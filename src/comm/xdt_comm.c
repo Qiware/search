@@ -15,9 +15,8 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
-#include "comm.h"
+#include "xdt_comm.h"
 #include "sha256.h"
-#include "orm_log.h"
 
 /******************************************************************************
  ** Name : Open
