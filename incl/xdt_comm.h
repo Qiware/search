@@ -32,13 +32,6 @@ typedef int bool;
 #define MD5_SUM_CHK_LEN     (32)    /* Md5校验值长度 */
 #define XDR_STR_MAX_LEN     (2048)  /* XDR的最大长度 */
 
-/* 单向链表 */
-typedef struct _list_t
-{
-    void *data;                     /* 数据信息 */
-    struct _list_t *next;           /* 下一结点 */
-}list_t;
-
 extern int Readn(int fd, void *buff, int n);
 extern int Writen(int fd, const void *buff, int n);
 extern int Rename(const char *oldpath, const char *newpath);

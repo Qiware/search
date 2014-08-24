@@ -16,8 +16,8 @@ typedef struct
     list2_node_t *head;
 }list2_t;
 
-int list2_insert_head(list2_t *list, void *data);
-int list2_insert_head_ex(list2_t *list, list2_node_t *node);
-int list2_insert_tail(list2_t *list, void *data);
-int list2_insert_tail_ex(list2_t *list, list2_node_t *node);
+int list2_insert_head(list2_t *list, list2_node_t *node);
+int list2_insert_tail(list2_t *list, list2_node_t *node);
+list2_node_t *list2_delete_head(list2_t *list);
+list2_node_t *list2_delete_tail(list2_t *list);
 #endif /*__LIST2_H__*/

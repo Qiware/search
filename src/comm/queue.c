@@ -19,9 +19,9 @@
  ******************************************************************************/
 int queue_init(Queue_t *q, int max, int size)
 {
-    int idx = 0;
-    void *args = NULL;
-    Qnode_t *node = NULL;
+    int idx;
+    void *args;
+    Qnode_t *node;
     
     memset(q, 0, sizeof(Queue_t));
 
