@@ -1,4 +1,7 @@
 <!-- 搜索引擎配置信息 -->
 <SEARCH>
-
+    <LOG>       <!-- 日志配置 -->
+        <PATH></PATH>         <!-- 日志路径 -->
+        <LEVEL>debug</LEVEL>  <!-- 日志级别: debug, trace, info, warn, error, fatal -->
+    <LOG>
 </SEARCH>
