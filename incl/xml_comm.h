@@ -4,6 +4,37 @@
 #include "stack.h"
 #include "xml_tree.h"
 
+#define XmlIsULineChar(ch)      ('_' == ch)     /* 下划线 */
+#define XmlIsTableChar(ch)      ('\t' == ch)    /* 制表符 */
+#define XmlIsStrEndChar(ch)     ('\0' == ch)    /* 结束符 */
+#define XmlIsEqualChar(ch)      ('=' == ch)     /* 等号符 */
+#define XmlIsDQuotChar(ch)      ('"' == ch)     /* 双引号 */
+#define XmlIsSQuotChar(ch)      ('\'' == ch)    /* 单引号 */
+#define XmlIsLPBrackChar(ch)    ('<' == ch)     /* 左尖括号 */
+#define XmlIsRPBrackChar(ch)    ('>' == ch)     /* 右尖括号 */
+#define XmlIsRDLineChar(ch)     ('/' == ch)     /* 右斜线 */
+#define XmlIsDoubtChar(ch)      ('?' == ch)     /* 疑问号 */
+#define XmlIsAndChar(ch)        ('&' == ch)     /* 与号 */
+#define XmlIsSubChar(ch)        ('-' == ch)     /* 减号 */
+#define XmlIsColonChar(ch)      (':' == ch)     /* 冒号 */
+#define XmlIsNLineChar(ch)      (('\n'==ch) || ('\r'==ch))  /* 换行符 */
+
+/* 转义关键字 */
+#define XmlIsLtStr(str) (0 == strncmp(str, XML_ESC_LT_STR, XML_ESC_LT_LEN))       /* 小于 */
+#define XmlIsGtStr(str) (0 == strncmp(str, XML_ESC_GT_STR, XML_ESC_GT_LEN))       /* 大于 */
+#define XmlIsAmpStr(str) (0 == strncmp(str, XML_ESC_AMP_STR, XML_ESC_AMP_LEN))    /* 与号 */
+#define XmlIsAposStr(str) (0 == strncmp(str, XML_ESC_APOS_STR, XML_ESC_APOS_LEN)) /* 单引号 */
+#define XmlIsQuotStr(str) (0 == strncmp(str, XML_ESC_QUOT_STR, XML_ESC_QUOT_LEN)) /* 双引号 */
+
+#define XmlIsMarkChar(ch) /* 标签名的合法字符 */\
+    (isalpha(ch) || isdigit(ch)    \
+     || XmlIsULineChar(ch))  || XmlIsSubChar(ch) || XmlIsColonChar(ch)
+#define XmlIsMarkBorder(ch) /* 标签名的合法边界 */\
+    (isspace(ch) || XmlIsRDLineChar(ch) \
+    || XmlIsRPBrackChar(ch) || XmlIsTableChar(ch) || XmlIsNLineChar(ch))
+#define XmlIsIgnoreChar(ch) /* 无意义字符 */\
+    (isspace(ch) || XmlIsTableChar(ch) || XmlIsNLineChar(ch))
+
 
 #define xml_set_type(node, t) ((node)->type = (t))          /* 设置节点类型 */
 #define xml_set_flag(node, f) ((node)->flag |= (f))     	/* 设置节点标志 */
@@ -30,26 +61,26 @@
 #define XML_END_FLAG        '/'	    /* 结束标志"</XXX>" */
 #define STR_END_FLAG        '\0'    /* 字串结束符 */
 
-#if defined(__XML_FRWD_PARSE__)
+#if defined(__XML_ESC_PARSE__)
 /* 转义字串及对应长度 */
-#define XML_FRWD_LT_STR     "&lt;"
-#define XML_FRWD_LT_LEN     (4)
+#define XML_ESC_LT_STR     "&lt;"
+#define XML_ESC_LT_LEN     (4)
 
-#define XML_FRWD_GT_STR     "&gt;"
-#define XML_FRWD_GT_LEN     (4)
+#define XML_ESC_GT_STR     "&gt;"
+#define XML_ESC_GT_LEN     (4)
 
-#define XML_FRWD_AMP_STR    "&amp;"
-#define XML_FRWD_AMP_LEN    (5)
+#define XML_ESC_AMP_STR    "&amp;"
+#define XML_ESC_AMP_LEN    (5)
 
-#define XML_FRWD_APOS_STR   "&apos;"
-#define XML_FRWD_APOS_LEN   (6)
+#define XML_ESC_APOS_STR   "&apos;"
+#define XML_ESC_APOS_LEN   (6)
 
-#define XML_FRWD_QUOT_STR   "&quot;"
-#define XML_FRWD_QUOT_LEN   (6)
+#define XML_ESC_QUOT_STR   "&quot;"
+#define XML_ESC_QUOT_LEN   (6)
 
-#define XML_FRWD_UNKNOWN_STR "&"
-#define XML_FRWD_UNKNOWN_LEN (1)
-#endif /*__XML_FRWD_PARSE__*/
+#define XML_ESC_UNKNOWN_STR "&"
+#define XML_ESC_UNKNOWN_LEN (1)
+#endif /*__XML_ESC_PARSE__*/
 
 /* 错误信息定义 */
 typedef enum
@@ -71,28 +102,28 @@ typedef enum
     , XML_SUCCESS = 0
 }xml_err_e;
 
-#if defined(__XML_FRWD_PARSE__)
+#if defined(__XML_ESC_PARSE__)
 /* 转义字串类型 */
 typedef enum
 {
-    XML_FRWD_LT             /* &lt;     < */
-    , XML_FRWD_GT           /* &gt;     > */
-    , XML_FRWD_AMP          /* &amp;    & */
-    , XML_FRWD_APOS         /* &apos;   ' */
-    , XML_FRWD_QUOT         /* &quot;   " */
-    , XML_FRWD_UNKNOWN
+    XML_ESC_LT             /* &lt;     < */
+    , XML_ESC_GT           /* &gt;     > */
+    , XML_ESC_AMP          /* &amp;    & */
+    , XML_ESC_APOS         /* &apos;   ' */
+    , XML_ESC_QUOT         /* &quot;   " */
+    , XML_ESC_UNKNOWN
 
-    , XML_FRWD_TOTAL = XML_FRWD_UNKNOWN
-}xml_frwd_e;
+    , XML_ESC_TOTAL = XML_ESC_UNKNOWN
+}xml_esc_e;
 
 typedef struct
 {
-    xml_frwd_e type;
+    xml_esc_e type;
     char *str;
     char ch;
     int length;
-}xml_frwd_t;
-#endif /*__XML_FRWD_PARSE__*/
+}xml_esc_t;
+#endif /*__XML_ESC_PARSE__*/
 
 /* 文件解析 结构体 */
 typedef struct
@@ -102,22 +133,22 @@ typedef struct
     int length;
 }xml_fparse_t;
 
-#if defined(__XML_FRWD_PARSE__)
+#if defined(__XML_ESC_PARSE__)
 /* 转义字串分割链表: 用于有转义字串的结点值或属性值的处理 */
-typedef struct _xml_frwd_node_t
+typedef struct _xml_esc_node_t
 {
     int length;
     char *str;
-    struct _xml_frwd_node_t *next;
-}xml_frwd_node_t;
+    struct _xml_esc_node_t *next;
+}xml_esc_node_t;
 
 /* 转义字串分割链表 */
 typedef struct
 {
-    xml_frwd_node_t *head;
-    xml_frwd_node_t *tail;
-}xml_frwd_split_t;
-#endif /*__XML_FRWD_PARSE__*/
+    xml_esc_node_t *head;
+    xml_esc_node_t *tail;
+}xml_esc_split_t;
+#endif /*__XML_ESC_PARSE__*/
 
 typedef struct
 {

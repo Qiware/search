@@ -1,0 +1,16 @@
+ <!-- 爬虫配置信息 -->
+
+<CRAWLER>
+    <WEBSITE>     <!-- 种子配置 -->
+        <SEED>www.ifeng.com</SEED>
+        <SEED>www.sina.com.cn</SEED>
+    </WEBSITE>
+    <LOG_LEVEL>   <!-- 日志级别配置 -->
+        <FATAL>1</FATAL>
+        <ERROR>1</ERROR>
+        <WARN>1</WARN>
+        <INFO>1</INFO>
+        <TRACE>1</TRACE>
+        <DEBUG>1</DEBUG>
+    </LOG_LEVEL>
+</CFAWLER>

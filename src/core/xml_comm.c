@@ -11,35 +11,6 @@
 #include "dts_comm.h"
 
 
-#define XmlIsULineChar(ch)      ('_' == ch)     /* 下划线 */
-#define XmlIsTableChar(ch)      ('\t' == ch)    /* 制表符 */
-#define XmlIsStrEndChar(ch)     ('\0' == ch)    /* 结束符 */
-#define XmlIsEqualChar(ch)      ('=' == ch)     /* 等号符 */
-#define XmlIsDQuotChar(ch)      ('"' == ch)     /* 双引号 */
-#define XmlIsSQuotChar(ch)      ('\'' == ch)    /* 单引号 */
-#define XmlIsLPBrackChar(ch)    ('<' == ch)     /* 左尖括号 */
-#define XmlIsRPBrackChar(ch)    ('>' == ch)     /* 右尖括号 */
-#define XmlIsRDLineChar(ch)     ('/' == ch)     /* 右斜线 */
-#define XmlIsDoubtChar(ch)      ('?' == ch)     /* 疑问号 */
-#define XmlIsAndChar(ch)        ('&' == ch)     /* 和号 */
-#define XmlIsSubChar(ch)        ('-' == ch)     /* 减号 */
-#define XmlIsColonChar(ch)      (':' == ch)     /* 冒号 */
-#define XmlIsNLineChar(ch)      (('\n'==ch) || ('\r'==ch))  /* 换行符 */
-
-/* 转义关键字 */
-#define XmlIsLtStr(str) (0 == strncmp(str, XML_FRWD_LT_STR, XML_FRWD_LT_LEN))       /* 小于 */
-#define XmlIsGtStr(str) (0 == strncmp(str, XML_FRWD_GT_STR, XML_FRWD_GT_LEN))       /* 大于 */
-#define XmlIsAmpStr(str) (0 == strncmp(str, XML_FRWD_AMP_STR, XML_FRWD_AMP_LEN))    /* 与号 */
-#define XmlIsAposStr(str) (0 == strncmp(str, XML_FRWD_APOS_STR, XML_FRWD_APOS_LEN)) /* 单引号 */
-#define XmlIsQuotStr(str) (0 == strncmp(str, XML_FRWD_QUOT_STR, XML_FRWD_QUOT_LEN)) /* 双引号 */
-
-#define XmlIsMarkChar(ch) (isalpha(ch) || isdigit(ch)   /* 标签名的合法字符 */ \
-                || XmlIsULineChar(ch))  || XmlIsSubChar(ch) || XmlIsColonChar(ch)
-#define XmlIsMarkBorder(ch) (isspace(ch) || XmlIsRDLineChar(ch) /* 标签名的合法边界 */ \
-                || XmlIsRPBrackChar(ch) || XmlIsTableChar(ch) || XmlIsNLineChar(ch))
-#define XmlIsIgnoreChar(ch) (isspace(ch) || XmlIsTableChar(ch) || XmlIsNLineChar(ch)) /* 无意义字符 */
-
-
 static int xml_parse_version(xml_fparse_t *fparse);
 static int xml_parse_note(xml_fparse_t *fparse);
 static int xml_parse_mark(xml_tree_t *xml, Stack_t *stack, xml_fparse_t *fparse);
@@ -52,26 +23,26 @@ static int xml_mark_is_end(xml_fparse_t *fparse);
 static int xml_mark_has_value(xml_fparse_t *fparse);
 static int xml_mark_get_value(Stack_t *stack, xml_fparse_t *fparse);
 
-#if defined(__XML_FRWD_PARSE__)
-static const xml_frwd_t *xml_frwd_get(const char *str);
-static int xml_frwd_free(xml_frwd_split_t *split);
-static int xml_frwd_size(const xml_frwd_split_t *split);
-static int xml_frwd_merge(const xml_frwd_split_t *sp, char *dst);
-static int xml_frwd_split(const xml_frwd_t *frwd, const char *str, int len, xml_frwd_split_t *split);
+#if defined(__XML_ESC_PARSE__)
+static const xml_esc_t *xml_esc_get(const char *str);
+static int xml_esc_free(xml_esc_split_t *split);
+static int xml_esc_size(const xml_esc_split_t *split);
+static int xml_esc_merge(const xml_esc_split_t *sp, char *dst);
+static int xml_esc_split(const xml_esc_t *esc, const char *str, int len, xml_esc_split_t *split);
 
-/* 转义字串对应的长度: 必须与xml_frwd_e的顺序一致 */
-static const xml_frwd_t g_xml_frwd_str[] =
+/* 转义字串对应的长度: 必须与xml_esc_e的顺序一致 */
+static const xml_esc_t g_xml_esc_str[] =
 {
-    {XML_FRWD_LT,     XML_FRWD_LT_STR,    '<',  XML_FRWD_LT_LEN}   /* &lt; */
-    , {XML_FRWD_GT,   XML_FRWD_GT_STR,    '>',  XML_FRWD_GT_LEN}   /* &gt; */
-    , {XML_FRWD_AMP,  XML_FRWD_AMP_STR,   '&',  XML_FRWD_AMP_LEN}  /* &amp; */
-    , {XML_FRWD_APOS, XML_FRWD_APOS_STR,  '\'', XML_FRWD_APOS_LEN} /* &apos; */
-    , {XML_FRWD_QUOT, XML_FRWD_QUOT_STR,  '"',  XML_FRWD_QUOT_LEN} /* &quot; */
+    {XML_ESC_LT,     XML_ESC_LT_STR,    '<',  XML_ESC_LT_LEN}   /* &lt; */
+    , {XML_ESC_GT,   XML_ESC_GT_STR,    '>',  XML_ESC_GT_LEN}   /* &gt; */
+    , {XML_ESC_AMP,  XML_ESC_AMP_STR,   '&',  XML_ESC_AMP_LEN}  /* &amp; */
+    , {XML_ESC_APOS, XML_ESC_APOS_STR,  '\'', XML_ESC_APOS_LEN} /* &apos; */
+    , {XML_ESC_QUOT, XML_ESC_QUOT_STR,  '"',  XML_ESC_QUOT_LEN} /* &quot; */
 
     /* 未知类型: 只有&开头才判断是否为转义字符。未知，则是首字母& */
-    , {XML_FRWD_UNKNOWN, XML_FRWD_UNKNOWN_STR, '&',  XML_FRWD_UNKNOWN_LEN}
+    , {XML_ESC_UNKNOWN, XML_ESC_UNKNOWN_STR, '&',  XML_ESC_UNKNOWN_LEN}
 };
-#endif /*__XML_FRWD_PARSE__*/
+#endif /*__XML_ESC_PARSE__*/
 
 /******************************************************************************
  **函数名称: xml_node_creat
@@ -809,13 +780,13 @@ static int xml_mark_get_attr(Stack_t *stack, xml_fparse_t *fparse)
     xml_node_t *node = NULL, *top = NULL;
     int len = 0, errflg = 0, size = 0, ret = 0;
     const char *ptr = fparse->ptr;
-#if defined(__XML_FRWD_PARSE__)
-    xml_frwd_split_t split;
-    const xml_frwd_t *frwd = NULL;
+#if defined(__XML_ESC_PARSE__)
+    xml_esc_split_t split;
+    const xml_esc_t *esc = NULL;
 
 
     memset(&split, 0, sizeof(split));
-#endif /*__XML_FRWD_PARSE__*/
+#endif /*__XML_ESC_PARSE__*/
 
     /* 1. 获取正在处理的标签 */
     top = (xml_node_t*)stack_gettop(stack);
@@ -881,14 +852,14 @@ static int xml_mark_get_attr(Stack_t *stack, xml_fparse_t *fparse)
         fparse->ptr = ptr;
         while ((*ptr != border) && !XmlIsStrEndChar(*ptr))   /* 计算 双/单 引号之间的数据长度 */
         {
-        #if defined(__XML_FRWD_PARSE__)
+        #if defined(__XML_ESC_PARSE__)
             if (XmlIsAndChar(*ptr))
             {
                 /* 判断并获取转义字串类型及相关信息 */
-                frwd = xml_frwd_get(ptr);
+                esc = xml_esc_get(ptr);
 
                 /* 对包含有转义字串的字串进行切割 */
-                ret = xml_frwd_split(frwd, fparse->ptr, ptr-fparse->ptr+1, &split);
+                ret = xml_esc_split(esc, fparse->ptr, ptr-fparse->ptr+1, &split);
                 if (XML_SUCCESS != ret)
                 {
                     errflg = 1;
@@ -896,11 +867,11 @@ static int xml_mark_get_attr(Stack_t *stack, xml_fparse_t *fparse)
                     break;
                 }
 
-                ptr += frwd->length;
+                ptr += esc->length;
                 fparse->ptr = ptr;
             }
             else
-        #endif /*__XML_FRWD_PARSE__*/
+        #endif /*__XML_ESC_PARSE__*/
             {
                 ptr++;
             }
@@ -916,10 +887,10 @@ static int xml_mark_get_attr(Stack_t *stack, xml_fparse_t *fparse)
         len = ptr - fparse->ptr;
         ptr++;  /* 跳过" */
 
-    #if defined(__XML_FRWD_PARSE__)
+    #if defined(__XML_ESC_PARSE__)
         if (NULL != split.head)
         {
-            size = xml_frwd_size(&split);
+            size = xml_esc_size(&split);
             size += len+1;
     
             node->value = (char *)calloc(1, size);
@@ -930,14 +901,14 @@ static int xml_mark_get_attr(Stack_t *stack, xml_fparse_t *fparse)
                 break;
             }
 
-            xml_frwd_merge(&split, node->value);
+            xml_esc_merge(&split, node->value);
             
             strncat(node->value, fparse->ptr, len);
 
-            xml_frwd_free(&split);
+            xml_esc_free(&split);
         }
         else
-    #endif /*__XML_FRWD_PARSE__*/
+    #endif /*__XML_ESC_PARSE__*/
         {
             node->value = (char*)calloc(1, (len+1)*sizeof(char));
             if (NULL == node->value)
@@ -967,9 +938,9 @@ static int xml_mark_get_attr(Stack_t *stack, xml_fparse_t *fparse)
 
     }while (XmlIsMarkChar(*ptr));
 
-#if defined(__XML_FRWD_PARSE__)
-    xml_frwd_free(&split);
-#endif /*__XML_FRWD_PARSE__*/
+#if defined(__XML_ESC_PARSE__)
+    xml_esc_free(&split);
+#endif /*__XML_ESC_PARSE__*/
 
     if (1 == errflg)         /* 防止内存泄漏 */
     {
@@ -1064,12 +1035,12 @@ static int xml_mark_get_value(Stack_t *stack, xml_fparse_t *fparse)
     int ret = 0, len = 0, size = 0;
     const char *p1=NULL, *p2=NULL;
     xml_node_t *current = NULL;
-#if defined(__XML_FRWD_PARSE__)
-    const xml_frwd_t *frwd = NULL;
-    xml_frwd_split_t split;
+#if defined(__XML_ESC_PARSE__)
+    const xml_esc_t *esc = NULL;
+    xml_esc_split_t split;
 
     memset(&split, 0, sizeof(split));
-#endif /*__XML_FRWD_PARSE__*/
+#endif /*__XML_ESC_PARSE__*/
 
     current = (xml_node_t*)stack_gettop(stack);
     if (NULL == current)
@@ -1086,24 +1057,24 @@ static int xml_mark_get_value(Stack_t *stack, xml_fparse_t *fparse)
     /* 提取节点值: 允许节点值中出现空格和换行符 */    
     while (!XmlIsStrEndChar(*p1) && !XmlIsLPBrackChar(*p1))
     {
-    #if defined(__XML_FRWD_PARSE__)
+    #if defined(__XML_ESC_PARSE__)
         if (XmlIsAndChar(*p1))
         {
-            frwd = xml_frwd_get(p1);
+            esc = xml_esc_get(p1);
 
-            ret = xml_frwd_split(frwd, fparse->ptr, p1-fparse->ptr+1, &split);
+            ret = xml_esc_split(esc, fparse->ptr, p1-fparse->ptr+1, &split);
             if (XML_SUCCESS != ret)
             {
-                xml_frwd_free(&split);
+                xml_esc_free(&split);
                 LogError("Parse forwad string failed!");
                 return XML_FAILED;
             }
             
-            p1 += frwd->length;
+            p1 += esc->length;
             fparse->ptr = p1;
         }
         else
-    #endif /*__XML_FRWD_PARSE__*/
+    #endif /*__XML_ESC_PARSE__*/
         {
             p1++;
         }
@@ -1111,9 +1082,9 @@ static int xml_mark_get_value(Stack_t *stack, xml_fparse_t *fparse)
 
     if (XmlIsStrEndChar(*p1))
     {
-    #if defined(__XML_FRWD_PARSE__)
-        xml_frwd_free(&split);
-    #endif /*__XML_FRWD_PARSE__*/
+    #if defined(__XML_ESC_PARSE__)
+        xml_esc_free(&split);
+    #endif /*__XML_ESC_PARSE__*/
         LogError("XML format is wrong! MarkName:[%s]", current->name);
         return XML_ERR_FORMAT;
     }
@@ -1125,32 +1096,32 @@ static int xml_mark_get_value(Stack_t *stack, xml_fparse_t *fparse)
     p1++;
 
     len = p1 - fparse->ptr;
-#if defined(__XML_FRWD_PARSE__)
-    size = xml_frwd_size(&split);
-#endif /*__XML_FRWD_PARSE__*/
+#if defined(__XML_ESC_PARSE__)
+    size = xml_esc_size(&split);
+#endif /*__XML_ESC_PARSE__*/
     size += len+1;
 
     current->value = (char*)calloc(1, size*sizeof(char));
     if (NULL == current->value)
     {
-    #if defined(__XML_FRWD_PARSE__)
-        xml_frwd_free(&split);
-    #endif /*__XML_FRWD_PARSE__*/
+    #if defined(__XML_ESC_PARSE__)
+        xml_esc_free(&split);
+    #endif /*__XML_ESC_PARSE__*/
         LogError("Calloc failed!");
         return XML_ERR_CALLOC;
     }
 
-#if defined(__XML_FRWD_PARSE__)
+#if defined(__XML_ESC_PARSE__)
     if (NULL != split.head)
     {
-        xml_frwd_merge(&split, current->value);
+        xml_esc_merge(&split, current->value);
 
         strncat(current->value, fparse->ptr, len);
 
-        xml_frwd_free(&split);
+        xml_esc_free(&split);
     }
     else
-#endif /*__XML_FRWD_PARSE__*/
+#endif /*__XML_ESC_PARSE__*/
     {
         strncpy(current->value, fparse->ptr, len);
     }
@@ -2476,9 +2447,9 @@ int xml_pack_node_length(xml_node_t *root, Stack_t *stack)
     return length;
 }
 
-#if defined(__XML_FRWD_PARSE__)
+#if defined(__XML_ESC_PARSE__)
 /******************************************************************************
- **函数名称: xml_frwd_get
+ **函数名称: xml_esc_get
  **功    能: 获取转义字串的信息
  **输入参数:
  **      str: 以&开头的字串
@@ -2494,34 +2465,34 @@ int xml_pack_node_length(xml_node_t *root, Stack_t *stack)
  **        &quot;  "    引号
  **作    者: # Qifeng.zou # 2014.01.06 #
  ******************************************************************************/
-static const xml_frwd_t *xml_frwd_get(const char *str)
+static const xml_esc_t *xml_esc_get(const char *str)
 {
     if (XmlIsLtStr(str))         /* &lt; */
     {
-        return &g_xml_frwd_str[XML_FRWD_LT];
+        return &g_xml_esc_str[XML_ESC_LT];
     }
     else if (XmlIsGtStr(str))    /* &gt; */
     {
-        return &g_xml_frwd_str[XML_FRWD_GT];
+        return &g_xml_esc_str[XML_ESC_GT];
     }
     else if (XmlIsAmpStr(str))   /* &amp; */
     {
-        return &g_xml_frwd_str[XML_FRWD_AMP];
+        return &g_xml_esc_str[XML_ESC_AMP];
     }
     else if (XmlIsAposStr(str))  /* &apos; */
     {
-        return &g_xml_frwd_str[XML_FRWD_APOS];
+        return &g_xml_esc_str[XML_ESC_APOS];
     }
     else if (XmlIsQuotStr(str))  /* &quot; */
     {
-        return &g_xml_frwd_str[XML_FRWD_QUOT];
+        return &g_xml_esc_str[XML_ESC_QUOT];
     }
 
-    return &g_xml_frwd_str[XML_FRWD_UNKNOWN];    /* 未知类型 */
+    return &g_xml_esc_str[XML_ESC_UNKNOWN];    /* 未知类型 */
 }
 
 /******************************************************************************
- **函数名称: xml_frwd_size
+ **函数名称: xml_esc_size
  **功    能: 获取转义切割之前字段长度之和
  **输入参数:
  **      s: 被切割后的字串链表
@@ -2531,10 +2502,10 @@ static const xml_frwd_t *xml_frwd_get(const char *str)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.01.06 #
  ******************************************************************************/
-static int xml_frwd_size(const xml_frwd_split_t *sp)
+static int xml_esc_size(const xml_esc_split_t *sp)
 {
     int size = 0;
-    xml_frwd_node_t *node = sp->head;
+    xml_esc_node_t *node = sp->head;
     
     while (NULL != node)
     {
@@ -2546,7 +2517,7 @@ static int xml_frwd_size(const xml_frwd_split_t *sp)
 }
 
 /******************************************************************************
- **函数名称: xml_frwd_merge
+ **函数名称: xml_esc_merge
  **功    能: 合并被切割转义的字串
  **输入参数:
  **      s: 被切割后的字串链表
@@ -2556,10 +2527,10 @@ static int xml_frwd_size(const xml_frwd_split_t *sp)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.01.06 #
  ******************************************************************************/
-static int xml_frwd_merge(const xml_frwd_split_t *sp, char *dst)
+static int xml_esc_merge(const xml_esc_split_t *sp, char *dst)
 {
     char *ptr = dst;
-    xml_frwd_node_t *fnode = sp->head;
+    xml_esc_node_t *fnode = sp->head;
 
     while (NULL != fnode)
     {
@@ -2572,7 +2543,7 @@ static int xml_frwd_merge(const xml_frwd_split_t *sp, char *dst)
 }
 
 /******************************************************************************
- **函数名称: xml_frwd_free
+ **函数名称: xml_esc_free
  **功    能: 是否转义切割对象
  **输入参数:
  **     split: 切割对象
@@ -2582,9 +2553,9 @@ static int xml_frwd_merge(const xml_frwd_split_t *sp, char *dst)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.01.06 #
  ******************************************************************************/
-static int xml_frwd_free(xml_frwd_split_t *split)
+static int xml_esc_free(xml_esc_split_t *split)
 {
-    xml_frwd_node_t *node = split->head, *next = NULL;
+    xml_esc_node_t *node = split->head, *next = NULL;
 
     while (NULL != node)
     {
@@ -2600,10 +2571,10 @@ static int xml_frwd_free(xml_frwd_split_t *split)
 }
 
 /******************************************************************************
- **函数名称: xml_frwd_split
+ **函数名称: xml_esc_split
  **功    能: 切割并转义从转义字串及之前的字串
  **输入参数:
- **     frwd: 对应的转义信息
+ **     esc: 对应的转义信息
  **     str: 字串
  **     len: str+len处的字串需要进行转义, 即:str[len]='&'
  **输出参数:
@@ -2619,12 +2590,12 @@ static int xml_frwd_free(xml_frwd_split_t *split)
  **        &quot;  "    引号
  **作    者: # Qifeng.zou # 2014.01.06 #
  ******************************************************************************/
-static int xml_frwd_split(const xml_frwd_t *frwd,
-    const char *str, int len, xml_frwd_split_t *split)
+static int xml_esc_split(const xml_esc_t *esc,
+    const char *str, int len, xml_esc_split_t *split)
 {
-    xml_frwd_node_t *node = NULL;
+    xml_esc_node_t *node = NULL;
 
-    node = (xml_frwd_node_t *)calloc(1, sizeof(xml_frwd_node_t));
+    node = (xml_esc_node_t *)calloc(1, sizeof(xml_esc_node_t));
     if (NULL == node)
     {
         LogError("Calloc memory failed!");
@@ -2639,7 +2610,7 @@ static int xml_frwd_split(const xml_frwd_t *frwd,
     }
 
     strncpy(node->str, str, len-1);
-    node->str[len-1] = frwd->ch;
+    node->str[len-1] = esc->ch;
     node->length = len;
     
     if (NULL == split->head)
@@ -2654,4 +2625,4 @@ static int xml_frwd_split(const xml_frwd_t *frwd,
 
     return XML_SUCCESS;
 }
-#endif /*__XML_FRWD_PARSE__*/
+#endif /*__XML_ESC_PARSE__*/
