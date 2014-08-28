@@ -65,7 +65,7 @@ AGAIN:
 int Readn(int fd, void *buff, int n)
 {
     int left = n, len = 0;
-    void *ptr = buff;
+    char *ptr = (char *)buff;
 
     while (left > 0)
     {
@@ -110,7 +110,7 @@ int Readn(int fd, void *buff, int n)
 int Writen(int fd, const void *buff, int n)
 {
     int left = n, len = 0;
-    const void *ptr = buff;
+    const char *ptr = (const char *)buff;
 
     while (left > 0)
     {
@@ -714,7 +714,7 @@ int block_send(int fd, const void *addr, size_t size, int secs)
             return -1;
         }
 
-        n = Writen(fd, addr+off, left);
+        n = Writen(fd, (const char *)addr+off, left);
         if (n < 0)
         {
             return -1;
@@ -773,7 +773,7 @@ int block_recv(int fd, void *addr, size_t size, int secs)
             return -1;
         }
 
-        n = Readn(fd, addr+off, left);
+        n = Readn(fd, (char *)addr+off, left);
         if (n < 0)
         {
             return -1;

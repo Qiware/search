@@ -884,12 +884,11 @@ void *eslab_alloc(eslab_pool_t *eslab, size_t size)
     int block = 0, count = 0;
     size_t alloc_size = 0;
     slab_pool_t *slab = NULL;
-    eslab_node_t *node = eslab->node, *prev, *next;
+    eslab_node_t *node = eslab->node, *next;
 
     /* 1. Search and alloc */
     while (NULL != node)
     {
-        prev = node;
         next = node->next;
         
         p = slab_alloc(node->sp, size);
@@ -904,7 +903,7 @@ void *eslab_alloc(eslab_pool_t *eslab, size_t size)
 
     log_info("Not enough memory! [%d]", count);
 
-    /* 2. Add node into link */
+    /* 2. Add new slab node into link */
     block = size / eslab->inc_size;
     if (size % eslab->inc_size)
     {

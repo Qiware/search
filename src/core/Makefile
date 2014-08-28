@@ -30,7 +30,7 @@ $(TARGET): $(OBJS)
 	@echo "$@ is OK!"
 
 $(OBJS): %.o : %.c
-	$(CC) $(CFLAGS) -fPIC -c $< -o $@ $(INCLUDE)
+	$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
 
 clean:
 	rm -fr $(OBJS)
