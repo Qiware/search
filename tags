@@ -16,7 +16,7 @@ AVL_SUCCESS	src/incl/avl_tree.h	/^    AVL_SUCCESS                 \/* 成功 *\/
 ByteNumHi	src/incl/sha256.h	/^	int  ByteNumHi;$/;"	m	struct:_sha256_t
 ByteNumLo	src/incl/sha256.h	/^	int  ByteNumLo;$/;"	m	struct:_sha256_t
 CC	make/build.mak	/^CC = gcc$/;"	m
-CFLAGS	make/build.mak	/^CFLAGS = -Wall -g -fPIC -s$/;"	m
+CFLAGS	make/build.mak	/^CFLAGS = -Wall -g -fPIC -s \\$/;"	m
 CMD_LINE_MAX_LEN	src/incl/xdt_comm.h	30;"	d
 CONFIG_DEBUG_SUPPORT	make/switch.mak	/^CONFIG_DEBUG_SUPPORT = __ON__ 	# 调试开关$/;"	m
 CONFIG_LOG_SUPPORT	make/switch.mak	/^CONFIG_LOG_SUPPORT = __ON__		# 日志开关$/;"	m
@@ -42,18 +42,33 @@ OBJS	src/core/Makefile	/^OBJS = $(subst .c,.o, $(SRC_LIST)) $/;"	m
 Open	src/core/xdt_comm.c	/^int Open(const char *fpath, int flags, mode_t mode)$/;"	f
 Padding	src/incl/sha256.h	/^	int  Padding[ 64 ];$/;"	m	struct:_sha256_t
 Qnode_t	src/incl/queue.h	/^}Qnode_t;$/;"	t	typeref:struct:_Qnode_t
-Queue_t	src/incl/queue.h	/^}Queue_t;$/;"	t	typeref:struct:__anon19
+Queue_t	src/incl/queue.h	/^}Queue_t;$/;"	t	typeref:struct:__anon23
 RBT_COLOR_BLACK	src/incl/rb_tree.h	13;"	d
 RBT_COLOR_RED	src/incl/rb_tree.h	14;"	d
-RBT_FAILED	src/incl/rb_tree.h	/^    , RBT_FAILED = ~0x7fffffff      \/* 失败 *\/$/;"	e	enum:__anon7
+RBT_FAILED	src/incl/rb_tree.h	/^    , RBT_FAILED = ~0x7fffffff      \/* 失败 *\/$/;"	e	enum:__anon11
 RBT_LCHILD	src/incl/rb_tree.h	16;"	d
 RBT_MAX_DEPTH	src/incl/rb_tree.h	19;"	d
-RBT_NODE_EXIST	src/incl/rb_tree.h	/^    , RBT_NODE_EXIST                \/* 结点存在 *\/$/;"	e	enum:__anon7
+RBT_NODE_EXIST	src/incl/rb_tree.h	/^    , RBT_NODE_EXIST                \/* 结点存在 *\/$/;"	e	enum:__anon11
 RBT_RCHILD	src/incl/rb_tree.h	17;"	d
-RBT_SUCCESS	src/incl/rb_tree.h	/^    RBT_SUCCESS                     \/* 成功 *\/$/;"	e	enum:__anon7
+RBT_SUCCESS	src/incl/rb_tree.h	/^    RBT_SUCCESS                     \/* 成功 *\/$/;"	e	enum:__anon11
 Random	src/core/xdt_comm.c	/^int Random(void)$/;"	f
 Readn	src/core/xdt_comm.c	/^int Readn(int fd, void *buff, int n)$/;"	f
 Rename	src/core/xdt_comm.c	/^int Rename(const char *oldpath, const char *newpath)$/;"	f
+SHM_SLAB_ALLOC_EXACT	src/incl/shm_slab.h	/^    SHM_SLAB_ALLOC_EXACT,   \/* ����128�ֽ� *\/$/;"	e	enum:__anon5
+SHM_SLAB_ALLOC_LARGE	src/incl/shm_slab.h	/^    SHM_SLAB_ALLOC_LARGE,   \/* ����128�ֽڣ�С��2048�ֽ� *\/$/;"	e	enum:__anon5
+SHM_SLAB_ALLOC_PAGES	src/incl/shm_slab.h	/^    SHM_SLAB_ALLOC_PAGES,   \/* ����ҳ���� *\/$/;"	e	enum:__anon5
+SHM_SLAB_ALLOC_SMALL	src/incl/shm_slab.h	/^    SHM_SLAB_ALLOC_SMALL,   \/* С��128�ֽ� *\/$/;"	e	enum:__anon5
+SHM_SLAB_ALLOC_TOTAL	src/incl/shm_slab.h	/^    SHM_SLAB_ALLOC_TOTAL$/;"	e	enum:__anon5
+SHM_SLAB_ALLOC_TYPE	src/incl/shm_slab.h	/^}SHM_SLAB_ALLOC_TYPE;$/;"	t	typeref:enum:__anon5
+SHM_SLAB_ALLOC_UNKNOWN	src/incl/shm_slab.h	/^    SHM_SLAB_ALLOC_UNKNOWN, \/* δ֪��ʽ *\/$/;"	e	enum:__anon5
+SHM_SLAB_BITMAP_BITS	src/core/shm_slab.c	8;"	d	file:
+SHM_SLAB_BITMAP_SHIFT	src/core/shm_slab.c	9;"	d	file:
+SHM_SLAB_BUSY_BITMAP	src/core/shm_slab.c	13;"	d	file:
+SHM_SLAB_FREE_PAGE	src/core/shm_slab.c	12;"	d	file:
+SHM_SLAB_MIN_SHIFT	src/core/shm_slab.c	7;"	d	file:
+SHM_SLAB_MIN_SIZE	src/core/shm_slab.c	6;"	d	file:
+SHM_SLAB_NULL_PAGE	src/core/shm_slab.c	11;"	d	file:
+SHM_SLAB_PAGE_SIZE	src/core/shm_slab.c	5;"	d	file:
 SLAB_BIG	src/core/slab.c	6;"	d	file:
 SLAB_BUSY	src/core/slab.c	24;"	d	file:
 SLAB_BUSY	src/core/slab.c	36;"	d	file:
@@ -79,7 +94,7 @@ SLAB_SMALL	src/core/slab.c	8;"	d	file:
 SRC_LIST	src/core/Makefile	/^SRC_LIST = avl_tree.c \\$/;"	m
 STR_END_FLAG	src/incl/xml_comm.h	62;"	d
 Sleep	src/core/xdt_comm.c	/^int Sleep(int secs)$/;"	f
-Stack_t	src/incl/stack.h	/^}Stack_t;$/;"	t	typeref:struct:__anon6
+Stack_t	src/incl/stack.h	/^}Stack_t;$/;"	t	typeref:struct:__anon10
 TARGET	src/core/Makefile	/^TARGET = libcore.so$/;"	m
 Value	src/incl/sha256.h	/^	char  Value[ 32 ]; $/;"	m	struct:_sha256_t
 Writen	src/core/xdt_comm.c	/^int Writen(int fd, const void *buff, int n)$/;"	f
@@ -92,37 +107,37 @@ XDT_LOG_LEVEL_TRACE	src/incl/xdt_log.h	18;"	d
 XDT_LOG_LEVEL_WARN	src/incl/xdt_log.h	15;"	d
 XML_BEGIN_FLAG	src/incl/xml_comm.h	58;"	d
 XML_END_FLAG	src/incl/xml_comm.h	61;"	d
-XML_ERR_CALLOC	src/incl/xml_comm.h	/^    XML_ERR_CALLOC           \/* calloc失败 *\/$/;"	e	enum:__anon11
-XML_ERR_CREAT_NODE	src/incl/xml_comm.h	/^    , XML_ERR_CREAT_NODE     \/* 新建节点失败 *\/$/;"	e	enum:__anon11
-XML_ERR_EMPTY_TREE	src/incl/xml_comm.h	/^    , XML_ERR_EMPTY_TREE     \/* 空树 *\/$/;"	e	enum:__anon11
-XML_ERR_FOPEN	src/incl/xml_comm.h	/^    , XML_ERR_FOPEN          \/* fopen失败 *\/$/;"	e	enum:__anon11
-XML_ERR_FORMAT	src/incl/xml_comm.h	/^    , XML_ERR_FORMAT         \/* XML格式错误 *\/$/;"	e	enum:__anon11
-XML_ERR_GET_ATTR	src/incl/xml_comm.h	/^    , XML_ERR_GET_ATTR       \/* 属性获取失败 *\/$/;"	e	enum:__anon11
-XML_ERR_GET_NAME	src/incl/xml_comm.h	/^    , XML_ERR_GET_NAME       \/* 标签名获取失败 *\/$/;"	e	enum:__anon11
-XML_ERR_MARK_MISMATCH	src/incl/xml_comm.h	/^    , XML_ERR_MARK_MISMATCH  \/* 标签不匹配 *\/$/;"	e	enum:__anon11
-XML_ERR_NODE_TYPE	src/incl/xml_comm.h	/^    , XML_ERR_NODE_TYPE      \/* 节点类型错误 *\/$/;"	e	enum:__anon11
-XML_ERR_PTR_NULL	src/incl/xml_comm.h	/^    , XML_ERR_PTR_NULL       \/* 空指针 *\/$/;"	e	enum:__anon11
-XML_ERR_STACK	src/incl/xml_comm.h	/^    , XML_ERR_STACK          \/* 栈出错 *\/$/;"	e	enum:__anon11
-XML_ESC_AMP	src/incl/xml_comm.h	/^    , XML_ESC_AMP          \/* &amp;    & *\/$/;"	e	enum:__anon12
+XML_ERR_CALLOC	src/incl/xml_comm.h	/^    XML_ERR_CALLOC           \/* calloc失败 *\/$/;"	e	enum:__anon15
+XML_ERR_CREAT_NODE	src/incl/xml_comm.h	/^    , XML_ERR_CREAT_NODE     \/* 新建节点失败 *\/$/;"	e	enum:__anon15
+XML_ERR_EMPTY_TREE	src/incl/xml_comm.h	/^    , XML_ERR_EMPTY_TREE     \/* 空树 *\/$/;"	e	enum:__anon15
+XML_ERR_FOPEN	src/incl/xml_comm.h	/^    , XML_ERR_FOPEN          \/* fopen失败 *\/$/;"	e	enum:__anon15
+XML_ERR_FORMAT	src/incl/xml_comm.h	/^    , XML_ERR_FORMAT         \/* XML格式错误 *\/$/;"	e	enum:__anon15
+XML_ERR_GET_ATTR	src/incl/xml_comm.h	/^    , XML_ERR_GET_ATTR       \/* 属性获取失败 *\/$/;"	e	enum:__anon15
+XML_ERR_GET_NAME	src/incl/xml_comm.h	/^    , XML_ERR_GET_NAME       \/* 标签名获取失败 *\/$/;"	e	enum:__anon15
+XML_ERR_MARK_MISMATCH	src/incl/xml_comm.h	/^    , XML_ERR_MARK_MISMATCH  \/* 标签不匹配 *\/$/;"	e	enum:__anon15
+XML_ERR_NODE_TYPE	src/incl/xml_comm.h	/^    , XML_ERR_NODE_TYPE      \/* 节点类型错误 *\/$/;"	e	enum:__anon15
+XML_ERR_PTR_NULL	src/incl/xml_comm.h	/^    , XML_ERR_PTR_NULL       \/* 空指针 *\/$/;"	e	enum:__anon15
+XML_ERR_STACK	src/incl/xml_comm.h	/^    , XML_ERR_STACK          \/* 栈出错 *\/$/;"	e	enum:__anon15
+XML_ESC_AMP	src/incl/xml_comm.h	/^    , XML_ESC_AMP          \/* &amp;    & *\/$/;"	e	enum:__anon16
 XML_ESC_AMP_LEN	src/incl/xml_comm.h	73;"	d
 XML_ESC_AMP_STR	src/incl/xml_comm.h	72;"	d
-XML_ESC_APOS	src/incl/xml_comm.h	/^    , XML_ESC_APOS         \/* &apos;   ' *\/$/;"	e	enum:__anon12
+XML_ESC_APOS	src/incl/xml_comm.h	/^    , XML_ESC_APOS         \/* &apos;   ' *\/$/;"	e	enum:__anon16
 XML_ESC_APOS_LEN	src/incl/xml_comm.h	76;"	d
 XML_ESC_APOS_STR	src/incl/xml_comm.h	75;"	d
-XML_ESC_GT	src/incl/xml_comm.h	/^    , XML_ESC_GT           \/* &gt;     > *\/$/;"	e	enum:__anon12
+XML_ESC_GT	src/incl/xml_comm.h	/^    , XML_ESC_GT           \/* &gt;     > *\/$/;"	e	enum:__anon16
 XML_ESC_GT_LEN	src/incl/xml_comm.h	70;"	d
 XML_ESC_GT_STR	src/incl/xml_comm.h	69;"	d
-XML_ESC_LT	src/incl/xml_comm.h	/^    XML_ESC_LT             \/* &lt;     < *\/$/;"	e	enum:__anon12
+XML_ESC_LT	src/incl/xml_comm.h	/^    XML_ESC_LT             \/* &lt;     < *\/$/;"	e	enum:__anon16
 XML_ESC_LT_LEN	src/incl/xml_comm.h	67;"	d
 XML_ESC_LT_STR	src/incl/xml_comm.h	66;"	d
-XML_ESC_QUOT	src/incl/xml_comm.h	/^    , XML_ESC_QUOT         \/* &quot;   " *\/$/;"	e	enum:__anon12
+XML_ESC_QUOT	src/incl/xml_comm.h	/^    , XML_ESC_QUOT         \/* &quot;   " *\/$/;"	e	enum:__anon16
 XML_ESC_QUOT_LEN	src/incl/xml_comm.h	79;"	d
 XML_ESC_QUOT_STR	src/incl/xml_comm.h	78;"	d
-XML_ESC_TOTAL	src/incl/xml_comm.h	/^    , XML_ESC_TOTAL = XML_ESC_UNKNOWN$/;"	e	enum:__anon12
-XML_ESC_UNKNOWN	src/incl/xml_comm.h	/^    , XML_ESC_UNKNOWN$/;"	e	enum:__anon12
+XML_ESC_TOTAL	src/incl/xml_comm.h	/^    , XML_ESC_TOTAL = XML_ESC_UNKNOWN$/;"	e	enum:__anon16
+XML_ESC_UNKNOWN	src/incl/xml_comm.h	/^    , XML_ESC_UNKNOWN$/;"	e	enum:__anon16
 XML_ESC_UNKNOWN_LEN	src/incl/xml_comm.h	82;"	d
 XML_ESC_UNKNOWN_STR	src/incl/xml_comm.h	81;"	d
-XML_FAILED	src/incl/xml_comm.h	/^    , XML_FAILED             \/* 失败 *\/$/;"	e	enum:__anon11
+XML_FAILED	src/incl/xml_comm.h	/^    , XML_FAILED             \/* 失败 *\/$/;"	e	enum:__anon15
 XML_MARK_BEGIN	src/incl/xml_tree.h	16;"	d
 XML_MARK_BEGIN_LEN	src/incl/xml_tree.h	17;"	d
 XML_MARK_END1	src/incl/xml_tree.h	18;"	d
@@ -130,15 +145,15 @@ XML_MARK_END1_LEN	src/incl/xml_tree.h	19;"	d
 XML_MARK_END2	src/incl/xml_tree.h	20;"	d
 XML_MARK_END2_LEN	src/incl/xml_tree.h	21;"	d
 XML_MAX_DEPTH	src/incl/xml_tree.h	14;"	d
-XML_NODE_ATTR	src/incl/xml_tree.h	/^    XML_NODE_ATTR,     \/* 属性节点 *\/$/;"	e	enum:__anon9
-XML_NODE_CHILD	src/incl/xml_tree.h	/^    XML_NODE_CHILD,    \/* 孩子节点 *\/$/;"	e	enum:__anon9
+XML_NODE_ATTR	src/incl/xml_tree.h	/^    XML_NODE_ATTR,     \/* 属性节点 *\/$/;"	e	enum:__anon13
+XML_NODE_CHILD	src/incl/xml_tree.h	/^    XML_NODE_CHILD,    \/* 孩子节点 *\/$/;"	e	enum:__anon13
 XML_NODE_HAS_ATTR	src/incl/xml_tree.h	40;"	d
 XML_NODE_HAS_CHILD	src/incl/xml_tree.h	39;"	d
 XML_NODE_HAS_NONE	src/incl/xml_tree.h	38;"	d
 XML_NODE_HAS_VALUE	src/incl/xml_tree.h	41;"	d
-XML_NODE_ROOT	src/incl/xml_tree.h	/^    XML_NODE_ROOT,     \/* 根节点 *\/$/;"	e	enum:__anon9
-XML_NODE_TYPE_TOTAL	src/incl/xml_tree.h	/^    XML_NODE_TYPE_TOTAL = XML_NODE_UNKNOWN    \/* 节点类型数 *\/$/;"	e	enum:__anon9
-XML_NODE_UNKNOWN	src/incl/xml_tree.h	/^    XML_NODE_UNKNOWN,  \/* 未知节点 *\/$/;"	e	enum:__anon9
+XML_NODE_ROOT	src/incl/xml_tree.h	/^    XML_NODE_ROOT,     \/* 根节点 *\/$/;"	e	enum:__anon13
+XML_NODE_TYPE_TOTAL	src/incl/xml_tree.h	/^    XML_NODE_TYPE_TOTAL = XML_NODE_UNKNOWN    \/* 节点类型数 *\/$/;"	e	enum:__anon13
+XML_NODE_UNKNOWN	src/incl/xml_tree.h	/^    XML_NODE_UNKNOWN,  \/* 未知节点 *\/$/;"	e	enum:__anon13
 XML_NOTE_BEGIN	src/incl/xml_tree.h	26;"	d
 XML_NOTE_BEGIN_LEN	src/incl/xml_tree.h	27;"	d
 XML_NOTE_END	src/incl/xml_tree.h	28;"	d
@@ -149,7 +164,7 @@ XML_NOTE_END_LEN	src/incl/xml_tree.h	29;"	d
 XML_NOTE_FLAG	src/incl/xml_comm.h	60;"	d
 XML_ROOT_NAME	src/incl/xml_tree.h	35;"	d
 XML_ROOT_NAME_SIZE	src/incl/xml_tree.h	36;"	d
-XML_SUCCESS	src/incl/xml_comm.h	/^    , XML_SUCCESS = 0$/;"	e	enum:__anon11
+XML_SUCCESS	src/incl/xml_comm.h	/^    , XML_SUCCESS = 0$/;"	e	enum:__anon15
 XML_VERS_BEGIN	src/incl/xml_tree.h	22;"	d
 XML_VERS_BEGIN_LEN	src/incl/xml_tree.h	23;"	d
 XML_VERS_END	src/incl/xml_tree.h	24;"	d
@@ -187,6 +202,7 @@ __QUEUE_H__	src/incl/queue.h	2;"	d
 __RB_STACK_PRINT__	src/core/rb_tree.c	4;"	d	file:
 __RB_TREE_H__	src/incl/rb_tree.h	2;"	d
 __SHA256_H__	src/incl/sha256.h	2;"	d
+__SHM_SLAB__	src/incl/shm_slab.h	2;"	d
 __SLAB_H__	src/incl/slab.h	2;"	d
 __STACK_H__	src/incl/stack.h	10;"	d
 __STACK_OPTIMIZE__	src/incl/stack.h	18;"	d
@@ -207,6 +223,7 @@ _node_t	src/incl/avl_tree.h	/^typedef struct _node_t$/;"	s
 _rb_delete	src/core/rb_tree.c	/^static int _rb_delete(rbt_tree_t *tree, rbt_node_t *dnode)$/;"	f	file:
 _rbt_node_t	src/incl/rb_tree.h	/^typedef struct _rbt_node_t$/;"	s
 _sha256_t	src/incl/sha256.h	/^typedef struct _sha256_t$/;"	s
+_shm_slab_alloc_slot	src/core/shm_slab.c	/^static void *_shm_slab_alloc_slot(shm_slab_pool_t *pool, int slot_idx, int type)$/;"	f	file:
 _slab_page_t	src/incl/slab.h	/^typedef struct _slab_page_t$/;"	s
 _thread_worker_t	src/incl/thread_pool.h	/^typedef struct _thread_worker_t$/;"	s
 _try_flock	src/core/xdt_comm.c	/^int _try_flock(int fd, int type, int whence, int start, int len)$/;"	f
@@ -215,7 +232,7 @@ _xml_esc_node_t	src/incl/xml_comm.h	/^typedef struct _xml_esc_node_t$/;"	s
 _xml_node_length	src/core/xml_comm.c	/^int _xml_node_length(xml_node_t *root, Stack_t *stack)$/;"	f
 _xml_node_t	src/incl/xml_tree.h	/^typedef struct _xml_node_t$/;"	s
 _xml_pack_length	src/core/xml_tree.c	/^int _xml_pack_length(xml_node_t *node)$/;"	f
-addr	src/incl/slab.h	/^    void *addr;$/;"	m	struct:__anon17
+addr	src/incl/slab.h	/^    void *addr;$/;"	m	struct:__anon21
 arg	src/incl/thread_pool.h	/^	void *arg;                      \/* 接口参数 *\/$/;"	m	struct:_thread_worker_t
 args	src/incl/queue.h	/^    void *args;$/;"	m	struct:_Qnode_t
 avl_assert	src/core/avl_tree.c	/^void avl_assert(const avl_node_t *node)$/;"	f
@@ -244,29 +261,33 @@ avl_search	src/core/avl_tree.c	/^const avl_node_t *avl_search(const avl_tree_t *
 avl_set_lchild	src/incl/avl_tree.h	51;"	d
 avl_set_rchild	src/incl/avl_tree.h	61;"	d
 avl_tree_t	src/incl/avl_tree.h	/^}avl_tree_t;$/;"	t	typeref:struct:__anon3
-base	src/incl/queue.h	/^    Qnode_t *base;  \/* 队列基址 *\/$/;"	m	struct:__anon19
-base	src/incl/stack.h	/^    void **base;    \/* 栈基地址 *\/$/;"	m	struct:__anon6
+base	src/incl/queue.h	/^    Qnode_t *base;  \/* 队列基址 *\/$/;"	m	struct:__anon23
+base	src/incl/stack.h	/^    void **base;    \/* 栈基地址 *\/$/;"	m	struct:__anon10
+base_offset	src/incl/shm_slab.h	/^    size_t base_offset;     \/* ����ƫ���� *\/$/;"	m	struct:__anon8
 bf	src/incl/avl_tree.h	/^    int bf;                     \/* 平衡因子 *\/$/;"	m	struct:_node_t
+bitmap	src/incl/shm_slab.h	/^    unsigned int bitmap;    \/* ҳ��ʹ��λͼ *\/$/;"	m	struct:__anon7
 block_recv	src/core/xdt_comm.c	/^int block_recv(int fd, void *addr, size_t size, int secs)$/;"	f
 block_send	src/core/xdt_comm.c	/^int block_send(int fd, const void *addr, size_t size, int secs)$/;"	f
 bool	src/incl/xdt_comm.h	/^typedef int bool;$/;"	t
-ch	src/incl/xml_comm.h	/^    char ch;$/;"	m	struct:__anon13
+ch	src/incl/xml_comm.h	/^    char ch;$/;"	m	struct:__anon17
 color	src/incl/rb_tree.h	/^    int color;                      \/* 结点颜色: RBT_COLOR_BLACK(黑) 或 RBT_COLOR_RED(红) *\/$/;"	m	struct:_rbt_node_t
-count	src/incl/slab.h	/^    int count;$/;"	m	struct:__anon18
+count	src/incl/slab.h	/^    int count;$/;"	m	struct:__anon22
 creat_thread	src/core/xdt_comm.c	/^int creat_thread(pthread_t *tid, void *(*process)(void *args), void *args)$/;"	f
 data	src/incl/avl_tree.h	/^    void *data;                 \/* 附加数据 *\/$/;"	m	struct:_node_t
 data	src/incl/list.h	/^    void *data;$/;"	m	struct:_list_node_t
 data	src/incl/list2.h	/^    void *data;$/;"	m	struct:_list2_node_t
-data	src/incl/slab.h	/^    void *data;$/;"	m	struct:__anon17
+data	src/incl/slab.h	/^    void *data;$/;"	m	struct:__anon21
 data	src/incl/thread_pool.h	/^    void *data;                     \/* 附加数据 *\/$/;"	m	struct:__anon1
-end	src/incl/slab.h	/^    u_char *end;$/;"	m	struct:__anon17
+data_offset	src/incl/shm_slab.h	/^    size_t data_offset;     \/* �ɷ���ռ����ʼƫ���� *\/$/;"	m	struct:__anon8
+end	src/incl/slab.h	/^    u_char *end;$/;"	m	struct:__anon21
+end_offset	src/incl/shm_slab.h	/^    size_t end_offset;      \/* �ɷ���ռ�Ľ���ƫ���� *\/$/;"	m	struct:__anon8
 eslab_add	src/core/slab.c	/^static slab_pool_t *eslab_add(eslab_pool_t *eslab, size_t size)$/;"	f	file:
 eslab_alloc	src/core/slab.c	/^void *eslab_alloc(eslab_pool_t *eslab, size_t size)$/;"	f
 eslab_destroy	src/core/slab.c	/^int eslab_destroy(eslab_pool_t *eslab)$/;"	f
 eslab_free	src/core/slab.c	/^int eslab_free(eslab_pool_t *eslab, void *p)$/;"	f
 eslab_init	src/core/slab.c	/^int eslab_init(eslab_pool_t *eslab, size_t size)$/;"	f
 eslab_node_t	src/incl/slab.h	/^}eslab_node_t;$/;"	t	typeref:struct:_eslab_node_t
-eslab_pool_t	src/incl/slab.h	/^}eslab_pool_t;$/;"	t	typeref:struct:__anon18
+eslab_pool_t	src/incl/slab.h	/^}eslab_pool_t;$/;"	t	typeref:struct:__anon22
 fClose	src/incl/xdt_comm.h	44;"	d
 false	src/incl/xdt_comm.h	23;"	d
 false	src/incl/xml_tree.h	44;"	d
@@ -274,29 +295,38 @@ fd_is_writable	src/core/xdt_comm.c	/^int fd_is_writable(int fd)$/;"	f
 fd_nonblock	src/core/xdt_comm.c	/^int fd_nonblock(int fd)$/;"	f
 firstchild	src/incl/xml_tree.h	/^    struct _xml_node_t *firstchild;  \/* 孩子节点链表头: 属性节点+孩子节点 *\/$/;"	m	struct:_xml_node_t	typeref:struct:_xml_node_t::_xml_node_t
 flag	src/incl/xml_tree.h	/^    unsigned int flag;          \/* 记录节点是否有孩子(XML_NODE_HAS_CHILD)、属性(XML_NODE_HAS_ATTR)、节点值(XML_NODE_HAS_VALUE) *\/$/;"	m	struct:_xml_node_t
-free	src/incl/slab.h	/^    slab_page_t   free;$/;"	m	struct:__anon17
+free	src/incl/shm_slab.h	/^    shm_slab_page_t free;   \/* ����ҳ���� *\/$/;"	m	struct:__anon8
+free	src/incl/slab.h	/^    slab_page_t   free;$/;"	m	struct:__anon21
+g_shm_slab_exact_shift	src/core/shm_slab.c	/^static int g_shm_slab_exact_shift = 0;  \/* SLOT��ȷ�ڴ���䵥Ԫ��Ӧ��λ�� *\/$/;"	v	file:
+g_shm_slab_exact_size	src/core/shm_slab.c	/^static size_t g_shm_slab_exact_size = 0;\/* SLOT��ȷ�ڴ���䵥Ԫ *\/$/;"	v	file:
+g_shm_slab_max_shift	src/core/shm_slab.c	/^static int g_shm_slab_max_shift = 0;    \/* SLOT����ڴ���䵥Ԫ��Ӧ��λ�� *\/$/;"	v	file:
+g_shm_slab_max_size	src/core/shm_slab.c	/^static size_t g_shm_slab_max_size = 0;  \/* SLOT����ڴ���䵥Ԫ *\/$/;"	v	file:
+g_shm_slab_page_shift	src/core/shm_slab.c	/^static int g_shm_slab_page_shift = 0;   \/* ÿһҳ�ڴ��С��Ӧ��λ�� *\/$/;"	v	file:
+g_shm_slab_page_size	src/core/shm_slab.c	/^static size_t g_shm_slab_page_size = 0; \/* ÿһҳ�ڴ�Ĵ�С *\/$/;"	v	file:
 g_xml_esc_str	src/core/xml_comm.c	/^static const xml_esc_t g_xml_esc_str[] =$/;"	v	file:
 head	src/incl/list.h	/^    list_node_t *head;$/;"	m	struct:__anon4
-head	src/incl/list2.h	/^    list2_node_t *head;$/;"	m	struct:__anon20
-head	src/incl/queue.h	/^    Qnode_t *head;  \/* 队列头 *\/$/;"	m	struct:__anon19
+head	src/incl/list2.h	/^    list2_node_t *head;$/;"	m	struct:__anon24
+head	src/incl/queue.h	/^    Qnode_t *head;  \/* 队列头 *\/$/;"	m	struct:__anon23
 head	src/incl/thread_pool.h	/^	thread_worker_t *head;          \/* 队列头 *\/$/;"	m	struct:__anon1
-head	src/incl/xml_comm.h	/^    xml_esc_node_t *head;$/;"	m	struct:__anon15
-inc_size	src/incl/slab.h	/^    size_t inc_size;$/;"	m	struct:__anon18
+head	src/incl/xml_comm.h	/^    xml_esc_node_t *head;$/;"	m	struct:__anon19
+inc_size	src/incl/slab.h	/^    size_t inc_size;$/;"	m	struct:__anon22
+index	src/incl/shm_slab.h	/^    unsigned int index;     \/* slot���� *\/$/;"	m	struct:__anon6
+index	src/incl/shm_slab.h	/^    unsigned int index;     \/* ҳ���� *\/$/;"	m	struct:__anon7
 key	src/incl/avl_tree.h	/^    int key;                    \/* 节点值: 可根据实际情况设置数据类型 *\/$/;"	m	struct:_node_t
 key	src/incl/rb_tree.h	/^    int key;                        \/* 关键字 *\/$/;"	m	struct:_rbt_node_t
 lchild	src/incl/avl_tree.h	/^    struct _node_t *lchild;     \/* 左孩子 *\/$/;"	m	struct:_node_t	typeref:struct:_node_t::_node_t
 lchild	src/incl/rb_tree.h	/^    struct _rbt_node_t *lchild;     \/* 左孩子节点 *\/$/;"	m	struct:_rbt_node_t	typeref:struct:_rbt_node_t::_rbt_node_t
-length	src/incl/xml_comm.h	/^    int length;$/;"	m	struct:__anon13
-length	src/incl/xml_comm.h	/^    int length;$/;"	m	struct:__anon14
+length	src/incl/xml_comm.h	/^    int length;$/;"	m	struct:__anon17
+length	src/incl/xml_comm.h	/^    int length;$/;"	m	struct:__anon18
 length	src/incl/xml_comm.h	/^    int length;$/;"	m	struct:_xml_esc_node_t
-level	src/incl/xdt_log.h	/^    uint32_t level;         \/* 日志级别: 其中由各日志级别通过或操作得来 *\/$/;"	m	struct:__anon5
+level	src/incl/xdt_log.h	/^    uint32_t level;         \/* 日志级别: 其中由各日志级别通过或操作得来 *\/$/;"	m	struct:__anon9
 list2_assert	src/core/list2.c	/^void list2_assert(list2_t *list)$/;"	f
 list2_delete_head	src/core/list2.c	/^list2_node_t *list2_delete_head(list2_t *list)$/;"	f
 list2_delete_tail	src/core/list2.c	/^list2_node_t *list2_delete_tail(list2_t *list)$/;"	f
 list2_insert_head	src/core/list2.c	/^int list2_insert_head(list2_t *list, list2_node_t *node)$/;"	f
 list2_insert_tail	src/core/list2.c	/^int list2_insert_tail(list2_t *list, list2_node_t *node)$/;"	f
 list2_node_t	src/incl/list2.h	/^}list2_node_t;$/;"	t	typeref:struct:_list2_node_t
-list2_t	src/incl/list2.h	/^}list2_t;$/;"	t	typeref:struct:__anon20
+list2_t	src/incl/list2.h	/^}list2_t;$/;"	t	typeref:struct:__anon24
 list_assert	src/core/list.c	/^void list_assert(list_t *list)$/;"	f
 list_delete_tail	src/core/list.c	/^list_node_t *list_delete_tail(list_t *list)$/;"	f
 list_insert_head	src/core/list.c	/^int list_insert_head(list_t *list, list_node_t *node)$/;"	f
@@ -308,12 +338,14 @@ log_error	src/incl/xdt_log.h	59;"	d
 log_fatal	src/incl/xdt_log.h	58;"	d
 log_info	src/incl/xdt_log.h	61;"	d
 log_warn	src/incl/xdt_log.h	60;"	d
-max	src/incl/queue.h	/^    int max;        \/* 队列容量 *\/$/;"	m	struct:__anon19
-max_index	src/incl/xdt_log.h	/^    uint16_t max_index;     \/* 日志最大索引号 *\/$/;"	m	struct:__anon5
-max_size	src/incl/xdt_log.h	/^    size_t max_size;        \/* 日志文件的最大尺寸 *\/$/;"	m	struct:__anon5
-min_shift	src/incl/slab.h	/^    size_t min_shift;$/;"	m	struct:__anon17
-min_size	src/incl/slab.h	/^    size_t min_size;$/;"	m	struct:__anon17
-name	src/incl/xdt_log.h	/^    char name[FILE_NAME_MAX_LEN];   \/* 文件名 *\/$/;"	m	struct:__anon5
+max	src/incl/queue.h	/^    int max;        \/* 队列容量 *\/$/;"	m	struct:__anon23
+max_index	src/incl/xdt_log.h	/^    uint16_t max_index;     \/* 日志最大索引号 *\/$/;"	m	struct:__anon9
+max_size	src/incl/xdt_log.h	/^    size_t max_size;        \/* 日志文件的最大尺寸 *\/$/;"	m	struct:__anon9
+min_shift	src/incl/shm_slab.h	/^    int min_shift;          \/* ��С���䵥Ԫ��λ�� *\/$/;"	m	struct:__anon8
+min_shift	src/incl/slab.h	/^    size_t min_shift;$/;"	m	struct:__anon21
+min_size	src/incl/shm_slab.h	/^    int min_size;           \/* ��С���䵥Ԫ *\/$/;"	m	struct:__anon8
+min_size	src/incl/slab.h	/^    size_t min_size;$/;"	m	struct:__anon21
+name	src/incl/xdt_log.h	/^    char name[FILE_NAME_MAX_LEN];   \/* 文件名 *\/$/;"	m	struct:__anon9
 name	src/incl/xml_tree.h	/^    char *name;                 \/* 节点名 *\/$/;"	m	struct:_xml_node_t
 next	src/incl/list.h	/^    struct _list_node_t *next;$/;"	m	struct:_list_node_t	typeref:struct:_list_node_t::_list_node_t
 next	src/incl/list2.h	/^    struct _list2_node_t *next;$/;"	m	struct:_list2_node_t	typeref:struct:_list2_node_t::_list2_node_t
@@ -323,18 +355,24 @@ next	src/incl/slab.h	/^    struct _slab_page_t  *next;$/;"	m	struct:_slab_page_t
 next	src/incl/thread_pool.h	/^	struct _thread_worker_t *next;  \/* 下一个节点 *\/$/;"	m	struct:_thread_worker_t	typeref:struct:_thread_worker_t::_thread_worker_t
 next	src/incl/xml_comm.h	/^    struct _xml_esc_node_t *next;$/;"	m	struct:_xml_esc_node_t	typeref:struct:_xml_esc_node_t::_xml_esc_node_t
 next	src/incl/xml_tree.h	/^    struct _xml_node_t *next;   \/* 兄弟节点链表 *\/$/;"	m	struct:_xml_node_t	typeref:struct:_xml_node_t::_xml_node_t
-node	src/incl/slab.h	/^    eslab_node_t *node;$/;"	m	struct:__anon18
+next_idx	src/incl/shm_slab.h	/^    int next_idx;           \/* ��һҳ������ *\/$/;"	m	struct:__anon7
+node	src/incl/slab.h	/^    eslab_node_t *node;$/;"	m	struct:__anon22
 num	src/incl/list.h	/^    int num;$/;"	m	struct:__anon4
-num	src/incl/list2.h	/^    int num;$/;"	m	struct:__anon20
-num	src/incl/queue.h	/^    int num;        \/* 队列成员个数 *\/$/;"	m	struct:__anon19
+num	src/incl/list2.h	/^    int num;$/;"	m	struct:__anon24
+num	src/incl/queue.h	/^    int num;        \/* 队列成员个数 *\/$/;"	m	struct:__anon23
 num	src/incl/thread_pool.h	/^	int num;                        \/* 实际创建的线程个数 *\/$/;"	m	struct:__anon1
-pages	src/incl/slab.h	/^    slab_page_t  *pages;$/;"	m	struct:__anon17
+page_idx	src/incl/shm_slab.h	/^    int page_idx;           \/* slot������ҳ���� *\/$/;"	m	struct:__anon6
+page_offset	src/incl/shm_slab.h	/^    size_t page_offset;     \/* PAGE�������ʼƫ���� *\/$/;"	m	struct:__anon8
+pages	src/incl/shm_slab.h	/^    unsigned int pages;     \/* ��¼ҳ�����ҳ�� *\/$/;"	m	struct:__anon7
+pages	src/incl/slab.h	/^    slab_page_t  *pages;$/;"	m	struct:__anon21
 parent	src/incl/avl_tree.h	/^    struct _node_t *parent;     \/* 父节点 *\/$/;"	m	struct:_node_t	typeref:struct:_node_t::_node_t
 parent	src/incl/rb_tree.h	/^    struct _rbt_node_t *parent;     \/* 父节点 *\/$/;"	m	struct:_rbt_node_t	typeref:struct:_rbt_node_t::_rbt_node_t
 parent	src/incl/xml_tree.h	/^    struct _xml_node_t *parent; \/* 父亲节点 *\/$/;"	m	struct:_xml_node_t	typeref:struct:_xml_node_t::_xml_node_t
-path	src/incl/xdt_log.h	/^    char path[FILE_NAME_MAX_LEN];   \/* 文件路径 *\/$/;"	m	struct:__anon5
+path	src/incl/xdt_log.h	/^    char path[FILE_NAME_MAX_LEN];   \/* 文件路径 *\/$/;"	m	struct:__anon9
+pool_size	src/incl/shm_slab.h	/^    size_t pool_size;       \/* �ڴ�ռ��ܴ�С *\/$/;"	m	struct:__anon8
 prev	src/incl/list2.h	/^    struct _list2_node_t *prev;$/;"	m	struct:_list2_node_t	typeref:struct:_list2_node_t::_list2_node_t
 prev	src/incl/slab.h	/^    uintptr_t prev;$/;"	m	struct:_slab_page_t
+prev_idx	src/incl/shm_slab.h	/^    int prev_idx;           \/* ��һҳ������ *\/$/;"	m	struct:__anon7
 proc_rdlock	src/incl/xdt_comm.h	71;"	d
 proc_rdlock_ex	src/incl/xdt_comm.h	77;"	d
 proc_try_rdlock	src/incl/xdt_comm.h	73;"	d
@@ -346,8 +384,8 @@ proc_unlock_ex	src/incl/xdt_comm.h	80;"	d
 proc_wrlock	src/incl/xdt_comm.h	70;"	d
 proc_wrlock_ex	src/incl/xdt_comm.h	76;"	d
 process	src/incl/thread_pool.h	/^	void *(*process)(void *arg);    \/* 线程调用接口 *\/$/;"	m	struct:_thread_worker_t
-ptr	src/incl/xml_comm.h	/^    char *ptr;$/;"	m	struct:__anon16
-ptr	src/incl/xml_comm.h	/^    const char *ptr;            \/* 当前处理到的位置 *\/$/;"	m	struct:__anon14
+ptr	src/incl/xml_comm.h	/^    char *ptr;$/;"	m	struct:__anon20
+ptr	src/incl/xml_comm.h	/^    const char *ptr;            \/* 当前处理到的位置 *\/$/;"	m	struct:__anon18
 queue_init	src/core/queue.c	/^int queue_init(Queue_t *q, int max, int size)$/;"	f
 queue_lock	src/incl/thread_pool.h	/^	pthread_mutex_t queue_lock;     \/* 队列互斥锁 *\/$/;"	m	struct:__anon1
 queue_pop	src/core/queue.c	/^void *queue_pop(Queue_t *q)$/;"	f
@@ -355,6 +393,7 @@ queue_push	src/core/queue.c	/^int queue_push(Queue_t *q, void *addr, int size)$/
 queue_ready	src/incl/thread_pool.h	/^	pthread_cond_t queue_ready;     \/* 队列临界锁 *\/$/;"	m	struct:__anon1
 queue_size	src/incl/thread_pool.h	/^	int queue_size;                 \/* 工作队列当前大小 *\/$/;"	m	struct:__anon1
 rb_insert_fixup	src/core/rb_tree.c	/^static int rb_insert_fixup(rbt_tree_t *tree, rbt_node_t *node)$/;"	f	file:
+rbitmap	src/incl/shm_slab.h	/^    unsigned int rbitmap;   \/* ��ʼλͼ��ȡ��ֵ *\/$/;"	m	struct:__anon7
 rbt_assert	src/core/rb_tree.c	/^void rbt_assert(const rbt_tree_t *tree, const rbt_node_t *node)$/;"	f
 rbt_copy_color	src/incl/rb_tree.h	46;"	d
 rbt_creat	src/core/rb_tree.c	/^rbt_tree_t *rbt_creat(void)$/;"	f
@@ -369,7 +408,7 @@ rbt_is_red	src/incl/rb_tree.h	50;"	d
 rbt_left_rotate	src/core/rb_tree.c	/^void rbt_left_rotate(rbt_tree_t *tree, rbt_node_t *node)$/;"	f
 rbt_node_t	src/incl/rb_tree.h	/^}rbt_node_t;$/;"	t	typeref:struct:_rbt_node_t
 rbt_print	src/core/rb_tree.c	/^int rbt_print(rbt_tree_t *tree)$/;"	f
-rbt_ret_e	src/incl/rb_tree.h	/^}rbt_ret_e;$/;"	t	typeref:enum:__anon7
+rbt_ret_e	src/incl/rb_tree.h	/^}rbt_ret_e;$/;"	t	typeref:enum:__anon11
 rbt_right_rotate	src/core/rb_tree.c	/^void rbt_right_rotate(rbt_tree_t *tree, rbt_node_t *node)$/;"	f
 rbt_search	src/core/rb_tree.c	/^const rbt_node_t *rbt_search(const rbt_tree_t *tree, int key)$/;"	f
 rbt_set_black	src/incl/rb_tree.h	49;"	d
@@ -379,14 +418,14 @@ rbt_set_lchild	src/incl/rb_tree.h	54;"	d
 rbt_set_rchild	src/incl/rb_tree.h	64;"	d
 rbt_set_red	src/incl/rb_tree.h	48;"	d
 rbt_tprint	src/core/rb_tree.c	/^static void rbt_tprint(const rbt_tree_t *tree, const rbt_node_t *node, int depth)$/;"	f	file:
-rbt_tree_t	src/incl/rb_tree.h	/^}rbt_tree_t;$/;"	t	typeref:struct:__anon8
+rbt_tree_t	src/incl/rb_tree.h	/^}rbt_tree_t;$/;"	t	typeref:struct:__anon12
 rchild	src/incl/avl_tree.h	/^    struct _node_t *rchild;     \/* 右孩子 *\/$/;"	m	struct:_node_t	typeref:struct:_node_t::_node_t
 rchild	src/incl/rb_tree.h	/^    struct _rbt_node_t *rchild;     \/* 右孩子节点 *\/$/;"	m	struct:_rbt_node_t	typeref:struct:_rbt_node_t::_rbt_node_t
 reg	src/incl/sha256.h	/^	int  reg[ 8 ]; \/** h0 to h 7 -- old value store*\/$/;"	m	struct:_sha256_t
 root	src/incl/avl_tree.h	/^    avl_node_t *root;           \/* 根节点 *\/$/;"	m	struct:__anon3
-root	src/incl/rb_tree.h	/^    rbt_node_t *root;               \/* 根节点 *\/$/;"	m	struct:__anon8
-root	src/incl/xml_tree.h	/^    xml_node_t *root;           \/* 根节点: 注意root的第一个子节点才是真正的根节点 *\/$/;"	m	struct:__anon10
-sentinel	src/incl/rb_tree.h	/^    rbt_node_t *sentinel;           \/* 哨兵节点 *\/$/;"	m	struct:__anon8
+root	src/incl/rb_tree.h	/^    rbt_node_t *root;               \/* 根节点 *\/$/;"	m	struct:__anon12
+root	src/incl/xml_tree.h	/^    xml_node_t *root;           \/* 根节点: 注意root的第一个子节点才是真正的根节点 *\/$/;"	m	struct:__anon14
+sentinel	src/incl/rb_tree.h	/^    rbt_node_t *sentinel;           \/* 哨兵节点 *\/$/;"	m	struct:__anon12
 sha256_calc_block	src/core/sha256.c	/^static uint64_t sha256_calc_block(int* dp, int* rp){$/;"	f	file:
 sha256_calculate	src/core/sha256.c	/^uint64_t sha256_calculate(sha256_t* t, char* dp, uint64_t dl){$/;"	f
 sha256_digest	src/core/xdt_comm.c	/^void sha256_digest(char *str, unsigned int len, unsigned char digest[32])$/;"	f
@@ -395,9 +434,39 @@ sha256_k	src/core/sha256.c	/^const int sha256_k[ 64 ] = {$/;"	v
 sha256_reset	src/core/sha256.c	/^uint64_t sha256_reset(sha256_t* t){ $/;"	f
 sha256_t	src/incl/sha256.h	/^}sha256_t;$/;"	t	typeref:struct:_sha256_t
 sha256_uninit	src/core/sha256.c	/^uint64_t sha256_uninit(sha256_t* t){ return 0; }$/;"	f
+shift	src/incl/shm_slab.h	/^    unsigned int shift:16;  \/* ҳ����Ĵ�С��Ӧ��λ�� *\/$/;"	m	struct:__anon7
+shm_slab_alloc	src/core/shm_slab.c	/^void *shm_slab_alloc(shm_slab_pool_t *pool, size_t size)$/;"	f
+shm_slab_alloc_pages	src/core/shm_slab.c	/^static shm_slab_page_t *shm_slab_alloc_pages(shm_slab_pool_t *pool, int pages)$/;"	f	file:
+shm_slab_alloc_slot	src/core/shm_slab.c	/^static void *shm_slab_alloc_slot(shm_slab_pool_t *pool, size_t size)$/;"	f	file:
+shm_slab_exact_shift	src/core/shm_slab.c	32;"	d	file:
+shm_slab_exact_size	src/core/shm_slab.c	31;"	d	file:
+shm_slab_free	src/core/shm_slab.c	/^int shm_slab_free(shm_slab_pool_t *pool, void *p)$/;"	f
+shm_slab_free_pages	src/core/shm_slab.c	/^static int shm_slab_free_pages(shm_slab_pool_t *pool, shm_slab_page_t *page)$/;"	f	file:
+shm_slab_get_alloc_type	src/core/shm_slab.c	/^static int shm_slab_get_alloc_type(int size)$/;"	f	file:
+shm_slab_head_size	src/core/shm_slab.c	/^size_t shm_slab_head_size(size_t size)$/;"	f
+shm_slab_init	src/core/shm_slab.c	/^int shm_slab_init(shm_slab_pool_t *pool)$/;"	f
+shm_slab_init_param	src/core/shm_slab.c	/^static void shm_slab_init_param(void)$/;"	f	file:
+shm_slab_is_busy_bitmap	src/core/shm_slab.c	15;"	d	file:
+shm_slab_is_free_page	src/core/shm_slab.c	17;"	d	file:
+shm_slab_is_null_page	src/core/shm_slab.c	16;"	d	file:
+shm_slab_max_shift	src/core/shm_slab.c	30;"	d	file:
+shm_slab_max_size	src/core/shm_slab.c	29;"	d	file:
+shm_slab_page_shift	src/core/shm_slab.c	28;"	d	file:
+shm_slab_page_size	src/core/shm_slab.c	27;"	d	file:
+shm_slab_page_t	src/incl/shm_slab.h	/^}shm_slab_page_t;$/;"	t	typeref:struct:__anon7
+shm_slab_pool_t	src/incl/shm_slab.h	/^}shm_slab_pool_t;$/;"	t	typeref:struct:__anon8
+shm_slab_set_exact_shift	src/core/shm_slab.c	39;"	d	file:
+shm_slab_set_exact_size	src/core/shm_slab.c	38;"	d	file:
+shm_slab_set_max_shift	src/core/shm_slab.c	37;"	d	file:
+shm_slab_set_max_size	src/core/shm_slab.c	36;"	d	file:
+shm_slab_set_page_shift	src/core/shm_slab.c	35;"	d	file:
+shm_slab_set_page_size	src/core/shm_slab.c	34;"	d	file:
+shm_slab_slot_add_page	src/core/shm_slab.c	/^static int shm_slab_slot_add_page($/;"	f	file:
+shm_slab_slot_remove_page	src/core/shm_slab.c	/^static int shm_slab_slot_remove_page($/;"	f	file:
+shm_slab_slot_t	src/incl/shm_slab.h	/^}shm_slab_slot_t;$/;"	t	typeref:struct:__anon6
 shutdown	src/incl/thread_pool.h	/^	int shutdown;                   \/* 是否已销毁线程 *\/$/;"	m	struct:__anon1
-size	src/incl/queue.h	/^    int size;       \/* 队列各节点的最大存储空间 *\/$/;"	m	struct:__anon19
-size	src/incl/stack.h	/^    int size;       \/* 栈的大小 *\/$/;"	m	struct:__anon6
+size	src/incl/queue.h	/^    int size;       \/* 队列各节点的最大存储空间 *\/$/;"	m	struct:__anon23
+size	src/incl/stack.h	/^    int size;       \/* 栈的大小 *\/$/;"	m	struct:__anon10
 slab	src/incl/slab.h	/^    uintptr_t slab;$/;"	m	struct:_slab_page_t
 slab_align_ptr	src/core/slab.c	62;"	d	file:
 slab_alloc	src/core/slab.c	/^void *slab_alloc(slab_pool_t *pool, size_t size)$/;"	f
@@ -417,15 +486,16 @@ slab_max_size	src/core/slab.c	/^static size_t slab_max_size = 0;$/;"	v	file:
 slab_page_shift	src/core/slab.c	/^static unsigned int slab_page_shift = SLAB_PAGE_SHIFT;$/;"	v	file:
 slab_page_size	src/core/slab.c	/^static size_t slab_page_size = SLAB_PAGE_SIZE;$/;"	v	file:
 slab_page_t	src/incl/slab.h	/^}slab_page_t;$/;"	t	typeref:struct:_slab_page_t
-slab_pool_t	src/incl/slab.h	/^} slab_pool_t;$/;"	t	typeref:struct:__anon17
+slab_pool_t	src/incl/slab.h	/^} slab_pool_t;$/;"	t	typeref:struct:__anon21
 slab_set_exact_shift	src/core/slab.c	56;"	d	file:
 slab_set_exact_size	src/core/slab.c	54;"	d	file:
 slab_set_max_size	src/core/slab.c	52;"	d	file:
 slab_set_page_shift	src/core/slab.c	60;"	d	file:
 slab_set_page_size	src/core/slab.c	58;"	d	file:
+slot_offset	src/incl/shm_slab.h	/^    size_t slot_offset;     \/* SLOT�������ʼƫ���� *\/$/;"	m	struct:__anon8
 sp	src/incl/slab.h	/^    slab_pool_t *sp;$/;"	m	struct:_eslab_node_t
 sprint_init	src/incl/xml_comm.h	159;"	d
-sprint_t	src/incl/xml_comm.h	/^}sprint_t;$/;"	t	typeref:struct:__anon16
+sprint_t	src/incl/xml_comm.h	/^}sprint_t;$/;"	t	typeref:struct:__anon20
 stack_depth	src/incl/stack.h	67;"	d
 stack_destroy	src/core/stack.c	/^void stack_destroy(Stack_t *stack)$/;"	f
 stack_destroy	src/incl/stack.h	32;"	d
@@ -437,14 +507,14 @@ stack_pop	src/core/stack.c	/^int stack_pop(Stack_t *stack)$/;"	f
 stack_pop	src/incl/stack.h	51;"	d
 stack_push	src/core/stack.c	/^int stack_push(Stack_t *stack, void *node)$/;"	f
 stack_push	src/incl/stack.h	41;"	d
-start	src/incl/slab.h	/^    u_char *start;$/;"	m	struct:__anon17
-str	src/incl/xml_comm.h	/^    char *str;$/;"	m	struct:__anon13
-str	src/incl/xml_comm.h	/^    char *str;$/;"	m	struct:__anon16
+start	src/incl/slab.h	/^    u_char *start;$/;"	m	struct:__anon21
+str	src/incl/xml_comm.h	/^    char *str;$/;"	m	struct:__anon17
+str	src/incl/xml_comm.h	/^    char *str;$/;"	m	struct:__anon20
 str	src/incl/xml_comm.h	/^    char *str;$/;"	m	struct:_xml_esc_node_t
-str	src/incl/xml_comm.h	/^    const char *str;         \/* XML字串 *\/$/;"	m	struct:__anon14
+str	src/incl/xml_comm.h	/^    const char *str;         \/* XML字串 *\/$/;"	m	struct:__anon18
 tail	src/incl/list.h	/^    list_node_t *tail;$/;"	m	struct:__anon4
-tail	src/incl/queue.h	/^    Qnode_t *tail;  \/* 队列尾 *\/$/;"	m	struct:__anon19
-tail	src/incl/xml_comm.h	/^    xml_esc_node_t *tail;$/;"	m	struct:__anon15
+tail	src/incl/queue.h	/^    Qnode_t *tail;  \/* 队列尾 *\/$/;"	m	struct:__anon23
+tail	src/incl/xml_comm.h	/^    xml_esc_node_t *tail;$/;"	m	struct:__anon19
 tail	src/incl/xml_tree.h	/^    struct _xml_node_t *tail;   \/* 孩子节点链表尾 # 构建\/修改XML树时使用 # 提高操作效率 *\/$/;"	m	struct:_xml_node_t	typeref:struct:_xml_node_t::_xml_node_t
 temp	src/incl/xml_tree.h	/^    struct _xml_node_t *temp;   \/* 临时指针: 遍历XML树时，提高效率(其他情况下，此指针值无效) *\/    $/;"	m	struct:_xml_node_t	typeref:struct:_xml_node_t::_xml_node_t
 thread_create_detach	src/core/thread_pool.c	/^static int thread_create_detach(thread_pool_t *tp, int idx)$/;"	f	file:
@@ -459,16 +529,17 @@ thread_pool_t	src/incl/thread_pool.h	/^}thread_pool_t;$/;"	t	typeref:struct:__an
 thread_routine	src/core/thread_pool.c	/^static void *thread_routine(void *arg)$/;"	f	file:
 thread_worker_t	src/incl/thread_pool.h	/^}thread_worker_t;$/;"	t	typeref:struct:_thread_worker_t
 tid	src/incl/thread_pool.h	/^	pthread_t *tid;                 \/* 线程ID数组 —动态分配空间 *\/$/;"	m	struct:__anon1
-top	src/incl/stack.h	/^    void **top;     \/* 栈顶地址 *\/$/;"	m	struct:__anon6
+top	src/incl/stack.h	/^    void **top;     \/* 栈顶地址 *\/$/;"	m	struct:__anon10
 true	src/incl/xdt_comm.h	24;"	d
 true	src/incl/xml_tree.h	47;"	d
-type	src/incl/xml_comm.h	/^    xml_esc_e type;$/;"	m	struct:__anon13
+type	src/incl/shm_slab.h	/^    unsigned int type:16;   \/* ҳ���������: ȡֵ��ΧSHM_SLAB_ALLOC_TYPE *\/$/;"	m	struct:__anon7
+type	src/incl/xml_comm.h	/^    xml_esc_e type;$/;"	m	struct:__anon17
 type	src/incl/xml_tree.h	/^    xml_node_type_e type;       \/* 节点类型 *\/$/;"	m	struct:_xml_node_t
 usck_udp_creat	src/core/xdt_comm.c	/^int usck_udp_creat(const char *path)$/;"	f
 usck_udp_recv	src/core/xdt_comm.c	/^int usck_udp_recv(int sckid, void *buff, int rcvlen)$/;"	f
 usck_udp_send	src/core/xdt_comm.c	/^int usck_udp_send(int sckid, const char *path, const void *buff, size_t sndlen)$/;"	f
 value	src/incl/xml_tree.h	/^    char *value;                \/* 节点值 *\/$/;"	m	struct:_xml_node_t
-xdt_log_t	src/incl/xdt_log.h	/^}xdt_log_t;$/;"	t	typeref:struct:__anon5
+xdt_log_t	src/incl/xdt_log.h	/^}xdt_log_t;$/;"	t	typeref:struct:__anon9
 xml_add_attr	src/core/xml_tree.c	/^xml_node_t *xml_add_attr(xml_node_t *node, const char *name, const char *value)$/;"	f
 xml_add_brother	src/incl/xml_tree.h	109;"	d
 xml_add_child	src/core/xml_tree.c	/^xml_node_t *xml_add_child(xml_node_t *node, const char *name, const char *value)$/;"	f
@@ -482,24 +553,24 @@ xml_delete_brother	src/incl/xml_tree.h	111;"	d
 xml_delete_child	src/core/xml_comm.c	/^int xml_delete_child(xml_node_t *node, xml_node_t *child)$/;"	f
 xml_delete_empty	src/core/xml_tree.c	/^int xml_delete_empty(xml_tree_t *xml)$/;"	f
 xml_destroy	src/incl/xml_tree.h	121;"	d
-xml_err_e	src/incl/xml_comm.h	/^}xml_err_e;$/;"	t	typeref:enum:__anon11
-xml_esc_e	src/incl/xml_comm.h	/^}xml_esc_e;$/;"	t	typeref:enum:__anon12
+xml_err_e	src/incl/xml_comm.h	/^}xml_err_e;$/;"	t	typeref:enum:__anon15
+xml_esc_e	src/incl/xml_comm.h	/^}xml_esc_e;$/;"	t	typeref:enum:__anon16
 xml_esc_free	src/core/xml_comm.c	/^static int xml_esc_free(xml_esc_split_t *split)$/;"	f	file:
 xml_esc_get	src/core/xml_comm.c	/^static const xml_esc_t *xml_esc_get(const char *str)$/;"	f	file:
 xml_esc_merge	src/core/xml_comm.c	/^static int xml_esc_merge(const xml_esc_split_t *sp, char *dst)$/;"	f	file:
 xml_esc_node_t	src/incl/xml_comm.h	/^}xml_esc_node_t;$/;"	t	typeref:struct:_xml_esc_node_t
 xml_esc_size	src/core/xml_comm.c	/^static int xml_esc_size(const xml_esc_split_t *sp)$/;"	f	file:
 xml_esc_split	src/core/xml_comm.c	/^static int xml_esc_split(const xml_esc_t *esc,$/;"	f	file:
-xml_esc_split_t	src/incl/xml_comm.h	/^}xml_esc_split_t;$/;"	t	typeref:struct:__anon15
-xml_esc_t	src/incl/xml_comm.h	/^}xml_esc_t;$/;"	t	typeref:struct:__anon13
+xml_esc_split_t	src/incl/xml_comm.h	/^}xml_esc_split_t;$/;"	t	typeref:struct:__anon19
+xml_esc_t	src/incl/xml_comm.h	/^}xml_esc_t;$/;"	t	typeref:struct:__anon17
 xml_fload	src/core/xml_comm.c	/^char *xml_fload(const char *fname)$/;"	f
-xml_fparse_t	src/incl/xml_comm.h	/^}xml_fparse_t;$/;"	t	typeref:struct:__anon14
+xml_fparse_t	src/incl/xml_comm.h	/^}xml_fparse_t;$/;"	t	typeref:struct:__anon18
 xml_fprint	src/core/xml_tree.c	/^int xml_fprint(xml_tree_t *xml, FILE *fp)$/;"	f
-xml_fprint_attr	src/core/xml_comm.c	1160;"	d	file:
-xml_fprint_name	src/core/xml_comm.c	1149;"	d	file:
-xml_fprint_next	src/core/xml_comm.c	/^static xml_node_t *xml_fprint_next(Stack_t *stack, xml_node_t *node, FILE *fp)$/;"	f	file:
-xml_fprint_tree	src/core/xml_comm.c	/^int xml_fprint_tree(xml_node_t *root, Stack_t *stack, FILE *fp)$/;"	f
-xml_fprint_value	src/core/xml_comm.c	1175;"	d	file:
+xml_fprint_attr	src/core/xml_print.c	27;"	d	file:
+xml_fprint_name	src/core/xml_print.c	16;"	d	file:
+xml_fprint_next	src/core/xml_print.c	/^static xml_node_t *xml_fprint_next(Stack_t *stack, xml_node_t *node, FILE *fp)$/;"	f	file:
+xml_fprint_tree	src/core/xml_print.c	/^int xml_fprint_tree(xml_node_t *root, Stack_t *stack, FILE *fp)$/;"	f
+xml_fprint_value	src/core/xml_print.c	42;"	d	file:
 xml_free_next	src/core/xml_comm.c	/^xml_node_t *xml_free_next(Stack_t *stack, xml_node_t *current)$/;"	f
 xml_fwrite	src/core/xml_tree.c	/^int xml_fwrite(xml_tree_t *xml, const char *fname)$/;"	f
 xml_has_attr	src/incl/xml_comm.h	55;"	d
@@ -509,7 +580,7 @@ xml_init	src/core/xml_comm.c	/^int xml_init(xml_tree_t **xml)$/;"	f
 xml_is_attr	src/incl/xml_comm.h	51;"	d
 xml_is_child	src/incl/xml_comm.h	52;"	d
 xml_is_root	src/incl/xml_comm.h	53;"	d
-xml_mark_end	src/core/xml_comm.c	499;"	d	file:
+xml_mark_end	src/core/xml_comm.c	498;"	d	file:
 xml_mark_get_attr	src/core/xml_comm.c	/^static int xml_mark_get_attr(Stack_t *stack, xml_fparse_t *fparse)$/;"	f	file:
 xml_mark_get_name	src/core/xml_comm.c	/^static int xml_mark_get_name(xml_tree_t *xml, Stack_t *stack, xml_fparse_t *fparse)$/;"	f	file:
 xml_mark_get_value	src/core/xml_comm.c	/^static int xml_mark_get_value(Stack_t *stack, xml_fparse_t *fparse)$/;"	f	file:
@@ -517,30 +588,30 @@ xml_mark_has_attr	src/core/xml_comm.c	/^static int xml_mark_has_attr(xml_fparse_
 xml_mark_has_value	src/core/xml_comm.c	/^static int xml_mark_has_value(xml_fparse_t *fparse)$/;"	f	file:
 xml_mark_is_end	src/core/xml_comm.c	/^static int xml_mark_is_end(xml_fparse_t *fparse)$/;"	f	file:
 xml_name	src/incl/xml_tree.h	87;"	d
-xml_node_attr_length	src/core/xml_comm.c	2004;"	d	file:
+xml_node_attr_length	src/core/xml_comm.c	1331;"	d	file:
 xml_node_creat	src/core/xml_comm.c	/^xml_node_t *xml_node_creat(xml_node_type_e type)$/;"	f
 xml_node_creat_ext	src/core/xml_comm.c	/^xml_node_t *xml_node_creat_ext(xml_node_type_e type, const char *name, const char *value)$/;"	f
 xml_node_free	src/core/xml_tree.c	/^int xml_node_free(xml_node_t *node)$/;"	f
 xml_node_length	src/core/xml_tree.c	/^int xml_node_length(xml_node_t *node)$/;"	f
-xml_node_name_length	src/core/xml_comm.c	1991;"	d	file:
+xml_node_name_length	src/core/xml_comm.c	1318;"	d	file:
 xml_node_next_length	src/core/xml_comm.c	/^static xml_node_t *xml_node_next_length(Stack_t *stack, xml_node_t *node, int *length)$/;"	f	file:
 xml_node_sfree	src/core/xml_comm.c	/^int xml_node_sfree(xml_node_t *node)$/;"	f
 xml_node_t	src/incl/xml_tree.h	/^}xml_node_t;$/;"	t	typeref:struct:_xml_node_t
-xml_node_type_e	src/incl/xml_tree.h	/^}xml_node_type_e;$/;"	t	typeref:enum:__anon9
-xml_node_value_length	src/core/xml_comm.c	2020;"	d	file:
-xml_pack_attr	src/core/xml_comm.c	1694;"	d	file:
-xml_pack_attr_length	src/core/xml_comm.c	2221;"	d	file:
+xml_node_type_e	src/incl/xml_tree.h	/^}xml_node_type_e;$/;"	t	typeref:enum:__anon13
+xml_node_value_length	src/core/xml_comm.c	1347;"	d	file:
+xml_pack_attr	src/core/xml_print.c	475;"	d	file:
+xml_pack_attr_length	src/core/xml_print.c	236;"	d	file:
 xml_pack_length	src/incl/xml_tree.h	119;"	d
-xml_pack_name	src/core/xml_comm.c	1687;"	d	file:
-xml_pack_name_length	src/core/xml_comm.c	2214;"	d	file:
-xml_pack_next	src/core/xml_comm.c	/^static xml_node_t *xml_pack_next(Stack_t *stack, xml_node_t *node, sprint_t *sp)$/;"	f	file:
-xml_pack_next_length	src/core/xml_comm.c	/^static xml_node_t *xml_pack_next_length(Stack_t *stack, xml_node_t *node, int *length)$/;"	f	file:
-xml_pack_node_length	src/core/xml_comm.c	/^int xml_pack_node_length(xml_node_t *root, Stack_t *stack)$/;"	f
-xml_pack_tree	src/core/xml_comm.c	/^int xml_pack_tree(xml_node_t *root, Stack_t *stack, sprint_t *sp)$/;"	f
-xml_pack_value	src/core/xml_comm.c	1711;"	d	file:
-xml_pack_value	src/core/xml_comm.c	1741;"	d	file:
-xml_pack_value_length	src/core/xml_comm.c	2239;"	d	file:
-xml_pack_value_length	src/core/xml_comm.c	2270;"	d	file:
+xml_pack_name	src/core/xml_print.c	468;"	d	file:
+xml_pack_name_length	src/core/xml_print.c	229;"	d	file:
+xml_pack_next	src/core/xml_print.c	/^static xml_node_t *xml_pack_next(Stack_t *stack, xml_node_t *node, sprint_t *sp)$/;"	f	file:
+xml_pack_next_length	src/core/xml_print.c	/^static xml_node_t *xml_pack_next_length(Stack_t *stack, xml_node_t *node, int *length)$/;"	f	file:
+xml_pack_node_length	src/core/xml_print.c	/^int xml_pack_node_length(xml_node_t *root, Stack_t *stack)$/;"	f
+xml_pack_tree	src/core/xml_print.c	/^int xml_pack_tree(xml_node_t *root, Stack_t *stack, sprint_t *sp)$/;"	f
+xml_pack_value	src/core/xml_print.c	492;"	d	file:
+xml_pack_value	src/core/xml_print.c	522;"	d	file:
+xml_pack_value_length	src/core/xml_print.c	254;"	d	file:
+xml_pack_value_length	src/core/xml_print.c	285;"	d	file:
 xml_parent	src/incl/xml_tree.h	85;"	d
 xml_parse	src/core/xml_comm.c	/^int xml_parse(xml_tree_t *xml, Stack_t *stack, const char *str)$/;"	f
 xml_parse_end	src/core/xml_comm.c	/^static int xml_parse_end(Stack_t *stack, xml_fparse_t *fparse)$/;"	f	file:
@@ -560,13 +631,13 @@ xml_set_value	src/core/xml_tree.c	/^int xml_set_value(xml_node_t *node, const ch
 xml_set_value_flag	src/incl/xml_comm.h	48;"	d
 xml_spack	src/core/xml_tree.c	/^extern int xml_spack(xml_tree_t *xml, char *str)$/;"	f
 xml_sprint	src/core/xml_tree.c	/^int xml_sprint(xml_tree_t *xml, char *str)$/;"	f
-xml_sprint_attr	src/core/xml_comm.c	1475;"	d	file:
-xml_sprint_name	src/core/xml_comm.c	1463;"	d	file:
-xml_sprint_next	src/core/xml_comm.c	/^static xml_node_t *xml_sprint_next(Stack_t *stack, xml_node_t *node, sprint_t *sp)$/;"	f	file:
-xml_sprint_tree	src/core/xml_comm.c	/^int xml_sprint_tree(xml_node_t *root, Stack_t *stack, sprint_t *sp)$/;"	f
-xml_sprint_value	src/core/xml_comm.c	1491;"	d	file:
+xml_sprint_attr	src/core/xml_print.c	715;"	d	file:
+xml_sprint_name	src/core/xml_print.c	703;"	d	file:
+xml_sprint_next	src/core/xml_print.c	/^static xml_node_t *xml_sprint_next(Stack_t *stack, xml_node_t *node, sprint_t *sp)$/;"	f	file:
+xml_sprint_tree	src/core/xml_print.c	/^int xml_sprint_tree(xml_node_t *root, Stack_t *stack, sprint_t *sp)$/;"	f
+xml_sprint_value	src/core/xml_print.c	731;"	d	file:
 xml_tree_length	src/incl/xml_tree.h	116;"	d
-xml_tree_t	src/incl/xml_tree.h	/^}xml_tree_t;$/;"	t	typeref:struct:__anon10
+xml_tree_t	src/incl/xml_tree.h	/^}xml_tree_t;$/;"	t	typeref:struct:__anon14
 xml_unset_attr_flag	src/incl/xml_comm.h	45;"	d
 xml_unset_child_flag	src/incl/xml_comm.h	47;"	d
 xml_unset_flag	src/incl/xml_comm.h	41;"	d

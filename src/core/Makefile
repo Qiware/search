@@ -15,6 +15,7 @@ SRC_LIST = avl_tree.c \
 			slab.c \
 			shm_slab.c \
 			xml_comm.c \
+			xml_print.c \
 			xml_tree.c \
 			thread_pool.c
 
