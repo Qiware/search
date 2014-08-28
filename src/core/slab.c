@@ -63,14 +63,15 @@ static unsigned int slab_page_shift = SLAB_PAGE_SHIFT;
     (u_char *) (((uintptr_t) (p) + ((uintptr_t) a - 1)) & ~((uintptr_t) a - 1))
 
 /******************************************************************************
- ** Name : slab_init
- ** Func : Initialize slab pool
- ** Input: 
- **     pool: Slab pool.
- **Output: NONE
- **Return: void
- ** Note : 
- **Author: # Qifeng.zou # 2013.08.07 #
+ **函数名称: slab_init
+ **功    能: Slab初始化
+ **输入参数:
+ **     pool: Slab对象
+ **输出参数:
+ **返    回: VOID
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Nginx # YYYY.MM.DD #
  ******************************************************************************/
 void slab_init(slab_pool_t *pool)
 {
@@ -141,15 +142,16 @@ void slab_init(slab_pool_t *pool)
 }
 
 /******************************************************************************
- ** Name : slab_alloc
- ** Func : Alloc memory from slab pool.
- ** Input: 
- **     pool: Slab pool.
- **     size: Special size of memory.
- **Output: NONE
- **Return: void
- ** Note : 
- **Author: # Qifeng.zou # 2013.08.07 #
+ **函数名称: slab_alloc
+ **功    能: 从Slab中申请内存空间
+ **输入参数:
+ **     pool: Slab对象
+ **     size: 申请的空间大小
+ **输出参数:
+ **返    回: VOID
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Nginx # YYYY.MM.DD #
  ******************************************************************************/
 void *slab_alloc(slab_pool_t *pool, size_t size)
 {
@@ -419,15 +421,16 @@ done:
 }
 
 /******************************************************************************
- ** Name : slab_free
- ** Func : Free special memory
- ** Input: 
- **     pool: Slab pool.
- **     p: Address of memory which will be free.
- **Output: NONE
- **Return: void
- ** Note : 
- **Author: # Qifeng.zou # 2013.08.07 #
+ **函数名称: slab_free
+ **功    能: 释放从Slab申请的内存空间
+ **输入参数:
+ **     pool: Slab对象
+ **     p: 内存起始地址
+ **输出参数:
+ **返    回: VOID
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Nginx # YYYY.MM.DD #
  ******************************************************************************/
 void slab_free(slab_pool_t *pool, void *p)
 {
@@ -650,15 +653,16 @@ fail:
 }
 
 /******************************************************************************
- ** Name : slab_alloc_pages
- ** Func : Alloc pages from slab pool.
- ** Input: 
- **     pool: Slab pool.
- **     pages: Number of pages
- **Output: NONE
- **Return: Address of pages
- ** Note : 
- **Author: # Qifeng.zou # 2013.08.07 #
+ **函数名称: slab_alloc_pages
+ **功    能: 从Slab中申请一页内存
+ **输入参数:
+ **     pool: Slab对象
+ **     pages: 申请的页数
+ **输出参数:
+ **返    回: 页对象地址
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Nginx # YYYY.MM.DD #
  ******************************************************************************/
 static slab_page_t *slab_alloc_pages(slab_pool_t *pool, unsigned int pages)
 {
@@ -714,16 +718,17 @@ static slab_page_t *slab_alloc_pages(slab_pool_t *pool, unsigned int pages)
 }
 
 /******************************************************************************
- ** Name : slab_free_pages
- ** Func : Free pages from slab pool.
- ** Input: 
- **     pool: Slab pool.
- **     page: Address of page which will be free.
- **     pages: Number of page
- **Output: NONE
- **Return: void
- ** Note : 
- **Author: # Qifeng.zou # 2013.08.07 #
+ **函数名称: slab_fee_pages
+ **功    能: 释放从Slab中申请的页
+ **输入参数:
+ **     pool: Slab对象
+ **     page: 页对象
+ **     pages: 页数
+ **输出参数:
+ **返    回: 页地址
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Nginx # YYYY.MM.DD #
  ******************************************************************************/
 static void slab_free_pages(slab_pool_t *pool, slab_page_t *page, unsigned int pages)
 {
@@ -752,12 +757,14 @@ static void slab_free_pages(slab_pool_t *pool, slab_page_t *page, unsigned int p
 }
 
 /*******************************************************************************
- * 模块: 扩展SLAB模块
- * 作用: 使SLAB机制管理的空间可以动态增加
- * 说明: 
- *      通过链表的方式将多个SLAB管理空间串联起来，从而实现SLAB空间的扩展.
- * 注意: 
- * 作者: # Qifeng.zou # 2013.08.15 #
+ ** Copyright (C) 2013-2014 Xundao technology Cot,. Ltd
+ **
+ ** 模块: 扩展SLAB模块
+ ** 作用: 使SLAB机制管理的空间可以动态增加
+ ** 说明: 
+ **      通过链表的方式将多个SLAB管理空间串联起来，从而实现SLAB空间的扩展.
+ ** 注意: 
+ ** 作者: # Qifeng.zou # 2013.08.15 #
  ******************************************************************************/
 static slab_pool_t *eslab_add(eslab_pool_t *eslab, size_t size);
 

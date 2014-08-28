@@ -13,6 +13,7 @@ SRC_LIST = avl_tree.c \
 			xdt_comm.c \
 			sha256.c \
 			slab.c \
+			shm_slab.c \
 			xml_comm.c \
 			xml_tree.c \
 			thread_pool.c
