@@ -3,6 +3,7 @@ include $(PROJ)/make/options.mak
 
 CC = gcc
 CFLAGS = -Wall -g -fPIC -s \
+			-Werror \
 			-Wshadow \
 			-Wcast-qual \
 			-Winline \
