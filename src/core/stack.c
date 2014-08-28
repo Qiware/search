@@ -21,7 +21,7 @@
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
-int stack_init(Stack_t *stack, int size)
+int32_t stack_init(Stack_t *stack, int32_t size)
 {
     memset(stack, 0, sizeof(Stack_t));
 
@@ -69,7 +69,7 @@ void stack_destroy(Stack_t *stack)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
-int stack_push(Stack_t *stack, void *node)
+int32_t stack_push(Stack_t *stack, void *node)
 {
     if ((stack->top - stack->base) >= stack->size)
     {
@@ -94,7 +94,7 @@ int stack_push(Stack_t *stack, void *node)
  **      在此只负责将节点弹出栈，并不负责内存空间的释放
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
-int stack_pop(Stack_t *stack)
+int32_t stack_pop(Stack_t *stack)
 {
     if (stack->base == stack->top)
     {

@@ -16,7 +16,7 @@
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.08.24 #
  ******************************************************************************/
-int list_insert_head(list_t *list, list_node_t *node)
+int32_t list_insert_head(list_t *list, list_node_t *node)
 {
     /* 1. 链表为空时 */
     if (NULL == list->head)
@@ -50,7 +50,7 @@ int list_insert_head(list_t *list, list_node_t *node)
  **     请调用者自己取释放返回结点和数据的内存空间
  **作    者: # Qifeng.zou # 2014.08.24 #
  ******************************************************************************/
-int list_insert_tail(list_t *list, list_node_t *node)
+int32_t list_insert_tail(list_t *list, list_node_t *node)
 {
     /* 1. 链表为空时 */
     if (NULL == list->tail)
@@ -133,7 +133,7 @@ list_node_t *list_delete_tail(list_t *list)
  ******************************************************************************/
 void list_assert(list_t *list)
 {
-    int num = 0;
+    int32_t num = 0;
     list_node_t *curr;
 
     curr = list->head;

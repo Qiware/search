@@ -32,9 +32,9 @@
  ** Note :
  ** Author: # Qifeng.zou # 2014.04.18 #
  ******************************************************************************/
-int Open(const char *fpath, int flags, mode_t mode)
+int32_t Open(const char *fpath, int32_t flags, mode_t mode)
 {
-    int fd = 0;
+    int32_t fd = 0;
     
 AGAIN:
     fd = open(fpath, flags, mode);
@@ -62,9 +62,9 @@ AGAIN:
  ** Note :
  ** Author: # Qifeng.zou # 2014.04.18 #
  ******************************************************************************/
-int Readn(int fd, void *buff, int n)
+int32_t Readn(int32_t fd, void *buff, int32_t n)
 {
-    int left = n, len = 0;
+    int32_t left = n, len = 0;
     char *ptr = (char *)buff;
 
     while (left > 0)
@@ -107,9 +107,9 @@ int Readn(int fd, void *buff, int n)
  ** Note :
  ** Author: # Qifeng.zou # 2014.04.18 #
  ******************************************************************************/
-int Writen(int fd, const void *buff, int n)
+int32_t Writen(int32_t fd, const void *buff, int32_t n)
 {
-    int left = n, len = 0;
+    int32_t left = n, len = 0;
     const char *ptr = (const char *)buff;
 
     while (left > 0)
@@ -146,9 +146,9 @@ int Writen(int fd, const void *buff, int n)
  ** Note :
  ** Author: # Qifeng.zou # 2014.04.18 #
  ******************************************************************************/
-int Sleep(int secs)
+int32_t Sleep(int32_t secs)
 {
-    int left = 0;
+    int32_t left = 0;
 
     left = secs;
     do
@@ -170,10 +170,10 @@ int Sleep(int secs)
  ** Note :
  ** Author: # Qifeng.zou # 2014.04.18 #
  ******************************************************************************/
-unsigned int Hash(const char *str)
+uint32_t Hash(const char *str)
 {
     const char *p = str;
-    unsigned int hash = 5381;
+    uint32_t hash = 5381;
 
     while (*p)
     {
@@ -195,7 +195,7 @@ unsigned int Hash(const char *str)
  ** Note :
  ** Author: # Qifeng.zou # 2014.04.18 #
  ******************************************************************************/
-int Random(void)
+int32_t Random(void)
 {
     struct timeval cur_time;
 
@@ -217,9 +217,9 @@ int Random(void)
  ** Note :
  ** Author: # Qifeng.zou # 2014.04.18 #
  ******************************************************************************/
-int fd_nonblock(int fd)
+int32_t fd_nonblock(int32_t fd)
 {
-    int flags = 0;
+    int32_t flags = 0;
 
     flags = fcntl(fd, F_GETFL, 0);
     
@@ -240,9 +240,9 @@ int fd_nonblock(int fd)
  ** Note :
  ** Author: # Qifeng.zou # 2014.04.18 #
  ******************************************************************************/
-int usck_udp_creat(const char *path)
+int32_t usck_udp_creat(const char *path)
 {
-    int fd = -1, len = 0, ret = 0;
+    int32_t fd = -1, len = 0, ret = 0;
     struct sockaddr_un svraddr;
 
     memset(&svraddr, 0, sizeof(svraddr));
@@ -290,9 +290,9 @@ int usck_udp_creat(const char *path)
  ** Note :
  ** Author: # Qifeng.zou # 2014.04.18 #
  ******************************************************************************/
-int usck_udp_send(int sckid, const char *path, const void *buff, size_t sndlen)
+int32_t usck_udp_send(int32_t sckid, const char *path, const void *buff, size_t sndlen)
 {
-    int n = 0;
+    int32_t n = 0;
     int	addrlen = 0;
     struct sockaddr_un toaddr;
 
@@ -330,7 +330,7 @@ AGAIN:
  ** Note :
  ** Author: # Qifeng.zou # 2014.04.18 #
  ******************************************************************************/
-int usck_udp_recv(int sckid, void *buff, int rcvlen)
+int32_t usck_udp_recv(int32_t sckid, void *buff, int32_t rcvlen)
 {
     int	len = 0;
     struct sockaddr_un from;
@@ -354,9 +354,9 @@ int usck_udp_recv(int sckid, void *buff, int rcvlen)
  ** Note :
  ** Author: # Qifeng.zou # 2014.04.18 #
  ******************************************************************************/
-int Mkdir(const char *dir, mode_t mode)
+int32_t Mkdir(const char *dir, mode_t mode)
 {
-    int ret = 0, len = 0;
+    int32_t ret = 0, len = 0;
     const char *p = dir;
     struct stat file_stat;
     char part[FILE_PATH_MAX_LEN] = {0};
@@ -422,7 +422,7 @@ int Mkdir(const char *dir, mode_t mode)
  **     Ext: fname="/home/svn/etc/lsn.log", will create "/home/svn/etc/"
  ** Author: # Qifeng.zou # 2014.04.18 #
  ******************************************************************************/
-int Mkdir2(const char *fname, mode_t mode)
+int32_t Mkdir2(const char *fname, mode_t mode)
 {
     const char *p = fname;
     char dir[FILE_PATH_MAX_LEN] = {0};
@@ -454,9 +454,9 @@ int Mkdir2(const char *fname, mode_t mode)
  ** Note :
  ** Author: # Qifeng.zou # 2014.04.18 #
  ******************************************************************************/
-int creat_thread(pthread_t *tid, void *(*process)(void *args), void *args)
+int32_t creat_thread(pthread_t *tid, void *(*process)(void *args), void *args)
 {
-    int ret = 0;
+    int32_t ret = 0;
     pthread_attr_t attr;
 
     do
@@ -503,7 +503,7 @@ int creat_thread(pthread_t *tid, void *(*process)(void *args), void *args)
  ** Note :
  ** Author: # Qifeng.zou # 2014.06.07 #
  ******************************************************************************/
-int fd_is_writable(int fd)
+int32_t fd_is_writable(int32_t fd)
 {
     fd_set wset;
     struct timeval tmout;
@@ -530,10 +530,10 @@ int fd_is_writable(int fd)
  ** Note : 
  ** Author: # Qifeng.zou # 2014.03.24 #
  ******************************************************************************/
-int Listen(int port)
+int32_t Listen(int32_t port)
 {
-    int sckid = 0;
-    int ret = 0, opt = 1;
+    int32_t sckid = 0;
+    int32_t ret = 0, opt = 1;
     struct sockaddr_in svraddr;
 
 
@@ -601,7 +601,7 @@ int Listen(int port)
  **         如果无法建立锁定，则返回-1，错误代码为EACCES 或EAGAIN。
  **作    者: # Qifeng.zou # 2013.09.06 #
  ******************************************************************************/
-int _try_flock(int fd, int type, int whence, int start, int len)
+int32_t _try_flock(int32_t fd, int32_t type, int32_t whence, int32_t start, int32_t len)
 {
     struct flock fl;
 
@@ -632,7 +632,7 @@ int _try_flock(int fd, int type, int whence, int start, int len)
  **         若在等待锁定的过程中被信号中断时，会立即返回-1，错误代码为EINTR。
  **作    者: # Qifeng.zou # 2013.09.06 #
  ******************************************************************************/
-int _flock(int fd, int type, int whence, int offset, int len)
+int32_t _flock(int32_t fd, int32_t type, int32_t whence, int32_t offset, int32_t len)
 {
     struct flock fl;
 
@@ -656,9 +656,9 @@ int _flock(int fd, int type, int whence, int offset, int len)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.10.31 #
  ******************************************************************************/
-int Rename(const char *oldpath, const char *newpath)
+int32_t Rename(const char *oldpath, const char *newpath)
 {
-    int ret = 0;
+    int32_t ret = 0;
 
 AGAIN:
     ret = rename(oldpath, newpath);
@@ -687,9 +687,9 @@ AGAIN:
  **    等待所有字节发送完成后才返回，除非出现严重错误.
  **作    者: # Qifeng.zou # 2014.06.24 #
  ******************************************************************************/
-int block_send(int fd, const void *addr, size_t size, int secs)
+int32_t block_send(int32_t fd, const void *addr, size_t size, int32_t secs)
 {
-    int ret = 0, n = 0, left = size, off = 0;
+    int32_t ret = 0, n = 0, left = size, off = 0;
     fd_set wrset;
     struct timeval tmout;
 
@@ -745,9 +745,9 @@ int block_send(int fd, const void *addr, size_t size, int secs)
  **    等待所有字节接收完成后才返回，除非出现严重错误或超时.
  **作    者: # Qifeng.zou # 2014.06.24 #
  ******************************************************************************/
-int block_recv(int fd, void *addr, size_t size, int secs)
+int32_t block_recv(int32_t fd, void *addr, size_t size, int32_t secs)
 {
-    int ret = 0, n = 0, left = size, off = 0;
+    int32_t ret = 0, n = 0, left = size, off = 0;
     fd_set rdset;
     struct timeval tmout;
 
@@ -802,7 +802,7 @@ int block_recv(int fd, void *addr, size_t size, int secs)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.08.07 #
  ******************************************************************************/
-void sha256_digest(char *str, unsigned int len, unsigned char digest[32])
+void sha256_digest(char *str, uint32_t len, u_char digest[32])
 {
     sha256_t sha256;
 

@@ -17,9 +17,9 @@
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.04.28 #
  ******************************************************************************/
-int queue_init(Queue_t *q, int max, int size)
+int32_t queue_init(Queue_t *q, int32_t max, int32_t size)
 {
-    int idx;
+    int32_t idx;
     void *args;
     Qnode_t *node;
     
@@ -39,7 +39,7 @@ int queue_init(Queue_t *q, int max, int size)
         return -1;
     }
 
-    /* 2. Set circular pointer */
+    /* 2. Set circular point32_ter */
     node = (Qnode_t *)q->base;
     for (idx=0; idx<max-1; ++idx, ++node)
     {
@@ -68,7 +68,7 @@ int queue_init(Queue_t *q, int max, int size)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.04.28 #
  ******************************************************************************/
-int queue_push(Queue_t *q, void *addr, int size)
+int32_t queue_push(Queue_t *q, void *addr, int32_t size)
 {
     Qnode_t *node = q->tail;
 

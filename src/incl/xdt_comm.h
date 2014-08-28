@@ -33,10 +33,10 @@ typedef int bool;
 #define MD5_SUM_CHK_LEN     (32)    /* Md5校验值长度 */
 #define XDR_STR_MAX_LEN     (2048)  /* XDR的最大长度 */
 
-extern int Readn(int fd, void *buff, int n);
-extern int Writen(int fd, const void *buff, int n);
-extern int Rename(const char *oldpath, const char *newpath);
-extern int Open(const char *fpath, int flags, mode_t mode);
+int Readn(int fd, void *buff, int n);
+int Writen(int fd, const void *buff, int n);
+int Rename(const char *oldpath, const char *newpath);
+int Open(const char *fpath, int flags, mode_t mode);
 #define Close(fd)  \
 { \
     if(fd > 0) { close(fd), fd = -1; } \
@@ -44,28 +44,28 @@ extern int Open(const char *fpath, int flags, mode_t mode);
 #define fClose(fp) {fclose(fp), fp = NULL;}
 #define Free(p) {free(p), p=NULL; }
 
-extern int Sleep(int seconds);
-extern unsigned int Hash(const char *str);
-extern int Random(void);
+int Sleep(int seconds);
+unsigned int Hash(const char *str);
+int Random(void);
 
-extern int Mkdir(const char *dir, mode_t mode);
-extern int Mkdir2(const char *fname, mode_t mode);
+int Mkdir(const char *dir, mode_t mode);
+int Mkdir2(const char *fname, mode_t mode);
 
-extern int Listen(int port);
-extern int fd_nonblock(int fd);
-extern int fd_is_writable(int fd);
-extern int block_recv(int fd, void *addr, size_t size, int secs);
-extern int block_send(int fd, const void *addr, size_t size, int secs);
+int Listen(int port);
+int fd_nonblock(int fd);
+int fd_is_writable(int fd);
+int block_recv(int fd, void *addr, size_t size, int secs);
+int block_send(int fd, const void *addr, size_t size, int secs);
 
-extern int usck_udp_creat(const char *fname);
-extern int usck_udp_send(int sckid, const char *path, const void *buff, size_t bufflen);
-extern int usck_udp_recv(int sckid, void *buff, int rcvlen);
+int usck_udp_creat(const char *fname);
+int usck_udp_send(int sckid, const char *path, const void *buff, size_t bufflen);
+int usck_udp_recv(int sckid, void *buff, int rcvlen);
 
 int creat_thread(pthread_t *tid, void *(*process)(void *args), void *args);
 
 /* 文件锁相关 */
-extern int _flock(int fd, int type, int whence, int offset, int len);
-extern int _try_flock(int fd, int type, int whence, int offset, int len);
+int _flock(int fd, int type, int whence, int offset, int len);
+int _try_flock(int fd, int type, int whence, int offset, int len);
 
 #define proc_wrlock(fd) _flock(fd, F_WRLCK, SEEK_SET, 0, 0)  /* 写锁(全文件) */
 #define proc_rdlock(fd) _flock(fd, F_RDLCK, SEEK_SET, 0, 0)  /* 读锁(全文件) */

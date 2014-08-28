@@ -159,18 +159,18 @@ typedef struct
 #define sprint_init(sp, s) ((sp)->str = (s), (sp)->ptr = s)
 
 
-extern char *xml_fload(const char *fname);
+char *xml_fload(const char *fname);
 
-extern int xml_init(xml_tree_t **xmltree);
-extern int xml_parse(xml_tree_t *xmltree, Stack_t *stack, const char *str);
-extern int xml_fprint_tree(xml_node_t *root, Stack_t *stack, FILE *fp);
-extern int xml_sprint_tree(xml_node_t *root, Stack_t *stack, sprint_t *sp);
-extern int xml_pack_tree(xml_node_t *root, Stack_t *stack, sprint_t *sp);
+int xml_init(xml_tree_t **xmltree);
+int xml_parse(xml_tree_t *xmltree, Stack_t *stack, const char *str);
+int xml_fprint_tree(xml_node_t *root, Stack_t *stack, FILE *fp);
+int xml_sprint_tree(xml_node_t *root, Stack_t *stack, sprint_t *sp);
+int xml_pack_tree(xml_node_t *root, Stack_t *stack, sprint_t *sp);
 
-extern int _xml_node_length(xml_node_t *root, Stack_t *stack);
-extern int xml_pack_node_length(xml_node_t *root, Stack_t *stack);
-    
-extern int xml_node_sfree(xml_node_t *node);
-extern xml_node_t *xml_free_next(Stack_t *stack, xml_node_t *current);
+int _xml_node_length(xml_node_t *root, Stack_t *stack);
+int xml_pack_node_length(xml_node_t *root, Stack_t *stack);
+
+int xml_node_sfree(xml_node_t *node);
+xml_node_t *xml_free_next(Stack_t *stack, xml_node_t *current);
 
 #endif /*__XML_COMM_H__*/

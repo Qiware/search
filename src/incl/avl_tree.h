@@ -35,8 +35,8 @@ typedef struct _node_t
     struct _node_t *parent;     /* 父节点 */
     struct _node_t *lchild;     /* 左孩子 */
     struct _node_t *rchild;     /* 右孩子 */
-    int key;                    /* 节点值: 可根据实际情况设置数据类型 */
-    int bf;                     /* 平衡因子 */
+    int32_t key;                    /* 节点值: 可根据实际情况设置数据类型 */
+    int32_t bf;                     /* 平衡因子 */
 
     void *data;                 /* 附加数据 */
 }avl_node_t;
@@ -88,11 +88,11 @@ typedef struct
     } \
 }
 
-extern int avl_creat(avl_tree_t **tree);
-extern int avl_insert(avl_tree_t *tree, int key, void *data);
-extern const avl_node_t *avl_search(const avl_tree_t *tree, int key);
-extern int avl_delete(avl_tree_t *tree, int key, void **data);
-extern int avl_print(avl_tree_t *tree);
+extern int32_t avl_creat(avl_tree_t **tree);
+extern int32_t avl_insert(avl_tree_t *tree, int32_t key, void *data);
+extern const avl_node_t *avl_search(const avl_tree_t *tree, int32_t key);
+extern int32_t avl_delete(avl_tree_t *tree, int32_t key, void **data);
+extern int32_t avl_print(avl_tree_t *tree);
 extern void avl_destroy(avl_tree_t **tree);
 
 /* 测试使用 */

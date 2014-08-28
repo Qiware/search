@@ -29,8 +29,8 @@ typedef enum
 /* 结点结构 */
 typedef struct _rbt_node_t
 {
-    int key;                        /* 关键字 */
-    int color;                      /* 结点颜色: RBT_COLOR_BLACK(黑) 或 RBT_COLOR_RED(红) */
+    int32_t key;                        /* 关键字 */
+    int32_t color;                      /* 结点颜色: RBT_COLOR_BLACK(黑) 或 RBT_COLOR_RED(红) */
     struct _rbt_node_t *parent;     /* 父节点 */
     struct _rbt_node_t *lchild;     /* 左孩子节点 */
     struct _rbt_node_t *rchild;     /* 右孩子节点 */
@@ -84,10 +84,10 @@ typedef struct
 }
 
 rbt_tree_t *rbt_creat(void);
-int rbt_insert(rbt_tree_t *tree, int key);
-int rbt_delete(rbt_tree_t *tree, int key);
-const rbt_node_t *rbt_search(const rbt_tree_t *tree, int key);
-int rbt_print(rbt_tree_t *tree);
-int rbt_destroy(rbt_tree_t **tree);
+int32_t rbt_insert(rbt_tree_t *tree, int32_t key);
+int32_t rbt_delete(rbt_tree_t *tree, int32_t key);
+const rbt_node_t *rbt_search(const rbt_tree_t *tree, int32_t key);
+int32_t rbt_print(rbt_tree_t *tree);
+int32_t rbt_destroy(rbt_tree_t **tree);
 
 #endif /*__RB_TREE_H__*/

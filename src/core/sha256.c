@@ -2,7 +2,7 @@
 
 static uint64_t sha256_calc_block(int* DwordBufPtr, int* regPtr);
 
-const int sha256_k[ 64 ] = {
+const int32_t sha256_k[ 64 ] = {
        0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
        0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
        0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
@@ -19,7 +19,7 @@ uint64_t  sha256_init(sha256_t* t){	return sha256_reset(t); }
 uint64_t sha256_uninit(sha256_t* t){ return 0; }
 
 uint64_t sha256_reset(sha256_t* t){ 
-	int x;
+	int32_t x;
 	t->reg[0]=0x6a09e667;
 	t->reg[1]=0xbb67ae85;
 	t->reg[2]=0x3c6ef372;
@@ -35,8 +35,8 @@ uint64_t sha256_reset(sha256_t* t){
 
 
 uint64_t sha256_calculate(sha256_t* t, char* dp, uint64_t dl){
-	int w,x,y,z;
-	int reg[ 8 ];
+	int32_t w,x,y,z;
+	int32_t reg[ 8 ];
 
 	/** 
 	   Set x, y, z, w 
@@ -120,9 +120,9 @@ uint64_t sha256_calculate(sha256_t* t, char* dp, uint64_t dl){
 
 /** calculate 64 dwords block -- data is at first 16 dwords */
 static uint64_t sha256_calc_block(int* dp, int* rp){
-	int a,b,c,d,e,f,g,h;
-	int t0,t1,t2;
-	int x;
+	int32_t a,b,c,d,e,f,g,h;
+	int32_t t0,t1,t2;
+	int32_t x;
 
 	/** extend 16s dword to 64 dwords */	
 	for(x = 16; x < 64; x ++){

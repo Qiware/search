@@ -11,13 +11,13 @@ typedef struct _list_node_t
 /* 单向链表对象 */
 typedef struct
 {
-    int num;
+    int32_t num;
     list_node_t *head;
     list_node_t *tail;
 }list_t;
 
-int list_insert_head(list_t *list, list_node_t *node);
-int list_insert_tail(list_t *list, list_node_t *node);
+int32_t list_insert_head(list_t *list, list_node_t *node);
+int32_t list_insert_tail(list_t *list, list_node_t *node);
 list_node_t *list_delete_head(list_t *list);
 list_node_t *list_delete_tail(list_t *list);
 void list_assert(list_t *list);

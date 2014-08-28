@@ -57,9 +57,9 @@ extern int stack_init(Stack_t *stack, int size);
     ) \
 )
 #else   /*__STACK_OPTIMIZE__*/
-extern void stack_destroy(Stack_t *stack);
-extern int stack_push(Stack_t *stack, void *node);
-extern int stack_pop(Stack_t * stack);
+void stack_destroy(Stack_t *stack);
+int stack_push(Stack_t *stack, void *node);
+int stack_pop(Stack_t * stack);
 #endif /*__STACK_OPTIMIZE__*/
 
 #define stack_isempty(stack) (((stack)->base == (stack)->top)? true : false) /* 栈是否为空 */

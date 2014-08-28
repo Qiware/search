@@ -23,7 +23,7 @@
 
 #define SLAB_BUSY        0xffffffffffffffff
 
-#else
+#else   /*!__x86_64__*/
 
 #define SLAB_PAGE_FREE   0
 #define SLAB_PAGE_BUSY   0xffffffff
@@ -34,19 +34,19 @@
 #define SLAB_MAP_SHIFT   16
 
 #define SLAB_BUSY        0xffffffff
-#endif
+#endif  /*!__x86_64__*/
 
 #define slab_junk(p, size) memset(p, 0, size)
 
-static slab_page_t *slab_alloc_pages(slab_pool_t *pool, unsigned int pages);
-static void slab_free_pages(slab_pool_t *pool, slab_page_t *page, unsigned int pages);
+static slab_page_t *slab_alloc_pages(slab_pool_t *pool, uint32_t pages);
+static void slab_free_pages(slab_pool_t *pool, slab_page_t *page, uint32_t pages);
 
 
 static size_t slab_max_size = 0;
 static size_t slab_exact_size = 0;
-static unsigned int slab_exact_shift = 0;
+static uint32_t slab_exact_shift = 0;
 static size_t slab_page_size = SLAB_PAGE_SIZE;
-static unsigned int slab_page_shift = SLAB_PAGE_SHIFT;
+static uint32_t slab_page_shift = SLAB_PAGE_SHIFT;
 
 #define slab_get_max_size() (slab_max_size)
 #define slab_set_max_size(size)  (slab_max_size = (size))
@@ -77,8 +77,8 @@ void slab_init(slab_pool_t *pool)
 {
     u_char *p = NULL;
     size_t size = 0;
-    int m = 0;
-    unsigned int i = 0, n = 0, pages = 0, shift = 0;
+    int32_t m = 0;
+    uint32_t i = 0, n = 0, pages = 0, shift = 0;
     slab_page_t *slots = NULL;
 
     /* STUB */
@@ -158,7 +158,7 @@ void *slab_alloc(slab_pool_t *pool, size_t size)
     size_t s = 0;
     uintptr_t p = 0, n = 0,
         m = 0, mask = 0, *bitmap = NULL;
-    unsigned int i = 0, slot = 0, shift = 0, map = 0;
+    uint32_t i = 0, slot = 0, shift = 0, map = 0;
     slab_page_t *page = NULL, *prev = NULL, *slots = NULL;
 
     if (size >= slab_get_max_size())
@@ -436,7 +436,7 @@ void slab_free(slab_pool_t *pool, void *p)
 {
     size_t size = 0;
     uintptr_t slab = 0, m = 0, *bitmap = NULL;
-    unsigned int n = 0, type = 0, slot = 0, shift = 0, map = 0;
+    uint32_t n = 0, type = 0, slot = 0, shift = 0, map = 0;
     slab_page_t *slots = NULL, *page = NULL;
 
     if ((u_char *) p < pool->start || (u_char *) p > pool->end)
@@ -664,7 +664,7 @@ fail:
  **注意事项: 
  **作    者: # Nginx # YYYY.MM.DD #
  ******************************************************************************/
-static slab_page_t *slab_alloc_pages(slab_pool_t *pool, unsigned int pages)
+static slab_page_t *slab_alloc_pages(slab_pool_t *pool, uint32_t pages)
 {
     slab_page_t *page = NULL, *p = NULL;
 
@@ -730,7 +730,7 @@ static slab_page_t *slab_alloc_pages(slab_pool_t *pool, unsigned int pages)
  **注意事项: 
  **作    者: # Nginx # YYYY.MM.DD #
  ******************************************************************************/
-static void slab_free_pages(slab_pool_t *pool, slab_page_t *page, unsigned int pages)
+static void slab_free_pages(slab_pool_t *pool, slab_page_t *page, uint32_t pages)
 {
     slab_page_t *prev = NULL;
 
@@ -782,7 +782,7 @@ static slab_pool_t *eslab_add(eslab_pool_t *eslab, size_t size);
  ** Note : 
  **Author: # Qifeng.zou # 2013.08.15 #
  ******************************************************************************/
-int eslab_init(eslab_pool_t *eslab, size_t size)
+int32_t eslab_init(eslab_pool_t *eslab, size_t size)
 {
     slab_pool_t *slab = NULL;
     
@@ -809,7 +809,7 @@ int eslab_init(eslab_pool_t *eslab, size_t size)
  ** Note : 
  **Author: # Qifeng.zou # 2013.08.15 #
  ******************************************************************************/
-int eslab_destroy(eslab_pool_t *eslab)
+int32_t eslab_destroy(eslab_pool_t *eslab)
 {
     eslab_node_t *node = NULL, *next = NULL;
 
@@ -888,7 +888,7 @@ static slab_pool_t *eslab_add(eslab_pool_t *eslab, size_t size)
 void *eslab_alloc(eslab_pool_t *eslab, size_t size)
 {
     void *p = NULL;
-    int block = 0, count = 0;
+    int32_t block = 0, count = 0;
     size_t alloc_size = 0;
     slab_pool_t *slab = NULL;
     eslab_node_t *node = eslab->node, *next;
@@ -941,7 +941,7 @@ void *eslab_alloc(eslab_pool_t *eslab, size_t size)
  ** Note : 
  **Author: # Qifeng.zou # 2013.08.15 #
  ******************************************************************************/
-int eslab_free(eslab_pool_t *eslab, void *p)
+int32_t eslab_free(eslab_pool_t *eslab, void *p)
 {
     eslab_node_t *node = eslab->node, *next = NULL;
 

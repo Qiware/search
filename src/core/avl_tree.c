@@ -1,17 +1,17 @@
 #include "avl_tree.h"
 
-static int _avl_insert(avl_tree_t *tree, avl_node_t *node, int key, bool *taller, void *data);
+static int32_t _avl_insert(avl_tree_t *tree, avl_node_t *node, int32_t key, bool *taller, void *data);
 static void _avl_destroy(avl_node_t *node);
 
-static int avl_right_balance(avl_tree_t *tree, avl_node_t *node);
-static int avl_left_balance(avl_tree_t *tree, avl_node_t *node);
-static int avl_insert_right(avl_tree_t *tree, avl_node_t *node, int key, bool *taller, void *data);
-static int avl_insert_left(avl_tree_t *tree, avl_node_t *node, int key, bool *taller, void *data);
+static int32_t avl_right_balance(avl_tree_t *tree, avl_node_t *node);
+static int32_t avl_left_balance(avl_tree_t *tree, avl_node_t *node);
+static int32_t avl_insert_right(avl_tree_t *tree, avl_node_t *node, int32_t key, bool *taller, void *data);
+static int32_t avl_insert_left(avl_tree_t *tree, avl_node_t *node, int32_t key, bool *taller, void *data);
 
-static int _avl_delete(avl_tree_t *tree, avl_node_t *node, int key, bool *lower, void **data);
-static int avl_replace_and_delete(avl_tree_t *tree, avl_node_t *node, avl_node_t *replace, bool *lower);
-static int avl_delete_left_balance(avl_tree_t *tree, avl_node_t *node, bool *lower);
-static int avl_delete_right_balance(avl_tree_t *tree, avl_node_t *node, bool *lower);
+static int32_t _avl_delete(avl_tree_t *tree, avl_node_t *node, int32_t key, bool *lower, void **data);
+static int32_t avl_replace_and_delete(avl_tree_t *tree, avl_node_t *node, avl_node_t *replace, bool *lower);
+static int32_t avl_delete_left_balance(avl_tree_t *tree, avl_node_t *node, bool *lower);
+static int32_t avl_delete_right_balance(avl_tree_t *tree, avl_node_t *node, bool *lower);
 
 /******************************************************************************
  **函数名称: avl_creat
@@ -24,7 +24,7 @@ static int avl_delete_right_balance(avl_tree_t *tree, avl_node_t *node, bool *lo
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.19 #
  ******************************************************************************/
-int avl_creat(avl_tree_t **tree)
+int32_t avl_creat(avl_tree_t **tree)
 {
     *tree = (avl_tree_t *)calloc(1, sizeof(avl_tree_t));
     if (NULL == *tree)
@@ -53,7 +53,7 @@ int avl_creat(avl_tree_t **tree)
  **     2. 如果要重置data值，请先执行删除操作.
  **作    者: # Qifeng.zou # 2013.12.12 #
  ******************************************************************************/
-int avl_insert(avl_tree_t *tree, int key, void *data)
+int32_t avl_insert(avl_tree_t *tree, int32_t key, void *data)
 {
     bool taller = false;
     avl_node_t *node = tree->root;
@@ -98,7 +98,7 @@ int avl_insert(avl_tree_t *tree, int key, void *data)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.13 #
  ******************************************************************************/
-static int _avl_insert(avl_tree_t *tree, avl_node_t *node, int key, bool *taller, void *data)
+static int32_t _avl_insert(avl_tree_t *tree, avl_node_t *node, int32_t key, bool *taller, void *data)
 {
     if (key == node->key)        /* 结点已存在 */
     {
@@ -128,10 +128,10 @@ static int _avl_insert(avl_tree_t *tree, avl_node_t *node, int key, bool *taller
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.13 #
  ******************************************************************************/
-static int avl_insert_right(
-    avl_tree_t *tree, avl_node_t *node, int key, bool *taller, void *data)
+static int32_t avl_insert_right(
+    avl_tree_t *tree, avl_node_t *node, int32_t key, bool *taller, void *data)
 {
-    int ret = -1;
+    int32_t ret = -1;
     avl_node_t *add = NULL;
     
     if (NULL == node->rchild)
@@ -208,10 +208,10 @@ static int avl_insert_right(
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.13 #
  ******************************************************************************/
-static int avl_insert_left(
-    avl_tree_t *tree, avl_node_t *node, int key, bool *taller, void *data)
+static int32_t avl_insert_left(
+    avl_tree_t *tree, avl_node_t *node, int32_t key, bool *taller, void *data)
 {
-    int ret = -1;
+    int32_t ret = -1;
     avl_node_t *add = NULL;
     
     if (NULL == node->lchild)
@@ -296,7 +296,7 @@ static int avl_insert_left(
  **     1. 图(1)中A表示右边失衡的结点 图(2)表示平衡处理的结果
  **作    者: # Qifeng.zou # 2013.12.13 #
  ******************************************************************************/
-static int avl_rr_balance(avl_tree_t *tree, avl_node_t *node)
+static int32_t avl_rr_balance(avl_tree_t *tree, avl_node_t *node)
 {
     avl_node_t *rchild = node->rchild, *parent = node->parent;
 
@@ -336,7 +336,7 @@ static int avl_rr_balance(avl_tree_t *tree, avl_node_t *node)
  **     1. 图(1)中A表示右边失衡的结点 图(2)表示平衡处理的结果
  **作    者: # Qifeng.zou # 2013.12.13 #
  ******************************************************************************/
-int avl_rl_balance(avl_tree_t *tree, avl_node_t *node)
+int32_t avl_rl_balance(avl_tree_t *tree, avl_node_t *node)
 {
     avl_node_t *rchild = node->rchild,
         *parent = node->parent, *rlchild = NULL;
@@ -412,7 +412,7 @@ int avl_rl_balance(avl_tree_t *tree, avl_node_t *node)
  **     1. 图(1)中A表示右边失衡的结点 图(2)表示平衡处理的结果
  **作    者: # Qifeng.zou # 2013.12.13 #
  ******************************************************************************/
-static int avl_right_balance(avl_tree_t *tree, avl_node_t *node)
+static int32_t avl_right_balance(avl_tree_t *tree, avl_node_t *node)
 {
     avl_node_t *rchild = node->rchild;
 
@@ -454,7 +454,7 @@ static int avl_right_balance(avl_tree_t *tree, avl_node_t *node)
  **     1. 图(1)中A表示左边失衡的结点 图(2)表示平衡处理的结果
  **作    者: # Qifeng.zou # 2013.12.13 #
  ******************************************************************************/
-int avl_ll_balance(avl_tree_t *tree, avl_node_t *node)
+int32_t avl_ll_balance(avl_tree_t *tree, avl_node_t *node)
 {
     avl_node_t *lchild = node->lchild, *parent = node->parent;
 
@@ -504,7 +504,7 @@ int avl_ll_balance(avl_tree_t *tree, avl_node_t *node)
  **     1. 图(1)中A表示左边失衡的结点 图(2)表示平衡处理的结果
  **作    者: # Qifeng.zou # 2013.12.13 #
  ******************************************************************************/
-int avl_lr_balance(avl_tree_t *tree, avl_node_t *node)
+int32_t avl_lr_balance(avl_tree_t *tree, avl_node_t *node)
 {
     avl_node_t *lchild = node->lchild,
         *parent = node->parent, *lrchild = NULL;
@@ -581,7 +581,7 @@ int avl_lr_balance(avl_tree_t *tree, avl_node_t *node)
  **     1. 图(1)中A表示左边失衡的结点 图(2)表示平衡处理的结果
  **作    者: # Qifeng.zou # 2013.12.13 #
  ******************************************************************************/
-int avl_left_balance(avl_tree_t *tree, avl_node_t *node)
+int32_t avl_left_balance(avl_tree_t *tree, avl_node_t *node)
 {
     avl_node_t *lchild = node->lchild;
 
@@ -612,7 +612,7 @@ int avl_left_balance(avl_tree_t *tree, avl_node_t *node)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.12 #
  ******************************************************************************/
-const avl_node_t *avl_search(const avl_tree_t *tree, int key)
+const avl_node_t *avl_search(const avl_tree_t *tree, int32_t key)
 {
     const avl_node_t *node = tree->root;
 
@@ -702,7 +702,7 @@ void avl_assert(const avl_node_t *node)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.19 #
  ******************************************************************************/
-int avl_delete(avl_tree_t *tree, int key, void **data)
+int32_t avl_delete(avl_tree_t *tree, int32_t key, void **data)
 {
     bool lower = false;
 
@@ -729,7 +729,7 @@ int avl_delete(avl_tree_t *tree, int key, void **data)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.19 #
  ******************************************************************************/
-static int _avl_delete(avl_tree_t *tree, avl_node_t *node, int key, bool *lower, void **data)
+static int32_t _avl_delete(avl_tree_t *tree, avl_node_t *node, int32_t key, bool *lower, void **data)
 {
     avl_node_t *parent = node->parent;
 
@@ -821,7 +821,7 @@ static int _avl_delete(avl_tree_t *tree, avl_node_t *node, int key, bool *lower,
  **         因为在此使用的递归算法, 如果真把node给释放了，会造成压栈的信息出现错误!
  **作    者: # Qifeng.zou # 2013.12.19 #
  ******************************************************************************/
-int avl_replace_and_delete(avl_tree_t *tree,
+int32_t avl_replace_and_delete(avl_tree_t *tree,
         avl_node_t *node, avl_node_t *prev, bool *lower)
 {
     if (NULL == prev->rchild)
@@ -872,7 +872,7 @@ int avl_replace_and_delete(avl_tree_t *tree,
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.19 #
  ******************************************************************************/
-int avl_delete_left_balance(avl_tree_t *tree, avl_node_t *node, bool *lower)
+int32_t avl_delete_left_balance(avl_tree_t *tree, avl_node_t *node, bool *lower)
 {
     avl_node_t *rchild = NULL, *rlchild = NULL, *parent = node->parent;
 
@@ -982,7 +982,7 @@ int avl_delete_left_balance(avl_tree_t *tree, avl_node_t *node, bool *lower)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.19 #
  ******************************************************************************/
-int avl_delete_right_balance(avl_tree_t *tree, avl_node_t *node, bool *lower)
+int32_t avl_delete_right_balance(avl_tree_t *tree, avl_node_t *node, bool *lower)
 {
     avl_node_t *lchild = NULL, *lrchild = NULL, *parent = node->parent;
 
@@ -1104,9 +1104,9 @@ static void _avl_destroy(avl_node_t *node)
     free(node);
 }
 
-int _avl_print(avl_node_t *node, Stack_t *stack);
+int32_t _avl_print32_t(avl_node_t *node, Stack_t *stack);
 /******************************************************************************
- **函数名称: val_print
+ **函数名称: val_print32_t
  **功    能: 打印平衡二叉树(外部接口)
  **输入参数: 
  **     tree: 平衡二叉树
@@ -1116,9 +1116,9 @@ int _avl_print(avl_node_t *node, Stack_t *stack);
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.17 #
  ******************************************************************************/
-int avl_print(avl_tree_t *tree)
+int32_t avl_print32_t(avl_tree_t *tree)
 {
-    int ret = 0;
+    int32_t ret = 0;
     Stack_t stack;
 
     memset(&stack, 0, sizeof(stack));
@@ -1134,14 +1134,14 @@ int avl_print(avl_tree_t *tree)
         return AVL_ERR_STACK;
     }
     
-    _avl_print(tree->root, &stack);
+    _avl_print32_t(tree->root, &stack);
 
     stack_destroy(&stack);
     return AVL_SUCCESS;
 }
 
 /******************************************************************************
- **函数名称: avl_print_head
+ **函数名称: avl_print32_t_head
  **功    能: 打印结点头(内部接口)
  **输入参数: 
  **     node: 被打印的结点
@@ -1152,9 +1152,9 @@ int avl_print(avl_tree_t *tree)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.17 #
  ******************************************************************************/
-void avl_print_head(avl_node_t *node, int depth)
+void avl_print32_t_head(avl_node_t *node, int32_t depth)
 {
-    int idx = 0;
+    int32_t idx = 0;
     avl_node_t *parent = node->parent;
     
     while (depth > 1)
@@ -1204,7 +1204,7 @@ void avl_print_head(avl_node_t *node, int depth)
 }
 
 /******************************************************************************
- **函数名称: avl_print_tail
+ **函数名称: avl_print32_t_tail
  **功    能: 打印结点尾(内部接口)
  **输入参数: 
  **     node: 被打印的结点
@@ -1215,9 +1215,9 @@ void avl_print_head(avl_node_t *node, int depth)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.17 #
  ******************************************************************************/
-void avl_print_tail(avl_node_t *node, int depth)
+void avl_print32_t_tail(avl_node_t *node, int32_t depth)
 {
-    int idx = 0;
+    int32_t idx = 0;
 
     if ((NULL == node->lchild)
         && (NULL == node->rchild))
@@ -1239,7 +1239,7 @@ void avl_print_tail(avl_node_t *node, int depth)
 }
 
 /******************************************************************************
- **函数名称: _avl_print
+ **函数名称: _avl_print32_t
  **功    能: 打印平衡二叉树(内部接口)
  **输入参数: 
  **     tree: 平衡二叉树
@@ -1255,9 +1255,9 @@ void avl_print_tail(avl_node_t *node, int depth)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.17 #
  ******************************************************************************/
-int _avl_print(avl_node_t *root, Stack_t *stack)
+int32_t _avl_print32_t(avl_node_t *root, Stack_t *stack)
 {
-    int depth = 0;
+    int32_t depth = 0;
     avl_node_t *node = root;
 
 
@@ -1267,24 +1267,24 @@ int _avl_print(avl_node_t *root, Stack_t *stack)
     depth = stack_depth(stack);
 
     /* 2. 打印结点头 */
-    avl_print_head(node, depth);
+    avl_print32_t_head(node, depth);
 
     /* 3. 打印右子树 */
     if (NULL != node->rchild)
     {
-        _avl_print(node->rchild, stack);
+        _avl_print32_t(node->rchild, stack);
     }
 
     /* 4. 打印左子树 */
     if (NULL != node->lchild)
     {
-        _avl_print(node->lchild, stack);
+        _avl_print32_t(node->lchild, stack);
     }
 
     depth = stack_depth(stack);
 
     /* 5. 打印结点尾 */
-    avl_print_tail(node, depth);    
+    avl_print32_t_tail(node, depth);    
 
     /* 6. 出栈 */
     stack_pop(stack);

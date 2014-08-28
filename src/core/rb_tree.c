@@ -3,9 +3,9 @@
 
 #define __RB_STACK_PRINT__
 
-static int rb_insert_fixup(rbt_tree_t *tree, rbt_node_t *node);
-static int _rb_delete(rbt_tree_t *tree, rbt_node_t *dnode);
-static int rbt_delete_fixup(rbt_tree_t *tree, rbt_node_t *node);
+static int32_t rb_insert_fixup(rbt_tree_t *tree, rbt_node_t *node);
+static int32_t _rb_delete(rbt_tree_t *tree, rbt_node_t *dnode);
+static int32_t rbt_delete_fixup(rbt_tree_t *tree, rbt_node_t *node);
 
 /******************************************************************************
  **函数名称: rbt_assert
@@ -195,7 +195,7 @@ rbt_tree_t *rbt_creat(void)
  **注意事项: 新结点的左右孩子肯定为叶子结点
  **作    者: # Qifeng.zou # 2013.12.23 #
  ******************************************************************************/
-rbt_node_t *rbt_creat_node(rbt_tree_t *tree, int key, int color, int type, rbt_node_t *parent)
+rbt_node_t *rbt_creat_node(rbt_tree_t *tree, int32_t key, int32_t color, int32_t type, rbt_node_t *parent)
 {
     rbt_node_t *node = NULL;
 
@@ -243,7 +243,7 @@ rbt_node_t *rbt_creat_node(rbt_tree_t *tree, int key, int color, int type, rbt_n
  **注意事项: 插入节点操作只可能破坏性质(4)
  **作    者: # Qifeng.zou # 2013.12.23 #
  ******************************************************************************/
-int rbt_insert(rbt_tree_t *tree, int key)
+int32_t rbt_insert(rbt_tree_t *tree, int32_t key)
 {
     rbt_node_t *node = tree->root, *add = NULL;
 
@@ -313,7 +313,7 @@ int rbt_insert(rbt_tree_t *tree, int key)
  **注意事项: 插入节点操作只可能破坏性质④
  **作    者: # Qifeng.zou # 2013.12.23 #
  ******************************************************************************/
-static int rb_insert_fixup(rbt_tree_t *tree, rbt_node_t *node)
+static int32_t rb_insert_fixup(rbt_tree_t *tree, rbt_node_t *node)
 {
     rbt_node_t *parent = NULL, *uncle = NULL, *grandpa = NULL, *gparent = NULL;
 
@@ -419,7 +419,7 @@ static int rb_insert_fixup(rbt_tree_t *tree, rbt_node_t *node)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.27 #
  ******************************************************************************/
-int rbt_delete(rbt_tree_t *tree, int key)
+int32_t rbt_delete(rbt_tree_t *tree, int32_t key)
 {
     rbt_node_t *node = tree->root;
 
@@ -454,7 +454,7 @@ int rbt_delete(rbt_tree_t *tree, int key)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.28 #
  ******************************************************************************/
-static int _rb_delete(rbt_tree_t *tree, rbt_node_t *dnode)
+static int32_t _rb_delete(rbt_tree_t *tree, rbt_node_t *dnode)
 {
     rbt_node_t *parent = NULL, *next = NULL, *refer = NULL;
 
@@ -597,7 +597,7 @@ static int _rb_delete(rbt_tree_t *tree, rbt_node_t *dnode)
     if(next != dnode)
     {
         dnode->key = next->key;
-        /* Copy next's satellite data into dnode */
+        /* Copy next's satellite data int32_to dnode */
     }
 
     if(rbt_is_red(next)) /* Not black */
@@ -625,7 +625,7 @@ static int _rb_delete(rbt_tree_t *tree, rbt_node_t *dnode)
  **     注意: 被删结点为黑色结点，才能调用此函数进行性质调整
  **作    者: # Qifeng.zou # 2013.12.28 #
  ******************************************************************************/
-static int rbt_delete_fixup(rbt_tree_t *tree, rbt_node_t *node)
+static int32_t rbt_delete_fixup(rbt_tree_t *tree, rbt_node_t *node)
 {
     rbt_node_t *parent = NULL, *brother = NULL;
 
@@ -744,7 +744,7 @@ static int rbt_delete_fixup(rbt_tree_t *tree, rbt_node_t *node)
 }
 
 /******************************************************************************
- **函数名称: rbt_hprint
+ **函数名称: rbt_hprint32_t
  **功    能: 打印结点头(内部接口)
  **输入参数: 
  **     node: 被打印的结点
@@ -755,9 +755,9 @@ static int rbt_delete_fixup(rbt_tree_t *tree, rbt_node_t *node)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.17 #
  ******************************************************************************/
-static void rbt_hprint(const rbt_tree_t *tree, const rbt_node_t *node, int depth)
+static void rbt_hprint32_t(const rbt_tree_t *tree, const rbt_node_t *node, int32_t depth)
 {
-    int idx = 0;
+    int32_t idx = 0;
     rbt_node_t *parent = node->parent;
 
     while(depth > 0 && (NULL != parent))
@@ -807,7 +807,7 @@ static void rbt_hprint(const rbt_tree_t *tree, const rbt_node_t *node, int depth
 }
 
 /******************************************************************************
- **函数名称: avl_tprint
+ **函数名称: avl_tprint32_t
  **功    能: 打印结点尾(内部接口)
  **输入参数: 
  **     node: 被打印的结点
@@ -818,9 +818,9 @@ static void rbt_hprint(const rbt_tree_t *tree, const rbt_node_t *node, int depth
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.17 #
  ******************************************************************************/
-static void rbt_tprint(const rbt_tree_t *tree, const rbt_node_t *node, int depth)
+static void rbt_tprint32_t(const rbt_tree_t *tree, const rbt_node_t *node, int32_t depth)
 {
-    int idx = 0;
+    int32_t idx = 0;
 
     if((tree->sentinel == node->lchild)
         && (tree->sentinel == node->rchild))
@@ -842,7 +842,7 @@ static void rbt_tprint(const rbt_tree_t *tree, const rbt_node_t *node, int depth
 }
 
 /******************************************************************************
- **函数名称: rbt_print
+ **函数名称: rbt_print32_t
  **功    能: 打印红黑树(外部接口)
  **输入参数: 
  **     tree: 红黑树
@@ -852,9 +852,9 @@ static void rbt_tprint(const rbt_tree_t *tree, const rbt_node_t *node, int depth
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.17 #
  ******************************************************************************/
-int rbt_print(rbt_tree_t *tree)
+int32_t rbt_print32_t(rbt_tree_t *tree)
 {
-    int depth = 0;
+    int32_t depth = 0;
     Stack_t _stack, *stack = &_stack;
     rbt_node_t *node = tree->root, *parent = NULL;
 
@@ -873,14 +873,14 @@ int rbt_print(rbt_tree_t *tree)
 
             stack_push(stack, node);
                         
-            rbt_hprint(tree, node, depth);   /* 打印头：入栈时打印头 出栈时打印尾 */
+            rbt_hprint32_t(tree, node, depth);   /* 打印头：入栈时打印头 出栈时打印尾 */
 
             node = node->lchild;
         }
 
         /* 打印最左端的子孙结点 */
         depth = stack_depth(stack);
-        rbt_hprint(tree, node, depth);
+        rbt_hprint32_t(tree, node, depth);
 
         /* 最左端的孩子有右孩子 */
         if(tree->sentinel != node->rchild)
@@ -891,7 +891,7 @@ int rbt_print(rbt_tree_t *tree)
         }
         
         /* 最左端的孩子无右孩子 */
-        rbt_tprint(tree, node, depth);
+        rbt_tprint32_t(tree, node, depth);
 
         parent = stack_gettop(stack);
         if(NULL == parent)
@@ -914,7 +914,7 @@ int rbt_print(rbt_tree_t *tree)
             stack_pop(stack);
             
             depth = stack_depth(stack);
-            rbt_tprint(tree, parent, depth);    /* 打印尾：出栈时打印尾 入栈时已打印头 */
+            rbt_tprint32_t(tree, parent, depth);    /* 打印尾：出栈时打印尾 入栈时已打印头 */
 
             node = parent;
             parent = stack_gettop(stack);
@@ -942,7 +942,7 @@ int rbt_print(rbt_tree_t *tree)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.23 #
  ******************************************************************************/
-const rbt_node_t *rbt_search(const rbt_tree_t *tree, int key)
+const rbt_node_t *rbt_search(const rbt_tree_t *tree, int32_t key)
 {
     const rbt_node_t *node = tree->root;
 
@@ -979,7 +979,7 @@ const rbt_node_t *rbt_search(const rbt_tree_t *tree, int key)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.27 #
  ******************************************************************************/
-int rbt_destroy(rbt_tree_t **tree)
+int32_t rbt_destroy(rbt_tree_t **tree)
 {
     Stack_t _stack, *stack = &_stack;
     rbt_node_t *node = (*tree)->root, *parent = NULL;

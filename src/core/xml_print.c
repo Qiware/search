@@ -87,7 +87,7 @@
  ******************************************************************************/
 static xml_node_t *xml_fprint_next(Stack_t *stack, xml_node_t *node, FILE *fp)
 {
-    int ret = 0, depth = 0, level = 0;
+    int32_t ret = 0, depth = 0, level = 0;
     xml_node_t *top = NULL, *child = NULL;
 
     if (NULL != node->temp)      /* 首先: 处理孩子节点: 选出下一个孩子节点 */
@@ -181,9 +181,9 @@ static xml_node_t *xml_fprint_next(Stack_t *stack, xml_node_t *node, FILE *fp)
  **           3. 不打印root的兄弟节点
  **作    者: # Qifeng.zou # 2013.02.27 #
  ******************************************************************************/
-int xml_fprint_tree(xml_node_t *root, Stack_t *stack, FILE *fp)
+int32_t xml_fprint_tree(xml_node_t *root, Stack_t *stack, FILE *fp)
 {
-    int ret = 0, depth = 0;
+    int32_t ret = 0, depth = 0;
     xml_node_t *node = root;
 
     depth = stack_depth(stack);
@@ -338,9 +338,9 @@ int xml_fprint_tree(xml_node_t *root, Stack_t *stack, FILE *fp)
  **           3. 不打印root的兄弟节点
  **作    者: # Qifeng.zou # 2013.06.11 #
  ******************************************************************************/
-static xml_node_t *xml_pack_next_length(Stack_t *stack, xml_node_t *node, int *length)
+static xml_node_t *xml_pack_next_length(Stack_t *stack, xml_node_t *node, int32_t *length)
 {
-    int ret = 0, length2 = 0;
+    int32_t ret = 0, length2 = 0;
     xml_node_t *top = NULL, *child = NULL;
 
     if (NULL != node->temp)      /* 首先: 处理孩子节点: 选出下一个孩子节点 */
@@ -423,9 +423,9 @@ static xml_node_t *xml_pack_next_length(Stack_t *stack, xml_node_t *node, int *l
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.06.11 #
  ******************************************************************************/
-int xml_pack_node_length(xml_node_t *root, Stack_t *stack)
+int32_t xml_pack_node_length(xml_node_t *root, Stack_t *stack)
 {
-    int ret = 0, depth = 0, length=0;
+    int32_t ret = 0, depth = 0, length=0;
     xml_node_t *node = root;
 
     depth = stack_depth(stack);
@@ -576,7 +576,7 @@ int xml_pack_node_length(xml_node_t *root, Stack_t *stack)
  ******************************************************************************/
 static xml_node_t *xml_pack_next(Stack_t *stack, xml_node_t *node, sprint_t *sp)
 {
-    int ret = 0;
+    int32_t ret = 0;
     xml_node_t *top = NULL, *child = NULL;
 
     if (NULL != node->temp)      /* 首先: 处理孩子节点: 选出下一个孩子节点 */
@@ -658,9 +658,9 @@ static xml_node_t *xml_pack_next(Stack_t *stack, xml_node_t *node, sprint_t *sp)
  **           3. 不打印root的兄弟节点
  **作    者: # Qifeng.zou # 2013.03.01 #
  ******************************************************************************/
-int xml_pack_tree(xml_node_t *root, Stack_t *stack, sprint_t *sp)
+int32_t xml_pack_tree(xml_node_t *root, Stack_t *stack, sprint_t *sp)
 {
-    int ret = 0, depth = 0;
+    int32_t ret = 0, depth = 0;
     xml_node_t *node = root;
 
     depth = stack_depth(stack);
@@ -789,7 +789,7 @@ int xml_pack_tree(xml_node_t *root, Stack_t *stack, sprint_t *sp)
  ******************************************************************************/
 static xml_node_t *xml_sprint_next(Stack_t *stack, xml_node_t *node, sprint_t *sp)
 {
-    int ret = 0, depth = 0, level = 0;
+    int32_t ret = 0, depth = 0, level = 0;
     xml_node_t *top = NULL, *child = NULL;
 
     if (NULL != node->temp)      /* 首先: 处理孩子节点: 选出下一个孩子节点 */
@@ -887,9 +887,9 @@ static xml_node_t *xml_sprint_next(Stack_t *stack, xml_node_t *node, sprint_t *s
  **           3. 不打印root的兄弟节点
  **作    者: # Qifeng.zou # 2013.02.27 #
  ******************************************************************************/
-int xml_sprint_tree(xml_node_t *root, Stack_t *stack, sprint_t *sp)
+int32_t xml_sprint_tree(xml_node_t *root, Stack_t *stack, sprint_t *sp)
 {
-    int ret = 0, depth = 0;
+    int32_t ret = 0, depth = 0;
     xml_node_t *node = root;
 
     depth = stack_depth(stack);
