@@ -1,5 +1,5 @@
-include switch.mak
-include options.mak
+include $(PROJ)/make/switch.mak
+include $(PROJ)/make/options.mak
 
 CC = gcc
 CFLAGS = -Wall -g

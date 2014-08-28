@@ -1,12 +1,12 @@
  <!-- 爬虫配置信息 -->
 
-<CRAWLER>
-    <SEED>        <!-- 种子配置 -->
-        <ITEM>www.ifeng.com</ITEM>
-        <ITEM>www.sina.com.cn</ITEM>
-    </SEED>
-    <LOG>         <!-- 日志配置 -->
-        <PATH></PATH>         <!-- 日志路径 -->
-        <LEVEL>debug</LEVEL>  <!-- 日志级别: debug, trace, info, warn, error, fatal -->
-    </LOG>
-</CRAWLER>
+<Crawler>
+    <Seed>        <!-- 种子配置 -->
+        <Item>www.ifeng.com</Item>
+        <Item>www.sina.com.cn</Item>
+    </Seed>
+    <Log>         <!-- 日志配置 -->
+        <Path></Path>         <!-- 日志路径 -->
+        <Level>debug</Level>  <!-- 日志级别: debug, trace, info, warn, error, fatal -->
+    </Log>
+</Crawler>

@@ -309,8 +309,8 @@ int thread_pool_destroy(thread_pool_t *tp)
  ******************************************************************************/
 int thread_pool_destroy_ext(thread_pool_t *tp, void (*args_destroy)(void *cntx, void *args), void *cntx)
 {
-	int idx=0, ret=0;
-	thread_worker_t *member = NULL;
+	int idx;
+	thread_worker_t *member;
 
 
 	if (0 != tp->shutdown)

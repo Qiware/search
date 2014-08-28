@@ -1,9 +1,3 @@
-/** #######################################
-    Sha256 Calculator
--- Static Space Used: 64 * 4 Bytes
-###########################################
-*/
-
 #include "sha256.h"
 
 static uint64_t sha256_calc_block(int* DwordBufPtr, int* regPtr);

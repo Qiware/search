@@ -8,7 +8,8 @@
 
 #include "xml_tree.h"
 #include "xml_comm.h"
-#include "dts_comm.h"
+#include "xdt_comm.h"
+#include "xdt_log.h"
 
 
 static int xml_parse_version(xml_fparse_t *fparse);
@@ -62,7 +63,7 @@ xml_node_t *xml_node_creat(xml_node_type_e type)
     node = (xml_node_t*)calloc(1, sizeof(xml_node_t));
     if (NULL == node)
     {
-        LogError("Calloc failed!");
+        log_error("Calloc failed!");
         return NULL;
     }
 
@@ -102,7 +103,7 @@ xml_node_t *xml_node_creat_ext(xml_node_type_e type, const char *name, const cha
     node = (xml_node_t*)calloc(1, sizeof(xml_node_t));
     if (NULL == node)
     {
-        LogError("Calloc failed!");
+        log_error("Calloc failed!");
         return NULL;
     }
 
@@ -151,7 +152,7 @@ int xml_init(xml_tree_t **xml)
     *xml = (xml_tree_t*)calloc(1, sizeof(xml_tree_t));
     if (NULL == *xml)
     {
-        LogError("Calloc failed!");
+        log_error("Calloc failed!");
         return XML_ERR_CALLOC;
     }
 
@@ -160,7 +161,7 @@ int xml_init(xml_tree_t **xml)
     {
         free(*xml);
         *xml = NULL;
-        LogError("Calloc failed!");
+        log_error("Calloc failed!");
         return XML_ERR_CALLOC;
     }
 
@@ -192,7 +193,7 @@ char *xml_fload(const char *fname)
     ret = stat(fname, &fstate);
     if (XML_SUCCESS != ret)
     {
-        LogError("XML file is not exist! [%s]", fname);
+        log_error("XML file is not exist! [%s]", fname);
         return NULL;
     }
 
@@ -200,7 +201,7 @@ char *xml_fload(const char *fname)
     buff = (char *)calloc(1, (fstate.st_size+1)*sizeof(char));
     if (NULL == buff)
     {
-        LogError("Calloc failed!");
+        log_error("Calloc failed!");
         return NULL;
     }
 
@@ -209,7 +210,7 @@ char *xml_fload(const char *fname)
     if (NULL == fp)
     {
         free(buff), buff=NULL;
-        LogError("Open file failed![%s]", fname);
+        log_error("Open file failed![%s]", fname);
         return NULL;
     }
 
@@ -222,7 +223,7 @@ char *xml_fload(const char *fname)
         {
             fclose(fp), fp=NULL;
             free(buff), buff=NULL;
-            LogError("Read file failed!");
+            log_error("Read file failed!");
             return NULL;
         }
         
@@ -274,7 +275,7 @@ int xml_parse(xml_tree_t *xml, Stack_t *stack, const char *str)
                         ret = xml_parse_version(&fparse);
                         if (XML_SUCCESS != ret)
                         {
-                            LogError("XML format is wrong![%-.32s] [%ld]",
+                            log_error("XML format is wrong![%-.32s] [%ld]",
                                 fparse.ptr, fparse.ptr-fparse.str);
                             return XML_ERR_FORMAT;
                         }
@@ -286,7 +287,7 @@ int xml_parse(xml_tree_t *xml, Stack_t *stack, const char *str)
                         ret = xml_parse_note(&fparse);
                         if (XML_SUCCESS != ret)
                         {
-                            LogError("XML format is wrong![%-.32s]", fparse.ptr);
+                            log_error("XML format is wrong![%-.32s]", fparse.ptr);
                             return XML_ERR_FORMAT;
                         }
                         break;
@@ -296,7 +297,7 @@ int xml_parse(xml_tree_t *xml, Stack_t *stack, const char *str)
                         ret = xml_parse_end(stack, &fparse);
                         if (XML_SUCCESS != ret)
                         {
-                            LogError("XML format is wrong![%-.32s] [%ld]",
+                            log_error("XML format is wrong![%-.32s] [%ld]",
                                 fparse.ptr, fparse.ptr-fparse.str);
                             return XML_ERR_FORMAT;
                         }
@@ -307,7 +308,7 @@ int xml_parse(xml_tree_t *xml, Stack_t *stack, const char *str)
                         ret = xml_parse_mark(xml, stack, &fparse);
                         if (XML_SUCCESS != ret)
                         {
-                            LogError("Parse XML failed! [%-.32s] [%ld]",
+                            log_error("Parse XML failed! [%-.32s] [%ld]",
                                 fparse.ptr, fparse.ptr-fparse.str);
                             return XML_ERR_FORMAT;
                         }
@@ -320,15 +321,15 @@ int xml_parse(xml_tree_t *xml, Stack_t *stack, const char *str)
             {
                 if (stack_isempty(stack))
                 {
-                    LogDebug("Parse xml success!");
+                    log_debug("Parse xml success!");
                     return XML_SUCCESS;
                 }
-                LogError("Invalid format! [%-.32s] [%ld]", fparse.ptr, fparse.ptr-fparse.str);
+                log_error("Invalid format! [%-.32s] [%ld]", fparse.ptr, fparse.ptr-fparse.str);
                 return XML_ERR_FORMAT;
             }
             default:            /* 非法字符 */
             {
-                LogError("Invalid format! [%-.32s] [%ld]", fparse.ptr, fparse.ptr-fparse.str);
+                log_error("Invalid format! [%-.32s] [%ld]", fparse.ptr, fparse.ptr-fparse.str);
                 return XML_ERR_FORMAT;
             }
         }
@@ -336,7 +337,7 @@ int xml_parse(xml_tree_t *xml, Stack_t *stack, const char *str)
 
     if (!stack_isempty(stack))
     {
-        LogError("Invalid format! [%-.32s]", fparse.ptr);
+        log_error("Invalid format! [%-.32s]", fparse.ptr);
         return XML_ERR_FORMAT;
     }
     
@@ -364,7 +365,7 @@ static int xml_parse_version(xml_fparse_t *fparse)
     ret = strncmp(fparse->ptr, XML_VERS_BEGIN, XML_VERS_BEGIN_LEN);
     if (0 != ret)
     {
-        LogError("XML format is wrong![%-.32s]", fparse->ptr);
+        log_error("XML format is wrong![%-.32s]", fparse->ptr);
         return XML_ERR_FORMAT;
     }
 
@@ -381,13 +382,13 @@ static int xml_parse_version(xml_fparse_t *fparse)
         while (XmlIsMarkChar(*ptr)) ptr++;
         if (ptr == fparse->ptr)
         {
-            LogError("XML format is wrong![%-.32s]", fparse->ptr);
+            log_error("XML format is wrong![%-.32s]", fparse->ptr);
             return XML_ERR_FORMAT;
         }
         
         if (!XmlIsEqualChar(*ptr))
         {
-            LogError("XML format is wrong![%-.32s]", fparse->ptr);
+            log_error("XML format is wrong![%-.32s]", fparse->ptr);
             return XML_ERR_FORMAT;
         }
         ptr++;
@@ -403,7 +404,7 @@ static int xml_parse_version(xml_fparse_t *fparse)
         }
         else                                /* 不为双/单引号，则格式错误 */
         {
-            LogError("XML format is wrong![%-.32s]", fparse->ptr);
+            log_error("XML format is wrong![%-.32s]", fparse->ptr);
             return XML_ERR_FORMAT;
         }
         ptr++;
@@ -416,7 +417,7 @@ static int xml_parse_version(xml_fparse_t *fparse)
 
         if (*ptr != border)
         {
-            LogError("XML format is wrong![%-.32s]", fparse->ptr);
+            log_error("XML format is wrong![%-.32s]", fparse->ptr);
             return XML_ERR_FORMAT;
         }
         ptr++;  /* 跳过双/单引号 */
@@ -429,14 +430,14 @@ static int xml_parse_version(xml_fparse_t *fparse)
     /* 版本信息以"?>"结束 */
     if (!XmlIsDoubtChar(*fparse->ptr))
     {
-        LogError("XML format is wrong![%-.32s]", fparse->ptr);
+        log_error("XML format is wrong![%-.32s]", fparse->ptr);
         return XML_ERR_FORMAT;
     }
     fparse->ptr++;  /* 跳过? */
     
     if (!XmlIsRPBrackChar(*fparse->ptr))
     {
-        LogError("XML format is wrong![%-.32s]", fparse->ptr);
+        log_error("XML format is wrong![%-.32s]", fparse->ptr);
         return XML_ERR_FORMAT;
     }
     
@@ -464,7 +465,7 @@ static int xml_parse_note(xml_fparse_t *fparse)
     ret = strncmp(fparse->ptr, XML_NOTE_BEGIN, XML_NOTE_BEGIN_LEN);
     if (0 != ret)
     {
-        LogError("XML format is wrong![%-.32s]", fparse->ptr);
+        log_error("XML format is wrong![%-.32s]", fparse->ptr);
         return XML_ERR_FORMAT;
     }
 
@@ -474,7 +475,7 @@ static int xml_parse_note(xml_fparse_t *fparse)
     ptr = strstr(fparse->ptr, XML_NOTE_END1);
     if ((NULL == ptr) || (XML_NOTE_END2 != *(ptr + XML_NOTE_END1_LEN)))
     {
-        LogError("XML format is wrong![%-.32s]", fparse->ptr);
+        log_error("XML format is wrong![%-.32s]", fparse->ptr);
         return XML_ERR_FORMAT;
     }
 
@@ -524,7 +525,7 @@ static int xml_parse_mark(xml_tree_t *xml, Stack_t *stack, xml_fparse_t *fparse)
     ret = xml_mark_get_name(xml, stack, fparse);
     if (XML_SUCCESS != ret)
     {
-        LogError("Get mark name failed!");
+        log_error("Get mark name failed!");
         return ret;
     }
     
@@ -534,7 +535,7 @@ static int xml_parse_mark(xml_tree_t *xml, Stack_t *stack, xml_fparse_t *fparse)
         ret = xml_mark_get_attr(stack, fparse);
         if (XML_SUCCESS != ret)
         {
-            LogError("Get mark attr failed!");
+            log_error("Get mark attr failed!");
             return ret;
         }
     }
@@ -595,7 +596,7 @@ static int xml_parse_end(Stack_t *stack, xml_fparse_t *fparse)
     
     if (!XmlIsRPBrackChar(*ptr))
     {
-        LogError("XML format is wrong![%-.32s]", fparse->ptr);
+        log_error("XML format is wrong![%-.32s]", fparse->ptr);
         return XML_ERR_FORMAT;
     }
 
@@ -605,7 +606,7 @@ static int xml_parse_end(Stack_t *stack, xml_fparse_t *fparse)
     top = (xml_node_t*)stack_gettop(stack);
     if (NULL == top)
     {
-        LogError("Get stack top member failed!");
+        log_error("Get stack top member failed!");
         return XML_ERR_STACK;
     }
 
@@ -613,7 +614,7 @@ static int xml_parse_end(Stack_t *stack, xml_fparse_t *fparse)
     if (len != strlen(top->name)
         || (0 != strncmp(top->name, fparse->ptr, len)))
     {
-        LogError("Mark name is not match![%s][%-.32s]", top->name, fparse->ptr);
+        log_error("Mark name is not match![%s][%-.32s]", top->name, fparse->ptr);
         return XML_ERR_MARK_MISMATCH;
     }
 
@@ -621,7 +622,7 @@ static int xml_parse_end(Stack_t *stack, xml_fparse_t *fparse)
     ret = stack_pop(stack);
     if (XML_SUCCESS != ret)
     {
-        LogError("Pop failed!");
+        log_error("Pop failed!");
         return XML_ERR_STACK;
     }
 
@@ -656,7 +657,7 @@ static int xml_mark_get_name(xml_tree_t *xml, Stack_t *stack, xml_fparse_t *fpar
     node = xml_node_creat(XML_NODE_UNKNOWN);
     if (NULL == node)
     {
-        LogError("Create xml node failed!");
+        log_error("Create xml node failed!");
         return XML_ERR_CREAT_NODE;
     }
 
@@ -699,7 +700,7 @@ static int xml_mark_get_name(xml_tree_t *xml, Stack_t *stack, xml_fparse_t *fpar
     /* 4.判断标签名边界是否合法 */
     if (!XmlIsMarkBorder(*ptr))
     {
-        LogError("XML format is wrong!\n[%-32.32s]", fparse->ptr);
+        log_error("XML format is wrong!\n[%-32.32s]", fparse->ptr);
         return XML_ERR_FORMAT;
     }
 
@@ -709,7 +710,7 @@ static int xml_mark_get_name(xml_tree_t *xml, Stack_t *stack, xml_fparse_t *fpar
     node->name = calloc(1, (len+1)*sizeof(char));
     if (NULL == node->name)
     {
-        LogError("Calloc failed!");
+        log_error("Calloc failed!");
         return XML_ERR_CALLOC;
     }
     strncpy(node->name, fparse->ptr, len);
@@ -718,7 +719,7 @@ static int xml_mark_get_name(xml_tree_t *xml, Stack_t *stack, xml_fparse_t *fpar
     ret = stack_push(stack, (void*)node);
     if (XML_SUCCESS != ret)
     {
-        LogError("Stack push failed!");
+        log_error("Stack push failed!");
         return XML_ERR_STACK;
     }
 
@@ -778,12 +779,12 @@ static int xml_mark_get_attr(Stack_t *stack, xml_fparse_t *fparse)
 {
     char border = '"';
     xml_node_t *node = NULL, *top = NULL;
-    int len = 0, errflg = 0, size = 0, ret = 0;
+    int len = 0, errflg = 0;
     const char *ptr = fparse->ptr;
 #if defined(__XML_ESC_PARSE__)
+    int ret, size;
     xml_esc_split_t split;
     const xml_esc_t *esc = NULL;
-
 
     memset(&split, 0, sizeof(split));
 #endif /*__XML_ESC_PARSE__*/
@@ -792,7 +793,7 @@ static int xml_mark_get_attr(Stack_t *stack, xml_fparse_t *fparse)
     top = (xml_node_t*)stack_gettop(stack);
     if (NULL == top)
     {
-        LogError("Get stack top failed!");
+        log_error("Get stack top failed!");
         return XML_ERR_STACK;
     }
 
@@ -803,7 +804,7 @@ static int xml_mark_get_attr(Stack_t *stack, xml_fparse_t *fparse)
         node = xml_node_creat(XML_NODE_ATTR);
         if (NULL == node)
         {
-            LogError("Create xml node failed!");
+            log_error("Create xml node failed!");
             return XML_ERR_CREAT_NODE;
         }
 
@@ -818,7 +819,7 @@ static int xml_mark_get_attr(Stack_t *stack, xml_fparse_t *fparse)
         if (NULL == node->name)
         {
             errflg = 1;
-            LogError("Calloc failed!");
+            log_error("Calloc failed!");
             break;
         }
 
@@ -830,7 +831,7 @@ static int xml_mark_get_attr(Stack_t *stack, xml_fparse_t *fparse)
         if (!XmlIsEqualChar(*ptr))                      /* 不为等号，则格式错误 */
         {
             errflg = 1;
-            LogError("Attribute format is incorrect![%-.32s]", fparse->ptr);
+            log_error("Attribute format is incorrect![%-.32s]", fparse->ptr);
             break;
         }
         ptr++;                                  /* 跳过"=" */
@@ -844,7 +845,7 @@ static int xml_mark_get_attr(Stack_t *stack, xml_fparse_t *fparse)
         else                  /* 不为 双/单 引号，则格式错误 */
         {
             errflg = 1;
-            LogError("XML format is wrong![%-.32s]", fparse->ptr);
+            log_error("XML format is wrong![%-.32s]", fparse->ptr);
             break;
         }
 
@@ -863,7 +864,7 @@ static int xml_mark_get_attr(Stack_t *stack, xml_fparse_t *fparse)
                 if (XML_SUCCESS != ret)
                 {
                     errflg = 1;
-                    LogError("Parse forwad string failed!");
+                    log_error("Parse forwad string failed!");
                     break;
                 }
 
@@ -880,7 +881,7 @@ static int xml_mark_get_attr(Stack_t *stack, xml_fparse_t *fparse)
         if (*ptr != border)
         {
             errflg = 1;
-            LogError("Mismatch border [%c]![%-.32s]", border, fparse->ptr);
+            log_error("Mismatch border [%c]![%-.32s]", border, fparse->ptr);
             break;
         }
 
@@ -897,7 +898,7 @@ static int xml_mark_get_attr(Stack_t *stack, xml_fparse_t *fparse)
             if (NULL == node->value)
             {
                 errflg = 1;
-                LogError("Alloc memory failed!");
+                log_error("Alloc memory failed!");
                 break;
             }
 
@@ -914,7 +915,7 @@ static int xml_mark_get_attr(Stack_t *stack, xml_fparse_t *fparse)
             if (NULL == node->value)
             {
                 errflg = 1;
-                LogError("Calloc failed!");
+                log_error("Calloc failed!");
                 break;
             }
 
@@ -1014,7 +1015,7 @@ static int xml_mark_has_value(xml_fparse_t *fparse)
         return true;
     }
     
-    LogError("XML format is wrong![%-.32s]", fparse->ptr);
+    log_error("XML format is wrong![%-.32s]", fparse->ptr);
     return XML_ERR_FORMAT;
 }
 
@@ -1032,10 +1033,11 @@ static int xml_mark_has_value(xml_fparse_t *fparse)
  ******************************************************************************/
 static int xml_mark_get_value(Stack_t *stack, xml_fparse_t *fparse)
 {
-    int ret = 0, len = 0, size = 0;
+    int len = 0, size = 0;
     const char *p1=NULL, *p2=NULL;
     xml_node_t *current = NULL;
 #if defined(__XML_ESC_PARSE__)
+    int ret;
     const xml_esc_t *esc = NULL;
     xml_esc_split_t split;
 
@@ -1066,7 +1068,7 @@ static int xml_mark_get_value(Stack_t *stack, xml_fparse_t *fparse)
             if (XML_SUCCESS != ret)
             {
                 xml_esc_free(&split);
-                LogError("Parse forwad string failed!");
+                log_error("Parse forwad string failed!");
                 return XML_FAILED;
             }
             
@@ -1085,7 +1087,7 @@ static int xml_mark_get_value(Stack_t *stack, xml_fparse_t *fparse)
     #if defined(__XML_ESC_PARSE__)
         xml_esc_free(&split);
     #endif /*__XML_ESC_PARSE__*/
-        LogError("XML format is wrong! MarkName:[%s]", current->name);
+        log_error("XML format is wrong! MarkName:[%s]", current->name);
         return XML_ERR_FORMAT;
     }
     
@@ -1107,7 +1109,7 @@ static int xml_mark_get_value(Stack_t *stack, xml_fparse_t *fparse)
     #if defined(__XML_ESC_PARSE__)
         xml_esc_free(&split);
     #endif /*__XML_ESC_PARSE__*/
-        LogError("Calloc failed!");
+        log_error("Calloc failed!");
         return XML_ERR_CALLOC;
     }
 
@@ -1136,7 +1138,7 @@ static int xml_mark_get_value(Stack_t *stack, xml_fparse_t *fparse)
         return XML_SUCCESS;
     }
 
-    LogError("XML format is wrong: Node have child and value at same time!");
+    log_error("XML format is wrong: Node have child and value at same time!");
     return XML_ERR_FORMAT;
 #endif /*__XML_OCOV__*/
 
@@ -1243,13 +1245,13 @@ static xml_node_t *xml_fprint_next(Stack_t *stack, xml_node_t *node, FILE *fp)
         ret = stack_pop(stack);
         if (XML_SUCCESS != ret)
         {
-            LogError("Stack pop failed!");
+            log_error("Stack pop failed!");
             return NULL;
         }
         
         if (stack_isempty(stack))
         {
-            LogError("Compelte fprint!");
+            log_error("Compelte fprint!");
             return NULL;
         }
         
@@ -1262,7 +1264,7 @@ static xml_node_t *xml_fprint_next(Stack_t *stack, xml_node_t *node, FILE *fp)
             ret = stack_pop(stack);
             if (XML_SUCCESS != ret)
             {
-                LogError("Stack pop failed!");
+                log_error("Stack pop failed!");
                 return NULL;
             }
         
@@ -1316,7 +1318,7 @@ int xml_fprint_tree(xml_node_t *root, Stack_t *stack, FILE *fp)
     depth = stack_depth(stack);
     if (0 != depth)
     {
-        LogError("Stack depth must empty. depth:[%d]", depth);
+        log_error("Stack depth must empty. depth:[%d]", depth);
         return XML_ERR_STACK;
     }
 
@@ -1327,7 +1329,7 @@ int xml_fprint_tree(xml_node_t *root, Stack_t *stack, FILE *fp)
         ret = stack_push(stack, node);
         if (XML_SUCCESS != ret)
         {
-            LogError("Stack push failed!");
+            log_error("Stack push failed!");
             return XML_ERR_STACK;
         }
         
@@ -1418,7 +1420,7 @@ xml_node_t *xml_free_next(Stack_t *stack, xml_node_t *current)
         ret = stack_pop(stack);
         if (XML_SUCCESS != ret)
         {
-            LogError("Stack pop failed!");
+            log_error("Stack pop failed!");
             return NULL;
         }
         
@@ -1438,7 +1440,7 @@ xml_node_t *xml_free_next(Stack_t *stack, xml_node_t *current)
             ret = stack_pop(stack);
             if (XML_SUCCESS != ret)
             {
-                LogError("Stack pop failed!");
+                log_error("Stack pop failed!");
                 return NULL;
             }
             
@@ -1564,13 +1566,13 @@ static xml_node_t *xml_sprint_next(Stack_t *stack, xml_node_t *node, sprint_t *s
         ret = stack_pop(stack);
         if (XML_SUCCESS != ret)
         {
-            LogError("Stack pop failed!");
+            log_error("Stack pop failed!");
             return NULL;
         }
         
         if (stack_isempty(stack))
         {
-            LogError("Compelte fprint!");
+            log_error("Compelte fprint!");
             return NULL;
         }
         
@@ -1583,7 +1585,7 @@ static xml_node_t *xml_sprint_next(Stack_t *stack, xml_node_t *node, sprint_t *s
             ret = stack_pop(stack);
             if (XML_SUCCESS != ret)
             {
-                LogError("Stack pop failed!");
+                log_error("Stack pop failed!");
                 return NULL;
             }
         
@@ -1639,7 +1641,7 @@ int xml_sprint_tree(xml_node_t *root, Stack_t *stack, sprint_t *sp)
     depth = stack_depth(stack);
     if (0 != depth)
     {
-        LogError("Stack depth must empty. depth:[%d]", depth);
+        log_error("Stack depth must empty. depth:[%d]", depth);
         return XML_ERR_STACK;
     }
 
@@ -1650,7 +1652,7 @@ int xml_sprint_tree(xml_node_t *root, Stack_t *stack, sprint_t *sp)
         ret = stack_push(stack, node);
         if (XML_SUCCESS != ret)
         {
-            LogError("Stack push failed!");
+            log_error("Stack push failed!");
             return XML_ERR_STACK;
         }
         
@@ -1675,7 +1677,7 @@ int xml_sprint_tree(xml_node_t *root, Stack_t *stack, sprint_t *sp)
 
     if (!stack_isempty(stack))
     {
-        LogError("Stack is not empty!");
+        log_error("Stack is not empty!");
         return XML_ERR_STACK;
     }
     return XML_SUCCESS;
@@ -1807,13 +1809,13 @@ static xml_node_t *xml_pack_next(Stack_t *stack, xml_node_t *node, sprint_t *sp)
         ret = stack_pop(stack);
         if (XML_SUCCESS != ret)
         {
-            LogError("Stack pop failed!");
+            log_error("Stack pop failed!");
             return NULL;
         }
         
         if (stack_isempty(stack))
         {
-            LogError("Compelte fprint!");
+            log_error("Compelte fprint!");
             return NULL;
         }
         
@@ -1826,7 +1828,7 @@ static xml_node_t *xml_pack_next(Stack_t *stack, xml_node_t *node, sprint_t *sp)
             ret = stack_pop(stack);
             if (XML_SUCCESS != ret)
             {
-                LogError("Stack pop failed!");
+                log_error("Stack pop failed!");
                 return NULL;
             }
         
@@ -1874,7 +1876,7 @@ int xml_pack_tree(xml_node_t *root, Stack_t *stack, sprint_t *sp)
     depth = stack_depth(stack);
     if (0 != depth)
     {
-        LogError("Stack depth must empty. depth:[%d]", depth);
+        log_error("Stack depth must empty. depth:[%d]", depth);
         return XML_ERR_STACK;
     }
 
@@ -1885,7 +1887,7 @@ int xml_pack_tree(xml_node_t *root, Stack_t *stack, sprint_t *sp)
         ret = stack_push(stack, node);
         if (XML_SUCCESS != ret)
         {
-            LogError("Stack push failed!");
+            log_error("Stack push failed!");
             return XML_ERR_STACK;
         }
         
@@ -1910,7 +1912,7 @@ int xml_pack_tree(xml_node_t *root, Stack_t *stack, sprint_t *sp)
 
     if (!stack_isempty(stack))
     {
-        LogError("Stack is not empty!");
+        log_error("Stack is not empty!");
         return XML_ERR_STACK;
     }
     return XML_SUCCESS;
@@ -1936,7 +1938,7 @@ int xml_delete_child(xml_node_t *node, xml_node_t *child)
 
     if (node != child->parent)
     {
-        LogError("Parent node is not right!");
+        log_error("Parent node is not right!");
         return -1;
     }
     
@@ -2091,14 +2093,14 @@ static xml_node_t *xml_node_next_length(Stack_t *stack, xml_node_t *node, int *l
         if (XML_SUCCESS != ret)
         {
             *length += length2;
-            LogError("Stack pop failed!");
+            log_error("Stack pop failed!");
             return NULL;
         }
         
         if (stack_isempty(stack))
         {
             *length += length2;
-            LogError("Compelte fprint!");
+            log_error("Compelte fprint!");
             return NULL;
         }
         
@@ -2112,7 +2114,7 @@ static xml_node_t *xml_node_next_length(Stack_t *stack, xml_node_t *node, int *l
             if (XML_SUCCESS != ret)
             {
                 *length += length2;
-                LogError("Stack pop failed!");
+                log_error("Stack pop failed!");
                 return NULL;
             }
         
@@ -2166,7 +2168,7 @@ int _xml_node_length(xml_node_t *root, Stack_t *stack)
     depth = stack_depth(stack);
     if (0 != depth)
     {
-        LogError("Stack depth must empty. depth:[%d]", depth);
+        log_error("Stack depth must empty. depth:[%d]", depth);
         return XML_ERR_STACK;
     }
 
@@ -2177,7 +2179,7 @@ int _xml_node_length(xml_node_t *root, Stack_t *stack)
         ret = stack_push(stack, node);
         if (XML_SUCCESS != ret)
         {
-            LogError("Stack push failed!");
+            log_error("Stack push failed!");
             return XML_ERR_STACK;
         }
         
@@ -2338,14 +2340,14 @@ static xml_node_t *xml_pack_next_length(Stack_t *stack, xml_node_t *node, int *l
         if (XML_SUCCESS != ret)
         {
             *length += length2;
-            LogError("Stack pop failed!");
+            log_error("Stack pop failed!");
             return NULL;
         }
         
         if (stack_isempty(stack))
         {
             *length += length2;
-            LogError("Compelte fprint!");
+            log_error("Compelte fprint!");
             return NULL;
         }
         
@@ -2359,7 +2361,7 @@ static xml_node_t *xml_pack_next_length(Stack_t *stack, xml_node_t *node, int *l
             if (XML_SUCCESS != ret)
             {
                 *length += length2;
-                LogError("Stack pop failed!");
+                log_error("Stack pop failed!");
                 return NULL;
             }
         
@@ -2405,7 +2407,7 @@ int xml_pack_node_length(xml_node_t *root, Stack_t *stack)
     depth = stack_depth(stack);
     if (0 != depth)
     {
-        LogError("Stack depth must empty. depth:[%d]", depth);
+        log_error("Stack depth must empty. depth:[%d]", depth);
         return XML_ERR_STACK;
     }
 
@@ -2417,7 +2419,7 @@ int xml_pack_node_length(xml_node_t *root, Stack_t *stack)
         ret = stack_push(stack, node);
         if (XML_SUCCESS != ret)
         {
-            LogError("Stack push failed!");
+            log_error("Stack push failed!");
             return XML_ERR_STACK;
         }
         
@@ -2598,7 +2600,7 @@ static int xml_esc_split(const xml_esc_t *esc,
     node = (xml_esc_node_t *)calloc(1, sizeof(xml_esc_node_t));
     if (NULL == node)
     {
-        LogError("Calloc memory failed!");
+        log_error("Calloc memory failed!");
         return XML_ERR_CALLOC;
     }
 

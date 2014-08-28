@@ -10,7 +10,7 @@
 #include <memory.h>
 
 #include "stack.h"
-#include "xds_comm.h"
+#include "xdt_comm.h"
 
 #define AVL_RH    (-1)              /* 右子树增高 */
 #define AVL_EH    (0)               /* 高度未发生变化 */

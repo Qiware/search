@@ -1,3 +1,7 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
 #include "list.h"
 
 /******************************************************************************
@@ -19,7 +23,6 @@ int list_insert_head(list_t *list, list_node_t *node)
     {
         list->head = node;
         list->tail = node;
-        node->prev = node;
         node->next = node;
 
         list->num = 1;

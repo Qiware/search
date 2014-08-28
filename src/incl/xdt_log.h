@@ -7,6 +7,7 @@
  ******************************************************************************/
 #if !defined(__XDT_LOG_H__)
 #define __XDT_LOG_H__
+#include "xdt_comm.h"
 
 /* 错误级别: 依次递减 */
 #define XDT_LOG_LEVEL_FATAL     (0x0001)    /* 严重级别 */
@@ -33,6 +34,7 @@ void xdt_log_core(
         const char *fname, int lineno,
         const char *fmt, ...);
 
+#if 0
 /* 请使用如下接口 */
 #define log_fatal(log, ...) /* 撰写严重日志 */\
     if ((log)->level & XDR_LOG_LEVEL_FATAL) \
@@ -52,5 +54,11 @@ void xdt_log_core(
 #define log_trace(log, ...) /* 撰写跟踪日志 */\
     if ((log)->level & XDR_LOG_LEVEL_TRACE) \
         xdt_log_core(XDR_LOG_LEVEL_TRACE, __FILE__, __LINE__, __VA_ARGS__)
-
+#else
+#define log_fatal(...)
+#define log_error(...)
+#define log_warn(...)
+#define log_info(...)
+#define log_debug(...)
+#endif
 #endif /*__XDT_LOG_H__*/

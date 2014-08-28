@@ -245,8 +245,7 @@ rbt_node_t *rbt_creat_node(rbt_tree_t *tree, int key, int color, int type, rbt_n
  ******************************************************************************/
 int rbt_insert(rbt_tree_t *tree, int key)
 {
-    rbt_node_t *node = tree->root,
-              *add = NULL, *parent = NULL;
+    rbt_node_t *node = tree->root, *add = NULL;
 
     /* 1. 当根节点为空时，直接添加 */
     if(tree->sentinel == tree->root)
@@ -983,7 +982,7 @@ const rbt_node_t *rbt_search(const rbt_tree_t *tree, int key)
 int rbt_destroy(rbt_tree_t **tree)
 {
     Stack_t _stack, *stack = &_stack;
-    rbt_node_t *node = (*tree)->root, *parent = NULL, *top = NULL;
+    rbt_node_t *node = (*tree)->root, *parent = NULL;
 
     if((*tree)->sentinel == node) return 0;
 

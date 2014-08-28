@@ -18,6 +18,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
+
 typedef int bool;
 #define false (0)
 #define true  (1)
@@ -38,7 +39,6 @@ extern int Rename(const char *oldpath, const char *newpath);
 extern int Open(const char *fpath, int flags, mode_t mode);
 #define Close(fd)  \
 { \
-    LogDebug("Close(%d)", fd); \
     if(fd > 0) { close(fd), fd = -1; } \
 }
 #define fClose(fp) {fclose(fp), fp = NULL;}

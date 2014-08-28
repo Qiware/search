@@ -1,3 +1,7 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
 #include "list2.h"
 
 /******************************************************************************
@@ -76,7 +80,7 @@ list2_node_t *list2_delete_head(list2_t *list)
 
     list->head = list->head->next;
     tail->next = list->head;
-    list->prev = tail;
+    list->head->prev = tail;
 
     --list->num;
     return curr;
@@ -97,11 +101,13 @@ list2_node_t *list2_delete_head(list2_t *list)
  ******************************************************************************/
 int list2_insert_tail(list2_t *list, list2_node_t *node)
 {
+    list2_node_t *tail;
+
     /* 1. 链表为空 */
-    if (NULL == list->tail)
+    if (NULL == list->head)
     {
         list->head = node;
-        list->tail = node;
+        list->head->prev = node;
         node->prev = node;
         node->next = node;
 
@@ -109,10 +115,10 @@ int list2_insert_tail(list2_t *list, list2_node_t *node)
         return 0;
     }
 
+    tail = list->head->prev;
     /* 2. 链表不空时 */
-    list->tail->next = node;
-    node->prev = list->tail;
-    list->tail = node;
+    tail->next = node;
+    node->prev = tail;
     node->next = list->head;
     list->head->prev = node;
 
@@ -146,7 +152,6 @@ list2_node_t *list2_delete_tail(list2_t *list)
     {
         tail = list->head;
 
-        list->tail = NULL;
         list->head = NULL;
         list->num = 0;
         return tail;
@@ -177,7 +182,7 @@ list2_node_t *list2_delete_tail(list2_t *list)
 void list2_assert(list2_t *list)
 {
     int num = 0;
-    list2_node_t *curr = list->head;
+    list2_node_t *curr = list->head, *tail;
 
     if (NULL == curr)
     {

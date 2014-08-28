@@ -1,4 +1,5 @@
 #include "slab.h"
+#include "xdt_log.h"
 
 #define SLAB_PAGE_MASK   3
 #define SLAB_PAGE        0
@@ -135,7 +136,7 @@ void slab_init(slab_pool_t *pool)
         pool->pages->slab = pages;
     }
 
-    LogInfo("start:%p end:%p size:%d pages:%d\n",
+    log_info("start:%p end:%p size:%d pages:%d\n",
         pool->start, pool->end, pool->end - pool->start, pages);
 }
 
@@ -437,7 +438,7 @@ void slab_free(slab_pool_t *pool, void *p)
 
     if ((u_char *) p < pool->start || (u_char *) p > pool->end)
     {
-        LogError("Outside of pool. [%p]", p);
+        log_error("Outside of pool. [%p]", p);
         goto fail;
     }
 
@@ -602,13 +603,13 @@ void slab_free(slab_pool_t *pool, void *p)
 
             if (SLAB_PAGE_FREE == slab)
             {
-                LogError("Page is already free");
+                log_error("Page is already free");
                 goto fail;
             }
 
             if (SLAB_PAGE_BUSY == slab)
             {
-                LogError("Pointer to wrong page");
+                log_error("Pointer to wrong page");
                 goto fail;
             }
 
@@ -635,13 +636,13 @@ done:
 
 wrong_chunk:
 
-    LogError("Pointer to wrong chunk");
+    log_error("Pointer to wrong chunk");
 
     goto fail;
 
 chunk_already_free:
 
-    LogError("Chunk is already free");
+    log_error("Chunk is already free");
 
 fail:
 
@@ -707,7 +708,7 @@ static slab_page_t *slab_alloc_pages(slab_pool_t *pool, unsigned int pages)
         }
     }
 
-    LogError("Not enough memory!");
+    log_error("Not enough memory!");
 
     return NULL;
 }
@@ -758,13 +759,13 @@ static void slab_free_pages(slab_pool_t *pool, slab_page_t *page, unsigned int p
  * зЂвт: 
  * зїеп: # Qifeng.zou # 2013.08.15 #
  ******************************************************************************/
-static slab_pool_t *eslab_add(eslab_pool_t *esp, size_t size);
+static slab_pool_t *eslab_add(eslab_pool_t *eslab, size_t size);
 
 /******************************************************************************
  ** Name : eslab_init
  ** Func : Initialize expand slab pool.
  ** Input: 
- **     esp: Expand slab pool
+ **     eslab: Expand slab pool
  **     size: Size(bytes) of new slab pool.
  **Output: NONE
  **Return: 0:success !0:failed
@@ -774,18 +775,18 @@ static slab_pool_t *eslab_add(eslab_pool_t *esp, size_t size);
  ** Note : 
  **Author: # Qifeng.zou # 2013.08.15 #
  ******************************************************************************/
-int eslab_init(eslab_pool_t *esp, size_t size)
+int eslab_init(eslab_pool_t *eslab, size_t size)
 {
     slab_pool_t *slab = NULL;
     
-    eslab_destroy(esp);
+    eslab_destroy(eslab);
 
-    esp->inc_size = size;
+    eslab->inc_size = size;
     
-    slab = eslab_add(esp, size);
+    slab = eslab_add(eslab, size);
     if (NULL == slab)
     {
-        LogError("Add slab node failed!");
+        log_error("Add slab node failed!");
         return -1;
     }
     return 0;
@@ -795,17 +796,17 @@ int eslab_init(eslab_pool_t *esp, size_t size)
  ** Name : eslab_destroy
  ** Func : Destory expand slab pool.
  ** Input: 
- **     esp: Expand slab pool
+ **     eslab: Expand slab pool
  **Output: NONE
  **Return: 0:success !0:failed
  ** Note : 
  **Author: # Qifeng.zou # 2013.08.15 #
  ******************************************************************************/
-int eslab_destroy(eslab_pool_t *esp)
+int eslab_destroy(eslab_pool_t *eslab)
 {
     eslab_node_t *node = NULL, *next = NULL;
 
-    node = esp->node;
+    node = eslab->node;
     while (NULL != node)
     {
         next = node->next;
@@ -823,14 +824,14 @@ int eslab_destroy(eslab_pool_t *esp)
  ** Name : eslab_add
  ** Func : Add into expand slab pool.
  ** Input: 
- **     esp: Expand slab pool
+ **     eslab: Expand slab pool
  **     size: Size of new slab pool.
  **Output: NONE
  **Return: Address of new slab.
  ** Note : 
  **Author: # Qifeng.zou # 2013.08.15 #
  ******************************************************************************/
-static slab_pool_t *eslab_add(eslab_pool_t *esp, size_t size)
+static slab_pool_t *eslab_add(eslab_pool_t *eslab, size_t size)
 {
     void *addr = NULL;
     eslab_node_t *node = NULL, *next = NULL;
@@ -839,7 +840,7 @@ static slab_pool_t *eslab_add(eslab_pool_t *esp, size_t size)
     node = calloc(1, sizeof(eslab_node_t));
     if (NULL == node)
     {
-        LogError("Alloc memory failed!");
+        log_error("Alloc memory failed!");
         return NULL;
     }
 
@@ -848,7 +849,7 @@ static slab_pool_t *eslab_add(eslab_pool_t *esp, size_t size)
     if (NULL == addr)
     {
         free(node), node=NULL;
-        LogError("Alloc memory failed!");
+        log_error("Alloc memory failed!");
         return NULL;
     }
 
@@ -857,11 +858,11 @@ static slab_pool_t *eslab_add(eslab_pool_t *esp, size_t size)
     slab_init(node->sp);
 
     /* 3. Add node into link */
-    next = esp->node;
-    esp->node = node;
+    next = eslab->node;
+    eslab->node = node;
     node->next = next;
 
-    esp->count++;
+    eslab->count++;
 
     return (slab_pool_t *)addr;
 }
@@ -870,21 +871,20 @@ static slab_pool_t *eslab_add(eslab_pool_t *esp, size_t size)
  ** Name : eslab_alloc
  ** Func : Alloc memory from slab pool.
  ** Input: 
- **     esp: Expand slab pool
+ **     eslab: Expand slab pool
  **     size: Size of new slab pool.
  **Output: NONE
  **Return: Memory address
  ** Note : 
  **Author: # Qifeng.zou # 2013.08.15 #
  ******************************************************************************/
-void *eslab_alloc(eslab_pool_t *esp, size_t size)
+void *eslab_alloc(eslab_pool_t *eslab, size_t size)
 {
     void *p = NULL;
-    int ret = 0, block = 0, count = 0;
+    int block = 0, count = 0;
     size_t alloc_size = 0;
     slab_pool_t *slab = NULL;
-    eslab_node_t *node = esp->node, *prev = NULL, *next = NULL;
-
+    eslab_node_t *node = eslab->node, *prev, *next;
 
     /* 1. Search and alloc */
     while (NULL != node)
@@ -902,22 +902,21 @@ void *eslab_alloc(eslab_pool_t *esp, size_t size)
         count++;
     }
 
-    LogInfo("Not enough memory! [%d]", count);
-    abort();
+    log_info("Not enough memory! [%d]", count);
 
     /* 2. Add node into link */
-    block = size / esp->inc_size;
-    if (size % esp->inc_size)
+    block = size / eslab->inc_size;
+    if (size % eslab->inc_size)
     {
         block++;
     }
 
-    alloc_size = (block * esp->inc_size + SLAB_EXTRA_SIZE);
+    alloc_size = (block * eslab->inc_size + SLAB_EXTRA_SIZE);
     
-    slab = eslab_add(esp, alloc_size);
+    slab = eslab_add(eslab, alloc_size);
     if (NULL == slab)
     {
-        LogError("Add slab node failed!");
+        log_error("Add slab node failed!");
         return NULL;
     }
 
@@ -929,16 +928,16 @@ void *eslab_alloc(eslab_pool_t *esp, size_t size)
  ** Name : eslab_free
  ** Func : Free special memory from expand slab pool.
  ** Input: 
- **     esp: Expadnd slab pool
+ **     eslab: Expadnd slab pool
  **     p: Needed to be free.
  **Output: NONE
  **Return: 0:success !0:failed
  ** Note : 
  **Author: # Qifeng.zou # 2013.08.15 #
  ******************************************************************************/
-int eslab_free(eslab_pool_t *esp, void *p)
+int eslab_free(eslab_pool_t *eslab, void *p)
 {
-    eslab_node_t *node = esp->node, *next = NULL;
+    eslab_node_t *node = eslab->node, *next = NULL;
 
     while (NULL != node)
     {

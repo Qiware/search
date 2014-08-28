@@ -614,7 +614,7 @@ int avl_left_balance(avl_tree_t *tree, avl_node_t *node)
  ******************************************************************************/
 const avl_node_t *avl_search(const avl_tree_t *tree, int key)
 {
-    const avl_node_t *node = tree->root, *parent = NULL;
+    const avl_node_t *node = tree->root;
 
     while (NULL != node)
     {
@@ -1257,7 +1257,7 @@ void avl_print_tail(avl_node_t *node, int depth)
  ******************************************************************************/
 int _avl_print(avl_node_t *root, Stack_t *stack)
 {
-    int ret = 0, depth = 0;
+    int depth = 0;
     avl_node_t *node = root;
 
 
