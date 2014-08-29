@@ -1,5 +1,5 @@
 #include "slab.h"
-#include "xdt_log.h"
+#include "log.h"
 
 #define SLAB_PAGE_MASK   3
 #define SLAB_PAGE        0

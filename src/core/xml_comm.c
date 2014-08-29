@@ -8,8 +8,8 @@
 
 #include "xml_tree.h"
 #include "xml_comm.h"
-#include "xdt_comm.h"
-#include "xdt_log.h"
+#include "common.h"
+#include "log.h"
 
 static int32_t xml_parse_version(xml_fparse_t *fparse);
 static int32_t xml_parse_note(xml_fparse_t *fparse);

@@ -10,7 +10,7 @@ SRC_LIST = avl_tree.c \
 			list2.c \
 			stack.c \
 			queue.c \
-			xdt_comm.c \
+			common.c \
 			sha256.c \
 			slab.c \
 			shm_slab.c \

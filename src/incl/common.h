@@ -1,5 +1,5 @@
-#if !defined(__XDT_COMM_H__)
-#define __XDT_COMM_H__
+#if !defined(__COMMON_H__)
+#define __COMMON_H__
 
 #include <stdio.h>
 #include <fcntl.h>
@@ -80,4 +80,4 @@ int _try_flock(int fd, int type, int whence, int offset, int len);
 #define proc_unlock_ex(fd, idx) _flock(fd, F_UNLCK, SEEK_SET, idx, 1)   /* 解锁(单字节) */
 
 void sha256_digest(char *str, unsigned int len, unsigned char digest[32]);
-#endif /*__XDT_COMM_H__*/
+#endif /*__COMMON_H__*/

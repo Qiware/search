@@ -1,5 +1,5 @@
 #include "shm_slab.h"
-#include "xdt_log.h"
+#include "log.h"
 
 /* ∫Í∂®“Â */
 #define SHM_SLAB_PAGE_SIZE  (4096)  /* “≥≥ﬂ¥Á */

@@ -8,8 +8,8 @@
 
 #include "xml_tree.h"
 #include "xml_comm.h"
-#include "xdt_comm.h"
-#include "xdt_log.h"
+#include "common.h"
+#include "log.h"
 
 
 /* 是否为根路径 */
