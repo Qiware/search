@@ -1,3 +1,18 @@
+/******************************************************************************
+ ** Coypright(C) 2013-2014 Xundao technology Co., Ltd
+ **
+ ** 文件名: xml_comm.c
+ ** 版本号: 1.0
+ ** 描  述: XML格式的解析
+ **         解析XML格式的文件、字串: 在此主要使用的是压栈的思路，其效率比使用递
+ **         归算法的处理思路效率更高.对比数据如下:
+ **         1. 创建XML: 高5%~10%
+ **         2. 查找效率: 高30%左右
+ **         3. 释放效率: 高20%左右
+ ** 作  者: # Qifeng.zou # 2013.02.18 #
+ ** 修  改:
+ **     1. # 增加转义字符的处理 # Qifeng.zou # 2014.01.06 #
+ ******************************************************************************/
 #include <stdio.h>
 #include <ctype.h>
 #include <errno.h>
@@ -11,24 +26,24 @@
 #include "common.h"
 #include "log.h"
 
-static int32_t xml_parse_version(xml_fparse_t *fparse);
-static int32_t xml_parse_note(xml_fparse_t *fparse);
-static int32_t xml_parse_mark(xml_tree_t *xml, Stack_t *stack, xml_fparse_t *fparse);
-static int32_t xml_parse_end(Stack_t *stack, xml_fparse_t *fparse);
+static int xml_parse_version(xml_fparse_t *fparse);
+static int xml_parse_note(xml_fparse_t *fparse);
+static int xml_parse_mark(xml_tree_t *xml, Stack_t *stack, xml_fparse_t *fparse);
+static int xml_parse_end(Stack_t *stack, xml_fparse_t *fparse);
 
-static int32_t xml_mark_get_name(xml_tree_t *xml, Stack_t *stack, xml_fparse_t *fparse);
-static int32_t xml_mark_has_attr(xml_fparse_t *fparse);
-static int32_t xml_mark_get_attr(Stack_t *stack, xml_fparse_t *fparse);
-static int32_t xml_mark_is_end(xml_fparse_t *fparse);
-static int32_t xml_mark_has_value(xml_fparse_t *fparse);
-static int32_t xml_mark_get_value(Stack_t *stack, xml_fparse_t *fparse);
+static int xml_mark_get_name(xml_tree_t *xml, Stack_t *stack, xml_fparse_t *fparse);
+static int xml_mark_has_attr(xml_fparse_t *fparse);
+static int xml_mark_get_attr(Stack_t *stack, xml_fparse_t *fparse);
+static int xml_mark_is_end(xml_fparse_t *fparse);
+static int xml_mark_has_value(xml_fparse_t *fparse);
+static int xml_mark_get_value(Stack_t *stack, xml_fparse_t *fparse);
 
 #if defined(__XML_ESC_PARSE__)
 static const xml_esc_t *xml_esc_get(const char *str);
-static int32_t xml_esc_free(xml_esc_split_t *split);
-static int32_t xml_esc_size(const xml_esc_split_t *split);
-static int32_t xml_esc_merge(const xml_esc_split_t *sp, char *dst);
-static int32_t xml_esc_split(const xml_esc_t *esc, const char *str, int32_t len, xml_esc_split_t *split);
+static int xml_esc_free(xml_esc_split_t *split);
+static int xml_esc_size(const xml_esc_split_t *split);
+static int xml_esc_merge(const xml_esc_split_t *sp, char *dst);
+static int xml_esc_split(const xml_esc_t *esc, const char *str, int len, xml_esc_split_t *split);
 
 /* 转义字串对应的长度: 必须与xml_esc_e的顺序一致 */
 static const xml_esc_t g_xml_esc_str[] =
@@ -95,7 +110,7 @@ xml_node_t *xml_node_creat(xml_node_type_e type)
  ******************************************************************************/
 xml_node_t *xml_node_creat_ext(xml_node_type_e type, const char *name, const char *value)
 {
-    int32_t size=0, ret=0;
+    int size=0, ret=0;
     xml_node_t *node = NULL;
 
     /* 1. 创建节点 */
@@ -146,7 +161,7 @@ xml_node_t *xml_node_creat_ext(xml_node_type_e type, const char *name, const cha
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
-int32_t xml_init(xml_tree_t **xml)
+int xml_init(xml_tree_t **xml)
 {
     *xml = (xml_tree_t*)calloc(1, sizeof(xml_tree_t));
     if (NULL == *xml)
@@ -181,7 +196,7 @@ int32_t xml_init(xml_tree_t **xml)
  ******************************************************************************/
 char *xml_fload(const char *fname)
 {
-    int32_t ret = 0, left = 0, num = 0, offset = 0;
+    int ret = 0, left = 0, num = 0, offset = 0;
     FILE *fp = NULL;
     char *buff = NULL;
     struct stat fstate;
@@ -249,9 +264,9 @@ char *xml_fload(const char *fname)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
-int32_t xml_parse(xml_tree_t *xml, Stack_t *stack, const char *str)
+int xml_parse(xml_tree_t *xml, Stack_t *stack, const char *str)
 {
-    int32_t ret = 0;
+    int ret = 0;
     xml_fparse_t fparse;
 
     fparse.str = str;
@@ -354,9 +369,9 @@ int32_t xml_parse(xml_tree_t *xml, Stack_t *stack, const char *str)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
-static int32_t xml_parse_version(xml_fparse_t *fparse)
+static int xml_parse_version(xml_fparse_t *fparse)
 {
-    int32_t ret = 0;
+    int ret = 0;
     char border = '"';
     const char *ptr = NULL;
 
@@ -455,9 +470,9 @@ static int32_t xml_parse_version(xml_fparse_t *fparse)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
-static int32_t xml_parse_note(xml_fparse_t *fparse)
+static int xml_parse_note(xml_fparse_t *fparse)
 {
-    int32_t ret = 0;
+    int ret = 0;
     const char *ptr = NULL;
 
 	/* 匹配注释开头"<!--" */
@@ -514,9 +529,9 @@ static int32_t xml_parse_note(xml_fparse_t *fparse)
  **      注意: 以上3个步骤是固定的，否则将会出现混乱
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
-static int32_t xml_parse_mark(xml_tree_t *xml, Stack_t *stack, xml_fparse_t *fparse)
+static int xml_parse_mark(xml_tree_t *xml, Stack_t *stack, xml_fparse_t *fparse)
 {
-    int32_t ret = 0;
+    int ret = 0;
 
     fparse->ptr += XML_MARK_BEGIN_LEN;    /* 跳过"<" */
 
@@ -580,9 +595,9 @@ static int32_t xml_parse_mark(xml_tree_t *xml, Stack_t *stack, xml_fparse_t *fpa
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
-static int32_t xml_parse_end(Stack_t *stack, xml_fparse_t *fparse)
+static int xml_parse_end(Stack_t *stack, xml_fparse_t *fparse)
 {
-    int32_t ret = 0;
+    int ret = 0;
     size_t len = 0;
     xml_node_t *top = NULL;
     const char *ptr = NULL;
@@ -646,9 +661,9 @@ static int32_t xml_parse_end(Stack_t *stack, xml_fparse_t *fparse)
  **            2. 此时tail用来记录孩子节点链表尾
  **作    者: # Qifeng.zou # 2013.02.23 #
  ******************************************************************************/
-static int32_t xml_mark_get_name(xml_tree_t *xml, Stack_t *stack, xml_fparse_t *fparse)
+static int xml_mark_get_name(xml_tree_t *xml, Stack_t *stack, xml_fparse_t *fparse)
 {
-    int32_t ret=0, len=0;
+    int ret=0, len=0;
     const char *ptr = fparse->ptr;
     xml_node_t *node = NULL, *top = NULL;
 
@@ -738,7 +753,7 @@ static int32_t xml_mark_get_name(xml_tree_t *xml, Stack_t *stack, xml_fparse_t *
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.02.23 #
  ******************************************************************************/
-static int32_t xml_mark_has_attr(xml_fparse_t *fparse)
+static int xml_mark_has_attr(xml_fparse_t *fparse)
 {
     const char *ptr = fparse->ptr;
 
@@ -774,14 +789,14 @@ static int32_t xml_mark_has_attr(xml_fparse_t *fparse)
  **作    者: # Qifeng.zou # 2013.02.18 #
  **修    改: # Qifeng.zou # 2014.01.06 #
  ******************************************************************************/
-static int32_t xml_mark_get_attr(Stack_t *stack, xml_fparse_t *fparse)
+static int xml_mark_get_attr(Stack_t *stack, xml_fparse_t *fparse)
 {
     char border = '"';
     xml_node_t *node = NULL, *top = NULL;
-    int32_t len = 0, errflg = 0;
+    int len = 0, errflg = 0;
     const char *ptr = fparse->ptr;
 #if defined(__XML_ESC_PARSE__)
-    int32_t ret, size;
+    int ret, size;
     xml_esc_split_t split;
     const xml_esc_t *esc = NULL;
 
@@ -966,9 +981,9 @@ static int32_t xml_mark_get_attr(Stack_t *stack, xml_fparse_t *fparse)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.02.23 #
  ******************************************************************************/
-static int32_t xml_mark_is_end(xml_fparse_t *fparse)
+static int xml_mark_is_end(xml_fparse_t *fparse)
 {
-    int32_t ret = 0;
+    int ret = 0;
     const char *ptr = fparse->ptr;
     
     while (XmlIsIgnoreChar(*ptr)) ptr++;
@@ -993,7 +1008,7 @@ static int32_t xml_mark_is_end(xml_fparse_t *fparse)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.02.23 #
  ******************************************************************************/
-static int32_t xml_mark_has_value(xml_fparse_t *fparse)
+static int xml_mark_has_value(xml_fparse_t *fparse)
 {
     const char *ptr = fparse->ptr;
 
@@ -1030,13 +1045,13 @@ static int32_t xml_mark_has_value(xml_fparse_t *fparse)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.02.23 #
  ******************************************************************************/
-static int32_t xml_mark_get_value(Stack_t *stack, xml_fparse_t *fparse)
+static int xml_mark_get_value(Stack_t *stack, xml_fparse_t *fparse)
 {
-    int32_t len = 0, size = 0;
+    int len = 0, size = 0;
     const char *p1=NULL, *p2=NULL;
     xml_node_t *current = NULL;
 #if defined(__XML_ESC_PARSE__)
-    int32_t ret;
+    int ret;
     const xml_esc_t *esc = NULL;
     xml_esc_split_t split;
 
@@ -1155,7 +1170,7 @@ static int32_t xml_mark_get_value(Stack_t *stack, xml_fparse_t *fparse)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.02.27 #
  ******************************************************************************/
-int32_t xml_node_sfree(xml_node_t *node)
+int xml_node_sfree(xml_node_t *node)
 {
     if (NULL != node->name)
     {
@@ -1187,7 +1202,7 @@ int32_t xml_node_sfree(xml_node_t *node)
  ******************************************************************************/
 xml_node_t *xml_free_next(Stack_t *stack, xml_node_t *current)
 {
-    int32_t ret = 0;
+    int ret = 0;
     xml_node_t *child = NULL, *top = NULL;
     
     /* 1. 释放孩子节点 */
@@ -1259,7 +1274,7 @@ xml_node_t *xml_free_next(Stack_t *stack, xml_node_t *current)
  **     释放时需调用函数xml_node_free()
  **作    者: # Qifeng.zou # 2013.03.02 #
  ******************************************************************************/
-int32_t xml_delete_child(xml_node_t *node, xml_node_t *child)
+int xml_delete_child(xml_node_t *node, xml_node_t *child)
 {
     xml_node_t *p1 = NULL, *p2 = NULL;
 
@@ -1386,9 +1401,9 @@ int32_t xml_delete_child(xml_node_t *node, xml_node_t *child)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.06.10 #
  ******************************************************************************/
-static xml_node_t *xml_node_next_length(Stack_t *stack, xml_node_t *node, int32_t *length)
+static xml_node_t *xml_node_next_length(Stack_t *stack, xml_node_t *node, int *length)
 {
-    int32_t ret = 0, depth = 0, level = 0, length2 = 0;
+    int ret = 0, depth = 0, level = 0, length2 = 0;
     xml_node_t *top = NULL, *child = NULL;
 
     if (NULL != node->temp)      /* 首先: 处理孩子节点: 选出下一个孩子节点 */
@@ -1487,9 +1502,9 @@ static xml_node_t *xml_node_next_length(Stack_t *stack, xml_node_t *node, int32_
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.06.10 #
  ******************************************************************************/
-int32_t _xml_node_length(xml_node_t *root, Stack_t *stack)
+int _xml_node_length(xml_node_t *root, Stack_t *stack)
 {
-    int32_t ret = 0, depth = 0, length=0;
+    int ret = 0, depth = 0, length=0;
     xml_node_t *node = root;
 
     depth = stack_depth(stack);
@@ -1591,9 +1606,9 @@ static const xml_esc_t *xml_esc_get(const char *str)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.01.06 #
  ******************************************************************************/
-static int32_t xml_esc_size(const xml_esc_split_t *sp)
+static int xml_esc_size(const xml_esc_split_t *sp)
 {
-    int32_t size = 0;
+    int size = 0;
     xml_esc_node_t *node = sp->head;
     
     while (NULL != node)
@@ -1616,7 +1631,7 @@ static int32_t xml_esc_size(const xml_esc_split_t *sp)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.01.06 #
  ******************************************************************************/
-static int32_t xml_esc_merge(const xml_esc_split_t *sp, char *dst)
+static int xml_esc_merge(const xml_esc_split_t *sp, char *dst)
 {
     char *ptr = dst;
     xml_esc_node_t *fnode = sp->head;
@@ -1642,7 +1657,7 @@ static int32_t xml_esc_merge(const xml_esc_split_t *sp, char *dst)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.01.06 #
  ******************************************************************************/
-static int32_t xml_esc_free(xml_esc_split_t *split)
+static int xml_esc_free(xml_esc_split_t *split)
 {
     xml_esc_node_t *node = split->head, *next = NULL;
 
@@ -1679,8 +1694,8 @@ static int32_t xml_esc_free(xml_esc_split_t *split)
  **        &quot;  "    引号
  **作    者: # Qifeng.zou # 2014.01.06 #
  ******************************************************************************/
-static int32_t xml_esc_split(const xml_esc_t *esc,
-    const char *str, int32_t len, xml_esc_split_t *split)
+static int xml_esc_split(const xml_esc_t *esc,
+    const char *str, int len, xml_esc_split_t *split)
 {
     xml_esc_node_t *node = NULL;
 

@@ -24,7 +24,7 @@ typedef enum
 typedef struct
 {
     uint32_t index;         /* slot索引 */
-    int32_t page_idx;       /* slot链表的页索引 */
+    int page_idx;       /* slot链表的页索引 */
 }shm_slab_slot_t;
 
 /* PAGE管理 */
@@ -36,16 +36,16 @@ typedef struct
     uint32_t type:16;       /* 页分配的类型: 取值范围SHM_SLAB_ALLOC_TYPE */
     uint32_t bitmap;        /* 页的使用位图 */
     uint32_t rbitmap;       /* 初始位图的取反值 */
-    int32_t next_idx;       /* 下一页的索引 */
-    int32_t prev_idx;       /* 上一页的索引 */
+    int next_idx;       /* 下一页的索引 */
+    int prev_idx;       /* 上一页的索引 */
 }shm_slab_page_t;
 
 typedef struct
 {
     size_t pool_size;       /* 内存空间总大小 */
     
-    int32_t min_size;       /* 最小分配单元 */
-    int32_t min_shift;      /* 最小分配单元的位移 */
+    int min_size;       /* 最小分配单元 */
+    int min_shift;      /* 最小分配单元的位移 */
 
     size_t base_offset;     /* 基础偏移量 */
     size_t data_offset;     /* 可分配空间的起始偏移量 */

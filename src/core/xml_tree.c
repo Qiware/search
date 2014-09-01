@@ -1,3 +1,12 @@
+/******************************************************************************
+ ** Coypright(C) 2013-2014 Xundao technology Co., Ltd
+ **
+ ** 文件名: xml_tree.c
+ ** 版本号: 1.0
+ ** 描  述: XML的处理
+ **         这此文件中主要包含了XML处理的对外接口
+ ** 作  者: # Qifeng.zou # 2013.02.18 #
+ ******************************************************************************/
 #include <stdio.h>
 #include <ctype.h>
 #include <errno.h>
@@ -114,7 +123,7 @@ xml_tree_t *xml_creat(const char *fname)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.09.25 #
  ******************************************************************************/
-xml_tree_t *xml_screat_ext(const char *str, int32_t length)
+xml_tree_t *xml_screat_ext(const char *str, int length)
 {
     char *buff = NULL;
     xml_tree_t *xml = NULL;
@@ -161,7 +170,7 @@ xml_tree_t *xml_screat_ext(const char *str, int32_t length)
  ******************************************************************************/
  xml_tree_t *xml_screat(const char *str)
 {
-    int32_t ret = 0;
+    int ret = 0;
     Stack_t stack;
     xml_tree_t *xml = NULL;
 
@@ -239,9 +248,9 @@ xml_tree_t *xml_screat_ext(const char *str, int32_t length)
  **      除释放指定节点的内存外，还必须释放该节点所有子孙节点的内存
  **作    者: # Qifeng.zou # 2013.02.27 #
  ******************************************************************************/
-int32_t xml_node_free(xml_node_t *node)
+int xml_node_free(xml_node_t *node)
 {
-    int32_t ret = 0;
+    int ret = 0;
     Stack_t _stack, *stack = &_stack;
     xml_node_t *current = node,
                *parent = node->parent, *child = NULL;
@@ -307,9 +316,9 @@ int32_t xml_node_free(xml_node_t *node)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.03.26 #
  ******************************************************************************/
-int32_t xml_fprint(xml_tree_t *xml, FILE *fp)
+int xml_fprint(xml_tree_t *xml, FILE *fp)
 {
-    int32_t ret = 0;
+    int ret = 0;
     Stack_t stack;
     xml_node_t *child = xml->root->firstchild;
 
@@ -331,7 +340,7 @@ int32_t xml_fprint(xml_tree_t *xml, FILE *fp)
         ret = xml_fprint_tree(child, &stack, fp);
         if (XML_SUCCESS != ret)
         {
-            log_error("fPrint32_t tree failed!");
+            log_error("fPrint tree failed!");
             stack_destroy(&stack);
             return ret;
         }
@@ -354,9 +363,9 @@ int32_t xml_fprint(xml_tree_t *xml, FILE *fp)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.02.27 #
  ******************************************************************************/
-int32_t xml_fwrite(xml_tree_t *xml, const char *fname)
+int xml_fwrite(xml_tree_t *xml, const char *fname)
 {
-    int32_t ret = 0;
+    int ret = 0;
     Stack_t stack;
     FILE *fp = NULL;
     xml_node_t *child = xml->root->firstchild;
@@ -387,7 +396,7 @@ int32_t xml_fwrite(xml_tree_t *xml, const char *fname)
         ret = xml_fprint_tree(child, &stack, fp);
         if (XML_SUCCESS != ret)
         {
-            log_error("fPrint32_t tree failed!");
+            log_error("fPrint tree failed!");
             fclose(fp), fp = NULL;
             stack_destroy(&stack);
             return ret;
@@ -412,9 +421,9 @@ int32_t xml_fwrite(xml_tree_t *xml, const char *fname)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.02.27 #
  ******************************************************************************/
-int32_t xml_sprint(xml_tree_t *xml, char *str)
+int xml_sprint(xml_tree_t *xml, char *str)
 {
-    int32_t ret = 0;
+    int ret = 0;
     sprint_t sp;
     Stack_t stack;
     xml_node_t *child = xml->root->firstchild;
@@ -438,7 +447,7 @@ int32_t xml_sprint(xml_tree_t *xml, char *str)
         ret = xml_sprint_tree(child, &stack, &sp);
         if (XML_SUCCESS != ret)
         {
-            log_error("Sprint32_t tree failed!");
+            log_error("Sprint tree failed!");
             stack_destroy(&stack);
             return ret;
         }
@@ -461,9 +470,9 @@ int32_t xml_sprint(xml_tree_t *xml, char *str)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.03.01 #
  ******************************************************************************/
-extern int32_t xml_spack(xml_tree_t *xml, char *str)
+extern int xml_spack(xml_tree_t *xml, char *str)
 {
-    int32_t ret = 0;
+    int ret = 0;
     sprint_t sp;
     Stack_t stack;
     xml_node_t *child = xml->root->firstchild;
@@ -487,7 +496,7 @@ extern int32_t xml_spack(xml_tree_t *xml, char *str)
         ret = xml_pack_tree(child, &stack, &sp);
         if (XML_SUCCESS != ret)
         {
-            log_error("Sprint32_t tree failed!");
+            log_error("Sprint tree failed!");
             stack_destroy(&stack);
             return ret;
         }
@@ -744,7 +753,7 @@ xml_node_t *xml_add_child(xml_node_t *node, const char *name, const char *value)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.06.12 #
  ******************************************************************************/
-xml_node_t *xml_add_node(xml_node_t *node, const char *name, const char *value, int32_t type)
+xml_node_t *xml_add_node(xml_node_t *node, const char *name, const char *value, int type)
 {
     switch(type)
     {
@@ -773,9 +782,9 @@ xml_node_t *xml_add_node(xml_node_t *node, const char *name, const char *value, 
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.06.10 #
  ******************************************************************************/
-int32_t xml_node_length(xml_node_t *node)
+int xml_node_length(xml_node_t *node)
 {
-    int32_t ret=0, length=0;
+    int ret=0, length=0;
     Stack_t stack;
     
     if (NULL == node)
@@ -815,9 +824,9 @@ int32_t xml_node_length(xml_node_t *node)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.06.12 #
  ******************************************************************************/
-int32_t xml_set_value(xml_node_t *node, const char *value)
+int xml_set_value(xml_node_t *node, const char *value)
 {
-    int32_t size = 0;
+    int size = 0;
     
     if (NULL != node->value)
     {
@@ -870,9 +879,9 @@ int32_t xml_set_value(xml_node_t *node, const char *value)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.06.11 #
  ******************************************************************************/
-int32_t _xml_pack_length(xml_node_t *node)
+int _xml_pack_length(xml_node_t *node)
 {
-    int32_t ret = 0, length = 0, length2 = 0;
+    int ret = 0, length = 0, length2 = 0;
     Stack_t stack;
     xml_node_t *child = NULL;
     
@@ -948,9 +957,9 @@ int32_t _xml_pack_length(xml_node_t *node)
  **     3. 如为无属性节点、无孩子节点、且无节点值的节点，则删除之
  **作    者: # Qifeng.zou # 2013.10.21 #
  ******************************************************************************/
-int32_t xml_delete_empty(xml_tree_t *xml)
+int xml_delete_empty(xml_tree_t *xml)
 {
-    int32_t ret = -1;
+    int ret = -1;
     xml_node_t *node = NULL;
     Stack_t _stack, *stack = &_stack;
 

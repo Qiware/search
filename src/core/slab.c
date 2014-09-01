@@ -77,7 +77,7 @@ void slab_init(slab_pool_t *pool)
 {
     u_char *p = NULL;
     size_t size = 0;
-    int32_t m = 0;
+    int m = 0;
     uint32_t i = 0, n = 0, pages = 0, shift = 0;
     slab_page_t *slots = NULL;
 
@@ -782,7 +782,7 @@ static slab_pool_t *eslab_add(eslab_pool_t *eslab, size_t size);
  ** Note : 
  **Author: # Qifeng.zou # 2013.08.15 #
  ******************************************************************************/
-int32_t eslab_init(eslab_pool_t *eslab, size_t size)
+int eslab_init(eslab_pool_t *eslab, size_t size)
 {
     slab_pool_t *slab = NULL;
     
@@ -809,7 +809,7 @@ int32_t eslab_init(eslab_pool_t *eslab, size_t size)
  ** Note : 
  **Author: # Qifeng.zou # 2013.08.15 #
  ******************************************************************************/
-int32_t eslab_destroy(eslab_pool_t *eslab)
+int eslab_destroy(eslab_pool_t *eslab)
 {
     eslab_node_t *node = NULL, *next = NULL;
 
@@ -888,7 +888,7 @@ static slab_pool_t *eslab_add(eslab_pool_t *eslab, size_t size)
 void *eslab_alloc(eslab_pool_t *eslab, size_t size)
 {
     void *p = NULL;
-    int32_t block = 0, count = 0;
+    int block = 0, count = 0;
     size_t alloc_size = 0;
     slab_pool_t *slab = NULL;
     eslab_node_t *node = eslab->node, *next;
@@ -941,7 +941,7 @@ void *eslab_alloc(eslab_pool_t *eslab, size_t size)
  ** Note : 
  **Author: # Qifeng.zou # 2013.08.15 #
  ******************************************************************************/
-int32_t eslab_free(eslab_pool_t *eslab, void *p)
+int eslab_free(eslab_pool_t *eslab, void *p)
 {
     eslab_node_t *node = eslab->node, *next = NULL;
 

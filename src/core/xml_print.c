@@ -1,3 +1,12 @@
+/******************************************************************************
+ ** Coypright(C) 2013-2014 Xundao technology Co., Ltd
+ **
+ ** 文件名: xml_print.c
+ ** 版本号: 1.0
+ ** 描  述: XML格式的打印
+ **         将XML树打印成XML格式的文件、字符串等.
+ ** 作  者: # Qifeng.zou # 2013.02.18 #
+ ******************************************************************************/
 #include <stdio.h>
 #include <ctype.h>
 #include <errno.h>
@@ -87,7 +96,7 @@
  ******************************************************************************/
 static xml_node_t *xml_fprint_next(Stack_t *stack, xml_node_t *node, FILE *fp)
 {
-    int32_t ret = 0, depth = 0, level = 0;
+    int ret = 0, depth = 0, level = 0;
     xml_node_t *top = NULL, *child = NULL;
 
     if (NULL != node->temp)      /* 首先: 处理孩子节点: 选出下一个孩子节点 */
@@ -181,9 +190,9 @@ static xml_node_t *xml_fprint_next(Stack_t *stack, xml_node_t *node, FILE *fp)
  **           3. 不打印root的兄弟节点
  **作    者: # Qifeng.zou # 2013.02.27 #
  ******************************************************************************/
-int32_t xml_fprint_tree(xml_node_t *root, Stack_t *stack, FILE *fp)
+int xml_fprint_tree(xml_node_t *root, Stack_t *stack, FILE *fp)
 {
-    int32_t ret = 0, depth = 0;
+    int ret = 0, depth = 0;
     xml_node_t *node = root;
 
     depth = stack_depth(stack);
@@ -338,9 +347,9 @@ int32_t xml_fprint_tree(xml_node_t *root, Stack_t *stack, FILE *fp)
  **           3. 不打印root的兄弟节点
  **作    者: # Qifeng.zou # 2013.06.11 #
  ******************************************************************************/
-static xml_node_t *xml_pack_next_length(Stack_t *stack, xml_node_t *node, int32_t *length)
+static xml_node_t *xml_pack_next_length(Stack_t *stack, xml_node_t *node, int *length)
 {
-    int32_t ret = 0, length2 = 0;
+    int ret = 0, length2 = 0;
     xml_node_t *top = NULL, *child = NULL;
 
     if (NULL != node->temp)      /* 首先: 处理孩子节点: 选出下一个孩子节点 */
@@ -423,9 +432,9 @@ static xml_node_t *xml_pack_next_length(Stack_t *stack, xml_node_t *node, int32_
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.06.11 #
  ******************************************************************************/
-int32_t xml_pack_node_length(xml_node_t *root, Stack_t *stack)
+int xml_pack_node_length(xml_node_t *root, Stack_t *stack)
 {
-    int32_t ret = 0, depth = 0, length=0;
+    int ret = 0, depth = 0, length=0;
     xml_node_t *node = root;
 
     depth = stack_depth(stack);
@@ -576,7 +585,7 @@ int32_t xml_pack_node_length(xml_node_t *root, Stack_t *stack)
  ******************************************************************************/
 static xml_node_t *xml_pack_next(Stack_t *stack, xml_node_t *node, sprint_t *sp)
 {
-    int32_t ret = 0;
+    int ret = 0;
     xml_node_t *top = NULL, *child = NULL;
 
     if (NULL != node->temp)      /* 首先: 处理孩子节点: 选出下一个孩子节点 */
@@ -658,9 +667,9 @@ static xml_node_t *xml_pack_next(Stack_t *stack, xml_node_t *node, sprint_t *sp)
  **           3. 不打印root的兄弟节点
  **作    者: # Qifeng.zou # 2013.03.01 #
  ******************************************************************************/
-int32_t xml_pack_tree(xml_node_t *root, Stack_t *stack, sprint_t *sp)
+int xml_pack_tree(xml_node_t *root, Stack_t *stack, sprint_t *sp)
 {
-    int32_t ret = 0, depth = 0;
+    int ret = 0, depth = 0;
     xml_node_t *node = root;
 
     depth = stack_depth(stack);
@@ -789,7 +798,7 @@ int32_t xml_pack_tree(xml_node_t *root, Stack_t *stack, sprint_t *sp)
  ******************************************************************************/
 static xml_node_t *xml_sprint_next(Stack_t *stack, xml_node_t *node, sprint_t *sp)
 {
-    int32_t ret = 0, depth = 0, level = 0;
+    int ret = 0, depth = 0, level = 0;
     xml_node_t *top = NULL, *child = NULL;
 
     if (NULL != node->temp)      /* 首先: 处理孩子节点: 选出下一个孩子节点 */
@@ -887,9 +896,9 @@ static xml_node_t *xml_sprint_next(Stack_t *stack, xml_node_t *node, sprint_t *s
  **           3. 不打印root的兄弟节点
  **作    者: # Qifeng.zou # 2013.02.27 #
  ******************************************************************************/
-int32_t xml_sprint_tree(xml_node_t *root, Stack_t *stack, sprint_t *sp)
+int xml_sprint_tree(xml_node_t *root, Stack_t *stack, sprint_t *sp)
 {
-    int32_t ret = 0, depth = 0;
+    int ret = 0, depth = 0;
     xml_node_t *node = root;
 
     depth = stack_depth(stack);

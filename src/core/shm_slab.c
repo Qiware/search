@@ -18,11 +18,11 @@
 
 /* 静态全局变量 */
 static size_t g_shm_slab_page_size = 0; /* 每一页内存的大小 */
-static int32_t g_shm_slab_page_shift = 0;   /* 每一页内存大小对应的位移 */
+static int g_shm_slab_page_shift = 0;   /* 每一页内存大小对应的位移 */
 static size_t g_shm_slab_max_size = 0;  /* SLOT最大内存分配单元 */
-static int32_t g_shm_slab_max_shift = 0;    /* SLOT最大内存分配单元对应的位移 */
+static int g_shm_slab_max_shift = 0;    /* SLOT最大内存分配单元对应的位移 */
 static size_t g_shm_slab_exact_size = 0;/* SLOT精确内存分配单元 */
-static int32_t g_shm_slab_exact_shift = 0;  /* SLOT精确内存分配单元对应的位移 */
+static int g_shm_slab_exact_shift = 0;  /* SLOT精确内存分配单元对应的位移 */
 
 #define shm_slab_page_size() (g_shm_slab_page_size)
 #define shm_slab_page_shift() (g_shm_slab_page_shift)
@@ -41,15 +41,15 @@ static int32_t g_shm_slab_exact_shift = 0;  /* SLOT精确内存分配单元对应的位移 */
 
 /* 静态函数声明 */
 static void shm_slab_init_param(void);
-static shm_slab_page_t *shm_slab_alloc_pages(shm_slab_pool_t *pool, int32_t pages);
-static int32_t shm_slab_free_pages(shm_slab_pool_t *pool, shm_slab_page_t *page);
+static shm_slab_page_t *shm_slab_alloc_pages(shm_slab_pool_t *pool, int pages);
+static int shm_slab_free_pages(shm_slab_pool_t *pool, shm_slab_page_t *page);
 static void *shm_slab_alloc_slot(shm_slab_pool_t *pool, size_t size);
-static void *_shm_slab_alloc_slot(shm_slab_pool_t *pool, int32_t slot_idx, int32_t type);
+static void *_shm_slab_alloc_slot(shm_slab_pool_t *pool, int slot_idx, int type);
 #if defined(__XDT_NOT_USED__)
-static int32_t shm_slab_slot_add_page(
+static int shm_slab_slot_add_page(
     shm_slab_pool_t *pool, shm_slab_slot_t *slot, shm_slab_page_t *page);
 #endif /*__XDT_NOT_USED__*/
-static int32_t shm_slab_slot_remove_page(
+static int shm_slab_slot_remove_page(
     shm_slab_pool_t *pool, shm_slab_slot_t *slot, shm_slab_page_t *page);
 
 /******************************************************************************
@@ -75,11 +75,11 @@ static int32_t shm_slab_slot_remove_page(
  **     addr: 为偏移量的基址
  **Author: # Qifeng.zou # 2013.07.12 #
  ******************************************************************************/
-int32_t shm_slab_init(shm_slab_pool_t *pool)
+int shm_slab_init(shm_slab_pool_t *pool)
 {
     void *addr = NULL;
     size_t min_size = 0, left_size = 0;
-    int32_t idx = 0, slot_num = 0, page_num = 0;
+    int idx = 0, slot_num = 0, page_num = 0;
     shm_slab_slot_t *slot = NULL;
     shm_slab_page_t *page = NULL;
 
@@ -159,7 +159,7 @@ int32_t shm_slab_init(shm_slab_pool_t *pool)
  ******************************************************************************/
 static void shm_slab_init_param(void)
 {
-    int32_t shift = 0;
+    int shift = 0;
     size_t size = 0;
     
     
@@ -204,7 +204,7 @@ static void shm_slab_init_param(void)
  **Note  : 
  **Author: # Qifeng.zou # 2013.07.16 #
  ******************************************************************************/
-static int32_t shm_slab_get_alloc_type(int32_t size)
+static int shm_slab_get_alloc_type(int32_t size)
 {
     if(size < shm_slab_exact_size())
     {
@@ -238,7 +238,7 @@ static int32_t shm_slab_get_alloc_type(int32_t size)
  ******************************************************************************/
 void *shm_slab_alloc(shm_slab_pool_t *pool, size_t size)
 {
-    int32_t pages = 0;
+    int pages = 0;
     void *addr = NULL, *p = NULL;
     shm_slab_page_t *page = NULL;
 
@@ -283,7 +283,7 @@ void *shm_slab_alloc(shm_slab_pool_t *pool, size_t size)
  **Note  : 
  **Author: # Qifeng.zou # 2013.07.12 #
  ******************************************************************************/
-static shm_slab_page_t *shm_slab_alloc_pages(shm_slab_pool_t *pool, int32_t pages)
+static shm_slab_page_t *shm_slab_alloc_pages(shm_slab_pool_t *pool, int pages)
 {
     void *addr = NULL;
     shm_slab_page_t *start_page = NULL, *page = NULL,
@@ -383,7 +383,7 @@ static shm_slab_page_t *shm_slab_alloc_pages(shm_slab_pool_t *pool, int32_t page
 static void *shm_slab_alloc_slot(shm_slab_pool_t *pool, size_t size)
 {
     void *p = NULL;
-    int32_t shift = 0, idx = 0, s = 0;
+    int shift = 0, idx = 0, s = 0;
     SHM_SLAB_ALLOC_TYPE type = SHM_SLAB_ALLOC_UNKNOWN;
     
     /* 1. Make sure use which slot */
@@ -439,13 +439,13 @@ static void *shm_slab_alloc_slot(shm_slab_pool_t *pool, size_t size)
  **Note  :
  **Author: # Qifeng.zou # 2013.07.15 #
  ******************************************************************************/
-static void *_shm_slab_alloc_slot(shm_slab_pool_t *pool, int32_t slot_idx, int32_t type)
+static void *_shm_slab_alloc_slot(shm_slab_pool_t *pool, int slot_idx, int type)
 {
-    int32_t *bitmap = NULL;
+    int *bitmap = NULL;
     shm_slab_slot_t *slot = NULL;
     shm_slab_page_t *start_page = NULL, *page = NULL, *new_page = NULL;
     void *addr = NULL, *data = NULL, *ptr = NULL;
-    int32_t bits = 0, exp_bitmaps = 0, i = 0, idx = 0, shift = 0;
+    int bits = 0, exp_bitmaps = 0, i = 0, idx = 0, shift = 0;
 
     addr = (void *)pool;
     data = addr + pool->data_offset;
@@ -596,9 +596,9 @@ static void *_shm_slab_alloc_slot(shm_slab_pool_t *pool, int32_t slot_idx, int32
  **Note  : 
  **Author: # Qifeng.zou # 2013.07.15 #
  ******************************************************************************/
-static int32_t shm_slab_free_pages(shm_slab_pool_t *pool, shm_slab_page_t *page)
+static int shm_slab_free_pages(shm_slab_pool_t *pool, shm_slab_page_t *page)
 {
-    int32_t page_idx = 0;
+    int page_idx = 0;
     void *addr = NULL, *data = NULL;
     shm_slab_page_t *start_page = NULL, *free = NULL, *next = NULL;
 
@@ -645,11 +645,11 @@ static int32_t shm_slab_free_pages(shm_slab_pool_t *pool, shm_slab_page_t *page)
  **Note  : 
  **Author: # Qifeng.zou # 2013.07.17 #
  ******************************************************************************/
-static int32_t shm_slab_slot_add_page(
+static int shm_slab_slot_add_page(
     shm_slab_pool_t *pool, shm_slab_slot_t *slot, shm_slab_page_t *page)
 {
     void *addr = NULL;
-    int32_t page_idx = 0;
+    int page_idx = 0;
     shm_slab_page_t *start_page = NULL, *next = NULL;
 
     addr = (void *)pool;
@@ -684,7 +684,7 @@ static int32_t shm_slab_slot_add_page(
  **Note  : 
  **Author: # Qifeng.zou # 2013.07.17 #
  ******************************************************************************/
-static int32_t shm_slab_slot_remove_page(
+static int shm_slab_slot_remove_page(
     shm_slab_pool_t *pool, shm_slab_slot_t *slot, shm_slab_page_t *page)
 {
     void *addr = NULL;
@@ -752,13 +752,13 @@ static int32_t shm_slab_slot_remove_page(
  **Note  : 
  **Author: # Qifeng.zou # 2013.07.12 #
  ******************************************************************************/
-int32_t shm_slab_free(shm_slab_pool_t *pool, void *p)
+int shm_slab_free(shm_slab_pool_t *pool, void *p)
 {
-    int32_t ret = 0, page_idx = 0,
+    int ret = 0, page_idx = 0,
         idx = 0, is_free = 1,
         bits = 0, bit_idx = 0, bitmap_idx = 0,
         slot_idx = 0, exp_bitmaps = 0;
-    int32_t *bitmap = NULL;
+    int *bitmap = NULL;
     size_t offset = 0;
     shm_slab_slot_t *slot = NULL;
     shm_slab_page_t *page = NULL;

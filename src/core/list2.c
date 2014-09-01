@@ -17,7 +17,7 @@
  **     新结点的空间有外界分配，删除时，请记得释放空间.
  **作    者: # Qifeng.zou # 2014.08.24 #
  ******************************************************************************/
-int32_t list2_insert_head(list2_t *list, list2_node_t *node)
+int list2_insert_head(list2_t *list, list2_node_t *node)
 {
     list2_node_t *tail;
 
@@ -99,7 +99,7 @@ list2_node_t *list2_delete_head(list2_t *list)
  **     请调用者自己取释放返回结点和数据的内存空间
  **作    者: # Qifeng.zou # 2014.08.24 #
  ******************************************************************************/
-int32_t list2_insert_tail(list2_t *list, list2_node_t *node)
+int list2_insert_tail(list2_t *list, list2_node_t *node)
 {
     list2_node_t *tail;
 
@@ -181,7 +181,7 @@ list2_node_t *list2_delete_tail(list2_t *list)
  ******************************************************************************/
 void list2_assert(list2_t *list)
 {
-    int32_t num = 0;
+    int num = 0;
     list2_node_t *curr = list->head, *tail;
 
     if (NULL == curr)

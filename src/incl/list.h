@@ -11,7 +11,7 @@ typedef struct _list_node_t
 /* 单向链表对象 */
 typedef struct
 {
-    int32_t num;
+    int num;
     list_node_t *head;
     list_node_t *tail;
 }list_t;

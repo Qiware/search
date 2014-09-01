@@ -1,3 +1,12 @@
+/******************************************************************************
+ ** Coypright(C) 2013-2014 Xundao technology Co., Ltd
+ **
+ ** 文件名: queue.c
+ ** 版本号: 1.0
+ ** 描  述: 队列模块
+ **         1. 先进先出的一种数据结构
+ ** 作  者: # Qifeng.zou # 2014.04.28 #
+ ******************************************************************************/
 #include <stdio.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -17,9 +26,9 @@
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.04.28 #
  ******************************************************************************/
-int32_t queue_init(Queue_t *q, int32_t max, int32_t size)
+int queue_init(Queue_t *q, int max, int size)
 {
-    int32_t idx;
+    int idx;
     void *args;
     Qnode_t *node;
     
@@ -68,7 +77,7 @@ int32_t queue_init(Queue_t *q, int32_t max, int32_t size)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.04.28 #
  ******************************************************************************/
-int32_t queue_push(Queue_t *q, void *addr, int32_t size)
+int queue_push(Queue_t *q, void *addr, int size)
 {
     Qnode_t *node = q->tail;
 

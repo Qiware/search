@@ -1,12 +1,18 @@
+###############################################################################
+## Coypright(C) 2013-2014 Xundao technology Co., Ltd
+##
+## 文件名: Makefile
+## 版本号: 1.0
+## 描  述: 核心模块的编译
+## 作  者: # Qifeng.zou # 2014.08.28 #
+###############################################################################
 include $(PROJ)/make/build.mak
 
 INCLUDE = -I. -I$(PROJ)/src/incl
 LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lpthread
 
-SRC_LIST = avl_tree.c \
-			rb_tree.c \
-			list.c \
+SRC_LIST = list.c \
 			list2.c \
 			stack.c \
 			queue.c \
@@ -17,6 +23,9 @@ SRC_LIST = avl_tree.c \
 			xml_comm.c \
 			xml_print.c \
 			xml_tree.c \
+			avl_tree.c \
+			rb_tree.c \
+			trie_tree.c \
 			thread_pool.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 

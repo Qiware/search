@@ -1,10 +1,13 @@
-/*********************************************************************
- *** Module: Thread pool 
- *** File  : thread_pool.c
- *** Desc  : 
- *** Note  :
- *** Author: # Qifeng.zou # 2012.12.26 #
- ********************************************************************/
+/******************************************************************************
+ ** Coypright(C) 2013-2014 Xundao technology Co., Ltd
+ **
+ ** 文件名: thread_pool.c
+ ** 版本号: 1.0
+ ** 描  述: 线程池模块的实现.
+ **         通过线程池模块, 可有效的简化多线程编程的处理, 加快开发速度, 同时有
+ **         效增强模块的复用性和程序的稳定性。
+ ** 作  者: # Qifeng.zou # 2012.12.26 #
+ ******************************************************************************/
 #include <stdio.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -18,7 +21,7 @@
 
 #include "thread_pool.h"
 
-static int32_t thread_create_detach(thread_pool_t *tp, int32_t idx);
+static int thread_create_detach(thread_pool_t *tp, int idx);
 static void *thread_routine(void *arg);
 
 /******************************************************************************
@@ -35,9 +38,9 @@ static void *thread_routine(void *arg);
  ** Note :
  ** Author: # Qifeng.zou # 2012.12.26 #
  ******************************************************************************/
-int32_t thread_pool_init(thread_pool_t **tp, int32_t num)
+int thread_pool_init(thread_pool_t **tp, int num)
 {
-	int32_t idx=0, ret=0;
+	int idx=0, ret=0;
 
 	/* 1. 分配线程池空间，并初始化 */
 	*tp = (thread_pool_t*)calloc(1, sizeof(thread_pool_t));
@@ -89,7 +92,7 @@ int32_t thread_pool_init(thread_pool_t **tp, int32_t num)
  ** Note :
  ** Author: # Qifeng.zou # 2012.12.26 #
  ******************************************************************************/
-int32_t thread_pool_add_worker(thread_pool_t *tp, void *(*process)(void *arg), void *arg)
+int thread_pool_add_worker(thread_pool_t *tp, void *(*process)(void *arg), void *arg)
 {
 	thread_worker_t *worker=NULL, *member=NULL;
 
@@ -144,9 +147,9 @@ int32_t thread_pool_add_worker(thread_pool_t *tp, void *(*process)(void *arg), v
  ** Note :
  ** Author: # Qifeng.zou # 2012.12.26 #
  ******************************************************************************/
-int32_t thread_pool_keepalive(thread_pool_t *tp)
+int thread_pool_keepalive(thread_pool_t *tp)
 {
-	int32_t idx=0, ret=0;
+	int idx=0, ret=0;
 
  	for (idx=0; idx<tp->num; idx++)
 	{
@@ -177,9 +180,9 @@ int32_t thread_pool_keepalive(thread_pool_t *tp)
  ** Note :
  ** Author: # Qifeng.zou # 2012.12.26 #
  ******************************************************************************/
-int32_t thread_pool_keepalive_ext(thread_pool_t *tp, void *(*process)(void *arg), void *arg)
+int thread_pool_keepalive_ext(thread_pool_t *tp, void *(*process)(void *arg), void *arg)
 {
-	int32_t idx=0, ret=0;
+	int idx=0, ret=0;
 
  	for (idx=0; idx<tp->num; idx++)
 	{
@@ -210,9 +213,9 @@ int32_t thread_pool_keepalive_ext(thread_pool_t *tp, void *(*process)(void *arg)
  ** Note :
  ** Author: # Qifeng.zou # 2014.04.24 #
  ******************************************************************************/
-int32_t thread_pool_get_tidx(thread_pool_t *tp)
+int thread_pool_get_tidx(thread_pool_t *tp)
 {
-    int32_t idx = 0;
+    int idx = 0;
     pthread_t tid = pthread_self();
 
     for (idx=0; idx<tp->num; ++idx)
@@ -241,9 +244,9 @@ int32_t thread_pool_get_tidx(thread_pool_t *tp)
  ** Note :
  ** Author: # Qifeng.zou # 2012.12.26 #
  ******************************************************************************/
-int32_t thread_pool_destroy(thread_pool_t *tp)
+int thread_pool_destroy(thread_pool_t *tp)
 {
-	int32_t idx=0, ret=0;
+	int idx=0, ret=0;
 	thread_worker_t *member = NULL;
 
 
@@ -307,9 +310,9 @@ int32_t thread_pool_destroy(thread_pool_t *tp)
  ** Note :
  ** Author: # Qifeng.zou # 2014.04.28 #
  ******************************************************************************/
-int32_t thread_pool_destroy_ext(thread_pool_t *tp, void (*args_destroy)(void *cntx, void *args), void *cntx)
+int thread_pool_destroy_ext(thread_pool_t *tp, void (*args_destroy)(void *cntx, void *args), void *cntx)
 {
-	int32_t idx;
+	int idx;
 	thread_worker_t *member;
 
 
@@ -367,9 +370,9 @@ int32_t thread_pool_destroy_ext(thread_pool_t *tp, void (*args_destroy)(void *cn
  **     4. Destroy thread attribute
  ** Author: # Qifeng.zou # 2014.05.10 #
  ******************************************************************************/
-static int32_t thread_create_detach(thread_pool_t *tp, int32_t idx)
+static int thread_create_detach(thread_pool_t *tp, int idx)
 {
-	int32_t ret = 0;
+	int ret = 0;
 	pthread_attr_t attr;
 
 	do

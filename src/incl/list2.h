@@ -12,7 +12,7 @@ typedef struct _list2_node_t
 /* 双向链表对象 */
 typedef struct
 {
-    int32_t num;
+    int num;
     list2_node_t *head;
 }list2_t;
 
