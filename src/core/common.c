@@ -812,3 +812,23 @@ void sha256_digest(char *str, uint32_t len, u_char digest[32])
 
     memcpy(digest, sha256.Value, sizeof(sha256.Value));
 }
+
+/******************************************************************************
+ **函数名称: proc_is_exist
+ **功    能: 检查进程是否存在
+ **输入参数: 
+ **     pid: 进程ID
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.09.01 #
+ ******************************************************************************/
+int proc_is_exist(pid_t pid)
+{
+	char fname[FILE_NAME_MAX_LEN];
+	
+	snprintf(fname, sizeof(fname), "/proc/%d/status", pid);
+
+    return access(fname, 0);
+}

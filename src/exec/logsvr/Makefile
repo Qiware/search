@@ -3,42 +3,27 @@
 ##
 ## 文件名: Makefile
 ## 版本号: 1.0
-## 描  述: 核心模块的编译
-## 作  者: # Qifeng.zou # 2014.08.28 #
+## 描  述: 日志服务模块
+## 作  者: # Qifeng.zou # 2014.09.01 #
 ###############################################################################
 include $(PROJ)/make/build.mak
 
 INCLUDE = -I. -I$(PROJ)/src/incl
 LIBS_PATH = -L$(PROJ)/lib
-LIBS = -lpthread
+LIBS = -lpthread -lcore
 
-SRC_LIST = list.c \
-			list2.c \
-			stack.c \
-			queue.c \
-			common.c \
-			sha256.c \
-			slab.c \
-			shm_slab.c \
-			xml_comm.c \
-			xml_print.c \
-			xml_tree.c \
-			avl_tree.c \
-			rb_tree.c \
-			trie_tree.c \
-			alog.c \
-			thread_pool.c
+SRC_LIST = alog_svr.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
 
-TARGET = libcore.so
+TARGET = alog_svr
 
 .PHONY: all clean
 
 all: $(TARGET)
 $(TARGET): $(OBJS)
-	$(CC) $(LFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS)
-	mv $@ $(PROJ)/lib
+	$(CC) $(CFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS)
+	mv $@ $(PROJ)/bin
 	@echo "$@ is OK!"
 
 $(OBJS): %.o : %.c

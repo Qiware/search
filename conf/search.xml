@@ -3,5 +3,6 @@
     <Log>       <!-- 日志配置 -->
         <Path></Path>         <!-- 日志路径 -->
         <Level>debug</Level>  <!-- 日志级别: debug, trace, info, warn, error, fatal -->
+        <MaxSize></MaxSize>   <!-- 最大尺寸(单位: MB) -->
     <Log>
 </Search>

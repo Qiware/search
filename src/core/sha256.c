@@ -1,25 +1,49 @@
+/******************************************************************************
+ ** Coypright(C) 2013-2014 Xundao technology Co., Ltd
+ **
+ ** 文件名: sha256.c
+ ** 版本号: 1.0
+ ** 描  述: SHA256加密算法.
+ ** 作  者: # Qifeng.zou # 2014.08.05 # 来自网络 #
+ ******************************************************************************/
 #include "sha256.h"
 
 static uint64_t sha256_calc_block(int* DwordBufPtr, int* regPtr);
 
-const int sha256_k[ 64 ] = {
-       0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
-       0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
-       0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
-       0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
-       0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
-       0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
-       0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
-       0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+const int sha256_key[ 64 ] = {
+    0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5,
+    0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+    0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3,
+    0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+    0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc,
+    0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+    0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7,
+    0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+    0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13,
+    0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+    0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3,
+    0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+    0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5,
+    0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+    0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
+    0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
 };
 
 
-uint64_t  sha256_init(sha256_t* t){    return sha256_reset(t); }
+uint64_t sha256_init(sha256_t* t)
+{
+    return sha256_reset(t);
+}
 
-uint64_t sha256_uninit(sha256_t* t){ return 0; }
+uint64_t sha256_uninit(sha256_t* t)
+{
+    return 0;
+}
 
-uint64_t sha256_reset(sha256_t* t){ 
+uint64_t sha256_reset(sha256_t* t)
+{ 
     int x;
+
     t->reg[0]=0x6a09e667;
     t->reg[1]=0xbb67ae85;
     t->reg[2]=0x3c6ef372;
@@ -28,13 +52,19 @@ uint64_t sha256_reset(sha256_t* t){
     t->reg[5]=0x9b05688c;
     t->reg[6]=0x1f83d9ab;
     t->reg[7]=0x5be0cd19;
-    for(x = 0; x < 16; x ++){ t->Padding[ x ] = t->DwordBuf[ x ] = 0; }
+
+    for(x = 0; x < 16; x ++)
+    {
+        t->Padding[ x ] = t->DwordBuf[ x ] = 0;
+    }
+
     t->ByteNumLo = t->ByteNumHi = t->DwordBufBytes = 0;
     return 0; 
 }
 
 
-uint64_t sha256_calculate(sha256_t* t, char* dp, uint64_t dl){
+uint64_t sha256_calculate(sha256_t* t, char* dp, uint64_t dl)
+{
     int w,x,y,z;
     int reg[ 8 ];
 
@@ -66,7 +96,8 @@ uint64_t sha256_calculate(sha256_t* t, char* dp, uint64_t dl){
     */
     while(w > 0){
         while(x < 16){
-            t->Padding[ x ] = (t->Padding[ x ] & ~(0x000000ff << (24 - y))) | ((dp[ z ] & 0x000000ff) << (24 - y));
+            t->Padding[ x ] = (t->Padding[ x ] & ~(0x000000ff << (24 - y)))
+                                    | ((dp[ z ] & 0x000000ff) << (24 - y));
             y = y + 8; x += (y >> 5); y &= 0x1f; z ++; 
         }
         sha256_calc_block(t->Padding, reg);
@@ -75,7 +106,10 @@ uint64_t sha256_calculate(sha256_t* t, char* dp, uint64_t dl){
     
     /** Clear Dirty Data */
     if((x | y) == 0){
-        for(w = 0; w < 16; w ++){ t->DwordBuf[ w ] = t->Padding[ w ] = 0; }
+        for(w = 0; w < 16; w ++)
+        {
+            t->DwordBuf[ w ] = t->Padding[ w ] = 0;
+        }
     }
 
     /** 
@@ -84,8 +118,9 @@ uint64_t sha256_calculate(sha256_t* t, char* dp, uint64_t dl){
     */
     w = (int)(dl - z); 
     while(w > 0){
-        t->DwordBuf[ x ] = t->Padding[ x ] = 
-            (t->Padding[ x ] & ~(0x000000ff << (24 - y))) | ((dp[ z ] & 0x000000ff) << (24 - y));
+        t->DwordBuf[ x ] = t->Padding[ x ] =
+            (t->Padding[ x ] & ~(0x000000ff << (24 - y)))
+                | ((dp[ z ] & 0x000000ff) << (24 - y));
         y = y + 8; x += (y >> 5); y &= 0x1f; z ++;
         w --;
     }
@@ -94,7 +129,10 @@ uint64_t sha256_calculate(sha256_t* t, char* dp, uint64_t dl){
     t->Padding[ x ] |= 0x00000080 << (24 - y); 
 
     /** Save Old Value */
-    for(w = 0; w < 8; w ++){ t->reg[ w ] = reg[ w ]; }
+    for(w = 0; w < 8; w ++)
+    {
+        t->reg[ w ] = reg[ w ];
+    }
     
     /** Check if Length + 0x80 could append */
     t->DwordBufBytes =  x * 4  + (y >> 3);
@@ -155,7 +193,7 @@ static uint64_t sha256_calc_block(int* dp, int* rp)
              (((e >> 11) & 0x1fffff) | (e << 21)) ^ 
              (((e >> 25) & 0x7f) | (e << 7));
         t0 = (e & f) ^ ((~e) & g);
-        t1 = h + t1 + t0 + sha256_k[ x ] + dp[ x ];
+        t1 = h + t1 + t0 + sha256_key[ x ] + dp[ x ];
         h=g; g=f; f=e; e=d+t1; d=c; c=b; b=a; a=t1+t2; 
     }
 

@@ -30,8 +30,9 @@ typedef int bool;
 #define CMD_LINE_MAX_LEN    (1024)  /* 命令行最大长度 */
 #define ERR_MSG_MAX_LEN     (1024)  /* 错误信息最大长度 */
 
-#define MD5_SUM_CHK_LEN     (32)    /* Md5校验值长度 */
-#define XDR_STR_MAX_LEN     (2048)  /* XDR的最大长度 */
+#define MD5_SUM_CHK_LEN     (32)    /* MD5校验值长度 */
+#define INVALID_FD          (-1)    /* 非法文件描述符 */
+#define INVALID_PID         (-1)    /* 非法进程ID */
 
 int Readn(int fd, void *buff, int n);
 int Writen(int fd, const void *buff, int n);
@@ -62,6 +63,7 @@ int usck_udp_send(int sckid, const char *path, const void *buff, size_t bufflen)
 int usck_udp_recv(int sckid, void *buff, int rcvlen);
 
 int creat_thread(pthread_t *tid, void *(*process)(void *args), void *args);
+int proc_is_exist(pid_t pid);
 
 /* 文件锁相关 */
 int _flock(int fd, int type, int whence, int offset, int len);
@@ -73,11 +75,11 @@ int _try_flock(int fd, int type, int whence, int offset, int len);
 #define proc_try_rdlock(fd) _try_flock(fd, F_RDLCK, SEEK_SET, 0, 0) /* 尝试读锁(全文件) */
 #define proc_unlock(fd) _flock(fd, F_UNLCK, SEEK_SET, 0, 0)  /* 解锁(全文件) */
 
-#define proc_wrlock_ex(fd, idx) _flock(fd, F_WRLCK, SEEK_SET, idx, 1)   /* 写锁(单字节) */
-#define proc_rdlock_ex(fd, idx) _flock(fd, F_RDLCK, SEEK_SET, idx, 1)   /* 读锁(单字节) */
-#define proc_try_wrlock_ex(fd, idx) _try_flock(fd, F_WRLCK, SEEK_SET, idx, 1) /* 尝试写锁(单字节) */
-#define proc_try_rdlock_ex(fd, idx) _try_flock(fd, F_RDLCK, SEEK_SET, idx, 1) /* 尝试读锁(单字节) */
-#define proc_unlock_ex(fd, idx) _flock(fd, F_UNLCK, SEEK_SET, idx, 1)   /* 解锁(单字节) */
+#define proc_wrlock_b(fd, idx) _flock(fd, F_WRLCK, SEEK_SET, idx, 1)   /* 写锁(单字节) */
+#define proc_rdlock_b(fd, idx) _flock(fd, F_RDLCK, SEEK_SET, idx, 1)   /* 读锁(单字节) */
+#define proc_try_wrlock_b(fd, idx) _try_flock(fd, F_WRLCK, SEEK_SET, idx, 1) /* 尝试写锁(单字节) */
+#define proc_try_rdlock_b(fd, idx) _try_flock(fd, F_RDLCK, SEEK_SET, idx, 1) /* 尝试读锁(单字节) */
+#define proc_unlock_b(fd, idx) _flock(fd, F_UNLCK, SEEK_SET, idx, 1)   /* 解锁(单字节) */
 
 void sha256_digest(char *str, unsigned int len, unsigned char digest[32]);
 #endif /*__COMMON_H__*/

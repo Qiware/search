@@ -4,6 +4,41 @@
 !_TAG_PROGRAM_NAME	Exuberant Ctags	//
 !_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
 !_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+ALOG_CMD_INVALID	src/incl/alog.h	/^    ALOG_CMD_INVALID,               \/* ·Ç·¨ÃüÁî *\/$/;"	e	enum:__anon24
+ALOG_CMD_SYNC	src/incl/alog.h	/^    ALOG_CMD_SYNC,                  \/* Í¬²½ÃüÁî *\/$/;"	e	enum:__anon24
+ALOG_CMD_TOTAL	src/incl/alog.h	/^    ALOG_CMD_TOTAL = ALOG_CMD_UNKNOWN \/* ÃüÁîÊýÄ¿ *\/$/;"	e	enum:__anon24
+ALOG_CMD_UNKNOWN	src/incl/alog.h	/^    ALOG_CMD_UNKNOWN,               \/* Î´ÖªÃüÁî *\/$/;"	e	enum:__anon24
+ALOG_DEFAULT_ERRLOG	src/incl/alog.h	38;"	d
+ALOG_DEFAULT_TRCLOG	src/incl/alog.h	39;"	d
+ALOG_DIR_MODE	src/incl/alog.h	31;"	d
+ALOG_DUMP_COL_NUM	src/incl/alog.h	52;"	d
+ALOG_DUMP_HEAD_STR	src/incl/alog.h	56;"	d
+ALOG_DUMP_LINE_MAX_SIZE	src/incl/alog.h	53;"	d
+ALOG_DUMP_PAGE_MAX_LINE	src/incl/alog.h	54;"	d
+ALOG_DUMP_PAGE_MAX_SIZE	src/incl/alog.h	55;"	d
+ALOG_ERR_FORCE	src/incl/alog.h	11;"	d
+ALOG_FILE_CACHE_SIZE	src/incl/alog.h	23;"	d
+ALOG_FILE_MAX_NUM	src/incl/alog.h	22;"	d
+ALOG_FILE_MAX_SIZE	src/incl/alog.h	35;"	d
+ALOG_INVALID_FD	src/incl/alog.h	49;"	d
+ALOG_INVALID_PID	src/incl/alog.h	48;"	d
+ALOG_LOCK_FILE	src/incl/alog.h	44;"	d
+ALOG_MSG_MAX_LEN	src/incl/alog.h	33;"	d
+ALOG_OPEN_FLAGS	src/incl/alog.h	30;"	d
+ALOG_OPEN_MODE	src/incl/alog.h	29;"	d
+ALOG_PARAM_ERR	src/incl/alog.h	/^    ALOG_PARAM_ERR,                 \/* ´íÎóÈÕÖ¾Â·¾¶²ÎÊý *\/$/;"	e	enum:__anon25
+ALOG_PARAM_SIZE	src/incl/alog.h	/^    ALOG_PARAM_SIZE,                \/* ÈÕÖ¾´óÐ¡²ÎÊý *\/$/;"	e	enum:__anon25
+ALOG_PARAM_TOTAL	src/incl/alog.h	/^    ALOG_PARAM_TOTAL = ALOG_PARAM_UNKNOWN$/;"	e	enum:__anon25
+ALOG_PARAM_TRC	src/incl/alog.h	/^    ALOG_PARAM_TRC,                 \/* ¸ú×ÙÈÕÖ¾Â·¾¶²ÎÊý *\/$/;"	e	enum:__anon25
+ALOG_PARAM_UNKNOWN	src/incl/alog.h	/^    ALOG_PARAM_UNKNOWN,             \/* Î´Öª²ÎÊý *\/$/;"	e	enum:__anon25
+ALOG_SHM_KEY	src/incl/alog.h	27;"	d
+ALOG_SHM_SIZE	src/incl/alog.h	24;"	d
+ALOG_SUFFIX	src/incl/alog.h	37;"	d
+ALOG_SVR_LOG_NAME	src/exec/logsvr/alog_svr.c	22;"	d	file:
+ALOG_SVR_PROC_LOCK	src/exec/logsvr/alog_svr.c	16;"	d	file:
+ALOG_SVR_SYNC	src/incl/alog.h	12;"	d
+ALOG_SVR_THREAD_NUM	src/incl/alog.h	34;"	d
+ALOG_SYNC_TIMEOUT	src/incl/alog.h	25;"	d
 AVL_EH	src/incl/avl_tree.h	16;"	d
 AVL_ERR_NOT_FOUND	src/incl/avl_tree.h	/^    , AVL_ERR_NOT_FOUND         \/* æœªæ‰¾åˆ° *\/$/;"	e	enum:__anon2
 AVL_ERR_STACK	src/incl/avl_tree.h	/^    , AVL_ERR_STACK             \/* æ ˆå¼‚å¸¸ *\/$/;"	e	enum:__anon2
@@ -13,49 +48,119 @@ AVL_MAX_DEPTH	src/incl/avl_tree.h	19;"	d
 AVL_NODE_EXIST	src/incl/avl_tree.h	/^    , AVL_NODE_EXIST            \/* èŠ‚ç‚¹å­˜åœ¨ *\/$/;"	e	enum:__anon2
 AVL_RH	src/incl/avl_tree.h	15;"	d
 AVL_SUCCESS	src/incl/avl_tree.h	/^    AVL_SUCCESS                 \/* æˆåŠŸ *\/$/;"	e	enum:__anon2
-ByteNumHi	src/incl/sha256.h	/^	int  ByteNumHi;$/;"	m	struct:_sha256_t
-ByteNumLo	src/incl/sha256.h	/^	int  ByteNumLo;$/;"	m	struct:_sha256_t
+AlogErrlogDefPath	src/incl/alog.h	40;"	d
+AlogGetDataSize	src/core/alog.c	75;"	d	file:
+AlogGetLevel	src/core/alog.c	70;"	d	file:
+AlogGetLevelStr	src/core/alog.c	120;"	d	file:
+AlogGetLockPath	src/incl/alog.h	45;"	d
+AlogGetMaxSize	src/core/alog.c	43;"	d	file:
+AlogGetShmAddr	src/core/alog.c	25;"	d	file:
+AlogHash	src/core/alog.c	77;"	d	file:
+AlogIsErrLevel	src/core/alog.c	78;"	d	file:
+AlogIsForceSync	src/core/alog.c	126;"	d	file:
+AlogIsShmAddrValid	src/core/alog.c	27;"	d	file:
+AlogIsTimeout	src/incl/alog.h	59;"	d
+AlogIsTooLarge	src/core/alog.c	45;"	d	file:
+AlogSetMaxSize	src/core/alog.c	44;"	d	file:
+AlogSetShmAddr	src/core/alog.c	26;"	d	file:
+AlogSvrGetLogPath	src/exec/logsvr/alog_svr.c	23;"	d	file:
+AlogSvrGetProcLockPath	src/exec/logsvr/alog_svr.c	17;"	d	file:
+AlogSvrTryLockProc	src/exec/logsvr/alog_svr.c	19;"	d	file:
+AlogTrclogDefPath	src/incl/alog.h	42;"	d
+ByteNumHi	src/incl/sha256.h	/^    int  ByteNumHi;$/;"	m	struct:_sha256_t
+ByteNumLo	src/incl/sha256.h	/^    int  ByteNumLo;$/;"	m	struct:_sha256_t
 CC	make/build.mak	/^CC = gcc$/;"	m
 CFLAGS	make/build.mak	/^CFLAGS = -Wall -g -fPIC -s \\$/;"	m
-CMD_LINE_MAX_LEN	src/incl/xdt_comm.h	30;"	d
-CONFIG_DEBUG_SUPPORT	make/switch.mak	/^CONFIG_DEBUG_SUPPORT = __ON__ 	# è°ƒè¯•å¼€å…³$/;"	m
-CONFIG_LOG_SUPPORT	make/switch.mak	/^CONFIG_LOG_SUPPORT = __ON__		# æ—¥å¿—å¼€å…³$/;"	m
-Close	src/incl/xdt_comm.h	40;"	d
+CMD_LINE_MAX_LEN	src/incl/common.h	30;"	d
+CONFIG_DEBUG_SUPPORT	make/switch.mak	/^CONFIG_DEBUG_SUPPORT = __ON__     # è°ƒè¯•å¼€å…³$/;"	m
+CONFIG_LOG_SUPPORT	make/switch.mak	/^CONFIG_LOG_SUPPORT = __ON__        # æ—¥å¿—å¼€å…³$/;"	m
+Close	src/incl/common.h	41;"	d
 DIR	Makefile	/^DIR := "src\/core"$/;"	m
-DwordBuf	src/incl/sha256.h	/^	int  DwordBuf[ 16 ]; \/** data store *\/$/;"	m	struct:_sha256_t
-DwordBufBytes	src/incl/sha256.h	/^	int  DwordBufBytes;$/;"	m	struct:_sha256_t
-ERR_MSG_MAX_LEN	src/incl/xdt_comm.h	31;"	d
-FILE_LINE_MAX_LEN	src/incl/xdt_comm.h	27;"	d
-FILE_NAME_MAX_LEN	src/incl/xdt_comm.h	26;"	d
-FILE_PATH_MAX_LEN	src/incl/xdt_comm.h	28;"	d
-Free	src/incl/xdt_comm.h	45;"	d
-Hash	src/core/xdt_comm.c	/^unsigned int Hash(const char *str)$/;"	f
+DwordBuf	src/incl/sha256.h	/^    int  DwordBuf[ 16 ]; \/** data store *\/$/;"	m	struct:_sha256_t
+DwordBufBytes	src/incl/sha256.h	/^    int  DwordBufBytes;$/;"	m	struct:_sha256_t
+ERR_MSG_MAX_LEN	src/incl/common.h	31;"	d
+FILE_LINE_MAX_LEN	src/incl/common.h	27;"	d
+FILE_NAME_MAX_LEN	src/incl/common.h	26;"	d
+FILE_PATH_MAX_LEN	src/incl/common.h	28;"	d
+Free	src/incl/common.h	46;"	d
+Hash	src/core/common.c	/^uint32_t Hash(const char *str)$/;"	f
 INCLUDE	src/core/Makefile	/^INCLUDE = -I. -I$(PROJ)\/src\/incl$/;"	m
-IP_ADDR_MAX_LEN	src/incl/xdt_comm.h	29;"	d
+INCLUDE	src/exec/logsvr/Makefile	/^INCLUDE = -I. -I$(PROJ)\/src\/incl$/;"	m
+INVALID_FD	src/incl/common.h	34;"	d
+INVALID_PID	src/incl/common.h	35;"	d
+IP_ADDR_MAX_LEN	src/incl/common.h	29;"	d
 LFLAGS	make/build.mak	/^LFLAGS = -Wall -g -fPIC -shared  -s$/;"	m
 LIBS	src/core/Makefile	/^LIBS = -lpthread$/;"	m
+LIBS	src/exec/logsvr/Makefile	/^LIBS = -lpthread$/;"	m
 LIBS_PATH	src/core/Makefile	/^LIBS_PATH = -L$(PROJ)\/lib$/;"	m
-Listen	src/core/xdt_comm.c	/^int Listen(int port)$/;"	f
-MD5_SUM_CHK_LEN	src/incl/xdt_comm.h	33;"	d
-Mkdir	src/core/xdt_comm.c	/^int Mkdir(const char *dir, mode_t mode)$/;"	f
-Mkdir2	src/core/xdt_comm.c	/^int Mkdir2(const char *fname, mode_t mode)$/;"	f
+LIBS_PATH	src/exec/logsvr/Makefile	/^LIBS_PATH = -L$(PROJ)\/lib$/;"	m
+LOG_CMD_INVALID	src/incl/log_svr.h	/^    LOG_CMD_INVALID,               \/* éžæ³•å‘½ä»¤ *\/$/;"	e	enum:__anon34
+LOG_CMD_SYNC	src/incl/log_svr.h	/^    LOG_CMD_SYNC,                  \/* åŒæ­¥å‘½ä»¤ *\/$/;"	e	enum:__anon34
+LOG_CMD_TOTAL	src/incl/log_svr.h	/^    LOG_CMD_TOTAL = LOG_CMD_UNKNOWN \/* å‘½ä»¤æ•°ç›® *\/$/;"	e	enum:__anon34
+LOG_CMD_UNKNOWN	src/incl/log_svr.h	/^    LOG_CMD_UNKNOWN,               \/* æœªçŸ¥å‘½ä»¤ *\/$/;"	e	enum:__anon34
+LOG_DEFAULT_ERRLOG	src/incl/log_svr.h	20;"	d
+LOG_DEFAULT_TRCLOG	src/incl/log_svr.h	21;"	d
+LOG_DIR_MODE	src/incl/log_svr.h	13;"	d
+LOG_DUMP_COL_NUM	src/incl/log_svr.h	32;"	d
+LOG_DUMP_HEAD_STR	src/incl/log_svr.h	36;"	d
+LOG_DUMP_LINE_MAX_SIZE	src/incl/log_svr.h	33;"	d
+LOG_DUMP_PAGE_MAX_LINE	src/incl/log_svr.h	34;"	d
+LOG_DUMP_PAGE_MAX_SIZE	src/incl/log_svr.h	35;"	d
+LOG_FILE_CACHE_SIZE	src/incl/log_svr.h	6;"	d
+LOG_FILE_MAX_NUM	src/incl/log_svr.h	5;"	d
+LOG_FILE_MAX_SIZE	src/incl/log_svr.h	17;"	d
+LOG_INVALID_FD	src/incl/log.h	25;"	d
+LOG_INVALID_FD	src/incl/log_svr.h	29;"	d
+LOG_INVALID_PID	src/incl/log.h	24;"	d
+LOG_INVALID_PID	src/incl/log_svr.h	28;"	d
+LOG_LEVEL_DEBUG	src/incl/alog.h	/^    LOG_LEVEL_DEBUG,                \/* µ÷ÊÔ¼¶±ð *\/$/;"	e	enum:__anon23
+LOG_LEVEL_DEBUG	src/incl/log.h	20;"	d
+LOG_LEVEL_ERROR	src/incl/alog.h	/^    LOG_LEVEL_ERROR,                \/* ´íÎó¼¶±ð *\/$/;"	e	enum:__anon23
+LOG_LEVEL_ERROR	src/incl/log.h	17;"	d
+LOG_LEVEL_FATAL	src/incl/log.h	16;"	d
+LOG_LEVEL_INFO	src/incl/alog.h	/^    LOG_LEVEL_INFO,                 \/* ÐÅÏ¢¼¶±ð *\/$/;"	e	enum:__anon23
+LOG_LEVEL_INFO	src/incl/log.h	19;"	d
+LOG_LEVEL_TOTAL	src/incl/alog.h	/^    LOG_LEVEL_TOTAL$/;"	e	enum:__anon23
+LOG_LEVEL_TOTAL	src/incl/log.h	22;"	d
+LOG_LEVEL_TRACE	src/incl/log.h	21;"	d
+LOG_LEVEL_UNKNOWN	src/incl/alog.h	/^    LOG_LEVEL_UNKNOWN,              \/* Î´Öª¼¶±ð *\/$/;"	e	enum:__anon23
+LOG_LEVEL_WARN	src/incl/log.h	18;"	d
+LOG_LEVEL_WARNING	src/incl/alog.h	/^    LOG_LEVEL_WARNING,              \/* ¾¯¸æ¼¶±ð *\/$/;"	e	enum:__anon23
+LOG_LOCK_FILE	src/incl/log_svr.h	24;"	d
+LOG_MSG_MAX_LEN	src/incl/log_svr.h	15;"	d
+LOG_OPEN_FLAGS	src/incl/log_svr.h	12;"	d
+LOG_OPEN_MODE	src/incl/log_svr.h	11;"	d
+LOG_SHM_KEY	src/incl/log_svr.h	9;"	d
+LOG_SHM_SIZE	src/incl/log_svr.h	7;"	d
+LOG_SUFFIX	src/incl/log_svr.h	19;"	d
+LOG_SVR_THREAD_NUM	src/incl/log_svr.h	16;"	d
+LOG_SYNC_TIMEOUT	src/incl/log_svr.h	8;"	d
+Listen	src/core/common.c	/^int Listen(int32_t port)$/;"	f
+LogGetLockPath	src/incl/log_svr.h	25;"	d
+LogHash	src/core/log.c	58;"	d	file:
+LogIsTimeout	src/incl/log_svr.h	39;"	d
+LogTrclogDefPath	src/incl/log_svr.h	22;"	d
+MD5_SUM_CHK_LEN	src/incl/common.h	33;"	d
+Mkdir	src/core/common.c	/^int Mkdir(const char *dir, mode_t mode)$/;"	f
+Mkdir2	src/core/common.c	/^int Mkdir2(const char *fname, mode_t mode)$/;"	f
 OBJS	src/core/Makefile	/^OBJS = $(subst .c,.o, $(SRC_LIST)) $/;"	m
-Open	src/core/xdt_comm.c	/^int Open(const char *fpath, int flags, mode_t mode)$/;"	f
+OBJS	src/exec/logsvr/Makefile	/^OBJS = $(subst .c,.o, $(SRC_LIST)) $/;"	m
+Open	src/core/common.c	/^int Open(const char *fpath, int flags, mode_t mode)$/;"	f
 PROJ	Makefile	/^export PROJ = ${PWD}$/;"	m
-Padding	src/incl/sha256.h	/^	int  Padding[ 64 ];$/;"	m	struct:_sha256_t
+Padding	src/incl/sha256.h	/^    int  Padding[ 64 ];$/;"	m	struct:_sha256_t
 Qnode_t	src/incl/queue.h	/^}Qnode_t;$/;"	t	typeref:struct:_Qnode_t
-Queue_t	src/incl/queue.h	/^}Queue_t;$/;"	t	typeref:struct:__anon23
+Queue_t	src/incl/queue.h	/^}Queue_t;$/;"	t	typeref:struct:__anon32
 RBT_COLOR_BLACK	src/incl/rb_tree.h	13;"	d
 RBT_COLOR_RED	src/incl/rb_tree.h	14;"	d
-RBT_FAILED	src/incl/rb_tree.h	/^    , RBT_FAILED = ~0x7fffffff      \/* å¤±è´¥ *\/$/;"	e	enum:__anon11
+RBT_FAILED	src/incl/rb_tree.h	/^    , RBT_FAILED = ~0x7fffffff      \/* å¤±è´¥ *\/$/;"	e	enum:__anon10
 RBT_LCHILD	src/incl/rb_tree.h	16;"	d
 RBT_MAX_DEPTH	src/incl/rb_tree.h	19;"	d
-RBT_NODE_EXIST	src/incl/rb_tree.h	/^    , RBT_NODE_EXIST                \/* ç»“ç‚¹å­˜åœ¨ *\/$/;"	e	enum:__anon11
+RBT_NODE_EXIST	src/incl/rb_tree.h	/^    , RBT_NODE_EXIST                \/* ç»“ç‚¹å­˜åœ¨ *\/$/;"	e	enum:__anon10
 RBT_RCHILD	src/incl/rb_tree.h	17;"	d
-RBT_SUCCESS	src/incl/rb_tree.h	/^    RBT_SUCCESS                     \/* æˆåŠŸ *\/$/;"	e	enum:__anon11
-Random	src/core/xdt_comm.c	/^int Random(void)$/;"	f
-Readn	src/core/xdt_comm.c	/^int Readn(int fd, void *buff, int n)$/;"	f
-Rename	src/core/xdt_comm.c	/^int Rename(const char *oldpath, const char *newpath)$/;"	f
+RBT_SUCCESS	src/incl/rb_tree.h	/^    RBT_SUCCESS                     \/* æˆåŠŸ *\/$/;"	e	enum:__anon10
+Random	src/core/common.c	/^int Random(void)$/;"	f
+Readn	src/core/common.c	/^int Readn(int32_t fd, void *buff, int n)$/;"	f
+Rename	src/core/common.c	/^int Rename(const char *oldpath, const char *newpath)$/;"	f
 SHM_SLAB_ALLOC_EXACT	src/incl/shm_slab.h	/^    SHM_SLAB_ALLOC_EXACT,   \/* µÈÓÚ128×Ö½Ú *\/$/;"	e	enum:__anon5
 SHM_SLAB_ALLOC_LARGE	src/incl/shm_slab.h	/^    SHM_SLAB_ALLOC_LARGE,   \/* ´óÓÚ128×Ö½Ú£¬Ð¡ÓÚ2048×Ö½Ú *\/$/;"	e	enum:__anon5
 SHM_SLAB_ALLOC_PAGES	src/incl/shm_slab.h	/^    SHM_SLAB_ALLOC_PAGES,   \/* °´ÕûÒ³·ÖÅä *\/$/;"	e	enum:__anon5
@@ -63,83 +168,85 @@ SHM_SLAB_ALLOC_SMALL	src/incl/shm_slab.h	/^    SHM_SLAB_ALLOC_SMALL,   \/* Ð¡ÓÚ1
 SHM_SLAB_ALLOC_TOTAL	src/incl/shm_slab.h	/^    SHM_SLAB_ALLOC_TOTAL$/;"	e	enum:__anon5
 SHM_SLAB_ALLOC_TYPE	src/incl/shm_slab.h	/^}SHM_SLAB_ALLOC_TYPE;$/;"	t	typeref:enum:__anon5
 SHM_SLAB_ALLOC_UNKNOWN	src/incl/shm_slab.h	/^    SHM_SLAB_ALLOC_UNKNOWN, \/* Î´Öª·½Ê½ *\/$/;"	e	enum:__anon5
-SHM_SLAB_BITMAP_BITS	src/core/shm_slab.c	8;"	d	file:
-SHM_SLAB_BITMAP_SHIFT	src/core/shm_slab.c	9;"	d	file:
-SHM_SLAB_BUSY_BITMAP	src/core/shm_slab.c	13;"	d	file:
-SHM_SLAB_FREE_PAGE	src/core/shm_slab.c	12;"	d	file:
-SHM_SLAB_MIN_SHIFT	src/core/shm_slab.c	7;"	d	file:
-SHM_SLAB_MIN_SIZE	src/core/shm_slab.c	6;"	d	file:
-SHM_SLAB_NULL_PAGE	src/core/shm_slab.c	11;"	d	file:
-SHM_SLAB_PAGE_SIZE	src/core/shm_slab.c	5;"	d	file:
-SLAB_BIG	src/core/slab.c	6;"	d	file:
-SLAB_BUSY	src/core/slab.c	24;"	d	file:
-SLAB_BUSY	src/core/slab.c	36;"	d	file:
-SLAB_EXACT	src/core/slab.c	7;"	d	file:
-SLAB_EXTRA_SIZE	src/core/slab.c	12;"	d	file:
-SLAB_MAP_MASK	src/core/slab.c	21;"	d	file:
-SLAB_MAP_MASK	src/core/slab.c	33;"	d	file:
-SLAB_MAP_SHIFT	src/core/slab.c	22;"	d	file:
-SLAB_MAP_SHIFT	src/core/slab.c	34;"	d	file:
-SLAB_PAGE	src/core/slab.c	5;"	d	file:
-SLAB_PAGE_BUSY	src/core/slab.c	17;"	d	file:
-SLAB_PAGE_BUSY	src/core/slab.c	29;"	d	file:
-SLAB_PAGE_FREE	src/core/slab.c	16;"	d	file:
-SLAB_PAGE_FREE	src/core/slab.c	28;"	d	file:
-SLAB_PAGE_MASK	src/core/slab.c	4;"	d	file:
-SLAB_PAGE_SHIFT	src/core/slab.c	11;"	d	file:
-SLAB_PAGE_SIZE	src/core/slab.c	10;"	d	file:
-SLAB_PAGE_START	src/core/slab.c	18;"	d	file:
-SLAB_PAGE_START	src/core/slab.c	30;"	d	file:
-SLAB_SHIFT_MASK	src/core/slab.c	20;"	d	file:
-SLAB_SHIFT_MASK	src/core/slab.c	32;"	d	file:
-SLAB_SMALL	src/core/slab.c	8;"	d	file:
-SRC_LIST	src/core/Makefile	/^SRC_LIST = avl_tree.c \\$/;"	m
+SHM_SLAB_BITMAP_BITS	src/core/shm_slab.c	17;"	d	file:
+SHM_SLAB_BITMAP_SHIFT	src/core/shm_slab.c	18;"	d	file:
+SHM_SLAB_BUSY_BITMAP	src/core/shm_slab.c	22;"	d	file:
+SHM_SLAB_FREE_PAGE	src/core/shm_slab.c	21;"	d	file:
+SHM_SLAB_MIN_SHIFT	src/core/shm_slab.c	16;"	d	file:
+SHM_SLAB_MIN_SIZE	src/core/shm_slab.c	15;"	d	file:
+SHM_SLAB_NULL_PAGE	src/core/shm_slab.c	20;"	d	file:
+SHM_SLAB_PAGE_SIZE	src/core/shm_slab.c	14;"	d	file:
+SLAB_BIG	src/core/slab.c	15;"	d	file:
+SLAB_BUSY	src/core/slab.c	33;"	d	file:
+SLAB_BUSY	src/core/slab.c	45;"	d	file:
+SLAB_EXACT	src/core/slab.c	16;"	d	file:
+SLAB_EXTRA_SIZE	src/core/slab.c	21;"	d	file:
+SLAB_MAP_MASK	src/core/slab.c	30;"	d	file:
+SLAB_MAP_MASK	src/core/slab.c	42;"	d	file:
+SLAB_MAP_SHIFT	src/core/slab.c	31;"	d	file:
+SLAB_MAP_SHIFT	src/core/slab.c	43;"	d	file:
+SLAB_PAGE	src/core/slab.c	14;"	d	file:
+SLAB_PAGE_BUSY	src/core/slab.c	26;"	d	file:
+SLAB_PAGE_BUSY	src/core/slab.c	38;"	d	file:
+SLAB_PAGE_FREE	src/core/slab.c	25;"	d	file:
+SLAB_PAGE_FREE	src/core/slab.c	37;"	d	file:
+SLAB_PAGE_MASK	src/core/slab.c	13;"	d	file:
+SLAB_PAGE_SHIFT	src/core/slab.c	20;"	d	file:
+SLAB_PAGE_SIZE	src/core/slab.c	19;"	d	file:
+SLAB_PAGE_START	src/core/slab.c	27;"	d	file:
+SLAB_PAGE_START	src/core/slab.c	39;"	d	file:
+SLAB_SHIFT_MASK	src/core/slab.c	29;"	d	file:
+SLAB_SHIFT_MASK	src/core/slab.c	41;"	d	file:
+SLAB_SMALL	src/core/slab.c	17;"	d	file:
+SRC_LIST	src/core/Makefile	/^SRC_LIST = list.c \\$/;"	m
+SRC_LIST	src/exec/logsvr/Makefile	/^SRC_LIST = alog_svr.c$/;"	m
 STR_END_FLAG	src/incl/xml_comm.h	62;"	d
-Sleep	src/core/xdt_comm.c	/^int Sleep(int secs)$/;"	f
-Stack_t	src/incl/stack.h	/^}Stack_t;$/;"	t	typeref:struct:__anon10
+SW_LOG_CHG_DBGFILE	src/incl/alog.h	188;"	d
+SW_LOG_CHG_ERRFILE	src/incl/alog.h	187;"	d
+SW_LOG_DEBUG	src/incl/alog.h	183;"	d
+SW_LOG_ERROR	src/incl/alog.h	182;"	d
+SW_LOG_INFO	src/incl/alog.h	185;"	d
+SW_LOG_WARNING	src/incl/alog.h	184;"	d
+Sleep	src/core/common.c	/^int Sleep(int32_t secs)$/;"	f
+Stack_t	src/incl/stack.h	/^}Stack_t;$/;"	t	typeref:struct:__anon9
 TARGET	src/core/Makefile	/^TARGET = libcore.so$/;"	m
-Value	src/incl/sha256.h	/^	char  Value[ 32 ]; $/;"	m	struct:_sha256_t
-Writen	src/core/xdt_comm.c	/^int Writen(int fd, const void *buff, int n)$/;"	f
-XDR_STR_MAX_LEN	src/incl/xdt_comm.h	34;"	d
-XDT_LOG_LEVEL_DEBUG	src/incl/xdt_log.h	17;"	d
-XDT_LOG_LEVEL_ERROR	src/incl/xdt_log.h	14;"	d
-XDT_LOG_LEVEL_FATAL	src/incl/xdt_log.h	13;"	d
-XDT_LOG_LEVEL_INFO	src/incl/xdt_log.h	16;"	d
-XDT_LOG_LEVEL_TRACE	src/incl/xdt_log.h	18;"	d
-XDT_LOG_LEVEL_WARN	src/incl/xdt_log.h	15;"	d
+TARGET	src/exec/logsvr/Makefile	/^TARGET = alog_svr$/;"	m
+ULOG_MAX_SIZE	src/incl/alog.h	152;"	d
+Value	src/incl/sha256.h	/^    char  Value[ 32 ]; $/;"	m	struct:_sha256_t
+Writen	src/core/common.c	/^int Writen(int32_t fd, const void *buff, int n)$/;"	f
 XML_BEGIN_FLAG	src/incl/xml_comm.h	58;"	d
 XML_END_FLAG	src/incl/xml_comm.h	61;"	d
-XML_ERR_CALLOC	src/incl/xml_comm.h	/^    XML_ERR_CALLOC           \/* callocå¤±è´¥ *\/$/;"	e	enum:__anon15
-XML_ERR_CREAT_NODE	src/incl/xml_comm.h	/^    , XML_ERR_CREAT_NODE     \/* æ–°å»ºèŠ‚ç‚¹å¤±è´¥ *\/$/;"	e	enum:__anon15
-XML_ERR_EMPTY_TREE	src/incl/xml_comm.h	/^    , XML_ERR_EMPTY_TREE     \/* ç©ºæ ‘ *\/$/;"	e	enum:__anon15
-XML_ERR_FOPEN	src/incl/xml_comm.h	/^    , XML_ERR_FOPEN          \/* fopenå¤±è´¥ *\/$/;"	e	enum:__anon15
-XML_ERR_FORMAT	src/incl/xml_comm.h	/^    , XML_ERR_FORMAT         \/* XMLæ ¼å¼é”™è¯¯ *\/$/;"	e	enum:__anon15
-XML_ERR_GET_ATTR	src/incl/xml_comm.h	/^    , XML_ERR_GET_ATTR       \/* å±žæ€§èŽ·å–å¤±è´¥ *\/$/;"	e	enum:__anon15
-XML_ERR_GET_NAME	src/incl/xml_comm.h	/^    , XML_ERR_GET_NAME       \/* æ ‡ç­¾åèŽ·å–å¤±è´¥ *\/$/;"	e	enum:__anon15
-XML_ERR_MARK_MISMATCH	src/incl/xml_comm.h	/^    , XML_ERR_MARK_MISMATCH  \/* æ ‡ç­¾ä¸åŒ¹é… *\/$/;"	e	enum:__anon15
-XML_ERR_NODE_TYPE	src/incl/xml_comm.h	/^    , XML_ERR_NODE_TYPE      \/* èŠ‚ç‚¹ç±»åž‹é”™è¯¯ *\/$/;"	e	enum:__anon15
-XML_ERR_PTR_NULL	src/incl/xml_comm.h	/^    , XML_ERR_PTR_NULL       \/* ç©ºæŒ‡é’ˆ *\/$/;"	e	enum:__anon15
-XML_ERR_STACK	src/incl/xml_comm.h	/^    , XML_ERR_STACK          \/* æ ˆå‡ºé”™ *\/$/;"	e	enum:__anon15
-XML_ESC_AMP	src/incl/xml_comm.h	/^    , XML_ESC_AMP          \/* &amp;    & *\/$/;"	e	enum:__anon16
+XML_ERR_CALLOC	src/incl/xml_comm.h	/^    XML_ERR_CALLOC           \/* callocå¤±è´¥ *\/$/;"	e	enum:__anon17
+XML_ERR_CREAT_NODE	src/incl/xml_comm.h	/^    , XML_ERR_CREAT_NODE     \/* æ–°å»ºèŠ‚ç‚¹å¤±è´¥ *\/$/;"	e	enum:__anon17
+XML_ERR_EMPTY_TREE	src/incl/xml_comm.h	/^    , XML_ERR_EMPTY_TREE     \/* ç©ºæ ‘ *\/$/;"	e	enum:__anon17
+XML_ERR_FOPEN	src/incl/xml_comm.h	/^    , XML_ERR_FOPEN          \/* fopenå¤±è´¥ *\/$/;"	e	enum:__anon17
+XML_ERR_FORMAT	src/incl/xml_comm.h	/^    , XML_ERR_FORMAT         \/* XMLæ ¼å¼é”™è¯¯ *\/$/;"	e	enum:__anon17
+XML_ERR_GET_ATTR	src/incl/xml_comm.h	/^    , XML_ERR_GET_ATTR       \/* å±žæ€§èŽ·å–å¤±è´¥ *\/$/;"	e	enum:__anon17
+XML_ERR_GET_NAME	src/incl/xml_comm.h	/^    , XML_ERR_GET_NAME       \/* æ ‡ç­¾åèŽ·å–å¤±è´¥ *\/$/;"	e	enum:__anon17
+XML_ERR_MARK_MISMATCH	src/incl/xml_comm.h	/^    , XML_ERR_MARK_MISMATCH  \/* æ ‡ç­¾ä¸åŒ¹é… *\/$/;"	e	enum:__anon17
+XML_ERR_NODE_TYPE	src/incl/xml_comm.h	/^    , XML_ERR_NODE_TYPE      \/* èŠ‚ç‚¹ç±»åž‹é”™è¯¯ *\/$/;"	e	enum:__anon17
+XML_ERR_PTR_NULL	src/incl/xml_comm.h	/^    , XML_ERR_PTR_NULL       \/* ç©ºæŒ‡é’ˆ *\/$/;"	e	enum:__anon17
+XML_ERR_STACK	src/incl/xml_comm.h	/^    , XML_ERR_STACK          \/* æ ˆå‡ºé”™ *\/$/;"	e	enum:__anon17
+XML_ESC_AMP	src/incl/xml_comm.h	/^    , XML_ESC_AMP          \/* &amp;    & *\/$/;"	e	enum:__anon18
 XML_ESC_AMP_LEN	src/incl/xml_comm.h	73;"	d
 XML_ESC_AMP_STR	src/incl/xml_comm.h	72;"	d
-XML_ESC_APOS	src/incl/xml_comm.h	/^    , XML_ESC_APOS         \/* &apos;   ' *\/$/;"	e	enum:__anon16
+XML_ESC_APOS	src/incl/xml_comm.h	/^    , XML_ESC_APOS         \/* &apos;   ' *\/$/;"	e	enum:__anon18
 XML_ESC_APOS_LEN	src/incl/xml_comm.h	76;"	d
 XML_ESC_APOS_STR	src/incl/xml_comm.h	75;"	d
-XML_ESC_GT	src/incl/xml_comm.h	/^    , XML_ESC_GT           \/* &gt;     > *\/$/;"	e	enum:__anon16
+XML_ESC_GT	src/incl/xml_comm.h	/^    , XML_ESC_GT           \/* &gt;     > *\/$/;"	e	enum:__anon18
 XML_ESC_GT_LEN	src/incl/xml_comm.h	70;"	d
 XML_ESC_GT_STR	src/incl/xml_comm.h	69;"	d
-XML_ESC_LT	src/incl/xml_comm.h	/^    XML_ESC_LT             \/* &lt;     < *\/$/;"	e	enum:__anon16
+XML_ESC_LT	src/incl/xml_comm.h	/^    XML_ESC_LT             \/* &lt;     < *\/$/;"	e	enum:__anon18
 XML_ESC_LT_LEN	src/incl/xml_comm.h	67;"	d
 XML_ESC_LT_STR	src/incl/xml_comm.h	66;"	d
-XML_ESC_QUOT	src/incl/xml_comm.h	/^    , XML_ESC_QUOT         \/* &quot;   " *\/$/;"	e	enum:__anon16
+XML_ESC_QUOT	src/incl/xml_comm.h	/^    , XML_ESC_QUOT         \/* &quot;   " *\/$/;"	e	enum:__anon18
 XML_ESC_QUOT_LEN	src/incl/xml_comm.h	79;"	d
 XML_ESC_QUOT_STR	src/incl/xml_comm.h	78;"	d
-XML_ESC_TOTAL	src/incl/xml_comm.h	/^    , XML_ESC_TOTAL = XML_ESC_UNKNOWN$/;"	e	enum:__anon16
-XML_ESC_UNKNOWN	src/incl/xml_comm.h	/^    , XML_ESC_UNKNOWN$/;"	e	enum:__anon16
+XML_ESC_TOTAL	src/incl/xml_comm.h	/^    , XML_ESC_TOTAL = XML_ESC_UNKNOWN$/;"	e	enum:__anon18
+XML_ESC_UNKNOWN	src/incl/xml_comm.h	/^    , XML_ESC_UNKNOWN$/;"	e	enum:__anon18
 XML_ESC_UNKNOWN_LEN	src/incl/xml_comm.h	82;"	d
 XML_ESC_UNKNOWN_STR	src/incl/xml_comm.h	81;"	d
-XML_FAILED	src/incl/xml_comm.h	/^    , XML_FAILED             \/* å¤±è´¥ *\/$/;"	e	enum:__anon15
+XML_FAILED	src/incl/xml_comm.h	/^    , XML_FAILED             \/* å¤±è´¥ *\/$/;"	e	enum:__anon17
 XML_MARK_BEGIN	src/incl/xml_tree.h	16;"	d
 XML_MARK_BEGIN_LEN	src/incl/xml_tree.h	17;"	d
 XML_MARK_END1	src/incl/xml_tree.h	18;"	d
@@ -147,15 +254,15 @@ XML_MARK_END1_LEN	src/incl/xml_tree.h	19;"	d
 XML_MARK_END2	src/incl/xml_tree.h	20;"	d
 XML_MARK_END2_LEN	src/incl/xml_tree.h	21;"	d
 XML_MAX_DEPTH	src/incl/xml_tree.h	14;"	d
-XML_NODE_ATTR	src/incl/xml_tree.h	/^    XML_NODE_ATTR,     \/* å±žæ€§èŠ‚ç‚¹ *\/$/;"	e	enum:__anon13
-XML_NODE_CHILD	src/incl/xml_tree.h	/^    XML_NODE_CHILD,    \/* å­©å­èŠ‚ç‚¹ *\/$/;"	e	enum:__anon13
+XML_NODE_ATTR	src/incl/xml_tree.h	/^    XML_NODE_ATTR,     \/* å±žæ€§èŠ‚ç‚¹ *\/$/;"	e	enum:__anon15
+XML_NODE_CHILD	src/incl/xml_tree.h	/^    XML_NODE_CHILD,    \/* å­©å­èŠ‚ç‚¹ *\/$/;"	e	enum:__anon15
 XML_NODE_HAS_ATTR	src/incl/xml_tree.h	40;"	d
 XML_NODE_HAS_CHILD	src/incl/xml_tree.h	39;"	d
 XML_NODE_HAS_NONE	src/incl/xml_tree.h	38;"	d
 XML_NODE_HAS_VALUE	src/incl/xml_tree.h	41;"	d
-XML_NODE_ROOT	src/incl/xml_tree.h	/^    XML_NODE_ROOT,     \/* æ ¹èŠ‚ç‚¹ *\/$/;"	e	enum:__anon13
-XML_NODE_TYPE_TOTAL	src/incl/xml_tree.h	/^    XML_NODE_TYPE_TOTAL = XML_NODE_UNKNOWN    \/* èŠ‚ç‚¹ç±»åž‹æ•° *\/$/;"	e	enum:__anon13
-XML_NODE_UNKNOWN	src/incl/xml_tree.h	/^    XML_NODE_UNKNOWN,  \/* æœªçŸ¥èŠ‚ç‚¹ *\/$/;"	e	enum:__anon13
+XML_NODE_ROOT	src/incl/xml_tree.h	/^    XML_NODE_ROOT,     \/* æ ¹èŠ‚ç‚¹ *\/$/;"	e	enum:__anon15
+XML_NODE_TYPE_TOTAL	src/incl/xml_tree.h	/^    XML_NODE_TYPE_TOTAL = XML_NODE_UNKNOWN    \/* èŠ‚ç‚¹ç±»åž‹æ•° *\/$/;"	e	enum:__anon15
+XML_NODE_UNKNOWN	src/incl/xml_tree.h	/^    XML_NODE_UNKNOWN,  \/* æœªçŸ¥èŠ‚ç‚¹ *\/$/;"	e	enum:__anon15
 XML_NOTE_BEGIN	src/incl/xml_tree.h	26;"	d
 XML_NOTE_BEGIN_LEN	src/incl/xml_tree.h	27;"	d
 XML_NOTE_END	src/incl/xml_tree.h	28;"	d
@@ -166,13 +273,13 @@ XML_NOTE_END_LEN	src/incl/xml_tree.h	29;"	d
 XML_NOTE_FLAG	src/incl/xml_comm.h	60;"	d
 XML_ROOT_NAME	src/incl/xml_tree.h	35;"	d
 XML_ROOT_NAME_SIZE	src/incl/xml_tree.h	36;"	d
-XML_SUCCESS	src/incl/xml_comm.h	/^    , XML_SUCCESS = 0$/;"	e	enum:__anon15
+XML_SUCCESS	src/incl/xml_comm.h	/^    , XML_SUCCESS = 0$/;"	e	enum:__anon17
 XML_VERS_BEGIN	src/incl/xml_tree.h	22;"	d
 XML_VERS_BEGIN_LEN	src/incl/xml_tree.h	23;"	d
 XML_VERS_END	src/incl/xml_tree.h	24;"	d
 XML_VERS_END_LEN	src/incl/xml_tree.h	25;"	d
 XML_VERS_FLAG	src/incl/xml_comm.h	59;"	d
-XmlIsAbsPath	src/core/xml_tree.c	19;"	d	file:
+XmlIsAbsPath	src/core/xml_tree.c	28;"	d	file:
 XmlIsAmpStr	src/incl/xml_comm.h	25;"	d
 XmlIsAndChar	src/incl/xml_comm.h	17;"	d
 XmlIsAposStr	src/incl/xml_comm.h	26;"	d
@@ -190,18 +297,24 @@ XmlIsNLineChar	src/incl/xml_comm.h	20;"	d
 XmlIsQuotStr	src/incl/xml_comm.h	27;"	d
 XmlIsRDLineChar	src/incl/xml_comm.h	15;"	d
 XmlIsRPBrackChar	src/incl/xml_comm.h	14;"	d
-XmlIsRootPath	src/core/xml_tree.c	16;"	d	file:
+XmlIsRootPath	src/core/xml_tree.c	25;"	d	file:
 XmlIsSQuotChar	src/incl/xml_comm.h	12;"	d
 XmlIsStrEndChar	src/incl/xml_comm.h	9;"	d
 XmlIsSubChar	src/incl/xml_comm.h	18;"	d
 XmlIsTableChar	src/incl/xml_comm.h	8;"	d
 XmlIsULineChar	src/incl/xml_comm.h	7;"	d
 _Qnode_t	src/incl/queue.h	/^typedef struct _Qnode_t$/;"	s
+__ALOG_ERR_FORCE__	src/incl/alog.h	15;"	d
+__ALOG_H__	src/incl/alog.h	2;"	d
+__ALOG_SVR_SYNC__	src/incl/alog.h	18;"	d
 __AVL_TREE_H__	src/incl/avl_tree.h	2;"	d
+__COMMON_H__	src/incl/common.h	2;"	d
 __LIST2_H__	src/incl/list2.h	2;"	d
 __LIST_H__	src/incl/list.h	2;"	d
+__LOG_H__	src/incl/log.h	9;"	d
+__LOG_SVR_H__	src/incl/log_svr.h	2;"	d
 __QUEUE_H__	src/incl/queue.h	2;"	d
-__RB_STACK_PRINT__	src/core/rb_tree.c	4;"	d	file:
+__RB_STACK_PRINT__	src/core/rb_tree.c	16;"	d	file:
 __RB_TREE_H__	src/incl/rb_tree.h	2;"	d
 __SHA256_H__	src/incl/sha256.h	2;"	d
 __SHM_SLAB__	src/incl/shm_slab.h	2;"	d
@@ -209,16 +322,19 @@ __SLAB_H__	src/incl/slab.h	2;"	d
 __STACK_H__	src/incl/stack.h	10;"	d
 __STACK_OPTIMIZE__	src/incl/stack.h	18;"	d
 __THREAD_POOL_H__	src/incl/thread_pool.h	2;"	d
-__XDT_COMM_H__	src/incl/xdt_comm.h	2;"	d
-__XDT_LOG_H__	src/incl/xdt_log.h	9;"	d
+__TRIE_TREE_H__	src/incl/trie_tree.h	21;"	d
 __XML_COMM_H__	src/incl/xml_comm.h	2;"	d
 __XML_TREE_H__	src/incl/xml_tree.h	2;"	d
+_alog_cycle_t	src/incl/alog.h	/^typedef struct _alog_cycle_t$/;"	s
+_alog_cycle_t	src/incl/log_svr.h	/^typedef struct _alog_cycle_t$/;"	s
+_alog_errlog_write	src/core/alog.c	/^static void _alog_errlog_write(int fd, pid_t pid, int level,$/;"	f	file:
+_alog_trclog_init	src/core/alog.c	/^static int _alog_trclog_init(void)$/;"	f	file:
 _avl_delete	src/core/avl_tree.c	/^static int _avl_delete(avl_tree_t *tree, avl_node_t *node, int key, bool *lower, void **data)$/;"	f	file:
 _avl_destroy	src/core/avl_tree.c	/^static void _avl_destroy(avl_node_t *node)$/;"	f	file:
 _avl_insert	src/core/avl_tree.c	/^static int _avl_insert(avl_tree_t *tree, avl_node_t *node, int key, bool *taller, void *data)$/;"	f	file:
 _avl_print	src/core/avl_tree.c	/^int _avl_print(avl_node_t *root, Stack_t *stack)$/;"	f
 _eslab_node_t	src/incl/slab.h	/^typedef struct _eslab_node_t$/;"	s
-_flock	src/core/xdt_comm.c	/^int _flock(int fd, int type, int whence, int offset, int len)$/;"	f
+_flock	src/core/common.c	/^int _flock(int32_t fd, int type, int whence, int offset, int len)$/;"	f
 _list2_node_t	src/incl/list2.h	/^typedef struct _list2_node_t$/;"	s
 _list_node_t	src/incl/list.h	/^typedef struct _list_node_t$/;"	s
 _node_t	src/incl/avl_tree.h	/^typedef struct _node_t$/;"	s
@@ -228,13 +344,81 @@ _sha256_t	src/incl/sha256.h	/^typedef struct _sha256_t$/;"	s
 _shm_slab_alloc_slot	src/core/shm_slab.c	/^static void *_shm_slab_alloc_slot(shm_slab_pool_t *pool, int slot_idx, int type)$/;"	f	file:
 _slab_page_t	src/incl/slab.h	/^typedef struct _slab_page_t$/;"	s
 _thread_worker_t	src/incl/thread_pool.h	/^typedef struct _thread_worker_t$/;"	s
-_try_flock	src/core/xdt_comm.c	/^int _try_flock(int fd, int type, int whence, int start, int len)$/;"	f
+_trie_tree_node_t	src/incl/trie_tree.h	/^typedef struct _trie_tree_node_t$/;"	s
+_try_flock	src/core/common.c	/^int _try_flock(int32_t fd, int type, int whence, int start, int len)$/;"	f
 _xml_delete_empty	src/core/xml_tree.c	/^static xml_node_t *_xml_delete_empty(xml_tree_t *xml, Stack_t *stack, xml_node_t *node)$/;"	f	file:
 _xml_esc_node_t	src/incl/xml_comm.h	/^typedef struct _xml_esc_node_t$/;"	s
 _xml_node_length	src/core/xml_comm.c	/^int _xml_node_length(xml_node_t *root, Stack_t *stack)$/;"	f
 _xml_node_t	src/incl/xml_tree.h	/^typedef struct _xml_node_t$/;"	s
 _xml_pack_length	src/core/xml_tree.c	/^int _xml_pack_length(xml_node_t *node)$/;"	f
-addr	src/incl/slab.h	/^    void *addr;$/;"	m	struct:__anon21
+action	src/incl/alog.h	/^    int (*action)(struct _alog_cycle_t *cycle, int level, \/* ÈÕÖ¾ÐÐÎª *\/$/;"	m	struct:_alog_cycle_t
+action	src/incl/log_svr.h	/^    int (*action)(struct _alog_cycle_t *cycle, int level, \/* æ—¥å¿—è¡Œä¸º *\/$/;"	m	struct:_alog_cycle_t
+addr	src/incl/alog.h	/^    void *addr;                     \/* ¹²ÏíÄÚ´æÊ×µØÖ· *\/$/;"	m	struct:__anon28
+addr	src/incl/log_svr.h	/^    void *addr;                     \/* å…±äº«å†…å­˜é¦–åœ°å€ *\/$/;"	m	struct:__anon37
+addr	src/incl/slab.h	/^    void *addr;$/;"	m	struct:__anon30
+alog_abnormal	src/core/alog.c	/^void alog_abnormal(const char *fname, int lineno, const char *fmt, ...)$/;"	f
+alog_abnormal_path	src/core/alog.c	1816;"	d	file:
+alog_cmd_e	src/incl/alog.h	/^}alog_cmd_e;$/;"	t	typeref:enum:__anon24
+alog_cmd_e	src/incl/log_svr.h	/^}alog_cmd_e;$/;"	t	typeref:enum:__anon34
+alog_cmd_t	src/incl/alog.h	/^}alog_cmd_t;$/;"	t	typeref:struct:__anon26
+alog_cmd_t	src/incl/log_svr.h	/^}alog_cmd_t;$/;"	t	typeref:struct:__anon35
+alog_creat_shm	src/core/alog.c	/^void *alog_creat_shm(void)$/;"	f
+alog_cycle_t	src/incl/alog.h	/^}alog_cycle_t;$/;"	t	typeref:struct:_alog_cycle_t
+alog_cycle_t	src/incl/log_svr.h	/^}alog_cycle_t;$/;"	t	typeref:struct:_alog_cycle_t
+alog_default_errlog	src/core/alog.c	111;"	d	file:
+alog_default_trclog	src/core/alog.c	112;"	d	file:
+alog_errlog_init	src/core/alog.c	/^static int alog_errlog_init(alog_cycle_t *cycle, int level,$/;"	f	file:
+alog_errlog_lock	src/core/alog.c	64;"	d	file:
+alog_errlog_print_dump	src/core/alog.c	/^static void alog_errlog_print_dump(sw_int_t fd, const void *dump, int dumplen)$/;"	f	file:
+alog_errlog_set_path	src/core/alog.c	/^static int alog_errlog_set_path(const char *path)$/;"	f	file:
+alog_errlog_trylock	src/core/alog.c	65;"	d	file:
+alog_errlog_unlock	src/core/alog.c	66;"	d	file:
+alog_errlog_write	src/core/alog.c	/^static int alog_errlog_write(alog_cycle_t *cycle, int level,$/;"	f	file:
+alog_fcache_all_unlock	src/core/alog.c	40;"	d	file:
+alog_fcache_all_wrlock	src/core/alog.c	39;"	d	file:
+alog_fcache_rdlock	src/core/alog.c	37;"	d	file:
+alog_fcache_unlock	src/core/alog.c	38;"	d	file:
+alog_fcache_wrlock	src/core/alog.c	36;"	d	file:
+alog_file_add_pid	src/core/alog.c	129;"	d	file:
+alog_file_check_pid	src/core/alog.c	130;"	d	file:
+alog_file_has_others	src/core/alog.c	131;"	d	file:
+alog_file_is_pid_live	src/incl/alog.h	176;"	d
+alog_file_reset_pid	src/incl/alog.h	178;"	d
+alog_file_t	src/incl/alog.h	/^}alog_file_t;$/;"	t	typeref:struct:__anon27
+alog_file_t	src/incl/log_svr.h	/^}alog_file_t;$/;"	t	typeref:struct:__anon36
+alog_get_cycle	src/core/alog.c	/^static alog_cycle_t *alog_get_cycle(int level)$/;"	f	file:
+alog_get_lock_fd	src/core/alog.c	33;"	d	file:
+alog_get_mthrd_flag	src/core/alog.c	54;"	d	file:
+alog_is_lock_fd_valid	src/core/alog.c	35;"	d	file:
+alog_level_e	src/incl/alog.h	/^}alog_level_e;$/;"	t	typeref:enum:__anon23
+alog_param_e	src/incl/alog.h	/^}alog_param_e;$/;"	t	typeref:enum:__anon25
+alog_rename	src/core/alog.c	/^static int alog_rename(const alog_file_t *file, const struct timeb *time)$/;"	f	file:
+alog_reset_mthrd_flag	src/core/alog.c	56;"	d	file:
+alog_set_level	src/core/alog.c	/^void alog_set_level(alog_level_e level) { g_AlogLevel = level; }$/;"	f
+alog_set_lock_fd	src/core/alog.c	34;"	d	file:
+alog_set_max_size	src/core/alog.c	/^void alog_set_max_size(size_t size)$/;"	f
+alog_set_mthrd_flag	src/core/alog.c	55;"	d	file:
+alog_set_path	src/core/alog.c	/^int alog_set_path(int type, const char *path)$/;"	f
+alog_svr_creat_shm	src/exec/logsvr/alog_svr.c	/^static char *alog_svr_creat_shm(int fd)$/;"	f	file:
+alog_svr_init	src/exec/logsvr/alog_svr.c	/^static int alog_svr_init(alog_svr_t *logsvr)$/;"	f	file:
+alog_svr_proc_lock	src/exec/logsvr/alog_svr.c	/^int alog_svr_proc_lock(void)$/;"	f
+alog_svr_sync_work	src/exec/logsvr/alog_svr.c	/^static int alog_svr_sync_work(int idx, alog_svr_t *logsvr)$/;"	f	file:
+alog_svr_t	src/incl/alog.h	/^}alog_svr_t;$/;"	t	typeref:struct:__anon28
+alog_svr_t	src/incl/log_svr.h	/^}alog_svr_t;$/;"	t	typeref:struct:__anon37
+alog_svr_timeout_routine	src/exec/logsvr/alog_svr.c	/^static int alog_svr_timeout_routine(void *args)$/;"	f	file:
+alog_sync	src/core/alog.c	/^static size_t alog_sync(alog_file_t *file, int *fd)$/;"	f	file:
+alog_trclog_conflict	src/core/alog.c	/^static int alog_trclog_conflict(const char *oripath, char *newpath, int size, int idx)$/;"	f	file:
+alog_trclog_creat	src/core/alog.c	/^static alog_file_t *alog_trclog_creat(void *addr, const char *path)$/;"	f	file:
+alog_trclog_init	src/core/alog.c	/^static int alog_trclog_init(alog_cycle_t *cycle, int level,$/;"	f	file:
+alog_trclog_lock	src/core/alog.c	59;"	d	file:
+alog_trclog_print_dump	src/core/alog.c	/^static int alog_trclog_print_dump(char *addr, const void *dump, int dumplen)$/;"	f	file:
+alog_trclog_release	src/core/alog.c	/^static void alog_trclog_release(alog_file_t *file)$/;"	f	file:
+alog_trclog_set_path	src/core/alog.c	/^static int alog_trclog_set_path(const char *path)$/;"	f	file:
+alog_trclog_sync	src/core/alog.c	/^int alog_trclog_sync(alog_file_t *file)$/;"	f
+alog_trclog_sync_ext	src/core/alog.c	/^static int alog_trclog_sync_ext(alog_cycle_t *cycle)$/;"	f	file:
+alog_trclog_trylock	src/core/alog.c	60;"	d	file:
+alog_trclog_unlock	src/core/alog.c	61;"	d	file:
+alog_trclog_write	src/core/alog.c	/^static int alog_trclog_write(alog_cycle_t *cycle, int level,$/;"	f	file:
 arg	src/incl/thread_pool.h	/^	void *arg;                      \/* æŽ¥å£å‚æ•° *\/$/;"	m	struct:_thread_worker_t
 args	src/incl/queue.h	/^    void *args;$/;"	m	struct:_Qnode_t
 avl_assert	src/core/avl_tree.c	/^void avl_assert(const avl_node_t *node)$/;"	f
@@ -263,25 +447,28 @@ avl_search	src/core/avl_tree.c	/^const avl_node_t *avl_search(const avl_tree_t *
 avl_set_lchild	src/incl/avl_tree.h	51;"	d
 avl_set_rchild	src/incl/avl_tree.h	61;"	d
 avl_tree_t	src/incl/avl_tree.h	/^}avl_tree_t;$/;"	t	typeref:struct:__anon3
-base	src/incl/queue.h	/^    Qnode_t *base;  \/* é˜Ÿåˆ—åŸºå€ *\/$/;"	m	struct:__anon23
-base	src/incl/stack.h	/^    void **base;    \/* æ ˆåŸºåœ°å€ *\/$/;"	m	struct:__anon10
+base	src/incl/queue.h	/^    Qnode_t *base;  \/* é˜Ÿåˆ—åŸºå€ *\/$/;"	m	struct:__anon32
+base	src/incl/stack.h	/^    void **base;    \/* æ ˆåŸºåœ°å€ *\/$/;"	m	struct:__anon9
 base_offset	src/incl/shm_slab.h	/^    size_t base_offset;     \/* »ù´¡Æ«ÒÆÁ¿ *\/$/;"	m	struct:__anon8
 bf	src/incl/avl_tree.h	/^    int bf;                     \/* å¹³è¡¡å› å­ *\/$/;"	m	struct:_node_t
-bitmap	src/incl/shm_slab.h	/^    unsigned int bitmap;    \/* Ò³µÄÊ¹ÓÃÎ»Í¼ *\/$/;"	m	struct:__anon7
-block_recv	src/core/xdt_comm.c	/^int block_recv(int fd, void *addr, size_t size, int secs)$/;"	f
-block_send	src/core/xdt_comm.c	/^int block_send(int fd, const void *addr, size_t size, int secs)$/;"	f
-bool	src/incl/xdt_comm.h	/^typedef int bool;$/;"	t
-ch	src/incl/xml_comm.h	/^    char ch;$/;"	m	struct:__anon17
-color	src/incl/rb_tree.h	/^    int color;                      \/* ç»“ç‚¹é¢œè‰²: RBT_COLOR_BLACK(é»‘) æˆ– RBT_COLOR_RED(çº¢) *\/$/;"	m	struct:_rbt_node_t
-count	src/incl/slab.h	/^    int count;$/;"	m	struct:__anon22
-creat_thread	src/core/xdt_comm.c	/^int creat_thread(pthread_t *tid, void *(*process)(void *args), void *args)$/;"	f
+bitmap	src/incl/shm_slab.h	/^    uint32_t bitmap;        \/* Ò³µÄÊ¹ÓÃÎ»Í¼ *\/$/;"	m	struct:__anon7
+block_recv	src/core/common.c	/^int block_recv(int32_t fd, void *addr, size_t size, int secs)$/;"	f
+block_send	src/core/common.c	/^int block_send(int32_t fd, const void *addr, size_t size, int secs)$/;"	f
+bool	src/incl/common.h	/^typedef int bool;$/;"	t
+ch	src/incl/xml_comm.h	/^    char ch;$/;"	m	struct:__anon19
+color	src/incl/rb_tree.h	/^    int32_t color;                      \/* ç»“ç‚¹é¢œè‰²: RBT_COLOR_BLACK(é»‘) æˆ– RBT_COLOR_RED(çº¢) *\/$/;"	m	struct:_rbt_node_t
+count	src/incl/slab.h	/^    int count;$/;"	m	struct:__anon31
+count	src/incl/trie_tree.h	/^    int count;                          \/* Unitä¸­ç»“ç‚¹ä¸ªæ•° *\/$/;"	m	struct:__anon14
+creat_thread	src/core/common.c	/^int creat_thread(pthread_t *tid, void *(*process)(void *args), void *args)$/;"	f
 data	src/incl/avl_tree.h	/^    void *data;                 \/* é™„åŠ æ•°æ® *\/$/;"	m	struct:_node_t
 data	src/incl/list.h	/^    void *data;$/;"	m	struct:_list_node_t
 data	src/incl/list2.h	/^    void *data;$/;"	m	struct:_list2_node_t
-data	src/incl/slab.h	/^    void *data;$/;"	m	struct:__anon21
+data	src/incl/slab.h	/^    void *data;$/;"	m	struct:__anon30
 data	src/incl/thread_pool.h	/^    void *data;                     \/* é™„åŠ æ•°æ® *\/$/;"	m	struct:__anon1
+data	src/incl/trie_tree.h	/^    void *data;                         \/* ç»“ç‚¹æ•°æ® *\/$/;"	m	struct:_trie_tree_node_t
 data_offset	src/incl/shm_slab.h	/^    size_t data_offset;     \/* ¿É·ÖÅä¿Õ¼äµÄÆðÊ¼Æ«ÒÆÁ¿ *\/$/;"	m	struct:__anon8
-end	src/incl/slab.h	/^    u_char *end;$/;"	m	struct:__anon21
+dtime	src/incl/alog.h	/^    struct tm dtime;				\/* ÈÕÖ¾ÎÄ¼þ´´½¨µÄÈÕÆÚ *\/$/;"	m	struct:__anon29	typeref:struct:__anon29::tm
+end	src/incl/slab.h	/^    u_char *end;$/;"	m	struct:__anon30
 end_offset	src/incl/shm_slab.h	/^    size_t end_offset;      \/* ¿É·ÖÅä¿Õ¼äµÄ½áÊøÆ«ÒÆÁ¿ *\/$/;"	m	struct:__anon8
 eslab_add	src/core/slab.c	/^static slab_pool_t *eslab_add(eslab_pool_t *eslab, size_t size)$/;"	f	file:
 eslab_alloc	src/core/slab.c	/^void *eslab_alloc(eslab_pool_t *eslab, size_t size)$/;"	f
@@ -289,65 +476,161 @@ eslab_destroy	src/core/slab.c	/^int eslab_destroy(eslab_pool_t *eslab)$/;"	f
 eslab_free	src/core/slab.c	/^int eslab_free(eslab_pool_t *eslab, void *p)$/;"	f
 eslab_init	src/core/slab.c	/^int eslab_init(eslab_pool_t *eslab, size_t size)$/;"	f
 eslab_node_t	src/incl/slab.h	/^}eslab_node_t;$/;"	t	typeref:struct:_eslab_node_t
-eslab_pool_t	src/incl/slab.h	/^}eslab_pool_t;$/;"	t	typeref:struct:__anon22
-fClose	src/incl/xdt_comm.h	44;"	d
-false	src/incl/xdt_comm.h	23;"	d
+eslab_pool_t	src/incl/slab.h	/^}eslab_pool_t;$/;"	t	typeref:struct:__anon31
+fClose	src/incl/common.h	45;"	d
+false	src/incl/common.h	23;"	d
 false	src/incl/xml_tree.h	44;"	d
-fd_is_writable	src/core/xdt_comm.c	/^int fd_is_writable(int fd)$/;"	f
-fd_nonblock	src/core/xdt_comm.c	/^int fd_nonblock(int fd)$/;"	f
+fd	src/incl/alog.h	/^    int fd;                         \/* ÈÕÖ¾ÃèÊö·û *\/$/;"	m	struct:_alog_cycle_t
+fd	src/incl/alog.h	/^    int fd;                         \/* ÎÄ¼þËøFD *\/$/;"	m	struct:__anon28
+fd	src/incl/alog.h	/^    sw_fd_t fd;						\/* ÈÕÖ¾ÎÄ¼þÃèÊö·û *\/$/;"	m	struct:__anon29
+fd	src/incl/log.h	/^    int fd;                             \/* æè¿°ç¬¦ *\/$/;"	m	struct:__anon13
+fd	src/incl/log_svr.h	/^    int fd;                         \/* æ–‡ä»¶é”FD *\/$/;"	m	struct:__anon37
+fd	src/incl/log_svr.h	/^    int fd;                         \/* æ—¥å¿—æè¿°ç¬¦ *\/$/;"	m	struct:_alog_cycle_t
+fd_is_writable	src/core/common.c	/^int fd_is_writable(int32_t fd)$/;"	f
+fd_nonblock	src/core/common.c	/^int fd_nonblock(int32_t fd)$/;"	f
+file	src/incl/alog.h	/^    alog_file_t *file;              \/* ÎÄ¼þ»º´æ *\/$/;"	m	struct:_alog_cycle_t
+file	src/incl/alog.h	/^    alog_file_t *file;              \/* Òì²½ÈÕÖ¾»º´æ *\/$/;"	m	struct:__anon29
+file	src/incl/log.h	/^    log_file_t *file;                   \/* æ—¥å¿—ç¼“å­˜ *\/$/;"	m	struct:__anon13
+file	src/incl/log_svr.h	/^    alog_file_t *file;              \/* æ–‡ä»¶ç¼“å­˜ *\/$/;"	m	struct:_alog_cycle_t
 firstchild	src/incl/xml_tree.h	/^    struct _xml_node_t *firstchild;  \/* å­©å­èŠ‚ç‚¹é“¾è¡¨å¤´: å±žæ€§èŠ‚ç‚¹+å­©å­èŠ‚ç‚¹ *\/$/;"	m	struct:_xml_node_t	typeref:struct:_xml_node_t::_xml_node_t
-flag	src/incl/xml_tree.h	/^    unsigned int flag;          \/* è®°å½•èŠ‚ç‚¹æ˜¯å¦æœ‰å­©å­(XML_NODE_HAS_CHILD)ã€å±žæ€§(XML_NODE_HAS_ATTR)ã€èŠ‚ç‚¹å€¼(XML_NODE_HAS_VALUE) *\/$/;"	m	struct:_xml_node_t
+flag	src/incl/xml_tree.h	/^    unsigned int flag;          \/* è®°å½•èŠ‚ç‚¹æ˜¯å¦æœ‰å­©å­(XML_NODE_HAS_CHILD)ã€$/;"	m	struct:_xml_node_t
 free	src/incl/shm_slab.h	/^    shm_slab_page_t free;   \/* ¿ÕÏÐÒ³Á´±í *\/$/;"	m	struct:__anon8
-free	src/incl/slab.h	/^    slab_page_t   free;$/;"	m	struct:__anon21
+free	src/incl/slab.h	/^    slab_page_t   free;$/;"	m	struct:__anon30
+g_AlogDataSize	src/core/alog.c	/^static const size_t g_AlogDataSize =  (ALOG_FILE_CACHE_SIZE - sizeof(alog_file_t));$/;"	v	file:
+g_AlogLevel	src/core/alog.c	/^static alog_level_e g_AlogLevel = LOG_LEVEL_DEBUG;$/;"	v	file:
+g_AlogLevelStr	src/core/alog.c	/^static const char *g_AlogLevelStr[LOG_LEVEL_TOTAL] = $/;"	v	file:
+g_AlogSyncSize	src/core/alog.c	/^static const int g_AlogSyncSize = 0.8 * ALOG_FILE_CACHE_SIZE;$/;"	v	file:
+g_LogDataSize	src/core/log.c	/^static const size_t g_LogDataSize =  (LOG_FILE_CACHE_SIZE - sizeof(log_file_t));$/;"	v	file:
+g_LogLevel	src/core/log.c	/^static log_level_e g_LogLevel = LOG_LEVEL_DEBUG;$/;"	v	file:
+g_LogSyncSize	src/core/log.c	/^static const int g_LogSyncSize = 0.8 * LOG_FILE_CACHE_SIZE;$/;"	v	file:
+g_alog_errlog	src/core/alog.c	/^static alog_cycle_t g_alog_errlog = {-1, NULL, -1, alog_errlog_init}; \/* Ä¬ÈÏ´íÎóÈÕÖ¾¶ÔÏó *\/$/;"	v	file:
+g_alog_lock_fd	src/core/alog.c	/^static int g_alog_lock_fd = -1;             \/* ÎÄ¼þËøFD *\/$/;"	v	file:
+g_alog_max_size	src/core/alog.c	/^static size_t g_alog_max_size = ALOG_FILE_MAX_SIZE;$/;"	v	file:
+g_alog_mthrd_key	src/core/alog.c	/^static pthread_key_t g_alog_mthrd_key;      \/* Ïß³ÌÌØ¶¨Êý¾ÝKEY *\/$/;"	v	file:
+g_alog_shm_addr	src/core/alog.c	/^static void *g_alog_shm_addr = (void *)-1;  \/* ¹²ÏíÄÚ´æµØÖ· *\/$/;"	v	file:
+g_alog_trclog	src/core/alog.c	/^static alog_cycle_t g_alog_trclog = {-1, NULL, -1, alog_trclog_init}; \/* Ä¬ÈÏ¸ú×ÙÈÕÖ¾¶ÔÏó *\/$/;"	v	file:
+g_errlog_mthrd_flag	src/core/alog.c	/^static bool g_errlog_mthrd_flag = false;    \/* ´íÎóÈÕÖ¾-¶àÏß³Ì±êÊ¶ *\/$/;"	v	file:
+g_errlog_mutex	src/core/alog.c	/^static pthread_mutex_t g_errlog_mutex = PTHREAD_MUTEX_INITIALIZER;  \/* ´íÎóÈÕÖ¾ÉèÖÃ-Ïß³Ì»¥³âËø *\/$/;"	v	file:
+g_log_level_str	src/core/log.c	/^static const char *g_log_level_str[LOG_LEVEL_TOTAL] = $/;"	v	file:
+g_log_lock_fd	src/core/log.c	/^static int g_log_lock_fd = -1;             \/* æ–‡ä»¶é”FD *\/$/;"	v	file:
+g_log_max_size	src/core/log.c	/^static size_t g_log_max_size = LOG_FILE_MAX_SIZE;$/;"	v	file:
+g_log_mutex	src/core/log.c	/^pthread_mutex_t g_log_mutex = PTHREAD_MUTEX_INITIALIZER;$/;"	v
+g_log_shm_addr	src/core/log.c	/^static void *g_log_shm_addr = (void *)-1;  \/* å…±äº«å†…å­˜åœ°å€ *\/$/;"	v	file:
+g_logsvr	src/exec/logsvr/alog_svr.c	/^static alog_svr_t g_logsvr;     \/* ÈÕÖ¾·þÎñ¶ÔÏó *\/$/;"	v	file:
 g_shm_slab_exact_shift	src/core/shm_slab.c	/^static int g_shm_slab_exact_shift = 0;  \/* SLOT¾«È·ÄÚ´æ·ÖÅäµ¥Ôª¶ÔÓ¦µÄÎ»ÒÆ *\/$/;"	v	file:
 g_shm_slab_exact_size	src/core/shm_slab.c	/^static size_t g_shm_slab_exact_size = 0;\/* SLOT¾«È·ÄÚ´æ·ÖÅäµ¥Ôª *\/$/;"	v	file:
 g_shm_slab_max_shift	src/core/shm_slab.c	/^static int g_shm_slab_max_shift = 0;    \/* SLOT×î´óÄÚ´æ·ÖÅäµ¥Ôª¶ÔÓ¦µÄÎ»ÒÆ *\/$/;"	v	file:
 g_shm_slab_max_size	src/core/shm_slab.c	/^static size_t g_shm_slab_max_size = 0;  \/* SLOT×î´óÄÚ´æ·ÖÅäµ¥Ôª *\/$/;"	v	file:
 g_shm_slab_page_shift	src/core/shm_slab.c	/^static int g_shm_slab_page_shift = 0;   \/* Ã¿Ò»Ò³ÄÚ´æ´óÐ¡¶ÔÓ¦µÄÎ»ÒÆ *\/$/;"	v	file:
 g_shm_slab_page_size	src/core/shm_slab.c	/^static size_t g_shm_slab_page_size = 0; \/* Ã¿Ò»Ò³ÄÚ´æµÄ´óÐ¡ *\/$/;"	v	file:
+g_trclog_mthrd_flag	src/core/alog.c	/^static bool g_trclog_mthrd_flag = false;    \/* ¸ú×ÙÈÕÖ¾-¶àÏß³Ì±êÊ¶ *\/$/;"	v	file:
+g_trclog_mutex	src/core/alog.c	/^static pthread_mutex_t g_trclog_mutex = PTHREAD_MUTEX_INITIALIZER;  \/* ¸ú×ÙÈÕÖ¾ÉèÖÃ-Ïß³Ì»¥³âËø *\/$/;"	v	file:
+g_uLogLevel	src/core/alog.c	/^static int g_uLogLevel = LOG_LEVEL_DEBUG;$/;"	v	file:
+g_ulog_max_size	src/core/alog.c	/^static sw_int_t g_ulog_max_size = ULOG_MAX_SIZE;$/;"	v	file:
+g_usr_log	src/core/alog.c	/^ulog_cycle_t g_usr_log = {ALOG_INVALID_FD, -1, -1, -1, "", "", "", {0}, NULL};$/;"	v
 g_xml_esc_str	src/core/xml_comm.c	/^static const xml_esc_t g_xml_esc_str[] =$/;"	v	file:
 head	src/incl/list.h	/^    list_node_t *head;$/;"	m	struct:__anon4
-head	src/incl/list2.h	/^    list2_node_t *head;$/;"	m	struct:__anon24
-head	src/incl/queue.h	/^    Qnode_t *head;  \/* é˜Ÿåˆ—å¤´ *\/$/;"	m	struct:__anon23
+head	src/incl/list2.h	/^    list2_node_t *head;$/;"	m	struct:__anon33
+head	src/incl/queue.h	/^    Qnode_t *head;  \/* é˜Ÿåˆ—å¤´ *\/$/;"	m	struct:__anon32
 head	src/incl/thread_pool.h	/^	thread_worker_t *head;          \/* é˜Ÿåˆ—å¤´ *\/$/;"	m	struct:__anon1
-head	src/incl/xml_comm.h	/^    xml_esc_node_t *head;$/;"	m	struct:__anon19
-inc_size	src/incl/slab.h	/^    size_t inc_size;$/;"	m	struct:__anon22
-index	src/incl/shm_slab.h	/^    unsigned int index;     \/* slotË÷Òý *\/$/;"	m	struct:__anon6
-index	src/incl/shm_slab.h	/^    unsigned int index;     \/* Ò³Ë÷Òý *\/$/;"	m	struct:__anon7
+head	src/incl/xml_comm.h	/^    xml_esc_node_t *head;$/;"	m	struct:__anon21
+idx	src/incl/alog.h	/^    int idx;                        \/* »º´æË÷Òý *\/$/;"	m	struct:__anon26
+idx	src/incl/alog.h	/^    int idx;                        \/* ½ø³ÌË÷ÒýIDX *\/$/;"	m	struct:__anon29
+idx	src/incl/alog.h	/^    int idx;                        \/* Ë÷ÒýºÅ *\/$/;"	m	struct:__anon27
+idx	src/incl/log.h	/^    int idx;                            \/* ç´¢å¼•å· *\/$/;"	m	struct:__anon12
+idx	src/incl/log_svr.h	/^    int idx;                        \/* ç´¢å¼•å· *\/$/;"	m	struct:__anon36
+idx	src/incl/log_svr.h	/^    int idx;                        \/* ç¼“å­˜ç´¢å¼• *\/$/;"	m	struct:__anon35
+in_offset	src/incl/alog.h	/^    size_t in_offset;               \/* Ð´ÈëÆ«ÒÆ *\/$/;"	m	struct:__anon27
+in_offset	src/incl/log.h	/^    size_t in_offset;                   \/* å†™å…¥åç§» *\/$/;"	m	struct:__anon12
+in_offset	src/incl/log_svr.h	/^    size_t in_offset;               \/* å†™å…¥åç§» *\/$/;"	m	struct:__anon36
+inc_size	src/incl/slab.h	/^    size_t inc_size;$/;"	m	struct:__anon31
+index	src/incl/shm_slab.h	/^    uint32_t index;         \/* slotË÷Òý *\/$/;"	m	struct:__anon6
+index	src/incl/shm_slab.h	/^    uint32_t index;         \/* Ò³Ë÷Òý *\/$/;"	m	struct:__anon7
 key	src/incl/avl_tree.h	/^    int key;                    \/* èŠ‚ç‚¹å€¼: å¯æ ¹æ®å®žé™…æƒ…å†µè®¾ç½®æ•°æ®ç±»åž‹ *\/$/;"	m	struct:_node_t
-key	src/incl/rb_tree.h	/^    int key;                        \/* å…³é”®å­— *\/$/;"	m	struct:_rbt_node_t
+key	src/incl/rb_tree.h	/^    int32_t key;                        \/* å…³é”®å­— *\/$/;"	m	struct:_rbt_node_t
 lchild	src/incl/avl_tree.h	/^    struct _node_t *lchild;     \/* å·¦å­©å­ *\/$/;"	m	struct:_node_t	typeref:struct:_node_t::_node_t
 lchild	src/incl/rb_tree.h	/^    struct _rbt_node_t *lchild;     \/* å·¦å­©å­èŠ‚ç‚¹ *\/$/;"	m	struct:_rbt_node_t	typeref:struct:_rbt_node_t::_rbt_node_t
-length	src/incl/xml_comm.h	/^    int length;$/;"	m	struct:__anon17
-length	src/incl/xml_comm.h	/^    int length;$/;"	m	struct:__anon18
+length	src/incl/xml_comm.h	/^    int length;$/;"	m	struct:__anon19
+length	src/incl/xml_comm.h	/^    int length;$/;"	m	struct:__anon20
 length	src/incl/xml_comm.h	/^    int length;$/;"	m	struct:_xml_esc_node_t
-level	src/incl/xdt_log.h	/^    uint32_t level;         \/* æ—¥å¿—çº§åˆ«: å…¶ä¸­ç”±å„æ—¥å¿—çº§åˆ«é€šè¿‡æˆ–æ“ä½œå¾—æ¥ *\/$/;"	m	struct:__anon9
+level	src/incl/log.h	/^    int level;                          \/* æ—¥å¿—çº§åˆ«: LOG_LEVEL_TRACE ~ LOG_LEVEL_FATAL *\/$/;"	m	struct:__anon13
 list2_assert	src/core/list2.c	/^void list2_assert(list2_t *list)$/;"	f
 list2_delete_head	src/core/list2.c	/^list2_node_t *list2_delete_head(list2_t *list)$/;"	f
 list2_delete_tail	src/core/list2.c	/^list2_node_t *list2_delete_tail(list2_t *list)$/;"	f
 list2_insert_head	src/core/list2.c	/^int list2_insert_head(list2_t *list, list2_node_t *node)$/;"	f
 list2_insert_tail	src/core/list2.c	/^int list2_insert_tail(list2_t *list, list2_node_t *node)$/;"	f
 list2_node_t	src/incl/list2.h	/^}list2_node_t;$/;"	t	typeref:struct:_list2_node_t
-list2_t	src/incl/list2.h	/^}list2_t;$/;"	t	typeref:struct:__anon24
+list2_t	src/incl/list2.h	/^}list2_t;$/;"	t	typeref:struct:__anon33
 list_assert	src/core/list.c	/^void list_assert(list_t *list)$/;"	f
 list_delete_tail	src/core/list.c	/^list_node_t *list_delete_tail(list_t *list)$/;"	f
 list_insert_head	src/core/list.c	/^int list_insert_head(list_t *list, list_node_t *node)$/;"	f
 list_insert_tail	src/core/list.c	/^int list_insert_tail(list_t *list, list_node_t *node)$/;"	f
 list_node_t	src/incl/list.h	/^}list_node_t;$/;"	t	typeref:struct:_list_node_t
 list_t	src/incl/list.h	/^}list_t;$/;"	t	typeref:struct:__anon4
-log_debug	src/incl/xdt_log.h	62;"	d
-log_error	src/incl/xdt_log.h	59;"	d
-log_fatal	src/incl/xdt_log.h	58;"	d
-log_info	src/incl/xdt_log.h	61;"	d
-log_warn	src/incl/xdt_log.h	60;"	d
-max	src/incl/queue.h	/^    int max;        \/* é˜Ÿåˆ—å®¹é‡ *\/$/;"	m	struct:__anon23
-max_index	src/incl/xdt_log.h	/^    uint16_t max_index;     \/* æ—¥å¿—æœ€å¤§ç´¢å¼•å· *\/$/;"	m	struct:__anon9
-max_size	src/incl/xdt_log.h	/^    size_t max_size;        \/* æ—¥å¿—æ–‡ä»¶çš„æœ€å¤§å°ºå¯¸ *\/$/;"	m	struct:__anon9
-min_shift	src/incl/shm_slab.h	/^    int min_shift;          \/* ×îÐ¡·ÖÅäµ¥ÔªµÄÎ»ÒÆ *\/$/;"	m	struct:__anon8
-min_shift	src/incl/slab.h	/^    size_t min_shift;$/;"	m	struct:__anon21
-min_size	src/incl/shm_slab.h	/^    int min_size;           \/* ×îÐ¡·ÖÅäµ¥Ôª *\/$/;"	m	struct:__anon8
-min_size	src/incl/slab.h	/^    size_t min_size;$/;"	m	struct:__anon21
-name	src/incl/xdt_log.h	/^    char name[FILE_NAME_MAX_LEN];   \/* æ–‡ä»¶å *\/$/;"	m	struct:__anon9
+log_abnormal	src/core/log.c	/^void log_abnormal(const char *fname, int lineno, const char *fmt, ...)$/;"	f
+log_abnormal_path	src/core/log.c	1021;"	d	file:
+log_conflict	src/core/log.c	/^static int log_conflict(const char *oripath, char *newpath, int size, int idx)$/;"	f	file:
+log_core	src/core/alog.c	/^void log_core(int level, const char *fname, int lineno,$/;"	f
+log_core	src/core/log.c	/^void log_core(log_cycle_t *log, int level, const char *fname, int lineno,$/;"	f
+log_creat	src/core/log.c	/^static log_file_t *log_creat(void *addr, const char *path)$/;"	f	file:
+log_creat_shm	src/core/log.c	/^void *log_creat_shm(void)$/;"	f
+log_cycle_t	src/incl/log.h	/^}log_cycle_t;$/;"	t	typeref:struct:__anon13
+log_debug	src/incl/log.h	82;"	d
+log_default_log	src/core/log.c	78;"	d	file:
+log_error	src/incl/log.h	79;"	d
+log_fatal	src/incl/log.h	78;"	d
+log_fcache_all_unlock	src/core/log.c	34;"	d	file:
+log_fcache_all_wrlock	src/core/log.c	33;"	d	file:
+log_fcache_rdlock	src/core/log.c	31;"	d	file:
+log_fcache_unlock	src/core/log.c	32;"	d	file:
+log_fcache_wrlock	src/core/log.c	30;"	d	file:
+log_file_add_pid	src/core/log.c	95;"	d	file:
+log_file_check_pid	src/core/log.c	96;"	d	file:
+log_file_has_others	src/core/log.c	97;"	d	file:
+log_file_t	src/incl/log.h	/^}log_file_t;$/;"	t	typeref:struct:__anon12
+log_get_cycle	src/core/log.c	/^static log_cycle_t *log_get_cycle(int level)$/;"	f	file:
+log_get_data_size	src/core/log.c	56;"	d	file:
+log_get_level	src/core/log.c	51;"	d	file:
+log_get_level_str	src/core/log.c	86;"	d	file:
+log_get_lock_fd	src/core/log.c	27;"	d	file:
+log_get_max_size	src/core/log.c	38;"	d	file:
+log_get_shm_addr	src/core/log.c	19;"	d	file:
+log_global_init	src/core/log.c	/^static int log_global_init(void)$/;"	f	file:
+log_info	src/incl/log.h	81;"	d
+log_init	src/core/log.c	/^log_cycle_t *log_init(int level, const char *fname, size_t max_size)$/;"	f
+log_init	src/core/log.c	/^static int log_init(log_cycle_t *log, int level,$/;"	f	file:
+log_is_err_level	src/core/log.c	59;"	d	file:
+log_is_force_sync	src/core/log.c	92;"	d	file:
+log_is_lock_fd_valid	src/core/log.c	29;"	d	file:
+log_is_shm_addr_valid	src/core/log.c	21;"	d	file:
+log_is_too_large	src/core/log.c	40;"	d	file:
+log_print_dump	src/core/log.c	/^static int log_print_dump(char *addr, const void *dump, int dumplen)$/;"	f	file:
+log_release	src/core/log.c	/^static void log_release(log_file_t *file)$/;"	f	file:
+log_rename	src/core/log.c	/^static int log_rename(const log_file_t *file, const struct timeb *time)$/;"	f	file:
+log_set_applog_level	src/incl/alog.h	198;"	d
+log_set_level	src/core/log.c	/^void log_set_level(log_level_e level) { g_LogLevel = level; }$/;"	f
+log_set_lock_fd	src/core/log.c	28;"	d	file:
+log_set_max_size	src/core/log.c	/^void log_set_max_size(size_t size)$/;"	f
+log_set_max_size	src/core/log.c	39;"	d	file:
+log_set_path	src/core/log.c	/^static int log_set_path(const char *path)$/;"	f	file:
+log_set_shm_addr	src/core/log.c	20;"	d	file:
+log_set_syslog_level	src/incl/alog.h	197;"	d
+log_sync	src/core/log.c	/^int log_sync(log_file_t *file)$/;"	f
+log_sync	src/core/log.c	/^static size_t log_sync(log_file_t *file, int *fd)$/;"	f	file:
+log_sync_ext	src/core/log.c	/^static int log_sync_ext(log_cycle_t *log)$/;"	f	file:
+log_thread_mutex_lock	src/core/log.c	45;"	d	file:
+log_thread_mutex_trylock	src/core/log.c	46;"	d	file:
+log_thread_mutex_unlock	src/core/log.c	47;"	d	file:
+log_warn	src/incl/log.h	80;"	d
+log_write	src/core/log.c	/^static int log_write(log_cycle_t *log, int level,$/;"	f	file:
+main	src/exec/logsvr/alog_svr.c	/^int main(void)$/;"	f
+max	src/incl/queue.h	/^    int max;        \/* é˜Ÿåˆ—å®¹é‡ *\/$/;"	m	struct:__anon32
+max_size	src/incl/log.h	/^    size_t max_size;                    \/* æ—¥å¿—æ–‡ä»¶çš„æœ€å¤§å°ºå¯¸ *\/$/;"	m	struct:__anon13
+min_shift	src/incl/shm_slab.h	/^    int min_shift;      \/* ×îÐ¡·ÖÅäµ¥ÔªµÄÎ»ÒÆ *\/$/;"	m	struct:__anon8
+min_shift	src/incl/slab.h	/^    size_t min_shift;$/;"	m	struct:__anon30
+min_size	src/incl/shm_slab.h	/^    int min_size;       \/* ×îÐ¡·ÖÅäµ¥Ôª *\/$/;"	m	struct:__anon8
+min_size	src/incl/slab.h	/^    size_t min_size;$/;"	m	struct:__anon30
+name	src/incl/log.h	/^    char name[FILE_NAME_MAX_LEN];       \/* æ–‡ä»¶å *\/$/;"	m	struct:__anon13
 name	src/incl/xml_tree.h	/^    char *name;                 \/* èŠ‚ç‚¹å *\/$/;"	m	struct:_xml_node_t
 next	src/incl/list.h	/^    struct _list_node_t *next;$/;"	m	struct:_list_node_t	typeref:struct:_list_node_t::_list_node_t
 next	src/incl/list2.h	/^    struct _list2_node_t *next;$/;"	m	struct:_list2_node_t	typeref:struct:_list2_node_t::_list2_node_t
@@ -355,39 +638,60 @@ next	src/incl/queue.h	/^    struct _Qnode_t *next;$/;"	m	struct:_Qnode_t	typeref
 next	src/incl/slab.h	/^    struct _eslab_node_t *next;$/;"	m	struct:_eslab_node_t	typeref:struct:_eslab_node_t::_eslab_node_t
 next	src/incl/slab.h	/^    struct _slab_page_t  *next;$/;"	m	struct:_slab_page_t	typeref:struct:_slab_page_t::_slab_page_t
 next	src/incl/thread_pool.h	/^	struct _thread_worker_t *next;  \/* ä¸‹ä¸€ä¸ªèŠ‚ç‚¹ *\/$/;"	m	struct:_thread_worker_t	typeref:struct:_thread_worker_t::_thread_worker_t
+next	src/incl/trie_tree.h	/^    struct _trie_tree_node_t *next;     \/* åŽä¸€ä¸ªç»“ç‚¹ *\/$/;"	m	struct:_trie_tree_node_t	typeref:struct:_trie_tree_node_t::_trie_tree_node_t
 next	src/incl/xml_comm.h	/^    struct _xml_esc_node_t *next;$/;"	m	struct:_xml_esc_node_t	typeref:struct:_xml_esc_node_t::_xml_esc_node_t
 next	src/incl/xml_tree.h	/^    struct _xml_node_t *next;   \/* å…„å¼ŸèŠ‚ç‚¹é“¾è¡¨ *\/$/;"	m	struct:_xml_node_t	typeref:struct:_xml_node_t::_xml_node_t
-next_idx	src/incl/shm_slab.h	/^    int next_idx;           \/* ÏÂÒ»Ò³µÄË÷Òý *\/$/;"	m	struct:__anon7
-node	src/incl/slab.h	/^    eslab_node_t *node;$/;"	m	struct:__anon22
+next_idx	src/incl/shm_slab.h	/^    int next_idx;       \/* ÏÂÒ»Ò³µÄË÷Òý *\/$/;"	m	struct:__anon7
+node	src/incl/slab.h	/^    eslab_node_t *node;$/;"	m	struct:__anon31
 num	src/incl/list.h	/^    int num;$/;"	m	struct:__anon4
-num	src/incl/list2.h	/^    int num;$/;"	m	struct:__anon24
-num	src/incl/queue.h	/^    int num;        \/* é˜Ÿåˆ—æˆå‘˜ä¸ªæ•° *\/$/;"	m	struct:__anon23
+num	src/incl/list2.h	/^    int num;$/;"	m	struct:__anon33
+num	src/incl/queue.h	/^    int num;        \/* é˜Ÿåˆ—æˆå‘˜ä¸ªæ•° *\/$/;"	m	struct:__anon32
 num	src/incl/thread_pool.h	/^	int num;                        \/* å®žé™…åˆ›å»ºçš„çº¿ç¨‹ä¸ªæ•° *\/$/;"	m	struct:__anon1
-page_idx	src/incl/shm_slab.h	/^    int page_idx;           \/* slotÁ´±íµÄÒ³Ë÷Òý *\/$/;"	m	struct:__anon6
+out_offset	src/incl/alog.h	/^    size_t out_offset;              \/* Í¬²½Æ«ÒÆ *\/$/;"	m	struct:__anon27
+out_offset	src/incl/log.h	/^    size_t out_offset;                  \/* åŒæ­¥åç§» *\/$/;"	m	struct:__anon12
+out_offset	src/incl/log_svr.h	/^    size_t out_offset;              \/* åŒæ­¥åç§» *\/$/;"	m	struct:__anon36
+page_idx	src/incl/shm_slab.h	/^    int page_idx;       \/* slotÁ´±íµÄÒ³Ë÷Òý *\/$/;"	m	struct:__anon6
 page_offset	src/incl/shm_slab.h	/^    size_t page_offset;     \/* PAGEÊý×éµÄÆðÊ¼Æ«ÒÆÁ¿ *\/$/;"	m	struct:__anon8
-pages	src/incl/shm_slab.h	/^    unsigned int pages;     \/* ¼ÇÂ¼Ò³Êý×éµÄÒ³Êý *\/$/;"	m	struct:__anon7
-pages	src/incl/slab.h	/^    slab_page_t  *pages;$/;"	m	struct:__anon21
+pages	src/incl/shm_slab.h	/^    uint32_t pages;         \/* ¼ÇÂ¼Ò³Êý×éµÄÒ³Êý *\/$/;"	m	struct:__anon7
+pages	src/incl/slab.h	/^    slab_page_t  *pages;$/;"	m	struct:__anon30
 parent	src/incl/avl_tree.h	/^    struct _node_t *parent;     \/* çˆ¶èŠ‚ç‚¹ *\/$/;"	m	struct:_node_t	typeref:struct:_node_t::_node_t
 parent	src/incl/rb_tree.h	/^    struct _rbt_node_t *parent;     \/* çˆ¶èŠ‚ç‚¹ *\/$/;"	m	struct:_rbt_node_t	typeref:struct:_rbt_node_t::_rbt_node_t
 parent	src/incl/xml_tree.h	/^    struct _xml_node_t *parent; \/* çˆ¶äº²èŠ‚ç‚¹ *\/$/;"	m	struct:_xml_node_t	typeref:struct:_xml_node_t::_xml_node_t
-path	src/incl/xdt_log.h	/^    char path[FILE_NAME_MAX_LEN];   \/* æ–‡ä»¶è·¯å¾„ *\/$/;"	m	struct:__anon9
+path	src/incl/alog.h	/^    char path[FILE_NAME_MAX_LEN];   \/* ÈÕÖ¾ÎÄ¼þ¾ø¶ÔÂ·¾¶ *\/$/;"	m	struct:__anon27
+path	src/incl/log.h	/^    char path[FILE_NAME_MAX_LEN];       \/* æ–‡ä»¶è·¯å¾„ *\/$/;"	m	struct:__anon13
+path	src/incl/log.h	/^    char path[FILE_NAME_MAX_LEN];       \/* æ—¥å¿—æ–‡ä»¶ç»å¯¹è·¯å¾„ *\/$/;"	m	struct:__anon12
+path	src/incl/log_svr.h	/^    char path[FILE_NAME_MAX_LEN];   \/* æ—¥å¿—æ–‡ä»¶ç»å¯¹è·¯å¾„ *\/$/;"	m	struct:__anon36
+pid	src/incl/alog.h	/^    pid_t pid;                      \/* µ±Ç°½ø³ÌID *\/$/;"	m	struct:_alog_cycle_t
+pid	src/incl/alog.h	/^    pid_t pid;                      \/* ½ø³ÌID *\/$/;"	m	struct:__anon29
+pid	src/incl/alog.h	/^    pid_t pid;                      \/* Ê¹ÓÃÈÕÖ¾»º´æµÄ½ø³ÌID *\/$/;"	m	struct:__anon27
+pid	src/incl/log.h	/^    pid_t pid;                          \/* ä½¿ç”¨æ—¥å¿—ç¼“å­˜çš„è¿›ç¨‹ID *\/$/;"	m	struct:__anon12
+pid	src/incl/log_svr.h	/^    pid_t pid;                      \/* ä½¿ç”¨æ—¥å¿—ç¼“å­˜çš„è¿›ç¨‹ID *\/$/;"	m	struct:__anon36
+pid	src/incl/log_svr.h	/^    pid_t pid;                      \/* å½“å‰è¿›ç¨‹ID *\/$/;"	m	struct:_alog_cycle_t
+pool	src/incl/alog.h	/^    thread_pool_t *pool;            \/* Ïß³Ì³Ø *\/$/;"	m	struct:__anon28
+pool	src/incl/log_svr.h	/^    thread_pool_t *pool;            \/* çº¿ç¨‹æ±  *\/$/;"	m	struct:__anon37
 pool_size	src/incl/shm_slab.h	/^    size_t pool_size;       \/* ÄÚ´æ¿Õ¼ä×Ü´óÐ¡ *\/$/;"	m	struct:__anon8
+prdt_name	src/incl/alog.h	/^    char prdt_name[SW_NAME_LEN];	\/* ²úÆ·Ãû *\/$/;"	m	struct:__anon29
 prev	src/incl/list2.h	/^    struct _list2_node_t *prev;$/;"	m	struct:_list2_node_t	typeref:struct:_list2_node_t::_list2_node_t
 prev	src/incl/slab.h	/^    uintptr_t prev;$/;"	m	struct:_slab_page_t
-prev_idx	src/incl/shm_slab.h	/^    int prev_idx;           \/* ÉÏÒ»Ò³µÄË÷Òý *\/$/;"	m	struct:__anon7
-proc_rdlock	src/incl/xdt_comm.h	71;"	d
-proc_rdlock_ex	src/incl/xdt_comm.h	77;"	d
-proc_try_rdlock	src/incl/xdt_comm.h	73;"	d
-proc_try_rdlock_ex	src/incl/xdt_comm.h	79;"	d
-proc_try_wrlock	src/incl/xdt_comm.h	72;"	d
-proc_try_wrlock_ex	src/incl/xdt_comm.h	78;"	d
-proc_unlock	src/incl/xdt_comm.h	74;"	d
-proc_unlock_ex	src/incl/xdt_comm.h	80;"	d
-proc_wrlock	src/incl/xdt_comm.h	70;"	d
-proc_wrlock_ex	src/incl/xdt_comm.h	76;"	d
+prev_idx	src/incl/shm_slab.h	/^    int prev_idx;       \/* ÉÏÒ»Ò³µÄË÷Òý *\/$/;"	m	struct:__anon7
+proc_rdlock	src/incl/common.h	72;"	d
+proc_rdlock_b	src/incl/common.h	78;"	d
+proc_try_rdlock	src/incl/common.h	74;"	d
+proc_try_rdlock_b	src/incl/common.h	80;"	d
+proc_try_wrlock	src/incl/common.h	73;"	d
+proc_try_wrlock_b	src/incl/common.h	79;"	d
+proc_unlock	src/incl/common.h	75;"	d
+proc_unlock_b	src/incl/common.h	81;"	d
+proc_wrlock	src/incl/common.h	71;"	d
+proc_wrlock_b	src/incl/common.h	77;"	d
 process	src/incl/thread_pool.h	/^	void *(*process)(void *arg);    \/* çº¿ç¨‹è°ƒç”¨æŽ¥å£ *\/$/;"	m	struct:_thread_worker_t
-ptr	src/incl/xml_comm.h	/^    char *ptr;$/;"	m	struct:__anon20
-ptr	src/incl/xml_comm.h	/^    const char *ptr;            \/* å½“å‰å¤„ç†åˆ°çš„ä½ç½® *\/$/;"	m	struct:__anon18
+ptr	src/incl/xml_comm.h	/^    char *ptr;$/;"	m	struct:__anon22
+ptr	src/incl/xml_comm.h	/^    const char *ptr;            \/* å½“å‰å¤„ç†åˆ°çš„ä½ç½® *\/$/;"	m	struct:__anon20
+pub_log_bin	src/incl/alog.h	195;"	d
+pub_log_chglog	src/incl/alog.h	190;"	d
+pub_log_debug	src/incl/alog.h	193;"	d
+pub_log_error	src/incl/alog.h	192;"	d
+pub_log_info	src/incl/alog.h	194;"	d
 queue_init	src/core/queue.c	/^int queue_init(Queue_t *q, int max, int size)$/;"	f
 queue_lock	src/incl/thread_pool.h	/^	pthread_mutex_t queue_lock;     \/* é˜Ÿåˆ—äº’æ–¥é” *\/$/;"	m	struct:__anon1
 queue_pop	src/core/queue.c	/^void *queue_pop(Queue_t *q)$/;"	f
@@ -395,7 +699,7 @@ queue_push	src/core/queue.c	/^int queue_push(Queue_t *q, void *addr, int size)$/
 queue_ready	src/incl/thread_pool.h	/^	pthread_cond_t queue_ready;     \/* é˜Ÿåˆ—ä¸´ç•Œé” *\/$/;"	m	struct:__anon1
 queue_size	src/incl/thread_pool.h	/^	int queue_size;                 \/* å·¥ä½œé˜Ÿåˆ—å½“å‰å¤§å° *\/$/;"	m	struct:__anon1
 rb_insert_fixup	src/core/rb_tree.c	/^static int rb_insert_fixup(rbt_tree_t *tree, rbt_node_t *node)$/;"	f	file:
-rbitmap	src/incl/shm_slab.h	/^    unsigned int rbitmap;   \/* ³õÊ¼Î»Í¼µÄÈ¡·´Öµ *\/$/;"	m	struct:__anon7
+rbitmap	src/incl/shm_slab.h	/^    uint32_t rbitmap;       \/* ³õÊ¼Î»Í¼µÄÈ¡·´Öµ *\/$/;"	m	struct:__anon7
 rbt_assert	src/core/rb_tree.c	/^void rbt_assert(const rbt_tree_t *tree, const rbt_node_t *node)$/;"	f
 rbt_copy_color	src/incl/rb_tree.h	46;"	d
 rbt_creat	src/core/rb_tree.c	/^rbt_tree_t *rbt_creat(void)$/;"	f
@@ -403,14 +707,14 @@ rbt_creat_node	src/core/rb_tree.c	/^rbt_node_t *rbt_creat_node(rbt_tree_t *tree,
 rbt_delete	src/core/rb_tree.c	/^int rbt_delete(rbt_tree_t *tree, int key)$/;"	f
 rbt_delete_fixup	src/core/rb_tree.c	/^static int rbt_delete_fixup(rbt_tree_t *tree, rbt_node_t *node)$/;"	f	file:
 rbt_destroy	src/core/rb_tree.c	/^int rbt_destroy(rbt_tree_t **tree)$/;"	f
-rbt_hprint	src/core/rb_tree.c	/^static void rbt_hprint(const rbt_tree_t *tree, const rbt_node_t *node, int depth)$/;"	f	file:
+rbt_hprint32_t	src/core/rb_tree.c	/^static void rbt_hprint32_t(const rbt_tree_t *tree, const rbt_node_t *node, int depth)$/;"	f	file:
 rbt_insert	src/core/rb_tree.c	/^int rbt_insert(rbt_tree_t *tree, int key)$/;"	f
 rbt_is_black	src/incl/rb_tree.h	51;"	d
 rbt_is_red	src/incl/rb_tree.h	50;"	d
 rbt_left_rotate	src/core/rb_tree.c	/^void rbt_left_rotate(rbt_tree_t *tree, rbt_node_t *node)$/;"	f
 rbt_node_t	src/incl/rb_tree.h	/^}rbt_node_t;$/;"	t	typeref:struct:_rbt_node_t
-rbt_print	src/core/rb_tree.c	/^int rbt_print(rbt_tree_t *tree)$/;"	f
-rbt_ret_e	src/incl/rb_tree.h	/^}rbt_ret_e;$/;"	t	typeref:enum:__anon11
+rbt_print32_t	src/core/rb_tree.c	/^int rbt_print32_t(rbt_tree_t *tree)$/;"	f
+rbt_ret_e	src/incl/rb_tree.h	/^}rbt_ret_e;$/;"	t	typeref:enum:__anon10
 rbt_right_rotate	src/core/rb_tree.c	/^void rbt_right_rotate(rbt_tree_t *tree, rbt_node_t *node)$/;"	f
 rbt_search	src/core/rb_tree.c	/^const rbt_node_t *rbt_search(const rbt_tree_t *tree, int key)$/;"	f
 rbt_set_black	src/incl/rb_tree.h	49;"	d
@@ -419,85 +723,86 @@ rbt_set_color	src/incl/rb_tree.h	47;"	d
 rbt_set_lchild	src/incl/rb_tree.h	54;"	d
 rbt_set_rchild	src/incl/rb_tree.h	64;"	d
 rbt_set_red	src/incl/rb_tree.h	48;"	d
-rbt_tprint	src/core/rb_tree.c	/^static void rbt_tprint(const rbt_tree_t *tree, const rbt_node_t *node, int depth)$/;"	f	file:
-rbt_tree_t	src/incl/rb_tree.h	/^}rbt_tree_t;$/;"	t	typeref:struct:__anon12
+rbt_tprint32_t	src/core/rb_tree.c	/^static void rbt_tprint32_t(const rbt_tree_t *tree, const rbt_node_t *node, int depth)$/;"	f	file:
+rbt_tree_t	src/incl/rb_tree.h	/^}rbt_tree_t;$/;"	t	typeref:struct:__anon11
 rchild	src/incl/avl_tree.h	/^    struct _node_t *rchild;     \/* å³å­©å­ *\/$/;"	m	struct:_node_t	typeref:struct:_node_t::_node_t
 rchild	src/incl/rb_tree.h	/^    struct _rbt_node_t *rchild;     \/* å³å­©å­èŠ‚ç‚¹ *\/$/;"	m	struct:_rbt_node_t	typeref:struct:_rbt_node_t::_rbt_node_t
-reg	src/incl/sha256.h	/^	int  reg[ 8 ]; \/** h0 to h 7 -- old value store*\/$/;"	m	struct:_sha256_t
+reg	src/incl/sha256.h	/^    int  reg[ 8 ]; \/** h0 to h 7 -- old value store*\/$/;"	m	struct:_sha256_t
 root	src/incl/avl_tree.h	/^    avl_node_t *root;           \/* æ ¹èŠ‚ç‚¹ *\/$/;"	m	struct:__anon3
-root	src/incl/rb_tree.h	/^    rbt_node_t *root;               \/* æ ¹èŠ‚ç‚¹ *\/$/;"	m	struct:__anon12
-root	src/incl/xml_tree.h	/^    xml_node_t *root;           \/* æ ¹èŠ‚ç‚¹: æ³¨æ„rootçš„ç¬¬ä¸€ä¸ªå­èŠ‚ç‚¹æ‰æ˜¯çœŸæ­£çš„æ ¹èŠ‚ç‚¹ *\/$/;"	m	struct:__anon14
-sentinel	src/incl/rb_tree.h	/^    rbt_node_t *sentinel;           \/* å“¨å…µèŠ‚ç‚¹ *\/$/;"	m	struct:__anon12
-sha256_calc_block	src/core/sha256.c	/^static uint64_t sha256_calc_block(int* dp, int* rp){$/;"	f	file:
-sha256_calculate	src/core/sha256.c	/^uint64_t sha256_calculate(sha256_t* t, char* dp, uint64_t dl){$/;"	f
-sha256_digest	src/core/xdt_comm.c	/^void sha256_digest(char *str, unsigned int len, unsigned char digest[32])$/;"	f
-sha256_init	src/core/sha256.c	/^uint64_t  sha256_init(sha256_t* t){	return sha256_reset(t); }$/;"	f
-sha256_k	src/core/sha256.c	/^const int sha256_k[ 64 ] = {$/;"	v
-sha256_reset	src/core/sha256.c	/^uint64_t sha256_reset(sha256_t* t){ $/;"	f
+root	src/incl/rb_tree.h	/^    rbt_node_t *root;               \/* æ ¹èŠ‚ç‚¹ *\/$/;"	m	struct:__anon11
+root	src/incl/trie_tree.h	/^    trie_tree_node_t *root;             \/* TRIEæ ‘æ ¹ç»“ç‚¹ *\/$/;"	m	struct:__anon14
+root	src/incl/xml_tree.h	/^    xml_node_t *root;           \/* æ ¹èŠ‚ç‚¹: æ³¨æ„rootçš„ç¬¬ä¸€ä¸ªå­èŠ‚ç‚¹æ‰æ˜¯çœŸæ­£çš„æ ¹èŠ‚ç‚¹ *\/$/;"	m	struct:__anon16
+sentinel	src/incl/rb_tree.h	/^    rbt_node_t *sentinel;           \/* å“¨å…µèŠ‚ç‚¹ *\/$/;"	m	struct:__anon11
+sha256_calc_block	src/core/sha256.c	/^static uint64_t sha256_calc_block(int* dp, int* rp)$/;"	f	file:
+sha256_calculate	src/core/sha256.c	/^uint64_t sha256_calculate(sha256_t* t, char* dp, uint64_t dl)$/;"	f
+sha256_digest	src/core/common.c	/^void sha256_digest(char *str, uint32_t len, u_char digest[32])$/;"	f
+sha256_init	src/core/sha256.c	/^uint64_t sha256_init(sha256_t* t)$/;"	f
+sha256_key	src/core/sha256.c	/^const int sha256_key[ 64 ] = {$/;"	v
+sha256_reset	src/core/sha256.c	/^uint64_t sha256_reset(sha256_t* t)$/;"	f
 sha256_t	src/incl/sha256.h	/^}sha256_t;$/;"	t	typeref:struct:_sha256_t
-sha256_uninit	src/core/sha256.c	/^uint64_t sha256_uninit(sha256_t* t){ return 0; }$/;"	f
-shift	src/incl/shm_slab.h	/^    unsigned int shift:16;  \/* Ò³·ÖÅäµÄ´óÐ¡¶ÔÓ¦µÄÎ»ÒÆ *\/$/;"	m	struct:__anon7
+sha256_uninit	src/core/sha256.c	/^uint64_t sha256_uninit(sha256_t* t)$/;"	f
+shift	src/incl/shm_slab.h	/^    uint32_t shift:16;      \/* Ò³·ÖÅäµÄ´óÐ¡¶ÔÓ¦µÄÎ»ÒÆ *\/$/;"	m	struct:__anon7
 shm_slab_alloc	src/core/shm_slab.c	/^void *shm_slab_alloc(shm_slab_pool_t *pool, size_t size)$/;"	f
 shm_slab_alloc_pages	src/core/shm_slab.c	/^static shm_slab_page_t *shm_slab_alloc_pages(shm_slab_pool_t *pool, int pages)$/;"	f	file:
 shm_slab_alloc_slot	src/core/shm_slab.c	/^static void *shm_slab_alloc_slot(shm_slab_pool_t *pool, size_t size)$/;"	f	file:
-shm_slab_exact_shift	src/core/shm_slab.c	32;"	d	file:
-shm_slab_exact_size	src/core/shm_slab.c	31;"	d	file:
+shm_slab_exact_shift	src/core/shm_slab.c	41;"	d	file:
+shm_slab_exact_size	src/core/shm_slab.c	40;"	d	file:
 shm_slab_free	src/core/shm_slab.c	/^int shm_slab_free(shm_slab_pool_t *pool, void *p)$/;"	f
 shm_slab_free_pages	src/core/shm_slab.c	/^static int shm_slab_free_pages(shm_slab_pool_t *pool, shm_slab_page_t *page)$/;"	f	file:
-shm_slab_get_alloc_type	src/core/shm_slab.c	/^static int shm_slab_get_alloc_type(int size)$/;"	f	file:
+shm_slab_get_alloc_type	src/core/shm_slab.c	/^static int shm_slab_get_alloc_type(int32_t size)$/;"	f	file:
 shm_slab_head_size	src/core/shm_slab.c	/^size_t shm_slab_head_size(size_t size)$/;"	f
 shm_slab_init	src/core/shm_slab.c	/^int shm_slab_init(shm_slab_pool_t *pool)$/;"	f
 shm_slab_init_param	src/core/shm_slab.c	/^static void shm_slab_init_param(void)$/;"	f	file:
-shm_slab_is_busy_bitmap	src/core/shm_slab.c	15;"	d	file:
-shm_slab_is_free_page	src/core/shm_slab.c	17;"	d	file:
-shm_slab_is_null_page	src/core/shm_slab.c	16;"	d	file:
-shm_slab_max_shift	src/core/shm_slab.c	30;"	d	file:
-shm_slab_max_size	src/core/shm_slab.c	29;"	d	file:
-shm_slab_page_shift	src/core/shm_slab.c	28;"	d	file:
-shm_slab_page_size	src/core/shm_slab.c	27;"	d	file:
+shm_slab_is_busy_bitmap	src/core/shm_slab.c	24;"	d	file:
+shm_slab_is_free_page	src/core/shm_slab.c	26;"	d	file:
+shm_slab_is_null_page	src/core/shm_slab.c	25;"	d	file:
+shm_slab_max_shift	src/core/shm_slab.c	39;"	d	file:
+shm_slab_max_size	src/core/shm_slab.c	38;"	d	file:
+shm_slab_page_shift	src/core/shm_slab.c	37;"	d	file:
+shm_slab_page_size	src/core/shm_slab.c	36;"	d	file:
 shm_slab_page_t	src/incl/shm_slab.h	/^}shm_slab_page_t;$/;"	t	typeref:struct:__anon7
 shm_slab_pool_t	src/incl/shm_slab.h	/^}shm_slab_pool_t;$/;"	t	typeref:struct:__anon8
-shm_slab_set_exact_shift	src/core/shm_slab.c	39;"	d	file:
-shm_slab_set_exact_size	src/core/shm_slab.c	38;"	d	file:
-shm_slab_set_max_shift	src/core/shm_slab.c	37;"	d	file:
-shm_slab_set_max_size	src/core/shm_slab.c	36;"	d	file:
-shm_slab_set_page_shift	src/core/shm_slab.c	35;"	d	file:
-shm_slab_set_page_size	src/core/shm_slab.c	34;"	d	file:
+shm_slab_set_exact_shift	src/core/shm_slab.c	48;"	d	file:
+shm_slab_set_exact_size	src/core/shm_slab.c	47;"	d	file:
+shm_slab_set_max_shift	src/core/shm_slab.c	46;"	d	file:
+shm_slab_set_max_size	src/core/shm_slab.c	45;"	d	file:
+shm_slab_set_page_shift	src/core/shm_slab.c	44;"	d	file:
+shm_slab_set_page_size	src/core/shm_slab.c	43;"	d	file:
 shm_slab_slot_add_page	src/core/shm_slab.c	/^static int shm_slab_slot_add_page($/;"	f	file:
 shm_slab_slot_remove_page	src/core/shm_slab.c	/^static int shm_slab_slot_remove_page($/;"	f	file:
 shm_slab_slot_t	src/incl/shm_slab.h	/^}shm_slab_slot_t;$/;"	t	typeref:struct:__anon6
 shutdown	src/incl/thread_pool.h	/^	int shutdown;                   \/* æ˜¯å¦å·²é”€æ¯çº¿ç¨‹ *\/$/;"	m	struct:__anon1
-size	src/incl/queue.h	/^    int size;       \/* é˜Ÿåˆ—å„èŠ‚ç‚¹çš„æœ€å¤§å­˜å‚¨ç©ºé—´ *\/$/;"	m	struct:__anon23
-size	src/incl/stack.h	/^    int size;       \/* æ ˆçš„å¤§å° *\/$/;"	m	struct:__anon10
+size	src/incl/queue.h	/^    int size;       \/* é˜Ÿåˆ—å„èŠ‚ç‚¹çš„æœ€å¤§å­˜å‚¨ç©ºé—´ *\/$/;"	m	struct:__anon32
+size	src/incl/stack.h	/^    int size;       \/* æ ˆçš„å¤§å° *\/$/;"	m	struct:__anon9
 slab	src/incl/slab.h	/^    uintptr_t slab;$/;"	m	struct:_slab_page_t
-slab_align_ptr	src/core/slab.c	62;"	d	file:
+slab_align_ptr	src/core/slab.c	71;"	d	file:
 slab_alloc	src/core/slab.c	/^void *slab_alloc(slab_pool_t *pool, size_t size)$/;"	f
-slab_alloc_pages	src/core/slab.c	/^static slab_page_t *slab_alloc_pages(slab_pool_t *pool, unsigned int pages)$/;"	f	file:
-slab_exact_shift	src/core/slab.c	/^static unsigned int slab_exact_shift = 0;$/;"	v	file:
+slab_alloc_pages	src/core/slab.c	/^static slab_page_t *slab_alloc_pages(slab_pool_t *pool, uint32_t pages)$/;"	f	file:
+slab_exact_shift	src/core/slab.c	/^static uint32_t slab_exact_shift = 0;$/;"	v	file:
 slab_exact_size	src/core/slab.c	/^static size_t slab_exact_size = 0;$/;"	v	file:
 slab_free	src/core/slab.c	/^void slab_free(slab_pool_t *pool, void *p)$/;"	f
-slab_free_pages	src/core/slab.c	/^static void slab_free_pages(slab_pool_t *pool, slab_page_t *page, unsigned int pages)$/;"	f	file:
-slab_get_exact_shift	src/core/slab.c	55;"	d	file:
-slab_get_exact_size	src/core/slab.c	53;"	d	file:
-slab_get_max_size	src/core/slab.c	51;"	d	file:
-slab_get_page_shift	src/core/slab.c	59;"	d	file:
-slab_get_page_size	src/core/slab.c	57;"	d	file:
+slab_free_pages	src/core/slab.c	/^static void slab_free_pages(slab_pool_t *pool, slab_page_t *page, uint32_t pages)$/;"	f	file:
+slab_get_exact_shift	src/core/slab.c	64;"	d	file:
+slab_get_exact_size	src/core/slab.c	62;"	d	file:
+slab_get_max_size	src/core/slab.c	60;"	d	file:
+slab_get_page_shift	src/core/slab.c	68;"	d	file:
+slab_get_page_size	src/core/slab.c	66;"	d	file:
 slab_init	src/core/slab.c	/^void slab_init(slab_pool_t *pool)$/;"	f
-slab_junk	src/core/slab.c	39;"	d	file:
+slab_junk	src/core/slab.c	48;"	d	file:
 slab_max_size	src/core/slab.c	/^static size_t slab_max_size = 0;$/;"	v	file:
-slab_page_shift	src/core/slab.c	/^static unsigned int slab_page_shift = SLAB_PAGE_SHIFT;$/;"	v	file:
+slab_page_shift	src/core/slab.c	/^static uint32_t slab_page_shift = SLAB_PAGE_SHIFT;$/;"	v	file:
 slab_page_size	src/core/slab.c	/^static size_t slab_page_size = SLAB_PAGE_SIZE;$/;"	v	file:
 slab_page_t	src/incl/slab.h	/^}slab_page_t;$/;"	t	typeref:struct:_slab_page_t
-slab_pool_t	src/incl/slab.h	/^} slab_pool_t;$/;"	t	typeref:struct:__anon21
-slab_set_exact_shift	src/core/slab.c	56;"	d	file:
-slab_set_exact_size	src/core/slab.c	54;"	d	file:
-slab_set_max_size	src/core/slab.c	52;"	d	file:
-slab_set_page_shift	src/core/slab.c	60;"	d	file:
-slab_set_page_size	src/core/slab.c	58;"	d	file:
+slab_pool_t	src/incl/slab.h	/^} slab_pool_t;$/;"	t	typeref:struct:__anon30
+slab_set_exact_shift	src/core/slab.c	65;"	d	file:
+slab_set_exact_size	src/core/slab.c	63;"	d	file:
+slab_set_max_size	src/core/slab.c	61;"	d	file:
+slab_set_page_shift	src/core/slab.c	69;"	d	file:
+slab_set_page_size	src/core/slab.c	67;"	d	file:
 slot_offset	src/incl/shm_slab.h	/^    size_t slot_offset;     \/* SLOTÊý×éµÄÆðÊ¼Æ«ÒÆÁ¿ *\/$/;"	m	struct:__anon8
 sp	src/incl/slab.h	/^    slab_pool_t *sp;$/;"	m	struct:_eslab_node_t
 sprint_init	src/incl/xml_comm.h	159;"	d
-sprint_t	src/incl/xml_comm.h	/^}sprint_t;$/;"	t	typeref:struct:__anon20
+sprint_t	src/incl/xml_comm.h	/^}sprint_t;$/;"	t	typeref:struct:__anon22
 stack_depth	src/incl/stack.h	67;"	d
 stack_destroy	src/core/stack.c	/^void stack_destroy(Stack_t *stack)$/;"	f
 stack_destroy	src/incl/stack.h	32;"	d
@@ -509,14 +814,19 @@ stack_pop	src/core/stack.c	/^int stack_pop(Stack_t *stack)$/;"	f
 stack_pop	src/incl/stack.h	51;"	d
 stack_push	src/core/stack.c	/^int stack_push(Stack_t *stack, void *node)$/;"	f
 stack_push	src/incl/stack.h	41;"	d
-start	src/incl/slab.h	/^    u_char *start;$/;"	m	struct:__anon21
-str	src/incl/xml_comm.h	/^    char *str;$/;"	m	struct:__anon17
-str	src/incl/xml_comm.h	/^    char *str;$/;"	m	struct:__anon20
+start	src/incl/slab.h	/^    u_char *start;$/;"	m	struct:__anon30
+str	src/incl/xml_comm.h	/^    char *str;$/;"	m	struct:__anon19
+str	src/incl/xml_comm.h	/^    char *str;$/;"	m	struct:__anon22
 str	src/incl/xml_comm.h	/^    char *str;$/;"	m	struct:_xml_esc_node_t
-str	src/incl/xml_comm.h	/^    const char *str;         \/* XMLå­—ä¸² *\/$/;"	m	struct:__anon18
+str	src/incl/xml_comm.h	/^    const char *str;         \/* XMLå­—ä¸² *\/$/;"	m	struct:__anon20
+svc_name	src/incl/alog.h	/^    char svc_name[SW_NAME_LEN];		\/* SVCÃû *\/$/;"	m	struct:__anon29
+svr_name	src/incl/alog.h	/^    char svr_name[SW_NAME_LEN];		\/* SVRÃû *\/$/;"	m	struct:__anon29
+sync_time	src/incl/alog.h	/^    struct timeb sync_time;         \/* ÉÏ´ÎÍ¬²½µÄÊ±¼ä *\/$/;"	m	struct:__anon27	typeref:struct:__anon27::timeb
+sync_time	src/incl/log.h	/^    struct timeb sync_time;             \/* ä¸Šæ¬¡åŒæ­¥çš„æ—¶é—´ *\/$/;"	m	struct:__anon12	typeref:struct:__anon12::timeb
+sync_time	src/incl/log_svr.h	/^    struct timeb sync_time;         \/* ä¸Šæ¬¡åŒæ­¥çš„æ—¶é—´ *\/$/;"	m	struct:__anon36	typeref:struct:__anon36::timeb
 tail	src/incl/list.h	/^    list_node_t *tail;$/;"	m	struct:__anon4
-tail	src/incl/queue.h	/^    Qnode_t *tail;  \/* é˜Ÿåˆ—å°¾ *\/$/;"	m	struct:__anon23
-tail	src/incl/xml_comm.h	/^    xml_esc_node_t *tail;$/;"	m	struct:__anon19
+tail	src/incl/queue.h	/^    Qnode_t *tail;  \/* é˜Ÿåˆ—å°¾ *\/$/;"	m	struct:__anon32
+tail	src/incl/xml_comm.h	/^    xml_esc_node_t *tail;$/;"	m	struct:__anon21
 tail	src/incl/xml_tree.h	/^    struct _xml_node_t *tail;   \/* å­©å­èŠ‚ç‚¹é“¾è¡¨å°¾ # æž„å»º\/ä¿®æ”¹XMLæ ‘æ—¶ä½¿ç”¨ # æé«˜æ“ä½œæ•ˆçŽ‡ *\/$/;"	m	struct:_xml_node_t	typeref:struct:_xml_node_t::_xml_node_t
 temp	src/incl/xml_tree.h	/^    struct _xml_node_t *temp;   \/* ä¸´æ—¶æŒ‡é’ˆ: éåŽ†XMLæ ‘æ—¶ï¼Œæé«˜æ•ˆçŽ‡(å…¶ä»–æƒ…å†µä¸‹ï¼Œæ­¤æŒ‡é’ˆå€¼æ— æ•ˆ) *\/    $/;"	m	struct:_xml_node_t	typeref:struct:_xml_node_t::_xml_node_t
 thread_create_detach	src/core/thread_pool.c	/^static int thread_create_detach(thread_pool_t *tp, int idx)$/;"	f	file:
@@ -531,48 +841,71 @@ thread_pool_t	src/incl/thread_pool.h	/^}thread_pool_t;$/;"	t	typeref:struct:__an
 thread_routine	src/core/thread_pool.c	/^static void *thread_routine(void *arg)$/;"	f	file:
 thread_worker_t	src/incl/thread_pool.h	/^}thread_worker_t;$/;"	t	typeref:struct:_thread_worker_t
 tid	src/incl/thread_pool.h	/^	pthread_t *tid;                 \/* çº¿ç¨‹IDæ•°ç»„ â€”åŠ¨æ€åˆ†é…ç©ºé—´ *\/$/;"	m	struct:__anon1
-top	src/incl/stack.h	/^    void **top;     \/* æ ˆé¡¶åœ°å€ *\/$/;"	m	struct:__anon10
-true	src/incl/xdt_comm.h	24;"	d
+top	src/incl/stack.h	/^    void **top;     \/* æ ˆé¡¶åœ°å€ *\/$/;"	m	struct:__anon9
+trcno	src/incl/alog.h	/^    sw_int64_t trcno;				\/* ÒµÎñÁ÷Ë®ºÅ *\/$/;"	m	struct:__anon29
+trie_tree_creat	src/core/trie_tree.c	/^trie_tree_t *trie_tree_creat(int count)$/;"	f
+trie_tree_destroy	src/core/trie_tree.c	/^void trie_tree_destroy(trie_tree_t **tree)$/;"	f
+trie_tree_insert	src/core/trie_tree.c	/^int trie_tree_insert(trie_tree_t *tree, const char *str, int len)$/;"	f
+trie_tree_node_free	src/core/trie_tree.c	/^static void trie_tree_node_free(trie_tree_t *tree, trie_tree_node_t *node)$/;"	f	file:
+trie_tree_node_t	src/incl/trie_tree.h	/^}trie_tree_node_t;$/;"	t	typeref:struct:_trie_tree_node_t
+trie_tree_search	src/core/trie_tree.c	/^const trie_tree_node_t *trie_tree_search(trie_tree_t *tree, const char *str, int len)$/;"	f
+trie_tree_t	src/incl/trie_tree.h	/^}trie_tree_t;$/;"	t	typeref:struct:__anon14
+true	src/incl/common.h	24;"	d
 true	src/incl/xml_tree.h	47;"	d
-type	src/incl/shm_slab.h	/^    unsigned int type:16;   \/* Ò³·ÖÅäµÄÀàÐÍ: È¡Öµ·¶Î§SHM_SLAB_ALLOC_TYPE *\/$/;"	m	struct:__anon7
-type	src/incl/xml_comm.h	/^    xml_esc_e type;$/;"	m	struct:__anon17
+type	src/incl/alog.h	/^    alog_cmd_e type;                \/* ÈÕÖ¾ÃüÁîÀàÐÍ *\/$/;"	m	struct:__anon26
+type	src/incl/log_svr.h	/^    alog_cmd_e type;                \/* æ—¥å¿—å‘½ä»¤ç±»åž‹ *\/$/;"	m	struct:__anon35
+type	src/incl/shm_slab.h	/^    uint32_t type:16;       \/* Ò³·ÖÅäµÄÀàÐÍ: È¡Öµ·¶Î§SHM_SLAB_ALLOC_TYPE *\/$/;"	m	struct:__anon7
+type	src/incl/xml_comm.h	/^    xml_esc_e type;$/;"	m	struct:__anon19
 type	src/incl/xml_tree.h	/^    xml_node_type_e type;       \/* èŠ‚ç‚¹ç±»åž‹ *\/$/;"	m	struct:_xml_node_t
-usck_udp_creat	src/core/xdt_comm.c	/^int usck_udp_creat(const char *path)$/;"	f
-usck_udp_recv	src/core/xdt_comm.c	/^int usck_udp_recv(int sckid, void *buff, int rcvlen)$/;"	f
-usck_udp_send	src/core/xdt_comm.c	/^int usck_udp_send(int sckid, const char *path, const void *buff, size_t sndlen)$/;"	f
+uLog	src/core/alog.c	/^void uLog(int level, const char *fmt, ...)$/;"	f
+uLogGetCycle	src/core/alog.c	1480;"	d	file:
+uLogGetLevel	src/core/alog.c	1490;"	d	file:
+uLogGetMaxSize	src/core/alog.c	1484;"	d	file:
+uLogIsTooLarge	src/core/alog.c	1486;"	d	file:
+uLogSetMaxSize	src/core/alog.c	1485;"	d	file:
+ulog_cycle_t	src/incl/alog.h	/^}ulog_cycle_t;$/;"	t	typeref:struct:__anon29
+ulog_date_switch	src/core/alog.c	/^sw_int_t ulog_date_switch(ulog_cycle_t *ulog, const struct tm *dt)$/;"	f
+ulog_force_sync	src/core/alog.c	1493;"	d	file:
+ulog_force_sync_ext	src/core/alog.c	/^int ulog_force_sync_ext(ulog_cycle_t *ulog, const struct tm *dt)$/;"	f
+ulog_init	src/core/alog.c	/^sw_int_t ulog_init($/;"	f
+ulog_release	src/core/alog.c	/^void ulog_release(void)$/;"	f
+ulog_set_level	src/core/alog.c	/^void ulog_set_level(alog_level_e level) { g_uLogLevel = level; }$/;"	f
+ulog_set_path	src/core/alog.c	/^static int ulog_set_path(ulog_cycle_t *ulog, const char *path)$/;"	f	file:
+usck_udp_creat	src/core/common.c	/^int usck_udp_creat(const char *path)$/;"	f
+usck_udp_recv	src/core/common.c	/^int usck_udp_recv(int32_t sckid, void *buff, int rcvlen)$/;"	f
+usck_udp_send	src/core/common.c	/^int usck_udp_send(int32_t sckid, const char *path, const void *buff, size_t sndlen)$/;"	f
 value	src/incl/xml_tree.h	/^    char *value;                \/* èŠ‚ç‚¹å€¼ *\/$/;"	m	struct:_xml_node_t
-xdt_log_t	src/incl/xdt_log.h	/^}xdt_log_t;$/;"	t	typeref:struct:__anon9
 xml_add_attr	src/core/xml_tree.c	/^xml_node_t *xml_add_attr(xml_node_t *node, const char *name, const char *value)$/;"	f
-xml_add_brother	src/incl/xml_tree.h	109;"	d
+xml_add_brother	src/incl/xml_tree.h	110;"	d
 xml_add_child	src/core/xml_tree.c	/^xml_node_t *xml_add_child(xml_node_t *node, const char *name, const char *value)$/;"	f
 xml_add_node	src/core/xml_tree.c	/^xml_node_t *xml_add_node(xml_node_t *node, const char *name, const char *value, int type)$/;"	f
-xml_attr_free	src/core/xml_tree.c	209;"	d	file:
-xml_brother	src/incl/xml_tree.h	86;"	d
-xml_child	src/incl/xml_tree.h	84;"	d
+xml_attr_free	src/core/xml_tree.c	218;"	d	file:
+xml_brother	src/incl/xml_tree.h	87;"	d
+xml_child	src/incl/xml_tree.h	85;"	d
 xml_creat	src/core/xml_tree.c	/^xml_tree_t *xml_creat(const char *fname)$/;"	f
 xml_creat_empty	src/core/xml_tree.c	/^xml_tree_t *xml_creat_empty(void)$/;"	f
-xml_delete_brother	src/incl/xml_tree.h	111;"	d
+xml_delete_brother	src/incl/xml_tree.h	113;"	d
 xml_delete_child	src/core/xml_comm.c	/^int xml_delete_child(xml_node_t *node, xml_node_t *child)$/;"	f
 xml_delete_empty	src/core/xml_tree.c	/^int xml_delete_empty(xml_tree_t *xml)$/;"	f
-xml_destroy	src/incl/xml_tree.h	121;"	d
-xml_err_e	src/incl/xml_comm.h	/^}xml_err_e;$/;"	t	typeref:enum:__anon15
-xml_esc_e	src/incl/xml_comm.h	/^}xml_esc_e;$/;"	t	typeref:enum:__anon16
+xml_destroy	src/incl/xml_tree.h	124;"	d
+xml_err_e	src/incl/xml_comm.h	/^}xml_err_e;$/;"	t	typeref:enum:__anon17
+xml_esc_e	src/incl/xml_comm.h	/^}xml_esc_e;$/;"	t	typeref:enum:__anon18
 xml_esc_free	src/core/xml_comm.c	/^static int xml_esc_free(xml_esc_split_t *split)$/;"	f	file:
 xml_esc_get	src/core/xml_comm.c	/^static const xml_esc_t *xml_esc_get(const char *str)$/;"	f	file:
 xml_esc_merge	src/core/xml_comm.c	/^static int xml_esc_merge(const xml_esc_split_t *sp, char *dst)$/;"	f	file:
 xml_esc_node_t	src/incl/xml_comm.h	/^}xml_esc_node_t;$/;"	t	typeref:struct:_xml_esc_node_t
 xml_esc_size	src/core/xml_comm.c	/^static int xml_esc_size(const xml_esc_split_t *sp)$/;"	f	file:
 xml_esc_split	src/core/xml_comm.c	/^static int xml_esc_split(const xml_esc_t *esc,$/;"	f	file:
-xml_esc_split_t	src/incl/xml_comm.h	/^}xml_esc_split_t;$/;"	t	typeref:struct:__anon19
-xml_esc_t	src/incl/xml_comm.h	/^}xml_esc_t;$/;"	t	typeref:struct:__anon17
+xml_esc_split_t	src/incl/xml_comm.h	/^}xml_esc_split_t;$/;"	t	typeref:struct:__anon21
+xml_esc_t	src/incl/xml_comm.h	/^}xml_esc_t;$/;"	t	typeref:struct:__anon19
 xml_fload	src/core/xml_comm.c	/^char *xml_fload(const char *fname)$/;"	f
-xml_fparse_t	src/incl/xml_comm.h	/^}xml_fparse_t;$/;"	t	typeref:struct:__anon18
+xml_fparse_t	src/incl/xml_comm.h	/^}xml_fparse_t;$/;"	t	typeref:struct:__anon20
 xml_fprint	src/core/xml_tree.c	/^int xml_fprint(xml_tree_t *xml, FILE *fp)$/;"	f
-xml_fprint_attr	src/core/xml_print.c	31;"	d	file:
-xml_fprint_name	src/core/xml_print.c	20;"	d	file:
+xml_fprint_attr	src/core/xml_print.c	40;"	d	file:
+xml_fprint_name	src/core/xml_print.c	29;"	d	file:
 xml_fprint_next	src/core/xml_print.c	/^static xml_node_t *xml_fprint_next(Stack_t *stack, xml_node_t *node, FILE *fp)$/;"	f	file:
 xml_fprint_tree	src/core/xml_print.c	/^int xml_fprint_tree(xml_node_t *root, Stack_t *stack, FILE *fp)$/;"	f
-xml_fprint_value	src/core/xml_print.c	46;"	d	file:
+xml_fprint_value	src/core/xml_print.c	55;"	d	file:
 xml_free_next	src/core/xml_comm.c	/^xml_node_t *xml_free_next(Stack_t *stack, xml_node_t *current)$/;"	f
 xml_fwrite	src/core/xml_tree.c	/^int xml_fwrite(xml_tree_t *xml, const char *fname)$/;"	f
 xml_has_attr	src/incl/xml_comm.h	55;"	d
@@ -582,39 +915,39 @@ xml_init	src/core/xml_comm.c	/^int xml_init(xml_tree_t **xml)$/;"	f
 xml_is_attr	src/incl/xml_comm.h	51;"	d
 xml_is_child	src/incl/xml_comm.h	52;"	d
 xml_is_root	src/incl/xml_comm.h	53;"	d
-xml_mark_end	src/core/xml_comm.c	498;"	d	file:
+xml_mark_end	src/core/xml_comm.c	513;"	d	file:
 xml_mark_get_attr	src/core/xml_comm.c	/^static int xml_mark_get_attr(Stack_t *stack, xml_fparse_t *fparse)$/;"	f	file:
 xml_mark_get_name	src/core/xml_comm.c	/^static int xml_mark_get_name(xml_tree_t *xml, Stack_t *stack, xml_fparse_t *fparse)$/;"	f	file:
 xml_mark_get_value	src/core/xml_comm.c	/^static int xml_mark_get_value(Stack_t *stack, xml_fparse_t *fparse)$/;"	f	file:
 xml_mark_has_attr	src/core/xml_comm.c	/^static int xml_mark_has_attr(xml_fparse_t *fparse)$/;"	f	file:
 xml_mark_has_value	src/core/xml_comm.c	/^static int xml_mark_has_value(xml_fparse_t *fparse)$/;"	f	file:
 xml_mark_is_end	src/core/xml_comm.c	/^static int xml_mark_is_end(xml_fparse_t *fparse)$/;"	f	file:
-xml_name	src/incl/xml_tree.h	87;"	d
-xml_node_attr_length	src/core/xml_comm.c	1331;"	d	file:
+xml_name	src/incl/xml_tree.h	88;"	d
+xml_node_attr_length	src/core/xml_comm.c	1346;"	d	file:
 xml_node_creat	src/core/xml_comm.c	/^xml_node_t *xml_node_creat(xml_node_type_e type)$/;"	f
 xml_node_creat_ext	src/core/xml_comm.c	/^xml_node_t *xml_node_creat_ext(xml_node_type_e type, const char *name, const char *value)$/;"	f
 xml_node_free	src/core/xml_tree.c	/^int xml_node_free(xml_node_t *node)$/;"	f
 xml_node_length	src/core/xml_tree.c	/^int xml_node_length(xml_node_t *node)$/;"	f
-xml_node_name_length	src/core/xml_comm.c	1318;"	d	file:
+xml_node_name_length	src/core/xml_comm.c	1333;"	d	file:
 xml_node_next_length	src/core/xml_comm.c	/^static xml_node_t *xml_node_next_length(Stack_t *stack, xml_node_t *node, int *length)$/;"	f	file:
 xml_node_sfree	src/core/xml_comm.c	/^int xml_node_sfree(xml_node_t *node)$/;"	f
 xml_node_t	src/incl/xml_tree.h	/^}xml_node_t;$/;"	t	typeref:struct:_xml_node_t
-xml_node_type_e	src/incl/xml_tree.h	/^}xml_node_type_e;$/;"	t	typeref:enum:__anon13
-xml_node_value_length	src/core/xml_comm.c	1347;"	d	file:
-xml_pack_attr	src/core/xml_print.c	484;"	d	file:
-xml_pack_attr_length	src/core/xml_print.c	245;"	d	file:
-xml_pack_length	src/incl/xml_tree.h	119;"	d
-xml_pack_name	src/core/xml_print.c	477;"	d	file:
-xml_pack_name_length	src/core/xml_print.c	238;"	d	file:
+xml_node_type_e	src/incl/xml_tree.h	/^}xml_node_type_e;$/;"	t	typeref:enum:__anon15
+xml_node_value_length	src/core/xml_comm.c	1362;"	d	file:
+xml_pack_attr	src/core/xml_print.c	493;"	d	file:
+xml_pack_attr_length	src/core/xml_print.c	254;"	d	file:
+xml_pack_length	src/incl/xml_tree.h	122;"	d
+xml_pack_name	src/core/xml_print.c	486;"	d	file:
+xml_pack_name_length	src/core/xml_print.c	247;"	d	file:
 xml_pack_next	src/core/xml_print.c	/^static xml_node_t *xml_pack_next(Stack_t *stack, xml_node_t *node, sprint_t *sp)$/;"	f	file:
 xml_pack_next_length	src/core/xml_print.c	/^static xml_node_t *xml_pack_next_length(Stack_t *stack, xml_node_t *node, int *length)$/;"	f	file:
 xml_pack_node_length	src/core/xml_print.c	/^int xml_pack_node_length(xml_node_t *root, Stack_t *stack)$/;"	f
 xml_pack_tree	src/core/xml_print.c	/^int xml_pack_tree(xml_node_t *root, Stack_t *stack, sprint_t *sp)$/;"	f
-xml_pack_value	src/core/xml_print.c	501;"	d	file:
-xml_pack_value	src/core/xml_print.c	531;"	d	file:
-xml_pack_value_length	src/core/xml_print.c	263;"	d	file:
-xml_pack_value_length	src/core/xml_print.c	294;"	d	file:
-xml_parent	src/incl/xml_tree.h	85;"	d
+xml_pack_value	src/core/xml_print.c	510;"	d	file:
+xml_pack_value	src/core/xml_print.c	540;"	d	file:
+xml_pack_value_length	src/core/xml_print.c	272;"	d	file:
+xml_pack_value_length	src/core/xml_print.c	303;"	d	file:
+xml_parent	src/incl/xml_tree.h	86;"	d
 xml_parse	src/core/xml_comm.c	/^int xml_parse(xml_tree_t *xml, Stack_t *stack, const char *str)$/;"	f
 xml_parse_end	src/core/xml_comm.c	/^static int xml_parse_end(Stack_t *stack, xml_fparse_t *fparse)$/;"	f	file:
 xml_parse_mark	src/core/xml_comm.c	/^static int xml_parse_mark(xml_tree_t *xml, Stack_t *stack, xml_fparse_t *fparse)$/;"	f	file:
@@ -624,7 +957,7 @@ xml_reset_flag	src/incl/xml_comm.h	42;"	d
 xml_rsearch	src/core/xml_tree.c	/^xml_node_t *xml_rsearch(xml_node_t *curr, const char *path)$/;"	f
 xml_screat	src/core/xml_tree.c	/^ xml_tree_t *xml_screat(const char *str)$/;"	f
 xml_screat_ext	src/core/xml_tree.c	/^xml_tree_t *xml_screat_ext(const char *str, int length)$/;"	f
-xml_search	src/incl/xml_tree.h	104;"	d
+xml_search	src/incl/xml_tree.h	105;"	d
 xml_set_attr_flag	src/incl/xml_comm.h	44;"	d
 xml_set_child_flag	src/incl/xml_comm.h	46;"	d
 xml_set_flag	src/incl/xml_comm.h	40;"	d
@@ -633,15 +966,15 @@ xml_set_value	src/core/xml_tree.c	/^int xml_set_value(xml_node_t *node, const ch
 xml_set_value_flag	src/incl/xml_comm.h	48;"	d
 xml_spack	src/core/xml_tree.c	/^extern int xml_spack(xml_tree_t *xml, char *str)$/;"	f
 xml_sprint	src/core/xml_tree.c	/^int xml_sprint(xml_tree_t *xml, char *str)$/;"	f
-xml_sprint_attr	src/core/xml_print.c	729;"	d	file:
-xml_sprint_name	src/core/xml_print.c	717;"	d	file:
+xml_sprint_attr	src/core/xml_print.c	738;"	d	file:
+xml_sprint_name	src/core/xml_print.c	726;"	d	file:
 xml_sprint_next	src/core/xml_print.c	/^static xml_node_t *xml_sprint_next(Stack_t *stack, xml_node_t *node, sprint_t *sp)$/;"	f	file:
 xml_sprint_tree	src/core/xml_print.c	/^int xml_sprint_tree(xml_node_t *root, Stack_t *stack, sprint_t *sp)$/;"	f
-xml_sprint_value	src/core/xml_print.c	745;"	d	file:
-xml_tree_length	src/incl/xml_tree.h	116;"	d
-xml_tree_t	src/incl/xml_tree.h	/^}xml_tree_t;$/;"	t	typeref:struct:__anon14
+xml_sprint_value	src/core/xml_print.c	754;"	d	file:
+xml_tree_length	src/incl/xml_tree.h	119;"	d
+xml_tree_t	src/incl/xml_tree.h	/^}xml_tree_t;$/;"	t	typeref:struct:__anon16
 xml_unset_attr_flag	src/incl/xml_comm.h	45;"	d
 xml_unset_child_flag	src/incl/xml_comm.h	47;"	d
 xml_unset_flag	src/incl/xml_comm.h	41;"	d
 xml_unset_value_flag	src/incl/xml_comm.h	49;"	d
-xml_value	src/incl/xml_tree.h	88;"	d
+xml_value	src/incl/xml_tree.h	89;"	d

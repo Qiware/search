@@ -7,7 +7,10 @@
  ******************************************************************************/
 #if !defined(__LOG_H__)
 #define __LOG_H__
+
 #include "common.h"
+
+#include <sys/timeb.h>
 
 /* 错误级别: 依次递减 */
 #define LOG_LEVEL_FATAL     (0x0001)    /* 严重级别 */
@@ -16,25 +19,35 @@
 #define LOG_LEVEL_INFO      (0x0008)    /* 信息级别 */
 #define LOG_LEVEL_DEBUG     (0x0010)    /* 调试级别 */
 #define LOG_LEVEL_TRACE     (0x0020)    /* 跟踪级别 */
+#define LOG_LEVEL_TOTAL     (6)         /* 日志级别总数 */
 
-typedef enum
+#define LOG_INVALID_PID     (-1)        /* 非法进程ID */
+#define LOG_INVALID_FD      (-1)        /* 非法文件描述符 */
+
+/* 文件缓存信息 */
+typedef struct
 {
-    LOG_
-}log_id_e;
+    int idx;                            /* 索引号 */
+    char path[FILE_NAME_MAX_LEN];       /* 日志文件绝对路径 */
+    size_t in_offset;                   /* 写入偏移 */
+    size_t out_offset;                  /* 同步偏移 */
+    pid_t pid;                          /* 使用日志缓存的进程ID */
+    struct timeb sync_time;             /* 上次同步的时间 */
+}log_file_t;
 
 /* 日志对象 */
 typedef struct
 {
-    int fd;                 /* 描述符 */
-    int log_id;             /* 日志ID: 见 */
-    uint32_t level;         /* 日志级别: 其中由各日志级别通过或操作得来 */
-    char name[FILE_NAME_MAX_LEN];   /* 文件名 */
-    char path[FILE_NAME_MAX_LEN];   /* 文件路径 */
-    uint16_t max_index;     /* 日志最大索引号 */
-    size_t max_size;        /* 日志文件的最大尺寸 */
-} log_cycle_t;
+    int fd;                             /* 描述符 */
+    int level;                          /* 日志级别: LOG_LEVEL_TRACE ~ LOG_LEVEL_FATAL */
+    char name[FILE_NAME_MAX_LEN];       /* 文件名 */
+    char path[FILE_NAME_MAX_LEN];       /* 文件路径 */
+    size_t max_size;                    /* 日志文件的最大尺寸 */
+    log_file_t *file;                   /* 日志缓存 */
+}log_cycle_t;
 
 /* 日志接口 */
+log_cycle_t *log_init(int level, const char *fname, size_t max_size);
 void log_core(
         log_cycle_t *log,
         int level,

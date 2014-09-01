@@ -17,7 +17,8 @@ export PROJ = ${PWD}
 #DIR=`find ./src -type d`
 DIR := "src/core"
 DIR += "src/os/unix"
-DIR += "src/src/crawler"
+DIR += "src/exec/crawler"
+DIR += "src/exec/logsvr"
 export DIR
 
 .PHONY: all clean rebuild

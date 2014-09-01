@@ -8,4 +8,4 @@
 ## 作    者: # Qifeng.zou # 2014.08.28 #
 ###############################################################################
 CONFIG_DEBUG_SUPPORT = __ON__     # 调试开关
-CONFIG_LOG_SUPPORT = __ON__        # 日志开关
+CONFIG_ALOG_SUPPORT = __ON__      # 异步日志开关

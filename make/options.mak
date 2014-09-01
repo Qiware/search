@@ -12,7 +12,6 @@ ifeq (__ON__, $(strip $(CONFIG_DEBUG_SUPPORT)))
 endif
 
 #日志相关宏
-ifeq (__ON__, $(strip $(CONFIG_LOG_SUPPORT)))
-	OPTIONS += __XDT_LOG__
-	OPTIONS += __XDT_LOG_DEBUG__
+ifeq (__ON__, $(strip $(CONFIG_ALOG_SUPPORT)))
+	OPTIONS += __ASYNC_LOG__
 endif
