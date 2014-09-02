@@ -11,7 +11,6 @@
 #if defined(__ASYNC_LOG__)
 
 #include <sys/timeb.h>
-
 #include "common.h"
 
 /* 宏定义 */
@@ -44,6 +43,23 @@
 
 #define log_is_timeout(diff_time) (diff_time >= LOG_SYNC_TIMEOUT)
 
+/* 文件缓存信息 */
+typedef struct
+{
+    int idx;                                /* 索引号 */
+    char path[FILE_NAME_MAX_LEN];           /* 日志文件绝对路径 */
+    size_t in_offset;                       /* 写入偏移 */
+    size_t out_offset;                      /* 同步偏移 */
+    pid_t pid;                              /* 使用日志缓存的进程ID */
+    struct timeb sync_tm;                   /* 上次同步的时间 */
+}log_file_info_t;
+
+/* 内部接口 */
+int log_set_path(const char *path);
+int log_trclog_sync(log_file_info_t *file);
+void log_set_max_size(size_t size);
+void log_abnormal(const char *fname, int lineno, const char *fmt, ...);
+
 /* 日志级别 */
 #define LOG_LEVEL_FATAL         (0x0001)    /* 严重级别 */
 #define LOG_LEVEL_ERROR         (0x0002)    /* 错误级别 */
@@ -52,17 +68,6 @@
 #define LOG_LEVEL_DEBUG         (0x0010)    /* 调试级别 */
 #define LOG_LEVEL_TRACE         (0x0020)    /* 跟踪级别 */
 #define LOG_LEVEL_TOTAL         (6)         /* 级别总数 */
-
-/* 日志信息 */
-typedef struct
-{
-    int idx;                                /* 日志索引号 */
-    char path[FILE_NAME_MAX_LEN];           /* 文件路径(路径+名) */
-    size_t in_offset;                       /* 输入偏移 */
-    size_t out_offset;                      /* 输出偏移 */
-    pid_t pid;                              /* 被进程PID占用 */
-    struct timeb sync_tm;                   /* 上次同步时间 */
-}log_file_info_t;
 
 /* 日志对象 */
 typedef struct _log_cycle_t
@@ -82,12 +87,6 @@ void log_core(int level,
             const char *fname, int lineno,
             const void *dump, int dumplen,
             const char *fmt, ...);
-
-/* 内部接口 */
-int log_set_path(const char *path);
-int log_trclog_sync(log_file_info_t *file);
-void log_set_max_size(size_t size);
-void log_abnormal(const char *fname, int lineno, const char *fmt, ...);
 
 #if 0
 /* 日志模块接口 */
