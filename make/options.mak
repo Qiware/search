@@ -13,5 +13,6 @@ endif
 
 #日志相关宏
 ifeq (__ON__, $(strip $(CONFIG_ALOG_SUPPORT)))
-	OPTIONS += __ASYNC_LOG__
+	OPTIONS += __ASYNC_LOG__		# 异步日志功能
+	OPTIONS += __LOG_ERR_FORCE__	# 出现错误日志时，则强制同步
 endif

@@ -819,7 +819,7 @@ void sha256_digest(char *str, uint32_t len, u_char digest[32])
  **输入参数: 
  **     pid: 进程ID
  **输出参数: NONE
- **返    回: 0:成功 !0:失败
+ **返    回: 1:存在 0:不存在
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.01 #
@@ -828,7 +828,7 @@ int proc_is_exist(pid_t pid)
 {
 	char fname[FILE_NAME_MAX_LEN];
 	
-	snprintf(fname, sizeof(fname), "/proc/%d/status", pid);
+	snprintf(fname, sizeof(fname), "/proc/%d", pid);
 
-    return access(fname, 0);
+    return (0 == access(fname, 0));
 }

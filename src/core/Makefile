@@ -26,7 +26,7 @@ SRC_LIST = list.c \
 			avl_tree.c \
 			rb_tree.c \
 			trie_tree.c \
-			alog.c \
+			log.c \
 			thread_pool.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 

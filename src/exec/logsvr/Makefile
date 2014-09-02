@@ -12,11 +12,11 @@ INCLUDE = -I. -I$(PROJ)/src/incl
 LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lpthread -lcore
 
-SRC_LIST = alog_svr.c
+SRC_LIST = log_svr.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
 
-TARGET = alog_svr
+TARGET = log_svr
 
 .PHONY: all clean
 

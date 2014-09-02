@@ -1,0 +1,337 @@
+/*******************************************************************************
+ * 模块: 异步日志模块 - 服务端代码
+ * 作用: 
+ *      1) 负责共享内存的初始化
+ *      2) 负责把死亡的客户端进程的在缓存中日志同步到文件
+ * 作者: # Qifeng.zou # 2013.11.07 #
+ ******************************************************************************/
+#include <sys/shm.h>
+#include <sys/types.h>
+
+#include "log.h"
+#include "common.h"
+#include "thread_pool.h"
+
+#if defined(__ASYNC_LOG__)
+
+/* 日志服务 */
+typedef struct
+{
+    int fd;                         /* ÎÄ¼þËøFD */
+    void *addr;                     /* ¹²ÏíÄÚ´æÊ×µØÖ· */
+    thread_pool_t *pool;            /* Ïß³Ì³Ø */
+}log_svr_t;
+
+/* 服务进程互斥锁路径 */
+#define LOG_SVR_PROC_LOCK  ".log_svr.lck"
+#define log_svr_proc_lock_path(path, size) \
+    snprintf(path, size, "../tmp/%s",  LOG_SVR_PROC_LOCK)
+#define log_svr_proc_trylock(fd) proc_try_wrlock(fd)
+
+/* 服务进程日志文件路径 */
+#define LOG_SVR_LOG_NAME   "log_svr.log"
+#define LogSvrGetLogPath(path, size) \
+    snprintf(path, size, "../logs/%s", LOG_SVR_LOG_NAME)
+
+static log_svr_t g_log_svr;     /* 日志服务对象 */
+
+static int log_svr_init(log_svr_t *logsvr);
+static void *log_svr_timeout_routine(void *args);
+int log_svr_sync_work(int idx, log_svr_t *logsvr);
+static int log_svr_proc_lock(void);
+
+static char *log_svr_creat_shm(int fd);
+
+/******************************************************************************
+ **函数名称: main 
+ **功    能: 日志服务主程序
+ **输入参数: NONE
+ **输出参数: NONE
+ **返    回: 0:success !0:failed
+ **实现描述: 
+ **     1. 完成日志模块的初始化
+ **     2. 启动命令接收和超时处理
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2013.10.28 #
+ ******************************************************************************/
+int main(void)
+{
+    int ret;
+    log_svr_t *logsvr = &g_log_svr;
+
+    memset(logsvr, 0, sizeof(log_svr_t));
+
+    daemon(0, 0);
+
+    /* 1. 初始化日志系统 */
+    ret = log_svr_init(logsvr);
+    if(ret < 0)
+    {
+        fprintf(stderr, "Init log failed!");
+        return -1;
+    }
+
+    thread_pool_add_worker(logsvr->pool, log_svr_timeout_routine, logsvr);
+
+    while(1){ pause(); }
+    return 0;
+}
+
+/******************************************************************************
+ **函数名称: log_svr_proc_lock
+ **功    能: 日志服务进程锁，防止同时启动两个服务进程
+ **输入参数: 
+ **输出参数: NONE
+ **返    回: 0:success !0:failed
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2013.11.06 #
+ ******************************************************************************/
+int log_svr_proc_lock(void)
+{
+    int ret = 0, fd = 0;
+    char path[FILE_PATH_MAX_LEN];
+
+    /* 1. 获取服务进程锁文件路径 */
+    log_svr_proc_lock_path(path, sizeof(path));
+
+    Mkdir2(path, DIR_MODE);
+
+    /* 2. 打开服务进程锁文件 */
+    fd = Open(path, OPEN_FLAGS, OPEN_MODE);
+    if(fd < 0)
+    {
+        fprintf(stderr, "errmsg:[%d]%s! path:[%s]", errno, strerror(errno), path);
+        return -1;
+    }
+
+    /* 3. 尝试加锁 */
+    ret = log_svr_proc_trylock(fd);
+    if(ret < 0)
+    {
+        fprintf(stderr, "errmsg:[%d]%s! path:[%s]", errno, strerror(errno), path);
+        Close(fd);
+        return -1;
+    }
+
+    return 0;
+}
+
+/******************************************************************************
+ **函数名称: log_svr_init
+ **功    能: 初始化处理
+ **输入参数: 
+ **输出参数: NONE
+ **返    回: 0:success !0:failed
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2013.10.28 #
+ ******************************************************************************/
+static int log_svr_init(log_svr_t *logsvr)
+{
+    int ret = 0;
+    char path[FILE_PATH_MAX_LEN] = {0};
+
+    /* 设置跟踪日志路径 */
+    LogSvrGetLogPath(path, sizeof(path));
+
+    log_set_path(path);
+    
+    /* 1. 加服务进程锁 */
+    ret = log_svr_proc_lock();
+    if(ret < 0)
+    {
+        fprintf(stderr, "Log server is already running...");
+        return -1;    /* 日志服务进程正在运行... */
+    }
+
+    /* 2. 打开文件缓存锁 */
+    LogGetLockPath(path, sizeof(path));
+
+    Mkdir2(path, DIR_MODE);
+
+    logsvr->fd = Open(path, OPEN_FLAGS, OPEN_MODE);
+    if(logsvr->fd < 0)
+    {
+        fprintf(stderr, "errmsg:[%d] %s! path:[%s]", errno, strerror(errno), path);
+        return -1;
+    }
+
+    /* 3. 创建/连接共享内存 */
+    logsvr->addr = log_svr_creat_shm(logsvr->fd);
+    if(NULL == logsvr->addr)
+    {
+        fprintf(stderr, "Create SHM failed!");
+        return -1;
+    }
+
+    /* 4. 启动多个线程 */
+    ret = thread_pool_init(&logsvr->pool, LOG_SVR_THREAD_NUM);
+    if(ret < 0)
+    {
+        thread_pool_destroy(logsvr->pool);
+        logsvr->pool = NULL;
+        fprintf(stderr, "errmsg:[%d]%s!", errno, strerror(errno));
+        return -1;
+    }
+
+    return 0;
+}
+
+/******************************************************************************
+ **函数名称: log_svr_creat_shm
+ **功    能: 创建或连接共享内存
+ **输入参数: 
+ **输出参数: 
+ **     cfg: 日志配置信息
+ **返    回: Address of SHM
+ **实现描述: 
+ **     1. 创建共享内存
+ **     2. 连接共享内存
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2013.10.28 #
+ ******************************************************************************/
+static char *log_svr_creat_shm(int fd)
+{
+    int idx, shmid;
+    void *addr = NULL, *p = NULL;
+    log_file_info_t *file = NULL;
+
+    /* 1. 创建共享内存 */
+    /* 1.1 判断是否已经创建 */
+    shmid = shmget(LOG_SHM_KEY, 0, 0666);
+    if(shmid >= 0)
+    {
+        return shmat(shmid, NULL, 0);  /* 已创建 */
+    }
+
+    /* 1.2 异常，则退出处理 */
+    if(ENOENT != errno)
+    {
+        return NULL;
+    }
+
+    /* 1.3 创建共享内存 */
+    shmid = shmget(LOG_SHM_KEY, LOG_SHM_SIZE, IPC_CREAT|0660);
+    if(shmid < 0)
+    {
+        return NULL;
+    }
+
+    /* 2. ATTACH共享内存 */
+    addr = (void *)shmat(shmid, NULL, 0);
+    if((void *)-1 == addr)
+    {
+        fprintf(stderr, "Attach shm failed! shmid:[%d] key:[0x%x]", shmid, LOG_SHM_KEY);
+        return NULL;
+    }
+
+    /* 3. 初始化共享内存 */
+    p = addr;
+    for(idx=0; idx<LOG_FILE_MAX_NUM; idx++)
+    {
+        file = (log_file_info_t *)(p + idx * LOG_FILE_CACHE_SIZE);
+
+        proc_wrlock_b(fd, idx+1);
+        
+        file->idx = idx;
+        file->pid = INVALID_PID;
+
+        proc_unlock_b(fd, idx+1);
+    }
+
+    return addr;
+}
+
+/******************************************************************************
+ **函数名称: log_svr_timeout_routine
+ **功    能: 日志超时处理
+ **输入参数: 
+ **     args: 参数
+ **输出参数: NONE
+ **返    回: 0:success !0:failed
+ **实现描述: 
+ **     1. 睡眠指定时间
+ **     2. 依次遍历日志缓存
+ **     3. 进行超时判断
+ **     4. 进行缓存同步处理
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2013.10.25 #
+ ******************************************************************************/
+static void *log_svr_timeout_routine(void *args)
+{
+    int ret = 0, idx = 0;
+    struct timeb curr_time;
+    log_file_info_t *file = NULL;
+    log_svr_t *logsvr = (log_svr_t *)args;
+
+
+    while(1)
+    {
+        memset(&curr_time, 0, sizeof(curr_time));
+
+        ftime(&curr_time);
+
+        for(idx=0; idx<LOG_FILE_MAX_NUM; idx++)
+        {
+            /* 1. 尝试加锁 */
+            ret = proc_wrlock_b(logsvr->fd, idx+1);
+            if(ret < 0)
+            {
+                continue;
+            }
+
+            /* 2. 路径为空，则不用同步 */
+            file = (log_file_info_t *)(logsvr->addr + idx*LOG_FILE_CACHE_SIZE);
+            if('\0' == file->path[0])
+            {
+                proc_unlock_b(logsvr->fd, idx+1);
+                continue;
+            }
+
+            log_trclog_sync(file);
+        
+            /* 判断文件是否还有运行的进程正在使用文件缓存 */
+            if(!proc_is_exist(file->pid))
+            {
+                memset(file, 0, sizeof(log_file_info_t));
+
+                file->pid = INVALID_PID;
+            }
+            file->idx = idx;
+            
+            proc_unlock_b(logsvr->fd, idx+1);
+        }
+        
+        Sleep(LOG_SYNC_TIMEOUT);
+    }
+
+    return (void *)-1;
+}
+
+/******************************************************************************
+ **函数名称: log_svr_sync_work
+ **功    能: 日志同步处理
+ **输入参数: 
+ **     idx: 缓存索引
+ **     logsvr: 日志服务对象
+ **输出参数: NONE
+ **返    回: 0:success !0:failed
+ **实现描述: 
+ **     1. 缓存加锁
+ **     2. 写入文件
+ **     3. 缓存解锁
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2013.10.28 #
+ ******************************************************************************/
+int log_svr_sync_work(int idx, log_svr_t *logsvr)
+{
+    log_file_info_t *file = NULL;
+
+    file = (log_file_info_t *)(logsvr->addr + idx*LOG_FILE_CACHE_SIZE);
+    
+    log_trclog_sync(file);
+    
+    return 0;
+}
+#endif /*__ASYNC_LOG__*/

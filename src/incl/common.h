@@ -34,6 +34,10 @@ typedef int bool;
 #define INVALID_FD          (-1)    /* 非法文件描述符 */
 #define INVALID_PID         (-1)    /* 非法进程ID */
 
+#define OPEN_MODE           (0666)  /* 文件权值 */
+#define OPEN_FLAGS          (O_CREAT|O_WRONLY|O_APPEND) /* 文件标志 */
+#define DIR_MODE            (0777)  /* 目录权值 */
+
 int Readn(int fd, void *buff, int n);
 int Writen(int fd, const void *buff, int n);
 int Rename(const char *oldpath, const char *newpath);
