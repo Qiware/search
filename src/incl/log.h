@@ -13,6 +13,15 @@
 #include <sys/timeb.h>
 #include "common.h"
 
+/* 日志级别 */
+#define LOG_LEVEL_FATAL         (0x0001)    /* 严重级别 */
+#define LOG_LEVEL_ERROR         (0x0002)    /* 错误级别 */
+#define LOG_LEVEL_WARN          (0x0004)    /* 警告级别 */
+#define LOG_LEVEL_INFO          (0x0008)    /* 信息级别 */
+#define LOG_LEVEL_DEBUG         (0x0010)    /* 调试级别 */
+#define LOG_LEVEL_TRACE         (0x0020)    /* 跟踪级别 */
+#define LOG_LEVEL_TOTAL         (6)         /* 级别总数 */
+
 /* 宏定义 */
 #define LOG_FILE_MAX_NUM        (512)       /* 日志文件最大个数 */
 #define LOG_FILE_CACHE_SIZE     (64*1024)   /* 日志文件的缓存SIZE */
@@ -28,10 +37,10 @@
 
 #define LOG_SUFFIX              ".log"      /* 日志文件后缀 */
 #define LOG_DEFAULT_TRCLOG      "trc.log"   /* 默认日志名 */
-#define LogTrclogDefPath(path, size)        /* 默认日志文件路径 */ \
+#define log_default_path(path, size)        /* 默认日志文件路径 */ \
     snprintf(path, size, "../logs/%s", LOG_DEFAULT_TRCLOG);
 #define LOG_LOCK_FILE           ".log.lock" /* 日志锁 */
-#define LogGetLockPath(path, size)          /* 日志锁路径 */ \
+#define log_get_lock_path(path, size)       /* 日志锁路径 */ \
     snprintf(path, size, "../tmp/log/%s", LOG_LOCK_FILE)
 
 /* DUMP设置 */
@@ -56,18 +65,8 @@ typedef struct
 
 /* 内部接口 */
 int log_set_path(const char *path);
-int log_trclog_sync(log_file_info_t *file);
+void log_sync(log_file_info_t *file);
 void log_set_max_size(size_t size);
-void log_abnormal(const char *fname, int lineno, const char *fmt, ...);
-
-/* 日志级别 */
-#define LOG_LEVEL_FATAL         (0x0001)    /* 严重级别 */
-#define LOG_LEVEL_ERROR         (0x0002)    /* 错误级别 */
-#define LOG_LEVEL_WARN          (0x0004)    /* 警告级别 */
-#define LOG_LEVEL_INFO          (0x0008)    /* 信息级别 */
-#define LOG_LEVEL_DEBUG         (0x0010)    /* 调试级别 */
-#define LOG_LEVEL_TRACE         (0x0020)    /* 跟踪级别 */
-#define LOG_LEVEL_TOTAL         (6)         /* 级别总数 */
 
 /* 日志对象 */
 typedef struct _log_cycle_t
@@ -75,18 +74,17 @@ typedef struct _log_cycle_t
     int fd;                                 /* 文件描述符 */
     log_file_info_t *file;                  /* 文件信息 */
     pid_t pid;                              /* 进程PID */
-    int (*action)(
-        struct _log_cycle_t *cycle, int level, /* 回调函数 */
-        const void *dump, int dumplen,
-        const char *errmsg, const struct timeb *curr_time);
 }log_cycle_t;
 
 /* 外部接口 */
-void log_set_level(int level);
-void log_core(int level,
-            const char *fname, int lineno,
-            const void *dump, int dumplen,
-            const char *fmt, ...);
+log_cycle_t *log_init(int level, const char *path);
+void log_core(log_cycle_t *log, int level,
+                const char *fname, int lineno,
+                const void *dump, int dumplen,
+                const char *fmt, ...);
+
+log_cycle_t *log_get_cycle(void);
+void log_destroy(log_cycle_t **log);
 
 #if 0
 /* 日志模块接口 */

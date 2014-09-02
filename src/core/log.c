@@ -1,14 +1,11 @@
 /*******************************************************************************
- * 模块: 异步日志模块 - 客户端代码
- * 说明: 
- **     跟踪日志: 考虑性能要求, 跟踪日志首先存储在缓冲区中, 当缓存区中的日志达到
- **               一定量、或超过一定时间未同步、或出现错误级别日志时, 
- **               则将跟踪日志同步到日志文件中.
- **     错误日志: 因错误日志是很少出现的, 为了使系统管理人员第一时间知道系统错误,
- **               因此错误日志是实时打印到日志文件中
- * 注意: 
- *      跟踪日志: 不同的"进程"和"线程"是不能使用的同名的日志文件
- * 作者: # Qifeng.zou # 2013.11.07 #
+ ** 模  块: 异步日志模块 - 客户端代码
+ ** 说  明: 
+ **     考虑性能要求, 日志首先存储在缓冲区中, 当缓存区中的日志达到一定量、或超
+ **     过一定时间未同步、或出现错误级别日志时, 则将日志同步到日志文件中.
+ ** 注  意: 
+ **     不同的"进程"和"线程"是不能使用的同名的日志文件
+ ** 作  者: # Qifeng.zou # 2013.11.07 #
  ******************************************************************************/
 #include <sys/shm.h>
 #include <sys/types.h>
@@ -25,7 +22,7 @@ static void *g_log_shm_addr = (void *)-1;  /* 共享内存地址 */
 #define log_get_shm_addr() (g_log_shm_addr)              /* 获取共享内存地址 */
 #define log_set_shm_addr(addr) (g_log_shm_addr = (addr)) /* 设置共享内存地址 */
 #define log_is_shm_addr_valid()    /* 判断共享内存地址是否合法 */ \
-    ((NULL != g_log_shm_addr) && ((void *)-1 != g_log_shm_addr))
+            (NULL != g_log_shm_addr && (void *)-1 != g_log_shm_addr)
 
 /* 文件锁 */
 static int g_log_lock_fd = -1;             /* 文件锁FD */
@@ -40,67 +37,123 @@ static int g_log_lock_fd = -1;             /* 文件锁FD */
 #define log_fcache_all_unlock() proc_unlock(g_log_lock_fd)/* 缓存解锁锁(整个都解锁) */
 
 static size_t g_log_max_size = LOG_FILE_MAX_SIZE;
-#define log_get_max_size() (g_log_max_size)    /* 获取日志大小 */
+#define log_get_max_size() (g_log_max_size)     /* 获取日志大小 */
 #define _log_set_max_size(size) (g_log_max_size = (size))
 #define log_is_too_large(size) ((size) >= g_log_max_size)
 
 /* 线程同步数据 */
-static pthread_key_t g_log_mthrd_key;      /* 线程特定数据KEY */
-static bool g_trclog_multi_thread_flag = false;    /* 跟踪日志-多线程标识 */
-static pthread_mutex_t g_trclog_mutex = PTHREAD_MUTEX_INITIALIZER;  /* 跟踪日志设置-线程互斥锁 */
+static pthread_key_t g_log_specific_key;        /* 线程私有数据KEY */
 
-#define log_get_multi_thread_flag() (g_trclog_multi_thread_flag)
-#define log_set_multi_thread_flag() (g_trclog_multi_thread_flag = true)
-#define log_reset_multi_thread_flag() (g_trclog_multi_thread_flag = false)
+/* 日志线程互斥锁: 日志对象和配置信息锁 */
+static pthread_mutex_t g_log_mutex = PTHREAD_MUTEX_INITIALIZER;  
 
-/* 跟踪日志对象和配置信息锁 */
-#define log_trclog_lock() pthread_mutex_lock(&g_trclog_mutex)
-#define log_trclog_trylock() pthread_mutex_trylock(&g_trclog_mutex)
-#define log_trclog_unlock() pthread_mutex_unlock(&g_trclog_mutex)
-
-/* 日志级别设置 */
-static int g_log_level = LOG_LEVEL_DEBUG;
-#define log_get_level() (g_log_level)
-void log_set_level(int level) { g_log_level = level; }
+#define log_mutex_lock() pthread_mutex_lock(&g_log_mutex)
+#define log_mutex_trylock() pthread_mutex_trylock(&g_log_mutex)
+#define log_mutex_unlock() pthread_mutex_unlock(&g_log_mutex)
 
 /* 日志缓存数据空间大小 */
 static const size_t g_log_data_size =  (LOG_FILE_CACHE_SIZE - sizeof(log_file_info_t));
 #define log_get_data_size() (g_log_data_size)
 
-#define log_hash(path) (Hash(path)%LOG_FILE_MAX_NUM)   /* 异步日志哈希 */
-#define log_is_err_level(level) (LOG_LEVEL_ERROR == (level))
+#define log_hash(path) (Hash(path) % LOG_FILE_MAX_NUM)  /* 异步日志哈希 */
+#define log_is_err_level(level) (LOG_LEVEL_ERROR & (level))
 
 /* 函数声明 */
-static log_cycle_t *log_get_cycle(int level);
-
-static int log_trclog_init(log_cycle_t *log, int level,
-        const void *dump, int dumplen, const char *msg, const struct timeb *curr_time);
-static int _log_trclog_init(void);
-static int log_trclog_set_path(const char *path);
-static log_file_info_t *log_trclog_creat(void *addr, const char *path);
-static void log_trclog_release(log_file_info_t *file);
-static int log_trclog_write(log_cycle_t *log, int level,
-        const void *dump, int dumplen, const char *msg, const struct timeb *curr_time);
-static int log_trclog_print_dump(char *addr, const void *dump, int dumplen);
-static int log_trclog_sync_ext(log_cycle_t *log);
+static int _log_init_global(void);
+static log_file_info_t *log_creat(void *addr, const char *path);
+static void log_release(log_file_info_t *file);
+static int log_write(log_cycle_t *log, int level,
+        const void *dump, int dumplen, const char *msg, const struct timeb *ctm);
+static int log_print_dump(char *addr, const void *dump, int dumplen);
+static int log_sync_ext(log_cycle_t *log);
 
 static int log_rename(const log_file_info_t *file, const struct timeb *time);
-static size_t log_sync(log_file_info_t *file, int *fd);
-
-/* 全局变量 */
-static log_cycle_t g_log_trclog = {-1, NULL, -1, log_trclog_init}; /* 默认跟踪日志对象 */
-
-#define log_default_trclog() (&g_log_trclog)
+static size_t _log_sync(log_file_info_t *file, int *fd);
 
 /* 是否强制写(注意: 系数必须小于或等于0.8，否则可能出现严重问题) */
-static const int g_LogSyncSize = 0.8 * LOG_FILE_CACHE_SIZE;
-#define log_is_force_sync(file) (((file)->in_offset - (file)->out_offset) > g_LogSyncSize)
+static const int g_log_sync_size = 0.8 * LOG_FILE_CACHE_SIZE;
+#define log_is_force_sync(file) (((file)->in_offset - (file)->out_offset) > g_log_sync_size)
+
+/******************************************************************************
+ **函数名称: log_init
+ **功    能: 初始化日志信息
+ **输入参数: 
+ **     level: 日志级别(其值：LOG_LEVEL_TRACE~LOG_LEVEL_FATAL的或值)
+ **     path: 日志路径
+ **输出参数: NONE
+ **返    回: 0:success !0:failed
+ **实现描述: 
+ **     1. 日志模块初始化
+ **     2. 将日志信息写入共享内存
+ **注意事项: 
+ **     注意: 此函数中不能调用错误日志函数 - 可能死锁!
+ **作    者: # Qifeng.zou # 2013.10.31 #
+ ******************************************************************************/
+log_cycle_t *log_init(int level, const char *path)
+{
+    int ret;
+    void *addr;
+    log_cycle_t *log;
+
+    /* 1. 新建日志对象 */
+    log = (log_cycle_t *)calloc(1, sizeof(log_cycle_t));
+    if (NULL == log)
+    {
+        return NULL;
+    }
+
+    log->pid = getpid();
+    
+    log_mutex_lock();
+
+    do
+    {
+        /* 2. 初始化全局数据 */
+        ret = _log_init_global();
+        if(ret < 0)
+        {
+            fprintf(stderr, "Initialize trace log failed!");
+            break;
+        }
+
+        /* 3. 完成日志对象的创建 */
+        addr = log_get_shm_addr();
+
+        log->file = log_creat(addr, path);
+        if(NULL == log->file)
+        {
+            fprintf(stderr, "Create [%s] failed!", path);
+            break;
+        }
+
+        /* 4. 新建日志文件 */
+        log->fd = Open(path, OPEN_FLAGS, OPEN_MODE);
+        if(log->fd < 0)
+        {
+            fprintf(stderr, "errmsg:[%d] %s! path:[%s]", errno, strerror(errno), path);
+            break;
+        }
+
+        log_mutex_unlock();
+	    return log;
+    } while(0);
+
+    /* 5. 异常处理 */
+    if (NULL != log->file)
+    {
+        log_release(log->file);
+    }
+    log_mutex_unlock();
+    free(log);
+    return NULL;
+}
 
 /******************************************************************************
  **函数名称: log_core
  **功    能: 日志核心调用
  **输入参数: 
- **     level: 日志级别(LOG_LEVEL_DEBUG ~ LOG_LEVEL_ERROR)
+ **     log: 日志对象
+ **     level: 日志级别(LOG_LEVEL_TRACE ~ LOG_LEVEL_FATAL)
  **     fname: 文件名
  **     lineno: 文件行号
  **     dump: 需打印的内存地址
@@ -114,98 +167,64 @@ static const int g_LogSyncSize = 0.8 * LOG_FILE_CACHE_SIZE;
  **     3. 组合日志信息
  **     4. 日志同步处理
  **注意事项: 
+ **     日志级别的判断在函数外进行判断
  **作    者: # Qifeng.zou # 2013.10.24 #
  ******************************************************************************/
-void log_core(int level,
-        const char *fname, int lineno,
-        const void *dump, int dumplen,
-        const char *fmt, ...)
+void log_core(log_cycle_t *log, int level,
+                const char *fname, int lineno,
+                const void *dump, int dumplen,
+                const char *fmt, ...)
 {
-    int len = 0;
+    int len;
     va_list args;
-    struct timeb curr_time;
-    log_cycle_t *log;
+    struct timeb ctm;
     char errmsg[LOG_MSG_MAX_LEN];
-
-    memset(&curr_time, 0, sizeof(curr_time));
-
-    if(!(level & log_get_level()))
-    {
-        return;
-    }
-
-    log = log_get_cycle(level);
-    if(NULL == log)
-    {
-        fprintf(stderr, "Get log log failed!");
-        return;
-    }
 
     va_start(args, fmt);
     len = snprintf(errmsg, sizeof(errmsg), "[%s][%d] ", fname, lineno);
     vsnprintf(errmsg + len, sizeof(errmsg) - len, fmt, args);
     va_end(args);
 
-    ftime(&curr_time);
+    ftime(&ctm);
     
-    log->action(log, level, dump, dumplen, errmsg, &curr_time);
+    log_write(log, level, dump, dumplen, errmsg, &ctm);
+}
+
+/******************************************************************************
+ **函数名称: log_destroy
+ **功    能: 销毁日志模块
+ **输入参数: 
+ **     log: 日志对象
+ **输出参数: NONE
+ **返    回: VOID
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.09.02 #
+ ******************************************************************************/
+void log_destroy(log_cycle_t **log)
+{
+    log_mutex_lock();
+
+    log_release((*log)->file);
+    free(*log);
+    *log = NULL;
+
+    log_mutex_unlock();
 }
 
 /******************************************************************************
  **函数名称: log_get_cycle
  **功    能: 获取日志对象
- **输入参数: 
- **     level: 日志级别
+ **输入参数: NONE
  **输出参数: NONE
- **返    回: 日志周期
+ **返    回: 日志对象
  **实现描述: 
  **注意事项: 
- **     1. 一个进程中的所有线程的错误日志都打印到一个日志中
- **     2. 而跟踪日志可以视具体的设置而定
  **作    者: # Qifeng.zou # 2013.11.04 #
  ******************************************************************************/
-static log_cycle_t *log_get_cycle(int level)
+log_cycle_t *log_get_cycle(void)
 {
-    log_cycle_t *log;
-    
-    if(!log_get_multi_thread_flag())
-    {
-        return log_default_trclog();
-    }
-
-    log = (log_cycle_t *)pthread_getspecific(g_log_mthrd_key);
-    if(NULL == log)
-    {
-        return NULL;
-    }
-
-    return log;
-}
-
-/******************************************************************************
- **函数名称: log_set_path
- **功    能: 设置日志路径
- **输入参数: 
- **     path: 文件名(绝对路径)
- **输出参数: NONE
- **返    回: VOID
- **实现描述: 
- **注意事项: 
- **     请使用绝对路径，以免因为服务进程在其他目录，造成同步时路径异常
- **作    者: # Qifeng.zou # 2013.10.29 #
- ******************************************************************************/
-int log_set_path(const char *path)
-{
-    int ret;
-
-    ret = log_trclog_set_path(path);
-    if(ret < 0)
-    {
-        log_error("Set trace path failed! path:[%s]", path);
-        return -1;
-    }
-    return 0;
-
+    return (log_cycle_t *)pthread_getspecific(g_log_specific_key);
 }
 
 /******************************************************************************
@@ -221,125 +240,11 @@ int log_set_path(const char *path)
  ******************************************************************************/
 void log_set_max_size(size_t size)
 {
-    log_trclog_lock();
+    log_mutex_lock();
     
     _log_set_max_size(size);
 
-    log_trclog_unlock();
-}
-
-/******************************************************************************
- **函数名称: log_trclog_set_path
- **功    能: 设置非错误级别日志路径
- **输入参数: 
- **     path: 日志绝对路径
- **输出参数: NONE
- **返    回: 0:success !0:failed
- **实现描述: 
- **注意事项: 
- **     请勿调用错误日志函数 - 小心死锁!
- **作    者: # Qifeng.zou # 2013.10.30 #
- ******************************************************************************/
-static int log_trclog_set_path(const char *path)
-{
-    pid_t pid = getpid();
-    int ret = 0;
-    log_cycle_t *log;
-    void *addr = NULL;
-
-    log_trclog_lock();
-
-    ret = _log_trclog_init();
-    if(ret < 0)
-    {
-        log_trclog_unlock();
-        fprintf(stderr, "Initialize trace log failed!");
-        return -1;
-    }
-
-    addr = log_get_shm_addr();
-            
-    /* 1. 判断是否创建线程特有数据 */
-    if(!log_get_multi_thread_flag())
-    {
-        ret = pthread_key_create(&g_log_mthrd_key, free);
-        if(0 != ret)
-        {
-            log_trclog_unlock();
-            fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
-            return -1;
-        }
-
-        /* 为各线程日志分配对象空间 */
-        log = (log_cycle_t *)calloc(1, sizeof(log_cycle_t));
-        if(NULL == log)
-        {
-            log_trclog_unlock();
-            fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
-            return -1;
-        }
-
-        log->fd = INVALID_FD;
-        log->pid = INVALID_PID;
-
-        /* 创建跟踪日志 - 注意: 日志名可能被改变，之后的路径请使用file->path */
-        log->file = log_trclog_creat(addr, path);
-        if(NULL == log->file)
-        {
-            free(log);
-            log_trclog_unlock();
-            fprintf(stderr, "Create [%s] failed!", path);
-            return -1;
-        }
-
-        ret = pthread_setspecific(g_log_mthrd_key, (void *)log);
-        if(0 != ret)
-        {
-            log_trclog_release(log->file);
-            free(log);
-            log_trclog_unlock();
-            fprintf(stderr, "errmsg:[%d] %s! path:[%s]", errno, strerror(errno), path);
-            return -1;
-        }
-
-        log->pid = pid;
-        log->action = log_trclog_write;
-
-        log_set_multi_thread_flag();
-        log_trclog_unlock();
-        return 0;
-    }
-
-    /* 2. 更改路径信息 */
-    log = log_get_cycle(LOG_LEVEL_DEBUG);
-    if(NULL == log)
-    {
-        log_trclog_unlock();
-        fprintf(stderr, "Get log cycle failed!");
-        return -1;
-    }
-
-    if(NULL != log->file)
-    {
-        if(!(log->file->pid != pid))
-        {
-            log_trclog_release(log->file);
-        }
-        log->file = NULL;
-    }
-    
-    /* 创建跟踪日志 - 注意: 日志名可能被改变，之后的路径请使用file->path */
-    log->file = log_trclog_creat(addr, path);
-    if(NULL == log->file)
-    {
-        free(log);
-        log_trclog_unlock();
-        fprintf(stderr, "Alloc log file failed!");
-        return -1;
-    }
-    log_trclog_unlock();
-
-    return 0;
+    log_mutex_unlock();
 }
 
 /******************************************************************************
@@ -371,83 +276,6 @@ static int log_rename(const log_file_info_t *file, const struct timeb *time)
 }
 
 /******************************************************************************
- **函数名称: log_trclog_init
- **功    能: 初始化跟踪日志信息
- **输入参数: 
- **     cycle: 日志对象
- **     level: 日志级别
- **     dump: 内存地址
- **     dumplen: 需打印的地址长度
- **     msg: 日志内容
- **输出参数: NONE
- **返    回: 0:success !0:failed
- **实现描述: 
- **     1. 日志模块初始化
- **     2. 将日志信息写入共享内存
- **注意事项: 
- **     注意: 此函数中不能调用错误日志函数 - 可能死锁!
- **作    者: # Qifeng.zou # 2013.10.31 #
- ******************************************************************************/
-static int log_trclog_init(log_cycle_t *log, int level,
-    const void *dump, int dumplen, const char *msg, const struct timeb *curr_time)
-{
-    int ret = 0;
-    void *addr = NULL;
-    pid_t pid = getpid();
-    log_file_info_t *file = NULL;
-    char path[FILE_PATH_MAX_LEN];
-    
-    log_trclog_lock();
-
-    /* 1. 日志模块初始化 */
-    ret = _log_trclog_init();
-    if(ret < 0)
-    {
-        log_trclog_unlock();
-        fprintf(stderr, "Initialize trace log failed!");
-        return -1;
-    }
-
-    /* 2. 完成日志对象的创建 */
-    if(NULL == log->file)
-    {
-        addr = log_get_shm_addr();
-
-        LogTrclogDefPath(path, sizeof(path));
-
-        file = log_trclog_creat(addr, path);
-        if(NULL == file)
-        {
-            log_trclog_unlock();
-            fprintf(stderr, "Create [%s] failed!", path);
-            return -1;
-        }
-        log->file = file;
-    }
-
-    log->pid = pid;
-
-    if(log->fd < 0)
-    {
-        log->fd = Open(path, OPEN_FLAGS, OPEN_MODE);
-        if(log->fd < 0)
-        {
-            log_trclog_unlock();
-            fprintf(stderr, "errmsg:[%d] %s! path:[%s]", errno, strerror(errno), path);
-            return -1;
-        }
-    }
-
-    /* 3. 将日志信息写入共享内存 */
-    log->action = log_trclog_write;
-
-    log->action(log, level, dump, dumplen, msg, curr_time);
-	
-    log_trclog_unlock();
-	return 0;
-}
-
-/******************************************************************************
  **函数名称: log_creat_shm
  **功    能: 创建共享内存
  **输入参数: NONE
@@ -460,8 +288,8 @@ static int log_trclog_init(log_cycle_t *log, int level,
  ******************************************************************************/
 void *log_creat_shm(void)
 {
-    int shmid = -1;
-    void *addr = NULL;
+    int shmid;
+    void *addr;
     
     shmid = shmget(LOG_SHM_KEY, 0, 0);
     if(shmid < 0)
@@ -485,8 +313,8 @@ void *log_creat_shm(void)
 }
 
 /******************************************************************************
- **函数名称: _log_trclog_init
- **功    能: 初始化跟踪日志信息
+ **函数名称: _log_init_global
+ **功    能: 初始化全局数据
  **输入参数: 
  **输出参数: NONE
  **返    回: 0:success !0:failed
@@ -497,7 +325,7 @@ void *log_creat_shm(void)
  **     注意: 此函数中不能调用错误日志函数 - 可能死锁!
  **作    者: # Qifeng.zou # 2013.10.31 #
  ******************************************************************************/
-static int _log_trclog_init(void)
+static int _log_init_global(void)
 {
     int fd = 0;
     void *addr = log_get_shm_addr();
@@ -518,7 +346,7 @@ static int _log_trclog_init(void)
 
     if(!log_is_lock_fd_valid())
     {
-        LogGetLockPath(path, sizeof(path));
+        log_get_lock_path(path, sizeof(path));
 
         Mkdir2(path, DIR_MODE);
         
@@ -536,7 +364,7 @@ static int _log_trclog_init(void)
 }
 
 /******************************************************************************
- **函数名称: log_trclog_conflict
+ **函数名称: log_name_conflict_handler
  **功    能: 日志名冲突时，产生新的日志名
  **输入参数: 
  **     oripath: 原始日志名
@@ -549,7 +377,9 @@ static int _log_trclog_init(void)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.05 #
  ******************************************************************************/
-static int log_trclog_conflict(const char *oripath, char *newpath, int size, int idx)
+static int log_name_conflict_handler(
+            const char *oripath,
+            char *newpath, int size, int idx)
 {
     int len = 0;
     char *ptr = NULL;
@@ -587,8 +417,8 @@ static int log_trclog_conflict(const char *oripath, char *newpath, int size, int
 }
 
 /******************************************************************************
- **函数名称: log_trclog_creat
- **功    能: 创建跟踪日志信息
+ **函数名称: log_creat
+ **功    能: 创建日志信息
  **输入参数: 
  **     addr: 共享内存首地址
  **     path: 日志绝对路径
@@ -599,11 +429,11 @@ static int log_trclog_conflict(const char *oripath, char *newpath, int size, int
  **     2. 选择合适的日志缓存，并返回
  **注意事项: 
  **     1. 当存在日志名一致的日志时, 判断进程ID是否一样.
- **        如果不一样, 且对应进程, 依然正在运行, 则提示创建跟踪日志失败!
+ **        如果不一样, 且对应进程, 依然正在运行, 则提示创建日志失败!
  **     2. 请勿在此函数中调用错误日志函数 - 小心死锁!
  **作    者: # Qifeng.zou # 2013.10.31 #
  ******************************************************************************/
-static log_file_info_t *log_trclog_creat(void *addr, const char *path)
+static log_file_info_t *log_creat(void *addr, const char *path)
 {
     pid_t pid = getpid();
     log_file_info_t *file = NULL;
@@ -635,14 +465,14 @@ static log_file_info_t *log_trclog_creat(void *addr, const char *path)
             if(0 != ret)
             {
                 file->pid = pid;
-                log_trclog_sync(file);
+                log_sync(file);
 
                 log_fcache_all_unlock();
                 return file;
             }
 
             /* 文件名重复，且其他进程正在运行... */
-            ret = log_trclog_conflict(path, newpath, sizeof(newpath), ++repeat);
+            ret = log_name_conflict_handler(path, newpath, sizeof(newpath), ++repeat);
             if(ret < 0)
             {
                 log_fcache_all_unlock();
@@ -699,7 +529,7 @@ static log_file_info_t *log_trclog_creat(void *addr, const char *path)
 }
 
 /******************************************************************************
- **函数名称: log_trclog_release
+ **函数名称: log_release
  **功    能: 释放申请的日志缓存
  **输入参数: 
  **     file: 日志对象
@@ -709,7 +539,7 @@ static log_file_info_t *log_trclog_creat(void *addr, const char *path)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.11.05 #
  ******************************************************************************/
-static void log_trclog_release(log_file_info_t *file)
+static void log_release(log_file_info_t *file)
 {
     int idx;
 
@@ -717,7 +547,7 @@ static void log_trclog_release(log_file_info_t *file)
     
     log_fcache_wrlock(file);
 
-    log_trclog_sync(file);
+    log_sync(file);
 
     memset(file, 0, sizeof(log_file_info_t));
 
@@ -729,8 +559,8 @@ static void log_trclog_release(log_file_info_t *file)
 }
 
 /******************************************************************************
- **函数名称: log_trclog_write
- **功    能: 将跟踪日志信息写入缓存
+ **函数名称: log_write
+ **功    能: 将日志信息写入缓存
  **输入参数: 
  **     cycle: 日志对象
  **     level: 日志级别
@@ -743,8 +573,8 @@ static void log_trclog_release(log_file_info_t *file)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.10.31 #
  ******************************************************************************/
-static int log_trclog_write(log_cycle_t *log, int level,
-    const void *dump, int dumplen, const char *errmsg, const struct timeb *curr_time)
+static int log_write(log_cycle_t *log, int level,
+    const void *dump, int dumplen, const char *errmsg, const struct timeb *ctm)
 {
     int msglen = 0, left = 0;
     char *addr = NULL;
@@ -754,7 +584,7 @@ static int log_trclog_write(log_cycle_t *log, int level,
 
     memset(&loctm, 0, sizeof(loctm));
 
-    localtime_r(&curr_time->time, &loctm);      /* 获取当前系统时间 */
+    localtime_r(&ctm->time, &loctm);      /* 获取当前系统时间 */
 
     log_fcache_wrlock(file);      /* 缓存加锁 */
 
@@ -769,7 +599,7 @@ static int log_trclog_write(log_cycle_t *log, int level,
             snprintf(addr, left, "@%d|%04d%02d%02d|%02d:%02d:%02d.%03d|FATAL %s\n",
                     log->pid, loctm.tm_year+1900, loctm.tm_mon+1, loctm.tm_mday,
                     loctm.tm_hour, loctm.tm_min, loctm.tm_sec,
-                    curr_time->millitm, errmsg);
+                    ctm->millitm, errmsg);
             break;
         }
         case LOG_LEVEL_ERROR:
@@ -778,7 +608,7 @@ static int log_trclog_write(log_cycle_t *log, int level,
             snprintf(addr, left, "@%d|%04d%02d%02d|%02d:%02d:%02d.%03d|ERROR %s\n",
                     log->pid, loctm.tm_year+1900, loctm.tm_mon+1, loctm.tm_mday,
                     loctm.tm_hour, loctm.tm_min, loctm.tm_sec,
-                    curr_time->millitm, errmsg);
+                    ctm->millitm, errmsg);
             break;
         }
         case LOG_LEVEL_WARN:
@@ -787,7 +617,7 @@ static int log_trclog_write(log_cycle_t *log, int level,
             snprintf(addr, left, "@%d|%04d%02d%02d|%02d:%02d:%02d.%03d|WARN %s\n",
                     log->pid, loctm.tm_year+1900, loctm.tm_mon+1, loctm.tm_mday,
                     loctm.tm_hour, loctm.tm_min, loctm.tm_sec,
-                    curr_time->millitm, errmsg);
+                    ctm->millitm, errmsg);
             break;
         }
         case LOG_LEVEL_INFO:
@@ -796,7 +626,7 @@ static int log_trclog_write(log_cycle_t *log, int level,
             snprintf(addr, left, "@%d|%04d%02d%02d|%02d:%02d:%02d.%03d|INFO %s\n",
                     log->pid, loctm.tm_year+1900, loctm.tm_mon+1, loctm.tm_mday,
                     loctm.tm_hour, loctm.tm_min, loctm.tm_sec,
-                    curr_time->millitm, errmsg);
+                    ctm->millitm, errmsg);
             break;
         }
         case LOG_LEVEL_DEBUG:
@@ -805,7 +635,7 @@ static int log_trclog_write(log_cycle_t *log, int level,
             snprintf(addr, left, "@%d|%04d%02d%02d|%02d:%02d:%02d.%03d|DEBUG %s\n",
                     log->pid, loctm.tm_year+1900, loctm.tm_mon+1, loctm.tm_mday,
                     loctm.tm_hour, loctm.tm_min, loctm.tm_sec,
-                    curr_time->millitm, errmsg);
+                    ctm->millitm, errmsg);
             break;
         }
         case LOG_LEVEL_TRACE:
@@ -814,7 +644,7 @@ static int log_trclog_write(log_cycle_t *log, int level,
             snprintf(addr, left, "@%d|%04d%02d%02d|%02d:%02d:%02d.%03d|TRACE %s\n",
                     log->pid, loctm.tm_year+1900, loctm.tm_mon+1, loctm.tm_mday,
                     loctm.tm_hour, loctm.tm_min, loctm.tm_sec,
-                    curr_time->millitm, errmsg);
+                    ctm->millitm, errmsg);
             break;
         }
         default:
@@ -823,7 +653,7 @@ static int log_trclog_write(log_cycle_t *log, int level,
             snprintf(addr, left, "@%d|%04d%02d%02d|%02d:%02d:%02d.%03d|OTHER %s\n",
                     log->pid, loctm.tm_year+1900, loctm.tm_mon+1, loctm.tm_mday,
                     loctm.tm_hour, loctm.tm_min, loctm.tm_sec,
-                    curr_time->millitm, errmsg);
+                    ctm->millitm, errmsg);
             break;
         }
     } 
@@ -836,22 +666,22 @@ static int log_trclog_write(log_cycle_t *log, int level,
     /* 打印DUMP数据 */
     if((NULL != dump) && (dumplen > 0) && (left > dumplen)) 
     {
-        msglen = log_trclog_print_dump(addr, dump, dumplen);
+        msglen = log_print_dump(addr, dump, dumplen);
 
         file->in_offset += msglen;
     }
 
     /* 判断是否强制写或发送通知 */
-    diff_time = curr_time->time - file->sync_tm.time;
+    diff_time = ctm->time - file->sync_tm.time;
     if(log_is_force_sync(file)  
     #if defined(__LOG_ERR_FORCE__)
-        || (log_is_err_level(level) && (level != log_get_level()))
+        || log_is_err_level(level)
     #endif /*__LOG_ERR_FORCE__*/
         || log_is_timeout(diff_time))
     {
-        memcpy(&file->sync_tm, curr_time, sizeof(file->sync_tm));
+        memcpy(&file->sync_tm, ctm, sizeof(file->sync_tm));
         
-        log_trclog_sync_ext(log);
+        log_sync_ext(log);
     }
 
     log_fcache_unlock(file);      /* 缓存解锁 */
@@ -860,7 +690,7 @@ static int log_trclog_write(log_cycle_t *log, int level,
 }
 
 /******************************************************************************
- **函数名称: log_trclog_print_dump
+ **函数名称: log_print_dump
  **功    能: 以16进制打印日志信息
  **输入参数: 
  **     fd: 日志文件描述符
@@ -872,7 +702,7 @@ static int log_trclog_write(log_cycle_t *log, int level,
  **注意事项: 
  **修    改: # Qifeng.zou # 2013.10.30 #
  ******************************************************************************/
-static int log_trclog_print_dump(char *addr, const void *dump, int dumplen)
+static int log_print_dump(char *addr, const void *dump, int dumplen)
 {
     char *in = addr;
     const char *dump_ptr = NULL, *dump_end = NULL;    
@@ -947,49 +777,47 @@ static int log_trclog_print_dump(char *addr, const void *dump, int dumplen)
 }
 
 /******************************************************************************
- **函数名称: log_trclog_sync
- **功    能: 强制同步跟踪日志信息到日志文件
+ **函数名称: log_sync
+ **功    能: 强制同步日志信息到日志文件
  **输入参数: 
- **     file: 跟踪日志文件信息
+ **     file: 日志文件信息
  **输出参数: NONE
  **返    回: VOID
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.10.30 #
  ******************************************************************************/
-int log_trclog_sync(log_file_info_t *file)
+void log_sync(log_file_info_t *file)
 {
-    size_t fsize = 0;
+    size_t fsize;
 
     /* 1. 执行同步操作 */
-    fsize = log_sync(file, NULL);
+    fsize = _log_sync(file, NULL);
 
     /* 2. 文件是否过大 */
     if(log_is_too_large(fsize))
     {
         log_rename(file, &file->sync_tm);
     }
-
-    return 0;
 }
 
 /******************************************************************************
- **函数名称: log_trclog_sync_ext
- **功    能: 强制同步跟踪日志信息到日志文件
+ **函数名称: log_sync_ext
+ **功    能: 强制同步日志信息到日志文件
  **输入参数: 
- **     file: 跟踪日志文件信息
+ **     file: 日志文件信息
  **输出参数: NONE
  **返    回: VOID
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.10.30 #
  ******************************************************************************/
-static int log_trclog_sync_ext(log_cycle_t *log)
+static int log_sync_ext(log_cycle_t *log)
 {
     size_t fsize = 0;
 
     /* 1. 执行同步操作 */
-    fsize = log_sync(log->file, &log->fd);
+    fsize = _log_sync(log->file, &log->fd);
 
     /* 2. 文件是否过大 */
     if(log_is_too_large(fsize))
@@ -1002,7 +830,7 @@ static int log_trclog_sync_ext(log_cycle_t *log)
 }
 
 /******************************************************************************
- ** Name : log_sync
+ ** Name : _log_sync
  ** Desc : 强制同步业务日志
  ** Input: 
  **	    file: 文件缓存
@@ -1016,7 +844,7 @@ static int log_trclog_sync_ext(log_cycle_t *log)
  **     3) 在此函数中不允许调用错误级别的日志函数 可能死锁!
  ** Author: # Qifeng.zou # 2013.11.08 #
  ******************************************************************************/
-static size_t log_sync(log_file_info_t *file, int *fd)
+static size_t _log_sync(log_file_info_t *file, int *fd)
 {
     int ret = 0, loc_fd = -1;
     void *addr = NULL;

@@ -17,9 +17,10 @@
 /* 日志服务 */
 typedef struct
 {
-    int fd;                         /* ÎÄ¼þËøFD */
-    void *addr;                     /* ¹²ÏíÄÚ´æÊ×µØÖ· */
-    thread_pool_t *pool;            /* Ïß³Ì³Ø */
+    int fd;                         /* 文件描述符 */
+    void *addr;                     /* 共享内存首地址 */
+    thread_pool_t *pool;            /* 内存池对象 */
+    log_cycle_t *log;               /* 日志对象 */
 }log_svr_t;
 
 /* 服务进程互斥锁路径 */
@@ -30,7 +31,7 @@ typedef struct
 
 /* 服务进程日志文件路径 */
 #define LOG_SVR_LOG_NAME   "log_svr.log"
-#define LogSvrGetLogPath(path, size) \
+#define log_svr_log_path(path, size) \
     snprintf(path, size, "../logs/%s", LOG_SVR_LOG_NAME)
 
 static log_svr_t g_log_svr;     /* 日志服务对象 */
@@ -133,10 +134,15 @@ static int log_svr_init(log_svr_t *logsvr)
     char path[FILE_PATH_MAX_LEN] = {0};
 
     /* 设置跟踪日志路径 */
-    LogSvrGetLogPath(path, sizeof(path));
+    log_svr_log_path(path, sizeof(path));
 
-    log_set_path(path);
-    
+    logsvr->log = log_init(LOG_LEVEL_DEBUG, path);
+    if (NULL == logsvr->log)
+    {
+        fprintf(stderr, "Init log failed!");
+        return -1;
+    }
+   
     /* 1. 加服务进程锁 */
     ret = log_svr_proc_lock();
     if(ret < 0)
@@ -146,7 +152,7 @@ static int log_svr_init(log_svr_t *logsvr)
     }
 
     /* 2. 打开文件缓存锁 */
-    LogGetLockPath(path, sizeof(path));
+    log_get_lock_path(path, sizeof(path));
 
     Mkdir2(path, DIR_MODE);
 
@@ -289,7 +295,7 @@ static void *log_svr_timeout_routine(void *args)
                 continue;
             }
 
-            log_trclog_sync(file);
+            log_sync(file);
         
             /* 判断文件是否还有运行的进程正在使用文件缓存 */
             if(!proc_is_exist(file->pid))
@@ -330,7 +336,7 @@ int log_svr_sync_work(int idx, log_svr_t *logsvr)
 
     file = (log_file_info_t *)(logsvr->addr + idx*LOG_FILE_CACHE_SIZE);
     
-    log_trclog_sync(file);
+    log_sync(file);
     
     return 0;
 }
