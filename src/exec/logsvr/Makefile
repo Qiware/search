@@ -16,7 +16,7 @@ SRC_LIST = log_svr.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
 
-TARGET = log_svr
+TARGET = logsvr
 
 .PHONY: all clean
 

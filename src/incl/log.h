@@ -63,6 +63,17 @@ typedef struct
     struct timeb sync_tm;                   /* 上次同步的时间 */
 }log_file_info_t;
 
+/* 日志共享内存信息 */
+typedef struct
+{
+    int max_num;                            /* 日志缓存数 */
+    char path[FILE_NAME_MAX_LEN];           /* 日志文件绝对路径 */
+    size_t in_offset;                       /* 写入偏移 */
+    size_t out_offset;                      /* 同步偏移 */
+    pid_t pid;                              /* 使用日志缓存的进程ID */
+    struct timeb sync_tm;                   /* 上次同步的时间 */
+}log_shm_t;
+
 /* 内部接口 */
 int log_set_path(const char *path);
 void log_sync(log_file_info_t *file);
@@ -77,6 +88,7 @@ typedef struct _log_cycle_t
 }log_cycle_t;
 
 /* 外部接口 */
+int log_get_level(const char *level_str);
 log_cycle_t *log_init(int level, const char *path);
 void log_core(log_cycle_t *log, int level,
                 const char *fname, int lineno,

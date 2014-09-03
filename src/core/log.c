@@ -15,7 +15,6 @@
 
 #if defined(__ASYNC_LOG__)
 
-/* 宏定义 */
 /* 共享内存 */
 static void *g_log_shm_addr = (void *)-1;  /* 共享内存地址 */
 
@@ -34,7 +33,7 @@ static int g_log_lock_fd = -1;             /* 文件锁FD */
 #define log_fcache_rdlock(file) proc_rdlock_b(g_log_lock_fd, (file)->idx+1)  /* 加缓存写锁 */
 #define log_fcache_unlock(file) proc_unlock_b(g_log_lock_fd, (file)->idx+1)  /* 解缓存锁 */
 #define log_fcache_all_wrlock() proc_wrlock(g_log_lock_fd)  /* 缓存加写锁(整个都加锁) */
-#define log_fcache_all_unlock() proc_unlock(g_log_lock_fd)/* 缓存解锁锁(整个都解锁) */
+#define log_fcache_all_unlock() proc_unlock(g_log_lock_fd)  /* 缓存解锁锁(整个都解锁) */
 
 static size_t g_log_max_size = LOG_FILE_MAX_SIZE;
 #define log_get_max_size() (g_log_max_size)     /* 获取日志大小 */
@@ -225,6 +224,59 @@ void log_destroy(log_cycle_t **log)
 log_cycle_t *log_get_cycle(void)
 {
     return (log_cycle_t *)pthread_getspecific(g_log_specific_key);
+}
+
+/******************************************************************************
+ **函数名称: log_get_level
+ **功    能: 获取日志级别
+ **输入参数: 
+ **     level_str: 日志级别字串
+ **输出参数: NONE
+ **返    回: 日志级别
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.09.03 #
+ ******************************************************************************/
+int log_get_level(const char *level_str)
+{
+    int level;
+
+    if (!strcasecmp(level_str, "trace"))
+    {
+        return LOG_LEVEL_TRACE;
+    }
+
+    level = LOG_LEVEL_TRACE;
+    if (!strcasecmp(level_str, "debug"))
+    {
+        return level|LOG_LEVEL_DEBUG;
+    }
+
+    level |= LOG_LEVEL_DEBUG;
+    if (!strcasecmp(level_str, "info"))
+    {
+        return level|LOG_LEVEL_INFO;
+    }
+
+    level |= LOG_LEVEL_INFO;
+    if (!strcasecmp(level_str, "warn"))
+    {
+        return level|LOG_LEVEL_WARN;
+    }
+
+    level |= LOG_LEVEL_WARN;
+    if (!strcasecmp(level_str, "error"))
+    {
+        return level|LOG_LEVEL_ERROR;
+    }
+
+    level |= LOG_LEVEL_ERROR;
+    if (!strcmp(level_str, "fatal"))
+    {
+        return level|LOG_LEVEL_FATAL;
+    }
+
+    return 0;
 }
 
 /******************************************************************************
@@ -436,8 +488,8 @@ static int log_name_conflict_handler(
 static log_file_info_t *log_creat(void *addr, const char *path)
 {
     pid_t pid = getpid();
-    log_file_info_t *file = NULL;
-    int ret = 0, idx = 0, hash_idx = 0, repeat = 0, idle_idx = -1;
+    log_file_info_t *file;
+    int ret, idx, hash_idx = 0, repeat = 0, idle_idx = -1;
     char newpath[FILE_NAME_MAX_LEN];
     const char *ptr = path;
 

@@ -1,9 +1,12 @@
-/*******************************************************************************
- * 模块: 异步日志模块 - 服务端代码
- * 作用: 
- *      1) 负责共享内存的初始化
- *      2) 负责把死亡的客户端进程的在缓存中日志同步到文件
- * 作者: # Qifeng.zou # 2013.11.07 #
+/******************************************************************************
+ ** Coypright(C) 2014-2024 Xundao technology Co., Ltd
+ **
+ ** 文件名: log_svr.c
+ ** 版本号: 1.0
+ ** 描  述: 异步日志模块 - 服务端代码
+ **         1. 负责共享内存的初始化
+ **         2. 负责把共享内存中的日志同步到指定文件。
+ ** 作  者: # Qifeng.zou # 2013.11.07 #
  ******************************************************************************/
 #include <sys/shm.h>
 #include <sys/types.h>
@@ -34,8 +37,6 @@ typedef struct
 #define log_svr_log_path(path, size) \
     snprintf(path, size, "../logs/%s", LOG_SVR_LOG_NAME)
 
-static log_svr_t g_log_svr;     /* 日志服务对象 */
-
 static int log_svr_init(log_svr_t *logsvr);
 static void *log_svr_timeout_routine(void *args);
 int log_svr_sync_work(int idx, log_svr_t *logsvr);
@@ -58,21 +59,22 @@ static char *log_svr_creat_shm(int fd);
 int main(void)
 {
     int ret;
-    log_svr_t *logsvr = &g_log_svr;
+    log_svr_t logsvr;
 
-    memset(logsvr, 0, sizeof(log_svr_t));
+    memset(&logsvr, 0, sizeof(log_svr_t));
 
     daemon(0, 0);
 
     /* 1. 初始化日志系统 */
-    ret = log_svr_init(logsvr);
+    ret = log_svr_init(&logsvr);
     if(ret < 0)
     {
         fprintf(stderr, "Init log failed!");
         return -1;
     }
 
-    thread_pool_add_worker(logsvr->pool, log_svr_timeout_routine, logsvr);
+    /* 2. 初始化日志系统 */
+    thread_pool_add_worker(logsvr.pool, log_svr_timeout_routine, &logsvr);
 
     while(1){ pause(); }
     return 0;
