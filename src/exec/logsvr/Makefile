@@ -10,7 +10,7 @@ include $(PROJ)/make/build.mak
 
 INCLUDE = -I. -I$(PROJ)/src/incl
 LIBS_PATH = -L$(PROJ)/lib
-LIBS = -lpthread -lcore
+LIBS = -lpthread -lxdo_core -lxdo_unix
 
 SRC_LIST = log_svr.c
 
@@ -31,4 +31,4 @@ $(OBJS): %.o : %.c
 	$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
 
 clean:
-	rm -fr $(OBJS)
+	rm -fr $(OBJS) $(PROJ)/bin/$(TARGET)

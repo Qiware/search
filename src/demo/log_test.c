@@ -6,17 +6,10 @@
 
 int main(void)
 {
-    int level, idx;
+    int idx;
     log_cycle_t *log;
 
-    level = LOG_LEVEL_TRACE
-                | LOG_LEVEL_DEBUG
-                | LOG_LEVEL_INFO
-                | LOG_LEVEL_WARN
-                | LOG_LEVEL_ERROR
-                | LOG_LEVEL_FATAL;
-
-    log = log_init(level, "../log/log_test.log");
+    log = log_init("error", "../log/log_test.log");
     if (NULL == log)
     {
         fprintf(stderr, "Init log failed!");

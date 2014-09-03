@@ -13,6 +13,8 @@
 
 #include "log.h"
 #include "common.h"
+#include "xdo_lock.h"
+#include "xdo_unistd.h"
 #include "thread_pool.h"
 
 #if defined(__ASYNC_LOG__)

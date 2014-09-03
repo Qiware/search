@@ -6,6 +6,8 @@
  ** 描  述: SHA256加密算法.
  ** 作  者: # Qifeng.zou # 2014.08.05 # 来自网络 #
  ******************************************************************************/
+#include <string.h>
+
 #include "sha256.h"
 
 static uint64_t sha256_calc_block(int* DwordBufPtr, int* regPtr);
@@ -200,4 +202,28 @@ static uint64_t sha256_calc_block(int* dp, int* rp)
     rp[0] += a; rp[1] += b; rp[2] += c; rp[3] += d; rp[4] += e; rp[5] += f; rp[6]+=g; rp[7]+=h;
 
     return 0;
+}
+
+/******************************************************************************
+ **函数名称: sha256_digest
+ **功    能: 生成SHA256摘要
+ **输入参数: 
+ **     str: 原始串
+ **     len: Str长度
+ **输出参数:
+ **     digest: SHA256摘要值
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.08.07 #
+ ******************************************************************************/
+void sha256_digest(char *str, uint32_t len, u_char digest[32])
+{
+    sha256_t sha256;
+
+    sha256_init(&sha256);
+	
+    sha256_calculate(&sha256, str, len);
+
+    memcpy(digest, sha256.Value, sizeof(sha256.Value));
 }

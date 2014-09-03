@@ -11,7 +11,10 @@
 #include <sys/types.h>
 
 #include "log.h"
+#include "hash.h"
 #include "common.h"
+#include "xdo_lock.h"
+#include "xdo_unistd.h"
 
 #if defined(__ASYNC_LOG__)
 
@@ -54,7 +57,7 @@ static pthread_mutex_t g_log_mutex = PTHREAD_MUTEX_INITIALIZER;
 static const size_t g_log_data_size =  (LOG_FILE_CACHE_SIZE - sizeof(log_file_info_t));
 #define log_get_data_size() (g_log_data_size)
 
-#define log_hash(path) (Hash(path) % LOG_FILE_MAX_NUM)  /* 异步日志哈希 */
+#define log_hash(path) (hash_time33(path) % LOG_FILE_MAX_NUM)  /* 异步日志哈希 */
 #define log_is_err_level(level) (LOG_LEVEL_ERROR & (level))
 
 /* 函数声明 */
@@ -88,7 +91,7 @@ static const int g_log_sync_size = 0.8 * LOG_FILE_CACHE_SIZE;
  **     注意: 此函数中不能调用错误日志函数 - 可能死锁!
  **作    者: # Qifeng.zou # 2013.10.31 #
  ******************************************************************************/
-log_cycle_t *log_init(int level, const char *path)
+log_cycle_t *log_init(const char *level_str, const char *path)
 {
     int ret;
     void *addr;
@@ -101,6 +104,7 @@ log_cycle_t *log_init(int level, const char *path)
         return NULL;
     }
 
+    log->level = log_get_level(level_str);
     log->pid = getpid();
     
     log_mutex_lock();
@@ -241,39 +245,39 @@ int log_get_level(const char *level_str)
 {
     int level;
 
-    if (!strcasecmp(level_str, "trace"))
+    if (!strcasecmp(level_str, "fatal"))
     {
-        return LOG_LEVEL_TRACE;
+        return LOG_LEVEL_FATAL;
     }
 
-    level = LOG_LEVEL_TRACE;
-    if (!strcasecmp(level_str, "debug"))
-    {
-        return level|LOG_LEVEL_DEBUG;
-    }
-
-    level |= LOG_LEVEL_DEBUG;
-    if (!strcasecmp(level_str, "info"))
-    {
-        return level|LOG_LEVEL_INFO;
-    }
-
-    level |= LOG_LEVEL_INFO;
-    if (!strcasecmp(level_str, "warn"))
-    {
-        return level|LOG_LEVEL_WARN;
-    }
-
-    level |= LOG_LEVEL_WARN;
+    level = LOG_LEVEL_FATAL;
     if (!strcasecmp(level_str, "error"))
     {
         return level|LOG_LEVEL_ERROR;
     }
 
     level |= LOG_LEVEL_ERROR;
-    if (!strcmp(level_str, "fatal"))
+    if (!strcasecmp(level_str, "warn"))
     {
-        return level|LOG_LEVEL_FATAL;
+        return level|LOG_LEVEL_WARN;
+    }
+
+    level |= LOG_LEVEL_WARN;
+    if (!strcasecmp(level_str, "info"))
+    {
+        return level|LOG_LEVEL_INFO;
+    }
+
+    level |= LOG_LEVEL_INFO;
+    if (!strcasecmp(level_str, "debug"))
+    {
+        return level|LOG_LEVEL_DEBUG;
+    }
+
+    level |= LOG_LEVEL_TRACE;
+    if (!strcmp(level_str, "TRACE"))
+    {
+        return level|LOG_LEVEL_TRACE;
     }
 
     return 0;

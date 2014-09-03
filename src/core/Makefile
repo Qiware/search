@@ -13,10 +13,10 @@ LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lpthread
 
 SRC_LIST = list.c \
+			hash.c \
 			list2.c \
 			stack.c \
 			queue.c \
-			common.c \
 			sha256.c \
 			slab.c \
 			shm_slab.c \
@@ -31,7 +31,7 @@ SRC_LIST = list.c \
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
 
-TARGET = libcore.so
+TARGET = libxdo_core.so
 
 .PHONY: all clean
 
@@ -46,4 +46,4 @@ $(OBJS): %.o : %.c
 	$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
 
 clean:
-	rm -fr $(OBJS)
+	rm -fr $(OBJS) $(PROJ)/lib/$(TARGET)

@@ -15,8 +15,8 @@ export PROJ = ${PWD}
 
 # 编译目录(注：编译按顺序执行　注意库之间的依赖关系)
 #DIR=`find ./src -type d`
-DIR := "src/core"
-DIR += "src/os/unix"
+DIR := "src/os/unix"
+DIR += "src/core"
 DIR += "src/exec/crawler"
 DIR += "src/exec/logsvr"
 DIR += "src/demo"

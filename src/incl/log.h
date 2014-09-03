@@ -23,8 +23,8 @@
 #define LOG_LEVEL_TOTAL         (6)         /* 级别总数 */
 
 /* 宏定义 */
-#define LOG_FILE_MAX_NUM        (512)       /* 日志文件最大个数 */
-#define LOG_FILE_CACHE_SIZE     (64*1024)   /* 日志文件的缓存SIZE */
+#define LOG_FILE_MAX_NUM        (32)        /* 日志文件最大个数 */
+#define LOG_FILE_CACHE_SIZE     (1024*1024) /* 日志文件的缓存SIZE */
 #define LOG_SHM_SIZE                        /* 日志共享内存SIZE */\
     (LOG_FILE_MAX_NUM * LOG_FILE_CACHE_SIZE)
 #define LOG_SYNC_TIMEOUT        (3)         /* 日志超时同步时间 */
@@ -91,7 +91,7 @@ typedef struct _log_cycle_t
 
 /* 外部接口 */
 int log_get_level(const char *level_str);
-log_cycle_t *log_init(int level, const char *path);
+log_cycle_t *log_init(const char *level_str, const char *path);
 void log_core(log_cycle_t *log, int level,
                 const char *fname, int lineno,
                 const void *dump, int dumplen,
@@ -100,7 +100,6 @@ void log_core(log_cycle_t *log, int level,
 log_cycle_t *log_get_cycle(void);
 void log_destroy(log_cycle_t **log);
 
-#if 1
 /* 日志模块接口 */
 #define log_fatal(log, ...) /* 撰写FATAL级别日志 */\
     if ((log)->level & LOG_LEVEL_FATAL) \
@@ -131,22 +130,5 @@ void log_destroy(log_cycle_t **log);
 #define log_debug_ex(...)
 #define log_bin_ex(...)
 
-#else
-#define log_fatal(...)
-#define log_error(...)
-#define log_warn(...)
-#define log_info(...)
-#define log_debug(...)
-#define log_bin(...)
-
-#define log_fatal_ex(...)
-#define log_error_ex(...)
-#define log_warn_ex(...)
-#define log_info_ex(...)
-#define log_debug_ex(...)
-#define log_bin_ex(...)
-
-
-#endif
 #endif /*__ASYNC_LOG__*/
 #endif /*__LOG_H__*/
