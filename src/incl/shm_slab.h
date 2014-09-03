@@ -8,6 +8,8 @@
 #include <string.h>
 #include <memory.h>
 
+#include "log.h"
+
 /* 内存分配方式 */
 typedef enum
 {
@@ -57,9 +59,9 @@ typedef struct
     shm_slab_page_t free;   /* 空闲页链表 */
 }shm_slab_pool_t;
 
-int32_t shm_slab_init(shm_slab_pool_t *pool);
-void *shm_slab_alloc(shm_slab_pool_t *pool, size_t size);
-int32_t shm_slab_free(shm_slab_pool_t *pool, void *p);
+int32_t shm_slab_init(shm_slab_pool_t *pool, log_cycle_t *log);
+void *shm_slab_alloc(shm_slab_pool_t *pool, size_t size, log_cycle_t *log);
+int32_t shm_slab_free(shm_slab_pool_t *pool, void *p, log_cycle_t *log);
 
 size_t shm_slab_head_size(size_t size);
 #endif /*__SHM_SLAB__*/

@@ -50,16 +50,20 @@ static int g_shm_slab_exact_shift = 0;  /* SLOT精确内存分配单元对应的位移 */
 
 /* 静态函数声明 */
 static void shm_slab_init_param(void);
-static shm_slab_page_t *shm_slab_alloc_pages(shm_slab_pool_t *pool, int pages);
+static shm_slab_page_t *shm_slab_alloc_pages(
+        shm_slab_pool_t *pool, int pages, log_cycle_t *log);
 static int shm_slab_free_pages(shm_slab_pool_t *pool, shm_slab_page_t *page);
-static void *shm_slab_alloc_slot(shm_slab_pool_t *pool, size_t size);
-static void *_shm_slab_alloc_slot(shm_slab_pool_t *pool, int slot_idx, int type);
+static void *shm_slab_alloc_slot(
+        shm_slab_pool_t *pool, size_t size, log_cycle_t *log);
+static void *_shm_slab_alloc_slot(
+        shm_slab_pool_t *pool, int slot_idx, int type, log_cycle_t *log);
 #if defined(__XDT_NOT_USED__)
 static int shm_slab_slot_add_page(
     shm_slab_pool_t *pool, shm_slab_slot_t *slot, shm_slab_page_t *page);
 #endif /*__XDT_NOT_USED__*/
 static int shm_slab_slot_remove_page(
-    shm_slab_pool_t *pool, shm_slab_slot_t *slot, shm_slab_page_t *page);
+    shm_slab_pool_t *pool, shm_slab_slot_t *slot,
+    shm_slab_page_t *page, log_cycle_t *log);
 
 /******************************************************************************
  **Name  : shm_slab_init
@@ -84,7 +88,7 @@ static int shm_slab_slot_remove_page(
  **     addr: 为偏移量的基址
  **Author: # Qifeng.zou # 2013.07.12 #
  ******************************************************************************/
-int shm_slab_init(shm_slab_pool_t *pool)
+int shm_slab_init(shm_slab_pool_t *pool, log_cycle_t *log)
 {
     void *addr = NULL;
     size_t min_size = 0, left_size = 0;
@@ -120,7 +124,7 @@ int shm_slab_init(shm_slab_pool_t *pool)
 
     if(pool->end_offset < pool->page_offset)
     {
-        log_error_ex("Not enough memory!");
+        log_error(log, "Not enough memory!");
         return -1;  /* Not enough memory */
     }
 
@@ -128,11 +132,13 @@ int shm_slab_init(shm_slab_pool_t *pool)
     page_num = left_size / (shm_slab_page_size() + sizeof(shm_slab_page_t));
     if(page_num <= 0)
     {
-        log_error_ex("Not enough memory!");
+        log_error(log, "Not enough memory!");
         return -1;  /* Not enough memory */
     }
 
-    log_info_ex("page_num:%d!", page_num);
+
+    log_info(log, "min_size:%d min_shift:%d slot_off:%d page_off:%d page_num:%d ",
+        pool->min_size, pool->min_shift, pool->slot_offset, pool->page_offset, page_num);
     
     page = (shm_slab_page_t *)(addr + pool->page_offset);
     for(idx=0; idx<page_num; idx++)
@@ -245,7 +251,7 @@ static int shm_slab_get_alloc_type(int32_t size)
  **Note  : 
  **Author: # Qifeng.zou # 2013.07.12 #
  ******************************************************************************/
-void *shm_slab_alloc(shm_slab_pool_t *pool, size_t size)
+void *shm_slab_alloc(shm_slab_pool_t *pool, size_t size, log_cycle_t *log)
 {
     int pages = 0;
     void *addr = NULL, *p = NULL;
@@ -253,7 +259,7 @@ void *shm_slab_alloc(shm_slab_pool_t *pool, size_t size)
 
     if(0 == size)
     {
-        log_error_ex("Size is incorrect!");
+        log_error(log, "Size is incorrect!");
         return NULL;
     }
     
@@ -263,10 +269,10 @@ void *shm_slab_alloc(shm_slab_pool_t *pool, size_t size)
         addr = (void *)pool;
         pages = (size + shm_slab_page_size() - 1) >> shm_slab_page_shift();
         
-        page = shm_slab_alloc_pages(pool, pages);
+        page = shm_slab_alloc_pages(pool, pages, log);
         if(NULL == page)
         {
-            log_error_ex("Alloc pages failed!");
+            log_error(log, "Alloc pages failed!");
             return NULL;
         }
         
@@ -277,7 +283,7 @@ void *shm_slab_alloc(shm_slab_pool_t *pool, size_t size)
     }
 
     /* 2. Alloc small memory */
-    return shm_slab_alloc_slot(pool, size);
+    return shm_slab_alloc_slot(pool, size, log);
 }
 
 /******************************************************************************
@@ -292,7 +298,8 @@ void *shm_slab_alloc(shm_slab_pool_t *pool, size_t size)
  **Note  : 
  **Author: # Qifeng.zou # 2013.07.12 #
  ******************************************************************************/
-static shm_slab_page_t *shm_slab_alloc_pages(shm_slab_pool_t *pool, int pages)
+static shm_slab_page_t *shm_slab_alloc_pages(
+        shm_slab_pool_t *pool, int pages, log_cycle_t *log)
 {
     void *addr = NULL;
     shm_slab_page_t *start_page = NULL, *page = NULL,
@@ -372,7 +379,7 @@ static shm_slab_page_t *shm_slab_alloc_pages(shm_slab_pool_t *pool, int pages)
         }
     }
 
-    log_error_ex("Alloc pages failed!");
+    log_error(log, "Alloc pages failed!");
     
     return NULL;
 }
@@ -389,7 +396,7 @@ static shm_slab_page_t *shm_slab_alloc_pages(shm_slab_pool_t *pool, int pages)
  **Note  : 
  **Author: # Qifeng.zou # 2013.07.12 #
  ******************************************************************************/
-static void *shm_slab_alloc_slot(shm_slab_pool_t *pool, size_t size)
+static void *shm_slab_alloc_slot(shm_slab_pool_t *pool, size_t size, log_cycle_t *log)
 {
     void *p = NULL;
     int shift = 0, idx = 0, s = 0;
@@ -414,7 +421,7 @@ static void *shm_slab_alloc_slot(shm_slab_pool_t *pool, size_t size)
 
     type = shm_slab_get_alloc_type(size);
 
-    p = _shm_slab_alloc_slot(pool, idx, type);
+    p = _shm_slab_alloc_slot(pool, idx, type, log);
     if(NULL == p)
     {
         return NULL;
@@ -448,7 +455,8 @@ static void *shm_slab_alloc_slot(shm_slab_pool_t *pool, size_t size)
  **Note  :
  **Author: # Qifeng.zou # 2013.07.15 #
  ******************************************************************************/
-static void *_shm_slab_alloc_slot(shm_slab_pool_t *pool, int slot_idx, int type)
+static void *_shm_slab_alloc_slot(
+        shm_slab_pool_t *pool, int slot_idx, int type, log_cycle_t *log)
 {
     int *bitmap = NULL;
     shm_slab_slot_t *slot = NULL;
@@ -469,10 +477,10 @@ static void *_shm_slab_alloc_slot(shm_slab_pool_t *pool, int slot_idx, int type)
     slot = (shm_slab_slot_t *)(addr + pool->slot_offset);
     if(shm_slab_is_null_page(slot[slot_idx].page_idx))
     {
-        page = shm_slab_alloc_pages(pool, 1);
+        page = shm_slab_alloc_pages(pool, 1, log);
         if(NULL == page)
         {
-            log_error_ex("Alloc pages failed!");
+            log_error(log, "Alloc pages failed!");
             return NULL;
         }
 
@@ -552,10 +560,10 @@ static void *_shm_slab_alloc_slot(shm_slab_pool_t *pool, int slot_idx, int type)
 
         if(shm_slab_is_null_page(page->next_idx))
         {
-            new_page = shm_slab_alloc_pages(pool, 1);
+            new_page = shm_slab_alloc_pages(pool, 1, log);
             if(NULL == new_page)
             {
-                log_error_ex("Alloc pages failed!");
+                log_error(log, "Alloc pages failed!");
                 return NULL;
             }
 
@@ -589,7 +597,7 @@ static void *_shm_slab_alloc_slot(shm_slab_pool_t *pool, int slot_idx, int type)
         page = &start_page[page->next_idx];
     }while(1);
 
-    log_error_ex("Alloc slot failed!");
+    log_error(log, "Alloc slot failed!");
     return NULL;
 }
 
@@ -694,14 +702,15 @@ static int shm_slab_slot_add_page(
  **Author: # Qifeng.zou # 2013.07.17 #
  ******************************************************************************/
 static int shm_slab_slot_remove_page(
-    shm_slab_pool_t *pool, shm_slab_slot_t *slot, shm_slab_page_t *page)
+    shm_slab_pool_t *pool, shm_slab_slot_t *slot, shm_slab_page_t *page,
+    log_cycle_t *log)
 {
     void *addr = NULL;
     shm_slab_page_t *start_page = NULL, *next = NULL, *prev = NULL;
 
     if(shm_slab_is_null_page(slot->page_idx))
     {
-        log_error_ex("Remove page failed!");
+        log_error(log, "Remove page failed!");
         return -1;
     }
 
@@ -745,7 +754,7 @@ static int shm_slab_slot_remove_page(
         return 0;
     }
 
-    log_error_ex("Search page failed!");
+    log_error(log, "Search page failed!");
     return -1;
 }
 
@@ -761,7 +770,7 @@ static int shm_slab_slot_remove_page(
  **Note  : 
  **Author: # Qifeng.zou # 2013.07.12 #
  ******************************************************************************/
-int shm_slab_free(shm_slab_pool_t *pool, void *p)
+int shm_slab_free(shm_slab_pool_t *pool, void *p, log_cycle_t *log)
 {
     int ret = 0, page_idx = 0,
         idx = 0, is_free = 1,
@@ -778,7 +787,7 @@ int shm_slab_free(shm_slab_pool_t *pool, void *p)
     
     if((offset < pool->data_offset) || (offset > pool->end_offset))
     {
-        log_error_ex("Pointer address is incorrect!");
+        log_error(log, "Pointer address is incorrect!");
         return -1;
     }
 
@@ -823,10 +832,10 @@ int shm_slab_free(shm_slab_pool_t *pool, void *p)
                 slot_idx = page->shift - pool->min_shift;
                 
                 /* Remove from slot[idx] link */
-                ret = shm_slab_slot_remove_page(pool, slot+slot_idx, page);
+                ret = shm_slab_slot_remove_page(pool, slot+slot_idx, page, log);
                 if(ret < 0)
                 {
-                    log_error_ex("Remove page failed!");
+                    log_error(log, "Remove page failed!");
                     return -1;
                 }
 
@@ -849,10 +858,10 @@ int shm_slab_free(shm_slab_pool_t *pool, void *p)
                 slot_idx = page->shift - pool->min_shift;
                 
                 /* Remove from slot[idx] link */
-                ret = shm_slab_slot_remove_page(pool, slot+slot_idx, page);
+                ret = shm_slab_slot_remove_page(pool, slot+slot_idx, page, log);
                 if(ret < 0)
                 {
-                    log_error_ex("Remove page failed!");
+                    log_error(log, "Remove page failed!");
                     return -1;
                 }
 
@@ -867,7 +876,7 @@ int shm_slab_free(shm_slab_pool_t *pool, void *p)
         }
         default:
         {
-            log_error_ex("Type is unknown! [%d]", page->type);
+            log_error(log, "Type is unknown! [%d]", page->type);
             return -1;
         }
     }

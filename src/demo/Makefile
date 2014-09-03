@@ -24,6 +24,7 @@ all: $(TARGET)
 $(TARGET): $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS)
 	mv $@ $(PROJ)/bin
+	rm -f $(OBJS)
 	@echo "$@ is OK!"
 
 $(OBJS): %.o : %.c
