@@ -82,9 +82,11 @@ void log_set_max_size(size_t size);
 /* 日志对象 */
 typedef struct _log_cycle_t
 {
+    int level;                              /* 日志级别 */
+
     int fd;                                 /* 文件描述符 */
-    log_file_info_t *file;                  /* 文件信息 */
     pid_t pid;                              /* 进程PID */
+    log_file_info_t *file;                  /* 文件信息 */
 }log_cycle_t;
 
 /* 外部接口 */
@@ -98,7 +100,7 @@ void log_core(log_cycle_t *log, int level,
 log_cycle_t *log_get_cycle(void);
 void log_destroy(log_cycle_t **log);
 
-#if 0
+#if 1
 /* 日志模块接口 */
 #define log_fatal(log, ...) /* 撰写FATAL级别日志 */\
     if ((log)->level & LOG_LEVEL_FATAL) \
@@ -121,6 +123,14 @@ void log_destroy(log_cycle_t **log);
 #define log_bin(log, addr, len, ...)   /* 撰写MEM-DUMP日志 */\
     if ((log)->level & LOG_LEVEL_INFO) \
         log_core(log, LOG_LEVEL_INFO, __FILE__, __LINE__, addr, len, __VA_ARGS__)
+
+#define log_fatal_ex(...)
+#define log_error_ex(...)
+#define log_warn_ex(...)
+#define log_info_ex(...)
+#define log_debug_ex(...)
+#define log_bin_ex(...)
+
 #else
 #define log_fatal(...)
 #define log_error(...)
@@ -128,6 +138,15 @@ void log_destroy(log_cycle_t **log);
 #define log_info(...)
 #define log_debug(...)
 #define log_bin(...)
+
+#define log_fatal_ex(...)
+#define log_error_ex(...)
+#define log_warn_ex(...)
+#define log_info_ex(...)
+#define log_debug_ex(...)
+#define log_bin_ex(...)
+
+
 #endif
 #endif /*__ASYNC_LOG__*/
 #endif /*__LOG_H__*/

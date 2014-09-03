@@ -19,6 +19,7 @@ DIR := "src/core"
 DIR += "src/os/unix"
 DIR += "src/exec/crawler"
 DIR += "src/exec/logsvr"
+DIR += "src/demo"
 export DIR
 
 .PHONY: all clean rebuild

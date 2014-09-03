@@ -120,7 +120,7 @@ int shm_slab_init(shm_slab_pool_t *pool)
 
     if(pool->end_offset < pool->page_offset)
     {
-        log_error("Not enough memory!");
+        log_error_ex("Not enough memory!");
         return -1;  /* Not enough memory */
     }
 
@@ -128,11 +128,11 @@ int shm_slab_init(shm_slab_pool_t *pool)
     page_num = left_size / (shm_slab_page_size() + sizeof(shm_slab_page_t));
     if(page_num <= 0)
     {
-        log_error("Not enough memory!");
+        log_error_ex("Not enough memory!");
         return -1;  /* Not enough memory */
     }
 
-    log_info("page_num:%d!", page_num);
+    log_info_ex("page_num:%d!", page_num);
     
     page = (shm_slab_page_t *)(addr + pool->page_offset);
     for(idx=0; idx<page_num; idx++)
@@ -253,7 +253,7 @@ void *shm_slab_alloc(shm_slab_pool_t *pool, size_t size)
 
     if(0 == size)
     {
-        log_error("Size is incorrect!");
+        log_error_ex("Size is incorrect!");
         return NULL;
     }
     
@@ -266,7 +266,7 @@ void *shm_slab_alloc(shm_slab_pool_t *pool, size_t size)
         page = shm_slab_alloc_pages(pool, pages);
         if(NULL == page)
         {
-            log_error("Alloc pages failed!");
+            log_error_ex("Alloc pages failed!");
             return NULL;
         }
         
@@ -372,7 +372,7 @@ static shm_slab_page_t *shm_slab_alloc_pages(shm_slab_pool_t *pool, int pages)
         }
     }
 
-    log_error("Alloc pages failed!");
+    log_error_ex("Alloc pages failed!");
     
     return NULL;
 }
@@ -472,7 +472,7 @@ static void *_shm_slab_alloc_slot(shm_slab_pool_t *pool, int slot_idx, int type)
         page = shm_slab_alloc_pages(pool, 1);
         if(NULL == page)
         {
-            log_error("Alloc pages failed!");
+            log_error_ex("Alloc pages failed!");
             return NULL;
         }
 
@@ -555,7 +555,7 @@ static void *_shm_slab_alloc_slot(shm_slab_pool_t *pool, int slot_idx, int type)
             new_page = shm_slab_alloc_pages(pool, 1);
             if(NULL == new_page)
             {
-                log_error("Alloc pages failed!");
+                log_error_ex("Alloc pages failed!");
                 return NULL;
             }
 
@@ -589,7 +589,7 @@ static void *_shm_slab_alloc_slot(shm_slab_pool_t *pool, int slot_idx, int type)
         page = &start_page[page->next_idx];
     }while(1);
 
-    log_error("Alloc slot failed!");
+    log_error_ex("Alloc slot failed!");
     return NULL;
 }
 
@@ -701,7 +701,7 @@ static int shm_slab_slot_remove_page(
 
     if(shm_slab_is_null_page(slot->page_idx))
     {
-        log_error("Remove page failed!");
+        log_error_ex("Remove page failed!");
         return -1;
     }
 
@@ -745,7 +745,7 @@ static int shm_slab_slot_remove_page(
         return 0;
     }
 
-    log_error("Search page failed!");
+    log_error_ex("Search page failed!");
     return -1;
 }
 
@@ -778,7 +778,7 @@ int shm_slab_free(shm_slab_pool_t *pool, void *p)
     
     if((offset < pool->data_offset) || (offset > pool->end_offset))
     {
-        log_error("Pointer address is incorrect!");
+        log_error_ex("Pointer address is incorrect!");
         return -1;
     }
 
@@ -826,7 +826,7 @@ int shm_slab_free(shm_slab_pool_t *pool, void *p)
                 ret = shm_slab_slot_remove_page(pool, slot+slot_idx, page);
                 if(ret < 0)
                 {
-                    log_error("Remove page failed!");
+                    log_error_ex("Remove page failed!");
                     return -1;
                 }
 
@@ -852,7 +852,7 @@ int shm_slab_free(shm_slab_pool_t *pool, void *p)
                 ret = shm_slab_slot_remove_page(pool, slot+slot_idx, page);
                 if(ret < 0)
                 {
-                    log_error("Remove page failed!");
+                    log_error_ex("Remove page failed!");
                     return -1;
                 }
 
@@ -867,7 +867,7 @@ int shm_slab_free(shm_slab_pool_t *pool, void *p)
         }
         default:
         {
-            log_error("Type is unknown! [%d]", page->type);
+            log_error_ex("Type is unknown! [%d]", page->type);
             return -1;
         }
     }

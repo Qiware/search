@@ -23,7 +23,6 @@ typedef struct
     int fd;                         /* 文件描述符 */
     void *addr;                     /* 共享内存首地址 */
     thread_pool_t *pool;            /* 内存池对象 */
-    log_cycle_t *log;               /* 日志对象 */
 }log_svr_t;
 
 /* 服务进程互斥锁路径 */
@@ -138,13 +137,6 @@ static int log_svr_init(log_svr_t *logsvr)
     /* 设置跟踪日志路径 */
     log_svr_log_path(path, sizeof(path));
 
-    logsvr->log = log_init(LOG_LEVEL_DEBUG, path);
-    if (NULL == logsvr->log)
-    {
-        fprintf(stderr, "Init log failed!");
-        return -1;
-    }
-   
     /* 1. 加服务进程锁 */
     ret = log_svr_proc_lock();
     if(ret < 0)
