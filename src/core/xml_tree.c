@@ -39,7 +39,7 @@ static xml_node_t *_xml_delete_empty(xml_tree_t *xml, Stack_t *stack, xml_node_t
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.06.12 #
  ******************************************************************************/
-xml_tree_t *xml_creat_empty(void)
+xml_tree_t *xml_creat_empty(log_cycle_t *log)
 {
     xml_tree_t *xml = NULL;
 
@@ -47,16 +47,18 @@ xml_tree_t *xml_creat_empty(void)
     xml = (xml_tree_t*)calloc(1, sizeof(xml_tree_t));
     if (NULL == xml)
     {
-        log_error("Calloc failed!");
+        log_error(xml->log, "Calloc failed!");
         return NULL;
     }
+
+    xml->log = log;
 
     /* 2. Add root node */
     xml->root = xml_node_creat(XML_NODE_ROOT);
     if (NULL == xml->root)
     {
         free(xml), xml = NULL;
-        log_error("Calloc failed!");
+        log_error(xml->log, "Create node failed!");
         return NULL;
     }
 
@@ -65,7 +67,7 @@ xml_tree_t *xml_creat_empty(void)
     if (NULL == xml->root->name)
     {
         xml_destroy(xml);
-        log_error("Calloc failed!");
+        log_error(xml->log, "Calloc failed!");
         return NULL;
     }
     
@@ -78,16 +80,17 @@ xml_tree_t *xml_creat_empty(void)
  **函数名称: xml_creat
  **功    能: 将XML文件转化成XML树
  **输入参数:
- **      fcache: 文件缓存
+ **     log: 日志对象
+ **     fcache: 文件缓存
  **输出参数:
  **返    回: XML树
  **实现描述: 
- **      1. 将XML文件读入内存
- **      2. 在内存中将XML文件转为XML树
+ **     1. 将XML文件读入内存
+ **     2. 在内存中将XML文件转为XML树
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
-xml_tree_t *xml_creat(const char *fname)
+xml_tree_t *xml_creat(log_cycle_t *log, const char *fname)
 {
     char *buff = NULL;
     xml_tree_t *xml = NULL;
@@ -96,12 +99,12 @@ xml_tree_t *xml_creat(const char *fname)
     buff = xml_fload(fname);
     if (NULL == buff)
     {
-        log_error("Load xml file into memory failed![%s]", fname);
+        log_error(xml->log, "Load xml file into memory failed![%s]", fname);
         return NULL;
     }
 
     /* 2. 在内存中将XML文件转为XML树 */
-    xml = xml_screat(buff);
+    xml = xml_screat(log, buff);
 
     free(buff), buff = NULL;
 
@@ -112,42 +115,46 @@ xml_tree_t *xml_creat(const char *fname)
  **函数名称: xml_screat_ext
  **功    能: 将XML字串转为XML树
  **输入参数:
- **      str: XML字串
- **      length: 字串长度
+ **     str: XML字串
+ **     length: 字串长度
  **输出参数:
  **返    回: XML树
  **实现描述: 
- **      1. 分配缓存空间
- **      2. 截取XML字串
- **      3. 解析为XML字串
+ **     1. 分配缓存空间
+ **     2. 截取XML字串
+ **     3. 解析为XML字串
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.09.25 #
  ******************************************************************************/
-xml_tree_t *xml_screat_ext(const char *str, int length)
+xml_tree_t *xml_screat_ext(log_cycle_t *log, const char *str, int length)
 {
     char *buff = NULL;
     xml_tree_t *xml = NULL;
 
     if (0 == length)     /* 创建空树 */
     {
-        return xml_creat_empty(); 
+        return xml_creat_empty(log); 
     }
     else if (length < 0) /* 长度无限制 */
     {
-        return xml_screat(str);
+        return xml_screat(log, str);
     }
 
     /* length > 0 */
     buff = (char *)calloc(1, length + 1);
     if (NULL == buff)
     {
-        log_error("Alloc memory failed!");
+        log_error(xml->log, "Alloc memory failed!");
         return NULL;
     }
 
     memcpy(buff, str, length);
 
-    xml = xml_screat(buff);
+    xml = xml_screat(log, buff);
+    if (NULL != xml)
+    {
+        xml->log = log;
+    }
 
     free(buff), buff = NULL;
 
@@ -158,17 +165,17 @@ xml_tree_t *xml_screat_ext(const char *str, int length)
  **函数名称: xml_screat
  **功    能: 将XML字串转为XML树
  **输入参数:
- **      str: XML字串
+ **     str: XML字串
  **输出参数:
  **返    回: XML树
  **实现描述: 
- **      1. 初始化栈
- **      2. 初始化xml树
- **      3. 在内存中将文件解析为XML树
+ **     1. 初始化栈
+ **     2. 初始化xml树
+ **     3. 在内存中将文件解析为XML树
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
- xml_tree_t *xml_screat(const char *str)
+ xml_tree_t *xml_screat(log_cycle_t *log, const char *str)
 {
     int ret = 0;
     Stack_t stack;
@@ -177,7 +184,7 @@ xml_tree_t *xml_screat_ext(const char *str, int length)
     if ((NULL == str)
         || ('\0' == str[0]))
     {
-        return xml_creat_empty();
+        return xml_creat_empty(log);
     }
     
     do
@@ -186,7 +193,7 @@ xml_tree_t *xml_screat_ext(const char *str, int length)
         ret = stack_init(&stack, XML_MAX_DEPTH);
         if (XML_SUCCESS != ret)
         {
-            log_error("Init xml stack failed!");
+            log_error(xml->log, "Init xml stack failed!");
             break;
         }
 
@@ -194,15 +201,17 @@ xml_tree_t *xml_screat_ext(const char *str, int length)
         ret = xml_init(&xml);
         if (XML_SUCCESS != ret)
         {   
-            log_error("Init xml tree failed!");
+            log_error(xml->log, "Init xml tree failed!");
             break;
         }
+
+        xml->log = log;
 
         /* 3. 解析XML文件缓存 */
         ret = xml_parse(xml, &stack, str);
         if (XML_SUCCESS != ret)
         {
-            log_error("Parse xml file cache failed!");
+            log_error(xml->log, "Parse xml file cache failed!");
             xml_destroy(xml);
             break;
         }
@@ -238,17 +247,18 @@ xml_tree_t *xml_screat_ext(const char *str, int length)
  **函数名称: xml_node_free
  **功    能: 释放指定节点，及其所有属性节点、子节点的内存
  **输入参数:
- **      node: 被释放的节点
+ **     xml: 
+ **     node: 被释放的节点
  **输出参数:
  **返    回: 0: 成功 !0: 失败
  **实现描述: 
- **      1. 将孩子从链表中剔除
- **      2. 释放孩子节点及其所有子节点
+ **     1. 将孩子从链表中剔除
+ **     2. 释放孩子节点及其所有子节点
  **注意事项: 
- **      除释放指定节点的内存外，还必须释放该节点所有子孙节点的内存
+ **     除释放指定节点的内存外，还必须释放该节点所有子孙节点的内存
  **作    者: # Qifeng.zou # 2013.02.27 #
  ******************************************************************************/
-int xml_node_free(xml_node_t *node)
+int xml_node_free(xml_tree_t *xml, xml_node_t *node)
 {
     int ret = 0;
     Stack_t _stack, *stack = &_stack;
@@ -258,7 +268,7 @@ int xml_node_free(xml_node_t *node)
     /* 1. 将此节点从孩子链表剔除 */
     if ((NULL != parent) && (NULL != current))
     {
-        ret = xml_delete_child(parent, node);
+        ret = xml_delete_child(xml, parent, node);
         if (XML_SUCCESS != ret)
         {
             return ret;
@@ -268,7 +278,7 @@ int xml_node_free(xml_node_t *node)
     ret = stack_init(stack, XML_MAX_DEPTH);
     if (XML_SUCCESS != ret)
     {
-        log_error("Stack init failed!");
+        log_error(xml->log, "Init stack failed!");
         return XML_ERR_STACK;
     }
 
@@ -279,8 +289,8 @@ int xml_node_free(xml_node_t *node)
         ret = stack_push(stack, current);
         if (XML_SUCCESS != ret)
         {
-            log_error("Stack push failed!");
             stack_destroy(stack);
+            log_error(xml->log, "Push stack failed!");
             return XML_ERR_STACK;
         }
 
@@ -289,14 +299,14 @@ int xml_node_free(xml_node_t *node)
 
 
         /* 3. 选择下一个处理的节点: 从父亲节点、兄弟节点、孩子节点中 */
-        current = xml_free_next(stack, current); 
+        current = xml_free_next(xml, stack, current); 
         
     }while (NULL != current);
 
     if (!stack_isempty(stack))
     {
-        log_error("Stack is not empty!");
         stack_destroy(stack);
+        log_error(xml->log, "Stack is not empty!");
         return XML_ERR_STACK;
     }
 
@@ -308,8 +318,8 @@ int xml_node_free(xml_node_t *node)
  **函数名称: xml_fprint
  **功    能: 根据XML树构建XML文件(注: XML有层次格式)
  **输入参数:
- **      xml: XML树
- **      fp: 文件指针
+ **     xml: XML树
+ **     fp: 文件指针
  **输出参数:
  **返    回: 0:成功 !0:失败
  **实现描述: 
@@ -324,23 +334,23 @@ int xml_fprint(xml_tree_t *xml, FILE *fp)
 
     if (NULL == child) 
     {
-        log_error("The tree is empty!");
+        log_error(xml->log, "The tree is empty!");
         return XML_ERR_EMPTY_TREE;
     }
     
     ret = stack_init(&stack, XML_MAX_DEPTH);
     if (XML_SUCCESS != ret)
     {
-        log_error("Stack init failed!");
+        log_error(xml->log, "Stack init failed!");
         return XML_ERR_STACK;
     }
 
     while (NULL != child)
     {
-        ret = xml_fprint_tree(child, &stack, fp);
+        ret = xml_fprint_tree(xml, child, &stack, fp);
         if (XML_SUCCESS != ret)
         {
-            log_error("fPrint tree failed!");
+            log_error(xml->log, "fPrint tree failed!");
             stack_destroy(&stack);
             return ret;
         }
@@ -355,8 +365,8 @@ int xml_fprint(xml_tree_t *xml, FILE *fp)
  **函数名称: xml_fwrite
  **功    能: 根据XML树构建XML文件(注: XML有层次格式)
  **输入参数:
- **      xml: XML树
- **      fname: 文件路径
+ **     xml: XML树
+ **     fname: 文件路径
  **输出参数:
  **返    回: 0:成功 !0:失败
  **实现描述: 
@@ -372,14 +382,14 @@ int xml_fwrite(xml_tree_t *xml, const char *fname)
 
     if (NULL == child) 
     {
-        log_error("The tree is empty!");
+        log_error(xml->log, "The tree is empty!");
         return XML_ERR_EMPTY_TREE;
     }
 
     fp = fopen(fname, "wb");
     if (NULL == fp)
     {
-        log_error("Call fopen() failed![%s]", fname);
+        log_error(xml->log, "Call fopen() failed![%s]", fname);
         return XML_ERR_FOPEN;
     }
     
@@ -387,16 +397,16 @@ int xml_fwrite(xml_tree_t *xml, const char *fname)
     if (XML_SUCCESS != ret)
     {
         fclose(fp), fp = NULL;
-        log_error("Stack init failed!");
+        log_error(xml->log, "Stack init failed!");
         return XML_ERR_STACK;
     }
 
     while (NULL != child)
     {
-        ret = xml_fprint_tree(child, &stack, fp);
+        ret = xml_fprint_tree(xml, child, &stack, fp);
         if (XML_SUCCESS != ret)
         {
-            log_error("fPrint tree failed!");
+            log_error(xml->log, "fPrint tree failed!");
             fclose(fp), fp = NULL;
             stack_destroy(&stack);
             return ret;
@@ -413,8 +423,8 @@ int xml_fwrite(xml_tree_t *xml, const char *fname)
  **函数名称: xml_sprint
  **功    能: 根据XML树构建XML文件缓存(注: XML有层次格式)
  **输入参数:
- **      xml: XML树
- **      str: 用于存放文件缓存
+ **     xml: XML树
+ **     str: 用于存放文件缓存
  **输出参数:
  **返    回: 返回XML文件缓存的长度
  **实现描述: 
@@ -438,16 +448,16 @@ int xml_sprint(xml_tree_t *xml, char *str)
     ret = stack_init(&stack, XML_MAX_DEPTH);
     if (XML_SUCCESS != ret)
     {
-        log_error("Stack init failed!");
+        log_error(xml->log, "Stack init failed!");
         return XML_ERR_STACK;
     }
 
     while (NULL != child)
     {
-        ret = xml_sprint_tree(child, &stack, &sp);
+        ret = xml_sprint_tree(xml, child, &stack, &sp);
         if (XML_SUCCESS != ret)
         {
-            log_error("Sprint tree failed!");
+            log_error(xml->log, "Sprint tree failed!");
             stack_destroy(&stack);
             return ret;
         }
@@ -462,8 +472,8 @@ int xml_sprint(xml_tree_t *xml, char *str)
  **函数名称: xml_spack
  **功    能: 根据XML树构建XML报文(注: XML无层次格式)
  **输入参数:
- **      xml: XML树
- **      str: 用于存放XML报文
+ **     xml: XML树
+ **     str: 用于存放XML报文
  **输出参数:
  **返    回: 返回XML文件报文的长度
  **实现描述: 
@@ -487,16 +497,16 @@ extern int xml_spack(xml_tree_t *xml, char *str)
     ret = stack_init(&stack, XML_MAX_DEPTH);
     if (XML_SUCCESS != ret)
     {
-        log_error("Stack init failed!");
+        log_error(xml->log, "Stack init failed!");
         return XML_ERR_STACK;
     }
 
     while (NULL != child)
     {
-        ret = xml_pack_tree(child, &stack, &sp);
+        ret = xml_pack_tree(xml, child, &stack, &sp);
         if (XML_SUCCESS != ret)
         {
-            log_error("Sprint tree failed!");
+            log_error(xml->log, "Sprint tree failed!");
             stack_destroy(&stack);
             return ret;
         }
@@ -519,16 +529,11 @@ extern int xml_spack(xml_tree_t *xml, char *str)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.02.26 #
  ******************************************************************************/
-xml_node_t *xml_rsearch(xml_node_t *curr, const char *path)
+xml_node_t *xml_rsearch(xml_tree_t *xml, xml_node_t *curr, const char *path)
 {
     size_t len = 0;
     xml_node_t *node = curr;
     const char *str = path, *ptr = NULL;
-
-    if ((NULL == path) || (NULL == node))
-    {
-        return NULL;
-    }
 
     /* 1. 路径判断 */
     if (XmlIsRootPath(path))
@@ -543,7 +548,6 @@ xml_node_t *xml_rsearch(xml_node_t *curr, const char *path)
     node = curr->firstchild;
     if (NULL == node)
     {
-        log_error("Path is not exist! path:[%s]", path);
         return NULL;
     }
 
@@ -592,17 +596,19 @@ xml_node_t *xml_rsearch(xml_node_t *curr, const char *path)
  **函数名称: xml_add_attr
  **功    能: 往节点中添加属性节点
  **输入参数:
- **      node: 需要添加属性节点的节点
- **      attr: 属性节点(链表或单个节点)
+ **     node: 需要添加属性节点的节点
+ **     attr: 属性节点(链表或单个节点)
  **输出参数:
  **返    回: 被创建节点的地址
  **实现描述: 
- **      属性节点放在所有属性节点后面
+ **     属性节点放在所有属性节点后面
  **注意事项: 
- **      属性节点(attr)可以有兄弟节点
+ **     属性节点(attr)可以有兄弟节点
  **作    者: # Qifeng.zou # 2013.03.01 #
  ******************************************************************************/
-xml_node_t *xml_add_attr(xml_node_t *node, const char *name, const char *value)
+xml_node_t *xml_add_attr(
+        xml_tree_t *xml, xml_node_t *node,
+        const char *name, const char *value)
 {
     xml_node_t *attr = NULL,
         *parent = node->parent,
@@ -610,13 +616,13 @@ xml_node_t *xml_add_attr(xml_node_t *node, const char *name, const char *value)
 
     if (NULL == parent)
     {
-        log_error("Please create root node at first!");
+        log_error(xml->log, "Please create root node at first!");
         return NULL;
     }
 
     if (xml_is_attr(node))
     {
-        log_error("Can't add attr for attribute node!");
+        log_error(xml->log, "Can't add attr for attribute node!");
         return NULL;
     }
 
@@ -624,7 +630,7 @@ xml_node_t *xml_add_attr(xml_node_t *node, const char *name, const char *value)
     attr = xml_node_creat_ext(XML_NODE_ATTR, name, value);
     if (NULL == attr)
     {
-        log_error("Create node failed!");
+        log_error(xml->log, "Create node failed!");
         return NULL;
     }
     
@@ -676,7 +682,7 @@ xml_node_t *xml_add_attr(xml_node_t *node, const char *name, const char *value)
 
     xml_node_sfree(attr);
     
-    log_error("Add attr node failed!");
+    log_error(xml->log, "Add attr node failed!");
     return NULL;
 }
 
@@ -684,30 +690,34 @@ xml_node_t *xml_add_attr(xml_node_t *node, const char *name, const char *value)
  **函数名称: xml_add_child
  **功    能: 给指定节点添加孩子节点
  **输入参数:
- **      node: 需要添加孩子节点的节点
- **      name: 孩子节点名
- **      value: 孩子节点值
+ **     node: 需要添加孩子节点的节点
+ **     name: 孩子节点名
+ **     value: 孩子节点值
  **输出参数:
  **返    回: 新增节点的地址
  **实现描述: 
  **注意事项: 
- **      1. 新建孩子节点
- **      2. 将孩子加入子节点链表尾
+ **     1. 新建孩子节点
+ **     2. 将孩子加入子节点链表尾
  **作    者: # Qifeng.zou # 2013.03.01 #
  ******************************************************************************/
-xml_node_t *xml_add_child(xml_node_t *node, const char *name, const char *value)
+xml_node_t *xml_add_child(
+        xml_tree_t *xml, xml_node_t *node,
+        const char *name, const char *value)
 {
     xml_node_t *child = NULL;
 
     if (xml_is_attr(node))
     {
-        log_error("Can't add child for attribute node![%s]", node->name);
+        log_error(xml->log,
+            "Can't add child for attribute node![%s]", node->name);
         return NULL;
     }
 #if defined(__XML_OCOV__)
     else if (xml_has_value(node))
     {
-        log_error("Can't add child for the node which has value![%s]", node->name);
+        log_error(xml->log,
+            "Can't add child for the node which has value![%s]", node->name);
         return NULL;
     }
 #endif /*__XML_OCOV__*/
@@ -716,7 +726,7 @@ xml_node_t *xml_add_child(xml_node_t *node, const char *name, const char *value)
     child = xml_node_creat_ext(XML_NODE_CHILD, name, value);
     if (NULL == child)
     {
-        log_error("Create node failed![%s]", name);
+        log_error(xml->log, "Create node failed![%s]", name);
         return NULL;
     }
 
@@ -753,18 +763,20 @@ xml_node_t *xml_add_child(xml_node_t *node, const char *name, const char *value)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.06.12 #
  ******************************************************************************/
-xml_node_t *xml_add_node(xml_node_t *node, const char *name, const char *value, int type)
+xml_node_t *xml_add_node(
+        xml_tree_t *xml, xml_node_t *node,
+        const char *name, const char *value, int type)
 {
     switch(type)
     {
         case XML_NODE_ATTR:
         {
-            return xml_add_attr(node, name, value);
+            return xml_add_attr(xml, node, name, value);
         }
         case XML_NODE_ROOT:
         case XML_NODE_CHILD:
         {
-            return xml_add_child(node, name, value);
+            return xml_add_child(xml, node, name, value);
         }
     }
 
@@ -775,35 +787,36 @@ xml_node_t *xml_add_node(xml_node_t *node, const char *name, const char *value, 
  **函数名称: xml_node_length
  **功    能: 计算XML树打印成XML格式字串时的长度(注: 有层次结构)
  **输入参数:
- **     xml: XML节点
+ **     xml: XML树
+ **     node: XML节点
  **输出参数:
  **返    回: XML格式字串长度
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.06.10 #
  ******************************************************************************/
-int xml_node_length(xml_node_t *node)
+int xml_node_length(xml_tree_t *xml, xml_node_t *node)
 {
     int ret=0, length=0;
     Stack_t stack;
     
     if (NULL == node)
     {
-        log_error("The node is empty!");
+        log_error(xml->log, "The node is empty!");
         return 0;
     }
     
     ret = stack_init(&stack, XML_MAX_DEPTH);
     if (XML_SUCCESS != ret)
     {
-        log_error("Stack init failed!");
+        log_error(xml->log, "Stack init failed!");
         return -1;
     }
 
-    length = _xml_node_length(node, &stack);
+    length = _xml_node_length(xml, node, &stack);
     if (length < 0)
     {
-        log_error("Get the length of node failed!");
+        log_error(xml->log, "Get the length of node failed!");
         stack_destroy(&stack);
         return -1;
     }
@@ -879,7 +892,7 @@ int xml_set_value(xml_node_t *node, const char *value)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.06.11 #
  ******************************************************************************/
-int _xml_pack_length(xml_node_t *node)
+int _xml_pack_length(xml_tree_t *xml, xml_node_t *node)
 {
     int ret = 0, length = 0, length2 = 0;
     Stack_t stack;
@@ -887,14 +900,14 @@ int _xml_pack_length(xml_node_t *node)
     
     if (NULL == node)
     {
-        log_error("The node is empty!");
+        log_error(xml->log, "The node is empty!");
         return 0;
     }
     
     ret = stack_init(&stack, XML_MAX_DEPTH);
     if (XML_SUCCESS != ret)
     {
-        log_error("Stack init failed!");
+        log_error(xml->log, "Stack init failed!");
         return -1;
     }
 
@@ -902,10 +915,10 @@ int _xml_pack_length(xml_node_t *node)
     {
         case XML_NODE_CHILD: /* 处理孩子节点 */
         {
-            length = xml_pack_node_length(node, &stack);
+            length = xml_pack_node_length(xml, node, &stack);
             if (length < 0)
             {
-                log_error("Get length of the node failed!");
+                log_error(xml->log, "Get length of the node failed!");
                 stack_destroy(&stack);
                 return -1;
             }
@@ -916,10 +929,10 @@ int _xml_pack_length(xml_node_t *node)
             child = node->firstchild;
             while (NULL != child)
             {
-                length2 = xml_pack_node_length(child, &stack);
+                length2 = xml_pack_node_length(xml, child, &stack);
                 if (length2 < 0)
                 {
-                    log_error("Get length of the node failed!");
+                    log_error(xml->log, "Get length of the node failed!");
                     stack_destroy(&stack);
                     return -1;
                 }
@@ -967,7 +980,7 @@ int xml_delete_empty(xml_tree_t *xml)
     ret = stack_init(stack, XML_MAX_DEPTH);
     if (0 != ret)
     {
-        log_error("Init stack failed!");
+        log_error(xml->log, "Init stack failed!");
         return XML_ERR_STACK;
     }
 
@@ -984,7 +997,7 @@ int xml_delete_empty(xml_tree_t *xml)
             }
 
             /* 属性节点后续无孩子节点: 说明其父节点无孩子节点, 此类父节点不应该入栈 */
-            log_error("Push is not right!");
+            log_error(xml->log, "Push is not right!");
             return XML_ERR_STACK;
         }
         /* 2. 此节点有孩子节点: 入栈, 并处理其孩子节点 */
@@ -993,7 +1006,7 @@ int xml_delete_empty(xml_tree_t *xml)
             ret = stack_push(stack, node);
             if (0 != ret)
             {
-                log_error("Push failed!");
+                log_error(xml->log, "Push failed!");
                 return XML_ERR_STACK;
             }
             

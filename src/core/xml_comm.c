@@ -4,11 +4,11 @@
  ** 文件名: xml_comm.c
  ** 版本号: 1.0
  ** 描  述: XML格式的解析
- **         解析XML格式的文件、字串: 在此主要使用的是压栈的思路，其效率比使用递
- **         归算法的处理思路效率更高.对比数据如下:
- **         1. 创建XML: 高5%~10%
- **         2. 查找效率: 高30%左右
- **         3. 释放效率: 高20%左右
+ **        解析XML格式的文件、字串: 在此主要使用的是压栈的思路，其效率比使用递
+ **        归算法的处理思路效率更高.对比数据如下:
+ **        1. 创建XML: 高5%~10%
+ **        2. 查找效率: 高30%左右
+ **        3. 释放效率: 高20%左右
  ** 作  者: # Qifeng.zou # 2013.02.18 #
  ** 修  改:
  **     1. # 增加转义字符的处理 # Qifeng.zou # 2014.01.06 #
@@ -26,24 +26,28 @@
 #include "common.h"
 #include "log.h"
 
-static int xml_parse_version(xml_fparse_t *fparse);
-static int xml_parse_note(xml_fparse_t *fparse);
+static int xml_parse_version(xml_tree_t *xml, xml_fparse_t *fparse);
+static int xml_parse_note(xml_tree_t *xml, xml_fparse_t *fparse);
 static int xml_parse_mark(xml_tree_t *xml, Stack_t *stack, xml_fparse_t *fparse);
-static int xml_parse_end(Stack_t *stack, xml_fparse_t *fparse);
+static int xml_parse_end(xml_tree_t *xml, Stack_t *stack, xml_fparse_t *fparse);
 
 static int xml_mark_get_name(xml_tree_t *xml, Stack_t *stack, xml_fparse_t *fparse);
 static int xml_mark_has_attr(xml_fparse_t *fparse);
-static int xml_mark_get_attr(Stack_t *stack, xml_fparse_t *fparse);
+static int xml_mark_get_attr(xml_tree_t *xml, Stack_t *stack, xml_fparse_t *fparse);
 static int xml_mark_is_end(xml_fparse_t *fparse);
 static int xml_mark_has_value(xml_fparse_t *fparse);
-static int xml_mark_get_value(Stack_t *stack, xml_fparse_t *fparse);
+static int xml_mark_get_value(xml_tree_t *xml, Stack_t *stack, xml_fparse_t *fparse);
 
 #if defined(__XML_ESC_PARSE__)
 static const xml_esc_t *xml_esc_get(const char *str);
 static int xml_esc_free(xml_esc_split_t *split);
 static int xml_esc_size(const xml_esc_split_t *split);
 static int xml_esc_merge(const xml_esc_split_t *sp, char *dst);
-static int xml_esc_split(const xml_esc_t *esc, const char *str, int len, xml_esc_split_t *split);
+static int xml_esc_split(
+        xml_tree_t *xml,
+        const xml_esc_t *esc,
+        const char *str, int len,
+        xml_esc_split_t *split);
 
 /* 转义字串对应的长度: 必须与xml_esc_e的顺序一致 */
 static const xml_esc_t g_xml_esc_str[] =
@@ -77,7 +81,6 @@ xml_node_t *xml_node_creat(xml_node_type_e type)
     node = (xml_node_t*)calloc(1, sizeof(xml_node_t));
     if (NULL == node)
     {
-        log_error("Calloc failed!");
         return NULL;
     }
 
@@ -108,7 +111,9 @@ xml_node_t *xml_node_creat(xml_node_type_e type)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.06.11 #
  ******************************************************************************/
-xml_node_t *xml_node_creat_ext(xml_node_type_e type, const char *name, const char *value)
+xml_node_t *xml_node_creat_ext(
+        xml_node_type_e type,
+        const char *name, const char *value)
 {
     int size=0, ret=0;
     xml_node_t *node = NULL;
@@ -117,7 +122,6 @@ xml_node_t *xml_node_creat_ext(xml_node_type_e type, const char *name, const cha
     node = (xml_node_t*)calloc(1, sizeof(xml_node_t));
     if (NULL == node)
     {
-        log_error("Calloc failed!");
         return NULL;
     }
 
@@ -154,7 +158,7 @@ xml_node_t *xml_node_creat_ext(xml_node_type_e type, const char *name, const cha
  **函数名称: xml_init
  **功    能: 初始化XML树
  **输入参数:
- **      xml: XML树
+ **     xml: XML树
  **输出参数:
  **返    回: 0: 成功  !0: 失败
  **实现描述: 
@@ -166,16 +170,13 @@ int xml_init(xml_tree_t **xml)
     *xml = (xml_tree_t*)calloc(1, sizeof(xml_tree_t));
     if (NULL == *xml)
     {
-        log_error("Calloc failed!");
         return XML_ERR_CALLOC;
     }
 
     (*xml)->root = (xml_node_t*)calloc(1, sizeof(xml_node_t));
     if (NULL == (*xml)->root)
     {
-        free(*xml);
-        *xml = NULL;
-        log_error("Calloc failed!");
+        free(*xml), *xml = NULL;
         return XML_ERR_CALLOC;
     }
 
@@ -186,8 +187,8 @@ int xml_init(xml_tree_t **xml)
  **函数名称: xml_fload
  **功    能: 将XML文件载入文件缓存
  **输入参数:
- **      fname: 文件路径名
- **      length: 获取文件长度
+ **     fname: 文件路径名
+ **     length: 获取文件长度
  **输出参数:
  **返    回: 文件缓存
  **实现描述: 
@@ -207,7 +208,6 @@ char *xml_fload(const char *fname)
     ret = stat(fname, &fstate);
     if (XML_SUCCESS != ret)
     {
-        log_error("XML file is not exist! [%s]", fname);
         return NULL;
     }
 
@@ -215,7 +215,6 @@ char *xml_fload(const char *fname)
     buff = (char *)calloc(1, (fstate.st_size+1)*sizeof(char));
     if (NULL == buff)
     {
-        log_error("Calloc failed!");
         return NULL;
     }
 
@@ -224,7 +223,6 @@ char *xml_fload(const char *fname)
     if (NULL == fp)
     {
         free(buff), buff=NULL;
-        log_error("Open file failed![%s]", fname);
         return NULL;
     }
 
@@ -235,9 +233,8 @@ char *xml_fload(const char *fname)
         num = fread(buff + offset, 1, left, fp);
         if (ferror(fp))
         {
-            fclose(fp), fp=NULL;
-            free(buff), buff=NULL;
-            log_error("Read file failed!");
+            fclose(fp), fp = NULL;
+            free(buff), buff = NULL;
             return NULL;
         }
         
@@ -245,7 +242,7 @@ char *xml_fload(const char *fname)
         offset += num;
     }
 
-    fclose(fp), fp=NULL;
+    fclose(fp), fp = NULL;
     return buff;
 }
 
@@ -253,14 +250,14 @@ char *xml_fload(const char *fname)
  **函数名称: xml_parse
  **功    能: 解析XML文件缓存
  **输入参数:
- **      xml: XML树
- **      stack: XML栈
- **      str: XML字串
+ **     xml: XML树
+ **     stack: XML栈
+ **     str: XML字串
  **输出参数:
  **返    回: 0: 成功  !0: 失败
  **实现描述: 
- **      1. 解析版本信息
- **      2. 解析XML BODY
+ **     1. 解析版本信息
+ **     2. 解析XML BODY
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
@@ -286,10 +283,10 @@ int xml_parse(xml_tree_t *xml, Stack_t *stack, const char *str)
                     case XML_VERS_FLAG:  /* "<?" 版本开始 */ 
                     {
                         /* 版本信息不用加载到XML树中 */
-                        ret = xml_parse_version(&fparse);
+                        ret = xml_parse_version(xml, &fparse);
                         if (XML_SUCCESS != ret)
                         {
-                            log_error("XML format is wrong![%-.32s] [%ld]",
+                            log_error(xml->log, "XML format is wrong![%-.32s] [%ld]",
                                 fparse.ptr, fparse.ptr-fparse.str);
                             return XML_ERR_FORMAT;
                         }
@@ -298,20 +295,20 @@ int xml_parse(xml_tree_t *xml, Stack_t *stack, const char *str)
                     case XML_NOTE_FLAG:   /* "<!--" 注释信息 */
                     {
                         /* 注释信息不用加载到XML树中 */
-                        ret = xml_parse_note(&fparse);
+                        ret = xml_parse_note(xml, &fparse);
                         if (XML_SUCCESS != ret)
                         {
-                            log_error("XML format is wrong![%-.32s]", fparse.ptr);
+                            log_error(xml->log, "XML format is wrong![%-.32s]", fparse.ptr);
                             return XML_ERR_FORMAT;
                         }
                         break;
                     }
                     case XML_END_FLAG:   /* "</" 节点结束 */
                     {
-                        ret = xml_parse_end(stack, &fparse);
+                        ret = xml_parse_end(xml, stack, &fparse);
                         if (XML_SUCCESS != ret)
                         {
-                            log_error("XML format is wrong![%-.32s] [%ld]",
+                            log_error(xml->log, "XML format is wrong![%-.32s] [%ld]",
                                 fparse.ptr, fparse.ptr-fparse.str);
                             return XML_ERR_FORMAT;
                         }
@@ -322,7 +319,7 @@ int xml_parse(xml_tree_t *xml, Stack_t *stack, const char *str)
                         ret = xml_parse_mark(xml, stack, &fparse);
                         if (XML_SUCCESS != ret)
                         {
-                            log_error("Parse XML failed! [%-.32s] [%ld]",
+                            log_error(xml->log, "Parse XML failed! [%-.32s] [%ld]",
                                 fparse.ptr, fparse.ptr-fparse.str);
                             return XML_ERR_FORMAT;
                         }
@@ -335,15 +332,15 @@ int xml_parse(xml_tree_t *xml, Stack_t *stack, const char *str)
             {
                 if (stack_isempty(stack))
                 {
-                    log_debug("Parse xml success!");
+                    log_debug(xml->log, "Parse xml success!");
                     return XML_SUCCESS;
                 }
-                log_error("Invalid format! [%-.32s] [%ld]", fparse.ptr, fparse.ptr-fparse.str);
+                log_error(xml->log, "Invalid format! [%-.32s] [%ld]", fparse.ptr, fparse.ptr-fparse.str);
                 return XML_ERR_FORMAT;
             }
             default:            /* 非法字符 */
             {
-                log_error("Invalid format! [%-.32s] [%ld]", fparse.ptr, fparse.ptr-fparse.str);
+                log_error(xml->log, "Invalid format! [%-.32s] [%ld]", fparse.ptr, fparse.ptr-fparse.str);
                 return XML_ERR_FORMAT;
             }
         }
@@ -351,7 +348,7 @@ int xml_parse(xml_tree_t *xml, Stack_t *stack, const char *str)
 
     if (!stack_isempty(stack))
     {
-        log_error("Invalid format! [%-.32s]", fparse.ptr);
+        log_error(xml->log, "Invalid format! [%-.32s]", fparse.ptr);
         return XML_ERR_FORMAT;
     }
     
@@ -362,14 +359,14 @@ int xml_parse(xml_tree_t *xml, Stack_t *stack, const char *str)
  **函数名称: xml_parse_version
  **功    能: 解析XML文件缓存版本信息
  **输入参数:
- **      fparse: 解析文件缓存信息
+ **     fparse: 解析文件缓存信息
  **输出参数:
  **返    回: 0: 成功  !0: 失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
-static int xml_parse_version(xml_fparse_t *fparse)
+static int xml_parse_version(xml_tree_t *xml, xml_fparse_t *fparse)
 {
     int ret = 0;
     char border = '"';
@@ -379,7 +376,7 @@ static int xml_parse_version(xml_fparse_t *fparse)
     ret = strncmp(fparse->ptr, XML_VERS_BEGIN, XML_VERS_BEGIN_LEN);
     if (0 != ret)
     {
-        log_error("XML format is wrong![%-.32s]", fparse->ptr);
+        log_error(xml->log, "XML format is wrong![%-.32s]", fparse->ptr);
         return XML_ERR_FORMAT;
     }
 
@@ -396,13 +393,13 @@ static int xml_parse_version(xml_fparse_t *fparse)
         while (XmlIsMarkChar(*ptr)) ptr++;
         if (ptr == fparse->ptr)
         {
-            log_error("XML format is wrong![%-.32s]", fparse->ptr);
+            log_error(xml->log, "XML format is wrong![%-.32s]", fparse->ptr);
             return XML_ERR_FORMAT;
         }
         
         if (!XmlIsEqualChar(*ptr))
         {
-            log_error("XML format is wrong![%-.32s]", fparse->ptr);
+            log_error(xml->log, "XML format is wrong![%-.32s]", fparse->ptr);
             return XML_ERR_FORMAT;
         }
         ptr++;
@@ -418,7 +415,7 @@ static int xml_parse_version(xml_fparse_t *fparse)
         }
         else                                /* 不为双/单引号，则格式错误 */
         {
-            log_error("XML format is wrong![%-.32s]", fparse->ptr);
+            log_error(xml->log, "XML format is wrong![%-.32s]", fparse->ptr);
             return XML_ERR_FORMAT;
         }
         ptr++;
@@ -431,7 +428,7 @@ static int xml_parse_version(xml_fparse_t *fparse)
 
         if (*ptr != border)
         {
-            log_error("XML format is wrong![%-.32s]", fparse->ptr);
+            log_error(xml->log, "XML format is wrong![%-.32s]", fparse->ptr);
             return XML_ERR_FORMAT;
         }
         ptr++;  /* 跳过双/单引号 */
@@ -444,14 +441,14 @@ static int xml_parse_version(xml_fparse_t *fparse)
     /* 版本信息以"?>"结束 */
     if (!XmlIsDoubtChar(*fparse->ptr))
     {
-        log_error("XML format is wrong![%-.32s]", fparse->ptr);
+        log_error(xml->log, "XML format is wrong![%-.32s]", fparse->ptr);
         return XML_ERR_FORMAT;
     }
     fparse->ptr++;  /* 跳过? */
     
     if (!XmlIsRPBrackChar(*fparse->ptr))
     {
-        log_error("XML format is wrong![%-.32s]", fparse->ptr);
+        log_error(xml->log, "XML format is wrong![%-.32s]", fparse->ptr);
         return XML_ERR_FORMAT;
     }
     
@@ -463,14 +460,14 @@ static int xml_parse_version(xml_fparse_t *fparse)
  **函数名称: xml_parse_note
  **功    能: 解析XML文件缓存注释信息
  **输入参数:
- **      fparse: 解析文件缓存信息
+ **     fparse: 解析文件缓存信息
  **输出参数:
  **返    回: 0: 成功  !0: 失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
-static int xml_parse_note(xml_fparse_t *fparse)
+static int xml_parse_note(xml_tree_t *xml, xml_fparse_t *fparse)
 {
     int ret = 0;
     const char *ptr = NULL;
@@ -479,7 +476,7 @@ static int xml_parse_note(xml_fparse_t *fparse)
     ret = strncmp(fparse->ptr, XML_NOTE_BEGIN, XML_NOTE_BEGIN_LEN);
     if (0 != ret)
     {
-        log_error("XML format is wrong![%-.32s]", fparse->ptr);
+        log_error(xml->log, "XML format is wrong![%-.32s]", fparse->ptr);
         return XML_ERR_FORMAT;
     }
 
@@ -489,7 +486,7 @@ static int xml_parse_note(xml_fparse_t *fparse)
     ptr = strstr(fparse->ptr, XML_NOTE_END1);
     if ((NULL == ptr) || (XML_NOTE_END2 != *(ptr + XML_NOTE_END1_LEN)))
     {
-        log_error("XML format is wrong![%-.32s]", fparse->ptr);
+        log_error(xml->log, "XML format is wrong![%-.32s]", fparse->ptr);
         return XML_ERR_FORMAT;
     }
 
@@ -502,8 +499,8 @@ static int xml_parse_note(xml_fparse_t *fparse)
  **函数名称: xml_mark_end
  **功    能: 标签以/>为标志结束
  **输入参数:
- **      stack: 栈
- **      fparse: 解析文件缓存信息
+ **     stack: 栈
+ **     fparse: 解析文件缓存信息
  **输出参数:
  **返    回: 0: 成功  !0: 失败
  **实现描述: 
@@ -516,17 +513,17 @@ static int xml_parse_note(xml_fparse_t *fparse)
  **函数名称: xml_parse_mark
  **功    能: 处理标签节点
  **输入参数:
- **      xml: XML树
- **      stack: XML栈
- **      fparse: 解析文件缓存信息
+ **     xml: XML树
+ **     stack: XML栈
+ **     fparse: 解析文件缓存信息
  **输出参数:
  **返    回: 0: 成功  !0: 失败
  **实现描述: 
- **      1. 提取标签名
- **      2. 提取标签各属性
- **      3. 提取标签值
+ **     1. 提取标签名
+ **     2. 提取标签各属性
+ **     3. 提取标签值
  **注意事项: 
- **      注意: 以上3个步骤是固定的，否则将会出现混乱
+ **     注意: 以上3个步骤是固定的，否则将会出现混乱
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
 static int xml_parse_mark(xml_tree_t *xml, Stack_t *stack, xml_fparse_t *fparse)
@@ -539,17 +536,17 @@ static int xml_parse_mark(xml_tree_t *xml, Stack_t *stack, xml_fparse_t *fparse)
     ret = xml_mark_get_name(xml, stack, fparse);
     if (XML_SUCCESS != ret)
     {
-        log_error("Get mark name failed!");
+        log_error(xml->log, "Get mark name failed!");
         return ret;
     }
     
     /* 2. 提取标签属性 */
     if (xml_mark_has_attr(fparse))
     {
-        ret = xml_mark_get_attr(stack, fparse);
+        ret = xml_mark_get_attr(xml, stack, fparse);
         if (XML_SUCCESS != ret)
         {
-            log_error("Get mark attr failed!");
+            log_error(xml->log, "Get mark attr failed!");
             return ret;
         }
     }
@@ -568,7 +565,7 @@ static int xml_parse_mark(xml_tree_t *xml, Stack_t *stack, xml_fparse_t *fparse)
     {
         case true:
         {
-            return xml_mark_get_value(stack, fparse);
+            return xml_mark_get_value(xml, stack, fparse);
         }
         case false:
         {
@@ -576,6 +573,7 @@ static int xml_parse_mark(xml_tree_t *xml, Stack_t *stack, xml_fparse_t *fparse)
         }
         default:
         {
+            log_error(xml->log, "XML format is wrong![%-.32s]", fparse->ptr);
             return ret;
         }
     }
@@ -587,15 +585,15 @@ static int xml_parse_mark(xml_tree_t *xml, Stack_t *stack, xml_fparse_t *fparse)
  **函数名称: xml_parse_end
  **功    能: 处理结束节点(处理</XXX>格式的结束)
  **输入参数:
- **      stack: XML栈
- **      fparse: 解析文件缓存信息
+ **     stack: XML栈
+ **     fparse: 解析文件缓存信息
  **输出参数:
  **返    回: 0: 成功  !0: 失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
-static int xml_parse_end(Stack_t *stack, xml_fparse_t *fparse)
+static int xml_parse_end(xml_tree_t *xml, Stack_t *stack, xml_fparse_t *fparse)
 {
     int ret = 0;
     size_t len = 0;
@@ -610,7 +608,7 @@ static int xml_parse_end(Stack_t *stack, xml_fparse_t *fparse)
     
     if (!XmlIsRPBrackChar(*ptr))
     {
-        log_error("XML format is wrong![%-.32s]", fparse->ptr);
+        log_error(xml->log, "XML format is wrong![%-.32s]", fparse->ptr);
         return XML_ERR_FORMAT;
     }
 
@@ -620,7 +618,7 @@ static int xml_parse_end(Stack_t *stack, xml_fparse_t *fparse)
     top = (xml_node_t*)stack_gettop(stack);
     if (NULL == top)
     {
-        log_error("Get stack top member failed!");
+        log_error(xml->log, "Get stack top member failed!");
         return XML_ERR_STACK;
     }
 
@@ -628,7 +626,7 @@ static int xml_parse_end(Stack_t *stack, xml_fparse_t *fparse)
     if (len != strlen(top->name)
         || (0 != strncmp(top->name, fparse->ptr, len)))
     {
-        log_error("Mark name is not match![%s][%-.32s]", top->name, fparse->ptr);
+        log_error(xml->log, "Mark name is not match![%s][%-.32s]", top->name, fparse->ptr);
         return XML_ERR_MARK_MISMATCH;
     }
 
@@ -636,7 +634,7 @@ static int xml_parse_end(Stack_t *stack, xml_fparse_t *fparse)
     ret = stack_pop(stack);
     if (XML_SUCCESS != ret)
     {
-        log_error("Pop failed!");
+        log_error(xml->log, "Pop failed!");
         return XML_ERR_STACK;
     }
 
@@ -650,15 +648,15 @@ static int xml_parse_end(Stack_t *stack, xml_fparse_t *fparse)
  **函数名称: xml_mark_get_name
  **功    能: 提取标签名，并入栈
  **输入参数:
- **      xml: XML树
- **      stack: XML栈
- **      fparse: 解析文件缓存信息
+ **     xml: XML树
+ **     stack: XML栈
+ **     fparse: 解析文件缓存信息
  **输出参数:
  **返    回: 0: 成功  !0: 失败
  **实现描述: 
  **注意事项: 
- **      注意: 1. 因新建节点已加入XML树中，因此在此不必去释放新节点的内存空间
- **            2. 此时tail用来记录孩子节点链表尾
+ **     注意: 1. 因新建节点已加入XML树中，因此在此不必去释放新节点的内存空间
+ **           2. 此时tail用来记录孩子节点链表尾
  **作    者: # Qifeng.zou # 2013.02.23 #
  ******************************************************************************/
 static int xml_mark_get_name(xml_tree_t *xml, Stack_t *stack, xml_fparse_t *fparse)
@@ -671,7 +669,7 @@ static int xml_mark_get_name(xml_tree_t *xml, Stack_t *stack, xml_fparse_t *fpar
     node = xml_node_creat(XML_NODE_UNKNOWN);
     if (NULL == node)
     {
-        log_error("Create xml node failed!");
+        log_error(xml->log, "Create xml node failed!");
         return XML_ERR_CREAT_NODE;
     }
 
@@ -714,7 +712,7 @@ static int xml_mark_get_name(xml_tree_t *xml, Stack_t *stack, xml_fparse_t *fpar
     /* 4.判断标签名边界是否合法 */
     if (!XmlIsMarkBorder(*ptr))
     {
-        log_error("XML format is wrong!\n[%-32.32s]", fparse->ptr);
+        log_error(xml->log, "XML format is wrong!\n[%-32.32s]", fparse->ptr);
         return XML_ERR_FORMAT;
     }
 
@@ -724,7 +722,7 @@ static int xml_mark_get_name(xml_tree_t *xml, Stack_t *stack, xml_fparse_t *fpar
     node->name = calloc(1, (len+1)*sizeof(char));
     if (NULL == node->name)
     {
-        log_error("Calloc failed!");
+        log_error(xml->log, "Calloc failed!");
         return XML_ERR_CALLOC;
     }
     strncpy(node->name, fparse->ptr, len);
@@ -733,7 +731,7 @@ static int xml_mark_get_name(xml_tree_t *xml, Stack_t *stack, xml_fparse_t *fpar
     ret = stack_push(stack, (void*)node);
     if (XML_SUCCESS != ret)
     {
-        log_error("Stack push failed!");
+        log_error(xml->log, "Stack push failed!");
         return XML_ERR_STACK;
     }
 
@@ -746,7 +744,7 @@ static int xml_mark_get_name(xml_tree_t *xml, Stack_t *stack, xml_fparse_t *fpar
  **函数名称: xml_mark_has_attr
  **功    能: 判断标签是否有属性节点
  **输入参数:
- **      fparse: 解析文件缓存信息
+ **     fparse: 解析文件缓存信息
  **输出参数:
  **返    回: 0: 成功  !0: 失败
  **实现描述: 
@@ -773,23 +771,24 @@ static int xml_mark_has_attr(xml_fparse_t *fparse)
  **函数名称: xml_mark_get_attr
  **功    能: 解析有属性的标签
  **输入参数:
- **      stack: XML栈
- **      fparse: 解析文件缓存信息
+ **     
+ **     stack: XML栈
+ **     fparse: 解析文件缓存信息
  **输出参数:
  **返    回: 0: 成功  !0: 失败
  **实现描述: 
  **注意事项: 
  **     1. 属性值可使用双引号或单引号确定属性值范围
  **     2. 转义符号的转换对应关系如下:
- **        &lt;    <    小于
- **        &gt;    >    大于
- **        &amp;   &    和号
- **        &apos;  '    单引号
- **        &quot;  "    引号
+ **       &lt;    <    小于
+ **       &gt;    >    大于
+ **       &amp;   &    和号
+ **       &apos;  '    单引号
+ **       &quot;  "    引号
  **作    者: # Qifeng.zou # 2013.02.18 #
  **修    改: # Qifeng.zou # 2014.01.06 #
  ******************************************************************************/
-static int xml_mark_get_attr(Stack_t *stack, xml_fparse_t *fparse)
+static int xml_mark_get_attr(xml_tree_t *xml, Stack_t *stack, xml_fparse_t *fparse)
 {
     char border = '"';
     xml_node_t *node = NULL, *top = NULL;
@@ -807,7 +806,7 @@ static int xml_mark_get_attr(Stack_t *stack, xml_fparse_t *fparse)
     top = (xml_node_t*)stack_gettop(stack);
     if (NULL == top)
     {
-        log_error("Get stack top failed!");
+        log_error(xml->log, "Get stack top failed!");
         return XML_ERR_STACK;
     }
 
@@ -818,7 +817,7 @@ static int xml_mark_get_attr(Stack_t *stack, xml_fparse_t *fparse)
         node = xml_node_creat(XML_NODE_ATTR);
         if (NULL == node)
         {
-            log_error("Create xml node failed!");
+            log_error(xml->log, "Create xml node failed!");
             return XML_ERR_CREAT_NODE;
         }
 
@@ -833,7 +832,7 @@ static int xml_mark_get_attr(Stack_t *stack, xml_fparse_t *fparse)
         if (NULL == node->name)
         {
             errflg = 1;
-            log_error("Calloc failed!");
+            log_error(xml->log, "Calloc failed!");
             break;
         }
 
@@ -845,7 +844,7 @@ static int xml_mark_get_attr(Stack_t *stack, xml_fparse_t *fparse)
         if (!XmlIsEqualChar(*ptr))                      /* 不为等号，则格式错误 */
         {
             errflg = 1;
-            log_error("Attribute format is incorrect![%-.32s]", fparse->ptr);
+            log_error(xml->log, "Attribute format is incorrect![%-.32s]", fparse->ptr);
             break;
         }
         ptr++;                                  /* 跳过"=" */
@@ -859,7 +858,7 @@ static int xml_mark_get_attr(Stack_t *stack, xml_fparse_t *fparse)
         else                  /* 不为 双/单 引号，则格式错误 */
         {
             errflg = 1;
-            log_error("XML format is wrong![%-.32s]", fparse->ptr);
+            log_error(xml->log, "XML format is wrong![%-.32s]", fparse->ptr);
             break;
         }
 
@@ -874,11 +873,11 @@ static int xml_mark_get_attr(Stack_t *stack, xml_fparse_t *fparse)
                 esc = xml_esc_get(ptr);
 
                 /* 对包含有转义字串的字串进行切割 */
-                ret = xml_esc_split(esc, fparse->ptr, ptr-fparse->ptr+1, &split);
+                ret = xml_esc_split(xml, esc, fparse->ptr, ptr-fparse->ptr+1, &split);
                 if (XML_SUCCESS != ret)
                 {
                     errflg = 1;
-                    log_error("Parse forwad string failed!");
+                    log_error(xml->log, "Parse forwad string failed!");
                     break;
                 }
 
@@ -895,7 +894,7 @@ static int xml_mark_get_attr(Stack_t *stack, xml_fparse_t *fparse)
         if (*ptr != border)
         {
             errflg = 1;
-            log_error("Mismatch border [%c]![%-.32s]", border, fparse->ptr);
+            log_error(xml->log, "Mismatch border [%c]![%-.32s]", border, fparse->ptr);
             break;
         }
 
@@ -912,7 +911,7 @@ static int xml_mark_get_attr(Stack_t *stack, xml_fparse_t *fparse)
             if (NULL == node->value)
             {
                 errflg = 1;
-                log_error("Alloc memory failed!");
+                log_error(xml->log, "Alloc memory failed!");
                 break;
             }
 
@@ -929,7 +928,7 @@ static int xml_mark_get_attr(Stack_t *stack, xml_fparse_t *fparse)
             if (NULL == node->value)
             {
                 errflg = 1;
-                log_error("Calloc failed!");
+                log_error(xml->log, "Calloc failed!");
                 break;
             }
 
@@ -974,7 +973,7 @@ static int xml_mark_get_attr(Stack_t *stack, xml_fparse_t *fparse)
  **函数名称: xml_mark_is_end
  **功    能: 标签是否结束 "/>"
  **输入参数:
- **      fparse: 解析文件缓存信息
+ **     fparse: 解析文件缓存信息
  **输出参数:
  **返    回: 0: 成功  !0: 失败
  **实现描述: 
@@ -1001,7 +1000,7 @@ static int xml_mark_is_end(xml_fparse_t *fparse)
  **函数名称: xml_mark_has_value
  **功    能: 是否有节点值
  **输入参数:
- **      fparse: 解析文件缓存信息
+ **     fparse: 解析文件缓存信息
  **输出参数:
  **返    回: true:有 false:无 -1: 错误格式
  **实现描述: 
@@ -1029,7 +1028,6 @@ static int xml_mark_has_value(xml_fparse_t *fparse)
         return true;
     }
     
-    log_error("XML format is wrong![%-.32s]", fparse->ptr);
     return XML_ERR_FORMAT;
 }
 
@@ -1037,15 +1035,15 @@ static int xml_mark_has_value(xml_fparse_t *fparse)
  **函数名称: xml_mark_get_value
  **功    能: 获取节点值
  **输入参数: 
- **      stack: XML栈
- **      fparse: 解析文件缓存信息
+ **     stack: XML栈
+ **     fparse: 解析文件缓存信息
  **输出参数:
  **返    回: 0: 成功  !0: 失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.02.23 #
  ******************************************************************************/
-static int xml_mark_get_value(Stack_t *stack, xml_fparse_t *fparse)
+static int xml_mark_get_value(xml_tree_t *xml, Stack_t *stack, xml_fparse_t *fparse)
 {
     int len = 0, size = 0;
     const char *p1=NULL, *p2=NULL;
@@ -1082,7 +1080,7 @@ static int xml_mark_get_value(Stack_t *stack, xml_fparse_t *fparse)
             if (XML_SUCCESS != ret)
             {
                 xml_esc_free(&split);
-                log_error("Parse forwad string failed!");
+                log_error(xml->log, "Parse forwad string failed!");
                 return XML_FAILED;
             }
             
@@ -1101,7 +1099,7 @@ static int xml_mark_get_value(Stack_t *stack, xml_fparse_t *fparse)
     #if defined(__XML_ESC_PARSE__)
         xml_esc_free(&split);
     #endif /*__XML_ESC_PARSE__*/
-        log_error("XML format is wrong! MarkName:[%s]", current->name);
+        log_error(xml->log, "XML format is wrong! MarkName:[%s]", current->name);
         return XML_ERR_FORMAT;
     }
     
@@ -1123,7 +1121,7 @@ static int xml_mark_get_value(Stack_t *stack, xml_fparse_t *fparse)
     #if defined(__XML_ESC_PARSE__)
         xml_esc_free(&split);
     #endif /*__XML_ESC_PARSE__*/
-        log_error("Calloc failed!");
+        log_error(xml->log, "Calloc failed!");
         return XML_ERR_CALLOC;
     }
 
@@ -1152,7 +1150,7 @@ static int xml_mark_get_value(Stack_t *stack, xml_fparse_t *fparse)
         return XML_SUCCESS;
     }
 
-    log_error("XML format is wrong: Node have child and value at same time!");
+    log_error(xml->log, "XML format is wrong: Node have child and value at same time!");
     return XML_ERR_FORMAT;
 #endif /*__XML_OCOV__*/
 
@@ -1163,7 +1161,7 @@ static int xml_mark_get_value(Stack_t *stack, xml_fparse_t *fparse)
  **函数名称: xml_node_sfree
  **功    能: 释放单个节点
  **输入参数:
- **      node: 需要被释放的节点
+ **     node: 需要被释放的节点
  **输出参数:
  **返    回: 0: 成功  !0: 失败
  **实现描述: 
@@ -1192,15 +1190,15 @@ int xml_node_sfree(xml_node_t *node)
  **函数名称: xml_free_next
  **功    能: 获取下一个需要被处理的节点
  **输入参数:
- **      stack: 栈
- **      current: 当前正在处理的节点
+ **     stack: 栈
+ **     current: 当前正在处理的节点
  **输出参数:
  **返    回: 下一个需要处理的节点
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.02.27 #
  ******************************************************************************/
-xml_node_t *xml_free_next(Stack_t *stack, xml_node_t *current)
+xml_node_t *xml_free_next(xml_tree_t *xml, Stack_t *stack, xml_node_t *current)
 {
     int ret = 0;
     xml_node_t *child = NULL, *top = NULL;
@@ -1221,7 +1219,7 @@ xml_node_t *xml_free_next(Stack_t *stack, xml_node_t *current)
         ret = stack_pop(stack);
         if (XML_SUCCESS != ret)
         {
-            log_error("Stack pop failed!");
+            log_error(xml->log, "Stack pop failed!");
             return NULL;
         }
         
@@ -1241,7 +1239,7 @@ xml_node_t *xml_free_next(Stack_t *stack, xml_node_t *current)
             ret = stack_pop(stack);
             if (XML_SUCCESS != ret)
             {
-                log_error("Stack pop failed!");
+                log_error(xml->log, "Stack pop failed!");
                 return NULL;
             }
             
@@ -1264,8 +1262,8 @@ xml_node_t *xml_free_next(Stack_t *stack, xml_node_t *current)
  **函数名称: xml_delete_child
  **功    能: 从孩子节点链表中删除指定的孩子节点
  **输入参数:
- **      node: 需要删除孩子节点的节点
- **      child: 孩子节点
+ **     node: 需要删除孩子节点的节点
+ **     child: 孩子节点
  **输出参数:
  **返    回: 0: 成功  !0: 失败
  **实现描述: 
@@ -1274,13 +1272,13 @@ xml_node_t *xml_free_next(Stack_t *stack, xml_node_t *current)
  **     释放时需调用函数xml_node_free()
  **作    者: # Qifeng.zou # 2013.03.02 #
  ******************************************************************************/
-int xml_delete_child(xml_node_t *node, xml_node_t *child)
+int xml_delete_child(xml_tree_t *xml, xml_node_t *node, xml_node_t *child)
 {
     xml_node_t *p1 = NULL, *p2 = NULL;
 
     if (node != child->parent)
     {
-        log_error("Parent node is not right!");
+        log_error(xml->log, "Parent node is not right!");
         return -1;
     }
     
@@ -1401,7 +1399,8 @@ int xml_delete_child(xml_node_t *node, xml_node_t *child)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.06.10 #
  ******************************************************************************/
-static xml_node_t *xml_node_next_length(Stack_t *stack, xml_node_t *node, int *length)
+static xml_node_t *xml_node_next_length(
+    xml_tree_t *xml, Stack_t *stack, xml_node_t *node, int *length)
 {
     int ret = 0, depth = 0, level = 0, length2 = 0;
     xml_node_t *top = NULL, *child = NULL;
@@ -1435,14 +1434,14 @@ static xml_node_t *xml_node_next_length(Stack_t *stack, xml_node_t *node, int *l
         if (XML_SUCCESS != ret)
         {
             *length += length2;
-            log_error("Stack pop failed!");
+            log_error(xml->log, "Stack pop failed!");
             return NULL;
         }
         
         if (stack_isempty(stack))
         {
             *length += length2;
-            log_error("Compelte fprint!");
+            log_error(xml->log, "Compelte fprint!");
             return NULL;
         }
         
@@ -1456,7 +1455,7 @@ static xml_node_t *xml_node_next_length(Stack_t *stack, xml_node_t *node, int *l
             if (XML_SUCCESS != ret)
             {
                 *length += length2;
-                log_error("Stack pop failed!");
+                log_error(xml->log, "Stack pop failed!");
                 return NULL;
             }
         
@@ -1502,7 +1501,7 @@ static xml_node_t *xml_node_next_length(Stack_t *stack, xml_node_t *node, int *l
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.06.10 #
  ******************************************************************************/
-int _xml_node_length(xml_node_t *root, Stack_t *stack)
+int _xml_node_length(xml_tree_t *xml, xml_node_t *root, Stack_t *stack)
 {
     int ret = 0, depth = 0, length=0;
     xml_node_t *node = root;
@@ -1510,7 +1509,7 @@ int _xml_node_length(xml_node_t *root, Stack_t *stack)
     depth = stack_depth(stack);
     if (0 != depth)
     {
-        log_error("Stack depth must empty. depth:[%d]", depth);
+        log_error(xml->log, "Stack depth must empty. depth:[%d]", depth);
         return XML_ERR_STACK;
     }
 
@@ -1521,7 +1520,7 @@ int _xml_node_length(xml_node_t *root, Stack_t *stack)
         ret = stack_push(stack, node);
         if (XML_SUCCESS != ret)
         {
-            log_error("Stack push failed!");
+            log_error(xml->log, "Stack push failed!");
             return XML_ERR_STACK;
         }
         
@@ -1540,7 +1539,7 @@ int _xml_node_length(xml_node_t *root, Stack_t *stack)
         xml_node_value_length(node, length);
         
         /* 5. 选择下一个处理的节点: 从父亲节点、兄弟节点、孩子节点中 */
-        node = xml_node_next_length(stack, node, &length);
+        node = xml_node_next_length(xml, stack, node, &length);
         
     }while (NULL != node);
 
@@ -1556,17 +1555,17 @@ int _xml_node_length(xml_node_t *root, Stack_t *stack)
  **函数名称: xml_esc_get
  **功    能: 获取转义字串的信息
  **输入参数:
- **      str: 以&开头的字串
+ **     str: 以&开头的字串
  **输出参数:
  **返    回: 0: 成功  !0: 失败
  **实现描述: 
  **注意事项: 
  **     转义字串的对应关系如下:
- **        &lt;    <    小于
- **        &gt;    >    大于
- **        &amp;   &    和号
- **        &apos;  '    单引号
- **        &quot;  "    引号
+ **       &lt;    <    小于
+ **       &gt;    >    大于
+ **       &amp;   &    和号
+ **       &apos;  '    单引号
+ **       &quot;  "    引号
  **作    者: # Qifeng.zou # 2014.01.06 #
  ******************************************************************************/
 static const xml_esc_t *xml_esc_get(const char *str)
@@ -1599,7 +1598,7 @@ static const xml_esc_t *xml_esc_get(const char *str)
  **函数名称: xml_esc_size
  **功    能: 获取转义切割之前字段长度之和
  **输入参数:
- **      s: 被切割后的字串链表
+ **     s: 被切割后的字串链表
  **输出参数:
  **返    回: 0: 成功  !0: 失败
  **实现描述: 
@@ -1624,7 +1623,7 @@ static int xml_esc_size(const xml_esc_split_t *sp)
  **函数名称: xml_esc_merge
  **功    能: 合并被切割转义的字串
  **输入参数:
- **      s: 被切割后的字串链表
+ **     s: 被切割后的字串链表
  **输出参数:
  **返    回: 0: 成功  !0: 失败
  **实现描述: 
@@ -1687,14 +1686,14 @@ static int xml_esc_free(xml_esc_split_t *split)
  **实现描述: 
  **注意事项: 
  **     转义字串的对应关系如下:
- **        &lt;    <    小于
- **        &gt;    >    大于
- **        &amp;   &    和号
- **        &apos;  '    单引号
- **        &quot;  "    引号
+ **       &lt;    <    小于
+ **       &gt;    >    大于
+ **       &amp;   &    和号
+ **       &apos;  '    单引号
+ **       &quot;  "    引号
  **作    者: # Qifeng.zou # 2014.01.06 #
  ******************************************************************************/
-static int xml_esc_split(const xml_esc_t *esc,
+static int xml_esc_split(xml_tree_t *xml, const xml_esc_t *esc,
     const char *str, int len, xml_esc_split_t *split)
 {
     xml_esc_node_t *node = NULL;
@@ -1702,7 +1701,7 @@ static int xml_esc_split(const xml_esc_t *esc,
     node = (xml_esc_node_t *)calloc(1, sizeof(xml_esc_node_t));
     if (NULL == node)
     {
-        log_error("Calloc memory failed!");
+        log_error(xml->log, "Calloc memory failed!");
         return XML_ERR_CALLOC;
     }
 

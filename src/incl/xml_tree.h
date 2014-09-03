@@ -2,6 +2,7 @@
 #define __XML_TREE_H__
 
 #include <stdio.h>
+#include "log.h"
 
 /* 如需开启一下功能宏，请将其加入到编译选项中 */
 /* 功能宏: 节点只有孩子节点或只有数值(Only child or value) */
@@ -79,6 +80,7 @@ typedef struct _xml_node_t
 typedef struct
 {
     xml_node_t *root;           /* 根节点: 注意root的第一个子节点才是真正的根节点 */
+    log_cycle_t *log;           /* 日志对象 */
 }xml_tree_t;
 
 /* 对外的接口 */
@@ -89,38 +91,45 @@ typedef struct
 #define xml_value(node) (node->value)
 
 xml_node_t *xml_node_creat(xml_node_type_e type);
-xml_node_t *xml_node_creat_ext(xml_node_type_e type, const char *name, const char *value);
-int xml_node_free(xml_node_t *node);
+xml_node_t *xml_node_creat_ext(
+        xml_node_type_e type, const char *name, const char *value);
+int xml_node_free(xml_tree_t *xml, xml_node_t *node);
 
-xml_tree_t *xml_creat(const char *fname);
-xml_tree_t *xml_screat(const char *str);
-xml_tree_t *xml_screat_ext(const char *str, int length);
+xml_tree_t *xml_creat(log_cycle_t *log, const char *fname);
+xml_tree_t *xml_screat(log_cycle_t *log, const char *str);
+xml_tree_t *xml_screat_ext(log_cycle_t *log, const char *str, int length);
 
 int xml_fwrite(xml_tree_t *xml, const char *fname);
 int xml_fprint(xml_tree_t *xml, FILE *fp);
 int xml_sprint(xml_tree_t *xml, char *str);
 int xml_spack(xml_tree_t *xml, char *str);
 
-xml_node_t *xml_rsearch(xml_node_t *curr, const char *path);
-#define xml_search(xml, path) xml_rsearch(xml->root, path)
+xml_node_t *xml_rsearch(xml_tree_t *xml, xml_node_t *curr, const char *path);
+#define xml_search(xml, path) xml_rsearch(xml, xml->root, path)
 
-xml_node_t *xml_add_node(xml_node_t *node, const char *name, const char *value, int type);
-xml_node_t *xml_add_attr(xml_node_t *node, const char *name, const char *value);
-xml_node_t *xml_add_child(xml_node_t *node, const char *name, const char *value);
-#define xml_add_brother(node, name, value) \
-            xml_add_node((node)->parent, name, value, node->type)
-int xml_delete_child(xml_node_t *node, xml_node_t *child);
-#define xml_delete_brother(node, brother) \
-            xml_delete_child((node)->parent, brother)
+xml_node_t *xml_add_node(
+        xml_tree_t *xml, xml_node_t *node,
+        const char *name, const char *value, int type);
+xml_node_t *xml_add_attr(
+        xml_tree_t *xml, xml_node_t *node,
+        const char *name, const char *value);
+xml_node_t *xml_add_child(
+        xml_tree_t *xml, xml_node_t *node,
+        const char *name, const char *value);
+#define xml_add_brother(xml, node, name, value) \
+    xml_add_node(xml, (node)->parent, name, value, node->type)
+int xml_delete_child(xml_tree_t *xml, xml_node_t *node, xml_node_t *child);
+#define xml_delete_brother(xml, node, brother) \
+    xml_delete_child(xml, (node)->parent, brother)
 int xml_delete_empty(xml_tree_t *xml);
 
 int xml_set_value(xml_node_t *node, const char *value);
-int xml_node_length(xml_node_t *node);
-#define xml_tree_length(xml) xml_node_length(xml->root->firstchild)
+int xml_node_length(xml_tree_t *xml, xml_node_t *node);
+#define xml_tree_length(xml) xml_node_length(xml, xml->root->firstchild)
 
-extern int _xml_pack_length(xml_node_t *node);
-#define xml_pack_length(xml) _xml_pack_length(xml->root)
+extern int _xml_pack_length(xml_tree_t *xml, xml_node_t *node);
+#define xml_pack_length(xml) _xml_pack_length(xml, xml->root)
 
-#define xml_destroy(xml) {xml_node_free(xml->root); free(xml); xml=NULL;}
+#define xml_destroy(xml) {xml_node_free(xml, xml->root); free(xml); xml=NULL;}
 
 #endif /*__XML_TREE_H__*/
