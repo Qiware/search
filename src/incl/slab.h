@@ -7,6 +7,8 @@
 #include <memory.h>
 #include <stdint.h>
 
+#include "log.h"
+
 typedef struct _slab_page_t
 {
     uintptr_t slab;
@@ -27,9 +29,10 @@ typedef struct
 
     void *data;
     void *addr;
+    log_cycle_t *log;
 } slab_pool_t;
 
-void slab_init(slab_pool_t *pool);
+void slab_init(slab_pool_t *pool, log_cycle_t *log);
 void *slab_alloc(slab_pool_t *pool, size_t size);
 void slab_free(slab_pool_t *pool, void *p);
 
@@ -46,9 +49,10 @@ typedef struct
     int count;
     size_t inc_size;
     eslab_node_t *node;
+    log_cycle_t *log;
 }eslab_pool_t;
 
-int eslab_init(eslab_pool_t *spl, size_t size);
+int eslab_init(eslab_pool_t *spl, size_t size, log_cycle_t *log);
 int eslab_destroy(eslab_pool_t *spl);
 void *eslab_alloc(eslab_pool_t *spl, size_t size);
 int eslab_free(eslab_pool_t *spl, void *p);

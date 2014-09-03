@@ -958,7 +958,7 @@ static int xml_mark_get_attr(xml_tree_t *xml, Stack_t *stack, xml_fparse_t *fpar
 
     if (1 == errflg)         /* 防止内存泄漏 */
     {
-        xml_node_free(node);
+        xml_node_free(xml, node);
         node = NULL;
         return XML_ERR_GET_ATTR;
     }

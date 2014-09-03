@@ -82,13 +82,15 @@ static uint32_t slab_page_shift = SLAB_PAGE_SHIFT;
  **注意事项: 
  **作    者: # Nginx # YYYY.MM.DD #
  ******************************************************************************/
-void slab_init(slab_pool_t *pool)
+void slab_init(slab_pool_t *pool, log_cycle_t *log)
 {
     u_char *p = NULL;
     size_t size = 0;
     int m = 0;
     uint32_t i = 0, n = 0, pages = 0, shift = 0;
     slab_page_t *slots = NULL;
+
+    pool->log = log;
 
     /* STUB */
     if (0 == slab_get_max_size())
@@ -146,7 +148,7 @@ void slab_init(slab_pool_t *pool)
         pool->pages->slab = pages;
     }
 
-    log_info("start:%p end:%p size:%d pages:%d\n",
+    log_info(pool->log, "start:%p end:%p size:%d pages:%d\n",
         pool->start, pool->end, pool->end - pool->start, pages);
 }
 
@@ -450,7 +452,7 @@ void slab_free(slab_pool_t *pool, void *p)
 
     if ((u_char *) p < pool->start || (u_char *) p > pool->end)
     {
-        log_error("Outside of pool. [%p]", p);
+        log_error(pool->log, "Outside of pool. [%p]", p);
         goto fail;
     }
 
@@ -615,13 +617,13 @@ void slab_free(slab_pool_t *pool, void *p)
 
             if (SLAB_PAGE_FREE == slab)
             {
-                log_error("Page is already free");
+                log_error(pool->log, "Page is already free");
                 goto fail;
             }
 
             if (SLAB_PAGE_BUSY == slab)
             {
-                log_error("Pointer to wrong page");
+                log_error(pool->log, "Pointer to wrong page");
                 goto fail;
             }
 
@@ -648,13 +650,13 @@ done:
 
 wrong_chunk:
 
-    log_error("Pointer to wrong chunk");
+    log_error(pool->log, "Pointer to wrong chunk");
 
     goto fail;
 
 chunk_already_free:
 
-    log_error("Chunk is already free");
+    log_error(pool->log, "Chunk is already free");
 
 fail:
 
@@ -721,7 +723,7 @@ static slab_page_t *slab_alloc_pages(slab_pool_t *pool, uint32_t pages)
         }
     }
 
-    log_error("Not enough memory!");
+    log_error(pool->log, "Not enough memory!");
 
     return NULL;
 }
@@ -791,18 +793,19 @@ static slab_pool_t *eslab_add(eslab_pool_t *eslab, size_t size);
  ** Note : 
  **Author: # Qifeng.zou # 2013.08.15 #
  ******************************************************************************/
-int eslab_init(eslab_pool_t *eslab, size_t size)
+int eslab_init(eslab_pool_t *eslab, size_t size, log_cycle_t *log)
 {
     slab_pool_t *slab = NULL;
     
     eslab_destroy(eslab);
 
     eslab->inc_size = size;
+    eslab->log = log;
     
     slab = eslab_add(eslab, size);
     if (NULL == slab)
     {
-        log_error("Add slab node failed!");
+        log_error(eslab->log, "Add slab node failed!");
         return -1;
     }
     return 0;
@@ -856,7 +859,7 @@ static slab_pool_t *eslab_add(eslab_pool_t *eslab, size_t size)
     node = calloc(1, sizeof(eslab_node_t));
     if (NULL == node)
     {
-        log_error("Alloc memory failed!");
+        log_error(eslab->log, "Alloc memory failed!");
         return NULL;
     }
 
@@ -865,13 +868,13 @@ static slab_pool_t *eslab_add(eslab_pool_t *eslab, size_t size)
     if (NULL == addr)
     {
         free(node), node=NULL;
-        log_error("Alloc memory failed!");
+        log_error(eslab->log, "Alloc memory failed!");
         return NULL;
     }
 
     node->sp = (slab_pool_t *)addr;
     node->sp->end = addr + size;
-    slab_init(node->sp);
+    slab_init(node->sp, eslab->log);
 
     /* 3. Add node into link */
     next = eslab->node;
@@ -917,7 +920,7 @@ void *eslab_alloc(eslab_pool_t *eslab, size_t size)
         count++;
     }
 
-    log_info("Not enough memory! [%d]", count);
+    log_info(eslab->log, "Not enough memory! [%d]", count);
 
     /* 2. Add new slab node into link */
     block = size / eslab->inc_size;
@@ -931,9 +934,11 @@ void *eslab_alloc(eslab_pool_t *eslab, size_t size)
     slab = eslab_add(eslab, alloc_size);
     if (NULL == slab)
     {
-        log_error("Add slab node failed!");
+        log_error(eslab->log, "Add slab node failed!");
         return NULL;
     }
+
+    slab->log = eslab->log;
 
     /* 3. Alloc memory from new slab pool */
     return slab_alloc(slab, size);
