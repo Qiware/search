@@ -13,30 +13,12 @@
 
 #include "log.h"
 #include "common.h"
+#include "log_svr.h"
 #include "xdo_lock.h"
 #include "xdo_unistd.h"
 #include "thread_pool.h"
 
 #if defined(__ASYNC_LOG__)
-
-/* 日志服务 */
-typedef struct
-{
-    int fd;                         /* 文件描述符 */
-    void *addr;                     /* 共享内存首地址 */
-    thread_pool_t *pool;            /* 内存池对象 */
-}log_svr_t;
-
-/* 服务进程互斥锁路径 */
-#define LOG_SVR_PROC_LOCK  ".log_svr.lck"
-#define log_svr_proc_lock_path(path, size) \
-    snprintf(path, size, "../tmp/%s",  LOG_SVR_PROC_LOCK)
-#define log_svr_proc_trylock(fd) proc_try_wrlock(fd)
-
-/* 服务进程日志文件路径 */
-#define LOG_SVR_LOG_NAME   "log_svr.log"
-#define log_svr_log_path(path, size) \
-    snprintf(path, size, "../logs/%s", LOG_SVR_LOG_NAME)
 
 static int log_svr_init(log_svr_t *logsvr);
 static void *log_svr_timeout_routine(void *args);
