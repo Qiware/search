@@ -66,5 +66,3 @@ int _flock(int32_t fd, int type, int whence, int offset, int len)
     
     return fcntl(fd, F_SETLKW, &fl);
 }
-
-

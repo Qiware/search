@@ -338,5 +338,3 @@ int xdo_block_recv(int fd, void *addr, size_t size, int timeout_sec)
         return 0; /* Done */
     }
 }
-
-

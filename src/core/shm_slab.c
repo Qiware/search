@@ -1,37 +1,37 @@
 /******************************************************************************
  ** Coypright(C) 2013-2014 Xundao technology Co., Ltd
  **
- ** ÎÄ¼şÃû: shm_slab.c
- ** °æ±¾ºÅ: 1.0
- ** Ãè  Êö: ¹²ÏíÄÚ´æ°æµÄSLABËã·¨»úÖÆ
- **         ¸ÃËã·¨Ö÷ÒªÓÃÓÚ¹²ÏíÄÚ´æµÄ·ÖÅä¡¢¹ÜÀíºÍ»ØÊÕµÄ´¦Àí¡£
- ** ×÷  Õß: # Qifeng.zou # 2013.07.12 #
+ ** æ–‡ä»¶å: shm_slab.c
+ ** ç‰ˆæœ¬å·: 1.0
+ ** æ  è¿°: å…±äº«å†…å­˜ç‰ˆçš„SLABç®—æ³•æœºåˆ¶
+ **         è¯¥ç®—æ³•ä¸»è¦ç”¨äºå…±äº«å†…å­˜çš„åˆ†é…ã€ç®¡ç†å’Œå›æ”¶çš„å¤„ç†ã€‚
+ ** ä½œ  è€…: # Qifeng.zou # 2013.07.12 #
  ******************************************************************************/
 #include "shm_slab.h"
 #include "log.h"
 
-/* ºê¶¨Òå */
-#define SHM_SLAB_PAGE_SIZE  (4096)  /* Ò³³ß´ç */
-#define SHM_SLAB_MIN_SIZE   (8)     /* ×îĞ¡·ÖÅä³ß´ç */
-#define SHM_SLAB_MIN_SHIFT  (3)     /* ×îĞ¡·ÖÅä³ß´çµÄÎ»ÒÆ */
-#define SHM_SLAB_BITMAP_BITS (32)   /* Î»Í¼ÊıÎ» */
-#define SHM_SLAB_BITMAP_SHIFT (5)   /* Î»Í¼ÊıÎ»¶ÔÓ¦µÄÎ»ÒÆ */
+/* å®å®šä¹‰ */
+#define SHM_SLAB_PAGE_SIZE  (4096)  /* é¡µå°ºå¯¸ */
+#define SHM_SLAB_MIN_SIZE   (8)     /* æœ€å°åˆ†é…å°ºå¯¸ */
+#define SHM_SLAB_MIN_SHIFT  (3)     /* æœ€å°åˆ†é…å°ºå¯¸çš„ä½ç§» */
+#define SHM_SLAB_BITMAP_BITS (32)   /* ä½å›¾æ•°ä½ */
+#define SHM_SLAB_BITMAP_SHIFT (5)   /* ä½å›¾æ•°ä½å¯¹åº”çš„ä½ç§» */
 
-#define SHM_SLAB_NULL_PAGE  (-1)    /* ¿ÕÒ³ */
-#define SHM_SLAB_FREE_PAGE  (-2)    /* FREEÁ´±í */
-#define SHM_SLAB_BUSY_BITMAP  (0xffffffff)  /* ÕûÒ³ÄÚ´æ¶¼ÒÑ±»Õ¼ÓÃ */
+#define SHM_SLAB_NULL_PAGE  (-1)    /* ç©ºé¡µ */
+#define SHM_SLAB_FREE_PAGE  (-2)    /* FREEé“¾è¡¨ */
+#define SHM_SLAB_BUSY_BITMAP  (0xffffffff)  /* æ•´é¡µå†…å­˜éƒ½å·²è¢«å ç”¨ */
 
 #define shm_slab_is_busy_bitmap(bitmap) (SHM_SLAB_BUSY_BITMAP == (bitmap))
 #define shm_slab_is_null_page(page_idx) (SHM_SLAB_NULL_PAGE == (page_idx))
 #define shm_slab_is_free_page(page_idx) (SHM_SLAB_FREE_PAGE == (page_idx))
 
-/* ¾²Ì¬È«¾Ö±äÁ¿ */
-static size_t g_shm_slab_page_size = 0; /* Ã¿Ò»Ò³ÄÚ´æµÄ´óĞ¡ */
-static int g_shm_slab_page_shift = 0;   /* Ã¿Ò»Ò³ÄÚ´æ´óĞ¡¶ÔÓ¦µÄÎ»ÒÆ */
-static size_t g_shm_slab_max_size = 0;  /* SLOT×î´óÄÚ´æ·ÖÅäµ¥Ôª */
-static int g_shm_slab_max_shift = 0;    /* SLOT×î´óÄÚ´æ·ÖÅäµ¥Ôª¶ÔÓ¦µÄÎ»ÒÆ */
-static size_t g_shm_slab_exact_size = 0;/* SLOT¾«È·ÄÚ´æ·ÖÅäµ¥Ôª */
-static int g_shm_slab_exact_shift = 0;  /* SLOT¾«È·ÄÚ´æ·ÖÅäµ¥Ôª¶ÔÓ¦µÄÎ»ÒÆ */
+/* é™æ€å…¨å±€å˜é‡ */
+static size_t g_shm_slab_page_size = 0; /* æ¯ä¸€é¡µå†…å­˜çš„å¤§å° */
+static int g_shm_slab_page_shift = 0;   /* æ¯ä¸€é¡µå†…å­˜å¤§å°å¯¹åº”çš„ä½ç§» */
+static size_t g_shm_slab_max_size = 0;  /* SLOTæœ€å¤§å†…å­˜åˆ†é…å•å…ƒ */
+static int g_shm_slab_max_shift = 0;    /* SLOTæœ€å¤§å†…å­˜åˆ†é…å•å…ƒå¯¹åº”çš„ä½ç§» */
+static size_t g_shm_slab_exact_size = 0;/* SLOTç²¾ç¡®å†…å­˜åˆ†é…å•å…ƒ */
+static int g_shm_slab_exact_shift = 0;  /* SLOTç²¾ç¡®å†…å­˜åˆ†é…å•å…ƒå¯¹åº”çš„ä½ç§» */
 
 #define shm_slab_page_size() (g_shm_slab_page_size)
 #define shm_slab_page_shift() (g_shm_slab_page_shift)
@@ -48,7 +48,7 @@ static int g_shm_slab_exact_shift = 0;  /* SLOT¾«È·ÄÚ´æ·ÖÅäµ¥Ôª¶ÔÓ¦µÄÎ»ÒÆ */
 #define shm_slab_set_exact_shift(shift) (g_shm_slab_exact_shift = (shift))
 
 
-/* ¾²Ì¬º¯ÊıÉùÃ÷ */
+/* é™æ€å‡½æ•°å£°æ˜ */
 static void shm_slab_init_param(void);
 static shm_slab_page_t *shm_slab_alloc_pages(
         shm_slab_pool_t *pool, int pages, log_cycle_t *log);
@@ -57,10 +57,10 @@ static void *shm_slab_alloc_slot(
         shm_slab_pool_t *pool, size_t size, log_cycle_t *log);
 static void *_shm_slab_alloc_slot(
         shm_slab_pool_t *pool, int slot_idx, int type, log_cycle_t *log);
-#if defined(__XDT_NOT_USED__)
+#if defined(__XDO_NOT_USED__)
 static int shm_slab_slot_add_page(
     shm_slab_pool_t *pool, shm_slab_slot_t *slot, shm_slab_page_t *page);
-#endif /*__XDT_NOT_USED__*/
+#endif /*__XDO_NOT_USED__*/
 static int shm_slab_slot_remove_page(
     shm_slab_pool_t *pool, shm_slab_slot_t *slot,
     shm_slab_page_t *page, log_cycle_t *log);
@@ -85,7 +85,7 @@ static int shm_slab_slot_remove_page(
  **     |          |              |            |                              |
  **    addr       slot           page         data                           end
  **Note  : 
- **     addr: ÎªÆ«ÒÆÁ¿µÄ»ùÖ·
+ **     addr: ä¸ºåç§»é‡çš„åŸºå€
  **Author: # Qifeng.zou # 2013.07.12 #
  ******************************************************************************/
 int shm_slab_init(shm_slab_pool_t *pool, log_cycle_t *log)
@@ -468,10 +468,10 @@ static void *_shm_slab_alloc_slot(
     data = addr + pool->data_offset;
     start_page = (shm_slab_page_t *)(addr + pool->page_offset);
     
-    shift = slot_idx + pool->min_shift;			/* SIZEµÄÎ»ÒÆ */
-    bits = (shm_slab_page_size() >> shift);		/* ¼ÆËãĞèÒª¶àÉÙbitÄÜ±íÊ¾slotÕ¼ÓÃÇé¿ö */
-    exp_bitmaps = (bits >> SHM_SLAB_BITMAP_SHIFT) - 1;	/* (1).µ±>0Ê±£¬±íÊ¾ĞèÒªÀ©Õ¹Î»Í¼
-                                                           (2).µ±<=0Ê±£¬±íÊ¾²»ĞèÒªÀ©Õ¹Î»Í¼ */
+    shift = slot_idx + pool->min_shift;			/* SIZEçš„ä½ç§» */
+    bits = (shm_slab_page_size() >> shift);		/* è®¡ç®—éœ€è¦å¤šå°‘bitèƒ½è¡¨ç¤ºslotå ç”¨æƒ…å†µ */
+    exp_bitmaps = (bits >> SHM_SLAB_BITMAP_SHIFT) - 1;	/* (1).å½“>0æ—¶ï¼Œè¡¨ç¤ºéœ€è¦æ‰©å±•ä½å›¾
+                                                           (2).å½“<=0æ—¶ï¼Œè¡¨ç¤ºä¸éœ€è¦æ‰©å±•ä½å›¾ */
 
     /* 1. Get address of page */
     slot = (shm_slab_slot_t *)(addr + pool->slot_offset);
@@ -491,7 +491,7 @@ static void *_shm_slab_alloc_slot(
         /* Set bitmap */
         if(exp_bitmaps > 0)
         {
-            /* 1. ĞèÒªÀ©Õ¹Î»Í¼: ½«±»ÓÃÎªÀ©Õ¹Î»Í¼µÄSLOTµÄ¶ÔÓ¦bitÖÃ1 */
+            /* 1. éœ€è¦æ‰©å±•ä½å›¾: å°†è¢«ç”¨ä¸ºæ‰©å±•ä½å›¾çš„SLOTçš„å¯¹åº”bitç½®1 */
             for(i=0; i<exp_bitmaps; i++)
             {
                 page->bitmap |= (1 << i);
@@ -499,7 +499,7 @@ static void *_shm_slab_alloc_slot(
         }
         else
         {
-            /* 2. ²»ĞèÒªÀ©Õ¹Î»Í¼: ½«²»´æÔÚµÄSLOT¶ÔÓ¦µÄbitÖÃ1 */
+            /* 2. ä¸éœ€è¦æ‰©å±•ä½å›¾: å°†ä¸å­˜åœ¨çš„SLOTå¯¹åº”çš„bitç½®1 */
             for(i=bits; i<SHM_SLAB_BITMAP_BITS; i++)
             {
                  page->bitmap |= (1 << i);
@@ -534,7 +534,7 @@ static void *_shm_slab_alloc_slot(
         }
         else if(exp_bitmaps > 0)
         {
-            /* ¿É·ÖÅä¿Õ¼äµÄÇ°¼¸¸öintÓÃ×÷Î»Í¼: À©Õ¹Î»Í¼ */
+            /* å¯åˆ†é…ç©ºé—´çš„å‰å‡ ä¸ªintç”¨ä½œä½å›¾: æ‰©å±•ä½å›¾ */
             bitmap = (int32_t *)(data + (page->index << shm_slab_page_shift()));
             for(idx=0; idx<exp_bitmaps; idx++)
             {
@@ -580,14 +580,14 @@ static void *_shm_slab_alloc_slot(
             {
                 for(i=0; i<exp_bitmaps; i++)
                 {
-                    page->bitmap |= (1 << i);   /* µÍÎ»ÖÃ1 */
+                    page->bitmap |= (1 << i);   /* ä½ä½ç½®1 */
                 }
             }
             else
             {
                 for(i=bits; i<SHM_SLAB_BITMAP_BITS; i++)
                 {
-                    page->bitmap |= (1 << i);   /* ¸ßÎ»ÖÃ1 */
+                    page->bitmap |= (1 << i);   /* é«˜ä½ç½®1 */
                 }
             }
             page->rbitmap = ~(page->bitmap);
@@ -648,7 +648,7 @@ static int shm_slab_free_pages(shm_slab_pool_t *pool, shm_slab_page_t *page)
     return 0;
 }
 
-#if defined(__XDT_NOT_USED__)
+#if defined(__XDO_NOT_USED__)
 /******************************************************************************
  **Name  : shm_slab_slot_add_page
  **Func  : Add page into slot link.
@@ -686,7 +686,7 @@ static int shm_slab_slot_add_page(
 
     return 0;
 }
-#endif /*__XDT_NOT_USED__*/
+#endif /*__XDO_NOT_USED__*/
 
 /******************************************************************************
  **Name  : shm_slab_slot_remove_page

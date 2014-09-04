@@ -10,53 +10,53 @@
 
 #include "log.h"
 
-/* ÄÚ´æ·ÖÅä·½Ê½ */
+/* å†…å­˜åˆ†é…æ–¹å¼ */
 typedef enum
 {
-    SHM_SLAB_ALLOC_UNKNOWN, /* Î´Öª·½Ê½ */
-    SHM_SLAB_ALLOC_SMALL,   /* Ğ¡ÓÚ128×Ö½Ú */
-    SHM_SLAB_ALLOC_EXACT,   /* µÈÓÚ128×Ö½Ú */
-    SHM_SLAB_ALLOC_LARGE,   /* ´óÓÚ128×Ö½Ú£¬Ğ¡ÓÚ2048×Ö½Ú */
-    SHM_SLAB_ALLOC_PAGES,   /* °´ÕûÒ³·ÖÅä */
+    SHM_SLAB_ALLOC_UNKNOWN, /* æœªçŸ¥æ–¹å¼ */
+    SHM_SLAB_ALLOC_SMALL,   /* å°äº128å­—èŠ‚ */
+    SHM_SLAB_ALLOC_EXACT,   /* ç­‰äº128å­—èŠ‚ */
+    SHM_SLAB_ALLOC_LARGE,   /* å¤§äº128å­—èŠ‚ï¼Œå°äº2048å­—èŠ‚ */
+    SHM_SLAB_ALLOC_PAGES,   /* æŒ‰æ•´é¡µåˆ†é… */
 
     SHM_SLAB_ALLOC_TOTAL
 }SHM_SLAB_ALLOC_TYPE;
 
-/* SLOT¹ÜÀí */
+/* SLOTç®¡ç† */
 typedef struct
 {
-    uint32_t index;         /* slotË÷Òı */
-    int page_idx;       /* slotÁ´±íµÄÒ³Ë÷Òı */
+    uint32_t index;         /* slotç´¢å¼• */
+    int page_idx;       /* sloté“¾è¡¨çš„é¡µç´¢å¼• */
 }shm_slab_slot_t;
 
-/* PAGE¹ÜÀí */
+/* PAGEç®¡ç† */
 typedef struct
 {
-    uint32_t index;         /* Ò³Ë÷Òı */
-    uint32_t pages;         /* ¼ÇÂ¼Ò³Êı×éµÄÒ³Êı */
-    uint32_t shift:16;      /* Ò³·ÖÅäµÄ´óĞ¡¶ÔÓ¦µÄÎ»ÒÆ */
-    uint32_t type:16;       /* Ò³·ÖÅäµÄÀàĞÍ: È¡Öµ·¶Î§SHM_SLAB_ALLOC_TYPE */
-    uint32_t bitmap;        /* Ò³µÄÊ¹ÓÃÎ»Í¼ */
-    uint32_t rbitmap;       /* ³õÊ¼Î»Í¼µÄÈ¡·´Öµ */
-    int next_idx;       /* ÏÂÒ»Ò³µÄË÷Òı */
-    int prev_idx;       /* ÉÏÒ»Ò³µÄË÷Òı */
+    uint32_t index;         /* é¡µç´¢å¼• */
+    uint32_t pages;         /* è®°å½•é¡µæ•°ç»„çš„é¡µæ•° */
+    uint32_t shift:16;      /* é¡µåˆ†é…çš„å¤§å°å¯¹åº”çš„ä½ç§» */
+    uint32_t type:16;       /* é¡µåˆ†é…çš„ç±»å‹: å–å€¼èŒƒå›´SHM_SLAB_ALLOC_TYPE */
+    uint32_t bitmap;        /* é¡µçš„ä½¿ç”¨ä½å›¾ */
+    uint32_t rbitmap;       /* åˆå§‹ä½å›¾çš„å–åå€¼ */
+    int next_idx;       /* ä¸‹ä¸€é¡µçš„ç´¢å¼• */
+    int prev_idx;       /* ä¸Šä¸€é¡µçš„ç´¢å¼• */
 }shm_slab_page_t;
 
 typedef struct
 {
-    size_t pool_size;       /* ÄÚ´æ¿Õ¼ä×Ü´óĞ¡ */
+    size_t pool_size;       /* å†…å­˜ç©ºé—´æ€»å¤§å° */
     
-    int min_size;       /* ×îĞ¡·ÖÅäµ¥Ôª */
-    int min_shift;      /* ×îĞ¡·ÖÅäµ¥ÔªµÄÎ»ÒÆ */
+    int min_size;       /* æœ€å°åˆ†é…å•å…ƒ */
+    int min_shift;      /* æœ€å°åˆ†é…å•å…ƒçš„ä½ç§» */
 
-    size_t base_offset;     /* »ù´¡Æ«ÒÆÁ¿ */
-    size_t data_offset;     /* ¿É·ÖÅä¿Õ¼äµÄÆğÊ¼Æ«ÒÆÁ¿ */
-    size_t end_offset;      /* ¿É·ÖÅä¿Õ¼äµÄ½áÊøÆ«ÒÆÁ¿ */
+    size_t base_offset;     /* åŸºç¡€åç§»é‡ */
+    size_t data_offset;     /* å¯åˆ†é…ç©ºé—´çš„èµ·å§‹åç§»é‡ */
+    size_t end_offset;      /* å¯åˆ†é…ç©ºé—´çš„ç»“æŸåç§»é‡ */
 
-    size_t slot_offset;     /* SLOTÊı×éµÄÆğÊ¼Æ«ÒÆÁ¿ */
-    size_t page_offset;     /* PAGEÊı×éµÄÆğÊ¼Æ«ÒÆÁ¿ */
+    size_t slot_offset;     /* SLOTæ•°ç»„çš„èµ·å§‹åç§»é‡ */
+    size_t page_offset;     /* PAGEæ•°ç»„çš„èµ·å§‹åç§»é‡ */
 	
-    shm_slab_page_t free;   /* ¿ÕÏĞÒ³Á´±í */
+    shm_slab_page_t free;   /* ç©ºé—²é¡µé“¾è¡¨ */
 }shm_slab_pool_t;
 
 int32_t shm_slab_init(shm_slab_pool_t *pool, log_cycle_t *log);

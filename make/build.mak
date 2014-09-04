@@ -13,11 +13,12 @@ CC = gcc
 CFLAGS = -Wall -g -fPIC -O0\
 			-Werror \
 			-Wshadow \
-			-Wcast-qual \
 			-Winline \
-			-Waggregate-return \
+			-Wcast-qual \
 			-Wunreachable-code \
-			-Wcast-align \
+			-Waggregate-return \
+			-Wcast-align  \
 			-Wredundant-decls
+
 CFLAGS += $(patsubst %, -D%, $(OPTIONS))
 LFLAGS = -Wall -g -fPIC -shared  -s

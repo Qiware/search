@@ -36,14 +36,14 @@ void slab_init(slab_pool_t *pool, log_cycle_t *log);
 void *slab_alloc(slab_pool_t *pool, size_t size);
 void slab_free(slab_pool_t *pool, void *p);
 
-/* 可扩展SLAB节点 */
+/* 鍙墿灞昐LAB鑺傜偣 */
 typedef struct _eslab_node_t
 {
     slab_pool_t *sp;
     struct _eslab_node_t *next;
 }eslab_node_t;
 
-/* 可扩展SLAB */
+/* 鍙墿灞昐LAB */
 typedef struct
 {
     int count;
