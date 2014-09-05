@@ -239,6 +239,7 @@ log_cycle_t *log_get_cycle(void)
  **返    回: 日志级别
  **实现描述: 
  **注意事项: 
+ **     当级别匹配失败时，默认情况下将开启所有日志级别.
  **作    者: # Qifeng.zou # 2014.09.03 #
  ******************************************************************************/
 int log_get_level(const char *level_str)
@@ -274,13 +275,13 @@ int log_get_level(const char *level_str)
         return level|LOG_LEVEL_DEBUG;
     }
 
-    level |= LOG_LEVEL_TRACE;
+    level |= LOG_LEVEL_DEBUG;
     if (!strcasecmp(level_str, LOG_LEVEL_TRACE_STR))
     {
         return level|LOG_LEVEL_TRACE;
     }
 
-    return 0;
+    return level|LOG_LEVEL_TRACE;
 }
 
 /******************************************************************************
