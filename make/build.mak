@@ -21,4 +21,4 @@ CFLAGS = -Wall -g -fPIC -O0\
 			-Wredundant-decls
 
 CFLAGS += $(patsubst %, -D%, $(OPTIONS))
-LFLAGS = -Wall -g -fPIC -shared  -s
+LFLAGS = -Wall -g -fPIC -shared
