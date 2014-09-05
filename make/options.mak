@@ -8,7 +8,7 @@
 ###############################################################################
 # 调试相关宏
 ifeq (__ON__, $(strip $(CONFIG_DEBUG_SUPPORT)))
-	OPTIONS += __XDT_DEBUG__
+	OPTIONS += __XDO_DEBUG__
 endif
 
 #日志相关宏
