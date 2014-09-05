@@ -58,7 +58,8 @@ static const size_t g_log_data_size =  (LOG_FILE_CACHE_SIZE - sizeof(log_file_in
 #define log_get_data_size() (g_log_data_size)
 
 #define log_hash(path) (hash_time33(path) % LOG_FILE_MAX_NUM)  /* 异步日志哈希 */
-#define log_is_err_level(level) (LOG_LEVEL_ERROR & (level))
+#define log_is_err_level(level) \
+    (LOG_LEVEL_ERROR & (level) || LOG_LEVEL_FATAL & (level))
 
 /* 函数声明 */
 static int _log_init_global(void);
@@ -74,7 +75,7 @@ static size_t _log_sync(log_file_info_t *file, int *fd);
 
 /* 是否强制写(注意: 系数必须小于或等于0.8，否则可能出现严重问题) */
 static const int g_log_sync_size = 0.8 * LOG_FILE_CACHE_SIZE;
-#define log_is_force_sync(file) (((file)->in_offset - (file)->out_offset) > g_log_sync_size)
+#define log_is_over_limit(file) (((file)->in_offset - (file)->out_offset) > g_log_sync_size)
 
 /******************************************************************************
  **函数名称: log_init
@@ -636,7 +637,7 @@ static int log_write(log_cycle_t *log, int level,
     int msglen = 0, left = 0;
     char *addr = NULL;
     struct tm loctm;
-    time_t diff_time = 0;
+    time_t difftm = 0;
     log_file_info_t *file = log->file;
 
     memset(&loctm, 0, sizeof(loctm));
@@ -729,12 +730,9 @@ static int log_write(log_cycle_t *log, int level,
     }
 
     /* 判断是否强制写或发送通知 */
-    diff_time = ctm->time - file->sync_tm.time;
-    if(log_is_force_sync(file)  
-    #if defined(__LOG_ERR_FORCE__)
-        || log_is_err_level(level)
-    #endif /*__LOG_ERR_FORCE__*/
-        || log_is_timeout(diff_time))
+    difftm = ctm->time - file->sync_tm.time;
+    if(log_is_over_limit(file)  
+        || log_is_timeout(difftm))
     {
         memcpy(&file->sync_tm, ctm, sizeof(file->sync_tm));
         

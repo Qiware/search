@@ -35,7 +35,7 @@
 #define LOG_FILE_CACHE_SIZE     (1024*1024) /* 日志文件的缓存SIZE */
 #define LOG_SHM_SIZE                        /* 日志共享内存SIZE */\
     (LOG_FILE_MAX_NUM * LOG_FILE_CACHE_SIZE)
-#define LOG_SYNC_TIMEOUT        (3)         /* 日志超时同步时间 */
+#define LOG_SYNC_TIMEOUT        (5)         /* 日志超时同步时间 */
 #define LOG_LEVEL_MAX_LEN       (16)        /* 日志级别字串的长度 */
 
 #define LOG_SHM_KEY             (0x32313123)/* 共享内存KEY */

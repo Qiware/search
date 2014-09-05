@@ -245,16 +245,16 @@ static char *log_svr_creat_shm(int fd)
 static void *log_svr_timeout_routine(void *args)
 {
     int ret = 0, idx = 0;
-    struct timeb curr_time;
+    struct timeb ctm;
     log_file_info_t *file = NULL;
     log_svr_t *logsvr = (log_svr_t *)args;
 
 
     while(1)
     {
-        memset(&curr_time, 0, sizeof(curr_time));
+        memset(&ctm, 0, sizeof(ctm));
 
-        ftime(&curr_time);
+        ftime(&ctm);
 
         for(idx=0; idx<LOG_FILE_MAX_NUM; idx++)
         {
