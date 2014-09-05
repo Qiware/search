@@ -15,7 +15,7 @@
 #include "list.h"
 
 /******************************************************************************
- **函数名称: list_insert_head
+ **函数名称: list_insert
  **功    能: 插入链表头
  **输入参数: 
  **     list: 单向链表
@@ -26,7 +26,7 @@
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.08.24 #
  ******************************************************************************/
-int list_insert_head(list_t *list, list_node_t *node)
+int list_insert(list_t *list, list_node_t *node)
 {
     /* 1. 链表为空时 */
     if (NULL == list->head)

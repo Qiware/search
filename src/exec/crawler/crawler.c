@@ -23,15 +23,15 @@ typedef struct
 {
     bool is_daemon;                     /* 是否后台运行 */
     char conf_path[FILE_NAME_MAX_LEN];  /* 配置文件路径 */
-    char log_level[LOG_LEVEL_MAX_LEN];  /* 指定日志级别 */
-}crawler_opt_t;
+    int log_level;                      /* 指定日志级别 */
+}crwl_opt_t;
 
-static int crawler_getopt(int argc, char **argv, crawler_opt_t *opt);
-static int crawler_usage(const char *exec);
+static int crwl_getopt(int argc, char **argv, crwl_opt_t *opt);
+static int crwl_usage(const char *exec);
 
 /******************************************************************************
  **函数名称: main 
- **功    能: 爬虫服务主程序
+ **功    能: 爬虫主程序
  **输入参数: 
  **     argc: 参数个数
  **     argv: 参数列表
@@ -39,15 +39,15 @@ static int crawler_usage(const char *exec);
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **     1. 加载爬虫配置
- **     2. 启动爬虫服务
+ **     2. 启动爬虫功能
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.04 #
  ******************************************************************************/
 int main(int argc, char *argv[])
 {
     int ret;
-    crawler_opt_t opt;
-    crawler_conf_t conf;
+    crwl_opt_t opt;
+    crwl_conf_t conf;
     log_cycle_t *log;
     char log_path[FILE_NAME_MAX_LEN];
 
@@ -55,10 +55,10 @@ int main(int argc, char *argv[])
     memset(&conf, 0, sizeof(conf));
 
     /* 1. 解析输入参数 */
-    ret = crawler_getopt(argc, argv, &opt);
+    ret = crwl_getopt(argc, argv, &opt);
     if (CRWL_OK != ret)
     {
-        return crawler_usage(argv[0]);
+        return crwl_usage(argv[0]);
     }
 
     /* 2. 初始化日志模块 */
@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
     log = log_init(opt.log_level, log_path);
     if (NULL == log)
     {
-        fprintf(stderr, "Init log failed!");
+        fprintf(stderr, "Init log failed!\n");
         return CRWL_ERR;
     }
 
@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
     ret = crwl_load_conf(&conf, opt.conf_path, log);
     if (CRWL_OK != ret)
     {
-        fprintf(stderr, "Load crawler configuration failed!");
+        fprintf(stderr, "Load crawler configuration failed!\n");
         return CRWL_ERR;
     }
 
@@ -83,7 +83,7 @@ int main(int argc, char *argv[])
     ret = crwl_start_work(&conf, log);
     if (CRWL_OK != ret)
     {
-        fprintf(stderr, "Start crawler server failed!");
+        fprintf(stderr, "Start crawler server failed!\n");
         return CRWL_ERR;
     }
 
@@ -93,7 +93,7 @@ int main(int argc, char *argv[])
 }
 
 /******************************************************************************
- **函数名称: crawler_getopt 
+ **函数名称: crwl_getopt 
  **功    能: 解析输入参数
  **输入参数: 
  **     argc: 参数个数
@@ -110,7 +110,7 @@ int main(int argc, char *argv[])
  **     h: 帮助手册
  **作    者: # Qifeng.zou # 2014.09.05 #
  ******************************************************************************/
-static int crawler_getopt(int argc, char **argv, crawler_opt_t *opt)
+static int crwl_getopt(int argc, char **argv, crwl_opt_t *opt)
 {
     int _opt;
 
@@ -131,7 +131,7 @@ static int crawler_getopt(int argc, char **argv, crawler_opt_t *opt)
             }
             case 'l':   /* 指定日志级别 */
             {
-                snprintf(opt->log_level, sizeof(opt->log_level), "%s", optarg);
+                opt->log_level = log_get_level(optarg);
                 break;
             }
             case 'h':
@@ -150,16 +150,17 @@ static int crawler_getopt(int argc, char **argv, crawler_opt_t *opt)
     {
         return CRWL_SHOW_HELP;
     }
-    else if (!strlen(opt->log_level))
+
+    if (!opt->log_level)
     {
-        snprintf(opt->log_level, sizeof(opt->log_level), "trace");
+        opt->log_level = log_get_level(LOG_DEF_LEVEL_STR);
     }
 
     return CRWL_OK;
 }
 
 /******************************************************************************
- **函数名称: crawler_usage
+ **函数名称: crwl_usage
  **功    能: 显示启动参数帮助信息
  **输入参数:
  **     name: 程序名
@@ -169,7 +170,7 @@ static int crawler_getopt(int argc, char **argv, crawler_opt_t *opt)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.07.11 #
  ******************************************************************************/
-static int crawler_usage(const char *exec)
+static int crwl_usage(const char *exec)
 {
     printf("\nusage: %s [-h] [-b] -c config_file [-l log_level]\n", exec);
     printf("\t-h\tShow help\n"

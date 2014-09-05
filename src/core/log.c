@@ -81,7 +81,7 @@ static const int g_log_sync_size = 0.8 * LOG_FILE_CACHE_SIZE;
  **函数名称: log_init
  **功    能: 初始化日志信息
  **输入参数: 
- **     level: 日志级别(其值：LOG_LEVEL_TRACE~LOG_LEVEL_FATAL的或值)
+ **     level: 日志级别(其值：LOG_LEVEL_TRACE~LOG_LEVEL_FATAL的"或"值)
  **     path: 日志路径
  **输出参数: NONE
  **返    回: 0:success !0:failed
@@ -92,7 +92,7 @@ static const int g_log_sync_size = 0.8 * LOG_FILE_CACHE_SIZE;
  **     注意: 此函数中不能调用错误日志函数 - 可能死锁!
  **作    者: # Qifeng.zou # 2013.10.31 #
  ******************************************************************************/
-log_cycle_t *log_init(const char *level_str, const char *path)
+log_cycle_t *log_init(int level, const char *path)
 {
     int ret;
     void *addr;
@@ -105,7 +105,7 @@ log_cycle_t *log_init(const char *level_str, const char *path)
         return NULL;
     }
 
-    log->level = log_get_level(level_str);
+    log->level = level;
     log->pid = getpid();
     
     log_mutex_lock();

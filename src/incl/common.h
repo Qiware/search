@@ -6,17 +6,6 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <memory.h>
-#include <stdarg.h>
-#include <sys/un.h>
-#include <signal.h>
-#include <pthread.h>
-#include <sys/time.h>
-#include <arpa/inet.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
 
 typedef int bool;
 #define false (0)
@@ -32,5 +21,10 @@ typedef int bool;
 #define MD5_SUM_CHK_LEN     (32)    /* MD5校验值长度 */
 #define INVALID_FD          (-1)    /* 非法文件描述符 */
 #define INVALID_PID         (-1)    /* 非法进程ID */
+
+/* 内存大小单位 */
+#define KB                  (1024)
+#define MB                  (1024 * KB)
+#define GB                  (1024 * MB)
 
 #endif /*__COMMON_H__*/

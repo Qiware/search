@@ -15,7 +15,7 @@
 #include "list2.h"
 
 /******************************************************************************
- **函数名称: list2_insert_head
+ **函数名称: list2_insert
  **功    能: 插入链表头
  **输入参数: 
  **     list: 双向链表
@@ -27,7 +27,7 @@
  **     新结点的空间有外界分配，删除时，请记得释放空间.
  **作    者: # Qifeng.zou # 2014.08.24 #
  ******************************************************************************/
-int list2_insert_head(list2_t *list, list2_node_t *node)
+int list2_insert(list2_t *list, list2_node_t *node)
 {
     list2_node_t *tail;
 
@@ -54,7 +54,7 @@ int list2_insert_head(list2_t *list, list2_node_t *node)
 }
 
 /******************************************************************************
- **函数名称: list2_delete_head
+ **函数名称: list2_delete
  **功    能: 删除链表头
  **输入参数: 
  **     list: 双向链表
@@ -65,7 +65,7 @@ int list2_insert_head(list2_t *list, list2_node_t *node)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.08.24 #
  ******************************************************************************/
-list2_node_t *list2_delete_head(list2_t *list)
+list2_node_t *list2_delete(list2_t *list)
 {
     list2_node_t *tail, *curr;
 

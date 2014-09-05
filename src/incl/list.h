@@ -16,9 +16,9 @@ typedef struct
     list_node_t *tail;
 }list_t;
 
-int32_t list_insert_head(list_t *list, list_node_t *node);
+int32_t list_insert(list_t *list, list_node_t *node);
+list_node_t *list_delete(list_t *list);
 int32_t list_insert_tail(list_t *list, list_node_t *node);
-list_node_t *list_delete_head(list_t *list);
 list_node_t *list_delete_tail(list_t *list);
 void list_assert(list_t *list);
 #endif /*__LIST_H__*/

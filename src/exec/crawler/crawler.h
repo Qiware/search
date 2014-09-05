@@ -10,14 +10,28 @@
 #if !defined(__CRAWLER_H__)
 #define __CRAWLER_H__
 
+#include "log.h"
+#include "common.h"
+
+typedef struct
+{
+    int num;
+    int thread_num;
+    char man_ip[IP_ADDR_MAX_LEN];
+}crwl_worker_t;
+
 /* 爬虫配置信息 */
 typedef struct
 {
-}crawler_conf_t;
+    int thread_num;                         /* 爬虫线程数 */
+    char svrip[IP_ADDR_MAX_LEN];            /* 任务分发服务IP */
+    int port;                               /* 任务分发服务端口 */
+    char log_level_str[LOG_LEVEL_MAX_LEN];  /* 日志级别 */
+}crwl_conf_t;
 
 /* 爬虫服务信息 */
 typedef struct
 {
-}crawler_svr_t;
+}crwl_svr_t;
 
 #endif /*__CRAWLER_H__*/

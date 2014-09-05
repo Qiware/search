@@ -31,4 +31,4 @@ $(OBJS): %.o : %.c
 	$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
 
 clean:
-	rm -fr $(OBJS)
+	rm -fr $(OBJS) $(TARGET)

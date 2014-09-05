@@ -30,9 +30,10 @@
 #define LOG_LEVEL_INFO_STR      "info"      /* 信息级别字串 */
 #define LOG_LEVEL_DEBUG_STR     "debug"     /* 调试级别字串 */
 #define LOG_LEVEL_TRACE_STR     "trace"     /* 跟踪级别字串 */
+#define LOG_DEF_LEVEL_STR       LOG_LEVEL_TRACE_STR /* 默认日志级别字串 */
 
 #define LOG_FILE_MAX_NUM        (32)        /* 日志文件最大个数 */
-#define LOG_FILE_CACHE_SIZE     (1024*1024) /* 日志文件的缓存SIZE */
+#define LOG_FILE_CACHE_SIZE     (1 * MB)    /* 日志文件的缓存SIZE */
 #define LOG_SHM_SIZE                        /* 日志共享内存SIZE */\
     (LOG_FILE_MAX_NUM * LOG_FILE_CACHE_SIZE)
 #define LOG_SYNC_TIMEOUT        (5)         /* 日志超时同步时间 */
@@ -42,7 +43,7 @@
 
 #define LOG_MSG_MAX_LEN         (2048)      /* 日志行最大长度 */
 #define LOG_SVR_THREAD_NUM      (1)         /* 服务线程数 */
-#define LOG_FILE_MAX_SIZE       (8*1024*1024)/* 单个日志文件的最大SIZE */
+#define LOG_FILE_MAX_SIZE       (128 * MB)  /* 单个日志文件的最大SIZE */
 
 #define LOG_SUFFIX              ".log"      /* 日志文件后缀 */
 #define LOG_DEFAULT_TRCLOG      "trc.log"   /* 默认日志名 */
@@ -100,7 +101,7 @@ typedef struct _log_cycle_t
 
 /* 外部接口 */
 int log_get_level(const char *level_str);
-log_cycle_t *log_init(const char *level_str, const char *path);
+log_cycle_t *log_init(int level, const char *path);
 void log_core(log_cycle_t *log, int level,
                 const char *fname, int lineno,
                 const void *dump, int dumplen,
