@@ -95,9 +95,9 @@ xml_node_t *xml_node_creat_ext(
         xml_node_type_e type, const char *name, const char *value);
 int xml_node_free(xml_tree_t *xml, xml_node_t *node);
 
-xml_tree_t *xml_creat(log_cycle_t *log, const char *fname);
-xml_tree_t *xml_screat(log_cycle_t *log, const char *str);
-xml_tree_t *xml_screat_ext(log_cycle_t *log, const char *str, int length);
+xml_tree_t *xml_creat(const char *fname, log_cycle_t *log);
+xml_tree_t *xml_screat(const char *str, log_cycle_t *log);
+xml_tree_t *xml_screat_ext(const char *str, int length, log_cycle_t *log);
 
 int xml_fwrite(xml_tree_t *xml, const char *fname);
 int xml_fprint(xml_tree_t *xml, FILE *fp);

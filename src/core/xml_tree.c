@@ -90,7 +90,7 @@ xml_tree_t *xml_creat_empty(log_cycle_t *log)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
-xml_tree_t *xml_creat(log_cycle_t *log, const char *fname)
+xml_tree_t *xml_creat(const char *fname, log_cycle_t *log)
 {
     char *buff = NULL;
     xml_tree_t *xml = NULL;
@@ -104,7 +104,7 @@ xml_tree_t *xml_creat(log_cycle_t *log, const char *fname)
     }
 
     /* 2. 在内存中将XML文件转为XML树 */
-    xml = xml_screat(log, buff);
+    xml = xml_screat(buff, log);
 
     free(buff), buff = NULL;
 
@@ -126,7 +126,7 @@ xml_tree_t *xml_creat(log_cycle_t *log, const char *fname)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.09.25 #
  ******************************************************************************/
-xml_tree_t *xml_screat_ext(log_cycle_t *log, const char *str, int length)
+xml_tree_t *xml_screat_ext(const char *str, int length, log_cycle_t *log)
 {
     char *buff = NULL;
     xml_tree_t *xml = NULL;
@@ -137,7 +137,7 @@ xml_tree_t *xml_screat_ext(log_cycle_t *log, const char *str, int length)
     }
     else if (length < 0) /* 长度无限制 */
     {
-        return xml_screat(log, str);
+        return xml_screat(str, log);
     }
 
     /* length > 0 */
@@ -150,7 +150,7 @@ xml_tree_t *xml_screat_ext(log_cycle_t *log, const char *str, int length)
 
     memcpy(buff, str, length);
 
-    xml = xml_screat(log, buff);
+    xml = xml_screat(buff, log);
     if (NULL != xml)
     {
         xml->log = log;
@@ -175,7 +175,7 @@ xml_tree_t *xml_screat_ext(log_cycle_t *log, const char *str, int length)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
- xml_tree_t *xml_screat(log_cycle_t *log, const char *str)
+ xml_tree_t *xml_screat(const char *str, log_cycle_t *log)
 {
     int ret = 0;
     Stack_t stack;
