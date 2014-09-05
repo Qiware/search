@@ -245,37 +245,37 @@ int log_get_level(const char *level_str)
 {
     int level;
 
-    if (!strcasecmp(level_str, "fatal"))
+    if (!strcasecmp(level_str, LOG_LEVEL_FATAL_STR))
     {
         return LOG_LEVEL_FATAL;
     }
 
     level = LOG_LEVEL_FATAL;
-    if (!strcasecmp(level_str, "error"))
+    if (!strcasecmp(level_str, LOG_LEVEL_ERROR_STR))
     {
         return level|LOG_LEVEL_ERROR;
     }
 
     level |= LOG_LEVEL_ERROR;
-    if (!strcasecmp(level_str, "warn"))
+    if (!strcasecmp(level_str, LOG_LEVEL_WARN_STR))
     {
         return level|LOG_LEVEL_WARN;
     }
 
     level |= LOG_LEVEL_WARN;
-    if (!strcasecmp(level_str, "info"))
+    if (!strcasecmp(level_str, LOG_LEVEL_INFO_STR))
     {
         return level|LOG_LEVEL_INFO;
     }
 
     level |= LOG_LEVEL_INFO;
-    if (!strcasecmp(level_str, "debug"))
+    if (!strcasecmp(level_str, LOG_LEVEL_DEBUG_STR))
     {
         return level|LOG_LEVEL_DEBUG;
     }
 
     level |= LOG_LEVEL_TRACE;
-    if (!strcmp(level_str, "TRACE"))
+    if (!strcasecmp(level_str, LOG_LEVEL_TRACE_STR))
     {
         return level|LOG_LEVEL_TRACE;
     }

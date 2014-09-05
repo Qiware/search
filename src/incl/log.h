@@ -13,6 +13,8 @@
 #include <sys/timeb.h>
 #include "common.h"
 
+/* 宏定义 */
+
 /* 日志级别 */
 #define LOG_LEVEL_FATAL         (0x0001)    /* 严重级别 */
 #define LOG_LEVEL_ERROR         (0x0002)    /* 错误级别 */
@@ -22,12 +24,19 @@
 #define LOG_LEVEL_TRACE         (0x0020)    /* 跟踪级别 */
 #define LOG_LEVEL_TOTAL         (6)         /* 级别总数 */
 
-/* 宏定义 */
+#define LOG_LEVEL_FATAL_STR     "fatal"     /* 严重级别字串 */
+#define LOG_LEVEL_ERROR_STR     "error"     /* 错误级别字串 */
+#define LOG_LEVEL_WARN_STR      "warn"      /* 警告级别字串 */
+#define LOG_LEVEL_INFO_STR      "info"      /* 信息级别字串 */
+#define LOG_LEVEL_DEBUG_STR     "debug"     /* 调试级别字串 */
+#define LOG_LEVEL_TRACE_STR     "trace"     /* 跟踪级别字串 */
+
 #define LOG_FILE_MAX_NUM        (32)        /* 日志文件最大个数 */
 #define LOG_FILE_CACHE_SIZE     (1024*1024) /* 日志文件的缓存SIZE */
 #define LOG_SHM_SIZE                        /* 日志共享内存SIZE */\
     (LOG_FILE_MAX_NUM * LOG_FILE_CACHE_SIZE)
 #define LOG_SYNC_TIMEOUT        (3)         /* 日志超时同步时间 */
+#define LOG_LEVEL_MAX_LEN       (16)        /* 日志级别字串的长度 */
 
 #define LOG_SHM_KEY             (0x32313123)/* 共享内存KEY */
 
@@ -96,7 +105,8 @@ void log_core(log_cycle_t *log, int level,
                 const char *fname, int lineno,
                 const void *dump, int dumplen,
                 const char *fmt, ...);
-
+#define log_get_path(path, size, name) \
+            snprintf(path, size, "../log/%s.log", name)
 log_cycle_t *log_get_cycle(void);
 void log_destroy(log_cycle_t **log);
 
