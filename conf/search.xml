@@ -1,8 +1,37 @@
-<!-- 搜索引擎配置信息 -->
-<Search>
-    <Log>       <!-- 日志配置 -->
-        <Path></Path>         <!-- 日志路径 -->
-        <Level>debug</Level>  <!-- 日志级别: debug, trace, info, warn, error, fatal -->
-        <MaxSize></MaxSize>   <!-- 最大尺寸(单位: MB) -->
-    <Log>
-</Search>
+<!-- 搜索引擎系统配置信息 -->
+<SEARCH>
+  <LOG>     <!-- 日志配置 -->
+      <LEVEL>trace</LEVEL>  <!-- 日志级别: trace|debug|info|warn|error|fatal -->
+      <MAX_SIZE>100</MAX_SIZE><!-- 日志大小(单位: MB) -->
+  </LOG>
+  <CRWLSYS> <!-- 爬虫系统配置 -->
+      <MANAGER> <!-- 管理服务: 负责爬虫的任务分发 -->
+          <RECV_THD_NUM>1</RECV_THD_NUM>    <!-- 接收线程数 -->
+          <DIST_THD_NUM>1</DIST_THD_NUM>    <!-- 分发线程数 -->
+          <PORT>2222</PORT>                 <!-- 爬虫服务端口号 -->
+          <!-- URL队列KEY路径(待抓取URL) -->
+          <URL_QUEUE_KEY>../tmp/keyfile/crwl_man.key</URL_QUEUE_KEY>
+          <SEED>  <!-- 种子配置 -->
+              <ITEM>www.ifeng.com</ITEM>
+              <ITEM>www.sina.com.cn</ITEM>
+          </SEED>
+      </MANAGER>
+      <CRAWLER>  <!-- 爬虫进程: 负责网页下载 -->
+          <NUM>1</NUM>            <!-- 爬虫进程数 -->
+          <THD_NUM>5</THD_NUM>    <!-- 各爬虫进程中的线程数 -->
+          <SVRIP>127.0.0.1</SVRIP><!-- 管理服务IP -->
+          <PORT>2222</PORT>       <!-- 管理服务侦听端口 -->
+      </CRAWLER>
+      <ANALYST> <!-- 分析进程: 负责对网页的分析(内容分析、URL提取等) -->
+          <NUM>1</NUM>            <!-- 分析进程数 -->
+          <THD_NUM>5</THD_NUM>    <!-- 各分析进程中的线程数 -->
+          <SVRIP>127.0.0.1</SVRIP><!-- 管理服务IP -->
+          <PORT>2222</PORT>       <!-- 管理服务侦听端口 -->
+          <DATABASE>  <!-- 数据库配置 -->
+              <SVRNAME></SVRNAME>   <!-- 服务名 -->
+              <USERNAME></USERNAME> <!-- 登录名 -->
+              <PASSWD></PASSWD>     <!-- 登陆密码 -->
+          </DATABASE>
+      </ANALYST>
+  </CRWLSYS>
+</SEARCH>
