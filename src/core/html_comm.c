@@ -38,31 +38,6 @@ static int html_mark_is_end(html_fparse_t *fparse);
 static int html_mark_has_value(html_fparse_t *fparse);
 static int html_mark_get_value(html_tree_t *html, Stack_t *stack, html_fparse_t *fparse);
 
-#if defined(__HTML_ESC_PARSE__)
-static const html_esc_t *html_esc_get(const char *str);
-static int html_esc_free(html_esc_split_t *split);
-static int html_esc_size(const html_esc_split_t *split);
-static int html_esc_merge(const html_esc_split_t *sp, char *dst);
-static int html_esc_split(
-        html_tree_t *html,
-        const html_esc_t *esc,
-        const char *str, int len,
-        html_esc_split_t *split);
-
-/* 转义字串对应的长度: 必须与html_esc_e的顺序一致 */
-static const html_esc_t g_html_esc_str[] =
-{
-    {HTML_ESC_LT,     HTML_ESC_LT_STR,    '<',  HTML_ESC_LT_LEN}   /* &lt; */
-    , {HTML_ESC_GT,   HTML_ESC_GT_STR,    '>',  HTML_ESC_GT_LEN}   /* &gt; */
-    , {HTML_ESC_AMP,  HTML_ESC_AMP_STR,   '&',  HTML_ESC_AMP_LEN}  /* &amp; */
-    , {HTML_ESC_APOS, HTML_ESC_APOS_STR,  '\'', HTML_ESC_APOS_LEN} /* &apos; */
-    , {HTML_ESC_QUOT, HTML_ESC_QUOT_STR,  '"',  HTML_ESC_QUOT_LEN} /* &quot; */
-
-    /* 未知类型: 只有&开头才判断是否为转义字符。未知，则是首字母& */
-    , {HTML_ESC_UNKNOWN, HTML_ESC_UNKNOWN_STR, '&',  HTML_ESC_UNKNOWN_LEN}
-};
-#endif /*__HTML_ESC_PARSE__*/
-
 /******************************************************************************
  **函数名称: html_node_creat
  **功    能: 创建HTML节点
@@ -794,13 +769,6 @@ static int html_mark_get_attr(html_tree_t *html, Stack_t *stack, html_fparse_t *
     html_node_t *node = NULL, *top = NULL;
     int len = 0, errflg = 0;
     const char *ptr = fparse->ptr;
-#if defined(__HTML_ESC_PARSE__)
-    int ret, size;
-    html_esc_split_t split;
-    const html_esc_t *esc = NULL;
-
-    memset(&split, 0, sizeof(split));
-#endif /*__HTML_ESC_PARSE__*/
 
     /* 1. 获取正在处理的标签 */
     top = (html_node_t*)stack_gettop(stack);
@@ -864,31 +832,11 @@ static int html_mark_get_attr(html_tree_t *html, Stack_t *stack, html_fparse_t *
 
         ptr++;
         fparse->ptr = ptr;
-        while ((*ptr != border) && !HtmlIsStrEndChar(*ptr))   /* 计算 双/单 引号之间的数据长度 */
+
+        /* 计算 双/单 引号之间的数据长度 */
+        while ((*ptr != border) && !HtmlIsStrEndChar(*ptr))
         {
-        #if defined(__HTML_ESC_PARSE__)
-            if (HtmlIsAndChar(*ptr))
-            {
-                /* 判断并获取转义字串类型及相关信息 */
-                esc = html_esc_get(ptr);
-
-                /* 对包含有转义字串的字串进行切割 */
-                ret = html_esc_split(html, esc, fparse->ptr, ptr-fparse->ptr+1, &split);
-                if (HTML_SUCCESS != ret)
-                {
-                    errflg = 1;
-                    log_error(html->log, "Parse forwad string failed!");
-                    break;
-                }
-
-                ptr += esc->length;
-                fparse->ptr = ptr;
-            }
-            else
-        #endif /*__HTML_ESC_PARSE__*/
-            {
-                ptr++;
-            }
+            ptr++;
         }
 
         if (*ptr != border)
@@ -901,39 +849,15 @@ static int html_mark_get_attr(html_tree_t *html, Stack_t *stack, html_fparse_t *
         len = ptr - fparse->ptr;
         ptr++;  /* 跳过" */
 
-    #if defined(__HTML_ESC_PARSE__)
-        if (NULL != split.head)
+        node->value = (char*)calloc(1, (len+1)*sizeof(char));
+        if (NULL == node->value)
         {
-            size = html_esc_size(&split);
-            size += len+1;
-    
-            node->value = (char *)calloc(1, size);
-            if (NULL == node->value)
-            {
-                errflg = 1;
-                log_error(html->log, "Alloc memory failed!");
-                break;
-            }
-
-            html_esc_merge(&split, node->value);
-            
-            strncat(node->value, fparse->ptr, len);
-
-            html_esc_free(&split);
+            errflg = 1;
+            log_error(html->log, "Calloc failed!");
+            break;
         }
-        else
-    #endif /*__HTML_ESC_PARSE__*/
-        {
-            node->value = (char*)calloc(1, (len+1)*sizeof(char));
-            if (NULL == node->value)
-            {
-                errflg = 1;
-                log_error(html->log, "Calloc failed!");
-                break;
-            }
 
-            memcpy(node->value, fparse->ptr, len);
-        }
+        memcpy(node->value, fparse->ptr, len);
 
         /* 3.4 将节点加入属性链表 */
         if (NULL == top->tail) /* 还没有孩子节点 */
@@ -951,10 +875,6 @@ static int html_mark_get_attr(html_tree_t *html, Stack_t *stack, html_fparse_t *
         while (HtmlIsIgnoreChar(*ptr)) ptr++;
 
     }while (HtmlIsMarkChar(*ptr));
-
-#if defined(__HTML_ESC_PARSE__)
-    html_esc_free(&split);
-#endif /*__HTML_ESC_PARSE__*/
 
     if (1 == errflg)         /* 防止内存泄漏 */
     {
@@ -1048,13 +968,6 @@ static int html_mark_get_value(html_tree_t *html, Stack_t *stack, html_fparse_t 
     int len = 0, size = 0;
     const char *p1=NULL, *p2=NULL;
     html_node_t *current = NULL;
-#if defined(__HTML_ESC_PARSE__)
-    int ret;
-    const html_esc_t *esc = NULL;
-    html_esc_split_t split;
-
-    memset(&split, 0, sizeof(split));
-#endif /*__HTML_ESC_PARSE__*/
 
     current = (html_node_t*)stack_gettop(stack);
     if (NULL == current)
@@ -1071,34 +984,11 @@ static int html_mark_get_value(html_tree_t *html, Stack_t *stack, html_fparse_t 
     /* 提取节点值: 允许节点值中出现空格和换行符 */    
     while (!HtmlIsStrEndChar(*p1) && !HtmlIsLPBrackChar(*p1))
     {
-    #if defined(__HTML_ESC_PARSE__)
-        if (HtmlIsAndChar(*p1))
-        {
-            esc = html_esc_get(p1);
-
-            ret = html_esc_split(esc, fparse->ptr, p1-fparse->ptr+1, &split);
-            if (HTML_SUCCESS != ret)
-            {
-                html_esc_free(&split);
-                log_error(html->log, "Parse forwad string failed!");
-                return HTML_FAILED;
-            }
-            
-            p1 += esc->length;
-            fparse->ptr = p1;
-        }
-        else
-    #endif /*__HTML_ESC_PARSE__*/
-        {
-            p1++;
-        }
+        p1++;
     }
 
     if (HtmlIsStrEndChar(*p1))
     {
-    #if defined(__HTML_ESC_PARSE__)
-        html_esc_free(&split);
-    #endif /*__HTML_ESC_PARSE__*/
         log_error(html->log, "HTML format is wrong! MarkName:[%s]", current->name);
         return HTML_ERR_FORMAT;
     }
@@ -1110,35 +1000,16 @@ static int html_mark_get_value(html_tree_t *html, Stack_t *stack, html_fparse_t 
     p1++;
 
     len = p1 - fparse->ptr;
-#if defined(__HTML_ESC_PARSE__)
-    size = html_esc_size(&split);
-#endif /*__HTML_ESC_PARSE__*/
     size += len+1;
 
     current->value = (char*)calloc(1, size*sizeof(char));
     if (NULL == current->value)
     {
-    #if defined(__HTML_ESC_PARSE__)
-        html_esc_free(&split);
-    #endif /*__HTML_ESC_PARSE__*/
         log_error(html->log, "Calloc failed!");
         return HTML_ERR_CALLOC;
     }
 
-#if defined(__HTML_ESC_PARSE__)
-    if (NULL != split.head)
-    {
-        html_esc_merge(&split, current->value);
-
-        strncat(current->value, fparse->ptr, len);
-
-        html_esc_free(&split);
-    }
-    else
-#endif /*__HTML_ESC_PARSE__*/
-    {
-        strncpy(current->value, fparse->ptr, len);
-    }
+    strncpy(current->value, fparse->ptr, len);
 
     fparse->ptr = p2;
     html_set_value_flag(current);
@@ -1549,183 +1420,3 @@ int _html_node_length(html_tree_t *html, html_node_t *root, Stack_t *stack)
     }
     return length;
 }
-
-#if defined(__HTML_ESC_PARSE__)
-/******************************************************************************
- **函数名称: html_esc_get
- **功    能: 获取转义字串的信息
- **输入参数:
- **     str: 以&开头的字串
- **输出参数:
- **返    回: 0: 成功  !0: 失败
- **实现描述: 
- **注意事项: 
- **     转义字串的对应关系如下:
- **       &lt;    <    小于
- **       &gt;    >    大于
- **       &amp;   &    和号
- **       &apos;  '    单引号
- **       &quot;  "    引号
- **作    者: # Qifeng.zou # 2014.01.06 #
- ******************************************************************************/
-static const html_esc_t *html_esc_get(const char *str)
-{
-    if (HtmlIsLtStr(str))         /* &lt; */
-    {
-        return &g_html_esc_str[HTML_ESC_LT];
-    }
-    else if (HtmlIsGtStr(str))    /* &gt; */
-    {
-        return &g_html_esc_str[HTML_ESC_GT];
-    }
-    else if (HtmlIsAmpStr(str))   /* &amp; */
-    {
-        return &g_html_esc_str[HTML_ESC_AMP];
-    }
-    else if (HtmlIsAposStr(str))  /* &apos; */
-    {
-        return &g_html_esc_str[HTML_ESC_APOS];
-    }
-    else if (HtmlIsQuotStr(str))  /* &quot; */
-    {
-        return &g_html_esc_str[HTML_ESC_QUOT];
-    }
-
-    return &g_html_esc_str[HTML_ESC_UNKNOWN];    /* 未知类型 */
-}
-
-/******************************************************************************
- **函数名称: html_esc_size
- **功    能: 获取转义切割之前字段长度之和
- **输入参数:
- **     s: 被切割后的字串链表
- **输出参数:
- **返    回: 0: 成功  !0: 失败
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.01.06 #
- ******************************************************************************/
-static int html_esc_size(const html_esc_split_t *sp)
-{
-    int size = 0;
-    html_esc_node_t *node = sp->head;
-    
-    while (NULL != node)
-    {
-        size = node->length;
-        node = node->next;
-    }
-
-    return size;
-}
-
-/******************************************************************************
- **函数名称: html_esc_merge
- **功    能: 合并被切割转义的字串
- **输入参数:
- **     s: 被切割后的字串链表
- **输出参数:
- **返    回: 0: 成功  !0: 失败
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.01.06 #
- ******************************************************************************/
-static int html_esc_merge(const html_esc_split_t *sp, char *dst)
-{
-    char *ptr = dst;
-    html_esc_node_t *fnode = sp->head;
-
-    while (NULL != fnode)
-    {
-        sprintf(ptr, "%s", fnode->str);
-        ptr += fnode->length;
-        fnode = fnode->next;
-    }
-
-    return HTML_SUCCESS;
-}
-
-/******************************************************************************
- **函数名称: html_esc_free
- **功    能: 是否转义切割对象
- **输入参数:
- **     split: 切割对象
- **输出参数:
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.01.06 #
- ******************************************************************************/
-static int html_esc_free(html_esc_split_t *split)
-{
-    html_esc_node_t *node = split->head, *next = NULL;
-
-    while (NULL != node)
-    {
-        next = node->next;
-        free(node->str);
-        free(node);
-        node = next;
-    }
-    split->head = NULL;
-    split->tail = NULL;
-    
-    return HTML_SUCCESS;
-}
-
-/******************************************************************************
- **函数名称: html_esc_split
- **功    能: 切割并转义从转义字串及之前的字串
- **输入参数:
- **     esc: 对应的转义信息
- **     str: 字串
- **     len: str+len处的字串需要进行转义, 即:str[len]='&'
- **输出参数:
- **     split: 分割后的结果
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
- **     转义字串的对应关系如下:
- **       &lt;    <    小于
- **       &gt;    >    大于
- **       &amp;   &    和号
- **       &apos;  '    单引号
- **       &quot;  "    引号
- **作    者: # Qifeng.zou # 2014.01.06 #
- ******************************************************************************/
-static int html_esc_split(html_tree_t *html, const html_esc_t *esc,
-    const char *str, int len, html_esc_split_t *split)
-{
-    html_esc_node_t *node = NULL;
-
-    node = (html_esc_node_t *)calloc(1, sizeof(html_esc_node_t));
-    if (NULL == node)
-    {
-        log_error(html->log, "Calloc memory failed!");
-        return HTML_ERR_CALLOC;
-    }
-
-    node->str = (char *)calloc(1, len+1);
-    if (NULL == node->str)
-    {
-        free(node);
-        return HTML_ERR_CALLOC;
-    }
-
-    strncpy(node->str, str, len-1);
-    node->str[len-1] = esc->ch;
-    node->length = len;
-    
-    if (NULL == split->head)
-    {
-        split->head = node;
-    }
-    else
-    {
-        split->tail->next = node;
-    }
-    split->tail = node;
-
-    return HTML_SUCCESS;
-}
-#endif /*__HTML_ESC_PARSE__*/

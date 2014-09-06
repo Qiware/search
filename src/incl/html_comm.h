@@ -19,13 +19,6 @@
 #define HtmlIsColonChar(ch)      (':' == ch)     /* 冒号 */
 #define HtmlIsNLineChar(ch)      (('\n'==ch) || ('\r'==ch))  /* 换行符 */
 
-/* 转义关键字 */
-#define HtmlIsLtStr(str) (0 == strncmp(str, HTML_ESC_LT_STR, HTML_ESC_LT_LEN))       /* 小于 */
-#define HtmlIsGtStr(str) (0 == strncmp(str, HTML_ESC_GT_STR, HTML_ESC_GT_LEN))       /* 大于 */
-#define HtmlIsAmpStr(str) (0 == strncmp(str, HTML_ESC_AMP_STR, HTML_ESC_AMP_LEN))    /* 与号 */
-#define HtmlIsAposStr(str) (0 == strncmp(str, HTML_ESC_APOS_STR, HTML_ESC_APOS_LEN)) /* 单引号 */
-#define HtmlIsQuotStr(str) (0 == strncmp(str, HTML_ESC_QUOT_STR, HTML_ESC_QUOT_LEN)) /* 双引号 */
-
 #define HtmlIsMarkChar(ch) /* 标签名的合法字符 */\
     (isalpha(ch) || isdigit(ch)    \
      || HtmlIsULineChar(ch))  || HtmlIsSubChar(ch) || HtmlIsColonChar(ch)
@@ -61,27 +54,6 @@
 #define HTML_END_FLAG        '/'	    /* 结束标志"</XXX>" */
 #define STR_END_FLAG        '\0'    /* 字串结束符 */
 
-#if defined(__HTML_ESC_PARSE__)
-/* 转义字串及对应长度 */
-#define HTML_ESC_LT_STR     "&lt;"
-#define HTML_ESC_LT_LEN     (4)
-
-#define HTML_ESC_GT_STR     "&gt;"
-#define HTML_ESC_GT_LEN     (4)
-
-#define HTML_ESC_AMP_STR    "&amp;"
-#define HTML_ESC_AMP_LEN    (5)
-
-#define HTML_ESC_APOS_STR   "&apos;"
-#define HTML_ESC_APOS_LEN   (6)
-
-#define HTML_ESC_QUOT_STR   "&quot;"
-#define HTML_ESC_QUOT_LEN   (6)
-
-#define HTML_ESC_UNKNOWN_STR "&"
-#define HTML_ESC_UNKNOWN_LEN (1)
-#endif /*__HTML_ESC_PARSE__*/
-
 /* 错误信息定义 */
 typedef enum
 {
@@ -102,29 +74,6 @@ typedef enum
     , HTML_SUCCESS = 0
 }html_err_e;
 
-#if defined(__HTML_ESC_PARSE__)
-/* 转义字串类型 */
-typedef enum
-{
-    HTML_ESC_LT             /* &lt;     < */
-    , HTML_ESC_GT           /* &gt;     > */
-    , HTML_ESC_AMP          /* &amp;    & */
-    , HTML_ESC_APOS         /* &apos;   ' */
-    , HTML_ESC_QUOT         /* &quot;   " */
-    , HTML_ESC_UNKNOWN
-
-    , HTML_ESC_TOTAL = HTML_ESC_UNKNOWN
-}html_esc_e;
-
-typedef struct
-{
-    html_esc_e type;
-    char *str;
-    char ch;
-    int length;
-}html_esc_t;
-#endif /*__HTML_ESC_PARSE__*/
-
 /* 文件解析 结构体 */
 typedef struct
 {
@@ -132,23 +81,6 @@ typedef struct
     const char *ptr;            /* 当前处理到的位置 */
     int length;
 }html_fparse_t;
-
-#if defined(__HTML_ESC_PARSE__)
-/* 转义字串分割链表: 用于有转义字串的结点值或属性值的处理 */
-typedef struct _html_esc_node_t
-{
-    int length;
-    char *str;
-    struct _html_esc_node_t *next;
-}html_esc_node_t;
-
-/* 转义字串分割链表 */
-typedef struct
-{
-    html_esc_node_t *head;
-    html_esc_node_t *tail;
-}html_esc_split_t;
-#endif /*__HTML_ESC_PARSE__*/
 
 typedef struct
 {
