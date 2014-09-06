@@ -23,6 +23,9 @@ SRC_LIST = list.c \
 			xml_comm.c \
 			xml_print.c \
 			xml_tree.c \
+			html_comm.c \
+			html_print.c \
+			html_tree.c \
 			avl_tree.c \
 			rb_tree.c \
 			trie_tree.c \
