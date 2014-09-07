@@ -98,6 +98,8 @@ log_cycle_t *log_init(int level, const char *path)
     void *addr;
     log_cycle_t *log;
 
+    Mkdir2(path, DIR_MODE);
+
     /* 1. 新建日志对象 */
     log = (log_cycle_t *)calloc(1, sizeof(log_cycle_t));
     if (NULL == log)
