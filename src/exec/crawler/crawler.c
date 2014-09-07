@@ -112,29 +112,33 @@ int main(int argc, char *argv[])
  ******************************************************************************/
 static int crwl_getopt(int argc, char **argv, crwl_opt_t *opt)
 {
-    int _opt;
+    int ch;
 
     /* 1. 解析输入参数 */
-    while (-1 != (_opt = getopt(argc, argv, "c:l:bh")))
+    while (-1 != (ch = getopt(argc, argv, "c:l:bh")))
     {
-        switch (_opt)
+        switch (ch)
         {
             case 'b':   /* 是否后台运行 */
+            case 'B':
             {
                 opt->is_daemon = true;
                 break;
             }
             case 'c':   /* 指定配置文件 */
+            case 'C':
             {
                 snprintf(opt->conf_path, sizeof(opt->conf_path), "%s", optarg);
                 break;
             }
             case 'l':   /* 指定日志级别 */
+            case 'L':
             {
                 opt->log_level = log_get_level(optarg);
                 break;
             }
-            case 'h':
+            case 'h':   /* 显示帮助信息 */
+            case 'H':
             default:
             {
                 return CRWL_SHOW_HELP;
