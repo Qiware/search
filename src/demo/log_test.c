@@ -1,17 +1,21 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <libgen.h>
 #include <unistd.h>
 
 #include "log.h"
 
-int main(void)
+int main(int argc, char *argv[])
 {
     int idx, level;
     log_cycle_t *log;
+    char path[FILE_PATH_MAX_LEN];
 
     level = log_get_level("error");
 
-    log = log_init(level, "../log/log_test.log");
+    snprintf(path, sizeof(path), "../log/%s.log", basename(argv[0]));
+
+    log = log_init(level, path);
     if (NULL == log)
     {
         fprintf(stderr, "Init log failed!");
