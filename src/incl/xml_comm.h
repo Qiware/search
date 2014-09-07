@@ -85,21 +85,20 @@
 /* 错误信息定义 */
 typedef enum
 {
-    XML_ERR_CALLOC           /* calloc失败 */
-    , XML_ERR_FORMAT         /* XML格式错误 */
-    , XML_ERR_STACK          /* 栈出错 */
-    , XML_ERR_NODE_TYPE      /* 节点类型错误 */
-    , XML_ERR_GET_ATTR       /* 属性获取失败 */
-    , XML_ERR_GET_NAME       /* 标签名获取失败 */
-    , XML_ERR_MARK_MISMATCH  /* 标签不匹配 */
-    , XML_ERR_CREAT_NODE     /* 新建节点失败 */
-    , XML_ERR_PTR_NULL       /* 空指针 */
-    , XML_ERR_EMPTY_TREE     /* 空树 */
-    , XML_ERR_FOPEN          /* fopen失败 */
-    
-    /* 请在此行之上增加新的错误码 */
-    , XML_FAILED             /* 失败 */
-    , XML_SUCCESS = 0
+    XML_OK = 0
+    , XML_ERR = ~0x7fffffff     /* 失败 */
+
+    , XML_ERR_CALLOC            /* calloc失败 */
+    , XML_ERR_FORMAT            /* XML格式错误 */
+    , XML_ERR_STACK             /* 栈出错 */
+    , XML_ERR_NODE_TYPE         /* 节点类型错误 */
+    , XML_ERR_GET_ATTR          /* 属性获取失败 */
+    , XML_ERR_GET_NAME          /* 标签名获取失败 */
+    , XML_ERR_MARK_MISMATCH     /* 标签不匹配 */
+    , XML_ERR_CREAT_NODE        /* 新建节点失败 */
+    , XML_ERR_PTR_NULL          /* 空指针 */
+    , XML_ERR_EMPTY_TREE        /* 空树 */
+    , XML_ERR_FOPEN             /* fopen失败 */
 }xml_err_e;
 
 #if defined(__XML_ESC_PARSE__)
@@ -128,10 +127,10 @@ typedef struct
 /* 文件解析 结构体 */
 typedef struct
 {
-    const char *str;         /* XML字串 */
+    const char *str;            /* XML字串 */
     const char *ptr;            /* 当前处理到的位置 */
     int length;
-}xml_fparse_t;
+}xml_parse_t;
 
 #if defined(__XML_ESC_PARSE__)
 /* 转义字串分割链表: 用于有转义字串的结点值或属性值的处理 */

@@ -124,7 +124,7 @@ static xml_node_t *xml_fprint_next(
         }
         
         ret = stack_pop(stack);
-        if (XML_SUCCESS != ret)
+        if (XML_OK != ret)
         {
             log_error(xml->log, "Stack pop failed!");
             return NULL;
@@ -143,7 +143,7 @@ static xml_node_t *xml_fprint_next(
             /* 3. 父亲节点出栈 */
             top = stack_gettop(stack);
             ret = stack_pop(stack);
-            if (XML_SUCCESS != ret)
+            if (XML_OK != ret)
             {
                 log_error(xml->log, "Stack pop failed!");
                 return NULL;
@@ -208,7 +208,7 @@ int xml_fprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, FILE *fp)
         /* 1. 将要处理的节点压栈 */
         node->temp = node->firstchild;
         ret = stack_push(stack, node);
-        if (XML_SUCCESS != ret)
+        if (XML_OK != ret)
         {
             log_error(xml->log, "Stack push failed!");
             return XML_ERR_STACK;
@@ -236,7 +236,7 @@ int xml_fprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, FILE *fp)
     {
         return XML_ERR_STACK;
     }
-    return XML_SUCCESS;
+    return XML_OK;
 }
 
 /******************************************************************************
@@ -372,7 +372,7 @@ static xml_node_t *xml_pack_next_length(
         }
         
         ret = stack_pop(stack);
-        if (XML_SUCCESS != ret)
+        if (XML_OK != ret)
         {
             *length += length2;
             log_error(xml->log, "Stack pop failed!");
@@ -393,7 +393,7 @@ static xml_node_t *xml_pack_next_length(
             /* 3. 父亲节点出栈 */
             top = stack_gettop(stack);
             ret = stack_pop(stack);
-            if (XML_SUCCESS != ret)
+            if (XML_OK != ret)
             {
                 *length += length2;
                 log_error(xml->log, "Stack pop failed!");
@@ -452,7 +452,7 @@ int xml_pack_node_length(xml_tree_t *xml, xml_node_t *root, Stack_t *stack)
         node->temp = node->firstchild;
         
         ret = stack_push(stack, node);
-        if (XML_SUCCESS != ret)
+        if (XML_OK != ret)
         {
             log_error(xml->log, "Stack push failed!");
             return XML_ERR_STACK;
@@ -609,7 +609,7 @@ static xml_node_t *xml_pack_next(
         }
         
         ret = stack_pop(stack);
-        if (XML_SUCCESS != ret)
+        if (XML_OK != ret)
         {
             log_error(xml->log, "Stack pop failed!");
             return NULL;
@@ -628,7 +628,7 @@ static xml_node_t *xml_pack_next(
             /* 3. 父亲节点出栈 */
             top = stack_gettop(stack);
             ret = stack_pop(stack);
-            if (XML_SUCCESS != ret)
+            if (XML_OK != ret)
             {
                 log_error(xml->log, "Stack pop failed!");
                 return NULL;
@@ -687,7 +687,7 @@ int xml_pack_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, sprint_t *s
         /* 1. 将要处理的节点压栈 */
         node->temp = node->firstchild;
         ret = stack_push(stack, node);
-        if (XML_SUCCESS != ret)
+        if (XML_OK != ret)
         {
             log_error(xml->log, "Stack push failed!");
             return XML_ERR_STACK;
@@ -717,7 +717,7 @@ int xml_pack_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, sprint_t *s
         log_error(xml->log, "Stack is not empty!");
         return XML_ERR_STACK;
     }
-    return XML_SUCCESS;
+    return XML_OK;
 }
 
 /******************************************************************************
@@ -831,7 +831,7 @@ static xml_node_t *xml_sprint_next(
         }
         
         ret = stack_pop(stack);
-        if (XML_SUCCESS != ret)
+        if (XML_OK != ret)
         {
             log_error(xml->log, "Stack pop failed!");
             return NULL;
@@ -850,7 +850,7 @@ static xml_node_t *xml_sprint_next(
             /* 3. 父亲节点出栈 */
             top = stack_gettop(stack);
             ret = stack_pop(stack);
-            if (XML_SUCCESS != ret)
+            if (XML_OK != ret)
             {
                 log_error(xml->log, "Stack pop failed!");
                 return NULL;
@@ -917,7 +917,7 @@ int xml_sprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, sprint_t 
         /* 1. 将要处理的节点压栈 */
         node->temp = node->firstchild;
         ret = stack_push(stack, node);
-        if (XML_SUCCESS != ret)
+        if (XML_OK != ret)
         {
             log_error(xml->log, "Stack push failed!");
             return XML_ERR_STACK;
@@ -948,5 +948,5 @@ int xml_sprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, sprint_t 
         return XML_ERR_STACK;
     }
 
-    return XML_SUCCESS;
+    return XML_OK;
 }
