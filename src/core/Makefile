@@ -34,7 +34,7 @@ SRC_LIST = list.c \
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
 
-TARGET = libxdo_core.so
+TARGET = libxdocore.so
 
 .PHONY: all clean
 

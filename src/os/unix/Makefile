@@ -18,7 +18,7 @@ SRC_LIST = 	xdo_lock.c \
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
 
-TARGET = libxdo_unix.so
+TARGET = libxdounix.so
 
 .PHONY: all clean
 
