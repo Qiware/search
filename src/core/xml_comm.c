@@ -67,6 +67,7 @@ static const xml_esc_t g_xml_esc_str[] =
  **函数名称: xml_node_creat
  **功    能: 创建XML节点
  **输入参数: 
+ **     pool: 内存池
  **     type: 节点类型(xml_node_type_e)
  **输出参数: NONE
  **返    回: 节点地址
@@ -74,11 +75,15 @@ static const xml_esc_t g_xml_esc_str[] =
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.02.18 #
  ******************************************************************************/
-xml_node_t *xml_node_creat(xml_node_type_e type)
+xml_node_t *xml_node_creat(mem_pool_t *pool, xml_node_type_e type)
 {
     xml_node_t *node = NULL;
 
+#if defined(__XML_MEM_POOL__)
+    node = (xml_node_t*)mem_pool_calloc(pool, sizeof(xml_node_t));
+#else /*!__XML_MEM_POOL__*/
     node = (xml_node_t*)calloc(1, sizeof(xml_node_t));
+#endif /*!__XML_MEM_POOL__*/
     if (NULL == node)
     {
         return NULL;
@@ -102,6 +107,7 @@ xml_node_t *xml_node_creat(xml_node_type_e type)
  **函数名称: xml_node_creat_ext
  **功    能: 创建XML节点
  **输入参数: 
+ **     xml: XML树
  **     type: 节点类型(xml_node_type_e)
  **     name: 节点名
  **     vlaue: 节点值
@@ -112,6 +118,7 @@ xml_node_t *xml_node_creat(xml_node_type_e type)
  **作    者: # Qifeng.zou # 2013.06.11 #
  ******************************************************************************/
 xml_node_t *xml_node_creat_ext(
+        xml_tree_t *xml,
         xml_node_type_e type,
         const char *name, const char *value)
 {
@@ -119,7 +126,11 @@ xml_node_t *xml_node_creat_ext(
     xml_node_t *node = NULL;
 
     /* 1. 创建节点 */
+#if defined(__XML_MEM_POOL__)
+    node = (xml_node_t*)mem_pool_calloc(xml->pool, sizeof(xml_node_t));
+#else /*!__XML_MEM_POOL__*/
     node = (xml_node_t*)calloc(1, sizeof(xml_node_t));
+#endif /*!__XML_MEM_POOL__*/
     if (NULL == node)
     {
         return NULL;
@@ -129,19 +140,27 @@ xml_node_t *xml_node_creat_ext(
 
     /* 2. 设置节点名 */
     size = strlen(name) + 1;
+#if defined(__XML_MEM_POOL__)
+    node->name = (char *)mem_pool_calloc(xml->pool, size);
+#else /*!__XML_MEM_POOL__*/
     node->name = (char *)calloc(1, size);
+#endif /*!__XML_MEM_POOL__*/
     if (NULL == node->name)
     {
-        xml_node_sfree(node);
+    #if !defined(__XML_MEM_POOL__)
+        xml_node_free_one(node);
+    #endif /*!__XML_MEM_POOL__*/
         return NULL;
     }
     snprintf(node->name, size, "%s", name);
 
     /* 3. 设置节点值 */
-    ret = xml_set_value(node, value);
+    ret = xml_set_value(xml, node, value);
     if (0 != ret)
     {
-        xml_node_sfree(node);
+    #if !defined(__XML_MEM_POOL__)
+        xml_node_free_one(node);
+    #endif /*__XML_MEM_POOL__*/
         return NULL;
     }
     
@@ -165,20 +184,47 @@ xml_node_t *xml_node_creat_ext(
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
-int xml_init(xml_tree_t **xml)
+int xml_init(xml_tree_t **xml, log_cycle_t *log)
 {
-    *xml = (xml_tree_t*)calloc(1, sizeof(xml_tree_t));
+#if defined(__XML_MEM_POOL__)
+    mem_pool_t *pool;
+
+    /* 1. 创建内存池 */
+    pool = mem_pool_creat(4096, log);
+    if (NULL == pool)
+    {
+        log_error(log, "Create memory pool failed!");
+        return XML_ERR;
+    }
+#endif /*__XML_MEM_POOL__*/
+
+    /* 2. 创建XML对象 */
+#if defined(__XML_MEM_POOL__)
+    *xml = (xml_tree_t *)mem_pool_calloc(pool, sizeof(xml_tree_t));
+#else /*!__XML_MEM_POOL__*/
+    *xml = (xml_tree_t *)calloc(1, sizeof(xml_tree_t));
+#endif /*!__XML_MEM_POOL__*/
     if (NULL == *xml)
     {
+        mem_pool_destroy(pool);
         return XML_ERR_CALLOC;
     }
 
-    (*xml)->root = (xml_node_t*)calloc(1, sizeof(xml_node_t));
+#if defined(__XML_MEM_POOL__)
+    (*xml)->root = (xml_node_t *)mem_pool_calloc(pool, sizeof(xml_node_t));
+#else /*!__XML_MEM_POOL__*/
+    (*xml)->root = (xml_node_t *)calloc(1, sizeof(xml_node_t));
+#endif /*!__XML_MEM_POOL__*/
     if (NULL == (*xml)->root)
     {
-        free(*xml), *xml = NULL;
+        mem_pool_destroy(pool);
         return XML_ERR_CALLOC;
     }
+    
+    (*xml)->log = log;
+#if defined(__XML_MEM_POOL__)
+    (*xml)->pool = pool;
+#endif /*__XML_MEM_POOL__*/
 
     return XML_OK;
 }
@@ -212,7 +258,7 @@ char *xml_fload(const char *fname)
     }
 
     /* 分配文件缓存空间 */
-    buff = (char *)calloc(1, (fstate.st_size+1)*sizeof(char));
+    buff = (char *)calloc(1, (fstate.st_size + 1) * sizeof(char));
     if (NULL == buff)
     {
         return NULL;
@@ -666,7 +712,7 @@ static int xml_mark_get_name(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse
     xml_node_t *node = NULL, *top = NULL;
 
     /* 1. 新建节点，并初始化 */
-    node = xml_node_creat(XML_NODE_UNKNOWN);
+    node = xml_node_creat(xml->pool, XML_NODE_UNKNOWN);
     if (NULL == node)
     {
         log_error(xml->log, "Create xml node failed!");
@@ -719,7 +765,11 @@ static int xml_mark_get_name(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse
     len = ptr - parse->ptr;
 
     /* 5. 提取出节点名 */
-    node->name = calloc(1, (len+1)*sizeof(char));
+#if defined(__XML_MEM_POOL__)
+    node->name = (char *)mem_pool_calloc(xml->pool, (len + 1) * sizeof(char));
+#else /*!__XML_MEM_POOL__*/
+    node->name = (char *)calloc(1, (len + 1) * sizeof(char));
+#endif /*!__XML_MEM_POOL__*/
     if (NULL == node->name)
     {
         log_error(xml->log, "Calloc failed!");
@@ -814,7 +864,7 @@ static int xml_mark_get_attr(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse
     do
     {
         /* 3.1 新建节点，并初始化 */
-        node = xml_node_creat(XML_NODE_ATTR);
+        node = xml_node_creat(xml->pool, XML_NODE_ATTR);
         if (NULL == node)
         {
             log_error(xml->log, "Create xml node failed!");
@@ -828,7 +878,11 @@ static int xml_mark_get_attr(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse
         while (XmlIsMarkChar(*ptr)) ptr++;  /* 查找属性名的边界 */
 
         len = ptr - parse->ptr;
-        node->name = (char*)calloc(1, (len+1)*sizeof(char));
+    #if defined(__XML_MEM_POOL__)
+        node->name = (char *)mem_pool_calloc(xml->pool, (len+1)*sizeof(char));
+    #else /*!__XML_MEM_POOL__*/
+        node->name = (char *)calloc(len + 1, sizeof(char));
+    #endif /*!__XML_MEM_POOL__*/
         if (NULL == node->name)
         {
             errflg = 1;
@@ -907,7 +961,11 @@ static int xml_mark_get_attr(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse
             size = xml_esc_size(&split);
             size += len+1;
     
+        #if defined(__XML_MEM_POOL__)
+            node->value = (char *)mem_pool_calloc(xml->pool, size);
+        #else /*!__XML_MEM_POOL__*/
             node->value = (char *)calloc(1, size);
+        #endif /*!__XML_MEM_POOL__*/
             if (NULL == node->value)
             {
                 errflg = 1;
@@ -924,7 +982,12 @@ static int xml_mark_get_attr(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse
         else
     #endif /*__XML_ESC_PARSE__*/
         {
-            node->value = (char*)calloc(1, (len+1)*sizeof(char));
+        #if defined(__XML_MEM_POOL__)
+            node->value = (char *)mem_pool_calloc(
+                                xml->pool, (len+1) * sizeof(char));
+        #else /*!__XML_MEM_POOL__*/
+            node->value = (char *)calloc(len + 1, sizeof(char));
+        #endif /*!__XML_MEM_POOL__*/
             if (NULL == node->value)
             {
                 errflg = 1;
@@ -958,7 +1021,9 @@ static int xml_mark_get_attr(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse
 
     if (1 == errflg)         /* 防止内存泄漏 */
     {
+    #if !defined(__XML_MEM_POOL__)
         xml_node_free(xml, node);
+    #endif /*!__XML_MEM_POOL__*/
         node = NULL;
         return XML_ERR_GET_ATTR;
     }
@@ -1115,7 +1180,11 @@ static int xml_mark_get_value(xml_tree_t *xml, Stack_t *stack, xml_parse_t *pars
 #endif /*__XML_ESC_PARSE__*/
     size += len+1;
 
-    current->value = (char*)calloc(1, size*sizeof(char));
+#if defined(__XML_MEM_POOL__)
+    current->value = (char *)mem_pool_calloc(xml->pool, size*sizeof(char));
+#else /*!__XML_MEM_POOL__*/
+    current->value = (char *)calloc(size, sizeof(char));
+#endif /*!__XML_MEM_POOL__*/
     if (NULL == current->value)
     {
     #if defined(__XML_ESC_PARSE__)
@@ -1143,7 +1212,7 @@ static int xml_mark_get_value(xml_tree_t *xml, Stack_t *stack, xml_parse_t *pars
     parse->ptr = p2;
     xml_set_value_flag(current);
 
-#if defined(__XML_OCOV__)
+#if defined(__XML_EITHER_CHILD_OR_VALUE__)
     /* 判断：有数值的情况下，是否还有孩子节点 */
     if ((XML_BEGIN_FLAG == *p2) && (XML_END_FLAG == *(p2+1)))
     {
@@ -1152,13 +1221,14 @@ static int xml_mark_get_value(xml_tree_t *xml, Stack_t *stack, xml_parse_t *pars
 
     log_error(xml->log, "XML format is wrong: Node have child and value at same time!");
     return XML_ERR_FORMAT;
-#endif /*__XML_OCOV__*/
+#endif /*__XML_EITHER_CHILD_OR_VALUE__*/
 
     return XML_OK;
 }
 
+#if !defined(__XML_MEM_POOL__)
 /******************************************************************************
- **函数名称: xml_node_sfree
+ **函数名称: xml_node_free_one
  **功    能: 释放单个节点
  **输入参数:
  **     node: 需要被释放的节点
@@ -1168,7 +1238,7 @@ static int xml_mark_get_value(xml_tree_t *xml, Stack_t *stack, xml_parse_t *pars
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.02.27 #
  ******************************************************************************/
-int xml_node_sfree(xml_node_t *node)
+int xml_node_free_one(xml_node_t *node)
 {
     if (NULL != node->name)
     {
@@ -1225,13 +1295,13 @@ xml_node_t *xml_free_next(xml_tree_t *xml, Stack_t *stack, xml_node_t *current)
         
         if (stack_isempty(stack))
         {
-            xml_node_sfree(top), top = NULL;
+            xml_node_free_one(top), top = NULL;
             return NULL;
         }
         
         /* 2. 处理其下一个兄弟节点 */
         current = top->next;
-        xml_node_sfree(top), top = NULL;
+        xml_node_free_one(top), top = NULL;
         while (NULL == current)     /* 所有兄弟节点已经处理完成，说明父亲节点也处理完成 */
         {
             /* 3. 父亲节点出栈 */
@@ -1245,18 +1315,19 @@ xml_node_t *xml_free_next(xml_tree_t *xml, Stack_t *stack, xml_node_t *current)
             
             if (stack_isempty(stack))
             {
-                xml_node_sfree(top), top = NULL;
+                xml_node_free_one(top), top = NULL;
                 return NULL;
             }
     
             /* 5. 选择父亲的兄弟节点 */
             current = top->next;
-            xml_node_sfree(top), top = NULL;
+            xml_node_free_one(top), top = NULL;
         }
     }
 
     return current;
 }
+#endif /*!__XML_MEM_POOL__*/
 
 /******************************************************************************
  **函数名称: xml_delete_child
@@ -1658,6 +1729,7 @@ static int xml_esc_merge(const xml_esc_split_t *sp, char *dst)
  ******************************************************************************/
 static int xml_esc_free(xml_esc_split_t *split)
 {
+#if !defined(__XML_MEM_POOL__)
     xml_esc_node_t *node = split->head, *next = NULL;
 
     while (NULL != node)
@@ -1667,6 +1739,8 @@ static int xml_esc_free(xml_esc_split_t *split)
         free(node);
         node = next;
     }
+#endif /*!__XML_MEM_POOL__*/
+
     split->head = NULL;
     split->tail = NULL;
     
@@ -1698,17 +1772,27 @@ static int xml_esc_split(xml_tree_t *xml, const xml_esc_t *esc,
 {
     xml_esc_node_t *node = NULL;
 
+#if defined(__XML_MEM_POOL__)
+    node = (xml_esc_node_t *)mem_pool_calloc(xml->pool, sizeof(xml_esc_node_t));
+#else /*!__XML_MEM_POOL__*/
     node = (xml_esc_node_t *)calloc(1, sizeof(xml_esc_node_t));
+#endif /*!__XML_MEM_POOL__*/
     if (NULL == node)
     {
         log_error(xml->log, "Calloc memory failed!");
         return XML_ERR_CALLOC;
     }
 
+#if defined(__XML_MEM_POOL__)
+    node->str = (char *)mem_pool_calloc(xml->pool, len+1);
+#else /*!__XML_MEM_POOL__*/
     node->str = (char *)calloc(1, len+1);
+#endif /*!__XML_MEM_POOL__*/
     if (NULL == node->str)
     {
+    #if !defined(__XML_MEM_POOL__)
         free(node);
+    #endif /*!__XML_MEM_POOL__*/
         return XML_ERR_CALLOC;
     }
 

@@ -160,7 +160,7 @@ typedef struct
 
 char *xml_fload(const char *fname);
 
-int xml_init(xml_tree_t **xml);
+int xml_init(xml_tree_t **xml, log_cycle_t *log);
 int xml_parse(xml_tree_t *xml, Stack_t *stack, const char *str);
 int xml_fprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, FILE *fp);
 int xml_sprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, sprint_t *sp);
@@ -169,7 +169,7 @@ int xml_pack_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, sprint_t *s
 int _xml_node_length(xml_tree_t *xml, xml_node_t *root, Stack_t *stack);
 int xml_pack_node_length(xml_tree_t *xml, xml_node_t *root, Stack_t *stack);
 
-int xml_node_sfree(xml_node_t *node);
+int xml_node_free_one(xml_node_t *node);
 xml_node_t *xml_free_next(xml_tree_t *xml, Stack_t *stack, xml_node_t *current);
 
 #endif /*__XML_COMM_H__*/

@@ -16,6 +16,13 @@ ifeq (__ON__, $(strip $(CONFIG_ALOG_SUPPORT)))
 	OPTIONS += __ASYNC_LOG__		# 异步日志功能
 endif
 
+# XML相关宏
+ifeq (__ON__, $(strip $(CONFIG_XML_SUPPORT)))
+	OPTIONS += __XML_MEM_POOL__		# XML的处理过程的内存从内存池申请
+	# 功能: 节点只有孩子节点或只有数值(Either Child Or Value)
+	OPTIONS += __XML_EITHER_CHILD_OR_VALUE__
+endif
+
 # HTML相关宏
 ifeq (__ON__, $(strip $(CONFIG_HTML_SUPPORT)))
 	OPTIONS += __HTML_AUTO_RESTORE__	# HTML自动修复功能
