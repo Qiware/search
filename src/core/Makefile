@@ -20,6 +20,7 @@ SRC_LIST = list.c \
 			sha256.c \
 			slab.c \
 			shm_slab.c \
+			mem_pool.c \
 			xml_comm.c \
 			xml_print.c \
 			xml_tree.c \

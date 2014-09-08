@@ -9,3 +9,5 @@
 ###############################################################################
 CONFIG_DEBUG_SUPPORT = __ON__     # 调试开关
 CONFIG_ALOG_SUPPORT = __ON__      # 异步日志开关
+CONFIG_HTML_SUPPORT = __ON__	  # HTML解析开关
+CONFIG_MEMALIGN_SUPPORT == POSIX_MEMALIGN # MEMALIGN # 内存对齐方式

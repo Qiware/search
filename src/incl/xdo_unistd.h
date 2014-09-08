@@ -43,4 +43,10 @@ int Random(void);
 
 int proc_is_exist(pid_t pid);
 int creat_thread(pthread_t *tid, void *(*process)(void *args), void *args);
+
+#if defined(HAVE_POSIX_MEMALIGN) || defined(HAVE_MEMALIGN)
+void *xdo_mem_align(size_t alignment, size_t size);
+#else
+#define xdo_mem_align(alignment, size) malloc(size)
+#endif
 #endif /*__XDO_UNISTD_H__*/

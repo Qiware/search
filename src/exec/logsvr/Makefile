@@ -10,7 +10,7 @@ include $(PROJ)/make/build.mak
 
 INCLUDE = -I. -I$(PROJ)/src/incl
 LIBS_PATH = -L$(PROJ)/lib
-LIBS = -lpthread -lxdo_core -lxdo_unix
+LIBS = -lpthread -lxdocore -lxdounix
 
 SRC_LIST = log_svr.c
 

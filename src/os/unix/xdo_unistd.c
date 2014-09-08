@@ -360,3 +360,54 @@ AGAIN:
     }
     return 0;
 }
+
+#if (HAVE_POSIX_MEMALIGN)
+/******************************************************************************
+ **函数名称: xdo_mem_align
+ **功    能: 内存对齐
+ **输入参数: 
+ **     alignment: 内存对齐
+ **     size: 空间SIZE
+ **输出参数: NONE
+ **返    回: 0:success !0:failed
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.09.08 #
+ ******************************************************************************/
+void *xdo_mem_align(size_t alignment, size_t size)
+{
+	void  *p;
+	int    err;
+	
+	err = posix_memalign(&p, alignment, size);
+	
+	if (err) 
+	{
+		p = NULL;
+	}
+	return p;
+}
+#elif (HAVE_MEMALIGN)
+/******************************************************************************
+ **函数名称: xdo_mem_align
+ **功    能: 内存对齐
+ **输入参数: 
+ **     alignment: 内存对齐
+ **     size: 空间SIZE
+ **输出参数: NONE
+ **返    回: 0:success !0:failed
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.09.08 #
+ ******************************************************************************/
+void *xdo_mem_align(size_t alignment, size_t size)
+{
+	void  *p;
+	
+	p = memalign(alignment,size);
+	if (p == NULL) 
+	{
+	}
+	return p;
+}
+#endif /*HAVE_MEMALIGN*/
