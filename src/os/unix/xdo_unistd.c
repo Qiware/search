@@ -1,3 +1,6 @@
+#include <sys/shm.h>
+#include <sys/ipc.h>
+
 #include "xdo_unistd.h"
 
 /******************************************************************************
@@ -288,7 +291,7 @@ int proc_is_exist(pid_t pid)
  **     args: Arguments of callback
  ** Output: 
  **     tid: Thread ID
- ** Return: 0:success !0:failed
+ ** Return: 0:成功 !0:失败
  ** Proc :
  ** Note :
  ** Author: # Qifeng.zou # 2014.04.18 #
@@ -339,7 +342,7 @@ int creat_thread(pthread_t *tid, void *(*process)(void *args), void *args)
  **     oldpath: 原文件名
  **     newpath: 新文件名
  **输出参数: NONE
- **返    回: 0:success !0:failed
+ **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.10.31 #
@@ -369,7 +372,7 @@ AGAIN:
  **     alignment: 内存对齐
  **     size: 空间SIZE
  **输出参数: NONE
- **返    回: 0:success !0:failed
+ **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.08 #
@@ -395,7 +398,7 @@ void *xdo_mem_align(size_t alignment, size_t size)
  **     alignment: 内存对齐
  **     size: 空间SIZE
  **输出参数: NONE
- **返    回: 0:success !0:failed
+ **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.08 #
@@ -411,3 +414,50 @@ void *xdo_mem_align(size_t alignment, size_t size)
 	return p;
 }
 #endif /*HAVE_MEMALIGN*/
+
+/******************************************************************************
+ **函数名称: xdo_shm_creat
+ **功    能: 创建共享内存
+ **输入参数: 
+ **     key: 共享内存KEY
+ **     size: 空间SIZE
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.09.08 #
+ ******************************************************************************/
+void *xdo_shm_creat(int key, size_t size)
+{
+    int shmid;
+    void *addr;
+
+    /* 1 判断是否已经创建 */
+    shmid = shmget(key, 0, 0666);
+    if(shmid >= 0)
+    {
+        return shmat(shmid, NULL, 0);  /* 已创建 */
+    }
+
+    /* 2 异常，则退出处理 */
+    if(ENOENT != errno)
+    {
+        return NULL;
+    }
+
+    /* 3 创建共享内存 */
+    shmid = shmget(key, size, IPC_CREAT|0660);
+    if(shmid < 0)
+    {
+        return NULL;
+    }
+
+    /* 4. ATTACH共享内存 */
+    addr = (void *)shmat(shmid, NULL, 0);
+    if((void *)-1 == addr)
+    {
+        return NULL;
+    }
+
+    return addr;
+}
