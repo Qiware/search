@@ -12,6 +12,8 @@
 ###############################################################################
 # 根目录
 export PROJ = ${PWD}
+export PROJ_BIN = ${PROJ}/bin
+export PROJ_LIB = ${PROJ}/lib
 
 # 编译目录(注：编译按顺序执行　注意库之间的依赖关系)
 #DIR=`find ./src -type d`
@@ -27,6 +29,12 @@ export DIR
 
 # 1. 编译操作
 all:
+	@if [ ! -d ${PROJ_BIN} ]; then \
+		mkdir ${PROJ_BIN}; \
+	fi
+	@if [ ! -d ${PROJ_LIB} ]; then \
+		mkdir ${PROJ_LIB}; \
+	fi
 	@for SUBDIR in ${DIR}; \
 	do \
 		if [ -e $${SUBDIR}/Makefile ]; then \
