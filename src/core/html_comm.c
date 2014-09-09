@@ -26,17 +26,21 @@
 #include "common.h"
 #include "log.h"
 
-static int html_parse_version(html_tree_t *html, html_fparse_t *fparse);
-static int html_parse_note(html_tree_t *html, html_fparse_t *fparse);
-static int html_parse_mark(html_tree_t *html, Stack_t *stack, html_fparse_t *fparse);
-static int html_parse_end(html_tree_t *html, Stack_t *stack, html_fparse_t *fparse);
+static int html_parse_doctype(html_tree_t *html, html_parse_t *parse);
+static int html_parse_note(html_tree_t *html, html_parse_t *parse);
+static int html_parse_mark(html_tree_t *html, Stack_t *stack, html_parse_t *parse);
+static int html_parse_end(html_tree_t *html, Stack_t *stack, html_parse_t *parse);
+static int html_parse_special(html_tree_t *html, Stack_t *stack, html_parse_t *parse);
 
-static int html_mark_get_name(html_tree_t *html, Stack_t *stack, html_fparse_t *fparse);
-static int html_mark_has_attr(html_fparse_t *fparse);
-static int html_mark_get_attr(html_tree_t *html, Stack_t *stack, html_fparse_t *fparse);
-static int html_mark_is_end(html_fparse_t *fparse);
-static int html_mark_has_value(html_fparse_t *fparse);
-static int html_mark_get_value(html_tree_t *html, Stack_t *stack, html_fparse_t *fparse);
+static int html_mark_get_name(html_tree_t *html, Stack_t *stack, html_parse_t *parse);
+static int html_mark_has_attr(html_parse_t *parse);
+static int html_mark_get_attr(html_tree_t *html, Stack_t *stack, html_parse_t *parse);
+static int html_mark_is_end(html_parse_t *parse);
+static int html_mark_has_value(html_parse_t *parse);
+static int html_mark_get_value(html_tree_t *html, Stack_t *stack, html_parse_t *parse);
+static int html_script_get_value(html_tree_t *html, Stack_t *stack, html_parse_t *parse);
+
+static int html_mark_mismatch_hdl(html_tree_t *html, html_node_t *node);
 
 /******************************************************************************
  **函数名称: html_node_creat
@@ -155,7 +159,7 @@ int html_init(html_tree_t **html)
         return HTML_ERR_CALLOC;
     }
 
-    return HTML_SUCCESS;
+    return HTML_OK;
 }
 
 /******************************************************************************
@@ -181,7 +185,7 @@ char *html_fload(const char *fname)
 
     /* 判断文件状态是否正常 */
     ret = stat(fname, &fstate);
-    if (HTML_SUCCESS != ret)
+    if (HTML_OK != ret)
     {
         return NULL;
     }
@@ -239,63 +243,58 @@ char *html_fload(const char *fname)
 int html_parse(html_tree_t *html, Stack_t *stack, const char *str)
 {
     int ret = 0;
-    html_fparse_t fparse;
+    html_parse_t parse;
 
-    fparse.str = str;
-    fparse.ptr = str;
-    fparse.length = -1; /* 未知 */
+    parse.str = str;
+    parse.ptr = str;
+    parse.length = -1; /* 未知 */
 
-    while (!HtmlIsStrEndChar(*(fparse.ptr)))
+    while (!HtmlIsStrEndChar(*(parse.ptr)))
     {
-        while (HtmlIsIgnoreChar(*(fparse.ptr))) fparse.ptr++;    /* 跳过无意义的字符 */
+        while (HtmlIsIgnoreChar(*(parse.ptr))) parse.ptr++;    /* 跳过无意义的字符 */
 
-        switch(*(fparse.ptr))
+        switch(*(parse.ptr))
         {
             case HTML_BEGIN_FLAG:
             {
-                switch(*(fparse.ptr+1))
+                switch(*(parse.ptr+1))
                 {
-                    case HTML_VERS_FLAG:  /* "<?" 版本开始 */ 
-                    {
-                        /* 版本信息不用加载到HTML树中 */
-                        ret = html_parse_version(html, &fparse);
-                        if (HTML_SUCCESS != ret)
-                        {
-                            log_error(html->log, "HTML format is wrong![%-.32s] [%ld]",
-                                fparse.ptr, fparse.ptr-fparse.str);
-                            return HTML_ERR_FORMAT;
-                        }
-                        break;
-                    }
                     case HTML_NOTE_FLAG:   /* "<!--" 注释信息 */
                     {
-                        /* 注释信息不用加载到HTML树中 */
-                        ret = html_parse_note(html, &fparse);
-                        if (HTML_SUCCESS != ret)
+                        if ('-' == *(parse.ptr+2))
                         {
-                            log_error(html->log, "HTML format is wrong![%-.32s]", fparse.ptr);
+                            /* 注释信息不用加载到HTML树中 */
+                            ret = html_parse_note(html, &parse);
+                        }
+                        else
+                        {
+                            ret = html_parse_doctype(html, &parse);
+                        }
+                        if (HTML_OK != ret)
+                        {
+                            log_error(html->log, "HTML format is wrong![%-.1024s]", parse.ptr);
                             return HTML_ERR_FORMAT;
                         }
                         break;
                     }
                     case HTML_END_FLAG:   /* "</" 节点结束 */
                     {
-                        ret = html_parse_end(html, stack, &fparse);
-                        if (HTML_SUCCESS != ret)
+                        ret = html_parse_end(html, stack, &parse);
+                        if (HTML_OK != ret)
                         {
-                            log_error(html->log, "HTML format is wrong![%-.32s] [%ld]",
-                                fparse.ptr, fparse.ptr-fparse.str);
+                            log_error(html->log, "HTML format is wrong![%-.1024s] [%ld]",
+                                parse.ptr, parse.ptr-parse.str);
                             return HTML_ERR_FORMAT;
                         }
                         break;
                     }
                     default:    /* "<XYZ" 节点开始 */
                     {
-                        ret = html_parse_mark(html, stack, &fparse);
-                        if (HTML_SUCCESS != ret)
+                        ret = html_parse_mark(html, stack, &parse);
+                        if (HTML_OK != ret)
                         {
-                            log_error(html->log, "Parse HTML failed! [%-.32s] [%ld]",
-                                fparse.ptr, fparse.ptr-fparse.str);
+                            log_error(html->log, "Parse HTML failed! [%-.1024s] [%ld]",
+                                parse.ptr, parse.ptr-parse.str);
                             return HTML_ERR_FORMAT;
                         }
                         break;
@@ -308,166 +307,171 @@ int html_parse(html_tree_t *html, Stack_t *stack, const char *str)
                 if (stack_isempty(stack))
                 {
                     log_debug(html->log, "Parse html success!");
-                    return HTML_SUCCESS;
+                    return HTML_OK;
                 }
-                log_error(html->log, "Invalid format! [%-.32s] [%ld]", fparse.ptr, fparse.ptr-fparse.str);
+                log_error(html->log, "Invalid format! [%-.1024s] [%ld]",
+                    parse.ptr, parse.ptr-parse.str);
                 return HTML_ERR_FORMAT;
             }
             default:            /* 非法字符 */
             {
-                log_error(html->log, "Invalid format! [%-.32s] [%ld]", fparse.ptr, fparse.ptr-fparse.str);
-                return HTML_ERR_FORMAT;
+                /* 判断是否存在特殊情况, 并处理 */
+                ret = html_parse_special(html, stack, &parse);
+                if (HTML_OK != ret)
+                {
+                    log_error(html->log, "Invalid format! [%-.1024s] [%ld]",
+                        parse.ptr, parse.ptr-parse.str);
+                    return HTML_ERR_FORMAT;
+                }
+                break;
             }
         }
     }
 
     if (!stack_isempty(stack))
     {
-        log_error(html->log, "Invalid format! [%-.32s]", fparse.ptr);
+        log_error(html->log, "Invalid format! [%-.1024s]", parse.ptr);
         return HTML_ERR_FORMAT;
     }
     
-    return HTML_SUCCESS;
+    return HTML_OK;
 }
 
 /******************************************************************************
- **函数名称: html_parse_version
- **功    能: 解析HTML文件缓存版本信息
+ **函数名称: html_parse_doctype
+ **功    能: 解析HTML格式文档类型信息
  **输入参数:
- **     fparse: 解析文件缓存信息
+ **     parse: 解析文件缓存信息
  **输出参数:
  **返    回: 0: 成功  !0: 失败
  **实现描述: 
  **注意事项: 
- **作    者: # Qifeng.zou # 2013.02.05 #
+ **参考格式:
+ **     1. 凤凰网 
+ **         <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+ **             "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+ **     2. 腾讯主页
+ **         <!DOCTYPE html>
+ **作    者: # Qifeng.zou # 2014.09.06 #
  ******************************************************************************/
-static int html_parse_version(html_tree_t *html, html_fparse_t *fparse)
+static int html_parse_doctype(html_tree_t *html, html_parse_t *parse)
 {
     int ret = 0;
     char border = '"';
     const char *ptr = NULL;
 
-    /* 匹配版本开头"<?html " */
-    ret = strncmp(fparse->ptr, HTML_VERS_BEGIN, HTML_VERS_BEGIN_LEN);
+    /* 匹配版本开头"<?DOCTYPE " */
+    ret = strncmp(parse->ptr, HTML_DOC_TYPE_BEGIN, HTML_DOC_TYPE_BEGIN_LEN);
     if (0 != ret)
     {
-        log_error(html->log, "HTML format is wrong![%-.32s]", fparse->ptr);
+        log_error(html->log, "HTML format is wrong![%-.1024s]", parse->ptr);
         return HTML_ERR_FORMAT;
     }
 
-    fparse->ptr += HTML_VERS_BEGIN_LEN; /* 跳过版本开头"<?html " */
+    parse->ptr += HTML_DOC_TYPE_BEGIN_LEN; /* 跳过版本开头"<?DOCTYPE " */
 
     /* 检查格式是否正确 */
     /* 跳过无意义字符 */
-    while (HtmlIsIgnoreChar(*fparse->ptr)) fparse->ptr++;
-    while (!HtmlIsDoubtChar(*fparse->ptr) && !HtmlIsStrEndChar(*fparse->ptr))
+    while (HtmlIsIgnoreChar(*parse->ptr))
     {
-        ptr = fparse->ptr;
+        parse->ptr++;
+    }
 
-        /* 属性名是否正确 */
-        while (HtmlIsMarkChar(*ptr)) ptr++;
-        if (ptr == fparse->ptr)
-        {
-            log_error(html->log, "HTML format is wrong![%-.32s]", fparse->ptr);
-            return HTML_ERR_FORMAT;
-        }
+    while (!HtmlIsStrEndChar(*parse->ptr)      /* 结束符'\0' */
+        && !HtmlIsRPBrackChar(*parse->ptr))    /* 右尖括号'>' */
+    {
+        ptr = parse->ptr;
         
-        if (!HtmlIsEqualChar(*ptr))
-        {
-            log_error(html->log, "HTML format is wrong![%-.32s]", fparse->ptr);
-            return HTML_ERR_FORMAT;
-        }
-        ptr++;
-        fparse->ptr = ptr;
-        
-        /* 属性值是否正确 */
-        while (HtmlIsIgnoreChar(*ptr)) ptr++; /* 跳过=之后的无意义字符 */
-
-        /* 判断是双引号(")还是单引号(')为版本属性值的边界 */
-        if (HtmlIsDQuotChar(*ptr) || HtmlIsSQuotChar(*ptr))
+        if (HtmlIsDQuotChar(*ptr)
+            || HtmlIsSQuotChar(*ptr)) /* 引号 */
         {
             border = *ptr;
+            ptr++;
+            while (*ptr != border
+                && !HtmlIsStrEndChar(*parse->ptr))
+            {
+                ptr++;
+            }
+
+            if (*ptr != border)
+            {
+                log_error(html->log, "HTML format is wrong![%-.1024s]", parse->ptr);
+                return HTML_ERR_FORMAT;
+            }
+            ptr++;  /* 跳过双/单引号 */
+
+		    /* 跳过无意义字符 */
+            while (HtmlIsIgnoreChar(*ptr))
+            {
+                ptr++;
+            }
+            parse->ptr = ptr;
+            continue;
         }
-        else                                /* 不为双/单引号，则格式错误 */
-        {
-            log_error(html->log, "HTML format is wrong![%-.32s]", fparse->ptr);
-            return HTML_ERR_FORMAT;
-        }
-        ptr++;
-        fparse->ptr = ptr;
-        
-        while ((*ptr != border) && !HtmlIsStrEndChar(*ptr))
+
+        while (HtmlIsMarkChar(*ptr))
         {
             ptr++;
         }
 
-        if (*ptr != border)
+        /* 跳过无意义字符 */
+        while (HtmlIsIgnoreChar(*ptr))
         {
-            log_error(html->log, "HTML format is wrong![%-.32s]", fparse->ptr);
-            return HTML_ERR_FORMAT;
+            ptr++;
         }
-        ptr++;  /* 跳过双/单引号 */
-        
-		/* 跳过无意义字符 */
-        while (HtmlIsIgnoreChar(*ptr)) ptr++;
-        fparse->ptr = ptr;
+
+        parse->ptr = ptr;
+        continue;
     }
 
-    /* 版本信息以"?>"结束 */
-    if (!HtmlIsDoubtChar(*fparse->ptr))
+    /* 文档类型信息以">"结束 */
+    if (!HtmlIsRPBrackChar(*parse->ptr))
     {
-        log_error(html->log, "HTML format is wrong![%-.32s]", fparse->ptr);
-        return HTML_ERR_FORMAT;
-    }
-    fparse->ptr++;  /* 跳过? */
-    
-    if (!HtmlIsRPBrackChar(*fparse->ptr))
-    {
-        log_error(html->log, "HTML format is wrong![%-.32s]", fparse->ptr);
+        log_error(html->log, "HTML format is wrong![%-.1024s]", parse->ptr);
         return HTML_ERR_FORMAT;
     }
     
-    fparse->ptr++;
-    return HTML_SUCCESS;
+    parse->ptr++;
+    return HTML_OK;
 }
 
 /******************************************************************************
  **函数名称: html_parse_note
  **功    能: 解析HTML文件缓存注释信息
  **输入参数:
- **     fparse: 解析文件缓存信息
+ **     parse: 解析文件缓存信息
  **输出参数:
  **返    回: 0: 成功  !0: 失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
-static int html_parse_note(html_tree_t *html, html_fparse_t *fparse)
+static int html_parse_note(html_tree_t *html, html_parse_t *parse)
 {
     int ret = 0;
     const char *ptr = NULL;
 
 	/* 匹配注释开头"<!--" */
-    ret = strncmp(fparse->ptr, HTML_NOTE_BEGIN, HTML_NOTE_BEGIN_LEN);
+    ret = strncmp(parse->ptr, HTML_NOTE_BEGIN, HTML_NOTE_BEGIN_LEN);
     if (0 != ret)
     {
-        log_error(html->log, "HTML format is wrong![%-.32s]", fparse->ptr);
+        log_error(html->log, "HTML format is wrong![%-.1024s]", parse->ptr);
         return HTML_ERR_FORMAT;
     }
 
-    fparse->ptr += HTML_NOTE_BEGIN_LEN; /* 跳过注释开头"<!--" */
+    parse->ptr += HTML_NOTE_BEGIN_LEN; /* 跳过注释开头"<!--" */
     
     /* 因在注释信息的节点中不允许出现"-->"，所以可使用如下匹配查找结束 */
-    ptr = strstr(fparse->ptr, HTML_NOTE_END1);
+    ptr = strstr(parse->ptr, HTML_NOTE_END1);
     if ((NULL == ptr) || (HTML_NOTE_END2 != *(ptr + HTML_NOTE_END1_LEN)))
     {
-        log_error(html->log, "HTML format is wrong![%-.32s]", fparse->ptr);
+        log_error(html->log, "HTML format is wrong![%-.1024s]", parse->ptr);
         return HTML_ERR_FORMAT;
     }
 
-    fparse->ptr = ptr;
-    fparse->ptr += HTML_NOTE_END_LEN;
-    return HTML_SUCCESS;
+    parse->ptr = ptr;
+    parse->ptr += HTML_NOTE_END_LEN;
+    return HTML_OK;
 }
 
 /******************************************************************************
@@ -475,14 +479,14 @@ static int html_parse_note(html_tree_t *html, html_fparse_t *fparse)
  **功    能: 标签以/>为标志结束
  **输入参数:
  **     stack: 栈
- **     fparse: 解析文件缓存信息
+ **     parse: 解析文件缓存信息
  **输出参数:
  **返    回: 0: 成功  !0: 失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.02.23 #
  ******************************************************************************/
-#define html_mark_end(stack, fparse) (fparse->ptr+=HTML_MARK_END2_LEN, stack_pop(stack))
+#define html_mark_end(stack, parse) (parse->ptr+=HTML_MARK_END2_LEN, stack_pop(stack))
 
 /******************************************************************************
  **函数名称: html_parse_mark
@@ -490,7 +494,7 @@ static int html_parse_note(html_tree_t *html, html_fparse_t *fparse)
  **输入参数:
  **     html: HTML树
  **     stack: HTML栈
- **     fparse: 解析文件缓存信息
+ **     parse: 解析文件缓存信息
  **输出参数:
  **返    回: 0: 成功  !0: 失败
  **实现描述: 
@@ -501,25 +505,26 @@ static int html_parse_note(html_tree_t *html, html_fparse_t *fparse)
  **     注意: 以上3个步骤是固定的，否则将会出现混乱
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
-static int html_parse_mark(html_tree_t *html, Stack_t *stack, html_fparse_t *fparse)
+static int html_parse_mark(html_tree_t *html, Stack_t *stack, html_parse_t *parse)
 {
     int ret = 0;
+    html_node_t *top;
 
-    fparse->ptr += HTML_MARK_BEGIN_LEN;    /* 跳过"<" */
+    parse->ptr += HTML_MARK_BEGIN_LEN;    /* 跳过"<" */
 
     /* 1. 提取标签名，并入栈 */
-    ret = html_mark_get_name(html, stack, fparse);
-    if (HTML_SUCCESS != ret)
+    ret = html_mark_get_name(html, stack, parse);
+    if (HTML_OK != ret)
     {
         log_error(html->log, "Get mark name failed!");
         return ret;
     }
     
     /* 2. 提取标签属性 */
-    if (html_mark_has_attr(fparse))
+    if (html_mark_has_attr(parse))
     {
-        ret = html_mark_get_attr(html, stack, fparse);
-        if (HTML_SUCCESS != ret)
+        ret = html_mark_get_attr(html, stack, parse);
+        if (HTML_OK != ret)
         {
             log_error(html->log, "Get mark attr failed!");
             return ret;
@@ -529,31 +534,37 @@ static int html_parse_mark(html_tree_t *html, Stack_t *stack, html_fparse_t *fpa
     /* 3. 标签是否结束:
             如果是<ABC DEF="EFG"/>格式时，此时标签结束；
             如果是<ABC DEF="EFG">HIGK</ABC>格式时，此时标签不结束 */
-    if (html_mark_is_end(fparse))
+    if (html_mark_is_end(parse))
     {
-        return html_mark_end(stack, fparse);
+        return html_mark_end(stack, parse);
     }
 
     /* 4. 提取标签值 */
-    ret = html_mark_has_value(fparse);
+    ret = html_mark_has_value(parse);
     switch(ret)
     {
         case true:
         {
-            return html_mark_get_value(html, stack, fparse);
+            top = stack_gettop(stack);
+            if (!strcasecmp(HTML_MARK_SCRIPT, top->name))
+            {
+                return html_script_get_value(html, stack, parse);
+            }
+
+            return html_mark_get_value(html, stack, parse);
         }
         case false:
         {
-            return HTML_SUCCESS;
+            return HTML_OK;
         }
         default:
         {
-            log_error(html->log, "HTML format is wrong![%-.32s]", fparse->ptr);
+            log_error(html->log, "HTML format is wrong![%-.1024s]", parse->ptr);
             return ret;
         }
     }
  
-    return HTML_SUCCESS;
+    return HTML_OK;
 }
    
 /******************************************************************************
@@ -561,62 +572,131 @@ static int html_parse_mark(html_tree_t *html, Stack_t *stack, html_fparse_t *fpa
  **功    能: 处理结束节点(处理</XXX>格式的结束)
  **输入参数:
  **     stack: HTML栈
- **     fparse: 解析文件缓存信息
+ **     parse: 解析文件缓存信息
  **输出参数:
  **返    回: 0: 成功  !0: 失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
-static int html_parse_end(html_tree_t *html, Stack_t *stack, html_fparse_t *fparse)
+static int html_parse_end(html_tree_t *html, Stack_t *stack, html_parse_t *parse)
 {
-    int ret = 0;
-    size_t len = 0;
-    html_node_t *top = NULL;
-    const char *ptr = NULL;
+    int ret;
+    size_t len;
+    html_node_t *top;
+    const char *ptr;
 
-    fparse->ptr += HTML_MARK_END2_LEN; /* 跳过</ */
-    ptr = fparse->ptr;
+    parse->ptr += HTML_MARK_END2_LEN; /* 跳过</ */
+    ptr = parse->ptr;
     
     /* 1. 确定结束节点名长度 */
     while (HtmlIsMarkChar(*ptr)) ptr++;
     
     if (!HtmlIsRPBrackChar(*ptr))
     {
-        log_error(html->log, "HTML format is wrong![%-.32s]", fparse->ptr);
+        log_error(html->log, "HTML format is wrong![%-.1024s]", parse->ptr);
         return HTML_ERR_FORMAT;
     }
 
-    len = ptr - fparse->ptr;
+    len = ptr - parse->ptr;
 
     /* 2. 获取栈中顶节点信息 */
     top = (html_node_t*)stack_gettop(stack);
     if (NULL == top)
     {
-        log_error(html->log, "Get stack top member failed!");
+        log_error(html->log, "Get stack top failed!");
         return HTML_ERR_STACK;
     }
 
     /* 3. 节点名是否一致 */
     if (len != strlen(top->name)
-        || (0 != strncmp(top->name, fparse->ptr, len)))
+        || (0 != strncmp(top->name, parse->ptr, len)))
     {
-        log_error(html->log, "Mark name is not match![%s][%-.32s]", top->name, fparse->ptr);
+    #if defined(__HTML_AUTO_RESTORE__)
+        do
+        {
+            log_error(html->log, "Mismatch![%s][%-.32s] [%d/%d]",
+                top->name, parse->ptr, strlen(top->name), len);
+
+            /* Step 1: 将TOP结点的孩子结点改为兄弟结点 */
+            ret = html_mark_mismatch_hdl(html, top);
+            if (HTML_OK != ret)
+            {
+                log_error(html->log, "Html restore failed!");
+                return HTML_ERR;
+            }
+
+            log_debug(html->log, "Html restore success!");
+
+            /* Step 2: 将TOP结点的孩子结点改为兄弟结点 */
+            stack_pop(stack);
+
+            top = (html_node_t*)stack_gettop(stack);
+            if (NULL == top)
+            {
+                log_error(html->log, "Get stack top failed!");
+                return HTML_ERR_STACK;
+            }
+        } while (len != strlen(top->name) || 0 != strncasecmp(top->name, parse->ptr, len));
+
+        log_debug(html->log, "Match success![%s][%-.32s] [%d/%d]",
+                top->name, parse->ptr, strlen(top->name), len);
+    #else /*!__HTML_AUTO_RESTORE__*/
+        log_error(html->log, "Mark name is not match![%s][%-.1024s]", top->name, parse->ptr);
         return HTML_ERR_MARK_MISMATCH;
+    #endif /*!__HTML_AUTO_RESTORE__*/
     }
 
     /* 4. 弹出栈顶节点 */
     ret = stack_pop(stack);
-    if (HTML_SUCCESS != ret)
+    if (HTML_OK != ret)
     {
         log_error(html->log, "Pop failed!");
         return HTML_ERR_STACK;
     }
 
     ptr++;
-    fparse->ptr = ptr;
+    parse->ptr = ptr;
         
-    return HTML_SUCCESS;
+    return HTML_OK;
+}
+
+/******************************************************************************
+ **函数名称: html_parse_special
+ **功    能: 解析HTML中的特殊情况
+ **输入参数:
+ **     html: HTML树
+ **     stack: HTML栈
+ **     parse: 解析文件缓存信息
+ **输出参数:
+ **返    回: 0: 成功  !0: 失败
+ **实现描述: 
+ **注意事项: 
+ **     如果此时结点已经有值，说明此时出现的是非法数据；如果没有值，则说明出现
+ **     的数据为节点值。 如：
+ **     <a href="www.baidu.com"> 
+ **         <span id="dingyue" class="txtright"></span>
+ **         今日更新
+ **     </a>
+ **     出现如下情况时，将"今日更新"解析为标签a的节点值.
+ **作    者: # Qifeng.zou # 2014.09.07 #
+ ******************************************************************************/
+static int html_parse_special(html_tree_t *html, Stack_t *stack, html_parse_t *parse)
+{
+    html_node_t *top;
+
+    top = stack_gettop(stack);
+    if (NULL == top)
+    {
+        return HTML_ERR;
+    }
+
+    if (html_has_value(top))
+    {
+        return HTML_ERR;
+    }
+
+    return html_mark_get_value(html, stack, parse);
 }
 
 /******************************************************************************
@@ -625,7 +705,7 @@ static int html_parse_end(html_tree_t *html, Stack_t *stack, html_fparse_t *fpar
  **输入参数:
  **     html: HTML树
  **     stack: HTML栈
- **     fparse: 解析文件缓存信息
+ **     parse: 解析文件缓存信息
  **输出参数:
  **返    回: 0: 成功  !0: 失败
  **实现描述: 
@@ -634,10 +714,10 @@ static int html_parse_end(html_tree_t *html, Stack_t *stack, html_fparse_t *fpar
  **           2. 此时tail用来记录孩子节点链表尾
  **作    者: # Qifeng.zou # 2013.02.23 #
  ******************************************************************************/
-static int html_mark_get_name(html_tree_t *html, Stack_t *stack, html_fparse_t *fparse)
+static int html_mark_get_name(html_tree_t *html, Stack_t *stack, html_parse_t *parse)
 {
     int ret=0, len=0;
-    const char *ptr = fparse->ptr;
+    const char *ptr = parse->ptr;
     html_node_t *node = NULL, *top = NULL;
 
     /* 1. 新建节点，并初始化 */
@@ -687,11 +767,11 @@ static int html_mark_get_name(html_tree_t *html, Stack_t *stack, html_fparse_t *
     /* 4.判断标签名边界是否合法 */
     if (!HtmlIsMarkBorder(*ptr))
     {
-        log_error(html->log, "HTML format is wrong!\n[%-32.32s]", fparse->ptr);
+        log_error(html->log, "HTML format is wrong!\n[%-32.32s]", parse->ptr);
         return HTML_ERR_FORMAT;
     }
 
-    len = ptr - fparse->ptr;
+    len = ptr - parse->ptr;
 
     /* 5. 提取出节点名 */
     node->name = calloc(1, (len+1)*sizeof(char));
@@ -700,39 +780,39 @@ static int html_mark_get_name(html_tree_t *html, Stack_t *stack, html_fparse_t *
         log_error(html->log, "Calloc failed!");
         return HTML_ERR_CALLOC;
     }
-    strncpy(node->name, fparse->ptr, len);
+    strncpy(node->name, parse->ptr, len);
 
     /* 6. 将节点入栈 */
     ret = stack_push(stack, (void*)node);
-    if (HTML_SUCCESS != ret)
+    if (HTML_OK != ret)
     {
         log_error(html->log, "Stack push failed!");
         return HTML_ERR_STACK;
     }
 
-    fparse->ptr = ptr;
+    parse->ptr = ptr;
 
-    return HTML_SUCCESS;
+    return HTML_OK;
 }
 
 /******************************************************************************
  **函数名称: html_mark_has_attr
  **功    能: 判断标签是否有属性节点
  **输入参数:
- **     fparse: 解析文件缓存信息
+ **     parse: 解析文件缓存信息
  **输出参数:
  **返    回: 0: 成功  !0: 失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.02.23 #
  ******************************************************************************/
-static int html_mark_has_attr(html_fparse_t *fparse)
+static int html_mark_has_attr(html_parse_t *parse)
 {
-    const char *ptr = fparse->ptr;
+    const char *ptr = parse->ptr;
 
     while (HtmlIsIgnoreChar(*ptr)) ptr++;    /* 跳过无意义的字符 */
 
-    fparse->ptr = ptr;
+    parse->ptr = ptr;
     
     if (HtmlIsMarkChar(*ptr))
     {
@@ -748,7 +828,7 @@ static int html_mark_has_attr(html_fparse_t *fparse)
  **输入参数:
  **     
  **     stack: HTML栈
- **     fparse: 解析文件缓存信息
+ **     parse: 解析文件缓存信息
  **输出参数:
  **返    回: 0: 成功  !0: 失败
  **实现描述: 
@@ -763,12 +843,12 @@ static int html_mark_has_attr(html_fparse_t *fparse)
  **作    者: # Qifeng.zou # 2013.02.18 #
  **修    改: # Qifeng.zou # 2014.01.06 #
  ******************************************************************************/
-static int html_mark_get_attr(html_tree_t *html, Stack_t *stack, html_fparse_t *fparse)
+static int html_mark_get_attr(html_tree_t *html, Stack_t *stack, html_parse_t *parse)
 {
     char border = '"';
     html_node_t *node = NULL, *top = NULL;
     int len = 0, errflg = 0;
-    const char *ptr = fparse->ptr;
+    const char *ptr = parse->ptr;
 
     /* 1. 获取正在处理的标签 */
     top = (html_node_t*)stack_gettop(stack);
@@ -792,10 +872,10 @@ static int html_mark_get_attr(html_tree_t *html, Stack_t *stack, html_fparse_t *
         /* 3.2 获取属性名 */
         while (HtmlIsIgnoreChar(*ptr)) ptr++;/* 跳过属性名之前无意义的空格 */
 
-        fparse->ptr = ptr;
+        parse->ptr = ptr;
         while (HtmlIsMarkChar(*ptr)) ptr++;  /* 查找属性名的边界 */
 
-        len = ptr - fparse->ptr;
+        len = ptr - parse->ptr;
         node->name = (char*)calloc(1, (len+1)*sizeof(char));
         if (NULL == node->name)
         {
@@ -804,7 +884,7 @@ static int html_mark_get_attr(html_tree_t *html, Stack_t *stack, html_fparse_t *
             break;
         }
 
-        memcpy(node->name, fparse->ptr, len);
+        memcpy(node->name, parse->ptr, len);
         
         /* 3.3 获取属性值 */
         while (HtmlIsIgnoreChar(*ptr)) ptr++;         /* 跳过=之前的无意义字符 */
@@ -812,42 +892,62 @@ static int html_mark_get_attr(html_tree_t *html, Stack_t *stack, html_fparse_t *
         if (!HtmlIsEqualChar(*ptr))                      /* 不为等号，则格式错误 */
         {
             errflg = 1;
-            log_error(html->log, "Attribute format is incorrect![%-.32s]", fparse->ptr);
+            log_error(html->log, "Attribute format is incorrect![%-.1024s]", parse->ptr);
             break;
         }
         ptr++;                                  /* 跳过"=" */
         while (HtmlIsIgnoreChar(*ptr)) ptr++;     /* 跳过=之后的无意义字符 */
 
-        /* 判断是单引号(')还是双引号(")为属性的边界 */
+        /* 1) 判断是单引号(')还是双引号(")为属性的边界 */
         if (HtmlIsDQuotChar(*ptr) || HtmlIsSQuotChar(*ptr))
         {
             border = *ptr;
-        }
-        else                  /* 不为 双/单 引号，则格式错误 */
-        {
-            errflg = 1;
-            log_error(html->log, "HTML format is wrong![%-.32s]", fparse->ptr);
-            break;
-        }
 
-        ptr++;
-        fparse->ptr = ptr;
-
-        /* 计算 双/单 引号之间的数据长度 */
-        while ((*ptr != border) && !HtmlIsStrEndChar(*ptr))
-        {
             ptr++;
-        }
+            parse->ptr = ptr;
 
-        if (*ptr != border)
+            /* 计算 双/单 引号之间的数据长度 */
+            while ((*ptr != border) && !HtmlIsStrEndChar(*ptr))
+            {
+                ptr++;
+            }
+
+            if (HtmlIsStrEndChar(*ptr))
+            {
+                errflg = 1;
+                log_error(html->log, "Mismatch border [%c]![%-.1024s]", border, parse->ptr);
+                break;
+            }
+
+            len = ptr - parse->ptr;
+            ptr++;  /* 跳过" */
+        }
+        /* 2) 不为 双/单 引号时，则以空格和'>'结束属性值 */
+        else
         {
-            errflg = 1;
-            log_error(html->log, "Mismatch border [%c]![%-.32s]", border, fparse->ptr);
-            break;
-        }
+        #if 1
+            /* 查找属性值的边界:空格或> */
+            while (!isspace(*ptr)
+                && !HtmlIsStrEndChar(*ptr)
+                && !HtmlIsRPBrackChar(*ptr))
+            {
+                ptr++;
+            }
 
-        len = ptr - fparse->ptr;
-        ptr++;  /* 跳过" */
+            if (HtmlIsStrEndChar(*ptr))
+            {
+                errflg = 1;
+                log_error(html->log, "Mismatch border [%c]![%-.1024s]", border, parse->ptr);
+                break;
+            }
+
+            len = ptr - parse->ptr;
+        #else
+            errflg = 1;
+            log_error(html->log, "Html format is wrong! [%-.1024s]", parse->ptr);
+            break;
+        #endif
+        }
 
         node->value = (char*)calloc(1, (len+1)*sizeof(char));
         if (NULL == node->value)
@@ -857,7 +957,7 @@ static int html_mark_get_attr(html_tree_t *html, Stack_t *stack, html_fparse_t *
             break;
         }
 
-        memcpy(node->value, fparse->ptr, len);
+        memcpy(node->value, parse->ptr, len);
 
         /* 3.4 将节点加入属性链表 */
         if (NULL == top->tail) /* 还没有孩子节点 */
@@ -883,27 +983,27 @@ static int html_mark_get_attr(html_tree_t *html, Stack_t *stack, html_fparse_t *
         return HTML_ERR_GET_ATTR;
     }
 
-    fparse->ptr = ptr;
+    parse->ptr = ptr;
     html_set_attr_flag(top);
 
-    return HTML_SUCCESS;
+    return HTML_OK;
 }
 
 /******************************************************************************
  **函数名称: html_mark_is_end
  **功    能: 标签是否结束 "/>"
  **输入参数:
- **     fparse: 解析文件缓存信息
+ **     parse: 解析文件缓存信息
  **输出参数:
  **返    回: 0: 成功  !0: 失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.02.23 #
  ******************************************************************************/
-static int html_mark_is_end(html_fparse_t *fparse)
+static int html_mark_is_end(html_parse_t *parse)
 {
     int ret = 0;
-    const char *ptr = fparse->ptr;
+    const char *ptr = parse->ptr;
     
     while (HtmlIsIgnoreChar(*ptr)) ptr++;
 
@@ -920,16 +1020,16 @@ static int html_mark_is_end(html_fparse_t *fparse)
  **函数名称: html_mark_has_value
  **功    能: 是否有节点值
  **输入参数:
- **     fparse: 解析文件缓存信息
+ **     parse: 解析文件缓存信息
  **输出参数:
  **返    回: true:有 false:无 -1: 错误格式
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.02.23 #
  ******************************************************************************/
-static int html_mark_has_value(html_fparse_t *fparse)
+static int html_mark_has_value(html_parse_t *parse)
 {
-    const char *ptr = fparse->ptr;
+    const char *ptr = parse->ptr;
 
     while (HtmlIsIgnoreChar(*ptr)) ptr++;
     
@@ -940,7 +1040,7 @@ static int html_mark_has_value(html_fparse_t *fparse)
         /* 跳过起始的空格和换行符 */
         while (HtmlIsIgnoreChar(*ptr)) ptr++;
 
-        fparse->ptr = ptr;
+        parse->ptr = ptr;
         if (HtmlIsLPBrackChar(*ptr)) /* 出现子节点 */
         {
             return false;
@@ -955,15 +1055,16 @@ static int html_mark_has_value(html_fparse_t *fparse)
  **函数名称: html_mark_get_value
  **功    能: 获取节点值
  **输入参数: 
+ **     html: HTML树
  **     stack: HTML栈
- **     fparse: 解析文件缓存信息
+ **     parse: 解析文件缓存信息
  **输出参数:
  **返    回: 0: 成功  !0: 失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.02.23 #
  ******************************************************************************/
-static int html_mark_get_value(html_tree_t *html, Stack_t *stack, html_fparse_t *fparse)
+static int html_mark_get_value(html_tree_t *html, Stack_t *stack, html_parse_t *parse)
 {
     int len = 0, size = 0;
     const char *p1=NULL, *p2=NULL;
@@ -975,15 +1076,24 @@ static int html_mark_get_value(html_tree_t *html, Stack_t *stack, html_fparse_t 
         return HTML_ERR_STACK;
     }
 
-    p1 = fparse->ptr;
+    p1 = parse->ptr;
 
     while (HtmlIsIgnoreChar(*p1)) p1++;
 
-    fparse->ptr = p1;
+    parse->ptr = p1;
     
     /* 提取节点值: 允许节点值中出现空格和换行符 */    
-    while (!HtmlIsStrEndChar(*p1) && !HtmlIsLPBrackChar(*p1))
+    while (!HtmlIsStrEndChar(*p1))
     {
+        if (HtmlIsLPBrackChar(*p1)
+        #if defined(__HTML_DEL_BR__)
+            && 0 != strncasecmp(p1, "<br />", 6)
+            && 0 != strncasecmp(p1, "<br/>", 5)
+        #endif /*__HTML_DEL_BR__*/
+        )
+        {
+            break;
+        }
         p1++;
     }
 
@@ -999,7 +1109,7 @@ static int html_mark_get_value(html_tree_t *html, Stack_t *stack, html_fparse_t 
 
     p1++;
 
-    len = p1 - fparse->ptr;
+    len = p1 - parse->ptr;
     size += len+1;
 
     current->value = (char*)calloc(1, size*sizeof(char));
@@ -1009,23 +1119,95 @@ static int html_mark_get_value(html_tree_t *html, Stack_t *stack, html_fparse_t 
         return HTML_ERR_CALLOC;
     }
 
-    strncpy(current->value, fparse->ptr, len);
+    strncpy(current->value, parse->ptr, len);
 
-    fparse->ptr = p2;
+    parse->ptr = p2;
     html_set_value_flag(current);
 
 #if defined(__HTML_OCOV__)
     /* 判断：有数值的情况下，是否还有孩子节点 */
     if ((HTML_BEGIN_FLAG == *p2) && (HTML_END_FLAG == *(p2+1)))
     {
-        return HTML_SUCCESS;
+        return HTML_OK;
     }
 
     log_error(html->log, "HTML format is wrong: Node have child and value at same time!");
     return HTML_ERR_FORMAT;
 #endif /*__HTML_OCOV__*/
 
-    return HTML_SUCCESS;
+    return HTML_OK;
+}
+
+/******************************************************************************
+ **函数名称: html_script_get_value
+ **功    能: 获取脚本结点值
+ **输入参数: 
+ **     html: HTML树
+ **     stack: HTML栈
+ **     parse: 解析文件缓存信息
+ **输出参数:
+ **返    回: 0: 成功  !0: 失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2013.02.23 #
+ ******************************************************************************/
+static int html_script_get_value(html_tree_t *html, Stack_t *stack, html_parse_t *parse)
+{
+    int len = 0, size = 0;
+    const char *p1=NULL, *p2=NULL;
+    html_node_t *current = NULL;
+
+    current = (html_node_t*)stack_gettop(stack);
+    if (NULL == current)
+    {
+        return HTML_ERR_STACK;
+    }
+
+    p1 = parse->ptr;
+
+    while (HtmlIsIgnoreChar(*p1)) p1++;
+
+    parse->ptr = p1;
+    
+    /* 提取节点值: 允许节点值中出现空格和换行符 */    
+    while (!HtmlIsStrEndChar(*p1))
+    {
+        if (HtmlIsLPBrackChar(*p1)
+            && !strncasecmp(p1, HTML_MARK_SCRIPT_END, strlen(HTML_MARK_SCRIPT_END)))
+        {
+            break;
+        }
+        p1++;
+    }
+
+    if (HtmlIsStrEndChar(*p1))
+    {
+        log_error(html->log, "HTML format is wrong! MarkName:[%s]", current->name);
+        return HTML_ERR_FORMAT;
+    }
+    
+    p2 = p1;
+    p1--;
+    while (HtmlIsIgnoreChar(*p1)) p1--;
+
+    p1++;
+
+    len = p1 - parse->ptr;
+    size += len+1;
+
+    current->value = (char*)calloc(1, size*sizeof(char));
+    if (NULL == current->value)
+    {
+        log_error(html->log, "Calloc failed!");
+        return HTML_ERR_CALLOC;
+    }
+
+    strncpy(current->value, parse->ptr, len);
+
+    parse->ptr = p2;
+    html_set_value_flag(current);
+
+    return HTML_OK;
 }
 
 /******************************************************************************
@@ -1054,7 +1236,7 @@ int html_node_sfree(html_node_t *node)
     }
 
     free(node);
-    return HTML_SUCCESS;
+    return HTML_OK;
 }
 
 /******************************************************************************
@@ -1088,7 +1270,7 @@ html_node_t *html_free_next(html_tree_t *html, Stack_t *stack, html_node_t *curr
         top = stack_gettop(stack);
         
         ret = stack_pop(stack);
-        if (HTML_SUCCESS != ret)
+        if (HTML_OK != ret)
         {
             log_error(html->log, "Stack pop failed!");
             return NULL;
@@ -1108,7 +1290,7 @@ html_node_t *html_free_next(html_tree_t *html, Stack_t *stack, html_node_t *curr
             /* 3. 父亲节点出栈 */
             top = stack_gettop(stack);
             ret = stack_pop(stack);
-            if (HTML_SUCCESS != ret)
+            if (HTML_OK != ret)
             {
                 log_error(html->log, "Stack pop failed!");
                 return NULL;
@@ -1168,7 +1350,7 @@ int html_delete_child(html_tree_t *html, html_node_t *node, html_node_t *child)
         {
             html_unset_attr_flag(node);
         }
-        return HTML_SUCCESS;
+        return HTML_OK;
     }
 
     p1 = node->firstchild;
@@ -1190,12 +1372,12 @@ int html_delete_child(html_tree_t *html, html_node_t *node, html_node_t *child)
                     html_unset_child_flag(node);
                 }
             }
-            return HTML_SUCCESS;
+            return HTML_OK;
         }
         p1 = p2;
         p2 = p2->next;
     }
-	return HTML_SUCCESS;
+	return HTML_OK;
 }
 
 /* 打印节点名长度(注: HTML有层次格式) */
@@ -1302,7 +1484,7 @@ static html_node_t *html_node_next_length(
         }
         
         ret = stack_pop(stack);
-        if (HTML_SUCCESS != ret)
+        if (HTML_OK != ret)
         {
             *length += length2;
             log_error(html->log, "Stack pop failed!");
@@ -1323,7 +1505,7 @@ static html_node_t *html_node_next_length(
             /* 3. 父亲节点出栈 */
             top = stack_gettop(stack);
             ret = stack_pop(stack);
-            if (HTML_SUCCESS != ret)
+            if (HTML_OK != ret)
             {
                 *length += length2;
                 log_error(html->log, "Stack pop failed!");
@@ -1389,7 +1571,7 @@ int _html_node_length(html_tree_t *html, html_node_t *root, Stack_t *stack)
         /* 1. 将要处理的节点压栈 */
         node->temp = node->firstchild;
         ret = stack_push(stack, node);
-        if (HTML_SUCCESS != ret)
+        if (HTML_OK != ret)
         {
             log_error(html->log, "Stack push failed!");
             return HTML_ERR_STACK;
@@ -1419,4 +1601,76 @@ int _html_node_length(html_tree_t *html, html_node_t *root, Stack_t *stack)
         return HTML_ERR_STACK;
     }
     return length;
+}
+
+/******************************************************************************
+ **函数名称: html_mark_mismatch_hdl
+ **功    能: 修复匹配失败的结点格式
+ **输入参数:
+ **     html: HTML树
+ **     node: 异常结点
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.09.07 #
+ ******************************************************************************/
+static int html_mark_mismatch_hdl(html_tree_t *html, html_node_t *node)
+{
+    html_node_t *attr, *next,
+        *child = node->firstchild,
+        *parent = node->parent;
+
+    attr = child;
+    while (NULL != child)
+    {
+        /* 1. 查找第一个孩子结点(非属性结点) */
+        if (html_is_attr(child))
+        {
+            attr = child;
+            child = child->next;
+            continue;
+        }
+
+        /* 2. 修改孩子结点的父节点 */
+        if (child == node->firstchild)
+        {
+            node->firstchild = NULL;
+        }
+        else
+        {
+            attr->next = NULL;
+        }
+
+        next = child;
+        while (NULL != next)
+        {
+            next->parent = parent;
+            next = next->next;
+        }
+
+        html_unset_child_flag(node);
+
+        /* 3. 将孩子结点插入父节点的孩子列表 */
+        if (NULL == node->next)
+        {
+            node->next = child;
+        }
+        else
+        {
+            next = node->next;
+            while (NULL != next->next)
+            {
+                next = next->next;
+            }
+
+            next->next = child;
+        }
+
+        html_set_child_flag(node->parent);
+        return HTML_OK;
+    }
+
+    html_unset_child_flag(node);
+    return HTML_OK;
 }

@@ -20,7 +20,7 @@ endif
 ifeq (__ON__, $(strip $(CONFIG_XML_SUPPORT)))
 	OPTIONS += __XML_MEM_POOL__		# XML的处理过程的内存从内存池申请
 	# 功能: 节点只有孩子节点或只有数值(Either Child Or Value)
-	OPTIONS += __XML_EITHER_CHILD_OR_VALUE__
+	#OPTIONS += __XML_EITHER_CHILD_OR_VALUE__
 endif
 
 # HTML相关宏
@@ -30,8 +30,8 @@ ifeq (__ON__, $(strip $(CONFIG_HTML_SUPPORT)))
 endif
 
 # 内存对齐
-ifeq (POSIX_MEMALIGN, $(strip $(CONFIG_POSIX_SUPPORT)))
+ifeq (POSIX_MEMALIGN, $(strip $(CONFIG_MEMALIGN_SUPPORT)))
 	OPTIONS += HAVE_POSIX_MEMALIGN	# POSIX内存对齐方式
-else ifeq (MEMALIGN, $(strip $(CONFIG_POSIX_SUPPORT)))
+else ifeq (MEMALIGN, $(strip $(CONFIG_MEMALIGN_SUPPORT)))
 	OPTIONS += HAVE_MEMALIGN		# 内存对齐方式
 endif

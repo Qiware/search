@@ -99,7 +99,7 @@ html_tree_t *html_creat(const char *fname, log_cycle_t *log)
     buff = html_fload(fname);
     if (NULL == buff)
     {
-        log_error(html->log, "Load html file into memory failed![%s]", fname);
+        log_error(log, "Load html file into memory failed![%s]", fname);
         return NULL;
     }
 
@@ -191,7 +191,7 @@ html_tree_t *html_screat_ext(const char *str, int length, log_cycle_t *log)
     {
         /* 1. 初始化栈 */
         ret = stack_init(&stack, HTML_MAX_DEPTH);
-        if (HTML_SUCCESS != ret)
+        if (HTML_OK != ret)
         {
             log_error(html->log, "Init html stack failed!");
             break;
@@ -199,9 +199,9 @@ html_tree_t *html_screat_ext(const char *str, int length, log_cycle_t *log)
 
         /* 2. 初始化HTML树 */
         ret = html_init(&html);
-        if (HTML_SUCCESS != ret)
+        if (HTML_OK != ret)
         {   
-            log_error(html->log, "Init html tree failed!");
+            log_error(html->log, "Init html failed!");
             break;
         }
 
@@ -209,9 +209,9 @@ html_tree_t *html_screat_ext(const char *str, int length, log_cycle_t *log)
 
         /* 3. 解析HTML文件缓存 */
         ret = html_parse(html, &stack, str);
-        if (HTML_SUCCESS != ret)
+        if (HTML_OK != ret)
         {
-            log_error(html->log, "Parse html file cache failed!");
+            log_error(html->log, "Parse html failed!");
             html_destroy(html);
             break;
         }
@@ -269,14 +269,14 @@ int html_node_free(html_tree_t *html, html_node_t *node)
     if ((NULL != parent) && (NULL != current))
     {
         ret = html_delete_child(html, parent, node);
-        if (HTML_SUCCESS != ret)
+        if (HTML_OK != ret)
         {
             return ret;
         }
     }
 
     ret = stack_init(stack, HTML_MAX_DEPTH);
-    if (HTML_SUCCESS != ret)
+    if (HTML_OK != ret)
     {
         log_error(html->log, "Init stack failed!");
         return HTML_ERR_STACK;
@@ -287,7 +287,7 @@ int html_node_free(html_tree_t *html, html_node_t *node)
         /* 1. 节点入栈 */
         current->temp = current->firstchild;
         ret = stack_push(stack, current);
-        if (HTML_SUCCESS != ret)
+        if (HTML_OK != ret)
         {
             stack_destroy(stack);
             log_error(html->log, "Push stack failed!");
@@ -311,7 +311,7 @@ int html_node_free(html_tree_t *html, html_node_t *node)
     }
 
     stack_destroy(stack);
-    return HTML_SUCCESS;
+    return HTML_OK;
 }
 
 /******************************************************************************
@@ -339,7 +339,7 @@ int html_fprint(html_tree_t *html, FILE *fp)
     }
     
     ret = stack_init(&stack, HTML_MAX_DEPTH);
-    if (HTML_SUCCESS != ret)
+    if (HTML_OK != ret)
     {
         log_error(html->log, "Stack init failed!");
         return HTML_ERR_STACK;
@@ -348,7 +348,7 @@ int html_fprint(html_tree_t *html, FILE *fp)
     while (NULL != child)
     {
         ret = html_fprint_tree(html, child, &stack, fp);
-        if (HTML_SUCCESS != ret)
+        if (HTML_OK != ret)
         {
             log_error(html->log, "fPrint tree failed!");
             stack_destroy(&stack);
@@ -358,7 +358,7 @@ int html_fprint(html_tree_t *html, FILE *fp)
     }
 
     stack_destroy(&stack);
-    return HTML_SUCCESS;
+    return HTML_OK;
 }
 
 /******************************************************************************
@@ -394,7 +394,7 @@ int html_fwrite(html_tree_t *html, const char *fname)
     }
     
     ret = stack_init(&stack, HTML_MAX_DEPTH);
-    if (HTML_SUCCESS != ret)
+    if (HTML_OK != ret)
     {
         fclose(fp), fp = NULL;
         log_error(html->log, "Stack init failed!");
@@ -404,7 +404,7 @@ int html_fwrite(html_tree_t *html, const char *fname)
     while (NULL != child)
     {
         ret = html_fprint_tree(html, child, &stack, fp);
-        if (HTML_SUCCESS != ret)
+        if (HTML_OK != ret)
         {
             log_error(html->log, "fPrint tree failed!");
             fclose(fp), fp = NULL;
@@ -416,7 +416,7 @@ int html_fwrite(html_tree_t *html, const char *fname)
 
     fclose(fp), fp = NULL;
     stack_destroy(&stack);
-    return HTML_SUCCESS;
+    return HTML_OK;
 }
 
 /******************************************************************************
@@ -440,13 +440,13 @@ int html_sprint(html_tree_t *html, char *str)
 
     if (NULL == child) 
     {
-        return HTML_SUCCESS;
+        return HTML_OK;
     }
 
     sprint_init(&sp, str);
     
     ret = stack_init(&stack, HTML_MAX_DEPTH);
-    if (HTML_SUCCESS != ret)
+    if (HTML_OK != ret)
     {
         log_error(html->log, "Stack init failed!");
         return HTML_ERR_STACK;
@@ -455,7 +455,7 @@ int html_sprint(html_tree_t *html, char *str)
     while (NULL != child)
     {
         ret = html_sprint_tree(html, child, &stack, &sp);
-        if (HTML_SUCCESS != ret)
+        if (HTML_OK != ret)
         {
             log_error(html->log, "Sprint tree failed!");
             stack_destroy(&stack);
@@ -489,13 +489,13 @@ extern int html_spack(html_tree_t *html, char *str)
 
     if (NULL == child) 
     {
-        return HTML_SUCCESS;
+        return HTML_OK;
     }
 
     sprint_init(&sp, str);
     
     ret = stack_init(&stack, HTML_MAX_DEPTH);
-    if (HTML_SUCCESS != ret)
+    if (HTML_OK != ret)
     {
         log_error(html->log, "Stack init failed!");
         return HTML_ERR_STACK;
@@ -504,7 +504,7 @@ extern int html_spack(html_tree_t *html, char *str)
     while (NULL != child)
     {
         ret = html_pack_tree(html, child, &stack, &sp);
-        if (HTML_SUCCESS != ret)
+        if (HTML_OK != ret)
         {
             log_error(html->log, "Sprint tree failed!");
             stack_destroy(&stack);
@@ -807,7 +807,7 @@ int html_node_length(html_tree_t *html, html_node_t *node)
     }
     
     ret = stack_init(&stack, HTML_MAX_DEPTH);
-    if (HTML_SUCCESS != ret)
+    if (HTML_OK != ret)
     {
         log_error(html->log, "Stack init failed!");
         return -1;
@@ -855,15 +855,15 @@ int html_set_value(html_node_t *node, const char *value)
             node->value = (char *)calloc(1, 1);
             if (NULL == node->value)
             {
-                return HTML_FAILED;
+                return HTML_ERR;
             }
 			
             html_set_value_flag(node);
-            return HTML_SUCCESS;
+            return HTML_OK;
         }
 
         html_unset_value_flag(node);
-        return HTML_SUCCESS;
+        return HTML_OK;
     }
 
     size = strlen(value) + 1;
@@ -872,13 +872,13 @@ int html_set_value(html_node_t *node, const char *value)
     if (NULL == node->value)
     {
         html_unset_value_flag(node);
-        return HTML_FAILED;
+        return HTML_ERR;
     }
 
     snprintf(node->value, size, "%s", value);
     html_set_value_flag(node);
     
-    return HTML_SUCCESS;
+    return HTML_OK;
 }
 
 /******************************************************************************
@@ -905,7 +905,7 @@ int _html_pack_length(html_tree_t *html, html_node_t *node)
     }
     
     ret = stack_init(&stack, HTML_MAX_DEPTH);
-    if (HTML_SUCCESS != ret)
+    if (HTML_OK != ret)
     {
         log_error(html->log, "Stack init failed!");
         return -1;
@@ -1041,7 +1041,7 @@ int html_delete_empty(html_tree_t *html)
 
     stack_destroy(stack);
     
-    return HTML_SUCCESS;
+    return HTML_OK;
 }
 
 /******************************************************************************

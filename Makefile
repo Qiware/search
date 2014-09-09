@@ -20,6 +20,7 @@ DIR += "src/core"
 DIR += "src/exec/crawler"
 DIR += "src/exec/logsvr"
 DIR += "src/demo"
+DIR += "src/demo/html"
 export DIR
 
 .PHONY: all clean rebuild

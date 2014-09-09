@@ -29,7 +29,7 @@
     (isspace(ch) || HtmlIsTableChar(ch) || HtmlIsNLineChar(ch))
 
 
-#define html_set_type(node, t) ((node)->type = (t))          /* 设置节点类型 */
+#define html_set_type(node, t) ((node)->type = (t))         /* 设置节点类型 */
 #define html_set_flag(node, f) ((node)->flag |= (f))     	/* 设置节点标志 */
 #define html_unset_flag(node, f) ((node)->flag &= ~(f))  	/* 清除节点某个标志 */
 #define html_reset_flag(node) ((node)->flag = HTML_NODE_HAS_NONE)   /* 重置节点标志 */
@@ -49,38 +49,38 @@
 #define html_has_child(node) (HTML_NODE_HAS_CHILD&(node)->flag)   /* 是否有孩子节点 */
 
 #define HTML_BEGIN_FLAG      '<'	    /* 标签开始标志"<" */
-#define HTML_VERS_FLAG       '?'	    /* 版本信息标志"<?html " */
 #define HTML_NOTE_FLAG       '!'	    /* 注释信息标志"<!--" */
 #define HTML_END_FLAG        '/'	    /* 结束标志"</XXX>" */
-#define STR_END_FLAG        '\0'    /* 字串结束符 */
+#define STR_END_FLAG         '\0'       /* 字串结束符 */
+#define HTML_MARK_SCRIPT    "script"    /* 脚本开始标志 */
+#define HTML_MARK_SCRIPT_END "</script>" /* 脚本结束标志 */
 
 /* 错误信息定义 */
 typedef enum
 {
-    HTML_ERR_CALLOC           /* calloc失败 */
-    , HTML_ERR_FORMAT         /* HTML格式错误 */
-    , HTML_ERR_STACK          /* 栈出错 */
-    , HTML_ERR_NODE_TYPE      /* 节点类型错误 */
-    , HTML_ERR_GET_ATTR       /* 属性获取失败 */
-    , HTML_ERR_GET_NAME       /* 标签名获取失败 */
-    , HTML_ERR_MARK_MISMATCH  /* 标签不匹配 */
-    , HTML_ERR_CREAT_NODE     /* 新建节点失败 */
-    , HTML_ERR_PTR_NULL       /* 空指针 */
-    , HTML_ERR_EMPTY_TREE     /* 空树 */
-    , HTML_ERR_FOPEN          /* fopen失败 */
-    
-    /* 请在此行之上增加新的错误码 */
-    , HTML_FAILED             /* 失败 */
-    , HTML_SUCCESS = 0
+    HTML_OK = 0
+
+    , HTML_ERR = ~0x7fffffff            /* 失败 */
+    , HTML_ERR_CALLOC                   /* calloc失败 */
+    , HTML_ERR_FORMAT                   /* HTML格式错误 */
+    , HTML_ERR_STACK                    /* 栈出错 */
+    , HTML_ERR_NODE_TYPE                /* 节点类型错误 */
+    , HTML_ERR_GET_ATTR                 /* 属性获取失败 */
+    , HTML_ERR_GET_NAME                 /* 标签名获取失败 */
+    , HTML_ERR_MARK_MISMATCH            /* 标签不匹配 */
+    , HTML_ERR_CREAT_NODE               /* 新建节点失败 */
+    , HTML_ERR_PTR_NULL                 /* 空指针 */
+    , HTML_ERR_EMPTY_TREE               /* 空树 */
+    , HTML_ERR_FOPEN                    /* fopen失败 */
 }html_err_e;
 
 /* 文件解析 结构体 */
 typedef struct
 {
-    const char *str;         /* HTML字串 */
-    const char *ptr;            /* 当前处理到的位置 */
+    const char *str;                    /* HTML字串 */
+    const char *ptr;                    /* 当前处理到的位置 */
     int length;
-}html_fparse_t;
+}html_parse_t;
 
 typedef struct
 {

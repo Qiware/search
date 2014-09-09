@@ -12,29 +12,29 @@
     <NAME attr1="av1" attr2="av2"></NAME> */
 /* #define __HTML_PACK_CMARK__ */
 
-#define HTML_MAX_DEPTH      (32)     /* HTML树的最大深度 */
+#define HTML_MAX_DEPTH      (32)    /* HTML树的最大深度 */
 
-#define HTML_MARK_BEGIN     "<"      /* 节点开始 */
-#define HTML_MARK_BEGIN_LEN  (1)     /* 节点开始 长度 */
-#define HTML_MARK_END1      "/>"     /* 节点结束 */
-#define HTML_MARK_END1_LEN   (2)     /* 节点结束 长度 */
-#define HTML_MARK_END2      "</"     /* 节点结束2 */
-#define HTML_MARK_END2_LEN   (2)     /* 节点结束2 长度 */
-#define HTML_VERS_BEGIN     "<?html " /* 版本开始 */
-#define HTML_VERS_BEGIN_LEN  (6)     /* 版本开始 长度 */
-#define HTML_VERS_END       "?>"     /* 版本结束 */
-#define HTML_VERS_END_LEN    (2)     /* 版本结束 长度 */
-#define HTML_NOTE_BEGIN     "<!--"   /* 注释开始 */
-#define HTML_NOTE_BEGIN_LEN  (4)     /* 注释开始 长度 */
-#define HTML_NOTE_END       "-->"    /* 注释结束 */
-#define HTML_NOTE_END_LEN    (3)     /* 注释结束 长度 */
+#define HTML_MARK_BEGIN     "<"     /* 节点开始 */
+#define HTML_MARK_BEGIN_LEN (1)     /* 节点开始 长度 */
+#define HTML_MARK_END1      "/>"    /* 节点结束 */
+#define HTML_MARK_END1_LEN  (2)     /* 节点结束 长度 */
+#define HTML_MARK_END2      "</"    /* 节点结束2 */
+#define HTML_MARK_END2_LEN  (2)     /* 节点结束2 长度 */
+#define HTML_DOC_TYPE_BEGIN "<!DOCTYPE " /* 文档类型开始 */
+#define HTML_DOC_TYPE_BEGIN_LEN (10)/* 文档类型开始 长度 */
+#define HTML_VERS_END       "?>"    /* 文档类型结束 */
+#define HTML_VERS_END_LEN   (2)     /* 版本结束 长度 */
+#define HTML_NOTE_BEGIN     "<!--"  /* 注释开始 */
+#define HTML_NOTE_BEGIN_LEN (4)     /* 注释开始 长度 */
+#define HTML_NOTE_END       "-->"   /* 注释结束 */
+#define HTML_NOTE_END_LEN   (3)     /* 注释结束 长度 */
 /* HTML_NOTE_END = (HTML_NOTE_END1 + HTML_NOTE_END2)  */
-#define HTML_NOTE_END1      "--"     /* 注释结束1 */
-#define HTML_NOTE_END1_LEN   (2)     /* 注释结束1 长度 */
-#define HTML_NOTE_END2      '>'      /* 注释结束2 */
+#define HTML_NOTE_END1      "--"    /* 注释结束1 */
+#define HTML_NOTE_END1_LEN  (2)     /* 注释结束1 长度 */
+#define HTML_NOTE_END2      '>'     /* 注释结束2 */
 
-#define HTML_ROOT_NAME       "ROOT"  /* 根节点名称 */
-#define HTML_ROOT_NAME_SIZE  (5)     /* 根节点名称 SIZE */
+#define HTML_ROOT_NAME       "ROOT" /* 根节点名称 */
+#define HTML_ROOT_NAME_SIZE  (5)    /* 根节点名称 SIZE */
 
 #define HTML_NODE_HAS_NONE   (0)             /* 啥都没有 */
 #define HTML_NODE_HAS_CHILD  (0x00000001)    /* 有孩子节点 */
@@ -64,16 +64,16 @@ typedef struct _html_node_t
 {
     char *name;                 /* 节点名 */
     char *value;                /* 节点值 */
-    html_node_type_e type;       /* 节点类型 */
+    html_node_type_e type;      /* 节点类型 */
 
-    struct _html_node_t *next;   /* 兄弟节点链表 */
+    struct _html_node_t *next;  /* 兄弟节点链表 */
     struct _html_node_t *firstchild;  /* 孩子节点链表头: 属性节点+孩子节点 */
-    struct _html_node_t *tail;   /* 孩子节点链表尾 # 构建/修改HTML树时使用 # 提高操作效率 */
+    struct _html_node_t *tail;  /* 孩子节点链表尾 # 构建/修改HTML树时使用 # 提高操作效率 */
     struct _html_node_t *parent; /* 父亲节点 */
 
     unsigned int flag;          /* 记录节点是否有孩子(HTML_NODE_HAS_CHILD)、
                                     属性(HTML_NODE_HAS_ATTR)、节点值(HTML_NODE_HAS_VALUE) */
-    struct _html_node_t *temp;   /* 临时指针: 遍历HTML树时，提高效率(其他情况下，此指针值无效) */    
+    struct _html_node_t *temp;  /* 临时指针: 遍历HTML树时，提高效率(其他情况下，此指针值无效) */    
 }html_node_t;
 
 /* HTML树 */

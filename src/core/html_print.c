@@ -124,7 +124,7 @@ static html_node_t *html_fprint_next(
         }
         
         ret = stack_pop(stack);
-        if (HTML_SUCCESS != ret)
+        if (HTML_OK != ret)
         {
             log_error(html->log, "Stack pop failed!");
             return NULL;
@@ -143,7 +143,7 @@ static html_node_t *html_fprint_next(
             /* 3. 父亲节点出栈 */
             top = stack_gettop(stack);
             ret = stack_pop(stack);
-            if (HTML_SUCCESS != ret)
+            if (HTML_OK != ret)
             {
                 log_error(html->log, "Stack pop failed!");
                 return NULL;
@@ -208,7 +208,7 @@ int html_fprint_tree(html_tree_t *html, html_node_t *root, Stack_t *stack, FILE 
         /* 1. 将要处理的节点压栈 */
         node->temp = node->firstchild;
         ret = stack_push(stack, node);
-        if (HTML_SUCCESS != ret)
+        if (HTML_OK != ret)
         {
             log_error(html->log, "Stack push failed!");
             return HTML_ERR_STACK;
@@ -236,7 +236,7 @@ int html_fprint_tree(html_tree_t *html, html_node_t *root, Stack_t *stack, FILE 
     {
         return HTML_ERR_STACK;
     }
-    return HTML_SUCCESS;
+    return HTML_OK;
 }
 
 /******************************************************************************
@@ -372,7 +372,7 @@ static html_node_t *html_pack_next_length(
         }
         
         ret = stack_pop(stack);
-        if (HTML_SUCCESS != ret)
+        if (HTML_OK != ret)
         {
             *length += length2;
             log_error(html->log, "Stack pop failed!");
@@ -393,7 +393,7 @@ static html_node_t *html_pack_next_length(
             /* 3. 父亲节点出栈 */
             top = stack_gettop(stack);
             ret = stack_pop(stack);
-            if (HTML_SUCCESS != ret)
+            if (HTML_OK != ret)
             {
                 *length += length2;
                 log_error(html->log, "Stack pop failed!");
@@ -452,7 +452,7 @@ int html_pack_node_length(html_tree_t *html, html_node_t *root, Stack_t *stack)
         node->temp = node->firstchild;
         
         ret = stack_push(stack, node);
-        if (HTML_SUCCESS != ret)
+        if (HTML_OK != ret)
         {
             log_error(html->log, "Stack push failed!");
             return HTML_ERR_STACK;
@@ -609,7 +609,7 @@ static html_node_t *html_pack_next(
         }
         
         ret = stack_pop(stack);
-        if (HTML_SUCCESS != ret)
+        if (HTML_OK != ret)
         {
             log_error(html->log, "Stack pop failed!");
             return NULL;
@@ -628,7 +628,7 @@ static html_node_t *html_pack_next(
             /* 3. 父亲节点出栈 */
             top = stack_gettop(stack);
             ret = stack_pop(stack);
-            if (HTML_SUCCESS != ret)
+            if (HTML_OK != ret)
             {
                 log_error(html->log, "Stack pop failed!");
                 return NULL;
@@ -687,7 +687,7 @@ int html_pack_tree(html_tree_t *html, html_node_t *root, Stack_t *stack, sprint_
         /* 1. 将要处理的节点压栈 */
         node->temp = node->firstchild;
         ret = stack_push(stack, node);
-        if (HTML_SUCCESS != ret)
+        if (HTML_OK != ret)
         {
             log_error(html->log, "Stack push failed!");
             return HTML_ERR_STACK;
@@ -717,7 +717,7 @@ int html_pack_tree(html_tree_t *html, html_node_t *root, Stack_t *stack, sprint_
         log_error(html->log, "Stack is not empty!");
         return HTML_ERR_STACK;
     }
-    return HTML_SUCCESS;
+    return HTML_OK;
 }
 
 /******************************************************************************
@@ -831,7 +831,7 @@ static html_node_t *html_sprint_next(
         }
         
         ret = stack_pop(stack);
-        if (HTML_SUCCESS != ret)
+        if (HTML_OK != ret)
         {
             log_error(html->log, "Stack pop failed!");
             return NULL;
@@ -850,7 +850,7 @@ static html_node_t *html_sprint_next(
             /* 3. 父亲节点出栈 */
             top = stack_gettop(stack);
             ret = stack_pop(stack);
-            if (HTML_SUCCESS != ret)
+            if (HTML_OK != ret)
             {
                 log_error(html->log, "Stack pop failed!");
                 return NULL;
@@ -917,7 +917,7 @@ int html_sprint_tree(html_tree_t *html, html_node_t *root, Stack_t *stack, sprin
         /* 1. 将要处理的节点压栈 */
         node->temp = node->firstchild;
         ret = stack_push(stack, node);
-        if (HTML_SUCCESS != ret)
+        if (HTML_OK != ret)
         {
             log_error(html->log, "Stack push failed!");
             return HTML_ERR_STACK;
@@ -948,5 +948,5 @@ int html_sprint_tree(html_tree_t *html, html_node_t *root, Stack_t *stack, sprin
         return HTML_ERR_STACK;
     }
 
-    return HTML_SUCCESS;
+    return HTML_OK;
 }
