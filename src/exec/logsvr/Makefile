@@ -23,7 +23,7 @@ TARGET = logsvr
 all: $(TARGET)
 $(TARGET): $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS)
-	mv $@ $(PROJ)/bin
+	mv $@ $(PROJ_BIN)
 	rm -f $(OBJS)
 	@echo "$@ is OK!"
 

@@ -42,7 +42,7 @@ TARGET = libxdocore.so
 all: $(TARGET)
 $(TARGET): $(OBJS)
 	$(CC) $(LFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS)
-	mv $@ $(PROJ)/lib
+	mv $@ $(PROJ_LIB)
 	rm -f $(OBJS)
 	@echo "$@ is OK!"
 
