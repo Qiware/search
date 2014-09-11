@@ -126,13 +126,13 @@ static html_node_t *html_fprint_next(
         ret = stack_pop(stack);
         if (HTML_OK != ret)
         {
-            log_error(html->log, "Stack pop failed!");
+            log2_error("Stack pop failed!");
             return NULL;
         }
         
         if (stack_isempty(stack))
         {
-            log_error(html->log, "Compelte fprint!");
+            log2_error("Compelte fprint!");
             return NULL;
         }
         
@@ -145,7 +145,7 @@ static html_node_t *html_fprint_next(
             ret = stack_pop(stack);
             if (HTML_OK != ret)
             {
-                log_error(html->log, "Stack pop failed!");
+                log2_error("Stack pop failed!");
                 return NULL;
             }
         
@@ -199,7 +199,7 @@ int html_fprint_tree(html_tree_t *html, html_node_t *root, Stack_t *stack, FILE 
     depth = stack_depth(stack);
     if (0 != depth)
     {
-        log_error(html->log, "Stack depth must empty. depth:[%d]", depth);
+        log2_error("Stack depth must empty. depth:[%d]", depth);
         return HTML_ERR_STACK;
     }
 
@@ -210,7 +210,7 @@ int html_fprint_tree(html_tree_t *html, html_node_t *root, Stack_t *stack, FILE 
         ret = stack_push(stack, node);
         if (HTML_OK != ret)
         {
-            log_error(html->log, "Stack push failed!");
+            log2_error("Stack push failed!");
             return HTML_ERR_STACK;
         }
         
@@ -375,14 +375,14 @@ static html_node_t *html_pack_next_length(
         if (HTML_OK != ret)
         {
             *length += length2;
-            log_error(html->log, "Stack pop failed!");
+            log2_error("Stack pop failed!");
             return NULL;
         }
         
         if (stack_isempty(stack))
         {
             *length += length2;
-            log_error(html->log, "Compelte fprint!");
+            log2_error("Compelte fprint!");
             return NULL;
         }
         
@@ -396,7 +396,7 @@ static html_node_t *html_pack_next_length(
             if (HTML_OK != ret)
             {
                 *length += length2;
-                log_error(html->log, "Stack pop failed!");
+                log2_error("Stack pop failed!");
                 return NULL;
             }
         
@@ -442,7 +442,7 @@ int html_pack_node_length(html_tree_t *html, html_node_t *root, Stack_t *stack)
     depth = stack_depth(stack);
     if (0 != depth)
     {
-        log_error(html->log, "Stack depth must empty. depth:[%d]", depth);
+        log2_error("Stack depth must empty. depth:[%d]", depth);
         return HTML_ERR_STACK;
     }
 
@@ -454,7 +454,7 @@ int html_pack_node_length(html_tree_t *html, html_node_t *root, Stack_t *stack)
         ret = stack_push(stack, node);
         if (HTML_OK != ret)
         {
-            log_error(html->log, "Stack push failed!");
+            log2_error("Stack push failed!");
             return HTML_ERR_STACK;
         }
         
@@ -611,13 +611,13 @@ static html_node_t *html_pack_next(
         ret = stack_pop(stack);
         if (HTML_OK != ret)
         {
-            log_error(html->log, "Stack pop failed!");
+            log2_error("Stack pop failed!");
             return NULL;
         }
         
         if (stack_isempty(stack))
         {
-            log_error(html->log, "Compelte fprint!");
+            log2_error("Compelte fprint!");
             return NULL;
         }
         
@@ -630,7 +630,7 @@ static html_node_t *html_pack_next(
             ret = stack_pop(stack);
             if (HTML_OK != ret)
             {
-                log_error(html->log, "Stack pop failed!");
+                log2_error("Stack pop failed!");
                 return NULL;
             }
         
@@ -678,7 +678,7 @@ int html_pack_tree(html_tree_t *html, html_node_t *root, Stack_t *stack, sprint_
     depth = stack_depth(stack);
     if (0 != depth)
     {
-        log_error(html->log, "Stack depth must empty. depth:[%d]", depth);
+        log2_error("Stack depth must empty. depth:[%d]", depth);
         return HTML_ERR_STACK;
     }
 
@@ -689,7 +689,7 @@ int html_pack_tree(html_tree_t *html, html_node_t *root, Stack_t *stack, sprint_
         ret = stack_push(stack, node);
         if (HTML_OK != ret)
         {
-            log_error(html->log, "Stack push failed!");
+            log2_error("Stack push failed!");
             return HTML_ERR_STACK;
         }
         
@@ -714,7 +714,7 @@ int html_pack_tree(html_tree_t *html, html_node_t *root, Stack_t *stack, sprint_
 
     if (!stack_isempty(stack))
     {
-        log_error(html->log, "Stack is not empty!");
+        log2_error("Stack is not empty!");
         return HTML_ERR_STACK;
     }
     return HTML_OK;
@@ -833,13 +833,13 @@ static html_node_t *html_sprint_next(
         ret = stack_pop(stack);
         if (HTML_OK != ret)
         {
-            log_error(html->log, "Stack pop failed!");
+            log2_error("Stack pop failed!");
             return NULL;
         }
         
         if (stack_isempty(stack))
         {
-            log_error(html->log, "Compelte fprint!");
+            log2_error("Compelte fprint!");
             return NULL;
         }
         
@@ -852,7 +852,7 @@ static html_node_t *html_sprint_next(
             ret = stack_pop(stack);
             if (HTML_OK != ret)
             {
-                log_error(html->log, "Stack pop failed!");
+                log2_error("Stack pop failed!");
                 return NULL;
             }
         
@@ -908,7 +908,7 @@ int html_sprint_tree(html_tree_t *html, html_node_t *root, Stack_t *stack, sprin
     depth = stack_depth(stack);
     if (0 != depth)
     {
-        log_error(html->log, "Stack depth must empty. depth:[%d]", depth);
+        log2_error("Stack depth must empty. depth:[%d]", depth);
         return HTML_ERR_STACK;
     }
 
@@ -919,7 +919,7 @@ int html_sprint_tree(html_tree_t *html, html_node_t *root, Stack_t *stack, sprin
         ret = stack_push(stack, node);
         if (HTML_OK != ret)
         {
-            log_error(html->log, "Stack push failed!");
+            log2_error("Stack push failed!");
             return HTML_ERR_STACK;
         }
         
@@ -944,7 +944,7 @@ int html_sprint_tree(html_tree_t *html, html_node_t *root, Stack_t *stack, sprin
 
     if (!stack_isempty(stack))
     {
-        log_error(html->log, "Stack is not empty!");
+        log2_error("Stack is not empty!");
         return HTML_ERR_STACK;
     }
 

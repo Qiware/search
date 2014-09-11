@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    html = html_creat(argv[1], log);
+    html = html_creat(argv[1]);
     if (NULL == html)
     {
         fprintf(stderr, "Create html tree failed!");

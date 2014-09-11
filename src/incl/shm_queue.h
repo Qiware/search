@@ -30,8 +30,8 @@ typedef struct
 
 shm_queue_t *shm_queue_creat(int key, int max, int size);
 shm_queue_t *shm_queue_attach(int key, int max, int size);
-void *shm_queue_alloc(shm_queue_t *shmq, log_cycle_t *log);
-void shm_queue_free(shm_queue_t *shmq, void *p, log_cycle_t *log);
+void *shm_queue_alloc(shm_queue_t *shmq);
+void shm_queue_free(shm_queue_t *shmq, void *p);
 int shm_queue_push(shm_queue_t *shmq, void *p);
 void *shm_queue_pop(shm_queue_t *shmq);
 

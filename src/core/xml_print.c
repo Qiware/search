@@ -126,13 +126,13 @@ static xml_node_t *xml_fprint_next(
         ret = stack_pop(stack);
         if (XML_OK != ret)
         {
-            log_error(xml->log, "Stack pop failed!");
+            log2_error("Stack pop failed!");
             return NULL;
         }
         
         if (stack_isempty(stack))
         {
-            log_error(xml->log, "Compelte fprint!");
+            log2_error("Compelte fprint!");
             return NULL;
         }
         
@@ -145,7 +145,7 @@ static xml_node_t *xml_fprint_next(
             ret = stack_pop(stack);
             if (XML_OK != ret)
             {
-                log_error(xml->log, "Stack pop failed!");
+                log2_error("Stack pop failed!");
                 return NULL;
             }
         
@@ -199,7 +199,7 @@ int xml_fprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, FILE *fp)
     depth = stack_depth(stack);
     if (0 != depth)
     {
-        log_error(xml->log, "Stack depth must empty. depth:[%d]", depth);
+        log2_error("Stack depth must empty. depth:[%d]", depth);
         return XML_ERR_STACK;
     }
 
@@ -210,7 +210,7 @@ int xml_fprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, FILE *fp)
         ret = stack_push(stack, node);
         if (XML_OK != ret)
         {
-            log_error(xml->log, "Stack push failed!");
+            log2_error("Stack push failed!");
             return XML_ERR_STACK;
         }
         
@@ -375,14 +375,14 @@ static xml_node_t *xml_pack_next_length(
         if (XML_OK != ret)
         {
             *length += length2;
-            log_error(xml->log, "Stack pop failed!");
+            log2_error("Stack pop failed!");
             return NULL;
         }
         
         if (stack_isempty(stack))
         {
             *length += length2;
-            log_error(xml->log, "Compelte fprint!");
+            log2_error("Compelte fprint!");
             return NULL;
         }
         
@@ -396,7 +396,7 @@ static xml_node_t *xml_pack_next_length(
             if (XML_OK != ret)
             {
                 *length += length2;
-                log_error(xml->log, "Stack pop failed!");
+                log2_error("Stack pop failed!");
                 return NULL;
             }
         
@@ -442,7 +442,7 @@ int xml_pack_node_length(xml_tree_t *xml, xml_node_t *root, Stack_t *stack)
     depth = stack_depth(stack);
     if (0 != depth)
     {
-        log_error(xml->log, "Stack depth must empty. depth:[%d]", depth);
+        log2_error("Stack depth must empty. depth:[%d]", depth);
         return XML_ERR_STACK;
     }
 
@@ -454,7 +454,7 @@ int xml_pack_node_length(xml_tree_t *xml, xml_node_t *root, Stack_t *stack)
         ret = stack_push(stack, node);
         if (XML_OK != ret)
         {
-            log_error(xml->log, "Stack push failed!");
+            log2_error("Stack push failed!");
             return XML_ERR_STACK;
         }
         
@@ -611,13 +611,13 @@ static xml_node_t *xml_pack_next(
         ret = stack_pop(stack);
         if (XML_OK != ret)
         {
-            log_error(xml->log, "Stack pop failed!");
+            log2_error("Stack pop failed!");
             return NULL;
         }
         
         if (stack_isempty(stack))
         {
-            log_error(xml->log, "Compelte fprint!");
+            log2_error("Compelte fprint!");
             return NULL;
         }
         
@@ -630,7 +630,7 @@ static xml_node_t *xml_pack_next(
             ret = stack_pop(stack);
             if (XML_OK != ret)
             {
-                log_error(xml->log, "Stack pop failed!");
+                log2_error("Stack pop failed!");
                 return NULL;
             }
         
@@ -678,7 +678,7 @@ int xml_pack_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, sprint_t *s
     depth = stack_depth(stack);
     if (0 != depth)
     {
-        log_error(xml->log, "Stack depth must empty. depth:[%d]", depth);
+        log2_error("Stack depth must empty. depth:[%d]", depth);
         return XML_ERR_STACK;
     }
 
@@ -689,7 +689,7 @@ int xml_pack_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, sprint_t *s
         ret = stack_push(stack, node);
         if (XML_OK != ret)
         {
-            log_error(xml->log, "Stack push failed!");
+            log2_error("Stack push failed!");
             return XML_ERR_STACK;
         }
         
@@ -714,7 +714,7 @@ int xml_pack_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, sprint_t *s
 
     if (!stack_isempty(stack))
     {
-        log_error(xml->log, "Stack is not empty!");
+        log2_error("Stack is not empty!");
         return XML_ERR_STACK;
     }
     return XML_OK;
@@ -833,13 +833,13 @@ static xml_node_t *xml_sprint_next(
         ret = stack_pop(stack);
         if (XML_OK != ret)
         {
-            log_error(xml->log, "Stack pop failed!");
+            log2_error("Stack pop failed!");
             return NULL;
         }
         
         if (stack_isempty(stack))
         {
-            log_error(xml->log, "Compelte fprint!");
+            log2_error("Compelte fprint!");
             return NULL;
         }
         
@@ -852,7 +852,7 @@ static xml_node_t *xml_sprint_next(
             ret = stack_pop(stack);
             if (XML_OK != ret)
             {
-                log_error(xml->log, "Stack pop failed!");
+                log2_error("Stack pop failed!");
                 return NULL;
             }
         
@@ -908,7 +908,7 @@ int xml_sprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, sprint_t 
     depth = stack_depth(stack);
     if (0 != depth)
     {
-        log_error(xml->log, "Stack depth must empty. depth:[%d]", depth);
+        log2_error("Stack depth must empty. depth:[%d]", depth);
         return XML_ERR_STACK;
     }
 
@@ -919,7 +919,7 @@ int xml_sprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, sprint_t 
         ret = stack_push(stack, node);
         if (XML_OK != ret)
         {
-            log_error(xml->log, "Stack push failed!");
+            log2_error("Stack push failed!");
             return XML_ERR_STACK;
         }
         
@@ -944,7 +944,7 @@ int xml_sprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, sprint_t 
 
     if (!stack_isempty(stack))
     {
-        log_error(xml->log, "Stack is not empty!");
+        log2_error("Stack is not empty!");
         return XML_ERR_STACK;
     }
 

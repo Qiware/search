@@ -39,7 +39,7 @@ static html_node_t *_html_delete_empty(html_tree_t *html, Stack_t *stack, html_n
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.06.12 #
  ******************************************************************************/
-html_tree_t *html_creat_empty(log_cycle_t *log)
+html_tree_t *html_creat_empty(void)
 {
     html_tree_t *html = NULL;
 
@@ -47,18 +47,16 @@ html_tree_t *html_creat_empty(log_cycle_t *log)
     html = (html_tree_t*)calloc(1, sizeof(html_tree_t));
     if (NULL == html)
     {
-        log_error(html->log, "Calloc failed!");
+        log2_error("Calloc failed!");
         return NULL;
     }
-
-    html->log = log;
 
     /* 2. Add root node */
     html->root = html_node_creat(HTML_NODE_ROOT);
     if (NULL == html->root)
     {
         free(html), html = NULL;
-        log_error(html->log, "Create node failed!");
+        log2_error("Create node failed!");
         return NULL;
     }
 
@@ -67,7 +65,7 @@ html_tree_t *html_creat_empty(log_cycle_t *log)
     if (NULL == html->root->name)
     {
         html_destroy(html);
-        log_error(html->log, "Calloc failed!");
+        log2_error("Calloc failed!");
         return NULL;
     }
     
@@ -90,7 +88,7 @@ html_tree_t *html_creat_empty(log_cycle_t *log)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
-html_tree_t *html_creat(const char *fname, log_cycle_t *log)
+html_tree_t *html_creat(const char *fname)
 {
     char *buff = NULL;
     html_tree_t *html = NULL;
@@ -99,12 +97,12 @@ html_tree_t *html_creat(const char *fname, log_cycle_t *log)
     buff = html_fload(fname);
     if (NULL == buff)
     {
-        log_error(log, "Load html file into memory failed![%s]", fname);
+        log2_error("Load html file into memory failed![%s]", fname);
         return NULL;
     }
 
     /* 2. 在内存中将HTML文件转为HTML树 */
-    html = html_screat(buff, log);
+    html = html_screat(buff);
 
     free(buff), buff = NULL;
 
@@ -126,35 +124,31 @@ html_tree_t *html_creat(const char *fname, log_cycle_t *log)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.09.25 #
  ******************************************************************************/
-html_tree_t *html_screat_ext(const char *str, int length, log_cycle_t *log)
+html_tree_t *html_screat_ext(const char *str, int length)
 {
     char *buff = NULL;
     html_tree_t *html = NULL;
 
     if (0 == length)     /* 创建空树 */
     {
-        return html_creat_empty(log); 
+        return html_creat_empty(); 
     }
     else if (length < 0) /* 长度无限制 */
     {
-        return html_screat(str, log);
+        return html_screat(str);
     }
 
     /* length > 0 */
     buff = (char *)calloc(1, length + 1);
     if (NULL == buff)
     {
-        log_error(html->log, "Alloc memory failed!");
+        log2_error("Alloc memory failed!");
         return NULL;
     }
 
     memcpy(buff, str, length);
 
-    html = html_screat(buff, log);
-    if (NULL != html)
-    {
-        html->log = log;
-    }
+    html = html_screat(buff);
 
     free(buff), buff = NULL;
 
@@ -175,7 +169,7 @@ html_tree_t *html_screat_ext(const char *str, int length, log_cycle_t *log)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
- html_tree_t *html_screat(const char *str, log_cycle_t *log)
+ html_tree_t *html_screat(const char *str)
 {
     int ret = 0;
     Stack_t stack;
@@ -184,7 +178,7 @@ html_tree_t *html_screat_ext(const char *str, int length, log_cycle_t *log)
     if ((NULL == str)
         || ('\0' == str[0]))
     {
-        return html_creat_empty(log);
+        return html_creat_empty();
     }
     
     do
@@ -193,7 +187,7 @@ html_tree_t *html_screat_ext(const char *str, int length, log_cycle_t *log)
         ret = stack_init(&stack, HTML_MAX_DEPTH);
         if (HTML_OK != ret)
         {
-            log_error(html->log, "Init html stack failed!");
+            log2_error("Init html stack failed!");
             break;
         }
 
@@ -201,17 +195,15 @@ html_tree_t *html_screat_ext(const char *str, int length, log_cycle_t *log)
         ret = html_init(&html);
         if (HTML_OK != ret)
         {   
-            log_error(html->log, "Init html failed!");
+            log2_error("Init html failed!");
             break;
         }
-
-        html->log = log;
 
         /* 3. 解析HTML文件缓存 */
         ret = html_parse(html, &stack, str);
         if (HTML_OK != ret)
         {
-            log_error(html->log, "Parse html failed!");
+            log2_error("Parse html failed!");
             html_destroy(html);
             break;
         }
@@ -278,7 +270,7 @@ int html_node_free(html_tree_t *html, html_node_t *node)
     ret = stack_init(stack, HTML_MAX_DEPTH);
     if (HTML_OK != ret)
     {
-        log_error(html->log, "Init stack failed!");
+        log2_error("Init stack failed!");
         return HTML_ERR_STACK;
     }
 
@@ -290,7 +282,7 @@ int html_node_free(html_tree_t *html, html_node_t *node)
         if (HTML_OK != ret)
         {
             stack_destroy(stack);
-            log_error(html->log, "Push stack failed!");
+            log2_error("Push stack failed!");
             return HTML_ERR_STACK;
         }
 
@@ -306,7 +298,7 @@ int html_node_free(html_tree_t *html, html_node_t *node)
     if (!stack_isempty(stack))
     {
         stack_destroy(stack);
-        log_error(html->log, "Stack is not empty!");
+        log2_error("Stack is not empty!");
         return HTML_ERR_STACK;
     }
 
@@ -334,14 +326,14 @@ int html_fprint(html_tree_t *html, FILE *fp)
 
     if (NULL == child) 
     {
-        log_error(html->log, "The tree is empty!");
+        log2_error("The tree is empty!");
         return HTML_ERR_EMPTY_TREE;
     }
     
     ret = stack_init(&stack, HTML_MAX_DEPTH);
     if (HTML_OK != ret)
     {
-        log_error(html->log, "Stack init failed!");
+        log2_error("Stack init failed!");
         return HTML_ERR_STACK;
     }
 
@@ -350,7 +342,7 @@ int html_fprint(html_tree_t *html, FILE *fp)
         ret = html_fprint_tree(html, child, &stack, fp);
         if (HTML_OK != ret)
         {
-            log_error(html->log, "fPrint tree failed!");
+            log2_error("fPrint tree failed!");
             stack_destroy(&stack);
             return ret;
         }
@@ -382,14 +374,14 @@ int html_fwrite(html_tree_t *html, const char *fname)
 
     if (NULL == child) 
     {
-        log_error(html->log, "The tree is empty!");
+        log2_error("The tree is empty!");
         return HTML_ERR_EMPTY_TREE;
     }
 
     fp = fopen(fname, "wb");
     if (NULL == fp)
     {
-        log_error(html->log, "Call fopen() failed![%s]", fname);
+        log2_error("Call fopen() failed![%s]", fname);
         return HTML_ERR_FOPEN;
     }
     
@@ -397,7 +389,7 @@ int html_fwrite(html_tree_t *html, const char *fname)
     if (HTML_OK != ret)
     {
         fclose(fp), fp = NULL;
-        log_error(html->log, "Stack init failed!");
+        log2_error("Stack init failed!");
         return HTML_ERR_STACK;
     }
 
@@ -406,7 +398,7 @@ int html_fwrite(html_tree_t *html, const char *fname)
         ret = html_fprint_tree(html, child, &stack, fp);
         if (HTML_OK != ret)
         {
-            log_error(html->log, "fPrint tree failed!");
+            log2_error("fPrint tree failed!");
             fclose(fp), fp = NULL;
             stack_destroy(&stack);
             return ret;
@@ -448,7 +440,7 @@ int html_sprint(html_tree_t *html, char *str)
     ret = stack_init(&stack, HTML_MAX_DEPTH);
     if (HTML_OK != ret)
     {
-        log_error(html->log, "Stack init failed!");
+        log2_error("Stack init failed!");
         return HTML_ERR_STACK;
     }
 
@@ -457,7 +449,7 @@ int html_sprint(html_tree_t *html, char *str)
         ret = html_sprint_tree(html, child, &stack, &sp);
         if (HTML_OK != ret)
         {
-            log_error(html->log, "Sprint tree failed!");
+            log2_error("Sprint tree failed!");
             stack_destroy(&stack);
             return ret;
         }
@@ -497,7 +489,7 @@ extern int html_spack(html_tree_t *html, char *str)
     ret = stack_init(&stack, HTML_MAX_DEPTH);
     if (HTML_OK != ret)
     {
-        log_error(html->log, "Stack init failed!");
+        log2_error("Stack init failed!");
         return HTML_ERR_STACK;
     }
 
@@ -506,7 +498,7 @@ extern int html_spack(html_tree_t *html, char *str)
         ret = html_pack_tree(html, child, &stack, &sp);
         if (HTML_OK != ret)
         {
-            log_error(html->log, "Sprint tree failed!");
+            log2_error("Sprint tree failed!");
             stack_destroy(&stack);
             return ret;
         }
@@ -616,13 +608,13 @@ html_node_t *html_add_attr(
 
     if (NULL == parent)
     {
-        log_error(html->log, "Please create root node at first!");
+        log2_error("Please create root node at first!");
         return NULL;
     }
 
     if (html_is_attr(node))
     {
-        log_error(html->log, "Can't add attr for attribute node!");
+        log2_error("Can't add attr for attribute node!");
         return NULL;
     }
 
@@ -630,7 +622,7 @@ html_node_t *html_add_attr(
     attr = html_node_creat_ext(HTML_NODE_ATTR, name, value);
     if (NULL == attr)
     {
-        log_error(html->log, "Create node failed!");
+        log2_error("Create node failed!");
         return NULL;
     }
     
@@ -682,7 +674,7 @@ html_node_t *html_add_attr(
 
     html_node_sfree(attr);
     
-    log_error(html->log, "Add attr node failed!");
+    log2_error("Add attr node failed!");
     return NULL;
 }
 
@@ -709,15 +701,13 @@ html_node_t *html_add_child(
 
     if (html_is_attr(node))
     {
-        log_error(html->log,
-            "Can't add child for attribute node![%s]", node->name);
+        log2_error("Can't add child for attribute node![%s]", node->name);
         return NULL;
     }
 #if defined(__HTML_OCOV__)
     else if (html_has_value(node))
     {
-        log_error(html->log,
-            "Can't add child for the node which has value![%s]", node->name);
+        log2_error("Can't add child for the node which has value![%s]", node->name);
         return NULL;
     }
 #endif /*__HTML_OCOV__*/
@@ -726,7 +716,7 @@ html_node_t *html_add_child(
     child = html_node_creat_ext(HTML_NODE_CHILD, name, value);
     if (NULL == child)
     {
-        log_error(html->log, "Create node failed![%s]", name);
+        log2_error("Create node failed![%s]", name);
         return NULL;
     }
 
@@ -802,21 +792,21 @@ int html_node_length(html_tree_t *html, html_node_t *node)
     
     if (NULL == node)
     {
-        log_error(html->log, "The node is empty!");
+        log2_error("The node is empty!");
         return 0;
     }
     
     ret = stack_init(&stack, HTML_MAX_DEPTH);
     if (HTML_OK != ret)
     {
-        log_error(html->log, "Stack init failed!");
+        log2_error("Stack init failed!");
         return -1;
     }
 
     length = _html_node_length(html, node, &stack);
     if (length < 0)
     {
-        log_error(html->log, "Get the length of node failed!");
+        log2_error("Get the length of node failed!");
         stack_destroy(&stack);
         return -1;
     }
@@ -900,14 +890,14 @@ int _html_pack_length(html_tree_t *html, html_node_t *node)
     
     if (NULL == node)
     {
-        log_error(html->log, "The node is empty!");
+        log2_error("The node is empty!");
         return 0;
     }
     
     ret = stack_init(&stack, HTML_MAX_DEPTH);
     if (HTML_OK != ret)
     {
-        log_error(html->log, "Stack init failed!");
+        log2_error("Stack init failed!");
         return -1;
     }
 
@@ -918,7 +908,7 @@ int _html_pack_length(html_tree_t *html, html_node_t *node)
             length = html_pack_node_length(html, node, &stack);
             if (length < 0)
             {
-                log_error(html->log, "Get length of the node failed!");
+                log2_error("Get length of the node failed!");
                 stack_destroy(&stack);
                 return -1;
             }
@@ -932,7 +922,7 @@ int _html_pack_length(html_tree_t *html, html_node_t *node)
                 length2 = html_pack_node_length(html, child, &stack);
                 if (length2 < 0)
                 {
-                    log_error(html->log, "Get length of the node failed!");
+                    log2_error("Get length of the node failed!");
                     stack_destroy(&stack);
                     return -1;
                 }
@@ -980,7 +970,7 @@ int html_delete_empty(html_tree_t *html)
     ret = stack_init(stack, HTML_MAX_DEPTH);
     if (0 != ret)
     {
-        log_error(html->log, "Init stack failed!");
+        log2_error("Init stack failed!");
         return HTML_ERR_STACK;
     }
 
@@ -997,7 +987,7 @@ int html_delete_empty(html_tree_t *html)
             }
 
             /* 属性节点后续无孩子节点: 说明其父节点无孩子节点, 此类父节点不应该入栈 */
-            log_error(html->log, "Push is not right!");
+            log2_error("Push is not right!");
             return HTML_ERR_STACK;
         }
         /* 2. 此节点有孩子节点: 入栈, 并处理其孩子节点 */
@@ -1006,7 +996,7 @@ int html_delete_empty(html_tree_t *html)
             ret = stack_push(stack, node);
             if (0 != ret)
             {
-                log_error(html->log, "Push failed!");
+                log2_error("Push failed!");
                 return HTML_ERR_STACK;
             }
             

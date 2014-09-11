@@ -112,13 +112,13 @@ shm_queue_t *shm_queue_attach(int key, int max, int size)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.10 #
  ******************************************************************************/
-void *shm_queue_alloc(shm_queue_t *shmq, log_cycle_t *log)
+void *shm_queue_alloc(shm_queue_t *shmq)
 {
     void *p;
 
     /* 加锁 */
 
-    p = shm_slab_alloc(&shmq->slab, shmq->size, log);
+    p = shm_slab_alloc(&shmq->slab, shmq->size);
 
     /* 解锁 */
 
@@ -137,10 +137,10 @@ void *shm_queue_alloc(shm_queue_t *shmq, log_cycle_t *log)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.10 #
  ******************************************************************************/
-void shm_queue_free(shm_queue_t *shmq, void *p, log_cycle_t *log)
+void shm_queue_free(shm_queue_t *shmq, void *p)
 {
     /* 加锁 */
-    shm_slab_free(&shmq->slab, p, log);
+    shm_slab_free(&shmq->slab, p);
     /* 解锁 */
 }
 

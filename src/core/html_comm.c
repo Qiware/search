@@ -272,7 +272,7 @@ int html_parse(html_tree_t *html, Stack_t *stack, const char *str)
                         }
                         if (HTML_OK != ret)
                         {
-                            log_error(html->log, "HTML format is wrong![%-.1024s]", parse.ptr);
+                            log2_error("HTML format is wrong![%-.1024s]", parse.ptr);
                             return HTML_ERR_FORMAT;
                         }
                         break;
@@ -282,7 +282,7 @@ int html_parse(html_tree_t *html, Stack_t *stack, const char *str)
                         ret = html_parse_end(html, stack, &parse);
                         if (HTML_OK != ret)
                         {
-                            log_error(html->log, "HTML format is wrong![%-.1024s] [%ld]",
+                            log2_error("HTML format is wrong![%-.1024s] [%ld]",
                                 parse.ptr, parse.ptr-parse.str);
                             return HTML_ERR_FORMAT;
                         }
@@ -293,7 +293,7 @@ int html_parse(html_tree_t *html, Stack_t *stack, const char *str)
                         ret = html_parse_mark(html, stack, &parse);
                         if (HTML_OK != ret)
                         {
-                            log_error(html->log, "Parse HTML failed! [%-.1024s] [%ld]",
+                            log2_error("Parse HTML failed! [%-.1024s] [%ld]",
                                 parse.ptr, parse.ptr-parse.str);
                             return HTML_ERR_FORMAT;
                         }
@@ -306,10 +306,10 @@ int html_parse(html_tree_t *html, Stack_t *stack, const char *str)
             {
                 if (stack_isempty(stack))
                 {
-                    log_debug(html->log, "Parse html success!");
+                    log2_debug("Parse html success!");
                     return HTML_OK;
                 }
-                log_error(html->log, "Invalid format! [%-.1024s] [%ld]",
+                log2_error("Invalid format! [%-.1024s] [%ld]",
                     parse.ptr, parse.ptr-parse.str);
                 return HTML_ERR_FORMAT;
             }
@@ -319,7 +319,7 @@ int html_parse(html_tree_t *html, Stack_t *stack, const char *str)
                 ret = html_parse_special(html, stack, &parse);
                 if (HTML_OK != ret)
                 {
-                    log_error(html->log, "Invalid format! [%-.1024s] [%ld]",
+                    log2_error("Invalid format! [%-.1024s] [%ld]",
                         parse.ptr, parse.ptr-parse.str);
                     return HTML_ERR_FORMAT;
                 }
@@ -330,7 +330,7 @@ int html_parse(html_tree_t *html, Stack_t *stack, const char *str)
 
     if (!stack_isempty(stack))
     {
-        log_error(html->log, "Invalid format! [%-.1024s]", parse.ptr);
+        log2_error("Invalid format! [%-.1024s]", parse.ptr);
         return HTML_ERR_FORMAT;
     }
     
@@ -364,7 +364,7 @@ static int html_parse_doctype(html_tree_t *html, html_parse_t *parse)
     ret = strncmp(parse->ptr, HTML_DOC_TYPE_BEGIN, HTML_DOC_TYPE_BEGIN_LEN);
     if (0 != ret)
     {
-        log_error(html->log, "HTML format is wrong![%-.1024s]", parse->ptr);
+        log2_error("HTML format is wrong![%-.1024s]", parse->ptr);
         return HTML_ERR_FORMAT;
     }
 
@@ -395,7 +395,7 @@ static int html_parse_doctype(html_tree_t *html, html_parse_t *parse)
 
             if (*ptr != border)
             {
-                log_error(html->log, "HTML format is wrong![%-.1024s]", parse->ptr);
+                log2_error("HTML format is wrong![%-.1024s]", parse->ptr);
                 return HTML_ERR_FORMAT;
             }
             ptr++;  /* 跳过双/单引号 */
@@ -427,7 +427,7 @@ static int html_parse_doctype(html_tree_t *html, html_parse_t *parse)
     /* 文档类型信息以">"结束 */
     if (!HtmlIsRPBrackChar(*parse->ptr))
     {
-        log_error(html->log, "HTML format is wrong![%-.1024s]", parse->ptr);
+        log2_error("HTML format is wrong![%-.1024s]", parse->ptr);
         return HTML_ERR_FORMAT;
     }
     
@@ -455,7 +455,7 @@ static int html_parse_note(html_tree_t *html, html_parse_t *parse)
     ret = strncmp(parse->ptr, HTML_NOTE_BEGIN, HTML_NOTE_BEGIN_LEN);
     if (0 != ret)
     {
-        log_error(html->log, "HTML format is wrong![%-.1024s]", parse->ptr);
+        log2_error("HTML format is wrong![%-.1024s]", parse->ptr);
         return HTML_ERR_FORMAT;
     }
 
@@ -465,7 +465,7 @@ static int html_parse_note(html_tree_t *html, html_parse_t *parse)
     ptr = strstr(parse->ptr, HTML_NOTE_END1);
     if ((NULL == ptr) || (HTML_NOTE_END2 != *(ptr + HTML_NOTE_END1_LEN)))
     {
-        log_error(html->log, "HTML format is wrong![%-.1024s]", parse->ptr);
+        log2_error("HTML format is wrong![%-.1024s]", parse->ptr);
         return HTML_ERR_FORMAT;
     }
 
@@ -516,7 +516,7 @@ static int html_parse_mark(html_tree_t *html, Stack_t *stack, html_parse_t *pars
     ret = html_mark_get_name(html, stack, parse);
     if (HTML_OK != ret)
     {
-        log_error(html->log, "Get mark name failed!");
+        log2_error("Get mark name failed!");
         return ret;
     }
     
@@ -526,7 +526,7 @@ static int html_parse_mark(html_tree_t *html, Stack_t *stack, html_parse_t *pars
         ret = html_mark_get_attr(html, stack, parse);
         if (HTML_OK != ret)
         {
-            log_error(html->log, "Get mark attr failed!");
+            log2_error("Get mark attr failed!");
             return ret;
         }
     }
@@ -559,7 +559,7 @@ static int html_parse_mark(html_tree_t *html, Stack_t *stack, html_parse_t *pars
         }
         default:
         {
-            log_error(html->log, "HTML format is wrong![%-.1024s]", parse->ptr);
+            log2_error("HTML format is wrong![%-.1024s]", parse->ptr);
             return ret;
         }
     }
@@ -594,7 +594,7 @@ static int html_parse_end(html_tree_t *html, Stack_t *stack, html_parse_t *parse
     
     if (!HtmlIsRPBrackChar(*ptr))
     {
-        log_error(html->log, "HTML format is wrong![%-.1024s]", parse->ptr);
+        log2_error("HTML format is wrong![%-.1024s]", parse->ptr);
         return HTML_ERR_FORMAT;
     }
 
@@ -604,7 +604,7 @@ static int html_parse_end(html_tree_t *html, Stack_t *stack, html_parse_t *parse
     top = (html_node_t*)stack_gettop(stack);
     if (NULL == top)
     {
-        log_error(html->log, "Get stack top failed!");
+        log2_error("Get stack top failed!");
         return HTML_ERR_STACK;
     }
 
@@ -615,18 +615,18 @@ static int html_parse_end(html_tree_t *html, Stack_t *stack, html_parse_t *parse
     #if defined(__HTML_AUTO_RESTORE__)
         do
         {
-            log_error(html->log, "Mismatch![%s][%-.32s] [%d/%d]",
+            log2_error("Mismatch![%s][%-.32s] [%d/%d]",
                 top->name, parse->ptr, strlen(top->name), len);
 
             /* Step 1: 将TOP结点的孩子结点改为兄弟结点 */
             ret = html_mark_mismatch_hdl(html, top);
             if (HTML_OK != ret)
             {
-                log_error(html->log, "Html restore failed!");
+                log2_error("Html restore failed!");
                 return HTML_ERR;
             }
 
-            log_debug(html->log, "Html restore success!");
+            log2_debug("Html restore success!");
 
             /* Step 2: 将TOP结点的孩子结点改为兄弟结点 */
             stack_pop(stack);
@@ -634,15 +634,15 @@ static int html_parse_end(html_tree_t *html, Stack_t *stack, html_parse_t *parse
             top = (html_node_t*)stack_gettop(stack);
             if (NULL == top)
             {
-                log_error(html->log, "Get stack top failed!");
+                log2_error("Get stack top failed!");
                 return HTML_ERR_STACK;
             }
         } while (len != strlen(top->name) || 0 != strncasecmp(top->name, parse->ptr, len));
 
-        log_debug(html->log, "Match success![%s][%-.32s] [%d/%d]",
+        log2_debug("Match success![%s][%-.32s] [%d/%d]",
                 top->name, parse->ptr, strlen(top->name), len);
     #else /*!__HTML_AUTO_RESTORE__*/
-        log_error(html->log, "Mark name is not match![%s][%-.1024s]", top->name, parse->ptr);
+        log2_error("Mark name is not match![%s][%-.1024s]", top->name, parse->ptr);
         return HTML_ERR_MARK_MISMATCH;
     #endif /*!__HTML_AUTO_RESTORE__*/
     }
@@ -651,7 +651,7 @@ static int html_parse_end(html_tree_t *html, Stack_t *stack, html_parse_t *parse
     ret = stack_pop(stack);
     if (HTML_OK != ret)
     {
-        log_error(html->log, "Pop failed!");
+        log2_error("Pop failed!");
         return HTML_ERR_STACK;
     }
 
@@ -724,7 +724,7 @@ static int html_mark_get_name(html_tree_t *html, Stack_t *stack, html_parse_t *p
     node = html_node_creat(HTML_NODE_UNKNOWN);
     if (NULL == node)
     {
-        log_error(html->log, "Create html node failed!");
+        log2_error("Create html node failed!");
         return HTML_ERR_CREAT_NODE;
     }
 
@@ -767,7 +767,7 @@ static int html_mark_get_name(html_tree_t *html, Stack_t *stack, html_parse_t *p
     /* 4.判断标签名边界是否合法 */
     if (!HtmlIsMarkBorder(*ptr))
     {
-        log_error(html->log, "HTML format is wrong!\n[%-32.32s]", parse->ptr);
+        log2_error("HTML format is wrong!\n[%-32.32s]", parse->ptr);
         return HTML_ERR_FORMAT;
     }
 
@@ -777,7 +777,7 @@ static int html_mark_get_name(html_tree_t *html, Stack_t *stack, html_parse_t *p
     node->name = calloc(1, (len+1)*sizeof(char));
     if (NULL == node->name)
     {
-        log_error(html->log, "Calloc failed!");
+        log2_error("Calloc failed!");
         return HTML_ERR_CALLOC;
     }
     strncpy(node->name, parse->ptr, len);
@@ -786,7 +786,7 @@ static int html_mark_get_name(html_tree_t *html, Stack_t *stack, html_parse_t *p
     ret = stack_push(stack, (void*)node);
     if (HTML_OK != ret)
     {
-        log_error(html->log, "Stack push failed!");
+        log2_error("Stack push failed!");
         return HTML_ERR_STACK;
     }
 
@@ -854,7 +854,7 @@ static int html_mark_get_attr(html_tree_t *html, Stack_t *stack, html_parse_t *p
     top = (html_node_t*)stack_gettop(stack);
     if (NULL == top)
     {
-        log_error(html->log, "Get stack top failed!");
+        log2_error("Get stack top failed!");
         return HTML_ERR_STACK;
     }
 
@@ -865,7 +865,7 @@ static int html_mark_get_attr(html_tree_t *html, Stack_t *stack, html_parse_t *p
         node = html_node_creat(HTML_NODE_ATTR);
         if (NULL == node)
         {
-            log_error(html->log, "Create html node failed!");
+            log2_error("Create html node failed!");
             return HTML_ERR_CREAT_NODE;
         }
 
@@ -880,7 +880,7 @@ static int html_mark_get_attr(html_tree_t *html, Stack_t *stack, html_parse_t *p
         if (NULL == node->name)
         {
             errflg = 1;
-            log_error(html->log, "Calloc failed!");
+            log2_error("Calloc failed!");
             break;
         }
 
@@ -892,7 +892,7 @@ static int html_mark_get_attr(html_tree_t *html, Stack_t *stack, html_parse_t *p
         if (!HtmlIsEqualChar(*ptr))                      /* 不为等号，则格式错误 */
         {
             errflg = 1;
-            log_error(html->log, "Attribute format is incorrect![%-.1024s]", parse->ptr);
+            log2_error("Attribute format is incorrect![%-.1024s]", parse->ptr);
             break;
         }
         ptr++;                                  /* 跳过"=" */
@@ -915,7 +915,7 @@ static int html_mark_get_attr(html_tree_t *html, Stack_t *stack, html_parse_t *p
             if (HtmlIsStrEndChar(*ptr))
             {
                 errflg = 1;
-                log_error(html->log, "Mismatch border [%c]![%-.1024s]", border, parse->ptr);
+                log2_error("Mismatch border [%c]![%-.1024s]", border, parse->ptr);
                 break;
             }
 
@@ -937,14 +937,14 @@ static int html_mark_get_attr(html_tree_t *html, Stack_t *stack, html_parse_t *p
             if (HtmlIsStrEndChar(*ptr))
             {
                 errflg = 1;
-                log_error(html->log, "Mismatch border [%c]![%-.1024s]", border, parse->ptr);
+                log2_error("Mismatch border [%c]![%-.1024s]", border, parse->ptr);
                 break;
             }
 
             len = ptr - parse->ptr;
         #else
             errflg = 1;
-            log_error(html->log, "Html format is wrong! [%-.1024s]", parse->ptr);
+            log2_error("Html format is wrong! [%-.1024s]", parse->ptr);
             break;
         #endif
         }
@@ -953,7 +953,7 @@ static int html_mark_get_attr(html_tree_t *html, Stack_t *stack, html_parse_t *p
         if (NULL == node->value)
         {
             errflg = 1;
-            log_error(html->log, "Calloc failed!");
+            log2_error("Calloc failed!");
             break;
         }
 
@@ -1099,7 +1099,7 @@ static int html_mark_get_value(html_tree_t *html, Stack_t *stack, html_parse_t *
 
     if (HtmlIsStrEndChar(*p1))
     {
-        log_error(html->log, "HTML format is wrong! MarkName:[%s]", current->name);
+        log2_error("HTML format is wrong! MarkName:[%s]", current->name);
         return HTML_ERR_FORMAT;
     }
     
@@ -1115,7 +1115,7 @@ static int html_mark_get_value(html_tree_t *html, Stack_t *stack, html_parse_t *
     current->value = (char*)calloc(1, size*sizeof(char));
     if (NULL == current->value)
     {
-        log_error(html->log, "Calloc failed!");
+        log2_error("Calloc failed!");
         return HTML_ERR_CALLOC;
     }
 
@@ -1131,7 +1131,7 @@ static int html_mark_get_value(html_tree_t *html, Stack_t *stack, html_parse_t *
         return HTML_OK;
     }
 
-    log_error(html->log, "HTML format is wrong: Node have child and value at same time!");
+    log2_error("HTML format is wrong: Node have child and value at same time!");
     return HTML_ERR_FORMAT;
 #endif /*__HTML_OCOV__*/
 
@@ -1182,7 +1182,7 @@ static int html_script_get_value(html_tree_t *html, Stack_t *stack, html_parse_t
 
     if (HtmlIsStrEndChar(*p1))
     {
-        log_error(html->log, "HTML format is wrong! MarkName:[%s]", current->name);
+        log2_error("HTML format is wrong! MarkName:[%s]", current->name);
         return HTML_ERR_FORMAT;
     }
     
@@ -1198,7 +1198,7 @@ static int html_script_get_value(html_tree_t *html, Stack_t *stack, html_parse_t
     current->value = (char*)calloc(1, size*sizeof(char));
     if (NULL == current->value)
     {
-        log_error(html->log, "Calloc failed!");
+        log2_error("Calloc failed!");
         return HTML_ERR_CALLOC;
     }
 
@@ -1272,7 +1272,7 @@ html_node_t *html_free_next(html_tree_t *html, Stack_t *stack, html_node_t *curr
         ret = stack_pop(stack);
         if (HTML_OK != ret)
         {
-            log_error(html->log, "Stack pop failed!");
+            log2_error("Stack pop failed!");
             return NULL;
         }
         
@@ -1292,7 +1292,7 @@ html_node_t *html_free_next(html_tree_t *html, Stack_t *stack, html_node_t *curr
             ret = stack_pop(stack);
             if (HTML_OK != ret)
             {
-                log_error(html->log, "Stack pop failed!");
+                log2_error("Stack pop failed!");
                 return NULL;
             }
             
@@ -1331,7 +1331,7 @@ int html_delete_child(html_tree_t *html, html_node_t *node, html_node_t *child)
 
     if (node != child->parent)
     {
-        log_error(html->log, "Parent node is not right!");
+        log2_error("Parent node is not right!");
         return -1;
     }
     
@@ -1487,14 +1487,14 @@ static html_node_t *html_node_next_length(
         if (HTML_OK != ret)
         {
             *length += length2;
-            log_error(html->log, "Stack pop failed!");
+            log2_error("Stack pop failed!");
             return NULL;
         }
         
         if (stack_isempty(stack))
         {
             *length += length2;
-            log_error(html->log, "Compelte fprint!");
+            log2_error("Compelte fprint!");
             return NULL;
         }
         
@@ -1508,7 +1508,7 @@ static html_node_t *html_node_next_length(
             if (HTML_OK != ret)
             {
                 *length += length2;
-                log_error(html->log, "Stack pop failed!");
+                log2_error("Stack pop failed!");
                 return NULL;
             }
         
@@ -1562,7 +1562,7 @@ int _html_node_length(html_tree_t *html, html_node_t *root, Stack_t *stack)
     depth = stack_depth(stack);
     if (0 != depth)
     {
-        log_error(html->log, "Stack depth must empty. depth:[%d]", depth);
+        log2_error("Stack depth must empty. depth:[%d]", depth);
         return HTML_ERR_STACK;
     }
 
@@ -1573,7 +1573,7 @@ int _html_node_length(html_tree_t *html, html_node_t *root, Stack_t *stack)
         ret = stack_push(stack, node);
         if (HTML_OK != ret)
         {
-            log_error(html->log, "Stack push failed!");
+            log2_error("Stack push failed!");
             return HTML_ERR_STACK;
         }
         

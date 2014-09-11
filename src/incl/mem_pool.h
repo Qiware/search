@@ -53,17 +53,15 @@ typedef struct _mem_pool_t
     struct _mem_pool_t   *current;
     mem_pool_large_t     *large;
     mem_pool_cleanup_t   *cleanup;
-    log_cycle_t          *log;
 }mem_pool_t;
 
 typedef struct
 {
     int              fd;
     u_char               *name;
-    log_cycle_t            *log;
 } mem_pool_cleanup_file_t;
 
-mem_pool_t *mem_pool_creat(size_t size, log_cycle_t *log);
+mem_pool_t *mem_pool_creat(size_t size);
 void mem_pool_destroy(mem_pool_t *pool);
 void mem_pool_reset(mem_pool_t *pool);
 

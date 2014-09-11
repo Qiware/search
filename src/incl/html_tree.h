@@ -80,7 +80,6 @@ typedef struct _html_node_t
 typedef struct
 {
     html_node_t *root;           /* 根节点: 注意root的第一个子节点才是真正的根节点 */
-    log_cycle_t *log;           /* 日志对象 */
 }html_tree_t;
 
 /* 对外的接口 */
@@ -95,9 +94,9 @@ html_node_t *html_node_creat_ext(
         html_node_type_e type, const char *name, const char *value);
 int html_node_free(html_tree_t *html, html_node_t *node);
 
-html_tree_t *html_creat(const char *fname, log_cycle_t *log);
-html_tree_t *html_screat(const char *str, log_cycle_t *log);
-html_tree_t *html_screat_ext(const char *str, int length, log_cycle_t *log);
+html_tree_t *html_creat(const char *fname);
+html_tree_t *html_screat(const char *str);
+html_tree_t *html_screat_ext(const char *str, int length);
 
 int html_fwrite(html_tree_t *html, const char *fname);
 int html_fprint(html_tree_t *html, FILE *fp);

@@ -24,6 +24,9 @@ typedef struct
     int queue_size;                 /* 工作队列当前大小 */
 
     void *data;                     /* 附加数据 */
+#if defined(__THREAD_POOL_SLAB__)    
+    eslab_pool_t eslab;             /* SLAB内存管理机制 */
+#endif /*__THREAD_POOL_SLAB__*/
 }thread_pool_t;
 
 

@@ -13,7 +13,7 @@
 #include "crwl_comm.h"
 #include "thread_pool.h"
 
-static int crwl_parse_conf(xml_tree_t *xml, crwl_conf_t *conf);
+static int crwl_parse_conf(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log);
 static void *crwl_worker_routine(void *args);
 
 /******************************************************************************
@@ -36,7 +36,7 @@ int crwl_load_conf(crwl_conf_t *conf, const char *path, log_cycle_t *log)
     xml_tree_t *xml;
 
     /* 1. 加载爬虫配置 */
-    xml = xml_creat(path, log);
+    xml = xml_creat(path);
     if (NULL == xml)
     {
         log_error(log, "Create xml failed! path:%s", path);
@@ -44,7 +44,7 @@ int crwl_load_conf(crwl_conf_t *conf, const char *path, log_cycle_t *log)
     }
 
     /* 2. 提取爬虫配置 */
-    ret = crwl_parse_conf(xml, conf);
+    ret = crwl_parse_conf(xml, conf, log);
     if (0 != ret)
     {
         xml_destroy(xml);
@@ -102,7 +102,7 @@ int crwl_start_work(crwl_conf_t *conf, log_cycle_t *log)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.05 #
  ******************************************************************************/
-static int crwl_parse_conf(xml_tree_t *xml, crwl_conf_t *conf)
+static int crwl_parse_conf(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
 {
     xml_node_t *curr, *node, *node2;
 
@@ -110,7 +110,7 @@ static int crwl_parse_conf(xml_tree_t *xml, crwl_conf_t *conf)
     curr = xml_search(xml, ".SEARCH.CRWLSYS.CRAWLER");
     if (NULL != curr)
     {
-        log_error(xml->log, "Didn't configure worker process!");
+        log_error(log, "Didn't configure worker process!");
         return CRWL_ERR;
     }
 
@@ -118,7 +118,7 @@ static int crwl_parse_conf(xml_tree_t *xml, crwl_conf_t *conf)
     node = xml_rsearch(xml, curr, "THD_NUM");
     if (NULL != node)
     {
-        log_warn(xml->log, "Didn't configure the number of worker process!");
+        log_warn(log, "Didn't configure the number of worker process!");
         conf->thread_num = CRWL_DEF_THD_NUM;
     }
     else
@@ -130,7 +130,7 @@ static int crwl_parse_conf(xml_tree_t *xml, crwl_conf_t *conf)
     node = xml_rsearch(xml, curr, "SVRIP");
     if (NULL != node)
     {
-        log_warn(xml->log, "Didn't configure distribute server ip address!");
+        log_error(log, "Didn't configure distribute server ip address!");
         return CRWL_ERR;
     }
 
@@ -140,7 +140,7 @@ static int crwl_parse_conf(xml_tree_t *xml, crwl_conf_t *conf)
     node = xml_rsearch(xml, curr, "PORT");
     if (NULL != node)
     {
-        log_warn(xml->log, "Didn't configure distribute server port!");
+        log_error(log, "Didn't configure distribute server port!");
         return CRWL_ERR;
     }
 

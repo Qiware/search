@@ -80,7 +80,6 @@ typedef struct
     xml_node_t *root;           /* 根节点: 注意root的第一个子节点才是真正的根节点 */
 
     mem_pool_t *pool;           /* 内存池 */
-    log_cycle_t *log;           /* 日志对象 */
 }xml_tree_t;
 
 /* 对外的接口 */
@@ -99,9 +98,9 @@ xml_node_t *xml_node_creat_ext(
 int xml_node_free(xml_tree_t *xml, xml_node_t *node);
 #endif /*!__XML_MEM_POOL__*/
 
-xml_tree_t *xml_creat(const char *fname, log_cycle_t *log);
-xml_tree_t *xml_screat(const char *str, log_cycle_t *log);
-xml_tree_t *xml_screat_ext(const char *str, int length, log_cycle_t *log);
+xml_tree_t *xml_creat(const char *fname);
+xml_tree_t *xml_screat(const char *str);
+xml_tree_t *xml_screat_ext(const char *str, int length);
 
 int xml_fwrite(xml_tree_t *xml, const char *fname);
 int xml_fprint(xml_tree_t *xml, FILE *fp);

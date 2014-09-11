@@ -39,7 +39,7 @@ static void *thread_routine(void *arg);
  ******************************************************************************/
 thread_pool_t *thread_pool_init(int num)
 {
-    int idx=0, ret=0;
+    int idx, ret;
     thread_pool_t *tp;
 
     /* 1. 分配线程池空间，并初始化 */
@@ -54,6 +54,11 @@ thread_pool_t *thread_pool_init(int num)
     tp->head = NULL;
     tp->queue_size = 0;
     tp->shutdown = 0;
+#if defined(__THREAD_POOL_SLAB__)
+    ret = eslab_init(&tp->eslab, 16*KB);
+#endif /*__THREAD_POOL_SLAB__*/
+
+
     tp->tid = (pthread_t *)calloc(1, num*sizeof(pthread_t));
     if (NULL == tp->tid)
     {
@@ -149,7 +154,7 @@ int thread_pool_add_worker(thread_pool_t *tp, void *(*process)(void *arg), void 
  ******************************************************************************/
 int thread_pool_keepalive(thread_pool_t *tp)
 {
-    int idx=0, ret=0;
+    int idx, ret;
 
      for (idx=0; idx<tp->num; idx++)
     {
@@ -182,7 +187,7 @@ int thread_pool_keepalive(thread_pool_t *tp)
  ******************************************************************************/
 int thread_pool_keepalive_ext(thread_pool_t *tp, void *(*process)(void *arg), void *arg)
 {
-    int idx=0, ret=0;
+    int idx, ret;
 
      for (idx=0; idx<tp->num; idx++)
     {
@@ -215,7 +220,7 @@ int thread_pool_keepalive_ext(thread_pool_t *tp, void *(*process)(void *arg), vo
  ******************************************************************************/
 int thread_pool_get_tidx(thread_pool_t *tp)
 {
-    int idx = 0;
+    int idx;
     pthread_t tid = pthread_self();
 
     for (idx=0; idx<tp->num; ++idx)
@@ -246,7 +251,7 @@ int thread_pool_get_tidx(thread_pool_t *tp)
  ******************************************************************************/
 int thread_pool_destroy(thread_pool_t *tp)
 {
-    int idx=0, ret=0;
+    int idx, ret;
     thread_worker_t *member = NULL;
 
 
@@ -372,7 +377,7 @@ int thread_pool_destroy_ext(thread_pool_t *tp, void (*args_destroy)(void *cntx, 
  ******************************************************************************/
 static int thread_create_detach(thread_pool_t *tp, int idx)
 {
-    int ret = 0;
+    int ret;
     pthread_attr_t attr;
 
     do

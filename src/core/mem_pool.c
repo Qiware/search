@@ -31,7 +31,7 @@ static void *mem_pool_alloc_large(mem_pool_t *pool, size_t size);
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.08 #
  ******************************************************************************/
-mem_pool_t *mem_pool_creat(size_t size, log_cycle_t *log)
+mem_pool_t *mem_pool_creat(size_t size)
 {
     mem_pool_t  *p;
 
@@ -52,7 +52,6 @@ mem_pool_t *mem_pool_creat(size_t size, log_cycle_t *log)
     p->current = (mem_pool_t *)p;
     p->large = NULL;
     p->cleanup = NULL;
-    p->log = log;
 
     return p;
 }
