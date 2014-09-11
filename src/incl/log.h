@@ -140,24 +140,42 @@ void log_destroy(log_cycle_t **log);
 #define log_bin_ex(...)
 
 
+/* 日志对象 */
+typedef struct
+{
+    FILE *fp;       /* 文件指针 */
+    int level;      /* 进程级别 */
+    pid_t pid;      /* 进程ID */
+}log2_cycle_t;
+
+extern log2_cycle_t g_log2;
+
 /* 系统日志函数(无句柄) */
 void log2_core(int level, const char *fname, int lineno,
             const void *dump, int dumplen, const char *fmt, ...);
 int log2_get_level(const char *level_str);
+void log2_destroy(void);
 
 #define log2_fatal(...) /* 撰写FATAL级别日志 */\
+    if (g_log2.level & LOG_LEVEL_FATAL) \
         log2_core(LOG_LEVEL_FATAL, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
 #define log2_error(...) /* 撰写ERROR级别日志 */\
+    if (g_log2.level & LOG_LEVEL_FATAL) \
         log2_core(LOG_LEVEL_ERROR, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
 #define log2_warn(...)  /* 撰写WARN级别日志 */\
+    if (g_log2.level & LOG_LEVEL_FATAL) \
         log2_core(LOG_LEVEL_WARN, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
 #define log2_info(...)  /* 撰写INFO级别日志 */\
+    if (g_log2.level & LOG_LEVEL_FATAL) \
         log2_core(LOG_LEVEL_INFO, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
 #define log2_debug(...) /* 撰写DEBUG级别日志 */\
+    if (g_log2.level & LOG_LEVEL_FATAL) \
         log2_core(LOG_LEVEL_DEBUG, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
 #define log2_trace(...) /* 撰写TRACE级别日志 */\
+    if (g_log2.level & LOG_LEVEL_FATAL) \
         log2_core(LOG_LEVEL_TRACE, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
 #define log2_bin(addr, len, ...)   /* 撰写MEM-DUMP日志 */\
+    if (g_log2.level & LOG_LEVEL_FATAL) \
         log2_core(LOG_LEVEL_INFO, __FILE__, __LINE__, addr, len, __VA_ARGS__)
 
 #endif /*__LOG_H__*/

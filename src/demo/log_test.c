@@ -24,6 +24,7 @@ int main(int argc, char *argv[])
 
     for (idx=0; idx<1000000; ++idx)
     {
+        log2_error("This is just a test! [%d]", idx);
         log_fatal(log, "This is just a test! [%d]", idx);
         log_error(log, "This is just a test! [%d]", idx);
         log_warn(log, "This is just a test! [%d]", idx);

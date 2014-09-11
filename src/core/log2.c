@@ -12,16 +12,11 @@
 #include "common.h"
 #include "xdo_unistd.h"
 
-/* 日志对象 */
-typedef struct
-{
-    FILE *fp;       /* 文件指针 */
-    int level;      /* 进程级别 */
-    pid_t pid;      /* 进程ID */
-}log2_cycle_t;
-
-static log2_cycle_t g_syslog;
-
+#if defined(__XDO_DEBUG__)
+log2_cycle_t g_log2 = {NULL, 0xFFFFFFFF, -1};
+#else /*!__XDO_DEBUG__*/
+log2_cycle_t g_log2 = {NULL, LOG_LEVEL_ERROR|LOG_LEVEL_FATAL, -1};
+#endif /*!__XDO_DEBUG__*/
 
 static int log2_write(log2_cycle_t *log, int level,
     const void *dump, int dumplen, const char *errmsg, const struct timeb *ctm);
@@ -57,23 +52,21 @@ void log2_core(int level,
     va_list args;
     struct timeb ctm;
     char errmsg[LOG_MSG_MAX_LEN];
-    log2_cycle_t *syslog = &g_syslog;
+    log2_cycle_t *log2 = &g_log2;
 
-    if (NULL == syslog->fp)
+    if (NULL == log2->fp)
     {
-        syslog->fp = fopen("../../system.log", "rw+");
-        if (NULL == syslog->fp)
+        log2->fp = fopen("../log/system.log", "aw+");
+        if (NULL == log2->fp)
         {
             return;
         }
-
-        syslog->level = log2_get_level("trace");
-        syslog->pid = getpid();
-    }
-
-    if (!(level & syslog->level))
-    {
-        return;
+    #if defined(__XDO_DEBUG__)
+        log2->level = log2_get_level("trace");
+    #else /*!__XDO_DEBUG__*/
+        log2->level = log2_get_level("error");
+    #endif /*!__XDO_DEBUG__*/
+        log2->pid = getpid();
     }
 
     va_start(args, fmt);
@@ -83,7 +76,7 @@ void log2_core(int level,
 
     ftime(&ctm);
     
-    log2_write(syslog, level, dump, dumplen, errmsg, &ctm);
+    log2_write(log2, level, dump, dumplen, errmsg, &ctm);
 }
 
 /******************************************************************************
@@ -98,7 +91,7 @@ void log2_core(int level,
  ******************************************************************************/
 void log2_destroy(void)
 {
-    fClose(g_syslog.fp);
+    fClose(g_log2.fp);
 }
 
 /******************************************************************************
