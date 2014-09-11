@@ -39,41 +39,41 @@ static void *thread_routine(void *arg);
  ******************************************************************************/
 thread_pool_t *thread_pool_init(int num)
 {
-	int idx=0, ret=0;
+    int idx=0, ret=0;
     thread_pool_t *tp;
 
-	/* 1. 分配线程池空间，并初始化 */
-	tp = (thread_pool_t*)calloc(1, sizeof(thread_pool_t));
-	if (NULL == tp)
-	{
-		return NULL;
-	}
+    /* 1. 分配线程池空间，并初始化 */
+    tp = (thread_pool_t*)calloc(1, sizeof(thread_pool_t));
+    if (NULL == tp)
+    {
+        return NULL;
+    }
 
-	pthread_mutex_init(&(tp->queue_lock), NULL);
-	pthread_cond_init(&(tp->queue_ready), NULL);
-	tp->head = NULL;
-	tp->queue_size = 0;
-	tp->shutdown = 0;
-	tp->tid = (pthread_t *)calloc(1, num*sizeof(pthread_t));
-	if (NULL == tp->tid)
-	{
-		free(tp);
-		return NULL;
-	}
+    pthread_mutex_init(&(tp->queue_lock), NULL);
+    pthread_cond_init(&(tp->queue_ready), NULL);
+    tp->head = NULL;
+    tp->queue_size = 0;
+    tp->shutdown = 0;
+    tp->tid = (pthread_t *)calloc(1, num*sizeof(pthread_t));
+    if (NULL == tp->tid)
+    {
+        free(tp);
+        return NULL;
+    }
 
-	/* 2. 创建指定数目的线程 */
-	for (idx=0; idx<num; idx++)
-	{
-		ret = thread_create_detach(tp, idx);
-		if (0 != ret)
-		{
+    /* 2. 创建指定数目的线程 */
+    for (idx=0; idx<num; idx++)
+    {
+        ret = thread_create_detach(tp, idx);
+        if (0 != ret)
+        {
             thread_pool_destroy(tp);
-			return NULL;
-		}
-		tp->num++;
-	}
+            return NULL;
+        }
+        tp->num++;
+    }
 
-	return tp;
+    return tp;
 }
 
 /******************************************************************************
@@ -94,44 +94,44 @@ thread_pool_t *thread_pool_init(int num)
  ******************************************************************************/
 int thread_pool_add_worker(thread_pool_t *tp, void *(*process)(void *arg), void *arg)
 {
-	thread_worker_t *worker=NULL, *member=NULL;
+    thread_worker_t *worker=NULL, *member=NULL;
 
-	/* 1. 创建新任务节点 */
-	worker = (thread_worker_t*)calloc(1, sizeof(thread_worker_t));
-	if (NULL == worker)
-	{
-		return -1;
-	}
+    /* 1. 创建新任务节点 */
+    worker = (thread_worker_t*)calloc(1, sizeof(thread_worker_t));
+    if (NULL == worker)
+    {
+        return -1;
+    }
 
-	worker->process = process;
-	worker->arg = arg;
-	worker->next = NULL;
+    worker->process = process;
+    worker->arg = arg;
+    worker->next = NULL;
 
-	/* 2. 将回调函数加入工作队列 */
-	pthread_mutex_lock(&(tp->queue_lock));
+    /* 2. 将回调函数加入工作队列 */
+    pthread_mutex_lock(&(tp->queue_lock));
 
-	member = tp->head;
-	if (NULL != member)
-	{
-		while (NULL != member->next)
-		{
-			member = member->next;
-		}
-		member->next = worker;
-	}
-	else
-	{
-		tp->head = worker;
-	}
+    member = tp->head;
+    if (NULL != member)
+    {
+        while (NULL != member->next)
+        {
+            member = member->next;
+        }
+        member->next = worker;
+    }
+    else
+    {
+        tp->head = worker;
+    }
 
-	tp->queue_size++;
+    tp->queue_size++;
 
-	pthread_mutex_unlock(&(tp->queue_lock));
+    pthread_mutex_unlock(&(tp->queue_lock));
 
-	/* 3. 唤醒正在等待的线程 */
-	pthread_cond_signal(&(tp->queue_ready));
+    /* 3. 唤醒正在等待的线程 */
+    pthread_cond_signal(&(tp->queue_ready));
 
-	return 0;
+    return 0;
 }
 
 /******************************************************************************
@@ -149,22 +149,22 @@ int thread_pool_add_worker(thread_pool_t *tp, void *(*process)(void *arg), void 
  ******************************************************************************/
 int thread_pool_keepalive(thread_pool_t *tp)
 {
-	int idx=0, ret=0;
+    int idx=0, ret=0;
 
- 	for (idx=0; idx<tp->num; idx++)
-	{
-		ret = pthread_kill(tp->tid[idx], 0);
-		if (ESRCH == ret)
-		{
-			ret = thread_create_detach(tp, idx);
-			if (ret < 0)
-			{
-				return -1;
-			}
-		}
-	}
+     for (idx=0; idx<tp->num; idx++)
+    {
+        ret = pthread_kill(tp->tid[idx], 0);
+        if (ESRCH == ret)
+        {
+            ret = thread_create_detach(tp, idx);
+            if (ret < 0)
+            {
+                return -1;
+            }
+        }
+    }
 
-	return 0;
+    return 0;
 }
 
 /******************************************************************************
@@ -182,25 +182,25 @@ int thread_pool_keepalive(thread_pool_t *tp)
  ******************************************************************************/
 int thread_pool_keepalive_ext(thread_pool_t *tp, void *(*process)(void *arg), void *arg)
 {
-	int idx=0, ret=0;
+    int idx=0, ret=0;
 
- 	for (idx=0; idx<tp->num; idx++)
-	{
-		ret = pthread_kill(tp->tid[idx], 0);
-		if (ESRCH == ret)
-		{
-			ret = thread_create_detach(tp, idx);
-			if (ret < 0)
-			{
-				return -1;
-			}
+     for (idx=0; idx<tp->num; idx++)
+    {
+        ret = pthread_kill(tp->tid[idx], 0);
+        if (ESRCH == ret)
+        {
+            ret = thread_create_detach(tp, idx);
+            if (ret < 0)
+            {
+                return -1;
+            }
 
             thread_pool_add_worker(tp, process, arg);
-		}
+        }
 
-	}
+    }
 
-	return 0;
+    return 0;
 }
 /******************************************************************************
  ** Name : thread_pool_get_tidx
@@ -246,50 +246,50 @@ int thread_pool_get_tidx(thread_pool_t *tp)
  ******************************************************************************/
 int thread_pool_destroy(thread_pool_t *tp)
 {
-	int idx=0, ret=0;
-	thread_worker_t *member = NULL;
+    int idx=0, ret=0;
+    thread_worker_t *member = NULL;
 
 
-	if (0 != tp->shutdown)
-	{
-		return -1;
-	}
+    if (0 != tp->shutdown)
+    {
+        return -1;
+    }
 
-	/* 1. 设置关闭线程池标志 */
-	tp->shutdown = 1;
+    /* 1. 设置关闭线程池标志 */
+    tp->shutdown = 1;
 
-	/* 2. 唤醒所有等待的线程 */
-	pthread_cond_broadcast(&(tp->queue_ready));
+    /* 2. 唤醒所有等待的线程 */
+    pthread_cond_broadcast(&(tp->queue_ready));
 
-	/* 3. 等待线程结束 */
-	while (idx < tp->num)
-	{
-		ret = pthread_kill(tp->tid[idx], 0);
-		if (ESRCH == ret)
-		{
-			idx++;
-			continue;
-		}
-		pthread_cancel(tp->tid[idx]);
-		idx++;
-	}
+    /* 3. 等待线程结束 */
+    while (idx < tp->num)
+    {
+        ret = pthread_kill(tp->tid[idx], 0);
+        if (ESRCH == ret)
+        {
+            idx++;
+            continue;
+        }
+        pthread_cancel(tp->tid[idx]);
+        idx++;
+    }
 
-	/* 4. 释放线程池对象空间 */
-	free(tp->tid);
-	tp->tid = NULL;
+    /* 4. 释放线程池对象空间 */
+    free(tp->tid);
+    tp->tid = NULL;
 
-	while (NULL != tp->head)
-	{
-		member = tp->head;
-		tp->head = member->next;
-		free(member);
-	}
+    while (NULL != tp->head)
+    {
+        member = tp->head;
+        tp->head = member->next;
+        free(member);
+    }
 
-	pthread_mutex_destroy(&(tp->queue_lock));
-	pthread_cond_destroy(&(tp->queue_ready));
-	free(tp);
-	
-	return 0;
+    pthread_mutex_destroy(&(tp->queue_lock));
+    pthread_cond_destroy(&(tp->queue_ready));
+    free(tp);
+    
+    return 0;
 }
 
 /******************************************************************************
@@ -312,46 +312,46 @@ int thread_pool_destroy(thread_pool_t *tp)
  ******************************************************************************/
 int thread_pool_destroy_ext(thread_pool_t *tp, void (*args_destroy)(void *cntx, void *args), void *cntx)
 {
-	int idx;
-	thread_worker_t *member;
+    int idx;
+    thread_worker_t *member;
 
 
-	if (0 != tp->shutdown)
-	{
-		return -1;
-	}
+    if (0 != tp->shutdown)
+    {
+        return -1;
+    }
 
-	/* 1. 设置关闭标志 */
-	tp->shutdown = 1;
+    /* 1. 设置关闭标志 */
+    tp->shutdown = 1;
 
-	/* 2. 唤醒所有线程 */
-	pthread_cond_broadcast(&(tp->queue_ready));
+    /* 2. 唤醒所有线程 */
+    pthread_cond_broadcast(&(tp->queue_ready));
 
-	/* 3. 杀死所有线程 */
-	for (idx=0; idx < tp->num; ++idx)
-	{
-		pthread_cancel(tp->tid[idx]);
-	}
+    /* 3. 杀死所有线程 */
+    for (idx=0; idx < tp->num; ++idx)
+    {
+        pthread_cancel(tp->tid[idx]);
+    }
 
-	/* 4. 释放参数空间 */
+    /* 4. 释放参数空间 */
     args_destroy(cntx, tp->data);
 
-	/* 5. 释放对象空间 */
-	free(tp->tid);
-	tp->tid = NULL;
+    /* 5. 释放对象空间 */
+    free(tp->tid);
+    tp->tid = NULL;
 
-	while (NULL != tp->head)
-	{
-		member = tp->head;
-		tp->head = member->next;
-		free(member);
-	}
+    while (NULL != tp->head)
+    {
+        member = tp->head;
+        tp->head = member->next;
+        free(member);
+    }
 
-	pthread_mutex_destroy(&(tp->queue_lock));
-	pthread_cond_destroy(&(tp->queue_ready));
-	free(tp);
-	
-	return 0;
+    pthread_mutex_destroy(&(tp->queue_lock));
+    pthread_cond_destroy(&(tp->queue_ready));
+    free(tp);
+    
+    return 0;
 }
 
 /******************************************************************************
@@ -372,47 +372,47 @@ int thread_pool_destroy_ext(thread_pool_t *tp, void (*args_destroy)(void *cntx, 
  ******************************************************************************/
 static int thread_create_detach(thread_pool_t *tp, int idx)
 {
-	int ret = 0;
-	pthread_attr_t attr;
+    int ret = 0;
+    pthread_attr_t attr;
 
-	do
-	{
-		ret = pthread_attr_init(&attr);
-		if (0 != ret)
-		{
-			break;
-		}
-		
-		ret = pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-		if (0 != ret)
-		{
-			break;
-		}
-		
-		ret = pthread_attr_setstacksize(&attr, 0x800000);
-		if (ret < 0)
-		{
-			break;
-		}
-		
-		ret = pthread_create(&(tp->tid[idx]), &attr, thread_routine, tp);
-		if (0 != ret)
-		{
-			if (EINTR == errno)
-			{
-			    pthread_attr_destroy(&attr);
-				continue;
-			}
-			
-			break;
-		}
+    do
+    {
+        ret = pthread_attr_init(&attr);
+        if (0 != ret)
+        {
+            break;
+        }
+        
+        ret = pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+        if (0 != ret)
+        {
+            break;
+        }
+        
+        ret = pthread_attr_setstacksize(&attr, 0x800000);
+        if (ret < 0)
+        {
+            break;
+        }
+        
+        ret = pthread_create(&(tp->tid[idx]), &attr, thread_routine, tp);
+        if (0 != ret)
+        {
+            if (EINTR == errno)
+            {
+                pthread_attr_destroy(&attr);
+                continue;
+            }
+            
+            break;
+        }
 
-		pthread_attr_destroy(&attr);
+        pthread_attr_destroy(&attr);
         return 0;
-	}while (1);
+    }while (1);
 
     pthread_attr_destroy(&attr);
-	return -1;
+    return -1;
 }
 
 /******************************************************************************
@@ -428,32 +428,32 @@ static int thread_create_detach(thread_pool_t *tp, int idx)
  ******************************************************************************/
 static void *thread_routine(void *arg)
 {
-	thread_worker_t *worker = NULL;
-	thread_pool_t *tp = (thread_pool_t*)arg;
+    thread_worker_t *worker = NULL;
+    thread_pool_t *tp = (thread_pool_t*)arg;
 
-	while (1)
-	{
-		pthread_mutex_lock(&(tp->queue_lock));
-		while ((0 == tp->shutdown)
-			&& (0 == tp->queue_size))
-		{
-			pthread_cond_wait(&(tp->queue_ready), &(tp->queue_lock));
-		}
+    while (1)
+    {
+        pthread_mutex_lock(&(tp->queue_lock));
+        while ((0 == tp->shutdown)
+            && (0 == tp->queue_size))
+        {
+            pthread_cond_wait(&(tp->queue_ready), &(tp->queue_lock));
+        }
 
-		if (0 != tp->shutdown)
-		{
-			pthread_mutex_unlock(&(tp->queue_lock));
-			pthread_exit(NULL);
-		}
+        if (0 != tp->shutdown)
+        {
+            pthread_mutex_unlock(&(tp->queue_lock));
+            pthread_exit(NULL);
+        }
 
-		tp->queue_size--;
-		worker = tp->head;
-		tp->head = worker->next;
-		pthread_mutex_unlock(&(tp->queue_lock));
+        tp->queue_size--;
+        worker = tp->head;
+        tp->head = worker->next;
+        pthread_mutex_unlock(&(tp->queue_lock));
 
-		(*(worker->process))(worker->arg);
+        (*(worker->process))(worker->arg);
 
-		free(worker);
-		worker = NULL;
-	}
+        free(worker);
+        worker = NULL;
+    }
 }
