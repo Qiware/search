@@ -11,9 +11,9 @@
 #include <sys/types.h>
 
 #include "log.h"
+#include "lock.h"
 #include "hash.h"
 #include "common.h"
-#include "xdo_lock.h"
 #include "xdo_unistd.h"
 
 #if defined(__ASYNC_LOG__)

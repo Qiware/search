@@ -12,7 +12,7 @@ INCLUDE = -I. -I$(PROJ)/src/incl
 LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lpthread
 
-SRC_LIST = 	xdo_lock.c \
+SRC_LIST = 	lock.c \
 			xdo_unistd.c \
 			xdo_socket.c
 

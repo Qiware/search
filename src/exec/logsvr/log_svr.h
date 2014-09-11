@@ -11,7 +11,7 @@
 #if !defined(__LOG_SVR_H__)
 #define __LOG_SVR_H__
 
-#include "xdo_lock.h"
+#include "lock.h"
 #include "thread_pool.h"
 
 /* 服务进程互斥锁路径 */

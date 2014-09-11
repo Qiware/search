@@ -1,5 +1,5 @@
-#if !defined(__XDO_LOCK_H__)
-#define __XDO_LOCK_H__
+#if !defined(__LOCK_H__)
+#define __LOCK_H__
 
 int _flock(int fd, int type, int whence, int offset, int len);
 int _try_flock(int fd, int type, int whence, int offset, int len);
@@ -18,4 +18,4 @@ int _try_flock(int fd, int type, int whence, int offset, int len);
 #define proc_try_rdlock_b(fd, idx) _try_flock(fd, F_RDLCK, SEEK_SET, idx, 1) /* 尝试读锁(单字节) */
 #define proc_unlock_b(fd, idx) _flock(fd, F_UNLCK, SEEK_SET, idx, 1)   /* 解锁(单字节) */
 
-#endif /*__XDO_LOCK_H__*/
+#endif /*__LOCK_H__*/

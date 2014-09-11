@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "xdo_lock.h"
+#include "lock.h"
 
 /******************************************************************************
  **函数名称: _try_flock

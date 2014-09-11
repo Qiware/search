@@ -12,9 +12,9 @@
 #include <sys/types.h>
 
 #include "log.h"
+#include "lock.h"
 #include "common.h"
 #include "log_svr.h"
-#include "xdo_lock.h"
 #include "xdo_unistd.h"
 #include "thread_pool.h"
 
