@@ -13,6 +13,7 @@ LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lpthread
 
 SRC_LIST = list.c \
+			log.c \
 			hash.c \
 			list2.c \
 			stack.c \
@@ -21,16 +22,16 @@ SRC_LIST = list.c \
 			slab.c \
 			shm_slab.c \
 			mem_pool.c \
+			shm_queue.c \
+			rb_tree.c \
+			avl_tree.c \
+			trie_tree.c \
 			xml_comm.c \
 			xml_print.c \
 			xml_tree.c \
 			html_comm.c \
 			html_print.c \
 			html_tree.c \
-			avl_tree.c \
-			rb_tree.c \
-			trie_tree.c \
-			log.c \
 			thread_pool.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 

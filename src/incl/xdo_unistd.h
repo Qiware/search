@@ -49,4 +49,6 @@ void *xdo_mem_align(size_t alignment, size_t size);
 #else
 #define xdo_mem_align(alignment, size) malloc(size)
 #endif
+
+void *xdo_shm_creat(int key, size_t size);
 #endif /*__XDO_UNISTD_H__*/
