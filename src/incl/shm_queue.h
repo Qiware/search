@@ -8,8 +8,8 @@
 /* 循环队列结点 */
 typedef struct _shm_queue_node_t
 {
-    int id:16;              /* 结点ID(0~max-1) */
-    int status:16;          /* 被占用标记(SHMQ_NODE_STAT_IDLE ~ SHMQ_NODE_STAT_PUSH) */
+    uint32_t id;            /* 结点ID(0~max-1) */
+    uint32_t status;        /* 被占用标记(SHMQ_NODE_STAT_IDLE ~ SHMQ_NODE_STAT_USED) */
     uint32_t next;          /* 下一个结点偏移(shm_queue_node_t) */
     uint32_t data;          /* 数据偏移 */
 }shm_queue_node_t;
