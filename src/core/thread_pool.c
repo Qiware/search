@@ -29,51 +29,51 @@ static void *thread_routine(void *arg);
  ** Desc : Initalize thread pool
  ** Input: 
  **     num: The num of threads in pool
- ** Output: 
- **     tp: Thread pool
- ** Return: 0: success !0: failed
+ ** Output: NONE
+ ** Return: Thread pool
  ** Process:
  **     1. Alloc thread pool space, and initalize it.
  **     2. Create the num of threads
  ** Note :
  ** Author: # Qifeng.zou # 2012.12.26 #
  ******************************************************************************/
-int thread_pool_init(thread_pool_t **tp, int num)
+thread_pool_t *thread_pool_init(int num)
 {
 	int idx=0, ret=0;
+    thread_pool_t *tp;
 
 	/* 1. 分配线程池空间，并初始化 */
-	*tp = (thread_pool_t*)calloc(1, sizeof(thread_pool_t));
-	if (NULL == *tp)
+	tp = (thread_pool_t*)calloc(1, sizeof(thread_pool_t));
+	if (NULL == tp)
 	{
-		return -1;
+		return NULL;
 	}
 
-	pthread_mutex_init(&((*tp)->queue_lock), NULL);
-	pthread_cond_init(&((*tp)->queue_ready), NULL);
-	(*tp)->head = NULL;
-	(*tp)->queue_size = 0;
-	(*tp)->shutdown = 0;
-	(*tp)->tid = (pthread_t*)calloc(1, num*sizeof(pthread_t));
-	if (NULL == (*tp)->tid)
+	pthread_mutex_init(&(tp->queue_lock), NULL);
+	pthread_cond_init(&(tp->queue_ready), NULL);
+	tp->head = NULL;
+	tp->queue_size = 0;
+	tp->shutdown = 0;
+	tp->tid = (pthread_t *)calloc(1, num*sizeof(pthread_t));
+	if (NULL == tp->tid)
 	{
-		free(*tp);
-		(*tp) = NULL;
-		return -1;
+		free(tp);
+		return NULL;
 	}
 
 	/* 2. 创建指定数目的线程 */
 	for (idx=0; idx<num; idx++)
 	{
-		ret = thread_create_detach(*tp, idx);
+		ret = thread_create_detach(tp, idx);
 		if (0 != ret)
 		{
-			return -1;
+            thread_pool_destroy(tp);
+			return NULL;
 		}
-		(*tp)->num++;
+		tp->num++;
 	}
 
-	return 0;
+	return tp;
 }
 
 /******************************************************************************

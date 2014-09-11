@@ -27,7 +27,7 @@ typedef struct
 }thread_pool_t;
 
 
-int thread_pool_init(thread_pool_t **tp, int num);
+thread_pool_t *thread_pool_init(int num);
 int thread_pool_add_worker(thread_pool_t *tp, void *(*process)(void *arg), void *arg);
 int thread_pool_keepalive(thread_pool_t *tp);
 int thread_pool_keepalive_ext(thread_pool_t *tp, void *(*process)(void *arg), void *arg);

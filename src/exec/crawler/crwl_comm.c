@@ -70,12 +70,12 @@ int crwl_load_conf(crwl_conf_t *conf, const char *path, log_cycle_t *log)
  ******************************************************************************/
 int crwl_start_work(crwl_conf_t *conf, log_cycle_t *log)
 {
-    int ret, idx;
+    int idx;
     thread_pool_t *tpool;
 
     /* 1. 初始化线程池 */
-    ret = thread_pool_init(&tpool, conf->thread_num);
-    if (0 != ret)
+    tpool = thread_pool_init(conf->thread_num);
+    if (NULL == tpool)
     {
         log_error(log, "Initialize thread pool failed!");
         return CRWL_ERR;

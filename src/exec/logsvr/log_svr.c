@@ -150,8 +150,8 @@ static int log_svr_init(log_svr_t *logsvr)
     }
 
     /* 4. 启动多个线程 */
-    ret = thread_pool_init(&logsvr->pool, LOG_SVR_THREAD_NUM);
-    if(ret < 0)
+    logsvr->pool = thread_pool_init(LOG_SVR_THREAD_NUM);
+    if(NULL == logsvr->pool)
     {
         thread_pool_destroy(logsvr->pool);
         logsvr->pool = NULL;
