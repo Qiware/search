@@ -4,6 +4,7 @@
 #include <unistd.h>
 
 #include "log.h"
+#include "xdo_unistd.h"
 
 int main(int argc, char *argv[])
 {
@@ -22,6 +23,8 @@ int main(int argc, char *argv[])
         return -1;
     }
 
+    log2_init("error", "../log/syslog.log");
+
     for (idx=0; idx<1000000; ++idx)
     {
         log2_error("This is just a test! [%d]", idx);
@@ -31,6 +34,7 @@ int main(int argc, char *argv[])
         log_info(log, "This is just a test! [%d]", idx);
         log_debug(log, "This is just a test! [%d]", idx);
         log_info(log, "This is just a test! [%d]", idx);
+        Sleep(2);
     }
 
     log_destroy(&log);

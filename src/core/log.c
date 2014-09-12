@@ -521,8 +521,7 @@ static log_file_info_t *log_creat(void *addr, const char *path)
                 return file;
             }
             
-            ret = proc_is_exist(file->pid);
-            if(0 != ret)
+            if(!proc_is_exist(file->pid))
             {
                 file->pid = pid;
                 log_sync(file);
