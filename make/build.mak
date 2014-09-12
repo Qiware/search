@@ -10,14 +10,14 @@ include $(PROJ)/make/switch.mak
 include $(PROJ)/make/options.mak
 
 CC = gcc
-CFLAGS = -Wall -g -fPIC -O0\
+CFLAGS = -Wall -g -fPIC -O0 \
 			-Werror \
 			-Wshadow \
 			-Winline \
 			-Wcast-qual \
 			-Wunreachable-code \
 			-Waggregate-return \
-			-Wcast-align  \
+			-Wcast-align \
 			-Wredundant-decls
 
 CFLAGS += $(patsubst %, -D%, $(OPTIONS))

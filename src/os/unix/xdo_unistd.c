@@ -366,10 +366,10 @@ AGAIN:
 
 #if (HAVE_POSIX_MEMALIGN)
 /******************************************************************************
- **函数名称: xdo_mem_align
- **功    能: 内存对齐
+ **函数名称: memalign_alloc
+ **功    能: 按照指定对齐方式申请内存
  **输入参数: 
- **     alignment: 内存对齐
+ **     alignment: 内存对齐大小
  **     size: 空间SIZE
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
@@ -377,43 +377,15 @@ AGAIN:
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.08 #
  ******************************************************************************/
-void *xdo_mem_align(size_t alignment, size_t size)
+void *memalign_alloc(size_t alignment, size_t size)
 {
-	void  *p;
-	int    err;
+	void  *p = NULL;
 	
-	err = posix_memalign(&p, alignment, size);
+	posix_memalign(&p, alignment, size);
 	
-	if (err) 
-	{
-		p = NULL;
-	}
 	return p;
 }
-#elif (HAVE_MEMALIGN)
-/******************************************************************************
- **函数名称: xdo_mem_align
- **功    能: 内存对齐
- **输入参数: 
- **     alignment: 内存对齐
- **     size: 空间SIZE
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.09.08 #
- ******************************************************************************/
-void *xdo_mem_align(size_t alignment, size_t size)
-{
-	void  *p;
-	
-	p = memalign(alignment,size);
-	if (p == NULL) 
-	{
-	}
-	return p;
-}
-#endif /*HAVE_MEMALIGN*/
+#endif /*HAVE_POSIX_MEMALIGN*/
 
 /******************************************************************************
  **函数名称: xdo_shm_creat

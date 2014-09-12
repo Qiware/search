@@ -35,7 +35,7 @@ mem_pool_t *mem_pool_creat(size_t size)
 {
     mem_pool_t  *p;
 
-    p = xdo_mem_align(MEM_POOL_ALIGNMENT, size);
+    p = memalign_alloc(MEM_POOL_ALIGNMENT, size);
     if (NULL == p)
     {
         return NULL;
@@ -260,7 +260,7 @@ static void *mem_pool_alloc_block(mem_pool_t *pool, size_t size)
 
     psize = (size_t) (pool->d.end - (u_char *) pool);
 
-    m = xdo_mem_align(MEM_POOL_ALIGNMENT, psize);
+    m = memalign_alloc(MEM_POOL_ALIGNMENT, psize);
     if (NULL == m)
     {
         return NULL;
@@ -365,7 +365,7 @@ void *mem_pool_mem_align(mem_pool_t *pool, size_t size, size_t alignment)
     void *p;
     mem_pool_large_t *large;
 
-    p = xdo_mem_align(alignment, size);
+    p = memalign_alloc(alignment, size);
     if (NULL == p)
     {
         return NULL;

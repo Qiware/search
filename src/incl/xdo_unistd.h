@@ -44,10 +44,12 @@ int Random(void);
 int proc_is_exist(pid_t pid);
 int creat_thread(pthread_t *tid, void *(*process)(void *args), void *args);
 
-#if defined(HAVE_POSIX_MEMALIGN) || defined(HAVE_MEMALIGN)
-void *xdo_mem_align(size_t alignment, size_t size);
+#if defined(HAVE_POSIX_MEMALIGN)
+void *memalign_alloc(size_t alignment, size_t size);
+#elif defined(HAVE_MEMALIGN)
+#define memalign_alloc(alignment, size) memalign(alignment, size)
 #else
-#define xdo_mem_align(alignment, size) malloc(size)
+#define memalign_alloc(alignment, size) malloc(size)
 #endif
 
 void *xdo_shm_creat(int key, size_t size);
