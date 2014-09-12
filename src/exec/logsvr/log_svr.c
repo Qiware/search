@@ -18,8 +18,6 @@
 #include "xdo_unistd.h"
 #include "thread_pool.h"
 
-#if defined(__ASYNC_LOG__)
-
 static int log_svr_init(log_svr_t *logsvr);
 static void *log_svr_timeout_routine(void *args);
 int log_svr_sync_work(int idx, log_svr_t *logsvr);
@@ -318,4 +316,3 @@ int log_svr_sync_work(int idx, log_svr_t *logsvr)
     
     return 0;
 }
-#endif /*__ASYNC_LOG__*/

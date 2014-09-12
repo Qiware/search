@@ -52,4 +52,4 @@ $(OBJS): %.o : %.c
 	$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
 
 clean:
-	rm -fr $(OBJS) $(PROJ)/lib/$(TARGET) $(TARGET)
+	rm -fr $(OBJS) $(PROJ_LIB)/$(TARGET)

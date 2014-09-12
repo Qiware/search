@@ -25,7 +25,7 @@ TARGET = libxdounix.so
 all: $(TARGET)
 $(TARGET): $(OBJS)
 	$(CC) $(LFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS)
-	mv $@ $(PROJ)/lib
+	mv $@ $(PROJ_LIB)
 	rm -f $(OBJS)
 	@echo "$@ is OK!"
 
@@ -33,4 +33,4 @@ $(OBJS): %.o : %.c
 	$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
 
 clean:
-	rm -fr $(OBJS) $(PROJ)/lib/$(TARGET)
+	rm -fr $(OBJS) $(PROJ_LIB)/$(TARGET)
