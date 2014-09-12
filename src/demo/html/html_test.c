@@ -7,7 +7,7 @@
 
 int main(int argc, char *argv[])
 {
-    int level;
+    int ret, level;
     log_cycle_t *log;
     html_tree_t *html;
     char path[FILE_PATH_MAX_LEN];
@@ -26,6 +26,14 @@ int main(int argc, char *argv[])
     if (NULL == log)
     {
         fprintf(stderr, "Init log failed!");
+        return -1;
+    }
+
+    ret = log2_init("trace", "../log/html.log");
+    if (0 != ret)
+    {
+        log_destroy(&log);
+        fprintf(stderr, "Init log2 failed!");
         return -1;
     }
 

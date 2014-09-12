@@ -23,6 +23,38 @@ static int log2_write(log2_cycle_t *log, int level,
 static int log2_print_dump(log2_cycle_t *log, const void *dump, int dumplen);
 
 /******************************************************************************
+ **函数名称: log2_init
+ **功    能: 初始化日志模块
+ **输入参数: 
+ **     level: 日志级别(LOG_LEVEL_TRACE ~ LOG_LEVEL_FATAL)
+ **     path: 日志路径
+ **输出参数: NONE
+ **返    回: VOID
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.09.11 #
+ ******************************************************************************/
+int log2_init(const char *level, const char *path)
+{
+    log2_cycle_t *log2 = &g_log2;
+
+    if (NULL != log2->fp)
+    {
+        return 0;
+    }
+
+    log2->fp = fopen(path, "aw+");
+    if (NULL == log2->fp)
+    {
+        return -1;
+    }
+
+    log2->level = log2_get_level(level);
+    log2->pid = getpid();
+    return 0;
+}
+
+/******************************************************************************
  **函数名称: log2_core
  **功    能: 日志核心调用
  **输入参数: 
@@ -41,7 +73,7 @@ static int log2_print_dump(log2_cycle_t *log, const void *dump, int dumplen);
  **     4. 日志同步处理
  **注意事项: 
  **     日志级别的判断在函数外进行判断
- **作    者: # Qifeng.zou # 2013.10.24 #
+ **作    者: # Qifeng.zou # 2014.09.11 #
  ******************************************************************************/
 void log2_core(int level,
             const char *fname, int lineno,
@@ -52,22 +84,6 @@ void log2_core(int level,
     va_list args;
     struct timeb ctm;
     char errmsg[LOG_MSG_MAX_LEN];
-    log2_cycle_t *log2 = &g_log2;
-
-    if (NULL == log2->fp)
-    {
-        log2->fp = fopen("../log/system.log", "aw+");
-        if (NULL == log2->fp)
-        {
-            return;
-        }
-    #if defined(__XDO_DEBUG__)
-        log2->level = log2_get_level("trace");
-    #else /*!__XDO_DEBUG__*/
-        log2->level = log2_get_level("error");
-    #endif /*!__XDO_DEBUG__*/
-        log2->pid = getpid();
-    }
 
     va_start(args, fmt);
     len = snprintf(errmsg, sizeof(errmsg), "[%s][%d] ", fname, lineno);
@@ -76,7 +92,7 @@ void log2_core(int level,
 
     ftime(&ctm);
     
-    log2_write(log2, level, dump, dumplen, errmsg, &ctm);
+    log2_write(&g_log2, level, dump, dumplen, errmsg, &ctm);
 }
 
 /******************************************************************************
@@ -161,7 +177,7 @@ int log2_get_level(const char *level_str)
  **返    回: 0:success !0:failed
  **实现描述: 
  **注意事项: 
- **作    者: # Qifeng.zou # 2013.10.31 #
+ **作    者: # Qifeng.zou # 2014.09.11 #
  ******************************************************************************/
 static int log2_write(log2_cycle_t *log, int level,
     const void *dump, int dumplen,
@@ -258,7 +274,7 @@ static int log2_write(log2_cycle_t *log, int level,
  **返    回: 长度
  **实现描述: 
  **注意事项: 
- **修    改: # Qifeng.zou # 2013.10.30 #
+ **修    改: # Qifeng.zou # 2014.09.11 #
  ******************************************************************************/
 static int log2_print_dump(log2_cycle_t *log, const void *dump, int dumplen)
 {
