@@ -23,6 +23,60 @@ static int log2_write(log2_cycle_t *log, int level,
 static int log2_print_dump(log2_cycle_t *log, const void *dump, int dumplen);
 
 /******************************************************************************
+ **函数名称: log_get_level
+ **功    能: 获取日志级别
+ **输入参数: 
+ **     level_str: 日志级别字串
+ **输出参数: NONE
+ **返    回: 日志级别
+ **实现描述: 
+ **注意事项: 
+ **     当级别匹配失败时，默认情况下将开启所有日志级别.
+ **作    者: # Qifeng.zou # 2014.09.03 #
+ ******************************************************************************/
+int log2_get_level(const char *level_str)
+{
+    int level;
+
+    if (!strcasecmp(level_str, LOG_LEVEL_FATAL_STR))
+    {
+        return LOG_LEVEL_FATAL;
+    }
+
+    level = LOG_LEVEL_FATAL;
+    if (!strcasecmp(level_str, LOG_LEVEL_ERROR_STR))
+    {
+        return level | LOG_LEVEL_ERROR;
+    }
+
+    level |= LOG_LEVEL_ERROR;
+    if (!strcasecmp(level_str, LOG_LEVEL_WARN_STR))
+    {
+        return level | LOG_LEVEL_WARN;
+    }
+
+    level |= LOG_LEVEL_WARN;
+    if (!strcasecmp(level_str, LOG_LEVEL_INFO_STR))
+    {
+        return level | LOG_LEVEL_INFO;
+    }
+
+    level |= LOG_LEVEL_INFO;
+    if (!strcasecmp(level_str, LOG_LEVEL_DEBUG_STR))
+    {
+        return level | LOG_LEVEL_DEBUG;
+    }
+
+    level |= LOG_LEVEL_DEBUG;
+    if (!strcasecmp(level_str, LOG_LEVEL_TRACE_STR))
+    {
+        return level | LOG_LEVEL_TRACE;
+    }
+
+    return level | LOG_LEVEL_TRACE;
+}
+
+/******************************************************************************
  **函数名称: log2_init
  **功    能: 初始化日志模块
  **输入参数: 
@@ -108,60 +162,6 @@ void log2_core(int level,
 void log2_destroy(void)
 {
     fClose(g_log2.fp);
-}
-
-/******************************************************************************
- **函数名称: log_get_level
- **功    能: 获取日志级别
- **输入参数: 
- **     level_str: 日志级别字串
- **输出参数: NONE
- **返    回: 日志级别
- **实现描述: 
- **注意事项: 
- **     当级别匹配失败时，默认情况下将开启所有日志级别.
- **作    者: # Qifeng.zou # 2014.09.03 #
- ******************************************************************************/
-int log2_get_level(const char *level_str)
-{
-    int level;
-
-    if (!strcasecmp(level_str, LOG_LEVEL_FATAL_STR))
-    {
-        return LOG_LEVEL_FATAL;
-    }
-
-    level = LOG_LEVEL_FATAL;
-    if (!strcasecmp(level_str, LOG_LEVEL_ERROR_STR))
-    {
-        return level|LOG_LEVEL_ERROR;
-    }
-
-    level |= LOG_LEVEL_ERROR;
-    if (!strcasecmp(level_str, LOG_LEVEL_WARN_STR))
-    {
-        return level|LOG_LEVEL_WARN;
-    }
-
-    level |= LOG_LEVEL_WARN;
-    if (!strcasecmp(level_str, LOG_LEVEL_INFO_STR))
-    {
-        return level|LOG_LEVEL_INFO;
-    }
-
-    level |= LOG_LEVEL_INFO;
-    if (!strcasecmp(level_str, LOG_LEVEL_DEBUG_STR))
-    {
-        return level|LOG_LEVEL_DEBUG;
-    }
-
-    level |= LOG_LEVEL_DEBUG;
-    if (!strcasecmp(level_str, LOG_LEVEL_TRACE_STR))
-    {
-        return level|LOG_LEVEL_TRACE;
-    }
-
-    return level|LOG_LEVEL_TRACE;
 }
 
 /******************************************************************************

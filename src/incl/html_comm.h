@@ -4,29 +4,32 @@
 #include "stack.h"
 #include "html_tree.h"
 
-#define HtmlIsULineChar(ch)      ('_' == ch)     /* 下划线 */
-#define HtmlIsTableChar(ch)      ('\t' == ch)    /* 制表符 */
-#define HtmlIsStrEndChar(ch)     ('\0' == ch)    /* 结束符 */
-#define HtmlIsEqualChar(ch)      ('=' == ch)     /* 等号符 */
-#define HtmlIsDQuotChar(ch)      ('"' == ch)     /* 双引号 */
-#define HtmlIsSQuotChar(ch)      ('\'' == ch)    /* 单引号 */
-#define HtmlIsLPBrackChar(ch)    ('<' == ch)     /* 左尖括号 */
-#define HtmlIsRPBrackChar(ch)    ('>' == ch)     /* 右尖括号 */
-#define HtmlIsRDLineChar(ch)     ('/' == ch)     /* 右斜线 */
-#define HtmlIsDoubtChar(ch)      ('?' == ch)     /* 疑问号 */
-#define HtmlIsAndChar(ch)        ('&' == ch)     /* 与号 */
-#define HtmlIsSubChar(ch)        ('-' == ch)     /* 减号 */
-#define HtmlIsColonChar(ch)      (':' == ch)     /* 冒号 */
-#define HtmlIsNLineChar(ch)      (('\n'==ch) || ('\r'==ch))  /* 换行符 */
+#define html_is_uline_char(ch)   ('_' == ch)     /* 下划线 */
+#define html_is_tab_char(ch)     ('\t' == ch)    /* 制表符 */
+#define html_is_end_char(ch)     ('\0' == ch)    /* 结束符 */
+#define html_is_equal_char(ch)   ('=' == ch)     /* 等号符 */
+#define html_is_dquot_char(ch)   ('"' == ch)     /* 双引号 */
+#define html_is_squot_char(ch)   ('\'' == ch)    /* 单引号 */
+#define html_is_quot_char(ch)    (('"' == ch) || ('\'' == ch))    /* 引号 */
+#define html_is_lbrack_char(ch)  ('<' == ch)     /* 左尖括号 */
+#define html_is_rbrack_char(ch)  ('>' == ch)     /* 右尖括号 */
+#define html_is_rslash_char(ch)  ('/' == ch)     /* 右斜线 */
+#define html_is_doubt_char(ch)   ('?' == ch)     /* 疑问号 */
+#define html_is_and_char(ch)     ('&' == ch)     /* 与号 */
+#define html_is_sub_char(ch)     ('-' == ch)     /* 减号 */
+#define html_is_colon_char(ch)   (':' == ch)     /* 冒号 */
+#define html_is_nline_char(ch)   (('\n'== ch) || ('\r' == ch))  /* 换行符 */
 
-#define HtmlIsMarkChar(ch) /* 标签名的合法字符 */\
-    (isalpha(ch) || isdigit(ch)    \
-     || HtmlIsULineChar(ch))  || HtmlIsSubChar(ch) || HtmlIsColonChar(ch)
-#define HtmlIsMarkBorder(ch) /* 标签名的合法边界 */\
-    (isspace(ch) || HtmlIsRDLineChar(ch) \
-    || HtmlIsRPBrackChar(ch) || HtmlIsTableChar(ch) || HtmlIsNLineChar(ch))
-#define HtmlIsIgnoreChar(ch) /* 无意义字符 */\
-    (isspace(ch) || HtmlIsTableChar(ch) || HtmlIsNLineChar(ch))
+#define html_is_mark_char(ch)   /* 标签名的合法字符 */\
+    (isalpha(ch) || isdigit(ch) \
+        || html_is_uline_char(ch) \
+        || html_is_sub_char(ch) || html_is_colon_char(ch))
+#define html_is_mark_border(ch) /* 标签名的合法边界 */\
+    (isspace(ch) || html_is_rslash_char(ch) \
+        || html_is_rbrack_char(ch) || html_is_tab_char(ch) \
+        || html_is_nline_char(ch))
+#define html_is_ignore_char(ch) /* 无意义字符 */\
+    (isspace(ch) || html_is_tab_char(ch) || html_is_nline_char(ch))
 
 
 #define html_set_type(node, t) ((node)->type = (t))         /* 设置节点类型 */

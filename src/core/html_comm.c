@@ -249,9 +249,9 @@ int html_parse(html_tree_t *html, Stack_t *stack, const char *str)
     parse.ptr = str;
     parse.length = -1; /* 未知 */
 
-    while (!HtmlIsStrEndChar(*(parse.ptr)))
+    while (!html_is_end_char(*(parse.ptr)))
     {
-        while (HtmlIsIgnoreChar(*(parse.ptr))) parse.ptr++;    /* 跳过无意义的字符 */
+        while (html_is_ignore_char(*(parse.ptr))) parse.ptr++;    /* 跳过无意义的字符 */
 
         switch(*(parse.ptr))
         {
@@ -272,7 +272,7 @@ int html_parse(html_tree_t *html, Stack_t *stack, const char *str)
                         }
                         if (HTML_OK != ret)
                         {
-                            log2_error("HTML format is wrong![%-.1024s]", parse.ptr);
+                            log2_error("HTML format is wrong![%-.256s]", parse.ptr);
                             return HTML_ERR_FORMAT;
                         }
                         break;
@@ -282,7 +282,7 @@ int html_parse(html_tree_t *html, Stack_t *stack, const char *str)
                         ret = html_parse_end(html, stack, &parse);
                         if (HTML_OK != ret)
                         {
-                            log2_error("HTML format is wrong![%-.1024s] [%ld]",
+                            log2_error("HTML format is wrong![%-.256s] [%ld]",
                                 parse.ptr, parse.ptr-parse.str);
                             return HTML_ERR_FORMAT;
                         }
@@ -293,7 +293,7 @@ int html_parse(html_tree_t *html, Stack_t *stack, const char *str)
                         ret = html_parse_mark(html, stack, &parse);
                         if (HTML_OK != ret)
                         {
-                            log2_error("Parse HTML failed! [%-.1024s] [%ld]",
+                            log2_error("Parse HTML failed! [%-.256s] [%ld]",
                                 parse.ptr, parse.ptr-parse.str);
                             return HTML_ERR_FORMAT;
                         }
@@ -309,7 +309,7 @@ int html_parse(html_tree_t *html, Stack_t *stack, const char *str)
                     log2_debug("Parse html success!");
                     return HTML_OK;
                 }
-                log2_error("Invalid format! [%-.1024s] [%ld]",
+                log2_error("Invalid format! [%-.256s] [%ld]",
                     parse.ptr, parse.ptr-parse.str);
                 return HTML_ERR_FORMAT;
             }
@@ -319,7 +319,7 @@ int html_parse(html_tree_t *html, Stack_t *stack, const char *str)
                 ret = html_parse_special(html, stack, &parse);
                 if (HTML_OK != ret)
                 {
-                    log2_error("Invalid format! [%-.1024s] [%ld]",
+                    log2_error("Invalid format! [%-.256s] [%ld]",
                         parse.ptr, parse.ptr-parse.str);
                     return HTML_ERR_FORMAT;
                 }
@@ -330,7 +330,7 @@ int html_parse(html_tree_t *html, Stack_t *stack, const char *str)
 
     if (!stack_isempty(stack))
     {
-        log2_error("Invalid format! [%-.1024s]", parse.ptr);
+        log2_error("Invalid format! [%-.256s]", parse.ptr);
         return HTML_ERR_FORMAT;
     }
     
@@ -364,7 +364,7 @@ static int html_parse_doctype(html_tree_t *html, html_parse_t *parse)
     ret = strncmp(parse->ptr, HTML_DOC_TYPE_BEGIN, HTML_DOC_TYPE_BEGIN_LEN);
     if (0 != ret)
     {
-        log2_error("HTML format is wrong![%-.1024s]", parse->ptr);
+        log2_error("HTML format is wrong![%-.256s]", parse->ptr);
         return HTML_ERR_FORMAT;
     }
 
@@ -372,36 +372,35 @@ static int html_parse_doctype(html_tree_t *html, html_parse_t *parse)
 
     /* 检查格式是否正确 */
     /* 跳过无意义字符 */
-    while (HtmlIsIgnoreChar(*parse->ptr))
+    while (html_is_ignore_char(*parse->ptr))
     {
         parse->ptr++;
     }
 
-    while (!HtmlIsStrEndChar(*parse->ptr)      /* 结束符'\0' */
-        && !HtmlIsRPBrackChar(*parse->ptr))    /* 右尖括号'>' */
+    while (!html_is_end_char(*parse->ptr)      /* 结束符'\0' */
+        && !html_is_rbrack_char(*parse->ptr))    /* 右尖括号'>' */
     {
         ptr = parse->ptr;
         
-        if (HtmlIsDQuotChar(*ptr)
-            || HtmlIsSQuotChar(*ptr)) /* 引号 */
+        if (html_is_quot_char(*ptr)) /* 引号 */
         {
             border = *ptr;
             ptr++;
             while (*ptr != border
-                && !HtmlIsStrEndChar(*parse->ptr))
+                && !html_is_end_char(*parse->ptr))
             {
                 ptr++;
             }
 
             if (*ptr != border)
             {
-                log2_error("HTML format is wrong![%-.1024s]", parse->ptr);
+                log2_error("HTML format is wrong![%-.256s]", parse->ptr);
                 return HTML_ERR_FORMAT;
             }
             ptr++;  /* 跳过双/单引号 */
 
 		    /* 跳过无意义字符 */
-            while (HtmlIsIgnoreChar(*ptr))
+            while (html_is_ignore_char(*ptr))
             {
                 ptr++;
             }
@@ -409,13 +408,13 @@ static int html_parse_doctype(html_tree_t *html, html_parse_t *parse)
             continue;
         }
 
-        while (HtmlIsMarkChar(*ptr))
+        while (html_is_mark_char(*ptr))
         {
             ptr++;
         }
 
         /* 跳过无意义字符 */
-        while (HtmlIsIgnoreChar(*ptr))
+        while (html_is_ignore_char(*ptr))
         {
             ptr++;
         }
@@ -425,9 +424,9 @@ static int html_parse_doctype(html_tree_t *html, html_parse_t *parse)
     }
 
     /* 文档类型信息以">"结束 */
-    if (!HtmlIsRPBrackChar(*parse->ptr))
+    if (!html_is_rbrack_char(*parse->ptr))
     {
-        log2_error("HTML format is wrong![%-.1024s]", parse->ptr);
+        log2_error("HTML format is wrong![%-.256s]", parse->ptr);
         return HTML_ERR_FORMAT;
     }
     
@@ -455,7 +454,7 @@ static int html_parse_note(html_tree_t *html, html_parse_t *parse)
     ret = strncmp(parse->ptr, HTML_NOTE_BEGIN, HTML_NOTE_BEGIN_LEN);
     if (0 != ret)
     {
-        log2_error("HTML format is wrong![%-.1024s]", parse->ptr);
+        log2_error("HTML format is wrong![%-.256s]", parse->ptr);
         return HTML_ERR_FORMAT;
     }
 
@@ -465,7 +464,7 @@ static int html_parse_note(html_tree_t *html, html_parse_t *parse)
     ptr = strstr(parse->ptr, HTML_NOTE_END1);
     if ((NULL == ptr) || (HTML_NOTE_END2 != *(ptr + HTML_NOTE_END1_LEN)))
     {
-        log2_error("HTML format is wrong![%-.1024s]", parse->ptr);
+        log2_error("HTML format is wrong![%-.256s]", parse->ptr);
         return HTML_ERR_FORMAT;
     }
 
@@ -559,7 +558,9 @@ static int html_parse_mark(html_tree_t *html, Stack_t *stack, html_parse_t *pars
         }
         default:
         {
-            log2_error("HTML format is wrong![%-.1024s]", parse->ptr);
+            top = stack_gettop(stack);
+            log2_error("HTML format is wrong! Mark:[%s] [0x%x][%-.512s]",
+                top->name, (u_char)parse->ptr[0], parse->ptr);
             return ret;
         }
     }
@@ -590,11 +591,11 @@ static int html_parse_end(html_tree_t *html, Stack_t *stack, html_parse_t *parse
     ptr = parse->ptr;
     
     /* 1. 确定结束节点名长度 */
-    while (HtmlIsMarkChar(*ptr)) ptr++;
+    while (html_is_mark_char(*ptr)) ptr++;
     
-    if (!HtmlIsRPBrackChar(*ptr))
+    if (!html_is_rbrack_char(*ptr))
     {
-        log2_error("HTML format is wrong![%-.1024s]", parse->ptr);
+        log2_error("HTML format is wrong![%-.256s]", parse->ptr);
         return HTML_ERR_FORMAT;
     }
 
@@ -642,7 +643,7 @@ static int html_parse_end(html_tree_t *html, Stack_t *stack, html_parse_t *parse
         log2_debug("Match success![%s][%-.32s] [%d/%d]",
                 top->name, parse->ptr, strlen(top->name), len);
     #else /*!__HTML_AUTO_RESTORE__*/
-        log2_error("Mark name is not match![%s][%-.1024s]", top->name, parse->ptr);
+        log2_error("Mark name is not match![%s][%-.256s]", top->name, parse->ptr);
         return HTML_ERR_MARK_MISMATCH;
     #endif /*!__HTML_AUTO_RESTORE__*/
     }
@@ -762,12 +763,13 @@ static int html_mark_get_name(html_tree_t *html, Stack_t *stack, html_parse_t *p
     }
 
     /* 3. 确定节点名长度 */
-    while (HtmlIsMarkChar(*ptr)) ptr++;
+    while (html_is_mark_char(*ptr)) ptr++;
 
     /* 4.判断标签名边界是否合法 */
-    if (!HtmlIsMarkBorder(*ptr))
+    if (!html_is_mark_border(*ptr))
     {
-        log2_error("HTML format is wrong!\n[%-32.32s]", parse->ptr);
+        log2_error("HTML format is wrong!\n [0x%X%X] [%-32.32s]",
+            (u_char)*ptr, (u_char)*(ptr + 1), parse->ptr);
         return HTML_ERR_FORMAT;
     }
 
@@ -810,11 +812,11 @@ static int html_mark_has_attr(html_parse_t *parse)
 {
     const char *ptr = parse->ptr;
 
-    while (HtmlIsIgnoreChar(*ptr)) ptr++;    /* 跳过无意义的字符 */
+    while (html_is_ignore_char(*ptr)) ptr++;    /* 跳过无意义的字符 */
 
     parse->ptr = ptr;
     
-    if (HtmlIsMarkChar(*ptr))
+    if (html_is_mark_char(*ptr))
     {
         return true;
     }
@@ -870,10 +872,10 @@ static int html_mark_get_attr(html_tree_t *html, Stack_t *stack, html_parse_t *p
         }
 
         /* 3.2 获取属性名 */
-        while (HtmlIsIgnoreChar(*ptr)) ptr++;/* 跳过属性名之前无意义的空格 */
+        while (html_is_ignore_char(*ptr)) ptr++;/* 跳过属性名之前无意义的空格 */
 
         parse->ptr = ptr;
-        while (HtmlIsMarkChar(*ptr)) ptr++;  /* 查找属性名的边界 */
+        while (html_is_mark_char(*ptr)) ptr++;  /* 查找属性名的边界 */
 
         len = ptr - parse->ptr;
         node->name = (char*)calloc(1, (len+1)*sizeof(char));
@@ -887,19 +889,19 @@ static int html_mark_get_attr(html_tree_t *html, Stack_t *stack, html_parse_t *p
         memcpy(node->name, parse->ptr, len);
         
         /* 3.3 获取属性值 */
-        while (HtmlIsIgnoreChar(*ptr)) ptr++;         /* 跳过=之前的无意义字符 */
+        while (html_is_ignore_char(*ptr)) ptr++;         /* 跳过=之前的无意义字符 */
 
-        if (!HtmlIsEqualChar(*ptr))                      /* 不为等号，则格式错误 */
+        if (!html_is_equal_char(*ptr))                      /* 不为等号，则格式错误 */
         {
             errflg = 1;
-            log2_error("Attribute format is incorrect![%-.1024s]", parse->ptr);
+            log2_error("Attribute format is incorrect![%-.256s]", parse->ptr);
             break;
         }
         ptr++;                                  /* 跳过"=" */
-        while (HtmlIsIgnoreChar(*ptr)) ptr++;     /* 跳过=之后的无意义字符 */
+        while (html_is_ignore_char(*ptr)) ptr++;     /* 跳过=之后的无意义字符 */
 
         /* 1) 判断是单引号(')还是双引号(")为属性的边界 */
-        if (HtmlIsDQuotChar(*ptr) || HtmlIsSQuotChar(*ptr))
+        if (html_is_quot_char(*ptr))
         {
             border = *ptr;
 
@@ -907,15 +909,15 @@ static int html_mark_get_attr(html_tree_t *html, Stack_t *stack, html_parse_t *p
             parse->ptr = ptr;
 
             /* 计算 双/单 引号之间的数据长度 */
-            while ((*ptr != border) && !HtmlIsStrEndChar(*ptr))
+            while ((*ptr != border) && !html_is_end_char(*ptr))
             {
                 ptr++;
             }
 
-            if (HtmlIsStrEndChar(*ptr))
+            if (html_is_end_char(*ptr))
             {
                 errflg = 1;
-                log2_error("Mismatch border [%c]![%-.1024s]", border, parse->ptr);
+                log2_error("Mismatch border [%c]![%-.256s]", border, parse->ptr);
                 break;
             }
 
@@ -928,23 +930,23 @@ static int html_mark_get_attr(html_tree_t *html, Stack_t *stack, html_parse_t *p
         #if 1
             /* 查找属性值的边界:空格或> */
             while (!isspace(*ptr)
-                && !HtmlIsStrEndChar(*ptr)
-                && !HtmlIsRPBrackChar(*ptr))
+                && !html_is_end_char(*ptr)
+                && !html_is_rbrack_char(*ptr))
             {
                 ptr++;
             }
 
-            if (HtmlIsStrEndChar(*ptr))
+            if (html_is_end_char(*ptr))
             {
                 errflg = 1;
-                log2_error("Mismatch border [%c]![%-.1024s]", border, parse->ptr);
+                log2_error("Mismatch border [%c]![%-.256s]", border, parse->ptr);
                 break;
             }
 
             len = ptr - parse->ptr;
         #else
             errflg = 1;
-            log2_error("Html format is wrong! [%-.1024s]", parse->ptr);
+            log2_error("Html format is wrong! [%-.256s]", parse->ptr);
             break;
         #endif
         }
@@ -972,9 +974,9 @@ static int html_mark_get_attr(html_tree_t *html, Stack_t *stack, html_parse_t *p
         top->tail = node;
         
         /* 3.5 指针向后移动 */
-        while (HtmlIsIgnoreChar(*ptr)) ptr++;
+        while (html_is_ignore_char(*ptr)) ptr++;
 
-    }while (HtmlIsMarkChar(*ptr));
+    }while (html_is_mark_char(*ptr));
 
     if (1 == errflg)         /* 防止内存泄漏 */
     {
@@ -1005,7 +1007,7 @@ static int html_mark_is_end(html_parse_t *parse)
     int ret = 0;
     const char *ptr = parse->ptr;
     
-    while (HtmlIsIgnoreChar(*ptr)) ptr++;
+    while (html_is_ignore_char(*ptr)) ptr++;
 
     /* 1. 是否有节点值 */
     ret = strncmp(ptr, HTML_MARK_END1, HTML_MARK_END1_LEN);
@@ -1031,17 +1033,17 @@ static int html_mark_has_value(html_parse_t *parse)
 {
     const char *ptr = parse->ptr;
 
-    while (HtmlIsIgnoreChar(*ptr)) ptr++;
+    while (html_is_ignore_char(*ptr)) ptr++;
     
-    if (HtmlIsRPBrackChar(*ptr))
+    if (html_is_rbrack_char(*ptr))
     {
         ptr++;
 
         /* 跳过起始的空格和换行符 */
-        while (HtmlIsIgnoreChar(*ptr)) ptr++;
+        while (html_is_ignore_char(*ptr)) ptr++;
 
         parse->ptr = ptr;
-        if (HtmlIsLPBrackChar(*ptr)) /* 出现子节点 */
+        if (html_is_lbrack_char(*ptr)) /* 出现子节点 */
         {
             return false;
         }
@@ -1078,14 +1080,14 @@ static int html_mark_get_value(html_tree_t *html, Stack_t *stack, html_parse_t *
 
     p1 = parse->ptr;
 
-    while (HtmlIsIgnoreChar(*p1)) p1++;
+    while (html_is_ignore_char(*p1)) p1++;
 
     parse->ptr = p1;
     
     /* 提取节点值: 允许节点值中出现空格和换行符 */    
-    while (!HtmlIsStrEndChar(*p1))
+    while (!html_is_end_char(*p1))
     {
-        if (HtmlIsLPBrackChar(*p1)
+        if (html_is_lbrack_char(*p1)
         #if defined(__HTML_DEL_BR__)
             && 0 != strncasecmp(p1, "<br />", 6)
             && 0 != strncasecmp(p1, "<br/>", 5)
@@ -1097,7 +1099,7 @@ static int html_mark_get_value(html_tree_t *html, Stack_t *stack, html_parse_t *
         p1++;
     }
 
-    if (HtmlIsStrEndChar(*p1))
+    if (html_is_end_char(*p1))
     {
         log2_error("HTML format is wrong! MarkName:[%s]", current->name);
         return HTML_ERR_FORMAT;
@@ -1105,7 +1107,7 @@ static int html_mark_get_value(html_tree_t *html, Stack_t *stack, html_parse_t *
     
     p2 = p1;
     p1--;
-    while (HtmlIsIgnoreChar(*p1)) p1--;
+    while (html_is_ignore_char(*p1)) p1--;
 
     p1++;
 
@@ -1165,14 +1167,14 @@ static int html_script_get_value(html_tree_t *html, Stack_t *stack, html_parse_t
 
     p1 = parse->ptr;
 
-    while (HtmlIsIgnoreChar(*p1)) p1++;
+    while (html_is_ignore_char(*p1)) p1++;
 
     parse->ptr = p1;
     
     /* 提取节点值: 允许节点值中出现空格和换行符 */    
-    while (!HtmlIsStrEndChar(*p1))
+    while (!html_is_end_char(*p1))
     {
-        if (HtmlIsLPBrackChar(*p1)
+        if (html_is_lbrack_char(*p1)
             && !strncasecmp(p1, HTML_MARK_SCRIPT_END, strlen(HTML_MARK_SCRIPT_END)))
         {
             break;
@@ -1180,7 +1182,7 @@ static int html_script_get_value(html_tree_t *html, Stack_t *stack, html_parse_t
         p1++;
     }
 
-    if (HtmlIsStrEndChar(*p1))
+    if (html_is_end_char(*p1))
     {
         log2_error("HTML format is wrong! MarkName:[%s]", current->name);
         return HTML_ERR_FORMAT;
@@ -1188,7 +1190,7 @@ static int html_script_get_value(html_tree_t *html, Stack_t *stack, html_parse_t
     
     p2 = p1;
     p1--;
-    while (HtmlIsIgnoreChar(*p1)) p1--;
+    while (html_is_ignore_char(*p1)) p1--;
 
     p1++;
 

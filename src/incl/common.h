@@ -27,6 +27,21 @@ typedef int bool;
 #define MB                  (1024 * KB)
 #define GB                  (1024 * MB)
 
+#define is_uline_char(ch)   ('_' == ch)     /* 下划线 */
+#define is_tab_char(ch)     ('\t' == ch)    /* 制表符 */
+#define is_end_char(ch)     ('\0' == ch)    /* 结束符 */
+#define is_equal_char(ch)   ('=' == ch)     /* 等号符 */
+#define is_dquot_char(ch)   ('"' == ch)     /* 双引号 */
+#define is_squot_char(ch)   ('\'' == ch)    /* 单引号 */
+#define is_lbrack_char(ch)  ('<' == ch)     /* 左尖括号 */
+#define is_rbrack_char(ch)  ('>' == ch)     /* 右尖括号 */
+#define is_rslash_char(ch)  ('/' == ch)     /* 右斜线 */
+#define is_doubt_char(ch)   ('?' == ch)     /* 疑问号 */
+#define is_and_char(ch)     ('&' == ch)     /* 与号 */
+#define is_sub_char(ch)     ('-' == ch)     /* 减号 */
+#define is_colon_char(ch)   (':' == ch)     /* 冒号 */
+#define is_nline_char(ch)   (('\n'== ch) || ('\r' == ch))  /* 换行符 */
+
 /* 内存对齐 */
 #define mem_align(d, a)     (((d) + (a - 1)) & ~(a - 1))
 #define mem_align_ptr(p, a)                                                   \
