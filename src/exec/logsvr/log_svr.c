@@ -18,6 +18,9 @@
 #include "xdo_unistd.h"
 #include "thread_pool.h"
 
+#define LOG_SVR_LOG2_LEVEL  "trace"
+#define LOG_SVR_LOG2_PATH   "../log/logsvr.log2"
+
 static int log_svr_init(log_svr_t *logsvr);
 static void *log_svr_timeout_routine(void *args);
 int log_svr_sync_work(int idx, log_svr_t *logsvr);
@@ -44,13 +47,20 @@ int main(void)
 
     memset(&logsvr, 0, sizeof(log_svr_t));
 
+    ret = log2_init(LOG_SVR_LOG2_LEVEL, LOG_SVR_LOG2_PATH);
+    if (0 != ret)
+    {
+        fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
+        return -1;
+    }
+
     daemon(0, 0);
 
     /* 1. 初始化日志系统 */
     ret = log_svr_init(&logsvr);
     if(ret < 0)
     {
-        fprintf(stderr, "Init log failed!");
+        log2_error("Init log failed!");
         return -1;
     }
 
@@ -85,7 +95,7 @@ int log_svr_proc_lock(void)
     fd = Open(path, OPEN_FLAGS, OPEN_MODE);
     if(fd < 0)
     {
-        fprintf(stderr, "errmsg:[%d]%s! path:[%s]", errno, strerror(errno), path);
+        log2_error("errmsg:[%d]%s! path:[%s]", errno, strerror(errno), path);
         return -1;
     }
 
@@ -93,7 +103,7 @@ int log_svr_proc_lock(void)
     ret = log_svr_proc_trylock(fd);
     if(ret < 0)
     {
-        fprintf(stderr, "errmsg:[%d]%s! path:[%s]", errno, strerror(errno), path);
+        log2_error("errmsg:[%d]%s! path:[%s]", errno, strerror(errno), path);
         Close(fd);
         return -1;
     }
@@ -113,8 +123,8 @@ int log_svr_proc_lock(void)
  ******************************************************************************/
 static int log_svr_init(log_svr_t *logsvr)
 {
-    int ret = 0;
-    char path[FILE_PATH_MAX_LEN] = {0};
+    int ret;
+    char path[FILE_PATH_MAX_LEN];
 
     /* 设置跟踪日志路径 */
     log_svr_log_path(path, sizeof(path));
@@ -123,7 +133,7 @@ static int log_svr_init(log_svr_t *logsvr)
     ret = log_svr_proc_lock();
     if(ret < 0)
     {
-        fprintf(stderr, "Log server is already running...");
+        log2_error("Log server is already running...");
         return -1;    /* 日志服务进程正在运行... */
     }
 
@@ -135,7 +145,7 @@ static int log_svr_init(log_svr_t *logsvr)
     logsvr->fd = Open(path, OPEN_FLAGS, OPEN_MODE);
     if(logsvr->fd < 0)
     {
-        fprintf(stderr, "errmsg:[%d] %s! path:[%s]", errno, strerror(errno), path);
+        log2_error("errmsg:[%d] %s! path:[%s]", errno, strerror(errno), path);
         return -1;
     }
 
@@ -143,7 +153,7 @@ static int log_svr_init(log_svr_t *logsvr)
     logsvr->addr = log_svr_creat_shm(logsvr->fd);
     if(NULL == logsvr->addr)
     {
-        fprintf(stderr, "Create SHM failed!");
+        log2_error("Create SHM failed!");
         return -1;
     }
 
@@ -153,7 +163,7 @@ static int log_svr_init(log_svr_t *logsvr)
     {
         thread_pool_destroy(logsvr->pool);
         logsvr->pool = NULL;
-        fprintf(stderr, "errmsg:[%d]%s!", errno, strerror(errno));
+        log2_error("errmsg:[%d]%s!", errno, strerror(errno));
         return -1;
     }
 
@@ -204,7 +214,7 @@ static char *log_svr_creat_shm(int fd)
     addr = (void *)shmat(shmid, NULL, 0);
     if((void *)-1 == addr)
     {
-        fprintf(stderr, "Attach shm failed! shmid:[%d] key:[0x%x]", shmid, LOG_SHM_KEY);
+        log2_error("Attach shm failed! shmid:[%d] key:[0x%x]", shmid, LOG_SHM_KEY);
         return NULL;
     }
 

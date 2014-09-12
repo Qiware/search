@@ -8,30 +8,24 @@
 ###############################################################################
 
 
-# 开启的功能宏
-OPTIONS += __THREAD_POOL_SLAB__	# 线程池开启SLAB机制
+# 默认开启的功能
+ifeq (__ON__, $(strip $(CONFIG_DEFAULT_SUPPORT)))
+	# 线程池相关功能
+	OPTIONS += __THREAD_POOL_SLAB__		# 线程池开启SLAB机制
+
+	# XML相关功能
+	OPTIONS += __XML_MEM_POOL__			# XML的处理过程的内存从内存池申请
+	# 功能: 节点只有孩子节点或只有数值(Either Child Or Value)
+	#OPTIONS += __XML_EITHER_CHILD_OR_VALUE__
+
+	# HTML相关功能
+	OPTIONS += __HTML_AUTO_RESTORE__	# HTML自动修复功能
+	OPTIONS += __HTML_DEL_BR__			# HTML处理过程中，自动删除<br />
+endif
 
 # 调试相关宏
 ifeq (__ON__, $(strip $(CONFIG_DEBUG_SUPPORT)))
 	OPTIONS += __XDO_DEBUG__
-endif
-
-# 日志相关宏
-ifeq (__ON__, $(strip $(CONFIG_ALOG_SUPPORT)))
-	OPTIONS += __ASYNC_LOG__		# 异步日志功能
-endif
-
-# XML相关宏
-ifeq (__ON__, $(strip $(CONFIG_XML_SUPPORT)))
-	OPTIONS += __XML_MEM_POOL__		# XML的处理过程的内存从内存池申请
-	# 功能: 节点只有孩子节点或只有数值(Either Child Or Value)
-	#OPTIONS += __XML_EITHER_CHILD_OR_VALUE__
-endif
-
-# HTML相关宏
-ifeq (__ON__, $(strip $(CONFIG_HTML_SUPPORT)))
-	OPTIONS += __HTML_AUTO_RESTORE__	# HTML自动修复功能
-	OPTIONS += __HTML_DEL_BR__			# HTML处理过程中，自动删除<br />
 endif
 
 # 内存对齐

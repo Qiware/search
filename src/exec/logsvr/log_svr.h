@@ -15,7 +15,7 @@
 #include "thread_pool.h"
 
 /* 服务进程互斥锁路径 */
-#define LOG_SVR_PROC_LOCK  ".log_svr.lck"
+#define LOG_SVR_PROC_LOCK  "log_svr.lck"
 #define log_svr_proc_lock_path(path, size) \
     snprintf(path, size, "../tmp/%s",  LOG_SVR_PROC_LOCK)
 #define log_svr_proc_trylock(fd) proc_try_wrlock(fd)

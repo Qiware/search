@@ -47,7 +47,7 @@
 #define LOG_DEFAULT_TRCLOG      "trc.log"   /* 默认日志名 */
 #define log_default_path(path, size)        /* 默认日志文件路径 */ \
     snprintf(path, size, "../logs/%s", LOG_DEFAULT_TRCLOG);
-#define LOG_LOCK_FILE           ".log.lock" /* 日志锁 */
+#define LOG_LOCK_FILE           "log_cache.lck" /* 日志锁 */
 #define log_get_lock_path(path, size)       /* 日志锁路径 */ \
     snprintf(path, size, "../tmp/log/%s", LOG_LOCK_FILE)
 

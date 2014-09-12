@@ -16,8 +16,6 @@
 #include "common.h"
 #include "xdo_unistd.h"
 
-#if defined(__ASYNC_LOG__)
-
 /* 共享内存 */
 static void *g_log_shm_addr = (void *)-1;  /* 共享内存地址 */
 
@@ -982,4 +980,3 @@ static size_t _log_sync(log_file_info_t *file, int *fd)
     }
     return fsize;
 }
-#endif /*__ASYNC_LOG__*/
