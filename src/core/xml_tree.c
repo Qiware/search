@@ -74,7 +74,7 @@ xml_tree_t *xml_creat_empty(void)
 #endif /*__XML_MEM_POOL__*/
 
     /* 2. Add root node */
-    xml->root = xml_node_creat(pool, XML_NODE_ROOT);
+    xml->root = xml_node_creat(xml, XML_NODE_ROOT);
     if (NULL == xml->root)
     {
         xml_destroy(xml);
@@ -86,7 +86,7 @@ xml_tree_t *xml_creat_empty(void)
 #if defined(__XML_MEM_POOL__)
     xml->root->name = (char *)mem_pool_calloc(pool, XML_ROOT_NAME_SIZE);
 #else /*!__XML_MEM_POOL__*/
-    xml->root->name = (char *)calloc(XML_ROOT_NAME_SIZE);
+    xml->root->name = (char *)calloc(1, XML_ROOT_NAME_SIZE);
 #endif /*!__XML_MEM_POOL__*/
     if (NULL == xml->root->name)
     {

@@ -67,7 +67,7 @@ static const xml_esc_t g_xml_esc_str[] =
  **函数名称: xml_node_creat
  **功    能: 创建XML节点
  **输入参数: 
- **     pool: 内存池
+ **     xml: XML树
  **     type: 节点类型(xml_node_type_e)
  **输出参数: NONE
  **返    回: 节点地址
@@ -75,12 +75,12 @@ static const xml_esc_t g_xml_esc_str[] =
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.02.18 #
  ******************************************************************************/
-xml_node_t *xml_node_creat(mem_pool_t *pool, xml_node_type_e type)
+xml_node_t *xml_node_creat(xml_tree_t *xml, xml_node_type_e type)
 {
     xml_node_t *node = NULL;
 
 #if defined(__XML_MEM_POOL__)
-    node = (xml_node_t*)mem_pool_calloc(pool, sizeof(xml_node_t));
+    node = (xml_node_t*)mem_pool_calloc(xml->pool, sizeof(xml_node_t));
 #else /*!__XML_MEM_POOL__*/
     node = (xml_node_t*)calloc(1, sizeof(xml_node_t));
 #endif /*!__XML_MEM_POOL__*/
@@ -206,7 +206,9 @@ int xml_init(xml_tree_t **xml)
 #endif /*!__XML_MEM_POOL__*/
     if (NULL == *xml)
     {
+    #if defined(__XML_MEM_POOL__)
         mem_pool_destroy(pool);
+    #endif /*__XML_MEM_POOL__*/
         return XML_ERR_CALLOC;
     }
 
@@ -217,7 +219,9 @@ int xml_init(xml_tree_t **xml)
 #endif /*!__XML_MEM_POOL__*/
     if (NULL == (*xml)->root)
     {
+    #if defined(__XML_MEM_POOL__)
         mem_pool_destroy(pool);
+    #endif /*__XML_MEM_POOL__*/
         return XML_ERR_CALLOC;
     }
     
@@ -711,7 +715,7 @@ static int xml_mark_get_name(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse
     xml_node_t *node = NULL, *top = NULL;
 
     /* 1. 新建节点，并初始化 */
-    node = xml_node_creat(xml->pool, XML_NODE_UNKNOWN);
+    node = xml_node_creat(xml, XML_NODE_UNKNOWN);
     if (NULL == node)
     {
         log2_error("Create xml node failed!");
@@ -863,7 +867,7 @@ static int xml_mark_get_attr(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse
     do
     {
         /* 3.1 新建节点，并初始化 */
-        node = xml_node_creat(xml->pool, XML_NODE_ATTR);
+        node = xml_node_creat(xml, XML_NODE_ATTR);
         if (NULL == node)
         {
             log2_error("Create xml node failed!");

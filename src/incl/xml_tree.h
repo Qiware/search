@@ -90,7 +90,7 @@ typedef struct
 #define xml_name(node) (node->name)
 #define xml_value(node) (node->value)
 
-xml_node_t *xml_node_creat(mem_pool_t *pool, xml_node_type_e type);
+xml_node_t *xml_node_creat(xml_tree_t *xml, xml_node_type_e type);
 xml_node_t *xml_node_creat_ext(
         xml_tree_t *xml,
         xml_node_type_e type,
