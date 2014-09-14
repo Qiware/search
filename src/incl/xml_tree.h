@@ -78,8 +78,9 @@ typedef struct _xml_node_t
 typedef struct
 {
     xml_node_t *root;           /* 根节点: 注意root的第一个子节点才是真正的根节点 */
-
+#if defined(__XML_MEM_POOL__)
     mem_pool_t *pool;           /* 内存池 */
+#endif /*__XML_MEM_POOL__*/
 }xml_tree_t;
 
 /* 对外的接口 */
