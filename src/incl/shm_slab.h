@@ -20,14 +20,14 @@ typedef enum
     SHM_SLAB_ALLOC_PAGES,   /* 按整页分配 */
 
     SHM_SLAB_ALLOC_TOTAL
-}SHM_SLAB_ALLOC_TYPE;
+} SHM_SLAB_ALLOC_TYPE;
 
 /* SLOT管理 */
 typedef struct
 {
     uint32_t index;         /* slot索引 */
     int page_idx;           /* slot链表的页索引 */
-}shm_slab_slot_t;
+} shm_slab_slot_t;
 
 /* PAGE管理 */
 typedef struct
@@ -40,7 +40,7 @@ typedef struct
     uint32_t rbitmap;       /* 初始位图的取反值 */
     int next_idx;           /* 下一页的索引 */
     int prev_idx;           /* 上一页的索引 */
-}shm_slab_page_t;
+} shm_slab_page_t;
 
 typedef struct
 {
@@ -57,7 +57,7 @@ typedef struct
     size_t page_offset;     /* PAGE数组的起始偏移量 */
 	
     shm_slab_page_t free;   /* 空闲页链表 */
-}shm_slab_pool_t;
+} shm_slab_pool_t;
 
 int32_t shm_slab_init(shm_slab_pool_t *pool);
 void *shm_slab_alloc(shm_slab_pool_t *pool, size_t size);

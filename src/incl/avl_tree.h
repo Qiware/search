@@ -26,7 +26,7 @@ typedef enum
     , AVL_NODE_EXIST            /* 节点存在 */
     , AVL_ERR_STACK             /* 栈异常 */
     , AVL_ERR_NOT_FOUND         /* 未找到 */
-}avl_err_e;
+} avl_err_e;
 
 
 /* 节点结构 */
@@ -39,13 +39,13 @@ typedef struct _node_t
     int bf;                     /* 平衡因子 */
 
     void *data;                 /* 附加数据 */
-}avl_node_t;
+} avl_node_t;
 
 /* 树结构 */
 typedef struct
 {
     avl_node_t *root;           /* 根节点 */
-}avl_tree_t;
+} avl_tree_t;
 
 /* 设置node的左孩子节点 */
 #define avl_set_lchild(node, lc) \
@@ -55,7 +55,7 @@ typedef struct
     { \
         (lc)->parent = (node); \
     } \
-}
+} 
 
 /* 设置node的右孩子节点 */
 #define avl_set_rchild(node, rc) \
@@ -65,7 +65,7 @@ typedef struct
     { \
         (rc)->parent = (node); \
     } \
-}
+} 
 
 /* 替换父节点的孩子节点 */
 #define avl_replace_child(tree, _parent, old, _new) \
@@ -86,7 +86,7 @@ typedef struct
     { \
         avl_set_rchild(_parent, _new); \
     } \
-}
+} 
 
 extern int avl_creat(avl_tree_t **tree);
 extern int avl_insert(avl_tree_t *tree, int key, void *data);

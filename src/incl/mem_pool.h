@@ -27,14 +27,14 @@ typedef struct _mem_pool_cleanup_t
     mem_pool_cleanup_cb_t   handler;
     void                 *data;
     struct _mem_pool_cleanup_t   *next;
-}mem_pool_cleanup_t;
+} mem_pool_cleanup_t;
 
 /* 大块内存 */
 typedef struct _mem_pool_large_t
 {
     struct _mem_pool_large_t     *next;
     void                 *alloc;
-}mem_pool_large_t;
+} mem_pool_large_t;
 
 typedef struct _mem_pool_t __mem_pool_t;
 typedef struct
@@ -53,7 +53,7 @@ typedef struct _mem_pool_t
     struct _mem_pool_t   *current;
     mem_pool_large_t     *large;
     mem_pool_cleanup_t   *cleanup;
-}mem_pool_t;
+} mem_pool_t;
 
 typedef struct
 {

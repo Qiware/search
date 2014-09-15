@@ -69,7 +69,7 @@ typedef struct
     size_t out_offset;                      /* 同步偏移 */
     pid_t pid;                              /* 使用日志缓存的进程ID */
     struct timeb sync_tm;                   /* 上次同步的时间 */
-}log_file_info_t;
+} log_file_info_t;
 
 /* 日志共享内存信息 */
 typedef struct
@@ -80,7 +80,7 @@ typedef struct
     size_t out_offset;                      /* 同步偏移 */
     pid_t pid;                              /* 使用日志缓存的进程ID */
     struct timeb sync_tm;                   /* 上次同步的时间 */
-}log_shm_t;
+} log_shm_t;
 
 /* 内部接口 */
 int log_set_path(const char *path);
@@ -95,7 +95,7 @@ typedef struct _log_cycle_t
     int fd;                                 /* 文件描述符 */
     pid_t pid;                              /* 进程PID */
     log_file_info_t *file;                  /* 文件信息 */
-}log_cycle_t;
+} log_cycle_t;
 
 /* 外部接口 */
 int log_get_level(const char *level_str);
@@ -146,7 +146,7 @@ typedef struct
     FILE *fp;       /* 文件指针 */
     int level;      /* 进程级别 */
     pid_t pid;      /* 进程ID */
-}log2_cycle_t;
+} log2_cycle_t;
 
 extern log2_cycle_t g_log2;
 

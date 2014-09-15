@@ -75,7 +75,7 @@ typedef enum
     , HTML_ERR_PTR_NULL                 /* 空指针 */
     , HTML_ERR_EMPTY_TREE               /* 空树 */
     , HTML_ERR_FOPEN                    /* fopen失败 */
-}html_err_e;
+} html_err_e;
 
 /* 文件解析 结构体 */
 typedef struct
@@ -83,13 +83,13 @@ typedef struct
     const char *str;                    /* HTML字串 */
     const char *ptr;                    /* 当前处理到的位置 */
     int length;
-}html_parse_t;
+} html_parse_t;
 
 typedef struct
 {
     char *str;
     char *ptr;
-}sprint_t;
+} sprint_t;
 
 #define sprint_init(sp, s) ((sp)->str = (s), (sp)->ptr = s)
 

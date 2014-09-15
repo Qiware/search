@@ -12,7 +12,7 @@ typedef struct _thread_worker_t
     void *(*process)(void *arg);    /* 线程调用接口 */
     void *arg;                      /* 接口参数 */
     struct _thread_worker_t *next;  /* 下一个节点 */
-}thread_worker_t;
+} thread_worker_t;
 
 /* 线程池 */
 typedef struct
@@ -30,7 +30,7 @@ typedef struct
 #if defined(__THREAD_POOL_SLAB__)
     eslab_pool_t eslab;             /* SLAB内存管理机制 */
 #endif /*__THREAD_POOL_SLAB__*/
-}thread_pool_t;
+} thread_pool_t;
 
 
 thread_pool_t *thread_pool_init(int num);

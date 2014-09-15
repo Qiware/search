@@ -75,20 +75,30 @@ static uint32_t slab_page_shift = SLAB_PAGE_SHIFT;
  **函数名称: slab_init
  **功    能: Slab初始化
  **输入参数:
- **     pool: Slab对象
+ **     addr: 起始地址
+ **     size: 内存SIZE
  **输出参数:
- **返    回: VOID
+ **返    回: Slab对象
  **实现描述: 
  **注意事项: 
  **作    者: # Nginx # YYYY.MM.DD #
  ******************************************************************************/
-void slab_init(slab_pool_t *pool)
+slab_pool_t *slab_init(void *addr, size_t size)
 {
-    u_char *p = NULL;
-    size_t size = 0;
+    u_char *p;
+    size_t left_size;
+    slab_pool_t *pool;
     int m = 0;
     uint32_t i = 0, n = 0, pages = 0, shift = 0;
     slab_page_t *slots = NULL;
+
+    if (size < (sizeof(slab_pool_t) + slab_get_page_size()))
+    {
+        return NULL;
+    }
+
+    pool = (slab_pool_t *)addr;
+    pool->end = addr + size;
 
     /* STUB */
     if (0 == slab_get_max_size())
@@ -107,9 +117,9 @@ void slab_init(slab_pool_t *pool)
     pool->min_size = 1 << pool->min_shift;
 
     p = (u_char *) pool + sizeof(slab_pool_t);
-    size = pool->end - p;
+    left_size = pool->end - p;
 
-    slab_junk(p, size);
+    slab_junk(p, left_size);
 
     slots = (slab_page_t *) p;
     n = slab_get_page_shift() - pool->min_shift;
@@ -123,7 +133,7 @@ void slab_init(slab_pool_t *pool)
 
     p += n * sizeof(slab_page_t);
 
-    pages = (unsigned int) (size / (slab_get_page_size() + sizeof(slab_page_t)));
+    pages = (unsigned int) (left_size / (slab_get_page_size() + sizeof(slab_page_t)));
 
     memset(p, 0, pages * sizeof(slab_page_t));
 
@@ -146,8 +156,10 @@ void slab_init(slab_pool_t *pool)
         pool->pages->slab = pages;
     }
 
-    log2_info("start:%p end:%p size:%d pages:%d\n",
+    log2_info("start:%p end:%p left_size:%d pages:%d\n",
         pool->start, pool->end, pool->end - pool->start, pages);
+
+    return pool;
 }
 
 /******************************************************************************
@@ -826,9 +838,9 @@ int eslab_destroy(eslab_pool_t *eslab)
     while (NULL != node)
     {
         next = node->next;
-        if (node->sp)
+        if (node->pool)
         {
-            free(node->sp);
+            free(node->pool);
         }
         free(node);
         node = next;
@@ -850,7 +862,7 @@ int eslab_destroy(eslab_pool_t *eslab)
 static slab_pool_t *eslab_add(eslab_pool_t *eslab, size_t size)
 {
     void *addr = NULL;
-    eslab_node_t *node = NULL, *next = NULL;
+    eslab_node_t *node, *next = NULL;
 
     /* 1. Alloc memory for node. */
     node = calloc(1, sizeof(eslab_node_t));
@@ -869,9 +881,7 @@ static slab_pool_t *eslab_add(eslab_pool_t *eslab, size_t size)
         return NULL;
     }
 
-    node->sp = (slab_pool_t *)addr;
-    node->sp->end = addr + size;
-    slab_init(node->sp);
+    node->pool = slab_init(addr, size);
 
     /* 3. Add node into link */
     next = eslab->node;
@@ -907,7 +917,7 @@ void *eslab_alloc(eslab_pool_t *eslab, size_t size)
     {
         next = node->next;
         
-        p = slab_alloc(node->sp, size);
+        p = slab_alloc(node->pool, size);
         if (NULL != p)
         {
             return p;
@@ -958,9 +968,9 @@ int eslab_free(eslab_pool_t *eslab, void *p)
     {
         next = node->next;
         
-        if ((p >= (void *)node->sp->start) && (p < (void *)node->sp->end))
+        if ((p >= (void *)node->pool->start) && (p < (void *)node->pool->end))
         {
-            slab_free(node->sp, p);
+            slab_free(node->pool, p);
             return 0;
         }
         node = next;

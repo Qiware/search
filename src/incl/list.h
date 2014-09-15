@@ -6,7 +6,7 @@ typedef struct _list_node_t
 {
     void *data;
     struct _list_node_t *next;
-}list_node_t;
+} list_node_t;
 
 /* 单向链表对象 */
 typedef struct
@@ -14,7 +14,7 @@ typedef struct
     int num;
     list_node_t *head;
     list_node_t *tail;
-}list_t;
+} list_t;
 
 int32_t list_insert(list_t *list, list_node_t *node);
 list_node_t *list_delete(list_t *list);

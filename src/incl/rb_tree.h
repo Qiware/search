@@ -24,7 +24,7 @@ typedef enum
     RBT_SUCCESS                     /* 成功 */
     , RBT_FAILED = ~0x7fffffff      /* 失败 */
     , RBT_NODE_EXIST                /* 结点存在 */
-}rbt_ret_e;
+} rbt_ret_e;
 
 /* 结点结构 */
 typedef struct _rbt_node_t
@@ -34,14 +34,14 @@ typedef struct _rbt_node_t
     struct _rbt_node_t *parent;     /* 父节点 */
     struct _rbt_node_t *lchild;     /* 左孩子节点 */
     struct _rbt_node_t *rchild;     /* 右孩子节点 */
-}rbt_node_t;
+} rbt_node_t;
 
 /* 红黑树结构 */
 typedef struct
 {
     rbt_node_t *root;               /* 根节点 */
     rbt_node_t *sentinel;           /* 哨兵节点 */
-}rbt_tree_t;
+} rbt_tree_t;
 
 #define rbt_copy_color(node, src) ((node)->color = (src)->color);
 #define rbt_set_color(node, c)  ((node)->color = (c))
@@ -58,7 +58,7 @@ typedef struct
     { \
         (left)->parent = (node); \
     } \
-}
+} 
 
 /* 设置右孩子 */
 #define rbt_set_rchild(tree, node, right) \
@@ -68,7 +68,7 @@ typedef struct
     { \
         (right)->parent = (node); \
     } \
-}
+} 
 
 /* 设置孩子节点 */
 #define rbt_set_child(tree, node, type, child) \
@@ -81,7 +81,7 @@ typedef struct
     { \
         rbt_set_rchild(tree, node, child); \
     } \
-}
+} 
 
 rbt_tree_t *rbt_creat(void);
 int32_t rbt_insert(rbt_tree_t *tree, int32_t key);

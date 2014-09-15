@@ -12,7 +12,7 @@ typedef struct _shm_queue_node_t
     uint32_t status;        /* 被占用标记(SHMQ_NODE_STAT_IDLE ~ SHMQ_NODE_STAT_USED) */
     uint32_t next;          /* 下一个结点偏移(shm_queue_node_t) */
     uint32_t data;          /* 数据偏移 */
-}shm_queue_node_t;
+} shm_queue_node_t;
 
 /* 循环队列 */
 typedef struct
@@ -26,7 +26,7 @@ typedef struct
     uint32_t tail;          /* 队列尾(shm_queue_node_t) */
 
     shm_slab_pool_t slab;   /* SLAB对象 */
-}shm_queue_t;
+} shm_queue_t;
 
 shm_queue_t *shm_queue_creat(int key, int max, int size);
 shm_queue_t *shm_queue_attach(int key, int max, int size);

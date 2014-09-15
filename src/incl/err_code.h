@@ -16,6 +16,6 @@ typedef enum
 
     /* 请在此行上方添加错误码 */
     , XDO_ERR_TOTAL
-}err_code_e;
+} err_code_e;
 
 #endif /*__ERR_CODE_H__*/

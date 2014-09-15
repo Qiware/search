@@ -56,7 +56,7 @@ typedef enum
     HTML_NODE_ATTR,     /* 属性节点 */
     HTML_NODE_UNKNOWN,  /* 未知节点 */
     HTML_NODE_TYPE_TOTAL = HTML_NODE_UNKNOWN    /* 节点类型数 */
-}html_node_type_e;
+} html_node_type_e;
 
 
 /* HTML节点 */
@@ -74,13 +74,13 @@ typedef struct _html_node_t
     unsigned int flag;          /* 记录节点是否有孩子(HTML_NODE_HAS_CHILD)、
                                     属性(HTML_NODE_HAS_ATTR)、节点值(HTML_NODE_HAS_VALUE) */
     struct _html_node_t *temp;  /* 临时指针: 遍历HTML树时，提高效率(其他情况下，此指针值无效) */    
-}html_node_t;
+} html_node_t;
 
 /* HTML树 */
 typedef struct
 {
     html_node_t *root;           /* 根节点: 注意root的第一个子节点才是真正的根节点 */
-}html_tree_t;
+} html_tree_t;
 
 /* 对外的接口 */
 #define html_child(node) (node->firstchild)

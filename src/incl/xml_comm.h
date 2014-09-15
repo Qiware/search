@@ -99,7 +99,7 @@ typedef enum
     , XML_ERR_PTR_NULL          /* 空指针 */
     , XML_ERR_EMPTY_TREE        /* 空树 */
     , XML_ERR_FOPEN             /* fopen失败 */
-}xml_err_e;
+} xml_err_e;
 
 #if defined(__XML_ESC_PARSE__)
 /* 转义字串类型 */
@@ -113,7 +113,7 @@ typedef enum
     , XML_ESC_UNKNOWN
 
     , XML_ESC_TOTAL = XML_ESC_UNKNOWN
-}xml_esc_e;
+} xml_esc_e;
 
 typedef struct
 {
@@ -121,7 +121,7 @@ typedef struct
     char *str;
     char ch;
     int length;
-}xml_esc_t;
+} xml_esc_t;
 #endif /*__XML_ESC_PARSE__*/
 
 /* 文件解析 结构体 */
@@ -130,7 +130,7 @@ typedef struct
     const char *str;            /* XML字串 */
     const char *ptr;            /* 当前处理到的位置 */
     int length;
-}xml_parse_t;
+} xml_parse_t;
 
 #if defined(__XML_ESC_PARSE__)
 /* 转义字串分割链表: 用于有转义字串的结点值或属性值的处理 */
@@ -139,21 +139,21 @@ typedef struct _xml_esc_node_t
     int length;
     char *str;
     struct _xml_esc_node_t *next;
-}xml_esc_node_t;
+} xml_esc_node_t;
 
 /* 转义字串分割链表 */
 typedef struct
 {
     xml_esc_node_t *head;
     xml_esc_node_t *tail;
-}xml_esc_split_t;
+} xml_esc_split_t;
 #endif /*__XML_ESC_PARSE__*/
 
 typedef struct
 {
     char *str;
     char *ptr;
-}sprint_t;
+} sprint_t;
 
 #define sprint_init(sp, s) ((sp)->str = (s), (sp)->ptr = s)
 

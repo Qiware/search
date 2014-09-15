@@ -23,7 +23,7 @@ typedef struct
     void **base;    /* 栈基地址 */
     void **top;     /* 栈顶地址 */
     int size;       /* 栈的大小 */
-}Stack_t;
+} Stack_t;
 
 extern int stack_init(Stack_t *stack, int size);
 

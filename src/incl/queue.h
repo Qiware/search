@@ -6,7 +6,7 @@ typedef struct _Qnode_t
 {
     struct _Qnode_t *next;
     void *args;
-}Qnode_t;
+} Qnode_t;
 
 /* 循环队列 */
 typedef struct
@@ -18,7 +18,7 @@ typedef struct
     Qnode_t *base;  /* 队列基址 */
     Qnode_t *head;  /* 队列头 */
     Qnode_t *tail;  /* 队列尾 */
-}Queue_t;
+} Queue_t;
 
 extern int queue_init(Queue_t *q, int max, int size);
 extern int queue_push(Queue_t *q, void *addr, int size);

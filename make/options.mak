@@ -16,7 +16,7 @@ ifeq (__ON__, $(strip $(CONFIG_DEFAULT_SUPPORT)))
 	# XML相关功能
 	OPTIONS += __XML_MEM_POOL__			# XML的处理过程的内存从内存池申请
 	# 功能: 节点只有孩子节点或只有数值(Either Child Or Value)
-	#OPTIONS += __XML_EITHER_CHILD_OR_VALUE__
+	# OPTIONS += __XML_EITHER_CHILD_OR_VALUE__
 
 	# HTML相关功能
 	OPTIONS += __HTML_AUTO_RESTORE__	# HTML自动修复功能

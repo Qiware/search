@@ -54,7 +54,7 @@ typedef enum
     XML_NODE_ATTR,     /* 属性节点 */
     XML_NODE_UNKNOWN,  /* 未知节点 */
     XML_NODE_TYPE_TOTAL = XML_NODE_UNKNOWN    /* 节点类型数 */
-}xml_node_type_e;
+} xml_node_type_e;
 
 
 /* XML节点 */
@@ -72,7 +72,7 @@ typedef struct _xml_node_t
     unsigned int flag;          /* 记录节点是否有孩子(XML_NODE_HAS_CHILD)、
                                     属性(XML_NODE_HAS_ATTR)、节点值(XML_NODE_HAS_VALUE) */
     struct _xml_node_t *temp;   /* 临时指针: 遍历XML树时，提高效率(其他情况下，此指针值无效) */    
-}xml_node_t;
+} xml_node_t;
 
 /* XML树 */
 typedef struct
@@ -81,7 +81,7 @@ typedef struct
 #if defined(__XML_MEM_POOL__)
     mem_pool_t *pool;           /* 内存池 */
 #endif /*__XML_MEM_POOL__*/
-}xml_tree_t;
+} xml_tree_t;
 
 /* 对外的接口 */
 #define xml_child(node) (node->firstchild)
