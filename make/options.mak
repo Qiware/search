@@ -10,9 +10,6 @@
 
 # 默认开启的功能
 ifeq (__ON__, $(strip $(CONFIG_DEFAULT_SUPPORT)))
-	# 线程池相关功能
-	OPTIONS += __THREAD_POOL_SLAB__		# 线程池开启SLAB机制
-
 	# XML相关功能
 	OPTIONS += __XML_MEM_POOL__			# XML的处理过程的内存从内存池申请
 	# 功能: 节点只有孩子节点或只有数值(Either Child Or Value)

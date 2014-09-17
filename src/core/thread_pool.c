@@ -54,7 +54,6 @@ thread_pool_t *thread_pool_init(int num)
     tp->head = NULL;
     tp->queue_size = 0;
     tp->shutdown = 0;
-#if defined(__THREAD_POOL_SLAB__)
     ret = eslab_init(&tp->eslab, 16*KB);
     if (0 != ret)
     {
@@ -63,14 +62,9 @@ thread_pool_t *thread_pool_init(int num)
     }
 
     tp->tid = (pthread_t *)eslab_alloc(&tp->eslab, num*sizeof(pthread_t));
-#else /*!__THREAD_POOL_SLAB__*/
-    tp->tid = (pthread_t *)calloc(1, num*sizeof(pthread_t));
-#endif /*!__THREAD_POOL_SLAB__*/
     if (NULL == tp->tid)
     {
-    #if defined(__THREAD_POOL_SLAB__)
         eslab_destroy(&tp->eslab);
-    #endif /*__THREAD_POOL_SLAB__*/
         free(tp);
         return NULL;
     }
@@ -111,11 +105,7 @@ int thread_pool_add_worker(thread_pool_t *tp, void *(*process)(void *arg), void 
     thread_worker_t *worker=NULL, *member=NULL;
 
     /* 1. 创建新任务节点 */
-#if defined(__THREAD_POOL_SLAB__)
     worker = (thread_worker_t*)eslab_alloc(&tp->eslab, sizeof(thread_worker_t));
-#else /*!__THREAD_POOL_SLAB__*/
-    worker = (thread_worker_t*)calloc(1, sizeof(thread_worker_t));
-#endif /*!__THREAD_POOL_SLAB__*/
     if (NULL == worker)
     {
         return -1;
@@ -265,10 +255,6 @@ int thread_pool_get_tidx(thread_pool_t *tp)
 int thread_pool_destroy(thread_pool_t *tp)
 {
     int idx, ret;
-#if !defined(__THREAD_POOL_SLAB__)
-    thread_worker_t *member;
-#endif /*!__THREAD_POOL_SLAB__*/
-
 
     if (0 != tp->shutdown)
     {
@@ -294,25 +280,9 @@ int thread_pool_destroy(thread_pool_t *tp)
         idx++;
     }
 
-#if !defined(__THREAD_POOL_SLAB__)
-    /* 4. 释放线程池对象空间 */
-    free(tp->tid);
-    tp->tid = NULL;
-
-    while (NULL != tp->head)
-    {
-        member = tp->head;
-        tp->head = member->next;
-        free(member);
-    }
-#endif /*!__THREAD_POOL_SLAB__*/
-
+    eslab_destroy(&tp->eslab);
     pthread_mutex_destroy(&(tp->queue_lock));
     pthread_cond_destroy(&(tp->queue_ready));
-
-#if defined(__THREAD_POOL_SLAB__)
-    eslab_destroy(&tp->eslab);
-#endif /*!__THREAD_POOL_SLAB__*/
     free(tp);
     
     return 0;
@@ -340,10 +310,6 @@ int thread_pool_destroy_ext(
     thread_pool_t *tp, void (*args_destroy)(void *cntx, void *args), void *cntx)
 {
     int idx;
-#if !defined(__THREAD_POOL_SLAB__)
-    thread_worker_t *member;
-#endif /*!__THREAD_POOL_SLAB__*/
-
 
     if (0 != tp->shutdown)
     {
@@ -365,25 +331,11 @@ int thread_pool_destroy_ext(
     /* 4. 释放参数空间 */
     args_destroy(cntx, tp->data);
 
-#if !defined(__THREAD_POOL_SLAB__)
     /* 5. 释放对象空间 */
-    free(tp->tid);
-    tp->tid = NULL;
-
-    while (NULL != tp->head)
-    {
-        member = tp->head;
-        tp->head = member->next;
-        free(member);
-    }
-#endif /*!__THREAD_POOL_SLAB__*/
-
     pthread_mutex_destroy(&(tp->queue_lock));
     pthread_cond_destroy(&(tp->queue_ready));
 
-#if defined(__THREAD_POOL_SLAB__)
     eslab_destroy(&tp->eslab);
-#endif /*__THREAD_POOL_SLAB__*/
     free(tp);
     
     return 0;
@@ -463,7 +415,7 @@ static int thread_create_detach(thread_pool_t *tp, int idx)
  ******************************************************************************/
 static void *thread_routine(void *arg)
 {
-    thread_worker_t *worker = NULL;
+    thread_worker_t *worker;
     thread_pool_t *tp = (thread_pool_t*)arg;
 
     while (1)
@@ -488,11 +440,8 @@ static void *thread_routine(void *arg)
 
         (*(worker->process))(worker->arg);
 
-    #if defined(__THREAD_POOL_SLAB__)
+        pthread_mutex_lock(&(tp->queue_lock));
         eslab_free(&tp->eslab, worker);
-    #else /*!__THREAD_POOL_SLAB__*/
-        free(worker);
-    #endif /*!__THREAD_POOL_SLAB__*/
-        worker = NULL;
+        pthread_mutex_unlock(&(tp->queue_lock));
     }
 }
