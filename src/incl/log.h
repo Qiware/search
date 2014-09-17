@@ -14,13 +14,17 @@
 /* 宏定义 */
 
 /* 日志级别 */
-#define LOG_LEVEL_FATAL         (0x0001)    /* 严重级别 */
-#define LOG_LEVEL_ERROR         (0x0002)    /* 错误级别 */
-#define LOG_LEVEL_WARN          (0x0004)    /* 警告级别 */
-#define LOG_LEVEL_INFO          (0x0008)    /* 信息级别 */
-#define LOG_LEVEL_DEBUG         (0x0010)    /* 调试级别 */
-#define LOG_LEVEL_TRACE         (0x0020)    /* 跟踪级别 */
-#define LOG_LEVEL_TOTAL         (6)         /* 级别总数 */
+typedef enum
+{
+    LOG_LEVEL_FATAL                         /* 严重级别 */
+    , LOG_LEVEL_ERROR                       /* 错误级别 */
+    , LOG_LEVEL_WARN                        /* 警告级别 */
+    , LOG_LEVEL_INFO                        /* 信息级别 */
+    , LOG_LEVEL_DEBUG                       /* 调试级别 */
+    , LOG_LEVEL_TRACE                       /* 跟踪级别 */
+
+    , LOG_LEVEL_TOTAL                       /* 级别总数 */
+} log_level_e;
 
 #define LOG_LEVEL_FATAL_STR     "fatal"     /* 严重级别字串 */
 #define LOG_LEVEL_ERROR_STR     "error"     /* 错误级别字串 */
@@ -111,25 +115,25 @@ void log_destroy(log_cycle_t **log);
 
 /* 日志模块接口 */
 #define log_fatal(log, ...) /* 撰写FATAL级别日志 */\
-    if ((log)->level & LOG_LEVEL_FATAL) \
+    if ((log)->level <= LOG_LEVEL_FATAL) \
         log_core(log, LOG_LEVEL_FATAL, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
 #define log_error(log, ...) /* 撰写ERROR级别日志 */\
-    if ((log)->level & LOG_LEVEL_ERROR) \
+    if ((log)->level <= LOG_LEVEL_ERROR) \
         log_core(log, LOG_LEVEL_ERROR, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
 #define log_warn(log, ...)  /* 撰写WARN级别日志 */\
-    if ((log)->level & LOG_LEVEL_WARN) \
+    if ((log)->level <= LOG_LEVEL_WARN) \
         log_core(log, LOG_LEVEL_WARN, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
 #define log_info(log, ...)  /* 撰写INFO级别日志 */\
-    if ((log)->level & LOG_LEVEL_INFO) \
+    if ((log)->level <= LOG_LEVEL_INFO) \
         log_core(log, LOG_LEVEL_INFO, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
 #define log_debug(log, ...) /* 撰写DEBUG级别日志 */\
-    if ((log)->level & LOG_LEVEL_DEBUG) \
+    if ((log)->level <= LOG_LEVEL_DEBUG) \
         log_core(log, LOG_LEVEL_DEBUG, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
 #define log_trace(log, ...) /* 撰写TRACE级别日志 */\
-    if ((log)->level & LOG_LEVEL_TRACE) \
+    if ((log)->level <= LOG_LEVEL_TRACE) \
         log_core(log, LOG_LEVEL_TRACE, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
 #define log_bin(log, addr, len, ...)   /* 撰写MEM-DUMP日志 */\
-    if ((log)->level & LOG_LEVEL_INFO) \
+    if ((log)->level <= LOG_LEVEL_INFO) \
         log_core(log, LOG_LEVEL_INFO, __FILE__, __LINE__, addr, len, __VA_ARGS__)
 
 #define log_fatal_ex(...)
@@ -158,25 +162,25 @@ int log2_get_level(const char *level_str);
 void log2_destroy(void);
 
 #define log2_fatal(...) /* 撰写FATAL级别日志 */\
-    if (g_log2.level & LOG_LEVEL_FATAL) \
+    if (g_log2.level <= LOG_LEVEL_FATAL) \
         log2_core(LOG_LEVEL_FATAL, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
 #define log2_error(...) /* 撰写ERROR级别日志 */\
-    if (g_log2.level & LOG_LEVEL_FATAL) \
+    if (g_log2.level <= LOG_LEVEL_FATAL) \
         log2_core(LOG_LEVEL_ERROR, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
 #define log2_warn(...)  /* 撰写WARN级别日志 */\
-    if (g_log2.level & LOG_LEVEL_FATAL) \
+    if (g_log2.level <= LOG_LEVEL_FATAL) \
         log2_core(LOG_LEVEL_WARN, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
 #define log2_info(...)  /* 撰写INFO级别日志 */\
-    if (g_log2.level & LOG_LEVEL_FATAL) \
+    if (g_log2.level <= LOG_LEVEL_FATAL) \
         log2_core(LOG_LEVEL_INFO, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
 #define log2_debug(...) /* 撰写DEBUG级别日志 */\
-    if (g_log2.level & LOG_LEVEL_FATAL) \
+    if (g_log2.level <= LOG_LEVEL_FATAL) \
         log2_core(LOG_LEVEL_DEBUG, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
 #define log2_trace(...) /* 撰写TRACE级别日志 */\
-    if (g_log2.level & LOG_LEVEL_FATAL) \
+    if (g_log2.level <= LOG_LEVEL_FATAL) \
         log2_core(LOG_LEVEL_TRACE, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
 #define log2_bin(addr, len, ...)   /* 撰写MEM-DUMP日志 */\
-    if (g_log2.level & LOG_LEVEL_FATAL) \
+    if (g_log2.level <= LOG_LEVEL_FATAL) \
         log2_core(LOG_LEVEL_INFO, __FILE__, __LINE__, addr, len, __VA_ARGS__)
 
 #endif /*__LOG_H__*/
