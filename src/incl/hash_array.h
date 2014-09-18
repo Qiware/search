@@ -23,5 +23,8 @@ typedef struct
 
 hash_array_t *hash_array_init(int num, uint32_t (*key)(const char *str, size_t len));
 int hash_array_insert(hash_array_t *hash, int key, void *addr);
+void *hash_array_search(hash_array_t *hash, int key);
+void *hash_array_delete(hash_array_t *hash, int key);
+int hash_array_destroy(hash_array_t *hash);
 
 #endif /*__HASH_ARRAY_H__*/

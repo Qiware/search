@@ -954,9 +954,9 @@ int rbt_print32_t(rbt_tree_t *tree)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.23 #
  ******************************************************************************/
-const rbt_node_t *rbt_search(const rbt_tree_t *tree, int key)
+rbt_node_t *rbt_search(rbt_tree_t *tree, int key)
 {
-    const rbt_node_t *node = tree->root;
+    rbt_node_t *node = tree->root;
 
     while(NULL != node)
     {

@@ -34,6 +34,8 @@ typedef struct _rbt_node_t
     struct _rbt_node_t *parent;     /* 父节点 */
     struct _rbt_node_t *lchild;     /* 左孩子节点 */
     struct _rbt_node_t *rchild;     /* 右孩子节点 */
+
+    void *data;                     /* 数据地址 */
 } rbt_node_t;
 
 /* 红黑树结构 */
@@ -86,7 +88,7 @@ typedef struct
 rbt_tree_t *rbt_creat(void);
 int32_t rbt_insert(rbt_tree_t *tree, int32_t key);
 int32_t rbt_delete(rbt_tree_t *tree, int32_t key);
-const rbt_node_t *rbt_search(const rbt_tree_t *tree, int32_t key);
+rbt_node_t *rbt_search(rbt_tree_t *tree, int32_t key);
 int32_t rbt_print(rbt_tree_t *tree);
 int32_t rbt_destroy(rbt_tree_t **tree);
 
