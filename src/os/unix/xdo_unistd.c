@@ -433,3 +433,39 @@ void *xdo_shm_creat(int key, size_t size)
 
     return addr;
 }
+
+/******************************************************************************
+ **函数名称: System
+ **功    能: 执行系统命令
+ **输入参数: 
+ **     cmd: shell命令
+ **输出参数: NONE
+ **返    回: 0:success !0:failed
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2013.11.06 #
+ ******************************************************************************/
+int System(const char *cmd)
+{ 
+    int status = -1;
+    
+    status = system(cmd);
+    if(-1 == status)
+    {
+        return -1;
+    }
+
+    if(WIFEXITED(status))
+    {
+        if(0 == WEXITSTATUS(status))
+        {
+            return WEXITSTATUS(status);
+        }
+        else
+        {
+            return WEXITSTATUS(status);
+        }
+    }
+
+    return WEXITSTATUS(status);
+}

@@ -29,8 +29,8 @@ typedef enum
 /* 结点结构 */
 typedef struct _rbt_node_t
 {
-    int32_t key;                        /* 关键字 */
-    int32_t color;                      /* 结点颜色: RBT_COLOR_BLACK(黑) 或 RBT_COLOR_RED(红) */
+    int32_t key;                    /* 关键字 */
+    int32_t color;                  /* 结点颜色: RBT_COLOR_BLACK(黑) 或 RBT_COLOR_RED(红) */
     struct _rbt_node_t *parent;     /* 父节点 */
     struct _rbt_node_t *lchild;     /* 左孩子节点 */
     struct _rbt_node_t *rchild;     /* 右孩子节点 */

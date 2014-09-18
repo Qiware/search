@@ -33,7 +33,8 @@ SRC_LIST = list.c \
 			html_comm.c \
 			html_print.c \
 			html_tree.c \
-			thread_pool.c
+			thread_pool.c \
+			x_string.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
 

@@ -172,7 +172,7 @@ void rbt_left_rotate(rbt_tree_t *tree, rbt_node_t *node)
  ******************************************************************************/
 rbt_tree_t *rbt_creat(void)
 {
-    rbt_tree_t *tree = NULL;
+    rbt_tree_t *tree;
     
     tree = (rbt_tree_t *)calloc(1, sizeof(rbt_tree_t));
     if(NULL == tree)
@@ -209,7 +209,7 @@ rbt_tree_t *rbt_creat(void)
  ******************************************************************************/
 rbt_node_t *rbt_creat_node(rbt_tree_t *tree, int key, int color, int type, rbt_node_t *parent)
 {
-    rbt_node_t *node = NULL;
+    rbt_node_t *node;
 
     node = (rbt_node_t *)calloc(1, sizeof(rbt_node_t));
     if(NULL == node)
@@ -257,7 +257,7 @@ rbt_node_t *rbt_creat_node(rbt_tree_t *tree, int key, int color, int type, rbt_n
  ******************************************************************************/
 int rbt_insert(rbt_tree_t *tree, int key)
 {
-    rbt_node_t *node = tree->root, *add = NULL;
+    rbt_node_t *node = tree->root, *add;
 
     /* 1. 当根节点为空时，直接添加 */
     if(tree->sentinel == tree->root)
