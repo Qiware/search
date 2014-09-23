@@ -8,12 +8,14 @@
 ###############################################################################
 include $(PROJ)/make/build.mak
 
-INCLUDE = -I. -I$(PROJ)/src/incl
+INCLUDE = -I. \
+			-I../incl \
+			-I$(PROJ)/src/incl
 LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lpthread -lxdocore -lxdounix
 
 SRC_LIST = crawler.c \
-			crwl_comm.c
+			crwl_worker.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
 

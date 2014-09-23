@@ -16,7 +16,6 @@
 #include "log.h"
 #include "common.h"
 #include "crawler.h"
-#include "crwl_comm.h"
 
 /* 程序输入参数信息 */
 typedef struct
@@ -47,6 +46,7 @@ int main(int argc, char *argv[])
 {
     int ret;
     crwl_opt_t opt;
+    crwl_ctx_t *ctx;
     crwl_conf_t conf;
     log_cycle_t *log;
     char log_path[FILE_NAME_MAX_LEN];
@@ -80,8 +80,8 @@ int main(int argc, char *argv[])
     }
 
     /* 3. 启动爬虫服务 */
-    ret = crwl_start_work(&conf, log);
-    if (CRWL_OK != ret)
+    ctx = crwl_start_work(&conf, log);
+    if (NULL == ctx)
     {
         fprintf(stderr, "Start crawler server failed!\n");
         return CRWL_ERR;
