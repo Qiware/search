@@ -154,6 +154,7 @@ void log2_core(int level,
  ******************************************************************************/
 void log2_destroy(void)
 {
+    fflush(g_log2.fp);
     fClose(g_log2.fp);
 }
 

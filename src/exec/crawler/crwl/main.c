@@ -49,10 +49,10 @@ static int crwl_worker_usage(const char *exec);
 int main(int argc, char *argv[])
 {
     int ret;
+    log_cycle_t *log;
     crwl_worker_opt_t opt;
     crwl_worker_ctx_t *ctx;
     crwl_worker_conf_t conf;
-    log_cycle_t *log;
     char log_path[FILE_NAME_MAX_LEN];
 
     memset(&opt, 0, sizeof(opt));
@@ -71,7 +71,7 @@ int main(int argc, char *argv[])
     {
         fprintf(stderr, "Init log2 failed! level:%s path:%s\n",
                 CRWL_WORKER_LOG2_LEVEL, CRWL_WORKER_LOG2_PATH);
-        return CRWL_ERR;
+        goto ERROR;
     }
 
     log_get_path(log_path, sizeof(log_path), basename(argv[0]));
@@ -80,7 +80,7 @@ int main(int argc, char *argv[])
     if (NULL == log)
     {
         log2_error("Init log failed!");
-        return CRWL_ERR;
+        goto ERROR;
     }
 
     /* 3. 加载配置文件 */
@@ -88,7 +88,7 @@ int main(int argc, char *argv[])
     if (CRWL_OK != ret)
     {
         log2_error("Load crawler configuration failed!");
-        return CRWL_ERR;
+        goto ERROR;
     }
 
     /* 3. 启动爬虫服务 */
@@ -96,12 +96,15 @@ int main(int argc, char *argv[])
     if (NULL == ctx)
     {
         log2_error("Start crawler server failed!");
-        return CRWL_ERR;
+        goto ERROR;
     }
 
     while (1) { pause(); }
 
-    return 0;
+ERROR:
+    log2_destroy();
+
+    return CRWL_ERR;
 }
 
 /******************************************************************************
