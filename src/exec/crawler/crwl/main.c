@@ -17,6 +17,9 @@
 #include "common.h"
 #include "crawler.h"
 
+#define CRWL_WORKER_LOG2_LEVEL  "trace"             /* 日志级别 */
+#define CRWL_WORKER_LOG2_PATH   "../log/system.log" /* 日志路径 */
+
 /* 程序输入参数信息 */
 typedef struct
 {
@@ -62,10 +65,11 @@ int main(int argc, char *argv[])
     }
 
     /* 2. 初始化日志模块 */
-    ret = log2_init("trace", "../log/system.log");
+    ret = log2_init(CRWL_WORKER_LOG2_LEVEL, CRWL_WORKER_LOG2_PATH);
     if (0 != ret)
     {
-        fprintf(stderr, "Init log2 failed!\n");
+        fprintf(stderr, "Init log2 failed! level:%s path:%s\n",
+                CRWL_WORKER_LOG2_LEVEL, CRWL_WORKER_LOG2_PATH);
         return CRWL_ERR;
     }
 
@@ -74,7 +78,7 @@ int main(int argc, char *argv[])
     log = log_init(opt.log_level, log_path);
     if (NULL == log)
     {
-        fprintf(stderr, "Init log failed!\n");
+        log2_error("Init log failed!\n");
         return CRWL_ERR;
     }
 
@@ -82,7 +86,7 @@ int main(int argc, char *argv[])
     ret = crwl_load_conf(&conf, opt.conf_path, log);
     if (CRWL_OK != ret)
     {
-        fprintf(stderr, "Load crawler configuration failed!\n");
+        log2_error("Load crawler configuration failed!\n");
         return CRWL_ERR;
     }
 
@@ -90,7 +94,7 @@ int main(int argc, char *argv[])
     ctx = crwl_start_work(&conf, log);
     if (NULL == ctx)
     {
-        fprintf(stderr, "Start crawler server failed!\n");
+        log2_error("Start crawler server failed!\n");
         return CRWL_ERR;
     }
 
