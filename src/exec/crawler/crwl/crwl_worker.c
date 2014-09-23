@@ -120,7 +120,7 @@ static int crwl_parse_conf(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
 
     /* 1. 定位工作进程配置 */
     curr = xml_search(xml, ".SEARCH.CRWLSYS.CRAWLER");
-    if (NULL != curr)
+    if (NULL == curr)
     {
         log_error(log, "Didn't configure worker process!");
         return CRWL_ERR;
@@ -128,7 +128,7 @@ static int crwl_parse_conf(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
 
     /* 2. 爬虫线程数(相对查找) */
     node = xml_rsearch(xml, curr, "THD_NUM");
-    if (NULL != node)
+    if (NULL == node)
     {
         log_warn(log, "Didn't configure the number of worker process!");
         conf->thread_num = CRWL_WORKER_DEF_THD_NUM;
@@ -146,7 +146,7 @@ static int crwl_parse_conf(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
 
     /* 3. 任务分配服务IP(相对查找) */
     node = xml_rsearch(xml, curr, "SVRIP");
-    if (NULL != node)
+    if (NULL == node)
     {
         log_error(log, "Didn't configure distribute server ip address!");
         return CRWL_ERR;
@@ -156,7 +156,7 @@ static int crwl_parse_conf(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
 
     /* 4. 任务分配服务端口(相对查找) */
     node = xml_rsearch(xml, curr, "PORT");
-    if (NULL != node)
+    if (NULL == node)
     {
         log_error(log, "Didn't configure distribute server port!");
         return CRWL_ERR;
@@ -172,7 +172,7 @@ static int crwl_parse_conf(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
         if (NULL != node)
         {
             snprintf(conf->log_level_str,
-                sizeof(conf->log_level_str), "%s", node->value);
+                    sizeof(conf->log_level_str), "%s", node->value);
             break;
         }
 
@@ -262,6 +262,8 @@ static int crwl_worker_reset_fdset(crwl_worker_t *worker)
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
+ **     1. 依次遍历套接字，判断是否可读
+ **     2. 如果可读，则接收数据
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.23 #
  ******************************************************************************/
@@ -369,7 +371,7 @@ static int crwl_worker_event_hdl(crwl_worker_t *worker)
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
- **作    者: # Qifeng.zou # 2014.09.05 #
+ **作    者: # Menglai.Wang & Qifeng.zou # 2014.09.05 #
  ******************************************************************************/
 static void *crwl_worker_routine(void *_ctx)
 {
