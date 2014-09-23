@@ -13,13 +13,12 @@
               <ITEM>www.sina.com.cn</ITEM>
           </SEED>
       </CONTROLER>
-      <CRAWLER>  <!-- 爬虫进程: 负责网页下载 -->
+      <WORKER>    <!-- 爬虫进程: 负责网页下载 -->
           <THD_NUM>5</THD_NUM>    <!-- 爬虫进程中的线程数 -->
           <SVRIP>127.0.0.1</SVRIP><!-- 管理服务IP -->
           <PORT>2222</PORT>       <!-- 管理服务侦听端口 -->
-          <LOG LEVEL="debug" />   <!-- 日志级别: trace|debug|info|warn|error|fatal -->
-      </CRAWLER>
-      <ANALYST> <!-- 分析进程: 负责对网页的分析(内容分析、URL提取等) -->
+      </WORKER>
+      <ANALYST>   <!-- 分析进程: 负责对网页的分析(内容分析、URL提取等) -->
           <NUM>1</NUM>            <!-- 分析进程数 -->
           <THD_NUM>5</THD_NUM>    <!-- 各分析进程中的线程数 -->
           <SVRIP>127.0.0.1</SVRIP><!-- 管理服务IP -->

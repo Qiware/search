@@ -8,8 +8,10 @@
  ** 作  者: # Qifeng.zou # 2014.09.04 #
  ******************************************************************************/
 
+#include "common.h"
 #include "crawler.h"
 #include "xml_tree.h"
+#include "xdo_unistd.h"
 #include "thread_pool.h"
 #include "crwl_worker.h"
 
@@ -58,53 +60,6 @@ int crwl_worker_load_conf(crwl_worker_conf_t *conf, const char *path, log_cycle_
 }
 
 /******************************************************************************
- **函数名称: crwl_worker_start
- **功    能: 启动爬虫服务
- **输入参数: 
- **     conf: 配置信息
- **     log: 日志对象
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.09.04 #
- ******************************************************************************/
-crwl_worker_ctx_t *crwl_worker_start(crwl_worker_conf_t *conf, log_cycle_t *log)
-{
-    int idx;
-    crwl_worker_ctx_t *ctx;
-
-    /* 1. 创建爬虫对象 */
-    ctx = (crwl_worker_ctx_t *)calloc(1, sizeof(crwl_worker_ctx_t));
-    if (NULL == ctx)
-    {
-        log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return NULL;
-    }
-
-    ctx->log = log;
-
-    memcpy(&ctx->conf, conf, sizeof(crwl_worker_conf_t));
-
-    /* 2. 初始化线程池 */
-    ctx->tpool = thread_pool_init(conf->thread_num);
-    if (NULL == ctx->tpool)
-    {
-        free(ctx);
-        log_error(log, "Initialize thread pool failed!");
-        return NULL;
-    }
-
-    /* 3. 初始化线程池 */
-    for (idx=0; idx<conf->thread_num; ++idx)
-    {
-        thread_pool_add_worker(ctx->tpool, crwl_worker_routine, ctx);
-    }
-    
-    return ctx;
-}
-
-/******************************************************************************
  **函数名称: crwl_worker_parse_conf
  **功    能: 提取配置信息
  **输入参数: 
@@ -122,7 +77,7 @@ static int crwl_worker_parse_conf(
     xml_node_t *curr, *node, *node2;
 
     /* 1. 定位工作进程配置 */
-    curr = xml_search(xml, ".SEARCH.CRWLSYS.CRAWLER");
+    curr = xml_search(xml, ".SEARCH.CRWLSYS.WORKER");
     if (NULL == curr)
     {
         log_error(log, "Didn't configure worker process!");
@@ -183,6 +138,53 @@ static int crwl_worker_parse_conf(
     }
 
     return CRWL_OK;
+}
+
+/******************************************************************************
+ **函数名称: crwl_worker_start
+ **功    能: 启动爬虫服务
+ **输入参数: 
+ **     conf: 配置信息
+ **     log: 日志对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.09.04 #
+ ******************************************************************************/
+crwl_worker_ctx_t *crwl_worker_start(crwl_worker_conf_t *conf, log_cycle_t *log)
+{
+    int idx;
+    crwl_worker_ctx_t *ctx;
+
+    /* 1. 创建爬虫对象 */
+    ctx = (crwl_worker_ctx_t *)calloc(1, sizeof(crwl_worker_ctx_t));
+    if (NULL == ctx)
+    {
+        log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
+        return NULL;
+    }
+
+    ctx->log = log;
+
+    memcpy(&ctx->conf, conf, sizeof(crwl_worker_conf_t));
+
+    /* 2. 初始化线程池 */
+    ctx->tpool = thread_pool_init(conf->thread_num);
+    if (NULL == ctx->tpool)
+    {
+        free(ctx);
+        log_error(log, "Initialize thread pool failed!");
+        return NULL;
+    }
+
+    /* 3. 初始化线程池 */
+    for (idx=0; idx<conf->thread_num; ++idx)
+    {
+        thread_pool_add_worker(ctx->tpool, crwl_worker_routine, ctx);
+    }
+    
+    return ctx;
 }
 
 /******************************************************************************
@@ -258,6 +260,25 @@ static int crwl_worker_reset_fdset(crwl_worker_t *worker)
 }
 
 /******************************************************************************
+ **函数名称: crwl_worker_fsync
+ **功    能: 将接收的HTML同步到文件
+ **输入参数: 
+ **     worker: 爬虫对象
+ **     sck: 套接字对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.09.23 #
+ ******************************************************************************/
+static int crwl_worker_fsync(crwl_worker_t *worker, crwl_worker_sck_t *sck)
+{
+    sck->off = 0;
+    sck->total = CRWL_WORKER_READ_SIZE;
+    return CRWL_OK;
+}
+
+/******************************************************************************
  **函数名称: crwl_worker_recv_data
  **功    能: 接收数据
  **输入参数: 
@@ -268,14 +289,15 @@ static int crwl_worker_reset_fdset(crwl_worker_t *worker)
  **     1. 依次遍历套接字，判断是否可读
  **     2. 如果可读，则接收数据
  **注意事项: 
- **作    者: # Qifeng.zou # 2014.09.23 #
+ **作    者: # Menglai.Wang & Qifeng.zou # 2014.09.23 #
  ******************************************************************************/
 static int crwl_worker_recv_data(crwl_worker_t *worker)
 {
-    int idx;
-    crwl_worker_sck_t *sck;
+    int idx, n, left;
     list2_node_t *node;
+    crwl_worker_sck_t *sck;
 
+    /* 1. 依次遍历套接字，判断是否可读 */
     node = worker->sck_lst.head;
     for (idx=0; idx<worker->sck_lst.num; ++idx)
     {
@@ -285,8 +307,37 @@ static int crwl_worker_recv_data(crwl_worker_t *worker)
             continue;
         }
 
+        /* 2. 如果可读，则接收数据 */
         if (FD_ISSET(sck->fd, &worker->rdset))
         {
+            left = sck->total - sck->off;
+
+            n = Readn(sck->fd, sck->buff + sck->off, left);
+            if (n < 0)
+            {
+                if (EINTR == errno)
+                {
+                    continue;
+                }
+
+                log_error(worker->log, "errmsg:[%d] %s!", errno, strerror(errno));
+                Close(sck->fd);
+                return CRWL_ERR;
+            }
+            else if (0 == n)
+            {
+                log_error(worker->log, "End of read data! url:%s", sck->url);
+                crwl_worker_fsync(worker, sck);
+                Close(sck->fd);
+                continue;
+            }
+
+            /* 3. 将HTML数据写入文件 */
+            sck->off += n;
+            if (sck->off >= CRWL_WORKER_SYNC_SIZE)
+            {
+                crwl_worker_fsync(worker, sck);
+            }
         }
 
         node = node->next;

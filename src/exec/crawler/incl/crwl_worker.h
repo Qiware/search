@@ -8,7 +8,10 @@
 #define CRWL_WORKER_TV_SEC          (02)    /* 超时(秒) */
 #define CRWL_WORKER_TV_USEC         (00)    /* 超时(微妙) */
 #define CRWL_WORKER_DEF_THD_NUM     (1)     /* 爬虫默认线程数 */
-#define CRWL_WORKER_SLAB_SIZE       (16*KB) /* 爬虫SLAB内存池大小 */
+#define CRWL_WORKER_SLAB_SIZE       (16 * KB) /* 爬虫SLAB内存池大小 */
+#define CRWL_WORKER_BUFF_SIZE       (10 * KB) /* 接收SIZE */
+#define CRWL_WORKER_READ_SIZE       (8 * KB)  /* 读取SIZE */
+#define CRWL_WORKER_SYNC_SIZE       (04 * KB) /* 同步SIZE */
 
 /* 爬虫配置信息 */
 typedef struct
@@ -23,7 +26,10 @@ typedef struct
 typedef struct
 {
     int fd;                                 /* 文件描述符 */
+    int off;                                /* 缓存的偏移量 */
+    int total;                              /* 接收总数 */
     char url[FILE_NAME_MAX_LEN];            /* URL */
+    char buff[CRWL_WORKER_BUFF_SIZE];       /* 接收缓存 */
 } crwl_worker_sck_t;
 
 /* 爬虫对象信息 */
@@ -45,8 +51,6 @@ typedef struct
     thread_pool_t *tpool;                   /* 线程池对象 */
     log_cycle_t *log;                       /* 日志对象 */
 } crwl_worker_ctx_t;
-
-
 
 int crwl_worker_load_conf(crwl_worker_conf_t *conf, const char *path, log_cycle_t *log);
 crwl_worker_ctx_t *crwl_worker_start(crwl_worker_conf_t *conf, log_cycle_t *log);
