@@ -11,12 +11,14 @@
 #include "crawler.h"
 #include "xml_tree.h"
 #include "thread_pool.h"
+#include "crwl_worker.h"
 
-static int crwl_parse_conf(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log);
+static int crwl_worker_parse_conf(
+        xml_tree_t *xml, crwl_worker_conf_t *conf, log_cycle_t *log);
 static void *crwl_worker_routine(void *_ctx);
 
 /******************************************************************************
- **函数名称: crwl_load_conf
+ **函数名称: crwl_worker_load_conf
  **功    能: 加载爬虫配置信息
  **输入参数:
  **     path: 配置路径
@@ -29,7 +31,7 @@ static void *crwl_worker_routine(void *_ctx);
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.04 #
  ******************************************************************************/
-int crwl_load_conf(crwl_conf_t *conf, const char *path, log_cycle_t *log)
+int crwl_worker_load_conf(crwl_worker_conf_t *conf, const char *path, log_cycle_t *log)
 {
     int ret;
     xml_tree_t *xml;
@@ -43,7 +45,7 @@ int crwl_load_conf(crwl_conf_t *conf, const char *path, log_cycle_t *log)
     }
 
     /* 2. 提取爬虫配置 */
-    ret = crwl_parse_conf(xml, conf, log);
+    ret = crwl_worker_parse_conf(xml, conf, log);
     if (0 != ret)
     {
         xml_destroy(xml);
@@ -56,7 +58,7 @@ int crwl_load_conf(crwl_conf_t *conf, const char *path, log_cycle_t *log)
 }
 
 /******************************************************************************
- **函数名称: crwl_start_work
+ **函数名称: crwl_worker_start
  **功    能: 启动爬虫服务
  **输入参数: 
  **     conf: 配置信息
@@ -67,13 +69,13 @@ int crwl_load_conf(crwl_conf_t *conf, const char *path, log_cycle_t *log)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.04 #
  ******************************************************************************/
-crwl_ctx_t *crwl_start_work(crwl_conf_t *conf, log_cycle_t *log)
+crwl_worker_ctx_t *crwl_worker_start(crwl_worker_conf_t *conf, log_cycle_t *log)
 {
     int idx;
-    crwl_ctx_t *ctx;
+    crwl_worker_ctx_t *ctx;
 
     /* 1. 创建爬虫对象 */
-    ctx = (crwl_ctx_t *)calloc(1, sizeof(crwl_ctx_t));
+    ctx = (crwl_worker_ctx_t *)calloc(1, sizeof(crwl_worker_ctx_t));
     if (NULL == ctx)
     {
         log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
@@ -82,7 +84,7 @@ crwl_ctx_t *crwl_start_work(crwl_conf_t *conf, log_cycle_t *log)
 
     ctx->log = log;
 
-    memcpy(&ctx->conf, conf, sizeof(crwl_conf_t));
+    memcpy(&ctx->conf, conf, sizeof(crwl_worker_conf_t));
 
     /* 2. 初始化线程池 */
     ctx->tpool = thread_pool_init(conf->thread_num);
@@ -103,7 +105,7 @@ crwl_ctx_t *crwl_start_work(crwl_conf_t *conf, log_cycle_t *log)
 }
 
 /******************************************************************************
- **函数名称: crwl_parse_conf
+ **函数名称: crwl_worker_parse_conf
  **功    能: 提取配置信息
  **输入参数: 
  **     xml: 配置文件
@@ -114,7 +116,8 @@ crwl_ctx_t *crwl_start_work(crwl_conf_t *conf, log_cycle_t *log)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.05 #
  ******************************************************************************/
-static int crwl_parse_conf(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
+static int crwl_worker_parse_conf(
+        xml_tree_t *xml, crwl_worker_conf_t *conf, log_cycle_t *log)
 {
     xml_node_t *curr, *node, *node2;
 
@@ -193,7 +196,7 @@ static int crwl_parse_conf(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.23 #
  ******************************************************************************/
-static crwl_worker_t *crwl_worker_creat(crwl_ctx_t *ctx)
+static crwl_worker_t *crwl_worker_creat(crwl_worker_ctx_t *ctx)
 {
     int ret;
     crwl_worker_t *worker;
@@ -270,19 +273,19 @@ static int crwl_worker_reset_fdset(crwl_worker_t *worker)
 static int crwl_worker_recv_data(crwl_worker_t *worker)
 {
     int idx;
-    crwl_sck_t *data;
+    crwl_worker_sck_t *sck;
     list2_node_t *node;
 
     node = worker->sck_lst.head;
     for (idx=0; idx<worker->sck_lst.num; ++idx)
     {
-        data = (crwl_sck_t *)node->data;
-        if (NULL == data)
+        sck = (crwl_worker_sck_t *)node->data;
+        if (NULL == sck)
         {
             continue;
         }
 
-        if (FD_ISSET(data->fd, &worker->rdset))
+        if (FD_ISSET(sck->fd, &worker->rdset))
         {
         }
 
@@ -306,19 +309,19 @@ static int crwl_worker_recv_data(crwl_worker_t *worker)
 static int crwl_worker_send_data(crwl_worker_t *worker)
 {
     int idx;
-    crwl_sck_t *data;
     list2_node_t *node;
+    crwl_worker_sck_t *sck;
 
     node = worker->sck_lst.head;
     for (idx=0; idx<worker->sck_lst.num; ++idx)
     {
-        data = (crwl_sck_t *)node->data;
-        if (NULL == data)
+        sck = (crwl_worker_sck_t *)node->data;
+        if (NULL == sck)
         {
             continue;
         }
 
-        if (FD_ISSET(data->fd, &worker->wrset))
+        if (FD_ISSET(sck->fd, &worker->wrset))
         {
         }
 
@@ -378,7 +381,7 @@ static void *crwl_worker_routine(void *_ctx)
     int ret, max;
     struct timeval tv;
     crwl_worker_t *worker;
-    crwl_ctx_t *ctx = (crwl_ctx_t *)_ctx;
+    crwl_worker_ctx_t *ctx = (crwl_worker_ctx_t *)_ctx;
 
     worker = crwl_worker_creat(ctx);
     if (NULL == worker)

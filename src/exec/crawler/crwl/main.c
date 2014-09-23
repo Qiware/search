@@ -16,6 +16,7 @@
 #include "log.h"
 #include "common.h"
 #include "crawler.h"
+#include "crwl_worker.h"
 
 #define CRWL_WORKER_LOG2_LEVEL  "trace"             /* 日志级别 */
 #define CRWL_WORKER_LOG2_PATH   "../log/system.log" /* 日志路径 */
@@ -26,10 +27,10 @@ typedef struct
     bool is_daemon;                     /* 是否后台运行 */
     char conf_path[FILE_NAME_MAX_LEN];  /* 配置文件路径 */
     int log_level;                      /* 指定日志级别 */
-}crwl_opt_t;
+}crwl_worker_opt_t;
 
-static int crwl_getopt(int argc, char **argv, crwl_opt_t *opt);
-static int crwl_usage(const char *exec);
+static int crwl_worker_getopt(int argc, char **argv, crwl_worker_opt_t *opt);
+static int crwl_worker_usage(const char *exec);
 
 /******************************************************************************
  **函数名称: main 
@@ -48,9 +49,9 @@ static int crwl_usage(const char *exec);
 int main(int argc, char *argv[])
 {
     int ret;
-    crwl_opt_t opt;
-    crwl_ctx_t *ctx;
-    crwl_conf_t conf;
+    crwl_worker_opt_t opt;
+    crwl_worker_ctx_t *ctx;
+    crwl_worker_conf_t conf;
     log_cycle_t *log;
     char log_path[FILE_NAME_MAX_LEN];
 
@@ -58,10 +59,10 @@ int main(int argc, char *argv[])
     memset(&conf, 0, sizeof(conf));
 
     /* 1. 解析输入参数 */
-    ret = crwl_getopt(argc, argv, &opt);
+    ret = crwl_worker_getopt(argc, argv, &opt);
     if (CRWL_OK != ret)
     {
-        return crwl_usage(argv[0]);
+        return crwl_worker_usage(argv[0]);
     }
 
     /* 2. 初始化日志模块 */
@@ -78,23 +79,23 @@ int main(int argc, char *argv[])
     log = log_init(opt.log_level, log_path);
     if (NULL == log)
     {
-        log2_error("Init log failed!\n");
+        log2_error("Init log failed!");
         return CRWL_ERR;
     }
 
     /* 3. 加载配置文件 */
-    ret = crwl_load_conf(&conf, opt.conf_path, log);
+    ret = crwl_worker_load_conf(&conf, opt.conf_path, log);
     if (CRWL_OK != ret)
     {
-        log2_error("Load crawler configuration failed!\n");
+        log2_error("Load crawler configuration failed!");
         return CRWL_ERR;
     }
 
     /* 3. 启动爬虫服务 */
-    ctx = crwl_start_work(&conf, log);
+    ctx = crwl_worker_start(&conf, log);
     if (NULL == ctx)
     {
-        log2_error("Start crawler server failed!\n");
+        log2_error("Start crawler server failed!");
         return CRWL_ERR;
     }
 
@@ -104,7 +105,7 @@ int main(int argc, char *argv[])
 }
 
 /******************************************************************************
- **函数名称: crwl_getopt 
+ **函数名称: crwl_worker_getopt 
  **功    能: 解析输入参数
  **输入参数: 
  **     argc: 参数个数
@@ -121,7 +122,7 @@ int main(int argc, char *argv[])
  **     h: 帮助手册
  **作    者: # Qifeng.zou # 2014.09.05 #
  ******************************************************************************/
-static int crwl_getopt(int argc, char **argv, crwl_opt_t *opt)
+static int crwl_worker_getopt(int argc, char **argv, crwl_worker_opt_t *opt)
 {
     int ch;
 
@@ -175,7 +176,7 @@ static int crwl_getopt(int argc, char **argv, crwl_opt_t *opt)
 }
 
 /******************************************************************************
- **函数名称: crwl_usage
+ **函数名称: crwl_worker_usage
  **功    能: 显示启动参数帮助信息
  **输入参数:
  **     name: 程序名
@@ -185,13 +186,12 @@ static int crwl_getopt(int argc, char **argv, crwl_opt_t *opt)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.07.11 #
  ******************************************************************************/
-static int crwl_usage(const char *exec)
+static int crwl_worker_usage(const char *exec)
 {
-    printf("\nusage: %s [-h] [-b] -c config_file [-l log_level]\n", exec);
+    printf("\nUsage: %s [-h] [-b] -c config_file [-l log_level]\n", exec);
     printf("\t-h\tShow help\n"
            "\t-b\tRun as daemon\n"
            "\t-l\tSet log level. [trace|debug|info|warn|error|fatal]\n"
            "\t-c\tConfiguration path\n\n");
-
     return CRWL_OK;
 }
