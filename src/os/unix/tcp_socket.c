@@ -70,12 +70,7 @@ int tcp_listen(int port)
     opt = 1;
     setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(&opt));
 
-    ret = fd_set_nonblocking(fd);
-    if (ret < 0)
-    {
-        Close(fd);
-        return -1;
-    }
+    fd_set_nonblocking(fd);
 
     return fd;
 }
@@ -123,7 +118,7 @@ int tcp_connect(const char *ipaddr, int port)
 
     fd_set_nonblocking(fd);
     
-    return 0;
+    return fd;
 }
 
 /******************************************************************************
