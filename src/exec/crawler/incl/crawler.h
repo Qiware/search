@@ -14,6 +14,7 @@ typedef enum
 {
     CRWL_OK = 0
     , CRWL_SHOW_HELP                        /* 显示帮助信息 */
+
     , CRWL_ERR = ~0x7fffffff                /* 失败、错误 */
 } crwl_err_code_e;
 
@@ -25,5 +26,12 @@ typedef struct
 
     char *addr;                             /* 缓存首地址 */
 } snap_shot_t;
+
+/* 发送数据的信息 */
+typedef struct
+{
+    int type;                               /* 数据类型 */
+    int length;                             /* 数据长度 */
+} crwl_data_info_t;
 
 #endif /*__CRAWLER_H__*/

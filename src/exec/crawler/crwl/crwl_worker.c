@@ -246,8 +246,8 @@ static int crwl_worker_destroy(crwl_worker_t *worker)
 }
 
 /******************************************************************************
- **函数名称: crwl_worker_reset_fdset
- **功    能: 重置读写集合
+ **函数名称: crwl_worker_fdset
+ **功    能: 设置读写集合
  **输入参数: 
  **     worker: 爬虫对象
  **输出参数: NONE
@@ -256,7 +256,7 @@ static int crwl_worker_destroy(crwl_worker_t *worker)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.23 #
  ******************************************************************************/
-static int crwl_worker_reset_fdset(crwl_worker_t *worker)
+static int crwl_worker_fdset(crwl_worker_t *worker)
 {
     int max = -1;
     list_node_t *node;
@@ -390,10 +390,25 @@ static int crwl_worker_trav_recv(crwl_worker_t *worker)
 static int crwl_worker_send_data(crwl_worker_t *worker, crwl_worker_sck_t *sck)
 {
     int n, left;
+    list_node_t *node;
+    crwl_data_info_t *info;
 
     /* 1. 从发送列表取数据 */
     if (!sck->send.addr)
     {
+        node = list_remove_head(&sck->send_list);
+        if (NULL == node)
+        {
+            return CRWL_OK;
+        }
+
+        info = (crwl_data_info_t *)node->data;
+
+        sck->send.addr = node->data;
+        sck->send.off = sizeof(crwl_data_info_t);
+        sck->send.total = info->length + sizeof(crwl_data_info_t);
+
+        eslab_free(&worker->slab, node);
     }
 
     /* 2. 发送数据 */
@@ -403,6 +418,7 @@ static int crwl_worker_send_data(crwl_worker_t *worker, crwl_worker_sck_t *sck)
     if (n < 0)
     {
         log_error(worker->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        eslab_free(&worker->slab, sck->send.addr);
         return CRWL_ERR;
     }
 
@@ -410,6 +426,8 @@ static int crwl_worker_send_data(crwl_worker_t *worker, crwl_worker_sck_t *sck)
     left = sck->send.total - sck->send.off;
     if (0 == left)
     {
+        eslab_free(&worker->slab, sck->send.addr);
+
         sck->send.addr = NULL;
         sck->send.total = 0;
         sck->send.off = 0;
@@ -565,7 +583,7 @@ static void *crwl_worker_routine(void *_ctx)
         FD_ZERO(&worker->rdset);
         FD_ZERO(&worker->wrset);
 
-        max = crwl_worker_reset_fdset(worker);
+        max = crwl_worker_fdset(worker);
         if (max < 0)
         {
             continue;
