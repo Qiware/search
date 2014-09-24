@@ -14,7 +14,8 @@ LIBS = -lpthread
 
 SRC_LIST = 	lock.c \
 			xdo_unistd.c \
-			xdo_socket.c
+			tcp_socket.c \
+			unix_socket.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
 
