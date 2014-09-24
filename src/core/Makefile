@@ -17,7 +17,6 @@ SRC_LIST = list.c \
 			log2.c \
 			hash.c \
 			list2.c \
-			stack.c \
 			queue.c \
 			sha256.c \
 			slab.c \

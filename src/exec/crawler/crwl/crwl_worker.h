@@ -15,7 +15,7 @@
 #define CRWL_WRK_BUFF_SIZE       (16 * KB)  /* 接收SIZE */
 #define CRWL_WRK_READ_SIZE       (12 * KB)  /* 读取SIZE */
 #define CRWL_WRK_SYNC_SIZE       (12 * KB)  /* 同步SIZE */
-#define CRWL_WRK_DWNLD_WEB_PAGE_NUM (1)     /* 默认同时下载的网页数 */
+#define CRWL_WRK_LOAD_WEB_PAGE_NUM (1)      /* 默认同时下载的网页数 */
 
 /* 爬虫配置信息 */
 typedef struct
@@ -23,21 +23,25 @@ typedef struct
     int thread_num;                         /* 爬虫线程数 */
     char svrip[IP_ADDR_MAX_LEN];            /* 任务分发服务IP */
     int port;                               /* 任务分发服务端口 */
-    int download_web_page_num;              /* 同时下载网页的数目 */
+    int load_web_page_num;                  /* 同时加载网页的数目 */
 } crwl_worker_conf_t;
 
 /* 爬虫对象信息 */
 typedef struct
 {
     int sckid;                              /* 套接字ID */
+
     char url[URL_MAX_LEN];                  /* 原始URL(未转义) */
     char base64_url[URL_MAX_LEN];           /* 转义URL(中文转为BASE64编码) */
+
+    char ipaddr[IP_ADDR_MAX_LEN];           /* IP地址 */
+    int port;                               /* 端口号 */
 
     snap_shot_t read;                       /* 读取快照 */
     snap_shot_t send;                       /* 发送快照 */
 
     char recv_buff[CRWL_WRK_BUFF_SIZE];     /* 接收缓存 */
-    char send_buff[CRWL_WRK_BUFF_SIZE];     /* 发送缓存 */
+    list_t send_list;                       /* 发送链表 */
 } crwl_worker_sck_t;
 
 /* 爬虫对象信息 */
@@ -49,7 +53,8 @@ typedef struct
     eslab_pool_t slab;                      /* 内存池 */
     log_cycle_t *log;                       /* 日志对象 */
 
-    list_t sck_lst;                         /* 套接字列表 */
+    list_t sck_list;                        /* 套接字列表
+                                               结点数据指针指向crwl_worker_sck_t */
 } crwl_worker_t;
 
 /* 爬虫上下文 */

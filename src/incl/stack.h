@@ -14,9 +14,6 @@
 #include <string.h>
 #include <memory.h>
 
-/* 栈的优化开关 */
-#define __STACK_OPTIMIZE__
-
 /* 通用栈定义 */
 typedef struct
 {
@@ -25,42 +22,103 @@ typedef struct
     int size;       /* 栈的大小 */
 } Stack_t;
 
-extern int stack_init(Stack_t *stack, int size);
+/******************************************************************************
+ **函数名称: stack_init
+ **功    能: 栈初始化
+ **输入参数:
+ **      stack: 栈
+ **      size: 栈的大小
+ **输出参数:
+ **返    回: 0: 成功  !0: 失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2013.02.05 #
+ ******************************************************************************/
+static __inline int stack_init(Stack_t *stack, int size)
+{
+    memset(stack, 0, sizeof(Stack_t));
 
-#if defined(__STACK_OPTIMIZE__)
-/* 释放栈 */
-#define stack_destroy(stack) \
-( \
-    free((stack)->base), \
-    (stack)->base = NULL, \
-    (stack)->top = NULL, \
-    (stack)->size = 0 \
-)
+    stack->base = (void**)calloc(size, sizeof(void*));
+    if (NULL == stack->base)
+    {
+        return -1;
+    }
+    stack->top= stack->base;
+    stack->size = size;
 
-/* 压栈 */
-#define stack_push(stack, node) \
-( \
-    (((stack)->top-(stack)->base) >= (stack)->size)? (-1): \
-    ( \
-        *((stack)->top) = (node), \
-        (stack)->top++, 0 \
-    ) \
-)
+    return 0;
+}
 
-/* 入栈 */
-#define stack_pop(stack) \
-(   \
-    ((stack)->base == (stack)->top)? (-1): \
-    ( \
-        (stack)->top--, \
-        *((stack)->top) = NULL, 0 \
-    ) \
-)
-#else   /*__STACK_OPTIMIZE__*/
-void stack_destroy(Stack_t *stack);
-int stack_push(Stack_t *stack, void *node);
-int stack_pop(Stack_t * stack);
-#endif /*__STACK_OPTIMIZE__*/
+/******************************************************************************
+ **函数名称: stack_destroy
+ **功    能: 释放栈
+ **输入参数:
+ **      stack: 被释放的栈
+ **输出参数:
+ **返    回: 0: 成功  !0: 失败
+ **实现描述: 
+ **注意事项: 
+ **      在此处并不释放xml_stack_node_t中name, value的内存空间。
+ **      因为这些空间已交由xml树托管。释放xml树时，自然会释放这些空间。
+ **作    者: # Qifeng.zou # 2013.02.05 #
+ ******************************************************************************/
+static __inline int stack_destroy(Stack_t *stack)
+{
+    free(stack->base);
+    stack->base = NULL;
+    stack->top = NULL;
+    stack->size = 0;
+
+    return 0;
+}
+
+/******************************************************************************
+ **函数名称: stack_push
+ **功    能: 入栈
+ **输入参数:
+ **      stack: 栈
+ **输出参数:
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2013.02.05 #
+ ******************************************************************************/
+static __inline int stack_push(Stack_t *stack, void *node)
+{
+    if ((stack->top - stack->base) >= stack->size)
+    {
+        return -1;
+    }
+
+    *(stack->top) = node;
+    stack->top++;
+
+    return 0;
+}
+
+/******************************************************************************
+ **函数名称: stack_pop
+ **功    能: 出栈
+ **输入参数:
+ **      stack: 栈
+ **输出参数:
+ **返    回: 栈顶节点地址
+ **实现描述: 
+ **注意事项: 
+ **      在此只负责将节点弹出栈，并不负责内存空间的释放
+ **作    者: # Qifeng.zou # 2013.02.05 #
+ ******************************************************************************/
+static __inline int stack_pop(Stack_t *stack)
+{
+    if (stack->base == stack->top)
+    {
+        return -1;
+    }
+
+    stack->top--;
+    *(stack->top) = NULL;
+    return 0;
+}
 
 #define stack_isempty(stack) (((stack)->base == (stack)->top)? true : false) /* 栈是否为空 */
 #define stack_gettop(stack) (((stack)->base == (stack)->top)? NULL: *((stack)->top-1)) /* 取栈顶元素 */

@@ -19,6 +19,9 @@ static int crwl_worker_parse_conf(
         xml_tree_t *xml, crwl_worker_conf_t *conf, log_cycle_t *log);
 static void *crwl_worker_routine(void *_ctx);
 
+int crwl_worker_insert_sck(crwl_worker_t *worker, crwl_worker_sck_t *sck);
+static int crwl_worker_delete_sck(crwl_worker_t *worker, crwl_worker_sck_t *sck);
+
 /******************************************************************************
  **函数名称: crwl_worker_load_conf
  **功    能: 加载爬虫配置信息
@@ -123,17 +126,17 @@ static int crwl_worker_parse_conf(
     conf->port = atoi(node->value);
 
     /* 5. 下载网页的数目(相对查找) */
-    node = xml_rsearch(xml, curr, "DOWNLOAD_WEB_PAGE_NUM");
+    node = xml_rsearch(xml, curr, "LOAD_WEB_PAGE_NUM");
     if (NULL == node)
     {
-        log_error(log, "Didn't configure download web page number!");
+        log_error(log, "Didn't configure load web page number!");
         return CRWL_ERR;
     }
 
-    conf->download_web_page_num = atoi(node->value);
-    if (!conf->download_web_page_num)
+    conf->load_web_page_num = atoi(node->value);
+    if (!conf->load_web_page_num)
     {
-        conf->download_web_page_num = CRWL_WRK_DWNLD_WEB_PAGE_NUM;
+        conf->load_web_page_num = CRWL_WRK_LOAD_WEB_PAGE_NUM;
     }
 
     return CRWL_OK;
@@ -259,20 +262,24 @@ static int crwl_worker_reset_fdset(crwl_worker_t *worker)
     list_node_t *node;
     crwl_worker_sck_t *sck;
 
-    node = (list_node_t *)worker->sck_lst.head;
-    while (NULL != node)
+    node = (list_node_t *)worker->sck_list.head;
+    for (; NULL != node; node = node->next)
     {
         sck = (crwl_worker_sck_t *)node->data;
 
         /* 1. 设置可读集合 */
         FD_SET(sck->sckid, &worker->rdset);
 
-        /* 2. 设置可写集合 */
-        FD_SET(sck->sckid, &worker->wrset);
+        /* 2. 设置可写集合
+         *  正在发送数据或发送链表不为空时, 表示有数据需要发送,
+         *  因此, 需要将此套接字加入到可写集合 */
+        if (NULL != sck->send.addr
+            || NULL != sck->send_list.head)
+        {
+            FD_SET(sck->sckid, &worker->wrset);
+        }
 
         max = (max < sck->sckid)? sck->sckid : max;
-
-        node = node->next;
     }
 
     return max;
@@ -299,8 +306,8 @@ static int crwl_worker_fsync(crwl_worker_t *worker, crwl_worker_sck_t *sck)
 }
 
 /******************************************************************************
- **函数名称: crwl_worker_recv_data
- **功    能: 接收数据
+ **函数名称: crwl_worker_trav_recv
+ **功    能: 遍历接收数据
  **输入参数: 
  **     worker: 爬虫对象
  **输出参数: NONE
@@ -311,14 +318,14 @@ static int crwl_worker_fsync(crwl_worker_t *worker, crwl_worker_sck_t *sck)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.23 #
  ******************************************************************************/
-static int crwl_worker_recv_data(crwl_worker_t *worker)
+static int crwl_worker_trav_recv(crwl_worker_t *worker)
 {
     int n, left;
     list_node_t *node;
     crwl_worker_sck_t *sck;
 
     /* 1. 依次遍历套接字, 判断是否可读 */
-    node = worker->sck_lst.head;
+    node = worker->sck_list.head;
     for (; NULL != node; node = node->next)
     {
         sck = (crwl_worker_sck_t *)node->data;
@@ -375,30 +382,111 @@ static int crwl_worker_recv_data(crwl_worker_t *worker)
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
- **     1. 依次遍历套接字, 判断是否可写
- **     2. 如果可写, 则发送数据
+ **     1. 如果发送指针为空, 则从发送队列取数据
+ **     2. 发送数据
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.09.24 #
+ ******************************************************************************/
+static int crwl_worker_send_data(crwl_worker_t *worker, crwl_worker_sck_t *sck)
+{
+    int n, left;
+
+    /* 1. 从发送列表取数据 */
+    if (!sck->send.addr)
+    {
+    }
+
+    /* 2. 发送数据 */
+    left = sck->send.total - sck->send.off;
+
+    n = Writen(sck->sckid, sck->send.addr + sck->send.off, left);
+    if (n < 0)
+    {
+        log_error(worker->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        return CRWL_ERR;
+    }
+
+    sck->send.off += n;
+    left = sck->send.total - sck->send.off;
+    if (0 == left)
+    {
+        sck->send.addr = NULL;
+        sck->send.total = 0;
+        sck->send.off = 0;
+    }
+
+    return CRWL_OK;
+}
+
+/******************************************************************************
+ **函数名称: crwl_worker_trav_send
+ **功    能: 遍历发送数据
+ **输入参数: 
+ **     worker: 爬虫对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **     1. 依次遍历套接字列表
+ **     2. 判断是否可写
+ **     3. 发送数据
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.23 #
  ******************************************************************************/
-static int crwl_worker_send_data(crwl_worker_t *worker)
+static int crwl_worker_trav_send(crwl_worker_t *worker)
 {
-    list_node_t *node;
+    int ret;
+    list_node_t *node, *prev;
     crwl_worker_sck_t *sck;
 
-    /* 1. 依次遍历套接字, 判断是否可写 */
-    node = worker->sck_lst.head;
+    /* 1. 依次遍历套接字列表 */
+    node = worker->sck_list.head;
+    prev = node;
     for (; NULL != node; node = node->next)
     {
         sck = (crwl_worker_sck_t *)node->data;
         if (NULL == sck)
         {
+            prev = node;
             continue;
         }
 
-        /* 2. 如果可写, 则发送数据 */
+        /* 2. 判断是否可写 */
         if (!FD_ISSET(sck->sckid, &worker->wrset))
         {
+            prev = node;
             continue;
+        }
+        
+        /* 3. 发送数据 */
+        ret = crwl_worker_send_data(worker, sck);
+        if (CRWL_OK != ret)
+        {
+            log_error(worker->log, "Send data failed!"
+                " ipaddr:[%s:%d] url:[%s] base64_url:[%s]",
+                sck->ipaddr, sck->port, sck->url, sck->base64_url);
+
+            /* 将异常套接字踢出链表, 并释放空间 */
+            if (prev)
+            {
+                prev->next = node->next;
+            }
+            else
+            {
+                worker->sck_list.head = node->next;
+            }
+
+            if (node == worker->sck_list.tail)
+            {
+                worker->sck_list.tail = prev;
+            }
+
+            --worker->sck_list.num;
+
+            eslab_free(&worker->slab, node);
+
+            crwl_worker_delete_sck(worker, sck);
+
+            return CRWL_ERR;  /* 结束处理：简化异常的后续链表处理逻辑 */
         }
     }
 
@@ -423,7 +511,7 @@ static int crwl_worker_event_hdl(crwl_worker_t *worker)
     int ret;
 
     /* 1. 接收数据 */
-    ret = crwl_worker_recv_data(worker);
+    ret = crwl_worker_trav_recv(worker);
     if (CRWL_OK != ret)
     {
         log_error(worker->log, "Worker recv data failed!");
@@ -431,7 +519,7 @@ static int crwl_worker_event_hdl(crwl_worker_t *worker)
     }
 
     /* 2. 发送数据 */
-    ret = crwl_worker_send_data(worker);
+    ret = crwl_worker_trav_send(worker);
     if (CRWL_OK != ret)
     {
         log_error(worker->log, "Worker send data failed!");
@@ -478,6 +566,10 @@ static void *crwl_worker_routine(void *_ctx)
         FD_ZERO(&worker->wrset);
 
         max = crwl_worker_reset_fdset(worker);
+        if (max < 0)
+        {
+            continue;
+        }
 
         /* 3. 等待事件通知 */
         tv.tv_sec = CRWL_WRK_TV_SEC;
@@ -507,4 +599,82 @@ static void *crwl_worker_routine(void *_ctx)
 
     crwl_worker_destroy(worker);
     return (void *)-1;
+}
+
+/******************************************************************************
+ **函数名称: crwl_worker_insert_sck
+ **功    能: 插入套接字
+ **输入参数: 
+ **     worker: 爬虫对象 
+ **     sck: 套接字
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.09.24 #
+ ******************************************************************************/
+int crwl_worker_insert_sck(crwl_worker_t *worker, crwl_worker_sck_t *sck)
+{
+    int ret;
+    list_node_t *node;
+
+    /* 1. 申请内存空间 */
+    node = eslab_alloc(&worker->slab, sizeof(list_node_t));
+    if (NULL == node)
+    {
+        log_error(worker->log, "Alloc memory failed!");
+        return CRWL_ERR;
+    }
+
+    node->data = sck;
+
+    /* 2. 插入链表尾 */
+    ret = list_insert_tail(&worker->sck_list, node);
+    if (0 != ret)
+    {
+        log_error(worker->log, "Insert socket node failed!");
+        eslab_free(&worker->slab, node);
+        return CRWL_ERR;
+    }
+
+    return CRWL_OK;
+}
+
+/******************************************************************************
+ **函数名称: crwl_worker_delete_sck
+ **功    能: 删除套接字
+ **输入参数: 
+ **     worker: 爬虫对象 
+ **     sck: 套接字
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.09.24 #
+ ******************************************************************************/
+static int crwl_worker_delete_sck(crwl_worker_t *worker, crwl_worker_sck_t *sck)
+{
+    list_node_t *item, *next;
+
+    Close(sck->sckid);
+
+    item = sck->send_list.head;
+    while (NULL != item)
+    {
+        eslab_free(&worker->slab, item->data);
+
+        next = item->next;
+
+        eslab_free(&worker->slab, item);
+
+        item = next;
+    }
+
+    sck->send_list.num = 0;
+    sck->send_list.head = NULL;
+    sck->send_list.tail = NULL;
+
+    eslab_free(&worker->slab, sck);
+
+    return CRWL_OK;
 }
