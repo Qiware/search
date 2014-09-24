@@ -27,19 +27,19 @@
  **实现描述: 
  **     1. 创建套接字
  **     2. 绑定指定端口
- **     3. 设置套接字属性(可重用、非阻塞)
+ **     3. 侦听指定端口
+ **     4. 设置套接字属性(可重用、非阻塞)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.03.24 #
  ******************************************************************************/
 int tcp_listen(int port)
 {
-    int sckid = 0;
-    int ret = 0, opt = 1;
+    int fd, ret, opt = 1;
     struct sockaddr_in svraddr;
 
     /* 1. 创建套接字 */
-    sckid = socket(AF_INET, SOCK_STREAM, 0);
-    if (sckid < 0)
+    fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (fd < 0)
     {
         return -1;
     }
@@ -51,31 +51,79 @@ int tcp_listen(int port)
     svraddr.sin_addr.s_addr = htonl(INADDR_ANY);
     svraddr.sin_port = htons(port);
 
-    ret = bind(sckid, (struct sockaddr *)&svraddr, sizeof(svraddr));
+    ret = bind(fd, (struct sockaddr *)&svraddr, sizeof(svraddr));
     if (ret < 0)
     {
-        Close(sckid);
+        Close(fd);
         return -1;
     }
 
-    ret = listen(sckid, 20);
+    /* 3. 侦听指定端口 */
+    ret = listen(fd, 20);
     if (ret < 0)
     {
-        Close(sckid);
+        Close(fd);
         return -1;
     }
 
-    /* 3. 设置套接字属性(可重用、非阻塞) */
-    setsockopt(sckid, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(&opt));
+    /* 4. 设置套接字属性(可重用、非阻塞) */
+    opt = 1;
+    setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(&opt));
 
-    ret = fd_set_nonblocking(sckid);
+    ret = fd_set_nonblocking(fd);
     if (ret < 0)
     {
-        Close(sckid);
+        Close(fd);
         return -1;
     }
 
-    return sckid;
+    return fd;
+}
+
+/******************************************************************************
+ **函数名称: tcp_connect
+ **功    能: 连接指定服务器
+ **输入参数: 
+ **     ipaddr: IP地址
+ **     port: 端口号
+ **输出参数: NONE
+ **返    回: 套接字ID
+ **实现描述: 
+ **     1. 创建套接字
+ **     2. 连接指定服务器
+ **     3. 设置套接字属性(非阻塞)
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.09.24 #
+ ******************************************************************************/
+int tcp_connect(const char *ipaddr, int port)
+{
+    int ret, fd;
+    struct sockaddr_in svraddr;
+
+    /* 1. 创建套接字 */
+    fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (fd < 0)
+    {
+        return -1;
+    }
+
+    /* 2. 连接远程服务器 */
+    bzero(&svraddr, sizeof(svraddr));
+
+    svraddr.sin_family = AF_INET;
+    inet_pton(AF_INET, ipaddr, &svraddr.sin_addr);
+    svraddr.sin_port = htons(port);
+
+    ret = connect(fd, (struct sockaddr *)&svraddr, sizeof(svraddr));
+    if (0 != ret)
+    {
+        Close(fd);
+        return -1;
+    }
+
+    fd_set_nonblocking(fd);
+    
+    return 0;
 }
 
 /******************************************************************************

@@ -26,7 +26,7 @@ typedef struct
     int load_web_page_num;                  /* 同时加载网页的数目 */
 } crwl_worker_conf_t;
 
-/* 爬虫对象信息 */
+/* 网页加载套接字信息 */
 typedef struct
 {
     int sckid;                              /* 套接字ID */

@@ -19,8 +19,8 @@ static int crwl_worker_parse_conf(
         xml_tree_t *xml, crwl_worker_conf_t *conf, log_cycle_t *log);
 static void *crwl_worker_routine(void *_ctx);
 
-int crwl_worker_insert_sck(crwl_worker_t *worker, crwl_worker_sck_t *sck);
-static int crwl_worker_delete_sck(crwl_worker_t *worker, crwl_worker_sck_t *sck);
+int crwl_worker_add_sck(crwl_worker_t *worker, crwl_worker_sck_t *sck);
+static int crwl_worker_remove_sck(crwl_worker_t *worker, crwl_worker_sck_t *sck);
 
 /******************************************************************************
  **函数名称: crwl_worker_load_conf
@@ -484,7 +484,7 @@ static int crwl_worker_trav_send(crwl_worker_t *worker)
 
             eslab_free(&worker->slab, node);
 
-            crwl_worker_delete_sck(worker, sck);
+            crwl_worker_remove_sck(worker, sck);
 
             return CRWL_ERR;  /* 结束处理：简化异常的后续链表处理逻辑 */
         }
@@ -602,8 +602,8 @@ static void *crwl_worker_routine(void *_ctx)
 }
 
 /******************************************************************************
- **函数名称: crwl_worker_insert_sck
- **功    能: 插入套接字
+ **函数名称: crwl_worker_add_sck
+ **功    能: 添加套接字
  **输入参数: 
  **     worker: 爬虫对象 
  **     sck: 套接字
@@ -613,7 +613,7 @@ static void *crwl_worker_routine(void *_ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.24 #
  ******************************************************************************/
-int crwl_worker_insert_sck(crwl_worker_t *worker, crwl_worker_sck_t *sck)
+int crwl_worker_add_sck(crwl_worker_t *worker, crwl_worker_sck_t *sck)
 {
     int ret;
     list_node_t *node;
@@ -641,7 +641,7 @@ int crwl_worker_insert_sck(crwl_worker_t *worker, crwl_worker_sck_t *sck)
 }
 
 /******************************************************************************
- **函数名称: crwl_worker_delete_sck
+ **函数名称: crwl_worker_remove_sck
  **功    能: 删除套接字
  **输入参数: 
  **     worker: 爬虫对象 
@@ -652,7 +652,7 @@ int crwl_worker_insert_sck(crwl_worker_t *worker, crwl_worker_sck_t *sck)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.24 #
  ******************************************************************************/
-static int crwl_worker_delete_sck(crwl_worker_t *worker, crwl_worker_sck_t *sck)
+static int crwl_worker_remove_sck(crwl_worker_t *worker, crwl_worker_sck_t *sck)
 {
     list_node_t *item, *next;
 
