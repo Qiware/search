@@ -19,10 +19,13 @@ export PROJ_LIB = ${PROJ}/lib
 #DIR=`find ./src -type d`
 DIR := "src/os/unix"
 DIR += "src/core"
+
 DIR += "src/exec/crawler/crwl"
 DIR += "src/exec/logsvr"
+
 DIR += "src/demo"
 DIR += "src/demo/html"
+DIR += "src/demo/list"
 export DIR
 
 .PHONY: all clean rebuild
