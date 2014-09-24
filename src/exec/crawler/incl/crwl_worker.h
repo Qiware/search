@@ -2,16 +2,20 @@
 #define __CRWL_WORKER_H__
 
 #include "log.h"
+#include "slab.h"
+#include "list.h"
 #include "crawler.h"
+#include "thread_pool.h"
 
 /* 宏定义 */
-#define CRWL_WORKER_TV_SEC          (02)    /* 超时(秒) */
-#define CRWL_WORKER_TV_USEC         (00)    /* 超时(微妙) */
-#define CRWL_WORKER_DEF_THD_NUM     (1)     /* 爬虫默认线程数 */
-#define CRWL_WORKER_SLAB_SIZE       (16 * KB) /* 爬虫SLAB内存池大小 */
-#define CRWL_WORKER_BUFF_SIZE       (10 * KB) /* 接收SIZE */
-#define CRWL_WORKER_READ_SIZE       (8 * KB)  /* 读取SIZE */
-#define CRWL_WORKER_SYNC_SIZE       (04 * KB) /* 同步SIZE */
+#define CRWL_WRK_TV_SEC          (02)       /* 超时(秒) */
+#define CRWL_WRK_TV_USEC         (00)       /* 超时(微妙) */
+#define CRWL_WRK_DEF_THD_NUM     (1)        /* 爬虫默认线程数 */
+#define CRWL_WRK_SLAB_SIZE       (16 * KB)  /* 爬虫SLAB内存池大小 */
+#define CRWL_WRK_BUFF_SIZE       (16 * KB)  /* 接收SIZE */
+#define CRWL_WRK_READ_SIZE       (12 * KB)  /* 读取SIZE */
+#define CRWL_WRK_SYNC_SIZE       (12 * KB)  /* 同步SIZE */
+#define CRWL_WRK_DWNLD_WEB_PAGE_NUM (1)     /* 默认同时下载的网页数 */
 
 /* 爬虫配置信息 */
 typedef struct
@@ -19,17 +23,21 @@ typedef struct
     int thread_num;                         /* 爬虫线程数 */
     char svrip[IP_ADDR_MAX_LEN];            /* 任务分发服务IP */
     int port;                               /* 任务分发服务端口 */
-    char log_level_str[LOG_LEVEL_MAX_LEN];  /* 日志级别 */
+    int download_web_page_num;              /* 同时下载网页的数目 */
 } crwl_worker_conf_t;
 
 /* 爬虫对象信息 */
 typedef struct
 {
-    int fd;                                 /* 文件描述符 */
-    int off;                                /* 缓存的偏移量 */
-    int total;                              /* 接收总数 */
-    char url[FILE_NAME_MAX_LEN];            /* URL */
-    char buff[CRWL_WORKER_BUFF_SIZE];       /* 接收缓存 */
+    int sckid;                              /* 套接字ID */
+    char url[URL_MAX_LEN];                  /* 原始URL(未转义) */
+    char base64_url[URL_MAX_LEN];           /* 转义URL(中文转为BASE64编码) */
+
+    snap_shot_t read;                       /* 读取快照 */
+    snap_shot_t send;                       /* 发送快照 */
+
+    char recv_buff[CRWL_WRK_BUFF_SIZE];     /* 接收缓存 */
+    char send_buff[CRWL_WRK_BUFF_SIZE];     /* 发送缓存 */
 } crwl_worker_sck_t;
 
 /* 爬虫对象信息 */
@@ -41,18 +49,18 @@ typedef struct
     eslab_pool_t slab;                      /* 内存池 */
     log_cycle_t *log;                       /* 日志对象 */
 
-    list2_t sck_lst;                        /* 套接字列表 */
+    list_t sck_lst;                         /* 套接字列表 */
 } crwl_worker_t;
 
 /* 爬虫上下文 */
 typedef struct
 {
-    crwl_worker_conf_t conf;                       /* 配置信息 */
+    crwl_worker_conf_t conf;                /* 配置信息 */
     thread_pool_t *tpool;                   /* 线程池对象 */
     log_cycle_t *log;                       /* 日志对象 */
 } crwl_worker_ctx_t;
 
 int crwl_worker_load_conf(crwl_worker_conf_t *conf, const char *path, log_cycle_t *log);
-crwl_worker_ctx_t *crwl_worker_start(crwl_worker_conf_t *conf, log_cycle_t *log);
+crwl_worker_ctx_t *crwl_worker_startup(crwl_worker_conf_t *conf, log_cycle_t *log);
 
 #endif /*__CRWL_WORKER_H__*/

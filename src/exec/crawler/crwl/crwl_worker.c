@@ -1,7 +1,7 @@
 /******************************************************************************
  ** Coypright(C) 2014-2024 Xundao technology Co., Ltd
  **
- ** 文件名: crawler.c
+ ** 文件名: crwl_worker.c
  ** 版本号: 1.0
  ** 描  述: 网络爬虫
  **         负责下载指定URL网页
@@ -74,7 +74,7 @@ int crwl_worker_load_conf(crwl_worker_conf_t *conf, const char *path, log_cycle_
 static int crwl_worker_parse_conf(
         xml_tree_t *xml, crwl_worker_conf_t *conf, log_cycle_t *log)
 {
-    xml_node_t *curr, *node, *node2;
+    xml_node_t *curr, *node;
 
     /* 1. 定位工作进程配置 */
     curr = xml_search(xml, ".SEARCH.CRWLSYS.WORKER");
@@ -85,11 +85,11 @@ static int crwl_worker_parse_conf(
     }
 
     /* 2. 爬虫线程数(相对查找) */
-    node = xml_rsearch(xml, curr, "THD_NUM");
+    node = xml_rsearch(xml, curr, "THREAD_NUM");
     if (NULL == node)
     {
         log_warn(log, "Didn't configure the number of worker process!");
-        conf->thread_num = CRWL_WORKER_DEF_THD_NUM;
+        conf->thread_num = CRWL_WRK_DEF_THD_NUM;
     }
     else
     {
@@ -122,26 +122,25 @@ static int crwl_worker_parse_conf(
 
     conf->port = atoi(node->value);
 
-    /* 5. 日志级别:如果本级没有设置，则继承上一级的配置 */
-    node2 = curr;
-    while (NULL != node2)
+    /* 5. 下载网页的数目(相对查找) */
+    node = xml_rsearch(xml, curr, "DOWNLOAD_WEB_PAGE_NUM");
+    if (NULL == node)
     {
-        node = xml_rsearch(xml, node2, ".LOG.LEVEL");
-        if (NULL != node)
-        {
-            snprintf(conf->log_level_str,
-                    sizeof(conf->log_level_str), "%s", node->value);
-            break;
-        }
+        log_error(log, "Didn't configure download web page number!");
+        return CRWL_ERR;
+    }
 
-        node2 = node2->parent;
+    conf->download_web_page_num = atoi(node->value);
+    if (!conf->download_web_page_num)
+    {
+        conf->download_web_page_num = CRWL_WRK_DWNLD_WEB_PAGE_NUM;
     }
 
     return CRWL_OK;
 }
 
 /******************************************************************************
- **函数名称: crwl_worker_start
+ **函数名称: crwl_worker_startup
  **功    能: 启动爬虫服务
  **输入参数: 
  **     conf: 配置信息
@@ -152,7 +151,7 @@ static int crwl_worker_parse_conf(
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.04 #
  ******************************************************************************/
-crwl_worker_ctx_t *crwl_worker_start(crwl_worker_conf_t *conf, log_cycle_t *log)
+crwl_worker_ctx_t *crwl_worker_startup(crwl_worker_conf_t *conf, log_cycle_t *log)
 {
     int idx;
     crwl_worker_ctx_t *ctx;
@@ -188,7 +187,7 @@ crwl_worker_ctx_t *crwl_worker_start(crwl_worker_conf_t *conf, log_cycle_t *log)
 }
 
 /******************************************************************************
- **函数名称: crwl_worker_creat
+ **函数名称: crwl_worker_init
  **功    能: 创建爬虫对象
  **输入参数: 
  **     ctx: 上下文
@@ -198,7 +197,7 @@ crwl_worker_ctx_t *crwl_worker_start(crwl_worker_conf_t *conf, log_cycle_t *log)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.23 #
  ******************************************************************************/
-static crwl_worker_t *crwl_worker_creat(crwl_worker_ctx_t *ctx)
+static crwl_worker_t *crwl_worker_init(crwl_worker_ctx_t *ctx)
 {
     int ret;
     crwl_worker_t *worker;
@@ -214,7 +213,7 @@ static crwl_worker_t *crwl_worker_creat(crwl_worker_ctx_t *ctx)
     worker->log = ctx->log;
 
     /* 2.创建SLAB内存池 */
-    ret = eslab_init(&worker->slab, CRWL_WORKER_SLAB_SIZE);
+    ret = eslab_init(&worker->slab, CRWL_WRK_SLAB_SIZE);
     if (0 != ret)
     {
         free(worker);
@@ -256,7 +255,27 @@ static int crwl_worker_destroy(crwl_worker_t *worker)
  ******************************************************************************/
 static int crwl_worker_reset_fdset(crwl_worker_t *worker)
 {
-    return 0;
+    int max = -1;
+    list_node_t *node;
+    crwl_worker_sck_t *sck;
+
+    node = (list_node_t *)worker->sck_lst.head;
+    while (NULL != node)
+    {
+        sck = (crwl_worker_sck_t *)node->data;
+
+        /* 1. 设置可读集合 */
+        FD_SET(sck->sckid, &worker->rdset);
+
+        /* 2. 设置可写集合 */
+        FD_SET(sck->sckid, &worker->wrset);
+
+        max = (max < sck->sckid)? sck->sckid : max;
+
+        node = node->next;
+    }
+
+    return max;
 }
 
 /******************************************************************************
@@ -273,8 +292,9 @@ static int crwl_worker_reset_fdset(crwl_worker_t *worker)
  ******************************************************************************/
 static int crwl_worker_fsync(crwl_worker_t *worker, crwl_worker_sck_t *sck)
 {
-    sck->off = 0;
-    sck->total = CRWL_WORKER_READ_SIZE;
+    fprintf(stdout, "%s", sck->read.addr);
+    sck->read.off = 0;
+    sck->read.total = CRWL_WRK_READ_SIZE;
     return CRWL_OK;
 }
 
@@ -286,20 +306,20 @@ static int crwl_worker_fsync(crwl_worker_t *worker, crwl_worker_sck_t *sck)
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
- **     1. 依次遍历套接字，判断是否可读
- **     2. 如果可读，则接收数据
+ **     1. 依次遍历套接字, 判断是否可读
+ **     2. 如果可读, 则接收数据
  **注意事项: 
- **作    者: # Menglai.Wang & Qifeng.zou # 2014.09.23 #
+ **作    者: # Qifeng.zou # 2014.09.23 #
  ******************************************************************************/
 static int crwl_worker_recv_data(crwl_worker_t *worker)
 {
-    int idx, n, left;
-    list2_node_t *node;
+    int n, left;
+    list_node_t *node;
     crwl_worker_sck_t *sck;
 
-    /* 1. 依次遍历套接字，判断是否可读 */
+    /* 1. 依次遍历套接字, 判断是否可读 */
     node = worker->sck_lst.head;
-    for (idx=0; idx<worker->sck_lst.num; ++idx)
+    for (; NULL != node; node = node->next)
     {
         sck = (crwl_worker_sck_t *)node->data;
         if (NULL == sck)
@@ -307,40 +327,41 @@ static int crwl_worker_recv_data(crwl_worker_t *worker)
             continue;
         }
 
-        /* 2. 如果可读，则接收数据 */
-        if (FD_ISSET(sck->fd, &worker->rdset))
+        /* 2. 如果可读, 则接收数据 */
+        if (!FD_ISSET(sck->sckid, &worker->rdset))
         {
-            left = sck->total - sck->off;
+            continue;
+        }
 
-            n = Readn(sck->fd, sck->buff + sck->off, left);
-            if (n < 0)
-            {
-                if (EINTR == errno)
-                {
-                    continue;
-                }
+        left = sck->read.total - sck->read.off;
 
-                log_error(worker->log, "errmsg:[%d] %s!", errno, strerror(errno));
-                Close(sck->fd);
-                return CRWL_ERR;
-            }
-            else if (0 == n)
+        n = Readn(sck->sckid, sck->read.addr + sck->read.off, left);
+        if (n < 0)
+        {
+            if ((EINTR == errno)
+                    || (EWOULDBLOCK == errno))
             {
-                log_error(worker->log, "End of read data! url:%s", sck->url);
-                crwl_worker_fsync(worker, sck);
-                Close(sck->fd);
                 continue;
             }
 
-            /* 3. 将HTML数据写入文件 */
-            sck->off += n;
-            if (sck->off >= CRWL_WORKER_SYNC_SIZE)
-            {
-                crwl_worker_fsync(worker, sck);
-            }
+            log_error(worker->log, "errmsg:[%d] %s!", errno, strerror(errno));
+            Close(sck->sckid);
+            return CRWL_ERR;
+        }
+        else if (0 == n)
+        {
+            log_error(worker->log, "End of read data! url:%s", sck->url);
+            crwl_worker_fsync(worker, sck);
+            Close(sck->sckid);
+            continue;
         }
 
-        node = node->next;
+        /* 3. 将HTML数据写入文件 */
+        sck->read.off += n;
+        if (sck->read.off >= CRWL_WRK_SYNC_SIZE)
+        {
+            crwl_worker_fsync(worker, sck);
+        }
     }
 
     return CRWL_OK;
@@ -354,17 +375,19 @@ static int crwl_worker_recv_data(crwl_worker_t *worker)
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
+ **     1. 依次遍历套接字, 判断是否可写
+ **     2. 如果可写, 则发送数据
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.23 #
  ******************************************************************************/
 static int crwl_worker_send_data(crwl_worker_t *worker)
 {
-    int idx;
-    list2_node_t *node;
+    list_node_t *node;
     crwl_worker_sck_t *sck;
 
+    /* 1. 依次遍历套接字, 判断是否可写 */
     node = worker->sck_lst.head;
-    for (idx=0; idx<worker->sck_lst.num; ++idx)
+    for (; NULL != node; node = node->next)
     {
         sck = (crwl_worker_sck_t *)node->data;
         if (NULL == sck)
@@ -372,11 +395,11 @@ static int crwl_worker_send_data(crwl_worker_t *worker)
             continue;
         }
 
-        if (FD_ISSET(sck->fd, &worker->wrset))
+        /* 2. 如果可写, 则发送数据 */
+        if (!FD_ISSET(sck->sckid, &worker->wrset))
         {
+            continue;
         }
-
-        node = node->next;
     }
 
     return CRWL_OK;
@@ -390,6 +413,8 @@ static int crwl_worker_send_data(crwl_worker_t *worker)
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
+ **     1. 接收数据
+ **     2. 发送数据
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.23 #
  ******************************************************************************/
@@ -397,7 +422,7 @@ static int crwl_worker_event_hdl(crwl_worker_t *worker)
 {
     int ret;
 
-    /* 1. 进行事件处理 */
+    /* 1. 接收数据 */
     ret = crwl_worker_recv_data(worker);
     if (CRWL_OK != ret)
     {
@@ -405,7 +430,7 @@ static int crwl_worker_event_hdl(crwl_worker_t *worker)
         return CRWL_ERR;
     }
 
-    /* 2. 进行事件处理 */
+    /* 2. 发送数据 */
     ret = crwl_worker_send_data(worker);
     if (CRWL_OK != ret)
     {
@@ -422,10 +447,14 @@ static int crwl_worker_event_hdl(crwl_worker_t *worker)
  **输入参数: 
  **     _ctx: 上下文
  **输出参数: NONE
- **返    回: 0:成功 !0:失败
+ **返    回: VOID *
  **实现描述: 
+ **     1. 创建爬虫对象
+ **     2. 设置读写集合
+ **     3. 等待事件通知
+ **     4. 进行事件处理
  **注意事项: 
- **作    者: # Menglai.Wang & Qifeng.zou # 2014.09.05 #
+ **作    者: # Qifeng.zou # 2014.09.23 #
  ******************************************************************************/
 static void *crwl_worker_routine(void *_ctx)
 {
@@ -434,28 +463,30 @@ static void *crwl_worker_routine(void *_ctx)
     crwl_worker_t *worker;
     crwl_worker_ctx_t *ctx = (crwl_worker_ctx_t *)_ctx;
 
-    worker = crwl_worker_creat(ctx);
+    /* 1. 创建爬虫对象 */
+    worker = crwl_worker_init(ctx);
     if (NULL == worker)
     {
-        log_error(ctx->log, "Create worker failed!");
+        log_error(ctx->log, "Initialize worker failed!");
         return (void *)-1;
     }
 
     while (1)
     {
-        /* 1. 设置读写集合 */
+        /* 2. 设置读写集合 */
         FD_ZERO(&worker->rdset);
         FD_ZERO(&worker->wrset);
 
         max = crwl_worker_reset_fdset(worker);
 
-        /* 2. 等待事件通知 */
-        tv.tv_sec = CRWL_WORKER_TV_SEC;
-        tv.tv_usec = CRWL_WORKER_TV_USEC;
+        /* 3. 等待事件通知 */
+        tv.tv_sec = CRWL_WRK_TV_SEC;
+        tv.tv_usec = CRWL_WRK_TV_USEC;
         ret = select(max+1, &worker->rdset, &worker->wrset, NULL, &tv);
         if (ret < 0)
         {
-            if (EINTR == errno)
+            if ((EINTR == errno)
+                || (EWOULDBLOCK == errno))
             {
                 continue;
             }
@@ -470,7 +501,7 @@ static void *crwl_worker_routine(void *_ctx)
             continue;
         }
 
-        /* 3. 进行事件处理 */
+        /* 4. 进行事件处理 */
         crwl_worker_event_hdl(worker);
     }
 

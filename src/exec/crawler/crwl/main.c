@@ -18,8 +18,11 @@
 #include "crawler.h"
 #include "crwl_worker.h"
 
-#define CRWL_WORKER_LOG2_LEVEL  "trace"             /* 日志级别 */
-#define CRWL_WORKER_LOG2_PATH   "../log/system.log" /* 日志路径 */
+#if defined(__XDO_DEBUG__)
+    #define CRWL_WRK_LOG2_LEVEL  "trace"             /* 日志级别 */
+#else /*!__XDO_DEBUG__*/
+    #define CRWL_WRK_LOG2_LEVEL  "error"             /* 日志级别 */
+#endif /*!__XDO_DEBUG__*/
 
 /* 程序输入参数信息 */
 typedef struct
@@ -66,11 +69,13 @@ int main(int argc, char *argv[])
     }
 
     /* 2. 初始化日志模块 */
-    ret = log2_init(CRWL_WORKER_LOG2_LEVEL, CRWL_WORKER_LOG2_PATH);
+    log2_get_path(log_path, sizeof(log_path), basename(argv[0]));
+
+    ret = log2_init(CRWL_WRK_LOG2_LEVEL, log_path);
     if (0 != ret)
     {
         fprintf(stderr, "Init log2 failed! level:%s path:%s\n",
-                CRWL_WORKER_LOG2_LEVEL, CRWL_WORKER_LOG2_PATH);
+                CRWL_WRK_LOG2_LEVEL, log_path);
         goto ERROR;
     }
 
@@ -92,7 +97,7 @@ int main(int argc, char *argv[])
     }
 
     /* 3. 启动爬虫服务 */
-    ctx = crwl_worker_start(&conf, log);
+    ctx = crwl_worker_startup(&conf, log);
     if (NULL == ctx)
     {
         log2_error("Start crawler server failed!");

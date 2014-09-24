@@ -10,16 +10,20 @@
 #if !defined(__CRAWLER_H__)
 #define __CRAWLER_H__
 
-#include "log.h"
-#include "list2.h"
-#include "common.h"
-#include "thread_pool.h"
-
 typedef enum
 {
     CRWL_OK = 0
     , CRWL_SHOW_HELP                        /* 显示帮助信息 */
     , CRWL_ERR = ~0x7fffffff                /* 失败、错误 */
 } crwl_err_code_e;
+
+/* 读取/发送快照 */
+typedef struct
+{
+    int off;                                /* 偏移量 */
+    int total;                              /* 总字节 */
+
+    char *addr;                             /* 缓存首地址 */
+} snap_shot_t;
 
 #endif /*__CRAWLER_H__*/

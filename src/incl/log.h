@@ -155,6 +155,8 @@ typedef struct
 extern log2_cycle_t g_log2;
 
 /* 系统日志函数(无句柄) */
+#define log2_get_path(path, size, name) \
+            snprintf(path, size, "../log/%s.log2", name)
 int log2_init(const char *level, const char *path);
 void log2_core(int level, const char *fname, int lineno,
             const void *dump, int dumplen, const char *fmt, ...);
