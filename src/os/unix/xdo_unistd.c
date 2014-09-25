@@ -4,49 +4,51 @@
 #include "xdo_unistd.h"
 
 /******************************************************************************
- ** Name : Open
- ** Desc : Recall open system call when errno is EINTR. 
- ** Input: 
- **     fpath: Path of file
- **     flags: Open flags
- **     mode: file mode
- ** Output: NONE
- ** Return: file descriptor
- ** Proc :
- ** Note :
- ** Author: # Qifeng.zou # 2014.04.18 #
+ **函数名称: Open
+ **功    能: 打开指定文件
+ **输入参数: 
+ **     fname: 文件名
+ **     flags: 打开标志
+ **     mode: 文件权限
+ **输出参数: NONE
+ **返    回: 文件描述符
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.04.18 #
  ******************************************************************************/
-int Open(const char *fpath, int flags, mode_t mode)
+int Open(const char *fname, int flags, mode_t mode)
 {
-    int fd = 0;
+    int fd;
     
 AGAIN:
-    fd = open(fpath, flags, mode);
+    fd = open(fname, flags, mode);
     if (fd < 0)
     {
         if (EINTR == errno)
         {
             goto AGAIN;
         }
+
         return -1;
     }
+
     return fd;        
 }
 
 /******************************************************************************
- ** Name : Readn
- ** Desc : Readn special number of characters. 
- ** Input: 
- **     fd: file descriptor.
- **     n: special number of characters.
- ** Output:
- **     buff: read buffer
- ** Return: number of read characters
- ** Proc :
- ** Note :
- ** Author: # Qifeng.zou # 2014.04.18 #
+ **函数名称: Readn
+ **功    能: 读取指定字节数
+ **输入参数: 
+ **     fd: 文件描述符
+ **     n: 希望读取的字节数
+ **输出参数:
+ **     buff: 接收缓存
+ **返    回: 真正读取的字节数
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.04.18 #
  ******************************************************************************/
-int Readn(int32_t fd, void *buff, int n)
+int Readn(int fd, void *buff, int n)
 {
     int left = n, len = 0;
     char *ptr = (char *)buff;
@@ -79,19 +81,19 @@ int Readn(int32_t fd, void *buff, int n)
 }
 
 /******************************************************************************
- ** Name : Writen
- ** Desc : Writen special number of characters. 
- ** Input: 
- **     fd: file descriptor.
- **     buff: write buffer.
- **     n: special number of characters.
- ** Output:
- ** Return: number of write characters
- ** Proc :
- ** Note :
- ** Author: # Qifeng.zou # 2014.04.18 #
+ **函数名称: Writen
+ **功    能: 写入指定字节数
+ **输入参数: 
+ **     fd: 文件描述符
+ **     n: 希望写入的字节数
+ **输出参数:
+ **     buff: 数据地址
+ **返    回: 真正写入的字节数
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.04.18 #
  ******************************************************************************/
-int Writen(int32_t fd, const void *buff, int n)
+int Writen(int fd, const void *buff, int n)
 {
     int left = n, len = 0;
     const char *ptr = (const char *)buff;
@@ -120,93 +122,88 @@ int Writen(int32_t fd, const void *buff, int n)
 }
 
 /******************************************************************************
- ** Name : Sleep
- ** Desc : Sleep special seconds. 
- ** Input: 
- **     secs: special seconds.
- ** Output: NONE
- ** Return: 0-Success !0-Failed
- ** Proc :
- ** Note :
- ** Author: # Qifeng.zou # 2014.04.18 #
+ **函数名称: Sleep
+ **功    能: 睡眠指定时间
+ **输入参数: 
+ **     sec: 秒
+ **输出参数: NONE
+ **返    回: VOID
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.04.18 #
  ******************************************************************************/
-int Sleep(int32_t secs)
+void Sleep(int sec)
 {
-    int left = 0;
+    int left = sec;
 
-    left = secs;
     do
     {
         left = sleep(left);
     }while (left > 0);
-
-    return 0;
 }
 
 /******************************************************************************
- ** Name : Random
- ** Desc : Generate random value.
- ** Input: NONE
- ** Output: NONE
- ** Return: Random value
- ** Proc :
- **     1. Get current time
- **     2. Generate a random number
- ** Note :
- ** Author: # Qifeng.zou # 2014.04.18 #
+ **函数名称: Random
+ **功    能: 产生随机数
+ **输入参数: NONE
+ **输出参数: NONE
+ **返    回: 随机数
+ **实现描述: 
+ **     1. 获取当前时间
+ **     2. 产生随机数
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.04.18 #
  ******************************************************************************/
 int Random(void)
 {
-    struct timeval cur_time;
+    struct timeval ctm;
 
-    memset(&cur_time, 0, sizeof(cur_time));
+    memset(&ctm, 0, sizeof(ctm));
 
-    gettimeofday(&cur_time, NULL);
+    gettimeofday(&ctm, NULL);
 
-    return ((random()*cur_time.tv_usec)&0x7FFFFFFF);
+    return ((random() * ctm.tv_usec) & 0x7FFFFFFF);
 }
 
 /******************************************************************************
- ** Name : Mkdir
- ** Desc : Create directory
- ** Input: 
- **     dir: Special directory
- **     mode: Directory mode
- ** Output: 
- ** Return: 0-Success !0-Failed
- ** Proc :
- ** Note :
- ** Author: # Qifeng.zou # 2014.04.18 #
+ **函数名称: Mkdir
+ **功    能: 新建目录
+ **输入参数:
+ **     dir: 目录路径
+ **     mode: 目录权限
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **     1. 判断目录是否存在
+ **     2. 递归创建目录结构
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.04.18 #
  ******************************************************************************/
 int Mkdir(const char *dir, mode_t mode)
 {
-    int ret = 0, len = 0;
+    int ret, len;
     const char *p = dir;
-    struct stat file_stat;
-    char part[FILE_PATH_MAX_LEN] = {0};
+    struct stat st;
+    char part[FILE_PATH_MAX_LEN];
 
-    memset(&file_stat, 0, sizeof(file_stat));
-
-    ret = stat(dir, &file_stat);
+    /* 1. 判断目录是否存在 */
+    ret = stat(dir, &st);
     if (0 == ret)
     {
-        if (S_ISDIR(file_stat.st_mode))
-        {
-            return 0;
-        }
-        return -1;  /* Exist, but not directory */
+        return !S_ISDIR(st.st_mode); /* 为目录, 则成功, 否则失败 */
     }
 
+    /* 2. 递归创建目录结构 */
     p = strchr(p, '/');
     while (NULL != p)
     {
         len = p - dir + 1;
         memcpy(part, dir, len);
 
-        ret = stat(part, &file_stat);
+        ret = stat(part, &st);
         if (0 == ret)
         {
-            if (S_ISDIR(file_stat.st_mode))
+            if (S_ISDIR(st.st_mode))
             {
                 p++;
                 p = strchr(p, '/');
@@ -233,24 +230,22 @@ int Mkdir(const char *dir, mode_t mode)
 }
 
 /******************************************************************************
- ** Name : Mkdir2
- ** Desc : Only build directory when filename contain direcotry.
- ** Input: 
- **     fname: file-name which contain directory
- **     mode: Directory mode
- ** Output: 
- ** Return: 0-Success !0-Failed
- ** Proc :
- ** Note :
- **     Ext: fname="/home/svn/etc/lsn.log", will create "/home/svn/etc/"
- ** Author: # Qifeng.zou # 2014.04.18 #
+ **函数名称: Mkdir2
+ **功    能: 构建文件路径中的目录
+ **输入参数:
+ **     fname: 文件路径
+ **     mode: 目录权限
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **     如果fname为/home/svn/etc/lsn.log, 则会构建目录/home/svn/etc/
+ **作    者: # Qifeng.zou # 2014.04.18 #
  ******************************************************************************/
 int Mkdir2(const char *fname, mode_t mode)
 {
-    const char *p = fname;
-    char dir[FILE_PATH_MAX_LEN] = {0};
-
-    p += strlen(fname);
+    const char *p;
+    char dir[FILE_PATH_MAX_LEN];
 
     p = strrchr(fname, '/');
     if (NULL == p)
@@ -284,24 +279,24 @@ int proc_is_exist(pid_t pid)
 }
 
 /******************************************************************************
- ** Name : creat_thread
- ** Desc : Create thread
- ** Input: 
- **     process: Callback
- **     args: Arguments of callback
- ** Output: 
- **     tid: Thread ID
- ** Return: 0:成功 !0:失败
- ** Proc :
- ** Note :
- ** Author: # Qifeng.zou # 2014.04.18 #
+ **函数名称: thread_creat
+ **功    能: 创建线程
+ **输入参数:
+ **     process: 线程回调函数
+ **     args: 回调函数参数
+ **输出参数:
+ **     tid: 线程ID
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.04.18 #
  ******************************************************************************/
-int creat_thread(pthread_t *tid, void *(*process)(void *args), void *args)
+int thread_creat(pthread_t *tid, void *(*process)(void *args), void *args)
 {
-    int ret = 0;
+    int ret;
     pthread_attr_t attr;
 
-    do
+    for (;;)
     {
         ret = pthread_attr_init(&attr);
         if (0 != ret)
@@ -315,7 +310,7 @@ int creat_thread(pthread_t *tid, void *(*process)(void *args), void *args)
             break;
         }
 
-        ret = pthread_attr_setstacksize(&attr, 0x800000);
+        ret = pthread_attr_setstacksize(&attr, THREAD_ATTR_STACK_SIZE);
 
         ret = pthread_create(tid, &attr, process, args);
         if (0 != ret)
@@ -328,8 +323,9 @@ int creat_thread(pthread_t *tid, void *(*process)(void *args), void *args)
 
             break;
         }
+
         break;
-    }while (1);
+    }
 
     pthread_attr_destroy(&attr);
     return ret;
@@ -349,7 +345,7 @@ int creat_thread(pthread_t *tid, void *(*process)(void *args), void *args)
  ******************************************************************************/
 int Rename(const char *oldpath, const char *newpath)
 {
-    int ret = 0;
+    int ret;
 
 AGAIN:
     ret = rename(oldpath, newpath);
@@ -388,7 +384,7 @@ void *memalign_alloc(size_t alignment, size_t size)
 #endif /*HAVE_POSIX_MEMALIGN*/
 
 /******************************************************************************
- **函数名称: xdo_shm_creat
+ **函数名称: shm_creat
  **功    能: 创建共享内存
  **输入参数: 
  **     key: 共享内存KEY
@@ -399,7 +395,7 @@ void *memalign_alloc(size_t alignment, size_t size)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.08 #
  ******************************************************************************/
-void *xdo_shm_creat(int key, size_t size)
+void *shm_creat(int key, size_t size)
 {
     int shmid;
     void *addr;
@@ -438,16 +434,16 @@ void *xdo_shm_creat(int key, size_t size)
  **函数名称: System
  **功    能: 执行系统命令
  **输入参数: 
- **     cmd: shell命令
+ **     cmd: Shell命令
  **输出参数: NONE
- **返    回: 0:success !0:failed
+ **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
- **作    者: # Qifeng.zou # 2013.11.06 #
+ **作    者: # Qifeng.zou # 2014.09.25 #
  ******************************************************************************/
 int System(const char *cmd)
 { 
-    int status = -1;
+    int status;
     
     status = system(cmd);
     if(-1 == status)

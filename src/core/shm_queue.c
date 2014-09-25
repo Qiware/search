@@ -44,7 +44,7 @@ shm_queue_t *shm_queue_creat(int key, int max, int size)
     shm_size += ((max * size)/getpagesize() + 1) * getpagesize();
     
     /* 2. 创建共享内存 */
-    addr = xdo_shm_creat(key, shm_size);
+    addr = shm_creat(key, shm_size);
     if (NULL == addr)
     {
         return NULL;

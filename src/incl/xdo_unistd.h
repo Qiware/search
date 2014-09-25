@@ -35,14 +35,13 @@ int Open(const char *fpath, int flags, mode_t mode);
 #define fClose(fp) {fclose(fp), fp = NULL;}
 #define Free(p) {free(p), p=NULL; }
 
-int Sleep(int seconds);
+void Sleep(int sec);
 int Mkdir(const char *dir, mode_t mode);
 int Mkdir2(const char *fname, mode_t mode);
 
 int Random(void);
 
 int proc_is_exist(pid_t pid);
-int creat_thread(pthread_t *tid, void *(*process)(void *args), void *args);
 
 #if defined(HAVE_POSIX_MEMALIGN)
 void *memalign_alloc(size_t alignment, size_t size);
@@ -52,5 +51,7 @@ void *memalign_alloc(size_t alignment, size_t size);
 #define memalign_alloc(alignment, size) malloc(size)
 #endif
 
-void *xdo_shm_creat(int key, size_t size);
+#define THREAD_ATTR_STACK_SIZE   (0x800000) /* 线程栈SIZE */
+int thread_creat(pthread_t *tid, void *(*process)(void *args), void *args);
+void *shm_creat(int key, size_t size);
 #endif /*__XDO_UNISTD_H__*/
