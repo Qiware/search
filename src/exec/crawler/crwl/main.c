@@ -96,11 +96,19 @@ int main(int argc, char *argv[])
         goto ERROR;
     }
 
-    /* 3. 启动爬虫服务 */
-    ctx = crwl_worker_startup(&conf, log);
+    /* 4. 初始化爬虫信息 */
+    ctx = crwl_worker_init_cntx(&conf, log);
     if (NULL == ctx)
     {
         log2_error("Start crawler server failed!");
+        goto ERROR;
+    }
+
+    /* 5. 启动爬虫服务 */
+    ret = crwl_worker_startup(ctx);
+    if (CRWL_OK != ret)
+    {
+        log2_error("Startup crawler server failed!");
         goto ERROR;
     }
 

@@ -1,11 +1,18 @@
 #if !defined(__QUEUE_H__)
 #define __QUEUE_H__
 
+/* 队列配置 */
+typedef struct
+{
+    size_t count;   /* 单元数 */
+    size_t size;    /* 单元SIZE */
+} queue_conf_t;
+
 /* 循环队列结点 */
 typedef struct _Qnode_t
 {
     struct _Qnode_t *next;
-    void *args;
+    void *data;
 } Qnode_t;
 
 /* 循环队列 */
@@ -20,8 +27,8 @@ typedef struct
     Qnode_t *tail;  /* 队列尾 */
 } Queue_t;
 
-extern int queue_init(Queue_t *q, int max, int size);
-extern int queue_push(Queue_t *q, void *addr, int size);
-extern void* queue_pop(Queue_t *q);
-extern void queue_destroy(Queue_t *q);
+int queue_init(Queue_t *q, int max, int size);
+int queue_push(Queue_t *q, void *addr, int size);
+void* queue_pop(Queue_t *q);
+void queue_destroy(Queue_t *q);
 #endif /*__QUEUE_H__*/

@@ -123,7 +123,7 @@ int tcp_connect(const char *ipaddr, int port)
 
 /******************************************************************************
  **函数名称: tcp_connect_ex
- **功    能: 连接指定服务器
+ **功    能: 连接指定服务器(超时返回)
  **输入参数: 
  **     ipaddr: IP地址
  **     port: 端口号
@@ -135,7 +135,7 @@ int tcp_connect(const char *ipaddr, int port)
  **     2. 连接指定服务器
  **     3. 设置套接字属性(非阻塞)
  **注意事项: 
- **作    者: # Menglai.Wang # 2014.09.25 #
+ **作    者: # Qifeng.zou & Menglai.Wang # 2014.09.25 #
  ******************************************************************************/
 int tcp_connect_ex(const char *ipaddr, int port, int sec)
 {

@@ -29,7 +29,7 @@
 int queue_init(Queue_t *q, int max, int size)
 {
     int idx;
-    void *args;
+    void *data;
     Qnode_t *node;
     
     memset(q, 0, sizeof(Queue_t));
@@ -41,8 +41,8 @@ int queue_init(Queue_t *q, int max, int size)
         return -1;
     }
 
-    args = (void *)calloc(max, size*sizeof(char));
-    if (NULL == args)
+    data = (void *)calloc(max, size*sizeof(char));
+    if (NULL == data)
     {
         free(q->base), q->base = NULL;
         return -1;
@@ -53,11 +53,11 @@ int queue_init(Queue_t *q, int max, int size)
     for (idx=0; idx<max-1; ++idx, ++node)
     {
         node->next = node + 1;
-        node->args = args + idx*size;
+        node->data = data + idx*size;
     }
     
     node->next = q->base;
-    node->args = args + idx*size;
+    node->data = data + idx*size;
     q->head = q->tail = q->base;
     q->max = max;
     q->size = size;
@@ -92,7 +92,7 @@ int queue_push(Queue_t *q, void *addr, int size)
     }
 
     /* 2. Check valid attribute */
-    memcpy(node->args, addr, size);
+    memcpy(node->data, addr, size);
 
     q->tail = q->tail->next;
     ++q->num;
@@ -113,16 +113,16 @@ int queue_push(Queue_t *q, void *addr, int size)
  ******************************************************************************/
 void *queue_pop(Queue_t *q)
 {
-    void *args = NULL;
+    void *data;
 
     if (0 == q->num)
     {
         return NULL;
     }
 
-    args = q->head->args;
+    data = q->head->data;
     q->head = q->head->next;
     --q->num;
 
-    return args;
+    return data;
 }

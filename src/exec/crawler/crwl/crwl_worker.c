@@ -22,6 +22,8 @@ static void *crwl_worker_routine(void *_ctx);
 int crwl_worker_add_sck(crwl_worker_t *worker, crwl_worker_sck_t *sck);
 static int crwl_worker_remove_sck(crwl_worker_t *worker, crwl_worker_sck_t *sck);
 
+static int crwl_worker_task_handler(crwl_worker_t *worker, crwl_task_header_t *h);
+
 /******************************************************************************
  **函数名称: crwl_worker_load_conf
  **功    能: 加载爬虫配置信息
@@ -34,6 +36,7 @@ static int crwl_worker_remove_sck(crwl_worker_t *worker, crwl_worker_sck_t *sck)
  **     1. 加载爬虫配置
  **     2. 提取配置信息
  **注意事项: 
+ **     在此需要验证参数的合法性!
  **作    者: # Qifeng.zou # 2014.09.04 #
  ******************************************************************************/
 int crwl_worker_load_conf(crwl_worker_conf_t *conf, const char *path, log_cycle_t *log)
@@ -139,24 +142,43 @@ static int crwl_worker_parse_conf(
         conf->load_web_page_num = CRWL_WRK_LOAD_WEB_PAGE_NUM;
     }
 
+    /* 6. 任务队列配置(相对查找) */
+    node = xml_rsearch(xml, curr, "TASK_QUEUE.COUNT");
+    if (NULL == node)
+    {
+        log_error(log, "Didn't configure count of task queue unit!");
+        return CRWL_ERR;
+    }
+
+    conf->task_queue.count = atoi(node->value);
+
+    node = xml_rsearch(xml, curr, "TASK_QUEUE.SIZE");
+    if (NULL == node)
+    {
+        log_error(log, "Didn't configure size of task queue unit!");
+        return CRWL_ERR;
+    }
+
+    conf->task_queue.size = atoi(node->value);
+
     return CRWL_OK;
 }
 
 /******************************************************************************
- **函数名称: crwl_worker_startup
- **功    能: 启动爬虫服务
+ **函数名称: crwl_worker_init_cntx
+ **功    能: 初始化全局信息
  **输入参数: 
  **     conf: 配置信息
  **     log: 日志对象
  **输出参数: NONE
- **返    回: 0:成功 !0:失败
+ **返    回: 全局对象
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.04 #
  ******************************************************************************/
-crwl_worker_ctx_t *crwl_worker_startup(crwl_worker_conf_t *conf, log_cycle_t *log)
+crwl_worker_ctx_t *crwl_worker_init_cntx(crwl_worker_conf_t *conf, log_cycle_t *log)
 {
-    int idx;
+    int ret;
     crwl_worker_ctx_t *ctx;
 
     /* 1. 创建爬虫对象 */
@@ -171,7 +193,18 @@ crwl_worker_ctx_t *crwl_worker_startup(crwl_worker_conf_t *conf, log_cycle_t *lo
 
     memcpy(&ctx->conf, conf, sizeof(crwl_worker_conf_t));
 
-    /* 2. 初始化线程池 */
+    /* 2. 创建任务队列 */
+    pthread_rwlock_init(&ctx->task.lock, NULL);
+
+    ret = queue_init(&ctx->task.queue,
+            conf->task_queue.count, conf->task_queue.size);
+    if (0 != ret)
+    {
+        free(ctx);
+        return NULL;
+    }
+
+    /* 3. 初始化线程池 */
     ctx->tpool = thread_pool_init(conf->thread_num);
     if (NULL == ctx->tpool)
     {
@@ -180,13 +213,32 @@ crwl_worker_ctx_t *crwl_worker_startup(crwl_worker_conf_t *conf, log_cycle_t *lo
         return NULL;
     }
 
-    /* 3. 初始化线程池 */
+    return ctx;
+}
+
+/******************************************************************************
+ **函数名称: crwl_worker_startup
+ **功    能: 启动爬虫服务
+ **输入参数: 
+ **     ctx: 全局信息
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.09.04 #
+ ******************************************************************************/
+int crwl_worker_startup(crwl_worker_ctx_t *ctx)
+{
+    int idx;
+    crwl_worker_conf_t *conf = &ctx->conf;
+
+    /* 1. 设置线程回调 */
     for (idx=0; idx<conf->thread_num; ++idx)
     {
         thread_pool_add_worker(ctx->tpool, crwl_worker_routine, ctx);
     }
     
-    return ctx;
+    return CRWL_OK;
 }
 
 /******************************************************************************
@@ -243,6 +295,47 @@ static int crwl_worker_destroy(crwl_worker_t *worker)
     eslab_destroy(&worker->slab);
     free(worker);
     return CRWL_OK;
+}
+
+/******************************************************************************
+ **函数名称: crwl_worker_get_task
+ **功    能: 获取工作任务
+ **输入参数: 
+ **     worker: 爬虫对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.09.25 #
+ ******************************************************************************/
+static int crwl_worker_get_task(crwl_worker_ctx_t *ctx, crwl_worker_t *worker)
+{
+    void *data;
+    crwl_task_header_t *h;
+
+    /* 1. 判断是否应该取任务 */
+    if (0 == ctx->task.queue.num
+        || worker->sck_list.num >= ctx->conf.load_web_page_num)
+    {
+        return CRWL_OK;
+    }
+
+    /* 2. 从任务队列取数据 */
+    pthread_rwlock_wrlock(&ctx->task.lock);
+
+    data = queue_pop(&ctx->task.queue);
+    if (NULL == data)
+    {
+        pthread_rwlock_unlock(&ctx->task.lock);
+        return CRWL_OK;
+    }
+
+    pthread_rwlock_unlock(&ctx->task.lock);
+
+    /* 3. 连接远程Web服务器 */
+    h = (crwl_task_header_t *)data;
+
+    return crwl_worker_task_handler(worker, h);
 }
 
 /******************************************************************************
@@ -345,8 +438,7 @@ static int crwl_worker_trav_recv(crwl_worker_t *worker)
         n = Readn(sck->sckid, sck->read.addr + sck->read.off, left);
         if (n < 0)
         {
-            if ((EINTR == errno)
-                    || (EWOULDBLOCK == errno))
+            if (EINTR == errno)
             {
                 continue;
             }
@@ -512,6 +604,22 @@ static int crwl_worker_trav_send(crwl_worker_t *worker)
 }
 
 /******************************************************************************
+ **函数名称: crwl_worker_timeout_hdl
+ **功    能: 爬虫的超时处理
+ **输入参数: 
+ **     worker: 爬虫对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.09.25 #
+ ******************************************************************************/
+static int crwl_worker_timeout_hdl(crwl_worker_t *worker)
+{
+    return CRWL_OK;
+}
+
+/******************************************************************************
  **函数名称: crwl_worker_event_hdl
  **功    能: 爬虫的事件处理
  **输入参数: 
@@ -574,12 +682,16 @@ static void *crwl_worker_routine(void *_ctx)
     if (NULL == worker)
     {
         log_error(ctx->log, "Initialize worker failed!");
+        pthread_exit((void *)-1);
         return (void *)-1;
     }
 
     while (1)
     {
-        /* 2. 设置读写集合 */
+        /* 2. 获取爬虫任务 */
+        crwl_worker_get_task(ctx, worker);
+
+        /* 1. 设置读写集合 */
         FD_ZERO(&worker->rdset);
         FD_ZERO(&worker->wrset);
 
@@ -595,8 +707,7 @@ static void *crwl_worker_routine(void *_ctx)
         ret = select(max+1, &worker->rdset, &worker->wrset, NULL, &tv);
         if (ret < 0)
         {
-            if ((EINTR == errno)
-                || (EWOULDBLOCK == errno))
+            if (EINTR == errno)
             {
                 continue;
             }
@@ -604,10 +715,12 @@ static void *crwl_worker_routine(void *_ctx)
             log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
 
             crwl_worker_destroy(worker);
+            pthread_exit((void *)-1);
             return (void *)-1;
         }
         else if (0 == ret)
         {
+            crwl_worker_timeout_hdl(worker);
             continue;
         }
 
@@ -616,6 +729,7 @@ static void *crwl_worker_routine(void *_ctx)
     }
 
     crwl_worker_destroy(worker);
+    pthread_exit((void *)-1);
     return (void *)-1;
 }
 
@@ -694,5 +808,34 @@ static int crwl_worker_remove_sck(crwl_worker_t *worker, crwl_worker_sck_t *sck)
 
     eslab_free(&worker->slab, sck);
 
+    return CRWL_OK;
+}
+
+/******************************************************************************
+ **函数名称: crwl_worker_task_handler
+ **功    能: 爬虫任务的处理
+ **输入参数: 
+ **     worker: 爬虫对象 
+ **     head: 任务头部
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.09.25 #
+ ******************************************************************************/
+static int crwl_worker_task_handler(crwl_worker_t *worker, crwl_task_header_t *h)
+{
+    switch (h->type)
+    {
+        case CRWL_TASK_LOAD_PAGE:       /* 加载网页的任务 */
+        {
+            return CRWL_OK;
+        }
+        case CRWL_TASK_TYPE_UNKNOWN:    /* 未知任务 */
+        default:
+        {
+            return CRWL_OK;
+        }
+    }
     return CRWL_OK;
 }

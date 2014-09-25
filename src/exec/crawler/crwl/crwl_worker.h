@@ -1,21 +1,29 @@
 #if !defined(__CRWL_WORKER_H__)
 #define __CRWL_WORKER_H__
 
+#include <stdint.h>
+
 #include "log.h"
 #include "slab.h"
 #include "list.h"
+#include "queue.h"
+#include "common.h"
 #include "crawler.h"
+#include "crwl_task.h"
 #include "thread_pool.h"
 
 /* 宏定义 */
-#define CRWL_WRK_TV_SEC          (02)       /* 超时(秒) */
-#define CRWL_WRK_TV_USEC         (00)       /* 超时(微妙) */
-#define CRWL_WRK_DEF_THD_NUM     (1)        /* 爬虫默认线程数 */
-#define CRWL_WRK_SLAB_SIZE       (16 * KB)  /* 爬虫SLAB内存池大小 */
-#define CRWL_WRK_BUFF_SIZE       (16 * KB)  /* 接收SIZE */
-#define CRWL_WRK_READ_SIZE       (12 * KB)  /* 读取SIZE */
-#define CRWL_WRK_SYNC_SIZE       (12 * KB)  /* 同步SIZE */
-#define CRWL_WRK_LOAD_WEB_PAGE_NUM (1)      /* 默认同时下载的网页数 */
+#define CRWL_WRK_TV_SEC             (02)        /* 超时(秒) */
+#define CRWL_WRK_TV_USEC            (00)        /* 超时(微妙) */
+#define CRWL_WRK_DEF_THD_NUM        (1)         /* 爬虫默认线程数 */
+#define CRWL_WRK_SLAB_SIZE          (16 * KB)   /* 爬虫SLAB内存池大小 */
+#define CRWL_WRK_BUFF_SIZE          (16 * KB)   /* 接收SIZE */
+#define CRWL_WRK_READ_SIZE          (12 * KB)   /* 读取SIZE */
+#define CRWL_WRK_SYNC_SIZE          (12 * KB)   /* 同步SIZE */
+#define CRWL_WRK_LOAD_WEB_PAGE_NUM  (1)         /* 默认同时下载的网页数 */
+
+#define CRWL_TASK_QUEUE_MAX_NUM     (10000)     /* 任务队列单元数 */
+#define CRWL_TASK_QUEUE_MAX_SIZE    (4 * KB)    /* 任务队列单元SIZE */
 
 /* 爬虫配置信息 */
 typedef struct
@@ -24,6 +32,7 @@ typedef struct
     char svrip[IP_ADDR_MAX_LEN];            /* 任务分发服务IP */
     int port;                               /* 任务分发服务端口 */
     int load_web_page_num;                  /* 同时加载网页的数目 */
+    queue_conf_t task_queue;                /* 任务队列配置 */
 } crwl_worker_conf_t;
 
 /* 网页加载套接字信息 */
@@ -57,15 +66,18 @@ typedef struct
                                                结点数据指针指向crwl_worker_sck_t */
 } crwl_worker_t;
 
-/* 爬虫上下文 */
+/* 爬虫全局信息 */
 typedef struct
 {
     crwl_worker_conf_t conf;                /* 配置信息 */
     thread_pool_t *tpool;                   /* 线程池对象 */
     log_cycle_t *log;                       /* 日志对象 */
+
+    crwl_task_t task;                       /* 任务对象 */
 } crwl_worker_ctx_t;
 
 int crwl_worker_load_conf(crwl_worker_conf_t *conf, const char *path, log_cycle_t *log);
-crwl_worker_ctx_t *crwl_worker_startup(crwl_worker_conf_t *conf, log_cycle_t *log);
+crwl_worker_ctx_t *crwl_worker_init_cntx(crwl_worker_conf_t *conf, log_cycle_t *log);
+int crwl_worker_startup(crwl_worker_ctx_t *ctx);
 
 #endif /*__CRWL_WORKER_H__*/
