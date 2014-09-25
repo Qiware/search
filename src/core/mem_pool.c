@@ -13,8 +13,8 @@
 #include <memory.h>
 #include <string.h>
 
+#include "syscall.h"
 #include "mem_pool.h"
-#include "xdo_unistd.h"
 
 static void *mem_pool_alloc_block(mem_pool_t *pool, size_t size);
 static void *mem_pool_alloc_large(mem_pool_t *pool, size_t size);

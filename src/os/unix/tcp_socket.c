@@ -14,8 +14,8 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
+#include "syscall.h"
 #include "xdo_socket.h"
-#include "xdo_unistd.h"
 
 /******************************************************************************
  **函数名称: tcp_listen

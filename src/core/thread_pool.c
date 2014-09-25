@@ -21,7 +21,6 @@
 
 #include "thread_pool.h"
 
-static int thread_create_detach(thread_pool_t *tp, int idx);
 static void *thread_routine(void *arg);
 
 /******************************************************************************
@@ -72,7 +71,8 @@ thread_pool_t *thread_pool_init(int num)
     /* 2. 创建指定数目的线程 */
     for (idx=0; idx<num; idx++)
     {
-        ret = thread_create_detach(tp, idx);
+        
+        ret = thread_creat(&tp->tid[idx], thread_routine, tp);
         if (0 != ret)
         {
             thread_pool_destroy(tp);
@@ -164,7 +164,7 @@ int thread_pool_keepalive(thread_pool_t *tp)
         ret = pthread_kill(tp->tid[idx], 0);
         if (ESRCH == ret)
         {
-            ret = thread_create_detach(tp, idx);
+            ret = thread_creat(&tp->tid[idx], thread_routine, tp);
             if (ret < 0)
             {
                 return -1;
@@ -197,7 +197,7 @@ int thread_pool_keepalive_ext(thread_pool_t *tp, void *(*process)(void *arg), vo
         ret = pthread_kill(tp->tid[idx], 0);
         if (ESRCH == ret)
         {
-            ret = thread_create_detach(tp, idx);
+            ret = thread_creat(&tp->tid[idx], thread_routine, tp);
             if (ret < 0)
             {
                 return -1;
@@ -342,67 +342,6 @@ int thread_pool_destroy_ext(
 }
 
 /******************************************************************************
- ** Name : thread_create_detach
- ** Desc : Create detach thread
- ** Input: 
- **     tp: Thread pool
- **     idx: The index of thead
- ** Output: NONE
- ** Return: 0: success !0: failed
- ** Process:
- ** Note :
- **     1. Init thread attribute
- **     2. Set thread attribute
- **     3. Create thread
- **     4. Destroy thread attribute
- ** Author: # Qifeng.zou # 2014.05.10 #
- ******************************************************************************/
-static int thread_create_detach(thread_pool_t *tp, int idx)
-{
-    int ret;
-    pthread_attr_t attr;
-
-    do
-    {
-        ret = pthread_attr_init(&attr);
-        if (0 != ret)
-        {
-            break;
-        }
-        
-        ret = pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-        if (0 != ret)
-        {
-            break;
-        }
-        
-        ret = pthread_attr_setstacksize(&attr, 0x800000);
-        if (ret < 0)
-        {
-            break;
-        }
-        
-        ret = pthread_create(&(tp->tid[idx]), &attr, thread_routine, tp);
-        if (0 != ret)
-        {
-            if (EINTR == errno)
-            {
-                pthread_attr_destroy(&attr);
-                continue;
-            }
-            
-            break;
-        }
-
-        pthread_attr_destroy(&attr);
-        return 0;
-    }while (1);
-
-    pthread_attr_destroy(&attr);
-    return -1;
-}
-
-/******************************************************************************
  ** Name : thread_routine
  ** Desc : The entry of routine
  ** Input: 
@@ -444,4 +383,57 @@ static void *thread_routine(void *arg)
         eslab_free(&tp->eslab, worker);
         pthread_mutex_unlock(&(tp->queue_lock));
     }
+}
+
+/******************************************************************************
+ **函数名称: thread_creat
+ **功    能: 创建线程
+ **输入参数:
+ **     process: 线程回调函数
+ **     args: 回调函数参数
+ **输出参数:
+ **     tid: 线程ID
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.04.18 #
+ ******************************************************************************/
+int thread_creat(pthread_t *tid, void *(*process)(void *args), void *args)
+{
+    int ret;
+    pthread_attr_t attr;
+
+    for (;;)
+    {
+        ret = pthread_attr_init(&attr);
+        if (0 != ret)
+        {
+            break;
+        }
+
+        ret = pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+        if (0 != ret)
+        {
+            break;
+        }
+
+        ret = pthread_attr_setstacksize(&attr, THREAD_ATTR_STACK_SIZE);
+
+        ret = pthread_create(tid, &attr, process, args);
+        if (0 != ret)
+        {
+            if (EINTR == errno)
+            {
+                pthread_attr_destroy(&attr);
+                continue;
+            }
+
+            break;
+        }
+
+        break;
+    }
+
+    pthread_attr_destroy(&attr);
+    return ret;
 }

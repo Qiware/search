@@ -1,7 +1,7 @@
 #include <sys/shm.h>
 #include <sys/ipc.h>
 
-#include "xdo_unistd.h"
+#include "syscall.h"
 
 /******************************************************************************
  **函数名称: Open
@@ -276,59 +276,6 @@ int proc_is_exist(pid_t pid)
 	snprintf(fname, sizeof(fname), "/proc/%d", pid);
 
     return (0 == access(fname, 0));
-}
-
-/******************************************************************************
- **函数名称: thread_creat
- **功    能: 创建线程
- **输入参数:
- **     process: 线程回调函数
- **     args: 回调函数参数
- **输出参数:
- **     tid: 线程ID
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.04.18 #
- ******************************************************************************/
-int thread_creat(pthread_t *tid, void *(*process)(void *args), void *args)
-{
-    int ret;
-    pthread_attr_t attr;
-
-    for (;;)
-    {
-        ret = pthread_attr_init(&attr);
-        if (0 != ret)
-        {
-            break;
-        }
-
-        ret = pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-        if (0 != ret)
-        {
-            break;
-        }
-
-        ret = pthread_attr_setstacksize(&attr, THREAD_ATTR_STACK_SIZE);
-
-        ret = pthread_create(tid, &attr, process, args);
-        if (0 != ret)
-        {
-            if (EINTR == errno)
-            {
-                pthread_attr_destroy(&attr);
-                continue;
-            }
-
-            break;
-        }
-
-        break;
-    }
-
-    pthread_attr_destroy(&attr);
-    return ret;
 }
 
 /******************************************************************************

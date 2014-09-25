@@ -15,7 +15,7 @@
 #include "lock.h"
 #include "common.h"
 #include "log_svr.h"
-#include "xdo_unistd.h"
+#include "syscall.h"
 #include "thread_pool.h"
 
 #define LOG_SVR_LOG2_LEVEL  "trace"

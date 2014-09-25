@@ -13,7 +13,7 @@ LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lpthread
 
 SRC_LIST = 	lock.c \
-			xdo_unistd.c \
+			syscall.c \
 			tcp_socket.c \
 			unix_socket.c
 

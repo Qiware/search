@@ -13,7 +13,7 @@
 
 #include "shm_slab.h"
 #include "shm_queue.h"
-#include "xdo_unistd.h"
+#include "syscall.h"
 
 /******************************************************************************
  **函数名称: shm_queue_creat

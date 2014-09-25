@@ -11,7 +11,7 @@
 #include "common.h"
 #include "crawler.h"
 #include "xml_tree.h"
-#include "xdo_unistd.h"
+#include "syscall.h"
 #include "thread_pool.h"
 #include "crwl_worker.h"
 

@@ -51,7 +51,5 @@ void *memalign_alloc(size_t alignment, size_t size);
 #define memalign_alloc(alignment, size) malloc(size)
 #endif
 
-#define THREAD_ATTR_STACK_SIZE   (0x800000) /* 线程栈SIZE */
-int thread_creat(pthread_t *tid, void *(*process)(void *args), void *args);
 void *shm_creat(int key, size_t size);
 #endif /*__XDO_UNISTD_H__*/

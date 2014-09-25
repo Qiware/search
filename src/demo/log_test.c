@@ -4,7 +4,7 @@
 #include <unistd.h>
 
 #include "log.h"
-#include "xdo_unistd.h"
+#include "syscall.h"
 
 int main(int argc, char *argv[])
 {

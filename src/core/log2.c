@@ -10,7 +10,7 @@
 
 #include "log.h"
 #include "common.h"
-#include "xdo_unistd.h"
+#include "syscall.h"
 
 #if defined(__XDO_DEBUG__)
 log2_cycle_t g_log2 = {NULL, 0xFFFFFFFF, -1};

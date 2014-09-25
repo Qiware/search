@@ -14,7 +14,7 @@
 #include "lock.h"
 #include "hash.h"
 #include "common.h"
-#include "xdo_unistd.h"
+#include "syscall.h"
 
 /* 共享内存 */
 static void *g_log_shm_addr = (void *)-1;  /* 共享内存地址 */
