@@ -9,11 +9,24 @@
  **输入参数: 
  **     fname: 文件名
  **     flags: 打开标志
+ **         O_RDONLY: 只读
+ **         O_WRONLY: 只写
+ **         O_RDWR: 可读可写
+ **         O_APPEND: 追加方式(使用了此标识，则函数lseek()将失效)
+ **         O_CREAT: 创建文件(如果已存在，则无任何效果)
+ **         O_EXCL: 配合O_CREAT一起使用，如果文件已存在，将返回错误.
+ **         O_DSYNC: 每次写入操作需要等待物理IO返回成功, 但不等待文件属性被更新
+ **         O_SYNC: 每次写入操作需要等待物理IO返回成功, 且需等待文件属性被更新
+ **         O_NONBLOCK: 非阻塞方式(详细信息请参考文档)
+ **         O_TRUNC: 截断文件(文件存在，且为普通文件，并且使用了O_RDWR或O_WRONLY)
+ **         ...: 其他请参考http://linux.die.net/man/3/open
  **     mode: 文件权限
  **输出参数: NONE
  **返    回: 文件描述符
  **实现描述: 
+ **     http://linux.die.net/man/3/open
  **注意事项: 
+ **     示例: fd = Open("./abc/t.data", O_CREAT|O_APPEND, 0666);
  **作    者: # Qifeng.zou # 2014.04.18 #
  ******************************************************************************/
 int Open(const char *fname, int flags, mode_t mode)
