@@ -44,14 +44,11 @@ TARGET = libxdocore.so
 all: $(TARGET)
 $(TARGET): $(OBJS)
 	$(CC) $(LFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS)
-	@echo "CC $(LFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS)" 1>&2
 	mv $@ $(PROJ_LIB)
-	rm -f $(OBJS)
 	@echo "$@ is OK!"
 
 $(OBJS): %.o : %.c
 	$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
-	@echo "CC $(PWD)/$<" 1>&2
 
 clean:
 	rm -fr $(OBJS) $(PROJ_LIB)/$(TARGET)

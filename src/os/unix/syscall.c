@@ -189,7 +189,14 @@ int Random(void)
  **实现描述: 
  **     1. 判断目录是否存在
  **     2. 递归创建目录结构
- **注意事项: 
+ **扩展知识: 
+ **     S_ISLNK(st_mode): 是否是连接
+ **     S_ISREG(st_mode): 是否是常规文件
+ **     S_ISDIR(st_mode): 是否是目录
+ **     S_ISCHR(st_mode): 是否是字符设备
+ **     S_ISBLK(st_mode): 是否是块设备
+ **     S_ISFIFO(st_mode): 是否是FIFO文件
+ **     S_ISSOCK(st_mode): 是否是SOCKET文件
  **作    者: # Qifeng.zou # 2014.04.18 #
  ******************************************************************************/
 int Mkdir(const char *dir, mode_t mode)
