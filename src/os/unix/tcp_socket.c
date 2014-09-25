@@ -54,7 +54,7 @@ int tcp_listen(int port)
     ret = bind(fd, (struct sockaddr *)&svraddr, sizeof(svraddr));
     if (ret < 0)
     {
-        Close(fd);
+        close(fd);
         return -1;
     }
 
@@ -62,7 +62,7 @@ int tcp_listen(int port)
     ret = listen(fd, 20);
     if (ret < 0)
     {
-        Close(fd);
+        close(fd);
         return -1;
     }
 
@@ -112,11 +112,92 @@ int tcp_connect(const char *ipaddr, int port)
     ret = connect(fd, (struct sockaddr *)&svraddr, sizeof(svraddr));
     if (0 != ret)
     {
-        Close(fd);
+        close(fd);
         return -1;
     }
 
     fd_set_nonblocking(fd);
+
+    return fd;
+}
+
+/******************************************************************************
+ **函数名称: tcp_connect_ex
+ **功    能: 连接指定服务器
+ **输入参数: 
+ **     ipaddr: IP地址
+ **     port: 端口号
+ **     sec: 超时时间
+ **输出参数: NONE
+ **返    回: 套接字ID
+ **实现描述: 
+ **     1. 创建套接字
+ **     2. 连接指定服务器
+ **     3. 设置套接字属性(非阻塞)
+ **注意事项: 
+ **作    者: # Menglai.Wang # 2014.09.25 #
+ ******************************************************************************/
+int tcp_connect_ex(const char *ipaddr, int port, int sec)
+{
+    int ret, fd;
+    fd_set rdset, wrset;
+    struct timeval tv;
+    struct sockaddr_in svraddr;
+
+    /* 1. 创建套接字 */
+    fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (fd < 0)
+    {
+        return -1;
+    }
+
+    fd_set_nonblocking(fd);
+
+    /* 2. 连接远程服务器 */
+    bzero(&svraddr, sizeof(svraddr));
+
+    svraddr.sin_family = AF_INET;
+    inet_pton(AF_INET, ipaddr, &svraddr.sin_addr);
+    svraddr.sin_port = htons(port);
+
+    ret = connect(fd, (struct sockaddr *)&svraddr, sizeof(svraddr));
+    if (0 == ret)
+    {
+        return fd;
+    }
+
+    if (EINPROGRESS != errno)
+    {
+        close(fd);
+        return -1;
+    }
+
+    /* 3. 判断是否超时 */
+AGAIN:
+    FD_ZERO(&rdset);
+    FD_ZERO(&wrset);
+
+    FD_SET(fd, &rdset);
+    FD_SET(fd, &wrset);
+
+    tv.tv_sec = sec;
+    tv.tv_usec = 0;
+    ret = select(fd+1, &rdset, &wrset, NULL, &tv);
+    if (ret < 0)
+    {
+        if (EINTR == errno)
+        {
+            goto AGAIN;
+        }
+
+        close(fd);
+        return -1;
+    }
+    else if (0 == ret)
+    {
+        close(fd);
+        return -1;
+    }
     
     return fd;
 }

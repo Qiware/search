@@ -24,6 +24,8 @@ DIR += "src/exec/crawler/crwl"
 DIR += "src/exec/logsvr"
 
 DIR += "src/demo"
+DIR += "src/demo/log"
+DIR += "src/demo/tcp"
 DIR += "src/demo/html"
 DIR += "src/demo/list"
 export DIR
