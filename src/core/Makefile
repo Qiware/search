@@ -12,10 +12,10 @@ INCLUDE = -I. -I$(PROJ)/src/incl
 LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lpthread
 
-SRC_LIST = list.c \
+SRC_LIST = hash.c \
 			log.c \
 			log2.c \
-			hash.c \
+			list.c \
 			list2.c \
 			queue.c \
 			sha256.c \
@@ -44,12 +44,14 @@ TARGET = libxdocore.so
 all: $(TARGET)
 $(TARGET): $(OBJS)
 	$(CC) $(LFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS)
+	@echo "CC $(LFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS)" 1>&2
 	mv $@ $(PROJ_LIB)
 	rm -f $(OBJS)
 	@echo "$@ is OK!"
 
 $(OBJS): %.o : %.c
 	$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
+	@echo "CC $(PWD)/$<" 1>&2
 
 clean:
 	rm -fr $(OBJS) $(PROJ_LIB)/$(TARGET)

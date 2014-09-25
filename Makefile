@@ -43,7 +43,7 @@ all:
 		if [ -e $${SUBDIR}/Makefile ]; then \
 			echo cd $${SUBDIR}; \
 			cd $${SUBDIR}; \
-			make; \
+			make 1>/dev/null; \
 			cd ${PROJ}; \
 		fi \
 	done

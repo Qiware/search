@@ -23,12 +23,14 @@ TARGET = list
 all: $(TARGET)
 $(TARGET): $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS)
+	@echo "CC $(CFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS)" 1>&2
 	mv $@ $(PROJ_BIN)
 	rm -f $(OBJS)
 	@echo "$@ is OK!"
 
 $(OBJS): %.o : %.c
 	$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
+	@echo "CC $(PWD)/$<" 1>&2
 
 clean:
 	rm -fr $(OBJS) $(PROJ_BIN)/$(TARGET)
