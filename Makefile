@@ -20,7 +20,8 @@ export PROJ_LIB = ${PROJ}/lib
 DIR := "src/os/unix"
 DIR += "src/core"
 
-DIR += "src/exec/crawler/crwl"
+DIR += "src/exec/crawler/work"
+DIR += "src/exec/crawler/ctrl"
 DIR += "src/exec/logsvr"
 
 DIR += "src/demo"

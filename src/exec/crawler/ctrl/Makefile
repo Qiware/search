@@ -14,12 +14,11 @@ INCLUDE = -I. \
 LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lpthread -lxdocore -lxdounix
 
-SRC_LIST = main.c \
-			crwl_worker.c
+SRC_LIST = crwl_ctrl.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
 
-TARGET = crwl_worker
+TARGET = crwl_ctrl
 
 .PHONY: all clean
 

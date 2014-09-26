@@ -9,8 +9,8 @@
 #include "queue.h"
 #include "common.h"
 #include "crawler.h"
-#include "crwl_task.h"
 #include "thread_pool.h"
+#include "crwl_worker_task.h"
 
 /* 宏定义 */
 #define CRWL_WRK_TV_SEC             (02)        /* 超时(秒) */
@@ -21,6 +21,8 @@
 #define CRWL_WRK_READ_SIZE          (12 * KB)   /* 读取SIZE */
 #define CRWL_WRK_SYNC_SIZE          (12 * KB)   /* 同步SIZE */
 #define CRWL_WRK_LOAD_WEB_PAGE_NUM  (1)         /* 默认同时下载的网页数 */
+#define CRWL_WRK_CONNECT_TMOUT      (30)        /* 连接超时时间 */
+#define CRWL_WRK_WEB_SVR_PORT       (80)        /* WEB服务器侦听端口 */
 
 #define CRWL_TASK_QUEUE_MAX_NUM     (10000)     /* 任务队列单元数 */
 #define CRWL_TASK_QUEUE_MAX_SIZE    (4 * KB)    /* 任务队列单元SIZE */
@@ -73,8 +75,11 @@ typedef struct
     thread_pool_t *tpool;                   /* 线程池对象 */
     log_cycle_t *log;                       /* 日志对象 */
 
-    crwl_task_t task;                       /* 任务对象 */
+    crwl_worker_task_t task;                /* 任务对象 */
 } crwl_worker_ctx_t;
+
+int crwl_worker_add_sck(crwl_worker_t *worker, crwl_worker_sck_t *sck);
+int crwl_worker_task_load_url(crwl_worker_t *worker, const char *url);
 
 int crwl_worker_load_conf(crwl_worker_conf_t *conf, const char *path, log_cycle_t *log);
 crwl_worker_ctx_t *crwl_worker_init_cntx(crwl_worker_conf_t *conf, log_cycle_t *log);

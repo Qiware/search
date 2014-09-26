@@ -15,7 +15,7 @@ typedef int bool;
 #define FILE_NAME_MAX_LEN   (256)   /* 文件名最大长度 */
 #define FILE_LINE_MAX_LEN   (256)   /* 文件行最大长度 */
 #define FILE_PATH_MAX_LEN   (256)   /* 文件路径最大长度 */
-#define IP_ADDR_MAX_LEN     (16)    /* IP地址最大长度 */
+#define IP_ADDR_MAX_LEN     (64)    /* IP地址最大长度 */
 #define CMD_LINE_MAX_LEN    (1024)  /* 命令行最大长度 */
 #define ERR_MSG_MAX_LEN     (1024)  /* 错误信息最大长度 */
 #define URL_MAX_LEN         (4096)  /* URL最大长度 */
