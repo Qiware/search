@@ -68,6 +68,11 @@ int main(int argc, char *argv[])
         return crwl_worker_usage(argv[0]);
     }
 
+    if (opt.is_daemon)
+    {
+        daemon(1, 0);
+    }
+
     /* 2. 初始化日志模块 */
     log2_get_path(log_path, sizeof(log_path), basename(argv[0]));
 
@@ -126,7 +131,8 @@ ERROR:
  **输入参数: 
  **     argc: 参数个数
  **     argv: 参数列表
- **输出参数: NONE
+ **输出参数:
+ **     opt: 参数选项
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **     1. 解析输入参数
@@ -134,7 +140,7 @@ ERROR:
  **注意事项: 
  **     c: 配置文件路径
  **     l: 日志级别
- **     b: 后台运行
+ **     d: 后台运行
  **     h: 帮助手册
  **作    者: # Qifeng.zou # 2014.09.05 #
  ******************************************************************************/
@@ -143,12 +149,12 @@ static int crwl_worker_getopt(int argc, char **argv, crwl_worker_opt_t *opt)
     int ch;
 
     /* 1. 解析输入参数 */
-    while (-1 != (ch = getopt(argc, argv, "c:l:bh")))
+    while (-1 != (ch = getopt(argc, argv, "c:l:dh")))
     {
         switch (ch)
         {
-            case 'b':   /* 是否后台运行 */
-            case 'B':
+            case 'd':   /* 是否后台运行 */
+            case 'D':
             {
                 opt->is_daemon = true;
                 break;
@@ -204,9 +210,9 @@ static int crwl_worker_getopt(int argc, char **argv, crwl_worker_opt_t *opt)
  ******************************************************************************/
 static int crwl_worker_usage(const char *exec)
 {
-    printf("\nUsage: %s [-h] [-b] -c config_file [-l log_level]\n", exec);
+    printf("\nUsage: %s [-h] [-d] -c config_file [-l log_level]\n", exec);
     printf("\t-h\tShow help\n"
-           "\t-b\tRun as daemon\n"
+           "\t-d\tRun as daemon\n"
            "\t-l\tSet log level. [trace|debug|info|warn|error|fatal]\n"
            "\t-c\tConfiguration path\n\n");
     return CRWL_OK;
