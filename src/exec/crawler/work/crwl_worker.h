@@ -66,6 +66,7 @@ typedef struct
 
     list_t sck_list;                        /* 套接字列表
                                                结点数据指针指向crwl_worker_sck_t */
+    crwl_worker_task_t task;                /* 任务对象 */
 } crwl_worker_t;
 
 /* 爬虫全局信息 */
@@ -74,8 +75,6 @@ typedef struct
     crwl_worker_conf_t conf;                /* 配置信息 */
     thread_pool_t *tpool;                   /* 线程池对象 */
     log_cycle_t *log;                       /* 日志对象 */
-
-    crwl_worker_task_t task;                /* 任务对象 */
 } crwl_worker_ctx_t;
 
 int crwl_worker_add_sck(crwl_worker_t *worker, crwl_worker_sck_t *sck);

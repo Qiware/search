@@ -177,7 +177,6 @@ static int crwl_worker_parse_conf(
  ******************************************************************************/
 crwl_worker_ctx_t *crwl_worker_init_cntx(crwl_worker_conf_t *conf, log_cycle_t *log)
 {
-    int ret;
     crwl_worker_ctx_t *ctx;
 
     /* 1. 创建爬虫对象 */
@@ -191,17 +190,6 @@ crwl_worker_ctx_t *crwl_worker_init_cntx(crwl_worker_conf_t *conf, log_cycle_t *
     ctx->log = log;
 
     memcpy(&ctx->conf, conf, sizeof(crwl_worker_conf_t));
-
-    /* 2. 创建任务队列 */
-    pthread_rwlock_init(&ctx->task.lock, NULL);
-
-    ret = queue_init(&ctx->task.queue,
-            conf->task_queue.count, conf->task_queue.size);
-    if (0 != ret)
-    {
-        free(ctx);
-        return NULL;
-    }
 
     /* 3. 初始化线程池 */
     ctx->tpool = thread_pool_init(conf->thread_num);
@@ -255,6 +243,7 @@ static crwl_worker_t *crwl_worker_init(crwl_worker_ctx_t *ctx)
 {
     int ret;
     crwl_worker_t *worker;
+    crwl_worker_conf_t *conf = &ctx->conf;
 
     /* 1.创建爬虫对象 */
     worker = (crwl_worker_t *)calloc(1, sizeof(crwl_worker_t));
@@ -272,6 +261,18 @@ static crwl_worker_t *crwl_worker_init(crwl_worker_ctx_t *ctx)
     {
         free(worker);
         log_error(worker->log, "Initialize slab pool failed!");
+        return NULL;
+    }
+
+    /* 3. 创建任务队列 */
+    pthread_rwlock_init(&worker->task.lock, NULL);
+
+    ret = queue_init(&worker->task.queue,
+            conf->task_queue.count, conf->task_queue.size);
+    if (0 != ret)
+    {
+        eslab_destroy(&worker->slab);
+        free(worker);
         return NULL;
     }
 
@@ -313,23 +314,23 @@ static int crwl_worker_get_task(crwl_worker_ctx_t *ctx, crwl_worker_t *worker)
     crwl_worker_task_header_t *h;
 
     /* 1. 判断是否应该取任务 */
-    if (0 == ctx->task.queue.num
+    if (0 == worker->task.queue.num
         || worker->sck_list.num >= ctx->conf.load_web_page_num)
     {
         return CRWL_OK;
     }
 
     /* 2. 从任务队列取数据 */
-    pthread_rwlock_wrlock(&ctx->task.lock);
+    pthread_rwlock_wrlock(&worker->task.lock);
 
-    data = queue_pop(&ctx->task.queue);
+    data = queue_pop(&worker->task.queue);
     if (NULL == data)
     {
-        pthread_rwlock_unlock(&ctx->task.lock);
+        pthread_rwlock_unlock(&worker->task.lock);
         return CRWL_OK;
     }
 
-    pthread_rwlock_unlock(&ctx->task.lock);
+    pthread_rwlock_unlock(&worker->task.lock);
 
     /* 3. 连接远程Web服务器 */
     h = (crwl_worker_task_header_t *)data;
