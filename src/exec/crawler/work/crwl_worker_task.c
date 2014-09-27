@@ -25,7 +25,7 @@ int crwl_worker_task_load_webpage_by_url(
 {
     int ret, fd;
     struct hostent *host;
-    crwl_worker_sck_t *sck;
+    crwl_worker_socket_t *sck;
     char ipaddr[IP_ADDR_MAX_LEN];
     
     /* 1. 通过URL获取WEB服务器信息 */
@@ -48,21 +48,21 @@ int crwl_worker_task_load_webpage_by_url(
     }
 
     /* 3. 将FD等信息加入套接字链表 */
-    sck = eslab_alloc(&worker->slab, sizeof(crwl_worker_sck_t));
+    sck = eslab_alloc(&worker->slab, sizeof(crwl_worker_socket_t));
     if (NULL == sck)
     {
         log_error(worker->log, "Alloc memory from slab failed!");
         return CRWL_ERR;
     }
 
-    memset(sck, 0, sizeof(crwl_worker_sck_t));
+    memset(sck, 0, sizeof(crwl_worker_socket_t));
 
     sck->sckid = fd;
     snprintf(sck->url, sizeof(sck->url), "%s", args->url);
     snprintf(sck->ipaddr, sizeof(sck->ipaddr), "%s", ipaddr);
     sck->port = args->port;
 
-    ret = crwl_worker_add_sck(worker, sck);
+    ret = crwl_worker_add_sock(worker, sck);
     if (CRWL_OK != ret)
     {
         log_error(worker->log, "Add socket into list failed!");
@@ -91,7 +91,7 @@ int crwl_worker_task_load_webpage_by_ip(
         crwl_worker_t *worker, const crwl_task_load_webpage_by_ip_t *args)
 {
     int ret, fd;
-    crwl_worker_sck_t *sck;
+    crwl_worker_socket_t *sck;
 
     /* 暂不支持IPV6 */
     if (IPV6 == args->type)
@@ -109,20 +109,20 @@ int crwl_worker_task_load_webpage_by_ip(
     }
 
     /* 2. 将FD等信息加入套接字链表 */
-    sck = eslab_alloc(&worker->slab, sizeof(crwl_worker_sck_t));
+    sck = eslab_alloc(&worker->slab, sizeof(crwl_worker_socket_t));
     if (NULL == sck)
     {
         log_error(worker->log, "Alloc memory from slab failed!");
         return CRWL_ERR;
     }
 
-    memset(sck, 0, sizeof(crwl_worker_sck_t));
+    memset(sck, 0, sizeof(crwl_worker_socket_t));
 
     sck->sckid = fd;
     snprintf(sck->ipaddr, sizeof(sck->ipaddr), "%s", args->ipaddr);
     sck->port = args->port;
 
-    ret = crwl_worker_add_sck(worker, sck);
+    ret = crwl_worker_add_sock(worker, sck);
     if (CRWL_OK != ret)
     {
         log_error(worker->log, "Add socket into list failed!");

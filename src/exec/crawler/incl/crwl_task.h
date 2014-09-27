@@ -19,7 +19,7 @@ typedef enum
 /* 爬虫任务 */
 typedef struct
 {
-    uint32_t type;                          /* 任务类型 */
+    crwl_task_type_e type;                  /* 任务类型 */
     uint32_t length;                        /* 数据长度(头+体) */
 } crwl_task_t;
 

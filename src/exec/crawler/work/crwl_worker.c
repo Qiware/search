@@ -19,7 +19,7 @@ static int crwl_worker_parse_conf(
         xml_tree_t *xml, crwl_worker_conf_t *conf, log_cycle_t *log);
 static void *crwl_worker_routine(void *_ctx);
 
-static int crwl_worker_remove_sck(crwl_worker_t *worker, crwl_worker_sck_t *sck);
+static int crwl_worker_remove_sock(crwl_worker_t *worker, crwl_worker_socket_t *sck);
 
 static int crwl_worker_task_handler(crwl_worker_t *worker, crwl_task_t *t);
 
@@ -315,7 +315,7 @@ static int crwl_worker_get_task(crwl_worker_ctx_t *ctx, crwl_worker_t *worker)
 
     /* 1. 判断是否应该取任务 */
     if (0 == worker->task.queue.num
-        || worker->sck_list.num >= ctx->conf.load_web_page_num)
+        || worker->sock_list.num >= ctx->conf.load_web_page_num)
     {
         return CRWL_OK;
     }
@@ -353,12 +353,12 @@ static int crwl_worker_fdset(crwl_worker_t *worker)
 {
     int max = -1;
     list_node_t *node;
-    crwl_worker_sck_t *sck;
+    crwl_worker_socket_t *sck;
 
-    node = (list_node_t *)worker->sck_list.head;
+    node = (list_node_t *)worker->sock_list.head;
     for (; NULL != node; node = node->next)
     {
-        sck = (crwl_worker_sck_t *)node->data;
+        sck = (crwl_worker_socket_t *)node->data;
 
         /* 1. 设置可读集合 */
         FD_SET(sck->sckid, &worker->rdset);
@@ -390,7 +390,7 @@ static int crwl_worker_fdset(crwl_worker_t *worker)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.23 #
  ******************************************************************************/
-static int crwl_worker_fsync(crwl_worker_t *worker, crwl_worker_sck_t *sck)
+static int crwl_worker_fsync(crwl_worker_t *worker, crwl_worker_socket_t *sck)
 {
     fprintf(stdout, "%s", sck->read.addr);
     sck->read.off = 0;
@@ -414,14 +414,15 @@ static int crwl_worker_fsync(crwl_worker_t *worker, crwl_worker_sck_t *sck)
 static int crwl_worker_trav_recv(crwl_worker_t *worker)
 {
     int n, left;
+    time_t ctm = time(NULL);
     list_node_t *node;
-    crwl_worker_sck_t *sck;
+    crwl_worker_socket_t *sck;
 
     /* 1. 依次遍历套接字, 判断是否可读 */
-    node = worker->sck_list.head;
+    node = worker->sock_list.head;
     for (; NULL != node; node = node->next)
     {
-        sck = (crwl_worker_sck_t *)node->data;
+        sck = (crwl_worker_socket_t *)node->data;
         if (NULL == sck)
         {
             continue;
@@ -433,6 +434,7 @@ static int crwl_worker_trav_recv(crwl_worker_t *worker)
             continue;
         }
 
+        sck->rdtm = ctm;
         left = sck->read.total - sck->read.off;
 
         n = Readn(sck->sckid, sck->read.addr + sck->read.off, left);
@@ -479,7 +481,7 @@ static int crwl_worker_trav_recv(crwl_worker_t *worker)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.24 #
  ******************************************************************************/
-static int crwl_worker_send_data(crwl_worker_t *worker, crwl_worker_sck_t *sck)
+static int crwl_worker_send_data(crwl_worker_t *worker, crwl_worker_socket_t *sck)
 {
     int n, left;
     list_node_t *node;
@@ -504,6 +506,7 @@ static int crwl_worker_send_data(crwl_worker_t *worker, crwl_worker_sck_t *sck)
     }
 
     /* 2. 发送数据 */
+    sck->wrtm = time(NULL);
     left = sck->send.total - sck->send.off;
 
     n = Writen(sck->sckid, sck->send.addr + sck->send.off, left);
@@ -546,14 +549,14 @@ static int crwl_worker_trav_send(crwl_worker_t *worker)
 {
     int ret;
     list_node_t *node, *prev;
-    crwl_worker_sck_t *sck;
+    crwl_worker_socket_t *sck;
 
     /* 1. 依次遍历套接字列表 */
-    node = worker->sck_list.head;
+    node = worker->sock_list.head;
     prev = node;
     for (; NULL != node; node = node->next)
     {
-        sck = (crwl_worker_sck_t *)node->data;
+        sck = (crwl_worker_socket_t *)node->data;
         if (NULL == sck)
         {
             prev = node;
@@ -582,19 +585,19 @@ static int crwl_worker_trav_send(crwl_worker_t *worker)
             }
             else
             {
-                worker->sck_list.head = node->next;
+                worker->sock_list.head = node->next;
             }
 
-            if (node == worker->sck_list.tail)
+            if (node == worker->sock_list.tail)
             {
-                worker->sck_list.tail = prev;
+                worker->sock_list.tail = prev;
             }
 
-            --worker->sck_list.num;
+            --worker->sock_list.num;
 
             eslab_free(&worker->slab, node);
 
-            crwl_worker_remove_sck(worker, sck);
+            crwl_worker_remove_sock(worker, sck);
 
             return CRWL_ERR;  /* 结束处理：简化异常的后续链表处理逻辑 */
         }
@@ -611,11 +614,86 @@ static int crwl_worker_trav_send(crwl_worker_t *worker)
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
+ **     1. 依次遍历套接字, 判断是否超时
+ **     2. 超时关闭套接字、释放内存等
  **注意事项: 
- **作    者: # Qifeng.zou # 2014.09.25 #
+ **作    者: # Qifeng.zou # 2014.09.28 #
  ******************************************************************************/
 static int crwl_worker_timeout_hdl(crwl_worker_t *worker)
 {
+    time_t ctm = time(NULL);
+    list_node_t *node, *prev;
+    crwl_worker_socket_t *sck;
+
+    /* 1. 依次遍历套接字, 判断是否超时 */
+    node = worker->sock_list.head;
+    prev = node;
+    while (NULL != node)
+    {
+        sck = (crwl_worker_socket_t *)node->data;
+        if (NULL == sck)
+        {
+            prev = node;
+            node = node->next;
+            continue;
+        }
+
+        if ((ctm - sck->rdtm <= CRWL_WRK_TMOUT_SEC)
+            && (ctm - sck->wrtm <= CRWL_WRK_TMOUT_SEC))
+        {
+            prev = node;
+            node = node->next;
+            continue;
+        }
+
+        Close(sck->sckid);
+        crwl_worker_fsync(worker, sck);
+
+        /* 删除链表头 */
+        if (prev == node)
+        {
+            if (worker->sock_list.head == worker->sock_list.tail)
+            {
+                worker->sock_list.head = NULL;
+                worker->sock_list.tail = NULL;
+
+                --worker->sock_list.num;
+                eslab_free(&worker->slab, node);
+                crwl_worker_remove_sock(worker, sck);
+                return CRWL_OK;
+            }
+
+            prev = node->next;
+            worker->sock_list.head = node->next;
+
+            --worker->sock_list.num;
+            eslab_free(&worker->slab, node);
+            crwl_worker_remove_sock(worker, sck);
+
+            node = prev;
+            continue;
+        }
+        /* 删除链表尾 */
+        else if (node == worker->sock_list.tail)
+        {
+            worker->sock_list.tail = prev;
+
+            --worker->sock_list.num;
+            eslab_free(&worker->slab, node);
+            crwl_worker_remove_sock(worker, sck);
+            return CRWL_OK;
+        }
+
+        /* 删除链表中间结点 */
+        prev->next = node->next;
+
+        --worker->sock_list.num;
+        eslab_free(&worker->slab, node);
+        crwl_worker_remove_sock(worker, sck);
+
+        node = prev->next;
+    }
+
     return CRWL_OK;
 }
 
@@ -734,7 +812,7 @@ static void *crwl_worker_routine(void *_ctx)
 }
 
 /******************************************************************************
- **函数名称: crwl_worker_add_sck
+ **函数名称: crwl_worker_add_sock
  **功    能: 添加套接字
  **输入参数: 
  **     worker: 爬虫对象 
@@ -745,7 +823,7 @@ static void *crwl_worker_routine(void *_ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.24 #
  ******************************************************************************/
-int crwl_worker_add_sck(crwl_worker_t *worker, crwl_worker_sck_t *sck)
+int crwl_worker_add_sock(crwl_worker_t *worker, crwl_worker_socket_t *sck)
 {
     int ret;
     list_node_t *node;
@@ -761,7 +839,7 @@ int crwl_worker_add_sck(crwl_worker_t *worker, crwl_worker_sck_t *sck)
     node->data = sck;
 
     /* 2. 插入链表尾 */
-    ret = list_insert_tail(&worker->sck_list, node);
+    ret = list_insert_tail(&worker->sock_list, node);
     if (0 != ret)
     {
         log_error(worker->log, "Insert socket node failed!");
@@ -773,7 +851,7 @@ int crwl_worker_add_sck(crwl_worker_t *worker, crwl_worker_sck_t *sck)
 }
 
 /******************************************************************************
- **函数名称: crwl_worker_remove_sck
+ **函数名称: crwl_worker_remove_sock
  **功    能: 删除套接字
  **输入参数: 
  **     worker: 爬虫对象 
@@ -784,7 +862,7 @@ int crwl_worker_add_sck(crwl_worker_t *worker, crwl_worker_sck_t *sck)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.24 #
  ******************************************************************************/
-static int crwl_worker_remove_sck(crwl_worker_t *worker, crwl_worker_sck_t *sck)
+static int crwl_worker_remove_sock(crwl_worker_t *worker, crwl_worker_socket_t *sck)
 {
     list_node_t *item, *next;
 
@@ -801,10 +879,6 @@ static int crwl_worker_remove_sck(crwl_worker_t *worker, crwl_worker_sck_t *sck)
 
         item = next;
     }
-
-    sck->send_list.num = 0;
-    sck->send_list.head = NULL;
-    sck->send_list.tail = NULL;
 
     eslab_free(&worker->slab, sck);
 
@@ -845,6 +919,7 @@ static int crwl_worker_task_handler(crwl_worker_t *worker, crwl_task_t *t)
         case CRWL_TASK_TYPE_UNKNOWN:
         default:
         {
+            log_debug(worker->log, "Unknown task type! [%d]", t->type);
             return CRWL_OK;
         }
     }

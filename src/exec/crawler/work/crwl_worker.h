@@ -23,6 +23,7 @@
 #define CRWL_WRK_LOAD_WEB_PAGE_NUM  (1)         /* 默认同时下载的网页数 */
 #define CRWL_WRK_CONNECT_TMOUT      (30)        /* 连接超时时间 */
 #define CRWL_WRK_WEB_SVR_PORT       (80)        /* WEB服务器侦听端口 */
+#define CRWL_WRK_TMOUT_SEC          (30)        /* 超时时间(秒) */
 
 #define CRWL_TASK_QUEUE_MAX_NUM     (10000)     /* 任务队列单元数 */
 #define CRWL_TASK_QUEUE_MAX_SIZE    (4 * KB)    /* 任务队列单元SIZE */
@@ -41,6 +42,8 @@ typedef struct
 typedef struct
 {
     int sckid;                              /* 套接字ID */
+    time_t wrtm;                            /* 最近写入时间 */
+    time_t rdtm;                            /* 最近读取时间 */
 
     char url[URL_MAX_LEN];                  /* 原始URL(未转义) */
     char base64_url[URL_MAX_LEN];           /* 转义URL(中文转为BASE64编码) */
@@ -53,7 +56,7 @@ typedef struct
 
     char recv_buff[CRWL_WRK_BUFF_SIZE];     /* 接收缓存 */
     list_t send_list;                       /* 发送链表 */
-} crwl_worker_sck_t;
+} crwl_worker_socket_t;
 
 /* 爬虫对象信息 */
 typedef struct
@@ -64,8 +67,8 @@ typedef struct
     eslab_pool_t slab;                      /* 内存池 */
     log_cycle_t *log;                       /* 日志对象 */
 
-    list_t sck_list;                        /* 套接字列表
-                                               结点数据指针指向crwl_worker_sck_t */
+    list_t sock_list;                       /* 套接字列表
+                                               结点数据指针指向crwl_worker_socket_t */
     crwl_task_queue_t task;                 /* 任务对象 */
 } crwl_worker_t;
 
@@ -77,7 +80,7 @@ typedef struct
     log_cycle_t *log;                       /* 日志对象 */
 } crwl_worker_ctx_t;
 
-int crwl_worker_add_sck(crwl_worker_t *worker, crwl_worker_sck_t *sck);
+int crwl_worker_add_sock(crwl_worker_t *worker, crwl_worker_socket_t *sck);
 int crwl_worker_task_load_webpage_by_url(
         crwl_worker_t *worker, const crwl_task_load_webpage_by_url_t *args);
 int crwl_worker_task_load_webpage_by_ip(
