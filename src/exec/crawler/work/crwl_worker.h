@@ -9,8 +9,8 @@
 #include "queue.h"
 #include "common.h"
 #include "crawler.h"
+#include "crwl_task.h"
 #include "thread_pool.h"
-#include "crwl_worker_task.h"
 
 /* 宏定义 */
 #define CRWL_WRK_TV_SEC             (02)        /* 超时(秒) */
@@ -66,7 +66,7 @@ typedef struct
 
     list_t sck_list;                        /* 套接字列表
                                                结点数据指针指向crwl_worker_sck_t */
-    crwl_worker_task_t task;                /* 任务对象 */
+    crwl_task_queue_t task;                 /* 任务对象 */
 } crwl_worker_t;
 
 /* 爬虫全局信息 */

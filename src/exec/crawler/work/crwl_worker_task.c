@@ -4,9 +4,9 @@
 #include "common.h"
 #include "crawler.h"
 #include "syscall.h"
+#include "crwl_task.h"
 #include "xdo_socket.h"
 #include "crwl_worker.h"
-#include "crwl_worker_task.h"
 
 /******************************************************************************
  **函数名称: crwl_worker_task_load_url

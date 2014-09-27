@@ -9,9 +9,9 @@
  ******************************************************************************/
 
 #include "common.h"
+#include "syscall.h"
 #include "crawler.h"
 #include "xml_tree.h"
-#include "syscall.h"
 #include "thread_pool.h"
 #include "crwl_worker.h"
 
@@ -21,7 +21,7 @@ static void *crwl_worker_routine(void *_ctx);
 
 static int crwl_worker_remove_sck(crwl_worker_t *worker, crwl_worker_sck_t *sck);
 
-static int crwl_worker_task_handler(crwl_worker_t *worker, crwl_worker_task_header_t *h);
+static int crwl_worker_task_handler(crwl_worker_t *worker, crwl_task_t *t);
 
 /******************************************************************************
  **函数名称: crwl_worker_load_conf
@@ -311,7 +311,7 @@ static int crwl_worker_destroy(crwl_worker_t *worker)
 static int crwl_worker_get_task(crwl_worker_ctx_t *ctx, crwl_worker_t *worker)
 {
     void *data;
-    crwl_worker_task_header_t *h;
+    crwl_task_t *t;
 
     /* 1. 判断是否应该取任务 */
     if (0 == worker->task.queue.num
@@ -333,9 +333,9 @@ static int crwl_worker_get_task(crwl_worker_ctx_t *ctx, crwl_worker_t *worker)
     pthread_rwlock_unlock(&worker->task.lock);
 
     /* 3. 连接远程Web服务器 */
-    h = (crwl_worker_task_header_t *)data;
+    t = (crwl_task_t *)data;
 
-    return crwl_worker_task_handler(worker, h);
+    return crwl_worker_task_handler(worker, t);
 }
 
 /******************************************************************************
@@ -823,11 +823,11 @@ static int crwl_worker_remove_sck(crwl_worker_t *worker, crwl_worker_sck_t *sck)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.25 #
  ******************************************************************************/
-static int crwl_worker_task_handler(crwl_worker_t *worker, crwl_worker_task_header_t *h)
+static int crwl_worker_task_handler(crwl_worker_t *worker, crwl_task_t *t)
 {
     const char *url = "www.baidu.com";
 
-    switch (h->type)
+    switch (t->type)
     {
         case CRWL_TASK_LOAD_URL:       /* 加载网页的任务 */
         {
