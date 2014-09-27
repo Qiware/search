@@ -78,7 +78,10 @@ typedef struct
 } crwl_worker_ctx_t;
 
 int crwl_worker_add_sck(crwl_worker_t *worker, crwl_worker_sck_t *sck);
-int crwl_worker_task_load_url(crwl_worker_t *worker, const char *url);
+int crwl_worker_task_load_webpage_by_url(
+        crwl_worker_t *worker, const crwl_task_load_webpage_by_url_t *args);
+int crwl_worker_task_load_webpage_by_ip(
+        crwl_worker_t *worker, const crwl_task_load_webpage_by_ip_t *args);
 
 int crwl_worker_load_conf(crwl_worker_conf_t *conf, const char *path, log_cycle_t *log);
 crwl_worker_ctx_t *crwl_worker_init_cntx(crwl_worker_conf_t *conf, log_cycle_t *log);

@@ -816,7 +816,7 @@ static int crwl_worker_remove_sck(crwl_worker_t *worker, crwl_worker_sck_t *sck)
  **功    能: 爬虫任务的处理
  **输入参数: 
  **     worker: 爬虫对象 
- **     head: 任务头部
+ **     t: 任务对象(对象+数据)
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
@@ -825,19 +825,24 @@ static int crwl_worker_remove_sck(crwl_worker_t *worker, crwl_worker_sck_t *sck)
  ******************************************************************************/
 static int crwl_worker_task_handler(crwl_worker_t *worker, crwl_task_t *t)
 {
-    const char *url = "www.baidu.com";
+    char *args = (char *)t + sizeof(crwl_task_t);
 
     switch (t->type)
     {
-        case CRWL_TASK_LOAD_URL:       /* 加载网页的任务 */
+        /* 通过URL加载网页 */
+        case CRWL_TASK_LOAD_WEB_PAGE_BY_URL:
         {
-            return crwl_worker_task_load_url(worker, url);
+            return crwl_worker_task_load_webpage_by_url(
+                    worker, (const crwl_task_load_webpage_by_url_t *)args);
         }
-        case CRWL_TASK_LOAD_IPADDR:
+        /* 通过IP加载网页 */
+        case CRWL_TASK_LOAD_WEB_PAGE_BY_IP:
         {
-            return CRWL_OK;
+            return crwl_worker_task_load_webpage_by_ip(
+                    worker, (const crwl_task_load_webpage_by_ip_t *)args);
         }
-        case CRWL_TASK_TYPE_UNKNOWN:    /* 未知任务 */
+        /* 未知任务类型 */
+        case CRWL_TASK_TYPE_UNKNOWN:
         default:
         {
             return CRWL_OK;

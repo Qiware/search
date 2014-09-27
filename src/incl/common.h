@@ -25,8 +25,11 @@ typedef int bool;
 #define INVALID_FD          (-1)    /* 非法文件描述符 */
 #define INVALID_PID         (-1)    /* 非法进程ID */
 
+#define IPV4                (0)     /* IP地址类型-IPV4 */
+#define IPV6                (1)     /* IP地址类型-IPV6 */
+
 /* 内存单位 */
-#define KB                  (1024)  /* KB */
+#define KB                  (1024)      /* KB */
 #define MB                  (1024 * KB) /* MB */
 #define GB                  (1024 * MB) /* GB */
 
