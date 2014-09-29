@@ -24,24 +24,24 @@
 static void *thread_routine(void *arg);
 
 /******************************************************************************
- ** Name : thread_pool_init
- ** Desc : Initalize thread pool
- ** Input: 
- **     num: The num of threads in pool
- ** Output: NONE
- ** Return: Thread pool
- ** Process:
- **     1. Alloc thread pool space, and initalize it.
- **     2. Create the num of threads
- ** Note :
- ** Author: # Qifeng.zou # 2012.12.26 #
+ **函数名称: thread_pool_init
+ **功    能: 初始化线程池
+ **输入参数:
+ **      num: 线程数目
+ **输出参数:
+ **返    回: 线程池
+ **实现描述: 
+ **     1. 分配线程池空间, 并初始化
+ **     2. 创建指定数目的线程
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2012.12.26 #
  ******************************************************************************/
 thread_pool_t *thread_pool_init(int num)
 {
     int idx, ret;
     thread_pool_t *tp;
 
-    /* 1. 分配线程池空间，并初始化 */
+    /* 1. 分配线程池空间, 并初始化 */
     tp = (thread_pool_t *)calloc(1, sizeof(thread_pool_t));
     if (NULL == tp)
     {
@@ -85,26 +85,26 @@ thread_pool_t *thread_pool_init(int num)
 }
 
 /******************************************************************************
- ** Name : thread_pool_add_worker
- ** Desc : Register routine callback function
- ** Input: 
- **     tp: Thread pool
- **     process: Callback function
- **     arg: The paramter of callback function
- ** Output: NONE
- ** Return: 0: success !0: failed
- ** Process:
- **     1. Create new task node
- **     2. Add callback function into work queue
- **     3. Wakeup waitting process 
- ** Note :
- ** Author: # Qifeng.zou # 2012.12.26 #
+ **函数名称: thread_pool_add_worker
+ **功    能: 注册处理任务(回调函数)
+ **输入参数:
+ **     tp: 线程池
+ **     process: 回调函数
+ **     arg: 回调函数的参数
+ **输出参数:
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **     1. 新建任务结点
+ **     2. 将回调函数加入工作队列
+ **     3. 唤醒正在等待的线程
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2012.12.26 #
  ******************************************************************************/
 int thread_pool_add_worker(thread_pool_t *tp, void *(*process)(void *arg), void *arg)
 {
     thread_worker_t *worker=NULL, *member=NULL;
 
-    /* 1. 创建新任务节点 */
+    /* 1. 新建任务节点 */
     worker = (thread_worker_t*)eslab_alloc(&tp->eslab, sizeof(thread_worker_t));
     if (NULL == worker)
     {
@@ -143,17 +143,19 @@ int thread_pool_add_worker(thread_pool_t *tp, void *(*process)(void *arg), void 
 }
 
 /******************************************************************************
- ** Name : thread_pool_keepalive
- ** Desc : Keepalive thread
- ** Input: 
- **     tp: Thread-pool
- ** Output: NONE
- ** Return: 0: success !0: failed
- ** Process:
- **     1. Judge the thread whether exist?
- **     2. The thread was dead if it's not exist.
- ** Note :
- ** Author: # Qifeng.zou # 2012.12.26 #
+ **函数名称: thread_pool_keepalive
+ **功    能: 线程保活处理
+ **输入参数:
+ **     tp: 线程池
+ **     process: 回调函数
+ **     arg: 回调函数的参数
+ **输出参数:
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **     1. 判断线程是否正在运行
+ **     2. 如果线程已退出, 则重新启动线程
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2012.12.26 #
  ******************************************************************************/
 int thread_pool_keepalive(thread_pool_t *tp)
 {
@@ -176,17 +178,19 @@ int thread_pool_keepalive(thread_pool_t *tp)
 }
 
 /******************************************************************************
- ** Name : thread_pool_keepalive_ext
- ** Desc : Keepalive thread
- ** Input: 
- **     tp: Thread-pool
- ** Output: NONE
- ** Return: 0: success !0: failed
- ** Process:
- **     1. Judge the thread whether exist?
- **     2. The thread was dead if it's not exist.
- ** Note :
- ** Author: # Qifeng.zou # 2012.12.26 #
+ **函数名称: thread_pool_keepalive_ex
+ **功    能: 线程保活处理
+ **输入参数:
+ **     tp: 线程池
+ **     process: 回调函数
+ **     arg: 回调函数的参数
+ **输出参数:
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **     1. 判断线程是否正在运行
+ **     2. 如果线程已退出, 则重新启动线程并注册回调函数
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2012.12.26 #
  ******************************************************************************/
 int thread_pool_keepalive_ext(thread_pool_t *tp, void *(*process)(void *arg), void *arg)
 {
@@ -210,16 +214,17 @@ int thread_pool_keepalive_ext(thread_pool_t *tp, void *(*process)(void *arg), vo
 
     return 0;
 }
+
 /******************************************************************************
- ** Name : thread_pool_get_tidx
- ** Desc : Get thread index of current thread.
- ** Input: 
- **     tp: The object of thread-pool
- ** Output: NONE
- ** Return: 0: success !0: failed
- ** Process:
- ** Note :
- ** Author: # Qifeng.zou # 2014.04.24 #
+ **函数名称: thread_pool_get_tidx
+ **功    能: 获取当前线程在线程池中的序列号
+ **输入参数:
+ **     tp: 线程池
+ **输出参数:
+ **返    回: 线程序列号
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2012.12.26 #
  ******************************************************************************/
 int thread_pool_get_tidx(thread_pool_t *tp)
 {
@@ -238,19 +243,18 @@ int thread_pool_get_tidx(thread_pool_t *tp)
 }
 
 /******************************************************************************
- ** Name : thread_pool_destroy
- ** Desc : Destroy thread pool
- ** Input: 
- **     tp: Thread-pool
- ** Output: NONE
- ** Return: 0: success !0: failed
- ** Process:
- **     1. Close thread-pool flag
- **     2. Wakeuup all the threads which is waitting
- **     3. Wait all threads end of run
- **     4. Release all threads space
- ** Note :
- ** Author: # Qifeng.zou # 2012.12.26 #
+ **函数名称: thread_pool_destroy
+ **功    能: 销毁线程池
+ **输入参数:
+ **     tp: 线程池
+ **输出参数:
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **     1. 设置销毁标志
+ **     2. 唤醒所有线程
+ **     3. 等待所有线程结束
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2012.12.26 #
  ******************************************************************************/
 int thread_pool_destroy(thread_pool_t *tp)
 {
@@ -261,7 +265,7 @@ int thread_pool_destroy(thread_pool_t *tp)
         return -1;
     }
 
-    /* 1. 设置关闭线程池标志 */
+    /* 1. 设置销毁标志 */
     tp->shutdown = 1;
 
     /* 2. 唤醒所有等待的线程 */
@@ -289,25 +293,25 @@ int thread_pool_destroy(thread_pool_t *tp)
 }
 
 /******************************************************************************
- ** Name : thread_pool_destroy_ext
- ** Desc : Destroy thread pool
- ** Input: 
+ **函数名称: thread_pool_destroy_ex
+ **功    能: 销毁线程池
+ **输入参数:
  **     tp: 线程池对象
- **     args_destroy: 释放tp->data的空间
- **     cntx: 其他相关参数
- ** Output: NONE
- ** Return: 0: success !0: failed
- ** Process:
- **     1. 设置关闭标志
+ **     _destroy: 释放tp->data的空间
+ **     ctx: 其他相关参数
+ **输出参数:
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **     1. 设置销毁标志
  **     2. 唤醒所有线程
  **     3. 杀死所有线程
  **     4. 释放参数空间
  **     5. 释放线程池对象
- ** Note :
- ** Author: # Qifeng.zou # 2014.04.28 #
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.04.18 #
  ******************************************************************************/
-int thread_pool_destroy_ext(
-    thread_pool_t *tp, void (*args_destroy)(void *cntx, void *args), void *cntx)
+int thread_pool_destroy_ex(
+    thread_pool_t *tp, void (*_destroy)(void *ctx, void *args), void *ctx)
 {
     int idx;
 
@@ -316,7 +320,7 @@ int thread_pool_destroy_ext(
         return -1;
     }
 
-    /* 1. 设置关闭标志 */
+    /* 1. 设置销毁标志 */
     tp->shutdown = 1;
 
     /* 2. 唤醒所有线程 */
@@ -329,7 +333,7 @@ int thread_pool_destroy_ext(
     }
 
     /* 4. 释放参数空间 */
-    args_destroy(cntx, tp->data);
+    _destroy(ctx, tp->data);
 
     /* 5. 释放对象空间 */
     pthread_mutex_destroy(&(tp->queue_lock));
@@ -342,20 +346,21 @@ int thread_pool_destroy_ext(
 }
 
 /******************************************************************************
- ** Name : thread_routine
- ** Desc : The entry of routine
- ** Input: 
- **     arg: the parmater of this function
- ** Output: NONE
- ** Return: 0: success !0: failed
- ** Process:
- ** Note :
- ** Author: # Qifeng.zou # 2013.12.26 #
+ **函数名称: thread_routine
+ **功    能: 线程运行函数
+ **输入参数:
+ **     _tp: 线程池
+ **输出参数:
+ **返    回: VOID *
+ **实现描述: 
+ **     判断是否有任务: 如无, 则等待; 如有, 则处理.
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.04.18 #
  ******************************************************************************/
-static void *thread_routine(void *arg)
+static void *thread_routine(void *_tp)
 {
     thread_worker_t *worker;
-    thread_pool_t *tp = (thread_pool_t*)arg;
+    thread_pool_t *tp = (thread_pool_t*)_tp;
 
     while (1)
     {
