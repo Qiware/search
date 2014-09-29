@@ -54,7 +54,7 @@ int main(void)
         return -1;
     }
 
-    daemon(0, 0);
+    daemon(1, 0);
 
     /* 1. 初始化日志系统 */
     ret = log_svr_init(&logsvr);
