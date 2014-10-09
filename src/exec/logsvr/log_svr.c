@@ -47,6 +47,9 @@ int main(void)
 
     memset(&logsvr, 0, sizeof(log_svr_t));
 
+    daemon(1, 0);
+
+    /* 1. 初始化日志系统 */
     ret = log2_init(LOG_SVR_LOG2_LEVEL, LOG_SVR_LOG2_PATH);
     if (0 != ret)
     {
@@ -54,9 +57,6 @@ int main(void)
         return -1;
     }
 
-    daemon(1, 0);
-
-    /* 1. 初始化日志系统 */
     ret = log_svr_init(&logsvr);
     if(ret < 0)
     {

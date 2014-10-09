@@ -39,7 +39,7 @@ int crwl_worker_task_load_webpage_by_url(
     inet_ntop(AF_INET, host->h_addr, ipaddr, sizeof(ipaddr));
 
     /* 2. 连接远程WEB服务器 */
-    fd = tcp_connect_ex(ipaddr, args->port, CRWL_WRK_CONNECT_TMOUT);
+    fd = tcp_connect_ex2(ipaddr, args->port);
     if (fd < 0)
     {
         log_error(worker->log, "errmsg:[%d] %s! ipaddr:%s url:%s",

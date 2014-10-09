@@ -177,9 +177,11 @@ static int crwl_worker_parse_conf(
  ******************************************************************************/
 crwl_worker_ctx_t *crwl_worker_init_cntx(crwl_worker_conf_t *conf, log_cycle_t *log)
 {
+    int idx, ret;
+    crwl_worker_t *worker;
     crwl_worker_ctx_t *ctx;
 
-    /* 1. 创建爬虫对象 */
+    /* 1. 创建全局对象 */
     ctx = (crwl_worker_ctx_t *)calloc(1, sizeof(crwl_worker_ctx_t));
     if (NULL == ctx)
     {
@@ -191,13 +193,39 @@ crwl_worker_ctx_t *crwl_worker_init_cntx(crwl_worker_conf_t *conf, log_cycle_t *
 
     memcpy(&ctx->conf, conf, sizeof(crwl_worker_conf_t));
 
-    /* 3. 初始化线程池 */
-    ctx->tpool = thread_pool_init(conf->thread_num);
-    if (NULL == ctx->tpool)
+    /* 2. 创建Worker线程池 */
+    ctx->worker_tp = thread_pool_init(conf->thread_num);
+    if (NULL == ctx->worker_tp)
     {
         free(ctx);
         log_error(log, "Initialize thread pool failed!");
         return NULL;
+    }
+
+    ctx->worker_tp->data =
+        (crwl_worker_t *)calloc(conf->thread_num, sizeof(crwl_worker_t));
+    if (NULL == ctx->worker_tp->data)
+    {
+        log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        thread_pool_destroy(ctx->worker_tp);
+        free(ctx);
+        return NULL;
+    }
+
+    /* 3. 依次初始化Worker线程信息 */
+    for (idx=0; idx<conf->thread_num; ++idx)
+    {
+        worker = (crwl_worker_t *)ctx->worker_tp->data + idx;
+
+        ret = crwl_worker_init(ctx, worker);
+        if (CRWL_OK != ret)
+        {
+            log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
+
+            thread_pool_destroy(ctx->worker_tp);
+            free(ctx);
+            return NULL;
+        }
     }
 
     return ctx;
@@ -222,61 +250,69 @@ int crwl_worker_startup(crwl_worker_ctx_t *ctx)
     /* 1. 设置线程回调 */
     for (idx=0; idx<conf->thread_num; ++idx)
     {
-        thread_pool_add_worker(ctx->tpool, crwl_worker_routine, ctx);
+        thread_pool_add_worker(ctx->worker_tp, crwl_worker_routine, ctx);
     }
     
     return CRWL_OK;
 }
 
 /******************************************************************************
- **函数名称: crwl_worker_init
- **功    能: 创建爬虫对象
+ **函数名称: crwl_worker_get
+ **功    能: 获取爬虫对象
  **输入参数: 
- **     ctx: 上下文
+ **     ctx: 全局信息
  **输出参数: NONE
  **返    回: 爬虫对象
  **实现描述: 
  **注意事项: 
+ **作    者: # Qifeng.zou # 2014.10.09 #
+ ******************************************************************************/
+static crwl_worker_t *crwl_worker_get(crwl_worker_ctx_t *ctx)
+{
+    int tidx;
+
+    tidx = thread_pool_get_tidx(ctx->worker_tp);
+
+    return (crwl_worker_t *)ctx->worker_tp->data + tidx;
+}
+
+/******************************************************************************
+ **函数名称: crwl_worker_init
+ **功    能: 创建爬虫对象
+ **输入参数: 
+ **     ctx: 全局信息
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.23 #
  ******************************************************************************/
-static crwl_worker_t *crwl_worker_init(crwl_worker_ctx_t *ctx)
+int crwl_worker_init(crwl_worker_ctx_t *ctx, crwl_worker_t *worker)
 {
     int ret;
-    crwl_worker_t *worker;
     crwl_worker_conf_t *conf = &ctx->conf;
-
-    /* 1.创建爬虫对象 */
-    worker = (crwl_worker_t *)calloc(1, sizeof(crwl_worker_t));
-    if (NULL == worker)
-    {
-        log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return NULL;
-    }
 
     worker->log = ctx->log;
 
-    /* 2.创建SLAB内存池 */
+    /* 1. 创建SLAB内存池 */
     ret = eslab_init(&worker->slab, CRWL_WRK_SLAB_SIZE);
     if (0 != ret)
     {
-        free(worker);
         log_error(worker->log, "Initialize slab pool failed!");
-        return NULL;
+        return CRWL_ERR;
     }
 
-    /* 3. 创建任务队列 */
+    /* 2. 创建任务队列 */
     pthread_rwlock_init(&worker->task.lock, NULL);
 
-    ret = queue_init(&worker->task.queue,
-            conf->task_queue.count, conf->task_queue.size);
+    ret = queue_init(&worker->task.queue, conf->task_queue.count);
     if (0 != ret)
     {
         eslab_destroy(&worker->slab);
-        free(worker);
-        return NULL;
+        return CRWL_ERR;
     }
 
-    return worker;
+    return CRWL_OK;
 }
 
 /******************************************************************************
@@ -737,7 +773,7 @@ static int crwl_worker_event_hdl(crwl_worker_t *worker)
  **函数名称: crwl_worker_routine
  **功    能: 运行爬虫线程
  **输入参数: 
- **     _ctx: 上下文
+ **     _ctx: 全局信息
  **输出参数: NONE
  **返    回: VOID *
  **实现描述: 
@@ -756,7 +792,7 @@ static void *crwl_worker_routine(void *_ctx)
     crwl_worker_ctx_t *ctx = (crwl_worker_ctx_t *)_ctx;
 
     /* 1. 创建爬虫对象 */
-    worker = crwl_worker_init(ctx);
+    worker = crwl_worker_get(ctx);
     if (NULL == worker)
     {
         log_error(ctx->log, "Initialize worker failed!");

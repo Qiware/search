@@ -21,7 +21,7 @@
 #define CRWL_WRK_READ_SIZE          (12 * KB)   /* 读取SIZE */
 #define CRWL_WRK_SYNC_SIZE          (12 * KB)   /* 同步SIZE */
 #define CRWL_WRK_LOAD_WEB_PAGE_NUM  (1)         /* 默认同时下载的网页数 */
-#define CRWL_WRK_CONNECT_TMOUT      (30)        /* 连接超时时间 */
+#define CRWL_WRK_CONNECT_TMOUT      (00)        /* 连接超时时间 */
 #define CRWL_WRK_WEB_SVR_PORT       (80)        /* WEB服务器侦听端口 */
 #define CRWL_WRK_TMOUT_SEC          (30)        /* 超时时间(秒) */
 
@@ -61,6 +61,8 @@ typedef struct
 /* 爬虫对象信息 */
 typedef struct
 {
+    int tidx;                               /* 线程索引 */
+
     fd_set wrset;                           /* 可写集合 */
     fd_set rdset;                           /* 可读集合 */
 
@@ -76,7 +78,7 @@ typedef struct
 typedef struct
 {
     crwl_worker_conf_t conf;                /* 配置信息 */
-    thread_pool_t *tpool;                   /* 线程池对象 */
+    thread_pool_t *worker_tp;               /* 线程池对象 */
     log_cycle_t *log;                       /* 日志对象 */
 } crwl_worker_ctx_t;
 
@@ -89,5 +91,6 @@ int crwl_worker_task_load_webpage_by_ip(
 int crwl_worker_load_conf(crwl_worker_conf_t *conf, const char *path, log_cycle_t *log);
 crwl_worker_ctx_t *crwl_worker_init_cntx(crwl_worker_conf_t *conf, log_cycle_t *log);
 int crwl_worker_startup(crwl_worker_ctx_t *ctx);
+int crwl_worker_init(crwl_worker_ctx_t *ctx, crwl_worker_t *worker);
 
 #endif /*__CRWL_WORKER_H__*/
