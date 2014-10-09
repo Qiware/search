@@ -20,15 +20,14 @@ typedef struct
 {
     int max;        /* 队列容量 */
     int num;        /* 队列成员个数 */
-    int size;       /* 队列各节点的最大存储空间 */
 
     Qnode_t *base;  /* 队列基址 */
     Qnode_t *head;  /* 队列头 */
     Qnode_t *tail;  /* 队列尾 */
 } Queue_t;
 
-int queue_init(Queue_t *q, int max, int size);
-int queue_push(Queue_t *q, void *addr, int size);
+int queue_init(Queue_t *q, int max);
+int queue_push(Queue_t *q, void *addr);
 void* queue_pop(Queue_t *q);
 void queue_destroy(Queue_t *q);
 #endif /*__QUEUE_H__*/
