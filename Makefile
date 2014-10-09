@@ -18,17 +18,18 @@ export PROJ_LIB = ${PROJ}/lib
 # 编译目录(注：编译按顺序执行　注意库之间的依赖关系)
 #DIR=`find ./src -type d`
 DIR := "src/core"
+DIR += "src/db/redis"
 
 DIR += "src/exec/crawler/work"
 DIR += "src/exec/crawler/ctrl"
 DIR += "src/exec/logsvr"
 
 # 测试目录
-DIR += "src/demo"
-DIR += "src/demo/log"
-DIR += "src/demo/tcp"
-DIR += "src/demo/html"
-DIR += "src/demo/list"
+#DIR += "src/demo"
+#DIR += "src/demo/log"
+#DIR += "src/demo/tcp"
+#DIR += "src/demo/html"
+#DIR += "src/demo/list"
 export DIR
 
 .PHONY: all clean rebuild
