@@ -15,8 +15,8 @@
 
 #define __RB_STACK_PRINT__
 
-static int rb_insert_fixup(rbt_tree_t *tree, rbt_node_t *node);
-static int _rb_delete(rbt_tree_t *tree, rbt_node_t *dnode);
+static int rbt_insert_fixup(rbt_tree_t *tree, rbt_node_t *node);
+static int _rbt_delete(rbt_tree_t *tree, rbt_node_t *dnode);
 static int rbt_delete_fixup(rbt_tree_t *tree, rbt_node_t *node);
 
 /******************************************************************************
@@ -288,7 +288,7 @@ int rbt_insert(rbt_tree_t *tree, int key)
                     return RBT_FAILED;
                 }
                 
-                return rb_insert_fixup(tree, add); /* 防止红黑树的性质被破坏 */
+                return rbt_insert_fixup(tree, add); /* 防止红黑树的性质被破坏 */
             }
             node = node->lchild;
         }
@@ -302,7 +302,7 @@ int rbt_insert(rbt_tree_t *tree, int key)
                     return RBT_FAILED;
                 }
 
-                return rb_insert_fixup(tree, add); /* 防止红黑树的性质被破坏 */
+                return rbt_insert_fixup(tree, add); /* 防止红黑树的性质被破坏 */
             }
             node = node->rchild;
         }
@@ -312,7 +312,7 @@ int rbt_insert(rbt_tree_t *tree, int key)
 }
 
 /******************************************************************************
- **函数名称: rb_insert_fixup
+ **函数名称: rbt_insert_fixup
  **功    能: 插入操作修复(内部接口)
  **输入参数: 
  **     tree: 红黑树
@@ -325,7 +325,7 @@ int rbt_insert(rbt_tree_t *tree, int key)
  **注意事项: 插入节点操作只可能破坏性质④
  **作    者: # Qifeng.zou # 2013.12.23 #
  ******************************************************************************/
-static int rb_insert_fixup(rbt_tree_t *tree, rbt_node_t *node)
+static int rbt_insert_fixup(rbt_tree_t *tree, rbt_node_t *node)
 {
     rbt_node_t *parent = NULL, *uncle = NULL, *grandpa = NULL, *gparent = NULL;
 
@@ -439,7 +439,7 @@ int rbt_delete(rbt_tree_t *tree, int key)
     {
         if(key == node->key)
         {
-            return _rb_delete(tree, node);
+            return _rbt_delete(tree, node);
         }
         else if(key < node->key)
         {
@@ -466,7 +466,7 @@ int rbt_delete(rbt_tree_t *tree, int key)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.28 #
  ******************************************************************************/
-static int _rb_delete(rbt_tree_t *tree, rbt_node_t *dnode)
+static int _rbt_delete(rbt_tree_t *tree, rbt_node_t *dnode)
 {
     rbt_node_t *parent = NULL, *next = NULL, *refer = NULL;
 
