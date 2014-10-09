@@ -203,6 +203,57 @@ AGAIN:
 }
 
 /******************************************************************************
+ **函数名称: tcp_connect_ex2
+ **功    能: 连接指定服务器
+ **输入参数: 
+ **     ipaddr: IP地址
+ **     port: 端口号
+ **输出参数: NONE
+ **返    回: 套接字ID
+ **实现描述: 
+ **     1. 创建套接字
+ **     2. 设置为非阻塞套接字
+ **     3. 连接指定服务器
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.10.09 #
+ ******************************************************************************/
+int tcp_connect_ex2(const char *ipaddr, int port)
+{
+    int ret, fd;
+    struct sockaddr_in svraddr;
+
+    /* 1. 创建套接字 */
+    fd = socket(AF_INET, SOCK_STREAM, 0);
+    if (fd < 0)
+    {
+        return -1;
+    }
+
+    fd_set_nonblocking(fd);
+
+    /* 2. 连接远程服务器 */
+    bzero(&svraddr, sizeof(svraddr));
+
+    svraddr.sin_family = AF_INET;
+    inet_pton(AF_INET, ipaddr, &svraddr.sin_addr);
+    svraddr.sin_port = htons(port);
+
+    ret = connect(fd, (struct sockaddr *)&svraddr, sizeof(svraddr));
+    if (0 == ret)
+    {
+        return fd;
+    }
+
+    if (EINPROGRESS != errno)
+    {
+        close(fd);
+        return -1;
+    }
+
+    return fd;
+}
+
+/******************************************************************************
  **函数名称: fd_is_writable
  **功    能: 判断文件描述符是否可写
  **输入参数: 

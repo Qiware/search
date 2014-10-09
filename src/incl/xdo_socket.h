@@ -4,6 +4,7 @@
 int tcp_listen(int port);
 int tcp_connect(const char *ipaddr, int port);
 int tcp_connect_ex(const char *ipaddr, int port, int sec);
+int tcp_connect_ex2(const char *ipaddr, int port);
 int tcp_block_send(int fd, const void *addr, int len, int timeout);
 int tcp_block_recv(int fd, void *addr, int len, int timeout);
 

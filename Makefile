@@ -17,13 +17,13 @@ export PROJ_LIB = ${PROJ}/lib
 
 # 编译目录(注：编译按顺序执行　注意库之间的依赖关系)
 #DIR=`find ./src -type d`
-DIR := "src/os/unix"
-DIR += "src/core"
+DIR := "src/core"
 
 DIR += "src/exec/crawler/work"
 DIR += "src/exec/crawler/ctrl"
 DIR += "src/exec/logsvr"
 
+# 测试目录
 DIR += "src/demo"
 DIR += "src/demo/log"
 DIR += "src/demo/tcp"
@@ -46,7 +46,7 @@ all:
 		if [ -e $${SUBDIR}/Makefile ]; then \
 			echo cd $${SUBDIR}; \
 			cd $${SUBDIR}; \
-			make 1>/dev/null; \
+			make; \
 			cd ${PROJ}; \
 		fi \
 	done

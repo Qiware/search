@@ -32,3 +32,18 @@ ifeq (POSIX_MEMALIGN, $(strip $(CONFIG_MEMALIGN_SUPPORT)))
 else ifeq (MEMALIGN, $(strip $(CONFIG_MEMALIGN_SUPPORT)))
 	OPTIONS += HAVE_MEMALIGN		# 内存对齐方式
 endif
+
+# 设置系统日志级别
+ifeq (FATAL, $(strip $(CONFIG_LOG2_LEVEL)))
+	OPTIONS += LOG2_LEVEL=0
+else ifeq (ERROR, $(strip $(CONFIG_LOG2_LEVEL)))
+	OPTIONS += LOG2_LEVEL=1
+else ifeq (WARN, $(strip $(CONFIG_LOG2_LEVEL)))
+	OPTIONS += LOG2_LEVEL=2
+else ifeq (INFO, $(strip $(CONFIG_LOG2_LEVEL)))
+	OPTIONS += LOG2_LEVEL=3
+else ifeq (DEBUG, $(strip $(CONFIG_LOG2_LEVEL)))
+	OPTIONS += LOG2_LEVEL=4
+else ifeq (TRACE, $(strip $(CONFIG_LOG2_LEVEL)))
+	OPTIONS += LOG2_LEVEL=5
+endif

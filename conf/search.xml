@@ -3,8 +3,8 @@
   <LOG LEVEL="trace" /> <!-- 日志级别: trace|debug|info|warn|error|fatal -->
   <CRWLSYS> <!-- 爬虫系统配置 -->
       <CONTROLER> <!-- 控制进程: 负责爬虫的任务分发 -->
-          <RECV_THD_NUM>1</RECV_THD_NUM>    <!-- 接收线程数 -->
-          <DIST_THD_NUM>1</DIST_THD_NUM>    <!-- 分发线程数 -->
+          <RECV_THREAD_NUM>1</RECV_THREAD_NUM>    <!-- 接收线程数 -->
+          <DIST_THREAD_NUM>1</DIST_THREAD_NUM>    <!-- 分发线程数 -->
           <PORT>2222</PORT>                 <!-- 爬虫服务端口号 -->
           <!-- URL队列KEY路径(待抓取URL) -->
           <URL_QUEUE_KEY>../tmp/keyfile/crwl_man.key</URL_QUEUE_KEY>
@@ -18,14 +18,14 @@
           <SVRIP>127.0.0.1</SVRIP>    <!-- 管理服务IP -->
           <PORT>2222</PORT>           <!-- 管理服务侦听端口 -->
           <LOAD_WEB_PAGE_NUM>1</LOAD_WEB_PAGE_NUM>  <!-- 同时爬取的网页数 -->
-          <TASK_QUEUE>  <!-- 任务队列配置 -->
+          <TASK_QUEUE>                <!-- 任务队列配置 -->
               <COUNT>10000</COUNT>    <!-- 队列单元数 -->
               <SIZE>4096</SIZE>       <!-- 队列单元SIZE(单位: BYTE) -->
           </TASK_QUEUE>
       </WORKER>
       <ANALYST>   <!-- 分析进程: 负责对网页的分析(内容分析、URL提取等) -->
           <PROCESS_NUM>1</PROCESS_NUM><!-- 分析进程数 -->
-          <THD_NUM>5</THD_NUM>        <!-- 各分析进程中的线程数 -->
+          <THREAD_NUM>5</THREAD_NUM>  <!-- 各分析进程中的线程数 -->
           <SVRIP>127.0.0.1</SVRIP>    <!-- 管理服务IP -->
           <PORT>2222</PORT>           <!-- 管理服务侦听端口 -->
           <DATABASE>  <!-- 数据库配置 -->

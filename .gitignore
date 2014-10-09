@@ -3,3 +3,4 @@ bin/*
 lib/*
 src/demo/*
 tags
+stderr

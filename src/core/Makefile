@@ -15,11 +15,13 @@ LIBS = -lpthread
 SRC_LIST = hash.c \
 			log.c \
 			log2.c \
+			lock.c \
 			list.c \
 			list2.c \
 			queue.c \
 			sha256.c \
 			slab.c \
+			syscall.c \
 			shm_slab.c \
 			mem_pool.c \
 			shm_queue.c \
@@ -33,6 +35,8 @@ SRC_LIST = hash.c \
 			html_print.c \
 			html_tree.c \
 			thread_pool.c \
+			tcp_socket.c \
+			unix_socket.c \
 			x_string.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 

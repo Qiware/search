@@ -8,6 +8,7 @@
 ## 作    者: # Qifeng.zou # 2014.08.28 #
 ###############################################################################
 
-CONFIG_DEFAULT_SUPPORT = __ON__     # 默认功能开关
-CONFIG_DEBUG_SUPPORT = __ON__     	# 调试开关
-CONFIG_MEMALIGN_SUPPORT = POSIX_MEMALIGN # MEMALIGN # 内存对齐方式
+CONFIG_DEFAULT_SUPPORT = __ON__		# 默认功能开关
+CONFIG_DEBUG_SUPPORT = __ON__		# 调试开关
+CONFIG_MEMALIGN_SUPPORT = POSIX_MEMALIGN	# MEMALIGN # 内存对齐方式
+CONFIG_LOG2_LEVEL = ERROR			# 设置系统日志级别(TRACE|DEBUG|INFO|ERROR|FATAL)
