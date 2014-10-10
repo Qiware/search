@@ -25,11 +25,12 @@ DIR += "src/exec/crawler/ctrl"
 DIR += "src/exec/logsvr"
 
 # 测试目录
-#DIR += "src/demo"
-#DIR += "src/demo/log"
-#DIR += "src/demo/tcp"
-#DIR += "src/demo/html"
-#DIR += "src/demo/list"
+DEMO_DIR = "src/demo"
+DIR += "${DEMO_DIR}/log"
+DIR += "${DEMO_DIR}/tcp"
+DIR += "${DEMO_DIR}/html"
+DIR += "${DEMO_DIR}/list"
+DIR += "${DEMO_DIR}/redis"
 export DIR
 
 .PHONY: all clean rebuild
