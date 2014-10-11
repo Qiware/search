@@ -58,10 +58,22 @@ typedef struct
     list_t send_list;                       /* 发送链表 */
 } crwl_worker_socket_t;
 
+/* 爬虫全局信息 */
+typedef struct
+{
+    crwl_worker_conf_t conf;                /* 配置信息 */
+    thread_pool_t *worker_tp;               /* 线程池对象 */
+    log_cycle_t *log;                       /* 日志对象 */
+
+    pthread_rwlock_t slab_lock;             /* 内存池锁 */
+    eslab_pool_t slab;                      /* 内存池 */
+} crwl_worker_ctx_t;
+
 /* 爬虫对象信息 */
 typedef struct
 {
     int tidx;                               /* 线程索引 */
+    crwl_worker_ctx_t *ctx;                 /* 全局信息 */
 
     fd_set wrset;                           /* 可写集合 */
     fd_set rdset;                           /* 可读集合 */
@@ -73,14 +85,6 @@ typedef struct
                                                结点数据指针指向crwl_worker_socket_t */
     crwl_task_queue_t task;                 /* 任务对象 */
 } crwl_worker_t;
-
-/* 爬虫全局信息 */
-typedef struct
-{
-    crwl_worker_conf_t conf;                /* 配置信息 */
-    thread_pool_t *worker_tp;               /* 线程池对象 */
-    log_cycle_t *log;                       /* 日志对象 */
-} crwl_worker_ctx_t;
 
 int crwl_worker_add_sock(crwl_worker_t *worker, crwl_worker_socket_t *sck);
 int crwl_worker_task_load_webpage_by_uri(

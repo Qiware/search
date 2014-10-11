@@ -15,6 +15,7 @@
 #include "thread_pool.h"
 #include "crwl_worker.h"
 
+int crwl_worker_tpool_init(crwl_worker_ctx_t *ctx);
 static int crwl_worker_parse_conf(
         xml_tree_t *xml, crwl_worker_conf_t *conf, log_cycle_t *log);
 static void *crwl_worker_routine(void *_ctx);
@@ -168,8 +169,7 @@ static int crwl_worker_parse_conf(
  ******************************************************************************/
 crwl_worker_ctx_t *crwl_worker_init_cntx(crwl_worker_conf_t *conf, log_cycle_t *log)
 {
-    int idx, ret;
-    crwl_worker_t *worker;
+    int ret;
     crwl_worker_ctx_t *ctx;
 
     /* 1. 创建全局对象 */
@@ -181,42 +181,16 @@ crwl_worker_ctx_t *crwl_worker_init_cntx(crwl_worker_conf_t *conf, log_cycle_t *
     }
 
     ctx->log = log;
-
     memcpy(&ctx->conf, conf, sizeof(crwl_worker_conf_t));
 
-    /* 2. 创建Worker线程池 */
-    ctx->worker_tp = thread_pool_init(conf->thread_num);
-    if (NULL == ctx->worker_tp)
+    /* 3. 初始化Worker线程池 */
+    ret = crwl_worker_tpool_init(ctx);
+    if (CRWL_OK != ret)
     {
+        thread_pool_destroy(ctx->worker_tp);
         free(ctx);
         log_error(log, "Initialize thread pool failed!");
         return NULL;
-    }
-
-    ctx->worker_tp->data =
-        (crwl_worker_t *)calloc(conf->thread_num, sizeof(crwl_worker_t));
-    if (NULL == ctx->worker_tp->data)
-    {
-        log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        thread_pool_destroy(ctx->worker_tp);
-        free(ctx);
-        return NULL;
-    }
-
-    /* 3. 依次初始化Worker线程信息 */
-    for (idx=0; idx<conf->thread_num; ++idx)
-    {
-        worker = (crwl_worker_t *)ctx->worker_tp->data + idx;
-
-        ret = crwl_worker_init(ctx, worker);
-        if (CRWL_OK != ret)
-        {
-            log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
-
-            thread_pool_destroy(ctx->worker_tp);
-            free(ctx);
-            return NULL;
-        }
     }
 
     return ctx;
@@ -319,8 +293,76 @@ int crwl_worker_init(crwl_worker_ctx_t *ctx, crwl_worker_t *worker)
  ******************************************************************************/
 static int crwl_worker_destroy(crwl_worker_t *worker)
 {
+    void *data;
+
     eslab_destroy(&worker->slab);
+
+    pthread_rwlock_wrlock(&worker->task.lock);
+    while (1)
+    {
+        data = queue_pop(&worker->task.queue);
+        if (NULL == data)
+        {
+            break;
+        }
+    }
+    pthread_rwlock_unlock(&worker->task.lock);
+
+    pthread_rwlock_destroy(&worker->task.lock);
+    queue_destroy(&worker->task.queue);
+
     free(worker);
+    return CRWL_OK;
+}
+
+/******************************************************************************
+ **函数名称: crwl_worker_tpool_init
+ **功    能: 初始化爬虫线程池
+ **输入参数: 
+ **     ctx: 全局信息
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.10.11 #
+ ******************************************************************************/
+int crwl_worker_tpool_init(crwl_worker_ctx_t *ctx)
+{
+    int idx, ret;
+    crwl_worker_t *worker;
+    crwl_worker_conf_t *conf = &ctx->conf;
+
+    /* 1. 创建Worker线程池 */
+    ctx->worker_tp = thread_pool_init(conf->thread_num);
+    if (NULL == ctx->worker_tp)
+    {
+        free(ctx);
+        log_error(log, "Initialize thread pool failed!");
+        return NULL;
+    }
+
+    /* 2. 新建Worker对象 */
+    ctx->worker_tp->data =
+        (crwl_worker_t *)calloc(conf->thread_num, sizeof(crwl_worker_t));
+    if (NULL == ctx->worker_tp->data)
+    {
+        log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        return CRWL_ERR;
+    }
+
+    /* 3. 依次初始化Worker对象 */
+    for (idx=0; idx<conf->thread_num; ++idx)
+    {
+        worker = (crwl_worker_t *)ctx->worker_tp->data + idx;
+
+        ret = crwl_worker_init(ctx, worker);
+        if (CRWL_OK != ret)
+        {
+            log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
+            return CRWL_ERR;
+        }
+    }
+
     return CRWL_OK;
 }
 

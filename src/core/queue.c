@@ -111,8 +111,31 @@ void *queue_pop(Queue_t *q)
     }
 
     data = q->head->data;
+    q->head->data = NULL;
     q->head = q->head->next;
     --q->num;
 
     return data;
+}
+
+/******************************************************************************
+ **函数名称: queue_destroy
+ **功    能: 销毁队列
+ **输入参数:
+ **     q: 队列
+ **输出参数:
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.10.11 #
+ ******************************************************************************/
+void queue_destroy(Queue_t *q)
+{
+    free(q->base);
+
+    q->base = NULL;
+    q->head = NULL;
+    q->tail = NULL;
+    q->max = 0;
+    q->num = 0;
 }

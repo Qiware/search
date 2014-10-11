@@ -546,6 +546,7 @@ extern int xml_spack(xml_tree_t *xml, char *str)
  **返    回: 查找到的节点地址
  **实现描述: 
  **注意事项: 
+ **     1. XML大小写敏感
  **作    者: # Qifeng.zou # 2013.02.26 #
  ******************************************************************************/
 xml_node_t *xml_rsearch(xml_tree_t *xml, xml_node_t *curr, const char *path)

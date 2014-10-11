@@ -413,6 +413,7 @@ int xml_parse(xml_tree_t *xml, Stack_t *stack, const char *str)
  **返    回: 0: 成功  !0: 失败
  **实现描述: 
  **注意事项: 
+ **     1. XML大小写敏感
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
 static int xml_parse_version(xml_tree_t *xml, xml_parse_t *parse)
@@ -514,6 +515,7 @@ static int xml_parse_version(xml_tree_t *xml, xml_parse_t *parse)
  **返    回: 0: 成功  !0: 失败
  **实现描述: 
  **注意事项: 
+ **     1. XML大小写敏感
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
 static int xml_parse_note(xml_tree_t *xml, xml_parse_t *parse)
@@ -640,6 +642,7 @@ static int xml_parse_mark(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse)
  **返    回: 0: 成功  !0: 失败
  **实现描述: 
  **注意事项: 
+ **     1. XML大小写敏感
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
 static int xml_parse_end(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse)
@@ -1046,6 +1049,7 @@ static int xml_mark_get_attr(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse
  **返    回: 0: 成功  !0: 失败
  **实现描述: 
  **注意事项: 
+ **     1. XML大小写敏感
  **作    者: # Qifeng.zou # 2013.02.23 #
  ******************************************************************************/
 static int xml_mark_is_end(xml_parse_t *parse)
