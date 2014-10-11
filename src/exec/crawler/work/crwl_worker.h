@@ -67,13 +67,13 @@ typedef struct
 
     pthread_rwlock_t slab_lock;             /* 内存池锁 */
     eslab_pool_t slab;                      /* 内存池 */
-} crwl_worker_ctx_t;
+} crwl_worker_cntx_t;
 
 /* 爬虫对象信息 */
 typedef struct
 {
     int tidx;                               /* 线程索引 */
-    crwl_worker_ctx_t *ctx;                 /* 全局信息 */
+    crwl_worker_cntx_t *ctx;                 /* 全局信息 */
 
     fd_set wrset;                           /* 可写集合 */
     fd_set rdset;                           /* 可读集合 */
@@ -93,8 +93,8 @@ int crwl_worker_task_load_webpage_by_ip(
         crwl_worker_t *worker, const crwl_task_load_webpage_by_ip_t *args);
 
 int crwl_worker_load_conf(crwl_worker_conf_t *conf, const char *path, log_cycle_t *log);
-crwl_worker_ctx_t *crwl_worker_init_cntx(crwl_worker_conf_t *conf, log_cycle_t *log);
-int crwl_worker_startup(crwl_worker_ctx_t *ctx);
-int crwl_worker_init(crwl_worker_ctx_t *ctx, crwl_worker_t *worker);
+crwl_worker_cntx_t *crwl_worker_init_cntx(const crwl_worker_conf_t *conf, log_cycle_t *log);
+int crwl_worker_startup(crwl_worker_cntx_t *ctx);
+int crwl_worker_init(crwl_worker_cntx_t *ctx, crwl_worker_t *worker);
 
 #endif /*__CRWL_WORKER_H__*/

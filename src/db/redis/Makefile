@@ -12,11 +12,11 @@ INCLUDE = -I. -I$(PROJ)/src/incl
 LIBS_PATH = -L$(PROJ)/lib
 LIBS = 
 
-SRC_LIST = redis.c
+SRC_LIST = redis_queue.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
 
-TARGET = libxdoredis.so
+TARGET = libxdoredis_queue.so
 
 .PHONY: all clean
 

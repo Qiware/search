@@ -15,7 +15,7 @@
 #include "thread_pool.h"
 #include "crwl_worker.h"
 
-int crwl_worker_tpool_init(crwl_worker_ctx_t *ctx);
+int crwl_worker_tpool_init(crwl_worker_cntx_t *ctx);
 static int crwl_worker_parse_conf(
         xml_tree_t *xml, crwl_worker_conf_t *conf, log_cycle_t *log);
 static void *crwl_worker_routine(void *_ctx);
@@ -167,13 +167,14 @@ static int crwl_worker_parse_conf(
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.04 #
  ******************************************************************************/
-crwl_worker_ctx_t *crwl_worker_init_cntx(crwl_worker_conf_t *conf, log_cycle_t *log)
+crwl_worker_cntx_t *crwl_worker_init_cntx(
+        const crwl_worker_conf_t *conf, log_cycle_t *log)
 {
     int ret;
-    crwl_worker_ctx_t *ctx;
+    crwl_worker_cntx_t *ctx;
 
     /* 1. 创建全局对象 */
-    ctx = (crwl_worker_ctx_t *)calloc(1, sizeof(crwl_worker_ctx_t));
+    ctx = (crwl_worker_cntx_t *)calloc(1, sizeof(crwl_worker_cntx_t));
     if (NULL == ctx)
     {
         log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
@@ -183,10 +184,25 @@ crwl_worker_ctx_t *crwl_worker_init_cntx(crwl_worker_conf_t *conf, log_cycle_t *
     ctx->log = log;
     memcpy(&ctx->conf, conf, sizeof(crwl_worker_conf_t));
 
+    /* 2. 新建SLAB机制 */
+    pthread_rwlock_init(&ctx->slab_lock, NULL);
+
+    ret = eslab_init(&ctx->slab, 32 * KB);
+    if (0 != ret)
+    {
+        pthread_rwlock_destroy(&ctx->slab_lock);
+        free(ctx);
+
+        log_error(log, "Initialize slab failed!");
+        return NULL;
+    }
+
     /* 3. 初始化Worker线程池 */
     ret = crwl_worker_tpool_init(ctx);
     if (CRWL_OK != ret)
     {
+        eslab_destroy(&ctx->slab);
+        pthread_rwlock_destroy(&ctx->slab_lock);
         thread_pool_destroy(ctx->worker_tp);
         free(ctx);
         log_error(log, "Initialize thread pool failed!");
@@ -207,10 +223,10 @@ crwl_worker_ctx_t *crwl_worker_init_cntx(crwl_worker_conf_t *conf, log_cycle_t *
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.04 #
  ******************************************************************************/
-int crwl_worker_startup(crwl_worker_ctx_t *ctx)
+int crwl_worker_startup(crwl_worker_cntx_t *ctx)
 {
     int idx;
-    crwl_worker_conf_t *conf = &ctx->conf;
+    const crwl_worker_conf_t *conf = &ctx->conf;
 
     /* 1. 设置线程回调 */
     for (idx=0; idx<conf->thread_num; ++idx)
@@ -232,7 +248,7 @@ int crwl_worker_startup(crwl_worker_ctx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.09 #
  ******************************************************************************/
-static crwl_worker_t *crwl_worker_get(crwl_worker_ctx_t *ctx)
+static crwl_worker_t *crwl_worker_get(crwl_worker_cntx_t *ctx)
 {
     int tidx;
 
@@ -252,10 +268,10 @@ static crwl_worker_t *crwl_worker_get(crwl_worker_ctx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.23 #
  ******************************************************************************/
-int crwl_worker_init(crwl_worker_ctx_t *ctx, crwl_worker_t *worker)
+int crwl_worker_init(crwl_worker_cntx_t *ctx, crwl_worker_t *worker)
 {
     int ret;
-    crwl_worker_conf_t *conf = &ctx->conf;
+    const crwl_worker_conf_t *conf = &ctx->conf;
 
     worker->log = ctx->log;
 
@@ -294,17 +310,25 @@ int crwl_worker_init(crwl_worker_ctx_t *ctx, crwl_worker_t *worker)
 static int crwl_worker_destroy(crwl_worker_t *worker)
 {
     void *data;
+    crwl_worker_cntx_t *ctx = worker->ctx;
 
     eslab_destroy(&worker->slab);
 
+    /* 释放TASK队列及数据 */
     pthread_rwlock_wrlock(&worker->task.lock);
     while (1)
     {
+        /* 弹出数据 */
         data = queue_pop(&worker->task.queue);
         if (NULL == data)
         {
             break;
         }
+
+        /* 释放内存 */
+        pthread_rwlock_wrlock(&ctx->slab_lock);
+        eslab_free(&ctx->slab, data);
+        pthread_rwlock_unlock(&ctx->slab_lock);
     }
     pthread_rwlock_unlock(&worker->task.lock);
 
@@ -326,19 +350,18 @@ static int crwl_worker_destroy(crwl_worker_t *worker)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.11 #
  ******************************************************************************/
-int crwl_worker_tpool_init(crwl_worker_ctx_t *ctx)
+int crwl_worker_tpool_init(crwl_worker_cntx_t *ctx)
 {
-    int idx, ret;
+    int idx, ret, num;
     crwl_worker_t *worker;
-    crwl_worker_conf_t *conf = &ctx->conf;
+    const crwl_worker_conf_t *conf = &ctx->conf;
 
     /* 1. 创建Worker线程池 */
     ctx->worker_tp = thread_pool_init(conf->thread_num);
     if (NULL == ctx->worker_tp)
     {
-        free(ctx);
-        log_error(log, "Initialize thread pool failed!");
-        return NULL;
+        log_error(ctx->log, "Initialize thread pool failed!");
+        return CRWL_ERR;
     }
 
     /* 2. 新建Worker对象 */
@@ -346,6 +369,7 @@ int crwl_worker_tpool_init(crwl_worker_ctx_t *ctx)
         (crwl_worker_t *)calloc(conf->thread_num, sizeof(crwl_worker_t));
     if (NULL == ctx->worker_tp->data)
     {
+        thread_pool_destroy(ctx->worker_tp);
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return CRWL_ERR;
     }
@@ -359,9 +383,25 @@ int crwl_worker_tpool_init(crwl_worker_ctx_t *ctx)
         if (CRWL_OK != ret)
         {
             log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
-            return CRWL_ERR;
+            break;
         }
     }
+
+    if (idx == conf->thread_num)
+    {
+        return CRWL_OK;
+    }
+
+    /* 4. 释放Worker对象 */
+    num = idx;
+    for (idx=0; idx<num; ++idx)
+    {
+        worker = (crwl_worker_t *)ctx->worker_tp->data + idx;
+
+        crwl_worker_destroy(worker);
+    }
+
+    thread_pool_destroy(ctx->worker_tp);
 
     return CRWL_OK;
 }
@@ -377,7 +417,7 @@ int crwl_worker_tpool_init(crwl_worker_ctx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.25 #
  ******************************************************************************/
-static int crwl_worker_get_task(crwl_worker_ctx_t *ctx, crwl_worker_t *worker)
+static int crwl_worker_get_task(crwl_worker_cntx_t *ctx, crwl_worker_t *worker)
 {
     void *data;
     crwl_task_t *t;
@@ -822,7 +862,7 @@ static void *crwl_worker_routine(void *_ctx)
     int ret, max;
     struct timeval tv;
     crwl_worker_t *worker;
-    crwl_worker_ctx_t *ctx = (crwl_worker_ctx_t *)_ctx;
+    crwl_worker_cntx_t *ctx = (crwl_worker_cntx_t *)_ctx;
 
     /* 1. 创建爬虫对象 */
     worker = crwl_worker_get(ctx);

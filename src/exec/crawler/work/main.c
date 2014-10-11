@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
     int ret;
     log_cycle_t *log;
     crwl_worker_opt_t opt;
-    crwl_worker_ctx_t *ctx;
+    crwl_worker_cntx_t *ctx;
     crwl_worker_conf_t conf;
     char log_path[FILE_NAME_MAX_LEN];
 
