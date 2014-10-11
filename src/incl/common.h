@@ -19,6 +19,7 @@ typedef int bool;
 #define CMD_LINE_MAX_LEN    (1024)  /* 命令行最大长度 */
 #define ERR_MSG_MAX_LEN     (1024)  /* 错误信息最大长度 */
 #define URL_MAX_LEN         (4096)  /* URL最大长度 */
+#define URI_MAX_LEN     URL_MAX_LEN /* URI最大长度 */
 
 #define MD5_SUM_CHK_LEN     (32)    /* MD5校验值长度 */
 

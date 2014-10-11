@@ -9,7 +9,7 @@
 #include "crwl_worker.h"
 
 /******************************************************************************
- **函数名称: crwl_worker_task_load_webpage_by_url
+ **函数名称: crwl_worker_task_load_webpage_by_uri
  **功    能: 通过URL加载网页的任务处理
  **输入参数: 
  **     worker: 爬虫对象 
@@ -20,8 +20,8 @@
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.25 #
  ******************************************************************************/
-int crwl_worker_task_load_webpage_by_url(
-        crwl_worker_t *worker, const crwl_task_load_webpage_by_url_t *args)
+int crwl_worker_task_load_webpage_by_uri(
+        crwl_worker_t *worker, const crwl_task_load_webpage_by_uri_t *args)
 {
     int ret, fd;
     struct hostent *host;
@@ -29,10 +29,10 @@ int crwl_worker_task_load_webpage_by_url(
     char ipaddr[IP_ADDR_MAX_LEN];
     
     /* 1. 通过URL获取WEB服务器信息 */
-    host = gethostbyname(args->url);
+    host = gethostbyname(args->uri);
     if (NULL == host)
     {
-        log_error(worker->log, "Get host by name failed! url:%s", args->url);
+        log_error(worker->log, "Get host by name failed! uri:%s", args->uri);
         return CRWL_OK;
     }
 
@@ -42,8 +42,8 @@ int crwl_worker_task_load_webpage_by_url(
     fd = tcp_connect_ex2(ipaddr, args->port);
     if (fd < 0)
     {
-        log_error(worker->log, "errmsg:[%d] %s! ipaddr:%s url:%s",
-            errno, strerror(errno), ipaddr, args->url);
+        log_error(worker->log, "errmsg:[%d] %s! ipaddr:%s uri:%s",
+            errno, strerror(errno), ipaddr, args->uri);
         return CRWL_OK;
     }
 
@@ -58,7 +58,7 @@ int crwl_worker_task_load_webpage_by_url(
     memset(sck, 0, sizeof(crwl_worker_socket_t));
 
     sck->sckid = fd;
-    snprintf(sck->url, sizeof(sck->url), "%s", args->url);
+    snprintf(sck->uri, sizeof(sck->uri), "%s", args->uri);
     snprintf(sck->ipaddr, sizeof(sck->ipaddr), "%s", ipaddr);
     sck->port = args->port;
 

@@ -1,6 +1,10 @@
 *.o
 bin/*
 lib/*
-src/demo/*
 tags
 stderr
+src/demo/html/html_test
+src/demo/log/log_test
+src/demo/tcp/connect
+src/demo/list/list
+src/demo/redis/redis_test

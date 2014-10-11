@@ -33,7 +33,7 @@ void redis_test(void)
     /* 2. 设置KEY-VALUE对
      * 需要注意的是, 如果返回的对象是NULL, 则表示客户端和服务器之间出现严重错误, 
      * 必须重新链接. 这里只是举例说明, 简便起见, 后面的命令就不再做这样的判断了. */
-    const char *command1 = "set stest1 value1";
+    const char *command1 = "set stest2 value2";
 
     r = (redisReply *)redisCommand(ctx, command1);
     if (NULL == r)
@@ -96,14 +96,20 @@ void redis_test(void)
     r = (redisReply *)redisCommand(ctx, command4);
     /* 这里需要先说明一下, 由于stest2键并不存在, 因此Redis会返回空结果, 
      * 这里只是为了演示. */
-    if (REDIS_REPLY_NIL != r->type)
+    if (REDIS_REPLY_NIL == r->type)
+    {
+        printf("Execute [%s] is NIL!\n", command4);
+    }
+    else if (REDIS_REPLY_STRING != r->type)
     {
         fprintf(stderr, "Execute [%s] failed!\n", command4);
         freeReplyObject(r);
         goto ERROR;
     }
-
-    printf("Execute [%s] Success!\n", command4);
+    else
+    {
+        printf("Execute [%s] Success! Value:%s\n", command4, r->str);
+    }
 
     freeReplyObject(r);
 
@@ -156,7 +162,7 @@ void redis_test(void)
         goto ERROR;
     }
 
-    /* 对pipeline返回结果的处理方式, 和前面代码的处理方式完全一直, 
+    /* 对pipeline返回结果的处理方式, 和前面代码的处理方式完全一样, 
      * 这里就不再重复给出了. */
     if (REDIS_OK != redisGetReply(ctx, (void **)&r))
     {

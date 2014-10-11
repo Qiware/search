@@ -5,7 +5,6 @@
 typedef struct
 {
     size_t count;   /* 单元数 */
-    size_t size;    /* 单元SIZE */
 } queue_conf_t;
 
 /* 循环队列结点 */

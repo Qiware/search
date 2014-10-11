@@ -151,15 +151,6 @@ static int crwl_worker_parse_conf(
 
     conf->task_queue.count = atoi(node->value);
 
-    node = xml_rsearch(xml, curr, "TASK_QUEUE.SIZE");
-    if (NULL == node)
-    {
-        log_error(log, "Didn't configure size of task queue unit!");
-        return CRWL_ERR;
-    }
-
-    conf->task_queue.size = atoi(node->value);
-
     return CRWL_OK;
 }
 
@@ -487,7 +478,7 @@ static int crwl_worker_trav_recv(crwl_worker_t *worker)
         }
         else if (0 == n)
         {
-            log_error(worker->log, "End of read data! url:%s", sck->url);
+            log_error(worker->log, "End of read data! uri:%s", sck->uri);
             crwl_worker_fsync(worker, sck);
             Close(sck->sckid);
             continue;
@@ -611,8 +602,8 @@ static int crwl_worker_trav_send(crwl_worker_t *worker)
         if (CRWL_OK != ret)
         {
             log_error(worker->log, "Send data failed!"
-                " ipaddr:[%s:%d] url:[%s] base64_url:[%s]",
-                sck->ipaddr, sck->port, sck->url, sck->base64_url);
+                " ipaddr:[%s:%d] uri:[%s] base64_uri:[%s]",
+                sck->ipaddr, sck->port, sck->uri, sck->base64_uri);
 
             /* 将异常套接字踢出链表, 并释放空间 */
             if (prev)
@@ -942,8 +933,8 @@ static int crwl_worker_task_handler(crwl_worker_t *worker, crwl_task_t *t)
         /* 通过URL加载网页 */
         case CRWL_TASK_LOAD_WEB_PAGE_BY_URL:
         {
-            return crwl_worker_task_load_webpage_by_url(
-                    worker, (const crwl_task_load_webpage_by_url_t *)args);
+            return crwl_worker_task_load_webpage_by_uri(
+                    worker, (const crwl_task_load_webpage_by_uri_t *)args);
         }
         /* 通过IP加载网页 */
         case CRWL_TASK_LOAD_WEB_PAGE_BY_IP:

@@ -33,9 +33,9 @@ typedef struct
 /* 通过URL加载网页 */
 typedef struct
 {
-    char url[URL_MAX_LEN];                  /* URL */
+    char uri[URL_MAX_LEN];                  /* URL */
     int port;                               /* 端口号 */
-} crwl_task_load_webpage_by_url_t;
+} crwl_task_load_webpage_by_uri_t;
 
 /* 通过IP加载网页 */
 typedef struct

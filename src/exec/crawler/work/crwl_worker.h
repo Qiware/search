@@ -45,8 +45,8 @@ typedef struct
     time_t wrtm;                            /* 最近写入时间 */
     time_t rdtm;                            /* 最近读取时间 */
 
-    char url[URL_MAX_LEN];                  /* 原始URL(未转义) */
-    char base64_url[URL_MAX_LEN];           /* 转义URL(中文转为BASE64编码) */
+    char uri[URL_MAX_LEN];                  /* 原始URL(未转义) */
+    char base64_uri[URL_MAX_LEN];           /* 转义URL(中文转为BASE64编码) */
 
     char ipaddr[IP_ADDR_MAX_LEN];           /* IP地址 */
     int port;                               /* 端口号 */
@@ -83,8 +83,8 @@ typedef struct
 } crwl_worker_ctx_t;
 
 int crwl_worker_add_sock(crwl_worker_t *worker, crwl_worker_socket_t *sck);
-int crwl_worker_task_load_webpage_by_url(
-        crwl_worker_t *worker, const crwl_task_load_webpage_by_url_t *args);
+int crwl_worker_task_load_webpage_by_uri(
+        crwl_worker_t *worker, const crwl_task_load_webpage_by_uri_t *args);
 int crwl_worker_task_load_webpage_by_ip(
         crwl_worker_t *worker, const crwl_task_load_webpage_by_ip_t *args);
 
