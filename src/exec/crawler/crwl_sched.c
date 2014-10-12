@@ -58,7 +58,7 @@ void *crwl_sched_routine(void *_ctx)
         if (worker->task.queue.num >= worker->task.queue.max)
         {
             Sleep(1);
-            log_error(ctx->log, "Queue space isn't engouth! idx:%d", idx);
+            log_error(ctx->log, "Queue space isn't enough! idx:%d", idx);
             continue;
         }
 
@@ -66,8 +66,9 @@ void *crwl_sched_routine(void *_ctx)
         snprintf(cmd, sizeof(cmd), "LPOP CRWL_REDIS_TASK_QUEUE");
 
         r = redisCommand(sched->redis_ctx, cmd);
-        if (NULL == r)
+        if (REDIS_REPLY_NIL == r->type)
         {
+            log_error(ctx->log, "Didn't pop data! idx:%d", idx);
             Sleep(1);
             continue;
         }
