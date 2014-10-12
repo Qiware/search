@@ -18,6 +18,7 @@ export PROJ_LIB = ${PROJ}/lib
 # 编译目录(注：编译按顺序执行　注意库之间的依赖关系)
 #DIR=`find ./src -type d`
 DIR := "src/core"
+DIR := "src/http"
 DIR += "src/db/redis"
 
 DIR += "src/exec/crawler/"

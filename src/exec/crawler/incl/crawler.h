@@ -21,6 +21,7 @@
 #include "crwl_task.h"
 #include "thread_pool.h"
 
+/* 错误码 */
 typedef enum
 {
     CRWL_OK = 0
@@ -28,6 +29,13 @@ typedef enum
 
     , CRWL_ERR = ~0x7fffffff                /* 失败、错误 */
 } crwl_err_code_e;
+
+/* 数据类型 */
+typedef enum
+{
+    CRWL_DATA_TYPE_UNKNOWN = 0              /* 未知数据 */
+    , CRWL_HTTP_GET_REQ                     /* HTTP GET请求 */
+} crwl_data_type_e;
 
 /* 读取/发送快照 */
 typedef struct
@@ -41,8 +49,8 @@ typedef struct
 /* 发送数据的信息 */
 typedef struct
 {
-    int type;                               /* 数据类型 */
-    int length;                             /* 数据长度 */
+    int type;                               /* 数据类型(crwl_data_type_e) */
+    int length;                             /* 数据长度(报头+报体) */
 } crwl_data_info_t;
 
 /* Worker配置信息 */

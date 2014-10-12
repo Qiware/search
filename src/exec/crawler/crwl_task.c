@@ -109,6 +109,10 @@ void crwl_task_queue_destroy(crwl_task_queue_t *tq)
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
+ **     1. 通过URL获取WEB服务器信息
+ **     2. 连接远程WEB服务器
+ **     3. 将FD等信息加入套接字链表
+ **     4. 添加HTTP GET请求
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.25 #
  ******************************************************************************/
@@ -117,6 +121,7 @@ int crwl_task_load_webpage_by_uri(
 {
     int ret, fd;
     struct hostent *host;
+    time_t ctm = time(NULL);
     crwl_worker_socket_t *sck;
     char ipaddr[IP_ADDR_MAX_LEN];
     
@@ -150,6 +155,9 @@ int crwl_task_load_webpage_by_uri(
     memset(sck, 0, sizeof(crwl_worker_socket_t));
 
     sck->sckid = fd;
+    sck->rdtm = ctm;
+    sck->wrtm = ctm;
+    sck->read.addr = sck->recv_buff;
     snprintf(sck->uri, sizeof(sck->uri), "%s", args->uri);
     snprintf(sck->ipaddr, sizeof(sck->ipaddr), "%s", ipaddr);
     sck->port = args->port;
@@ -158,6 +166,17 @@ int crwl_task_load_webpage_by_uri(
     if (CRWL_OK != ret)
     {
         log_error(worker->log, "Add socket into list failed!");
+        eslab_free(&worker->slab, sck);
+        return CRWL_ERR;
+    }
+
+    /* 4. 添加HTTP GET请求 */
+    ret = crwl_worker_add_http_get_req(worker, sck, args->uri);
+    if (CRWL_OK != ret)
+    {
+        log_error(worker->log, "Add http get request failed!");
+
+        crwl_worker_remove_sock(worker, sck);
         eslab_free(&worker->slab, sck);
         return CRWL_ERR;
     }

@@ -8,6 +8,7 @@
  ** 作  者: # Qifeng.zou # 2014.09.04 #
  ******************************************************************************/
 
+#include "http.h"
 #include "common.h"
 #include "syscall.h"
 #include "crawler.h"
@@ -17,8 +18,6 @@
 
 static int crwl_worker_parse_conf(
         xml_tree_t *xml, crwl_worker_conf_t *conf, log_cycle_t *log);
-
-static int crwl_worker_remove_sock(crwl_worker_t *worker, crwl_worker_socket_t *sck);
 
 static int crwl_worker_task_handler(crwl_worker_t *worker, crwl_task_t *t);
 
@@ -474,14 +473,14 @@ static int crwl_worker_trav_recv(crwl_worker_t *worker)
             }
 
             log_error(worker->log, "errmsg:[%d] %s!", errno, strerror(errno));
-            Close(sck->sckid);
+            crwl_worker_remove_sock(worker, sck);
             return CRWL_ERR;
         }
         else if (0 == n)
         {
             log_error(worker->log, "End of read data! uri:%s", sck->uri);
             crwl_worker_fsync(worker, sck);
-            Close(sck->sckid);
+            crwl_worker_remove_sock(worker, sck);
             continue;
         }
 
@@ -526,9 +525,9 @@ static int crwl_worker_send_data(crwl_worker_t *worker, crwl_worker_socket_t *sc
 
         info = (crwl_data_info_t *)node->data;
 
-        sck->send.addr = node->data;
-        sck->send.off = sizeof(crwl_data_info_t);
-        sck->send.total = info->length + sizeof(crwl_data_info_t);
+        sck->send.addr = (void *)(info + 1);
+        sck->send.off = 0;
+        sck->send.total = info->length - sizeof(crwl_data_info_t);
 
         eslab_free(&worker->slab, node);
     }
@@ -674,7 +673,6 @@ static int crwl_worker_timeout_hdl(crwl_worker_t *worker)
             continue;
         }
 
-        Close(sck->sckid);
         crwl_worker_fsync(worker, sck);
 
         /* 删除链表头 */
@@ -865,6 +863,10 @@ int crwl_worker_add_sock(crwl_worker_t *worker, crwl_worker_socket_t *sck)
         return CRWL_ERR;
     }
 
+    sck->read.addr = sck->recv_buff;
+    sck->read.off = 0;
+    sck->read.total = CRWL_WRK_READ_SIZE;
+
     node->data = sck;
 
     /* 2. 插入链表尾 */
@@ -891,12 +893,13 @@ int crwl_worker_add_sock(crwl_worker_t *worker, crwl_worker_socket_t *sck)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.24 #
  ******************************************************************************/
-static int crwl_worker_remove_sock(crwl_worker_t *worker, crwl_worker_socket_t *sck)
+int crwl_worker_remove_sock(crwl_worker_t *worker, crwl_worker_socket_t *sck)
 {
-    list_node_t *item, *next;
+    list_node_t *item, *next, *prev;
 
     Close(sck->sckid);
 
+    /* 1. 释放发送链表 */
     item = sck->send_list.head;
     while (NULL != item)
     {
@@ -909,9 +912,59 @@ static int crwl_worker_remove_sock(crwl_worker_t *worker, crwl_worker_socket_t *
         item = next;
     }
 
-    eslab_free(&worker->slab, sck);
+    /* 2. 从套接字链表剔除SCK */
+    item = worker->sock_list.head;
+    prev = item;
+    while (NULL != item)
+    {
+        if (item->data == sck)
+        {
+            /* 在链表头 */
+            if (prev == item)
+            {
+                if (worker->sock_list.head == worker->sock_list.tail)
+                {
+                    worker->sock_list.num = 0;
+                    worker->sock_list.head = NULL;
+                    worker->sock_list.tail = NULL;
 
-    return CRWL_OK;
+                    eslab_free(&worker->slab, item);
+                    eslab_free(&worker->slab, sck);
+                    return CRWL_OK;
+                }
+
+                --worker->sock_list.num;
+                worker->sock_list.head = item->next;
+
+                eslab_free(&worker->slab, item);
+                eslab_free(&worker->slab, sck);
+                return CRWL_OK;
+            }
+            /* 在链表尾 */
+            else if (item == worker->sock_list.tail)
+            {
+                --worker->sock_list.num;
+                worker->sock_list.tail = prev;
+
+                eslab_free(&worker->slab, item);
+                eslab_free(&worker->slab, sck);
+                return CRWL_OK;
+            }
+            /* 在链表中间 */
+            --worker->sock_list.num;
+            prev->next = item->next;
+
+            eslab_free(&worker->slab, item);
+            eslab_free(&worker->slab, sck);
+            return CRWL_OK;
+        }
+
+        prev = item;
+        item = item->next;
+    }
+
+    log_error(worker->log, "Didn't find special socket!");
+    return CRWL_OK; /* 未找到 */
 }
 
 /******************************************************************************
@@ -953,4 +1006,84 @@ static int crwl_worker_task_handler(crwl_worker_t *worker, crwl_task_t *t)
         }
     }
     return CRWL_OK;
+}
+
+/******************************************************************************
+ **函数名称: crwl_worker_add_http_get_req
+ **功    能: 添加HTTP GET请求
+ **输入参数: 
+ **     worker: 爬虫对象 
+ **     sck: 指定套接字
+ **     uri: 源URI
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **     1. 创建链表结点
+ **     2. 新建HTTP GET请求
+ **     3. 将结点插入链表
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.10.12 #
+ ******************************************************************************/
+int crwl_worker_add_http_get_req(
+        crwl_worker_t *worker, crwl_worker_socket_t *sck, const char *uri)
+{
+    int ret;
+    void *addr;
+    list_node_t *node;
+    crwl_data_info_t *info;
+
+    do
+    {
+        /* 1. 创建链表结点 */
+        node = eslab_alloc(&worker->slab, sizeof(list_node_t));
+        if (NULL == node)
+        {
+            log_error(worker->log, "Alloc memory from slab failed!");
+            break;
+        }
+
+        /* 2. 新建HTTP GET请求 */
+        node->data = eslab_alloc(&worker->slab,
+                        sizeof(crwl_data_info_t) + HTTP_GET_REQ_STR_LEN);
+        if (NULL == node->data)
+        {
+            log_error(worker->log, "Alloc memory from slab failed!");
+            break;
+        }
+
+        info = node->data;
+        addr = node->data + sizeof(crwl_data_info_t);
+
+        ret = http_get_request(uri, addr, HTTP_GET_REQ_STR_LEN);
+        if (0 != ret)
+        {
+            log_error(worker->log, "HTTP GET request string failed");
+            break;
+        }
+
+        info->type = CRWL_HTTP_GET_REQ;
+        info->length = sizeof(crwl_data_info_t) + strlen((const char *)addr);
+
+        /* 3. 将结点插入链表 */
+        ret = list_insert_tail(&sck->send_list, node);
+        if (0 != ret)
+        {
+            log_error(worker->log, "Insert list tail failed");
+            break;
+        }
+
+        return CRWL_OK;
+    } while(0);
+
+    /* 释放空间 */
+    if (NULL != node)
+    {
+        if (node->data)
+        {
+            eslab_free(&worker->slab, node->data);
+        }
+        eslab_free(&worker->slab, node);
+    }
+
+    return CRWL_ERR;
 }

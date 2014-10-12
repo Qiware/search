@@ -26,7 +26,7 @@ static void crwl_sched_destroy(crwl_sched_t *sched);
  ******************************************************************************/
 void *crwl_sched_routine(void *_ctx)
 {
-    int ret, idx;
+    int ret, idx, times = 0;
     void *addr;
     redisReply *r;
     crwl_sched_t *sched;
@@ -57,10 +57,17 @@ void *crwl_sched_routine(void *_ctx)
         worker = begin + idx;
         if (worker->task.queue.num >= worker->task.queue.max)
         {
-            Sleep(1);
+            ++times;
+            if (times >= conf->worker.thread_num)
+            {
+                times = 0;
+                Sleep(1);
+            }
             log_error(ctx->log, "Queue space isn't enough! idx:%d", idx);
             continue;
         }
+
+        times = 0;
 
        /* 2. 从队列取数据 */
         snprintf(cmd, sizeof(cmd), "LPOP CRWL_REDIS_TASK_QUEUE");

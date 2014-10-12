@@ -64,7 +64,12 @@ typedef struct
     crwl_task_queue_t task;                 /* 任务对象 */
 } crwl_worker_t;
 
+/* 函数声明 */
 int crwl_worker_add_sock(crwl_worker_t *worker, crwl_worker_socket_t *sck);
+int crwl_worker_remove_sock(crwl_worker_t *worker, crwl_worker_socket_t *sck);
+
+int crwl_worker_add_http_get_req(
+        crwl_worker_t *worker, crwl_worker_socket_t *sck, const char *uri);
 int crwl_task_load_webpage_by_uri(
         crwl_worker_t *worker, const crwl_task_load_webpage_by_uri_t *args);
 int crwl_task_load_webpage_by_ip(

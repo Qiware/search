@@ -1,4 +1,6 @@
+#include "log.h"
 #include "http.h"
+#include "common.h"
 
 /******************************************************************************
  **函数名称: http_get_path_from_uri
@@ -77,12 +79,12 @@ int http_get_host_from_uri(const char *uri, char *host, int size)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.10 #
  ******************************************************************************/
-int http_parse_get_req_field_from_uri(const char *uri, http_get_req_field_t *field)
+int http_parse_get_req_field_from_uri(const char *uri, http_get_req_field_t *f)
 {
     int ret;
     
     /* 1. 获取PATH字段 */
-    ret = http_get_path_from_uri(uri, filed.path, sizeof(filed.path));
+    ret = http_get_path_from_uri(uri, f->path, sizeof(f->path));
     if (HTTP_OK != ret)
     {
         log2_error("Get path failed! uri:%s", uri);
@@ -90,7 +92,7 @@ int http_parse_get_req_field_from_uri(const char *uri, http_get_req_field_t *fie
     }
 
     /* 2. 获取HOST字段 */
-    ret  = http_get_host_from_uri(uri, filed.host, sizeof(filed.host));
+    ret  = http_get_host_from_uri(uri, f->host, sizeof(f->host));
     if (HTTP_OK != ret)
     {
         log2_error("Get host failed! uri:%s", uri);
@@ -119,7 +121,7 @@ int http_get_request(const char *uri, char *req, int size)
     http_get_req_field_t field;
 
     /* 1. 获取GET相关字段 */
-    ret  = http_parse_get_req_field_from_uri(uri, &filed);
+    ret  = http_parse_get_req_field_from_uri(uri, &field);
     if (HTTP_OK != ret)
     {
         log2_error("Get request field failed! uri:%s", uri);
