@@ -14,14 +14,14 @@ INCLUDE = -I. \
 LIBS_PATH = -L$(PROJ)/lib -L/usr/lib/hiredis
 LIBS = -lpthread -lxdocore -lxdounix -lhiredis
 
-SRC_LIST = main.c \
+SRC_LIST = crawler.c \
 			crwl_task.c \
 			crwl_sched.c \
 			crwl_worker.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
 
-TARGET = crwl_worker
+TARGET = crawler
 
 .PHONY: all clean
 
