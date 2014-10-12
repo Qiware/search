@@ -419,7 +419,7 @@ static int crwl_worker_fdset(crwl_worker_t *worker)
  ******************************************************************************/
 static int crwl_worker_fsync(crwl_worker_t *worker, crwl_worker_socket_t *sck)
 {
-    fprintf(stdout, "%s", sck->read.addr);
+    fprintf(stderr, "%s", sck->read.addr);
     sck->read.off = 0;
     sck->read.total = CRWL_WRK_READ_SIZE;
     return CRWL_OK;

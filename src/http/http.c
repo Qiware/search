@@ -1,3 +1,9 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <memory.h>
+#include <string.h>
+
 #include "log.h"
 #include "http.h"
 #include "common.h"
@@ -32,10 +38,10 @@ int http_get_path_from_uri(const char *uri, char *path, int size)
         if ('/' == *(ptr + 1))
         {
             ptr += 2;
-            break;
+            continue;
         }
 
-        ptr++;
+        break;
     }
 
     if ('\0' == *ptr)
@@ -64,6 +70,49 @@ int http_get_path_from_uri(const char *uri, char *path, int size)
  ******************************************************************************/
 int http_get_host_from_uri(const char *uri, char *host, int size)
 {
+    int len;
+    const char *ptr = uri,
+          *start = uri, *end = uri;
+
+    while ('\0' != *ptr)
+    {
+        if ('/' != *ptr)
+        {
+            ptr++;
+            continue;
+        }
+
+        if ('/' == *(ptr + 1))
+        {
+            start = ptr + 2;
+            ptr += 2;
+            continue;
+        }
+        else if ('/' != *(ptr + 1))
+        {
+            end = ptr - 1;
+            break;
+        }
+
+        ptr++;
+    }
+
+    if (start == end)
+    {
+        snprintf(host, size, "%s", uri);
+        return HTTP_OK;
+    }
+
+    len = end - start;
+    if (size <= len)
+    {
+        log2_error("Host name is too long! len:%d", len);
+        return HTTP_OK;
+    }
+
+    memcpy(host, start, len);
+    host[len] = '\0';
+
     return HTTP_OK;
 }
 
@@ -138,6 +187,8 @@ int http_get_request(const char *uri, char *req, int size)
         "Accept-Language: zh-cn\r\n"
         "Accept-Charset: utf-8\r\n"
         "\r\n", field.path, field.host);
+
+    fprintf(stderr, "%s", req);
 
     return HTTP_OK;
 }
