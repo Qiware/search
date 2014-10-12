@@ -804,6 +804,7 @@ void *crwl_worker_routine(void *_ctx)
         max = crwl_worker_fdset(worker);
         if (max < 0)
         {
+            Sleep(1);
             continue;
         }
 
