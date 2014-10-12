@@ -20,16 +20,15 @@ export PROJ_LIB = ${PROJ}/lib
 DIR := "src/core"
 DIR += "src/db/redis"
 
-DIR += "src/exec/crawler/work"
-DIR += "src/exec/crawler/ctrl"
+DIR += "src/exec/crawler/"
 DIR += "src/exec/logsvr"
 
 # 测试目录
 DEMO_DIR = "src/demo"
-DIR += "${DEMO_DIR}/log"
-DIR += "${DEMO_DIR}/tcp"
-DIR += "${DEMO_DIR}/html"
-DIR += "${DEMO_DIR}/list"
+#DIR += "${DEMO_DIR}/log"
+#DIR += "${DEMO_DIR}/tcp"
+#DIR += "${DEMO_DIR}/html"
+#DIR += "${DEMO_DIR}/list"
 DIR += "${DEMO_DIR}/redis"
 export DIR
 

@@ -15,10 +15,8 @@
 #include "thread_pool.h"
 #include "crwl_worker.h"
 
-int crwl_worker_tpool_init(crwl_worker_cntx_t *ctx);
 static int crwl_worker_parse_conf(
         xml_tree_t *xml, crwl_worker_conf_t *conf, log_cycle_t *log);
-static void *crwl_worker_routine(void *_ctx);
 
 static int crwl_worker_remove_sock(crwl_worker_t *worker, crwl_worker_socket_t *sck);
 
@@ -156,88 +154,6 @@ static int crwl_worker_parse_conf(
 }
 
 /******************************************************************************
- **函数名称: crwl_worker_init_cntx
- **功    能: 初始化全局信息
- **输入参数: 
- **     conf: 配置信息
- **     log: 日志对象
- **输出参数: NONE
- **返    回: 全局对象
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.09.04 #
- ******************************************************************************/
-crwl_worker_cntx_t *crwl_worker_init_cntx(
-        const crwl_worker_conf_t *conf, log_cycle_t *log)
-{
-    int ret;
-    crwl_worker_cntx_t *ctx;
-
-    /* 1. 创建全局对象 */
-    ctx = (crwl_worker_cntx_t *)calloc(1, sizeof(crwl_worker_cntx_t));
-    if (NULL == ctx)
-    {
-        log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return NULL;
-    }
-
-    ctx->log = log;
-    memcpy(&ctx->conf, conf, sizeof(crwl_worker_conf_t));
-
-    /* 2. 新建SLAB机制 */
-    pthread_rwlock_init(&ctx->slab_lock, NULL);
-
-    ret = eslab_init(&ctx->slab, 32 * KB);
-    if (0 != ret)
-    {
-        pthread_rwlock_destroy(&ctx->slab_lock);
-        free(ctx);
-
-        log_error(log, "Initialize slab failed!");
-        return NULL;
-    }
-
-    /* 3. 初始化Worker线程池 */
-    ret = crwl_worker_tpool_init(ctx);
-    if (CRWL_OK != ret)
-    {
-        eslab_destroy(&ctx->slab);
-        pthread_rwlock_destroy(&ctx->slab_lock);
-        thread_pool_destroy(ctx->worker_tp);
-        free(ctx);
-        log_error(log, "Initialize thread pool failed!");
-        return NULL;
-    }
-
-    return ctx;
-}
-
-/******************************************************************************
- **函数名称: crwl_worker_startup
- **功    能: 启动爬虫服务
- **输入参数: 
- **     ctx: 全局信息
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.09.04 #
- ******************************************************************************/
-int crwl_worker_startup(crwl_worker_cntx_t *ctx)
-{
-    int idx;
-    const crwl_worker_conf_t *conf = &ctx->conf;
-
-    /* 1. 设置线程回调 */
-    for (idx=0; idx<conf->thread_num; ++idx)
-    {
-        thread_pool_add_worker(ctx->worker_tp, crwl_worker_routine, ctx);
-    }
-    
-    return CRWL_OK;
-}
-
-/******************************************************************************
  **函数名称: crwl_worker_get
  **功    能: 获取爬虫对象
  **输入参数: 
@@ -248,7 +164,7 @@ int crwl_worker_startup(crwl_worker_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.09 #
  ******************************************************************************/
-static crwl_worker_t *crwl_worker_get(crwl_worker_cntx_t *ctx)
+static crwl_worker_t *crwl_worker_get(crwl_cntx_t *ctx)
 {
     int tidx;
 
@@ -268,10 +184,10 @@ static crwl_worker_t *crwl_worker_get(crwl_worker_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.23 #
  ******************************************************************************/
-int crwl_worker_init(crwl_worker_cntx_t *ctx, crwl_worker_t *worker)
+int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker)
 {
     int ret;
-    const crwl_worker_conf_t *conf = &ctx->conf;
+    const crwl_worker_conf_t *conf = &ctx->conf.worker;
 
     worker->log = ctx->log;
 
@@ -310,7 +226,7 @@ int crwl_worker_init(crwl_worker_cntx_t *ctx, crwl_worker_t *worker)
 static int crwl_worker_destroy(crwl_worker_t *worker)
 {
     void *data;
-    crwl_worker_cntx_t *ctx = worker->ctx;
+    crwl_cntx_t *ctx = worker->ctx;
 
     eslab_destroy(&worker->slab);
 
@@ -350,11 +266,11 @@ static int crwl_worker_destroy(crwl_worker_t *worker)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.11 #
  ******************************************************************************/
-int crwl_worker_tpool_init(crwl_worker_cntx_t *ctx)
+int crwl_worker_tpool_init(crwl_cntx_t *ctx)
 {
     int idx, ret, num;
     crwl_worker_t *worker;
-    const crwl_worker_conf_t *conf = &ctx->conf;
+    const crwl_worker_conf_t *conf = &ctx->conf.worker;
 
     /* 1. 创建Worker线程池 */
     ctx->worker_tp = thread_pool_init(conf->thread_num);
@@ -389,7 +305,7 @@ int crwl_worker_tpool_init(crwl_worker_cntx_t *ctx)
 
     if (idx == conf->thread_num)
     {
-        return CRWL_OK;
+        return CRWL_OK; /* 成功 */
     }
 
     /* 4. 释放Worker对象 */
@@ -401,9 +317,10 @@ int crwl_worker_tpool_init(crwl_worker_cntx_t *ctx)
         crwl_worker_destroy(worker);
     }
 
+    free(ctx->worker_tp->data);
     thread_pool_destroy(ctx->worker_tp);
 
-    return CRWL_OK;
+    return CRWL_ERR;
 }
 
 /******************************************************************************
@@ -417,14 +334,14 @@ int crwl_worker_tpool_init(crwl_worker_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.25 #
  ******************************************************************************/
-static int crwl_worker_get_task(crwl_worker_cntx_t *ctx, crwl_worker_t *worker)
+static int crwl_worker_get_task(crwl_cntx_t *ctx, crwl_worker_t *worker)
 {
     void *data;
     crwl_task_t *t;
 
     /* 1. 判断是否应该取任务 */
     if (0 == worker->task.queue.num
-        || worker->sock_list.num >= ctx->conf.load_web_page_num)
+        || worker->sock_list.num >= ctx->conf.worker.load_web_page_num)
     {
         return CRWL_OK;
     }
@@ -857,12 +774,12 @@ static int crwl_worker_event_hdl(crwl_worker_t *worker)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.23 #
  ******************************************************************************/
-static void *crwl_worker_routine(void *_ctx)
+void *crwl_worker_routine(void *_ctx)
 {
     int ret, max;
     struct timeval tv;
     crwl_worker_t *worker;
-    crwl_worker_cntx_t *ctx = (crwl_worker_cntx_t *)_ctx;
+    crwl_cntx_t *ctx = (crwl_cntx_t *)_ctx;
 
     /* 1. 创建爬虫对象 */
     worker = crwl_worker_get(ctx);
@@ -1015,13 +932,13 @@ static int crwl_worker_task_handler(crwl_worker_t *worker, crwl_task_t *t)
         /* 通过URL加载网页 */
         case CRWL_TASK_LOAD_WEB_PAGE_BY_URL:
         {
-            return crwl_worker_task_load_webpage_by_uri(
+            return crwl_task_load_webpage_by_uri(
                     worker, (const crwl_task_load_webpage_by_uri_t *)args);
         }
         /* 通过IP加载网页 */
         case CRWL_TASK_LOAD_WEB_PAGE_BY_IP:
         {
-            return crwl_worker_task_load_webpage_by_ip(
+            return crwl_task_load_webpage_by_ip(
                     worker, (const crwl_task_load_webpage_by_ip_t *)args);
         }
         /* 未知任务类型 */

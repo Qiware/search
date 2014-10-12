@@ -10,6 +10,17 @@
 #if !defined(__CRAWLER_H__)
 #define __CRAWLER_H__
 
+#include <stdint.h>
+
+#include "log.h"
+#include "slab.h"
+#include "list.h"
+#include "queue.h"
+#include "common.h"
+#include "crawler.h"
+#include "crwl_task.h"
+#include "thread_pool.h"
+
 typedef enum
 {
     CRWL_OK = 0
@@ -34,4 +45,33 @@ typedef struct
     int length;                             /* 数据长度 */
 } crwl_data_info_t;
 
+/* Worker配置信息 */
+typedef struct
+{
+    int thread_num;                         /* 爬虫线程数 */
+    char svrip[IP_ADDR_MAX_LEN];            /* 任务分发服务IP */
+    int port;                               /* 任务分发服务端口 */
+    int load_web_page_num;                  /* 同时加载网页的数目 */
+    queue_conf_t task_queue;                /* 任务队列配置 */
+} crwl_worker_conf_t;
+
+/* 爬虫配置信息 */
+typedef struct
+{
+    crwl_worker_conf_t worker;              /* Worker配置信息 */
+} crwl_conf_t;
+
+/* 爬虫全局信息 */
+typedef struct
+{
+    crwl_conf_t conf;                       /* 配置信息 */
+    thread_pool_t *worker_tp;               /* 线程池对象 */
+    log_cycle_t *log;                       /* 日志对象 */
+
+    pthread_rwlock_t slab_lock;             /* 内存池锁 */
+    eslab_pool_t slab;                      /* 内存池 */
+} crwl_cntx_t;
+
+crwl_cntx_t *crwl_cntx_init(const crwl_conf_t *conf, log_cycle_t *log);
+int crwl_cntx_startup(crwl_cntx_t *ctx);
 #endif /*__CRAWLER_H__*/

@@ -9,7 +9,7 @@
 #include "crwl_worker.h"
 
 /******************************************************************************
- **函数名称: crwl_worker_task_load_webpage_by_uri
+ **函数名称: crwl_task_load_webpage_by_uri
  **功    能: 通过URL加载网页的任务处理
  **输入参数: 
  **     worker: 爬虫对象 
@@ -20,7 +20,7 @@
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.25 #
  ******************************************************************************/
-int crwl_worker_task_load_webpage_by_uri(
+int crwl_task_load_webpage_by_uri(
         crwl_worker_t *worker, const crwl_task_load_webpage_by_uri_t *args)
 {
     int ret, fd;
@@ -74,7 +74,7 @@ int crwl_worker_task_load_webpage_by_uri(
 }
 
 /******************************************************************************
- **函数名称: crwl_worker_task_load_webpage_by_ip
+ **函数名称: crwl_task_load_webpage_by_ip
  **功    能: 通过IP加载网页的任务处理
  **输入参数: 
  **     worker: 爬虫对象 
@@ -87,7 +87,7 @@ int crwl_worker_task_load_webpage_by_uri(
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.28 #
  ******************************************************************************/
-int crwl_worker_task_load_webpage_by_ip(
+int crwl_task_load_webpage_by_ip(
         crwl_worker_t *worker, const crwl_task_load_webpage_by_ip_t *args)
 {
     int ret, fd;

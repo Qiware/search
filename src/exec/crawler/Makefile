@@ -9,16 +9,19 @@
 include $(PROJ)/make/build.mak
 
 INCLUDE = -I. \
-			-I../incl \
+			-I./incl \
 			-I$(PROJ)/src/incl
-LIBS_PATH = -L$(PROJ)/lib
-LIBS = -lpthread -lxdocore -lxdounix
+LIBS_PATH = -L$(PROJ)/lib -L/usr/lib/hiredis
+LIBS = -lpthread -lxdocore -lxdounix -lhiredis
 
-SRC_LIST = crwl_ctrl.c
+SRC_LIST = main.c \
+			crwl_task.c \
+			crwl_sched.c \
+			crwl_worker.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
 
-TARGET = crwl_ctrl
+TARGET = crwl_worker
 
 .PHONY: all clean
 

@@ -26,17 +26,6 @@
 #define CRWL_WRK_TMOUT_SEC          (30)        /* 超时时间(秒) */
 
 #define CRWL_TASK_QUEUE_MAX_NUM     (10000)     /* 任务队列单元数 */
-#define CRWL_TASK_QUEUE_MAX_SIZE    (4 * KB)    /* 任务队列单元SIZE */
-
-/* 爬虫配置信息 */
-typedef struct
-{
-    int thread_num;                         /* 爬虫线程数 */
-    char svrip[IP_ADDR_MAX_LEN];            /* 任务分发服务IP */
-    int port;                               /* 任务分发服务端口 */
-    int load_web_page_num;                  /* 同时加载网页的数目 */
-    queue_conf_t task_queue;                /* 任务队列配置 */
-} crwl_worker_conf_t;
 
 /* 网页加载套接字信息 */
 typedef struct
@@ -58,22 +47,11 @@ typedef struct
     list_t send_list;                       /* 发送链表 */
 } crwl_worker_socket_t;
 
-/* 爬虫全局信息 */
-typedef struct
-{
-    crwl_worker_conf_t conf;                /* 配置信息 */
-    thread_pool_t *worker_tp;               /* 线程池对象 */
-    log_cycle_t *log;                       /* 日志对象 */
-
-    pthread_rwlock_t slab_lock;             /* 内存池锁 */
-    eslab_pool_t slab;                      /* 内存池 */
-} crwl_worker_cntx_t;
-
 /* 爬虫对象信息 */
 typedef struct
 {
     int tidx;                               /* 线程索引 */
-    crwl_worker_cntx_t *ctx;                 /* 全局信息 */
+    crwl_cntx_t *ctx;                 /* 全局信息 */
 
     fd_set wrset;                           /* 可写集合 */
     fd_set rdset;                           /* 可读集合 */
@@ -87,14 +65,14 @@ typedef struct
 } crwl_worker_t;
 
 int crwl_worker_add_sock(crwl_worker_t *worker, crwl_worker_socket_t *sck);
-int crwl_worker_task_load_webpage_by_uri(
+int crwl_task_load_webpage_by_uri(
         crwl_worker_t *worker, const crwl_task_load_webpage_by_uri_t *args);
-int crwl_worker_task_load_webpage_by_ip(
+int crwl_task_load_webpage_by_ip(
         crwl_worker_t *worker, const crwl_task_load_webpage_by_ip_t *args);
 
 int crwl_worker_load_conf(crwl_worker_conf_t *conf, const char *path, log_cycle_t *log);
-crwl_worker_cntx_t *crwl_worker_init_cntx(const crwl_worker_conf_t *conf, log_cycle_t *log);
-int crwl_worker_startup(crwl_worker_cntx_t *ctx);
-int crwl_worker_init(crwl_worker_cntx_t *ctx, crwl_worker_t *worker);
+int crwl_worker_tpool_init(crwl_cntx_t *ctx);
+int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker);
+void *crwl_worker_routine(void *_ctx);
 
 #endif /*__CRWL_WORKER_H__*/
