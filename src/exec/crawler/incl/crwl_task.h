@@ -45,4 +45,16 @@ typedef struct
     int port;                               /* 端口号 */
 } crwl_task_load_webpage_by_ip_t;
 
+/* TASK空间 */
+typedef union
+{
+    crwl_task_load_webpage_by_uri_t uri;
+    crwl_task_load_webpage_by_ip_t ip;
+} crwl_task_space_u;
+
+int crwl_task_queue_init(crwl_task_queue_t *tq, int max);
+int crwl_task_queue_push(crwl_task_queue_t *tq, void *addr);
+void *crwl_task_queue_pop(crwl_task_queue_t *tq);
+void crwl_task_queue_destroy(crwl_task_queue_t *tq);
+
 #endif /*__CRWL_TASK_H__*/

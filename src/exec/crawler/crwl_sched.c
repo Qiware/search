@@ -1,4 +1,4 @@
-#include <netdb.h>
+#include <stdint.h>
 
 #include "log.h"
 #include "common.h"
@@ -9,8 +9,8 @@
 #include "crwl_worker.h"
 #include "crwl_sched.h"
 
-
 static crwl_sched_t *crwl_sched_init(crwl_cntx_t *ctx);
+static void crwl_sched_destroy(crwl_sched_t *sched);
 
 /******************************************************************************
  **函数名称: crwl_sched_routine
@@ -26,9 +26,21 @@ static crwl_sched_t *crwl_sched_init(crwl_cntx_t *ctx);
  ******************************************************************************/
 void *crwl_sched_routine(void *_ctx)
 {
+    int ret, idx;
+    void *addr;
+    redisReply *r;
     crwl_sched_t *sched;
+    crwl_worker_t *begin, *worker;
     crwl_cntx_t *ctx = (crwl_cntx_t *)_ctx;
+    crwl_conf_t *conf = &ctx->conf;
+    char cmd[CMD_LINE_MAX_LEN];
+    crwl_task_t *task;
+    crwl_task_load_webpage_by_uri_t *lw_uri;
+    size_t size = sizeof(crwl_task_t) + sizeof(crwl_task_space_u);
 
+    begin = (crwl_worker_t *)ctx->worker_tp->data;
+
+    /* 1. 初始化调度器 */
     sched = crwl_sched_init(ctx);
     if (NULL == sched)
     {
@@ -37,20 +49,74 @@ void *crwl_sched_routine(void *_ctx)
         return (void *)CRWL_ERR;
     }
 
+    idx = 0;
     while (1)
     {
+        ++idx;
+        idx %= conf->worker.thread_num;
+        worker = begin + idx;
+        if (worker->task.queue.num >= worker->task.queue.max)
+        {
+            Sleep(1);
+            log_error(ctx->log, "Queue space isn't engouth! idx:%d", idx);
+            continue;
+        }
+
+       /* 2. 从队列取数据 */
+        snprintf(cmd, sizeof(cmd), "LPOP CRWL_REDIS_TASK_QUEUE");
+
+        r = redisCommand(sched->redis_ctx, cmd);
+        if (NULL == r)
+        {
+            Sleep(1);
+            continue;
+        }
+
+        fprintf(stderr, "URL:%s\n", r->str);
+
+        /* 3. 新建crwl_task_t对象 */
+        addr = crwl_slab_alloc(ctx, size);
+        if (NULL == addr)
+        {
+            freeReplyObject(r);
+            log_error(ctx->log, "Alloc memory from slab failed!");
+            break;
+        }
+
+        task = (crwl_task_t *)addr;
+        lw_uri = (crwl_task_load_webpage_by_uri_t *)(addr + sizeof(crwl_task_t));
+
+        task->type = CRWL_TASK_LOAD_WEB_PAGE_BY_URL;
+        task->length = sizeof(crwl_task_t) + sizeof(crwl_task_load_webpage_by_uri_t);
+
+        snprintf(lw_uri->uri, sizeof(lw_uri->uri), "%s", r->str);
+        lw_uri->port = CRWL_WRK_WEB_SVR_PORT;
+
+        /* 4. 放入Worker任务队列 */
+        ret = crwl_task_queue_push(&worker->task, addr);
+        if (CRWL_OK != ret)
+        {
+            freeReplyObject(r);
+            log_error(ctx->log, "Push into worker queue failed! uri:%s port:%d",
+                    lw_uri->uri, lw_uri->port);
+            continue;
+        }
+
+        freeReplyObject(r);
     }
+
+    crwl_sched_destroy(sched);
 
     return (void *)CRWL_ERR;
 }
 
 /******************************************************************************
  **函数名称: crwl_sched_init
- **功    能: 初始化调度线程
+ **功    能: 初始化调度对象
  **输入参数: 
  **     ctx: 全局信息
  **输出参数: NONE
- **返    回: 0:成功 !0:失败
+ **返    回: 调队对象
  **实现描述: 
  **     1. 初始化调度器
  **注意事项: 
@@ -79,4 +145,21 @@ static crwl_sched_t *crwl_sched_init(crwl_cntx_t *ctx)
     }
 
     return sched;
+}
+
+/******************************************************************************
+ **函数名称: crwl_sched_destroy
+ **功    能: 销毁调度对象
+ **输入参数: 
+ **     ctx: 全局信息
+ **输出参数: NONE
+ **返    回: VOID
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.10.12 #
+ ******************************************************************************/
+static void crwl_sched_destroy(crwl_sched_t *sched)
+{
+    redisFree(sched->redis_ctx);
+    free(sched);
 }

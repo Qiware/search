@@ -149,6 +149,10 @@ static int crwl_worker_parse_conf(
     }
 
     conf->task_queue.count = atoi(node->value);
+    if (conf->task_queue.count <= 0)
+    {
+        conf->task_queue.count = 1;
+    }
 
     return CRWL_OK;
 }
@@ -200,10 +204,8 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker)
     }
 
     /* 2. 创建任务队列 */
-    pthread_rwlock_init(&worker->task.lock, NULL);
-
-    ret = queue_init(&worker->task.queue, conf->task_queue.count);
-    if (0 != ret)
+    ret = crwl_task_queue_init(&worker->task, conf->task_queue.count);
+    if (CRWL_OK != ret)
     {
         eslab_destroy(&worker->slab);
         return CRWL_ERR;
