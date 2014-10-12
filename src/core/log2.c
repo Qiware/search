@@ -90,6 +90,8 @@ int log2_init(const char *level, const char *path)
         return 0;
     }
 
+    Mkdir2(path, DIR_MODE);
+
     log2->fp = fopen(path, "aw+");
     if (NULL == log2->fp)
     {

@@ -388,7 +388,8 @@ static int _log_init_global(void)
         addr = log_creat_shm();
         if(NULL == addr)
         {
-            fprintf(stderr, "Create share-memory failed!");
+            fprintf(stderr, "[%s][%d] Create share-memory failed!\n",
+                    __FILE__, __LINE__);
             return -1;
         }
         
@@ -404,7 +405,8 @@ static int _log_init_global(void)
         fd = Open(path, OPEN_FLAGS, OPEN_MODE);
         if(fd < 0)
         {
-            fprintf(stderr, "errmsg:[%d] %s! [%s]", errno, strerror(errno), path);
+            fprintf(stderr, "[%s][%d] errmsg:[%d] %s! [%s]\n",
+                    __FILE__, __LINE__, errno, strerror(errno), path);
             return -1;
         }
 

@@ -217,6 +217,8 @@ int Mkdir(const char *dir, mode_t mode)
     p = strchr(p, '/');
     while (NULL != p)
     {
+        memset(part, 0, sizeof(part));
+
         len = p - dir + 1;
         memcpy(part, dir, len);
 
@@ -266,6 +268,8 @@ int Mkdir2(const char *fname, mode_t mode)
 {
     const char *p;
     char dir[FILE_PATH_MAX_LEN];
+
+    memset(dir, 0, sizeof(dir));
 
     p = strrchr(fname, '/');
     if (NULL == p)
