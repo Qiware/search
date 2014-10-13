@@ -286,7 +286,7 @@ crwl_cntx_t *crwl_cntx_init(const crwl_conf_t *conf, log_cycle_t *log)
     }
 
     /* 3. 创建Worker线程池 */
-    ret = crwl_worker_tpool_init(ctx);
+    ret = crwl_init_workers(ctx);
     if (CRWL_OK != ret)
     {
         crwl_slab_destroy(ctx);
@@ -301,7 +301,7 @@ crwl_cntx_t *crwl_cntx_init(const crwl_conf_t *conf, log_cycle_t *log)
     if (CRWL_OK != ret)
     {
         crwl_slab_destroy(ctx);
-        thread_pool_destroy(ctx->worker_tp);
+        thread_pool_destroy(ctx->workers);
         free(ctx);
         log_error(log, "Create thread failed!");
         return NULL;
@@ -329,7 +329,7 @@ int crwl_cntx_startup(crwl_cntx_t *ctx)
     /* 1. 设置线程回调 */
     for (idx=0; idx<conf->worker.thread_num; ++idx)
     {
-        thread_pool_add_worker(ctx->worker_tp, crwl_worker_routine, ctx);
+        thread_pool_add_worker(ctx->workers, crwl_worker_routine, ctx);
     }
     
     return CRWL_OK;

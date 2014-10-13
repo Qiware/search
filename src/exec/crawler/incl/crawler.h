@@ -73,7 +73,8 @@ typedef struct
 typedef struct
 {
     crwl_conf_t conf;                       /* 配置信息 */
-    thread_pool_t *worker_tp;               /* 线程池对象 */
+
+    thread_pool_t *workers;                 /* 线程池对象 */
     log_cycle_t *log;                       /* 日志对象 */
 
     pthread_rwlock_t slab_lock;             /* 内存池锁 */

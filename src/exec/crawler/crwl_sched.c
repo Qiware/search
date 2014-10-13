@@ -47,7 +47,7 @@ void *crwl_sched_routine(void *_ctx)
     crwl_task_load_webpage_by_uri_t *lw_uri;
     size_t size = sizeof(crwl_task_t) + sizeof(crwl_task_space_u);
 
-    begin = (crwl_worker_t *)ctx->worker_tp->data;
+    begin = (crwl_worker_t *)ctx->workers->data;
 
     /* 1. 初始化调度器 */
     sched = crwl_sched_init(ctx);
