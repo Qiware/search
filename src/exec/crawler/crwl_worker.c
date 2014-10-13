@@ -643,18 +643,18 @@ static int crwl_worker_trav_send(crwl_worker_t *worker)
 static int crwl_worker_timeout_hdl(crwl_worker_t *worker)
 {
     time_t ctm = time(NULL);
-    list_node_t *node, *prev;
+    list_node_t *node;
     crwl_worker_socket_t *sck;
+
+    log_debug(worker->log, "Timeout handle!");
 
     /* 1. 依次遍历套接字, 判断是否超时 */
     node = worker->sock_list.head;
-    prev = node;
     while (NULL != node)
     {
         sck = (crwl_worker_socket_t *)node->data;
         if (NULL == sck)
         {
-            prev = node;
             node = node->next;
             continue;
         }
@@ -662,56 +662,15 @@ static int crwl_worker_timeout_hdl(crwl_worker_t *worker)
         if ((ctm - sck->rdtm <= CRWL_WRK_TMOUT_SEC)
             && (ctm - sck->wrtm <= CRWL_WRK_TMOUT_SEC))
         {
-            prev = node;
             node = node->next;
             continue;
         }
 
         crwl_worker_fsync(worker, sck);
 
-        /* 删除链表头 */
-        if (prev == node)
-        {
-            if (worker->sock_list.head == worker->sock_list.tail)
-            {
-                worker->sock_list.head = NULL;
-                worker->sock_list.tail = NULL;
-
-                --worker->sock_list.num;
-                eslab_free(&worker->slab, node);
-                crwl_worker_remove_sock(worker, sck);
-                return CRWL_OK;
-            }
-
-            prev = node->next;
-            worker->sock_list.head = node->next;
-
-            --worker->sock_list.num;
-            eslab_free(&worker->slab, node);
-            crwl_worker_remove_sock(worker, sck);
-
-            node = prev;
-            continue;
-        }
-        /* 删除链表尾 */
-        else if (node == worker->sock_list.tail)
-        {
-            worker->sock_list.tail = prev;
-
-            --worker->sock_list.num;
-            eslab_free(&worker->slab, node);
-            crwl_worker_remove_sock(worker, sck);
-            return CRWL_OK;
-        }
-
-        /* 删除链表中间结点 */
-        prev->next = node->next;
-
-        --worker->sock_list.num;
-        eslab_free(&worker->slab, node);
         crwl_worker_remove_sock(worker, sck);
 
-        node = prev->next;
+        node = worker->sock_list.head;
     }
 
     return CRWL_OK;
@@ -796,6 +755,7 @@ void *crwl_worker_routine(void *_ctx)
         max = crwl_worker_fdset(worker);
         if (max < 0)
         {
+            log_debug(ctx->log, "Sleep 1 second!");
             Sleep(1);
             continue;
         }
