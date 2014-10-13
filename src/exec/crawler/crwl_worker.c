@@ -232,25 +232,20 @@ static int crwl_worker_destroy(crwl_worker_t *worker)
     eslab_destroy(&worker->slab);
 
     /* 释放TASK队列及数据 */
-    pthread_rwlock_wrlock(&worker->task.lock);
     while (1)
     {
         /* 弹出数据 */
-        data = queue_pop(&worker->task.queue);
+        data = crwl_task_queue_pop(&worker->task);
         if (NULL == data)
         {
             break;
         }
 
         /* 释放内存 */
-        pthread_rwlock_wrlock(&ctx->slab_lock);
-        eslab_free(&ctx->slab, data);
-        pthread_rwlock_unlock(&ctx->slab_lock);
+        crwl_slab_free(ctx, data);
     }
-    pthread_rwlock_unlock(&worker->task.lock);
 
-    pthread_rwlock_destroy(&worker->task.lock);
-    queue_destroy(&worker->task.queue);
+    crwl_task_queue_destroy(&worker->task);
 
     free(worker);
     return CRWL_OK;
@@ -348,16 +343,12 @@ static int crwl_worker_get_task(crwl_cntx_t *ctx, crwl_worker_t *worker)
     }
 
     /* 2. 从任务队列取数据 */
-    pthread_rwlock_wrlock(&worker->task.lock);
-
-    data = queue_pop(&worker->task.queue);
+    data = crwl_task_queue_pop(&worker->task);
     if (NULL == data)
     {
-        pthread_rwlock_unlock(&worker->task.lock);
+        log_error(worker->log, "Get task from queue failed!");
         return CRWL_OK;
     }
-
-    pthread_rwlock_unlock(&worker->task.lock);
 
     /* 3. 连接远程Web服务器 */
     t = (crwl_task_t *)data;
@@ -422,6 +413,7 @@ static int crwl_worker_fsync(crwl_worker_t *worker, crwl_worker_socket_t *sck)
     fprintf(stderr, "%s", sck->read.addr);
     sck->read.off = 0;
     sck->read.total = CRWL_WRK_READ_SIZE;
+    memset(sck->recv_buff, 0, sizeof(sck->recv_buff));
     return CRWL_OK;
 }
 

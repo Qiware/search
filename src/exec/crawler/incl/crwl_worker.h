@@ -43,7 +43,7 @@ typedef struct
     snap_shot_t read;                       /* 读取快照 */
     snap_shot_t send;                       /* 发送快照 */
 
-    char recv_buff[CRWL_WRK_BUFF_SIZE];     /* 接收缓存 */
+    char recv_buff[CRWL_WRK_BUFF_SIZE+1];   /* 接收缓存 */
     list_t send_list;                       /* 发送链表 */
 } crwl_worker_socket_t;
 
