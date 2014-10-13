@@ -133,8 +133,8 @@ void log_destroy(log_cycle_t **log);
     if ((log)->level <= LOG_LEVEL_TRACE) \
         log_core(log, LOG_LEVEL_TRACE, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
 #define log_bin(log, addr, len, ...)   /* 撰写MEM-DUMP日志 */\
-    if ((log)->level <= LOG_LEVEL_INFO) \
-        log_core(log, LOG_LEVEL_INFO, __FILE__, __LINE__, addr, len, __VA_ARGS__)
+    if ((log)->level <= LOG_LEVEL_TRACE) \
+        log_core(log, LOG_LEVEL_TRACE, __FILE__, __LINE__, addr, len, __VA_ARGS__)
 
 #define log_fatal_ex(...)
 #define log_error_ex(...)
@@ -167,22 +167,22 @@ void log2_destroy(void);
     if (g_log2.level <= LOG_LEVEL_FATAL) \
         log2_core(LOG_LEVEL_FATAL, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
 #define log2_error(...) /* 撰写ERROR级别日志 */\
-    if (g_log2.level <= LOG_LEVEL_FATAL) \
+    if (g_log2.level <= LOG_LEVEL_ERROR) \
         log2_core(LOG_LEVEL_ERROR, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
 #define log2_warn(...)  /* 撰写WARN级别日志 */\
-    if (g_log2.level <= LOG_LEVEL_FATAL) \
+    if (g_log2.level <= LOG_LEVEL_WARN) \
         log2_core(LOG_LEVEL_WARN, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
 #define log2_info(...)  /* 撰写INFO级别日志 */\
-    if (g_log2.level <= LOG_LEVEL_FATAL) \
+    if (g_log2.level <= LOG_LEVEL_INFO) \
         log2_core(LOG_LEVEL_INFO, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
 #define log2_debug(...) /* 撰写DEBUG级别日志 */\
-    if (g_log2.level <= LOG_LEVEL_FATAL) \
+    if (g_log2.level <= LOG_LEVEL_DEBUG) \
         log2_core(LOG_LEVEL_DEBUG, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
 #define log2_trace(...) /* 撰写TRACE级别日志 */\
-    if (g_log2.level <= LOG_LEVEL_FATAL) \
+    if (g_log2.level <= LOG_LEVEL_TRACE) \
         log2_core(LOG_LEVEL_TRACE, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
 #define log2_bin(addr, len, ...)   /* 撰写MEM-DUMP日志 */\
-    if (g_log2.level <= LOG_LEVEL_FATAL) \
-        log2_core(LOG_LEVEL_INFO, __FILE__, __LINE__, addr, len, __VA_ARGS__)
+    if (g_log2.level <= LOG_LEVEL_TRACE) \
+        log2_core(LOG_LEVEL_TRACE, __FILE__, __LINE__, addr, len, __VA_ARGS__)
 
 #endif /*__LOG_H__*/
