@@ -124,6 +124,8 @@ int crwl_task_load_webpage_by_uri(
     time_t ctm = time(NULL);
     crwl_worker_socket_t *sck;
     char ipaddr[IP_ADDR_MAX_LEN];
+
+    fprintf(stdout, "call:%s() uri:%s\n", __func__, args->uri);
     
     /* 1. 通过URL获取WEB服务器信息 */
     host = gethostbyname(args->uri);
