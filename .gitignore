@@ -3,6 +3,7 @@
 *.log2
 bin/*
 lib/*
+tmp/*
 tags
 stderr
 src/demo/html/html_test
