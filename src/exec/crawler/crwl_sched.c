@@ -84,12 +84,11 @@ void *crwl_sched_routine(void *_ctx)
         r = redisCommand(sched->redis_ctx, cmd);
         if (REDIS_REPLY_NIL == r->type)
         {
-            log_error(ctx->log, "Didn't pop data! idx:%d", idx);
-            Sleep(1);
+            usleep(500);
             continue;
         }
 
-        fprintf(stderr, "URL:%s\n", r->str);
+        log_debug(ctx->log, "URL:%s! idx:%d", r->str);
 
         /* 3. 新建crwl_task_t对象 */
         addr = crwl_slab_alloc(ctx, size);

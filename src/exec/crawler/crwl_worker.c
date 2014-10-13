@@ -646,8 +646,6 @@ static int crwl_worker_timeout_hdl(crwl_worker_t *worker)
     list_node_t *node;
     crwl_worker_socket_t *sck;
 
-    log_debug(worker->log, "Timeout handle!");
-
     /* 1. 依次遍历套接字, 判断是否超时 */
     node = worker->sock_list.head;
     while (NULL != node)
@@ -659,12 +657,15 @@ static int crwl_worker_timeout_hdl(crwl_worker_t *worker)
             continue;
         }
 
+        /* 超时未发送或接收数据时, 认为无数据传输, 将直接关闭套接字 */
         if ((ctm - sck->rdtm <= CRWL_WRK_TMOUT_SEC)
             && (ctm - sck->wrtm <= CRWL_WRK_TMOUT_SEC))
         {
             node = node->next;
             continue;
         }
+
+        log_debug(worker->log, "Didn't communicate for along time! ip:%s", sck->ipaddr);
 
         crwl_worker_fsync(worker, sck);
 
@@ -755,8 +756,7 @@ void *crwl_worker_routine(void *_ctx)
         max = crwl_worker_fdset(worker);
         if (max < 0)
         {
-            log_debug(ctx->log, "Sleep 1 second!");
-            Sleep(1);
+            usleep(500);
             continue;
         }
 
@@ -900,6 +900,7 @@ int crwl_worker_remove_sock(crwl_worker_t *worker, crwl_worker_socket_t *sck)
             else if (item == worker->sock_list.tail)
             {
                 --worker->sock_list.num;
+                prev->next = NULL;
                 worker->sock_list.tail = prev;
 
                 eslab_free(&worker->slab, item);
