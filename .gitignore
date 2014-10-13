@@ -1,6 +1,7 @@
 *.o
 *.log
 *.log2
+*.lck
 bin/*
 lib/*
 tmp/*
