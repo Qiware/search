@@ -471,7 +471,8 @@ static int crwl_worker_trav_recv(crwl_worker_t *worker)
         }
         else if (0 == n)
         {
-            log_error(worker->log, "End of read data! uri:%s", sck->uri);
+            log_debug(worker->log, "End of read data! uri:%s", sck->uri);
+
             crwl_worker_fsync(worker, sck);
             crwl_worker_remove_sock(worker, sck);
             continue;
@@ -890,6 +891,8 @@ int crwl_worker_remove_sock(crwl_worker_t *worker, crwl_worker_socket_t *sck)
 {
     list_node_t *item, *next, *prev;
 
+    log_debug(worker->log, "Remove socket! ip:%s port:%d", sck->ipaddr, sck->port);
+
     Close(sck->sckid);
 
     /* 1. 释放发送链表 */
@@ -974,7 +977,7 @@ int crwl_worker_remove_sock(crwl_worker_t *worker, crwl_worker_socket_t *sck)
  ******************************************************************************/
 static int crwl_worker_task_handler(crwl_worker_t *worker, crwl_task_t *t)
 {
-    char *args = (char *)t + sizeof(crwl_task_t);
+    char *args = (char *)(t + 1);
 
     switch (t->type)
     {
@@ -994,7 +997,7 @@ static int crwl_worker_task_handler(crwl_worker_t *worker, crwl_task_t *t)
         case CRWL_TASK_TYPE_UNKNOWN:
         default:
         {
-            log_debug(worker->log, "Unknown task type! [%d]", t->type);
+            log_error(worker->log, "Unknown task type! [%d]", t->type);
             return CRWL_OK;
         }
     }
