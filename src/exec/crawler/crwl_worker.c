@@ -192,6 +192,7 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker)
     int ret;
     const crwl_worker_conf_t *conf = &ctx->conf.worker;
 
+    worker->ctx = ctx;
     worker->log = ctx->log;
 
     /* 1. 创建SLAB内存池 */

@@ -51,7 +51,7 @@ typedef struct
 typedef struct
 {
     int tidx;                               /* 线程索引 */
-    crwl_cntx_t *ctx;                 /* 全局信息 */
+    crwl_cntx_t *ctx;                       /* 全局信息 */
 
     fd_set wrset;                           /* 可写集合 */
     fd_set rdset;                           /* 可读集合 */
@@ -61,7 +61,7 @@ typedef struct
 
     list_t sock_list;                       /* 套接字列表
                                                结点数据指针指向crwl_worker_socket_t */
-    crwl_task_queue_t task;                 /* 任务对象 */
+    crwl_task_queue_t task;                 /* 任务对象(注意: 该队列结点和数据的空间来自CTX) */
 } crwl_worker_t;
 
 /* 函数声明 */

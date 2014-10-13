@@ -1,4 +1,6 @@
 *.o
+*.log
+*.log2
 bin/*
 lib/*
 tags
