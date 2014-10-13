@@ -28,11 +28,12 @@ TARGET = crawler
 all: $(TARGET)
 $(TARGET): $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS)
-	mv $@ $(PROJ_BIN)
+	@mv $@ $(PROJ_BIN)
 	@echo "$@ is OK!"
+	@rm -fr $(OBJS)
 
 $(OBJS): %.o : %.c
 	$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
 
 clean:
-	rm -fr $(OBJS) $(PROJ_BIN)/$(TARGET)
+	@rm -fr $(OBJS) $(PROJ_BIN)/$(TARGET)

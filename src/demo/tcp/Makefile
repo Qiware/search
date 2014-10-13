@@ -23,10 +23,11 @@ TARGET = connect
 all: $(TARGET)
 $(TARGET): $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS)
+	@rm -fr $(OBJS)
 	@echo "$@ is OK!"
 
 $(OBJS): %.o : %.c
 	$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
 
 clean:
-	rm -fr $(OBJS) $(TARGET)
+	@rm -fr $(OBJS) $(TARGET)

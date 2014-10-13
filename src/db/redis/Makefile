@@ -23,11 +23,12 @@ TARGET = libxdoredis_queue.so
 all: $(TARGET)
 $(TARGET): $(OBJS)
 	$(CC) $(LFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS)
-	mv $@ $(PROJ_LIB)
+	@mv $@ $(PROJ_LIB)
 	@echo "$@ is OK!"
+	@rm -fr $(OBJS)
 
 $(OBJS): %.o : %.c
 	$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
 
 clean:
-	rm -fr $(OBJS) $(PROJ_LIB)/$(TARGET)
+	@rm -fr $(OBJS) $(PROJ_LIB)/$(TARGET)
