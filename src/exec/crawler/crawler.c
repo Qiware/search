@@ -215,7 +215,7 @@ static int crwl_getopt(int argc, char **argv, crwl_opt_t *opt)
  ******************************************************************************/
 static int crwl_usage(const char *exec)
 {
-    printf("\nUsage: %s [-h] [-d] -c config_file [-l log_level]\n", exec);
+    printf("\nUsage: %s [-h] [-d] -c <config file> [-l log_level]\n", exec);
     printf("\t-h\tShow help\n"
            "\t-d\tRun as daemon\n"
            "\t-l\tSet log level. [trace|debug|info|warn|error|fatal]\n"

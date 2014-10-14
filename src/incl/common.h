@@ -6,10 +6,17 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <stdbool.h>
 
-typedef int bool;
-#define false (0)
-#define true  (1)
+#if !defined(bool)
+    #define bool char
+#endif
+#if !defined(false)
+    #define false (0)
+#endif
+#if !defined(true)
+    #define true  (1)
+#endif
 
 /* 宏定义 */
 #define FILE_NAME_MAX_LEN   (256)   /* 文件名最大长度 */
