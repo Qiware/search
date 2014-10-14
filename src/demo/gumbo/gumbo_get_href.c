@@ -11,7 +11,7 @@ int main(int argc, const char** argv)
     int ret;
     gumbo_cntx_t ctx;
     gumbo_html_t *html;
-    const char *fname = argv[1], *title;
+    const char *fname = argv[1];
 
     if (2 != argc)
     {
@@ -19,7 +19,7 @@ int main(int argc, const char** argv)
         exit(EXIT_FAILURE);
     }
 
-    log2_init("trace", "./gettile.log");
+    log2_init("trace", "./gumbo.log");
 
     ret = gumbo_init(&ctx);
     if (0 != ret)
@@ -36,11 +36,7 @@ int main(int argc, const char** argv)
         return -1;
     }
 
-#if 1
-    title = gumbo_get_title(html);
-    printf("%s\n", title);
-    gumbo_get_href(html);
-#endif
+    gumbo_search_href(html);
 
     gumbo_html_destroy(&ctx, html);
     gumbo_destroy(&ctx);

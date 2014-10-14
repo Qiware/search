@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <assert.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
@@ -186,4 +187,111 @@ static int gumbo_load_html(gumbo_cntx_t *ctx, gumbo_html_t *html)
 
     fclose(fp);
     return 0;
+}
+
+/******************************************************************************
+ **函数名称: gumbo_get_title
+ **功    能: 获取TITLE字段
+ **输入参数: 
+ **     html: HTML对象
+ **输出参数: NONE
+ **返    回: TITLE字段
+ **实现描述: 
+ **     1. 查找HEAD结点
+ **     2. 查找HTML结点
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.10.14 #
+ ******************************************************************************/
+const char *gumbo_get_title(const gumbo_html_t *html)
+{
+    int idx;
+    const GumboNode *root, *head, *child, *title_text;
+    const GumboVector *children;
+
+    root = html->output->root;
+
+    /* 1. 查找HEAD结点 */
+    children = &root->v.element.children;
+    head = NULL;
+    for (idx=0; idx<children->length; ++idx)
+    {
+        child = children->data[idx];
+        if (GUMBO_NODE_ELEMENT == child->type
+            && GUMBO_TAG_HEAD == child->v.element.tag)
+        {
+            head = child;
+            break;
+        }
+    }
+
+    /* 2. 查找HTML结点 */
+    children = &head->v.element.children;
+    for (idx=0; idx<children->length; ++idx)
+    {
+        child = children->data[idx];
+        if (GUMBO_NODE_ELEMENT == child->type
+            && GUMBO_TAG_TITLE == child->v.element.tag)
+        {
+            if (1 != child->v.element.children.length)
+            {
+                return NULL;
+            }
+
+            title_text = child->v.element.children.data[0];
+            return title_text->v.text.text;
+        }
+    }
+
+    return NULL;
+}
+
+/******************************************************************************
+ **函数名称: gumbo_search_href
+ **功    能: 查找HREF字段
+ **输入参数: 
+ **     html: HTML对象
+ **输出参数: NONE
+ **返    回: HREF字段
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.10.14 #
+ ******************************************************************************/
+static void _gumbo_search_href(GumboNode *node)
+{
+    unsigned int i;
+    GumboAttribute *href;
+    GumboVector *children;
+
+    if (GUMBO_NODE_ELEMENT != node->type)
+    {
+        return;
+    }
+
+    if (GUMBO_TAG_A == node->v.element.tag
+        && (href = gumbo_get_attribute(&node->v.element.attributes, "href")))
+    {
+        fprintf(stdout, "%s\n", href->value);
+    }
+
+    children = &node->v.element.children;
+    for (i = 0; i < children->length; ++i)
+    {
+        search_for_links((GumboNode *)children->data[i]);
+    }
+}
+
+/******************************************************************************
+ **函数名称: gumbo_search_href
+ **功    能: 查找HREF字段
+ **输入参数: 
+ **     html: HTML对象
+ **输出参数: NONE
+ **返    回: HREF字段
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.10.14 #
+ ******************************************************************************/
+void gumbo_search_href(const gumbo_html_t *html)
+{
+    search_for_links(html->output->root);
 }

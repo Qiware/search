@@ -12,11 +12,11 @@ INCLUDE = -I. -I$(PROJ)/src/incl -I$(PROJ)/src/gumbo
 LIBS_PATH = -L$(PROJ)/lib -L/usr/local/lib
 LIBS = -lgumbo -lgumbo_ex -lxdocore
 
-SRC_LIST = gumbo_get_title.c
+SRC_LIST = gumbo_get_href.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
 
-TARGET = gumbo_get_title
+TARGET = gumbo_get_href
 
 .PHONY: all clean
 
