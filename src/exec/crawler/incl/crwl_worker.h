@@ -76,8 +76,8 @@ int crwl_task_load_webpage_by_ip(
         crwl_worker_t *worker, const crwl_task_load_webpage_by_ip_t *args);
 
 int crwl_worker_load_conf(crwl_worker_conf_t *conf, const char *path, log_cycle_t *log);
-int crwl_init_workers(crwl_cntx_t *ctx);
-int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker);
-void *crwl_worker_routine(void *_ctx);
 
+int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker);
+int crwl_worker_destroy(crwl_worker_t *worker);
+void *crwl_worker_routine(void *_ctx);
 #endif /*__CRWL_WORKER_H__*/
