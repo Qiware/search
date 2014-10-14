@@ -37,6 +37,9 @@ static int crwl_getopt(int argc, char **argv, crwl_opt_t *opt);
 static int crwl_usage(const char *exec);
 static int crwl_load_conf(crwl_conf_t *conf, const char *path, log_cycle_t *log);
 
+static int crwl_init_workers(crwl_cntx_t *ctx);
+static int crwl_workers_destroy(crwl_cntx_t *ctx);
+
 /******************************************************************************
  **函数名称: main 
  **功    能: 爬虫主程序
@@ -420,3 +423,108 @@ void crwl_slab_destroy(crwl_cntx_t *ctx)
     eslab_destroy(&ctx->slab);
     pthread_rwlock_destroy(&ctx->slab_lock);
 }
+
+/******************************************************************************
+ **函数名称: crwl_init_workers
+ **功    能: 初始化爬虫线程池
+ **输入参数: 
+ **     ctx: 全局信息
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.10.11 #
+ ******************************************************************************/
+static int crwl_init_workers(crwl_cntx_t *ctx)
+{
+    int idx, ret, num;
+    crwl_worker_t *worker;
+    const crwl_worker_conf_t *conf = &ctx->conf.worker;
+
+    /* 1. 创建Worker线程池 */
+    ctx->workers = thread_pool_init(conf->thread_num);
+    if (NULL == ctx->workers)
+    {
+        log_error(ctx->log, "Initialize thread pool failed!");
+        return CRWL_ERR;
+    }
+
+    /* 2. 新建Worker对象 */
+    ctx->workers->data =
+        (crwl_worker_t *)calloc(conf->thread_num, sizeof(crwl_worker_t));
+    if (NULL == ctx->workers->data)
+    {
+        thread_pool_destroy(ctx->workers);
+        log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        return CRWL_ERR;
+    }
+
+    /* 3. 依次初始化Worker对象 */
+    for (idx=0; idx<conf->thread_num; ++idx)
+    {
+        worker = (crwl_worker_t *)ctx->workers->data + idx;
+
+        ret = crwl_worker_init(ctx, worker);
+        if (CRWL_OK != ret)
+        {
+            log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
+            break;
+        }
+    }
+
+    if (idx == conf->thread_num)
+    {
+        return CRWL_OK; /* 成功 */
+    }
+
+    /* 4. 释放Worker对象 */
+    num = idx;
+    for (idx=0; idx<num; ++idx)
+    {
+        worker = (crwl_worker_t *)ctx->workers->data + idx;
+
+        crwl_worker_destroy(worker);
+    }
+
+    free(ctx->workers->data);
+    thread_pool_destroy(ctx->workers);
+
+    return CRWL_ERR;
+}
+
+/******************************************************************************
+ **函数名称: crwl_workers_destroy
+ **功    能: 销毁爬虫线程池
+ **输入参数: 
+ **     ctx: 全局信息
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.10.14 #
+ ******************************************************************************/
+int crwl_workers_destroy(crwl_cntx_t *ctx)
+{
+    int idx;
+    crwl_worker_t *worker;
+    const crwl_worker_conf_t *conf = &ctx->conf.worker;
+
+    /* 1. 释放Worker对象 */
+    for (idx=0; idx<conf->thread_num; ++idx)
+    {
+        worker = (crwl_worker_t *)ctx->workers->data + idx;
+
+        crwl_worker_destroy(worker);
+    }
+
+    free(ctx->workers->data);
+
+    /* 2. 释放线程池对象 */
+    thread_pool_destroy(ctx->workers);
+
+    ctx->workers = NULL;
+
+    return CRWL_ERR;
+}
+
+
