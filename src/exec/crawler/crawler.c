@@ -301,7 +301,7 @@ crwl_cntx_t *crwl_cntx_init(const crwl_conf_t *conf, log_cycle_t *log)
     if (CRWL_OK != ret)
     {
         crwl_slab_destroy(ctx);
-        thread_pool_destroy(ctx->workers);
+        crwl_workers_destroy(ctx);
         free(ctx);
         log_error(log, "Create thread failed!");
         return NULL;

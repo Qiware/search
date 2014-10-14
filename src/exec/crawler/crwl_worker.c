@@ -321,6 +321,41 @@ int crwl_init_workers(crwl_cntx_t *ctx)
 }
 
 /******************************************************************************
+ **函数名称: crwl_workers_destroy
+ **功    能: 销毁爬虫线程池
+ **输入参数: 
+ **     ctx: 全局信息
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.10.14 #
+ ******************************************************************************/
+int crwl_workers_destroy(crwl_cntx_t *ctx)
+{
+    int idx;
+    crwl_worker_t *worker;
+    const crwl_worker_conf_t *conf = &ctx->conf.worker;
+
+    /* 1. 释放Worker对象 */
+    for (idx=0; idx<conf->thread_num; ++idx)
+    {
+        worker = (crwl_worker_t *)ctx->workers->data + idx;
+
+        crwl_worker_destroy(worker);
+    }
+
+    free(ctx->workers->data);
+
+    /* 2. 释放线程池对象 */
+    thread_pool_destroy(ctx->workers);
+
+    ctx->workers = NULL;
+
+    return CRWL_ERR;
+}
+
+/******************************************************************************
  **函数名称: crwl_worker_get_task
  **功    能: 获取工作任务
  **输入参数: 
