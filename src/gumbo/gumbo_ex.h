@@ -29,4 +29,7 @@ void gumbo_destroy(gumbo_cntx_t *ctx);
 gumbo_html_t *gumbo_html_parse(gumbo_cntx_t *ctx, const char *path);
 void gumbo_html_destroy(gumbo_cntx_t *ctx, gumbo_html_t *html);
 
+const char *gumbo_get_title(const gumbo_html_t *html);
+void gumbo_search_href(const gumbo_html_t *html);
+
 #endif /*__GUMBO_EX_H__*/

@@ -681,7 +681,7 @@ void *crwl_worker_routine(void *_ctx)
         /* 2. 获取爬虫任务 */
         crwl_worker_get_task(ctx, worker);
 
-        /* 1. 设置读写集合 */
+        /* 3. 设置读写集合 */
         FD_ZERO(&worker->rdset);
         FD_ZERO(&worker->wrset);
 
@@ -692,7 +692,7 @@ void *crwl_worker_routine(void *_ctx)
             continue;
         }
 
-        /* 3. 等待事件通知 */
+        /* 4. 等待事件通知 */
         tv.tv_sec = CRWL_WRK_TV_SEC;
         tv.tv_usec = CRWL_WRK_TV_USEC;
         ret = select(max+1, &worker->rdset, &worker->wrset, NULL, &tv);
@@ -715,7 +715,7 @@ void *crwl_worker_routine(void *_ctx)
             continue;
         }
 
-        /* 4. 进行事件处理 */
+        /* 5. 进行事件处理 */
         crwl_worker_event_hdl(worker);
     }
 

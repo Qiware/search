@@ -7,8 +7,10 @@ lib/*
 tmp/*
 tags
 stderr
+cscope.*
 src/demo/html/html_test
 src/demo/log/log_test
 src/demo/tcp/connect
 src/demo/list/list
 src/demo/redis/redis_test
+src/demo/gumbo/gumbo_get_title
