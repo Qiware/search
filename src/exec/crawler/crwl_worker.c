@@ -346,7 +346,6 @@ static int crwl_worker_fsync(crwl_worker_t *worker, crwl_worker_socket_t *sck)
     fprintf(stderr, "%s", sck->read.addr);
     sck->read.off = 0;
     sck->read.total = CRWL_WRK_READ_SIZE;
-    memset(sck->recv_buff, 0, sizeof(sck->recv_buff));
     return CRWL_OK;
 }
 
@@ -412,6 +411,7 @@ static int crwl_worker_trav_recv(crwl_worker_t *worker)
 
         /* 3. 将HTML数据写入文件 */
         sck->read.off += n;
+        sck->read.addr[sck->read.off] = '\0';
         if (sck->read.off >= CRWL_WRK_SYNC_SIZE)
         {
             crwl_worker_fsync(worker, sck);
