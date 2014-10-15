@@ -19,11 +19,7 @@
 #include "crwl_sched.h"
 #include "crwl_worker.h"
 
-#if defined(__XDO_DEBUG__)
-    #define CRWL_LOG2_LEVEL  "trace"             /* 日志级别 */
-#else /*!__XDO_DEBUG__*/
-    #define CRWL_LOG2_LEVEL  "error"             /* 日志级别 */
-#endif /*!__XDO_DEBUG__*/
+#define CRWL_LOG2_LEVEL  "error"        /* 日志级别 */
 
 /* 程序输入参数信息 */
 typedef struct

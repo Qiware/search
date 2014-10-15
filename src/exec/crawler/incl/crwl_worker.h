@@ -44,6 +44,10 @@ typedef struct
 
     char recv_buff[CRWL_WRK_BUFF_SIZE+1];   /* 接收缓存 */
     list_t send_list;                       /* 发送链表 */
+
+    /* 网页存储信息 */
+    FILE *fp;                               /* 文件指针 */
+    char fname[FILE_NAME_MAX_LEN];          /* 网页名 */
 } crwl_worker_socket_t;
 
 /* 爬虫对象信息 */
@@ -73,6 +77,8 @@ int crwl_task_load_webpage_by_uri(
         crwl_worker_t *worker, const crwl_task_load_webpage_by_uri_t *args);
 int crwl_task_load_webpage_by_ip(
         crwl_worker_t *worker, const crwl_task_load_webpage_by_ip_t *args);
+
+int crwl_webpage_fopen(crwl_worker_t *worker, crwl_worker_socket_t *sck);
 
 int crwl_worker_load_conf(crwl_worker_conf_t *conf, const char *path, log_cycle_t *log);
 

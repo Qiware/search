@@ -56,5 +56,4 @@ int crwl_task_queue_init(crwl_task_queue_t *tq, int max);
 int crwl_task_queue_push(crwl_task_queue_t *tq, void *addr);
 void *crwl_task_queue_pop(crwl_task_queue_t *tq);
 void crwl_task_queue_destroy(crwl_task_queue_t *tq);
-
 #endif /*__CRWL_TASK_H__*/

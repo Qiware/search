@@ -192,6 +192,17 @@ int crwl_task_load_webpage_by_uri(
         return CRWL_ERR;
     }
 
+    /* 5. 打开存储文件 */
+    ret = crwl_webpage_fopen(worker, sck);
+    if (CRWL_OK != ret)
+    {
+        log_error(worker->log, "Open [%s] failed!");
+
+        crwl_worker_remove_sock(worker, sck);
+        eslab_free(&worker->slab, sck);
+        return CRWL_ERR;
+    }
+
     return CRWL_OK;
 }
 
@@ -249,6 +260,35 @@ int crwl_task_load_webpage_by_ip(
     {
         log_error(worker->log, "Add socket into list failed!");
         eslab_free(&worker->slab, sck);
+        return CRWL_ERR;
+    }
+
+    return CRWL_OK;
+}
+
+/******************************************************************************
+ **函数名称: crwl_webpage_fopen
+ **功    能: 打开网页存储文件
+ **输入参数: 
+ **     sck: 套接字对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.10.15 #
+ ******************************************************************************/
+int crwl_webpage_fopen(crwl_worker_t *worker, crwl_worker_socket_t *sck)
+{
+    char path[FILE_NAME_MAX_LEN];
+
+    Mkdir(sck->uri, 0777);
+
+    snprintf(path, sizeof(path), "%s/index.html", sck->uri);
+
+    sck->fp = fopen(path, "w");
+    if (NULL == sck->fp)
+    {
+        log_error(worker->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return CRWL_ERR;
     }
 

@@ -343,7 +343,8 @@ static int crwl_worker_fdset(crwl_worker_t *worker)
  ******************************************************************************/
 static int crwl_worker_fsync(crwl_worker_t *worker, crwl_worker_socket_t *sck)
 {
-    fprintf(stderr, "%s", sck->read.addr);
+    fwrite(sck->read.addr, sck->read.off, 1, sck->fp);
+
     sck->read.off = 0;
     sck->read.total = CRWL_WRK_READ_SIZE;
     return CRWL_OK;
@@ -784,6 +785,10 @@ int crwl_worker_remove_sock(crwl_worker_t *worker, crwl_worker_socket_t *sck)
 
     log_debug(worker->log, "Remove socket! ip:%s port:%d", sck->ipaddr, sck->port);
 
+    if (sck->fp)
+    {
+        fclose(sck->fp);
+    }
     Close(sck->sckid);
 
     /* 1. 释放发送链表 */
