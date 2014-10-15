@@ -4,6 +4,7 @@
 *.lck
 *.html
 *.htm
+*.list
 bin/*
 lib/*
 tmp/*

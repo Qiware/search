@@ -14,7 +14,7 @@ INCLUDE = -I. \
 LIBS_PATH = -L$(PROJ)/lib -L/usr/lib/hiredis
 LIBS = -lpthread -lxdocore -lxdounix -lhiredis -lxdohttp
 
-SRC_LIST = crawler.c \
+SRC_LIST = crwl_main.c \
 			crwl_task.c \
 			crwl_sched.c \
 			crwl_worker.c
