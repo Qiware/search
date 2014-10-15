@@ -35,7 +35,6 @@ typedef struct
     time_t rdtm;                            /* 最近读取时间 */
 
     char uri[URL_MAX_LEN];                  /* 原始URL(未转义) */
-    char base64_uri[URL_MAX_LEN];           /* 转义URL(中文转为BASE64编码) */
 
     char ipaddr[IP_ADDR_MAX_LEN];           /* IP地址 */
     int port;                               /* 端口号 */

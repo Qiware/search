@@ -527,9 +527,8 @@ static int crwl_worker_trav_send(crwl_worker_t *worker)
         ret = crwl_worker_send_data(worker, sck);
         if (CRWL_OK != ret)
         {
-            log_error(worker->log, "Send data failed!"
-                " ipaddr:[%s:%d] uri:[%s] base64_uri:[%s]",
-                sck->ipaddr, sck->port, sck->uri, sck->base64_uri);
+            log_error(worker->log, "Send data failed! ipaddr:[%s:%d] uri:[%s]",
+                sck->ipaddr, sck->port, sck->uri);
 
             /* 将异常套接字踢出链表, 并释放空间 */
             if (prev)
