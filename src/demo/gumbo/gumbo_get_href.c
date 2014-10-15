@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 
+#include "list.h"
 #include "gumbo_ex.h"
 #include <gumbo.h>
 
@@ -11,6 +12,7 @@ int main(int argc, const char** argv)
     int ret;
     gumbo_cntx_t ctx;
     gumbo_html_t *html;
+    gumbo_result_t *r;
     const char *fname = argv[1];
 
     if (2 != argc)
@@ -36,8 +38,18 @@ int main(int argc, const char** argv)
         return -1;
     }
 
-    gumbo_search_href(html);
+    r = gumbo_search_href(&ctx, html);
+    if (NULL == r)
+    {
+        gumbo_html_destroy(&ctx, html);
+        gumbo_destroy(&ctx);
+        fprintf(stderr, "Search href failed!");
+        return -1;
+    }
 
+    gumbo_print_result(r);
+
+    gumbo_result_destroy(&ctx, r);
     gumbo_html_destroy(&ctx, html);
     gumbo_destroy(&ctx);
     return 0;

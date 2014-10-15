@@ -16,6 +16,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include "list.h"
 #include "gumbo_ex.h"
 
 static int gumbo_load_html(gumbo_cntx_t *ctx, gumbo_html_t *html);
@@ -250,15 +251,17 @@ const char *gumbo_get_title(const gumbo_html_t *html)
  **功    能: 查找HREF字段
  **输入参数: 
  **     html: HTML对象
- **输出参数: NONE
- **返    回: HREF字段
+ **输出参数:
+ **     r: 查询结果
+ **返    回: VOID
  **实现描述: 
  **注意事项: 
- **作    者: # Qifeng.zou # 2014.10.14 #
+ **作    者: # Qifeng.zou # 2014.10.15 #
  ******************************************************************************/
-static void _gumbo_search_href(GumboNode *node)
+static void _gumbo_search_href(gumbo_cntx_t *ctx, GumboNode *node, gumbo_result_t *r)
 {
-    unsigned int i;
+    int len, idx;
+    list_node_t *lnd;
     GumboAttribute *href;
     GumboVector *children;
 
@@ -270,13 +273,35 @@ static void _gumbo_search_href(GumboNode *node)
     if (GUMBO_TAG_A == node->v.element.tag
         && (href = gumbo_get_attribute(&node->v.element.attributes, "href")))
     {
-        fprintf(stdout, "%s\n", href->value);
+        /* 新建链表结点 */
+        lnd = eslab_alloc(&ctx->slab, sizeof(list_node_t));
+        if (NULL == lnd)
+        {
+            log2_error("Alloc memory from slab failed!");
+            return;
+        }
+
+        /* 申请数据空间 */
+        len = strlen(href->value);
+
+        lnd->data = eslab_alloc(&ctx->slab, len + 1);
+        if (NULL == lnd->data)
+        {
+            eslab_free(&ctx->slab, lnd);
+            log2_error("Alloc memory from slab failed!");
+            return;
+        }
+
+        snprintf(lnd->data, len+1, "%s", href->value);
+
+        /* 插入链表尾部 */
+        list_insert_tail(&r->list, lnd);
     }
 
     children = &node->v.element.children;
-    for (i = 0; i < children->length; ++i)
+    for (idx = 0; idx < children->length; ++idx)
     {
-        search_for_links((GumboNode *)children->data[i]);
+        _gumbo_search_href(ctx, (GumboNode *)children->data[idx], r);
     }
 }
 
@@ -286,12 +311,80 @@ static void _gumbo_search_href(GumboNode *node)
  **输入参数: 
  **     html: HTML对象
  **输出参数: NONE
- **返    回: HREF字段
+ **返    回: HREF字段列表
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.14 #
  ******************************************************************************/
-void gumbo_search_href(const gumbo_html_t *html)
+gumbo_result_t *gumbo_search_href(gumbo_cntx_t *ctx, const gumbo_html_t *html)
 {
-    search_for_links(html->output->root);
+    gumbo_result_t *r;
+
+    /* 1. 申请空间 */
+    r = eslab_alloc(&ctx->slab, sizeof(gumbo_result_t));
+    if (NULL == r)
+    {
+        log2_error("Alloc memory from slab failed!");
+        return NULL;
+    }
+
+    r->list.num = 0;
+    r->list.head = NULL;
+    r->list.tail = NULL;
+
+    /* 2. 查询HREF字段 */
+    _gumbo_search_href(ctx, html->output->root, r);
+
+    return r;
+}
+
+/******************************************************************************
+ **函数名称: gumbo_print_result
+ **功    能: 打印结果
+ **输入参数: 
+ **     r: 结果对象
+ **输出参数: NONE
+ **返    回: VOID
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.10.15 #
+ ******************************************************************************/
+void gumbo_print_result(gumbo_result_t *r)
+{
+    list_node_t *node = r->list.head;
+
+    while (NULL != node)
+    {
+        fprintf(stdout, "%s\n", (char *)node->data);
+        node = node->next;
+    }
+}
+
+/******************************************************************************
+ **函数名称: gumbo_result_destroy
+ **功    能: 释放结果对象
+ **输入参数: 
+ **     ctx: 全局信息
+ **     r: 结果对象
+ **输出参数: NONE
+ **返    回: VOID
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.10.15 #
+ ******************************************************************************/
+void gumbo_result_destroy(gumbo_cntx_t *ctx, gumbo_result_t *r)
+{
+    list_node_t *node = r->list.head, *next;
+
+    while (NULL != node)
+    {
+        next = node->next;
+
+        eslab_free(&ctx->slab, node->data);
+        eslab_free(&ctx->slab, node);
+
+        node = next;
+    }
+
+    eslab_free(&ctx->slab, r);
 }
