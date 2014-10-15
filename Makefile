@@ -14,6 +14,9 @@
 export PROJ = ${PWD}
 export PROJ_BIN = ${PROJ}/bin
 export PROJ_LIB = ${PROJ}/lib
+export PROJ_LOG = ${PROJ}/log
+export GCC_LOG = ${PROJ_LOG}/gcc.log
+
 
 # 编译目录(注：编译按顺序执行　注意库之间的依赖关系)
 #DIR=`find ./src -type d`
@@ -45,12 +48,15 @@ all:
 	@if [ ! -d ${PROJ_LIB} ]; then \
 		mkdir ${PROJ_LIB}; \
 	fi
+	@if [ -e ${GCC_LOG} ]; then \
+		echo > ${GCC_LOG}; \
+	fi
 	@for SUBDIR in ${DIR}; \
 	do \
 		if [ -e $${SUBDIR}/Makefile ]; then \
 			echo cd $${SUBDIR}; \
 			cd $${SUBDIR}; \
-			make; \
+			make >> ${GCC_LOG}; \
 			cd ${PROJ}; \
 		fi \
 	done
