@@ -2,6 +2,8 @@
 *.log
 *.log2
 *.lck
+*.html
+*.htm
 bin/*
 lib/*
 tmp/*
