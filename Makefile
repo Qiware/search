@@ -49,14 +49,14 @@ all:
 		mkdir ${PROJ_LIB}; \
 	fi
 	@if [ -e ${GCC_LOG} ]; then \
-		echo > ${GCC_LOG}; \
+		rm -f ${GCC_LOG}; \
 	fi
 	@for SUBDIR in ${DIR}; \
 	do \
 		if [ -e $${SUBDIR}/Makefile ]; then \
 			echo cd $${SUBDIR}; \
 			cd $${SUBDIR}; \
-			make >> ${GCC_LOG}; \
+			make 2>&1 | tee -a ${GCC_LOG}; \
 			cd ${PROJ}; \
 		fi \
 	done
