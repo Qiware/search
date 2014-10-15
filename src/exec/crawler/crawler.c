@@ -38,7 +38,7 @@ static int crwl_usage(const char *exec);
 static int crwl_load_conf(crwl_conf_t *conf, const char *path, log_cycle_t *log);
 
 static int crwl_init_workers(crwl_cntx_t *ctx);
-static int crwl_workers_destroy(crwl_cntx_t *ctx);
+int crwl_workers_destroy(crwl_cntx_t *ctx);
 
 /******************************************************************************
  **函数名称: main 
@@ -298,18 +298,6 @@ crwl_cntx_t *crwl_cntx_init(const crwl_conf_t *conf, log_cycle_t *log)
         return NULL;
     }
 
-    /* 4. 创建Sched线程 */
-    pthread_t tid;
-    ret = thread_creat(&tid, crwl_sched_routine, ctx);
-    if (CRWL_OK != ret)
-    {
-        crwl_slab_destroy(ctx);
-        crwl_workers_destroy(ctx);
-        free(ctx);
-        log_error(log, "Create thread failed!");
-        return NULL;
-    }
-
     return ctx;
 }
 
@@ -326,15 +314,24 @@ crwl_cntx_t *crwl_cntx_init(const crwl_conf_t *conf, log_cycle_t *log)
  ******************************************************************************/
 int crwl_cntx_startup(crwl_cntx_t *ctx)
 {
-    int idx;
+    int ret, idx;
+    pthread_t tid;
     const crwl_conf_t *conf = &ctx->conf;
 
-    /* 1. 设置线程回调 */
+    /* 1. 设置Worker线程回调 */
     for (idx=0; idx<conf->worker.thread_num; ++idx)
     {
         thread_pool_add_worker(ctx->workers, crwl_worker_routine, ctx);
     }
     
+    /* 2. 设置Sched线程回调 */
+    ret = thread_creat(&tid, crwl_sched_routine, ctx);
+    if (CRWL_OK != ret)
+    {
+        log_error(ctx->log, "Create thread failed!");
+        return CRWL_OK;
+    }
+
     return CRWL_OK;
 }
 
@@ -526,5 +523,3 @@ int crwl_workers_destroy(crwl_cntx_t *ctx)
 
     return CRWL_ERR;
 }
-
-
