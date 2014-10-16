@@ -104,6 +104,7 @@ typedef struct _log_cycle_t
 /* 外部接口 */
 int log_get_level(const char *level_str);
 log_cycle_t *log_init(int level, const char *path);
+#define log_set_level(log, _level) { (log)->level = (_level); }
 void log_core(log_cycle_t *log, int level,
                 const char *fname, int lineno,
                 const void *dump, int dumplen,
@@ -153,6 +154,7 @@ int log2_init(const char *level, const char *path);
 void log2_core(int level, const char *fname, int lineno,
             const void *dump, int dumplen, const char *fmt, ...);
 int log2_get_level(const char *level_str);
+#define log2_set_level(_level) { g_log2.level = (_level); }
 void log2_destroy(void);
 
 #define log2_fatal(...) /* 撰写FATAL级别日志 */\

@@ -12,11 +12,7 @@
 #include "common.h"
 #include "syscall.h"
 
-#if defined(__XDO_DEBUG__)
-log2_cycle_t g_log2 = {NULL, 0xFFFFFFFF, -1};
-#else /*!__XDO_DEBUG__*/
-log2_cycle_t g_log2 = {NULL, LOG_LEVEL_ERROR|LOG_LEVEL_FATAL, -1};
-#endif /*!__XDO_DEBUG__*/
+log2_cycle_t g_log2 = {NULL, LOG_LEVEL_TRACE, -1};
 
 static int log2_write(log2_cycle_t *log, int level,
     const void *dump, int dumplen, const char *errmsg, const struct timeb *ctm);
