@@ -140,7 +140,7 @@ void *shm_queue_alloc(shm_queue_t *shmq)
 void shm_queue_free(shm_queue_t *shmq, void *p)
 {
     /* 加锁 */
-    shm_slab_free(&shmq->slab, p);
+    shm_slab_dealloc(&shmq->slab, p);
     /* 解锁 */
 }
 

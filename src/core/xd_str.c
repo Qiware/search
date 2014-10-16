@@ -1,6 +1,6 @@
 #include <string.h>
 
-#include "x_string.h"
+#include "xd_str.h"
 
 /******************************************************************************
  **函数名称: str_to_lower
@@ -13,7 +13,7 @@
  **注意事项:
  **作    者: # Qifeng.zou # 2014.09.18 #
  ******************************************************************************/
-string_t *str_to_lower(string_t *s)
+xd_str_t *str_to_lower(xd_str_t *s)
 {
     int idx;
 
@@ -72,7 +72,7 @@ string_t *str_to_lower(string_t *s)
  **注意事项:
  **作    者: # Qifeng.zou # 2014.09.18 #
  ******************************************************************************/
-string_t *str_to_upper(string_t *s)
+xd_str_t *str_to_upper(xd_str_t *s)
 {
     int idx;
 

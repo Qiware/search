@@ -14,7 +14,7 @@
 #include "crawler.h"
 #include "syscall.h"
 #include "crwl_task.h"
-#include "xdo_socket.h"
+#include "xd_socket.h"
 #include "crwl_worker.h"
 #include "crwl_sched.h"
 

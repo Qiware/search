@@ -16,7 +16,7 @@
 #define CRWL_WRK_TV_SEC             (02)        /* 超时(秒) */
 #define CRWL_WRK_TV_USEC            (00)        /* 超时(微妙) */
 #define CRWL_WRK_DEF_THD_NUM        (1)         /* 爬虫默认线程数 */
-#define CRWL_WRK_SLAB_SIZE          (16 * KB)   /* 爬虫SLAB内存池大小 */
+#define CRWL_WRK_SLAB_SIZE          (1 * MB)    /* 爬虫SLAB内存池大小 */
 #define CRWL_WRK_BUFF_SIZE          (64 * KB)   /* 接收SIZE */
 #define CRWL_WRK_READ_SIZE          (64 * KB)   /* 读取SIZE */
 #define CRWL_WRK_SYNC_SIZE          (16 * KB)   /* 同步SIZE */

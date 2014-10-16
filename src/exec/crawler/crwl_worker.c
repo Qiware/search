@@ -243,7 +243,7 @@ int crwl_worker_destroy(crwl_worker_t *worker)
         }
 
         /* 释放内存 */
-        crwl_slab_free(ctx, data);
+        crwl_slab_dealloc(ctx, data);
     }
 
     crwl_task_queue_destroy(&worker->task);
@@ -456,7 +456,7 @@ static int crwl_worker_send_data(crwl_worker_t *worker, crwl_worker_socket_t *sc
         sck->send.off = 0;
         sck->send.total = info->length - sizeof(crwl_data_info_t);
 
-        eslab_free(&worker->slab, node);
+        eslab_dealloc(&worker->slab, node);
     }
 
     /* 2. 发送数据 */
@@ -467,7 +467,7 @@ static int crwl_worker_send_data(crwl_worker_t *worker, crwl_worker_socket_t *sc
     if (n < 0)
     {
         log_error(worker->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        eslab_free(&worker->slab, sck->send.addr);
+        eslab_dealloc(&worker->slab, sck->send.addr);
         return CRWL_ERR;
     }
 
@@ -475,7 +475,7 @@ static int crwl_worker_send_data(crwl_worker_t *worker, crwl_worker_socket_t *sc
     left = sck->send.total - sck->send.off;
     if (0 == left)
     {
-        eslab_free(&worker->slab, sck->send.addr);
+        eslab_dealloc(&worker->slab, sck->send.addr);
 
         sck->send.addr = NULL;
         sck->send.total = 0;
@@ -548,7 +548,7 @@ static int crwl_worker_trav_send(crwl_worker_t *worker)
 
             --worker->sock_list.num;
 
-            eslab_free(&worker->slab, node);
+            eslab_dealloc(&worker->slab, node);
 
             crwl_worker_remove_sock(worker, sck);
 
@@ -760,7 +760,7 @@ int crwl_worker_add_sock(crwl_worker_t *worker, crwl_worker_socket_t *sck)
     if (0 != ret)
     {
         log_error(worker->log, "Insert socket node failed!");
-        eslab_free(&worker->slab, node);
+        eslab_dealloc(&worker->slab, node);
         return CRWL_ERR;
     }
 
@@ -795,11 +795,11 @@ int crwl_worker_remove_sock(crwl_worker_t *worker, crwl_worker_socket_t *sck)
     item = sck->send_list.head;
     while (NULL != item)
     {
-        eslab_free(&worker->slab, item->data);
+        eslab_dealloc(&worker->slab, item->data);
 
         next = item->next;
 
-        eslab_free(&worker->slab, item);
+        eslab_dealloc(&worker->slab, item);
 
         item = next;
     }
@@ -820,16 +820,16 @@ int crwl_worker_remove_sock(crwl_worker_t *worker, crwl_worker_socket_t *sck)
                     worker->sock_list.head = NULL;
                     worker->sock_list.tail = NULL;
 
-                    eslab_free(&worker->slab, item);
-                    eslab_free(&worker->slab, sck);
+                    eslab_dealloc(&worker->slab, item);
+                    eslab_dealloc(&worker->slab, sck);
                     return CRWL_OK;
                 }
 
                 --worker->sock_list.num;
                 worker->sock_list.head = item->next;
 
-                eslab_free(&worker->slab, item);
-                eslab_free(&worker->slab, sck);
+                eslab_dealloc(&worker->slab, item);
+                eslab_dealloc(&worker->slab, sck);
                 return CRWL_OK;
             }
             /* 在链表尾 */
@@ -839,16 +839,16 @@ int crwl_worker_remove_sock(crwl_worker_t *worker, crwl_worker_socket_t *sck)
                 prev->next = NULL;
                 worker->sock_list.tail = prev;
 
-                eslab_free(&worker->slab, item);
-                eslab_free(&worker->slab, sck);
+                eslab_dealloc(&worker->slab, item);
+                eslab_dealloc(&worker->slab, sck);
                 return CRWL_OK;
             }
             /* 在链表中间 */
             --worker->sock_list.num;
             prev->next = item->next;
 
-            eslab_free(&worker->slab, item);
-            eslab_free(&worker->slab, sck);
+            eslab_dealloc(&worker->slab, item);
+            eslab_dealloc(&worker->slab, sck);
             return CRWL_OK;
         }
 
@@ -973,9 +973,9 @@ int crwl_worker_add_http_get_req(
     {
         if (node->data)
         {
-            eslab_free(&worker->slab, node->data);
+            eslab_dealloc(&worker->slab, node->data);
         }
-        eslab_free(&worker->slab, node);
+        eslab_dealloc(&worker->slab, node);
     }
 
     return CRWL_ERR;

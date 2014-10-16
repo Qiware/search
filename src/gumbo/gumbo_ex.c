@@ -39,7 +39,7 @@ int gumbo_init(gumbo_cntx_t *ctx)
     memset(ctx, 0, sizeof(gumbo_cntx_t));
 
     /* 1. 初始化Slab对象 */
-    ret = eslab_init(&ctx->slab, 32 * KB);
+    ret = eslab_init(&ctx->slab, 1 * MB);
     if (0 != ret)
     {
         log2_error("Initialize slab failed!");
@@ -49,7 +49,7 @@ int gumbo_init(gumbo_cntx_t *ctx)
     /* 2. 设置OPTIONS对象 */
     ctx->opt.userdata = (void *)&ctx->slab;
     ctx->opt.allocator = (GumboAllocatorFunction)&eslab_alloc;
-    ctx->opt.deallocator = (GumboDeallocatorFunction)&eslab_free;
+    ctx->opt.deallocator = (GumboDeallocatorFunction)&eslab_dealloc;
     ctx->opt.tab_stop = 8;
     ctx->opt.stop_on_first_error = false;
     ctx->opt.max_errors = -1;
@@ -88,7 +88,7 @@ gumbo_html_t *gumbo_html_parse(gumbo_cntx_t *ctx, const char *path)
     ret = gumbo_load_html(ctx, html);
     if (0 != ret)
     {
-        eslab_free(&ctx->slab, html);
+        eslab_dealloc(&ctx->slab, html);
         log2_error("Load html failed! path:%s", path);
         return NULL;
     }
@@ -98,11 +98,12 @@ gumbo_html_t *gumbo_html_parse(gumbo_cntx_t *ctx, const char *path)
                         &ctx->opt, html->input, html->input_length);
     if (NULL == html->output)
     {
-        eslab_free(&ctx->slab, html->input);
-        eslab_free(&ctx->slab, html);
+        eslab_dealloc(&ctx->slab, html->input);
+        eslab_dealloc(&ctx->slab, html);
         return NULL;
     }
 
+    eslab_dealloc(&ctx->slab, html->input);
     return html;
 }
 
@@ -121,8 +122,8 @@ gumbo_html_t *gumbo_html_parse(gumbo_cntx_t *ctx, const char *path)
 void gumbo_html_destroy(gumbo_cntx_t *ctx, gumbo_html_t *html)
 {
     gumbo_destroy_output(&ctx->opt, html->output);
-    eslab_free(&ctx->slab, html->input);
-    eslab_free(&ctx->slab, html);
+    //eslab_dealloc(&ctx->slab, html->input);
+    eslab_dealloc(&ctx->slab, html);
 }
 
 /******************************************************************************
@@ -274,7 +275,7 @@ static void _gumbo_search_href(gumbo_cntx_t *ctx, GumboNode *node, gumbo_result_
         && (href = gumbo_get_attribute(&node->v.element.attributes, "href")))
     {
         /* 新建链表结点 */
-        lnd = eslab_alloc(&ctx->slab, sizeof(list_node_t));
+        lnd = mem_pool_alloc(r->mem_pool, sizeof(list_node_t));
         if (NULL == lnd)
         {
             log2_error("Alloc memory from slab failed!");
@@ -284,10 +285,10 @@ static void _gumbo_search_href(gumbo_cntx_t *ctx, GumboNode *node, gumbo_result_
         /* 申请数据空间 */
         len = strlen(href->value);
 
-        lnd->data = eslab_alloc(&ctx->slab, len + 1);
+        lnd->data = mem_pool_alloc(r->mem_pool, len + 1);
         if (NULL == lnd->data)
         {
-            eslab_free(&ctx->slab, lnd);
+            mem_pool_dealloc(r->mem_pool, lnd);
             log2_error("Alloc memory from slab failed!");
             return;
         }
@@ -331,6 +332,12 @@ gumbo_result_t *gumbo_search_href(gumbo_cntx_t *ctx, const gumbo_html_t *html)
     r->list.num = 0;
     r->list.head = NULL;
     r->list.tail = NULL;
+    r->mem_pool = mem_pool_creat(4 * KB);
+    if (NULL == r->mem_pool)
+    {
+        eslab_dealloc(&ctx->slab, r);
+        return NULL;
+    }
 
     /* 2. 查询HREF字段 */
     _gumbo_search_href(ctx, html->output->root, r);
@@ -380,11 +387,11 @@ void gumbo_result_destroy(gumbo_cntx_t *ctx, gumbo_result_t *r)
     {
         next = node->next;
 
-        eslab_free(&ctx->slab, node->data);
-        eslab_free(&ctx->slab, node);
+        mem_pool_dealloc(r->mem_pool, node->data);
+        mem_pool_dealloc(r->mem_pool, node);
 
         node = next;
     }
 
-    eslab_free(&ctx->slab, r);
+    eslab_dealloc(&ctx->slab, r);
 }

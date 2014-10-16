@@ -2,6 +2,7 @@
 #define __GUMBO_EX_H__
 
 #include "slab.h"
+#include "mem_pool.h"
 
 #include <gumbo.h>
 
@@ -27,6 +28,7 @@ typedef struct
 typedef struct
 {
     list_t list;                    /* 结果链表 */
+    mem_pool_t *mem_pool;           /* 内存池 */
 } gumbo_result_t;
 
 int gumbo_init(gumbo_cntx_t *ctx);

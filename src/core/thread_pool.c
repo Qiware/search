@@ -385,7 +385,7 @@ static void *thread_routine(void *_tp)
         (*(worker->process))(worker->arg);
 
         pthread_mutex_lock(&(tp->queue_lock));
-        eslab_free(&tp->eslab, worker);
+        eslab_dealloc(&tp->eslab, worker);
         pthread_mutex_unlock(&(tp->queue_lock));
     }
 }

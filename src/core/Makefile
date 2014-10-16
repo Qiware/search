@@ -37,7 +37,7 @@ SRC_LIST = hash.c \
 			thread_pool.c \
 			tcp_socket.c \
 			unix_socket.c \
-			x_string.c
+			xd_str.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
 

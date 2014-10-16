@@ -48,7 +48,7 @@
 #define slab_junk(p, size) memset(p, 0, size)
 
 static slab_page_t *slab_alloc_pages(slab_pool_t *pool, uint32_t pages);
-static void slab_free_pages(slab_pool_t *pool, slab_page_t *page, uint32_t pages);
+static void slab_dealloc_pages(slab_pool_t *pool, slab_page_t *page, uint32_t pages);
 
 
 static size_t slab_max_size = 0;
@@ -453,7 +453,7 @@ done:
  **注意事项: 
  **作    者: # Nginx # YYYY.MM.DD #
  ******************************************************************************/
-void slab_free(slab_pool_t *pool, void *p)
+void slab_dealloc(slab_pool_t *pool, void *p)
 {
     size_t size = 0;
     uintptr_t slab = 0, m = 0, *bitmap = NULL;
@@ -526,7 +526,7 @@ void slab_free(slab_pool_t *pool, void *p)
                     }
                 }
 
-                slab_free_pages(pool, page, 1);
+                slab_dealloc_pages(pool, page, 1);
 
                 goto done;
             }
@@ -567,7 +567,7 @@ void slab_free(slab_pool_t *pool, void *p)
                     goto done;
                 }
 
-                slab_free_pages(pool, page, 1);
+                slab_dealloc_pages(pool, page, 1);
 
                 goto done;
             }
@@ -610,7 +610,7 @@ void slab_free(slab_pool_t *pool, void *p)
                     goto done;
                 }
 
-                slab_free_pages(pool, page, 1);
+                slab_dealloc_pages(pool, page, 1);
 
                 goto done;
             }
@@ -640,7 +640,7 @@ void slab_free(slab_pool_t *pool, void *p)
             n = ((u_char *) p - pool->start) >> slab_get_page_shift();
             size = slab & ~SLAB_PAGE_START;
 
-            slab_free_pages(pool, &pool->pages[n], size);
+            slab_dealloc_pages(pool, &pool->pages[n], size);
 
             slab_junk(p, size << slab_get_page_shift());
 
@@ -739,7 +739,7 @@ static slab_page_t *slab_alloc_pages(slab_pool_t *pool, uint32_t pages)
 }
 
 /******************************************************************************
- **函数名称: slab_fee_pages
+ **函数名称: slab_dealloc_pages
  **功    能: 释放从Slab中申请的页
  **输入参数:
  **     pool: Slab对象
@@ -751,7 +751,7 @@ static slab_page_t *slab_alloc_pages(slab_pool_t *pool, uint32_t pages)
  **注意事项: 
  **作    者: # Nginx # YYYY.MM.DD #
  ******************************************************************************/
-static void slab_free_pages(slab_pool_t *pool, slab_page_t *page, uint32_t pages)
+static void slab_dealloc_pages(slab_pool_t *pool, slab_page_t *page, uint32_t pages)
 {
     slab_page_t *prev = NULL;
 
@@ -809,7 +809,7 @@ int eslab_init(eslab_pool_t *eslab, size_t size)
     
     eslab_destroy(eslab);
 
-    eslab->inc_size = size;
+    eslab->incr = size;
     
     slab = eslab_add(eslab, size);
     if (NULL == slab)
@@ -886,6 +886,8 @@ static slab_pool_t *eslab_add(eslab_pool_t *eslab, size_t size)
     /* 3. Add node into link */
     next = eslab->node;
     eslab->node = node;
+    eslab->curr = node;
+
     node->next = next;
 
     eslab->count++;
@@ -906,37 +908,56 @@ static slab_pool_t *eslab_add(eslab_pool_t *eslab, size_t size)
  ******************************************************************************/
 void *eslab_alloc(eslab_pool_t *eslab, size_t size)
 {
+    static int num = 0;
     void *p;
     int block, count = 0;
     size_t alloc_size;
     slab_pool_t *slab;
-    eslab_node_t *node = eslab->node, *next;
+    eslab_node_t *node, *next;
 
-    /* 1. Search and alloc */
-    while (NULL != node)
+    log2_info("[%d] Alloc size:%d!", ++num, size);
+
+    /* 1. 申请内存空间 */
+    p = slab_alloc(eslab->curr->pool, size);
+    if (NULL != p)
+    {
+        return p;
+    }
+
+    /* 2. 查找可申请空间的内存池 */
+    node = eslab->curr->next;
+    if (NULL == node)
+    {
+        node = eslab->node;
+    }
+
+    while (node != eslab->curr)
     {
         next = node->next;
         
         p = slab_alloc(node->pool, size);
         if (NULL != p)
         {
+            eslab->curr = node;
             return p;
         }
 
         node = next;
+        if (NULL == node)
+        {
+            node = eslab->node;
+        }
         count++;
     }
 
-    log2_info("Not enough memory! [%d]", count);
-
-    /* 2. Add new slab node into link */
-    block = size / eslab->inc_size;
-    if (size % eslab->inc_size)
+    /* 3. 遍历完所有内存池依然未申请到内存 */
+    block = size / eslab->incr;
+    if (size % eslab->incr)
     {
         block++;
     }
 
-    alloc_size = (block * eslab->inc_size + SLAB_EXTRA_SIZE);
+    alloc_size = (block * eslab->incr + SLAB_EXTRA_SIZE);
     
     slab = eslab_add(eslab, alloc_size);
     if (NULL == slab)
@@ -945,12 +966,14 @@ void *eslab_alloc(eslab_pool_t *eslab, size_t size)
         return NULL;
     }
 
+    log2_info("Add new slab block! size:%d count:[%d]", alloc_size, count++);
+
     /* 3. Alloc memory from new slab pool */
     return slab_alloc(slab, size);
 }
 
 /******************************************************************************
- ** Name : eslab_free
+ ** Name : eslab_dealloc
  ** Func : Free special memory from expand slab pool.
  ** Input: 
  **     eslab: Expadnd slab pool
@@ -960,7 +983,7 @@ void *eslab_alloc(eslab_pool_t *eslab, size_t size)
  ** Note : 
  **Author: # Qifeng.zou # 2013.08.15 #
  ******************************************************************************/
-int eslab_free(eslab_pool_t *eslab, void *p)
+int eslab_dealloc(eslab_pool_t *eslab, void *p)
 {
     eslab_node_t *node = eslab->node, *next = NULL;
 
@@ -970,7 +993,7 @@ int eslab_free(eslab_pool_t *eslab, void *p)
         
         if ((p >= (void *)node->pool->start) && (p < (void *)node->pool->end))
         {
-            slab_free(node->pool, p);
+            slab_dealloc(node->pool, p);
             return 0;
         }
         node = next;

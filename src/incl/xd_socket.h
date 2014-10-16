@@ -1,5 +1,5 @@
-#if !defined(__XDO_SOCKET_H__)
-#define __XDO_SOCKET_H__
+#if !defined(__XD_SOCKET_H__)
+#define __XD_SOCKET_H__
 
 int tcp_listen(int port);
 int tcp_connect(const char *ipaddr, int port);
@@ -16,4 +16,4 @@ int unix_udp_creat(const char *path);
 int unix_udp_send(int sckid, const char *path, const void *buff, int len);
 int unix_udp_recv(int sckid, void *buff, int len);
 
-#endif /*__XDO_SOCKET_H__*/
+#endif /*__XD_SOCKET_H__*/

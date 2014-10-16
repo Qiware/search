@@ -86,7 +86,7 @@ int crwl_cntx_startup(crwl_cntx_t *ctx);
 
 int crwl_slab_init(crwl_cntx_t *ctx);
 void *crwl_slab_alloc(crwl_cntx_t *ctx, int size);
-void crwl_slab_free(crwl_cntx_t *ctx, void *p);
+void crwl_slab_dealloc(crwl_cntx_t *ctx, void *p);
 void crwl_slab_destroy(crwl_cntx_t *ctx);
 
 #endif /*__CRAWLER_H__*/

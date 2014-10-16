@@ -386,7 +386,7 @@ void *mem_pool_mem_align(mem_pool_t *pool, size_t size, size_t alignment)
 }
 
 /******************************************************************************
- **函数名称: mem_pool_free
+ **函数名称: mem_pool_dealloc
  **功    能: 释放内存
  **输入参数: 
  **     pool: 内存池
@@ -397,7 +397,7 @@ void *mem_pool_mem_align(mem_pool_t *pool, size_t size, size_t alignment)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.08 #
  ******************************************************************************/
-int mem_pool_free(mem_pool_t *pool, void *p)
+int mem_pool_dealloc(mem_pool_t *pool, void *p)
 {
     mem_pool_large_t  *l;
 

@@ -19,6 +19,7 @@ typedef struct
     char host[URI_MAX_LEN];     /* HOST信息 */
 } http_get_req_field_t;
 
+int http_get_host_from_uri(const char *uri, char *host, int size);
 int http_get_request(const char *uri, char *req, int size);
 
 #endif /*__HTTP_H__*/

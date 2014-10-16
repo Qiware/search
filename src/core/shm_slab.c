@@ -766,7 +766,7 @@ static int shm_slab_slot_remove_page(
  **Note  : 
  **Author: # Qifeng.zou # 2013.07.12 #
  ******************************************************************************/
-int shm_slab_free(shm_slab_pool_t *pool, void *p)
+int shm_slab_dealloc(shm_slab_pool_t *pool, void *p)
 {
     int ret = 0, page_idx = 0,
         idx = 0, is_free = 1,

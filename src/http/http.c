@@ -103,7 +103,7 @@ int http_get_host_from_uri(const char *uri, char *host, int size)
         return HTTP_OK;
     }
 
-    len = end - start;
+    len = (end - start) + 1;
     if (size <= len)
     {
         log2_error("Host name is too long! len:%d", len);
@@ -186,6 +186,7 @@ int http_get_request(const char *uri, char *req, int size)
         "Accept: */*\r\n"
         "Accept-Language: zh-cn\r\n"
         "Accept-Charset: utf-8\r\n"
+        "Connection: Close\r\n"
         "\r\n", field.path, field.host);
 
     fprintf(stderr, "%s", req);

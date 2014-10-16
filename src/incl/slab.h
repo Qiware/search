@@ -33,7 +33,7 @@ typedef struct
 
 slab_pool_t *slab_init(void *addr, size_t size);
 void *slab_alloc(slab_pool_t *pool, size_t size);
-void slab_free(slab_pool_t *pool, void *p);
+void slab_dealloc(slab_pool_t *pool, void *p);
 
 /* 可扩展SLAB节点 */
 typedef struct _eslab_node_t
@@ -45,13 +45,15 @@ typedef struct _eslab_node_t
 /* 可扩展SLAB */
 typedef struct
 {
-    int count;
-    size_t inc_size;
-    eslab_node_t *node;
+    int count;                  /* SLAB结点总数 */
+    size_t incr;                /* 扩展SLAB递增空间 */
+
+    eslab_node_t *node;         /* SLAB内存池链表 */
+    eslab_node_t *curr;         /* 最近一次正在使用eSLAB结点 */
 } eslab_pool_t;
 
 int eslab_init(eslab_pool_t *spl, size_t size);
 int eslab_destroy(eslab_pool_t *spl);
 void *eslab_alloc(eslab_pool_t *spl, size_t size);
-int eslab_free(eslab_pool_t *spl, void *p);
+int eslab_dealloc(eslab_pool_t *spl, void *p);
 #endif /*__SLAB_H__*/

@@ -69,7 +69,7 @@ void *mem_pool_alloc(mem_pool_t *pool, size_t size);
 void *mem_pool_nalloc(mem_pool_t *pool, size_t size);
 void *mem_pool_calloc(mem_pool_t *pool, size_t size);
 void *mem_pool_mem_align(mem_pool_t *pool, size_t size, size_t alignment);
-int mem_pool_free(mem_pool_t *pool, void *p);
+int mem_pool_dealloc(mem_pool_t *pool, void *p);
 
 mem_pool_cleanup_t *mem_pool_cleanup_add(mem_pool_t *p, size_t size);
 void mem_pool_run_cleanup_file(mem_pool_t *p, int fd);

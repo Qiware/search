@@ -5,7 +5,7 @@
 #include <string.h>
 
 #include "common.h"
-#include "xdo_socket.h"
+#include "xd_socket.h"
 
 #define PORT (80)
 

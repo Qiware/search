@@ -348,7 +348,7 @@ int crwl_slab_init(crwl_cntx_t *ctx)
 
     pthread_rwlock_init(&ctx->slab_lock, NULL);
 
-    ret = eslab_init(&ctx->slab, 32 * KB);
+    ret = eslab_init(&ctx->slab, 1 * MB);
     if (0 != ret)
     {
         pthread_rwlock_destroy(&ctx->slab_lock);
@@ -393,10 +393,10 @@ void *crwl_slab_alloc(crwl_cntx_t *ctx, int size)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.12 #
  ******************************************************************************/
-void crwl_slab_free(crwl_cntx_t *ctx, void *p)
+void crwl_slab_dealloc(crwl_cntx_t *ctx, void *p)
 {
     pthread_rwlock_wrlock(&ctx->slab_lock);
-    eslab_free(&ctx->slab, p); 
+    eslab_dealloc(&ctx->slab, p); 
     pthread_rwlock_unlock(&ctx->slab_lock);
 }
 

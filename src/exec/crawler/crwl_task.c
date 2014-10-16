@@ -10,11 +10,12 @@
 #include <netdb.h>
 
 #include "log.h"
+#include "http.h"
 #include "common.h"
 #include "crawler.h"
 #include "syscall.h"
 #include "crwl_task.h"
-#include "xdo_socket.h"
+#include "xd_socket.h"
 #include "crwl_worker.h"
 
 /******************************************************************************
@@ -132,12 +133,14 @@ int crwl_task_load_webpage_by_uri(
     struct hostent *host;
     time_t ctm = time(NULL);
     crwl_worker_socket_t *sck;
-    char ipaddr[IP_ADDR_MAX_LEN];
+    char ipaddr[IP_ADDR_MAX_LEN], domain[FILE_NAME_MAX_LEN];
 
     log_debug(worker->log, "Load webpage uri:%s!", args->uri);
+
+    http_get_host_from_uri(args->uri, domain, sizeof(domain));
     
     /* 1. 通过URL获取WEB服务器信息 */
-    host = gethostbyname(args->uri);
+    host = gethostbyname(domain);
     if (NULL == host)
     {
         log_error(worker->log, "Get host by name failed! uri:%s", args->uri);
@@ -177,7 +180,7 @@ int crwl_task_load_webpage_by_uri(
     if (CRWL_OK != ret)
     {
         log_error(worker->log, "Add socket into list failed!");
-        eslab_free(&worker->slab, sck);
+        eslab_dealloc(&worker->slab, sck);
         return CRWL_ERR;
     }
 
@@ -188,7 +191,7 @@ int crwl_task_load_webpage_by_uri(
         log_error(worker->log, "Add http get request failed!");
 
         crwl_worker_remove_sock(worker, sck);
-        eslab_free(&worker->slab, sck);
+        eslab_dealloc(&worker->slab, sck);
         return CRWL_ERR;
     }
 
@@ -199,7 +202,7 @@ int crwl_task_load_webpage_by_uri(
         log_error(worker->log, "Open [%s] failed!");
 
         crwl_worker_remove_sock(worker, sck);
-        eslab_free(&worker->slab, sck);
+        eslab_dealloc(&worker->slab, sck);
         return CRWL_ERR;
     }
 
@@ -259,7 +262,7 @@ int crwl_task_load_webpage_by_ip(
     if (CRWL_OK != ret)
     {
         log_error(worker->log, "Add socket into list failed!");
-        eslab_free(&worker->slab, sck);
+        eslab_dealloc(&worker->slab, sck);
         return CRWL_ERR;
     }
 
@@ -281,9 +284,9 @@ int crwl_webpage_fopen(crwl_worker_t *worker, crwl_worker_socket_t *sck)
 {
     char path[FILE_NAME_MAX_LEN];
 
-    Mkdir(sck->uri, 0777);
+    snprintf(path, sizeof(path), "%s", sck->uri);
 
-    snprintf(path, sizeof(path), "%s/index.html", sck->uri);
+    Mkdir2(sck->uri, 0777);
 
     sck->fp = fopen(path, "w");
     if (NULL == sck->fp)
