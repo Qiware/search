@@ -21,6 +21,8 @@
 #include "crwl_task.h"
 #include "thread_pool.h"
 
+#define CRWL_DEF_CONF_PATH  "../conf/crawler.xml"   /* 默认配置路径 */
+
 /* 错误码 */
 typedef enum
 {

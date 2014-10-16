@@ -80,7 +80,7 @@ static int crwl_worker_parse_conf(
     xml_node_t *curr, *node;
 
     /* 1. 定位工作进程配置 */
-    curr = xml_search(xml, ".SEARCH.CRWLSYS.WORKER");
+    curr = xml_search(xml, ".CRAWLER.WORKER");
     if (NULL == curr)
     {
         log_error(log, "Didn't configure worker process!");

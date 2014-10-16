@@ -187,7 +187,7 @@ static int crwl_getopt(int argc, char **argv, crwl_opt_t *opt)
     /* 2. 验证输入参数 */
     if (!strlen(opt->conf_path))
     {
-        snprintf(opt->conf_path, sizeof(opt->conf_path), "../conf/search.xml");
+        snprintf(opt->conf_path, sizeof(opt->conf_path), "%s", CRWL_DEF_CONF_PATH);
     }
 
     if (!opt->log_level)
