@@ -1,14 +1,15 @@
 <!-- 爬虫系统配置信息 -->
 <CRAWLER>
-    <!-- LOG_LEVLE: 日志级别
-         LOG2_LEVEL: 系统日志级别
-         取值范围: trace|debug|info|warn|error|fatal -->
-    <LOG LOG_LEVEL="error" LOG2_LEVEL="error" />
-    <POLICY>    <!-- 策略配置 -->
-        <MAX_DEEP>3</MAX_DEEP>      <!-- 最大爬取深度 -->
-        <SAVE_PATH>.</SAVE_PATH>    <!-- 下载存储路径 -->
-    </POLICY>
     <COMMON>    <!-- 公共配置 -->
+        <!-- 日志信息配置
+             LOG_LEVLE: 日志级别
+             LOG2_LEVEL: 系统日志级别
+             取值范围: trace|debug|info|warn|error|fatal -->
+        <LOG LOG_LEVEL="error" LOG2_LEVEL="error" PATH="../log/" />
+        <POLICY>    <!-- 策略配置 -->
+            <MAX_DEEP>3</MAX_DEEP>      <!-- 最大爬取深度 -->
+            <SAVE_PATH>.</SAVE_PATH>    <!-- 下载存储路径 -->
+        </POLICY>
         <REDIS>  <!-- REDIS配置 -->
             <MASTER IPADDR="127.0.0.1" PORT="6379">
                 <SLAVE IPADDR="127.0.0.1" PORT="6380" />

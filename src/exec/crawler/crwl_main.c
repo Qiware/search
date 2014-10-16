@@ -558,17 +558,25 @@ int crwl_workers_destroy(crwl_cntx_t *ctx)
  ******************************************************************************/
 static int crwl_parse_comm_conf(xml_tree_t *xml, crwl_conf_t *conf)
 {
-    xml_node_t *node;
+    xml_node_t *node, *fix;
 
-    /* 1. 日志级别 */
-    node = xml_search(xml, ".CRAWLER.LOG.LOG_LEVEL");
+    /* 1. 定位COMMON.LOG标签 */
+    fix = xml_search(xml, ".CRAWLER.COMMON.LOG");
+    if (NULL == fix)
+    {
+        log2_error("Parse common configuration failed!");
+        return CRWL_ERR;
+    }
+
+    /* 2. 日志级别 */
+    node = xml_rsearch(xml, fix, "LOG_LEVEL");
     if (NULL != node)
     {
         conf->log_level = log_get_level(node->value);
     }
 
-    /* 2. 系统日志级别 */
-    node = xml_search(xml, ".CRAWLER.LOG.LOG2_LEVEL");
+    /* 3. 系统日志级别 */
+    node = xml_rsearch(xml, fix, "LOG2_LEVEL");
     if (NULL != node)
     {
         conf->log2_level = log_get_level(node->value);
