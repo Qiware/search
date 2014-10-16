@@ -34,7 +34,7 @@ typedef struct
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
-static __inline int stack_init(Stack_t *stack, int size)
+static inline int stack_init(Stack_t *stack, int size)
 {
     memset(stack, 0, sizeof(Stack_t));
 
@@ -62,7 +62,7 @@ static __inline int stack_init(Stack_t *stack, int size)
  **      因为这些空间已交由xml树托管。释放xml树时，自然会释放这些空间。
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
-static __inline int stack_destroy(Stack_t *stack)
+static inline int stack_destroy(Stack_t *stack)
 {
     free(stack->base);
     stack->base = NULL;
@@ -83,7 +83,7 @@ static __inline int stack_destroy(Stack_t *stack)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
-static __inline int stack_push(Stack_t *stack, void *node)
+static inline int stack_push(Stack_t *stack, void *node)
 {
     if ((stack->top - stack->base) >= stack->size)
     {
@@ -108,7 +108,7 @@ static __inline int stack_push(Stack_t *stack, void *node)
  **      在此只负责将节点弹出栈，并不负责内存空间的释放
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
-static __inline int stack_pop(Stack_t *stack)
+static inline int stack_pop(Stack_t *stack)
 {
     if (stack->base == stack->top)
     {
