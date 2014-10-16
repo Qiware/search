@@ -9,6 +9,7 @@
 #include "queue.h"
 #include "common.h"
 #include "crawler.h"
+#include "xml_tree.h"
 #include "crwl_task.h"
 #include "thread_pool.h"
 
@@ -80,7 +81,7 @@ int crwl_task_load_webpage_by_ip(
 
 int crwl_webpage_fopen(crwl_worker_t *worker, crwl_worker_socket_t *sck);
 
-int crwl_worker_load_conf(crwl_worker_conf_t *conf, const char *path, log_cycle_t *log);
+int crwl_worker_parse_conf(xml_tree_t *xml, crwl_worker_conf_t *conf, log_cycle_t *log);
 
 int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker);
 int crwl_worker_destroy(crwl_worker_t *worker);

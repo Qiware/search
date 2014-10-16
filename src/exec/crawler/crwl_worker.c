@@ -16,51 +16,7 @@
 #include "thread_pool.h"
 #include "crwl_worker.h"
 
-static int crwl_worker_parse_conf(
-        xml_tree_t *xml, crwl_worker_conf_t *conf, log_cycle_t *log);
-
 static int crwl_worker_task_handler(crwl_worker_t *worker, crwl_task_t *t);
-
-/******************************************************************************
- **函数名称: crwl_worker_load_conf
- **功    能: 加载爬虫配置信息
- **输入参数:
- **     path: 配置路径
- **输出参数:
- **     conf: 配置信息
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **     1. 加载爬虫配置
- **     2. 提取配置信息
- **注意事项: 
- **     在此需要验证参数的合法性!
- **作    者: # Qifeng.zou # 2014.09.04 #
- ******************************************************************************/
-int crwl_worker_load_conf(crwl_worker_conf_t *conf, const char *path, log_cycle_t *log)
-{
-    int ret;
-    xml_tree_t *xml;
-
-    /* 1. 加载爬虫配置 */
-    xml = xml_creat(path);
-    if (NULL == xml)
-    {
-        log_error(log, "Create xml failed! path:%s", path);
-        return CRWL_ERR;
-    }
-
-    /* 2. 提取爬虫配置 */
-    ret = crwl_worker_parse_conf(xml, conf, log);
-    if (0 != ret)
-    {
-        xml_destroy(xml);
-        log_error(log, "Crawler get configuration failed! path:%s", path);
-        return CRWL_ERR;
-    }
-
-    xml_destroy(xml);
-    return CRWL_OK;
-}
 
 /******************************************************************************
  **函数名称: crwl_worker_parse_conf
@@ -74,7 +30,7 @@ int crwl_worker_load_conf(crwl_worker_conf_t *conf, const char *path, log_cycle_
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.05 #
  ******************************************************************************/
-static int crwl_worker_parse_conf(
+int crwl_worker_parse_conf(
         xml_tree_t *xml, crwl_worker_conf_t *conf, log_cycle_t *log)
 {
     xml_node_t *curr, *node;
@@ -467,7 +423,9 @@ static int crwl_worker_send_data(crwl_worker_t *worker, crwl_worker_socket_t *sc
     if (n < 0)
     {
         log_error(worker->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        eslab_dealloc(&worker->slab, sck->send.addr);
+
+        eslab_dealloc(&worker->slab, sck->send.addr - sizeof(crwl_data_info_t));
+        sck->send.addr = NULL;
         return CRWL_ERR;
     }
 
@@ -475,7 +433,7 @@ static int crwl_worker_send_data(crwl_worker_t *worker, crwl_worker_socket_t *sc
     left = sck->send.total - sck->send.off;
     if (0 == left)
     {
-        eslab_dealloc(&worker->slab, sck->send.addr);
+        eslab_dealloc(&worker->slab, sck->send.addr - sizeof(crwl_data_info_t));
 
         sck->send.addr = NULL;
         sck->send.total = 0;

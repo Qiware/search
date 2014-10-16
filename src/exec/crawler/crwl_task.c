@@ -199,7 +199,7 @@ int crwl_task_load_webpage_by_uri(
     ret = crwl_webpage_fopen(worker, sck);
     if (CRWL_OK != ret)
     {
-        log_error(worker->log, "Open [%s] failed!");
+        log_error(worker->log, "Save webpage failed!");
 
         crwl_worker_remove_sock(worker, sck);
         eslab_dealloc(&worker->slab, sck);
@@ -291,7 +291,8 @@ int crwl_webpage_fopen(crwl_worker_t *worker, crwl_worker_socket_t *sck)
     sck->fp = fopen(path, "w");
     if (NULL == sck->fp)
     {
-        log_error(worker->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        log_error(worker->log, "errmsg:[%d] %s! path:%s",
+                errno, strerror(errno), path);
         return CRWL_ERR;
     }
 

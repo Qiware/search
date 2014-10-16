@@ -25,8 +25,8 @@
 typedef struct
 {
     bool is_daemon;                     /* 是否后台运行 */
+    int log_level;                      /* 日志级别 */
     char conf_path[FILE_NAME_MAX_LEN];  /* 配置文件路径 */
-    int log_level;                      /* 指定日志级别 */
 }crwl_opt_t;
 
 static int crwl_getopt(int argc, char **argv, crwl_opt_t *opt);
@@ -35,6 +35,8 @@ static int crwl_load_conf(crwl_conf_t *conf, const char *path, log_cycle_t *log)
 
 static int crwl_init_workers(crwl_cntx_t *ctx);
 int crwl_workers_destroy(crwl_cntx_t *ctx);
+
+static int crwl_parse_comm_conf(xml_tree_t *xml, crwl_conf_t *conf);
 
 /******************************************************************************
  **函数名称: main 
@@ -235,15 +237,34 @@ static int crwl_usage(const char *exec)
 static int crwl_load_conf(crwl_conf_t *conf, const char *path, log_cycle_t *log)
 {
     int ret;
+    xml_tree_t *xml;
 
-    /* 1. 加载Worker配置 */
-    ret = crwl_worker_load_conf(&conf->worker, path, log);
-    if (CRWL_OK != ret)
+    /* 1. 加载爬虫配置 */
+    xml = xml_creat(path);
+    if (NULL == xml)
     {
-        log_error(log, "Load worker configuration failed! path:%s", path);
+        log_error(log, "Create xml failed! path:%s", path);
         return CRWL_ERR;
     }
 
+    /* 2. 加载通用配置 */
+    ret = crwl_parse_comm_conf(xml, conf);
+    if (CRWL_OK != ret)
+    {
+        log_error(log, "Load common conf failed! path:%s", path);
+        return CRWL_ERR;
+    }
+
+    /* 2. 提取爬虫配置 */
+    ret = crwl_worker_parse_conf(xml, &conf->worker, log);
+    if (0 != ret)
+    {
+        log_error(log, "Parse worker configuration failed! path:%s", path);
+        xml_destroy(xml);
+        return CRWL_ERR;
+    }
+
+    xml_destroy(xml);
     return CRWL_OK;
 }
 
@@ -263,6 +284,9 @@ crwl_cntx_t *crwl_cntx_init(const crwl_conf_t *conf, log_cycle_t *log)
 {
     int ret;
     crwl_cntx_t *ctx;
+
+    log_set_level(log, conf->log_level);
+    log2_set_level(conf->log2_level);
 
     /* 1. 创建全局对象 */
     ctx = (crwl_cntx_t *)calloc(1, sizeof(crwl_cntx_t));
@@ -518,4 +542,37 @@ int crwl_workers_destroy(crwl_cntx_t *ctx)
     ctx->workers = NULL;
 
     return CRWL_ERR;
+}
+
+/******************************************************************************
+ **函数名称: crwl_parse_comm_conf
+ **功    能: 加载通用配置
+ **输入参数: 
+ **     xml: XML配置
+ **输出参数:
+ **     conf: 配置信息
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.10.16 #
+ ******************************************************************************/
+static int crwl_parse_comm_conf(xml_tree_t *xml, crwl_conf_t *conf)
+{
+    xml_node_t *node;
+
+    /* 1. 日志级别 */
+    node = xml_search(xml, ".CRAWLER.LOG.LOG_LEVEL");
+    if (NULL != node)
+    {
+        conf->log_level = log_get_level(node->value);
+    }
+
+    /* 2. 系统日志级别 */
+    node = xml_search(xml, ".CRAWLER.LOG.LOG2_LEVEL");
+    if (NULL != node)
+    {
+        conf->log2_level = log_get_level(node->value);
+    }
+
+    return CRWL_OK;
 }

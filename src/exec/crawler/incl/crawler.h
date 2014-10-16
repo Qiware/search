@@ -68,6 +68,9 @@ typedef struct
 /* 爬虫配置信息 */
 typedef struct
 {
+    int log_level;                          /* 日志级别 */
+    int log2_level;                         /* 系统日志级别 */
+
     crwl_worker_conf_t worker;              /* Worker配置信息 */
 } crwl_conf_t;
 
