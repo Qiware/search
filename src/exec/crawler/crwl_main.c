@@ -481,6 +481,8 @@ static int crwl_init_workers(crwl_cntx_t *ctx)
     {
         worker = (crwl_worker_t *)ctx->workers->data + idx;
 
+        worker->tidx = idx;
+
         ret = crwl_worker_init(ctx, worker);
         if (CRWL_OK != ret)
         {

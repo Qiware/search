@@ -284,9 +284,12 @@ int crwl_webpage_fopen(crwl_worker_t *worker, crwl_worker_socket_t *sck)
 {
     char path[FILE_NAME_MAX_LEN];
 
-    snprintf(path, sizeof(path), "%s", sck->uri);
+    sck->webpage_idx = ++worker->down_webpage_total;
 
-    Mkdir2(sck->uri, 0777);
+    snprintf(path, sizeof(path), "./webpage/%02d-%08ld.html",
+            worker->tidx, sck->webpage_idx);
+
+    Mkdir2(path, 0777);
 
     sck->fp = fopen(path, "w");
     if (NULL == sck->fp)

@@ -39,7 +39,7 @@ void *crwl_sched_routine(void *_ctx)
     void *addr;
     redisReply *r;
     crwl_sched_t *sched;
-    crwl_worker_t *begin, *worker;
+    crwl_worker_t *worker;
     crwl_cntx_t *ctx = (crwl_cntx_t *)_ctx;
     crwl_conf_t *conf = &ctx->conf;
     char cmd[CMD_LINE_MAX_LEN];
@@ -47,7 +47,7 @@ void *crwl_sched_routine(void *_ctx)
     crwl_task_load_webpage_by_uri_t *lw_uri;
     size_t size = sizeof(crwl_task_t) + sizeof(crwl_task_space_u);
 
-    begin = (crwl_worker_t *)ctx->workers->data;
+    worker = (crwl_worker_t *)ctx->workers->data;
 
     /* 1. 初始化调度器 */
     sched = crwl_sched_init(ctx);
@@ -62,15 +62,15 @@ void *crwl_sched_routine(void *_ctx)
     while (1)
     {
         ++idx;
-        idx %= conf->worker.thread_num;
-        worker = begin + idx;
-        if (worker->task.queue.num >= worker->task.queue.max)
+        idx = idx % conf->worker.thread_num;
+
+        if (worker[idx].task.queue.num >= worker[idx].task.queue.max)
         {
             ++times;
             if (times >= conf->worker.thread_num)
             {
                 times = 0;
-                Sleep(1);
+                usleep(500);
             }
             log_error(ctx->log, "Queue space isn't enough! idx:%d", idx);
             continue;
@@ -84,6 +84,7 @@ void *crwl_sched_routine(void *_ctx)
         r = redisCommand(sched->redis_ctx, cmd);
         if (REDIS_REPLY_NIL == r->type)
         {
+            --idx;
             usleep(500);
             continue;
         }
@@ -109,7 +110,7 @@ void *crwl_sched_routine(void *_ctx)
         lw_uri->port = CRWL_WRK_WEB_SVR_PORT;
 
         /* 4. 放入Worker任务队列 */
-        ret = crwl_task_queue_push(&worker->task, addr);
+        ret = crwl_task_queue_push(&worker[idx].task, addr);
         if (CRWL_OK != ret)
         {
             freeReplyObject(r);
