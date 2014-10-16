@@ -48,7 +48,7 @@ int crwl_worker_parse_conf(
     if (NULL == node)
     {
         log_warn(log, "Didn't configure the number of worker process!");
-        conf->thread_num = CRWL_WRK_DEF_THD_NUM;
+        conf->thread_num = CRWL_DEF_THD_NUM;
     }
     else
     {
@@ -82,17 +82,17 @@ int crwl_worker_parse_conf(
     conf->port = atoi(node->value);
 
     /* 5. 下载网页的数目(相对查找) */
-    node = xml_rsearch(xml, curr, "LOAD_WEB_PAGE_NUM");
+    node = xml_rsearch(xml, curr, "DOWN_WEBPAGE_NUM");
     if (NULL == node)
     {
         log_error(log, "Didn't configure load web page number!");
         return CRWL_ERR;
     }
 
-    conf->load_web_page_num = atoi(node->value);
-    if (!conf->load_web_page_num)
+    conf->down_webpage_num = atoi(node->value);
+    if (!conf->down_webpage_num)
     {
-        conf->load_web_page_num = CRWL_WRK_LOAD_WEB_PAGE_NUM;
+        conf->down_webpage_num = CRWL_DOWN_WEBPAGE_NUM;
     }
 
     /* 6. 任务队列配置(相对查找) */
@@ -152,7 +152,7 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker)
     worker->log = ctx->log;
 
     /* 1. 创建SLAB内存池 */
-    ret = eslab_init(&worker->slab, CRWL_WRK_SLAB_SIZE);
+    ret = eslab_init(&worker->slab, CRWL_SLAB_SIZE);
     if (0 != ret)
     {
         log_error(worker->log, "Initialize slab pool failed!");
@@ -226,7 +226,7 @@ static int crwl_worker_get_task(crwl_cntx_t *ctx, crwl_worker_t *worker)
 
     /* 1. 判断是否应该取任务 */
     if (0 == worker->task.queue.num
-        || worker->sock_list.num >= ctx->conf.worker.load_web_page_num)
+        || worker->sock_list.num >= ctx->conf.worker.down_webpage_num)
     {
         return CRWL_OK;
     }
@@ -302,7 +302,7 @@ static int crwl_worker_fsync(crwl_worker_t *worker, crwl_worker_socket_t *sck)
     fwrite(sck->read.addr, sck->read.off, 1, sck->fp);
 
     sck->read.off = 0;
-    sck->read.total = CRWL_WRK_READ_SIZE;
+    sck->read.total = CRWL_RECV_BUFF_SIZE;
     return CRWL_OK;
 }
 
@@ -369,7 +369,7 @@ static int crwl_worker_trav_recv(crwl_worker_t *worker)
         /* 3. 将HTML数据写入文件 */
         sck->read.off += n;
         sck->read.addr[sck->read.off] = '\0';
-        if (sck->read.off >= CRWL_WRK_SYNC_SIZE)
+        if (sck->read.off >= CRWL_RECV_SYNC_SIZE)
         {
             crwl_worker_fsync(worker, sck);
         }
@@ -548,8 +548,8 @@ static int crwl_worker_timeout_hdl(crwl_worker_t *worker)
         }
 
         /* 超时未发送或接收数据时, 认为无数据传输, 将直接关闭套接字 */
-        if ((ctm - sck->rdtm <= CRWL_WRK_TMOUT_SEC)
-            && (ctm - sck->wrtm <= CRWL_WRK_TMOUT_SEC))
+        if ((ctm - sck->rdtm <= CRWL_SCK_TMOUT_SEC)
+            && (ctm - sck->wrtm <= CRWL_SCK_TMOUT_SEC))
         {
             node = node->next;
             continue;
@@ -651,8 +651,8 @@ void *crwl_worker_routine(void *_ctx)
         }
 
         /* 4. 等待事件通知 */
-        tv.tv_sec = CRWL_WRK_TV_SEC;
-        tv.tv_usec = CRWL_WRK_TV_USEC;
+        tv.tv_sec = CRWL_TMOUT_SEC;
+        tv.tv_usec = CRWL_TMOUT_USEC;
         ret = select(max+1, &worker->rdset, &worker->wrset, NULL, &tv);
         if (ret < 0)
         {
@@ -709,7 +709,7 @@ int crwl_worker_add_sock(crwl_worker_t *worker, crwl_worker_socket_t *sck)
 
     sck->read.addr = sck->recv_buff;
     sck->read.off = 0;
-    sck->read.total = CRWL_WRK_READ_SIZE;
+    sck->read.total = CRWL_RECV_BUFF_SIZE;
 
     node->data = sck;
 
@@ -837,13 +837,13 @@ static int crwl_worker_task_handler(crwl_worker_t *worker, crwl_task_t *t)
     switch (t->type)
     {
         /* 通过URL加载网页 */
-        case CRWL_TASK_LOAD_WEB_PAGE_BY_URL:
+        case CRWL_TASK_DOWN_WEBPAGE_BY_URL:
         {
             return crwl_task_load_webpage_by_uri(
                     worker, (const crwl_task_load_webpage_by_uri_t *)args);
         }
         /* 通过IP加载网页 */
-        case CRWL_TASK_LOAD_WEB_PAGE_BY_IP:
+        case CRWL_TASK_DOWN_WEBPAGE_BY_IP:
         {
             return crwl_task_load_webpage_by_ip(
                     worker, (const crwl_task_load_webpage_by_ip_t *)args);

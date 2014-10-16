@@ -5,7 +5,7 @@
              LOG_LEVLE: 日志级别
              LOG2_LEVEL: 系统日志级别
              取值范围: trace|debug|info|warn|error|fatal -->
-        <LOG LOG_LEVEL="error" LOG2_LEVEL="error" PATH="../log/" />
+        <LOG LOG_LEVEL="debug" LOG2_LEVEL="debug" PATH="../log/" />
         <POLICY>    <!-- 策略配置 -->
             <MAX_DEEP>3</MAX_DEEP>      <!-- 最大爬取深度 -->
             <SAVE_PATH>.</SAVE_PATH>    <!-- 下载存储路径 -->
@@ -27,16 +27,12 @@
         <RECV_THREAD_NUM>1</RECV_THREAD_NUM>    <!-- 接收线程数 -->
         <DISP_THREAD_NUM>1</DISP_THREAD_NUM>    <!-- 分发线程数 -->
         <PORT>2222</PORT>                 <!-- 爬虫服务端口号 -->
-        <SEED>  <!-- 种子配置 -->
-            <ITEM>www.ifeng.com</ITEM>
-            <ITEM>www.sina.com.cn</ITEM>
-        </SEED>
     </CONTROLER>
     <WORKER>    <!-- 爬虫进程: 负责网页下载 -->
         <THREAD_NUM>2</THREAD_NUM>  <!-- 爬虫进程中的线程数 -->
         <SVRIP>127.0.0.1</SVRIP>    <!-- 管理服务IP -->
         <PORT>2222</PORT>           <!-- 管理服务侦听端口 -->
-        <LOAD_WEB_PAGE_NUM>20</LOAD_WEB_PAGE_NUM>  <!-- 同时爬取的网页数 -->
+        <DOWN_WEBPAGE_NUM>20</DOWN_WEBPAGE_NUM>  <!-- 同时爬取的网页数 -->
         <TASK_QUEUE>                <!-- 任务队列配置 -->
             <COUNT>10000</COUNT>    <!-- 队列单元数 -->
         </TASK_QUEUE>

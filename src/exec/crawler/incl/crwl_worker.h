@@ -13,20 +13,6 @@
 #include "crwl_task.h"
 #include "thread_pool.h"
 
-/* 宏定义 */
-#define CRWL_WRK_TV_SEC             (02)        /* 超时(秒) */
-#define CRWL_WRK_TV_USEC            (00)        /* 超时(微妙) */
-#define CRWL_WRK_DEF_THD_NUM        (1)         /* 爬虫默认线程数 */
-#define CRWL_WRK_SLAB_SIZE          (1 * MB)    /* 爬虫SLAB内存池大小 */
-#define CRWL_WRK_BUFF_SIZE          (64 * KB)   /* 接收SIZE */
-#define CRWL_WRK_READ_SIZE          (64 * KB)   /* 读取SIZE */
-#define CRWL_WRK_SYNC_SIZE          (16 * KB)   /* 同步SIZE */
-#define CRWL_WRK_LOAD_WEB_PAGE_NUM  (1)         /* 默认同时下载的网页数 */
-#define CRWL_WRK_CONNECT_TMOUT      (00)        /* 连接超时时间 */
-#define CRWL_WRK_WEB_SVR_PORT       (80)        /* WEB服务器侦听端口 */
-#define CRWL_WRK_TMOUT_SEC          (05)        /* 超时时间(秒) */
-
-#define CRWL_TASK_QUEUE_MAX_NUM     (10000)     /* 任务队列单元数 */
 
 /* 网页加载套接字信息 */
 typedef struct
@@ -43,7 +29,7 @@ typedef struct
     snap_shot_t read;                       /* 读取快照 */
     snap_shot_t send;                       /* 发送快照 */
 
-    char recv_buff[CRWL_WRK_BUFF_SIZE+1];   /* 接收缓存 */
+    char recv_buff[CRWL_RECV_BUFF_SIZE+1];  /* 接收缓存 */
     list_t send_list;                       /* 发送链表 */
 
     /* 网页存储信息 */

@@ -236,7 +236,7 @@ int crwl_task_load_webpage_by_ip(
     }
     
     /* 1. 连接远程WEB服务器 */
-    fd = tcp_connect_ex(args->ipaddr, args->port, CRWL_WRK_CONNECT_TMOUT);
+    fd = tcp_connect_ex(args->ipaddr, args->port, CRWL_CONNECT_TMOUT_SEC);
     if (fd < 0)
     {
         log_error(worker->log, "errmsg:[%d] %s! ipaddr:%s",

@@ -180,8 +180,7 @@ int http_get_request(const char *uri, char *req, int size)
     /* 2. 构建HTTP GET请求 */
     snprintf(req, size,
         "GET %s HTTP/1.1\r\n"
-        "User-Agent: Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1;"
-        ".NET CLR 2.0.50727; .NET CLR 3.0.04506.648; .NET CLR 3.5.21022)\r\n"
+        "User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:33.0) Gecko/20100101 Firefox/33.0\r\n"
         "Host: %s\r\n"
         "Accept: */*\r\n"
         "Accept-Language: zh-cn\r\n"

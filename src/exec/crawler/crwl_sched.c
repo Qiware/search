@@ -103,11 +103,11 @@ void *crwl_sched_routine(void *_ctx)
         task = (crwl_task_t *)addr;
         lw_uri = (crwl_task_load_webpage_by_uri_t *)(addr + sizeof(crwl_task_t));
 
-        task->type = CRWL_TASK_LOAD_WEB_PAGE_BY_URL;
+        task->type = CRWL_TASK_DOWN_WEBPAGE_BY_URL;
         task->length = sizeof(crwl_task_t) + sizeof(crwl_task_load_webpage_by_uri_t);
 
         snprintf(lw_uri->uri, sizeof(lw_uri->uri), "%s", r->str);
-        lw_uri->port = CRWL_WRK_WEB_SVR_PORT;
+        lw_uri->port = CRWL_WEB_SVR_PORT;
 
         /* 4. 放入Worker任务队列 */
         ret = crwl_task_queue_push(&worker[idx].task, addr);

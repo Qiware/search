@@ -21,7 +21,22 @@
 #include "crwl_task.h"
 #include "thread_pool.h"
 
+/* 宏定义 */
+#define CRWL_TMOUT_SEC              (02)        /* 超时(秒) */
+#define CRWL_TMOUT_USEC             (00)        /* 超时(微妙) */
+#define CRWL_DEF_THD_NUM            (01)        /* 默认线程数 */
+#define CRWL_SLAB_SIZE              (1 * MB)    /* SLAB内存池大小 */
+#define CRWL_RECV_BUFF_SIZE         (128 * KB)  /* 缓存SIZE */
+#define CRWL_RECV_SYNC_SIZE         (64 * KB)   /* 同步SIZE */
+#define CRWL_DOWN_WEBPAGE_NUM       (1)         /* 默认同时下载的网页数 */
+#define CRWL_CONNECT_TMOUT_SEC      (00)        /* 连接超时时间 */
+#define CRWL_WEB_SVR_PORT           (80)        /* WEB服务器侦听端口 */
+#define CRWL_SCK_TMOUT_SEC          (05)        /* 套接字超时时间(秒) */
+
+#define CRWL_TASK_QUEUE_MAX_NUM     (10000)     /* 任务队列单元数 */
 #define CRWL_DEF_CONF_PATH  "../conf/crawler.xml"   /* 默认配置路径 */
+
+
 
 /* 错误码 */
 typedef enum
@@ -61,7 +76,7 @@ typedef struct
     int thread_num;                         /* 爬虫线程数 */
     char svrip[IP_ADDR_MAX_LEN];            /* 任务分发服务IP */
     int port;                               /* 任务分发服务端口 */
-    int load_web_page_num;                  /* 同时加载网页的数目 */
+    int down_webpage_num;                   /* 同时加载网页的数目 */
     queue_conf_t task_queue;                /* 任务队列配置 */
 } crwl_worker_conf_t;
 
