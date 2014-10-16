@@ -23,7 +23,7 @@ endif
 
 # 调试相关宏
 ifeq (__ON__, $(strip $(CONFIG_DEBUG_SUPPORT)))
-	OPTIONS += __XDO_DEBUG__
+	OPTIONS += __XD_DEBUG__
 endif
 
 # 内存对齐

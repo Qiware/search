@@ -56,10 +56,8 @@ static void *shm_slab_alloc_slot(
         shm_slab_pool_t *pool, size_t size);
 static void *_shm_slab_alloc_slot(
         shm_slab_pool_t *pool, int slot_idx, int type);
-#if defined(__XDO_NOT_USED__)
-static int shm_slab_slot_add_page(
+int shm_slab_slot_add_page(
     shm_slab_pool_t *pool, shm_slab_slot_t *slot, shm_slab_page_t *page);
-#endif /*__XDO_NOT_USED__*/
 static int shm_slab_slot_remove_page(
     shm_slab_pool_t *pool, shm_slab_slot_t *slot, shm_slab_page_t *page);
 
@@ -645,7 +643,6 @@ static int shm_slab_free_pages(shm_slab_pool_t *pool, shm_slab_page_t *page)
     return 0;
 }
 
-#if defined(__XDO_NOT_USED__)
 /******************************************************************************
  **Name  : shm_slab_slot_add_page
  **Func  : Add page into slot link.
@@ -659,7 +656,7 @@ static int shm_slab_free_pages(shm_slab_pool_t *pool, shm_slab_page_t *page)
  **Note  : 
  **Author: # Qifeng.zou # 2013.07.17 #
  ******************************************************************************/
-static int shm_slab_slot_add_page(
+int shm_slab_slot_add_page(
     shm_slab_pool_t *pool, shm_slab_slot_t *slot, shm_slab_page_t *page)
 {
     void *addr = NULL;
@@ -683,7 +680,6 @@ static int shm_slab_slot_add_page(
 
     return 0;
 }
-#endif /*__XDO_NOT_USED__*/
 
 /******************************************************************************
  **Name  : shm_slab_slot_remove_page

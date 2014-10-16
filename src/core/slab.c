@@ -9,6 +9,7 @@
  ******************************************************************************/
 #include "slab.h"
 #include "log.h"
+#include <assert.h>
 
 #define SLAB_PAGE_MASK   3
 #define SLAB_PAGE        0

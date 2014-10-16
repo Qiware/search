@@ -408,9 +408,9 @@ static int crwl_worker_send_data(crwl_worker_t *worker, crwl_worker_socket_t *sc
 
         info = (crwl_data_info_t *)node->data;
 
-        sck->send.addr = (void *)(info + 1);
-        sck->send.off = 0;
-        sck->send.total = info->length - sizeof(crwl_data_info_t);
+        sck->send.addr = (void *)node->data;
+        sck->send.off = sizeof(crwl_data_info_t); /* 不发送头部信息 */
+        sck->send.total = info->length;
 
         eslab_dealloc(&worker->slab, node);
     }
@@ -424,7 +424,7 @@ static int crwl_worker_send_data(crwl_worker_t *worker, crwl_worker_socket_t *sc
     {
         log_error(worker->log, "errmsg:[%d] %s!", errno, strerror(errno));
 
-        eslab_dealloc(&worker->slab, sck->send.addr - sizeof(crwl_data_info_t));
+        eslab_dealloc(&worker->slab, sck->send.addr);
         sck->send.addr = NULL;
         return CRWL_ERR;
     }
@@ -433,7 +433,7 @@ static int crwl_worker_send_data(crwl_worker_t *worker, crwl_worker_socket_t *sc
     left = sck->send.total - sck->send.off;
     if (0 == left)
     {
-        eslab_dealloc(&worker->slab, sck->send.addr - sizeof(crwl_data_info_t));
+        eslab_dealloc(&worker->slab, sck->send.addr);
 
         sck->send.addr = NULL;
         sck->send.total = 0;
