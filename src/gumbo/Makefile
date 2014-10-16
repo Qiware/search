@@ -16,7 +16,7 @@ SRC_LIST = gumbo_ex.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
 
-TARGET = libgumbo_ex.so
+TARGET = libxd_gumbo_ex.so
 
 .PHONY: all clean
 

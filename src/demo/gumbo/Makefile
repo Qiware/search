@@ -10,7 +10,7 @@ include $(PROJ)/make/build.mak
 
 INCLUDE = -I. -I$(PROJ)/src/incl -I$(PROJ)/src/gumbo
 LIBS_PATH = -L$(PROJ)/lib -L/usr/local/lib
-LIBS = -lgumbo -lgumbo_ex -lxdocore
+LIBS = -lgumbo -lxd_gumbo_ex -lxd_core
 
 SRC_LIST = gumbo_get_href.c
 

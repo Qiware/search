@@ -10,13 +10,13 @@ include $(PROJ)/make/build.mak
 
 INCLUDE = -I. -I$(PROJ)/src/incl
 LIBS_PATH = -L$(PROJ)/lib
-LIBS = 
+LIBS = -lxd_core
 
 SRC_LIST = http.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
 
-TARGET = libxdohttp.so
+TARGET = libxd_http.so
 
 .PHONY: all clean
 

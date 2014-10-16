@@ -10,7 +10,7 @@ include $(PROJ)/make/build.mak
 
 INCLUDE = -I. -I$(PROJ)/src/incl
 LIBS_PATH = -L$(PROJ)/lib -L/usr/local/lib
-LIBS = -lpthread -lxdocore -lxdounix -lhiredis
+LIBS = -lpthread -lhiredis -lxd_core
 
 SRC_LIST = redis.c
 

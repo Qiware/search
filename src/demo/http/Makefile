@@ -10,13 +10,13 @@ include $(PROJ)/make/build.mak
 
 INCLUDE = -I. -I$(PROJ)/src/incl
 LIBS_PATH = -L$(PROJ)/lib
-LIBS = -lpthread -lxd_core
+LIBS = -lpthread -lxd_core -lxd_http
 
-SRC_LIST = connect.c
+SRC_LIST = http.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
 
-TARGET = connect
+TARGET = http
 
 .PHONY: all clean
 

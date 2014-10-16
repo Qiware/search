@@ -10,13 +10,13 @@ include $(PROJ)/make/build.mak
 
 INCLUDE = -I. -I$(PROJ)/src/incl
 LIBS_PATH = -L$(PROJ)/lib
-LIBS = 
+LIBS = -lxd_core
 
 SRC_LIST = redis_queue.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
 
-TARGET = libxdoredis_queue.so
+TARGET = libxd_redis_queue.so
 
 .PHONY: all clean
 
