@@ -85,7 +85,7 @@ typedef struct
 {
     char ipaddr[IP_ADDR_MAX_LEN];           /* Redis服务IP */
     int port;                               /* Redis服务端口 */
-    char undo_taskq[FILE_NAME_MAX_LEN];     /* Undo任务队列名 */
+    char undo_taskq[QUEUE_NAME_MAX_LEN];    /* Undo任务队列名 */
 } crwl_redis_conf_t;
 
 /* 爬虫配置信息 */

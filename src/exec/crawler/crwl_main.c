@@ -588,7 +588,7 @@ static int crwl_parse_comm_conf(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
 
     /* 2. 定位REDIS标签 */
     fix = xml_search(xml, ".CRAWLER.COMMON.REDIS");
-    if (NULL != fix)
+    if (NULL == fix)
     {
         log_error(log, "Didn't configure redis!");
         return CRWL_ERR;
