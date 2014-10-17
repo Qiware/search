@@ -22,6 +22,7 @@ typedef struct
     time_t rdtm;                            /* 最近读取时间 */
 
     char uri[URL_MAX_LEN];                  /* 原始URL(未转义) */
+    uint32_t deep;                          /* 网页深度 */
 
     char ipaddr[IP_ADDR_MAX_LEN];           /* IP地址 */
     int port;                               /* 端口号 */
@@ -62,12 +63,14 @@ int crwl_worker_remove_sock(crwl_worker_t *worker, crwl_worker_socket_t *sck);
 
 int crwl_worker_add_http_get_req(
         crwl_worker_t *worker, crwl_worker_socket_t *sck, const char *uri);
-int crwl_task_load_webpage_by_uri(
-        crwl_worker_t *worker, const crwl_task_load_webpage_by_uri_t *args);
-int crwl_task_load_webpage_by_ip(
-        crwl_worker_t *worker, const crwl_task_load_webpage_by_ip_t *args);
+int crwl_task_down_webpage_by_uri(
+        crwl_worker_t *worker, const crwl_task_down_webpage_by_uri_t *args);
+int crwl_task_down_webpage_by_ip(
+        crwl_worker_t *worker, const crwl_task_down_webpage_by_ip_t *args);
 
-int crwl_webpage_fopen(crwl_worker_t *worker, crwl_worker_socket_t *sck);
+int crwl_worker_webpage_fopen(crwl_worker_t *worker, crwl_worker_socket_t *sck);
+int crwl_worker_webpage_fsync(crwl_worker_t *worker, crwl_worker_socket_t *sck);
+int crwl_worker_webpage_fcheck(crwl_worker_t *worker, crwl_worker_socket_t *sck);
 
 int crwl_worker_parse_conf(xml_tree_t *xml, crwl_worker_conf_t *conf, log_cycle_t *log);
 

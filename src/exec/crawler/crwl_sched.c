@@ -44,7 +44,7 @@ void *crwl_sched_routine(void *_ctx)
     crwl_conf_t *conf = &ctx->conf;
     char cmd[CMD_LINE_MAX_LEN];
     crwl_task_t *task;
-    crwl_task_load_webpage_by_uri_t *lw_uri;
+    crwl_task_down_webpage_by_uri_t *lw_uri;
     size_t size = sizeof(crwl_task_t) + sizeof(crwl_task_space_u);
 
     worker = (crwl_worker_t *)ctx->workers->data;
@@ -101,10 +101,10 @@ void *crwl_sched_routine(void *_ctx)
         }
 
         task = (crwl_task_t *)addr;
-        lw_uri = (crwl_task_load_webpage_by_uri_t *)(addr + sizeof(crwl_task_t));
+        lw_uri = (crwl_task_down_webpage_by_uri_t *)(addr + sizeof(crwl_task_t));
 
         task->type = CRWL_TASK_DOWN_WEBPAGE_BY_URL;
-        task->length = sizeof(crwl_task_t) + sizeof(crwl_task_load_webpage_by_uri_t);
+        task->length = sizeof(crwl_task_t) + sizeof(crwl_task_down_webpage_by_uri_t);
 
         snprintf(lw_uri->uri, sizeof(lw_uri->uri), "%s", r->str);
         lw_uri->port = CRWL_WEB_SVR_PORT;

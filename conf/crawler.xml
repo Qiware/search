@@ -1,6 +1,7 @@
 <!-- 爬虫系统配置信息 -->
 <CRAWLER>
-    <COMMON>    <!-- 公共配置 -->
+    <!-- 公共配置 -->
+    <COMMON>
         <!-- 日志信息配置
              LOG_LEVLE: 日志级别
              LOG2_LEVEL: 系统日志级别
@@ -23,21 +24,27 @@
             </MASTER>
         </REDIS>
     </COMMON>
-    <CONTROLER> <!-- 控制进程: 负责爬虫的任务分发 -->
+
+    <!-- 控制进程: 负责爬虫的任务分发 -->
+    <CONTROLER>
         <RECV_THREAD_NUM>1</RECV_THREAD_NUM>    <!-- 接收线程数 -->
         <DISP_THREAD_NUM>1</DISP_THREAD_NUM>    <!-- 分发线程数 -->
-        <PORT>2222</PORT>                 <!-- 爬虫服务端口号 -->
+        <PORT>2222</PORT>                       <!-- 爬虫服务端口号 -->
     </CONTROLER>
-    <WORKER>    <!-- 爬虫进程: 负责网页下载 -->
-        <THREAD_NUM>2</THREAD_NUM>  <!-- 爬虫进程中的线程数 -->
+
+    <!-- 爬虫进程: 负责网页下载 -->
+    <WORKER>
+        <THREAD_NUM>2</THREAD_NUM>  <!-- 爬虫线程数 -->
         <SVRIP>127.0.0.1</SVRIP>    <!-- 管理服务IP -->
         <PORT>2222</PORT>           <!-- 管理服务侦听端口 -->
         <DOWN_WEBPAGE_NUM>20</DOWN_WEBPAGE_NUM>  <!-- 同时爬取的网页数 -->
         <TASK_QUEUE>                <!-- 任务队列配置 -->
-            <COUNT>10000</COUNT>    <!-- 队列单元数 -->
+            <COUNT>10000</COUNT>        <!-- 队列单元数 -->
         </TASK_QUEUE>
     </WORKER>
-    <ANALYST>   <!-- 分析进程: 负责对网页的分析(内容分析、URL提取等) -->
+
+    <!-- 分析进程: 负责对网页的分析(内容分析、URL提取等) -->
+    <ANALYST>
         <PROCESS_NUM>1</PROCESS_NUM><!-- 分析进程数 -->
         <THREAD_NUM>5</THREAD_NUM>  <!-- 各分析进程中的线程数 -->
         <SVRIP>127.0.0.1</SVRIP>    <!-- 管理服务IP -->

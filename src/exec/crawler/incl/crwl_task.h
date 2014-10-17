@@ -36,7 +36,7 @@ typedef struct
     char uri[URL_MAX_LEN];                  /* URI */
     int deep;                               /* 当前URI的深度(0:表示深度未知) */
     int port;                               /* 端口号 */
-} crwl_task_load_webpage_by_uri_t;
+} crwl_task_down_webpage_by_uri_t;
 
 /* 通过IP加载网页 */
 typedef struct
@@ -44,13 +44,13 @@ typedef struct
     int type;                               /* IP类型(IPV4或IPV6) */
     char ipaddr[IP_ADDR_MAX_LEN];           /* IP地址 */
     int port;                               /* 端口号 */
-} crwl_task_load_webpage_by_ip_t;
+} crwl_task_down_webpage_by_ip_t;
 
 /* TASK空间 */
 typedef union
 {
-    crwl_task_load_webpage_by_uri_t uri;
-    crwl_task_load_webpage_by_ip_t ip;
+    crwl_task_down_webpage_by_uri_t uri;
+    crwl_task_down_webpage_by_ip_t ip;
 } crwl_task_space_u;
 
 int crwl_task_queue_init(crwl_task_queue_t *tq, int max);

@@ -111,7 +111,7 @@ void crwl_task_queue_destroy(crwl_task_queue_t *tq)
 }
 
 /******************************************************************************
- **函数名称: crwl_task_load_webpage_by_uri
+ **函数名称: crwl_task_down_webpage_by_uri
  **功    能: 通过URL加载网页的任务处理
  **输入参数: 
  **     worker: 爬虫对象 
@@ -126,8 +126,8 @@ void crwl_task_queue_destroy(crwl_task_queue_t *tq)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.25 #
  ******************************************************************************/
-int crwl_task_load_webpage_by_uri(
-        crwl_worker_t *worker, const crwl_task_load_webpage_by_uri_t *args)
+int crwl_task_down_webpage_by_uri(
+        crwl_worker_t *worker, const crwl_task_down_webpage_by_uri_t *args)
 {
     int ret, fd;
     struct hostent *host;
@@ -196,7 +196,7 @@ int crwl_task_load_webpage_by_uri(
     }
 
     /* 5. 打开存储文件 */
-    ret = crwl_webpage_fopen(worker, sck);
+    ret = crwl_worker_webpage_fopen(worker, sck);
     if (CRWL_OK != ret)
     {
         log_error(worker->log, "Save webpage failed!");
@@ -210,7 +210,7 @@ int crwl_task_load_webpage_by_uri(
 }
 
 /******************************************************************************
- **函数名称: crwl_task_load_webpage_by_ip
+ **函数名称: crwl_task_down_webpage_by_ip
  **功    能: 通过IP加载网页的任务处理
  **输入参数: 
  **     worker: 爬虫对象 
@@ -223,8 +223,8 @@ int crwl_task_load_webpage_by_uri(
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.28 #
  ******************************************************************************/
-int crwl_task_load_webpage_by_ip(
-        crwl_worker_t *worker, const crwl_task_load_webpage_by_ip_t *args)
+int crwl_task_down_webpage_by_ip(
+        crwl_worker_t *worker, const crwl_task_down_webpage_by_ip_t *args)
 {
     int ret, fd;
     crwl_worker_socket_t *sck;
@@ -263,39 +263,6 @@ int crwl_task_load_webpage_by_ip(
     {
         log_error(worker->log, "Add socket into list failed!");
         eslab_dealloc(&worker->slab, sck);
-        return CRWL_ERR;
-    }
-
-    return CRWL_OK;
-}
-
-/******************************************************************************
- **函数名称: crwl_webpage_fopen
- **功    能: 打开网页存储文件
- **输入参数: 
- **     sck: 套接字对象
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.10.15 #
- ******************************************************************************/
-int crwl_webpage_fopen(crwl_worker_t *worker, crwl_worker_socket_t *sck)
-{
-    char path[FILE_NAME_MAX_LEN];
-
-    sck->webpage_idx = ++worker->down_webpage_total;
-
-    snprintf(path, sizeof(path), "./webpage/%02d-%08ld.html",
-            worker->tidx, sck->webpage_idx);
-
-    Mkdir2(path, 0777);
-
-    sck->fp = fopen(path, "w");
-    if (NULL == sck->fp)
-    {
-        log_error(worker->log, "errmsg:[%d] %s! path:%s",
-                errno, strerror(errno), path);
         return CRWL_ERR;
     }
 
