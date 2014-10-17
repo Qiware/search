@@ -97,9 +97,9 @@ int http_get_host_from_uri(const char *uri, char *host, int size)
         ptr++;
     }
 
-    if (start == end)
+    if (start >= end)
     {
-        snprintf(host, size, "%s", uri);
+        snprintf(host, size, "%s", start);
         return HTTP_OK;
     }
 
