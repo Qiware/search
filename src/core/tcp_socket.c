@@ -44,6 +44,9 @@ int tcp_listen(int port)
         return -1;
     }
 
+    opt = 1;
+    setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(int));
+
     /* 2. 绑定指定端口 */
     bzero(&svraddr, sizeof(svraddr));
 
@@ -66,10 +69,7 @@ int tcp_listen(int port)
         return -1;
     }
 
-    /* 4. 设置套接字属性(可重用、非阻塞) */
-    opt = 1;
-    setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(&opt));
-
+    /* 4. 设置非阻塞属性 */
     fd_set_nonblocking(fd);
 
     return fd;
