@@ -28,7 +28,7 @@
  **     1. 创建套接字
  **     2. 绑定指定端口
  **     3. 侦听指定端口
- **     4. 设置非阻塞属性
+ **     4. 设置套接字属性(可重用、非阻塞)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.03.24 #
  ******************************************************************************/
@@ -44,16 +44,7 @@ int tcp_listen(int port)
         return -1;
     }
 
-    /* 2. 设为可重用 */
-    opt = 1;
-    ret = setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(int));
-    if (ret < 0)
-    {
-        close(fd);
-        return -1;
-    }
-
-    /* 3. 绑定指定端口 */
+    /* 2. 绑定指定端口 */
     bzero(&svraddr, sizeof(svraddr));
 
     svraddr.sin_family = AF_INET;
@@ -67,7 +58,7 @@ int tcp_listen(int port)
         return -1;
     }
 
-    /* 4. 侦听指定端口 */
+    /* 3. 侦听指定端口 */
     ret = listen(fd, 20);
     if (ret < 0)
     {
@@ -75,7 +66,10 @@ int tcp_listen(int port)
         return -1;
     }
 
-    /* 5. 设为非阻塞属性 */
+    /* 4. 设置套接字属性(可重用、非阻塞) */
+    opt = 1;
+    setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(&opt));
+
     fd_set_nonblocking(fd);
 
     return fd;
