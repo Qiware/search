@@ -3,25 +3,16 @@
     <!-- 公共配置 -->
     <COMMON>
         <!-- 日志信息配置
-             LOG_LEVLE: 日志级别
-             LOG2_LEVEL: 系统日志级别
-             取值范围: trace|debug|info|warn|error|fatal -->
-        <LOG LOG_LEVEL="debug" LOG2_LEVEL="debug" PATH="../log/" />
+            1) LOG_LEVLE: 日志级别
+            2) LOG2_LEVEL: 系统日志级别
+            3) 取值范围: trace|debug|info|warn|error|fatal -->
+        <LOG LOG_LEVEL="warn" LOG2_LEVEL="warn" PATH="../log/" />
         <POLICY>    <!-- 策略配置 -->
             <MAX_DEEP>3</MAX_DEEP>      <!-- 最大爬取深度 -->
             <SAVE_PATH>.</SAVE_PATH>    <!-- 下载存储路径 -->
         </POLICY>
-        <REDIS>  <!-- REDIS配置 -->
-            <MASTER IPADDR="127.0.0.1" PORT="6379">
-                <SLAVE IPADDR="127.0.0.1" PORT="6380" />
-                <SLAVE IPADDR="127.0.0.1" PORT="6381" />
-                <SLAVE IPADDR="127.0.0.1" PORT="6382" />
-            </MASTER>
-            <MASTER IPADDR="127.0.0.1" PORT="6389">
-                <SLAVE IPADDR="127.0.0.1" PORT="6390" />
-                <SLAVE IPADDR="127.0.0.1" PORT="6391" />
-                <SLAVE IPADDR="127.0.0.1" PORT="6392" />
-            </MASTER>
+        <REDIS IPADDR="127.0.0.1" PORT="6379">  <!-- REDIS配置 -->
+            <UNDO_TASK_QUEUE NAME="CRWL_UNDO_TASKQ" />  <!-- UNDO任务队列 -->
         </REDIS>
     </COMMON>
 

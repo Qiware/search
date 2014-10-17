@@ -26,8 +26,8 @@
 #define CRWL_TMOUT_USEC             (00)        /* 超时(微妙) */
 #define CRWL_DEF_THD_NUM            (01)        /* 默认线程数 */
 #define CRWL_SLAB_SIZE              (1 * MB)    /* SLAB内存池大小 */
-#define CRWL_RECV_BUFF_SIZE         (128 * KB)  /* 缓存SIZE */
-#define CRWL_RECV_SYNC_SIZE         (64 * KB)   /* 同步SIZE */
+#define CRWL_RECV_SIZE              (128 * KB)  /* 缓存SIZE(接收缓存) */
+#define CRWL_SYNC_SIZE              (64 * KB)   /* 同步SIZE */
 #define CRWL_DOWN_WEBPAGE_NUM       (1)         /* 默认同时下载的网页数 */
 #define CRWL_CONNECT_TMOUT_SEC      (00)        /* 连接超时时间 */
 #define CRWL_WEB_SVR_PORT           (80)        /* WEB服务器侦听端口 */
@@ -85,6 +85,11 @@ typedef struct
 {
     int log_level;                          /* 日志级别 */
     int log2_level;                         /* 系统日志级别 */
+
+    /* REDIS配置 */
+    char redis_ipaddr[IP_ADDR_MAX_LEN];     /* Redis服务IP */
+    int redis_port;                         /* Redis服务端口 */
+    char undo_taskq[FILE_NAME_MAX_LEN];     /* Undo任务队列名 */
 
     crwl_worker_conf_t worker;              /* Worker配置信息 */
 } crwl_conf_t;

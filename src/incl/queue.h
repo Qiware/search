@@ -4,7 +4,7 @@
 /* 队列配置 */
 typedef struct
 {
-    size_t count;   /* 单元数 */
+    size_t count;           /* 单元数 */
 } queue_conf_t;
 
 /* 循环队列结点 */
@@ -17,16 +17,23 @@ typedef struct _Qnode_t
 /* 循环队列 */
 typedef struct
 {
-    int max;        /* 队列容量 */
-    int num;        /* 队列成员个数 */
+    int max;                /* 队列容量 */
+    int num;                /* 队列成员个数 */
 
-    Qnode_t *base;  /* 队列基址 */
-    Qnode_t *head;  /* 队列头 */
-    Qnode_t *tail;  /* 队列尾 */
+    Qnode_t *base;          /* 队列基址 */
+    Qnode_t *head;          /* 队列头 */
+    Qnode_t *tail;          /* 队列尾 */
 } Queue_t;
 
 int queue_init(Queue_t *q, int max);
 int queue_push(Queue_t *q, void *addr);
 void* queue_pop(Queue_t *q);
 void queue_destroy(Queue_t *q);
+
+/* 获取队列剩余空间 */
+static inline int queue_space(Queue_t *q)
+{
+    return (q->max > q->num)? 1 : 0;
+}
+
 #endif /*__QUEUE_H__*/

@@ -36,7 +36,7 @@ static int crwl_load_conf(crwl_conf_t *conf, const char *path, log_cycle_t *log)
 static int crwl_init_workers(crwl_cntx_t *ctx);
 int crwl_workers_destroy(crwl_cntx_t *ctx);
 
-static int crwl_parse_comm_conf(xml_tree_t *xml, crwl_conf_t *conf);
+static int crwl_parse_comm_conf(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log);
 
 /******************************************************************************
  **函数名称: main 
@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
     ret = crwl_load_conf(&conf, opt.conf_path, log);
     if (CRWL_OK != ret)
     {
-        log2_error("Load crawler configuration failed!");
+        log_error(log, "Load crawler configuration failed! path:%s", opt.conf_path);
         goto ERROR;
     }
 
@@ -108,7 +108,7 @@ int main(int argc, char *argv[])
     ctx = crwl_cntx_init(&conf, log);
     if (NULL == ctx)
     {
-        log2_error("Start crawler server failed!");
+        log_error(log, "Start crawler server failed!");
         goto ERROR;
     }
 
@@ -116,7 +116,7 @@ int main(int argc, char *argv[])
     ret = crwl_cntx_startup(ctx);
     if (CRWL_OK != ret)
     {
-        log2_error("Startup crawler server failed!");
+        log_error(log, "Startup crawler server failed!");
         goto ERROR;
     }
 
@@ -248,7 +248,7 @@ static int crwl_load_conf(crwl_conf_t *conf, const char *path, log_cycle_t *log)
     }
 
     /* 2. 加载通用配置 */
-    ret = crwl_parse_comm_conf(xml, conf);
+    ret = crwl_parse_comm_conf(xml, conf, log);
     if (CRWL_OK != ret)
     {
         log_error(log, "Load common conf failed! path:%s", path);
@@ -551,6 +551,7 @@ int crwl_workers_destroy(crwl_cntx_t *ctx)
  **功    能: 加载通用配置
  **输入参数: 
  **     xml: XML配置
+ **     log: 日志对象
  **输出参数:
  **     conf: 配置信息
  **返    回: 0:成功 !0:失败
@@ -558,30 +559,70 @@ int crwl_workers_destroy(crwl_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.16 #
  ******************************************************************************/
-static int crwl_parse_comm_conf(xml_tree_t *xml, crwl_conf_t *conf)
+static int crwl_parse_comm_conf(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
 {
     xml_node_t *node, *fix;
 
     /* 1. 定位COMMON.LOG标签 */
     fix = xml_search(xml, ".CRAWLER.COMMON.LOG");
-    if (NULL == fix)
+    if (NULL != fix)
     {
-        log2_error("Parse common configuration failed!");
-        return CRWL_ERR;
+        /* 1.1 日志级别 */
+        node = xml_rsearch(xml, fix, "LOG_LEVEL");
+        if (NULL != node)
+        {
+            conf->log_level = log_get_level(node->value);
+        }
+
+        /* 1.2 系统日志级别 */
+        node = xml_rsearch(xml, fix, "LOG2_LEVEL");
+        if (NULL != node)
+        {
+            conf->log2_level = log_get_level(node->value);
+        }
+    }
+    else
+    {
+        log_warn(log, "Didn't configure log!");
     }
 
-    /* 2. 日志级别 */
-    node = xml_rsearch(xml, fix, "LOG_LEVEL");
-    if (NULL != node)
+    /* 2. 定位COMMON.REDIS标签 */
+    fix = xml_search(xml, ".CRAWLER.COMMON.REDIS");
+    if (NULL != fix)
     {
-        conf->log_level = log_get_level(node->value);
-    }
+        /* 2.1 获取IP地址 */
+        node = xml_rsearch(xml, fix, "IPADDR");
+        if (NULL == node)
+        {
+            log_error(log, "Get redis ip address failed!");
+            return CRWL_ERR;
+        }
 
-    /* 3. 系统日志级别 */
-    node = xml_rsearch(xml, fix, "LOG2_LEVEL");
-    if (NULL != node)
+        snprintf(conf->redis_ipaddr, sizeof(conf->redis_ipaddr), "%s", node->value);
+
+        /* 2.2 获取端口号 */
+        node = xml_rsearch(xml, fix, "PORT");
+        if (NULL == node)
+        {
+            log_error(log, "Get redis port failed!");
+            return CRWL_ERR;
+        }
+
+        conf->redis_port = atoi(node->value);
+
+        /* 2.2 获取端口号 */
+        node = xml_rsearch(xml, fix, "UNDO_TASK_QUEUE.NAME");
+        if (NULL == node)
+        {
+            log_error(log, "Get undo task queue name failed!");
+            return CRWL_ERR;
+        }
+
+        snprintf(conf->undo_taskq, sizeof(conf->undo_taskq), "%s", node->value);
+    }
+    else
     {
-        conf->log2_level = log_get_level(node->value);
+        log_error(log, "Didn't configure redis!");
     }
 
     return CRWL_OK;

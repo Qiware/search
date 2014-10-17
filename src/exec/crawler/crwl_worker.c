@@ -161,7 +161,7 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker)
     }
 
     /* 2. 创建任务队列 */
-    ret = crwl_task_queue_init(&worker->task, conf->task_queue.count);
+    ret = crwl_task_queue_init(&worker->undo_taskq, conf->task_queue.count);
     if (CRWL_OK != ret)
     {
         eslab_destroy(&worker->slab);
@@ -193,7 +193,7 @@ int crwl_worker_destroy(crwl_worker_t *worker)
     while (1)
     {
         /* 弹出数据 */
-        data = crwl_task_queue_pop(&worker->task);
+        data = crwl_task_queue_pop(&worker->undo_taskq);
         if (NULL == data)
         {
             break;
@@ -203,14 +203,14 @@ int crwl_worker_destroy(crwl_worker_t *worker)
         crwl_slab_dealloc(ctx, data);
     }
 
-    crwl_task_queue_destroy(&worker->task);
+    crwl_task_queue_destroy(&worker->undo_taskq);
 
     free(worker);
     return CRWL_OK;
 }
 
 /******************************************************************************
- **函数名称: crwl_worker_get_task
+ **函数名称: crwl_worker_fetch_task
  **功    能: 获取工作任务
  **输入参数: 
  **     worker: 爬虫对象
@@ -220,20 +220,20 @@ int crwl_worker_destroy(crwl_worker_t *worker)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.25 #
  ******************************************************************************/
-static int crwl_worker_get_task(crwl_cntx_t *ctx, crwl_worker_t *worker)
+static int crwl_worker_fetch_task(crwl_cntx_t *ctx, crwl_worker_t *worker)
 {
     void *data;
     crwl_task_t *t;
 
     /* 1. 判断是否应该取任务 */
-    if (0 == worker->task.queue.num
+    if (0 == worker->undo_taskq.queue.num
         || worker->sock_list.num >= ctx->conf.worker.down_webpage_num)
     {
         return CRWL_OK;
     }
 
     /* 2. 从任务队列取数据 */
-    data = crwl_task_queue_pop(&worker->task);
+    data = crwl_task_queue_pop(&worker->undo_taskq);
     if (NULL == data)
     {
         log_error(worker->log, "Get task from queue failed!");
@@ -350,7 +350,7 @@ static int crwl_worker_trav_recv(crwl_worker_t *worker)
         /* 3. 将HTML数据写入文件 */
         sck->read.off += n;
         sck->read.addr[sck->read.off] = '\0';
-        if (sck->read.off >= CRWL_RECV_SYNC_SIZE)
+        if (sck->read.off >= CRWL_SYNC_SIZE)
         {
             crwl_worker_webpage_fsync(worker, sck);
         }
@@ -619,7 +619,7 @@ void *crwl_worker_routine(void *_ctx)
     while (1)
     {
         /* 2. 获取爬虫任务 */
-        crwl_worker_get_task(ctx, worker);
+        crwl_worker_fetch_task(ctx, worker);
 
         /* 3. 设置读写集合 */
         FD_ZERO(&worker->rdset);
@@ -689,9 +689,9 @@ int crwl_worker_add_sock(crwl_worker_t *worker, crwl_worker_socket_t *sck)
         return CRWL_ERR;
     }
 
-    sck->read.addr = sck->recv_buff;
+    sck->read.addr = sck->recv;
     sck->read.off = 0;
-    sck->read.total = CRWL_RECV_BUFF_SIZE;
+    sck->read.total = CRWL_RECV_SIZE;
 
     node->data = sck;
 
@@ -971,7 +971,7 @@ int crwl_worker_webpage_fsync(crwl_worker_t *worker, crwl_worker_socket_t *sck)
     fwrite(sck->read.addr, sck->read.off, 1, sck->fp);
 
     sck->read.off = 0;
-    sck->read.total = CRWL_RECV_BUFF_SIZE;
+    sck->read.total = CRWL_RECV_SIZE;
     return CRWL_OK;
 }
 

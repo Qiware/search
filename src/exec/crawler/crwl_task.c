@@ -171,7 +171,7 @@ int crwl_task_down_webpage_by_uri(
     sck->sckid = fd;
     sck->rdtm = ctm;
     sck->wrtm = ctm;
-    sck->read.addr = sck->recv_buff;
+    sck->read.addr = sck->recv;
     snprintf(sck->uri, sizeof(sck->uri), "%s", args->uri);
     snprintf(sck->ipaddr, sizeof(sck->ipaddr), "%s", ipaddr);
     sck->port = args->port;
