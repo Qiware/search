@@ -48,6 +48,7 @@ static int crwl_parse_comm_conf(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **     1. 加载爬虫配置
+ **     1. 初始化爬虫信息
  **     2. 启动爬虫功能
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.04 #
@@ -372,7 +373,7 @@ int crwl_slab_init(crwl_cntx_t *ctx)
 
     pthread_rwlock_init(&ctx->slab_lock, NULL);
 
-    ret = eslab_init(&ctx->slab, 1 * MB);
+    ret = eslab_init(&ctx->slab, CRWL_SLAB_SIZE);
     if (0 != ret)
     {
         pthread_rwlock_destroy(&ctx->slab_lock);
@@ -395,7 +396,7 @@ int crwl_slab_init(crwl_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.12 #
  ******************************************************************************/
-void *crwl_slab_alloc(crwl_cntx_t *ctx, int size)
+void *crwl_slab_alloc(crwl_cntx_t *ctx, size_t size)
 {
     void *addr;
 
@@ -556,6 +557,7 @@ int crwl_workers_destroy(crwl_cntx_t *ctx)
  **     conf: 配置信息
  **返    回: 0:成功 !0:失败
  **实现描述: 
+ **     通过XML查询接口查找对应的配置信息
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.16 #
  ******************************************************************************/

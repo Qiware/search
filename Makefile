@@ -32,11 +32,11 @@ DIR += "src/exec/logsvr"
 DEMO_DIR = "src/demo"
 #DIR += "${DEMO_DIR}/log"
 #DIR += "${DEMO_DIR}/tcp"
+#DIR += "${DEMO_DIR}/http"
 #DIR += "${DEMO_DIR}/html"
 #DIR += "${DEMO_DIR}/list"
 DIR += "${DEMO_DIR}/redis"
 DIR += "${DEMO_DIR}/gumbo"
-DIR += "${DEMO_DIR}/http"
 export DIR
 
 .PHONY: all clean rebuild

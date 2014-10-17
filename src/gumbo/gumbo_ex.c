@@ -248,7 +248,7 @@ const char *gumbo_get_title(const gumbo_html_t *html)
 }
 
 /******************************************************************************
- **函数名称: gumbo_search_href
+ **函数名称: gumbo_parse_href
  **功    能: 查找HREF字段
  **输入参数: 
  **     html: HTML对象
@@ -259,7 +259,7 @@ const char *gumbo_get_title(const gumbo_html_t *html)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.15 #
  ******************************************************************************/
-static void _gumbo_search_href(gumbo_cntx_t *ctx, GumboNode *node, gumbo_result_t *r)
+static void _gumbo_parse_href(gumbo_cntx_t *ctx, GumboNode *node, gumbo_result_t *r)
 {
     int len, idx;
     list_node_t *lnd;
@@ -302,12 +302,12 @@ static void _gumbo_search_href(gumbo_cntx_t *ctx, GumboNode *node, gumbo_result_
     children = &node->v.element.children;
     for (idx = 0; idx < children->length; ++idx)
     {
-        _gumbo_search_href(ctx, (GumboNode *)children->data[idx], r);
+        _gumbo_parse_href(ctx, (GumboNode *)children->data[idx], r);
     }
 }
 
 /******************************************************************************
- **函数名称: gumbo_search_href
+ **函数名称: gumbo_parse_href
  **功    能: 查找HREF字段
  **输入参数: 
  **     html: HTML对象
@@ -317,7 +317,7 @@ static void _gumbo_search_href(gumbo_cntx_t *ctx, GumboNode *node, gumbo_result_
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.14 #
  ******************************************************************************/
-gumbo_result_t *gumbo_search_href(gumbo_cntx_t *ctx, const gumbo_html_t *html)
+gumbo_result_t *gumbo_parse_href(gumbo_cntx_t *ctx, const gumbo_html_t *html)
 {
     gumbo_result_t *r;
 
@@ -339,8 +339,8 @@ gumbo_result_t *gumbo_search_href(gumbo_cntx_t *ctx, const gumbo_html_t *html)
         return NULL;
     }
 
-    /* 2. 查询HREF字段 */
-    _gumbo_search_href(ctx, html->output->root, r);
+    /* 2. 提取HREF字段 */
+    _gumbo_parse_href(ctx, html->output->root, r);
 
     return r;
 }

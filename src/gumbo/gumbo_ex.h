@@ -41,6 +41,6 @@ void gumbo_print_result(gumbo_result_t *r);
 void gumbo_result_destroy(gumbo_cntx_t *ctx, gumbo_result_t *r);
 
 const char *gumbo_get_title(const gumbo_html_t *html);
-gumbo_result_t *gumbo_search_href(gumbo_cntx_t *ctx, const gumbo_html_t *html);
+gumbo_result_t *gumbo_parse_href(gumbo_cntx_t *ctx, const gumbo_html_t *html);
 
 #endif /*__GUMBO_EX_H__*/

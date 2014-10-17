@@ -246,52 +246,54 @@ int xml_init(xml_tree_t **xml)
  ******************************************************************************/
 char *xml_fload(const char *fname)
 {
-    int ret = 0, left = 0, num = 0, offset = 0;
-    FILE *fp = NULL;
-    char *buff = NULL;
-    struct stat fstate;
+    size_t size;
+    int ret, left, num, off;
+    FILE *fp;
+    char *buff;
+    struct stat st;
 
-    memset(&fstate, 0, sizeof(fstate));
-
-    /* 判断文件状态是否正常 */
-    ret = stat(fname, &fstate);
-    if (XML_OK != ret)
+    /* 1. 判断文件状态是否正常 */
+    ret = stat(fname, &st);
+    if (0 != ret)
     {
         return NULL;
     }
 
-    /* 分配文件缓存空间 */
-    buff = (char *)calloc(1, (fstate.st_size + 1) * sizeof(char));
+    /* 2. 分配文件缓存空间 */
+    num = (st.st_size + 1) / KB;
+    size = (num + 1) * KB;
+
+    buff = (char *)calloc(1, size);
     if (NULL == buff)
     {
         return NULL;
     }
 
-    /* 将文件载入缓存 */
+    /* 3. 将文件载入缓存 */
     fp = fopen(fname, "r");
     if (NULL == fp)
     {
-        free(buff), buff=NULL;
+        free(buff);
         return NULL;
     }
 
-    offset = 0;
-    left = fstate.st_size;
+    off = 0;
+    left = st.st_size;
     while (!feof(fp) && (left > 0))
     {
-        num = fread(buff + offset, 1, left, fp);
+        num = fread(buff + off, 1, left, fp);
         if (ferror(fp))
         {
-            fclose(fp), fp = NULL;
-            free(buff), buff = NULL;
+            fclose(fp);
+            free(buff);
             return NULL;
         }
         
         left -= num;
-        offset += num;
+        off += num;
     }
 
-    fclose(fp), fp = NULL;
+    fclose(fp);
     return buff;
 }
 

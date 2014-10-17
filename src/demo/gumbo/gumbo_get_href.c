@@ -38,7 +38,7 @@ int main(int argc, const char** argv)
         return -1;
     }
 
-    r = gumbo_search_href(&ctx, html);
+    r = gumbo_parse_href(&ctx, html);
     if (NULL == r)
     {
         gumbo_html_destroy(&ctx, html);
