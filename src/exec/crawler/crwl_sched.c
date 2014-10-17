@@ -120,12 +120,12 @@ static crwl_sched_t *crwl_sched_init(crwl_cntx_t *ctx)
     /* 2. 连接Redis服务 */
     tv.tv_sec = 30;
     tv.tv_usec = 0;
-    sched->redis_ctx = redisConnectWithTimeout(conf->redis_ipaddr, conf->redis_port, tv);
+    sched->redis_ctx = redisConnectWithTimeout(conf->redis.ipaddr, conf->redis.port, tv);
     if (NULL == sched->redis_ctx)
     {
         free(sched);
         log_error(ctx->log, "Connect redis failed! IP:[%s:%d]",
-                conf->redis_ipaddr, conf->redis_port);
+                conf->redis.ipaddr, conf->redis.port);
         return NULL;
     }
 
@@ -258,7 +258,7 @@ static int crwl_sched_fetch_undo_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
         times = 0;
 
         /* 2. 取Undo任务数据 */
-        r = redisCommand(sched->redis_ctx, "LPOP %s", conf->undo_taskq);
+        r = redisCommand(sched->redis_ctx, "LPOP %s", conf->redis.undo_taskq);
         if (REDIS_REPLY_NIL == r->type)
         {
             freeReplyObject(r);

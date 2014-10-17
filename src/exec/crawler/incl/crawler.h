@@ -80,17 +80,21 @@ typedef struct
     queue_conf_t task_queue;                /* 任务队列配置 */
 } crwl_worker_conf_t;
 
+/* Redis配置信息 */
+typedef struct
+{
+    char ipaddr[IP_ADDR_MAX_LEN];           /* Redis服务IP */
+    int port;                               /* Redis服务端口 */
+    char undo_taskq[FILE_NAME_MAX_LEN];     /* Undo任务队列名 */
+} crwl_redis_conf_t;
+
 /* 爬虫配置信息 */
 typedef struct
 {
     int log_level;                          /* 日志级别 */
     int log2_level;                         /* 系统日志级别 */
 
-    /* REDIS配置 */
-    char redis_ipaddr[IP_ADDR_MAX_LEN];     /* Redis服务IP */
-    int redis_port;                         /* Redis服务端口 */
-    char undo_taskq[FILE_NAME_MAX_LEN];     /* Undo任务队列名 */
-
+    crwl_redis_conf_t redis;                /* REDIS配置信息 */
     crwl_worker_conf_t worker;              /* Worker配置信息 */
 } crwl_conf_t;
 

@@ -563,7 +563,7 @@ static int crwl_parse_comm_conf(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
 {
     xml_node_t *node, *fix;
 
-    /* 1. 定位COMMON.LOG标签 */
+    /* 1. 定位LOG标签 */
     fix = xml_search(xml, ".CRAWLER.COMMON.LOG");
     if (NULL != fix)
     {
@@ -586,44 +586,44 @@ static int crwl_parse_comm_conf(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
         log_warn(log, "Didn't configure log!");
     }
 
-    /* 2. 定位COMMON.REDIS标签 */
+    /* 2. 定位REDIS标签 */
     fix = xml_search(xml, ".CRAWLER.COMMON.REDIS");
     if (NULL != fix)
     {
-        /* 2.1 获取IP地址 */
-        node = xml_rsearch(xml, fix, "IPADDR");
-        if (NULL == node)
-        {
-            log_error(log, "Get redis ip address failed!");
-            return CRWL_ERR;
-        }
-
-        snprintf(conf->redis_ipaddr, sizeof(conf->redis_ipaddr), "%s", node->value);
-
-        /* 2.2 获取端口号 */
-        node = xml_rsearch(xml, fix, "PORT");
-        if (NULL == node)
-        {
-            log_error(log, "Get redis port failed!");
-            return CRWL_ERR;
-        }
-
-        conf->redis_port = atoi(node->value);
-
-        /* 2.2 获取端口号 */
-        node = xml_rsearch(xml, fix, "UNDO_TASK_QUEUE.NAME");
-        if (NULL == node)
-        {
-            log_error(log, "Get undo task queue name failed!");
-            return CRWL_ERR;
-        }
-
-        snprintf(conf->undo_taskq, sizeof(conf->undo_taskq), "%s", node->value);
-    }
-    else
-    {
         log_error(log, "Didn't configure redis!");
+        return CRWL_ERR;
     }
+
+    /* 2.1 获取IP地址 */
+    node = xml_rsearch(xml, fix, "IPADDR");
+    if (NULL == node)
+    {
+        log_error(log, "Get redis ip address failed!");
+        return CRWL_ERR;
+    }
+
+    snprintf(conf->redis.ipaddr, sizeof(conf->redis.ipaddr), "%s", node->value);
+
+    /* 2.2 获取端口号 */
+    node = xml_rsearch(xml, fix, "PORT");
+    if (NULL == node)
+    {
+        log_error(log, "Get redis port failed!");
+        return CRWL_ERR;
+    }
+
+    conf->redis.port = atoi(node->value);
+
+    /* 2.2 获取端口号 */
+    node = xml_rsearch(xml, fix, "UNDO_TASK_QUEUE.NAME");
+    if (NULL == node)
+    {
+        log_error(log, "Get undo task queue name failed!");
+        return CRWL_ERR;
+    }
+
+    snprintf(conf->redis.undo_taskq,
+            sizeof(conf->redis.undo_taskq), "%s", node->value);
 
     return CRWL_OK;
 }

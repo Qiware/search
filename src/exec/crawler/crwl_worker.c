@@ -1024,5 +1024,3 @@ int crwl_worker_webpage_fcheck(crwl_worker_t *worker, crwl_worker_socket_t *sck)
 
     return CRWL_OK;
 }
-
-
