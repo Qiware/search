@@ -18,7 +18,6 @@
 #include "syscall.h"
 #include "thread_pool.h"
 
-#define LOG_SVR_LOG2_LEVEL  "trace"
 #define LOG_SVR_LOG2_PATH   "../log/logsvr.log2"
 
 static int log_svr_init(log_svr_t *logsvr);
@@ -50,7 +49,7 @@ int main(void)
     daemon(1, 0);
 
     /* 1. 初始化日志系统 */
-    ret = log2_init(LOG_SVR_LOG2_LEVEL, LOG_SVR_LOG2_PATH);
+    ret = log2_init(LOG_LEVEL_DEBUG, LOG_SVR_LOG2_PATH);
     if (0 != ret)
     {
         fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));

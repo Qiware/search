@@ -201,14 +201,13 @@ int Random(void)
  ******************************************************************************/
 int Mkdir(const char *dir, mode_t mode)
 {
-    int ret, len;
+    int len;
     const char *p = dir;
     struct stat st;
     char part[FILE_PATH_MAX_LEN];
 
     /* 1. 判断目录是否存在 */
-    ret = stat(dir, &st);
-    if (0 == ret)
+    if (0 == stat(dir, &st))
     {
         return !S_ISDIR(st.st_mode); /* 为目录, 则成功, 否则失败 */
     }
@@ -222,8 +221,7 @@ int Mkdir(const char *dir, mode_t mode)
         len = p - dir + 1;
         memcpy(part, dir, len);
 
-        ret = stat(part, &st);
-        if (0 == ret)
+        if (0 == stat(part, &st))
         {
             if (S_ISDIR(st.st_mode))
             {
@@ -234,8 +232,7 @@ int Mkdir(const char *dir, mode_t mode)
             return -1;  /* Exist, but not directory */
         }
         
-        ret = mkdir(part, mode);
-        if (0 != ret)
+        if (0 != mkdir(part, mode))
         {
             if (EEXIST != errno)
             {

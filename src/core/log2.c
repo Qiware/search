@@ -77,7 +77,7 @@ int log2_get_level(const char *level_str)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.11 #
  ******************************************************************************/
-int log2_init(const char *level, const char *path)
+int log2_init(int level, const char *path)
 {
     log2_cycle_t *log2 = &g_log2;
 
@@ -94,7 +94,7 @@ int log2_init(const char *level, const char *path)
         return -1;
     }
 
-    log2->level = log2_get_level(level);
+    log2->level = level;
     log2->pid = getpid();
     return 0;
 }
