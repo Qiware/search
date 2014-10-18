@@ -20,6 +20,7 @@
 
 /* 宏定义 */
 #define FILE_NAME_MAX_LEN   (256)   /* 文件名最大长度 */
+#define PATH_NAME_MAX_LEN   (256)   /* 路径最大长度 */
 #define FILE_LINE_MAX_LEN   (256)   /* 文件行最大长度 */
 #define FILE_PATH_MAX_LEN   (256)   /* 文件路径最大长度 */
 #define IP_ADDR_MAX_LEN     (64)    /* IP地址最大长度 */

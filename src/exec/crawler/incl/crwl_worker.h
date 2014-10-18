@@ -71,9 +71,9 @@ int crwl_task_down_webpage_by_uri(
 int crwl_task_down_webpage_by_ip(
         crwl_worker_t *worker, const crwl_task_down_webpage_by_ip_t *args);
 
-int crwl_worker_webpage_fopen(crwl_worker_t *worker, crwl_worker_socket_t *sck);
+int crwl_worker_webpage_creat(crwl_worker_t *worker, crwl_worker_socket_t *sck);
 int crwl_worker_webpage_fsync(crwl_worker_t *worker, crwl_worker_socket_t *sck);
-int crwl_worker_webpage_fcheck(crwl_worker_t *worker, crwl_worker_socket_t *sck);
+int crwl_worker_webpage_finfo(crwl_worker_t *worker, crwl_worker_socket_t *sck);
 
 int crwl_worker_parse_conf(xml_tree_t *xml, crwl_worker_conf_t *conf, log_cycle_t *log);
 

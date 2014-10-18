@@ -188,7 +188,5 @@ int http_get_request(const char *uri, char *req, int size)
         "Connection: Close\r\n"
         "\r\n", field.path, field.host);
 
-    fprintf(stderr, "%s", req);
-
     return HTTP_OK;
 }

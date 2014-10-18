@@ -565,7 +565,9 @@ static int crwl_parse_comm_conf(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
 {
     xml_node_t *node, *fix;
 
-    /* 1. 定位LOG标签 */
+    /* 1. 定位LOG标签
+     *  获取日志级别信息
+     * */
     fix = xml_search(xml, ".CRAWLER.COMMON.LOG");
     if (NULL != fix)
     {
@@ -588,7 +590,39 @@ static int crwl_parse_comm_conf(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
         log_warn(log, "Didn't configure log!");
     }
 
-    /* 2. 定位REDIS标签 */
+    /* 2. 定位Download标签
+     *  获取网页抓取深度和存储路径
+     * */
+    fix = xml_search(xml, ".CRAWLER.COMMON.DOWNLOAD");
+    if (NULL == fix)
+    {
+        log_error(log, "Didn't configure download!");
+        return CRWL_ERR;
+    }
+
+    /* 2.1 获取抓取深度 */
+    node = xml_rsearch(xml, fix, "DEEP");
+    if (NULL == node)
+    {
+        log_error(log, "Get download deep failed!");
+        return CRWL_ERR;
+    }
+
+    conf->download.deep = atoi(node->value);
+
+    /* 2.2 获取存储路径 */
+    node = xml_rsearch(xml, fix, "PATH");
+    if (NULL == node)
+    {
+        log_error(log, "Get download path failed!");
+        return CRWL_ERR;
+    }
+
+    snprintf(conf->download.path, sizeof(conf->download.path), "%s", node->value);
+
+    /* 3. 定位REDIS标签
+     *  获取Redis的IP地址、端口号、队列等信息
+     * */
     fix = xml_search(xml, ".CRAWLER.COMMON.REDIS");
     if (NULL == fix)
     {
@@ -596,7 +630,7 @@ static int crwl_parse_comm_conf(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
         return CRWL_ERR;
     }
 
-    /* 2.1 获取IP地址 */
+    /* 3.1 获取IP地址 */
     node = xml_rsearch(xml, fix, "IPADDR");
     if (NULL == node)
     {
@@ -606,7 +640,7 @@ static int crwl_parse_comm_conf(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
 
     snprintf(conf->redis.ipaddr, sizeof(conf->redis.ipaddr), "%s", node->value);
 
-    /* 2.2 获取端口号 */
+    /* 3.2 获取端口号 */
     node = xml_rsearch(xml, fix, "PORT");
     if (NULL == node)
     {
@@ -616,11 +650,11 @@ static int crwl_parse_comm_conf(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
 
     conf->redis.port = atoi(node->value);
 
-    /* 2.2 获取端口号 */
-    node = xml_rsearch(xml, fix, "UNDO_TASK_QUEUE.NAME");
+    /* 3.3 获取队列名 */
+    node = xml_rsearch(xml, fix, "QUEUE.UNDO_TASKQ");
     if (NULL == node)
     {
-        log_error(log, "Get undo task queue name failed!");
+        log_error(log, "Get undo task queue failed!");
         return CRWL_ERR;
     }
 

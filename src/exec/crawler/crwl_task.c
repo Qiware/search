@@ -195,8 +195,8 @@ int crwl_task_down_webpage_by_uri(
         return CRWL_ERR;
     }
 
-    /* 5. 打开存储文件 */
-    ret = crwl_worker_webpage_fopen(worker, sck);
+    /* 5. 新建存储文件 */
+    ret = crwl_worker_webpage_creat(worker, sck);
     if (CRWL_OK != ret)
     {
         log_error(worker->log, "Save webpage failed!");

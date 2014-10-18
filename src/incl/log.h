@@ -53,7 +53,7 @@ typedef enum
     snprintf(path, size, "../logs/%s", LOG_DEFAULT_TRCLOG);
 #define LOG_LOCK_FILE           "log_cache.lck" /* 日志锁 */
 #define log_get_lock_path(path, size)       /* 日志锁路径 */ \
-    snprintf(path, size, "../tmp/log/%s", LOG_LOCK_FILE)
+    snprintf(path, size, "../temp/log/%s", LOG_LOCK_FILE)
 
 /* DUMP设置 */
 #define LOG_DUMP_COL_NUM        (16)        /* DUMP列数 */

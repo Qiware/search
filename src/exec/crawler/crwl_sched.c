@@ -243,7 +243,7 @@ static int crwl_sched_fetch_undo_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
         ++sched->last_idx;
         sched->last_idx %= conf->worker.thread_num;
 
-        if (crwl_worker_undo_taskq_space(worker + sched->last_idx))
+        if (!crwl_worker_undo_taskq_space(worker + sched->last_idx))
         {
             ++times;
             if (times >= conf->worker.thread_num)

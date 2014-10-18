@@ -80,6 +80,13 @@ typedef struct
     queue_conf_t task_queue;                /* 任务队列配置 */
 } crwl_worker_conf_t;
 
+/* Download配置信息 */
+typedef struct
+{
+    int deep;                               /* 爬取最大深度 */
+    char path[PATH_NAME_MAX_LEN];           /* 网页存储路径 */
+} crwl_download_conf_t;
+
 /* Redis配置信息 */
 typedef struct
 {
@@ -94,6 +101,7 @@ typedef struct
     int log_level;                          /* 日志级别 */
     int log2_level;                         /* 系统日志级别 */
 
+    crwl_download_conf_t download;          /* Download配置信息 */
     crwl_redis_conf_t redis;                /* REDIS配置信息 */
     crwl_worker_conf_t worker;              /* Worker配置信息 */
 } crwl_conf_t;

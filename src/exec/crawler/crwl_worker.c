@@ -341,7 +341,7 @@ static int crwl_worker_trav_recv(crwl_worker_t *worker)
         {
             log_debug(worker->log, "End of read data! uri:%s", sck->uri);
 
-            crwl_worker_webpage_fcheck(worker, sck);
+            crwl_worker_webpage_finfo(worker, sck);
             crwl_worker_webpage_fsync(worker, sck);
             crwl_worker_remove_sock(worker, sck);
             continue;
@@ -539,7 +539,7 @@ static int crwl_worker_timeout_hdl(crwl_worker_t *worker)
         log_debug(worker->log, "Didn't communicate for along time! ip:%s", sck->ipaddr);
 
         crwl_worker_webpage_fsync(worker, sck);
-        crwl_worker_webpage_fcheck(worker, sck);
+        crwl_worker_webpage_finfo(worker, sck);
 
         crwl_worker_remove_sock(worker, sck);
 
@@ -922,7 +922,7 @@ int crwl_worker_add_http_get_req(
 }
 
 /******************************************************************************
- **函数名称: crwl_worker_webpage_fopen
+ **函数名称: crwl_worker_webpage_creat
  **功    能: 打开网页存储文件
  **输入参数: 
  **     sck: 套接字对象
@@ -932,13 +932,15 @@ int crwl_worker_add_http_get_req(
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.15 #
  ******************************************************************************/
-int crwl_worker_webpage_fopen(crwl_worker_t *worker, crwl_worker_socket_t *sck)
+int crwl_worker_webpage_creat(crwl_worker_t *worker, crwl_worker_socket_t *sck)
 {
     char path[FILE_NAME_MAX_LEN];
 
     sck->webpage_idx = ++worker->down_webpage_total;
 
-    snprintf(path, sizeof(path), "./webpage/%02d-%08ld.html",
+    snprintf(path, sizeof(path),
+            "%s/%02d-%08ld.html",
+            worker->ctx->conf.download.path,
             worker->tidx, sck->webpage_idx);
 
     Mkdir2(path, 0777);
@@ -976,8 +978,8 @@ int crwl_worker_webpage_fsync(crwl_worker_t *worker, crwl_worker_socket_t *sck)
 }
 
 /******************************************************************************
- **函数名称: crwl_worker_webpage_fcheck
- **功    能: 创建网页的校验文件
+ **函数名称: crwl_worker_webpage_finfo
+ **功    能: 创建网页的信息文件
  **输入参数: 
  **     worker: 爬虫对象
  **     sck: 套接字对象
@@ -987,14 +989,18 @@ int crwl_worker_webpage_fsync(crwl_worker_t *worker, crwl_worker_socket_t *sck)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.17 #
  ******************************************************************************/
-int crwl_worker_webpage_fcheck(crwl_worker_t *worker, crwl_worker_socket_t *sck)
+int crwl_worker_webpage_finfo(crwl_worker_t *worker, crwl_worker_socket_t *sck)
 {
     FILE *fp;
     struct tm loctm;
     char path[FILE_NAME_MAX_LEN];
 
-    snprintf(path, sizeof(path), "./webpage/%02d-%08ld.chk",
+    snprintf(path, sizeof(path),
+            "%s/info/%02d-%08ld.info",
+            worker->ctx->conf.download.path,
             worker->tidx, sck->webpage_idx);
+
+    Mkdir2(path, 0777);
 
     /* 1. 新建文件 */
     fp = fopen(path, "w");
@@ -1009,13 +1015,16 @@ int crwl_worker_webpage_fcheck(crwl_worker_t *worker, crwl_worker_socket_t *sck)
 
     /* 2. 写入校验内容 */
     fprintf(fp, 
-        "<HTML_CHECK>\n"
-        "   <URI>%s</URI>\n"
-        "   <DEEP>%d</DEEP>\n"
-        "   <IPADDR>%s</IPADDR>\n"
-        "   <PORT>%d</PORT>\n"
-        "   <TIME>%04d-%02d-%02d %02d:%02d:%02d</TIME>\n"
-        "</HTML_CHECK>\n",
+        "<INFO>\n"
+        "\t<URI>%s</URI>\n"
+        "\t<DEEP>%d</DEEP>\n"
+        "\t<IPADDR>%s</IPADDR>\n"
+        "\t<PORT>%d</PORT>\n"
+        "\t<HTML>%s/%02d-%08ld.html</HTML>\n"
+        "\t<TIME>%04d-%02d-%02d %02d:%02d:%02d</TIME>\n"
+        "</INFO>\n",
+        worker->ctx->conf.download.path,
+        worker->tidx, sck->webpage_idx,
         sck->uri, sck->deep, sck->ipaddr, sck->port,
         loctm.tm_year+1900, loctm.tm_mon+1, loctm.tm_mday,
         loctm.tm_hour, loctm.tm_min, loctm.tm_sec);
