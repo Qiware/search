@@ -36,7 +36,7 @@
         <THREAD_NUM>2</THREAD_NUM>  <!-- 爬虫线程数 -->
         <SVRIP>127.0.0.1</SVRIP>    <!-- 管理服务IP -->
         <PORT>2222</PORT>           <!-- 管理服务侦听端口 -->
-        <DOWN_WEBPAGE_NUM>20</DOWN_WEBPAGE_NUM>  <!-- 同时爬取的网页数 -->
+        <DOWN_WEBPAGE_NUM>1024</DOWN_WEBPAGE_NUM>  <!-- 同时爬取的网页数 -->
         <TASK_QUEUE>                <!-- 任务队列配置 -->
             <COUNT>10000</COUNT>        <!-- 队列单元数 -->
         </TASK_QUEUE>
