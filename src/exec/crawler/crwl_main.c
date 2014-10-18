@@ -80,7 +80,7 @@ int main(int argc, char *argv[])
     /* 2. 初始化日志模块 */
     log2_get_path(log_path, sizeof(log_path), basename(argv[0]));
 
-    ret = log2_init(CRWL_LOG2_LEVEL, log_path);
+    ret = log2_init(opt.log_level, log_path);
     if (0 != ret)
     {
         fprintf(stderr, "Init log2 failed! level:%s path:%s\n",

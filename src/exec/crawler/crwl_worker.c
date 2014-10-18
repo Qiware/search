@@ -348,6 +348,7 @@ static int crwl_worker_trav_recv(crwl_worker_t *worker)
         }
 
         /* 3. 将HTML数据写入文件 */
+        sck->total += n;
         sck->read.off += n;
         sck->read.addr[sck->read.off] = '\0';
         if (sck->read.off >= CRWL_SYNC_SIZE)
@@ -530,7 +531,7 @@ static int crwl_worker_timeout_hdl(crwl_worker_t *worker)
 
         /* 超时未发送或接收数据时, 认为无数据传输, 将直接关闭套接字 */
         if ((ctm - sck->rdtm <= CRWL_SCK_TMOUT_SEC)
-            && (ctm - sck->wrtm <= CRWL_SCK_TMOUT_SEC))
+            || (ctm - sck->wrtm <= CRWL_SCK_TMOUT_SEC))
         {
             node = node->next;
             continue;
@@ -936,7 +937,8 @@ int crwl_worker_webpage_creat(crwl_worker_t *worker, crwl_worker_socket_t *sck)
 {
     char path[FILE_NAME_MAX_LEN];
 
-    sck->webpage_idx = ++worker->down_webpage_total;
+    sck->webpage_size = 0;
+    sck->webpage_idx = ++worker->down_webpage_num;
 
     snprintf(path, sizeof(path),
             "%s/%02d-%08ld.html",
@@ -1017,11 +1019,10 @@ int crwl_worker_webpage_finfo(crwl_worker_t *worker, crwl_worker_socket_t *sck)
     fprintf(fp, 
         "<INFO>\n"
         "\t<URI DEEP=\"%d\" IPADDR=\"%s\" PORT=\"%d\">%s</URI>\n"
-        "\t<HTML>%s/%02d-%08ld.html</HTML>\n"
+        "\t<HTML>%02d-%08ld.html</HTML>\n"
         "\t<TIME>%04d-%02d-%02d %02d:%02d:%02d</TIME>\n"
         "</INFO>\n",
         sck->deep, sck->ipaddr, sck->port, sck->uri,
-        worker->ctx->conf.download.path,
         worker->tidx, sck->webpage_idx,
         loctm.tm_year+1900, loctm.tm_mon+1, loctm.tm_mday,
         loctm.tm_hour, loctm.tm_min, loctm.tm_sec);

@@ -36,6 +36,7 @@ typedef struct
     /* 网页存储信息 */
     FILE *fp;                       /* 文件指针 */
     uint64_t webpage_idx;           /* 网页编号 */
+    size_t webpage_size;            /* 网页总字节数 */
 } crwl_worker_socket_t;
 
 /* 爬虫对象信息 */
@@ -54,7 +55,7 @@ typedef struct
                                        结点数据指针指向crwl_worker_socket_t */
     crwl_task_queue_t undo_taskq;   /* 任务对象(注意: 该队列结点和数据的空间来自CTX) */
 
-    uint64_t down_webpage_total;    /* 下载网页的总数 */
+    uint64_t down_webpage_num;      /* 下载网页的总数 */
 } crwl_worker_t;
 
 /* 获取队列剩余空间 */

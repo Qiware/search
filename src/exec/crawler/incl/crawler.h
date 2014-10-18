@@ -25,7 +25,7 @@
 #define CRWL_TMOUT_SEC              (02)    /* 超时(秒) */
 #define CRWL_TMOUT_USEC             (00)    /* 超时(微妙) */
 #define CRWL_DEF_THD_NUM            (01)    /* 默认线程数 */
-#define CRWL_SLAB_SIZE              (1 * MB)/* SLAB内存池大小 */
+#define CRWL_SLAB_SIZE              (10 * MB)   /* SLAB内存池大小 */
 #define CRWL_RECV_SIZE              (128 * KB)  /* 缓存SIZE(接收缓存) */
 #define CRWL_SYNC_SIZE              (64 * KB)   /* 同步SIZE */
 #define CRWL_DOWN_WEBPAGE_NUM       (1)     /* 默认同时下载的网页数 */
