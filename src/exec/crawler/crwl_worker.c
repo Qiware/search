@@ -1016,16 +1016,13 @@ int crwl_worker_webpage_finfo(crwl_worker_t *worker, crwl_worker_socket_t *sck)
     /* 2. 写入校验内容 */
     fprintf(fp, 
         "<INFO>\n"
-        "\t<URI>%s</URI>\n"
-        "\t<DEEP>%d</DEEP>\n"
-        "\t<IPADDR>%s</IPADDR>\n"
-        "\t<PORT>%d</PORT>\n"
+        "\t<URI DEEP=\"%d\" IPADDR=\"%s\" PORT=\"%d\">%s</URI>\n"
         "\t<HTML>%s/%02d-%08ld.html</HTML>\n"
         "\t<TIME>%04d-%02d-%02d %02d:%02d:%02d</TIME>\n"
         "</INFO>\n",
+        sck->deep, sck->ipaddr, sck->port, sck->uri,
         worker->ctx->conf.download.path,
         worker->tidx, sck->webpage_idx,
-        sck->uri, sck->deep, sck->ipaddr, sck->port,
         loctm.tm_year+1900, loctm.tm_mon+1, loctm.tm_mday,
         loctm.tm_hour, loctm.tm_min, loctm.tm_sec);
 
