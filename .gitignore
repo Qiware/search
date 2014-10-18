@@ -8,6 +8,7 @@
 bin/*
 lib/*
 tmp/*
+temp/*
 tags
 stderr
 cscope.*
