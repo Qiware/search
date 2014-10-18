@@ -172,9 +172,10 @@ int crwl_task_down_webpage_by_uri(
     sck->rdtm = ctm;
     sck->wrtm = ctm;
     sck->read.addr = sck->recv;
-    snprintf(sck->uri, sizeof(sck->uri), "%s", args->uri);
-    snprintf(sck->ipaddr, sizeof(sck->ipaddr), "%s", ipaddr);
-    sck->port = args->port;
+
+    snprintf(sck->webpage.uri, sizeof(sck->webpage.uri), "%s", args->uri);
+    snprintf(sck->webpage.ipaddr, sizeof(sck->webpage.ipaddr), "%s", ipaddr);
+    sck->webpage.port = args->port;
 
     ret = crwl_worker_add_sock(worker, sck);
     if (CRWL_OK != ret)
@@ -255,8 +256,8 @@ int crwl_task_down_webpage_by_ip(
     memset(sck, 0, sizeof(crwl_worker_socket_t));
 
     sck->sckid = fd;
-    snprintf(sck->ipaddr, sizeof(sck->ipaddr), "%s", args->ipaddr);
-    sck->port = args->port;
+    snprintf(sck->webpage.ipaddr, sizeof(sck->webpage.ipaddr), "%s", args->ipaddr);
+    sck->webpage.port = args->port;
 
     ret = crwl_worker_add_sock(worker, sck);
     if (CRWL_OK != ret)

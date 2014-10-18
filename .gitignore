@@ -5,6 +5,7 @@
 *.html
 *.htm
 *.list
+*.info
 bin/*
 lib/*
 tmp/*

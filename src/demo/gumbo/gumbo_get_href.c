@@ -21,7 +21,7 @@ int main(int argc, const char** argv)
         exit(EXIT_FAILURE);
     }
 
-    log2_init("trace", "./gumbo.log");
+    log2_init(LOG_LEVEL_DEBUG, "./gumbo.log");
 
     ret = gumbo_init(&ctx);
     if (0 != ret)

@@ -48,8 +48,8 @@ int crwl_worker_parse_conf(
     node = xml_rsearch(xml, curr, "THREAD_NUM");
     if (NULL == node)
     {
-        log_warn(log, "Didn't configure the number of worker process!");
-        conf->thread_num = CRWL_DEF_THD_NUM;
+        conf->thread_num = CRWL_THD_DEF_NUM;
+        log_warn(log, "Set thread number: %d!", conf->thread_num);
     }
     else
     {
@@ -58,56 +58,40 @@ int crwl_worker_parse_conf(
 
     if (conf->thread_num <= 0)
     {
-        log_error(log, "Crawler thread number [%d] isn't right!", conf->thread_num);
-        return CRWL_ERR;
+        conf->thread_num = CRWL_THD_MIN_NUM;
+        log_warn(log, "Set thread number: %d!", conf->thread_num);
     }
 
-    /* 3. 任务分配服务IP(相对查找) */
-    node = xml_rsearch(xml, curr, "SVRIP");
-    if (NULL == node)
-    {
-        log_error(log, "Didn't configure distribute server ip address!");
-        return CRWL_ERR;
-    }
-
-    snprintf(conf->svrip, sizeof(conf->svrip), "%s", node->value);
-
-    /* 4. 任务分配服务端口(相对查找) */
-    node = xml_rsearch(xml, curr, "PORT");
-    if (NULL == node)
-    {
-        log_error(log, "Didn't configure distribute server port!");
-        return CRWL_ERR;
-    }
-
-    conf->port = atoi(node->value);
-
-    /* 5. 下载网页的数目(相对查找) */
-    node = xml_rsearch(xml, curr, "DOWN_WEBPAGE_NUM");
+    /* 3. 并发网页连接数(相对查找) */
+    node = xml_rsearch(xml, curr, "CONNECTIONS");
     if (NULL == node)
     {
         log_error(log, "Didn't configure load web page number!");
         return CRWL_ERR;
     }
 
-    conf->down_webpage_num = atoi(node->value);
-    if (!conf->down_webpage_num)
+    conf->connections = atoi(node->value);
+    if (conf->connections <= 0)
     {
-        conf->down_webpage_num = CRWL_DOWN_WEBPAGE_NUM;
+        conf->connections = CRWL_CONNECTIONS_MIN_NUM;
+    }
+    else if (conf->connections >= CRWL_CONNECTIONS_MAX_NUM)
+    {
+        conf->connections = CRWL_CONNECTIONS_MAX_NUM;
     }
 
-    /* 6. 任务队列配置(相对查找) */
-    node = xml_rsearch(xml, curr, "TASK_QUEUE.COUNT");
+    /* 4. Undo任务队列配置(相对查找) */
+    node = xml_rsearch(xml, curr, "TASKQ.COUNT");
     if (NULL == node)
     {
-        log_error(log, "Didn't configure count of task queue unit!");
+        log_error(log, "Didn't configure count of undo task queue unit!");
         return CRWL_ERR;
     }
 
-    conf->task_queue.count = atoi(node->value);
-    if (conf->task_queue.count <= 0)
+    conf->taskq_count = atoi(node->value);
+    if (conf->taskq_count <= 0)
     {
-        conf->task_queue.count = 1;
+        conf->taskq_count = CRWL_TASK_QUEUE_MAX_NUM;
     }
 
     return CRWL_OK;
@@ -161,7 +145,7 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker)
     }
 
     /* 2. 创建任务队列 */
-    ret = crwl_task_queue_init(&worker->undo_taskq, conf->task_queue.count);
+    ret = crwl_task_queue_init(&worker->undo_taskq, conf->taskq_count);
     if (CRWL_OK != ret)
     {
         eslab_destroy(&worker->slab);
@@ -227,7 +211,7 @@ static int crwl_worker_fetch_task(crwl_cntx_t *ctx, crwl_worker_t *worker)
 
     /* 1. 判断是否应该取任务 */
     if (0 == worker->undo_taskq.queue.num
-        || worker->sock_list.num >= ctx->conf.worker.down_webpage_num)
+        || worker->sock_list.num >= ctx->conf.worker.connections)
     {
         return CRWL_OK;
     }
@@ -339,7 +323,7 @@ static int crwl_worker_trav_recv(crwl_worker_t *worker)
         }
         else if (0 == n)
         {
-            log_debug(worker->log, "End of read data! uri:%s", sck->uri);
+            log_debug(worker->log, "End of read data! uri:%s", sck->webpage.uri);
 
             crwl_worker_webpage_finfo(worker, sck);
             crwl_worker_webpage_fsync(worker, sck);
@@ -347,8 +331,9 @@ static int crwl_worker_trav_recv(crwl_worker_t *worker)
             continue;
         }
 
+        sck->webpage.size += n;
+
         /* 3. 将HTML数据写入文件 */
-        sck->total += n;
         sck->read.off += n;
         sck->read.addr[sck->read.off] = '\0';
         if (sck->read.off >= CRWL_SYNC_SIZE)
@@ -469,7 +454,7 @@ static int crwl_worker_trav_send(crwl_worker_t *worker)
         if (CRWL_OK != ret)
         {
             log_error(worker->log, "Send data failed! ipaddr:[%s:%d] uri:[%s]",
-                sck->ipaddr, sck->port, sck->uri);
+                sck->webpage.ipaddr, sck->webpage.port, sck->webpage.uri);
 
             /* 将异常套接字踢出链表, 并释放空间 */
             if (prev)
@@ -537,7 +522,8 @@ static int crwl_worker_timeout_hdl(crwl_worker_t *worker)
             continue;
         }
 
-        log_debug(worker->log, "Didn't communicate for along time! ip:%s", sck->ipaddr);
+        log_debug(worker->log, "Didn't communicate for along time! ip:%s",
+                sck->webpage.ipaddr);
 
         crwl_worker_webpage_fsync(worker, sck);
         crwl_worker_webpage_finfo(worker, sck);
@@ -583,6 +569,8 @@ static int crwl_worker_event_hdl(crwl_worker_t *worker)
         return CRWL_ERR;
     }
 
+    /* 3. 超时扫描 */
+    crwl_worker_timeout_hdl(worker);
     return CRWL_OK;
 }
 
@@ -724,11 +712,12 @@ int crwl_worker_remove_sock(crwl_worker_t *worker, crwl_worker_socket_t *sck)
 {
     list_node_t *item, *next, *prev;
 
-    log_debug(worker->log, "Remove socket! ip:%s port:%d", sck->ipaddr, sck->port);
+    log_debug(worker->log, "Remove socket! ip:%s port:%d",
+            sck->webpage.ipaddr, sck->webpage.port);
 
-    if (sck->fp)
+    if (sck->webpage.fp)
     {
-        fclose(sck->fp);
+        fclose(sck->webpage.fp);
     }
     Close(sck->sckid);
 
@@ -937,18 +926,18 @@ int crwl_worker_webpage_creat(crwl_worker_t *worker, crwl_worker_socket_t *sck)
 {
     char path[FILE_NAME_MAX_LEN];
 
-    sck->webpage_size = 0;
-    sck->webpage_idx = ++worker->down_webpage_num;
+    sck->webpage.size = 0;
+    sck->webpage.idx = ++worker->down_webpage_total;
 
     snprintf(path, sizeof(path),
             "%s/%02d-%08ld.html",
             worker->ctx->conf.download.path,
-            worker->tidx, sck->webpage_idx);
+            worker->tidx, sck->webpage.idx);
 
     Mkdir2(path, 0777);
 
-    sck->fp = fopen(path, "w");
-    if (NULL == sck->fp)
+    sck->webpage.fp = fopen(path, "w");
+    if (NULL == sck->webpage.fp)
     {
         log_error(worker->log, "errmsg:[%d] %s! path:%s",
                 errno, strerror(errno), path);
@@ -972,7 +961,7 @@ int crwl_worker_webpage_creat(crwl_worker_t *worker, crwl_worker_socket_t *sck)
  ******************************************************************************/
 int crwl_worker_webpage_fsync(crwl_worker_t *worker, crwl_worker_socket_t *sck)
 {
-    fwrite(sck->read.addr, sck->read.off, 1, sck->fp);
+    fwrite(sck->read.addr, sck->read.off, 1, sck->webpage.fp);
 
     sck->read.off = 0;
     sck->read.total = CRWL_RECV_SIZE;
@@ -1000,7 +989,7 @@ int crwl_worker_webpage_finfo(crwl_worker_t *worker, crwl_worker_socket_t *sck)
     snprintf(path, sizeof(path),
             "%s/info/%02d-%08ld.info",
             worker->ctx->conf.download.path,
-            worker->tidx, sck->webpage_idx);
+            worker->tidx, sck->webpage.idx);
 
     Mkdir2(path, 0777);
 
@@ -1022,8 +1011,9 @@ int crwl_worker_webpage_finfo(crwl_worker_t *worker, crwl_worker_socket_t *sck)
         "\t<HTML>%02d-%08ld.html</HTML>\n"
         "\t<TIME>%04d-%02d-%02d %02d:%02d:%02d</TIME>\n"
         "</INFO>\n",
-        sck->deep, sck->ipaddr, sck->port, sck->uri,
-        worker->tidx, sck->webpage_idx,
+        sck->webpage.deep, sck->webpage.ipaddr,
+        sck->webpage.port, sck->webpage.uri,
+        worker->tidx, sck->webpage.idx,
         loctm.tm_year+1900, loctm.tm_mon+1, loctm.tm_mday,
         loctm.tm_hour, loctm.tm_min, loctm.tm_sec);
 

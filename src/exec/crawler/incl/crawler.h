@@ -24,12 +24,20 @@
 /* 宏定义 */
 #define CRWL_TMOUT_SEC              (02)    /* 超时(秒) */
 #define CRWL_TMOUT_USEC             (00)    /* 超时(微妙) */
-#define CRWL_DEF_THD_NUM            (01)    /* 默认线程数 */
+#define CRWL_CONNECT_TMOUT_SEC      (00)    /* 连接超时时间 */
+
+#define CRWL_THD_MAX_NUM            (64)    /* 最大线程数 */
+#define CRWL_THD_DEF_NUM            (05)    /* 默认线程数 */
+#define CRWL_THD_MIN_NUM            (01)    /* 最小线程数 */
+
 #define CRWL_SLAB_SIZE              (10 * MB)   /* SLAB内存池大小 */
 #define CRWL_RECV_SIZE              (128 * KB)  /* 缓存SIZE(接收缓存) */
 #define CRWL_SYNC_SIZE              (64 * KB)   /* 同步SIZE */
-#define CRWL_DOWN_WEBPAGE_NUM       (1)     /* 默认同时下载的网页数 */
-#define CRWL_CONNECT_TMOUT_SEC      (00)    /* 连接超时时间 */
+
+#define CRWL_CONNECTIONS_MAX_NUM    (1024)  /* 最大网络连接数 */
+#define CRWL_CONNECTIONS_DEF_NUM    (512)   /* 默认网络连接数 */
+#define CRWL_CONNECTIONS_MIN_NUM    (1)     /* 最小网络连接数 */
+
 #define CRWL_WEB_SVR_PORT           (80)    /* WEB服务器侦听端口 */
 #define CRWL_SCK_TMOUT_SEC          (05)    /* 套接字超时时间(秒) */
 
@@ -74,10 +82,8 @@ typedef struct
 typedef struct
 {
     int thread_num;                         /* 爬虫线程数 */
-    char svrip[IP_ADDR_MAX_LEN];            /* 任务分发服务IP */
-    int port;                               /* 任务分发服务端口 */
-    int down_webpage_num;                   /* 同时加载网页的数目 */
-    queue_conf_t task_queue;                /* 任务队列配置 */
+    int connections;                        /* 并发网页连接数 */
+    int taskq_count;                        /* Undo任务队列容量 */
 } crwl_worker_conf_t;
 
 /* Download配置信息 */

@@ -13,6 +13,20 @@
 #include "crwl_task.h"
 #include "thread_pool.h"
 
+/* 网页信息 */
+typedef struct
+{
+    char uri[URL_MAX_LEN];          /* 原始URL */
+    uint32_t deep;                  /* 网页深度 */
+
+    char ipaddr[IP_ADDR_MAX_LEN];   /* IP地址 */
+    int port;                       /* 端口号 */
+
+    /* 网页存储信息 */
+    uint64_t idx;                   /* 网页编号 */
+    FILE *fp;                       /* 文件指针 */
+    size_t size;                    /* 网页总字节数 */
+} crwl_webpage_t;
 
 /* 网页加载套接字信息 */
 typedef struct
@@ -21,22 +35,13 @@ typedef struct
     time_t wrtm;                    /* 最近写入时间 */
     time_t rdtm;                    /* 最近读取时间 */
 
-    char uri[URL_MAX_LEN];          /* 原始URL(未转义) */
-    uint32_t deep;                  /* 网页深度 */
-
-    char ipaddr[IP_ADDR_MAX_LEN];   /* IP地址 */
-    int port;                       /* 端口号 */
+    crwl_webpage_t webpage;         /* 网页信息 */
 
     snap_shot_t read;               /* 读取快照 */
     snap_shot_t send;               /* 发送快照 */
 
     char recv[CRWL_RECV_SIZE + 1];  /* 接收缓存 */
     list_t send_list;               /* 发送链表 */
-
-    /* 网页存储信息 */
-    FILE *fp;                       /* 文件指针 */
-    uint64_t webpage_idx;           /* 网页编号 */
-    size_t webpage_size;            /* 网页总字节数 */
 } crwl_worker_socket_t;
 
 /* 爬虫对象信息 */
@@ -55,7 +60,7 @@ typedef struct
                                        结点数据指针指向crwl_worker_socket_t */
     crwl_task_queue_t undo_taskq;   /* 任务对象(注意: 该队列结点和数据的空间来自CTX) */
 
-    uint64_t down_webpage_num;      /* 下载网页的总数 */
+    uint64_t down_webpage_total;    /* 下载网页的计数 */
 } crwl_worker_t;
 
 /* 获取队列剩余空间 */

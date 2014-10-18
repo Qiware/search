@@ -24,22 +24,11 @@
         </REDIS>
     </COMMON>
 
-    <!-- 控制进程: 负责爬虫的任务分发 -->
-    <CONTROLER>
-        <RECV_THREAD_NUM>1</RECV_THREAD_NUM>    <!-- 接收线程数 -->
-        <DISP_THREAD_NUM>1</DISP_THREAD_NUM>    <!-- 分发线程数 -->
-        <PORT>2222</PORT>                       <!-- 爬虫服务端口号 -->
-    </CONTROLER>
-
     <!-- 爬虫进程: 负责网页下载 -->
     <WORKER>
-        <THREAD_NUM>2</THREAD_NUM>  <!-- 爬虫线程数 -->
-        <SVRIP>127.0.0.1</SVRIP>    <!-- 管理服务IP -->
-        <PORT>2222</PORT>           <!-- 管理服务侦听端口 -->
-        <DOWN_WEBPAGE_NUM>1024</DOWN_WEBPAGE_NUM>  <!-- 同时爬取的网页数 -->
-        <TASK_QUEUE>                <!-- 任务队列配置 -->
-            <COUNT>10000</COUNT>        <!-- 队列单元数 -->
-        </TASK_QUEUE>
+        <THREAD_NUM>2</THREAD_NUM>      <!-- 爬虫线程数 -->
+        <CONNECTIONS>1024</CONNECTIONS> <!-- 爬取网页的并发(连接)数 -->
+        <TASKQ COUNT="10000" />         <!-- Undo任务队列配置 -->
     </WORKER>
 
     <!-- 分析进程: 负责对网页的分析(内容分析、URL提取等) -->
