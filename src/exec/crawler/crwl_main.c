@@ -364,7 +364,7 @@ int crwl_cntx_startup(crwl_cntx_t *ctx)
     }
     else if (0 == pid)
     {
-        crwl_parser_routine(conf);
+        crwl_parser_exec(conf);
         exit(0);
     }
 
