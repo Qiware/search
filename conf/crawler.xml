@@ -16,7 +16,7 @@
              2) PORT: 端口号 -->
         <REDIS IPADDR="127.0.0.1" PORT="6379">
             <QUEUE UNDO_TASKQ="CRWL_UNDO_TASKQ" />  <!-- 队列配置 -->
-            <HASH DONE_TAB="CRWL_DONE_TAB" />       <!-- 哈希配置 -->
+            <HASH DONE_TAB="CRWL_DONE_TAB" />       <!-- 哈希表配置 -->
             <SLAVE>   <!-- 副本服务器 -->
                 <ITEM IPADDR="127.0.0.1" PORT="6380" />
                 <ITEM IPADDR="127.0.0.1" PORT="6381" />
@@ -24,23 +24,15 @@
         </REDIS>
     </COMMON>
 
-    <!-- 爬虫进程: 负责网页下载 -->
-    <WORKER>
-        <THREAD_NUM>2</THREAD_NUM>      <!-- 爬虫线程数 -->
-        <CONNECTIONS>1024</CONNECTIONS> <!-- 爬取网页的并发(连接)数 -->
+    <!-- 爬虫进程: 负责网页下载
+         1) NUM: 线程数 -->
+    <WORKER NUM="2">
+        <CONNECTIONS TIMEOUT="30">1024</CONNECTIONS> <!-- 爬取网页的并发(连接)数 -->
         <TASKQ COUNT="10000" />         <!-- Undo任务队列配置 -->
     </WORKER>
 
     <!-- 分析进程: 负责对网页的分析(内容分析、URL提取等) -->
-    <ANALYST>
-        <PROCESS_NUM>1</PROCESS_NUM><!-- 分析进程数 -->
-        <THREAD_NUM>5</THREAD_NUM>  <!-- 各分析进程中的线程数 -->
-        <SVRIP>127.0.0.1</SVRIP>    <!-- 管理服务IP -->
-        <PORT>2222</PORT>           <!-- 管理服务侦听端口 -->
-        <DATABASE>  <!-- 数据库配置 -->
-            <SVRNAME></SVRNAME>     <!-- 服务名 -->
-            <USERNAME></USERNAME>   <!-- 登录名 -->
-            <PASSWD></PASSWD>       <!-- 登陆密码 -->
-        </DATABASE>
-    </ANALYST>
+    <PARSER>
+        <DATABASE SERVER="服务名" USER="用户名" PASSWD="密码" />  <!-- 数据库配置 -->
+    </PARSER>
 </CRAWLER>

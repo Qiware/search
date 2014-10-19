@@ -18,6 +18,7 @@
 #include "crawler.h"
 #include "crwl_sched.h"
 #include "crwl_worker.h"
+#include "crwl_parser.h"
 
 #define CRWL_LOG2_LEVEL  "error"        /* 日志级别 */
 
@@ -335,12 +336,13 @@ crwl_cntx_t *crwl_cntx_init(const crwl_conf_t *conf, log_cycle_t *log)
  ******************************************************************************/
 int crwl_cntx_startup(crwl_cntx_t *ctx)
 {
+    pid_t pid;
     int ret, idx;
     pthread_t tid;
     const crwl_conf_t *conf = &ctx->conf;
 
     /* 1. 设置Worker线程回调 */
-    for (idx=0; idx<conf->worker.thread_num; ++idx)
+    for (idx=0; idx<conf->worker.num; ++idx)
     {
         thread_pool_add_worker(ctx->workers, crwl_worker_routine, ctx);
     }
@@ -350,7 +352,20 @@ int crwl_cntx_startup(crwl_cntx_t *ctx)
     if (CRWL_OK != ret)
     {
         log_error(ctx->log, "Create thread failed!");
-        return CRWL_OK;
+        return CRWL_ERR;
+    }
+
+    /* 3. 启动Parser进程 */
+    pid = fork();
+    if (pid < 0)
+    {
+        log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        return CRWL_ERR;
+    }
+    else if (0 == pid)
+    {
+        crwl_parser_routine(conf);
+        exit(0);
     }
 
     return CRWL_OK;
@@ -460,7 +475,7 @@ static int crwl_init_workers(crwl_cntx_t *ctx)
     const crwl_worker_conf_t *conf = &ctx->conf.worker;
 
     /* 1. 创建Worker线程池 */
-    ctx->workers = thread_pool_init(conf->thread_num);
+    ctx->workers = thread_pool_init(conf->num);
     if (NULL == ctx->workers)
     {
         log_error(ctx->log, "Initialize thread pool failed!");
@@ -469,7 +484,7 @@ static int crwl_init_workers(crwl_cntx_t *ctx)
 
     /* 2. 新建Worker对象 */
     ctx->workers->data =
-        (crwl_worker_t *)calloc(conf->thread_num, sizeof(crwl_worker_t));
+        (crwl_worker_t *)calloc(conf->num, sizeof(crwl_worker_t));
     if (NULL == ctx->workers->data)
     {
         thread_pool_destroy(ctx->workers);
@@ -478,7 +493,7 @@ static int crwl_init_workers(crwl_cntx_t *ctx)
     }
 
     /* 3. 依次初始化Worker对象 */
-    for (idx=0; idx<conf->thread_num; ++idx)
+    for (idx=0; idx<conf->num; ++idx)
     {
         worker = (crwl_worker_t *)ctx->workers->data + idx;
 
@@ -492,7 +507,7 @@ static int crwl_init_workers(crwl_cntx_t *ctx)
         }
     }
 
-    if (idx == conf->thread_num)
+    if (idx == conf->num)
     {
         return CRWL_OK; /* 成功 */
     }
@@ -530,7 +545,7 @@ int crwl_workers_destroy(crwl_cntx_t *ctx)
     const crwl_worker_conf_t *conf = &ctx->conf.worker;
 
     /* 1. 释放Worker对象 */
-    for (idx=0; idx<conf->thread_num; ++idx)
+    for (idx=0; idx<conf->num; ++idx)
     {
         worker = (crwl_worker_t *)ctx->workers->data + idx;
 

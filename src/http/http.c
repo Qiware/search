@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <ctype.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <memory.h>
@@ -189,4 +190,59 @@ int http_get_request(const char *uri, char *req, int size)
         "\r\n", field.path, field.host);
 
     return HTTP_OK;
+}
+
+/******************************************************************************
+ **函数名称: uri_is_valid
+ **功    能: 判断URI是否合法
+ **输入参数:
+ **     uri: URI
+ **输出参数:
+ **返    回: true:合法 false:不合法
+ **实现描述: 
+ **     1. URI中不能有空格
+ **     2. 域名只能出现字母、数字和点
+ **注意事项:
+ **     URI格式: 域名 + 路径 + 参数
+ **作    者: # Qifeng.zou # 2014.10.19 #
+ ******************************************************************************/
+bool uri_is_valid(const char *uri)
+{
+    int ret;
+    char host[URI_MAX_LEN];
+    const char *ch;
+
+    /* 1. 判断域名合法性 */
+    ret = http_get_host_from_uri(uri, host, sizeof(host));
+    if (HTTP_OK != ret)
+    {
+        return false;
+    }
+
+    ch = host;
+    while ('\0' != *ch)
+    {
+        if (!isalpha(*ch)
+            && !isdigit(*ch)
+            && '.' != *ch)
+        {
+            return false;
+        }
+
+        ++ch;
+    }
+
+    /* 2. 判断是否有空格 */
+    ch = uri;
+    while ('\0' != *ch)
+    {
+        if (isspace(*ch))
+        {
+            return false;
+        }
+
+        ++ch;
+    }
+   
+    return true;
 }

@@ -39,7 +39,7 @@
 #define CRWL_CONNECTIONS_MIN_NUM    (1)     /* 最小网络连接数 */
 
 #define CRWL_WEB_SVR_PORT           (80)    /* WEB服务器侦听端口 */
-#define CRWL_SCK_TMOUT_SEC          (05)    /* 套接字超时时间(秒) */
+#define CRWL_SCK_TMOUT_SEC          (30)    /* 套接字超时时间(秒) */
 
 #define CRWL_TASK_QUEUE_MAX_NUM     (10000) /* 任务队列单元数 */
 #define CRWL_DEF_CONF_PATH  "../conf/crawler.xml"   /* 默认配置路径 */
@@ -81,7 +81,7 @@ typedef struct
 /* Worker配置信息 */
 typedef struct
 {
-    int thread_num;                         /* 爬虫线程数 */
+    int num;                                /* 爬虫线程数 */
     int connections;                        /* 并发网页连接数 */
     int taskq_count;                        /* Undo任务队列容量 */
 } crwl_worker_conf_t;

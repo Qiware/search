@@ -1,0 +1,412 @@
+/******************************************************************************
+ ** Coypright(C) 2014-2024 Xundao technology Co., Ltd
+ **
+ ** 文件名: crwl_parser.c
+ ** 版本号: 1.0
+ ** 描  述: 超链接的提取程序
+ **         从爬取的网页中提取超链接
+ ** 作  者: # Qifeng.zou # 2014.10.17 #
+ ******************************************************************************/
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <dirent.h>
+#include <libgen.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+
+#include "log.h"
+#include "list.h"
+#include "http.h"
+#include "common.h"
+#include "syscall.h"
+#include "crawler.h"
+#include "xml_tree.h"
+#include "crwl_parser.h"
+
+#define CRWL_PARSER_LOG_NAME    "parser"
+
+static crwl_parser_t *crwl_parser_init(const crwl_conf_t *conf, log_cycle_t *log);
+static int crwl_parser_loop(crwl_parser_t *parser);
+static int crwl_parser_webpage_info(crwl_parser_t *parser);
+static int crwl_parser_work_flow(crwl_parser_t *parser);
+static int crwl_parser_deep_hdl(crwl_parser_t *parser, gumbo_result_t *result);
+
+/******************************************************************************
+ **函数名称: crwl_parser_routine
+ **功    能: 解析器主接口
+ **输入参数: 
+ **     conf: 配置信息
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.10.17 #
+ ******************************************************************************/
+int crwl_parser_routine(const crwl_conf_t *conf)
+{
+    int ret;
+    crwl_parser_t *parser;
+    log_cycle_t *log;
+    char log_path[FILE_PATH_MAX_LEN];
+
+    memset(&parser, 0, sizeof(parser));
+
+    /* 1. 初始化日志模块 */
+    log2_get_path(log_path, sizeof(log_path), CRWL_PARSER_LOG_NAME);
+
+    ret = log2_init(conf->log2_level, log_path);
+    if (0 != ret)
+    {
+        fprintf(stderr, "Init log2 failed! level:%d path:%s\n",
+                conf->log2_level, log_path);
+        return CRWL_ERR;
+    }
+
+    log_get_path(log_path, sizeof(log_path), CRWL_PARSER_LOG_NAME);
+
+    log = log_init(conf->log_level, log_path);
+    if (NULL == log)
+    {
+        fprintf(stderr, "Init log2 failed! level:%d path:%s\n",
+                conf->log_level, log_path);
+        return CRWL_ERR;
+    }
+
+    /* 2. 初始化Parser对象 */
+    parser = crwl_parser_init(conf, log);
+    if (NULL == parser)
+    {
+        log_error(log, "Init parser failed!");
+        return CRWL_ERR;
+    }
+
+    /* 遍历网页信息 */
+    crwl_parser_loop(parser);
+
+    /* 3. 释放GUMBO对象 */
+    gumbo_destroy(&parser->gumbo_ctx);
+    return CRWL_OK;
+}
+
+/******************************************************************************
+ **函数名称: crwl_parser_init
+ **功    能: 初始化Parser对象
+ **输入参数: 
+ **     conf: 配置信息
+ **     log: 日志信息
+ **输出参数:
+ **返    回: Parser对象
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.10.18 #
+ ******************************************************************************/
+static crwl_parser_t *crwl_parser_init(const crwl_conf_t *conf, log_cycle_t *log)
+{
+    int ret;
+    struct timeval tv;
+    crwl_parser_t *parser;
+
+    parser = (crwl_parser_t *)calloc(1, sizeof(crwl_parser_t));
+    if (NULL == parser)
+    {
+        log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
+        return NULL;
+    }
+
+    /* 2. 初始化GUMBO对象 */
+    ret = gumbo_init(&parser->gumbo_ctx);
+    if (0 != ret)
+    {
+        log_error(log, "Init gumbo failed!");
+        free(parser);
+        return NULL;
+    }
+
+    /* 3. 连接Redis服务 */
+    tv.tv_sec = 30;
+    tv.tv_usec = 0;
+    parser->redis_ctx = redisConnectWithTimeout("127.0.0.1", 6379, tv);
+    if (NULL == parser->redis_ctx)
+    {
+        log_error(parser->log, "Connect redis failed!");
+        gumbo_destroy(&parser->gumbo_ctx);
+        free(parser);
+        return NULL;
+    }
+
+    return parser;
+}
+
+/******************************************************************************
+ **函数名称: crwl_parser_loop
+ **功    能: 遍历网页信息
+ **输入参数: 
+ **     p: 解析器对象
+ **输出参数:
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.10.18 #
+ ******************************************************************************/
+static int crwl_parser_loop(crwl_parser_t *parser)
+{
+    int ret;
+    DIR *dir;
+    struct stat st;
+    struct dirent *item;
+    char path[PATH_NAME_MAX_LEN];
+
+    while (1)
+    {
+        snprintf(path, sizeof(path), "%s/info", parser->conf->download.path);
+
+        /* 1. 打开目录 */
+        dir = opendir(path);
+        if (NULL == dir)
+        {
+            Mkdir(path, 0777);
+            continue;
+        }
+
+        /* 2. 遍历文件 */
+        while (NULL != (item = readdir(dir)))
+        {
+            snprintf(parser->info.fname,
+                    sizeof(parser->info.fname), "%s/%s", path, item->d_name); 
+
+            /* 判断文件类型 */
+            stat(parser->info.fname, &st);
+            if (!S_ISREG(st.st_mode))
+            {
+                continue;
+            }
+
+            /* 获取网页信息 */
+            ret = crwl_parser_webpage_info(parser);
+            if (0 != ret)
+            {
+                log_error(parser->log, "Get webpage information failed! fname:%s",
+                        parser->info.fname);
+                continue;
+            }
+
+            /* 主处理流程 */
+            crwl_parser_work_flow(parser);
+        }
+
+        /* 3. 关闭目录 */
+        closedir(dir);
+    }
+
+    return CRWL_OK;
+}
+
+/******************************************************************************
+ **函数名称: crwl_parser_webpage_info
+ **功    能: 获取网页信息
+ **输入参数: 
+ **     p: 解析器对象
+ **输出参数:
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.10.18 #
+ ******************************************************************************/
+static int crwl_parser_webpage_info(crwl_parser_t *parser)
+{
+    xml_tree_t *xml;
+    xml_node_t *node, *fix;
+    crwl_webpage_info_t *info = &parser->info;
+
+    /* 1. 新建XML树 */
+    xml = xml_creat(parser->info.fname);
+    if (NULL == xml)
+    {
+        log2_error("Create xml tree failed!");
+        return CRWL_ERR;
+    }
+
+    /* 2. 提取网页信息 */
+    do
+    {
+        fix = xml_search(xml, ".INFO");
+        if (NULL == fix)
+        {
+            log2_error("Didn't find INFO mark!");
+            break;
+        }
+
+        /* 获取URI字段 */
+        node = xml_rsearch(xml, fix, "URI");
+        if (NULL == fix)
+        {
+            log2_error("Didn't find INFO mark!");
+            break;
+        }
+
+        snprintf(info->uri, sizeof(info->uri), "%s", node->value);
+
+        /* 获取DEEP字段 */
+        node = xml_rsearch(xml, fix, "URI.DEEP");
+        if (NULL == fix)
+        {
+            log2_error("Didn't find INFO mark!");
+            break;
+        }
+
+        info->deep = atoi(node->value);
+
+        /* 获取IPADDR字段 */
+        node = xml_rsearch(xml, fix, "URI.IPADDR");
+        if (NULL == fix)
+        {
+            log2_error("Didn't find IPADDR mark!");
+            break;
+        }
+
+        snprintf(info->ipaddr, sizeof(info->ipaddr), "%s", node->value);
+
+        /* 获取PORT字段 */
+        node = xml_rsearch(xml, fix, "URI.PORT");
+        if (NULL == fix)
+        {
+            log2_error("Didn't find PORT mark!");
+            break;
+        }
+
+        info->port = atoi(node->value);
+
+        /* 获取HTML字段 */
+        node = xml_rsearch(xml, fix, "HTML");
+        if (NULL == fix)
+        {
+            log2_error("Didn't find HTML mark!");
+            break;
+        }
+
+        snprintf(info->html, sizeof(info->html), "%s", node->value);
+
+        xml_destroy(xml);
+        return CRWL_OK;
+    } while(0);
+
+    /* 3. 释放XML树 */
+    xml_destroy(xml);
+    return CRWL_ERR;
+}
+
+/******************************************************************************
+ **函数名称: crwl_parser_work_flow
+ **功    能: 解析器处理流程
+ **输入参数: 
+ **     p: 解析器对象
+ **输出参数:
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.10.17 #
+ ******************************************************************************/
+static int crwl_parser_work_flow(crwl_parser_t *parser)
+{
+    int ret;
+    char fhtml[FILE_PATH_MAX_LEN];
+    gumbo_html_t *html;             /* HTML对象 */
+    gumbo_result_t *result;         /* 结果集合 */
+    crwl_webpage_info_t *info = &parser->info;
+
+#if 0
+    /* 1. 判断网页深度 */
+    if (0 == parser->info.deep
+        || parser->info.deep > 3)
+    {
+        log_info(parser->log, "Drop handle webpage! deep:%d", parser->info.deep);
+        return CRWL_OK;
+    }
+#endif
+
+    snprintf(fhtml, sizeof(fhtml), "%s/%s", parser->conf->download.path, info->html);
+
+    /* 2. 解析HTML文件 */
+    html = gumbo_html_parse(&parser->gumbo_ctx, fhtml);
+    if (NULL == html)
+    {
+        log_error(parser->log, "Parse html failed! fname:%s", fhtml);
+        return CRWL_ERR;
+    }
+
+    /* 3. 提取超链接 */
+    result = gumbo_parse_href(&parser->gumbo_ctx, html);
+    if (NULL == result)
+    {
+        gumbo_html_destroy(&parser->gumbo_ctx, html);
+
+        log_error(parser->log, "Parse href failed! fname:%s", fhtml);
+        return CRWL_ERR;
+    }
+
+    /* 4. 深入处理超链接
+     *  1. 判断超链接深度
+     *  2. 判断超链接是否已被爬取
+     *  3. 将超链接插入任务队列 */
+    ret = crwl_parser_deep_hdl(parser, result);
+    if (0 != ret)
+    {
+        log_error(parser->log, "Deep handler failed! fname:%s", fhtml);
+        return CRWL_ERR;
+    }
+
+    /* 5. 内存释放 */
+    gumbo_result_destroy(&parser->gumbo_ctx, result);
+    gumbo_html_destroy(&parser->gumbo_ctx, html);
+    return CRWL_OK;
+}
+
+/******************************************************************************
+ **函数名称: crwl_parser_deep_hdl
+ **功    能: 超链接的深入分析和处理
+ **输入参数: 
+ **     p: 解析器对象
+ **     result: URI集合
+ **输出参数:
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **     1. 判断超链接深度
+ **     2. 判断超链接是否已被爬取
+ **     3. 将超链接插入任务队列
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.10.17 #
+ ******************************************************************************/
+static int crwl_parser_deep_hdl(crwl_parser_t *parser, gumbo_result_t *result)
+{
+    redisReply *r; 
+    list_node_t *node = result->list.head;
+
+    /* 1. 遍历URL集合 */
+    while (NULL != node)
+    {
+        /* 1.1 确认URI的合法性 */
+        if (!uri_is_valid((const char *)node->data))
+        {
+            node = node->next;
+            continue;
+        }
+
+        /* 1.2 插入Undo任务队列 */
+        r = redisCommand(parser->redis_ctx, "RPUSH %s %s",
+                parser->conf->redis.undo_taskq, (const char *)node->data);
+        if (REDIS_REPLY_NIL == r->type)
+        {
+            freeReplyObject(r);
+            log_error(parser->log, "Push into undo task queue failed!");
+            return CRWL_ERR;
+        }
+
+        freeReplyObject(r);
+
+        node = node->next;
+    }
+
+    return CRWL_OK;
+}

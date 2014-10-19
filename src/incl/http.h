@@ -21,5 +21,6 @@ typedef struct
 
 int http_get_host_from_uri(const char *uri, char *host, int size);
 int http_get_request(const char *uri, char *req, int size);
+bool uri_is_valid(const char *uri);
 
 #endif /*__HTTP_H__*/

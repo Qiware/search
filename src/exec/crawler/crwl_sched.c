@@ -241,12 +241,12 @@ static int crwl_sched_fetch_undo_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
     {
         /* 1. 选空闲Worker队列 */
         ++sched->last_idx;
-        sched->last_idx %= conf->worker.thread_num;
+        sched->last_idx %= conf->worker.num;
 
         if (!crwl_worker_undo_taskq_space(worker + sched->last_idx))
         {
             ++times;
-            if (times >= conf->worker.thread_num)
+            if (times >= conf->worker.num)
             {
                 times = 0;
                 log_warn(ctx->log, "Undo task queue space isn't enough!");

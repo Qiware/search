@@ -45,21 +45,21 @@ int crwl_worker_parse_conf(
     }
 
     /* 2. 爬虫线程数(相对查找) */
-    node = xml_rsearch(xml, curr, "THREAD_NUM");
+    node = xml_rsearch(xml, curr, "NUM");
     if (NULL == node)
     {
-        conf->thread_num = CRWL_THD_DEF_NUM;
-        log_warn(log, "Set thread number: %d!", conf->thread_num);
+        conf->num = CRWL_THD_DEF_NUM;
+        log_warn(log, "Set thread number: %d!", conf->num);
     }
     else
     {
-        conf->thread_num = atoi(node->value);
+        conf->num = atoi(node->value);
     }
 
-    if (conf->thread_num <= 0)
+    if (conf->num <= 0)
     {
-        conf->thread_num = CRWL_THD_MIN_NUM;
-        log_warn(log, "Set thread number: %d!", conf->thread_num);
+        conf->num = CRWL_THD_MIN_NUM;
+        log_warn(log, "Set thread number: %d!", conf->num);
     }
 
     /* 3. 并发网页连接数(相对查找) */

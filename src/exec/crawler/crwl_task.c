@@ -137,6 +137,12 @@ int crwl_task_down_webpage_by_uri(
 
     log_debug(worker->log, "Load webpage uri:%s!", args->uri);
 
+    if (!uri_is_valid((const char *)args->uri))
+    {
+        log_error(worker->log, "Uri is invalid! %s", args->uri);
+        return CRWL_ERR;
+    }
+
     http_get_host_from_uri(args->uri, domain, sizeof(domain));
     
     /* 1. 通过URL获取WEB服务器信息 */
