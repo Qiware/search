@@ -19,6 +19,7 @@
 #include "log.h"
 #include "list.h"
 #include "http.h"
+#include "xd_str.h"
 #include "common.h"
 #include "syscall.h"
 #include "crawler.h"
@@ -32,6 +33,8 @@ static int crwl_parser_loop(crwl_parser_t *parser);
 static int crwl_parser_webpage_info(crwl_parser_t *parser);
 static int crwl_parser_work_flow(crwl_parser_t *parser);
 static int crwl_parser_deep_hdl(crwl_parser_t *parser, gumbo_result_t *result);
+
+bool crwl_is_uri_download(redisContext *ctx, const char *uri);
 
 /******************************************************************************
  **函数名称: crwl_parser_exec
@@ -318,28 +321,36 @@ static int crwl_parser_webpage_info(crwl_parser_t *parser)
 static int crwl_parser_work_flow(crwl_parser_t *parser)
 {
     int ret;
-    char fhtml[FILE_PATH_MAX_LEN];
     gumbo_html_t *html;             /* HTML对象 */
     gumbo_result_t *result;         /* 结果集合 */
+    char fname[FILE_PATH_MAX_LEN];  /* HTML文件名 */
+    crwl_conf_t *conf = &parser->conf;
     crwl_webpage_info_t *info = &parser->info;
 
 #if 0
     /* 1. 判断网页深度 */
-    if (0 == parser->info.deep
-        || parser->info.deep > 3)
+    if ((0 == info->deep) || (info->deep > 3))
     {
-        log_info(parser->log, "Drop handle webpage! deep:%d", parser->info.deep);
+        log_info(parser->log, "Drop handle webpage! uri:%s deep:%d",
+                info->uri, info->deep);
         return CRWL_OK;
     }
 #endif
 
-    snprintf(fhtml, sizeof(fhtml), "%s/%s", parser->conf.download.path, info->html);
+    /* 判断网页(URI)是否已下载 */
+    if (!crwl_is_uri_download(parser->redis_ctx, info->uri))
+    {
+        log_info(parser->log, "Uri [%s] was downloaded!", info->uri);
+        return CRWL_OK;
+    }
+
+    snprintf(fname, sizeof(fname), "%s/%s", conf->download.path, info->html);
 
     /* 2. 解析HTML文件 */
-    html = gumbo_html_parse(&parser->gumbo_ctx, fhtml);
+    html = gumbo_html_parse(&parser->gumbo_ctx, fname);
     if (NULL == html)
     {
-        log_error(parser->log, "Parse html failed! fname:%s", fhtml);
+        log_error(parser->log, "Parse html failed! fname:%s", fname);
         return CRWL_ERR;
     }
 
@@ -349,7 +360,7 @@ static int crwl_parser_work_flow(crwl_parser_t *parser)
     {
         gumbo_html_destroy(&parser->gumbo_ctx, html);
 
-        log_error(parser->log, "Parse href failed! fname:%s", fhtml);
+        log_error(parser->log, "Parse href failed! fname:%s", fname);
         return CRWL_ERR;
     }
 
@@ -360,7 +371,7 @@ static int crwl_parser_work_flow(crwl_parser_t *parser)
     ret = crwl_parser_deep_hdl(parser, result);
     if (CRWL_OK != ret)
     {
-        log_error(parser->log, "Deep handler failed! fname:%s", fhtml);
+        log_error(parser->log, "Deep handler failed! fname:%s", fname);
         return CRWL_ERR;
     }
 
@@ -388,21 +399,24 @@ static int crwl_parser_work_flow(crwl_parser_t *parser)
 static int crwl_parser_deep_hdl(crwl_parser_t *parser, gumbo_result_t *result)
 {
     redisReply *r; 
+    char uri[URI_MAX_LEN];
     list_node_t *node = result->list.head;
 
     /* 1. 遍历URL集合 */
     while (NULL != node)
     {
         /* 1.1 确认URI的合法性 */
-        if (!uri_is_valid((const char *)node->data))
+        if (!str_trim(node->data, uri, sizeof(uri))
+            || !uri_is_valid(uri))
         {
+            log_error(parser->log, "Uri [%s] is invalid!", uri);
             node = node->next;
             continue;
         }
 
         /* 1.2 插入Undo任务队列 */
         r = redisCommand(parser->redis_ctx, "RPUSH %s %s",
-                parser->conf.redis.undo_taskq, (const char *)node->data);
+                parser->conf.redis.undo_taskq, uri);
         if (REDIS_REPLY_NIL == r->type)
         {
             freeReplyObject(r);
@@ -416,4 +430,38 @@ static int crwl_parser_deep_hdl(crwl_parser_t *parser, gumbo_result_t *result)
     }
 
     return CRWL_OK;
+}
+
+/******************************************************************************
+ **函数名称: crwl_is_uri_download
+ **功    能: 判断网页(URI)是否已下载
+ **输入参数: 
+ **     ctx: Redis信息
+ **     uri: URI字串
+ **输出参数:
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.10.18 #
+ ******************************************************************************/
+bool crwl_is_uri_download(redisContext *ctx, const char *uri)
+{
+    redisReply *r;
+
+    /* 2. 设置DONE表 */
+    r = redisCommand(ctx, "HSETNX CRWL_DONE_TAB %s 1", uri);
+    if (REDIS_REPLY_INTEGER != r->type)
+    {
+        freeReplyObject(r);
+        return true;
+    }
+
+    if (1 == r->integer)
+    {
+        freeReplyObject(r);
+        return false;
+    }
+
+    freeReplyObject(r);
+    return true;
 }

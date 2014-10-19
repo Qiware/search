@@ -11,6 +11,7 @@
 
 #include "log.h"
 #include "http.h"
+#include "xd_str.h"
 #include "common.h"
 #include "crawler.h"
 #include "syscall.h"
@@ -119,7 +120,7 @@ void crwl_task_queue_destroy(crwl_task_queue_t *tq)
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
- **     1. 通过URL获取WEB服务器信息
+ **     1. 通过URL获取WEB服务器信息(域名, 端口号)
  **     2. 连接远程WEB服务器
  **     3. 将FD等信息加入套接字链表
  **     4. 添加HTTP GET请求
@@ -130,23 +131,32 @@ int crwl_task_down_webpage_by_uri(
         crwl_worker_t *worker, const crwl_task_down_webpage_by_uri_t *args)
 {
     int ret, fd;
+    uri_field_t field;
     struct hostent *host;
     time_t ctm = time(NULL);
     crwl_worker_socket_t *sck;
-    char ipaddr[IP_ADDR_MAX_LEN], domain[FILE_NAME_MAX_LEN];
+    char ipaddr[IP_ADDR_MAX_LEN];
 
-    log_debug(worker->log, "Load webpage uri:%s!", args->uri);
+    memset(&field, 0, sizeof(field));
 
-    if (!uri_is_valid((const char *)args->uri))
+    /* 解析URI字串 */
+    if(!uri_reslove(args->uri, &field))
     {
-        log_error(worker->log, "Uri is invalid! %s", args->uri);
+        log_error(worker->log, "Reslove uri [%d] failed!", args->uri);
         return CRWL_ERR;
     }
 
-    http_get_host_from_uri(args->uri, domain, sizeof(domain));
+    /* 判断URI合法性 */
+    if (!uri_is_valid((const char *)args->uri))
+    {
+        log_error(worker->log, "Uri [%s] is invalid!", args->uri);
+        return CRWL_ERR;
+    }
+
+    uri_get_host(args->uri, field.host, sizeof(field.host));
     
     /* 1. 通过URL获取WEB服务器信息 */
-    host = gethostbyname(domain);
+    host = gethostbyname(field.host);
     if (NULL == host)
     {
         log_error(worker->log, "Get host by name failed! uri:%s", args->uri);

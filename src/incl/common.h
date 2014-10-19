@@ -66,11 +66,4 @@
     (u_char *) (((uintptr_t) (p) + ((uintptr_t) a - 1)) & ~((uintptr_t) a - 1))
 #define PTR_ALIGNMENT   sizeof(unsigned long)
 
-/* IP地址配置 */
-typedef struct
-{
-    char ipaddr[IP_ADDR_MAX_LEN];           /* IP地址 */
-    int port;                               /* 端口号 */
-} svr_ip_t;
-
 #endif /*__COMMON_H__*/

@@ -12,6 +12,8 @@
 #include <string.h>
 #include <getopt.h>
 #include <libgen.h>
+#include <sys/wait.h>
+#include <sys/types.h>
 
 #include "log.h"
 #include "common.h"
@@ -19,8 +21,6 @@
 #include "crwl_sched.h"
 #include "crwl_worker.h"
 #include "crwl_parser.h"
-
-#define CRWL_LOG2_LEVEL  "error"        /* 日志级别 */
 
 /* 程序输入参数信息 */
 typedef struct
@@ -56,7 +56,7 @@ static int crwl_parse_comm_conf(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
  ******************************************************************************/
 int main(int argc, char *argv[])
 {
-    int ret;
+    int ret, status;
     crwl_opt_t opt;
     crwl_cntx_t *ctx;
     log_cycle_t *log;
@@ -84,8 +84,8 @@ int main(int argc, char *argv[])
     ret = log2_init(opt.log_level, log_path);
     if (0 != ret)
     {
-        fprintf(stderr, "Init log2 failed! level:%s path:%s\n",
-                CRWL_LOG2_LEVEL, log_path);
+        fprintf(stderr, "Init log2 failed! level:%d path:%s\n",
+                opt.log_level, log_path);
         goto ERROR;
     }
 
@@ -94,7 +94,7 @@ int main(int argc, char *argv[])
     log = log_init(opt.log_level, log_path);
     if (NULL == log)
     {
-        log2_error("Init log failed!");
+        log2_error("Initialize log failed!");
         goto ERROR;
     }
 
@@ -102,7 +102,7 @@ int main(int argc, char *argv[])
     ret = crwl_load_conf(&conf, opt.conf_path, log);
     if (CRWL_OK != ret)
     {
-        log_error(log, "Load crawler configuration failed! path:%s", opt.conf_path);
+        log_error(log, "Load configuration failed! path:%s", opt.conf_path);
         goto ERROR;
     }
 
@@ -110,7 +110,7 @@ int main(int argc, char *argv[])
     ctx = crwl_cntx_init(&conf, log);
     if (NULL == ctx)
     {
-        log_error(log, "Start crawler server failed!");
+        log_error(log, "Initialize crawler failed!");
         goto ERROR;
     }
 
@@ -118,11 +118,15 @@ int main(int argc, char *argv[])
     ret = crwl_cntx_startup(ctx);
     if (CRWL_OK != ret)
     {
-        log_error(log, "Startup crawler server failed!");
+        log_error(log, "Startup crawler failed!");
         goto ERROR;
     }
 
-    while (1) { pause(); }
+    while (1)
+    {
+        wait(&status);
+        pause();
+    }
 
 ERROR:
     log2_destroy();

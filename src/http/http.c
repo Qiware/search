@@ -7,118 +7,11 @@
 
 #include "log.h"
 #include "http.h"
+#include "xd_str.h"
 #include "common.h"
 
 /******************************************************************************
- **函数名称: http_get_path_from_uri
- **功    能: 从URI中获取PATH字串
- **输入参数:
- **     uri: URI
- **     size: req长度
- **输出参数:
- **     path: PATH字串
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **     uri:http://www.bai.com/news.html
- **     如果URI为以上值，那么提取之后的PATH为/new.html
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.10.10 #
- ******************************************************************************/
-int http_get_path_from_uri(const char *uri, char *path, int size)
-{
-    const char *ptr = uri;
-
-    while ('\0' != *ptr)
-    {
-        if ('/' != *ptr)
-        {
-            ptr++;
-            continue;
-        }
-
-        if ('/' == *(ptr + 1))
-        {
-            ptr += 2;
-            continue;
-        }
-
-        break;
-    }
-
-    if ('\0' == *ptr)
-    {
-        snprintf(path, size, "/");
-        return HTTP_OK;
-    }
-
-    snprintf(path, size, "%s", ptr);
-
-    return HTTP_OK;
-}
-
-/******************************************************************************
- **函数名称: http_get_host_from_uri
- **功    能: 从URI中获取HOST字串
- **输入参数:
- **     uri: URI
- **     size: req长度
- **输出参数:
- **     host: HOST字串
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.10.10 #
- ******************************************************************************/
-int http_get_host_from_uri(const char *uri, char *host, int size)
-{
-    int len;
-    const char *ptr = uri,
-          *start = uri, *end = uri;
-
-    while ('\0' != *ptr)
-    {
-        if ('/' != *ptr)
-        {
-            ptr++;
-            continue;
-        }
-
-        if ('/' == *(ptr + 1))
-        {
-            start = ptr + 2;
-            ptr += 2;
-            continue;
-        }
-        else if ('/' != *(ptr + 1))
-        {
-            end = ptr - 1;
-            break;
-        }
-
-        ptr++;
-    }
-
-    if (start >= end)
-    {
-        snprintf(host, size, "%s", start);
-        return HTTP_OK;
-    }
-
-    len = (end - start) + 1;
-    if (size <= len)
-    {
-        log2_error("Host name is too long! len:%d", len);
-        return HTTP_OK;
-    }
-
-    memcpy(host, start, len);
-    host[len] = '\0';
-
-    return HTTP_OK;
-}
-
-/******************************************************************************
- **函数名称: http_parse_get_req_field_from_uri
+ **函数名称: http_get_field_from_uri
  **功    能: 从URI中获取GET请求字段
  **输入参数:
  **     uri: URI
@@ -129,12 +22,12 @@ int http_get_host_from_uri(const char *uri, char *host, int size)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.10 #
  ******************************************************************************/
-int http_parse_get_req_field_from_uri(const char *uri, http_get_req_field_t *f)
+int http_get_field_from_uri(const char *uri, uri_field_t *f)
 {
     int ret;
     
     /* 1. 获取PATH字段 */
-    ret = http_get_path_from_uri(uri, f->path, sizeof(f->path));
+    ret = uri_get_path(uri, f->path, sizeof(f->path));
     if (HTTP_OK != ret)
     {
         log2_error("Get path failed! uri:%s", uri);
@@ -142,7 +35,7 @@ int http_parse_get_req_field_from_uri(const char *uri, http_get_req_field_t *f)
     }
 
     /* 2. 获取HOST字段 */
-    ret  = http_get_host_from_uri(uri, f->host, sizeof(f->host));
+    ret  = uri_get_host(uri, f->host, sizeof(f->host));
     if (HTTP_OK != ret)
     {
         log2_error("Get host failed! uri:%s", uri);
@@ -168,13 +61,18 @@ int http_parse_get_req_field_from_uri(const char *uri, http_get_req_field_t *f)
 int http_get_request(const char *uri, char *req, int size)
 {
     int ret;
-    http_get_req_field_t field;
+    uri_field_t field;
 
     /* 1. 获取GET相关字段 */
-    ret  = http_parse_get_req_field_from_uri(uri, &field);
-    if (HTTP_OK != ret)
+    ret = uri_get_path(uri, field.path, sizeof(field.path));
+    if (0 != ret)
     {
-        log2_error("Get request field failed! uri:%s", uri);
+        return HTTP_ERR;
+    }
+
+    ret = uri_get_host(uri, field.host, sizeof(field.host));
+    if (0 != ret)
+    {
         return HTTP_ERR;
     }
 
@@ -190,59 +88,4 @@ int http_get_request(const char *uri, char *req, int size)
         "\r\n", field.path, field.host);
 
     return HTTP_OK;
-}
-
-/******************************************************************************
- **函数名称: uri_is_valid
- **功    能: 判断URI是否合法
- **输入参数:
- **     uri: URI
- **输出参数:
- **返    回: true:合法 false:不合法
- **实现描述: 
- **     1. URI中不能有空格
- **     2. 域名只能出现字母、数字和点
- **注意事项:
- **     URI格式: 域名 + 路径 + 参数
- **作    者: # Qifeng.zou # 2014.10.19 #
- ******************************************************************************/
-bool uri_is_valid(const char *uri)
-{
-    int ret;
-    char host[URI_MAX_LEN];
-    const char *ch;
-
-    /* 1. 判断域名合法性 */
-    ret = http_get_host_from_uri(uri, host, sizeof(host));
-    if (HTTP_OK != ret)
-    {
-        return false;
-    }
-
-    ch = host;
-    while ('\0' != *ch)
-    {
-        if (!isalpha(*ch)
-            && !isdigit(*ch)
-            && '.' != *ch)
-        {
-            return false;
-        }
-
-        ++ch;
-    }
-
-    /* 2. 判断是否有空格 */
-    ch = uri;
-    while ('\0' != *ch)
-    {
-        if (isspace(*ch))
-        {
-            return false;
-        }
-
-        ++ch;
-    }
-   
-    return true;
 }
