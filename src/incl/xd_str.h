@@ -17,17 +17,15 @@ int str_trim(const char *in, char *out, size_t size);
 /* URI字段 */
 typedef struct
 {
-    int type;                   /* 协议类型 */
-
     char uri[URI_MAX_LEN];      /* URI */
+    int len;                    /* URI长度 */
+
+    char protocol[URI_PROTOCOL_MAX_LEN];    /* 协议类型 */
     char host[URI_MAX_LEN];     /* 域名 */
     char path[URI_MAX_LEN];     /* 路径信息 */
     int port;                   /* 端口号 */
 } uri_field_t;
 
-bool uri_is_valid(const char *uri);
-int uri_get_path(const char *uri, char *path, int size);
-int uri_get_host(const char *uri, char *host, int size);
 int uri_reslove(const char *uri, uri_field_t *f);
 
 #endif /*__XD_STR_H__*/

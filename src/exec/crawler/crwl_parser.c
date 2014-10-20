@@ -400,14 +400,14 @@ static int crwl_parser_deep_hdl(crwl_parser_t *parser, gumbo_result_t *result)
 {
     redisReply *r; 
     char uri[URI_MAX_LEN];
+    uri_field_t field;
     list_node_t *node = result->list.head;
 
     /* 1. 遍历URL集合 */
     while (NULL != node)
     {
         /* 1.1 确认URI的合法性 */
-        if (!str_trim(node->data, uri, sizeof(uri))
-            || !uri_is_valid(uri))
+        if (uri_reslove(node->data, &field))
         {
             log_error(parser->log, "Uri [%s] is invalid!", uri);
             node = node->next;

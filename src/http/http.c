@@ -11,41 +11,6 @@
 #include "common.h"
 
 /******************************************************************************
- **函数名称: http_get_field_from_uri
- **功    能: 从URI中获取GET请求字段
- **输入参数:
- **     uri: URI
- **     filed: HTTP GET请求的域
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.10.10 #
- ******************************************************************************/
-int http_get_field_from_uri(const char *uri, uri_field_t *f)
-{
-    int ret;
-    
-    /* 1. 获取PATH字段 */
-    ret = uri_get_path(uri, f->path, sizeof(f->path));
-    if (HTTP_OK != ret)
-    {
-        log2_error("Get path failed! uri:%s", uri);
-        return HTTP_ERR;
-    }
-
-    /* 2. 获取HOST字段 */
-    ret  = uri_get_host(uri, f->host, sizeof(f->host));
-    if (HTTP_OK != ret)
-    {
-        log2_error("Get host failed! uri:%s", uri);
-        return HTTP_ERR;
-    }
-
-    return HTTP_OK;
-}
-
-/******************************************************************************
  **函数名称: http_get_request
  **功    能: 构造HTTP GET请求
  **输入参数:
@@ -60,18 +25,10 @@ int http_get_field_from_uri(const char *uri, uri_field_t *f)
  ******************************************************************************/
 int http_get_request(const char *uri, char *req, int size)
 {
-    int ret;
     uri_field_t field;
 
     /* 1. 获取GET相关字段 */
-    ret = uri_get_path(uri, field.path, sizeof(field.path));
-    if (0 != ret)
-    {
-        return HTTP_ERR;
-    }
-
-    ret = uri_get_host(uri, field.host, sizeof(field.host));
-    if (0 != ret)
+    if(uri_reslove(uri, &field))
     {
         return HTTP_ERR;
     }

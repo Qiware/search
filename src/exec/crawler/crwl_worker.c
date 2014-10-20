@@ -63,10 +63,10 @@ int crwl_worker_parse_conf(
     }
 
     /* 3. 并发网页连接数(相对查找) */
-    node = xml_rsearch(xml, curr, "CONNECTIONS");
+    node = xml_rsearch(xml, curr, "CONNECTIONS.NUM");
     if (NULL == node)
     {
-        log_error(log, "Didn't configure load web page number!");
+        log_error(log, "Didn't configure download webpage number!");
         return CRWL_ERR;
     }
 

@@ -29,6 +29,7 @@
 #define ERR_MSG_MAX_LEN     (1024)  /* 错误信息最大长度 */
 #define URL_MAX_LEN         (4096)  /* URL最大长度 */
 #define URI_MAX_LEN     URL_MAX_LEN /* URI最大长度 */
+#define URI_PROTOCOL_MAX_LEN    (32)/* 协议类型 */
 
 #define MD5_SUM_CHK_LEN     (32)    /* MD5校验值长度 */
 
@@ -65,5 +66,14 @@
 #define mem_align_ptr(p, a)                                                   \
     (u_char *) (((uintptr_t) (p) + ((uintptr_t) a - 1)) & ~((uintptr_t) a - 1))
 #define PTR_ALIGNMENT   sizeof(unsigned long)
+
+/* 协议类型 */
+typedef enum
+{
+    PROTOCOL_UNKNOWN                        /* 未知协议 */
+    , PROTOCOL_HTTP                         /* HTTP协议 */
+    , PROTOCOL_HTTPS                        /* HTTPS协议 */
+    , PROTOCOL_FTP                          /* FTP协议 */
+} protocol_type_e;
 
 #endif /*__COMMON_H__*/

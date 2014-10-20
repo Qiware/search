@@ -140,21 +140,12 @@ int crwl_task_down_webpage_by_uri(
     memset(&field, 0, sizeof(field));
 
     /* 解析URI字串 */
-    if(!uri_reslove(args->uri, &field))
+    if(uri_reslove(args->uri, &field))
     {
         log_error(worker->log, "Reslove uri [%d] failed!", args->uri);
         return CRWL_ERR;
     }
-
-    /* 判断URI合法性 */
-    if (!uri_is_valid((const char *)args->uri))
-    {
-        log_error(worker->log, "Uri [%s] is invalid!", args->uri);
-        return CRWL_ERR;
-    }
-
-    uri_get_host(args->uri, field.host, sizeof(field.host));
-    
+   
     /* 1. 通过URL获取WEB服务器信息 */
     host = gethostbyname(field.host);
     if (NULL == host)

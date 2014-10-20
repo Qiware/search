@@ -143,7 +143,8 @@ int str_trim(const char *in, char *out, size_t size)
     while ('\0' != *s)
     {
         if ((' ' == *s)
-            || ('\n' == *s) || ('\r' == *s))
+            || ('\n' == *s)
+            || ('\r' == *s))
         {
             ++s;
             continue;
@@ -162,7 +163,8 @@ int str_trim(const char *in, char *out, size_t size)
     while (e > s)
     {
         if ((' ' == *e)
-            || ('\n' == *e) || ('\r' == *e))
+            || ('\n' == *e)
+            || ('\r' == *e))
         {
             --e;
             continue;
@@ -179,169 +181,6 @@ int str_trim(const char *in, char *out, size_t size)
 }
 
 /******************************************************************************
- **函数名称: uri_is_valid
- **功    能: 判断URI是否合法
- **输入参数:
- **     uri: URI
- **输出参数:
- **返    回: true:合法 false:不合法
- **实现描述: 
- **     1. URI中不能有空格
- **     2. 域名只能出现字母、数字、点、下划线
- **注意事项:
- **     URI格式: 域名 + 路径 + 参数
- **作    者: # Qifeng.zou # 2014.10.19 #
- ******************************************************************************/
-bool uri_is_valid(const char *uri)
-{
-    int ret;
-    char host[URI_MAX_LEN];
-    const char *ch;
-
-    /* 1. 判断域名合法性 */
-    ret = uri_get_host(uri, host, sizeof(host));
-    if (0 != ret)
-    {
-        return false;
-    }
-
-    ch = host;
-    while ('\0' != *ch)
-    {
-        if (!isalpha(*ch)
-            && !isdigit(*ch)
-            && '.' != *ch && '_' != *ch && '-' != *ch)
-        {
-            return false;
-        }
-
-        ++ch;
-    }
-
-    /* 2. 判断是否有空格 */
-    ch = uri;
-    while ('\0' != *ch)
-    {
-        if (isspace(*ch))
-        {
-            return false;
-        }
-
-        ++ch;
-    }
-   
-    return true;
-}
-
-/******************************************************************************
- **函数名称: uri_get_path
- **功    能: 从URI中获取PATH字串
- **输入参数:
- **     uri: URI
- **     size: req长度
- **输出参数:
- **     path: PATH字串
- **返    回: 端口号 (<0: 失败)
- **实现描述: 
- **     uri:http://www.bai.com/news.html
- **     如果URI为以上值，那么提取之后的PATH为/new.html
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.10.19 #
- ******************************************************************************/
-int uri_get_path(const char *uri, char *path, int size)
-{
-    int port = 80;
-    const char *ptr = uri;
-
-    while ('\0' != *ptr)
-    {
-        if ('/' != *ptr)
-        {
-            ptr++;
-            continue;
-        }
-
-        if ('/' == *(ptr + 1))
-        {
-            ptr += 2;
-            continue;
-        }
-
-        break;
-    }
-
-    if ('\0' == *ptr)
-    {
-        snprintf(path, size, "/");
-        return port;
-    }
-
-    snprintf(path, size, "%s", ptr);
-
-    return port;
-}
-
-/******************************************************************************
- **函数名称: uri_get_host
- **功    能: 从URI中获取HOST字串
- **输入参数:
- **     uri: URI
- **     size: Host长度
- **输出参数:
- **     host: HOST字串
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.10.19 #
- ******************************************************************************/
-int uri_get_host(const char *uri, char *host, int size)
-{
-    int len;
-    const char *ptr = uri,
-          *start = uri, *end = uri;
-
-    while ('\0' != *ptr)
-    {
-        if ('/' != *ptr)
-        {
-            ptr++;
-            continue;
-        }
-
-        if ('/' == *(ptr + 1))
-        {
-            start = ptr + 2;
-            ptr += 2;
-            continue;
-        }
-        else if ('/' != *(ptr + 1))
-        {
-            end = ptr - 1;
-            break;
-        }
-
-        ptr++;
-    }
-
-    if (start >= end)
-    {
-        snprintf(host, size, "%s", start);
-        return 0;
-    }
-
-    len = (end - start) + 1;
-    if (size <= len)
-    {
-        return -1;   /* Host name is too long */
-    }
-
-    memcpy(host, start, len);
-    host[len] = '\0';
-
-    return 0;
-}
-
-/******************************************************************************
  **函数名称: uri_reslove
  **功    能: 分解URI字串
  **输入参数:
@@ -355,27 +194,172 @@ int uri_get_host(const char *uri, char *host, int size)
  ******************************************************************************/
 int uri_reslove(const char *uri, uri_field_t *field)
 {
-    int ret, len;
+    int len;
+    const char *ch, *s;
+
+    memset(field, 0, sizeof(uri_field_t));
 
     /* 1. 剔除URI前后的非法字符 */
-    len = str_trim(uri, field->uri, sizeof(field->uri));
-    if (0 == len)
+    field->len = str_trim(uri, field->uri, sizeof(field->uri));
+    if (0 == field->len)
     {
-        return 0;
+        return -1;  /* 长度=0 */
     }
     
     /* 2. 从URI中提取域名、端口、路径等信息 */
-    field->port = uri_get_host(field->uri, field->host, sizeof(field->host));
-    if (0 != field->port)
+    ch = field->uri;
+
+    /* 判断是否有协议(http:// | https:// | ftp:// ...) */
+    while ('\0' != *ch)
     {
-        return -1;
+        if (':' != *ch && '/' != *ch)
+        {
+            ++ch;
+            continue;
+        }
+        break;
     }
 
-    ret = uri_get_path(field->uri, field->path, sizeof(field->path));
-    if (0 != ret)
+    if ('\0' == *ch)
     {
-        return -1;
+        /* 只有域名: (协议/端口/路径 使用默认值) */
+        snprintf(field->protocol, sizeof(field->protocol), "http");
+        snprintf(field->host, sizeof(field->host), "%s", field->uri);
+        snprintf(field->path, sizeof(field->path), "/");
+        field->port = 80;
+        return 0;
     }
 
-    return 0;
+    /* 1. 有协议 或 有端口号 */
+    if (':' == *ch)
+    {
+        /* 有协议类型 */
+        if ('/' == *(ch + 1)
+            && '/' == *(ch + 1))
+        {
+            /* 提取协议 */
+            len = ch - field->uri;
+            len = (len < (sizeof(field->protocol) - 1))?
+                        len : (sizeof(field->protocol) - 1);
+            memcpy(field->protocol, field->uri, len);
+            field->protocol[len] = '\0';
+
+            /* 提取域名 */
+            ch += 3;
+            s = ch;
+            while ('\0' != *ch)
+            {
+                if (isalpha(*ch)
+                    || isdigit(*ch)
+                    || ('.' == *ch)
+                    || ('-' == *ch)
+                    || ('_' == *ch))
+                {
+                    ++ch;
+                    continue;
+                }
+                break;
+            }
+
+            if ('\0' == *ch)        /* 无端口、无路径 */
+            {
+                /* 有协议与域名: (端口/路径 使用默认值) */
+                snprintf(field->host, sizeof(field->host), "%s", field->uri);
+                snprintf(field->path, sizeof(field->path), "/");
+                field->port = 80;
+                return 0;
+            }
+            else if (':' == *ch)    /* 有端口 */
+            {
+                if (!isdigit(*(ch + 1)))
+                {
+                    return -1;  /* 格式有误 */
+                }
+
+            GET_HOST:
+                /* 提取域名 */
+                len = ch - s;
+                len = (len < sizeof(field->host) - 1)?
+                            len : sizeof(field->host) - 1;
+                memcpy(field->host, s, len);
+                field->host[len] = '\0';
+
+            GET_PORT:
+                /* 提取端口号 */
+                ++ch;
+                s = ch;
+                while ('\0' != *ch)
+                {
+                    if (isdigit(*ch))
+                    {
+                        ++ch;
+                        continue;
+                    }
+                    break;
+                }
+
+                field->port = atoi(s);
+
+                /* 提取路径 */
+                if ('\0' == *ch)
+                {
+                    snprintf(field->path, sizeof(field->path), "/");
+                    return 0;
+                }
+                else if ('/' != *ch)
+                {
+                    return -1;  /* 格式有误 */
+                }
+
+                snprintf(field->path, sizeof(field->path), "%s", ch);
+                return 0;
+            }
+            else if ('/' == *ch)     /* 无端口、有路径 */
+            {
+                /* 提取域名 */
+                len = ch - s;
+                len = (len < sizeof(field->host) - 1)?
+                            len : sizeof(field->host) - 1;
+                memcpy(field->host, s, len);
+                field->host[len] = '\0';
+                field->port = 80;   /* 默认值 */
+                snprintf(field->path, sizeof(field->path), "%s", ch);
+                return 0;
+            }
+            else
+            {
+                return -1;  /* 格式有误 */
+            }
+            return 0;
+        }
+        /* 无协议、有端口号 */
+        else if (isdigit(*(ch + 1)))
+        {
+            /* 设置协议(默认:HTTP) */
+            snprintf(field->protocol, sizeof(field->protocol), "http");
+
+            /* 提取域名 */
+            s = field->uri;
+
+            len = ch - s;
+            len = (len < sizeof(field->host) - 1)? len : sizeof(field->host) - 1;
+            memcpy(field->host, s, len);
+            field->host[len] = '\0';
+
+            /* 提取端口号 */
+            goto GET_PORT;
+        }
+
+        return -1; /* 格式有误 */
+    }
+    /* 2. 无协议 且 无端口号 */
+    else if ('/' == *ch)
+    {
+        /* 设置协议(默认:HTTP) */
+        snprintf(field->protocol, sizeof(field->protocol), "http");
+
+        goto GET_HOST;
+    }
+
+    return -1;
 }

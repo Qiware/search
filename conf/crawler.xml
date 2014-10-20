@@ -27,7 +27,7 @@
     <!-- 爬虫进程: 负责网页下载
          1) NUM: 线程数 -->
     <WORKER NUM="2">
-        <CONNECTIONS TIMEOUT="30">1024</CONNECTIONS> <!-- 爬取网页的并发(连接)数 -->
+        <CONNECTIONS NUM="1024" TIMEOUT="30" /> <!-- 爬取网页的并发(连接)数 -->
         <TASKQ COUNT="10000" />         <!-- Undo任务队列配置 -->
     </WORKER>
 
