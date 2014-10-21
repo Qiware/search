@@ -194,6 +194,8 @@ int str_trim(const char *in, char *out, size_t size)
  ******************************************************************************/
 int uri_reslove(const char *uri, uri_field_t *field)
 {
+#define URI_DEF_PORT        (80)
+#define URI_DEF_PROTOCOL    "http"
     int len;
     const char *ch, *s;
 
@@ -223,15 +225,14 @@ int uri_reslove(const char *uri, uri_field_t *field)
     if ('\0' == *ch)
     {
         /* 只有域名: (协议/端口/路径 使用默认值) */
-        snprintf(field->protocol, sizeof(field->protocol), "http");
+        snprintf(field->protocol, sizeof(field->protocol), "%s", URI_DEF_PROTOCOL);
         snprintf(field->host, sizeof(field->host), "%s", field->uri);
         snprintf(field->path, sizeof(field->path), "/");
-        field->port = 80;
+        field->port = URI_DEF_PORT;
         return 0;
     }
-
     /* 1. 有协议 或 有端口号 */
-    if (':' == *ch)
+    else if (':' == *ch)
     {
         /* 有协议类型 */
         if ('/' == *(ch + 1)
@@ -266,7 +267,7 @@ int uri_reslove(const char *uri, uri_field_t *field)
                 /* 有协议与域名: (端口/路径 使用默认值) */
                 snprintf(field->host, sizeof(field->host), "%s", field->uri);
                 snprintf(field->path, sizeof(field->path), "/");
-                field->port = 80;
+                field->port = URI_DEF_PORT;
                 return 0;
             }
             else if (':' == *ch)    /* 有端口 */
@@ -276,7 +277,7 @@ int uri_reslove(const char *uri, uri_field_t *field)
                     return -1;  /* 格式有误 */
                 }
 
-            GET_HOST:
+            URI_GET_HOST:
                 /* 提取域名 */
                 len = ch - s;
                 len = (len < sizeof(field->host) - 1)?
@@ -284,7 +285,7 @@ int uri_reslove(const char *uri, uri_field_t *field)
                 memcpy(field->host, s, len);
                 field->host[len] = '\0';
 
-            GET_PORT:
+            URI_GET_PORT:
                 /* 提取端口号 */
                 ++ch;
                 s = ch;
@@ -322,7 +323,7 @@ int uri_reslove(const char *uri, uri_field_t *field)
                             len : sizeof(field->host) - 1;
                 memcpy(field->host, s, len);
                 field->host[len] = '\0';
-                field->port = 80;   /* 默认值 */
+                field->port = URI_DEF_PORT;   /* 默认值 */
                 snprintf(field->path, sizeof(field->path), "%s", ch);
                 return 0;
             }
@@ -336,7 +337,7 @@ int uri_reslove(const char *uri, uri_field_t *field)
         else if (isdigit(*(ch + 1)))
         {
             /* 设置协议(默认:HTTP) */
-            snprintf(field->protocol, sizeof(field->protocol), "http");
+            snprintf(field->protocol, sizeof(field->protocol), "%s", URI_DEF_PROTOCOL);
 
             /* 提取域名 */
             s = field->uri;
@@ -347,7 +348,7 @@ int uri_reslove(const char *uri, uri_field_t *field)
             field->host[len] = '\0';
 
             /* 提取端口号 */
-            goto GET_PORT;
+            goto URI_GET_PORT;
         }
 
         return -1; /* 格式有误 */
@@ -356,9 +357,9 @@ int uri_reslove(const char *uri, uri_field_t *field)
     else if ('/' == *ch)
     {
         /* 设置协议(默认:HTTP) */
-        snprintf(field->protocol, sizeof(field->protocol), "http");
+        snprintf(field->protocol, sizeof(field->protocol), "%s", URI_DEF_PROTOCOL);
 
-        goto GET_HOST;
+        goto URI_GET_HOST;
     }
 
     return -1;
