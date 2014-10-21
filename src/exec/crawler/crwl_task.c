@@ -140,7 +140,7 @@ int crwl_task_down_webpage_by_uri(
     memset(&field, 0, sizeof(field));
 
     /* 解析URI字串 */
-    if(uri_reslove(args->uri, &field))
+    if(0 != uri_reslove(args->uri, &field))
     {
         log_error(worker->log, "Reslove uri [%d] failed!", args->uri);
         return CRWL_ERR;

@@ -407,7 +407,7 @@ static int crwl_parser_deep_hdl(crwl_parser_t *parser, gumbo_result_t *result)
     while (NULL != node)
     {
         /* 1.1 确认URI的合法性 */
-        if (uri_reslove(node->data, &field))
+        if (0 != uri_reslove(node->data, &field))
         {
             log_error(parser->log, "Uri [%s] is invalid!", uri);
             node = node->next;
