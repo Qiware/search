@@ -176,6 +176,7 @@ int crwl_task_down_webpage_by_uri(
     memset(sck, 0, sizeof(crwl_worker_socket_t));
 
     sck->sckid = fd;
+    sck->crtm = ctm;
     sck->rdtm = ctm;
     sck->wrtm = ctm;
     sck->read.addr = sck->recv;
