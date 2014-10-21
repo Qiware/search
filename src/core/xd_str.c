@@ -208,6 +208,7 @@ int uri_reslove(const char *uri, uri_field_t *field)
     
     /* 2. 从URI中提取域名、端口、路径等信息 */
     ch = field->uri;
+    s = ch;
 
     /* 判断是否有协议(http:// | https:// | ftp:// ...) */
     while ('\0' != *ch)
@@ -355,6 +356,11 @@ int uri_reslove(const char *uri, uri_field_t *field)
     /* 2. 无协议 且 无端口号 */
     else if ('/' == *ch)
     {
+        if (s == ch)
+        {
+            return -1;  /* 此URL为相对地址: /Default.asp?opt=query&tel=123 */
+        }
+
         /* 设置协议(默认:HTTP) */
         snprintf(field->protocol, sizeof(field->protocol), "http");
 
