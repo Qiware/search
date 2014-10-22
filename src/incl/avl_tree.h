@@ -32,13 +32,14 @@ typedef enum
 /* 节点结构 */
 typedef struct _node_t
 {
-    struct _node_t *parent;     /* 父节点 */
-    struct _node_t *lchild;     /* 左孩子 */
-    struct _node_t *rchild;     /* 右孩子 */
-    int key;                    /* 节点值: 可根据实际情况设置数据类型 */
+    int key;                    /* 节点值 */
     int bf;                     /* 平衡因子 */
 
     void *data;                 /* 附加数据 */
+
+    struct _node_t *parent;     /* 父节点 */
+    struct _node_t *lchild;     /* 左孩子 */
+    struct _node_t *rchild;     /* 右孩子 */
 } avl_node_t;
 
 /* 树结构 */

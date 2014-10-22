@@ -6,6 +6,7 @@
 *.htm
 *.list
 *.info
+src/demo/*
 bin/*
 lib/*
 tmp/*
@@ -13,4 +14,3 @@ temp/*
 tags
 stderr
 cscope.*
-src/demo
