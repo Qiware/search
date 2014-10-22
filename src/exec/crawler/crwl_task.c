@@ -130,13 +130,14 @@ void crwl_task_queue_destroy(crwl_task_queue_t *tq)
 int crwl_task_down_webpage_by_uri(
         crwl_worker_t *worker, const crwl_task_down_webpage_by_uri_t *args)
 {
-    int ret, fd;
+    int ret, fd, ip_idx;
     uri_field_t field;
     time_t ctm = time(NULL);
     crwl_worker_socket_t *sck;
-    char ipaddr[IP_ADDR_MAX_LEN];
     struct addrinfo *addrinfo, *curr;
     struct sockaddr_in *sockaddr;
+    avl_unique_t unique;
+    crwl_domain_t *domain;
 
     memset(&field, 0, sizeof(field));
 
@@ -148,26 +149,68 @@ int crwl_task_down_webpage_by_uri(
     }
    
     /* 1. 通过URL获取WEB服务器信息 */
-    if (0 != getaddrinfo(field.host, NULL, NULL, &addrinfo))
+    unique.data = field.host;
+    unique.len = strlen(field.host);
+
+    domain = hash_tab_search(worker->ctx->domain, &unique);
+    if (NULL == domain)
     {
-        log_error(worker->log, "Get address info failed! uri:%s host:%s port:%d",
-                args->uri, field.host, field.port);
-        return CRWL_OK;
+        if (0 != getaddrinfo(field.host, NULL, NULL, &addrinfo))
+        {
+            log_error(worker->log, "Get address info failed! uri:%s host:%s port:%d",
+                    args->uri, field.host, field.port);
+            return CRWL_ERR;
+        }
+
+        domain = (crwl_domain_t *)calloc(1, sizeof(crwl_domain_t));
+        if (NULL == domain)
+        {
+            log_error(worker->log, "errmsg:[%d] %s!", errno, strerror(errno));
+            return CRWL_ERR;
+        }
+
+        snprintf(domain->host, sizeof(domain->host), "%s", field.host);
+        domain->ip_num = 0;
+
+        curr = addrinfo;
+        while (NULL != curr
+            && domain->ip_num < CRWL_IP_MAX_NUM)
+        {
+            sockaddr = (struct sockaddr_in *)curr->ai_addr;
+
+            inet_ntop(AF_INET,
+                    &sockaddr->sin_addr.s_addr,
+                    domain->ip[domain->ip_num],
+                    sizeof(domain->ip[domain->ip_num]));
+            ++domain->ip_num;
+
+            curr = curr->ai_next;
+        }
+
+        ret = hash_tab_insert(worker->ctx->domain, &unique, domain);
+        if (0 != ret)
+        {
+            log_error(worker->log, "Insert into hash table failed!");
+            return CRWL_ERR;
+        }
     }
 
-    curr = addrinfo;
-    sockaddr = (struct sockaddr_in *)curr->ai_addr;
+    if (0 == domain->ip_num)
+    {
+        log_error(worker->log, "IP number is zero!");
+        return CRWL_ERR;
+    }
 
-    inet_ntop(AF_INET, &sockaddr->sin_addr.s_addr, ipaddr, sizeof(ipaddr));
+    ip_idx = random() % domain->ip_num;
 
-    freeaddrinfo(addrinfo);
+    /* freeaddrinfo(addrinfo); */
 
     /* 2. 连接远程WEB服务器 */
-    fd = tcp_connect_ex2(ipaddr, args->port);
+    fd = tcp_connect_ex2(domain->ip[ip_idx], args->port);
     if (fd < 0)
     {
         log_error(worker->log, "errmsg:[%d] %s! ipaddr:%s uri:%s",
-            errno, strerror(errno), ipaddr, args->uri);
+            errno, strerror(errno), domain->ip[ip_idx], args->uri);
         return CRWL_OK;
     }
 
@@ -188,7 +231,7 @@ int crwl_task_down_webpage_by_uri(
     sck->read.addr = sck->recv;
 
     snprintf(sck->webpage.uri, sizeof(sck->webpage.uri), "%s", args->uri);
-    snprintf(sck->webpage.ipaddr, sizeof(sck->webpage.ipaddr), "%s", ipaddr);
+    snprintf(sck->webpage.ipaddr, sizeof(sck->webpage.ipaddr), "%s", domain->ip[ip_idx]);
     sck->webpage.port = args->port;
 
     ret = crwl_worker_add_sock(worker, sck);

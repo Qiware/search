@@ -44,7 +44,7 @@ uint32_t hash_time33(const char *str)
  **     该算法特点: 算法简单、性能高效、散列效果佳.
  ** Author: # Qifeng.zou # 2014.04.18 #
  ******************************************************************************/
-uint32_t hash_time33_ex(const char *addr, int len)
+uint32_t hash_time33_ex(const void *addr, size_t len)
 {
     uint32_t hash = 5381;
     const char *p = addr;

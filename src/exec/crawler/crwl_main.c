@@ -17,6 +17,7 @@
 
 #include "log.h"
 #include "lock.h"
+#include "hash.h"
 #include "common.h"
 #include "crawler.h"
 #include "syscall.h"
@@ -326,7 +327,17 @@ crwl_cntx_t *crwl_cntx_init(const crwl_conf_t *conf, log_cycle_t *log)
         return NULL;
     }
 
-    /* 3. 创建Worker线程池 */
+    /* 3. 新建域名表 */
+    ctx->domain = hash_tab_init(10, hash_time33_ex, NULL);
+    if (NULL == ctx->domain)
+    {
+        crwl_slab_destroy(ctx);
+        free(ctx);
+        log_error(log, "Initialize hash table failed!");
+        return NULL;
+    }
+
+    /* 4. 创建Worker线程池 */
     ret = crwl_init_workers(ctx);
     if (CRWL_OK != ret)
     {

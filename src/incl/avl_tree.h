@@ -35,8 +35,8 @@ typedef struct
     size_t len;
 } avl_unique_t;
 
-typedef uint32_t (*avl_key_cb_t)(void *unique, size_t len);
-typedef int (*avl_cmp_cb_t)(void *data1, void *data2);
+typedef uint32_t (*avl_key_cb_t)(const void *unique, size_t len);
+typedef int (*avl_cmp_cb_t)(const void *data1, const void *data2);
 
 /* 节点结构 */
 typedef struct _node_t

@@ -82,6 +82,7 @@ hash_tab_t *hash_tab_init(int num, avl_key_cb_t key, avl_cmp_cb_t cmp)
         hash->tree[idx]->cmp = cmp;
     }
 
+    hash->num = num;
     hash->key = key;
     hash->cmp = cmp;
 

@@ -18,6 +18,7 @@
 #include "queue.h"
 #include "common.h"
 #include "crawler.h"
+#include "hash_tab.h"
 #include "crwl_task.h"
 #include "thread_pool.h"
 
@@ -99,7 +100,7 @@ typedef struct
     char ipaddr[IP_ADDR_MAX_LEN];           /* Redis服务IP */
     int port;                               /* Redis服务端口 */
     char undo_taskq[QUEUE_NAME_MAX_LEN];    /* Undo任务队列名 */
-    char done_hash_tab[256];                /* Done哈希表名 */
+    char done_hash_tab[TABLE_NAME_MAX_LEN]; /* Done哈希表名 */
 } crwl_redis_conf_t;
 
 /* 爬虫配置信息 */
@@ -113,6 +114,16 @@ typedef struct
     crwl_worker_conf_t worker;              /* Worker配置信息 */
 } crwl_conf_t;
 
+/* 域名信息 */
+typedef struct
+{
+    char host[URI_MAX_LEN];                 /* Host信息(域名) */
+
+#define CRWL_IP_MAX_NUM  (10)
+    char ip[CRWL_IP_MAX_NUM][IP_ADDR_MAX_LEN];  /* 域名对应的IP地址 */
+    int ip_num;                             /* IP地址数 */
+} crwl_domain_t;
+
 /* 爬虫全局信息 */
 typedef struct
 {
@@ -120,6 +131,7 @@ typedef struct
     log_cycle_t *log;                       /* 日志对象 */
 
     thread_pool_t *workers;                 /* 线程池对象 */
+    hash_tab_t *domain;                     /* 域名表: 通过域名找到IP地址 */
 
     pthread_rwlock_t slab_lock;             /* 内存池锁 */
     eslab_pool_t slab;                      /* 内存池 */
