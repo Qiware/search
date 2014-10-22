@@ -10,8 +10,7 @@ include $(PROJ)/make/build.mak
 
 INCLUDE = -I. \
 			-I./incl \
-			-I$(PROJ)/src/incl \
-			-I$(PROJ)/src/gumbo
+			-I$(PROJ)/src/incl
 LIBS_PATH = -L$(PROJ)/lib -L/usr/lib/hiredis
 LIBS = -lpthread -lhiredis -lxd_core -lxd_http -lxd_gumbo_ex
 
