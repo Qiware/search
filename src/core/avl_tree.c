@@ -675,11 +675,11 @@ int avl_left_balance(avl_tree_t *tree, avl_node_t *node)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.12 #
  ******************************************************************************/
-const avl_node_t *avl_search(const avl_tree_t *tree, avl_unique_t *unique)
+avl_node_t *avl_search(avl_tree_t *tree, avl_unique_t *unique)
 {
     int ret;
     uint32_t key;
-    const avl_node_t *node = tree->root;
+    avl_node_t *node = tree->root;
 
     key = tree->key(unique->data, unique->len);
 

@@ -102,12 +102,12 @@ typedef struct
     } \
 } 
 
-extern int avl_creat(avl_tree_t **tree, avl_key_cb_t key, avl_cmp_cb_t cmp);
-extern int avl_insert(avl_tree_t *tree, avl_unique_t *unique, void *data);
-extern const avl_node_t *avl_search(const avl_tree_t *tree, avl_unique_t *unique);
-extern int avl_delete(avl_tree_t *tree, avl_unique_t *unique, void **data);
-extern int avl_print(avl_tree_t *tree);
-extern void avl_destroy(avl_tree_t **tree);
+int avl_creat(avl_tree_t **tree, avl_key_cb_t key, avl_cmp_cb_t cmp);
+int avl_insert(avl_tree_t *tree, avl_unique_t *unique, void *data);
+avl_node_t *avl_search(avl_tree_t *tree, avl_unique_t *unique);
+int avl_delete(avl_tree_t *tree, avl_unique_t *unique, void **data);
+int avl_print(avl_tree_t *tree);
+void avl_destroy(avl_tree_t **tree);
 
 /* 测试使用 */
 void avl_assert(const avl_node_t *node);
