@@ -1,26 +1,28 @@
 /******************************************************************************
  ** Coypright(C) 2014-2024 Xundao technology Co., Ltd
  **
- ** 文件名: hash_array.c
+ ** 文件名: hash_tab.c
  ** 版本号: 1.0
- ** 描  述: 哈希数组模块
- **         1. 使用哈希数组存储数据
- **         2. 使用红黑树解决数据冲突
- ** 作  者: # Qifeng.zou # 2014.09.18 #
+ ** 描  述: 哈希表模块
+ **         1. 使用哈希数组分解锁的压力
+ **         2. 使用平衡树解决数据查找的性能问题
+ ** 作  者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
 
-#include "hash_array.h"
+#include "log.h"
+#include "hash_tab.h"
 
 /******************************************************************************
- **函数名称: hash_array_init
- **功    能: 构建哈希数组
+ **函数名称: hash_tab_init
+ **功    能: 构建哈希表
  **输入参数:
  **     num: 数组长度
  **     key: 生成KEY的函数
+ **     cmp: 数据比较函数
  **输出参数: NONE
  **返    回: 哈希数组地址
  **实现描述: 
@@ -28,36 +30,26 @@
  **     2. 创建内存池
  **     3. 创建数组空间
  **注意事项: 
- **作    者: # Qifeng.zou # 2014.09.18 #
+ **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
-hash_array_t *hash_array_init(int num, uint32_t (*key)(const char *str, size_t len))
+hash_tab_t *hash_tab_init(int num, avl_key_cb_t key, avl_cmp_cb_t cmp)
 {
     int ret, idx;
-    hash_array_t *hash;
+    hash_tab_t *hash;
         
 
     /* 1. 创建哈希数组 */
-    hash = (hash_array_t *)calloc(1, sizeof(hash_array_t));
+    hash = (hash_tab_t *)calloc(1, sizeof(hash_tab_t));
     if (NULL == hash)
     {
         log2_error("errmsg:[%d] %s!", errno, strerror(errno));
         return NULL;
     }
 
-    /* 2. 创建内存池 */
-    ret = eslab_init(&hash->pool, 32 * KB);
-    if (0 != ret)
-    {
-        free(hash);
-        log2_error("Initialize slab failed!");
-        return NULL;
-    }
-
     /* 3. 创建数组空间 */
-    hash->node = (hash_node_t *)eslab_alloc(&hash->pool, num * sizeof(hash_node_t));
-    if (NULL == hash->node)
+    hash->tree = (avl_tree_t **)calloc(num, sizeof(avl_tree_t *));
+    if (NULL == hash->tree)
     {
-        eslab_destroy(&hash->pool);
         free(hash);
         log2_error("Alloc memory from slab failed!");
         return NULL;
@@ -65,16 +57,23 @@ hash_array_t *hash_array_init(int num, uint32_t (*key)(const char *str, size_t l
 
     for (idx=0; idx<num; ++idx)
     {
-        hash->node[idx].tree = NULL;
+        ret = avl_creat(&hash->tree[idx], key, cmp);
+        if (0 != ret)
+        {
+            free(hash->tree);
+            free(hash);
+            return NULL;
+        }
     }
 
     hash->key = key;
+    hash->cmp = cmp;
 
     return hash;
 }
 
 /******************************************************************************
- **函数名称: hash_array_insert
+ **函数名称: hash_tab_insert
  **功    能: 插入哈希成员
  **输入参数:
  **     hash: 哈希数组
@@ -84,27 +83,21 @@ hash_array_t *hash_array_init(int num, uint32_t (*key)(const char *str, size_t l
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
- **作    者: # Qifeng.zou # 2014.09.18 #
+ **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
-int hash_array_insert(hash_array_t *hash, int key, void *data)
+int hash_tab_insert(hash_tab_t *hash, avl_unique_t *unique, void *data)
 {
-    int idx;
+    uint32_t key, idx;
+
+    key = hash->key(unique->data, unique->len);
 
     idx = key % hash->num;
-    if (NULL == hash->node[idx].tree)
-    {
-        hash->node[idx].tree = rbt_creat();
-        if (NULL == hash->node[idx].tree)
-        {
-            return -1;
-        }
-    }
 
-    return rbt_insert(hash->node[idx].tree, key);
+    return avl_insert(hash->tree[idx], unique, data);
 }
 
 /******************************************************************************
- **函数名称: hash_array_search
+ **函数名称: hash_tab_search
  **功    能: 查找哈希成员
  **输入参数:
  **     hash: 哈希数组
@@ -113,20 +106,18 @@ int hash_array_insert(hash_array_t *hash, int key, void *data)
  **返    回: 数据地址
  **实现描述: 
  **注意事项: 
- **作    者: # Qifeng.zou # 2014.09.18 #
+ **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
-void *hash_array_search(hash_array_t *hash, int key)
+void *hash_tab_search(hash_tab_t *hash, avl_unique_t *unique)
 {
-    int idx;
-    rbt_node_t *node;
+    uint32_t key, idx;
+    avl_node_t *node;
+
+    key = hash->key(unique->data, unique->len);
 
     idx = key % hash->num;
-    if (NULL == hash->node[idx].tree)
-    {
-        return NULL;
-    }
 
-    node = rbt_search(hash->node[idx].tree, key);
+    node = avl_search(hash->tree[idx], unique);
     if (NULL == node)
     {
         return NULL;
@@ -136,7 +127,7 @@ void *hash_array_search(hash_array_t *hash, int key)
 }
 
 /******************************************************************************
- **函数名称: hash_array_delete
+ **函数名称: hash_tab_delete
  **功    能: 删除哈希成员
  **输入参数:
  **     hash: 哈希数组
@@ -146,35 +137,24 @@ void *hash_array_search(hash_array_t *hash, int key)
  **实现描述: 
  **注意事项: 
  **     注意: 返回地址的内存空间由外部释放
- **作    者: # Qifeng.zou # 2014.09.18 #
+ **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
-void *hash_array_delete(hash_array_t *hash, int key)
+void *hash_tab_delete(hash_tab_t *hash, avl_unique_t *unique)
 {
-    int idx;
     void *data;
-    rbt_node_t *node;
+    uint32_t key, idx;
+
+    key = hash->key(unique->data, unique->len);
 
     idx = key % hash->num;
-    if (NULL == hash->node[idx].tree)
-    {
-        return NULL;
-    }
 
-    node = rbt_search(hash->node[idx].tree, key);
-    if (NULL == node)
-    {
-        return NULL;
-    }
-
-    data = node->data;
-
-    rbt_delete(hash->node[idx].tree, key);
+    avl_delete(hash->tree[idx], unique, &data);
 
     return data;
 }
 
 /******************************************************************************
- **函数名称: hash_array_destroy
+ **函数名称: hash_tab_destroy
  **功    能: 销毁哈希数组(未完成)
  **输入参数:
  **     hash: 哈希数组
@@ -183,23 +163,17 @@ void *hash_array_delete(hash_array_t *hash, int key)
  **实现描述: 
  **注意事项: 
  **     注意: 该函数还未完成: 未释放DATA空间
- **作    者: # Qifeng.zou # 2014.09.18 #
+ **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
-int hash_array_destroy(hash_array_t *hash)
+int hash_tab_destroy(hash_tab_t *hash)
 {
-    int idx;
+    uint32_t idx;
 
     for (idx=0; idx<hash->num; ++idx)
     {
-        if (NULL == hash->node[idx].tree)
-        {
-            continue;
-        }
-
-        rbt_destroy(&hash->node[idx].tree);
+        avl_destroy(&hash->tree[idx]);
     }
 
-    eslab_destroy(&hash->pool);
     free(hash);
 
     return 0;

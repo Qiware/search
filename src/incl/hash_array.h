@@ -1,6 +1,7 @@
 #if !defined(__HASH_ARRAY_H__)
 #define __HASH_ARRAY_H__
 
+#include "slab.h"
 #include "rb_tree.h"
 
 /* 哈希结点 */
