@@ -132,10 +132,11 @@ int crwl_task_down_webpage_by_uri(
 {
     int ret, fd;
     uri_field_t field;
-    struct hostent *host;
     time_t ctm = time(NULL);
     crwl_worker_socket_t *sck;
     char ipaddr[IP_ADDR_MAX_LEN];
+    struct addrinfo *addrinfo, *curr;
+    struct sockaddr_in *sockaddr;
 
     memset(&field, 0, sizeof(field));
 
@@ -147,14 +148,19 @@ int crwl_task_down_webpage_by_uri(
     }
    
     /* 1. 通过URL获取WEB服务器信息 */
-    host = gethostbyname(field.host);
-    if (NULL == host)
+    if (0 != getaddrinfo(field.host, NULL, NULL, &addrinfo))
     {
-        log_error(worker->log, "Get host by name failed! uri:%s", args->uri);
+        log_error(worker->log, "Get address info failed! uri:%s host:%s port:%d",
+                args->uri, field.host, field.port);
         return CRWL_OK;
     }
 
-    inet_ntop(AF_INET, host->h_addr, ipaddr, sizeof(ipaddr));
+    curr = addrinfo;
+    sockaddr = (struct sockaddr_in *)curr->ai_addr;
+
+    inet_ntop(AF_INET, &sockaddr->sin_addr.s_addr, ipaddr, sizeof(ipaddr));
+
+    freeaddrinfo(addrinfo);
 
     /* 2. 连接远程WEB服务器 */
     fd = tcp_connect_ex2(ipaddr, args->port);
