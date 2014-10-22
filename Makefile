@@ -21,9 +21,8 @@ export GCC_LOG = ${PROJ_LOG}/gcc.log
 # 编译目录(注：编译按顺序执行　注意库之间的依赖关系)
 #DIR=`find ./src -type d`
 DIR := "src/core"
-DIR += "src/http"
-DIR += "src/gumbo"
-DIR += "src/db/redis"
+DIR += "src/comm/http"
+DIR += "src/comm/gumbo"
 
 DIR += "src/exec/crawler/"
 #DIR += "src/exec/parser/"
