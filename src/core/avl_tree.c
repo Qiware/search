@@ -12,15 +12,19 @@
  ******************************************************************************/
 #include "avl_tree.h"
 
-static int _avl_insert(avl_tree_t *tree, avl_node_t *node, int key, bool *taller, void *data);
+static int _avl_insert(avl_tree_t *tree, avl_node_t *node,
+        uint32_t key, avl_unique_t *unique, bool *taller, void *data);
 static void _avl_destroy(avl_node_t *node);
 
 static int avl_right_balance(avl_tree_t *tree, avl_node_t *node);
 static int avl_left_balance(avl_tree_t *tree, avl_node_t *node);
-static int avl_insert_right(avl_tree_t *tree, avl_node_t *node, int key, bool *taller, void *data);
-static int avl_insert_left(avl_tree_t *tree, avl_node_t *node, int key, bool *taller, void *data);
+static int avl_insert_right(avl_tree_t *tree, avl_node_t *node,
+            uint32_t key, avl_unique_t *unique, bool *taller, void *data);
+static int avl_insert_left(avl_tree_t *tree, avl_node_t *node,
+            uint32_t key, avl_unique_t *unique, bool *taller, void *data);
 
-static int _avl_delete(avl_tree_t *tree, avl_node_t *node, int key, bool *lower, void **data);
+static int _avl_delete(avl_tree_t *tree, avl_node_t *node,
+            uint32_t key, avl_unique_t *unique, bool *lower, void **data);
 static int avl_replace_and_delete(avl_tree_t *tree, avl_node_t *node, avl_node_t *replace, bool *lower);
 static int avl_delete_left_balance(avl_tree_t *tree, avl_node_t *node, bool *lower);
 static int avl_delete_right_balance(avl_tree_t *tree, avl_node_t *node, bool *lower);
@@ -31,21 +35,24 @@ static int avl_delete_right_balance(avl_tree_t *tree, avl_node_t *node, bool *lo
  **输入参数: 
  **     tree: 平衡二叉树
  **输出参数: NONE
- **返    回: AVL_SUCCESS:成功 AVL_FAILED:失败
+ **返    回: AVL_OK:成功 AVL_ERR:失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.19 #
  ******************************************************************************/
-int avl_creat(avl_tree_t **tree)
+int avl_creat(avl_tree_t **tree, avl_key_cb_t key, avl_cmp_cb_t cmp)
 {
     *tree = (avl_tree_t *)calloc(1, sizeof(avl_tree_t));
     if (NULL == *tree)
     {
-        return AVL_FAILED;
+        return AVL_ERR;
     }
 
     (*tree)->root = NULL;
-    return AVL_SUCCESS;
+    (*tree)->key = key;
+    (*tree)->cmp = cmp;
+    
+    return AVL_OK;
 }
 
 /******************************************************************************
@@ -56,7 +63,7 @@ int avl_creat(avl_tree_t **tree)
  **     node: 新结点
  **     data: 附加数据
  **输出参数: NONE
- **返    回: AVL_SUCCESS:成功 AVL_NODE_EXIST:已存在 AVL_FAILED:失败
+ **返    回: AVL_OK:成功 AVL_NODE_EXIST:已存在 AVL_ERR:失败
  **实现描述: 
  **     1. 当树的根结点为空时，则直接创建根结点，并赋值
  **     2. 当树的根结点不为空时，则调用_insert()进行处理
@@ -65,10 +72,13 @@ int avl_creat(avl_tree_t **tree)
  **     2. 如果要重置data值，请先执行删除操作.
  **作    者: # Qifeng.zou # 2013.12.12 #
  ******************************************************************************/
-int avl_insert(avl_tree_t *tree, int key, void *data)
+int avl_insert(avl_tree_t *tree, avl_unique_t *unique, void *data)
 {
+    uint32_t key;
     bool taller = false;
     avl_node_t *node = tree->root;
+
+    key = tree->key(unique->data, unique->len);
 
     /* 如果为空树，则创建第一个结点 */
     if (NULL == node)
@@ -76,7 +86,7 @@ int avl_insert(avl_tree_t *tree, int key, void *data)
         node = (avl_node_t *)calloc(1, sizeof(avl_node_t));
         if (NULL == node)
         {
-            return AVL_FAILED;
+            return AVL_ERR;
         }
         node->parent = NULL;
         node->rchild = NULL;
@@ -85,11 +95,20 @@ int avl_insert(avl_tree_t *tree, int key, void *data)
         node->key = key;
         node->data = data;
         
+        node->unique.data = malloc(unique->len);
+        if (NULL == node->unique.data)
+        {
+            free(node);
+            return AVL_ERR;
+        }
+        memcpy(node->unique.data, unique->data, unique->len);
+        node->unique.len = unique->len;
+        
         tree->root = node;
-        return AVL_SUCCESS;
+        return AVL_OK;
     }
 
-    return _avl_insert(tree, node, key, &taller, data);
+    return _avl_insert(tree, node, key, unique, &taller, data);
 }
 
 /******************************************************************************
@@ -102,7 +121,7 @@ int avl_insert(avl_tree_t *tree, int key, void *data)
  **     data: 附加数据
  **输出参数: 
  **     taller: 是否增高
- **返    回: AVL_SUCCESS:成功 AVL_NODE_EXIST:已存在 AVL_FAILED:失败
+ **返    回: AVL_OK:成功 AVL_NODE_EXIST:已存在 AVL_ERR:失败
  **实现描述: 
  **     1. 当结点关键字等于key值时，结点已存在
  **     2. 当结点关键字小于key值时，插入右子树
@@ -110,20 +129,34 @@ int avl_insert(avl_tree_t *tree, int key, void *data)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.13 #
  ******************************************************************************/
-static int _avl_insert(avl_tree_t *tree, avl_node_t *node, int key, bool *taller, void *data)
+static int _avl_insert(avl_tree_t *tree, avl_node_t *node,
+        uint32_t key, avl_unique_t *unique, bool *taller, void *data)
 {
+    int ret;
+    
     if (key == node->key)        /* 结点已存在 */
     {
-        *taller = false;
-        return AVL_NODE_EXIST;
+        ret = memcmp(unique, node->unique,
+                (unique->len > node->unique.len)? unique->len : node->unique.len);
+        if (0 == ret)
+        {
+            *taller = false;
+            return AVL_NODE_EXIST;
+        }
+        else if (ret < 0)
+        {
+            return avl_insert_left(tree, node, key, unique, taller, data);
+        }
+        
+        return avl_insert_right(tree, node, key, unique, taller, data);
     }
     else if (key > node->key)    /* 插入右子树 */
     {
-        return avl_insert_right(tree, node, key, taller, data);
+        return avl_insert_right(tree, node, key, unique, taller, data);
     }
 
     /* 插入左子树 */
-    return avl_insert_left(tree, node, key, taller, data);
+    return avl_insert_left(tree, node, key, unique, taller, data);
 }
 
 /******************************************************************************
@@ -135,13 +168,13 @@ static int _avl_insert(avl_tree_t *tree, avl_node_t *node, int key, bool *taller
  **     key: 需被插入的key
  **输出参数: 
  **     taller: 是否增高
- **返    回: AVL_SUCCESS:成功 AVL_NODE_EXIST:已存在 AVL_FAILED:失败
+ **返    回: AVL_OK:成功 AVL_NODE_EXIST:已存在 AVL_ERR:失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.13 #
  ******************************************************************************/
-static int avl_insert_right(
-    avl_tree_t *tree, avl_node_t *node, int key, bool *taller, void *data)
+static int avl_insert_right(avl_tree_t *tree, avl_node_t *node,
+        uint32_t key, avl_unique_t *unique, bool *taller, void *data)
 {
     int ret = -1;
     avl_node_t *add = NULL;
@@ -153,7 +186,7 @@ static int avl_insert_right(
         {
             *taller = false;
             fprintf(stderr, "[%s][%d] Calloc failed!\n", __FILE__, __LINE__);
-            return AVL_FAILED;
+            return AVL_ERR;
         }
 
         add->lchild = NULL;
@@ -162,6 +195,15 @@ static int avl_insert_right(
         add->key = key;
         add->bf = AVL_EH;
         add->data = data;
+
+        add->unique.data = malloc(unique->len);
+        if (NULL == add->unique.data)
+        {
+            free(add);
+            return AVL_ERR;
+        }
+        memcpy(add->unique.data, unique->data, unique->len);
+        add->unique.len = unique->len;
         
         node->rchild = add;
         *taller = true;     /* node的高度增加了 */
@@ -169,7 +211,7 @@ static int avl_insert_right(
     else
     {
         ret = _avl_insert(tree, node->rchild, key, taller, data);
-        if ((AVL_SUCCESS != ret))
+        if ((AVL_OK != ret))
         {
             return ret;
         }
@@ -177,7 +219,7 @@ static int avl_insert_right(
 
     if (false == *taller)
     {
-        return AVL_SUCCESS;
+        return AVL_OK;
     }
 
     /* 右增高: 进行平衡化处理 */
@@ -187,23 +229,23 @@ static int avl_insert_right(
         {
             node->bf = AVL_EH;
             *taller = false;
-            return AVL_SUCCESS;
+            return AVL_OK;
         }
         case AVL_EH:    /* 等高: 右子树增高 不会导致失衡 */
         {
             node->bf = AVL_RH;
             *taller = true;
-            return AVL_SUCCESS;
+            return AVL_OK;
         }
         case AVL_RH:    /* 右高: 右子树增高 导致失衡 */
         {
             avl_right_balance(tree, node);
             *taller = false;
-            return AVL_SUCCESS;
+            return AVL_OK;
         }
     }
 
-    return AVL_FAILED;
+    return AVL_ERR;
 }
 
 /******************************************************************************
@@ -215,13 +257,13 @@ static int avl_insert_right(
  **     key: 需被插入的key
  **输出参数: 
  **     taller: 是否增高
- **返    回: AVL_SUCCESS:成功 AVL_NODE_EXIST:已存在 AVL_FAILED:失败
+ **返    回: AVL_OK:成功 AVL_NODE_EXIST:已存在 AVL_ERR:失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.13 #
  ******************************************************************************/
-static int avl_insert_left(
-    avl_tree_t *tree, avl_node_t *node, int key, bool *taller, void *data)
+static int avl_insert_left(avl_tree_t *tree, avl_node_t *node,
+        uint32_t key, avl_unique_t *unique, bool *taller, void *data)
 {
     int ret = -1;
     avl_node_t *add = NULL;
@@ -233,7 +275,7 @@ static int avl_insert_left(
         {
             *taller = false;
             fprintf(stderr, "[%s][%d] Calloc failed!\n", __FILE__, __LINE__);
-            return AVL_FAILED;
+            return AVL_ERR;
         }
 
         add->lchild = NULL;
@@ -242,6 +284,15 @@ static int avl_insert_left(
         add->key = key;
         add->bf = AVL_EH;
         add->data = data;
+
+        add->unique.data = malloc(unique->len);
+        if (NULL == add->unique.data)
+        {
+            free(add);
+            return AVL_ERR;
+        }
+        memcpy(add->unique.data, unique->data, unique->len);
+        add->unique.len = unique->len;
         
         node->lchild = add;
         *taller = true;     /* node的高度增加了 */
@@ -249,7 +300,7 @@ static int avl_insert_left(
     else
     {
         ret = _avl_insert(tree, node->lchild, key, taller, data);
-        if (AVL_SUCCESS != ret)
+        if (AVL_OK != ret)
         {
             return ret;
         }
@@ -257,7 +308,7 @@ static int avl_insert_left(
 
     if (false == *taller)
     {
-        return AVL_SUCCESS;
+        return AVL_OK;
     }
 
     /* 左增高: 进行平衡化处理 */
@@ -267,23 +318,23 @@ static int avl_insert_left(
         {
             node->bf = AVL_EH;
             *taller = false;
-            return AVL_SUCCESS;
+            return AVL_OK;
         }
         case AVL_EH:    /* 等高: 左子树增高 不会导致失衡 */
         {
             node->bf = AVL_LH;
             *taller = true;
-            return AVL_SUCCESS;
+            return AVL_OK;
         }
         case AVL_LH:    /* 左高: 左子树增高 导致失衡 */
         {
             avl_left_balance(tree, node);
             *taller = false;
-            return AVL_SUCCESS;
+            return AVL_OK;
         }
     }
 
-    return AVL_FAILED;
+    return AVL_ERR;
 }
 
 /******************************************************************************
@@ -293,7 +344,7 @@ static int avl_insert_left(
  **     tree: 平衡二叉树
  **     node: 右边失去平衡的结点
  **输出参数: NONE
- **返    回: AVL_SUCCESS:成功 AVL_FAILED:失败
+ **返    回: AVL_OK:成功 AVL_ERR:失败
  **实现描述: RR型
  **              A                  C
  **             / \                / \
@@ -320,7 +371,7 @@ static int avl_rr_balance(avl_tree_t *tree, avl_node_t *node)
 
     avl_replace_child(tree, parent, node, rchild);
 
-    return AVL_SUCCESS;
+    return AVL_OK;
 }
 
 /******************************************************************************
@@ -330,7 +381,7 @@ static int avl_rr_balance(avl_tree_t *tree, avl_node_t *node)
  **     tree: 平衡二叉树
  **     node: 右边失去平衡的结点
  **输出参数: NONE
- **返    回: AVL_SUCCESS:成功 AVL_FAILED:失败
+ **返    回: AVL_OK:成功 AVL_ERR:失败
  **实现描述: 
  ** 场景1: RL型
  **              A                    B
@@ -386,7 +437,7 @@ int avl_rl_balance(avl_tree_t *tree, avl_node_t *node)
 
     avl_replace_child(tree, parent, node, rlchild);
     
-    return AVL_SUCCESS;
+    return AVL_OK;
 }
 
 /******************************************************************************
@@ -396,7 +447,7 @@ int avl_rl_balance(avl_tree_t *tree, avl_node_t *node)
  **     tree: 平衡二叉树
  **     node: 右边失去平衡的结点
  **输出参数: NONE
- **返    回: AVL_SUCCESS:成功 AVL_FAILED:失败
+ **返    回: AVL_OK:成功 AVL_ERR:失败
  **实现描述: 
  ** 场景1: RR型
  **              A                  C
@@ -440,7 +491,7 @@ static int avl_right_balance(avl_tree_t *tree, avl_node_t *node)
         }
     }
     
-    return AVL_FAILED;
+    return AVL_ERR;
 }
 
 /******************************************************************************
@@ -450,7 +501,7 @@ static int avl_right_balance(avl_tree_t *tree, avl_node_t *node)
  **     tree: 平衡二叉树
  **     node: 左边失去平衡的结点
  **输出参数: NONE
- **返    回: AVL_SUCCESS:成功 AVL_FAILED:失败
+ **返    回: AVL_OK:成功 AVL_ERR:失败
  **实现描述: 
  ** 场景1: LL型
  **              A                  B
@@ -478,7 +529,7 @@ int avl_ll_balance(avl_tree_t *tree, avl_node_t *node)
 
     avl_replace_child(tree, parent, node, lchild);
 
-    return AVL_SUCCESS;
+    return AVL_OK;
 }
 
 /******************************************************************************
@@ -488,7 +539,7 @@ int avl_ll_balance(avl_tree_t *tree, avl_node_t *node)
  **     tree: 平衡二叉树
  **     node: 左边失去平衡的结点
  **输出参数: NONE
- **返    回: AVL_SUCCESS:成功 AVL_FAILED:失败
+ **返    回: AVL_OK:成功 AVL_ERR:失败
  **实现描述: 
  ** 场景1: LL型
  **              A                  B
@@ -555,7 +606,7 @@ int avl_lr_balance(avl_tree_t *tree, avl_node_t *node)
 
     avl_replace_child(tree, parent, node, lrchild);
 
-    return AVL_SUCCESS;
+    return AVL_OK;
 }
 
 /******************************************************************************
@@ -565,7 +616,7 @@ int avl_lr_balance(avl_tree_t *tree, avl_node_t *node)
  **     tree: 平衡二叉树
  **     node: 左边失去平衡的结点
  **输出参数: NONE
- **返    回: AVL_SUCCESS:成功 AVL_FAILED:失败
+ **返    回: AVL_OK:成功 AVL_ERR:失败
  **实现描述: 
  ** 场景1: LL型
  **              A                  B
@@ -609,7 +660,7 @@ int avl_left_balance(avl_tree_t *tree, avl_node_t *node)
         }
     }
 
-    return AVL_FAILED;
+    return AVL_ERR;
 }
 
 /******************************************************************************
@@ -624,15 +675,32 @@ int avl_left_balance(avl_tree_t *tree, avl_node_t *node)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.12 #
  ******************************************************************************/
-const avl_node_t *avl_search(const avl_tree_t *tree, int key)
+const avl_node_t *avl_search(const avl_tree_t *tree, avl_unique_t *unique)
 {
+    int ret;
+    uint32_t key;
     const avl_node_t *node = tree->root;
+
+    key = tree->key(unique->data, unique->len);
 
     while (NULL != node)
     {
         if (node->key == key)
         {
-            return node;
+            ret = memcmp(unique->data, node->unique.data,
+                    (unique->len > node->unique.len)? unique->len : node->unique.len);
+            if (0 == ret)
+            {
+                return node;
+            }
+            else if (ret < 0)
+            {
+                node = node->lchild;
+            }
+            else
+            {
+                node = node->rchild;
+            }
         }
         else if (key < node->key)
         {
@@ -709,21 +777,24 @@ void avl_assert(const avl_node_t *node)
  **     key: 被删除的关键字
  **输出参数: 
  **     data: 附加数据
- **返    回: AVL_SUCCESS:成功 AVL_FAILED:失败
+ **返    回: AVL_OK:成功 AVL_ERR:失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.19 #
  ******************************************************************************/
-int avl_delete(avl_tree_t *tree, int key, void **data)
+int avl_delete(avl_tree_t *tree, avl_unique_t *unique, void **data)
 {
+    uint32_t key;
     bool lower = false;
+
+    key = tree->key(unique->data, unique->len);
 
     if (NULL == tree->root)
     {
-        return AVL_SUCCESS;
+        return AVL_OK;
     }
 
-    return _avl_delete(tree, tree->root, key, &lower, data);
+    return _avl_delete(tree, tree->root, key, unique, &lower, data);
 }
 
 /******************************************************************************
@@ -736,49 +807,72 @@ int avl_delete(avl_tree_t *tree, int key, void **data)
  **输出参数: 
  **     lower: 高度是否降低
  **     data: 附加数据
- **返    回: AVL_SUCCESS:成功 AVL_FAILED:失败
+ **返    回: AVL_OK:成功 AVL_ERR:失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.19 #
  ******************************************************************************/
-static int _avl_delete(avl_tree_t *tree, avl_node_t *node, int key, bool *lower, void **data)
+static int _avl_delete(avl_tree_t *tree, avl_node_t *node,
+        uint32_t key, avl_unique_t *unique, bool *lower, void **data)
 {
+    int ret;
     avl_node_t *parent = node->parent;
 
     /* 1. 查找需要被删除的结点 */
     if (key < node->key)         /* 左子树上查找 */
     {
+    AVL_LESS:
         if (NULL == node->lchild)
         {
-            return AVL_SUCCESS;
+            return AVL_OK;
         }
         
-        _avl_delete(tree, node->lchild, key, lower, data);
+        _avl_delete(tree, node->lchild, key, unique, lower, data);
         avl_assert(node);
         avl_assert(node->lchild);
         if (true == *lower)
         {
             return avl_delete_left_balance(tree, node, lower);
         }
-        return AVL_SUCCESS;
+        return AVL_OK;
     }
     else if (key > node->key)    /* 右子树上查找 */
     {
+    AVL_GREATER:
         if (NULL == node->rchild)
         {
-            return AVL_SUCCESS;
+            return AVL_OK;
         }
         
-        _avl_delete(tree, node->rchild, key, lower, data);
+        _avl_delete(tree, node->rchild, key, unique, lower, data);
         avl_assert(node);
         avl_assert(node->rchild);
         if (true == *lower)
         {
             return avl_delete_right_balance(tree, node, lower);
         }
-        return AVL_SUCCESS;
+        return AVL_OK;
+    }
+    else
+    {
+        ret = memcmp(unique->data, node->unique.data,
+                (unique->len > node->unique.len)? unique->len : node->unique.len);
+        if (0 == ret)
+        {
+            goto AVL_EQUAL;
+        }
+        else if (ret < 0)
+        {
+            goto AVL_LESS;
+        }
+        else if (ret > 0)
+        {
+            goto AVL_GREATER;
+        }
     }
 
+AVL_EQUAL:
+    
     /* 2. 已找到将被删除的结点node */
     *data = node->data;
 
@@ -791,8 +885,9 @@ static int _avl_delete(avl_tree_t *tree, avl_node_t *node, int key, bool *lower,
 
         avl_assert(parent);
         avl_assert(node->lchild);
+        free(node->unique.data);
         free(node), node = NULL;
-        return AVL_SUCCESS;
+        return AVL_OK;
     }
     /* 2.2 左子树空, 只需接它的右子树 */
     else if (NULL == node->lchild)
@@ -803,8 +898,9 @@ static int _avl_delete(avl_tree_t *tree, avl_node_t *node, int key, bool *lower,
 
         avl_assert(parent);
         avl_assert(node->rchild);
+        free(node->unique.data);
         free(node), node=NULL;
-        return AVL_SUCCESS;
+        return AVL_OK;
     }
 
     /* 2.3 左右子树均不为空: 查找左子树最右边的结点 替换被删的结点 */
@@ -814,7 +910,7 @@ static int _avl_delete(avl_tree_t *tree, avl_node_t *node, int key, bool *lower,
         avl_assert(node);
         return avl_delete_left_balance(tree, node, lower);
     }
-    return AVL_SUCCESS;
+    return AVL_OK;
 }
 
 /******************************************************************************
@@ -826,7 +922,7 @@ static int _avl_delete(avl_tree_t *tree, avl_node_t *node, int key, bool *lower,
  **     prev: 前继结点:此结点最右端的结点将会用来替换被删除的结点.
  **输出参数: 
  **     lower: 高度是否变化
- **返    回: AVL_SUCCESS:成功 AVL_FAILED:失败
+ **返    回: AVL_OK:成功 AVL_ERR:失败
  **实现描述: 
  **注意事项: 
  **     >> 在此其实并不会删除node, 而是将replace的值给了node, 再删了replace.
@@ -856,7 +952,7 @@ int avl_replace_and_delete(avl_tree_t *tree,
         avl_assert(prev->parent);
         avl_assert(prev->lchild);
         free(prev), prev=NULL;    /* 注意: 释放的不是dnode, 而是rnode */
-        return AVL_SUCCESS;
+        return AVL_OK;
     }
 
     avl_replace_and_delete(tree, node, prev->rchild, lower);
@@ -868,7 +964,7 @@ int avl_replace_and_delete(avl_tree_t *tree,
             但replace可能失衡，因此必须在此自己处理 */
         avl_delete_right_balance(tree, prev, lower);
     }
-    return AVL_SUCCESS;
+    return AVL_OK;
 }
 
 /******************************************************************************
@@ -879,7 +975,7 @@ int avl_replace_and_delete(avl_tree_t *tree,
  **     node: 结点node的左子树的某个结点已被删除
  **输出参数: 
  **     lower: 高度是否变化
- **返    回: AVL_SUCCESS:成功 AVL_FAILED:失败
+ **返    回: AVL_OK:成功 AVL_ERR:失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.19 #
@@ -978,7 +1074,7 @@ int avl_delete_left_balance(avl_tree_t *tree, avl_node_t *node, bool *lower)
         }
     }
 
-    return AVL_SUCCESS;
+    return AVL_OK;
 }
 
 /******************************************************************************
@@ -989,7 +1085,7 @@ int avl_delete_left_balance(avl_tree_t *tree, avl_node_t *node, bool *lower)
  **     node: 结点node的右子树的某个结点已被删除
  **输出参数: 
  **     lower: 高度是否变化
- **返    回: AVL_SUCCESS:成功 AVL_FAILED:失败
+ **返    回: AVL_OK:成功 AVL_ERR:失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.19 #
@@ -1088,7 +1184,7 @@ int avl_delete_right_balance(avl_tree_t *tree, avl_node_t *node, bool *lower)
             break;
         }
     }
-    return AVL_SUCCESS;
+    return AVL_OK;
 }
 /******************************************************************************
  **函数名称: _avl_destroy
@@ -1137,11 +1233,11 @@ int avl_print(avl_tree_t *tree)
 
     if (NULL == tree->root)
     {
-        return AVL_SUCCESS;
+        return AVL_OK;
     }
 
     ret = stack_init(&stack, AVL_MAX_DEPTH);
-    if (AVL_SUCCESS != ret)
+    if (AVL_OK != ret)
     {
         return AVL_ERR_STACK;
     }
@@ -1149,7 +1245,7 @@ int avl_print(avl_tree_t *tree)
     _avl_print(tree->root, &stack);
 
     stack_destroy(&stack);
-    return AVL_SUCCESS;
+    return AVL_OK;
 }
 
 /******************************************************************************
@@ -1300,5 +1396,5 @@ int _avl_print(avl_node_t *root, Stack_t *stack)
 
     /* 6. 出栈 */
     stack_pop(stack);
-    return AVL_SUCCESS;
+    return AVL_OK;
 }
