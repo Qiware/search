@@ -48,7 +48,7 @@ int main(void)
 
     daemon(1, 0);
 
-    /* 1. 初始化日志系统 */
+    /* 1. 初始化系统日志 */
     ret = log2_init(LOG_LEVEL_DEBUG, LOG_SVR_LOG2_PATH);
     if (0 != ret)
     {
@@ -56,6 +56,7 @@ int main(void)
         return -1;
     }
 
+    /* 2. 初始化日志服务 */
     ret = log_svr_init(&logsvr);
     if(ret < 0)
     {
@@ -63,7 +64,7 @@ int main(void)
         return -1;
     }
 
-    /* 2. 初始化日志系统 */
+    /* 3. 启动超时扫描线程 */
     thread_pool_add_worker(logsvr.pool, log_svr_timeout_routine, &logsvr);
 
     while(1){ pause(); }

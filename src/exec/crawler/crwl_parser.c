@@ -399,7 +399,6 @@ static int crwl_parser_work_flow(crwl_parser_t *parser)
 static int crwl_parser_deep_hdl(crwl_parser_t *parser, gumbo_result_t *result)
 {
     redisReply *r; 
-    char uri[URI_MAX_LEN];
     uri_field_t field;
     list_node_t *node = result->list.head;
 
@@ -409,14 +408,14 @@ static int crwl_parser_deep_hdl(crwl_parser_t *parser, gumbo_result_t *result)
         /* 1.1 确认URI的合法性 */
         if (0 != uri_reslove(node->data, &field))
         {
-            log_error(parser->log, "Uri [%s] is invalid!", uri);
+            log_error(parser->log, "Uri [%s] is invalid!", (char *)node->data);
             node = node->next;
             continue;
         }
 
         /* 1.2 插入Undo任务队列 */
         r = redisCommand(parser->redis_ctx, "RPUSH %s %s",
-                parser->conf.redis.undo_taskq, uri);
+                parser->conf.redis.undo_taskq, field.uri);
         if (REDIS_REPLY_NIL == r->type)
         {
             freeReplyObject(r);
