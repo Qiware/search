@@ -46,24 +46,40 @@ hash_tab_t *hash_tab_init(int num, avl_key_cb_t key, avl_cmp_cb_t cmp)
         return NULL;
     }
 
-    /* 3. 创建数组空间 */
+    /* 2. 创建数组空间 */
     hash->tree = (avl_tree_t **)calloc(num, sizeof(avl_tree_t *));
     if (NULL == hash->tree)
     {
         free(hash);
-        log2_error("Alloc memory from slab failed!");
+        log2_error("errmsg:[%d] %s!", errno, strerror(errno));
         return NULL;
     }
 
+    hash->lock = (pthread_rwlock_t *)calloc(num, sizeof(pthread_rwlock_t));
+    if (NULL == hash->lock)
+    {
+        free(hash->tree);
+        free(hash);
+        log2_error("errmsg:[%d] %s!", errno, strerror(errno));
+        return NULL;
+    }
+
+    /* 3. 创建平衡二叉树 */
     for (idx=0; idx<num; ++idx)
     {
+        pthread_rwlock_init(&hash->lock[idx], NULL);
+
         ret = avl_creat(&hash->tree[idx], key, cmp);
         if (0 != ret)
         {
             free(hash->tree);
             free(hash);
+            log2_error("Create avl tree failed!");
             return NULL;
         }
+
+        hash->tree[idx]->key = key;
+        hash->tree[idx]->cmp = cmp;
     }
 
     hash->key = key;
@@ -87,13 +103,18 @@ hash_tab_t *hash_tab_init(int num, avl_key_cb_t key, avl_cmp_cb_t cmp)
  ******************************************************************************/
 int hash_tab_insert(hash_tab_t *hash, avl_unique_t *unique, void *data)
 {
+    int ret;
     uint32_t key, idx;
 
     key = hash->key(unique->data, unique->len);
 
     idx = key % hash->num;
 
-    return avl_insert(hash->tree[idx], unique, data);
+    pthread_rwlock_wrlock(&hash->lock[idx]);
+    ret = avl_insert(hash->tree[idx], unique, data);
+    pthread_rwlock_unlock(&hash->lock[idx]);
+
+    return ret;
 }
 
 /******************************************************************************
@@ -117,7 +138,9 @@ void *hash_tab_search(hash_tab_t *hash, avl_unique_t *unique)
 
     idx = key % hash->num;
 
+    pthread_rwlock_rdlock(&hash->lock[idx]);
     node = avl_search(hash->tree[idx], unique);
+    pthread_rwlock_unlock(&hash->lock[idx]);
     if (NULL == node)
     {
         return NULL;
@@ -148,7 +171,9 @@ void *hash_tab_delete(hash_tab_t *hash, avl_unique_t *unique)
 
     idx = key % hash->num;
 
+    pthread_rwlock_wrlock(&hash->lock[idx]);
     avl_delete(hash->tree[idx], unique, &data);
+    pthread_rwlock_unlock(&hash->lock[idx]);
 
     return data;
 }
