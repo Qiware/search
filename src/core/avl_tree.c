@@ -136,7 +136,7 @@ static int _avl_insert(avl_tree_t *tree, avl_node_t *node,
     
     if (key == node->key)        /* 结点已存在 */
     {
-        ret = memcmp(unique, node->unique,
+        ret = memcmp(unique->data, node->unique.data,
                 (unique->len > node->unique.len)? unique->len : node->unique.len);
         if (0 == ret)
         {
@@ -210,7 +210,7 @@ static int avl_insert_right(avl_tree_t *tree, avl_node_t *node,
     }
     else
     {
-        ret = _avl_insert(tree, node->rchild, key, taller, data);
+        ret = _avl_insert(tree, node->rchild, key, unique, taller, data);
         if ((AVL_OK != ret))
         {
             return ret;
@@ -299,7 +299,7 @@ static int avl_insert_left(avl_tree_t *tree, avl_node_t *node,
     }
     else
     {
-        ret = _avl_insert(tree, node->lchild, key, taller, data);
+        ret = _avl_insert(tree, node->lchild, key, unique, taller, data);
         if (AVL_OK != ret)
         {
             return ret;

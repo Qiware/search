@@ -31,8 +31,8 @@ typedef enum
 
 typedef struct
 {
-    void *unique;
-    int len;
+    void *data;
+    size_t len;
 } avl_unique_t;
 
 typedef uint32_t (*avl_key_cb_t)(void *unique, size_t len);
