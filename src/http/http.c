@@ -28,7 +28,7 @@ int http_get_request(const char *uri, char *req, int size)
     uri_field_t field;
 
     /* 1. 获取GET相关字段 */
-    if(uri_reslove(uri, &field))
+    if(0 != uri_reslove(uri, &field))
     {
         return HTTP_ERR;
     }

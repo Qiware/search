@@ -140,7 +140,7 @@ int crwl_task_down_webpage_by_uri(
     memset(&field, 0, sizeof(field));
 
     /* 解析URI字串 */
-    if(uri_reslove(args->uri, &field))
+    if(0 != uri_reslove(args->uri, &field))
     {
         log_error(worker->log, "Reslove uri [%d] failed!", args->uri);
         return CRWL_ERR;
@@ -176,6 +176,7 @@ int crwl_task_down_webpage_by_uri(
     memset(sck, 0, sizeof(crwl_worker_socket_t));
 
     sck->sckid = fd;
+    sck->crtm = ctm;
     sck->rdtm = ctm;
     sck->wrtm = ctm;
     sck->read.addr = sck->recv;

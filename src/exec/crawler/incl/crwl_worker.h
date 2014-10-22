@@ -32,6 +32,7 @@ typedef struct
 typedef struct
 {
     int sckid;                      /* 套接字ID */
+    time_t crtm;                    /* Create Time */
     time_t wrtm;                    /* 最近写入时间 */
     time_t rdtm;                    /* 最近读取时间 */
 
