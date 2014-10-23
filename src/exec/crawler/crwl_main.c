@@ -778,7 +778,7 @@ CRWL_FETCH_DOMAIN:
         /* 查找失败则通过getaddrinfo()查询IP地址 */
         if (0 != getaddrinfo(host, NULL, NULL, &addrinfo))
         {
-            log_error(ctx->log, "Get address info failed! host:%s");
+            log_error(ctx->log, "Get address info failed! host:%s", host);
             return NULL;
         }
 
