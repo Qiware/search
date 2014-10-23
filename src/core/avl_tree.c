@@ -13,18 +13,18 @@
 #include "avl_tree.h"
 
 static int _avl_insert(avl_tree_t *tree, avl_node_t *node,
-        uint32_t key, avl_unique_t *unique, bool *taller, void *data);
+        uint32_t key, const avl_unique_t *unique, bool *taller, void *data);
 static void _avl_destroy(avl_node_t *node);
 
 static int avl_right_balance(avl_tree_t *tree, avl_node_t *node);
 static int avl_left_balance(avl_tree_t *tree, avl_node_t *node);
 static int avl_insert_right(avl_tree_t *tree, avl_node_t *node,
-            uint32_t key, avl_unique_t *unique, bool *taller, void *data);
+            uint32_t key, const avl_unique_t *unique, bool *taller, void *data);
 static int avl_insert_left(avl_tree_t *tree, avl_node_t *node,
-            uint32_t key, avl_unique_t *unique, bool *taller, void *data);
+            uint32_t key, const avl_unique_t *unique, bool *taller, void *data);
 
 static int _avl_delete(avl_tree_t *tree, avl_node_t *node,
-            uint32_t key, avl_unique_t *unique, bool *lower, void **data);
+            uint32_t key, const avl_unique_t *unique, bool *lower, void **data);
 static int avl_replace_and_delete(avl_tree_t *tree, avl_node_t *node, avl_node_t *replace, bool *lower);
 static int avl_delete_left_balance(avl_tree_t *tree, avl_node_t *node, bool *lower);
 static int avl_delete_right_balance(avl_tree_t *tree, avl_node_t *node, bool *lower);
@@ -40,7 +40,7 @@ static int avl_delete_right_balance(avl_tree_t *tree, avl_node_t *node, bool *lo
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.19 #
  ******************************************************************************/
-int avl_creat(avl_tree_t **tree, avl_key_cb_t key, avl_cmp_cb_t cmp)
+int avl_creat(avl_tree_t **tree, avl_key_cb_t key_cb, avl_cmp_cb_t cmp_cb)
 {
     *tree = (avl_tree_t *)calloc(1, sizeof(avl_tree_t));
     if (NULL == *tree)
@@ -49,8 +49,8 @@ int avl_creat(avl_tree_t **tree, avl_key_cb_t key, avl_cmp_cb_t cmp)
     }
 
     (*tree)->root = NULL;
-    (*tree)->key = key;
-    (*tree)->cmp = cmp;
+    (*tree)->key_cb = key_cb;
+    (*tree)->cmp_cb = cmp_cb;
     
     return AVL_OK;
 }
@@ -72,13 +72,13 @@ int avl_creat(avl_tree_t **tree, avl_key_cb_t key, avl_cmp_cb_t cmp)
  **     2. 如果要重置data值，请先执行删除操作.
  **作    者: # Qifeng.zou # 2013.12.12 #
  ******************************************************************************/
-int avl_insert(avl_tree_t *tree, avl_unique_t *unique, void *data)
+int avl_insert(avl_tree_t *tree, const avl_unique_t *unique, void *data)
 {
     uint32_t key;
     bool taller = false;
     avl_node_t *node = tree->root;
 
-    key = tree->key(unique->data, unique->len);
+    key = tree->key_cb(unique->data, unique->len);
 
     /* 如果为空树，则创建第一个结点 */
     if (NULL == node)
@@ -130,7 +130,7 @@ int avl_insert(avl_tree_t *tree, avl_unique_t *unique, void *data)
  **作    者: # Qifeng.zou # 2013.12.13 #
  ******************************************************************************/
 static int _avl_insert(avl_tree_t *tree, avl_node_t *node,
-        uint32_t key, avl_unique_t *unique, bool *taller, void *data)
+        uint32_t key, const avl_unique_t *unique, bool *taller, void *data)
 {
     int ret;
     
@@ -174,7 +174,7 @@ static int _avl_insert(avl_tree_t *tree, avl_node_t *node,
  **作    者: # Qifeng.zou # 2013.12.13 #
  ******************************************************************************/
 static int avl_insert_right(avl_tree_t *tree, avl_node_t *node,
-        uint32_t key, avl_unique_t *unique, bool *taller, void *data)
+        uint32_t key, const avl_unique_t *unique, bool *taller, void *data)
 {
     int ret = -1;
     avl_node_t *add = NULL;
@@ -263,7 +263,7 @@ static int avl_insert_right(avl_tree_t *tree, avl_node_t *node,
  **作    者: # Qifeng.zou # 2013.12.13 #
  ******************************************************************************/
 static int avl_insert_left(avl_tree_t *tree, avl_node_t *node,
-        uint32_t key, avl_unique_t *unique, bool *taller, void *data)
+        uint32_t key, const avl_unique_t *unique, bool *taller, void *data)
 {
     int ret = -1;
     avl_node_t *add = NULL;
@@ -675,13 +675,13 @@ int avl_left_balance(avl_tree_t *tree, avl_node_t *node)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.12 #
  ******************************************************************************/
-avl_node_t *avl_search(avl_tree_t *tree, avl_unique_t *unique)
+avl_node_t *avl_search(avl_tree_t *tree, const avl_unique_t *unique)
 {
     int ret;
     uint32_t key;
     avl_node_t *node = tree->root;
 
-    key = tree->key(unique->data, unique->len);
+    key = tree->key_cb(unique->data, unique->len);
 
     while (NULL != node)
     {
@@ -782,15 +782,16 @@ void avl_assert(const avl_node_t *node)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.19 #
  ******************************************************************************/
-int avl_delete(avl_tree_t *tree, avl_unique_t *unique, void **data)
+int avl_delete(avl_tree_t *tree, const avl_unique_t *unique, void **data)
 {
     uint32_t key;
     bool lower = false;
 
-    key = tree->key(unique->data, unique->len);
+    key = tree->key_cb(unique->data, unique->len);
 
     if (NULL == tree->root)
     {
+        *data = NULL;
         return AVL_OK;
     }
 

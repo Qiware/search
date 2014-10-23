@@ -57,8 +57,8 @@ typedef struct
 {
     avl_node_t *root;           /* 根节点 */
 
-    avl_key_cb_t key;           /* Create key */
-    avl_cmp_cb_t cmp;           /* Compare data */
+    avl_key_cb_t key_cb;        /* Create key */
+    avl_cmp_cb_t cmp_cb;        /* Compare data */
 } avl_tree_t;
 
 /* 设置node的左孩子节点 */
@@ -102,10 +102,10 @@ typedef struct
     } \
 } 
 
-int avl_creat(avl_tree_t **tree, avl_key_cb_t key, avl_cmp_cb_t cmp);
-int avl_insert(avl_tree_t *tree, avl_unique_t *unique, void *data);
-avl_node_t *avl_search(avl_tree_t *tree, avl_unique_t *unique);
-int avl_delete(avl_tree_t *tree, avl_unique_t *unique, void **data);
+int avl_creat(avl_tree_t **tree, avl_key_cb_t key_cb, avl_cmp_cb_t cmp_cb);
+int avl_insert(avl_tree_t *tree, const avl_unique_t *unique, void *data);
+avl_node_t *avl_search(avl_tree_t *tree, const avl_unique_t *unique);
+int avl_delete(avl_tree_t *tree, const avl_unique_t *unique, void **data);
 int avl_print(avl_tree_t *tree);
 void avl_destroy(avl_tree_t **tree);
 

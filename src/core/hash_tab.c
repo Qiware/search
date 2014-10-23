@@ -32,7 +32,7 @@
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
-hash_tab_t *hash_tab_init(int num, avl_key_cb_t key, avl_cmp_cb_t cmp)
+hash_tab_t *hash_tab_init(int num, avl_key_cb_t key_cb, avl_cmp_cb_t cmp_cb)
 {
     int ret, idx;
     hash_tab_t *hash;
@@ -83,8 +83,8 @@ hash_tab_t *hash_tab_init(int num, avl_key_cb_t key, avl_cmp_cb_t cmp)
     }
 
     hash->num = num;
-    hash->key = key;
-    hash->cmp = cmp;
+    hash->key_cb = key_cb;
+    hash->cmp_cb = cmp_cb;
 
     return hash;
 }
@@ -102,12 +102,12 @@ hash_tab_t *hash_tab_init(int num, avl_key_cb_t key, avl_cmp_cb_t cmp)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
-int hash_tab_insert(hash_tab_t *hash, avl_unique_t *unique, void *data)
+int hash_tab_insert(hash_tab_t *hash, const avl_unique_t *unique, void *data)
 {
     int ret;
     uint32_t key, idx;
 
-    key = hash->key(unique->data, unique->len);
+    key = hash->key_cb(unique->data, unique->len);
 
     idx = key % hash->num;
 
@@ -130,12 +130,12 @@ int hash_tab_insert(hash_tab_t *hash, avl_unique_t *unique, void *data)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
-void *hash_tab_search(hash_tab_t *hash, avl_unique_t *unique)
+void *hash_tab_search(hash_tab_t *hash, const avl_unique_t *unique)
 {
     uint32_t key, idx;
     avl_node_t *node;
 
-    key = hash->key(unique->data, unique->len);
+    key = hash->key_cb(unique->data, unique->len);
 
     idx = key % hash->num;
 
@@ -163,12 +163,12 @@ void *hash_tab_search(hash_tab_t *hash, avl_unique_t *unique)
  **     注意: 返回地址的内存空间由外部释放
  **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
-void *hash_tab_delete(hash_tab_t *hash, avl_unique_t *unique)
+void *hash_tab_delete(hash_tab_t *hash, const avl_unique_t *unique)
 {
     void *data;
     uint32_t key, idx;
 
-    key = hash->key(unique->data, unique->len);
+    key = hash->key_cb(unique->data, unique->len);
 
     idx = key % hash->num;
 
