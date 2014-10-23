@@ -8,12 +8,15 @@
  ** 作  者: # Qifeng.zou # 2014.09.04 #
  ******************************************************************************/
 #include <stdio.h>
+#include <netdb.h>
 #include <stdlib.h>
 #include <string.h>
 #include <getopt.h>
 #include <libgen.h>
 #include <sys/wait.h>
 #include <sys/types.h>
+#include <sys/socket.h>
+
 
 #include "log.h"
 #include "lock.h"
@@ -21,6 +24,7 @@
 #include "common.h"
 #include "crawler.h"
 #include "syscall.h"
+#include "xd_socket.h"
 #include "crwl_sched.h"
 #include "crwl_worker.h"
 #include "crwl_parser.h"
@@ -450,7 +454,7 @@ void *crwl_slab_alloc(crwl_cntx_t *ctx, size_t size)
 }
 
 /******************************************************************************
- **函数名称: crwl_slab_free
+ **函数名称: crwl_slab_dealloc
  **功    能: 全局SLAB回收空间
  **输入参数: 
  **     ctx: 全局信息
@@ -741,4 +745,90 @@ static int crwl_proc_lock(void)
     }
 
     return 0;
+}
+
+/******************************************************************************
+ **函数名称: crwl_get_ipaddr
+ **功    能: 获取域名对应的IP地址
+ **输入参数:
+ **     ctx: 全局信息
+ **     host: 域名
+ **输出参数: NONE
+ **返    回: 获取域名对应的地址信息
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.10.21 #
+ ******************************************************************************/
+crwl_domain_t *crwl_get_ipaddr(crwl_cntx_t *ctx, char *host)
+{
+    int ret;
+    avl_unique_t unique;
+    crwl_domain_t *domain;
+    struct sockaddr_in *sockaddr;
+    struct addrinfo *addrinfo, *curr;
+
+    unique.data = host;
+    unique.len = strlen(host);
+
+CRWL_FETCH_DOMAIN:
+    /* 1. 从域名表中查找IP地址 */
+    domain = hash_tab_search(ctx->domain, &unique);
+    if (NULL == domain)
+    {
+        /* 查找失败则通过getaddrinfo()查询IP地址 */
+        if (0 != getaddrinfo(host, NULL, NULL, &addrinfo))
+        {
+            log_error(ctx->log, "Get address info failed! host:%s");
+            return NULL;
+        }
+
+        /* 申请域名信息：此空间插入哈希表中(此处不释放空间) */
+        domain = (crwl_domain_t *)calloc(1, sizeof(crwl_domain_t));
+        if (NULL == domain)
+        {
+            freeaddrinfo(addrinfo);
+
+            log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
+            return NULL;
+        }
+
+        snprintf(domain->host, sizeof(domain->host), "%s", host);
+        domain->ip_num = 0;
+
+        curr = addrinfo;
+        while (NULL != curr
+            && domain->ip_num < CRWL_IP_MAX_NUM)
+        {
+            sockaddr = (struct sockaddr_in *)curr->ai_addr;
+
+            inet_ntop(AF_INET,
+                    &sockaddr->sin_addr.s_addr,
+                    domain->ip[domain->ip_num],
+                    sizeof(domain->ip[domain->ip_num]));
+            ++domain->ip_num;
+
+            curr = curr->ai_next;
+        }
+
+        freeaddrinfo(addrinfo);
+
+        ret = hash_tab_insert(ctx->domain, &unique, domain);
+        if (0 != ret)
+        {
+            free(domain);
+
+            if (AVL_NODE_EXIST == ret)
+            {
+                log_debug(ctx->log, "Domain is exist! host:[%s]",
+                        ret, AVL_NODE_EXIST, host);
+                goto CRWL_FETCH_DOMAIN;
+            }
+
+            log_error(ctx->log, "Insert into hash table failed! ret:[%x/%x] host:[%s]",
+                    ret, AVL_NODE_EXIST, host);
+            return NULL;
+        }
+    }
+
+    return domain;
 }

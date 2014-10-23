@@ -63,7 +63,7 @@ int crwl_worker_parse_conf(
     }
 
     /* 3. 并发网页连接数(相对查找) */
-    node = xml_rsearch(xml, curr, "CONNECTIONS.NUM");
+    node = xml_rsearch(xml, curr, "CONNECTIONS.MAX");
     if (NULL == node)
     {
         log_error(log, "Didn't configure download webpage number!");
@@ -330,8 +330,8 @@ static int crwl_worker_trav_recv(crwl_worker_t *worker)
         {
             log_debug(worker->log, "End of read data! uri:%s", sck->webpage.uri);
 
-            crwl_worker_webpage_finfo(worker, sck);
             crwl_worker_webpage_fsync(worker, sck);
+            crwl_worker_webpage_finfo(worker, sck);
             crwl_worker_remove_sock(worker, sck);
             continue;
         }
@@ -527,8 +527,8 @@ static int crwl_worker_timeout_hdl(crwl_worker_t *worker)
             continue;
         }
 
-        log_debug(worker->log, "Didn't communicate for along time! ip:%s",
-                sck->webpage.ipaddr);
+        log_error(worker->log, "Didn't communicate for along time! uri:%s ip:%s",
+                sck->webpage.uri, sck->webpage.ipaddr);
 
         crwl_worker_webpage_fsync(worker, sck);
         crwl_worker_webpage_finfo(worker, sck);
@@ -1013,12 +1013,12 @@ int crwl_worker_webpage_finfo(crwl_worker_t *worker, crwl_worker_socket_t *sck)
     fprintf(fp, 
         "<INFO>\n"
         "\t<URI DEEP=\"%d\" IPADDR=\"%s\" PORT=\"%d\">%s</URI>\n"
-        "\t<HTML>%02d-%08ld.html</HTML>\n"
+        "\t<HTML SIZE=\"%lu\">%02d-%08ld.html</HTML>\n"
         "\t<TIME>%04d-%02d-%02d %02d:%02d:%02d</TIME>\n"
         "</INFO>\n",
         sck->webpage.deep, sck->webpage.ipaddr,
         sck->webpage.port, sck->webpage.uri,
-        worker->tidx, sck->webpage.idx,
+        sck->webpage.size, worker->tidx, sck->webpage.idx,
         loctm.tm_year+1900, loctm.tm_mon+1, loctm.tm_mday,
         loctm.tm_hour, loctm.tm_min, loctm.tm_sec);
 
