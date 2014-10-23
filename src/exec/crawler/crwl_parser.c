@@ -337,7 +337,10 @@ static int crwl_parser_work_flow(crwl_parser_t *parser)
     }
 #endif
 
-    /* 判断网页(URI)是否已下载 */
+    /* 判断网页(URI)是否已下载
+     * 判断的同时设置网页的下载标志
+     * 如果已下载，则不做提取该网页中的超链接
+     * */
     if (!crwl_is_uri_download(parser->redis_ctx, info->uri))
     {
         log_info(parser->log, "Uri [%s] was downloaded!", info->uri);
@@ -438,9 +441,13 @@ static int crwl_parser_deep_hdl(crwl_parser_t *parser, gumbo_result_t *result)
  **     ctx: Redis信息
  **     uri: URI字串
  **输出参数:
- **返    回: 0:成功 !0:失败
+ **返    回: true:已下载 false:未下载
  **实现描述: 
+ **     HSETNX:
+ **         1. 表示新的Field被设置了新值
+ **         0. 表示Key或Field已经存在，该命令没有进行任何操作。
  **注意事项: 
+ **     在DONE TABLE才算已下载.
  **作    者: # Qifeng.zou # 2014.10.18 #
  ******************************************************************************/
 bool crwl_is_uri_download(redisContext *ctx, const char *uri)
@@ -457,6 +464,9 @@ bool crwl_is_uri_download(redisContext *ctx, const char *uri)
 
     if (1 == r->integer)
     {
+        /* 1. 表示新的Field被设置了新值
+         * 说明之前未设置值，也就是未下载网页
+         * */
         freeReplyObject(r);
         return false;
     }

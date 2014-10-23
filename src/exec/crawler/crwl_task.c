@@ -144,7 +144,7 @@ int crwl_task_down_webpage_by_uri(
     /* 解析URI字串 */
     if(0 != uri_reslove(args->uri, &field))
     {
-        log_error(worker->log, "Reslove uri [%d] failed!", args->uri);
+        log_error(worker->log, "Reslove uri [%s] failed!", args->uri);
         return CRWL_ERR;
     }
    
@@ -152,6 +152,7 @@ int crwl_task_down_webpage_by_uri(
     unique.data = field.host;
     unique.len = strlen(field.host);
 
+CRWL_FETCH_DOMAIN:
     domain = hash_tab_search(worker->ctx->domain, &unique);
     if (NULL == domain)
     {
@@ -162,9 +163,12 @@ int crwl_task_down_webpage_by_uri(
             return CRWL_ERR;
         }
 
+        /* 申请域名信息：此空间将挂载到平衡二叉树上 */
         domain = (crwl_domain_t *)calloc(1, sizeof(crwl_domain_t));
         if (NULL == domain)
         {
+            freeaddrinfo(addrinfo);
+
             log_error(worker->log, "errmsg:[%d] %s!", errno, strerror(errno));
             return CRWL_ERR;
         }
@@ -187,10 +191,23 @@ int crwl_task_down_webpage_by_uri(
             curr = curr->ai_next;
         }
 
+        freeaddrinfo(addrinfo);
+
         ret = hash_tab_insert(worker->ctx->domain, &unique, domain);
         if (0 != ret)
         {
-            log_error(worker->log, "Insert into hash table failed!");
+            free(domain);
+
+            if (AVL_NODE_EXIST == ret)
+            {
+                log_debug(worker->log, "Domain is exist! uri:[%s] host:[%s]",
+                        ret, AVL_NODE_EXIST, field.uri, field.host);
+                goto CRWL_FETCH_DOMAIN;
+            }
+
+            log_error(worker->log, "Insert into hash table failed! ret:[%x / %x]"
+                    " uri:[%s] host:[%s]",
+                    ret, AVL_NODE_EXIST, field.uri, field.host);
             return CRWL_ERR;
         }
     }
@@ -203,7 +220,6 @@ int crwl_task_down_webpage_by_uri(
 
     ip_idx = random() % domain->ip_num;
 
-    /* freeaddrinfo(addrinfo); */
 
     /* 2. 连接远程WEB服务器 */
     fd = tcp_connect_ex2(domain->ip[ip_idx], args->port);

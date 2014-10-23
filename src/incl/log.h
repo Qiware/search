@@ -45,7 +45,7 @@ typedef enum
 
 #define LOG_MSG_MAX_LEN         (2048)      /* 日志行最大长度 */
 #define LOG_SVR_THREAD_NUM      (1)         /* 服务线程数 */
-#define LOG_FILE_MAX_SIZE       (128 * MB)  /* 单个日志文件的最大SIZE */
+#define LOG_FILE_MAX_SIZE       (8 * MB)  /* 单个日志文件的最大SIZE */
 
 #define LOG_SUFFIX              ".log"      /* 日志文件后缀 */
 #define LOG_DEFAULT_TRCLOG      "trc.log"   /* 默认日志名 */

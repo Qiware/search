@@ -190,12 +190,13 @@ int str_trim(const char *in, char *out, size_t size)
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项:
+ **     在路径符号'/'之前, 不允许出现特殊符号:# ?等
  **作    者: # Qifeng.zou # 2014.10.19 #
  ******************************************************************************/
 int uri_reslove(const char *uri, uri_field_t *field)
 {
-#define URI_DEF_PORT        (80)
-#define URI_DEF_PROTOCOL    "http"
+#define URI_DEF_PORT        (80)    /* 默认端口 */
+#define URI_DEF_PROTOCOL    "http"  /* 默认协议 */
     int len;
     const char *ch, *s;
 
@@ -203,9 +204,9 @@ int uri_reslove(const char *uri, uri_field_t *field)
 
     /* 1. 剔除URI前后的非法字符 */
     field->len = str_trim(uri, field->uri, sizeof(field->uri));
-    if (0 == field->len)
+    if (field->len <= URI_MIN_LEN)
     {
-        return -1;  /* 长度=0 */
+        return -1;  /* 长度非法 */
     }
     
     /* 2. 从URI中提取域名、端口、路径等信息 */
@@ -215,10 +216,18 @@ int uri_reslove(const char *uri, uri_field_t *field)
     /* 判断是否有协议(http:// | https:// | ftp:// ...) */
     while ('\0' != *ch)
     {
-        if (':' != *ch && '/' != *ch)
+        if (isalpha(*ch)
+            || isdigit(*ch)
+            || ('.' == *ch)
+            || ('-' == *ch)
+            || ('_' == *ch))
         {
             ++ch;
             continue;
+        }
+        if (':' != *ch && '/' != *ch)
+        {
+            return -1;  /* 异常:在路径符号'/'之前, 不允许出现特殊符号:# ?等 */
         }
         break;
     }
@@ -266,7 +275,7 @@ int uri_reslove(const char *uri, uri_field_t *field)
             if ('\0' == *ch)        /* 无端口、无路径 */
             {
                 /* 有协议与域名: (端口/路径 使用默认值) */
-                snprintf(field->host, sizeof(field->host), "%s", field->uri);
+                snprintf(field->host, sizeof(field->host), "%s", s);
                 snprintf(field->path, sizeof(field->path), "/");
                 field->port = URI_DEF_PORT;
                 return 0;

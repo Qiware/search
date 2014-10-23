@@ -227,7 +227,11 @@ static int crwl_worker_fetch_task(crwl_cntx_t *ctx, crwl_worker_t *worker)
     /* 3. 连接远程Web服务器 */
     t = (crwl_task_t *)data;
 
-    return crwl_worker_task_handler(worker, t);
+    crwl_worker_task_handler(worker, t);
+
+    crwl_slab_dealloc(ctx, data);
+
+    return CRWL_OK;
 }
 
 /******************************************************************************
@@ -317,7 +321,8 @@ static int crwl_worker_trav_recv(crwl_worker_t *worker)
                 continue;
             }
 
-            log_error(worker->log, "errmsg:[%d] %s!", errno, strerror(errno));
+            log_error(worker->log, "errmsg:[%d] %s! uri:%s ip:%s",
+                    errno, strerror(errno), sck->webpage.uri, sck->webpage.ipaddr);
             crwl_worker_remove_sock(worker, sck);
             return CRWL_ERR;
         }

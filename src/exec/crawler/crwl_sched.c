@@ -249,7 +249,7 @@ static int crwl_sched_fetch_undo_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
             if (times >= conf->worker.num)
             {
                 times = 0;
-                log_warn(ctx->log, "Undo task queue space isn't enough!");
+                log_trace(ctx->log, "Undo task queue space isn't enough!");
                 return CRWL_OK;
             }
             continue;
@@ -290,6 +290,7 @@ static int crwl_sched_fetch_undo_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
         if (CRWL_OK != ret)
         {
             freeReplyObject(r);
+            crwl_slab_dealloc(ctx, addr);
             log_error(ctx->log, "Push into worker queue failed! uri:%s port:%d",
                     dw->uri, dw->port);
             return CRWL_OK;
