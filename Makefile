@@ -17,6 +17,7 @@ export PROJ_LIB = ${PROJ}/lib
 export PROJ_LOG = ${PROJ}/log
 export GCC_LOG = ${PROJ_LOG}/gcc.log
 
+export CPU=`cat /proc/cpuinfo | grep processor | wc -l`
 
 # 编译目录(注：编译按顺序执行　注意库之间的依赖关系)
 #DIR=`find ./src -type d`
@@ -44,9 +45,11 @@ export DIR
 # 1. 编译操作
 all:
 	@if [ ! -d ${PROJ_BIN} ]; then \
+		rm -fr ${PROJ_BIN}; \
 		mkdir ${PROJ_BIN}; \
 	fi
 	@if [ ! -d ${PROJ_LIB} ]; then \
+		rm -fr ${PROJ_LIB}; \
 		mkdir ${PROJ_LIB}; \
 	fi
 	@if [ -e ${GCC_LOG} ]; then \
@@ -57,7 +60,7 @@ all:
 		if [ -e $${SUBDIR}/Makefile ]; then \
 			echo cd $${SUBDIR}; \
 			cd $${SUBDIR}; \
-			make 2>&1 | tee -a ${GCC_LOG}; \
+			make -j${CPU} 2>&1 | tee -a ${GCC_LOG}; \
 			cd ${PROJ}; \
 		fi \
 	done
