@@ -52,4 +52,6 @@ void *memalign_alloc(size_t alignment, size_t size);
 #endif
 
 void *shm_creat(int key, size_t size);
+int bind_cpu(uint16_t id);
+
 #endif /*__XDO_UNISTD_H__*/

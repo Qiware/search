@@ -1,5 +1,7 @@
+#define _GNU_SOURCE
 #include <sys/shm.h>
 #include <sys/ipc.h>
+#include <pthread.h>
 
 #include "syscall.h"
 
@@ -432,4 +434,31 @@ int System(const char *cmd)
     }
 
     return WEXITSTATUS(status);
+}
+
+/******************************************************************************
+ **函数名称: bind_cpu
+ **功    能: 绑定CPU
+ **输入参数: 
+ **     num: 指定CPU编号(从0开始计数)
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项:
+ **     如果id大于最大cpu编号，将id %= cpu_num重新计算id值.
+ **作    者: # Qifeng.zou # 2014.10.24 #
+ ******************************************************************************/
+int bind_cpu(uint16_t id)
+{
+    cpu_set_t cpuset;
+
+    if ((sysconf(_SC_NPROCESSORS_CONF) - id) <= 0)
+    {
+        id %= sysconf(_SC_NPROCESSORS_CONF);
+    }
+
+    CPU_ZERO(&cpuset);
+    CPU_SET(id, &cpuset);
+
+    return pthread_setaffinity_np(pthread_self(), sizeof(cpuset), &cpuset);
 }
