@@ -140,9 +140,4 @@ int crwl_cntx_startup(crwl_cntx_t *ctx);
 
 crwl_domain_t *crwl_get_ipaddr(crwl_cntx_t *ctx, char *host);
 
-int crwl_slab_init(crwl_cntx_t *ctx);
-void *crwl_slab_alloc(crwl_cntx_t *ctx, size_t size);
-void crwl_slab_dealloc(crwl_cntx_t *ctx, void *p);
-void crwl_slab_destroy(crwl_cntx_t *ctx);
-
 #endif /*__CRAWLER_H__*/

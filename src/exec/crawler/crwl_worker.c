@@ -145,7 +145,7 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker)
     }
 
     /* 2. 创建任务队列 */
-    ret = lqueue_init(&worker->undo_taskq, conf->taskq_count);
+    ret = lqueue_init(&worker->undo_taskq, conf->taskq_count, 5 * MB);
     if (CRWL_OK != ret)
     {
         eslab_destroy(&worker->slab);

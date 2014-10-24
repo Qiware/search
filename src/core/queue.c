@@ -145,7 +145,8 @@ void queue_destroy(Queue_t *q)
  **功    能: 初始化加锁队列
  **输入参数: 
  **     lq: 加锁队列
- **     max: 队列大小
+ **     max: 队列长度
+ **     pool: 内存池总空间
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
@@ -154,7 +155,7 @@ void queue_destroy(Queue_t *q)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.12 #
  ******************************************************************************/
-int lqueue_init(lqueue_t *lq, int max)
+int lqueue_init(lqueue_t *lq, int max, size_t pool)
 {
     int ret;
 
@@ -171,7 +172,7 @@ int lqueue_init(lqueue_t *lq, int max)
     /* 2. 创建内存池 */
     pthread_rwlock_init(&lq->slab_lock, NULL);
 
-    ret = eslab_init(&lq->slab, 5 * MB);
+    ret = eslab_init(&lq->slab, pool);
     if (0 != ret)
     {
         pthread_rwlock_destroy(&lq->lock);
