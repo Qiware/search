@@ -322,30 +322,19 @@ crwl_cntx_t *crwl_cntx_init(const crwl_conf_t *conf, log_cycle_t *log)
     ctx->log = log;
     memcpy(&ctx->conf, conf, sizeof(crwl_conf_t));
 
-    /* 2. 新建SLAB机制 */
-    ret = crwl_slab_init(ctx);
-    if (CRWL_OK != ret)
-    {
-        free(ctx);
-        log_error(log, "Initialize slab failed!");
-        return NULL;
-    }
-
-    /* 3. 新建域名表 */
+    /* 2. 新建域名表 */
     ctx->domain = hash_tab_init(10, hash_time33_ex, NULL);
     if (NULL == ctx->domain)
     {
-        crwl_slab_destroy(ctx);
         free(ctx);
         log_error(log, "Initialize hash table failed!");
         return NULL;
     }
 
-    /* 4. 创建Worker线程池 */
+    /* 3. 创建Worker线程池 */
     ret = crwl_init_workers(ctx);
     if (CRWL_OK != ret)
     {
-        crwl_slab_destroy(ctx);
         free(ctx);
         log_error(log, "Initialize thread pool failed!");
         return NULL;
@@ -400,92 +389,6 @@ int crwl_cntx_startup(crwl_cntx_t *ctx)
     }
 
     return CRWL_OK;
-}
-
-/******************************************************************************
- **函数名称: crwl_slab_init
- **功    能: 初始化全局SLAB
- **输入参数: 
- **     ctx: 全局信息
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.10.12 #
- ******************************************************************************/
-int crwl_slab_init(crwl_cntx_t *ctx)
-{
-    int ret;
-
-    pthread_rwlock_init(&ctx->slab_lock, NULL);
-
-    ret = eslab_init(&ctx->slab, CRWL_SLAB_SIZE);
-    if (0 != ret)
-    {
-        pthread_rwlock_destroy(&ctx->slab_lock);
-
-        log_error(ctx->log, "Initialize slab failed!");
-        return CRWL_ERR;
-    }
-
-    return CRWL_OK;
-}
-
-/******************************************************************************
- **函数名称: crwl_slab_alloc
- **功    能: 从全局SLAB申请空间
- **输入参数: 
- **     ctx: 全局信息
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.10.12 #
- ******************************************************************************/
-void *crwl_slab_alloc(crwl_cntx_t *ctx, size_t size)
-{
-    void *addr;
-
-    pthread_rwlock_wrlock(&ctx->slab_lock);
-    addr = eslab_alloc(&ctx->slab, size); 
-    pthread_rwlock_unlock(&ctx->slab_lock);
-
-    return addr;
-}
-
-/******************************************************************************
- **函数名称: crwl_slab_dealloc
- **功    能: 全局SLAB回收空间
- **输入参数: 
- **     ctx: 全局信息
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.10.12 #
- ******************************************************************************/
-void crwl_slab_dealloc(crwl_cntx_t *ctx, void *p)
-{
-    pthread_rwlock_wrlock(&ctx->slab_lock);
-    eslab_dealloc(&ctx->slab, p); 
-    pthread_rwlock_unlock(&ctx->slab_lock);
-}
-
-/******************************************************************************
- **函数名称: crwl_slab_destroy
- **功    能: 销毁全局SLAB
- **输入参数: 
- **     ctx: 全局信息
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.10.12 #
- ******************************************************************************/
-void crwl_slab_destroy(crwl_cntx_t *ctx)
-{
-    eslab_destroy(&ctx->slab);
-    pthread_rwlock_destroy(&ctx->slab_lock);
 }
 
 /******************************************************************************

@@ -268,7 +268,7 @@ static int crwl_sched_fetch_undo_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
         log_trace(ctx->log, "[%02d] URL:%s!", sched->last_idx, r->str);
 
         /* 3. 新建crwl_task_t对象 */
-        addr = crwl_slab_alloc(ctx, size);
+        addr = lqueue_mem_alloc(&worker[sched->last_idx].undo_taskq, size);
         if (NULL == addr)
         {
             freeReplyObject(r);
@@ -286,11 +286,12 @@ static int crwl_sched_fetch_undo_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
         dw->port = CRWL_WEB_SVR_PORT;
 
         /* 4. 放入Worker任务队列 */
-        ret = crwl_task_queue_push(&worker[sched->last_idx].undo_taskq, addr);
+        ret = lqueue_push(&worker[sched->last_idx].undo_taskq, addr);
         if (CRWL_OK != ret)
         {
             freeReplyObject(r);
-            crwl_slab_dealloc(ctx, addr);
+            lqueue_mem_dealloc(&worker[sched->last_idx].undo_taskq, addr);
+
             log_error(ctx->log, "Push into worker queue failed! uri:%s port:%d",
                     dw->uri, dw->port);
             return CRWL_OK;

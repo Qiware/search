@@ -145,7 +145,7 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker)
     }
 
     /* 2. 创建任务队列 */
-    ret = crwl_task_queue_init(&worker->undo_taskq, conf->taskq_count);
+    ret = lqueue_init(&worker->undo_taskq, conf->taskq_count);
     if (CRWL_OK != ret)
     {
         eslab_destroy(&worker->slab);
@@ -169,7 +169,6 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker)
 int crwl_worker_destroy(crwl_worker_t *worker)
 {
     void *data;
-    crwl_cntx_t *ctx = worker->ctx;
 
     eslab_destroy(&worker->slab);
 
@@ -177,17 +176,17 @@ int crwl_worker_destroy(crwl_worker_t *worker)
     while (1)
     {
         /* 弹出数据 */
-        data = crwl_task_queue_pop(&worker->undo_taskq);
+        data = lqueue_pop(&worker->undo_taskq);
         if (NULL == data)
         {
             break;
         }
 
         /* 释放内存 */
-        crwl_slab_dealloc(ctx, data);
+        lqueue_mem_dealloc(&worker->undo_taskq, data);
     }
 
-    crwl_task_queue_destroy(&worker->undo_taskq);
+    lqueue_destroy(&worker->undo_taskq);
 
     free(worker);
     return CRWL_OK;
@@ -217,7 +216,7 @@ static int crwl_worker_fetch_task(crwl_cntx_t *ctx, crwl_worker_t *worker)
     }
 
     /* 2. 从任务队列取数据 */
-    data = crwl_task_queue_pop(&worker->undo_taskq);
+    data = lqueue_pop(&worker->undo_taskq);
     if (NULL == data)
     {
         log_error(worker->log, "Get task from queue failed!");
@@ -229,7 +228,7 @@ static int crwl_worker_fetch_task(crwl_cntx_t *ctx, crwl_worker_t *worker)
 
     crwl_worker_task_handler(worker, t);
 
-    crwl_slab_dealloc(ctx, data);
+    lqueue_mem_dealloc(&worker->undo_taskq, data);
 
     return CRWL_OK;
 }

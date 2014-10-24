@@ -132,9 +132,6 @@ typedef struct
 
     thread_pool_t *workers;                 /* 线程池对象 */
     hash_tab_t *domain;                     /* 域名表: 通过域名找到IP地址 */
-
-    pthread_rwlock_t slab_lock;             /* 内存池锁 */
-    eslab_pool_t slab;                      /* 内存池 */
 } crwl_cntx_t;
 
 /* 对外接口 */

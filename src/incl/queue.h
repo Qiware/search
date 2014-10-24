@@ -1,6 +1,10 @@
 #if !defined(__QUEUE_H__)
 #define __QUEUE_H__
 
+#include <pthread.h>
+
+#include "slab.h"
+
 /* 队列配置 */
 typedef struct
 {
@@ -35,5 +39,22 @@ static inline int queue_space(Queue_t *q)
 {
     return (q->max > q->num)? 1 : 0;
 }
+
+/* 加锁队列 */
+typedef struct
+{
+    pthread_rwlock_t lock;                  /* 队列锁(可用SPIN锁替换) */
+    Queue_t queue;                          /* 队列 */
+
+    pthread_rwlock_t slab_lock;             /* 内存池锁(可用SPIN锁替换) */
+    eslab_pool_t slab;                      /* 内存池 */
+} lqueue_t;
+
+int lqueue_init(lqueue_t *lq, int max);
+void *lqueue_mem_alloc(lqueue_t *lq, size_t size);
+int lqueue_mem_dealloc(lqueue_t *lq, void *p);
+int lqueue_push(lqueue_t *lq, void *addr);
+void *lqueue_pop(lqueue_t *lq);
+void lqueue_destroy(lqueue_t *lq);
 
 #endif /*__QUEUE_H__*/

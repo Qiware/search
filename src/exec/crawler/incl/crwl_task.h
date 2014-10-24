@@ -23,13 +23,6 @@ typedef struct
     uint32_t length;                        /* 数据长度(头+体) */
 } crwl_task_t;
 
-/* 爬虫队列 */
-typedef struct
-{
-    pthread_rwlock_t lock;                  /* 任务队列锁(可用SPIN锁替换) */
-    Queue_t queue;                          /* 任务队列 */
-} crwl_task_queue_t;
-
 /* 通过URL加载网页 */
 typedef struct
 {
@@ -53,8 +46,4 @@ typedef union
     crwl_task_down_webpage_by_ip_t ip;
 } crwl_task_space_u;
 
-int crwl_task_queue_init(crwl_task_queue_t *tq, int max);
-int crwl_task_queue_push(crwl_task_queue_t *tq, void *addr);
-void *crwl_task_queue_pop(crwl_task_queue_t *tq);
-void crwl_task_queue_destroy(crwl_task_queue_t *tq);
 #endif /*__CRWL_TASK_H__*/

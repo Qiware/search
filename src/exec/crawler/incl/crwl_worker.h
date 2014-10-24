@@ -59,7 +59,7 @@ typedef struct
 
     list_t sock_list;               /* 套接字列表
                                        结点数据指针指向crwl_worker_socket_t */
-    crwl_task_queue_t undo_taskq;   /* 任务对象(注意: 该队列结点和数据的空间来自CTX) */
+    lqueue_t undo_taskq;            /* 任务队列(注意: 该队列结点和数据的空间来自CTX) */
 
     uint64_t down_webpage_total;    /* 下载网页的计数 */
 } crwl_worker_t;
