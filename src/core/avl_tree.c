@@ -25,6 +25,7 @@ static int avl_insert_left(avl_tree_t *tree, avl_node_t *node,
 
 static int _avl_delete(avl_tree_t *tree, avl_node_t *node,
             uint32_t key, const avl_unique_t *unique, bool *lower, void **data);
+
 static int avl_replace_and_delete(avl_tree_t *tree, avl_node_t *node, avl_node_t *replace, bool *lower);
 static int avl_delete_left_balance(avl_tree_t *tree, avl_node_t *node, bool *lower);
 static int avl_delete_right_balance(avl_tree_t *tree, avl_node_t *node, bool *lower);
@@ -814,7 +815,7 @@ int avl_delete(avl_tree_t *tree, const avl_unique_t *unique, void **data)
  **作    者: # Qifeng.zou # 2013.12.19 #
  ******************************************************************************/
 static int _avl_delete(avl_tree_t *tree, avl_node_t *node,
-        uint32_t key, avl_unique_t *unique, bool *lower, void **data)
+        uint32_t key, const avl_unique_t *unique, bool *lower, void **data)
 {
     int ret;
     avl_node_t *parent = node->parent;

@@ -12,8 +12,8 @@ typedef struct
     avl_tree_t **tree;          /* 平衡二叉树(数组成员: num个) */
     pthread_rwlock_t *lock;     /* 平衡二叉树锁 */
 
-    avl_key_cb_t key;
-    avl_cmp_cb_t cmp;
+    avl_key_cb_t key_cb;
+    avl_cmp_cb_t cmp_cb;
 } hash_tab_t;
 
 hash_tab_t *hash_tab_init(int num, avl_key_cb_t key_cb, avl_cmp_cb_t cmp_cb);
