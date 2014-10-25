@@ -928,15 +928,20 @@ int crwl_worker_add_http_get_req(
  ******************************************************************************/
 int crwl_worker_webpage_creat(crwl_worker_t *worker, crwl_worker_socket_t *sck)
 {
+    struct tm loctm;
     char path[FILE_NAME_MAX_LEN];
+
+    localtime_r(&sck->crtm.time, &loctm);
 
     sck->webpage.size = 0;
     sck->webpage.idx = ++worker->down_webpage_total;
 
     snprintf(path, sizeof(path),
-            "%s/%02d-%08ld.html",
+            "%s/%02d-%08ld-%04d%02d%02d%02d%02d%02d%03d.html",
             worker->ctx->conf.download.path,
-            worker->tidx, sck->webpage.idx);
+            worker->tidx, sck->webpage.idx,
+            loctm.tm_year+1900, loctm.tm_mon+1, loctm.tm_mday,
+            loctm.tm_hour, loctm.tm_min, loctm.tm_sec, sck->crtm.millitm);
 
     Mkdir2(path, 0777);
 
@@ -948,27 +953,6 @@ int crwl_worker_webpage_creat(crwl_worker_t *worker, crwl_worker_socket_t *sck)
         return CRWL_ERR;
     }
 
-    return CRWL_OK;
-}
-
-/******************************************************************************
- **函数名称: crwl_worker_webpage_fsync
- **功    能: 将接收的HTML同步到文件
- **输入参数: 
- **     worker: 爬虫对象
- **     sck: 套接字对象
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.10.15 #
- ******************************************************************************/
-int crwl_worker_webpage_fsync(crwl_worker_t *worker, crwl_worker_socket_t *sck)
-{
-    fwrite(sck->read.addr, sck->read.off, 1, sck->webpage.fp);
-
-    sck->read.off = 0;
-    sck->read.total = CRWL_RECV_SIZE;
     return CRWL_OK;
 }
 
@@ -990,10 +974,14 @@ int crwl_worker_webpage_finfo(crwl_worker_t *worker, crwl_worker_socket_t *sck)
     struct tm loctm;
     char path[FILE_NAME_MAX_LEN];
 
+    localtime_r(&sck->crtm.time, &loctm);
+
     snprintf(path, sizeof(path),
-            "%s/info/%02d-%08ld.info",
+            "%s/info/%02d-%08ld-%04d%02d%02d%02d%02d%02d%03d.info",
             worker->ctx->conf.download.path,
-            worker->tidx, sck->webpage.idx);
+            worker->tidx, sck->webpage.idx,
+            loctm.tm_year+1900, loctm.tm_mon+1, loctm.tm_mday,
+            loctm.tm_hour, loctm.tm_min, loctm.tm_sec, sck->crtm.millitm);
 
     Mkdir2(path, 0777);
 
@@ -1006,20 +994,17 @@ int crwl_worker_webpage_finfo(crwl_worker_t *worker, crwl_worker_socket_t *sck)
         return CRWL_ERR;
     }
 
-    localtime_r(&sck->wrtm, &loctm);
-
     /* 2. 写入校验内容 */
     fprintf(fp, 
         "<INFO>\n"
         "\t<URI DEEP=\"%d\" IPADDR=\"%s\" PORT=\"%d\">%s</URI>\n"
-        "\t<HTML SIZE=\"%lu\">%02d-%08ld.html</HTML>\n"
-        "\t<TIME>%04d-%02d-%02d %02d:%02d:%02d</TIME>\n"
+        "\t<HTML SIZE=\"%lu\">%02d-%08ld-%04d%02d%02d%02d%02d%02d%03d.html</HTML>\n"
         "</INFO>\n",
         sck->webpage.deep, sck->webpage.ipaddr,
         sck->webpage.port, sck->webpage.uri,
         sck->webpage.size, worker->tidx, sck->webpage.idx,
         loctm.tm_year+1900, loctm.tm_mon+1, loctm.tm_mday,
-        loctm.tm_hour, loctm.tm_min, loctm.tm_sec);
+        loctm.tm_hour, loctm.tm_min, loctm.tm_sec, sck->crtm.millitm);
 
     fclose(fp);
 

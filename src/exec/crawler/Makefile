@@ -12,7 +12,12 @@ INCLUDE = -I. \
 			-I./incl \
 			-I$(PROJ)/src/incl
 LIBS_PATH = -L$(PROJ)/lib -L/usr/lib/hiredis
-LIBS = -lpthread -lhiredis -lxd_core -lxd_http -lxd_gumbo_ex
+LIBS = -lpthread \
+	   		-lhiredis \
+			-lxd_redis \
+			-lxd_core \
+			-lxd_http \
+			-lxd_gumbo_ex 
 
 SRC_LIST = crwl_main.c \
 			crwl_task.c \

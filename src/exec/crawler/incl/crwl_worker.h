@@ -32,7 +32,7 @@ typedef struct
 typedef struct
 {
     int sckid;                      /* 套接字ID */
-    time_t crtm;                    /* Create Time */
+    struct timeb crtm;              /* 创建时间 */
     time_t wrtm;                    /* 最近写入时间 */
     time_t rdtm;                    /* 最近读取时间 */
 
@@ -79,7 +79,17 @@ int crwl_task_down_webpage_by_ip(
         crwl_worker_t *worker, const crwl_task_down_webpage_by_ip_t *args);
 
 int crwl_worker_webpage_creat(crwl_worker_t *worker, crwl_worker_socket_t *sck);
-int crwl_worker_webpage_fsync(crwl_worker_t *worker, crwl_worker_socket_t *sck);
+/* 将接收的数据同步到文件
+ *  worker: 对应crwl_worker_t数据类型
+ *  sck: 对应crwl_worker_socket_t数据类型
+ * */
+#define crwl_worker_webpage_fsync(worker, sck) \
+{ \
+    fwrite(sck->read.addr, sck->read.off, 1, sck->webpage.fp); \
+ \
+    sck->read.off = 0; \
+    sck->read.total = CRWL_RECV_SIZE; \
+}
 int crwl_worker_webpage_finfo(crwl_worker_t *worker, crwl_worker_socket_t *sck);
 
 int crwl_worker_parse_conf(xml_tree_t *xml, crwl_worker_conf_t *conf, log_cycle_t *log);

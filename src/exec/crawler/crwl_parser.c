@@ -19,6 +19,7 @@
 #include "log.h"
 #include "list.h"
 #include "http.h"
+#include "redis.h"
 #include "xd_str.h"
 #include "common.h"
 #include "syscall.h"
@@ -34,7 +35,10 @@ static int crwl_parser_webpage_info(crwl_parser_t *parser);
 static int crwl_parser_work_flow(crwl_parser_t *parser);
 static int crwl_parser_deep_hdl(crwl_parser_t *parser, gumbo_result_t *result);
 
-bool crwl_is_uri_download(redisContext *ctx, const char *uri);
+/* 判断URI是否已下载 */
+#define crwl_is_uri_down(ctx, hash, uri) (!redis_hsetnx(ctx, hash, uri, "1"))
+/* 判断URI是否已推送至队列 */
+#define crwl_is_uri_push(ctx, hash, uri) (!redis_hsetnx(ctx, hash, uri, "1"))
 
 /******************************************************************************
  **函数名称: crwl_parser_exec
@@ -341,7 +345,7 @@ static int crwl_parser_work_flow(crwl_parser_t *parser)
      * 判断的同时设置网页的下载标志
      * 如果已下载，则不做提取该网页中的超链接
      * */
-    if (!crwl_is_uri_download(parser->redis_ctx, info->uri))
+    if (crwl_is_uri_down(parser->redis_ctx, conf->redis.done_tab, info->uri))
     {
         log_info(parser->log, "Uri [%s] was downloaded!", info->uri);
         return CRWL_OK;
@@ -403,6 +407,7 @@ static int crwl_parser_deep_hdl(crwl_parser_t *parser, gumbo_result_t *result)
 {
     redisReply *r; 
     uri_field_t field;
+    crwl_conf_t *conf = &parser->conf;
     list_node_t *node = result->list.head;
 
     /* 1. 遍历URL集合 */
@@ -412,6 +417,14 @@ static int crwl_parser_deep_hdl(crwl_parser_t *parser, gumbo_result_t *result)
         if (0 != uri_reslove(node->data, &field))
         {
             log_error(parser->log, "Uri [%s] is invalid!", (char *)node->data);
+            node = node->next;
+            continue;
+        }
+
+        /* 判断URI是否已经被推送到队列中 */
+        if (crwl_is_uri_push(parser->redis_ctx, conf->redis.push_tab, field.uri))
+        {
+            log_info(parser->log, "Uri [%s] was pushed!", (char *)node->data);
             node = node->next;
             continue;
         }
@@ -432,45 +445,4 @@ static int crwl_parser_deep_hdl(crwl_parser_t *parser, gumbo_result_t *result)
     }
 
     return CRWL_OK;
-}
-
-/******************************************************************************
- **函数名称: crwl_is_uri_download
- **功    能: 判断网页(URI)是否已下载
- **输入参数: 
- **     ctx: Redis信息
- **     uri: URI字串
- **输出参数:
- **返    回: true:已下载 false:未下载
- **实现描述: 
- **     HSETNX:
- **         1. 表示新的Field被设置了新值
- **         0. 表示Key或Field已经存在，该命令没有进行任何操作。
- **注意事项: 
- **     在DONE TABLE才算已下载.
- **作    者: # Qifeng.zou # 2014.10.18 #
- ******************************************************************************/
-bool crwl_is_uri_download(redisContext *ctx, const char *uri)
-{
-    redisReply *r;
-
-    /* 2. 设置DONE表 */
-    r = redisCommand(ctx, "HSETNX CRWL_DONE_TAB %s 1", uri);
-    if (REDIS_REPLY_INTEGER != r->type)
-    {
-        freeReplyObject(r);
-        return true;
-    }
-
-    if (1 == r->integer)
-    {
-        /* 1. 表示新的Field被设置了新值
-         * 说明之前未设置值，也就是未下载网页
-         * */
-        freeReplyObject(r);
-        return false;
-    }
-
-    freeReplyObject(r);
-    return true;
 }

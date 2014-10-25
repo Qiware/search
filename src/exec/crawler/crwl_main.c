@@ -610,6 +610,27 @@ static int crwl_parse_comm_conf(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
     snprintf(conf->redis.undo_taskq,
             sizeof(conf->redis.undo_taskq), "%s", node->value);
 
+    /* 3.4 获取哈希表名 */
+    node = xml_rsearch(xml, fix, "HASH.DONE_TAB");
+    if (NULL == node)
+    {
+        log_error(log, "Get done hash table failed!");
+        return CRWL_ERR;
+    }
+
+    snprintf(conf->redis.done_tab,
+            sizeof(conf->redis.done_tab), "%s", node->value);
+
+    node = xml_rsearch(xml, fix, "HASH.PUSH_TAB");
+    if (NULL == node)
+    {
+        log_error(log, "Get pushed hash table failed!");
+        return CRWL_ERR;
+    }
+
+    snprintf(conf->redis.push_tab,
+            sizeof(conf->redis.push_tab), "%s", node->value);
+
     return CRWL_OK;
 }
 

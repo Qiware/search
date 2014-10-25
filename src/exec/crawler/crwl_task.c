@@ -40,7 +40,6 @@ int crwl_task_down_webpage_by_uri(
 {
     int ret, fd, ip_idx;
     uri_field_t field;
-    time_t ctm = time(NULL);
     crwl_domain_t *domain;
     crwl_worker_socket_t *sck;
 
@@ -84,9 +83,9 @@ int crwl_task_down_webpage_by_uri(
     memset(sck, 0, sizeof(crwl_worker_socket_t));
 
     sck->sckid = fd;
-    sck->crtm = ctm;
-    sck->rdtm = ctm;
-    sck->wrtm = ctm;
+    ftime(&sck->crtm);
+    sck->rdtm = sck->crtm.time;
+    sck->wrtm = sck->crtm.time;
     sck->read.addr = sck->recv;
 
     snprintf(sck->webpage.uri, sizeof(sck->webpage.uri), "%s", args->uri);
