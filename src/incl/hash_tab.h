@@ -16,10 +16,10 @@ typedef struct
     avl_cmp_cb_t cmp;
 } hash_tab_t;
 
-hash_tab_t *hash_tab_init(int num, avl_key_cb_t key, avl_cmp_cb_t cmp);
-int hash_tab_insert(hash_tab_t *hash, avl_unique_t *unique, void *addr);
-void *hash_tab_search(hash_tab_t *hash, avl_unique_t *unique);
-void *hash_tab_delete(hash_tab_t *hash, avl_unique_t *unique);
+hash_tab_t *hash_tab_init(int num, avl_key_cb_t key_cb, avl_cmp_cb_t cmp_cb);
+int hash_tab_insert(hash_tab_t *hash, const avl_unique_t *unique, void *addr);
+void *hash_tab_search(hash_tab_t *hash, const avl_unique_t *unique);
+void *hash_tab_delete(hash_tab_t *hash, const avl_unique_t *unique);
 int hash_tab_destroy(hash_tab_t *hash);
 
 #endif /*__HASH_TAB_H__*/
