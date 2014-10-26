@@ -724,6 +724,11 @@ CRWL_FETCH_DOMAIN:
             && domain->ip_num < CRWL_IP_MAX_NUM)
         {
             sockaddr = (struct sockaddr_in *)curr->ai_addr;
+            if (0 == sockaddr->sin_addr.s_addr)
+            {
+                curr = curr->ai_next;
+                continue;
+            }
 
             inet_ntop(AF_INET,
                     &sockaddr->sin_addr.s_addr,

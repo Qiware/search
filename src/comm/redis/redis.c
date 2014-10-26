@@ -36,15 +36,15 @@ bool redis_hsetnx(redisContext *ctx,
     if (REDIS_REPLY_INTEGER != r->type)
     {
         freeReplyObject(r);
-        return true;
+        return false;
     }
 
     if (1 == r->integer)
     {
         freeReplyObject(r);
-        return false;
+        return true;
     }
 
     freeReplyObject(r);
-    return true;
+    return false;
 }

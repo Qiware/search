@@ -6,7 +6,7 @@
              1) LOG_LEVLE: 日志级别
              2) LOG2_LEVEL: 系统日志级别
              3) 取值范围: trace|debug|info|warn|error|fatal -->
-        <LOG LOG_LEVEL="warn" LOG2_LEVEL="error" PATH="../log/" />
+        <LOG LOG_LEVEL="info" LOG2_LEVEL="error" PATH="../log/" />
         <!-- 爬取配置
              1) DEEP: 最大爬取深度
              2) PATH: 网页存储路径 -->
@@ -15,8 +15,13 @@
              1) IPADDR: IP地址
              2) PORT: 端口号 -->
         <REDIS IPADDR="127.0.0.1" PORT="6379">
-            <QUEUE UNDO_TASKQ="CRWL_UNDO_TASKQ" />  <!-- 队列配置 -->
-            <HASH DONE_TAB="CRWL_DONE_TAB" />       <!-- 哈希表配置 -->
+            <!-- 队列配置
+                 1) UNDO_TASKQ: 还未处理的网页队列 -->
+            <QUEUE UNDO_TASKQ="CRWL_UNDO_TASKQ" />
+            <!-- 哈希表配置
+                 1) DONE_TAB: 已下载网页表
+                 2) PUSH_TAB: 已放入过队列的网页(防止重复放入UNDO队列) -->
+            <HASH DONE_TAB="CRWL_DONE_TAB" PUSH_TAB="CRWL_PUSH_TAB" />
             <SLAVE>   <!-- 副本服务器 -->
                 <ITEM IPADDR="127.0.0.1" PORT="6380" />
                 <ITEM IPADDR="127.0.0.1" PORT="6381" />
@@ -26,7 +31,7 @@
 
     <!-- 爬虫进程: 负责网页下载
          1) NUM: 线程数 -->
-    <WORKER NUM="1">
+    <WORKER NUM="5">
         <CONNECTIONS MAX="64" TIMEOUT="30" /> <!-- 爬取网页的并发(连接)数 -->
         <TASKQ COUNT="10000" />         <!-- Undo任务队列配置 -->
     </WORKER>
