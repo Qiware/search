@@ -35,10 +35,7 @@ void* queue_pop(Queue_t *q);
 void queue_destroy(Queue_t *q);
 
 /* 获取队列剩余空间 */
-static inline int queue_space(Queue_t *q)
-{
-    return (q->max > q->num)? 1 : 0;
-}
+#define queue_space(q) ((q)->max - (q)->num)
 
 /* 加锁队列 */
 typedef struct
