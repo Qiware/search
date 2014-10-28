@@ -12,7 +12,7 @@ typedef struct
     char fname[FILE_NAME_MAX_LEN];  /* 网页信息文件 */
 
     char uri[URI_MAX_LEN];          /* URI */
-    int deep;                       /* 网页深度 */
+    uint32_t depth;                 /* 网页深度 */
     char ipaddr[IP_ADDR_MAX_LEN];   /* IP地址 */
     int port;                       /* 端口号 */
     char html[FILE_NAME_MAX_LEN];   /* 网页存储名 */

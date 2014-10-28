@@ -919,10 +919,10 @@ int crwl_worker_webpage_finfo(crwl_worker_t *worker, crwl_worker_socket_t *sck)
     /* 2. 写入校验内容 */
     fprintf(fp, 
         "<INFO>\n"
-        "\t<URI DEEP=\"%d\" IPADDR=\"%s\" PORT=\"%d\">%s</URI>\n"
+        "\t<URI DEPTH=\"%d\" IPADDR=\"%s\" PORT=\"%d\">%s</URI>\n"
         "\t<HTML SIZE=\"%lu\">%02d-%08ld-%04d%02d%02d%02d%02d%02d%03d.html</HTML>\n"
         "</INFO>\n",
-        sck->webpage.deep, sck->webpage.ipaddr,
+        sck->webpage.depth, sck->webpage.ipaddr,
         sck->webpage.port, sck->webpage.uri,
         sck->webpage.size, worker->tidx, sck->webpage.idx,
         loctm.tm_year+1900, loctm.tm_mon+1, loctm.tm_mday,

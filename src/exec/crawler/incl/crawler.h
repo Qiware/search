@@ -40,6 +40,7 @@
 #define CRWL_CONNECTIONS_DEF_NUM    (512)   /* 默认网络连接数 */
 #define CRWL_CONNECTIONS_MIN_NUM    (1)     /* 最小网络连接数 */
 
+#define CRWL_DEPTH_NO_LIMIT         (-1)    /* 爬取深度无限制 */
 #define CRWL_WEB_SVR_PORT           (80)    /* WEB服务器侦听端口 */
 #define CRWL_SCK_TMOUT_SEC          (30)    /* 套接字超时时间(秒) */
 
@@ -53,7 +54,7 @@
                 "<TASK>" \
                     "<TYPE>%d</TYPE>" \
                     "<BODY>" \
-                        "<URI DEEP=\"%d\">%s</URI>" \
+                        "<URI DEPTH=\"%d\">%s</URI>" \
                     "</BODY>" \
                 "</TASK>", \
                 CRWL_TASK_DOWN_WEBPAGE_BY_URL, deep, uri);

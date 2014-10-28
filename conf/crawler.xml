@@ -8,9 +8,9 @@
              3) 取值范围: trace|debug|info|warn|error|fatal -->
         <LOG LOG_LEVEL="info" LOG2_LEVEL="error" PATH="../log/" />
         <!-- 爬取配置
-             1) DEEP: 最大爬取深度
+             1) DEPTH: 最大爬取深度
              2) PATH: 网页存储路径 -->
-        <DOWNLOAD DEEP="3" PATH="../temp/crwl/webpage" />
+        <DOWNLOAD DEPTH="3" PATH="../temp/crwl/webpage" />
         <!-- REDIS服务配置
              1) IPADDR: IP地址
              2) PORT: 端口号 -->
@@ -41,12 +41,12 @@
         <DATABASE SERVER="服务名" USER="用户名" PASSWD="密码" />  <!-- 数据库配置 -->
     </PARSER>
 
-    <!-- 种子配置(DEEP: 表示种子的当前深度) -->
+    <!-- 种子配置(DEPTH: 表示种子的当前深度) -->
     <SEED>
-        <ITEM URI="www.baidu.com" DEEP="0" />
-        <ITEM URI="www.ifeng.com" DEEP="0" />
-        <ITEM URI="www.qq.com" DEEP="0" />
-        <ITEM URI="www.163.com" DEEP="0" />
-        <ITEM URI="www.52rd.com" DEEP="0" />
+        <ITEM URI="www.baidu.com" DEPTH="0" />
+        <ITEM URI="www.ifeng.com" DEPTH="0" />
+        <ITEM URI="www.qq.com" DEPTH="0" />
+        <ITEM URI="www.163.com" DEPTH="0" />
+        <ITEM URI="www.52rd.com" DEPTH="0" />
     </SEED>
 </CRAWLER>

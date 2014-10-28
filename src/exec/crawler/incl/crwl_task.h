@@ -27,7 +27,7 @@ typedef struct
 typedef struct
 {
     char uri[URL_MAX_LEN];                  /* URI */
-    int deep;                               /* 当前URI的深度(0:表示深度未知) */
+    uint32_t depth;                         /* 当前URI的深度(0:表示深度未知) */
     int port;                               /* 端口号 */
 } crwl_task_down_webpage_by_uri_t;
 

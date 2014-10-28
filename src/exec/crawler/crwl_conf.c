@@ -65,14 +65,14 @@ static int crwl_parse_comm_conf(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
     }
 
     /* 2.1 获取抓取深度 */
-    node = xml_rsearch(xml, fix, "DEEP");
+    node = xml_rsearch(xml, fix, "DEPTH");
     if (NULL == node)
     {
-        log_error(log, "Get download deep failed!");
+        log_error(log, "Get download depth failed!");
         return CRWL_ERR;
     }
 
-    conf->download.deep = atoi(node->value);
+    conf->download.depth = atoi(node->value);
 
     /* 2.2 获取存储路径 */
     node = xml_rsearch(xml, fix, "PATH");
@@ -216,16 +216,16 @@ static int crwl_parse_seed_conf(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
 
         snprintf(seed->uri, sizeof(seed->uri), "%s", cf_node->value);
 
-        /* 获取DEEP */
-        cf_node = xml_rsearch(xml, cf_item, "DEEP");
+        /* 获取DEPTH */
+        cf_node = xml_rsearch(xml, cf_item, "DEPTH");
         if (NULL == cf_node)
         {
-            seed->deep = 0;
-            log_info(log, "Didn't set deepth of uri!");
+            seed->depth = 0;
+            log_info(log, "Didn't set depth of uri!");
         }
         else
         {
-            seed->deep = atoi(cf_node->value);
+            seed->depth = atoi(cf_node->value);
         }
 
         /* 加入配置链表 */

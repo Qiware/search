@@ -262,15 +262,15 @@ static int crwl_parser_webpage_info(crwl_parser_t *parser)
 
         snprintf(info->uri, sizeof(info->uri), "%s", node->value);
 
-        /* 获取DEEP字段 */
-        node = xml_rsearch(xml, fix, "URI.DEEP");
+        /* 获取DEPTH字段 */
+        node = xml_rsearch(xml, fix, "URI.DEPTH");
         if (NULL == fix)
         {
             log_error(parser->log, "Didn't find INFO mark!");
             break;
         }
 
-        info->deep = atoi(node->value);
+        info->depth = atoi(node->value);
 
         /* 获取IPADDR字段 */
         node = xml_rsearch(xml, fix, "URI.IPADDR");
@@ -332,10 +332,10 @@ static int crwl_parser_work_flow(crwl_parser_t *parser)
     crwl_webpage_info_t *info = &parser->info;
 
     /* 1. 判断网页深度 */
-    if (info->deep > conf->download.deep)
+    if (info->depth > conf->download.depth)
     {
-        log_info(parser->log, "Drop handle webpage! uri:%s deep:%d",
-                info->uri, info->deep);
+        log_info(parser->log, "Drop handle webpage! uri:%s depth:%d",
+                info->uri, info->depth);
         return CRWL_OK;
     }
 
@@ -432,7 +432,7 @@ static int crwl_parser_deep_hdl(crwl_parser_t *parser, gumbo_result_t *result)
         }
 
         /* 组装任务格式 */
-        len = crwl_get_task_str(task_str, sizeof(task_str), field.uri, info->deep+1);
+        len = crwl_get_task_str(task_str, sizeof(task_str), field.uri, info->depth+1);
         if (len >= sizeof(task_str))
         {
             log_info(parser->log, "Task string is too long! [%s]", task_str);

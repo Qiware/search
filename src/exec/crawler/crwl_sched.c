@@ -347,14 +347,14 @@ static int crwl_sched_push_undo_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
     while (NULL != node)
     {
         seed = (crwl_seed_item_t *)node->data;
-        if (seed->deep > ctx->conf.download.deep) /* 判断网页深度 */
+        if (seed->depth > ctx->conf.download.depth) /* 判断网页深度 */
         {
             node = node->next;
             continue;
         }
 
         /* 1. 组装任务格式 */
-        len = crwl_get_task_str(task_str, sizeof(task_str), seed->uri, seed->deep);
+        len = crwl_get_task_str(task_str, sizeof(task_str), seed->uri, seed->depth);
         if (len >= sizeof(task_str))
         {
             log_info(ctx->log, "Task string is too long! uri:[%s]", seed->uri);
@@ -477,14 +477,14 @@ static int crwl_task_parse_download_webpage_by_uri(
 
     snprintf(dw->uri, sizeof(dw->uri), "%s", node->value);
 
-    /* 获取URI.DEEP */
-    node = xml_rsearch(xml, body, "URI.DEEP");
+    /* 获取URI.DEPTH */
+    node = xml_rsearch(xml, body, "URI.DEPTH");
     if (NULL == node)
     {
         return CRWL_ERR;
     }
 
-    dw->deep = atoi(node->value);
+    dw->depth = atoi(node->value);
     dw->port = CRWL_WEB_SVR_PORT;
 
     return CRWL_OK;
