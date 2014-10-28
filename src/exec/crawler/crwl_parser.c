@@ -331,15 +331,13 @@ static int crwl_parser_work_flow(crwl_parser_t *parser)
     crwl_conf_t *conf = &parser->conf;
     crwl_webpage_info_t *info = &parser->info;
 
-#if 0
     /* 1. 判断网页深度 */
-    if ((0 == info->deep) || (info->deep > 3))
+    if (info->deep > conf->download.deep)
     {
         log_info(parser->log, "Drop handle webpage! uri:%s deep:%d",
                 info->uri, info->deep);
         return CRWL_OK;
     }
-#endif
 
     /* 判断网页(URI)是否已下载
      * 判断的同时设置网页的下载标志
@@ -350,6 +348,7 @@ static int crwl_parser_work_flow(crwl_parser_t *parser)
         log_info(parser->log, "Uri [%s] was downloaded!", info->uri);
         return CRWL_OK;
     }
+
 
     snprintf(fname, sizeof(fname), "%s/%s", conf->download.path, info->html);
 

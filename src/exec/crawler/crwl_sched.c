@@ -347,6 +347,11 @@ static int crwl_sched_push_undo_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
     while (NULL != node)
     {
         seed = (crwl_seed_item_t *)node->data;
+        if (seed->deep > ctx->conf.download.deep) /* 判断网页深度 */
+        {
+            node = node->next;
+            continue;
+        }
 
         /* 1. 组装任务格式 */
         len = crwl_get_task_str(task_str, sizeof(task_str), seed->uri, seed->deep);
