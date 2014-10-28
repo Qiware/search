@@ -10,6 +10,7 @@
 #include <stdint.h>
 
 #include "log.h"
+#include "redis.h"
 #include "common.h"
 #include "crawler.h"
 #include "syscall.h"
@@ -274,7 +275,7 @@ static int crwl_sched_fetch_undo_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
         times = 0;
 
         /* 2. 取Undo任务数据 */
-        r = redisCommand(sched->redis_ctx, "LPOP %s", conf->redis.undo_taskq);
+        r = redis_lpop(sched->redis_ctx, conf->redis.undo_taskq);
         if (REDIS_REPLY_NIL == r->type)
         {
             freeReplyObject(r);
@@ -357,8 +358,7 @@ static int crwl_sched_push_undo_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
         }
 
         /* 2. 插入Undo任务队列 */
-        r = redisCommand(sched->redis_ctx,
-                "RPUSH %s %s", ctx->conf.redis.undo_taskq, task_str);
+        r = redis_rpush(sched->redis_ctx, ctx->conf.redis.undo_taskq, task_str);
         if (REDIS_REPLY_NIL == r->type)
         {
             freeReplyObject(r);

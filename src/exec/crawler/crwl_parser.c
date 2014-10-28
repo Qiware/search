@@ -442,8 +442,7 @@ static int crwl_parser_deep_hdl(crwl_parser_t *parser, gumbo_result_t *result)
         }
 
         /* 1.2 插入Undo任务队列 */
-        r = redisCommand(parser->redis_ctx,
-                "RPUSH %s %s", parser->conf.redis.undo_taskq, task_str);
+        r = redis_rpush(parser->redis_ctx, parser->conf.redis.undo_taskq, task_str);
         if (REDIS_REPLY_NIL == r->type)
         {
             freeReplyObject(r);
