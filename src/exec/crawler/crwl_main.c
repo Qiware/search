@@ -42,12 +42,9 @@ typedef struct
 static int crwl_getopt(int argc, char **argv, crwl_opt_t *opt);
 static int crwl_usage(const char *exec);
 static int crwl_proc_lock(void);
-static int crwl_load_conf(crwl_conf_t *conf, const char *path, log_cycle_t *log);
 
 static int crwl_init_workers(crwl_cntx_t *ctx);
 int crwl_workers_destroy(crwl_cntx_t *ctx);
-
-static int crwl_parse_comm_conf(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log);
 
 /******************************************************************************
  **函数名称: main 
@@ -234,53 +231,6 @@ static int crwl_usage(const char *exec)
            "\t-d\tRun as daemon\n"
            "\t-l\tSet log level. [trace|debug|info|warn|error|fatal]\n"
            "\t-c\tConfiguration path\n\n");
-    return CRWL_OK;
-}
-
-/******************************************************************************
- **函数名称: crwl_load_conf
- **功    能: 加载配置信息
- **输入参数:
- **     path: 配置路径
- **     log: 日志对象
- **输出参数:
- **     conf: 配置信息 
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.10.12 #
- ******************************************************************************/
-static int crwl_load_conf(crwl_conf_t *conf, const char *path, log_cycle_t *log)
-{
-    int ret;
-    xml_tree_t *xml;
-
-    /* 1. 加载爬虫配置 */
-    xml = xml_creat(path);
-    if (NULL == xml)
-    {
-        log_error(log, "Create xml failed! path:%s", path);
-        return CRWL_ERR;
-    }
-
-    /* 2. 加载通用配置 */
-    ret = crwl_parse_comm_conf(xml, conf, log);
-    if (CRWL_OK != ret)
-    {
-        log_error(log, "Load common conf failed! path:%s", path);
-        return CRWL_ERR;
-    }
-
-    /* 2. 提取爬虫配置 */
-    ret = crwl_worker_parse_conf(xml, &conf->worker, log);
-    if (0 != ret)
-    {
-        log_error(log, "Parse worker configuration failed! path:%s", path);
-        xml_destroy(xml);
-        return CRWL_ERR;
-    }
-
-    xml_destroy(xml);
     return CRWL_OK;
 }
 
@@ -497,144 +447,6 @@ int crwl_workers_destroy(crwl_cntx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: crwl_parse_comm_conf
- **功    能: 加载通用配置
- **输入参数: 
- **     xml: XML配置
- **     log: 日志对象
- **输出参数:
- **     conf: 配置信息
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **     通过XML查询接口查找对应的配置信息
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.10.16 #
- ******************************************************************************/
-static int crwl_parse_comm_conf(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
-{
-    xml_node_t *node, *fix;
-
-    /* 1. 定位LOG标签
-     *  获取日志级别信息
-     * */
-    fix = xml_search(xml, ".CRAWLER.COMMON.LOG");
-    if (NULL != fix)
-    {
-        /* 1.1 日志级别 */
-        node = xml_rsearch(xml, fix, "LOG_LEVEL");
-        if (NULL != node)
-        {
-            conf->log_level = log_get_level(node->value);
-        }
-
-        /* 1.2 系统日志级别 */
-        node = xml_rsearch(xml, fix, "LOG2_LEVEL");
-        if (NULL != node)
-        {
-            conf->log2_level = log_get_level(node->value);
-        }
-    }
-    else
-    {
-        log_warn(log, "Didn't configure log!");
-    }
-
-    /* 2. 定位Download标签
-     *  获取网页抓取深度和存储路径
-     * */
-    fix = xml_search(xml, ".CRAWLER.COMMON.DOWNLOAD");
-    if (NULL == fix)
-    {
-        log_error(log, "Didn't configure download!");
-        return CRWL_ERR;
-    }
-
-    /* 2.1 获取抓取深度 */
-    node = xml_rsearch(xml, fix, "DEEP");
-    if (NULL == node)
-    {
-        log_error(log, "Get download deep failed!");
-        return CRWL_ERR;
-    }
-
-    conf->download.deep = atoi(node->value);
-
-    /* 2.2 获取存储路径 */
-    node = xml_rsearch(xml, fix, "PATH");
-    if (NULL == node)
-    {
-        log_error(log, "Get download path failed!");
-        return CRWL_ERR;
-    }
-
-    snprintf(conf->download.path, sizeof(conf->download.path), "%s", node->value);
-
-    /* 3. 定位REDIS标签
-     *  获取Redis的IP地址、端口号、队列等信息
-     * */
-    fix = xml_search(xml, ".CRAWLER.COMMON.REDIS");
-    if (NULL == fix)
-    {
-        log_error(log, "Didn't configure redis!");
-        return CRWL_ERR;
-    }
-
-    /* 3.1 获取IP地址 */
-    node = xml_rsearch(xml, fix, "IPADDR");
-    if (NULL == node)
-    {
-        log_error(log, "Get redis ip address failed!");
-        return CRWL_ERR;
-    }
-
-    snprintf(conf->redis.ipaddr, sizeof(conf->redis.ipaddr), "%s", node->value);
-
-    /* 3.2 获取端口号 */
-    node = xml_rsearch(xml, fix, "PORT");
-    if (NULL == node)
-    {
-        log_error(log, "Get redis port failed!");
-        return CRWL_ERR;
-    }
-
-    conf->redis.port = atoi(node->value);
-
-    /* 3.3 获取队列名 */
-    node = xml_rsearch(xml, fix, "QUEUE.UNDO_TASKQ");
-    if (NULL == node)
-    {
-        log_error(log, "Get undo task queue failed!");
-        return CRWL_ERR;
-    }
-
-    snprintf(conf->redis.undo_taskq,
-            sizeof(conf->redis.undo_taskq), "%s", node->value);
-
-    /* 3.4 获取哈希表名 */
-    node = xml_rsearch(xml, fix, "HASH.DONE_TAB");
-    if (NULL == node)
-    {
-        log_error(log, "Get done hash table failed!");
-        return CRWL_ERR;
-    }
-
-    snprintf(conf->redis.done_tab,
-            sizeof(conf->redis.done_tab), "%s", node->value);
-
-    node = xml_rsearch(xml, fix, "HASH.PUSH_TAB");
-    if (NULL == node)
-    {
-        log_error(log, "Get pushed hash table failed!");
-        return CRWL_ERR;
-    }
-
-    snprintf(conf->redis.push_tab,
-            sizeof(conf->redis.push_tab), "%s", node->value);
-
-    return CRWL_OK;
-}
-
-/******************************************************************************
  **函数名称: crwl_proc_lock
  **功    能: 爬虫进程锁(防止同时启动两个服务进程)
  **输入参数: NONE
@@ -694,7 +506,7 @@ crwl_domain_t *crwl_get_ipaddr(crwl_cntx_t *ctx, char *host)
     unique.data = host;
     unique.len = strlen(host);
 
-CRWL_FETCH_DOMAIN:
+CRWL_FETCH_IPADDR_BY_DOMAIN:
     /* 1. 从域名表中查找IP地址 */
     domain = hash_tab_search(ctx->domain, &unique);
     if (NULL == domain)
@@ -750,7 +562,7 @@ CRWL_FETCH_DOMAIN:
             {
                 log_debug(ctx->log, "Domain is exist! host:[%s]",
                         ret, AVL_NODE_EXIST, host);
-                goto CRWL_FETCH_DOMAIN;
+                goto CRWL_FETCH_IPADDR_BY_DOMAIN;
             }
 
             log_error(ctx->log, "Insert into hash table failed! ret:[%x/%x] host:[%s]",

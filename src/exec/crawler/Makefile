@@ -20,6 +20,7 @@ LIBS = -lpthread \
 			-lxd_gumbo_ex 
 
 SRC_LIST = crwl_main.c \
+			crwl_conf.c \
 			crwl_task.c \
 			crwl_sched.c \
 			crwl_worker.c \

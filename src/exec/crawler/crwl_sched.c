@@ -24,6 +24,11 @@ static void crwl_sched_destroy(crwl_sched_t *sched);
 static int crwl_sched_timeout_hdl(crwl_cntx_t *ctx, crwl_sched_t *sched);
 static int crwl_sched_event_hdl(crwl_cntx_t *ctx, crwl_sched_t *sched);
 static int crwl_sched_fetch_undo_task(crwl_cntx_t *ctx, crwl_sched_t *sched);
+static int crwl_sched_push_undo_task(crwl_cntx_t *ctx, crwl_sched_t *sched);
+
+static int crwl_task_parse(const char *str, crwl_task_t *task);
+static int crwl_task_parse_download_webpage_by_uri(
+        xml_tree_t *xml, crwl_task_down_webpage_by_uri_t *dw);
 
 /******************************************************************************
  **函数名称: crwl_sched_routine
@@ -105,6 +110,7 @@ void *crwl_sched_routine(void *_ctx)
  ******************************************************************************/
 static crwl_sched_t *crwl_sched_init(crwl_cntx_t *ctx)
 {
+    int ret;
     struct timeval tv;
     crwl_sched_t *sched;
     crwl_conf_t *conf = &ctx->conf;
@@ -132,6 +138,16 @@ static crwl_sched_t *crwl_sched_init(crwl_cntx_t *ctx)
     /* 3. 创建命令套接字 */
     sched->cmd_sck_id = -1;
 
+    /* 4. 将种子插入队列 */
+    ret = crwl_sched_push_undo_task(ctx, sched);
+    if (CRWL_OK != ret)
+    {
+        redisFree(sched->redis_ctx);
+        sched->redis_ctx = NULL;
+        log_error(ctx->log, "Push task into undo queue failed!");
+        return NULL;
+    }
+
     return sched;
 }
 
@@ -149,6 +165,7 @@ static crwl_sched_t *crwl_sched_init(crwl_cntx_t *ctx)
 static void crwl_sched_destroy(crwl_sched_t *sched)
 {
     redisFree(sched->redis_ctx);
+    sched->redis_ctx = NULL;
     Close(sched->cmd_sck_id);
     free(sched);
 }
@@ -231,7 +248,6 @@ static int crwl_sched_fetch_undo_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
     crwl_conf_t *conf = &ctx->conf;
 
     crwl_task_t *task;
-    crwl_task_down_webpage_by_uri_t *dw;
     size_t size = sizeof(crwl_task_t) + sizeof(crwl_task_space_u);
 
     worker = (crwl_worker_t *)ctx->workers->data;
@@ -277,28 +293,201 @@ static int crwl_sched_fetch_undo_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
         }
 
         task = (crwl_task_t *)addr;
-        dw = (crwl_task_down_webpage_by_uri_t *)(addr + sizeof(crwl_task_t));
 
-        task->type = CRWL_TASK_DOWN_WEBPAGE_BY_URL;
-        task->length = sizeof(crwl_task_t) + sizeof(crwl_task_down_webpage_by_uri_t);
+        /* 4. 解析Undo数据信息 */
+        ret = crwl_task_parse(r->str, task);
+        if (CRWL_OK != ret)
+        {
+            log_error(ctx->log, "Parse task string failed! %s", r->str);
 
-        snprintf(dw->uri, sizeof(dw->uri), "%s", r->str);
-        dw->port = CRWL_WEB_SVR_PORT;
+            freeReplyObject(r);
+            lqueue_mem_dealloc(&worker[sched->last_idx].undo_taskq, addr);
+            return CRWL_ERR;
+        }
 
         /* 4. 放入Worker任务队列 */
         ret = lqueue_push(&worker[sched->last_idx].undo_taskq, addr);
         if (CRWL_OK != ret)
         {
+            log_error(ctx->log, "Push into worker queue failed!");
+
             freeReplyObject(r);
             lqueue_mem_dealloc(&worker[sched->last_idx].undo_taskq, addr);
-
-            log_error(ctx->log, "Push into worker queue failed! uri:%s port:%d",
-                    dw->uri, dw->port);
             return CRWL_OK;
         }
 
         freeReplyObject(r);
     }
+
+    return CRWL_OK;
+}
+
+/******************************************************************************
+ **函数名称: crwl_sched_push_undo_task
+ **功    能: 将数据放入UNDO队列
+ **输入参数: 
+ **     ctx: 全局信息
+ **     sched: 调度对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.10.28 #
+ ******************************************************************************/
+static int crwl_sched_push_undo_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
+{
+    int len;
+    redisReply *r; 
+    list_node_t *node;
+    crwl_seed_item_t *seed;
+    char task_str[CRWL_TASK_STR_LEN];
+
+    node = ctx->conf.seed.head;
+    while (NULL != node)
+    {
+        seed = (crwl_seed_item_t *)node->data;
+
+        /* 1. 组装任务格式 */
+        len = snprintf(task_str, sizeof(task_str),
+                "<TASK>\n"
+                "\t<TYPE>%d</TYPE>\n"
+                "\t<BODY>\n"
+                "\t\t<URI DEEP=\"%d\">%s</URI>\n"
+                "\t</BODY>\n"
+                "</TASK>",
+                CRWL_TASK_DOWN_WEBPAGE_BY_URL, seed->deep+1, seed->uri);
+        if (len >= sizeof(task_str))
+        {
+            log_info(ctx->log, "Task string is too long! uri:[%s]", seed->uri);
+            node = node->next;
+            continue;
+        }
+
+        /* 2. 插入Undo任务队列 */
+        r = redisCommand(sched->redis_ctx,
+                "RPUSH %s %s", ctx->conf.redis.undo_taskq, task_str);
+        if (REDIS_REPLY_NIL == r->type)
+        {
+            freeReplyObject(r);
+            log_error(ctx->log, "Push into undo task queue failed!");
+            return CRWL_ERR;
+        }
+
+        freeReplyObject(r);
+        node = node->next;
+    }
+
+    return CRWL_OK;
+}
+
+/******************************************************************************
+ **函数名称: crwl_task_parse
+ **功    能: 解析TASK字串
+ **输入参数: 
+ **     str: TASK格式字串
+ **输出参数:
+ **     task: TASK信息(注意: 此字段为消息头+消息体格式)
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **     字段task的地址指向"头+体"的内存首地址, 根据解析的数据类型，将报体放入仅
+ **     接于该字段内存地址后面。
+ **作    者: # Qifeng.zou # 2014.10.28 #
+ ******************************************************************************/
+static int crwl_task_parse(const char *str, crwl_task_t *task)
+{
+    int ret;
+    xml_tree_t *xml;
+    xml_node_t *node;
+
+    /* 1. 解析XML字串 */
+    xml = xml_screat(str);
+    if (NULL == xml)
+    {
+        return CRWL_ERR;
+    }
+
+    /* 2. 获取任务类型 */
+    node = xml_search(xml, "TASK.TYPE");
+    if (NULL == node)
+    {
+        xml_destroy(xml);
+        return CRWL_ERR;
+    }
+
+    task->type = atoi(node->value);
+    switch(task->type)
+    {
+        case CRWL_TASK_DOWN_WEBPAGE_BY_URL:
+        {
+            task->length = sizeof(crwl_task_t) + sizeof(crwl_task_down_webpage_by_uri_t);
+
+            ret = crwl_task_parse_download_webpage_by_uri(
+                    xml, (crwl_task_down_webpage_by_uri_t *)(task + 1));
+            if (CRWL_OK != ret)
+            {
+                xml_destroy(xml);
+                return CRWL_ERR;
+            }
+            break;
+        }
+        case CRWL_TASK_DOWN_WEBPAGE_BY_IP:
+        {
+            break;
+        }
+        default:
+        {
+            break;
+        }
+    }
+
+    xml_destroy(xml);
+
+    return CRWL_OK;
+}
+
+/******************************************************************************
+ **函数名称: crwl_task_parse_download_webpage_by_uri
+ **功    能: 解析TASK字串中DOWNLOAD WEBPAGE BY URI的配置
+ **输入参数: 
+ **     xml: XML树
+ **输出参数:
+ **     dw: Download webpage by uri的配置
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.10.28 #
+ ******************************************************************************/
+static int crwl_task_parse_download_webpage_by_uri(
+        xml_tree_t *xml, crwl_task_down_webpage_by_uri_t *dw)
+{
+    xml_node_t *node, *body;
+
+    /* 定位BODY结点 */
+    body = xml_search(xml, "TASK.BODY");
+    if (NULL == body)
+    {
+        return CRWL_ERR;
+    }
+
+    /* 获取URI */
+    node = xml_rsearch(xml, body, "URI");
+    if (NULL == node)
+    {
+        return CRWL_ERR;
+    }
+
+    snprintf(dw->uri, sizeof(dw->uri), "%s", node->value);
+
+    /* 获取URI.DEEP */
+    node = xml_rsearch(xml, body, "URI.DEEP");
+    if (NULL == node)
+    {
+        return CRWL_ERR;
+    }
+
+    dw->deep = atoi(node->value);
+    dw->port = CRWL_WEB_SVR_PORT;
 
     return CRWL_OK;
 }

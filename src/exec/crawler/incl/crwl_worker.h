@@ -92,8 +92,6 @@ int crwl_worker_webpage_creat(crwl_worker_t *worker, crwl_worker_socket_t *sck);
 }
 int crwl_worker_webpage_finfo(crwl_worker_t *worker, crwl_worker_socket_t *sck);
 
-int crwl_worker_parse_conf(xml_tree_t *xml, crwl_worker_conf_t *conf, log_cycle_t *log);
-
 int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker);
 int crwl_worker_destroy(crwl_worker_t *worker);
 void *crwl_worker_routine(void *_ctx);

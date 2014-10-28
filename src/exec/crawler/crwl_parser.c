@@ -405,10 +405,13 @@ static int crwl_parser_work_flow(crwl_parser_t *parser)
  ******************************************************************************/
 static int crwl_parser_deep_hdl(crwl_parser_t *parser, gumbo_result_t *result)
 {
+    int len;
     redisReply *r; 
     uri_field_t field;
+    char task_str[CRWL_TASK_STR_LEN];
     crwl_conf_t *conf = &parser->conf;
     list_node_t *node = result->list.head;
+    crwl_webpage_info_t *info = &parser->info;
 
     /* 1. 遍历URL集合 */
     while (NULL != node)
@@ -429,9 +432,25 @@ static int crwl_parser_deep_hdl(crwl_parser_t *parser, gumbo_result_t *result)
             continue;
         }
 
+        /* 组装任务格式 */
+        len = snprintf(task_str, sizeof(task_str),
+                "<TASK>\n"
+                "\t<TYPE>%d</TYPE>\n"
+                "\t<BODY>\n"
+                "\t\t<URI DEEP=\"%d\">%s</URI>\n"
+                "\t</BODY>\n"
+                "</TASK>",
+                CRWL_TASK_DOWN_WEBPAGE_BY_URL, info->deep+1, field.uri);
+        if (len >= sizeof(task_str))
+        {
+            log_info(parser->log, "Task string is too long! [%s]", task_str);
+            node = node->next;
+            continue;
+        }
+
         /* 1.2 插入Undo任务队列 */
-        r = redisCommand(parser->redis_ctx, "RPUSH %s %s",
-                parser->conf.redis.undo_taskq, field.uri);
+        r = redisCommand(parser->redis_ctx,
+                "RPUSH %s %s", parser->conf.redis.undo_taskq, task_str);
         if (REDIS_REPLY_NIL == r->type)
         {
             freeReplyObject(r);

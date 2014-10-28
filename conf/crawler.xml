@@ -40,4 +40,13 @@
     <PARSER>
         <DATABASE SERVER="服务名" USER="用户名" PASSWD="密码" />  <!-- 数据库配置 -->
     </PARSER>
+
+    <!-- 种子配置(DEEP: 表示种子的当前深度) -->
+    <SEED>
+        <ITEM URI="www.baidu.com" DEEP="0" />
+        <ITEM URI="www.ifeng.com" DEEP="0" />
+        <ITEM URI="www.qq.com" DEEP="0" />
+        <ITEM URI="www.163.com" DEEP="0" />
+        <ITEM URI="www.52rd.com" DEEP="0" />
+    </SEED>
 </CRAWLER>

@@ -20,6 +20,7 @@
 #include "crawler.h"
 #include "hash_tab.h"
 #include "crwl_task.h"
+#include "crwl_conf.h"
 #include "thread_pool.h"
 
 /* 宏定义 */
@@ -45,7 +46,8 @@
 #define CRWL_TASK_QUEUE_MAX_NUM     (10000) /* 任务队列单元数 */
 #define CRWL_DEF_CONF_PATH  "../conf/crawler.xml"   /* 默认配置路径 */
 
-
+#define CRWL_TASK_STR_LEN           (8192)  /* TASK字串最大长度 */
+#define CRWL_WEBPAGE_NAME 
 
 /* 错误码 */
 typedef enum
@@ -78,42 +80,6 @@ typedef struct
     int type;                               /* 数据类型(crwl_data_type_e) */
     int length;                             /* 数据长度(报头+报体) */
 } crwl_data_info_t;
-
-/* Worker配置信息 */
-typedef struct
-{
-    int num;                                /* 爬虫线程数 */
-    int connections;                        /* 并发网页连接数 */
-    int taskq_count;                        /* Undo任务队列容量 */
-} crwl_worker_conf_t;
-
-/* Download配置信息 */
-typedef struct
-{
-    int deep;                               /* 爬取最大深度 */
-    char path[PATH_NAME_MAX_LEN];           /* 网页存储路径 */
-} crwl_download_conf_t;
-
-/* Redis配置信息 */
-typedef struct
-{
-    char ipaddr[IP_ADDR_MAX_LEN];           /* Redis服务IP */
-    int port;                               /* Redis服务端口 */
-    char undo_taskq[QUEUE_NAME_MAX_LEN];    /* Undo任务队列名 */
-    char done_tab[TABLE_NAME_MAX_LEN];      /* Done哈希表名 */
-    char push_tab[TABLE_NAME_MAX_LEN];      /* Push哈希表名 */
-} crwl_redis_conf_t;
-
-/* 爬虫配置信息 */
-typedef struct
-{
-    int log_level;                          /* 日志级别 */
-    int log2_level;                         /* 系统日志级别 */
-
-    crwl_download_conf_t download;          /* Download配置信息 */
-    crwl_redis_conf_t redis;                /* REDIS配置信息 */
-    crwl_worker_conf_t worker;              /* Worker配置信息 */
-} crwl_conf_t;
 
 /* 域名信息 */
 typedef struct
