@@ -47,7 +47,16 @@
 #define CRWL_DEF_CONF_PATH  "../conf/crawler.xml"   /* 默认配置路径 */
 
 #define CRWL_TASK_STR_LEN           (8192)  /* TASK字串最大长度 */
-#define CRWL_WEBPAGE_NAME 
+
+#define crwl_get_task_str(str, size, uri, deep) /* TASK字串 */\
+            snprintf(str, size, \
+                "<TASK>" \
+                    "<TYPE>%d</TYPE>" \
+                    "<BODY>" \
+                        "<URI DEEP=\"%d\">%s</URI>" \
+                    "</BODY>" \
+                "</TASK>", \
+                CRWL_TASK_DOWN_WEBPAGE_BY_URL, deep, uri);
 
 /* 错误码 */
 typedef enum

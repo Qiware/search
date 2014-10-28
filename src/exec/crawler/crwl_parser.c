@@ -433,14 +433,7 @@ static int crwl_parser_deep_hdl(crwl_parser_t *parser, gumbo_result_t *result)
         }
 
         /* 组装任务格式 */
-        len = snprintf(task_str, sizeof(task_str),
-                "<TASK>\n"
-                "\t<TYPE>%d</TYPE>\n"
-                "\t<BODY>\n"
-                "\t\t<URI DEEP=\"%d\">%s</URI>\n"
-                "\t</BODY>\n"
-                "</TASK>",
-                CRWL_TASK_DOWN_WEBPAGE_BY_URL, info->deep+1, field.uri);
+        len = crwl_get_task_str(task_str, sizeof(task_str), field.uri, info->deep+1);
         if (len >= sizeof(task_str))
         {
             log_info(parser->log, "Task string is too long! [%s]", task_str);

@@ -348,14 +348,7 @@ static int crwl_sched_push_undo_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
         seed = (crwl_seed_item_t *)node->data;
 
         /* 1. 组装任务格式 */
-        len = snprintf(task_str, sizeof(task_str),
-                "<TASK>\n"
-                "\t<TYPE>%d</TYPE>\n"
-                "\t<BODY>\n"
-                "\t\t<URI DEEP=\"%d\">%s</URI>\n"
-                "\t</BODY>\n"
-                "</TASK>",
-                CRWL_TASK_DOWN_WEBPAGE_BY_URL, seed->deep+1, seed->uri);
+        len = crwl_get_task_str(task_str, sizeof(task_str), seed->uri, seed->deep);
         if (len >= sizeof(task_str))
         {
             log_info(ctx->log, "Task string is too long! uri:[%s]", seed->uri);
