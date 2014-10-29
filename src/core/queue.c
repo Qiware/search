@@ -291,5 +291,3 @@ void lqueue_destroy(lqueue_t *lq)
     pthread_rwlock_destroy(&lq->lock);
     queue_destroy(&lq->queue);
 }
-
-

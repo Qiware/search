@@ -67,11 +67,9 @@ int main(int argc, char *argv[])
     crwl_opt_t opt;
     crwl_cntx_t *ctx;
     log_cycle_t *log;
-    crwl_conf_t conf;
     char log_path[FILE_NAME_MAX_LEN];
 
     memset(&opt, 0, sizeof(opt));
-    memset(&conf, 0, sizeof(conf));
 
     /* 1. 解析输入参数 */
     ret = crwl_getopt(argc, argv, &opt);
@@ -105,23 +103,15 @@ int main(int argc, char *argv[])
         goto ERROR;
     }
 
-    /* 3. 加载配置文件 */
-    ret = crwl_load_conf(&conf, opt.conf_path, log);
-    if (CRWL_OK != ret)
-    {
-        log_error(log, "Load configuration failed! path:%s", opt.conf_path);
-        goto ERROR;
-    }
-
-    /* 4. 初始化爬虫信息 */
-    ctx = crwl_cntx_init(&conf, log);
+    /* 3. 初始化全局信息 */
+    ctx = crwl_cntx_init(opt.conf_path, log);
     if (NULL == ctx)
     {
         log_error(log, "Initialize crawler failed!");
         goto ERROR;
     }
 
-    /* 5. 启动爬虫服务 */
+    /* 4. 启动爬虫服务 */
     ret = crwl_cntx_startup(ctx);
     if (CRWL_OK != ret)
     {
@@ -238,7 +228,7 @@ static int crwl_usage(const char *exec)
  **函数名称: crwl_cntx_init
  **功    能: 初始化全局信息
  **输入参数: 
- **     conf: 配置信息
+ **     path: 配置文件路径
  **     log: 日志对象
  **输出参数: NONE
  **返    回: 全局对象
@@ -246,10 +236,13 @@ static int crwl_usage(const char *exec)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.04 #
  ******************************************************************************/
-crwl_cntx_t *crwl_cntx_init(const crwl_conf_t *conf, log_cycle_t *log)
+crwl_cntx_t *crwl_cntx_init(const char *path, log_cycle_t *log)
 {
     int ret;
     crwl_cntx_t *ctx;
+    crwl_conf_t conf;
+
+    memset(&conf, 0, sizeof(conf));
 
     /* 1. 判断程序是否已运行 */
     if (0 != crwl_proc_lock())
@@ -258,10 +251,18 @@ crwl_cntx_t *crwl_cntx_init(const crwl_conf_t *conf, log_cycle_t *log)
         return NULL;
     }
 
-    log_set_level(log, conf->log_level);
-    log2_set_level(conf->log2_level);
+    /* 2. 加载配置文件 */
+    ret = crwl_load_conf(&conf, path, log);
+    if (CRWL_OK != ret)
+    {
+        log_error(log, "Load configuration failed! path:%s", path);
+        return NULL;
+    }
 
-    /* 1. 创建全局对象 */
+    log_set_level(log, conf.log_level);
+    log2_set_level(conf.log2_level);
+
+    /* 3. 创建全局对象 */
     ctx = (crwl_cntx_t *)calloc(1, sizeof(crwl_cntx_t));
     if (NULL == ctx)
     {
@@ -270,9 +271,9 @@ crwl_cntx_t *crwl_cntx_init(const crwl_conf_t *conf, log_cycle_t *log)
     }
 
     ctx->log = log;
-    memcpy(&ctx->conf, conf, sizeof(crwl_conf_t)); /* 注: 内存池地址也已拷贝 */
+    memcpy(&ctx->conf, &conf, sizeof(conf)); /* 注: 内存池地址也已拷贝 */
 
-    /* 2. 新建域名表 */
+    /* 4. 新建域名表 */
     ctx->domain = hash_tab_init(CRWL_DOMAIN_SLOT_LEN, hash_time33_ex, NULL);
     if (NULL == ctx->domain)
     {
@@ -281,7 +282,7 @@ crwl_cntx_t *crwl_cntx_init(const crwl_conf_t *conf, log_cycle_t *log)
         return NULL;
     }
 
-    /* 3. 创建Worker线程池 */
+    /* 5. 创建Worker线程池 */
     ret = crwl_init_workers(ctx);
     if (CRWL_OK != ret)
     {

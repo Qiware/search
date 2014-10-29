@@ -113,7 +113,7 @@ typedef struct
 } crwl_cntx_t;
 
 /* 对外接口 */
-crwl_cntx_t *crwl_cntx_init(const crwl_conf_t *conf, log_cycle_t *log);
+crwl_cntx_t *crwl_cntx_init(const char *path, log_cycle_t *log);
 int crwl_cntx_startup(crwl_cntx_t *ctx);
 
 crwl_domain_t *crwl_get_ip_by_domain(crwl_cntx_t *ctx, char *host);

@@ -309,6 +309,9 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
 
         slave->port = atoi(node->value);
 
+        /* 加入Slave链表尾 */
+        list_insert_tail(&redis->slave, l_node);
+
         /* 下一结点 */
         item = item->next;
     }
@@ -479,5 +482,3 @@ static int crwl_conf_load_worker(
 
     return CRWL_OK;
 }
-
-

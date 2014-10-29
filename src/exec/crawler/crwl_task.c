@@ -91,6 +91,7 @@ int crwl_task_down_webpage_by_uri(
     snprintf(sck->webpage.uri, sizeof(sck->webpage.uri), "%s", args->uri);
     snprintf(sck->webpage.ip, sizeof(sck->webpage.ip), "%s", domain->ip[ip_idx]);
     sck->webpage.port = args->port;
+    sck->webpage.depth = args->depth;
 
     ret = crwl_worker_add_sock(worker, sck);
     if (CRWL_OK != ret)
