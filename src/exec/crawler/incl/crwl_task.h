@@ -35,7 +35,7 @@ typedef struct
 typedef struct
 {
     int type;                               /* IP类型(IPV4或IPV6) */
-    char ipaddr[IP_ADDR_MAX_LEN];           /* IP地址 */
+    char ip[IP_ADDR_MAX_LEN];               /* IP地址 */
     int port;                               /* 端口号 */
 } crwl_task_down_webpage_by_ip_t;
 

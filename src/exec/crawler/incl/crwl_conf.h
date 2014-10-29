@@ -26,14 +26,22 @@ typedef struct
     uint32_t depth;                         /* 网页深度 */
 } crwl_seed_item_t;
 
+/* Redis副本配置信息 */
+typedef struct
+{
+    char ip[IP_ADDR_MAX_LEN];               /* Redis服务IP */
+    int port;                               /* Redis服务端口 */
+} crwl_redis_slave_conf_t;
+
 /* Redis配置信息 */
 typedef struct
 {
-    char ipaddr[IP_ADDR_MAX_LEN];           /* Redis服务IP */
+    char ip[IP_ADDR_MAX_LEN];               /* Redis服务IP */
     int port;                               /* Redis服务端口 */
     char undo_taskq[QUEUE_NAME_MAX_LEN];    /* Undo任务队列名 */
     char done_tab[TABLE_NAME_MAX_LEN];      /* Done哈希表名 */
     char push_tab[TABLE_NAME_MAX_LEN];      /* Push哈希表名 */
+    list_t slave;                           /* 副本配置信息 */
 } crwl_redis_conf_t;
 
 /* 爬虫配置信息 */
@@ -46,6 +54,8 @@ typedef struct
     crwl_redis_conf_t redis;                /* REDIS配置信息 */
     crwl_worker_conf_t worker;              /* Worker配置信息 */
     list_t seed;                            /* 种子信息 */
+
+    mem_pool_t *mem_pool;                   /* 内存池 */
 } crwl_conf_t;
 
 int crwl_load_conf(crwl_conf_t *conf, const char *path, log_cycle_t *log);

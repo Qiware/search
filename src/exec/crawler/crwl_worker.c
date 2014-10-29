@@ -243,7 +243,7 @@ static int crwl_worker_trav_recv(crwl_worker_t *worker)
             }
 
             log_error(worker->log, "errmsg:[%d] %s! uri:%s ip:%s",
-                    errno, strerror(errno), sck->webpage.uri, sck->webpage.ipaddr);
+                    errno, strerror(errno), sck->webpage.uri, sck->webpage.ip);
             crwl_worker_remove_sock(worker, sck);
             return CRWL_ERR;
         }
@@ -379,8 +379,8 @@ static int crwl_worker_trav_send(crwl_worker_t *worker)
         ret = crwl_worker_send_data(worker, sck);
         if (CRWL_OK != ret)
         {
-            log_error(worker->log, "Send data failed! ipaddr:[%s:%d] uri:[%s]",
-                sck->webpage.ipaddr, sck->webpage.port, sck->webpage.uri);
+            log_error(worker->log, "Send data failed! ip:[%s:%d] uri:[%s]",
+                sck->webpage.ip, sck->webpage.port, sck->webpage.uri);
 
             /* 将异常套接字踢出链表, 并释放空间 */
             if (prev)
@@ -449,7 +449,7 @@ static int crwl_worker_timeout_hdl(crwl_worker_t *worker)
         }
 
         log_error(worker->log, "Didn't communicate for along time! uri:%s ip:%s",
-                sck->webpage.uri, sck->webpage.ipaddr);
+                sck->webpage.uri, sck->webpage.ip);
 
         crwl_worker_webpage_fsync(worker, sck);
         crwl_worker_webpage_finfo(worker, sck);
@@ -639,7 +639,7 @@ int crwl_worker_remove_sock(crwl_worker_t *worker, crwl_worker_socket_t *sck)
     list_node_t *item, *next, *prev;
 
     log_debug(worker->log, "Remove socket! ip:%s port:%d",
-            sck->webpage.ipaddr, sck->webpage.port);
+            sck->webpage.ip, sck->webpage.port);
 
     if (sck->webpage.fp)
     {
@@ -919,10 +919,10 @@ int crwl_worker_webpage_finfo(crwl_worker_t *worker, crwl_worker_socket_t *sck)
     /* 2. 写入校验内容 */
     fprintf(fp, 
         "<INFO>\n"
-        "\t<URI DEPTH=\"%d\" IPADDR=\"%s\" PORT=\"%d\">%s</URI>\n"
+        "\t<URI DEPTH=\"%d\" IP=\"%s\" PORT=\"%d\">%s</URI>\n"
         "\t<HTML SIZE=\"%lu\">%02d-%08ld-%04d%02d%02d%02d%02d%02d%03d.html</HTML>\n"
         "</INFO>\n",
-        sck->webpage.depth, sck->webpage.ipaddr,
+        sck->webpage.depth, sck->webpage.ip,
         sck->webpage.port, sck->webpage.uri,
         sck->webpage.size, worker->tidx, sck->webpage.idx,
         loctm.tm_year+1900, loctm.tm_mon+1, loctm.tm_mday,

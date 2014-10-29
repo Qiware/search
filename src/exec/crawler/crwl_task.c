@@ -53,7 +53,7 @@ int crwl_task_down_webpage_by_uri(
     }
    
     /* 1. 通过URL获取WEB服务器IP信息 */
-    domain = crwl_get_ipaddr(worker->ctx, field.host);
+    domain = crwl_get_ip_by_domain(worker->ctx, field.host);
     if (NULL == domain
         || 0 == domain->ip_num)
     {
@@ -67,7 +67,7 @@ int crwl_task_down_webpage_by_uri(
     fd = tcp_connect_ex2(domain->ip[ip_idx], args->port);
     if (fd < 0)
     {
-        log_error(worker->log, "errmsg:[%d] %s! ipaddr:%s uri:%s",
+        log_error(worker->log, "errmsg:[%d] %s! ip:%s uri:%s",
             errno, strerror(errno), domain->ip[ip_idx], args->uri);
         return CRWL_OK;
     }
@@ -89,7 +89,7 @@ int crwl_task_down_webpage_by_uri(
     sck->read.addr = sck->recv;
 
     snprintf(sck->webpage.uri, sizeof(sck->webpage.uri), "%s", args->uri);
-    snprintf(sck->webpage.ipaddr, sizeof(sck->webpage.ipaddr), "%s", domain->ip[ip_idx]);
+    snprintf(sck->webpage.ip, sizeof(sck->webpage.ip), "%s", domain->ip[ip_idx]);
     sck->webpage.port = args->port;
 
     ret = crwl_worker_add_sock(worker, sck);
@@ -150,11 +150,11 @@ int crwl_task_down_webpage_by_ip(
     }
     
     /* 1. 连接远程WEB服务器 */
-    fd = tcp_connect_ex(args->ipaddr, args->port, CRWL_CONNECT_TMOUT_SEC);
+    fd = tcp_connect_ex(args->ip, args->port, CRWL_CONNECT_TMOUT_SEC);
     if (fd < 0)
     {
-        log_error(worker->log, "errmsg:[%d] %s! ipaddr:%s",
-            errno, strerror(errno), args->ipaddr);
+        log_error(worker->log, "errmsg:[%d] %s! ip:%s",
+            errno, strerror(errno), args->ip);
         return CRWL_OK;
     }
 
@@ -169,7 +169,7 @@ int crwl_task_down_webpage_by_ip(
     memset(sck, 0, sizeof(crwl_worker_socket_t));
 
     sck->sckid = fd;
-    snprintf(sck->webpage.ipaddr, sizeof(sck->webpage.ipaddr), "%s", args->ipaddr);
+    snprintf(sck->webpage.ip, sizeof(sck->webpage.ip), "%s", args->ip);
     sck->webpage.port = args->port;
 
     ret = crwl_worker_add_sock(worker, sck);

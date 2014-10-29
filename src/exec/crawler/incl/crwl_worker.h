@@ -19,7 +19,7 @@ typedef struct
     char uri[URL_MAX_LEN];          /* 原始URL */
     uint32_t depth;                 /* 网页深度 */
 
-    char ipaddr[IP_ADDR_MAX_LEN];   /* IP地址 */
+    char ip[IP_ADDR_MAX_LEN];       /* IP地址 */
     int port;                       /* 端口号 */
 
     /* 网页存储信息 */

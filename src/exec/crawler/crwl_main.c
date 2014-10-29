@@ -270,10 +270,10 @@ crwl_cntx_t *crwl_cntx_init(const crwl_conf_t *conf, log_cycle_t *log)
     }
 
     ctx->log = log;
-    memcpy(&ctx->conf, conf, sizeof(crwl_conf_t));
+    memcpy(&ctx->conf, conf, sizeof(crwl_conf_t)); /* 注: 内存池地址也已拷贝 */
 
     /* 2. 新建域名表 */
-    ctx->domain = hash_tab_init(10, hash_time33_ex, NULL);
+    ctx->domain = hash_tab_init(CRWL_DOMAIN_SLOT_LEN, hash_time33_ex, NULL);
     if (NULL == ctx->domain)
     {
         free(ctx);
@@ -484,7 +484,7 @@ static int crwl_proc_lock(void)
 }
 
 /******************************************************************************
- **函数名称: crwl_get_ipaddr
+ **函数名称: crwl_get_ip_by_domain
  **功    能: 获取域名对应的IP地址
  **输入参数:
  **     ctx: 全局信息
@@ -495,7 +495,7 @@ static int crwl_proc_lock(void)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.21 #
  ******************************************************************************/
-crwl_domain_t *crwl_get_ipaddr(crwl_cntx_t *ctx, char *host)
+crwl_domain_t *crwl_get_ip_by_domain(crwl_cntx_t *ctx, char *host)
 {
     int ret;
     avl_unique_t unique;
@@ -506,7 +506,7 @@ crwl_domain_t *crwl_get_ipaddr(crwl_cntx_t *ctx, char *host)
     unique.data = host;
     unique.len = strlen(host);
 
-CRWL_FETCH_IPADDR_BY_DOMAIN:
+CRWL_FETCH_IP_BY_DOMAIN:
     /* 1. 从域名表中查找IP地址 */
     domain = hash_tab_search(ctx->domain, &unique);
     if (NULL == domain)
@@ -562,7 +562,7 @@ CRWL_FETCH_IPADDR_BY_DOMAIN:
             {
                 log_debug(ctx->log, "Domain is exist! host:[%s]",
                         ret, AVL_NODE_EXIST, host);
-                goto CRWL_FETCH_IPADDR_BY_DOMAIN;
+                goto CRWL_FETCH_IP_BY_DOMAIN;
             }
 
             log_error(ctx->log, "Insert into hash table failed! ret:[%x/%x] host:[%s]",

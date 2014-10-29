@@ -13,7 +13,7 @@ typedef struct
 
     char uri[URI_MAX_LEN];          /* URI */
     uint32_t depth;                 /* 网页深度 */
-    char ipaddr[IP_ADDR_MAX_LEN];   /* IP地址 */
+    char ip[IP_ADDR_MAX_LEN];       /* IP地址 */
     int port;                       /* 端口号 */
     char html[FILE_NAME_MAX_LEN];   /* 网页存储名 */
 } crwl_webpage_info_t;

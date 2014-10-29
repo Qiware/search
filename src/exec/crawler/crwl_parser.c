@@ -272,15 +272,15 @@ static int crwl_parser_webpage_info(crwl_parser_t *parser)
 
         info->depth = atoi(node->value);
 
-        /* 获取IPADDR字段 */
-        node = xml_rsearch(xml, fix, "URI.IPADDR");
+        /* 获取IP字段 */
+        node = xml_rsearch(xml, fix, "URI.IP");
         if (NULL == fix)
         {
-            log_error(parser->log, "Didn't find IPADDR mark!");
+            log_error(parser->log, "Didn't find IP mark!");
             break;
         }
 
-        snprintf(info->ipaddr, sizeof(info->ipaddr), "%s", node->value);
+        snprintf(info->ip, sizeof(info->ip), "%s", node->value);
 
         /* 获取PORT字段 */
         node = xml_rsearch(xml, fix, "URI.PORT");

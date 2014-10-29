@@ -12,9 +12,9 @@
              2) PATH: 网页存储路径 -->
         <DOWNLOAD DEPTH="3" PATH="../temp/crwl/webpage" />
         <!-- REDIS服务配置
-             1) IPADDR: IP地址
+             1) IP: IP地址
              2) PORT: 端口号 -->
-        <REDIS IPADDR="127.0.0.1" PORT="6379">
+        <REDIS IP="127.0.0.1" PORT="6379">
             <!-- 队列配置
                  1) UNDO_TASKQ: 还未处理的网页队列 -->
             <QUEUE UNDO_TASKQ="CRWL_UNDO_TASKQ" />
@@ -23,8 +23,8 @@
                  2) PUSH_TAB: 已放入过队列的网页(防止重复放入UNDO队列) -->
             <HASH DONE_TAB="CRWL_DONE_TAB" PUSH_TAB="CRWL_PUSH_TAB" />
             <SLAVE>   <!-- 副本服务器 -->
-                <ITEM IPADDR="127.0.0.1" PORT="6380" />
-                <ITEM IPADDR="127.0.0.1" PORT="6381" />
+                <ITEM IP="127.0.0.1" PORT="6380" />
+                <ITEM IP="127.0.0.1" PORT="6381" />
             </SLAVE>
         </REDIS>
     </COMMON>
@@ -38,6 +38,7 @@
 
     <!-- 分析进程: 负责对网页的分析(内容分析、URL提取等) -->
     <PARSER>
+        <STORE PATH="../temp/parser/webpage" /> <!-- 被解析网页的存储路径 -->
         <DATABASE SERVER="服务名" USER="用户名" PASSWD="密码" />  <!-- 数据库配置 -->
     </PARSER>
 

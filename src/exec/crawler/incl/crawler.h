@@ -40,6 +40,7 @@
 #define CRWL_CONNECTIONS_DEF_NUM    (512)   /* 默认网络连接数 */
 #define CRWL_CONNECTIONS_MIN_NUM    (1)     /* 最小网络连接数 */
 
+#define CRWL_DOMAIN_SLOT_LEN        (1777)  /* 域名IP映射表长度 */
 #define CRWL_DEPTH_NO_LIMIT         (-1)    /* 爬取深度无限制 */
 #define CRWL_WEB_SVR_PORT           (80)    /* WEB服务器侦听端口 */
 #define CRWL_SCK_TMOUT_SEC          (30)    /* 套接字超时时间(秒) */
@@ -115,6 +116,6 @@ typedef struct
 crwl_cntx_t *crwl_cntx_init(const crwl_conf_t *conf, log_cycle_t *log);
 int crwl_cntx_startup(crwl_cntx_t *ctx);
 
-crwl_domain_t *crwl_get_ipaddr(crwl_cntx_t *ctx, char *host);
+crwl_domain_t *crwl_get_ip_by_domain(crwl_cntx_t *ctx, char *host);
 
 #endif /*__CRAWLER_H__*/
