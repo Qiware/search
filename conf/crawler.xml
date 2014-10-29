@@ -33,7 +33,7 @@
          1) NUM: 线程数 -->
     <WORKER NUM="5">
         <CONNECTIONS MAX="64" TIMEOUT="30" /> <!-- 爬取网页的并发(连接)数 -->
-        <TASKQ COUNT="10000" />         <!-- Undo任务队列配置 -->
+        <TASKQ COUNT="1000" />         <!-- Undo任务队列配置 -->
     </WORKER>
 
     <!-- 分析进程: 负责对网页的分析(内容分析、URL提取等) -->
