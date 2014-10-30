@@ -44,9 +44,11 @@ static crwl_worker_t *crwl_worker_get(crwl_cntx_t *ctx)
  **功    能: 创建爬虫对象
  **输入参数: 
  **     ctx: 全局信息
+ **     worker: Worker对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
+ **     依次创建Worker的成员和所依赖的资源.
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.23 #
  ******************************************************************************/
@@ -71,16 +73,33 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker)
     if (CRWL_OK != ret)
     {
         eslab_destroy(&worker->slab);
+
+        log_error(worker->log, "Init lock queue failed!");
         return CRWL_ERR;
     }
 
 #if defined(__EVENT_EPOLL__)
     /* 3. 创建epoll对象 */
-    worker->efd = epoll_create(CRWL_EVENT_MAX_NUM);
-    if (worker->efd < 0)
+    worker->ep_fd = epoll_create(CRWL_EVENT_MAX_NUM);
+    if (worker->ep_fd < 0)
     {
         lqueue_destroy(&worker->undo_taskq);
         eslab_destroy(&worker->slab);
+
+        log_error(worker->log, "Create epoll failed! errmsg:[%d] %s!");
+        return CRWL_ERR;
+    }
+
+    worker->events = (struct epoll_event *)eslab_alloc(
+                            &worker->slab,
+                            conf->connections * sizeof(struct epoll_event));
+    if (NULL == worker->events)
+    {
+        lqueue_destroy(&worker->undo_taskq);
+        eslab_destroy(&worker->slab);
+        Close(worker->ep_fd);
+
+        log_error(worker->log, "Alloc memory from slab failed!");
         return CRWL_ERR;
     }
 #endif /*__EVENT_EPOLL__*/
@@ -120,6 +139,10 @@ int crwl_worker_destroy(crwl_worker_t *worker)
     }
 
     lqueue_destroy(&worker->undo_taskq);
+
+#if defined(__EVENT_EPOLL__)
+    close(worker->ep_fd);
+#endif /*__EVENT_EPOLL__*/
 
     free(worker);
     return CRWL_OK;
@@ -182,19 +205,21 @@ static int crwl_worker_fetch_task(crwl_cntx_t *ctx, crwl_worker_t *worker)
 static int crwl_worker_recv_data(crwl_worker_t *worker, crwl_worker_socket_t *sck)
 {
     int n, left;
-    time_t ctm = time(NULL);
+
+    sck->rdtm = time(NULL);
 
     while (1)
     {
-        sck->rdtm = ctm;
         left = sck->read.total - sck->read.off;
 
         n = Readn(sck->sckid, sck->read.addr + sck->read.off, left);
-        if (n != left)
+        if (n < left)
         {
             if (n > 0)          /* 等待再次触发 */
             {
                 sck->webpage.size += n;
+
+                log_debug(worker->log, "Wait next recv! uri:%s", sck->webpage.uri);
 
                 /* 将HTML数据写入文件 */
                 sck->read.off += n;
@@ -220,6 +245,7 @@ static int crwl_worker_recv_data(crwl_worker_t *worker, crwl_worker_socket_t *sc
                 continue;
             }
 
+            /* 异常情况处理 */
             log_error(worker->log, "errmsg:[%d] %s! uri:%s ip:%s",
                     errno, strerror(errno), sck->webpage.uri, sck->webpage.ip);
             crwl_worker_remove_sock(worker, sck);
@@ -342,7 +368,7 @@ static int crwl_worker_trav_recv(crwl_worker_t *worker)
     crwl_worker_socket_t *sck;
 
     /* 1. 依次遍历套接字, 判断是否可读 */
-    for (idx=0; idx<worker->nfds; ++idx)
+    for (idx=0; idx<worker->ep_fds; ++idx)
     {
         /* 判断遍历是否可读 */
         if (!(worker->events[idx].events & EPOLLIN))
@@ -360,6 +386,8 @@ static int crwl_worker_trav_recv(crwl_worker_t *worker)
         }
         
         /* 接收网络数据 */
+        log_info(worker->log, "idx:%d/%d fd:%d!",
+                idx, worker->ep_fds, worker->events[idx].data.fd);
         crwl_worker_recv_data(worker, sck);
     }
 
@@ -390,6 +418,8 @@ static int crwl_worker_send_data(crwl_worker_t *worker, crwl_worker_socket_t *sc
     struct epoll_event ev;
 #endif /*__EVENT_EPOLL__*/
 
+    sck->wrtm = time(NULL);
+
     while (1)
     {
         /* 1. 从发送列表取数据 */
@@ -404,7 +434,7 @@ static int crwl_worker_send_data(crwl_worker_t *worker, crwl_worker_socket_t *sc
                 ev.data.fd = sck->sckid;
                 ev.events = EPOLLIN | EPOLLET;
 
-                epoll_ctl(worker->efd, EPOLL_CTL_MOD, sck->sckid, &ev);    
+                epoll_ctl(worker->ep_fd, EPOLL_CTL_MOD, sck->sckid, &ev);    
             #endif /*__EVENT_EPOLL__*/
                 return CRWL_OK;
             }
@@ -419,7 +449,6 @@ static int crwl_worker_send_data(crwl_worker_t *worker, crwl_worker_socket_t *sc
         }
 
         /* 2. 发送数据 */
-        sck->wrtm = time(NULL);
         left = sck->send.total - sck->send.off;
 
         n = Writen(sck->sckid, sck->send.addr + sck->send.off, left);
@@ -475,7 +504,7 @@ static int crwl_worker_trav_send(crwl_worker_t *worker)
     crwl_worker_socket_t *sck;
 
     /* 1. 依次遍历套接字, 判断是否可读 */
-    for (idx=0; idx<worker->nfds; ++idx)
+    for (idx=0; idx<worker->ep_fds; ++idx)
     {
         /* 判断遍历是否可读 */
         if (!(worker->events[idx].events & EPOLLOUT))
@@ -561,17 +590,18 @@ static int crwl_worker_trav_send(crwl_worker_t *worker)
 static int crwl_worker_timeout_hdl(crwl_worker_t *worker)
 {
     time_t ctm = time(NULL);
-    list_node_t *node;
+    list_node_t *node, *next;
     crwl_worker_socket_t *sck;
 
     /* 1. 依次遍历套接字, 判断是否超时 */
     node = worker->sock_list.head;
-    while (NULL != node)
+    for (; NULL != node; node = next)
     {
+        next = node->next;
+
         sck = (crwl_worker_socket_t *)node->data;
         if (NULL == sck)
         {
-            node = node->next;
             continue;
         }
 
@@ -579,18 +609,16 @@ static int crwl_worker_timeout_hdl(crwl_worker_t *worker)
         if ((ctm - sck->rdtm <= CRWL_SCK_TMOUT_SEC)
             || (ctm - sck->wrtm <= CRWL_SCK_TMOUT_SEC))
         {
-            node = node->next;
             continue;
         }
 
-        log_error(worker->log, "Timeout! uri:%s ip:%s", sck->webpage.uri, sck->webpage.ip);
+        log_error(worker->log, "Timeout! uri:%s ip:%s size:%d",
+                sck->webpage.uri, sck->webpage.ip, sck->webpage.size);
 
         crwl_worker_webpage_fsync(worker, sck);
         crwl_worker_webpage_finfo(worker, sck);
 
         crwl_worker_remove_sock(worker, sck);
-
-        node = worker->sock_list.head;
     }
 
     return CRWL_OK;
@@ -654,6 +682,7 @@ void *crwl_worker_routine(void *_ctx)
 {
     crwl_worker_t *worker;
     crwl_cntx_t *ctx = (crwl_cntx_t *)_ctx;
+    crwl_worker_conf_t *conf = &ctx->conf.worker;
 
     /* 1. 创建爬虫对象 */
     worker = crwl_worker_get(ctx);
@@ -670,10 +699,9 @@ void *crwl_worker_routine(void *_ctx)
         crwl_worker_fetch_task(ctx, worker);
 
         /* 3. 等待事件通知 */
-        worker->nfds = epoll_wait(
-                        worker->efd, worker->events, 
-                        CRWL_EVENT_MAX_NUM, CRWL_TMOUT_SEC);
-        if (worker->nfds < 0)
+        worker->ep_fds = epoll_wait(
+                worker->ep_fd, worker->events, conf->connections, CRWL_TMOUT_SEC);
+        if (worker->ep_fds < 0)
         {
             if (EINTR == errno)
             {
@@ -686,7 +714,7 @@ void *crwl_worker_routine(void *_ctx)
             pthread_exit((void *)-1);
             return (void *)-1;
         }
-        else if (0 == worker->nfds)
+        else if (0 == worker->ep_fds)
         {
             crwl_worker_timeout_hdl(worker);
             continue;
@@ -832,10 +860,12 @@ int crwl_worker_add_sock(crwl_worker_t *worker, crwl_worker_socket_t *sck)
     ev.data.fd = sck->sckid;
     ev.events = EPOLLOUT | EPOLLET;
 
-    ret = epoll_ctl(worker->efd, EPOLL_CTL_ADD, sck->sckid, &ev);
+    ret = epoll_ctl(worker->ep_fd, EPOLL_CTL_ADD, sck->sckid, &ev);
     if (0 != ret)
     {
         log_error(worker->log, "errmsg:[%d] %s!", errno, strerror(errno));
+
+        crwl_worker_remove_sock(worker, sck);
         return CRWL_ERR;
     }
 #endif /*__EVENT_EPOLL__*/
@@ -897,7 +927,7 @@ int crwl_worker_remove_sock(crwl_worker_t *worker, crwl_worker_socket_t *sck)
 
 #if defined(__EVENT_EPOLL__)
     /* 移除epoll监听 */
-    epoll_ctl(worker->efd, EPOLL_CTL_DEL, sck->sckid, &ev);
+    epoll_ctl(worker->ep_fd, EPOLL_CTL_DEL, sck->sckid, &ev);
 #endif /*__EVENT_EPOLL__*/
 
     if (sck->webpage.fp)
@@ -1105,6 +1135,7 @@ int crwl_worker_add_http_get_req(
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
+ **     网页存储文件在此fopen(), 在crwl_worker_remove_sock()中fclose().
  **作    者: # Qifeng.zou # 2014.10.15 #
  ******************************************************************************/
 int crwl_worker_webpage_creat(crwl_worker_t *worker, crwl_worker_socket_t *sck)
@@ -1117,20 +1148,21 @@ int crwl_worker_webpage_creat(crwl_worker_t *worker, crwl_worker_socket_t *sck)
     sck->webpage.size = 0;
     sck->webpage.idx = ++worker->down_webpage_total;
 
-    snprintf(path, sizeof(path),
-            "%s/%02d-%08ld-%04d%02d%02d%02d%02d%02d%03d.html",
-            worker->ctx->conf.download.path,
+    snprintf(sck->webpage.fname, sizeof(sck->webpage.fname),
+            "%02d-%08ld-%04d%02d%02d%02d%02d%02d%03d",
             worker->tidx, sck->webpage.idx,
             loctm.tm_year+1900, loctm.tm_mon+1, loctm.tm_mday,
             loctm.tm_hour, loctm.tm_min, loctm.tm_sec, sck->crtm.millitm);
+
+    snprintf(path, sizeof(path), "%s/%s.html",
+            worker->ctx->conf.download.path, sck->webpage.fname);
 
     Mkdir2(path, 0777);
 
     sck->webpage.fp = fopen(path, "w");
     if (NULL == sck->webpage.fp)
     {
-        log_error(worker->log, "errmsg:[%d] %s! path:%s",
-                errno, strerror(errno), path);
+        log_error(worker->log, "errmsg:[%d] %s! path:%s", errno, strerror(errno), path);
         return CRWL_ERR;
     }
 
@@ -1146,6 +1178,8 @@ int crwl_worker_webpage_creat(crwl_worker_t *worker, crwl_worker_socket_t *sck)
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
+ **     1. 首先将数据写入临时目录
+ **     2. 再将临时文件移入指定目录
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.17 #
  ******************************************************************************/
@@ -1153,25 +1187,24 @@ int crwl_worker_webpage_finfo(crwl_worker_t *worker, crwl_worker_socket_t *sck)
 {
     FILE *fp;
     struct tm loctm;
-    char path[FILE_NAME_MAX_LEN];
+    char path[FILE_NAME_MAX_LEN],
+         temp[FILE_NAME_MAX_LEN];
 
     localtime_r(&sck->crtm.time, &loctm);
 
-    snprintf(path, sizeof(path),
-            "%s/info/%02d-%08ld-%04d%02d%02d%02d%02d%02d%03d.info",
-            worker->ctx->conf.download.path,
-            worker->tidx, sck->webpage.idx,
-            loctm.tm_year+1900, loctm.tm_mon+1, loctm.tm_mday,
-            loctm.tm_hour, loctm.tm_min, loctm.tm_sec, sck->crtm.millitm);
+    snprintf(temp, sizeof(temp), "%s/info/.temp/%s.info",
+            worker->ctx->conf.download.path, sck->webpage.fname);
 
-    Mkdir2(path, 0777);
+    snprintf(path, sizeof(path), "%s/info/%s.info",
+            worker->ctx->conf.download.path, sck->webpage.fname);
+
+    Mkdir2(temp, 0777);
 
     /* 1. 新建文件 */
-    fp = fopen(path, "w");
+    fp = fopen(temp, "w");
     if (NULL == fp)
     {
-        log_error(worker->log, "errmsg:[%d] %s! path:%s",
-                errno, strerror(errno), path);
+        log_error(worker->log, "errmsg:[%d] %s! path:%s", errno, strerror(errno), path);
         return CRWL_ERR;
     }
 
@@ -1179,15 +1212,15 @@ int crwl_worker_webpage_finfo(crwl_worker_t *worker, crwl_worker_socket_t *sck)
     fprintf(fp, 
         "<INFO>\n"
         "\t<URI DEPTH=\"%d\" IP=\"%s\" PORT=\"%d\">%s</URI>\n"
-        "\t<HTML SIZE=\"%lu\">%02d-%08ld-%04d%02d%02d%02d%02d%02d%03d.html</HTML>\n"
+        "\t<HTML SIZE=\"%lu\">%s.html</HTML>\n"
         "</INFO>\n",
         sck->webpage.depth, sck->webpage.ip,
         sck->webpage.port, sck->webpage.uri,
-        sck->webpage.size, worker->tidx, sck->webpage.idx,
-        loctm.tm_year+1900, loctm.tm_mon+1, loctm.tm_mday,
-        loctm.tm_hour, loctm.tm_min, loctm.tm_sec, sck->crtm.millitm);
+        sck->webpage.size, sck->webpage.fname);
 
     fclose(fp);
+
+    Rename(temp, path);
 
     return CRWL_OK;
 }

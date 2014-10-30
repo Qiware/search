@@ -23,7 +23,7 @@ endif
 
 # 事件驱动相关宏
 ifeq (EPOLL, $(strip $(CONFIG_EVENT_SUPPORT)))
-	OPTIONS += __EVENT_EPOLL___
+	OPTIONS += __EVENT_EPOLL__
 else ifeq (SELECT, $(strip $(CONFIG_EVENT_SUPPORT)))
 	OPTIONS += __EVENT_SELECT__
 endif

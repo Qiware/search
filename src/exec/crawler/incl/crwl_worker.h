@@ -26,6 +26,7 @@ typedef struct
     int port;                       /* 端口号 */
 
     /* 网页存储信息 */
+    char fname[FILE_NAME_MAX_LEN];  /* 文件名 - 无后缀 */
     uint64_t idx;                   /* 网页编号 */
     FILE *fp;                       /* 文件指针 */
     size_t size;                    /* 网页总字节数 */
@@ -52,12 +53,12 @@ typedef struct
 typedef struct
 {
     int tidx;                       /* 线程索引 */
-    crwl_cntx_t *ctx;               /* 全局信息 */
+    crwl_cntx_t *ctx;               /* 全局配置 */
 
 #if defined(__EVENT_EPOLL__)
-    int efd;                        /* epoll文件描述符 */
-    int nfds;                       /* 处于激活状态的套接字数 */
-    struct epoll_event events[CRWL_EVENT_MAX_NUM];/* Event最大数 */
+    int ep_fd;                      /* epoll文件描述符 */
+    int ep_fds;                     /* 处于激活状态的套接字数 */
+    struct epoll_event *events;     /* Event最大数 */
 #else /*!__EVENT_EPOLL__*/
     fd_set wrset;                   /* 可写集合 */
     fd_set rdset;                   /* 可读集合 */

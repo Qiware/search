@@ -561,8 +561,7 @@ CRWL_FETCH_IP_BY_DOMAIN:
 
             if (AVL_NODE_EXIST == ret)
             {
-                log_debug(ctx->log, "Domain is exist! host:[%s]",
-                        ret, AVL_NODE_EXIST, host);
+                log_debug(ctx->log, "Domain is exist! host:[%s]", host);
                 goto CRWL_FETCH_IP_BY_DOMAIN;
             }
 
