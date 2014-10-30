@@ -59,6 +59,7 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker)
 
     worker->ctx = ctx;
     worker->log = ctx->log;
+    worker->scan_tm = time(NULL);
 
     /* 1. 创建SLAB内存池 */
     ret = eslab_init(&worker->slab, CRWL_SLAB_SIZE);
@@ -625,6 +626,7 @@ static int crwl_worker_timeout_hdl(crwl_worker_t *worker)
 static int crwl_worker_event_hdl(crwl_worker_t *worker)
 {
     int ret;
+    time_t ctm = time(NULL);
 
     /* 1. 接收数据 */
     ret = crwl_worker_trav_recv(worker);
@@ -643,7 +645,13 @@ static int crwl_worker_event_hdl(crwl_worker_t *worker)
     }
 
     /* 3. 超时扫描 */
-    crwl_worker_timeout_hdl(worker);
+    if (ctm - worker->scan_tm > CRWL_TMOUT_SCAN_SEC)
+    {
+        worker->scan_tm = ctm;
+
+        crwl_worker_timeout_hdl(worker);
+    }
+
     return CRWL_OK;
 }
 

@@ -26,6 +26,7 @@
 /* 宏定义 */
 #define CRWL_TMOUT_SEC              (02)    /* 超时(秒) */
 #define CRWL_TMOUT_USEC             (00)    /* 超时(微妙) */
+#define CRWL_TMOUT_SCAN_SEC         (05)    /* 超时扫描间隔 */
 #define CRWL_CONNECT_TMOUT_SEC      (00)    /* 连接超时时间 */
 
 #define CRWL_THD_MAX_NUM            (64)    /* 最大线程数 */

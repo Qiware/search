@@ -67,6 +67,7 @@ typedef struct
     eslab_pool_t slab;              /* 内存池 */
     log_cycle_t *log;               /* 日志对象 */
 
+    time_t scan_tm;                 /* 超时扫描时间 */
     list_t sock_list;               /* 套接字列表
                                        结点数据指针指向crwl_worker_socket_t */
     lqueue_t undo_taskq;            /* 任务队列(注意: 该队列结点和数据的空间来自CTX) */

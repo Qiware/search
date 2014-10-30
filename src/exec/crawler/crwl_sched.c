@@ -238,6 +238,7 @@ static int crwl_sched_event_hdl(crwl_cntx_t *ctx, crwl_sched_t *sched)
  **     3. 新建crwl_task_t对象
  **     4. 放入Worker任务队列
  **注意事项: 
+ **     从Undo Task队列中申请的内存将由Worker线程去释放
  **作    者: # Qifeng.zou # 2014.10.17 #
  ******************************************************************************/
 static int crwl_sched_fetch_undo_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
@@ -422,26 +423,23 @@ static int crwl_task_parse(const char *str, crwl_task_t *task)
 
             ret = crwl_task_parse_download_webpage_by_uri(
                     xml, (crwl_task_down_webpage_by_uri_t *)(task + 1));
-            if (CRWL_OK != ret)
-            {
-                xml_destroy(xml);
-                return CRWL_ERR;
-            }
-            break;
+           break;
         }
         case CRWL_TASK_DOWN_WEBPAGE_BY_IP:
         {
+            ret = CRWL_ERR;
             break;
         }
         default:
         {
+            ret = CRWL_ERR;
             break;
         }
     }
 
     xml_destroy(xml);
 
-    return CRWL_OK;
+    return ret;
 }
 
 /******************************************************************************
