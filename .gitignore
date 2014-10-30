@@ -6,6 +6,7 @@
 *.htm
 *.list
 *.info
+*.bak
 src/demo/*
 bin/*
 lib/*
