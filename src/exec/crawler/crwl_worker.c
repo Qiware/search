@@ -376,18 +376,9 @@ static int crwl_worker_trav_recv(crwl_worker_t *worker)
             continue;
         }
 
-        /* 接收发送过来的数据 */
-        sck = crwl_worker_query_sock(worker, worker->events[idx].data.fd);
-        if (NULL == sck)
-        {
-            log_fatal(worker->log, "Query socket failed!");
-            assert(0);
-            continue;
-        }
+        sck = (crwl_worker_socket_t *)worker->events[idx].data.ptr;
         
         /* 接收网络数据 */
-        log_info(worker->log, "idx:%d/%d fd:%d!",
-                idx, worker->ep_fds, worker->events[idx].data.fd);
         crwl_worker_recv_data(worker, sck);
     }
 
@@ -431,11 +422,12 @@ static int crwl_worker_send_data(crwl_worker_t *worker, crwl_worker_socket_t *sc
             #if defined(__EVENT_EPOLL__)
                 memset(&ev, 0, sizeof(ev));
 
-                ev.data.fd = sck->sckid;
-                ev.events = EPOLLIN | EPOLLET;
+                ev.data.ptr = sck;
+                ev.events = EPOLLIN | EPOLLET;  /* 边缘触发 */
 
                 epoll_ctl(worker->ep_fd, EPOLL_CTL_MOD, sck->sckid, &ev);    
             #endif /*__EVENT_EPOLL__*/
+
                 return CRWL_OK;
             }
 
@@ -506,22 +498,15 @@ static int crwl_worker_trav_send(crwl_worker_t *worker)
     /* 1. 依次遍历套接字, 判断是否可读 */
     for (idx=0; idx<worker->ep_fds; ++idx)
     {
-        /* 判断遍历是否可读 */
+        /* 判断遍历是否可写 */
         if (!(worker->events[idx].events & EPOLLOUT))
         {
             continue;
         }
 
-        /* 接收发送过来的数据 */
-        sck = crwl_worker_query_sock(worker, worker->events[idx].data.fd);
-        if (NULL == sck)
-        {
-            log_fatal(worker->log, "Query socket failed!");
-            assert(0);
-            continue;
-        }
+        sck = (crwl_worker_socket_t *)worker->events[idx].data.ptr;
         
-        /* 接收网络数据 */
+        /* 发送网络数据 */
         crwl_worker_send_data(worker, sck);
     }
 
@@ -857,8 +842,8 @@ int crwl_worker_add_sock(crwl_worker_t *worker, crwl_worker_socket_t *sck)
     /* 3. 加入epoll监听(首先是发送数据, 所以设置EPOLLOUT) */
     memset(&ev, 0, sizeof(ev));
 
-    ev.data.fd = sck->sckid;
-    ev.events = EPOLLOUT | EPOLLET;
+    ev.data.ptr = sck;
+    ev.events = EPOLLOUT | EPOLLET; /* 边缘触发 */
 
     ret = epoll_ctl(worker->ep_fd, EPOLL_CTL_ADD, sck->sckid, &ev);
     if (0 != ret)
