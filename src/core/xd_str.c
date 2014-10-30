@@ -379,3 +379,118 @@ int uri_reslove(const char *uri, uri_field_t *field)
 
     return -1;
 }
+
+/******************************************************************************
+ **函数名称: href_to_uri
+ **功    能: 将href字段转化成ｕｒｉ
+ **输入参数: 
+ **     href: 从网页site中提取出来的href字段
+ **     site: 网址
+ **输出参数:
+ **     field: 解析href后URI的各域信息
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.10.30 #
+ ******************************************************************************/
+int href_to_uri(const char *href, const char *site, uri_field_t *field)
+{
+    int len, up = 0;
+    const char *p, *p2;
+    char uri[URI_MAX_LEN], tmp[URI_MAX_LEN];
+
+    /* 1. 踢出URI前后的空格 */
+    len = str_trim(href, tmp, sizeof(tmp));
+    if (len < URI_MIN_LEN)
+    {
+        return -1;
+    }
+
+    /* 2. 判断URI类型(相对路径、绝对路径或是正常的URI) */
+    /* 类似格式: http://www.baidu.com */
+    if (!strncmp(URI_HTTP_STR, tmp, URI_HTTP_STR_LEN))
+    {
+        return uri_reslove(tmp, field);
+    }
+
+    /* 绝对路径 */
+    if (href_is_abs(tmp))
+    {
+        if (0 != uri_reslove(site, field))
+        {
+            return -1;
+        }
+
+        snprintf(uri, sizeof(uri), "%s%s%s", URI_HTTP_STR, field->host, tmp);
+
+        return uri_reslove(uri, field);
+    }
+
+    /* 相对路径 */
+    if (href_is_up(tmp)) /* 上一级目录 */
+    {
+        p = tmp;
+        do
+        {
+            ++up;
+            p += 3; 
+        } while(href_is_up(p));
+
+        p2 = site + strlen(site) - 1;
+        if ('/' == *p2)
+        {
+            --p2;
+        }
+
+        for (; up > 0; --up)
+        {
+            while (('/' != *p2) && (p2 != site))
+            {
+                --p2;
+            }
+
+            if (p2 == site)
+            {
+                return -1;
+            }
+
+            --p2;
+        }
+
+        ++p2; /* 指向'/' */
+        if (p2 - site <= URI_HTTP_STR_LEN)
+        {
+            return -1;
+        }
+
+        snprintf(uri, sizeof(uri), "%s%s", p2, p);
+
+        return uri_reslove(uri, field);
+    }
+    else if (href_is_local(tmp)) /* 本级目录 */
+    {
+        p = tmp + 2;
+
+        p2 = site + strlen(site) - 1;
+        if ('/' == *p2)
+        {
+            --p2;
+        }
+
+        while (p2 != site && '/' != *p2)
+        {
+            --p2;
+        }
+
+        if (p2 - site <= URI_HTTP_STR_LEN)
+        {
+            return false;
+        }
+
+        snprintf(uri, sizeof(uri), "%s%s", p2, p); /* p2此时指向'/' */
+
+        return uri_reslove(uri, field);
+    }
+
+    return -1;
+}

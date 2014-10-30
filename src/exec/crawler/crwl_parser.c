@@ -35,6 +35,8 @@ static int crwl_parser_webpage_info(crwl_parser_t *parser);
 static int crwl_parser_work_flow(crwl_parser_t *parser);
 static int crwl_parser_deep_hdl(crwl_parser_t *parser, gumbo_result_t *result);
 
+bool uri_reslove_ex(const char *_uri, const char *parent, uri_field_t *field);
+
 /* 判断URI是否已下载 */
 #define crwl_is_uri_down(ctx, hash, uri) (!redis_hsetnx(ctx, hash, uri, "1"))
 /* 判断URI是否已推送至队列 */
@@ -412,35 +414,32 @@ static int crwl_parser_deep_hdl(crwl_parser_t *parser, gumbo_result_t *result)
     list_node_t *node = result->list.head;
     crwl_webpage_info_t *info = &parser->info;
 
-    /* 1. 遍历URL集合 */
-    while (NULL != node)
+    /* 遍历URL集合 */
+    for (; NULL != node; node = node->next)
     {
-        /* 1.1 确认URI的合法性 */
-        if (0 != uri_reslove(node->data, &field))
+        /* 1. 分析href字段 */
+        if (!href_to_uri((const char *)node->data, info->uri, &field))
         {
-            log_error(parser->log, "Uri [%s] is invalid!", (char *)node->data);
-            node = node->next;
+            log_info(parser->log, "Uri [%s] is invalid!", (char *)node->data);
             continue;
         }
 
-        /* 判断URI是否已经被推送到队列中 */
+        /* 2. 判断URI是否已经被推送到队列中 */
         if (crwl_is_uri_push(parser->redis_ctx, conf->redis.push_tab, field.uri))
         {
             log_info(parser->log, "Uri [%s] was pushed!", (char *)node->data);
-            node = node->next;
             continue;
         }
 
-        /* 组装任务格式 */
+        /* 3. 组装任务格式 */
         len = crwl_get_task_str(task_str, sizeof(task_str), field.uri, info->depth+1);
         if (len >= sizeof(task_str))
         {
             log_info(parser->log, "Task string is too long! [%s]", task_str);
-            node = node->next;
             continue;
         }
 
-        /* 1.2 插入Undo任务队列 */
+        /* 4. 插入Undo任务队列 */
         r = redis_rpush(parser->redis_ctx, parser->conf.redis.undo_taskq, task_str);
         if (REDIS_REPLY_NIL == r->type)
         {
@@ -450,8 +449,6 @@ static int crwl_parser_deep_hdl(crwl_parser_t *parser, gumbo_result_t *result)
         }
 
         freeReplyObject(r);
-
-        node = node->next;
     }
 
     return CRWL_OK;
