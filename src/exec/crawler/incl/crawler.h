@@ -48,6 +48,10 @@
 #define CRWL_TASK_QUEUE_MAX_NUM     (10000) /* 任务队列单元数 */
 #define CRWL_DEF_CONF_PATH  "../conf/crawler.xml"   /* 默认配置路径 */
 
+#if defined(__EVENT_EPOLL__)
+#define CRWL_EVENT_MAX_NUM          (1024)  /* 事件最大数 */
+#endif /*__EVENT_EPOLL__*/
+
 #define CRWL_TASK_STR_LEN           (8192)  /* TASK字串最大长度 */
 
 #define crwl_get_task_str(str, size, uri, deep) /* TASK字串 */\
@@ -65,8 +69,10 @@ typedef enum
 {
     CRWL_OK = 0                             /* 正常 */
     , CRWL_SHOW_HELP                        /* 显示帮助信息 */
+    , CRWL_SCK_CLOSE                        /* 套接字关闭 */
 
-    , CRWL_ERR = ~0x7fffffff                /* 失败、错误 */
+    , CRWL_ERR                              /* 失败、错误 */
+
 } crwl_err_code_e;
 
 /* 数据类型 */

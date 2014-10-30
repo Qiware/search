@@ -12,6 +12,9 @@
 #include "xml_tree.h"
 #include "crwl_task.h"
 #include "thread_pool.h"
+#if defined(__EVENT_EPOLL__)
+#include <sys/epoll.h>    
+#endif /*__EVENT_EPOLL__*/
 
 /* 网页信息 */
 typedef struct
@@ -51,8 +54,14 @@ typedef struct
     int tidx;                       /* 线程索引 */
     crwl_cntx_t *ctx;               /* 全局信息 */
 
+#if defined(__EVENT_EPOLL__)
+    int efd;                        /* epoll文件描述符 */
+    int nfds;                       /* 处于激活状态的套接字数 */
+    struct epoll_event events[CRWL_EVENT_MAX_NUM];/* Event最大数 */
+#else /*!__EVENT_EPOLL__*/
     fd_set wrset;                   /* 可写集合 */
     fd_set rdset;                   /* 可读集合 */
+#endif /*!__EVENT_EPOLL__*/
 
     eslab_pool_t slab;              /* 内存池 */
     log_cycle_t *log;               /* 日志对象 */
@@ -69,6 +78,7 @@ typedef struct
 
 /* 函数声明 */
 int crwl_worker_add_sock(crwl_worker_t *worker, crwl_worker_socket_t *sck);
+crwl_worker_socket_t *crwl_worker_query_sock(crwl_worker_t *worker, int sckid);
 int crwl_worker_remove_sock(crwl_worker_t *worker, crwl_worker_socket_t *sck);
 
 int crwl_worker_add_http_get_req(

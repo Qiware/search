@@ -258,7 +258,7 @@ int thread_pool_get_tidx(thread_pool_t *tp)
  ******************************************************************************/
 int thread_pool_destroy(thread_pool_t *tp)
 {
-    int idx, ret;
+    int idx = 0, ret;
 
     if (0 != tp->shutdown)
     {
