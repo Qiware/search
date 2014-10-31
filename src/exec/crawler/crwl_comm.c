@@ -31,105 +31,8 @@
 
 #define CRWL_PROC_LOCK_PATH "../temp/crwl/crwl.lck"
 
-/* 程序输入参数信息 */
-typedef struct
-{
-    bool is_daemon;                     /* 是否后台运行 */
-    int log_level;                      /* 日志级别 */
-    char conf_path[FILE_NAME_MAX_LEN];  /* 配置文件路径 */
-}crwl_opt_t;
-
-static int crwl_getopt(int argc, char **argv, crwl_opt_t *opt);
-static int crwl_usage(const char *exec);
-static int crwl_proc_lock(void);
-
 static int crwl_init_workers(crwl_cntx_t *ctx);
 int crwl_workers_destroy(crwl_cntx_t *ctx);
-
-/******************************************************************************
- **函数名称: main 
- **功    能: 爬虫主程序
- **输入参数: 
- **     argc: 参数个数
- **     argv: 参数列表
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **     1. 加载爬虫配置
- **     1. 初始化爬虫信息
- **     2. 启动爬虫功能
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.09.04 #
- ******************************************************************************/
-int main(int argc, char *argv[])
-{
-    int ret, status;
-    crwl_opt_t opt;
-    crwl_cntx_t *ctx;
-    log_cycle_t *log;
-    char log_path[FILE_NAME_MAX_LEN];
-
-    memset(&opt, 0, sizeof(opt));
-
-    /* 1. 解析输入参数 */
-    ret = crwl_getopt(argc, argv, &opt);
-    if (CRWL_OK != ret)
-    {
-        return crwl_usage(argv[0]);
-    }
-
-    if (opt.is_daemon)
-    {
-        daemon(1, 0);
-    }
-
-    /* 2. 初始化日志模块 */
-    log2_get_path(log_path, sizeof(log_path), basename(argv[0]));
-
-    ret = log2_init(opt.log_level, log_path);
-    if (0 != ret)
-    {
-        fprintf(stderr, "Init log2 failed! level:%d path:%s\n",
-                opt.log_level, log_path);
-        goto ERROR;
-    }
-
-    log_get_path(log_path, sizeof(log_path), basename(argv[0]));
-
-    log = log_init(opt.log_level, log_path);
-    if (NULL == log)
-    {
-        log2_error("Initialize log failed!");
-        goto ERROR;
-    }
-
-    /* 3. 初始化全局信息 */
-    ctx = crwl_cntx_init(opt.conf_path, log);
-    if (NULL == ctx)
-    {
-        log_error(log, "Initialize crawler failed!");
-        goto ERROR;
-    }
-
-    /* 4. 启动爬虫服务 */
-    ret = crwl_cntx_startup(ctx);
-    if (CRWL_OK != ret)
-    {
-        log_error(log, "Startup crawler failed!");
-        goto ERROR;
-    }
-
-    while (1)
-    {
-        wait(&status);
-        pause();
-    }
-
-ERROR:
-    log2_destroy();
-
-    return CRWL_ERR;
-}
 
 /******************************************************************************
  **函数名称: crwl_getopt 
@@ -150,7 +53,7 @@ ERROR:
  **     h: 帮助手册
  **作    者: # Qifeng.zou # 2014.09.05 #
  ******************************************************************************/
-static int crwl_getopt(int argc, char **argv, crwl_opt_t *opt)
+int crwl_getopt(int argc, char **argv, crwl_opt_t *opt)
 {
     int ch;
 
@@ -171,12 +74,6 @@ static int crwl_getopt(int argc, char **argv, crwl_opt_t *opt)
                 snprintf(opt->conf_path, sizeof(opt->conf_path), "%s", optarg);
                 break;
             }
-            case 'l':   /* 指定日志级别 */
-            case 'L':
-            {
-                opt->log_level = log_get_level(optarg);
-                break;
-            }
             case 'h':   /* 显示帮助信息 */
             case 'H':
             default:
@@ -195,11 +92,6 @@ static int crwl_getopt(int argc, char **argv, crwl_opt_t *opt)
         snprintf(opt->conf_path, sizeof(opt->conf_path), "%s", CRWL_DEF_CONF_PATH);
     }
 
-    if (!opt->log_level)
-    {
-        opt->log_level = log_get_level(LOG_DEF_LEVEL_STR);
-    }
-
     return CRWL_OK;
 }
 
@@ -214,7 +106,7 @@ static int crwl_getopt(int argc, char **argv, crwl_opt_t *opt)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.11 #
  ******************************************************************************/
-static int crwl_usage(const char *exec)
+int crwl_usage(const char *exec)
 {
     printf("\nUsage: %s [-h] [-d] -c <config file> [-l log_level]\n", exec);
     printf("\t-h\tShow help\n"
@@ -307,7 +199,6 @@ crwl_cntx_t *crwl_cntx_init(const char *path, log_cycle_t *log)
  ******************************************************************************/
 int crwl_cntx_startup(crwl_cntx_t *ctx)
 {
-    pid_t pid;
     int ret, idx;
     pthread_t tid;
     const crwl_conf_t *conf = &ctx->conf;
@@ -324,19 +215,6 @@ int crwl_cntx_startup(crwl_cntx_t *ctx)
     {
         log_error(ctx->log, "Create thread failed!");
         return CRWL_ERR;
-    }
-
-    /* 3. 启动Parser进程 */
-    pid = fork();
-    if (pid < 0)
-    {
-        log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return CRWL_ERR;
-    }
-    else if (0 == pid)
-    {
-        crwl_parser_exec(conf);
-        exit(0);
     }
 
     return CRWL_OK;
@@ -457,7 +335,7 @@ int crwl_workers_destroy(crwl_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.21 #
  ******************************************************************************/
-static int crwl_proc_lock(void)
+int crwl_proc_lock(void)
 {
     int fd;
     char path[FILE_PATH_MAX_LEN];

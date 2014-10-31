@@ -67,8 +67,8 @@ void *crwl_sched_routine(void *_ctx)
 
         max = sched->cmd_sck_id;
 
-        tv.tv_sec = 0;
-        tv.tv_usec = 50000;
+        tv.tv_sec = 1;
+        tv.tv_usec = 0;
 
         ret = select(max+1, &sched->rdset, &sched->wrset, NULL, &tv);
         if (ret < 0)

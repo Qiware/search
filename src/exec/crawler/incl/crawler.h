@@ -109,6 +109,13 @@ typedef struct
     int ip_num;                             /* IP地址数 */
 } crwl_domain_t;
 
+/* 输入参数信息 */
+typedef struct
+{
+    bool is_daemon;                         /* 是否后台运行 */
+    char conf_path[FILE_NAME_MAX_LEN];      /* 配置文件路径 */
+}crwl_opt_t;
+
 /* 爬虫全局信息 */
 typedef struct
 {
@@ -120,6 +127,10 @@ typedef struct
 } crwl_cntx_t;
 
 /* 对外接口 */
+int crwl_getopt(int argc, char **argv, crwl_opt_t *opt);
+int crwl_usage(const char *exec);
+int crwl_proc_lock(void);
+
 crwl_cntx_t *crwl_cntx_init(const char *path, log_cycle_t *log);
 int crwl_cntx_startup(crwl_cntx_t *ctx);
 

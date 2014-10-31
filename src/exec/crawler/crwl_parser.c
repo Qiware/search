@@ -25,6 +25,7 @@
 #include "syscall.h"
 #include "crawler.h"
 #include "xml_tree.h"
+#include "crwl_conf.h"
 #include "crwl_parser.h"
 
 #define CRWL_PARSER_LOG_NAME    "parser"
