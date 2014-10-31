@@ -53,7 +53,8 @@ typedef struct
 typedef struct
 {
     int tidx;                       /* 线程索引 */
-    crwl_cntx_t *ctx;               /* 全局配置 */
+    crwl_cntx_t *ctx;               /* 全局信息 */
+    crwl_worker_conf_t *conf;       /* Worker配置(指向ctx->conf.worker) */
 
 #if defined(__EVENT_EPOLL__)
     int ep_fd;                      /* epoll文件描述符 */

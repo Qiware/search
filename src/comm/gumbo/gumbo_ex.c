@@ -39,7 +39,7 @@ int gumbo_init(gumbo_cntx_t *ctx)
     memset(ctx, 0, sizeof(gumbo_cntx_t));
 
     /* 1. 初始化Slab对象 */
-    ret = eslab_init(&ctx->slab, 1 * MB);
+    ret = eslab_init(&ctx->slab, 10 * MB);
     if (0 != ret)
     {
         log2_error("Initialize slab failed!");

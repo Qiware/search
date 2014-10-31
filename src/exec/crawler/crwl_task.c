@@ -67,6 +67,7 @@ int crwl_task_down_webpage_by_uri(
     fd = tcp_connect_ex2(domain->ip[ip_idx], args->port);
     if (fd < 0)
     {
+        assert(0);
         log_error(worker->log, "errmsg:[%d] %s! ip:%s uri:%s",
             errno, strerror(errno), domain->ip[ip_idx], args->uri);
         return CRWL_OK;
@@ -177,6 +178,7 @@ int crwl_task_down_webpage_by_ip(
     if (CRWL_OK != ret)
     {
         log_error(worker->log, "Add socket into list failed!");
+        Close(sck->sckid);
         eslab_dealloc(&worker->slab, sck);
         return CRWL_ERR;
     }

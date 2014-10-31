@@ -8,7 +8,8 @@
 typedef struct
 {
     int num;                                /* 爬虫线程数 */
-    int connections;                        /* 并发网页连接数 */
+    int conn_max_num;                       /* 并发网页连接数 */
+    int conn_tmout_sec;                     /* 连接超时时间 */
     int taskq_count;                        /* Undo任务队列容量 */
 } crwl_worker_conf_t;
 

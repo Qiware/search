@@ -21,6 +21,8 @@ int str_trim(const char *in, char *out, size_t size);
 #define URI_HTTP_STR_LEN    (7)
 #define URI_HTTPS_STR       "https://"      /* HTTPS连接 */
 #define URI_HTTPS_STR_LEN   (8)
+#define URI_WWW_STR         "www."          /* www. */
+#define URI_WWW_STR_LEN     (4)
 
 #define href_is_abs(str) ('/' == str[0])            /* href是绝对路径 */
 #define href_is_up(str) (!strncmp("../", str, 3))   /* href是上级路径 */

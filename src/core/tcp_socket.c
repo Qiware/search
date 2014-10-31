@@ -92,7 +92,7 @@ int tcp_listen(int port)
  ******************************************************************************/
 int tcp_connect(const char *ipaddr, int port)
 {
-    int ret, fd;
+    int ret, fd, opt = 1;
     struct sockaddr_in svraddr;
 
     /* 1. 创建套接字 */
@@ -101,6 +101,9 @@ int tcp_connect(const char *ipaddr, int port)
     {
         return -1;
     }
+
+    opt = 1;
+    setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(int));
 
     /* 2. 连接远程服务器 */
     bzero(&svraddr, sizeof(svraddr));
@@ -139,7 +142,7 @@ int tcp_connect(const char *ipaddr, int port)
  ******************************************************************************/
 int tcp_connect_ex(const char *ipaddr, int port, int sec)
 {
-    int ret, fd;
+    int ret, fd, opt = 1;
     fd_set rdset, wrset;
     struct timeval tv;
     struct sockaddr_in svraddr;
@@ -150,6 +153,9 @@ int tcp_connect_ex(const char *ipaddr, int port, int sec)
     {
         return -1;
     }
+
+    opt = 1;
+    setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(int));
 
     fd_set_nonblocking(fd);
 
@@ -219,7 +225,7 @@ AGAIN:
  ******************************************************************************/
 int tcp_connect_ex2(const char *ipaddr, int port)
 {
-    int ret, fd;
+    int ret, fd, opt = 1;
     struct sockaddr_in svraddr;
 
     /* 1. 创建套接字 */
@@ -228,6 +234,9 @@ int tcp_connect_ex2(const char *ipaddr, int port)
     {
         return -1;
     }
+
+    opt = 1;
+    setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(int));
 
     fd_set_nonblocking(fd);
 

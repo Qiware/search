@@ -456,14 +456,29 @@ static int crwl_conf_load_worker(
         return CRWL_ERR;
     }
 
-    conf->connections = atoi(node->value);
-    if (conf->connections <= 0)
+    conf->conn_max_num = atoi(node->value);
+    if (conf->conn_max_num <= 0)
     {
-        conf->connections = CRWL_CONNECTIONS_MIN_NUM;
+        conf->conn_max_num = CRWL_CONN_MIN_NUM;
     }
-    else if (conf->connections >= CRWL_CONNECTIONS_MAX_NUM)
+    else if (conf->conn_max_num >= CRWL_CONN_MAX_NUM)
     {
-        conf->connections = CRWL_CONNECTIONS_MAX_NUM;
+        conf->conn_max_num = CRWL_CONN_MAX_NUM;
+    }
+
+    /* 连接超时时间 */
+    node = xml_rsearch(xml, curr, "CONNECTIONS.TIMEOUT");
+    if (NULL == node)
+    {
+        conf->conn_tmout_sec = CRWL_CONN_TMOUT_SEC;
+
+        log_error(log, "Didn't configure download webpage number!");
+    }
+
+    conf->conn_tmout_sec = atoi(node->value);
+    if (conf->conn_tmout_sec <= 0)
+    {
+        conf->conn_tmout_sec = CRWL_CONN_TMOUT_SEC;
     }
 
     /* 4. Undo任务队列配置(相对查找) */

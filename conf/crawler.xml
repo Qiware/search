@@ -6,11 +6,11 @@
              1) LOG_LEVLE: 日志级别
              2) LOG2_LEVEL: 系统日志级别
              3) 取值范围: trace|debug|info|warn|error|fatal -->
-        <LOG LOG_LEVEL="debug" LOG2_LEVEL="error" PATH="../log/" />
+        <LOG LOG_LEVEL="info" LOG2_LEVEL="error" PATH="../log/" />
         <!-- 爬取配置
              1) DEPTH: 最大爬取深度
              2) PATH: 网页存储路径 -->
-        <DOWNLOAD DEPTH="3" PATH="../temp/crwl/webpage" />
+        <DOWNLOAD DEPTH="-1" PATH="../temp/crwl/webpage" />
         <!-- REDIS服务配置
              1) IP: IP地址
              2) PORT: 端口号 -->
@@ -31,8 +31,8 @@
 
     <!-- 爬虫进程: 负责网页下载
          1) NUM: 线程数 -->
-    <WORKER NUM="5">
-        <CONNECTIONS MAX="64" TIMEOUT="30" /> <!-- 爬取网页的并发(连接)数 -->
+    <WORKER NUM="3">
+        <CONNECTIONS MAX="128" TIMEOUT="15" /> <!-- 爬取网页的并发(连接)数 -->
         <TASKQ COUNT="1000" />         <!-- Undo任务队列配置 -->
     </WORKER>
 

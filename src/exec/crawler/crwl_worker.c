@@ -55,11 +55,11 @@ static crwl_worker_t *crwl_worker_get(crwl_cntx_t *ctx)
 int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker)
 {
     int ret;
-    const crwl_worker_conf_t *conf = &ctx->conf.worker;
 
     worker->ctx = ctx;
     worker->log = ctx->log;
     worker->scan_tm = time(NULL);
+    worker->conf = &ctx->conf.worker;
 
     /* 1. 创建SLAB内存池 */
     ret = eslab_init(&worker->slab, CRWL_SLAB_SIZE);
@@ -70,7 +70,7 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker)
     }
 
     /* 2. 创建任务队列 */
-    ret = lqueue_init(&worker->undo_taskq, conf->taskq_count, 5 * MB);
+    ret = lqueue_init(&worker->undo_taskq, worker->conf->taskq_count, 5 * MB);
     if (CRWL_OK != ret)
     {
         eslab_destroy(&worker->slab);
@@ -92,8 +92,8 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker)
     }
 
     worker->events = (struct epoll_event *)eslab_alloc(
-                            &worker->slab,
-                            conf->connections * sizeof(struct epoll_event));
+            &worker->slab,
+            worker->conf->conn_max_num * sizeof(struct epoll_event));
     if (NULL == worker->events)
     {
         lqueue_destroy(&worker->undo_taskq);
@@ -167,7 +167,7 @@ static int crwl_worker_fetch_task(crwl_cntx_t *ctx, crwl_worker_t *worker)
 
     /* 1. 判断是否应该取任务 */
     if (0 == worker->undo_taskq.queue.num
-        || worker->sock_list.num >= ctx->conf.worker.connections)
+        || worker->sock_list.num >= worker->conf->conn_max_num)
     {
         return CRWL_OK;
     }
@@ -220,7 +220,8 @@ static int crwl_worker_recv_data(crwl_worker_t *worker, crwl_worker_socket_t *sc
             {
                 sck->webpage.size += n;
 
-                log_debug(worker->log, "Wait next recv! uri:%s", sck->webpage.uri);
+                log_debug(worker->log, "Wait next recv! uri:%s size:%d n:%d",
+                        sck->webpage.uri, sck->webpage.size, n);
 
                 /* 将HTML数据写入文件 */
                 sck->read.off += n;
@@ -229,21 +230,24 @@ static int crwl_worker_recv_data(crwl_worker_t *worker, crwl_worker_socket_t *sc
                 {
                     crwl_worker_webpage_fsync(worker, sck);
                 }
+
+                if (EAGAIN != errno)
+                {
+                    log_info(worker->log, "errmsg:[%d] %s!", errno, strerror(errno));
+                    goto CRWL_END_OF_READ;
+                }
                 return CRWL_OK;
             }
             else if (0 == n)    /* 已关闭 */
             {
-                log_debug(worker->log, "End of recv! uri:%s", sck->webpage.uri);
+            CRWL_END_OF_READ:
+                log_info(worker->log, "End of recv! uri:%s size:%d",
+                        sck->webpage.uri, sck->webpage.size);
 
                 crwl_worker_webpage_fsync(worker, sck);
                 crwl_worker_webpage_finfo(worker, sck);
                 crwl_worker_remove_sock(worker, sck);
                 return CRWL_SCK_CLOSE;
-            }
-
-            if (EINTR == errno)
-            {
-                continue;
             }
 
             /* 异常情况处理 */
@@ -253,6 +257,7 @@ static int crwl_worker_recv_data(crwl_worker_t *worker, crwl_worker_socket_t *sc
             return CRWL_ERR;
         }
 
+        log_debug(worker->log, "Recv! uri:%s n:%d", sck->webpage.uri, n);
         sck->webpage.size += n;
 
         /* 3. 将HTML数据写入文件 */
@@ -592,8 +597,8 @@ static int crwl_worker_timeout_hdl(crwl_worker_t *worker)
         }
 
         /* 超时未发送或接收数据时, 认为无数据传输, 将直接关闭套接字 */
-        if ((ctm - sck->rdtm <= CRWL_SCK_TMOUT_SEC)
-            || (ctm - sck->wrtm <= CRWL_SCK_TMOUT_SEC))
+        if ((ctm - sck->rdtm <= worker->conf->conn_tmout_sec)
+            || (ctm - sck->wrtm <= worker->conf->conn_tmout_sec))
         {
             continue;
         }
@@ -675,7 +680,6 @@ void *crwl_worker_routine(void *_ctx)
 {
     crwl_worker_t *worker;
     crwl_cntx_t *ctx = (crwl_cntx_t *)_ctx;
-    crwl_worker_conf_t *conf = &ctx->conf.worker;
 
     /* 1. 创建爬虫对象 */
     worker = crwl_worker_get(ctx);
@@ -693,7 +697,8 @@ void *crwl_worker_routine(void *_ctx)
 
         /* 3. 等待事件通知 */
         worker->ep_fds = epoll_wait(
-                worker->ep_fd, worker->events, conf->connections, CRWL_TMOUT_SEC);
+                worker->ep_fd, worker->events,
+                worker->conf->conn_max_num, CRWL_TMOUT_SEC);
         if (worker->ep_fds < 0)
         {
             if (EINTR == errno)
@@ -853,14 +858,7 @@ int crwl_worker_add_sock(crwl_worker_t *worker, crwl_worker_socket_t *sck)
     ev.data.ptr = sck;
     ev.events = EPOLLOUT | EPOLLET; /* 边缘触发 */
 
-    ret = epoll_ctl(worker->ep_fd, EPOLL_CTL_ADD, sck->sckid, &ev);
-    if (0 != ret)
-    {
-        log_error(worker->log, "errmsg:[%d] %s!", errno, strerror(errno));
-
-        crwl_worker_remove_sock(worker, sck);
-        return CRWL_ERR;
-    }
+    epoll_ctl(worker->ep_fd, EPOLL_CTL_ADD, sck->sckid, &ev);
 #endif /*__EVENT_EPOLL__*/
 
     return CRWL_OK;

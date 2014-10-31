@@ -37,14 +37,14 @@
 #define CRWL_RECV_SIZE              (128 * KB)  /* 缓存SIZE(接收缓存) */
 #define CRWL_SYNC_SIZE              (64 * KB)   /* 同步SIZE */
 
-#define CRWL_CONNECTIONS_MAX_NUM    (1024)  /* 最大网络连接数 */
-#define CRWL_CONNECTIONS_DEF_NUM    (512)   /* 默认网络连接数 */
-#define CRWL_CONNECTIONS_MIN_NUM    (1)     /* 最小网络连接数 */
+#define CRWL_CONN_MAX_NUM           (1024)  /* 最大网络连接数 */
+#define CRWL_CONN_DEF_NUM           (128)   /* 默认网络连接数 */
+#define CRWL_CONN_MIN_NUM           (1)     /* 最小网络连接数 */
+#define CRWL_CONN_TMOUT_SEC         (15)    /* 连接超时时间(秒) */
 
 #define CRWL_DOMAIN_SLOT_LEN        (1777)  /* 域名IP映射表长度 */
 #define CRWL_DEPTH_NO_LIMIT         (-1)    /* 爬取深度无限制 */
 #define CRWL_WEB_SVR_PORT           (80)    /* WEB服务器侦听端口 */
-#define CRWL_SCK_TMOUT_SEC          (30)    /* 套接字超时时间(秒) */
 
 #define CRWL_TASK_QUEUE_MAX_NUM     (10000) /* 任务队列单元数 */
 #define CRWL_DEF_CONF_PATH  "../conf/crawler.xml"   /* 默认配置路径 */

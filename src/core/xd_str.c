@@ -412,7 +412,8 @@ int href_to_uri(const char *href, const char *site, uri_field_t *field)
 
     /* 2. 判断URI类型(正常的URI, 相对路径, 绝对路径, 也可能异常) */
     /* 类似格式: http://www.baidu.com */
-    if (!strncmp(URI_HTTP_STR, tmp, URI_HTTP_STR_LEN))
+    if (!strncmp(URI_HTTP_STR, tmp, URI_HTTP_STR_LEN)
+        || !strncmp(URI_WWW_STR, tmp, URI_WWW_STR_LEN))
     {
         return uri_reslove(tmp, field);
     }
@@ -500,7 +501,7 @@ int href_to_uri(const char *href, const char *site, uri_field_t *field)
         if (len <= URI_HTTP_STR_LEN
             || len >= URI_MAX_LEN)
         {
-            return false;
+            return -1;
         }
 
         snprintf(uri, sizeof(uri), "%s", site);
@@ -513,7 +514,7 @@ int href_to_uri(const char *href, const char *site, uri_field_t *field)
     p = tmp;
     goto HREF_IS_LOCAL_PATH;
 
-    return false;
+    return -1;
 }
 
 /******************************************************************************
@@ -529,7 +530,13 @@ int href_to_uri(const char *href, const char *site, uri_field_t *field)
  ******************************************************************************/
 bool uri_is_valid(const char *uri)
 {
-    do
+    if (NULL == uri
+        || '\0' == *uri)
+    {
+        return false;
+    }
+
+    for (; '\0' != *uri; ++uri)
     {
         switch (*uri)
         {
@@ -540,12 +547,12 @@ bool uri_is_valid(const char *uri)
             case ']':
             case '(':
             case ')':
+            case ';':
             {
                 return false;
             }
         }
-        ++uri;
-    } while ('\0' != *uri);
+    }
 
     return true;
 }

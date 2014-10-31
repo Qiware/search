@@ -419,7 +419,7 @@ static int crwl_parser_deep_hdl(crwl_parser_t *parser, gumbo_result_t *result)
     for (; NULL != node; node = node->next)
     {
         /* 1. 分析href字段 */
-        if (!href_to_uri((const char *)node->data, info->uri, &field))
+        if (0 != href_to_uri((const char *)node->data, info->uri, &field))
         {
             log_info(parser->log, "Uri [%s] is invalid!", (char *)node->data);
             continue;
