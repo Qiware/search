@@ -27,7 +27,6 @@ DIR += "src/comm/gumbo"
 DIR += "src/comm/redis"
 
 DIR += "src/exec/crawler/"
-#DIR += "src/exec/parser/"
 DIR += "src/exec/logsvr"
 
 # 测试目录
