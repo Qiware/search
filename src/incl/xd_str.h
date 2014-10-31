@@ -19,9 +19,9 @@ int str_trim(const char *in, char *out, size_t size);
 #define URI_HTTPS_STR       "https://"      /* HTTPS连接 */
 #define URI_HTTPS_STR_LEN   (8)
 
-#define href_is_abs(str) ('/' == str[0])    /* href是绝对路径 */
+#define href_is_abs(str) ('/' == str[0])            /* href是绝对路径 */
 #define href_is_up(str) (!strncmp("../", str, 3))   /* href是上级路径 */
-#define href_is_local(str) (!strncmp("./", str, 2)) /* href是当前路径 */
+#define href_is_loc(str) (!strncmp("./", str, 2))   /* href是当前路径 */
 
 /* URI字段 */
 typedef struct

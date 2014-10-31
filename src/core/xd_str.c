@@ -391,6 +391,7 @@ int uri_reslove(const char *uri, uri_field_t *field)
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
+ **     href字段值可能为正常的URI, 也可能为绝对路径, 也可能为相对路径,也可能错误.
  **作    者: # Qifeng.zou # 2014.10.30 #
  ******************************************************************************/
 int href_to_uri(const char *href, const char *site, uri_field_t *field)
@@ -406,7 +407,7 @@ int href_to_uri(const char *href, const char *site, uri_field_t *field)
         return -1;
     }
 
-    /* 2. 判断URI类型(相对路径、绝对路径或是正常的URI) */
+    /* 2. 判断URI类型(正常的URI, 相对路径, 绝对路径, 也可能异常) */
     /* 类似格式: http://www.baidu.com */
     if (!strncmp(URI_HTTP_STR, tmp, URI_HTTP_STR_LEN))
     {
@@ -467,10 +468,11 @@ int href_to_uri(const char *href, const char *site, uri_field_t *field)
 
         return uri_reslove(uri, field);
     }
-    else if (href_is_local(tmp)) /* 本级目录 */
+    else if (href_is_loc(tmp)) /* 本级目录 */
     {
         p = tmp + 2;
 
+    HREF_IS_LOCAL_PATH:
         p2 = site + strlen(site) - 1;
         if ('/' == *p2)
         {
@@ -482,14 +484,32 @@ int href_to_uri(const char *href, const char *site, uri_field_t *field)
             --p2;
         }
 
-        if (p2 - site <= URI_HTTP_STR_LEN)
+        /* p2此时指向'/' */
+        len = p2 - site;
+        if (len <= URI_HTTP_STR_LEN)
         {
             return false;
         }
 
-        snprintf(uri, sizeof(uri), "%s%s", p2, p); /* p2此时指向'/' */
+        snprintf(uri, sizeof(uri), "%s", site);
+        snprintf(uri+len, sizeof(uri)-len, "/%s", p);
 
         return uri_reslove(uri, field);
+    }
+
+    /* 本级目录分析 */
+    p = tmp;
+    while (' ' != *p && '\0' != *p
+        && '\n' != *p && '\r' != *p
+        && '(' != *p && ')' != *p)
+    {
+        ++p;
+    }
+
+    if ('\0' == *p)
+    {
+        p = tmp;
+        goto HREF_IS_LOCAL_PATH;
     }
 
     return -1;

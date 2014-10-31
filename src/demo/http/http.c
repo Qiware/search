@@ -14,12 +14,16 @@ int main(int argc, char *argv[])
     int ret;
     char get_req[4096];
     uri_field_t field;
+    const char *site = "http://www.baidu.com/news";
+    const char *href = "abc.html";
 
     memset(&field, 0, sizeof(field));
 
     http_get_request(argv[1], get_req, sizeof(get_req));
 
     ret = uri_reslove(argv[1], &field);
+
+    href_to_uri(href, site, &field);
 
     fprintf(stdout, "P:%s H:%s P:%d P:%s R:%d\n",
             field.protocol, field.host, field.port, field.path, ret);
