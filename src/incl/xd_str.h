@@ -14,6 +14,9 @@ xd_str_t *str_to_lower(xd_str_t *s);
 xd_str_t *str_to_upper(xd_str_t *s);
 int str_trim(const char *in, char *out, size_t size);
 
+#define URI_DEF_PORT        (80)    /* 默认端口 */
+#define URI_DEF_PROTOCOL    "http"  /* 默认协议 */
+
 #define URI_HTTP_STR        "http://"       /* HTTP连接 */
 #define URI_HTTP_STR_LEN    (7)
 #define URI_HTTPS_STR       "https://"      /* HTTPS连接 */
@@ -35,6 +38,7 @@ typedef struct
     int port;                   /* 端口号 */
 } uri_field_t;
 
+bool uri_is_valid(const char *uri);
 int uri_reslove(const char *uri, uri_field_t *f);
 int href_to_uri(const char *href, const char *site, uri_field_t *field);
 

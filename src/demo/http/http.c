@@ -15,7 +15,7 @@ int main(int argc, char *argv[])
     char get_req[4096];
     uri_field_t field;
     const char *site = "http://www.baidu.com/news";
-    const char *href = "abc.html";
+    const char *href = "javascript(0):1";
 
     memset(&field, 0, sizeof(field));
 

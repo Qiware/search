@@ -195,8 +195,6 @@ int str_trim(const char *in, char *out, size_t size)
  ******************************************************************************/
 int uri_reslove(const char *uri, uri_field_t *field)
 {
-#define URI_DEF_PORT        (80)    /* 默认端口 */
-#define URI_DEF_PROTOCOL    "http"  /* 默认协议 */
     int len;
     const char *ch, *s;
 
@@ -407,6 +405,11 @@ int href_to_uri(const char *href, const char *site, uri_field_t *field)
         return -1;
     }
 
+    if (!uri_is_valid(tmp))
+    {
+        return -1;
+    }
+
     /* 2. 判断URI类型(正常的URI, 相对路径, 绝对路径, 也可能异常) */
     /* 类似格式: http://www.baidu.com */
     if (!strncmp(URI_HTTP_STR, tmp, URI_HTTP_STR_LEN))
@@ -422,7 +425,15 @@ int href_to_uri(const char *href, const char *site, uri_field_t *field)
             return -1;
         }
 
-        snprintf(uri, sizeof(uri), "%s%s%s", URI_HTTP_STR, field->host, tmp);
+        if (URI_DEF_PORT == field->port)
+        {
+            snprintf(uri, sizeof(uri), "%s%s%s", URI_HTTP_STR, field->host, tmp);
+        }
+        else
+        {
+            snprintf(uri, sizeof(uri), "%s%s:%d%s",
+                    URI_HTTP_STR, field->host, field->port, tmp);
+        }
 
         return uri_reslove(uri, field);
     }
@@ -486,7 +497,8 @@ int href_to_uri(const char *href, const char *site, uri_field_t *field)
 
         /* p2此时指向'/' */
         len = p2 - site;
-        if (len <= URI_HTTP_STR_LEN)
+        if (len <= URI_HTTP_STR_LEN
+            || len >= URI_MAX_LEN)
         {
             return false;
         }
@@ -499,18 +511,41 @@ int href_to_uri(const char *href, const char *site, uri_field_t *field)
 
     /* 本级目录分析 */
     p = tmp;
-    while (' ' != *p && '\0' != *p
-        && '\n' != *p && '\r' != *p
-        && '(' != *p && ')' != *p)
-    {
-        ++p;
-    }
+    goto HREF_IS_LOCAL_PATH;
 
-    if ('\0' == *p)
-    {
-        p = tmp;
-        goto HREF_IS_LOCAL_PATH;
-    }
+    return false;
+}
 
-    return -1;
+/******************************************************************************
+ **函数名称: uri_is_valid
+ **功    能: 判断URI的合法性
+ **输入参数: 
+ **     uri: URI
+ **输出参数: NONE
+ **返    回: true:合法 false:不合法
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.10.31 #
+ ******************************************************************************/
+bool uri_is_valid(const char *uri)
+{
+    do
+    {
+        switch (*uri)
+        {
+            case ' ':
+            case '\n':
+            case '\r':
+            case '[':
+            case ']':
+            case '(':
+            case ')':
+            {
+                return false;
+            }
+        }
+        ++uri;
+    } while ('\0' != *uri);
+
+    return true;
 }
