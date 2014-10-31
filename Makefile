@@ -17,8 +17,6 @@ export PROJ_LIB = ${PROJ}/lib
 export PROJ_LOG = ${PROJ}/log
 export GCC_LOG = ${PROJ_LOG}/gcc.log
 
-export CPU=`cat /proc/cpuinfo | grep processor | wc -l`
-
 # 编译目录(注：编译按顺序执行　注意库之间的依赖关系)
 #DIR=`find ./src -type d`
 DIR := "src/core"
@@ -60,7 +58,7 @@ all:
 		if [ -e $${SUBDIR}/Makefile ]; then \
 			echo cd $${SUBDIR}; \
 			cd $${SUBDIR}; \
-			make -j${CPU} 2>&1 | tee -a ${GCC_LOG}; \
+			make 2>&1 | tee -a ${GCC_LOG}; \
 			cd ${PROJ}; \
 		fi \
 	done
