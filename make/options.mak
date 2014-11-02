@@ -33,6 +33,11 @@ ifeq (__ON__, $(strip $(CONFIG_DEBUG_SUPPORT)))
 	OPTIONS += __XD_DEBUG__
 endif
 
+# 内存泄露检测
+ifeq (__ON__, $(strip $(CONFIG_MEMLEAK_CHECK)))
+	OPTIONS += __MEM_LEAK_CHECK__
+endif
+
 # 内存对齐
 ifeq (POSIX_MEMALIGN, $(strip $(CONFIG_MEMALIGN_SUPPORT)))
 	OPTIONS += HAVE_POSIX_MEMALIGN	# POSIX内存对齐方式
