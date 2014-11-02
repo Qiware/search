@@ -2,6 +2,7 @@
 #include <sys/shm.h>
 #include <sys/ipc.h>
 #include <pthread.h>
+#include <sys/resource.h>
 
 #include "syscall.h"
 
@@ -461,4 +462,32 @@ int bind_cpu(uint16_t id)
     CPU_SET(id, &cpuset);
 
     return pthread_setaffinity_np(pthread_self(), sizeof(cpuset), &cpuset);
+}
+
+/******************************************************************************
+ **函数名称: limit_file_num
+ **功    能: 修改进程最多可打开的文件数目
+ **输入参数: 
+ **     max: 进程最多可打开的文件数目
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项:
+ **     只有root权限才可以修改硬限制
+ **     1) rlim_cur: 软限制
+ **     2) rlim_max: 硬限制
+ **其他说明:
+ **     1) 任何进程可以将软限制改为小于或等于硬限制
+ **     2) 任何进程都可以将硬限制降低，但普通用户降低了就无法提高，该值必须等于或大于软限制
+ **     3) 只有超级用户可以提高硬限制
+ **作    者: # Qifeng.zou # 2014.11.01 #
+ ******************************************************************************/
+int limit_file_num(int max)
+{
+    struct rlimit limit;
+
+    limit.rlim_cur = max;
+    limit.rlim_max = max;
+
+    return setrlimit(RLIMIT_NOFILE, &limit);
 }

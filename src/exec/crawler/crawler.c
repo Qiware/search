@@ -61,11 +61,6 @@ int main(int argc, char *argv[])
         return crwl_usage(argv[0]);
     }
 
-    if (opt.is_daemon)
-    {
-        daemon(1, 0);
-    }
-
     /* 2. 初始化日志模块 */
     log2_get_path(log_path, sizeof(log_path), basename(argv[0]));
 
@@ -84,6 +79,8 @@ int main(int argc, char *argv[])
         log2_error("Initialize log failed!");
         goto ERROR;
     }
+
+    daemon(1, 0);
 
     /* 3. 初始化全局信息 */
     ctx = crwl_cntx_init(opt.conf_path, log);

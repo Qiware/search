@@ -138,6 +138,7 @@ int tcp_connect(const char *ipaddr, int port)
  **     2. 连接指定服务器
  **     3. 设置套接字属性(非阻塞)
  **注意事项: 
+ **     1) SO_REUSEADDR: 
  **作    者: # Qifeng.zou & Menglai.Wang # 2014.09.25 #
  ******************************************************************************/
 int tcp_connect_ex(const char *ipaddr, int port, int sec)

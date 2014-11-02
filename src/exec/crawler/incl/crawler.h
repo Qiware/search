@@ -112,7 +112,6 @@ typedef struct
 /* 输入参数信息 */
 typedef struct
 {
-    bool is_daemon;                         /* 是否后台运行 */
     char conf_path[FILE_NAME_MAX_LEN];      /* 配置文件路径 */
 }crwl_opt_t;
 

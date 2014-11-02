@@ -62,12 +62,6 @@ int crwl_getopt(int argc, char **argv, crwl_opt_t *opt)
     {
         switch (ch)
         {
-            case 'd':   /* 是否后台运行 */
-            case 'D':
-            {
-                opt->is_daemon = true;
-                break;
-            }
             case 'c':   /* 指定配置文件 */
             case 'C':
             {
@@ -173,6 +167,8 @@ crwl_cntx_t *crwl_cntx_init(const char *path, log_cycle_t *log)
         log_error(log, "Initialize hash table failed!");
         return NULL;
     }
+
+    limit_file_num(4096);
 
     /* 5. 创建Worker线程池 */
     ret = crwl_init_workers(ctx);
