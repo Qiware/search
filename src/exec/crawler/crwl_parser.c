@@ -72,7 +72,7 @@ int crwl_parser_exec(const crwl_conf_t *conf, log_cycle_t *log)
     crwl_parser_loop(parser);
 
     /* 3. 释放GUMBO对象 */
-    gumbo_destroy(&parser->gumbo_ctx);
+    crwl_parser_destroy(parser);
     return CRWL_OK;
 }
 
@@ -100,6 +100,8 @@ static crwl_parser_t *crwl_parser_init(const crwl_conf_t *conf, log_cycle_t *log
         return NULL;
     }
 
+    parser->log = log;
+
     log_set_level(log, conf->log.level);
     log2_set_level(conf->log.level2);
 
@@ -107,7 +109,7 @@ static crwl_parser_t *crwl_parser_init(const crwl_conf_t *conf, log_cycle_t *log
     ret = gumbo_init(&parser->gumbo_ctx);
     if (0 != ret)
     {
-        log_error(log, "Init gumbo failed!");
+        log_error(parser->log, "Init gumbo failed!");
         free(parser);
         return NULL;
     }
@@ -122,10 +124,28 @@ static crwl_parser_t *crwl_parser_init(const crwl_conf_t *conf, log_cycle_t *log
         return NULL;
     }
 
-    parser->log = log;
     memcpy(&parser->conf, conf, sizeof(crwl_conf_t));
 
     return parser;
+}
+
+/******************************************************************************
+ **函数名称: crwl_parser_destroy
+ **功    能: 销毁Parser对象
+ **输入参数: 
+ **输出参数:
+ **返    回: VOID
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.11.04 #
+ ******************************************************************************/
+void crwl_parser_destroy(crwl_parser_t *parser)
+{
+    log_destroy(&parser->log);
+    log2_destroy();
+    redis_ctx_destroy(parser->redis);
+    gumbo_destroy(&parser->gumbo_ctx);
+    free(parser);
 }
 
 /******************************************************************************
@@ -201,6 +221,7 @@ static int crwl_parser_loop(crwl_parser_t *parser)
 
         Mkdir(conf->parser.store.path, 0777);
 
+        break;
         Sleep(5);
     }
 
@@ -345,9 +366,10 @@ static int crwl_parser_work_flow(crwl_parser_t *parser)
     result = gumbo_parse_href(&parser->gumbo_ctx, html);
     if (NULL == result)
     {
-        gumbo_html_destroy(&parser->gumbo_ctx, html);
-
         log_error(parser->log, "Parse href failed! fpath:%s", fpath);
+
+        gumbo_result_destroy(&parser->gumbo_ctx, result);
+        gumbo_html_destroy(&parser->gumbo_ctx, html);
         return CRWL_ERR;
     }
 
@@ -360,6 +382,9 @@ static int crwl_parser_work_flow(crwl_parser_t *parser)
     if (CRWL_OK != ret)
     {
         log_error(parser->log, "Deep handler failed! fpath:%s", fpath);
+
+        gumbo_result_destroy(&parser->gumbo_ctx, result);
+        gumbo_html_destroy(&parser->gumbo_ctx, html);
         return CRWL_ERR;
     }
 
@@ -458,7 +483,7 @@ bool crwl_set_uri_exists(redis_ctx_t *ctx, const char *hash, const char *uri)
         return !redis_hsetnx(ctx->master, hash, uri, "1");
     }
 
-    while (1)
+    do
     {
         r = redisCommand(
                 ctx->slave[random() % ctx->slave_num],
@@ -475,7 +500,7 @@ bool crwl_set_uri_exists(redis_ctx_t *ctx, const char *hash, const char *uri)
 
         freeReplyObject(r);
         return true; /* 已存在 */
-    }
+    } while(0);
 
     freeReplyObject(r);
 

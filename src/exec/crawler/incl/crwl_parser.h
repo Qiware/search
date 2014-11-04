@@ -32,5 +32,6 @@ typedef struct
 } crwl_parser_t;
 
 int crwl_parser_exec(const crwl_conf_t *conf, log_cycle_t *log);
+void crwl_parser_destroy(crwl_parser_t *parser);
 
 #endif /*__CRWL_PARSER_H__*/

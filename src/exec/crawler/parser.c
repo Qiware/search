@@ -52,7 +52,9 @@ int main(int argc, char *argv[])
         return CRWL_ERR;
     }
 
+#if !defined(__MEM_LEAK_CHECK__)
     daemon(1, 0);
+#endif /*__MEM_LEAK_CHECK__*/
 
     /* 3. 启动解析器 */
     return crwl_parser_exec(&conf, log);
