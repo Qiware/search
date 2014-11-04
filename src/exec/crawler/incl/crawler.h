@@ -130,6 +130,7 @@ int crwl_getopt(int argc, char **argv, crwl_opt_t *opt);
 int crwl_usage(const char *exec);
 int crwl_proc_lock(void);
 
+log_cycle_t *crwl_init_log(char *proc);
 crwl_cntx_t *crwl_cntx_init(const char *path, log_cycle_t *log);
 int crwl_cntx_startup(crwl_cntx_t *ctx);
 

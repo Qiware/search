@@ -3,10 +3,10 @@
     <!-- 公共配置 -->
     <COMMON>
         <!-- 日志信息配置
-             1) LOG_LEVLE: 日志级别
-             2) LOG2_LEVEL: 系统日志级别
+             1) LEVLE: 日志级别
+             2) LEVEL2: 系统日志级别
              3) 取值范围: trace|debug|info|warn|error|fatal -->
-        <LOG LOG_LEVEL="error" LOG2_LEVEL="error" PATH="../log/" />
+        <LOG LEVEL="error" LEVEL2="error" PATH="../log/" />
         <!-- 爬取配置
              1) DEPTH: 最大爬取深度
              2) PATH: 网页存储路径 -->
@@ -38,7 +38,8 @@
 
     <!-- 分析进程: 负责对网页的分析(内容分析、URL提取等) -->
     <PARSER>
-        <STORE PATH="../temp/parser/webpage" /> <!-- 被解析网页的存储路径 -->
+        <!-- 被解析网页的存储路径 -->
+        <STORE PATH="../temp/parser/webpage" ERR_PATH="../temp/parser/error" />
         <DATABASE SERVER="服务名" USER="用户名" PASSWD="密码" />  <!-- 数据库配置 -->
     </PARSER>
 

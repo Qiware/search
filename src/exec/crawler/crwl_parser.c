@@ -32,7 +32,7 @@
 
 static crwl_parser_t *crwl_parser_init(const crwl_conf_t *conf, log_cycle_t *log);
 static int crwl_parser_loop(crwl_parser_t *parser);
-static int crwl_parser_webpage_info(crwl_parser_t *parser);
+static int crwl_parser_webpage_info(crwl_webpage_info_t *info);
 static int crwl_parser_work_flow(crwl_parser_t *parser);
 static int crwl_parser_deep_hdl(crwl_parser_t *parser, gumbo_result_t *result);
 
@@ -64,21 +64,21 @@ int crwl_parser_exec(const crwl_conf_t *conf)
     /* 1. 初始化日志模块 */
     log2_get_path(log_path, sizeof(log_path), CRWL_PARSER_LOG_NAME);
 
-    ret = log2_init(conf->log2_level, log_path);
+    ret = log2_init(conf->log.level2, log_path);
     if (0 != ret)
     {
         fprintf(stderr, "Init log2 failed! level:%d path:%s\n",
-                conf->log2_level, log_path);
+                conf->log.level2, log_path);
         return CRWL_ERR;
     }
 
     log_get_path(log_path, sizeof(log_path), CRWL_PARSER_LOG_NAME);
 
-    log = log_init(conf->log_level, log_path);
+    log = log_init(conf->log.level, log_path);
     if (NULL == log)
     {
         fprintf(stderr, "Init log2 failed! level:%d path:%s\n",
-                conf->log_level, log_path);
+                conf->log.level, log_path);
         return CRWL_ERR;
     }
 
@@ -113,7 +113,6 @@ int crwl_parser_exec(const crwl_conf_t *conf)
 static crwl_parser_t *crwl_parser_init(const crwl_conf_t *conf, log_cycle_t *log)
 {
     int ret;
-    struct timeval tv;
     crwl_parser_t *parser;
 
     parser = (crwl_parser_t *)calloc(1, sizeof(crwl_parser_t));
@@ -133,12 +132,10 @@ static crwl_parser_t *crwl_parser_init(const crwl_conf_t *conf, log_cycle_t *log
     }
 
     /* 3. 连接Redis服务 */
-    tv.tv_sec = 30;
-    tv.tv_usec = 0;
-    parser->redis_ctx = redisConnectWithTimeout("127.0.0.1", 6379, tv);
-    if (NULL == parser->redis_ctx)
+    parser->redis = redis_ctx_init(&conf->redis.master, &conf->redis.slave);
+    if (NULL == parser->redis)
     {
-        log_error(parser->log, "Connect redis failed!");
+        log_error(parser->log, "Initialize redis context failed!");
         gumbo_destroy(&parser->gumbo_ctx);
         free(parser);
         return NULL;
@@ -167,11 +164,13 @@ static int crwl_parser_loop(crwl_parser_t *parser)
     DIR *dir;
     struct stat st;
     struct dirent *item;
-    char path[PATH_NAME_MAX_LEN];
+    char path[PATH_NAME_MAX_LEN],
+         new_path[FILE_PATH_MAX_LEN];
+    crwl_conf_t *conf = &parser->conf;
 
     while (1)
     {
-        snprintf(path, sizeof(path), "%s/info", parser->conf.download.path);
+        snprintf(path, sizeof(path), "%s/info", conf->download.path);
 
         /* 1. 打开目录 */
         dir = opendir(path);
@@ -195,10 +194,12 @@ static int crwl_parser_loop(crwl_parser_t *parser)
             }
 
             /* 获取网页信息 */
-            ret = crwl_parser_webpage_info(parser);
+            ret = crwl_parser_webpage_info(&parser->info);
             if (CRWL_OK != ret)
             {
-                remove(parser->info.fname);
+                snprintf(new_path, sizeof(new_path),
+                        "%s/%s", conf->parser.store.err_path, item->d_name);
+                Rename(parser->info.fname, new_path);
 
                 log_error(parser->log, "Get webpage information failed! fname:%s",
                         parser->info.fname);
@@ -208,7 +209,10 @@ static int crwl_parser_loop(crwl_parser_t *parser)
             /* 主处理流程 */
             crwl_parser_work_flow(parser);
 
-            remove(parser->info.fname);
+            snprintf(new_path, sizeof(new_path),
+                    "%s/%s", conf->parser.store.path, item->d_name);
+
+            Rename(parser->info.fname, new_path);
         }
 
         /* 3. 关闭目录 */
@@ -223,25 +227,23 @@ static int crwl_parser_loop(crwl_parser_t *parser)
 /******************************************************************************
  **函数名称: crwl_parser_webpage_info
  **功    能: 获取网页信息
- **输入参数: 
- **     p: 解析器对象
+ **输入参数:
+ **     info: 网页信息
  **输出参数:
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.18 #
  ******************************************************************************/
-static int crwl_parser_webpage_info(crwl_parser_t *parser)
+static int crwl_parser_webpage_info(crwl_webpage_info_t *info)
 {
     xml_tree_t *xml;
     xml_node_t *node, *fix;
-    crwl_webpage_info_t *info = &parser->info;
 
     /* 1. 新建XML树 */
-    xml = xml_creat(parser->info.fname);
+    xml = xml_creat(info->fname);
     if (NULL == xml)
     {
-        log_error(parser->log, "Create xml tree failed!");
         return CRWL_ERR;
     }
 
@@ -251,7 +253,6 @@ static int crwl_parser_webpage_info(crwl_parser_t *parser)
         fix = xml_search(xml, ".INFO");
         if (NULL == fix)
         {
-            log_error(parser->log, "Didn't find INFO mark!");
             break;
         }
 
@@ -259,7 +260,6 @@ static int crwl_parser_webpage_info(crwl_parser_t *parser)
         node = xml_rsearch(xml, fix, "URI");
         if (NULL == fix)
         {
-            log_error(parser->log, "Didn't find INFO mark!");
             break;
         }
 
@@ -269,7 +269,6 @@ static int crwl_parser_webpage_info(crwl_parser_t *parser)
         node = xml_rsearch(xml, fix, "URI.DEPTH");
         if (NULL == fix)
         {
-            log_error(parser->log, "Didn't find INFO mark!");
             break;
         }
 
@@ -279,7 +278,6 @@ static int crwl_parser_webpage_info(crwl_parser_t *parser)
         node = xml_rsearch(xml, fix, "URI.IP");
         if (NULL == fix)
         {
-            log_error(parser->log, "Didn't find IP mark!");
             break;
         }
 
@@ -289,7 +287,6 @@ static int crwl_parser_webpage_info(crwl_parser_t *parser)
         node = xml_rsearch(xml, fix, "URI.PORT");
         if (NULL == fix)
         {
-            log_error(parser->log, "Didn't find PORT mark!");
             break;
         }
 
@@ -299,7 +296,6 @@ static int crwl_parser_webpage_info(crwl_parser_t *parser)
         node = xml_rsearch(xml, fix, "HTML");
         if (NULL == fix)
         {
-            log_error(parser->log, "Didn't find HTML mark!");
             break;
         }
 
@@ -346,7 +342,7 @@ static int crwl_parser_work_flow(crwl_parser_t *parser)
      * 判断的同时设置网页的下载标志
      * 如果已下载，则不做提取该网页中的超链接
      * */
-    if (crwl_is_uri_down(parser->redis_ctx, conf->redis.done_tab, info->uri))
+    if (crwl_is_uri_down(parser->redis->master, conf->redis.done_tab, info->uri))
     {
         log_info(parser->log, "Uri [%s] was downloaded!", info->uri);
         return CRWL_OK;
@@ -418,7 +414,7 @@ static int crwl_parser_deep_hdl(crwl_parser_t *parser, gumbo_result_t *result)
     /* 遍历URL集合 */
     for (; NULL != node; node = node->next)
     {
-        /* 1. 分析href字段 */
+        /* 1. 将href转至uri */
         if (0 != href_to_uri((const char *)node->data, info->uri, &field))
         {
             log_info(parser->log, "Uri [%s] is invalid!", (char *)node->data);
@@ -426,7 +422,7 @@ static int crwl_parser_deep_hdl(crwl_parser_t *parser, gumbo_result_t *result)
         }
 
         /* 2. 判断URI是否已经被推送到队列中 */
-        if (crwl_is_uri_push(parser->redis_ctx, conf->redis.push_tab, field.uri))
+        if (crwl_is_uri_push(parser->redis->master, conf->redis.push_tab, field.uri))
         {
             log_info(parser->log, "Uri [%s] was pushed!", (char *)node->data);
             continue;
@@ -441,7 +437,7 @@ static int crwl_parser_deep_hdl(crwl_parser_t *parser, gumbo_result_t *result)
         }
 
         /* 4. 插入Undo任务队列 */
-        r = redis_rpush(parser->redis_ctx, parser->conf.redis.undo_taskq, task_str);
+        r = redis_rpush(parser->redis->master, parser->conf.redis.undo_taskq, task_str);
         if (REDIS_REPLY_NIL == r->type)
         {
             freeReplyObject(r);

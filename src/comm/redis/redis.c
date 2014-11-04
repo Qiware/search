@@ -11,6 +11,105 @@
 #include "common.h"
 
 /******************************************************************************
+ **函数名称: redis_ctx_init
+ **功    能: 初始化Redis上下文
+ **输入参数: 
+ **     mcf: Master配置
+ **     scf: Slave配置链表
+ **输出参数:
+ **返    回: Redis上下文
+ **实现描述: 
+ **     1. 申请内存空间
+ **     2. 连接Master
+ **     3. 依次连接Slave
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.11.04 #
+ ******************************************************************************/
+redis_ctx_t *redis_ctx_init(const redis_conf_t *mcf, const list_t *scf)
+{
+    int idx;
+    struct timeval tv;
+    redis_ctx_t *ctx;
+    list_node_t *node;
+    redis_conf_t *conf;
+
+    /* 1. 申请内存空间 */
+    ctx = (redis_ctx_t *)calloc(1, sizeof(redis_ctx_t));
+    if (NULL == ctx)
+    {
+        return NULL;
+    }
+
+    ctx->slave = (redisContext **)calloc(scf->num, sizeof(redisContext *));
+    if (NULL == ctx->slave)
+    {
+        free(ctx);
+        return NULL;
+    }
+
+    /* 2. 连接Master */
+    tv.tv_sec = 30;
+    tv.tv_usec = 0;
+    ctx->master = redisConnectWithTimeout(mcf->ip, mcf->port, tv);
+    if (NULL == ctx->master)
+    {
+        free(ctx->slave);
+        free(ctx);
+        return NULL;
+    }
+
+    /* 3. 依次连接Slave */
+    ctx->slave_num = 0;
+    node = scf->head;
+
+    for (idx=0; idx<scf->num; ++idx, node = node->next)
+    {
+        tv.tv_sec = 30;
+        tv.tv_usec = 0;
+
+        conf = (redis_conf_t *)node->data;
+
+        ctx->slave[idx] = redisConnectWithTimeout(conf->ip, conf->port, tv);
+        if (NULL == ctx->slave[idx])
+        {
+            redis_ctx_destroy(ctx);
+            return NULL;
+        }
+        ++ctx->slave_num;
+    }
+
+    return ctx;
+}
+
+/******************************************************************************
+ **函数名称: redis_ctx_destroy
+ **功    能: 销毁Redis上下文
+ **输入参数: 
+ **     ctx: Redis上下文
+ **输出参数: NONE
+ **返    回: VOID
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.11.04 #
+ ******************************************************************************/
+void redis_ctx_destroy(redis_ctx_t *ctx)
+{
+    int idx;
+
+    for (idx=0; idx<ctx->slave_num; ++idx)
+    {
+        if (NULL != ctx->slave[idx])
+        {
+            redisFree(ctx->slave[idx]);
+            ctx->slave[idx] = NULL;
+        }
+    }
+
+    free(ctx->slave);
+    free(ctx);
+}
+
+/******************************************************************************
  **函数名称: redis_hsetnx
  **功    能: 设置HASH表中指定KEY的值(前提: 当指定KEY不存在时才更新)
  **输入参数: 

@@ -380,7 +380,7 @@ int uri_reslove(const char *uri, uri_field_t *field)
 
 /******************************************************************************
  **函数名称: href_to_uri
- **功    能: 将href字段转化成ｕｒｉ
+ **功    能: 将href字段转化成uri
  **输入参数: 
  **     href: 从网页site中提取出来的href字段
  **     site: 网址

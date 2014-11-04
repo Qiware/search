@@ -2,6 +2,7 @@
 #define __CRWL_PARSER_H__
 
 #include "log.h"
+#include "redis.h"
 #include "crawler.h"
 #include "gumbo_ex.h"
 #include <hiredis/hiredis.h>
@@ -24,7 +25,7 @@ typedef struct
     crwl_conf_t conf;               /* 配置信息 */
 
     log_cycle_t *log;               /* 日志对象 */
-    redisContext *redis_ctx;        /* REDIS对象 */
+    redis_ctx_t *redis;             /* Redis上下文 */
     gumbo_cntx_t gumbo_ctx;         /* GUMBO对象 */
 
     crwl_webpage_info_t info;       /* 网页信息 */

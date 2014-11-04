@@ -15,6 +15,7 @@ static int crwl_conf_load_comm(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *
 static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log);
 static int crwl_conf_load_seed(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log);
 static int crwl_conf_load_worker(xml_tree_t *xml, crwl_worker_conf_t *conf, log_cycle_t *log);
+static int crwl_conf_load_parser(xml_tree_t *xml, crwl_parser_conf_t *conf, log_cycle_t *log);
 
 /******************************************************************************
  **函数名称: crwl_load_conf
@@ -71,7 +72,15 @@ int crwl_load_conf(crwl_conf_t *conf, const char *path, log_cycle_t *log)
             break;
         }
 
-        /* 5. 加载种子配置 */
+        /* 5. 提取解析配置 */
+        ret = crwl_conf_load_parser(xml, &conf->parser, log);
+        if (0 != ret)
+        {
+            log_error(log, "Parse worker configuration failed! path:%s", path);
+            break;
+        }
+
+        /* 6. 加载种子配置 */
         ret = crwl_conf_load_seed(xml, conf, log);
         if (CRWL_OK != ret)
         {
@@ -120,17 +129,17 @@ static int crwl_conf_load_comm(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *
     if (NULL != fix)
     {
         /* 1.1 日志级别 */
-        node = xml_rsearch(xml, fix, "LOG_LEVEL");
+        node = xml_rsearch(xml, fix, "LEVEL");
         if (NULL != node)
         {
-            conf->log_level = log_get_level(node->value);
+            conf->log.level = log_get_level(node->value);
         }
 
         /* 1.2 系统日志级别 */
-        node = xml_rsearch(xml, fix, "LOG2_LEVEL");
+        node = xml_rsearch(xml, fix, "LEVEL2");
         if (NULL != node)
         {
-            conf->log2_level = log_get_level(node->value);
+            conf->log.level2 = log_get_level(node->value);
         }
     }
     else
@@ -200,7 +209,7 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
     list_node_t *l_node;
     xml_node_t *fix, *node, *item;
     crwl_redis_conf_t *redis = &conf->redis;
-    crwl_redis_slave_conf_t *slave;
+    redis_conf_t *slave;
 
     /* 1. 定位REDIS标签
      *  获取Redis的IP地址、端口号、队列、副本等信息
@@ -220,7 +229,7 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
         return CRWL_ERR;
     }
 
-    snprintf(redis->ip, sizeof(redis->ip), "%s", node->value);
+    snprintf(redis->master.ip, sizeof(redis->master.ip), "%s", node->value);
 
     /* 获取端口号 */
     node = xml_rsearch(xml, fix, "PORT");
@@ -230,7 +239,7 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
         return CRWL_ERR;
     }
 
-    redis->port = atoi(node->value);
+    redis->master.port = atoi(node->value);
 
     /* 获取队列名 */
     node = xml_rsearch(xml, fix, "QUEUE.UNDO_TASKQ");
@@ -279,8 +288,7 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
             return CRWL_ERR;
         }
 
-        slave = (crwl_redis_slave_conf_t *)mem_pool_alloc(
-                    conf->mem_pool, sizeof(crwl_redis_slave_conf_t));
+        slave = (redis_conf_t *)mem_pool_alloc(conf->mem_pool, sizeof(redis_conf_t));
         if (NULL == slave)
         {
             log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
@@ -494,6 +502,54 @@ static int crwl_conf_load_worker(
     {
         conf->taskq_count = CRWL_TASK_QUEUE_MAX_NUM;
     }
+
+    return CRWL_OK;
+}
+
+/******************************************************************************
+ **函数名称: crwl_conf_load_parser
+ **功    能: 提取Parser配置信息
+ **输入参数: 
+ **     xml: 配置文件
+ **输出参数:
+ **     conf: 配置信息
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.11.04 #
+ ******************************************************************************/
+static int crwl_conf_load_parser(
+        xml_tree_t *xml, crwl_parser_conf_t *conf, log_cycle_t *log)
+{
+    xml_node_t *curr, *node;
+
+    /* 1. 定位工作进程配置 */
+    curr = xml_search(xml, ".CRAWLER.PARSER");
+    if (NULL == curr)
+    {
+        log_error(log, "Didn't configure parser process!");
+        return CRWL_ERR;
+    }
+
+    /* 2. 存储路径(相对查找) */
+    node = xml_rsearch(xml, curr, "STORE.PATH");
+    if (NULL == node)
+    {
+        log_error(log, "Didn't configure store path!");
+        return CRWL_ERR;
+    }
+
+    snprintf(conf->store.path, sizeof(conf->store.path), "%s", node->value);
+
+    /* 3. 错误信息存储路径(相对查找) */
+    node = xml_rsearch(xml, curr, "STORE.ERR_PATH");
+    if (NULL == node)
+    {
+        log_error(log, "Didn't configure error store path!");
+        return CRWL_ERR;
+    }
+
+    snprintf(conf->store.err_path, sizeof(conf->store.err_path), "%s", node->value);
 
     return CRWL_OK;
 }

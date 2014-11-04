@@ -145,8 +145,8 @@ crwl_cntx_t *crwl_cntx_init(const char *path, log_cycle_t *log)
         return NULL;
     }
 
-    log_set_level(log, conf.log_level);
-    log2_set_level(conf.log2_level);
+    log_set_level(log, conf.log.level);
+    log2_set_level(conf.log.level2);
 
     /* 3. 创建全局对象 */
     ctx = (crwl_cntx_t *)calloc(1, sizeof(crwl_cntx_t));
@@ -446,4 +446,44 @@ CRWL_FETCH_IP_BY_DOMAIN:
     }
 
     return domain;
+}
+
+/******************************************************************************
+ **函数名称: crwl_get_ip_by_domain
+ **功    能: 获取域名对应的IP地址
+ **输入参数:
+ **     ctx: 全局信息
+ **     host: 域名
+ **输出参数: NONE
+ **返    回: 获取域名对应的地址信息
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.10.21 #
+ ******************************************************************************/
+log_cycle_t *crwl_init_log(char *proc)
+{
+    int ret;
+    log_cycle_t *log;
+    char path[FILE_NAME_MAX_LEN];
+
+    log2_get_path(path, sizeof(path), basename(proc));
+
+    ret = log2_init(LOG_LEVEL_ERROR, path);
+    if (0 != ret)
+    {
+        fprintf(stderr, "Init log2 failed!");
+        return NULL;
+    }
+
+    log_get_path(path, sizeof(path), basename(proc));
+
+    log = log_init(LOG_LEVEL_ERROR, path);
+    if (NULL == log)
+    {
+        log2_error("Initialize log failed!");
+        log2_destroy();
+        return NULL;
+    }
+
+    return log;
 }

@@ -46,11 +46,10 @@
  ******************************************************************************/
 int main(int argc, char *argv[])
 {
-    int ret, status;
+    int ret;
     crwl_opt_t opt;
     crwl_cntx_t *ctx;
     log_cycle_t *log;
-    char log_path[FILE_NAME_MAX_LEN];
 
     memset(&opt, 0, sizeof(opt));
 
@@ -62,22 +61,10 @@ int main(int argc, char *argv[])
     }
 
     /* 2. 初始化日志模块 */
-    log2_get_path(log_path, sizeof(log_path), basename(argv[0]));
-
-    ret = log2_init(LOG_LEVEL_ERROR, log_path);
-    if (0 != ret)
-    {
-        fprintf(stderr, "Init log2 failed! path:%s\n", log_path);
-        goto ERROR;
-    }
-
-    log_get_path(log_path, sizeof(log_path), basename(argv[0]));
-
-    log = log_init(LOG_LEVEL_ERROR, log_path);
+    log = crwl_init_log(argv[0]);
     if (NULL == log)
     {
-        log2_error("Initialize log failed!");
-        goto ERROR;
+        return CRWL_ERR;
     }
 
     daemon(1, 0);
@@ -98,11 +85,7 @@ int main(int argc, char *argv[])
         goto ERROR;
     }
 
-    while (1)
-    {
-        wait(&status);
-        pause();
-    }
+    while (1) { pause(); }
 
 ERROR:
     log2_destroy();
