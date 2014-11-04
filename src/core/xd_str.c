@@ -197,7 +197,7 @@ int str_trim(const char *in, char *out, size_t size)
 int uri_reslove(const char *uri, uri_field_t *field)
 {
     int len;
-    const char *ch, *s;
+    const char *ch, *s, *suffix;
 
     memset(field, 0, sizeof(uri_field_t));
 
@@ -208,25 +208,26 @@ int uri_reslove(const char *uri, uri_field_t *field)
         return -1;  /* 长度非法 */
     }
     
-    /* 提取后缀 */
+    /* 2. 从URI中提取后缀 */
     len = 0;
-    ch = field->uri + field->len - 1;
+    suffix = field->uri + field->len - 1;
     while (len < URI_SUFFIX_LEN)
     {
-        if ('.' == *ch)
+        if ('.' == *suffix)
         {
-            if (!strncasecmp(ch, ".pdf", 4)
-                || !strncasecmp(ch, ".exe", 4))
+            if (!uri_is_valid_suffix(suffix))
             {
-                return -1;
+                return -1;  /* 后缀不合法 */
             }
 
-            snprintf(field->suffix, sizeof(field->suffix), "%s", ch);
+            snprintf(field->suffix, sizeof(field->suffix), "%s", suffix);
+
+            break;
         }
         ++len;
     }
     
-    /* 2. 从URI中提取域名、端口、路径等信息 */
+    /* 3. 从URI中提取域名、端口、路径等信息 */
     ch = field->uri;
     s = ch;
 
@@ -574,4 +575,63 @@ bool uri_is_valid(const char *uri)
     }
 
     return true;
+}
+
+/* URI合法后缀 */
+static const char g_uri_suffix[][URI_SUFFIX_LEN] = 
+{
+    /* 按网页划分 */
+    ".html"         /* 静态网页 */
+    , ".htm"        /* 静态网页 */
+    , ".asp"        /* ASP动态网页 */
+    , ".aspx"       /* ASP动态网页 */
+    , ".php"        /* PHP动态网页 */
+    , ".shtml"      /* 静态网页 */
+    , ".shtm"       /* 静态网页 */
+    , ".stm"        /* 静态网页 */
+
+    /* 按机构划分 */
+    , ".rec"        /* 娱乐类 */
+    , ".arts"       /* 艺术类 */
+    , ".hom"        /* 个人类 */
+    , ".com"        /* 商业类 */
+    , ".edu"        /* 教育类 */
+    , ".gov"        /* 政府类 */
+    , ".org"        /* 非盈利类 */
+    , ".info"       /* 信息服务类 */
+    , ".net"        /* 网络服务机构类 */
+
+    /* 按地域划分 */
+    , ".cn"         /* 中国大陆 */
+    , ".hk"         /* 中国香港 */
+    , ".tw"         /* 中国台湾 */
+
+    /* 结束标志: 请在此行上方添加合法后缀 */
+    , ""
+};
+
+/******************************************************************************
+ **函数名称: uri_is_valid_suffix
+ **功    能: 判断URI的后缀是否合法性
+ **输入参数: 
+ **     uri: URI
+ **输出参数: NONE
+ **返    回: true:合法 false:不合法
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.11.04 #
+ ******************************************************************************/
+bool uri_is_valid_suffix(const char *suffix)
+{
+    int idx;
+
+    for (idx=0; '\0' != g_uri_suffix[idx][0]; ++idx)
+    {
+        if (!strcmp(suffix, g_uri_suffix[idx]))
+        {
+            return true;
+        }
+    }
+
+    return false;
 }

@@ -32,7 +32,7 @@
 #define URL_MAX_LEN         (2048)  /* URL最大长度 */
 #define URI_MIN_LEN     URL_MIN_LEN /* URI最小长度 */
 #define URI_MAX_LEN     URL_MAX_LEN /* URI最大长度 */
-#define URI_SUFFIX_LEN      (5)     /* 后缀长度 */
+#define URI_SUFFIX_LEN      (8)     /* 后缀长度 */
 #define URI_PROTOCOL_MAX_LEN    (32)/* 协议类型 */
 
 #define MD5_SUM_CHK_LEN     (32)    /* MD5校验值长度 */

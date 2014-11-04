@@ -251,8 +251,9 @@ static int crwl_worker_recv_data(crwl_worker_t *worker, crwl_worker_socket_t *sc
             }
 
             /* 异常情况处理 */
-            log_error(worker->log, "errmsg:[%d] %s! uri:%s ip:%s",
-                    errno, strerror(errno), sck->webpage.uri, sck->webpage.ip);
+            log_error(worker->log, "errmsg:[%d] %s! uri:%s ip:%s size:%d",
+                    errno, strerror(errno),
+                    sck->webpage.uri, sck->webpage.ip, sck->webpage.size);
             crwl_worker_remove_sock(worker, sck);
             return CRWL_ERR;
         }

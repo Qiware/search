@@ -42,6 +42,7 @@ typedef struct
 } uri_field_t;
 
 bool uri_is_valid(const char *uri);
+bool uri_is_valid_suffix(const char *suffix);
 int uri_reslove(const char *uri, uri_field_t *f);
 int href_to_uri(const char *href, const char *site, uri_field_t *field);
 
