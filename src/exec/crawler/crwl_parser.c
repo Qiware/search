@@ -100,6 +100,9 @@ static crwl_parser_t *crwl_parser_init(const crwl_conf_t *conf, log_cycle_t *log
         return NULL;
     }
 
+    log_set_level(log, conf->log.level);
+    log2_set_level(conf->log.level2);
+
     /* 2. 初始化GUMBO对象 */
     ret = gumbo_init(&parser->gumbo_ctx);
     if (0 != ret)

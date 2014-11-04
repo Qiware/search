@@ -211,7 +211,8 @@ int uri_reslove(const char *uri, uri_field_t *field)
     /* 2. 从URI中提取后缀 */
     len = 0;
     suffix = field->uri + field->len - 1;
-    while (len < URI_SUFFIX_LEN)
+    while ((len < URI_SUFFIX_LEN)
+        && (suffix != field->uri))
     {
         if ('.' == *suffix)
         {
@@ -225,6 +226,7 @@ int uri_reslove(const char *uri, uri_field_t *field)
             break;
         }
         ++len;
+        --suffix;
     }
     
     /* 3. 从URI中提取域名、端口、路径等信息 */
