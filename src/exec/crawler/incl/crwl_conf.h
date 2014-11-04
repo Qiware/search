@@ -29,7 +29,7 @@ typedef struct
 {
     char uri[URI_MAX_LEN];                  /* 网页URI */
     uint32_t depth;                         /* 网页深度 */
-} crwl_seed_item_t;
+} crwl_seed_conf_t;
 
 /* Redis配置信息 */
 typedef struct

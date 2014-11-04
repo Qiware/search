@@ -55,5 +55,5 @@ int main(int argc, char *argv[])
     daemon(1, 0);
 
     /* 3. 启动解析器 */
-    return crwl_parser_exec(&conf);
+    return crwl_parser_exec(&conf, log);
 }

@@ -24,7 +24,6 @@
             <HASH DONE_TAB="CRWL_DONE_TAB" PUSH_TAB="CRWL_PUSH_TAB" />
             <SLAVE>   <!-- 副本服务器 -->
                 <ITEM IP="127.0.0.1" PORT="6380" />
-                <ITEM IP="127.0.0.1" PORT="6381" />
             </SLAVE>
         </REDIS>
     </COMMON>

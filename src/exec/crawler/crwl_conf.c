@@ -345,7 +345,7 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
 static int crwl_conf_load_seed(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
 {
     list_node_t *node;
-    crwl_seed_item_t *seed;
+    crwl_seed_conf_t *seed;
     xml_node_t *cf_node, *cf_item;
 
     /* 1. 定位SEED->ITEM标签 */
@@ -373,7 +373,7 @@ static int crwl_conf_load_seed(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *
             return CRWL_ERR;
         }
 
-        seed = (crwl_seed_item_t *)mem_pool_alloc(conf->mem_pool, sizeof(crwl_seed_item_t));
+        seed = (crwl_seed_conf_t *)mem_pool_alloc(conf->mem_pool, sizeof(crwl_seed_conf_t));
         if (NULL == seed)
         {
             log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));

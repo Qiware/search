@@ -36,53 +36,31 @@ static int crwl_parser_webpage_info(crwl_webpage_info_t *info);
 static int crwl_parser_work_flow(crwl_parser_t *parser);
 static int crwl_parser_deep_hdl(crwl_parser_t *parser, gumbo_result_t *result);
 
-bool uri_reslove_ex(const char *_uri, const char *parent, uri_field_t *field);
+bool crwl_set_uri_exists(redis_ctx_t *ctx, const char *hash, const char *uri);
 
-/* 判断URI是否已下载 */
-#define crwl_is_uri_down(ctx, hash, uri) (!redis_hsetnx(ctx, hash, uri, "1"))
-/* 判断URI是否已推送至队列 */
-#define crwl_is_uri_push(ctx, hash, uri) (!redis_hsetnx(ctx, hash, uri, "1"))
+/* 判断uri是否已下载 */
+#define crwl_is_uri_down(ctx, hash, uri) crwl_set_uri_exists(ctx, hash, uri)
+
+/* 判断uri是否已推送 */
+#define crwl_is_uri_push(ctx, hash, uri) crwl_set_uri_exists(ctx, hash, uri)
 
 /******************************************************************************
  **函数名称: crwl_parser_exec
  **功    能: 解析器主接口
  **输入参数: 
  **     conf: 配置信息
+ **     log: 日志对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.17 #
  ******************************************************************************/
-int crwl_parser_exec(const crwl_conf_t *conf)
+int crwl_parser_exec(const crwl_conf_t *conf, log_cycle_t *log)
 {
-    int ret;
     crwl_parser_t *parser;
-    log_cycle_t *log;
-    char log_path[FILE_PATH_MAX_LEN];
 
-    /* 1. 初始化日志模块 */
-    log2_get_path(log_path, sizeof(log_path), CRWL_PARSER_LOG_NAME);
-
-    ret = log2_init(conf->log.level2, log_path);
-    if (0 != ret)
-    {
-        fprintf(stderr, "Init log2 failed! level:%d path:%s\n",
-                conf->log.level2, log_path);
-        return CRWL_ERR;
-    }
-
-    log_get_path(log_path, sizeof(log_path), CRWL_PARSER_LOG_NAME);
-
-    log = log_init(conf->log.level, log_path);
-    if (NULL == log)
-    {
-        fprintf(stderr, "Init log2 failed! level:%d path:%s\n",
-                conf->log.level, log_path);
-        return CRWL_ERR;
-    }
-
-    /* 2. 初始化Parser对象 */
+    /* 1. 初始化Parser对象 */
     parser = crwl_parser_init(conf, log);
     if (NULL == parser)
     {
@@ -90,7 +68,7 @@ int crwl_parser_exec(const crwl_conf_t *conf)
         return CRWL_ERR;
     }
 
-    /* 遍历网页信息 */
+    /* 2. 遍历网页信息 */
     crwl_parser_loop(parser);
 
     /* 3. 释放GUMBO对象 */
@@ -342,7 +320,7 @@ static int crwl_parser_work_flow(crwl_parser_t *parser)
      * 判断的同时设置网页的下载标志
      * 如果已下载，则不做提取该网页中的超链接
      * */
-    if (crwl_is_uri_down(parser->redis->master, conf->redis.done_tab, info->uri))
+    if (crwl_is_uri_down(parser->redis, conf->redis.done_tab, info->uri))
     {
         log_info(parser->log, "Uri [%s] was downloaded!", info->uri);
         return CRWL_OK;
@@ -422,7 +400,7 @@ static int crwl_parser_deep_hdl(crwl_parser_t *parser, gumbo_result_t *result)
         }
 
         /* 2. 判断URI是否已经被推送到队列中 */
-        if (crwl_is_uri_push(parser->redis->master, conf->redis.push_tab, field.uri))
+        if (crwl_is_uri_push(parser->redis, conf->redis.push_tab, field.uri))
         {
             log_info(parser->log, "Uri [%s] was pushed!", (char *)node->data);
             continue;
@@ -449,4 +427,52 @@ static int crwl_parser_deep_hdl(crwl_parser_t *parser, gumbo_result_t *result)
     }
 
     return CRWL_OK;
+}
+
+/******************************************************************************
+ **函数名称: crwl_set_uri_exists
+ **功    能: 设置uri是否已存在
+ **输入参数: 
+ **     ctx: Redis对象
+ **     hash: 哈希表名
+ **     uri: 判断对象-URI
+ **输出参数:
+ **返    回: true:已下载 false:未下载
+ **实现描述: 
+ **     1) 当URI已存在时, 返回true;
+ **     2) 当URI不存在时, 返回false, 并设置uri的值为1.
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.11.04 #
+ ******************************************************************************/
+bool crwl_set_uri_exists(redis_ctx_t *ctx, const char *hash, const char *uri)
+{
+    redisReply *r;
+
+    if (0 == ctx->slave_num)
+    {
+        return !redis_hsetnx(ctx->master, hash, uri, "1");
+    }
+
+    while (1)
+    {
+        r = redisCommand(
+                ctx->slave[random() % ctx->slave_num],
+                "HEXISTS %s %s", hash, uri);
+        if (REDIS_REPLY_INTEGER != r->type)
+        {
+            break;
+        }
+
+        if (0 == r->integer)
+        {
+            break;
+        }
+
+        freeReplyObject(r);
+        return true; /* 已存在 */
+    }
+
+    freeReplyObject(r);
+
+    return !redis_hsetnx(ctx->master, hash, uri, "1");
 }

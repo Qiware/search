@@ -342,13 +342,13 @@ static int crwl_sched_push_undo_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
     int len;
     redisReply *r; 
     list_node_t *node;
-    crwl_seed_item_t *seed;
+    crwl_seed_conf_t *seed;
     char task_str[CRWL_TASK_STR_LEN];
 
     node = ctx->conf.seed.head;
     while (NULL != node)
     {
-        seed = (crwl_seed_item_t *)node->data;
+        seed = (crwl_seed_conf_t *)node->data;
         if (seed->depth > ctx->conf.download.depth) /* 判断网页深度 */
         {
             node = node->next;
