@@ -190,7 +190,8 @@ int str_trim(const char *in, char *out, size_t size)
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项:
- **     在路径符号'/'之前, 不允许出现特殊符号:# ?等
+ **     1) 在路径符号'/'之前, 不允许出现特殊符号:# ?等
+ **     2) 出现PDF EXE等后缀的话, 放弃处理
  **作    者: # Qifeng.zou # 2014.10.19 #
  ******************************************************************************/
 int uri_reslove(const char *uri, uri_field_t *field)
@@ -205,6 +206,24 @@ int uri_reslove(const char *uri, uri_field_t *field)
     if (field->len <= URI_MIN_LEN)
     {
         return -1;  /* 长度非法 */
+    }
+    
+    /* 提取后缀 */
+    len = 0;
+    ch = field->uri + field->len - 1;
+    while (len < URI_SUFFIX_LEN)
+    {
+        if ('.' == *ch)
+        {
+            if (!strncasecmp(ch, ".pdf", 4)
+                || !strncasecmp(ch, ".exe", 4))
+            {
+                return -1;
+            }
+
+            snprintf(field->suffix, sizeof(field->suffix), "%s", ch);
+        }
+        ++len;
     }
     
     /* 2. 从URI中提取域名、端口、路径等信息 */
@@ -400,7 +419,7 @@ int href_to_uri(const char *href, const char *site, uri_field_t *field)
 
     /* 1. 踢出URI前后的空格 */
     len = str_trim(href, tmp, sizeof(tmp));
-    if (len < URI_MIN_LEN)
+    if (len <= 0)
     {
         return -1;
     }

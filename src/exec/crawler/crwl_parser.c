@@ -196,6 +196,8 @@ static int crwl_parser_loop(crwl_parser_t *parser)
         /* 3. 关闭目录 */
         closedir(dir);
 
+        Mkdir(conf->parser.store.path, 0777);
+
         Sleep(5);
     }
 
@@ -304,7 +306,7 @@ static int crwl_parser_work_flow(crwl_parser_t *parser)
     int ret;
     gumbo_html_t *html;             /* HTML对象 */
     gumbo_result_t *result;         /* 结果集合 */
-    char fname[FILE_PATH_MAX_LEN];  /* HTML文件名 */
+    char fpath[FILE_PATH_MAX_LEN];  /* HTML文件名 */
     crwl_conf_t *conf = &parser->conf;
     crwl_webpage_info_t *info = &parser->info;
 
@@ -317,8 +319,8 @@ static int crwl_parser_work_flow(crwl_parser_t *parser)
     }
 
     /* 判断网页(URI)是否已下载
-     * 判断的同时设置网页的下载标志
-     * 如果已下载，则不做提取该网页中的超链接
+     *  判断的同时设置网页的下载标志
+     *  如果已下载，则不做提取该网页中的超链接
      * */
     if (crwl_is_uri_down(parser->redis, conf->redis.done_tab, info->uri))
     {
@@ -326,14 +328,13 @@ static int crwl_parser_work_flow(crwl_parser_t *parser)
         return CRWL_OK;
     }
 
-
-    snprintf(fname, sizeof(fname), "%s/%s", conf->download.path, info->html);
+    snprintf(fpath, sizeof(fpath), "%s/%s", conf->download.path, info->html);
 
     /* 2. 解析HTML文件 */
-    html = gumbo_html_parse(&parser->gumbo_ctx, fname);
+    html = gumbo_html_parse(&parser->gumbo_ctx, fpath);
     if (NULL == html)
     {
-        log_error(parser->log, "Parse html failed! fname:%s", fname);
+        log_error(parser->log, "Parse html failed! fpath:%s", fpath);
         return CRWL_ERR;
     }
 
@@ -343,18 +344,19 @@ static int crwl_parser_work_flow(crwl_parser_t *parser)
     {
         gumbo_html_destroy(&parser->gumbo_ctx, html);
 
-        log_error(parser->log, "Parse href failed! fname:%s", fname);
+        log_error(parser->log, "Parse href failed! fpath:%s", fpath);
         return CRWL_ERR;
     }
 
     /* 4. 深入处理超链接
      *  1. 判断超链接深度
      *  2. 判断超链接是否已被爬取
-     *  3. 将超链接插入任务队列 */
+     *  3. 将超链接插入任务队列
+     * */
     ret = crwl_parser_deep_hdl(parser, result);
     if (CRWL_OK != ret)
     {
-        log_error(parser->log, "Deep handler failed! fname:%s", fname);
+        log_error(parser->log, "Deep handler failed! fpath:%s", fpath);
         return CRWL_ERR;
     }
 

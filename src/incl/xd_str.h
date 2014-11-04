@@ -38,6 +38,7 @@ typedef struct
     char host[URI_MAX_LEN];     /* 域名 */
     char path[URI_MAX_LEN];     /* 路径信息 */
     int port;                   /* 端口号 */
+    char suffix[URI_SUFFIX_LEN];/* 后缀字段 */
 } uri_field_t;
 
 bool uri_is_valid(const char *uri);

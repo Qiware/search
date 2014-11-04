@@ -8,6 +8,7 @@
  ** 作  者: # Qifeng.zou # 2014.10.28 #
  ******************************************************************************/
 
+#include "syscall.h"
 #include "crawler.h"
 #include "crwl_conf.h"
 
@@ -541,6 +542,8 @@ static int crwl_conf_load_parser(
 
     snprintf(conf->store.path, sizeof(conf->store.path), "%s", node->value);
 
+    Mkdir(conf->store.path, DIR_MODE);
+
     /* 3. 错误信息存储路径(相对查找) */
     node = xml_rsearch(xml, curr, "STORE.ERR_PATH");
     if (NULL == node)
@@ -550,6 +553,8 @@ static int crwl_conf_load_parser(
     }
 
     snprintf(conf->store.err_path, sizeof(conf->store.err_path), "%s", node->value);
+
+    Mkdir(conf->store.err_path, 0777);
 
     return CRWL_OK;
 }
