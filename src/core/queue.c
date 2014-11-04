@@ -259,20 +259,16 @@ void *lqueue_mem_alloc(lqueue_t *lq, size_t size)
  **     lq: 加锁队列
  **     p: 内存地址
  **输出参数: NONE
- **返    回: 0:成功 !0:失败
+ **返    回: VOID
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.24 #
  ******************************************************************************/
-int lqueue_mem_dealloc(lqueue_t *lq, void *p)
+void lqueue_mem_dealloc(lqueue_t *lq, void *p)
 {
-    int ret;
-
     pthread_rwlock_wrlock(&lq->slab_lock);
-    ret = eslab_dealloc(&lq->slab, p);
+    eslab_dealloc(&lq->slab, p);
     pthread_rwlock_unlock(&lq->slab_lock);
-
-    return ret;
 }
 
 /******************************************************************************

@@ -95,7 +95,7 @@ gumbo_html_t *gumbo_html_parse(gumbo_cntx_t *ctx, const char *path)
 
     /* 3. 解析HTML文件 */
     html->output = gumbo_parse_with_options(
-                        &ctx->opt, html->input, html->input_length);
+            &ctx->opt, html->input, html->input_length);
     if (NULL == html->output)
     {
         eslab_dealloc(&ctx->slab, html->input);
@@ -122,7 +122,6 @@ gumbo_html_t *gumbo_html_parse(gumbo_cntx_t *ctx, const char *path)
 void gumbo_html_destroy(gumbo_cntx_t *ctx, gumbo_html_t *html)
 {
     gumbo_destroy_output(&ctx->opt, html->output);
-    //eslab_dealloc(&ctx->slab, html->input);
     eslab_dealloc(&ctx->slab, html);
 }
 
@@ -394,4 +393,5 @@ void gumbo_result_destroy(gumbo_cntx_t *ctx, gumbo_result_t *r)
     }
 
     eslab_dealloc(&ctx->slab, r);
+    mem_pool_destroy(r->mem_pool);
 }

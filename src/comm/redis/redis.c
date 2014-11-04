@@ -64,18 +64,19 @@ redis_ctx_t *redis_ctx_init(const redis_conf_t *mcf, const list_t *scf)
 
     for (idx=0; idx<scf->num; ++idx, node = node->next)
     {
+        ++ctx->slave_num;
+
         tv.tv_sec = 30;
         tv.tv_usec = 0;
 
         conf = (redis_conf_t *)node->data;
 
         ctx->slave[idx] = redisConnectWithTimeout(conf->ip, conf->port, tv);
-        if (NULL == ctx->slave[idx])
+        if (ctx->slave[idx]->err)
         {
             redis_ctx_destroy(ctx);
             return NULL;
         }
-        ++ctx->slave_num;
     }
 
     return ctx;
@@ -105,6 +106,7 @@ void redis_ctx_destroy(redis_ctx_t *ctx)
         }
     }
 
+    redisFree(ctx->master);
     free(ctx->slave);
     free(ctx);
 }

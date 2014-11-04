@@ -49,7 +49,7 @@ typedef struct
 
 int lqueue_init(lqueue_t *lq, int max, size_t pool);
 void *lqueue_mem_alloc(lqueue_t *lq, size_t size);
-int lqueue_mem_dealloc(lqueue_t *lq, void *p);
+void lqueue_mem_dealloc(lqueue_t *lq, void *p);
 int lqueue_push(lqueue_t *lq, void *addr);
 void *lqueue_pop(lqueue_t *lq);
 void lqueue_destroy(lqueue_t *lq);

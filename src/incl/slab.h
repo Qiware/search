@@ -31,10 +31,6 @@ typedef struct
     void *addr;
 } slab_pool_t;
 
-slab_pool_t *slab_init(void *addr, size_t size);
-void *slab_alloc(slab_pool_t *pool, size_t size);
-void slab_dealloc(slab_pool_t *pool, void *p);
-
 /* 可扩展SLAB节点 */
 typedef struct _eslab_node_t
 {
@@ -52,8 +48,12 @@ typedef struct
     eslab_node_t *curr;         /* 最近一次正在使用eSLAB结点 */
 } eslab_pool_t;
 
+slab_pool_t *slab_init(void *addr, size_t size);
+void *slab_alloc(slab_pool_t *pool, size_t size);
+void slab_dealloc(slab_pool_t *pool, void *p);
+
 int eslab_init(eslab_pool_t *spl, size_t size);
 int eslab_destroy(eslab_pool_t *spl);
 void *eslab_alloc(eslab_pool_t *spl, size_t size);
-int eslab_dealloc(eslab_pool_t *spl, void *p);
+void eslab_dealloc(eslab_pool_t *spl, void *p);
 #endif /*__SLAB_H__*/

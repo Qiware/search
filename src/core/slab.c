@@ -48,6 +48,7 @@
 
 #define slab_junk(p, size) memset(p, 0, size)
 
+#if !defined(__MEM_LEAK_CHECK__)
 static slab_page_t *slab_alloc_pages(slab_pool_t *pool, uint32_t pages);
 static void slab_dealloc_pages(slab_pool_t *pool, slab_page_t *page, uint32_t pages);
 
@@ -967,7 +968,7 @@ void *eslab_alloc(eslab_pool_t *eslab, size_t size)
         return NULL;
     }
 
-    log2_info("Add new slab block! size:%d count:[%d]", alloc_size, count++);
+    log2_fatal("Add new slab block! size:%d count:[%d]", alloc_size, count++);
 
     /* 3. Alloc memory from new slab pool */
     return slab_alloc(slab, size);
@@ -980,11 +981,11 @@ void *eslab_alloc(eslab_pool_t *eslab, size_t size)
  **     eslab: Expadnd slab pool
  **     p: Needed to be free.
  **Output: NONE
- **Return: 0:success !0:failed
+ **Return: VOID
  ** Note : 
  **Author: # Qifeng.zou # 2013.08.15 #
  ******************************************************************************/
-int eslab_dealloc(eslab_pool_t *eslab, void *p)
+void eslab_dealloc(eslab_pool_t *eslab, void *p)
 {
     eslab_node_t *node = eslab->node, *next = NULL;
 
@@ -995,9 +996,19 @@ int eslab_dealloc(eslab_pool_t *eslab, void *p)
         if ((p >= (void *)node->pool->start) && (p < (void *)node->pool->end))
         {
             slab_dealloc(node->pool, p);
-            return 0;
+            return;
         }
         node = next;
     }
-    return -1;
+    return; /* 异常 */
 }
+#else /*__MEM_LEAK_CHECK__*/
+slab_pool_t *slab_init(void *addr, size_t size) { return calloc(1, sizeof(slab_pool_t)); }
+void *slab_alloc(slab_pool_t *pool, size_t size) { return calloc(1, size); }
+void slab_dealloc(slab_pool_t *pool, void *p) { free(p); }
+
+int eslab_init(eslab_pool_t *spl, size_t size) { return 0; }
+int eslab_destroy(eslab_pool_t *spl) { return 0; }
+void *eslab_alloc(eslab_pool_t *spl, size_t size) { return calloc(1, size); }
+void eslab_dealloc(eslab_pool_t *spl, void *p) { free(p); }
+#endif /*__MEM_LEAK_CHECK__*/
