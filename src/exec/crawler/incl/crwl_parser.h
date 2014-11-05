@@ -22,7 +22,7 @@ typedef struct
 /* 解析器对象 */
 typedef struct
 {
-    crwl_conf_t conf;               /* 配置信息 */
+    crwl_conf_t *conf;              /* 配置信息 */
 
     log_cycle_t *log;               /* 日志对象 */
     redis_ctx_t *redis;             /* Redis上下文 */
@@ -31,7 +31,7 @@ typedef struct
     crwl_webpage_info_t info;       /* 网页信息 */
 } crwl_parser_t;
 
-int crwl_parser_exec(const crwl_conf_t *conf, log_cycle_t *log);
+int crwl_parser_exec(crwl_conf_t *conf, log_cycle_t *log);
 void crwl_parser_destroy(crwl_parser_t *parser);
 
 #endif /*__CRWL_PARSER_H__*/

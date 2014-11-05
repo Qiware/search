@@ -114,7 +114,7 @@ static crwl_sched_t *crwl_sched_init(crwl_cntx_t *ctx)
     int ret;
     struct timeval tv;
     crwl_sched_t *sched;
-    crwl_conf_t *conf = &ctx->conf;
+    crwl_conf_t *conf = ctx->conf;
 
     /* 1. 创建调度器对象 */
     sched = (crwl_sched_t *)calloc(1, sizeof(crwl_sched_t));
@@ -248,7 +248,7 @@ static int crwl_sched_fetch_undo_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
     void *addr;
     redisReply *r;
     crwl_worker_t *worker;
-    crwl_conf_t *conf = &ctx->conf;
+    crwl_conf_t *conf = ctx->conf;
 
     crwl_task_t *task;
     size_t size = sizeof(crwl_task_t) + sizeof(crwl_task_space_u);
@@ -345,11 +345,11 @@ static int crwl_sched_push_undo_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
     crwl_seed_conf_t *seed;
     char task_str[CRWL_TASK_STR_LEN];
 
-    node = ctx->conf.seed.head;
+    node = ctx->conf->seed.head;
     while (NULL != node)
     {
         seed = (crwl_seed_conf_t *)node->data;
-        if (seed->depth > ctx->conf.download.depth) /* 判断网页深度 */
+        if (seed->depth > ctx->conf->download.depth) /* 判断网页深度 */
         {
             node = node->next;
             continue;
@@ -365,7 +365,7 @@ static int crwl_sched_push_undo_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
         }
 
         /* 2. 插入Undo任务队列 */
-        r = redis_rpush(sched->redis_ctx, ctx->conf.redis.undo_taskq, task_str);
+        r = redis_rpush(sched->redis_ctx, ctx->conf->redis.undo_taskq, task_str);
         if (REDIS_REPLY_NIL == r->type)
         {
             freeReplyObject(r);

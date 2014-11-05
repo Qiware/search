@@ -126,9 +126,6 @@ crwl_cntx_t *crwl_cntx_init(const char *path, log_cycle_t *log)
 {
     int ret;
     crwl_cntx_t *ctx;
-    crwl_conf_t conf;
-
-    memset(&conf, 0, sizeof(conf));
 
     /* 1. 判断程序是否已运行 */
     if (0 != crwl_proc_lock())
@@ -137,18 +134,7 @@ crwl_cntx_t *crwl_cntx_init(const char *path, log_cycle_t *log)
         return NULL;
     }
 
-    /* 2. 加载配置文件 */
-    ret = crwl_load_conf(&conf, path, log);
-    if (CRWL_OK != ret)
-    {
-        log_error(log, "Load configuration failed! path:%s", path);
-        return NULL;
-    }
-
-    log_set_level(log, conf.log.level);
-    log2_set_level(conf.log.level2);
-
-    /* 3. 创建全局对象 */
+    /* 2. 创建全局对象 */
     ctx = (crwl_cntx_t *)calloc(1, sizeof(crwl_cntx_t));
     if (NULL == ctx)
     {
@@ -156,13 +142,24 @@ crwl_cntx_t *crwl_cntx_init(const char *path, log_cycle_t *log)
         return NULL;
     }
 
+    /* 3. 加载配置文件 */
+    ctx->conf = crwl_conf_creat(path, log);
+    if (NULL == ctx->conf)
+    {
+        free(ctx);
+        log_error(log, "Load configuration failed! path:%s", path);
+        return NULL;
+    }
+
     ctx->log = log;
-    memcpy(&ctx->conf, &conf, sizeof(conf)); /* 注: 内存池地址也已拷贝 */
+    log_set_level(log, ctx->conf->log.level);
+    log2_set_level(ctx->conf->log.level2);
 
     /* 4. 新建域名表 */
     ctx->domain = hash_tab_init(CRWL_DOMAIN_SLOT_LEN, hash_time33_ex, NULL);
     if (NULL == ctx->domain)
     {
+        crwl_conf_destroy(ctx->conf);
         free(ctx);
         log_error(log, "Initialize hash table failed!");
         return NULL;
@@ -174,6 +171,7 @@ crwl_cntx_t *crwl_cntx_init(const char *path, log_cycle_t *log)
     ret = crwl_init_workers(ctx);
     if (CRWL_OK != ret)
     {
+        crwl_conf_destroy(ctx->conf);
         free(ctx);
         log_error(log, "Initialize thread pool failed!");
         return NULL;
@@ -197,7 +195,7 @@ int crwl_cntx_startup(crwl_cntx_t *ctx)
 {
     int ret, idx;
     pthread_t tid;
-    const crwl_conf_t *conf = &ctx->conf;
+    const crwl_conf_t *conf = ctx->conf;
 
     /* 1. 设置Worker线程回调 */
     for (idx=0; idx<conf->worker.num; ++idx)
@@ -231,7 +229,7 @@ static int crwl_init_workers(crwl_cntx_t *ctx)
 {
     int idx, ret, num;
     crwl_worker_t *worker;
-    const crwl_worker_conf_t *conf = &ctx->conf.worker;
+    const crwl_worker_conf_t *conf = &ctx->conf->worker;
 
     /* 1. 创建Worker线程池 */
     ctx->workers = thread_pool_init(conf->num);
@@ -301,7 +299,7 @@ int crwl_workers_destroy(crwl_cntx_t *ctx)
 {
     int idx;
     crwl_worker_t *worker;
-    const crwl_worker_conf_t *conf = &ctx->conf.worker;
+    const crwl_worker_conf_t *conf = &ctx->conf->worker;
 
     /* 1. 释放Worker对象 */
     for (idx=0; idx<conf->num; ++idx)

@@ -30,7 +30,7 @@
 
 #define CRWL_PARSER_LOG_NAME    "parser"
 
-static crwl_parser_t *crwl_parser_init(const crwl_conf_t *conf, log_cycle_t *log);
+static crwl_parser_t *crwl_parser_init(crwl_conf_t *conf, log_cycle_t *log);
 static int crwl_parser_loop(crwl_parser_t *parser);
 static int crwl_parser_webpage_info(crwl_webpage_info_t *info);
 static int crwl_parser_work_flow(crwl_parser_t *parser);
@@ -56,7 +56,7 @@ bool crwl_set_uri_exists(redis_ctx_t *ctx, const char *hash, const char *uri);
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.17 #
  ******************************************************************************/
-int crwl_parser_exec(const crwl_conf_t *conf, log_cycle_t *log)
+int crwl_parser_exec(crwl_conf_t *conf, log_cycle_t *log)
 {
     crwl_parser_t *parser;
 
@@ -88,7 +88,7 @@ int crwl_parser_exec(const crwl_conf_t *conf, log_cycle_t *log)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.18 #
  ******************************************************************************/
-static crwl_parser_t *crwl_parser_init(const crwl_conf_t *conf, log_cycle_t *log)
+static crwl_parser_t *crwl_parser_init(crwl_conf_t *conf, log_cycle_t *log)
 {
     int ret;
     crwl_parser_t *parser;
@@ -124,7 +124,7 @@ static crwl_parser_t *crwl_parser_init(const crwl_conf_t *conf, log_cycle_t *log
         return NULL;
     }
 
-    memcpy(&parser->conf, conf, sizeof(crwl_conf_t));
+    parser->conf = conf;
 
     return parser;
 }
@@ -167,7 +167,7 @@ static int crwl_parser_loop(crwl_parser_t *parser)
     struct dirent *item;
     char path[PATH_NAME_MAX_LEN],
          new_path[FILE_PATH_MAX_LEN];
-    crwl_conf_t *conf = &parser->conf;
+    crwl_conf_t *conf = parser->conf;
 
     while (1)
     {
@@ -221,7 +221,6 @@ static int crwl_parser_loop(crwl_parser_t *parser)
 
         Mkdir(conf->parser.store.path, 0777);
 
-        break;
         Sleep(5);
     }
 
@@ -331,7 +330,7 @@ static int crwl_parser_work_flow(crwl_parser_t *parser)
     gumbo_html_t *html;             /* HTML对象 */
     gumbo_result_t *result;         /* 结果集合 */
     char fpath[FILE_PATH_MAX_LEN];  /* HTML文件名 */
-    crwl_conf_t *conf = &parser->conf;
+    crwl_conf_t *conf = parser->conf;
     crwl_webpage_info_t *info = &parser->info;
 
     /* 1. 判断网页深度 */
@@ -415,7 +414,7 @@ static int crwl_parser_deep_hdl(crwl_parser_t *parser, gumbo_result_t *result)
     redisReply *r; 
     uri_field_t field;
     char task_str[CRWL_TASK_STR_LEN];
-    crwl_conf_t *conf = &parser->conf;
+    crwl_conf_t *conf = parser->conf;
     list_node_t *node = result->list.head;
     crwl_webpage_info_t *info = &parser->info;
 
@@ -445,7 +444,7 @@ static int crwl_parser_deep_hdl(crwl_parser_t *parser, gumbo_result_t *result)
         }
 
         /* 4. 插入Undo任务队列 */
-        r = redis_rpush(parser->redis->master, parser->conf.redis.undo_taskq, task_str);
+        r = redis_rpush(parser->redis->master, parser->conf->redis.undo_taskq, task_str);
         if (REDIS_REPLY_NIL == r->type)
         {
             freeReplyObject(r);

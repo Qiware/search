@@ -31,11 +31,8 @@
 
 int main(int argc, char *argv[])
 {
-    int ret;
     log_cycle_t *log;
-    crwl_conf_t conf;
-
-    memset(&conf, 0, sizeof(conf));
+    crwl_conf_t *conf;
 
     /* 1. 初始化日志模块 */
     log = crwl_init_log(argv[0]);
@@ -45,8 +42,8 @@ int main(int argc, char *argv[])
     }
 
     /* 2. 加载配置信息 */
-    ret = crwl_load_conf(&conf, "../conf/crawler.xml", log);
-    if (CRWL_OK != ret)
+    conf = crwl_conf_creat("../conf/crawler.xml", log);
+    if (NULL == conf)
     {
         log2_error("Initialize log failed!");
         return CRWL_ERR;
@@ -57,5 +54,5 @@ int main(int argc, char *argv[])
 #endif /*__MEM_LEAK_CHECK__*/
 
     /* 3. 启动解析器 */
-    return crwl_parser_exec(&conf, log);
+    return crwl_parser_exec(conf, log);
 }

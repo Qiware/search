@@ -59,7 +59,7 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker)
     worker->ctx = ctx;
     worker->log = ctx->log;
     worker->scan_tm = time(NULL);
-    worker->conf = &ctx->conf.worker;
+    worker->conf = &ctx->conf->worker;
 
     /* 1. 创建SLAB内存池 */
     ret = eslab_init(&worker->slab, CRWL_SLAB_SIZE);
@@ -1147,7 +1147,7 @@ int crwl_worker_webpage_creat(crwl_worker_t *worker, crwl_worker_socket_t *sck)
             loctm.tm_hour, loctm.tm_min, loctm.tm_sec, sck->crtm.millitm);
 
     snprintf(path, sizeof(path), "%s/%s.html",
-            worker->ctx->conf.download.path, sck->webpage.fname);
+            worker->ctx->conf->download.path, sck->webpage.fname);
 
     Mkdir2(path, 0777);
 
@@ -1185,10 +1185,10 @@ int crwl_worker_webpage_finfo(crwl_worker_t *worker, crwl_worker_socket_t *sck)
     localtime_r(&sck->crtm.time, &loctm);
 
     snprintf(temp, sizeof(temp), "%s/info/.temp/%s.info",
-            worker->ctx->conf.download.path, sck->webpage.fname);
+            worker->ctx->conf->download.path, sck->webpage.fname);
 
     snprintf(path, sizeof(path), "%s/info/%s.info",
-            worker->ctx->conf.download.path, sck->webpage.fname);
+            worker->ctx->conf->download.path, sck->webpage.fname);
 
     Mkdir2(temp, 0777);
 

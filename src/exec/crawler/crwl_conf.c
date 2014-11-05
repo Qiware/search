@@ -19,36 +19,44 @@ static int crwl_conf_load_worker(xml_tree_t *xml, crwl_worker_conf_t *conf, log_
 static int crwl_conf_load_parser(xml_tree_t *xml, crwl_parser_conf_t *conf, log_cycle_t *log);
 
 /******************************************************************************
- **函数名称: crwl_load_conf
+ **函数名称: crwl_conf_creat
  **功    能: 加载配置信息
  **输入参数:
  **     path: 配置路径
  **     log: 日志对象
- **输出参数:
- **     conf: 配置信息 
- **返    回: 0:成功 !0:失败
+ **输出参数: NONE
+ **返    回: 配置对象
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.12 #
  ******************************************************************************/
-int crwl_load_conf(crwl_conf_t *conf, const char *path, log_cycle_t *log)
+crwl_conf_t *crwl_conf_creat(const char *path, log_cycle_t *log)
 {
     int ret;
     xml_tree_t *xml;
+    crwl_conf_t *conf;
     mem_pool_t *mem_pool;
 
-    /* 1. 创建配置内存池  */
+    /* 1. 创建配置内存池 */
     mem_pool = mem_pool_creat(4 * KB);
     if (NULL == mem_pool)
     {
         log_error(log, "Create memory pool failed!");
-        return CRWL_ERR;
+        return NULL;
     }
-
-    conf->mem_pool = mem_pool;
 
     do
     {
+        /* 2. 创建配置对象 */
+        conf = mem_pool_alloc(mem_pool, sizeof(crwl_conf_t));
+        if (NULL == conf)
+        {
+            log_error(log, "Alloc memory from pool failed!");
+            break;
+        }
+
+        conf->mem_pool = mem_pool;
+
         /* 2. 构建XML树 */
         xml = xml_creat(path);
         if (NULL == xml)
@@ -91,7 +99,7 @@ int crwl_load_conf(crwl_conf_t *conf, const char *path, log_cycle_t *log)
 
         /* 6. 释放XML树 */
         xml_destroy(xml);
-        return CRWL_OK;
+        return conf;
     } while(0);
 
     /* 异常处理 */
@@ -100,9 +108,8 @@ int crwl_load_conf(crwl_conf_t *conf, const char *path, log_cycle_t *log)
         xml_destroy(xml);
     }
     mem_pool_destroy(mem_pool);
-    return CRWL_ERR;
+    return NULL;
 }
-
 
 /******************************************************************************
  **函数名称: crwl_conf_load_comm
