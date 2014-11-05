@@ -279,6 +279,10 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
     snprintf(redis->push_tab, sizeof(redis->push_tab), "%s", node->value);
 
     /* 获取Redis副本配置 */
+    redis->slave_list.num = 0;
+    redis->slave_list.head = NULL;
+    redis->slave_list.tail = NULL;
+
     item = xml_rsearch(xml, fix, "SLAVE.ITEM");
     while (NULL != item)
     {
@@ -326,7 +330,7 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
         slave->port = atoi(node->value);
 
         /* 加入Slave链表尾 */
-        list_insert_tail(&redis->slave, l_node);
+        list_insert_tail(&redis->slave_list, l_node);
 
         /* 下一结点 */
         item = item->next;
@@ -365,6 +369,10 @@ static int crwl_conf_load_seed(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *
     }
 
     /* 2. 提取种子信息 */
+    conf->seed.num = 0;
+    conf->seed.head = NULL;
+    conf->seed.tail = NULL;
+
     while (NULL != cf_item)
     {
         if (0 != strcasecmp(cf_item->name, "ITEM"))

@@ -115,7 +115,7 @@ static crwl_parser_t *crwl_parser_init(crwl_conf_t *conf, log_cycle_t *log)
     }
 
     /* 3. 连接Redis服务 */
-    parser->redis = redis_ctx_init(&conf->redis.master, &conf->redis.slave);
+    parser->redis = redis_ctx_init(&conf->redis.master, &conf->redis.slave_list);
     if (NULL == parser->redis)
     {
         log_error(parser->log, "Initialize redis context failed!");
@@ -145,6 +145,7 @@ void crwl_parser_destroy(crwl_parser_t *parser)
     log2_destroy();
     redis_ctx_destroy(parser->redis);
     gumbo_destroy(&parser->gumbo_ctx);
+    crwl_conf_destroy(parser->conf);
     free(parser);
 }
 
@@ -221,7 +222,11 @@ static int crwl_parser_loop(crwl_parser_t *parser)
 
         Mkdir(conf->parser.store.path, 0777);
 
+    #if defined(__MEM_LEAK_CHECK__)
+        break;
+    #else /*__MEM_LEAK_CHECK__*/
         Sleep(5);
+    #endif /*__MEM_LEAK_CHECK__*/
     }
 
     return CRWL_OK;

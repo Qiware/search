@@ -392,6 +392,6 @@ void gumbo_result_destroy(gumbo_cntx_t *ctx, gumbo_result_t *r)
         node = next;
     }
 
-    eslab_dealloc(&ctx->slab, r);
     mem_pool_destroy(r->mem_pool);
+    eslab_dealloc(&ctx->slab, r);
 }
