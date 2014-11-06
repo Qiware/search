@@ -12,7 +12,6 @@ typedef struct
  
 xd_str_t *str_to_lower(xd_str_t *s);
 xd_str_t *str_to_upper(xd_str_t *s);
-int str_trim(const char *in, char *out, size_t size);
 
 #define URI_DEF_PORT        (80)    /* 默认端口 */
 #define URI_DEF_PROTOCOL    "http"  /* 默认协议 */
@@ -41,6 +40,7 @@ typedef struct
     char suffix[URI_SUFFIX_LEN];/* 后缀字段 */
 } uri_field_t;
 
+int uri_trim(const char *in, char *out, size_t size);
 bool uri_is_valid(const char *uri);
 bool uri_is_valid_suffix(const char *suffix);
 int uri_reslove(const char *uri, uri_field_t *f);

@@ -122,7 +122,7 @@ xd_str_t *str_to_upper(xd_str_t *s)
 }
 
 /******************************************************************************
- **函数名称: str_trim
+ **函数名称: uri_trim
  **功    能: 删除字串前后的空格、换行符.
  **输入参数:
  **     str: 字串
@@ -134,7 +134,7 @@ xd_str_t *str_to_upper(xd_str_t *s)
  **注意事项:
  **作    者: # Qifeng.zou # 2014.09.19 #
  ******************************************************************************/
-int str_trim(const char *in, char *out, size_t size)
+int uri_trim(const char *in, char *out, size_t size)
 {
     size_t len;
     const char *s = in, *e = in + strlen(in);
@@ -152,17 +152,23 @@ int str_trim(const char *in, char *out, size_t size)
         break;
     }
 
-    if (e == s)
+    /* 判断合法性
+     * 1. 长度是否为0
+     * 2. 首字符是否合法
+     * */
+    if ((e == s)
+        || (!isalpha(*s) && !isdigit(*s)))
     {
         out[0] = '\0';
         return 0;
     }
 
-    /* 2. 删除尾部空格、换行符等 */
+    /* 2. 删除尾部空格、换行符、路径分隔符等 */
     --e;
     while (e > s)
     {
         if ((' ' == *e)
+            || ('/' == *s)
             || ('\n' == *e)
             || ('\r' == *e))
         {
@@ -202,7 +208,7 @@ int uri_reslove(const char *uri, uri_field_t *field)
     memset(field, 0, sizeof(uri_field_t));
 
     /* 1. 剔除URI前后的非法字符 */
-    field->len = str_trim(uri, field->uri, sizeof(field->uri));
+    field->len = uri_trim(uri, field->uri, sizeof(field->uri));
     if (field->len <= URI_MIN_LEN)
     {
         return -1;  /* 长度非法 */
@@ -421,7 +427,7 @@ int href_to_uri(const char *href, const char *site, uri_field_t *field)
     char uri[URI_MAX_LEN], tmp[URI_MAX_LEN];
 
     /* 1. 踢出URI前后的空格 */
-    len = str_trim(href, tmp, sizeof(tmp));
+    len = uri_trim(href, tmp, sizeof(tmp));
     if (len <= 0)
     {
         return -1;
