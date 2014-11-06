@@ -1184,10 +1184,10 @@ int crwl_worker_webpage_finfo(crwl_worker_t *worker, crwl_worker_socket_t *sck)
 
     localtime_r(&sck->crtm.time, &loctm);
 
-    snprintf(temp, sizeof(temp), "%s/info/.temp/%s.info",
+    snprintf(temp, sizeof(temp), "%s/wbi/.temp/%s.wbi",
             worker->ctx->conf->download.path, sck->webpage.fname);
 
-    snprintf(path, sizeof(path), "%s/info/%s.info",
+    snprintf(path, sizeof(path), "%s/wbi/%s.wbi",
             worker->ctx->conf->download.path, sck->webpage.fname);
 
     Mkdir2(temp, 0777);
