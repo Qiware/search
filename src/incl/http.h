@@ -4,7 +4,7 @@
 #include "common.h"
 
 #define HTTP_DEF_PORT           (80)    /* HTTP默认端口号 */
-#define HTTP_GET_REQ_STR_LEN    (4096)  /* HTTP GET请求的最大长度 */
+#define HTTP_GET_REQ_STR_LEN    (3072)  /* HTTP GET请求的最大长度 */
 
 typedef enum
 {
