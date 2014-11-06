@@ -161,7 +161,7 @@ static int crwl_parser_loop(crwl_parser_t *parser)
 
     while (1)
     {
-        snprintf(path, sizeof(path), "%s/info", conf->download.path);
+        snprintf(path, sizeof(path), "%s/wpi", conf->download.path);
 
         /* 1. 打开目录 */
         dir = opendir(path);

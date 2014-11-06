@@ -33,7 +33,7 @@
 #define CRWL_THD_DEF_NUM            (05)    /* 默认线程数 */
 #define CRWL_THD_MIN_NUM            (01)    /* 最小线程数 */
 
-#define CRWL_SLAB_SIZE              (10 * MB)   /* SLAB内存池大小 */
+#define CRWL_SLAB_SIZE              (50 * MB)   /* SLAB内存池大小 */
 #define CRWL_RECV_SIZE              (128 * KB)  /* 缓存SIZE(接收缓存) */
 #define CRWL_SYNC_SIZE              (64 * KB)   /* 同步SIZE */
 
@@ -55,7 +55,7 @@
 
 #define CRWL_TASK_STR_LEN           (8192)  /* TASK字串最大长度 */
 
-#define crwl_get_task_str(str, size, uri, deep) /* TASK字串 */\
+#define crwl_get_task_str(str, size, uri, deep) /* TASK字串格式 */\
             snprintf(str, size, \
                 "<TASK>" \
                     "<TYPE>%d</TYPE>" \
