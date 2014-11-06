@@ -26,7 +26,6 @@ typedef struct
 
     log_cycle_t *log;               /* 日志对象 */
     redis_ctx_t *redis;             /* Redis上下文 */
-    gumbo_cntx_t gumbo_ctx;         /* GUMBO对象 */
 
     crwl_webpage_info_t info;       /* 网页信息 */
 } crwl_parser_t;

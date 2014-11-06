@@ -572,3 +572,9 @@ void mem_pool_delete_file(void *data)
 
     close(c->fd);
 }
+
+
+int _mem_pool_dealloc(mem_pool_t *pool, void *p)
+{
+    return 0;
+}

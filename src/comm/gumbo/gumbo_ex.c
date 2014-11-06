@@ -19,49 +19,12 @@
 #include "list.h"
 #include "gumbo_ex.h"
 
-static int gumbo_load_html(gumbo_cntx_t *ctx, gumbo_html_t *html);
-
-/******************************************************************************
- **函数名称: gumbo_init
- **功    能: 初始化GUMBO对象
- **输入参数:
- **     ctx: 全局对象
- **输出参数:
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.10.14 #
- ******************************************************************************/
-int gumbo_init(gumbo_cntx_t *ctx)
-{
-    int ret;
-
-    memset(ctx, 0, sizeof(gumbo_cntx_t));
-
-    /* 1. 初始化Slab对象 */
-    ret = eslab_init(&ctx->slab, 10 * MB);
-    if (0 != ret)
-    {
-        log2_error("Initialize slab failed!");
-        return -1;
-    }
-
-    /* 2. 设置OPTIONS对象 */
-    ctx->opt.userdata = (void *)&ctx->slab;
-    ctx->opt.allocator = (GumboAllocatorFunction)&eslab_alloc;
-    ctx->opt.deallocator = (GumboDeallocatorFunction)&eslab_dealloc;
-    ctx->opt.tab_stop = 8;
-    ctx->opt.stop_on_first_error = false;
-    ctx->opt.max_errors = -1;
-
-    return 0;
-}
+static int gumbo_load_html(gumbo_html_t *html);
 
 /******************************************************************************
  **函数名称: gumbo_html_parse
  **功    能: 解析指定的HTML文件
  **输入参数:
- **     ctx: 全局对象
  **     path: HTML文件路径
  **输出参数:
  **返    回: HTML对象
@@ -69,41 +32,57 @@ int gumbo_init(gumbo_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.14 #
  ******************************************************************************/
-gumbo_html_t *gumbo_html_parse(gumbo_cntx_t *ctx, const char *path)
+gumbo_html_t *gumbo_html_parse(const char *path)
 {
     int ret;
     gumbo_html_t *html;
+    mem_pool_t *mem_pool;
 
-    /* 1. 创建HTML对象 */
-    html = eslab_alloc(&ctx->slab, sizeof(gumbo_html_t));
+    /* 1. 创建内存池 */
+    mem_pool = mem_pool_creat(1 * MB);
+    if (NULL == mem_pool)
+    {
+        log2_error("Create memory pool failed!");
+        return NULL;
+    }
+
+    /* 2. 创建HTML对象 */
+    html = mem_pool_alloc(mem_pool, sizeof(gumbo_html_t));
     if (NULL == html)
     {
+        mem_pool_destroy(mem_pool);
         log2_error("Alloc memory from slab failed!");
         return NULL;
     }
 
-    /* 2. 加载HTML文件 */
+    html->mem_pool = mem_pool;
+
+    /* 3. 加载HTML文件 */
     snprintf(html->path, sizeof(html->path), "%s", path);
 
-    ret = gumbo_load_html(ctx, html);
+    ret = gumbo_load_html(html);
     if (0 != ret)
     {
-        eslab_dealloc(&ctx->slab, html);
+        mem_pool_destroy(mem_pool);
         log2_error("Load html failed! path:%s", path);
         return NULL;
     }
 
     /* 3. 解析HTML文件 */
-    html->output = gumbo_parse_with_options(
-            &ctx->opt, html->input, html->input_length);
+    html->opt.userdata = (void *)mem_pool;
+    html->opt.allocator = (GumboAllocatorFunction)&mem_pool_alloc;
+    html->opt.deallocator = (GumboDeallocatorFunction)&_mem_pool_dealloc;
+    html->opt.tab_stop = 8;
+    html->opt.stop_on_first_error = false;
+    html->opt.max_errors = -1;
+
+    html->output = gumbo_parse_with_options(&html->opt, html->input, html->input_length);
     if (NULL == html->output)
     {
-        eslab_dealloc(&ctx->slab, html->input);
-        eslab_dealloc(&ctx->slab, html);
+        mem_pool_destroy(mem_pool);
         return NULL;
     }
 
-    eslab_dealloc(&ctx->slab, html->input);
     return html;
 }
 
@@ -111,41 +90,23 @@ gumbo_html_t *gumbo_html_parse(gumbo_cntx_t *ctx, const char *path)
  **函数名称: gumbo_html_destroy
  **功    能: 释放HTML对象
  **输入参数:
- **     ctx: 全局对象
  **     html: HTML对象
- **输出参数:
+ **输出参数: NONE
  **返    回: VOID
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.14 #
  ******************************************************************************/
-void gumbo_html_destroy(gumbo_cntx_t *ctx, gumbo_html_t *html)
+void gumbo_html_destroy(gumbo_html_t *html)
 {
-    gumbo_destroy_output(&ctx->opt, html->output);
-    eslab_dealloc(&ctx->slab, html);
-}
-
-/******************************************************************************
- **函数名称: gumbo_destroy
- **功    能: 释放GUMBO对象
- **输入参数:
- **     ctx: 全局对象
- **输出参数:
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.10.14 #
- ******************************************************************************/
-void gumbo_destroy(gumbo_cntx_t *ctx)
-{
-    eslab_destroy(&ctx->slab);
+    gumbo_destroy_output(&html->opt, html->output);
+    mem_pool_destroy(html->mem_pool);
 }
 
 /******************************************************************************
  **函数名称: gumbo_load_html
  **功    能: 将HTML文件载入内存
- **输入参数:
- **     ctx: 全局对象
+ **输入参数: NONE
  **输出参数:
  **     html: HTML对象
  **返    回: 0:成功 !0:失败
@@ -153,7 +114,7 @@ void gumbo_destroy(gumbo_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.14 #
  ******************************************************************************/
-static int gumbo_load_html(gumbo_cntx_t *ctx, gumbo_html_t *html)
+static int gumbo_load_html(gumbo_html_t *html)
 {
     FILE *fp;
     int fd, off, n;
@@ -172,7 +133,7 @@ static int gumbo_load_html(gumbo_cntx_t *ctx, gumbo_html_t *html)
     fstat(fd, &st);
 
     html->input_length = st.st_size;
-    html->input = eslab_alloc(&ctx->slab, html->input_length + 1);
+    html->input = mem_pool_alloc(html->mem_pool, html->input_length + 1);
     if (NULL == html->input)
     {
         log2_error("Alloc memory from slab failed!");
@@ -258,10 +219,10 @@ const char *gumbo_get_title(const gumbo_html_t *html)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.15 #
  ******************************************************************************/
-static void _gumbo_parse_href(gumbo_cntx_t *ctx, GumboNode *node, gumbo_result_t *r)
+static void _gumbo_parse_href(GumboNode *node, gumbo_result_t *r)
 {
     int len, idx;
-    list_node_t *lnd;
+    list_node_t *list_node;
     GumboAttribute *href;
     GumboVector *children;
 
@@ -274,8 +235,8 @@ static void _gumbo_parse_href(gumbo_cntx_t *ctx, GumboNode *node, gumbo_result_t
         && (href = gumbo_get_attribute(&node->v.element.attributes, "href")))
     {
         /* 新建链表结点 */
-        lnd = mem_pool_alloc(r->mem_pool, sizeof(list_node_t));
-        if (NULL == lnd)
+        list_node = mem_pool_alloc(r->mem_pool, sizeof(list_node_t));
+        if (NULL == list_node)
         {
             log2_error("Alloc memory from slab failed!");
             return;
@@ -284,24 +245,24 @@ static void _gumbo_parse_href(gumbo_cntx_t *ctx, GumboNode *node, gumbo_result_t
         /* 申请数据空间 */
         len = strlen(href->value);
 
-        lnd->data = mem_pool_alloc(r->mem_pool, len + 1);
-        if (NULL == lnd->data)
+        list_node->data = mem_pool_alloc(r->mem_pool, len + 1);
+        if (NULL == list_node->data)
         {
-            mem_pool_dealloc(r->mem_pool, lnd);
+            mem_pool_dealloc(r->mem_pool, list_node);
             log2_error("Alloc memory from slab failed!");
             return;
         }
 
-        snprintf(lnd->data, len+1, "%s", href->value);
+        snprintf(list_node->data, len+1, "%s", href->value);
 
         /* 插入链表尾部 */
-        list_insert_tail(&r->list, lnd);
+        list_insert_tail(&r->list, list_node);
     }
 
     children = &node->v.element.children;
     for (idx = 0; idx < children->length; ++idx)
     {
-        _gumbo_parse_href(ctx, (GumboNode *)children->data[idx], r);
+        _gumbo_parse_href((GumboNode *)children->data[idx], r);
     }
 }
 
@@ -316,14 +277,24 @@ static void _gumbo_parse_href(gumbo_cntx_t *ctx, GumboNode *node, gumbo_result_t
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.14 #
  ******************************************************************************/
-gumbo_result_t *gumbo_parse_href(gumbo_cntx_t *ctx, const gumbo_html_t *html)
+gumbo_result_t *gumbo_parse_href(const gumbo_html_t *html)
 {
     gumbo_result_t *r;
+    mem_pool_t *mem_pool;
 
-    /* 1. 申请空间 */
-    r = eslab_alloc(&ctx->slab, sizeof(gumbo_result_t));
+    /* 1. 创建内存池 */
+    mem_pool = mem_pool_creat(1 * MB);
+    if (NULL == mem_pool)
+    {
+        log2_error("Create memory pool failed!");
+        return NULL;
+    }
+
+    /* 2. 创建结果集对象 */
+    r = mem_pool_alloc(mem_pool, sizeof(gumbo_result_t));
     if (NULL == r)
     {
+        mem_pool_destroy(mem_pool);
         log2_error("Alloc memory from slab failed!");
         return NULL;
     }
@@ -331,15 +302,10 @@ gumbo_result_t *gumbo_parse_href(gumbo_cntx_t *ctx, const gumbo_html_t *html)
     r->list.num = 0;
     r->list.head = NULL;
     r->list.tail = NULL;
-    r->mem_pool = mem_pool_creat(4 * KB);
-    if (NULL == r->mem_pool)
-    {
-        eslab_dealloc(&ctx->slab, r);
-        return NULL;
-    }
+    r->mem_pool = mem_pool;
 
-    /* 2. 提取HREF字段 */
-    _gumbo_parse_href(ctx, html->output->root, r);
+    /* 3. 提取HREF字段 */
+    _gumbo_parse_href(html->output->root, r);
 
     return r;
 }
@@ -370,7 +336,6 @@ void gumbo_print_result(gumbo_result_t *r)
  **函数名称: gumbo_result_destroy
  **功    能: 释放结果对象
  **输入参数: 
- **     ctx: 全局信息
  **     r: 结果对象
  **输出参数: NONE
  **返    回: VOID
@@ -378,20 +343,7 @@ void gumbo_print_result(gumbo_result_t *r)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.15 #
  ******************************************************************************/
-void gumbo_result_destroy(gumbo_cntx_t *ctx, gumbo_result_t *r)
+void gumbo_result_destroy(gumbo_result_t *r)
 {
-    list_node_t *node = r->list.head, *next;
-
-    while (NULL != node)
-    {
-        next = node->next;
-
-        mem_pool_dealloc(r->mem_pool, node->data);
-        mem_pool_dealloc(r->mem_pool, node);
-
-        node = next;
-    }
-
     mem_pool_destroy(r->mem_pool);
-    eslab_dealloc(&ctx->slab, r);
 }

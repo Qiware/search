@@ -6,13 +6,6 @@
 
 #include <gumbo.h>
 
-/* GUMBO-CTX对象 */
-typedef struct
-{
-    GumboOptions opt;               /* 配置信息 */
-    eslab_pool_t slab;              /* 内存池对象 */
-} gumbo_cntx_t;
-
 /* GUMBO-HTML对象 */
 typedef struct
 {
@@ -22,6 +15,8 @@ typedef struct
     int input_length;               /* HTML文件长度 */
 
     GumboOutput *output;            /* HTML解析对象 */
+    mem_pool_t *mem_pool;           /* 内存池对象 */
+    GumboOptions opt;               /* 解析HTML的选项 */
 } gumbo_html_t;
 
 /* 查询结果 */
@@ -31,16 +26,13 @@ typedef struct
     mem_pool_t *mem_pool;           /* 内存池 */
 } gumbo_result_t;
 
-int gumbo_init(gumbo_cntx_t *ctx);
-void gumbo_destroy(gumbo_cntx_t *ctx);
-
-gumbo_html_t *gumbo_html_parse(gumbo_cntx_t *ctx, const char *path);
-void gumbo_html_destroy(gumbo_cntx_t *ctx, gumbo_html_t *html);
+gumbo_html_t *gumbo_html_parse(const char *path);
+void gumbo_html_destroy(gumbo_html_t *html);
 
 void gumbo_print_result(gumbo_result_t *r);
-void gumbo_result_destroy(gumbo_cntx_t *ctx, gumbo_result_t *r);
+void gumbo_result_destroy(gumbo_result_t *r);
 
 const char *gumbo_get_title(const gumbo_html_t *html);
-gumbo_result_t *gumbo_parse_href(gumbo_cntx_t *ctx, const gumbo_html_t *html);
+gumbo_result_t *gumbo_parse_href(const gumbo_html_t *html);
 
 #endif /*__GUMBO_EX_H__*/

@@ -90,9 +90,9 @@ int crwl_parser_exec(crwl_conf_t *conf, log_cycle_t *log)
  ******************************************************************************/
 static crwl_parser_t *crwl_parser_init(crwl_conf_t *conf, log_cycle_t *log)
 {
-    int ret;
     crwl_parser_t *parser;
 
+    /* 1. 申请对象空间 */
     parser = (crwl_parser_t *)calloc(1, sizeof(crwl_parser_t));
     if (NULL == parser)
     {
@@ -105,21 +105,11 @@ static crwl_parser_t *crwl_parser_init(crwl_conf_t *conf, log_cycle_t *log)
     log_set_level(log, conf->log.level);
     log2_set_level(conf->log.level2);
 
-    /* 2. 初始化GUMBO对象 */
-    ret = gumbo_init(&parser->gumbo_ctx);
-    if (0 != ret)
-    {
-        log_error(parser->log, "Init gumbo failed!");
-        free(parser);
-        return NULL;
-    }
-
-    /* 3. 连接Redis服务 */
+    /* 2. 连接Redis服务 */
     parser->redis = redis_ctx_init(&conf->redis.master, &conf->redis.slave_list);
     if (NULL == parser->redis)
     {
         log_error(parser->log, "Initialize redis context failed!");
-        gumbo_destroy(&parser->gumbo_ctx);
         free(parser);
         return NULL;
     }
@@ -144,7 +134,6 @@ void crwl_parser_destroy(crwl_parser_t *parser)
     log_destroy(&parser->log);
     log2_destroy();
     redis_ctx_destroy(parser->redis);
-    gumbo_destroy(&parser->gumbo_ctx);
     crwl_conf_destroy(parser->conf);
     free(parser);
 }
@@ -359,7 +348,7 @@ static int crwl_parser_work_flow(crwl_parser_t *parser)
     snprintf(fpath, sizeof(fpath), "%s/%s", conf->download.path, info->html);
 
     /* 2. 解析HTML文件 */
-    html = gumbo_html_parse(&parser->gumbo_ctx, fpath);
+    html = gumbo_html_parse(fpath);
     if (NULL == html)
     {
         log_error(parser->log, "Parse html failed! fpath:%s", fpath);
@@ -367,13 +356,13 @@ static int crwl_parser_work_flow(crwl_parser_t *parser)
     }
 
     /* 3. 提取超链接 */
-    result = gumbo_parse_href(&parser->gumbo_ctx, html);
+    result = gumbo_parse_href(html);
     if (NULL == result)
     {
         log_error(parser->log, "Parse href failed! fpath:%s", fpath);
 
-        gumbo_result_destroy(&parser->gumbo_ctx, result);
-        gumbo_html_destroy(&parser->gumbo_ctx, html);
+        gumbo_result_destroy(result);
+        gumbo_html_destroy(html);
         return CRWL_ERR;
     }
 
@@ -387,14 +376,14 @@ static int crwl_parser_work_flow(crwl_parser_t *parser)
     {
         log_error(parser->log, "Deep handler failed! fpath:%s", fpath);
 
-        gumbo_result_destroy(&parser->gumbo_ctx, result);
-        gumbo_html_destroy(&parser->gumbo_ctx, html);
+        gumbo_result_destroy(result);
+        gumbo_html_destroy(html);
         return CRWL_ERR;
     }
 
     /* 5. 内存释放 */
-    gumbo_result_destroy(&parser->gumbo_ctx, result);
-    gumbo_html_destroy(&parser->gumbo_ctx, html);
+    gumbo_result_destroy(result);
+    gumbo_html_destroy(html);
     return CRWL_OK;
 }
 
