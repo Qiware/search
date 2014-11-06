@@ -25,12 +25,13 @@ typedef struct
     crwl_conf_t *conf;              /* 配置信息 */
 
     log_cycle_t *log;               /* 日志对象 */
-    redis_ctx_t *redis;             /* Redis上下文 */
+    redis_cluster_t *redis;         /* Redis集群 */
 
     crwl_webpage_info_t info;       /* 网页信息 */
 } crwl_parser_t;
 
-int crwl_parser_exec(crwl_conf_t *conf, log_cycle_t *log);
+crwl_parser_t *crwl_parser_init(crwl_conf_t *conf, log_cycle_t *log);
+int crwl_parser_work(crwl_parser_t *parser);
 void crwl_parser_destroy(crwl_parser_t *parser);
 
 #endif /*__CRWL_PARSER_H__*/

@@ -11,8 +11,8 @@
 #include "common.h"
 
 /******************************************************************************
- **函数名称: redis_ctx_init
- **功    能: 初始化Redis上下文
+ **函数名称: redis_cluster_init
+ **功    能: 初始化Redis集群
  **输入参数: 
  **     mcf: Master配置
  **     scf: Slave配置链表
@@ -25,90 +25,92 @@
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.04 #
  ******************************************************************************/
-redis_ctx_t *redis_ctx_init(const redis_conf_t *mcf, const list_t *scf)
+redis_cluster_t *redis_cluster_init(const redis_conf_t *mcf, const list_t *scf)
 {
     int idx;
     struct timeval tv;
-    redis_ctx_t *ctx;
+    redis_cluster_t *cluster;
     list_node_t *node;
     redis_conf_t *conf;
 
     /* 1. 申请内存空间 */
-    ctx = (redis_ctx_t *)calloc(1, sizeof(redis_ctx_t));
-    if (NULL == ctx)
+    cluster = (redis_cluster_t *)calloc(1, sizeof(redis_cluster_t));
+    if (NULL == cluster)
     {
         return NULL;
     }
 
-    ctx->slave = (redisContext **)calloc(scf->num, sizeof(redisContext *));
-    if (NULL == ctx->slave)
+    cluster->slave = (redisContext **)calloc(scf->num, sizeof(redisContext *));
+    if (NULL == cluster->slave)
     {
-        free(ctx);
+        free(cluster);
         return NULL;
     }
 
     /* 2. 连接Master */
     tv.tv_sec = 30;
     tv.tv_usec = 0;
-    ctx->master = redisConnectWithTimeout(mcf->ip, mcf->port, tv);
-    if (NULL == ctx->master)
+    cluster->master = redisConnectWithTimeout(mcf->ip, mcf->port, tv);
+    if (NULL == cluster->master)
     {
-        free(ctx->slave);
-        free(ctx);
+        free(cluster->slave);
+        free(cluster);
         return NULL;
     }
 
     /* 3. 依次连接Slave */
-    ctx->slave_num = 0;
+    cluster->slave_num = 0;
     node = scf->head;
 
     for (idx=0; idx<scf->num; ++idx, node = node->next)
     {
-        ++ctx->slave_num;
+        ++cluster->slave_num;
 
         tv.tv_sec = 30;
         tv.tv_usec = 0;
 
         conf = (redis_conf_t *)node->data;
 
-        ctx->slave[idx] = redisConnectWithTimeout(conf->ip, conf->port, tv);
-        if (ctx->slave[idx]->err)
+        cluster->slave[idx] = redisConnectWithTimeout(conf->ip, conf->port, tv);
+        if (cluster->slave[idx]->err)
         {
-            redis_ctx_destroy(ctx);
+            redis_cluster_destroy(cluster);
             return NULL;
         }
     }
 
-    return ctx;
+    return cluster;
 }
 
 /******************************************************************************
- **函数名称: redis_ctx_destroy
- **功    能: 销毁Redis上下文
+ **函数名称: redis_cluster_destroy
+ **功    能: 销毁Redis集群
  **输入参数: 
- **     ctx: Redis上下文
+ **     cluster: Redis集群
  **输出参数: NONE
  **返    回: VOID
  **实现描述: 
+ **     1. 销毁副本上下文
+ **     1. 销毁主机上下文
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.04 #
  ******************************************************************************/
-void redis_ctx_destroy(redis_ctx_t *ctx)
+void redis_cluster_destroy(redis_cluster_t *cluster)
 {
     int idx;
 
-    for (idx=0; idx<ctx->slave_num; ++idx)
+    for (idx=0; idx<cluster->slave_num; ++idx)
     {
-        if (NULL != ctx->slave[idx])
+        if (NULL != cluster->slave[idx])
         {
-            redisFree(ctx->slave[idx]);
-            ctx->slave[idx] = NULL;
+            redisFree(cluster->slave[idx]);
+            cluster->slave[idx] = NULL;
         }
     }
 
-    redisFree(ctx->master);
-    free(ctx->slave);
-    free(ctx);
+    redisFree(cluster->master);
+    free(cluster->slave);
+    free(cluster);
 }
 
 /******************************************************************************

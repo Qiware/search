@@ -13,16 +13,16 @@ typedef struct
     int port;                       /* 端口号 */
 } redis_conf_t;
 
-/* Redis对象 */
+/* Redis集群对象 */
 typedef struct
 {
     redisContext *master;           /* 主对象 */
     int slave_num;                  /* 副本数 */
     redisContext **slave;           /* 副本对象 */
-} redis_ctx_t;
+} redis_cluster_t;
 
-redis_ctx_t *redis_ctx_init(const redis_conf_t *mcf, const list_t *scf);
-void redis_ctx_destroy(redis_ctx_t *ctx);
+redis_cluster_t *redis_cluster_init(const redis_conf_t *mcf, const list_t *scf);
+void redis_cluster_destroy(redis_cluster_t *ctx);
 
 bool redis_hsetnx(redisContext *ctx, const char *hash, const char *key, const char *value);
 

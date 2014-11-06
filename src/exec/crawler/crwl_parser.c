@@ -30,51 +30,17 @@
 
 #define CRWL_PARSER_LOG_NAME    "parser"
 
-static crwl_parser_t *crwl_parser_init(crwl_conf_t *conf, log_cycle_t *log);
-static int crwl_parser_loop(crwl_parser_t *parser);
 static int crwl_parser_webpage_info(crwl_webpage_info_t *info);
 static int crwl_parser_work_flow(crwl_parser_t *parser);
 static int crwl_parser_deep_hdl(crwl_parser_t *parser, gumbo_result_t *result);
 
-bool crwl_set_uri_exists(redis_ctx_t *ctx, const char *hash, const char *uri);
+bool crwl_set_uri_exists(redis_cluster_t *cluster, const char *hash, const char *uri);
 
 /* 判断uri是否已下载 */
-#define crwl_is_uri_down(ctx, hash, uri) crwl_set_uri_exists(ctx, hash, uri)
+#define crwl_is_uri_down(cluster, hash, uri) crwl_set_uri_exists(cluster, hash, uri)
 
 /* 判断uri是否已推送 */
-#define crwl_is_uri_push(ctx, hash, uri) crwl_set_uri_exists(ctx, hash, uri)
-
-/******************************************************************************
- **函数名称: crwl_parser_exec
- **功    能: 解析器主接口
- **输入参数: 
- **     conf: 配置信息
- **     log: 日志对象
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.10.17 #
- ******************************************************************************/
-int crwl_parser_exec(crwl_conf_t *conf, log_cycle_t *log)
-{
-    crwl_parser_t *parser;
-
-    /* 1. 初始化Parser对象 */
-    parser = crwl_parser_init(conf, log);
-    if (NULL == parser)
-    {
-        log_error(log, "Init parser failed!");
-        return CRWL_ERR;
-    }
-
-    /* 2. 遍历网页信息 */
-    crwl_parser_loop(parser);
-
-    /* 3. 释放GUMBO对象 */
-    crwl_parser_destroy(parser);
-    return CRWL_OK;
-}
+#define crwl_is_uri_push(cluster, hash, uri) crwl_set_uri_exists(cluster, hash, uri)
 
 /******************************************************************************
  **函数名称: crwl_parser_init
@@ -88,7 +54,7 @@ int crwl_parser_exec(crwl_conf_t *conf, log_cycle_t *log)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.18 #
  ******************************************************************************/
-static crwl_parser_t *crwl_parser_init(crwl_conf_t *conf, log_cycle_t *log)
+crwl_parser_t *crwl_parser_init(crwl_conf_t *conf, log_cycle_t *log)
 {
     crwl_parser_t *parser;
 
@@ -105,8 +71,8 @@ static crwl_parser_t *crwl_parser_init(crwl_conf_t *conf, log_cycle_t *log)
     log_set_level(log, conf->log.level);
     log2_set_level(conf->log.level2);
 
-    /* 2. 连接Redis服务 */
-    parser->redis = redis_ctx_init(&conf->redis.master, &conf->redis.slave_list);
+    /* 2. 连接Redis集群 */
+    parser->redis = redis_cluster_init(&conf->redis.master, &conf->redis.slave_list);
     if (NULL == parser->redis)
     {
         log_error(parser->log, "Initialize redis context failed!");
@@ -133,14 +99,14 @@ void crwl_parser_destroy(crwl_parser_t *parser)
 {
     log_destroy(&parser->log);
     log2_destroy();
-    redis_ctx_destroy(parser->redis);
+    redis_cluster_destroy(parser->redis);
     crwl_conf_destroy(parser->conf);
     free(parser);
 }
 
 /******************************************************************************
- **函数名称: crwl_parser_loop
- **功    能: 遍历网页信息
+ **函数名称: crwl_parser_work
+ **功    能: 网页解析处理
  **输入参数: 
  **     p: 解析器对象
  **输出参数:
@@ -149,7 +115,7 @@ void crwl_parser_destroy(crwl_parser_t *parser)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.18 #
  ******************************************************************************/
-static int crwl_parser_loop(crwl_parser_t *parser)
+int crwl_parser_work(crwl_parser_t *parser)
 {
     int ret;
     DIR *dir;
@@ -211,11 +177,7 @@ static int crwl_parser_loop(crwl_parser_t *parser)
 
         Mkdir(conf->parser.store.path, 0777);
 
-    #if defined(__MEM_LEAK_CHECK__)
-        break;
-    #else /*__MEM_LEAK_CHECK__*/
         Sleep(5);
-    #endif /*__MEM_LEAK_CHECK__*/
     }
 
     return CRWL_OK;
@@ -456,7 +418,7 @@ static int crwl_parser_deep_hdl(crwl_parser_t *parser, gumbo_result_t *result)
  **函数名称: crwl_set_uri_exists
  **功    能: 设置uri是否已存在
  **输入参数: 
- **     ctx: Redis对象
+ **     cluster: Redis集群
  **     hash: 哈希表名
  **     uri: 判断对象-URI
  **输出参数:
@@ -467,19 +429,19 @@ static int crwl_parser_deep_hdl(crwl_parser_t *parser, gumbo_result_t *result)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.04 #
  ******************************************************************************/
-bool crwl_set_uri_exists(redis_ctx_t *ctx, const char *hash, const char *uri)
+bool crwl_set_uri_exists(redis_cluster_t *cluster, const char *hash, const char *uri)
 {
     redisReply *r;
 
-    if (0 == ctx->slave_num)
+    if (0 == cluster->slave_num)
     {
-        return !redis_hsetnx(ctx->master, hash, uri, "1");
+        return !redis_hsetnx(cluster->master, hash, uri, "1");
     }
 
     do
     {
         r = redisCommand(
-                ctx->slave[random() % ctx->slave_num],
+                cluster->slave[random() % cluster->slave_num],
                 "HEXISTS %s %s", hash, uri);
         if (REDIS_REPLY_INTEGER != r->type)
         {
@@ -497,5 +459,5 @@ bool crwl_set_uri_exists(redis_ctx_t *ctx, const char *hash, const char *uri)
 
     freeReplyObject(r);
 
-    return !redis_hsetnx(ctx->master, hash, uri, "1");
+    return !redis_hsetnx(cluster->master, hash, uri, "1");
 }
