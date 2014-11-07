@@ -34,7 +34,7 @@
  ******************************************************************************/
 int tcp_listen(int port)
 {
-    int fd, ret, opt = 1;
+    int fd, opt = 1;
     struct sockaddr_in svraddr;
 
     /* 1. 创建套接字 */
@@ -54,16 +54,14 @@ int tcp_listen(int port)
     svraddr.sin_addr.s_addr = htonl(INADDR_ANY);
     svraddr.sin_port = htons(port);
 
-    ret = bind(fd, (struct sockaddr *)&svraddr, sizeof(svraddr));
-    if (ret < 0)
+    if (bind(fd, (struct sockaddr *)&svraddr, sizeof(svraddr)) < 0)
     {
         close(fd);
         return -1;
     }
 
     /* 3. 侦听指定端口 */
-    ret = listen(fd, 20);
-    if (ret < 0)
+    if (listen(fd, 20) < 0)
     {
         close(fd);
         return -1;
@@ -92,7 +90,7 @@ int tcp_listen(int port)
  ******************************************************************************/
 int tcp_connect(const char *ipaddr, int port)
 {
-    int ret, fd, opt = 1;
+    int fd, opt = 1;
     struct sockaddr_in svraddr;
 
     /* 1. 创建套接字 */
@@ -112,8 +110,7 @@ int tcp_connect(const char *ipaddr, int port)
     inet_pton(AF_INET, ipaddr, &svraddr.sin_addr);
     svraddr.sin_port = htons(port);
 
-    ret = connect(fd, (struct sockaddr *)&svraddr, sizeof(svraddr));
-    if (0 != ret)
+    if (0 != connect(fd, (struct sockaddr *)&svraddr, sizeof(svraddr)))
     {
         close(fd);
         return -1;
@@ -167,8 +164,7 @@ int tcp_connect_ex(const char *ipaddr, int port, int sec)
     inet_pton(AF_INET, ipaddr, &svraddr.sin_addr);
     svraddr.sin_port = htons(port);
 
-    ret = connect(fd, (struct sockaddr *)&svraddr, sizeof(svraddr));
-    if (0 == ret)
+    if (!connect(fd, (struct sockaddr *)&svraddr, sizeof(svraddr)))
     {
         return fd;
     }
@@ -226,7 +222,7 @@ AGAIN:
  ******************************************************************************/
 int tcp_connect_ex2(const char *ipaddr, int port)
 {
-    int ret, fd, opt = 1;
+    int fd, opt = 1;
     struct sockaddr_in svraddr;
 
     /* 1. 创建套接字 */
@@ -248,8 +244,7 @@ int tcp_connect_ex2(const char *ipaddr, int port)
     inet_pton(AF_INET, ipaddr, &svraddr.sin_addr);
     svraddr.sin_port = htons(port);
 
-    ret = connect(fd, (struct sockaddr *)&svraddr, sizeof(svraddr));
-    if (0 == ret)
+    if (!connect(fd, (struct sockaddr *)&svraddr, sizeof(svraddr)))
     {
         return fd;
     }

@@ -54,24 +54,20 @@ static crwl_worker_t *crwl_worker_get(crwl_cntx_t *ctx)
  ******************************************************************************/
 int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker)
 {
-    int ret;
-
     worker->ctx = ctx;
     worker->log = ctx->log;
     worker->scan_tm = time(NULL);
     worker->conf = &ctx->conf->worker;
 
     /* 1. 创建SLAB内存池 */
-    ret = eslab_init(&worker->slab, CRWL_SLAB_SIZE);
-    if (0 != ret)
+    if (eslab_init(&worker->slab, CRWL_SLAB_SIZE))
     {
         log_error(worker->log, "Initialize slab pool failed!");
         return CRWL_ERR;
     }
 
     /* 2. 创建任务队列 */
-    ret = lqueue_init(&worker->undo_taskq, worker->conf->taskq_count, 20 * MB);
-    if (CRWL_OK != ret)
+    if (lqueue_init(&worker->undo_taskq, worker->conf->taskq_count, 20 * MB))
     {
         eslab_destroy(&worker->slab);
 
@@ -631,20 +627,17 @@ static int crwl_worker_timeout_hdl(crwl_worker_t *worker)
  ******************************************************************************/
 static int crwl_worker_event_hdl(crwl_worker_t *worker)
 {
-    int ret;
     time_t ctm = time(NULL);
 
     /* 1. 接收数据 */
-    ret = crwl_worker_trav_recv(worker);
-    if (CRWL_OK != ret)
+    if (crwl_worker_trav_recv(worker))
     {
         log_error(worker->log, "Worker recv data failed!");
         return CRWL_ERR;
     }
 
     /* 2. 发送数据 */
-    ret = crwl_worker_trav_send(worker);
-    if (CRWL_OK != ret)
+    if (crwl_worker_trav_send(worker))
     {
         log_error(worker->log, "Worker send data failed!");
         return CRWL_ERR;
@@ -823,7 +816,6 @@ void *crwl_worker_routine(void *_ctx)
  ******************************************************************************/
 int crwl_worker_add_sock(crwl_worker_t *worker, crwl_worker_socket_t *sck)
 {
-    int ret;
     list_node_t *node;
 #if defined(__EVENT_EPOLL__)
     struct epoll_event ev;
@@ -844,8 +836,7 @@ int crwl_worker_add_sock(crwl_worker_t *worker, crwl_worker_socket_t *sck)
     node->data = sck;
 
     /* 2. 插入链表尾 */
-    ret = list_insert_tail(&worker->sock_list, node);
-    if (0 != ret)
+    if (list_insert_tail(&worker->sock_list, node))
     {
         log_error(worker->log, "Insert socket node failed!");
         eslab_dealloc(&worker->slab, node);
@@ -1057,7 +1048,6 @@ static int crwl_worker_task_handler(crwl_worker_t *worker, crwl_task_t *t)
 int crwl_worker_add_http_get_req(
         crwl_worker_t *worker, crwl_worker_socket_t *sck, const char *uri)
 {
-    int ret;
     void *addr;
     list_node_t *node;
     crwl_data_info_t *info;
@@ -1084,8 +1074,7 @@ int crwl_worker_add_http_get_req(
         info = node->data;
         addr = node->data + sizeof(crwl_data_info_t);
 
-        ret = http_get_request(uri, addr, HTTP_GET_REQ_STR_LEN);
-        if (0 != ret)
+        if (http_get_request(uri, addr, HTTP_GET_REQ_STR_LEN))
         {
             log_error(worker->log, "HTTP GET request string failed");
             break;
@@ -1095,8 +1084,7 @@ int crwl_worker_add_http_get_req(
         info->length = sizeof(crwl_data_info_t) + strlen((const char *)addr);
 
         /* 3. 将结点插入链表 */
-        ret = list_insert_tail(&sck->send_list, node);
-        if (0 != ret)
+        if (list_insert_tail(&sck->send_list, node))
         {
             log_error(worker->log, "Insert list tail failed");
             break;
@@ -1212,7 +1200,7 @@ int crwl_worker_webpage_finfo(crwl_worker_t *worker, crwl_worker_socket_t *sck)
 
     fclose(fp);
 
-    Rename(temp, path);
+    rename(temp, path);
 
     return CRWL_OK;
 }

@@ -32,7 +32,7 @@
  ******************************************************************************/
 hash_array_t *hash_array_init(int num, uint32_t (*key)(const char *str, size_t len))
 {
-    int ret, idx;
+    int idx;
     hash_array_t *hash;
         
 
@@ -45,8 +45,7 @@ hash_array_t *hash_array_init(int num, uint32_t (*key)(const char *str, size_t l
     }
 
     /* 2. 创建内存池 */
-    ret = eslab_init(&hash->pool, 32 * KB);
-    if (0 != ret)
+    if (0 != eslab_init(&hash->pool, 32 * KB))
     {
         free(hash);
         log2_error("Initialize slab failed!");

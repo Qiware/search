@@ -67,6 +67,7 @@ crwl_parser_t *crwl_parser_init(crwl_conf_t *conf, log_cycle_t *log)
     }
 
     parser->log = log;
+    parser->conf = conf;
 
     log_set_level(log, conf->log.level);
     log2_set_level(conf->log.level2);
@@ -79,8 +80,6 @@ crwl_parser_t *crwl_parser_init(crwl_conf_t *conf, log_cycle_t *log)
         free(parser);
         return NULL;
     }
-
-    parser->conf = conf;
 
     return parser;
 }
@@ -97,10 +96,22 @@ crwl_parser_t *crwl_parser_init(crwl_conf_t *conf, log_cycle_t *log)
  ******************************************************************************/
 void crwl_parser_destroy(crwl_parser_t *parser)
 {
-    log_destroy(&parser->log);
+    if (parser->log)
+    {
+        log_destroy(&parser->log);
+        parser->log = NULL;
+    }
     log2_destroy();
-    redis_cluster_destroy(parser->redis);
-    crwl_conf_destroy(parser->conf);
+    if (parser->redis)
+    {
+        redis_cluster_destroy(parser->redis);
+        parser->redis = NULL;
+    }
+    if (parser->conf)
+    {
+        crwl_conf_destroy(parser->conf);
+        parser->conf = NULL;
+    }
     free(parser);
 }
 
@@ -117,12 +128,12 @@ void crwl_parser_destroy(crwl_parser_t *parser)
  ******************************************************************************/
 int crwl_parser_work(crwl_parser_t *parser)
 {
-    int ret;
     DIR *dir;
     struct stat st;
     struct dirent *item;
     char path[PATH_NAME_MAX_LEN],
-         new_path[FILE_PATH_MAX_LEN];
+         new_path[FILE_PATH_MAX_LEN],
+         html_path[FILE_PATH_MAX_LEN];
     crwl_conf_t *conf = parser->conf;
 
     while (1)
@@ -151,12 +162,15 @@ int crwl_parser_work(crwl_parser_t *parser)
             }
 
             /* 获取网页信息 */
-            ret = crwl_parser_webpage_info(&parser->info);
-            if (CRWL_OK != ret)
+            if (crwl_parser_webpage_info(&parser->info))
             {
                 snprintf(new_path, sizeof(new_path),
                         "%s/%s", conf->parser.store.err_path, item->d_name);
-                Rename(parser->info.fname, new_path);
+                rename(parser->info.fname, new_path);
+
+                snprintf(html_path, sizeof(html_path),
+                        "%s/%s", conf->download.path, parser->info.html);
+                remove(html_path);
 
                 log_error(parser->log, "Get webpage information failed! fname:%s",
                         parser->info.fname);
@@ -169,7 +183,12 @@ int crwl_parser_work(crwl_parser_t *parser)
             snprintf(new_path, sizeof(new_path),
                     "%s/%s", conf->parser.store.path, item->d_name);
 
-            Rename(parser->info.fname, new_path);
+            rename(parser->info.fname, new_path);
+
+
+            snprintf(html_path, sizeof(html_path),
+                    "%s/%s", conf->download.path, parser->info.html);
+            remove(html_path);
         }
 
         /* 3. 关闭目录 */
@@ -282,7 +301,6 @@ static int crwl_parser_webpage_info(crwl_webpage_info_t *info)
  ******************************************************************************/
 static int crwl_parser_work_flow(crwl_parser_t *parser)
 {
-    int ret;
     gumbo_html_t *html;             /* HTML对象 */
     gumbo_result_t *result;         /* 结果集合 */
     char fpath[FILE_PATH_MAX_LEN];  /* HTML文件名 */
@@ -333,8 +351,7 @@ static int crwl_parser_work_flow(crwl_parser_t *parser)
      *  2. 判断超链接是否已被爬取
      *  3. 将超链接插入任务队列
      * */
-    ret = crwl_parser_deep_hdl(parser, result);
-    if (CRWL_OK != ret)
+    if (crwl_parser_deep_hdl(parser, result))
     {
         log_error(parser->log, "Deep handler failed! fpath:%s", fpath);
 

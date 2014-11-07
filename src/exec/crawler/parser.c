@@ -33,6 +33,8 @@ int main(int argc, char *argv[])
     crwl_conf_t *conf;
     crwl_parser_t *parser;
 
+    daemon(1, 0);
+
     /* 1. 初始化日志模块 */
     log = crwl_init_log(argv[0]);
     if (NULL == log)
@@ -48,15 +50,14 @@ int main(int argc, char *argv[])
         return CRWL_ERR;
     }
 
-#if !defined(__MEM_LEAK_CHECK__)
-    daemon(1, 0);
-#endif /*__MEM_LEAK_CHECK__*/
-
     /* 3. 初始化Parser对象 */
     parser = crwl_parser_init(conf, log);
     if (NULL == parser)
     {
         log_error(log, "Init parser failed!");
+        crwl_conf_destroy(conf);
+        log2_destroy();
+        log_destroy(&log);
         return CRWL_ERR;
     }
 

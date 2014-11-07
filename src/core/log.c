@@ -323,7 +323,7 @@ static int log_rename(const log_file_info_t *file, const struct timeb *time)
         file->path, loctm.tm_year+1900, loctm.tm_mon+1, loctm.tm_mday,
         loctm.tm_hour, loctm.tm_min, loctm.tm_sec);
 
-    return Rename(file->path, newpath);
+    return rename(file->path, newpath);
 }
 
 /******************************************************************************
@@ -490,7 +490,7 @@ static log_file_info_t *log_creat(void *addr, const char *path)
 {
     pid_t pid = getpid();
     log_file_info_t *file;
-    int ret, idx, hash_idx = 0, repeat = 0, idle_idx = -1;
+    int idx, hash_idx = 0, repeat = 0, idle_idx = -1;
     char newpath[FILE_NAME_MAX_LEN];
     const char *ptr = path;
 
@@ -524,8 +524,7 @@ static log_file_info_t *log_creat(void *addr, const char *path)
             }
 
             /* 文件名重复，且其他进程正在运行... */
-            ret = log_name_conflict_handler(path, newpath, sizeof(newpath), ++repeat);
-            if(ret < 0)
+            if (log_name_conflict_handler(path, newpath, sizeof(newpath), ++repeat))
             {
                 log_fcache_all_unlock();
                 return NULL;
@@ -551,8 +550,7 @@ static log_file_info_t *log_creat(void *addr, const char *path)
             }
 
             /* 进程是否存在 */
-            ret = proc_is_exist(file->pid);
-            if(0 != ret)
+            if (proc_is_exist(file->pid))
             {
                 idle_idx = hash_idx;
                 
@@ -895,7 +893,7 @@ static int log_sync_ext(log_cycle_t *log)
  ******************************************************************************/
 static size_t _log_sync(log_file_info_t *file, int *fd)
 {
-    int ret = 0, loc_fd = -1;
+    int loc_fd = -1;
     void *addr = NULL;
     struct stat buff;
     size_t n = 0, fsize = 0;
@@ -917,8 +915,7 @@ static size_t _log_sync(log_file_info_t *file, int *fd)
     do
     {
         /* 3. 文件是否存在 */
-        ret = lstat(file->path, &buff);
-        if(ret < 0)
+        if (lstat(file->path, &buff) < 0)
         {
             if(ENOENT != errno)
             {

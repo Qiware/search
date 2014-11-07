@@ -26,7 +26,6 @@
 
 int Readn(int fd, void *buff, int n);
 int Writen(int fd, const void *buff, int n);
-int Rename(const char *oldpath, const char *newpath);
 int Open(const char *fpath, int flags, mode_t mode);
 #define Close(fd)  \
 { \

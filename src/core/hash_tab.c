@@ -34,7 +34,7 @@
  ******************************************************************************/
 hash_tab_t *hash_tab_init(int num, avl_key_cb_t key_cb, avl_cmp_cb_t cmp_cb)
 {
-    int ret, idx;
+    int idx;
     hash_tab_t *hash;
         
 
@@ -69,8 +69,7 @@ hash_tab_t *hash_tab_init(int num, avl_key_cb_t key_cb, avl_cmp_cb_t cmp_cb)
     {
         pthread_rwlock_init(&hash->lock[idx], NULL);
 
-        ret = avl_creat(&hash->tree[idx], key_cb, cmp_cb);
-        if (0 != ret)
+        if (0 != avl_creat(&hash->tree[idx], key_cb, cmp_cb))
         {
             free(hash->tree);
             free(hash);

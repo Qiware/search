@@ -122,7 +122,7 @@ xml_node_t *xml_node_creat_ext(
         xml_node_type_e type,
         const char *name, const char *value)
 {
-    int size=0, ret=0;
+    int size;
     xml_node_t *node = NULL;
 
     /* 1. 创建节点 */
@@ -155,8 +155,7 @@ xml_node_t *xml_node_creat_ext(
     snprintf(node->name, size, "%s", name);
 
     /* 3. 设置节点值 */
-    ret = xml_set_value(xml, node, value);
-    if (0 != ret)
+    if (xml_set_value(xml, node, value))
     {
     #if !defined(__XML_MEM_POOL__)
         xml_node_free_one(node);
@@ -247,14 +246,13 @@ int xml_init(xml_tree_t **xml)
 char *xml_fload(const char *fname)
 {
     size_t size;
-    int ret, left, num, off;
+    int left, num, off;
     FILE *fp;
     char *buff;
     struct stat st;
 
     /* 1. 判断文件状态是否正常 */
-    ret = stat(fname, &st);
-    if (0 != ret)
+    if (0 != stat(fname, &st))
     {
         return NULL;
     }
@@ -581,7 +579,7 @@ static int xml_parse_note(xml_tree_t *xml, xml_parse_t *parse)
  ******************************************************************************/
 static int xml_parse_mark(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse)
 {
-    int ret = 0;
+    int ret;
 
     parse->ptr += XML_MARK_BEGIN_LEN;    /* 跳过"<" */
 
@@ -649,7 +647,6 @@ static int xml_parse_mark(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse)
  ******************************************************************************/
 static int xml_parse_end(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse)
 {
-    int ret = 0;
     size_t len = 0;
     xml_node_t *top = NULL;
     const char *ptr = NULL;
@@ -685,8 +682,7 @@ static int xml_parse_end(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse)
     }
 
     /* 4. 弹出栈顶节点 */
-    ret = stack_pop(stack);
-    if (XML_OK != ret)
+    if (stack_pop(stack))
     {
         log2_error("Pop failed!");
         return XML_ERR_STACK;
@@ -715,7 +711,7 @@ static int xml_parse_end(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse)
  ******************************************************************************/
 static int xml_mark_get_name(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse)
 {
-    int ret=0, len=0;
+    int len;
     const char *ptr = parse->ptr;
     xml_node_t *node = NULL, *top = NULL;
 
@@ -786,8 +782,7 @@ static int xml_mark_get_name(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse
     strncpy(node->name, parse->ptr, len);
 
     /* 6. 将节点入栈 */
-    ret = stack_push(stack, (void*)node);
-    if (XML_OK != ret)
+    if (stack_push(stack, (void*)node))
     {
         log2_error("Stack push failed!");
         return XML_ERR_STACK;
@@ -849,8 +844,8 @@ static int xml_mark_has_attr(xml_parse_t *parse)
 static int xml_mark_get_attr(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse)
 {
     char border = '"';
-    xml_node_t *node = NULL, *top = NULL;
-    int len = 0, errflg = 0;
+    xml_node_t *node, *top;
+    int len, errflg = 0;
     const char *ptr = parse->ptr;
 #if defined(__XML_ESC_PARSE__)
     int ret, size;
@@ -1056,14 +1051,12 @@ static int xml_mark_get_attr(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse
  ******************************************************************************/
 static int xml_mark_is_end(xml_parse_t *parse)
 {
-    int ret = 0;
     const char *ptr = parse->ptr;
     
     while (XmlIsIgnoreChar(*ptr)) ptr++;
 
     /* 1. 是否有节点值 */
-    ret = strncmp(ptr, XML_MARK_END1, XML_MARK_END1_LEN);
-    if (0 != ret)
+    if (strncmp(ptr, XML_MARK_END1, XML_MARK_END1_LEN))
     {
         return false;
     }
@@ -1119,12 +1112,11 @@ static int xml_mark_has_value(xml_parse_t *parse)
  ******************************************************************************/
 static int xml_mark_get_value(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse)
 {
-    int len = 0, size = 0;
-    const char *p1=NULL, *p2=NULL;
-    xml_node_t *current = NULL;
+    int len, size = 0;
+    const char *p1, *p2;
+    xml_node_t *current;
 #if defined(__XML_ESC_PARSE__)
-    int ret;
-    const xml_esc_t *esc = NULL;
+    const xml_esc_t *esc;
     xml_esc_split_t split;
 
     memset(&split, 0, sizeof(split));
@@ -1150,8 +1142,7 @@ static int xml_mark_get_value(xml_tree_t *xml, Stack_t *stack, xml_parse_t *pars
         {
             esc = xml_esc_get(p1);
 
-            ret = xml_esc_split(esc, parse->ptr, p1-parse->ptr+1, &split);
-            if (XML_OK != ret)
+            if (xml_esc_split(esc, parse->ptr, p1-parse->ptr+1, &split))
             {
                 xml_esc_free(&split);
                 log2_error("Parse forwad string failed!");
@@ -1279,7 +1270,6 @@ int xml_node_free_one(xml_node_t *node)
  ******************************************************************************/
 xml_node_t *xml_free_next(xml_tree_t *xml, Stack_t *stack, xml_node_t *current)
 {
-    int ret = 0;
     xml_node_t *child = NULL, *top = NULL;
     
     /* 1. 释放孩子节点 */
@@ -1295,8 +1285,7 @@ xml_node_t *xml_free_next(xml_tree_t *xml, Stack_t *stack, xml_node_t *current)
         /* 1. 弹出已经处理完成的节点, 并释放 */
         top = stack_gettop(stack);
         
-        ret = stack_pop(stack);
-        if (XML_OK != ret)
+        if (stack_pop(stack))
         {
             log2_error("Stack pop failed!");
             return NULL;
@@ -1315,8 +1304,7 @@ xml_node_t *xml_free_next(xml_tree_t *xml, Stack_t *stack, xml_node_t *current)
         {
             /* 3. 父亲节点出栈 */
             top = stack_gettop(stack);
-            ret = stack_pop(stack);
-            if (XML_OK != ret)
+            if (stack_pop(stack))
             {
                 log2_error("Stack pop failed!");
                 return NULL;
@@ -1354,12 +1342,12 @@ xml_node_t *xml_free_next(xml_tree_t *xml, Stack_t *stack, xml_node_t *current)
  ******************************************************************************/
 int xml_delete_child(xml_tree_t *xml, xml_node_t *node, xml_node_t *child)
 {
-    xml_node_t *p1 = NULL, *p2 = NULL;
+    xml_node_t *p1, *p2;
 
     if (node != child->parent)
     {
         log2_error("Parent node is not right!");
-        return -1;
+        return XML_ERR_PTR;
     }
     
     if (node->firstchild == child)    /* 1. 要删的是子节点链表的开始节点 */
@@ -1482,7 +1470,7 @@ int xml_delete_child(xml_tree_t *xml, xml_node_t *node, xml_node_t *child)
 static xml_node_t *xml_node_next_length(
     xml_tree_t *xml, Stack_t *stack, xml_node_t *node, int *length)
 {
-    int ret = 0, depth = 0, level = 0, length2 = 0;
+    int depth = 0, level = 0, length2 = 0;
     xml_node_t *top = NULL, *child = NULL;
 
     if (NULL != node->temp)      /* 首先: 处理孩子节点: 选出下一个孩子节点 */
@@ -1510,8 +1498,7 @@ static xml_node_t *xml_node_next_length(
             length2 += strlen(top->name) + 4;
         }
         
-        ret = stack_pop(stack);
-        if (XML_OK != ret)
+        if (stack_pop(stack))
         {
             *length += length2;
             log2_error("Stack pop failed!");
@@ -1531,8 +1518,7 @@ static xml_node_t *xml_node_next_length(
         {
             /* 3. 父亲节点出栈 */
             top = stack_gettop(stack);
-            ret = stack_pop(stack);
-            if (XML_OK != ret)
+            if (stack_pop(stack))
             {
                 *length += length2;
                 log2_error("Stack pop failed!");
@@ -1583,7 +1569,7 @@ static xml_node_t *xml_node_next_length(
  ******************************************************************************/
 int _xml_node_length(xml_tree_t *xml, xml_node_t *root, Stack_t *stack)
 {
-    int ret = 0, depth = 0, length=0;
+    int depth, length=0;
     xml_node_t *node = root;
 
     depth = stack_depth(stack);
@@ -1597,8 +1583,7 @@ int _xml_node_length(xml_tree_t *xml, xml_node_t *root, Stack_t *stack)
     {
         /* 1. 将要处理的节点压栈 */
         node->temp = node->firstchild;
-        ret = stack_push(stack, node);
-        if (XML_OK != ret)
+        if (stack_push(stack, node))
         {
             log2_error("Stack push failed!");
             return XML_ERR_STACK;

@@ -244,7 +244,7 @@ static int crwl_sched_event_hdl(crwl_cntx_t *ctx, crwl_sched_t *sched)
  ******************************************************************************/
 static int crwl_sched_fetch_undo_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
 {
-    int ret, times;
+    int times;
     void *addr;
     redisReply *r;
     crwl_worker_t *worker;
@@ -298,8 +298,7 @@ static int crwl_sched_fetch_undo_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
         task = (crwl_task_t *)addr;
 
         /* 4. 解析Undo数据信息 */
-        ret = crwl_task_parse(r->str, task);
-        if (CRWL_OK != ret)
+        if (crwl_task_parse(r->str, task))
         {
             log_error(ctx->log, "Parse task string failed! %s", r->str);
 
@@ -309,8 +308,7 @@ static int crwl_sched_fetch_undo_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
         }
 
         /* 4. 放入Worker任务队列 */
-        ret = lqueue_push(&worker[sched->last_idx].undo_taskq, addr);
-        if (CRWL_OK != ret)
+        if (lqueue_push(&worker[sched->last_idx].undo_taskq, addr))
         {
             log_error(ctx->log, "Push into worker queue failed!");
 

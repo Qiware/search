@@ -33,7 +33,7 @@
  ******************************************************************************/
 int unix_udp_creat(const char *path)
 {
-    int fd = -1, len = 0, ret = 0;
+    int fd, len;
     struct sockaddr_un svraddr;
 
     memset(&svraddr, 0, sizeof(svraddr));
@@ -55,8 +55,7 @@ int unix_udp_creat(const char *path)
     
     len = strlen(svraddr.sun_path) + sizeof(svraddr.sun_family);
 
-    ret = bind(fd, (struct sockaddr *)&svraddr, len);
-    if (ret<0)
+    if (bind(fd, (struct sockaddr *)&svraddr, len) < 0)
     {
         return -1;
     }

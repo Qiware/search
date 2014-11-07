@@ -32,7 +32,6 @@ static int crwl_conf_load_parser(xml_tree_t *xml, crwl_parser_conf_t *conf, log_
  ******************************************************************************/
 crwl_conf_t *crwl_conf_creat(const char *path, log_cycle_t *log)
 {
-    int ret;
     xml_tree_t *xml;
     crwl_conf_t *conf;
     mem_pool_t *mem_pool;
@@ -66,32 +65,28 @@ crwl_conf_t *crwl_conf_creat(const char *path, log_cycle_t *log)
         }
 
         /* 3. 加载通用配置 */
-        ret = crwl_conf_load_comm(xml, conf, log);
-        if (CRWL_OK != ret)
+        if (crwl_conf_load_comm(xml, conf, log))
         {
             log_error(log, "Load common conf failed! path:%s", path);
             break;
         }
 
         /* 4. 提取爬虫配置 */
-        ret = crwl_conf_load_worker(xml, &conf->worker, log);
-        if (0 != ret)
+        if (crwl_conf_load_worker(xml, &conf->worker, log))
         {
             log_error(log, "Parse worker configuration failed! path:%s", path);
             break;
         }
 
         /* 5. 提取解析配置 */
-        ret = crwl_conf_load_parser(xml, &conf->parser, log);
-        if (0 != ret)
+        if (crwl_conf_load_parser(xml, &conf->parser, log))
         {
             log_error(log, "Parse worker configuration failed! path:%s", path);
             break;
         }
 
         /* 6. 加载种子配置 */
-        ret = crwl_conf_load_seed(xml, conf, log);
-        if (CRWL_OK != ret)
+        if (crwl_conf_load_seed(xml, conf, log))
         {
             log_error(log, "Load seed conf failed! path:%s", path);
             break;
@@ -127,7 +122,6 @@ crwl_conf_t *crwl_conf_creat(const char *path, log_cycle_t *log)
  ******************************************************************************/
 static int crwl_conf_load_comm(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
 {
-    int ret;
     xml_node_t *node, *fix;
 
     /* 1. 定位LOG标签
@@ -186,8 +180,7 @@ static int crwl_conf_load_comm(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *
     snprintf(conf->download.path, sizeof(conf->download.path), "%s", node->value);
 
     /* 3. 获取Redis配置信息 */
-    ret = crwl_conf_load_redis(xml, conf, log);
-    if (CRWL_OK != ret)
+    if (crwl_conf_load_redis(xml, conf, log))
     {
         log_error(log, "Get redis configuration failed!");
         return CRWL_ERR;

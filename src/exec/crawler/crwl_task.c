@@ -38,7 +38,7 @@
 int crwl_task_down_webpage_by_uri(
         crwl_worker_t *worker, const crwl_task_down_webpage_by_uri_t *args)
 {
-    int ret, fd, ip_idx;
+    int fd, ip_idx;
     uri_field_t field;
     crwl_domain_t *domain;
     crwl_worker_socket_t *sck;
@@ -94,8 +94,7 @@ int crwl_task_down_webpage_by_uri(
     sck->webpage.port = args->port;
     sck->webpage.depth = args->depth;
 
-    ret = crwl_worker_add_sock(worker, sck);
-    if (CRWL_OK != ret)
+    if (crwl_worker_add_sock(worker, sck))
     {
         log_error(worker->log, "Add socket into list failed!");
         eslab_dealloc(&worker->slab, sck);
@@ -103,8 +102,7 @@ int crwl_task_down_webpage_by_uri(
     }
 
     /* 4. 添加HTTP GET请求 */
-    ret = crwl_worker_add_http_get_req(worker, sck, args->uri);
-    if (CRWL_OK != ret)
+    if (crwl_worker_add_http_get_req(worker, sck, args->uri))
     {
         log_error(worker->log, "Add http get request failed!");
 
@@ -113,8 +111,7 @@ int crwl_task_down_webpage_by_uri(
     }
 
     /* 5. 新建存储文件 */
-    ret = crwl_worker_webpage_creat(worker, sck);
-    if (CRWL_OK != ret)
+    if (crwl_worker_webpage_creat(worker, sck))
     {
         log_error(worker->log, "Save webpage failed!");
 
@@ -142,7 +139,7 @@ int crwl_task_down_webpage_by_uri(
 int crwl_task_down_webpage_by_ip(
         crwl_worker_t *worker, const crwl_task_down_webpage_by_ip_t *args)
 {
-    int ret, fd;
+    int fd;
     crwl_worker_socket_t *sck;
 
     /* 暂不支持IPV6 */
@@ -174,8 +171,7 @@ int crwl_task_down_webpage_by_ip(
     snprintf(sck->webpage.ip, sizeof(sck->webpage.ip), "%s", args->ip);
     sck->webpage.port = args->port;
 
-    ret = crwl_worker_add_sock(worker, sck);
-    if (CRWL_OK != ret)
+    if (crwl_worker_add_sock(worker, sck))
     {
         log_error(worker->log, "Add socket into list failed!");
         Close(sck->sckid);

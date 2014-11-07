@@ -124,7 +124,6 @@ int crwl_usage(const char *exec)
  ******************************************************************************/
 crwl_cntx_t *crwl_cntx_init(const char *path, log_cycle_t *log)
 {
-    int ret;
     crwl_cntx_t *ctx;
 
     /* 1. 判断程序是否已运行 */
@@ -168,8 +167,7 @@ crwl_cntx_t *crwl_cntx_init(const char *path, log_cycle_t *log)
     limit_file_num(4096);
 
     /* 5. 创建Worker线程池 */
-    ret = crwl_init_workers(ctx);
-    if (CRWL_OK != ret)
+    if (crwl_init_workers(ctx))
     {
         crwl_conf_destroy(ctx->conf);
         free(ctx);
@@ -193,7 +191,7 @@ crwl_cntx_t *crwl_cntx_init(const char *path, log_cycle_t *log)
  ******************************************************************************/
 int crwl_cntx_startup(crwl_cntx_t *ctx)
 {
-    int ret, idx;
+    int idx;
     pthread_t tid;
     const crwl_conf_t *conf = ctx->conf;
 
@@ -204,8 +202,7 @@ int crwl_cntx_startup(crwl_cntx_t *ctx)
     }
     
     /* 2. 设置Sched线程回调 */
-    ret = thread_creat(&tid, crwl_sched_routine, ctx);
-    if (CRWL_OK != ret)
+    if (thread_creat(&tid, crwl_sched_routine, ctx))
     {
         log_error(ctx->log, "Create thread failed!");
         return CRWL_ERR;
@@ -227,7 +224,7 @@ int crwl_cntx_startup(crwl_cntx_t *ctx)
  ******************************************************************************/
 static int crwl_init_workers(crwl_cntx_t *ctx)
 {
-    int idx, ret, num;
+    int idx, num;
     crwl_worker_t *worker;
     const crwl_worker_conf_t *conf = &ctx->conf->worker;
 
@@ -256,8 +253,7 @@ static int crwl_init_workers(crwl_cntx_t *ctx)
 
         worker->tidx = idx;
 
-        ret = crwl_worker_init(ctx, worker);
-        if (CRWL_OK != ret)
+        if (crwl_worker_init(ctx, worker))
         {
             log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
             break;
@@ -460,14 +456,12 @@ CRWL_FETCH_IP_BY_DOMAIN:
  ******************************************************************************/
 log_cycle_t *crwl_init_log(char *proc)
 {
-    int ret;
     log_cycle_t *log;
     char path[FILE_NAME_MAX_LEN];
 
     log2_get_path(path, sizeof(path), basename(proc));
 
-    ret = log2_init(LOG_LEVEL_ERROR, path);
-    if (0 != ret)
+    if (log2_init(LOG_LEVEL_ERROR, path))
     {
         fprintf(stderr, "Init log2 failed!");
         return NULL;

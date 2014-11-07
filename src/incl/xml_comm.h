@@ -99,6 +99,7 @@ typedef enum
     , XML_ERR_PTR_NULL          /* 空指针 */
     , XML_ERR_EMPTY_TREE        /* 空树 */
     , XML_ERR_FOPEN             /* fopen失败 */
+    , XML_ERR_PTR               /* 指针错误 */
 } xml_err_e;
 
 #if defined(__XML_ESC_PARSE__)

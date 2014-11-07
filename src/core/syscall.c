@@ -302,35 +302,6 @@ int proc_is_exist(pid_t pid)
     return (0 == access(fname, 0));
 }
 
-/******************************************************************************
- **函数名称: Rename
- **功    能: 重命名文件
- **输入参数: 
- **     oldpath: 原文件名
- **     newpath: 新文件名
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2013.10.31 #
- ******************************************************************************/
-int Rename(const char *oldpath, const char *newpath)
-{
-    int ret;
-
-AGAIN:
-    ret = rename(oldpath, newpath);
-    if(ret < 0)
-    {
-        if(EINTR == errno)
-        {
-            goto AGAIN;
-        }
-        return -1;
-    }
-    return 0;
-}
-
 #if (HAVE_POSIX_MEMALIGN)
 /******************************************************************************
  **函数名称: memalign_alloc

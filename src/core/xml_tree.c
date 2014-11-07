@@ -196,9 +196,8 @@ xml_tree_t *xml_screat_ext(const char *str, int length)
  ******************************************************************************/
 xml_tree_t *xml_screat(const char *str)
 {
-    int ret = 0;
     Stack_t stack;
-    xml_tree_t *xml = NULL;
+    xml_tree_t *xml;
 
     if ((NULL == str)
         || ('\0' == str[0]))
@@ -209,35 +208,35 @@ xml_tree_t *xml_screat(const char *str)
     do
     {
         /* 1. 初始化栈 */
-        ret = stack_init(&stack, XML_MAX_DEPTH);
-        if (XML_OK != ret)
+        if (stack_init(&stack, XML_MAX_DEPTH))
         {
             log2_error("Init xml stack failed!");
             break;
         }
 
         /* 2. 初始化XML树 */
-        ret = xml_init(&xml);
-        if (XML_OK != ret)
+        if (xml_init(&xml))
         {   
             log2_error("Init xml tree failed!");
             break;
         }
 
         /* 3. 解析XML文件缓存 */
-        ret = xml_parse(xml, &stack, str);
-        if (XML_OK != ret)
+        if (xml_parse(xml, &stack, str))
         {
             log2_error("Parse xml failed!");
             xml_destroy(xml);
             break;
         }
+
+        stack_destroy(&stack);
+        return xml;
     }while (0);
 
     /* 4. 释放内存空间 */
     stack_destroy(&stack);
     
-    return xml;
+    return NULL;
 }
 
 #if !defined(__XML_MEM_POOL__)
@@ -278,7 +277,6 @@ xml_tree_t *xml_screat(const char *str)
  ******************************************************************************/
 int xml_node_free(xml_tree_t *xml, xml_node_t *node)
 {
-    int ret = 0;
     Stack_t _stack, *stack = &_stack;
     xml_node_t *current = node,
                *parent = node->parent, *child = NULL;
@@ -286,15 +284,13 @@ int xml_node_free(xml_tree_t *xml, xml_node_t *node)
     /* 1. 将此节点从孩子链表剔除 */
     if ((NULL != parent) && (NULL != current))
     {
-        ret = xml_delete_child(xml, parent, node);
-        if (XML_OK != ret)
+        if (xml_delete_child(xml, parent, node))
         {
-            return ret;
+            return XML_ERR;
         }
     }
 
-    ret = stack_init(stack, XML_MAX_DEPTH);
-    if (XML_OK != ret)
+    if (stack_init(stack, XML_MAX_DEPTH))
     {
         log2_error("Init stack failed!");
         return XML_ERR_STACK;
@@ -304,8 +300,7 @@ int xml_node_free(xml_tree_t *xml, xml_node_t *node)
     {
         /* 1. 节点入栈 */
         current->temp = current->firstchild;
-        ret = stack_push(stack, current);
-        if (XML_OK != ret)
+        if (stack_push(stack, current))
         {
             stack_destroy(stack);
             log2_error("Push stack failed!");
@@ -314,7 +309,6 @@ int xml_node_free(xml_tree_t *xml, xml_node_t *node)
 
         /* 2. 释放属性节点: 让孩子指针指向真正的孩子节点 */
         xml_attr_free(current, child);
-
 
         /* 3. 选择下一个处理的节点: 从父亲节点、兄弟节点、孩子节点中 */
         current = xml_free_next(xml, stack, current); 
@@ -347,7 +341,6 @@ int xml_node_free(xml_tree_t *xml, xml_node_t *node)
  ******************************************************************************/
 int xml_fprint(xml_tree_t *xml, FILE *fp)
 {
-    int ret = 0;
     Stack_t stack;
     xml_node_t *child = xml->root->firstchild;
 
@@ -357,8 +350,7 @@ int xml_fprint(xml_tree_t *xml, FILE *fp)
         return XML_ERR_EMPTY_TREE;
     }
     
-    ret = stack_init(&stack, XML_MAX_DEPTH);
-    if (XML_OK != ret)
+    if (stack_init(&stack, XML_MAX_DEPTH))
     {
         log2_error("Stack init failed!");
         return XML_ERR_STACK;
@@ -366,12 +358,11 @@ int xml_fprint(xml_tree_t *xml, FILE *fp)
 
     while (NULL != child)
     {
-        ret = xml_fprint_tree(xml, child, &stack, fp);
-        if (XML_OK != ret)
+        if (xml_fprint_tree(xml, child, &stack, fp))
         {
             log2_error("fPrint tree failed!");
             stack_destroy(&stack);
-            return ret;
+            return XML_ERR;
         }
         child = child->next;
     }
@@ -394,7 +385,6 @@ int xml_fprint(xml_tree_t *xml, FILE *fp)
  ******************************************************************************/
 int xml_fwrite(xml_tree_t *xml, const char *fname)
 {
-    int ret = 0;
     Stack_t stack;
     FILE *fp = NULL;
     xml_node_t *child = xml->root->firstchild;
@@ -412,8 +402,7 @@ int xml_fwrite(xml_tree_t *xml, const char *fname)
         return XML_ERR_FOPEN;
     }
     
-    ret = stack_init(&stack, XML_MAX_DEPTH);
-    if (XML_OK != ret)
+    if (stack_init(&stack, XML_MAX_DEPTH))
     {
         fclose(fp), fp = NULL;
         log2_error("Stack init failed!");
@@ -422,13 +411,12 @@ int xml_fwrite(xml_tree_t *xml, const char *fname)
 
     while (NULL != child)
     {
-        ret = xml_fprint_tree(xml, child, &stack, fp);
-        if (XML_OK != ret)
+        if (xml_fprint_tree(xml, child, &stack, fp))
         {
             log2_error("fPrint tree failed!");
             fclose(fp), fp = NULL;
             stack_destroy(&stack);
-            return ret;
+            return XML_ERR;
         }
         child = child->next;
     }
@@ -452,7 +440,6 @@ int xml_fwrite(xml_tree_t *xml, const char *fname)
  ******************************************************************************/
 int xml_sprint(xml_tree_t *xml, char *str)
 {
-    int ret = 0;
     sprint_t sp;
     Stack_t stack;
     xml_node_t *child = xml->root->firstchild;
@@ -464,8 +451,7 @@ int xml_sprint(xml_tree_t *xml, char *str)
 
     sprint_init(&sp, str);
     
-    ret = stack_init(&stack, XML_MAX_DEPTH);
-    if (XML_OK != ret)
+    if (stack_init(&stack, XML_MAX_DEPTH))
     {
         log2_error("Stack init failed!");
         return XML_ERR_STACK;
@@ -473,12 +459,11 @@ int xml_sprint(xml_tree_t *xml, char *str)
 
     while (NULL != child)
     {
-        ret = xml_sprint_tree(xml, child, &stack, &sp);
-        if (XML_OK != ret)
+        if (xml_sprint_tree(xml, child, &stack, &sp))
         {
             log2_error("Sprint tree failed!");
             stack_destroy(&stack);
-            return ret;
+            return XML_ERR;
         }
         child = child->next;
     }
@@ -501,7 +486,6 @@ int xml_sprint(xml_tree_t *xml, char *str)
  ******************************************************************************/
 extern int xml_spack(xml_tree_t *xml, char *str)
 {
-    int ret = 0;
     sprint_t sp;
     Stack_t stack;
     xml_node_t *child = xml->root->firstchild;
@@ -513,8 +497,7 @@ extern int xml_spack(xml_tree_t *xml, char *str)
 
     sprint_init(&sp, str);
     
-    ret = stack_init(&stack, XML_MAX_DEPTH);
-    if (XML_OK != ret)
+    if (stack_init(&stack, XML_MAX_DEPTH))
     {
         log2_error("Stack init failed!");
         return XML_ERR_STACK;
@@ -522,12 +505,11 @@ extern int xml_spack(xml_tree_t *xml, char *str)
 
     while (NULL != child)
     {
-        ret = xml_pack_tree(xml, child, &stack, &sp);
-        if (XML_OK != ret)
+        if (xml_pack_tree(xml, child, &stack, &sp))
         {
             log2_error("Sprint tree failed!");
             stack_destroy(&stack);
-            return ret;
+            return XML_ERR;
         }
         child = child->next;
     }
@@ -817,7 +799,7 @@ xml_node_t *xml_add_node(
  ******************************************************************************/
 int xml_node_length(xml_tree_t *xml, xml_node_t *node)
 {
-    int ret=0, length=0;
+    int length = 0;
     Stack_t stack;
     
     if (NULL == node)
@@ -826,8 +808,7 @@ int xml_node_length(xml_tree_t *xml, xml_node_t *node)
         return 0;
     }
     
-    ret = stack_init(&stack, XML_MAX_DEPTH);
-    if (XML_OK != ret)
+    if (stack_init(&stack, XML_MAX_DEPTH))
     {
         log2_error("Stack init failed!");
         return -1;
@@ -925,7 +906,7 @@ int xml_set_value(xml_tree_t *xml, xml_node_t *node, const char *value)
  ******************************************************************************/
 int _xml_pack_length(xml_tree_t *xml, xml_node_t *node)
 {
-    int ret = 0, length = 0, length2 = 0;
+    int length = 0, length2 = 0;
     Stack_t stack;
     xml_node_t *child = NULL;
     
@@ -935,8 +916,7 @@ int _xml_pack_length(xml_tree_t *xml, xml_node_t *node)
         return 0;
     }
     
-    ret = stack_init(&stack, XML_MAX_DEPTH);
-    if (XML_OK != ret)
+    if (stack_init(&stack, XML_MAX_DEPTH))
     {
         log2_error("Stack init failed!");
         return -1;
@@ -1003,13 +983,11 @@ int _xml_pack_length(xml_tree_t *xml, xml_node_t *node)
  ******************************************************************************/
 int xml_delete_empty(xml_tree_t *xml)
 {
-    int ret = -1;
     xml_node_t *node = NULL;
     Stack_t _stack, *stack = &_stack;
 
 
-    ret = stack_init(stack, XML_MAX_DEPTH);
-    if (0 != ret)
+    if (stack_init(stack, XML_MAX_DEPTH))
     {
         log2_error("Init stack failed!");
         return XML_ERR_STACK;
@@ -1034,8 +1012,7 @@ int xml_delete_empty(xml_tree_t *xml)
         /* 2. 此节点有孩子节点: 入栈, 并处理其孩子节点 */
         else if (xml_has_child(node))
         {
-            ret = stack_push(stack, node);
-            if (0 != ret)
+            if (stack_push(stack, node))
             {
                 log2_error("Push failed!");
                 return XML_ERR_STACK;

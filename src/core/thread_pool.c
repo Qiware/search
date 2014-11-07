@@ -38,7 +38,7 @@ static void *thread_routine(void *arg);
  ******************************************************************************/
 thread_pool_t *thread_pool_init(int num)
 {
-    int idx, ret;
+    int idx;
     thread_pool_t *tp;
 
     /* 1. 分配线程池空间, 并初始化 */
@@ -53,8 +53,7 @@ thread_pool_t *thread_pool_init(int num)
     tp->head = NULL;
     tp->queue_size = 0;
     tp->shutdown = 0;
-    ret = eslab_init(&tp->eslab, 16*KB);
-    if (0 != ret)
+    if (eslab_init(&tp->eslab, 16*KB))
     {
         free(tp);
         return NULL;
@@ -71,9 +70,7 @@ thread_pool_t *thread_pool_init(int num)
     /* 2. 创建指定数目的线程 */
     for (idx=0; idx<num; idx++)
     {
-        
-        ret = thread_creat(&tp->tid[idx], thread_routine, tp);
-        if (0 != ret)
+        if (thread_creat(&tp->tid[idx], thread_routine, tp))
         {
             thread_pool_destroy(tp);
             return NULL;
@@ -159,15 +156,13 @@ int thread_pool_add_worker(thread_pool_t *tp, void *(*process)(void *arg), void 
  ******************************************************************************/
 int thread_pool_keepalive(thread_pool_t *tp)
 {
-    int idx, ret;
+    int idx;
 
      for (idx=0; idx<tp->num; idx++)
     {
-        ret = pthread_kill(tp->tid[idx], 0);
-        if (ESRCH == ret)
+        if (ESRCH == pthread_kill(tp->tid[idx], 0))
         {
-            ret = thread_creat(&tp->tid[idx], thread_routine, tp);
-            if (ret < 0)
+            if (thread_creat(&tp->tid[idx], thread_routine, tp) < 0)
             {
                 return -1;
             }
@@ -194,15 +189,13 @@ int thread_pool_keepalive(thread_pool_t *tp)
  ******************************************************************************/
 int thread_pool_keepalive_ext(thread_pool_t *tp, void *(*process)(void *arg), void *arg)
 {
-    int idx, ret;
+    int idx;
 
      for (idx=0; idx<tp->num; idx++)
     {
-        ret = pthread_kill(tp->tid[idx], 0);
-        if (ESRCH == ret)
+        if (ESRCH == pthread_kill(tp->tid[idx], 0))
         {
-            ret = thread_creat(&tp->tid[idx], thread_routine, tp);
-            if (ret < 0)
+            if (thread_creat(&tp->tid[idx], thread_routine, tp) < 0)
             {
                 return -1;
             }
@@ -258,7 +251,7 @@ int thread_pool_get_tidx(thread_pool_t *tp)
  ******************************************************************************/
 int thread_pool_destroy(thread_pool_t *tp)
 {
-    int idx = 0, ret;
+    int idx;
 
     if (0 != tp->shutdown)
     {
@@ -272,10 +265,10 @@ int thread_pool_destroy(thread_pool_t *tp)
     pthread_cond_broadcast(&(tp->queue_ready));
 
     /* 3. 等待线程结束 */
+    idx = 0;
     while (idx < tp->num)
     {
-        ret = pthread_kill(tp->tid[idx], 0);
-        if (ESRCH == ret)
+        if (ESRCH == pthread_kill(tp->tid[idx], 0))
         {
             idx++;
             continue;
@@ -405,27 +398,30 @@ static void *thread_routine(void *_tp)
  ******************************************************************************/
 int thread_creat(pthread_t *tid, void *(*process)(void *args), void *args)
 {
-    int ret;
     pthread_attr_t attr;
 
     for (;;)
     {
-        ret = pthread_attr_init(&attr);
-        if (0 != ret)
+        /* 属性初始化 */
+        if (pthread_attr_init(&attr))
         {
             break;
         }
 
-        ret = pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-        if (0 != ret)
+        /* 设置为分离线程 */
+        if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
         {
             break;
         }
 
-        ret = pthread_attr_setstacksize(&attr, THREAD_ATTR_STACK_SIZE);
+        /* 设置线程栈大小 */
+        if (pthread_attr_setstacksize(&attr, THREAD_ATTR_STACK_SIZE))
+        {
+            break;
+        }
 
-        ret = pthread_create(tid, &attr, process, args);
-        if (0 != ret)
+        /* 创建线程 */
+        if (pthread_create(tid, &attr, process, args))
         {
             if (EINTR == errno)
             {
@@ -436,9 +432,10 @@ int thread_creat(pthread_t *tid, void *(*process)(void *args), void *args)
             break;
         }
 
-        break;
+        pthread_attr_destroy(&attr);
+        return 0;
     }
 
     pthread_attr_destroy(&attr);
-    return ret;
+    return -1;
 }
