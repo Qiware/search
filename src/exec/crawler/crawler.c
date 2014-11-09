@@ -70,7 +70,7 @@ int main(int argc, char *argv[])
     daemon(1, 0);
 
     /* 3. 初始化全局信息 */
-    ctx = crwl_cntx_init(opt.conf_path, log);
+    ctx = crwl_init(opt.conf_path, log);
     if (NULL == ctx)
     {
         log_error(log, "Initialize crawler failed!");
@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
     }
 
     /* 4. 启动爬虫服务 */
-    ret = crwl_cntx_startup(ctx);
+    ret = crwl_startup(ctx);
     if (CRWL_OK != ret)
     {
         log_error(log, "Startup crawler failed!");

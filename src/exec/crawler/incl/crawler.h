@@ -109,15 +109,15 @@ typedef struct
     int length;                             /* 数据长度(报头+报体) */
 } crwl_data_info_t;
 
-/* 域名信息 */
+/* 域名IP映射信息 */
 typedef struct
 {
     char host[URI_MAX_LEN];                 /* Host信息(域名) */
 
-#define CRWL_IP_MAX_NUM  (10)
+#define CRWL_IP_MAX_NUM  (8)
     char ip[CRWL_IP_MAX_NUM][IP_ADDR_MAX_LEN];  /* 域名对应的IP地址 */
     int ip_num;                             /* IP地址数 */
-} crwl_domain_t;
+} crwl_domain_ip_map_t;
 
 /* 输入参数信息 */
 typedef struct
@@ -132,7 +132,7 @@ typedef struct
     log_cycle_t *log;                       /* 日志对象 */
 
     thread_pool_t *workers;                 /* 线程池对象 */
-    hash_tab_t *domain;                     /* 域名表: 通过域名找到IP地址 */
+    hash_tab_t *domain_ip_map;              /* 域名IP映射表: 通过域名找到IP地址 */
 } crwl_cntx_t;
 
 /* 对外接口 */
@@ -141,9 +141,9 @@ int crwl_usage(const char *exec);
 int crwl_proc_lock(void);
 
 log_cycle_t *crwl_init_log(char *fname);
-crwl_cntx_t *crwl_cntx_init(const char *path, log_cycle_t *log);
-int crwl_cntx_startup(crwl_cntx_t *ctx);
+crwl_cntx_t *crwl_init(const char *path, log_cycle_t *log);
+int crwl_startup(crwl_cntx_t *ctx);
 
-crwl_domain_t *crwl_get_ip_by_domain(crwl_cntx_t *ctx, char *host);
+crwl_domain_ip_map_t *crwl_get_ip_by_domain(crwl_cntx_t *ctx, char *host);
 
 #endif /*__CRAWLER_H__*/

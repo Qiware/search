@@ -101,17 +101,15 @@ hash_tab_t *hash_tab_init(int num, avl_key_cb_t key_cb, avl_cmp_cb_t cmp_cb)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
-int hash_tab_insert(hash_tab_t *hash, const avl_unique_t *unique, void *data)
+int hash_tab_insert(hash_tab_t *hash, void *uk, int uk_len, void *data)
 {
     int ret;
-    uint32_t key, idx;
+    uint32_t idx;
 
-    key = hash->key_cb(unique->data, unique->len);
-
-    idx = key % hash->num;
+    idx = hash->key_cb(uk, uk_len) % hash->num;
 
     pthread_rwlock_wrlock(&hash->lock[idx]);
-    ret = avl_insert(hash->tree[idx], unique, data);
+    ret = avl_insert(hash->tree[idx], uk, uk_len, data);
     pthread_rwlock_unlock(&hash->lock[idx]);
 
     return ret;
@@ -129,17 +127,16 @@ int hash_tab_insert(hash_tab_t *hash, const avl_unique_t *unique, void *data)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
-void *hash_tab_search(hash_tab_t *hash, const avl_unique_t *unique)
+void *hash_tab_search(hash_tab_t *hash, void *uk, int uk_len)
 {
-    uint32_t key, idx;
+    uint32_t idx;
     avl_node_t *node;
 
-    key = hash->key_cb(unique->data, unique->len);
 
-    idx = key % hash->num;
+    idx = hash->key_cb(uk, uk_len) % hash->num;
 
     pthread_rwlock_rdlock(&hash->lock[idx]);
-    node = avl_search(hash->tree[idx], unique);
+    node = avl_search(hash->tree[idx], uk, uk_len);
     pthread_rwlock_unlock(&hash->lock[idx]);
     if (NULL == node)
     {
@@ -162,17 +159,16 @@ void *hash_tab_search(hash_tab_t *hash, const avl_unique_t *unique)
  **     注意: 返回地址的内存空间由外部释放
  **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
-void *hash_tab_delete(hash_tab_t *hash, const avl_unique_t *unique)
+void *hash_tab_delete(hash_tab_t *hash, void *uk, int uk_len)
 {
     void *data;
-    uint32_t key, idx;
+    uint32_t idx;
 
-    key = hash->key_cb(unique->data, unique->len);
 
-    idx = key % hash->num;
+    idx = hash->key_cb(uk, uk_len) % hash->num;
 
     pthread_rwlock_wrlock(&hash->lock[idx]);
-    avl_delete(hash->tree[idx], unique, &data);
+    avl_delete(hash->tree[idx], uk, uk_len, &data);
     pthread_rwlock_unlock(&hash->lock[idx]);
 
     return data;

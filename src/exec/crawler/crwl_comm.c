@@ -33,6 +33,7 @@
 
 static int crwl_init_workers(crwl_cntx_t *ctx);
 int crwl_workers_destroy(crwl_cntx_t *ctx);
+static int crwl_domain_cmp(const void *ukey, const void *data);
 
 /******************************************************************************
  **函数名称: crwl_getopt 
@@ -48,8 +49,6 @@ int crwl_workers_destroy(crwl_cntx_t *ctx);
  **     2. 验证输入参数
  **注意事项: 
  **     c: 配置文件路径
- **     l: 日志级别
- **     d: 后台运行
  **     h: 帮助手册
  **作    者: # Qifeng.zou # 2014.09.05 #
  ******************************************************************************/
@@ -58,18 +57,16 @@ int crwl_getopt(int argc, char **argv, crwl_opt_t *opt)
     int ch;
 
     /* 1. 解析输入参数 */
-    while (-1 != (ch = getopt(argc, argv, "c:l:dh")))
+    while (-1 != (ch = getopt(argc, argv, "c:h")))
     {
         switch (ch)
         {
             case 'c':   /* 指定配置文件 */
-            case 'C':
             {
                 snprintf(opt->conf_path, sizeof(opt->conf_path), "%s", optarg);
                 break;
             }
             case 'h':   /* 显示帮助信息 */
-            case 'H':
             default:
             {
                 return CRWL_SHOW_HELP;
@@ -109,7 +106,7 @@ int crwl_usage(const char *exec)
 }
 
 /******************************************************************************
- **函数名称: crwl_cntx_init
+ **函数名称: crwl_init
  **功    能: 初始化全局信息
  **输入参数: 
  **     path: 配置文件路径
@@ -120,7 +117,7 @@ int crwl_usage(const char *exec)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.04 #
  ******************************************************************************/
-crwl_cntx_t *crwl_cntx_init(const char *path, log_cycle_t *log)
+crwl_cntx_t *crwl_init(const char *path, log_cycle_t *log)
 {
     crwl_cntx_t *ctx;
 
@@ -152,9 +149,9 @@ crwl_cntx_t *crwl_cntx_init(const char *path, log_cycle_t *log)
     log_set_level(log, ctx->conf->log.level);
     log2_set_level(ctx->conf->log.level2);
 
-    /* 4. 新建域名表 */
-    ctx->domain = hash_tab_init(CRWL_DOMAIN_SLOT_LEN, hash_time33_ex, NULL);
-    if (NULL == ctx->domain)
+    /* 4. 新建域名IP映射表 */
+    ctx->domain_ip_map = hash_tab_init(CRWL_DOMAIN_SLOT_LEN, hash_time33_ex, crwl_domain_cmp);
+    if (NULL == ctx->domain_ip_map)
     {
         crwl_conf_destroy(ctx->conf);
         free(ctx);
@@ -177,17 +174,18 @@ crwl_cntx_t *crwl_cntx_init(const char *path, log_cycle_t *log)
 }
 
 /******************************************************************************
- **函数名称: crwl_cntx_startup
+ **函数名称: crwl_startup
  **功    能: 启动爬虫服务
  **输入参数: 
  **     ctx: 全局信息
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
+ **     设置线程回调
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.04 #
  ******************************************************************************/
-int crwl_cntx_startup(crwl_cntx_t *ctx)
+int crwl_startup(crwl_cntx_t *ctx)
 {
     int idx;
     pthread_t tid;
@@ -357,26 +355,22 @@ int crwl_proc_lock(void)
  **     ctx: 全局信息
  **     host: 域名
  **输出参数: NONE
- **返    回: 获取域名对应的地址信息
+ **返    回: 域名IP映射信息
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.21 #
  ******************************************************************************/
-crwl_domain_t *crwl_get_ip_by_domain(crwl_cntx_t *ctx, char *host)
+crwl_domain_ip_map_t *crwl_get_ip_by_domain(crwl_cntx_t *ctx, char *host)
 {
     int ret;
-    avl_unique_t unique;
-    crwl_domain_t *domain;
+    crwl_domain_ip_map_t *map;
     struct sockaddr_in *sockaddr;
     struct addrinfo *addrinfo, *curr;
 
-    unique.data = host;
-    unique.len = strlen(host);
-
 CRWL_FETCH_IP_BY_DOMAIN:
     /* 1. 从域名表中查找IP地址 */
-    domain = hash_tab_search(ctx->domain, &unique);
-    if (NULL == domain)
+    map = hash_tab_search(ctx->domain_ip_map, host, strlen(host));
+    if (NULL == map)
     {
         /* 查找失败则通过getaddrinfo()查询IP地址 */
         if (0 != getaddrinfo(host, NULL, NULL, &addrinfo))
@@ -386,8 +380,8 @@ CRWL_FETCH_IP_BY_DOMAIN:
         }
 
         /* 申请域名信息：此空间插入哈希表中(此处不释放空间) */
-        domain = (crwl_domain_t *)calloc(1, sizeof(crwl_domain_t));
-        if (NULL == domain)
+        map = (crwl_domain_ip_map_t *)calloc(1, sizeof(crwl_domain_ip_map_t));
+        if (NULL == map)
         {
             freeaddrinfo(addrinfo);
 
@@ -395,12 +389,12 @@ CRWL_FETCH_IP_BY_DOMAIN:
             return NULL;
         }
 
-        snprintf(domain->host, sizeof(domain->host), "%s", host);
-        domain->ip_num = 0;
+        snprintf(map->host, sizeof(map->host), "%s", host);
+        map->ip_num = 0;
 
         curr = addrinfo;
         while (NULL != curr
-            && domain->ip_num < CRWL_IP_MAX_NUM)
+            && map->ip_num < CRWL_IP_MAX_NUM)
         {
             sockaddr = (struct sockaddr_in *)curr->ai_addr;
             if (0 == sockaddr->sin_addr.s_addr)
@@ -411,19 +405,19 @@ CRWL_FETCH_IP_BY_DOMAIN:
 
             inet_ntop(AF_INET,
                     &sockaddr->sin_addr.s_addr,
-                    domain->ip[domain->ip_num],
-                    sizeof(domain->ip[domain->ip_num]));
-            ++domain->ip_num;
+                    map->ip[map->ip_num],
+                    sizeof(map->ip[map->ip_num]));
+            ++map->ip_num;
 
             curr = curr->ai_next;
         }
 
         freeaddrinfo(addrinfo);
 
-        ret = hash_tab_insert(ctx->domain, &unique, domain);
+        ret = hash_tab_insert(ctx->domain_ip_map, host, strlen(host), map);
         if (0 != ret)
         {
-            free(domain);
+            free(map);
 
             if (AVL_NODE_EXIST == ret)
             {
@@ -437,7 +431,27 @@ CRWL_FETCH_IP_BY_DOMAIN:
         }
     }
 
-    return domain;
+    return map;
+}
+
+/******************************************************************************
+ **函数名称: crwl_get_ip_by_domain
+ **功    能: 获取域名对应的IP地址
+ **输入参数:
+ **     ctx: 全局信息
+ **     host: 域名
+ **输出参数: NONE
+ **返    回: 获取域名对应的地址信息
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.10.21 #
+ ******************************************************************************/
+static int crwl_domain_cmp(const void *_domain, const void *data)
+{
+    const char *host = (const char *)_domain;
+    const crwl_domain_ip_map_t *map = (const crwl_domain_ip_map_t *)data;
+
+    return strcmp(host, map->host);
 }
 
 /******************************************************************************
