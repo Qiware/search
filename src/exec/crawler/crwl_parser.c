@@ -228,7 +228,7 @@ static int crwl_parser_webpage_info(crwl_webpage_info_t *info)
     /* 2. 提取网页信息 */
     do
     {
-        fix = xml_search(xml, ".INFO");
+        fix = xml_search(xml, ".WPI");
         if (NULL == fix)
         {
             break;

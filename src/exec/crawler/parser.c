@@ -1,7 +1,7 @@
 /******************************************************************************
  ** Coypright(C) 2014-2024 Xundao technology Co., Ltd
  **
- ** 文件名: crwl_parser.c
+ ** 文件名: parser.c
  ** 版本号: 1.0
  ** 描  述: 超链接的提取程序
  **         从爬取的网页中提取超链接
@@ -29,42 +29,55 @@
 
 int main(int argc, char *argv[])
 {
+    crwl_opt_t opt;
     log_cycle_t *log;
     crwl_conf_t *conf;
     crwl_parser_t *parser;
 
+    memset(&opt, 0, sizeof(opt));
+
+    /* 1. 解析输入参数 */
+    if (crwl_getopt(argc, argv, &opt))
+    {
+        return crwl_usage(argv[0]);
+    }
+
     daemon(1, 0);
 
-    /* 1. 初始化日志模块 */
+    /* 2. 初始化日志模块 */
     log = crwl_init_log(argv[0]);
     if (NULL == log)
     {
         return CRWL_ERR;
     }
 
-    /* 2. 加载配置信息 */
-    conf = crwl_conf_creat("../conf/crawler.xml", log);
+    /* 3. 加载配置信息 */
+    conf = crwl_conf_creat(opt.conf_path, log);
     if (NULL == conf)
     {
         log_error(log, "Initialize log failed!");
+
+        log2_destroy();
+        log_destroy(&log);
         return CRWL_ERR;
     }
 
-    /* 3. 初始化Parser对象 */
+    /* 4. 初始化Parser对象 */
     parser = crwl_parser_init(conf, log);
     if (NULL == parser)
     {
         log_error(log, "Init parser failed!");
+
         crwl_conf_destroy(conf);
         log2_destroy();
         log_destroy(&log);
         return CRWL_ERR;
     }
 
-    /* 4. 处理网页信息 */
+    /* 5. 处理网页信息 */
     crwl_parser_work(parser);
 
-    /* 5. 释放GUMBO对象 */
+    /* 6. 释放GUMBO对象 */
     crwl_parser_destroy(parser);
 
     return CRWL_OK;

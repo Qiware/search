@@ -36,7 +36,7 @@ int http_get_request(const char *uri, char *req, int size)
     /* 2. 构建HTTP GET请求 */
     snprintf(req, size,
         "GET %s HTTP/1.1\r\n"
-        "User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:33.0) Gecko/20100101 Firefox/33.0\r\n"
+        "User-Agent: XunDaoCrawler (X11; Ubuntu; Linux x86_64; rv:33.0)\r\n"
         "Host: %s\r\n"
         "Accept: */*\r\n"
         "Accept-Language: zh-cn\r\n"

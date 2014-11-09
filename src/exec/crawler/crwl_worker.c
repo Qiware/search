@@ -1189,14 +1189,7 @@ int crwl_worker_webpage_finfo(crwl_worker_t *worker, crwl_worker_socket_t *sck)
     }
 
     /* 2. 写入校验内容 */
-    fprintf(fp, 
-        "<INFO>\n"
-        "\t<URI DEPTH=\"%d\" IP=\"%s\" PORT=\"%d\">%s</URI>\n"
-        "\t<HTML SIZE=\"%lu\">%s.html</HTML>\n"
-        "</INFO>\n",
-        sck->webpage.depth, sck->webpage.ip,
-        sck->webpage.port, sck->webpage.uri,
-        sck->webpage.size, sck->webpage.fname);
+    crwl_write_webpage_finfo(fp, sck);
 
     fclose(fp);
 

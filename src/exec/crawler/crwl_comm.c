@@ -104,8 +104,6 @@ int crwl_usage(const char *exec)
 {
     printf("\nUsage: %s [-h] [-d] -c <config file> [-l log_level]\n", exec);
     printf("\t-h\tShow help\n"
-           "\t-d\tRun as daemon\n"
-           "\t-l\tSet log level. [trace|debug|info|warn|error|fatal]\n"
            "\t-c\tConfiguration path\n\n");
     return CRWL_OK;
 }
@@ -443,23 +441,23 @@ CRWL_FETCH_IP_BY_DOMAIN:
 }
 
 /******************************************************************************
- **函数名称: crwl_get_ip_by_domain
- **功    能: 获取域名对应的IP地址
+ **函数名称: crwl_init_log
+ **功    能: 初始化日志模块
  **输入参数:
- **     ctx: 全局信息
- **     host: 域名
+ **     fname: 日志文件名
  **输出参数: NONE
  **返    回: 获取域名对应的地址信息
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.21 #
  ******************************************************************************/
-log_cycle_t *crwl_init_log(char *proc)
+log_cycle_t *crwl_init_log(char *fname)
 {
     log_cycle_t *log;
     char path[FILE_NAME_MAX_LEN];
 
-    log2_get_path(path, sizeof(path), basename(proc));
+    /* 1. 初始化系统日志 */
+    log2_get_path(path, sizeof(path), basename(fname));
 
     if (log2_init(LOG_LEVEL_ERROR, path))
     {
@@ -467,7 +465,8 @@ log_cycle_t *crwl_init_log(char *proc)
         return NULL;
     }
 
-    log_get_path(path, sizeof(path), basename(proc));
+    /* 2. 初始化业务日志 */
+    log_get_path(path, sizeof(path), basename(fname));
 
     log = log_init(LOG_LEVEL_ERROR, path);
     if (NULL == log)
