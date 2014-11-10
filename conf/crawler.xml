@@ -10,7 +10,7 @@
         <!-- 爬取配置
              1) DEPTH: 最大爬取深度
              2) PATH: 网页存储路径 -->
-        <DOWNLOAD DEPTH="-1" PATH="../temp/crwl/webpage" />
+        <DOWNLOAD DEPTH="5" PATH="../data/crwl/webpage" />
         <!-- REDIS服务配置
              1) IP: IP地址
              2) PORT: 端口号 -->
@@ -31,14 +31,14 @@
     <!-- 爬虫进程: 负责网页下载
          1) NUM: 线程数 -->
     <WORKER NUM="3">
-        <CONNECTIONS MAX="256" TIMEOUT="15" /> <!-- 爬取网页的并发(连接)数 -->
+        <CONNECTIONS MAX="512" TIMEOUT="15" /> <!-- 爬取网页的并发(连接)数 -->
         <TASKQ COUNT="10000" />         <!-- Undo任务队列配置 -->
     </WORKER>
 
     <!-- 分析进程: 负责对网页的分析(内容分析、URL提取等) -->
     <PARSER>
         <!-- 被解析网页的存储路径 -->
-        <STORE PATH="../temp/parser/webpage" ERR_PATH="../temp/parser/error" />
+        <STORE PATH="../data/parser/webpage" ERR_PATH="../data/parser/error" />
         <DATABASE SERVER="服务名" USER="用户名" PASSWD="密码" />  <!-- 数据库配置 -->
     </PARSER>
 
