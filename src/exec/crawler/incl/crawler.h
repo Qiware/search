@@ -123,6 +123,7 @@ typedef struct
 typedef struct
 {
     char conf_path[FILE_NAME_MAX_LEN];      /* 配置文件路径 */
+    bool isdaemon;                          /* 是否后台运行 */
 }crwl_opt_t;
 
 /* 爬虫全局信息 */

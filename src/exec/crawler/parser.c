@@ -42,7 +42,10 @@ int main(int argc, char *argv[])
         return crwl_usage(argv[0]);
     }
 
-    daemon(1, 0);
+    if (opt.isdaemon)
+    {
+        daemon(1, 0);
+    }
 
     /* 2. 初始化日志模块 */
     log = crwl_init_log(argv[0]);

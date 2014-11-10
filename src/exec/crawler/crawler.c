@@ -60,14 +60,18 @@ int main(int argc, char *argv[])
         return crwl_usage(argv[0]);
     }
 
+    if (opt.isdaemon)
+    {
+        daemon(1, 0);
+    }
+ 
     /* 2. 初始化日志模块 */
     log = crwl_init_log(argv[0]);
     if (NULL == log)
     {
+        fprintf(stderr, "Initialize log failed!");
         return CRWL_ERR;
     }
-
-    daemon(1, 0);
 
     /* 3. 初始化全局信息 */
     ctx = crwl_init(opt.conf_path, log);

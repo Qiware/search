@@ -57,13 +57,18 @@ int crwl_getopt(int argc, char **argv, crwl_opt_t *opt)
     int ch;
 
     /* 1. 解析输入参数 */
-    while (-1 != (ch = getopt(argc, argv, "c:h")))
+    while (-1 != (ch = getopt(argc, argv, "c:hd")))
     {
         switch (ch)
         {
             case 'c':   /* 指定配置文件 */
             {
                 snprintf(opt->conf_path, sizeof(opt->conf_path), "%s", optarg);
+                break;
+            }
+            case 'd':
+            {
+                opt->isdaemon = true;
                 break;
             }
             case 'h':   /* 显示帮助信息 */
