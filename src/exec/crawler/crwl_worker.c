@@ -75,7 +75,6 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker)
         return CRWL_ERR;
     }
 
-#if defined(__EVENT_EPOLL__)
     /* 3. 创建epoll对象 */
     worker->ep_fd = epoll_create(CRWL_EVENT_MAX_NUM);
     if (worker->ep_fd < 0)
@@ -99,7 +98,6 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker)
         log_error(worker->log, "Alloc memory from slab failed!");
         return CRWL_ERR;
     }
-#endif /*__EVENT_EPOLL__*/
 
     return CRWL_OK;
 }
@@ -137,9 +135,7 @@ int crwl_worker_destroy(crwl_worker_t *worker)
 
     lqueue_destroy(&worker->undo_taskq);
 
-#if defined(__EVENT_EPOLL__)
     close(worker->ep_fd);
-#endif /*__EVENT_EPOLL__*/
 
     free(worker);
     return CRWL_OK;
@@ -269,89 +265,6 @@ int crwl_worker_recv_data(crwl_worker_t *worker, crwl_worker_socket_t *sck)
     return CRWL_OK;
 }
 
-#if !defined(__EVENT_EPOLL__)
-/******************************************************************************
- **函数名称: crwl_worker_fdset
- **功    能: 设置读写集合
- **输入参数: 
- **     worker: 爬虫对象
- **输出参数: NONE
- **返    回: 最大的套接字
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.09.23 #
- ******************************************************************************/
-static int crwl_worker_fdset(crwl_worker_t *worker)
-{
-    int max = -1;
-    list_node_t *node;
-    crwl_worker_socket_t *sck;
-
-    node = (list_node_t *)worker->sock_list.head;
-    for (; NULL != node; node = node->next)
-    {
-        sck = (crwl_worker_socket_t *)node->data;
-
-        /* 1. 设置可读集合 */
-        FD_SET(sck->sckid, &worker->rdset);
-
-        /* 2. 设置可写集合
-         *  正在发送数据或发送链表不为空时, 表示有数据需要发送,
-         *  因此, 需要将此套接字加入到可写集合 */
-        if (NULL != sck->send.addr
-            || NULL != sck->send_list.head)
-        {
-            FD_SET(sck->sckid, &worker->wrset);
-        }
-
-        max = (max < sck->sckid)? sck->sckid : max;
-    }
-
-    return max;
-}
-
-/******************************************************************************
- **函数名称: crwl_worker_trav_recv
- **功    能: 遍历接收数据
- **输入参数: 
- **     worker: 爬虫对象
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **     1. 依次遍历套接字, 判断是否可读
- **     2. 如果可读, 则接收数据
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.09.23 #
- ******************************************************************************/
-static int crwl_worker_trav_recv(crwl_worker_t *worker)
-{
-    list_node_t *node, *next;
-    crwl_worker_socket_t *sck;
-
-    /* 1. 依次遍历套接字, 判断是否可读 */
-    node = worker->sock_list.head;
-    for (; NULL != node; node = next)
-    {
-        next = node->next;
-
-        sck = (crwl_worker_socket_t *)node->data;
-        if (NULL == sck)
-        {
-            continue;
-        }
-
-        /* 2. 如果可读, 则接收数据 */
-        if (!FD_ISSET(sck->sckid, &worker->rdset))
-        {
-            continue;
-        }
-
-        sck->recv_cb(worker, sck);
-    }
-
-    return CRWL_OK;
-}
-#else /*__EVENT_EPOLL__*/
 /******************************************************************************
  **函数名称: crwl_worker_trav_recv
  **功    能: 遍历接收数据
@@ -387,7 +300,6 @@ static int crwl_worker_trav_recv(crwl_worker_t *worker)
 
     return CRWL_OK;
 }
-#endif /*__EVENT_EPOLL__*/
 
 /******************************************************************************
  **函数名称: crwl_worker_send_data
@@ -408,9 +320,7 @@ int crwl_worker_send_data(crwl_worker_t *worker, crwl_worker_socket_t *sck)
     int n, left;
     list_node_t *node;
     crwl_data_info_t *info;
-#if defined(__EVENT_EPOLL__)
     struct epoll_event ev;
-#endif /*__EVENT_EPOLL__*/
 
     sck->wrtm = time(NULL);
 
@@ -422,14 +332,12 @@ int crwl_worker_send_data(crwl_worker_t *worker, crwl_worker_socket_t *sck)
             node = list_remove_head(&sck->send_list);
             if (NULL == node)
             {
-            #if defined(__EVENT_EPOLL__)
                 memset(&ev, 0, sizeof(ev));
 
                 ev.data.ptr = sck;
                 ev.events = EPOLLIN | EPOLLET;  /* 边缘触发 */
 
                 epoll_ctl(worker->ep_fd, EPOLL_CTL_MOD, sck->sckid, &ev);    
-            #endif /*__EVENT_EPOLL__*/
 
                 return CRWL_OK;
             }
@@ -478,7 +386,6 @@ int crwl_worker_send_data(crwl_worker_t *worker, crwl_worker_socket_t *sck)
     return CRWL_OK;
 }
 
-#if defined(__EVENT_EPOLL__)
 /******************************************************************************
  **函数名称: crwl_worker_trav_send
  **功    能: 遍历发送数据
@@ -515,52 +422,6 @@ static int crwl_worker_trav_send(crwl_worker_t *worker)
 
     return CRWL_OK;
 }
-#else /*!__EVENT_EPOLL__*/
-/******************************************************************************
- **函数名称: crwl_worker_trav_send
- **功    能: 遍历发送数据
- **输入参数: 
- **     worker: 爬虫对象
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **     1. 依次遍历套接字列表
- **     2. 判断是否可写
- **     3. 发送数据
- **注意事项: 
- **     如果在发送过程中出现异常情况, 发送函数中将会删除该套接字.
- **作    者: # Qifeng.zou # 2014.09.23 #
- ******************************************************************************/
-static int crwl_worker_trav_send(crwl_worker_t *worker)
-{
-    list_node_t *node, *next;
-    crwl_worker_socket_t *sck;
-
-    /* 1. 依次遍历套接字列表 */
-    node = worker->sock_list.head;
-    for (; NULL != node; node = next)
-    {
-        next = node->next;
-
-        sck = (crwl_worker_socket_t *)node->data;
-        if (NULL == sck)
-        {
-            continue;
-        }
-
-        /* 2. 判断是否可写 */
-        if (!FD_ISSET(sck->sckid, &worker->wrset))
-        {
-            continue;
-        }
-        
-        /* 3. 发送数据 */
-        sck->send_cb(worker, sck);
-    }
-
-    return CRWL_OK;
-}
-#endif /*!__EVENT_EPOLL__*/
 
 /******************************************************************************
  **函数名称: crwl_worker_timeout_hdl
@@ -654,7 +515,6 @@ static int crwl_worker_event_hdl(crwl_worker_t *worker)
     return CRWL_OK;
 }
 
-#if defined(__EVENT_EPOLL__)
 /******************************************************************************
  **函数名称: crwl_worker_routine
  **功    能: 运行爬虫线程
@@ -720,87 +580,6 @@ void *crwl_worker_routine(void *_ctx)
     pthread_exit((void *)-1);
     return (void *)-1;
 }
-#else /*!__EVENT_EPOLL__*/
-/******************************************************************************
- **函数名称: crwl_worker_routine
- **功    能: 运行爬虫线程
- **输入参数: 
- **     _ctx: 全局信息
- **输出参数: NONE
- **返    回: VOID *
- **实现描述: 
- **     1. 创建爬虫对象
- **     2. 设置读写集合
- **     3. 等待事件通知
- **     4. 进行事件处理
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.09.23 #
- ******************************************************************************/
-void *crwl_worker_routine(void *_ctx)
-{
-    int ret, max;
-    struct timeval tv;
-    crwl_worker_t *worker;
-    crwl_cntx_t *ctx = (crwl_cntx_t *)_ctx;
-
-    /* 1. 创建爬虫对象 */
-    worker = crwl_worker_get(ctx);
-    if (NULL == worker)
-    {
-        log_error(ctx->log, "Initialize worker failed!");
-        pthread_exit((void *)-1);
-        return (void *)-1;
-    }
-
-    while (1)
-    {
-        /* 2. 获取爬虫任务 */
-        crwl_worker_fetch_task(ctx, worker);
-
-        /* 3. 设置读写集合 */
-        FD_ZERO(&worker->rdset);
-        FD_ZERO(&worker->wrset);
-
-        max = crwl_worker_fdset(worker);
-        if (max < 0)
-        {
-            usleep(500);
-            continue;
-        }
-
-        /* 4. 等待事件通知 */
-        tv.tv_sec = CRWL_TMOUT_SEC;
-        tv.tv_usec = CRWL_TMOUT_USEC;
-
-        ret = select(max+1, &worker->rdset, &worker->wrset, NULL, &tv);
-        if (ret < 0)
-        {
-            if (EINTR == errno)
-            {
-                continue;
-            }
-
-            log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
-
-            crwl_worker_destroy(worker);
-            pthread_exit((void *)-1);
-            return (void *)-1;
-        }
-        else if (0 == ret)
-        {
-            crwl_worker_timeout_hdl(worker);
-            continue;
-        }
-
-        /* 5. 进行事件处理 */
-        crwl_worker_event_hdl(worker);
-    }
-
-    crwl_worker_destroy(worker);
-    pthread_exit((void *)-1);
-    return (void *)-1;
-}
-#endif /*__EVENT_EPOLL__*/
 
 /******************************************************************************
  **函数名称: crwl_worker_add_sock
@@ -817,9 +596,7 @@ void *crwl_worker_routine(void *_ctx)
 int crwl_worker_add_sock(crwl_worker_t *worker, crwl_worker_socket_t *sck)
 {
     list_node_t *node;
-#if defined(__EVENT_EPOLL__)
     struct epoll_event ev;
-#endif /*__EVENT_EPOLL__*/
 
     /* 1. 申请内存空间 */
     node = eslab_alloc(&worker->slab, sizeof(list_node_t));
@@ -843,7 +620,6 @@ int crwl_worker_add_sock(crwl_worker_t *worker, crwl_worker_socket_t *sck)
         return CRWL_ERR;
     }
 
-#if defined(__EVENT_EPOLL__)
     /* 3. 加入epoll监听(首先是发送数据, 所以设置EPOLLOUT) */
     memset(&ev, 0, sizeof(ev));
 
@@ -851,7 +627,6 @@ int crwl_worker_add_sock(crwl_worker_t *worker, crwl_worker_socket_t *sck)
     ev.events = EPOLLOUT | EPOLLET; /* 边缘触发 */
 
     epoll_ctl(worker->ep_fd, EPOLL_CTL_ADD, sck->sckid, &ev);
-#endif /*__EVENT_EPOLL__*/
 
     return CRWL_OK;
 }
@@ -900,18 +675,14 @@ crwl_worker_socket_t *crwl_worker_query_sock(crwl_worker_t *worker, int sckid)
  ******************************************************************************/
 int crwl_worker_remove_sock(crwl_worker_t *worker, crwl_worker_socket_t *sck)
 {
-#if defined(__EVENT_EPOLL__)
     struct epoll_event ev;
-#endif /*__EVENT_EPOLL__*/
     list_node_t *item, *next, *prev;
 
     log_debug(worker->log, "Remove socket! ip:%s port:%d",
             sck->webpage.ip, sck->webpage.port);
 
-#if defined(__EVENT_EPOLL__)
     /* 移除epoll监听 */
     epoll_ctl(worker->ep_fd, EPOLL_CTL_DEL, sck->sckid, &ev);
-#endif /*__EVENT_EPOLL__*/
 
     if (sck->webpage.fp)
     {
