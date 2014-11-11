@@ -32,23 +32,6 @@ typedef struct
     size_t size;                    /* 网页总字节数 */
 } crwl_webpage_t;
 
-/* 网页加载套接字信息 */
-typedef struct
-{
-    int sckid;                      /* 套接字ID */
-    struct timeb crtm;              /* 创建时间 */
-    time_t wrtm;                    /* 最近写入时间 */
-    time_t rdtm;                    /* 最近读取时间 */
-
-    crwl_webpage_t webpage;         /* 网页信息 */
-
-    snap_shot_t read;               /* 读取快照 */
-    snap_shot_t send;               /* 发送快照 */
-
-    char recv[CRWL_RECV_SIZE + 1];  /* 接收缓存 */
-    list_t send_list;               /* 发送链表 */
-} crwl_worker_socket_t;
-
 /* 爬虫对象信息 */
 typedef struct
 {
@@ -76,6 +59,27 @@ typedef struct
     uint64_t down_webpage_total;    /* 下载网页的计数 */
 } crwl_worker_t;
 
+/* 网页加载套接字信息 */
+typedef struct _crwl_worker_socket_t
+{
+    int sckid;                      /* 套接字ID */
+    struct timeb crtm;              /* 创建时间 */
+    time_t wrtm;                    /* 最近写入时间 */
+    time_t rdtm;                    /* 最近读取时间 */
+
+    crwl_webpage_t webpage;         /* 网页信息 */
+
+    snap_shot_t read;               /* 读取快照 */
+    snap_shot_t send;               /* 发送快照 */
+
+    char recv[CRWL_RECV_SIZE + 1];  /* 接收缓存 */
+    list_t send_list;               /* 发送链表 */
+
+    /* 数据接收和发送回调 */
+    int (*recv_cb)(crwl_worker_t *worker, struct _crwl_worker_socket_t *sck);
+    int (*send_cb)(crwl_worker_t *worker, struct _crwl_worker_socket_t *sck);
+} crwl_worker_socket_t;
+
 /* 获取队列剩余空间 */
 #define crwl_worker_undo_taskq_space(worker) queue_space(&(worker)->undo_taskq.queue)
 
@@ -83,6 +87,9 @@ typedef struct
 int crwl_worker_add_sock(crwl_worker_t *worker, crwl_worker_socket_t *sck);
 crwl_worker_socket_t *crwl_worker_query_sock(crwl_worker_t *worker, int sckid);
 int crwl_worker_remove_sock(crwl_worker_t *worker, crwl_worker_socket_t *sck);
+
+int crwl_worker_recv_data(crwl_worker_t *worker, crwl_worker_socket_t *sck);
+int crwl_worker_send_data(crwl_worker_t *worker, crwl_worker_socket_t *sck);
 
 int crwl_worker_add_http_get_req(
         crwl_worker_t *worker, crwl_worker_socket_t *sck, const char *uri);

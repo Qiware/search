@@ -199,7 +199,7 @@ static int crwl_worker_fetch_task(crwl_cntx_t *ctx, crwl_worker_t *worker)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.30 #
  ******************************************************************************/
-static int crwl_worker_recv_data(crwl_worker_t *worker, crwl_worker_socket_t *sck)
+int crwl_worker_recv_data(crwl_worker_t *worker, crwl_worker_socket_t *sck)
 {
     int n, left;
 
@@ -346,7 +346,7 @@ static int crwl_worker_trav_recv(crwl_worker_t *worker)
             continue;
         }
 
-        crwl_worker_recv_data(worker, sck);
+        sck->recv_cb(worker, sck);
     }
 
     return CRWL_OK;
@@ -382,7 +382,7 @@ static int crwl_worker_trav_recv(crwl_worker_t *worker)
         sck = (crwl_worker_socket_t *)worker->events[idx].data.ptr;
         
         /* 接收网络数据 */
-        crwl_worker_recv_data(worker, sck);
+        sck->recv_cb(worker, sck);
     }
 
     return CRWL_OK;
@@ -403,7 +403,7 @@ static int crwl_worker_trav_recv(crwl_worker_t *worker)
  **     发送数据直到出现EAGAIN -- 一次性发送最大量的数据
  **作    者: # Qifeng.zou # 2014.09.24 #
  ******************************************************************************/
-static int crwl_worker_send_data(crwl_worker_t *worker, crwl_worker_socket_t *sck)
+int crwl_worker_send_data(crwl_worker_t *worker, crwl_worker_socket_t *sck)
 {
     int n, left;
     list_node_t *node;
@@ -510,7 +510,7 @@ static int crwl_worker_trav_send(crwl_worker_t *worker)
         sck = (crwl_worker_socket_t *)worker->events[idx].data.ptr;
         
         /* 发送网络数据 */
-        crwl_worker_send_data(worker, sck);
+        sck->send_cb(worker, sck);
     }
 
     return CRWL_OK;
@@ -555,7 +555,7 @@ static int crwl_worker_trav_send(crwl_worker_t *worker)
         }
         
         /* 3. 发送数据 */
-        crwl_worker_send_data(worker, sck);
+        sck->send_cb(worker, sck);
     }
 
     return CRWL_OK;
