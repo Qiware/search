@@ -2,6 +2,7 @@
 #define __CRWL_WORKER_H__
 
 #include <stdint.h>
+#include <sys/epoll.h>    
 
 #include "log.h"
 #include "slab.h"
@@ -12,9 +13,6 @@
 #include "xml_tree.h"
 #include "crwl_task.h"
 #include "thread_pool.h"
-#if defined(__EVENT_EPOLL__)
-#include <sys/epoll.h>    
-#endif /*__EVENT_EPOLL__*/
 
 /* 网页信息 */
 typedef struct
@@ -39,14 +37,9 @@ typedef struct
     crwl_cntx_t *ctx;               /* 全局信息 */
     crwl_worker_conf_t *conf;       /* Worker配置(指向ctx->conf.worker) */
 
-#if defined(__EVENT_EPOLL__)
     int ep_fd;                      /* epoll文件描述符 */
     int ep_fds;                     /* 处于激活状态的套接字数 */
     struct epoll_event *events;     /* Event最大数 */
-#else /*!__EVENT_EPOLL__*/
-    fd_set wrset;                   /* 可写集合 */
-    fd_set rdset;                   /* 可读集合 */
-#endif /*!__EVENT_EPOLL__*/
 
     eslab_pool_t slab;              /* 内存池 */
     log_cycle_t *log;               /* 日志对象 */

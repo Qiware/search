@@ -49,9 +49,7 @@
 #define CRWL_TASK_QUEUE_MAX_NUM     (10000) /* 任务队列单元数 */
 #define CRWL_DEF_CONF_PATH  "../conf/crawler.xml"   /* 默认配置路径 */
 
-#if defined(__EVENT_EPOLL__)
-#define CRWL_EVENT_MAX_NUM          (1024)  /* 事件最大数 */
-#endif /*__EVENT_EPOLL__*/
+#define CRWL_EVENT_MAX_NUM          (2048)  /* 事件最大数 */
 
 #define CRWL_TASK_STR_LEN           (8192)  /* TASK字串最大长度 */
 
