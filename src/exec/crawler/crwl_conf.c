@@ -16,7 +16,7 @@ static int crwl_conf_load_comm(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *
 static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log);
 static int crwl_conf_load_seed(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log);
 static int crwl_conf_load_worker(xml_tree_t *xml, crwl_worker_conf_t *conf, log_cycle_t *log);
-static int crwl_conf_load_parser(xml_tree_t *xml, crwl_parser_conf_t *conf, log_cycle_t *log);
+static int crwl_conf_load_filter(xml_tree_t *xml, crwl_filter_conf_t *conf, log_cycle_t *log);
 
 /******************************************************************************
  **函数名称: crwl_conf_creat
@@ -79,7 +79,7 @@ crwl_conf_t *crwl_conf_creat(const char *path, log_cycle_t *log)
         }
 
         /* 5. 提取解析配置 */
-        if (crwl_conf_load_parser(xml, &conf->parser, log))
+        if (crwl_conf_load_filter(xml, &conf->filter, log))
         {
             log_error(log, "Parse worker configuration failed! path:%s", path);
             break;
@@ -516,8 +516,8 @@ static int crwl_conf_load_worker(
 }
 
 /******************************************************************************
- **函数名称: crwl_conf_load_parser
- **功    能: 提取Parser配置信息
+ **函数名称: crwl_conf_load_filter
+ **功    能: 提取Filter配置信息
  **输入参数: 
  **     xml: 配置文件
  **输出参数:
@@ -527,16 +527,16 @@ static int crwl_conf_load_worker(
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.04 #
  ******************************************************************************/
-static int crwl_conf_load_parser(
-        xml_tree_t *xml, crwl_parser_conf_t *conf, log_cycle_t *log)
+static int crwl_conf_load_filter(
+        xml_tree_t *xml, crwl_filter_conf_t *conf, log_cycle_t *log)
 {
     xml_node_t *curr, *node;
 
     /* 1. 定位工作进程配置 */
-    curr = xml_search(xml, ".CRAWLER.PARSER");
+    curr = xml_search(xml, ".CRAWLER.FILTER");
     if (NULL == curr)
     {
-        log_error(log, "Didn't configure parser process!");
+        log_error(log, "Didn't configure filter process!");
         return CRWL_ERR;
     }
 

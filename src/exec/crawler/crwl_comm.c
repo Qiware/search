@@ -27,7 +27,6 @@
 #include "xd_socket.h"
 #include "crwl_sched.h"
 #include "crwl_worker.h"
-#include "crwl_parser.h"
 
 #define CRWL_PROC_LOCK_PATH "../temp/crwl/crwl.lck"
 

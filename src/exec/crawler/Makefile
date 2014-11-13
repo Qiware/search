@@ -25,9 +25,9 @@ SRC_LIST = crwl_comm.c \
 			crwl_task.c \
 			crwl_sched.c \
 			crwl_worker.c \
-			crwl_parser.c
+			crwl_filter.c
 SRC_LIST2 = crawler.c
-SRC_LIST3 = parser.c
+SRC_LIST3 = filter.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST))
 OBJS2 = $(subst .c,.o, $(SRC_LIST2))
@@ -35,7 +35,7 @@ OBJS3 = $(subst .c,.o, $(SRC_LIST3))
 
 TARGET = libxd_crwl.so
 TARGET2 = crawler
-TARGET3 = parser
+TARGET3 = filter
 
 .PHONY: all clean
 

@@ -1,7 +1,7 @@
 /******************************************************************************
  ** Coypright(C) 2014-2024 Xundao technology Co., Ltd
  **
- ** 文件名: crwl_parser.c
+ ** 文件名: crwl_filter.c
  ** 版本号: 1.0
  ** 描  述: 超链接的提取程序
  **         从爬取的网页中提取超链接
@@ -26,13 +26,13 @@
 #include "crawler.h"
 #include "xml_tree.h"
 #include "crwl_conf.h"
-#include "crwl_parser.h"
+#include "crwl_filter.h"
 
-#define CRWL_PARSER_LOG_NAME    "parser"
+#define CRWL_PARSER_LOG_NAME    "filter"
 
-static int crwl_parser_webpage_info(crwl_webpage_info_t *info);
-static int crwl_parser_work_flow(crwl_parser_t *parser);
-static int crwl_parser_deep_hdl(crwl_parser_t *parser, gumbo_result_t *result);
+static int crwl_filter_webpage_info(crwl_webpage_info_t *info);
+static int crwl_filter_work_flow(crwl_filter_t *filter);
+static int crwl_filter_deep_hdl(crwl_filter_t *filter, gumbo_result_t *result);
 
 bool crwl_set_uri_exists(redis_cluster_t *cluster, const char *hash, const char *uri);
 
@@ -43,50 +43,50 @@ bool crwl_set_uri_exists(redis_cluster_t *cluster, const char *hash, const char 
 #define crwl_is_uri_push(cluster, hash, uri) crwl_set_uri_exists(cluster, hash, uri)
 
 /******************************************************************************
- **函数名称: crwl_parser_init
- **功    能: 初始化Parser对象
+ **函数名称: crwl_filter_init
+ **功    能: 初始化Filter对象
  **输入参数: 
  **     conf: 配置信息
  **     log: 日志信息
  **输出参数:
- **返    回: Parser对象
+ **返    回: Filter对象
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.18 #
  ******************************************************************************/
-crwl_parser_t *crwl_parser_init(crwl_conf_t *conf, log_cycle_t *log)
+crwl_filter_t *crwl_filter_init(crwl_conf_t *conf, log_cycle_t *log)
 {
-    crwl_parser_t *parser;
+    crwl_filter_t *filter;
 
     /* 1. 申请对象空间 */
-    parser = (crwl_parser_t *)calloc(1, sizeof(crwl_parser_t));
-    if (NULL == parser)
+    filter = (crwl_filter_t *)calloc(1, sizeof(crwl_filter_t));
+    if (NULL == filter)
     {
         log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
         return NULL;
     }
 
-    parser->log = log;
-    parser->conf = conf;
+    filter->log = log;
+    filter->conf = conf;
 
     log_set_level(log, conf->log.level);
     log2_set_level(conf->log.level2);
 
     /* 2. 连接Redis集群 */
-    parser->redis = redis_cluster_init(&conf->redis.master, &conf->redis.slave_list);
-    if (NULL == parser->redis)
+    filter->redis = redis_cluster_init(&conf->redis.master, &conf->redis.slave_list);
+    if (NULL == filter->redis)
     {
-        log_error(parser->log, "Initialize redis context failed!");
-        free(parser);
+        log_error(filter->log, "Initialize redis context failed!");
+        free(filter);
         return NULL;
     }
 
-    return parser;
+    return filter;
 }
 
 /******************************************************************************
- **函数名称: crwl_parser_destroy
- **功    能: 销毁Parser对象
+ **函数名称: crwl_filter_destroy
+ **功    能: 销毁Filter对象
  **输入参数: 
  **输出参数:
  **返    回: VOID
@@ -94,29 +94,29 @@ crwl_parser_t *crwl_parser_init(crwl_conf_t *conf, log_cycle_t *log)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.04 #
  ******************************************************************************/
-void crwl_parser_destroy(crwl_parser_t *parser)
+void crwl_filter_destroy(crwl_filter_t *filter)
 {
-    if (parser->log)
+    if (filter->log)
     {
-        log_destroy(&parser->log);
-        parser->log = NULL;
+        log_destroy(&filter->log);
+        filter->log = NULL;
     }
     log2_destroy();
-    if (parser->redis)
+    if (filter->redis)
     {
-        redis_cluster_destroy(parser->redis);
-        parser->redis = NULL;
+        redis_cluster_destroy(filter->redis);
+        filter->redis = NULL;
     }
-    if (parser->conf)
+    if (filter->conf)
     {
-        crwl_conf_destroy(parser->conf);
-        parser->conf = NULL;
+        crwl_conf_destroy(filter->conf);
+        filter->conf = NULL;
     }
-    free(parser);
+    free(filter);
 }
 
 /******************************************************************************
- **函数名称: crwl_parser_work
+ **函数名称: crwl_filter_work
  **功    能: 网页解析处理
  **输入参数: 
  **     p: 解析器对象
@@ -126,7 +126,7 @@ void crwl_parser_destroy(crwl_parser_t *parser)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.18 #
  ******************************************************************************/
-int crwl_parser_work(crwl_parser_t *parser)
+int crwl_filter_work(crwl_filter_t *filter)
 {
     DIR *dir;
     struct stat st;
@@ -134,7 +134,7 @@ int crwl_parser_work(crwl_parser_t *parser)
     char path[PATH_NAME_MAX_LEN],
          new_path[FILE_PATH_MAX_LEN],
          html_path[FILE_PATH_MAX_LEN];
-    crwl_conf_t *conf = parser->conf;
+    crwl_conf_t *conf = filter->conf;
 
     while (1)
     {
@@ -151,50 +151,50 @@ int crwl_parser_work(crwl_parser_t *parser)
         /* 2. 遍历文件 */
         while (NULL != (item = readdir(dir)))
         {
-            snprintf(parser->info.fname,
-                    sizeof(parser->info.fname), "%s/%s", path, item->d_name); 
+            snprintf(filter->info.fname,
+                    sizeof(filter->info.fname), "%s/%s", path, item->d_name); 
 
             /* 判断文件类型 */
-            stat(parser->info.fname, &st);
+            stat(filter->info.fname, &st);
             if (!S_ISREG(st.st_mode))
             {
                 continue;
             }
 
             /* 获取网页信息 */
-            if (crwl_parser_webpage_info(&parser->info))
+            if (crwl_filter_webpage_info(&filter->info))
             {
                 snprintf(new_path, sizeof(new_path),
-                        "%s/%s", conf->parser.store.err_path, item->d_name);
-                rename(parser->info.fname, new_path);
+                        "%s/%s", conf->filter.store.err_path, item->d_name);
+                rename(filter->info.fname, new_path);
 
                 snprintf(html_path, sizeof(html_path),
-                        "%s/%s", conf->download.path, parser->info.html);
+                        "%s/%s", conf->download.path, filter->info.html);
                 remove(html_path);
 
-                log_error(parser->log, "Get webpage information failed! fname:%s",
-                        parser->info.fname);
+                log_error(filter->log, "Get webpage information failed! fname:%s",
+                        filter->info.fname);
                 continue;
             }
 
             /* 主处理流程 */
-            crwl_parser_work_flow(parser);
+            crwl_filter_work_flow(filter);
 
             snprintf(new_path, sizeof(new_path),
-                    "%s/%s", conf->parser.store.path, item->d_name);
+                    "%s/%s", conf->filter.store.path, item->d_name);
 
-            rename(parser->info.fname, new_path);
+            rename(filter->info.fname, new_path);
 
 
             snprintf(html_path, sizeof(html_path),
-                    "%s/%s", conf->download.path, parser->info.html);
+                    "%s/%s", conf->download.path, filter->info.html);
             remove(html_path);
         }
 
         /* 3. 关闭目录 */
         closedir(dir);
 
-        Mkdir(conf->parser.store.path, 0777);
+        Mkdir(conf->filter.store.path, 0777);
 
         Sleep(5);
     }
@@ -203,7 +203,7 @@ int crwl_parser_work(crwl_parser_t *parser)
 }
 
 /******************************************************************************
- **函数名称: crwl_parser_webpage_info
+ **函数名称: crwl_filter_webpage_info
  **功    能: 获取网页信息
  **输入参数:
  **     info: 网页信息
@@ -213,7 +213,7 @@ int crwl_parser_work(crwl_parser_t *parser)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.18 #
  ******************************************************************************/
-static int crwl_parser_webpage_info(crwl_webpage_info_t *info)
+static int crwl_filter_webpage_info(crwl_webpage_info_t *info)
 {
     xml_tree_t *xml;
     xml_node_t *node, *fix;
@@ -289,7 +289,7 @@ static int crwl_parser_webpage_info(crwl_webpage_info_t *info)
 }
 
 /******************************************************************************
- **函数名称: crwl_parser_work_flow
+ **函数名称: crwl_filter_work_flow
  **功    能: 解析器处理流程
  **输入参数: 
  **     p: 解析器对象
@@ -299,18 +299,18 @@ static int crwl_parser_webpage_info(crwl_webpage_info_t *info)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.17 #
  ******************************************************************************/
-static int crwl_parser_work_flow(crwl_parser_t *parser)
+static int crwl_filter_work_flow(crwl_filter_t *filter)
 {
     gumbo_html_t *html;             /* HTML对象 */
     gumbo_result_t *result;         /* 结果集合 */
     char fpath[FILE_PATH_MAX_LEN];  /* HTML文件名 */
-    crwl_conf_t *conf = parser->conf;
-    crwl_webpage_info_t *info = &parser->info;
+    crwl_conf_t *conf = filter->conf;
+    crwl_webpage_info_t *info = &filter->info;
 
     /* 1. 判断网页深度 */
     if (info->depth > conf->download.depth)
     {
-        log_info(parser->log, "Drop handle webpage! uri:%s depth:%d",
+        log_info(filter->log, "Drop handle webpage! uri:%s depth:%d",
                 info->uri, info->depth);
         return CRWL_OK;
     }
@@ -319,9 +319,9 @@ static int crwl_parser_work_flow(crwl_parser_t *parser)
      *  判断的同时设置网页的下载标志
      *  如果已下载，则不做提取该网页中的超链接
      * */
-    if (crwl_is_uri_down(parser->redis, conf->redis.done_tab, info->uri))
+    if (crwl_is_uri_down(filter->redis, conf->redis.done_tab, info->uri))
     {
-        log_info(parser->log, "Uri [%s] was downloaded!", info->uri);
+        log_info(filter->log, "Uri [%s] was downloaded!", info->uri);
         return CRWL_OK;
     }
 
@@ -331,7 +331,7 @@ static int crwl_parser_work_flow(crwl_parser_t *parser)
     html = gumbo_html_parse(fpath);
     if (NULL == html)
     {
-        log_error(parser->log, "Parse html failed! fpath:%s", fpath);
+        log_error(filter->log, "Parse html failed! fpath:%s", fpath);
         return CRWL_ERR;
     }
 
@@ -339,7 +339,7 @@ static int crwl_parser_work_flow(crwl_parser_t *parser)
     result = gumbo_parse_href(html);
     if (NULL == result)
     {
-        log_error(parser->log, "Parse href failed! fpath:%s", fpath);
+        log_error(filter->log, "Parse href failed! fpath:%s", fpath);
 
         gumbo_result_destroy(result);
         gumbo_html_destroy(html);
@@ -351,9 +351,9 @@ static int crwl_parser_work_flow(crwl_parser_t *parser)
      *  2. 判断超链接是否已被爬取
      *  3. 将超链接插入任务队列
      * */
-    if (crwl_parser_deep_hdl(parser, result))
+    if (crwl_filter_deep_hdl(filter, result))
     {
-        log_error(parser->log, "Deep handler failed! fpath:%s", fpath);
+        log_error(filter->log, "Deep handler failed! fpath:%s", fpath);
 
         gumbo_result_destroy(result);
         gumbo_html_destroy(html);
@@ -367,7 +367,7 @@ static int crwl_parser_work_flow(crwl_parser_t *parser)
 }
 
 /******************************************************************************
- **函数名称: crwl_parser_deep_hdl
+ **函数名称: crwl_filter_deep_hdl
  **功    能: 超链接的深入分析和处理
  **输入参数: 
  **     p: 解析器对象
@@ -381,15 +381,15 @@ static int crwl_parser_work_flow(crwl_parser_t *parser)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.17 #
  ******************************************************************************/
-static int crwl_parser_deep_hdl(crwl_parser_t *parser, gumbo_result_t *result)
+static int crwl_filter_deep_hdl(crwl_filter_t *filter, gumbo_result_t *result)
 {
     int len;
     redisReply *r; 
     uri_field_t field;
     char task_str[CRWL_TASK_STR_LEN];
-    crwl_conf_t *conf = parser->conf;
+    crwl_conf_t *conf = filter->conf;
     list_node_t *node = result->list.head;
-    crwl_webpage_info_t *info = &parser->info;
+    crwl_webpage_info_t *info = &filter->info;
 
     /* 遍历URL集合 */
     for (; NULL != node; node = node->next)
@@ -397,14 +397,14 @@ static int crwl_parser_deep_hdl(crwl_parser_t *parser, gumbo_result_t *result)
         /* 1. 将href转至uri */
         if (0 != href_to_uri((const char *)node->data, info->uri, &field))
         {
-            log_info(parser->log, "Uri [%s] is invalid!", (char *)node->data);
+            log_info(filter->log, "Uri [%s] is invalid!", (char *)node->data);
             continue;
         }
 
         /* 2. 判断URI是否已经被推送到队列中 */
-        if (crwl_is_uri_push(parser->redis, conf->redis.push_tab, field.uri))
+        if (crwl_is_uri_push(filter->redis, conf->redis.push_tab, field.uri))
         {
-            log_info(parser->log, "Uri [%s] was pushed!", (char *)node->data);
+            log_info(filter->log, "Uri [%s] was pushed!", (char *)node->data);
             continue;
         }
 
@@ -412,16 +412,16 @@ static int crwl_parser_deep_hdl(crwl_parser_t *parser, gumbo_result_t *result)
         len = crwl_get_task_str(task_str, sizeof(task_str), field.uri, info->depth+1);
         if (len >= sizeof(task_str))
         {
-            log_info(parser->log, "Task string is too long! [%s]", task_str);
+            log_info(filter->log, "Task string is too long! [%s]", task_str);
             continue;
         }
 
         /* 4. 插入Undo任务队列 */
-        r = redis_rpush(parser->redis->master, parser->conf->redis.undo_taskq, task_str);
+        r = redis_rpush(filter->redis->master, filter->conf->redis.undo_taskq, task_str);
         if (REDIS_REPLY_NIL == r->type)
         {
             freeReplyObject(r);
-            log_error(parser->log, "Push into undo task queue failed!");
+            log_error(filter->log, "Push into undo task queue failed!");
             return CRWL_ERR;
         }
 

@@ -22,7 +22,7 @@ typedef struct
         char path[FILE_PATH_MAX_LEN];       /* 数据存储路径 */
         char err_path[FILE_PATH_MAX_LEN];   /* 错误数据存储路径 */
     } store;
-} crwl_parser_conf_t;
+} crwl_filter_conf_t;
 
 /* Seed配置信息 */
 typedef struct
@@ -56,7 +56,7 @@ typedef struct
     } download;                             /* 下载配置 */
     crwl_redis_conf_t redis;                /* REDIS配置信息 */
     crwl_worker_conf_t worker;              /* Worker配置信息 */
-    crwl_parser_conf_t parser;              /* Parser配置信息 */
+    crwl_filter_conf_t filter;              /* Filter配置信息 */
     list_t seed;                            /* 种子信息 */
 
     mem_pool_t *mem_pool;                   /* 内存池 */

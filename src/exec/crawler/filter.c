@@ -1,7 +1,7 @@
 /******************************************************************************
  ** Coypright(C) 2014-2024 Xundao technology Co., Ltd
  **
- ** 文件名: parser.c
+ ** 文件名: filter.c
  ** 版本号: 1.0
  ** 描  述: 超链接的提取程序
  **         从爬取的网页中提取超链接
@@ -25,14 +25,14 @@
 #include "crawler.h"
 #include "xml_tree.h"
 #include "crwl_conf.h"
-#include "crwl_parser.h"
+#include "crwl_filter.h"
 
 int main(int argc, char *argv[])
 {
     crwl_opt_t opt;
     log_cycle_t *log;
     crwl_conf_t *conf;
-    crwl_parser_t *parser;
+    crwl_filter_t *filter;
 
     memset(&opt, 0, sizeof(opt));
 
@@ -65,11 +65,11 @@ int main(int argc, char *argv[])
         return CRWL_ERR;
     }
 
-    /* 4. 初始化Parser对象 */
-    parser = crwl_parser_init(conf, log);
-    if (NULL == parser)
+    /* 4. 初始化Filter对象 */
+    filter = crwl_filter_init(conf, log);
+    if (NULL == filter)
     {
-        log_error(log, "Init parser failed!");
+        log_error(log, "Init filter failed!");
 
         crwl_conf_destroy(conf);
         log2_destroy();
@@ -78,10 +78,10 @@ int main(int argc, char *argv[])
     }
 
     /* 5. 处理网页信息 */
-    crwl_parser_work(parser);
+    crwl_filter_work(filter);
 
     /* 6. 释放GUMBO对象 */
-    crwl_parser_destroy(parser);
+    crwl_filter_destroy(filter);
 
     return CRWL_OK;
 }

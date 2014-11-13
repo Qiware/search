@@ -1,5 +1,5 @@
-#if !defined(__CRWL_PARSER_H__)
-#define __CRWL_PARSER_H__
+#if !defined(__CRWL_FILTER_H__)
+#define __CRWL_FILTER_H__
 
 #include "log.h"
 #include "redis.h"
@@ -28,10 +28,10 @@ typedef struct
     redis_cluster_t *redis;         /* Redis集群 */
 
     crwl_webpage_info_t info;       /* 网页信息 */
-} crwl_parser_t;
+} crwl_filter_t;
 
-crwl_parser_t *crwl_parser_init(crwl_conf_t *conf, log_cycle_t *log);
-int crwl_parser_work(crwl_parser_t *parser);
-void crwl_parser_destroy(crwl_parser_t *parser);
+crwl_filter_t *crwl_filter_init(crwl_conf_t *conf, log_cycle_t *log);
+int crwl_filter_work(crwl_filter_t *filter);
+void crwl_filter_destroy(crwl_filter_t *filter);
 
-#endif /*__CRWL_PARSER_H__*/
+#endif /*__CRWL_FILTER_H__*/

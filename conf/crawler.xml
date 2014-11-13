@@ -36,11 +36,11 @@
     </WORKER>
 
     <!-- 分析进程: 负责对网页的分析(内容分析、URL提取等) -->
-    <PARSER>
+    <FILTER>
         <!-- 被解析网页的存储路径 -->
-        <STORE PATH="../data/parser/webpage" ERR_PATH="../data/parser/error" />
+        <STORE PATH="../data/filter/webpage" ERR_PATH="../data/filter/error" />
         <DATABASE SERVER="服务名" USER="用户名" PASSWD="密码" />  <!-- 数据库配置 -->
-    </PARSER>
+    </FILTER>
 
     <!-- 种子配置(DEPTH: 表示种子的当前深度) -->
     <SEED>

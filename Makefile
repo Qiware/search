@@ -42,17 +42,9 @@ export DIR
 
 # 1. 编译操作
 all:
-	@if [ ! -d ${PROJ_BIN} ]; then \
-		rm -fr ${PROJ_BIN}; \
-		mkdir ${PROJ_BIN}; \
-	fi
-	@if [ ! -d ${PROJ_LIB} ]; then \
-		rm -fr ${PROJ_LIB}; \
-		mkdir ${PROJ_LIB}; \
-	fi
-	@if [ -e ${GCC_LOG} ]; then \
-		rm -f ${GCC_LOG}; \
-	fi
+	@mkdir -p ${PROJ_LIB};
+	@mkdir -p ${PROJ_BIN};
+	@mkdir -p ${PROJ_LOG};
 	@for SUBDIR in ${DIR}; \
 	do \
 		if [ -e $${SUBDIR}/Makefile ]; then \
