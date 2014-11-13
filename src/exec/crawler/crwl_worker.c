@@ -57,7 +57,7 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker)
     worker->ctx = ctx;
     worker->log = ctx->log;
     worker->scan_tm = time(NULL);
-    worker->conf = &ctx->conf->worker;
+    worker->conf = ctx->conf;
 
     /* 1. 创建SLAB内存池 */
     if (eslab_init(&worker->slab, CRWL_SLAB_SIZE))
@@ -67,7 +67,7 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker)
     }
 
     /* 2. 创建任务队列 */
-    if (lqueue_init(&worker->undo_taskq, worker->conf->taskq_count, 20 * MB))
+    if (lqueue_init(&worker->undo_taskq, worker->conf->worker.taskq_count, 20 * MB))
     {
         eslab_destroy(&worker->slab);
 
@@ -88,7 +88,7 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker)
 
     worker->events = (struct epoll_event *)eslab_alloc(
             &worker->slab,
-            worker->conf->conn_max_num * sizeof(struct epoll_event));
+            worker->conf->worker.conn_max_num * sizeof(struct epoll_event));
     if (NULL == worker->events)
     {
         lqueue_destroy(&worker->undo_taskq);
@@ -159,7 +159,7 @@ static int crwl_worker_fetch_task(crwl_cntx_t *ctx, crwl_worker_t *worker)
 
     /* 1. 判断是否应该取任务 */
     if (0 == worker->undo_taskq.queue.num
-        || worker->sock_list.num >= worker->conf->conn_max_num)
+        || worker->sock_list.num >= worker->conf->worker.conn_max_num)
     {
         return CRWL_OK;
     }
@@ -455,8 +455,8 @@ static int crwl_worker_timeout_hdl(crwl_worker_t *worker)
         }
 
         /* 超时未发送或接收数据时, 认为无数据传输, 将直接关闭套接字 */
-        if ((ctm - sck->rdtm <= worker->conf->conn_tmout_sec)
-            || (ctm - sck->wrtm <= worker->conf->conn_tmout_sec))
+        if ((ctm - sck->rdtm <= worker->conf->worker.conn_tmout_sec)
+            || (ctm - sck->wrtm <= worker->conf->worker.conn_tmout_sec))
         {
             continue;
         }
@@ -552,7 +552,7 @@ void *crwl_worker_routine(void *_ctx)
         /* 3. 等待事件通知 */
         worker->ep_fds = epoll_wait(
                 worker->ep_fd, worker->events,
-                worker->conf->conn_max_num, CRWL_TMOUT_SEC);
+                worker->conf->worker.conn_max_num, CRWL_TMOUT_SEC);
         if (worker->ep_fds < 0)
         {
             if (EINTR == errno)
@@ -906,7 +906,7 @@ int crwl_worker_webpage_creat(crwl_worker_t *worker, crwl_worker_socket_t *sck)
             loctm.tm_hour, loctm.tm_min, loctm.tm_sec, sck->crtm.millitm);
 
     snprintf(path, sizeof(path), "%s/%s.html",
-            worker->ctx->conf->download.path, sck->webpage.fname);
+            worker->conf->download.path, sck->webpage.fname);
 
     Mkdir2(path, 0777);
 
@@ -944,10 +944,10 @@ int crwl_worker_webpage_finfo(crwl_worker_t *worker, crwl_worker_socket_t *sck)
     localtime_r(&sck->crtm.time, &loctm);
 
     snprintf(temp, sizeof(temp), "%s/wpi/.temp/%s.wpi",
-            worker->ctx->conf->download.path, sck->webpage.fname);
+            worker->conf->download.path, sck->webpage.fname);
 
     snprintf(path, sizeof(path), "%s/wpi/%s.wpi",
-            worker->ctx->conf->download.path, sck->webpage.fname);
+            worker->conf->download.path, sck->webpage.fname);
 
     Mkdir2(temp, 0777);
 

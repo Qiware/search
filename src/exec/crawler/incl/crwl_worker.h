@@ -34,8 +34,8 @@ typedef struct
 typedef struct
 {
     int tidx;                       /* 线程索引 */
-    crwl_cntx_t *ctx;               /* 全局信息 */
-    crwl_worker_conf_t *conf;       /* Worker配置(指向ctx->conf.worker) */
+    crwl_cntx_t *ctx;               /* 全局对象 */
+    crwl_conf_t *conf;              /* 全局配置信息 */
 
     int ep_fd;                      /* epoll文件描述符 */
     int ep_fds;                     /* 处于激活状态的套接字数 */
