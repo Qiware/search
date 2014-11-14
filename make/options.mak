@@ -21,13 +21,6 @@ ifeq (__ON__, $(strip $(CONFIG_DEFAULT_SUPPORT)))
 	OPTIONS += __HTML_DEL_BR__			# HTML处理过程中，自动删除<br />
 endif
 
-# 事件驱动相关宏
-ifeq (EPOLL, $(strip $(CONFIG_EVENT_SUPPORT)))
-	OPTIONS += __EVENT_EPOLL__
-else ifeq (SELECT, $(strip $(CONFIG_EVENT_SUPPORT)))
-	OPTIONS += __EVENT_SELECT__
-endif
-
 # 调试相关宏
 ifeq (__ON__, $(strip $(CONFIG_DEBUG_SUPPORT)))
 	OPTIONS += __XD_DEBUG__
