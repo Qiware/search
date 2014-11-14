@@ -32,7 +32,7 @@
 
 static int crwl_init_workers(crwl_cntx_t *ctx);
 int crwl_workers_destroy(crwl_cntx_t *ctx);
-static int crwl_domain_cmp(const void *ukey, const void *data);
+static int crwl_domain_ip_map_cmp_cb(const void *ukey, const void *data);
 
 /******************************************************************************
  **函数名称: crwl_getopt 
@@ -154,7 +154,10 @@ crwl_cntx_t *crwl_init(const char *path, log_cycle_t *log)
     log2_set_level(ctx->conf->log.level2);
 
     /* 4. 新建域名IP映射表 */
-    ctx->domain_ip_map = hash_tab_init(CRWL_DOMAIN_SLOT_LEN, hash_time33_ex, crwl_domain_cmp);
+    ctx->domain_ip_map = hash_tab_creat(
+            CRWL_DOMAIN_IP_MAP_HASH_NUM,
+            hash_time33_ex,
+            crwl_domain_ip_map_cmp_cb);
     if (NULL == ctx->domain_ip_map)
     {
         crwl_conf_destroy(ctx->conf);
@@ -439,18 +442,18 @@ CRWL_FETCH_IP_BY_DOMAIN:
 }
 
 /******************************************************************************
- **函数名称: crwl_get_ip_by_domain
- **功    能: 获取域名对应的IP地址
+ **函数名称: crwl_domain_ip_map_cmp_cb
+ **功    能: 域名IP映射表的比较
  **输入参数:
- **     ctx: 全局信息
- **     host: 域名
+ **     _domain: 域名
+ **     data: 域名IP映射表数据(crwl_domain_ip_map_t)
  **输出参数: NONE
- **返    回: 获取域名对应的地址信息
+ **返    回: 0:相等 <0:小于 >0:大于
  **实现描述: 
  **注意事项: 
- **作    者: # Qifeng.zou # 2014.10.21 #
+ **作    者: # Qifeng.zou # 2014.11.14 #
  ******************************************************************************/
-static int crwl_domain_cmp(const void *_domain, const void *data)
+static int crwl_domain_ip_map_cmp_cb(const void *_domain, const void *data)
 {
     const char *host = (const char *)_domain;
     const crwl_domain_ip_map_t *map = (const crwl_domain_ip_map_t *)data;

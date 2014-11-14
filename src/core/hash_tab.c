@@ -17,8 +17,8 @@
 #include "hash_tab.h"
 
 /******************************************************************************
- **函数名称: hash_tab_init
- **功    能: 构建哈希表
+ **函数名称: hash_tab_creat
+ **功    能: 创建哈希表
  **输入参数:
  **     num: 数组长度
  **     key: 生成KEY的函数
@@ -32,7 +32,7 @@
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
-hash_tab_t *hash_tab_init(int num, avl_key_cb_t key_cb, avl_cmp_cb_t cmp_cb)
+hash_tab_t *hash_tab_creat(int num, avl_key_cb_t key_cb, avl_cmp_cb_t cmp_cb)
 {
     int idx;
     hash_tab_t *hash;
