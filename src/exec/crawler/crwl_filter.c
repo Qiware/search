@@ -42,6 +42,65 @@ bool crwl_set_uri_exists(redis_cluster_t *cluster, const char *hash, const char 
 /* 判断uri是否已推送 */
 #define crwl_is_uri_push(cluster, hash, uri) crwl_set_uri_exists(cluster, hash, uri)
 
+int main(int argc, char *argv[])
+{
+    crwl_opt_t opt;
+    log_cycle_t *log;
+    crwl_conf_t *conf;
+    crwl_filter_t *filter;
+
+    memset(&opt, 0, sizeof(opt));
+
+    /* 1. 解析输入参数 */
+    if (crwl_getopt(argc, argv, &opt))
+    {
+        return crwl_usage(argv[0]);
+    }
+
+    if (opt.isdaemon)
+    {
+        daemon(1, 0);
+    }
+
+    /* 2. 初始化日志模块 */
+    log = crwl_init_log(argv[0]);
+    if (NULL == log)
+    {
+        return CRWL_ERR;
+    }
+
+    /* 3. 加载配置信息 */
+    conf = crwl_conf_load(opt.conf_path, log);
+    if (NULL == conf)
+    {
+        log_error(log, "Initialize log failed!");
+
+        log2_destroy();
+        log_destroy(&log);
+        return CRWL_ERR;
+    }
+
+    /* 4. 初始化Filter对象 */
+    filter = crwl_filter_init(conf, log);
+    if (NULL == filter)
+    {
+        log_error(log, "Init filter failed!");
+
+        crwl_conf_destroy(conf);
+        log2_destroy();
+        log_destroy(&log);
+        return CRWL_ERR;
+    }
+
+    /* 5. 处理网页信息 */
+    crwl_filter_work(filter);
+
+    /* 6. 释放GUMBO对象 */
+    crwl_filter_destroy(filter);
+
+    return CRWL_OK;
+}
+
 /******************************************************************************
  **函数名称: crwl_filter_init
  **功    能: 初始化Filter对象
