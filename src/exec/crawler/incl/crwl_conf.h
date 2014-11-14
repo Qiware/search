@@ -62,7 +62,7 @@ typedef struct
     mem_pool_t *mem_pool;                   /* 内存池 */
 } crwl_conf_t;
 
-crwl_conf_t *crwl_conf_creat(const char *path, log_cycle_t *log);
+crwl_conf_t *crwl_conf_load(const char *path, log_cycle_t *log);
 #define crwl_conf_destroy(conf)             /* 销毁配置对象 */\
 { \
     mem_pool_destroy(conf->mem_pool); \

@@ -141,7 +141,7 @@ crwl_cntx_t *crwl_init(const char *path, log_cycle_t *log)
     }
 
     /* 3. 加载配置文件 */
-    ctx->conf = crwl_conf_creat(path, log);
+    ctx->conf = crwl_conf_load(path, log);
     if (NULL == ctx->conf)
     {
         free(ctx);

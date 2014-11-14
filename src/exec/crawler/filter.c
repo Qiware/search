@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
     }
 
     /* 3. 加载配置信息 */
-    conf = crwl_conf_creat(opt.conf_path, log);
+    conf = crwl_conf_load(opt.conf_path, log);
     if (NULL == conf)
     {
         log_error(log, "Initialize log failed!");

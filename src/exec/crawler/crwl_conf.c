@@ -19,7 +19,7 @@ static int crwl_conf_load_worker(xml_tree_t *xml, crwl_worker_conf_t *conf, log_
 static int crwl_conf_load_filter(xml_tree_t *xml, crwl_filter_conf_t *conf, log_cycle_t *log);
 
 /******************************************************************************
- **函数名称: crwl_conf_creat
+ **函数名称: crwl_conf_load
  **功    能: 加载配置信息
  **输入参数:
  **     path: 配置路径
@@ -30,7 +30,7 @@ static int crwl_conf_load_filter(xml_tree_t *xml, crwl_filter_conf_t *conf, log_
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.12 #
  ******************************************************************************/
-crwl_conf_t *crwl_conf_creat(const char *path, log_cycle_t *log)
+crwl_conf_t *crwl_conf_load(const char *path, log_cycle_t *log)
 {
     xml_tree_t *xml;
     crwl_conf_t *conf;
