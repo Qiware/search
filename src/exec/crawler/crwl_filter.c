@@ -131,7 +131,7 @@ int crwl_filter_work(crwl_filter_t *filter)
     DIR *dir;
     struct stat st;
     struct dirent *item;
-    char path[PATH_NAME_MAX_LEN],
+    char path[FILE_PATH_MAX_LEN],
          new_path[FILE_PATH_MAX_LEN],
          html_path[FILE_PATH_MAX_LEN];
     crwl_conf_t *conf = filter->conf;

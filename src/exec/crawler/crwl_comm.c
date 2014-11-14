@@ -410,10 +410,11 @@ CRWL_FETCH_IP_BY_DOMAIN:
                 continue;
             }
 
-            inet_ntop(AF_INET,
+            map->ip[map->ip_num].family = curr->ai_family;
+            inet_ntop(curr->ai_family,
                     &sockaddr->sin_addr.s_addr,
-                    map->ip[map->ip_num],
-                    sizeof(map->ip[map->ip_num]));
+                    map->ip[map->ip_num].ip,
+                    sizeof(map->ip[map->ip_num].ip));
             ++map->ip_num;
 
             curr = curr->ai_next;

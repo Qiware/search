@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
     snprintf(ipaddr, sizeof(ipaddr), "%s", argv[1]);
     port = atoi(argv[2]);
 
-    fd = tcp_connect(ipaddr, port);
+    fd = tcp_connect(AF_INET, ipaddr, port);
 
     fprintf(stderr, "errmsg:[%d] %s! fd:%d", errno, strerror(errno), fd);
 

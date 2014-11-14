@@ -52,7 +52,7 @@ typedef struct
     struct
     {
         uint32_t depth;                     /* 爬取最大深度 */
-        char path[PATH_NAME_MAX_LEN];       /* 网页存储路径 */
+        char path[FILE_PATH_MAX_LEN];       /* 网页存储路径 */
     } download;                             /* 下载配置 */
     crwl_redis_conf_t redis;                /* REDIS配置信息 */
     crwl_worker_conf_t worker;              /* Worker配置信息 */

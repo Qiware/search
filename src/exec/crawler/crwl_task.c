@@ -64,11 +64,13 @@ int crwl_task_down_webpage_by_uri(
     ip_idx = random() % map->ip_num;
 
     /* 2. 连接远程WEB服务器 */
-    fd = tcp_connect_ex2(map->ip[ip_idx], args->port);
+    fd = tcp_connect_ex2(map->ip[ip_idx].family, map->ip[ip_idx].ip, args->port);
     if (fd < 0)
     {
-        log_error(worker->log, "errmsg:[%d] %s! ip:%s uri:%s",
-            errno, strerror(errno), map->ip[ip_idx], args->uri);
+        log_error(worker->log, "errmsg:[%d] %s! family:%d ip:%s uri:%s",
+            errno, strerror(errno),
+            map->ip[ip_idx].family,
+            map->ip[ip_idx].ip, args->uri);
         return CRWL_OK;
     }
 
@@ -89,7 +91,7 @@ int crwl_task_down_webpage_by_uri(
     sck->read.addr = sck->recv;
 
     snprintf(sck->webpage.uri, sizeof(sck->webpage.uri), "%s", args->uri);
-    snprintf(sck->webpage.ip, sizeof(sck->webpage.ip), "%s", map->ip[ip_idx]);
+    snprintf(sck->webpage.ip, sizeof(sck->webpage.ip), "%s", map->ip[ip_idx].ip);
     sck->webpage.port = args->port;
     sck->webpage.depth = args->depth;
     sck->recv_cb = crwl_worker_recv_data;
@@ -143,14 +145,9 @@ int crwl_task_down_webpage_by_ip(
     int fd;
     crwl_worker_socket_t *sck;
 
-    /* 暂不支持IPV6 */
-    if (IPV6 == args->type)
-    {
-        return CRWL_OK;
-    }
-    
+
     /* 1. 连接远程WEB服务器 */
-    fd = tcp_connect_ex(args->ip, args->port, CRWL_CONNECT_TMOUT_SEC);
+    fd = tcp_connect_ex(args->family, args->ip, args->port, CRWL_CONNECT_TMOUT_SEC);
     if (fd < 0)
     {
         log_error(worker->log, "errmsg:[%d] %s! ip:%s",

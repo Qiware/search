@@ -77,6 +77,7 @@ int tcp_listen(int port)
  **函数名称: tcp_connect
  **功    能: 连接指定服务器
  **输入参数: 
+ **     family: 协议(AF_INET/AF_INET6)
  **     ipaddr: IP地址
  **     port: 端口号
  **输出参数: NONE
@@ -88,13 +89,13 @@ int tcp_listen(int port)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.24 #
  ******************************************************************************/
-int tcp_connect(const char *ipaddr, int port)
+int tcp_connect(int family, const char *ipaddr, int port)
 {
     int fd, opt = 1;
     struct sockaddr_in svraddr;
 
     /* 1. 创建套接字 */
-    fd = socket(AF_INET, SOCK_STREAM, 0);
+    fd = socket(family, SOCK_STREAM, 0);
     if (fd < 0)
     {
         return -1;
@@ -125,6 +126,7 @@ int tcp_connect(const char *ipaddr, int port)
  **函数名称: tcp_connect_ex
  **功    能: 连接指定服务器(超时返回)
  **输入参数: 
+ **     family: 协议(AF_INET/AF_INET6)
  **     ipaddr: IP地址
  **     port: 端口号
  **     sec: 超时时间
@@ -138,7 +140,7 @@ int tcp_connect(const char *ipaddr, int port)
  **     1) SO_REUSEADDR: 
  **作    者: # Qifeng.zou & Menglai.Wang # 2014.09.25 #
  ******************************************************************************/
-int tcp_connect_ex(const char *ipaddr, int port, int sec)
+int tcp_connect_ex(int family, const char *ipaddr, int port, int sec)
 {
     int ret, fd, opt = 1;
     fd_set rdset, wrset;
@@ -146,7 +148,7 @@ int tcp_connect_ex(const char *ipaddr, int port, int sec)
     struct sockaddr_in svraddr;
 
     /* 1. 创建套接字 */
-    fd = socket(AF_INET, SOCK_STREAM, 0);
+    fd = socket(family, SOCK_STREAM, 0);
     if (fd < 0)
     {
         return -1;
@@ -209,6 +211,7 @@ AGAIN:
  **函数名称: tcp_connect_ex2
  **功    能: 连接指定服务器
  **输入参数: 
+ **     family: 协议(AF_INET/AF_INET6)
  **     ipaddr: IP地址
  **     port: 端口号
  **输出参数: NONE
@@ -220,13 +223,13 @@ AGAIN:
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.09 #
  ******************************************************************************/
-int tcp_connect_ex2(const char *ipaddr, int port)
+int tcp_connect_ex2(int family, const char *ipaddr, int port)
 {
     int fd, opt = 1;
     struct sockaddr_in svraddr;
 
     /* 1. 创建套接字 */
-    fd = socket(AF_INET, SOCK_STREAM, 0);
+    fd = socket(family, SOCK_STREAM, 0);
     if (fd < 0)
     {
         return -1;

@@ -21,6 +21,7 @@
 #include "hash_tab.h"
 #include "crwl_task.h"
 #include "crwl_conf.h"
+#include "xd_socket.h"
 #include "thread_pool.h"
 
 /* 宏定义 */
@@ -112,9 +113,9 @@ typedef struct
 {
     char host[URI_MAX_LEN];                 /* Host信息(域名) */
 
-#define CRWL_IP_MAX_NUM  (8)
-    char ip[CRWL_IP_MAX_NUM][IP_ADDR_MAX_LEN];  /* 域名对应的IP地址 */
     int ip_num;                             /* IP地址数 */
+#define CRWL_IP_MAX_NUM  (8)
+    ipaddr_t ip[CRWL_IP_MAX_NUM];           /* 域名对应的IP地址 */
 } crwl_domain_ip_map_t;
 
 /* 输入参数信息 */

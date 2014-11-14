@@ -20,10 +20,9 @@
 
 /* 宏定义 */
 #define FILE_NAME_MAX_LEN   (256)   /* 文件名最大长度 */
-#define PATH_NAME_MAX_LEN   (256)   /* 路径最大长度 */
-#define FILE_LINE_MAX_LEN   (256)   /* 文件行最大长度 */
-#define FILE_PATH_MAX_LEN   (256)   /* 文件路径最大长度 */
-#define IP_ADDR_MAX_LEN     (64)    /* IP地址最大长度 */
+#define FILE_PATH_MAX_LEN  FILE_NAME_MAX_LEN   /* 文件路径最大长度 */
+#define FILE_LINE_MAX_LEN   (1024)  /* 文件行最大长度 */
+#define IP_ADDR_MAX_LEN     (32)    /* IP地址最大长度 */
 #define CMD_LINE_MAX_LEN    (1024)  /* 命令行最大长度 */
 #define QUEUE_NAME_MAX_LEN  (64)    /* 队列名最大长度 */
 #define TABLE_NAME_MAX_LEN  (64)    /* 表名最大长度 */
@@ -39,9 +38,6 @@
 
 #define INVALID_FD          (-1)    /* 非法文件描述符 */
 #define INVALID_PID         (-1)    /* 非法进程ID */
-
-#define IPV4                (0)     /* IP地址类型-IPV4 */
-#define IPV6                (1)     /* IP地址类型-IPV6 */
 
 /* 内存单位 */
 #define KB                  (1024)      /* KB */

@@ -34,7 +34,7 @@ typedef struct
 /* 通过IP加载网页 */
 typedef struct
 {
-    int type;                               /* IP类型(IPV4或IPV6) */
+    int family;                             /* 协议类型(AF_INET或AF_INET6) */
     char ip[IP_ADDR_MAX_LEN];               /* IP地址 */
     int port;                               /* 端口号 */
 } crwl_task_down_webpage_by_ip_t;
