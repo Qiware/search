@@ -228,14 +228,14 @@ static int crwl_filter_webpage_info(crwl_webpage_info_t *info)
     /* 2. 提取网页信息 */
     do
     {
-        fix = xml_search(xml, ".WPI");
+        fix = xml_query(xml, ".WPI");
         if (NULL == fix)
         {
             break;
         }
 
         /* 获取URI字段 */
-        node = xml_rsearch(xml, fix, "URI");
+        node = xml_rquery(xml, fix, "URI");
         if (NULL == fix)
         {
             break;
@@ -244,7 +244,7 @@ static int crwl_filter_webpage_info(crwl_webpage_info_t *info)
         snprintf(info->uri, sizeof(info->uri), "%s", node->value);
 
         /* 获取DEPTH字段 */
-        node = xml_rsearch(xml, fix, "URI.DEPTH");
+        node = xml_rquery(xml, fix, "URI.DEPTH");
         if (NULL == fix)
         {
             break;
@@ -253,7 +253,7 @@ static int crwl_filter_webpage_info(crwl_webpage_info_t *info)
         info->depth = atoi(node->value);
 
         /* 获取IP字段 */
-        node = xml_rsearch(xml, fix, "URI.IP");
+        node = xml_rquery(xml, fix, "URI.IP");
         if (NULL == fix)
         {
             break;
@@ -262,7 +262,7 @@ static int crwl_filter_webpage_info(crwl_webpage_info_t *info)
         snprintf(info->ip, sizeof(info->ip), "%s", node->value);
 
         /* 获取PORT字段 */
-        node = xml_rsearch(xml, fix, "URI.PORT");
+        node = xml_rquery(xml, fix, "URI.PORT");
         if (NULL == fix)
         {
             break;
@@ -271,7 +271,7 @@ static int crwl_filter_webpage_info(crwl_webpage_info_t *info)
         info->port = atoi(node->value);
 
         /* 获取HTML字段 */
-        node = xml_rsearch(xml, fix, "HTML");
+        node = xml_rquery(xml, fix, "HTML");
         if (NULL == fix)
         {
             break;

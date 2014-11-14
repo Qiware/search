@@ -93,57 +93,64 @@ hash_tab_t *hash_tab_creat(int num, avl_key_cb_t key_cb, avl_cmp_cb_t cmp_cb)
  **功    能: 插入哈希成员
  **输入参数:
  **     hash: 哈希数组
- **     key: KEY值
+ **     pkey: 主键
+ **     pkey_len: 主键长度
+ **输出参数:
  **     data: 数据
- **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
-int hash_tab_insert(hash_tab_t *hash, void *uk, int uk_len, void *data)
+int hash_tab_insert(hash_tab_t *hash, void *pkey, int pkey_len, void *data)
 {
     int ret;
     uint32_t idx;
 
-    idx = hash->key_cb(uk, uk_len) % hash->num;
+    idx = hash->key_cb(pkey, pkey_len) % hash->num;
 
     pthread_rwlock_wrlock(&hash->lock[idx]);
-    ret = avl_insert(hash->tree[idx], uk, uk_len, data);
+    ret = avl_insert(hash->tree[idx], pkey, pkey_len, data);
     pthread_rwlock_unlock(&hash->lock[idx]);
 
     return ret;
 }
 
 /******************************************************************************
- **函数名称: hash_tab_search
+ **函数名称: hash_tab_query
  **功    能: 查找哈希成员
  **输入参数:
  **     hash: 哈希数组
- **     key: KEY值
- **输出参数: NONE
- **返    回: 数据地址
+ **     pkey: 主键
+ **     pkey_len: 主键长度
+ **     data_len: 结果取长度
+ **输出参数:
+ **     data: 查找结果
+ **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
-void *hash_tab_search(hash_tab_t *hash, void *uk, int uk_len)
+int hash_tab_query(hash_tab_t *hash, void *pkey, int pkey_len, void *data, int data_len)
 {
     uint32_t idx;
     avl_node_t *node;
 
 
-    idx = hash->key_cb(uk, uk_len) % hash->num;
+    idx = hash->key_cb(pkey, pkey_len) % hash->num;
 
     pthread_rwlock_rdlock(&hash->lock[idx]);
-    node = avl_search(hash->tree[idx], uk, uk_len);
-    pthread_rwlock_unlock(&hash->lock[idx]);
+    node = avl_query(hash->tree[idx], pkey, pkey_len);
     if (NULL == node)
     {
-        return NULL;
+        pthread_rwlock_unlock(&hash->lock[idx]);
+        return -1; /* 未找到 */
     }
 
-    return node->data;
+    memcpy(data, node->data, data_len);
+    pthread_rwlock_unlock(&hash->lock[idx]);
+
+    return 0;
 }
 
 /******************************************************************************
@@ -151,7 +158,8 @@ void *hash_tab_search(hash_tab_t *hash, void *uk, int uk_len)
  **功    能: 删除哈希成员
  **输入参数:
  **     hash: 哈希数组
- **     key: KEY值
+ **     pkey: 主键
+ **     pkey_len: 主键长度
  **输出参数: NONE
  **返    回: 数据地址
  **实现描述: 
@@ -159,16 +167,16 @@ void *hash_tab_search(hash_tab_t *hash, void *uk, int uk_len)
  **     注意: 返回地址的内存空间由外部释放
  **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
-void *hash_tab_delete(hash_tab_t *hash, void *uk, int uk_len)
+void *hash_tab_delete(hash_tab_t *hash, void *pkey, int pkey_len)
 {
     void *data;
     uint32_t idx;
 
 
-    idx = hash->key_cb(uk, uk_len) % hash->num;
+    idx = hash->key_cb(pkey, pkey_len) % hash->num;
 
     pthread_rwlock_wrlock(&hash->lock[idx]);
-    avl_delete(hash->tree[idx], uk, uk_len, &data);
+    avl_delete(hash->tree[idx], pkey, pkey_len, &data);
     pthread_rwlock_unlock(&hash->lock[idx]);
 
     return data;

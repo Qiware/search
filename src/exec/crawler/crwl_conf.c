@@ -127,18 +127,18 @@ static int crwl_conf_load_comm(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *
     /* 1. 定位LOG标签
      *  获取日志级别信息
      * */
-    fix = xml_search(xml, ".CRAWLER.COMMON.LOG");
+    fix = xml_query(xml, ".CRAWLER.COMMON.LOG");
     if (NULL != fix)
     {
         /* 1.1 日志级别 */
-        node = xml_rsearch(xml, fix, "LEVEL");
+        node = xml_rquery(xml, fix, "LEVEL");
         if (NULL != node)
         {
             conf->log.level = log_get_level(node->value);
         }
 
         /* 1.2 系统日志级别 */
-        node = xml_rsearch(xml, fix, "LEVEL2");
+        node = xml_rquery(xml, fix, "LEVEL2");
         if (NULL != node)
         {
             conf->log.level2 = log_get_level(node->value);
@@ -152,7 +152,7 @@ static int crwl_conf_load_comm(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *
     /* 2. 定位Download标签
      *  获取网页抓取深度和存储路径
      * */
-    fix = xml_search(xml, ".CRAWLER.COMMON.DOWNLOAD");
+    fix = xml_query(xml, ".CRAWLER.COMMON.DOWNLOAD");
     if (NULL == fix)
     {
         log_error(log, "Didn't configure download!");
@@ -160,7 +160,7 @@ static int crwl_conf_load_comm(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *
     }
 
     /* 2.1 获取抓取深度 */
-    node = xml_rsearch(xml, fix, "DEPTH");
+    node = xml_rquery(xml, fix, "DEPTH");
     if (NULL == node)
     {
         log_error(log, "Get download depth failed!");
@@ -170,7 +170,7 @@ static int crwl_conf_load_comm(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *
     conf->download.depth = atoi(node->value);
 
     /* 2.2 获取存储路径 */
-    node = xml_rsearch(xml, fix, "PATH");
+    node = xml_rquery(xml, fix, "PATH");
     if (NULL == node)
     {
         log_error(log, "Get download path failed!");
@@ -215,7 +215,7 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
     /* 1. 定位REDIS标签
      *  获取Redis的IP地址、端口号、队列、副本等信息
      * */
-    fix = xml_search(xml, ".CRAWLER.COMMON.REDIS");
+    fix = xml_query(xml, ".CRAWLER.COMMON.REDIS");
     if (NULL == fix)
     {
         log_error(log, "Didn't configure redis!");
@@ -223,7 +223,7 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
     }
 
     /* 获取IP地址 */
-    node = xml_rsearch(xml, fix, "IP");
+    node = xml_rquery(xml, fix, "IP");
     if (NULL == node)
     {
         log_error(log, "Get redis ip address failed!");
@@ -233,7 +233,7 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
     snprintf(redis->master.ip, sizeof(redis->master.ip), "%s", node->value);
 
     /* 获取端口号 */
-    node = xml_rsearch(xml, fix, "PORT");
+    node = xml_rquery(xml, fix, "PORT");
     if (NULL == node)
     {
         log_error(log, "Get redis port failed!");
@@ -243,7 +243,7 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
     redis->master.port = atoi(node->value);
 
     /* 获取队列名 */
-    node = xml_rsearch(xml, fix, "QUEUE.UNDO_TASKQ");
+    node = xml_rquery(xml, fix, "QUEUE.UNDO_TASKQ");
     if (NULL == node)
     {
         log_error(log, "Get undo task queue failed!");
@@ -253,7 +253,7 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
     snprintf(redis->undo_taskq, sizeof(redis->undo_taskq), "%s", node->value);
 
     /* 获取哈希表名 */
-    node = xml_rsearch(xml, fix, "HASH.DONE_TAB");  /* DONE哈希表 */
+    node = xml_rquery(xml, fix, "HASH.DONE_TAB");  /* DONE哈希表 */
     if (NULL == node)
     {
         log_error(log, "Get done hash table failed!");
@@ -262,7 +262,7 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
 
     snprintf(redis->done_tab, sizeof(redis->done_tab), "%s", node->value);
 
-    node = xml_rsearch(xml, fix, "HASH.PUSH_TAB");  /* PUSH哈希表 */
+    node = xml_rquery(xml, fix, "HASH.PUSH_TAB");  /* PUSH哈希表 */
     if (NULL == node)
     {
         log_error(log, "Get pushed hash table failed!");
@@ -276,7 +276,7 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
     redis->slave_list.head = NULL;
     redis->slave_list.tail = NULL;
 
-    item = xml_rsearch(xml, fix, "SLAVE.ITEM");
+    item = xml_rquery(xml, fix, "SLAVE.ITEM");
     while (NULL != item)
     {
         if (0 != strcmp(item->name, "ITEM"))
@@ -303,7 +303,7 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
         l_node->data = slave;
 
         /* 获取IP地址 */
-        node = xml_rsearch(xml, item, "IP");
+        node = xml_rquery(xml, item, "IP");
         if (NULL == node)
         {
             item = item->next;
@@ -313,7 +313,7 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
         snprintf(slave->ip, sizeof(slave->ip), "%s", node->value);
 
         /* 获取PORT地址 */
-        node = xml_rsearch(xml, item, "PORT");
+        node = xml_rquery(xml, item, "PORT");
         if (NULL == node)
         {
             item = item->next;
@@ -354,7 +354,7 @@ static int crwl_conf_load_seed(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *
     xml_node_t *cf_node, *cf_item;
 
     /* 1. 定位SEED->ITEM标签 */
-    cf_item = xml_search(xml, ".CRAWLER.SEED.ITEM");
+    cf_item = xml_query(xml, ".CRAWLER.SEED.ITEM");
     if (NULL == cf_item)
     {
         log_error(log, "Didn't configure seed item!");
@@ -392,7 +392,7 @@ static int crwl_conf_load_seed(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *
         node->data = seed;
 
         /* 提取URI */
-        cf_node = xml_rsearch(xml, cf_item, "URI");
+        cf_node = xml_rquery(xml, cf_item, "URI");
         if (NULL == cf_node)
         {
             log_error(log, "Get uri failed!");
@@ -402,7 +402,7 @@ static int crwl_conf_load_seed(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *
         snprintf(seed->uri, sizeof(seed->uri), "%s", cf_node->value);
 
         /* 获取DEPTH */
-        cf_node = xml_rsearch(xml, cf_item, "DEPTH");
+        cf_node = xml_rquery(xml, cf_item, "DEPTH");
         if (NULL == cf_node)
         {
             seed->depth = 0;
@@ -440,7 +440,7 @@ static int crwl_conf_load_worker(
     xml_node_t *curr, *node;
 
     /* 1. 定位工作进程配置 */
-    curr = xml_search(xml, ".CRAWLER.WORKER");
+    curr = xml_query(xml, ".CRAWLER.WORKER");
     if (NULL == curr)
     {
         log_error(log, "Didn't configure worker process!");
@@ -448,7 +448,7 @@ static int crwl_conf_load_worker(
     }
 
     /* 2. 爬虫线程数(相对查找) */
-    node = xml_rsearch(xml, curr, "NUM");
+    node = xml_rquery(xml, curr, "NUM");
     if (NULL == node)
     {
         conf->num = CRWL_THD_DEF_NUM;
@@ -466,7 +466,7 @@ static int crwl_conf_load_worker(
     }
 
     /* 3. 并发网页连接数(相对查找) */
-    node = xml_rsearch(xml, curr, "CONNECTIONS.MAX");
+    node = xml_rquery(xml, curr, "CONNECTIONS.MAX");
     if (NULL == node)
     {
         log_error(log, "Didn't configure download webpage number!");
@@ -484,7 +484,7 @@ static int crwl_conf_load_worker(
     }
 
     /* 连接超时时间 */
-    node = xml_rsearch(xml, curr, "CONNECTIONS.TIMEOUT");
+    node = xml_rquery(xml, curr, "CONNECTIONS.TIMEOUT");
     if (NULL == node)
     {
         conf->conn_tmout_sec = CRWL_CONN_TMOUT_SEC;
@@ -499,7 +499,7 @@ static int crwl_conf_load_worker(
     }
 
     /* 4. Undo任务队列配置(相对查找) */
-    node = xml_rsearch(xml, curr, "TASKQ.COUNT");
+    node = xml_rquery(xml, curr, "TASKQ.COUNT");
     if (NULL == node)
     {
         log_error(log, "Didn't configure count of undo task queue unit!");
@@ -533,7 +533,7 @@ static int crwl_conf_load_filter(
     xml_node_t *curr, *node;
 
     /* 1. 定位工作进程配置 */
-    curr = xml_search(xml, ".CRAWLER.FILTER");
+    curr = xml_query(xml, ".CRAWLER.FILTER");
     if (NULL == curr)
     {
         log_error(log, "Didn't configure filter process!");
@@ -541,7 +541,7 @@ static int crwl_conf_load_filter(
     }
 
     /* 2. 存储路径(相对查找) */
-    node = xml_rsearch(xml, curr, "STORE.PATH");
+    node = xml_rquery(xml, curr, "STORE.PATH");
     if (NULL == node)
     {
         log_error(log, "Didn't configure store path!");
@@ -553,7 +553,7 @@ static int crwl_conf_load_filter(
     Mkdir(conf->store.path, DIR_MODE);
 
     /* 3. 错误信息存储路径(相对查找) */
-    node = xml_rsearch(xml, curr, "STORE.ERR_PATH");
+    node = xml_rquery(xml, curr, "STORE.ERR_PATH");
     if (NULL == node)
     {
         log_error(log, "Didn't configure error store path!");

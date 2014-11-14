@@ -38,11 +38,12 @@
 int crwl_task_down_webpage_by_uri(
         crwl_worker_t *worker, const crwl_task_down_webpage_by_uri_t *args)
 {
-    int fd, ip_idx;
+    int ret, fd, ip_idx;
     uri_field_t field;
-    crwl_domain_ip_map_t *map;
+    crwl_domain_ip_map_t map;
     crwl_worker_socket_t *sck;
 
+    memset(&map, 0, sizeof(map));
     memset(&field, 0, sizeof(field));
 
     /* 解析URI字串 */
@@ -53,24 +54,23 @@ int crwl_task_down_webpage_by_uri(
     }
    
     /* 1. 通过URL获取WEB服务器IP信息 */
-    map = crwl_get_ip_by_domain(worker->ctx, field.host);
-    if (NULL == map 
-        || 0 == map->ip_num)
+    ret = crwl_get_domain_ip_map(worker->ctx, field.host, &map);
+    if (0 != ret || 0 == map.ip_num)
     {
         log_error(worker->log, "Get ip failed! host:%s", field.host);
         return CRWL_ERR;
     }
 
-    ip_idx = random() % map->ip_num;
+    ip_idx = random() % map.ip_num;
 
     /* 2. 连接远程WEB服务器 */
-    fd = tcp_connect_ex2(map->ip[ip_idx].family, map->ip[ip_idx].ip, args->port);
+    fd = tcp_connect_ex2(map.ip[ip_idx].family, map.ip[ip_idx].ip, args->port);
     if (fd < 0)
     {
         log_error(worker->log, "errmsg:[%d] %s! family:%d ip:%s uri:%s",
             errno, strerror(errno),
-            map->ip[ip_idx].family,
-            map->ip[ip_idx].ip, args->uri);
+            map.ip[ip_idx].family,
+            map.ip[ip_idx].ip, args->uri);
         return CRWL_OK;
     }
 
@@ -91,9 +91,10 @@ int crwl_task_down_webpage_by_uri(
     sck->read.addr = sck->recv;
 
     snprintf(sck->webpage.uri, sizeof(sck->webpage.uri), "%s", args->uri);
-    snprintf(sck->webpage.ip, sizeof(sck->webpage.ip), "%s", map->ip[ip_idx].ip);
+    snprintf(sck->webpage.ip, sizeof(sck->webpage.ip), "%s", map.ip[ip_idx].ip);
     sck->webpage.port = args->port;
     sck->webpage.depth = args->depth;
+
     sck->recv_cb = crwl_worker_recv_data;
     sck->send_cb = crwl_worker_send_data;
 

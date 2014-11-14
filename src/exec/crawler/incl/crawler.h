@@ -144,6 +144,6 @@ log_cycle_t *crwl_init_log(char *fname);
 crwl_cntx_t *crwl_init(const char *path, log_cycle_t *log);
 int crwl_startup(crwl_cntx_t *ctx);
 
-crwl_domain_ip_map_t *crwl_get_ip_by_domain(crwl_cntx_t *ctx, char *host);
+int crwl_get_domain_ip_map(crwl_cntx_t *ctx, char *host, crwl_domain_ip_map_t *map);
 
 #endif /*__CRAWLER_H__*/

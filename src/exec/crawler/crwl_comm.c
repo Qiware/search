@@ -356,90 +356,101 @@ int crwl_proc_lock(void)
 }
 
 /******************************************************************************
- **函数名称: crwl_get_ip_by_domain
- **功    能: 获取域名对应的IP地址
+ **函数名称: crwl_get_domain_ip_map
+ **功    能: 获取域名IP映射
  **输入参数:
  **     ctx: 全局信息
  **     host: 域名
- **输出参数: NONE
- **返    回: 域名IP映射信息
+ **输出参数:
+ **     map: 域名IP映射
+ **返    回: 0:成功 !0:失败
  **实现描述: 
+ **     1. 从域名IP映射表中查询
+ **     2. 通过DNS服务器查询
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.21 #
  ******************************************************************************/
-crwl_domain_ip_map_t *crwl_get_ip_by_domain(crwl_cntx_t *ctx, char *host)
+int crwl_get_domain_ip_map(crwl_cntx_t *ctx, char *host, crwl_domain_ip_map_t *map)
 {
     int ret;
-    crwl_domain_ip_map_t *map;
+    crwl_domain_ip_map_t *new;
     struct sockaddr_in *sockaddr;
     struct addrinfo *addrinfo, *curr;
 
-CRWL_FETCH_IP_BY_DOMAIN:
-    /* 1. 从域名表中查找IP地址 */
-    map = hash_tab_search(ctx->domain_ip_map, host, strlen(host));
-    if (NULL == map)
+    /* 1. 从域名IP映射表中查找 */
+    ret = hash_tab_query(
+            ctx->domain_ip_map,
+            host, strlen(host),
+            map, sizeof(crwl_domain_ip_map_t));
+    if (0 == ret)
     {
-        /* 查找失败则通过getaddrinfo()查询IP地址 */
-        if (0 != getaddrinfo(host, NULL, NULL, &addrinfo))
-        {
-            log_error(ctx->log, "Get address info failed! host:%s", host);
-            return NULL;
-        }
-
-        /* 申请域名信息：此空间插入哈希表中(此处不释放空间) */
-        map = (crwl_domain_ip_map_t *)calloc(1, sizeof(crwl_domain_ip_map_t));
-        if (NULL == map)
-        {
-            freeaddrinfo(addrinfo);
-
-            log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
-            return NULL;
-        }
-
-        snprintf(map->host, sizeof(map->host), "%s", host);
-        map->ip_num = 0;
-
-        curr = addrinfo;
-        while (NULL != curr
-            && map->ip_num < CRWL_IP_MAX_NUM)
-        {
-            sockaddr = (struct sockaddr_in *)curr->ai_addr;
-            if (0 == sockaddr->sin_addr.s_addr)
-            {
-                curr = curr->ai_next;
-                continue;
-            }
-
-            map->ip[map->ip_num].family = curr->ai_family;
-            inet_ntop(curr->ai_family,
-                    &sockaddr->sin_addr.s_addr,
-                    map->ip[map->ip_num].ip,
-                    sizeof(map->ip[map->ip_num].ip));
-            ++map->ip_num;
-
-            curr = curr->ai_next;
-        }
-
-        freeaddrinfo(addrinfo);
-
-        ret = hash_tab_insert(ctx->domain_ip_map, host, strlen(host), map);
-        if (0 != ret)
-        {
-            free(map);
-
-            if (AVL_NODE_EXIST == ret)
-            {
-                log_debug(ctx->log, "Domain is exist! host:[%s]", host);
-                goto CRWL_FETCH_IP_BY_DOMAIN;
-            }
-
-            log_error(ctx->log, "Insert into hash table failed! ret:[%x/%x] host:[%s]",
-                    ret, AVL_NODE_EXIST, host);
-            return NULL;
-        }
+        return CRWL_OK; /* 成功 */
     }
 
-    return map;
+    /* 2. 通过DNS服务器查询 */
+    if (0 != getaddrinfo(host, NULL, NULL, &addrinfo))
+    {
+        log_error(ctx->log, "Get address info failed! host:%s", host);
+        return CRWL_ERR;
+    }
+
+    /* 3. 申请新的内存空间(此处不释放空间) */
+    new = (crwl_domain_ip_map_t *)calloc(1, sizeof(crwl_domain_ip_map_t));
+    if (NULL == new)
+    {
+        freeaddrinfo(addrinfo);
+
+        log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        return CRWL_ERR;
+    }
+
+    snprintf(new->host, sizeof(new->host), "%s", host);
+    new->ip_num = 0;
+
+    curr = addrinfo;
+    while (NULL != curr
+            && new->ip_num < CRWL_IP_MAX_NUM)
+    {
+        sockaddr = (struct sockaddr_in *)curr->ai_addr;
+        if (0 == sockaddr->sin_addr.s_addr)
+        {
+            curr = curr->ai_next;
+            continue;
+        }
+
+        new->ip[new->ip_num].family = curr->ai_family;
+        inet_ntop(curr->ai_family,
+                &sockaddr->sin_addr.s_addr,
+                new->ip[new->ip_num].ip,
+                sizeof(new->ip[new->ip_num].ip));
+        ++new->ip_num;
+
+        curr = curr->ai_next;
+    }
+
+    freeaddrinfo(addrinfo);
+
+    /* 4. 插入域名IP映射表 */
+    ret = hash_tab_insert(ctx->domain_ip_map, host, strlen(host), new);
+    if (0 != ret)
+    {
+        if (AVL_NODE_EXIST == ret)
+        {
+            memcpy(map, new, sizeof(crwl_domain_ip_map_t));
+            free(new);
+            log_debug(ctx->log, "Domain is exist! host:[%s]", host);
+            return 0;
+        }
+
+        free(new);
+        log_error(ctx->log, "Insert into hash table failed! ret:[%x/%x] host:[%s]",
+                ret, AVL_NODE_EXIST, host);
+        return CRWL_ERR;
+    }
+
+    memcpy(map, new, sizeof(crwl_domain_ip_map_t));
+
+    return 0;
 }
 
 /******************************************************************************

@@ -406,7 +406,7 @@ static int crwl_task_parse(const char *str, crwl_task_t *task)
     }
 
     /* 2. 获取任务类型 */
-    node = xml_search(xml, "TASK.TYPE");
+    node = xml_query(xml, "TASK.TYPE");
     if (NULL == node)
     {
         xml_destroy(xml);
@@ -459,14 +459,14 @@ static int crwl_task_parse_download_webpage_by_uri(
     xml_node_t *node, *body;
 
     /* 定位BODY结点 */
-    body = xml_search(xml, "TASK.BODY");
+    body = xml_query(xml, "TASK.BODY");
     if (NULL == body)
     {
         return CRWL_ERR;
     }
 
     /* 获取URI */
-    node = xml_rsearch(xml, body, "URI");
+    node = xml_rquery(xml, body, "URI");
     if (NULL == node)
     {
         return CRWL_ERR;
@@ -475,7 +475,7 @@ static int crwl_task_parse_download_webpage_by_uri(
     snprintf(dw->uri, sizeof(dw->uri), "%s", node->value);
 
     /* 获取URI.DEPTH */
-    node = xml_rsearch(xml, body, "URI.DEPTH");
+    node = xml_rquery(xml, body, "URI.DEPTH");
     if (NULL == node)
     {
         return CRWL_ERR;

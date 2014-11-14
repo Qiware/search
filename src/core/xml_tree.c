@@ -519,7 +519,7 @@ extern int xml_spack(xml_tree_t *xml, char *str)
 }
 
 /******************************************************************************
- **函数名称: xml_rsearch
+ **函数名称: xml_rquery
  **功    能: 搜索指定节点的信息(相对路径)
  **输入参数:
  **     curr: 参照结点
@@ -531,7 +531,7 @@ extern int xml_spack(xml_tree_t *xml, char *str)
  **     1. XML大小写敏感
  **作    者: # Qifeng.zou # 2013.02.26 #
  ******************************************************************************/
-xml_node_t *xml_rsearch(xml_tree_t *xml, xml_node_t *curr, const char *path)
+xml_node_t *xml_rquery(xml_tree_t *xml, xml_node_t *curr, const char *path)
 {
     size_t len = 0;
     xml_node_t *node = curr;

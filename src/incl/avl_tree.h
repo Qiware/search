@@ -24,49 +24,49 @@ typedef enum
     AVL_OK                      /* 成功 */
 
     , AVL_ERR = ~0x7FFFFFFF     /* 失败 */
-    , AVL_NODE_EXIST            /* 节点存在 */
+    , AVL_NODE_EXIST            /* 节点已存在 */
     , AVL_ERR_STACK             /* 栈异常 */
     , AVL_ERR_NOT_FOUND         /* 未找到 */
 } avl_err_e;
 
-/* 唯一键 */
+/* 主键 */
 typedef struct
 {
-    void *data;
-    size_t len;
-} avl_ukey_t;
+    void *key;                  /* 主键 */
+    size_t len;                 /* 主键长度 */
+} avl_primary_key_t;
 
 /******************************************************************************
  **函数名称: avl_key_cb_t
  **功    能: 为唯一键产生KEY值
  **输入参数: 
- **     ukey: 唯一键(任意数据类型, 但该值在二叉树中必须是唯一的)
- **     len: 唯一键长度
+ **     pkey: 主键(任意数据类型, 但该值在二叉树中必须是唯一的)
+ **     pkey_len: 主键长度
  **输出参数: NONE
  **返    回: KEY值
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.09 #
  ******************************************************************************/
-typedef uint32_t (*avl_key_cb_t)(const void *ukey, size_t len);
+typedef uint32_t (*avl_key_cb_t)(const void *pkey, size_t pkey_len);
 
 /******************************************************************************
  **函数名称: avl_cmp_cb_t
- **功    能: 唯一键与值的比较函数
+ **功    能: 主键与值的比较函数
  **输入参数: 
- **     ukey: 唯一键
+ **     pkey: 主键
  **     data: 与唯一键进行比较的数值
  **输出参数: NONE
  **返    回: 
  **     1. 0:相等
- **     2. < 0: 小于(ukey < data)
- **     3. > 0: 大于(ukey > data)
+ **     2. < 0: 小于(pkey < data)
+ **     3. > 0: 大于(pkey > data)
  **实现描述: 
  **注意事项: 
- **     数值中必须存有与之相关联ukey的值
+ **     数值中必须存有与之相关联pkey的值
  **作    者: # Qifeng.zou # 2014.11.09 #
  ******************************************************************************/
-typedef int (*avl_cmp_cb_t)(const void *ukey, const void *data);
+typedef int (*avl_cmp_cb_t)(const void *pkey, const void *data);
 
 /* 节点结构 */
 typedef struct _node_t
@@ -133,9 +133,9 @@ typedef struct
 } 
 
 int avl_creat(avl_tree_t **tree, avl_key_cb_t key_cb, avl_cmp_cb_t cmp_cb);
-int avl_insert(avl_tree_t *tree, void *uk, int uk_len, void *data);
-avl_node_t *avl_search(avl_tree_t *tree, void *uk, int uk_len);
-int avl_delete(avl_tree_t *tree, void *uk, int uk_len, void **data);
+int avl_insert(avl_tree_t *tree, void *pkey, int pkey_len, void *data);
+avl_node_t *avl_query(avl_tree_t *tree, void *pkey, int pkey_len);
+int avl_delete(avl_tree_t *tree, void *pkey, int pkey_len, void **data);
 int avl_print(avl_tree_t *tree);
 void avl_destroy(avl_tree_t **tree);
 
