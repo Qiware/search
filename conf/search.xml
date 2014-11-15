@@ -1,4 +1,17 @@
-<!-- 搜索引擎系统配置信息 -->
-<SEARCH>
-  <LOG LEVEL="trace" /> <!-- 日志级别: trace|debug|info|warn|error|fatal -->
-</SEARCH>
+<!-- 搜索引擎配置信息 -->
+<SEARCH-ENGINES>
+    <!-- 日志信息配置
+         1) LEVLE: 日志级别
+         2) LEVEL2: 系统日志级别
+         3) 取值范围: trace|debug|info|warn|error|fatal -->
+    <LOG LEVEL="error" LEVEL2="error" PATH="../log/" />
+
+    <!-- 并发(连接)配置
+         1) MAX: 最大并发数
+         2) TIMEOUT: 连接超时时间 -->
+    <CONNECTIONS MAX="100000" TIMEOUT="15" />
+
+    <!-- 工作线程配置
+        1) NUM: 工作线程数 -->
+        <WORKER NUM="3" />
+</SEARCH-ENGINES>
