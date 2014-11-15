@@ -3,8 +3,8 @@
  **
  ** 文件名: crwl_conf.c
  ** 版本号: 1.0
- ** 描  述: 网络爬虫
- **         负责爬虫配置信息的解析加载
+ ** 描  述: 网络爬虫配置
+ **         负责爬虫配置信息(crawler.xml)的解析加载
  ** 作  者: # Qifeng.zou # 2014.10.28 #
  ******************************************************************************/
 
@@ -136,12 +136,20 @@ static int crwl_conf_load_comm(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *
         {
             conf->log.level = log_get_level(node->value);
         }
+        else
+        {
+            conf->log.level = log_get_level(LOG_DEF_LEVEL_STR);
+        }
 
         /* 1.2 系统日志级别 */
         node = xml_rquery(xml, fix, "LEVEL2");
         if (NULL != node)
         {
             conf->log.level2 = log_get_level(node->value);
+        }
+        else
+        {
+            conf->log.level2 = log_get_level(LOG_DEF_LEVEL_STR);
         }
     }
     else
