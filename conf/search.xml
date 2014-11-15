@@ -12,6 +12,7 @@
     <CONNECTIONS MAX="100000" TIMEOUT="15" />
 
     <!-- 工作线程配置
-        1) NUM: 工作线程数 -->
-        <WORKER NUM="3" />
+        1) RECVER_NUM: Recver线程数
+        2) WORKER_NUM: Worker线程数 -->
+        <THREAD RECVER_NUM="2" WORKER_NUM="5" />
 </SEARCH-ENGINES>

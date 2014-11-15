@@ -52,7 +52,12 @@ typedef struct
     srch_conf_t *conf;                      /* 配置信息 */
     log_cycle_t *log;                       /* 日志对象 */
 
-    thread_pool_t *workers;                 /* 线程池对象 */
+    thread_pool_t *recvers;                 /* Recver线程池 */
+    thread_pool_t *workers;                 /* Worker线程池 */
 } srch_cntx_t;
+
+int srch_getopt(int argc, char **argv, srch_opt_t *opt);
+int srch_usage(const char *exec);
+log_cycle_t *srch_init_log(char *fname);
 
 #endif /*__SEARCH_H__*/

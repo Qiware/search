@@ -8,78 +8,90 @@
  ** 作  者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
 
+#include <stdio.h>
+#include <netdb.h>
+#include <stdlib.h>
+#include <string.h>
+#include <getopt.h>
+#include <libgen.h>
+#include <sys/wait.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+
+#include "lock.h"
+#include "hash.h"
+#include "common.h"
+#include "search.h"
+#include "syscall.h"
+#include "xd_socket.h"
+#include "srch_worker.h"
+
+#define SRCH_PROC_LOCK_PATH "../temp/crwl/crwl.lck"
 
 /******************************************************************************
- **函数名称: srch_getopt 
- **功    能: 解析输入参数
+ **函数名称: main 
+ **功    能: 搜索引擎主程序
  **输入参数: 
  **     argc: 参数个数
  **     argv: 参数列表
- **输出参数:
- **     opt: 参数选项
+ **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
- **     1. 解析输入参数
- **     2. 验证输入参数
+ **     1. 加载搜索引擎配置
+ **     1. 初始化搜索引擎信息
+ **     2. 启动搜索引擎功能
  **注意事项: 
- **     c: 配置文件路径
- **     h: 帮助手册
  **作    者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
-int srch_getopt(int argc, char **argv, srch_opt_t *opt)
+int main(int argc, char *argv[])
 {
-    int ch;
+    int ret;
+    srch_opt_t opt;
+    srch_cntx_t *ctx;
+    log_cycle_t *log;
+
+    memset(&opt, 0, sizeof(opt));
 
     /* 1. 解析输入参数 */
-    while (-1 != (ch = getopt(argc, argv, "c:hd")))
+    ret = srch_getopt(argc, argv, &opt);
+    if (SRCH_OK != ret)
     {
-        switch (ch)
-        {
-            case 'c':   /* 指定配置文件 */
-            {
-                snprintf(opt->conf_path, sizeof(opt->conf_path), "%s", optarg);
-                break;
-            }
-            case 'd':
-            {
-                opt->isdaemon = true;
-                break;
-            }
-            case 'h':   /* 显示帮助信息 */
-            default:
-            {
-                return SRCH_SHOW_HELP;
-            }
-        }
+        return srch_usage(argv[0]);
     }
 
-    optarg = NULL;
-    optind = 1;
-
-    /* 2. 验证输入参数 */
-    if (!strlen(opt->conf_path))
+    if (opt.isdaemon)
     {
-        snprintf(opt->conf_path, sizeof(opt->conf_path), "%s", SRCH_DEF_CONF_PATH);
+        daemon(1, 0);
+    }
+ 
+    /* 2. 初始化日志模块 */
+    log = srch_init_log(argv[0]);
+    if (NULL == log)
+    {
+        fprintf(stderr, "Initialize log failed!");
+        return SRCH_ERR;
     }
 
-    return SRCH_OK;
-}
+    /* 3. 初始化全局信息 */
+    ctx = srch_init(opt.conf_path, log);
+    if (NULL == ctx)
+    {
+        log_error(log, "Initialize crawler failed!");
+        goto ERROR;
+    }
 
-/******************************************************************************
- **函数名称: srch_usage
- **功    能: 显示启动参数帮助信息
- **输入参数:
- **     name: 程序名
- **输出参数: NULL
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.09.11 #
- ******************************************************************************/
-int srch_usage(const char *exec)
-{
-    printf("\nUsage: %s [-h] [-d] -c <config file> [-l log_level]\n", exec);
-    printf("\t-h\tShow help\n"
-           "\t-c\tConfiguration path\n\n");
-    return SRCH_OK;
+    /* 4. 启动爬虫服务 */
+    ret = srch_startup(ctx);
+    if (SRCH_OK != ret)
+    {
+        log_error(log, "Startup crawler failed!");
+        goto ERROR;
+    }
+
+    while (1) { pause(); }
+
+ERROR:
+    log2_destroy();
+
+    return SRCH_ERR;
 }
