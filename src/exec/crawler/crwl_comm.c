@@ -110,29 +110,38 @@ int crwl_usage(const char *exec)
 }
 
 /******************************************************************************
- **函数名称: crwl_init
+ **函数名称: crwl_cntx_init
  **功    能: 初始化全局信息
  **输入参数: 
+ **     pname: 进程名
  **     path: 配置文件路径
- **     log: 日志对象
  **输出参数: NONE
  **返    回: 全局对象
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.04 #
  ******************************************************************************/
-crwl_cntx_t *crwl_init(const char *path, log_cycle_t *log)
+crwl_cntx_t *crwl_cntx_init(char *pname, const char *path)
 {
+    log_cycle_t *log;
     crwl_cntx_t *ctx;
 
-    /* 1. 判断程序是否已运行 */
+    /* 1. 初始化日志模块 */
+    log = crwl_init_log(pname);
+    if (NULL == log)
+    {
+        fprintf(stderr, "Initialize log failed!");
+        return NULL;
+    }
+
+    /* 2. 判断程序是否已运行 */
     if (0 != crwl_proc_lock())
     {
         log_error(log, "Crawler is running!");
         return NULL;
     }
 
-    /* 2. 创建全局对象 */
+    /* 3. 创建全局对象 */
     ctx = (crwl_cntx_t *)calloc(1, sizeof(crwl_cntx_t));
     if (NULL == ctx)
     {
@@ -140,7 +149,7 @@ crwl_cntx_t *crwl_init(const char *path, log_cycle_t *log)
         return NULL;
     }
 
-    /* 3. 加载配置文件 */
+    /* 4. 加载配置文件 */
     ctx->conf = crwl_conf_load(path, log);
     if (NULL == ctx->conf)
     {
@@ -153,7 +162,7 @@ crwl_cntx_t *crwl_init(const char *path, log_cycle_t *log)
     log_set_level(log, ctx->conf->log.level);
     log2_set_level(ctx->conf->log.level2);
 
-    /* 4. 新建域名IP映射表 */
+    /* 5. 新建域名IP映射表 */
     ctx->domain_ip_map = hash_tab_creat(
             CRWL_DOMAIN_IP_MAP_HASH_NUM,
             hash_time33_ex,
@@ -168,7 +177,7 @@ crwl_cntx_t *crwl_init(const char *path, log_cycle_t *log)
 
     limit_file_num(4096);
 
-    /* 5. 创建Worker线程池 */
+    /* 6. 创建Worker线程池 */
     if (crwl_init_workers(ctx))
     {
         crwl_conf_destroy(ctx->conf);
@@ -178,6 +187,26 @@ crwl_cntx_t *crwl_init(const char *path, log_cycle_t *log)
     }
 
     return ctx;
+}
+
+/******************************************************************************
+ **函数名称: crwl_cntx_destroy
+ **功    能: 销毁爬虫上下文
+ **输入参数: 
+ **     ctx: 全局信息
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **     设置线程回调
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.11.17 #
+ ******************************************************************************/
+void crwl_cntx_destroy(crwl_cntx_t *ctx)
+{
+    crwl_workers_destroy(ctx);
+
+    log_destroy(&ctx->log);
+    log2_destroy();
 }
 
 /******************************************************************************

@@ -141,7 +141,8 @@ int crwl_usage(const char *exec);
 int crwl_proc_lock(void);
 
 log_cycle_t *crwl_init_log(char *fname);
-crwl_cntx_t *crwl_init(const char *path, log_cycle_t *log);
+crwl_cntx_t *crwl_cntx_init(char *pname, const char *path);
+void crwl_cntx_destroy(crwl_cntx_t *ctx);
 int crwl_startup(crwl_cntx_t *ctx);
 
 int crwl_get_domain_ip_map(crwl_cntx_t *ctx, char *host, crwl_domain_ip_map_t *map);

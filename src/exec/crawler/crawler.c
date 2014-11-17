@@ -48,7 +48,6 @@ int main(int argc, char *argv[])
     int ret;
     crwl_opt_t opt;
     crwl_cntx_t *ctx;
-    log_cycle_t *log;
 
     memset(&opt, 0, sizeof(opt));
 
@@ -64,34 +63,26 @@ int main(int argc, char *argv[])
         daemon(1, 0);
     }
  
-    /* 2. 初始化日志模块 */
-    log = crwl_init_log(argv[0]);
-    if (NULL == log)
+    /* 2. 初始化全局信息 */
+    ctx = crwl_cntx_init(argv[0], opt.conf_path);
+    if (NULL == ctx)
     {
-        fprintf(stderr, "Initialize log failed!");
+        fprintf(stderr, "Initialize crawler failed!");
         return CRWL_ERR;
     }
 
-    /* 3. 初始化全局信息 */
-    ctx = crwl_init(opt.conf_path, log);
-    if (NULL == ctx)
-    {
-        log_error(log, "Initialize crawler failed!");
-        goto ERROR;
-    }
-
-    /* 4. 启动爬虫服务 */
+    /* 3. 启动爬虫服务 */
     ret = crwl_startup(ctx);
     if (CRWL_OK != ret)
     {
-        log_error(log, "Startup crawler failed!");
+        log_error(ctx->log, "Startup crawler failed!");
         goto ERROR;
     }
 
     while (1) { pause(); }
 
 ERROR:
-    log2_destroy();
+    crwl_cntx_destroy(ctx);
 
     return CRWL_ERR;
 }
