@@ -8,13 +8,12 @@
 
     <!-- 并发(连接)配置
         1) MAX: 最大并发数
-        2) TIMEOUT: 连接超时时间 -->
-    <CONNECTIONS MAX="100000" TIMEOUT="15" />
+        2) TIMEOUT: 连接超时时间
+        3) PORT: 侦听端口 -->
+    <CONNECTIONS MAX="100000" TIMEOUT="15" PORT="8888" />
 
     <!-- Worker配置
         1) NUM: 线程数 -->
-    <WORKER NUM="3">
-        <CONNECTIONS MAX="1024" TIMEOUT="15" /> <!-- 并发(连接)数 -->
-    </WORKER>
+    <WORKER NUM="3" />
     <RECVER NUM="5" />
 </SEARCH-ENGINES>
