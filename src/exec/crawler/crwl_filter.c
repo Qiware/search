@@ -132,7 +132,9 @@ crwl_filter_t *crwl_filter_init(crwl_conf_t *conf, log_cycle_t *log)
     log2_set_level(conf->log.level2);
 
     /* 2. 连接Redis集群 */
-    filter->redis = redis_cluster_init(&conf->redis.master, &conf->redis.slave_list);
+    filter->redis = redis_cluster_init(
+            &conf->redis.master,
+            conf->redis.slaves, conf->redis.slave_num);
     if (NULL == filter->redis)
     {
         log_error(filter->log, "Initialize redis context failed!");

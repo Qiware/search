@@ -47,7 +47,8 @@ typedef struct
     char undo_taskq[QUEUE_NAME_MAX_LEN];    /* Undo任务队列名 */
     char done_tab[TABLE_NAME_MAX_LEN];      /* Done哈希表名 */
     char push_tab[TABLE_NAME_MAX_LEN];      /* Push哈希表名 */
-    list_t slave_list;                      /* 副本配置信息 */
+    int slave_num;                          /* 副本数目 */
+    redis_conf_t *slaves;                   /* 副本配置信息 */
 } crwl_redis_conf_t;
 
 /* 爬虫配置信息 */

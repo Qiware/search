@@ -215,7 +215,7 @@ static int crwl_conf_load_comm(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *
  ******************************************************************************/
 static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
 {
-    list_node_t *l_node;
+    int max;
     xml_node_t *fix, *node, *item;
     crwl_redis_conf_t *redis = &conf->redis;
     redis_conf_t *slave;
@@ -280,12 +280,27 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
     snprintf(redis->push_tab, sizeof(redis->push_tab), "%s", node->value);
 
     /* 获取Redis副本配置 */
-    redis->slave_list.num = 0;
-    redis->slave_list.head = NULL;
-    redis->slave_list.tail = NULL;
+    node = xml_rquery(xml, fix, "SLAVE.MAX");
+    if (NULL == node)
+    {
+        log_error(log, "Get max number of redis-slaves failed!");
+        return CRWL_ERR;
+    }
+
+    max = atoi(node->value);
+
+    /* 注: 出现异常情况时 内存在此不必释放 */
+    redis->slaves = (redis_conf_t *)mem_pool_alloc(conf->mem_pool, max*sizeof(redis_conf_t));
+    if (NULL == redis->slaves)
+    {
+        log_error(log, "Alloc memory for redis-slaves failed!");
+        return CRWL_ERR;
+    }
+
+    redis->slave_num = 0;
 
     item = xml_rquery(xml, fix, "SLAVE.ITEM");
-    while (NULL != item)
+    while (NULL != item && redis->slave_num < max)
     {
         if (0 != strcmp(item->name, "ITEM"))
         {
@@ -293,22 +308,7 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
             continue;
         }
 
-        /* 新建链表结点(注: 出现异常情况时 内存在此不必释放)  */
-        l_node = (list_node_t *)mem_pool_alloc(conf->mem_pool, sizeof(list_node_t));
-        if (NULL == l_node)
-        {
-            log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
-            return CRWL_ERR;
-        }
-
-        slave = (redis_conf_t *)mem_pool_alloc(conf->mem_pool, sizeof(redis_conf_t));
-        if (NULL == slave)
-        {
-            log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
-            return CRWL_ERR;
-        }
-
-        l_node->data = slave;
+        slave = redis->slaves + redis->slave_num;
 
         /* 获取IP地址 */
         node = xml_rquery(xml, item, "IP");
@@ -330,8 +330,7 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
 
         slave->port = atoi(node->value);
 
-        /* 加入Slave链表尾 */
-        list_insert_tail(&redis->slave_list, l_node);
+        ++redis->slave_num;
 
         /* 下一结点 */
         item = item->next;

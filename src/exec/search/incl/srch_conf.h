@@ -13,7 +13,7 @@
 #include "common.h"
 #include "xml_tree.h"
 
-/* 爬虫配置信息 */
+/* 搜索引擎配置信息 */
 typedef struct
 {
     struct
@@ -26,7 +26,10 @@ typedef struct
         int max;                            /* 最大并发数 */
         int timeout;                        /* 连接超时时间 */
     } connections;
+
+    int recvers;                            /* Recver线程数 */
     int workers;                            /* Worker线程数 */
+
     mem_pool_t *mem_pool;                   /* 内存池 */
 } srch_conf_t;
 

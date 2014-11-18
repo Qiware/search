@@ -125,9 +125,10 @@ log_cycle_t *srch_init_log(char *fname)
 }
 
 /******************************************************************************
- **函数名称: srch_init
+ **函数名称: srch_cntx_init
  **功    能: 初始化全局信息
  **输入参数: 
+ **     pname: 进程名
  **     path: 配置文件路径
  **     log: 日志对象
  **输出参数: NONE
@@ -136,18 +137,27 @@ log_cycle_t *srch_init_log(char *fname)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
-srch_cntx_t *srch_init(const char *path, log_cycle_t *log)
+srch_cntx_t *srch_cntx_init(const char *pname, const char *conf_path)
 {
+    log_cycle_t *log;
     srch_cntx_t *ctx;
 
-    /* 1. 判断程序是否已运行 */
+    /* 1. 初始化日志模块 */
+    log = srch_init_log(pname);
+    if (NULL == log)
+    {
+        fprintf(stderr, "Initialize log failed!");
+        return SRCH_ERR;
+    }
+
+    /* 2. 判断程序是否已运行 */
     if (0 != srch_proc_lock())
     {
         log_error(log, "Crawler is running!");
         return NULL;
     }
 
-    /* 2. 创建全局对象 */
+    /* 3. 创建全局对象 */
     ctx = (srch_cntx_t *)calloc(1, sizeof(srch_cntx_t));
     if (NULL == ctx)
     {
@@ -155,12 +165,12 @@ srch_cntx_t *srch_init(const char *path, log_cycle_t *log)
         return NULL;
     }
 
-    /* 3. 加载配置文件 */
-    ctx->conf = srch_conf_load(path, log);
+    /* 4. 加载配置文件 */
+    ctx->conf = srch_conf_load(conf_path, log);
     if (NULL == ctx->conf)
     {
         free(ctx);
-        log_error(log, "Load configuration failed! path:%s", path);
+        log_error(log, "Load configuration failed! path:%s", conf_path);
         return NULL;
     }
 
@@ -194,6 +204,26 @@ srch_cntx_t *srch_init(const char *path, log_cycle_t *log)
     }
 
     return ctx;
+}
+
+/******************************************************************************
+ **函数名称: srch_cntx_destroy
+ **功    能: 销毁搜索引擎上下文
+ **输入参数: 
+ **     ctx: 全局信息
+ **输出参数: NONE
+ **返    回: VOID
+ **实现描述: 
+ **     依次销毁侦听线程、接收线程、工作线程、日志对象等
+ **注意事项: 按序销毁
+ **作    者: # Qifeng.zou # 2014.11.17 #
+ ******************************************************************************/
+void srch_cntx_destroy(srch_cntx_t *ctx)
+{
+    srch_workers_destroy(ctx);
+
+    log_destroy(&ctx->log);
+    log2_destroy();
 }
 
 /******************************************************************************

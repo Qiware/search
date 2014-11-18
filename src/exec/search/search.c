@@ -48,7 +48,6 @@ int main(int argc, char *argv[])
     int ret;
     srch_opt_t opt;
     srch_cntx_t *ctx;
-    log_cycle_t *log;
 
     memset(&opt, 0, sizeof(opt));
 
@@ -61,37 +60,33 @@ int main(int argc, char *argv[])
 
     if (opt.isdaemon)
     {
-        daemon(1, 0);
+        /* int daemon(int nochdir, int noclose);
+         *  1． daemon()函数主要用于希望脱离控制台,以守护进程形式在后台运行的程序.
+         *  2． 当nochdir为0时,daemon将更改进城的根目录为root(“/”).
+         *  3． 当noclose为0是,daemon将进城的STDIN, STDOUT, STDERR都重定向到/dev/null */
+        daemon(1, 1);
     }
  
-    /* 2. 初始化日志模块 */
-    log = srch_init_log(argv[0]);
-    if (NULL == log)
-    {
-        fprintf(stderr, "Initialize log failed!");
-        return SRCH_ERR;
-    }
-
-    /* 3. 初始化全局信息 */
-    ctx = srch_init(opt.conf_path, log);
+    /* 2. 初始化全局信息 */
+    ctx = srch_cntx_init(argv[0], opt.conf_path);
     if (NULL == ctx)
     {
-        log_error(log, "Initialize crawler failed!");
-        goto ERROR;
+        fprintf(stderr, "Initialize crawler failed!");
+        return CRWL_ERR;
     }
 
-    /* 4. 启动爬虫服务 */
-    ret = srch_startup(ctx);
-    if (SRCH_OK != ret)
+    /* 3. 启动爬虫服务 */
+    if (srch_startup(ctx))
     {
-        log_error(log, "Startup crawler failed!");
+        log_error(ctx->log, "Startup crawler failed!");
         goto ERROR;
     }
 
     while (1) { pause(); }
 
 ERROR:
-    log2_destroy();
+    /* 4. 销毁全局信息 */
+    srch_cntx_destroy(ctx);
 
     return SRCH_ERR;
 }

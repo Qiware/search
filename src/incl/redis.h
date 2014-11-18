@@ -21,7 +21,8 @@ typedef struct
     redisContext **slave;           /* 副本对象 */
 } redis_cluster_t;
 
-redis_cluster_t *redis_cluster_init(const redis_conf_t *mcf, const list_t *scf);
+redis_cluster_t *redis_cluster_init(
+        const redis_conf_t *mcf, const redis_conf_t *scf, int slave_num);
 void redis_cluster_destroy(redis_cluster_t *ctx);
 
 bool redis_hsetnx(redisContext *ctx, const char *hash, const char *key, const char *value);

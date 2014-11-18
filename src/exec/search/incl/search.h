@@ -56,6 +56,9 @@ typedef struct
     thread_pool_t *workers;                 /* Worker线程池 */
 } srch_cntx_t;
 
+
+srch_cntx_t *srch_cntx_init(const char *pname, const char *conf_path);
+void srch_cntx_destroy(srch_cntx_t *ctx);
 int srch_getopt(int argc, char **argv, srch_opt_t *opt);
 int srch_usage(const char *exec);
 log_cycle_t *srch_init_log(char *fname);

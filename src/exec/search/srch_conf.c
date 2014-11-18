@@ -93,7 +93,7 @@ srch_conf_t *srch_conf_load(const char *path, log_cycle_t *log)
  **实现描述: 
  **     通过XML查询接口查找对应的配置信息
  **注意事项: 
- **作    者: # Qifeng.zou # 2014.14.16 #
+ **作    者: # Qifeng.zou # 2014.11.16 #
  ******************************************************************************/
 static int srch_conf_load_comm(xml_tree_t *xml, srch_conf_t *conf, log_cycle_t *log)
 {
