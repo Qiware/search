@@ -13,11 +13,12 @@ INCLUDE = -I. \
 			-I$(PROJ)/src/incl
 LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lpthread
+LIBS2 = -lxd_srch -lxd_core
 
 SRC_LIST = srch_comm.c \
 			srch_conf.c \
 			srch_listen.c \
-			srch_recv.c \
+			srch_recver.c \
 			srch_worker.c
 SRC_LIST2 = search.c
 
