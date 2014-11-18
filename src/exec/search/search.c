@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
     if (NULL == ctx)
     {
         fprintf(stderr, "Initialize crawler failed!");
-        return CRWL_ERR;
+        return SRCH_ERR;
     }
 
     /* 3. 启动爬虫服务 */

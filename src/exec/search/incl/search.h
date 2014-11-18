@@ -57,10 +57,18 @@ typedef struct
 } srch_cntx_t;
 
 
-srch_cntx_t *srch_cntx_init(const char *pname, const char *conf_path);
+srch_cntx_t *srch_cntx_init(char *pname, const char *conf_path);
 void srch_cntx_destroy(srch_cntx_t *ctx);
 int srch_getopt(int argc, char **argv, srch_opt_t *opt);
 int srch_usage(const char *exec);
+
+int srch_startup(srch_cntx_t *ctx);
+
 log_cycle_t *srch_init_log(char *fname);
+int srch_proc_lock(void);
+int srch_init_workers(srch_cntx_t *ctx);
+int srch_workers_destroy(srch_cntx_t *ctx);
+int srch_init_recvers(srch_cntx_t *ctx);
+int srch_recvers_destroy(srch_cntx_t *ctx);
 
 #endif /*__SEARCH_H__*/

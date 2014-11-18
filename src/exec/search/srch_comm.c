@@ -8,7 +8,28 @@
  ** 作  者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
 
+#include <stdio.h>
+#include <netdb.h>
+#include <stdlib.h>
+#include <string.h>
+#include <getopt.h>
+#include <libgen.h>
+#include <sys/wait.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+
+#include "log.h"
+#include "lock.h"
+#include "hash.h"
+#include "common.h"
 #include "search.h"
+#include "syscall.h"
+#include "xd_socket.h"
+#include "srch_worker.h"
+#include "srch_listen.h"
+#include "srch_recver.h"
+
+#define SRCH_PROC_LOCK_PATH "../temp/srch/srch.lck"
 
 /******************************************************************************
  **函数名称: srch_getopt 
@@ -137,7 +158,7 @@ log_cycle_t *srch_init_log(char *fname)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
-srch_cntx_t *srch_cntx_init(const char *pname, const char *conf_path)
+srch_cntx_t *srch_cntx_init(char *pname, const char *conf_path)
 {
     log_cycle_t *log;
     srch_cntx_t *ctx;
@@ -147,7 +168,7 @@ srch_cntx_t *srch_cntx_init(const char *pname, const char *conf_path)
     if (NULL == log)
     {
         fprintf(stderr, "Initialize log failed!");
-        return SRCH_ERR;
+        return NULL;
     }
 
     /* 2. 判断程序是否已运行 */
@@ -245,13 +266,13 @@ int srch_startup(srch_cntx_t *ctx)
     const srch_conf_t *conf = ctx->conf;
 
     /* 1. 设置Worker线程回调 */
-    for (idx=0; idx<conf->worker_num; ++idx)
+    for (idx=0; idx<conf->workers; ++idx)
     {
         thread_pool_add_worker(ctx->workers, srch_worker_routine, ctx);
     }
 
     /* 2. 设置Recver线程回调 */
-    for (idx=0; idx<conf->recver_num; ++idx)
+    for (idx=0; idx<conf->recvers; ++idx)
     {
         thread_pool_add_worker(ctx->recvers, srch_recver_routine, ctx);
     }
@@ -277,14 +298,14 @@ int srch_startup(srch_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
-static int srch_init_workers(srch_cntx_t *ctx)
+int srch_init_workers(srch_cntx_t *ctx)
 {
     int idx, num;
     srch_worker_t *worker;
-    const srch_worker_conf_t *conf = &ctx->conf->worker;
+    const srch_conf_t *conf = ctx->conf;
 
     /* 1. 创建Worker线程池 */
-    ctx->workers = thread_pool_init(conf->num);
+    ctx->workers = thread_pool_init(conf->workers);
     if (NULL == ctx->workers)
     {
         log_error(ctx->log, "Initialize thread pool failed!");
@@ -293,7 +314,7 @@ static int srch_init_workers(srch_cntx_t *ctx)
 
     /* 2. 新建Worker对象 */
     ctx->workers->data =
-        (srch_worker_t *)calloc(conf->num, sizeof(srch_worker_t));
+        (srch_worker_t *)calloc(conf->workers, sizeof(srch_worker_t));
     if (NULL == ctx->workers->data)
     {
         thread_pool_destroy(ctx->workers);
@@ -302,7 +323,7 @@ static int srch_init_workers(srch_cntx_t *ctx)
     }
 
     /* 3. 依次初始化Worker对象 */
-    for (idx=0; idx<conf->num; ++idx)
+    for (idx=0; idx<conf->workers; ++idx)
     {
         worker = (srch_worker_t *)ctx->workers->data + idx;
 
@@ -315,7 +336,7 @@ static int srch_init_workers(srch_cntx_t *ctx)
         }
     }
 
-    if (idx == conf->num)
+    if (idx == conf->workers)
     {
         return SRCH_OK; /* 成功 */
     }
@@ -350,10 +371,10 @@ int srch_workers_destroy(srch_cntx_t *ctx)
 {
     int idx;
     srch_worker_t *worker;
-    const srch_worker_conf_t *conf = &ctx->conf->worker;
+    const srch_conf_t *conf = ctx->conf;
 
     /* 1. 释放Worker对象 */
-    for (idx=0; idx<conf->num; ++idx)
+    for (idx=0; idx<conf->workers; ++idx)
     {
         worker = (srch_worker_t *)ctx->workers->data + idx;
 
@@ -381,14 +402,14 @@ int srch_workers_destroy(srch_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
-static int srch_init_recvers(srch_cntx_t *ctx)
+int srch_init_recvers(srch_cntx_t *ctx)
 {
     int idx, num;
     srch_recver_t *recver;
-    const srch_recver_conf_t *conf = &ctx->conf->recver;
+    const srch_conf_t *conf = ctx->conf;
 
     /* 1. 创建Worker线程池 */
-    ctx->recvers = thread_pool_init(conf->num);
+    ctx->recvers = thread_pool_init(conf->recvers);
     if (NULL == ctx->recvers)
     {
         log_error(ctx->log, "Initialize thread pool failed!");
@@ -397,7 +418,7 @@ static int srch_init_recvers(srch_cntx_t *ctx)
 
     /* 2. 新建Recver对象 */
     ctx->recvers->data =
-        (srch_recver_t *)calloc(conf->num, sizeof(srch_recver_t));
+        (srch_recver_t *)calloc(conf->recvers, sizeof(srch_recver_t));
     if (NULL == ctx->recvers->data)
     {
         thread_pool_destroy(ctx->recvers);
@@ -406,7 +427,7 @@ static int srch_init_recvers(srch_cntx_t *ctx)
     }
 
     /* 3. 依次初始化Recver对象 */
-    for (idx=0; idx<conf->num; ++idx)
+    for (idx=0; idx<conf->recvers; ++idx)
     {
         recver = (srch_recver_t *)ctx->recvers->data + idx;
 
@@ -419,7 +440,7 @@ static int srch_init_recvers(srch_cntx_t *ctx)
         }
     }
 
-    if (idx == conf->num)
+    if (idx == conf->recvers)
     {
         return SRCH_OK; /* 成功 */
     }
@@ -454,10 +475,10 @@ int srch_recvers_destroy(srch_cntx_t *ctx)
 {
     int idx;
     srch_recver_t *recver;
-    const srch_recver_conf_t *conf = &ctx->conf->recver;
+    const srch_conf_t *conf = ctx->conf;
 
     /* 1. 释放Recver对象 */
-    for (idx=0; idx<conf->num; ++idx)
+    for (idx=0; idx<conf->recvers; ++idx)
     {
         recver = (srch_recver_t *)ctx->recvers->data + idx;
 
@@ -510,5 +531,3 @@ int srch_proc_lock(void)
 
     return 0;
 }
-
-

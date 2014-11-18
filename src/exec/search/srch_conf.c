@@ -7,9 +7,8 @@
  **         负责从搜索引擎配置文件(search.xml)中提取有效信息
  ** 作  者: # Qifeng.zou # 2014.10.28 #
  ******************************************************************************/
-
+#include "search.h"
 #include "syscall.h"
-#include "crawler.h"
 #include "srch_conf.h"
 
 static int srch_conf_load_comm(xml_tree_t *xml, srch_conf_t *conf, log_cycle_t *log);
@@ -142,7 +141,7 @@ static int srch_conf_load_comm(xml_tree_t *xml, srch_conf_t *conf, log_cycle_t *
     if (NULL == fix)
     {
         log_error(log, "Didn't configure connections!");
-        return CRWL_ERR;
+        return SRCH_ERR;
     }
 
     /* 2.1 获取最大并发数 */
@@ -150,7 +149,7 @@ static int srch_conf_load_comm(xml_tree_t *xml, srch_conf_t *conf, log_cycle_t *
     if (NULL == node)
     {
         log_error(log, "Get max number of connections failed!");
-        return CRWL_ERR;
+        return SRCH_ERR;
     }
 
     conf->connections.max = atoi(node->value);
@@ -160,7 +159,7 @@ static int srch_conf_load_comm(xml_tree_t *xml, srch_conf_t *conf, log_cycle_t *
     if (NULL == node)
     {
         log_error(log, "Get timeout of connection failed!");
-        return CRWL_ERR;
+        return SRCH_ERR;
     }
 
     conf->connections.timeout = atoi(node->value);
@@ -172,7 +171,7 @@ static int srch_conf_load_comm(xml_tree_t *xml, srch_conf_t *conf, log_cycle_t *
     if (NULL == fix)
     {
         log_error(log, "Didn't configure worker!");
-        return CRWL_ERR;
+        return SRCH_ERR;
     }
 
     /* 3.1 获取Worker线程数 */
@@ -180,10 +179,10 @@ static int srch_conf_load_comm(xml_tree_t *xml, srch_conf_t *conf, log_cycle_t *
     if (NULL == node)
     {
         log_error(log, "Get number of worker failed!");
-        return CRWL_ERR;
+        return SRCH_ERR;
     }
 
     conf->workers = atoi(node->value);
 
-    return CRWL_OK;
+    return SRCH_OK;
 }

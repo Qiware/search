@@ -1,50 +1,50 @@
-#include "srch_listen.h"
+#include "srch_recver.h"
 
 /******************************************************************************
- **函数名称: srch_listen_routine
- **功    能: 运行侦听线程
+ **函数名称: srch_recver_routine
+ **功    能: 运行接收线程
  **输入参数:
- **     _ctx: 全局信息
+ **     _ctx: 全局对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.18 #
  ******************************************************************************/
-void *srch_listen_routine(void *_ctx)
+void *srch_recver_routine(void *_ctx)
 {
     return NULL;
 }
 
 /******************************************************************************
- **函数名称: srch_listen_init
- **功    能: 初始化侦听线程
+ **函数名称: srch_recver_init
+ **功    能: 初始化接收线程
  **输入参数:
  **     ctx: 全局信息
- **     lsn: 侦听对象
+ **     recver: 接收对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.18 #
  ******************************************************************************/
-int srch_listen_init(srch_cntx_t *ctx, srch_listen_t *lsn)
+int srch_recver_init(srch_cntx_t *ctx, srch_recver_t *recver)
 {
     return SRCH_OK;
 }
 
 /******************************************************************************
- **函数名称: srch_listen_destroy
- **功    能: 销毁侦听线程
+ **函数名称: srch_recver_destroy
+ **功    能: 销毁接收线程
  **输入参数:
- **     lsn: 侦听对象
+ **     recver: 接收对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.18 #
  ******************************************************************************/
-int srch_listen_destroy(srch_listen_t *lsn)
+int srch_recver_destroy(srch_recver_t *recver)
 {
     return SRCH_OK;
 }
