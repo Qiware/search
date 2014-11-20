@@ -47,7 +47,7 @@ typedef struct
     time_t scan_tm;                 /* 超时扫描时间 */
     list_t sock_list;               /* 套接字列表
                                        结点数据指针指向crwl_worker_socket_t */
-    lqueue_t undo_taskq;            /* 任务队列(注意: 该队列结点和数据的空间来自CTX) */
+    lqueue_t undo_taskq;            /* 任务队列 */
 
     uint64_t down_webpage_total;    /* 下载网页的计数 */
 } crwl_worker_t;

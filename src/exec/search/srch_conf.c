@@ -164,25 +164,25 @@ static int srch_conf_load_comm(xml_tree_t *xml, srch_conf_t *conf, log_cycle_t *
 
     conf->connections.timeout = atoi(node->value);
 
-    /* 3. 定位Worker标签
-     *  获取网页抓取深度和存储路径
-     * */
-    fix = xml_query(xml, ".SEARCH-ENGINES.WORKER");
+    /* 3. 获取WORKER.NUM标签 */
+    node = xml_query(xml, ".SEARCH-ENGINES.WORKER.NUM");
     if (NULL == fix)
     {
         log_error(log, "Didn't configure worker!");
         return SRCH_ERR;
     }
 
-    /* 3.1 获取Worker线程数 */
-    node = xml_rquery(xml, fix, "NUM");
-    if (NULL == node)
+    conf->worker_num = atoi(node->value);
+
+    /* 4. 获取RECVER.NUM标签 */
+    node = xml_query(xml, ".SEARCH-ENGINES.RECVER.NUM");
+    if (NULL == fix)
     {
-        log_error(log, "Get number of worker failed!");
+        log_error(log, "Didn't configure receiver!");
         return SRCH_ERR;
     }
 
-    conf->workers = atoi(node->value);
+    conf->recver_num = atoi(node->value);
 
     return SRCH_OK;
 }

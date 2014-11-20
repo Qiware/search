@@ -36,7 +36,6 @@ typedef enum
     , SRCH_SCK_CLOSE                        /* 套接字关闭 */
 
     , SRCH_ERR = ~0x7FFFFFFF                /* 失败、错误 */
-
 } srch_err_code_e;
 
 /* 输入参数 */
@@ -56,6 +55,13 @@ typedef struct
     thread_pool_t *workers;                 /* Worker线程池 */
 } srch_cntx_t;
 
+/* 新增套接字对象 */
+typedef struct
+{
+    int fd;                                 /* 套接字 */
+    int tidx;                               /* 线程索引 */
+    uint64_t serial;                        /* 序列号 */
+} srch_add_sck_t;
 
 srch_cntx_t *srch_cntx_init(char *pname, const char *conf_path);
 void srch_cntx_destroy(srch_cntx_t *ctx);

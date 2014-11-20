@@ -26,7 +26,7 @@
 #include "xd_socket.h"
 #include "srch_worker.h"
 
-#define SRCH_PROC_LOCK_PATH "../temp/crwl/crwl.lck"
+#define SRCH_PROC_LOCK_PATH "../temp/srch/srch.lck"
 
 /******************************************************************************
  **函数名称: main 
