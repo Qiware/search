@@ -36,12 +36,12 @@ int http_get_request(const char *uri, char *req, int size)
     /* 2. 构建HTTP GET请求 */
     snprintf(req, size,
         "GET %s HTTP/1.1\r\n"
-        "User-Agent: XunDaoCrawler (X11; Ubuntu; Linux x86_64; rv:33.0)\r\n"
         "Host: %s\r\n"
         "Accept: */*\r\n"
         "Accept-Language: zh-cn\r\n"
         "Accept-Charset: utf-8\r\n"
-        "Connection: Close\r\n"
+        "Connection: close\r\n"
+        "User-Agent: XunDao Crawler\r\n"
         "\r\n", field.path, field.host);
 
     return HTTP_OK;

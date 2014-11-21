@@ -59,7 +59,7 @@
                 "<TASK>" \
                     "<TYPE>%d</TYPE>"   /* Task类型 */\
                     "<BODY>" \
-                        "<URI DEPTH=\"%d\">%s</URI>" /* 网页深度&URI */\
+                        "<URI DEPTH=\"%d\">\"%s\"</URI>" /* 网页深度&URI */\
                     "</BODY>" \
                 "</TASK>", \
                 CRWL_TASK_DOWN_WEBPAGE_BY_URL, deep, uri);
@@ -68,7 +68,7 @@
     fprintf(fp,  \
         "<WPI>\n" \
         "\t<URI DEPTH=\"%d\" IP=\"%s\" PORT=\"%d\">%s</URI>\n" \
-        "\t<HTML SIZE=\"%lu\">%s.html</HTML>\n" \
+        "\t<HTML SIZE=\"%lu\">\"%s.html\"</HTML>\n" \
         "</WPI>\n", \
         sck->webpage.depth, sck->webpage.ip, \
         sck->webpage.port, sck->webpage.uri, \
