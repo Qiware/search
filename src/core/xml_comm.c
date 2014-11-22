@@ -434,13 +434,14 @@ static int xml_parse_version(xml_tree_t *xml, xml_parse_t *parse)
 
     /* 检查格式是否正确 */
     /* 跳过无意义字符 */
-    while (XmlIsIgnoreChar(*parse->ptr)) parse->ptr++;
+    while (XmlIsIgnoreChar(*parse->ptr)) { ++parse->ptr; }
+
     while (!XmlIsDoubtChar(*parse->ptr) && !XmlIsStrEndChar(*parse->ptr))
     {
         ptr = parse->ptr;
 
         /* 属性名是否正确 */
-        while (XmlIsMarkChar(*ptr)) ptr++;
+        while (XmlIsMarkChar(*ptr)) { ++ptr; }
         if (ptr == parse->ptr)
         {
             log2_error("XML format is wrong![%-.32s]", parse->ptr);
@@ -456,10 +457,10 @@ static int xml_parse_version(xml_tree_t *xml, xml_parse_t *parse)
         parse->ptr = ptr;
         
         /* 属性值是否正确 */
-        while (XmlIsIgnoreChar(*ptr)) ptr++; /* 跳过=之后的无意义字符 */
+        while (XmlIsIgnoreChar(*ptr)) { ++ptr; } /* 跳过=之后的无意义字符 */
 
         /* 判断是双引号(")还是单引号(')为版本属性值的边界 */
-        if (XmlIsDQuotChar(*ptr) || XmlIsSQuotChar(*ptr))
+        if (XmlIsQuotChar(*ptr) || XmlIsSQuotChar(*ptr))
         {
             border = *ptr;
         }
@@ -471,10 +472,7 @@ static int xml_parse_version(xml_tree_t *xml, xml_parse_t *parse)
         ptr++;
         parse->ptr = ptr;
         
-        while ((*ptr != border) && !XmlIsStrEndChar(*ptr))
-        {
-            ptr++;
-        }
+        while ((*ptr != border) && !XmlIsStrEndChar(*ptr)) { ++ptr; }
 
         if (*ptr != border)
         {
@@ -484,7 +482,7 @@ static int xml_parse_version(xml_tree_t *xml, xml_parse_t *parse)
         ptr++;  /* 跳过双/单引号 */
         
 		/* 跳过无意义字符 */
-        while (XmlIsIgnoreChar(*ptr)) ptr++;
+        while (XmlIsIgnoreChar(*ptr)) { ++ptr; }
         parse->ptr = ptr;
     }
 
@@ -655,7 +653,7 @@ static int xml_parse_end(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse)
     ptr = parse->ptr;
     
     /* 1. 确定结束节点名长度 */
-    while (XmlIsMarkChar(*ptr)) ptr++;
+    while (XmlIsMarkChar(*ptr)) { ++ptr; }
     
     if (!XmlIsRPBrackChar(*ptr))
     {
@@ -757,7 +755,7 @@ static int xml_mark_get_name(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse
     }
 
     /* 3. 确定节点名长度 */
-    while (XmlIsMarkChar(*ptr)) ptr++;
+    while (XmlIsMarkChar(*ptr)) { ++ptr; }
 
     /* 4.判断标签名边界是否合法 */
     if (!XmlIsMarkBorder(*ptr))
@@ -808,7 +806,7 @@ static int xml_mark_has_attr(xml_parse_t *parse)
 {
     const char *ptr = parse->ptr;
 
-    while (XmlIsIgnoreChar(*ptr)) ptr++;    /* 跳过无意义的字符 */
+    while (XmlIsIgnoreChar(*ptr)) { ++ptr; }    /* 跳过无意义的字符 */
 
     parse->ptr = ptr;
     
@@ -875,10 +873,10 @@ static int xml_mark_get_attr(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse
         }
 
         /* 3.2 获取属性名 */
-        while (XmlIsIgnoreChar(*ptr)) ptr++;/* 跳过属性名之前无意义的空格 */
+        while (XmlIsIgnoreChar(*ptr)) { ++ptr; }/* 跳过属性名之前无意义的空格 */
 
         parse->ptr = ptr;
-        while (XmlIsMarkChar(*ptr)) ptr++;  /* 查找属性名的边界 */
+        while (XmlIsMarkChar(*ptr)) { ++ptr; }  /* 查找属性名的边界 */
 
         len = ptr - parse->ptr;
     #if defined(__XML_MEM_POOL__)
@@ -896,7 +894,7 @@ static int xml_mark_get_attr(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse
         memcpy(node->name, parse->ptr, len);
         
         /* 3.3 获取属性值 */
-        while (XmlIsIgnoreChar(*ptr)) ptr++;         /* 跳过=之前的无意义字符 */
+        while (XmlIsIgnoreChar(*ptr)) { ++ptr; }        /* 跳过=之前的无意义字符 */
 
         if (!XmlIsEqualChar(*ptr))                      /* 不为等号，则格式错误 */
         {
@@ -905,10 +903,10 @@ static int xml_mark_get_attr(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse
             break;
         }
         ptr++;                                  /* 跳过"=" */
-        while (XmlIsIgnoreChar(*ptr)) ptr++;     /* 跳过=之后的无意义字符 */
+        while (XmlIsIgnoreChar(*ptr)) { ++ptr; }/* 跳过=之后的无意义字符 */
 
         /* 判断是单引号(')还是双引号(")为属性的边界 */
-        if (XmlIsDQuotChar(*ptr) || XmlIsSQuotChar(*ptr))
+        if (XmlIsQuotChar(*ptr) || XmlIsSQuotChar(*ptr))
         {
             border = *ptr;
         }
@@ -921,7 +919,7 @@ static int xml_mark_get_attr(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse
 
         ptr++;
         parse->ptr = ptr;
-        while ((*ptr != border) && !XmlIsStrEndChar(*ptr))   /* 计算 双/单 引号之间的数据长度 */
+        while ((*ptr != border) && !XmlIsStrEndChar(*ptr))/* 计算 双/单 引号之间的数据长度 */
         {
         #if defined(__XML_ESC_PARSE__)
             if (XmlIsAndChar(*ptr))
@@ -1014,7 +1012,7 @@ static int xml_mark_get_attr(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse
         top->tail = node;
         
         /* 3.5 指针向后移动 */
-        while (XmlIsIgnoreChar(*ptr)) ptr++;
+        while (XmlIsIgnoreChar(*ptr)) { ++ptr; }
 
     }while (XmlIsMarkChar(*ptr));
 
@@ -1053,7 +1051,7 @@ static int xml_mark_is_end(xml_parse_t *parse)
 {
     const char *ptr = parse->ptr;
     
-    while (XmlIsIgnoreChar(*ptr)) ptr++;
+    while (XmlIsIgnoreChar(*ptr)) { ++ptr; }
 
     /* 1. 是否有节点值 */
     if (strncmp(ptr, XML_MARK_END1, XML_MARK_END1_LEN))
@@ -1078,14 +1076,14 @@ static int xml_mark_has_value(xml_parse_t *parse)
 {
     const char *ptr = parse->ptr;
 
-    while (XmlIsIgnoreChar(*ptr)) ptr++;
+    while (XmlIsIgnoreChar(*ptr)) { ++ptr; }
     
     if (XmlIsRPBrackChar(*ptr))
     {
         ptr++;
 
         /* 跳过起始的空格和换行符 */
-        while (XmlIsIgnoreChar(*ptr)) ptr++;
+        while (XmlIsIgnoreChar(*ptr)) { ++ptr; }
 
         parse->ptr = ptr;
         if (XmlIsLPBrackChar(*ptr)) /* 出现子节点 */
@@ -1112,6 +1110,7 @@ static int xml_mark_has_value(xml_parse_t *parse)
  ******************************************************************************/
 static int xml_mark_get_value(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse)
 {
+    char border = '<'; /* 取值边界 */
     int len, size = 0;
     const char *p1, *p2;
     xml_node_t *current;
@@ -1130,12 +1129,18 @@ static int xml_mark_get_value(xml_tree_t *xml, Stack_t *stack, xml_parse_t *pars
 
     p1 = parse->ptr;
 
-    while (XmlIsIgnoreChar(*p1)) p1++;
+    while (XmlIsIgnoreChar(*p1)) { ++p1; }
+
+    if (XmlIsQuotChar(*p1) || XmlIsSQuotChar(*p1))
+    {
+        border = *p1; /* 记录取值边界 */
+        ++p1;
+    }
 
     parse->ptr = p1;
     
     /* 提取节点值: 允许节点值中出现空格和换行符 */    
-    while (!XmlIsStrEndChar(*p1) && !XmlIsLPBrackChar(*p1))
+    while (!XmlIsStrEndChar(*p1) && (border != *p1))
     {
     #if defined(__XML_ESC_PARSE__)
         if (XmlIsAndChar(*p1))
@@ -1148,7 +1153,7 @@ static int xml_mark_get_value(xml_tree_t *xml, Stack_t *stack, xml_parse_t *pars
                 log2_error("Parse forwad string failed!");
                 return XML_ERR;
             }
-            
+
             p1 += esc->length;
             parse->ptr = p1;
         }
@@ -1159,7 +1164,13 @@ static int xml_mark_get_value(xml_tree_t *xml, Stack_t *stack, xml_parse_t *pars
         }
     }
 
-    if (XmlIsStrEndChar(*p1))
+    if (XmlIsLPBrackChar(*p1))      /* 为尖括号时 */
+    {
+        p2 = p1;
+        p1--;
+        while (XmlIsIgnoreChar(*p1)) { --p1; }
+    }
+    else if (XmlIsStrEndChar(*p1))  /* 为结束符时 */
     {
     #if defined(__XML_ESC_PARSE__)
         xml_esc_free(&split);
@@ -1167,14 +1178,20 @@ static int xml_mark_get_value(xml_tree_t *xml, Stack_t *stack, xml_parse_t *pars
         log2_error("XML format is wrong! MarkName:[%s]", current->name);
         return XML_ERR_FORMAT;
     }
-    
-    p2 = p1;
-    p1--;
-    while (XmlIsIgnoreChar(*p1)) p1--;
+    else                            /* 为单引号或双引号时 */
+    {
+        p2 = p1 + 1;
+        p1--;
+        while (XmlIsIgnoreChar(*p2)) { ++p2; }
 
-    p1++;
+        if (!XmlIsLPBrackChar(*p2))
+        {
+            log2_error("XML format is wrong! [%s]", p2);
+            return XML_ERR_FORMAT;
+        }
+    }
 
-    len = p1 - parse->ptr;
+    len = p1 - parse->ptr + 1;
 #if defined(__XML_ESC_PARSE__)
     size = xml_esc_size(&split);
 #endif /*__XML_ESC_PARSE__*/
