@@ -250,6 +250,9 @@ int crwl_worker_recv_data(crwl_worker_t *worker, crwl_worker_socket_t *sck)
             log_error(worker->log, "errmsg:[%d] %s! uri:%s ip:%s size:%d",
                     errno, strerror(errno),
                     sck->webpage.uri, sck->webpage.ip, sck->webpage.size);
+
+            crwl_worker_webpage_fsync(worker, sck);
+            crwl_worker_webpage_finfo(worker, sck);
             crwl_worker_remove_sock(worker, sck);
             return CRWL_ERR;
         }

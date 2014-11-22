@@ -175,7 +175,13 @@ crwl_cntx_t *crwl_cntx_init(char *pname, const char *path)
         return NULL;
     }
 
-    limit_file_num(4096);
+    if(limit_file_num(4096))
+    {
+        crwl_conf_destroy(ctx->conf);
+        free(ctx);
+        log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
+        return NULL;
+    }
 
     /* 6. 创建Worker线程池 */
     if (crwl_init_workers(ctx))
