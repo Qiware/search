@@ -230,6 +230,32 @@ void *lqueue_pop(lqueue_t *lq)
 }
 
 /******************************************************************************
+ **函数名称: lqueue_trypop
+ **功    能: 尝试弹出加锁队列
+ **输入参数: 
+ **     lq: 加锁队列
+ **输出参数: NONE
+ **返    回: 数据地址
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.11.20 #
+ ******************************************************************************/
+void *lqueue_trypop(lqueue_t *lq)
+{
+    void *addr;
+
+    if (pthread_rwlock_trywrlock(&lq->lock))
+    {
+        return NULL;
+    }
+
+    addr = queue_pop(&lq->queue);
+    pthread_rwlock_unlock(&lq->lock);
+
+    return addr;
+}
+
+/******************************************************************************
  **函数名称: lqueue_mem_alloc
  **功    能: 申请队列内存空间
  **输入参数: 

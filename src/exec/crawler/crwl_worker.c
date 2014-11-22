@@ -154,6 +154,7 @@ int crwl_worker_destroy(crwl_worker_t *worker)
  ******************************************************************************/
 static int crwl_worker_fetch_task(crwl_cntx_t *ctx, crwl_worker_t *worker)
 {
+    int idx, num;
     void *data;
     crwl_task_t *t;
 
@@ -165,20 +166,24 @@ static int crwl_worker_fetch_task(crwl_cntx_t *ctx, crwl_worker_t *worker)
     }
 
     /* 2. 从任务队列取数据 */
-    data = lqueue_pop(&worker->undo_taskq);
-    if (NULL == data)
+    num = worker->conf->worker.conn_max_num - worker->sock_list.num;
+
+    for (idx=0; idx<num; ++idx)
     {
-        log_error(worker->log, "Get task from queue failed!");
-        return CRWL_OK;
+        data = lqueue_pop(&worker->undo_taskq);
+        if (NULL == data)
+        {
+            log_error(worker->log, "Get task from queue failed!");
+            return CRWL_OK;
+        }
+
+        /* 3. 连接远程Web服务器 */
+        t = (crwl_task_t *)data;
+
+        crwl_worker_task_handler(worker, t);
+
+        lqueue_mem_dealloc(&worker->undo_taskq, data);
     }
-
-    /* 3. 连接远程Web服务器 */
-    t = (crwl_task_t *)data;
-
-    crwl_worker_task_handler(worker, t);
-
-    lqueue_mem_dealloc(&worker->undo_taskq, data);
-
     return CRWL_OK;
 }
 
@@ -511,7 +516,7 @@ void *crwl_worker_routine(void *_ctx)
             log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
 
             crwl_worker_destroy(worker);
-            pthread_exit((void *)-1);
+            abort();
             return (void *)-1;
         }
         else if (0 == worker->ep_fds)
