@@ -222,17 +222,16 @@ int crwl_worker_recv_data(crwl_worker_t *worker, crwl_worker_socket_t *sck)
                 {
                     crwl_worker_webpage_fsync(worker, sck);
                 }
-
-                if (EAGAIN != errno)
-                {
-                    log_info(worker->log, "errmsg:[%d] %s!", errno, strerror(errno));
-                    goto CRWL_END_OF_READ;
-                }
+                
                 return CRWL_OK;
             }
             else if (0 == n)    /* 已关闭 */
             {
-            CRWL_END_OF_READ:
+                if (EINPROGRESS == errno)
+                {
+                    return CRWL_OK; /* 正在进行中... */
+                }
+
                 log_info(worker->log, "End of recv! uri:%s size:%d",
                         sck->webpage.uri, sck->webpage.size);
 
@@ -240,6 +239,11 @@ int crwl_worker_recv_data(crwl_worker_t *worker, crwl_worker_socket_t *sck)
                 crwl_worker_webpage_finfo(worker, sck);
                 crwl_worker_remove_sock(worker, sck);
                 return CRWL_SCK_CLOSE;
+            }
+
+            if (EINPROGRESS == errno)
+            {
+                return CRWL_OK; /* 正在进行中... */
             }
 
             /* 异常情况处理 */
@@ -260,42 +264,6 @@ int crwl_worker_recv_data(crwl_worker_t *worker, crwl_worker_socket_t *sck)
         {
             crwl_worker_webpage_fsync(worker, sck);
         }
-    }
-
-    return CRWL_OK;
-}
-
-/******************************************************************************
- **函数名称: crwl_worker_trav_recv
- **功    能: 遍历接收数据
- **输入参数: 
- **     worker: 爬虫对象
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **     1. 依次遍历套接字, 判断是否可读
- **     2. 如果可读, 则接收数据
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.10.30 #
- ******************************************************************************/
-static int crwl_worker_trav_recv(crwl_worker_t *worker)
-{
-    int idx;
-    crwl_worker_socket_t *sck;
-
-    /* 1. 依次遍历套接字, 判断是否可读 */
-    for (idx=0; idx<worker->ep_fds; ++idx)
-    {
-        /* 判断遍历是否可读 */
-        if (!(worker->events[idx].events & EPOLLIN))
-        {
-            continue;
-        }
-
-        sck = (crwl_worker_socket_t *)worker->events[idx].data.ptr;
-        
-        /* 接收网络数据 */
-        sck->recv_cb(worker, sck);
     }
 
     return CRWL_OK;
@@ -387,43 +355,6 @@ int crwl_worker_send_data(crwl_worker_t *worker, crwl_worker_socket_t *sck)
 }
 
 /******************************************************************************
- **函数名称: crwl_worker_trav_send
- **功    能: 遍历发送数据
- **输入参数: 
- **     worker: 爬虫对象
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **     1. 依次遍历套接字列表
- **     2. 判断是否可写
- **     3. 发送数据
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.09.23 #
- ******************************************************************************/
-static int crwl_worker_trav_send(crwl_worker_t *worker)
-{
-    int idx;
-    crwl_worker_socket_t *sck;
-
-    /* 1. 依次遍历套接字, 判断是否可读 */
-    for (idx=0; idx<worker->ep_fds; ++idx)
-    {
-        /* 判断遍历是否可写 */
-        if (!(worker->events[idx].events & EPOLLOUT))
-        {
-            continue;
-        }
-
-        sck = (crwl_worker_socket_t *)worker->events[idx].data.ptr;
-        
-        /* 发送网络数据 */
-        sck->send_cb(worker, sck);
-    }
-
-    return CRWL_OK;
-}
-
-/******************************************************************************
  **函数名称: crwl_worker_timeout_hdl
  **功    能: 爬虫的超时处理
  **输入参数: 
@@ -488,23 +419,37 @@ static int crwl_worker_timeout_hdl(crwl_worker_t *worker)
  ******************************************************************************/
 static int crwl_worker_event_hdl(crwl_worker_t *worker)
 {
+    int idx;
     time_t ctm = time(NULL);
+    crwl_worker_socket_t *sck;
 
-    /* 1. 接收数据 */
-    if (crwl_worker_trav_recv(worker))
+    /* 1. 依次遍历套接字, 判断是否可读可写 */
+    for (idx=0; idx<worker->ep_fds; ++idx)
     {
-        log_error(worker->log, "Worker recv data failed!");
-        return CRWL_ERR;
+        sck = (crwl_worker_socket_t *)worker->events[idx].data.ptr;
+
+        /* 1.1 判断是否可读 */
+        if (worker->events[idx].events & EPOLLIN)
+        {
+            /* 接收网络数据 */
+            if (sck->recv_cb(worker, sck))
+            {
+                continue; /* 异常: 不必判断是否可写(套接字已关闭) */
+            }
+        }
+
+        /* 1.2 判断是否可写 */
+        if (worker->events[idx].events & EPOLLOUT)
+        {
+            /* 发送网络数据 */
+            if (sck->send_cb(worker, sck))
+            {
+                continue; /* 异常: 套接字已关闭 */
+            }
+        }
     }
 
-    /* 2. 发送数据 */
-    if (crwl_worker_trav_send(worker))
-    {
-        log_error(worker->log, "Worker send data failed!");
-        return CRWL_ERR;
-    }
-
-    /* 3. 超时扫描 */
+    /* 2. 超时扫描 */
     if (ctm - worker->scan_tm > CRWL_TMOUT_SCAN_SEC)
     {
         worker->scan_tm = ctm;

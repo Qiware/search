@@ -50,6 +50,7 @@ typedef struct
     lqueue_t undo_taskq;            /* 任务队列 */
 
     uint64_t down_webpage_total;    /* 下载网页的计数 */
+    uint64_t err_webpage_total;     /* 异常网页的计数 */
 } crwl_worker_t;
 
 /* 网页加载套接字信息 */

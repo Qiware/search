@@ -82,7 +82,6 @@ typedef enum
     , CRWL_SCK_CLOSE                        /* 套接字关闭 */
 
     , CRWL_ERR = ~0x7FFFFFFF                /* 失败、错误 */
-
 } crwl_err_code_e;
 
 /* 数据类型 */
