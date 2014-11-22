@@ -1,8 +1,12 @@
 #!/bin/sh
 
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:../lib
 
 ulimit -c unlimited
+
+# 准备阶段
+./prepare.sh
+
+sudo redis-server /etc/redis/redis_slave_6380.conf
 
 # 日志服务
 ./logsvr
