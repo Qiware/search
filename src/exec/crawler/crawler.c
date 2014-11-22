@@ -66,7 +66,9 @@ int main(int argc, char *argv[])
          *  3. 当noclose为0是, daemon将进城的STDIN, STDOUT, STDERR都重定向到/dev/null */
         daemon(1, 1);
     }
- 
+
+    crwl_set_signal();
+
     /* 2. 初始化全局信息 */
     ctx = crwl_cntx_init(argv[0], opt.conf_path);
     if (NULL == ctx)

@@ -138,6 +138,7 @@ typedef struct
 int crwl_getopt(int argc, char **argv, crwl_opt_t *opt);
 int crwl_usage(const char *exec);
 int crwl_proc_lock(void);
+void crwl_set_signal(void);
 
 log_cycle_t *crwl_init_log(char *fname);
 crwl_cntx_t *crwl_cntx_init(char *pname, const char *path);

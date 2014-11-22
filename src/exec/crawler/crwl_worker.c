@@ -170,7 +170,7 @@ static int crwl_worker_fetch_task(crwl_cntx_t *ctx, crwl_worker_t *worker)
 
     for (idx=0; idx<num; ++idx)
     {
-        data = lqueue_trypop(&worker->undo_taskq);
+        data = lqueue_pop(&worker->undo_taskq);
         if (NULL == data)
         {
             return CRWL_OK;

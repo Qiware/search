@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <getopt.h>
+#include <signal.h>
 #include <libgen.h>
 #include <sys/wait.h>
 #include <sys/types.h>
@@ -33,6 +34,7 @@
 static int crwl_init_workers(crwl_cntx_t *ctx);
 int crwl_workers_destroy(crwl_cntx_t *ctx);
 static int crwl_domain_ip_map_cmp_cb(const void *ukey, const void *data);
+static void crwl_signal_hdl(int signum);
 
 /******************************************************************************
  **函数名称: crwl_getopt 
@@ -411,6 +413,7 @@ int crwl_get_domain_ip_map(crwl_cntx_t *ctx, char *host, crwl_domain_ip_map_t *m
     crwl_domain_ip_map_t *new;
     struct sockaddr_in *sockaddr;
     struct addrinfo *addrinfo, *curr;
+    struct addrinfo hints;
 
     /* 1. 从域名IP映射表中查找 */
     ret = hash_tab_query(
@@ -423,7 +426,11 @@ int crwl_get_domain_ip_map(crwl_cntx_t *ctx, char *host, crwl_domain_ip_map_t *m
     }
 
     /* 2. 通过DNS服务器查询 */
-    if (0 != getaddrinfo(host, NULL, NULL, &addrinfo))
+    memset(&hints, 0, sizeof(hints));
+
+    hints.ai_socktype = SOCK_STREAM;
+
+    if (0 != getaddrinfo(host, "http", &hints, &addrinfo))
     {
         log_error(ctx->log, "Get address info failed! host:%s", host);
         return CRWL_ERR;
@@ -545,4 +552,74 @@ log_cycle_t *crwl_init_log(char *fname)
     }
 
     return log;
+}
+
+/******************************************************************************
+ **函数名称: crwl_set_signal
+ **功    能: 设置信号处理
+ **输入参数: NONE
+ **输出参数: NONE
+ **返    回: VOID
+ **实现描述: 
+ **注意事项: 
+ **     1) sa_handler: 此参数和signal()的参数handler相同, 代表新的信号处理函数,
+ **         其他意义请参考signal().
+ **     2) sa_mask: 用来设置在处理该信号时暂时将sa_mask指定的信号集搁置.
+ **     3) sa_restorer: 此参数没有使用.
+ **     4) sa_flags: 用来设置信号处理的其他相关操作, 下列的数值可用:
+ **         SA_NOCLDSTOP: 对于SIGCHLD, 当子进程停止时（ctrl+z）不产生此信号, 当
+ **             子进程终止时, 产生此信号
+ **         SA_RESTART: 系统调用自动再启动
+ **         SA_ONSTACK: ???
+ **         SA_NOCLDWAIT: 当调用进程的子进程终止时, 不再创建僵尸进程.因此父进程
+ **             将得不到SIGCHLD信号, 调用wait时, 将出错返回, errno：ECHLD
+ **         SA_NODEFER: 系统在执行信号处理函数时, 不自动阻塞该信号
+ **         SA_RESETHAND: 系统在执行信号处理函数时, 恢复该信号的默认处理方式：SIG_DEF
+ **         SA_SIGINFO: 附加信息(较少使用)
+ **作    者: # Qifeng.zou # 2014.11.22 #
+ ******************************************************************************/
+void crwl_set_signal(void)
+{
+    struct sigaction act;
+
+    memset(&act, 0, sizeof(act));
+
+    act.sa_handler = crwl_signal_hdl;
+    sigemptyset(&act.sa_mask); /* 清空此信号集 */
+    act.sa_flags = 0;
+
+    sigaction(SIGPIPE, &act, NULL);
+}
+
+/******************************************************************************
+ **函数名称: crwl_signal_hdl
+ **功    能: 信号处理回调函数
+ **输入参数:
+ **     signum: 信号编号
+ **输出参数: NONE
+ **返    回: VOID
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.11.22 #
+ ******************************************************************************/
+static void crwl_signal_hdl(int signum)
+{
+    switch (signum)
+    {
+        case SIGINT:
+        {
+            log2_error("Catch SIGINT [%d] signal!", signum);
+            return;
+        }
+        case SIGPIPE:
+        {
+            log2_error("Catch SIGPIPE [%d] signal!", signum);
+            return;
+        }
+        default:
+        {
+            log2_error("Catch unknown signal! signum:[%d]", signum);
+            return;
+        }
+    }
 }
