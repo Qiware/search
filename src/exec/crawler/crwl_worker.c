@@ -82,7 +82,8 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker)
     {
         slab_destroy(worker->slab);
 
-        log_error(worker->log, "Init lock queue failed!");
+        log_error(worker->log, "Init lock queue failed! taskq_count:%d",
+                worker->conf->worker.taskq_count);
         return CRWL_ERR;
     }
 

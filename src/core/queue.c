@@ -157,14 +157,12 @@ void queue_destroy(Queue_t *q)
  ******************************************************************************/
 int lqueue_init(lqueue_t *lq, int max, size_t memsz)
 {
-    int ret;
     void *addr;
 
     /* 1. 创建队列 */
     pthread_rwlock_init(&lq->lock, NULL);
 
-    ret = queue_init(&lq->queue, max);
-    if (0 != ret)
+    if (queue_init(&lq->queue, max))
     {
         pthread_rwlock_destroy(&lq->lock);
         return -1;
@@ -183,7 +181,7 @@ int lqueue_init(lqueue_t *lq, int max, size_t memsz)
     }
 
     lq->slab = slab_init(addr, memsz);
-    if (NULL != lq->slab)
+    if (NULL == lq->slab)
     {
         free(addr);
         pthread_rwlock_destroy(&lq->slab_lock);
