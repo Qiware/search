@@ -51,6 +51,7 @@ typedef struct
     srch_conf_t *conf;                      /* 配置信息 */
     log_cycle_t *log;                       /* 日志对象 */
 
+    pthread_t lsn_tid;                      /* Listen线程 */
     thread_pool_t *recvers;                 /* Recver线程池 */
     thread_pool_t *workers;                 /* Worker线程池 */
 } srch_cntx_t;

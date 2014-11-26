@@ -246,7 +246,9 @@ srch_cntx_t *srch_cntx_init(char *pname, const char *conf_path)
  ******************************************************************************/
 void srch_cntx_destroy(srch_cntx_t *ctx)
 {
+    pthread_cancel(ctx->lsn_tid);
     srch_workers_destroy(ctx);
+    srch_recvers_destroy(ctx);
 
     log_destroy(&ctx->log);
     log2_destroy();
@@ -267,8 +269,8 @@ void srch_cntx_destroy(srch_cntx_t *ctx)
 int srch_startup(srch_cntx_t *ctx)
 {
     int idx;
-    pthread_t tid;
     const srch_conf_t *conf = ctx->conf;
+
 
     /* 1. 设置Worker线程回调 */
     for (idx=0; idx<conf->worker_num; ++idx)
@@ -283,7 +285,7 @@ int srch_startup(srch_cntx_t *ctx)
     }
     
     /* 3. 设置Listen线程回调 */
-    if (thread_creat(&tid, srch_listen_routine, ctx))
+    if (thread_creat(&ctx->lsn_tid, srch_listen_routine, ctx))
     {
         log_error(ctx->log, "Create listen thread failed!");
         return SRCH_ERR;
