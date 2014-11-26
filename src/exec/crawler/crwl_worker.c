@@ -170,7 +170,7 @@ static int crwl_worker_fetch_task(crwl_cntx_t *ctx, crwl_worker_t *worker)
 
     for (idx=0; idx<num; ++idx)
     {
-        data = lqueue_pop(&worker->undo_taskq);
+        data = lqueue_trypop(&worker->undo_taskq);
         if (NULL == data)
         {
             return CRWL_OK;
@@ -332,7 +332,8 @@ int crwl_worker_send_data(crwl_worker_t *worker, crwl_worker_socket_t *sck)
         n = Writen(sck->sckid, sck->send.addr + sck->send.off, left);
         if (n < 0)
         {
-            log_error(worker->log, "errmsg:[%d] %s!", errno, strerror(errno));
+            log_error(worker->log, "errmsg:[%d] %s! total:%d off:%d",
+                    errno, strerror(errno), sck->send.total, sck->send.off);
 
             eslab_dealloc(&worker->slab, sck->send.addr);
             sck->send.addr = NULL;

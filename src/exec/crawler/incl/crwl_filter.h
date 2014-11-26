@@ -26,6 +26,7 @@ typedef struct
     char ip[IP_ADDR_MAX_LEN];       /* IP地址 */
     int port;                       /* 端口号 */
     char html[FILE_NAME_MAX_LEN];   /* 网页存储名 */
+    int size;                       /* 网页大小 */
 } crwl_webpage_info_t;
 
 /* 解析器对象 */
