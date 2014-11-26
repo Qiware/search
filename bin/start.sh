@@ -4,8 +4,6 @@
 ulimit -c unlimited
 
 # 准备阶段
-./prepare.sh
-
 sudo redis-server /etc/redis/redis_slave_6380.conf
 
 # 日志服务
@@ -16,3 +14,5 @@ sudo redis-server /etc/redis/redis_slave_6380.conf
 
 # 爬虫过滤服务
 ./crawler-filter -d
+
+./monitor.sh
