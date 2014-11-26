@@ -51,6 +51,7 @@ typedef struct
 slab_pool_t *slab_init(void *addr, size_t size);
 void *slab_alloc(slab_pool_t *pool, size_t size);
 void slab_dealloc(slab_pool_t *pool, void *p);
+#define slab_destroy(pool) { free(pool); pool = NULL; }
 
 int eslab_init(eslab_pool_t *spl, size_t size);
 int eslab_destroy(eslab_pool_t *spl);

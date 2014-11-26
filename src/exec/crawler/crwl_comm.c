@@ -269,7 +269,7 @@ static int crwl_init_workers(crwl_cntx_t *ctx)
     const crwl_worker_conf_t *conf = &ctx->conf->worker;
 
     /* 1. 创建Worker线程池 */
-    ctx->workers = thread_pool_init(conf->num);
+    ctx->workers = thread_pool_init(conf->num, 0);
     if (NULL == ctx->workers)
     {
         log_error(ctx->log, "Initialize thread pool failed!");

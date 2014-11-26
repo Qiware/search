@@ -75,7 +75,7 @@ int crwl_task_down_webpage_by_uri(
     }
 
     /* 3. 将FD等信息加入套接字链表 */
-    sck = eslab_alloc(&worker->slab, sizeof(crwl_worker_socket_t));
+    sck = slab_alloc(worker->slab, sizeof(crwl_worker_socket_t));
     if (NULL == sck)
     {
         log_error(worker->log, "Alloc memory from slab failed!");
@@ -101,7 +101,7 @@ int crwl_task_down_webpage_by_uri(
     if (crwl_worker_add_sock(worker, sck))
     {
         log_error(worker->log, "Add socket into list failed!");
-        eslab_dealloc(&worker->slab, sck);
+        slab_dealloc(worker->slab, sck);
         return CRWL_ERR;
     }
 
@@ -157,7 +157,7 @@ int crwl_task_down_webpage_by_ip(
     }
 
     /* 2. 将FD等信息加入套接字链表 */
-    sck = eslab_alloc(&worker->slab, sizeof(crwl_worker_socket_t));
+    sck = slab_alloc(worker->slab, sizeof(crwl_worker_socket_t));
     if (NULL == sck)
     {
         log_error(worker->log, "Alloc memory from slab failed!");
@@ -174,7 +174,7 @@ int crwl_task_down_webpage_by_ip(
     {
         log_error(worker->log, "Add socket into list failed!");
         Close(sck->sckid);
-        eslab_dealloc(&worker->slab, sck);
+        slab_dealloc(worker->slab, sck);
         return CRWL_ERR;
     }
 

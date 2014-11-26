@@ -27,7 +27,8 @@ static void *thread_routine(void *arg);
  **函数名称: thread_pool_init
  **功    能: 初始化线程池
  **输入参数:
- **      num: 线程数目
+ **     num: 线程数目
+ **     slab_size: Slab内存池SIZE
  **输出参数:
  **返    回: 线程池
  **实现描述: 
@@ -36,9 +37,10 @@ static void *thread_routine(void *arg);
  **注意事项: 
  **作    者: # Qifeng.zou # 2012.12.26 #
  ******************************************************************************/
-thread_pool_t *thread_pool_init(int num)
+thread_pool_t *thread_pool_init(int num, size_t slab_size)
 {
     int idx;
+    void *addr;
     thread_pool_t *tp;
 
     /* 1. 分配线程池空间, 并初始化 */
@@ -53,16 +55,31 @@ thread_pool_t *thread_pool_init(int num)
     tp->head = NULL;
     tp->queue_size = 0;
     tp->shutdown = 0;
-    if (eslab_init(&tp->eslab, 16*KB))
+
+    /* 新建Slab内存池 */
+    if (0 == slab_size)
+    {
+        slab_size = THREAD_POOL_SLAB_SIZE;
+    }
+
+    addr = calloc(1, slab_size);
+    if (NULL == addr)
     {
         free(tp);
         return NULL;
     }
 
-    tp->tid = (pthread_t *)eslab_alloc(&tp->eslab, num*sizeof(pthread_t));
+    tp->slab = slab_init(addr, slab_size);
+    if (NULL == tp->slab)
+    {
+        free(tp);
+        return NULL;
+    }
+
+    tp->tid = (pthread_t *)slab_alloc(tp->slab, num*sizeof(pthread_t));
     if (NULL == tp->tid)
     {
-        eslab_destroy(&tp->eslab);
+        slab_destroy(tp->slab);
         free(tp);
         return NULL;
     }
@@ -102,7 +119,7 @@ int thread_pool_add_worker(thread_pool_t *tp, void *(*process)(void *arg), void 
     thread_worker_t *worker=NULL, *member=NULL;
 
     /* 1. 新建任务节点 */
-    worker = (thread_worker_t*)eslab_alloc(&tp->eslab, sizeof(thread_worker_t));
+    worker = (thread_worker_t*)slab_alloc(tp->slab, sizeof(thread_worker_t));
     if (NULL == worker)
     {
         return -1;
@@ -277,7 +294,7 @@ int thread_pool_destroy(thread_pool_t *tp)
         idx++;
     }
 
-    eslab_destroy(&tp->eslab);
+    slab_destroy(tp->slab);
     pthread_mutex_destroy(&(tp->queue_lock));
     pthread_cond_destroy(&(tp->queue_ready));
     free(tp);
@@ -332,7 +349,7 @@ int thread_pool_destroy_ex(
     pthread_mutex_destroy(&(tp->queue_lock));
     pthread_cond_destroy(&(tp->queue_ready));
 
-    eslab_destroy(&tp->eslab);
+    slab_destroy(tp->slab);
     free(tp);
     
     return 0;
@@ -378,7 +395,7 @@ static void *thread_routine(void *_tp)
         (*(worker->process))(worker->arg);
 
         pthread_mutex_lock(&(tp->queue_lock));
-        eslab_dealloc(&tp->eslab, worker);
+        slab_dealloc(tp->slab, worker);
         pthread_mutex_unlock(&(tp->queue_lock));
     }
 }

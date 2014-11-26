@@ -41,7 +41,7 @@ typedef struct
     int ep_fds;                     /* 处于激活状态的套接字数 */
     struct epoll_event *events;     /* Event最大数 */
 
-    eslab_pool_t slab;              /* 内存池 */
+    slab_pool_t *slab;              /* 内存池 */
     log_cycle_t *log;               /* 日志对象 */
 
     time_t scan_tm;                 /* 超时扫描时间 */
@@ -63,8 +63,8 @@ typedef struct _crwl_worker_socket_t
 
     crwl_webpage_t webpage;         /* 网页信息 */
 
-    snap_shot_t read;               /* 读取快照 */
-    snap_shot_t send;               /* 发送快照 */
+    socket_snapshot_t read;               /* 读取快照 */
+    socket_snapshot_t send;               /* 发送快照 */
 
     char recv[CRWL_RECV_SIZE + 1];  /* 接收缓存 */
     list_t send_list;               /* 发送链表 */

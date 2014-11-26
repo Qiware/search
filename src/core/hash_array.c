@@ -30,12 +30,12 @@
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.18 #
  ******************************************************************************/
-hash_array_t *hash_array_init(int num, uint32_t (*key)(const char *str, size_t len))
+hash_array_t *hash_array_init(int num, size_t slab_size, key_cb_t key_cb)
 {
     int idx;
+    void *addr;
     hash_array_t *hash;
         
-
     /* 1. 创建哈希数组 */
     hash = (hash_array_t *)calloc(1, sizeof(hash_array_t));
     if (NULL == hash)
@@ -45,18 +45,28 @@ hash_array_t *hash_array_init(int num, uint32_t (*key)(const char *str, size_t l
     }
 
     /* 2. 创建内存池 */
-    if (0 != eslab_init(&hash->pool, 32 * KB))
+    addr = calloc(1, slab_size);
+    if (NULL == addr)
     {
+        free(hash);
+        log2_error("errmsg:[%d] %s!", errno, strerror(errno));
+        return NULL;
+    }
+
+    hash->slab = slab_init(addr, slab_size);
+    if (NULL == hash->slab)
+    {
+        free(addr);
         free(hash);
         log2_error("Initialize slab failed!");
         return NULL;
     }
 
     /* 3. 创建数组空间 */
-    hash->node = (hash_node_t *)eslab_alloc(&hash->pool, num * sizeof(hash_node_t));
+    hash->node = (hash_node_t *)slab_alloc(hash->slab, num * sizeof(hash_node_t));
     if (NULL == hash->node)
     {
-        eslab_destroy(&hash->pool);
+        slab_destroy(hash->slab);
         free(hash);
         log2_error("Alloc memory from slab failed!");
         return NULL;
@@ -67,7 +77,7 @@ hash_array_t *hash_array_init(int num, uint32_t (*key)(const char *str, size_t l
         hash->node[idx].tree = NULL;
     }
 
-    hash->key = key;
+    hash->key_cb = key_cb;
 
     return hash;
 }
@@ -135,7 +145,7 @@ void *hash_array_search(hash_array_t *hash, int key)
 }
 
 /******************************************************************************
- **函数名称: hash_array_delete
+ **函数名称: hash_array_remove
  **功    能: 删除哈希成员
  **输入参数:
  **     hash: 哈希数组
@@ -147,7 +157,7 @@ void *hash_array_search(hash_array_t *hash, int key)
  **     注意: 返回地址的内存空间由外部释放
  **作    者: # Qifeng.zou # 2014.09.18 #
  ******************************************************************************/
-void *hash_array_delete(hash_array_t *hash, int key)
+void *hash_array_remove(hash_array_t *hash, int key)
 {
     int idx;
     void *data;
@@ -198,7 +208,7 @@ int hash_array_destroy(hash_array_t *hash)
         rbt_destroy(&hash->node[idx].tree);
     }
 
-    eslab_destroy(&hash->pool);
+    slab_destroy(hash->slab);
     free(hash);
 
     return 0;

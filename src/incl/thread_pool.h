@@ -5,7 +5,8 @@
 
 #include "slab.h"
 
-#define THREAD_ATTR_STACK_SIZE   (0x800000) /* 线程栈SIZE */
+#define THREAD_ATTR_STACK_SIZE  (0x800000)  /* 线程栈SIZE */
+#define THREAD_POOL_SLAB_SIZE   (16 * KB)   /* 线程池Slab空间SIZE */
 
 /* 线程工作内容 */
 typedef struct _thread_worker_t
@@ -28,11 +29,11 @@ typedef struct
     int queue_size;                 /* 工作队列当前大小 */
 
     void *data;                     /* 附加数据 */
-    eslab_pool_t eslab;             /* SLAB内存管理机制 */
+    slab_pool_t *slab;              /* SLAB内存管理机制 */
 } thread_pool_t;
 
 int thread_creat(pthread_t *tid, void *(*process)(void *args), void *args);
-thread_pool_t *thread_pool_init(int num);
+thread_pool_t *thread_pool_init(int num, size_t slab_size);
 int thread_pool_add_worker(thread_pool_t *tp, void *(*process)(void *arg), void *arg);
 int thread_pool_keepalive(thread_pool_t *tp);
 int thread_pool_keepalive_ext(thread_pool_t *tp, void *(*process)(void *arg), void *arg);

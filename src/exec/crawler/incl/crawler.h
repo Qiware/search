@@ -91,15 +91,6 @@ typedef enum
     , CRWL_HTTP_GET_REQ                     /* HTTP GET请求 */
 } crwl_data_type_e;
 
-/* 读取/发送快照 */
-typedef struct
-{
-    int off;                                /* 偏移量 */
-    int total;                              /* 总字节 */
-
-    char *addr;                             /* 缓存首地址 */
-} snap_shot_t;
-
 /* 发送数据的信息 */
 typedef struct
 {

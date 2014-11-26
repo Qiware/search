@@ -312,7 +312,7 @@ int srch_init_workers(srch_cntx_t *ctx)
     const srch_conf_t *conf = ctx->conf;
 
     /* 1. 创建Worker线程池 */
-    ctx->workers = thread_pool_init(conf->worker_num);
+    ctx->workers = thread_pool_init(conf->worker_num, 0);
     if (NULL == ctx->workers)
     {
         log_error(ctx->log, "Initialize thread pool failed!");
@@ -418,7 +418,7 @@ int srch_init_recvers(srch_cntx_t *ctx)
     const srch_conf_t *conf = ctx->conf;
 
     /* 1. 创建Worker线程池 */
-    ctx->recvers = thread_pool_init(conf->recver_num);
+    ctx->recvers = thread_pool_init(conf->recver_num, 0);
     if (NULL == ctx->recvers)
     {
         log_error(ctx->log, "Initialize thread pool failed!");
@@ -453,7 +453,7 @@ int srch_init_recvers(srch_cntx_t *ctx)
         return SRCH_OK; /* 成功 */
     }
 
-    /* 4. 释放Worker对象 */
+    /* 4. 释放Recver对象 */
     num = idx;
     for (idx=0; idx<num; ++idx)
     {
