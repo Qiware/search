@@ -22,11 +22,38 @@ do
     echo ""
     echo "Net stat:"
     echo "---------------------------------------------------------------------"
-    total=`sudo netstat -antp | grep "crawler" | grep -v "crawler-filter"| grep -v grep | wc -l`
-    established=`sudo netstat -antp | grep "crawler" | grep -v "crawler-filter" | grep "ESTABLISHED" | wc -l`
-    close_wait=`sudo netstat -antp | grep "crawler" | grep -v "crawler-filter" | grep "CLOSE_WAIT" | wc -l`
-    echo "PROC\t\tESTABLISHED\tCLOSE_WAIT\tTOTAL"
-    echo "crawler\t\t$established\t\t$close_wait\t\t$total"
+    IFS='\n'
+    total=0
+    active_num=0
+    close_num=0
+
+    sudo netstat -antp | grep 'crawler' | grep -v 'crawler-filter'| grep -v grep  > proc.list
+
+    for item in `cat ./proc.list`;
+    do
+        flag=`echo $item  | wc -l`
+        if [ $flag -eq 0 ]; then
+            continue;
+        fi
+
+        # 统计套接字总数
+        total=`expr $total + $flag`
+
+        # 统计活跃的套接字
+        flag=`echo $item | grep 'ESTABLISHED' | wc -l`
+        if [ $flag -gt 0 ]; then
+            active_num=`expr $active_num + $flag`
+        fi
+
+        # 统计关闭的套接字
+        flag=`echo $item | grep -e 'CLOSE_WAIT' -e 'SYN_SENT' | wc -l`
+        if [ $flag -gt 0 ]; then
+            close_num=`expr $close_num + $flag`
+        fi
+    done
+
+    echo "PROC\t\tESTABLISHED\tCLOSE\t\tTOTAL"
+    echo "crawler\t\t$active_num\t\t$close_num\t\t$total"
     echo "---------------------------------------------------------------------"
 
     sleep 1
