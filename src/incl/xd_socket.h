@@ -2,6 +2,8 @@
 #define __XD_SOCKET_H__
 
 #include "common.h"
+#include <sys/timeb.h>
+
 
 /* IP地址信息 */
 typedef struct
@@ -24,11 +26,17 @@ typedef struct _socket_t
 {
     int fd;                         /* 套接字FD */
 
+    struct timeb crtm;              /* 创建时间 */
+    time_t wrtm;                    /* 最近写入时间 */
+    time_t rdtm;                    /* 最近读取时间 */
+
     socket_snapshot_t read;         /* 读取快照 */
     socket_snapshot_t send;         /* 发送快照 */
 
     int (*recv_cb)(void *ctx, struct _socket_t *sck);  /* 接收回调 */
     int (*send_cb)(void *ctx, struct _socket_t *sck);  /* 发送回调 */
+
+    void *data;                     /* 附加数据(自定义数据) */
 } socket_t;
 
 int tcp_listen(int port);

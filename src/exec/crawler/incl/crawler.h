@@ -64,15 +64,17 @@
                 "</TASK>", \
                 CRWL_TASK_DOWN_WEBPAGE_BY_URL, deep, uri);
 
-#define crwl_write_webpage_finfo(fp, sck)   /* 写入网页信息 */\
+#define crwl_write_webpage_finfo(fp, data)   /* 写入网页信息 */\
+{ \
     fprintf(fp,  \
         "<WPI>\n" \
         "\t<URI DEPTH=\"%d\" IP=\"%s\" PORT=\"%d\">%s</URI>\n" \
         "\t<HTML SIZE=\"%lu\">\"%s.html\"</HTML>\n" \
         "</WPI>\n", \
-        sck->webpage.depth, sck->webpage.ip, \
-        sck->webpage.port, sck->webpage.uri, \
-        sck->webpage.size, sck->webpage.fname);
+        data->webpage.depth, data->webpage.ip, \
+        data->webpage.port, data->webpage.uri, \
+        data->webpage.size, data->webpage.fname); \
+}
 
 /* 错误码 */
 typedef enum

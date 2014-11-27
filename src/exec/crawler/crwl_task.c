@@ -41,7 +41,8 @@ int crwl_task_down_webpage_by_uri(
     int ret, fd, ip_idx;
     uri_field_t field;
     crwl_domain_ip_map_t map;
-    crwl_worker_socket_t *sck;
+    socket_t *sck;
+    crwl_worker_socket_data_t *data;
 
     memset(&map, 0, sizeof(map));
     memset(&field, 0, sizeof(field));
@@ -75,25 +76,25 @@ int crwl_task_down_webpage_by_uri(
     }
 
     /* 3. 将FD等信息加入套接字链表 */
-    sck = slab_alloc(worker->slab, sizeof(crwl_worker_socket_t));
+    sck = crwl_worker_socket_alloc(worker);
     if (NULL == sck)
     {
         log_error(worker->log, "Alloc memory from slab failed!");
         return CRWL_ERR;
     }
 
-    memset(sck, 0, sizeof(crwl_worker_socket_t));
+    data = (crwl_worker_socket_data_t *)sck->data;
 
-    sck->sckid = fd;
+    sck->fd = fd;
     ftime(&sck->crtm);
     sck->rdtm = sck->crtm.time;
     sck->wrtm = sck->crtm.time;
-    sck->read.addr = sck->recv;
+    sck->read.addr = data->recv;
 
-    snprintf(sck->webpage.uri, sizeof(sck->webpage.uri), "%s", args->uri);
-    snprintf(sck->webpage.ip, sizeof(sck->webpage.ip), "%s", map.ip[ip_idx].ip);
-    sck->webpage.port = args->port;
-    sck->webpage.depth = args->depth;
+    snprintf(data->webpage.uri, sizeof(data->webpage.uri), "%s", args->uri);
+    snprintf(data->webpage.ip, sizeof(data->webpage.ip), "%s", map.ip[ip_idx].ip);
+    data->webpage.port = args->port;
+    data->webpage.depth = args->depth;
 
     sck->recv_cb = crwl_worker_recv_data;
     sck->send_cb = crwl_worker_send_data;
@@ -101,7 +102,7 @@ int crwl_task_down_webpage_by_uri(
     if (crwl_worker_add_sock(worker, sck))
     {
         log_error(worker->log, "Add socket into list failed!");
-        slab_dealloc(worker->slab, sck);
+        crwl_worker_socket_dealloc(worker, sck);
         return CRWL_ERR;
     }
 
@@ -144,7 +145,8 @@ int crwl_task_down_webpage_by_ip(
         crwl_worker_t *worker, const crwl_task_down_webpage_by_ip_t *args)
 {
     int fd;
-    crwl_worker_socket_t *sck;
+    socket_t *sck;
+    crwl_worker_socket_data_t *data;
 
 
     /* 1. 连接远程WEB服务器 */
@@ -157,24 +159,24 @@ int crwl_task_down_webpage_by_ip(
     }
 
     /* 2. 将FD等信息加入套接字链表 */
-    sck = slab_alloc(worker->slab, sizeof(crwl_worker_socket_t));
+    sck = crwl_worker_socket_alloc(worker);
     if (NULL == sck)
     {
         log_error(worker->log, "Alloc memory from slab failed!");
         return CRWL_ERR;
     }
 
-    memset(sck, 0, sizeof(crwl_worker_socket_t));
+    data = (crwl_worker_socket_data_t *)sck->data;
 
-    sck->sckid = fd;
-    snprintf(sck->webpage.ip, sizeof(sck->webpage.ip), "%s", args->ip);
-    sck->webpage.port = args->port;
+    sck->fd = fd;
+    snprintf(data->webpage.ip, sizeof(data->webpage.ip), "%s", args->ip);
+    data->webpage.port = args->port;
 
     if (crwl_worker_add_sock(worker, sck))
     {
         log_error(worker->log, "Add socket into list failed!");
-        Close(sck->sckid);
-        slab_dealloc(worker->slab, sck);
+        Close(sck->fd);
+        crwl_worker_socket_dealloc(worker, sck);
         return CRWL_ERR;
     }
 
