@@ -32,7 +32,7 @@
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
-hash_tab_t *hash_tab_creat(int num, avl_key_cb_t key_cb, avl_cmp_cb_t cmp_cb)
+hash_tab_t *hash_tab_creat(int num, key_cb_t key_cb, avl_cmp_cb_t cmp_cb)
 {
     int idx;
     hash_tab_t *hash;
@@ -154,7 +154,7 @@ int hash_tab_query(hash_tab_t *hash, void *pkey, int pkey_len, void *data, int d
 }
 
 /******************************************************************************
- **函数名称: hash_tab_delete
+ **函数名称: hash_tab_remove
  **功    能: 删除哈希成员
  **输入参数:
  **     hash: 哈希数组
@@ -167,7 +167,7 @@ int hash_tab_query(hash_tab_t *hash, void *pkey, int pkey_len, void *data, int d
  **     注意: 返回地址的内存空间由外部释放
  **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
-void *hash_tab_delete(hash_tab_t *hash, void *pkey, int pkey_len)
+void *hash_tab_remove(hash_tab_t *hash, void *pkey, int pkey_len)
 {
     void *data;
     uint32_t idx;

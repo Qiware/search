@@ -44,7 +44,7 @@ static int avl_delete_right_balance(avl_tree_t *tree, avl_node_t *node, bool *lo
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.19 #
  ******************************************************************************/
-int avl_creat(avl_tree_t **tree, avl_key_cb_t key_cb, avl_cmp_cb_t cmp_cb)
+int avl_creat(avl_tree_t **tree, key_cb_t key_cb, avl_cmp_cb_t cmp_cb)
 {
     *tree = (avl_tree_t *)calloc(1, sizeof(avl_tree_t));
     if (NULL == *tree)

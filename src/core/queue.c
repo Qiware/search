@@ -148,49 +148,56 @@ void queue_destroy(Queue_t *q)
  **     max: 队列长度
  **     memsz: 内存池总空间
  **输出参数: NONE
- **返    回: 0:成功 !0:失败
+ **返    回: 加锁队列对象
  **实现描述: 
  **     1. 初始化线程读写锁
  **     2. 创建队列
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.12 #
  ******************************************************************************/
-int lqueue_init(lqueue_t *lq, int max, size_t memsz)
+lqueue_t *lqueue_init(int max, size_t memsz)
 {
     void *addr;
+    lqueue_t *q;
+    slab_pool_t *slab;
 
-    /* 1. 创建队列 */
-    pthread_rwlock_init(&lq->lock, NULL);
-
-    if (queue_init(&lq->queue, max))
-    {
-        pthread_rwlock_destroy(&lq->lock);
-        return -1;
-    }
-
-    /* 2. 创建内存池 */
-    pthread_rwlock_init(&lq->slab_lock, NULL);
-
+    /* 1. 创建内存池 */
     addr = calloc(1, memsz);
     if (NULL == addr)
     {
-        pthread_rwlock_destroy(&lq->slab_lock);
-        pthread_rwlock_destroy(&lq->lock);
-        queue_destroy(&lq->queue);
-        return -1;
+        return NULL;
     }
 
-    lq->slab = slab_init(addr, memsz);
-    if (NULL == lq->slab)
+    slab = slab_init(addr, memsz);
+    if (NULL == slab)
     {
         free(addr);
-        pthread_rwlock_destroy(&lq->slab_lock);
-        pthread_rwlock_destroy(&lq->lock);
-        queue_destroy(&lq->queue);
-        return -1;
+        return NULL;
     }
 
-    return 0;
+    /* 2. 创建队列对象 */
+    q = slab_alloc(slab, sizeof(lqueue_t)); 
+    if (NULL == q)
+    {
+        free(addr);
+        return NULL;
+    }
+
+    q->slab = slab;
+    pthread_rwlock_init(&q->slab_lock, NULL);
+
+    /* 2. 创建队列 */
+    pthread_rwlock_init(&q->lock, NULL);
+
+    if (queue_init(&q->queue, max))
+    {
+        pthread_rwlock_destroy(&q->lock);
+        pthread_rwlock_destroy(&q->slab_lock);
+        free(addr);
+        return NULL;
+    }
+
+    return q;
 }
 
 /******************************************************************************

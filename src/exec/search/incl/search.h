@@ -25,8 +25,12 @@
 
 #define SRCH_DEF_CONF_PATH  "../conf/search.xml"   /* 默认配置路径 */
 
-#define SRCH_EVENT_MAX_NUM          (2048)  /* 事件最大数 */
+#define SRCH_EVENT_MAX_NUM          (40960) /* 事件最大数 */
 
+/* 命令路径 */
+#define SRCH_LSN_CMD_PATH "../temp/srch/lsn_cmd.usck"       /* 侦听线程 */
+#define SRCH_RCV_CMD_PATH "../temp/srch/rcv_cmd_%02d.usck"  /* 接收线程 */
+#define SRCH_WRK_CMD_PATH "../temp/srch/wrk_cmd_%02d.usck"  /* 工作线程 */
 
 /* 错误码 */
 typedef enum
@@ -60,8 +64,7 @@ typedef struct
 typedef struct
 {
     int fd;                                 /* 套接字 */
-    int tidx;                               /* 线程索引 */
-    uint64_t serial;                        /* 序列号 */
+    uint64_t sck_serial;                    /* SCK流水号 */
 } srch_add_sck_t;
 
 srch_cntx_t *srch_cntx_init(char *pname, const char *conf_path);

@@ -28,8 +28,8 @@ typedef struct
         int port;                           /* 侦听端口 */
     } connections;
 
-    int worker_num;                         /* Worker线程数 */
     int recver_num;                         /* Recver线程数 */
+    int worker_num;                         /* Worker线程数 */
 
     mem_pool_t *mem_pool;                   /* 内存池 */
 } srch_conf_t;

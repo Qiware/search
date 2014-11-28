@@ -2,10 +2,8 @@
 #include "common.h"
 #include "syscall.h"
 #include "xd_socket.h"
-#include "srch_worker.h"
+#include "srch_recver.h"
 #include "srch_listen.h"
-
-#define SRCH_LSN_CMD_PATH "../temp/srch/lsn_cmd.usck"
 
 srch_listen_t *srch_listen_init(srch_cntx_t *ctx);
 static int srch_listen_accept(srch_cntx_t *ctx, srch_listen_t *lsn);
@@ -172,7 +170,7 @@ static int srch_listen_accept(srch_cntx_t *ctx, srch_listen_t *lsn)
 {
     int fd, tidx;
     socklen_t len;
-    srch_worker_t *worker;
+    srch_recver_t *rsvr;
     srch_add_sck_t *add;
     struct sockaddr_in cliaddr;
 
@@ -186,14 +184,14 @@ static int srch_listen_accept(srch_cntx_t *ctx, srch_listen_t *lsn)
         return SRCH_ERR;
     }
 
-    ++lsn->sck_serial_no;
+    ++lsn->sck_serial;
     fd_set_nonblocking(fd);
 
     /* 2. 将通信套接字放入队列 */
-    tidx = lsn->sck_serial_no % ctx->conf->worker_num;
-    worker = (srch_worker_t *)ctx->workers->data + tidx;
+    tidx = lsn->sck_serial % ctx->conf->recver_num;
+    rsvr = (srch_recver_t *)ctx->recvers->data + tidx;
 
-    add = lqueue_mem_alloc(&worker->add_sckq, sizeof(srch_add_sck_t));
+    add = lqueue_mem_alloc(rsvr->conn_sckq, sizeof(srch_add_sck_t));
     if (NULL == add)
     {
         log_error(lsn->log, "Alloc memory from queue failed!");
@@ -202,13 +200,12 @@ static int srch_listen_accept(srch_cntx_t *ctx, srch_listen_t *lsn)
     }
 
     add->fd = fd;
-    add->tidx = tidx;
-    add->serial = lsn->sck_serial_no;
+    add->sck_serial = lsn->sck_serial;
 
-    if (lqueue_push(&worker->add_sckq, add))
+    if (lqueue_push(rsvr->conn_sckq, add))
     {
         log_error(lsn->log, "Push into queue failed!");
-        lqueue_mem_dealloc(&worker->add_sckq, add);
+        lqueue_mem_dealloc(rsvr->conn_sckq, add);
         Close(fd);
         return SRCH_ERR;
     }

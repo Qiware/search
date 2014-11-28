@@ -37,20 +37,6 @@ typedef struct
 } avl_primary_key_t;
 
 /******************************************************************************
- **函数名称: avl_key_cb_t
- **功    能: 为唯一键产生KEY值
- **输入参数: 
- **     pkey: 主键(任意数据类型, 但该值在二叉树中必须是唯一的)
- **     pkey_len: 主键长度
- **输出参数: NONE
- **返    回: KEY值
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.11.09 #
- ******************************************************************************/
-typedef uint32_t (*avl_key_cb_t)(const void *pkey, size_t pkey_len);
-
-/******************************************************************************
  **函数名称: avl_cmp_cb_t
  **功    能: 主键与值的比较函数
  **输入参数: 
@@ -87,7 +73,7 @@ typedef struct
 {
     avl_node_t *root;           /* 根节点 */
 
-    avl_key_cb_t key_cb;        /* 生成KEY的回调 */
+    key_cb_t key_cb;            /* 生成KEY的回调 */
     avl_cmp_cb_t cmp_cb;        /* 数值比较回调 */
 } avl_tree_t;
 
@@ -132,7 +118,7 @@ typedef struct
     } \
 } 
 
-int avl_creat(avl_tree_t **tree, avl_key_cb_t key_cb, avl_cmp_cb_t cmp_cb);
+int avl_creat(avl_tree_t **tree, key_cb_t key_cb, avl_cmp_cb_t cmp_cb);
 int avl_insert(avl_tree_t *tree, void *pkey, int pkey_len, void *data);
 avl_node_t *avl_query(avl_tree_t *tree, void *pkey, int pkey_len);
 int avl_delete(avl_tree_t *tree, void *pkey, int pkey_len, void **data);

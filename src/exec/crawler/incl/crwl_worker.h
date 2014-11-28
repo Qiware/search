@@ -38,7 +38,7 @@ typedef struct
     crwl_conf_t *conf;              /* 全局配置信息 */
 
     int ep_fd;                      /* epoll文件描述符 */
-    int ep_fds;                     /* 处于激活状态的套接字数 */
+    int fds;                        /* 处于激活状态的套接字数 */
     struct epoll_event *events;     /* Event最大数 */
 
     slab_pool_t *slab;              /* 内存池 */
@@ -47,7 +47,7 @@ typedef struct
     time_t scan_tm;                 /* 超时扫描时间 */
     list_t sock_list;               /* 套接字列表
                                        结点数据指针指向socket_t */
-    lqueue_t undo_taskq;            /* 任务队列 */
+    lqueue_t *undo_taskq;           /* 任务队列 */
 
     uint64_t down_webpage_total;    /* 下载网页的计数 */
     uint64_t err_webpage_total;     /* 异常网页的计数 */
@@ -62,7 +62,7 @@ typedef struct
 } crwl_worker_socket_data_t;
 
 /* 获取队列剩余空间 */
-#define crwl_worker_undo_taskq_space(worker) queue_space(&(worker)->undo_taskq.queue)
+#define crwl_worker_undo_taskq_space(worker) queue_space(&(worker)->undo_taskq->queue)
 
 /* 函数声明 */
 int crwl_worker_add_sock(crwl_worker_t *worker, socket_t *sck);

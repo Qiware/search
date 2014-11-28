@@ -287,7 +287,7 @@ static int crwl_sched_fetch_undo_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
         log_trace(ctx->log, "[%02d] URL:%s!", sched->last_idx, r->str);
 
         /* 3. 新建crwl_task_t对象 */
-        addr = lqueue_mem_alloc(&worker[sched->last_idx].undo_taskq, size);
+        addr = lqueue_mem_alloc(worker[sched->last_idx].undo_taskq, size);
         if (NULL == addr)
         {
             freeReplyObject(r);
@@ -303,17 +303,17 @@ static int crwl_sched_fetch_undo_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
             log_error(ctx->log, "Parse task string failed! %s", r->str);
 
             freeReplyObject(r);
-            lqueue_mem_dealloc(&worker[sched->last_idx].undo_taskq, addr);
+            lqueue_mem_dealloc(worker[sched->last_idx].undo_taskq, addr);
             return CRWL_ERR;
         }
 
         /* 4. 放入Worker任务队列 */
-        if (lqueue_push(&worker[sched->last_idx].undo_taskq, addr))
+        if (lqueue_push(worker[sched->last_idx].undo_taskq, addr))
         {
             log_error(ctx->log, "Push into worker queue failed!");
 
             freeReplyObject(r);
-            lqueue_mem_dealloc(&worker[sched->last_idx].undo_taskq, addr);
+            lqueue_mem_dealloc(worker[sched->last_idx].undo_taskq, addr);
             return CRWL_OK;
         }
 

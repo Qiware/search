@@ -6,6 +6,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <stdint.h>
 #include <stdbool.h>
 
 #if !defined(bool)
@@ -75,5 +76,19 @@ typedef enum
     , PROTOCOL_HTTPS                        /* HTTPS协议 */
     , PROTOCOL_FTP                          /* FTP协议 */
 } protocol_type_e;
+
+/******************************************************************************
+ **函数名称: key_cb_t
+ **功    能: 为唯一键产生KEY值
+ **输入参数: 
+ **     pkey: 主键(任意数据类型, 但该值必须是唯一的)
+ **     pkey_len: 主键长度
+ **输出参数: NONE
+ **返    回: KEY值
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.11.09 #
+ ******************************************************************************/
+typedef uint32_t (*key_cb_t)(const void *pkey, size_t pkey_len);
 
 #endif /*__COMMON_H__*/

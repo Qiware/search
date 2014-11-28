@@ -78,7 +78,8 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker)
     }
 
     /* 2. 创建任务队列 */
-    if (lqueue_init(&worker->undo_taskq, worker->conf->worker.taskq_count, 20 * MB))
+    worker->undo_taskq = lqueue_init(worker->conf->worker.taskq_count, 20 * MB);
+    if (NULL == worker->undo_taskq)
     {
         slab_destroy(worker->slab);
 
@@ -91,7 +92,7 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker)
     worker->ep_fd = epoll_create(CRWL_EVENT_MAX_NUM);
     if (worker->ep_fd < 0)
     {
-        lqueue_destroy(&worker->undo_taskq);
+        lqueue_destroy(worker->undo_taskq);
         slab_destroy(worker->slab);
 
         log_error(worker->log, "Create epoll failed! errmsg:[%d] %s!");
@@ -103,7 +104,7 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker)
             worker->conf->worker.conn_max_num * sizeof(struct epoll_event));
     if (NULL == worker->events)
     {
-        lqueue_destroy(&worker->undo_taskq);
+        lqueue_destroy(worker->undo_taskq);
         slab_destroy(worker->slab);
         Close(worker->ep_fd);
 
@@ -135,17 +136,17 @@ int crwl_worker_destroy(crwl_worker_t *worker)
     while (1)
     {
         /* 弹出数据 */
-        data = lqueue_pop(&worker->undo_taskq);
+        data = lqueue_pop(worker->undo_taskq);
         if (NULL == data)
         {
             break;
         }
 
         /* 释放内存 */
-        lqueue_mem_dealloc(&worker->undo_taskq, data);
+        lqueue_mem_dealloc(worker->undo_taskq, data);
     }
 
-    lqueue_destroy(&worker->undo_taskq);
+    lqueue_destroy(worker->undo_taskq);
 
     close(worker->ep_fd);
 
@@ -171,7 +172,7 @@ static int crwl_worker_fetch_task(crwl_cntx_t *ctx, crwl_worker_t *worker)
     crwl_task_t *t;
 
     /* 1. 判断是否应该取任务 */
-    if (0 == worker->undo_taskq.queue.num
+    if (0 == worker->undo_taskq->queue.num
         || worker->sock_list.num >= worker->conf->worker.conn_max_num)
     {
         return CRWL_OK;
@@ -182,7 +183,7 @@ static int crwl_worker_fetch_task(crwl_cntx_t *ctx, crwl_worker_t *worker)
 
     for (idx=0; idx<num; ++idx)
     {
-        data = lqueue_trypop(&worker->undo_taskq);
+        data = lqueue_trypop(worker->undo_taskq);
         if (NULL == data)
         {
             return CRWL_OK;
@@ -193,7 +194,7 @@ static int crwl_worker_fetch_task(crwl_cntx_t *ctx, crwl_worker_t *worker)
 
         crwl_worker_task_handler(worker, t);
 
-        lqueue_mem_dealloc(&worker->undo_taskq, data);
+        lqueue_mem_dealloc(worker->undo_taskq, data);
     }
     return CRWL_OK;
 }
@@ -452,7 +453,7 @@ static int crwl_worker_event_hdl(crwl_worker_t *worker)
     socket_t *sck;
 
     /* 1. 依次遍历套接字, 判断是否可读可写 */
-    for (idx=0; idx<worker->ep_fds; ++idx)
+    for (idx=0; idx<worker->fds; ++idx)
     {
         sck = (socket_t *)worker->events[idx].data.ptr;
 
@@ -523,10 +524,10 @@ void *crwl_worker_routine(void *_ctx)
         crwl_worker_fetch_task(ctx, worker);
 
         /* 3. 等待事件通知 */
-        worker->ep_fds = epoll_wait(
+        worker->fds = epoll_wait(
                 worker->ep_fd, worker->events,
                 worker->conf->worker.conn_max_num, CRWL_TMOUT_SEC);
-        if (worker->ep_fds < 0)
+        if (worker->fds < 0)
         {
             if (EINTR == errno)
             {
@@ -539,7 +540,7 @@ void *crwl_worker_routine(void *_ctx)
             abort();
             return (void *)-1;
         }
-        else if (0 == worker->ep_fds)
+        else if (0 == worker->fds)
         {
             crwl_worker_timeout_hdl(worker);
             continue;
@@ -594,7 +595,8 @@ int crwl_worker_add_sock(crwl_worker_t *worker, socket_t *sck)
         return CRWL_ERR;
     }
 
-    /* 3. 加入epoll监听(首先是发送数据, 所以设置EPOLLOUT) */
+    /* 3. 加入epoll监听(首先是发送数据, 所以需设置EPOLLOUT,
+     * 又可能服务端主动断开连接, 所以需要设置EPOLLIN, 否则可能出现EPIPE的异常) */
     memset(&ev, 0, sizeof(ev));
 
     ev.data.ptr = sck;

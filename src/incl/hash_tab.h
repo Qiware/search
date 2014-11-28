@@ -12,14 +12,14 @@ typedef struct
     avl_tree_t **tree;          /* 平衡二叉树(数组成员: num个) */
     pthread_rwlock_t *lock;     /* 平衡二叉树锁 */
 
-    avl_key_cb_t key_cb;
+    key_cb_t key_cb;
     avl_cmp_cb_t cmp_cb;
 } hash_tab_t;
 
-hash_tab_t *hash_tab_creat(int num, avl_key_cb_t key_cb, avl_cmp_cb_t cmp_cb);
+hash_tab_t *hash_tab_creat(int num, key_cb_t key_cb, avl_cmp_cb_t cmp_cb);
 int hash_tab_insert(hash_tab_t *hash, void *pkey, int pkey_len, void *addr);
 int hash_tab_query(hash_tab_t *hash, void *pkey, int pkey_len, void *data, int data_len);
-void *hash_tab_delete(hash_tab_t *hash, void *pkey, int pkey_len);
+void *hash_tab_remove(hash_tab_t *hash, void *pkey, int pkey_len);
 int hash_tab_destroy(hash_tab_t *hash);
 
 #endif /*__HASH_TAB_H__*/

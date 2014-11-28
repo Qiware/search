@@ -440,6 +440,7 @@ int srch_init_recvers(srch_cntx_t *ctx)
         recver = (srch_recver_t *)ctx->recvers->data + idx;
 
         recver->tidx = idx;
+        recver->log = ctx->log;
 
         if (srch_recver_init(ctx, recver))
         {

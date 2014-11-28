@@ -2,9 +2,8 @@
 #define __HASH_ARRAY_H__
 
 #include "slab.h"
+#include "common.h"
 #include "rb_tree.h"
-
-typedef uint32_t (*key_cb_t)(const void *data, size_t size);
 
 /* 哈希结点 */
 typedef struct

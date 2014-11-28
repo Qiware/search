@@ -47,7 +47,7 @@ typedef struct
     slab_pool_t *slab;                      /* 内存池 */
 } lqueue_t;
 
-int lqueue_init(lqueue_t *lq, int max, size_t pool);
+lqueue_t *lqueue_init(int max, size_t pool);
 void *lqueue_mem_alloc(lqueue_t *lq, size_t size);
 void lqueue_mem_dealloc(lqueue_t *lq, void *p);
 int lqueue_push(lqueue_t *lq, void *addr);
