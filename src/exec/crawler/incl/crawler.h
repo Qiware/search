@@ -44,8 +44,10 @@
 #define CRWL_CONN_TMOUT_SEC         (15)    /* 连接超时时间(秒) */
 
 #define CRWL_DOMAIN_IP_MAP_HASH_NUM (1777)  /* 域名IP映射表长度 */
+#define CRWL_DOMAIN_BLACKLIST_HASH_NUM (1777)   /* 域名黑名单表长度 */
 #define CRWL_DEPTH_NO_LIMIT         (-1)    /* 爬取深度无限制 */
 #define CRWL_WEB_SVR_PORT           (80)    /* WEB服务器侦听端口 */
+
 
 #define CRWL_TASK_QUEUE_MAX_NUM     (10000) /* 任务队列单元数 */
 #define CRWL_DEF_CONF_PATH  "../conf/crawler.xml"   /* 默认配置路径 */
@@ -108,7 +110,16 @@ typedef struct
     int ip_num;                             /* IP地址数 */
 #define CRWL_IP_MAX_NUM  (8)
     ipaddr_t ip[CRWL_IP_MAX_NUM];           /* 域名对应的IP地址 */
+    time_t access_tm;                       /* 最近访问时间 */
 } crwl_domain_ip_map_t;
+
+/* 域名黑名单信息 */
+typedef struct
+{
+    char host[URI_MAX_LEN];                 /* Host信息(域名) */
+
+    time_t access_tm;                       /* 最近访问时间 */
+} crwl_domain_blacklist_t;
 
 /* 输入参数信息 */
 typedef struct
@@ -125,6 +136,7 @@ typedef struct
 
     thread_pool_t *workers;                 /* 线程池对象 */
     hash_tab_t *domain_ip_map;              /* 域名IP映射表: 通过域名找到IP地址 */
+    hash_tab_t *domain_blacklist;           /* 域名黑名单 */
 } crwl_cntx_t;
 
 /* 对外接口 */

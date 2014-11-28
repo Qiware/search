@@ -34,6 +34,7 @@
 static int crwl_init_workers(crwl_cntx_t *ctx);
 int crwl_workers_destroy(crwl_cntx_t *ctx);
 static int crwl_domain_ip_map_cmp_cb(const void *ukey, const void *data);
+static int crwl_domain_blacklist_cmp_cb(const void *ukey, const void *data);
 static void crwl_signal_hdl(int signum);
 
 /******************************************************************************
@@ -151,50 +152,66 @@ crwl_cntx_t *crwl_cntx_init(char *pname, const char *path)
         return NULL;
     }
 
-    /* 4. 加载配置文件 */
-    ctx->conf = crwl_conf_load(path, log);
-    if (NULL == ctx->conf)
+    do
     {
-        free(ctx);
-        log_error(log, "Load configuration failed! path:%s", path);
-        return NULL;
-    }
+        /* 4. 加载配置文件 */
+        ctx->conf = crwl_conf_load(path, log);
+        if (NULL == ctx->conf)
+        {
+            log_error(log, "Load configuration failed! path:%s", path);
+            break;
+        }
 
-    ctx->log = log;
-    log_set_level(log, ctx->conf->log.level);
-    log2_set_level(ctx->conf->log.level2);
+        ctx->log = log;
+        log_set_level(log, ctx->conf->log.level);
+        log2_set_level(ctx->conf->log.level2);
 
-    /* 5. 新建域名IP映射表 */
-    ctx->domain_ip_map = hash_tab_creat(
-            CRWL_DOMAIN_IP_MAP_HASH_NUM,
-            hash_time33_ex,
-            crwl_domain_ip_map_cmp_cb);
-    if (NULL == ctx->domain_ip_map)
-    {
-        crwl_conf_destroy(ctx->conf);
-        free(ctx);
-        log_error(log, "Initialize hash table failed!");
-        return NULL;
-    }
+        /* 5. 新建域名IP映射表 */
+        ctx->domain_ip_map = hash_tab_creat(
+                CRWL_DOMAIN_IP_MAP_HASH_NUM,
+                hash_time33_ex,
+                crwl_domain_ip_map_cmp_cb);
+        if (NULL == ctx->domain_ip_map)
+        {
+            log_error(log, "Initialize hash table failed!");
+            break;
+        }
 
-    if(limit_file_num(4096))
-    {
-        crwl_conf_destroy(ctx->conf);
-        free(ctx);
-        log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return NULL;
-    }
+        /* 6. 新建域名黑名单表 */
+        ctx->domain_blacklist = hash_tab_creat(
+                CRWL_DOMAIN_BLACKLIST_HASH_NUM,
+                hash_time33_ex,
+                crwl_domain_blacklist_cmp_cb);
+        if (NULL == ctx->domain_blacklist)
+        {
+            log_error(log, "Initialize hash table failed!");
+            break;
+        }
 
-    /* 6. 创建Worker线程池 */
-    if (crwl_init_workers(ctx))
-    {
-        crwl_conf_destroy(ctx->conf);
-        free(ctx);
-        log_error(log, "Initialize thread pool failed!");
-        return NULL;
-    }
 
-    return ctx;
+        if(limit_file_num(4096))
+        {
+            log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
+            break;
+        }
+
+        /* 6. 创建Worker线程池 */
+        if (crwl_init_workers(ctx))
+        {
+            log_error(log, "Initialize thread pool failed!");
+            break;
+        }
+
+        return ctx;
+    } while(0);
+
+    /* 释放内存 */
+    if (ctx->conf) { crwl_conf_destroy(ctx->conf); }
+    if (ctx->domain_ip_map) { hash_tab_destroy(ctx->domain_ip_map); }
+    if (ctx->domain_blacklist) { hash_tab_destroy(ctx->domain_blacklist); }
+    free(ctx);
+
+    return NULL;
 }
 
 /******************************************************************************
@@ -411,6 +428,8 @@ int crwl_get_domain_ip_map(crwl_cntx_t *ctx, char *host, crwl_domain_ip_map_t *m
 {
     int ret;
     crwl_domain_ip_map_t *new;
+    crwl_domain_blacklist_t blacklist;
+    crwl_domain_blacklist_t *new_blacklist;
     struct sockaddr_in *sockaddr;
     struct addrinfo *addrinfo, *curr;
     struct addrinfo hints;
@@ -425,6 +444,17 @@ int crwl_get_domain_ip_map(crwl_cntx_t *ctx, char *host, crwl_domain_ip_map_t *m
         return CRWL_OK; /* 成功 */
     }
 
+    /* 2. 从域名黑名单中查找 */
+    ret = hash_tab_query(
+            ctx->domain_blacklist,
+            host, strlen(host),
+            &blacklist, sizeof(blacklist));
+    if (0 == ret)
+    {
+        log_info(ctx->log, "Host [%s] in blacklist!", host);
+        return CRWL_ERR; /* 在黑名单中 */
+    }
+
     /* 2. 通过DNS服务器查询 */
     memset(&hints, 0, sizeof(hints));
 
@@ -433,6 +463,23 @@ int crwl_get_domain_ip_map(crwl_cntx_t *ctx, char *host, crwl_domain_ip_map_t *m
     if (0 != getaddrinfo(host, "http", &hints, &addrinfo))
     {
         log_error(ctx->log, "Get address info failed! host:%s", host);
+
+        /* 插入域名黑名单中 */
+        new_blacklist = calloc(1, sizeof(crwl_domain_blacklist_t));
+        if (NULL == new_blacklist)
+        {
+            return CRWL_ERR;
+        }
+
+        snprintf(new_blacklist->host, sizeof(new_blacklist->host), "%s", host);
+        new_blacklist->access_tm = time(NULL);
+
+        ret = hash_tab_insert(ctx->domain_blacklist, host, strlen(host), new_blacklist);
+        if (0 != ret)
+        {
+            free(new_blacklist);
+        }
+
         return CRWL_ERR;
     }
 
@@ -505,6 +552,7 @@ int crwl_get_domain_ip_map(crwl_cntx_t *ctx, char *host, crwl_domain_ip_map_t *m
  **返    回: 0:相等 <0:小于 >0:大于
  **实现描述: 
  **注意事项: 
+ **     查找成功后，将会更新访问时间. 该时间将会是表数据更新的参考依据
  **作    者: # Qifeng.zou # 2014.11.14 #
  ******************************************************************************/
 static int crwl_domain_ip_map_cmp_cb(const void *_domain, const void *data)
@@ -513,6 +561,27 @@ static int crwl_domain_ip_map_cmp_cb(const void *_domain, const void *data)
     const crwl_domain_ip_map_t *map = (const crwl_domain_ip_map_t *)data;
 
     return strcmp(host, map->host);
+}
+
+/******************************************************************************
+ **函数名称: crwl_domain_blacklist_cmp_cb
+ **功    能: 域名黑名单的比较
+ **输入参数:
+ **     _domain: 域名
+ **     data: 域名黑名单数据(crwl_domain_blacklist_t)
+ **输出参数: NONE
+ **返    回: 0:相等 <0:小于 >0:大于
+ **实现描述: 
+ **注意事项: 
+ **     查找成功后，将会更新访问时间. 该时间将会是表数据更新的参考依据
+ **作    者: # Qifeng.zou # 2014.11.28 #
+ ******************************************************************************/
+static int crwl_domain_blacklist_cmp_cb(const void *_domain, const void *data)
+{
+    const char *host = (const char *)_domain;
+    const crwl_domain_blacklist_t *item = (const crwl_domain_blacklist_t *)data;
+
+    return strcmp(host, item->host);
 }
 
 /******************************************************************************

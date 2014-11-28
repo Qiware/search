@@ -416,11 +416,12 @@ static int crwl_worker_timeout_hdl(crwl_worker_t *worker)
         if ((ctm - sck->rdtm <= worker->conf->worker.conn_tmout_sec)
             || (ctm - sck->wrtm <= worker->conf->worker.conn_tmout_sec))
         {
-            continue;
+            continue; /* 未超时 */
         }
 
-        log_info(worker->log, "Timeout! uri:%s ip:%s size:%d",
-                data->webpage.uri, data->webpage.ip, data->webpage.size);
+        log_error(worker->log, "Timeout! uri:%s ip:%s size:%d! ctm:%lu rdtm:%lu wrtm:%lu",
+                data->webpage.uri, data->webpage.ip, data->webpage.size,
+                ctm, sck->rdtm, sck->wrtm);
 
         crwl_worker_webpage_fsync(worker, sck);
         crwl_worker_webpage_finfo(worker, sck);
@@ -597,7 +598,7 @@ int crwl_worker_add_sock(crwl_worker_t *worker, socket_t *sck)
     memset(&ev, 0, sizeof(ev));
 
     ev.data.ptr = sck;
-    ev.events = EPOLLOUT | EPOLLET; /* 边缘触发 */
+    ev.events = EPOLLIN | EPOLLOUT | EPOLLET; /* 边缘触发 */
 
     epoll_ctl(worker->ep_fd, EPOLL_CTL_ADD, sck->fd, &ev);
 

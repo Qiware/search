@@ -30,7 +30,7 @@
 
 #define CRWL_PARSER_LOG_NAME    "filter"
 
-static int crwl_filter_webpage_info(crwl_webpage_info_t *info);
+static int crwl_filter_webpage_info(crwl_webpage_info_t *info, log_cycle_t *log);
 static int crwl_filter_work_flow(crwl_filter_t *filter);
 static int crwl_filter_deep_hdl(crwl_filter_t *filter, gumbo_result_t *result);
 
@@ -223,7 +223,7 @@ int crwl_filter_work(crwl_filter_t *filter)
             }
 
             /* 获取网页信息 */
-            if (crwl_filter_webpage_info(&filter->info))
+            if (crwl_filter_webpage_info(&filter->info, filter->log))
             {
                 snprintf(new_path, sizeof(new_path),
                         "%s/%s", conf->filter.store.err_path, item->d_name);
@@ -232,9 +232,6 @@ int crwl_filter_work(crwl_filter_t *filter)
                 snprintf(html_path, sizeof(html_path),
                         "%s/%s", conf->download.path, filter->info.html);
                 remove(html_path);
-
-                log_error(filter->log, "Get webpage information failed! fname:%s",
-                        filter->info.fname);
                 continue;
             }
 
@@ -274,7 +271,7 @@ int crwl_filter_work(crwl_filter_t *filter)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.18 #
  ******************************************************************************/
-static int crwl_filter_webpage_info(crwl_webpage_info_t *info)
+static int crwl_filter_webpage_info(crwl_webpage_info_t *info, log_cycle_t *log)
 {
     xml_tree_t *xml;
     xml_node_t *node, *fix;
@@ -283,6 +280,7 @@ static int crwl_filter_webpage_info(crwl_webpage_info_t *info)
     xml = xml_creat(info->fname);
     if (NULL == xml)
     {
+        log_error(log, "Create XML failed!");
         return CRWL_ERR;
     }
 
@@ -292,6 +290,7 @@ static int crwl_filter_webpage_info(crwl_webpage_info_t *info)
         fix = xml_query(xml, ".WPI");
         if (NULL == fix)
         {
+            log_error(log, "Get WPI mark failed!");
             break;
         }
 
@@ -299,6 +298,7 @@ static int crwl_filter_webpage_info(crwl_webpage_info_t *info)
         node = xml_rquery(xml, fix, "URI");
         if (NULL == fix)
         {
+            log_error(log, "Get URI mark failed!");
             break;
         }
 
@@ -308,6 +308,7 @@ static int crwl_filter_webpage_info(crwl_webpage_info_t *info)
         node = xml_rquery(xml, fix, "URI.DEPTH");
         if (NULL == fix)
         {
+            log_error(log, "Get DEPTH mark failed!");
             break;
         }
 
@@ -317,6 +318,7 @@ static int crwl_filter_webpage_info(crwl_webpage_info_t *info)
         node = xml_rquery(xml, fix, "URI.IP");
         if (NULL == fix)
         {
+            log_error(log, "Get IP mark failed!");
             break;
         }
 
@@ -326,6 +328,7 @@ static int crwl_filter_webpage_info(crwl_webpage_info_t *info)
         node = xml_rquery(xml, fix, "URI.PORT");
         if (NULL == fix)
         {
+            log_error(log, "Get PORT mark failed!");
             break;
         }
 
@@ -335,6 +338,7 @@ static int crwl_filter_webpage_info(crwl_webpage_info_t *info)
         node = xml_rquery(xml, fix, "HTML");
         if (NULL == fix)
         {
+            log_error(log, "Get HTML mark failed!");
             break;
         }
 
@@ -344,12 +348,14 @@ static int crwl_filter_webpage_info(crwl_webpage_info_t *info)
         node = xml_rquery(xml, fix, "HTML.SIZE");
         if (NULL == fix)
         {
+            log_error(log, "Get HTML.SIZE mark failed!");
             break;
         }
 
         info->size = atoi(node->value);
         if (info->size <= 0)
         {
+            log_info(log, "Html size is zero!");
             break;
         }
 

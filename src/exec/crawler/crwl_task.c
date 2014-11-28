@@ -58,7 +58,7 @@ int crwl_task_down_webpage_by_uri(
     ret = crwl_get_domain_ip_map(worker->ctx, field.host, &map);
     if (0 != ret || 0 == map.ip_num)
     {
-        log_error(worker->log, "Get ip failed! host:%s", field.host);
+        log_error(worker->log, "Get ip failed! uri:%s host:%s", field.uri, field.host);
         return CRWL_ERR;
     }
 
