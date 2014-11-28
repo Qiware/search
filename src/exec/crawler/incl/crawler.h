@@ -44,7 +44,7 @@
 #define CRWL_CONN_TMOUT_SEC         (15)    /* 连接超时时间(秒) */
 
 #define CRWL_DOMAIN_IP_MAP_HASH_NUM (1777)  /* 域名IP映射表长度 */
-#define CRWL_DOMAIN_BLACKLIST_HASH_NUM (1777)   /* 域名黑名单表长度 */
+#define CRWL_DOMAIN_BLACKLIST_HASH_NUM (10) /* 域名黑名单表长度 */
 #define CRWL_DEPTH_NO_LIMIT         (-1)    /* 爬取深度无限制 */
 #define CRWL_WEB_SVR_PORT           (80)    /* WEB服务器侦听端口 */
 
