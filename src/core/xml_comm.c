@@ -94,7 +94,7 @@ xml_node_t *xml_node_creat(xml_tree_t *xml, xml_node_type_e type)
     node->type = type;
 
     node->next = NULL;
-    node->firstchild = NULL;
+    node->child = NULL;
     node->parent = NULL;
     xml_reset_flag(node);
     node->temp = NULL;
@@ -164,7 +164,7 @@ xml_node_t *xml_node_creat_ext(
     }
     
     node->next = NULL;
-    node->firstchild = NULL;
+    node->child = NULL;
     node->parent = NULL;
     node->temp = NULL;
     node->tail = NULL;
@@ -728,7 +728,7 @@ static int xml_mark_get_name(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse
     {
         if (NULL == xml->root->tail)
         {
-            xml->root->firstchild = node;
+            xml->root->child = node;
         }
         else
         {
@@ -746,7 +746,7 @@ static int xml_mark_get_name(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse
         node->parent = top;
         if (NULL == top->tail)
         {
-            top->firstchild = node;
+            top->child = node;
         }
         else
         {
@@ -1004,7 +1004,7 @@ static int xml_mark_get_attr(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse
         /* 3.4 将节点加入属性链表 */
         if (NULL == top->tail) /* 还没有孩子节点 */
         {
-            top->firstchild = node;
+            top->child = node;
         }
         else
         {
@@ -1350,10 +1350,10 @@ int xml_delete_child(xml_tree_t *xml, xml_node_t *node, xml_node_t *child)
         return XML_ERR_PTR;
     }
     
-    if (node->firstchild == child)    /* 1. 要删的是子节点链表的开始节点 */
+    if (node->child == child)    /* 1. 要删的是子节点链表的开始节点 */
     {
-        node->firstchild = child->next;  /* 剔除链表 */
-        if (NULL == node->firstchild)
+        node->child = child->next;  /* 剔除链表 */
+        if (NULL == node->child)
         {
             node->tail = NULL;
             if (xml_is_attr(child))
@@ -1361,14 +1361,14 @@ int xml_delete_child(xml_tree_t *xml, xml_node_t *node, xml_node_t *child)
                 xml_unset_attr_flag(node);
             }
         }
-        else if (xml_is_attr(child) && !xml_is_attr(node->firstchild))
+        else if (xml_is_attr(child) && !xml_is_attr(node->child))
         {
             xml_unset_attr_flag(node);
         }
         return XML_OK;
     }
 
-    p1 = node->firstchild;
+    p1 = node->child;
     p2 = p1->next;
     while (NULL != p2)
     {
@@ -1582,7 +1582,7 @@ int _xml_node_length(xml_tree_t *xml, xml_node_t *root, Stack_t *stack)
     do
     {
         /* 1. 将要处理的节点压栈 */
-        node->temp = node->firstchild;
+        node->temp = node->child;
         if (stack_push(stack, node))
         {
             log2_error("Stack push failed!");

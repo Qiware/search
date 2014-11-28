@@ -65,7 +65,7 @@ typedef struct _xml_node_t
     xml_node_type_e type;       /* 节点类型 */
 
     struct _xml_node_t *next;   /* 兄弟节点链表 */
-    struct _xml_node_t *firstchild;  /* 孩子节点链表头: 属性节点+孩子节点 */
+    struct _xml_node_t *child;  /* 孩子节点链表头: 属性节点+孩子节点 */
     struct _xml_node_t *tail;   /* 孩子节点链表尾 # 构建/修改XML树时使用 # 提高操作效率 */
     struct _xml_node_t *parent; /* 父亲节点 */
 
@@ -84,7 +84,7 @@ typedef struct
 } xml_tree_t;
 
 /* 对外的接口 */
-#define xml_child(node) (node->firstchild)
+#define xml_child(node) (node->child)
 #define xml_parent(node) (node->parent)
 #define xml_brother(node) (node->next)
 #define xml_name(node) (node->name)
@@ -129,7 +129,7 @@ int xml_delete_empty(xml_tree_t *xml);
 
 int xml_set_value(xml_tree_t *xml, xml_node_t *node, const char *value);
 int xml_node_length(xml_tree_t *xml, xml_node_t *node);
-#define xml_tree_length(xml) xml_node_length(xml, xml->root->firstchild)
+#define xml_tree_length(xml) xml_node_length(xml, xml->root->child)
 
 extern int _xml_pack_length(xml_tree_t *xml, xml_node_t *node);
 #define xml_pack_length(xml) _xml_pack_length(xml, xml->root)

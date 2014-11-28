@@ -254,7 +254,7 @@ xml_tree_t *xml_screat(const char *str)
                 xml_node_free_one(child), child = NULL;    \
                 continue;   \
             }   \
-            node->firstchild = node->temp; /* 让孩子指针指向真正的孩子节点 */  \
+            node->child = node->temp; /* 让孩子指针指向真正的孩子节点 */  \
             break;  \
         }   \
     }   \
@@ -299,7 +299,7 @@ int xml_node_free(xml_tree_t *xml, xml_node_t *node)
     do
     {
         /* 1. 节点入栈 */
-        current->temp = current->firstchild;
+        current->temp = current->child;
         if (stack_push(stack, current))
         {
             stack_destroy(stack);
@@ -342,7 +342,7 @@ int xml_node_free(xml_tree_t *xml, xml_node_t *node)
 int xml_fprint(xml_tree_t *xml, FILE *fp)
 {
     Stack_t stack;
-    xml_node_t *child = xml->root->firstchild;
+    xml_node_t *child = xml->root->child;
 
     if (NULL == child) 
     {
@@ -387,7 +387,7 @@ int xml_fwrite(xml_tree_t *xml, const char *fname)
 {
     Stack_t stack;
     FILE *fp = NULL;
-    xml_node_t *child = xml->root->firstchild;
+    xml_node_t *child = xml->root->child;
 
     if (NULL == child) 
     {
@@ -442,7 +442,7 @@ int xml_sprint(xml_tree_t *xml, char *str)
 {
     sprint_t sp;
     Stack_t stack;
-    xml_node_t *child = xml->root->firstchild;
+    xml_node_t *child = xml->root->child;
 
     if (NULL == child) 
     {
@@ -488,7 +488,7 @@ extern int xml_spack(xml_tree_t *xml, char *str)
 {
     sprint_t sp;
     Stack_t stack;
-    xml_node_t *child = xml->root->firstchild;
+    xml_node_t *child = xml->root->child;
 
     if (NULL == child) 
     {
@@ -547,7 +547,7 @@ xml_node_t *xml_rquery(xml_tree_t *xml, xml_node_t *curr, const char *path)
         str++;
     }
 
-    node = curr->firstchild;
+    node = curr->child;
     if (NULL == node)
     {
         return NULL;
@@ -588,7 +588,7 @@ xml_node_t *xml_rquery(xml_tree_t *xml, xml_node_t *curr, const char *path)
         }
 
         str = ptr+1;
-        node = node->firstchild;
+        node = node->child;
     }while (NULL != node);
     
     return NULL;
@@ -614,7 +614,7 @@ xml_node_t *xml_add_attr(
 {
     xml_node_t *attr = NULL,
         *parent = node->parent,
-        *link = node->firstchild;
+        *link = node->child;
 
     if (NULL == parent)
     {
@@ -639,7 +639,7 @@ xml_node_t *xml_add_attr(
     /* 2. 将节点放入XML树 */
     if (NULL == link)                    /* 没有孩子节点，也没有属性节点 */
     {
-        node->firstchild = attr;
+        node->child = attr;
         node->tail = attr;
         attr->parent = node;
         xml_set_attr_flag(node);
@@ -675,8 +675,8 @@ xml_node_t *xml_add_attr(
     else if (xml_has_child(node) && !xml_has_attr(node)) /* 有孩子但无属性 */
     {    
         attr->parent = node;
-        attr->next = node->firstchild;
-        node->firstchild = attr;
+        attr->next = node->child;
+        node->child = attr;
 
         xml_set_attr_flag(node);
         return attr;
@@ -737,7 +737,7 @@ xml_node_t *xml_add_child(
     /* 2. 将孩子加入子节点链表尾 */    
     if (NULL == node->tail)              /* 没有孩子&属性节点 */
     {
-        node->firstchild = child;
+        node->child = child;
     }
     else
     {
@@ -937,7 +937,7 @@ int _xml_pack_length(xml_tree_t *xml, xml_node_t *node)
         }
         case XML_NODE_ROOT:  /* 处理父亲节点 */
         {
-            child = node->firstchild;
+            child = node->child;
             while (NULL != child)
             {
                 length2 = xml_pack_node_length(xml, child, &stack);
@@ -993,7 +993,7 @@ int xml_delete_empty(xml_tree_t *xml)
         return XML_ERR_STACK;
     }
 
-    node = xml->root->firstchild;
+    node = xml->root->child;
     while (NULL != node)
     {
         /* 1. 此节点为属性节点: 不用入栈, 继续查找其兄弟节点 */
@@ -1018,7 +1018,7 @@ int xml_delete_empty(xml_tree_t *xml)
                 return XML_ERR_STACK;
             }
             
-            node = node->firstchild;
+            node = node->child;
             continue;
         }
         /* 3. 此节点为拥有节点值或属性节点, 而无孩子节点: 此节点不入栈, 并继续查找其兄弟节点 */
@@ -1072,19 +1072,19 @@ static xml_node_t *_xml_delete_empty(xml_tree_t *xml, Stack_t *stack, xml_node_t
     do
     {
         parent = node->parent;
-        prev = parent->firstchild;
+        prev = parent->child;
 
         if (prev == node)
         {
-            parent->firstchild = node->next;
+            parent->child = node->next;
             
         #if !defined(__XML_MEM_POOL__)
             xml_node_free_one(node);           /* 释放空节点 */
         #endif /*!__XML_MEM_POOL__*/            
             
-            if (NULL != parent->firstchild)
+            if (NULL != parent->child)
             {
-                return parent->firstchild;  /* 处理子节点的兄弟节点 */
+                return parent->child;  /* 处理子节点的兄弟节点 */
             }
             
             /* 已无兄弟: 则处理父节点 */

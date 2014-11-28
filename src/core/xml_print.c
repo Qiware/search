@@ -204,7 +204,7 @@ int xml_fprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, FILE *fp)
     do
     {
         /* 1. 将要处理的节点压栈 */
-        node->temp = node->firstchild;
+        node->temp = node->child;
         if (stack_push(stack, node))
         {
             log2_error("Stack push failed!");
@@ -444,7 +444,7 @@ int xml_pack_node_length(xml_tree_t *xml, xml_node_t *root, Stack_t *stack)
     do
     {
         /* 1. 将要处理的节点压栈 */
-        node->temp = node->firstchild;
+        node->temp = node->child;
         
         if (stack_push(stack, node))
         {
@@ -676,7 +676,7 @@ int xml_pack_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, sprint_t *s
     do
     {
         /* 1. 将要处理的节点压栈 */
-        node->temp = node->firstchild;
+        node->temp = node->child;
         if (stack_push(stack, node))
         {
             log2_error("Stack push failed!");
@@ -903,7 +903,7 @@ int xml_sprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, sprint_t 
     do
     {
         /* 1. 将要处理的节点压栈 */
-        node->temp = node->firstchild;
+        node->temp = node->child;
         if (stack_push(stack, node))
         {
             log2_error("Stack push failed!");
