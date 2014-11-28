@@ -8,7 +8,7 @@
 #define XmlIsTableChar(ch)      ('\t' == ch)    /* 制表符 */
 #define XmlIsStrEndChar(ch)     ('\0' == ch)    /* 结束符 */
 #define XmlIsEqualChar(ch)      ('=' == ch)     /* 等号符 */
-#define XmlIsDQuotChar(ch)      ('"' == ch)     /* 双引号 */
+#define XmlIsQuotChar(ch)      ('"' == ch)      /* 双引号 */
 #define XmlIsSQuotChar(ch)      ('\'' == ch)    /* 单引号 */
 #define XmlIsLPBrackChar(ch)    ('<' == ch)     /* 左尖括号 */
 #define XmlIsRPBrackChar(ch)    ('>' == ch)     /* 右尖括号 */

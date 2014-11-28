@@ -59,20 +59,22 @@
                 "<TASK>" \
                     "<TYPE>%d</TYPE>"   /* Task类型 */\
                     "<BODY>" \
-                        "<URI DEPTH=\"%d\">%s</URI>" /* 网页深度&URI */\
+                        "<URI DEPTH=\"%d\">\"%s\"</URI>" /* 网页深度&URI */\
                     "</BODY>" \
                 "</TASK>", \
                 CRWL_TASK_DOWN_WEBPAGE_BY_URL, deep, uri);
 
-#define crwl_write_webpage_finfo(fp, sck)   /* 写入网页信息 */\
+#define crwl_write_webpage_finfo(fp, data)   /* 写入网页信息 */\
+{ \
     fprintf(fp,  \
         "<WPI>\n" \
         "\t<URI DEPTH=\"%d\" IP=\"%s\" PORT=\"%d\">%s</URI>\n" \
-        "\t<HTML SIZE=\"%lu\">%s.html</HTML>\n" \
+        "\t<HTML SIZE=\"%lu\">\"%s.html\"</HTML>\n" \
         "</WPI>\n", \
-        sck->webpage.depth, sck->webpage.ip, \
-        sck->webpage.port, sck->webpage.uri, \
-        sck->webpage.size, sck->webpage.fname);
+        data->webpage.depth, data->webpage.ip, \
+        data->webpage.port, data->webpage.uri, \
+        data->webpage.size, data->webpage.fname); \
+}
 
 /* 错误码 */
 typedef enum
@@ -82,7 +84,6 @@ typedef enum
     , CRWL_SCK_CLOSE                        /* 套接字关闭 */
 
     , CRWL_ERR = ~0x7FFFFFFF                /* 失败、错误 */
-
 } crwl_err_code_e;
 
 /* 数据类型 */
@@ -91,15 +92,6 @@ typedef enum
     CRWL_DATA_TYPE_UNKNOWN = 0              /* 未知数据 */
     , CRWL_HTTP_GET_REQ                     /* HTTP GET请求 */
 } crwl_data_type_e;
-
-/* 读取/发送快照 */
-typedef struct
-{
-    int off;                                /* 偏移量 */
-    int total;                              /* 总字节 */
-
-    char *addr;                             /* 缓存首地址 */
-} snap_shot_t;
 
 /* 发送数据的信息 */
 typedef struct
@@ -139,6 +131,7 @@ typedef struct
 int crwl_getopt(int argc, char **argv, crwl_opt_t *opt);
 int crwl_usage(const char *exec);
 int crwl_proc_lock(void);
+void crwl_set_signal(void);
 
 log_cycle_t *crwl_init_log(char *fname);
 crwl_cntx_t *crwl_cntx_init(char *pname, const char *path);

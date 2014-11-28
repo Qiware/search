@@ -146,7 +146,7 @@ void queue_destroy(Queue_t *q)
  **输入参数: 
  **     lq: 加锁队列
  **     max: 队列长度
- **     pool: 内存池总空间
+ **     memsz: 内存池总空间
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
@@ -155,15 +155,14 @@ void queue_destroy(Queue_t *q)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.12 #
  ******************************************************************************/
-int lqueue_init(lqueue_t *lq, int max, size_t pool)
+int lqueue_init(lqueue_t *lq, int max, size_t memsz)
 {
-    int ret;
+    void *addr;
 
     /* 1. 创建队列 */
     pthread_rwlock_init(&lq->lock, NULL);
 
-    ret = queue_init(&lq->queue, max);
-    if (0 != ret)
+    if (queue_init(&lq->queue, max))
     {
         pthread_rwlock_destroy(&lq->lock);
         return -1;
@@ -172,11 +171,21 @@ int lqueue_init(lqueue_t *lq, int max, size_t pool)
     /* 2. 创建内存池 */
     pthread_rwlock_init(&lq->slab_lock, NULL);
 
-    ret = eslab_init(&lq->slab, pool);
-    if (0 != ret)
+    addr = calloc(1, memsz);
+    if (NULL == addr)
     {
-        pthread_rwlock_destroy(&lq->lock);
         pthread_rwlock_destroy(&lq->slab_lock);
+        pthread_rwlock_destroy(&lq->lock);
+        queue_destroy(&lq->queue);
+        return -1;
+    }
+
+    lq->slab = slab_init(addr, memsz);
+    if (NULL == lq->slab)
+    {
+        free(addr);
+        pthread_rwlock_destroy(&lq->slab_lock);
+        pthread_rwlock_destroy(&lq->lock);
         queue_destroy(&lq->queue);
         return -1;
     }
@@ -230,6 +239,32 @@ void *lqueue_pop(lqueue_t *lq)
 }
 
 /******************************************************************************
+ **函数名称: lqueue_trypop
+ **功    能: 尝试弹出加锁队列
+ **输入参数: 
+ **     lq: 加锁队列
+ **输出参数: NONE
+ **返    回: 数据地址
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.11.20 #
+ ******************************************************************************/
+void *lqueue_trypop(lqueue_t *lq)
+{
+    void *addr;
+
+    if (pthread_rwlock_trywrlock(&lq->lock))
+    {
+        return NULL;
+    }
+
+    addr = queue_pop(&lq->queue);
+    pthread_rwlock_unlock(&lq->lock);
+
+    return addr;
+}
+
+/******************************************************************************
  **函数名称: lqueue_mem_alloc
  **功    能: 申请队列内存空间
  **输入参数: 
@@ -246,7 +281,7 @@ void *lqueue_mem_alloc(lqueue_t *lq, size_t size)
     void *addr;
 
     pthread_rwlock_wrlock(&lq->slab_lock);
-    addr = eslab_alloc(&lq->slab, size);
+    addr = slab_alloc(lq->slab, size);
     pthread_rwlock_unlock(&lq->slab_lock);
 
     return addr;
@@ -267,7 +302,7 @@ void *lqueue_mem_alloc(lqueue_t *lq, size_t size)
 void lqueue_mem_dealloc(lqueue_t *lq, void *p)
 {
     pthread_rwlock_wrlock(&lq->slab_lock);
-    eslab_dealloc(&lq->slab, p);
+    slab_dealloc(lq->slab, p);
     pthread_rwlock_unlock(&lq->slab_lock);
 }
 
@@ -286,4 +321,5 @@ void lqueue_destroy(lqueue_t *lq)
 {
     pthread_rwlock_destroy(&lq->lock);
     queue_destroy(&lq->queue);
+    free(lq->slab);
 }

@@ -41,69 +41,70 @@ typedef struct
     int ep_fds;                     /* 处于激活状态的套接字数 */
     struct epoll_event *events;     /* Event最大数 */
 
-    eslab_pool_t slab;              /* 内存池 */
+    slab_pool_t *slab;              /* 内存池 */
     log_cycle_t *log;               /* 日志对象 */
 
     time_t scan_tm;                 /* 超时扫描时间 */
     list_t sock_list;               /* 套接字列表
-                                       结点数据指针指向crwl_worker_socket_t */
+                                       结点数据指针指向socket_t */
     lqueue_t undo_taskq;            /* 任务队列 */
 
     uint64_t down_webpage_total;    /* 下载网页的计数 */
+    uint64_t err_webpage_total;     /* 异常网页的计数 */
 } crwl_worker_t;
 
 /* 网页加载套接字信息 */
-typedef struct _crwl_worker_socket_t
+typedef struct
 {
-    int sckid;                      /* 套接字ID */
-    struct timeb crtm;              /* 创建时间 */
-    time_t wrtm;                    /* 最近写入时间 */
-    time_t rdtm;                    /* 最近读取时间 */
-
     crwl_webpage_t webpage;         /* 网页信息 */
-
-    snap_shot_t read;               /* 读取快照 */
-    snap_shot_t send;               /* 发送快照 */
-
     char recv[CRWL_RECV_SIZE + 1];  /* 接收缓存 */
     list_t send_list;               /* 发送链表 */
-
-    /* 数据接收和发送回调 */
-    int (*recv_cb)(crwl_worker_t *worker, struct _crwl_worker_socket_t *sck);
-    int (*send_cb)(crwl_worker_t *worker, struct _crwl_worker_socket_t *sck);
-} crwl_worker_socket_t;
+} crwl_worker_socket_data_t;
 
 /* 获取队列剩余空间 */
 #define crwl_worker_undo_taskq_space(worker) queue_space(&(worker)->undo_taskq.queue)
 
 /* 函数声明 */
-int crwl_worker_add_sock(crwl_worker_t *worker, crwl_worker_socket_t *sck);
-crwl_worker_socket_t *crwl_worker_query_sock(crwl_worker_t *worker, int sckid);
-int crwl_worker_remove_sock(crwl_worker_t *worker, crwl_worker_socket_t *sck);
+int crwl_worker_add_sock(crwl_worker_t *worker, socket_t *sck);
+socket_t *crwl_worker_query_sock(crwl_worker_t *worker, int sckid);
+int crwl_worker_remove_sock(crwl_worker_t *worker, socket_t *sck);
 
-int crwl_worker_recv_data(crwl_worker_t *worker, crwl_worker_socket_t *sck);
-int crwl_worker_send_data(crwl_worker_t *worker, crwl_worker_socket_t *sck);
+int crwl_worker_recv_data(void *_worker, socket_t *sck);
+int crwl_worker_send_data(void *_worker, socket_t *sck);
 
 int crwl_worker_add_http_get_req(
-        crwl_worker_t *worker, crwl_worker_socket_t *sck, const char *uri);
+        crwl_worker_t *worker, socket_t *sck, const char *uri);
+
+socket_t *crwl_worker_socket_alloc(crwl_worker_t *worker);
+#define crwl_worker_socket_dealloc(worker, sck) /* 释放Socket空间 */\
+{ \
+    if (NULL != sck->data) \
+    { \
+        slab_dealloc(worker->slab, sck->data); \
+    } \
+    slab_dealloc(worker->slab, sck); \
+}
+
 int crwl_task_down_webpage_by_uri(
         crwl_worker_t *worker, const crwl_task_down_webpage_by_uri_t *args);
 int crwl_task_down_webpage_by_ip(
         crwl_worker_t *worker, const crwl_task_down_webpage_by_ip_t *args);
 
-int crwl_worker_webpage_creat(crwl_worker_t *worker, crwl_worker_socket_t *sck);
+int crwl_worker_webpage_creat(crwl_worker_t *worker, socket_t *sck);
 /* 将接收的数据同步到文件
  *  worker: 对应crwl_worker_t数据类型
- *  sck: 对应crwl_worker_socket_t数据类型
+ *  sck: 对应socket_t数据类型
  * */
 #define crwl_worker_webpage_fsync(worker, sck) \
 { \
-    fwrite(sck->read.addr, sck->read.off, 1, sck->webpage.fp); \
+    crwl_worker_socket_data_t *_data = sck->data; \
+ \
+    fwrite(sck->read.addr, sck->read.off, 1, _data->webpage.fp); \
  \
     sck->read.off = 0; \
     sck->read.total = CRWL_RECV_SIZE; \
 }
-int crwl_worker_webpage_finfo(crwl_worker_t *worker, crwl_worker_socket_t *sck);
+int crwl_worker_webpage_finfo(crwl_worker_t *worker, socket_t *sck);
 
 int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker);
 int crwl_worker_destroy(crwl_worker_t *worker);

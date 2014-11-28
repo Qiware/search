@@ -44,7 +44,7 @@ typedef struct
     Queue_t queue;                          /* 队列 */
 
     pthread_rwlock_t slab_lock;             /* 内存池锁(可用SPIN锁替换) */
-    eslab_pool_t slab;                      /* 内存池 */
+    slab_pool_t *slab;                      /* 内存池 */
 } lqueue_t;
 
 int lqueue_init(lqueue_t *lq, int max, size_t pool);
@@ -52,6 +52,7 @@ void *lqueue_mem_alloc(lqueue_t *lq, size_t size);
 void lqueue_mem_dealloc(lqueue_t *lq, void *p);
 int lqueue_push(lqueue_t *lq, void *addr);
 void *lqueue_pop(lqueue_t *lq);
+void *lqueue_trypop(lqueue_t *lq);
 void lqueue_destroy(lqueue_t *lq);
 
 #endif /*__QUEUE_H__*/

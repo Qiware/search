@@ -61,12 +61,14 @@ int main(int argc, char *argv[])
     if (opt.isdaemon)
     {
         /* int daemon(int nochdir, int noclose);
-         *  1． daemon()函数主要用于希望脱离控制台,以守护进程形式在后台运行的程序.
-         *  2． 当nochdir为0时,daemon将更改进城的根目录为root(“/”).
-         *  3． 当noclose为0是,daemon将进城的STDIN, STDOUT, STDERR都重定向到/dev/null */
+         *  1. daemon()函数主要用于希望脱离控制台, 以守护进程形式在后台运行的程序.
+         *  2. 当nochdir为0时, daemon将更改进城的根目录为root(“/”).
+         *  3. 当noclose为0是, daemon将进城的STDIN, STDOUT, STDERR都重定向到/dev/null */
         daemon(1, 1);
     }
- 
+
+    crwl_set_signal();
+
     /* 2. 初始化全局信息 */
     ctx = crwl_cntx_init(argv[0], opt.conf_path);
     if (NULL == ctx)

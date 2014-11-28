@@ -5,6 +5,8 @@
 #include "srch_worker.h"
 #include "srch_listen.h"
 
+#define SRCH_LSN_CMD_PATH "../temp/srch/lsn_cmd.usck"
+
 srch_listen_t *srch_listen_init(srch_cntx_t *ctx);
 static int srch_listen_accept(srch_cntx_t *ctx, srch_listen_t *lsn);
 
@@ -120,7 +122,7 @@ srch_listen_t *srch_listen_init(srch_cntx_t *ctx)
         }
 
         /* 3. 创建命令套接字 */
-        lsn->cmd_sck_id = unix_udp_creat("../temp/srch/lsn_cmd.usck");
+        lsn->cmd_sck_id = unix_udp_creat(SRCH_LSN_CMD_PATH);
         if (lsn->cmd_sck_id < 0)
         {
             log_error(lsn->log, "errmsg:[%d] %s!", errno, strerror(errno));
@@ -191,7 +193,7 @@ static int srch_listen_accept(srch_cntx_t *ctx, srch_listen_t *lsn)
     tidx = lsn->sck_serial_no % ctx->conf->worker_num;
     worker = (srch_worker_t *)ctx->workers->data + tidx;
 
-    add = lqueue_mem_alloc(&worker->add_sck, sizeof(srch_add_sck_t));
+    add = lqueue_mem_alloc(&worker->add_sckq, sizeof(srch_add_sck_t));
     if (NULL == add)
     {
         log_error(lsn->log, "Alloc memory from queue failed!");
@@ -203,10 +205,10 @@ static int srch_listen_accept(srch_cntx_t *ctx, srch_listen_t *lsn)
     add->tidx = tidx;
     add->serial = lsn->sck_serial_no;
 
-    if (lqueue_push(&worker->add_sck, add))
+    if (lqueue_push(&worker->add_sckq, add))
     {
         log_error(lsn->log, "Push into queue failed!");
-        lqueue_mem_dealloc(&worker->add_sck, add);
+        lqueue_mem_dealloc(&worker->add_sckq, add);
         Close(fd);
         return SRCH_ERR;
     }

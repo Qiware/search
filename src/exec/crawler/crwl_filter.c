@@ -340,6 +340,19 @@ static int crwl_filter_webpage_info(crwl_webpage_info_t *info)
 
         snprintf(info->html, sizeof(info->html), "%s", node->value);
 
+        /* 获取HTML.SIZE字段 */
+        node = xml_rquery(xml, fix, "HTML.SIZE");
+        if (NULL == fix)
+        {
+            break;
+        }
+
+        info->size = atoi(node->value);
+        if (info->size <= 0)
+        {
+            break;
+        }
+
         xml_destroy(xml);
         return CRWL_OK;
     } while(0);

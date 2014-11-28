@@ -439,6 +439,10 @@ done:
     {
         memset((void *)p, 0, size);
     }
+    else
+    {
+        abort();
+    }
 
     return (void *) p;
 }
