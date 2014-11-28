@@ -1,11 +1,39 @@
 #!/bin/sh
 
 ###############################################################################
-# 功能描述: 打印指定进程的网络状态统计信息
+# 功能描述: 打印进程状态
+# 参数说明: NONE
+# 输出结果: 进程统计信息
+# 注意事项:
+# 作    者: # Qifeng.zou # 2014.11.28 #
+###############################################################################
+print_proc()
+{
+    ps -axu | grep -e "crawler" -e "logsvr" -e "redis" | grep -v "grep" | sort
+}
+
+###############################################################################
+# 功能描述: 打印共享内存状态
+# 参数说明: NONE
+# 输出结果: 共享内存状态信息
+# 注意事项:
+# 作    者: # Qifeng.zou # 2014.11.28 #
+###############################################################################
+print_shm()
+{
+    ipcs -m | grep -e "^0x" -e "key" | grep -v "dest" | grep -v "grep"
+}
+
+###############################################################################
+# 功能描述: 打印指定进程的网络状态
 # 参数说明:
 #   参数1: 进程名
 # 输出结果: 网络状态统计信息
-# 注意事项: 暂时无法做到精确匹配
+# 注意事项:
+#   1. 暂时不精确匹配
+#       1) 精确匹配: grep -e "$1 " -e "$1"$
+#       2) 非精确匹配: grep "$1"
+#   2. 文件netstat.list作为当前网络状态输入文件
 # 作    者: # Qifeng.zou # 2014.11.28 #
 ###############################################################################
 print_netstat()
@@ -18,7 +46,8 @@ print_netstat()
 
     while read item
     do
-        num=`echo $item | grep $1 | wc -l`
+        #num=`echo $item | grep -e "$1 " -e "$1"$ | wc -l` # 精确匹配
+        num=`echo $item | grep "$1" | wc -l`
         if [ $num -eq 0 ]; then
             continue;
         fi
@@ -49,7 +78,7 @@ print_netstat()
         if [ $num -gt 0 ]; then
             sync_num=`expr $sync_num + $num`
         fi
-    done < netstat.list
+    done < .netstat.list
 
     # 打印统计信息
     echo "$1\t\t$listen_num\t$active_num\t$close_num\t$sync_num\t$total"
@@ -73,24 +102,24 @@ main()
         echo "Process stat:"
         echo "---------------------------------------------------------------------"
         echo "USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND"
-        ps -axu | grep -e "crawler" -e "logsvr" -e "redis" | grep -v grep | sort
+        print_proc
         echo "---------------------------------------------------------------------"
 
         echo ""
         echo "Shared memory stat:"
         echo "---------------------------------------------------------------------"
-        ipcs -m | grep -v "dest" | grep "qifeng"
+        print_shm
         echo "---------------------------------------------------------------------"
 
         echo ""
-        echo "Net stat:"
+        echo "Network stat:"
         echo "---------------------------------------------------------------------"
-        IFS='\n'
         echo "PROC\t\tLISTEN\tESTAB\tCLOSE\tSYNC\tTOTAL"
 
-        sudo netstat -antp | grep -v grep  > netstat.list
+        sudo netstat -antp | grep -v grep  > .netstat.list
 
         print_netstat "crawler"
+        print_netstat "filter"
         print_netstat "redis"
         echo "---------------------------------------------------------------------"
 
