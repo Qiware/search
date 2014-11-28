@@ -31,8 +31,8 @@ print_shm()
 # 输出结果: 网络状态统计信息
 # 注意事项:
 #   1. 暂时不精确匹配
-#       1) 精确匹配: grep -e "$1 " -e "$1"$
-#       2) 非精确匹配: grep "$1"
+#       1) 精确匹配: grep -e "$item " -e "$item"$
+#       2) 非精确匹配: grep "$item"
 #   2. 文件netstat.list作为当前网络状态输入文件
 # 作    者: # Qifeng.zou # 2014.11.28 #
 ###############################################################################
@@ -44,44 +44,47 @@ print_netstat()
     close_num=0
     sync_num=0
 
-    while read item
+    for item in $@ # 遍历参数列表
     do
-        #num=`echo $item | grep -e "$1 " -e "$1"$ | wc -l` # 精确匹配
-        num=`echo $item | grep "$1" | wc -l`
-        if [ $num -eq 0 ]; then
-            continue;
-        fi
+        while read line # 遍历文件行
+        do
+            #num=`echo $line | grep -e "$item " -e "$item"$ | wc -l` # 精确匹配
+            num=`echo $line | grep "$item" | wc -l`
+            if [ $num -eq 0 ]; then
+                continue;
+            fi
 
-        # 统计套接字总数
-        total=`expr $total + $num`
+            # 统计套接字总数
+            total=`expr $total + $num`
 
-        # 统计活跃的套接字
-        num=`echo $item | grep 'LISTEN' | wc -l`
-        if [ $num -gt 0 ]; then
-            listen_num=`expr $listen_num + $num`
-        fi
+            # 统计活跃的套接字
+            num=`echo $line | grep 'LISTEN' | wc -l`
+            if [ $num -gt 0 ]; then
+                listen_num=`expr $listen_num + $num`
+            fi
 
-        # 统计活跃的套接字
-        num=`echo $item | grep 'ESTABLISHED' | wc -l`
-        if [ $num -gt 0 ]; then
-            active_num=`expr $active_num + $num`
-        fi
+            # 统计活跃的套接字
+            num=`echo $line | grep 'ESTABLISHED' | wc -l`
+            if [ $num -gt 0 ]; then
+                active_num=`expr $active_num + $num`
+            fi
 
-        # 统计关闭的套接字
-        num=`echo $item | grep -e 'CLOSE_WAIT' | wc -l`
-        if [ $num -gt 0 ]; then
-            close_num=`expr $close_num + $num`
-        fi
+            # 统计关闭的套接字
+            num=`echo $line | grep -e 'CLOSE_WAIT' | wc -l`
+            if [ $num -gt 0 ]; then
+                close_num=`expr $close_num + $num`
+            fi
 
-        # 统计SYNC的套接字
-        num=`echo $item | grep -e 'SYN_SENT' | wc -l`
-        if [ $num -gt 0 ]; then
-            sync_num=`expr $sync_num + $num`
-        fi
-    done < .netstat.list
+            # 统计SYNC的套接字
+            num=`echo $line | grep -e 'SYN_SENT' | wc -l`
+            if [ $num -gt 0 ]; then
+                sync_num=`expr $sync_num + $num`
+            fi
+        done < .netstat.list
 
-    # 打印统计信息
-    echo "$1\t\t$listen_num\t$active_num\t$close_num\t$sync_num\t$total"
+        # 打印统计信息
+        echo "$item\t\t$listen_num\t$active_num\t$close_num\t$sync_num\t$total"
+    done
 }
 
 ###############################################################################
@@ -118,9 +121,7 @@ main()
 
         sudo netstat -antp | grep -v grep  > .netstat.list
 
-        print_netstat "crawler"
-        print_netstat "filter"
-        print_netstat "redis"
+        print_netstat "crawler" "filter" "redis"
         echo "---------------------------------------------------------------------"
 
         sleep 1
