@@ -33,8 +33,10 @@
 
 static int crwl_init_workers(crwl_cntx_t *ctx);
 int crwl_workers_destroy(crwl_cntx_t *ctx);
-static int crwl_domain_ip_map_cmp_cb(const void *ukey, const void *data);
-static int crwl_domain_blacklist_cmp_cb(const void *ukey, const void *data);
+static int crwl_domain_ip_map_cmp_cb(
+        const char *domain, const crwl_domain_ip_map_t *map);
+static int crwl_domain_blacklist_cmp_cb(
+        const char *domain, const crwl_domain_blacklist_t *blacklist);
 static void crwl_signal_hdl(int signum);
 
 /******************************************************************************
@@ -168,9 +170,9 @@ crwl_cntx_t *crwl_cntx_init(char *pname, const char *path)
 
         /* 5. 新建域名IP映射表 */
         ctx->domain_ip_map = hash_tab_creat(
-                CRWL_DOMAIN_IP_MAP_HASH_NUM,
+                CRWL_DOMAIN_IP_MAP_HASH_MOD,
                 hash_time33_ex,
-                crwl_domain_ip_map_cmp_cb);
+                (avl_cmp_cb_t)crwl_domain_ip_map_cmp_cb);
         if (NULL == ctx->domain_ip_map)
         {
             log_error(log, "Initialize hash table failed!");
@@ -179,9 +181,9 @@ crwl_cntx_t *crwl_cntx_init(char *pname, const char *path)
 
         /* 6. 新建域名黑名单表 */
         ctx->domain_blacklist = hash_tab_creat(
-                CRWL_DOMAIN_BLACKLIST_HASH_NUM,
+                CRWL_DOMAIN_BLACKLIST_HASH_MOD,
                 hash_time33_ex,
-                crwl_domain_blacklist_cmp_cb);
+                (avl_cmp_cb_t)crwl_domain_blacklist_cmp_cb);
         if (NULL == ctx->domain_blacklist)
         {
             log_error(log, "Initialize hash table failed!");
@@ -555,20 +557,17 @@ int crwl_get_domain_ip_map(crwl_cntx_t *ctx, char *host, crwl_domain_ip_map_t *m
  **     查找成功后，将会更新访问时间. 该时间将会是表数据更新的参考依据
  **作    者: # Qifeng.zou # 2014.11.14 #
  ******************************************************************************/
-static int crwl_domain_ip_map_cmp_cb(const void *_domain, const void *data)
+static int crwl_domain_ip_map_cmp_cb(const char *domain, const crwl_domain_ip_map_t *map)
 {
-    const char *host = (const char *)_domain;
-    const crwl_domain_ip_map_t *map = (const crwl_domain_ip_map_t *)data;
-
-    return strcmp(host, map->host);
+    return strcmp(domain, map->host);
 }
 
 /******************************************************************************
  **函数名称: crwl_domain_blacklist_cmp_cb
  **功    能: 域名黑名单的比较
  **输入参数:
- **     _domain: 域名
- **     data: 域名黑名单数据(crwl_domain_blacklist_t)
+ **     domain: 域名
+ **     blacklist: 域名黑名单数据
  **输出参数: NONE
  **返    回: 0:相等 <0:小于 >0:大于
  **实现描述: 
@@ -576,12 +575,10 @@ static int crwl_domain_ip_map_cmp_cb(const void *_domain, const void *data)
  **     查找成功后，将会更新访问时间. 该时间将会是表数据更新的参考依据
  **作    者: # Qifeng.zou # 2014.11.28 #
  ******************************************************************************/
-static int crwl_domain_blacklist_cmp_cb(const void *_domain, const void *data)
+static int crwl_domain_blacklist_cmp_cb(
+        const char *domain, const crwl_domain_blacklist_t *blacklist)
 {
-    const char *host = (const char *)_domain;
-    const crwl_domain_blacklist_t *item = (const crwl_domain_blacklist_t *)data;
-
-    return strcmp(host, item->host);
+    return strcmp(domain, blacklist->host);
 }
 
 /******************************************************************************

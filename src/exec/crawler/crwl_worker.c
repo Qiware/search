@@ -420,7 +420,7 @@ static int crwl_worker_timeout_hdl(crwl_worker_t *worker)
             continue; /* 未超时 */
         }
 
-        log_error(worker->log, "Timeout! uri:%s ip:%s size:%d! ctm:%lu rdtm:%lu wrtm:%lu",
+        log_info(worker->log, "Timeout! uri:%s ip:%s size:%d! ctm:%lu rdtm:%lu wrtm:%lu",
                 data->webpage.uri, data->webpage.ip, data->webpage.size,
                 ctm, sck->rdtm, sck->wrtm);
 

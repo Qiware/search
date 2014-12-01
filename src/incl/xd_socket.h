@@ -12,14 +12,35 @@ typedef struct
     char ip[IP_ADDR_MAX_LEN];       /* IP地址信息 */
 } ipaddr_t;
 
+/* 接收(发送)数据阶段 */
+typedef enum
+{
+    SOCK_PHASE_INIT_HEAD            /* 准备接收报头(如: 分配空间) */
+    , SOCK_PHASE_RECV_HEAD          /* 接收报头数据 */
+    , SOCK_PHASE_INIT_BODY          /* 准备接收报体(如: 分配空间) */
+    , SOCK_PHASE_RECV_BODY          /* 接收报体数据 */
+    , SOCK_PHASE_RECV_POST          /* 接收完毕(如: 对数据进行处理) */
+
+    , SOCK_PHASE_SEND_HEAD          /* 发送报头数据 */
+    , SOCK_PHASE_SEND_BODY          /* 发送报体数据 */
+    , SOCK_PHASE_SEND_POST          /* 发送结束 */
+
+    , SOCK_PHASE_TOTAL
+} socket_snap_phase_e;
+
 /* 读取/发送快照 */
 typedef struct
 {
+    int phase;                      /* 当前状态 */
     int off;                        /* 偏移量 */
     int total;                      /* 总字节 */
 
     char *addr;                     /* 缓存首地址 */
-} socket_snapshot_t;
+} socket_snap_t;
+
+typedef struct _socket_t socket_t;
+typedef int (*recv_cb_t)(void *ctx, socket_t *sck);
+typedef int (*send_cb_t)(void *ctx, socket_t *sck);
 
 /* 套接字对象 */
 typedef struct _socket_t
@@ -30,11 +51,11 @@ typedef struct _socket_t
     time_t wrtm;                    /* 最近写入时间 */
     time_t rdtm;                    /* 最近读取时间 */
 
-    socket_snapshot_t read;         /* 读取快照 */
-    socket_snapshot_t send;         /* 发送快照 */
+    socket_snap_t read;             /* 读取快照 */
+    socket_snap_t send;             /* 发送快照 */
 
-    int (*recv_cb)(void *ctx, struct _socket_t *sck);  /* 接收回调 */
-    int (*send_cb)(void *ctx, struct _socket_t *sck);  /* 发送回调 */
+    recv_cb_t recv_cb;              /* 接收回调 */
+    send_cb_t send_cb;              /* 发送回调 */
 
     void *data;                     /* 附加数据(自定义数据) */
 } socket_t;

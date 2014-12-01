@@ -20,7 +20,7 @@
  **函数名称: hash_tab_creat
  **功    能: 创建哈希表
  **输入参数:
- **     num: 数组长度
+ **     mod: 哈希模(数组长度)
  **     key: 生成KEY的函数
  **     cmp: 数据比较函数
  **输出参数: NONE
@@ -32,7 +32,7 @@
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
-hash_tab_t *hash_tab_creat(int num, key_cb_t key_cb, avl_cmp_cb_t cmp_cb)
+hash_tab_t *hash_tab_creat(int mod, key_cb_t key_cb, avl_cmp_cb_t cmp_cb)
 {
     int idx;
     hash_tab_t *hash;
@@ -47,7 +47,7 @@ hash_tab_t *hash_tab_creat(int num, key_cb_t key_cb, avl_cmp_cb_t cmp_cb)
     }
 
     /* 2. 创建数组空间 */
-    hash->tree = (avl_tree_t **)calloc(num, sizeof(avl_tree_t *));
+    hash->tree = (avl_tree_t **)calloc(mod, sizeof(avl_tree_t *));
     if (NULL == hash->tree)
     {
         free(hash);
@@ -55,7 +55,7 @@ hash_tab_t *hash_tab_creat(int num, key_cb_t key_cb, avl_cmp_cb_t cmp_cb)
         return NULL;
     }
 
-    hash->lock = (pthread_rwlock_t *)calloc(num, sizeof(pthread_rwlock_t));
+    hash->lock = (pthread_rwlock_t *)calloc(mod, sizeof(pthread_rwlock_t));
     if (NULL == hash->lock)
     {
         free(hash->tree);
@@ -65,7 +65,7 @@ hash_tab_t *hash_tab_creat(int num, key_cb_t key_cb, avl_cmp_cb_t cmp_cb)
     }
 
     /* 3. 创建平衡二叉树 */
-    for (idx=0; idx<num; ++idx)
+    for (idx=0; idx<mod; ++idx)
     {
         pthread_rwlock_init(&hash->lock[idx], NULL);
 
@@ -81,7 +81,7 @@ hash_tab_t *hash_tab_creat(int num, key_cb_t key_cb, avl_cmp_cb_t cmp_cb)
         hash->tree[idx]->cmp_cb = cmp_cb;
     }
 
-    hash->num = num;
+    hash->num = mod;
     hash->key_cb = key_cb;
     hash->cmp_cb = cmp_cb;
 
