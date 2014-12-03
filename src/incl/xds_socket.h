@@ -1,5 +1,5 @@
-#if !defined(__XD_SOCKET_H__)
-#define __XD_SOCKET_H__
+#if !defined(__XDS_SOCKET_H__)
+#define __XDS_SOCKET_H__
 
 #include "common.h"
 #include <sys/timeb.h>
@@ -39,8 +39,8 @@ typedef struct
 } socket_snap_t;
 
 typedef struct _socket_t socket_t;
-typedef int (*recv_cb_t)(void *ctx, socket_t *sck);
-typedef int (*send_cb_t)(void *ctx, socket_t *sck);
+typedef int (*socket_recv_cb_t)(void *ctx, socket_t *sck);
+typedef int (*socket_send_cb_t)(void *ctx, socket_t *sck);
 
 /* 套接字对象 */
 typedef struct _socket_t
@@ -54,8 +54,8 @@ typedef struct _socket_t
     socket_snap_t read;             /* 读取快照 */
     socket_snap_t send;             /* 发送快照 */
 
-    recv_cb_t recv_cb;              /* 接收回调 */
-    send_cb_t send_cb;              /* 发送回调 */
+    socket_recv_cb_t recv_cb;       /* 接收回调 */
+    socket_send_cb_t send_cb;       /* 发送回调 */
 
     void *data;                     /* 附加数据(自定义数据) */
 } socket_t;
@@ -75,4 +75,4 @@ int unix_udp_creat(const char *path);
 int unix_udp_send(int sckid, const char *path, const void *buff, int len);
 int unix_udp_recv(int sckid, void *buff, int len);
 
-#endif /*__XD_SOCKET_H__*/
+#endif /*__XDS_SOCKET_H__*/

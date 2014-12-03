@@ -15,6 +15,7 @@ export PROJ = ${PWD}
 export PROJ_BIN = ${PROJ}/bin
 export PROJ_LIB = ${PROJ}/lib
 export PROJ_LOG = ${PROJ}/log
+export PROJ_CONF = ${PROJ}/conf
 export GCC_LOG = ${PROJ_LOG}/gcc.log
 
 # 编译目录(注：编译按顺序执行　注意库之间的依赖关系)

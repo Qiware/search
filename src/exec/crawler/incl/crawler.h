@@ -21,7 +21,7 @@
 #include "hash_tab.h"
 #include "crwl_task.h"
 #include "crwl_conf.h"
-#include "xd_socket.h"
+#include "xds_socket.h"
 #include "thread_pool.h"
 
 /* 宏定义 */

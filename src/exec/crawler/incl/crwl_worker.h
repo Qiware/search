@@ -69,8 +69,8 @@ int crwl_worker_add_sock(crwl_worker_t *worker, socket_t *sck);
 socket_t *crwl_worker_query_sock(crwl_worker_t *worker, int sckid);
 int crwl_worker_remove_sock(crwl_worker_t *worker, socket_t *sck);
 
-int crwl_worker_recv_data(void *_worker, socket_t *sck);
-int crwl_worker_send_data(void *_worker, socket_t *sck);
+int crwl_worker_recv_data(crwl_worker_t *worker, socket_t *sck);
+int crwl_worker_send_data(crwl_worker_t *worker, socket_t *sck);
 
 int crwl_worker_add_http_get_req(
         crwl_worker_t *worker, socket_t *sck, const char *uri);

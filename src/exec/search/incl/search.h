@@ -1,6 +1,7 @@
 #if !defined(__SEARCH_H__)
 #define __SEARCH_H__
 
+#include "queue.h"
 #include "srch_conf.h"
 #include "thread_pool.h"
 
@@ -23,9 +24,10 @@
 #define SRCH_CONN_MIN_NUM           (1)     /* 最小网络连接数 */
 #define SRCH_CONN_TMOUT_SEC         (15)    /* 连接超时时间(秒) */
 
-#define SRCH_DEF_CONF_PATH  "../conf/search.xml"   /* 默认配置路径 */
+#define SRCH_CONNQ_LEN              (10000) /* 连接队列长度 */
+#define SRCH_RECVQ_LEN              (10000) /* 接收队列长度 */
 
-#define SRCH_EVENT_MAX_NUM          (40960) /* 事件最大数 */
+#define SRCH_DEF_CONF_PATH  "../conf/search.xml"   /* 默认配置路径 */
 
 /* 命令路径 */
 #define SRCH_LSN_CMD_PATH "../temp/srch/lsn_cmd.usck"       /* 侦听线程 */
@@ -37,6 +39,8 @@ typedef enum
 {
     SRCH_OK = 0                             /* 正常 */
     , SRCH_SHOW_HELP                        /* 显示帮助信息 */
+    , SRCH_DONE                             /* 完成 */
+    , SRCH_SCK_AGAIN                        /* 出现EAGAIN提示 */
     , SRCH_SCK_CLOSE                        /* 套接字关闭 */
 
     , SRCH_ERR = ~0x7FFFFFFF                /* 失败、错误 */
@@ -56,8 +60,11 @@ typedef struct
     log_cycle_t *log;                       /* 日志对象 */
 
     pthread_t lsn_tid;                      /* Listen线程 */
-    thread_pool_t *recvers;                 /* Recver线程池 */
+    thread_pool_t *agents;                  /* Agent线程池 */
     thread_pool_t *workers;                 /* Worker线程池 */
+
+    lqueue_t **connq;                       /* 连接队列(注:数组长度与Recver相等) */
+    lqueue_t **recvq;                       /* 接收队列(注:数组长度与Worker相等) */
 } srch_cntx_t;
 
 /* 新增套接字对象 */
@@ -66,6 +73,24 @@ typedef struct
     int fd;                                 /* 套接字 */
     uint64_t sck_serial;                    /* SCK流水号 */
 } srch_add_sck_t;
+
+/* 报头 */
+typedef struct
+{
+    uint32_t type;                          /* 消息类型 */
+    size_t length;                          /* 报体长度 */
+#define SRCH_MSG_MARK_KEY   (0x1ED23CB4)
+    int mark;                               /* 校验值 */
+    int flag;                               /* 标识量(0:系统数据类型 1:自定义数据类型) */
+    char *body;                             /* 报体 */
+} srch_msg_header_t;
+
+/* 报体 */
+typedef struct
+{
+} srch_msg_body_t;
+
+
 
 srch_cntx_t *srch_cntx_init(char *pname, const char *conf_path);
 void srch_cntx_destroy(srch_cntx_t *ctx);
@@ -78,7 +103,7 @@ log_cycle_t *srch_init_log(char *fname);
 int srch_proc_lock(void);
 int srch_init_workers(srch_cntx_t *ctx);
 int srch_workers_destroy(srch_cntx_t *ctx);
-int srch_init_recvers(srch_cntx_t *ctx);
-int srch_recvers_destroy(srch_cntx_t *ctx);
+int srch_init_agents(srch_cntx_t *ctx);
+int srch_agents_destroy(srch_cntx_t *ctx);
 
 #endif /*__SEARCH_H__*/

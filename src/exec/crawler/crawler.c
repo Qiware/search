@@ -22,7 +22,7 @@
 #include "common.h"
 #include "crawler.h"
 #include "syscall.h"
-#include "xd_socket.h"
+#include "xds_socket.h"
 #include "crwl_sched.h"
 #include "crwl_worker.h"
 

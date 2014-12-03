@@ -17,10 +17,10 @@
 #include <sys/types.h>
 
 #include "log.h"
+#include "str.h"
 #include "list.h"
 #include "http.h"
 #include "redis.h"
-#include "xd_str.h"
 #include "common.h"
 #include "syscall.h"
 #include "crawler.h"

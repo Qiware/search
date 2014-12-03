@@ -17,8 +17,8 @@ LIBS2 = -lxd_srch -lxd_core
 
 SRC_LIST = srch_comm.c \
 			srch_conf.c \
+			srch_agent.c \
 			srch_listen.c \
-			srch_recver.c \
 			srch_worker.c
 SRC_LIST2 = search.c
 

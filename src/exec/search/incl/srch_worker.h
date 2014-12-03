@@ -8,6 +8,8 @@
 typedef struct
 {
     int tidx;                       /* 线程IDX */
+
+    lqueue_t *recvq;                /* 发送队列 */
 } srch_worker_t;
 
 void *srch_worker_routine(void *_ctx);

@@ -39,7 +39,7 @@ SRC_LIST = hash.c \
 			unix_socket.c \
 			hash_tab.c \
 			hash_array.c \
-			xd_str.c
+			string.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
 
@@ -52,7 +52,6 @@ $(TARGET): $(OBJS)
 	$(CC) $(LFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS)
 	@mv $@ $(PROJ_LIB)
 	@echo "$@ is OK!"
-	@rm -fr $(OBJS)
 
 $(OBJS): %.o : %.c
 	$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)

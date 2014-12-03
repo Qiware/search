@@ -1,5 +1,5 @@
-#if !defined(__XD_STR_H__)
-#define __XD_STR_H__
+#if !defined(__STR_H__)
+#define __STR_H__
 
 #include "common.h"
 
@@ -8,10 +8,10 @@ typedef struct
 {
     char *str;      /* 字串值 */
     int len;        /* 字串长 */
-} xd_str_t;
+} str_t;
  
-xd_str_t *str_to_lower(xd_str_t *s);
-xd_str_t *str_to_upper(xd_str_t *s);
+str_t *str_to_lower(str_t *s);
+str_t *str_to_upper(str_t *s);
 
 #define URI_DEF_PORT        (80)    /* 默认端口 */
 #define URI_DEF_PROTOCOL    "http"  /* 默认协议 */
@@ -46,4 +46,4 @@ bool uri_is_valid_suffix(const char *suffix);
 int uri_reslove(const char *uri, uri_field_t *f);
 int href_to_uri(const char *href, const char *site, uri_field_t *field);
 
-#endif /*__XD_STR_H__*/
+#endif /*__STR_H__*/

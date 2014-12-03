@@ -23,7 +23,7 @@
 #include "common.h"
 #include "search.h"
 #include "syscall.h"
-#include "xd_socket.h"
+#include "xds_socket.h"
 #include "srch_worker.h"
 
 #define SRCH_PROC_LOCK_PATH "../temp/srch/srch.lck"

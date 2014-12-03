@@ -212,10 +212,9 @@ static int crwl_worker_fetch_task(crwl_cntx_t *ctx, crwl_worker_t *worker)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.30 #
  ******************************************************************************/
-int crwl_worker_recv_data(void *_worker, socket_t *sck)
+int crwl_worker_recv_data(crwl_worker_t *worker, socket_t *sck)
 {
     int n, left;
-    crwl_worker_t *worker = _worker;
     crwl_worker_socket_data_t *data = (crwl_worker_socket_data_t *)sck->data;
 
     sck->rdtm = time(NULL);
@@ -296,6 +295,7 @@ int crwl_worker_recv_data(void *_worker, socket_t *sck)
  **功    能: 发送数据
  **输入参数: 
  **     worker: 爬虫对象
+ **     sck: 套接字对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
@@ -305,13 +305,12 @@ int crwl_worker_recv_data(void *_worker, socket_t *sck)
  **     发送数据直到出现EAGAIN -- 一次性发送最大量的数据
  **作    者: # Qifeng.zou # 2014.09.24 #
  ******************************************************************************/
-int crwl_worker_send_data(void *_worker, socket_t *sck)
+int crwl_worker_send_data(crwl_worker_t *worker, socket_t *sck)
 {
     int n, left;
     list_node_t *node;
     crwl_data_info_t *info;
     struct epoll_event ev;
-    crwl_worker_t *worker = _worker;
     crwl_worker_socket_data_t *data = (crwl_worker_socket_data_t *)sck->data;
 
     sck->wrtm = time(NULL);

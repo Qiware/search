@@ -6,8 +6,8 @@
 #include <string.h>
 
 #include "log.h"
+#include "str.h"
 #include "http.h"
-#include "xd_str.h"
 #include "common.h"
 
 /******************************************************************************

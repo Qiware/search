@@ -1,6 +1,6 @@
 #include <string.h>
 
-#include "xd_str.h"
+#include "str.h"
 #include <ctype.h>
 
 /******************************************************************************
@@ -14,7 +14,7 @@
  **注意事项:
  **作    者: # Qifeng.zou # 2014.09.18 #
  ******************************************************************************/
-xd_str_t *str_to_lower(xd_str_t *s)
+str_t *str_to_lower(str_t *s)
 {
     int idx;
 
@@ -73,7 +73,7 @@ xd_str_t *str_to_lower(xd_str_t *s)
  **注意事项:
  **作    者: # Qifeng.zou # 2014.09.18 #
  ******************************************************************************/
-xd_str_t *str_to_upper(xd_str_t *s)
+str_t *str_to_upper(str_t *s)
 {
     int idx;
 

@@ -10,13 +10,13 @@
 #include <netdb.h>
 
 #include "log.h"
+#include "str.h"
 #include "http.h"
-#include "xd_str.h"
 #include "common.h"
 #include "crawler.h"
 #include "syscall.h"
 #include "crwl_task.h"
-#include "xd_socket.h"
+#include "xds_socket.h"
 #include "crwl_worker.h"
 
 /******************************************************************************
@@ -96,8 +96,8 @@ int crwl_task_down_webpage_by_uri(
     data->webpage.port = args->port;
     data->webpage.depth = args->depth;
 
-    sck->recv_cb = crwl_worker_recv_data;
-    sck->send_cb = crwl_worker_send_data;
+    sck->recv_cb = (socket_recv_cb_t)crwl_worker_recv_data;
+    sck->send_cb = (socket_send_cb_t)crwl_worker_send_data;
 
     if (crwl_worker_add_sock(worker, sck))
     {

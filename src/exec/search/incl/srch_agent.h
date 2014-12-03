@@ -1,10 +1,13 @@
-#if !defined(__SRCH_RECVER_H__)
-#define __SRCH_RECVER_H__
+#if !defined(__SRCH_AGENT_H__)
+#define __SRCH_AGENT_H__
 
 #include "list.h"
 #include "queue.h"
 #include "search.h"
-#include  "hash_tab.h"
+#include "hash_tab.h"
+
+#define SRCH_AGENT_EVENT_MAX_NUM     (4096)  /* 事件最大数 */
+#define SRCH_AGENT_SCK_HASH_MOD      (775)   /* 套接字哈希长度 */
 
 typedef struct
 {
@@ -21,23 +24,22 @@ typedef struct
 
     int cmd_sck_id;                 /* 命令套接字 */
     hash_tab_t *sock_tab;           /* 套接字表(挂载数据socket_t) */
-    lqueue_t *conn_sckq;            /* 套接字队列 */
 
     time_t scan_tm;                 /* 前一次超时扫描的时间 */
-} srch_recver_t;
+} srch_agent_t;
 
 /* 套接字信息 */
 typedef struct
 {
     uint64_t sck_serial;            /* 序列号 */
 
-    char recv[SRCH_RECV_SIZE + 1];  /* 接收缓存 */
+    srch_msg_header_t *header;      /* 报头起始地址 */
     list_t send_list;               /* 发送链表 */
-} srch_recver_socket_data_t;
+} srch_agent_sck_data_t;
 
-void *srch_recver_routine(void *_ctx);
+void *srch_agent_routine(void *_ctx);
 
-int srch_recver_init(srch_cntx_t *ctx, srch_recver_t *recver);
-int srch_recver_destroy(srch_recver_t *recver);
+int srch_agent_init(srch_cntx_t *ctx, srch_agent_t *agent);
+int srch_agent_destroy(srch_agent_t *agent);
 
-#endif /*__SRCH_RECVER_H__*/
+#endif /*__SRCH_AGENT_H__*/

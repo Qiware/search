@@ -174,15 +174,15 @@ static int srch_conf_load_comm(xml_tree_t *xml, srch_conf_t *conf, log_cycle_t *
 
     conf->worker_num = atoi(node->value);
 
-    /* 4. 获取RECVER.NUM标签 */
-    node = xml_query(xml, ".SEARCH-ENGINES.RECVER.NUM");
+    /* 4. 获取AGENT.NUM标签 */
+    node = xml_query(xml, ".SEARCH-ENGINES.AGENT.NUM");
     if (NULL == fix)
     {
         log_error(log, "Didn't configure receiver!");
         return SRCH_ERR;
     }
 
-    conf->recver_num = atoi(node->value);
+    conf->agent_num = atoi(node->value);
 
     return SRCH_OK;
 }
