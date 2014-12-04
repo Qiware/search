@@ -419,9 +419,8 @@ static int crwl_worker_timeout_hdl(crwl_worker_t *worker)
             continue; /* 未超时 */
         }
 
-        log_info(worker->log, "Timeout! uri:%s ip:%s size:%d! ctm:%lu rdtm:%lu wrtm:%lu",
-                data->webpage.uri, data->webpage.ip, data->webpage.size,
-                ctm, sck->rdtm, sck->wrtm);
+        log_info(worker->log, "Timeout! uri:%s ip:%s size:%d!",
+                data->webpage.uri, data->webpage.ip, data->webpage.size);
 
         crwl_worker_webpage_fsync(worker, sck);
         crwl_worker_webpage_finfo(worker, sck);
@@ -526,10 +525,12 @@ void *crwl_worker_routine(void *_ctx)
         worker->fds = epoll_wait(
                 worker->ep_fd, worker->events,
                 worker->conf->worker.conn_max_num, CRWL_TMOUT_SEC);
-        if (worker->fds < 0)
+        if (worker->fds <= 0)
         {
             if (EINTR == errno)
             {
+                /* Timeout */
+                crwl_worker_timeout_hdl(worker);
                 continue;
             }
 
@@ -539,13 +540,8 @@ void *crwl_worker_routine(void *_ctx)
             abort();
             return (void *)-1;
         }
-        else if (0 == worker->fds)
-        {
-            crwl_worker_timeout_hdl(worker);
-            continue;
-        }
 
-        /* 5. 进行事件处理 */
+        /* 4. 进行事件处理 */
         crwl_worker_event_hdl(worker);
     }
 
