@@ -99,10 +99,10 @@ int crwl_worker_webpage_creat(crwl_worker_t *worker, socket_t *sck);
 { \
     crwl_worker_socket_data_t *_data = sck->data; \
  \
-    fwrite(sck->read.addr, sck->read.off, 1, _data->webpage.fp); \
+    fwrite(sck->recv.addr, sck->recv.off, 1, _data->webpage.fp); \
  \
-    sck->read.off = 0; \
-    sck->read.total = CRWL_RECV_SIZE; \
+    sck->recv.off = 0; \
+    sck->recv.total = CRWL_RECV_SIZE; \
 }
 int crwl_worker_webpage_finfo(crwl_worker_t *worker, socket_t *sck);
 

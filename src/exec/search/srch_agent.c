@@ -19,11 +19,13 @@ static int srch_agent_recv(srch_agent_t *agt, socket_t *sck);
 static int srch_agent_send(srch_agent_t *agt, socket_t *sck);
 
 static int srch_agent_event_hdl(srch_agent_t *agt);
-static int srch_agent_timeout_hdl(srch_agent_t *agt);
+static int srch_agent_event_timeout_hdl(srch_agent_t *agt);
+
+static int srch_agent_sock_remove(srch_agent_t *agt, socket_t *sck);
 
 /******************************************************************************
  **函数名称: srch_agent_routine
- **功    能: 运行代理线程
+ **功    能: 运行Agent线程
  **输入参数:
  **     _ctx: 全局对象
  **输出参数: NONE
@@ -58,8 +60,7 @@ void *srch_agent_routine(void *_ctx)
         }
 
         /* 3. 等待事件通知 */
-        agt->fds = epoll_wait(agt->ep_fd, agt->events,
-                SRCH_AGENT_EVENT_MAX_NUM, SRCH_TMOUT_SEC);
+        agt->fds = epoll_wait(agt->ep_fd, agt->events, SRCH_AGENT_EVENT_MAX_NUM, -1);  /* SRCH_AGENT_TMOUT_SEC */
         if (agt->fds < 0)
         {
             if (EINTR == errno)
@@ -67,18 +68,19 @@ void *srch_agent_routine(void *_ctx)
                 continue;
             }
 
+            /* 异常情况 */
             log_error(agt->log, "errmsg:[%d] %s!", errno, strerror(errno));
             abort();
             return (void *)-1;
         }
         else if (0 == agt->fds)
         {
-            /* 超时处理 */
-            srch_agent_timeout_hdl(agt);
+            log_error(agt->log, "Timeout! errmsg:[%d] %s!", errno, strerror(errno));
+            srch_agent_event_timeout_hdl(agt);
             continue;
         }
 
-        /* 3. 处理事件通知 */
+        /* 4. 处理事件通知 */
         srch_agent_event_hdl(agt);
     }
 
@@ -87,7 +89,7 @@ void *srch_agent_routine(void *_ctx)
 
 /******************************************************************************
  **函数名称: srch_agent_init
- **功    能: 初始化代理线程
+ **功    能: 初始化Agent线程
  **输入参数:
  **     ctx: 全局信息
  **     r: 接收对象
@@ -132,6 +134,7 @@ int srch_agent_init(srch_cntx_t *ctx, srch_agent_t *agt)
             srch_agent_socket_cmp_cb);
     if (NULL == agt->sock_tab)
     {
+        log_error(agt->log, "Create socket hash table failed!");
         return SRCH_ERR;
     }
 
@@ -174,9 +177,9 @@ int srch_agent_init(srch_cntx_t *ctx, srch_agent_t *agt)
 
 /******************************************************************************
  **函数名称: srch_agent_destroy
- **功    能: 销毁代理线程
+ **功    能: 销毁Agent线程
  **输入参数:
- **     agent: 接收对象
+ **     agt: 接收对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
@@ -234,7 +237,7 @@ static int srch_agent_event_hdl(srch_agent_t *agt)
         if (agt->events[idx].events & EPOLLIN)
         {
             /* 接收网络数据 */
-            while (SRCH_OK == (ret = sck->recv_cb(agt, sck))) { NULL; }
+            while (SRCH_OK == (ret = sck->recv_cb(agt, sck)));
             if (SRCH_SCK_AGAIN != ret)
             {
                 /* 异常-关闭SCK: 不必判断是否可写 */
@@ -246,7 +249,7 @@ static int srch_agent_event_hdl(srch_agent_t *agt)
         if (agt->events[idx].events & EPOLLOUT)
         {
             /* 发送网络数据 */
-            while (SRCH_OK == sck->send_cb(agt, sck)) { NULL; }
+            while (SRCH_OK == sck->send_cb(agt, sck));
             if (SRCH_SCK_AGAIN != ret)
             {
                 continue; /* 异常: 套接字已关闭 */
@@ -259,17 +262,17 @@ static int srch_agent_event_hdl(srch_agent_t *agt)
     {
         agt->scan_tm = ctm;
 
-        srch_agent_timeout_hdl(agt);
+        srch_agent_event_timeout_hdl(agt);
     }
 
     return SRCH_OK;
 }
 
 /******************************************************************************
- **函数名称: srch_agent_timeout_hdl
+ **函数名称: srch_agent_event_timeout_hdl
  **功    能: 事件超时处理
  **输入参数: 
- **     ctx: 全局信息
+ **     agt: Agent对象
  **     r: 
  **输出参数: NONE
  **返    回: Agent对象
@@ -277,7 +280,7 @@ static int srch_agent_event_hdl(srch_agent_t *agt)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.28 #
  ******************************************************************************/
-static int srch_agent_timeout_hdl(srch_agent_t *agt)
+static int srch_agent_event_timeout_hdl(srch_agent_t *agt)
 {
 #if 0
     time_t ctm = time(NULL);
@@ -319,7 +322,7 @@ static int srch_agent_timeout_hdl(srch_agent_t *agt)
  **功    能: 添加新的连接
  **输入参数: 
  **     ctx: 全局信息
- **     r: Agent对象
+ **     agt: Agent对象
  **输出参数: NONE
  **返    回: Agent对象
  **实现描述: 
@@ -418,123 +421,135 @@ static int srch_agent_socket_cmp_cb(const void *pkey, const void *data)
 }
 
 /******************************************************************************
- **函数名称: srch_agent_init_head
- **功    能: 为接收报头做准备
+ **函数名称: srch_agent_ready_head
+ **功    能: 准备接收报头
  **输入参数:
- **     agent: Agent对象
- **     sck: 套接字对象
+ **     agt: Agent对象
+ **     sck: SCK对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.01 #
  ******************************************************************************/
-static int srch_agent_init_head(srch_agent_t *agt, socket_t *sck)
+static int srch_agent_ready_head(srch_agent_t *agt, socket_t *sck)
 {
     srch_agent_sck_data_t *data = sck->data;
 
-    data->header = lqueue_mem_alloc(
-            agt->ctx->recvq[agt->tidx], sizeof(srch_msg_header_t));
-    if (NULL == data->header)
+    data->head = lqueue_mem_alloc(
+            agt->ctx->recvq[agt->tidx], sizeof(srch_msg_head_t));
+    if (NULL == data->head)
     {
         log_error(agt->log, "Alloc memory from queue failed!");
         return SRCH_ERR;
     }
 
-    sck->read.addr = (void *)data->header;
-    sck->read.off = 0;
-    sck->read.total = sizeof(srch_msg_header_t);
+    sck->recv.addr = (void *)data->head;
+    sck->recv.off = 0;
+    sck->recv.total = sizeof(srch_msg_head_t);
 
     return SRCH_OK;
 }
 
 /******************************************************************************
- **函数名称: srch_agent_recv_header
+ **函数名称: srch_agent_recv_head
  **功    能: 接收报头
  **输入参数:
- **     agent: Agent对象
- **     sck: 套接字对象
+ **     agt: Agent对象
+ **     sck: SCK对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.01 #
  ******************************************************************************/
-static int srch_agent_recv_header(srch_agent_t *agt, socket_t *sck)
+static int srch_agent_recv_head(srch_agent_t *agt, socket_t *sck)
 {
     int n, left;
-    socket_snap_t *read = &sck->read;
-    srch_msg_header_t *head;
+    socket_snap_t *recv = &sck->recv;
+    srch_msg_head_t *head;
 
     /* 1. 计算剩余字节 */
-    left = sizeof(srch_msg_header_t) - read->off;
+    left = sizeof(srch_msg_head_t) - recv->off;
 
     /* 2. 接收报头数据 */
-    n = Readn(sck->fd, read->addr + read->off, left);
-    if (n != left)
+    while (1)
     {
-        if (n > 0)
+        n = read(sck->fd, recv->addr + recv->off, left);
+        if (n == left)
         {
-            read->off += n;
-            return SRCH_SCK_AGAIN;
+            recv->off += n;
+            break; /* 接收完毕 */
+        }
+        else if (n > 0)
+        {
+            recv->off += n;
+            continue;
         }
         else if (0 == n)
         {
-           log_info(agt->log, "Client disconnected. errmsg:[%d] %s! fd:[%d] n:[%d/%d]",
-                errno, strerror(errno), sck->fd, n, left);
+            log_info(agt->log, "Client disconnected. errmsg:[%d] %s! fd:[%d] n:[%d/%d]",
+                    errno, strerror(errno), sck->fd, n, left);
             return SRCH_SCK_CLOSE;
+        }
+        else if ((n < 0) && (EAGAIN == errno))
+        {
+            return SRCH_SCK_AGAIN; /* 等待下次事件通知 */
+        }
+
+        if (EINTR == errno)
+        {
+            continue; 
         }
 
         log_error(agt->log, "errmsg:[%d] %s. fd:[%d]", errno, strerror(errno), sck->fd);
         return SRCH_ERR;
     }
-    
-    read->off += n;
 
     /* 3. 校验报头数据 */
-    head = (srch_msg_header_t *)sck->read.addr;
+    head = (srch_msg_head_t *)sck->recv.addr;
     if (SRCH_MSG_MARK_KEY != head->mark)
     {
-        log_error(agt->log, "Check header failed! type:%d len:%d flag:%d mark:[%u/%u]",
+        log_error(agt->log, "Check head failed! type:%d len:%d flag:%d mark:[%u/%u]",
             head->type, head->length, head->flag, head->mark, SRCH_MSG_MARK_KEY);
         return SRCH_ERR;
     }
 
-    read->total = head->length;
+    recv->total = head->length;
 
-    log_info(agt->log, "Recv header success! type:%d len:%d flag:%d mark:[%u/%u]",
+    log_info(agt->log, "Recv head success! type:%d len:%d flag:%d mark:[%u/%u]",
             head->type, head->length, head->flag, head->mark, SRCH_MSG_MARK_KEY);
 
-    return SRCH_DONE;
+    return SRCH_OK;
 }
 
 /******************************************************************************
- **函数名称: srch_agent_init_body
- **功    能: 为接收报体做准备
+ **函数名称: srch_agent_ready_body
+ **功    能: 准备接收报体
  **输入参数:
- **     agent: Agent对象
- **     sck: 套接字对象
+ **     agt: Agent对象
+ **     sck: SCK对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.02 #
  ******************************************************************************/
-static int srch_agent_init_body(srch_agent_t *agt, socket_t *sck)
+static int srch_agent_ready_body(srch_agent_t *agt, socket_t *sck)
 {
     srch_agent_sck_data_t *data = sck->data;
 
-    data->header->body = lqueue_mem_alloc(
-            agt->ctx->recvq[agt->tidx], data->header->length);
-    if (NULL == data->header->body)
+    data->head->body = lqueue_mem_alloc(
+            agt->ctx->recvq[agt->tidx], data->head->length);
+    if (NULL == data->head->body)
     {
         log_error(agt->log, "Alloc memory from queue failed!");
         return SRCH_ERR;
     }
 
-    sck->read.addr = (void *)data->header->body;
-    sck->read.off = 0;
-    sck->read.total = data->header->length;
+    sck->recv.addr = (void *)data->head->body;
+    sck->recv.off = 0;
+    sck->recv.total = data->head->length;
 
     return SRCH_OK;
 }
@@ -543,8 +558,8 @@ static int srch_agent_init_body(srch_agent_t *agt, socket_t *sck)
  **函数名称: srch_agent_recv_body
  **功    能: 接收报体
  **输入参数:
- **     agent: Agent对象
- **     sck: 套接字对象
+ **     agt: Agent对象
+ **     sck: SCK对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
@@ -554,63 +569,69 @@ static int srch_agent_init_body(srch_agent_t *agt, socket_t *sck)
 static int srch_agent_recv_body(srch_agent_t *agt, socket_t *sck)
 {
     int n, left;
-    socket_snap_t *read = &sck->read;
-    srch_msg_header_t *head = (srch_msg_header_t *)read->addr;
+    socket_snap_t *recv = &sck->recv;
+    srch_msg_head_t *head = (srch_msg_head_t *)recv->addr;
 
     /* 1. 接收报体 */
-    left = head->length - read->off;
-
-    n = Readn(sck->fd, read->addr + read->off, left);
-    if (n != left)
+    while (1)
     {
-        if (n > 0)
+        left = head->length - recv->off;
+
+        n = read(sck->fd, recv->addr + recv->off, left);
+        if (n == left)
         {
-            read->off += n;
-            return SRCH_SCK_AGAIN;
+            recv->off += n;
+            break; /* 接收完毕 */
+        }
+        else if (n > 0)
+        {
+            recv->off += n;
+            continue;
         }
         else if (0 == n)
         {
-            if (EAGAIN == errno)
-            {
-                return SRCH_SCK_AGAIN; /* 接完头部时, 缓存中正好无数据... */
-            }
-
-            log_info(agt->log, "Client disconnected. errmsg:[%d] %s! "
-                "fd:[%d] type:[%d] flag:[%d] bodylen:[%d] total:[%d] left:[%d] offset:[%d]",
-                errno, strerror(errno),
-                sck->fd, head->type, head->flag,
-                head->length, read->total, left, read->off);
+            log_info(agt->log, "Client disconnected. errmsg:[%d] %s! fd:[%d] n:[%d/%d]",
+                    errno, strerror(errno), sck->fd, n, left);
             return SRCH_SCK_CLOSE;
+        }
+        else if ((n < 0) && (EAGAIN == errno))
+        {
+            return SRCH_SCK_AGAIN;
+        }
+
+        if (EINTR == errno)
+        {
+            continue;
         }
 
         log_error(agt->log, "errmsg:[%d] %s!"
                 " fd:%d type:%d length:%d n:%d total:%d offset:%d addr:%p",
                 errno, strerror(errno), head->type,
-                sck->fd, head->length, n, read->total, read->off, read->addr);
+                sck->fd, head->length, n, recv->total, recv->off, recv->addr);
         return SRCH_ERR;
     }
 
     /* 2. Set flag variables */
-    read->off += n;
-    read->phase = SOCK_PHASE_RECV_POST;
+    recv->phase = SOCK_PHASE_RECV_POST;
 
     log_trace(agt->log, "fd:%d type:%d length:%d total:%d off:%d",
-            head->type, sck->fd, head->length, read->total, read->off);
+            head->type, sck->fd, head->length, recv->total, recv->off);
 
-    return SRCH_DONE;
+    return SRCH_OK;
 }
 
 /******************************************************************************
  **函数名称: srch_agent_recv_post
  **功    能: 接收完毕的处理
  **输入参数:
- **     agent: Agent对象
- **     sck: 套接字对象
+ **     agt: Agent对象
+ **     sck: SCK对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
+ **     如果出现异常，需要释放内存空间
  **注意事项: 
- **作    者: # Qifeng.zou # 2014.12.02 #
+ **作    者: # Qifeng.zou # 2014.12.03 #
  ******************************************************************************/
 static int srch_agent_recv_post(srch_agent_t *agt, socket_t *sck)
 {
@@ -618,11 +639,95 @@ static int srch_agent_recv_post(srch_agent_t *agt, socket_t *sck)
 }
 
 /******************************************************************************
+ **函数名称: _srch_agent_recv
+ **功    能: 接收数据
+ **输入参数:
+ **     agt: Agent对象
+ **     sck: SCK对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **     1. 分配报头空间
+ **     2. 接收报头
+ **     3. 分配报体空间
+ **     4. 接收报体
+ **     5. 对报文进行处理
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.11.29 #
+ ******************************************************************************/
+static int _srch_agent_recv(srch_agent_t *agt, socket_t *sck)
+{
+    int ret;
+    socket_snap_t *recv = &sck->recv;
+
+    switch (recv->phase)
+    {
+        case SOCK_PHASE_READY_HEAD: /* 分配报头空间 */
+        {
+            if (srch_agent_ready_head(agt, sck))
+            {
+                log_error(agt->log, "Alloc memory for head failed!");
+                return SRCH_ERR;
+            }
+
+            recv->phase = SOCK_PHASE_RECV_HEAD; /* 设置下步 */
+            /* # 继续后续处理 # 不用BREAK # */
+        }
+        case SOCK_PHASE_RECV_HEAD:  /* 接收报头 */
+        {
+            ret = srch_agent_recv_head(agt, sck);
+            if (SRCH_OK == ret)
+            {
+                /* 继续后续处理 */
+            }
+            else
+            {
+                return ret; /* 其他情况都返回给上一层处理 */
+            }
+
+            recv->phase = SOCK_PHASE_READY_BODY;
+            /* # 继续后续处理 # 不用BREAK # */
+        }
+        case SOCK_PHASE_READY_BODY: /* 分配报体空间 */
+        {
+            if (srch_agent_ready_body(agt, sck))
+            {
+                log_error(agt->log, "Alloc memory for body failed!");
+                return SRCH_ERR;
+            }
+
+            recv->phase = SOCK_PHASE_RECV_BODY;
+            /* # 继续后续处理 # 不用BREAK # */
+        }
+        case SOCK_PHASE_RECV_BODY:  /* 接收报体 */
+        {
+            ret = srch_agent_recv_body(agt, sck);
+            if (SRCH_OK == ret)
+            {
+                /* 继续后续处理 */
+            }
+            else
+            {
+                return ret; /* 其他情况都返回给上一层处理 */
+            }
+
+            recv->phase = SOCK_PHASE_RECV_POST;
+            /* # 继续后续处理 # 不用BREAK # */
+        }
+        case SOCK_PHASE_RECV_POST:  /* 接收完毕: 数据处理 */
+        {
+            return srch_agent_recv_post(agt, sck);
+        }
+    }
+    return SRCH_OK;
+}
+
+/******************************************************************************
  **函数名称: srch_agent_recv
  **功    能: 接收数据
  **输入参数:
- **     ctx: 全局信息
- **     sck: 套接字对象
+ **     agt: Agent对象
+ **     sck: SCK对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
@@ -637,67 +742,29 @@ static int srch_agent_recv_post(srch_agent_t *agt, socket_t *sck)
 static int srch_agent_recv(srch_agent_t *agt, socket_t *sck)
 {
     int ret;
-    socket_snap_t *read = &sck->read;
 
-    switch (read->phase)
+    while (1)
     {
-        case SOCK_PHASE_INIT_HEAD:  /* 分配报头空间 */
+        /* 接收数据 */
+        ret = _srch_agent_recv(agt, sck);
+        switch (ret)
         {
-            if (srch_agent_init_head(agt, sck))
+            case SRCH_OK:       /* 继续接收 */
             {
-                log_error(agt->log, "Alloc memory for header failed!");
+                continue;
+            }
+            case SRCH_SCK_AGAIN:/* 等待下次事件通知 */
+            {
+                return SRCH_OK;
+            }
+            default:            /* 异常情况 */
+            {
+                srch_agent_sock_remove(agt, sck);
                 return SRCH_ERR;
             }
-
-            read->phase = SOCK_PHASE_RECV_HEAD; /* 设置下步 */
-            /* # 继续后续处理 # 不用BREAK # */
-        }
-        case SOCK_PHASE_RECV_HEAD:  /* 接收报头 */
-        {
-            ret = srch_agent_recv_header(agt, sck);
-            if (SRCH_DONE == ret)
-            {
-                /* 继续后续处理 */
-            }
-            else
-            {
-                return ret; /* 其他情况都返回给上一层处理 */
-            }
-
-            read->phase = SOCK_PHASE_INIT_BODY;
-            /* # 继续后续处理 # 不用BREAK # */
-        }
-        case SOCK_PHASE_INIT_BODY:  /* 分配报体空间 */
-        {
-            if (srch_agent_init_body(agt, sck))
-            {
-                log_error(agt->log, "Alloc memory for body failed!");
-                return SRCH_ERR;
-            }
-
-            read->phase = SOCK_PHASE_RECV_BODY;
-            /* # 继续后续处理 # 不用BREAK # */
-        }
-        case SOCK_PHASE_RECV_BODY:  /* 接收报体 */
-        {
-            ret = srch_agent_recv_body(agt, sck);
-            if (SRCH_DONE == ret)
-            {
-                /* 继续后续处理 */
-            }
-            else
-            {
-                return ret; /* 其他情况都返回给上一层处理 */
-            }
-
-            read->phase = SOCK_PHASE_RECV_POST;
-            /* # 继续后续处理 # 不用BREAK # */
-        }
-        case SOCK_PHASE_RECV_POST:  /* 接收完毕: 数据处理 */
-        {
-            return srch_agent_recv_post(agt, sck);
         }
     }
+
     return SRCH_OK;
 }
 
@@ -705,8 +772,8 @@ static int srch_agent_recv(srch_agent_t *agt, socket_t *sck)
  **函数名称: srch_agent_send
  **功    能: 发送数据
  **输入参数:
- **     ctx: 全局信息
- **     sck: 套接字对象
+ **     agt: Agent对象
+ **     sck: SCK对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
@@ -718,4 +785,36 @@ static int srch_agent_send(srch_agent_t *agt, socket_t *sck)
     return SRCH_OK;
 }
 
+/******************************************************************************
+ **函数名称: srch_agent_sock_remove
+ **功    能: 删除指定套接字
+ **输入参数:
+ **     agt: Agent对象
+ **     sck: SCK对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.12.06 #
+ ******************************************************************************/
+static int srch_agent_sock_remove(srch_agent_t *agt, socket_t *sck)
+{
+    void *addr;
+    srch_agent_sck_data_t *data = sck->data;
 
+    /* 1. 将套接字从哈希表中剔除 */
+    addr = hash_tab_remove(agt->sock_tab, &data->sck_serial, sizeof(data->sck_serial));
+    if (addr != sck)
+    {
+        log_fatal(agt->log, "Remove socket failed! fd:%d", sck->fd);
+        return SRCH_ERR;
+    }
+
+    /* 2. 释放套接字空间(TODO:释放发送链表空间) */
+    Close(sck->fd);
+
+    slab_dealloc(agt->slab, sck->data);
+    slab_dealloc(agt->slab, sck);
+
+    return SRCH_OK;
+}

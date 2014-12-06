@@ -6,8 +6,6 @@
 #include "thread_pool.h"
 
 /* 宏定义 */
-#define SRCH_TMOUT_SEC              (02)    /* 超时(秒) */
-#define SRCH_TMOUT_USEC             (00)    /* 超时(微妙) */
 #define SRCH_TMOUT_SCAN_SEC         (05)    /* 超时扫描间隔 */
 #define SRCH_CONNECT_TMOUT_SEC      (00)    /* 连接超时时间 */
 
@@ -83,7 +81,7 @@ typedef struct
     int mark;                               /* 校验值 */
     int flag;                               /* 标识量(0:系统数据类型 1:自定义数据类型) */
     char *body;                             /* 报体 */
-} srch_msg_header_t;
+} srch_msg_head_t;
 
 /* 报体 */
 typedef struct

@@ -89,7 +89,7 @@ int crwl_task_down_webpage_by_uri(
     ftime(&sck->crtm);
     sck->rdtm = sck->crtm.time;
     sck->wrtm = sck->crtm.time;
-    sck->read.addr = data->recv;
+    sck->recv.addr = data->recv;
 
     snprintf(data->webpage.uri, sizeof(data->webpage.uri), "%s", args->uri);
     snprintf(data->webpage.ip, sizeof(data->webpage.ip), "%s", map.ip[ip_idx].ip);

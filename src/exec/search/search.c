@@ -71,14 +71,14 @@ int main(int argc, char *argv[])
     ctx = srch_cntx_init(argv[0], opt.conf_path);
     if (NULL == ctx)
     {
-        fprintf(stderr, "Initialize crawler failed!");
+        fprintf(stderr, "Initialize search-engine failed!");
         return SRCH_ERR;
     }
 
     /* 3. 启动爬虫服务 */
     if (srch_startup(ctx))
     {
-        log_error(ctx->log, "Startup crawler failed!");
+        log_error(ctx->log, "Startup search-engine failed!");
         goto ERROR;
     }
 

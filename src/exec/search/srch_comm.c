@@ -182,7 +182,7 @@ srch_cntx_t *srch_cntx_init(char *pname, const char *conf_path)
     /* 2. 判断程序是否已运行 */
     if (0 != srch_proc_lock())
     {
-        log_error(log, "Crawler is running!");
+        log_error(log, "Search-engine is running!");
         return NULL;
     }
 

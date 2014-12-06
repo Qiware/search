@@ -15,9 +15,9 @@ typedef struct
 /* 接收(发送)数据阶段 */
 typedef enum
 {
-    SOCK_PHASE_INIT_HEAD            /* 准备接收报头(如: 分配空间) */
+    SOCK_PHASE_READY_HEAD           /* 准备接收报头(如: 分配空间) */
     , SOCK_PHASE_RECV_HEAD          /* 接收报头数据 */
-    , SOCK_PHASE_INIT_BODY          /* 准备接收报体(如: 分配空间) */
+    , SOCK_PHASE_READY_BODY          /* 准备接收报体(如: 分配空间) */
     , SOCK_PHASE_RECV_BODY          /* 接收报体数据 */
     , SOCK_PHASE_RECV_POST          /* 接收完毕(如: 对数据进行处理) */
 
@@ -51,8 +51,8 @@ typedef struct _socket_t
     time_t wrtm;                    /* 最近写入时间 */
     time_t rdtm;                    /* 最近读取时间 */
 
-    socket_snap_t read;             /* 读取快照 */
-    socket_snap_t send;             /* 发送快照 */
+    socket_snap_t recv;             /* Recv快照 */
+    socket_snap_t send;             /* Send快照 */
 
     socket_recv_cb_t recv_cb;       /* 接收回调 */
     socket_send_cb_t send_cb;       /* 发送回调 */

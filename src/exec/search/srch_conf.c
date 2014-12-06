@@ -101,7 +101,7 @@ static int srch_conf_load_comm(xml_tree_t *xml, srch_conf_t *conf, log_cycle_t *
     /* 1. 定位LOG标签
      *  获取日志级别信息
      * */
-    fix = xml_query(xml, ".SEARCH-ENGINES.LOG");
+    fix = xml_query(xml, ".SEARCH-ENGINE.LOG");
     if (NULL != fix)
     {
         /* 1.1 日志级别 */
@@ -137,7 +137,7 @@ static int srch_conf_load_comm(xml_tree_t *xml, srch_conf_t *conf, log_cycle_t *
     /* 2. 定位Connections标签
      *  获取网页抓取深度和存储路径
      * */
-    fix = xml_query(xml, ".SEARCH-ENGINES.CONNECTIONS");
+    fix = xml_query(xml, ".SEARCH-ENGINE.CONNECTIONS");
     if (NULL == fix)
     {
         log_error(log, "Didn't configure connections!");
@@ -165,7 +165,7 @@ static int srch_conf_load_comm(xml_tree_t *xml, srch_conf_t *conf, log_cycle_t *
     conf->connections.timeout = atoi(node->value);
 
     /* 3. 获取WORKER.NUM标签 */
-    node = xml_query(xml, ".SEARCH-ENGINES.WORKER.NUM");
+    node = xml_query(xml, ".SEARCH-ENGINE.WORKER.NUM");
     if (NULL == fix)
     {
         log_error(log, "Didn't configure worker!");
@@ -175,7 +175,7 @@ static int srch_conf_load_comm(xml_tree_t *xml, srch_conf_t *conf, log_cycle_t *
     conf->worker_num = atoi(node->value);
 
     /* 4. 获取AGENT.NUM标签 */
-    node = xml_query(xml, ".SEARCH-ENGINES.AGENT.NUM");
+    node = xml_query(xml, ".SEARCH-ENGINE.AGENT.NUM");
     if (NULL == fix)
     {
         log_error(log, "Didn't configure receiver!");

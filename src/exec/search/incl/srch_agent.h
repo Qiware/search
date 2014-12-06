@@ -6,15 +6,18 @@
 #include "search.h"
 #include "hash_tab.h"
 
-#define SRCH_AGENT_EVENT_MAX_NUM     (4096)  /* 事件最大数 */
-#define SRCH_AGENT_SCK_HASH_MOD      (775)   /* 套接字哈希长度 */
+#define SRCH_AGENT_TMOUT_SEC        (05)    /* 超时(秒) */
+#define SRCH_AGENT_TMOUT_USEC       (00)    /* 超时(微妙) */
+
+#define SRCH_AGENT_EVENT_MAX_NUM    (4096)  /* 事件最大数 */
+#define SRCH_AGENT_SCK_HASH_MOD     (777)   /* 套接字哈希长度 */
 
 typedef struct
 {
     int tidx;                       /* 线程索引 */
 
     srch_cntx_t *ctx;               /* 全局对象 */
-    srch_conf_t *conf;              /* 全局配置信息 */
+    srch_conf_t *conf;              /* 配置信息 */
     slab_pool_t *slab;              /* 内存池 */
     log_cycle_t *log;               /* 日志对象 */
 
@@ -33,7 +36,7 @@ typedef struct
 {
     uint64_t sck_serial;            /* 序列号 */
 
-    srch_msg_header_t *header;      /* 报头起始地址 */
+    srch_msg_head_t *head;          /* 报头起始地址 */
     list_t send_list;               /* 发送链表 */
 } srch_agent_sck_data_t;
 

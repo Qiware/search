@@ -221,73 +221,47 @@ int crwl_worker_recv_data(crwl_worker_t *worker, socket_t *sck)
 
     while (1)
     {
-        left = sck->read.total - sck->read.off;
+        left = sck->recv.total - sck->recv.off;
 
-        n = Readn(sck->fd, sck->read.addr + sck->read.off, left);
-        if (n < left)
+        n = read(sck->fd, sck->recv.addr + sck->recv.off, left);
+        if (n > 0)
         {
-            if (n > 0)          /* 等待再次触发 */
+            log_debug(worker->log, "Recv! uri:%s n:%d", data->webpage.uri, n);
+
+            data->webpage.size += n;
+
+            /* 将HTML数据写入文件 */
+            sck->recv.off += n;
+            sck->recv.addr[sck->recv.off] = '\0';
+            if (sck->recv.off >= CRWL_SYNC_SIZE)
             {
-                data->webpage.size += n;
-
-                log_debug(worker->log, "Wait next recv! uri:%s size:%d n:%d",
-                        data->webpage.uri, data->webpage.size, n);
-
-                /* 将HTML数据写入文件 */
-                sck->read.off += n;
-                sck->read.addr[sck->read.off] = '\0';
-                if (sck->read.off >= CRWL_SYNC_SIZE)
-                {
-                    crwl_worker_webpage_fsync(worker, sck);
-                }
-                
-                return CRWL_OK;
-            }
-            else if (0 == n)    /* 已关闭 */
-            {
-                if (EINPROGRESS == errno)
-                {
-                    return CRWL_OK; /* 正在进行中... */
-                }
-
-                log_info(worker->log, "End of recv! uri:%s size:%d",
-                        data->webpage.uri, data->webpage.size);
-
                 crwl_worker_webpage_fsync(worker, sck);
-                crwl_worker_webpage_finfo(worker, sck);
-                crwl_worker_remove_sock(worker, sck);
-                return CRWL_SCK_CLOSE;
             }
-
-            if (EINPROGRESS == errno)
-            {
-                return CRWL_OK; /* 正在进行中... */
-            }
-
-            /* 异常情况处理 */
-            log_error(worker->log, "errmsg:[%d] %s! uri:%s ip:%s size:%d",
-                    errno, strerror(errno),
-                    data->webpage.uri, data->webpage.ip, data->webpage.size);
+            continue;
+        }
+        else if (0 == n)
+        {
+            log_info(worker->log, "End of recv! uri:%s size:%d",
+                    data->webpage.uri, data->webpage.size);
 
             crwl_worker_webpage_fsync(worker, sck);
             crwl_worker_webpage_finfo(worker, sck);
             crwl_worker_remove_sock(worker, sck);
-            return CRWL_ERR;
+            return CRWL_SCK_CLOSE;
         }
-
-        log_debug(worker->log, "Recv! uri:%s n:%d", data->webpage.uri, n);
-        data->webpage.size += n;
-
-        /* 3. 将HTML数据写入文件 */
-        sck->read.off += n;
-        sck->read.addr[sck->read.off] = '\0';
-        if (sck->read.off >= CRWL_SYNC_SIZE)
+        else if (n < 0 && EAGAIN == errno)
         {
-            crwl_worker_webpage_fsync(worker, sck);
+            log_debug(worker->log, "Again! uri:%s", data->webpage.uri);
+            return CRWL_OK;
         }
-    }
+        else if (EINTR == errno)
+        {
+            continue;
+        }
 
-    return CRWL_OK;
+        log_error(worker->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        return CRWL_ERR;
+    }
 }
 
 /******************************************************************************
@@ -525,12 +499,10 @@ void *crwl_worker_routine(void *_ctx)
         worker->fds = epoll_wait(
                 worker->ep_fd, worker->events,
                 worker->conf->worker.conn_max_num, CRWL_TMOUT_SEC);
-        if (worker->fds <= 0)
+        if (worker->fds < 0)
         {
             if (EINTR == errno)
             {
-                /* Timeout */
-                crwl_worker_timeout_hdl(worker);
                 continue;
             }
 
@@ -539,6 +511,11 @@ void *crwl_worker_routine(void *_ctx)
             crwl_worker_destroy(worker);
             abort();
             return (void *)-1;
+        }
+        else if (0 == worker->fds) /* Timeout */
+        {
+            crwl_worker_timeout_hdl(worker);
+            continue;
         }
 
         /* 4. 进行事件处理 */
@@ -576,9 +553,9 @@ int crwl_worker_add_sock(crwl_worker_t *worker, socket_t *sck)
         return CRWL_ERR;
     }
 
-    sck->read.addr = data->recv;
-    sck->read.off = 0;
-    sck->read.total = CRWL_RECV_SIZE;
+    sck->recv.addr = data->recv;
+    sck->recv.off = 0;
+    sck->recv.total = CRWL_RECV_SIZE;
 
     node->data = sck;
 
