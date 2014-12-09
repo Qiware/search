@@ -451,7 +451,7 @@ static int crwl_worker_event_hdl(crwl_worker_t *worker)
     }
 
     /* 2. 超时扫描 */
-    if (ctm - worker->scan_tm > CRWL_TMOUT_SCAN_SEC)
+    if (ctm - worker->scan_tm > CRWL_SCAN_TMOUT_SEC)
     {
         worker->scan_tm = ctm;
 
@@ -498,7 +498,7 @@ void *crwl_worker_routine(void *_ctx)
         /* 3. 等待事件通知 */
         worker->fds = epoll_wait(
                 worker->ep_fd, worker->events,
-                worker->conf->worker.conn_max_num, CRWL_TMOUT_SEC);
+                worker->conf->worker.conn_max_num, CRWL_EVENT_TMOUT_MSEC);
         if (worker->fds < 0)
         {
             if (EINTR == errno)
