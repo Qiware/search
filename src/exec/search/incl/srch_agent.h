@@ -6,8 +6,7 @@
 #include "search.h"
 #include "hash_tab.h"
 
-#define SRCH_AGENT_TMOUT_SEC        (05)    /* 超时(秒) */
-#define SRCH_AGENT_TMOUT_USEC       (00)    /* 超时(微妙) */
+#define SRCH_AGENT_TMOUT_MSEC       (2000)  /* 超时(豪秒) */
 
 #define SRCH_AGENT_EVENT_MAX_NUM    (4096)  /* 事件最大数 */
 #define SRCH_AGENT_SCK_HASH_MOD     (777)   /* 套接字哈希长度 */

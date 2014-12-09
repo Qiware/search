@@ -60,7 +60,8 @@ void *srch_agent_routine(void *_ctx)
         }
 
         /* 3. 等待事件通知 */
-        agt->fds = epoll_wait(agt->ep_fd, agt->events, SRCH_AGENT_EVENT_MAX_NUM, -1);  /* SRCH_AGENT_TMOUT_SEC */
+        agt->fds = epoll_wait(agt->ep_fd, agt->events,
+                SRCH_AGENT_EVENT_MAX_NUM, SRCH_AGENT_TMOUT_MSEC);
         if (agt->fds < 0)
         {
             if (EINTR == errno)
@@ -75,7 +76,7 @@ void *srch_agent_routine(void *_ctx)
         }
         else if (0 == agt->fds)
         {
-            log_error(agt->log, "Timeout! errmsg:[%d] %s!", errno, strerror(errno));
+            log_info(agt->log, "Timeout! errmsg:[%d] %s!", errno, strerror(errno));
             srch_agent_event_timeout_hdl(agt);
             continue;
         }
