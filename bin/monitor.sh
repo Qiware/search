@@ -9,7 +9,7 @@
 ###############################################################################
 print_proc()
 {
-    ps -axu | grep -e "crawler" -e "logsvr" -e "redis" | grep -v "grep" | sort
+    ps -axu | grep -e "crawler" -e "logsvr" -e "redis" -e "search" | grep -v "grep" | sort
 }
 
 ###############################################################################
@@ -38,14 +38,14 @@ print_shm()
 ###############################################################################
 print_netstat()
 {
-    total=0
-    listen_num=0
-    active_num=0
-    close_num=0
-    sync_num=0
-
     for item in $@ # 遍历参数列表
     do
+        total=0
+        listen_num=0
+        active_num=0
+        close_num=0
+        sync_num=0
+
         while read line # 遍历文件行
         do
             #num=`echo $line | grep -e "$item " -e "$item"$ | wc -l` # 精确匹配
@@ -121,10 +121,10 @@ main()
 
         sudo netstat -antp | grep -v grep  > .netstat.list
 
-        print_netstat "crawler" "filter" "redis"
+        print_netstat "crawler" "filter" "redis" "search"
         echo "---------------------------------------------------------------------"
 
-        sleep 1
+        sleep 5
     done;
 }
 
