@@ -22,7 +22,6 @@ LIBS2 = -lxd_crwl
 
 SRC_LIST = crwl_comm.c \
 			crwl_conf.c \
-			crwl_task.c \
 			crwl_sched.c \
 			crwl_worker.c
 SRC_LIST2 = crawler.c

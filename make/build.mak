@@ -10,7 +10,7 @@ include $(PROJ)/make/switch.mak
 include $(PROJ)/make/options.mak
 
 CC = gcc
-CFLAGS = -Wall -g -fPIC -O0 \
+CFLAGS = -Wall -gdwarf-2 -g3 -fPIC -O0 \
 			-Werror \
 			-Wshadow \
 			-Winline \
