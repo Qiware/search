@@ -63,7 +63,7 @@
                         "<URI DEPTH=\"%d\">\"%s\"</URI>" /* 网页深度&URI */\
                     "</BODY>" \
                 "</TASK>", \
-                CRWL_TASK_DOWN_WEBPAGE_BY_URL, deep, uri);
+                CRWL_TASK_DOWN_WEBPAGE, deep, uri);
 
 #define crwl_write_webpage_finfo(fp, data)   /* 写入网页信息 */\
 { \

@@ -47,7 +47,7 @@ typedef struct
     time_t scan_tm;                 /* 超时扫描时间 */
     list_t sock_list;               /* 套接字列表
                                        结点数据指针指向socket_t */
-    lqueue_t *undo_taskq;           /* 任务队列 */
+    lqueue_t *taskq;                /* 任务队列 */
 
     uint64_t down_webpage_total;    /* 下载网页的计数 */
     uint64_t err_webpage_total;     /* 异常网页的计数 */
@@ -62,7 +62,7 @@ typedef struct
 } crwl_worker_socket_data_t;
 
 /* 获取队列剩余空间 */
-#define crwl_worker_undo_taskq_space(worker) queue_space(&(worker)->undo_taskq->queue)
+#define crwl_worker_taskq_space(worker) queue_space(&(worker)->taskq->queue)
 
 /* 函数声明 */
 int crwl_worker_add_sock(crwl_worker_t *worker, socket_t *sck);
@@ -84,11 +84,6 @@ socket_t *crwl_worker_socket_alloc(crwl_worker_t *worker);
     } \
     slab_dealloc(worker->slab, sck); \
 }
-
-int crwl_task_down_webpage_by_uri(
-        crwl_worker_t *worker, const crwl_task_down_webpage_by_uri_t *args);
-int crwl_task_down_webpage_by_ip(
-        crwl_worker_t *worker, const crwl_task_down_webpage_by_ip_t *args);
 
 int crwl_worker_webpage_creat(crwl_worker_t *worker, socket_t *sck);
 /* 将接收的数据同步到文件

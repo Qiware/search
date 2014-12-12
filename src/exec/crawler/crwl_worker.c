@@ -17,7 +17,24 @@
 #include "thread_pool.h"
 #include "crwl_worker.h"
 
-static int crwl_worker_task_handler(crwl_worker_t *worker, crwl_task_t *t);
+static int crwl_worker_task_down_webpage(
+        crwl_worker_t *worker, const crwl_task_down_webpage_t *args);
+static int crwl_worker_task_unknown_hdl(crwl_worker_t *worker, const void *args);
+
+typedef int (*crwl_worker_task_hdl_t)(crwl_worker_t *worker, const void *args);
+
+/* 任务处理回调函数
+ *  注意：必须与crwl_task_type_e个数、顺序保持一致, 否则将会出严重问题 */
+static crwl_worker_task_hdl_t g_crwl_worker_task_hdl[CRWL_TASK_TYPE_TOTAL] = 
+{
+    (crwl_worker_task_hdl_t)crwl_worker_task_unknown_hdl    /* CRWL_TASK_TYPE_UNKNOWN */
+    , (crwl_worker_task_hdl_t)crwl_worker_task_down_webpage /* CRWL_TASK_DOWN_WEBPAGE */
+};
+
+#define crwl_worker_task_handler(worker, task)              /* 任务处理回调 */\
+    ((task->type < CRWL_TASK_TYPE_TOTAL)? \
+        g_crwl_worker_task_hdl[task->type](worker, task+1) : \
+        g_crwl_worker_task_hdl[CRWL_TASK_TYPE_UNKNOWN](worker, task+1))
 
 /******************************************************************************
  **函数名称: crwl_worker_get
@@ -78,8 +95,8 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker)
     }
 
     /* 2. 创建任务队列 */
-    worker->undo_taskq = lqueue_init(worker->conf->worker.taskq_count, 20 * MB);
-    if (NULL == worker->undo_taskq)
+    worker->taskq = lqueue_init(worker->conf->worker.taskq_count, 20 * MB);
+    if (NULL == worker->taskq)
     {
         slab_destroy(worker->slab);
 
@@ -92,7 +109,7 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker)
     worker->ep_fd = epoll_create(CRWL_EVENT_MAX_NUM);
     if (worker->ep_fd < 0)
     {
-        lqueue_destroy(worker->undo_taskq);
+        lqueue_destroy(worker->taskq);
         slab_destroy(worker->slab);
 
         log_error(worker->log, "Create epoll failed! errmsg:[%d] %s!");
@@ -104,7 +121,7 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker)
             worker->conf->worker.conn_max_num * sizeof(struct epoll_event));
     if (NULL == worker->events)
     {
-        lqueue_destroy(worker->undo_taskq);
+        lqueue_destroy(worker->taskq);
         slab_destroy(worker->slab);
         Close(worker->ep_fd);
 
@@ -136,17 +153,17 @@ int crwl_worker_destroy(crwl_worker_t *worker)
     while (1)
     {
         /* 弹出数据 */
-        data = lqueue_pop(worker->undo_taskq);
+        data = lqueue_pop(worker->taskq);
         if (NULL == data)
         {
             break;
         }
 
         /* 释放内存 */
-        lqueue_mem_dealloc(worker->undo_taskq, data);
+        lqueue_mem_dealloc(worker->taskq, data);
     }
 
-    lqueue_destroy(worker->undo_taskq);
+    lqueue_destroy(worker->taskq);
 
     close(worker->ep_fd);
 
@@ -172,7 +189,7 @@ static int crwl_worker_fetch_task(crwl_cntx_t *ctx, crwl_worker_t *worker)
     crwl_task_t *t;
 
     /* 1. 判断是否应该取任务 */
-    if (0 == worker->undo_taskq->queue.num
+    if (0 == worker->taskq->queue.num
         || worker->sock_list.num >= worker->conf->worker.conn_max_num)
     {
         return CRWL_OK;
@@ -183,7 +200,7 @@ static int crwl_worker_fetch_task(crwl_cntx_t *ctx, crwl_worker_t *worker)
 
     for (idx=0; idx<num; ++idx)
     {
-        data = lqueue_trypop(worker->undo_taskq);
+        data = lqueue_trypop(worker->taskq);
         if (NULL == data)
         {
             return CRWL_OK;
@@ -194,7 +211,7 @@ static int crwl_worker_fetch_task(crwl_cntx_t *ctx, crwl_worker_t *worker)
 
         crwl_worker_task_handler(worker, t);
 
-        lqueue_mem_dealloc(worker->undo_taskq, data);
+        lqueue_mem_dealloc(worker->taskq, data);
     }
     return CRWL_OK;
 }
@@ -709,47 +726,6 @@ int crwl_worker_remove_sock(crwl_worker_t *worker, socket_t *sck)
 }
 
 /******************************************************************************
- **函数名称: crwl_worker_task_handler
- **功    能: 爬虫任务的处理
- **输入参数: 
- **     worker: 爬虫对象 
- **     t: 任务对象(对象+数据)
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.09.25 #
- ******************************************************************************/
-static int crwl_worker_task_handler(crwl_worker_t *worker, crwl_task_t *t)
-{
-    char *args = (char *)(t + 1);
-
-    switch (t->type)
-    {
-        /* 通过URL加载网页 */
-        case CRWL_TASK_DOWN_WEBPAGE_BY_URL:
-        {
-            return crwl_task_down_webpage_by_uri(
-                    worker, (const crwl_task_down_webpage_by_uri_t *)args);
-        }
-        /* 通过IP加载网页 */
-        case CRWL_TASK_DOWN_WEBPAGE_BY_IP:
-        {
-            return crwl_task_down_webpage_by_ip(
-                    worker, (const crwl_task_down_webpage_by_ip_t *)args);
-        }
-        /* 未知任务类型 */
-        case CRWL_TASK_TYPE_UNKNOWN:
-        default:
-        {
-            log_error(worker->log, "Unknown task type! [%d]", t->type);
-            return CRWL_OK;
-        }
-    }
-    return CRWL_OK;
-}
-
-/******************************************************************************
  **函数名称: crwl_worker_add_http_get_req
  **功    能: 添加HTTP GET请求
  **输入参数: 
@@ -950,3 +926,106 @@ socket_t *crwl_worker_socket_alloc(crwl_worker_t *worker)
 
     return sck;
 }
+
+/******************************************************************************
+ **函数名称: crwl_worker_task_down_webpage
+ **功    能: 加载网页的任务处理
+ **输入参数: 
+ **     worker: 爬虫对象 
+ **     args: 通过URL加载网页的任务的参数
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **     1. 通过URL获取WEB服务器信息(域名, 端口号)
+ **     2. 连接远程WEB服务器
+ **     3. 将FD等信息加入套接字链表
+ **     4. 添加HTTP GET请求
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.09.25 #
+ ******************************************************************************/
+static int crwl_worker_task_down_webpage(
+        crwl_worker_t *worker, const crwl_task_down_webpage_t *args)
+{
+    int fd;
+    socket_t *sck;
+    crwl_worker_socket_data_t *data;
+
+    /* 1. 连接远程WEB服务器 */
+    fd = tcp_connect_ex2(args->family, args->ip, args->port);
+    if (fd < 0)
+    {
+        log_error(worker->log, "errmsg:[%d] %s! family:%d ip:%s uri:%s",
+            errno, strerror(errno), args->family, args->ip, args->uri);
+        return CRWL_OK;
+    }
+
+    /* 2. 将FD等信息加入套接字链表 */
+    sck = crwl_worker_socket_alloc(worker);
+    if (NULL == sck)
+    {
+        log_error(worker->log, "Alloc memory from slab failed!");
+        return CRWL_ERR;
+    }
+
+    data = (crwl_worker_socket_data_t *)sck->data;
+
+    sck->fd = fd;
+    ftime(&sck->crtm);
+    sck->rdtm = sck->crtm.time;
+    sck->wrtm = sck->crtm.time;
+    sck->recv.addr = data->recv;
+
+    snprintf(data->webpage.uri, sizeof(data->webpage.uri), "%s", args->uri);
+    snprintf(data->webpage.ip, sizeof(data->webpage.ip), "%s", args->ip);
+    data->webpage.port = args->port;
+    data->webpage.depth = args->depth;
+
+    sck->recv_cb = (socket_recv_cb_t)crwl_worker_recv_data;
+    sck->send_cb = (socket_send_cb_t)crwl_worker_send_data;
+
+    if (crwl_worker_add_sock(worker, sck))
+    {
+        log_error(worker->log, "Add socket into list failed!");
+        crwl_worker_socket_dealloc(worker, sck);
+        return CRWL_ERR;
+    }
+
+    /* 4. 添加HTTP GET请求 */
+    if (crwl_worker_add_http_get_req(worker, sck, args->uri))
+    {
+        log_error(worker->log, "Add http get request failed!");
+
+        crwl_worker_remove_sock(worker, sck);
+        return CRWL_ERR;
+    }
+
+    /* 5. 新建存储文件 */
+    if (crwl_worker_webpage_creat(worker, sck))
+    {
+        log_error(worker->log, "Save webpage failed!");
+
+        crwl_worker_remove_sock(worker, sck);
+        return CRWL_ERR;
+    }
+
+    return CRWL_OK;
+}
+
+/******************************************************************************
+ **函数名称: crwl_worker_task_unknown_hdl
+ **功    能: 未知类型的任务处理
+ **输入参数: 
+ **     worker: 爬虫对象 
+ **     args: 附加参数
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.12.12 #
+ ******************************************************************************/
+static int crwl_worker_task_unknown_hdl(crwl_worker_t *worker, const void *args)
+{
+    log_error(worker->log, "Task type is unknown!");
+    return CRWL_ERR;
+}
+
