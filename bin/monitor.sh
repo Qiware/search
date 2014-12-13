@@ -38,6 +38,8 @@ print_shm()
 ###############################################################################
 print_netstat()
 {
+    sudo netstat -antp | grep -v grep  > .netstat.all
+
     for item in $@ # 遍历参数列表
     do
         total=0
@@ -80,7 +82,7 @@ print_netstat()
             if [ $num -gt 0 ]; then
                 sync_num=`expr $sync_num + $num`
             fi
-        done < .netstat.list
+        done < .netstat.all
 
         # 打印统计信息
         echo "$item\t\t$listen_num\t$active_num\t$close_num\t$sync_num\t$total"
@@ -96,6 +98,8 @@ print_netstat()
 ###############################################################################
 main()
 {
+    print_netstat "crawler" "filter" "redis" "search" > .netstat.ls
+
     while true
     do
         clear
@@ -114,17 +118,17 @@ main()
         print_shm
         echo "---------------------------------------------------------------------"
 
+        # 显示上次获取的netstat信息(防止刷屏时间过长)
         echo ""
         echo "Network stat:"
         echo "---------------------------------------------------------------------"
         echo "PROC\t\tLISTEN\tESTAB\tCLOSE\tSYNC\tTOTAL"
 
-        sudo netstat -antp | grep -v grep  > .netstat.list
-
-        print_netstat "crawler" "filter" "redis" "search"
+        cat .netstat.ls
         echo "---------------------------------------------------------------------"
+        print_netstat "crawler" "filter" "redis" "search" > .netstat.ls
 
-        sleep 5
+        sleep 1
     done;
 }
 
