@@ -310,7 +310,7 @@ static int crwl_sched_fetch_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
         }
 
         /* 5. 处理Undo任务 */
-        if (crwl_sched_task_hdl(ctx, worker, task))
+        if (crwl_sched_task_hdl(ctx, &worker[sched->last_idx], task))
         {
             log_error(ctx->log, "Handle undo task failed! %s", r->str);
 

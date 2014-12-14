@@ -491,6 +491,7 @@ static int crwl_worker_event_hdl(crwl_worker_t *worker)
  **     3. 等待事件通知
  **     4. 进行事件处理
  **注意事项: 
+ **     1. 当无套接字时, epoll_wait()将不断的返回-1.
  **作    者: # Qifeng.zou # 2014.09.23 #
  ******************************************************************************/
 void *crwl_worker_routine(void *_ctx)
@@ -520,6 +521,7 @@ void *crwl_worker_routine(void *_ctx)
         {
             if (EINTR == errno)
             {
+                uslepp(500);
                 continue;
             }
 
