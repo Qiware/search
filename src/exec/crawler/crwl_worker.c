@@ -410,7 +410,7 @@ static int crwl_worker_timeout_hdl(crwl_worker_t *worker)
             continue; /* 未超时 */
         }
 
-        log_info(worker->log, "Timeout! uri:%s ip:%s size:%d!",
+        log_warn(worker->log, "Timeout! uri:%s ip:%s size:%d!",
                 data->webpage.uri, data->webpage.ip, data->webpage.size);
 
         crwl_worker_webpage_fsync(worker, sck);
