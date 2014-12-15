@@ -133,7 +133,9 @@ typedef struct
     crwl_conf_t *conf;                      /* 配置信息 */
     log_cycle_t *log;                       /* 日志对象 */
 
-    thread_pool_t *workers;                 /* 线程池对象 */
+    thread_pool_t *scheds;                  /* Sched线程池 */
+    thread_pool_t *workers;                 /* Worker线程池 */
+
     hash_tab_t *domain_ip_map;              /* 域名IP映射表: 通过域名找到IP地址 */
     hash_tab_t *domain_blacklist;           /* 域名黑名单 */
 } crwl_cntx_t;

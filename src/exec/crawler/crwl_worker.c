@@ -521,7 +521,7 @@ void *crwl_worker_routine(void *_ctx)
         {
             if (EINTR == errno)
             {
-                uslepp(500);
+                usleep(500);
                 continue;
             }
 

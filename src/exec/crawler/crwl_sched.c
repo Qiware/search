@@ -249,13 +249,13 @@ static int crwl_sched_fetch_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
     int times;
     void *addr;
     redisReply *r;
-    crwl_worker_t *worker;
+    crwl_worker_t *workers, *worker;
     crwl_conf_t *conf = ctx->conf;
 
     crwl_task_t *task;
     size_t size = sizeof(crwl_task_t) + sizeof(crwl_task_space_u);
 
-    worker = (crwl_worker_t *)ctx->workers->data;
+    workers = (crwl_worker_t *)ctx->workers->data;
 
     times = 0;
     while (1)
@@ -264,7 +264,9 @@ static int crwl_sched_fetch_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
         ++sched->last_idx;
         sched->last_idx %= conf->worker.num;
 
-        if (!crwl_worker_taskq_space(worker + sched->last_idx))
+        worker = workers + sched->last_idx;
+
+        if (!crwl_worker_taskq_space(worker))
         {
             ++times;
             if (times >= conf->worker.num)
@@ -289,7 +291,7 @@ static int crwl_sched_fetch_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
         log_trace(ctx->log, "[%02d] URL:%s!", sched->last_idx, r->str);
 
         /* 3. 新建crwl_task_t对象 */
-        addr = lqueue_mem_alloc(worker[sched->last_idx].taskq, size);
+        addr = lqueue_mem_alloc(worker->taskq, size);
         if (NULL == addr)
         {
             freeReplyObject(r);
@@ -305,17 +307,17 @@ static int crwl_sched_fetch_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
             log_error(ctx->log, "Parse task string failed! %s", r->str);
 
             freeReplyObject(r);
-            lqueue_mem_dealloc(worker[sched->last_idx].taskq, addr);
+            lqueue_mem_dealloc(worker->taskq, addr);
             return CRWL_ERR;
         }
 
         /* 5. 处理Undo任务 */
-        if (crwl_sched_task_hdl(ctx, &worker[sched->last_idx], task))
+        if (crwl_sched_task_hdl(ctx, worker, task))
         {
             log_error(ctx->log, "Handle undo task failed! %s", r->str);
 
             freeReplyObject(r);
-            lqueue_mem_dealloc(worker[sched->last_idx].taskq, addr);
+            lqueue_mem_dealloc(worker->taskq, addr);
             return CRWL_ERR;
         }
 
@@ -560,6 +562,7 @@ static int crwl_sched_task_hdl(crwl_cntx_t *ctx, crwl_worker_t *worker, crwl_tas
         }
         default:
         {
+            log_error(ctx->log, "Task type [%d] is unknown!", task->type);
             return CRWL_ERR;
         }
     }

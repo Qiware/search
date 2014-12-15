@@ -33,6 +33,7 @@
 
 static int crwl_init_workers(crwl_cntx_t *ctx);
 int crwl_workers_destroy(crwl_cntx_t *ctx);
+static int crwl_init_scheds(crwl_cntx_t *ctx);
 static int crwl_domain_ip_map_cmp_cb(
         const char *domain, const crwl_domain_ip_map_t *map);
 static int crwl_domain_blacklist_cmp_cb(
@@ -204,6 +205,13 @@ crwl_cntx_t *crwl_cntx_init(char *pname, const char *path)
             break;
         }
 
+        /* 7. 创建Sched线程池 */
+        if (crwl_init_scheds(ctx))
+        {
+            log_error(log, "Initialize thread pool failed!");
+            break;
+        }
+
         return ctx;
     } while(0);
 
@@ -251,7 +259,6 @@ void crwl_cntx_destroy(crwl_cntx_t *ctx)
 int crwl_startup(crwl_cntx_t *ctx)
 {
     int idx;
-    pthread_t tid;
     const crwl_conf_t *conf = ctx->conf;
 
     /* 1. 设置Worker线程回调 */
@@ -261,10 +268,9 @@ int crwl_startup(crwl_cntx_t *ctx)
     }
     
     /* 2. 设置Sched线程回调 */
-    if (thread_creat(&tid, crwl_sched_routine, ctx))
+    for (idx=0; idx<CRWL_SCHED_THD_NUM; ++idx)
     {
-        log_error(ctx->log, "Create thread failed!");
-        return CRWL_ERR;
+        thread_pool_add_worker(ctx->scheds, crwl_sched_routine, ctx);
     }
 
     return CRWL_OK;
@@ -372,6 +378,30 @@ int crwl_workers_destroy(crwl_cntx_t *ctx)
     ctx->workers = NULL;
 
     return CRWL_ERR;
+}
+
+/******************************************************************************
+ **函数名称: crwl_init_scheds
+ **功    能: 初始化Sched线程池
+ **输入参数: 
+ **     ctx: 全局信息
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.12.15 #
+ ******************************************************************************/
+static int crwl_init_scheds(crwl_cntx_t *ctx)
+{
+    /* 1. 创建Sched线程池 */
+    ctx->scheds = thread_pool_init(CRWL_SCHED_THD_NUM, 0);
+    if (NULL == ctx->scheds)
+    {
+        log_error(ctx->log, "Initialize thread pool failed!");
+        return CRWL_ERR;
+    }
+
+    return CRWL_OK;
 }
 
 /******************************************************************************
