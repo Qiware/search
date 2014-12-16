@@ -492,7 +492,7 @@ int crwl_get_domain_ip_map(crwl_cntx_t *ctx, char *host, crwl_domain_ip_map_t *m
 
     hints.ai_socktype = SOCK_STREAM;
 
-    if (0 != getaddrinfo(host, "http", &hints, &addrinfo))
+    if (0 != getaddrinfo(host, NULL, &hints, &addrinfo))
     {
         log_error(ctx->log, "Get address info failed! host:%s", host);
 
