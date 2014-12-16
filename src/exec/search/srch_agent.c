@@ -339,7 +339,7 @@ static int srch_agent_add_conn(srch_cntx_t *ctx, srch_agent_t *agt)
     struct epoll_event ev;
 
     /* 1. 取数据 */
-    add = lqueue_trypop(ctx->connq[agt->tidx]);
+    add = queue_pop(ctx->connq[agt->tidx]);
     if (NULL == add)
     {
         return SRCH_OK;
@@ -349,7 +349,7 @@ static int srch_agent_add_conn(srch_cntx_t *ctx, srch_agent_t *agt)
     sck = slab_alloc(agt->slab, sizeof(socket_t));
     if (NULL == sck)
     {
-        lqueue_mem_dealloc(ctx->connq[agt->tidx], add);
+        queue_dealloc(ctx->connq[agt->tidx], add);
         log_error(agt->log, "Alloc memory from slab failed!");
         return SRCH_ERR;
     }
@@ -358,7 +358,7 @@ static int srch_agent_add_conn(srch_cntx_t *ctx, srch_agent_t *agt)
     if (NULL == data)
     {
         slab_dealloc(agt->slab, sck);
-        lqueue_mem_dealloc(ctx->connq[agt->tidx], add);
+        queue_dealloc(ctx->connq[agt->tidx], add);
         log_error(agt->log, "Alloc memory from slab failed!");
         return SRCH_ERR;
     }
@@ -374,7 +374,7 @@ static int srch_agent_add_conn(srch_cntx_t *ctx, srch_agent_t *agt)
 
     data->sck_serial = add->sck_serial;
 
-    lqueue_mem_dealloc(ctx->connq[agt->tidx], add);
+    queue_dealloc(ctx->connq[agt->tidx], add);
 
     /* 4. 哈希表中(以序列号为主键) */
     if (hash_tab_insert(agt->sock_tab, &data->sck_serial, sizeof(data->sck_serial), sck))
@@ -437,7 +437,7 @@ static int srch_agent_ready_head(srch_agent_t *agt, socket_t *sck)
 {
     srch_agent_sck_data_t *data = sck->data;
 
-    data->head = lqueue_mem_alloc(
+    data->head = queue_malloc(
             agt->ctx->recvq[agt->tidx], sizeof(srch_msg_head_t));
     if (NULL == data->head)
     {
@@ -540,7 +540,7 @@ static int srch_agent_ready_body(srch_agent_t *agt, socket_t *sck)
 {
     srch_agent_sck_data_t *data = sck->data;
 
-    data->head->body = lqueue_mem_alloc(
+    data->head->body = queue_malloc(
             agt->ctx->recvq[agt->tidx], data->head->length);
     if (NULL == data->head->body)
     {

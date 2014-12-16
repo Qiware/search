@@ -47,7 +47,7 @@ typedef struct
     time_t scan_tm;                 /* 超时扫描时间 */
     list_t sock_list;               /* 套接字列表
                                        结点数据指针指向socket_t */
-    lqueue_t *taskq;                /* 任务队列 */
+    queue_t *taskq;                 /* 任务队列 */
 
     uint64_t down_webpage_total;    /* 下载网页的计数 */
     uint64_t err_webpage_total;     /* 异常网页的计数 */

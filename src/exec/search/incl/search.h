@@ -61,8 +61,8 @@ typedef struct
     thread_pool_t *agents;                  /* Agent线程池 */
     thread_pool_t *workers;                 /* Worker线程池 */
 
-    lqueue_t **connq;                       /* 连接队列(注:数组长度与Recver相等) */
-    lqueue_t **recvq;                       /* 接收队列(注:数组长度与Worker相等) */
+    queue_t **connq;                        /* 连接队列(注:数组长度与Recver相等) */
+    queue_t **recvq;                        /* 接收队列(注:数组长度与Worker相等) */
 } srch_cntx_t;
 
 /* 新增套接字对象 */

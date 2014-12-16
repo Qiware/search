@@ -189,7 +189,7 @@ static int srch_listen_accept(srch_cntx_t *ctx, srch_listen_t *lsn)
     /* 2. 将通信套接字放入队列 */
     tidx = lsn->sck_serial % ctx->conf->agent_num;
 
-    add = lqueue_mem_alloc(ctx->connq[tidx], sizeof(srch_add_sck_t));
+    add = queue_malloc(ctx->connq[tidx], sizeof(srch_add_sck_t));
     if (NULL == add)
     {
         log_error(lsn->log, "Alloc memory from queue failed!");
@@ -200,10 +200,10 @@ static int srch_listen_accept(srch_cntx_t *ctx, srch_listen_t *lsn)
     add->fd = fd;
     add->sck_serial = lsn->sck_serial;
 
-    if (lqueue_push(ctx->connq[tidx], add))
+    if (queue_push(ctx->connq[tidx], add))
     {
         log_error(lsn->log, "Push into queue failed!");
-        lqueue_mem_dealloc(ctx->connq[tidx], add);
+        queue_dealloc(ctx->connq[tidx], add);
         Close(fd);
         return SRCH_ERR;
     }

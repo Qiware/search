@@ -161,6 +161,8 @@ slab_pool_t *slab_init(void *addr, size_t size)
     log2_info("start:%p end:%p left_size:%d pages:%d\n",
         pool->start, pool->end, pool->end - pool->start, pages);
 
+    spin_lock_init(&pool->lock);
+
     return pool;
 }
 
@@ -183,6 +185,9 @@ void *slab_alloc(slab_pool_t *pool, size_t size)
         m = 0, mask = 0, *bitmap = NULL;
     uint32_t i = 0, slot = 0, shift = 0, map = 0;
     slab_page_t *page = NULL, *prev = NULL, *slots = NULL;
+
+    /* 加锁 */
+    spin_lock(&pool->lock);
 
     if (size >= slab_get_max_size())
     {
@@ -439,10 +444,9 @@ done:
     {
         memset((void *)p, 0, size);
     }
-    else
-    {
-        abort();
-    }
+
+    /* 解锁 */
+    spin_unlock(&pool->lock);
 
     return (void *) p;
 }
@@ -465,6 +469,9 @@ void slab_dealloc(slab_pool_t *pool, void *p)
     uintptr_t slab = 0, m = 0, *bitmap = NULL;
     uint32_t n = 0, type = 0, slot = 0, shift = 0, map = 0;
     slab_page_t *slots = NULL, *page = NULL;
+
+    /* 加锁 */
+    spin_lock(&pool->lock);
 
     if ((u_char *) p < pool->start || (u_char *) p > pool->end)
     {
@@ -655,6 +662,7 @@ void slab_dealloc(slab_pool_t *pool, void *p)
     }
 
     /* not reached */
+    spin_unlock(&pool->lock);
 
     return;
 
@@ -662,6 +670,7 @@ done:
 
     slab_junk(p, size);
 
+    spin_unlock(&pool->lock);
     return;
 
 wrong_chunk:
@@ -676,6 +685,7 @@ chunk_already_free:
 
 fail:
 
+    spin_unlock(&pool->lock);
     return;
 }
 

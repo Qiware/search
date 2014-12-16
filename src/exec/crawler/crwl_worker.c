@@ -95,7 +95,7 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker)
     }
 
     /* 2. 创建任务队列 */
-    worker->taskq = lqueue_init(worker->conf->worker.taskq_count, 20 * MB);
+    worker->taskq = queue_init(worker->conf->worker.taskq_count, 20 * MB);
     if (NULL == worker->taskq)
     {
         slab_destroy(worker->slab);
@@ -109,7 +109,7 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker)
     worker->ep_fd = epoll_create(CRWL_EVENT_MAX_NUM);
     if (worker->ep_fd < 0)
     {
-        lqueue_destroy(worker->taskq);
+        queue_destroy(worker->taskq);
         slab_destroy(worker->slab);
 
         log_error(worker->log, "Create epoll failed! errmsg:[%d] %s!");
@@ -121,7 +121,7 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker)
             worker->conf->worker.conn_max_num * sizeof(struct epoll_event));
     if (NULL == worker->events)
     {
-        lqueue_destroy(worker->taskq);
+        queue_destroy(worker->taskq);
         slab_destroy(worker->slab);
         Close(worker->ep_fd);
 
@@ -153,17 +153,17 @@ int crwl_worker_destroy(crwl_worker_t *worker)
     while (1)
     {
         /* 弹出数据 */
-        data = lqueue_pop(worker->taskq);
+        data = queue_pop(worker->taskq);
         if (NULL == data)
         {
             break;
         }
 
         /* 释放内存 */
-        lqueue_mem_dealloc(worker->taskq, data);
+        queue_dealloc(worker->taskq, data);
     }
 
-    lqueue_destroy(worker->taskq);
+    queue_destroy(worker->taskq);
 
     close(worker->ep_fd);
 
@@ -200,7 +200,7 @@ static int crwl_worker_fetch_task(crwl_cntx_t *ctx, crwl_worker_t *worker)
 
     for (idx=0; idx<num; ++idx)
     {
-        data = lqueue_trypop(worker->taskq);
+        data = queue_pop(worker->taskq);
         if (NULL == data)
         {
             return CRWL_OK;
@@ -211,7 +211,7 @@ static int crwl_worker_fetch_task(crwl_cntx_t *ctx, crwl_worker_t *worker)
 
         crwl_worker_task_handler(worker, t);
 
-        lqueue_mem_dealloc(worker->taskq, data);
+        queue_dealloc(worker->taskq, data);
     }
     return CRWL_OK;
 }

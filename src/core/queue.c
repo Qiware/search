@@ -16,7 +16,7 @@
 #include "queue.h"
 
 /******************************************************************************
- **函数名称: queue_init
+ **函数名称: _queue_init
  **功    能: 队列初始化
  **输入参数:
  **     q: 队列
@@ -29,22 +29,22 @@
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.04.28 #
  ******************************************************************************/
-int queue_init(Queue_t *q, int max)
+int _queue_init(_queue_t *q, int max)
 {
     int idx;
-    Qnode_t *node;
+    _qnode_t *node;
     
-    memset(q, 0, sizeof(Queue_t));
+    memset(q, 0, sizeof(_queue_t));
 
     /* 1. 申请内存空间 */
-    q->base = (Qnode_t *)calloc(max, sizeof(Qnode_t));
+    q->base = (_qnode_t *)calloc(max, sizeof(_qnode_t));
     if (NULL == q->base)
     {
         return -1;
     }
 
     /* 2. 设为循环队列 */
-    node = (Qnode_t *)q->base;
+    node = (_qnode_t *)q->base;
     for (idx=0; idx<max-1; ++idx, ++node)
     {
         node->next = node + 1;
@@ -56,11 +56,13 @@ int queue_init(Queue_t *q, int max)
     q->head = q->tail = q->base;
     q->max = max;
 
+    spin_lock_init(&q->lock);
+
     return 0;
 }
 
 /******************************************************************************
- **函数名称: queue_push
+ **函数名称: queue_push_lock
  **功    能: 入队列
  **输入参数:
  **     q: 队列
@@ -72,13 +74,16 @@ int queue_init(Queue_t *q, int max)
  **     addr指向的地址必须为堆地址
  **作    者: # Qifeng.zou # 2014.04.28 #
  ******************************************************************************/
-int queue_push(Queue_t *q, void *addr)
+int queue_push_lock(_queue_t *q, void *addr)
 {
-    Qnode_t *node = q->tail;
+    _qnode_t *node = q->tail;
+
+    spin_lock(&q->lock);
 
     /* 1. 检查合法性 */
     if (q->num >= q->max)
     {
+        spin_unlock(&q->lock);
         return -1;
     }
 
@@ -87,11 +92,13 @@ int queue_push(Queue_t *q, void *addr)
     q->tail = q->tail->next;
     ++q->num;
 
+    spin_unlock(&q->lock);
+
     return 0;
 }
 
 /******************************************************************************
- **函数名称: queue_pop
+ **函数名称: queue_pop_lock
  **功    能: 出队列
  **输入参数:
  **     q: 队列
@@ -101,12 +108,15 @@ int queue_push(Queue_t *q, void *addr)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.04.28 #
  ******************************************************************************/
-void *queue_pop(Queue_t *q)
+void *queue_pop_lock(_queue_t *q)
 {
     void *data;
 
+    spin_lock(&q->lock);
+
     if (0 == q->num)
     {
+        spin_unlock(&q->lock);
         return NULL;
     }
 
@@ -115,11 +125,13 @@ void *queue_pop(Queue_t *q)
     q->head = q->head->next;
     --q->num;
 
+    spin_unlock(&q->lock);
+
     return data;
 }
 
 /******************************************************************************
- **函数名称: queue_destroy
+ **函数名称: _queue_destroy
  **功    能: 销毁队列
  **输入参数:
  **     q: 队列
@@ -129,8 +141,10 @@ void *queue_pop(Queue_t *q)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.11 #
  ******************************************************************************/
-void queue_destroy(Queue_t *q)
+void _queue_destroy(_queue_t *q)
 {
+    spin_lock(&q->lock);
+
     free(q->base);
 
     q->base = NULL;
@@ -138,13 +152,16 @@ void queue_destroy(Queue_t *q)
     q->tail = NULL;
     q->max = 0;
     q->num = 0;
+
+    spin_unlock(&q->lock);
+
+    spin_lock_destroy(&q->lock);
 }
 
 /******************************************************************************
- **函数名称: lqueue_init
+ **函数名称: queue_init
  **功    能: 初始化加锁队列
  **输入参数: 
- **     lq: 加锁队列
  **     max: 队列长度
  **     memsz: 内存池总空间
  **输出参数: NONE
@@ -155,10 +172,10 @@ void queue_destroy(Queue_t *q)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.12 #
  ******************************************************************************/
-lqueue_t *lqueue_init(int max, size_t memsz)
+queue_t *queue_init(int max, size_t memsz)
 {
     void *addr;
-    lqueue_t *q;
+    queue_t *q;
     slab_pool_t *slab;
 
     /* 1. 创建内存池 */
@@ -176,7 +193,7 @@ lqueue_t *lqueue_init(int max, size_t memsz)
     }
 
     /* 2. 创建队列对象 */
-    q = slab_alloc(slab, sizeof(lqueue_t)); 
+    q = slab_alloc(slab, sizeof(queue_t)); 
     if (NULL == q)
     {
         free(addr);
@@ -184,15 +201,10 @@ lqueue_t *lqueue_init(int max, size_t memsz)
     }
 
     q->slab = slab;
-    pthread_rwlock_init(&q->slab_lock, NULL);
 
     /* 2. 创建队列 */
-    pthread_rwlock_init(&q->lock, NULL);
-
-    if (queue_init(&q->queue, max))
+    if (_queue_init(&q->queue, max))
     {
-        pthread_rwlock_destroy(&q->lock);
-        pthread_rwlock_destroy(&q->slab_lock);
         free(addr);
         return NULL;
     }
@@ -201,132 +213,19 @@ lqueue_t *lqueue_init(int max, size_t memsz)
 }
 
 /******************************************************************************
- **函数名称: lqueue_push
- **功    能: 放入加锁队列
- **输入参数: 
- **     lq: 加锁队列
- **     addr: 数据地址
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.10.12 #
- ******************************************************************************/
-int lqueue_push(lqueue_t *lq, void *addr)
-{
-    int ret;
-
-    pthread_rwlock_wrlock(&lq->lock);
-    ret = queue_push(&lq->queue, addr);
-    pthread_rwlock_unlock(&lq->lock);
-
-    return (ret? -1: 0);
-}
-
-/******************************************************************************
- **函数名称: lqueue_pop
- **功    能: 弹出加锁队列
- **输入参数: 
- **     lq: 加锁队列
- **输出参数: NONE
- **返    回: 数据地址
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.10.12 #
- ******************************************************************************/
-void *lqueue_pop(lqueue_t *lq)
-{
-    void *addr;
-
-    pthread_rwlock_wrlock(&lq->lock);
-    addr = queue_pop(&lq->queue);
-    pthread_rwlock_unlock(&lq->lock);
-
-    return addr;
-}
-
-/******************************************************************************
- **函数名称: lqueue_trypop
- **功    能: 尝试弹出加锁队列
- **输入参数: 
- **     lq: 加锁队列
- **输出参数: NONE
- **返    回: 数据地址
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.11.20 #
- ******************************************************************************/
-void *lqueue_trypop(lqueue_t *lq)
-{
-    void *addr;
-
-    if (pthread_rwlock_trywrlock(&lq->lock))
-    {
-        return NULL;
-    }
-
-    addr = queue_pop(&lq->queue);
-    pthread_rwlock_unlock(&lq->lock);
-
-    return addr;
-}
-
-/******************************************************************************
- **函数名称: lqueue_mem_alloc
- **功    能: 申请队列内存空间
- **输入参数: 
- **     lq: 加锁队列
- **     size: 空间大小
- **输出参数: NONE
- **返    回: 数据地址
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.10.24 #
- ******************************************************************************/
-void *lqueue_mem_alloc(lqueue_t *lq, size_t size)
-{
-    void *addr;
-
-    pthread_rwlock_wrlock(&lq->slab_lock);
-    addr = slab_alloc(lq->slab, size);
-    pthread_rwlock_unlock(&lq->slab_lock);
-
-    return addr;
-}
-
-/******************************************************************************
- **函数名称: lqueue_mem_dealloc
- **功    能: 释放队列内存空间
- **输入参数: 
- **     lq: 加锁队列
- **     p: 内存地址
- **输出参数: NONE
- **返    回: VOID
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.10.24 #
- ******************************************************************************/
-void lqueue_mem_dealloc(lqueue_t *lq, void *p)
-{
-    pthread_rwlock_wrlock(&lq->slab_lock);
-    slab_dealloc(lq->slab, p);
-    pthread_rwlock_unlock(&lq->slab_lock);
-}
-
-/******************************************************************************
- **函数名称: lqueue_destroy
+ **函数名称: queue_destroy
  **功    能: 销毁加锁队列
  **输入参数: 
- **     lq: 加锁队列
+ **     q: 加锁队列
  **输出参数: NONE
  **返    回: VOID
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.12 #
  ******************************************************************************/
-void lqueue_destroy(lqueue_t *lq)
+void queue_destroy(queue_t *q)
 {
-    pthread_rwlock_destroy(&lq->lock);
-    queue_destroy(&lq->queue);
-    free(lq->slab);
+    _queue_destroy(&q->queue);
+    spin_lock_destroy(&q->slab->lock);
+    free(q->slab);
 }

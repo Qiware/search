@@ -34,7 +34,7 @@ typedef struct
         "je 2f\n"               /*   goto QUIT; */\
         "jmp 1b\n"              /* goto RECHECK; */\
         "2:"                    /* QUIT: */\
-        :"+q" (ticket), "+m" (lock->ticket), "+m" (lock->owner) \
+        :"+q" (ticket), "+m" ((lock)->ticket), "+m" ((lock)->owner) \
         : \
         :"memory", "cc"); \
 }
@@ -44,8 +44,12 @@ typedef struct
 { \
     __asm__ __volatile__( \
         "lock incw %0" \
-        :"+m" (lock->owner) \
+        :"+m" ((lock)->owner) \
         : \
         :"memory", "cc"); \
 }
+
+/* 销毁 */
+#define spin_lock_destroy(lock) spin_lock_init(lock)
+
 #endif /*__SPIN_LOCK_H__*/

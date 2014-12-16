@@ -219,7 +219,7 @@ srch_cntx_t *srch_cntx_init(char *pname, const char *conf_path)
     /* 6. 创建连接队列 */
     size = SRCH_CONNQ_LEN * sizeof(srch_add_sck_t);
 
-    ctx->connq = (lqueue_t **)calloc(conf->agent_num, sizeof(lqueue_t*));
+    ctx->connq = (queue_t **)calloc(conf->agent_num, sizeof(queue_t*));
     if (NULL == ctx->connq)
     {
         free(ctx);
@@ -229,7 +229,7 @@ srch_cntx_t *srch_cntx_init(char *pname, const char *conf_path)
 
     for (idx=0; idx<conf->agent_num; ++idx)
     {
-        ctx->connq[idx] = lqueue_init(SRCH_CONNQ_LEN, size);
+        ctx->connq[idx] = queue_init(SRCH_CONNQ_LEN, size);
         if (NULL == ctx->connq)
         {
             log_error(ctx->log, "Initialize lock queue failed!");
@@ -238,7 +238,7 @@ srch_cntx_t *srch_cntx_init(char *pname, const char *conf_path)
     }
 
     /* 7. 创建接收队列 */
-    ctx->recvq = (lqueue_t **)calloc(conf->agent_num, sizeof(lqueue_t*));
+    ctx->recvq = (queue_t **)calloc(conf->agent_num, sizeof(queue_t*));
     if (NULL == ctx->recvq)
     {
         free(ctx);
@@ -248,7 +248,7 @@ srch_cntx_t *srch_cntx_init(char *pname, const char *conf_path)
 
     for (idx=0; idx<conf->agent_num; ++idx)
     {
-        ctx->recvq[idx] = lqueue_init(SRCH_RECVQ_LEN, 30 * MB);
+        ctx->recvq[idx] = queue_init(SRCH_RECVQ_LEN, 30 * MB);
         if (NULL == ctx->recvq)
         {
             log_error(ctx->log, "Initialize lock queue failed!");

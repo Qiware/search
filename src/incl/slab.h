@@ -8,6 +8,7 @@
 #include <stdint.h>
 
 #include "log.h"
+#include "spinlock.h"
 
 typedef struct _slab_page_t
 {
@@ -29,6 +30,8 @@ typedef struct
 
     void *data;
     void *addr;
+
+    spin_lock_t lock;                       /* 内存锁 */
 } slab_pool_t;
 
 /* 可扩展SLAB节点 */
