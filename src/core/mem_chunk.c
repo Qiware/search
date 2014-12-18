@@ -26,38 +26,53 @@
  ******************************************************************************/
 mem_chunk_t *mem_chunk_init(int num, size_t size)
 {
-    int bitmap_num;
+    int i, m;
+    uint32_t *bitmap;
     mem_chunk_t *chunk;
 
+    /* 1. 创建对象 */
     chunk = (mem_chunk_t *)calloc(1, sizeof(mem_chunk_t));
     if (NULL == chunk)
     {
         return NULL;
     }
 
-    chunk->num = num;
-    chunk->size = size;
-
-    bitmap_num = num/32;
-    if (num%32)
+   /* 2. 新建BitMap */
+    chunk->bitmap_num = num/32;
+    m = num%32;
+    if (m)
     {
-        bitmap_num++;
+        ++chunk->bitmap_num;
     }
 
-    chunk->bitmap = (uint32_t *)calloc(bitmap_num, sizeof(uint32_t));
+    chunk->bitmap = (uint32_t *)calloc(chunk->bitmap_num, sizeof(uint32_t));
     if (NULL == chunk->bitmap)
     {
         free(chunk);
         return NULL;
     }
 
-    chunk->addr = (char *)calloc(bitmap_num, size);
+    if (m)
+    {
+        bitmap = &chunk->bitmap[chunk->bitmap_num - 1];
+
+        for (i=m; i<32; i++)
+        {
+            *bitmap |= (1 << i);
+        }
+    }
+
+   /* 3. 数据空间 */
+    chunk->addr = (char *)calloc(num, size);
     if (NULL == chunk->addr)
     {
         free(chunk->bitmap);
         free(chunk);
         return NULL;
     }
+
+    chunk->num = num;
+    chunk->size = size;
 
     return chunk;
 }
@@ -90,7 +105,7 @@ void *mem_chunk_alloc(mem_chunk_t *chunk)
         bitmap = chunk->bitmap + i;
         for (j=0; j<32; ++j)
         {
-            if ((*bitmap >> j) & 1)
+            if (!((*bitmap >> j) & 1))
             {
                 *bitmap |= (1 << j);
                 spin_unlock(&chunk->lock);
