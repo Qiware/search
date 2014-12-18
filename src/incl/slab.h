@@ -31,7 +31,7 @@ typedef struct
     void *data;
     void *addr;
 
-    spin_lock_t lock;                       /* 内存锁 */
+    spinlock_t lock;                        /* 内存锁 */
 } slab_pool_t;
 
 /* 可扩展SLAB节点 */

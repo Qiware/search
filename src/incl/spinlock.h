@@ -12,7 +12,7 @@ typedef struct
 {
     unsigned short ticket;
     unsigned short owner;
-} spin_lock_t;
+} spinlock_t;
 
 /* 初始化 */
 #define spin_lock_init(lock) \

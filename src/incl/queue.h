@@ -29,7 +29,7 @@ typedef struct
     _qnode_t *head;                         /* 队列头 */
     _qnode_t *tail;                         /* 队列尾 */
 
-    spin_lock_t lock;                       /* 队列锁 */
+    spinlock_t lock;                        /* 队列锁 */
 } _queue_t;
 
 /* 获取队列剩余空间 */
