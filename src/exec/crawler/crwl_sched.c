@@ -249,11 +249,9 @@ static int crwl_sched_fetch_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
     int times;
     void *addr;
     redisReply *r;
+    crwl_task_t *task;
     crwl_worker_t *workers, *worker;
     crwl_conf_t *conf = ctx->conf;
-
-    crwl_task_t *task;
-    size_t size = sizeof(crwl_task_t) + sizeof(crwl_task_space_u);
 
     workers = (crwl_worker_t *)ctx->workers->data;
 
@@ -291,7 +289,7 @@ static int crwl_sched_fetch_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
         log_trace(ctx->log, "[%02d] URL:%s!", sched->last_idx, r->str);
 
         /* 3. 新建crwl_task_t对象 */
-        addr = queue_malloc(worker->taskq, size);
+        addr = queue_malloc(worker->taskq);
         if (NULL == addr)
         {
             freeReplyObject(r);

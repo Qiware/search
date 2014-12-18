@@ -437,8 +437,7 @@ static int srch_agent_ready_head(srch_agent_t *agt, socket_t *sck)
 {
     srch_agent_sck_data_t *data = sck->data;
 
-    data->head = queue_malloc(
-            agt->ctx->recvq[agt->tidx], sizeof(srch_msg_head_t));
+    data->head = queue_malloc(agt->ctx->recvq[agt->tidx]);
     if (NULL == data->head)
     {
         log_error(agt->log, "Alloc memory from queue failed!");
@@ -540,14 +539,7 @@ static int srch_agent_ready_body(srch_agent_t *agt, socket_t *sck)
 {
     srch_agent_sck_data_t *data = sck->data;
 
-    data->head->body = queue_malloc(
-            agt->ctx->recvq[agt->tidx], data->head->length);
-    if (NULL == data->head->body)
-    {
-        log_error(agt->log, "Alloc memory from queue failed!");
-        return SRCH_ERR;
-    }
-
+    data->head->body = (void *)(data->head + 1);
     sck->recv.addr = (void *)data->head->body;
     sck->recv.off = 0;
     sck->recv.total = data->head->length;

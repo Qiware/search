@@ -163,49 +163,40 @@ void _queue_destroy(_queue_t *q)
  **功    能: 初始化加锁队列
  **输入参数: 
  **     max: 队列长度
- **     memsz: 内存池总空间
+ **     size: 内存单元SIZE
  **输出参数: NONE
  **返    回: 加锁队列对象
  **实现描述: 
- **     1. 初始化线程读写锁
- **     2. 创建队列
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.12 #
  ******************************************************************************/
-queue_t *queue_init(int max, size_t memsz)
+queue_t *queue_init(int max, size_t size)
 {
-    void *addr;
     queue_t *q;
-    slab_pool_t *slab;
+    mem_chunk_t *chunk;
 
-    /* 1. 创建内存池 */
-    addr = calloc(1, memsz);
-    if (NULL == addr)
-    {
-        return NULL;
-    }
-
-    slab = slab_init(addr, memsz);
-    if (NULL == slab)
-    {
-        free(addr);
-        return NULL;
-    }
-
-    /* 2. 创建队列对象 */
-    q = slab_alloc(slab, sizeof(queue_t)); 
+    /* 1. 新建对象 */
+    q = (queue_t *)calloc(1, sizeof(queue_t));
     if (NULL == q)
     {
-        free(addr);
         return NULL;
     }
 
-    q->slab = slab;
+    /* 2. 创建内存池 */
+    chunk = mem_chunk_init(max * 1.2, size);
+    if (NULL == chunk)
+    {
+        free(q);
+        return NULL;
+    }
 
-    /* 2. 创建队列 */
+    q->chunk = chunk;
+
+    /* 3. 创建队列 */
     if (_queue_init(&q->queue, max))
     {
-        free(addr);
+        free(q);
+        mem_chunk_destroy(chunk);
         return NULL;
     }
 
@@ -226,6 +217,6 @@ queue_t *queue_init(int max, size_t memsz)
 void queue_destroy(queue_t *q)
 {
     _queue_destroy(&q->queue);
-    spin_lock_destroy(&q->slab->lock);
-    free(q->slab);
+    mem_chunk_destroy(q->chunk);
+    free(q);
 }

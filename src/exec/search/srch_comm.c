@@ -166,7 +166,6 @@ log_cycle_t *srch_init_log(char *fname)
 srch_cntx_t *srch_cntx_init(char *pname, const char *conf_path)
 {
     int idx;
-    size_t size;
     log_cycle_t *log;
     srch_cntx_t *ctx;
     srch_conf_t *conf;
@@ -217,8 +216,6 @@ srch_cntx_t *srch_cntx_init(char *pname, const char *conf_path)
     }
 
     /* 6. 创建连接队列 */
-    size = SRCH_CONNQ_LEN * sizeof(srch_add_sck_t);
-
     ctx->connq = (queue_t **)calloc(conf->agent_num, sizeof(queue_t*));
     if (NULL == ctx->connq)
     {
@@ -229,7 +226,7 @@ srch_cntx_t *srch_cntx_init(char *pname, const char *conf_path)
 
     for (idx=0; idx<conf->agent_num; ++idx)
     {
-        ctx->connq[idx] = queue_init(SRCH_CONNQ_LEN, size);
+        ctx->connq[idx] = queue_init(SRCH_CONNQ_LEN, sizeof(srch_add_sck_t));
         if (NULL == ctx->connq)
         {
             log_error(ctx->log, "Initialize lock queue failed!");
@@ -248,7 +245,7 @@ srch_cntx_t *srch_cntx_init(char *pname, const char *conf_path)
 
     for (idx=0; idx<conf->agent_num; ++idx)
     {
-        ctx->recvq[idx] = queue_init(SRCH_RECVQ_LEN, 30 * MB);
+        ctx->recvq[idx] = queue_init(SRCH_RECVQ_LEN, SRCH_RECVQ_SIZE);
         if (NULL == ctx->recvq)
         {
             log_error(ctx->log, "Initialize lock queue failed!");

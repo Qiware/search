@@ -138,7 +138,7 @@ void mem_chunk_dealloc(mem_chunk_t *chunk, void *p)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.18 #
  ******************************************************************************/
-void mem_chunk_detroy(mem_chunk_t *chunk)
+void mem_chunk_destroy(mem_chunk_t *chunk)
 {
     free(chunk->bitmap);
     free(chunk->addr);

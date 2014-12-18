@@ -19,6 +19,6 @@ typedef struct
 mem_chunk_t *mem_chunk_init(int num, size_t size);
 void *mem_chunk_alloc(mem_chunk_t *chunk);
 void mem_chunk_dealloc(mem_chunk_t *chunk, void *p);
-void mem_chunk_detroy(mem_chunk_t *chunk);
+void mem_chunk_destroy(mem_chunk_t *chunk);
 
 #endif /*__MEM_CHUNK_H__*/

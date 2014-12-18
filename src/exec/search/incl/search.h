@@ -24,6 +24,7 @@
 
 #define SRCH_CONNQ_LEN              (10000) /* 连接队列长度 */
 #define SRCH_RECVQ_LEN              (10000) /* 接收队列长度 */
+#define SRCH_RECVQ_SIZE             (2 * KB)/* 接收队列SIZE */
 
 #define SRCH_DEF_CONF_PATH  "../conf/search.xml"   /* 默认配置路径 */
 
