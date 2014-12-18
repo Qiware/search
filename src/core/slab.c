@@ -90,9 +90,9 @@ slab_pool_t *slab_init(void *addr, size_t size)
     u_char *p;
     size_t left_size;
     slab_pool_t *pool;
-    int m = 0;
-    uint32_t i = 0, n = 0, pages = 0, shift = 0;
-    slab_page_t *slots = NULL;
+    int m;
+    uint32_t i, n, pages, shift = 0;
+    slab_page_t *slots;
 
     if (size < (sizeof(slab_pool_t) + slab_get_page_size()))
     {
@@ -465,10 +465,10 @@ done:
  ******************************************************************************/
 void slab_dealloc(slab_pool_t *pool, void *p)
 {
-    size_t size = 0;
-    uintptr_t slab = 0, m = 0, *bitmap = NULL;
-    uint32_t n = 0, type = 0, slot = 0, shift = 0, map = 0;
-    slab_page_t *slots = NULL, *page = NULL;
+    size_t size;
+    uintptr_t slab, m, *bitmap;
+    uint32_t n, type, slot, shift, map;
+    slab_page_t *slots, *page;
 
     /* 加锁 */
     spin_lock(&pool->lock);
@@ -504,8 +504,7 @@ void slab_dealloc(slab_pool_t *pool, void *p)
             {
                 if (NULL == page->next)
                 {
-                    slots = (slab_page_t *)
-                                       ((u_char *) pool + sizeof(slab_pool_t));
+                    slots = (slab_page_t *)((u_char *) pool + sizeof(slab_pool_t));
                     slot = shift - pool->min_shift;
 
                     page->next = slots[slot].next;
@@ -562,8 +561,7 @@ void slab_dealloc(slab_pool_t *pool, void *p)
             {
                 if (SLAB_BUSY == slab)
                 {
-                    slots = (slab_page_t *)
-                                       ((u_char *) pool + sizeof(slab_pool_t));
+                    slots = (slab_page_t *)((u_char *) pool + sizeof(slab_pool_t));
                     slot = slab_get_exact_shift() - pool->min_shift;
 
                     page->next = slots[slot].next;
@@ -605,8 +603,7 @@ void slab_dealloc(slab_pool_t *pool, void *p)
             {
                 if (NULL == page->next)
                 {
-                    slots = (slab_page_t *)
-                                       ((u_char *) pool + sizeof(slab_pool_t));
+                    slots = (slab_page_t *)((u_char *) pool + sizeof(slab_pool_t));
                     slot = shift - pool->min_shift;
 
                     page->next = slots[slot].next;
@@ -703,7 +700,7 @@ fail:
  ******************************************************************************/
 static slab_page_t *slab_alloc_pages(slab_pool_t *pool, uint32_t pages)
 {
-    slab_page_t *page = NULL, *p = NULL;
+    slab_page_t *page, *p;
 
 
     for (page = pool->free.next; page != &pool->free; page = page->next)
@@ -769,7 +766,7 @@ static slab_page_t *slab_alloc_pages(slab_pool_t *pool, uint32_t pages)
  ******************************************************************************/
 static void slab_dealloc_pages(slab_pool_t *pool, slab_page_t *page, uint32_t pages)
 {
-    slab_page_t *prev = NULL;
+    slab_page_t *prev;
 
     page->slab = pages--;
 
