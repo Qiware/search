@@ -293,7 +293,7 @@ static int crwl_sched_fetch_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
         if (NULL == addr)
         {
             freeReplyObject(r);
-            log_error(ctx->log, "Alloc memory from slab failed!");
+            log_error(ctx->log, "Alloc memory from queue failed!");
             return CRWL_OK;
         }
 
