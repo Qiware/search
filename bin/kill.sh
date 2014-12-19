@@ -3,6 +3,7 @@
 pkill -9 crawler
 pkill -9 crawler-filter
 pkill -9 search
+pkill -9 logsvr
 
 sleep 1
 

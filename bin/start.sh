@@ -2,10 +2,13 @@
 ulimit -c unlimited
 
 # 准备阶段
-sudo redis-server /etc/redis/redis_slave_6380.conf
+#sudo redis-server /etc/redis/redis_slave_6380.conf
 
 # 日志服务
+n=`ps -axu | grep "logsvr" | wc -l`
+if [ $n > 0 ]; then
 ./logsvr
+fi
 
 # 爬虫服务
 ./crawler -d

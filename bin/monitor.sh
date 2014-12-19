@@ -38,6 +38,7 @@ print_shm()
 ###############################################################################
 print_netstat()
 {
+    rm -f .netstat.ls
     sudo netstat -antp | grep -v grep  > .netstat.all
 
     for item in $@ # 遍历参数列表
@@ -50,8 +51,7 @@ print_netstat()
 
         while read line # 遍历文件行
         do
-            #num=`echo $line | grep -e "$item " -e "$item"$ | wc -l` # 精确匹配
-            num=`echo $line | grep "$item" | wc -l`
+            num=`echo $line | grep "/$item" | wc -l`
             if [ $num -eq 0 ]; then
                 continue;
             fi
@@ -85,7 +85,14 @@ print_netstat()
         done < .netstat.all
 
         # 打印统计信息
-        echo "$item\t\t$listen_num\t$active_num\t$close_num\t$sync_num\t$total"
+        len=`expr length "$item"`
+        if [ $len -lt 8 ]; then
+            echo "$item\t\t$listen_num\t$active_num\t$close_num\t$sync_num\t$total" >> .netstat.ls
+        elif [ $len -lt 16 ]; then
+            echo "$item\t$listen_num\t$active_num\t$close_num\t$sync_num\t$total" >> .netstat.ls
+        else
+            echo "$item\t$listen_num\t$active_num\t$close_num\t$sync_num\t$total" >> .netstat.ls
+        fi
     done
 }
 
@@ -98,7 +105,7 @@ print_netstat()
 ###############################################################################
 main()
 {
-    print_netstat "crawler" "filter" "redis" "search" > .netstat.ls
+    touch .netstat.ls
 
     while true
     do
@@ -126,7 +133,7 @@ main()
 
         cat .netstat.ls
         echo "---------------------------------------------------------------------"
-        print_netstat "crawler" "filter" "redis" "search" > .netstat.ls
+        print_netstat "crawler" "crawler-fil" "redis-server" "search"
 
         sleep 1
     done;
