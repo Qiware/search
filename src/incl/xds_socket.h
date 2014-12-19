@@ -17,7 +17,7 @@ typedef enum
 {
     SOCK_PHASE_READY_HEAD           /* 准备接收报头(如: 分配空间) */
     , SOCK_PHASE_RECV_HEAD          /* 接收报头数据 */
-    , SOCK_PHASE_READY_BODY          /* 准备接收报体(如: 分配空间) */
+    , SOCK_PHASE_READY_BODY         /* 准备接收报体(如: 分配空间) */
     , SOCK_PHASE_RECV_BODY          /* 接收报体数据 */
     , SOCK_PHASE_RECV_POST          /* 接收完毕(如: 对数据进行处理) */
 

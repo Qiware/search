@@ -77,11 +77,10 @@ typedef struct
 typedef struct
 {
     uint32_t type;                          /* 消息类型 */
-    size_t length;                          /* 报体长度 */
+    uint32_t length;                        /* 报体长度 */
 #define SRCH_MSG_MARK_KEY   (0x1ED23CB4)
     int mark;                               /* 校验值 */
     int flag;                               /* 标识量(0:系统数据类型 1:自定义数据类型) */
-    char *body;                             /* 报体 */
 } srch_msg_head_t;
 
 /* 报体 */
