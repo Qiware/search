@@ -6,7 +6,7 @@
 #include <assert.h>
 #include <hiredis/hiredis.h>
 
-#define REDIS_SERVER_IP_ADDR    "127.0.0.1"
+#define REDIS_SERVER_IP_ADDR    "192.168.1.113"
 #define REDIS_SERVER_PORT       (6379)
 
 void redis_test(void)

@@ -15,7 +15,7 @@ typedef struct
 /* 接收(发送)数据阶段 */
 typedef enum
 {
-    SOCK_PHASE_READY_HEAD           /* 准备接收报头(如: 分配空间) */
+    SOCK_PHASE_RECV_INIT            /* 准备接收(如: 分配空间) */
     , SOCK_PHASE_RECV_HEAD          /* 接收报头数据 */
     , SOCK_PHASE_READY_BODY         /* 准备接收报体(如: 分配空间) */
     , SOCK_PHASE_RECV_BODY          /* 接收报体数据 */
