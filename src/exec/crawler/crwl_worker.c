@@ -205,6 +205,7 @@ static int crwl_worker_fetch_task(crwl_cntx_t *ctx, crwl_worker_t *worker)
         data = queue_pop(worker->taskq);
         if (NULL == data)
         {
+            log_trace(worker->log, "Didn't pop data from queue!");
             return CRWL_OK;
         }
 

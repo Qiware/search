@@ -30,8 +30,8 @@ static int g_log_lock_fd = -1;             /* 文件锁FD */
 #define log_get_lock_fd() (g_log_lock_fd)             /* 获取文件锁FD */
 #define log_set_lock_fd(fd) (g_log_lock_fd = (fd))    /* 设置文件锁FD */
 #define log_is_lock_fd_valid() (g_log_lock_fd >= 0)   /* 判断文件锁FD是否合法 */
-#define log_fcache_wrlock(file) proc_wrlock_b(g_log_lock_fd, (file)->idx+1)  /* 加缓存写锁 */
-#define log_fcache_rdlock(file) proc_rdlock_b(g_log_lock_fd, (file)->idx+1)  /* 加缓存写锁 */
+#define log_fcache_wrlock(file) proc_spin_wrlock_b(g_log_lock_fd, (file)->idx+1)  /* 加缓存写锁 */
+#define log_fcache_rdlock(file) proc_spin_rdlock_b(g_log_lock_fd, (file)->idx+1)  /* 加缓存写锁 */
 #define log_fcache_unlock(file) proc_unlock_b(g_log_lock_fd, (file)->idx+1)  /* 解缓存锁 */
 #define log_fcache_all_wrlock() proc_wrlock(g_log_lock_fd)  /* 缓存加写锁(整个都加锁) */
 #define log_fcache_all_unlock() proc_unlock(g_log_lock_fd)  /* 缓存解锁锁(整个都解锁) */

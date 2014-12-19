@@ -224,7 +224,7 @@ static char *log_svr_creat_shm(int fd)
     {
         file = (log_file_info_t *)(p + idx * LOG_FILE_CACHE_SIZE);
 
-        proc_wrlock_b(fd, idx+1);
+        proc_spin_wrlock_b(fd, idx+1);
         
         file->idx = idx;
         file->pid = INVALID_PID;
@@ -252,7 +252,7 @@ static char *log_svr_creat_shm(int fd)
  ******************************************************************************/
 static void *log_svr_timeout_routine(void *args)
 {
-    int ret = 0, idx = 0;
+    int idx;
     struct timeb ctm;
     log_file_info_t *file = NULL;
     log_svr_t *logsvr = (log_svr_t *)args;
@@ -267,11 +267,7 @@ static void *log_svr_timeout_routine(void *args)
         for(idx=0; idx<LOG_FILE_MAX_NUM; idx++)
         {
             /* 1. 尝试加锁 */
-            ret = proc_wrlock_b(logsvr->fd, idx+1);
-            if(ret < 0)
-            {
-                continue;
-            }
+            proc_spin_wrlock_b(logsvr->fd, idx+1);
 
             /* 2. 路径为空，则不用同步 */
             file = (log_file_info_t *)(logsvr->addr + idx*LOG_FILE_CACHE_SIZE);
