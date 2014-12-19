@@ -26,12 +26,16 @@
 #define SRCH_RECVQ_LEN              (10000) /* 接收队列长度 */
 #define SRCH_RECVQ_SIZE             (2 * KB)/* 接收队列SIZE */
 
+#define SRCH_MSG_TYPE_MAX           (0xFF)  /* 消息最大类型 */
+
 #define SRCH_DEF_CONF_PATH  "../conf/search.xml"   /* 默认配置路径 */
 
 /* 命令路径 */
 #define SRCH_LSN_CMD_PATH "../temp/srch/lsn_cmd.usck"       /* 侦听线程 */
 #define SRCH_RCV_CMD_PATH "../temp/srch/rcv_cmd_%02d.usck"  /* 接收线程 */
 #define SRCH_WRK_CMD_PATH "../temp/srch/wrk_cmd_%02d.usck"  /* 工作线程 */
+
+typedef int (*srch_reg_cb_t)(uint8_t type, char *buff, size_t len, void *args);
 
 /* 错误码 */
 typedef enum
@@ -52,6 +56,15 @@ typedef struct
     bool isdaemon;                          /* 是否后台运行 */
 } srch_opt_t;
 
+/* 消息注册对象 */
+typedef struct
+{
+    uint8_t type;                           /* 数据类型 范围:(0 ~ SRCH_MSG_TYPE_MAX) */
+    uint8_t flag;                           /* 注册标志 范围:(0: 未注册 1: 已注册) */
+    srch_reg_cb_t cb;                       /* 对应数据类型的处理函数 */
+    void *args;                             /* 附加参数 */
+} srch_reg_t;
+
 /* 搜索引擎对象 */
 typedef struct
 {
@@ -61,6 +74,7 @@ typedef struct
     pthread_t lsn_tid;                      /* Listen线程 */
     thread_pool_t *agents;                  /* Agent线程池 */
     thread_pool_t *workers;                 /* Worker线程池 */
+    srch_reg_t reg[SRCH_MSG_TYPE_MAX];      /* 消息注册 */
 
     queue_t **connq;                        /* 连接队列(注:数组长度与Recver相等) */
     queue_t **recvq;                        /* 接收队列(注:数组长度与Worker相等) */
@@ -76,19 +90,19 @@ typedef struct
 /* 报头 */
 typedef struct
 {
-    uint32_t type;                          /* 消息类型 */
-    uint32_t length;                        /* 报体长度 */
+    uint8_t type;                           /* 消息类型 */
+    uint8_t flag;                           /* 标识量(0:系统数据类型 1:自定义数据类型) */
+    uint16_t length;                        /* 报体长度 */
 #define SRCH_MSG_MARK_KEY   (0x1ED23CB4)
     int mark;                               /* 校验值 */
-    int flag;                               /* 标识量(0:系统数据类型 1:自定义数据类型) */
 } srch_msg_head_t;
 
 /* 报体 */
 typedef struct
 {
+#define SRCH_WORDS_LEN      (128)
+    char words[SRCH_WORDS_LEN];             /* 搜索关键字 */
 } srch_msg_body_t;
-
-
 
 srch_cntx_t *srch_cntx_init(char *pname, const char *conf_path);
 void srch_cntx_destroy(srch_cntx_t *ctx);
@@ -96,6 +110,7 @@ int srch_getopt(int argc, char **argv, srch_opt_t *opt);
 int srch_usage(const char *exec);
 
 int srch_startup(srch_cntx_t *ctx);
+int srch_register(srch_cntx_t *ctx, uint32_t type, srch_reg_cb_t cb, void *args);
 
 log_cycle_t *srch_init_log(char *fname);
 int srch_proc_lock(void);

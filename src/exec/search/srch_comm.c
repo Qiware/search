@@ -585,3 +585,43 @@ int srch_proc_lock(void)
 
     return 0;
 }
+
+/******************************************************************************
+ **函数名称: srch_register
+ **功    能: 注册消息处理函数
+ **输入参数:
+ **     ctx: 全局信息
+ **     type: 扩展消息类型. Range:(0 ~ SRCH_MSG_TYPE_MAX)
+ **     cb: 指定消息类型对应的处理函数
+ **     args: 附加参数
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **     1. 只能用于注册处理扩展数据类型的处理
+ **     2. 不允许重复注册 
+ **作    者: # Qifeng.zou # 2014.12.20 #
+ ******************************************************************************/
+int srch_register(srch_cntx_t *ctx, uint32_t type, srch_reg_cb_t cb, void *args)
+{
+    srch_reg_t *reg;
+
+    if (type >= SRCH_MSG_TYPE_MAX)
+    {
+        log_error(ctx->log, "Type [0x%02X] is out of range!", type);
+        return SRCH_ERR;
+    }
+    else if (0 != ctx->reg[type].flag)
+    {
+        log_error(ctx->log, "Repeat register [0x%02X]!", type);
+        return SRCH_ERR;
+    }
+
+    reg = &ctx->reg[type];
+    reg->type = type;
+    reg->cb = cb;
+    reg->args = args;
+    reg->flag = 1;
+
+    return SRCH_OK;
+}

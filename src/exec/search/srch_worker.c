@@ -13,6 +13,34 @@
  ******************************************************************************/
 void *srch_worker_routine(void *_ctx)
 {
+    int idx;
+    void *addr;
+    srch_reg_t *reg;
+    srch_msg_head_t *head;
+    srch_cntx_t *ctx = (srch_cntx_t *)_ctx;
+
+    while (1)
+    {
+        idx = rand() % ctx->conf->agent_num;
+
+        /* 1. 从队列中取数据 */
+        addr = queue_pop(ctx->recvq[idx]);
+        if (NULL == addr)
+        {
+            usleep(0);
+            continue;
+        }
+
+        /* 2. 对数据进行处理 */
+        head = (srch_msg_head_t *)addr;
+
+        reg = &ctx->reg[head->type];
+
+        reg->cb(head->type, addr + sizeof(srch_msg_head_t), head->length, reg->args);
+
+        /* 3. 释放内存空间 */
+        queue_dealloc(ctx->recvq[idx], addr);
+    }
     return NULL;
 }
 
