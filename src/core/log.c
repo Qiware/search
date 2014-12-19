@@ -107,6 +107,7 @@ log_cycle_t *log_init(int level, const char *path)
 
     log->level = level;
     log->pid = getpid();
+    pthread_mutex_init(&log->lock, NULL);
     
     log_mutex_lock();
 
@@ -148,6 +149,7 @@ log_cycle_t *log_init(int level, const char *path)
         log_release(log->file);
     }
     log_mutex_unlock();
+    pthread_mutex_destroy(&log->lock);
     free(log);
     return NULL;
 }
@@ -626,17 +628,16 @@ static void log_release(log_file_info_t *file)
 static int log_write(log_cycle_t *log, int level,
     const void *dump, int dumplen, const char *errmsg, const struct timeb *ctm)
 {
-    int msglen = 0, left = 0;
-    char *addr = NULL;
+    int msglen, left;
+    char *addr;
     struct tm loctm;
-    time_t difftm = 0;
+    time_t difftm;
     log_file_info_t *file = log->file;
 
-    memset(&loctm, 0, sizeof(loctm));
+    localtime_r(&ctm->time, &loctm);        /* 获取当前系统时间 */
 
-    localtime_r(&ctm->time, &loctm);      /* 获取当前系统时间 */
-
-    log_fcache_wrlock(file);      /* 缓存加锁 */
+    log_fcache_wrlock(file);                /* 缓存加锁 */
+    pthread_mutex_lock(&log->lock);
 
     addr = (char *)(file + 1) + file->in_offset;
     left = log_get_data_size() - file->in_offset;
@@ -731,6 +732,7 @@ static int log_write(log_cycle_t *log, int level,
         log_sync_ext(log);
     }
 
+    pthread_mutex_unlock(&log->lock);
     log_fcache_unlock(file);      /* 缓存解锁 */
 
     return 0;

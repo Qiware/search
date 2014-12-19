@@ -99,6 +99,7 @@ typedef struct _log_cycle_t
     int fd;                                 /* 文件描述符 */
     pid_t pid;                              /* 进程PID */
     log_file_info_t *file;                  /* 文件信息 */
+    pthread_mutex_t lock;                   /* 线程互斥锁 */
 } log_cycle_t;
 
 /* 外部接口 */
