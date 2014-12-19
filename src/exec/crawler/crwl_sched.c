@@ -26,7 +26,6 @@ static void crwl_sched_destroy(crwl_sched_t *sched);
 static int crwl_sched_timeout_hdl(crwl_cntx_t *ctx, crwl_sched_t *sched);
 static int crwl_sched_event_hdl(crwl_cntx_t *ctx, crwl_sched_t *sched);
 static int crwl_sched_fetch_task(crwl_cntx_t *ctx, crwl_sched_t *sched);
-static int crwl_sched_push_task(crwl_cntx_t *ctx, crwl_sched_t *sched);
 
 static int crwl_task_parse(const char *str, crwl_task_t *task);
 static int crwl_task_parse_download_webpage(xml_tree_t *xml, crwl_task_down_webpage_t *dw);
@@ -56,7 +55,7 @@ void *crwl_sched_routine(void *_ctx)
     if (NULL == sched)
     {
         log_error(ctx->log, "Create schedule failed!");
-        pthread_exit((void *)-1);
+        exit(0);
         return (void *)CRWL_ERR;
     }
 
@@ -95,6 +94,7 @@ void *crwl_sched_routine(void *_ctx)
 
     crwl_sched_destroy(sched);
 
+    exit(0);
     return (void *)CRWL_ERR;
 }
 
@@ -112,7 +112,6 @@ void *crwl_sched_routine(void *_ctx)
  ******************************************************************************/
 static crwl_sched_t *crwl_sched_init(crwl_cntx_t *ctx)
 {
-    int ret;
     struct timeval tv;
     crwl_sched_t *sched;
     crwl_conf_t *conf = ctx->conf;
@@ -130,8 +129,9 @@ static crwl_sched_t *crwl_sched_init(crwl_cntx_t *ctx)
     tv.tv_usec = 0;
     sched->redis = redisConnectWithTimeout(
             conf->redis.master.ip, conf->redis.master.port, tv);
-    if (NULL == sched->redis)
+    if (sched->redis->err)
     {
+        redisFree(sched->redis);
         free(sched);
         log_error(ctx->log, "Connect redis failed! IP:[%s:%d]",
                 conf->redis.master.ip, conf->redis.master.port);
@@ -140,16 +140,6 @@ static crwl_sched_t *crwl_sched_init(crwl_cntx_t *ctx)
 
     /* 3. 创建命令套接字 */
     sched->cmd_sck_id = -1;
-
-    /* 4. 将种子插入队列 */
-    ret = crwl_sched_push_task(ctx, sched);
-    if (CRWL_OK != ret)
-    {
-        redisFree(sched->redis);
-        sched->redis = NULL;
-        log_error(ctx->log, "Push task into undo queue failed!");
-        return NULL;
-    }
 
     return sched;
 }
@@ -320,61 +310,6 @@ static int crwl_sched_fetch_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
         }
 
         freeReplyObject(r);
-    }
-
-    return CRWL_OK;
-}
-
-/******************************************************************************
- **函数名称: crwl_sched_push_task
- **功    能: 将数据放入UNDO队列
- **输入参数: 
- **     ctx: 全局信息
- **     sched: 调度对象
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.10.28 #
- ******************************************************************************/
-static int crwl_sched_push_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
-{
-    int len;
-    redisReply *r; 
-    list_node_t *node;
-    crwl_seed_conf_t *seed;
-    char task_str[CRWL_TASK_STR_LEN];
-
-    node = ctx->conf->seed.head;
-    while (NULL != node)
-    {
-        seed = (crwl_seed_conf_t *)node->data;
-        if (seed->depth > ctx->conf->download.depth) /* 判断网页深度 */
-        {
-            node = node->next;
-            continue;
-        }
-
-        /* 1. 组装任务格式 */
-        len = crwl_get_task_str(task_str, sizeof(task_str), seed->uri, seed->depth);
-        if (len >= sizeof(task_str))
-        {
-            log_info(ctx->log, "Task string is too long! uri:[%s]", seed->uri);
-            node = node->next;
-            continue;
-        }
-
-        /* 2. 插入Undo任务队列 */
-        r = redis_rpush(sched->redis, ctx->conf->redis.undo_taskq, task_str);
-        if (REDIS_REPLY_NIL == r->type)
-        {
-            freeReplyObject(r);
-            log_error(ctx->log, "Push into undo task queue failed!");
-            return CRWL_ERR;
-        }
-
-        freeReplyObject(r);
-        node = node->next;
     }
 
     return CRWL_OK;

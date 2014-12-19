@@ -32,6 +32,7 @@
 
 static int crwl_filter_webpage_info(crwl_webpage_info_t *info, log_cycle_t *log);
 static int crwl_filter_work_flow(crwl_filter_t *filter);
+static int crwl_filter_push_task(crwl_filter_t *filter);
 static int crwl_filter_deep_hdl(crwl_filter_t *filter, gumbo_result_t *result);
 
 bool crwl_set_uri_exists(redis_cluster_t *cluster, const char *hash, const char *uri);
@@ -149,6 +150,7 @@ crwl_filter_t *crwl_filter_init(crwl_conf_t *conf, log_cycle_t *log)
  **函数名称: crwl_filter_destroy
  **功    能: 销毁Filter对象
  **输入参数: 
+ **     filter: Filter对象
  **输出参数:
  **返    回: VOID
  **实现描述: 
@@ -180,7 +182,7 @@ void crwl_filter_destroy(crwl_filter_t *filter)
  **函数名称: crwl_filter_work
  **功    能: 网页解析处理
  **输入参数: 
- **     p: 解析器对象
+ **     filter: 解析器对象
  **输出参数:
  **返    回: 0:成功 !0:失败
  **实现描述: 
@@ -196,6 +198,8 @@ int crwl_filter_work(crwl_filter_t *filter)
          new_path[FILE_PATH_MAX_LEN],
          html_path[FILE_PATH_MAX_LEN];
     crwl_conf_t *conf = filter->conf;
+
+    crwl_filter_push_task(filter);
 
     while (1)
     {
@@ -265,6 +269,7 @@ int crwl_filter_work(crwl_filter_t *filter)
  **功    能: 获取网页信息
  **输入参数:
  **     info: 网页信息
+ **     log: 日志对象
  **输出参数:
  **返    回: 0:成功 !0:失败
  **实现描述: 
@@ -372,7 +377,7 @@ static int crwl_filter_webpage_info(crwl_webpage_info_t *info, log_cycle_t *log)
  **函数名称: crwl_filter_work_flow
  **功    能: 解析器处理流程
  **输入参数: 
- **     p: 解析器对象
+ **     filter: 解析器对象
  **输出参数:
  **返    回: 0:成功 !0:失败
  **实现描述: 
@@ -450,7 +455,7 @@ static int crwl_filter_work_flow(crwl_filter_t *filter)
  **函数名称: crwl_filter_deep_hdl
  **功    能: 超链接的深入分析和处理
  **输入参数: 
- **     p: 解析器对象
+ **     filter: 解析器对象
  **     result: URI集合
  **输出参数:
  **返    回: 0:成功 !0:失败
@@ -557,4 +562,59 @@ bool crwl_set_uri_exists(redis_cluster_t *cluster, const char *hash, const char 
     freeReplyObject(r);
 
     return !redis_hsetnx(cluster->master, hash, uri, "1");
+}
+
+/******************************************************************************
+ **函数名称: crwl_filter_push_task
+ **功    能: 将Seed放入UNDO队列
+ **输入参数: 
+ **     filter: Filter对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.10.28 #
+ ******************************************************************************/
+static int crwl_filter_push_task(crwl_filter_t *filter)
+{
+    int len;
+    redisReply *r; 
+    list_node_t *node;
+    crwl_seed_conf_t *seed;
+    char task_str[CRWL_TASK_STR_LEN];
+
+    node = filter->conf->seed.head;
+    while (NULL != node)
+    {
+        seed = (crwl_seed_conf_t *)node->data;
+        if (seed->depth > filter->conf->download.depth) /* 判断网页深度 */
+        {
+            node = node->next;
+            continue;
+        }
+
+        /* 1. 组装任务格式 */
+        len = crwl_get_task_str(task_str, sizeof(task_str), seed->uri, seed->depth);
+        if (len >= sizeof(task_str))
+        {
+            log_info(filter->log, "Task string is too long! uri:[%s]", seed->uri);
+            node = node->next;
+            continue;
+        }
+
+        /* 2. 插入Undo任务队列 */
+        r = redis_rpush(filter->redis->master, filter->conf->redis.undo_taskq, task_str);
+        if (NULL == r
+            || REDIS_REPLY_NIL == r->type)
+        {
+            if (r) { freeReplyObject(r); }
+            log_error(filter->log, "Push into undo task queue failed!");
+            return CRWL_ERR;
+        }
+
+        freeReplyObject(r);
+        node = node->next;
+    }
+
+    return CRWL_OK;
 }

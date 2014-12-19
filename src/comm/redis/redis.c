@@ -52,7 +52,7 @@ redis_cluster_t *redis_cluster_init(
     tv.tv_sec = 30;
     tv.tv_usec = 0;
     cluster->master = redisConnectWithTimeout(master_cf->ip, master_cf->port, tv);
-    if (NULL == cluster->master)
+    if (cluster->master->err)
     {
         free(cluster->slave);
         free(cluster);
@@ -136,7 +136,8 @@ bool redis_hsetnx(redisContext *ctx,
     redisReply *r;
 
     r = redisCommand(ctx, "HSETNX %s %s %s", hash, key, value);
-    if (REDIS_REPLY_INTEGER != r->type)
+    if (NULL == r
+        || REDIS_REPLY_INTEGER != r->type)
     {
         freeReplyObject(r);
         return false;
