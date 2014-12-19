@@ -66,6 +66,7 @@ void *srch_agent_routine(void *_ctx)
         {
             if (EINTR == errno)
             {
+                usleep(500);
                 continue;
             }
 
@@ -76,7 +77,6 @@ void *srch_agent_routine(void *_ctx)
         }
         else if (0 == agt->fds)
         {
-            log_info(agt->log, "Timeout! errmsg:[%d] %s!", errno, strerror(errno));
             srch_agent_event_timeout_hdl(agt);
             continue;
         }
@@ -437,14 +437,15 @@ static int srch_agent_ready_head(srch_agent_t *agt, socket_t *sck)
 {
     srch_agent_sck_data_t *data = sck->data;
 
-    data->head = queue_malloc(agt->ctx->recvq[agt->tidx]);
-    if (NULL == data->head)
+    sck->recv.addr = queue_malloc(agt->ctx->recvq[agt->tidx]);
+    if (NULL == sck->recv.addr)
     {
         log_error(agt->log, "Alloc memory from queue failed!");
         return SRCH_ERR;
     }
 
-    sck->recv.addr = (void *)data->head;
+    data->head = (srch_msg_head_t *)sck->recv.addr;
+    data->body = (void *)(data->head + 1);
     sck->recv.off = 0;
     sck->recv.total = sizeof(srch_msg_head_t);
 
@@ -508,6 +509,12 @@ static int srch_agent_recv_head(srch_agent_t *agt, socket_t *sck)
 
     /* 3. 校验报头数据 */
     head = (srch_msg_head_t *)sck->recv.addr;
+
+    head->type = ntohl(head->type);
+    head->length = ntohl(head->length);
+    head->mark = ntohl(head->mark);
+    head->flag = ntohl(head->flag);
+
     if (SRCH_MSG_MARK_KEY != head->mark)
     {
         log_error(agt->log, "Check head failed! type:%d len:%d flag:%d mark:[%u/%u]",
@@ -539,9 +546,9 @@ static int srch_agent_ready_body(srch_agent_t *agt, socket_t *sck)
 {
     srch_agent_sck_data_t *data = sck->data;
 
-    data->head->body = (void *)(data->head + 1);
-    sck->recv.addr = (void *)data->head->body;
-    sck->recv.off = 0;
+    data->body = (void *)(data->head + 1);
+    sck->recv.addr = (void *)data->head;
+    sck->recv.off = sizeof(srch_msg_head_t);
     sck->recv.total = data->head->length;
 
     return SRCH_OK;
@@ -622,8 +629,8 @@ static int srch_agent_recv_body(srch_agent_t *agt, socket_t *sck)
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
- **     如果出现异常，需要释放内存空间
  **注意事项: 
+ **     如果出现异常，需要释放内存空间
  **作    者: # Qifeng.zou # 2014.12.03 #
  ******************************************************************************/
 static int srch_agent_recv_post(srch_agent_t *agt, socket_t *sck)
