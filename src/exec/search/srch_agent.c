@@ -437,10 +437,10 @@ static int srch_agent_recv_head(srch_agent_t *agt, socket_t *sck)
 {
     int n, left;
     socket_snap_t *recv = &sck->recv;
-    srch_msg_head_t *head;
+    srch_mesg_head_t *head;
 
     /* 1. 计算剩余字节 */
-    left = sizeof(srch_msg_head_t) - recv->off;
+    left = sizeof(srch_mesg_head_t) - recv->off;
 
     /* 2. 接收报头数据 */
     while (1)
@@ -477,7 +477,7 @@ static int srch_agent_recv_head(srch_agent_t *agt, socket_t *sck)
     }
 
     /* 3. 校验报头数据 */
-    head = (srch_msg_head_t *)sck->recv.addr;
+    head = (srch_mesg_head_t *)sck->recv.addr;
 
     /* head->type = head->type; */
     /* head->flag = head->flag; */
@@ -515,7 +515,7 @@ static int srch_agent_recv_body(srch_agent_t *agt, socket_t *sck)
 {
     int n, left;
     socket_snap_t *recv = &sck->recv;
-    srch_msg_head_t *head = (srch_msg_head_t *)recv->addr;
+    srch_mesg_head_t *head = (srch_mesg_head_t *)recv->addr;
 
     /* 1. 接收报体 */
     while (1)
@@ -603,10 +603,10 @@ static int _srch_agent_recv(srch_agent_t *agt, socket_t *sck)
                 return SRCH_ERR;
             }
 
-            data->head = (srch_msg_head_t *)sck->recv.addr;
+            data->head = (srch_mesg_head_t *)sck->recv.addr;
             data->body = (void *)(data->head + 1);
             sck->recv.off = 0;
-            sck->recv.total = sizeof(srch_msg_head_t);
+            sck->recv.total = sizeof(srch_mesg_head_t);
 
             /* 设置下步 */
             recv->phase = SOCK_PHASE_RECV_HEAD;

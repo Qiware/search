@@ -60,6 +60,8 @@ typedef struct
 typedef struct
 {
     uint8_t type;                           /* 数据类型 范围:(0 ~ SRCH_MSG_TYPE_MAX) */
+#define SRCH_REG_FLAG_UNREG     (0)         /* 0: 未注册 */
+#define SRCH_REG_FLAG_REGED     (1)         /* 1: 已注册 */
     uint8_t flag;                           /* 注册标志 范围:(0: 未注册 1: 已注册) */
     srch_reg_cb_t cb;                       /* 对应数据类型的处理函数 */
     void *args;                             /* 附加参数 */
@@ -87,23 +89,6 @@ typedef struct
     uint64_t sck_serial;                    /* SCK流水号 */
 } srch_add_sck_t;
 
-/* 报头 */
-typedef struct
-{
-    uint8_t type;                           /* 消息类型 */
-    uint8_t flag;                           /* 标识量(0:系统数据类型 1:自定义数据类型) */
-    uint16_t length;                        /* 报体长度 */
-#define SRCH_MSG_MARK_KEY   (0x1ED23CB4)
-    int mark;                               /* 校验值 */
-} srch_msg_head_t;
-
-/* 报体 */
-typedef struct
-{
-#define SRCH_WORDS_LEN      (128)
-    char words[SRCH_WORDS_LEN];             /* 搜索关键字 */
-} srch_msg_body_t;
-
 srch_cntx_t *srch_cntx_init(char *pname, const char *conf_path);
 void srch_cntx_destroy(srch_cntx_t *ctx);
 int srch_getopt(int argc, char **argv, srch_opt_t *opt);
@@ -114,9 +99,9 @@ int srch_register(srch_cntx_t *ctx, uint32_t type, srch_reg_cb_t cb, void *args)
 
 log_cycle_t *srch_init_log(char *fname);
 int srch_proc_lock(void);
-int srch_init_workers(srch_cntx_t *ctx);
+int srch_creat_workers(srch_cntx_t *ctx);
 int srch_workers_destroy(srch_cntx_t *ctx);
-int srch_init_agents(srch_cntx_t *ctx);
+int srch_creat_agents(srch_cntx_t *ctx);
 int srch_agents_destroy(srch_cntx_t *ctx);
 
 #endif /*__SEARCH_H__*/

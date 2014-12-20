@@ -159,7 +159,7 @@ log_cycle_t *srch_init_log(char *fname)
  **     3. 创建全局对象 
  **     4. 加载配置文件
  **     5. 创建Worker线程池
- **     6. 创建Recver线程池
+ **     6. 创建Agent线程池
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
@@ -235,7 +235,7 @@ srch_cntx_t *srch_cntx_init(char *pname, const char *conf_path)
     }
 
     /* 7. 创建接收队列 */
-    ctx->recvq = (queue_t **)calloc(conf->agent_num, sizeof(queue_t*));
+    ctx->recvq = (queue_t **)calloc(conf->worker_num, sizeof(queue_t*));
     if (NULL == ctx->recvq)
     {
         free(ctx);
@@ -243,7 +243,7 @@ srch_cntx_t *srch_cntx_init(char *pname, const char *conf_path)
         return NULL;
     }
 
-    for (idx=0; idx<conf->agent_num; ++idx)
+    for (idx=0; idx<conf->worker_num; ++idx)
     {
         ctx->recvq[idx] = queue_init(SRCH_RECVQ_LEN, SRCH_RECVQ_SIZE);
         if (NULL == ctx->recvq)
@@ -254,7 +254,7 @@ srch_cntx_t *srch_cntx_init(char *pname, const char *conf_path)
     }
 
     /* 8. 创建Worker线程池 */
-    if (srch_init_workers(ctx))
+    if (srch_creat_workers(ctx))
     {
         srch_conf_destroy(ctx->conf);
         free(ctx);
@@ -262,8 +262,8 @@ srch_cntx_t *srch_cntx_init(char *pname, const char *conf_path)
         return NULL;
     }
 
-    /* 9. 创建Recver线程池 */
-    if (srch_init_agents(ctx))
+    /* 9. 创建Agent线程池 */
+    if (srch_creat_agents(ctx))
     {
         srch_conf_destroy(ctx->conf);
         free(ctx);
@@ -320,7 +320,7 @@ int srch_startup(srch_cntx_t *ctx)
         thread_pool_add_worker(ctx->workers, srch_worker_routine, ctx);
     }
 
-    /* 2. 设置Recver线程回调 */
+    /* 2. 设置Agent线程回调 */
     for (idx=0; idx<conf->agent_num; ++idx)
     {
         thread_pool_add_worker(ctx->agents, srch_agent_routine, ctx);
@@ -337,8 +337,8 @@ int srch_startup(srch_cntx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: srch_init_workers
- **功    能: 初始化Worker线程池
+ **函数名称: srch_creat_workers
+ **功    能: 创建Worker线程池
  **输入参数: 
  **     ctx: 全局信息
  **输出参数: NONE
@@ -347,7 +347,7 @@ int srch_startup(srch_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
-int srch_init_workers(srch_cntx_t *ctx)
+int srch_creat_workers(srch_cntx_t *ctx)
 {
     int idx, num;
     srch_worker_t *worker;
@@ -443,8 +443,8 @@ int srch_workers_destroy(srch_cntx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: srch_init_agents
- **功    能: 初始化Recver线程池
+ **函数名称: srch_creat_agents
+ **功    能: 创建Agent线程池
  **输入参数: 
  **     ctx: 全局信息
  **输出参数: NONE
@@ -453,7 +453,7 @@ int srch_workers_destroy(srch_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
-int srch_init_agents(srch_cntx_t *ctx)
+int srch_creat_agents(srch_cntx_t *ctx)
 {
     int idx, num;
     srch_agent_t *agent;
@@ -467,7 +467,7 @@ int srch_init_agents(srch_cntx_t *ctx)
         return SRCH_ERR;
     }
 
-    /* 2. 新建Recver对象 */
+    /* 2. 新建Agent对象 */
     ctx->agents->data = (srch_agent_t *)calloc(conf->agent_num, sizeof(srch_agent_t));
     if (NULL == ctx->agents->data)
     {
@@ -476,7 +476,7 @@ int srch_init_agents(srch_cntx_t *ctx)
         return SRCH_ERR;
     }
 
-    /* 3. 依次初始化Recver对象 */
+    /* 3. 依次初始化Agent对象 */
     for (idx=0; idx<conf->agent_num; ++idx)
     {
         agent = (srch_agent_t *)ctx->agents->data + idx;
@@ -496,7 +496,7 @@ int srch_init_agents(srch_cntx_t *ctx)
         return SRCH_OK; /* 成功 */
     }
 
-    /* 4. 释放Recver对象 */
+    /* 4. 释放Agent对象 */
     num = idx;
     for (idx=0; idx<num; ++idx)
     {
@@ -513,7 +513,7 @@ int srch_init_agents(srch_cntx_t *ctx)
 
 /******************************************************************************
  **函数名称: srch_agents_destroy
- **功    能: 销毁Recver线程池
+ **功    能: 销毁Agent线程池
  **输入参数: 
  **     ctx: 全局信息
  **输出参数: NONE
@@ -529,7 +529,7 @@ int srch_agents_destroy(srch_cntx_t *ctx)
     srch_agent_t *agent;
     const srch_conf_t *conf = ctx->conf;
 
-    /* 1. 释放Recver对象 */
+    /* 1. 释放Agent对象 */
     for (idx=0; idx<conf->agent_num; ++idx)
     {
         agent = (srch_agent_t *)ctx->agents->data + idx;
@@ -584,6 +584,50 @@ int srch_proc_lock(void)
     }
 
     return 0;
+}
+
+/******************************************************************************
+ **函数名称: srch_reg_def_hdl
+ **功    能: 默认注册函数
+ **输入参数:
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.12.20 #
+ ******************************************************************************/
+static int srch_reg_def_hdl(uint8_t type, char *buff, size_t len, void *args)
+{
+    return SRCH_OK;
+}
+
+/******************************************************************************
+ **函数名称: srch_init_register
+ **功    能: 初始化注册消息处理
+ **输入参数:
+ **     ctx: 全局信息
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.12.20 #
+ ******************************************************************************/
+int srch_init_register(srch_cntx_t *ctx)
+{
+    int idx;
+    srch_reg_t *reg;
+
+    for (idx=0; idx<SRCH_MSG_TYPE_MAX; ++idx)
+    {
+        reg = &ctx->reg[idx];
+
+        reg->type = idx;
+        reg->cb = srch_reg_def_hdl;
+        reg->args = NULL;
+        reg->flag = SRCH_REG_FLAG_UNREG;
+    }
+
+    return SRCH_OK;
 }
 
 /******************************************************************************

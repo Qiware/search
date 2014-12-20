@@ -5,6 +5,7 @@
 #include "queue.h"
 #include "search.h"
 #include "hash_tab.h"
+#include "srch_mesg.h"
 
 #define SRCH_AGENT_TMOUT_MSEC       (2000)  /* 超时(豪秒) */
 
@@ -35,7 +36,7 @@ typedef struct
 {
     uint64_t sck_serial;            /* 序列号 */
 
-    srch_msg_head_t *head;          /* 报头起始地址 */
+    srch_mesg_head_t *head;         /* 报头起始地址 */
     void *body;                     /* Body */
     list_t send_list;               /* 发送链表 */
 } srch_agent_sck_data_t;
