@@ -556,13 +556,37 @@ static int srch_agent_recv_body(srch_agent_t *agt, socket_t *sck)
         return SRCH_ERR;
     }
 
-    /* 2. Set flag variables */
-    recv->phase = SOCK_PHASE_RECV_POST;
-
     log_trace(agt->log, "fd:%d type:%d length:%d total:%d off:%d",
             head->type, sck->fd, head->length, recv->total, recv->off);
 
     return SRCH_OK;
+}
+
+/******************************************************************************
+ **函数名称: srch_agent_recv_post
+ **功    能: 数据接收完毕，进行数据处理
+ **输入参数:
+ **     agt: Agent对象
+ **     sck: SCK对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.12.21 #
+ ******************************************************************************/
+static int srch_agent_recv_post(srch_agent_t *agt, socket_t *sck)
+{
+    srch_agent_sck_data_t *data = (srch_agent_sck_data_t *)sck->data;
+
+    /* 1. 自定义消息的处理 */
+    if (SRCH_MSG_FLAG_USR == data->head->flag)
+    {
+        return queue_push(agt->ctx->recvq[agt->tidx], sck->recv.addr);
+    }
+
+    /* TODO: 2. 系统消息的处理 */
+    /* return srch_sys_msg_hdl(agt, sck); */
+    return SRCH_ERR;
 }
 
 /******************************************************************************
@@ -596,31 +620,33 @@ static int _srch_agent_recv(srch_agent_t *agt, socket_t *sck)
         {
             data = (srch_agent_sck_data_t *)sck->data;
 
-            sck->recv.addr = queue_malloc(agt->ctx->recvq[agt->tidx]);
-            if (NULL == sck->recv.addr)
+            recv->addr = queue_malloc(agt->ctx->recvq[agt->tidx]);
+            if (NULL == recv->addr)
             {
                 log_error(agt->log, "Alloc memory from queue failed!");
                 return SRCH_ERR;
             }
 
-            data->head = (srch_mesg_head_t *)sck->recv.addr;
+            data->head = (srch_mesg_head_t *)recv->addr;
             data->body = (void *)(data->head + 1);
-            sck->recv.off = 0;
-            sck->recv.total = sizeof(srch_mesg_head_t);
+            recv->off = 0;
+            recv->total = sizeof(srch_mesg_head_t);
 
             /* 设置下步 */
             recv->phase = SOCK_PHASE_RECV_HEAD;
 
-            /* # 继续后续处理 # 不用BREAK # */
+            goto RECV_HEAD;
         }
         /* 2. 接收报头 */
         case SOCK_PHASE_RECV_HEAD:
         {
+        RECV_HEAD:
             ret = srch_agent_recv_head(agt, sck);
             switch (ret)
             {
                 case SRCH_OK:
                 {
+                    recv->phase = SOCK_PHASE_READY_BODY; /* 设置下步 */
                     break;      /* 继续后续处理 */
                 }
                 case SRCH_SCK_AGAIN:
@@ -629,36 +655,36 @@ static int _srch_agent_recv(srch_agent_t *agt, socket_t *sck)
                 }
                 default:
                 {
-                    queue_dealloc(agt->ctx->recvq[agt->tidx], sck->recv.addr);
+                    queue_dealloc(agt->ctx->recvq[agt->tidx], recv->addr);
                     return ret; /* 异常情况 */
                 }
             }
 
-            /* 设置下步 */
-            recv->phase = SOCK_PHASE_READY_BODY;
-
-            /* # 继续后续处理 # 不用BREAK # */
+            goto READY_BODY;
         }
         /* 3. 准备接收报体 */
         case SOCK_PHASE_READY_BODY:
         {
+        READY_BODY:
             data = (srch_agent_sck_data_t *)sck->data;
 
-            sck->recv.total += data->head->length;
+            recv->total += data->head->length;
 
             /* 设置下步 */
             recv->phase = SOCK_PHASE_RECV_BODY;
 
-            /* # 继续后续处理 # 不用BREAK # */
+            goto RECV_BODY;
         }
         /* 4. 接收报体 */
         case SOCK_PHASE_RECV_BODY:
         {
+        RECV_BODY:
             ret = srch_agent_recv_body(agt, sck);
             switch (ret)
             {
                 case SRCH_OK:
                 {
+                    recv->phase = SOCK_PHASE_RECV_POST; /* 设置下步 */
                     break;      /* 继续后续处理 */
                 }
                 case SRCH_SCK_AGAIN:
@@ -667,21 +693,19 @@ static int _srch_agent_recv(srch_agent_t *agt, socket_t *sck)
                 }
                 default:
                 {
-                    queue_dealloc(agt->ctx->recvq[agt->tidx], sck->recv.addr);
+                    queue_dealloc(agt->ctx->recvq[agt->tidx], recv->addr);
                     return ret; /* 异常情况 */
                 }
             }
 
-            /* 设置下步 */
-            recv->phase = SOCK_PHASE_RECV_POST;
-
-            /* # 继续后续处理 # 不用BREAK # */
+            goto RECV_POST;
         }
         /* 5. 接收完毕: 数据处理 */
         case SOCK_PHASE_RECV_POST:
         {
+        RECV_POST:
             /* 将数据放入接收队列 */
-            ret = queue_push(agt->ctx->recvq[agt->tidx], sck->recv.addr);
+            ret = srch_agent_recv_post(agt, sck);
             switch (ret)
             {
                 case SRCH_OK:
@@ -691,7 +715,7 @@ static int _srch_agent_recv(srch_agent_t *agt, socket_t *sck)
                 }
                 default:
                 {
-                    queue_dealloc(agt->ctx->recvq[agt->tidx], sck->recv.addr);
+                    queue_dealloc(agt->ctx->recvq[agt->tidx], recv->addr);
                     return SRCH_ERR;
                 }
             }
