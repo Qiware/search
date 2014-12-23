@@ -21,5 +21,6 @@ int hash_tab_insert(hash_tab_t *hash, void *pkey, int pkey_len, void *addr);
 int hash_tab_query(hash_tab_t *hash, void *pkey, int pkey_len, void *data, int data_len);
 void *hash_tab_remove(hash_tab_t *hash, void *pkey, int pkey_len);
 int hash_tab_destroy(hash_tab_t *hash);
+int hash_tab_trav(hash_tab_t *hash, avl_trav_cb_t cb, void *args);
 
 #endif /*__HASH_TAB_H__*/

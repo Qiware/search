@@ -1433,3 +1433,83 @@ int _avl_print(avl_node_t *root, Stack_t *stack)
     stack_pop(stack);
     return AVL_OK;
 }
+
+/******************************************************************************
+ **函数名称: _avl_trav
+ **功    能: 遍历平衡二叉树(内部接口)
+ **输入参数: 
+ **     tree: 平衡二叉树
+ **输出参数: NONE
+ **返    回: void
+ **实现描述: 
+ **     1. 结点入栈 
+ **     2. 处理该结点
+ **     3. 处理该结点的右子树
+ **     4. 处理该结点的左子树
+ **     5. 结点出栈
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.12.24 #
+ ******************************************************************************/
+static int _avl_trav(avl_node_t *root, Stack_t *stack, avl_trav_cb_t cb, void *args)
+{
+    avl_node_t *node = root;
+
+
+    /* 1. 将要处理的结点压栈 */
+    stack_push(stack, node);
+    
+    /* 2. 处理当前结点 */
+    cb(node->data, args);
+
+    /* 3. 打印右子树 */
+    if (NULL != node->rchild)
+    {
+        _avl_trav(node->rchild, stack, cb, args);
+    }
+
+    /* 4. 打印左子树 */
+    if (NULL != node->lchild)
+    {
+        _avl_trav(node->lchild, stack, cb, args);
+    }
+
+    /* 5. 出栈 */
+    stack_pop(stack);
+
+    return AVL_OK;
+}
+
+/******************************************************************************
+ **函数名称: avl_trav
+ **功    能: 遍历平衡二叉树(外部接口)
+ **输入参数: 
+ **     tree: 平衡二叉树
+ **输出参数: NONE
+ **返    回: void
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.12.23 #
+ ******************************************************************************/
+int avl_trav(avl_tree_t *tree, avl_trav_cb_t cb, void *args)
+{
+    int ret;
+    Stack_t stack;
+
+    memset(&stack, 0, sizeof(stack));
+
+    if (NULL == tree->root)
+    {
+        return AVL_OK;
+    }
+
+    ret = stack_init(&stack, AVL_MAX_DEPTH);
+    if (AVL_OK != ret)
+    {
+        return AVL_ERR_STACK;
+    }
+    
+    _avl_trav(tree->root, &stack, cb, args);
+
+    stack_destroy(&stack);
+    return AVL_OK;
+}

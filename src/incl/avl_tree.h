@@ -122,11 +122,14 @@ typedef struct
     } \
 } 
 
+typedef int (*avl_trav_cb_t)(void *data, void *args);
+
 int avl_creat(avl_tree_t **tree, slab_pool_t *slab, key_cb_t key_cb, avl_cmp_cb_t cmp_cb);
 int avl_insert(avl_tree_t *tree, void *pkey, int pkey_len, void *data);
 avl_node_t *avl_query(avl_tree_t *tree, void *pkey, int pkey_len);
 int avl_delete(avl_tree_t *tree, void *pkey, int pkey_len, void **data);
 int avl_print(avl_tree_t *tree);
+int avl_trav(avl_tree_t *tree, avl_trav_cb_t cb, void *args);
 void avl_destroy(avl_tree_t **tree);
 
 /* 测试使用 */

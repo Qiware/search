@@ -1,3 +1,4 @@
+#include "syscall.h"
 #include "srch_mesg.h"
 #include "srch_worker.h"
 
@@ -29,12 +30,13 @@ static srch_worker_t *srch_worker_get(srch_cntx_t *ctx)
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
+ **     TODO: 后续改成事件触发机制
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.20 #
  ******************************************************************************/
 void *srch_worker_routine(void *_ctx)
 {
-    int rqid;
+    int rqid; /* 接收队列ID */
     void *addr;
     srch_reg_t *reg;
     srch_worker_t *worker;
@@ -53,7 +55,7 @@ void *srch_worker_routine(void *_ctx)
         addr = queue_pop(ctx->recvq[rqid]);
         if (NULL == addr)
         {
-            usleep(0);
+            usleep(5000);
             continue;
         }
 

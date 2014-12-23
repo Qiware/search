@@ -493,6 +493,7 @@ int crwl_get_domain_ip_map(crwl_cntx_t *ctx, char *host, crwl_domain_ip_map_t *m
             map, sizeof(crwl_domain_ip_map_t));
     if (0 == ret)
     {
+        log_trace(ctx->log, "Found domain ip map in talbe! %s", host);
         return CRWL_OK; /* 成功 */
     }
 
@@ -517,7 +518,7 @@ int crwl_get_domain_ip_map(crwl_cntx_t *ctx, char *host, crwl_domain_ip_map_t *m
         log_error(ctx->log, "Get address info failed! host:%s", host);
 
         /* 插入域名黑名单中 */
-        new_blacklist = calloc(1, sizeof(crwl_domain_blacklist_t));
+        new_blacklist = slab_alloc(ctx->slab, sizeof(crwl_domain_blacklist_t));
         if (NULL == new_blacklist)
         {
             return CRWL_ERR;
@@ -536,7 +537,7 @@ int crwl_get_domain_ip_map(crwl_cntx_t *ctx, char *host, crwl_domain_ip_map_t *m
     }
 
     /* 3. 申请新的内存空间(此处不释放空间) */
-    new = (crwl_domain_ip_map_t *)calloc(1, sizeof(crwl_domain_ip_map_t));
+    new = (crwl_domain_ip_map_t *)slab_alloc(ctx->slab, sizeof(crwl_domain_ip_map_t));
     if (NULL == new)
     {
         freeaddrinfo(addrinfo);

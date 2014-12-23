@@ -2,6 +2,7 @@
 #define __SRCH_COMM_H__
 
 #include <stdint.h>
+#include "list.h"
 #include "common.h"
 
 /* 错误码 */
@@ -43,5 +44,13 @@ typedef struct
     int fd;                                 /* 套接字 */
     uint64_t sck_serial;                    /* SCK流水号 */
 } srch_add_sck_t;
+
+/* 超时连接链表 */
+typedef struct
+{
+    time_t ctm;
+    list_t list;
+    mem_pool_t *pool;
+} srch_conn_timeout_list_t;
 
 #endif /*__SRCH_COMM_H__*/

@@ -14,6 +14,7 @@
 #include <string.h>
 
 #include "log.h"
+#include "avl_tree.h"
 #include "hash_tab.h"
 
 /******************************************************************************
@@ -204,6 +205,30 @@ int hash_tab_destroy(hash_tab_t *hash)
     }
 
     free(hash);
+
+    return 0;
+}
+
+/******************************************************************************
+ **函数名称: hash_tab_trav
+ **功    能: 遍历哈希数组(TODO:未完成)
+ **输入参数:
+ **     hash: 哈希数组
+ **     cb: 回调函数
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.12.24 #
+ ******************************************************************************/
+int hash_tab_trav(hash_tab_t *hash, avl_trav_cb_t cb, void *args)
+{
+    uint32_t idx;
+
+    for (idx=0; idx<hash->num; ++idx)
+    {
+        avl_trav(hash->tree[idx], cb, args);
+    }
 
     return 0;
 }
