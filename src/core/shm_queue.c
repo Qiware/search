@@ -11,9 +11,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include "syscall.h"
 #include "shm_slab.h"
 #include "shm_queue.h"
-#include "syscall.h"
 
 /******************************************************************************
  **函数名称: shm_queue_creat
@@ -54,6 +54,10 @@ shm_queue_t *shm_queue_creat(int key, int max, int size)
     off = 0;
     shmq = (shm_queue_t *)addr;
 
+    spin_lock_init(&shmq->lock);
+
+    spin_lock(&shmq->lock);
+
     shmq->num = 0;
     shmq->max = max;
     shmq->size = size;
@@ -79,12 +83,14 @@ shm_queue_t *shm_queue_creat(int key, int max, int size)
     node->next = shmq->base;
     node->data = 0;
 
-    return 0;
+    spin_unlock(&shmq->lock);
+
+    return shmq;
 }
 
 /******************************************************************************
  **函数名称: shm_queue_attach
- **功    能: 连接共享内存队列
+ **功    能: 附着共享内存队列
  **输入参数:
  **     key: 共享内存KEY
  **     max: 队列单元数
@@ -92,56 +98,22 @@ shm_queue_t *shm_queue_creat(int key, int max, int size)
  **输出参数:
  **返    回: 共享内存队列
  **实现描述: 
+ **     1. 计算内存空间
+ **     2. 创建共享内存
+ **     3. 初始化标志量
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.10 #
  ******************************************************************************/
 shm_queue_t *shm_queue_attach(int key, int max, int size)
 {
-    return shm_queue_creat(key, max, size);
-}
+    size_t shm_size;
 
-/******************************************************************************
- **函数名称: shm_queue_alloc
- **功    能: 从队列申请空间
- **输入参数:
- **      shmq: 共享内存队列
- **输出参数:
- **返    回: 内存地址
- **实现描述: 
- **     1. 申请内存空间
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.09.10 #
- ******************************************************************************/
-void *shm_queue_alloc(shm_queue_t *shmq)
-{
-    void *p;
-
-    /* 加锁 */
-
-    p = shm_slab_alloc(&shmq->slab, shmq->size);
-
-    /* 解锁 */
-
-    return p;
-}
-
-/******************************************************************************
- **函数名称: shm_queue_free
- **功    能: 释放队列的内存
- **输入参数:
- **      shmq: 共享内存队列
- **      p: 内存地址
- **输出参数:
- **返    回: VOID 
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.09.10 #
- ******************************************************************************/
-void shm_queue_free(shm_queue_t *shmq, void *p)
-{
-    /* 加锁 */
-    shm_slab_dealloc(&shmq->slab, p);
-    /* 解锁 */
+    /* 1. 计算内存空间 */
+    shm_size =  sizeof(shm_queue_t) + max * sizeof(shm_queue_node_t);
+    shm_size += ((max * size)/getpagesize() + 1) * getpagesize();
+    
+    /* 2. 创建共享内存 */
+    return (shm_queue_t *)shm_attach(key, shm_size);
 }
 
 /******************************************************************************
@@ -163,12 +135,12 @@ int shm_queue_push(shm_queue_t *shmq, void *p)
     void *addr = (void *)shmq;
     shm_queue_node_t *node = (shm_queue_node_t *)(addr + shmq->tail);
 
-    /* 加锁 */
+    spin_lock(&shmq->lock);
 
     /* 1. 检查队列空间 */
     if (shmq->num >= shmq->max)
     {
-        /* 解锁 */
+        spin_unlock(&shmq->lock);
         return -1;
     }
 
@@ -185,7 +157,7 @@ int shm_queue_push(shm_queue_t *shmq, void *p)
 
     if (idx == shmq->max)
     {
-        /* 解锁 */
+        spin_unlock(&shmq->lock);
         return -1;
     }
 
@@ -195,7 +167,7 @@ int shm_queue_push(shm_queue_t *shmq, void *p)
     shmq->tail = node->next;
     ++shmq->num;
 
-    /* 解锁 */
+    spin_unlock(&shmq->lock);
 
     return 0;
 }
@@ -224,7 +196,13 @@ void *shm_queue_pop(shm_queue_t *shmq)
         return NULL;
     }
 
-    /* 加锁 */
+    spin_lock(&shmq->lock);
+    if (0 == shmq->num)
+    {
+        spin_unlock(&shmq->lock);
+        return NULL;
+    }
+
     node = (shm_queue_node_t *)(addr + shmq->head);
     for (idx=0; idx<shmq->max; ++idx)
     {
@@ -241,7 +219,8 @@ void *shm_queue_pop(shm_queue_t *shmq)
 
     node->status = SHMQ_NODE_STAT_IDLE;
     node->data = 0;
-    /* 解锁 */
+
+    spin_unlock(&shmq->lock);
 
     return p;
 }

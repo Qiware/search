@@ -10,6 +10,7 @@
 #include <memory.h>
 #include <stdint.h>
 
+#include "slab.h"
 #include "stack.h"
 #include "common.h"
 
@@ -72,6 +73,9 @@ typedef struct _node_t
 typedef struct
 {
     avl_node_t *root;           /* 根节点 */
+#if defined(__AVL_MEM_POOL__)
+    slab_pool_t *slab;          /* 内存池 */
+#endif /*__AVL_MEM_POOL__*/
 
     key_cb_t key_cb;            /* 生成KEY的回调 */
     avl_cmp_cb_t cmp_cb;        /* 数值比较回调 */
@@ -118,7 +122,7 @@ typedef struct
     } \
 } 
 
-int avl_creat(avl_tree_t **tree, key_cb_t key_cb, avl_cmp_cb_t cmp_cb);
+int avl_creat(avl_tree_t **tree, slab_pool_t *slab, key_cb_t key_cb, avl_cmp_cb_t cmp_cb);
 int avl_insert(avl_tree_t *tree, void *pkey, int pkey_len, void *data);
 avl_node_t *avl_query(avl_tree_t *tree, void *pkey, int pkey_len);
 int avl_delete(avl_tree_t *tree, void *pkey, int pkey_len, void **data);

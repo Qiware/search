@@ -31,6 +31,15 @@
 
 #define SRCH_PROC_LOCK_PATH "../temp/srch/srch.lck"
 
+
+static log_cycle_t *srch_init_log(char *fname);
+static int srch_proc_lock(void);
+static int srch_creat_agents(srch_cntx_t *ctx);
+static int srch_agents_destroy(srch_cntx_t *ctx);
+static int srch_creat_workers(srch_cntx_t *ctx);
+static int srch_workers_destroy(srch_cntx_t *ctx);
+static int srch_creat_queue(srch_cntx_t *ctx);
+
 /******************************************************************************
  **函数名称: srch_getopt 
  **功    能: 解析输入参数
@@ -117,7 +126,7 @@ int srch_usage(const char *exec)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
-log_cycle_t *srch_init_log(char *fname)
+static log_cycle_t *srch_init_log(char *fname)
 {
     log_cycle_t *log;
     char path[FILE_NAME_MAX_LEN];
@@ -165,7 +174,7 @@ log_cycle_t *srch_init_log(char *fname)
  ******************************************************************************/
 srch_cntx_t *srch_cntx_init(char *pname, const char *conf_path)
 {
-    int idx;
+    void *addr;
     log_cycle_t *log;
     srch_cntx_t *ctx;
     srch_conf_t *conf;
@@ -207,71 +216,59 @@ srch_cntx_t *srch_cntx_init(char *pname, const char *conf_path)
     log_set_level(log, conf->log.level);
     log2_set_level(conf->log.level2);
 
-    /* 5. 设置进程打开文件数 */
-    if (limit_file_num(conf->connections.max)) /* 设置进程打开文件的最大数目 */
+    /* 5. 创建内存池 */
+    addr = (void *)calloc(1, 30 * MB);
+    if (NULL == addr)
     {
         free(ctx);
         log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
         return NULL;
     }
 
-    /* 6. 创建连接队列 */
-    ctx->connq = (queue_t **)calloc(conf->agent_num, sizeof(queue_t*));
-    if (NULL == ctx->connq)
+    ctx->slab = slab_init(addr, 30 * MB);
+    if (NULL == ctx->slab)
     {
         free(ctx);
-        log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
+        log_error(log, "Init slab failed!");
         return NULL;
     }
 
-    for (idx=0; idx<conf->agent_num; ++idx)
+    do
     {
-        ctx->connq[idx] = queue_init(SRCH_CONNQ_LEN, sizeof(srch_add_sck_t));
-        if (NULL == ctx->connq)
+        /* 6. 设置进程打开文件数 */
+        if (limit_file_num(conf->connections.max)) /* 设置进程打开文件的最大数目 */
         {
-            log_error(ctx->log, "Initialize lock queue failed!");
-            return NULL;
+            log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
+            break;
         }
-    }
 
-    /* 7. 创建接收队列 */
-    ctx->recvq = (queue_t **)calloc(conf->worker_num, sizeof(queue_t*));
-    if (NULL == ctx->recvq)
-    {
-        free(ctx);
-        log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return NULL;
-    }
-
-    for (idx=0; idx<conf->worker_num; ++idx)
-    {
-        ctx->recvq[idx] = queue_init(SRCH_RECVQ_LEN, SRCH_RECVQ_SIZE);
-        if (NULL == ctx->recvq)
+        /* 6. 创建队列 */
+        if (srch_creat_queue(ctx))
         {
-            log_error(ctx->log, "Initialize lock queue failed!");
-            return NULL;
+            log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
+            break;
         }
-    }
 
-    /* 8. 创建Worker线程池 */
-    if (srch_creat_workers(ctx))
-    {
-        srch_conf_destroy(ctx->conf);
-        free(ctx);
-        log_error(log, "Initialize worker thread pool failed!");
-        return NULL;
-    }
+        /* 7. 创建Worker线程池 */
+        if (srch_creat_workers(ctx))
+        {
+            log_error(log, "Initialize worker thread pool failed!");
+            break;
+        }
 
-    /* 9. 创建Agent线程池 */
-    if (srch_creat_agents(ctx))
-    {
-        srch_conf_destroy(ctx->conf);
-        free(ctx);
-        log_error(log, "Initialize agent thread pool failed!");
-        return NULL;
-    }
+        /* 8. 创建Agent线程池 */
+        if (srch_creat_agents(ctx))
+        {
+            log_error(log, "Initialize agent thread pool failed!");
+            break;
+        }
 
-    return ctx;
+        return ctx;
+    } while(0);
+
+    srch_conf_destroy(ctx->conf);
+    free(ctx);
+    return NULL;
 }
 
 /******************************************************************************
@@ -347,7 +344,7 @@ int srch_startup(srch_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
-int srch_creat_workers(srch_cntx_t *ctx)
+static int srch_creat_workers(srch_cntx_t *ctx)
 {
     int idx, num;
     srch_worker_t *worker;
@@ -415,7 +412,7 @@ int srch_creat_workers(srch_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.14 #
  ******************************************************************************/
-int srch_workers_destroy(srch_cntx_t *ctx)
+static int srch_workers_destroy(srch_cntx_t *ctx)
 {
     int idx;
     void *data;
@@ -453,7 +450,7 @@ int srch_workers_destroy(srch_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
-int srch_creat_agents(srch_cntx_t *ctx)
+static int srch_creat_agents(srch_cntx_t *ctx)
 {
     int idx, num;
     srch_agent_t *agent;
@@ -522,7 +519,7 @@ int srch_creat_agents(srch_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
-int srch_agents_destroy(srch_cntx_t *ctx)
+static int srch_agents_destroy(srch_cntx_t *ctx)
 {
     int idx;
     void *data;
@@ -559,7 +556,7 @@ int srch_agents_destroy(srch_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
-int srch_proc_lock(void)
+static int srch_proc_lock(void)
 {
     int fd;
     char path[FILE_PATH_MAX_LEN];
@@ -666,6 +663,80 @@ int srch_register(srch_cntx_t *ctx, uint32_t type, srch_reg_cb_t cb, void *args)
     reg->cb = cb;
     reg->args = args;
     reg->flag = 1;
+
+    return SRCH_OK;
+}
+
+/******************************************************************************
+ **函数名称: srch_creat_queue
+ **功    能: 创建队列
+ **输入参数:
+ **     ctx: 全局信息
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **     此过程一旦失败, 程序必须推出运行. 因此, 在此申请的内存未被主动释放也不算内存泄露!
+ **作    者: # Qifeng.zou # 2014.12.21 #
+ ******************************************************************************/
+static int srch_creat_queue(srch_cntx_t *ctx)
+{
+    int idx;
+    const srch_conf_t *conf = ctx->conf;
+
+    /* 1. 创建连接队列(与Agent数一致) */
+    ctx->connq = (queue_t **)calloc(conf->agent_num, sizeof(queue_t*));
+    if (NULL == ctx->connq)
+    {
+        log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        return SRCH_ERR;
+    }
+
+    for (idx=0; idx<conf->agent_num; ++idx)
+    {
+        ctx->connq[idx] = queue_init(SRCH_CONNQ_LEN, sizeof(srch_add_sck_t));
+        if (NULL == ctx->connq)
+        {
+            log_error(ctx->log, "Initialize lock queue failed!");
+            return SRCH_ERR;
+        }
+    }
+
+    /* 2. 创建接收队列(与Agent数一致) */
+    ctx->recvq = (queue_t **)calloc(conf->agent_num, sizeof(queue_t*));
+    if (NULL == ctx->recvq)
+    {
+        log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        return SRCH_ERR;
+    }
+
+    for (idx=0; idx<conf->agent_num; ++idx)
+    {
+        ctx->recvq[idx] = queue_init(SRCH_RECVQ_LEN, SRCH_RECVQ_SIZE);
+        if (NULL == ctx->recvq)
+        {
+            log_error(ctx->log, "Initialize lock queue failed!");
+            return SRCH_ERR;
+        }
+    }
+
+    /* 3. 创建连接队列(与Agent数一致) */
+    ctx->connq = (queue_t **)calloc(conf->agent_num, sizeof(queue_t*));
+    if (NULL == ctx->connq)
+    {
+        log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        return SRCH_ERR;
+    }
+
+    for (idx=0; idx<conf->agent_num; ++idx)
+    {
+        ctx->connq[idx] = queue_init(SRCH_CONNQ_LEN, sizeof(srch_add_sck_t));
+        if (NULL == ctx->connq)
+        {
+            log_error(ctx->log, "Initialize lock queue failed!");
+            return SRCH_ERR;
+        }
+    }
 
     return SRCH_OK;
 }

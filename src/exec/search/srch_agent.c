@@ -14,14 +14,13 @@
 static srch_agent_t *srch_agent_get(srch_cntx_t *ctx);
 static int srch_agent_add_conn(srch_cntx_t *ctx, srch_agent_t *agt);
 static int srch_agent_socket_cmp_cb(const void *pkey, const void *data);
+static int srch_agent_del_conn(srch_agent_t *agt, socket_t *sck);
 
 static int srch_agent_recv(srch_agent_t *agt, socket_t *sck);
 static int srch_agent_send(srch_agent_t *agt, socket_t *sck);
 
 static int srch_agent_event_hdl(srch_agent_t *agt);
 static int srch_agent_event_timeout_hdl(srch_agent_t *agt);
-
-static int srch_agent_sock_remove(srch_agent_t *agt, socket_t *sck);
 
 /******************************************************************************
  **函数名称: srch_agent_routine
@@ -51,7 +50,7 @@ void *srch_agent_routine(void *_ctx)
     while (1)
     {
         /* 2. 从连接队列取数据 */
-        if (queue_space(&ctx->connq[agt->tidx]->queue))
+        if (srch_connq_space(ctx, agt->tidx))
         {
             if (srch_agent_add_conn(ctx, agt))
             {
@@ -130,6 +129,7 @@ int srch_agent_init(srch_cntx_t *ctx, srch_agent_t *agt)
 
     /* 2. 创建套接字管理表 */
     agt->sock_tab = hash_tab_creat(
+            agt->slab,
             SRCH_AGENT_SCK_HASH_MOD,
             hash_time33_ex,
             srch_agent_socket_cmp_cb);
@@ -374,7 +374,7 @@ static int srch_agent_add_conn(srch_cntx_t *ctx, srch_agent_t *agt)
 
     data->sck_serial = add->sck_serial;
 
-    queue_dealloc(ctx->connq[agt->tidx], add);
+    queue_dealloc(ctx->connq[agt->tidx], add);  /* 释放连接队列空间 */
 
     /* 4. 哈希表中(以序列号为主键) */
     if (hash_tab_insert(agt->sock_tab, &data->sck_serial, sizeof(data->sck_serial), sck))
@@ -393,6 +393,40 @@ static int srch_agent_add_conn(srch_cntx_t *ctx, srch_agent_t *agt)
     ev.events = EPOLLIN | EPOLLET; /* 边缘触发 */
 
     epoll_ctl(agt->ep_fd, EPOLL_CTL_ADD, sck->fd, &ev);
+
+    return SRCH_OK;
+}
+
+/******************************************************************************
+ **函数名称: srch_agent_del_conn
+ **功    能: 删除指定套接字
+ **输入参数:
+ **     agt: Agent对象
+ **     sck: SCK对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.12.06 #
+ ******************************************************************************/
+static int srch_agent_del_conn(srch_agent_t *agt, socket_t *sck)
+{
+    void *addr;
+    srch_agent_sck_data_t *data = sck->data;
+
+    /* 1. 将套接字从哈希表中剔除 */
+    addr = hash_tab_remove(agt->sock_tab, &data->sck_serial, sizeof(data->sck_serial));
+    if (addr != sck)
+    {
+        log_fatal(agt->log, "Remove socket failed! fd:%d", sck->fd);
+        return SRCH_ERR;
+    }
+
+    /* 2. 释放套接字空间(TODO:释放发送链表空间) */
+    Close(sck->fd);
+
+    slab_dealloc(agt->slab, sck->data);
+    slab_dealloc(agt->slab, sck);
 
     return SRCH_OK;
 }
@@ -437,10 +471,10 @@ static int srch_agent_recv_head(srch_agent_t *agt, socket_t *sck)
 {
     int n, left;
     socket_snap_t *recv = &sck->recv;
-    srch_mesg_head_t *head;
+    srch_mesg_header_t *head;
 
     /* 1. 计算剩余字节 */
-    left = sizeof(srch_mesg_head_t) - recv->off;
+    left = sizeof(srch_mesg_header_t) - recv->off;
 
     /* 2. 接收报头数据 */
     while (1)
@@ -477,7 +511,7 @@ static int srch_agent_recv_head(srch_agent_t *agt, socket_t *sck)
     }
 
     /* 3. 校验报头数据 */
-    head = (srch_mesg_head_t *)sck->recv.addr;
+    head = (srch_mesg_header_t *)sck->recv.addr;
 
     /* head->type = head->type; */
     /* head->flag = head->flag; */
@@ -515,7 +549,7 @@ static int srch_agent_recv_body(srch_agent_t *agt, socket_t *sck)
 {
     int n, left;
     socket_snap_t *recv = &sck->recv;
-    srch_mesg_head_t *head = (srch_mesg_head_t *)recv->addr;
+    srch_mesg_header_t *head = (srch_mesg_header_t *)recv->addr;
 
     /* 1. 接收报体 */
     while (1)
@@ -627,10 +661,10 @@ static int _srch_agent_recv(srch_agent_t *agt, socket_t *sck)
                 return SRCH_ERR;
             }
 
-            data->head = (srch_mesg_head_t *)recv->addr;
+            data->head = (srch_mesg_header_t *)recv->addr;
             data->body = (void *)(data->head + 1);
             recv->off = 0;
-            recv->total = sizeof(srch_mesg_head_t);
+            recv->total = sizeof(srch_mesg_header_t);
 
             /* 设置下步 */
             recv->phase = SOCK_PHASE_RECV_HEAD;
@@ -763,13 +797,30 @@ static int srch_agent_recv(srch_agent_t *agt, socket_t *sck)
             }
             default:            /* 异常情况 */
             {
-                srch_agent_sock_remove(agt, sck);
+                srch_agent_del_conn(agt, sck);
                 return SRCH_ERR;
             }
         }
     }
 
     return SRCH_OK;
+}
+
+/******************************************************************************
+ **函数名称: srch_agent_fetch_send_data
+ **功    能: 取发送数据
+ **输入参数:
+ **     agt: Agent对象
+ **     sck: SCK对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.12.22 #
+ ******************************************************************************/
+static void *srch_agent_fetch_send_data(srch_agent_t *agt, socket_t *sck)
+{
+    return NULL;
 }
 
 /******************************************************************************
@@ -786,39 +837,56 @@ static int srch_agent_recv(srch_agent_t *agt, socket_t *sck)
  ******************************************************************************/
 static int srch_agent_send(srch_agent_t *agt, socket_t *sck)
 {
-    return SRCH_OK;
-}
+    int n, left;
+    srch_mesg_header_t *head;
+    socket_snap_t *send = &sck->send;
 
-/******************************************************************************
- **函数名称: srch_agent_sock_remove
- **功    能: 删除指定套接字
- **输入参数:
- **     agt: Agent对象
- **     sck: SCK对象
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.12.06 #
- ******************************************************************************/
-static int srch_agent_sock_remove(srch_agent_t *agt, socket_t *sck)
-{
-    void *addr;
-    srch_agent_sck_data_t *data = sck->data;
+    sck->wrtm = time(NULL);
 
-    /* 1. 将套接字从哈希表中剔除 */
-    addr = hash_tab_remove(agt->sock_tab, &data->sck_serial, sizeof(data->sck_serial));
-    if (addr != sck)
+    for (;;)
     {
-        log_fatal(agt->log, "Remove socket failed! fd:%d", sck->fd);
-        return SRCH_ERR;
+        /* 1. 取发送的数据 */
+        if (NULL == send->addr)
+        {
+            send->addr = srch_agent_fetch_send_data(agt, sck);
+            if (NULL == send->addr)
+            {
+                break;
+            }
+
+            head = (srch_mesg_header_t *)send->addr;
+
+            send->off = 0;
+            send->total = head->length + sizeof(srch_mesg_header_t);
+        }
+
+        /* 2. 发送数据 */
+        left = send->total - send->off;
+
+        n = Writen(sck->fd, send->addr+send->off, left);
+        if (n != left)
+        {
+            if (n > 0)
+            {
+                send->off += n;
+                break;
+            }
+
+            log_error(agt->log, "errmsg:[%d] %s!", errno, strerror(errno));
+
+            /* 关闭套接字　并清空发送队列 */
+            srch_agent_del_conn(agt, sck);
+
+            /* TODO:释放空间 */
+            slab_dealloc(agt->slab, send->addr);
+            send->addr = NULL;
+
+            return SRCH_ERR;
+        }
+
+        /* TODO: 3. 释放空间 */
+        send->addr = NULL;
     }
-
-    /* 2. 释放套接字空间(TODO:释放发送链表空间) */
-    Close(sck->fd);
-
-    slab_dealloc(agt->slab, sck->data);
-    slab_dealloc(agt->slab, sck);
 
     return SRCH_OK;
 }

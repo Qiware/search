@@ -9,6 +9,7 @@
 #include <memory.h>
 
 #include "log.h"
+#include "spinlock.h"
 
 /* 内存分配方式 */
 typedef enum
@@ -44,6 +45,8 @@ typedef struct
 
 typedef struct
 {
+    spinlock_t lock;        /* 锁 */
+
     size_t pool_size;       /* 内存空间总大小 */
     
     int min_size;           /* 最小分配单元 */
@@ -61,7 +64,7 @@ typedef struct
 
 int32_t shm_slab_init(shm_slab_pool_t *pool);
 void *shm_slab_alloc(shm_slab_pool_t *pool, size_t size);
-int32_t shm_slab_dealloc(shm_slab_pool_t *pool, void *p);
+void shm_slab_dealloc(shm_slab_pool_t *pool, void *p);
 
 size_t shm_slab_head_size(size_t size);
 #endif /*__SHM_SLAB__*/

@@ -62,7 +62,7 @@ mem_chunk_t *mem_chunk_init(int num, size_t size)
         }
     }
 
-   /* 3. 数据空间 */
+    /* 3. 数据空间 */
     chunk->addr = (char *)calloc(num, size);
     if (NULL == chunk->addr)
     {

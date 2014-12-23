@@ -186,8 +186,8 @@ void *slab_alloc(slab_pool_t *pool, size_t size)
     uint32_t i = 0, slot = 0, shift = 0, map = 0;
     slab_page_t *page = NULL, *prev = NULL, *slots = NULL;
 
-    /* 加锁 */
-    spin_lock(&pool->lock);
+
+    spin_lock(&pool->lock);    /* 加锁 */
 
     if (size >= slab_get_max_size())
     {
@@ -445,14 +445,13 @@ done:
         memset((void *)p, 0, size);
     }
 
-    /* 解锁 */
-    spin_unlock(&pool->lock);
+    spin_unlock(&pool->lock);    /* 解锁 */
 
     return (void *) p;
 }
 
 /******************************************************************************
- **函数名称: slab_free
+ **函数名称: slab_dealloc
  **功    能: 释放从Slab申请的内存空间
  **输入参数:
  **     pool: Slab对象
@@ -470,8 +469,7 @@ void slab_dealloc(slab_pool_t *pool, void *p)
     uint32_t n, type, slot, shift, map;
     slab_page_t *slots, *page;
 
-    /* 加锁 */
-    spin_lock(&pool->lock);
+    spin_lock(&pool->lock);    /* 加锁 */
 
     if ((u_char *) p < pool->start || (u_char *) p > pool->end)
     {
@@ -654,12 +652,13 @@ void slab_dealloc(slab_pool_t *pool, void *p)
 
             slab_junk(p, size << slab_get_page_shift());
 
+            spin_unlock(&pool->lock); /* 解锁 */
             return;
         }
     }
 
     /* not reached */
-    spin_unlock(&pool->lock);
+    spin_unlock(&pool->lock); /* 解锁 */
 
     return;
 
@@ -682,7 +681,7 @@ chunk_already_free:
 
 fail:
 
-    spin_unlock(&pool->lock);
+    spin_unlock(&pool->lock); /* 解锁 */
     return;
 }
 

@@ -32,7 +32,7 @@
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
-hash_tab_t *hash_tab_creat(int mod, key_cb_t key_cb, avl_cmp_cb_t cmp_cb)
+hash_tab_t *hash_tab_creat(slab_pool_t *slab, int mod, key_cb_t key_cb, avl_cmp_cb_t cmp_cb)
 {
     int idx;
     hash_tab_t *hash;
@@ -69,7 +69,7 @@ hash_tab_t *hash_tab_creat(int mod, key_cb_t key_cb, avl_cmp_cb_t cmp_cb)
     {
         pthread_rwlock_init(&hash->lock[idx], NULL);
 
-        if (0 != avl_creat(&hash->tree[idx], key_cb, cmp_cb))
+        if (0 != avl_creat(&hash->tree[idx], slab, key_cb, cmp_cb))
         {
             free(hash->tree);
             free(hash);
@@ -184,7 +184,7 @@ void *hash_tab_remove(hash_tab_t *hash, void *pkey, int pkey_len)
 
 /******************************************************************************
  **函数名称: hash_tab_destroy
- **功    能: 销毁哈希数组(未完成)
+ **功    能: 销毁哈希数组(TODO:未完成)
  **输入参数:
  **     hash: 哈希数组
  **输出参数: NONE

@@ -129,6 +129,7 @@ int crwl_usage(const char *exec)
  ******************************************************************************/
 crwl_cntx_t *crwl_cntx_init(char *pname, const char *path)
 {
+    void *addr;
     log_cycle_t *log;
     crwl_cntx_t *ctx;
 
@@ -169,8 +170,26 @@ crwl_cntx_t *crwl_cntx_init(char *pname, const char *path)
         log_set_level(log, ctx->conf->log.level);
         log2_set_level(ctx->conf->log.level2);
 
+        /* 5. 创建内存池 */
+        addr = (void *)calloc(1, 30 * MB);
+        if (NULL == addr)
+        {
+            free(ctx);
+            log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
+            return NULL;
+        }
+
+        ctx->slab = slab_init(addr, 30 * MB);
+        if (NULL == ctx->slab)
+        {
+            free(ctx);
+            log_error(log, "Init slab failed!");
+            return NULL;
+        }
+
         /* 5. 新建域名IP映射表 */
         ctx->domain_ip_map = hash_tab_creat(
+                ctx->slab,
                 CRWL_DOMAIN_IP_MAP_HASH_MOD,
                 hash_time33_ex,
                 (avl_cmp_cb_t)crwl_domain_ip_map_cmp_cb);
@@ -182,6 +201,7 @@ crwl_cntx_t *crwl_cntx_init(char *pname, const char *path)
 
         /* 6. 新建域名黑名单表 */
         ctx->domain_blacklist = hash_tab_creat(
+                ctx->slab,
                 CRWL_DOMAIN_BLACKLIST_HASH_MOD,
                 hash_time33_ex,
                 (avl_cmp_cb_t)crwl_domain_blacklist_cmp_cb);

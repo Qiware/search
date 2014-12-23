@@ -36,7 +36,7 @@ typedef struct
 {
     uint64_t sck_serial;            /* 序列号 */
 
-    srch_mesg_head_t *head;         /* 报头起始地址 */
+    srch_mesg_header_t *head;       /* 报头起始地址 */
     void *body;                     /* Body */
     list_t send_list;               /* 发送链表 */
 } srch_agent_sck_data_t;

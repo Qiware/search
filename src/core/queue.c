@@ -112,6 +112,11 @@ void *queue_pop_lock(_queue_t *q)
 {
     void *data;
 
+    if (0 == q->num)
+    {
+        return NULL;
+    }
+
     spin_lock(&q->lock);
 
     if (0 == q->num)

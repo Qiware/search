@@ -31,7 +31,7 @@ typedef enum
 /* 读取/发送快照 */
 typedef struct
 {
-    int phase;                      /* 当前状态 */
+    int phase;                      /* 当前状态 Range: socket_snap_phase_e */
     int off;                        /* 偏移量 */
     int total;                      /* 总字节 */
 

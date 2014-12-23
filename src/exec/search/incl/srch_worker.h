@@ -8,6 +8,7 @@
 typedef struct
 {
     int tidx;                       /* 线程IDX */
+    log_cycle_t *log;               /* 日志对象 */
 } srch_worker_t;
 
 void *srch_worker_routine(void *_ctx);

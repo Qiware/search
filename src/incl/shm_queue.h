@@ -17,6 +17,8 @@ typedef struct _shm_queue_node_t
 /* 循环队列 */
 typedef struct
 {
+    spinlock_t lock;        /* 锁 */
+
     uint32_t max;           /* 队列容量 */
     uint32_t num;           /* 占用个数 */
     uint32_t size;          /* 队列各节点的最大存储空间 */
@@ -30,8 +32,8 @@ typedef struct
 
 shm_queue_t *shm_queue_creat(int key, int max, int size);
 shm_queue_t *shm_queue_attach(int key, int max, int size);
-void *shm_queue_alloc(shm_queue_t *shmq);
-void shm_queue_free(shm_queue_t *shmq, void *p);
+#define shm_queue_malloc(shmq) shm_slab_alloc(&shmq->slab, shmq->size)
+#define shm_queue_dealloc(shmq, p) shm_slab_dealloc(&shmq->slab, p)
 int shm_queue_push(shm_queue_t *shmq, void *p);
 void *shm_queue_pop(shm_queue_t *shmq);
 

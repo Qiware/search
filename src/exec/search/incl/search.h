@@ -3,6 +3,7 @@
 
 #include "queue.h"
 #include "srch_conf.h"
+#include "srch_comm.h"
 #include "thread_pool.h"
 
 /* 宏定义 */
@@ -35,59 +36,26 @@
 #define SRCH_RCV_CMD_PATH "../temp/srch/rcv_cmd_%02d.usck"  /* 接收线程 */
 #define SRCH_WRK_CMD_PATH "../temp/srch/wrk_cmd_%02d.usck"  /* 工作线程 */
 
-typedef int (*srch_reg_cb_t)(uint8_t type, char *buff, size_t len, void *args);
-
-/* 错误码 */
-typedef enum
-{
-    SRCH_OK = 0                             /* 正常 */
-    , SRCH_SHOW_HELP                        /* 显示帮助信息 */
-    , SRCH_DONE                             /* 完成 */
-    , SRCH_SCK_AGAIN                        /* 出现EAGAIN提示 */
-    , SRCH_SCK_CLOSE                        /* 套接字关闭 */
-
-    , SRCH_ERR = ~0x7FFFFFFF                /* 失败、错误 */
-} srch_err_code_e;
-
-/* 输入参数 */
-typedef struct
-{
-    char conf_path[FILE_NAME_MAX_LEN];      /* 配置文件路径 */
-    bool isdaemon;                          /* 是否后台运行 */
-} srch_opt_t;
-
-/* 消息注册对象 */
-typedef struct
-{
-    uint8_t type;                           /* 数据类型 范围:(0 ~ SRCH_MSG_TYPE_MAX) */
-#define SRCH_REG_FLAG_UNREG     (0)         /* 0: 未注册 */
-#define SRCH_REG_FLAG_REGED     (1)         /* 1: 已注册 */
-    uint8_t flag;                           /* 注册标志 范围:(0: 未注册 1: 已注册) */
-    srch_reg_cb_t cb;                       /* 对应数据类型的处理函数 */
-    void *args;                             /* 附加参数 */
-} srch_reg_t;
-
 /* 搜索引擎对象 */
 typedef struct
 {
     srch_conf_t *conf;                      /* 配置信息 */
     log_cycle_t *log;                       /* 日志对象 */
+    slab_pool_t *slab;                      /* 内存池 */
 
     pthread_t lsn_tid;                      /* Listen线程 */
     thread_pool_t *agents;                  /* Agent线程池 */
     thread_pool_t *workers;                 /* Worker线程池 */
     srch_reg_t reg[SRCH_MSG_TYPE_MAX];      /* 消息注册 */
 
-    queue_t **connq;                        /* 连接队列(注:数组长度与Recver相等) */
-    queue_t **recvq;                        /* 接收队列(注:数组长度与Worker相等) */
+    queue_t **connq;                        /* 连接队列(注:数组长度与Agent相等) */
+    queue_t **recvq;                        /* 接收队列(注:数组长度与Agent相等) */
+    queue_t **sendq;                        /* 发送队列(注:数组长度与Agent相等) */
 } srch_cntx_t;
 
-/* 新增套接字对象 */
-typedef struct
-{
-    int fd;                                 /* 套接字 */
-    uint64_t sck_serial;                    /* SCK流水号 */
-} srch_add_sck_t;
+#define srch_connq_space(ctx, idx) queue_space(&ctx->connq[idx]->queue) /* 连接队列空间 */
+#define srch_recvq_space(ctx, idx) queue_space(&ctx->recvq[idx]->queue) /* 接收队列空间 */
+#define srch_sendq_space(ctx, idx) queue_space(&ctx->sendq[idx]->queue) /* 发送队列空间 */
 
 srch_cntx_t *srch_cntx_init(char *pname, const char *conf_path);
 void srch_cntx_destroy(srch_cntx_t *ctx);
@@ -96,12 +64,4 @@ int srch_usage(const char *exec);
 
 int srch_startup(srch_cntx_t *ctx);
 int srch_register(srch_cntx_t *ctx, uint32_t type, srch_reg_cb_t cb, void *args);
-
-log_cycle_t *srch_init_log(char *fname);
-int srch_proc_lock(void);
-int srch_creat_workers(srch_cntx_t *ctx);
-int srch_workers_destroy(srch_cntx_t *ctx);
-int srch_creat_agents(srch_cntx_t *ctx);
-int srch_agents_destroy(srch_cntx_t *ctx);
-
 #endif /*__SEARCH_H__*/

@@ -16,7 +16,9 @@
 
 static int _avl_insert(avl_tree_t *tree, avl_node_t *node,
         uint32_t key, const avl_primary_key_t *pkey, bool *taller, void *data);
+#if !defined(__AVL_MEM_POOL__)
 static void _avl_destroy(avl_node_t *node);
+#endif /*!__AVL_MEM_POOL__*/
 
 static int avl_right_balance(avl_tree_t *tree, avl_node_t *node);
 static int avl_left_balance(avl_tree_t *tree, avl_node_t *node);
@@ -44,13 +46,23 @@ static int avl_delete_right_balance(avl_tree_t *tree, avl_node_t *node, bool *lo
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.19 #
  ******************************************************************************/
-int avl_creat(avl_tree_t **tree, key_cb_t key_cb, avl_cmp_cb_t cmp_cb)
+int avl_creat(avl_tree_t **tree, slab_pool_t *slab, key_cb_t key_cb, avl_cmp_cb_t cmp_cb)
 {
+#if defined(__AVL_MEM_POOL__)
+    *tree = (avl_tree_t *)slab_alloc(slab, sizeof(avl_tree_t));
+    if (NULL == *tree)
+    {
+        return AVL_ERR;
+    }
+
+    (*tree)->slab = slab;
+#else /*!__AVL_MEM_POOL__*/
     *tree = (avl_tree_t *)calloc(1, sizeof(avl_tree_t));
     if (NULL == *tree)
     {
         return AVL_ERR;
     }
+#endif /*__AVL_MEM_POOL__*/
 
     (*tree)->root = NULL;
     (*tree)->key_cb = key_cb;
@@ -92,7 +104,11 @@ int avl_insert(avl_tree_t *tree, void *pkey, int pkey_len, void *data)
     /* 如果为空树，则创建第一个结点 */
     if (NULL == root)
     {
+    #if defined(__AVL_MEM_POOL__)
+        root = (avl_node_t *)slab_alloc(tree->slab, sizeof(avl_node_t));
+    #else /*!__AVL_MEM_POOL__*/
         root = (avl_node_t *)calloc(1, sizeof(avl_node_t));
+    #endif /*!__AVL_MEM_POOL__*/
         if (NULL == root)
         {
             return AVL_ERR;
@@ -186,7 +202,11 @@ static int avl_insert_right(avl_tree_t *tree, avl_node_t *node,
     
     if (NULL == node->rchild)
     {
+    #if defined(__AVL_MEM_POOL__)
+        add = (avl_node_t *)slab_alloc(tree->slab, sizeof(avl_node_t));
+    #else /*!__AVL_MEM_POOL__*/
         add = (avl_node_t *)calloc(1, sizeof(avl_node_t));
+    #endif /*!__AVL_MEM_POOL__*/
         if (NULL == add)
         {
             *taller = false;
@@ -268,7 +288,11 @@ static int avl_insert_left(avl_tree_t *tree, avl_node_t *node,
     
     if (NULL == node->lchild)
     {
+    #if defined(__AVL_MEM_POOL__)
+        add = (avl_node_t *)slab_alloc(tree->slab, sizeof(avl_node_t));
+    #else /*!__AVL_MEM_POOL__*/
         add = (avl_node_t *)calloc(1, sizeof(avl_node_t));
+    #endif /*!__AVL_MEM_POOL__*/
         if (NULL == add)
         {
             *taller = false;
@@ -717,12 +741,16 @@ avl_node_t *avl_query(avl_tree_t *tree, void *pkey, int pkey_len)
  ******************************************************************************/
 void avl_destroy(avl_tree_t **tree)
 {
+#if defined(__AVL_MEM_POOL__)
+    free((*tree)->slab);
+#else /*!__AVL_MEM_POOL__*/
     if (NULL != (*tree)->root)
     {
         _avl_destroy((*tree)->root);
         (*tree)->root = NULL;
     }
     free(*tree);
+#endif /*!__AVL_MEM_POOL__*/
     *tree = NULL;
 }
 
@@ -879,7 +907,11 @@ AVL_EQUAL:
 
         avl_assert(parent);
         avl_assert(node->lchild);
+    #if defined(__AVL_MEM_POOL__)
+        slab_dealloc(tree->slab, node), node = NULL;
+    #else /*!__AVL_MEM_POOL__*/
         free(node), node = NULL;
+    #endif /*!__AVL_MEM_POOL__*/
         return AVL_OK;
     }
     /* 2.2 左子树空, 只需接它的右子树 */
@@ -891,7 +923,11 @@ AVL_EQUAL:
 
         avl_assert(parent);
         avl_assert(node->rchild);
+    #if defined(__AVL_MEM_POOL__)
+        slab_dealloc(tree->slab, node), node = NULL;
+    #else /*!__AVL_MEM_POOL__*/
         free(node), node=NULL;
+    #endif /*!__AVL_MEM_POOL__*/
         return AVL_OK;
     }
 
@@ -943,7 +979,11 @@ int avl_replace_and_delete(avl_tree_t *tree,
         avl_assert(node);
         avl_assert(prev->parent);
         avl_assert(prev->lchild);
+    #if defined(__AVL_MEM_POOL__)
+        slab_dealloc(tree->slab, prev), prev=NULL;
+    #else /*!__AVL_MEM_POOL__*/
         free(prev), prev=NULL;    /* 注意: 释放的不是dnode, 而是rnode */
+    #endif /*!__AVL_MEM_POOL__*/
         return AVL_OK;
     }
 
@@ -1178,6 +1218,8 @@ int avl_delete_right_balance(avl_tree_t *tree, avl_node_t *node, bool *lower)
     }
     return AVL_OK;
 }
+
+#if !defined(__AVL_MEM_POOL__)
 /******************************************************************************
  **函数名称: _avl_destroy
  **功    能: 销毁AVL树(内部接口)
@@ -1203,6 +1245,7 @@ static void _avl_destroy(avl_node_t *node)
 
     free(node);
 }
+#endif /*!__AVL_MEM_POOL__*/
 
 int _avl_print(avl_node_t *node, Stack_t *stack);
 /******************************************************************************

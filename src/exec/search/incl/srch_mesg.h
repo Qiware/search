@@ -23,7 +23,7 @@ typedef struct
     uint16_t length;                        /* 报体长度 */
 #define SRCH_MSG_MARK_KEY   (0x1ED23CB4)
     uint32_t mark;                          /* 校验值 */
-} srch_mesg_head_t;
+} srch_mesg_header_t;
 
 /* 报体 */
 typedef struct
