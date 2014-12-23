@@ -241,8 +241,8 @@ static int srch_agent_event_hdl(srch_agent_t *agt)
             while (SRCH_OK == (ret = sck->recv_cb(agt, sck)));
             if (SRCH_SCK_AGAIN != ret)
             {
-                /* 异常-关闭SCK: 不必判断是否可写 */
-                continue; 
+                srch_agent_del_conn(agt, sck);
+                continue; /* 异常-关闭SCK: 不必判断是否可写 */
             }
         }
 
@@ -253,6 +253,7 @@ static int srch_agent_event_hdl(srch_agent_t *agt)
             while (SRCH_OK == sck->send_cb(agt, sck));
             if (SRCH_SCK_AGAIN != ret)
             {
+                srch_agent_del_conn(agt, sck);
                 continue; /* 异常: 套接字已关闭 */
             }
         }
@@ -412,6 +413,7 @@ static int srch_agent_add_conn(srch_cntx_t *ctx, srch_agent_t *agt)
 static int srch_agent_del_conn(srch_agent_t *agt, socket_t *sck)
 {
     void *addr;
+    list_node_t *node;
     srch_agent_sck_data_t *data = sck->data;
 
     /* 1. 将套接字从哈希表中剔除 */
@@ -422,8 +424,24 @@ static int srch_agent_del_conn(srch_agent_t *agt, socket_t *sck)
         return SRCH_ERR;
     }
 
-    /* 2. 释放套接字空间(TODO:释放发送链表空间) */
+    /* 2. 释放套接字空间 */
     Close(sck->fd);
+    for (;;)    /* 释放发送链表 */
+    {
+        node = list_remove_head(&data->send_list);
+        if (NULL == node)
+        {
+            break;
+        }
+
+        slab_dealloc(agt->slab, node->data);
+        slab_dealloc(agt->slab, node);
+    }
+
+    if (NULL != sck->recv.addr)
+    {
+        queue_dealloc(agt->ctx->recvq[agt->tidx], sck->recv.addr);
+    }
 
     slab_dealloc(agt->slab, sck->data);
     slab_dealloc(agt->slab, sck);
@@ -624,7 +642,7 @@ static int srch_agent_recv_post(srch_agent_t *agt, socket_t *sck)
 }
 
 /******************************************************************************
- **函数名称: _srch_agent_recv
+ **函数名称: srch_agent_recv
  **功    能: 接收数据
  **输入参数:
  **     agt: Agent对象
@@ -632,16 +650,10 @@ static int srch_agent_recv_post(srch_agent_t *agt, socket_t *sck)
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
- **     1. 分配报头空间
- **     2. 接收报头
- **     3. 分配报体空间
- **     4. 接收报体
- **     5. 对报文进行处理
  **注意事项: 
- **     如果出现异常，需要释放内存空间
  **作    者: # Qifeng.zou # 2014.11.29 #
  ******************************************************************************/
-static int _srch_agent_recv(srch_agent_t *agt, socket_t *sck)
+static int srch_agent_recv(srch_agent_t *agt, socket_t *sck)
 {
     int ret;
     socket_snap_t *recv = &sck->recv;
@@ -690,6 +702,7 @@ static int _srch_agent_recv(srch_agent_t *agt, socket_t *sck)
                 default:
                 {
                     queue_dealloc(agt->ctx->recvq[agt->tidx], recv->addr);
+                    recv->addr = NULL;
                     return ret; /* 异常情况 */
                 }
             }
@@ -728,6 +741,7 @@ static int _srch_agent_recv(srch_agent_t *agt, socket_t *sck)
                 default:
                 {
                     queue_dealloc(agt->ctx->recvq[agt->tidx], recv->addr);
+                    recv->addr = NULL;
                     return ret; /* 异常情况 */
                 }
             }
@@ -745,11 +759,13 @@ static int _srch_agent_recv(srch_agent_t *agt, socket_t *sck)
                 case SRCH_OK:
                 {
                     recv->phase = SOCK_PHASE_RECV_INIT;
+                    recv->addr = NULL;
                     return SRCH_OK;
                 }
                 default:
                 {
                     queue_dealloc(agt->ctx->recvq[agt->tidx], recv->addr);
+                    recv->addr = NULL;
                     return SRCH_ERR;
                 }
             }
@@ -761,52 +777,6 @@ static int _srch_agent_recv(srch_agent_t *agt, socket_t *sck)
 }
 
 /******************************************************************************
- **函数名称: srch_agent_recv
- **功    能: 接收数据
- **输入参数:
- **     agt: Agent对象
- **     sck: SCK对象
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **     1. 为报头分配空间
- **     2. 接收报头
- **     3. 为报体分配空间
- **     4. 接收报体
- **     5. 对报文进行处理
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.11.29 #
- ******************************************************************************/
-static int srch_agent_recv(srch_agent_t *agt, socket_t *sck)
-{
-    int ret;
-
-    while (1)
-    {
-        /* 接收数据 */
-        ret = _srch_agent_recv(agt, sck);
-        switch (ret)
-        {
-            case SRCH_OK:       /* 继续接收 */
-            {
-                continue;
-            }
-            case SRCH_SCK_AGAIN:/* 等待下次事件通知 */
-            {
-                return SRCH_OK;
-            }
-            default:            /* 异常情况 */
-            {
-                srch_agent_del_conn(agt, sck);
-                return SRCH_ERR;
-            }
-        }
-    }
-
-    return SRCH_OK;
-}
-
-/******************************************************************************
  **函数名称: srch_agent_fetch_send_data
  **功    能: 取发送数据
  **输入参数:
@@ -815,12 +785,27 @@ static int srch_agent_recv(srch_agent_t *agt, socket_t *sck)
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
+ **     从链表中取出需要发送的数据
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.22 #
  ******************************************************************************/
 static void *srch_agent_fetch_send_data(srch_agent_t *agt, socket_t *sck)
 {
-    return NULL;
+    void *addr;
+    list_node_t *node;
+    srch_agent_sck_data_t *data = sck->data;
+
+    node = list_remove_head(&data->send_list);
+    if (NULL == node)
+    {
+        return NULL;
+    }
+
+    addr = node->data;
+
+    slab_dealloc(agt->slab, node);
+
+    return addr;
 }
 
 /******************************************************************************
@@ -851,7 +836,7 @@ static int srch_agent_send(srch_agent_t *agt, socket_t *sck)
             send->addr = srch_agent_fetch_send_data(agt, sck);
             if (NULL == send->addr)
             {
-                break;
+                return SRCH_OK; /* 无数据 */
             }
 
             head = (srch_mesg_header_t *)send->addr;
@@ -869,24 +854,21 @@ static int srch_agent_send(srch_agent_t *agt, socket_t *sck)
             if (n > 0)
             {
                 send->off += n;
-                break;
+                return SRCH_SCK_AGAIN;
             }
 
             log_error(agt->log, "errmsg:[%d] %s!", errno, strerror(errno));
 
-            /* 关闭套接字　并清空发送队列 */
-            srch_agent_del_conn(agt, sck);
-
-            /* TODO:释放空间 */
+            /* 释放空间 */
             slab_dealloc(agt->slab, send->addr);
             send->addr = NULL;
-
             return SRCH_ERR;
         }
 
-        /* TODO: 3. 释放空间 */
+        /* 3. 释放空间 */
+        slab_dealloc(agt->slab, send->addr);
         send->addr = NULL;
     }
 
-    return SRCH_OK;
+    return SRCH_ERR;
 }
