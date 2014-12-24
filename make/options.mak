@@ -19,6 +19,9 @@ ifeq (__ON__, $(strip $(CONFIG_DEFAULT_SUPPORT)))
 	# HTML相关功能
 	OPTIONS += __HTML_AUTO_RESTORE__	# HTML自动修复功能
 	OPTIONS += __HTML_DEL_BR__			# HTML处理过程中，自动删除<br />
+
+	# AVL平衡二叉树功能
+	OPTIONS += __AVL_MEM_POOL__ 		# AVL使用内存池
 endif
 
 # 调试相关宏

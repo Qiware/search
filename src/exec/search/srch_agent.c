@@ -312,7 +312,6 @@ static int srch_agent_get_timeout_conn_list(socket_t *sck, srch_conn_timeout_lis
  **功    能: 事件超时处理
  **输入参数: 
  **     agt: Agent对象
- **     r: 
  **输出参数: NONE
  **返    回: Agent对象
  **实现描述: 
@@ -348,7 +347,7 @@ static int srch_agent_event_timeout_hdl(srch_agent_t *agt)
 
     /* 3. 删除超时连接 */
     node = timeout.list.head;
-    while (NULL != node)
+    for (; NULL != node; node = node->next)
     {
         sck = (socket_t *)node->data;
 
