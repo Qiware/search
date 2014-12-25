@@ -128,13 +128,8 @@ int srch_agent_init(srch_cntx_t *ctx, srch_agent_t *agt)
         return SRCH_ERR;
     }
 
-    /* 2. 创建套接字管理表 */
-    agt->sock_tab = hash_tab_creat(
-            agt->slab,
-            SRCH_AGENT_SCK_HASH_MOD,
-            hash_time33_ex,
-            srch_agent_socket_cmp_cb);
-    if (NULL == agt->sock_tab)
+    /* 2. 创建连接AVL树 */
+    if (avl_creat(&agt->connections, agt->slab, hash_time33_ex, srch_agent_socket_cmp_cb))
     {
         log_error(agt->log, "Create socket hash table failed!");
         return SRCH_ERR;
@@ -340,7 +335,7 @@ static int srch_agent_event_timeout_hdl(srch_agent_t *agt)
     timeout.ctm = time(NULL);
     
     /* 2. 获取超时连接 */
-    ret = hash_tab_trav(agt->sock_tab,
+    ret = avl_trav(agt->connections,
             (avl_trav_cb_t)srch_agent_get_timeout_conn_list, (void *)&timeout);
     if (0 != ret)
     {
@@ -424,8 +419,8 @@ static int srch_agent_add_conn(srch_cntx_t *ctx, srch_agent_t *agt)
 
         queue_dealloc(ctx->connq[agt->tidx], add);  /* 释放连接队列空间 */
 
-        /* 4. 哈希表中(以序列号为主键) */
-        if (hash_tab_insert(agt->sock_tab, &data->sck_serial, sizeof(data->sck_serial), sck))
+        /* 4. 插入AVL树中(以序列号为主键) */
+        if (avl_insert(agt->connections, &data->sck_serial, sizeof(data->sck_serial), sck))
         {
             Close(sck->fd);
             slab_dealloc(agt->slab, sck->data);
@@ -466,12 +461,11 @@ static int srch_agent_del_conn(srch_agent_t *agt, socket_t *sck)
 
     log_info(agt->log, "Call %s()! fd:%d", __func__, sck->fd);
 
-    /* 1. 将套接字从哈希表中剔除 */
-    addr = hash_tab_remove(agt->sock_tab, &data->sck_serial, sizeof(data->sck_serial));
+    /* 1. 将套接字从AVL树中剔除 */
+    avl_delete(agt->connections, &data->sck_serial, sizeof(data->sck_serial), &addr);
     if (addr != sck)
     {
         log_fatal(agt->log, "Remove socket failed! fd:%d", sck->fd);
-        return SRCH_ERR;
     }
 
     /* 2. 释放套接字空间 */

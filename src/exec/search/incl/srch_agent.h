@@ -4,7 +4,7 @@
 #include "list.h"
 #include "queue.h"
 #include "search.h"
-#include "hash_tab.h"
+#include "avl_tree.h"
 #include "srch_mesg.h"
 
 #define SRCH_AGENT_TMOUT_MSEC       (5000)  /* 超时(豪秒) */
@@ -26,7 +26,7 @@ typedef struct
     struct epoll_event *events;     /* Event最大数 */
 
     int cmd_sck_id;                 /* 命令套接字 */
-    hash_tab_t *sock_tab;           /* 套接字表(挂载数据socket_t) */
+    avl_tree_t *connections;        /* 套接字表(挂载数据socket_t) TODO:可改为红黑树 */
 
     time_t scan_tm;                 /* 前一次超时扫描的时间 */
 } srch_agent_t;
