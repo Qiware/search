@@ -347,13 +347,13 @@ static int srch_agent_event_timeout_hdl(srch_agent_t *agt)
         log_error(agt->log, "Traverse hash table failed!");
     }
 
+    log_debug(agt->log, "Timeout num:%d!", timeout.list.num);
+
     /* 3. 删除超时连接 */
     node = timeout.list.head;
     for (; NULL != node; node = node->next)
     {
         sck = (socket_t *)node->data;
-
-        log_info(agt->log, "Timeout! fd:%d", sck->fd);
 
         srch_agent_del_conn(agt, sck);
     }
@@ -460,6 +460,8 @@ static int srch_agent_del_conn(srch_agent_t *agt, socket_t *sck)
     void *addr;
     list_node_t *node;
     srch_agent_sck_data_t *data = sck->data;
+
+    log_info(agt->log, "Call %s()! fd:%d", __func__, sck->fd);
 
     /* 1. 将套接字从哈希表中剔除 */
     addr = hash_tab_remove(agt->sock_tab, &data->sck_serial, sizeof(data->sck_serial));

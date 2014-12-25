@@ -7,7 +7,7 @@
 #include "thread_pool.h"
 
 /* 宏定义 */
-#define SRCH_TMOUT_SCAN_SEC         (05)    /* 超时扫描间隔 */
+#define SRCH_TMOUT_SCAN_SEC         (15)    /* 超时扫描间隔 */
 #define SRCH_CONNECT_TMOUT_SEC      (00)    /* 连接超时时间 */
 
 #define SRCH_THD_MAX_NUM            (64)    /* 最大线程数 */

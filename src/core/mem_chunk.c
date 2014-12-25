@@ -90,7 +90,7 @@ mem_chunk_t *mem_chunk_init(int num, size_t size)
  ******************************************************************************/
 void *mem_chunk_alloc(mem_chunk_t *chunk)
 {
-    uint8_t i, j;
+    uint32_t i, j;
     uint32_t *bitmap;
 
     spin_lock(&chunk->lock);

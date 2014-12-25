@@ -21,7 +21,7 @@
 #define SRCH_SVR_IP_ADDR    "127.0.0.1"
 #define SRCH_SVR_PORT       (8888)
 
-#define SRCH_CLIENT_NUM     (1000)
+#define SRCH_CLIENT_NUM     (4000)
 
 int main(int argc, char *argv[])
 {
@@ -35,6 +35,8 @@ int main(int argc, char *argv[])
         ip = argv[1];
         port = atoi(argv[2]);
     }
+
+    limit_file_num(4096); /* 设置进程打开文件的最大数目 */
 
     for (idx=0; idx<SRCH_CLIENT_NUM; ++idx)
     {
