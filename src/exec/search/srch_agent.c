@@ -242,6 +242,7 @@ static int srch_agent_event_hdl(srch_agent_t *agt)
             ret = sck->recv_cb(agt, sck);
             if (SRCH_SCK_AGAIN != ret)
             {
+                log_error(agt->log, "Delete connection! fd:%d", sck->fd);
                 srch_agent_del_conn(agt, sck);
                 continue; /* 异常-关闭SCK: 不必判断是否可写 */
             }
@@ -254,6 +255,7 @@ static int srch_agent_event_hdl(srch_agent_t *agt)
             ret = sck->send_cb(agt, sck);
             if (SRCH_SCK_AGAIN != ret)
             {
+                log_error(agt->log, "Delete connection! fd:%d", sck->fd);
                 srch_agent_del_conn(agt, sck);
                 continue; /* 异常: 套接字已关闭 */
             }
@@ -350,6 +352,8 @@ static int srch_agent_event_timeout_hdl(srch_agent_t *agt)
     for (; NULL != node; node = node->next)
     {
         sck = (socket_t *)node->data;
+
+        log_info(agt->log, "Timeout! fd:%d", sck->fd);
 
         srch_agent_del_conn(agt, sck);
     }
@@ -650,7 +654,7 @@ static int srch_agent_recv_body(srch_agent_t *agt, socket_t *sck)
     }
 
     log_trace(agt->log, "fd:%d type:%d length:%d total:%d off:%d",
-            head->type, sck->fd, head->length, recv->total, recv->off);
+            sck->fd, head->type, head->length, recv->total, recv->off);
 
     return SRCH_OK;
 }
@@ -674,6 +678,8 @@ static int srch_agent_recv_post(srch_agent_t *agt, socket_t *sck)
     /* 1. 自定义消息的处理 */
     if (SRCH_MSG_FLAG_USR == data->head->flag)
     {
+        log_info(agt->log, "Push user data into queue!");
+
         return queue_push(agt->ctx->recvq[agt->tidx], sck->recv.addr);
     }
 
@@ -698,7 +704,7 @@ static int srch_agent_recv(srch_agent_t *agt, socket_t *sck)
 {
     int ret;
     socket_snap_t *recv = &sck->recv;
-    srch_agent_sck_data_t *data;
+    srch_agent_sck_data_t *data = (srch_agent_sck_data_t *)sck->data;
 
     for (;;)
     {
@@ -707,8 +713,6 @@ static int srch_agent_recv(srch_agent_t *agt, socket_t *sck)
             /* 1. 分配空间 */
             case SOCK_PHASE_RECV_INIT:
             {
-                data = (srch_agent_sck_data_t *)sck->data;
-
                 recv->addr = queue_malloc(agt->ctx->recvq[agt->tidx]);
                 if (NULL == recv->addr)
                 {
@@ -735,7 +739,15 @@ static int srch_agent_recv(srch_agent_t *agt, socket_t *sck)
                 {
                     case SRCH_OK:
                     {
-                        recv->phase = SOCK_PHASE_READY_BODY; /* 设置下步 */
+                        if (data->head->length)
+                        {
+                            recv->phase = SOCK_PHASE_READY_BODY; /* 设置下步 */
+                        }
+                        else
+                        {
+                            recv->phase = SOCK_PHASE_RECV_POST; /* 设置下步 */
+                            goto RECV_POST;
+                        }
                         break;      /* 继续后续处理 */
                     }
                     case SRCH_SCK_AGAIN:
@@ -756,8 +768,6 @@ static int srch_agent_recv(srch_agent_t *agt, socket_t *sck)
             case SOCK_PHASE_READY_BODY:
             {
             READY_BODY:
-                data = (srch_agent_sck_data_t *)sck->data;
-
                 recv->total += data->head->length;
 
                 /* 设置下步 */

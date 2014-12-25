@@ -63,5 +63,6 @@ int srch_getopt(int argc, char **argv, srch_opt_t *opt);
 int srch_usage(const char *exec);
 
 int srch_startup(srch_cntx_t *ctx);
+int srch_init_register(srch_cntx_t *ctx);
 int srch_register(srch_cntx_t *ctx, uint32_t type, srch_reg_cb_t cb, void *args);
 #endif /*__SEARCH_H__*/

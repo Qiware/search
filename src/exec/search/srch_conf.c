@@ -164,6 +164,16 @@ static int srch_conf_load_comm(xml_tree_t *xml, srch_conf_t *conf, log_cycle_t *
 
     conf->connections.timeout = atoi(node->value);
 
+    /* 2.3 获取侦听端口 */
+    node = xml_rquery(xml, fix, "PORT");
+    if (NULL == node)
+    {
+        log_error(log, "Get port of connection failed!");
+        return SRCH_ERR;
+    }
+
+    conf->connections.port = atoi(node->value);
+
     /* 3. 获取WORKER.NUM标签 */
     node = xml_query(xml, ".SEARCH-ENGINE.WORKER.NUM");
     if (NULL == fix)

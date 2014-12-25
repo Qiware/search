@@ -52,5 +52,4 @@ typedef struct
     list_t list;
     mem_pool_t *pool;
 } srch_conn_timeout_list_t;
-
 #endif /*__SRCH_COMM_H__*/

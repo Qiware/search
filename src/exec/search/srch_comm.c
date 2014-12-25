@@ -235,6 +235,13 @@ srch_cntx_t *srch_cntx_init(char *pname, const char *conf_path)
 
     do
     {
+        /* 6. 注册消息处理 */
+        if (srch_init_register(ctx))
+        {
+            log_error(log, "Initialize register failed!");
+            break;
+        }
+
         /* 6. 设置进程打开文件数 */
         if (limit_file_num(conf->connections.max)) /* 设置进程打开文件的最大数目 */
         {
@@ -595,6 +602,7 @@ static int srch_proc_lock(void)
  ******************************************************************************/
 static int srch_reg_def_hdl(uint8_t type, char *buff, size_t len, void *args)
 {
+    log2_info("Call: %s()", __func__);
     return SRCH_OK;
 }
 
