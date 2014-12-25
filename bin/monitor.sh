@@ -135,7 +135,7 @@ main()
         echo "---------------------------------------------------------------------"
         print_netstat "crawler" "crawler-fil" "redis-server" "search"
 
-        sleep 1
+        sleep 2
     done;
 }
 
