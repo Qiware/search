@@ -384,61 +384,64 @@ static int srch_agent_add_conn(srch_cntx_t *ctx, srch_agent_t *agt)
     srch_agent_sck_data_t *data;
     struct epoll_event ev;
 
-    /* 1. 取数据 */
-    add = queue_pop(ctx->connq[agt->tidx]);
-    if (NULL == add)
+    while (1)
     {
-        return SRCH_OK;
+        /* 1. 取数据 */
+        add = queue_pop(ctx->connq[agt->tidx]);
+        if (NULL == add)
+        {
+            return SRCH_OK;
+        }
+
+        /* 2. 申请SCK空间 */
+        sck = slab_alloc(agt->slab, sizeof(socket_t));
+        if (NULL == sck)
+        {
+            queue_dealloc(ctx->connq[agt->tidx], add);
+            log_error(agt->log, "Alloc memory from slab failed!");
+            return SRCH_ERR;
+        }
+
+        data = slab_alloc(agt->slab, sizeof(srch_agent_sck_data_t));
+        if (NULL == data)
+        {
+            slab_dealloc(agt->slab, sck);
+            queue_dealloc(ctx->connq[agt->tidx], add);
+            log_error(agt->log, "Alloc memory from slab failed!");
+            return SRCH_ERR;
+        }
+
+        sck->data = data;
+
+        /* 3. 设置SCK信息 */
+        sck->fd = add->fd;
+        ftime(&sck->crtm);          /* 创建时间 */
+        sck->wrtm = sck->rdtm = ctm;/* 记录当前时间 */
+        sck->recv_cb = (socket_recv_cb_t)srch_agent_recv;  /* Recv回调函数 */
+        sck->send_cb = (socket_send_cb_t)srch_agent_send;  /* Send回调函数*/
+
+        data->sck_serial = add->sck_serial;
+
+        queue_dealloc(ctx->connq[agt->tidx], add);  /* 释放连接队列空间 */
+
+        /* 4. 哈希表中(以序列号为主键) */
+        if (hash_tab_insert(agt->sock_tab, &data->sck_serial, sizeof(data->sck_serial), sck))
+        {
+            Close(sck->fd);
+            slab_dealloc(agt->slab, sck->data);
+            slab_dealloc(agt->slab, sck);
+            log_error(agt->log, "Insert into hash table failed!");
+            return SRCH_ERR;
+        }
+
+        /* 5. 加入epoll监听(首先是接收客户端搜索请求, 所以设置EPOLLIN) */
+        memset(&ev, 0, sizeof(ev));
+
+        ev.data.ptr = sck;
+        ev.events = EPOLLIN | EPOLLET; /* 边缘触发 */
+
+        epoll_ctl(agt->ep_fd, EPOLL_CTL_ADD, sck->fd, &ev);
     }
-
-    /* 2. 申请SCK空间 */
-    sck = slab_alloc(agt->slab, sizeof(socket_t));
-    if (NULL == sck)
-    {
-        queue_dealloc(ctx->connq[agt->tidx], add);
-        log_error(agt->log, "Alloc memory from slab failed!");
-        return SRCH_ERR;
-    }
-
-    data = slab_alloc(agt->slab, sizeof(srch_agent_sck_data_t));
-    if (NULL == data)
-    {
-        slab_dealloc(agt->slab, sck);
-        queue_dealloc(ctx->connq[agt->tidx], add);
-        log_error(agt->log, "Alloc memory from slab failed!");
-        return SRCH_ERR;
-    }
-
-    sck->data = data;
-
-    /* 3. 设置SCK信息 */
-    sck->fd = add->fd;
-    ftime(&sck->crtm);          /* 创建时间 */
-    sck->wrtm = sck->rdtm = ctm;/* 记录当前时间 */
-    sck->recv_cb = (socket_recv_cb_t)srch_agent_recv;  /* Recv回调函数 */
-    sck->send_cb = (socket_send_cb_t)srch_agent_send;  /* Send回调函数*/
-
-    data->sck_serial = add->sck_serial;
-
-    queue_dealloc(ctx->connq[agt->tidx], add);  /* 释放连接队列空间 */
-
-    /* 4. 哈希表中(以序列号为主键) */
-    if (hash_tab_insert(agt->sock_tab, &data->sck_serial, sizeof(data->sck_serial), sck))
-    {
-        Close(sck->fd);
-        slab_dealloc(agt->slab, sck->data);
-        slab_dealloc(agt->slab, sck);
-        log_error(agt->log, "Insert into hash table failed!");
-        return SRCH_ERR;
-    }
-
-    /* 5. 加入epoll监听(首先是接收客户端搜索请求, 所以设置EPOLLIN) */
-    memset(&ev, 0, sizeof(ev));
-
-    ev.data.ptr = sck;
-    ev.events = EPOLLIN | EPOLLET; /* 边缘触发 */
-
-    epoll_ctl(agt->ep_fd, EPOLL_CTL_ADD, sck->fd, &ev);
 
     return SRCH_OK;
 }
