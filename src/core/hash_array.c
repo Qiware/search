@@ -74,7 +74,12 @@ hash_array_t *hash_array_init(int num, size_t slab_size, key_cb_t key_cb)
 
     for (idx=0; idx<num; ++idx)
     {
-        hash->node[idx].tree = NULL;
+        hash->node[idx].tree = rbt_creat(hash->slab,
+                (mem_alloc_cb_t)slab_alloc, (mem_dealloc_cb_t)slab_dealloc);
+        if (NULL == hash->node[idx].tree)
+        {
+            return NULL;
+        }
     }
 
     hash->key_cb = key_cb;
@@ -97,19 +102,7 @@ hash_array_t *hash_array_init(int num, size_t slab_size, key_cb_t key_cb)
  ******************************************************************************/
 int hash_array_insert(hash_array_t *hash, int key, void *data)
 {
-    int idx;
-
-    idx = key % hash->num;
-    if (NULL == hash->node[idx].tree)
-    {
-        hash->node[idx].tree = rbt_creat();
-        if (NULL == hash->node[idx].tree)
-        {
-            return -1;
-        }
-    }
-
-    return rbt_insert(hash->node[idx].tree, key);
+    return rbt_insert(hash->node[key % hash->num].tree, key, data);
 }
 
 /******************************************************************************
@@ -159,25 +152,9 @@ void *hash_array_search(hash_array_t *hash, int key)
  ******************************************************************************/
 void *hash_array_remove(hash_array_t *hash, int key)
 {
-    int idx;
     void *data;
-    rbt_node_t *node;
 
-    idx = key % hash->num;
-    if (NULL == hash->node[idx].tree)
-    {
-        return NULL;
-    }
-
-    node = rbt_search(hash->node[idx].tree, key);
-    if (NULL == node)
-    {
-        return NULL;
-    }
-
-    data = node->data;
-
-    rbt_delete(hash->node[idx].tree, key);
+    rbt_delete(hash->node[key % hash->num].tree, key, &data);
 
     return data;
 }

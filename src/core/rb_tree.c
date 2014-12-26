@@ -81,7 +81,7 @@ void rbt_assert(const rbt_tree_t *tree, const rbt_node_t *node)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.01.15 #
  ******************************************************************************/
-void rbt_right_rotate(rbt_tree_t *tree, rbt_node_t *node)
+static void rbt_right_rotate(rbt_tree_t *tree, rbt_node_t *node)
 {
     rbt_node_t *parent = node->parent, *lchild = node->lchild;
     
@@ -128,7 +128,7 @@ void rbt_right_rotate(rbt_tree_t *tree, rbt_node_t *node)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.01.15 #
  ******************************************************************************/
-void rbt_left_rotate(rbt_tree_t *tree, rbt_node_t *node)
+static void rbt_left_rotate(rbt_tree_t *tree, rbt_node_t *node)
 {
     rbt_node_t *parent = node->parent, *rchild = node->rchild;
     
@@ -157,7 +157,9 @@ void rbt_left_rotate(rbt_tree_t *tree, rbt_node_t *node)
  **函数名称: rbt_creat
  **功    能: 创建红黑树对象(对外接口)
  **输入参数: 
- **     tree: 红黑树
+ **     pool: 内存池
+ **     alloc: 分配内存
+ **     dealloc: 释放内存
  **输出参数: NONE
  **返    回: RBT_SUCCESS:成功 RBT_FAILED:失败
  **实现描述: 
@@ -170,31 +172,35 @@ void rbt_left_rotate(rbt_tree_t *tree, rbt_node_t *node)
  **         的所有路径上包含相同数目的黑结点。
  **作    者: # Qifeng.zou # 2013.12.21 #
  ******************************************************************************/
-rbt_tree_t *rbt_creat(void)
+rbt_tree_t *rbt_creat(void *pool, mem_alloc_cb_t alloc, mem_dealloc_cb_t dealloc)
 {
     rbt_tree_t *tree;
     
-    tree = (rbt_tree_t *)calloc(1, sizeof(rbt_tree_t));
+    tree = (rbt_tree_t *)alloc(pool, sizeof(rbt_tree_t));
     if(NULL == tree)
     {
         return NULL;
     }
 
-    tree->sentinel = (rbt_node_t *)calloc(1, sizeof(rbt_node_t));
+    tree->sentinel = (rbt_node_t *)alloc(pool, sizeof(rbt_node_t));
     if(NULL == tree->sentinel)
     {
-        free(tree);
+        dealloc(pool, tree);
         return NULL;
     }
 
     tree->sentinel->color = RBT_COLOR_BLACK;
     tree->root = tree->sentinel;
 
+    tree->pool = pool;
+    tree->alloc = alloc;
+    tree->dealloc = dealloc;
+
     return tree;
 }
 
 /******************************************************************************
- **函数名称: rbt_insert
+ **函数名称: rbt_creat_node
  **功    能: 创建关键字为key的节点(内部接口)
  **输入参数: 
  **     key: 红黑树
@@ -207,11 +213,11 @@ rbt_tree_t *rbt_creat(void)
  **注意事项: 新结点的左右孩子肯定为叶子结点
  **作    者: # Qifeng.zou # 2013.12.23 #
  ******************************************************************************/
-rbt_node_t *rbt_creat_node(rbt_tree_t *tree, int key, int color, int type, rbt_node_t *parent)
+static rbt_node_t *rbt_creat_node(rbt_tree_t *tree, int64_t key, int color, int type, rbt_node_t *parent)
 {
     rbt_node_t *node;
 
-    node = (rbt_node_t *)calloc(1, sizeof(rbt_node_t));
+    node = (rbt_node_t *)tree->alloc(tree->pool, sizeof(rbt_node_t));
     if(NULL == node)
     {
         return NULL;
@@ -238,7 +244,8 @@ rbt_node_t *rbt_creat_node(rbt_tree_t *tree, int key, int color, int type, rbt_n
  **功    能: 向红黑树中增加节点(对外接口)
  **输入参数: 
  **     tree: 红黑树
- **     key: 需被添加的关键字
+ **     key: 关键字
+ **     data: 关键字对应的数据块
  **输出参数: NONE
  **返    回: RBT_SUCCESS:成功 RBT_FAILED:失败 RBT_NODE_EXIST:节点存在
  **实现描述: 
@@ -255,7 +262,7 @@ rbt_node_t *rbt_creat_node(rbt_tree_t *tree, int key, int color, int type, rbt_n
  **注意事项: 插入节点操作只可能破坏性质(4)
  **作    者: # Qifeng.zou # 2013.12.23 #
  ******************************************************************************/
-int rbt_insert(rbt_tree_t *tree, int key)
+int rbt_insert(rbt_tree_t *tree, int64_t key, void *data)
 {
     rbt_node_t *node = tree->root, *add;
 
@@ -268,6 +275,9 @@ int rbt_insert(rbt_tree_t *tree, int key)
         {
             return RBT_FAILED;
         }
+
+        tree->root->data = data;
+
         return RBT_SUCCESS;
     }
     
@@ -287,6 +297,8 @@ int rbt_insert(rbt_tree_t *tree, int key)
                 {
                     return RBT_FAILED;
                 }
+
+                add->data = data;
                 
                 return rbt_insert_fixup(tree, add); /* 防止红黑树的性质被破坏 */
             }
@@ -301,6 +313,8 @@ int rbt_insert(rbt_tree_t *tree, int key)
                 {
                     return RBT_FAILED;
                 }
+
+                add->data = data;
 
                 return rbt_insert_fixup(tree, add); /* 防止红黑树的性质被破坏 */
             }
@@ -425,13 +439,14 @@ static int rbt_insert_fixup(rbt_tree_t *tree, rbt_node_t *node)
  **输入参数: 
  **     tree: 红黑树
  **     key: 关键字
- **输出参数: NONE
+ **输出参数:
+ **     data: 关键字对应的数据块
  **返    回: RBT_SUCCESS:成功  RBT_FAILED:失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.27 #
  ******************************************************************************/
-int rbt_delete(rbt_tree_t *tree, int key)
+int rbt_delete(rbt_tree_t *tree, int64_t key, void **data)
 {
     rbt_node_t *node = tree->root;
 
@@ -439,6 +454,8 @@ int rbt_delete(rbt_tree_t *tree, int key)
     {
         if(key == node->key)
         {
+            *data = node->data;
+
             return _rbt_delete(tree, node);
         }
         else if(key < node->key)
@@ -451,11 +468,13 @@ int rbt_delete(rbt_tree_t *tree, int key)
         }
     }
 
+    *data = NULL;
+
     return RBT_SUCCESS;
 }
 
 /******************************************************************************
- **函数名称: rbt_delete
+ **函数名称: _rbt_delete
  **功    能: 删除结点(内部接口)
  **输入参数: 
  **     tree: 红黑树
@@ -470,7 +489,6 @@ static int _rbt_delete(rbt_tree_t *tree, rbt_node_t *dnode)
 {
     rbt_node_t *parent = NULL, *next = NULL, *refer = NULL;
 
-#if 1
     /* Case 1: 被删结点D的左孩子为叶子结点, 右孩子无限制(可为叶子结点，也可为非叶子结点) */
     if(tree->sentinel == dnode->lchild)
     {
@@ -493,11 +511,12 @@ static int _rbt_delete(rbt_tree_t *tree, rbt_node_t *dnode)
 
         if(rbt_is_red(dnode))
         {
-            free(dnode);
+            tree->dealloc(tree->pool, dnode);
             return RBT_SUCCESS;
         }
 
-        free(dnode);
+        tree->dealloc(tree->pool, dnode);
+
         return rbt_delete_fixup(tree, refer);
     }
     /* Case 2: 被删结点D的右孩子为叶子结点, 左孩子不为叶子结点 */
@@ -522,11 +541,12 @@ static int _rbt_delete(rbt_tree_t *tree, rbt_node_t *dnode)
 
         if(rbt_is_red(dnode))
         {
-            free(dnode);
+            tree->dealloc(tree->pool, dnode);
             return RBT_SUCCESS;
         }
 
-        free(dnode);
+        tree->dealloc(tree->pool, dnode);
+
         return rbt_delete_fixup(tree, refer);
     }
 
@@ -552,76 +572,17 @@ static int _rbt_delete(rbt_tree_t *tree, rbt_node_t *dnode)
     }
 
     dnode->key = next->key;
+    dnode->data = next->data; /* Copy next's satellite data into dnode */
 
     if(rbt_is_red(next)) /* Not black */
     {
-        free(next);
+        tree->dealloc(tree->pool, next);
         return RBT_SUCCESS;
     }
 
-    free(next);
+    tree->dealloc(tree->pool, next);
 
     return rbt_delete_fixup(tree, refer);
-
-#else
-    /* 查找dnode的后继结点next */
-    if((tree->sentinel == dnode->lchild)
-        || (tree->sentinel == dnode->rchild))
-    {
-        next = dnode;
-    }
-    else
-    {
-        next = dnode->rchild;
-        while(tree->sentinel != next->lchild)
-        {
-            next = next->lchild;
-        }
-    }
-
-    /* 设置替代后继结点的结点refer(参考结点) */
-    if(tree->sentinel != next->lchild)
-    {
-        refer = next->lchild;
-    }
-    else
-    {
-        refer = next->rchild;
-    }
-
-    refer->parent = next->parent;
-    if(tree->sentinel == next->parent)
-    {
-        tree->root = refer;
-    }
-    else
-    {
-        if(next == next->parent->lchild)
-        {
-            next->parent->lchild = refer;
-        }
-        else
-        {
-            next->parent->rchild = refer;
-        }
-    }
-
-    if(next != dnode)
-    {
-        dnode->key = next->key;
-        /* Copy next's satellite data into dnode */
-    }
-
-    if(rbt_is_red(next)) /* Not black */
-    {
-        free(next);
-        return RBT_SUCCESS;
-    }
-
-    free(next);
-
-    return rbt_delete_fixup(tree, refer);
-#endif
 }
 
 /******************************************************************************
@@ -756,7 +717,7 @@ static int rbt_delete_fixup(rbt_tree_t *tree, rbt_node_t *node)
 }
 
 /******************************************************************************
- **函数名称: rbt_hprint32_t
+ **函数名称: rbt_hprint
  **功    能: 打印结点头(内部接口)
  **输入参数: 
  **     node: 被打印的结点
@@ -767,7 +728,7 @@ static int rbt_delete_fixup(rbt_tree_t *tree, rbt_node_t *node)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.17 #
  ******************************************************************************/
-static void rbt_hprint32_t(const rbt_tree_t *tree, const rbt_node_t *node, int depth)
+static void rbt_hprint(const rbt_tree_t *tree, const rbt_node_t *node, int depth)
 {
     int idx = 0;
     rbt_node_t *parent = node->parent;
@@ -810,16 +771,16 @@ static void rbt_hprint32_t(const rbt_tree_t *tree, const rbt_node_t *node, int d
     if((tree->sentinel == node->lchild)
         && (tree->sentinel == node->rchild))
     {
-        fprintf(stderr, "<%03d:%c/>\n", node->key, node->color);
+        fprintf(stderr, "<%03ld:%c/>\n", node->key, node->color);
     }
     else
     {
-        fprintf(stderr, "<%03d:%c>\n", node->key, node->color);
+        fprintf(stderr, "<%03ld:%c>\n", node->key, node->color);
     }
 }
 
 /******************************************************************************
- **函数名称: avl_tprint32_t
+ **函数名称: avl_tprint
  **功    能: 打印结点尾(内部接口)
  **输入参数: 
  **     node: 被打印的结点
@@ -830,7 +791,7 @@ static void rbt_hprint32_t(const rbt_tree_t *tree, const rbt_node_t *node, int d
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.17 #
  ******************************************************************************/
-static void rbt_tprint32_t(const rbt_tree_t *tree, const rbt_node_t *node, int depth)
+static void rbt_tprint(const rbt_tree_t *tree, const rbt_node_t *node, int depth)
 {
     int idx = 0;
 
@@ -850,11 +811,11 @@ static void rbt_tprint32_t(const rbt_tree_t *tree, const rbt_node_t *node, int d
         depth--;
     }
 
-    fprintf(stderr, "</%03d>\n", node->key);
+    fprintf(stderr, "</%03ld>\n", node->key);
 }
 
 /******************************************************************************
- **函数名称: rbt_print32_t
+ **函数名称: rbt_print
  **功    能: 打印红黑树(外部接口)
  **输入参数: 
  **     tree: 红黑树
@@ -864,7 +825,7 @@ static void rbt_tprint32_t(const rbt_tree_t *tree, const rbt_node_t *node, int d
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.17 #
  ******************************************************************************/
-int rbt_print32_t(rbt_tree_t *tree)
+int rbt_print(rbt_tree_t *tree)
 {
     int depth = 0;
     Stack_t _stack, *stack = &_stack;
@@ -885,14 +846,14 @@ int rbt_print32_t(rbt_tree_t *tree)
 
             stack_push(stack, node);
                         
-            rbt_hprint32_t(tree, node, depth);   /* 打印头：入栈时打印头 出栈时打印尾 */
+            rbt_hprint(tree, node, depth);   /* 打印头：入栈时打印头 出栈时打印尾 */
 
             node = node->lchild;
         }
 
         /* 打印最左端的子孙结点 */
         depth = stack_depth(stack);
-        rbt_hprint32_t(tree, node, depth);
+        rbt_hprint(tree, node, depth);
 
         /* 最左端的孩子有右孩子 */
         if(tree->sentinel != node->rchild)
@@ -903,7 +864,7 @@ int rbt_print32_t(rbt_tree_t *tree)
         }
         
         /* 最左端的孩子无右孩子 */
-        rbt_tprint32_t(tree, node, depth);
+        rbt_tprint(tree, node, depth);
 
         parent = stack_gettop(stack);
         if(NULL == parent)
@@ -926,7 +887,7 @@ int rbt_print32_t(rbt_tree_t *tree)
             stack_pop(stack);
             
             depth = stack_depth(stack);
-            rbt_tprint32_t(tree, parent, depth);    /* 打印尾：出栈时打印尾 入栈时已打印头 */
+            rbt_tprint(tree, parent, depth);    /* 打印尾：出栈时打印尾 入栈时已打印头 */
 
             node = parent;
             parent = stack_gettop(stack);
@@ -954,7 +915,7 @@ int rbt_print32_t(rbt_tree_t *tree)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.23 #
  ******************************************************************************/
-rbt_node_t *rbt_search(rbt_tree_t *tree, int key)
+rbt_node_t *rbt_search(rbt_tree_t *tree, int64_t key)
 {
     rbt_node_t *node = tree->root;
 
@@ -1021,9 +982,9 @@ int rbt_destroy(rbt_tree_t **tree)
         parent = stack_gettop(stack);
         if(NULL == parent)
         {
-            free(node);
-            free((*tree)->sentinel);
-            free(*tree), *tree = NULL;
+            (*tree)->dealloc((*tree)->pool, node);
+            (*tree)->dealloc((*tree)->pool, (*tree)->sentinel);
+            (*tree)->dealloc((*tree)->pool, *tree), *tree = NULL;
             stack_destroy(stack);
             return RBT_SUCCESS;
         }
@@ -1031,7 +992,7 @@ int rbt_destroy(rbt_tree_t **tree)
         if((parent->lchild == node) /* 右孩子是否已处理 */
             && ((*tree)->sentinel != parent->rchild))
         {
-            free(node);
+            (*tree)->dealloc((*tree)->pool, node);
             node = parent->rchild;
             continue;
         }
@@ -1042,15 +1003,15 @@ int rbt_destroy(rbt_tree_t **tree)
         {
             stack_pop(stack);
 
-            free(node);     /* 出栈结点下一次循环时释放 */
+            (*tree)->dealloc((*tree)->pool, node);     /* 出栈结点下一次循环时释放 */
 
             node = parent;
             parent = stack_gettop(stack);
             if(NULL == parent)
             {
-                free(node);
-                free((*tree)->sentinel);
-                free(*tree), *tree = NULL;
+                (*tree)->dealloc((*tree)->pool, node);
+                (*tree)->dealloc((*tree)->pool, (*tree)->sentinel);
+                (*tree)->dealloc((*tree)->pool, *tree), *tree = NULL;
                 stack_destroy(stack);
                 return RBT_SUCCESS;
             }
@@ -1058,13 +1019,101 @@ int rbt_destroy(rbt_tree_t **tree)
 
         if(NULL != node)    /* 释放上面出栈的结点 */
         {
-            free(node);
+            (*tree)->dealloc((*tree)->pool, node);
         }
         node = parent->rchild;
     }
 
-    free((*tree)->sentinel);
-    free(*tree), *tree = NULL;
+    (*tree)->dealloc((*tree)->pool, (*tree)->sentinel);
+    (*tree)->dealloc((*tree)->pool, *tree), *tree = NULL;
     stack_destroy(stack);
     return RBT_SUCCESS;
+}
+
+/******************************************************************************
+ **函数名称: rbt_trav
+ **功    能: 遍历红黑树(外部接口)
+ **输入参数: 
+ **     tree: 红黑树
+ **     cb: 回调函数
+ **     args: 附加参数
+ **输出参数: NONE
+ **返    回: VOID
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.12.26 #
+ ******************************************************************************/
+int rbt_trav(rbt_tree_t *tree, rbt_trav_cb_t cb, void *args)
+{
+    Stack_t _stack, *stack = &_stack;
+    rbt_node_t *node = tree->root, *parent = NULL;
+
+    if(tree->sentinel == node) return 0;
+
+    stack_init(stack, RBT_MAX_DEPTH);
+
+    while(tree->sentinel != node)
+    {
+        /* 压左孩子入栈 */
+        while(tree->sentinel != node->lchild)
+        {
+            rbt_assert(tree, node);
+
+            stack_push(stack, node);
+                        
+            //rbt_hprint(tree, node, depth);   /* 打印头：入栈时打印头 出栈时打印尾 */
+            cb(node->data, args);
+
+            node = node->lchild;
+        }
+
+        /* 打印最左端的子孙结点 */
+        //rbt_hprint(tree, node, depth);
+        cb(node->data, args);
+
+        /* 最左端的孩子有右孩子 */
+        if(tree->sentinel != node->rchild)
+        {
+            stack_push(stack, node);
+            node = node->rchild;
+            continue;
+        }
+        
+        /* 最左端的孩子无右孩子 */
+        //rbt_tprint(tree, node, depth);
+
+        parent = stack_gettop(stack);
+        if(NULL == parent)
+        {
+            return stack_destroy(stack);
+        }
+
+        /* 判断最左结点的父结点未处理完成 */
+        if((parent->lchild == node)
+            && (tree->sentinel != parent->rchild))
+        {
+            node = parent->rchild;
+            continue;
+        }
+
+        /* 判断最左结点的父结点已处理完成 */
+        while((node == parent->rchild)
+            || (tree->sentinel == parent->rchild))
+        {
+            stack_pop(stack);
+            
+         //   rbt_tprint(tree, parent, depth);    /* 打印尾：出栈时打印尾 入栈时已打印头 */
+
+            node = parent;
+            parent = stack_gettop(stack);
+            if(NULL == parent)
+            {
+                return stack_destroy(stack);
+            }
+        }
+        
+        node = parent->rchild;
+    }
+
+    return stack_destroy(stack);
 }
