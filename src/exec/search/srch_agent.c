@@ -77,7 +77,13 @@ void *srch_agent_routine(void *_ctx)
         }
         else if (0 == agt->fds)
         {
-            srch_agent_event_timeout_hdl(agt);
+            agt->ctm = time(NULL);
+            if (agt->ctm - agt->scan_tm > SRCH_TMOUT_SCAN_SEC)
+            {
+                agt->scan_tm = agt->ctm;
+
+                srch_agent_event_timeout_hdl(agt);
+            }
             continue;
         }
 
@@ -225,7 +231,8 @@ static int srch_agent_event_hdl(srch_agent_t *agt)
 {
     int idx, ret;
     socket_t *sck;
-    time_t ctm = time(NULL);
+
+    agt->ctm = time(NULL);
 
     /* 1. 依次遍历套接字, 判断是否可读可写 */
     for (idx=0; idx<agt->fds; ++idx)
@@ -250,7 +257,7 @@ static int srch_agent_event_hdl(srch_agent_t *agt)
         {
             /* 发送网络数据 */
             ret = sck->send_cb(agt, sck);
-            if (SRCH_SCK_AGAIN != ret)
+            if (SRCH_ERR == ret)
             {
                 log_info(agt->log, "Delete connection! fd:%d", sck->fd);
                 srch_agent_del_conn(agt, sck);
@@ -260,9 +267,9 @@ static int srch_agent_event_hdl(srch_agent_t *agt)
     }
 
     /* 2. 超时扫描 */
-    if (ctm - agt->scan_tm > SRCH_TMOUT_SCAN_SEC)
+    if (agt->ctm - agt->scan_tm > SRCH_TMOUT_SCAN_SEC)
     {
-        agt->scan_tm = ctm;
+        agt->scan_tm = agt->ctm;
 
         srch_agent_event_timeout_hdl(agt);
     }
@@ -334,7 +341,7 @@ static int srch_agent_event_timeout_hdl(srch_agent_t *agt)
         return SRCH_ERR;
     }
 
-    timeout.ctm = time(NULL);
+    timeout.ctm = agt->ctm;
     
     /* 2. 获取超时连接 */
     ret = rbt_trav(agt->connections,
