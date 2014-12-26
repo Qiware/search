@@ -64,7 +64,9 @@ void *srch_worker_routine(void *_ctx)
 
         reg = &ctx->reg[head->type];
 
-        reg->cb(head->type, addr+sizeof(srch_mesg_header_t), head->length, reg->args);
+        reg->cb(head->type,
+                addr + sizeof(srch_mesg_header_t),
+                head->length, reg->args, worker->log);
 
         /* 3. 释放内存空间 */
         queue_dealloc(ctx->recvq[rqid], addr);

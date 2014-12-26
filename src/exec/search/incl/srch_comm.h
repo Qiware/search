@@ -25,7 +25,7 @@ typedef struct
 } srch_opt_t;
 
 /* 注册回调类型 */
-typedef int (*srch_reg_cb_t)(uint8_t type, char *buff, size_t len, void *args);
+typedef int (*srch_reg_cb_t)(uint8_t type, char *buff, size_t len, void *args, log_cycle_t *log);
 
 /* 注册对象 */
 typedef struct

@@ -600,10 +600,12 @@ static int srch_proc_lock(void)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.20 #
  ******************************************************************************/
-static int srch_reg_def_hdl(uint8_t type, char *buff, size_t len, void *args)
+static int srch_reg_def_hdl(uint8_t type, char *buff, size_t len, void *args, log_cycle_t *log)
 {
     static int total = 0;
-    log2_info("Call: %s()! total:%d", __func__, ++total);
+
+    log_info(log, "Call: %s()! total:%d", __func__, ++total);
+
     return SRCH_OK;
 }
 
