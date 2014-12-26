@@ -2,12 +2,16 @@
 #define __COMMON_H__
 
 #include <stdio.h>
+#include <ctype.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <memory.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdint.h>
 #include <stdbool.h>
+
+
 
 #if !defined(bool)
     #define bool char
