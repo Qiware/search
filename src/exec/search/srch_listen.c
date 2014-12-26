@@ -192,7 +192,7 @@ static int srch_listen_accept(srch_cntx_t *ctx, srch_listen_t *lsn)
     add = queue_malloc(ctx->connq[tidx]);
     if (NULL == add)
     {
-        log_error(lsn->log, "Alloc memory from queue failed!");
+        log_error(lsn->log, "Alloc memory from queue failed! fd:%d", fd);
         Close(fd);
         return SRCH_ERR;
     }
@@ -200,9 +200,11 @@ static int srch_listen_accept(srch_cntx_t *ctx, srch_listen_t *lsn)
     add->fd = fd;
     add->sck_serial = lsn->sck_serial;
 
+    log_debug(lsn->log, "Push data! fd:%d addr:%p", fd, add);
+
     if (queue_push(ctx->connq[tidx], add))
     {
-        log_error(lsn->log, "Push into queue failed!");
+        log_error(lsn->log, "Push into queue failed! fd:%d", fd);
         queue_dealloc(ctx->connq[tidx], add);
         Close(fd);
         return SRCH_ERR;

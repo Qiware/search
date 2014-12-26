@@ -602,7 +602,8 @@ static int srch_proc_lock(void)
  ******************************************************************************/
 static int srch_reg_def_hdl(uint8_t type, char *buff, size_t len, void *args)
 {
-    log2_info("Call: %s()", __func__);
+    static int total = 0;
+    log2_info("Call: %s()! total:%d", __func__, ++total);
     return SRCH_OK;
 }
 
@@ -619,10 +620,10 @@ static int srch_reg_def_hdl(uint8_t type, char *buff, size_t len, void *args)
  ******************************************************************************/
 int srch_init_register(srch_cntx_t *ctx)
 {
-    int idx;
+    uint32_t idx;
     srch_reg_t *reg;
 
-    for (idx=0; idx<SRCH_MSG_TYPE_MAX; ++idx)
+    for (idx=0; idx<=SRCH_MSG_TYPE_MAX; ++idx)
     {
         reg = &ctx->reg[idx];
 
@@ -702,7 +703,7 @@ static int srch_creat_queue(srch_cntx_t *ctx)
 
     for (idx=0; idx<conf->agent_num; ++idx)
     {
-        ctx->connq[idx] = queue_init(SRCH_CONNQ_LEN, sizeof(srch_add_sck_t));
+        ctx->connq[idx] = queue_creat(SRCH_CONNQ_LEN, sizeof(srch_add_sck_t));
         if (NULL == ctx->connq)
         {
             log_error(ctx->log, "Initialize lock queue failed!");
@@ -720,7 +721,7 @@ static int srch_creat_queue(srch_cntx_t *ctx)
 
     for (idx=0; idx<conf->agent_num; ++idx)
     {
-        ctx->recvq[idx] = queue_init(SRCH_RECVQ_LEN, SRCH_RECVQ_SIZE);
+        ctx->recvq[idx] = queue_creat(SRCH_RECVQ_LEN, SRCH_RECVQ_SIZE);
         if (NULL == ctx->recvq)
         {
             log_error(ctx->log, "Initialize lock queue failed!");
@@ -738,7 +739,7 @@ static int srch_creat_queue(srch_cntx_t *ctx)
 
     for (idx=0; idx<conf->agent_num; ++idx)
     {
-        ctx->connq[idx] = queue_init(SRCH_CONNQ_LEN, sizeof(srch_add_sck_t));
+        ctx->connq[idx] = queue_creat(SRCH_CONNQ_LEN, sizeof(srch_add_sck_t));
         if (NULL == ctx->connq)
         {
             log_error(ctx->log, "Initialize lock queue failed!");

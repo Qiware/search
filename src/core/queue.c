@@ -16,7 +16,7 @@
 #include "queue.h"
 
 /******************************************************************************
- **函数名称: _queue_init
+ **函数名称: _queue_creat
  **功    能: 队列初始化
  **输入参数:
  **     q: 队列
@@ -29,7 +29,7 @@
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.04.28 #
  ******************************************************************************/
-int _queue_init(_queue_t *q, int max)
+int _queue_creat(_queue_t *q, int max)
 {
     int idx;
     _qnode_t *node;
@@ -164,7 +164,7 @@ void _queue_destroy(_queue_t *q)
 }
 
 /******************************************************************************
- **函数名称: queue_init
+ **函数名称: queue_creat
  **功    能: 初始化加锁队列
  **输入参数: 
  **     max: 队列长度
@@ -175,7 +175,7 @@ void _queue_destroy(_queue_t *q)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.12 #
  ******************************************************************************/
-queue_t *queue_init(int max, size_t size)
+queue_t *queue_creat(int max, size_t size)
 {
     queue_t *q;
     mem_chunk_t *chunk;
@@ -188,7 +188,7 @@ queue_t *queue_init(int max, size_t size)
     }
 
     /* 2. 创建内存池 */
-    chunk = mem_chunk_init(max * 1.2, size);
+    chunk = mem_chunk_creat(max+8, size);
     if (NULL == chunk)
     {
         free(q);
@@ -198,7 +198,7 @@ queue_t *queue_init(int max, size_t size)
     q->chunk = chunk;
 
     /* 3. 创建队列 */
-    if (_queue_init(&q->queue, max))
+    if (_queue_creat(&q->queue, max))
     {
         free(q);
         mem_chunk_destroy(chunk);

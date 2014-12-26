@@ -34,7 +34,7 @@ typedef struct
 /* 套接字信息 */
 typedef struct
 {
-    uint64_t sck_serial;            /* 序列号 */
+    uint64_t sck_serial;            /* 序列号(主键) */
 
     srch_mesg_header_t *head;       /* 报头起始地址 */
     void *body;                     /* Body */

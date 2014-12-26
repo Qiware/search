@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
 {
     int fd[SRCH_CLIENT_NUM], idx, num = SRCH_CLIENT_NUM;
     const char *ip = SRCH_SVR_IP_ADDR;
-    int port = SRCH_SVR_PORT;
+    int n, port = SRCH_SVR_PORT;
     srch_mesg_header_t header;
 
     if (3 == argc)
@@ -53,12 +53,14 @@ int main(int argc, char *argv[])
             return -1;
         }
 
-        header.type = SRCH_MSG_SRCH_REQ;
+        header.type = idx%0xFF;
         header.flag = SRCH_MSG_FLAG_USR;
         header.mark = htonl(SRCH_MSG_MARK_KEY);
         header.length = 0;
 
-        Writen(fd[idx], (void *)&header, sizeof(header));
+        n = Writen(fd[idx], (void *)&header, sizeof(header));
+
+        fprintf(stdout, "idx:%d n:%d!\n", idx, n);
     }
 
 #if 0

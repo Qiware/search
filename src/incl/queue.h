@@ -34,8 +34,9 @@ typedef struct
 
 /* 获取队列剩余空间 */
 #define queue_space(q) ((q)->max - (q)->num)
+#define queue_used(q) ((q)->num)
 
-int _queue_init(_queue_t *q, int max);
+int _queue_creat(_queue_t *q, int max);
 int queue_push_lock(_queue_t *q, void *addr);
 void *queue_pop_lock(_queue_t *q);
 void _queue_destroy(_queue_t *q);
@@ -47,7 +48,7 @@ typedef struct
     mem_chunk_t *chunk;                     /* 内存池 */
 } queue_t;
 
-queue_t *queue_init(int max, size_t size);
+queue_t *queue_creat(int max, size_t size);
 #define queue_malloc(q) mem_chunk_alloc((q)->chunk)
 #define queue_dealloc(q, p) mem_chunk_dealloc((q)->chunk, p)
 #define queue_push(q, addr) queue_push_lock(&((q)->queue), addr)

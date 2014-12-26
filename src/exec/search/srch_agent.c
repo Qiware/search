@@ -51,11 +51,11 @@ void *srch_agent_routine(void *_ctx)
     while (1)
     {
         /* 2. 从连接队列取数据 */
-        if (srch_connq_space(ctx, agt->tidx))
+        if (srch_connq_used(ctx, agt->tidx))
         {
             if (srch_agent_add_conn(ctx, agt))
             {
-                log_error(agt->log, "Fetch new connection failed!");
+                log_error(agt->log, "Add connection failed!");
             }
         }
 
@@ -388,6 +388,8 @@ static int srch_agent_add_conn(srch_cntx_t *ctx, srch_agent_t *agt)
             return SRCH_OK;
         }
 
+        log_debug(agt->log, "Pop data! fd:%d addr:%p", add->fd, add);
+
         /* 2. 申请SCK空间 */
         sck = slab_alloc(agt->slab, sizeof(socket_t));
         if (NULL == sck)
@@ -396,6 +398,8 @@ static int srch_agent_add_conn(srch_cntx_t *ctx, srch_agent_t *agt)
             log_error(agt->log, "Alloc memory from slab failed!");
             return SRCH_ERR;
         }
+
+        memset(sck, 0, sizeof(socket_t));
 
         data = slab_alloc(agt->slab, sizeof(srch_agent_sck_data_t));
         if (NULL == data)
@@ -412,6 +416,8 @@ static int srch_agent_add_conn(srch_cntx_t *ctx, srch_agent_t *agt)
         sck->fd = add->fd;
         ftime(&sck->crtm);          /* 创建时间 */
         sck->wrtm = sck->rdtm = ctm;/* 记录当前时间 */
+
+        sck->recv.phase = SOCK_PHASE_RECV_INIT;
         sck->recv_cb = (socket_recv_cb_t)srch_agent_recv;  /* Recv回调函数 */
         sck->send_cb = (socket_send_cb_t)srch_agent_send;  /* Send回调函数*/
 
@@ -422,12 +428,15 @@ static int srch_agent_add_conn(srch_cntx_t *ctx, srch_agent_t *agt)
         /* 4. 插入AVL树中(以序列号为主键) */
         if (avl_insert(agt->connections, &data->sck_serial, sizeof(data->sck_serial), sck))
         {
+            log_error(agt->log, "Insert into avl failed! fd:%d seq:%lu", sck->fd, data->sck_serial);
+
             Close(sck->fd);
             slab_dealloc(agt->slab, sck->data);
             slab_dealloc(agt->slab, sck);
-            log_error(agt->log, "Insert into hash table failed!");
             return SRCH_ERR;
         }
+
+        log_debug(agt->log, "Insert into avl success! fd:%d seq:%lu", sck->fd, data->sck_serial);
 
         /* 5. 加入epoll监听(首先是接收客户端搜索请求, 所以设置EPOLLIN) */
         memset(&ev, 0, sizeof(ev));
@@ -718,6 +727,8 @@ static int srch_agent_recv(srch_agent_t *agt, socket_t *sck)
                     log_error(agt->log, "Alloc memory from queue failed!");
                     return SRCH_ERR;
                 }
+
+                log_info(agt->log, "Alloc memory from queue success!");
 
                 data->head = (srch_mesg_header_t *)recv->addr;
                 data->body = (void *)(data->head + 1);

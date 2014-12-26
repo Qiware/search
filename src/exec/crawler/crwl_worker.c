@@ -95,7 +95,7 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker)
     }
 
     /* 2. 创建任务队列 */
-    worker->taskq = queue_init(
+    worker->taskq = queue_creat(
             worker->conf->worker.taskq_count,
             sizeof(crwl_task_t) + sizeof(crwl_task_space_u));
     if (NULL == worker->taskq)

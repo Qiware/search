@@ -8,13 +8,15 @@
  **         此内存池主要用于存储大小一致的数据块的使用场景
  ** 作  者: # Qifeng.zou # 2014.12.18 #
  ******************************************************************************/
+#include "log.h"
 #include "common.h"
+#include "syscall.h"
 #include "mem_chunk.h"
 
 
 /******************************************************************************
- **函数名称: mem_chunk_init
- **功    能: 内存池初始化
+ **函数名称: mem_chunk_creat
+ **功    能: 创建内存池
  **输入参数: 
  **     num: 内存块数
  **     size: 内存块大小
@@ -24,11 +26,12 @@
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.18 #
  ******************************************************************************/
-mem_chunk_t *mem_chunk_init(int num, size_t size)
+mem_chunk_t *mem_chunk_creat(int num, size_t size)
 {
-    int i, m;
+    int i, m, idx;
     uint32_t *bitmap;
     mem_chunk_t *chunk;
+    mem_chunk_page_t *page;
 
     /* 1. 创建对象 */
     chunk = (mem_chunk_t *)calloc(1, sizeof(mem_chunk_t));
@@ -37,42 +40,71 @@ mem_chunk_t *mem_chunk_init(int num, size_t size)
         return NULL;
     }
 
-   /* 2. 新建BitMap */
-    chunk->bitmap_num = num/32;
-    m = num%32;
-    if (m)
-    {
-        ++chunk->bitmap_num;
-    }
+    chunk->num = num;
+    chunk->size = size;
 
-    chunk->bitmap = (uint32_t *)calloc(chunk->bitmap_num, sizeof(uint32_t));
-    if (NULL == chunk->bitmap)
+    /* 2. 计算页数, 并分配页空间 */
+    chunk->pages = math_ceiling(num, MEM_CHUNK_PAGE_SLOT_NUM);
+
+    chunk->page = (mem_chunk_page_t *)calloc(chunk->pages, sizeof(mem_chunk_page_t));
+    if (NULL == chunk->page)
     {
         free(chunk);
         return NULL;
     }
 
-    if (m)
-    {
-        bitmap = &chunk->bitmap[chunk->bitmap_num - 1];
-
-        for (i=m; i<32; i++)
-        {
-            *bitmap |= (1 << i);
-        }
-    }
-
-    /* 3. 数据空间 */
+    /* 3 分配总内存空间 */
     chunk->addr = (char *)calloc(num, size);
     if (NULL == chunk->addr)
     {
-        free(chunk->bitmap);
+        free(chunk->page);
         free(chunk);
         return NULL;
     }
 
-    chunk->num = num;
-    chunk->size = size;
+    /* 4. 设置位图信息 */
+    for (idx=0; idx<chunk->pages; ++idx)
+    {
+        page = &chunk->page[idx];
+
+        spin_lock_init(&page->lock);
+
+        /* 3.1 设置bitmap */
+        if (idx == (chunk->pages - 1))
+        {
+            m = (num - idx*MEM_CHUNK_PAGE_SLOT_NUM) % 32;
+
+            page->bitmaps = math_ceiling(num - idx*MEM_CHUNK_PAGE_SLOT_NUM, 32);
+        }
+        else
+        {
+            m = MEM_CHUNK_PAGE_SLOT_NUM % 32;
+
+            page->bitmaps = math_ceiling(MEM_CHUNK_PAGE_SLOT_NUM, 32);
+        }
+
+        page->bitmap = (uint32_t *)calloc(page->bitmaps, sizeof(uint32_t));
+        if (NULL == page->bitmap)
+        {
+            free(chunk->page);
+            free(chunk->addr);
+            free(chunk);
+            return NULL;
+        }
+
+        if (m)
+        {
+            bitmap = &page->bitmap[page->bitmaps - 1];
+
+            for (i=m; i<32; i++)
+            {
+                *bitmap |= (1 << i);
+            }
+        }
+
+        /* 3.2 设置数据空间 */
+        page->addr = chunk->addr + idx * MEM_CHUNK_PAGE_SLOT_NUM * size;
+    }
 
     return chunk;
 }
@@ -90,31 +122,42 @@ mem_chunk_t *mem_chunk_init(int num, size_t size)
  ******************************************************************************/
 void *mem_chunk_alloc(mem_chunk_t *chunk)
 {
-    uint32_t i, j;
+    uint32_t i, j, n, p;
     uint32_t *bitmap;
+    mem_chunk_page_t *page;
 
-    spin_lock(&chunk->lock);
+    n = rand(); /* 随机选择页 */
 
-    for (i=0; i<chunk->bitmap_num; ++i)
+    for (p=0; p<chunk->pages; ++p, ++n)
     {
-        if (0xFFFFFFFF == chunk->bitmap[i])
-        {
-            continue;
-        }
+        n %= chunk->pages;
+        page = &chunk->page[n];
 
-        bitmap = chunk->bitmap + i;
-        for (j=0; j<32; ++j)
+        spin_lock(&page->lock);
+
+        for (i=0; i<page->bitmaps; ++i)
         {
-            if (!((*bitmap >> j) & 1))
+            if (0xFFFFFFFF == page->bitmap[i])
             {
-                *bitmap |= (1 << j);
-                spin_unlock(&chunk->lock);
-                return chunk->addr + (i*32 + j)*chunk->size;
+                continue;
+            }
+
+            bitmap = page->bitmap + i;
+            for (j=0; j<32; ++j)
+            {
+                if (!((*bitmap >> j) & 1))
+                {
+                    *bitmap |= (1 << j);
+
+                    spin_unlock(&page->lock);
+
+                    return page->addr + (i*32 + j)*chunk->size;
+                }
             }
         }
-    }
 
-    spin_unlock(&chunk->lock);
+        spin_unlock(&page->lock);
+    }
     return NULL;
 }
 
@@ -132,14 +175,15 @@ void *mem_chunk_alloc(mem_chunk_t *chunk)
  ******************************************************************************/
 void mem_chunk_dealloc(mem_chunk_t *chunk, void *p)
 {
-    int i, j;
+    int i, j, n;
 
-    i = (p - chunk->addr) / (chunk->size << 5);
-    j = (p - (chunk->addr + i * (chunk->size << 5)))%chunk->size;
+    n = (p - chunk->addr) / (MEM_CHUNK_PAGE_SLOT_NUM * chunk->size);        /* 计算页号 */
+    i = (p - chunk->page[n].addr) / (32 * chunk->size);                     /* 计算页内bitmap索引 */
+    j = (p - (chunk->page[n].addr + i * (32 * chunk->size))) / chunk->size; /* 计算bitmap内偏移 */
 
-    spin_lock(&chunk->lock);
-    chunk->bitmap[i] &= ~(1 << j);
-    spin_unlock(&chunk->lock);
+    spin_lock(&chunk->page[n].lock);
+    chunk->page[n].bitmap[i] &= ~(1 << j);
+    spin_unlock(&chunk->page[n].lock);
 }
 
 /******************************************************************************
@@ -155,8 +199,18 @@ void mem_chunk_dealloc(mem_chunk_t *chunk, void *p)
  ******************************************************************************/
 void mem_chunk_destroy(mem_chunk_t *chunk)
 {
-    free(chunk->bitmap);
+    int i;
+    mem_chunk_page_t *page;
+
+    for (i=0; i<chunk->pages; ++i)
+    {
+        page = &chunk->page[i];
+
+        free(page->bitmap);
+        spin_lock_destroy(&page->lock);
+    }
+
+    free(chunk->page);
     free(chunk->addr);
     free(chunk);
-    spin_lock_destroy(&chunk->lock);
 }

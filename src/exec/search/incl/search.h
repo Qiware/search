@@ -23,8 +23,8 @@
 #define SRCH_CONN_MIN_NUM           (1)     /* 最小网络连接数 */
 #define SRCH_CONN_TMOUT_SEC         (15)    /* 连接超时时间(秒) */
 
-#define SRCH_CONNQ_LEN              (10000) /* 连接队列长度 */
-#define SRCH_RECVQ_LEN              (10000) /* 接收队列长度 */
+#define SRCH_CONNQ_LEN              (1000) /* 连接队列长度 */
+#define SRCH_RECVQ_LEN              (1000) /* 接收队列长度 */
 #define SRCH_RECVQ_SIZE             (2 * KB)/* 接收队列SIZE */
 
 #define SRCH_MSG_TYPE_MAX           (0xFF)  /* 消息最大类型 */
@@ -53,9 +53,9 @@ typedef struct
     queue_t **sendq;                        /* 发送队列(注:数组长度与Agent相等) */
 } srch_cntx_t;
 
-#define srch_connq_space(ctx, idx) queue_space(&ctx->connq[idx]->queue) /* 连接队列空间 */
-#define srch_recvq_space(ctx, idx) queue_space(&ctx->recvq[idx]->queue) /* 接收队列空间 */
-#define srch_sendq_space(ctx, idx) queue_space(&ctx->sendq[idx]->queue) /* 发送队列空间 */
+#define srch_connq_used(ctx, idx) queue_used(&ctx->connq[idx]->queue) /* 已用连接队列空间 */
+#define srch_recvq_used(ctx, idx) queue_used(&ctx->recvq[idx]->queue) /* 已用接收队列空间 */
+#define srch_sendq_used(ctx, idx) queue_used(&ctx->sendq[idx]->queue) /* 已用发送队列空间 */
 
 srch_cntx_t *srch_cntx_init(char *pname, const char *conf_path);
 void srch_cntx_destroy(srch_cntx_t *ctx);
