@@ -596,8 +596,6 @@ static int srch_agent_recv_head(srch_agent_t *agt, socket_t *sck)
         return SRCH_ERR;
     }
 
-    recv->total = head->length;
-
     log_info(agt->log, "Recv head success! type:%d len:%d flag:%d mark:[%u/%u]",
             head->type, head->length, head->flag, head->mark, SRCH_MSG_MARK_KEY);
 
@@ -625,7 +623,7 @@ static int srch_agent_recv_body(srch_agent_t *agt, socket_t *sck)
     /* 1. 接收报体 */
     while (1)
     {
-        left = head->length - recv->off;
+        left = recv->total - recv->off;
 
         n = read(sck->fd, recv->addr + recv->off, left);
         if (n == left)
@@ -661,7 +659,7 @@ static int srch_agent_recv_body(srch_agent_t *agt, socket_t *sck)
         return SRCH_ERR;
     }
 
-    log_trace(agt->log, "fd:%d type:%d length:%d total:%d off:%d",
+    log_trace(agt->log, "Recv body success! fd:%d type:%d length:%d total:%d off:%d",
             sck->fd, head->type, head->length, recv->total, recv->off);
 
     return SRCH_OK;
