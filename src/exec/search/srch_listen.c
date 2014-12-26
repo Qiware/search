@@ -183,11 +183,11 @@ static int srch_listen_accept(srch_cntx_t *ctx, srch_listen_t *lsn)
         return SRCH_ERR;
     }
 
-    ++lsn->sck_serial;
+    ++lsn->serial;
     fd_set_nonblocking(fd);
 
     /* 2. 将通信套接字放入队列 */
-    tidx = lsn->sck_serial % ctx->conf->agent_num;
+    tidx = lsn->serial % ctx->conf->agent_num;
 
     add = queue_malloc(ctx->connq[tidx]);
     if (NULL == add)
@@ -198,7 +198,7 @@ static int srch_listen_accept(srch_cntx_t *ctx, srch_listen_t *lsn)
     }
 
     add->fd = fd;
-    add->sck_serial = lsn->sck_serial;
+    add->serial = lsn->serial;
 
     log_debug(lsn->log, "Push data! fd:%d addr:%p", fd, add);
 

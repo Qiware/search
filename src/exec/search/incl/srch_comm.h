@@ -42,7 +42,7 @@ typedef struct
 typedef struct
 {
     int fd;                                 /* 套接字 */
-    uint64_t sck_serial;                    /* SCK流水号 */
+    uint64_t serial;                        /* SCK流水号 */
 } srch_add_sck_t;
 
 /* 超时连接链表 */
