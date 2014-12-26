@@ -23,8 +23,8 @@
 #define SRCH_CONN_MIN_NUM           (1)     /* 最小网络连接数 */
 #define SRCH_CONN_TMOUT_SEC         (15)    /* 连接超时时间(秒) */
 
-#define SRCH_CONNQ_LEN              (1000) /* 连接队列长度 */
-#define SRCH_RECVQ_LEN              (1000) /* 接收队列长度 */
+#define SRCH_CONNQ_LEN              (10000) /* 连接队列长度 */
+#define SRCH_RECVQ_LEN              (10000) /* 接收队列长度 */
 #define SRCH_RECVQ_SIZE             (2 * KB)/* 接收队列SIZE */
 
 #define SRCH_MSG_TYPE_MAX           (0xFF)  /* 消息最大类型 */

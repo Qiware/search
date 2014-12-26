@@ -52,7 +52,10 @@ int main(int argc, char *argv[])
             fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
             return -1;
         }
+    }
 
+    for (idx=0; idx<SRCH_CLIENT_NUM; ++idx)
+    {
         header.type = idx%0xFF;
         header.flag = SRCH_MSG_FLAG_USR;
         header.mark = htonl(SRCH_MSG_MARK_KEY);
@@ -63,15 +66,6 @@ int main(int argc, char *argv[])
         fprintf(stdout, "idx:%d n:%d!\n", idx, n);
     }
 
-#if 0
-    sleep(8);
-
-    for (idx=0; idx<SRCH_CLIENT_NUM; ++idx)
-    {
-        close(fd[idx]);
-        usleep(50000);
-    }
-#endif
     while (1) { pause(); }
 
     return 0;

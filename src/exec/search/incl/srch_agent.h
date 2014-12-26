@@ -7,7 +7,7 @@
 #include "avl_tree.h"
 #include "srch_mesg.h"
 
-#define SRCH_AGENT_TMOUT_MSEC       (5000)  /* 超时(豪秒) */
+#define SRCH_AGENT_TMOUT_MSEC       (500)   /* 超时(豪秒) */
 
 #define SRCH_AGENT_EVENT_MAX_NUM    (4096)  /* 事件最大数 */
 #define SRCH_AGENT_SCK_HASH_MOD     (7)     /* 套接字哈希长度 */
