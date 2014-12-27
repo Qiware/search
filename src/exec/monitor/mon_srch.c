@@ -15,6 +15,7 @@
 #include <netinet/in.h>
 
 #include "syscall.h"
+#include "monitor.h"
 #include "srch_mesg.h"
 #include "xds_socket.h"
 
@@ -23,27 +24,105 @@
 
 #define SRCH_CLIENT_NUM     (2000)
 
-int main(int argc, char *argv[])
-{
-    int fd[SRCH_CLIENT_NUM], idx, num = SRCH_CLIENT_NUM;
-    const char *ip = SRCH_SVR_IP_ADDR;
-    int n, port = SRCH_SVR_PORT;
-    srch_mesg_header_t header;
-    srch_mesg_body_t body;
+static int mon_srch_connect(menu_item_t *menu);
 
-    if (3 == argc)
+/******************************************************************************
+ **函数名称: mon_srch_menu
+ **功    能: 搜索引擎菜单
+ **输入参数: NONE
+ **输出参数: NONE
+ **返    回: 搜索引擎菜单
+ **实现描述: 
+ **     1. 初始化菜单环境
+ **     2. 加载子菜单
+ **     3. 启动菜单功能
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.12.27 #
+ ******************************************************************************/
+menu_item_t *mon_srch_menu(menu_cntx_t *ctx)
+{
+    menu_item_t *menu, *child;
+
+    menu = menu_creat(ctx, "监控搜索引擎", menu_display);
+    if (NULL == menu)
     {
-        ip = argv[1];
-        port = atoi(argv[2]);
+        return NULL;
     }
-    if (4 == argc)
+
+    /* 添加子菜单 */
+    child = menu_creat(ctx, "连接搜索引擎", mon_srch_connect);
+    if (NULL == child)
     {
-        ip = argv[1];
-        port = atoi(argv[2]);
-        num = atoi(argv[3]);
+        return menu;
+    }
+
+    menu_add(menu, child);
+
+    /* 添加子菜单 */
+    child = menu_creat(ctx, "连接搜索引擎", mon_srch_connect);
+    if (NULL == child)
+    {
+        return menu;
+    }
+
+    menu_add(menu, child);
+
+    /* 添加子菜单 */
+    child = menu_creat(ctx, "连接搜索引擎", mon_srch_connect);
+    if (NULL == child)
+    {
+        return menu;
+    }
+
+    menu_add(menu, child);
+
+    return menu;
+}
+
+/******************************************************************************
+ **函数名称: mon_srch_connect
+ **功    能: 测试搜索引擎处理大并发连接的能力
+ **输入参数:
+ **     menu: 菜单
+ **输出参数: NONE
+ **返    回: 连接搜索引擎
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.12.27 #
+ ******************************************************************************/
+static int mon_srch_connect(menu_item_t *menu)
+{
+    char ip[IP_ADDR_MAX_LEN], input[128];
+    int port = SRCH_SVR_PORT, num = SRCH_CLIENT_NUM;
+    int *fd, idx, n;
+    srch_mesg_body_t body;
+    srch_mesg_header_t header;
+
+    fprintf(stdout, "Use default configuration? [Y/n]");
+    scanf(" %s", input);
+    if ('Y' == input[0] || 'y' == input[0])
+    {
+        snprintf(ip, sizeof(ip), "%s", SRCH_SVR_IP_ADDR);
+        port = SRCH_SVR_PORT;
+        num = SRCH_CLIENT_NUM;
+    }
+    else
+    {
+        fprintf(stdout, "Input ip:");
+        scanf(" %s", ip);
+
+        fprintf(stdout, "Input port:");
+        scanf(" %s", input);
+        port = atoi(input);
+
+        fprintf(stdout, "Input num:");
+        scanf(" %s", input);
+        num = atoi(input);
     }
 
     limit_file_num(4096); /* 设置进程打开文件的最大数目 */
+
+    fd = (int *)malloc(num * sizeof(int));
 
     for (idx=0; idx<num; ++idx)
     {
@@ -71,7 +150,12 @@ int main(int argc, char *argv[])
         fprintf(stdout, "idx:%d n:%d!\n", idx, n);
     }
 
-    while (1) { pause(); }
+    Sleep(5);
+
+    for (idx=0; idx<num; ++idx)
+    {
+        Close(fd[idx]);
+    }
 
     return 0;
 }

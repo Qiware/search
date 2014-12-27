@@ -10,7 +10,6 @@
 #include "menu.h"
 #include "common.h"
 
-static int menu_display(menu_item_t *menu);
 
 /******************************************************************************
  **函数名称: menu_cntx_init
@@ -129,7 +128,7 @@ int menu_add(menu_item_t *menu, menu_item_t *child)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.27 #
  ******************************************************************************/
-static int menu_display(menu_item_t *menu)
+int menu_display(menu_item_t *menu)
 {
     int i = 0;
     menu_item_t *child = menu->child;
@@ -227,9 +226,9 @@ int menu_startup(menu_cntx_t *ctx)
         {
             if (!isdigit(opt[idx]))
             {
-                if (!strcasecmp(opt, "q")
-                    || !strcasecmp(opt, "quit")
-                    || !strcasecmp(opt, "exit"))
+                if (0 != strcasecmp(opt, "q")
+                    && 0 != strcasecmp(opt, "quit")
+                    && 0 != strcasecmp(opt, "exit"))
                 {
                     fprintf(stdout, "\n\t输入有误, 请重新输入!\n");
 

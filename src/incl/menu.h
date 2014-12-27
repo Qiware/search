@@ -30,6 +30,7 @@ typedef struct
 
 menu_cntx_t *menu_cntx_init(const char *title);
 menu_item_t *menu_creat(menu_cntx_t *ctx, const char *name, int (*func)(menu_item_t *));
+int menu_display(menu_item_t *menu);
 int menu_add(menu_item_t *menu, menu_item_t *child);
 int menu_startup(menu_cntx_t *ctx);
 

@@ -28,6 +28,7 @@ DIR += "src/comm/redis"
 DIR += "src/exec/crawler/"
 DIR += "src/exec/logsvr"
 DIR += "src/exec/search"
+DIR += "src/exec/monitor"
 
 # 测试目录
 DEMO_DIR = "src/demo"

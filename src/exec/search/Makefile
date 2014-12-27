@@ -29,11 +29,10 @@ OBJS3 = $(subst .c,.o, $(SRC_LIST3))
 
 TARGET = libxd_srch.so
 TARGET2 = search
-TARGET3 = client
 
 .PHONY: all clean
 
-all: $(TARGET) $(TARGET2) $(TARGET3)
+all: $(TARGET) $(TARGET2)
 $(TARGET): $(OBJS)
 	$(CC) $(LFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS)
 	@mv $@ $(PROJ_LIB)
@@ -44,23 +43,13 @@ $(TARGET2): $(OBJS2)
 	@mv $@ $(PROJ_BIN)
 	@echo "$@ is OK!"
 
-$(TARGET3): $(OBJS3)
-	$(CC) $(CFLAGS) -o $@ $(OBJS3) $(INCLUDE) $(LIBS_PATH) $(LIBS) $(LIBS2)
-	@mv $@ $(PROJ_BIN)
-	@echo "$@ is OK!"
-
-
 $(OBJS): %.o : %.c
 	$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
 
 $(OBJS2): %.o : %.c
 	$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
 
-$(OBJS3): %.o : %.c
-	$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
-
 clean:
-	@rm -fr $(OBJS) $(OBJS2) $(OBJS3) \
+	@rm -fr $(OBJS) $(OBJS2) \
 			$(PROJ_LIB)/$(TARGET) \
-			$(PROJ_BIN)/$(TARGET2) \
-			$(PROJ_BIN)/$(TARGET3)
+			$(PROJ_BIN)/$(TARGET2)
