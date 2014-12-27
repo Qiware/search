@@ -102,6 +102,7 @@ int menu_add(menu_item_t *menu, menu_item_t *child)
         menu->child = child;
         child->parent = menu;
         child->next = NULL;
+        ++menu->num;
         return 0;
     }
 
@@ -113,6 +114,7 @@ int menu_add(menu_item_t *menu, menu_item_t *child)
     item->next = child;
     child->parent = menu;
     child->next = NULL;
+    ++menu->num;
 
     return 0;
 }
@@ -130,16 +132,69 @@ int menu_add(menu_item_t *menu, menu_item_t *child)
  ******************************************************************************/
 int menu_display(menu_item_t *menu)
 {
-    int i = 0;
+    int i, off, len, n;
     menu_item_t *child = menu->child;
 
-    fprintf(stdout, "%s\n", menu->name);
-    fprintf(stdout, "==========================================\n");
-    for (; NULL != child; child = child->next, ++i)
+    /* 1. Display top line */ 
+    fprintf(stdout, "\n╔");
+    for (i=0; i<MENU_WIDTH; ++i)
     {
-        fprintf(stdout, "* %d: %s\n", i, child->name);
+        fprintf(stdout, "═");
     }
-    fprintf(stdout, "==========================================\n");
+    fprintf(stdout, "╗\n");
+
+    /* 2. Display title */
+    len = strlen(menu->name);
+    off = (MENU_WIDTH - len)/2;
+    fprintf(stdout, "║");
+    for (i=0; i<off; ++i)
+    {
+        fprintf(stdout, " ");
+    }
+    fprintf(stdout, "%s", menu->name);
+    for (i=off+len; i<MENU_WIDTH; ++i)
+    {
+        fprintf(stdout, " ");
+    }
+    fprintf(stdout, "║\n");
+
+    /* 3. Display sep line */
+    fprintf(stdout, "║");
+    for (i=0; i<MENU_WIDTH; ++i)
+    {
+        fprintf(stdout, "═");
+    }
+    fprintf(stdout, "║\n");
+
+    /* 4. Display child menu */
+    for (n=0; NULL != child; child = child->next, ++n)
+    {
+        fprintf(stdout, "║");
+
+        for (i=0; i<MENU_TAB_LEN; ++i)
+        {
+            fprintf(stdout, " ");
+        }
+
+        fprintf(stdout, "%2d: %s", n, child->name);
+
+        len = strlen(child->name)+4;
+
+        for (i=len+MENU_TAB_LEN; i<MENU_WIDTH; ++i)
+        {
+            fprintf(stdout, " ");
+        }
+        fprintf(stdout, "║\n");
+    }
+
+    /* 5. Display low line */ 
+    fprintf(stdout, "╚");
+    for (i=0; i<MENU_WIDTH; ++i)
+    {
+        fprintf(stdout, "═");
+    }
+    fprintf(stdout, "╝\n");
+
     return 0;
 }
 
@@ -218,7 +273,7 @@ int menu_startup(menu_cntx_t *ctx)
     while (1)
     {
     BEGIN:
-        fprintf(stdout, "\t选项:");
+        fprintf(stdout, "Option: ");
         scanf(" %s", opt);
 
         len = strlen(opt);
@@ -230,7 +285,7 @@ int menu_startup(menu_cntx_t *ctx)
                     && 0 != strcasecmp(opt, "quit")
                     && 0 != strcasecmp(opt, "exit"))
                 {
-                    fprintf(stdout, "\n\t输入有误, 请重新输入!\n");
+                    fprintf(stdout, "\n\tNot right!\n");
 
                     curr->func(curr);
                     goto BEGIN;

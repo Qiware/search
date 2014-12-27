@@ -3,6 +3,8 @@
 
 #include "mem_pool.h"
 
+#define MENU_WIDTH          (58)            /* Menu width */
+#define MENU_TAB_LEN        (8)             /* Table length */
 #define MENU_NAME_STR_LEN   (128)
 #define MENU_INPUT_LEN      (256)
 
@@ -13,6 +15,7 @@ typedef struct _menu_item_t
 
     int (*func)(struct _menu_item_t *);     /* 菜单对应的功能 */
 
+    int num;                                /* 子菜单数 */
     struct _menu_item_t *child;             /* 子菜单列表 */
     struct _menu_item_t *parent;            /* 父菜单 */
     struct _menu_item_t *next;              /* 兄弟菜单 */

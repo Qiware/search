@@ -4,7 +4,7 @@
  ** 文件名: monitor.c
  ** 版本号: 1.0
  ** 描  述: 监控模块
- **         获取平台运行的详细数据信息
+ **         获取平台运行的详细数据信息.(Note: Don't use display chinese!)
  ** 作  者: # Qifeng.zou # 2014.12.26 #
  ******************************************************************************/
 #include <memory.h>
@@ -33,7 +33,7 @@ int main(void)
     menu_cntx_t *ctx;
 
     /* 1. 初始化菜单 */
-    ctx = menu_cntx_init("监控系统");
+    ctx = menu_cntx_init("Monitor System");
 
     /* 2. 添加子菜单 */
     if (mon_load_menu(ctx))

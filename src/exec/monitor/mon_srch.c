@@ -43,14 +43,14 @@ menu_item_t *mon_srch_menu(menu_cntx_t *ctx)
 {
     menu_item_t *menu, *child;
 
-    menu = menu_creat(ctx, "监控搜索引擎", menu_display);
+    menu = menu_creat(ctx, "Monitory Search Engine", menu_display);
     if (NULL == menu)
     {
         return NULL;
     }
 
     /* 添加子菜单 */
-    child = menu_creat(ctx, "连接搜索引擎", mon_srch_connect);
+    child = menu_creat(ctx, "Connect to Search-Engine", mon_srch_connect);
     if (NULL == child)
     {
         return menu;
@@ -59,7 +59,7 @@ menu_item_t *mon_srch_menu(menu_cntx_t *ctx)
     menu_add(menu, child);
 
     /* 添加子菜单 */
-    child = menu_creat(ctx, "连接搜索引擎", mon_srch_connect);
+    child = menu_creat(ctx, "Connect to Search-Engine", mon_srch_connect);
     if (NULL == child)
     {
         return menu;
@@ -68,7 +68,7 @@ menu_item_t *mon_srch_menu(menu_cntx_t *ctx)
     menu_add(menu, child);
 
     /* 添加子菜单 */
-    child = menu_creat(ctx, "连接搜索引擎", mon_srch_connect);
+    child = menu_creat(ctx, "Connect to Search-Engine", mon_srch_connect);
     if (NULL == child)
     {
         return menu;
