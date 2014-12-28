@@ -211,6 +211,7 @@ int menu_display(menu_item_t *menu)
  ******************************************************************************/
 static menu_item_t *menu_exec(menu_item_t *menu, const char *opt)
 {
+    char input[MENU_INPUT_LEN];
     int ret, i, num;
     menu_item_t *child = menu->child;
 
@@ -220,9 +221,16 @@ static menu_item_t *menu_exec(menu_item_t *menu, const char *opt)
     {
         if (!menu->parent)
         {
-            fprintf(stderr, "\t退出系统!");
-            exit(0);
-            return NULL;
+            fprintf(stdout, "\tAre you sure exit?[No/Yes]");
+            scanf(" %s", input);
+            if (0 == strcasecmp(input, "yes"))
+            {
+                exit(0);
+                return NULL;
+            }
+
+            menu->func(menu);
+            return menu;
         }
 
         menu->parent->func(menu->parent);
@@ -236,18 +244,22 @@ static menu_item_t *menu_exec(menu_item_t *menu, const char *opt)
     {
         if (i == num)
         {
-            ret = child->func(child);
-            if (0 != ret                /* 失败或无子菜单时，均返回到上级菜单 */
-                || NULL == child->child)
+            if (child->func)
             {
-                break;
+                ret = child->func(child);
+                if (0 != ret                /* 失败或无子菜单时，均返回到上级菜单 */
+                        || NULL == child->child)
+                {
+                    break;
+                }
+                return child;
             }
-            return child;
+            fprintf(stdout, "\tERROR: Didn't register function!\n");
+            break;
         }
     }
 
     menu->func(menu);
-
     return menu;
 }
 

@@ -1,3 +1,13 @@
+/******************************************************************************
+ ** Coypright(C) 2014-2024 Xundao technology Co., Ltd
+ **
+ ** 文件名: mon_srch.c
+ ** 版本号: 1.0
+ ** 描  述: 监控搜索引擎
+ **         测试或获取搜索引擎的详细数据信息.
+ ** 注  意: 请勿显示中文，否则将会出现对齐异常!
+ ** 作  者: # Qifeng.zou # 2014.12.27 #
+ ******************************************************************************/
 #include <stdio.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -43,7 +53,7 @@ menu_item_t *mon_srch_menu(menu_cntx_t *ctx)
 {
     menu_item_t *menu, *child;
 
-    menu = menu_creat(ctx, "Monitory Search Engine", menu_display);
+    menu = menu_creat(ctx, "Monitor Search Engine", menu_display);
     if (NULL == menu)
     {
         return NULL;

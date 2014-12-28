@@ -4,7 +4,8 @@
  ** 文件名: monitor.c
  ** 版本号: 1.0
  ** 描  述: 监控模块
- **         获取平台运行的详细数据信息.(Note: Don't use display chinese!)
+ **         获取平台运行的详细数据信息.
+ ** 注  意: 请勿显示中文，否则将会出现对齐异常!
  ** 作  者: # Qifeng.zou # 2014.12.26 #
  ******************************************************************************/
 #include <memory.h>
@@ -71,11 +72,13 @@ static int mon_load_menu(menu_cntx_t *ctx)
 
     /* 1. 加载搜索引擎菜单 */
     child = mon_srch_menu(ctx);
+
     menu_add(ctx->menu, child);
 
     /* 2. 加载爬虫系统菜单 */
-//    child = mon_crwl_menu();
-//    menu_add(ctx->menu, child);
+    child = mon_crwl_menu(ctx);
+
+    menu_add(ctx->menu, child);
 
     return 0;
 }
