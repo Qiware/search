@@ -4,7 +4,7 @@
 #include <pthread.h>
 
 #include "spinlock.h"
-#include "mem_chunk.h"
+#include "memblk.h"
 
 /* 队列配置 */
 typedef struct
@@ -45,12 +45,12 @@ void _queue_destroy(_queue_t *q);
 typedef struct
 {
     _queue_t queue;                         /* 队列 */
-    mem_chunk_t *chunk;                     /* 内存池 */
+    memblk_t *chunk;                     /* 内存池 */
 } queue_t;
 
 queue_t *queue_creat(int max, size_t size);
-#define queue_malloc(q) mem_chunk_alloc((q)->chunk)
-#define queue_dealloc(q, p) mem_chunk_dealloc((q)->chunk, p)
+#define queue_malloc(q) memblk_alloc((q)->chunk)
+#define queue_dealloc(q, p) memblk_dealloc((q)->chunk, p)
 #define queue_push(q, addr) queue_push_lock(&((q)->queue), addr)
 #define queue_pop(q) queue_pop_lock(&((q)->queue))
 void queue_destroy(queue_t *q);

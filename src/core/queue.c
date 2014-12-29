@@ -178,7 +178,7 @@ void _queue_destroy(_queue_t *q)
 queue_t *queue_creat(int max, size_t size)
 {
     queue_t *q;
-    mem_chunk_t *chunk;
+    memblk_t *chunk;
 
     /* 1. 新建对象 */
     q = (queue_t *)calloc(1, sizeof(queue_t));
@@ -188,7 +188,7 @@ queue_t *queue_creat(int max, size_t size)
     }
 
     /* 2. 创建内存池 */
-    chunk = mem_chunk_creat(max+8, size);
+    chunk = memblk_creat(max+8, size);
     if (NULL == chunk)
     {
         free(q);
@@ -201,7 +201,7 @@ queue_t *queue_creat(int max, size_t size)
     if (_queue_creat(&q->queue, max))
     {
         free(q);
-        mem_chunk_destroy(chunk);
+        memblk_destroy(chunk);
         return NULL;
     }
 
@@ -222,6 +222,6 @@ queue_t *queue_creat(int max, size_t size)
 void queue_destroy(queue_t *q)
 {
     _queue_destroy(&q->queue);
-    mem_chunk_destroy(q->chunk);
+    memblk_destroy(q->chunk);
     free(q);
 }

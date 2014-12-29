@@ -1,7 +1,7 @@
 /******************************************************************************
  ** Coypright(C) 2014-2024 Xundao technology Co., Ltd
  **
- ** 文件名: mem_chunk.c
+ ** 文件名: memblk.c
  ** 版本号: 1.0
  ** 描  述: 内存块的实现(也属于内存池算法)
  **         所有数据块大小都一致.
@@ -11,11 +11,11 @@
 #include "log.h"
 #include "common.h"
 #include "syscall.h"
-#include "mem_chunk.h"
+#include "memblk.h"
 
 
 /******************************************************************************
- **函数名称: mem_chunk_creat
+ **函数名称: memblk_creat
  **功    能: 创建内存池
  **输入参数: 
  **     num: 内存块数
@@ -26,69 +26,69 @@
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.18 #
  ******************************************************************************/
-mem_chunk_t *mem_chunk_creat(int num, size_t size)
+memblk_t *memblk_creat(int num, size_t size)
 {
     int i, m, idx;
     uint32_t *bitmap;
-    mem_chunk_t *chunk;
-    mem_chunk_page_t *page;
+    memblk_t *blk;
+    memblk_page_t *page;
 
     /* 1. 创建对象 */
-    chunk = (mem_chunk_t *)calloc(1, sizeof(mem_chunk_t));
-    if (NULL == chunk)
+    blk = (memblk_t *)calloc(1, sizeof(memblk_t));
+    if (NULL == blk)
     {
         return NULL;
     }
 
-    chunk->num = num;
-    chunk->size = size;
+    blk->num = num;
+    blk->size = size;
 
     /* 2. 计算页数, 并分配页空间 */
-    chunk->pages = math_ceiling(num, MEM_CHUNK_PAGE_SLOT_NUM);
+    blk->pages = math_ceiling(num, MEMBLK_PAGE_SLOT_NUM);
 
-    chunk->page = (mem_chunk_page_t *)calloc(chunk->pages, sizeof(mem_chunk_page_t));
-    if (NULL == chunk->page)
+    blk->page = (memblk_page_t *)calloc(blk->pages, sizeof(memblk_page_t));
+    if (NULL == blk->page)
     {
-        free(chunk);
+        free(blk);
         return NULL;
     }
 
     /* 3 分配总内存空间 */
-    chunk->addr = (char *)calloc(num, size);
-    if (NULL == chunk->addr)
+    blk->addr = (char *)calloc(num, size);
+    if (NULL == blk->addr)
     {
-        free(chunk->page);
-        free(chunk);
+        free(blk->page);
+        free(blk);
         return NULL;
     }
 
     /* 4. 设置位图信息 */
-    for (idx=0; idx<chunk->pages; ++idx)
+    for (idx=0; idx<blk->pages; ++idx)
     {
-        page = &chunk->page[idx];
+        page = &blk->page[idx];
 
         spin_lock_init(&page->lock);
 
         /* 3.1 设置bitmap */
-        if (idx == (chunk->pages - 1))
+        if (idx == (blk->pages - 1))
         {
-            m = (num - idx*MEM_CHUNK_PAGE_SLOT_NUM) % 32;
+            m = (num - idx*MEMBLK_PAGE_SLOT_NUM) % 32;
 
-            page->bitmaps = math_ceiling(num - idx*MEM_CHUNK_PAGE_SLOT_NUM, 32);
+            page->bitmaps = math_ceiling(num - idx*MEMBLK_PAGE_SLOT_NUM, 32);
         }
         else
         {
-            m = MEM_CHUNK_PAGE_SLOT_NUM % 32;
+            m = MEMBLK_PAGE_SLOT_NUM % 32;
 
-            page->bitmaps = math_ceiling(MEM_CHUNK_PAGE_SLOT_NUM, 32);
+            page->bitmaps = math_ceiling(MEMBLK_PAGE_SLOT_NUM, 32);
         }
 
         page->bitmap = (uint32_t *)calloc(page->bitmaps, sizeof(uint32_t));
         if (NULL == page->bitmap)
         {
-            free(chunk->page);
-            free(chunk->addr);
-            free(chunk);
+            free(blk->page);
+            free(blk->addr);
+            free(blk);
             return NULL;
         }
 
@@ -103,35 +103,35 @@ mem_chunk_t *mem_chunk_creat(int num, size_t size)
         }
 
         /* 3.2 设置数据空间 */
-        page->addr = chunk->addr + idx * MEM_CHUNK_PAGE_SLOT_NUM * size;
+        page->addr = blk->addr + idx * MEMBLK_PAGE_SLOT_NUM * size;
     }
 
-    return chunk;
+    return blk;
 }
 
 /******************************************************************************
- **函数名称: mem_chunk_alloc
+ **函数名称: memblk_alloc
  **功    能: 申请空间
  **输入参数: 
- **     chunk: 内存块对象
+ **     blk: 内存块对象
  **输出参数: NONE
  **返    回: 内存地址
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.18 #
  ******************************************************************************/
-void *mem_chunk_alloc(mem_chunk_t *chunk)
+void *memblk_alloc(memblk_t *blk)
 {
     uint32_t i, j, n, p;
     uint32_t *bitmap;
-    mem_chunk_page_t *page;
+    memblk_page_t *page;
 
     n = rand(); /* 随机选择页 */
 
-    for (p=0; p<chunk->pages; ++p, ++n)
+    for (p=0; p<blk->pages; ++p, ++n)
     {
-        n %= chunk->pages;
-        page = &chunk->page[n];
+        n %= blk->pages;
+        page = &blk->page[n];
 
         spin_lock(&page->lock);
 
@@ -151,7 +151,7 @@ void *mem_chunk_alloc(mem_chunk_t *chunk)
 
                     spin_unlock(&page->lock);
 
-                    return page->addr + (i*32 + j)*chunk->size;
+                    return page->addr + (i*32 + j)*blk->size;
                 }
             }
         }
@@ -162,10 +162,10 @@ void *mem_chunk_alloc(mem_chunk_t *chunk)
 }
 
 /******************************************************************************
- **函数名称: mem_chunk_dealloc
+ **函数名称: memblk_dealloc
  **功    能: 回收空间
  **输入参数: 
- **     chunk: 内存块对象
+ **     blk: 内存块对象
  **     p: 需要释放的空间地址
  **输出参数: NONE
  **返    回: VOID
@@ -173,44 +173,44 @@ void *mem_chunk_alloc(mem_chunk_t *chunk)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.18 #
  ******************************************************************************/
-void mem_chunk_dealloc(mem_chunk_t *chunk, void *p)
+void memblk_dealloc(memblk_t *blk, void *p)
 {
     int i, j, n;
 
-    n = (p - chunk->addr) / (MEM_CHUNK_PAGE_SLOT_NUM * chunk->size);        /* 计算页号 */
-    i = (p - chunk->page[n].addr) / (32 * chunk->size);                     /* 计算页内bitmap索引 */
-    j = (p - (chunk->page[n].addr + i * (32 * chunk->size))) / chunk->size; /* 计算bitmap内偏移 */
+    n = (p - blk->addr) / (MEMBLK_PAGE_SLOT_NUM * blk->size);        /* 计算页号 */
+    i = (p - blk->page[n].addr) / (32 * blk->size);                     /* 计算页内bitmap索引 */
+    j = (p - (blk->page[n].addr + i * (32 * blk->size))) / blk->size; /* 计算bitmap内偏移 */
 
-    spin_lock(&chunk->page[n].lock);
-    chunk->page[n].bitmap[i] &= ~(1 << j);
-    spin_unlock(&chunk->page[n].lock);
+    spin_lock(&blk->page[n].lock);
+    blk->page[n].bitmap[i] &= ~(1 << j);
+    spin_unlock(&blk->page[n].lock);
 }
 
 /******************************************************************************
- **函数名称: mem_chunk_destroy
+ **函数名称: memblk_destroy
  **功    能: 销毁内存块
  **输入参数: 
- **     chunk: 内存块对象
+ **     blk: 内存块对象
  **输出参数: NONE
  **返    回: VOID
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.18 #
  ******************************************************************************/
-void mem_chunk_destroy(mem_chunk_t *chunk)
+void memblk_destroy(memblk_t *blk)
 {
     int i;
-    mem_chunk_page_t *page;
+    memblk_page_t *page;
 
-    for (i=0; i<chunk->pages; ++i)
+    for (i=0; i<blk->pages; ++i)
     {
-        page = &chunk->page[i];
+        page = &blk->page[i];
 
         free(page->bitmap);
         spin_lock_destroy(&page->lock);
     }
 
-    free(chunk->page);
-    free(chunk->addr);
-    free(chunk);
+    free(blk->page);
+    free(blk->addr);
+    free(blk);
 }

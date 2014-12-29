@@ -32,7 +32,7 @@
 #define SRCH_SVR_IP_ADDR    "127.0.0.1"
 #define SRCH_SVR_PORT       (8888)
 
-#define SRCH_CLIENT_NUM     (2000)
+#define SRCH_CLIENT_NUM     (4000)
 
 static int mon_srch_connect(menu_item_t *menu);
 
@@ -140,24 +140,27 @@ static int mon_srch_connect(menu_item_t *menu)
         if (fd[idx] < 0)
         {
             fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
-            return -1;
+            break;
         }
     }
 
     for (idx=0; idx<num; ++idx)
     {
-        header.type = idx%0xFF;
-        header.flag = SRCH_MSG_FLAG_USR;
-        header.mark = htonl(SRCH_MSG_MARK_KEY);
-        header.length = htons(sizeof(body));
+        if (fd[idx] > 0)
+        {
+            header.type = idx%0xFF;
+            header.flag = SRCH_MSG_FLAG_USR;
+            header.mark = htonl(SRCH_MSG_MARK_KEY);
+            header.length = htons(sizeof(body));
 
-        snprintf(body.words, sizeof(body.words), "爱我中华");
+            snprintf(body.words, sizeof(body.words), "爱我中华");
 
-        n = Writen(fd[idx], (void *)&header, sizeof(header));
+            n = Writen(fd[idx], (void *)&header, sizeof(header));
 
-        n = Writen(fd[idx], (void *)&body, sizeof(body));
+            n = Writen(fd[idx], (void *)&body, sizeof(body));
 
-        fprintf(stdout, "idx:%d n:%d!\n", idx, n);
+            fprintf(stdout, "idx:%d n:%d!\n", idx, n);
+        }
     }
 
     Sleep(5);
