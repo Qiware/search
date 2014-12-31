@@ -31,9 +31,9 @@ typedef struct
 /* 处理数据请求的相关参数 */
 typedef struct
 {
-    unsigned int ori_rsvr_tidx;     /* RCVSVR的编号 */
-    unsigned int rqidx;             /* Recv队列索引 */
-    unsigned int num;               /* 需要处理的数据条数 */
+    uint32_t ori_rsvr_tidx;         /* 接收线程编号 */
+    uint32_t rqidx;                 /* 接收队列索引 */
+    uint32_t num;                   /* 需要处理的数据条数 */
 } smtp_cmd_work_t;
 
 /* 发送数据请求的相关参数 */
@@ -45,14 +45,14 @@ typedef struct
 /* 配置信息 */
 typedef struct
 {
-    char name[FILE_NAME_MAX_LEN];  /* 服务名: 不允许重复出现 */
-    int port;                       /* Listen端口 */
-    int recv_thd_num;               /* Recv线程数 */
-    int work_thd_num;               /* Work线程数 */
-    int recvq_num;                  /* Recv队列数 */
+    char name[FILE_NAME_MAX_LEN];   /* 服务名: 不允许重复出现 */
+    int port;                       /* 侦听端口 */
+    int recv_thd_num;               /* 接收线程数 */
+    int work_thd_num;               /* 工作线程数 */
+    int recvq_num;                  /* 接收队列数 */
 
     int qmax;                       /* 队列长度 */
-    int qsize;                      /* 单元大小 */
+    int qsize;                      /* 队列大小 */
 } smtp_cmd_conf_t;
 
 /* Recv状态信息 */
@@ -86,9 +86,9 @@ typedef union
 /* 命令信息结构体 */
 typedef struct
 {
-    unsigned int type;              /* 命令类型 Range:SMTP_CMD_e */
-    char src_path[FILE_NAME_MAX_LEN]; /* 命令源路径 */
-    smtp_cmd_args_t args;            /* 其他数据信息 */
+    uint32_t type;                      /* 命令类型 Range: smtp_cmd_e */
+    char src_path[FILE_NAME_MAX_LEN];   /* 命令源路径 */
+    smtp_cmd_args_t args;               /* 其他数据信息 */
 } smtp_cmd_t;
 
 #endif /*__SMTP_CMD_H__*/

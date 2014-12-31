@@ -60,7 +60,7 @@ menu_item_t *mon_srch_menu(menu_cntx_t *ctx)
     }
 
     /* 添加子菜单 */
-    child = menu_creat(ctx, "Connect to Search-Engine", mon_srch_connect);
+    child = menu_creat(ctx, "Get configuration", mon_srch_connect);
     if (NULL == child)
     {
         return menu;
@@ -69,7 +69,7 @@ menu_item_t *mon_srch_menu(menu_cntx_t *ctx)
     menu_add(menu, child);
 
     /* 添加子菜单 */
-    child = menu_creat(ctx, "Connect to Search-Engine", mon_srch_connect);
+    child = menu_creat(ctx, "Get current status", mon_srch_connect);
     if (NULL == child)
     {
         return menu;
@@ -78,7 +78,7 @@ menu_item_t *mon_srch_menu(menu_cntx_t *ctx)
     menu_add(menu, child);
 
     /* 添加子菜单 */
-    child = menu_creat(ctx, "Connect to Search-Engine", mon_srch_connect);
+    child = menu_creat(ctx, "Test connect", mon_srch_connect);
     if (NULL == child)
     {
         return menu;
@@ -110,7 +110,8 @@ static int mon_srch_connect(menu_item_t *menu)
 
     fprintf(stdout, "Use default configuration? [Y/n]");
     scanf(" %s", input);
-    if ('Y' == input[0] || 'y' == input[0])
+    if (0 == strcasecmp(input, "Y")
+        || 0 == strcasecmp(input, "Yes"))
     {
         snprintf(ip, sizeof(ip), "%s", SRCH_SVR_IP_ADDR);
         port = SRCH_SVR_PORT;
@@ -134,6 +135,7 @@ static int mon_srch_connect(menu_item_t *menu)
 
     fd = (int *)malloc(num * sizeof(int));
 
+    /* 连接搜索引擎 */
     for (idx=0; idx<num; ++idx)
     {
         fd[idx] = tcp_connect(AF_INET, ip, port);
@@ -144,6 +146,7 @@ static int mon_srch_connect(menu_item_t *menu)
         }
     }
 
+    /* 发送搜索数据 */
     for (idx=0; idx<num; ++idx)
     {
         if (fd[idx] > 0)
@@ -165,6 +168,7 @@ static int mon_srch_connect(menu_item_t *menu)
 
     Sleep(5);
 
+    /* 关闭网络连接 */
     for (idx=0; idx<num; ++idx)
     {
         Close(fd[idx]);

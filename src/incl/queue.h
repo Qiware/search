@@ -9,7 +9,8 @@
 /* 队列配置 */
 typedef struct
 {
-    size_t count;           /* 单元数 */
+    size_t max;             /* 单元总数 */
+    size_t size;            /* 单元大小 */
 } queue_conf_t;
 
 /* 循环队列结点 */
