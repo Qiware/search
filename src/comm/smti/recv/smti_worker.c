@@ -6,22 +6,22 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
-#include "smtp.h"
+#include "smti.h"
 #include "xml_tree.h"
-#include "smtp_cmd.h"
-#include "smtp_comm.h"
-#include "smtp_recv.h"
+#include "smti_cmd.h"
+#include "smti_comm.h"
+#include "smti_recv.h"
 #include "thread_pool.h"
 
 
 /* 静态函数 */
-static smtp_worker_t *smtp_worker_get_curr(smtp_cntx_t *ctx);
-static int smtp_worker_init(smtp_cntx_t *ctx, smtp_worker_t *worker);
-static int smtp_worker_core_handler(smtp_cntx_t *ctx, smtp_worker_t *worker);
-static int smtp_worker_cmd_hdl(smtp_cntx_t *ctx, smtp_worker_t *worker, const smtp_cmd_t *cmd);
+static smti_worker_t *smti_worker_get_curr(smti_cntx_t *ctx);
+static int smti_worker_init(smti_cntx_t *ctx, smti_worker_t *worker);
+static int smti_worker_core_handler(smti_cntx_t *ctx, smti_worker_t *worker);
+static int smti_worker_cmd_hdl(smti_cntx_t *ctx, smti_worker_t *worker, const smti_cmd_t *cmd);
 
 /******************************************************************************
- ** Name : smtp_creat_worktp
+ ** Name : smti_creat_worktp
  ** Desc : 创建Work线程池
  ** Input: 
  **     conf: 配置参数
@@ -32,40 +32,40 @@ static int smtp_worker_cmd_hdl(smtp_cntx_t *ctx, smtp_worker_t *worker, const sm
  ** Note : 
  ** Author: # Qifeng.zou # 2014.04.11 #
  ******************************************************************************/
-int smtp_creat_worktp(smtp_cntx_t *ctx)
+int smti_creat_worktp(smti_cntx_t *ctx)
 {
     int ret = 0, idx = 0;
-    smtp_worker_t *worker = NULL;
-    smtp_conf_t *conf = &ctx->conf;
+    smti_worker_t *worker = NULL;
+    smti_conf_t *conf = &ctx->conf;
 
     ret = thread_pool_init(&ctx->worktp, conf->wrk_thd_num);
-    if (SMTP_OK != ret)
+    if (SMTI_OK != ret)
     {
         LogError("Initialize thread pool failed!");
-        return SMTP_ERR;
+        return SMTI_ERR;
     }
 
-    ctx->worktp->data = (void *)calloc(conf->wrk_thd_num, sizeof(smtp_worker_t));
+    ctx->worktp->data = (void *)calloc(conf->wrk_thd_num, sizeof(smti_worker_t));
     if (NULL == ctx->worktp->data)
     {
         LogError("errmsg:[%d] %s!", errno, strerror(errno));
         thread_pool_destroy(ctx->worktp);
         ctx->worktp = NULL;
-        return SMTP_ERR;
+        return SMTI_ERR;
     }
 
     worker = ctx->worktp->data;
     for (idx=0; idx<conf->wrk_thd_num; ++idx, ++worker)
     {
         worker->tidx = idx;
-        smtp_worker_init(ctx, worker);
+        smti_worker_init(ctx, worker);
     }
     
-    return SMTP_OK;
+    return SMTI_OK;
 }
 
 /******************************************************************************
- ** Name : smtp_worktp_destroy
+ ** Name : smti_worktp_destroy
  ** Desc : Destroy work-thread-pool
  ** Input: 
  ** Output: 
@@ -76,12 +76,12 @@ int smtp_creat_worktp(smtp_cntx_t *ctx)
  ** Note : 
  ** Author: # Qifeng.zou # 2014.04.15 #
  ******************************************************************************/
-void smtp_worktp_destroy(void *_ctx, void *args)
+void smti_worktp_destroy(void *_ctx, void *args)
 {
     int idx = 0, n = 0;
-    smtp_cntx_t *ctx = (smtp_cntx_t *)_ctx;
-    smtp_worker_t *worker = (smtp_worker_t *)args;
-    smtp_conf_t *conf = &ctx->conf;
+    smti_cntx_t *ctx = (smti_cntx_t *)_ctx;
+    smti_worker_t *worker = (smti_worker_t *)args;
+    smti_conf_t *conf = &ctx->conf;
 
     for (idx=0; idx<conf->wrk_thd_num; ++idx, ++worker)
     {
@@ -95,7 +95,7 @@ void smtp_worktp_destroy(void *_ctx, void *args)
 }
 
 /******************************************************************************
- ** Name : smtp_worker_routine
+ ** Name : smti_worker_routine
  ** Desc : Start work handler
  ** Input: 
  **     args: Global context
@@ -108,15 +108,15 @@ void smtp_worktp_destroy(void *_ctx, void *args)
  ** Note : 
  ** Author: # Qifeng.zou # 2014.04.10 #
  ******************************************************************************/
-void *smtp_worker_routine(void *args)
+void *smti_worker_routine(void *_ctx)
 {
-    int max = 0, ret = 0, idx;
+    int max, ret, idx;
+    smti_worker_t *worker;
     struct timeval timeout;
-    smtp_cntx_t *ctx = (smtp_cntx_t *)args;
-    smtp_worker_t *worker = NULL;
+    smti_cntx_t *ctx = (smti_cntx_t *)_ctx;
 
     /* 1. Get current worker context */
-    worker = smtp_worker_get_curr(ctx);
+    worker = smti_worker_get_curr(ctx);
     if (NULL == worker)
     {
         LogError("Initialize rsvr failed!");
@@ -132,8 +132,8 @@ void *smtp_worker_routine(void *args)
         FD_SET(worker->cmd_sck_id, &worker->rdset);
         worker->max = worker->cmd_sck_id;
 
-        timeout.tv_sec = SMTP_TMOUT_SEC;
-        timeout.tv_usec = SMTP_TMOUT_USEC;
+        timeout.tv_sec = SMTI_TMOUT_SEC;
+        timeout.tv_usec = SMTI_TMOUT_USEC;
         ret = select(worker->max+1, &worker->rdset, NULL, NULL, &timeout);
         if (ret < 0)
         {
@@ -143,29 +143,29 @@ void *smtp_worker_routine(void *args)
             }
 
             LogError("errmsg:[%d] %s", errno, strerror(errno));
-            return (void *)SMTP_ERR;
+            return (void *)SMTI_ERR;
         }
         else if (0 == ret)
         {
             /* 超时: 模拟处理命令 */
-            smtp_cmd_t cmd;
-            smtp_cmd_work_t *work_cmd = (smtp_cmd_work_t *)&cmd.args;
+            smti_cmd_t cmd;
+            smti_cmd_work_t *work_cmd = (smti_cmd_work_t *)&cmd.args;
 
-            for (idx=0; idx<SMTP_WORKER_HDL_QNUM; ++idx)
+            for (idx=0; idx<SMTI_WORKER_HDL_QNUM; ++idx)
             {
                 memset(&cmd, 0, sizeof(cmd));
 
-                cmd.type = SMTP_CMD_WORK;
+                cmd.type = SMTI_CMD_WORK;
                 work_cmd->num = -1;
-                work_cmd->rqidx = SMTP_WORKER_HDL_QNUM * worker->tidx + idx;
+                work_cmd->rqidx = SMTI_WORKER_HDL_QNUM * worker->tidx + idx;
 
-                smtp_worker_cmd_hdl(ctx, worker, &cmd);
+                smti_worker_cmd_hdl(ctx, worker, &cmd);
             }
             continue;
         }
 
         /* 3. Call work handler */
-        smtp_worker_core_handler(ctx, worker);
+        smti_worker_core_handler(ctx, worker);
     }
 
     pthread_exit(NULL);
@@ -173,7 +173,7 @@ void *smtp_worker_routine(void *args)
 }
 
 /******************************************************************************
- ** Name : smtp_worker_get_curr
+ ** Name : smti_worker_get_curr
  ** Desc : Get current worker context 
  ** Input: 
  **     ctx: Global context
@@ -183,7 +183,7 @@ void *smtp_worker_routine(void *args)
  ** Note : 
  ** Author: # Qifeng.zou # 2014.03.28 #
  ******************************************************************************/
-static smtp_worker_t *smtp_worker_get_curr(smtp_cntx_t *ctx)
+static smti_worker_t *smti_worker_get_curr(smti_cntx_t *ctx)
 {
     int tidx = 0;
     
@@ -195,11 +195,11 @@ static smtp_worker_t *smtp_worker_get_curr(smtp_cntx_t *ctx)
         return NULL;
     }
 
-    return (smtp_worker_t *)(ctx->worktp->data + tidx * sizeof(smtp_worker_t));
+    return (smti_worker_t *)(ctx->worktp->data + tidx * sizeof(smti_worker_t));
 }
 
 /******************************************************************************
- ** Name : smtp_worker_init
+ ** Name : smti_worker_init
  ** Desc : Init work context 
  ** Input: 
  **     ctx: Global context
@@ -209,26 +209,26 @@ static smtp_worker_t *smtp_worker_get_curr(smtp_cntx_t *ctx)
  ** Note : 
  ** Author: # Qifeng.zou # 2014.03.28 #
  ******************************************************************************/
-static int smtp_worker_init(smtp_cntx_t *ctx, smtp_worker_t *worker)
+static int smti_worker_init(smti_cntx_t *ctx, smti_worker_t *worker)
 {
     char path[FILE_PATH_MAX_LEN];
-    smtp_conf_t *conf = &ctx->conf; 
+    smti_conf_t *conf = &ctx->conf; 
 
     /* 1. Create command fd */
-    smtp_worker_usck_path(conf, path, worker->tidx);
+    smti_worker_usck_path(conf, path, worker->tidx);
     
     worker->cmd_sck_id = usck_udp_creat(path);
     if (worker->cmd_sck_id < 0)
     {
         LogError("Create unix-udp socket failed!");
-        return SMTP_ERR;
+        return SMTI_ERR;
     }
 
     return 0;
 }
 
 /******************************************************************************
- ** Name : smtp_worker_core_handler
+ ** Name : smti_worker_core_handler
  ** Desc : Core handler of work-svr
  ** Input: 
  **     ctx: Global context
@@ -239,43 +239,43 @@ static int smtp_worker_init(smtp_cntx_t *ctx, smtp_worker_t *worker)
  ** Note : 
  ** Author: # Qifeng.zou # 2014.03.28 #
  ******************************************************************************/
-static int smtp_worker_core_handler(smtp_cntx_t *ctx, smtp_worker_t *worker)
+static int smti_worker_core_handler(smti_cntx_t *ctx, smti_worker_t *worker)
 {
     int ret = 0;
-    smtp_cmd_t cmd;
+    smti_cmd_t cmd;
 
     memset(&cmd, 0, sizeof(cmd));
 
     if (!FD_ISSET(worker->cmd_sck_id, &worker->rdset))
     {
-        return SMTP_OK;
+        return SMTI_OK;
     }
 
     ret = usck_udp_recv(worker->cmd_sck_id, (void *)&cmd, sizeof(cmd));
     if (ret < 0)
     {
         LogError("Recv command failed! errmsg:[%d] %s", errno, strerror(errno));
-        return SMTP_ERR_RECV_CMD;
+        return SMTI_ERR_RECV_CMD;
     }
 
     switch (cmd.type)
     {
-        case SMTP_CMD_WORK:
+        case SMTI_CMD_WORK:
         {
-            return smtp_worker_cmd_hdl(ctx, worker, &cmd);
+            return smti_worker_cmd_hdl(ctx, worker, &cmd);
         }
         default:
         {
             LogError("Received unknown command! type:[%d]", cmd.type);
-            return SMTP_ERR_UNKNOWN_CMD;
+            return SMTI_ERR_UNKNOWN_CMD;
         }
     }
 
-    return SMTP_ERR_UNKNOWN_CMD;
+    return SMTI_ERR_UNKNOWN_CMD;
 }
 
 /******************************************************************************
- ** Name : smtp_worker_cmd_hdl
+ ** Name : smti_worker_cmd_hdl
  ** Desc : Handle WORK REQ
  ** Input: 
  **     ctx: Global context
@@ -286,13 +286,13 @@ static int smtp_worker_core_handler(smtp_cntx_t *ctx, smtp_worker_t *worker)
  ** Note : 
  ** Author: # Qifeng.zou # 2014.04.11 #
  ******************************************************************************/
-static int smtp_worker_cmd_hdl(smtp_cntx_t *ctx, smtp_worker_t *worker, const smtp_cmd_t *cmd)
+static int smti_worker_cmd_hdl(smti_cntx_t *ctx, smti_worker_t *worker, const smti_cmd_t *cmd)
 {
     void *addr;
     queue_t *rq;
-    smtp_header_t *head;
-    smtp_reg_t *reg;
-    smtp_cmd_work_t *work_cmd = (smtp_cmd_work_t *)&cmd->args;
+    smti_header_t *head;
+    smti_reg_t *reg;
+    smti_cmd_work_t *work_cmd = (smti_cmd_work_t *)&cmd->args;
 
     /* 1. 获取Recv队列地址 */
     rq = ctx->recvq[work_cmd->rqidx];
@@ -304,15 +304,15 @@ static int smtp_worker_cmd_hdl(smtp_cntx_t *ctx, smtp_worker_t *worker, const sm
         if (NULL == addr)
         {   
             /*log_debug(worker->log, "Didn't get data from queue!"); */
-            return SMTP_OK;
+            return SMTI_OK;
         }
         
         /* 3. 执行回调函数 */
-        head = (smtp_header_t *)addr;
+        head = (smti_header_t *)addr;
 
         reg = &ctx->reg[head->type];
 
-        reg->cb(head->type, addr+sizeof(smtp_header_t), head->body_len, reg->args);
+        reg->cb(head->type, addr+sizeof(smti_header_t), head->body_len, reg->args);
 
         /* 4. 释放内存空间 */
         queue_dealloc(rq, addr);
@@ -320,14 +320,14 @@ static int smtp_worker_cmd_hdl(smtp_cntx_t *ctx, smtp_worker_t *worker, const sm
         ++worker->work_data_num; /* 处理计数 */
     }
 
-    return SMTP_OK;
+    return SMTI_OK;
 }
 
 /******************************************************************************
- ** Name : smtp_work_def_hdl
+ ** Name : smti_work_def_hdl
  ** Desc : Default work request handler
  ** Input: 
- **     type: Data type. Range:0~SMTP_TYPE_MAX
+ **     type: Data type. Range:0~SMTI_TYPE_MAX
  **     buff: Data address
  **     len: Data length
  **     args: Additional parameter
@@ -337,9 +337,9 @@ static int smtp_worker_cmd_hdl(smtp_cntx_t *ctx, smtp_worker_t *worker, const sm
  ** Note : 
  ** Author: # Qifeng.zou # 2014.03.31 #
  ******************************************************************************/
-int smtp_work_def_hdl(unsigned int type, char *buff, size_t len, void *args)
+int smti_work_def_hdl(unsigned int type, char *buff, size_t len, void *args)
 {
     log_debug(worker->log, "Call %s() type:%d len:%d", __func__, type, len);
 
-    return SMTP_OK;
+    return SMTI_OK;
 }
