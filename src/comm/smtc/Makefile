@@ -9,20 +9,20 @@
 include $(PROJ)/make/build.mak
 
 INCLUDE = -I. -I$(PROJ)/src/incl \
-		  -I$(PROJ)/src/comm/smti/incl \
-		  -I$(PROJ)/src/comm/smti/send/incl \
-		  -I$(PROJ)/src/comm/smti/recv/incl
+		  -I$(PROJ)/src/comm/smtc/incl \
+		  -I$(PROJ)/src/comm/smtc/send/incl \
+		  -I$(PROJ)/src/comm/smtc/recv/incl
 LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lxd_core
 
-SRC_LIST = recv/smti.c \
-			recv/smti_lsn.c \
-			recv/smti_rsvr.c \
-			recv/smti_worker.c
+SRC_LIST = recv/smtc.c \
+			recv/smtc_lsn.c \
+			recv/smtc_rsvr.c \
+			recv/smtc_worker.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
 
-TARGET = libsmti.so
+TARGET = libsmtc.so
 
 .PHONY: all clean
 

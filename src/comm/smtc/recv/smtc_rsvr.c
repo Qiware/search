@@ -1,3 +1,12 @@
+/******************************************************************************
+ ** Coypright(C) 2014-2024 Xundao technology Co., Ltd
+ **
+ ** 文件名: smtc.c
+ ** 版本号: 1.0
+ ** 描  述: 共享消息传输通道(Sharing Message Transaction Channel)
+ **         1. 主要用于异步系统之间数据消息的传输
+ ** 作  者: # Qifeng.zou # 2014.12.29 #
+ ******************************************************************************/
 #include <memory.h>
 #include <assert.h>
 #include <signal.h>
@@ -6,57 +15,58 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
-#include "smti.h"
+#include "smtc.h"
 #include "xml_tree.h"
-#include "smti_cmd.h"
-#include "smti_comm.h"
-#include "smti_recv.h"
+#include "smtc_cmd.h"
+#include "smtc_comm.h"
+#include "smtc_recv.h"
 #include "thread_pool.h"
 
 /* 静态函数 */
-static smti_rsvr_t *smti_rsvr_get_curr(smti_cntx_t *ctx);
-static int smti_rsvr_init(smti_cntx_t *ctx, smti_rsvr_t *rsvr);
-static int smti_rsvr_event_core_hdl(smti_cntx_t *ctx, smti_rsvr_t *rsvr);
-static int smti_rsvr_event_timeout_hdl(smti_cntx_t *ctx, smti_rsvr_t *rsvr);
+static smtc_rsvr_t *smtc_rsvr_get_curr(smtc_cntx_t *ctx);
+static int smtc_rsvr_init(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, int tidx);
+static int smtc_rsvr_event_core_hdl(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr);
+static int smtc_rsvr_event_timeout_hdl(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr);
 
-static int smti_rsvr_trav_recv(smti_cntx_t *ctx, smti_rsvr_t *rsvr);
-static int smti_rsvr_trav_send(smti_cntx_t *ctx, smti_rsvr_t *rsvr);
+static int smtc_rsvr_trav_recv(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr);
+static int smtc_rsvr_trav_send(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr);
 
-static int smti_rsvr_recv_proc(smti_cntx_t *ctx, smti_rsvr_t *rsvr, smti_sck_t *sck);
-static int smti_rsvr_read_init(smti_cntx_t *ctx, smti_rsvr_t *rsvr, smti_sck_t *sck);
-static int smti_rsvr_recv_header(smti_cntx_t *ctx, smti_rsvr_t *rsvr, smti_sck_t *sck);
-static int smti_rsvr_recv_body(smti_cntx_t *ctx, smti_rsvr_t *rsvr, smti_sck_t *sck);
+static int smtc_rsvr_recv_proc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck);
+static int smtc_rsvr_read_init(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck);
+static int smtc_rsvr_recv_header(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck);
+static int smtc_rsvr_recv_body(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck);
+static int smtc_rsvr_read_post(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck);
 
-static int smti_rsvr_check_header(smti_cntx_t *ctx, smti_rsvr_t *rsvr, smti_sck_t *sck);
-static void smti_rsvr_read_release(smti_cntx_t *ctx, smti_rsvr_t *rsvr, smti_sck_t *sck);
+static int smtc_rsvr_check_header(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck);
+static void smtc_rsvr_read_release(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck);
 
-static int smti_rsvr_proc_data(smti_cntx_t *ctx, smti_rsvr_t *rsvr, smti_sck_t *sck);
-static int smti_rsvr_sys_data_proc(smti_cntx_t *ctx, smti_rsvr_t *rsvr, smti_sck_t *sck);
-static int smti_rsvr_exp_data_proc(smti_cntx_t *ctx, smti_rsvr_t *rsvr, smti_sck_t *sck);
+static int smtc_rsvr_proc_sys_mesg(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck);
+static int smtc_rsvr_proc_exp_mesg(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck);
 
-static int smti_rsvr_link_info_report_hdl(smti_cntx_t *ctx, smti_sck_t *sck);
-static int smti_rsvr_keepalive_req_hdl(smti_cntx_t *ctx, smti_rsvr_t *rsvr, smti_sck_t *sck);
-static int smti_rsvr_send_work_cmd(smti_cntx_t *ctx, smti_rsvr_t *rsvr, smti_sck_t *sck);
-static void smti_rsvr_send_work_all_cmd(smti_cntx_t *ctx, smti_rsvr_t *rsvr);
+static int smtc_rsvr_keepalive_req_hdl(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck);
+static int smtc_rsvr_cmd_send_proc_req(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck);
+static void smtc_rsvr_cmd_send_proc_all_req(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr);
+static int smtc_rsvr_cmd_resend_proc_req(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr);
 
-static int smti_rsvr_add_sck_hdl(smti_rsvr_t *rsvr, smti_cmd_add_sck_t *req);
-static int smti_rsvr_del_sck_hdl(smti_rsvr_t *rsvr, smti_sck_t *sck);
-static void smti_rsvr_del_all_sck_hdl(smti_rsvr_t *rsvr);
+static int smtc_rsvr_add_conn_hdl(smtc_rsvr_t *rsvr, smtc_cmd_add_sck_t *req);
+static int smtc_rsvr_del_conn_hdl(smtc_rsvr_t *rsvr, smtc_sck_t *sck);
+static void smtc_rsvr_del_all_conn_hdl(smtc_rsvr_t *rsvr);
 
-static int smti_rsvr_add_msg(smti_rsvr_t *rsvr, smti_sck_t *sck, void *addr);
-static void *smti_rsvr_get_msg(smti_rsvr_t *rsvr, smti_sck_t *sck);
-static int smti_rsvr_clear_msg(smti_rsvr_t *rsvr, smti_sck_t *sck);
+static int smtc_rsvr_add_mesg(smtc_rsvr_t *rsvr, smtc_sck_t *sck, void *addr);
+static void *smtc_rsvr_fetch_mesg(smtc_rsvr_t *rsvr, smtc_sck_t *sck);
+static int smtc_rsvr_clear_mesg(smtc_rsvr_t *rsvr, smtc_sck_t *sck);
 
-/* Random select a rsvr thread */
-#define smti_rand_recv(ctx) ((ctx)->listen.total++ % (ctx->recvtp->num))
-/* Random select a work thread */
-#define smti_rand_work(ctx) (rand() % (ctx->worktp->num))
+/* 随机选择接收线程 */
+#define smtc_rand_recv(ctx) ((ctx)->listen.total++ % (ctx->recvtp->num))
+
+/* 随机选择工作线程 */
+#define smtc_rand_work(ctx) (rand() % (ctx->worktp->num))
 
 /******************************************************************************
- **函数名称: smti_rsvr_set_rdset
+ **函数名称: smtc_rsvr_set_rdset
  **功    能: 设置可读集合
  **输入参数: 
- **     rsvr: 接收对象
+ **     rsvr: 接收服务
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
@@ -64,9 +74,9 @@ static int smti_rsvr_clear_msg(smti_rsvr_t *rsvr, smti_sck_t *sck);
  **     如果超时未接收或发送数据，则关闭连接!
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-#define smti_rsvr_set_rdset(rsvr) \
+#define smtc_rsvr_set_rdset(rsvr) \
 { \
-    smti_sck_t *curr, *next; \
+    smtc_sck_t *curr, *next; \
     \
     FD_ZERO(&rsvr->rdset); \
     \
@@ -83,7 +93,7 @@ static int smti_rsvr_clear_msg(smti_rsvr_t *rsvr, smti_sck_t *sck);
                     curr->fd, curr->ipaddr); \
             \
             next = curr->next; \
-            smti_rsvr_del_sck_hdl(rsvr, curr); \
+            smtc_rsvr_del_conn_hdl(rsvr, curr); \
             \
             curr = next; \
             continue; \
@@ -97,10 +107,10 @@ static int smti_rsvr_clear_msg(smti_rsvr_t *rsvr, smti_sck_t *sck);
 }
 
 /******************************************************************************
- **函数名称: smti_rsvr_set_wrset
+ **函数名称: smtc_rsvr_set_wrset
  **功    能: 设置可写集合
  **输入参数: 
- **     rsvr: 接收对象
+ **     rsvr: 接收服务
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
@@ -108,16 +118,16 @@ static int smti_rsvr_clear_msg(smti_rsvr_t *rsvr, smti_sck_t *sck);
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-#define smti_rsvr_set_wrset(rsvr) \
+#define smtc_rsvr_set_wrset(rsvr) \
 { \
-    smti_sck_t *curr; \
+    smtc_sck_t *curr; \
     \
     FD_ZERO(&rsvr->wrset); \
     \
     curr = rsvr->sck; \
     while (NULL != curr) \
     { \
-        if (NULL == curr->message_list \
+        if (NULL == curr->mesg_list \
             && NULL == curr->send.addr) \
         { \
             curr = curr->next; \
@@ -131,43 +141,43 @@ static int smti_rsvr_clear_msg(smti_rsvr_t *rsvr, smti_sck_t *sck);
 }
 
 /******************************************************************************
- **函数名称: smti_rsvr_routine
+ **函数名称: smtc_rsvr_routine
  **功    能: 运行接收服务线程
  **输入参数: 
  **     _ctx: 全局对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
- **     1. 获取接收对象
+ **     1. 获取接收服务
  **     2. 等待事件通知
  **     3. 进行事件处理
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-void *smti_rsvr_routine(void *_ctx)
+void *smtc_rsvr_routine(void *_ctx)
 {
     int ret;
-    smti_rsvr_t *rsvr;
+    smtc_rsvr_t *rsvr;
     struct timeval timeout;
-    smti_cntx_t *ctx = (smti_cntx_t *)_ctx;
+    smtc_cntx_t *ctx = (smtc_cntx_t *)_ctx;
 
-    /* 1. 获取接收对象 */
-    rsvr = smti_rsvr_get_curr(ctx);
+    /* 1. 获取接收服务 */
+    rsvr = smtc_rsvr_get_curr(ctx);
     if (NULL == rsvr)
     {
         log_fatal(rsvr->log, "Get recv server failed!");
         abort();
-        return (void *)SMTI_ERR;
+        return (void *)SMTC_ERR;
     }
 
     for (;;)
     {
         /* 2. 等待事件通知 */
-        smti_rsvr_set_rdset(rsvr);
-        smti_rsvr_set_wrset(rsvr);
+        smtc_rsvr_set_rdset(rsvr);
+        smtc_rsvr_set_wrset(rsvr);
 
-        timeout.tv_sec = SMTI_TMOUT_SEC;
-        timeout.tv_usec = SMTI_TMOUT_USEC;
+        timeout.tv_sec = SMTC_TMOUT_SEC;
+        timeout.tv_usec = SMTC_TMOUT_USEC;
         ret = select(rsvr->max+1, &rsvr->rdset, &rsvr->wrset, NULL, &timeout);
         if (ret < 0)
         {
@@ -178,16 +188,16 @@ void *smti_rsvr_routine(void *_ctx)
 
             log_fatal(rsvr->log, "errmsg:[%d] %s", errno, strerror(errno));
             abort();
-            return (void *)SMTI_ERR;
+            return (void *)SMTC_ERR;
         }
         else if (0 == ret)
         {
-            smti_rsvr_event_timeout_hdl(ctx, rsvr);
+            smtc_rsvr_event_timeout_hdl(ctx, rsvr);
             continue;
         }
 
         /* 3. 进行事件处理 */
-        smti_rsvr_event_core_hdl(ctx, rsvr);
+        smtc_rsvr_event_core_hdl(ctx, rsvr);
     }
 
     log_fatal(rsvr->log, "errmsg:[%d] %s", errno, strerror(errno));
@@ -196,19 +206,19 @@ void *smti_rsvr_routine(void *_ctx)
 }
 
 /******************************************************************************
- **函数名称: smti_rsvr_get_curr
- **功    能: 获取当前线程对应的接收对象
+ **函数名称: smtc_rsvr_get_curr
+ **功    能: 获取当前线程对应的接收服务
  **输入参数: 
  **     ctx: 全局对象
  **输出参数: NONE
- **返    回: 当前接收对象
+ **返    回: 当前接收服务
  **实现描述: 
  **     1. 获取当前线程的索引
- **     2. 返回当前线程对应的接收对象
+ **     2. 返回当前线程对应的接收服务
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static smti_rsvr_t *smti_rsvr_get_curr(smti_cntx_t *ctx)
+static smtc_rsvr_t *smtc_rsvr_get_curr(smtc_cntx_t *ctx)
 {
     int tidx;
 
@@ -220,29 +230,31 @@ static smti_rsvr_t *smti_rsvr_get_curr(smti_cntx_t *ctx)
         return NULL;
     }
 
-    /* 2. 返回当前线程对应的接收对象 */
-    return (smti_rsvr_t *)(ctx->recvtp->data + tidx * sizeof(smti_rsvr_t));
+    /* 2. 返回当前线程对应的接收服务 */
+    return (smtc_rsvr_t *)(ctx->recvtp->data + tidx * sizeof(smtc_rsvr_t));
 }
 
 /******************************************************************************
- **函数名称: smti_rsvr_init
- **功    能: 初始化接收对象
+ **函数名称: smtc_rsvr_init
+ **功    能: 初始化接收服务
  **输入参数: 
  **     ctx: 全局对象
+ **     tidx: 接收服务编号
  **输出参数:
- **     rsvr: 接收对象
+ **     rsvr: 接收服务
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **     1. 获取当前线程的索引
- **     2. 返回当前线程对应的接收对象
+ **     2. 返回当前线程对应的接收服务
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int smti_rsvr_init(smti_cntx_t *ctx, smti_rsvr_t *rsvr)
+static int smtc_rsvr_init(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, int tidx)
 {
     char path[FILE_PATH_MAX_LEN];
-    smti_conf_t *conf = &ctx->conf;
+    smtc_conf_t *conf = &ctx->conf;
 
+    rsvr->tidx = tidx;
     rsvr->log = ctx->log;
     rsvr->ctm = time(NULL);
 
@@ -251,37 +263,37 @@ static int smti_rsvr_init(smti_cntx_t *ctx, smti_rsvr_t *rsvr)
     if (NULL == rsvr->delay_total)
     {
         log_fatal(rsvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return SMTI_ERR;
+        return SMTC_ERR;
     }
 
     /* 2. 创建CMD套接字 */
-    smti_rsvr_usck_path(conf, path, rsvr->tidx);
+    smtc_rsvr_usck_path(conf, path, rsvr->tidx);
     
     rsvr->cmd_sck_id = usck_udp_creat(path);
     if (rsvr->cmd_sck_id < 0)
     {
         log_error(rsvr->log, "Create unix-udp socket failed!");
-        return SMTI_ERR;
+        return SMTC_ERR;
     }
 
     /* 3. 创建SLAB内存池 */
-    rsvr->pool = slab_init(SMTI_MEM_POOL_SIZE)
+    rsvr->pool = slab_init(SMTC_MEM_POOL_SIZE)
     if (NULL == rsvr->pool)
     {
         log_error(rsvr->log, "Initialize slab mem-pool failed!");
-        return SMTI_ERR;
+        return SMTC_ERR;
     }
 
     rsvr->sck = NULL;
-    return SMTI_OK;
+    return SMTC_OK;
 }
 
 /******************************************************************************
- **函数名称: smti_rsvr_recv_cmd
+ **函数名称: smtc_rsvr_recv_cmd
  **功    能: 接收命令数据
  **输入参数: 
  **     ctx: 全局对象
- **     rsvr: 接收对象
+ **     rsvr: 接收服务
  **输出参数:
  **返    回: 0:成功 !0:失败
  **实现描述: 
@@ -290,9 +302,9 @@ static int smti_rsvr_init(smti_cntx_t *ctx, smti_rsvr_t *rsvr)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int smti_rsvr_recv_cmd(smti_cntx_t *ctx, smti_rsvr_t *rsvr)
+static int smtc_rsvr_recv_cmd(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr)
 {
-    smti_cmd_t cmd;
+    smtc_cmd_t cmd;
 
     memset(&cmd, 0, sizeof(cmd));
 
@@ -300,32 +312,32 @@ static int smti_rsvr_recv_cmd(smti_cntx_t *ctx, smti_rsvr_t *rsvr)
     if (usck_udp_recv(rsvr->cmd_sck_id, (void *)&cmd, sizeof(cmd)) < 0)
     {
         log_error(rsvr->log, "Recv command failed!");
-        return SMTI_ERR_RECV_CMD;
+        return SMTC_ERR_RECV_CMD;
     }
 
     /* 2. 进行命令处理 */
     switch (cmd.type)
     {
-        case SMTI_CMD_ADD_SCK:
+        case SMTC_CMD_ADD_SCK:
         {
-            return smti_rsvr_add_sck_hdl(rsvr, (smti_cmd_add_sck_t *)&cmd.args);
+            return smtc_rsvr_add_conn_hdl(rsvr, (smtc_cmd_add_sck_t *)&cmd.args);
         }
         default:
         {
             log_error(rsvr->log, "Unknown command! type:%d", cmd.type);
-            return SMTI_ERR_UNKNOWN_CMD;
+            return SMTC_ERR_UNKNOWN_CMD;
         }
     }
 
-    return SMTI_ERR_UNKNOWN_CMD;
+    return SMTC_ERR_UNKNOWN_CMD;
 }
 
 /******************************************************************************
- **函数名称: smti_rsvr_trav_recv
+ **函数名称: smtc_rsvr_trav_recv
  **功    能: 遍历接收数据
  **输入参数: 
  **     ctx: 全局对象
- **     rsvr: 接收对象
+ **     rsvr: 接收服务
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
@@ -333,9 +345,9 @@ static int smti_rsvr_recv_cmd(smti_cntx_t *ctx, smti_rsvr_t *rsvr)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int smti_rsvr_trav_recv(smti_cntx_t *ctx, smti_rsvr_t *rsvr)
+static int smtc_rsvr_trav_recv(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr)
 {
-    smti_sck_t *curr, *next;
+    smtc_sck_t *curr, *next;
 
     rsvr->ctm = time(NULL);
 
@@ -347,11 +359,11 @@ static int smti_rsvr_trav_recv(smti_cntx_t *ctx, smti_rsvr_t *rsvr)
             curr->rtm = rsvr->ctm;
 
             /* Recv data */
-            if (smti_rsvr_recv_proc(ctx, recv, curr))
+            if (smtc_rsvr_recv_proc(ctx, recv, curr))
             {
                 log_error(rsvr->log, "Read proc failed! fd:%d ip:%s", curr->fd, curr->ipaddr);
                 next = curr->next;
-                smti_rsvr_del_sck_hdl(rsvr, curr);
+                smtc_rsvr_del_conn_hdl(rsvr, curr);
                 curr = next;
                 continue;
             }
@@ -360,15 +372,15 @@ static int smti_rsvr_trav_recv(smti_cntx_t *ctx, smti_rsvr_t *rsvr)
         curr = curr->next;
     }
 
-    return SMTI_OK;
+    return SMTC_OK;
 }
 
 /******************************************************************************
- **函数名称: smti_rsvr_trav_send
+ **函数名称: smtc_rsvr_trav_send
  **功    能: 遍历发送数据
  **输入参数: 
  **     ctx: 全局对象
- **     rsvr: 接收对象
+ **     rsvr: 接收服务
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
@@ -376,12 +388,12 @@ static int smti_rsvr_trav_recv(smti_cntx_t *ctx, smti_rsvr_t *rsvr)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int smti_rsvr_trav_send(smti_cntx_t *ctx, smti_rsvr_t *rsvr)
+static int smtc_rsvr_trav_send(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr)
 {
     int n;
-    smti_header_t *head;
-    smti_sck_t *curr;
-    smti_send_snap_t *send;
+    smtc_header_t *head;
+    smtc_sck_t *curr;
+    socket_snap_t *send;
 
     rsvr->ctm = time(NULL);
     curr = rsvr->sck;
@@ -398,17 +410,17 @@ static int smti_rsvr_trav_send(smti_cntx_t *ctx, smti_rsvr_t *rsvr)
                 /* 1. 获取需要发送的数据 */
                 if (NULL == send->addr)
                 {
-                    send->addr = smti_rsvr_get_msg(rsvr, curr);
+                    send->addr = smtc_rsvr_fetch_mesg(rsvr, curr);
                     if (NULL == send->addr)
                     {
                         break;
                     }
 
-                    head = (smti_header_t *)send->addr;
+                    head = (smtc_header_t *)send->addr;
 
-                    send->loc = SMTI_DATA_LOC_SLAB;
+                    send->loc = SMTC_DATA_LOC_SLAB;
                     send->off = 0;
-                    send->total = head->length + sizeof(smti_header_t);
+                    send->total = head->length + sizeof(smtc_header_t);
                     send->left = send->total;
                 }
 
@@ -425,40 +437,40 @@ static int smti_rsvr_trav_send(smti_cntx_t *ctx, smti_rsvr_t *rsvr)
 
                     log_error(rsvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
 
-                    if (SMTI_DATA_LOC_SLAB == send->loc)
+                    if (SMTC_DATA_LOC_SLAB == send->loc)
                     {
                         slab_dealloc(rsvr->pool, send->addr);
                     }
 
-                    smti_reset_send_snap(send);
+                    smtc_reset_send_snap(send);
 
                     /* 关闭套接字　并清空发送队列 */
-                    smti_rsvr_del_sck_hdl(rsvr, curr);
-                    return SMTI_ERR;
+                    smtc_rsvr_del_conn_hdl(rsvr, curr);
+                    return SMTC_ERR;
                 }
 
                 /* 3. 释放空间 */
-                if (SMTI_DATA_LOC_SLAB == send->loc)
+                if (SMTC_DATA_LOC_SLAB == send->loc)
                 {
                     slab_dealloc(rsvr->pool, send->addr);
                 }
 
-                smti_reset_send_snap(send);
+                smtc_reset_send_snap(send);
             }
         }
 
         curr = curr->next;
     }
 
-    return SMTI_OK;
+    return SMTC_OK;
 }
 
 /******************************************************************************
- **函数名称: smti_rsvr_recv_proc
+ **函数名称: smtc_rsvr_recv_proc
  **功    能: 接收数据并做相应处理
  **输入参数: 
  **     ctx: 全局对象
- **     rsvr: 接收对象
+ **     rsvr: 接收服务
  **     sck: 被操作的套接字
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
@@ -470,47 +482,47 @@ static int smti_rsvr_trav_send(smti_cntx_t *ctx, smti_rsvr_t *rsvr)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int smti_rsvr_recv_proc(smti_cntx_t *ctx, smti_rsvr_t *rsvr, smti_sck_t *sck)
+static int smtc_rsvr_recv_proc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck)
 {
     int ret;
-    smti_header_t *head;
-    smti_read_snap_t *read = &sck->read;
+    smtc_header_t *head;
+    socket_snap_t *read = &sck->read;
 
     switch (read->phase)
     {
         /* 1. 初始化接收 */
-        case SMTI_PHASE_READ_INIT:
+        case SMTC_PHASE_READ_INIT:
         {
-            if (smti_rsvr_read_init(ctx, recv, sck))
+            if (smtc_rsvr_read_init(ctx, recv, sck))
             {
                 log_error(rsvr->log, "Init read failed!");
-                return SMTI_ERR;
+                return SMTC_ERR;
             }
 
             /* 注意: 继续后续处理, 不执行break语句... */
         }
         /* 2. 接收数据头 */
-        case SMTI_PHASE_READ_HEAD:
+        case SMTC_PHASE_READ_HEAD:
         {
-            ret = smti_rsvr_recv_header(ctx, recv, sck);
-            if (SMTI_DONE == ret)
+            ret = smtc_rsvr_recv_header(ctx, recv, sck);
+            if (SMTC_DONE == ret)
             {
-                head = (smti_header_t *)read->addr;
+                head = (smtc_header_t *)read->addr;
                 if (head->length > 0)
                 {
-                    smti_set_read_phase(read, SMTI_PHASE_READ_BODY);
-                    return SMTI_OK;
+                    smtc_set_read_phase(read, SMTC_PHASE_READ_BODY);
+                    return SMTC_OK;
                 }
 
-                smti_set_read_phase(read, SMTI_PHASE_READ_POST);
+                smtc_set_read_phase(read, SMTC_PHASE_READ_POST);
                 goto PHASE_READ_POST;
             }
-            else if (SMTI_AGAIN == ret)  /* incomplete */
+            else if (SMTC_AGAIN == ret)  /* incomplete */
             {
                 /* Note: Continue rsvr head at next loop */
-                return SMTI_OK;
+                return SMTC_OK;
             }
-            else if (SMTI_SCK_CLOSED == ret)
+            else if (SMTC_SCK_CLOSED == ret)
             {
                 log_debug(rsvr->log, "Client disconnect!");
                 break;
@@ -523,24 +535,24 @@ static int smti_rsvr_recv_proc(smti_cntx_t *ctx, smti_rsvr_t *rsvr, smti_sck_t *
             /* 注意: 继续后续处理, 不执行break语句... */
         }
         /* 3. 接收数据体 */
-        case SMTI_PHASE_READ_BODY:
+        case SMTC_PHASE_READ_BODY:
         {
-            ret = smti_rsvr_recv_body(ctx, recv, sck);
-            if (SMTI_DONE == ret)
+            ret = smtc_rsvr_recv_body(ctx, recv, sck);
+            if (SMTC_DONE == ret)
             {
                 /* NULL;  Note: Continue handle */
             }
-            else if (SMTI_AGAIN == ret)
+            else if (SMTC_AGAIN == ret)
             {
                 /* Note: Continue rsvr body at next loop */
-                return SMTI_OK;
+                return SMTC_OK;
             }
-            else if (SMTI_HDL_DISCARD == ret)
+            else if (SMTC_HDL_DISCARD == ret)
             {
-                smti_rsvr_read_release(ctx, recv, sck);
-                return SMTI_OK;
+                smtc_rsvr_read_release(ctx, recv, sck);
+                return SMTC_OK;
             }
-            else if (SMTI_SCK_CLOSED == ret)
+            else if (SMTC_SCK_CLOSED == ret)
             {
                 log_debug(rsvr->log, "Client disconnect!");
                 break;
@@ -553,20 +565,20 @@ static int smti_rsvr_recv_proc(smti_cntx_t *ctx, smti_rsvr_t *rsvr, smti_sck_t *
             /* 注意: 继续后续处理, 不执行break语句... */
         }
         /* 4. 进行数据处理 */
-        case SMTI_PHASE_READ_POST:
+        case SMTC_PHASE_READ_POST:
         {
         PHASE_READ_POST:
-            ret = smti_rsvr_proc_data(ctx, recv, sck);
-            if (SMTI_OK == ret)
+            ret = smtc_rsvr_read_post(ctx, recv, sck);
+            if (SMTC_OK == ret)
             {
-                smti_reset_read_snap(read);
-                return SMTI_OK;
+                smtc_reset_read_snap(read);
+                return SMTC_OK;
             }
-            else if ((SMTI_HDL_DONE == ret)
-                || (SMTI_HDL_DISCARD == ret))
+            else if ((SMTC_HDL_DONE == ret)
+                || (SMTC_HDL_DISCARD == ret))
             {
-                smti_rsvr_read_release(ctx, recv, sck);
-                return SMTI_OK;
+                smtc_rsvr_read_release(ctx, recv, sck);
+                return SMTC_OK;
             }
 
             break;
@@ -578,17 +590,17 @@ static int smti_rsvr_recv_proc(smti_cntx_t *ctx, smti_rsvr_t *rsvr, smti_sck_t *
         }
     }
 
-    smti_rsvr_read_release(ctx, recv, sck);
+    smtc_rsvr_read_release(ctx, recv, sck);
 
-    return SMTI_ERR;
+    return SMTC_ERR;
 }
 
 /******************************************************************************
- **函数名称: smti_rsvr_read_init
+ **函数名称: smtc_rsvr_read_init
  **功    能: 初始化数据接收
  **输入参数: 
  **     ctx: 全局对象
- **     rsvr: 接收对象
+ **     rsvr: 接收服务
  **     sck: 被操作的套接字
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
@@ -598,11 +610,11 @@ static int smti_rsvr_recv_proc(smti_cntx_t *ctx, smti_rsvr_t *rsvr, smti_sck_t *
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int smti_rsvr_read_init(smti_cntx_t *ctx, smti_rsvr_t *rsvr, smti_sck_t *sck)
+static int smtc_rsvr_read_init(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck)
 {
-#define SMTI_RETRY_TIMES    (3)
+#define SMTC_RETRY_TIMES    (3)
     int times = 0;
-    smti_read_snap_t *read = &sck->read;
+    socket_snap_t *read = &sck->read;
 
 AGAIN:
     /* 1. 随机选择Recv队列 */
@@ -612,9 +624,9 @@ AGAIN:
     read->dataid = orm_queue_data_malloc(ctx->recvq[read->rqidx], &read->addr);
     if (NULLID == read->dataid)
     {
-        smti_rsvr_send_work_all_cmd(ctx, rsvr);
+        smtc_rsvr_cmd_send_proc_all_req(ctx, rsvr);
 
-        if (times++ < SMTI_RETRY_TIMES)
+        if (times++ < SMTC_RETRY_TIMES)
         {
             goto AGAIN;
         }
@@ -631,7 +643,7 @@ AGAIN:
             if (NULL == sck->null)
             {
                 log_error(rsvr->log, "Alloc memory from slab failed!");
-                return SMTI_ERR;
+                return SMTC_ERR;
             }
         }
 
@@ -643,17 +655,17 @@ AGAIN:
 
     /* 3. 设置标识量 */
     read->off = 0;
-    smti_set_read_phase(read, SMTI_PHASE_READ_HEAD);
+    smtc_set_read_phase(read, SMTC_PHASE_READ_HEAD);
     
-    return SMTI_OK;
+    return SMTC_OK;
 }
 
 /******************************************************************************
- **函数名称: smti_rsvr_read_release
+ **函数名称: smtc_rsvr_read_release
  **功    能: 释放数据接收
  **输入参数: 
  **     ctx: 全局对象
- **     rsvr: 接收对象
+ **     rsvr: 接收服务
  **     sck: 被操作的套接字
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
@@ -661,9 +673,9 @@ AGAIN:
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static void smti_rsvr_read_release(smti_cntx_t *ctx, smti_rsvr_t *rsvr, smti_sck_t *sck)
+static void smtc_rsvr_read_release(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck)
 {
-    smti_read_snap_t *read = &sck->read;
+    socket_snap_t *read = &sck->read;
 
     /* 1. 释放内存 */
     if (read->addr != sck->null)
@@ -672,15 +684,15 @@ static void smti_rsvr_read_release(smti_cntx_t *ctx, smti_rsvr_t *rsvr, smti_sck
     }
 
     /* 2. 重置标识量 */
-    smti_reset_read_snap(read);
+    smtc_reset_read_snap(read);
 }
 
 /******************************************************************************
- **函数名称: smti_rsvr_recv_header
+ **函数名称: smtc_rsvr_recv_header
  **功    能: 接收数据头
  **输入参数: 
  **     ctx: 全局对象
- **     rsvr: 接收对象
+ **     rsvr: 接收服务
  **     sck: 被操作的套接字
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
@@ -688,18 +700,18 @@ static void smti_rsvr_read_release(smti_cntx_t *ctx, smti_rsvr_t *rsvr, smti_sck
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int smti_rsvr_recv_header(smti_cntx_t *ctx, smti_rsvr_t *rsvr, smti_sck_t *sck)
+static int smtc_rsvr_recv_header(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck)
 {
     int n, left;
-    smti_read_snap_t *read = &sck->read;
-    smti_header_t *head = (smti_header_t *)read->addr;
+    socket_snap_t *read = &sck->read;
+    smtc_header_t *head = (smtc_header_t *)read->addr;
 
 
     /* 1. 接收数据 */
     while (1)
     {
         /* 1.1 计算剩余数 */
-        left = sizeof(smti_header_t) - read->off;
+        left = sizeof(smtc_header_t) - read->off;
 
         /* 1.2 接收数据头 */
         n = read(sck->fd, read->addr + read->off,  left);
@@ -715,13 +727,13 @@ static int smti_rsvr_recv_header(smti_cntx_t *ctx, smti_rsvr_t *rsvr, smti_sck_t
         }
         else if ((n < 0) && (EAGAIN == errno))
         {
-            return SMTI_AGAIN;
+            return SMTC_AGAIN;
         }
         else if (0 == n)
         {
             log_error(rsvr->log, "Client disconnected. errmsg:[%d] %s! fd:[%d] n:[%d/%d]",
                     errno, strerror(errno), sck->fd, n, left);
-            return SMTI_SCK_CLOSED;
+            return SMTC_SCK_CLOSED;
         }
         
         if (EINTR == errno)
@@ -732,33 +744,33 @@ static int smti_rsvr_recv_header(smti_cntx_t *ctx, smti_rsvr_t *rsvr, smti_sck_t
         ++rsvr->err_total; /* 错误计数 */
 
         log_error(rsvr->log, "errmsg:[%d] %s. fd:[%d]", errno, strerror(errno), sck->fd);
-        return SMTI_ERR;
+        return SMTC_ERR;
     }
 
     /* 3. 校验数据头 */
-    if (smti_rsvr_check_header(ctx, recv, sck))
+    if (smtc_rsvr_check_header(ctx, recv, sck))
     {
         ++rsvr->err_total; /* 错误计数 */
 
         log_error(rsvr->log, "Check header failed! type:%d len:%d flag:%d mark:[%u/%u]",
-                head->type, head->length, head->flag, head->mark, SMTI_MSG_MARK_KEY);
-        return SMTI_ERR;
+                head->type, head->length, head->flag, head->mark, SMTC_MSG_MARK_KEY);
+        return SMTC_ERR;
     }
 
-    read->total = sizeof(smti_header_t) + head->length;
+    read->total = sizeof(smtc_header_t) + head->length;
 
     log_debug(rsvr->log, "Recv header success! type:%d len:%d flag:%d mark:[%u/%u]",
-            head->type, head->length, head->flag, head->mark, SMTI_MSG_MARK_KEY);
+            head->type, head->length, head->flag, head->mark, SMTC_MSG_MARK_KEY);
 
-    return SMTI_DONE;
+    return SMTC_DONE;
 }
 
 /******************************************************************************
- **函数名称: smti_rsvr_check_header
+ **函数名称: smtc_rsvr_check_header
  **功    能: 校验数据头
  **输入参数: 
  **     ctx: 全局对象
- **     rsvr: 接收对象
+ **     rsvr: 接收服务
  **     sck: 被操作的套接字
  **输出参数: NONE
  **返    回: 0:合法 !0:不合法
@@ -766,43 +778,43 @@ static int smti_rsvr_recv_header(smti_cntx_t *ctx, smti_rsvr_t *rsvr, smti_sck_t
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int smti_rsvr_check_header(smti_cntx_t *ctx, smti_rsvr_t *rsvr, smti_sck_t *sck)
+static int smtc_rsvr_check_header(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck)
 {
-    smti_read_snap_t *read = &sck->read;
-    smti_header_t *head = (smti_header_t *)read->addr;
+    socket_snap_t *read = &sck->read;
+    smtc_header_t *head = (smtc_header_t *)read->addr;
 
 
     /* 1. 检查校验值 */
-    if (SMTI_MSG_MARK_KEY != head->mark)
+    if (SMTC_MSG_MARK_KEY != head->mark)
     {
         log_error(rsvr->log, "Mark [%u/%u] isn't right! type:%d len:%d flag:%d",
-                head->mark, SMTI_MSG_MARK_KEY, head->type, head->length, head->flag);
-        return SMTI_ERR;
+                head->mark, SMTC_MSG_MARK_KEY, head->type, head->length, head->flag);
+        return SMTC_ERR;
     }
 
     /* 2. 检查类型 */
-    if (!smti_is_type_valid(head->type))
+    if (!smtc_is_type_valid(head->type))
     {
         log_error(rsvr->log, "Data type is invalid! type:%d len:%d", head->type, head->length);
-        return SMTI_ERR;
+        return SMTC_ERR;
     }
  
     /* 3. 检查长度: 因所有队列长度一致 因此使用[0]判断 */
-    if (!smti_is_len_valid(ctx->recvq[0], head->length))
+    if (!smtc_is_len_valid(ctx->recvq[0], head->length))
     {
         log_error(rsvr->log, "Length is too long! type:%d len:%d", head->type, head->length);
-        return SMTI_ERR;
+        return SMTC_ERR;
     }
 
-    return SMTI_OK;
+    return SMTC_OK;
 }
 
 /******************************************************************************
- **函数名称: smti_rsvr_recv_body
+ **函数名称: smtc_rsvr_recv_body
  **功    能: 接收数据体
  **输入参数: 
  **     ctx: 全局对象
- **     rsvr: 接收对象
+ **     rsvr: 接收服务
  **     sck: 被操作的套接字
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
@@ -810,18 +822,18 @@ static int smti_rsvr_check_header(smti_cntx_t *ctx, smti_rsvr_t *rsvr, smti_sck_
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int smti_rsvr_recv_body(smti_cntx_t *ctx, smti_rsvr_t *rsvr, smti_sck_t *sck)
+static int smtc_rsvr_recv_body(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck)
 {
     int n, left;
-    smti_reg_t *reg;
-    smti_read_snap_t *read = &sck->read;
-    smti_header_t *head = (smti_header_t *)read->addr;
+    smtc_reg_t *reg;
+    socket_snap_t *read = &sck->read;
+    smtc_header_t *head = (smtc_header_t *)read->addr;
 
 
     while (1)
     {
         /* 1. 接收报体 */
-        left = head->length + sizeof(smti_header_t) - read->off;
+        left = head->length + sizeof(smtc_header_t) - read->off;
 
         n = read(sck->fd, read->addr + read->off, left);
         if (n == left)
@@ -836,7 +848,7 @@ static int smti_rsvr_recv_body(smti_cntx_t *ctx, smti_rsvr_t *rsvr, smti_sck_t *
         }
         else if ((n < 0) && (EAGAIN == errno))
         {
-            return SMTI_AGAIN;
+            return SMTC_AGAIN;
         }
         else if (0 == n)
         {
@@ -844,7 +856,7 @@ static int smti_rsvr_recv_body(smti_cntx_t *ctx, smti_rsvr_t *rsvr, smti_sck_t *
                     "fd:%d type:%d flag:%d bodylen:%d total:%d left:%d off:%d",
                     errno, strerror(errno),
                     sck->fd, head->type, head->flag, head->length, read->total, left, read->off);
-            return SMTI_SCK_CLOSED;
+            return SMTC_SCK_CLOSED;
         }
 
         if (EINTR == errno)
@@ -858,228 +870,100 @@ static int smti_rsvr_recv_body(smti_cntx_t *ctx, smti_rsvr_t *rsvr, smti_sck_t *
                 errno, strerror(errno), head->type,
                 head->length, n, sck->fd, read->total, read->off, read->addr);
 
-        return SMTI_ERR;
+        return SMTC_ERR;
     }
 
     /* 2. 设置标志变量 */
-    smti_set_read_phase(read, SMTI_PHASE_READ_POST);
+    smtc_set_read_phase(read, SMTC_PHASE_READ_POST);
 
     log_trace(rsvr->log, "Recv success! type:%d len:%d", head->type, head->length);
     
-    return SMTI_DONE;
+    return SMTC_DONE;
 }
 
 /******************************************************************************
- ** Name : smti_rsvr_sys_data_proc
- ** Desc : Handle system data
- ** Input: 
- **     ctx: Global context
- **     recv: Recv context
- **     sck: Socket information
- ** Output: NONE
- ** Return: 0:Succ !0:Fail
- ** Proc : 
- ** Note : 
- ** Author: # Qifeng.zou # 2014.04.14 #
+ **函数名称: smtc_rsvr_read_post
+ **功    能: 数据接收完成后的处理
+ **输入参数: 
+ **     ctx: 全局对象
+ **     rsvr: 接收服务
+ **     sck: 套接字对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **     1. 系统数据处理
+ **     2. 自定义数据处理
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int smti_rsvr_sys_data_proc(smti_cntx_t *ctx, smti_rsvr_t *rsvr, smti_sck_t *sck)
+static int smtc_rsvr_read_post(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck)
 {
-    smti_read_snap_t *read = &sck->read;
-    smti_header_t *head = (smti_header_t *)read->addr;
+    socket_snap_t *read = &sck->read;
+    smtc_header_t *head = read->addr;
+
+    /* 1. 系统数据处理 */
+    if (SMTC_SYS_DATA == head->flag)
+    {
+        return smtc_rsvr_proc_sys_mesg(ctx, recv, sck);
+    }
+
+    /* 2. 自定义数据处理 */
+    return smtc_rsvr_proc_exp_mesg(ctx, recv, sck);
+}
+
+/******************************************************************************
+ **函数名称: smtc_rsvr_proc_sys_mesg
+ **功    能: 系统消息处理
+ **输入参数: 
+ **     ctx: 全局对象
+ **     rsvr: 接收服务
+ **     sck: 套接字对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.01.01 #
+ ******************************************************************************/
+static int smtc_rsvr_proc_sys_mesg(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck)
+{
+    socket_snap_t *read = &sck->read;
+    smtc_header_t *head = (smtc_header_t *)read->addr;
 
     switch (head->type)
     {
-        case SMTI_KPALIVE_REQ:
+        case SMTC_KPALIVE_REQ:
         {
-            return smti_rsvr_keepalive_req_hdl(ctx, recv, sck);
-        }
-        case SMTI_LINK_INFO_REPORT:
-        {
-            return smti_rsvr_link_info_report_hdl(ctx, sck);
+            return smtc_rsvr_keepalive_req_hdl(ctx, recv, sck);
         }
         default:
         {
-            log_error(rsvr->log, "Give up handle this type [%d]!", head->type);
-            return SMTI_HDL_DISCARD;
+            log_error(rsvr->log, "Unknown message type! [%d]", head->type);
+            return SMTC_HDL_DISCARD;
         }
     }
     
-    return SMTI_HDL_DISCARD;
+    return SMTC_HDL_DISCARD;
 }
 
 /******************************************************************************
- ** Name : smti_rsvr_send_work_cmd
- ** Desc : Send WORK REQ to work-thread
- ** Input: 
- **     ctx: Global context
- **     recv: Rcv-SVR
- ** Output: 
- ** Return: 0:Succ !0:Fail
- ** Proc : 
- ** Note : 
- ** Author: # Qifeng.zou # 2014.04.11 #
+ **函数名称: smtc_rsvr_proc_exp_mesg
+ **功    能: 自定义消息处理
+ **输入参数: 
+ **     ctx: 全局对象
+ **     rsvr: 接收服务
+ **     sck: 套接字对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **     1. 是否在NULL空间: 直接丢弃
+ **     2. 放入队列中
+ **     3. 发送处理请求
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int smti_rsvr_send_work_cmd(smti_cntx_t *ctx, smti_rsvr_t *rsvr, smti_sck_t *sck)
+static int smtc_rsvr_proc_exp_mesg(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck)
 {
-    int ret = 0, times = 0, work_tidx = 0;
-    smti_cmd_t cmd;
-    char path[FILE_PATH_MAX_LEN];
-    smti_cmd_work_t *work_cmd = (smti_cmd_work_t *)&cmd.args;
-    smti_conf_t *conf = &ctx->conf;
-
-    cmd.type = SMTI_CMD_WORK;
-    work_cmd->ori_recv_tidx = rsvr->tidx;
-    work_cmd->num = ++rsvr->delay_total[sck->read.rqidx]; /* +1 */
-    work_cmd->rqidx = sck->read.rqidx;
-
-    /* 1. 随机选择Work线程 */
-    /* work_tidx = smti_rand_work(ctx); */
-    work_tidx = sck->read.rqidx / SMTI_WORKER_HDL_QNUM;
-
-    smti_wsvr_usck_path(conf, path, work_tidx);
-
-    /* 2. 发送处理命令 */
-    ret = usck_udp_send(rsvr->cmd_sck_id, path, &cmd, sizeof(smti_cmd_t));
-    if (ret < 0)
-    {
-        log_debug(rsvr->log, "Send command failed! errmsg:[%d] %s! path:[%s]",
-                errno, strerror(errno), path);
-        return SMTI_ERR;
-    }
-
-    rsvr->delay_total[sck->read.rqidx] = 0;
-
-    return SMTI_OK;
-}
-
-/******************************************************************************
- ** Name : smti_rsvr_resend_work_cmd
- ** Desc : Resend work command
- ** Input: 
- **     recv: RcvSvr
- ** Output: NONE
- ** Return: 
- **     0:Succ
- **     !0:Fail
- ** Proc : 
- ** Note : 
- ** Author: # Qifeng.zou # 2014.04.10 #
- ******************************************************************************/
-static int smti_rsvr_resend_work_cmd(smti_cntx_t *ctx, smti_rsvr_t *rsvr)
-{
-    int ret = 0, work_tidx = 0, times = 0, idx = 0;
-    smti_cmd_t cmd;
-    char path[FILE_PATH_MAX_LEN];
-    smti_cmd_work_t *work_cmd = (smti_cmd_work_t *)&cmd.args;
-    smti_conf_t *conf = &ctx->conf;
-
-
-    /* 依次检测各Recv队列的滞留数据 */
-    for (idx=0; idx<ctx->conf.rqnum; ++idx)
-    {
-        if (rsvr->delay_total[idx] > 0)
-        {
-            cmd.type = SMTI_CMD_WORK;
-            work_cmd->ori_recv_tidx = rsvr->tidx;
-            work_cmd->rqidx = idx;
-            work_cmd->num = rsvr->delay_total[idx];
-
-            /* 1. 随机选择Work线程 */
-            /* work_tidx = smti_rand_work(ctx); */
-            work_tidx = idx / SMTI_WORKER_HDL_QNUM;
-
-            smti_wsvr_usck_path(conf, path, work_tidx);
-
-            /* 2. 发送处理命令 */
-            ret = usck_udp_send(rsvr->cmd_sck_id, path, &cmd, sizeof(smti_cmd_t));
-            if (ret < 0)
-            {
-                log_debug(rsvr->log, "Send command failed! errmsg:[%d] %s! path:[%s]",
-                        errno, strerror(errno), path);
-                continue;
-            }
-
-            rsvr->delay_total[idx] = 0;
-        }
-    }
-
-    return 0;
-}
-
-/******************************************************************************
- ** Name : smti_rsvr_send_work_all_cmd
- ** Desc : Resend work all command
- ** Input: 
- **     recv: RcvSvr
- ** Output: NONE
- ** Return: void
- ** Proc : 
- **     给所有Work线程都发送处理命令
- ** Note : 
- ** Author: # Qifeng.zou # 2014.04.10 #
- ******************************************************************************/
-static void smti_rsvr_send_work_all_cmd(smti_cntx_t *ctx, smti_rsvr_t *rsvr)
-{
-    int work_idx = 0, ret = 0, times = 0, idx = 0;
-    smti_cmd_t cmd;
-    char path[FILE_PATH_MAX_LEN];
-    smti_conf_t *conf = &ctx->conf;
-    smti_cmd_work_t *work_cmd = (smti_cmd_work_t *)&cmd.args;
-
-     /* 1. 设置命令参数 */
-    cmd.type = SMTI_CMD_WORK;
-    work_cmd->ori_recv_tidx = rsvr->tidx;
-    work_cmd->num = -1; /* 取出所有数据 */
-
-     /* 2. 依次遍历所有Recv队列 让Work线程处理其中的数据 */
-    for (idx=0; idx<conf->rqnum; ++idx)
-    {
-        work_cmd->rqidx = idx;
-
-    AGAIN:
-        /* 2.1 随机选择Work线程 */
-        work_idx = rand() % conf->wrk_thd_num;
-
-        smti_wsvr_usck_path(conf, path, work_idx);
-
-        /* 2.2 发送处理命令 */
-        ret = usck_udp_send(rsvr->cmd_sck_id, path, &cmd, sizeof(smti_cmd_t));
-        if (0 != ret)
-        {
-            if (++times < 3)
-            {
-                goto AGAIN;
-            }
-
-            log_debug(rsvr->log, "Send command failed! errmsg:[%d] %s! path:%s",
-                    errno, strerror(errno), path);
-            continue;
-        }
-
-        rsvr->delay_total[idx] = 0;
-    }
-
-    return;
-}
-
-/******************************************************************************
- ** Name : smti_rsvr_exp_data_proc
- ** Desc : Forward expand data
- ** Input: 
- **     ctx: Global context
- **     sck: Socket information
- ** Output: NONE
- ** Return: 0:Succ !0:Fail
- ** Proc : 
- **     1. Send "Work REQ" command to worker thread
- **     2. Send fail commands again
- ** Note : 
- ** Author: # Qifeng.zou # 2014.04.10 #
- ******************************************************************************/
-static int smti_rsvr_exp_data_proc(smti_cntx_t *ctx, smti_rsvr_t *rsvr, smti_sck_t *sck)
-{
-    int ret;
-    smti_read_snap_t *read = &sck->read;
+    socket_snap_t *read = &sck->read;
 
     ++rsvr->recv_total; /* 总数 */
 
@@ -1088,98 +972,69 @@ static int smti_rsvr_exp_data_proc(smti_cntx_t *ctx, smti_rsvr_t *rsvr, smti_sck
     {
         ++rsvr->drop_total;  /* 丢弃计数 */
 
-        log_error(rsvr->log, "Lost data! tidx:[%d] fd:[%d] recv:%llu drop:%llu error:%llu",
+        log_error(rsvr->log, "Drop data! tidx:%d fd:%d recv:%llu drop:%llu error:%llu",
                 rsvr->tidx, sck->fd, rsvr->recv_total,
                 rsvr->drop_total, rsvr->err_total);
-        return SMTI_OK;
+        return SMTC_OK;
     }
 
     /* 2. 放入队列中 */
-    ret = orm_queue_push(ctx->recvq[read->rqidx], read->dataid);
-    if (ret < 0)
+    if (queue_push(ctx->recvq[read->rqidx], read->addr))
     {
-        orm_queue_data_free(ctx->recvq[read->rqidx], read->dataid);
+        queue_dealloc(ctx->recvq[read->rqidx], read->addr);
 
         ++rsvr->drop_total;  /* 丢弃计数 */
 
         log_error(rsvr->log, "Push failed! tidx:[%d] dataid:[%d] recv:%llu drop:%llu error:%llu",
                 rsvr->tidx, read->dataid, rsvr->recv_total,
                 rsvr->drop_total, rsvr->err_total);
-        return SMTI_OK;  /* Note: Don't return error */
+        return SMTC_OK;  /* Note: Don't return error */
     }
 
-    /* 1. Notify work-thread */
-    ret = smti_rsvr_send_work_cmd(ctx, recv, sck);
-    if (SMTI_OK != ret)
+    /* 3. 发送处理请求 */
+    if (smtc_rsvr_cmd_send_proc_req(ctx, recv, sck))
     {
         /* log_error(rsvr->log, "errmsg:[%d] %s!", errno, strerror(errno)); */
-        return SMTI_OK;  /* Note: Don't return error, resend at next time */
+        return SMTC_OK;  /* Note: Don't return error, resend at next time */
     }
 
-    return SMTI_OK;
+    return SMTC_OK;
 }
 
 /******************************************************************************
- ** Name : smti_rsvr_proc_data
- ** Desc : Process data from client.
- ** Input: 
- **     ctx: Global context
- **     recv: Recv context
- **     sck: Socket information
- ** Output: NONE
- ** Return: 0:Succ !0:Fail
- ** Proc : 
- **     1. Handle system data
- **     2. Forward expand data
- ** Note : 
- ** Author: # Qifeng.zou # 2014.05.13 #
- ******************************************************************************/
-static int smti_rsvr_proc_data(smti_cntx_t *ctx, smti_rsvr_t *rsvr, smti_sck_t *sck)
-{
-    smti_read_snap_t *read = &sck->read;
-    smti_header_t *head = read->addr;
-
-    /* 1. Handle system data */
-    if (SMTI_SYS_DATA == head->flag)
-    {
-        return smti_rsvr_sys_data_proc(ctx, recv, sck);
-    }
-
-    /* 2. Forward expand data */
-    return smti_rsvr_exp_data_proc(ctx, recv, sck);
-}
-
-/******************************************************************************
- **函数名称: smti_rsvr_event_core_hdl
+ **函数名称: smtc_rsvr_event_core_hdl
  **功    能: 事件核心处理
  **输入参数: 
  **     ctx: 全局对象
- **     rsvr: 接收对象
+ **     rsvr: 接收服务
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
+ **     1. 接收命令数据
+ **     2. 遍历接收数据
+ **     3. 遍历发送数据
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int smti_rsvr_event_core_hdl(smti_cntx_t *ctx, smti_rsvr_t *rsvr)
+static int smtc_rsvr_event_core_hdl(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr)
 {
     /* 1. 接收命令数据 */
     if (!FD_ISSET(rsvr->cmd_sck_id, &rsvr->rdset))
     {
-        smti_rsvr_recv_cmd(ctx, rsvr);
+        smtc_rsvr_recv_cmd(ctx, rsvr);
     }
 
     /* 2. 遍历接收数据 */
-    smti_rsvr_trav_recv(ctx, rsvr);
+    smtc_rsvr_trav_recv(ctx, rsvr);
 
     /* 3. 遍历发送数据 */
-    smti_rsvr_trav_send(ctx, rsvr);
+    smtc_rsvr_trav_send(ctx, rsvr);
 
-    return SMTI_OK;
+    return SMTC_OK;
 }
 
 /******************************************************************************
- **函数名称: smti_rsvr_event_timeout_hdl
+ **函数名称: smtc_rsvr_event_timeout_hdl
  **功    能: 事件超时处理
  **输入参数: 
  **     ctx: 全局对象
@@ -1191,26 +1046,26 @@ static int smti_rsvr_event_core_hdl(smti_cntx_t *ctx, smti_rsvr_t *rsvr)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int smti_rsvr_event_timeout_hdl(smti_cntx_t *ctx, smti_rsvr_t *rsvr)
+static int smtc_rsvr_event_timeout_hdl(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr)
 {
-    smti_sck_t *curr, *next;
+    smtc_sck_t *curr, *next;
 
     /* 1. 检测超时连接 */
     curr = rsvr->sck;
     rsvr->ctm = time(NULL);
     while (NULL != curr)
     {
-        if (rsvr->ctm - curr->rtm >= 2*SMTI_SCK_KPALIVE_SEC)
+        if (rsvr->ctm - curr->rtm >= 2*SMTC_SCK_KPALIVE_SEC)
         {
             log_trace(rsvr->log, "Didn't active for along time! fd:%d ip:%s",
                 curr->fd, curr->ipaddr);
 
             /* 释放数据 */
-            smti_rsvr_read_release(ctx, recv, curr);
+            smtc_rsvr_read_release(ctx, recv, curr);
 
             /* 删除连接 */
             next = curr->next;
-            smti_rsvr_del_sck_hdl(rsvr, curr);
+            smtc_rsvr_del_conn_hdl(rsvr, curr);
 
             curr = next;
             continue;
@@ -1220,99 +1075,72 @@ static int smti_rsvr_event_timeout_hdl(smti_cntx_t *ctx, smti_rsvr_t *rsvr)
     }
 
     /* 2. 重复发送处理命令 */
-    smti_rsvr_resend_work_cmd(ctx, rsvr);
-    return SMTI_OK;
+    smtc_rsvr_cmd_resend_proc_req(ctx, rsvr);
+
+    return SMTC_OK;
 }
 
 /******************************************************************************
- ** Name : smti_rsvr_keepalive_req_hdl
- ** Desc : Keepalive request hdl
- ** Input: 
- **     ctx: Global context
- **     sck: Socket information
- ** Output: NONE
- ** Return: 
- **     > Done : SMTI_HDL_DONE
- **     > Fail : SMTI_FAILED
- ** Proc : 
- ** Note : 
- ** Author: # Qifeng.zou # 2014.04.01 #
+ **函数名称: smtc_rsvr_keepalive_req_hdl
+ **功    能: 保活请求处理
+ **输入参数: 
+ **     ctx: 全局对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int smti_rsvr_keepalive_req_hdl(
-        smti_cntx_t *ctx, smti_rsvr_t *rsvr, smti_sck_t *sck)
+static int smtc_rsvr_keepalive_req_hdl(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck)
 {
     void *addr;
-    smti_header_t *head;
+    smtc_header_t *head;
 
-    addr = slab_alloc(rsvr->pool, sizeof(smti_header_t));
+    /* 1. 分配消息空间 */
+    addr = slab_alloc(rsvr->pool, sizeof(smtc_header_t));
     if (NULL == addr)
     {
         log_error(rsvr->log, "Alloc memory from slab failed!");
-        return SMTI_ERR;
+        return SMTC_ERR;
     }
 
-    head = (smti_header_t *)addr;
+    /* 2. 回复消息内容 */
+    head = (smtc_header_t *)addr;
 
-    head->type = SMTI_KPALIVE_REP;
+    head->type = SMTC_KPALIVE_REP;
     head->length = 0;
-    head->flag = SMTI_SYS_DATA;
-    head->mark = SMTI_MSG_MARK_KEY;
+    head->flag = SMTC_SYS_DATA;
+    head->mark = SMTC_MSG_MARK_KEY;
     
-    smti_rsvr_add_msg(rsvr, sck, addr);
+    /* 3. 加入发送列表 */
+    smtc_rsvr_add_mesg(rsvr, sck, addr);
 
     log_debug(rsvr->log, "Add respond of keepalive request!");
 
-    return SMTI_HDL_DONE;
+    return SMTC_HDL_DONE;
 }
 
 /******************************************************************************
- ** Name : smti_rsvr_link_info_report_hdl
- ** Desc : link info report hdl
- ** Input: 
- **     ctx: Global context
- **     sck: Socket information
- ** Output: NONE
- ** Return: 
- **     > Done : SMTI_HDL_DONE
- **     > Fail : SMTI_FAILED
- ** Proc : 
- ** Note : 
- ** Author: # Qifeng.zou # 2014.08.14 #
+ **函数名称: smtc_rsvr_add_conn_hdl
+ **功    能: 添加网络连接
+ **输入参数: 
+ **     ctx: 全局对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int smti_rsvr_link_info_report_hdl(smti_cntx_t *ctx, smti_sck_t *sck)
+static int smtc_rsvr_add_conn_hdl(smtc_rsvr_t *rsvr, smtc_cmd_add_sck_t *req)
 {
-    smti_link_info_report_t *info;
-    smti_read_snap_t *read = &sck->read;
+    smtc_sck_t *add;
 
-    info = (smti_link_info_report_t *)(read->addr + sizeof(smti_header_t));
-
-    sck->is_primary = info->is_primary;
-
-    return SMTI_HDL_DONE;
-}
-
-/******************************************************************************
- ** Name : smti_rsvr_add_sck_hdl
- ** Desc : ADD SCK request hdl
- ** Input: 
- **     recv: Recv对象
- **     req: Parameter of ADD SCK
- ** Output: NONE
- ** Return: 0:Succ !0:Fail
- ** Proc : 
- ** Note : 
- ** Author: # Qifeng.zou # 2014.07.04 #
- ******************************************************************************/
-static int smti_rsvr_add_sck_hdl(smti_rsvr_t *rsvr, smti_cmd_add_sck_t *req)
-{
-    smti_sck_t *add;
-
-    /* 1. 为新结点分配空间 */
-    add = slab_alloc(rsvr->pool, sizeof(smti_sck_t));
+    /* 1. 分配连接空间 */
+    add = slab_alloc(rsvr->pool, sizeof(smtc_sck_t));
     if (NULL == add)
     {
         log_error(rsvr->log, "Alloc memory failed!");
-        return SMTI_ERR;
+        return SMTC_ERR;
     }
 
     add->fd = req->sckid;
@@ -1340,24 +1168,25 @@ static int smti_rsvr_add_sck_hdl(smti_rsvr_t *rsvr, smti_cmd_add_sck_t *req)
 
     log_trace(rsvr->log, "Tidx [%d] insert sckid [%d] success! ip:%s",
         rsvr->tidx, req->sckid, req->ipaddr);
-    return SMTI_OK;
+
+    return SMTC_OK;
 }
 
 /******************************************************************************
- ** Name : smti_rsvr_del_sck_hdl
- ** Desc : 从套接字链表删除指定套接字.
- ** Input: 
- **     recv: Recv对象
- **     sck: 需要被被删除的套接字对象
- ** Output: NONE
- ** Return: 0:Succ !0:Fail
- ** Proc : 
- ** Note : 
- ** Author: # Qifeng.zou # 2014.07.04 #
+ **函数名称: smtc_rsvr_del_conn_hdl
+ **功    能: 删除网络连接
+ **输入参数: 
+ **     rsvr: 接收服务
+ **     sck: 套接字对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int smti_rsvr_del_sck_hdl(smti_rsvr_t *rsvr, smti_sck_t *sck)
+static int smtc_rsvr_del_conn_hdl(smtc_rsvr_t *rsvr, smtc_sck_t *sck)
 {
-    smti_sck_t *curr, *prev;
+    smtc_sck_t *curr, *prev;
 
     curr = rsvr->sck;
     prev = curr;
@@ -1375,7 +1204,7 @@ static int smti_rsvr_del_sck_hdl(smti_rsvr_t *rsvr, smti_sck_t *sck)
             }
 
             Close(curr->fd);
-            smti_rsvr_clear_msg(rsvr, curr);
+            smtc_rsvr_clear_mesg(rsvr, curr);
             curr->recv_total = 0;
 
             if (NULL != curr->null)
@@ -1386,30 +1215,30 @@ static int smti_rsvr_del_sck_hdl(smti_rsvr_t *rsvr, smti_sck_t *sck)
 
             --rsvr->connections; /* 统计TCP连接数 */
 
-            return SMTI_OK;
+            return SMTC_OK;
         }
 
         prev = curr;
         curr= curr->next;
     }
 
-    return SMTI_OK; /* Didn't found */
+    return SMTC_OK; /* Didn't found */
 }
 
 /******************************************************************************
- ** Name : smti_rsvr_del_all_sck_hdl
- ** Desc : 删除接收线程所有的套接字
- ** Input: 
- **     recv: Recv对象
- ** Output: NONE
- ** Return: void
- ** Proc : 
- ** Note : 
- ** Author: # Qifeng.zou # 2014.07.04 #
+ **函数名称: smtc_rsvr_del_all_conn_hdl
+ **功    能: 删除接收线程所有的套接字
+ **输入参数: 
+ **     rsvr: 接收服务
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static void smti_rsvr_del_all_sck_hdl(smti_rsvr_t *rsvr)
+static void smtc_rsvr_del_all_conn_hdl(smtc_rsvr_t *rsvr)
 {
-    smti_sck_t *curr, *next;
+    smtc_sck_t *curr, *next;
 
     curr = rsvr->sck; 
     while (NULL != curr)
@@ -1417,7 +1246,7 @@ static void smti_rsvr_del_all_sck_hdl(smti_rsvr_t *rsvr)
         next = curr->next;
 
         Close(curr->fd);
-        smti_rsvr_clear_msg(rsvr, curr);
+        smtc_rsvr_clear_mesg(rsvr, curr);
 
         if (NULL != curr->null)
         {
@@ -1434,19 +1263,20 @@ static void smti_rsvr_del_all_sck_hdl(smti_rsvr_t *rsvr)
 }
 
 /******************************************************************************
- **函数名称: smti_rsvr_add_msg
+ **函数名称: smtc_rsvr_add_mesg
  **功    能: 添加发送消息
  **输入参数: 
- **    recv: Recv对象
- **    buf: 将要发送的数据
+ **    rsvr: 接收服务
+ **    sck: 套接字对象
+ **    addr: 将要发送的数据
  **输出参数: NONE
- **返    回: 0:Succ !0:Fail
+ **返    回: 0:成功 !0:失败
  **实现描述: 
  **    将要发送的数据放在链表的末尾
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.07.04 #
  ******************************************************************************/
-static int smti_rsvr_add_msg(smti_rsvr_t *rsvr, smti_sck_t *sck, void *addr)
+static int smtc_rsvr_add_mesg(smtc_rsvr_t *rsvr, smtc_sck_t *sck, void *addr)
 {
     list_t *add, *item, *tail = NULL;
 
@@ -1455,18 +1285,18 @@ static int smti_rsvr_add_msg(smti_rsvr_t *rsvr, smti_sck_t *sck, void *addr)
     if (NULL == add)
     {
         log_debug(rsvr->log, "Alloc memory failed!");
-        return SMTI_ERR;
+        return SMTC_ERR;
     }
 
     add->data = addr;
     add->next = NULL;
 
     /* 2.插入链尾 */
-    item = sck->message_list;
+    item = sck->mesg_list;
     if (NULL == item)
     {
-        sck->message_list = add;
-        return SMTI_OK;
+        sck->mesg_list = add;
+        return SMTC_OK;
     }
 
     /* 3.查找链尾 */
@@ -1478,32 +1308,32 @@ static int smti_rsvr_add_msg(smti_rsvr_t *rsvr, smti_sck_t *sck, void *addr)
 
     tail->next = add;
 
-    return SMTI_OK;
+    return SMTC_OK;
 }
 
 /******************************************************************************
- **函数名称: smti_rsvr_get_msg
+ **函数名称: smtc_rsvr_fetch_mesg
  **功    能: 获取发送消息
  **输入参数: 
- **    recv: Recv对象
- **    buf: 将要发送的数据
+ **    rsvr: 接收服务
+ **    sck: 套接字对象
  **输出参数: NONE
- **返    回: 0:Succ !0:Fail
+ **返    回: 数据地址
  **实现描述: 
  **注意事项: 
- **作    者: # Qifeng.zou # 2014.07.04 #
+ **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static void *smti_rsvr_get_msg(smti_rsvr_t *rsvr, smti_sck_t *sck)
+static void *smtc_rsvr_fetch_mesg(smtc_rsvr_t *rsvr, smtc_sck_t *sck)
 {
     void *addr;
-    list_t *curr = sck->message_list;
+    list_t *curr = sck->mesg_list;
 
     if (NULL == curr)
     {
         return NULL;
     }
     
-    sck->message_list = curr->next;
+    sck->mesg_list = curr->next;
     addr = curr->data;
 
     slab_dealloc(rsvr->pool, curr);
@@ -1512,22 +1342,22 @@ static void *smti_rsvr_get_msg(smti_rsvr_t *rsvr, smti_sck_t *sck)
 }
 
 /******************************************************************************
- **函数名称: smti_rsvr_clear_msg
+ **函数名称: smtc_rsvr_clear_mesg
  **功    能: 清空发送消息
  **输入参数: 
- **    recv: Recv对象
+ **    rsvr: 接收服务
  **    sck: 将要清空的套接字对象
  **输出参数: NONE
- **返    回: 0:Succ !0:Fail
+ **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.07.04 #
  ******************************************************************************/
-static int smti_rsvr_clear_msg(smti_rsvr_t *rsvr, smti_sck_t *sck)
+static int smtc_rsvr_clear_mesg(smtc_rsvr_t *rsvr, smtc_sck_t *sck)
 {
     list_t *curr, *next;
 
-    curr = sck->message_list; 
+    curr = sck->mesg_list; 
     while (NULL != curr)
     {
         next = curr->next;
@@ -1538,6 +1368,159 @@ static int smti_rsvr_clear_msg(smti_rsvr_t *rsvr, smti_sck_t *sck)
         curr = next;
     }
 
-    sck->message_list = NULL;
-    return SMTI_OK;
+    sck->mesg_list = NULL;
+    return SMTC_OK;
+}
+
+/******************************************************************************
+ **函数名称: smtc_rsvr_cmd_send_proc_req
+ **功    能: 发送处理请求
+ **输入参数: 
+ **     ctx: 全局对象
+ **     rsvr: 接收服务
+ **     sck: 套接字对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.01.01 #
+ ******************************************************************************/
+static int smtc_rsvr_cmd_send_proc_req(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck)
+{
+    int times = 0, widx;
+    smtc_cmd_t cmd;
+    char path[FILE_PATH_MAX_LEN];
+    smtc_conf_t *conf = &ctx->conf;
+    smtc_cmd_proc_req_t *req = (smtc_cmd_proc_req_t *)&cmd.args;
+
+    cmd.type = SMTC_CMD_PROC_REQ;
+    req->ori_recv_tidx = rsvr->tidx;
+    req->num = ++rsvr->delay_total[sck->read.rqidx]; /* +1 */
+    req->rqidx = sck->read.rqidx;
+
+    /* 1. 随机选择Work线程 */
+    /* widx = smtc_rand_work(ctx); */
+    widx = sck->read.rqidx / SMTC_WORKER_HDL_QNUM;
+
+    smtc_wsvr_usck_path(conf, path, widx);
+
+    /* 2. 发送处理命令 */
+    if (usck_udp_send(rsvr->cmd_sck_id, path, &cmd, sizeof(smtc_cmd_t)) < 0)
+    {
+        log_debug(rsvr->log, "Send command failed! errmsg:[%d] %s! path:[%s]",
+                errno, strerror(errno), path);
+        return SMTC_ERR;
+    }
+
+    rsvr->delay_total[sck->read.rqidx] = 0;
+
+    return SMTC_OK;
+}
+
+/******************************************************************************
+ **函数名称: smtc_rsvr_cmd_resend_proc_req
+ **功    能: 重复发送处理请求
+ **输入参数: 
+ **     ctx: 全局对象
+ **     rsvr: 接收服务
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.01.01 #
+ ******************************************************************************/
+static int smtc_rsvr_cmd_resend_proc_req(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr)
+{
+    int widx, times = 0, idx;
+    smtc_cmd_t cmd;
+    char path[FILE_PATH_MAX_LEN];
+    smtc_cmd_proc_req_t *req = (smtc_cmd_proc_req_t *)&cmd.args;
+    smtc_conf_t *conf = &ctx->conf;
+
+
+    /* 依次检测各Recv队列的滞留数据 */
+    for (idx=0; idx<ctx->conf.rqnum; ++idx)
+    {
+        if (rsvr->delay_total[idx] > 0)
+        {
+            cmd.type = SMTC_CMD_PROC_REQ;
+            req->ori_recv_tidx = rsvr->tidx;
+            req->rqidx = idx;
+            req->num = rsvr->delay_total[idx];
+
+            /* 1. 随机选择Work线程 */
+            /* widx = smtc_rand_work(ctx); */
+            widx = idx / SMTC_WORKER_HDL_QNUM;
+
+            smtc_wsvr_usck_path(conf, path, widx);
+
+            /* 2. 发送处理命令 */
+            if (usck_udp_send(rsvr->cmd_sck_id, path, &cmd, sizeof(smtc_cmd_t)) < 0)
+            {
+                log_debug(rsvr->log, "Send command failed! errmsg:[%d] %s! path:[%s]",
+                        errno, strerror(errno), path);
+                continue;
+            }
+
+            rsvr->delay_total[idx] = 0;
+        }
+    }
+
+    return 0;
+}
+
+/******************************************************************************
+ **函数名称: smtc_rsvr_cmd_send_proc_all_req
+ **功    能: 发送处理所有数据的请求
+ **输入参数: 
+ **     ctx: 全局对象
+ **     rsvr: 接收服务
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.01.01 #
+ ******************************************************************************/
+static void smtc_rsvr_cmd_send_proc_all_req(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr)
+{
+    int widx, times = 0, idx;
+    smtc_cmd_t cmd;
+    char path[FILE_PATH_MAX_LEN];
+    smtc_conf_t *conf = &ctx->conf;
+    smtc_cmd_proc_req_t *req = (smtc_cmd_proc_req_t *)&cmd.args;
+
+     /* 1. 设置命令参数 */
+    cmd.type = SMTC_CMD_PROC_REQ;
+    req->ori_recv_tidx = rsvr->tidx;
+    req->num = -1; /* 取出所有数据 */
+
+     /* 2. 依次遍历所有Recv队列 让Work线程处理其中的数据 */
+    for (idx=0; idx<conf->rqnum; ++idx)
+    {
+        req->rqidx = idx;
+
+    AGAIN:
+        /* 2.1 随机选择Work线程 */
+        widx = rand() % conf->wrk_thd_num;
+
+        smtc_wsvr_usck_path(conf, path, widx);
+
+        /* 2.2 发送处理命令 */
+        if (usck_udp_send(rsvr->cmd_sck_id, path, &cmd, sizeof(smtc_cmd_t)) < 0)
+        {
+            if (++times < 3)
+            {
+                goto AGAIN;
+            }
+
+            log_debug(rsvr->log, "Send command failed! errmsg:[%d] %s! path:%s",
+                    errno, strerror(errno), path);
+
+            continue;
+        }
+
+        rsvr->delay_total[idx] = 0;
+    }
+
+    return;
 }

@@ -1,3 +1,12 @@
+/******************************************************************************
+ ** Coypright(C) 2014-2024 Xundao technology Co., Ltd
+ **
+ ** 文件名: smtc.c
+ ** 版本号: 1.0
+ ** 描  述: 共享消息传输通道(Sharing Message Transaction Channel)
+ **         1. 主要用于异步系统之间数据消息的传输
+ ** 作  者: # Qifeng.zou # 2014.12.29 #
+ ******************************************************************************/
 #include <memory.h>
 #include <assert.h>
 #include <signal.h>
@@ -6,28 +15,28 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
-#include "smti.h"
-#include "smti_cmd.h"
-#include "smti_comm.h"
-#include "smti_recv.h"
+#include "smtc.h"
+#include "smtc_cmd.h"
+#include "smtc_comm.h"
+#include "smtc_recv.h"
 #include "thread_pool.h"
 
 /* 静态函数 */
-static int smti_listen_init();
-static int smti_lsn_accept(smti_cntx_t *ctx, smti_listen_t *lsn);
+static int smtc_listen_init();
+static int smtc_lsn_accept(smtc_cntx_t *ctx, smtc_lsn_t *lsn);
 
-static int smti_lsn_cmd_core_hdl(smti_cntx_t *ctx, smti_listen_t *lsn);
-static int smti_cmd_to_recvtp(smti_cntx_t *ctx, int cmd_sck_id, const smti_cmd_t *cmd);
-static int smti_lsn_cmd_query_conf_hdl(smti_cntx_t *ctx, smti_listen_t *lsn, smti_cmd_t *cmd);
-static int smti_lsn_cmd_query_recv_stat_hdl(smti_cntx_t *ctx, smti_listen_t *lsn, smti_cmd_t *cmd);
-static int smti_lsn_cmd_query_work_stat_hdl(smti_cntx_t *ctx, smti_listen_t *lsn, smti_cmd_t *cmd);
+static int smtc_lsn_cmd_core_hdl(smtc_cntx_t *ctx, smtc_lsn_t *lsn);
+static int smtc_cmd_to_recvtp(smtc_cntx_t *ctx, int cmd_sck_id, const smtc_cmd_t *cmd);
+static int smtc_lsn_cmd_query_conf_hdl(smtc_cntx_t *ctx, smtc_lsn_t *lsn, smtc_cmd_t *cmd);
+static int smtc_lsn_cmd_query_recv_stat_hdl(smtc_cntx_t *ctx, smtc_lsn_t *lsn, smtc_cmd_t *cmd);
+static int smtc_lsn_cmd_query_proc_stat_hdl(smtc_cntx_t *ctx, smtc_lsn_t *lsn, smtc_cmd_t *cmd);
 
 /* 随机选择接收线程 */
-#define smti_rand_recv(ctx) ((ctx)->listen.total++ % (ctx->recvtp->num))
+#define smtc_rand_recv(ctx) ((ctx)->listen.total++ % (ctx->recvtp->num))
 
 /******************************************************************************
- **函数名称: smti_listen_routine
- **功    能: 启动SMTI侦听线程
+ **函数名称: smtc_listen_routine
+ **功    能: 启动SMTC侦听线程
  **输入参数: 
  **     conf: 配置信息
  **     log: 日志对象
@@ -40,18 +49,18 @@ static int smti_lsn_cmd_query_work_stat_hdl(smti_cntx_t *ctx, smti_listen_t *lsn
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-void *smti_listen_routine(void *args)
+void *smtc_listen_routine(void *args)
 {
     fd_set rdset;
     int ret, max;
-    smti_listen_t *lsn;
+    smtc_lsn_t *lsn;
     struct timeval timeout;
     char path[FILE_PATH_MAX_LEN];
-    smti_conf_t *conf = &ctx->conf;
-    smti_cntx_t *ctx = (smti_cntx_t *)args;
+    smtc_conf_t *conf = &ctx->conf;
+    smtc_cntx_t *ctx = (smtc_cntx_t *)args;
 
     /* 1. 初始化侦听 */
-    lsn = smti_listen_init(ctx)
+    lsn = smtc_listen_init(ctx)
     if (NULL == lsn)
     {
         log_error(ctx->log, "Initialize listen failed!");
@@ -69,8 +78,8 @@ void *smti_listen_routine(void *args)
 
         max = (lsn->lsn_sck_id > lsn->cmd_sck_id)? lsn->lsn_sck_id : lsn->cmd_sck_id;
 
-        timeout.tv_sec = SMTI_LSN_TMOUT_SEC;
-        timeout.tv_usec = SMTI_LSN_TMOUT_USEC;
+        timeout.tv_sec = SMTC_LSN_TMOUT_SEC;
+        timeout.tv_usec = SMTC_LSN_TMOUT_USEC;
         ret = select(max+1, &rdset, NULL, NULL, &timeout);
         if (ret < 0)
         {
@@ -91,13 +100,13 @@ void *smti_listen_routine(void *args)
         /* 3. 接收连接请求 */
         if (FD_ISSET(lsn->lsn_sck_id, &rdset))
         {
-            smti_lsn_accept(ctx, lsn);
+            smtc_lsn_accept(ctx, lsn);
         }
 
         /* 4. 接收处理命令 */
         if (FD_ISSET(lsn->cmd_sck_id, &rdset))
         {
-            smti_lsn_cmd_core_hdl(ctx, lsn);
+            smtc_lsn_cmd_core_hdl(ctx, lsn);
         }
     }
 
@@ -106,7 +115,7 @@ void *smti_listen_routine(void *args)
 }
 
 /******************************************************************************
- ** Name : smti_lsn_destroy
+ ** Name : smtc_lsn_destroy
  ** Desc : Destroy listen-thread
  ** Input: 
  **     lsn: Accept thread
@@ -118,18 +127,18 @@ void *smti_listen_routine(void *args)
  ** Note : 
  ** Author: # Qifeng.zou # 2014.04.15 #
  ******************************************************************************/
-int smti_lsn_destroy(smti_listen_t *lsn)
+int smtc_lsn_destroy(smtc_lsn_t *lsn)
 {
     Close(lsn->lsn_sck_id);
     Close(lsn->cmd_sck_id);
 
     pthread_cancel(lsn->tid);
-    return SMTI_OK;
+    return SMTC_OK;
 }
 
 /******************************************************************************
- **函数名称: smti_listen_init
- **功    能: 启动SMTI侦听线程
+ **函数名称: smtc_listen_init
+ **功    能: 启动SMTC侦听线程
  **输入参数: 
  **     conf: 配置信息
  **输出参数: NONE
@@ -140,9 +149,9 @@ int smti_lsn_destroy(smti_listen_t *lsn)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-static smti_listen_t *smti_listen_init(smti_cntx_t *ctx)
+static smtc_lsn_t *smtc_listen_init(smtc_cntx_t *ctx)
 {
-    smti_listen_t *lsn = &ctx->listen;
+    smtc_lsn_t *lsn = &ctx->listen;
 
     lsn->log = ctx->log;
 
@@ -155,7 +164,7 @@ static smti_listen_t *smti_listen_init(smti_cntx_t *ctx)
     }
 
     /* 2. 创建CMD套接字 */
-    smti_lsn_usck_path(conf, path);
+    smtc_lsn_usck_path(conf, path);
 
     lsn->cmd_sck_id = usck_udp_creat(path);
     if (lsn->cmd_sck_id < 0)
@@ -169,7 +178,7 @@ static smti_listen_t *smti_listen_init(smti_cntx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: smti_listen_accept
+ **函数名称: smtc_listen_accept
  **功    能: 接收连接请求
  **输入参数: 
  **     ctx: 全局对象
@@ -182,13 +191,13 @@ static smti_listen_t *smti_listen_init(smti_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-static int smti_lsn_accept(smti_cntx_t *ctx, smti_listen_t *lsn)
+static int smtc_lsn_accept(smtc_cntx_t *ctx, smtc_lsn_t *lsn)
 {
     int sckid;
     socklen_t len;
-    smti_cmd_t cmd;
+    smtc_cmd_t cmd;
     struct sockaddr_in cliaddr;
-    smti_cmd_add_sck_t *args = (smti_cmd_add_sck_t *)&cmd.args;
+    smtc_cmd_add_sck_t *args = (smtc_cmd_add_sck_t *)&cmd.args;
 
     /* 1. 接收连接请求 */
     for (;;)
@@ -210,7 +219,7 @@ static int smti_lsn_accept(smti_cntx_t *ctx, smti_listen_t *lsn)
         }
 
         log_error(lsn->log, "errmsg:[%d] %s", errno, strerror(errno));
-        return SMTI_ERR;
+        return SMTC_ERR;
     }
 
     fd_set_nonblocking(sckid);
@@ -218,22 +227,22 @@ static int smti_lsn_accept(smti_cntx_t *ctx, smti_listen_t *lsn)
     /* 2. 发送至接收端 */
     memset(&cmd, 0, sizeof(cmd));
 
-    cmd.type = SMTI_CMD_ADD_SCK;
+    cmd.type = SMTC_CMD_ADD_SCK;
     args->sckid = sckid; 
     snprintf(args->ipaddr, sizeof(args->ipaddr), "%s", inet_ntoa(cliaddr.sin_addr));
 
-    if (smti_cmd_to_recvtp(ctx, lsn->cmd_sck_id, &cmd) < 0)
+    if (smtc_cmd_to_recvtp(ctx, lsn->cmd_sck_id, &cmd) < 0)
     {
         Close(sckid);
         log_error(lsn->log, "Send command failed! sckid:[%d]", sckid);
-        return SMTI_ERR;
+        return SMTC_ERR;
     }
 
-    return SMTI_OK;
+    return SMTC_OK;
 }
 
 /******************************************************************************
- **函数名称: smti_lsn_cmd_core_hdl
+ **函数名称: smtc_lsn_cmd_core_hdl
  **功    能: 接收和处理命令
  **输入参数: 
  **     ctx: 全局对象
@@ -246,9 +255,9 @@ static int smti_lsn_accept(smti_cntx_t *ctx, smti_listen_t *lsn)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-static int smti_lsn_cmd_core_hdl(smti_cntx_t *ctx, smti_listen_t *lsn)
+static int smtc_lsn_cmd_core_hdl(smtc_cntx_t *ctx, smtc_lsn_t *lsn)
 {
-    smti_cmd_t cmd;
+    smtc_cmd_t cmd;
 
     memset(&cmd, 0, sizeof(cmd));
 
@@ -256,36 +265,36 @@ static int smti_lsn_cmd_core_hdl(smti_cntx_t *ctx, smti_listen_t *lsn)
     if (usck_udp_recv(lsn->cmd_sck_id, (void *)&cmd, sizeof(cmd)) < 0)
     {
         log_error(lsn->log, "Recv command failed! errmsg:[%d] %s", errno, strerror(errno));
-        return SMTI_ERR_RECV_CMD;
+        return SMTC_ERR_RECV_CMD;
     }
 
     /* 2. 处理命令 */
     switch (cmd.type)
     {
-        case SMTI_CMD_QUERY_CONF_REQ:
+        case SMTC_CMD_QUERY_CONF_REQ:
         {
-            return smti_lsn_cmd_query_conf_hdl(ctx, lsn, &cmd);
+            return smtc_lsn_cmd_query_conf_hdl(ctx, lsn, &cmd);
         }
-        case SMTI_CMD_QUERY_RECV_STAT_REQ:
+        case SMTC_CMD_QUERY_RECV_STAT_REQ:
         {
-            return smti_lsn_cmd_query_recv_stat_hdl(ctx, lsn, &cmd);
+            return smtc_lsn_cmd_query_recv_stat_hdl(ctx, lsn, &cmd);
         }
-        case SMTI_CMD_QUERY_WORK_STAT_REQ:
+        case SMTC_CMD_QUERY_PROC_STAT_REQ:
         {
-            return smti_lsn_cmd_query_work_stat_hdl(ctx, lsn, &cmd);
+            return smtc_lsn_cmd_query_proc_stat_hdl(ctx, lsn, &cmd);
         }
         default:
         {
             log_error(lsn->log, "Unknown command! type:[%d]", cmd.type);
-            return SMTI_ERR_UNKNOWN_CMD;
+            return SMTC_ERR_UNKNOWN_CMD;
         }
     }
 
-    return SMTI_ERR_UNKNOWN_CMD;
+    return SMTC_ERR_UNKNOWN_CMD;
 }
 
 /******************************************************************************
- ** Name : smti_cmd_to_recvtp
+ ** Name : smtc_cmd_to_recvtp
  ** Desc : Send command to one thread of recv-thread-pool
  ** Input: 
  **     ctx: Global context
@@ -299,42 +308,42 @@ static int smti_lsn_cmd_core_hdl(smti_cntx_t *ctx, smti_listen_t *lsn)
  **     2. Get recv-thread path
  **     3. Send command
  ** Note : 
- **     Resend command SMTI_RECV_CMD_RESND_TIMES when send failed.
+ **     Resend command SMTC_RECV_CMD_RESND_TIMES when send failed.
  ** Author: # Qifeng.zou # 2014.05.09 #
  ******************************************************************************/
-static int smti_cmd_to_recvtp(smti_cntx_t *ctx, int cmd_sck_id, const smti_cmd_t *cmd)
+static int smtc_cmd_to_recvtp(smtc_cntx_t *ctx, int cmd_sck_id, const smtc_cmd_t *cmd)
 {
     int ret = 0, tidx = 0, times = 0;
     char path[FILE_PATH_MAX_LEN];
-    smti_conf_t *conf = &ctx->conf;
+    smtc_conf_t *conf = &ctx->conf;
 
 AGAIN:
     memset(path, 0, sizeof(path));
 
     /* 1. Select recv-thread */
-    tidx = smti_rand_recv(ctx);
+    tidx = smtc_rand_recv(ctx);
 
     /* 2. Get recv-thread path */
-    smti_rsvr_usck_path(conf, path, tidx);
+    smtc_rsvr_usck_path(conf, path, tidx);
 
     /* 3. Send command */
-    ret = usck_udp_send(cmd_sck_id, path, cmd, sizeof(smti_cmd_t));
+    ret = usck_udp_send(cmd_sck_id, path, cmd, sizeof(smtc_cmd_t));
     if (ret < 0)
     {
-        if (times++ < SMTI_RECV_CMD_RESND_TIMES)
+        if (times++ < SMTC_RECV_CMD_RESND_TIMES)
         {
             goto AGAIN;
         }
         
         log_error(lsn->log, "Send cmd failed! path:[%d] type:[%d]", path, cmd->type);
-        return SMTI_ERR;
+        return SMTC_ERR;
     }
 
-    return SMTI_OK;
+    return SMTC_OK;
 }
 
 /******************************************************************************
- **函数名称: smti_lsn_cmd_query_conf_hdl
+ **函数名称: smtc_lsn_cmd_query_conf_hdl
  **功    能: 查询配置信息
  **输入参数: 
  **     ctx: 全局对象
@@ -348,17 +357,17 @@ AGAIN:
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-static int smti_lsn_cmd_query_conf_hdl(smti_cntx_t *ctx, smti_listen_t *lsn, smti_cmd_t *cmd)
+static int smtc_lsn_cmd_query_conf_hdl(smtc_cntx_t *ctx, smtc_lsn_t *lsn, smtc_cmd_t *cmd)
 {
     int ret;
-    smti_cmd_t rep;
-    smti_conf_t *cf = &ctx->conf;
-    smti_cmd_conf_t *args = (smti_cmd_conf_t *)&rep.args;
+    smtc_cmd_t rep;
+    smtc_conf_t *cf = &ctx->conf;
+    smtc_cmd_conf_t *args = (smtc_cmd_conf_t *)&rep.args;
 
     memset(&rep, 0, sizeof(rep));
 
     /* 1. 设置应答信息 */
-    rep.type = SMTI_CMD_QUERY_CONF_REP;
+    rep.type = SMTC_CMD_QUERY_CONF_REP;
 
     snprintf(args->name, sizeof(args->name), "%s", cf->name);
     args->port = cf->port;
@@ -373,14 +382,14 @@ static int smti_lsn_cmd_query_conf_hdl(smti_cntx_t *ctx, smti_listen_t *lsn, smt
     if (usck_udp_send(lsn->cmd_sck_id, cmd->src_path, &rep, sizeof(rep)) < 0)
     {
         log_error(lsn->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return SMTI_ERR;
+        return SMTC_ERR;
     }
 
-    return SMTI_OK;
+    return SMTC_OK;
 }
 
 /******************************************************************************
- **函数名称: smti_lsn_cmd_query_recv_stat_hdl
+ **函数名称: smtc_lsn_cmd_query_recv_stat_hdl
  **功    能: 查询接收线程状态
  **输入参数: 
  **     ctx: 全局对象
@@ -394,17 +403,17 @@ static int smti_lsn_cmd_query_conf_hdl(smti_cntx_t *ctx, smti_listen_t *lsn, smt
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-static int smti_lsn_cmd_query_recv_stat_hdl(smti_cntx_t *ctx, smti_listen_t *lsn, smti_cmd_t *cmd)
+static int smtc_lsn_cmd_query_recv_stat_hdl(smtc_cntx_t *ctx, smtc_lsn_t *lsn, smtc_cmd_t *cmd)
 {
     int idx;
-    smti_cmd_t rep;
-    smti_cmd_recv_stat_t *stat = (smti_cmd_recv_stat_t *)&rep.args;
-    const smti_rsvr_t *recv = (const smti_rsvr_t *)ctx->recvtp->data;
+    smtc_cmd_t rep;
+    smtc_cmd_recv_stat_t *stat = (smtc_cmd_recv_stat_t *)&rep.args;
+    const smtc_rsvr_t *recv = (const smtc_rsvr_t *)ctx->recvtp->data;
 
     for (idx=0; idx<ctx->conf.recv_thd_num; ++idx, ++recv)
     {
         /* 1. 设置应答信息 */
-        rep.type = SMTI_CMD_QUERY_RECV_STAT_REP;
+        rep.type = SMTC_CMD_QUERY_RECV_STAT_REP;
 
         stat->connections = recv->connections;
         stat->recv_num = recv->recv_num;
@@ -415,14 +424,14 @@ static int smti_lsn_cmd_query_recv_stat_hdl(smti_cntx_t *ctx, smti_listen_t *lsn
         if (usck_udp_send(rsvr->cmd_sck_id, cmd->src_path, &rep, sizeof(rep)) < 0)
         {
             log_error(lsn->log, "errmsg:[%d] %s!", errno, strerror(errno));
-            return SMTI_ERR;
+            return SMTC_ERR;
         }
     }
-    return SMTI_OK;
+    return SMTC_OK;
 }
 
 /******************************************************************************
- **函数名称: smti_lsn_cmd_query_work_stat_hdl
+ **函数名称: smtc_lsn_cmd_query_proc_stat_hdl
  **功    能: 查询工作线程状态
  **输入参数: 
  **     ctx: 全局对象
@@ -436,17 +445,17 @@ static int smti_lsn_cmd_query_recv_stat_hdl(smti_cntx_t *ctx, smti_listen_t *lsn
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-static int smti_lsn_cmd_query_work_stat_hdl(smti_cntx_t *ctx, smti_listen_t *lsn, smti_cmd_t *cmd)
+static int smtc_lsn_cmd_query_proc_stat_hdl(smtc_cntx_t *ctx, smtc_lsn_t *lsn, smtc_cmd_t *cmd)
 {
     int idx;
-    smti_cmd_t rep;
-    smti_cmd_work_stat_t *stat = (smti_cmd_work_stat_t *)&rep.args;
-    const smti_worker_t *worker = (smti_worker_t *)ctx->worktp->data;
+    smtc_cmd_t rep;
+    smtc_cmd_proc_stat_t *stat = (smtc_cmd_proc_stat_t *)&rep.args;
+    const smtc_worker_t *worker = (smtc_worker_t *)ctx->worktp->data;
 
     for (idx=0; idx<ctx->conf.wrk_thd_num; ++idx, ++worker)
     {
         /* 1. 设置应答信息 */
-        rep.type = SMTI_CMD_QUERY_WORK_STAT_REP;
+        rep.type = SMTC_CMD_QUERY_PROC_STAT_REP;
 
         stat->work_total = worker->work_total;
         stat->drop_total = worker->drop_total;
@@ -456,9 +465,9 @@ static int smti_lsn_cmd_query_work_stat_hdl(smti_cntx_t *ctx, smti_listen_t *lsn
         if (usck_udp_send(worker->cmd_sck_id, cmd->src_path, &rep, sizeof(rep)) < 0)
         {
             log_error(lsn->log, "errmsg:[%d] %s!", errno, strerror(errno));
-            return SMTI_ERR;
+            return SMTC_ERR;
         }
     }
 
-    return SMTI_OK;
+    return SMTC_OK;
 }

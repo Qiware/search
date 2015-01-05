@@ -1,37 +1,37 @@
-#if !defined(__SMTI_H__)
-#define __SMTI_H__
+#if !defined(__SMTC_H__)
+#define __SMTC_H__
 
 #include <stdint.h>
 
 #include "log.h"
 #include "slab.h"
-#include "smti_comm.h"
+#include "smtc_comm.h"
 #include "orm_queue.h"
 #include "thread_pool.h"
 
 /* 宏定义 */
-#define SMTI_THD_DEF_NUM     (01)       /* 默认线程数 */
-#define SMTI_THD_MIN_NUM     (01)       /* 最小线程数 */
-#define SMTI_THD_MAX_NUM     (64)       /* 最大线程数 */
-#define SMTI_CONN_MAX_NUM    (512)      /* 最大链接数 */
-#define SMTI_SCK_DEF_NUM     (32)       /* Default SCK number */
-#define SMTI_MSG_DEF_LEN     (512)      /* Read length at one time */
-#define SMTI_CLOSE_TMOUT     (60)       /* 超时关闭时长 */
-#define SMTI_CMD_RESND_TIMES (3)        /* 命令重发次数 */
+#define SMTC_THD_DEF_NUM     (01)       /* 默认线程数 */
+#define SMTC_THD_MIN_NUM     (01)       /* 最小线程数 */
+#define SMTC_THD_MAX_NUM     (64)       /* 最大线程数 */
+#define SMTC_CONN_MAX_NUM    (512)      /* 最大链接数 */
+#define SMTC_SCK_DEF_NUM     (32)       /* Default SCK number */
+#define SMTC_MSG_DEF_LEN     (512)      /* Read length at one time */
+#define SMTC_CLOSE_TMOUT     (60)       /* 超时关闭时长 */
+#define SMTC_CMD_RESND_TIMES (3)        /* 命令重发次数 */
 
-#define SMTI_WORKER_HDL_QNUM (2)        /* 各Worker线程负责的队列数 */
+#define SMTC_WORKER_HDL_QNUM (2)        /* 各Worker线程负责的队列数 */
 
 /* Recv线程的UNIX-UDP路径 */
-#define smti_rsvr_usck_path(conf, path, tidx) \
-    snprintf(path, sizeof(path), "../temp/smti/recv/%s/usck/%s_rsvr_%d.usck", \
+#define smtc_rsvr_usck_path(conf, path, tidx) \
+    snprintf(path, sizeof(path), "../temp/smtc/recv/%s/usck/%s_rsvr_%d.usck", \
         conf->name, conf->name, tidx+1)
 /* Worker线程的UNIX-UDP路径 */
-#define smti_worker_usck_path(conf, path, tidx) \
-    snprintf(path, sizeof(path), "../temp/smti/recv/%s/usck/%s_wsvr_%d.usck", \
+#define smtc_worker_usck_path(conf, path, tidx) \
+    snprintf(path, sizeof(path), "../temp/smtc/recv/%s/usck/%s_wsvr_%d.usck", \
         conf->name, conf->name, tidx+1)
 /* Listen线程的UNIX-UDP路径 */
-#define smti_listen_usck_path(conf, path) \
-    snprintf(path, sizeof(path), "../temp/smti/recv/%s/usck/%s_listen.usck", \
+#define smtc_listen_usck_path(conf, path) \
+    snprintf(path, sizeof(path), "../temp/smtc/recv/%s/usck/%s_listen.usck", \
         conf->name, conf->name)
 
 /* 配置信息 */
@@ -44,21 +44,21 @@ typedef struct
     int rqnum;                          /* Recv队列数 */
 
     queue_conf_t recvq;                 /* 队列配置信息 */
-} smti_conf_t;
+} smtc_conf_t;
 
 /* 回调注册 */
-typedef int (*smti_reg_cb_t)(uint32_t type, char *buff, size_t len, void *args);
+typedef int (*smtc_reg_cb_t)(uint32_t type, char *buff, size_t len, void *args);
 typedef struct
 {
-    uint32_t type;                      /* 消息类型. Range: 0~SMTI_TYPE_MAX */
-#define SMTI_FLAG_UNREG     (0)         /* 0: 未注册 */
-#define SMTI_FLAG_REGED     (1)         /* 1: 已注册 */
+    uint32_t type;                      /* 消息类型. Range: 0~SMTC_TYPE_MAX */
+#define SMTC_FLAG_UNREG     (0)         /* 0: 未注册 */
+#define SMTC_FLAG_REGED     (1)         /* 1: 已注册 */
     uint32_t flag;                      /* 注册标识 
                                             - 0: 未注册
                                             - 1: 已注册 */
-    smti_reg_cb_t cb;                   /* 回调函数指针 */
+    smtc_reg_cb_t proc;                 /* 回调函数指针 */
     void *args;                         /* 附加参数 */
-} smti_reg_t;
+} smtc_reg_t;
 
 /* 侦听对象 */
 typedef struct
@@ -69,10 +69,10 @@ typedef struct
     int lsn_sck_id;                     /* 侦听套接字 */
 
     uint64_t total;                     /* 连接请求总数 */
-} smti_listen_t;
+} smtc_lsn_t;
 
 /* 套接字信息 */
-typedef struct _smti_sck_t
+typedef struct _smtc_sck_t
 {
     int fd;                             /* 套接字ID */
     time_t ctm;                         /* 创建时间 */
@@ -80,21 +80,20 @@ typedef struct _smti_sck_t
     time_t wtm;                         /* 最近写入时间 */
     char ipaddr[IP_ADDR_MAX_LEN];       /* IP地址 */
 
-    uint8_t is_primary;                 /* 是否为主SCK(一个发送端只有一个主SCK) */
     uint64_t recv_total;                /* 接收的数据条数 */
-    smti_read_snap_t read;              /* 读取操作的快照 */
-    smti_send_snap_t send;              /* 发送操作的快照 */
-    list_t *message_list;               /* 发送消息链表 */
+    smtc_read_snap_t read;              /* 读取操作的快照 */
+    smtc_send_snap_t send;              /* 发送操作的快照 */
+    list_t *mesg_list;                  /* 发送消息链表 */
     char *null;                         /* NULL */
 
-    struct _smti_sck_t *next;           /* 下一结点 */
-} smti_sck_t;
+    struct _smtc_sck_t *next;           /* 下一结点 */
+} smtc_sck_t;
 
 /* 接收对象 */
 typedef struct
 {
     int tidx;                           /* 线程索引 */
-    slab_pool_t pool;                   /* 内存池 */
+    slab_pool_t *pool;                  /* 内存池 */
 
     int cmd_sck_id;                     /* 命令套接字 */
 
@@ -109,8 +108,8 @@ typedef struct
     uint64_t drop_total;                /* 丢弃的数据条数 */
     uint64_t *delay_total;              /* 滞留处理的数据条数 */
 
-    smti_sck_t *sck;                    /* 套接字链表 */
-} smti_rsvr_t;
+    smtc_sck_t *sck;                    /* 套接字链表 */
+} smtc_rsvr_t;
 
 /* 工作对象 */
 typedef struct
@@ -122,39 +121,37 @@ typedef struct
     int max;                            /* 套接字最大值 */
     fd_set rdset;                       /* 可读套接字集合 */
 
-    uint64_t work_total;                /* 已处理条数 */
+    uint64_t proc_total;                /* 已处理条数 */
     uint64_t drop_total;                /* 丢弃条数 */
     uint64_t err_total;                 /* 错误条数 */
-} smti_worker_t;
+} smtc_worker_t;
 
 /* 全局对象 */
 typedef struct
 {
-    smti_conf_t conf;                   /* 配置信息 */
+    smtc_conf_t conf;                   /* 配置信息 */
     log_cycle_t *log;                   /* 日志对象 */ 
 
-    smti_reg_t reg[SMTI_TYPE_MAX];      /* 回调注册对象 */
+    smtc_reg_t reg[SMTC_TYPE_MAX];      /* 回调注册对象 */
     
-    smti_listen_t listen;               /* 侦听对象 */
+    smtc_lsn_t listen;                  /* 侦听对象 */
     thread_pool_t *recvtp;              /* 接收线程池 */
     thread_pool_t *worktp;              /* 工作线程池 */ 
 
-    ORMQUEUE **recvq;                   /* 接收队列 */
-} smti_cntx_t;
+    queue_t **recvq;                    /* 接收队列 */
+} smtc_cntx_t;
 
 /* 外部接口 */
-smti_cntx_t *smti_init(const smti_conf_t *conf, log_cycle_t *log);
-int smti_register(smti_cntx_t *ctx, uint32_t type, smti_reg_cb_t cb, void *args);
-int smti_startup(smti_cntx_t *ctx);
-int smti_destroy(smti_cntx_t **ctx);
+smtc_cntx_t *smtc_init(const smtc_conf_t *conf, log_cycle_t *log);
+int smtc_register(smtc_cntx_t *ctx, uint32_t type, smtc_reg_cb_t proc, void *args);
+int smtc_startup(smtc_cntx_t *ctx);
+int smtc_destroy(smtc_cntx_t **ctx);
 
 /* 内部接口 */
-void *smti_listen_routine(void *_ctx);
-int smti_listen_destroy(smti_listen_t *lsn);
+void *smtc_listen_routine(void *_ctx);
+int smtc_listen_destroy(smtc_lsn_t *lsn);
 
-void *smti_rsvr_routine(void *_ctx);
-void *smti_worker_routine(void *_ctx);
+void *smtc_rsvr_routine(void *_ctx);
+void *smtc_worker_routine(void *_ctx);
 
-int smti_work_def_hdl(unsigned int type, char *buff, size_t len, void *args);
-
-#endif /*__SMTI_H__*/
+#endif /*__SMTC_H__*/

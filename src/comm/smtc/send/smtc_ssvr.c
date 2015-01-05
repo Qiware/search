@@ -10,23 +10,23 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
-#include "smti_cmd.h"
-#include "smti_cli.h"
-#include "smti_ssvr.h"
+#include "smtc_cmd.h"
+#include "smtc_cli.h"
+#include "smtc_ssvr.h"
 
-#define SMTI_NULL_MAX_LEN        (10*1024)   /* NULL空间最大长度 */
+#define SMTC_NULL_MAX_LEN        (10*1024)   /* NULL空间最大长度 */
 
 /* 释放发送的数据 */
-#define smti_ssvr_release_send_data(ssvr, send) \
+#define smtc_ssvr_release_send_data(ssvr, send) \
 { \
     switch (send->loc) \
     { \
-        case SMTI_DATA_LOC_ORM_QUEUE: \
+        case SMTC_DATA_LOC_ORM_QUEUE: \
         { \
             orm_queue_data_free(ssvr->sq, send->data_loc_sendq.dataid); \
             break; \
         } \
-        case SMTI_DATA_LOC_SLAB: \
+        case SMTC_DATA_LOC_SLAB: \
         { \
             slab_dealloc(&ssvr->pool, send->addr); \
             send->addr = NULL; \
@@ -36,45 +36,44 @@
 }
 
 /* 静态函数 */
-static void *smti_ssvr_routine(void *args);
+static void *smtc_ssvr_routine(void *args);
 
-static int smti_ssvr_init(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr);
-static smti_ssvr_t *smti_get_curr_ssvr(smti_ssvr_ctx_t *ctx);
+static int smtc_ssvr_init(smtc_ssvr_ctx_t *ctx, smtc_ssvr_t *ssvr);
+static smtc_ssvr_t *smtc_get_curr_ssvr(smtc_ssvr_ctx_t *ctx);
 
-static int smti_ssvr_creat_sendq(smti_ssvr_t *ssvr, const smti_ssvr_conf_t *conf);
-static int smti_ssvr_creat_usck(smti_ssvr_t *ssvr, const smti_ssvr_conf_t *conf);
-static int smti_ssvr_connect(smti_ssvr_t *ssvr, const smti_ssvr_conf_t *conf);
+static int smtc_ssvr_creat_sendq(smtc_ssvr_t *ssvr, const smtc_ssvr_conf_t *conf);
+static int smtc_ssvr_creat_usck(smtc_ssvr_t *ssvr, const smtc_ssvr_conf_t *conf);
+static int smtc_ssvr_connect(smtc_ssvr_t *ssvr, const smtc_ssvr_conf_t *conf);
 
-static int smti_ssvr_kpalive_req(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr);
-static int smti_ssvr_link_info_report(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr);
+static int smtc_ssvr_kpalive_req(smtc_ssvr_ctx_t *ctx, smtc_ssvr_t *ssvr);
 
-static int smti_ssvr_recv_cmd_handler(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr);
-static int smti_ssvr_recv_data_handler(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr);
+static int smtc_ssvr_recv_cmd_handler(smtc_ssvr_ctx_t *ctx, smtc_ssvr_t *ssvr);
+static int smtc_ssvr_recv_data_handler(smtc_ssvr_ctx_t *ctx, smtc_ssvr_t *ssvr);
 
-static void smti_ssvr_read_release(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr, smti_ssvr_sck_t *sck);
-static int smti_ssvr_read_init(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr, smti_ssvr_sck_t *sck);
-static int smti_ssvr_read_header(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr, smti_ssvr_sck_t *sck);
-static int smti_ssvr_read_body(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr, smti_ssvr_sck_t *sck);
+static void smtc_ssvr_read_release(smtc_ssvr_ctx_t *ctx, smtc_ssvr_t *ssvr, smtc_ssvr_sck_t *sck);
+static int smtc_ssvr_read_init(smtc_ssvr_ctx_t *ctx, smtc_ssvr_t *ssvr, smtc_ssvr_sck_t *sck);
+static int smtc_ssvr_read_header(smtc_ssvr_ctx_t *ctx, smtc_ssvr_t *ssvr, smtc_ssvr_sck_t *sck);
+static int smtc_ssvr_read_body(smtc_ssvr_ctx_t *ctx, smtc_ssvr_t *ssvr, smtc_ssvr_sck_t *sck);
 
-static int smti_ssvr_proc_data(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr, smti_ssvr_sck_t *sck);
-static int smti_ssvr_sys_data_proc(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr, smti_ssvr_sck_t *sck);
-static int smti_ssvr_exp_data_proc(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr, smti_ssvr_sck_t *sck);
+static int smtc_ssvr_proc_data(smtc_ssvr_ctx_t *ctx, smtc_ssvr_t *ssvr, smtc_ssvr_sck_t *sck);
+static int smtc_ssvr_sys_data_proc(smtc_ssvr_ctx_t *ctx, smtc_ssvr_t *ssvr, smtc_ssvr_sck_t *sck);
+static int smtc_ssvr_exp_data_proc(smtc_ssvr_ctx_t *ctx, smtc_ssvr_t *ssvr, smtc_ssvr_sck_t *sck);
 
-static int smti_ssvr_timeout_handler(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr);
-static int smti_ssvr_cmd_handler(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr, const smti_cmd_t *cmd);
-static int smti_ssvr_send_all_cmd_handler(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr, const smti_cmd_send_t *args);
+static int smtc_ssvr_timeout_handler(smtc_ssvr_ctx_t *ctx, smtc_ssvr_t *ssvr);
+static int smtc_ssvr_cmd_handler(smtc_ssvr_ctx_t *ctx, smtc_ssvr_t *ssvr, const smtc_cmd_t *cmd);
+static int smtc_ssvr_send_all_cmd_handler(smtc_ssvr_ctx_t *ctx, smtc_ssvr_t *ssvr, const smtc_cmd_send_t *args);
 
-static int smti_ssvr_add_msg(smti_ssvr_t *ssvr, void *addr);
-static void *smti_ssvr_get_msg(smti_ssvr_t *ssvr);
-static int smti_ssvr_clear_msg(smti_ssvr_t *ssvr);
+static int smtc_ssvr_add_msg(smtc_ssvr_t *ssvr, void *addr);
+static void *smtc_ssvr_get_msg(smtc_ssvr_t *ssvr);
+static int smtc_ssvr_clear_msg(smtc_ssvr_t *ssvr);
 
-static void smti_ssvr_reset_sck(smti_ssvr_t *ssvr, smti_ssvr_sck_t *sck);
+static void smtc_ssvr_reset_sck(smtc_ssvr_t *ssvr, smtc_ssvr_sck_t *sck);
 
 /* 链路状态检测 */
-#define smti_ssvr_conn_check(ssvr) (ssvr->sck.fd >= 0)? 1 : 0 /* 0:ERR 1:OK */
+#define smtc_ssvr_conn_check(ssvr) (ssvr->sck.fd >= 0)? 1 : 0 /* 0:ERR 1:OK */
 
 /******************************************************************************
- **函数名称: smti_ssvr_creat_sendtp
+ **函数名称: smtc_ssvr_creat_sendtp
  **功    能: 创建SND线程池
  **输入参数: 
  **     ctx: 上下文信息
@@ -84,11 +83,11 @@ static void smti_ssvr_reset_sck(smti_ssvr_t *ssvr, smti_ssvr_sck_t *sck);
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.03.26 #
  ******************************************************************************/
-int smti_ssvr_creat_sendtp(smti_ssvr_ctx_t *ctx)
+int smtc_ssvr_creat_sendtp(smtc_ssvr_ctx_t *ctx)
 {
     int ret = 0, idx = 0;
-    smti_ssvr_conf_t *conf = &ctx->conf;
-    smti_ssvr_t *ssvr = NULL;
+    smtc_ssvr_conf_t *conf = &ctx->conf;
+    smtc_ssvr_t *ssvr = NULL;
 
     /* 1. 创建SND线程池 */
     ret = thread_pool_init(&ctx->sendtp, conf->snd_thd_num);
@@ -96,42 +95,42 @@ int smti_ssvr_creat_sendtp(smti_ssvr_ctx_t *ctx)
     {
         thread_pool_destroy(ctx->sendtp);
         ctx->sendtp = NULL;
-        return SMTI_ERR;
+        return SMTC_ERR;
     }
 
     /* 2. 创建SND线程上下文 */
-    ctx->sendtp->data = calloc(conf->snd_thd_num, sizeof(smti_ssvr_t));
+    ctx->sendtp->data = calloc(conf->snd_thd_num, sizeof(smtc_ssvr_t));
     if (NULL == ctx->sendtp->data)
     {
         log_error(ssvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return SMTI_ERR;
+        return SMTC_ERR;
     }
 
     /* 3. 设置SND线程上下文 */
-    ssvr = (smti_ssvr_t *)ctx->sendtp->data;
+    ssvr = (smtc_ssvr_t *)ctx->sendtp->data;
     for (idx=0; idx<conf->snd_thd_num; ++idx, ++ssvr)
     {
         ssvr->tidx = idx;
 
-        ret = smti_ssvr_init(ctx, ssvr);
+        ret = smtc_ssvr_init(ctx, ssvr);
         if (0 != ret)
         {
             log_error(ssvr->log, "Initialize send thread failed!");
-            return SMTI_ERR;
+            return SMTC_ERR;
         }
     }
 
     /* 4. 注册SND线程回调 */
     for (idx=0; idx<conf->snd_thd_num; idx++)
     {
-        thread_pool_add_worker(ctx->sendtp, smti_ssvr_routine, ctx);
+        thread_pool_add_worker(ctx->sendtp, smtc_ssvr_routine, ctx);
     }
 
     return 0;
 }
 
 /******************************************************************************
- **函数名称: smti_ssvr_sendtp_destroy
+ **函数名称: smtc_ssvr_sendtp_destroy
  **功    能: 销毁Send线程
  **输入参数: 
  **     ctx: 发送端上下文
@@ -142,12 +141,12 @@ int smti_ssvr_creat_sendtp(smti_ssvr_ctx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.04.04 #
  ******************************************************************************/
-void smti_ssvr_sendtp_destroy(void *_ctx, void *args)
+void smtc_ssvr_sendtp_destroy(void *_ctx, void *args)
 {
     int idx = 0;
-    smti_ssvr_ctx_t *ctx = (smti_ssvr_ctx_t *)ctx;
-    smti_ssvr_conf_t *conf = &ctx->conf;
-    smti_ssvr_t *ssvr = (smti_ssvr_t *)args;
+    smtc_ssvr_ctx_t *ctx = (smtc_ssvr_ctx_t *)ctx;
+    smtc_ssvr_conf_t *conf = &ctx->conf;
+    smtc_ssvr_t *ssvr = (smtc_ssvr_t *)args;
 
     /* 3. 设置SND线程上下文 */
     for (idx=0; idx<conf->snd_thd_num; ++idx, ++ssvr)
@@ -163,7 +162,7 @@ void smti_ssvr_sendtp_destroy(void *_ctx, void *args)
 }
 
 /******************************************************************************
- **函数名称: smti_ssvr_init
+ **函数名称: smtc_ssvr_init
  **功    能: 初始化发送线程
  **输入参数: 
  **     ctx: 上下文信息
@@ -174,60 +173,58 @@ void smti_ssvr_sendtp_destroy(void *_ctx, void *args)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.03.26 #
  ******************************************************************************/
-static int smti_ssvr_init(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr)
+static int smtc_ssvr_init(smtc_ssvr_ctx_t *ctx, smtc_ssvr_t *ssvr)
 {
     int ret = 0;
-    smti_ssvr_conf_t *conf = &ctx->conf;
-    smti_send_snap_t *send = &ssvr->sck.send;
+    smtc_ssvr_conf_t *conf = &ctx->conf;
+    smtc_send_snap_t *send = &ssvr->sck.send;
 
     /* 1. 创建发送队列 */
-    ret = smti_ssvr_creat_sendq(ssvr, conf);
+    ret = smtc_ssvr_creat_sendq(ssvr, conf);
     if (0 != ret)
     {
         log_error(ssvr->log, "Initialize send queue failed!");
-        return SMTI_ERR;
+        return SMTC_ERR;
     }
 
     /* 2. 创建unix套接字 */
-    ret = smti_ssvr_creat_usck(ssvr, conf);
+    ret = smtc_ssvr_creat_usck(ssvr, conf);
     if (0 != ret)
     {
         log_error(ssvr->log, "Initialize send queue failed!");
-        return SMTI_ERR;
+        return SMTC_ERR;
     }
 
     /* 3. 创建SLAB内存池 */
-    ret = slab_init(&ssvr->pool, SMTI_MEM_POOL_SIZE);
+    ret = slab_init(&ssvr->pool, SMTC_MEM_POOL_SIZE);
     if (0 != ret)
     {
         log_error(ssvr->log, "Initialize slab mem-pool failed!");
-        return SMTI_ERR;
+        return SMTC_ERR;
     }
 
-    ssvr->sck.null = slab_alloc(&ssvr->pool, SMTI_NULL_MAX_LEN);
+    ssvr->sck.null = slab_alloc(&ssvr->pool, SMTC_NULL_MAX_LEN);
     if (NULL == ssvr->sck.null)
     {
         log_error(ssvr->log, "Alloc memory from slab failed!");
-        return SMTI_ERR;
+        return SMTC_ERR;
     }
 
     /* 4. 连接接收服务器 */
-    ret = smti_ssvr_connect(ssvr, conf);
+    ret = smtc_ssvr_connect(ssvr, conf);
     if (0 != ret)
     {
         log_error(ssvr->log, "Connect recv server failed!");
         /* Note: Don't return error! */
     }
 
-    smti_reset_send_snap(send);
-    
-    smti_ssvr_link_info_report(ctx, ssvr);
+    smtc_reset_send_snap(send);
 
     return 0;
 }
 
 /******************************************************************************
- **函数名称: smti_ssvr_creat_sendq
+ **函数名称: smtc_ssvr_creat_sendq
  **功    能: 创建SND线程的发送队列
  **输入参数: 
  **     ssvr: Send线程上下文
@@ -238,9 +235,9 @@ static int smti_ssvr_init(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.04.26 #
  ******************************************************************************/
-static int smti_ssvr_creat_sendq(smti_ssvr_t *ssvr, const smti_ssvr_conf_t *conf)
+static int smtc_ssvr_creat_sendq(smtc_ssvr_t *ssvr, const smtc_ssvr_conf_t *conf)
 {
-    const smti_queue_conf_t *qcf;
+    const smtc_queue_conf_t *qcf;
     char qname[FILE_NAME_MAX_LEN];
 
 
@@ -252,14 +249,14 @@ static int smti_ssvr_creat_sendq(smti_ssvr_t *ssvr, const smti_ssvr_conf_t *conf
     if (NULL == ssvr->sq)
     {
         log_error(ssvr->log, "Create send-queue failed!");
-        return SMTI_ERR;
+        return SMTC_ERR;
     }
 
     return 0;
 }
 
 /******************************************************************************
- **函数名称: smti_ssvr_creat_usck
+ **函数名称: smtc_ssvr_creat_usck
  **功    能: 创建SND线程的命令接收套接字
  **输入参数: 
  **     ssvr: Send线程上下文
@@ -270,11 +267,11 @@ static int smti_ssvr_creat_sendq(smti_ssvr_t *ssvr, const smti_ssvr_conf_t *conf
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.04.26 #
  ******************************************************************************/
-static int smti_ssvr_creat_usck(smti_ssvr_t *ssvr, const smti_ssvr_conf_t *conf)
+static int smtc_ssvr_creat_usck(smtc_ssvr_t *ssvr, const smtc_ssvr_conf_t *conf)
 {
     char path[FILE_PATH_MAX_LEN] = {0};
 
-    smti_ssvr_usck_path(conf, path, ssvr->tidx);
+    smtc_ssvr_usck_path(conf, path, ssvr->tidx);
     
     ssvr->cmd_sck_id = usck_udp_creat(path);
     if (ssvr->cmd_sck_id < 0)
@@ -288,7 +285,7 @@ static int smti_ssvr_creat_usck(smti_ssvr_t *ssvr, const smti_ssvr_conf_t *conf)
 }
 
 /******************************************************************************
- **函数名称: smti_ssvr_connect
+ **函数名称: smtc_ssvr_connect
  **功    能: 连接远程服务器
  **输入参数: 
  **     ctx: 上下文信息
@@ -299,11 +296,11 @@ static int smti_ssvr_creat_usck(smti_ssvr_t *ssvr, const smti_ssvr_conf_t *conf)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.03.25 #
  ******************************************************************************/
-static int smti_ssvr_connect(smti_ssvr_t *ssvr, const smti_ssvr_conf_t *conf)
+static int smtc_ssvr_connect(smtc_ssvr_t *ssvr, const smtc_ssvr_conf_t *conf)
 {
     int ret, opt = 1;
     struct sockaddr_in svraddr;
-    smti_ssvr_sck_t *sck = &ssvr->sck;
+    smtc_ssvr_sck_t *sck = &ssvr->sck;
 
 
     /* 1. 创建套接字 */
@@ -311,7 +308,7 @@ static int smti_ssvr_connect(smti_ssvr_t *ssvr, const smti_ssvr_conf_t *conf)
     if (sck->fd < 0)
     {
         log_error(ssvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return SMTI_ERR;
+        return SMTC_ERR;
     }
 
     /* 解决TIME_WAIT状态过多的问题 */
@@ -330,7 +327,7 @@ static int smti_ssvr_connect(smti_ssvr_t *ssvr, const smti_ssvr_conf_t *conf)
     {
         Close(sck->fd);
         log_error(ssvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return SMTI_ERR;
+        return SMTC_ERR;
     }
 
     fd_nonblock(sck->fd);
@@ -339,7 +336,7 @@ static int smti_ssvr_connect(smti_ssvr_t *ssvr, const smti_ssvr_conf_t *conf)
 }
 
 /******************************************************************************
- **函数名称: smti_ssvr_bind_cpu
+ **函数名称: smtc_ssvr_bind_cpu
  **功    能: 绑定CPU
  **输入参数: 
  **     ctx: 上下文信息
@@ -349,11 +346,11 @@ static int smti_ssvr_connect(smti_ssvr_t *ssvr, const smti_ssvr_conf_t *conf)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.06.11 #
  ******************************************************************************/
-static void smti_ssvr_bind_cpu(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr)
+static void smtc_ssvr_bind_cpu(smtc_ssvr_ctx_t *ctx, smtc_ssvr_t *ssvr)
 {
     int idx = 0, mod = 0;
     cpu_set_t cpuset;
-    smti_cpu_conf_t *cpu = &ctx->conf.cpu;
+    smtc_cpu_conf_t *cpu = &ctx->conf.cpu;
 
     mod = sysconf(_SC_NPROCESSORS_CONF) - cpu->start;
     if (mod <= 0)
@@ -372,7 +369,7 @@ static void smti_ssvr_bind_cpu(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr)
 }
 
 /******************************************************************************
- **函数名称: smti_ssvr_set_rwset
+ **函数名称: smtc_ssvr_set_rwset
  **功    能: 设置读写集
  **输入参数: 
  **     ssvr: Send线程上下文
@@ -382,10 +379,10 @@ static void smti_ssvr_bind_cpu(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.07.22 #
  ******************************************************************************/
-void smti_ssvr_set_rwset(smti_ssvr_t *ssvr) 
+void smtc_ssvr_set_rwset(smtc_ssvr_t *ssvr) 
 { 
-    smti_header_t *head;
-    smti_send_snap_t *send = &ssvr->sck.send;
+    smtc_header_t *head;
+    smtc_send_snap_t *send = &ssvr->sck.send;
 
     FD_ZERO(&ssvr->rset);
     FD_ZERO(&ssvr->wset);
@@ -414,7 +411,7 @@ void smti_ssvr_set_rwset(smti_ssvr_t *ssvr)
 }
 
 /******************************************************************************
- **函数名称: smti_ssvr_event_handler
+ **函数名称: smtc_ssvr_event_handler
  **功    能: Send主程序
  **输入参数: 
  **     ctx: 上下文信息
@@ -427,47 +424,45 @@ void smti_ssvr_set_rwset(smti_ssvr_t *ssvr)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.03.25 #
  ******************************************************************************/
-static int smti_ssvr_event_handler(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr)
+static int smtc_ssvr_event_handler(smtc_ssvr_ctx_t *ctx, smtc_ssvr_t *ssvr)
 {
     fd_set *wset = NULL;
-    int ret = 0, intv = SMTI_RECONN_MIN_INTV;
+    int ret = 0, intv = SMTC_RECONN_MIN_INTV;
     struct timeval tmout;
-    smti_ssvr_sck_t *sck = sck = &ssvr->sck;
-    smti_send_snap_t *send = &ssvr->sck.send;
+    smtc_ssvr_sck_t *sck = sck = &ssvr->sck;
+    smtc_send_snap_t *send = &ssvr->sck.send;
 
 
     for (;;)
     {
         /* 2. 连接合法性判断 */
-        if (!smti_ssvr_conn_check(ssvr))
+        if (!smtc_ssvr_conn_check(ssvr))
         {
-            smti_ssvr_clear_msg(ssvr);
+            smtc_ssvr_clear_msg(ssvr);
 
             /* 2.1 重连Recv端 */
-            ret = smti_ssvr_connect(ssvr, &ctx->conf);
+            ret = smtc_ssvr_connect(ssvr, &ctx->conf);
             if (ret < 0)
             {
                 log_error(ssvr->log, "Conncet recv server failed!");
 
-                if (intv >  SMTI_RECONN_MAX_INTV)
+                if (intv >  SMTC_RECONN_MAX_INTV)
                 {
-                    intv = SMTI_RECONN_MAX_INTV;
+                    intv = SMTC_RECONN_MAX_INTV;
                 }
                 Sleep(intv);
                 intv <<= 1;
                 continue;
             }
 
-            smti_ssvr_link_info_report(ctx, ssvr);
-
-            intv = SMTI_RECONN_MIN_INTV;
+            intv = SMTC_RECONN_MIN_INTV;
         }
 
         /* 3. 接收数据&命令 */
-        smti_ssvr_set_rwset(ssvr);
+        smtc_ssvr_set_rwset(ssvr);
 
-        tmout.tv_sec = SMTI_SND_TMOUT_SEC;
-        tmout.tv_usec = SMTI_SND_TMOUT_USEC;
+        tmout.tv_sec = SMTC_SND_TMOUT_SEC;
+        tmout.tv_usec = SMTC_SND_TMOUT_USEC;
         ret = select(ssvr->max+1, &ssvr->rset, &ssvr->wset, NULL, &tmout);
         if (ret < 0)
         {
@@ -481,26 +476,26 @@ static int smti_ssvr_event_handler(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr)
         }
         else if (0 == ret)
         {
-            smti_ssvr_timeout_handler(ctx, ssvr);
+            smtc_ssvr_timeout_handler(ctx, ssvr);
             continue;
         }
 
         /* 发送数据: 发送优先 */
         if (FD_ISSET(ssvr->sck.fd, &ssvr->wset))
         {
-            smti_ssvr_send_all_cmd_handler(ctx, ssvr, NULL);
+            smtc_ssvr_send_all_cmd_handler(ctx, ssvr, NULL);
         }
 
         /* 接收命令 */
         if (FD_ISSET(ssvr->cmd_sck_id, &ssvr->rset))
         {
-            smti_ssvr_recv_cmd_handler(ctx, ssvr);
+            smtc_ssvr_recv_cmd_handler(ctx, ssvr);
         }
 
         /* 接收Recv服务的数据 */
         if (FD_ISSET(ssvr->sck.fd, &ssvr->rset))
         {
-            smti_ssvr_recv_data_handler(ctx, ssvr);
+            smtc_ssvr_recv_data_handler(ctx, ssvr);
         }
     }
 
@@ -508,7 +503,7 @@ static int smti_ssvr_event_handler(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr)
 }
 
 /******************************************************************************
- **函数名称: smti_ssvr_routine
+ **函数名称: smtc_ssvr_routine
  **功    能: Snd线程调用的主程序
  **输入参数: 
  **     args: 上下文信息
@@ -521,15 +516,15 @@ static int smti_ssvr_event_handler(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.03.25 #
  ******************************************************************************/
-static void *smti_ssvr_routine(void *args)
+static void *smtc_ssvr_routine(void *args)
 {
-    smti_ssvr_t *ssvr = NULL;
-    smti_ssvr_ctx_t *ctx = (smti_ssvr_ctx_t *)args;
+    smtc_ssvr_t *ssvr = NULL;
+    smtc_ssvr_ctx_t *ctx = (smtc_ssvr_ctx_t *)args;
 
     LogDebug("Send-thread is running!");
 
     /* 1. 获取发送线程 */
-    ssvr = smti_get_curr_ssvr(ctx);
+    ssvr = smtc_get_curr_ssvr(ctx);
     if (NULL == ssvr)
     {
         log_error(ssvr->log, "Init send thread failed!");
@@ -538,16 +533,16 @@ static void *smti_ssvr_routine(void *args)
     }
 
     /* 2. 绑定指定CPU */
-    smti_ssvr_bind_cpu(ctx, ssvr);
+    smtc_ssvr_bind_cpu(ctx, ssvr);
 
-    smti_ssvr_event_handler(ctx, ssvr);
+    smtc_ssvr_event_handler(ctx, ssvr);
 
     pthread_exit(NULL);
     return (void *)-1;
 }
 
 /******************************************************************************
- **函数名称: smti_ssvr_kpalive_req
+ **函数名称: smtc_ssvr_kpalive_req
  **功    能: 发送保活命令
  **输入参数: 
  **     ctx: 上下文信息
@@ -560,23 +555,23 @@ static void *smti_ssvr_routine(void *args)
  **     因此发送数据时，不用判断EAGAIN的情况是否存在。
  **作    者: # Qifeng.zou # 2014.03.26 #
  ******************************************************************************/
-static int smti_ssvr_kpalive_req(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr)
+static int smtc_ssvr_kpalive_req(smtc_ssvr_ctx_t *ctx, smtc_ssvr_t *ssvr)
 {
     void *addr;
     int ret = 0;
-    smti_ssvr_sck_t *sck = &ssvr->sck;
-    smti_send_snap_t *send = &ssvr->sck.send;
-    smti_header_t *head;
-    int size = sizeof(smti_header_t);
+    smtc_ssvr_sck_t *sck = &ssvr->sck;
+    smtc_send_snap_t *send = &ssvr->sck.send;
+    smtc_header_t *head;
+    int size = sizeof(smtc_header_t);
 
     /* 1. 上次发送保活请求之后 仍未收到应答 */
     if ((sck->fd < 0) 
-        || (SMTI_KPALIVE_SENT == sck->kpalive)) 
+        || (SMTC_KPALIVE_SENT == sck->kpalive)) 
     {
         Close(sck->fd);
 
-        smti_ssvr_release_send_data(ssvr, send);
-        smti_reset_send_snap(send);
+        smtc_ssvr_release_send_data(ssvr, send);
+        smtc_reset_send_snap(send);
 
         log_error(ssvr->log, "Didn't get keep-alive respond for a long time!");
         return 0;
@@ -590,72 +585,24 @@ static int smti_ssvr_kpalive_req(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr)
     }
 
     /* 2. 设置心跳数据 */
-    head = (smti_header_t *)addr;
+    head = (smtc_header_t *)addr;
 
-    head->type = SMTI_KPALIVE_REQ;
+    head->type = SMTC_KPALIVE_REQ;
     head->body_len = 0;
-    head->flag = SMTI_SYS_DATA;
-    head->mark = SMTI_MSG_MARK_KEY;
+    head->flag = SMTC_SYS_DATA;
+    head->mark = SMTC_MSG_MARK_KEY;
 
     /* 3. 加入发送列表 */
-    smti_ssvr_add_msg(ssvr, addr);
+    smtc_ssvr_add_msg(ssvr, addr);
 
     LogDebug("Add keepalive request success! fd:[%d]", sck->fd);
 
-    smti_set_kpalive_stat(sck, SMTI_KPALIVE_SENT);
+    smtc_set_kpalive_stat(sck, SMTC_KPALIVE_SENT);
     return 0;
 }
 
 /******************************************************************************
- **函数名称: smti_ssvr_link_info_report
- **功    能: 发送链路信息报告
- **输入参数: 
- **     ssvr: Snd线程上下文
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.08.14 #
- ******************************************************************************/
-static int smti_ssvr_link_info_report(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr)
-{
-    void *addr;
-    int ret = 0;
-    smti_ssvr_sck_t *sck = &ssvr->sck;
-    smti_send_snap_t *send = &ssvr->sck.send;
-    smti_header_t *head;
-    smti_link_info_report_t *info;
-    int size = sizeof(smti_header_t) + sizeof(smti_link_info_report_t);
-
-    /* 1. 申请空间 */
-    addr = slab_alloc(&ssvr->pool, size);
-    if (NULL == addr)
-    {
-        log_error(ssvr->log, "Alloc memory from slab failed!");
-        return 0;
-    }
-
-    /* 2. 设置心跳数据 */
-    head = (smti_header_t *)addr;
-
-    head->type = SMTI_LINK_INFO_REPORT;
-    head->body_len = sizeof(smti_link_info_report_t);
-    head->flag = SMTI_SYS_DATA;
-    head->mark = SMTI_MSG_MARK_KEY;
-
-    info = addr + sizeof(smti_header_t);
-
-    info->is_primary = (0 == ssvr->tidx)? 1 : 0;
-
-    /* 3. 加入发送列表 */
-    smti_ssvr_add_msg(ssvr, addr);
-
-    LogDebug("Add link info report! fd:[%d]", sck->fd);
-    return 0;
-}
-
-/******************************************************************************
- **函数名称: smti_get_curr_ssvr
+ **函数名称: smtc_get_curr_ssvr
  **功    能: 获取当前SND线程的上下文
  **输入参数: 
  **     ssvr: Send线程上下文
@@ -666,10 +613,10 @@ static int smti_ssvr_link_info_report(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.04.26 #
  ******************************************************************************/
-static smti_ssvr_t *smti_get_curr_ssvr(smti_ssvr_ctx_t *ctx)
+static smtc_ssvr_t *smtc_get_curr_ssvr(smtc_ssvr_ctx_t *ctx)
 {
     int tidx = -1;
-    smti_ssvr_t *ssvr = NULL;
+    smtc_ssvr_t *ssvr = NULL;
 
     /* 1. 获取线程索引 */
     tidx = thread_pool_get_tidx(ctx->sendtp);
@@ -680,14 +627,14 @@ static smti_ssvr_t *smti_get_curr_ssvr(smti_ssvr_ctx_t *ctx)
     }
 
     /* 2. 获取SND线程上下文 */
-    ssvr = (smti_ssvr_t *)(ctx->sendtp->data + tidx * sizeof(smti_ssvr_t));
+    ssvr = (smtc_ssvr_t *)(ctx->sendtp->data + tidx * sizeof(smtc_ssvr_t));
     ssvr->tidx = tidx;
 
     return ssvr;
 }
 
 /******************************************************************************
- **函数名称: smti_ssvr_timeout_handler
+ **函数名称: smtc_ssvr_timeout_handler
  **功    能: 超时处理
  **输入参数: 
  **     ctx: 上下文信息
@@ -700,21 +647,21 @@ static smti_ssvr_t *smti_get_curr_ssvr(smti_ssvr_ctx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.04.26 #
  ******************************************************************************/
-static int smti_ssvr_timeout_handler(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr)
+static int smtc_ssvr_timeout_handler(smtc_ssvr_ctx_t *ctx, smtc_ssvr_t *ssvr)
 {
     int ret = 0;
     time_t curr_tm = time(NULL);
-    smti_ssvr_sck_t *sck = &ssvr->sck;
+    smtc_ssvr_sck_t *sck = &ssvr->sck;
 
     /* 1. 判断是否长时无数据 */
     if ((NULL != ssvr->sck.send.addr)
-        || (curr_tm - sck->wr_tm) < SMTI_SCK_KPALIVE_SEC)
+        || (curr_tm - sck->wr_tm) < SMTC_SCK_KPALIVE_SEC)
     {
         return 0;
     }
 
     /* 2. 发送保活请求 */
-    ret = smti_ssvr_kpalive_req(ctx, ssvr);
+    ret = smtc_ssvr_kpalive_req(ctx, ssvr);
     if (0 != ret)
     {
         log_error(ssvr->log, "Connection keepalive failed!");
@@ -727,7 +674,7 @@ static int smti_ssvr_timeout_handler(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr)
 }
 
 /******************************************************************************
- ** Name : smti_ssvr_check_header
+ ** Name : smtc_ssvr_check_header
  ** Desc : Check head
  ** Input: 
  **     ctx: 上下文
@@ -739,40 +686,40 @@ static int smti_ssvr_timeout_handler(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr)
  ** Note : 
  ** Author: # Qifeng.zou # 2014.05.13 #
  ******************************************************************************/
-static int smti_ssvr_check_header(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr, smti_ssvr_sck_t *sck)
+static int smtc_ssvr_check_header(smtc_ssvr_ctx_t *ctx, smtc_ssvr_t *ssvr, smtc_ssvr_sck_t *sck)
 {
-    smti_read_snap_t *read = &sck->read;
-    smti_header_t *head = (smti_header_t *)read->addr;
+    smtc_read_snap_t *read = &sck->read;
+    smtc_header_t *head = (smtc_header_t *)read->addr;
 
     /* 1. 检查校验值 */
-    if (SMTI_MSG_MARK_KEY != head->mark)
+    if (SMTC_MSG_MARK_KEY != head->mark)
     {
         log_error(ssvr->log, "Mark [%u/%u] isn't right! type:%d len:%d flag:%d",
-            head->mark, SMTI_MSG_MARK_KEY, head->type, head->body_len, head->flag);
-        return SMTI_ERR;
+            head->mark, SMTC_MSG_MARK_KEY, head->type, head->body_len, head->flag);
+        return SMTC_ERR;
     }
 
     /* 2. 检查类型 */
-    if (!smti_is_type_valid(head->type))
+    if (!smtc_is_type_valid(head->type))
     {
         log_error(ssvr->log, "Data type is invalid! type:%d len:%d", head->type, head->body_len);
-        return SMTI_ERR;
+        return SMTC_ERR;
     }
  
     /* 3. 检查长度: 因所有队列长度一致 因此使用[0]判断 */
-    if (head->body_len + sizeof(smti_header_t) >= SMTI_NULL_MAX_LEN)
+    if (head->body_len + sizeof(smtc_header_t) >= SMTC_NULL_MAX_LEN)
     {
         log_error(ssvr->log, "Length is too long! type:%d len:%d", head->type, head->body_len);
-        return SMTI_ERR;
+        return SMTC_ERR;
     }
 
-    return SMTI_OK;
+    return SMTC_OK;
 }
 
 
 
 /******************************************************************************
- ** Name : smti_ssvr_read_init
+ ** Name : smtc_ssvr_read_init
  ** Desc : Prepare ssvr read data
  ** Input: 
  **     ctx: 上下文
@@ -785,10 +732,10 @@ static int smti_ssvr_check_header(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr, smti_
  **     只有2种返回结果：Succ 或 队列空间不足
  ** Author: # Qifeng.zou # 2014.05.13 #
  ******************************************************************************/
-static int smti_ssvr_read_init(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr, smti_ssvr_sck_t *sck)
+static int smtc_ssvr_read_init(smtc_ssvr_ctx_t *ctx, smtc_ssvr_t *ssvr, smtc_ssvr_sck_t *sck)
 {
     int times = 0;
-    smti_read_snap_t *read = &sck->read;
+    smtc_read_snap_t *read = &sck->read;
 
     /* 指向NULL空间 */
     read->rqidx = 0;
@@ -797,13 +744,13 @@ static int smti_ssvr_read_init(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr, smti_ssv
 
     /* 3. 设置标识量 */
     read->offset = 0;
-    smti_set_read_phase(read, SMTI_PHASE_READ_HEAD);
+    smtc_set_read_phase(read, SMTC_PHASE_READ_HEAD);
     
-    return SMTI_OK;
+    return SMTC_OK;
 }
 
 /******************************************************************************
- ** Name : smti_ssvr_read_header
+ ** Name : smtc_ssvr_read_header
  ** Desc : Recv head
  ** Input: 
  **     ctx: 上下文
@@ -811,23 +758,23 @@ static int smti_ssvr_read_init(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr, smti_ssv
  **     sck: Socket information
  ** Output: NONE
  ** Return: 
- **     1. incomplete - SMTI_AGAIN
- **     2. done  - SMTI_DONE
- **     3. close - SMTI_SCK_CLOSED
- **     4. failed - SMTI_ERR
+ **     1. incomplete - SMTC_AGAIN
+ **     2. done  - SMTC_DONE
+ **     3. close - SMTC_SCK_CLOSED
+ **     4. failed - SMTC_ERR
  ** Proc : 
  ** Note : 
  **     Don't return error when errno is EAGAIN, but recv again at next time.
  ** Author: # Qifeng.zou # 2014.08.10 #
  ******************************************************************************/
-static int smti_ssvr_read_header(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr, smti_ssvr_sck_t *sck)
+static int smtc_ssvr_read_header(smtc_ssvr_ctx_t *ctx, smtc_ssvr_t *ssvr, smtc_ssvr_sck_t *sck)
 {
     int n = 0, ret = 0, left = 0;
-    smti_read_snap_t *read = &sck->read;
-    smti_header_t *head = (smti_header_t *)read->addr;
+    smtc_read_snap_t *read = &sck->read;
+    smtc_header_t *head = (smtc_header_t *)read->addr;
 
     /* 1. Compute left characters */
-    left = sizeof(smti_header_t) - read->offset;
+    left = sizeof(smtc_header_t) - read->offset;
 
     /* 2. Recv head */
     n = Readn(sck->fd, read->addr + read->offset,  left);
@@ -836,38 +783,38 @@ static int smti_ssvr_read_header(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr, smti_s
         if (n > 0)
         {
             read->offset += n;
-            return SMTI_AGAIN;
+            return SMTC_AGAIN;
         }
         else if (0 == n)
         {
             log_error(ssvr->log, "Server disconnected. errmsg:[%d] %s! fd:[%d] n:[%d/%d]",
                 errno, strerror(errno), sck->fd, n, left);
-            return SMTI_SCK_CLOSED;
+            return SMTC_SCK_CLOSED;
         }
 
         log_error(ssvr->log, "errmsg:[%d] %s. fd:[%d]", errno, strerror(errno), sck->fd);
-        return SMTI_ERR;
+        return SMTC_ERR;
     }
     
     read->offset += n;
 
     /* 3. Check head */
-    ret = smti_ssvr_check_header(ctx, ssvr, sck);
-    if (SMTI_OK != ret)
+    ret = smtc_ssvr_check_header(ctx, ssvr, sck);
+    if (SMTC_OK != ret)
     {
         log_error(ssvr->log, "Check header failed! type:%d len:%d flag:%d mark:[%u/%u]",
-            head->type, head->body_len, head->flag, head->mark, SMTI_MSG_MARK_KEY);
-        return SMTI_ERR;
+            head->type, head->body_len, head->flag, head->mark, SMTC_MSG_MARK_KEY);
+        return SMTC_ERR;
     }
 
-    read->total = sizeof(smti_header_t) + head->body_len;
-    smti_set_read_phase(read, SMTI_PHASE_READ_BODY);
+    read->total = sizeof(smtc_header_t) + head->body_len;
+    smtc_set_read_phase(read, SMTC_PHASE_READ_BODY);
 
-    return SMTI_DONE;
+    return SMTC_DONE;
 }
 
 /******************************************************************************
- ** Name : smti_ssvr_read_body
+ ** Name : smtc_ssvr_read_body
  ** Desc : Recv body
  ** Input: 
  **     ctx: 上下文
@@ -875,23 +822,23 @@ static int smti_ssvr_read_header(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr, smti_s
  **     sck: Socket information
  ** Output: NONE
  ** Return:
- **     1. incomplete - SMTI_AGAIN
- **     2. done  - SMTI_DONE
- **     3. close - SMTI_SCK_CLOSED
- **     4. failed - SMTI_ERR
+ **     1. incomplete - SMTC_AGAIN
+ **     2. done  - SMTC_DONE
+ **     3. close - SMTC_SCK_CLOSED
+ **     4. failed - SMTC_ERR
  ** Proc : 
  ** Note : 
  **     Don't return error when errno is EAGAIN, but ssvr again at next time.
  ** Author: # Qifeng.zou # 2014.04.10 #
  ******************************************************************************/
-static int smti_ssvr_read_body(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr, smti_ssvr_sck_t *sck)
+static int smtc_ssvr_read_body(smtc_ssvr_ctx_t *ctx, smtc_ssvr_t *ssvr, smtc_ssvr_sck_t *sck)
 {
     int n = 0, left = 0;
-    smti_read_snap_t *read = &sck->read;
-    smti_header_t *head = (smti_header_t *)read->addr;
+    smtc_read_snap_t *read = &sck->read;
+    smtc_header_t *head = (smtc_header_t *)read->addr;
 
     /* 1. Recv body */
-    left = head->body_len + sizeof(smti_header_t) - read->offset;
+    left = head->body_len + sizeof(smtc_header_t) - read->offset;
 
     n = Readn(sck->fd, read->addr + read->offset, left);
     if (n != left)
@@ -899,7 +846,7 @@ static int smti_ssvr_read_body(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr, smti_ssv
         if (n > 0)
         {
             read->offset += n;
-            return SMTI_AGAIN;
+            return SMTC_AGAIN;
         }
         else if (0 == n)
         {
@@ -907,27 +854,27 @@ static int smti_ssvr_read_body(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr, smti_ssv
                 "fd:[%d] type:[%d] flag:[%d] bodylen:[%d] total:[%d] left:[%d] offset:[%d]",
                 errno, strerror(errno),
                 sck->fd, head->type, head->flag, head->body_len, read->total, left, read->offset);
-            return SMTI_SCK_CLOSED;
+            return SMTC_SCK_CLOSED;
         }
 
         log_error(ssvr->log, "errmsg:[%d] %s! type:%d len:%d n:%d fd:%d total:%d offset:%d addr:%p",
             errno, strerror(errno), head->type,
             head->body_len, n, sck->fd, read->total, read->offset, read->addr);
 
-        return SMTI_ERR;
+        return SMTC_ERR;
     }
 
     /* 2. Set flag variables */
     read->offset += n;
-    smti_set_read_phase(read, SMTI_PHASE_READ_POST);
+    smtc_set_read_phase(read, SMTC_PHASE_READ_POST);
 
     LogTrace("Recv success! type:%d len:%d", head->type, head->body_len);
     
-    return SMTI_DONE;
+    return SMTC_DONE;
 }
 
 /******************************************************************************
- ** Name : smti_ssvr_proc_data
+ ** Name : smtc_ssvr_proc_data
  ** Desc : Process data from server.
  ** Input: 
  **     ctx: 上下文
@@ -941,23 +888,23 @@ static int smti_ssvr_read_body(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr, smti_ssv
  ** Note : 
  ** Author: # Qifeng.zou # 2014.05.13 #
  ******************************************************************************/
-static int smti_ssvr_proc_data(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr, smti_ssvr_sck_t *sck)
+static int smtc_ssvr_proc_data(smtc_ssvr_ctx_t *ctx, smtc_ssvr_t *ssvr, smtc_ssvr_sck_t *sck)
 {
-    smti_read_snap_t *read = &sck->read;
-    smti_header_t *head = read->addr;
+    smtc_read_snap_t *read = &sck->read;
+    smtc_header_t *head = read->addr;
 
     /* 1. Handle system data */
-    if (SMTI_SYS_DATA == head->flag)
+    if (SMTC_SYS_DATA == head->flag)
     {
-        return smti_ssvr_sys_data_proc(ctx, ssvr, sck);
+        return smtc_ssvr_sys_data_proc(ctx, ssvr, sck);
     }
 
     /* 2. Forward expand data */
-    return smti_ssvr_exp_data_proc(ctx, ssvr, sck);
+    return smtc_ssvr_exp_data_proc(ctx, ssvr, sck);
 }
 
 /******************************************************************************
- **函数名称: smti_ssvr_recv_data_handler
+ **函数名称: smtc_ssvr_recv_data_handler
  **功    能: 接收来自服务器的信息
  **输入参数: 
  **     ctx: 上下文信息
@@ -971,40 +918,40 @@ static int smti_ssvr_proc_data(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr, smti_ssv
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.03.26 #
  ******************************************************************************/
-static int smti_ssvr_recv_data_handler(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr)
+static int smtc_ssvr_recv_data_handler(smtc_ssvr_ctx_t *ctx, smtc_ssvr_t *ssvr)
 {
     int ret = 0;
-    smti_ssvr_sck_t *sck = &ssvr->sck;
-    smti_read_snap_t *read = &sck->read;
-    smti_header_t *head;
+    smtc_ssvr_sck_t *sck = &ssvr->sck;
+    smtc_read_snap_t *read = &sck->read;
+    smtc_header_t *head;
 
     sck->rd_tm = time(NULL);
 
     switch (read->phase)
     {
-        case SMTI_PHASE_READ_INIT: /* 1. 初始化读取消息 */
+        case SMTC_PHASE_READ_INIT: /* 1. 初始化读取消息 */
         {
-            smti_ssvr_read_init(ctx, ssvr, sck);
+            smtc_ssvr_read_init(ctx, ssvr, sck);
             /* NOTE: Don't break - Continue handle */
         }
-        case SMTI_PHASE_READ_HEAD: /* 2. 读取消息HEAD */
+        case SMTC_PHASE_READ_HEAD: /* 2. 读取消息HEAD */
         {
-            ret = smti_ssvr_read_header(ctx, ssvr, sck);
-            if (SMTI_DONE == ret)
+            ret = smtc_ssvr_read_header(ctx, ssvr, sck);
+            if (SMTC_DONE == ret)
             {
-                head = (smti_header_t *)read->addr;
+                head = (smtc_header_t *)read->addr;
                 if (head->body_len > 0)
                 {
-                    return SMTI_OK;
+                    return SMTC_OK;
                 }
                 goto READ_POST_STEP;
             }
-            else if (SMTI_AGAIN == ret)  /* incomplete */
+            else if (SMTC_AGAIN == ret)  /* incomplete */
             {
                 /* Note: Continue ssvr head at next loop */
-                return SMTI_OK;
+                return SMTC_OK;
             }
-            else if (SMTI_SCK_CLOSED == ret)
+            else if (SMTC_SCK_CLOSED == ret)
             {
                 LogDebug("Server disconnect!");
                 break;
@@ -1016,24 +963,24 @@ static int smti_ssvr_recv_data_handler(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr)
             }
             /* NOTE: Don't break - Continue handle */
         }
-        case SMTI_PHASE_READ_BODY: /* 3. 读取消息BODY */
+        case SMTC_PHASE_READ_BODY: /* 3. 读取消息BODY */
         {
-            ret = smti_ssvr_read_body(ctx, ssvr, sck);
-            if (SMTI_DONE == ret)
+            ret = smtc_ssvr_read_body(ctx, ssvr, sck);
+            if (SMTC_DONE == ret)
             {
                 goto READ_POST_STEP;
             }
-            else if (SMTI_AGAIN == ret)
+            else if (SMTC_AGAIN == ret)
             {
                 /* Note: Continue ssvr body at next loop */
-                return SMTI_OK;
+                return SMTC_OK;
             }
-            else if (SMTI_HDL_DISCARD == ret)
+            else if (SMTC_HDL_DISCARD == ret)
             {
-                smti_ssvr_read_release(ctx, ssvr, sck);
-                return SMTI_OK;
+                smtc_ssvr_read_release(ctx, ssvr, sck);
+                return SMTC_OK;
             }
-            else if (SMTI_SCK_CLOSED == ret)
+            else if (SMTC_SCK_CLOSED == ret)
             {
                 LogDebug("Client disconnect!");
                 break;
@@ -1045,20 +992,20 @@ static int smti_ssvr_recv_data_handler(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr)
             }
             /* NOTE: Don't break - Continue handle */
         }
-        case SMTI_PHASE_READ_POST:
+        case SMTC_PHASE_READ_POST:
         {
         READ_POST_STEP:
-            ret = smti_ssvr_proc_data(ctx, ssvr, sck);
-            if (SMTI_OK == ret)
+            ret = smtc_ssvr_proc_data(ctx, ssvr, sck);
+            if (SMTC_OK == ret)
             {
-                smti_reset_read_snap(read);
-                return SMTI_OK;
+                smtc_reset_read_snap(read);
+                return SMTC_OK;
             }
-            else if ((SMTI_HDL_DONE == ret)
-                || (SMTI_HDL_DISCARD == ret))
+            else if ((SMTC_HDL_DONE == ret)
+                || (SMTC_HDL_DISCARD == ret))
             {
-                smti_ssvr_read_release(ctx, ssvr, sck);
-                return SMTI_OK;
+                smtc_ssvr_read_release(ctx, ssvr, sck);
+                return SMTC_OK;
             }
 
             break;
@@ -1070,13 +1017,13 @@ static int smti_ssvr_recv_data_handler(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr)
         }
     }
 
-    smti_ssvr_read_release(ctx, ssvr, sck);
-    smti_ssvr_reset_sck(ssvr, sck);
-    return SMTI_ERR;
+    smtc_ssvr_read_release(ctx, ssvr, sck);
+    smtc_ssvr_reset_sck(ssvr, sck);
+    return SMTC_ERR;
 }
 
 /******************************************************************************
- ** Name : smti_ssvr_read_release
+ ** Name : smtc_ssvr_read_release
  ** Desc : Release and reset read buffer.
  ** Input: 
  **     ctx: 上下文
@@ -1088,9 +1035,9 @@ static int smti_ssvr_recv_data_handler(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr)
  ** Note : 
  ** Author: # Qifeng.zou # 2014.05.14 #
  ******************************************************************************/
-static void smti_ssvr_read_release(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr, smti_ssvr_sck_t *sck)
+static void smtc_ssvr_read_release(smtc_ssvr_ctx_t *ctx, smtc_ssvr_t *ssvr, smtc_ssvr_sck_t *sck)
 {
-    smti_read_snap_t *read = &sck->read;
+    smtc_read_snap_t *read = &sck->read;
 
     /* 1. 释放内存 */
     if ((read->dataid >= 0)
@@ -1100,11 +1047,11 @@ static void smti_ssvr_read_release(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr, smti
     }
 
     /* 2. 重置标识量 */
-    smti_reset_read_snap(read);
+    smtc_reset_read_snap(read);
 }
 
 /******************************************************************************
- **函数名称: smti_ssvr_recv_cmd_handler
+ **函数名称: smtc_ssvr_recv_cmd_handler
  **功    能: 接收命令
  **输入参数: 
  **     ctx: 上下文信息
@@ -1117,10 +1064,10 @@ static void smti_ssvr_read_release(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr, smti
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.04.26 #
  ******************************************************************************/
-static int smti_ssvr_recv_cmd_handler(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr)
+static int smtc_ssvr_recv_cmd_handler(smtc_ssvr_ctx_t *ctx, smtc_ssvr_t *ssvr)
 {
     int ret = 0;
-    smti_cmd_t cmd;
+    smtc_cmd_t cmd;
 
     memset(&cmd, 0, sizeof(cmd));
 
@@ -1133,7 +1080,7 @@ static int smti_ssvr_recv_cmd_handler(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr)
     }
 
     /* 2. 处理命令 */
-    ret = smti_ssvr_cmd_handler(ctx, ssvr, &cmd);
+    ret = smtc_ssvr_cmd_handler(ctx, ssvr, &cmd);
     if (0 != ret)
     {
         log_error(ssvr->log, "Handle command failed");
@@ -1144,7 +1091,7 @@ static int smti_ssvr_recv_cmd_handler(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr)
 }
 
 /******************************************************************************
- **函数名称: smti_ssvr_cmd_handler
+ **函数名称: smtc_ssvr_cmd_handler
  **功    能: 命令处理
  **输入参数: 
  **     ssvr: Send线程上下文
@@ -1155,19 +1102,19 @@ static int smti_ssvr_recv_cmd_handler(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.04.26 #
  ******************************************************************************/
-static int smti_ssvr_cmd_handler(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr, const smti_cmd_t *cmd)
+static int smtc_ssvr_cmd_handler(smtc_ssvr_ctx_t *ctx, smtc_ssvr_t *ssvr, const smtc_cmd_t *cmd)
 {
-    smti_ssvr_sck_t *sck = &ssvr->sck;
+    smtc_ssvr_sck_t *sck = &ssvr->sck;
 
     switch (cmd->type)
     {
-        case SMTI_CMD_SEND:
-        case SMTI_CMD_SEND_ALL:
+        case SMTC_CMD_SEND:
+        case SMTC_CMD_SEND_ALL:
         {
             if (fd_is_writable(sck->fd))
             {
-                return smti_ssvr_send_all_cmd_handler(ctx,
-                        ssvr, (const smti_cmd_send_t *)&cmd->args);
+                return smtc_ssvr_send_all_cmd_handler(ctx,
+                        ssvr, (const smtc_cmd_send_t *)&cmd->args);
             }
             return 0;
         }
@@ -1181,7 +1128,7 @@ static int smti_ssvr_cmd_handler(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr, const 
 }
 
 /******************************************************************************
- **函数名称: smti_ssvr_send_all_cmd_handler
+ **函数名称: smtc_ssvr_send_all_cmd_handler
  **功    能: 发送数据的请求处理
  **输入参数: 
  **     ssvr: Send线程上下文
@@ -1192,16 +1139,16 @@ static int smti_ssvr_cmd_handler(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr, const 
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.04.26 #
  ******************************************************************************/
-static int smti_ssvr_send_all_cmd_handler(
-        smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr, const smti_cmd_send_t *args)
+static int smtc_ssvr_send_all_cmd_handler(
+        smtc_ssvr_ctx_t *ctx, smtc_ssvr_t *ssvr, const smtc_cmd_send_t *args)
 {
     int ret = 0;
     size_t n = 0;
     struct timeval tmout;
     time_t ctm = time(NULL);
-    smti_header_t *head = NULL;
-    smti_ssvr_sck_t *sck = &ssvr->sck;
-    smti_send_snap_t *send = &ssvr->sck.send;
+    smtc_header_t *head = NULL;
+    smtc_ssvr_sck_t *sck = &ssvr->sck;
+    smtc_send_snap_t *send = &ssvr->sck.send;
 
 
     for (;;)
@@ -1209,13 +1156,13 @@ static int smti_ssvr_send_all_cmd_handler(
         if (NULL == send->addr)
         {
             /* 1. 取发送的数据 */
-            send->addr = smti_ssvr_get_msg(ssvr);
+            send->addr = smtc_ssvr_get_msg(ssvr);
             if (NULL != send->addr)
             {
-                head = (smti_header_t *)send->addr;
+                head = (smtc_header_t *)send->addr;
 
-                send->loc = SMTI_DATA_LOC_SLAB;
-                send->total = sizeof(smti_header_t) + head->body_len;
+                send->loc = SMTC_DATA_LOC_SLAB;
+                send->total = sizeof(smtc_header_t) + head->body_len;
                 send->left = send->total;
             }
             else
@@ -1226,10 +1173,10 @@ static int smti_ssvr_send_all_cmd_handler(
                     return 0;
                 }
 
-                head = (smti_header_t *)send->addr;
+                head = (smtc_header_t *)send->addr;
 
-                send->loc = SMTI_DATA_LOC_ORM_QUEUE;
-                send->total = sizeof(smti_header_t) + head->body_len;
+                send->loc = SMTC_DATA_LOC_ORM_QUEUE;
+                send->total = sizeof(smtc_header_t) + head->body_len;
                 send->left = send->total;
             }
         }
@@ -1238,13 +1185,13 @@ static int smti_ssvr_send_all_cmd_handler(
         n = Writen(sck->fd, send->addr + send->off, send->left);
         if (n < 0)
         {
-            head = (smti_header_t *)send->addr;
+            head = (smtc_header_t *)send->addr;
 
-        #if defined(__SMTI_DEBUG__)
+        #if defined(__SMTC_DEBUG__)
             send->fail++;
             fprintf(stderr, "succ:%llu fail:%llu again:%llu\n",
                 send->succ, send->fail, send->again);
-        #endif /*__SMTI_DEBUG__*/
+        #endif /*__SMTC_DEBUG__*/
 
             log_error(ssvr->log, "\terrmsg:[%d] %s! fd:%d type:%d body:%d left:[%d/%d]",
                 errno, strerror(errno), sck->fd,
@@ -1252,8 +1199,8 @@ static int smti_ssvr_send_all_cmd_handler(
 
             Close(sck->fd);
 
-            smti_ssvr_release_send_data(ssvr, send);
-            smti_reset_send_snap(send);
+            smtc_ssvr_release_send_data(ssvr, send);
+            smtc_reset_send_snap(send);
             return -1;
         }
         /* 只发送了部分数据 */
@@ -1264,9 +1211,9 @@ static int smti_ssvr_send_all_cmd_handler(
             send->left -= n;
             send->off += n;
             
-        #if defined(__SMTI_DEBUG__)
+        #if defined(__SMTC_DEBUG__)
             send->again++;
-        #endif /*__SMTI_DEBUG__*/
+        #endif /*__SMTC_DEBUG__*/
             return 0;
         }
 
@@ -1278,20 +1225,20 @@ static int smti_ssvr_send_all_cmd_handler(
         sck->wr_tm = ctm;
 
         /* 4. 释放空间 */
-        smti_ssvr_release_send_data(ssvr, send);
+        smtc_ssvr_release_send_data(ssvr, send);
 
-    #if defined(__SMTI_DEBUG__)
+    #if defined(__SMTC_DEBUG__)
         send->succ++;
-    #endif /*__SMTI_DEBUG__*/
+    #endif /*__SMTC_DEBUG__*/
 
-        smti_reset_send_snap(send);
+        smtc_reset_send_snap(send);
     }
 
     return 0;
 }
 
 /******************************************************************************
- **函数名称: smti_ssvr_add_msg
+ **函数名称: smtc_ssvr_add_msg
  **功    能: 添加发送数据
  **输入参数: 
  **    ssvr: Recv对象
@@ -1303,7 +1250,7 @@ static int smti_ssvr_send_all_cmd_handler(
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.07.04 #
  ******************************************************************************/
-static int smti_ssvr_add_msg(smti_ssvr_t *ssvr, void *addr)
+static int smtc_ssvr_add_msg(smtc_ssvr_t *ssvr, void *addr)
 {
     list_t *add, *item, *tail = NULL;
 
@@ -1312,7 +1259,7 @@ static int smti_ssvr_add_msg(smti_ssvr_t *ssvr, void *addr)
     if (NULL == add)
     {
         LogDebug("Alloc memory failed!");
-        return SMTI_ERR;
+        return SMTC_ERR;
     }
 
     add->data = addr;
@@ -1324,7 +1271,7 @@ static int smti_ssvr_add_msg(smti_ssvr_t *ssvr, void *addr)
     {
         ssvr->sck.message_list = add;
 
-        return SMTI_OK;
+        return SMTC_OK;
     }
 
     /* 3.查找链尾 */
@@ -1336,11 +1283,11 @@ static int smti_ssvr_add_msg(smti_ssvr_t *ssvr, void *addr)
 
     tail->next = add;
 
-    return SMTI_OK;
+    return SMTC_OK;
 }
 
 /******************************************************************************
- **函数名称: smti_ssvr_get_msg
+ **函数名称: smtc_ssvr_get_msg
  **功    能: 获取发送数据
  **输入参数: 
  **    ssvr: Recv对象
@@ -1351,7 +1298,7 @@ static int smti_ssvr_add_msg(smti_ssvr_t *ssvr, void *addr)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.07.04 #
  ******************************************************************************/
-static void *smti_ssvr_get_msg(smti_ssvr_t *ssvr)
+static void *smtc_ssvr_get_msg(smtc_ssvr_t *ssvr)
 {
     void *addr;
     list_t *curr = ssvr->sck.message_list;
@@ -1370,7 +1317,7 @@ static void *smti_ssvr_get_msg(smti_ssvr_t *ssvr)
 }
 
 /******************************************************************************
- **函数名称: smti_ssvr_clear_msg
+ **函数名称: smtc_ssvr_clear_msg
  **功    能: 清空发送数据
  **输入参数: 
  **    ssvr: Send对象
@@ -1381,7 +1328,7 @@ static void *smti_ssvr_get_msg(smti_ssvr_t *ssvr)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.07.04 #
  ******************************************************************************/
-static int smti_ssvr_clear_msg(smti_ssvr_t *ssvr)
+static int smtc_ssvr_clear_msg(smtc_ssvr_t *ssvr)
 {
     list_t *curr, *next;
 
@@ -1397,11 +1344,11 @@ static int smti_ssvr_clear_msg(smti_ssvr_t *ssvr)
     }
 
     ssvr->sck.message_list = NULL;
-    return SMTI_OK;
+    return SMTC_OK;
 }
 
 /******************************************************************************
- ** Name : smti_ssvr_sys_data_proc
+ ** Name : smtc_ssvr_sys_data_proc
  ** Desc : Handle system data
  ** Input: 
  **     ctx: 上下文
@@ -1413,32 +1360,32 @@ static int smti_ssvr_clear_msg(smti_ssvr_t *ssvr)
  ** Note : 
  ** Author: # Qifeng.zou # 2014.04.14 #
  ******************************************************************************/
-static int smti_ssvr_sys_data_proc(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr, smti_ssvr_sck_t *sck)
+static int smtc_ssvr_sys_data_proc(smtc_ssvr_ctx_t *ctx, smtc_ssvr_t *ssvr, smtc_ssvr_sck_t *sck)
 {
-    smti_read_snap_t *read = &sck->read;
-    smti_header_t *head = (smti_header_t *)read->addr;
+    smtc_read_snap_t *read = &sck->read;
+    smtc_header_t *head = (smtc_header_t *)read->addr;
 
     switch (head->type)
     {
-        case SMTI_KPALIVE_REP:  /* 保活应答数据 */
+        case SMTC_KPALIVE_REP:  /* 保活应答数据 */
         {
             LogDebug("Received keepalive respond!");
 
-            smti_set_kpalive_stat(sck, SMTI_KPALIVE_SUCC);
+            smtc_set_kpalive_stat(sck, SMTC_KPALIVE_SUCC);
             return 0;
         }
         default:
         {
             log_error(ssvr->log, "Give up handle this type [%d]!", head->type);
-            return SMTI_HDL_DISCARD;
+            return SMTC_HDL_DISCARD;
         }
     }
     
-    return SMTI_HDL_DISCARD;
+    return SMTC_HDL_DISCARD;
 }
 
 /******************************************************************************
- ** Name : smti_ssvr_exp_data_proc
+ ** Name : smtc_ssvr_exp_data_proc
  ** Desc : Forward expand data
  ** Input: 
  **     ctx: 上下文
@@ -1451,23 +1398,23 @@ static int smti_ssvr_sys_data_proc(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr, smti
  ** Note : 
  ** Author: # Qifeng.zou # 2014.04.10 #
  ******************************************************************************/
-static int smti_ssvr_exp_data_proc(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr, smti_ssvr_sck_t *sck)
+static int smtc_ssvr_exp_data_proc(smtc_ssvr_ctx_t *ctx, smtc_ssvr_t *ssvr, smtc_ssvr_sck_t *sck)
 {
     int ret;
-    smti_read_snap_t *read = &sck->read;
+    smtc_read_snap_t *read = &sck->read;
 
     /* 1. 是否在NULL空间: 直接丢弃 */
     if (read->addr == sck->null)
     {
         log_error(ssvr->log, "Lost data! tidx:[%d] fd:[%d]", ssvr->tidx, sck->fd);
-        return SMTI_OK;
+        return SMTC_OK;
     }
 
-    return SMTI_OK;
+    return SMTC_OK;
 }
 
 /******************************************************************************
- **函数名称: smti_ssvr_reset_sck
+ **函数名称: smtc_ssvr_reset_sck
  **功    能: 重置套接字信息
  **输入参数: 
  **     ssvr: Send对象
@@ -1478,17 +1425,17 @@ static int smti_ssvr_exp_data_proc(smti_ssvr_ctx_t *ctx, smti_ssvr_t *ssvr, smti
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.07.08 #
  ******************************************************************************/
-static void smti_ssvr_reset_sck(smti_ssvr_t *ssvr, smti_ssvr_sck_t *sck)
+static void smtc_ssvr_reset_sck(smtc_ssvr_t *ssvr, smtc_ssvr_sck_t *sck)
 {
-    smti_send_snap_t *send = &sck->send;
+    smtc_send_snap_t *send = &sck->send;
 
     /* 1. 重置标识量 */
     Close(sck->fd);
     sck->wr_tm = 0;
     sck->rd_tm = 0;
 
-    smti_set_kpalive_stat(sck, SMTI_KPALIVE_STAT_UNKNOWN);
+    smtc_set_kpalive_stat(sck, SMTC_KPALIVE_STAT_UNKNOWN);
 
     /* 2. 释放空间 */
-    smti_ssvr_clear_msg(ssvr);
+    smtc_ssvr_clear_msg(ssvr);
 }
