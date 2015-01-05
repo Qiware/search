@@ -129,7 +129,7 @@ int avl_insert(avl_tree_t *tree, void *pkey, int pkey_len, void *data);
 avl_node_t *avl_query(avl_tree_t *tree, void *pkey, int pkey_len);
 int avl_delete(avl_tree_t *tree, void *pkey, int pkey_len, void **data);
 int avl_print(avl_tree_t *tree);
-int avl_trav(avl_tree_t *tree, avl_trav_cb_t cb, void *args);
+int avl_trav(avl_tree_t *tree, avl_trav_cb_t proc, void *args);
 void avl_destroy(avl_tree_t **tree);
 
 /* 测试使用 */

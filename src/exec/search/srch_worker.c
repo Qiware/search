@@ -64,7 +64,7 @@ void *srch_worker_routine(void *_ctx)
 
         reg = &ctx->reg[head->type];
 
-        reg->cb(head->type,
+        reg->proc(head->type,
                 addr + sizeof(srch_mesg_header_t),
                 head->length, reg->args, worker->log);
 

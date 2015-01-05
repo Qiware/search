@@ -214,20 +214,20 @@ int hash_tab_destroy(hash_tab_t *hash)
  **功    能: 遍历哈希数组
  **输入参数:
  **     hash: 哈希数组
- **     cb: 回调函数
+ **     proc: 回调函数
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.24 #
  ******************************************************************************/
-int hash_tab_trav(hash_tab_t *hash, avl_trav_cb_t cb, void *args)
+int hash_tab_trav(hash_tab_t *hash, avl_trav_cb_t proc, void *args)
 {
     uint32_t idx;
 
     for (idx=0; idx<hash->num; ++idx)
     {
-        avl_trav(hash->tree[idx], cb, args);
+        avl_trav(hash->tree[idx], proc, args);
     }
 
     return 0;

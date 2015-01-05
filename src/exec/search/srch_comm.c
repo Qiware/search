@@ -630,7 +630,7 @@ int srch_init_register(srch_cntx_t *ctx)
         reg = &ctx->reg[idx];
 
         reg->type = idx;
-        reg->cb = srch_reg_def_hdl;
+        reg->proc = srch_reg_def_hdl;
         reg->args = NULL;
         reg->flag = SRCH_REG_FLAG_UNREG;
     }
@@ -644,7 +644,7 @@ int srch_init_register(srch_cntx_t *ctx)
  **输入参数:
  **     ctx: 全局信息
  **     type: 扩展消息类型. Range:(0 ~ SRCH_MSG_TYPE_MAX)
- **     cb: 指定消息类型对应的处理函数
+ **     proc: 指定消息类型对应的处理函数
  **     args: 附加参数
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
@@ -654,7 +654,7 @@ int srch_init_register(srch_cntx_t *ctx)
  **     2. 不允许重复注册 
  **作    者: # Qifeng.zou # 2014.12.20 #
  ******************************************************************************/
-int srch_register(srch_cntx_t *ctx, uint32_t type, srch_reg_cb_t cb, void *args)
+int srch_register(srch_cntx_t *ctx, uint32_t type, srch_reg_cb_t proc, void *args)
 {
     srch_reg_t *reg;
 
@@ -671,7 +671,7 @@ int srch_register(srch_cntx_t *ctx, uint32_t type, srch_reg_cb_t cb, void *args)
 
     reg = &ctx->reg[type];
     reg->type = type;
-    reg->cb = cb;
+    reg->proc = proc;
     reg->args = args;
     reg->flag = 1;
 

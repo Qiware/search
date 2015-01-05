@@ -34,7 +34,7 @@ typedef struct
 #define SRCH_REG_FLAG_UNREG     (0)         /* 0: 未注册 */
 #define SRCH_REG_FLAG_REGED     (1)         /* 1: 已注册 */
     uint8_t flag;                           /* 注册标志 范围:(0: 未注册 1: 已注册) */
-    srch_reg_cb_t cb;                       /* 对应数据类型的处理函数 */
+    srch_reg_cb_t proc;                     /* 对应数据类型的处理函数 */
     void *args;                             /* 附加参数 */
 } srch_reg_t;
 

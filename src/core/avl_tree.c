@@ -1450,7 +1450,7 @@ int _avl_print(avl_node_t *root, Stack_t *stack)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.24 #
  ******************************************************************************/
-static int _avl_trav(avl_node_t *root, Stack_t *stack, avl_trav_cb_t cb, void *args)
+static int _avl_trav(avl_node_t *root, Stack_t *stack, avl_trav_cb_t proc, void *args)
 {
     avl_node_t *node = root;
 
@@ -1459,18 +1459,18 @@ static int _avl_trav(avl_node_t *root, Stack_t *stack, avl_trav_cb_t cb, void *a
     stack_push(stack, node);
     
     /* 2. 处理当前结点 */
-    cb(node->data, args);
+    proc(node->data, args);
 
     /* 3. 打印右子树 */
     if (NULL != node->rchild)
     {
-        _avl_trav(node->rchild, stack, cb, args);
+        _avl_trav(node->rchild, stack, proc, args);
     }
 
     /* 4. 打印左子树 */
     if (NULL != node->lchild)
     {
-        _avl_trav(node->lchild, stack, cb, args);
+        _avl_trav(node->lchild, stack, proc, args);
     }
 
     /* 5. 出栈 */
@@ -1490,7 +1490,7 @@ static int _avl_trav(avl_node_t *root, Stack_t *stack, avl_trav_cb_t cb, void *a
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.23 #
  ******************************************************************************/
-int avl_trav(avl_tree_t *tree, avl_trav_cb_t cb, void *args)
+int avl_trav(avl_tree_t *tree, avl_trav_cb_t proc, void *args)
 {
     int ret;
     Stack_t stack;
@@ -1508,7 +1508,7 @@ int avl_trav(avl_tree_t *tree, avl_trav_cb_t cb, void *args)
         return AVL_ERR_STACK;
     }
     
-    _avl_trav(tree->root, &stack, cb, args);
+    _avl_trav(tree->root, &stack, proc, args);
 
     stack_destroy(&stack);
     return AVL_OK;

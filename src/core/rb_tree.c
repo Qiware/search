@@ -1043,7 +1043,7 @@ int rbt_destroy(rbt_tree_t **tree)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.26 #
  ******************************************************************************/
-int rbt_trav(rbt_tree_t *tree, rbt_trav_cb_t cb, void *args)
+int rbt_trav(rbt_tree_t *tree, rbt_trav_cb_t proc, void *args)
 {
     Stack_t _stack, *stack = &_stack;
     rbt_node_t *node = tree->root, *parent = NULL;
@@ -1062,14 +1062,14 @@ int rbt_trav(rbt_tree_t *tree, rbt_trav_cb_t cb, void *args)
             stack_push(stack, node);
                         
             //rbt_hprint(tree, node, depth);   /* 打印头：入栈时打印头 出栈时打印尾 */
-            cb(node->data, args);
+            proc(node->data, args);
 
             node = node->lchild;
         }
 
         /* 打印最左端的子孙结点 */
         //rbt_hprint(tree, node, depth);
-        cb(node->data, args);
+        proc(node->data, args);
 
         /* 最左端的孩子有右孩子 */
         if(tree->sentinel != node->rchild)

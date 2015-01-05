@@ -98,7 +98,7 @@ int rbt_insert(rbt_tree_t *tree, int64_t key, void *data);
 int rbt_delete(rbt_tree_t *tree, int64_t key, void **data);
 rbt_node_t *rbt_search(rbt_tree_t *tree, int64_t key);
 int rbt_print(rbt_tree_t *tree);
-int rbt_trav(rbt_tree_t *tree, rbt_trav_cb_t cb, void *args);
+int rbt_trav(rbt_tree_t *tree, rbt_trav_cb_t proc, void *args);
 int rbt_destroy(rbt_tree_t **tree);
 
 #endif /*__RB_TREE_H__*/

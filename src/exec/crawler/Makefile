@@ -33,7 +33,7 @@ OBJS3 = $(subst .c,.o, $(SRC_LIST3))
 
 TARGET = libxd_crwl.so
 TARGET2 = crawler
-TARGET3 = crawler-filter
+TARGET3 = crwlfilter
 
 .PHONY: all clean
 
