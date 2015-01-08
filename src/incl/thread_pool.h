@@ -39,8 +39,5 @@ int thread_pool_keepalive(thread_pool_t *tp);
 int thread_pool_keepalive_ext(thread_pool_t *tp, void *(*process)(void *arg), void *arg);
 int thread_pool_get_tidx(thread_pool_t *tp);
 int thread_pool_destroy(thread_pool_t *tp);
-int thread_pool_destroy_ext(
-        thread_pool_t *tp,
-        void (*args_destroy)(void *cntx, void *args),
-        void *cntx); 
+
 #endif /*__THREAD_POOL_H__*/

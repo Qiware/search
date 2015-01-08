@@ -5,18 +5,20 @@
 
 #include "log.h"
 #include "slab.h"
-#include "smtc_comm.h"
-#include "orm_queue.h"
+#include "list.h"
+#include "queue.h"
+#include "smtc_priv.h"
+#include "xds_socket.h"
 #include "thread_pool.h"
 
 /* 宏定义 */
-#define SMTC_THD_DEF_NUM     (01)       /* 默认线程数 */
-#define SMTC_THD_MIN_NUM     (01)       /* 最小线程数 */
-#define SMTC_THD_MAX_NUM     (64)       /* 最大线程数 */
-#define SMTC_CONN_MAX_NUM    (512)      /* 最大链接数 */
-#define SMTC_SCK_DEF_NUM     (32)       /* Default SCK number */
-#define SMTC_MSG_DEF_LEN     (512)      /* Read length at one time */
-#define SMTC_CLOSE_TMOUT     (60)       /* 超时关闭时长 */
+#define SMTC_THD_DEF_NUM    (01)       /* 默认线程数 */
+#define SMTC_THD_MIN_NUM    (01)       /* 最小线程数 */
+#define SMTC_THD_MAX_NUM    (64)       /* 最大线程数 */
+#define SMTC_CONN_MAX_NUM   (512)      /* 最大链接数 */
+#define SMTC_SCK_DEF_NUM    (32)       /* Default SCK number */
+#define SMTC_MSG_DEF_LEN    (512)      /* Read length at one time */
+#define SMTC_CLOSE_TMOUT    (60)       /* 超时关闭时长 */
 #define SMTC_CMD_RESND_TIMES (3)        /* 命令重发次数 */
 
 #define SMTC_WORKER_HDL_QNUM (2)        /* 各Worker线程负责的队列数 */
@@ -30,7 +32,7 @@
     snprintf(path, sizeof(path), "../temp/smtc/recv/%s/usck/%s_wsvr_%d.usck", \
         conf->name, conf->name, tidx+1)
 /* Listen线程的UNIX-UDP路径 */
-#define smtc_listen_usck_path(conf, path) \
+#define smtc_lsn_usck_path(conf, path) \
     snprintf(path, sizeof(path), "../temp/smtc/recv/%s/usck/%s_listen.usck", \
         conf->name, conf->name)
 
@@ -80,11 +82,14 @@ typedef struct _smtc_sck_t
     time_t wtm;                         /* 最近写入时间 */
     char ipaddr[IP_ADDR_MAX_LEN];       /* IP地址 */
 
-    uint64_t recv_total;                /* 接收的数据条数 */
-    smtc_read_snap_t read;              /* 读取操作的快照 */
-    smtc_send_snap_t send;              /* 发送操作的快照 */
+    int rqidx;                          /* 当前接收队列ID */
+    socket_snap_t read;                 /* 读取操作的快照 */
+    socket_snap_t send;                 /* 发送操作的快照 */
+
     list_t *mesg_list;                  /* 发送消息链表 */
     char *null;                         /* NULL */
+
+    uint64_t recv_total;                /* 接收的数据条数 */
 
     struct _smtc_sck_t *next;           /* 下一结点 */
 } smtc_sck_t;
@@ -94,6 +99,7 @@ typedef struct
 {
     int tidx;                           /* 线程索引 */
     slab_pool_t *pool;                  /* 内存池 */
+    log_cycle_t *log;                   /* 日志对象 */
 
     int cmd_sck_id;                     /* 命令套接字 */
 
@@ -115,6 +121,7 @@ typedef struct
 typedef struct
 {
     int tidx;                           /* 线程索引 */
+    log_cycle_t *log;                   /* 日志对象 */
 
     int cmd_sck_id;                     /* 命令套接字 */
 
@@ -152,6 +159,11 @@ void *smtc_listen_routine(void *_ctx);
 int smtc_listen_destroy(smtc_lsn_t *lsn);
 
 void *smtc_rsvr_routine(void *_ctx);
+int smtc_rsvr_init(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, int tidx);
+
 void *smtc_worker_routine(void *_ctx);
+int smtc_worker_init(smtc_cntx_t *ctx, smtc_worker_t *worker, int tidx);
+
+void smtc_rsvr_del_all_conn_hdl(smtc_rsvr_t *rsvr);
 
 #endif /*__SMTC_H__*/

@@ -15,21 +15,21 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
-#include "smtc_cmd.h"
+#include "smtc.h"
+#include "syscall.h"
 #include "xml_tree.h"
-#include "smtc_comm.h"
-#include "smtc_recv.h"
+#include "smtc_cmd.h"
+#include "smtc_priv.h"
 #include "thread_pool.h"
-#include "smtc_svr.h"
 
 static int _smtc_init(smtc_cntx_t *ctx);
 static int smtc_creat_recvq(smtc_cntx_t *ctx);
 
 static int smtc_creat_recvtp(smtc_cntx_t *ctx);
-static void smtc_recvtp_destroy(void *_ctx);
+void smtc_recvtp_destroy(void *_ctx, void *args);
 
 static int smtc_creat_worktp(smtc_cntx_t *ctx);
-static void smtc_worktp_destroy(void *_ctx);
+void smtc_worktp_destroy(void *_ctx, void *args);
 
 static int smtc_proc_def_hdl(uint32_t type, char *buff, size_t len, void *args);
 
@@ -65,13 +65,13 @@ smtc_cntx_t *smtc_init(const smtc_conf_t *conf, log_cycle_t *log)
     /* 2. 备份配置信息 */
     memcpy(&ctx->conf, conf, sizeof(smtc_conf_t));
 
-    ctx->conf.rqnum = SMTC_RECV_WORKER_HDL_QNUM * conf->wrk_thd_num;
+    ctx->conf.rqnum = SMTC_WORKER_HDL_QNUM * conf->wrk_thd_num;
 
     /* 3. 初始化接收端 */
     if (_smtc_init(ctx))
     {
         Free(ctx);
-        log_error(ctx->log, ctx->log, "Initialize recv failed!");
+        log_error(ctx->log, "Initialize recv failed!");
         return NULL;
     }
 
@@ -113,9 +113,9 @@ int smtc_startup(smtc_cntx_t *ctx)
     }
     
     /* 3. 创建侦听线程 */
-    if (creat_thread(&lsn->tid, smtc_listen_routine, ctx))
+    if (thread_creat(&lsn->tid, smtc_listen_routine, ctx))
     {
-        log_error(ctx->log, ctx->log, "Start listen failed");
+        log_error(ctx->log, "Start listen failed");
         return SMTC_ERR;
     }
     
@@ -177,13 +177,15 @@ int smtc_register(smtc_cntx_t *ctx, uint32_t type, smtc_reg_cb_t proc, void *arg
 int smtc_destroy(smtc_cntx_t **ctx)
 {
     /* 1. 销毁侦听线程 */
-    smtc_lsn_destroy(&(*ctx)->listen);
+    smtc_listen_destroy(&(*ctx)->listen);
 
+#if 0
     /* 2. 销毁接收线程池 */
     thread_pool_destroy_ext((*ctx)->recvtp, smtc_recvtp_destroy, *ctx);
 
     /* 3. 销毁工作线程池 */
     thread_pool_destroy_ext((*ctx)->worktp, smtc_worktp_destroy, *ctx);
+#endif
 
     Free(*ctx);
     return SMTC_OK;
@@ -204,8 +206,6 @@ static int smtc_reg_init(smtc_cntx_t *ctx)
 {
     int idx;
     smtc_reg_t *reg = &ctx->reg[0];
-
-    pthread_rwlock_init(&ctx->reg_rw_lck, NULL);
 
     for (idx=0; idx<SMTC_TYPE_MAX; ++idx, ++reg)
     {
@@ -241,21 +241,21 @@ static int _smtc_init(smtc_cntx_t *ctx)
     /* 2. 创建接收队列 */
     if (smtc_creat_recvq(ctx))
     {
-        log_error(ctx->log, ctx->log, "Create recv queue failed!");
+        log_error(ctx->log, "Create recv queue failed!");
         return SMTC_ERR;
     }
 
     /* 3. 创建接收线程池 */
     if (smtc_creat_recvtp(ctx))
     {
-        log_error(ctx->log, ctx->log, "Create recv thread pool failed!");
+        log_error(ctx->log, "Create recv thread pool failed!");
         return SMTC_ERR;
     }
 
     /* 4. 创建工作线程池 */
     if (smtc_creat_worktp(ctx))
     {
-        log_error(ctx->log, ctx->log, "Create worker thread pool failed!");
+        log_error(ctx->log, "Create worker thread pool failed!");
         return SMTC_ERR;
     }
 
@@ -324,9 +324,10 @@ static int smtc_creat_recvtp(smtc_cntx_t *ctx)
     smtc_conf_t *conf = &ctx->conf;
 
     /* 1. 创建线程池 */
-    if (thread_pool_init(&ctx->recvtp, conf->recv_thd_num))
+    ctx->recvtp = thread_pool_init(conf->recv_thd_num, 4*KB);
+    if (NULL == ctx->recvtp)
     {
-        log_error(rsvr->log, "Initialize thread pool failed!");
+        log_error(ctx->log, "Initialize thread pool failed!");
         return SMTC_ERR;
     }
 
@@ -334,7 +335,7 @@ static int smtc_creat_recvtp(smtc_cntx_t *ctx)
     ctx->recvtp->data = (void *)calloc(conf->recv_thd_num, sizeof(smtc_rsvr_t));
     if (NULL == ctx->recvtp->data)
     {
-        log_error(rsvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
 
         thread_pool_destroy(ctx->recvtp);
         ctx->recvtp = NULL;
@@ -371,7 +372,7 @@ static int smtc_creat_recvtp(smtc_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static void smtc_recvtp_destroy(void *_ctx, void *args)
+void smtc_recvtp_destroy(void *_ctx, void *args)
 {
     int idx;
     smtc_cntx_t *ctx = (smtc_cntx_t *)_ctx;
@@ -383,9 +384,9 @@ static void smtc_recvtp_destroy(void *_ctx, void *args)
         Close(rsvr->cmd_sck_id);
 
         /* 2. 关闭通信套接字 */
-        smtc_rsvr_del_all_sck_hdl(rsvr);
+        smtc_rsvr_del_all_conn_hdl(rsvr);
 
-        slab_destroy(&rsvr->pool);
+        slab_destroy(rsvr->pool);
     }
 
     Free(ctx->recvtp->data);
@@ -415,7 +416,8 @@ static int smtc_creat_worktp(smtc_cntx_t *ctx)
     smtc_conf_t *conf = &ctx->conf;
 
     /* 1. 创建线程池 */
-    if (thread_pool_init(&ctx->worktp, conf->wrk_thd_num))
+    ctx->worktp = thread_pool_init(conf->wrk_thd_num, 4*KB);
+    if (NULL == ctx->worktp)
     {
         log_error(ctx->log, "Initialize thread pool failed!");
         return SMTC_ERR;

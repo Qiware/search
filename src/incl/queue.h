@@ -9,8 +9,8 @@
 /* 队列配置 */
 typedef struct
 {
-    size_t max;             /* 单元总数 */
-    size_t size;            /* 单元大小 */
+    int max;                /* 单元总数 */
+    int size;               /* 单元大小 */
 } queue_conf_t;
 
 /* 循环队列结点 */
@@ -25,6 +25,7 @@ typedef struct
 {
     int max;                                /* 队列容量 */
     int num;                                /* 队列成员个数 */
+    int size;
 
     _qnode_t *base;                         /* 队列基址 */
     _qnode_t *head;                         /* 队列头 */
@@ -49,7 +50,7 @@ typedef struct
     memblk_t *chunk;                     /* 内存池 */
 } queue_t;
 
-queue_t *queue_creat(int max, size_t size);
+queue_t *queue_creat(int max, int size);
 #define queue_malloc(q) memblk_alloc((q)->chunk)
 #define queue_dealloc(q, p) memblk_dealloc((q)->chunk, p)
 #define queue_push(q, addr) queue_push_lock(&((q)->queue), addr)

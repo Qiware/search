@@ -61,7 +61,7 @@ static int smtc_ssvr_exp_data_proc(smtc_ssvr_ctx_t *ctx, smtc_ssvr_t *ssvr, smtc
 
 static int smtc_ssvr_timeout_handler(smtc_ssvr_ctx_t *ctx, smtc_ssvr_t *ssvr);
 static int smtc_ssvr_cmd_handler(smtc_ssvr_ctx_t *ctx, smtc_ssvr_t *ssvr, const smtc_cmd_t *cmd);
-static int smtc_ssvr_send_all_cmd_handler(smtc_ssvr_ctx_t *ctx, smtc_ssvr_t *ssvr, const smtc_cmd_send_t *args);
+static int smtc_ssvr_cmd_send_all_req_hdl(smtc_ssvr_ctx_t *ctx, smtc_ssvr_t *ssvr, const smtc_cmd_send_req_t *args);
 
 static int smtc_ssvr_add_msg(smtc_ssvr_t *ssvr, void *addr);
 static void *smtc_ssvr_get_msg(smtc_ssvr_t *ssvr);
@@ -483,7 +483,7 @@ static int smtc_ssvr_event_handler(smtc_ssvr_ctx_t *ctx, smtc_ssvr_t *ssvr)
         /* 发送数据: 发送优先 */
         if (FD_ISSET(ssvr->sck.fd, &ssvr->wset))
         {
-            smtc_ssvr_send_all_cmd_handler(ctx, ssvr, NULL);
+            smtc_ssvr_cmd_send_all_req_hdl(ctx, ssvr, NULL);
         }
 
         /* 接收命令 */
@@ -1113,8 +1113,8 @@ static int smtc_ssvr_cmd_handler(smtc_ssvr_ctx_t *ctx, smtc_ssvr_t *ssvr, const 
         {
             if (fd_is_writable(sck->fd))
             {
-                return smtc_ssvr_send_all_cmd_handler(ctx,
-                        ssvr, (const smtc_cmd_send_t *)&cmd->args);
+                return smtc_ssvr_cmd_send_all_req_hdl(ctx,
+                        ssvr, (const smtc_cmd_send_req_t *)&cmd->args);
             }
             return 0;
         }
@@ -1128,7 +1128,7 @@ static int smtc_ssvr_cmd_handler(smtc_ssvr_ctx_t *ctx, smtc_ssvr_t *ssvr, const 
 }
 
 /******************************************************************************
- **函数名称: smtc_ssvr_send_all_cmd_handler
+ **函数名称: smtc_ssvr_cmd_send_all_req_hdl
  **功    能: 发送数据的请求处理
  **输入参数: 
  **     ssvr: Send线程上下文
@@ -1139,11 +1139,10 @@ static int smtc_ssvr_cmd_handler(smtc_ssvr_ctx_t *ctx, smtc_ssvr_t *ssvr, const 
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.04.26 #
  ******************************************************************************/
-static int smtc_ssvr_send_all_cmd_handler(
-        smtc_ssvr_ctx_t *ctx, smtc_ssvr_t *ssvr, const smtc_cmd_send_t *args)
+static int smtc_ssvr_cmd_send_all_req_hdl(
+        smtc_ssvr_ctx_t *ctx, smtc_ssvr_t *ssvr, const smtc_cmd_send_req_t *args)
 {
-    int ret = 0;
-    size_t n = 0;
+    int ret, n;
     struct timeval tmout;
     time_t ctm = time(NULL);
     smtc_header_t *head = NULL;

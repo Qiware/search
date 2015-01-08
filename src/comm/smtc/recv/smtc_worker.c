@@ -18,14 +18,12 @@
 #include "smtc.h"
 #include "xml_tree.h"
 #include "smtc_cmd.h"
-#include "smtc_comm.h"
-#include "smtc_recv.h"
+#include "smtc_priv.h"
 #include "thread_pool.h"
 
 
 /* 静态函数 */
 static smtc_worker_t *smtc_worker_get_curr(smtc_cntx_t *ctx);
-static int smtc_worker_init(smtc_cntx_t *ctx, smtc_worker_t *worker, int tidx);
 static int smtc_worker_event_core_hdl(smtc_cntx_t *ctx, smtc_worker_t *worker);
 static int smtc_worker_cmd_proc_req_hdl(smtc_cntx_t *ctx, smtc_worker_t *worker, const smtc_cmd_t *cmd);
 
@@ -45,7 +43,7 @@ static int smtc_worker_cmd_proc_req_hdl(smtc_cntx_t *ctx, smtc_worker_t *worker,
  ******************************************************************************/
 void *smtc_worker_routine(void *_ctx)
 {
-    int max, ret, idx;
+    int ret, idx;
     smtc_worker_t *worker;
     smtc_cmd_proc_req_t *req;
     struct timeval timeout;
@@ -68,8 +66,8 @@ void *smtc_worker_routine(void *_ctx)
         FD_SET(worker->cmd_sck_id, &worker->rdset);
         worker->max = worker->cmd_sck_id;
 
-        timeout.tv_sec = SMTC_TMOUT_SEC;
-        timeout.tv_usec = SMTC_TMOUT_USEC;
+        timeout.tv_sec = 30;
+        timeout.tv_usec = 0;
         ret = select(worker->max+1, &worker->rdset, NULL, NULL, &timeout);
         if (ret < 0)
         {
@@ -152,7 +150,7 @@ static smtc_worker_t *smtc_worker_get_curr(smtc_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.06 #
  ******************************************************************************/
-static int smtc_worker_init(smtc_cntx_t *ctx, smtc_worker_t *worker, int tidx)
+int smtc_worker_init(smtc_cntx_t *ctx, smtc_worker_t *worker, int tidx)
 {
     char path[FILE_PATH_MAX_LEN];
     smtc_conf_t *conf = &ctx->conf; 
@@ -162,7 +160,7 @@ static int smtc_worker_init(smtc_cntx_t *ctx, smtc_worker_t *worker, int tidx)
     /* 1. 创建命令套接字 */
     smtc_worker_usck_path(conf, path, worker->tidx);
     
-    worker->cmd_sck_id = usck_udp_creat(path);
+    worker->cmd_sck_id = unix_udp_creat(path);
     if (worker->cmd_sck_id < 0)
     {
         log_error(worker->log, "Create unix-udp socket failed!");
@@ -194,7 +192,7 @@ static int smtc_worker_event_core_hdl(smtc_cntx_t *ctx, smtc_worker_t *worker)
         return SMTC_OK; /* 无数据 */
     }
 
-    if (usck_udp_recv(worker->cmd_sck_id, (void *)&cmd, sizeof(cmd)) < 0)
+    if (unix_udp_recv(worker->cmd_sck_id, (void *)&cmd, sizeof(cmd)) < 0)
     {
         log_error(worker->log, "errmsg:[%d] %s", errno, strerror(errno));
         return SMTC_ERR_RECV_CMD;
@@ -231,19 +229,20 @@ static int smtc_worker_event_core_hdl(smtc_cntx_t *ctx, smtc_worker_t *worker)
  ******************************************************************************/
 static int smtc_worker_cmd_proc_req_hdl(smtc_cntx_t *ctx, smtc_worker_t *worker, const smtc_cmd_t *cmd)
 {
+    int num = 0;
     void *addr;
     queue_t *rq;
     smtc_header_t *head;
     smtc_reg_t *reg;
-    smtc_cmd_proc_req_t *work_cmd = (smtc_cmd_proc_req_t *)&cmd->args;
+    const smtc_cmd_proc_req_t *work_cmd = (const smtc_cmd_proc_req_t *)&cmd->args;
 
     /* 1. 获取接收队列 */
     rq = ctx->recvq[work_cmd->rqidx];
    
-    while (1 || work_cmd->num-- > 0)
+    while (1 || num++ < work_cmd->num)
     {
         /* 2. 从接收队列获取数据 */
-        addr = queue_pop(rq, &addr);
+        addr = queue_pop(rq);
         if (NULL == addr)
         {   
             log_trace(worker->log, "Didn't get data from queue!");

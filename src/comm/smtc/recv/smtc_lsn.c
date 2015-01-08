@@ -16,17 +16,17 @@
 #include <netinet/in.h>
 
 #include "smtc.h"
+#include "syscall.h"
 #include "smtc_cmd.h"
-#include "smtc_comm.h"
-#include "smtc_recv.h"
+#include "smtc_priv.h"
 #include "thread_pool.h"
 
 /* 静态函数 */
-static int smtc_listen_init();
+static smtc_lsn_t *smtc_listen_init(smtc_cntx_t *ctx);
 static int smtc_lsn_accept(smtc_cntx_t *ctx, smtc_lsn_t *lsn);
 
 static int smtc_lsn_cmd_core_hdl(smtc_cntx_t *ctx, smtc_lsn_t *lsn);
-static int smtc_cmd_to_recvtp(smtc_cntx_t *ctx, int cmd_sck_id, const smtc_cmd_t *cmd);
+static int smtc_cmd_rand_to_recv(smtc_cntx_t *ctx, int cmd_sck_id, const smtc_cmd_t *cmd);
 static int smtc_lsn_cmd_query_conf_hdl(smtc_cntx_t *ctx, smtc_lsn_t *lsn, smtc_cmd_t *cmd);
 static int smtc_lsn_cmd_query_recv_stat_hdl(smtc_cntx_t *ctx, smtc_lsn_t *lsn, smtc_cmd_t *cmd);
 static int smtc_lsn_cmd_query_proc_stat_hdl(smtc_cntx_t *ctx, smtc_lsn_t *lsn, smtc_cmd_t *cmd);
@@ -51,16 +51,16 @@ static int smtc_lsn_cmd_query_proc_stat_hdl(smtc_cntx_t *ctx, smtc_lsn_t *lsn, s
  ******************************************************************************/
 void *smtc_listen_routine(void *args)
 {
+#define SMTC_LSN_TMOUT_SEC 30
+#define SMTC_LSN_TMOUT_USEC 0
     fd_set rdset;
     int ret, max;
     smtc_lsn_t *lsn;
     struct timeval timeout;
-    char path[FILE_PATH_MAX_LEN];
-    smtc_conf_t *conf = &ctx->conf;
     smtc_cntx_t *ctx = (smtc_cntx_t *)args;
 
     /* 1. 初始化侦听 */
-    lsn = smtc_listen_init(ctx)
+    lsn = smtc_listen_init(ctx);
     if (NULL == lsn)
     {
         log_error(ctx->log, "Initialize listen failed!");
@@ -115,28 +115,6 @@ void *smtc_listen_routine(void *args)
 }
 
 /******************************************************************************
- ** Name : smtc_lsn_destroy
- ** Desc : Destroy listen-thread
- ** Input: 
- **     lsn: Accept thread
- ** Output: NONE
- ** Return: 0:Succ !0:Fail
- ** Proc : 
- **     1. Close file descriptor
- **     2. Kill thread
- ** Note : 
- ** Author: # Qifeng.zou # 2014.04.15 #
- ******************************************************************************/
-int smtc_lsn_destroy(smtc_lsn_t *lsn)
-{
-    Close(lsn->lsn_sck_id);
-    Close(lsn->cmd_sck_id);
-
-    pthread_cancel(lsn->tid);
-    return SMTC_OK;
-}
-
-/******************************************************************************
  **函数名称: smtc_listen_init
  **功    能: 启动SMTC侦听线程
  **输入参数: 
@@ -151,12 +129,14 @@ int smtc_lsn_destroy(smtc_lsn_t *lsn)
  ******************************************************************************/
 static smtc_lsn_t *smtc_listen_init(smtc_cntx_t *ctx)
 {
+    char path[FILE_NAME_MAX_LEN];
     smtc_lsn_t *lsn = &ctx->listen;
+    smtc_conf_t *conf = &ctx->conf;
 
     lsn->log = ctx->log;
 
     /* 1. 侦听指定端口 */
-    lsn->lsn_sck_id = Listen(ctx->conf.port);
+    lsn->lsn_sck_id = tcp_listen(ctx->conf.port);
     if (lsn->lsn_sck_id < 0)
     {
         log_error(lsn->log, "Listen special port failed!");
@@ -166,7 +146,7 @@ static smtc_lsn_t *smtc_listen_init(smtc_cntx_t *ctx)
     /* 2. 创建CMD套接字 */
     smtc_lsn_usck_path(conf, path);
 
-    lsn->cmd_sck_id = usck_udp_creat(path);
+    lsn->cmd_sck_id = unix_udp_creat(path);
     if (lsn->cmd_sck_id < 0)
     {
         Close(lsn->lsn_sck_id);
@@ -176,6 +156,28 @@ static smtc_lsn_t *smtc_listen_init(smtc_cntx_t *ctx)
 
     return lsn;
 }
+
+/******************************************************************************
+ **函数名称: smtc_lsn_destroy
+ **功    能: 销毁侦听线程
+ **输入参数: 
+ **     lsn: 侦听对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.01.07 #
+ ******************************************************************************/
+int smtc_listen_destroy(smtc_lsn_t *lsn)
+{
+    Close(lsn->lsn_sck_id);
+    Close(lsn->cmd_sck_id);
+
+    pthread_cancel(lsn->tid);
+    return SMTC_OK;
+}
+
+
 
 /******************************************************************************
  **函数名称: smtc_listen_accept
@@ -231,7 +233,7 @@ static int smtc_lsn_accept(smtc_cntx_t *ctx, smtc_lsn_t *lsn)
     args->sckid = sckid; 
     snprintf(args->ipaddr, sizeof(args->ipaddr), "%s", inet_ntoa(cliaddr.sin_addr));
 
-    if (smtc_cmd_to_recvtp(ctx, lsn->cmd_sck_id, &cmd) < 0)
+    if (smtc_cmd_rand_to_recv(ctx, lsn->cmd_sck_id, &cmd) < 0)
     {
         Close(sckid);
         log_error(lsn->log, "Send command failed! sckid:[%d]", sckid);
@@ -262,7 +264,7 @@ static int smtc_lsn_cmd_core_hdl(smtc_cntx_t *ctx, smtc_lsn_t *lsn)
     memset(&cmd, 0, sizeof(cmd));
 
     /* 1. 接收命令 */
-    if (usck_udp_recv(lsn->cmd_sck_id, (void *)&cmd, sizeof(cmd)) < 0)
+    if (unix_udp_recv(lsn->cmd_sck_id, (void *)&cmd, sizeof(cmd)) < 0)
     {
         log_error(lsn->log, "Recv command failed! errmsg:[%d] %s", errno, strerror(errno));
         return SMTC_ERR_RECV_CMD;
@@ -294,48 +296,42 @@ static int smtc_lsn_cmd_core_hdl(smtc_cntx_t *ctx, smtc_lsn_t *lsn)
 }
 
 /******************************************************************************
- ** Name : smtc_cmd_to_recvtp
- ** Desc : Send command to one thread of recv-thread-pool
- ** Input: 
- **     ctx: Global context
- **     cmd_sck_id: Command FD 
- **     cmd: Command
- ** Output: 
- **     fail_cmdq: Fail queue - Store fail command into this queue. 
- ** Return: 0:Succ !0:Fail
- ** Proc : 
- **     1. Random select recv-thread
- **     2. Get recv-thread path
- **     3. Send command
- ** Note : 
- **     Resend command SMTC_RECV_CMD_RESND_TIMES when send failed.
- ** Author: # Qifeng.zou # 2014.05.09 #
+ **函数名称: smtc_cmd_rand_to_recv
+ **功    能: 发送命令到接收线程
+ **输入参数: 
+ **     ctx: 全局对象
+ **     cmd_sck_id: 命令套接字
+ **     cmd: 处理命令
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **     1. 随机选择接收线程
+ **     2. 发送命令至接收线程
+ **注意事项: 
+ **     如果发送失败，最多重复3次发送!
+ **作    者: # Qifeng.zou # 2015.01.09 #
  ******************************************************************************/
-static int smtc_cmd_to_recvtp(smtc_cntx_t *ctx, int cmd_sck_id, const smtc_cmd_t *cmd)
+static int smtc_cmd_rand_to_recv(smtc_cntx_t *ctx, int cmd_sck_id, const smtc_cmd_t *cmd)
 {
-    int ret = 0, tidx = 0, times = 0;
+    int tidx, times = 0;
     char path[FILE_PATH_MAX_LEN];
     smtc_conf_t *conf = &ctx->conf;
 
 AGAIN:
-    memset(path, 0, sizeof(path));
-
-    /* 1. Select recv-thread */
+    /* 1. 随机选择接收线程 */
     tidx = smtc_rand_recv(ctx);
 
-    /* 2. Get recv-thread path */
     smtc_rsvr_usck_path(conf, path, tidx);
 
-    /* 3. Send command */
-    ret = usck_udp_send(cmd_sck_id, path, cmd, sizeof(smtc_cmd_t));
-    if (ret < 0)
+    /* 2. 发送命令至接收线程 */
+    if (unix_udp_send(cmd_sck_id, path, cmd, sizeof(smtc_cmd_t)) < 0)
     {
-        if (times++ < SMTC_RECV_CMD_RESND_TIMES)
+        if (times++ < 3)
         {
             goto AGAIN;
         }
         
-        log_error(lsn->log, "Send cmd failed! path:[%d] type:[%d]", path, cmd->type);
+        log_error(ctx->log, "Send cmd failed! path:[%d] type:[%d]", path, cmd->type);
         return SMTC_ERR;
     }
 
@@ -359,7 +355,6 @@ AGAIN:
  ******************************************************************************/
 static int smtc_lsn_cmd_query_conf_hdl(smtc_cntx_t *ctx, smtc_lsn_t *lsn, smtc_cmd_t *cmd)
 {
-    int ret;
     smtc_cmd_t rep;
     smtc_conf_t *cf = &ctx->conf;
     smtc_cmd_conf_t *args = (smtc_cmd_conf_t *)&rep.args;
@@ -379,7 +374,7 @@ static int smtc_lsn_cmd_query_conf_hdl(smtc_cntx_t *ctx, smtc_lsn_t *lsn, smtc_c
     args->qsize = cf->recvq.size;
 
     /* 2. 发送应答信息 */
-    if (usck_udp_send(lsn->cmd_sck_id, cmd->src_path, &rep, sizeof(rep)) < 0)
+    if (unix_udp_send(lsn->cmd_sck_id, cmd->src_path, &rep, sizeof(rep)) < 0)
     {
         log_error(lsn->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return SMTC_ERR;
@@ -408,20 +403,20 @@ static int smtc_lsn_cmd_query_recv_stat_hdl(smtc_cntx_t *ctx, smtc_lsn_t *lsn, s
     int idx;
     smtc_cmd_t rep;
     smtc_cmd_recv_stat_t *stat = (smtc_cmd_recv_stat_t *)&rep.args;
-    const smtc_rsvr_t *recv = (const smtc_rsvr_t *)ctx->recvtp->data;
+    const smtc_rsvr_t *rsvr = (const smtc_rsvr_t *)ctx->recvtp->data;
 
-    for (idx=0; idx<ctx->conf.recv_thd_num; ++idx, ++recv)
+    for (idx=0; idx<ctx->conf.recv_thd_num; ++idx, ++rsvr)
     {
         /* 1. 设置应答信息 */
         rep.type = SMTC_CMD_QUERY_RECV_STAT_REP;
 
-        stat->connections = recv->connections;
-        stat->recv_num = recv->recv_num;
-        stat->drop_total = recv->drop_total;
-        stat->err_total = recv->err_total;
+        stat->connections = rsvr->connections;
+        stat->recv_total = rsvr->recv_total;
+        stat->drop_total = rsvr->drop_total;
+        stat->err_total = rsvr->err_total;
 
         /* 2. 发送命令信息 */
-        if (usck_udp_send(rsvr->cmd_sck_id, cmd->src_path, &rep, sizeof(rep)) < 0)
+        if (unix_udp_send(rsvr->cmd_sck_id, cmd->src_path, &rep, sizeof(rep)) < 0)
         {
             log_error(lsn->log, "errmsg:[%d] %s!", errno, strerror(errno));
             return SMTC_ERR;
@@ -457,12 +452,12 @@ static int smtc_lsn_cmd_query_proc_stat_hdl(smtc_cntx_t *ctx, smtc_lsn_t *lsn, s
         /* 1. 设置应答信息 */
         rep.type = SMTC_CMD_QUERY_PROC_STAT_REP;
 
-        stat->work_total = worker->work_total;
+        stat->proc_total = worker->proc_total;
         stat->drop_total = worker->drop_total;
         stat->err_total = worker->err_total;
 
         /* 2. 发送应答信息 */
-        if (usck_udp_send(worker->cmd_sck_id, cmd->src_path, &rep, sizeof(rep)) < 0)
+        if (unix_udp_send(worker->cmd_sck_id, cmd->src_path, &rep, sizeof(rep)) < 0)
         {
             log_error(lsn->log, "errmsg:[%d] %s!", errno, strerror(errno));
             return SMTC_ERR;

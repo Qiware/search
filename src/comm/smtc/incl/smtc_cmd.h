@@ -1,6 +1,8 @@
 #if !defined(__SMTC_CMD_H__)
 #define __SMTC_CMD_H__
 
+#include "common.h"
+
 /* 命令类型 */
 typedef enum
 {
@@ -40,7 +42,7 @@ typedef struct
 typedef struct
 {
     /* No member */
-} smtc_cmd_send_t;
+} smtc_cmd_send_req_t;
 
 /* 配置信息 */
 typedef struct
@@ -67,7 +69,7 @@ typedef struct
 /* Work状态信息 */
 typedef struct
 {
-    uint64_t work_total;
+    uint64_t proc_total;
     uint64_t drop_total;
     uint64_t err_total;
 } smtc_cmd_proc_stat_t;
@@ -77,7 +79,7 @@ typedef union
 {
     smtc_cmd_add_sck_t recv_req;
     smtc_cmd_proc_req_t proc_req;
-    smtc_cmd_send_t send_req;
+    smtc_cmd_send_req_t send_req;
     smtc_cmd_proc_stat_t proc_stat;
     smtc_cmd_recv_stat_t recv_stat;
     smtc_cmd_conf_t conf;

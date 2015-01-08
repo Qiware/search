@@ -175,7 +175,7 @@ void _queue_destroy(_queue_t *q)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.12 #
  ******************************************************************************/
-queue_t *queue_creat(int max, size_t size)
+queue_t *queue_creat(int max, int size)
 {
     queue_t *q;
     memblk_t *chunk;
@@ -204,6 +204,8 @@ queue_t *queue_creat(int max, size_t size)
         memblk_destroy(chunk);
         return NULL;
     }
+
+    q->queue.size = size;
 
     return q;
 }
