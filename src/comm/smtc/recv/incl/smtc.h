@@ -6,6 +6,7 @@
 #include "log.h"
 #include "slab.h"
 #include "list.h"
+#include "list2.h"
 #include "queue.h"
 #include "smtc_priv.h"
 #include "xds_socket.h"
@@ -83,15 +84,13 @@ typedef struct _smtc_sck_t
     char ipaddr[IP_ADDR_MAX_LEN];       /* IP地址 */
 
     int rqidx;                          /* 当前接收队列ID */
-    socket_snap_t read;                 /* 读取操作的快照 */
+    socket_snap_t recv;                 /* 读取操作的快照 */
     socket_snap_t send;                 /* 发送操作的快照 */
 
     list_t *mesg_list;                  /* 发送消息链表 */
     char *null;                         /* NULL */
 
     uint64_t recv_total;                /* 接收的数据条数 */
-
-    struct _smtc_sck_t *next;           /* 下一结点 */
 } smtc_sck_t;
 
 /* 接收对象 */
@@ -104,17 +103,16 @@ typedef struct
     int cmd_sck_id;                     /* 命令套接字 */
 
     int max;                            /* 最大套接字 */
+    time_t ctm;                         /* 当前时间 */
     fd_set rdset;                       /* 可读集合 */
     fd_set wrset;                       /* 可写集合 */
-    time_t ctm;                         /* 当前时间 */
+    list2_t conn_list;                  /* 套接字链表 */
 
     uint32_t connections;               /* TCP连接数 */
     uint64_t recv_total;                /* 获取的数据总条数 */
     uint64_t err_total;                 /* 错误的数据条数 */
     uint64_t drop_total;                /* 丢弃的数据条数 */
     uint64_t *delay_total;              /* 滞留处理的数据条数 */
-
-    smtc_sck_t *sck;                    /* 套接字链表 */
 } smtc_rsvr_t;
 
 /* 工作对象 */

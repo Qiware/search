@@ -56,18 +56,17 @@ static inline int list2_insert(list2_t *list, list2_node_t *node)
 }
 
 /******************************************************************************
- **函数名称: list2_delete
+ **函数名称: list2_remove_head
  **功    能: 删除链表头
  **输入参数: 
  **     list: 双向链表
- **     node: 新结点
  **输出参数: 
- **返    回: 0:成功 !0:失败
+ **返    回: 头结点地址
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.08.24 #
  ******************************************************************************/
-static inline list2_node_t *list2_delete(list2_t *list)
+static inline list2_node_t *list2_remove_head(list2_t *list)
 {
     list2_node_t *tail, *curr;
 
@@ -96,6 +95,40 @@ static inline list2_node_t *list2_delete(list2_t *list)
 
     --list->num;
     return curr;
+}
+/******************************************************************************
+ **函数名称: list2_delete
+ **功    能: 删除链表头
+ **输入参数: 
+ **     list: 双向链表
+ **     node: 被删结点
+ **输出参数: 
+ **返    回: 结点地址
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.01.10 #
+ ******************************************************************************/
+static inline list2_node_t *list2_delete(list2_t *list, list2_node_t *node)
+{
+    /* 1. 只有一个结点时 */
+    if (node == node->prev)
+    {
+        list->num = 0;
+        list->head = NULL;
+        return node;
+    }
+
+    /* 2. 含有多个结点时 */
+    if (node == list->head)
+    {
+        list->head = node->next;
+    }
+
+    node->prev->next = node->next;
+    node->next->prev = node->prev;
+
+    --list->num;
+    return node;
 }
 
 /******************************************************************************

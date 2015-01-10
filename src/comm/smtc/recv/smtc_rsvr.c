@@ -31,13 +31,13 @@ static int smtc_rsvr_trav_recv(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr);
 static int smtc_rsvr_trav_send(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr);
 
 static int smtc_rsvr_recv_proc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck);
-static int smtc_rsvr_read_init(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck);
+static int smtc_rsvr_recv_init(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck);
 static int smtc_rsvr_recv_header(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck);
 static int smtc_rsvr_recv_body(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck);
-static int smtc_rsvr_read_post(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck);
+static int smtc_rsvr_recv_post(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck);
 
 static int smtc_rsvr_check_header(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck);
-static void smtc_rsvr_read_release(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck);
+static void smtc_rsvr_recv_dealloc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck);
 
 static int smtc_rsvr_proc_sys_mesg(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck);
 static int smtc_rsvr_proc_exp_mesg(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck);
@@ -48,7 +48,7 @@ static void smtc_rsvr_cmd_send_proc_all_req(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr)
 static int smtc_rsvr_cmd_resend_proc_req(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr);
 
 static int smtc_rsvr_add_conn_hdl(smtc_rsvr_t *rsvr, smtc_cmd_add_sck_t *req);
-static int smtc_rsvr_del_conn_hdl(smtc_rsvr_t *rsvr, smtc_sck_t *sck);
+static int smtc_rsvr_del_conn_hdl(smtc_rsvr_t *rsvr, list2_node_t *node);
 
 static int smtc_rsvr_add_mesg(smtc_rsvr_t *rsvr, smtc_sck_t *sck, void *addr);
 static void *smtc_rsvr_fetch_mesg(smtc_rsvr_t *rsvr, smtc_sck_t *sck);
@@ -74,33 +74,47 @@ static int smtc_rsvr_clear_mesg(smtc_rsvr_t *rsvr, smtc_sck_t *sck);
  ******************************************************************************/
 #define smtc_rsvr_set_rdset(rsvr) \
 { \
-    smtc_sck_t *curr, *next; \
+    smtc_sck_t *curr; \
+    list2_node_t *node, *next, *tail; \
     \
     FD_ZERO(&rsvr->rdset); \
     \
     FD_SET(rsvr->cmd_sck_id, &rsvr->rdset); \
     rsvr->max = rsvr->cmd_sck_id; \
     \
-    curr = rsvr->sck; \
-    while (NULL != curr) \
+    node = rsvr->conn_list.head; \
+    if (NULL != node) \
     { \
+        tail = node->prev; \
+    } \
+    while (NULL != node) \
+    { \
+        curr = (smtc_sck_t *)node->data; \
         if ((rsvr->ctm - curr->rtm > 30) \
             && (rsvr->ctm - curr->wtm > 30)) \
         { \
             log_trace(rsvr->log, "Didn't active for along time! fd:%d ip:%s", \
                     curr->fd, curr->ipaddr); \
             \
-            next = curr->next; \
-            smtc_rsvr_del_conn_hdl(rsvr, curr); \
-            \
-            curr = next; \
+            if (node == tail) \
+            { \
+                smtc_rsvr_del_conn_hdl(rsvr, node); \
+                break; \
+            } \
+            next = node->next; \
+            smtc_rsvr_del_conn_hdl(rsvr, node); \
+            node = next; \
             continue; \
         } \
         \
         FD_SET(curr->fd, &rsvr->rdset); \
         rsvr->max = (rsvr->max > curr->fd)? rsvr->max : curr->fd; \
         \
-        curr = curr->next; \
+        if (node == tail) \
+        { \
+            break; \
+        } \
+        node = node->next; \
     } \
 }
 
@@ -119,22 +133,37 @@ static int smtc_rsvr_clear_mesg(smtc_rsvr_t *rsvr, smtc_sck_t *sck);
 #define smtc_rsvr_set_wrset(rsvr) \
 { \
     smtc_sck_t *curr; \
+    list2_node_t *node, *tail; \
     \
     FD_ZERO(&rsvr->wrset); \
     \
-    curr = rsvr->sck; \
-    while (NULL != curr) \
+    node = rsvr->conn_list.head; \
+    if (NULL != node) \
     { \
+        tail = node->prev; \
+    } \
+    while (NULL != node) \
+    { \
+        curr = (smtc_sck_t *)node->data; \
+        \
         if (NULL == curr->mesg_list \
             && NULL == curr->send.addr) \
         { \
-            curr = curr->next; \
+            if (node == tail) \
+            { \
+                break; \
+            } \
+            node = node->next; \
             continue; \
         } \
         \
         FD_SET(curr->fd, &rsvr->wrset); \
         \
-        curr = curr->next; \
+        if (node == tail) \
+        { \
+            break; \
+        } \
+        node = node->next; \
     } \
 }
 
@@ -290,7 +319,6 @@ int smtc_rsvr_init(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, int tidx)
         return SMTC_ERR;
     }
 
-    rsvr->sck = NULL;
     return SMTC_OK;
 }
 
@@ -353,13 +381,21 @@ static int smtc_rsvr_recv_cmd(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr)
  ******************************************************************************/
 static int smtc_rsvr_trav_recv(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr)
 {
-    smtc_sck_t *curr, *next;
+    smtc_sck_t *curr;
+    list2_node_t *node, *next, *tail;
 
     rsvr->ctm = time(NULL);
 
-    curr = rsvr->sck;
-    while (NULL != curr)
+    node = rsvr->conn_list.head;
+    if (NULL != node)
     {
+        tail = node->prev;
+    }
+
+    while (NULL != node)
+    {
+        curr = (smtc_sck_t *)node->data;
+
         if (FD_ISSET(curr->fd, &rsvr->rdset))
         {
             curr->rtm = rsvr->ctm;
@@ -367,15 +403,25 @@ static int smtc_rsvr_trav_recv(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr)
             /* 进行接收处理 */
             if (smtc_rsvr_recv_proc(ctx, rsvr, curr))
             {
-                log_error(rsvr->log, "Read proc failed! fd:%d ip:%s", curr->fd, curr->ipaddr);
-                next = curr->next;
-                smtc_rsvr_del_conn_hdl(rsvr, curr);
-                curr = next;
+                log_error(rsvr->log, "Recv proc failed! fd:%d ip:%s", curr->fd, curr->ipaddr);
+                if (node == tail)
+                {
+                    smtc_rsvr_del_conn_hdl(rsvr, node);
+                    break;
+                }
+                next = node->next;
+                smtc_rsvr_del_conn_hdl(rsvr, node);
+                node = next;
                 continue;
             }
         }
 
-        curr = curr->next;
+        if (node == tail)
+        {
+            break;
+        }
+
+        node = node->next;
     }
 
     return SMTC_OK;
@@ -399,13 +445,21 @@ static int smtc_rsvr_trav_send(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr)
     int n, left;
     smtc_header_t *head;
     smtc_sck_t *curr;
+    list2_node_t *node, *tail;
     socket_snap_t *send;
 
     rsvr->ctm = time(NULL);
-    curr = rsvr->sck;
 
-    while (NULL != curr)
+    node = rsvr->conn_list.head;
+    if (NULL != node)
     {
+        tail = node->prev;
+    }
+
+    while (NULL != node)
+    {
+        curr = (smtc_sck_t *)node->data;
+
         if (FD_ISSET(curr->fd, &rsvr->wrset))
         {
             curr->wtm = rsvr->ctm;
@@ -432,7 +486,7 @@ static int smtc_rsvr_trav_send(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr)
                 left = send->total - send->off;
 
                 n = Writen(curr->fd, send->addr+send->off, left);
-                if (n != (int) left)
+                if (n != left)
                 {
                     if (n > 0)
                     {
@@ -447,7 +501,7 @@ static int smtc_rsvr_trav_send(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr)
                     smtc_reset_send_snap(send);
 
                     /* 关闭套接字　并清空发送队列 */
-                    smtc_rsvr_del_conn_hdl(rsvr, curr);
+                    smtc_rsvr_del_conn_hdl(rsvr, node);
                     return SMTC_ERR;
                 }
 
@@ -458,7 +512,12 @@ static int smtc_rsvr_trav_send(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr)
             }
         }
 
-        curr = curr->next;
+        if (node == tail)
+        {
+            break;
+        }
+
+        node = node->next;
     }
 
     return SMTC_OK;
@@ -485,23 +544,23 @@ static int smtc_rsvr_recv_proc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *
 {
     int ret;
     smtc_header_t *head;
-    socket_snap_t *recv = &sck->read;
+    socket_snap_t *recv = &sck->recv;
 
     switch (recv->phase)
     {
         /* 1. 初始化接收 */
-        case SMTC_PHASE_READ_INIT:
+        case SOCK_PHASE_RECV_INIT:
         {
-            if (smtc_rsvr_read_init(ctx, rsvr, sck))
+            if (smtc_rsvr_recv_init(ctx, rsvr, sck))
             {
-                log_error(rsvr->log, "Init read failed!");
+                log_error(rsvr->log, "Initialize recv failed!");
                 return SMTC_ERR;
             }
 
             /* 注意: 继续后续处理, 不执行break语句... */
         }
         /* 2. 接收数据头 */
-        case SMTC_PHASE_READ_HEAD:
+        case SOCK_PHASE_RECV_HEAD:
         {
             ret = smtc_rsvr_recv_header(ctx, rsvr, sck);
             if (SMTC_DONE == ret)
@@ -509,12 +568,12 @@ static int smtc_rsvr_recv_proc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *
                 head = (smtc_header_t *)recv->addr;
                 if (head->length > 0)
                 {
-                    smtc_set_read_phase(recv, SMTC_PHASE_READ_BODY);
+                    smtc_set_recv_phase(recv, SOCK_PHASE_RECV_BODY);
                     return SMTC_OK;
                 }
 
-                smtc_set_read_phase(recv, SMTC_PHASE_READ_POST);
-                goto PHASE_READ_POST;
+                smtc_set_recv_phase(recv, SOCK_PHASE_RECV_POST);
+                goto PHASE_RECV_POST;
             }
             else if (SMTC_AGAIN == ret)  /* incomplete */
             {
@@ -534,7 +593,7 @@ static int smtc_rsvr_recv_proc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *
             /* 注意: 继续后续处理, 不执行break语句... */
         }
         /* 3. 接收数据体 */
-        case SMTC_PHASE_READ_BODY:
+        case SOCK_PHASE_RECV_BODY:
         {
             ret = smtc_rsvr_recv_body(ctx, rsvr, sck);
             if (SMTC_DONE == ret)
@@ -548,7 +607,7 @@ static int smtc_rsvr_recv_proc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *
             }
             else if (SMTC_HDL_DISCARD == ret)
             {
-                smtc_rsvr_read_release(ctx, rsvr, sck);
+                smtc_rsvr_recv_dealloc(ctx, rsvr, sck);
                 return SMTC_OK;
             }
             else if (SMTC_SCK_CLOSED == ret)
@@ -564,19 +623,19 @@ static int smtc_rsvr_recv_proc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *
             /* 注意: 继续后续处理, 不执行break语句... */
         }
         /* 4. 进行数据处理 */
-        case SMTC_PHASE_READ_POST:
+        case SOCK_PHASE_RECV_POST:
         {
-        PHASE_READ_POST:
-            ret = smtc_rsvr_read_post(ctx, rsvr, sck);
+        PHASE_RECV_POST:
+            ret = smtc_rsvr_recv_post(ctx, rsvr, sck);
             if (SMTC_OK == ret)
             {
-                smtc_reset_read_snap(recv);
+                smtc_reset_recv_snap(recv);
                 return SMTC_OK;
             }
             else if ((SMTC_HDL_DONE == ret)
                 || (SMTC_HDL_DISCARD == ret))
             {
-                smtc_rsvr_read_release(ctx, rsvr, sck);
+                smtc_rsvr_recv_dealloc(ctx, rsvr, sck);
                 return SMTC_OK;
             }
 
@@ -584,18 +643,18 @@ static int smtc_rsvr_recv_proc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *
         }
         default:
         {
-            log_error(rsvr->log, "Unknown phase!");
+            log_fatal(rsvr->log, "Unknown phase!");
             break;
         }
     }
 
-    smtc_rsvr_read_release(ctx, rsvr, sck);
+    smtc_rsvr_recv_dealloc(ctx, rsvr, sck);
 
     return SMTC_ERR;
 }
 
 /******************************************************************************
- **函数名称: smtc_rsvr_read_init
+ **函数名称: smtc_rsvr_recv_init
  **功    能: 初始化数据接收
  **输入参数: 
  **     ctx: 全局对象
@@ -609,10 +668,10 @@ static int smtc_rsvr_recv_proc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int smtc_rsvr_read_init(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck)
+static int smtc_rsvr_recv_init(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck)
 {
     int times = 0;
-    socket_snap_t *recv = &sck->read;
+    socket_snap_t *recv = &sck->recv;
 
 AGAIN:
     /* 1. 随机选择Recv队列 */
@@ -652,13 +711,13 @@ AGAIN:
 
     /* 3. 设置标识量 */
     recv->off = 0;
-    smtc_set_read_phase(recv, SMTC_PHASE_READ_HEAD);
+    smtc_set_recv_phase(recv, SOCK_PHASE_RECV_HEAD);
     
     return SMTC_OK;
 }
 
 /******************************************************************************
- **函数名称: smtc_rsvr_read_release
+ **函数名称: smtc_rsvr_recv_dealloc
  **功    能: 释放数据接收
  **输入参数: 
  **     ctx: 全局对象
@@ -670,9 +729,9 @@ AGAIN:
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static void smtc_rsvr_read_release(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck)
+static void smtc_rsvr_recv_dealloc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck)
 {
-    socket_snap_t *recv = &sck->read;
+    socket_snap_t *recv = &sck->recv;
 
     /* 1. 释放内存 */
     if (recv->addr != sck->null)
@@ -681,7 +740,7 @@ static void smtc_rsvr_read_release(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck
     }
 
     /* 2. 重置标识量 */
-    smtc_reset_read_snap(recv);
+    smtc_reset_recv_snap(recv);
 }
 
 /******************************************************************************
@@ -700,7 +759,7 @@ static void smtc_rsvr_read_release(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck
 static int smtc_rsvr_recv_header(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck)
 {
     int n, left;
-    socket_snap_t *r = &sck->read;
+    socket_snap_t *r = &sck->recv;
     smtc_header_t *head = (smtc_header_t *)r->addr;
 
 
@@ -777,7 +836,7 @@ static int smtc_rsvr_recv_header(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t
  ******************************************************************************/
 static int smtc_rsvr_check_header(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck)
 {
-    socket_snap_t *recv = &sck->read;
+    socket_snap_t *recv = &sck->recv;
     smtc_header_t *head = (smtc_header_t *)recv->addr;
 
 
@@ -822,7 +881,7 @@ static int smtc_rsvr_check_header(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_
 static int smtc_rsvr_recv_body(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck)
 {
     int n, left;
-    socket_snap_t *recv = &sck->read;
+    socket_snap_t *recv = &sck->recv;
     smtc_header_t *head = (smtc_header_t *)recv->addr;
 
 
@@ -870,7 +929,7 @@ static int smtc_rsvr_recv_body(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *
     }
 
     /* 2. 设置标志变量 */
-    smtc_set_read_phase(recv, SMTC_PHASE_READ_POST);
+    smtc_set_recv_phase(recv, SOCK_PHASE_RECV_POST);
 
     log_trace(rsvr->log, "Recv success! type:%d len:%d", head->type, head->length);
     
@@ -878,7 +937,7 @@ static int smtc_rsvr_recv_body(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *
 }
 
 /******************************************************************************
- **函数名称: smtc_rsvr_read_post
+ **函数名称: smtc_rsvr_recv_post
  **功    能: 数据接收完成后的处理
  **输入参数: 
  **     ctx: 全局对象
@@ -892,9 +951,9 @@ static int smtc_rsvr_recv_body(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int smtc_rsvr_read_post(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck)
+static int smtc_rsvr_recv_post(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck)
 {
-    socket_snap_t *recv = &sck->read;
+    socket_snap_t *recv = &sck->recv;
     smtc_header_t *head = (smtc_header_t *)recv->addr;
 
     /* 1. 系统数据处理 */
@@ -922,7 +981,7 @@ static int smtc_rsvr_read_post(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *
  ******************************************************************************/
 static int smtc_rsvr_proc_sys_mesg(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck)
 {
-    socket_snap_t *recv = &sck->read;
+    socket_snap_t *recv = &sck->recv;
     smtc_header_t *head = (smtc_header_t *)recv->addr;
 
     switch (head->type)
@@ -959,7 +1018,7 @@ static int smtc_rsvr_proc_sys_mesg(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck
  ******************************************************************************/
 static int smtc_rsvr_proc_exp_mesg(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck)
 {
-    socket_snap_t *recv = &sck->read;
+    socket_snap_t *recv = &sck->recv;
 
     ++rsvr->recv_total; /* 总数 */
 
@@ -1044,30 +1103,43 @@ static int smtc_rsvr_event_core_hdl(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr)
  ******************************************************************************/
 static int smtc_rsvr_event_timeout_hdl(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr)
 {
-    smtc_sck_t *curr, *next;
+    smtc_sck_t *curr;
+    list2_node_t *node, *next, *tail;
 
     /* 1. 检测超时连接 */
-    curr = rsvr->sck;
+    node = rsvr->conn_list.head;
+    if (NULL != node)
+    {
+        tail = node->prev;
+    }
+
     rsvr->ctm = time(NULL);
     while (NULL != curr)
     {
+        curr = (smtc_sck_t *)node->data;
+
         if (rsvr->ctm - curr->rtm >= 2*SMTC_SCK_KPALIVE_SEC)
         {
             log_trace(rsvr->log, "Didn't active for along time! fd:%d ip:%s",
-                curr->fd, curr->ipaddr);
+                    curr->fd, curr->ipaddr);
 
             /* 释放数据 */
-            smtc_rsvr_read_release(ctx, rsvr, curr);
+            smtc_rsvr_recv_dealloc(ctx, rsvr, curr);
 
             /* 删除连接 */
-            next = curr->next;
-            smtc_rsvr_del_conn_hdl(rsvr, curr);
+            if (node == tail)
+            {
+                smtc_rsvr_del_conn_hdl(rsvr, node);
+                break;
+            }
 
-            curr = next;
+            next = node->next;
+            smtc_rsvr_del_conn_hdl(rsvr, node);
+            node = next;
             continue;
         }
 
-        curr = curr->next;
+        node = node->next;
     }
 
     /* 2. 重复发送处理命令 */
@@ -1130,6 +1202,7 @@ static int smtc_rsvr_keepalive_req_hdl(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc
 static int smtc_rsvr_add_conn_hdl(smtc_rsvr_t *rsvr, smtc_cmd_add_sck_t *req)
 {
     smtc_sck_t *add;
+    list2_node_t *node;
 
     /* 1. 分配连接空间 */
     add = slab_alloc(rsvr->pool, sizeof(smtc_sck_t));
@@ -1145,19 +1218,20 @@ static int smtc_rsvr_add_conn_hdl(smtc_rsvr_t *rsvr, smtc_cmd_add_sck_t *req)
     add->wtm = add->ctm;
     snprintf(add->ipaddr, sizeof(add->ipaddr), "%s", req->ipaddr);
 
-    add->read.addr = NULL;
+    add->recv.addr = NULL;
 
     /* 2. 将结点加入到套接字链表 */
-    if (NULL == rsvr->sck)
+    node = slab_alloc(rsvr->pool, sizeof(list2_node_t));
+    if (NULL == node)
     {
-        rsvr->sck = add;
-        add->next = NULL;
+        log_error(rsvr->log, "Alloc memory failed!");
+        slab_dealloc(rsvr->pool, add);
+        return SMTC_ERR;
     }
-    else
-    {
-        add->next = rsvr->sck;
-        rsvr->sck = add;
-    }
+
+    node->data = (void *)add;
+
+    list2_insert_tail(&rsvr->conn_list, node);
 
     ++rsvr->connections; /* 统计TCP连接数 */
 
@@ -1172,52 +1246,36 @@ static int smtc_rsvr_add_conn_hdl(smtc_rsvr_t *rsvr, smtc_cmd_add_sck_t *req)
  **功    能: 删除网络连接
  **输入参数: 
  **     rsvr: 接收服务
- **     sck: 套接字对象
+ **     node: 套接字对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int smtc_rsvr_del_conn_hdl(smtc_rsvr_t *rsvr, smtc_sck_t *sck)
+static int smtc_rsvr_del_conn_hdl(smtc_rsvr_t *rsvr, list2_node_t *node)
 {
-    smtc_sck_t *curr, *prev;
+    smtc_sck_t *curr = (smtc_sck_t *)node->data;
 
-    curr = rsvr->sck;
-    prev = curr;
-    while (NULL != curr)
+    /* 1. 从链表剔除结点 */
+    list2_delete(&rsvr->conn_list, node);
+
+    slab_dealloc(rsvr->pool, node);
+
+    /* 2. 释放数据空间 */
+    Close(curr->fd);
+    smtc_rsvr_clear_mesg(rsvr, curr);
+    curr->recv_total = 0;
+
+    if (NULL != curr->null)
     {
-        if (sck == curr)
-        {
-            if (prev == curr)
-            {
-                rsvr->sck = curr->next;
-            }
-            else
-            {
-                prev->next = curr->next;
-            }
-
-            Close(curr->fd);
-            smtc_rsvr_clear_mesg(rsvr, curr);
-            curr->recv_total = 0;
-
-            if (NULL != curr->null)
-            {
-                slab_dealloc(rsvr->pool, curr->null);
-            }
-            slab_dealloc(rsvr->pool, curr);
-
-            --rsvr->connections; /* 统计TCP连接数 */
-
-            return SMTC_OK;
-        }
-
-        prev = curr;
-        curr= curr->next;
+        slab_dealloc(rsvr->pool, curr->null);
     }
+    slab_dealloc(rsvr->pool, curr);
 
-    return SMTC_OK; /* Didn't found */
+    --rsvr->connections; /* 统计TCP连接数 */
+
+    return SMTC_OK;
 }
 
 /******************************************************************************
@@ -1233,27 +1291,28 @@ static int smtc_rsvr_del_conn_hdl(smtc_rsvr_t *rsvr, smtc_sck_t *sck)
  ******************************************************************************/
 void smtc_rsvr_del_all_conn_hdl(smtc_rsvr_t *rsvr)
 {
-    smtc_sck_t *curr, *next;
+    list2_node_t *node, *next, *tail;
 
-    curr = rsvr->sck; 
-    while (NULL != curr)
+    node = rsvr->conn_list.head; 
+    if (NULL != node)
     {
-        next = curr->next;
+        tail = node->prev;
+    }
 
-        Close(curr->fd);
-        smtc_rsvr_clear_mesg(rsvr, curr);
-
-        if (NULL != curr->null)
+    while (NULL != node)
+    {
+        if (node == tail)
         {
-            slab_dealloc(rsvr->pool, curr->null);
+            smtc_rsvr_del_conn_hdl(rsvr, node);
+            break;
         }
-        slab_dealloc(rsvr->pool, curr);
 
-        curr = next;
+        next = node->next;
+        smtc_rsvr_del_conn_hdl(rsvr, node);
+        node = next;
     }
 
     rsvr->connections = 0; /* 统计TCP连接数 */
-    rsvr->sck = NULL;
     return;
 }
 
