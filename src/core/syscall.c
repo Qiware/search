@@ -1,4 +1,3 @@
-#define _GNU_SOURCE
 #include <sys/shm.h>
 #include <sys/ipc.h>
 #include <pthread.h>

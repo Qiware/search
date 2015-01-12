@@ -20,7 +20,7 @@
 #define SMTC_BODY_MAX_LEN        (10*1024)   /* 发送端接收的报文体最大长度 */
 
 /* 静态函数声明 */
-static int smtc_snd_init(smtc_ssvr_ctx_t *ctx);
+static int smtc_snd_init(smtc_ssvr_cntx_t *ctx);
 
 /******************************************************************************
  **函数名称: smtc_snd_startup
@@ -36,13 +36,13 @@ static int smtc_snd_init(smtc_ssvr_ctx_t *ctx);
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.03.21 #
  ******************************************************************************/
-smtc_ssvr_ctx_t *smtc_snd_startup(const smtc_ssvr_conf_t *conf)
+smtc_ssvr_cntx_t *smtc_snd_startup(const smtc_ssvr_conf_t *conf)
 {
     int ret;
-    smtc_ssvr_ctx_t *ctx;
+    smtc_ssvr_cntx_t *ctx;
 
     /* 1. 创建上下文对象 */
-    ctx = (smtc_ssvr_ctx_t *)calloc(1, sizeof(smtc_ssvr_ctx_t));
+    ctx = (smtc_ssvr_cntx_t *)calloc(1, sizeof(smtc_ssvr_cntx_t));
     if (NULL == ctx)
     {
         printf("errmsg:[%d] %s!", errno, strerror(errno));
@@ -75,7 +75,7 @@ smtc_ssvr_ctx_t *smtc_snd_startup(const smtc_ssvr_conf_t *conf)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.03.25 #
  ******************************************************************************/
-static int smtc_snd_init(smtc_ssvr_ctx_t *ctx)
+static int smtc_snd_init(smtc_ssvr_cntx_t *ctx)
 {
     /* 1. 创建Send线程池 */
     if (smtc_ssvr_creat_sendtp(ctx))

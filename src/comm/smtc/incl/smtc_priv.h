@@ -25,8 +25,8 @@
 #define SMTC_SND_TMOUT_SEC   (1)    /* SND超时: 秒 */
 #define SMTC_SND_TMOUT_USEC  (0)    /* SND超时: 微妙 */
 
-#define SMTC_SYS_DATA        (0)    /* 系统数据类型 */
-#define SMTC_EXP_DATA        (1)    /* 自定义数据类型 */
+#define SMTC_SYS_MESG        (0)    /* 系统数据类型 */
+#define SMTC_EXP_MESG        (1)    /* 自定义数据类型 */
 #define SMTC_MSG_MARK_KEY    (987654321) /* 校验值 */
 #define SMTC_TYPE_MAX        (0xFF) /* 自定义数据类型的最大值 */
 
@@ -48,7 +48,7 @@ typedef enum
 
     /*******************在此线以上添加系统数据类型****************************/
     , SMTC_DATA_TYPE_TOTAL
-} smtc_data_type_e;
+} smtc_sys_mesg_e;
 
 /* 套接字状态 */
 typedef enum
@@ -64,8 +64,8 @@ typedef enum
 typedef enum
 {
     SMTC_KPALIVE_STAT_UNKNOWN       /* 未知状态 */
-    , SMTC_KPALIVE_SENT             /* 已发送保活 */
-    , SMTC_KPALIVE_SUCC             /* 保活成功 */
+    , SMTC_KPALIVE_STAT_SENT        /* 已发送保活 */
+    , SMTC_KPALIVE_STAT_SUCC        /* 保活成功 */
 
     , SMTC_KPALIVE_STAT_TOTAL       /* 保活状态总数 */
 } smtc_kpalive_stat_e;
@@ -110,22 +110,9 @@ typedef enum
     , SMTC_DATA_LOC_TOTAL           /* 存储位置总数 */
 } smtc_data_loc_e;
 
-/* 接收快照 */
-typedef struct
-{
-    int phase;                      /* Range: SOCK_PHASE_READ_INIT ~ SOCK_PHASE_READ_POST */
-    uint32_t rqidx;                 /* Recv队列索引 */
-
-    void *addr;                     /* Data address */
-    int total;                      /* Total characters need to be recv */
-    int off;                     /* Have received 'off' characters */
-} smtc_recv_snap_t;
-
-/* State of read operation */
+/* 重置接收状态 */
 #define smtc_reset_recv_snap(recv) \
 { \
-    memset(recv, 0, sizeof(smtc_recv_snap_t));\
-    \
     recv->addr = NULL; \
     recv->phase = SOCK_PHASE_RECV_INIT; \
 } 
@@ -160,14 +147,16 @@ typedef struct
 /* 发送数据头部信息 */
 typedef struct
 {
-    uint32_t type;                  /* 数据类型 Range:0~65536 */
+    uint32_t type;                  /* 数据类型 */
     int length;                     /* 消息体的长度 */
-    int flag;                       /* 消息标志: Range: SMTC_DATA_FLAG */
+    int flag;                       /* 消息标志
+                                        - SMTC_SYS_MESG: 系统消息(smtc_sys_mesg_e)
+                                        - SMTC_EXP_MESG: 自定义消息(0x00~0xFF) */
     int mark;                       /* 校验值 */
 } __attribute__((packed)) smtc_header_t;
 
-#define smtc_is_sys_data(head) (SMTC_SYS_DATA == (head)->flag)
-#define smtc_is_exp_data(head) (SMTC_EXP_DATA == (head)->flag)
+#define smtc_is_sys_data(head) (SMTC_SYS_MESG == (head)->flag)
+#define smtc_is_exp_data(head) (SMTC_EXP_MESG == (head)->flag)
 
 #define smtc_is_type_valid(type) (type < SMTC_TYPE_MAX)
 #define smtc_is_len_valid(q, len) (q->queue.size >= (sizeof(smtc_header_t)+ (len)))
@@ -187,6 +176,5 @@ typedef struct
     short ison;                     /* 是否开启绑定CPU功能 */
     short start;                    /* 绑定CPU的起始CPU编号 */
 } smtc_cpu_conf_t;
-
 
 #endif /*__SMTC_PRIV_H__*/

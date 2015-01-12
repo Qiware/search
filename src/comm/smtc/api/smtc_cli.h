@@ -1,8 +1,8 @@
 #if !defined(__SMTC_CLI_H__)
 #define __SMTC_CLI_H__
 
-#include "smtc_comm.h"
-#include "orm_queue.h"
+#include "shm_queue.h"
+#include "smtc_priv.h"
 #include "smtc_ssvr.h"
 
 #define SMTC_SND_REQ_INTV_NUM  (100) /* 每发送N个通知1次发送服务 */
@@ -15,10 +15,10 @@
 /* 发送对象信息 */
 typedef struct
 {
-    smtc_ssvr_conf_t conf;           /* 客户端配置信息 */
+    smtc_ssvr_conf_t conf;          /* 客户端配置信息 */
     
     int cmdfd;                      /* 命令套接字 */
-    ORMQUEUE **sq;                  /* 发送缓冲队列 */
+    shm_queue_t **sq;               /* 发送缓冲队列 */
     unsigned int *snd_num;          /* 各队列放入计数 */
 } smtc_cli_t;
 

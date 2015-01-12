@@ -13,13 +13,13 @@
 #include "thread_pool.h"
 
 /* 宏定义 */
-#define SMTC_THD_DEF_NUM    (01)       /* 默认线程数 */
-#define SMTC_THD_MIN_NUM    (01)       /* 最小线程数 */
-#define SMTC_THD_MAX_NUM    (64)       /* 最大线程数 */
-#define SMTC_CONN_MAX_NUM   (512)      /* 最大链接数 */
-#define SMTC_SCK_DEF_NUM    (32)       /* Default SCK number */
-#define SMTC_MSG_DEF_LEN    (512)      /* Read length at one time */
-#define SMTC_CLOSE_TMOUT    (60)       /* 超时关闭时长 */
+#define SMTC_THD_DEF_NUM    (01)        /* 默认线程数 */
+#define SMTC_THD_MIN_NUM    (01)        /* 最小线程数 */
+#define SMTC_THD_MAX_NUM    (64)        /* 最大线程数 */
+#define SMTC_CONN_MAX_NUM   (512)       /* 最大链接数 */
+#define SMTC_SCK_DEF_NUM    (32)        /* Default SCK number */
+#define SMTC_MSG_DEF_LEN    (512)       /* Read length at one time */
+#define SMTC_CLOSE_TMOUT    (60)        /* 超时关闭时长 */
 #define SMTC_CMD_RESND_TIMES (3)        /* 命令重发次数 */
 
 #define SMTC_WORKER_HDL_QNUM (2)        /* 各Worker线程负责的队列数 */
@@ -83,12 +83,10 @@ typedef struct _smtc_sck_t
     time_t wtm;                         /* 最近写入时间 */
     char ipaddr[IP_ADDR_MAX_LEN];       /* IP地址 */
 
-    int rqidx;                          /* 当前接收队列ID */
-    socket_snap_t recv;                 /* 读取操作的快照 */
-    socket_snap_t send;                 /* 发送操作的快照 */
+    socket_recv_snap_t recv;            /* 接收快照 */
+    socket_snap_t send;                 /* 发送快照 */
 
     list_t *mesg_list;                  /* 发送消息链表 */
-    char *null;                         /* NULL */
 
     uint64_t recv_total;                /* 接收的数据条数 */
 } smtc_sck_t;

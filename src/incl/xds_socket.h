@@ -42,6 +42,54 @@ typedef struct _socket_t socket_t;
 typedef int (*socket_recv_cb_t)(void *ctx, socket_t *sck);
 typedef int (*socket_send_cb_t)(void *ctx, socket_t *sck);
 
+/* 接收快照-2 */
+typedef struct
+{
+    /*  |<------------       total       --------------->|
+     *  | 已处理 |     未处理     |       空闲空间       |
+     *   ------------------------------------------------
+     *  |XXXXXXXX|////////////////|                      |
+     *  |XXXXXXXX|////////////////|<------  left  ------>|
+     *  |XXXXXXXX|////////////////|                      |
+     *   ------------------------------------------------
+     *  ^        ^                ^                      ^
+     *  |        |                |                      |
+     * addr     wptr             rptr                   end
+     */
+    char *addr;                     /* 接收缓存 */
+    char *end;                      /* 结束地址 */
+
+    int total;                      /* 缓存大小 */
+    int left;                       /* 剩余空间 */
+
+    char *rptr;                     /* 接收偏移 */
+    char *wptr;                     /* 处理偏移 */
+} socket_recv_snap_t;
+
+/* 发送快照-2 */
+typedef struct
+{
+    /*  |<------------       total      --------------->|
+     *  | 已发送 |           未发送          | 空闲空间 |
+     *   -----------------------------------------------
+     *  |XXXXXXXX|///////////////////////////|          |
+     *  |XXXXXXXX|///////////////////////////|<--left-->|
+     *  |XXXXXXXX|///////////////////////////|          |
+     *   -----------------------------------------------
+     *  ^        ^                           ^          ^
+     *  |        |                           |          |
+     * addr     optr                        iptr       end
+     */
+    char *addr;                     /* 接收缓存 */
+    char *end;                      /* 结束地址 */
+
+    int total;                      /* 缓存大小 */
+    int left;                       /* 剩余空间 */
+
+    char *optr;                     /* 发送偏移 */
+    char *iptr;                     /* 输入偏移 */
+} socket_send_snap_t;
+
 /* 套接字对象 */
 typedef struct _socket_t
 {

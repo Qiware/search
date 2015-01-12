@@ -251,7 +251,7 @@ int smtc_cli_send(smtc_cli_t *cli, const void *data, int type, size_t size)
     header = (smtc_header_t *)addr;
     header->type = type;
     header->body_len = size;
-    header->flag = SMTC_EXP_DATA; /* 外部数据 */
+    header->flag = SMTC_EXP_MESG; /* 外部数据 */
     header->mark = SMTC_MSG_MARK_KEY;
 
     memcpy(addr+sizeof(smtc_header_t), data, size);

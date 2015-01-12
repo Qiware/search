@@ -1,6 +1,9 @@
 #if !defined(__SHM_QUEUE_H__)
 #define __SHM_QUEUE_H__
 
+#include "spinlock.h"
+#include "shm_slab.h"
+
 /* 结点当前状态 */
 #define SHMQ_NODE_STAT_IDLE     (0)  /* 未被占用 */
 #define SHMQ_NODE_STAT_USED     (1)  /* 已被占用 */
@@ -36,5 +39,7 @@ shm_queue_t *shm_queue_attach(int key, int max, int size);
 #define shm_queue_dealloc(shmq, p) shm_slab_dealloc(&shmq->slab, p)
 int shm_queue_push(shm_queue_t *shmq, void *p);
 void *shm_queue_pop(shm_queue_t *shmq);
+
+#define shm_queue_data_count(shmq) ((shmq)->max - (shmq)->num)
 
 #endif /*__SHM_QUEUE_H__*/
