@@ -1006,7 +1006,7 @@ static int smtc_rsvr_add_conn_hdl(smtc_rsvr_t *rsvr, smtc_cmd_add_sck_t *req)
     ++rsvr->connections; /* 统计TCP连接数 */
 
     log_trace(rsvr->log, "Tidx [%d] insert sckid [%d] success! ip:%s",
-        rsvr->tidx, req->sckid, req->ipaddr);
+            rsvr->tidx, req->sckid, req->ipaddr);
 
     return SMTC_OK;
 }

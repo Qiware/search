@@ -36,14 +36,14 @@ typedef struct
 typedef struct
 {
     int fd;                         /* 套接字ID */
-    time_t wr_tm;                   /* 最近写入操作时间 */
-    time_t rd_tm;                   /* 最近读取操作时间 */
+    time_t wrtm;                    /* 最近写入操作时间 */
+    time_t rdtm;                    /* 最近读取操作时间 */
 
     smtc_kpalive_stat_e kpalive;    /* 保活状态 */
     list_t *mesg_list;              /* 消息列表 */
     char *null;                     /* NULL空间 */
-    socket_snap_t recv;             /* 读取操作的快照 */
-    socket_snap_t send;             /* 发送记录 */
+    socket_snap_t recv;             /* 接收快照 */
+    socket_send_snap_t send;        /* 发送快照 */
 } smtc_ssvr_sck_t;
 
 #define smtc_set_kpalive_stat(sck, _kpalive) (sck)->kpalive = (_kpalive)
@@ -56,7 +56,7 @@ typedef struct
     log_cycle_t *log;               /* 日志对象 */
 
     int cmd_sck_id;                 /* 命令通信套接字ID */
-    smtc_ssvr_sck_t sck;              /* 发送套接字 */
+    smtc_ssvr_sck_t sck;            /* 发送套接字 */
 
     int max;                        /* 套接字最大值 */
     fd_set rset;                    /* 读集合 */
@@ -67,7 +67,8 @@ typedef struct
 /* 发送端上下文信息 */
 typedef struct
 {
-    smtc_ssvr_conf_t conf;            /* 客户端配置信息 */
+    smtc_ssvr_conf_t conf;          /* 客户端配置信息 */
+    log_cycle_t *log;               /* 日志对象 */
 
     thread_pool_t *sendtp;          /* Send thread pool */
     thread_pool_t *worktp;          /* Work thread pool */

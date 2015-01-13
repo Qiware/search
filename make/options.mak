@@ -22,6 +22,9 @@ ifeq (__ON__, $(strip $(CONFIG_DEFAULT_SUPPORT)))
 
 	# AVL平衡二叉树功能
 	OPTIONS += __AVL_MEM_POOL__ 		# AVL使用内存池
+
+	# 系统通用宏 
+	OPTIONS += _GNU_SOURCE
 endif
 
 # 调试相关宏

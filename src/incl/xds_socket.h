@@ -28,7 +28,7 @@ typedef enum
     , SOCK_PHASE_TOTAL
 } socket_snap_phase_e;
 
-/* 读取/发送快照 */
+/* 接收/发送快照 */
 typedef struct
 {
     int phase;                      /* 当前状态 Range: socket_snap_phase_e */
@@ -42,7 +42,7 @@ typedef struct _socket_t socket_t;
 typedef int (*socket_recv_cb_t)(void *ctx, socket_t *sck);
 typedef int (*socket_send_cb_t)(void *ctx, socket_t *sck);
 
-/* 接收快照-2 */
+/* 接收快照 */
 typedef struct
 {
     /*  |<------------       total       --------------->|
@@ -66,7 +66,7 @@ typedef struct
     char *wptr;                     /* 处理偏移 */
 } socket_recv_snap_t;
 
-/* 发送快照-2 */
+/* 发送快照 */
 typedef struct
 {
     /*  |<------------       total      --------------->|
@@ -80,11 +80,10 @@ typedef struct
      *  |        |                           |          |
      * addr     optr                        iptr       end
      */
-    char *addr;                     /* 接收缓存 */
+    char *addr;                     /* 发送缓存 */
     char *end;                      /* 结束地址 */
 
     int total;                      /* 缓存大小 */
-    int left;                       /* 剩余空间 */
 
     char *optr;                     /* 发送偏移 */
     char *iptr;                     /* 输入偏移 */
