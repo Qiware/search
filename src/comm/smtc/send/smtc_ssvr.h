@@ -10,6 +10,9 @@
 #include "shm_queue.h"
 #include "thread_pool.h"
 
+#define SMTC_SSVR_RECV_BUFF_SIZE (2 * MB)   /* 接收缓冲区大小 */
+#define SMTC_SSVR_SEND_BUFF_SIZE (2 * MB)   /* 发送缓冲区大小 */
+
 typedef enum
 {
     SMTC_DATA_ADDR_UNKNOWN
@@ -29,6 +32,7 @@ typedef struct
     int snd_thd_num;                /* 发送线程的个数 */
 
     smtc_cpu_conf_t cpu;            /* CPU亲和性配置 */
+
     smtc_queue_conf_t send_qcf;     /* 发送队列配置 */
 } smtc_ssvr_conf_t;
 
@@ -41,8 +45,8 @@ typedef struct
 
     smtc_kpalive_stat_e kpalive;    /* 保活状态 */
     list_t *mesg_list;              /* 消息列表 */
-    char *null;                     /* NULL空间 */
-    socket_snap_t recv;             /* 接收快照 */
+
+    socket_recv_snap_t recv;        /* 接收快照 */
     socket_send_snap_t send;        /* 发送快照 */
 } smtc_ssvr_sck_t;
 
@@ -75,7 +79,6 @@ typedef struct
 } smtc_ssvr_cntx_t;
 
 /* 内部接口 */
-int smtc_ssvr_creat_sendtp(smtc_ssvr_cntx_t *ctx);
 void smtc_ssvr_sendtp_destroy(void *_ctx, void *args);
 
 int smtc_ssvr_creat_worktp(smtc_ssvr_cntx_t *ctx);

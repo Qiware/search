@@ -34,10 +34,10 @@ static int smtc_rsvr_trav_send(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr);
 static int smtc_rsvr_recv_proc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck);
 static int smtc_rsvr_data_proc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck);
 
-static bool smtc_rsvr_header_isvalid(smtc_cntx_t *ctx, smtc_header_t *head);
+static bool smtc_rsvr_head_isvalid(smtc_cntx_t *ctx, smtc_header_t *head);
 
-static int smtc_rsvr_proc_sys_mesg(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck);
-static int smtc_rsvr_proc_exp_mesg(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck);
+static int smtc_rsvr_sys_mesg_proc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck);
+static int smtc_rsvr_exp_mesg_proc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck);
 
 static int smtc_rsvr_keepalive_req_hdl(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck);
 static int smtc_rsvr_cmd_send_proc_req(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck, int rqid);
@@ -553,15 +553,15 @@ static int smtc_rsvr_trav_send(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr)
  ******************************************************************************/
 static int smtc_rsvr_recv_proc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck)
 {
-    int n;
+    int n, left;
     socket_recv_snap_t *recv = &sck->recv;
 
     while (1)
     {
         /* 1. 接收网络数据 */
-        recv->left = (int)(recv->end - recv->rptr);
+        left = (int)(recv->end - recv->rptr);
 
-        n = read(sck->fd, recv->rptr, recv->left);
+        n = read(sck->fd, recv->rptr, left);
         if (n > 0)
         {
             recv->rptr += n;
@@ -577,7 +577,7 @@ static int smtc_rsvr_recv_proc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *
         else if (0 == n)
         {
             log_info(rsvr->log, "Client disconnected. errmsg:[%d] %s! fd:%d n:%d/%d",
-                    errno, strerror(errno), sck->fd, n, recv->left);
+                    errno, strerror(errno), sck->fd, n, left);
             return SMTC_SCK_CLOSED;
         }
         else if ((n < 0) && (EAGAIN == errno))
@@ -598,7 +598,7 @@ static int smtc_rsvr_recv_proc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *
 }
 
 /******************************************************************************
- **函数名称: smtc_rsvr_header_isvalid
+ **函数名称: smtc_rsvr_head_isvalid
  **功    能: 校验数据头
  **输入参数: 
  **     ctx: 全局对象
@@ -609,7 +609,7 @@ static int smtc_rsvr_recv_proc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static bool smtc_rsvr_header_isvalid(smtc_cntx_t *ctx, smtc_header_t *head)
+static bool smtc_rsvr_head_isvalid(smtc_cntx_t *ctx, smtc_header_t *head)
 {
     /* 1. 检查校验值
        2. 检查类型
@@ -664,8 +664,6 @@ static int smtc_rsvr_data_proc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *
         if (len < sizeof(smtc_header_t)
             || len < one_mesg_len)
         {
-            recv->left = (int)(recv->end - recv->rptr);
-
             memcpy(recv->addr, recv->wptr, len);
             recv->wptr = recv->addr;
             recv->rptr = recv->wptr + len;
@@ -680,7 +678,7 @@ static int smtc_rsvr_data_proc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *
         head->mark = ntohl(head->mark);
 
         /* 2.2 校验合法性 */
-        if (smtc_rsvr_header_isvalid(ctx, head))
+        if (smtc_rsvr_head_isvalid(ctx, head))
         {
             ++rsvr->err_total;
             log_error(rsvr->log, "Header is invalid! Mark:%u/%u type:%d len:%d flag:%d",
@@ -691,11 +689,11 @@ static int smtc_rsvr_data_proc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *
         /* 2.3 进行数据处理 */
         if (SMTC_SYS_MESG == head->flag)
         {
-            smtc_rsvr_proc_sys_mesg(ctx, rsvr, sck);
+            smtc_rsvr_sys_mesg_proc(ctx, rsvr, sck);
         }
         else
         {
-            smtc_rsvr_proc_exp_mesg(ctx, rsvr, sck);
+            smtc_rsvr_exp_mesg_proc(ctx, rsvr, sck);
         }
 
         recv->wptr += one_mesg_len;
@@ -705,7 +703,7 @@ static int smtc_rsvr_data_proc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *
 }
 
 /******************************************************************************
- **函数名称: smtc_rsvr_proc_sys_mesg
+ **函数名称: smtc_rsvr_sys_mesg_proc
  **功    能: 系统消息处理
  **输入参数: 
  **     ctx: 全局对象
@@ -717,7 +715,7 @@ static int smtc_rsvr_data_proc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int smtc_rsvr_proc_sys_mesg(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck)
+static int smtc_rsvr_sys_mesg_proc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck)
 {
     socket_recv_snap_t *recv = &sck->recv;
     smtc_header_t *head = (smtc_header_t *)recv->addr;
@@ -739,7 +737,7 @@ static int smtc_rsvr_proc_sys_mesg(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck
 }
 
 /******************************************************************************
- **函数名称: smtc_rsvr_proc_exp_mesg
+ **函数名称: smtc_rsvr_exp_mesg_proc
  **功    能: 自定义消息处理
  **输入参数: 
  **     ctx: 全局对象
@@ -754,7 +752,7 @@ static int smtc_rsvr_proc_sys_mesg(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int smtc_rsvr_proc_exp_mesg(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck)
+static int smtc_rsvr_exp_mesg_proc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck)
 {
     void *addr;
     int times = 0, rqid;
@@ -987,7 +985,6 @@ static int smtc_rsvr_add_conn_hdl(smtc_rsvr_t *rsvr, smtc_cmd_add_sck_t *req)
     sck->recv.rptr = sck->recv.addr;
 
     sck->recv.total = SMTC_RSVR_RECV_BUFF_SIZE;
-    sck->recv.left = SMTC_RSVR_RECV_BUFF_SIZE;
 
     /* 2. 将结点加入到套接字链表 */
     node = slab_alloc(rsvr->pool, sizeof(list2_node_t));

@@ -16,14 +16,13 @@
 #define SMTC_SCK_INVALID     (-1)   /* 套接字非法值 */
 #define SMTC_RECV_DEF_LEN    (512)  /* 一次默认接收长度 */
 
-#define SMTC_RECONN_MIN_INTV (4)    /* 连接重连最小间隔 */
-#define SMTC_RECONN_MAX_INTV (16)   /* 连接重连最大间隔 */
+#define SMTC_RECONN_INTV     (2)    /* 连接重连间隔 */
 
 #define SMTC_RECV_TMOUT_SEC  (1)    /* 侦听超时: 秒 */
 #define SMTC_RECV_TMOUT_USEC (0)    /* 侦听超时: 微妙 */
 
-#define SMTC_SND_TMOUT_SEC   (1)    /* SND超时: 秒 */
-#define SMTC_SND_TMOUT_USEC  (0)    /* SND超时: 微妙 */
+#define SMTC_SSVR_TMOUT_SEC   (1)   /* SND超时: 秒 */
+#define SMTC_SSVR_TMOUT_USEC  (0)   /* SND超时: 微妙 */
 
 #define SMTC_SYS_MESG        (0)    /* 系统数据类型 */
 #define SMTC_EXP_MESG        (1)    /* 自定义数据类型 */

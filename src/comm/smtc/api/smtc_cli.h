@@ -16,6 +16,7 @@
 typedef struct
 {
     smtc_ssvr_conf_t conf;          /* 客户端配置信息 */
+    log_cycle_t *log;               /* 日志对象 **/
     
     int cmdfd;                      /* 命令套接字 */
     shm_queue_t **sq;               /* 发送缓冲队列 */

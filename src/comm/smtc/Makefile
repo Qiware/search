@@ -20,7 +20,8 @@ SRC_LIST = recv/smtc.c \
 			recv/smtc_lsn.c \
 			recv/smtc_rsvr.c \
 			recv/smtc_worker.c \
-			send/smtc_ssvr.c
+			send/smtc_ssvr.c \
+			api/smtc_cli.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
 

@@ -60,7 +60,6 @@ typedef struct
     char *end;                      /* 结束地址 */
 
     int total;                      /* 缓存大小 */
-    int left;                       /* 剩余空间 */
 
     char *rptr;                     /* 接收偏移 */
     char *wptr;                     /* 处理偏移 */
