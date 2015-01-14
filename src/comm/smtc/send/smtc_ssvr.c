@@ -558,7 +558,7 @@ static int smtc_ssvr_kpalive_req(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr)
     head->type = SMTC_KPALIVE_REQ;
     head->length = 0;
     head->flag = SMTC_SYS_MESG;
-    head->mark = SMTC_MSG_MARK_KEY;
+    head->checksum = SMTC_CHECK_SUM;
 
     /* 3. 加入发送列表 */
     smtc_ssvr_add_mesg(ssvr, addr);
@@ -652,7 +652,7 @@ static int smtc_ssvr_timeout_hdl(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr)
  ******************************************************************************/
 static bool smtc_ssvr_head_isvalid(smtc_ssvr_cntx_t *ctx, smtc_header_t *head)
 {
-    if ((SMTC_MSG_MARK_KEY != head->mark)
+    if ((SMTC_CHECK_SUM != head->checksum)
         || !smtc_is_type_valid(head->type)
         || head->length + sizeof(smtc_header_t) >= SMTC_SSVR_RECV_BUFF_SIZE)
     {
@@ -879,7 +879,7 @@ static int smtc_ssvr_fill_send_buff(smtc_ssvr_t *ssvr, smtc_ssvr_sck_t *sck)
         head->type = htonl(head->type);
         head->length = htonl(head->length);
         head->flag = htonl(head->flag);
-        head->mark = htonl(head->mark);
+        head->checksum = htonl(head->checksum);
 
         /* 1.3 拷贝至发送缓存 */
         memcpy(send->iptr, addr, one_mesg_len);
@@ -912,7 +912,7 @@ static int smtc_ssvr_fill_send_buff(smtc_ssvr_t *ssvr, smtc_ssvr_sck_t *sck)
         head->type = htonl(head->type);
         head->length = htonl(head->length);
         head->flag = htonl(head->flag);
-        head->mark = htonl(head->mark);
+        head->checksum = htonl(head->checksum);
 
         /* 2.3 拷贝至发送缓存 */
         memcpy(send->iptr, addr, one_mesg_len);
@@ -1176,13 +1176,13 @@ static int smtc_ssvr_exp_mesg_proc(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr, smt
         head->type = ntohl(head->type);
         head->length = ntohl(head->length);
         head->flag = ntohl(head->flag);
-        head->mark = ntohl(head->mark);
+        head->checksum = ntohl(head->checksum);
 
         /* 2.2 校验合法性 */
         if (smtc_ssvr_head_isvalid(ctx, head))
         {
-            log_error(ssvr->log, "Header is invalid! Mark:%u/%u type:%d len:%d flag:%d",
-                    head->mark, SMTC_MSG_MARK_KEY, head->type, head->length, head->flag);
+            log_error(ssvr->log, "Header is invalid! CheckSum:%u/%u type:%d len:%d flag:%d",
+                    head->checksum, SMTC_CHECK_SUM, head->type, head->length, head->flag);
             return SMTC_ERR;
         }
 

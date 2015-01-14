@@ -481,7 +481,7 @@ static int smtc_rsvr_trav_send(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr)
                     head->type = htonl(head->type);
                     head->length = htonl(head->length);
                     head->flag = htonl(head->flag);
-                    head->mark = htonl(head->mark);
+                    head->checksum = htonl(head->checksum);
                 }
 
                 /* 2. 发送数据 */
@@ -614,7 +614,7 @@ static bool smtc_rsvr_head_isvalid(smtc_cntx_t *ctx, smtc_header_t *head)
     /* 1. 检查校验值
        2. 检查类型
        3. 检查长度: 因所有队列长度一致 因此使用[0]判断 */
-    if (SMTC_MSG_MARK_KEY != head->mark
+    if (SMTC_CHECK_SUM != head->checksum
         || !smtc_is_type_valid(head->type)
         || !smtc_is_len_valid(ctx->recvq[0], head->length))
     {
@@ -675,14 +675,14 @@ static int smtc_rsvr_data_proc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *
         head->type = ntohl(head->type);
         head->length = ntohl(head->length);
         head->flag = ntohl(head->flag);
-        head->mark = ntohl(head->mark);
+        head->checksum = ntohl(head->checksum);
 
         /* 2.2 校验合法性 */
         if (smtc_rsvr_head_isvalid(ctx, head))
         {
             ++rsvr->err_total;
             log_error(rsvr->log, "Header is invalid! Mark:%u/%u type:%d len:%d flag:%d",
-                    head->mark, SMTC_MSG_MARK_KEY, head->type, head->length, head->flag);
+                    head->checksum, SMTC_CHECK_SUM, head->type, head->length, head->flag);
             return SMTC_ERR;
         }
 
@@ -930,7 +930,7 @@ static int smtc_rsvr_keepalive_req_hdl(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc
     head->type = SMTC_KPALIVE_REP;
     head->length = 0;
     head->flag = SMTC_SYS_MESG;
-    head->mark = SMTC_MSG_MARK_KEY;
+    head->checksum = SMTC_CHECK_SUM;
     
     /* 3. 加入发送列表 */
     smtc_rsvr_add_mesg(rsvr, sck, addr);

@@ -12,30 +12,22 @@
 #include "common.h"
 #include "xds_socket.h"
 
-#define SMTC_NAME_MAX_LEN    (64)   /* 名称长度 */
-#define SMTC_SCK_INVALID     (-1)   /* 套接字非法值 */
-#define SMTC_RECV_DEF_LEN    (512)  /* 一次默认接收长度 */
+#define SMTC_NAME_MAX_LEN       (64)    /* 名称长度 */
+#define SMTC_RECONN_INTV        (2)     /* 连接重连间隔 */
 
-#define SMTC_RECONN_INTV     (2)    /* 连接重连间隔 */
+#define SMTC_SSVR_TMOUT_SEC     (1)     /* SND超时: 秒 */
+#define SMTC_SSVR_TMOUT_USEC    (0)     /* SND超时: 微妙 */
 
-#define SMTC_RECV_TMOUT_SEC  (1)    /* 侦听超时: 秒 */
-#define SMTC_RECV_TMOUT_USEC (0)    /* 侦听超时: 微妙 */
+#define SMTC_SYS_MESG           (0)     /* 系统数据类型 */
+#define SMTC_EXP_MESG           (1)     /* 自定义数据类型 */
+#define SMTC_CHECK_SUM          (0x1FE23DC4) /* 校验值 */
+#define SMTC_TYPE_MAX           (0xFF)  /* 自定义数据类型的最大值 */
 
-#define SMTC_SSVR_TMOUT_SEC   (1)   /* SND超时: 秒 */
-#define SMTC_SSVR_TMOUT_USEC  (0)   /* SND超时: 微妙 */
+#define SMTC_FAIL_CMDQ_MAX      (1000)  /* 失败命令的队列长度 */
+#define SMTC_THD_KPALIVE_SEC    (30)    /* THD保活间隔时间 */
+#define SMTC_SCK_KPALIVE_SEC    (30)    /* SCK保活间隔时间 */
 
-#define SMTC_SYS_MESG        (0)    /* 系统数据类型 */
-#define SMTC_EXP_MESG        (1)    /* 自定义数据类型 */
-#define SMTC_MSG_MARK_KEY    (987654321) /* 校验值 */
-#define SMTC_TYPE_MAX        (0xFF) /* 自定义数据类型的最大值 */
-
-#define SMTC_FAIL_CMDQ_MAX   (1000) /* 失败命令的队列长度 */
-#define SMTC_THD_KPALIVE_SEC (30)   /* THD保活间隔时间 */
-#define SMTC_SCK_KPALIVE_SEC (30)   /* SCK保活间隔时间 */
-
-#define SMTC_KPALIVE_DATAID  (0x10000000)    /* 保活数据ID */
-#define SMTC_NOT_NULL_DATAID (0x10000000)    /* 非空数据 */
-#define SMTC_MEM_POOL_SIZE   (10*1024*1024)  /* 内存池大小 */
+#define SMTC_MEM_POOL_SIZE      (10*MB) /* 内存池大小 */
 
 /* 系统数据类型 */
 typedef enum
@@ -151,7 +143,7 @@ typedef struct
     int flag;                       /* 消息标志
                                         - SMTC_SYS_MESG: 系统消息(smtc_sys_mesg_e)
                                         - SMTC_EXP_MESG: 自定义消息(0x00~0xFF) */
-    int mark;                       /* 校验值 */
+    int checksum;                   /* 校验值 */
 } __attribute__((packed)) smtc_header_t;
 
 #define smtc_is_sys_data(head) (SMTC_SYS_MESG == (head)->flag)
