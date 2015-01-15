@@ -34,8 +34,6 @@ static int smtc_rsvr_trav_send(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr);
 static int smtc_rsvr_recv_proc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck);
 static int smtc_rsvr_data_proc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck);
 
-static bool smtc_rsvr_head_isvalid(smtc_cntx_t *ctx, smtc_header_t *head);
-
 static int smtc_rsvr_sys_mesg_proc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck);
 static int smtc_rsvr_exp_mesg_proc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck);
 
@@ -606,23 +604,16 @@ static int smtc_rsvr_recv_proc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *
  **输出参数: NONE
  **返    回: true:合法 false:不合法
  **实现描述: 
+ **     1. 检查校验值
+ **     2. 检查类型
+ **     3. 检查长度: 因所有队列长度一致 因此使用[0]判断
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static bool smtc_rsvr_head_isvalid(smtc_cntx_t *ctx, smtc_header_t *head)
-{
-    /* 1. 检查校验值
-       2. 检查类型
-       3. 检查长度: 因所有队列长度一致 因此使用[0]判断 */
-    if (SMTC_CHECK_SUM != head->checksum
-        || !smtc_is_type_valid(head->type)
-        || !smtc_is_len_valid(ctx->recvq[0], head->length))
-    {
-        return false;
-    }
-
-    return true;
-}
+#define smtc_rsvr_head_isvalid(ctx, head) \
+    (((SMTC_CHECK_SUM != head->checksum \
+        || !smtc_is_type_valid(head->type) \
+        || !smtc_is_len_valid(ctx->recvq[0], head->length)))? false : true)
 
 /******************************************************************************
  **函数名称: smtc_rsvr_recv_post

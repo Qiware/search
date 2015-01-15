@@ -28,7 +28,6 @@ static int smtc_ssvr_creat_usck(smtc_ssvr_t *ssvr, const smtc_ssvr_conf_t *conf)
 static int smtc_ssvr_connect(smtc_ssvr_t *ssvr, const smtc_ssvr_conf_t *conf);
 
 static int smtc_ssvr_kpalive_req(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr);
-static bool smtc_ssvr_head_isvalid(smtc_ssvr_cntx_t *ctx, smtc_header_t *head);
 
 static int smtc_ssvr_recv_cmd_hdl(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr);
 static int smtc_ssvr_recv_proc(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr);
@@ -617,17 +616,10 @@ static int smtc_ssvr_timeout_hdl(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr)
  ** Note : 
  ** Author: # Qifeng.zou # 2015.05.13 #
  ******************************************************************************/
-static bool smtc_ssvr_head_isvalid(smtc_ssvr_cntx_t *ctx, smtc_header_t *head)
-{
-    if ((SMTC_CHECK_SUM != head->checksum)
-        || !smtc_is_type_valid(head->type)
-        || head->length + sizeof(smtc_header_t) >= SMTC_SSVR_RECV_BUFF_SIZE)
-    {
-        return false;
-    }
-
-    return true;
-}
+#define smtc_ssvr_head_isvalid(ctx, head) \
+    (((SMTC_CHECK_SUM != head->checksum) \
+        || !smtc_is_type_valid(head->type) \
+        || head->length + sizeof(smtc_header_t) >= SMTC_SSVR_RECV_BUFF_SIZE)? false : true)
 
 /******************************************************************************
  ** Name : smtc_ssvr_data_proc
@@ -1132,9 +1124,20 @@ static int smtc_ssvr_exp_mesg_proc(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr, smt
         if (len < sizeof(smtc_header_t)
             || len < one_mesg_len)
         {
-            memcpy(recv->addr, recv->optr, len);
-            recv->optr = recv->addr;
-            recv->iptr = recv->optr + len;
+            if (recv->iptr == recv->end) 
+            {
+                /* 防止OverWrite的情况发生 */
+                if ((recv->optr - recv->addr) < (recv->end - recv->iptr))
+                {
+                    log_error(ssvr->log, "Data length is invalid!");
+                    return SMTC_ERR;
+                }
+
+                memcpy(recv->addr, recv->optr, len);
+                recv->optr = recv->addr;
+                recv->iptr = recv->optr + len;
+                return SMTC_OK;
+            }
             return SMTC_OK;
         }
 
