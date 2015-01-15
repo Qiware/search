@@ -24,7 +24,7 @@
 #include "common.h"
 #include "search.h"
 #include "syscall.h"
-#include "xds_socket.h"
+#include "sck_api.h"
 #include "srch_worker.h"
 #include "srch_listen.h"
 #include "srch_agent.h"

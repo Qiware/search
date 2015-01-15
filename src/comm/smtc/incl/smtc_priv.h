@@ -10,7 +10,7 @@
 #include "log.h"
 #include "queue.h"
 #include "common.h"
-#include "xds_socket.h"
+#include "sck_api.h"
 
 #define SMTC_NAME_MAX_LEN       (64)    /* 名称长度 */
 #define SMTC_RECONN_INTV        (2)     /* 连接重连间隔 */

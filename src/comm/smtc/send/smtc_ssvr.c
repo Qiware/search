@@ -17,7 +17,7 @@
 #include "smtc_ssvr.h"
 
 /* 静态函数 */
-static int smtc_ssvr_creat_sendtp(smtc_ssvr_cntx_t *ctx);
+static int _smtc_ssvr_startup(smtc_ssvr_cntx_t *ctx);
 static void *smtc_ssvr_routine(void *_ctx);
 
 static int smtc_ssvr_init(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr, int tidx);
@@ -78,7 +78,7 @@ smtc_ssvr_cntx_t *smtc_ssvr_startup(const smtc_ssvr_conf_t *conf)
     memcpy(&ctx->conf, conf, sizeof(smtc_ssvr_conf_t));
 
     /* 3. 启动各发送服务 */
-    if (!smtc_ssvr_creat_sendtp(ctx))
+    if (!_smtc_ssvr_startup(ctx))
     {
         printf("Initalize send thread failed!");
         return NULL;
@@ -88,17 +88,21 @@ smtc_ssvr_cntx_t *smtc_ssvr_startup(const smtc_ssvr_conf_t *conf)
 }
 
 /******************************************************************************
- **函数名称: smtc_ssvr_creat_sendtp
- **功    能: 创建发送线程池
+ **函数名称: _smtc_ssvr_startup
+ **功    能: 启动发送端
  **输入参数: 
  **     ctx: 全局信息
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
+ **     1. 创建发送线程池
+ **     2. 创建发送线程对象
+ **     3. 设置发送线程对象
+ **     4. 注册发送线程回调
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static int smtc_ssvr_creat_sendtp(smtc_ssvr_cntx_t *ctx)
+static int _smtc_ssvr_startup(smtc_ssvr_cntx_t *ctx)
 {
     int idx;
     smtc_ssvr_t *ssvr;
@@ -142,39 +146,6 @@ static int smtc_ssvr_creat_sendtp(smtc_ssvr_cntx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: smtc_ssvr_sendtp_destroy
- **功    能: 销毁发送线程
- **输入参数: 
- **     ctx: 发送端上下文
- **     args: 线程池参数
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2015.04.04 #
- ******************************************************************************/
-void smtc_ssvr_sendtp_destroy(void *_ctx, void *args)
-{
-    int idx = 0;
-    smtc_ssvr_cntx_t *ctx = (smtc_ssvr_cntx_t *)ctx;
-    smtc_ssvr_conf_t *conf = &ctx->conf;
-    smtc_ssvr_t *ssvr = (smtc_ssvr_t *)args;
-
-    /* 3. 设置发送线程对象 */
-    for (idx=0; idx<conf->snd_thd_num; ++idx, ++ssvr)
-    {
-        Close(ssvr->cmd_sck_id);
-        Close(ssvr->sck.fd);
-        // TODO: 删除共享内存 或　程序退出时　自动删除共享内存
-        //shm_queue_destory(ssvr->sq);
-    }
-
-    free(args);
-
-    return;
-}
-
-/******************************************************************************
  **函数名称: smtc_ssvr_init
  **功    能: 初始化发送线程
  **输入参数: 
@@ -190,8 +161,8 @@ static int smtc_ssvr_init(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr, int tidx)
 {
     void *addr;
     smtc_ssvr_conf_t *conf = &ctx->conf;
-    socket_recv_snap_t *recv = &ssvr->sck.recv;
-    socket_send_snap_t *send = &ssvr->sck.send;
+    socket_snap2_t *recv = &ssvr->sck.recv;
+    socket_snap2_t *send = &ssvr->sck.send;
 
     ssvr->tidx = tidx;
 
@@ -225,28 +196,24 @@ static int smtc_ssvr_init(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr, int tidx)
     }
 
     /* 4. 初始化发送缓存 */
-    send->addr = calloc(1, SMTC_SSVR_SEND_BUFF_SIZE);
-    if (NULL == send->addr)
+    addr = calloc(1, SMTC_SSVR_SEND_BUFF_SIZE);
+    if (NULL == addr)
     {
         log_error(ssvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return SMTC_ERR;
     }
-    send->end = send->addr + SMTC_SSVR_SEND_BUFF_SIZE;
-    send->optr = send->addr;
-    send->iptr = send->addr;
-    send->total = SMTC_SSVR_SEND_BUFF_SIZE;
+
+    socket_set_snap(send, addr, SMTC_SSVR_SEND_BUFF_SIZE);
 
     /* 5. 初始化接收缓存 */
-    recv->addr = calloc(1, SMTC_SSVR_RECV_BUFF_SIZE);
-    if (NULL == recv->addr)
+    addr = calloc(1, SMTC_SSVR_RECV_BUFF_SIZE);
+    if (NULL == addr)
     {
         log_error(ssvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return SMTC_ERR;
     }
-    recv->end = recv->addr + SMTC_SSVR_RECV_BUFF_SIZE;
-    recv->rptr = recv->addr;
-    recv->wptr = recv->addr;
-    recv->total = SMTC_SSVR_RECV_BUFF_SIZE;
+
+    socket_set_snap(recv, addr, SMTC_SSVR_RECV_BUFF_SIZE);
 
     /* 6. 连接接收服务器 */
     if (smtc_ssvr_connect(ssvr, conf))
@@ -530,7 +497,7 @@ static int smtc_ssvr_kpalive_req(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr)
 {
     void *addr;
     smtc_ssvr_sck_t *sck = &ssvr->sck;
-    socket_send_snap_t *send = &ssvr->sck.send;
+    socket_snap2_t *send = &ssvr->sck.send;
     smtc_header_t *head;
     int size = sizeof(smtc_header_t);
 
@@ -679,7 +646,7 @@ static bool smtc_ssvr_head_isvalid(smtc_ssvr_cntx_t *ctx, smtc_header_t *head)
  ******************************************************************************/
 static int smtc_ssvr_data_proc(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr, smtc_ssvr_sck_t *sck)
 {
-    socket_recv_snap_t *recv = &sck->recv;
+    socket_snap2_t *recv = &sck->recv;
     smtc_header_t *head = (smtc_header_t *)recv->addr;
 
     /* 1. Handle system data */
@@ -711,19 +678,19 @@ static int smtc_ssvr_recv_proc(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr)
 {
     int n, left;
     smtc_ssvr_sck_t *sck = &ssvr->sck;
-    socket_recv_snap_t *recv = &sck->recv;
+    socket_snap2_t *recv = &sck->recv;
 
     sck->rdtm = time(NULL);
 
     while (1)
     {
         /* 1. 接收网络数据 */
-        left = (int)(recv->end - recv->rptr);
+        left = (int)(recv->end - recv->iptr);
 
-        n = read(sck->fd, recv->rptr, left);
+        n = read(sck->fd, recv->iptr, left);
         if (n > 0)
         {
-            recv->rptr += n;
+            recv->iptr += n;
 
             /* 2. 进行数据处理 */
             if (smtc_ssvr_data_proc(ctx, ssvr, sck))
@@ -850,7 +817,7 @@ static int smtc_ssvr_fill_send_buff(smtc_ssvr_t *ssvr, smtc_ssvr_sck_t *sck)
     list_node_t *node;
     int left, one_mesg_len;
     smtc_header_t *head;
-    socket_send_snap_t *send = &sck->send;
+    socket_snap2_t *send = &sck->send;
 
     /* 1. 从消息链表取数据 */
     for (;;)
@@ -942,7 +909,7 @@ static int smtc_ssvr_cmd_send_all_req_hdl(
     int n, len;
     time_t ctm = time(NULL);
     smtc_ssvr_sck_t *sck = &ssvr->sck;
-    socket_send_snap_t *send = &sck->send;
+    socket_snap2_t *send = &sck->send;
 
     sck->wrtm = ctm;
 
@@ -1104,7 +1071,7 @@ static int smtc_ssvr_clear_mesg(smtc_ssvr_t *ssvr)
  ******************************************************************************/
 static int smtc_ssvr_sys_mesg_proc(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr, smtc_ssvr_sck_t *sck)
 {
-    socket_recv_snap_t *recv = &sck->recv;
+    socket_snap2_t *recv = &sck->recv;
     smtc_header_t *head = (smtc_header_t *)recv->addr;
 
     switch (head->type)
@@ -1146,28 +1113,28 @@ static int smtc_ssvr_sys_mesg_proc(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr, smt
  **       ------------------------------------------------
  **      ^        ^                ^                      ^
  **      |        |                |                      |
- **     addr     wptr             rptr                   end
+ **     addr     optr             iptr                   end
  ** Author: # Qifeng.zou # 2015.04.10 #
  ******************************************************************************/
 static int smtc_ssvr_exp_mesg_proc(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr, smtc_ssvr_sck_t *sck)
 {
     smtc_header_t *head;
     int len, one_mesg_len;
-    socket_recv_snap_t *recv = &sck->recv;
+    socket_snap2_t *recv = &sck->recv;
 
     while (1)
     {
-        head = (smtc_header_t *)recv->wptr;
-        len = (int)(recv->rptr - recv->wptr);
+        head = (smtc_header_t *)recv->optr;
+        len = (int)(recv->iptr - recv->optr);
 
         /* 1. 不足一条数据时 */
         one_mesg_len = sizeof(smtc_header_t) + head->length;
         if (len < sizeof(smtc_header_t)
             || len < one_mesg_len)
         {
-            memcpy(recv->addr, recv->wptr, len);
-            recv->wptr = recv->addr;
-            recv->rptr = recv->wptr + len;
+            memcpy(recv->addr, recv->optr, len);
+            recv->optr = recv->addr;
+            recv->iptr = recv->optr + len;
             return SMTC_OK;
         }
 
@@ -1196,7 +1163,7 @@ static int smtc_ssvr_exp_mesg_proc(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr, smt
             smtc_ssvr_exp_mesg_proc(ctx, ssvr, sck);
         }
 
-        recv->wptr += one_mesg_len;
+        recv->optr += one_mesg_len;
     }
 
     return SMTC_OK;

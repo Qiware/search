@@ -46,8 +46,8 @@ typedef struct
     smtc_kpalive_stat_e kpalive;    /* 保活状态 */
     list_t *mesg_list;              /* 消息列表 */
 
-    socket_recv_snap_t recv;        /* 接收快照 */
-    socket_send_snap_t send;        /* 发送快照 */
+    socket_snap2_t recv;            /* 接收快照 */
+    socket_snap2_t send;            /* 发送快照 */
 } smtc_ssvr_sck_t;
 
 #define smtc_set_kpalive_stat(sck, _kpalive) (sck)->kpalive = (_kpalive)
@@ -78,13 +78,7 @@ typedef struct
     thread_pool_t *worktp;          /* Work thread pool */
 } smtc_ssvr_cntx_t;
 
-/* 内部接口 */
-void smtc_ssvr_sendtp_destroy(void *_ctx, void *args);
-
-int smtc_ssvr_creat_worktp(smtc_ssvr_cntx_t *ctx);
-
 /* 对外接口 */
 smtc_ssvr_cntx_t *smtc_ssvr_startup(const smtc_ssvr_conf_t *conf);
-extern void smtc_ssvr_destroy(smtc_ssvr_cntx_t *ctx);
 
 #endif /*__SMTC_SSVR_H__*/

@@ -26,8 +26,8 @@
 
 #include "syscall.h"
 #include "monitor.h"
+#include "sck_api.h"
 #include "srch_mesg.h"
-#include "xds_socket.h"
 
 #define SRCH_SVR_IP_ADDR    "127.0.0.1"
 #define SRCH_SVR_PORT       (8888)

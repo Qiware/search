@@ -1,7 +1,7 @@
 #include "search.h"
 #include "common.h"
 #include "syscall.h"
-#include "xds_socket.h"
+#include "sck_api.h"
 #include "srch_agent.h"
 #include "srch_listen.h"
 

@@ -548,23 +548,23 @@ static int smtc_rsvr_trav_send(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr)
  **       ------------------------------------------------
  **      ^        ^                ^                      ^
  **      |        |                |                      |
- **     addr     wptr             rptr                   end
+ **     addr     optr             iptr                   end
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
 static int smtc_rsvr_recv_proc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck)
 {
     int n, left;
-    socket_recv_snap_t *recv = &sck->recv;
+    socket_snap2_t *recv = &sck->recv;
 
     while (1)
     {
         /* 1. 接收网络数据 */
-        left = (int)(recv->end - recv->rptr);
+        left = (int)(recv->end - recv->iptr);
 
-        n = read(sck->fd, recv->rptr, left);
+        n = read(sck->fd, recv->iptr, left);
         if (n > 0)
         {
-            recv->rptr += n;
+            recv->iptr += n;
 
             /* 2. 进行数据处理 */
             if (smtc_rsvr_data_proc(ctx, rsvr, sck))
@@ -645,28 +645,28 @@ static bool smtc_rsvr_head_isvalid(smtc_cntx_t *ctx, smtc_header_t *head)
  **       ------------------------------------------------
  **      ^        ^                ^                      ^
  **      |        |                |                      |
- **     addr     wptr             rptr                   end
+ **     addr     optr             iptr                   end
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
 static int smtc_rsvr_data_proc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck)
 {
     smtc_header_t *head;
     int len, one_mesg_len;
-    socket_recv_snap_t *recv = &sck->recv;
+    socket_snap2_t *recv = &sck->recv;
 
     while (1)
     {
-        head = (smtc_header_t *)recv->wptr;
-        len = (int)(recv->rptr - recv->wptr);
+        head = (smtc_header_t *)recv->optr;
+        len = (int)(recv->iptr - recv->optr);
 
         /* 1. 不足一条数据时 */
         one_mesg_len = sizeof(smtc_header_t) + head->length;
         if (len < sizeof(smtc_header_t)
             || len < one_mesg_len)
         {
-            memcpy(recv->addr, recv->wptr, len);
-            recv->wptr = recv->addr;
-            recv->rptr = recv->wptr + len;
+            memcpy(recv->addr, recv->optr, len);
+            recv->optr = recv->addr;
+            recv->iptr = recv->optr + len;
             return SMTC_OK;
         }
 
@@ -696,7 +696,7 @@ static int smtc_rsvr_data_proc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *
             smtc_rsvr_exp_mesg_proc(ctx, rsvr, sck);
         }
 
-        recv->wptr += one_mesg_len;
+        recv->optr += one_mesg_len;
     }
 
     return SMTC_OK;
@@ -717,7 +717,7 @@ static int smtc_rsvr_data_proc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *
  ******************************************************************************/
 static int smtc_rsvr_sys_mesg_proc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck)
 {
-    socket_recv_snap_t *recv = &sck->recv;
+    socket_snap2_t *recv = &sck->recv;
     smtc_header_t *head = (smtc_header_t *)recv->addr;
 
     switch (head->type)
@@ -757,8 +757,8 @@ static int smtc_rsvr_exp_mesg_proc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck
     void *addr;
     int times = 0, rqid;
     static uint8_t num = 0;
-    socket_recv_snap_t *recv = &sck->recv;
-    smtc_header_t *head = (smtc_header_t *)recv->wptr;
+    socket_snap2_t *recv = &sck->recv;
+    smtc_header_t *head = (smtc_header_t *)recv->optr;
 
     ++rsvr->recv_total; /* 总数 */
 
@@ -784,7 +784,7 @@ AGAIN:
     }
 
     /* 2. 进行数据拷贝 */
-    memcpy(addr, recv->wptr, sizeof(smtc_header_t) + head->length);
+    memcpy(addr, recv->optr, sizeof(smtc_header_t) + head->length);
 
     /* 3. 将数据放入队列 */
     if (queue_push(ctx->recvq[rqid], addr))
@@ -954,6 +954,7 @@ static int smtc_rsvr_keepalive_req_hdl(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc
 static int smtc_rsvr_add_conn_hdl(smtc_rsvr_t *rsvr, smtc_cmd_add_sck_t *req)
 {
 #define SMTC_RSVR_RECV_BUFF_SIZE (5 * MB)
+    void *addr;
     smtc_sck_t *sck;
     list2_node_t *node;
 
@@ -972,19 +973,15 @@ static int smtc_rsvr_add_conn_hdl(smtc_rsvr_t *rsvr, smtc_cmd_add_sck_t *req)
     snprintf(sck->ipaddr, sizeof(sck->ipaddr), "%s", req->ipaddr);
 
     /* 2. 申请接收缓存 */
-    sck->recv.addr = (void *)calloc(1, SMTC_RSVR_RECV_BUFF_SIZE);
-    if (NULL == sck->recv.addr)
+    addr = (void *)calloc(1, SMTC_RSVR_RECV_BUFF_SIZE);
+    if (NULL == addr)
     {
         log_error(rsvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
         slab_dealloc(rsvr->pool, sck);
         return SMTC_ERR;
     }
 
-    sck->recv.end = sck->recv.addr + SMTC_RSVR_RECV_BUFF_SIZE;
-    sck->recv.wptr = sck->recv.addr;
-    sck->recv.rptr = sck->recv.addr;
-
-    sck->recv.total = SMTC_RSVR_RECV_BUFF_SIZE;
+    socket_set_snap(&sck->recv, addr, SMTC_RSVR_RECV_BUFF_SIZE);
 
     /* 2. 将结点加入到套接字链表 */
     node = slab_alloc(rsvr->pool, sizeof(list2_node_t));

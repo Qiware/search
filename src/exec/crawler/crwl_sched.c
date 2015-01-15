@@ -14,9 +14,9 @@
 #include "redis.h"
 #include "common.h"
 #include "crawler.h"
+#include "sck_api.h"
 #include "syscall.h"
 #include "crwl_task.h"
-#include "xds_socket.h"
 #include "crwl_worker.h"
 #include "crwl_sched.h"
 

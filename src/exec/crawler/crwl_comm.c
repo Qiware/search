@@ -25,7 +25,7 @@
 #include "common.h"
 #include "crawler.h"
 #include "syscall.h"
-#include "xds_socket.h"
+#include "sck_api.h"
 #include "crwl_sched.h"
 #include "crwl_worker.h"
 

@@ -22,8 +22,8 @@
 #include "hash.h"
 #include "common.h"
 #include "search.h"
+#include "sck_api.h"
 #include "syscall.h"
-#include "xds_socket.h"
 #include "srch_worker.h"
 
 #define SRCH_PROC_LOCK_PATH "../temp/srch/srch.lck"

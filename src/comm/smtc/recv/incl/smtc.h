@@ -8,8 +8,8 @@
 #include "list.h"
 #include "list2.h"
 #include "queue.h"
+#include "sck_api.h"
 #include "smtc_priv.h"
-#include "xds_socket.h"
 #include "thread_pool.h"
 
 /* 宏定义 */
@@ -83,7 +83,7 @@ typedef struct _smtc_sck_t
     time_t wtm;                         /* 最近写入时间 */
     char ipaddr[IP_ADDR_MAX_LEN];       /* IP地址 */
 
-    socket_recv_snap_t recv;            /* 接收快照 */
+    socket_snap2_t recv;                /* 接收快照 */
     socket_snap_t send;                 /* 发送快照 */
 
     list_t *mesg_list;                  /* 发送消息链表 */

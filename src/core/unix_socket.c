@@ -14,7 +14,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
-#include "xds_socket.h"
+#include "sck_api.h"
 #include "syscall.h"
 
 /******************************************************************************

@@ -17,11 +17,11 @@
 #include "list.h"
 #include "queue.h"
 #include "common.h"
+#include "sck_api.h"
 #include "crawler.h"
 #include "hash_tab.h"
 #include "crwl_task.h"
 #include "crwl_conf.h"
-#include "xds_socket.h"
 #include "thread_pool.h"
 
 /* 宏定义 */

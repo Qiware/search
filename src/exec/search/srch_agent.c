@@ -8,8 +8,8 @@
 #include "common.h"
 #include "syscall.h"
 #include "xml_tree.h"
+#include "sck_api.h"
 #include "srch_agent.h"
-#include "xds_socket.h"
 #include "thread_pool.h"
 
 static srch_agent_t *srch_agent_get(srch_cntx_t *ctx);
