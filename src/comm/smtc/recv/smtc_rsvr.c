@@ -664,9 +664,20 @@ static int smtc_rsvr_data_proc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *
         if (len < sizeof(smtc_header_t)
             || len < one_mesg_len)
         {
-            memcpy(recv->addr, recv->optr, len);
-            recv->optr = recv->addr;
-            recv->iptr = recv->optr + len;
+            if (recv->iptr == recv->end) 
+            {
+                /* 防止OverWrite的情况发生 */
+                if ((recv->optr - recv->addr) < (recv->end - recv->iptr))
+                {
+                    log_error(rsvr->log, "Data length is invalid!");
+                    return SMTC_ERR;
+                }
+
+                memcpy(recv->addr, recv->optr, len);
+                recv->optr = recv->addr;
+                recv->iptr = recv->optr + len;
+                return SMTC_OK;
+            }
             return SMTC_OK;
         }
 
