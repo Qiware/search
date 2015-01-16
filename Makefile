@@ -24,6 +24,7 @@ DIR := "src/core"
 DIR += "src/comm/http"
 DIR += "src/comm/gumbo"
 DIR += "src/comm/redis"
+DIR += "src/comm/smtc"
 
 DIR += "src/exec/crawler/"
 DIR += "src/exec/logsvr"
@@ -37,8 +38,8 @@ DEMO_DIR = "src/demo"
 #DIR += "${DEMO_DIR}/http"
 #DIR += "${DEMO_DIR}/html"
 #DIR += "${DEMO_DIR}/list"
-DIR += "${DEMO_DIR}/redis"
-DIR += "${DEMO_DIR}/gumbo"
+#DIR += "${DEMO_DIR}/redis"
+#DIR += "${DEMO_DIR}/gumbo"
 export DIR
 
 .PHONY: all clean rebuild
