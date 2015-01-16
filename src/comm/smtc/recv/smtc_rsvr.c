@@ -38,9 +38,8 @@ static int smtc_rsvr_sys_mesg_proc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck
 static int smtc_rsvr_exp_mesg_proc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck);
 
 static int smtc_rsvr_keepalive_req_hdl(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck);
-static int smtc_rsvr_cmd_send_proc_req(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck, int rqid);
-static void smtc_rsvr_cmd_send_proc_all_req(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr);
-static int smtc_rsvr_cmd_resend_proc_req(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr);
+static int smtc_rsvr_cmd_proc_req(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, int rqid);
+static int smtc_rsvr_cmd_proc_all_req(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr);
 
 static int smtc_rsvr_add_conn_hdl(smtc_rsvr_t *rsvr, smtc_cmd_add_sck_t *req);
 static int smtc_rsvr_del_conn_hdl(smtc_rsvr_t *rsvr, list2_node_t *node);
@@ -574,9 +573,8 @@ static int smtc_rsvr_recv_proc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *
         }
         else if (0 == n)
         {
-            log_info(rsvr->log, "Client disconnected. errmsg:[%d] %s! fd:%d n:%d/%d",
-                    errno, strerror(errno), sck->fd, n, left);
-            return SMTC_SCK_CLOSED;
+            log_info(rsvr->log, "Client disconnected. fd:%d n:%d/%d", sck->fd, n, left);
+            return SMTC_DISCONN;
         }
         else if ((n < 0) && (EAGAIN == errno))
         {
@@ -731,11 +729,11 @@ static int smtc_rsvr_sys_mesg_proc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck
         default:
         {
             log_error(rsvr->log, "Unknown message type! [%d]", head->type);
-            return SMTC_HDL_DISCARD;
+            return SMTC_ERR;
         }
     }
     
-    return SMTC_HDL_DISCARD;
+    return SMTC_OK;
 }
 
 /******************************************************************************
@@ -771,7 +769,7 @@ AGAIN:
     addr = queue_malloc(ctx->recvq[rqid]);
     if (NULL == addr)
     {
-        smtc_rsvr_cmd_send_proc_all_req(ctx, rsvr);
+        smtc_rsvr_cmd_proc_all_req(ctx, rsvr);
 
         if (times++ < 3)
         {
@@ -804,7 +802,7 @@ AGAIN:
     /* 4. 发送处理请求 */
     if ((++num)%2)
     {
-        smtc_rsvr_cmd_send_proc_req(ctx, rsvr, sck, rqid);
+        smtc_rsvr_cmd_proc_req(ctx, rsvr, rqid);
     }
 
     return SMTC_OK;
@@ -897,7 +895,7 @@ static int smtc_rsvr_event_timeout_hdl(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr)
     }
 
     /* 2. 重复发送处理命令 */
-    smtc_rsvr_cmd_resend_proc_req(ctx, rsvr);
+    smtc_rsvr_cmd_proc_all_req(ctx, rsvr);
 
     return SMTC_OK;
 }
@@ -939,7 +937,7 @@ static int smtc_rsvr_keepalive_req_hdl(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc
 
     log_debug(rsvr->log, "Add respond of keepalive request!");
 
-    return SMTC_HDL_DONE;
+    return SMTC_OK;
 }
 
 /******************************************************************************
@@ -1195,19 +1193,19 @@ static int smtc_rsvr_clear_mesg(smtc_rsvr_t *rsvr, smtc_sck_t *sck)
 }
 
 /******************************************************************************
- **函数名称: smtc_rsvr_cmd_send_proc_req
+ **函数名称: smtc_rsvr_cmd_proc_req
  **功    能: 发送处理请求
  **输入参数: 
  **     ctx: 全局对象
  **     rsvr: 接收服务
- **     sck: 套接字对象
+ **     rqid: 队列ID
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int smtc_rsvr_cmd_send_proc_req(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck, int rqid)
+static int smtc_rsvr_cmd_proc_req(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, int rqid)
 {
     int widx;
     smtc_cmd_t cmd;
@@ -1240,7 +1238,7 @@ static int smtc_rsvr_cmd_send_proc_req(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc
 }
 
 /******************************************************************************
- **函数名称: smtc_rsvr_cmd_resend_proc_req
+ **函数名称: smtc_rsvr_cmd_proc_all_req
  **功    能: 重复发送处理请求
  **输入参数: 
  **     ctx: 全局对象
@@ -1251,98 +1249,18 @@ static int smtc_rsvr_cmd_send_proc_req(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int smtc_rsvr_cmd_resend_proc_req(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr)
+static int smtc_rsvr_cmd_proc_all_req(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr)
 {
-    int widx, idx;
-    smtc_cmd_t cmd;
-    char path[FILE_PATH_MAX_LEN];
-    smtc_cmd_proc_req_t *req = (smtc_cmd_proc_req_t *)&cmd.args;
-    smtc_conf_t *conf = &ctx->conf;
+    int idx;
 
-
-    /* 依次检测各Recv队列的滞留数据 */
+    /* 依次遍历滞留总数 */
     for (idx=0; idx<ctx->conf.rqnum; ++idx)
     {
         if (rsvr->delay_total[idx] > 0)
         {
-            cmd.type = SMTC_CMD_PROC_REQ;
-            req->ori_rsvr_tidx = rsvr->tidx;
-            req->rqidx = idx;
-            req->num = rsvr->delay_total[idx];
-
-            /* 1. 随机选择Work线程 */
-            /* widx = smtc_rand_work(ctx); */
-            widx = idx / SMTC_WORKER_HDL_QNUM;
-
-            smtc_worker_usck_path(conf, path, widx);
-
-            /* 2. 发送处理命令 */
-            if (unix_udp_send(rsvr->cmd_sck_id, path, &cmd, sizeof(smtc_cmd_t)) < 0)
-            {
-                log_debug(rsvr->log, "Send command failed! errmsg:[%d] %s! path:[%s]",
-                        errno, strerror(errno), path);
-                continue;
-            }
-
-            rsvr->delay_total[idx] = 0;
+            smtc_rsvr_cmd_proc_req(ctx, rsvr, idx);
         }
     }
 
-    return 0;
-}
-
-/******************************************************************************
- **函数名称: smtc_rsvr_cmd_send_proc_all_req
- **功    能: 发送处理所有数据的请求
- **输入参数: 
- **     ctx: 全局对象
- **     rsvr: 接收服务
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2015.01.01 #
- ******************************************************************************/
-static void smtc_rsvr_cmd_send_proc_all_req(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr)
-{
-    int widx, times = 0, idx;
-    smtc_cmd_t cmd;
-    char path[FILE_PATH_MAX_LEN];
-    smtc_conf_t *conf = &ctx->conf;
-    smtc_cmd_proc_req_t *req = (smtc_cmd_proc_req_t *)&cmd.args;
-
-     /* 1. 设置命令参数 */
-    cmd.type = SMTC_CMD_PROC_REQ;
-    req->ori_rsvr_tidx = rsvr->tidx;
-    req->num = -1; /* 取出所有数据 */
-
-     /* 2. 依次遍历所有Recv队列 让Work线程处理其中的数据 */
-    for (idx=0; idx<conf->rqnum; ++idx)
-    {
-        req->rqidx = idx;
-
-    AGAIN:
-        /* 2.1 随机选择Work线程 */
-        widx = rand() % conf->wrk_thd_num;
-
-        smtc_worker_usck_path(conf, path, widx);
-
-        /* 2.2 发送处理命令 */
-        if (unix_udp_send(rsvr->cmd_sck_id, path, &cmd, sizeof(smtc_cmd_t)) < 0)
-        {
-            if (++times < 3)
-            {
-                goto AGAIN;
-            }
-
-            log_debug(rsvr->log, "Send command failed! errmsg:[%d] %s! path:%s",
-                    errno, strerror(errno), path);
-
-            continue;
-        }
-
-        rsvr->delay_total[idx] = 0;
-    }
-
-    return;
+    return SMTC_OK;
 }

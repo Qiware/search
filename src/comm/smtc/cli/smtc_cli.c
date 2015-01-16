@@ -20,7 +20,6 @@ static int smtc_cli_creat_usck(smtc_cli_t *cli, int idx);
     snprintf(path, sizeof(path), "./temp/smtc/snd/%s/usck/%s_cli_%d.usck", \
         cli->conf.name, cli->conf.name, idx)
 
-
 /******************************************************************************
  **函数名称: smtc_cli_init
  **功    能: 发送端初始化(对外接口)
@@ -32,7 +31,7 @@ static int smtc_cli_creat_usck(smtc_cli_t *cli, int idx);
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-smtc_cli_t *smtc_cli_init(const smtc_ssvr_conf_t *conf, int idx)
+smtc_cli_t *smtc_cli_init(const smtc_ssvr_conf_t *conf, int idx, log_cycle_t *log)
 {
     smtc_cli_t *cli;
 
@@ -214,29 +213,25 @@ static int smtc_cli_notify_svr(smtc_cli_t *cli, int idx)
  **     将数据按照约定格式放入队列中
  **注意事项: 
  **     1. 只能用于发送自定义数据类型, 而不能用于系统数据类型
- **     2. 不过关注变量num, is_notify在多线程中的值，因其不影响安全性
+ **     2. 不用关注变量num在多线程中的值, 因其不影响安全性
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
 int smtc_cli_send(smtc_cli_t *cli, const void *data, int type, size_t size)
 {
     void *addr;
+    uint32_t idx;
     static uint32_t num = 0;
-    uint32_t is_notify, idx;
     smtc_header_t *header;
     smtc_ssvr_conf_t *conf = &cli->conf;
 
-    idx = (num++)%conf->snd_thd_num;
+    idx = (num++) % conf->snd_thd_num;
 
-    /* 1. 判断存储空间是否充足 */
-    if (size + sizeof(smtc_header_t) > cli->sq[idx]->size)
+    /* 1. 校验类型和长度 */
+    if ((type >= SMTC_TYPE_MAX)
+        || (size + sizeof(smtc_header_t) > cli->sq[idx]->size))
     {
-        log_error(cli->log, "Send size is too large!");
-        return SMTC_ERR_QSIZE;
-    }
-    else if (type >= SMTC_TYPE_MAX)
-    {
-        log_error(cli->log, "Data type is invalid! type:%d", type);
-        return SMTC_ERR_DATA_TYPE;
+        log_error(cli->log, "Type of length is invalid! type:%d size:%u", type, size);
+        return SMTC_ERR;
     }
 
     /* 2. 向申请队列空间 */
@@ -244,8 +239,11 @@ int smtc_cli_send(smtc_cli_t *cli, const void *data, int type, size_t size)
     if (NULL == addr)
     {
         log_error(cli->log, "Queue space is not enough!");
-        smtc_cli_notify_svr(cli, idx);
-        return SMTC_ERR_QALLOC;
+        if (0 == num%2)
+        {
+            smtc_cli_notify_svr(cli, idx);
+        }
+        return SMTC_ERR;
     }
 
     /* 3. 将数据放入队列空间 */
@@ -255,21 +253,18 @@ int smtc_cli_send(smtc_cli_t *cli, const void *data, int type, size_t size)
     header->flag = SMTC_EXP_MESG; /* 自定义类型 */
     header->checksum = SMTC_CHECK_SUM;
 
-    memcpy(addr+sizeof(smtc_header_t), data, size);
+    memcpy(addr + sizeof(smtc_header_t), data, size);
 
-    /* 4. 压入队列 */
+    /* 4. 压入发送队列 */
     if (shm_queue_push(cli->sq[idx], addr))
     {
         log_error(cli->log, "Push data into queue failed!");
-        
         shm_queue_dealloc(cli->sq[idx], addr);
         return SMTC_ERR;
     }
 
-    is_notify = (cli->snd_num[idx]++) % SMTC_SND_REQ_INTV_NUM;
-
-    /* 5. 通知Send线程 */
-    if (!is_notify)
+    /* 5. 通知发送服务 */
+    if (0 == (cli->snd_num[idx]++) % 100)
     {
         smtc_cli_notify_svr(cli, idx);
     }

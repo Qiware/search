@@ -18,9 +18,6 @@
 #define SMTC_SSVR_TMOUT_SEC     (1)     /* SND超时: 秒 */
 #define SMTC_SSVR_TMOUT_USEC    (0)     /* SND超时: 微妙 */
 
-#define SMTC_SYS_MESG           (0)     /* 系统数据类型 */
-#define SMTC_EXP_MESG           (1)     /* 自定义数据类型 */
-#define SMTC_CHECK_SUM          (0x1FE23DC4) /* 校验值 */
 #define SMTC_TYPE_MAX           (0xFF)  /* 自定义数据类型的最大值 */
 
 #define SMTC_FAIL_CMDQ_MAX      (1000)  /* 失败命令的队列长度 */
@@ -51,27 +48,14 @@ typedef enum
     , SMTC_SCK_STAT_TOTAL
 } smtc_sck_stat_e;
 
-/* 保活状态 */
-typedef enum
-{
-    SMTC_KPALIVE_STAT_UNKNOWN       /* 未知状态 */
-    , SMTC_KPALIVE_STAT_SENT        /* 已发送保活 */
-    , SMTC_KPALIVE_STAT_SUCC        /* 保活成功 */
-
-    , SMTC_KPALIVE_STAT_TOTAL       /* 保活状态总数 */
-} smtc_kpalive_stat_e;
-
 /* 返回码 */
 typedef enum
 {
     SMTC_OK = 0                     /* 成功 */
     , SMTC_DONE                     /* 处理完成 */
     , SMTC_RECONN                   /* 重连处理 */
-    , SMTC_HDL_DONE                 /* 处理完成 */
-    , SMTC_HDL_DISCARD              /* 放弃处理 */
-
     , SMTC_AGAIN                    /* 未完成 */
-    , SMTC_SCK_CLOSED               /* 套接字被关闭*/
+    , SMTC_DISCONN                  /* 连接断开 */
 
     , SMTC_ERR = ~0x7FFFFFFF        /* 失败 */
     , SMTC_ERR_CALLOC               /* Calloc错误 */
@@ -138,12 +122,15 @@ typedef struct
 /* 发送数据头部信息 */
 typedef struct
 {
-    uint32_t type;                  /* 数据类型 */
-    int length;                     /* 消息体的长度 */
-    int flag;                       /* 消息标志
-                                        - SMTC_SYS_MESG: 系统消息(smtc_sys_mesg_e)
-                                        - SMTC_EXP_MESG: 自定义消息(0x00~0xFF) */
-    int checksum;                   /* 校验值 */
+    uint16_t type;                  /* 数据类型 */
+#define SMTC_SYS_MESG   (0)         /* 系统类型 */
+#define SMTC_EXP_MESG   (1)         /* 自定义类型 */
+    uint8_t flag;                   /* 消息标志
+                                        - 0: 系统消息(type: smtc_sys_mesg_e)
+                                        - 1: 自定义消息(type: 0x0000~0xFFFF) */
+    uint32_t length;                /* 消息体的长度 */
+#define SMTC_CHECK_SUM  (0x1FE23DC4)
+    uint32_t checksum;              /* 校验值 */
 } __attribute__((packed)) smtc_header_t;
 
 #define smtc_is_sys_data(head) (SMTC_SYS_MESG == (head)->flag)

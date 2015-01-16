@@ -43,14 +43,20 @@ typedef struct
     time_t wrtm;                    /* 最近写入操作时间 */
     time_t rdtm;                    /* 最近读取操作时间 */
 
-    smtc_kpalive_stat_e kpalive;    /* 保活状态 */
+#define SMTC_KPALIVE_STAT_UNKNOWN   (0)     /* 未知状态 */
+#define SMTC_KPALIVE_STAT_SENT      (1)     /* 已发送保活 */
+#define SMTC_KPALIVE_STAT_SUCC      (2)     /* 保活成功 */
+    int kpalive;                    /* 保活状态
+                                        0: 未知状态
+                                        1: 已发送保活
+                                        2: 保活成功 */
     list_t *mesg_list;              /* 消息列表 */
 
     socket_snap2_t recv;            /* 接收快照 */
     socket_snap2_t send;            /* 发送快照 */
 } smtc_ssvr_sck_t;
 
-#define smtc_set_kpalive_stat(sck, _kpalive) (sck)->kpalive = (_kpalive)
+#define smtc_set_kpalive_stat(sck, _stat) (sck)->kpalive = (_stat)
 
 /* SND线程上下文 */
 typedef struct

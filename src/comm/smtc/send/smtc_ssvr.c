@@ -25,20 +25,19 @@ static smtc_ssvr_t *smtc_ssvr_get_curr(smtc_ssvr_cntx_t *ctx);
 
 static int smtc_ssvr_creat_sendq(smtc_ssvr_t *ssvr, const smtc_ssvr_conf_t *conf);
 static int smtc_ssvr_creat_usck(smtc_ssvr_t *ssvr, const smtc_ssvr_conf_t *conf);
-static int smtc_ssvr_connect(smtc_ssvr_t *ssvr, const smtc_ssvr_conf_t *conf);
 
 static int smtc_ssvr_kpalive_req(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr);
 
-static int smtc_ssvr_recv_cmd_hdl(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr);
+static int smtc_ssvr_recv_cmd(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr);
 static int smtc_ssvr_recv_proc(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr);
 
 static int smtc_ssvr_data_proc(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr, smtc_ssvr_sck_t *sck);
-static int smtc_ssvr_sys_mesg_proc(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr, smtc_ssvr_sck_t *sck);
-static int smtc_ssvr_exp_mesg_proc(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr, smtc_ssvr_sck_t *sck);
+static int smtc_ssvr_sys_mesg_proc(smtc_ssvr_t *ssvr, smtc_ssvr_sck_t *sck, void *addr);
+static int smtc_ssvr_exp_mesg_proc(smtc_ssvr_t *ssvr, smtc_ssvr_sck_t *sck, void *addr);
 
 static int smtc_ssvr_timeout_hdl(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr);
-static int smtc_ssvr_cmd_hdl(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr, const smtc_cmd_t *cmd);
-static int smtc_ssvr_cmd_send_all_req_hdl(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr, const smtc_cmd_send_req_t *args);
+static int smtc_ssvr_proc_cmd(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr, const smtc_cmd_t *cmd);
+static int smtc_ssvr_send_data(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr);
 
 static int smtc_ssvr_add_mesg(smtc_ssvr_t *ssvr, void *addr);
 static void *smtc_ssvr_get_mesg(smtc_ssvr_t *ssvr);
@@ -215,7 +214,7 @@ static int smtc_ssvr_init(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr, int tidx)
     socket_set_snap(recv, addr, SMTC_SSVR_RECV_BUFF_SIZE);
 
     /* 6. 连接接收服务器 */
-    if (smtc_ssvr_connect(ssvr, conf))
+    if ((ssvr->sck.fd = tcp_connect(AF_INET, conf->ipaddr, conf->port)) < 0)
     {
         log_error(ssvr->log, "Connect recv server failed!");
         /* Note: Don't return error! */
@@ -287,25 +286,6 @@ static int smtc_ssvr_creat_usck(smtc_ssvr_t *ssvr, const smtc_ssvr_conf_t *conf)
 }
 
 /******************************************************************************
- **函数名称: smtc_ssvr_connect
- **功    能: 连接远程服务器
- **输入参数: 
- **     ctx: 全局信息
- **     conf: 配置信息
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2015.03.25 #
- ******************************************************************************/
-static int smtc_ssvr_connect(smtc_ssvr_t *ssvr, const smtc_ssvr_conf_t *conf)
-{
-    ;
-   
-    return SMTC_OK;
-}
-
-/******************************************************************************
  **函数名称: smtc_ssvr_bind_cpu
  **功    能: 绑定CPU
  **输入参数: 
@@ -315,7 +295,7 @@ static int smtc_ssvr_connect(smtc_ssvr_t *ssvr, const smtc_ssvr_conf_t *conf)
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
- **作    者: # Qifeng.zou # 2015.06.11 #
+ **作    者: # Qifeng.zou # 2015.01.16 #
  ******************************************************************************/
 static void smtc_ssvr_bind_cpu(smtc_ssvr_cntx_t *ctx, int tidx)
 {
@@ -345,10 +325,10 @@ static void smtc_ssvr_bind_cpu(smtc_ssvr_cntx_t *ctx, int tidx)
  **输入参数: 
  **     ssvr: 发送线程对象
  **输出参数: NONE
- **返    回: 0:Succ !0:Fail
+ **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
- **作    者: # Qifeng.zou # 2015.07.22 #
+ **作    者: # Qifeng.zou # 2015.01.16 #
  ******************************************************************************/
 void smtc_ssvr_set_rwset(smtc_ssvr_t *ssvr) 
 { 
@@ -389,7 +369,7 @@ void smtc_ssvr_set_rwset(smtc_ssvr_t *ssvr)
  **     2. 绑定CPU
  **     3. 调用发送主程
  **注意事项: 
- **作    者: # Qifeng.zou # 2015.03.25 #
+ **作    者: # Qifeng.zou # 2015.01.16 #
  ******************************************************************************/
 static void *smtc_ssvr_routine(void *_ctx)
 {
@@ -447,6 +427,7 @@ static void *smtc_ssvr_routine(void *_ctx)
             }
 
             log_fatal(ssvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
+            abort();
             return (void *)-1;
         }
         else if (0 == ret)
@@ -458,13 +439,13 @@ static void *smtc_ssvr_routine(void *_ctx)
         /* 发送数据: 发送优先 */
         if (FD_ISSET(sck->fd, &ssvr->wset))
         {
-            smtc_ssvr_cmd_send_all_req_hdl(ctx, ssvr, NULL);
+            smtc_ssvr_send_data(ctx, ssvr);
         }
 
         /* 接收命令 */
         if (FD_ISSET(ssvr->cmd_sck_id, &ssvr->rset))
         {
-            smtc_ssvr_recv_cmd_hdl(ctx, ssvr);
+            smtc_ssvr_recv_cmd(ctx, ssvr);
         }
 
         /* 接收Recv服务的数据 */
@@ -495,10 +476,10 @@ static void *smtc_ssvr_routine(void *_ctx)
 static int smtc_ssvr_kpalive_req(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr)
 {
     void *addr;
-    smtc_ssvr_sck_t *sck = &ssvr->sck;
-    socket_snap2_t *send = &ssvr->sck.send;
     smtc_header_t *head;
     int size = sizeof(smtc_header_t);
+    smtc_ssvr_sck_t *sck = &ssvr->sck;
+    socket_snap2_t *send = &ssvr->sck.send;
 
     /* 1. 上次发送保活请求之后 仍未收到应答 */
     if ((sck->fd < 0) 
@@ -507,7 +488,7 @@ static int smtc_ssvr_kpalive_req(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr)
         Close(sck->fd);
         Free(send->addr);
 
-        log_error(ssvr->log, "Didn't get keep-alive respond for a long time!");
+        log_error(ssvr->log, "Didn't get keepalive respond for a long time!");
         return SMTC_OK;
     }
 
@@ -604,66 +585,45 @@ static int smtc_ssvr_timeout_hdl(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr)
 }
 
 /******************************************************************************
- ** Name : smtc_ssvr_head_isvalid
- ** Desc : Check head
- ** Input: 
- **     ctx: 上下文
- **     ssvr: Recv context
- **     sck: Socket information
- ** Output: NONE
- ** Return: 0:Succ !0:Fail
- ** Proc : 
- ** Note : 
- ** Author: # Qifeng.zou # 2015.05.13 #
+ **函数名称: smtc_ssvr_head_isvalid
+ **功    能: 判断报头合法性
+ **输入参数: 
+ **     ctx: 全局信息
+ **     head: 报头合法性
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **     1. 判断校验值、数据类型、长度的合法性
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
 #define smtc_ssvr_head_isvalid(ctx, head) \
     (((SMTC_CHECK_SUM != head->checksum) \
         || !smtc_is_type_valid(head->type) \
-        || head->length + sizeof(smtc_header_t) >= SMTC_SSVR_RECV_BUFF_SIZE)? false : true)
-
-/******************************************************************************
- ** Name : smtc_ssvr_data_proc
- ** Desc : Process data from server.
- ** Input: 
- **     ctx: 上下文
- **     ssvr: Send server 
- **     sck: Socket info
- ** Output: NONE
- ** Return: 0:Succ !0:Fail
- ** Proc : 
- **     1. Handle system data
- **     2. Forward expand data
- ** Note : 
- ** Author: # Qifeng.zou # 2015.05.13 #
- ******************************************************************************/
-static int smtc_ssvr_data_proc(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr, smtc_ssvr_sck_t *sck)
-{
-    socket_snap2_t *recv = &sck->recv;
-    smtc_header_t *head = (smtc_header_t *)recv->addr;
-
-    /* 1. Handle system data */
-    if (SMTC_SYS_MESG == head->flag)
-    {
-        return smtc_ssvr_sys_mesg_proc(ctx, ssvr, sck);
-    }
-
-    /* 2. Forward expand data */
-    return smtc_ssvr_exp_mesg_proc(ctx, ssvr, sck);
-}
+        || (head->length + sizeof(smtc_header_t) >= SMTC_SSVR_RECV_BUFF_SIZE))? false : true)
 
 /******************************************************************************
  **函数名称: smtc_ssvr_recv_proc
- **功    能: 接收来自服务器的信息
+ **功    能: 接收网络数据
  **输入参数: 
  **     ctx: 全局信息
- **     ssvr: 发送线程全局信息
+ **     ssvr: 发送服务
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
- **     1. 读取消息HEAD
- **     2. 读取消息BODY
- **     3. 处理消息内容
+ **     1. 接收网络数据
+ **     2. 进行数据处理
  **注意事项: 
+ **       ------------------------------------------------
+ **      | 已处理 |     未处理     |       剩余空间       |
+ **       ------------------------------------------------
+ **      |XXXXXXXX|////////////////|                      |
+ **      |XXXXXXXX|////////////////|         left         |
+ **      |XXXXXXXX|////////////////|                      |
+ **       ------------------------------------------------
+ **      ^        ^                ^                      ^
+ **      |        |                |                      |
+ **     addr     optr             iptr                   end
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
 static int smtc_ssvr_recv_proc(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr)
@@ -694,9 +654,8 @@ static int smtc_ssvr_recv_proc(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr)
         }
         else if (0 == n)
         {
-            log_info(ssvr->log, "Client disconnected. errmsg:[%d] %s! fd:%d n:%d/%d",
-                    errno, strerror(errno), sck->fd, n, left);
-            return SMTC_SCK_CLOSED;
+            log_info(ssvr->log, "Client disconnected. fd:%d n:%d/%d", sck->fd, n, left);
+            return SMTC_DISCONN;
         }
         else if ((n < 0) && (EAGAIN == errno))
         {
@@ -716,387 +675,20 @@ static int smtc_ssvr_recv_proc(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr)
 }
 
 /******************************************************************************
- **函数名称: smtc_ssvr_recv_cmd_hdl
- **功    能: 接收命令
+ **函数名称: smtc_ssvr_data_proc
+ **功    能: 进行数据处理
  **输入参数: 
  **     ctx: 全局信息
- **     ssvr: 发送线程对象
- **输出参数: 
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **     1. 接收命令
- **     2. 处理命令
- **注意事项: 
- **作    者: # Qifeng.zou # 2015.01.14 #
- ******************************************************************************/
-static int smtc_ssvr_recv_cmd_hdl(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr)
-{
-    smtc_cmd_t cmd;
-
-    memset(&cmd, 0, sizeof(cmd));
-
-    /* 1. 接收命令 */
-    if (unix_udp_recv(ssvr->cmd_sck_id, &cmd, sizeof(cmd)) < 0)
-    {
-        log_error(ssvr->log, "Recv command failed! errmsg:[%d] %s!", errno, strerror(errno));
-        return SMTC_ERR;
-    }
-
-    /* 2. 处理命令 */
-    if (smtc_ssvr_cmd_hdl(ctx, ssvr, &cmd))
-    {
-        log_error(ssvr->log, "Handle command failed");
-        return SMTC_ERR;
-    }
-
-    return SMTC_OK;
-}
-
-/******************************************************************************
- **函数名称: smtc_ssvr_cmd_hdl
- **功    能: 命令处理
- **输入参数: 
- **     ssvr: 发送线程对象
- **     cmd: 接收到的命令信息
- **输出参数: 
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2015.01.14 #
- ******************************************************************************/
-static int smtc_ssvr_cmd_hdl(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr, const smtc_cmd_t *cmd)
-{
-    smtc_ssvr_sck_t *sck = &ssvr->sck;
-
-    switch (cmd->type)
-    {
-        case SMTC_CMD_SEND:
-        case SMTC_CMD_SEND_ALL:
-        {
-            if (fd_is_writable(sck->fd))
-            {
-                return smtc_ssvr_cmd_send_all_req_hdl(ctx,
-                        ssvr, (const smtc_cmd_send_req_t *)&cmd->args);
-            }
-            return SMTC_OK;
-        }
-        default:
-        {
-            log_error(ssvr->log, "Received unknown command! type:[%d]", cmd->type);
-            return SMTC_OK;
-        }
-    }
-    return SMTC_OK;
-}
-
-/******************************************************************************
- **函数名称: smtc_ssvr_fill_send_buff
- **功    能: 填充发送缓冲区
- **输入参数: 
- **     ssvr: 发送线程
- **     sck: 套接字对象
- **输出参数: 
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **     1. 从消息链表取数据
- **     2. 从发送队列取数据
- **注意事项: 
- **作    者: # Qifeng.zou # 2015.01.14 #
- ******************************************************************************/
-static int smtc_ssvr_fill_send_buff(smtc_ssvr_t *ssvr, smtc_ssvr_sck_t *sck)
-{
-    void *addr;
-    list_node_t *node;
-    int left, one_mesg_len;
-    smtc_header_t *head;
-    socket_snap2_t *send = &sck->send;
-
-    /* 1. 从消息链表取数据 */
-    for (;;)
-    {
-        /* 1.1 判断发送缓存的剩余空间是否足够 */
-        node = ssvr->sck.mesg_list->head;
-        if (NULL == node)
-        {
-            break; /* 无数据 */
-        }
-
-        head = (smtc_header_t *)node->data;
-
-        left = (int)(send->end - send->iptr);
-        one_mesg_len = sizeof(smtc_header_t) + head->length;
-        if (left < one_mesg_len)
-        {
-            break;
-        }
-
-        /* 1.2 取发送的数据 */
-        addr = smtc_ssvr_get_mesg(ssvr);
-
-        head = (smtc_header_t *)addr;
-
-        head->type = htonl(head->type);
-        head->length = htonl(head->length);
-        head->flag = htonl(head->flag);
-        head->checksum = htonl(head->checksum);
-
-        /* 1.3 拷贝至发送缓存 */
-        memcpy(send->iptr, addr, one_mesg_len);
-
-        send->iptr += one_mesg_len;
-        continue;
-    }
-
-    /* 2. 从发送队列取数据 */
-    for (;;)
-    {
-        /* 2.1 判断发送缓存的剩余空间是否足够 */
-        left = (int)(send->end - send->iptr);
-        if (left < ssvr->sq->size)
-        {
-            break;
-        }
-
-        /* 2.2 取发送的数据 */
-        addr = shm_queue_pop(ssvr->sq);
-        if (NULL == addr)
-        {
-            break;
-        }
-
-        head = (smtc_header_t *)addr;
-
-        one_mesg_len = sizeof(smtc_header_t) + head->length;
-
-        head->type = htonl(head->type);
-        head->length = htonl(head->length);
-        head->flag = htonl(head->flag);
-        head->checksum = htonl(head->checksum);
-
-        /* 2.3 拷贝至发送缓存 */
-        memcpy(send->iptr, addr, one_mesg_len);
-
-        send->iptr += one_mesg_len;
-        continue;
-    }
-
-    return SMTC_OK;
-}
-
-/******************************************************************************
- **函数名称: smtc_ssvr_cmd_send_all_req_hdl
- **功    能: 发送数据的请求处理
- **输入参数: 
- **     ssvr: 发送线程
- **     args: 命令参数
- **输出参数: 
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2015.01.14 #
- ******************************************************************************/
-static int smtc_ssvr_cmd_send_all_req_hdl(
-        smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr, const smtc_cmd_send_req_t *args)
-{
-    int n, len;
-    time_t ctm = time(NULL);
-    smtc_ssvr_sck_t *sck = &ssvr->sck;
-    socket_snap2_t *send = &sck->send;
-
-    sck->wrtm = ctm;
-
-    for (;;)
-    {
-        /* 1. 填充缓存 */
-        if (send->iptr == send->optr)
-        {
-            smtc_ssvr_fill_send_buff(ssvr, sck);
-        }
-
-        /* 2. 发送数据 */
-        len = send->iptr - send->optr;
-
-        n = Writen(sck->fd, send->optr, len);
-        if (n < 0)
-        {
-        #if defined(__SMTC_DEBUG__)
-            send->fail++;
-            fprintf(stderr, "succ:%llu fail:%llu again:%llu\n",
-                send->succ, send->fail, send->again);
-        #endif /*__SMTC_DEBUG__*/
-
-            log_error(ssvr->log, "\terrmsg:[%d] %s! fd:%d len:[%d]",
-                errno, strerror(errno), sck->fd, len);
-
-            Close(sck->fd);
-            Free(send->addr);
-            return SMTC_ERR;
-        }
-        /* 只发送了部分数据 */
-        else if (n != len)
-        {
-            send->optr += n;
-        #if defined(__SMTC_DEBUG__)
-            send->again++;
-        #endif /*__SMTC_DEBUG__*/
-            return SMTC_OK;
-        }
-
-        send->optr += n;
-
-        /* 4. 重置标识量 */
-        send->optr = send->addr;
-        send->iptr = send->addr;
-    #if defined(__SMTC_DEBUG__)
-        send->succ++;
-    #endif /*__SMTC_DEBUG__*/
-    }
-
-    return SMTC_OK;
-}
-
-/******************************************************************************
- **函数名称: smtc_ssvr_add_mesg
- **功    能: 添加发送数据
- **输入参数: 
- **    ssvr: Recv对象
- **    addr: 将要发送的数据
+ **     ssvr: 发送服务
+ **     sck: 连接对象
  **输出参数: NONE
- **返    回: 0:Succ !0:Fail
+ **返    回: 0:成功 !0:失败
  **实现描述: 
- **    将要发送的数据放在链表的末尾
+ **     1. 是否含有完整数据
+ **     2. 校验数据合法性
+ **     3. 进行数据处理
  **注意事项: 
- **作    者: # Qifeng.zou # 2015.07.04 #
- ******************************************************************************/
-static int smtc_ssvr_add_mesg(smtc_ssvr_t *ssvr, void *addr)
-{
-    list_node_t *add;
-
-    /* 1.创建新结点 */
-    add = slab_alloc(ssvr->pool, sizeof(list_node_t));
-    if (NULL == add)
-    {
-        log_debug(ssvr->log, "Alloc memory from slab failed!");
-        return SMTC_ERR;
-    }
-
-    add->data = addr;
-    add->next = NULL;
-
-    /* 2.插入链尾 */
-    list_insert_tail(ssvr->sck.mesg_list, add);
-
-    return SMTC_OK;
-}
-
-/******************************************************************************
- **函数名称: smtc_ssvr_get_mesg
- **功    能: 获取发送数据
- **输入参数: 
- **    ssvr: Recv对象
- **    sck: 套接字对象
- **输出参数: NONE
- **返    回: 0:Succ !0:Fail
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2015.07.04 #
- ******************************************************************************/
-static void *smtc_ssvr_get_mesg(smtc_ssvr_t *ssvr)
-{
-    void *addr;
-    list_node_t *node;
-
-    node = list_remove_head(ssvr->sck.mesg_list);
-    if (NULL == node)
-    {
-        return NULL;
-    }
-    
-    addr = node->data;
-
-    slab_dealloc(ssvr->pool, node);
-
-    return addr;
-}
-
-/******************************************************************************
- **函数名称: smtc_ssvr_clear_mesg
- **功    能: 清空发送数据
- **输入参数: 
- **    ssvr: Send对象
- **    sck: 套接字对象
- **输出参数: NONE
- **返    回: 0:Succ !0:Fail
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2015.07.04 #
- ******************************************************************************/
-static int smtc_ssvr_clear_mesg(smtc_ssvr_t *ssvr)
-{
-    list_node_t *node;
-
-    node = list_remove_head(ssvr->sck.mesg_list);
-    while (NULL != node)
-    {
-        slab_dealloc(ssvr->pool, node->data);
-        slab_dealloc(ssvr->pool, node);
-
-        node = list_remove_head(ssvr->sck.mesg_list);
-    }
-
-    ssvr->sck.mesg_list = NULL;
-    return SMTC_OK;
-}
-
-/******************************************************************************
- ** Name : smtc_ssvr_sys_mesg_proc
- ** Desc : Handle system data
- ** Input: 
- **     ctx: 上下文
- **     ssvr: Recv context
- **     sck: Socket information
- ** Output: NONE
- ** Return: 0:Succ !0:Fail
- ** Proc : 
- ** Note : 
- ** Author: # Qifeng.zou # 2015.04.14 #
- ******************************************************************************/
-static int smtc_ssvr_sys_mesg_proc(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr, smtc_ssvr_sck_t *sck)
-{
-    socket_snap2_t *recv = &sck->recv;
-    smtc_header_t *head = (smtc_header_t *)recv->addr;
-
-    switch (head->type)
-    {
-        case SMTC_KPALIVE_REP:  /* 保活应答数据 */
-        {
-            log_debug(ssvr->log, "Received keepalive respond!");
-
-            smtc_set_kpalive_stat(sck, SMTC_KPALIVE_STAT_SUCC);
-            return SMTC_OK;
-        }
-        default:
-        {
-            log_error(ssvr->log, "Give up handle this type [%d]!", head->type);
-            return SMTC_HDL_DISCARD;
-        }
-    }
-    
-    return SMTC_HDL_DISCARD;
-}
-
-/******************************************************************************
- ** Name : smtc_ssvr_exp_mesg_proc
- ** Desc : Forward expand data
- ** Input: 
- **     ctx: 上下文
- **     sck: Socket information
- ** Output: NONE
- ** Return: 0:Succ !0:Fail
- ** Proc : 
- **     1. Send "Work REQ" command to worker thread
- **     2. Send fail commands again
- ** Note : 
+ **       ------------------------------------------------
  **      | 已处理 |     未处理     |       剩余空间       |
  **       ------------------------------------------------
  **      |XXXXXXXX|////////////////|                      |
@@ -1106,12 +698,12 @@ static int smtc_ssvr_sys_mesg_proc(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr, smt
  **      ^        ^                ^                      ^
  **      |        |                |                      |
  **     addr     optr             iptr                   end
- ** Author: # Qifeng.zou # 2015.04.10 #
+ **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static int smtc_ssvr_exp_mesg_proc(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr, smtc_ssvr_sck_t *sck)
+static int smtc_ssvr_data_proc(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr, smtc_ssvr_sck_t *sck)
 {
     smtc_header_t *head;
-    int len, one_mesg_len;
+    int len, mesg_len;
     socket_snap2_t *recv = &sck->recv;
 
     while (1)
@@ -1120,9 +712,9 @@ static int smtc_ssvr_exp_mesg_proc(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr, smt
         len = (int)(recv->iptr - recv->optr);
 
         /* 1. 不足一条数据时 */
-        one_mesg_len = sizeof(smtc_header_t) + head->length;
+        mesg_len = sizeof(smtc_header_t) + head->length;
         if (len < sizeof(smtc_header_t)
-            || len < one_mesg_len)
+            || len < mesg_len)
         {
             if (recv->iptr == recv->end) 
             {
@@ -1159,40 +751,417 @@ static int smtc_ssvr_exp_mesg_proc(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr, smt
         /* 2.3 进行数据处理 */
         if (SMTC_SYS_MESG == head->flag)
         {
-            smtc_ssvr_sys_mesg_proc(ctx, ssvr, sck);
+            smtc_ssvr_sys_mesg_proc(ssvr, sck, recv->addr);
         }
         else
         {
-            smtc_ssvr_exp_mesg_proc(ctx, ssvr, sck);
+            smtc_ssvr_exp_mesg_proc(ssvr, sck, recv->addr);
         }
 
-        recv->optr += one_mesg_len;
+        recv->optr += mesg_len;
     }
 
     return SMTC_OK;
 }
 
 /******************************************************************************
- **函数名称: smtc_ssvr_reset_sck
- **功    能: 重置套接字信息
+ **函数名称: smtc_ssvr_recv_cmd
+ **功    能: 接收命令数据
  **输入参数: 
- **     ssvr: Send对象
- **     sck: 套接字对象
- **输出参数: NONE
- **返    回: 0:Succ !0:Fail
+ **     ctx: 全局信息
+ **     ssvr: 发送线程对象
+ **输出参数: 
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **     1. 接收命令
+ **     2. 处理命令
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.01.14 #
+ ******************************************************************************/
+static int smtc_ssvr_recv_cmd(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr)
+{
+    smtc_cmd_t cmd;
+
+    memset(&cmd, 0, sizeof(cmd));
+
+    /* 1. 接收命令 */
+    if (unix_udp_recv(ssvr->cmd_sck_id, &cmd, sizeof(cmd)) < 0)
+    {
+        log_error(ssvr->log, "Recv command failed! errmsg:[%d] %s!", errno, strerror(errno));
+        return SMTC_ERR;
+    }
+
+    /* 2. 处理命令 */
+    return smtc_ssvr_proc_cmd(ctx, ssvr, &cmd);
+}
+
+/******************************************************************************
+ **函数名称: smtc_ssvr_proc_cmd
+ **功    能: 命令处理
+ **输入参数: 
+ **     ssvr: 发送线程对象
+ **     cmd: 接收到的命令信息
+ **输出参数: 
+ **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-void smtc_ssvr_reset_sck(smtc_ssvr_t *ssvr, smtc_ssvr_sck_t *sck)
+static int smtc_ssvr_proc_cmd(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr, const smtc_cmd_t *cmd)
 {
-    /* 1. 重置标识量 */
-    Close(sck->fd);
-    sck->wrtm = 0;
-    sck->rdtm = 0;
+    smtc_ssvr_sck_t *sck = &ssvr->sck;
 
-    smtc_set_kpalive_stat(sck, SMTC_KPALIVE_STAT_UNKNOWN);
+    switch (cmd->type)
+    {
+        case SMTC_CMD_SEND:
+        case SMTC_CMD_SEND_ALL:
+        {
+            if (fd_is_writable(sck->fd))
+            {
+                return smtc_ssvr_send_data(ctx, ssvr);
+            }
+            return SMTC_OK;
+        }
+        default:
+        {
+            log_error(ssvr->log, "Unknown command! type:[%d]", cmd->type);
+            return SMTC_OK;
+        }
+    }
+    return SMTC_OK;
+}
 
-    /* 2. 释放空间 */
-    smtc_ssvr_clear_mesg(ssvr);
+/******************************************************************************
+ **函数名称: smtc_ssvr_fill_send_buff
+ **功    能: 填充发送缓冲区
+ **输入参数: 
+ **     ssvr: 发送线程
+ **     sck: 连接对象
+ **输出参数: 
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **     1. 从消息链表取数据
+ **     2. 从发送队列取数据
+ **注意事项: 
+ **       ------------------------------------------------
+ **      | 已处理 |     未处理     |       剩余空间       |
+ **       ------------------------------------------------
+ **      |XXXXXXXX|////////////////|                      |
+ **      |XXXXXXXX|////////////////|         left         |
+ **      |XXXXXXXX|////////////////|                      |
+ **       ------------------------------------------------
+ **      ^        ^                ^                      ^
+ **      |        |                |                      |
+ **     addr     optr             iptr                   end
+ **作    者: # Qifeng.zou # 2015.01.14 #
+ ******************************************************************************/
+static int smtc_ssvr_fill_send_buff(smtc_ssvr_t *ssvr, smtc_ssvr_sck_t *sck)
+{
+    void *addr;
+    list_node_t *node;
+    int left, mesg_len;
+    smtc_header_t *head;
+    socket_snap2_t *send = &sck->send;
+
+    /* 1. 从消息链表取数据 */
+    for (;;)
+    {
+        /* 1.1 是否有数据 */
+        node = ssvr->sck.mesg_list->head;
+        if (NULL == node)
+        {
+            break; /* 无数据 */
+        }
+
+        /* 1.2 判断剩余空间 */
+        head = (smtc_header_t *)node->data;
+
+        left = (int)(send->end - send->iptr);
+        mesg_len = sizeof(smtc_header_t) + head->length;
+        if (left < mesg_len)
+        {
+            break; /* 空间不足 */
+        }
+
+        /* 1.3 取发送的数据 */
+        addr = smtc_ssvr_get_mesg(ssvr);
+
+        head = (smtc_header_t *)addr;
+
+        head->type = htonl(head->type);
+        head->length = htonl(head->length);
+        head->flag = htonl(head->flag);
+        head->checksum = htonl(head->checksum);
+
+        /* 1.4 拷贝至发送缓存 */
+        memcpy(send->iptr, addr, mesg_len);
+
+        send->iptr += mesg_len;
+        continue;
+    }
+
+    /* 2. 从发送队列取数据 */
+    for (;;)
+    {
+        /* 2.1 判断发送缓存的剩余空间是否足够 */
+        left = (int)(send->end - send->iptr);
+        if (left < ssvr->sq->size)
+        {
+            break;  /* 空间不足 */
+        }
+
+        /* 2.2 取发送的数据 */
+        addr = shm_queue_pop(ssvr->sq);
+        if (NULL == addr)
+        {
+            break;  /* 无数据 */
+        }
+
+        head = (smtc_header_t *)addr;
+
+        mesg_len = sizeof(smtc_header_t) + head->length;
+
+        head->type = htonl(head->type);
+        head->length = htonl(head->length);
+        head->flag = htonl(head->flag);
+        head->checksum = htonl(head->checksum);
+
+        /* 2.3 拷贝至发送缓存 */
+        memcpy(send->iptr, addr, mesg_len);
+
+        send->iptr += mesg_len;
+        continue;
+    }
+
+    return SMTC_OK;
+}
+
+/******************************************************************************
+ **函数名称: smtc_ssvr_send_data
+ **功    能: 发送数据的请求处理
+ **输入参数: 
+ **     ctx: 全局信息
+ **     ssvr: 发送线程
+ **输出参数: 
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **     1. 填充发送缓存
+ **     2. 发送缓存数据
+ **     3. 重置标识量
+ **注意事项: 
+ **       ------------------------------------------------
+ **      | 已发送 |     待发送     |       剩余空间       |
+ **       ------------------------------------------------
+ **      |XXXXXXXX|////////////////|                      |
+ **      |XXXXXXXX|////////////////|         left         |
+ **      |XXXXXXXX|////////////////|                      |
+ **       ------------------------------------------------
+ **      ^        ^                ^                      ^
+ **      |        |                |                      |
+ **     addr     optr             iptr                   end
+ **作    者: # Qifeng.zou # 2015.01.14 #
+ ******************************************************************************/
+static int smtc_ssvr_send_data(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr)
+{
+    int n, len;
+    time_t ctm = time(NULL);
+    smtc_ssvr_sck_t *sck = &ssvr->sck;
+    socket_snap2_t *send = &sck->send;
+
+    sck->wrtm = ctm;
+
+    for (;;)
+    {
+        /* 1. 填充发送缓存 */
+        if (send->iptr == send->optr)
+        {
+            smtc_ssvr_fill_send_buff(ssvr, sck);
+        }
+
+        /* 2. 发送缓存数据 */
+        len = send->iptr - send->optr;
+
+        n = Writen(sck->fd, send->optr, len);
+        if (n < 0)
+        {
+        #if defined(__SMTC_DEBUG__)
+            send->fail++;
+        #endif /*__SMTC_DEBUG__*/
+
+            log_error(ssvr->log, "errmsg:[%d] %s! fd:%d len:[%d]",
+                    errno, strerror(errno), sck->fd, len);
+
+            Close(sck->fd);
+            Free(send->addr);
+            return SMTC_ERR;
+        }
+        /* 只发送了部分数据 */
+        else if (n != len)
+        {
+            send->optr += n;
+        #if defined(__SMTC_DEBUG__)
+            send->again++;
+        #endif /*__SMTC_DEBUG__*/
+            return SMTC_OK;
+        }
+
+        send->optr += n;
+
+        /* 3. 重置标识量 */
+        send->optr = send->addr;
+        send->iptr = send->addr;
+    #if defined(__SMTC_DEBUG__)
+        send->succ++;
+    #endif /*__SMTC_DEBUG__*/
+    }
+
+    return SMTC_OK;
+}
+
+/******************************************************************************
+ **函数名称: smtc_ssvr_add_mesg
+ **功    能: 添加发送消息
+ **输入参数: 
+ **     ssvr: 发送服务
+ **     addr: 消息地址
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **     1.创建新结点
+ **     2.插入链尾
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.01.16 #
+ ******************************************************************************/
+static int smtc_ssvr_add_mesg(smtc_ssvr_t *ssvr, void *addr)
+{
+    list_node_t *add;
+
+    /* 1.创建新结点 */
+    add = slab_alloc(ssvr->pool, sizeof(list_node_t));
+    if (NULL == add)
+    {
+        log_debug(ssvr->log, "Alloc memory from slab failed!");
+        return SMTC_ERR;
+    }
+
+    add->data = addr;
+    add->next = NULL;
+
+    /* 2.插入链尾 */
+    list_insert_tail(ssvr->sck.mesg_list, add);
+
+    return SMTC_OK;
+}
+
+/******************************************************************************
+ **函数名称: smtc_ssvr_get_mesg
+ **功    能: 获取发送消息
+ **输入参数: 
+ **     ssvr: 发送服务
+ **     sck: 连接对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **     取出链首结点的数据
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.01.16 #
+ ******************************************************************************/
+static void *smtc_ssvr_get_mesg(smtc_ssvr_t *ssvr)
+{
+    void *addr;
+    list_node_t *node;
+
+    node = list_remove_head(ssvr->sck.mesg_list);
+    if (NULL == node)
+    {
+        return NULL;
+    }
+    
+    addr = node->data;
+
+    slab_dealloc(ssvr->pool, node);
+
+    return addr;
+}
+
+/******************************************************************************
+ **函数名称: smtc_ssvr_clear_mesg
+ **功    能: 清空发送消息
+ **输入参数: 
+ **     ssvr: 发送服务
+ **     sck: 连接对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **     依次取出每条消息, 并释放所占有的空间
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.01.16 #
+ ******************************************************************************/
+static int smtc_ssvr_clear_mesg(smtc_ssvr_t *ssvr)
+{
+    list_node_t *node;
+
+    while (NULL != (node = list_remove_head(ssvr->sck.mesg_list)))
+    {
+        slab_dealloc(ssvr->pool, node->data);
+        slab_dealloc(ssvr->pool, node);
+    }
+
+    ssvr->sck.mesg_list = NULL;
+    return SMTC_OK;
+}
+
+/******************************************************************************
+ **函数名称: smtc_ssvr_sys_mesg_proc
+ **功    能: 系统消息的处理
+ **输入参数: 
+ **     ctx: 全局信息
+ **     ssvr: 发送服务
+ **     sck: 连接对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **     根据消息类型调用对应的处理接口
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.01.16 #
+ ******************************************************************************/
+static int smtc_ssvr_sys_mesg_proc(smtc_ssvr_t *ssvr, smtc_ssvr_sck_t *sck, void *addr)
+{
+    smtc_header_t *head = (smtc_header_t *)addr;
+
+    switch (head->type)
+    {
+        case SMTC_KPALIVE_REP:  /* 保活应答 */
+        {
+            log_debug(ssvr->log, "Received keepalive respond!");
+
+            smtc_set_kpalive_stat(sck, SMTC_KPALIVE_STAT_SUCC);
+            return SMTC_OK;
+        }
+        default:
+        {
+            log_error(ssvr->log, "Unknown type [%d]!", head->type);
+            return SMTC_ERR;
+        }
+    }
+    
+    return SMTC_OK;
+}
+
+/******************************************************************************
+ **函数名称: smtc_ssvr_exp_mesg_proc
+ **功    能: 自定义消息的处理
+ **输入参数: 
+ **     ctx: 全局信息
+ **     ssvr: 发送服务
+ **     sck: 连接对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.01.16 #
+ ******************************************************************************/
+static int smtc_ssvr_exp_mesg_proc(smtc_ssvr_t *ssvr, smtc_ssvr_sck_t *sck, void *addr)
+{
+    return SMTC_OK;
 }
