@@ -22,7 +22,7 @@ static int smtc_cli_creat_usck(smtc_cli_t *cli, int idx);
 
 
 /******************************************************************************
- **函数名称: smpt_cli_init
+ **函数名称: smtc_cli_init
  **功    能: 发送端初始化(对外接口)
  **输入参数: 
  **     conf: 配置信息
@@ -32,7 +32,7 @@ static int smtc_cli_creat_usck(smtc_cli_t *cli, int idx);
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-smtc_cli_t *smpt_cli_init(const smtc_ssvr_conf_t *conf, int idx)
+smtc_cli_t *smtc_cli_init(const smtc_ssvr_conf_t *conf, int idx)
 {
     smtc_cli_t *cli;
 

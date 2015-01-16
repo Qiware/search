@@ -8,11 +8,9 @@
 ###############################################################################
 include $(PROJ)/make/build.mak
 
-INCLUDE = -I. -I$(PROJ)/src/incl \
-		  -I$(PROJ)/src/comm/smtc/api \
-		  -I$(PROJ)/src/comm/smtc/incl \
-		  -I$(PROJ)/src/comm/smtc/send \
-		  -I$(PROJ)/src/comm/smtc/recv/incl
+INCLUDE = -I./incl \
+		  -I. -I$(PROJ)/src/incl
+
 LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lxd_core
 
@@ -21,7 +19,7 @@ SRC_LIST = recv/smtc.c \
 			recv/smtc_rsvr.c \
 			recv/smtc_worker.c \
 			send/smtc_ssvr.c \
-			api/smtc_cli.c
+			cli/smtc_cli.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
 
