@@ -13,8 +13,8 @@
 #include <sys/select.h>
 
 static int _smtc_cli_init(smtc_cli_t *cli, int idx);
-static int smtc_cli_attach_sendq(smtc_cli_t *cli);
-static int smtc_cli_creat_usck(smtc_cli_t *cli, int idx);
+static int smtc_cli_shmat(smtc_cli_t *cli);
+static int smtc_cli_cmd_usck(smtc_cli_t *cli, int idx);
 
 #define smtc_cli_unix_path(cli, path, idx) \
     snprintf(path, sizeof(path), "./temp/smtc/snd/%s/usck/%s_cli_%d.usck", \
@@ -25,32 +25,51 @@ static int smtc_cli_creat_usck(smtc_cli_t *cli, int idx);
  **功    能: 发送端初始化(对外接口)
  **输入参数: 
  **     conf: 配置信息
+ **     idx: CLI编号
+ **     log: 日志对象
  **输出参数: NONE
- **返    回: 0:成功 !0:失败
+ **返    回: 发送对象
  **实现描述: 
+ **     1. 创建CLI对象
+ **     2. 加载配置信息
+ **     3. 初始化处理
  **注意事项: 
+ **     某发送服务的不同cli对象的编号必须不同，否则将会出现绑定失败的问题!
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
 smtc_cli_t *smtc_cli_init(const smtc_ssvr_conf_t *conf, int idx, log_cycle_t *log)
 {
     smtc_cli_t *cli;
+    mem_pool_t *pool;
 
-    /* 1. 创建上下文 */
-    cli = (smtc_cli_t *)calloc(1, sizeof(smtc_cli_t));
-    if (NULL == cli)
+    /* 1. 创建内存池 */
+    pool = mem_pool_creat(1 * KB);
+    if (NULL == pool)
     {
-        log_error(cli->log, "errmsg:[%d] %s", errno, strerror(errno));
+        log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
         return NULL;
     }
+
+    /* 2. 创建CLI对象 */
+    cli = (smtc_cli_t *)mem_pool_alloc(pool, sizeof(smtc_cli_t));
+    if (NULL == cli)
+    {
+        log_error(log, "Alloc memory from pool failed!");
+        mem_pool_destroy(pool);
+        return NULL;
+    }
+
+    cli->log = log;
+    cli->pool = pool;
     
-    /* 2.  加载配置信息 */
+    /* 2. 加载配置信息 */
     memcpy(&cli->conf, conf, sizeof(smtc_ssvr_conf_t));
 
-    /* 3.  根据配置进行初始化 */
+    /* 3. 根据配置进行初始化 */
     if (_smtc_cli_init(cli, idx))
     {
-        log_error(cli->log, "Initialize send module failed!");
-        Free(cli);
+        log_error(log, "Initialize client of smtc failed!");
+        mem_pool_destroy(pool);
         return NULL;
     }
 
@@ -61,7 +80,8 @@ smtc_cli_t *smtc_cli_init(const smtc_ssvr_conf_t *conf, int idx, log_cycle_t *lo
  **函数名称: _smtc_cli_init
  **功    能: 发送端初始化
  **输入参数: 
- **     path: 配置文件路径
+ **     cli: CLI对象
+ **     idx: CLI编号
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
@@ -70,24 +90,12 @@ smtc_cli_t *smtc_cli_init(const smtc_ssvr_conf_t *conf, int idx, log_cycle_t *lo
  ******************************************************************************/
 static int _smtc_cli_init(smtc_cli_t *cli, int idx)
 {
-    /* 1. 连接Queue队列 */
-    if (smtc_cli_attach_sendq(cli))
+    /* 1. 连接共享内存
+     * 2. 创建通信套接字 */
+    if (smtc_cli_shmat(cli)
+        || smtc_cli_cmd_usck(cli, idx))
     {
-        log_error(cli->log, "Attach queue failed!");
-        return SMTC_ERR;
-    }
-
-    /* 2. 创建通信套接字 */
-    if (smtc_cli_creat_usck(cli, idx))
-    {
-        log_error(cli->log, "Create usck failed!");
-        return SMTC_ERR;
-    }
-
-    cli->snd_num = (uint32_t *)calloc(cli->conf.snd_thd_num, sizeof(uint32_t));
-    if (NULL == cli->snd_num)
-    {
-        log_error(cli->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        log_error(cli->log, "Initialize client of smtc failed!");
         return SMTC_ERR;
     }
 
@@ -95,7 +103,7 @@ static int _smtc_cli_init(smtc_cli_t *cli, int idx)
 }
 
 /******************************************************************************
- **函数名称: smtc_cli_attach_sendq
+ **函数名称: smtc_cli_shmat
  **功    能: Attach发送队列
  **输入参数: 
  **     cli: 上下文信息
@@ -105,33 +113,34 @@ static int _smtc_cli_init(smtc_cli_t *cli, int idx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static int smtc_cli_attach_sendq(smtc_cli_t *cli)
+static int smtc_cli_shmat(smtc_cli_t *cli)
 {
     int idx;
     key_t key;
     smtc_queue_conf_t *qcf;
     smtc_ssvr_conf_t *conf = &cli->conf;
-    char qname[FILE_NAME_MAX_LEN];
+    char path[FILE_NAME_MAX_LEN];
 
-    /* Send队列数组 */
-    cli->sq = (shm_queue_t **)calloc(conf->snd_thd_num, sizeof(shm_queue_t *));
+    /* 1. 新建队列对象 */
+    cli->sq = (shm_queue_t **)mem_pool_alloc(cli->pool, conf->snd_thd_num * sizeof(shm_queue_t *));
     if (NULL == cli->sq)
     {
         log_error(cli->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return SMTC_ERR;
     }
 
-    qcf = &conf->send_qcf;
+    /* 2. 连接共享队列 */
+    qcf = &conf->qcf;
     for (idx=0; idx<conf->snd_thd_num; ++idx)
     {
-        snprintf(qname, sizeof(qname), "%s-%d", qcf->name, idx);
+        snprintf(path, sizeof(path), "%s-%d", qcf->name, idx);
 
-        key = ftok(qname, 0);
+        key = ftok(path, 0);
 
         cli->sq[idx] = shm_queue_attach(key, qcf->count, qcf->size);
         if (NULL == cli->sq[idx])
         {
-            log_error(cli->log, "Attach queue failed! [%s]", qname);
+            log_error(cli->log, "Attach queue failed! path:[%s]", path);
             return SMTC_ERR;
         }
     }
@@ -140,8 +149,8 @@ static int smtc_cli_attach_sendq(smtc_cli_t *cli)
 }
 
 /******************************************************************************
- **函数名称: smtc_cli_creat_usck
- **功    能: 创建Unix-SCK命令套接字
+ **函数名称: smtc_cli_cmd_usck
+ **功    能: 创建命令套接字
  **输入参数: 
  **     cli: 上下文信息
  **输出参数: NONE
@@ -150,7 +159,7 @@ static int smtc_cli_attach_sendq(smtc_cli_t *cli)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static int smtc_cli_creat_usck(smtc_cli_t *cli, int idx)
+static int smtc_cli_cmd_usck(smtc_cli_t *cli, int idx)
 {
     char path[FILE_NAME_MAX_LEN];
 
@@ -159,8 +168,7 @@ static int smtc_cli_creat_usck(smtc_cli_t *cli, int idx)
     cli->cmdfd = unix_udp_creat(path);
     if (cli->cmdfd < 0)
     {
-        log_error(cli->log, "Create usck failed! errmsg:[%d] %s! path:[%s]",
-                errno, strerror(errno), path);
+        log_error(cli->log, "errmsg:[%d] %s! path:%s", errno, strerror(errno), path);
         return SMTC_ERR;                    
     }
 
@@ -168,17 +176,18 @@ static int smtc_cli_creat_usck(smtc_cli_t *cli, int idx)
 }
 
 /******************************************************************************
- **函数名称: smtc_cli_notify_svr
+ **函数名称: smtc_cli_cmd_send_req
  **功    能: 通知Send服务线程
  **输入参数: 
  **     cli: 上下文信息
+ **     idx: 发送服务ID
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static int smtc_cli_notify_svr(smtc_cli_t *cli, int idx)
+static int smtc_cli_cmd_send_req(smtc_cli_t *cli, int idx)
 {
     smtc_cmd_t cmd;
     char path[FILE_NAME_MAX_LEN];
@@ -191,8 +200,7 @@ static int smtc_cli_notify_svr(smtc_cli_t *cli, int idx)
 
     if (unix_udp_send(cli->cmdfd, path, &cmd, sizeof(cmd)) < 0)
     {
-        log_debug(cli->log, "errmsg:[%d] %s! cmdfd:%d path:%s",
-                errno, strerror(errno), cli->cmdfd, path);
+        log_debug(cli->log, "errmsg:[%d] %s! path:%s", errno, strerror(errno), path);
         return SMTC_ERR;
     }
 
@@ -201,12 +209,12 @@ static int smtc_cli_notify_svr(smtc_cli_t *cli, int idx)
 
 /******************************************************************************
  **函数名称: smtc_cli_send
- **功    能: 发送数据至服务端(对外接口)
+ **功    能: 发送指定数据(对外接口)
  **输入参数: 
  **     cli: 上下文信息
- **     data: 需要发送的数据
- **     type: 发送数据的类型
- **     size: 所发送数据的长度
+ **     type: 数据类型
+ **     data: 数据地址
+ **     size: 数据长度
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
@@ -216,7 +224,7 @@ static int smtc_cli_notify_svr(smtc_cli_t *cli, int idx)
  **     2. 不用关注变量num在多线程中的值, 因其不影响安全性
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-int smtc_cli_send(smtc_cli_t *cli, const void *data, int type, size_t size)
+int smtc_cli_send(smtc_cli_t *cli, int type, const void *data, size_t size)
 {
     void *addr;
     uint32_t idx;
@@ -234,19 +242,19 @@ int smtc_cli_send(smtc_cli_t *cli, const void *data, int type, size_t size)
         return SMTC_ERR;
     }
 
-    /* 2. 向申请队列空间 */
+    /* 2. 申请存储空间 */
     addr = shm_queue_malloc(cli->sq[idx]);
     if (NULL == addr)
     {
-        log_error(cli->log, "Queue space is not enough!");
         if (0 == num%2)
         {
-            smtc_cli_notify_svr(cli, idx);
+            smtc_cli_cmd_send_req(cli, idx);
         }
+        log_error(cli->log, "Queue space isn't enough!");
         return SMTC_ERR;
     }
 
-    /* 3. 将数据放入队列空间 */
+    /* 3. 放入队列空间 */
     header = (smtc_header_t *)addr;
     header->type = type;
     header->length = size;
@@ -264,10 +272,10 @@ int smtc_cli_send(smtc_cli_t *cli, const void *data, int type, size_t size)
     }
 
     /* 5. 通知发送服务 */
-    if (0 == (cli->snd_num[idx]++) % 100)
+    if (0 == (num++) % 50)
     {
-        smtc_cli_notify_svr(cli, idx);
+        smtc_cli_cmd_send_req(cli, idx);
     }
-    
+
     return SMTC_OK;
 }

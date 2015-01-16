@@ -69,7 +69,7 @@ int unix_udp_creat(const char *path)
  **函数名称: unix_udp_send
  **功    能: 发送数据(UNIX-UDP套接字)
  **输入参数: 
- **     sckid: 套接字ID
+ **     fd: 套接字ID
  **     path: 绑定路径
  **     buff: 发送数据
  **     len: 发送长度
@@ -80,7 +80,7 @@ int unix_udp_creat(const char *path)
  **     因使用的是UNIX-UDP协议, 因此, 要么都成功, 要么都发送失败!
  **作    者: # Qifeng.zou # 2014.03.24 #
  ******************************************************************************/
-int unix_udp_send(int sckid, const char *path, const void *buff, int len)
+int unix_udp_send(int fd, const char *path, const void *buff, int len)
 {
     int n;
     socklen_t addrlen;
@@ -93,7 +93,7 @@ AGAIN:
     snprintf(toaddr.sun_path, sizeof(toaddr.sun_path), "%s", path);
     addrlen = strlen(toaddr.sun_path) + sizeof(toaddr.sun_family);
 
-    n = sendto(sckid, buff, len, 0, (struct sockaddr*)&toaddr, addrlen);
+    n = sendto(fd, buff, len, 0, (struct sockaddr*)&toaddr, addrlen);
     if (n < 0)
     {
         if (EINTR == errno)
@@ -111,7 +111,7 @@ AGAIN:
  **函数名称: unix_udp_recv
  **功    能: 接收数据(UNIX-UDP套接字)
  **输入参数: 
- **     sckid: 套接字ID
+ **     fd: 套接字ID
  **     len: 接收长度
  **输出参数:
  **     buff: 接收数据
@@ -120,7 +120,7 @@ AGAIN:
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.03.24 #
  ******************************************************************************/
-int unix_udp_recv(int sckid, void *buff, int len)
+int unix_udp_recv(int fd, void *buff, int len)
 {
     socklen_t addrlen;
     struct sockaddr_un from;
@@ -129,6 +129,6 @@ int unix_udp_recv(int sckid, void *buff, int len)
 
     from.sun_family = AF_UNIX;
 
-    return recvfrom(sckid, buff, len, 0,
+    return recvfrom(fd, buff, len, 0,
             (struct sockaddr *)&from, (socklen_t *)&addrlen);
 }

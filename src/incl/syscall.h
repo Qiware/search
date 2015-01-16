@@ -32,7 +32,7 @@ int Open(const char *fpath, int flags, mode_t mode);
     if(fd > 0) { close(fd), fd = -1; } \
 }
 #define fClose(fp) {fclose(fp), fp = NULL;}
-#define Free(p) {free(p), p=NULL; }
+#define Free(p) { if (p) { free(p), p = NULL; } }
 
 void Sleep(int sec);
 int Mkdir(const char *dir, mode_t mode);

@@ -14,15 +14,13 @@
 
 #define SMTC_NAME_MAX_LEN       (64)    /* 名称长度 */
 #define SMTC_RECONN_INTV        (2)     /* 连接重连间隔 */
+#define SMTC_KPALIVE_INTV       (30)    /* 保活间隔 */
+#define SMTC_BUFF_SIZE          (5 * MB)/* 发送/接收缓存SIZE */
 
 #define SMTC_SSVR_TMOUT_SEC     (1)     /* SND超时: 秒 */
 #define SMTC_SSVR_TMOUT_USEC    (0)     /* SND超时: 微妙 */
 
 #define SMTC_TYPE_MAX           (0xFF)  /* 自定义数据类型的最大值 */
-
-#define SMTC_FAIL_CMDQ_MAX      (1000)  /* 失败命令的队列长度 */
-#define SMTC_THD_KPALIVE_SEC    (30)    /* THD保活间隔时间 */
-#define SMTC_SCK_KPALIVE_SEC    (30)    /* SCK保活间隔时间 */
 
 #define SMTC_MEM_POOL_SIZE      (10*MB) /* 内存池大小 */
 
@@ -32,21 +30,10 @@ typedef enum
     SMTC_UNKNOWN_DATA               /* 未知数据类型 */
     , SMTC_KPALIVE_REQ              /* 链路保活请求 */
     , SMTC_KPALIVE_REP              /* 链路保活应答 */
-    , SMTC_LINK_INFO_REPORT         /* 链路信息报告 */
 
     /*******************在此线以上添加系统数据类型****************************/
     , SMTC_DATA_TYPE_TOTAL
 } smtc_sys_mesg_e;
-
-/* 套接字状态 */
-typedef enum
-{
-    SMTC_SCK_STAT_UNKNOWN           /* 未知状态 */
-    , SMTC_SCK_STAT_OK              /* 状态正常 */
-    , SMTC_SCK_STAT_EAGAIN          /* 套接字不可写 */
-
-    , SMTC_SCK_STAT_TOTAL
-} smtc_sck_stat_e;
 
 /* 返回码 */
 typedef enum
@@ -68,58 +55,38 @@ typedef enum
     , SMTC_ERR_UNKNOWN_CMD          /* 未知命令类型 */
 } smtc_err_e;
 
-/* 数据存储位置 */
-typedef enum
-{
-    SMTC_DATA_LOC_UNKNOWN           /* 未知空间 */
-    , SMTC_DATA_LOC_HEAP            /* 堆 */
-    , SMTC_DATA_LOC_STACK           /* 栈 */
-    , SMTC_DATA_LOC_STATIC          /* 静态 */
-    , SMTC_DATA_LOC_SLAB            /* Slab空间 */
-
-    , SMTC_DATA_LOC_SHMQ            /* OrmQueue */
-    , SMTC_DATA_LOC_RECVQ           /* 接收队列 */
-
-    , SMTC_DATA_LOC_OTHER           /* 其他 */
-    
-    , SMTC_DATA_LOC_TOTAL           /* 存储位置总数 */
-} smtc_data_loc_e;
-
-/* 重置接收状态 */
-#define smtc_reset_recv_snap(recv) \
-{ \
-    recv->addr = NULL; \
-    recv->phase = SOCK_PHASE_RECV_INIT; \
-} 
-
-#define smtc_set_recv_phase(recv, _phase) ((recv)->phase = (_phase))
-#define smtc_get_recv_phase(recv) ((recv)->phase)
-#define smtc_is_recv_phase(recv, _phase) ((_phase) == (recv)->phase)
-
-/* 发送快照 */
+/* 接收/发送快照 */
 typedef struct
 {
-    /* 正在发送的数据 */
-    size_t total;                   /* 需要发送的字符总数 */
-    size_t off;                     /* 当前偏移量 */
-    char *addr;                     /* 发送数据的起始地址 */
-#if defined(__SMTC_DEBUG__)
-    /* 发送统计 */
-    uint64_t succ;                  /* 成功数 */
-    uint64_t fail;                  /* 失败数 */
-    uint64_t again;                 /* EAGAIN次数 */
-#endif /*__SMTC_DEBUG__*/
-} smtc_send_snap_t;
+    /*  |<------------       total      --------------->|
+     *  | 已发送 |           未发送          | 空闲空间 |
+     *  | 已处理 |           已接收          | 空闲空间 |
+     *   -----------------------------------------------
+     *  |XXXXXXXX|///////////////////////////|          |
+     *  |XXXXXXXX|///////////////////////////|<--left-->|
+     *  |XXXXXXXX|///////////////////////////|          |
+     *   -----------------------------------------------
+     *  ^        ^                           ^          ^
+     *  |        |                           |          |
+     * addr     optr                        iptr       end
+     */
+    char *addr;                     /* 发送缓存 */
+    char *end;                      /* 结束地址 */
 
-/* 重置发送记录 */
-#define smtc_reset_send_snap(s) \
-{ \
-    s->total = 0; \
-    s->off = 0; \
-    s->addr = NULL; \
-} 
+    int total;                      /* 缓存大小 */
 
-/* 发送数据头部信息 */
+    char *optr;                     /* 发送偏移 */
+    char *iptr;                     /* 输入偏移 */
+} smtc_snap_t;
+
+#define smtc_snap_setup(snap, _addr, _total) \
+   (snap)->addr = (_addr);  \
+   (snap)->end = (_addr) + (_total); \
+   (snap)->total = (_total); \
+   (snap)->optr = (_addr);  \
+   (snap)->iptr = (_addr); 
+
+/* 报头结构 */
 typedef struct
 {
     uint16_t type;                  /* 数据类型 */
@@ -133,19 +100,15 @@ typedef struct
     uint32_t checksum;              /* 校验值 */
 } __attribute__((packed)) smtc_header_t;
 
-#define smtc_is_sys_data(head) (SMTC_SYS_MESG == (head)->flag)
-#define smtc_is_exp_data(head) (SMTC_EXP_MESG == (head)->flag)
-
 #define smtc_is_type_valid(type) (type < SMTC_TYPE_MAX)
 #define smtc_is_len_valid(q, len) (q->queue.size >= (sizeof(smtc_header_t)+ (len)))
 
 /* 队列配置信息 */
 typedef struct
 {
-    char name[FILE_NAME_MAX_LEN];   /* 队列名 */
+    char name[FILE_NAME_MAX_LEN];   /* 队列路径 */
     int size;                       /* 单元大小 */
     int count;                      /* 队列长度 */
-    int flag;                       /* 新建标志:0-获取句柄 1-新建 */
 } smtc_queue_conf_t;
 
 /* 绑定CPU配置信息 */

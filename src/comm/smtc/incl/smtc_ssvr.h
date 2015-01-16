@@ -10,30 +10,18 @@
 #include "shm_queue.h"
 #include "thread_pool.h"
 
-#define SMTC_SSVR_RECV_BUFF_SIZE (2 * MB)   /* 接收缓冲区大小 */
-#define SMTC_SSVR_SEND_BUFF_SIZE (2 * MB)   /* 发送缓冲区大小 */
-
-typedef enum
-{
-    SMTC_DATA_ADDR_UNKNOWN
-    , SMTC_DATA_ADDR_SNDQ
-    , SMTC_DATA_ADDR_STACK
-    , SMTC_DATA_ADDR_OTHER
-    
-    , SMTC_DATA_ADDR_TOTAL
-} smtc_ssvr_data_addr_e;
-
 /* 发送端配置 */
 typedef struct
 {
     char name[SMTC_NAME_MAX_LEN];   /* 发送端名称 */
     char ipaddr[IP_ADDR_MAX_LEN];   /* 服务端IP地址 */
     int port;                       /* 服务端端口号 */
-    int snd_thd_num;                /* 发送线程的个数 */
+    int snd_thd_num;                /* 发送线程数 */
 
+    size_t send_buff_size;          /* 发送缓存大小 */
+    size_t recv_buff_size;          /* 接收缓存大小 */
     smtc_cpu_conf_t cpu;            /* CPU亲和性配置 */
-
-    smtc_queue_conf_t send_qcf;     /* 发送队列配置 */
+    smtc_queue_conf_t qcf;          /* 发送队列配置 */
 } smtc_ssvr_conf_t;
 
 /* 套接字信息 */
@@ -43,17 +31,17 @@ typedef struct
     time_t wrtm;                    /* 最近写入操作时间 */
     time_t rdtm;                    /* 最近读取操作时间 */
 
-#define SMTC_KPALIVE_STAT_UNKNOWN   (0)     /* 未知状态 */
-#define SMTC_KPALIVE_STAT_SENT      (1)     /* 已发送保活 */
-#define SMTC_KPALIVE_STAT_SUCC      (2)     /* 保活成功 */
+#define SMTC_KPALIVE_STAT_UNKNOWN   (0) /* 未知状态 */
+#define SMTC_KPALIVE_STAT_SENT      (1) /* 已发送保活 */
+#define SMTC_KPALIVE_STAT_SUCC      (2) /* 保活成功 */
     int kpalive;                    /* 保活状态
                                         0: 未知状态
                                         1: 已发送保活
                                         2: 保活成功 */
-    list_t *mesg_list;              /* 消息列表 */
+    list_t *mesg_list;              /* 发送链表 */
 
-    socket_snap2_t recv;            /* 接收快照 */
-    socket_snap2_t send;            /* 发送快照 */
+    smtc_snap_t recv;               /* 接收快照 */
+    smtc_snap_t send;               /* 发送快照 */
 } smtc_ssvr_sck_t;
 
 #define smtc_set_kpalive_stat(sck, _stat) (sck)->kpalive = (_stat)

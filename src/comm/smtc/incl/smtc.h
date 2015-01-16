@@ -79,12 +79,12 @@ typedef struct _smtc_sck_t
 {
     int fd;                             /* 套接字ID */
     time_t ctm;                         /* 创建时间 */
-    time_t rtm;                         /* 最近读取时间 */
-    time_t wtm;                         /* 最近写入时间 */
+    time_t rdtm;                        /* 最近读取时间 */
+    time_t wrtm;                        /* 最近写入时间 */
     char ipaddr[IP_ADDR_MAX_LEN];       /* IP地址 */
 
-    socket_snap2_t recv;                /* 接收快照 */
-    socket_snap_t send;                 /* 发送快照 */
+    smtc_snap_t recv;                   /* 接收快照 */
+    smtc_snap_t send;                   /* 发送快照 */
 
     list_t *mesg_list;                  /* 发送消息链表 */
 

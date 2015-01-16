@@ -133,7 +133,7 @@ main()
 
         cat .netstat.ls
         echo "---------------------------------------------------------------------"
-        print_netstat "crawler" "crawler-fil" "redis-server" "search"
+        print_netstat "crawler" "crwlfilter" "redis-server" "search"
 
         sleep 2
     done;

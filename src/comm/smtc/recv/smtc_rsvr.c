@@ -44,8 +44,9 @@ static int smtc_rsvr_cmd_proc_all_req(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr);
 static int smtc_rsvr_add_conn_hdl(smtc_rsvr_t *rsvr, smtc_cmd_add_sck_t *req);
 static int smtc_rsvr_del_conn_hdl(smtc_rsvr_t *rsvr, list2_node_t *node);
 
+static int smtc_rsvr_fill_send_buff(smtc_rsvr_t *rsvr, smtc_sck_t *sck);
 static int smtc_rsvr_add_mesg(smtc_rsvr_t *rsvr, smtc_sck_t *sck, void *addr);
-static void *smtc_rsvr_fetch_mesg(smtc_rsvr_t *rsvr, smtc_sck_t *sck);
+static void *smtc_rsvr_get_mesg(smtc_rsvr_t *rsvr, smtc_sck_t *sck);
 static int smtc_rsvr_clear_mesg(smtc_rsvr_t *rsvr, smtc_sck_t *sck);
 
 /* 随机选择接收线程 */
@@ -84,8 +85,8 @@ static int smtc_rsvr_clear_mesg(smtc_rsvr_t *rsvr, smtc_sck_t *sck);
     while (NULL != node) \
     { \
         curr = (smtc_sck_t *)node->data; \
-        if ((rsvr->ctm - curr->rtm > 30) \
-            && (rsvr->ctm - curr->wtm > 30)) \
+        if ((rsvr->ctm - curr->rdtm > 30) \
+            && (rsvr->ctm - curr->wrtm > 30)) \
         { \
             log_trace(rsvr->log, "Didn't active for along time! fd:%d ip:%s", \
                     curr->fd, curr->ipaddr); \
@@ -140,8 +141,8 @@ static int smtc_rsvr_clear_mesg(smtc_rsvr_t *rsvr, smtc_sck_t *sck);
     { \
         curr = (smtc_sck_t *)node->data; \
         \
-        if (NULL == curr->mesg_list \
-            && NULL == curr->send.addr) \
+        if ((NULL == curr->mesg_list) \
+            && (curr->send.optr == curr->send.iptr)) \
         { \
             if (node == tail) \
             { \
@@ -392,7 +393,7 @@ static int smtc_rsvr_trav_recv(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr)
 
         if (FD_ISSET(curr->fd, &rsvr->rdset))
         {
-            curr->rtm = rsvr->ctm;
+            curr->rdtm = rsvr->ctm;
 
             /* 进行接收处理 */
             if (smtc_rsvr_recv_proc(ctx, rsvr, curr))
@@ -432,15 +433,24 @@ static int smtc_rsvr_trav_recv(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr)
  **实现描述: 
  **     遍历判断套接字是否可写，并发送数据!
  **注意事项: 
+ **       ------------------------------------------------
+ **      | 已发送 |     待发送     |       剩余空间       |
+ **       ------------------------------------------------
+ **      |XXXXXXXX|////////////////|                      |
+ **      |XXXXXXXX|////////////////|         left         |
+ **      |XXXXXXXX|////////////////|                      |
+ **       ------------------------------------------------
+ **      ^        ^                ^                      ^
+ **      |        |                |                      |
+ **     addr     optr             iptr                   end
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
 static int smtc_rsvr_trav_send(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr)
 {
-    int n, left;
-    smtc_header_t *head;
+    int n, len;
     smtc_sck_t *curr;
+    smtc_snap_t *send;
     list2_node_t *node, *tail;
-    socket_snap_t *send;
 
     rsvr->ctm = time(NULL);
 
@@ -456,58 +466,38 @@ static int smtc_rsvr_trav_send(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr)
 
         if (FD_ISSET(curr->fd, &rsvr->wrset))
         {
-            curr->wtm = rsvr->ctm;
+            curr->wrtm = rsvr->ctm;
             send = &curr->send;
 
             for (;;)
             {
-                /* 1. 获取需要发送的数据 */
-                if (NULL == send->addr)
+                /* 1. 填充发送缓存 */
+                if (send->iptr == send->optr)
                 {
-                    send->addr = smtc_rsvr_fetch_mesg(rsvr, curr);
-                    if (NULL == send->addr)
-                    {
-                        break;
-                    }
-
-                    head = (smtc_header_t *)send->addr;
-
-                    send->off = 0;
-                    send->total = head->length + sizeof(smtc_header_t);
-
-                    head->type = htonl(head->type);
-                    head->length = htonl(head->length);
-                    head->flag = htonl(head->flag);
-                    head->checksum = htonl(head->checksum);
+                    smtc_rsvr_fill_send_buff(rsvr, curr);
                 }
 
-                /* 2. 发送数据 */
-                left = send->total - send->off;
+                /* 2. 发送缓存数据 */
+                len = send->iptr - send->optr;
 
-                n = Writen(curr->fd, send->addr+send->off, left);
-                if (n != left)
+                n = Writen(curr->fd, send->optr, len);
+                if (n != len)
                 {
                     if (n > 0)
                     {
-                        send->off += n;
+                        send->optr += n;
                         break;
                     }
 
                     log_error(rsvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
 
-                    slab_dealloc(rsvr->pool, send->addr);
-
-                    smtc_reset_send_snap(send);
-
-                    /* 关闭套接字　并清空发送队列 */
                     smtc_rsvr_del_conn_hdl(rsvr, node);
                     return SMTC_ERR;
                 }
 
-                /* 3. 释放空间 */
-                slab_dealloc(rsvr->pool, send->addr);
-
-                smtc_reset_send_snap(send);
+                /* 3. 重置标识量 */
+                send->optr = send->addr;
+                send->iptr = send->addr;
             }
         }
 
@@ -551,7 +541,7 @@ static int smtc_rsvr_trav_send(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr)
 static int smtc_rsvr_recv_proc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck)
 {
     int n, left;
-    socket_snap2_t *recv = &sck->recv;
+    smtc_snap_t *recv = &sck->recv;
 
     while (1)
     {
@@ -641,7 +631,7 @@ static int smtc_rsvr_data_proc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *
 {
     smtc_header_t *head;
     int len, one_mesg_len;
-    socket_snap2_t *recv = &sck->recv;
+    smtc_snap_t *recv = &sck->recv;
 
     while (1)
     {
@@ -717,7 +707,7 @@ static int smtc_rsvr_data_proc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *
  ******************************************************************************/
 static int smtc_rsvr_sys_mesg_proc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck)
 {
-    socket_snap2_t *recv = &sck->recv;
+    smtc_snap_t *recv = &sck->recv;
     smtc_header_t *head = (smtc_header_t *)recv->addr;
 
     switch (head->type)
@@ -757,7 +747,7 @@ static int smtc_rsvr_exp_mesg_proc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck
     void *addr;
     int times = 0, rqid;
     static uint8_t num = 0;
-    socket_snap2_t *recv = &sck->recv;
+    smtc_snap_t *recv = &sck->recv;
     smtc_header_t *head = (smtc_header_t *)recv->optr;
 
     ++rsvr->recv_total; /* 总数 */
@@ -870,7 +860,7 @@ static int smtc_rsvr_event_timeout_hdl(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr)
     {
         curr = (smtc_sck_t *)node->data;
 
-        if (rsvr->ctm - curr->rtm >= 2*SMTC_SCK_KPALIVE_SEC)
+        if (rsvr->ctm - curr->rdtm >= 2*30)
         {
             log_trace(rsvr->log, "Didn't active for along time! fd:%d ip:%s",
                     curr->fd, curr->ipaddr);
@@ -953,7 +943,6 @@ static int smtc_rsvr_keepalive_req_hdl(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc
  ******************************************************************************/
 static int smtc_rsvr_add_conn_hdl(smtc_rsvr_t *rsvr, smtc_cmd_add_sck_t *req)
 {
-#define SMTC_RSVR_RECV_BUFF_SIZE (5 * MB)
     void *addr;
     smtc_sck_t *sck;
     list2_node_t *node;
@@ -968,12 +957,12 @@ static int smtc_rsvr_add_conn_hdl(smtc_rsvr_t *rsvr, smtc_cmd_add_sck_t *req)
 
     sck->fd = req->sckid;
     sck->ctm = time(NULL);
-    sck->rtm = sck->ctm;
-    sck->wtm = sck->ctm;
+    sck->rdtm = sck->ctm;
+    sck->wrtm = sck->ctm;
     snprintf(sck->ipaddr, sizeof(sck->ipaddr), "%s", req->ipaddr);
 
     /* 2. 申请接收缓存 */
-    addr = (void *)calloc(1, SMTC_RSVR_RECV_BUFF_SIZE);
+    addr = (void *)calloc(1, SMTC_BUFF_SIZE);
     if (NULL == addr)
     {
         log_error(rsvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
@@ -981,9 +970,20 @@ static int smtc_rsvr_add_conn_hdl(smtc_rsvr_t *rsvr, smtc_cmd_add_sck_t *req)
         return SMTC_ERR;
     }
 
-    socket_set_snap(&sck->recv, addr, SMTC_RSVR_RECV_BUFF_SIZE);
+    smtc_snap_setup(&sck->recv, addr, SMTC_BUFF_SIZE);
 
-    /* 2. 将结点加入到套接字链表 */
+    /* 3. 申请发送缓存 */
+    addr = (void *)calloc(1, SMTC_BUFF_SIZE);
+    if (NULL == addr)
+    {
+        log_error(rsvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        slab_dealloc(rsvr->pool, sck);
+        return SMTC_ERR;
+    }
+
+    smtc_snap_setup(&sck->send, addr, SMTC_BUFF_SIZE);
+
+    /* 4. 加入链尾 */
     node = slab_alloc(rsvr->pool, sizeof(list2_node_t));
     if (NULL == node)
     {
@@ -1015,6 +1015,7 @@ static int smtc_rsvr_add_conn_hdl(smtc_rsvr_t *rsvr, smtc_cmd_add_sck_t *req)
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
+ **     释放接收缓存和发送缓存空间!
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
 static int smtc_rsvr_del_conn_hdl(smtc_rsvr_t *rsvr, list2_node_t *node)
@@ -1028,9 +1029,11 @@ static int smtc_rsvr_del_conn_hdl(smtc_rsvr_t *rsvr, list2_node_t *node)
 
     /* 2. 释放数据空间 */
     Close(curr->fd);
+
+    Free(curr->recv.addr);
+    Free(curr->send.addr);
     smtc_rsvr_clear_mesg(rsvr, curr);
     curr->recv_total = 0;
-
     slab_dealloc(rsvr->pool, curr);
 
     --rsvr->connections; /* 统计TCP连接数 */
@@ -1128,7 +1131,7 @@ static int smtc_rsvr_add_mesg(smtc_rsvr_t *rsvr, smtc_sck_t *sck, void *addr)
 }
 
 /******************************************************************************
- **函数名称: smtc_rsvr_fetch_mesg
+ **函数名称: smtc_rsvr_get_mesg
  **功    能: 获取发送消息
  **输入参数: 
  **    rsvr: 接收服务
@@ -1140,7 +1143,7 @@ static int smtc_rsvr_add_mesg(smtc_rsvr_t *rsvr, smtc_sck_t *sck, void *addr)
  **     TODO: 待补充对list->tail的处理
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static void *smtc_rsvr_fetch_mesg(smtc_rsvr_t *rsvr, smtc_sck_t *sck)
+static void *smtc_rsvr_get_mesg(smtc_rsvr_t *rsvr, smtc_sck_t *sck)
 {
     void *addr;
     list_node_t *curr = sck->mesg_list->head;
@@ -1260,6 +1263,78 @@ static int smtc_rsvr_cmd_proc_all_req(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr)
         {
             smtc_rsvr_cmd_proc_req(ctx, rsvr, idx);
         }
+    }
+
+    return SMTC_OK;
+}
+
+/******************************************************************************
+ **函数名称: smtc_rsvr_fill_send_buff
+ **功    能: 填充发送缓冲区
+ **输入参数: 
+ **     rsvr: 接收线程
+ **     sck: 连接对象
+ **输出参数: 
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **     1. 从消息链表取数据
+ **     2. 从发送队列取数据
+ **注意事项: 
+ **       ------------------------------------------------
+ **      | 已发送 |     待发送     |       剩余空间       |
+ **       ------------------------------------------------
+ **      |XXXXXXXX|////////////////|                      |
+ **      |XXXXXXXX|////////////////|         left         |
+ **      |XXXXXXXX|////////////////|                      |
+ **       ------------------------------------------------
+ **      ^        ^                ^                      ^
+ **      |        |                |                      |
+ **     addr     optr             iptr                   end
+ **作    者: # Qifeng.zou # 2015.01.14 #
+ ******************************************************************************/
+static int smtc_rsvr_fill_send_buff(smtc_rsvr_t *rsvr, smtc_sck_t *sck)
+{
+    void *addr;
+    list_node_t *node;
+    int left, mesg_len;
+    smtc_header_t *head;
+    smtc_snap_t *send = &sck->send;
+
+    /* 1. 从消息链表取数据 */
+    for (;;)
+    {
+        /* 1.1 是否有数据 */
+        node = sck->mesg_list->head;
+        if (NULL == node)
+        {
+            break; /* 无数据 */
+        }
+
+        /* 1.2 判断剩余空间 */
+        head = (smtc_header_t *)node->data;
+
+        left = (int)(send->end - send->iptr);
+        mesg_len = sizeof(smtc_header_t) + head->length;
+        if (left < mesg_len)
+        {
+            break; /* 空间不足 */
+        }
+
+        /* 1.3 取发送的数据 */
+        addr = smtc_rsvr_get_mesg(rsvr, sck);
+
+        head = (smtc_header_t *)addr;
+
+        head->type = htonl(head->type);
+        head->length = htonl(head->length);
+        head->flag = htonl(head->flag);
+        head->checksum = htonl(head->checksum);
+
+        /* 1.4 拷贝至发送缓存 */
+        memcpy(send->iptr, addr, mesg_len);
+
+        send->iptr += mesg_len;
+        continue;
     }
 
     return SMTC_OK;

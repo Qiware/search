@@ -159,8 +159,8 @@ static int smtc_ssvr_init(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr, int tidx)
 {
     void *addr;
     smtc_ssvr_conf_t *conf = &ctx->conf;
-    socket_snap2_t *recv = &ssvr->sck.recv;
-    socket_snap2_t *send = &ssvr->sck.send;
+    smtc_snap_t *recv = &ssvr->sck.recv;
+    smtc_snap_t *send = &ssvr->sck.send;
 
     ssvr->tidx = tidx;
 
@@ -194,24 +194,24 @@ static int smtc_ssvr_init(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr, int tidx)
     }
 
     /* 4. 初始化发送缓存 */
-    addr = calloc(1, SMTC_SSVR_SEND_BUFF_SIZE);
+    addr = calloc(1, conf->send_buff_size);
     if (NULL == addr)
     {
         log_error(ssvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return SMTC_ERR;
     }
 
-    socket_set_snap(send, addr, SMTC_SSVR_SEND_BUFF_SIZE);
+    smtc_snap_setup(send, addr, conf->send_buff_size);
 
     /* 5. 初始化接收缓存 */
-    addr = calloc(1, SMTC_SSVR_RECV_BUFF_SIZE);
+    addr = calloc(1, conf->recv_buff_size);
     if (NULL == addr)
     {
         log_error(ssvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return SMTC_ERR;
     }
 
-    socket_set_snap(recv, addr, SMTC_SSVR_RECV_BUFF_SIZE);
+    smtc_snap_setup(recv, addr, conf->recv_buff_size);
 
     /* 6. 连接接收服务器 */
     if ((ssvr->sck.fd = tcp_connect(AF_INET, conf->ipaddr, conf->port)) < 0)
@@ -239,7 +239,7 @@ static int smtc_ssvr_creat_sendq(smtc_ssvr_t *ssvr, const smtc_ssvr_conf_t *conf
 {
     key_t key;
     char path[FILE_NAME_MAX_LEN];
-    const smtc_queue_conf_t *qcf = &conf->send_qcf;
+    const smtc_queue_conf_t *qcf = &conf->qcf;
 
     /* 1. 创建/连接发送队列 */
     snprintf(path, sizeof(path), "%s-%d", qcf->name, ssvr->tidx);
@@ -479,7 +479,7 @@ static int smtc_ssvr_kpalive_req(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr)
     smtc_header_t *head;
     int size = sizeof(smtc_header_t);
     smtc_ssvr_sck_t *sck = &ssvr->sck;
-    socket_snap2_t *send = &ssvr->sck.send;
+    smtc_snap_t *send = &ssvr->sck.send;
 
     /* 1. 上次发送保活请求之后 仍未收到应答 */
     if ((sck->fd < 0) 
@@ -560,20 +560,17 @@ static smtc_ssvr_t *smtc_ssvr_get_curr(smtc_ssvr_cntx_t *ctx)
  ******************************************************************************/
 static int smtc_ssvr_timeout_hdl(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr)
 {
-    int ret = 0;
     time_t curr_tm = time(NULL);
     smtc_ssvr_sck_t *sck = &ssvr->sck;
 
     /* 1. 判断是否长时无数据 */
-    if ((NULL != ssvr->sck.send.addr)
-        || (curr_tm - sck->wrtm) < SMTC_SCK_KPALIVE_SEC)
+    if ((curr_tm - sck->wrtm) < SMTC_KPALIVE_INTV)
     {
         return SMTC_OK;
     }
 
     /* 2. 发送保活请求 */
-    ret = smtc_ssvr_kpalive_req(ctx, ssvr);
-    if (0 != ret)
+    if (smtc_ssvr_kpalive_req(ctx, ssvr))
     {
         log_error(ssvr->log, "Connection keepalive failed!");
         return SMTC_ERR;
@@ -600,7 +597,7 @@ static int smtc_ssvr_timeout_hdl(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr)
 #define smtc_ssvr_head_isvalid(ctx, head) \
     (((SMTC_CHECK_SUM != head->checksum) \
         || !smtc_is_type_valid(head->type) \
-        || (head->length + sizeof(smtc_header_t) >= SMTC_SSVR_RECV_BUFF_SIZE))? false : true)
+        || (head->length + sizeof(smtc_header_t) >= SMTC_BUFF_SIZE))? false : true)
 
 /******************************************************************************
  **函数名称: smtc_ssvr_recv_proc
@@ -630,7 +627,7 @@ static int smtc_ssvr_recv_proc(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr)
 {
     int n, left;
     smtc_ssvr_sck_t *sck = &ssvr->sck;
-    socket_snap2_t *recv = &sck->recv;
+    smtc_snap_t *recv = &sck->recv;
 
     sck->rdtm = time(NULL);
 
@@ -704,7 +701,7 @@ static int smtc_ssvr_data_proc(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr, smtc_ss
 {
     smtc_header_t *head;
     int len, mesg_len;
-    socket_snap2_t *recv = &sck->recv;
+    smtc_snap_t *recv = &sck->recv;
 
     while (1)
     {
@@ -861,7 +858,7 @@ static int smtc_ssvr_fill_send_buff(smtc_ssvr_t *ssvr, smtc_ssvr_sck_t *sck)
     list_node_t *node;
     int left, mesg_len;
     smtc_header_t *head;
-    socket_snap2_t *send = &sck->send;
+    smtc_snap_t *send = &sck->send;
 
     /* 1. 从消息链表取数据 */
     for (;;)
@@ -966,7 +963,7 @@ static int smtc_ssvr_send_data(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr)
     int n, len;
     time_t ctm = time(NULL);
     smtc_ssvr_sck_t *sck = &ssvr->sck;
-    socket_snap2_t *send = &sck->send;
+    smtc_snap_t *send = &sck->send;
 
     sck->wrtm = ctm;
 
@@ -1004,8 +1001,6 @@ static int smtc_ssvr_send_data(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr)
         #endif /*__SMTC_DEBUG__*/
             return SMTC_OK;
         }
-
-        send->optr += n;
 
         /* 3. 重置标识量 */
         send->optr = send->addr;

@@ -42,38 +42,6 @@ typedef struct _socket_t socket_t;
 typedef int (*socket_recv_cb_t)(void *ctx, socket_t *sck);
 typedef int (*socket_send_cb_t)(void *ctx, socket_t *sck);
 
-/* 接收/发送快照 */
-typedef struct
-{
-    /*  |<------------       total      --------------->|
-     *  | 已发送 |           未发送          | 空闲空间 |
-     *  | 已处理 |           已接收          | 空闲空间 |
-     *   -----------------------------------------------
-     *  |XXXXXXXX|///////////////////////////|          |
-     *  |XXXXXXXX|///////////////////////////|<--left-->|
-     *  |XXXXXXXX|///////////////////////////|          |
-     *   -----------------------------------------------
-     *  ^        ^                           ^          ^
-     *  |        |                           |          |
-     * addr     optr                        iptr       end
-     */
-    char *addr;                     /* 发送缓存 */
-    char *end;                      /* 结束地址 */
-
-    int total;                      /* 缓存大小 */
-
-    char *optr;                     /* 发送偏移 */
-    char *iptr;                     /* 输入偏移 */
-} socket_snap2_t;
-
-#define socket_set_snap(snap, _addr, _total) \
-   (snap)->addr = (_addr);  \
-   (snap)->end = (_addr) + (_total); \
-   (snap)->total = (_total); \
-   (snap)->optr = (_addr);  \
-   (snap)->iptr = (_addr); 
-
-
 /* 套接字对象 */
 typedef struct _socket_t
 {
@@ -104,7 +72,7 @@ int fd_is_writable(int fd);
     fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_NONBLOCK)
 
 int unix_udp_creat(const char *path);
-int unix_udp_send(int sckid, const char *path, const void *buff, int len);
-int unix_udp_recv(int sckid, void *buff, int len);
+int unix_udp_send(int fd, const char *path, const void *buff, int len);
+int unix_udp_recv(int fd, void *buff, int len);
 
 #endif /*__SCK_API_H__*/
