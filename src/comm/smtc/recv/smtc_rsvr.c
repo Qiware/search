@@ -856,7 +856,7 @@ static int smtc_rsvr_event_timeout_hdl(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr)
     }
 
     rsvr->ctm = time(NULL);
-    while (NULL != curr)
+    while (NULL != node)
     {
         curr = (smtc_sck_t *)node->data;
 

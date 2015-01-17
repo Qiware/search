@@ -65,7 +65,7 @@ smtc_cntx_t *smtc_init(const smtc_conf_t *conf, log_cycle_t *log)
     /* 2. 备份配置信息 */
     memcpy(&ctx->conf, conf, sizeof(smtc_conf_t));
 
-    ctx->conf.rqnum = SMTC_WORKER_HDL_QNUM * conf->wrk_thd_num;
+    ctx->conf.rqnum = SMTC_WORKER_HDL_QNUM * conf->work_thd_num;
 
     /* 3. 初始化接收端 */
     if (_smtc_init(ctx))
@@ -416,7 +416,7 @@ static int smtc_creat_worktp(smtc_cntx_t *ctx)
     smtc_conf_t *conf = &ctx->conf;
 
     /* 1. 创建线程池 */
-    ctx->worktp = thread_pool_init(conf->wrk_thd_num, 4*KB);
+    ctx->worktp = thread_pool_init(conf->work_thd_num, 4*KB);
     if (NULL == ctx->worktp)
     {
         log_error(ctx->log, "Initialize thread pool failed!");
@@ -424,7 +424,7 @@ static int smtc_creat_worktp(smtc_cntx_t *ctx)
     }
 
     /* 2. 创建工作对象 */
-    ctx->worktp->data = (void *)calloc(conf->wrk_thd_num, sizeof(smtc_worker_t));
+    ctx->worktp->data = (void *)calloc(conf->work_thd_num, sizeof(smtc_worker_t));
     if (NULL == ctx->worktp->data)
     {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
@@ -436,7 +436,7 @@ static int smtc_creat_worktp(smtc_cntx_t *ctx)
 
     /* 3. 初始化工作对象 */
     worker = ctx->worktp->data;
-    for (idx=0; idx<conf->wrk_thd_num; ++idx, ++worker)
+    for (idx=0; idx<conf->work_thd_num; ++idx, ++worker)
     {
         if (smtc_worker_init(ctx, worker, idx))
         {
@@ -471,7 +471,7 @@ void smtc_worktp_destroy(void *_ctx, void *args)
     smtc_conf_t *conf = &ctx->conf;
     smtc_worker_t *worker = (smtc_worker_t *)ctx->worktp->data;
 
-    for (idx=0; idx<conf->wrk_thd_num; ++idx, ++worker)
+    for (idx=0; idx<conf->work_thd_num; ++idx, ++worker)
     {
         Close(worker->cmd_sck_id);
     }

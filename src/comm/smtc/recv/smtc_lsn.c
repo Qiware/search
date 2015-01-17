@@ -367,7 +367,7 @@ static int smtc_lsn_cmd_query_conf_hdl(smtc_cntx_t *ctx, smtc_lsn_t *lsn, smtc_c
     snprintf(args->name, sizeof(args->name), "%s", cf->name);
     args->port = cf->port;
     args->recv_thd_num = cf->recv_thd_num;
-    args->work_thd_num = cf->wrk_thd_num;
+    args->work_thd_num = cf->work_thd_num;
     args->rqnum = cf->rqnum;
 
     args->qmax = cf->recvq.max;
@@ -447,7 +447,7 @@ static int smtc_lsn_cmd_query_proc_stat_hdl(smtc_cntx_t *ctx, smtc_lsn_t *lsn, s
     smtc_cmd_proc_stat_t *stat = (smtc_cmd_proc_stat_t *)&rep.args;
     const smtc_worker_t *worker = (smtc_worker_t *)ctx->worktp->data;
 
-    for (idx=0; idx<ctx->conf.wrk_thd_num; ++idx, ++worker)
+    for (idx=0; idx<ctx->conf.work_thd_num; ++idx, ++worker)
     {
         /* 1. 设置应答信息 */
         rep.type = SMTC_CMD_QUERY_PROC_STAT_REP;

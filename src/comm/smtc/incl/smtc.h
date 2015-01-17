@@ -42,9 +42,9 @@ typedef struct
 {
     char name[FILE_NAME_MAX_LEN];       /* 服务名: 不允许重复出现 */
     int port;                           /* 侦听端口 */
-    int recv_thd_num;                   /* Recv线程数 */
-    int wrk_thd_num;                    /* Work线程数 */
-    int rqnum;                          /* Recv队列数 */
+    int recv_thd_num;                   /* 接收线程数 */
+    int work_thd_num;                   /* 工作线程数 */
+    int rqnum;                          /* 接收队列数 */
 
     queue_conf_t recvq;                 /* 队列配置信息 */
 } smtc_conf_t;

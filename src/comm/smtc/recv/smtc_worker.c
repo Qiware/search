@@ -156,6 +156,7 @@ int smtc_worker_init(smtc_cntx_t *ctx, smtc_worker_t *worker, int tidx)
     smtc_conf_t *conf = &ctx->conf; 
 
     worker->tidx = tidx;
+    worker->log = ctx->log;
 
     /* 1. 创建命令套接字 */
     smtc_worker_usck_path(conf, path, worker->tidx);
@@ -229,7 +230,6 @@ static int smtc_worker_event_core_hdl(smtc_cntx_t *ctx, smtc_worker_t *worker)
  ******************************************************************************/
 static int smtc_worker_cmd_proc_req_hdl(smtc_cntx_t *ctx, smtc_worker_t *worker, const smtc_cmd_t *cmd)
 {
-    int num = 0;
     void *addr;
     queue_t *rq;
     smtc_header_t *head;
@@ -239,7 +239,7 @@ static int smtc_worker_cmd_proc_req_hdl(smtc_cntx_t *ctx, smtc_worker_t *worker,
     /* 1. 获取接收队列 */
     rq = ctx->recvq[work_cmd->rqidx];
    
-    while (1 || num++ < work_cmd->num)
+    while (1)
     {
         /* 2. 从接收队列获取数据 */
         addr = queue_pop(rq);
