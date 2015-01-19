@@ -119,7 +119,6 @@ static int smtc_cli_shmat(smtc_cli_t *cli)
     key_t key;
     smtc_queue_conf_t *qcf;
     smtc_ssvr_conf_t *conf = &cli->conf;
-    char path[FILE_NAME_MAX_LEN];
 
     /* 1. 新建队列对象 */
     cli->sq = (shm_queue_t **)mem_pool_alloc(cli->pool, conf->snd_thd_num * sizeof(shm_queue_t *));
@@ -133,14 +132,12 @@ static int smtc_cli_shmat(smtc_cli_t *cli)
     qcf = &conf->qcf;
     for (idx=0; idx<conf->snd_thd_num; ++idx)
     {
-        snprintf(path, sizeof(path), "%s-%d", qcf->name, idx);
-
-        key = ftok(path, 0);
+        key = ftok(qcf->name, idx);
 
         cli->sq[idx] = shm_queue_attach(key, qcf->count, qcf->size);
         if (NULL == cli->sq[idx])
         {
-            log_error(cli->log, "Attach queue failed! path:[%s]", path);
+            log_error(cli->log, "Attach queue failed! path:[%s]", qcf->name);
             return SMTC_ERR;
         }
     }

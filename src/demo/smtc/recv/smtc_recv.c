@@ -24,7 +24,7 @@ typedef enum
     , EEEE
 }MYSELT_DATA_TYPE_e;
 
-static void smtc_conf_setup(smtc_conf_t *conf)
+static void smtc_setup_conf(smtc_conf_t *conf)
 {
     snprintf(conf->name, sizeof(conf->name), "SMTC-RECV");
     conf->port = 54321;
@@ -44,7 +44,7 @@ int main(int argc, const char *argv[])
 
     memset(&conf, 0, sizeof(conf));
 
-    smtc_conf_setup(&conf);
+    smtc_setup_conf(&conf);
 
     signal(SIGPIPE, SIG_IGN);
                                        

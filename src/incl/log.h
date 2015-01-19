@@ -41,12 +41,11 @@ typedef enum
 #define LOG_SYNC_TIMEOUT        (1)         /* 日志超时同步时间 */
 #define LOG_LEVEL_MAX_LEN       (16)        /* 日志级别字串的长度 */
 
-#define LOG_SHM_KEY             (0x32313123)/* 共享内存KEY */
-
 #define LOG_MSG_MAX_LEN         (2048)      /* 日志行最大长度 */
 #define LOG_SVR_THREAD_NUM      (1)         /* 服务线程数 */
-#define LOG_FILE_MAX_SIZE       (8 * MB)  /* 单个日志文件的最大SIZE */
+#define LOG_FILE_MAX_SIZE       (8 * MB)    /* 单个日志文件的最大SIZE */
 
+#define LOG_KEY_PATH            "../temp/log/log.key"  /* 键值路径 */
 #define LOG_SUFFIX              ".log"      /* 日志文件后缀 */
 #define LOG_DEFAULT_TRCLOG      "trc.log"   /* 默认日志名 */
 #define log_default_path(path, size)        /* 默认日志文件路径 */ \

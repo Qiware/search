@@ -84,6 +84,20 @@ int smtc_send_debug(smtc_cli_t *cli, int secs)
     return 0;
 }
 
+static void smtc_setup_conf(smtc_ssvr_conf_t *conf)
+{
+    snprintf(conf->name, sizeof(conf->name), "SMTC-SEND");
+    snprintf(conf->ipaddr, sizeof(conf->ipaddr), "127.0.0.1");
+    conf->port = 54321;
+    conf->snd_thd_num = 3;
+    conf->send_buff_size = 5 * MB;
+    conf->recv_buff_size = 2 * MB;
+
+    snprintf(conf->qcf.name, sizeof(conf->qcf.name), "../temp/smtc/smtc-ssvr.key");
+    conf->qcf.size = 4096;
+    conf->qcf.count = 10000;
+}
+
 int main(int argc, const char *argv[])
 {
     int sleep = 5;
@@ -93,28 +107,18 @@ int main(int argc, const char *argv[])
     smtc_cli_t *cli2;
     smtc_ssvr_conf_t conf;
 
-    signal(SIGPIPE, SIG_IGN);
+    memset(&conf, 0, sizeof(conf));
 
-    if(argc < 2)
-    {
-        fprintf(stderr, "Parameter is incorrect!\n\tEx: ./smtc_snd  smtc_snd.conf 5");
-        return 0;
-    }
-    else if(2 == argc)
-    {
-        sleep = 1;
-    }
-    else
-    {
-        sleep = atoi(argv[2]);
-    }
+    signal(SIGPIPE, SIG_IGN);
 
     nice(-20);
 
-    log2_init(LOG_LEVEL_DEBUG, "./smtc.log2");
-    log = log_init(LOG_LEVEL_DEBUG, "./smtc.log");
+    smtc_setup_conf(&conf);
 
-    ctx = smtc_ssvr_startup(&conf);
+    log2_init(LOG_LEVEL_DEBUG, "./smtc_ssvr.log2");
+    log = log_init(LOG_LEVEL_DEBUG, "./smtc_ssvr.log");
+
+    ctx = smtc_ssvr_startup(&conf, log);
     if(NULL == ctx) 
     {
         fprintf(stderr, "Start up send-server failed!");

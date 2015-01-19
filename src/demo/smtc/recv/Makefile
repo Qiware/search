@@ -18,13 +18,14 @@ SRC_LIST = smtc_recv.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
 
-TARGET = smtc_recv
+TARGET = smtc_rsvr
 
 .PHONY: all clean
 
 all: $(TARGET)
 $(TARGET): $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS)
+	@mv $@ $(PROJ_BIN)
 	@rm -fr $(OBJS)
 	@echo "$@ is OK!"
 

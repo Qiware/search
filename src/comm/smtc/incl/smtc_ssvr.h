@@ -73,6 +73,6 @@ typedef struct
 } smtc_ssvr_cntx_t;
 
 /* 对外接口 */
-smtc_ssvr_cntx_t *smtc_ssvr_startup(const smtc_ssvr_conf_t *conf);
+smtc_ssvr_cntx_t *smtc_ssvr_startup(const smtc_ssvr_conf_t *conf, log_cycle_t *log);
 
 #endif /*__SMTC_SSVR_H__*/

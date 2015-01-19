@@ -60,7 +60,7 @@ static int smtc_ssvr_clear_mesg(smtc_ssvr_t *ssvr);
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-smtc_ssvr_cntx_t *smtc_ssvr_startup(const smtc_ssvr_conf_t *conf)
+smtc_ssvr_cntx_t *smtc_ssvr_startup(const smtc_ssvr_conf_t *conf, log_cycle_t *log)
 {
     smtc_ssvr_cntx_t *ctx;
 
@@ -72,11 +72,13 @@ smtc_ssvr_cntx_t *smtc_ssvr_startup(const smtc_ssvr_conf_t *conf)
         return NULL;
     }
 
+    ctx->log = log;
+
     /* 2. 加载配置信息 */
     memcpy(&ctx->conf, conf, sizeof(smtc_ssvr_conf_t));
 
     /* 3. 启动各发送服务 */
-    if (!_smtc_ssvr_startup(ctx))
+    if (_smtc_ssvr_startup(ctx))
     {
         printf("Initalize send thread failed!");
         return NULL;
@@ -163,6 +165,7 @@ static int smtc_ssvr_init(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr, int tidx)
     smtc_snap_t *send = &ssvr->sck.send;
 
     ssvr->tidx = tidx;
+    ssvr->log = ctx->log;
 
     /* 1. 创建发送队列 */
     if (smtc_ssvr_creat_sendq(ssvr, conf))
@@ -237,14 +240,20 @@ static int smtc_ssvr_init(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr, int tidx)
  ******************************************************************************/
 static int smtc_ssvr_creat_sendq(smtc_ssvr_t *ssvr, const smtc_ssvr_conf_t *conf)
 {
+    FILE *fp;
     key_t key;
-    char path[FILE_NAME_MAX_LEN];
     const smtc_queue_conf_t *qcf = &conf->qcf;
 
     /* 1. 创建/连接发送队列 */
-    snprintf(path, sizeof(path), "%s-%d", qcf->name, ssvr->tidx);
+    fp = fopen(qcf->name, "w");
+    fClose(fp);
 
-    key = ftok(path, 0);
+    key = ftok(qcf->name, ssvr->tidx);
+    if (-1 == key)
+    {
+        log_error(ssvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        return SMTC_ERR;
+    }
 
     ssvr->sq = shm_queue_creat(key, qcf->size, qcf->count);
     if (NULL == ssvr->sq)

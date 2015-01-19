@@ -341,13 +341,26 @@ static int log_rename(const log_file_info_t *file, const struct timeb *time)
  ******************************************************************************/
 void *log_creat_shm(void)
 {
+    FILE *fp;
     int shmid;
+    key_t key;
     void *addr;
+
+    Mkdir2(LOG_KEY_PATH, 0777);
+
+    fp = fopen(LOG_KEY_PATH, "w");
+    fClose(fp);
+
+    key = ftok(LOG_KEY_PATH, 0);
+    if (-1 == key)
+    {
+        return NULL;
+    }
     
-    shmid = shmget(LOG_SHM_KEY, 0, 0);
+    shmid = shmget(key, 0, 0);
     if(shmid < 0)
     {
-        shmid = shmget(LOG_SHM_KEY, LOG_SHM_SIZE, IPC_CREAT|0666);
+        shmid = shmget(key, LOG_SHM_SIZE, IPC_CREAT|0666);
         if(shmid < 0)
         {
             fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));

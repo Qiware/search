@@ -342,7 +342,7 @@ void *shm_creat(int key, size_t size)
     void *addr;
 
     /* 1 判断是否已经创建 */
-    shmid = shmget(key, 0, 0666);
+    shmid = shmget(key, 0, 0);
     if(shmid >= 0)
     {
         return NULL;  /* 已创建 */
