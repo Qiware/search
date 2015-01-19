@@ -50,9 +50,6 @@ void *memalign_alloc(size_t alignment, size_t size);
 #define memalign_alloc(alignment, size) malloc(size)
 #endif
 
-void *shm_creat(int key, size_t size);
-void *shm_attach(int key, size_t size);
-void *shm_creat_and_attach(int key, size_t size);
 int bind_cpu(uint16_t id);
 int limit_file_num(int max);
 

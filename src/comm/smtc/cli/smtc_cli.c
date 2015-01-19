@@ -1,6 +1,4 @@
-#include <sys/ipc.h>
-#include <sys/types.h>
-
+#include "shm_opt.h"
 #include "syscall.h"
 #include "smtc_cmd.h"
 #include "smtc_cli.h"
@@ -132,7 +130,7 @@ static int smtc_cli_shmat(smtc_cli_t *cli)
     qcf = &conf->qcf;
     for (idx=0; idx<conf->snd_thd_num; ++idx)
     {
-        key = ftok(qcf->name, idx);
+        key = shm_ftok(qcf->name, idx);
 
         cli->sq[idx] = shm_queue_attach(key, qcf->count, qcf->size);
         if (NULL == cli->sq[idx])

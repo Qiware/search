@@ -7,12 +7,10 @@
  **     不同的"进程"和"线程"是不能使用的同名的日志文件
  ** 作  者: # Qifeng.zou # 2013.11.07 #
  ******************************************************************************/
-#include <sys/shm.h>
-#include <sys/types.h>
-
 #include "log.h"
 #include "lock.h"
 #include "hash.h"
+#include "shm_opt.h"
 #include "common.h"
 #include "syscall.h"
 
@@ -341,17 +339,11 @@ static int log_rename(const log_file_info_t *file, const struct timeb *time)
  ******************************************************************************/
 void *log_creat_shm(void)
 {
-    FILE *fp;
     int shmid;
     key_t key;
     void *addr;
 
-    Mkdir2(LOG_KEY_PATH, 0777);
-
-    fp = fopen(LOG_KEY_PATH, "w");
-    fClose(fp);
-
-    key = ftok(LOG_KEY_PATH, 0);
+    key = shm_ftok(LOG_KEY_PATH, 0);
     if (-1 == key)
     {
         return NULL;

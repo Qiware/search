@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include "shm_opt.h"
 #include "syscall.h"
 #include "shm_slab.h"
 #include "shm_queue.h"

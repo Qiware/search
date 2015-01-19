@@ -4,13 +4,13 @@
 #include <sys/un.h>
 #include <signal.h>
 #include <pthread.h>
-#include <sys/ipc.h>
 #include <sys/time.h>
 #include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 
+#include "shm_opt.h"
 #include "syscall.h"
 #include "smtc_cmd.h"
 #include "smtc_cli.h"
@@ -240,15 +240,11 @@ static int smtc_ssvr_init(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr, int tidx)
  ******************************************************************************/
 static int smtc_ssvr_creat_sendq(smtc_ssvr_t *ssvr, const smtc_ssvr_conf_t *conf)
 {
-    FILE *fp;
     key_t key;
     const smtc_queue_conf_t *qcf = &conf->qcf;
 
     /* 1. 创建/连接发送队列 */
-    fp = fopen(qcf->name, "w");
-    fClose(fp);
-
-    key = ftok(qcf->name, ssvr->tidx);
+    key = shm_ftok(qcf->name, ssvr->tidx);
     if (-1 == key)
     {
         log_error(ssvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
