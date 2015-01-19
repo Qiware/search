@@ -12,7 +12,7 @@ INCLUDE = -I. -I$(PROJ)/src/incl
 LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lpthread -lxd_core
 
-SRC_LIST = log_svr.c
+SRC_LIST = logsvr.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
 
