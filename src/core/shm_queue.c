@@ -43,7 +43,7 @@ shm_queue_t *shm_queue_creat(int key, int max, int size)
     /* 1. 计算内存空间 */
     shm_size =  sizeof(shm_queue_t) + max * sizeof(shm_queue_node_t);
     shm_size += ((max * size)/getpagesize() + 1) * getpagesize();
-    
+
     /* 2. 创建共享内存 */
     addr = shm_creat(key, shm_size);
     if (NULL == addr)

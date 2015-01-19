@@ -47,6 +47,8 @@ key_t shm_ftok(const char *path, int id)
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
+ **     如果创建共享内存时出现错误，可能是因为SHMMAX限制了共享内存的大小.
+ **     SHMMAX的默认值为32MB, 可在/proc/sys/kernel/shmmax中查看到SHMMAX的值
  **作    者: # Qifeng.zou # 2014.09.08 #
  ******************************************************************************/
 void *shm_creat(int key, size_t size)
@@ -68,7 +70,7 @@ void *shm_creat(int key, size_t size)
     }
 
     /* 3 创建共享内存 */
-    shmid = shmget(key, size, IPC_CREAT|0660);
+    shmid = shmget(key, size, IPC_CREAT|0666);
     if(shmid < 0)
     {
         return NULL;

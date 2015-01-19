@@ -141,7 +141,7 @@ static int smtc_rsvr_clear_mesg(smtc_rsvr_t *rsvr, smtc_sck_t *sck);
     { \
         curr = (smtc_sck_t *)node->data; \
         \
-        if ((NULL == curr->mesg_list) \
+        if ((NULL == curr->mesg_list.head) \
             && (curr->send.optr == curr->send.iptr)) \
         { \
             if (node == tail) \
@@ -1095,6 +1095,7 @@ void smtc_rsvr_del_all_conn_hdl(smtc_rsvr_t *rsvr)
  ******************************************************************************/
 static int smtc_rsvr_add_mesg(smtc_rsvr_t *rsvr, smtc_sck_t *sck, void *addr)
 {
+    list_t *list = &sck->mesg_list;
     list_node_t *add, *item, *tail = NULL;
 
     /* 1.创建新结点 */
@@ -1109,11 +1110,11 @@ static int smtc_rsvr_add_mesg(smtc_rsvr_t *rsvr, smtc_sck_t *sck, void *addr)
     add->next = NULL;
 
     /* 2.插入链尾 */
-    item = sck->mesg_list->head;
+    item = list->head;
     if (NULL == item)
     {
-        sck->mesg_list->head = add;
-        sck->mesg_list->tail = add;
+        list->head = add;
+        list->tail = add;
         return SMTC_OK;
     }
 
@@ -1125,7 +1126,7 @@ static int smtc_rsvr_add_mesg(smtc_rsvr_t *rsvr, smtc_sck_t *sck, void *addr)
     }while (NULL != item);
 
     tail->next = add;
-    sck->mesg_list->tail = add;
+    list->tail = add;
 
     return SMTC_OK;
 }
@@ -1146,14 +1147,15 @@ static int smtc_rsvr_add_mesg(smtc_rsvr_t *rsvr, smtc_sck_t *sck, void *addr)
 static void *smtc_rsvr_get_mesg(smtc_rsvr_t *rsvr, smtc_sck_t *sck)
 {
     void *addr;
-    list_node_t *curr = sck->mesg_list->head;
+    list_t *list = &sck->mesg_list;
+    list_node_t *curr = list->head;
 
     if (NULL == curr)
     {
         return NULL;
     }
     
-    sck->mesg_list->head = curr->next;
+    list->head = curr->next;
     addr = curr->data;
 
     slab_dealloc(rsvr->pool, curr);
@@ -1176,9 +1178,10 @@ static void *smtc_rsvr_get_mesg(smtc_rsvr_t *rsvr, smtc_sck_t *sck)
  ******************************************************************************/
 static int smtc_rsvr_clear_mesg(smtc_rsvr_t *rsvr, smtc_sck_t *sck)
 {
+    list_t *list = &sck->mesg_list;
     list_node_t *curr, *next;
 
-    curr = sck->mesg_list->head; 
+    curr = list->head; 
     while (NULL != curr)
     {
         next = curr->next;
@@ -1189,8 +1192,8 @@ static int smtc_rsvr_clear_mesg(smtc_rsvr_t *rsvr, smtc_sck_t *sck)
         curr = next;
     }
 
-    sck->mesg_list->head = NULL;
-    sck->mesg_list->tail = NULL;
+    list->head = NULL;
+    list->tail = NULL;
 
     return SMTC_OK;
 }
@@ -1298,13 +1301,14 @@ static int smtc_rsvr_fill_send_buff(smtc_rsvr_t *rsvr, smtc_sck_t *sck)
     list_node_t *node;
     int left, mesg_len;
     smtc_header_t *head;
+    list_t *list = &sck->mesg_list;
     smtc_snap_t *send = &sck->send;
 
     /* 1. 从消息链表取数据 */
     for (;;)
     {
         /* 1.1 是否有数据 */
-        node = sck->mesg_list->head;
+        node = list->head;
         if (NULL == node)
         {
             break; /* 无数据 */

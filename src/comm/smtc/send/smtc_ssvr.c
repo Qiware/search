@@ -353,7 +353,7 @@ void smtc_ssvr_set_rwset(smtc_ssvr_t *ssvr)
     FD_SET(ssvr->sck.fd, &ssvr->rset);
 
     /* 2 设置写集合: 发送至接收端 */
-    if (NULL != ssvr->sck.mesg_list
+    if (NULL != ssvr->sck.mesg_list.head
         || 0 != shm_queue_data_count(ssvr->sq))
     {
         FD_SET(ssvr->sck.fd, &ssvr->wset);
@@ -869,7 +869,7 @@ static int smtc_ssvr_fill_send_buff(smtc_ssvr_t *ssvr, smtc_ssvr_sck_t *sck)
     for (;;)
     {
         /* 1.1 是否有数据 */
-        node = ssvr->sck.mesg_list->head;
+        node = ssvr->sck.mesg_list.head;
         if (NULL == node)
         {
             break; /* 无数据 */
@@ -1048,7 +1048,7 @@ static int smtc_ssvr_add_mesg(smtc_ssvr_t *ssvr, void *addr)
     add->next = NULL;
 
     /* 2.插入链尾 */
-    list_insert_tail(ssvr->sck.mesg_list, add);
+    list_insert_tail(&ssvr->sck.mesg_list, add);
 
     return SMTC_OK;
 }
@@ -1071,7 +1071,7 @@ static void *smtc_ssvr_get_mesg(smtc_ssvr_t *ssvr)
     void *addr;
     list_node_t *node;
 
-    node = list_remove_head(ssvr->sck.mesg_list);
+    node = list_remove_head(&ssvr->sck.mesg_list);
     if (NULL == node)
     {
         return NULL;
@@ -1101,13 +1101,13 @@ static int smtc_ssvr_clear_mesg(smtc_ssvr_t *ssvr)
 {
     list_node_t *node;
 
-    while (NULL != (node = list_remove_head(ssvr->sck.mesg_list)))
+    while (NULL != (node = list_remove_head(&ssvr->sck.mesg_list)))
     {
         slab_dealloc(ssvr->pool, node->data);
         slab_dealloc(ssvr->pool, node);
     }
 
-    ssvr->sck.mesg_list = NULL;
+    ssvr->sck.mesg_list.head = NULL;
     return SMTC_OK;
 }
 

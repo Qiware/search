@@ -86,7 +86,7 @@ typedef struct _smtc_sck_t
     smtc_snap_t recv;                   /* 接收快照 */
     smtc_snap_t send;                   /* 发送快照 */
 
-    list_t *mesg_list;                  /* 发送消息链表 */
+    list_t mesg_list;                   /* 发送消息链表 */
 
     uint64_t recv_total;                /* 接收的数据条数 */
 } smtc_sck_t;

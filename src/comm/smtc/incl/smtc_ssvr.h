@@ -38,7 +38,7 @@ typedef struct
                                         0: 未知状态
                                         1: 已发送保活
                                         2: 保活成功 */
-    list_t *mesg_list;              /* 发送链表 */
+    list_t mesg_list;               /* 发送链表 */
 
     smtc_snap_t recv;               /* 接收快照 */
     smtc_snap_t send;               /* 发送快照 */
