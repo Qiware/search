@@ -498,9 +498,7 @@ void smtc_worktp_destroy(void *_ctx, void *args)
  ******************************************************************************/
 static int smtc_proc_def_hdl(uint32_t type, char *buff, size_t len, void *args)
 {
-    smtc_worker_t *worker = (smtc_worker_t *)args;
-
-    log_debug(worker->log, "Call %s() type:%d len:%d", __func__, type, len);
+    log2_error("Call %s() type:%d len:%d", __func__, type, len);
 
     return SMTC_OK;
 }

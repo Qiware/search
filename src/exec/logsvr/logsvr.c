@@ -15,6 +15,7 @@
 #include "lock.h"
 #include "common.h"
 #include "logsvr.h"
+#include "shm_opt.h"
 #include "syscall.h"
 #include "thread_pool.h"
 
@@ -185,18 +186,12 @@ static int logsvr_init(logsvr_t *logsvr)
  ******************************************************************************/
 static char *logsvr_creat_shm(int fd)
 {
-    FILE *fp;
     key_t key;
     int idx, shmid;
     void *addr = NULL, *p = NULL;
     log_file_info_t *file = NULL;
 
-    Mkdir2(LOG_KEY_PATH, 0777);
-
-    fp = fopen(LOG_KEY_PATH, "w");
-    fClose(fp);
-
-    key = ftok(LOG_KEY_PATH, 0);
+    key = shm_ftok(LOG_KEY_PATH, 0);
     if (-1 == key)
     {
         return NULL;
@@ -217,7 +212,7 @@ static char *logsvr_creat_shm(int fd)
     }
 
     /* 1.3 创建共享内存 */
-    shmid = shmget(key, LOG_SHM_SIZE, IPC_CREAT|0660);
+    shmid = shmget(key, LOG_SHM_SIZE, IPC_CREAT|0666);
     if(shmid < 0)
     {
         return NULL;

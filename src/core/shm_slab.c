@@ -86,11 +86,11 @@ static int shm_slab_slot_remove_page(
  ******************************************************************************/
 int shm_slab_init(shm_slab_pool_t *pool)
 {
-    void *addr = NULL;
-    size_t min_size = 0, left_size = 0;
-    int idx = 0, slot_num = 0, page_num = 0;
-    shm_slab_slot_t *slot = NULL;
-    shm_slab_page_t *page = NULL;
+    void *addr;
+    size_t min_size, left_size;
+    int idx, slot_num, page_num;
+    shm_slab_slot_t *slot;
+    shm_slab_page_t *page;
 
     shm_slab_init_param();
 
@@ -132,7 +132,6 @@ int shm_slab_init(shm_slab_pool_t *pool)
         return -1;  /* Not enough memory */
     }
 
-
     log2_info("min_size:%d min_shift:%d slot_off:%d page_off:%d page_num:%d ",
         pool->min_size, pool->min_shift, pool->slot_offset, pool->page_offset, page_num);
     
@@ -171,8 +170,8 @@ int shm_slab_init(shm_slab_pool_t *pool)
  ******************************************************************************/
 static void shm_slab_init_param(void)
 {
-    int shift = 0;
-    size_t size = 0;
+    int shift;
+    size_t size;
     
     
     if(0 == shm_slab_page_size())
@@ -306,9 +305,8 @@ void *shm_slab_alloc(shm_slab_pool_t *pool, size_t size)
  ******************************************************************************/
 static shm_slab_page_t *shm_slab_alloc_pages(shm_slab_pool_t *pool, int pages)
 {
-    void *addr = NULL;
-    shm_slab_page_t *start_page = NULL, *page = NULL,
-                    *next = NULL, *prev = NULL;
+    void *addr;
+    shm_slab_page_t *start_page, *page, *next, *prev;
 
     addr = (void *)pool;
     page = &pool->free;
@@ -463,10 +461,10 @@ static void *shm_slab_alloc_slot(shm_slab_pool_t *pool, size_t size)
 static void *_shm_slab_alloc_slot(
         shm_slab_pool_t *pool, int slot_idx, int type)
 {
-    int *bitmap = NULL;
-    shm_slab_slot_t *slot = NULL;
-    shm_slab_page_t *start_page = NULL, *page = NULL, *new_page = NULL;
-    void *addr = NULL, *data = NULL, *ptr = NULL;
+    int *bitmap;
+    shm_slab_slot_t *slot;
+    shm_slab_page_t *start_page, *page, *new_page;
+    void *addr, *data, *ptr;
     int bits = 0, exp_bitmaps = 0, i = 0, idx = 0, shift = 0;
 
     addr = (void *)pool;

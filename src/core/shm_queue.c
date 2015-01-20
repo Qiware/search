@@ -36,16 +36,16 @@ shm_queue_t *shm_queue_creat(int key, int max, int size)
 {
     int idx;
     void *addr;
-    size_t shm_size, off;
+    size_t size, off;
     shm_queue_t *shmq;
     shm_queue_node_t *node;
 
     /* 1. 计算内存空间 */
-    shm_size =  sizeof(shm_queue_t) + max * sizeof(shm_queue_node_t);
-    shm_size += ((max * size)/getpagesize() + 1) * getpagesize();
+    size = sizeof(shm_queue_t) + max * sizeof(shm_queue_node_t);
+    size += ((max * size)/getpagesize() + 1) * getpagesize();
 
     /* 2. 创建共享内存 */
-    addr = shm_creat(key, shm_size);
+    addr = shm_creat(key, size);
     if (NULL == addr)
     {
         return NULL;
@@ -83,6 +83,16 @@ shm_queue_t *shm_queue_creat(int key, int max, int size)
     node->status = SHMQ_NODE_STAT_IDLE;
     node->next = shmq->base;
     node->data = 0;
+
+    /* 4. 初始化SHM SLAB */
+    shmq->slab.pool_size = size - (sizeof(shm_queue_t) + max * sizeof(shm_queue_node_t));
+
+    if (shm_slab_init(&shmq->slab))
+    {
+        spin_unlock(&shmq->lock);
+        log2_error("Initialize shm slab failed!");
+        return NULL;
+    }
 
     spin_unlock(&shmq->lock);
 

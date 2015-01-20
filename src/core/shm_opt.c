@@ -143,7 +143,7 @@ void *shm_creat_and_attach(int key, size_t size)
     }
 
     /* 3 创建共享内存 */
-    shmid = shmget(key, size, IPC_CREAT|0660);
+    shmid = shmget(key, size, IPC_CREAT|0666);
     if(shmid < 0)
     {
         return NULL;

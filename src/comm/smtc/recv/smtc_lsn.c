@@ -287,7 +287,7 @@ static int smtc_lsn_cmd_core_hdl(smtc_cntx_t *ctx, smtc_lsn_t *lsn)
         }
         default:
         {
-            log_error(lsn->log, "Unknown command! type:[%d]", cmd.type);
+            log_error(lsn->log, "Unknown command! type:%d", cmd.type);
             return SMTC_ERR_UNKNOWN_CMD;
         }
     }
@@ -331,7 +331,8 @@ AGAIN:
             goto AGAIN;
         }
         
-        log_error(ctx->log, "Send cmd failed! path:[%d] type:[%d]", path, cmd->type);
+        log_error(ctx->log, "errmsg:[%d] %s! path:%s type:%d",
+                errno, strerror(errno), path, cmd->type);
         return SMTC_ERR;
     }
 

@@ -816,7 +816,7 @@ AGAIN:
 static int smtc_rsvr_event_core_hdl(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr)
 {
     /* 1. 接收命令数据 */
-    if (!FD_ISSET(rsvr->cmd_sck_id, &rsvr->rdset))
+    if (FD_ISSET(rsvr->cmd_sck_id, &rsvr->rdset))
     {
         smtc_rsvr_recv_cmd(ctx, rsvr);
     }
@@ -845,22 +845,29 @@ static int smtc_rsvr_event_core_hdl(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr)
  ******************************************************************************/
 static int smtc_rsvr_event_timeout_hdl(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr)
 {
+    bool is_end = false;
     smtc_sck_t *curr;
     list2_node_t *node, *next, *tail;
 
     /* 1. 检测超时连接 */
     node = rsvr->conn_list.head;
-    if (NULL != node)
+    if (NULL == node)
     {
-        tail = node->prev;
+        return SMTC_OK;
     }
 
+    tail = node->prev;
     rsvr->ctm = time(NULL);
-    while (NULL != node)
+    while ((NULL != node) && (false == is_end))
     {
+        if (tail == node)
+        {
+            is_end = true;
+        }
+
         curr = (smtc_sck_t *)node->data;
 
-        if (rsvr->ctm - curr->rdtm >= 2*30)
+        if (rsvr->ctm - curr->rdtm >= 60)
         {
             log_trace(rsvr->log, "Didn't active for along time! fd:%d ip:%s",
                     curr->fd, curr->ipaddr);
