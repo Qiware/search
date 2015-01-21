@@ -83,6 +83,8 @@ void *shm_creat(int key, size_t size)
         return NULL;
     }
 
+    shmctl(shmid, IPC_RMID, NULL);
+
     return addr;
 }
 
@@ -91,14 +93,13 @@ void *shm_creat(int key, size_t size)
  **功    能: 附着共享内存
  **输入参数: 
  **     key: 共享内存KEY
- **     size: 空间SIZE
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.22 #
  ******************************************************************************/
-void *shm_attach(int key, size_t size)
+void *shm_attach(int key)
 {
     int shmid;
 

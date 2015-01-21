@@ -30,22 +30,27 @@
  **     2. 创建共享内存
  **     3. 初始化标志量
  **注意事项: 
+ **      -----------------------------------------------------------------
+ **     |      |        |                                                 |
+ **     | 队列 | 内存池 |                   可分配空间                    |
+ **     |      |        |                                                 |
+ **      -----------------------------------------------------------------
  **作    者: # Qifeng.zou # 2014.09.10 #
  ******************************************************************************/
 shm_queue_t *shm_queue_creat(int key, int max, int size)
 {
     int idx;
     void *addr;
-    size_t size, off;
+    size_t total, off;
     shm_queue_t *shmq;
     shm_queue_node_t *node;
 
     /* 1. 计算内存空间 */
-    size = sizeof(shm_queue_t) + max * sizeof(shm_queue_node_t);
-    size += ((max * size)/getpagesize() + 1) * getpagesize();
+    total = sizeof(shm_queue_t) + max * sizeof(shm_queue_node_t);
+    total += ((max * size)/getpagesize() + 1) * getpagesize();
 
     /* 2. 创建共享内存 */
-    addr = shm_creat(key, size);
+    addr = shm_creat(key, total);
     if (NULL == addr)
     {
         return NULL;
@@ -61,7 +66,7 @@ shm_queue_t *shm_queue_creat(int key, int max, int size)
 
     shmq->num = 0;
     shmq->max = max;
-    shmq->size = size;
+    shmq->size = total;
 
     off += sizeof(shm_queue_t);
     shmq->base = off;
@@ -85,7 +90,7 @@ shm_queue_t *shm_queue_creat(int key, int max, int size)
     node->data = 0;
 
     /* 4. 初始化SHM SLAB */
-    shmq->slab.pool_size = size - (sizeof(shm_queue_t) + max * sizeof(shm_queue_node_t));
+    shmq->slab.pool_size = total - (sizeof(shm_queue_t) + max * sizeof(shm_queue_node_t));
 
     if (shm_slab_init(&shmq->slab))
     {
@@ -115,16 +120,9 @@ shm_queue_t *shm_queue_creat(int key, int max, int size)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.10 #
  ******************************************************************************/
-shm_queue_t *shm_queue_attach(int key, int max, int size)
+shm_queue_t *shm_queue_attach(int key)
 {
-    size_t shm_size;
-
-    /* 1. 计算内存空间 */
-    shm_size =  sizeof(shm_queue_t) + max * sizeof(shm_queue_node_t);
-    shm_size += ((max * size)/getpagesize() + 1) * getpagesize();
-    
-    /* 2. 创建共享内存 */
-    return (shm_queue_t *)shm_attach(key, shm_size);
+    return (shm_queue_t *)shm_attach(key);
 }
 
 /******************************************************************************

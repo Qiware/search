@@ -132,7 +132,7 @@ static int smtc_cli_shmat(smtc_cli_t *cli)
     {
         key = shm_ftok(qcf->name, idx);
 
-        cli->sq[idx] = shm_queue_attach(key, qcf->count, qcf->size);
+        cli->sq[idx] = shm_queue_attach(key);
         if (NULL == cli->sq[idx])
         {
             log_error(cli->log, "Attach queue failed! path:[%s]", qcf->name);

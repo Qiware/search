@@ -34,7 +34,7 @@ typedef struct
 } shm_queue_t;
 
 shm_queue_t *shm_queue_creat(int key, int max, int size);
-shm_queue_t *shm_queue_attach(int key, int max, int size);
+shm_queue_t *shm_queue_attach(int key);
 #define shm_queue_malloc(shmq) shm_slab_alloc(&shmq->slab, shmq->size)
 #define shm_queue_dealloc(shmq, p) shm_slab_dealloc(&shmq->slab, p)
 int shm_queue_push(shm_queue_t *shmq, void *p);
