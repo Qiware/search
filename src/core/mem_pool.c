@@ -4,7 +4,8 @@
  ** 文件名: mem_pool.c
  ** 版本号: 1.0
  ** 描  述: 内存池的实现
- **         设计思路与NGINX的一致
+ **         所分配的所有内存块, 不能单独释放, 只能一次性的统一释放. 因此,
+ **         此内存池不适合于生命周期较长的处理流程.
  ** 作  者: # Qifeng.zou # 2014.09.08 #
  ******************************************************************************/
 
@@ -46,7 +47,7 @@ mem_pool_t *mem_pool_creat(size_t size)
     p->d.next = NULL;
     p->d.failed = 0;
 
-    size = size - sizeof(mem_pool_t);
+    size -= sizeof(mem_pool_t);
     p->max = (size < MEM_POOL_MAX_ALLOC_FROM_POOL) ? size : MEM_POOL_MAX_ALLOC_FROM_POOL;
 
     p->current = (mem_pool_t *)p;

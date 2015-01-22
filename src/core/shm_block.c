@@ -1,21 +1,22 @@
 /******************************************************************************
  ** Coypright(C) 2014-2024 Xundao technology Co., Ltd
  **
- ** 文件名: memblk.c
+ ** 文件名: shm_block.c
  ** 版本号: 1.0
  ** 描  述: 内存块的实现(也属于内存池算法)
  **         所有数据块大小都一致.
  **         此内存池主要用于存储大小一致的数据块的使用场景
- ** 作  者: # Qifeng.zou # 2014.12.18 #
+ ** 作  者: # Qifeng.zou # 2015.01.22 #
  ******************************************************************************/
 #include "log.h"
 #include "common.h"
 #include "syscall.h"
-#include "memblk.h"
+#include "shm_opt.h"
+#include "shm_block.h"
 
 
 /******************************************************************************
- **函数名称: memblk_creat
+ **函数名称: shm_block_creat
  **功    能: 创建内存池
  **输入参数: 
  **     num: 内存块数
@@ -24,43 +25,38 @@
  **返    回: 内存池对象
  **实现描述: 
  **注意事项: 
- **作    者: # Qifeng.zou # 2014.12.18 #
+ **作    者: # Qifeng.zou # 2015.01.22 #
  ******************************************************************************/
-memblk_t *memblk_creat(int num, size_t size)
+shm_block_t *shm_block_creat(int num, size_t size)
 {
-    int i, m, idx;
+    key_t key = 0x033034;
+    void *addr;
+    int i, m, idx, pages;
     uint32_t *bitmap;
-    memblk_t *blk;
-    memblk_page_t *page;
+    size_t shm_size;
+    shm_block_t *blk;
+    shm_block_page_t *page;
 
-    /* 1. 创建对象 */
-    blk = (memblk_t *)calloc(1, sizeof(memblk_t));
-    if (NULL == blk)
+    /* 1. 计算内存大小 */
+    pages = div_ceiling(num, SHM_BLOCK_PAGE_SLOT_NUM);
+
+    shm_size = sizeof(shm_block_t) + pages * sizeof(shm_block_page_t) + num * size;
+
+    /* 2. 创建共享内存 */
+    addr = shm_creat(key, shm_size);
+    if (NULL == addr)
     {
         return NULL;
     }
+
+    /* 3. 设置结构信息 */
+    blk = (shm_block_t *)addr;
 
     blk->num = num;
     blk->size = size;
-
-    /* 2. 计算页数, 并分配页空间 */
-    blk->pages = div_ceiling(num, MEMBLK_PAGE_SLOT_NUM);
-
-    blk->page = (memblk_page_t *)calloc(blk->pages, sizeof(memblk_page_t));
-    if (NULL == blk->page)
-    {
-        free(blk);
-        return NULL;
-    }
-
-    /* 3 分配总内存空间 */
-    blk->addr = (char *)calloc(num, size);
-    if (NULL == blk->addr)
-    {
-        free(blk->page);
-        free(blk);
-        return NULL;
-    }
+    blk->pages = pages;
+    blk->page = (shm_block_page_t *)(addr + sizeof(shm_block_t));
+    blk->addr = (char *)(addr + sizeof(shm_block_t) + pages * sizeof(shm_block_page_t));
 
     /* 4. 设置位图信息 */
     for (idx=0; idx<blk->pages; ++idx)
@@ -72,24 +68,15 @@ memblk_t *memblk_creat(int num, size_t size)
         /* 3.1 设置bitmap */
         if (idx == (blk->pages - 1))
         {
-            m = (num - idx*MEMBLK_PAGE_SLOT_NUM) % 32;
+            m = (num - idx*SHM_BLOCK_PAGE_SLOT_NUM) % 32;
 
-            page->bitmaps = div_ceiling(num - idx*MEMBLK_PAGE_SLOT_NUM, 32);
+            page->bitmaps = div_ceiling(num - idx*SHM_BLOCK_PAGE_SLOT_NUM, 32);
         }
         else
         {
-            m = MEMBLK_PAGE_SLOT_NUM % 32;
+            m = SHM_BLOCK_PAGE_SLOT_NUM % 32;
 
-            page->bitmaps = div_ceiling(MEMBLK_PAGE_SLOT_NUM, 32);
-        }
-
-        page->bitmap = (uint32_t *)calloc(page->bitmaps, sizeof(uint32_t));
-        if (NULL == page->bitmap)
-        {
-            free(blk->page);
-            free(blk->addr);
-            free(blk);
-            return NULL;
+            page->bitmaps = div_ceiling(SHM_BLOCK_PAGE_SLOT_NUM, 32);
         }
 
         if (m)
@@ -103,14 +90,14 @@ memblk_t *memblk_creat(int num, size_t size)
         }
 
         /* 3.2 设置数据空间 */
-        page->addr = blk->addr + idx * MEMBLK_PAGE_SLOT_NUM * size;
+        page->addr = blk->addr + idx * SHM_BLOCK_PAGE_SLOT_NUM * size;
     }
 
     return blk;
 }
 
 /******************************************************************************
- **函数名称: memblk_alloc
+ **函数名称: shm_block_alloc
  **功    能: 申请空间
  **输入参数: 
  **     blk: 内存块对象
@@ -118,13 +105,13 @@ memblk_t *memblk_creat(int num, size_t size)
  **返    回: 内存地址
  **实现描述: 
  **注意事项: 
- **作    者: # Qifeng.zou # 2014.12.18 #
+ **作    者: # Qifeng.zou # 2015.01.22 #
  ******************************************************************************/
-void *memblk_alloc(memblk_t *blk)
+void *shm_block_alloc(shm_block_t *blk)
 {
     uint32_t i, j, n, p;
     uint32_t *bitmap;
-    memblk_page_t *page;
+    shm_block_page_t *page;
 
     n = rand(); /* 随机选择页 */
 
@@ -162,7 +149,7 @@ void *memblk_alloc(memblk_t *blk)
 }
 
 /******************************************************************************
- **函数名称: memblk_dealloc
+ **函数名称: shm_block_dealloc
  **功    能: 回收空间
  **输入参数: 
  **     blk: 内存块对象
@@ -171,15 +158,15 @@ void *memblk_alloc(memblk_t *blk)
  **返    回: VOID
  **实现描述: 
  **注意事项: 
- **作    者: # Qifeng.zou # 2014.12.18 #
+ **作    者: # Qifeng.zou # 2015.01.22 #
  ******************************************************************************/
-void memblk_dealloc(memblk_t *blk, void *p)
+void shm_block_dealloc(shm_block_t *blk, void *p)
 {
     int i, j, n;
 
-    n = (p - blk->addr) / (MEMBLK_PAGE_SLOT_NUM * blk->size);        /* 计算页号 */
+    n = (p - blk->addr) / (SHM_BLOCK_PAGE_SLOT_NUM * blk->size);        /* 计算页号 */
     i = (p - blk->page[n].addr) / (32 * blk->size);                     /* 计算页内bitmap索引 */
-    j = (p - (blk->page[n].addr + i * (32 * blk->size))) / blk->size; /* 计算bitmap内偏移 */
+    j = (p - (blk->page[n].addr + i * (32 * blk->size))) / blk->size;   /* 计算bitmap内偏移 */
 
     spin_lock(&blk->page[n].lock);
     blk->page[n].bitmap[i] &= ~(1 << j);
@@ -187,7 +174,7 @@ void memblk_dealloc(memblk_t *blk, void *p)
 }
 
 /******************************************************************************
- **函数名称: memblk_destroy
+ **函数名称: shm_block_destroy
  **功    能: 销毁内存块
  **输入参数: 
  **     blk: 内存块对象
@@ -195,22 +182,9 @@ void memblk_dealloc(memblk_t *blk, void *p)
  **返    回: VOID
  **实现描述: 
  **注意事项: 
- **作    者: # Qifeng.zou # 2014.12.18 #
+ **作    者: # Qifeng.zou # 2015.01.22 #
  ******************************************************************************/
-void memblk_destroy(memblk_t *blk)
+void shm_block_destroy(shm_block_t *blk)
 {
-    int i;
-    memblk_page_t *page;
-
-    for (i=0; i<blk->pages; ++i)
-    {
-        page = &blk->page[i];
-
-        free(page->bitmap);
-        spin_lock_destroy(&page->lock);
-    }
-
-    free(blk->page);
-    free(blk->addr);
-    free(blk);
+    return;
 }

@@ -54,6 +54,6 @@ int bind_cpu(uint16_t id);
 int limit_file_num(int max);
 
 /* 取数值上限 */
-#define math_ceiling(num, mod) ((num)%(mod)? (num)/(mod)+1 : (num)/(mod))
+#define div_ceiling(num, mod) ((num)%(mod)? (num)/(mod)+1 : (num)/(mod))
 
 #endif /*__XDO_UNISTD_H__*/
