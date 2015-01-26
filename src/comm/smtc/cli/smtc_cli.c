@@ -226,14 +226,19 @@ int smtc_cli_send(smtc_cli_t *cli, int type, const void *data, size_t size)
     static uint32_t num = 0;
     smtc_header_t *header;
     smtc_ssvr_conf_t *conf = &cli->conf;
+    shm_queue_info_t *info;
 
     idx = (num++) % conf->snd_thd_num;
 
     /* 1. 校验类型和长度 */
+    info = cli->sq[idx]->info;
+
     if ((type >= SMTC_TYPE_MAX)
-        || (size + sizeof(smtc_header_t) > cli->sq[idx]->info->size))
+        || info->num >= info->max
+        || (size + sizeof(smtc_header_t) > info->size))
     {
-        log_error(cli->log, "Type of length is invalid! type:%d size:%u", type, size);
+        log_error(cli->log, "Type or length is invalid! type:%d size:%u num:%d/%d",
+                type, size, info->num, info->max);
         return SMTC_ERR;
     }
 
@@ -248,6 +253,8 @@ int smtc_cli_send(smtc_cli_t *cli, int type, const void *data, size_t size)
         log_error(cli->log, "Queue space isn't enough!");
         return SMTC_ERR;
     }
+
+    log_debug(cli->log, "%d: max:%d num:%d", num, info->max, info->num);
 
     /* 3. 放入队列空间 */
     header = (smtc_header_t *)addr;

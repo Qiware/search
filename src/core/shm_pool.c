@@ -28,7 +28,7 @@
 #define SHM_POOL_BITMAP_BUSY    (0xFFFFFFFF)    /* 都已分配 */
 
 #define shm_pool_get_page_addr(info, n)         /* 获取页地址 */\
-    (shm_pool_page_t *)((void *)(info) + (info)->page_off + (n) * sizeof(shm_pool_page_t))
+    (shm_pool_page_t *)((void *)(info) + (info)->page + (n) * sizeof(shm_pool_page_t))
 
 
 /******************************************************************************
@@ -71,11 +71,11 @@ shm_pool_t *shm_pool_init(void *addr, int max, size_t unit_size)
     info->unit_size = unit_size;
     info->page_size = SHM_POOL_PAGE_SLOT_NUM * unit_size;
     info->page_num = page_num;
-    info->page_off = sizeof(shm_pool_info_t);
-    info->data_off = info->page_off + page_num * sizeof(shm_pool_page_t);
+    info->page = sizeof(shm_pool_info_t);
+    info->data = info->page + page_num * sizeof(shm_pool_page_t);
 
     /* 3. 设置位图信息 */
-    page = (shm_pool_page_t *)(addr + info->page_off);
+    page = (shm_pool_page_t *)(addr + info->page);
 
     for (idx=0; idx<info->page_num; ++idx, ++page)
     {
@@ -110,7 +110,7 @@ shm_pool_t *shm_pool_init(void *addr, int max, size_t unit_size)
         }
 
         /* 3.2 设置数据空间 */
-        page->data_off = info->data_off + idx * info->page_size;
+        page->data = info->data + idx * info->page_size;
     }
 
     /* 4 创建内存池对象 */
@@ -122,7 +122,7 @@ shm_pool_t *shm_pool_init(void *addr, int max, size_t unit_size)
 
     pool->addr = (void *)addr;
     pool->info = info;
-    pool->page = page;
+    pool->page = (shm_pool_page_t *)(addr + info->page);
     pool->page_data = (void **)calloc(info->page_num, sizeof(void *));
     if (NULL == pool->page_data)
     {
@@ -130,9 +130,12 @@ shm_pool_t *shm_pool_init(void *addr, int max, size_t unit_size)
         return NULL;
     }
 
+    page = (shm_pool_page_t *)(addr + info->page);
     for (idx=0; idx<info->page_num; ++idx)
     {
-        pool->page_data[idx] = (void *)(addr + page[idx].data_off);
+        pool->page_data[idx] = (void *)(addr + page[idx].data);
+
+        log2_debug("[%d] Page data:%p", idx, pool->page_data[idx]);
     }
 
     return pool;
@@ -163,13 +166,13 @@ shm_pool_t *shm_pool_init(void *addr, int max, size_t unit_size)
 shm_pool_t *shm_pool_get(void *addr)
 {
     int idx;
+    shm_pool_t *pool;
     shm_pool_info_t *info;
     shm_pool_page_t *page;
-    shm_pool_t *pool;
 
     /* 1. 获取结构地址 */
     info = (shm_pool_info_t *)addr;
-    page = (shm_pool_page_t *)(addr + info->page_off);
+    page = (shm_pool_page_t *)(addr + info->page);
 
     /* 2. 创建内存池对象 */
     pool = (shm_pool_t *)calloc(1, sizeof(shm_pool_t));
@@ -191,7 +194,9 @@ shm_pool_t *shm_pool_get(void *addr)
 
     for (idx=0; idx<info->page_num; ++idx)
     {
-        pool->page_data[idx] = (void *)(addr + page[idx].data_off);
+        pool->page_data[idx] = (void *)(addr + page[idx].data);
+
+        log2_debug("[%d] Page data:%p", idx, pool->page_data[idx]);
     }
 
     return pool;
@@ -231,7 +236,7 @@ void *shm_pool_alloc(shm_pool_t *pool)
                 continue;
             }
 
-            bitmap = page->bitmap + i;
+            bitmap = &page->bitmap[i];
             for (j=0; j<32; ++j)
             {
                 if (!((*bitmap >> j) & 1))

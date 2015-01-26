@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <assert.h>
 
 #include "shm_opt.h"
 #include "syscall.h"
@@ -92,13 +93,13 @@ shm_queue_t *shm_queue_creat(int key, int max, int size)
         off += sizeof(shm_queue_node_t);
 
         node->id = idx;
-        node->status = SHMQ_NODE_STAT_IDLE;
+        node->flag = SHMQ_NODE_FLAG_IDLE;
         node->next = off;
         node->data = 0;
     }
     
     node->id = idx;
-    node->status = SHMQ_NODE_STAT_IDLE;
+    node->flag = SHMQ_NODE_FLAG_IDLE;
     node->next = info->base;
     node->data = 0;
 
@@ -185,10 +186,10 @@ shm_queue_t *shm_queue_attach(int key)
  ******************************************************************************/
 int shm_queue_push(shm_queue_t *shmq, void *p)
 {
-    int idx;
     void *addr = (void *)shmq->info;
+    shm_pool_t *pool = shmq->pool;
+    shm_queue_node_t *node;
     shm_queue_info_t *info = shmq->info;
-    shm_queue_node_t *node = (shm_queue_node_t *)(addr + info->tail);
 
     spin_lock(&info->lock);
 
@@ -200,24 +201,10 @@ int shm_queue_push(shm_queue_t *shmq, void *p)
     }
 
     /* 2. 占用空闲结点 */
-    for (idx=0; idx<info->max; ++idx)
-    {
-        if (SHMQ_NODE_STAT_IDLE == node->status)
-        {
-            break;
-        }
+    node = (shm_queue_node_t *)(addr + info->tail);
 
-        node = (shm_queue_node_t *)(addr + node->next);
-    }
-
-    if (idx == info->max)
-    {
-        spin_unlock(&info->lock);
-        return -1;
-    }
-
-    node->status = SHMQ_NODE_STAT_USED;
-    node->data = p - addr;
+    node->flag = SHMQ_NODE_FLAG_USED;
+    node->data = p - pool->page_data[0];
 
     info->tail = node->next;
     ++info->num;
@@ -242,10 +229,10 @@ int shm_queue_push(shm_queue_t *shmq, void *p)
  ******************************************************************************/
 void *shm_queue_pop(shm_queue_t *shmq)
 {
-    int idx;
     void *p, *addr = (void *)shmq->info;
     shm_queue_info_t *info = shmq->info;
     shm_queue_node_t *node;
+    shm_pool_t *pool = shmq->pool;
 
     if (0 == info->num)
     {
@@ -260,21 +247,18 @@ void *shm_queue_pop(shm_queue_t *shmq)
     }
 
     node = (shm_queue_node_t *)(addr + info->head);
-    for (idx=0; idx<info->max; ++idx)
+    if (SHMQ_NODE_FLAG_USED != node->flag)
     {
-        if (SHMQ_NODE_STAT_USED == node->status)
-        {
-            info->head = node->next;
-            break;
-        }
-
-        node = (shm_queue_node_t *)(addr + node->next);
+        assert(0);
     }
 
-    p = (void *)(addr + node->data);
+    p = (void *)(pool->page_data[0] + node->data);
 
-    node->status = SHMQ_NODE_STAT_IDLE;
+    node->flag = SHMQ_NODE_FLAG_IDLE;
     node->data = 0;
+
+    info->head = node->next;
+    --info->num;
 
     spin_unlock(&info->lock);
 

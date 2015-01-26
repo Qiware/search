@@ -5,14 +5,14 @@
 #include "shm_pool.h"
 
 /* 结点当前状态 */
-#define SHMQ_NODE_STAT_IDLE     (0)  /* 未被占用 */
-#define SHMQ_NODE_STAT_USED     (1)  /* 已被占用 */
+#define SHMQ_NODE_FLAG_IDLE     (0)  /* 未被占用 */
+#define SHMQ_NODE_FLAG_USED     (1)  /* 已被占用 */
 
 /* 队列结点 */
 typedef struct _shm_queue_node_t
 {
     uint32_t id;            /* 结点ID(0~max-1) */
-    uint32_t status;        /* 被占用标记(SHMQ_NODE_STAT_IDLE ~ SHMQ_NODE_STAT_USED) */
+    uint32_t flag;          /* 被占用标记(SHMQ_NODE_FLAG_IDLE ~ SHMQ_NODE_FLAG_USED) */
     uint32_t next;          /* 下一个结点偏移(shm_queue_node_t) */
     uint32_t data;          /* 数据偏移 */
 } shm_queue_node_t;

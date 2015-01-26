@@ -745,9 +745,9 @@ static int smtc_ssvr_data_proc(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr, smtc_ss
 
         /* 2. 至少一条数据时 */
         /* 2.1 转化字节序 */
-        head->type = ntohl(head->type);
+        head->type = ntohs(head->type);
+        head->flag = head->flag;
         head->length = ntohl(head->length);
-        head->flag = ntohl(head->flag);
         head->checksum = ntohl(head->checksum);
 
         /* 2.2 校验合法性 */
@@ -885,6 +885,10 @@ static int smtc_ssvr_fill_send_buff(smtc_ssvr_t *ssvr, smtc_ssvr_sck_t *sck)
 
         /* 1.2 判断剩余空间 */
         head = (smtc_header_t *)node->data;
+        if (SMTC_CHECK_SUM != head->checksum)
+        {
+            assert(0);
+        }
 
         left = (int)(send->end - send->iptr);
         mesg_len = sizeof(smtc_header_t) + head->length;
@@ -897,10 +901,14 @@ static int smtc_ssvr_fill_send_buff(smtc_ssvr_t *ssvr, smtc_ssvr_sck_t *sck)
         addr = smtc_ssvr_get_mesg(ssvr);
 
         head = (smtc_header_t *)addr;
+        if (SMTC_CHECK_SUM != head->checksum)
+        {
+            assert(0);
+        }
 
-        head->type = htonl(head->type);
+        head->type = htons(head->type);
+        head->flag = head->flag;
         head->length = htonl(head->length);
-        head->flag = htonl(head->flag);
         head->checksum = htonl(head->checksum);
 
         /* 1.4 拷贝至发送缓存 */
@@ -931,15 +939,17 @@ static int smtc_ssvr_fill_send_buff(smtc_ssvr_t *ssvr, smtc_ssvr_sck_t *sck)
 
         mesg_len = sizeof(smtc_header_t) + head->length;
 
-        head->type = htonl(head->type);
+        head->type = htons(head->type);
+        head->flag = head->flag;
         head->length = htonl(head->length);
-        head->flag = htonl(head->flag);
         head->checksum = htonl(head->checksum);
 
         /* 2.3 拷贝至发送缓存 */
         memcpy(send->iptr, addr, mesg_len);
 
         send->iptr += mesg_len;
+
+        shm_queue_dealloc(ssvr->sq, addr);
         continue;
     }
 
@@ -990,6 +1000,10 @@ static int smtc_ssvr_send_data(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr)
 
         /* 2. 发送缓存数据 */
         len = send->iptr - send->optr;
+        if (0 == len)
+        {
+            break;
+        }
 
         n = Writen(sck->fd, send->optr, len);
         if (n < 0)

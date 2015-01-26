@@ -24,7 +24,7 @@ typedef struct
     spinlock_t lock;                /* SPIN锁对象 */
     uint32_t bitmap_num;            /* 实际使用的BITMAP数 */
     uint32_t bitmap[SHM_POOL_BITMAP_MAX];  /* 分配位图(0:未使用 1:使用) */
-    size_t data_off;               /* 相对于data的偏移 */
+    size_t data;                    /* 页可支配空间(相对于info->data的偏移) */
 } shm_pool_page_t;
 
 /* 数据块对象 */
@@ -35,8 +35,8 @@ typedef struct
     size_t unit_size;               /* 各内存块SIZE */
     size_t page_size;               /* 各页SIZE */
 
-    size_t page_off;                /* 页对象 */
-    size_t data_off;                /* 可支配空间 */
+    size_t page;                    /* 页对象(偏移量) */
+    size_t data;                    /* 可支配空间(偏移量) */
 } shm_pool_info_t;
 
 /* 全局对象 */

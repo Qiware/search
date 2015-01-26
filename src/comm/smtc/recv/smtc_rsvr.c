@@ -496,8 +496,7 @@ static int smtc_rsvr_trav_send(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr)
                 }
 
                 /* 3. 重置标识量 */
-                send->optr = send->addr;
-                send->iptr = send->addr;
+                smtc_snap_reset(send);
             }
         }
 
@@ -629,19 +628,36 @@ static int smtc_rsvr_recv_proc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *
  ******************************************************************************/
 static int smtc_rsvr_data_proc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *sck)
 {
+    bool flag = false;
     smtc_header_t *head;
     int len, one_mesg_len;
     smtc_snap_t *recv = &sck->recv;
 
     while (1)
     {
+        flag = false;
         head = (smtc_header_t *)recv->optr;
+
         len = (int)(recv->iptr - recv->optr);
+        if (len >= sizeof(smtc_header_t))
+        {
+            if (SMTC_CHECK_SUM != ntohl(head->checksum))
+            {
+                log_error(rsvr->log, "Header is invalid! Mark:%X/%X type:%d len:%d flag:%d",
+                        ntohl(head->checksum), SMTC_CHECK_SUM, ntohs(head->type),
+                        ntohl(head->length), head->flag);
+                return SMTC_ERR;
+            }
+
+            one_mesg_len = sizeof(smtc_header_t) + ntohl(head->length);
+            if (len >= one_mesg_len)
+            {
+                flag = true;
+            }
+        }
 
         /* 1. 不足一条数据时 */
-        one_mesg_len = sizeof(smtc_header_t) + head->length;
-        if (len < sizeof(smtc_header_t)
-            || len < one_mesg_len)
+        if (!flag)
         {
             if (recv->iptr == recv->end) 
             {
@@ -660,15 +676,16 @@ static int smtc_rsvr_data_proc(smtc_cntx_t *ctx, smtc_rsvr_t *rsvr, smtc_sck_t *
             return SMTC_OK;
         }
 
+
         /* 2. 至少一条数据时 */
         /* 2.1 转化字节序 */
-        head->type = ntohl(head->type);
+        head->type = ntohs(head->type);
+        head->flag = head->flag;
         head->length = ntohl(head->length);
-        head->flag = ntohl(head->flag);
         head->checksum = ntohl(head->checksum);
 
         /* 2.2 校验合法性 */
-        if (smtc_rsvr_head_isvalid(ctx, head))
+        if (!smtc_rsvr_head_isvalid(ctx, head))
         {
             ++rsvr->err_total;
             log_error(rsvr->log, "Header is invalid! Mark:%u/%u type:%d len:%d flag:%d",
@@ -1323,6 +1340,10 @@ static int smtc_rsvr_fill_send_buff(smtc_rsvr_t *rsvr, smtc_sck_t *sck)
 
         /* 1.2 判断剩余空间 */
         head = (smtc_header_t *)node->data;
+        if (SMTC_CHECK_SUM != head->checksum)
+        {
+            assert(0);
+        }
 
         left = (int)(send->end - send->iptr);
         mesg_len = sizeof(smtc_header_t) + head->length;
@@ -1335,10 +1356,14 @@ static int smtc_rsvr_fill_send_buff(smtc_rsvr_t *rsvr, smtc_sck_t *sck)
         addr = smtc_rsvr_get_mesg(rsvr, sck);
 
         head = (smtc_header_t *)addr;
+        if (SMTC_CHECK_SUM != head->checksum)
+        {
+            assert(0);
+        }
 
-        head->type = htonl(head->type);
+        head->type = htons(head->type);
+        head->flag = head->flag;
         head->length = htonl(head->length);
-        head->flag = htonl(head->flag);
         head->checksum = htonl(head->checksum);
 
         /* 1.4 拷贝至发送缓存 */

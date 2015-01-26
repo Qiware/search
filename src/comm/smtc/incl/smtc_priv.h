@@ -90,8 +90,6 @@ typedef struct
    (snap)->optr = (snap)->addr;  \
    (snap)->iptr = (snap)->addr; 
 
-
-
 /* 报头结构 */
 typedef struct
 {

@@ -89,7 +89,7 @@ static void smtc_setup_conf(smtc_ssvr_conf_t *conf)
     snprintf(conf->name, sizeof(conf->name), "SMTC-SEND");
     snprintf(conf->ipaddr, sizeof(conf->ipaddr), "127.0.0.1");
     conf->port = 54321;
-    conf->snd_thd_num = 3;
+    conf->snd_thd_num = 1;
     conf->send_buff_size = 5 * MB;
     conf->recv_buff_size = 2 * MB;
 
