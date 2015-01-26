@@ -86,6 +86,12 @@ typedef struct
    (snap)->optr = (_addr);  \
    (snap)->iptr = (_addr); 
 
+#define smtc_snap_reset(snap)   /* 重置标志 */\
+   (snap)->optr = (snap)->addr;  \
+   (snap)->iptr = (snap)->addr; 
+
+
+
 /* 报头结构 */
 typedef struct
 {

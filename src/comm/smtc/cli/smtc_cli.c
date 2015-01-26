@@ -135,7 +135,7 @@ static int smtc_cli_shmat(smtc_cli_t *cli)
         cli->sq[idx] = shm_queue_attach(key);
         if (NULL == cli->sq[idx])
         {
-            log_error(cli->log, "Attach queue failed! path:[%s]", qcf->name);
+            log_error(cli->log, "errmsg:[%d] %s! path:[%s]", errno, strerror(errno), qcf->name);
             return SMTC_ERR;
         }
     }
@@ -231,7 +231,7 @@ int smtc_cli_send(smtc_cli_t *cli, int type, const void *data, size_t size)
 
     /* 1. 校验类型和长度 */
     if ((type >= SMTC_TYPE_MAX)
-        || (size + sizeof(smtc_header_t) > cli->sq[idx]->size))
+        || (size + sizeof(smtc_header_t) > cli->sq[idx]->info->size))
     {
         log_error(cli->log, "Type of length is invalid! type:%d size:%u", type, size);
         return SMTC_ERR;
@@ -267,10 +267,12 @@ int smtc_cli_send(smtc_cli_t *cli, int type, const void *data, size_t size)
     }
 
     /* 5. 通知发送服务 */
-    if (0 == (num++) % 50)
+    if (0 == num % 50)
     {
         smtc_cli_cmd_send_req(cli, idx);
     }
+
+    log_debug(cli->log, "[%d] Push Success! type:%d size:%u", num, type, size);
 
     return SMTC_OK;
 }

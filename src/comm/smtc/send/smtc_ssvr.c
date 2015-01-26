@@ -251,7 +251,7 @@ static int smtc_ssvr_creat_sendq(smtc_ssvr_t *ssvr, const smtc_ssvr_conf_t *conf
         return SMTC_ERR;
     }
 
-    ssvr->sq = shm_queue_creat(key, qcf->size, qcf->count);
+    ssvr->sq = shm_queue_creat(key, qcf->count, qcf->size);
     if (NULL == ssvr->sq)
     {
         log_error(ssvr->log, "Create send-queue failed!");
@@ -650,6 +650,9 @@ static int smtc_ssvr_recv_proc(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr)
             if (smtc_ssvr_data_proc(ctx, ssvr, sck))
             {
                 log_error(ssvr->log, "Proc data failed! fd:%d", sck->fd);
+
+                Close(sck->fd);
+                smtc_snap_reset(recv);
                 return SMTC_ERR;
             }
             continue;
@@ -657,6 +660,8 @@ static int smtc_ssvr_recv_proc(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr)
         else if (0 == n)
         {
             log_info(ssvr->log, "Client disconnected. fd:%d n:%d/%d", sck->fd, n, left);
+            Close(sck->fd);
+            smtc_snap_reset(recv);
             return SMTC_DISCONN;
         }
         else if ((n < 0) && (EAGAIN == errno))
@@ -670,6 +675,9 @@ static int smtc_ssvr_recv_proc(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr)
         }
 
         log_error(ssvr->log, "errmsg:[%d] %s. fd:%d", errno, strerror(errno), sck->fd);
+
+        Close(sck->fd);
+        smtc_snap_reset(recv);
         return SMTC_ERR;
     }
 
@@ -907,7 +915,7 @@ static int smtc_ssvr_fill_send_buff(smtc_ssvr_t *ssvr, smtc_ssvr_sck_t *sck)
     {
         /* 2.1 判断发送缓存的剩余空间是否足够 */
         left = (int)(send->end - send->iptr);
-        if (left < ssvr->sq->size)
+        if (left < ssvr->sq->info->size)
         {
             break;  /* 空间不足 */
         }
@@ -994,7 +1002,7 @@ static int smtc_ssvr_send_data(smtc_ssvr_cntx_t *ctx, smtc_ssvr_t *ssvr)
                     errno, strerror(errno), sck->fd, len);
 
             Close(sck->fd);
-            Free(send->addr);
+            smtc_snap_reset(send);
             return SMTC_ERR;
         }
         /* 只发送了部分数据 */

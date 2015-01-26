@@ -9,7 +9,7 @@
 #include "smtc.h"
 
 
-#define SMTC_LOG_LEVEL   (2)
+#define SMTC_LOG_LEVEL   LOG_LEVEL_TRACE
 #define SMTC_LOG_SIZE    (100*1024*1024)
 #define SMTC_LOG_COUNT   (10)
 #define SMTC_LOG_PATH    ("./smtc_rcv.log")

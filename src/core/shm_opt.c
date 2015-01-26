@@ -83,7 +83,9 @@ void *shm_creat(int key, size_t size)
         return NULL;
     }
 
-    shmctl(shmid, IPC_RMID, NULL);
+    memset(addr, 0, size);
+
+    //shmctl(shmid, IPC_RMID, NULL);
 
     return addr;
 }
