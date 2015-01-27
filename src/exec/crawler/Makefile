@@ -63,7 +63,7 @@ $(OBJS3): %.o : %.c
 	$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
 
 clean:
-	@rm -fr $(OBJS) $(OBJS2) $(OBJS3)\
+	@rm -fr *.o \
 			$(PROJ_LIB)/$(TARGET) \
 			$(PROJ_BIN)/$(TARGET2) \
 			$(PROJ_BIN)/$(TARGET3)

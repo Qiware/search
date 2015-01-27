@@ -37,4 +37,4 @@ $(OBJS): %.o : %.c
 	$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
 
 clean:
-	@rm -fr $(OBJS) $(PROJ_LIB)/$(TARGET)
+	@rm -fr *.o $(PROJ_LIB)/$(TARGET)

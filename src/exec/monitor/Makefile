@@ -34,4 +34,4 @@ $(OBJS): %.o : %.c
 	$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
 
 clean:
-	@rm -fr $(OBJS) $(PROJ_BIN)/$(TARGET)
+	@rm -fr *.o $(PROJ_BIN)/$(TARGET)
