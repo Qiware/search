@@ -1,5 +1,5 @@
 <!-- 搜索引擎配置信息 -->
-<SEARCH-ENGINES>
+<SEARCH-ENGINE>
     <!-- 日志信息配置
         1) LEVLE: 日志级别
         2) LEVEL2: 系统日志级别
@@ -10,10 +10,21 @@
         1) MAX: 最大并发数
         2) TIMEOUT: 连接超时时间
         3) PORT: 侦听端口 -->
-    <CONNECTIONS MAX="100000" TIMEOUT="15" PORT="8888" />
+    <CONNECTIONS MAX="4096" TIMEOUT="15" PORT="8888" />
 
+    <!-- 队列配置
+        1) NAME: 队列名称
+        2) COUNT: 队列容量 
+        3) SIZE: 队列单元大小 -->
+    <QUEUE>
+        <ITEM NAME="Q_SCK" COUNT="1000" SIZE="128" />  <!-- 套接字队列 -->
+        <ITEM NAME="Q_TASK" COUNT="1000" SIZE="128" /> <!-- 任务接收队列 -->
+    </QUEUE>
+
+    <!-- Agent配置
+        1) NUM: 线程数 -->
+    <AGENT NUM="3" />
     <!-- Worker配置
         1) NUM: 线程数 -->
     <WORKER NUM="3" />
-    <RECVER NUM="5" />
-</SEARCH-ENGINES>
+</SEARCH-ENGINE>
