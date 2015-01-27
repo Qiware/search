@@ -9,7 +9,7 @@
 ###############################################################################
 print_proc()
 {
-    ps -axu | grep -e "crawler" -e "logsvr" -e "redis" -e "search" | grep -v "grep" | sort
+    ps -axu | grep -e "crawler" -e "crwlfilter" -e "logsvr" -e "redis" -e "search" | grep -v "grep" | sort
 }
 
 ###############################################################################

@@ -14,7 +14,7 @@ fi
 ./crawler -d
 
 # 爬虫过滤服务
-./crawler-filter -d
+./crwlfilter -d
 
 # 搜索引擎服务
 ./search -d
