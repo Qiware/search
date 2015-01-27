@@ -11,18 +11,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-
-
-#if !defined(bool)
-    #define bool char
-#endif
-#if !defined(false)
-    #define false (0)
-#endif
-#if !defined(true)
-    #define true  (1)
-#endif
-
 /* 宏定义 */
 #define FILE_NAME_MAX_LEN   (256)   /* 文件名最大长度 */
 #define FILE_PATH_MAX_LEN  FILE_NAME_MAX_LEN   /* 文件路径最大长度 */

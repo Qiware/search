@@ -45,7 +45,7 @@ SRC_LIST = hash.c \
 			hash_array.c \
 			string.c
 
-OBJS = $(subst .c,.o, $(SRC_LIST)) 
+OBJS = $(subst .c,.o, $(SRC_LIST))
 
 TARGET = libxd_core.so
 

@@ -8,7 +8,7 @@ do
 done
 
 redis-cli FLUSHALL
-rm -fr ../data ../temp/* ../log/*
+rm -fr ../data  ../log/* smtc*.log*
 
 # 显示共享内存
 ipcs -m | grep -v 'dest' | awk '{ print $0 }'
