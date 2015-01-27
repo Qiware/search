@@ -47,7 +47,6 @@ print_netstat()
         listen_num=0
         active_num=0
         close_num=0
-        sync_num=0
 
         while read line # 遍历文件行
         do
@@ -72,26 +71,20 @@ print_netstat()
             fi
 
             # 统计关闭的套接字
-            num=`echo $line | grep -e 'CLOSE_WAIT' | wc -l`
+            num=`echo $line | grep -e 'CLOSE_WAIT' -e 'SYN_SENT' -e 'FIN_WAIT1' -e 'FIN_WAIT2' -e 'LAST_ACK' | wc -l`
             if [ $num -gt 0 ]; then
                 close_num=`expr $close_num + $num`
-            fi
-
-            # 统计SYNC的套接字
-            num=`echo $line | grep -e 'SYN_SENT' | wc -l`
-            if [ $num -gt 0 ]; then
-                sync_num=`expr $sync_num + $num`
             fi
         done < .netstat.all
 
         # 打印统计信息
         len=`expr length "$item"`
         if [ $len -lt 8 ]; then
-            echo "$item\t\t$listen_num\t$active_num\t$close_num\t$sync_num\t$total" >> .netstat.ls
+            echo "$item\t\t$listen_num\t$active_num\t$close_num\t$total" >> .netstat.ls
         elif [ $len -lt 16 ]; then
-            echo "$item\t$listen_num\t$active_num\t$close_num\t$sync_num\t$total" >> .netstat.ls
+            echo "$item\t$listen_num\t$active_num\t$close_num\t$total" >> .netstat.ls
         else
-            echo "$item\t$listen_num\t$active_num\t$close_num\t$sync_num\t$total" >> .netstat.ls
+            echo "$item\t$listen_num\t$active_num\t$close_num\t$total" >> .netstat.ls
         fi
     done
 }
@@ -129,7 +122,7 @@ main()
         echo ""
         echo "Network stat:"
         echo "---------------------------------------------------------------------"
-        echo "PROC\t\tLISTEN\tESTAB\tCLOSE\tSYNC\tTOTAL"
+        echo "PROC\t\tLISTEN\tESTAB\tCLOSE\tTOTAL"
 
         cat .netstat.ls
         echo "---------------------------------------------------------------------"
