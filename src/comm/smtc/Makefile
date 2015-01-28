@@ -36,7 +36,8 @@ $(TARGET): $(OBJS)
 
 $(OBJS): %.o : %.c
 	@$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
-	@echo "$(CC) $<"
+	@echo "$(CC) $(PWD)/$<"
 
 clean:
 	@rm -fr *.o $(PROJ_LIB)/$(TARGET)
+	@echo "rm -fr *.o $(PROJ_LIB)/$(TARGET)"

@@ -23,13 +23,14 @@ TARGET = logsvr
 all: $(TARGET)
 $(TARGET): $(OBJS)
 	@$(CC) $(CFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS)
-	@echo "$(CC) -o $@ $(OBJS)"
+	@echo "$(CC) $@"
 	@mv $@ $(PROJ_BIN)
 	@echo "$@ is OK!"
 
 $(OBJS): %.o : %.c
 	@$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
-	@echo "$(CC) -c $< -o $@"
+	@echo "$(CC) $(PWD)/$<"
 
 clean:
 	@rm -fr *.o $(PROJ_BIN)/$(TARGET)
+	@echo "rm -fr *.o $(PROJ_BIN)/$(TARGET)"

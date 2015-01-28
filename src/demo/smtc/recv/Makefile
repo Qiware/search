@@ -32,7 +32,8 @@ $(TARGET): $(OBJS)
 
 $(OBJS): %.o : %.c
 	@$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
-	@echo "$(CC) $<"
+	@echo "$(CC) $(PWD)/$<"
 
 clean:
-	@rm -fr *.o $(TARGET)
+	@rm -fr *.o $(PROJ_BIN)/$(TARGET)
+	@echo "rm -fr *.o $(PROJ_BIN)/$(TARGET)"

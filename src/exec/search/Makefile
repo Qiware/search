@@ -47,13 +47,16 @@ $(TARGET2): $(OBJS2)
 
 $(OBJS): %.o : %.c
 	@$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
-	@echo "$(CC) $<"
+	@echo "$(CC) $(PWD)/$<"
 
 $(OBJS2): %.o : %.c
 	@$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
-	@echo "$(CC) $<"
+	@echo "$(CC) $(PWD)/$<"
 
 clean:
 	@rm -fr *.o \
 			$(PROJ_LIB)/$(TARGET) \
 			$(PROJ_BIN)/$(TARGET2)
+	@echo "rm -fr *.o \
+			$(PROJ_LIB)/$(TARGET) \
+			$(PROJ_BIN)/$(TARGET2)"

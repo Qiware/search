@@ -64,3 +64,4 @@ $(OBJS): %.o : %.c
 
 clean:
 	@rm -fr *.o $(PROJ_LIB)/$(TARGET)
+	@echo "rm -fr *.o $(PROJ_LIB)/$(TARGET)"
