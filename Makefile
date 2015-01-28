@@ -54,7 +54,6 @@ all:
 	@for SUBDIR in ${DIR}; \
 	do \
 		if [ -e $${SUBDIR}/Makefile ]; then \
-			echo cd $${SUBDIR}; \
 			cd $${SUBDIR}; \
 			make 2>&1 | tee -a ${GCC_LOG}; \
 			cd ${PROJ}; \
@@ -66,7 +65,6 @@ clean:
 	@for SUBDIR in ${DIR}; \
 	do \
 		if [ -e $${SUBDIR}/Makefile ]; then \
-			echo cd $${SUBDIR}; \
 			cd $${SUBDIR}; \
 			make clean; \
 			cd ${PROJ}; \
