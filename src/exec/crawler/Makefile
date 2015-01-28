@@ -39,28 +39,34 @@ TARGET3 = crwlfilter
 
 all: $(TARGET) $(TARGET2) $(TARGET3)
 $(TARGET): $(OBJS)
-	$(CC) $(LFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS)
+	@$(CC) $(LFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS)
+	@echo "$(CC) $@"
 	@mv $@ $(PROJ_LIB)
 	@echo "$@ is OK!"
 
 $(TARGET2): $(OBJS2)
-	$(CC) $(CFLAGS) -o $@ $(OBJS2) $(INCLUDE) $(LIBS_PATH) $(LIBS) $(LIBS2)
+	@$(CC) $(CFLAGS) -o $@ $(OBJS2) $(INCLUDE) $(LIBS_PATH) $(LIBS) $(LIBS2)
+	@echo "$(CC) $@"
 	@mv $@ $(PROJ_BIN)
 	@echo "$@ is OK!"
 
 $(TARGET3): $(OBJS3)
-	$(CC) $(CFLAGS) -o $@ $(OBJS3) $(INCLUDE) $(LIBS_PATH) $(LIBS) $(LIBS2)
+	@$(CC) $(CFLAGS) -o $@ $(OBJS3) $(INCLUDE) $(LIBS_PATH) $(LIBS) $(LIBS2)
+	@echo "$(CC) $@"
 	@mv $@ $(PROJ_BIN)
 	@echo "$@ is OK!"
 
 $(OBJS): %.o : %.c
-	$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
+	@$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
+	@echo "$(CC) $<"
 
 $(OBJS2): %.o : %.c
-	$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
+	@$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
+	@echo "$(CC) $<"
 
 $(OBJS3): %.o : %.c
-	$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
+	@$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
+	@echo "$(CC) $<"
 
 clean:
 	@rm -fr *.o \

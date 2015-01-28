@@ -24,13 +24,15 @@ TARGET = smtc_rsvr
 
 all: $(TARGET)
 $(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS)
+	@$(CC) $(CFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS)
+	@echo "$(CC) $@"
 	@mv $@ $(PROJ_BIN)
 	@rm -fr $(OBJS)
 	@echo "$@ is OK!"
 
 $(OBJS): %.o : %.c
-	$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
+	@$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
+	@echo "$(CC) $<"
 
 clean:
 	@rm -fr *.o $(TARGET)

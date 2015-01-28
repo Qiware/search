@@ -22,12 +22,14 @@ TARGET = libxd_http.so
 
 all: $(TARGET)
 $(TARGET): $(OBJS)
-	$(CC) $(LFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS)
+	@$(CC) $(LFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS)
+	@echo "$(CC) $@"
 	@mv $@ $(PROJ_LIB)
 	@echo "$@ is OK!"
 
 $(OBJS): %.o : %.c
-	$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
+	@$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
+	@echo "$(CC) $<"
 
 clean:
 	@rm -fr *.o $(PROJ_LIB)/$(TARGET)
