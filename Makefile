@@ -19,8 +19,7 @@ export PROJ_CONF = ${PROJ}/conf
 export GCC_LOG = ${PROJ_LOG}/gcc.log
 
 # 编译目录(注：编译按顺序执行　注意库之间的依赖关系)
-#DIR=`find ./src -type d`
-DIR := "src/core"
+DIR = "src/core"
 DIR += "src/comm/http"
 DIR += "src/comm/gumbo"
 DIR += "src/comm/redis"
@@ -44,13 +43,19 @@ DIR += "${DEMO_DIR}/smtc/recv"
 DIR += "${DEMO_DIR}/smtc/send"
 export DIR
 
+# 创建目录结构
+define mak_mkdir
+	mkdir -p ${PROJ_LIB};
+	mkdir -p ${PROJ_BIN};
+	mkdir -p ${PROJ_LOG};
+	rm -fr ${GCC_LOG};
+endef
+
 .PHONY: all clean rebuild
 
 # 1. 编译操作
 all:
-	@mkdir -p ${PROJ_LIB};
-	@mkdir -p ${PROJ_BIN};
-	@mkdir -p ${PROJ_LOG};
+	${mak_mkdir}
 	@for SUBDIR in ${DIR}; \
 	do \
 		if [ -e $${SUBDIR}/Makefile ]; then \
