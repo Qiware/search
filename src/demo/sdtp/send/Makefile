@@ -10,15 +10,15 @@ include $(PROJ)/make/build.mak
 
 INCLUDE = -I. \
 		  -I$(PROJ)/src/incl \
-		  -I$(PROJ)/src/comm/smtc/incl
+		  -I$(PROJ)/src/comm/sdtp/incl
 LIBS_PATH = -L$(PROJ)/lib
-LIBS = -lpthread -lxd_core -lsmtc
+LIBS = -lpthread -lxd_core -lsdtp
 
-SRC_LIST = smtc_recv.c
+SRC_LIST = sdtp_send.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
 
-TARGET = smtc_rsvr
+TARGET = sdtp_ssvr
 
 .PHONY: all clean
 

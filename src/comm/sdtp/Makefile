@@ -14,16 +14,16 @@ INCLUDE = -I./incl \
 LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lxd_core
 
-SRC_LIST = recv/smtc.c \
-			recv/smtc_lsn.c \
-			recv/smtc_rsvr.c \
-			recv/smtc_worker.c \
-			send/smtc_ssvr.c \
-			cli/smtc_cli.c
+SRC_LIST = recv/sdtp.c \
+			recv/sdtp_lsn.c \
+			recv/sdtp_rsvr.c \
+			recv/sdtp_worker.c \
+			send/sdtp_ssvr.c \
+			cli/sdtp_cli.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
 
-TARGET = libsmtc.so
+TARGET = libsdtp.so
 
 .PHONY: all clean
 

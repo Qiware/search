@@ -1,7 +1,7 @@
 /******************************************************************************
  ** Coypright(C) 2014-2024 Xundao technology Co., Ltd
  **
- ** 文件名: smtc.c
+ ** 文件名: sdtp.c
  ** 版本号: 1.0
  ** 描  述: 共享消息传输通道(Sharing Message Transaction Channel)
  **         1. 主要用于异步系统之间数据消息的传输
@@ -15,20 +15,20 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
-#include "smtc.h"
+#include "sdtp.h"
 #include "xml_tree.h"
-#include "smtc_cmd.h"
-#include "smtc_priv.h"
+#include "sdtp_cmd.h"
+#include "sdtp_priv.h"
 #include "thread_pool.h"
 
 
 /* 静态函数 */
-static smtc_worker_t *smtc_worker_get_curr(smtc_cntx_t *ctx);
-static int smtc_worker_event_core_hdl(smtc_cntx_t *ctx, smtc_worker_t *worker);
-static int smtc_worker_cmd_proc_req_hdl(smtc_cntx_t *ctx, smtc_worker_t *worker, const smtc_cmd_t *cmd);
+static sdtp_worker_t *sdtp_worker_get_curr(sdtp_cntx_t *ctx);
+static int sdtp_worker_event_core_hdl(sdtp_cntx_t *ctx, sdtp_worker_t *worker);
+static int sdtp_worker_cmd_proc_req_hdl(sdtp_cntx_t *ctx, sdtp_worker_t *worker, const sdtp_cmd_t *cmd);
 
 /******************************************************************************
- **函数名称: smtc_worker_routine
+ **函数名称: sdtp_worker_routine
  **功    能: 运行工作线程
  **输入参数: 
  **     _ctx: 全局对象
@@ -41,16 +41,16 @@ static int smtc_worker_cmd_proc_req_hdl(smtc_cntx_t *ctx, smtc_worker_t *worker,
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.06 #
  ******************************************************************************/
-void *smtc_worker_routine(void *_ctx)
+void *sdtp_worker_routine(void *_ctx)
 {
     int ret, idx;
-    smtc_worker_t *worker;
-    smtc_cmd_proc_req_t *req;
+    sdtp_worker_t *worker;
+    sdtp_cmd_proc_req_t *req;
     struct timeval timeout;
-    smtc_cntx_t *ctx = (smtc_cntx_t *)_ctx;
+    sdtp_cntx_t *ctx = (sdtp_cntx_t *)_ctx;
 
     /* 1. 获取工作对象 */
-    worker = smtc_worker_get_curr(ctx);
+    worker = sdtp_worker_get_curr(ctx);
     if (NULL == worker)
     {
         log_fatal(ctx->log, "Get current worker failed!");
@@ -83,24 +83,24 @@ void *smtc_worker_routine(void *_ctx)
         else if (0 == ret)
         {
             /* 超时: 模拟处理命令 */
-            smtc_cmd_t cmd;
-            req = (smtc_cmd_proc_req_t *)&cmd.args;
+            sdtp_cmd_t cmd;
+            req = (sdtp_cmd_proc_req_t *)&cmd.args;
 
-            for (idx=0; idx<SMTC_WORKER_HDL_QNUM; ++idx)
+            for (idx=0; idx<SDTP_WORKER_HDL_QNUM; ++idx)
             {
                 memset(&cmd, 0, sizeof(cmd));
 
-                cmd.type = SMTC_CMD_PROC_REQ;
+                cmd.type = SDTP_CMD_PROC_REQ;
                 req->num = -1;
-                req->rqidx = SMTC_WORKER_HDL_QNUM * worker->tidx + idx;
+                req->rqidx = SDTP_WORKER_HDL_QNUM * worker->tidx + idx;
 
-                smtc_worker_cmd_proc_req_hdl(ctx, worker, &cmd);
+                sdtp_worker_cmd_proc_req_hdl(ctx, worker, &cmd);
             }
             continue;
         }
 
         /* 3. 进行事件处理 */
-        smtc_worker_event_core_hdl(ctx, worker);
+        sdtp_worker_event_core_hdl(ctx, worker);
     }
 
     abort();
@@ -108,7 +108,7 @@ void *smtc_worker_routine(void *_ctx)
 }
 
 /******************************************************************************
- **函数名称: smtc_worker_get_curr
+ **函数名称: sdtp_worker_get_curr
  **功    能: 获取工作对象
  **输入参数: 
  **     ctx: 全局对象
@@ -120,7 +120,7 @@ void *smtc_worker_routine(void *_ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.06 #
  ******************************************************************************/
-static smtc_worker_t *smtc_worker_get_curr(smtc_cntx_t *ctx)
+static sdtp_worker_t *sdtp_worker_get_curr(sdtp_cntx_t *ctx)
 {
     int tidx;
     
@@ -133,11 +133,11 @@ static smtc_worker_t *smtc_worker_get_curr(smtc_cntx_t *ctx)
     }
 
     /* 2. 返回工作对象 */
-    return (smtc_worker_t *)(ctx->worktp->data + tidx * sizeof(smtc_worker_t));
+    return (sdtp_worker_t *)(ctx->worktp->data + tidx * sizeof(sdtp_worker_t));
 }
 
 /******************************************************************************
- **函数名称: smtc_worker_init
+ **函数名称: sdtp_worker_init
  **功    能: 初始化工作服务
  **输入参数: 
  **     ctx: 全局对象
@@ -150,29 +150,29 @@ static smtc_worker_t *smtc_worker_get_curr(smtc_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.06 #
  ******************************************************************************/
-int smtc_worker_init(smtc_cntx_t *ctx, smtc_worker_t *worker, int tidx)
+int sdtp_worker_init(sdtp_cntx_t *ctx, sdtp_worker_t *worker, int tidx)
 {
     char path[FILE_PATH_MAX_LEN];
-    smtc_conf_t *conf = &ctx->conf; 
+    sdtp_conf_t *conf = &ctx->conf; 
 
     worker->tidx = tidx;
     worker->log = ctx->log;
 
     /* 1. 创建命令套接字 */
-    smtc_worker_usck_path(conf, path, worker->tidx);
+    sdtp_worker_usck_path(conf, path, worker->tidx);
     
     worker->cmd_sck_id = unix_udp_creat(path);
     if (worker->cmd_sck_id < 0)
     {
         log_error(worker->log, "Create unix-udp socket failed!");
-        return SMTC_ERR;
+        return SDTP_ERR;
     }
 
-    return SMTC_OK;
+    return SDTP_OK;
 }
 
 /******************************************************************************
- **函数名称: smtc_worker_event_core_hdl
+ **函数名称: sdtp_worker_event_core_hdl
  **功    能: 核心事件处理
  **输入参数: 
  **     ctx: 全局对象
@@ -184,39 +184,39 @@ int smtc_worker_init(smtc_cntx_t *ctx, smtc_worker_t *worker, int tidx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.06 #
  ******************************************************************************/
-static int smtc_worker_event_core_hdl(smtc_cntx_t *ctx, smtc_worker_t *worker)
+static int sdtp_worker_event_core_hdl(sdtp_cntx_t *ctx, sdtp_worker_t *worker)
 {
-    smtc_cmd_t cmd;
+    sdtp_cmd_t cmd;
 
     if (!FD_ISSET(worker->cmd_sck_id, &worker->rdset))
     {
-        return SMTC_OK; /* 无数据 */
+        return SDTP_OK; /* 无数据 */
     }
 
     if (unix_udp_recv(worker->cmd_sck_id, (void *)&cmd, sizeof(cmd)) < 0)
     {
         log_error(worker->log, "errmsg:[%d] %s", errno, strerror(errno));
-        return SMTC_ERR_RECV_CMD;
+        return SDTP_ERR_RECV_CMD;
     }
 
     switch (cmd.type)
     {
-        case SMTC_CMD_PROC_REQ:
+        case SDTP_CMD_PROC_REQ:
         {
-            return smtc_worker_cmd_proc_req_hdl(ctx, worker, &cmd);
+            return sdtp_worker_cmd_proc_req_hdl(ctx, worker, &cmd);
         }
         default:
         {
             log_error(worker->log, "Received unknown type! %d", cmd.type);
-            return SMTC_ERR_UNKNOWN_CMD;
+            return SDTP_ERR_UNKNOWN_CMD;
         }
     }
 
-    return SMTC_ERR_UNKNOWN_CMD;
+    return SDTP_ERR_UNKNOWN_CMD;
 }
 
 /******************************************************************************
- **函数名称: smtc_worker_cmd_proc_req_hdl
+ **函数名称: sdtp_worker_cmd_proc_req_hdl
  **功    能: 处理请求的处理
  **输入参数: 
  **     ctx: 全局对象
@@ -228,13 +228,13 @@ static int smtc_worker_event_core_hdl(smtc_cntx_t *ctx, smtc_worker_t *worker)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.06 #
  ******************************************************************************/
-static int smtc_worker_cmd_proc_req_hdl(smtc_cntx_t *ctx, smtc_worker_t *worker, const smtc_cmd_t *cmd)
+static int sdtp_worker_cmd_proc_req_hdl(sdtp_cntx_t *ctx, sdtp_worker_t *worker, const sdtp_cmd_t *cmd)
 {
     void *addr;
     queue_t *rq;
-    smtc_header_t *head;
-    smtc_reg_t *reg;
-    const smtc_cmd_proc_req_t *work_cmd = (const smtc_cmd_proc_req_t *)&cmd->args;
+    sdtp_header_t *head;
+    sdtp_reg_t *reg;
+    const sdtp_cmd_proc_req_t *work_cmd = (const sdtp_cmd_proc_req_t *)&cmd->args;
 
     /* 1. 获取接收队列 */
     rq = ctx->recvq[work_cmd->rqidx];
@@ -246,15 +246,15 @@ static int smtc_worker_cmd_proc_req_hdl(smtc_cntx_t *ctx, smtc_worker_t *worker,
         if (NULL == addr)
         {   
             log_trace(worker->log, "Didn't get data from queue!");
-            return SMTC_OK;
+            return SDTP_OK;
         }
         
         /* 3. 执行回调函数 */
-        head = (smtc_header_t *)addr;
+        head = (sdtp_header_t *)addr;
 
         reg = &ctx->reg[head->type];
 
-        reg->proc(head->type, addr+sizeof(smtc_header_t), head->length, reg->args);
+        reg->proc(head->type, addr+sizeof(sdtp_header_t), head->length, reg->args);
 
         /* 4. 释放内存空间 */
         queue_dealloc(rq, addr);
@@ -262,5 +262,5 @@ static int smtc_worker_cmd_proc_req_hdl(smtc_cntx_t *ctx, smtc_worker_t *worker,
         ++worker->proc_total; /* 处理计数 */
     }
 
-    return SMTC_OK;
+    return SDTP_OK;
 }
