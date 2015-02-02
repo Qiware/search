@@ -15,13 +15,13 @@
 static srch_agent_t *srch_agent_get(srch_cntx_t *ctx);
 static int srch_agent_add_conn(srch_cntx_t *ctx, srch_agent_t *agt);
 int srch_agent_socket_cmp_cb(const void *pkey, const void *data);
-static int srch_agent_del_conn(srch_agent_t *agt, socket_t *sck);
+static int srch_agent_del_conn(srch_cntx_t *ctx, srch_agent_t *agt, socket_t *sck);
 
-static int srch_agent_recv(srch_agent_t *agt, socket_t *sck);
-static int srch_agent_send(srch_agent_t *agt, socket_t *sck);
+static int srch_agent_recv(srch_cntx_t *ctx, srch_agent_t *agt, socket_t *sck);
+static int srch_agent_send(srch_cntx_t *ctx, srch_agent_t *agt, socket_t *sck);
 
-static int srch_agent_event_hdl(srch_agent_t *agt);
-static int srch_agent_event_timeout_hdl(srch_agent_t *agt);
+static int srch_agent_event_hdl(srch_cntx_t *ctx, srch_agent_t *agt);
+static int srch_agent_event_timeout_hdl(srch_cntx_t *ctx, srch_agent_t *agt);
 
 /******************************************************************************
  **函数名称: srch_agent_routine
@@ -82,13 +82,13 @@ void *srch_agent_routine(void *_ctx)
             {
                 agt->scan_tm = agt->ctm;
 
-                srch_agent_event_timeout_hdl(agt);
+                srch_agent_event_timeout_hdl(ctx, agt);
             }
             continue;
         }
 
         /* 4. 处理事件通知 */
-        srch_agent_event_hdl(agt);
+        srch_agent_event_hdl(ctx, agt);
     }
 
     return NULL;
@@ -114,9 +114,7 @@ int srch_agent_init(srch_cntx_t *ctx, srch_agent_t *agt)
     void *addr;
     char path[FILE_NAME_MAX_LEN];
 
-    agt->ctx = ctx;
     agt->log = ctx->log;
-    agt->conf = ctx->conf;
 
     /* 1. 创建SLAB内存池 */
     addr = calloc(1, SRCH_SLAB_SIZE);
@@ -227,7 +225,7 @@ static srch_agent_t *srch_agent_get(srch_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.28 #
  ******************************************************************************/
-static int srch_agent_event_hdl(srch_agent_t *agt)
+static int srch_agent_event_hdl(srch_cntx_t *ctx, srch_agent_t *agt)
 {
     int idx, ret;
     socket_t *sck;
@@ -243,11 +241,11 @@ static int srch_agent_event_hdl(srch_agent_t *agt)
         if (agt->events[idx].events & EPOLLIN)
         {
             /* 接收网络数据 */
-            ret = sck->recv_cb(agt, sck);
+            ret = sck->recv_cb(ctx, agt, sck);
             if (SRCH_SCK_AGAIN != ret)
             {
                 log_info(agt->log, "Delete connection! fd:%d", sck->fd);
-                srch_agent_del_conn(agt, sck);
+                srch_agent_del_conn(ctx, agt, sck);
                 continue; /* 异常-关闭SCK: 不必判断是否可写 */
             }
         }
@@ -256,11 +254,11 @@ static int srch_agent_event_hdl(srch_agent_t *agt)
         if (agt->events[idx].events & EPOLLOUT)
         {
             /* 发送网络数据 */
-            ret = sck->send_cb(agt, sck);
+            ret = sck->send_cb(ctx, agt, sck);
             if (SRCH_ERR == ret)
             {
                 log_info(agt->log, "Delete connection! fd:%d", sck->fd);
-                srch_agent_del_conn(agt, sck);
+                srch_agent_del_conn(ctx, agt, sck);
                 continue; /* 异常: 套接字已关闭 */
             }
         }
@@ -271,7 +269,7 @@ static int srch_agent_event_hdl(srch_agent_t *agt)
     {
         agt->scan_tm = agt->ctm;
 
-        srch_agent_event_timeout_hdl(agt);
+        srch_agent_event_timeout_hdl(ctx, agt);
     }
 
     return SRCH_OK;
@@ -324,7 +322,7 @@ static int srch_agent_get_timeout_conn_list(socket_t *sck, srch_conn_timeout_lis
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.28 #
  ******************************************************************************/
-static int srch_agent_event_timeout_hdl(srch_agent_t *agt)
+static int srch_agent_event_timeout_hdl(srch_cntx_t *ctx, srch_agent_t *agt)
 {
     int ret;
     socket_t *sck;
@@ -359,7 +357,7 @@ static int srch_agent_event_timeout_hdl(srch_agent_t *agt)
     {
         sck = (socket_t *)node->data;
 
-        srch_agent_del_conn(agt, sck);
+        srch_agent_del_conn(ctx, agt, sck);
     }
 
     /* 4. 释放内存空间 */
@@ -471,7 +469,7 @@ static int srch_agent_add_conn(srch_cntx_t *ctx, srch_agent_t *agt)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.06 #
  ******************************************************************************/
-static int srch_agent_del_conn(srch_agent_t *agt, socket_t *sck)
+static int srch_agent_del_conn(srch_cntx_t *ctx, srch_agent_t *agt, socket_t *sck)
 {
     void *addr;
     list_node_t *node;
@@ -504,7 +502,7 @@ static int srch_agent_del_conn(srch_agent_t *agt, socket_t *sck)
 
     if (NULL != sck->recv.addr)
     {
-        queue_dealloc(agt->ctx->recvq[agt->tidx], sck->recv.addr);
+        queue_dealloc(ctx->recvq[agt->tidx], sck->recv.addr);
     }
 
     slab_dealloc(agt->slab, sck->data);
@@ -688,7 +686,7 @@ static int srch_agent_recv_body(srch_agent_t *agt, socket_t *sck)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.21 #
  ******************************************************************************/
-static int srch_agent_recv_post(srch_agent_t *agt, socket_t *sck)
+static int srch_agent_recv_post(srch_cntx_t *ctx, srch_agent_t *agt, socket_t *sck)
 {
     srch_agent_sck_data_t *data = (srch_agent_sck_data_t *)sck->data;
 
@@ -697,7 +695,7 @@ static int srch_agent_recv_post(srch_agent_t *agt, socket_t *sck)
     {
         log_info(agt->log, "Push into user data queue!");
 
-        return queue_push(agt->ctx->recvq[agt->tidx], sck->recv.addr);
+        return queue_push(ctx->recvq[agt->tidx], sck->recv.addr);
     }
 
     /* TODO: 2. 系统消息的处理 */
@@ -717,10 +715,9 @@ static int srch_agent_recv_post(srch_agent_t *agt, socket_t *sck)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.29 #
  ******************************************************************************/
-static int srch_agent_recv(srch_agent_t *agt, socket_t *sck)
+static int srch_agent_recv(srch_cntx_t *ctx, srch_agent_t *agt, socket_t *sck)
 {
     int ret;
-    srch_cntx_t *ctx = agt->ctx;
     socket_snap_t *recv = &sck->recv;
     srch_agent_sck_data_t *data = (srch_agent_sck_data_t *)sck->data;
 
@@ -826,7 +823,7 @@ static int srch_agent_recv(srch_agent_t *agt, socket_t *sck)
             {
             RECV_POST:
                 /* 将数据放入接收队列 */
-                ret = srch_agent_recv_post(agt, sck);
+                ret = srch_agent_recv_post(ctx, agt, sck);
                 switch (ret)
                 {
                     case SRCH_OK:
@@ -894,7 +891,7 @@ static void *srch_agent_fetch_send_data(srch_agent_t *agt, socket_t *sck)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.29 #
  ******************************************************************************/
-static int srch_agent_send(srch_agent_t *agt, socket_t *sck)
+static int srch_agent_send(srch_cntx_t *ctx, srch_agent_t *agt, socket_t *sck)
 {
     int n, left;
     srch_mesg_header_t *head;

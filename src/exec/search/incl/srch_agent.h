@@ -16,8 +16,6 @@ typedef struct
 {
     int tidx;                       /* 线程索引 */
 
-    srch_cntx_t *ctx;               /* 全局对象 */
-    srch_conf_t *conf;              /* 配置信息 */
     slab_pool_t *slab;              /* 内存池 */
     log_cycle_t *log;               /* 日志对象 */
 

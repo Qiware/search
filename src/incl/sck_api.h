@@ -39,8 +39,8 @@ typedef struct
 } socket_snap_t;
 
 typedef struct _socket_t socket_t;
-typedef int (*socket_recv_cb_t)(void *ctx, socket_t *sck);
-typedef int (*socket_send_cb_t)(void *ctx, socket_t *sck);
+typedef int (*socket_recv_cb_t)(void *ctx, void *obj, socket_t *sck);
+typedef int (*socket_send_cb_t)(void *ctx, void *obj, socket_t *sck);
 
 /* 套接字对象 */
 typedef struct _socket_t

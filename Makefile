@@ -23,7 +23,7 @@ DIR = "src/core"
 DIR += "src/comm/http"
 DIR += "src/comm/gumbo"
 DIR += "src/comm/redis"
-DIR += "src/comm/smtc"
+DIR += "src/comm/sdtp"
 
 DIR += "src/exec/crawler/"
 DIR += "src/exec/logsvr"
