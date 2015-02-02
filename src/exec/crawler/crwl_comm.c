@@ -504,6 +504,7 @@ int crwl_proc_lock(void)
  **     1. 从域名IP映射表中查询
  **     2. 通过DNS服务器查询
  **注意事项: 
+ **     如果域名不存在, getaddrinfo()将阻塞30s左右的时间!
  **作    者: # Qifeng.zou # 2014.10.21 #
  ******************************************************************************/
 int crwl_get_domain_ip_map(crwl_cntx_t *ctx, char *host, crwl_domain_ip_map_t *map)
