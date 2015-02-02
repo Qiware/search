@@ -129,9 +129,11 @@ int crwl_usage(const char *exec)
  ******************************************************************************/
 crwl_cntx_t *crwl_cntx_init(char *pname, const char *path)
 {
+    int idx;
     void *addr;
     log_cycle_t *log;
     crwl_cntx_t *ctx;
+    crwl_conf_t *conf;
 
     /* 1. 初始化日志模块 */
     log = crwl_init_log(pname);
@@ -159,35 +161,54 @@ crwl_cntx_t *crwl_cntx_init(char *pname, const char *path)
     do
     {
         /* 4. 加载配置文件 */
-        ctx->conf = crwl_conf_load(path, log);
-        if (NULL == ctx->conf)
+        conf = crwl_conf_load(path, log);
+        if (NULL == conf)
         {
             log_error(log, "Load configuration failed! path:%s", path);
             break;
         }
 
+        ctx->conf = conf;
         ctx->log = log;
-        log_set_level(log, ctx->conf->log.level);
-        log2_set_level(ctx->conf->log.level2);
+        log_set_level(log, conf->log.level);
+        log2_set_level(conf->log.level2);
 
         /* 5. 创建内存池 */
         addr = (void *)calloc(1, 30 * MB);
         if (NULL == addr)
         {
-            free(ctx);
             log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
-            return NULL;
+            break;
         }
 
         ctx->slab = slab_init(addr, 30 * MB);
         if (NULL == ctx->slab)
         {
-            free(ctx);
             log_error(log, "Init slab failed!");
-            return NULL;
+            break;
         }
 
-        /* 5. 新建域名IP映射表 */
+        /* 6. 创建任务队列 */
+        ctx->taskq = (queue_t **)calloc(conf->worker.num, sizeof(queue_t *));
+        if (NULL == ctx->taskq)
+        {
+            log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
+            break;
+        }
+
+        for (idx=0; idx<conf->worker.num; ++idx)
+        {
+            ctx->taskq[idx] = queue_creat(
+                    conf->worker.taskq_count,
+                    sizeof(crwl_task_t) + sizeof(crwl_task_space_u));
+            if (NULL == ctx->taskq[idx])
+            {
+                log_error(ctx->log, "Create queue failed! taskq_count:%d", conf->worker.taskq_count);
+                break;
+            }
+        }
+
+        /* 7. 新建域名IP映射表 */
         ctx->domain_ip_map = hash_tab_creat(
                 ctx->slab,
                 CRWL_DOMAIN_IP_MAP_HASH_MOD,
@@ -199,7 +220,7 @@ crwl_cntx_t *crwl_cntx_init(char *pname, const char *path)
             break;
         }
 
-        /* 6. 新建域名黑名单表 */
+        /* 8. 新建域名黑名单表 */
         ctx->domain_blacklist = hash_tab_creat(
                 ctx->slab,
                 CRWL_DOMAIN_BLACKLIST_HASH_MOD,
@@ -218,14 +239,14 @@ crwl_cntx_t *crwl_cntx_init(char *pname, const char *path)
             break;
         }
 
-        /* 6. 创建Worker线程池 */
+        /* 9. 创建Worker线程池 */
         if (crwl_creat_workers(ctx))
         {
             log_error(log, "Initialize thread pool failed!");
             break;
         }
 
-        /* 7. 创建Sched线程池 */
+        /* 10. 创建Sched线程池 */
         if (crwl_creat_scheds(ctx))
         {
             log_error(log, "Initialize thread pool failed!");
@@ -237,6 +258,7 @@ crwl_cntx_t *crwl_cntx_init(char *pname, const char *path)
 
     /* 释放内存 */
     if (ctx->conf) { crwl_conf_destroy(ctx->conf); }
+    if (ctx->taskq) { free(ctx->taskq); }
     if (ctx->domain_ip_map) { hash_tab_destroy(ctx->domain_ip_map); }
     if (ctx->domain_blacklist) { hash_tab_destroy(ctx->domain_blacklist); }
     free(ctx);
@@ -258,8 +280,16 @@ crwl_cntx_t *crwl_cntx_init(char *pname, const char *path)
  ******************************************************************************/
 void crwl_cntx_destroy(crwl_cntx_t *ctx)
 {
-    crwl_workers_destroy(ctx);
+    int idx;
+    crwl_conf_t *conf = ctx->conf;
 
+    for (idx=0; idx<conf->worker.num; ++idx)
+    {
+        queue_destroy(ctx->taskq[idx]);
+    }
+    Free(ctx->taskq);
+
+    crwl_workers_destroy(ctx);
     log_destroy(&ctx->log);
     log2_destroy();
 }
@@ -356,7 +386,7 @@ static int crwl_creat_workers(crwl_cntx_t *ctx)
     {
         worker = (crwl_worker_t *)ctx->workers->data + idx;
 
-        crwl_worker_destroy(worker);
+        crwl_worker_destroy(ctx, worker);
     }
 
     free(ctx->workers->data);
@@ -387,7 +417,7 @@ int crwl_workers_destroy(crwl_cntx_t *ctx)
     {
         worker = (crwl_worker_t *)ctx->workers->data + idx;
 
-        crwl_worker_destroy(worker);
+        crwl_worker_destroy(ctx, worker);
     }
 
     free(ctx->workers->data);

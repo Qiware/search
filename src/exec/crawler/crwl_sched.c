@@ -17,7 +17,6 @@
 #include "sck_api.h"
 #include "syscall.h"
 #include "crwl_task.h"
-#include "crwl_worker.h"
 #include "crwl_sched.h"
 
 static crwl_sched_t *crwl_sched_init(crwl_cntx_t *ctx);
@@ -29,7 +28,7 @@ static int crwl_sched_fetch_task(crwl_cntx_t *ctx, crwl_sched_t *sched);
 
 static int crwl_task_parse(const char *str, crwl_task_t *task);
 static int crwl_task_parse_download_webpage(xml_tree_t *xml, crwl_task_down_webpage_t *dw);
-static int crwl_sched_task_hdl(crwl_cntx_t *ctx, crwl_worker_t *worker, crwl_task_t *task);
+static int crwl_sched_task_hdl(crwl_cntx_t *ctx, queue_t *taskq, crwl_task_t *task);
 
 /******************************************************************************
  **函数名称: crwl_sched_routine
@@ -239,11 +238,9 @@ static int crwl_sched_fetch_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
     int times;
     void *addr;
     redisReply *r;
+    queue_t *taskq;
     crwl_task_t *task;
-    crwl_worker_t *workers, *worker;
     crwl_conf_t *conf = ctx->conf;
-
-    workers = (crwl_worker_t *)ctx->workers->data;
 
     times = 0;
     while (1)
@@ -252,9 +249,9 @@ static int crwl_sched_fetch_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
         ++sched->last_idx;
         sched->last_idx %= conf->worker.num;
 
-        worker = workers + sched->last_idx;
+        taskq = ctx->taskq[sched->last_idx];
 
-        if (!crwl_worker_taskq_space(worker))
+        if (!queue_space(&taskq->queue))
         {
             ++times;
             if (times >= conf->worker.num)
@@ -279,7 +276,7 @@ static int crwl_sched_fetch_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
         log_trace(ctx->log, "[%02d] URL:%s!", sched->last_idx, r->str);
 
         /* 3. 新建crwl_task_t对象 */
-        addr = queue_malloc(worker->taskq);
+        addr = queue_malloc(taskq);
         if (NULL == addr)
         {
             freeReplyObject(r);
@@ -295,17 +292,17 @@ static int crwl_sched_fetch_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
             log_error(ctx->log, "Parse task string failed! %s", r->str);
 
             freeReplyObject(r);
-            queue_dealloc(worker->taskq, addr);
+            queue_dealloc(taskq, addr);
             return CRWL_ERR;
         }
 
         /* 5. 处理Undo任务 */
-        if (crwl_sched_task_hdl(ctx, worker, task))
+        if (crwl_sched_task_hdl(ctx, taskq, task))
         {
             log_error(ctx->log, "Handle undo task failed! %s", r->str);
 
             freeReplyObject(r);
-            queue_dealloc(worker->taskq, addr);
+            queue_dealloc(taskq, addr);
             return CRWL_ERR;
         }
 
@@ -423,7 +420,7 @@ static int crwl_task_parse_download_webpage(
  **功    能: 任务TASK_DOWN_WEBPAGE的处理
  **输入参数: 
  **     ctx: 全局信息
- **     worker: 爬虫对象
+ **     taskq: 任务队列
  **     task: 任务信息
  **输出参数:
  **返    回: 0:成功 !0:失败
@@ -432,7 +429,7 @@ static int crwl_task_parse_download_webpage(
  **作    者: # Qifeng.zou # 2014.12.12 #
  ******************************************************************************/
 static int crwl_sched_task_down_webpage_hdl(
-        crwl_cntx_t *ctx, crwl_worker_t *worker, crwl_task_t *task)
+        crwl_cntx_t *ctx, queue_t *taskq, crwl_task_t *task)
 {
     int ret, idx;
     uri_field_t field;
@@ -463,7 +460,7 @@ static int crwl_sched_task_down_webpage_hdl(
     snprintf(args->ip, sizeof(args->ip), "%s", map.ip[idx].ip);
 
     /* 3. 放入Worker任务队列 */
-    if (queue_push(worker->taskq, (void *)task))
+    if (queue_push(taskq, (void *)task))
     {
         log_error(ctx->log, "Push into worker queue failed!");
         return CRWL_ERR;
@@ -477,7 +474,7 @@ static int crwl_sched_task_down_webpage_hdl(
  **功    能: 处理Undo任务
  **输入参数: 
  **     ctx: 全局信息
- **     worker: 爬虫对象
+ **     taskq: 任务队列
  **     task: 任务信息
  **输出参数:
  **返    回: 0:成功 !0:失败
@@ -485,13 +482,13 @@ static int crwl_sched_task_down_webpage_hdl(
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.12 #
  ******************************************************************************/
-static int crwl_sched_task_hdl(crwl_cntx_t *ctx, crwl_worker_t *worker, crwl_task_t *task)
+static int crwl_sched_task_hdl(crwl_cntx_t *ctx, queue_t *taskq, crwl_task_t *task)
 {
     switch (task->type)
     {
         case CRWL_TASK_DOWN_WEBPAGE:
         {
-            return crwl_sched_task_down_webpage_hdl(ctx, worker, task);
+            return crwl_sched_task_down_webpage_hdl(ctx, taskq, task);
         }
         default:
         {

@@ -18,10 +18,10 @@
 #include "crwl_worker.h"
 
 static int crwl_worker_task_down_webpage(
-        crwl_worker_t *worker, const crwl_task_down_webpage_t *args);
-static int crwl_worker_task_unknown_hdl(crwl_worker_t *worker, const void *args);
+        crwl_cntx_t *ctx, crwl_worker_t *worker, const crwl_task_down_webpage_t *args);
+static int crwl_worker_task_unknown_hdl(crwl_cntx_t *ctx, crwl_worker_t *worker, const void *args);
 
-typedef int (*crwl_worker_task_hdl_t)(crwl_worker_t *worker, const void *args);
+typedef int (*crwl_worker_task_hdl_t)(crwl_cntx_t *ctx, crwl_worker_t *worker, const void *args);
 
 /* 任务处理回调函数
  *  注意：必须与crwl_task_type_e个数、顺序保持一致, 否则将会出严重问题 */
@@ -31,10 +31,10 @@ static crwl_worker_task_hdl_t g_crwl_worker_task_hdl[CRWL_TASK_TYPE_TOTAL] =
     , (crwl_worker_task_hdl_t)crwl_worker_task_down_webpage /* CRWL_TASK_DOWN_WEBPAGE */
 };
 
-#define crwl_worker_task_handler(worker, task)              /* 任务处理回调 */\
+#define crwl_worker_task_handler(ctx, worker, task)         /* 任务处理回调 */\
     ((task->type < CRWL_TASK_TYPE_TOTAL)? \
-        g_crwl_worker_task_hdl[task->type](worker, task+1) : \
-        g_crwl_worker_task_hdl[CRWL_TASK_TYPE_UNKNOWN](worker, task+1))
+        g_crwl_worker_task_hdl[task->type](ctx, worker, task+1) : \
+        g_crwl_worker_task_hdl[CRWL_TASK_TYPE_UNKNOWN](ctx, worker, task+1))
 
 /******************************************************************************
  **函数名称: crwl_worker_get
@@ -72,11 +72,10 @@ static crwl_worker_t *crwl_worker_get(crwl_cntx_t *ctx)
 int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker)
 {
     void *addr;
+    crwl_conf_t *conf = ctx->conf;
 
-    worker->ctx = ctx;
     worker->log = ctx->log;
     worker->scan_tm = time(NULL);
-    worker->conf = ctx->conf;
 
     /* 1. 创建SLAB内存池 */
     addr = calloc(1, CRWL_SLAB_SIZE);
@@ -94,24 +93,10 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker)
         return CRWL_ERR;
     }
 
-    /* 2. 创建任务队列 */
-    worker->taskq = queue_creat(
-            worker->conf->worker.taskq_count,
-            sizeof(crwl_task_t) + sizeof(crwl_task_space_u));
-    if (NULL == worker->taskq)
-    {
-        slab_destroy(worker->slab);
-
-        log_error(worker->log, "Init lock queue failed! taskq_count:%d",
-                worker->conf->worker.taskq_count);
-        return CRWL_ERR;
-    }
-
-    /* 3. 创建epoll对象 */
+    /* 2. 创建epoll对象 */
     worker->ep_fd = epoll_create(CRWL_EVENT_MAX_NUM);
     if (worker->ep_fd < 0)
     {
-        queue_destroy(worker->taskq);
         slab_destroy(worker->slab);
 
         log_error(worker->log, "Create epoll failed! errmsg:[%d] %s!");
@@ -120,10 +105,9 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker)
 
     worker->events = (struct epoll_event *)slab_alloc(
             worker->slab,
-            worker->conf->worker.conn_max_num * sizeof(struct epoll_event));
+            conf->worker.conn_max_num * sizeof(struct epoll_event));
     if (NULL == worker->events)
     {
-        queue_destroy(worker->taskq);
         slab_destroy(worker->slab);
         Close(worker->ep_fd);
 
@@ -138,6 +122,7 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker)
  **函数名称: crwl_worker_destroy
  **功    能: 销毁爬虫对象
  **输入参数: 
+ **     ctx: 全局对象
  **     worker: 爬虫对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
@@ -145,30 +130,10 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.23 #
  ******************************************************************************/
-int crwl_worker_destroy(crwl_worker_t *worker)
+int crwl_worker_destroy(crwl_cntx_t *ctx, crwl_worker_t *worker)
 {
-    void *data;
-
     slab_destroy(worker->slab);
-
-    /* 释放TASK队列及数据 */
-    while (1)
-    {
-        /* 弹出数据 */
-        data = queue_pop(worker->taskq);
-        if (NULL == data)
-        {
-            break;
-        }
-
-        /* 释放内存 */
-        queue_dealloc(worker->taskq, data);
-    }
-
-    queue_destroy(worker->taskq);
-
     close(worker->ep_fd);
-
     free(worker);
     return CRWL_OK;
 }
@@ -189,20 +154,22 @@ static int crwl_worker_fetch_task(crwl_cntx_t *ctx, crwl_worker_t *worker)
     int idx, num;
     void *data;
     crwl_task_t *t;
+    crwl_conf_t *conf = ctx->conf;
+    queue_t *taskq = ctx->taskq[worker->tidx];
 
     /* 1. 判断是否应该取任务 */
-    if (0 == worker->taskq->queue.num
-        || worker->sock_list.num >= worker->conf->worker.conn_max_num)
+    if (0 == taskq->queue.num
+        || worker->sock_list.num >= conf->worker.conn_max_num)
     {
         return CRWL_OK;
     }
 
     /* 2. 从任务队列取数据 */
-    num = worker->conf->worker.conn_max_num - worker->sock_list.num;
+    num = conf->worker.conn_max_num - worker->sock_list.num;
 
     for (idx=0; idx<num; ++idx)
     {
-        data = queue_pop(worker->taskq);
+        data = queue_pop(taskq);
         if (NULL == data)
         {
             log_trace(worker->log, "Didn't pop data from queue!");
@@ -212,9 +179,9 @@ static int crwl_worker_fetch_task(crwl_cntx_t *ctx, crwl_worker_t *worker)
         /* 3. 连接远程Web服务器 */
         t = (crwl_task_t *)data;
 
-        crwl_worker_task_handler(worker, t);
+        crwl_worker_task_handler(ctx, worker, t);
 
-        queue_dealloc(worker->taskq, data);
+        queue_dealloc(taskq, data);
     }
     return CRWL_OK;
 }
@@ -232,7 +199,7 @@ static int crwl_worker_fetch_task(crwl_cntx_t *ctx, crwl_worker_t *worker)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.30 #
  ******************************************************************************/
-int crwl_worker_recv_data(crwl_worker_t *worker, socket_t *sck)
+int crwl_worker_recv_data(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t *sck)
 {
     int n, left;
     crwl_worker_socket_data_t *data = (crwl_worker_socket_data_t *)sck->data;
@@ -265,7 +232,7 @@ int crwl_worker_recv_data(crwl_worker_t *worker, socket_t *sck)
                     data->webpage.uri, data->webpage.size);
 
             crwl_worker_webpage_fsync(worker, sck);
-            crwl_worker_webpage_finfo(worker, sck);
+            crwl_worker_webpage_finfo(ctx, worker, sck);
             crwl_worker_remove_sock(worker, sck);
             return CRWL_SCK_CLOSE;
         }
@@ -299,7 +266,7 @@ int crwl_worker_recv_data(crwl_worker_t *worker, socket_t *sck)
  **     发送数据直到出现EAGAIN -- 一次性发送最大量的数据
  **作    者: # Qifeng.zou # 2014.09.24 #
  ******************************************************************************/
-int crwl_worker_send_data(crwl_worker_t *worker, socket_t *sck)
+int crwl_worker_send_data(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t *sck)
 {
     int n, left;
     list_node_t *node;
@@ -376,6 +343,7 @@ int crwl_worker_send_data(crwl_worker_t *worker, socket_t *sck)
  **函数名称: crwl_worker_timeout_hdl
  **功    能: 爬虫的超时处理
  **输入参数: 
+ **     ctx: 全局对象
  **     worker: 爬虫对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
@@ -385,12 +353,13 @@ int crwl_worker_send_data(crwl_worker_t *worker, socket_t *sck)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.28 #
  ******************************************************************************/
-static int crwl_worker_timeout_hdl(crwl_worker_t *worker)
+static int crwl_worker_timeout_hdl(crwl_cntx_t *ctx, crwl_worker_t *worker)
 {
     time_t ctm = time(NULL);
     list_node_t *node, *next;
     socket_t *sck;
     crwl_worker_socket_data_t *data;
+    crwl_conf_t *conf = ctx->conf;
 
     /* 1. 依次遍历套接字, 判断是否超时 */
     node = worker->sock_list.head;
@@ -407,8 +376,8 @@ static int crwl_worker_timeout_hdl(crwl_worker_t *worker)
         data = (crwl_worker_socket_data_t *)sck->data;
 
         /* 超时未发送或接收数据时, 认为无数据传输, 将直接关闭套接字 */
-        if ((ctm - sck->rdtm <= worker->conf->worker.conn_tmout_sec)
-            || (ctm - sck->wrtm <= worker->conf->worker.conn_tmout_sec))
+        if ((ctm - sck->rdtm <= conf->worker.conn_tmout_sec)
+            || (ctm - sck->wrtm <= conf->worker.conn_tmout_sec))
         {
             continue; /* 未超时 */
         }
@@ -417,7 +386,7 @@ static int crwl_worker_timeout_hdl(crwl_worker_t *worker)
                 data->webpage.uri, data->webpage.ip, data->webpage.size);
 
         crwl_worker_webpage_fsync(worker, sck);
-        crwl_worker_webpage_finfo(worker, sck);
+        crwl_worker_webpage_finfo(ctx, worker, sck);
 
         crwl_worker_remove_sock(worker, sck);
     }
@@ -429,6 +398,7 @@ static int crwl_worker_timeout_hdl(crwl_worker_t *worker)
  **函数名称: crwl_worker_event_hdl
  **功    能: 爬虫的事件处理
  **输入参数: 
+ **     ctx: 全局对象
  **     worker: 爬虫对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
@@ -438,11 +408,11 @@ static int crwl_worker_timeout_hdl(crwl_worker_t *worker)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.23 #
  ******************************************************************************/
-static int crwl_worker_event_hdl(crwl_worker_t *worker)
+static int crwl_worker_event_hdl(crwl_cntx_t *ctx, crwl_worker_t *worker)
 {
     int idx;
-    time_t ctm = time(NULL);
     socket_t *sck;
+    time_t ctm = time(NULL);
 
     /* 1. 依次遍历套接字, 判断是否可读可写 */
     for (idx=0; idx<worker->fds; ++idx)
@@ -453,7 +423,7 @@ static int crwl_worker_event_hdl(crwl_worker_t *worker)
         if (worker->events[idx].events & EPOLLIN)
         {
             /* 接收网络数据 */
-            if (sck->recv_cb(worker, sck))
+            if (sck->recv_cb(ctx, worker, sck))
             {
                 continue; /* 异常: 不必判断是否可写(套接字已关闭) */
             }
@@ -463,7 +433,7 @@ static int crwl_worker_event_hdl(crwl_worker_t *worker)
         if (worker->events[idx].events & EPOLLOUT)
         {
             /* 发送网络数据 */
-            if (sck->send_cb(worker, sck))
+            if (sck->send_cb(ctx, worker, sck))
             {
                 continue; /* 异常: 套接字已关闭 */
             }
@@ -475,7 +445,7 @@ static int crwl_worker_event_hdl(crwl_worker_t *worker)
     {
         worker->scan_tm = ctm;
 
-        crwl_worker_timeout_hdl(worker);
+        crwl_worker_timeout_hdl(ctx, worker);
     }
 
     return CRWL_OK;
@@ -501,6 +471,7 @@ void *crwl_worker_routine(void *_ctx)
 {
     crwl_worker_t *worker;
     crwl_cntx_t *ctx = (crwl_cntx_t *)_ctx;
+    crwl_conf_t *conf = ctx->conf;
 
     /* 1. 创建爬虫对象 */
     worker = crwl_worker_get(ctx);
@@ -519,7 +490,7 @@ void *crwl_worker_routine(void *_ctx)
         /* 3. 等待事件通知 */
         worker->fds = epoll_wait(
                 worker->ep_fd, worker->events,
-                worker->conf->worker.conn_max_num, CRWL_EVENT_TMOUT_MSEC);
+                conf->worker.conn_max_num, CRWL_EVENT_TMOUT_MSEC);
         if (worker->fds < 0)
         {
             if (EINTR == errno)
@@ -530,21 +501,21 @@ void *crwl_worker_routine(void *_ctx)
 
             log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
 
-            crwl_worker_destroy(worker);
+            crwl_worker_destroy(ctx, worker);
             abort();
             return (void *)-1;
         }
         else if (0 == worker->fds) /* Timeout */
         {
-            crwl_worker_timeout_hdl(worker);
+            crwl_worker_timeout_hdl(ctx, worker);
             continue;
         }
 
         /* 4. 进行事件处理 */
-        crwl_worker_event_hdl(worker);
+        crwl_worker_event_hdl(ctx, worker);
     }
 
-    crwl_worker_destroy(worker);
+    crwl_worker_destroy(ctx, worker);
     pthread_exit((void *)-1);
     return (void *)-1;
 }
@@ -820,11 +791,12 @@ int crwl_worker_add_http_get_req(
  **     网页存储文件在此fopen(), 在crwl_worker_remove_sock()中fClose().
  **作    者: # Qifeng.zou # 2014.10.15 #
  ******************************************************************************/
-int crwl_worker_webpage_creat(crwl_worker_t *worker, socket_t *sck)
+int crwl_worker_webpage_creat(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t *sck)
 {
     struct tm loctm;
     char path[FILE_NAME_MAX_LEN];
     crwl_worker_socket_data_t *data = (crwl_worker_socket_data_t *)sck->data;
+    crwl_conf_t *conf = ctx->conf;
 
     localtime_r(&sck->crtm.time, &loctm);
 
@@ -838,7 +810,7 @@ int crwl_worker_webpage_creat(crwl_worker_t *worker, socket_t *sck)
             loctm.tm_hour, loctm.tm_min, loctm.tm_sec, sck->crtm.millitm);
 
     snprintf(path, sizeof(path), "%s/%s.html",
-            worker->conf->download.path, data->webpage.fname);
+            conf->download.path, data->webpage.fname);
 
     Mkdir2(path, 0777);
 
@@ -866,21 +838,18 @@ int crwl_worker_webpage_creat(crwl_worker_t *worker, socket_t *sck)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.17 #
  ******************************************************************************/
-int crwl_worker_webpage_finfo(crwl_worker_t *worker, socket_t *sck)
+int crwl_worker_webpage_finfo(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t *sck)
 {
     FILE *fp;
     struct tm loctm;
     char path[FILE_NAME_MAX_LEN],
          temp[FILE_NAME_MAX_LEN];
+    crwl_conf_t *conf = ctx->conf;
     crwl_worker_socket_data_t *data = (crwl_worker_socket_data_t *)sck->data;
 
     localtime_r(&sck->crtm.time, &loctm);
-
-    snprintf(temp, sizeof(temp), "%s/wpi/.temp/%s.wpi",
-            worker->conf->download.path, data->webpage.fname);
-
-    snprintf(path, sizeof(path), "%s/wpi/%s.wpi",
-            worker->conf->download.path, data->webpage.fname);
+    snprintf(temp, sizeof(temp), "%s/wpi/.temp/%s.wpi", conf->download.path, data->webpage.fname);
+    snprintf(path, sizeof(path), "%s/wpi/%s.wpi", conf->download.path, data->webpage.fname);
 
     Mkdir2(temp, 0777);
 
@@ -949,7 +918,7 @@ socket_t *crwl_worker_socket_alloc(crwl_worker_t *worker)
  **作    者: # Qifeng.zou # 2014.09.25 #
  ******************************************************************************/
 static int crwl_worker_task_down_webpage(
-        crwl_worker_t *worker, const crwl_task_down_webpage_t *args)
+        crwl_cntx_t *ctx, crwl_worker_t *worker, const crwl_task_down_webpage_t *args)
 {
     int fd;
     socket_t *sck;
@@ -1005,7 +974,7 @@ static int crwl_worker_task_down_webpage(
     }
 
     /* 5. 新建存储文件 */
-    if (crwl_worker_webpage_creat(worker, sck))
+    if (crwl_worker_webpage_creat(ctx, worker, sck))
     {
         log_error(worker->log, "Save webpage failed!");
 
@@ -1028,7 +997,7 @@ static int crwl_worker_task_down_webpage(
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.12 #
  ******************************************************************************/
-static int crwl_worker_task_unknown_hdl(crwl_worker_t *worker, const void *args)
+static int crwl_worker_task_unknown_hdl(crwl_cntx_t *ctx, crwl_worker_t *worker, const void *args)
 {
     log_error(worker->log, "Task type is unknown!");
     return CRWL_ERR;
