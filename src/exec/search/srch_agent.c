@@ -60,7 +60,7 @@ void *srch_agent_routine(void *_ctx)
         }
 
         /* 3. 等待事件通知 */
-        agt->fds = epoll_wait(agt->ep_fd, agt->events,
+        agt->fds = epoll_wait(agt->epid, agt->events,
                 SRCH_AGENT_EVENT_MAX_NUM, SRCH_AGENT_TMOUT_MSEC);
         if (agt->fds < 0)
         {
@@ -144,8 +144,8 @@ int srch_agent_init(srch_cntx_t *ctx, srch_agent_t *agt)
     do
     {
         /* 2. 创建epoll对象 */
-        agt->ep_fd = epoll_create(SRCH_AGENT_EVENT_MAX_NUM);
-        if (agt->ep_fd < 0)
+        agt->epid = epoll_create(SRCH_AGENT_EVENT_MAX_NUM);
+        if (agt->epid < 0)
         {
             log_error(agt->log, "errmsg:[%d] %s!", errno, strerror(errno));
             break;
@@ -173,7 +173,7 @@ int srch_agent_init(srch_cntx_t *ctx, srch_agent_t *agt)
     } while(0);
 
     slab_destroy(agt->slab);
-    Close(agt->ep_fd);
+    Close(agt->epid);
     Close(agt->cmd_sck_id);
     return SRCH_ERR;
 }
@@ -451,7 +451,7 @@ static int srch_agent_add_conn(srch_cntx_t *ctx, srch_agent_t *agt)
         ev.data.ptr = sck;
         ev.events = EPOLLIN | EPOLLET; /* 边缘触发 */
 
-        epoll_ctl(agt->ep_fd, EPOLL_CTL_ADD, sck->fd, &ev);
+        epoll_ctl(agt->epid, EPOLL_CTL_ADD, sck->fd, &ev);
     }
 
     return SRCH_OK;

@@ -100,8 +100,8 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker, int tidx)
     }
 
     /* 2. 创建epoll对象 */
-    worker->ep_fd = epoll_create(CRWL_EVENT_MAX_NUM);
-    if (worker->ep_fd < 0)
+    worker->epid = epoll_create(CRWL_EVENT_MAX_NUM);
+    if (worker->epid < 0)
     {
         slab_destroy(worker->slab);
 
@@ -115,7 +115,7 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker, int tidx)
     if (NULL == worker->events)
     {
         slab_destroy(worker->slab);
-        Close(worker->ep_fd);
+        Close(worker->epid);
 
         log_error(worker->log, "Alloc memory from slab failed!");
         return CRWL_ERR;
@@ -139,7 +139,7 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker, int tidx)
 int crwl_worker_destroy(crwl_cntx_t *ctx, crwl_worker_t *worker)
 {
     slab_destroy(worker->slab);
-    close(worker->ep_fd);
+    close(worker->epid);
     free(worker);
     return CRWL_OK;
 }
@@ -295,7 +295,7 @@ int crwl_worker_send_data(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t *sck
                 ev.data.ptr = sck;
                 ev.events = EPOLLIN | EPOLLET;  /* 边缘触发 */
 
-                epoll_ctl(worker->ep_fd, EPOLL_CTL_MOD, sck->fd, &ev);    
+                epoll_ctl(worker->epid, EPOLL_CTL_MOD, sck->fd, &ev);    
 
                 return CRWL_OK;
             }
@@ -495,7 +495,7 @@ void *crwl_worker_routine(void *_ctx)
 
         /* 3. 等待事件通知 */
         worker->fds = epoll_wait(
-                worker->ep_fd, worker->events,
+                worker->epid, worker->events,
                 conf->worker.conn_max_num, CRWL_EVENT_TMOUT_MSEC);
         if (worker->fds < 0)
         {
@@ -573,7 +573,7 @@ int crwl_worker_add_sock(crwl_worker_t *worker, socket_t *sck)
     ev.data.ptr = sck;
     ev.events = EPOLLIN | EPOLLOUT | EPOLLET; /* 边缘触发 */
 
-    epoll_ctl(worker->ep_fd, EPOLL_CTL_ADD, sck->fd, &ev);
+    epoll_ctl(worker->epid, EPOLL_CTL_ADD, sck->fd, &ev);
 
     return CRWL_OK;
 }
@@ -630,7 +630,7 @@ int crwl_worker_remove_sock(crwl_worker_t *worker, socket_t *sck)
             data->webpage.ip, data->webpage.port);
 
     /* 移除epoll监听 */
-    epoll_ctl(worker->ep_fd, EPOLL_CTL_DEL, sck->fd, &ev);
+    epoll_ctl(worker->epid, EPOLL_CTL_DEL, sck->fd, &ev);
 
     if (data->webpage.fp)
     {

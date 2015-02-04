@@ -19,7 +19,7 @@ typedef struct
     slab_pool_t *slab;              /* 内存池 */
     log_cycle_t *log;               /* 日志对象 */
 
-    int ep_fd;                      /* epoll描述符 */
+    int epid;                       /* epoll描述符 */
     int fds;                        /* 处于激活状态的套接字数 */
     struct epoll_event *events;     /* Event最大数 */
 

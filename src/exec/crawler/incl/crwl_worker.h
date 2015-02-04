@@ -35,7 +35,7 @@ typedef struct
 {
     int tidx;                       /* 线程索引 */
 
-    int ep_fd;                      /* epoll文件描述符 */
+    int epid;                       /* epoll文件描述符 */
     int fds;                        /* 处于激活状态的套接字数 */
     struct epoll_event *events;     /* EVENT数组 */
 
