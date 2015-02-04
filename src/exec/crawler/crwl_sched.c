@@ -54,7 +54,7 @@ void *crwl_sched_routine(void *_ctx)
     if (NULL == sched)
     {
         log_error(ctx->log, "Create schedule failed!");
-        exit(0);
+        abort();
         return (void *)CRWL_ERR;
     }
 
@@ -78,6 +78,7 @@ void *crwl_sched_routine(void *_ctx)
             }
 
             log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
+            abort();
             break;
         }
         else if (0 == ret)
@@ -93,7 +94,7 @@ void *crwl_sched_routine(void *_ctx)
 
     crwl_sched_destroy(sched);
 
-    exit(0);
+    abort();
     return (void *)CRWL_ERR;
 }
 
@@ -235,7 +236,7 @@ static int crwl_sched_event_hdl(crwl_cntx_t *ctx, crwl_sched_t *sched)
  ******************************************************************************/
 static int crwl_sched_fetch_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
 {
-    int times;
+    int times, taskq_id;
     void *addr;
     redisReply *r;
     queue_t *taskq;
@@ -245,11 +246,10 @@ static int crwl_sched_fetch_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
     times = 0;
     while (1)
     {
-        /* 1. 选空闲Worker队列 */
-        ++sched->last_idx;
-        sched->last_idx %= conf->worker.num;
+        /* 1. 随机选择任务队列 */
+        taskq_id = rand() % conf->worker.num;
 
-        taskq = ctx->taskq[sched->last_idx];
+        taskq = ctx->taskq[taskq_id];
 
         if (!queue_space(&taskq->queue))
         {
@@ -273,7 +273,7 @@ static int crwl_sched_fetch_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
             return CRWL_OK;
         }
 
-        log_trace(ctx->log, "[%02d] URL:%s!", sched->last_idx, r->str);
+        log_trace(ctx->log, "TQ:%02d URL:%s!", taskq_id, r->str);
 
         /* 3. 新建crwl_task_t对象 */
         addr = queue_malloc(taskq);

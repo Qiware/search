@@ -23,10 +23,9 @@
 #include "crawler.h"
 #include "syscall.h"
 #include "sck_api.h"
+#include "crwl_priv.h"
 #include "crwl_sched.h"
 #include "crwl_worker.h"
-
-#define CRWL_PROC_LOCK_PATH "../temp/crwl/crwl.lck"
 
 /******************************************************************************
  **函数名称: main 

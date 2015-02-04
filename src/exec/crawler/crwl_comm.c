@@ -352,8 +352,7 @@ static int crwl_creat_workers(crwl_cntx_t *ctx)
     }
 
     /* 2. 新建Worker对象 */
-    ctx->workers->data =
-        (crwl_worker_t *)calloc(conf->num, sizeof(crwl_worker_t));
+    ctx->workers->data = (crwl_worker_t *)calloc(conf->num, sizeof(crwl_worker_t));
     if (NULL == ctx->workers->data)
     {
         thread_pool_destroy(ctx->workers);
@@ -366,9 +365,7 @@ static int crwl_creat_workers(crwl_cntx_t *ctx)
     {
         worker = (crwl_worker_t *)ctx->workers->data + idx;
 
-        worker->tidx = idx;
-
-        if (crwl_worker_init(ctx, worker))
+        if (crwl_worker_init(ctx, worker, idx))
         {
             log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
             break;
@@ -478,17 +475,17 @@ int crwl_proc_lock(void)
     fd = Open(path, OPEN_FLAGS, OPEN_MODE);
     if(fd < 0)
     {
-        return -1;
+        return CRWL_ERR;
     }
 
     /* 3. 尝试加锁 */
     if(proc_try_wrlock(fd) < 0)
     {
         Close(fd);
-        return -1;
+        return CRWL_ERR;
     }
 
-    return 0;
+    return CRWL_OK;
 }
 
 /******************************************************************************
@@ -518,22 +515,16 @@ int crwl_get_domain_ip_map(crwl_cntx_t *ctx, char *host, crwl_domain_ip_map_t *m
     struct addrinfo hints;
 
     /* 1. 从域名IP映射表中查找 */
-    ret = hash_tab_query(
-            ctx->domain_ip_map,
-            host, strlen(host),
-            map, sizeof(crwl_domain_ip_map_t));
-    if (0 == ret)
+    if (!hash_tab_query(ctx->domain_ip_map,
+            host, strlen(host), map, sizeof(crwl_domain_ip_map_t)))
     {
         log_trace(ctx->log, "Found domain ip map in talbe! %s", host);
         return CRWL_OK; /* 成功 */
     }
 
     /* 2. 从域名黑名单中查找 */
-    ret = hash_tab_query(
-            ctx->domain_blacklist,
-            host, strlen(host),
-            &blacklist, sizeof(blacklist));
-    if (0 == ret)
+    if (!hash_tab_query(ctx->domain_blacklist,
+            host, strlen(host), &blacklist, sizeof(blacklist)))
     {
         log_info(ctx->log, "Host [%s] in blacklist!", host);
         return CRWL_ERR; /* 在黑名单中 */
@@ -558,8 +549,7 @@ int crwl_get_domain_ip_map(crwl_cntx_t *ctx, char *host, crwl_domain_ip_map_t *m
         snprintf(new_blacklist->host, sizeof(new_blacklist->host), "%s", host);
         new_blacklist->access_tm = time(NULL);
 
-        ret = hash_tab_insert(ctx->domain_blacklist, host, strlen(host), new_blacklist);
-        if (0 != ret)
+        if (hash_tab_insert(ctx->domain_blacklist, host, strlen(host), new_blacklist))
         {
             free(new_blacklist);
         }
@@ -581,8 +571,7 @@ int crwl_get_domain_ip_map(crwl_cntx_t *ctx, char *host, crwl_domain_ip_map_t *m
     new->ip_num = 0;
 
     curr = addrinfo;
-    while (NULL != curr
-            && new->ip_num < CRWL_IP_MAX_NUM)
+    while ((NULL != curr) && (new->ip_num < CRWL_IP_MAX_NUM))
     {
         sockaddr = (struct sockaddr_in *)curr->ai_addr;
         if (0 == sockaddr->sin_addr.s_addr)

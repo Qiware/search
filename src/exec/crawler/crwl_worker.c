@@ -52,6 +52,10 @@ static crwl_worker_t *crwl_worker_get(crwl_cntx_t *ctx)
     int tidx;
 
     tidx = thread_pool_get_tidx(ctx->workers);
+    if (tidx < 0)
+    {
+        return NULL;
+    }
 
     return (crwl_worker_t *)ctx->workers->data + tidx;
 }
@@ -62,6 +66,7 @@ static crwl_worker_t *crwl_worker_get(crwl_cntx_t *ctx)
  **输入参数: 
  **     ctx: 全局信息
  **     worker: Worker对象
+ **     tidx: 线程索引
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
@@ -69,11 +74,12 @@ static crwl_worker_t *crwl_worker_get(crwl_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.23 #
  ******************************************************************************/
-int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker)
+int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker, int tidx)
 {
     void *addr;
     crwl_conf_t *conf = ctx->conf;
 
+    worker->tidx = tidx;
     worker->log = ctx->log;
     worker->scan_tm = time(NULL);
 

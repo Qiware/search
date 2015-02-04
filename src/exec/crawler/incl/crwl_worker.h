@@ -9,8 +9,8 @@
 #include "list.h"
 #include "queue.h"
 #include "common.h"
-#include "crawler.h"
 #include "xml_tree.h"
+#include "crwl_priv.h"
 #include "crwl_task.h"
 #include "thread_pool.h"
 
@@ -95,7 +95,8 @@ int crwl_worker_webpage_creat(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t 
 }
 int crwl_worker_webpage_finfo(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t *sck);
 
-int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker);
+int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker, int tidx);
 int crwl_worker_destroy(crwl_cntx_t *ctx, crwl_worker_t *worker);
 void *crwl_worker_routine(void *_ctx);
+
 #endif /*__CRWL_WORKER_H__*/
