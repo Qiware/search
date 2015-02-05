@@ -1001,6 +1001,7 @@ static int sdtp_rsvr_add_conn_hdl(sdtp_rsvr_t *rsvr, sdtp_cmd_add_sck_t *req)
     if (NULL == addr)
     {
         log_error(rsvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        free(sck->recv.addr);
         slab_dealloc(rsvr->pool, sck);
         return SDTP_ERR;
     }
@@ -1013,6 +1014,7 @@ static int sdtp_rsvr_add_conn_hdl(sdtp_rsvr_t *rsvr, sdtp_cmd_add_sck_t *req)
     {
         log_error(rsvr->log, "Alloc memory failed!");
         free(sck->recv.addr);
+        free(sck->send.addr);
         slab_dealloc(rsvr->pool, sck);
         return SDTP_ERR;
     }
@@ -1368,6 +1370,9 @@ static int sdtp_rsvr_fill_send_buff(sdtp_rsvr_t *rsvr, sdtp_sck_t *sck)
 
         /* 1.4 拷贝至发送缓存 */
         memcpy(send->iptr, addr, mesg_len);
+
+        /* 1.5 释放数据空间 */
+        slab_dealloc(rsvr->pool, addr);
 
         send->iptr += mesg_len;
         continue;

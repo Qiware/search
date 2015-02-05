@@ -1030,8 +1030,8 @@ static int sdtp_ssvr_send_data(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr)
         }
 
         /* 3. 重置标识量 */
-        send->optr = send->addr;
-        send->iptr = send->addr;
+        sdtp_snap_reset(send);
+
     #if defined(__SDTP_DEBUG__)
         send->succ++;
     #endif /*__SDTP_DEBUG__*/
