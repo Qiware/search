@@ -583,26 +583,6 @@ static int sdtp_rsvr_recv_proc(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_sck_t *
 }
 
 /******************************************************************************
- **函数名称: sdtp_rsvr_head_isvalid
- **功    能: 校验数据头
- **输入参数: 
- **     ctx: 全局对象
- **     sck: 被操作的套接字
- **输出参数: NONE
- **返    回: true:合法 false:不合法
- **实现描述: 
- **     1. 检查校验值
- **     2. 检查类型
- **     3. 检查长度: 因所有队列长度一致 因此使用[0]判断
- **注意事项: 
- **作    者: # Qifeng.zou # 2015.01.01 #
- ******************************************************************************/
-#define sdtp_rsvr_head_isvalid(ctx, head) \
-    (((SDTP_CHECK_SUM != head->checksum \
-        || !sdtp_is_type_valid(head->type) \
-        || !sdtp_is_len_valid(ctx->recvq[0], head->length)))? false : true)
-
-/******************************************************************************
  **函数名称: sdtp_rsvr_recv_post
  **功    能: 数据接收完成后的处理
  **输入参数: 
@@ -685,7 +665,7 @@ static int sdtp_rsvr_data_proc(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_sck_t *
         head->checksum = ntohl(head->checksum);
 
         /* 2.2 校验合法性 */
-        if (!sdtp_rsvr_head_isvalid(ctx, head))
+        if (!SDTP_HEAD_ISVALID(head))
         {
             ++rsvr->err_total;
             log_error(rsvr->log, "Header is invalid! Mark:%u/%u type:%d len:%d flag:%d",
@@ -1348,6 +1328,7 @@ static int sdtp_rsvr_fill_send_buff(sdtp_rsvr_t *rsvr, sdtp_sck_t *sck)
         }
 
         left = (int)(send->end - send->iptr);
+
         mesg_len = sizeof(sdtp_header_t) + head->length;
         if (left < mesg_len)
         {

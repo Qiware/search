@@ -59,8 +59,8 @@ int avl_creat(avl_tree_t **tree, avl_option_t *opt, key_cb_t key_cb, avl_cmp_cb_
     if (NULL == opt)
     {
         (*tree)->opt.pool = NULL;
-        (*tree)->opt.alloc = avl_mem_alloc;
-        (*tree)->opt.dealloc = avl_mem_dealloc;
+        (*tree)->opt.alloc = (mem_alloc_cb_t)avl_mem_alloc;
+        (*tree)->opt.dealloc = (mem_dealloc_cb_t)avl_mem_dealloc;
     }
     else
     {

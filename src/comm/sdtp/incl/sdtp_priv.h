@@ -99,13 +99,16 @@ typedef struct
     uint8_t flag;                   /* 消息标志
                                         - 0: 系统消息(type: sdtp_sys_mesg_e)
                                         - 1: 自定义消息(type: 0x0000~0xFFFF) */
-    uint32_t length;                /* 消息体的长度 */
+    uint32_t length;                /* 消息体长度 */
 #define SDTP_CHECK_SUM  (0x1FE23DC4)
     uint32_t checksum;              /* 校验值 */
 } __attribute__((packed)) sdtp_header_t;
 
-#define sdtp_is_type_valid(type) (type < SDTP_TYPE_MAX)
-#define sdtp_is_len_valid(q, len) (q->queue.size >= (sizeof(sdtp_header_t)+ (len)))
+#define SDTP_TYPE_ISVALID(head) ((head)->type < SDTP_TYPE_MAX)
+#define SDTP_CHECKSUM_ISVALID(head) (SDTP_CHECK_SUM == (head)->checksum)
+
+/* 校验数据头 */
+#define SDTP_HEAD_ISVALID(head) (SDTP_CHECKSUM_ISVALID(head) && SDTP_TYPE_ISVALID(head))
 
 /* 队列配置信息 */
 typedef struct

@@ -43,9 +43,6 @@ static int sdtp_ssvr_add_mesg(sdtp_ssvr_t *ssvr, void *addr);
 static void *sdtp_ssvr_get_mesg(sdtp_ssvr_t *ssvr);
 static int sdtp_ssvr_clear_mesg(sdtp_ssvr_t *ssvr);
 
-/* 链路状态检测 */
-#define sdtp_ssvr_conn_isvalid(ssvr) ((ssvr)->sck.fd >= 0? true : false) /* 0:ERR 1:OK */
-
 /******************************************************************************
  **函数名称: sdtp_ssvr_startup
  **功    能: 启动发送端
@@ -404,7 +401,7 @@ static void *sdtp_ssvr_routine(void *_ctx)
     for (;;)
     {
         /* 3.1 连接合法性判断 */
-        if (!sdtp_ssvr_conn_isvalid(ssvr))
+        if (sck->fd < 0)
         {
             sdtp_ssvr_clear_mesg(ssvr);
 
@@ -587,24 +584,6 @@ static int sdtp_ssvr_timeout_hdl(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr)
 }
 
 /******************************************************************************
- **函数名称: sdtp_ssvr_head_isvalid
- **功    能: 判断报头合法性
- **输入参数: 
- **     ctx: 全局信息
- **     head: 报头合法性
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **     1. 判断校验值、数据类型、长度的合法性
- **注意事项: 
- **作    者: # Qifeng.zou # 2015.01.14 #
- ******************************************************************************/
-#define sdtp_ssvr_head_isvalid(ctx, head) \
-    (((SDTP_CHECK_SUM != head->checksum) \
-        || !sdtp_is_type_valid(head->type) \
-        || (head->length + sizeof(sdtp_header_t) >= SDTP_BUFF_SIZE))? false : true)
-
-/******************************************************************************
  **函数名称: sdtp_ssvr_recv_proc
  **功    能: 接收网络数据
  **输入参数: 
@@ -720,12 +699,16 @@ static int sdtp_ssvr_data_proc(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr, sdtp_ss
     {
         head = (sdtp_header_t *)recv->optr;
         len = (int)(recv->iptr - recv->optr);
-
-        /* 1. 不足一条数据时 */
-        mesg_len = sizeof(sdtp_header_t) + head->length;
-        if (len < sizeof(sdtp_header_t)
-            || len < mesg_len)
+        if (len < sizeof(sdtp_header_t))
         {
+            goto LEN_NOT_ENOUGH; /* 不足一条数据时 */
+        }
+
+        /* 1. 是否不足一条数据 */
+        mesg_len = sizeof(sdtp_header_t) + ntohl(head->length);
+        if (len < mesg_len)
+        {
+        LEN_NOT_ENOUGH:
             if (recv->iptr == recv->end) 
             {
                 /* 防止OverWrite的情况发生 */
@@ -751,7 +734,7 @@ static int sdtp_ssvr_data_proc(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr, sdtp_ss
         head->checksum = ntohl(head->checksum);
 
         /* 2.2 校验合法性 */
-        if (sdtp_ssvr_head_isvalid(ctx, head))
+        if (!SDTP_HEAD_ISVALID(head))
         {
             log_error(ssvr->log, "Header is invalid! CheckSum:%u/%u type:%d len:%d flag:%d",
                     head->checksum, SDTP_CHECK_SUM, head->type, head->length, head->flag);
