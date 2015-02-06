@@ -37,7 +37,7 @@ hash_tab_t *hash_tab_creat(slab_pool_t *slab, int mod, key_cb_t key_cb, avl_cmp_
 {
     int idx;
     hash_tab_t *hash;
-        
+    avl_option_t opt;
 
     /* 1. 创建哈希数组 */
     hash = (hash_tab_t *)calloc(1, sizeof(hash_tab_t));
@@ -68,9 +68,15 @@ hash_tab_t *hash_tab_creat(slab_pool_t *slab, int mod, key_cb_t key_cb, avl_cmp_
     /* 3. 创建平衡二叉树 */
     for (idx=0; idx<mod; ++idx)
     {
+        memset(&opt, 0, sizeof(opt));
+
+        opt.pool = (void *)slab;
+        opt.alloc = (mem_alloc_cb_t)slab_alloc;
+        opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+
         pthread_rwlock_init(&hash->lock[idx], NULL);
 
-        if (0 != avl_creat(&hash->tree[idx], slab, key_cb, cmp_cb))
+        if (0 != avl_creat(&hash->tree[idx], &opt, key_cb, cmp_cb))
         {
             free(hash->tree);
             free(hash);

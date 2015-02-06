@@ -30,12 +30,20 @@ typedef enum
     , AVL_ERR_NOT_FOUND         /* 未找到 */
 } avl_err_e;
 
+/* 选项 */
+typedef struct
+{
+    void *pool;                 /* 内存池对象 */
+    mem_alloc_cb_t alloc;       /* 申请内存 */
+    mem_dealloc_cb_t dealloc;   /* 释放内存 */
+} avl_option_t;
+
 /* 主键 */
 typedef struct
 {
     void *key;                  /* 主键 */
     size_t len;                 /* 主键长度 */
-} avl_primary_key_t;
+} avl_pkey_t;
 
 /******************************************************************************
  **函数名称: avl_cmp_cb_t
@@ -73,9 +81,8 @@ typedef struct _node_t
 typedef struct
 {
     avl_node_t *root;           /* 根节点 */
-#if defined(__AVL_MEM_POOL__)
-    slab_pool_t *slab;          /* 内存池 */
-#endif /*__AVL_MEM_POOL__*/
+
+    avl_option_t opt;           /* 选项信息 */
 
     key_cb_t key_cb;            /* 生成KEY的回调 */
     avl_cmp_cb_t cmp_cb;        /* 数值比较回调 */
@@ -124,7 +131,7 @@ typedef struct
 
 typedef int (*avl_trav_cb_t)(void *data, void *args);
 
-int avl_creat(avl_tree_t **tree, slab_pool_t *slab, key_cb_t key_cb, avl_cmp_cb_t cmp_cb);
+int avl_creat(avl_tree_t **tree, avl_option_t *opt, key_cb_t key_cb, avl_cmp_cb_t cmp_cb);
 int avl_insert(avl_tree_t *tree, void *pkey, int pkey_len, void *data);
 avl_node_t *avl_query(avl_tree_t *tree, void *pkey, int pkey_len);
 int avl_delete(avl_tree_t *tree, void *pkey, int pkey_len, void **data);
