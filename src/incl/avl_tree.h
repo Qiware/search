@@ -139,6 +139,9 @@ int avl_print(avl_tree_t *tree);
 int avl_trav(avl_tree_t *tree, avl_trav_cb_t proc, void *args);
 void avl_destroy(avl_tree_t **tree);
 
+void avl_mem_alloc(void *pool, void *p);
+void avl_mem_dealloc(void *pool, void *p);
+
 /* 测试使用 */
 void avl_assert(const avl_node_t *node);
 

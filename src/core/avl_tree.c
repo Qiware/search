@@ -55,7 +55,17 @@ int avl_creat(avl_tree_t **tree, avl_option_t *opt, key_cb_t key_cb, avl_cmp_cb_
     (*tree)->root = NULL;
     (*tree)->key_cb = key_cb;
     (*tree)->cmp_cb = cmp_cb;
-    memcpy(&(*tree)->opt, opt, sizeof(avl_option_t));
+
+    if (NULL == opt)
+    {
+        (*tree)->opt.pool = NULL;
+        (*tree)->opt.alloc = avl_mem_alloc;
+        (*tree)->opt.dealloc = avl_mem_dealloc;
+    }
+    else
+    {
+        memcpy(&(*tree)->opt, opt, sizeof(avl_option_t));
+    }
 
     return AVL_OK;
 }
@@ -1482,4 +1492,37 @@ int avl_trav(avl_tree_t *tree, avl_trav_cb_t proc, void *args)
 
     stack_destroy(&stack);
     return AVL_OK;
+}
+
+/******************************************************************************
+ **函数名称: avl_mem_alloc
+ **功    能: 默认分配内存(外部接口)
+ **输入参数: 
+ **     pool: 内存池
+ **     size: 申请SZ
+ **输出参数: NONE
+ **返    回: 内存地址
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.02.06 #
+ ******************************************************************************/
+void *avl_mem_alloc(void *pool, size_t size)
+{
+    return (void *)calloc(1, size);
+}
+
+/******************************************************************************
+ **函数名称: avl_mem_dealloc
+ **功    能: 默认释放内存(外部接口)
+ **输入参数: 
+ **     tree: 平衡二叉树
+ **输出参数: NONE
+ **返    回: VOID
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.02.06 #
+ ******************************************************************************/
+void avl_mem_dealloc(void *pool, void *p)
+{
+    free(p);
 }
