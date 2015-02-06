@@ -44,30 +44,32 @@ static int avl_delete_right_balance(avl_tree_t *tree, avl_node_t *node, bool *lo
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.19 #
  ******************************************************************************/
-int avl_creat(avl_tree_t **tree, avl_option_t *opt, key_cb_t key_cb, avl_cmp_cb_t cmp_cb)
+avl_tree_t *avl_creat(avl_option_t *opt, key_cb_t key_cb, avl_cmp_cb_t cmp_cb)
 {
-    *tree = (avl_tree_t *)opt->alloc(opt->pool, sizeof(avl_tree_t));
-    if (NULL == *tree)
+    avl_tree_t *tree;
+
+    if (NULL == opt
+        || NULL == key_cb
+        || NULL == cmp_cb
+        || NULL == opt->alloc
+        || NULL == opt->dealloc)
     {
-        return AVL_ERR;
+        return NULL;
     }
 
-    (*tree)->root = NULL;
-    (*tree)->key_cb = key_cb;
-    (*tree)->cmp_cb = cmp_cb;
-
-    if (NULL == opt)
+    tree = (avl_tree_t *)opt->alloc(opt->pool, sizeof(avl_tree_t));
+    if (NULL == tree)
     {
-        (*tree)->opt.pool = NULL;
-        (*tree)->opt.alloc = (mem_alloc_cb_t)avl_mem_alloc;
-        (*tree)->opt.dealloc = (mem_dealloc_cb_t)avl_mem_dealloc;
-    }
-    else
-    {
-        memcpy(&(*tree)->opt, opt, sizeof(avl_option_t));
+        return NULL;
     }
 
-    return AVL_OK;
+    tree->root = NULL;
+    tree->key_cb = key_cb;
+    tree->cmp_cb = cmp_cb;
+
+    memcpy(&tree->opt, opt, sizeof(avl_option_t));
+
+    return tree;
 }
 
 /******************************************************************************
@@ -729,18 +731,17 @@ avl_node_t *avl_query(avl_tree_t *tree, void *pkey, int pkey_len)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.15 #
  ******************************************************************************/
-void avl_destroy(avl_tree_t **tree)
+void avl_destroy(avl_tree_t *tree)
 {
-    avl_option_t *opt = &(*tree)->opt;
+    avl_option_t *opt = &tree->opt;
 
-    if (NULL != (*tree)->root)
+    if (NULL != tree->root)
     {
-        _avl_destroy(*tree, (*tree)->root);
-        (*tree)->root = NULL;
+        _avl_destroy(tree, tree->root);
+        tree->root = NULL;
     }
 
-    opt->dealloc(opt->pool, *tree);
-    *tree = NULL;
+    opt->dealloc(opt->pool, tree);
 }
 
 /******************************************************************************
@@ -1494,35 +1495,3 @@ int avl_trav(avl_tree_t *tree, avl_trav_cb_t proc, void *args)
     return AVL_OK;
 }
 
-/******************************************************************************
- **函数名称: avl_mem_alloc
- **功    能: 默认分配内存(外部接口)
- **输入参数: 
- **     pool: 内存池
- **     size: 申请SZ
- **输出参数: NONE
- **返    回: 内存地址
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2015.02.06 #
- ******************************************************************************/
-void *avl_mem_alloc(void *pool, size_t size)
-{
-    return (void *)calloc(1, size);
-}
-
-/******************************************************************************
- **函数名称: avl_mem_dealloc
- **功    能: 默认释放内存(外部接口)
- **输入参数: 
- **     tree: 平衡二叉树
- **输出参数: NONE
- **返    回: VOID
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2015.02.06 #
- ******************************************************************************/
-void avl_mem_dealloc(void *pool, void *p)
-{
-    free(p);
-}

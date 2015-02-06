@@ -35,6 +35,7 @@ hash_array_t *hash_array_init(int num, size_t slab_size, key_cb_t key_cb)
     int idx;
     void *addr;
     hash_array_t *hash;
+    rbt_option_t opt;
         
     /* 1. 创建哈希数组 */
     hash = (hash_array_t *)calloc(1, sizeof(hash_array_t));
@@ -74,8 +75,13 @@ hash_array_t *hash_array_init(int num, size_t slab_size, key_cb_t key_cb)
 
     for (idx=0; idx<num; ++idx)
     {
-        hash->node[idx].tree = rbt_creat(hash->slab,
-                (mem_alloc_cb_t)slab_alloc, (mem_dealloc_cb_t)slab_dealloc);
+        memset(&opt, 0, sizeof(opt));
+        
+        opt.pool = hash->slab;
+        opt.alloc = (mem_alloc_cb_t)slab_alloc;
+        opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+
+        hash->node[idx].tree = rbt_creat(&opt);
         if (NULL == hash->node[idx].tree)
         {
             return NULL;

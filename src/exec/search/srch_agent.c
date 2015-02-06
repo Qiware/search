@@ -112,6 +112,7 @@ void *srch_agent_routine(void *_ctx)
 int srch_agent_init(srch_cntx_t *ctx, srch_agent_t *agt)
 {
     void *addr;
+    rbt_option_t opt;
     char path[FILE_NAME_MAX_LEN];
 
     agt->log = ctx->log;
@@ -133,8 +134,13 @@ int srch_agent_init(srch_cntx_t *ctx, srch_agent_t *agt)
     }
 
     /* 2. 创建连接红黑树 */
-    agt->connections = rbt_creat(agt->slab,
-            (mem_alloc_cb_t)slab_alloc, (mem_dealloc_cb_t)slab_dealloc);
+    memset(&opt, 0, sizeof(opt));
+
+    opt.pool = agt->slab;
+    opt.alloc = (mem_alloc_cb_t)slab_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+
+    agt->connections = rbt_creat(&opt);
     if (NULL == agt->connections)
     {
         log_error(agt->log, "Create socket hash table failed!");
@@ -143,7 +149,7 @@ int srch_agent_init(srch_cntx_t *ctx, srch_agent_t *agt)
 
     do
     {
-        /* 2. 创建epoll对象 */
+        /* 3. 创建epoll对象 */
         agt->epid = epoll_create(SRCH_AGENT_EVENT_MAX_NUM);
         if (agt->epid < 0)
         {
@@ -159,7 +165,7 @@ int srch_agent_init(srch_cntx_t *ctx, srch_agent_t *agt)
             break;
         }
 
-        /* 3. 创建命令套接字 */
+        /* 4. 创建命令套接字 */
         snprintf(path, sizeof(path), SRCH_RCV_CMD_PATH, agt->tidx);
 
         agt->cmd_sck_id = unix_udp_creat(path);

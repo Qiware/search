@@ -30,6 +30,22 @@ typedef enum
     , RBT_NODE_EXIST                /* 结点存在 */
 } rbt_ret_e;
 
+/* 选项 */
+typedef struct
+{
+    void *pool;                 /* 内存池 */
+    mem_alloc_cb_t alloc;       /* 申请内存 */
+    mem_dealloc_cb_t dealloc;   /* 释放内存 */
+} rbt_option_t;
+
+/* 设置默认选项 */
+#define rbt_setup_option(opt)   \
+{ \
+    (opt)->pool = NULL; \
+    (opt)->alloc = mem_alloc; \
+    (opt)->dealloc = mem_dealloc; \
+}
+
 /* 结点结构 */
 typedef struct _rbt_node_t
 {
@@ -48,9 +64,7 @@ typedef struct
     rbt_node_t *root;               /* 根节点 */
     rbt_node_t *sentinel;           /* 哨兵节点 */
 
-    void *pool;                     /* 内存池 */
-    mem_alloc_cb_t alloc;           /* 分配内存回调 */
-    mem_dealloc_cb_t dealloc;       /* 回收内存回调 */
+    rbt_option_t opt;               /* 选项 */
 } rbt_tree_t;
 
 #define rbt_copy_color(node, src) ((node)->color = (src)->color);
@@ -93,7 +107,7 @@ typedef struct
     } \
 } 
 
-rbt_tree_t *rbt_creat(void *pool, mem_alloc_cb_t alloc, mem_dealloc_cb_t dealloc);
+rbt_tree_t *rbt_creat(rbt_option_t *opt);
 int rbt_insert(rbt_tree_t *tree, int64_t key, void *data);
 int rbt_delete(rbt_tree_t *tree, int64_t key, void **data);
 rbt_node_t *rbt_search(rbt_tree_t *tree, int64_t key);

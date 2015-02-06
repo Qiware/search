@@ -76,7 +76,8 @@ hash_tab_t *hash_tab_creat(slab_pool_t *slab, int mod, key_cb_t key_cb, avl_cmp_
 
         pthread_rwlock_init(&hash->lock[idx], NULL);
 
-        if (0 != avl_creat(&hash->tree[idx], &opt, key_cb, cmp_cb))
+        hash->tree[idx] = avl_creat(&opt, key_cb, cmp_cb);
+        if (NULL == hash->tree[idx])
         {
             free(hash->tree);
             free(hash);
@@ -207,7 +208,7 @@ int hash_tab_destroy(hash_tab_t *hash)
 
     for (idx=0; idx<hash->num; ++idx)
     {
-        avl_destroy(&hash->tree[idx]);
+        avl_destroy(hash->tree[idx]);
     }
 
     free(hash);

@@ -33,10 +33,18 @@ typedef enum
 /* 选项 */
 typedef struct
 {
-    void *pool;                 /* 内存池对象 */
+    void *pool;                 /* 内存池 */
     mem_alloc_cb_t alloc;       /* 申请内存 */
     mem_dealloc_cb_t dealloc;   /* 释放内存 */
 } avl_option_t;
+
+/* 设置默认选项 */
+#define avl_setup_option(opt)   \
+{ \
+    (opt)->pool = NULL; \
+    (opt)->alloc = mem_alloc; \
+    (opt)->dealloc = mem_dealloc; \
+}
 
 /* 主键 */
 typedef struct
@@ -131,16 +139,13 @@ typedef struct
 
 typedef int (*avl_trav_cb_t)(void *data, void *args);
 
-int avl_creat(avl_tree_t **tree, avl_option_t *opt, key_cb_t key_cb, avl_cmp_cb_t cmp_cb);
+avl_tree_t *avl_creat(avl_option_t *opt, key_cb_t key_cb, avl_cmp_cb_t cmp_cb);
 int avl_insert(avl_tree_t *tree, void *pkey, int pkey_len, void *data);
 avl_node_t *avl_query(avl_tree_t *tree, void *pkey, int pkey_len);
 int avl_delete(avl_tree_t *tree, void *pkey, int pkey_len, void **data);
 int avl_print(avl_tree_t *tree);
 int avl_trav(avl_tree_t *tree, avl_trav_cb_t proc, void *args);
-void avl_destroy(avl_tree_t **tree);
-
-void *avl_mem_alloc(void *pool, size_t size);
-void avl_mem_dealloc(void *pool, void *p);
+void avl_destroy(avl_tree_t *tree);
 
 /* 测试使用 */
 void avl_assert(const avl_node_t *node);

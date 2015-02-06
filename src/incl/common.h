@@ -96,6 +96,7 @@ typedef uint32_t (*key_cb_t)(const void *pkey, size_t pkey_len);
  **作    者: # Qifeng.zou # 2014.12.26 #
  ******************************************************************************/
 typedef void * (*mem_alloc_cb_t)(void *pool, size_t size);
+void *mem_alloc(void *pool, size_t size);
 
 /******************************************************************************
  **函数名称: mem_dealloc_cb_t
@@ -110,5 +111,6 @@ typedef void * (*mem_alloc_cb_t)(void *pool, size_t size);
  **作    者: # Qifeng.zou # 2014.12.26 #
  ******************************************************************************/
 typedef void (*mem_dealloc_cb_t)(void *pool, void *p);
+void mem_dealloc(void *pool, void *p);
 
 #endif /*__COMMON_H__*/
