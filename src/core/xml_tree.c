@@ -212,7 +212,7 @@ xml_tree_t *xml_screat(const char *str, xml_option_t *opt)
 
         stack_destroy(&stack);
         return xml;
-    }while (0);
+    } while(0);
 
     /* 4. 释放内存空间 */
     stack_destroy(&stack);
@@ -291,7 +291,7 @@ int xml_node_free(xml_tree_t *xml, xml_node_t *node)
 
         /* 3. 选择下一个处理的节点: 从父亲节点、兄弟节点、孩子节点中 */
         curr = xml_free_next(xml, stack, curr); 
-    }while (NULL != curr);
+    } while(NULL != curr);
 
     if (!stack_isempty(stack))
     {
@@ -510,9 +510,9 @@ extern int xml_spack(xml_tree_t *xml, char *str)
  ******************************************************************************/
 xml_node_t *xml_rquery(xml_tree_t *xml, xml_node_t *curr, const char *path)
 {
-    size_t len = 0;
+    size_t len;
     xml_node_t *node = curr;
-    const char *str = path, *ptr = NULL;
+    const char *str = path, *ptr;
 
     /* 1. 路径判断 */
     if (XML_IS_ROOT_PATH(path))
@@ -566,7 +566,7 @@ xml_node_t *xml_rquery(xml_tree_t *xml, xml_node_t *curr, const char *path)
 
         str = ptr+1;
         node = node->child;
-    }while (NULL != node);
+    } while(NULL != node);
     
     return NULL;
 }
@@ -589,9 +589,7 @@ xml_node_t *xml_add_attr(
         xml_tree_t *xml, xml_node_t *node,
         const char *name, const char *value)
 {
-    xml_node_t *attr = NULL,
-        *parent = node->parent,
-        *link = node->child;
+    xml_node_t *attr, *parent = node->parent, *link = node->child;
 
     if (NULL == parent)
     {
@@ -680,9 +678,7 @@ xml_node_t *xml_add_attr(
  **     2. 将孩子加入子节点链表尾
  **作    者: # Qifeng.zou # 2013.03.01 #
  ******************************************************************************/
-xml_node_t *xml_add_child(
-        xml_tree_t *xml, xml_node_t *node,
-        const char *name, const char *value)
+xml_node_t *xml_add_child(xml_tree_t *xml, xml_node_t *node, const char *name, const char *value)
 {
     xml_node_t *child = NULL;
 
@@ -740,9 +736,8 @@ xml_node_t *xml_add_child(
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.06.12 #
  ******************************************************************************/
-xml_node_t *xml_add_node(
-        xml_tree_t *xml, xml_node_t *node,
-        const char *name, const char *value, int type)
+xml_node_t *xml_add_node(xml_tree_t *xml,
+        xml_node_t *node, const char *name, const char *value, int type)
 {
     switch(type)
     {
@@ -774,7 +769,7 @@ xml_node_t *xml_add_node(
  ******************************************************************************/
 int xml_node_length(xml_tree_t *xml, xml_node_t *node)
 {
-    int length = 0;
+    int length;
     Stack_t stack;
     
     if (NULL == node)
@@ -816,7 +811,7 @@ int xml_node_length(xml_tree_t *xml, xml_node_t *node)
  ******************************************************************************/
 int xml_set_value(xml_tree_t *xml, xml_node_t *node, const char *value)
 {
-    int size = 0;
+    int size;
     
     if (NULL != node->value)
     {
@@ -872,9 +867,9 @@ int xml_set_value(xml_tree_t *xml, xml_node_t *node, const char *value)
  ******************************************************************************/
 int _xml_pack_length(xml_tree_t *xml, xml_node_t *node)
 {
-    int length = 0, length2 = 0;
+    int length, length2;
     Stack_t stack;
-    xml_node_t *child = NULL;
+    xml_node_t *child;
     
     if (NULL == node)
     {
@@ -923,6 +918,7 @@ int _xml_pack_length(xml_tree_t *xml, xml_node_t *node)
         case XML_NODE_UNKNOWN:
         {
             /* Do nothing */
+            length = 0;
             break;
         }
     }
@@ -949,7 +945,7 @@ int _xml_pack_length(xml_tree_t *xml, xml_node_t *node)
  ******************************************************************************/
 int xml_delete_empty(xml_tree_t *xml)
 {
-    xml_node_t *node = NULL;
+    xml_node_t *node;
     Stack_t _stack, *stack = &_stack;
 
 
@@ -1003,7 +999,7 @@ int xml_delete_empty(xml_tree_t *xml)
                 node = stack_gettop(stack);
 
                 stack_pop(stack);
-            }while (1);
+            } while(1);
             continue;
         }
         /* 4. 删除无属性、无孩子、无节点值的节点 */
@@ -1034,7 +1030,6 @@ static xml_node_t *_xml_delete_empty(xml_tree_t *xml, Stack_t *stack, xml_node_t
 {
     xml_node_t *parent, *prev;
 
-    
     do
     {
         parent = node->parent;
@@ -1099,7 +1094,7 @@ static xml_node_t *_xml_delete_empty(xml_tree_t *xml, Stack_t *stack, xml_node_t
         node = stack_gettop(stack);
         
         stack_pop(stack);
-    }while (NULL != node);
+    } while(NULL != node);
 
     return NULL;
 }

@@ -227,7 +227,7 @@ int xml_fprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, FILE *fp)
         
         /* 5. 选择下一个处理的节点: 从父亲节点、兄弟节点、孩子节点中 */
         node = xml_fprint_next(xml, stack, node, fp);
-    }while (NULL != node);
+    } while (NULL != node);
 
     if (!stack_isempty(stack))
     {
@@ -348,70 +348,74 @@ int xml_fprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, FILE *fp)
 static xml_node_t *xml_pack_next_length(
         xml_tree_t *xml, Stack_t *stack, xml_node_t *node, int *length)
 {
-    int length2 = 0;
-    xml_node_t *top = NULL, *child = NULL;
+    int length2;
+    xml_node_t *top, *child;
 
-    if (NULL != node->temp)      /* 首先: 处理孩子节点: 选出下一个孩子节点 */
+    /* 首先: 处理孩子节点: 选出下一个孩子节点 */
+
+    if (NULL != node->temp)
     {
         child = node->temp;
         node->temp = child->next;
         node = child;
         return node;
     }
-    else                        /* 再次: 处理其兄弟节点: 选出下一个兄弟节点 */
+
+    /* 再次: 处理其兄弟节点: 选出下一个兄弟节点 */
+
+    length2 = 0;
+
+    /* 1. 弹出已经处理完成的节点 */
+    top = stack_gettop(stack);
+    if (xml_has_child(top))
     {
-        /* 1. 弹出已经处理完成的节点 */
+        /* sprintf(sp->ptr, "</%s>", top->name); */
+        length2 += strlen(top->name) + 3;
+    }
+
+    if (stack_pop(stack))
+    {
+        *length += length2;
+        syslog_error("Stack pop failed!");
+        return NULL;
+    }
+
+    if (stack_isempty(stack))
+    {
+        *length += length2;
+        syslog_error("Compelte fprint!");
+        return NULL;
+    }
+
+    /* 2. 处理其下一个兄弟节点 */
+    node = top->next;
+    while (NULL == node)     /* 所有兄弟节点已经处理完成，说明父亲节点也处理完成 */
+    {
+        /* 3. 父亲节点出栈 */
         top = stack_gettop(stack);
-        if (xml_has_child(top))
-        {
-            /* sprintf(sp->ptr, "</%s>", top->name); */
-            length2 += strlen(top->name) + 3;
-        }
-        
         if (stack_pop(stack))
         {
             *length += length2;
             syslog_error("Stack pop failed!");
             return NULL;
         }
-        
+
+        /* 4. 打印父亲节点结束标志 */
+        if (xml_has_child(top))
+        {
+            /* sprintf(sp->ptr, "</%s>", top->name); */
+            length2 += strlen(top->name)+3;
+        }
+
         if (stack_isempty(stack))
         {
             *length += length2;
-            syslog_error("Compelte fprint!");
-            return NULL;
+            return NULL;    /* 处理完成 */
         }
-        
-        /* 2. 处理其下一个兄弟节点 */
-        node = top->next;
-        while (NULL == node)     /* 所有兄弟节点已经处理完成，说明父亲节点也处理完成 */
-        {
-            /* 3. 父亲节点出栈 */
-            top = stack_gettop(stack);
-            if (stack_pop(stack))
-            {
-                *length += length2;
-                syslog_error("Stack pop failed!");
-                return NULL;
-            }
-        
-            /* 4. 打印父亲节点结束标志 */
-            if (xml_has_child(top))
-            {
-                /* sprintf(sp->ptr, "</%s>", top->name); */
-                length2 += strlen(top->name)+3;
-            }
-            
-            if (stack_isempty(stack))
-            {
-                *length += length2;
-                return NULL;    /* 处理完成 */
-            }
 
-            /* 5. 选择父亲的兄弟节点 */
-            node = top->next;
-        }
-    }    
+        /* 5. 选择父亲的兄弟节点 */
+        node = top->next;
+    }
 
     *length += length2;
     return node;
@@ -431,7 +435,7 @@ static xml_node_t *xml_pack_next_length(
  ******************************************************************************/
 int xml_pack_node_length(xml_tree_t *xml, xml_node_t *root, Stack_t *stack)
 {
-    int depth, length = 0;
+    int depth, length;
     xml_node_t *node = root;
 
     depth = stack_depth(stack);
@@ -440,6 +444,8 @@ int xml_pack_node_length(xml_tree_t *xml, xml_node_t *root, Stack_t *stack)
         syslog_error("Stack depth must empty. depth:[%d]", depth);
         return XML_ERR_STACK;
     }
+
+    length = 0;
 
     do
     {
@@ -469,12 +475,13 @@ int xml_pack_node_length(xml_tree_t *xml, xml_node_t *root, Stack_t *stack)
         /* 5. 选择下一个处理的节点: 从父亲节点、兄弟节点、孩子节点中 */
         node = xml_pack_next_length(xml, stack, node, &length);
         
-    }while (NULL != node);
+    } while (NULL != node);
 
     if (!stack_isempty(stack))
     {
         return XML_ERR_STACK;
     }
+
     return length;
 }
 
@@ -582,7 +589,7 @@ int xml_pack_node_length(xml_tree_t *xml, xml_node_t *root, Stack_t *stack)
 static xml_node_t *xml_pack_next(
         xml_tree_t *xml, Stack_t *stack, xml_node_t *node, sprint_t *sp)
 {
-    xml_node_t *top = NULL, *child = NULL;
+    xml_node_t *top, *child;
 
     if (NULL != node->temp)      /* 首先: 处理孩子节点: 选出下一个孩子节点 */
     {
@@ -591,57 +598,57 @@ static xml_node_t *xml_pack_next(
         node = child;
         return node;
     }
-    else                        /* 再次: 处理其兄弟节点: 选出下一个兄弟节点 */
+
+    /* 再次: 处理其兄弟节点: 选出下一个兄弟节点 */
+
+    /* 1. 弹出已经处理完成的节点 */
+    top = stack_gettop(stack);
+    if (xml_has_child(top))
     {
-        /* 1. 弹出已经处理完成的节点 */
+        sprintf(sp->ptr, "</%s>", top->name);
+        sp->ptr += strlen(sp->ptr);
+    }
+
+    if (stack_pop(stack))
+    {
+        syslog_error("Stack pop failed!");
+        return NULL;
+    }
+
+    if (stack_isempty(stack))
+    {
+        syslog_error("Compelte fprint!");
+        return NULL;
+    }
+
+    /* 2. 处理其下一个兄弟节点 */
+    node = top->next;
+    while (NULL == node)     /* 所有兄弟节点已经处理完成，说明父亲节点也处理完成 */
+    {
+        /* 3. 父亲节点出栈 */
         top = stack_gettop(stack);
-        if (xml_has_child(top))
-        {
-            sprintf(sp->ptr, "</%s>", top->name);
-            sp->ptr += strlen(sp->ptr);
-        }
-        
         if (stack_pop(stack))
         {
             syslog_error("Stack pop failed!");
             return NULL;
         }
-        
+
+        /* 4. 打印父亲节点结束标志 */
+        if (xml_has_child(top))
+        {
+            sprintf(sp->ptr, "</%s>", top->name);
+            sp->ptr += strlen(sp->ptr);
+        }
+
         if (stack_isempty(stack))
         {
-            syslog_error("Compelte fprint!");
-            return NULL;
+            return NULL;    /* 处理完成 */
         }
-        
-        /* 2. 处理其下一个兄弟节点 */
-        node = top->next;
-        while (NULL == node)     /* 所有兄弟节点已经处理完成，说明父亲节点也处理完成 */
-        {
-            /* 3. 父亲节点出栈 */
-            top = stack_gettop(stack);
-            if (stack_pop(stack))
-            {
-                syslog_error("Stack pop failed!");
-                return NULL;
-            }
-        
-            /* 4. 打印父亲节点结束标志 */
-            if (xml_has_child(top))
-            {
-                sprintf(sp->ptr, "</%s>", top->name);
-                sp->ptr += strlen(sp->ptr);
-            }
-            
-            if (stack_isempty(stack))
-            {
-                return NULL;    /* 处理完成 */
-            }
 
-            /* 5. 选择父亲的兄弟节点 */
-            node = top->next;
-        }
-    }    
-    
+        /* 5. 选择父亲的兄弟节点 */
+        node = top->next;
+    }
+
     return node;
 }
 
@@ -700,7 +707,7 @@ int xml_pack_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, sprint_t *s
         /* 5. 选择下一个处理的节点: 从父亲节点、兄弟节点、孩子节点中 */
         node = xml_pack_next(xml, stack, node, sp);
 
-    }while (NULL != node);
+    } while (NULL != node);
 
     if (!stack_isempty(stack))
     {
@@ -927,7 +934,7 @@ int xml_sprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, sprint_t 
         /* 5. 选择下一个处理的节点: 从父亲节点、兄弟节点、孩子节点中 */
         node = xml_sprint_next(xml, stack, node, sp);
 
-    }while (NULL != node);
+    } while(NULL != node);
 
     if (!stack_isempty(stack))
     {
