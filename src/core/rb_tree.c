@@ -189,17 +189,19 @@ rbt_tree_t *rbt_creat(rbt_option_t *opt)
         return NULL;
     }
 
-    tree->sentinel = (rbt_node_t *)opt->alloc(opt->pool, sizeof(rbt_node_t));
+    tree->sentinel = (rbt_node_t *)tree->alloc(tree->pool, sizeof(rbt_node_t));
     if(NULL == tree->sentinel)
     {
-        opt->dealloc(opt->pool, tree);
+        tree->dealloc(tree->pool, tree);
         return NULL;
     }
 
     tree->sentinel->color = RBT_COLOR_BLACK;
     tree->root = tree->sentinel;
 
-    memcpy(&tree->opt, opt, sizeof(rbt_option_t));
+    tree->pool = opt->pool;
+    tree->alloc = opt->alloc;
+    tree->dealloc = opt->dealloc;
 
     return tree;
 }
@@ -221,9 +223,8 @@ rbt_tree_t *rbt_creat(rbt_option_t *opt)
 static rbt_node_t *rbt_creat_node(rbt_tree_t *tree, int64_t key, int color, int type, rbt_node_t *parent)
 {
     rbt_node_t *node;
-    rbt_option_t *opt = &tree->opt;
 
-    node = (rbt_node_t *)opt->alloc(opt->pool, sizeof(rbt_node_t));
+    node = (rbt_node_t *)tree->alloc(tree->pool, sizeof(rbt_node_t));
     if(NULL == node)
     {
         return NULL;
@@ -494,7 +495,6 @@ int rbt_delete(rbt_tree_t *tree, int64_t key, void **data)
 static int _rbt_delete(rbt_tree_t *tree, rbt_node_t *dnode)
 {
     rbt_node_t *parent, *next, *refer;
-    rbt_option_t *opt = &tree->opt;
 
     /* Case 1: 被删结点D的左孩子为叶子结点, 右孩子无限制(可为叶子结点，也可为非叶子结点) */
     if(tree->sentinel == dnode->lchild)
@@ -518,11 +518,11 @@ static int _rbt_delete(rbt_tree_t *tree, rbt_node_t *dnode)
 
         if(rbt_is_red(dnode))
         {
-            opt->dealloc(opt->pool, dnode);
+            tree->dealloc(tree->pool, dnode);
             return RBT_SUCCESS;
         }
 
-        opt->dealloc(opt->pool, dnode);
+        tree->dealloc(tree->pool, dnode);
 
         return rbt_delete_fixup(tree, refer);
     }
@@ -548,11 +548,11 @@ static int _rbt_delete(rbt_tree_t *tree, rbt_node_t *dnode)
 
         if(rbt_is_red(dnode))
         {
-            opt->dealloc(opt->pool, dnode);
+            tree->dealloc(tree->pool, dnode);
             return RBT_SUCCESS;
         }
 
-        opt->dealloc(opt->pool, dnode);
+        tree->dealloc(tree->pool, dnode);
 
         return rbt_delete_fixup(tree, refer);
     }
@@ -583,11 +583,11 @@ static int _rbt_delete(rbt_tree_t *tree, rbt_node_t *dnode)
 
     if(rbt_is_red(next)) /* Not black */
     {
-        opt->dealloc(opt->pool, next);
+        tree->dealloc(tree->pool, next);
         return RBT_SUCCESS;
     }
 
-    opt->dealloc(opt->pool, next);
+    tree->dealloc(tree->pool, next);
 
     return rbt_delete_fixup(tree, refer);
 }
@@ -959,20 +959,19 @@ rbt_node_t *rbt_search(rbt_tree_t *tree, int64_t key)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.27 #
  ******************************************************************************/
-int rbt_destroy(rbt_tree_t **tree)
+int rbt_destroy(rbt_tree_t *tree)
 {
     Stack_t _stack, *stack = &_stack;
-    rbt_node_t *node = (*tree)->root, *parent;
-    rbt_option_t *opt = &(*tree)->opt;
+    rbt_node_t *node = tree->root, *parent;
 
-    if((*tree)->sentinel == node) return 0;
+    if(tree->sentinel == node) return 0;
 
     stack_init(stack, RBT_MAX_DEPTH);
 
-    while((*tree)->sentinel != node)
+    while(tree->sentinel != node)
     {
         /* 压左孩子入栈 */
-        while((*tree)->sentinel != node->lchild)
+        while(tree->sentinel != node->lchild)
         {
             stack_push(stack, node);
             
@@ -980,7 +979,7 @@ int rbt_destroy(rbt_tree_t **tree)
         }
 
         /* 最左端的孩子有右孩子 */
-        if((*tree)->sentinel != node->rchild)
+        if(tree->sentinel != node->rchild)
         {
             stack_push(stack, node);
             node = node->rchild;
@@ -990,36 +989,36 @@ int rbt_destroy(rbt_tree_t **tree)
         parent = stack_gettop(stack);
         if(NULL == parent)
         {
-            opt->dealloc(opt->pool, node);
-            opt->dealloc(opt->pool, (*tree)->sentinel);
-            opt->dealloc(opt->pool, *tree), *tree = NULL;
+            tree->dealloc(tree->pool, node);
+            tree->dealloc(tree->pool, tree->sentinel);
+            tree->dealloc(tree->pool, tree);
             stack_destroy(stack);
             return RBT_SUCCESS;
         }
 
         if((parent->lchild == node) /* 右孩子是否已处理 */
-            && ((*tree)->sentinel != parent->rchild))
+            && (tree->sentinel != parent->rchild))
         {
-            opt->dealloc(opt->pool, node);
+            tree->dealloc(tree->pool, node);
             node = parent->rchild;
             continue;
         }
 
         /* 其他树内结点出栈时释放 */
         while((node == parent->rchild)
-            || ((*tree)->sentinel == parent->rchild))
+            || (tree->sentinel == parent->rchild))
         {
             stack_pop(stack);
 
-            opt->dealloc(opt->pool, node);     /* 出栈结点下一次循环时释放 */
+            tree->dealloc(tree->pool, node);     /* 出栈结点下一次循环时释放 */
 
             node = parent;
             parent = stack_gettop(stack);
             if(NULL == parent)
             {
-                opt->dealloc(opt->pool, node);
-                opt->dealloc(opt->pool, (*tree)->sentinel);
-                opt->dealloc(opt->pool, *tree), *tree = NULL;
+                tree->dealloc(tree->pool, node);
+                tree->dealloc(tree->pool, tree->sentinel);
+                tree->dealloc(tree->pool, tree);
                 stack_destroy(stack);
                 return RBT_SUCCESS;
             }
@@ -1027,13 +1026,13 @@ int rbt_destroy(rbt_tree_t **tree)
 
         if(NULL != node)    /* 释放上面出栈的结点 */
         {
-            opt->dealloc(opt->pool, node);
+            tree->dealloc(tree->pool, node);
         }
         node = parent->rchild;
     }
 
-    opt->dealloc(opt->pool, (*tree)->sentinel);
-    opt->dealloc(opt->pool, *tree), *tree = NULL;
+    tree->dealloc(tree->pool, tree->sentinel);
+    tree->dealloc(tree->pool, tree);
     stack_destroy(stack);
     return RBT_SUCCESS;
 }

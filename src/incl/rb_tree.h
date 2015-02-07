@@ -33,9 +33,9 @@ typedef enum
 /* 选项 */
 typedef struct
 {
-    void *pool;                 /* 内存池 */
-    mem_alloc_cb_t alloc;       /* 申请内存 */
-    mem_dealloc_cb_t dealloc;   /* 释放内存 */
+    void *pool;                     /* 内存池 */
+    mem_alloc_cb_t alloc;           /* 申请内存 */
+    mem_dealloc_cb_t dealloc;       /* 释放内存 */
 } rbt_option_t;
 
 /* 设置默认选项 */
@@ -64,7 +64,12 @@ typedef struct
     rbt_node_t *root;               /* 根节点 */
     rbt_node_t *sentinel;           /* 哨兵节点 */
 
-    rbt_option_t opt;               /* 选项 */
+    struct
+    {
+        void *pool;                 /* 内存池 */
+        mem_alloc_cb_t alloc;       /* 申请内存 */
+        mem_dealloc_cb_t dealloc;   /* 释放内存 */
+    };
 } rbt_tree_t;
 
 #define rbt_copy_color(node, src) ((node)->color = (src)->color);
@@ -113,6 +118,6 @@ int rbt_delete(rbt_tree_t *tree, int64_t key, void **data);
 rbt_node_t *rbt_search(rbt_tree_t *tree, int64_t key);
 int rbt_print(rbt_tree_t *tree);
 int rbt_trav(rbt_tree_t *tree, rbt_trav_cb_t proc, void *args);
-int rbt_destroy(rbt_tree_t **tree);
+int rbt_destroy(rbt_tree_t *tree);
 
 #endif /*__RB_TREE_H__*/

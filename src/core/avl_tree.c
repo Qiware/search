@@ -69,7 +69,9 @@ avl_tree_t *avl_creat(avl_option_t *opt, key_cb_t key_cb, avl_cmp_cb_t cmp_cb)
     tree->key_cb = key_cb;
     tree->cmp_cb = cmp_cb;
 
-    memcpy(&tree->opt, opt, sizeof(avl_option_t));
+    tree->pool = opt->pool;
+    tree->alloc = opt->alloc;
+    tree->dealloc = opt->dealloc;
 
     return tree;
 }
@@ -101,14 +103,13 @@ int avl_insert(avl_tree_t *tree, void *pkey, int pkey_len, void *data)
     bool taller = false;
     avl_pkey_t primary;/* 主键 */
     avl_node_t *root = tree->root;
-    avl_option_t *opt = &tree->opt;
 
     key = tree->key_cb(pkey, pkey_len);
 
     /* 如果为空树，则创建第一个结点 */
     if (NULL == root)
     {
-        root = (avl_node_t *)opt->alloc(opt->pool, sizeof(avl_node_t));
+        root = (avl_node_t *)tree->alloc(tree->pool, sizeof(avl_node_t));
         if (NULL == root)
         {
             return AVL_ERR;
@@ -199,11 +200,10 @@ static int avl_insert_right(avl_tree_t *tree, avl_node_t *node,
 {
     int ret = -1;
     avl_node_t *add = NULL;
-    avl_option_t *opt = &tree->opt;
     
     if (NULL == node->rchild)
     {
-        add = (avl_node_t *)opt->alloc(opt->pool, sizeof(avl_node_t));
+        add = (avl_node_t *)tree->alloc(tree->pool, sizeof(avl_node_t));
         if (NULL == add)
         {
             *taller = false;
@@ -282,11 +282,10 @@ static int avl_insert_left(avl_tree_t *tree, avl_node_t *node,
 {
     int ret = -1;
     avl_node_t *add;
-    avl_option_t *opt = &tree->opt;
     
     if (NULL == node->lchild)
     {
-        add = (avl_node_t *)opt->alloc(opt->pool, sizeof(avl_node_t));
+        add = (avl_node_t *)tree->alloc(tree->pool, sizeof(avl_node_t));
         if (NULL == add)
         {
             *taller = false;
@@ -735,15 +734,13 @@ avl_node_t *avl_query(avl_tree_t *tree, void *pkey, int pkey_len)
  ******************************************************************************/
 void avl_destroy(avl_tree_t *tree)
 {
-    avl_option_t *opt = &tree->opt;
-
     if (NULL != tree->root)
     {
         _avl_destroy(tree, tree->root);
         tree->root = NULL;
     }
 
-    opt->dealloc(opt->pool, tree);
+    tree->dealloc(tree->pool, tree);
 }
 
 /******************************************************************************
@@ -832,7 +829,6 @@ static int _avl_delete(avl_tree_t *tree, avl_node_t *node,
 {
     int ret;
     avl_node_t *parent = node->parent;
-    avl_option_t *opt = &tree->opt;
 
     /* 1. 查找需要被删除的结点 */
     if (key < node->key)         /* 左子树上查找 */
@@ -900,7 +896,7 @@ AVL_EQUAL:
 
         avl_assert(parent);
         avl_assert(node->lchild);
-        opt->dealloc(opt->pool, node), node = NULL;
+        tree->dealloc(tree->pool, node), node = NULL;
         return AVL_OK;
     }
     /* 2.2 左子树空, 只需接它的右子树 */
@@ -912,7 +908,7 @@ AVL_EQUAL:
 
         avl_assert(parent);
         avl_assert(node->rchild);
-        opt->dealloc(opt->pool, node), node = NULL;
+        tree->dealloc(tree->pool, node), node = NULL;
         return AVL_OK;
     }
 
@@ -945,8 +941,6 @@ AVL_EQUAL:
 int avl_replace_and_delete(avl_tree_t *tree,
         avl_node_t *node, avl_node_t *prev, bool *lower)
 {
-    avl_option_t *opt = &tree->opt;
-
     if (NULL == prev->rchild)
     {
         *lower = true;
@@ -966,7 +960,7 @@ int avl_replace_and_delete(avl_tree_t *tree,
         avl_assert(node);
         avl_assert(prev->parent);
         avl_assert(prev->lchild);
-        opt->dealloc(opt->pool, prev); /* 注意: 释放的不是dnode, 而是rnode */
+        tree->dealloc(tree->pool, prev); /* 注意: 释放的不是dnode, 而是rnode */
         return AVL_OK;
     }
 
@@ -1215,8 +1209,6 @@ int avl_delete_right_balance(avl_tree_t *tree, avl_node_t *node, bool *lower)
  ******************************************************************************/
 static void _avl_destroy(avl_tree_t *tree, avl_node_t *node)
 {
-    avl_option_t *opt = &tree->opt;
-
     if (NULL != node->lchild)
     {
         _avl_destroy(tree, node->lchild);
@@ -1227,7 +1219,7 @@ static void _avl_destroy(avl_tree_t *tree, avl_node_t *node)
         _avl_destroy(tree, node->rchild);
     }
 
-    opt->dealloc(opt->pool, node);
+    tree->dealloc(tree->pool, node);
 }
 
 int _avl_print(avl_node_t *node, Stack_t *stack);

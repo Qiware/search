@@ -184,7 +184,7 @@ int hash_array_destroy(hash_array_t *hash)
             continue;
         }
 
-        rbt_destroy(&hash->node[idx].tree);
+        rbt_destroy(hash->node[idx].tree);
     }
 
     slab_destroy(hash->slab);

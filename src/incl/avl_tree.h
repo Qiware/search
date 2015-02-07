@@ -90,10 +90,12 @@ typedef struct
 {
     avl_node_t *root;           /* 根节点 */
 
-    avl_option_t opt;           /* 选项信息 */
-
     key_cb_t key_cb;            /* 生成KEY的回调 */
     avl_cmp_cb_t cmp_cb;        /* 数值比较回调 */
+
+    void *pool;                 /* 内存池 */
+    mem_alloc_cb_t alloc;       /* 申请内存 */
+    mem_dealloc_cb_t dealloc;   /* 释放内存 */
 } avl_tree_t;
 
 /* 设置node的左孩子节点 */
