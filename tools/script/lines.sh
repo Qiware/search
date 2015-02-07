@@ -11,8 +11,8 @@ cl=`find ../../ -name "*.c" | xargs grep "^$" | wc -l`
 empty=`expr $hl + $cl`
 
 # 注释数
-hl=`find ../../ -name "*.h" | xargs grep -e "\*\*" -e "/\*" -e "\*\/" | wc -l`
-hl=`find ../../ -name "*.c" | xargs grep -e "\*\*" -e "/\*" -e "\*\/" | wc -l`
+hl=`find ../../ -name "*.h" | xargs grep -e "\*\*" -e "/\*" -e "\*/" -e "//" | wc -l`
+hl=`find ../../ -name "*.c" | xargs grep -e "\*\*" -e "/\*" -e "\*/" -e "//" | wc -l`
 note=`expr $hl + $cl`
 
 # 实行数
