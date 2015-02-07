@@ -85,16 +85,7 @@ xml_node_t *xml_node_creat(xml_tree_t *xml, xml_node_type_e type)
         return NULL;
     }
 
-    node->name = NULL;
-    node->value = NULL;
-    node->type = type;
-
-    node->next = NULL;
-    node->child = NULL;
-    node->parent = NULL;
-    xml_reset_flag(node);
-    node->temp = NULL;
-    node->tail = NULL;
+    xml_node_init(node, type);
 
     return node;
 }
@@ -126,7 +117,7 @@ xml_node_t *xml_node_creat_ext(xml_tree_t *xml,
         return NULL;
     }
 
-    node->type = type;
+    xml_node_init(node, type);
 
     /* 2. 设置节点名 */
     size = strlen(name) + 1;
@@ -145,12 +136,6 @@ xml_node_t *xml_node_creat_ext(xml_tree_t *xml,
         return NULL;
     }
     
-    node->next = NULL;
-    node->child = NULL;
-    node->parent = NULL;
-    node->temp = NULL;
-    node->tail = NULL;
-
     return node;
 }
 
@@ -168,19 +153,12 @@ xml_node_t *xml_node_creat_ext(xml_tree_t *xml,
 xml_tree_t *xml_init(xml_option_t *opt)
 {
     xml_tree_t *xml;
+    xml_node_t *root;
 
-    /* 创建XML对象 */
+    /* 1. 创建XML对象 */
     xml = (xml_tree_t *)opt->alloc(opt->pool, sizeof(xml_tree_t));
     if (NULL == xml)
     {
-        return NULL;
-    }
-
-    /* 创建根节点 */
-    xml->root = (xml_node_t *)opt->alloc(opt->pool, sizeof(xml_node_t));
-    if (NULL == xml->root)
-    {
-        opt->dealloc(opt->pool, xml);
         return NULL;
     }
 
@@ -188,7 +166,19 @@ xml_tree_t *xml_init(xml_option_t *opt)
     xml->alloc = opt->alloc;
     xml->dealloc = opt->dealloc;
 
-    return XML_OK;
+    /* 2. 创建根节点 */
+    root = (xml_node_t *)opt->alloc(opt->pool, sizeof(xml_node_t));
+    if (NULL == root)
+    {
+        opt->dealloc(opt->pool, xml);
+        return NULL;
+    }
+
+    xml_node_init(root, XML_NODE_ROOT);
+
+    xml->root = root;
+
+    return xml;
 }
 
 /******************************************************************************
@@ -203,7 +193,7 @@ xml_tree_t *xml_init(xml_option_t *opt)
  **     内存分配的最小单位为1KB, 防止内存碎片.
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
-char *xml_fload(const char *fname)
+char *xml_fload(const char *fname, xml_option_t *opt)
 {
     size_t size;
     int left, num, off;
@@ -221,7 +211,7 @@ char *xml_fload(const char *fname)
     num = (st.st_size + 1) / KB;
     size = (num + 1) * KB;
 
-    buff = (char *)calloc(1, size);
+    buff = (char *)opt->alloc(opt->pool, size);
     if (NULL == buff)
     {
         return NULL;
@@ -231,7 +221,7 @@ char *xml_fload(const char *fname)
     fp = fopen(fname, "r");
     if (NULL == fp)
     {
-        free(buff);
+        opt->dealloc(opt->pool, buff);
         return NULL;
     }
 
@@ -243,7 +233,7 @@ char *xml_fload(const char *fname)
         if (ferror(fp))
         {
             fclose(fp);
-            free(buff);
+            opt->dealloc(opt->pool, buff);
             return NULL;
         }
         
@@ -528,7 +518,7 @@ static int xml_parse_note(xml_tree_t *xml, xml_parse_t *parse)
  ******************************************************************************/
 static int xml_parse_mark(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse)
 {
-    bool ret;
+    int ret;
     parse->ptr += XML_MARK_BEGIN_LEN;    /* 跳过"<" */
 
     /* 1. 提取标签名，并入栈 */
@@ -560,11 +550,11 @@ static int xml_parse_mark(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse)
     ret = xml_mark_has_value(parse);
     switch(ret)
     {
-        case true:
+        case XML_HAS_VALUE:
         {
             return xml_mark_get_value(xml, stack, parse);
         }
-        case false:
+        case XML_NO_VALUE:
         {
             return XML_OK;
         }
@@ -1017,9 +1007,9 @@ static int xml_mark_has_value(xml_parse_t *parse)
         parse->ptr = ptr;
         if (XmlIsLPBrackChar(*ptr)) /* 出现子节点 */
         {
-            return false;
+            return XML_NO_VALUE;
         }
-        return true;
+        return XML_HAS_VALUE;
     }
     
     return XML_ERR_FORMAT;
@@ -1712,6 +1702,8 @@ static int xml_esc_split(xml_tree_t *xml, const xml_esc_t *esc,
         syslog_error("Calloc memory failed!");
         return XML_ERR_CALLOC;
     }
+
+    node->next = NULL;
 
     node->str = (char *)xml->alloc(xml->pool, len+1);
     if (NULL == node->str)

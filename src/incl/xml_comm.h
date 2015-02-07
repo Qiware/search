@@ -86,8 +86,10 @@
 typedef enum
 {
     XML_OK = 0
-    , XML_ERR = ~0x7fffffff     /* 失败 */
+    , XML_HAS_VALUE             /* 有值 */
+    , XML_NO_VALUE              /* 无值 */
 
+    , XML_ERR = ~0x7fffffff     /* 失败 */
     , XML_ERR_CALLOC            /* calloc失败 */
     , XML_ERR_FORMAT            /* XML格式错误 */
     , XML_ERR_STACK             /* 栈出错 */
@@ -159,7 +161,7 @@ typedef struct
 #define sprint_init(sp, s) ((sp)->str = (s), (sp)->ptr = s)
 
 
-char *xml_fload(const char *fname);
+char *xml_fload(const char *fname, xml_option_t *opt);
 
 xml_tree_t *xml_init(xml_option_t *opt);
 int xml_parse(xml_tree_t *xml, Stack_t *stack, const char *str);

@@ -77,8 +77,22 @@ typedef struct _xml_node_t
 
     unsigned int flag;          /* 记录节点是否有孩子(XML_NODE_HAS_CHILD)、
                                     属性(XML_NODE_HAS_ATTR)、节点值(XML_NODE_HAS_VALUE) */
-    struct _xml_node_t *temp;   /* 临时指针: 遍历XML树时，提高效率(其他情况下，此指针值无效) */    
+    struct _xml_node_t *temp;   /* 临时指针: 遍历XML树时，提高效率(其他情况下，此指针值无效) */
 } xml_node_t;
+
+/* 结点初始化 */
+#define xml_node_init(node, _type)  \
+{ \
+    (node)->name = NULL; \
+    (node)->value = NULL; \
+    (node)->type = (_type); \
+    (node)->next = NULL; \
+    (node)->child = NULL; \
+    (node)->tail = NULL; \
+    (node)->parent = NULL; \
+    (node)->flag = XML_NODE_HAS_NONE; \
+    (node)->temp = NULL; \
+}
 
 /* XML树 */
 typedef struct

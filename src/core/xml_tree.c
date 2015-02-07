@@ -15,17 +15,16 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include "log.h"
+#include "common.h"
 #include "xml_tree.h"
 #include "xml_comm.h"
-#include "common.h"
-#include "log.h"
-
 
 /* 是否为根路径 */
-#define XmlIsRootPath(path) (0 == strcmp(path, "."))
+#define XML_IS_ROOT_PATH(path) (0 == strcmp(path, "."))
 
 /* 是否为绝对路径 */
-#define XmlIsAbsPath(path) ('.' == path[0])
+#define XML_IS_ABS_PATH(path) ('.' == path[0])
 
 static xml_node_t *_xml_delete_empty(xml_tree_t *xml, Stack_t *stack, xml_node_t *node);
 
@@ -99,7 +98,7 @@ xml_tree_t *xml_creat(const char *fname, xml_option_t *opt)
     xml_tree_t *xml;
 
     /* 1. 将XML文件读入内存 */
-    buff = xml_fload(fname);
+    buff = xml_fload(fname, opt);
     if (NULL == buff)
     {
         syslog_error("Load xml file into memory failed![%s]", fname);
@@ -109,7 +108,7 @@ xml_tree_t *xml_creat(const char *fname, xml_option_t *opt)
     /* 2. 在内存中将XML文件转为XML树 */
     xml = xml_screat(buff, opt);
 
-    free(buff), buff = NULL;
+    opt->dealloc(opt->pool, buff);
 
     return xml;
 }
@@ -516,11 +515,11 @@ xml_node_t *xml_rquery(xml_tree_t *xml, xml_node_t *curr, const char *path)
     const char *str = path, *ptr = NULL;
 
     /* 1. 路径判断 */
-    if (XmlIsRootPath(path))
+    if (XML_IS_ROOT_PATH(path))
     {
         return curr;
     }
-    else if (XmlIsAbsPath(path))
+    else if (XML_IS_ABS_PATH(path))
     {
         str++;
     }
