@@ -195,10 +195,9 @@ xml_tree_t *xml_init(xml_option_t *opt)
  ******************************************************************************/
 char *xml_fload(const char *fname, xml_option_t *opt)
 {
-    size_t size;
-    int left, num, off;
     FILE *fp;
     char *buff;
+    int left, off, n;
     struct stat st;
 
     /* 1. 判断文件状态是否正常 */
@@ -208,10 +207,7 @@ char *xml_fload(const char *fname, xml_option_t *opt)
     }
 
     /* 2. 分配文件缓存空间 */
-    num = (st.st_size + 1) / KB;
-    size = (num + 1) * KB;
-
-    buff = (char *)opt->alloc(opt->pool, size);
+    buff = (char *)opt->alloc(opt->pool, st.st_size + 1);
     if (NULL == buff)
     {
         return NULL;
@@ -229,7 +225,7 @@ char *xml_fload(const char *fname, xml_option_t *opt)
     left = st.st_size;
     while (!feof(fp) && (left > 0))
     {
-        num = fread(buff + off, 1, left, fp);
+        n = fread(buff + off, 1, left, fp);
         if (ferror(fp))
         {
             fclose(fp);
@@ -237,9 +233,11 @@ char *xml_fload(const char *fname, xml_option_t *opt)
             return NULL;
         }
         
-        left -= num;
-        off += num;
+        left -= n;
+        off += n;
     }
+
+    buff[st.st_size] = '\0';
 
     fclose(fp);
     return buff;
@@ -705,13 +703,15 @@ static int xml_mark_get_name(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse
     len = ptr - parse->ptr;
 
     /* 5. 提取出节点名 */
-    node->name = (char *)xml->alloc(xml->pool, (len + 1) * sizeof(char));
+    node->name = (char *)xml->alloc(xml->pool, len + 1);
     if (NULL == node->name)
     {
         syslog_error("Calloc failed!");
         return XML_ERR_CALLOC;
     }
+
     strncpy(node->name, parse->ptr, len);
+    node->name[len] = '\0';
 
     /* 6. 将节点入栈 */
     if (stack_push(stack, (void*)node))
@@ -1129,6 +1129,8 @@ static int xml_mark_get_value(xml_tree_t *xml, Stack_t *stack, xml_parse_t *pars
 #if defined(__XML_ESC_PARSE__)
     if (NULL != split.head)
     {
+        curr->value[0] = '\0';
+
         xml_esc_merge(&split, curr->value);
 
         strncat(curr->value, parse->ptr, len);
@@ -1139,6 +1141,7 @@ static int xml_mark_get_value(xml_tree_t *xml, Stack_t *stack, xml_parse_t *pars
 #endif /*__XML_ESC_PARSE__*/
     {
         strncpy(curr->value, parse->ptr, len);
+        curr->value[len] = '\0';
     }
 
     parse->ptr = p2;
@@ -1715,6 +1718,7 @@ static int xml_esc_split(xml_tree_t *xml, const xml_esc_t *esc,
     strncpy(node->str, str, len-1);
     node->str[len-1] = esc->ch;
     node->length = len;
+    node->str[len] = '\0';
     
     if (NULL == split->head)
     {
