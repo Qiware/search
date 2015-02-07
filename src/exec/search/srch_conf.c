@@ -32,8 +32,6 @@ srch_conf_t *srch_conf_load(const char *path, log_cycle_t *log)
     srch_conf_t *conf;
     mem_pool_t *mem_pool;
 
-    memset(&opt, 0, sizeof(opt));
-
     /* 1. 创建配置内存池 */
     mem_pool = mem_pool_creat(4 * KB);
     if (NULL == mem_pool)
@@ -45,16 +43,20 @@ srch_conf_t *srch_conf_load(const char *path, log_cycle_t *log)
     do
     {
         /* 2. 创建配置对象 */
-        conf = mem_pool_alloc(mem_pool, sizeof(srch_conf_t));
+        conf = (srch_conf_t *)calloc(1, sizeof(srch_conf_t));
         if (NULL == conf)
         {
             log_error(log, "Alloc memory from pool failed!");
             break;
         }
 
-        conf->mem_pool = mem_pool;
+       /* 2. 构建XML树 */
+        memset(&opt, 0, sizeof(opt));
 
-        /* 2. 构建XML树 */
+        opt.pool = mem_pool;
+        opt.alloc = (mem_alloc_cb_t)mem_pool_alloc;
+        opt.dealloc = (mem_dealloc_cb_t)mem_pool_dealloc;
+
         xml = xml_creat(path, &opt);
         if (NULL == xml)
         {
@@ -119,20 +121,20 @@ static int srch_conf_load_comm(xml_tree_t *xml, srch_conf_t *conf, log_cycle_t *
         }
 
         /* 1.2 系统日志级别 */
-        node = xml_rquery(xml, fix, "LEVEL2");
+        node = xml_rquery(xml, fix, "SYS_LEVEL");
         if (NULL != node)
         {
-            conf->log.level2 = log_get_level(node->value);
+            conf->log.syslevel = log_get_level(node->value);
         }
         else
         {
-            conf->log.level2 = log_get_level(LOG_DEF_LEVEL_STR);
+            conf->log.syslevel = log_get_level(LOG_DEF_LEVEL_STR);
         }
     }
     else
     {
         conf->log.level = log_get_level(LOG_DEF_LEVEL_STR);
-        conf->log.level2 = log_get_level(LOG_DEF_LEVEL_STR);
+        conf->log.syslevel = log_get_level(LOG_DEF_LEVEL_STR);
 
         log_warn(log, "Didn't configure log!");
     }

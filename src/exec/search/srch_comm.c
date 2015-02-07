@@ -214,7 +214,7 @@ srch_cntx_t *srch_cntx_init(char *pname, const char *conf_path)
     ctx->log = log;
     ctx->conf = conf;
     log_set_level(log, conf->log.level);
-    syslog_set_level(conf->log.level2);
+    syslog_set_level(conf->log.syslevel);
 
     /* 5. 创建内存池 */
     addr = (void *)calloc(1, 30 * MB);

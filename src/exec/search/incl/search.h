@@ -8,20 +8,10 @@
 
 /* 宏定义 */
 #define SRCH_TMOUT_SCAN_SEC         (15)    /* 超时扫描间隔 */
-#define SRCH_CONNECT_TMOUT_SEC      (00)    /* 连接超时时间 */
-
-#define SRCH_THD_MAX_NUM            (64)    /* 最大线程数 */
-#define SRCH_THD_DEF_NUM            (05)    /* 默认线程数 */
-#define SRCH_THD_MIN_NUM            (01)    /* 最小线程数 */
 
 #define SRCH_SLAB_SIZE              (30 * MB)   /* SLAB内存池大小 */
 #define SRCH_RECV_SIZE              (8 * KB)    /* 缓存SIZE(接收缓存) */
 #define SRCH_SYNC_SIZE  (SRCH_RECV_SIZE >> 1)   /* 缓存同步SIZE */
-
-#define SRCH_CONN_MAX_NUM           (1024)  /* 最大网络连接数 */
-#define SRCH_CONN_DEF_NUM           (128)   /* 默认网络连接数 */
-#define SRCH_CONN_MIN_NUM           (1)     /* 最小网络连接数 */
-#define SRCH_CONN_TMOUT_SEC         (15)    /* 连接超时时间(秒) */
 
 #define SRCH_CONNQ_LEN              (10000) /* 连接队列长度 */
 #define SRCH_RECVQ_LEN              (10000) /* 接收队列长度 */
