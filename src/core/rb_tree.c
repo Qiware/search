@@ -607,7 +607,7 @@ static int _rbt_delete(rbt_tree_t *tree, rbt_node_t *dnode)
  ******************************************************************************/
 static int rbt_delete_fixup(rbt_tree_t *tree, rbt_node_t *node)
 {
-    rbt_node_t *parent, *brother;
+    rbt_node_t *parent = NULL, *brother = NULL;
 
     while(rbt_is_black(node) && (tree->root != node))
     {   

@@ -15,6 +15,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
+#include "log.h"
 #include "sdtp.h"
 #include "syscall.h"
 #include "xml_tree.h"
@@ -498,7 +499,7 @@ void sdtp_worktp_destroy(void *_ctx, void *args)
  ******************************************************************************/
 static int sdtp_proc_def_hdl(uint32_t type, char *buff, size_t len, void *args)
 {
-    log2_error("Call %s() type:%d len:%d", __func__, type, len);
+    syslog_error("Call %s() type:%u len:%d", __func__, type, len);
 
     return SDTP_OK;
 }

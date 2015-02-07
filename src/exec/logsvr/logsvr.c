@@ -8,6 +8,7 @@
  **         2. 负责把共享内存中的日志同步到指定文件。
  ** 作  者: # Qifeng.zou # 2013.11.07 #
  ******************************************************************************/
+#include <unistd.h>
 #include <sys/shm.h>
 #include <sys/types.h>
 
@@ -47,7 +48,11 @@ int main(void)
 
     memset(&logsvr, 0, sizeof(logsvr_t));
 
-    daemon(1, 0);
+    if (daemon(1, 0))
+    {
+        fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
+        return -1;
+    }
 
     /* 1. 初始化系统日志 */
     ret = syslog_init(LOG_LEVEL_DEBUG, LOG_SVR_LOG2_PATH);

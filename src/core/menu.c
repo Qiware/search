@@ -221,8 +221,12 @@ static menu_item_t *menu_exec(menu_item_t *menu, const char *opt)
     {
         if (!menu->parent)
         {
-            fprintf(stdout, "Are you sure exit?[No/Yes]");
-            scanf(" %s", input);
+            fprintf(stdout, "Are you sure exit?[No/Yes] ");
+            if (scanf(" %s", input) < 0)
+            {
+                return NULL;
+            }
+
             if (0 == strcasecmp(input, "yes"))
             {
                 exit(0);
@@ -286,7 +290,10 @@ int menu_startup(menu_cntx_t *ctx)
     {
     BEGIN:
         fprintf(stdout, "Option: ");
-        scanf(" %s", opt);
+        if (scanf(" %s", opt) < 0)
+        {
+            return 0;
+        }
 
         len = strlen(opt);
         for (idx=0; idx<len; ++idx)

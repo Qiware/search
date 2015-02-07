@@ -60,7 +60,10 @@ int main(int argc, char *argv[])
 
     if (opt.isdaemon)
     {
-        daemon(1, 0);
+        if (daemon(1, 0))
+        {
+            return CRWL_ERR;
+        }
     }
 
     /* 2. 初始化日志模块 */

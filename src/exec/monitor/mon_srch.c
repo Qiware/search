@@ -109,7 +109,11 @@ static int mon_srch_connect(menu_item_t *menu)
     srch_mesg_header_t header;
 
     fprintf(stdout, "Use default configuration? [Y/n]");
-    scanf(" %s", input);
+    if (scanf(" %s", input) < 0)
+    {
+        return 0;
+    }
+
     if (0 == strcasecmp(input, "Y")
         || 0 == strcasecmp(input, "Yes"))
     {
@@ -120,14 +124,25 @@ static int mon_srch_connect(menu_item_t *menu)
     else
     {
         fprintf(stdout, "Input ip:");
-        scanf(" %s", ip);
+        if (scanf(" %s", ip) < 0)
+        {
+            return 0;
+        }
 
         fprintf(stdout, "Input port:");
-        scanf(" %s", input);
+        if (scanf(" %s", input) < 0)
+        {
+            return 0;
+        }
+
         port = atoi(input);
 
         fprintf(stdout, "Input num:");
-        scanf(" %s", input);
+        if (scanf(" %s", input) < 0)
+        {
+            return 0;
+        }
+
         num = atoi(input);
     }
 

@@ -883,6 +883,8 @@ int _xml_pack_length(xml_tree_t *xml, xml_node_t *node)
         return -1;
     }
 
+    length = 0;
+
     switch(node->type)
     {
         case XML_NODE_CHILD: /* 处理孩子节点 */

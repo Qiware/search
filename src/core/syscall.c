@@ -314,10 +314,13 @@ int proc_is_exist(pid_t pid)
  ******************************************************************************/
 void *memalign_alloc(size_t alignment, size_t size)
 {
-	void  *p = NULL;
-	
-	posix_memalign(&p, alignment, size);
-	
+	void *p;
+
+	if (posix_memalign(&p, alignment, size))
+    {
+        return NULL;
+    }
+
 	return p;
 }
 #endif /*HAVE_POSIX_MEMALIGN*/
