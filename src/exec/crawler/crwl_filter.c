@@ -130,7 +130,7 @@ crwl_filter_t *crwl_filter_init(crwl_conf_t *conf, log_cycle_t *log)
     filter->conf = conf;
 
     log_set_level(log, conf->log.level);
-    syslog_set_level(conf->log.level2);
+    syslog_set_level(conf->log.syslevel);
 
     /* 2. 连接Redis集群 */
     filter->redis = redis_cluster_init(
@@ -556,9 +556,7 @@ bool crwl_set_uri_exists(redis_cluster_t *cluster, const char *hash, const char 
 
     do
     {
-        r = redisCommand(
-                cluster->slave[random() % cluster->slave_num],
-                "HEXISTS %s %s", hash, uri);
+        r = redisCommand(cluster->slave[random() % cluster->slave_num], "HEXISTS %s %s", hash, uri);
         if (REDIS_REPLY_INTEGER != r->type)
         {
             break;
@@ -591,19 +589,17 @@ bool crwl_set_uri_exists(redis_cluster_t *cluster, const char *hash, const char 
  ******************************************************************************/
 static int crwl_filter_push_task(crwl_filter_t *filter)
 {
-    int len;
+    int len, idx;
     redisReply *r; 
-    list_node_t *node;
     crwl_seed_conf_t *seed;
     char task_str[CRWL_TASK_STR_LEN];
+    crwl_conf_t *conf = filter->conf;
 
-    node = filter->conf->seed.head;
-    while (NULL != node)
+    for (idx=0; idx<conf->seed_num; ++idx)
     {
-        seed = (crwl_seed_conf_t *)node->data;
-        if (seed->depth > filter->conf->download.depth) /* 判断网页深度 */
+        seed = &conf->seed[idx];
+        if (seed->depth > conf->download.depth) /* 判断网页深度 */
         {
-            node = node->next;
             continue;
         }
 
@@ -612,7 +608,6 @@ static int crwl_filter_push_task(crwl_filter_t *filter)
         if (len >= sizeof(task_str))
         {
             log_info(filter->log, "Task string is too long! uri:[%s]", seed->uri);
-            node = node->next;
             continue;
         }
 
@@ -627,7 +622,6 @@ static int crwl_filter_push_task(crwl_filter_t *filter)
         }
 
         freeReplyObject(r);
-        node = node->next;
     }
 
     return CRWL_OK;

@@ -161,10 +161,10 @@ static int crwl_worker_fetch_task(crwl_cntx_t *ctx, crwl_worker_t *worker)
     void *data;
     crwl_task_t *t;
     crwl_conf_t *conf = ctx->conf;
-    queue_t *taskq = ctx->taskq[worker->tidx];
+    queue_t *workq = ctx->workq[worker->tidx];
 
     /* 1. 判断是否应该取任务 */
-    if (0 == taskq->queue.num
+    if (0 == workq->queue.num
         || worker->sock_list.num >= conf->worker.conn_max_num)
     {
         return CRWL_OK;
@@ -175,7 +175,7 @@ static int crwl_worker_fetch_task(crwl_cntx_t *ctx, crwl_worker_t *worker)
 
     for (idx=0; idx<num; ++idx)
     {
-        data = queue_pop(taskq);
+        data = queue_pop(workq);
         if (NULL == data)
         {
             log_trace(worker->log, "Didn't pop data from queue!");
@@ -187,7 +187,7 @@ static int crwl_worker_fetch_task(crwl_cntx_t *ctx, crwl_worker_t *worker)
 
         crwl_worker_task_handler(ctx, worker, t);
 
-        queue_dealloc(taskq, data);
+        queue_dealloc(workq, data);
     }
     return CRWL_OK;
 }

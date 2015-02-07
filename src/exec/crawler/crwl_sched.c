@@ -24,11 +24,11 @@ static void crwl_sched_destroy(crwl_sched_t *sched);
 
 static int crwl_sched_timeout_hdl(crwl_cntx_t *ctx, crwl_sched_t *sched);
 static int crwl_sched_event_hdl(crwl_cntx_t *ctx, crwl_sched_t *sched);
-static int crwl_sched_fetch_task(crwl_cntx_t *ctx, crwl_sched_t *sched);
+static int crwl_sched_task(crwl_cntx_t *ctx, crwl_sched_t *sched);
 
 static int crwl_task_parse(const char *str, crwl_task_t *task);
 static int crwl_task_parse_download_webpage(xml_tree_t *xml, crwl_task_down_webpage_t *dw);
-static int crwl_sched_task_hdl(crwl_cntx_t *ctx, queue_t *taskq, crwl_task_t *task);
+static int crwl_sched_task_hdl(crwl_cntx_t *ctx, queue_t *workq, crwl_task_t *task);
 
 /******************************************************************************
  **函数名称: crwl_sched_routine
@@ -180,7 +180,7 @@ static int crwl_sched_timeout_hdl(crwl_cntx_t *ctx, crwl_sched_t *sched)
     int ret;
 
     /* 1. 取Undo任务, 并放入Worker队列 */
-    ret = crwl_sched_fetch_task(ctx, sched);
+    ret = crwl_sched_task(ctx, sched);
     if (CRWL_OK != ret)
     {
         log_error(ctx->log, "Fetch task failed!");
@@ -206,7 +206,7 @@ static int crwl_sched_event_hdl(crwl_cntx_t *ctx, crwl_sched_t *sched)
 {
     int ret;    
 
-    ret = crwl_sched_fetch_task(ctx, sched);
+    ret = crwl_sched_task(ctx, sched);
     if (CRWL_OK != ret)
     {
         log_error(ctx->log, "Fetch task failed!");
@@ -217,7 +217,7 @@ static int crwl_sched_event_hdl(crwl_cntx_t *ctx, crwl_sched_t *sched)
 }
 
 /******************************************************************************
- **函数名称: crwl_sched_fetch_task
+ **函数名称: crwl_sched_task
  **功    能: 从UNDO队列中取数据，并放入到Worker队列中
  **输入参数: 
  **     ctx: 全局信息
@@ -234,12 +234,12 @@ static int crwl_sched_event_hdl(crwl_cntx_t *ctx, crwl_sched_t *sched)
  **     从Undo Task队列中申请的内存将由Worker线程去释放
  **作    者: # Qifeng.zou # 2014.10.17 #
  ******************************************************************************/
-static int crwl_sched_fetch_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
+static int crwl_sched_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
 {
-    int times, taskq_id;
+    int times, workq_id;
     void *addr;
     redisReply *r;
-    queue_t *taskq;
+    queue_t *workq;
     crwl_task_t *task;
     crwl_conf_t *conf = ctx->conf;
 
@@ -247,11 +247,11 @@ static int crwl_sched_fetch_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
     while (1)
     {
         /* 1. 随机选择任务队列 */
-        taskq_id = rand() % conf->worker.num;
+        workq_id = rand() % conf->worker.num;
 
-        taskq = ctx->taskq[taskq_id];
+        workq = ctx->workq[workq_id];
 
-        if (!queue_space(&taskq->queue))
+        if (!queue_space(&workq->queue))
         {
             ++times;
             if (times >= conf->worker.num)
@@ -273,10 +273,10 @@ static int crwl_sched_fetch_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
             return CRWL_OK;
         }
 
-        log_trace(ctx->log, "TQ:%02d URL:%s!", taskq_id, r->str);
+        log_trace(ctx->log, "TQ:%02d URL:%s!", workq_id, r->str);
 
         /* 3. 新建crwl_task_t对象 */
-        addr = queue_malloc(taskq);
+        addr = queue_malloc(workq);
         if (NULL == addr)
         {
             freeReplyObject(r);
@@ -292,17 +292,17 @@ static int crwl_sched_fetch_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
             log_error(ctx->log, "Parse task string failed! %s", r->str);
 
             freeReplyObject(r);
-            queue_dealloc(taskq, addr);
+            queue_dealloc(workq, addr);
             return CRWL_ERR;
         }
 
         /* 5. 处理Undo任务 */
-        if (crwl_sched_task_hdl(ctx, taskq, task))
+        if (crwl_sched_task_hdl(ctx, workq, task))
         {
             log_error(ctx->log, "Handle undo task failed! %s", r->str);
 
             freeReplyObject(r);
-            queue_dealloc(taskq, addr);
+            queue_dealloc(workq, addr);
             return CRWL_ERR;
         }
 
@@ -332,13 +332,25 @@ static int crwl_task_parse(const char *str, crwl_task_t *task)
     xml_tree_t *xml;
     xml_node_t *node;
     xml_option_t opt;
+    mem_pool_t *pool;
+
+    /* 1. 解析XML字串 */
+    pool = mem_pool_creat(4 * KB);
+    if (NULL == pool)
+    {
+        return CRWL_ERR;
+    }
 
     memset(&opt, 0, sizeof(opt));
 
-    /* 1. 解析XML字串 */
+    opt.pool = pool;
+    opt.alloc = (mem_alloc_cb_t)mem_pool_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)mem_pool_dealloc;
+
     xml = xml_screat(str, &opt);
     if (NULL == xml)
     {
+        mem_pool_destroy(pool);
         return CRWL_ERR;
     }
 
@@ -347,6 +359,7 @@ static int crwl_task_parse(const char *str, crwl_task_t *task)
     if (NULL == node)
     {
         xml_destroy(xml);
+        mem_pool_destroy(pool);
         return CRWL_ERR;
     }
 
@@ -368,6 +381,7 @@ static int crwl_task_parse(const char *str, crwl_task_t *task)
     }
 
     xml_destroy(xml);
+    mem_pool_destroy(pool);
 
     return ret;
 }
@@ -423,7 +437,7 @@ static int crwl_task_parse_download_webpage(
  **功    能: 任务TASK_DOWN_WEBPAGE的处理
  **输入参数: 
  **     ctx: 全局信息
- **     taskq: 任务队列
+ **     workq: 任务队列
  **     task: 任务信息
  **输出参数:
  **返    回: 0:成功 !0:失败
@@ -432,7 +446,7 @@ static int crwl_task_parse_download_webpage(
  **作    者: # Qifeng.zou # 2014.12.12 #
  ******************************************************************************/
 static int crwl_sched_task_down_webpage_hdl(
-        crwl_cntx_t *ctx, queue_t *taskq, crwl_task_t *task)
+        crwl_cntx_t *ctx, queue_t *workq, crwl_task_t *task)
 {
     int ret, idx;
     uri_field_t field;
@@ -463,7 +477,7 @@ static int crwl_sched_task_down_webpage_hdl(
     snprintf(args->ip, sizeof(args->ip), "%s", map.ip[idx].ip);
 
     /* 3. 放入Worker任务队列 */
-    if (queue_push(taskq, (void *)task))
+    if (queue_push(workq, (void *)task))
     {
         log_error(ctx->log, "Push into worker queue failed!");
         return CRWL_ERR;
@@ -477,7 +491,7 @@ static int crwl_sched_task_down_webpage_hdl(
  **功    能: 处理Undo任务
  **输入参数: 
  **     ctx: 全局信息
- **     taskq: 任务队列
+ **     workq: 任务队列
  **     task: 任务信息
  **输出参数:
  **返    回: 0:成功 !0:失败
@@ -485,13 +499,13 @@ static int crwl_sched_task_down_webpage_hdl(
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.12 #
  ******************************************************************************/
-static int crwl_sched_task_hdl(crwl_cntx_t *ctx, queue_t *taskq, crwl_task_t *task)
+static int crwl_sched_task_hdl(crwl_cntx_t *ctx, queue_t *workq, crwl_task_t *task)
 {
     switch (task->type)
     {
         case CRWL_TASK_DOWN_WEBPAGE:
         {
-            return crwl_sched_task_down_webpage_hdl(ctx, taskq, task);
+            return crwl_sched_task_down_webpage_hdl(ctx, workq, task);
         }
         default:
         {

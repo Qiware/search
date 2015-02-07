@@ -25,7 +25,7 @@
 #define CRWL_WEB_SVR_PORT           (80)    /* WEB服务器侦听端口 */
 
 
-#define CRWL_TASK_QUEUE_MAX_NUM     (10000) /* 任务队列单元数 */
+#define CRWL_WORKQ_MAX_NUM          (2000)  /* 工作队列单元数 */
 #define CRWL_DEF_CONF_PATH  "../conf/crawler.xml"   /* 默认配置路径 */
 
 #define CRWL_EVENT_MAX_NUM          (2048)  /* 事件最大数 */

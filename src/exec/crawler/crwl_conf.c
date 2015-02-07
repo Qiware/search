@@ -35,32 +35,30 @@ crwl_conf_t *crwl_conf_load(const char *path, log_cycle_t *log)
     xml_tree_t *xml;
     xml_option_t opt;
     crwl_conf_t *conf;
-    mem_pool_t *mem_pool;
+    mem_pool_t *pool;
 
-    /* 1. 创建配置内存池 */
-    mem_pool = mem_pool_creat(4 * KB);
-    if (NULL == mem_pool)
+    /* 1. 创建配置对象 */
+    conf = (crwl_conf_t *)calloc(1, sizeof(crwl_conf_t));
+    if (NULL == conf)
+    {
+        log_error(log, "Alloc memory from pool failed!");
+        return NULL;
+    }
+
+    /* 2. 构建XML树 */
+    pool = mem_pool_creat(4 * KB);
+    if (NULL == pool)
     {
         log_error(log, "Create memory pool failed!");
+        free(conf);
         return NULL;
     }
 
     do
     {
-        /* 2. 创建配置对象 */
-        conf = mem_pool_alloc(mem_pool, sizeof(crwl_conf_t));
-        if (NULL == conf)
-        {
-            log_error(log, "Alloc memory from pool failed!");
-            break;
-        }
-
-        conf->mem_pool = mem_pool;
-
-        /* 2. 构建XML树 */
         memset(&opt, 0, sizeof(opt));
 
-        opt.pool = mem_pool;
+        opt.pool = pool;
         opt.alloc = (mem_alloc_cb_t)mem_pool_alloc;
         opt.dealloc = (mem_dealloc_cb_t)mem_pool_dealloc;
 
@@ -101,15 +99,16 @@ crwl_conf_t *crwl_conf_load(const char *path, log_cycle_t *log)
 
         /* 6. 释放XML树 */
         xml_destroy(xml);
+        mem_pool_destroy(pool);
+
         return conf;
     } while(0);
 
     /* 异常处理 */
-    if (NULL != xml)
-    {
-        xml_destroy(xml);
-    }
-    mem_pool_destroy(mem_pool);
+    free(conf);
+    xml_destroy(xml);
+    mem_pool_destroy(pool);
+
     return NULL;
 }
 
@@ -149,14 +148,14 @@ static int crwl_conf_load_comm(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *
         }
 
         /* 1.2 系统日志级别 */
-        node = xml_rquery(xml, fix, "LEVEL2");
+        node = xml_rquery(xml, fix, "SYS_LEVEL");
         if (NULL != node)
         {
-            conf->log.level2 = log_get_level(node->value);
+            conf->log.syslevel = log_get_level(node->value);
         }
         else
         {
-            conf->log.level2 = log_get_level(LOG_DEF_LEVEL_STR);
+            conf->log.syslevel = log_get_level(LOG_DEF_LEVEL_STR);
         }
     }
     else
@@ -193,6 +192,20 @@ static int crwl_conf_load_comm(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *
     }
 
     snprintf(conf->download.path, sizeof(conf->download.path), "%s", node->value);
+
+    /* 2.3 任务队列配置(相对查找) */
+    node = xml_query(xml, "CRAWLER.COMMON.WORKQ.COUNT");
+    if (NULL == node)
+    {
+        log_error(log, "Didn't configure count of work task queue unit!");
+        return CRWL_ERR;
+    }
+
+    conf->workq_count = atoi(node->value);
+    if (conf->workq_count <= 0)
+    {
+        conf->workq_count = CRWL_WORKQ_MAX_NUM;
+    }
 
     /* 3. 获取Redis配置信息 */
     if (crwl_conf_load_redis(xml, conf, log))
@@ -258,7 +271,7 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
     redis->master.port = atoi(node->value);
 
     /* 获取队列名 */
-    node = xml_rquery(xml, fix, "QUEUE.UNDO_TASKQ");
+    node = xml_rquery(xml, fix, "TASKQ.NAME");
     if (NULL == node)
     {
         log_error(log, "Get undo task queue failed!");
@@ -268,7 +281,7 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
     snprintf(redis->undo_taskq, sizeof(redis->undo_taskq), "%s", node->value);
 
     /* 获取哈希表名 */
-    node = xml_rquery(xml, fix, "HASH.DONE_TAB");  /* DONE哈希表 */
+    node = xml_rquery(xml, fix, "DONE_TAB.NAME");  /* DONE哈希表 */
     if (NULL == node)
     {
         log_error(log, "Get done hash table failed!");
@@ -277,7 +290,7 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
 
     snprintf(redis->done_tab, sizeof(redis->done_tab), "%s", node->value);
 
-    node = xml_rquery(xml, fix, "HASH.PUSH_TAB");  /* PUSH哈希表 */
+    node = xml_rquery(xml, fix, "PUSH_TAB.NAME");  /* PUSH哈希表 */
     if (NULL == node)
     {
         log_error(log, "Get pushed hash table failed!");
@@ -286,7 +299,7 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
 
     snprintf(redis->push_tab, sizeof(redis->push_tab), "%s", node->value);
 
-    /* 获取Redis副本配置 */
+    /* 获取REDIS副本配置 */
     node = xml_rquery(xml, fix, "SLAVE.MAX");
     if (NULL == node)
     {
@@ -295,15 +308,13 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
     }
 
     max = atoi(node->value);
-
-    /* 注: 出现异常情况时 内存在此不必释放 */
-    redis->slaves = (redis_conf_t *)mem_pool_alloc(conf->mem_pool, max*sizeof(redis_conf_t));
-    if (NULL == redis->slaves)
+    if (max > CRWL_REDIS_SLAVE_MAX_NUM)
     {
-        log_error(log, "Alloc memory for redis-slaves failed!");
+        log_error(log, "Redis slave number is too many!");
         return CRWL_ERR;
     }
 
+    /* 注: 出现异常情况时 内存在此不必释放 */
     redis->slave_num = 0;
 
     item = xml_rquery(xml, fix, "SLAVE.ITEM");
@@ -363,74 +374,58 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
  ******************************************************************************/
 static int crwl_conf_load_seed(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
 {
-    list_node_t *node;
     crwl_seed_conf_t *seed;
-    xml_node_t *cf_node, *cf_item;
+    xml_node_t *node, *item;
 
     /* 1. 定位SEED->ITEM标签 */
-    cf_item = xml_query(xml, ".CRAWLER.SEED.ITEM");
-    if (NULL == cf_item)
+    item = xml_query(xml, ".CRAWLER.SEED.ITEM");
+    if (NULL == item)
     {
         log_error(log, "Didn't configure seed item!");
         return CRWL_ERR;
     }
 
     /* 2. 提取种子信息 */
-    conf->seed.num = 0;
-    conf->seed.head = NULL;
-    conf->seed.tail = NULL;
-
-    while (NULL != cf_item)
+    conf->seed_num = 0;
+    while (NULL != item)
     {
-        if (0 != strcasecmp(cf_item->name, "ITEM"))
+        if (0 != strcasecmp(item->name, "ITEM"))
         {
-            cf_item = cf_item->next;
+            item = item->next;
             continue;
         }
 
-        /* 申请配置空间(注: 出现异常情况时 内存在此不必释放) */
-        node = (list_node_t *)mem_pool_alloc(conf->mem_pool, sizeof(list_node_t));
-        if (NULL == node)
+        if (conf->seed_num >= CRWL_SEED_MAX_NUM)
         {
-            log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
+            log_error(log, "Seed number is too many!");
             return CRWL_ERR;
         }
 
-        seed = (crwl_seed_conf_t *)mem_pool_alloc(conf->mem_pool, sizeof(crwl_seed_conf_t));
-        if (NULL == seed)
-        {
-            log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
-            return CRWL_ERR;
-        }
-
-        node->data = seed;
+        seed = &conf->seed[conf->seed_num++];
 
         /* 提取URI */
-        cf_node = xml_rquery(xml, cf_item, "URI");
-        if (NULL == cf_node)
+        node = xml_rquery(xml, item, "URI");
+        if (NULL == node)
         {
             log_error(log, "Get uri failed!");
             return CRWL_ERR;
         }
 
-        snprintf(seed->uri, sizeof(seed->uri), "%s", cf_node->value);
+        snprintf(seed->uri, sizeof(seed->uri), "%s", node->value);
 
         /* 获取DEPTH */
-        cf_node = xml_rquery(xml, cf_item, "DEPTH");
-        if (NULL == cf_node)
+        node = xml_rquery(xml, item, "DEPTH");
+        if (NULL == node)
         {
             seed->depth = 0;
             log_info(log, "Didn't set depth of uri!");
         }
         else
         {
-            seed->depth = atoi(cf_node->value);
+            seed->depth = atoi(node->value);
         }
 
-        /* 加入配置链表 */
-        list_insert_tail(&conf->seed, node);
-
-        cf_item = cf_item->next;
+        item = item->next;
     }
 
     return CRWL_OK;
@@ -510,20 +505,6 @@ static int crwl_conf_load_worker(
     if (conf->conn_tmout_sec <= 0)
     {
         conf->conn_tmout_sec = CRWL_CONN_TMOUT_SEC;
-    }
-
-    /* 4. Undo任务队列配置(相对查找) */
-    node = xml_rquery(xml, curr, "TASKQ.COUNT");
-    if (NULL == node)
-    {
-        log_error(log, "Didn't configure count of undo task queue unit!");
-        return CRWL_ERR;
-    }
-
-    conf->taskq_count = atoi(node->value);
-    if (conf->taskq_count <= 0)
-    {
-        conf->taskq_count = CRWL_TASK_QUEUE_MAX_NUM;
     }
 
     return CRWL_OK;

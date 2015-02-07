@@ -67,7 +67,7 @@ typedef struct
     thread_pool_t *scheds;                  /* Sched线程池 */
     thread_pool_t *workers;                 /* Worker线程池 */
 
-    queue_t **taskq;                        /* 任务队列(注: 与WORKER线程一一对象) */
+    queue_t **workq;                        /* 工作队列(注: 与WORKER线程一一对象) */
     hash_tab_t *domain_ip_map;              /* 域名IP映射表: 通过域名找到IP地址 */
     hash_tab_t *domain_blacklist;           /* 域名黑名单 */
 } crwl_cntx_t;

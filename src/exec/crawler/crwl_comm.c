@@ -171,7 +171,7 @@ crwl_cntx_t *crwl_cntx_init(char *pname, const char *path)
         ctx->conf = conf;
         ctx->log = log;
         log_set_level(log, conf->log.level);
-        syslog_set_level(conf->log.level2);
+        syslog_set_level(conf->log.syslevel);
 
         /* 5. 创建内存池 */
         addr = (void *)calloc(1, 30 * MB);
@@ -189,8 +189,8 @@ crwl_cntx_t *crwl_cntx_init(char *pname, const char *path)
         }
 
         /* 6. 创建任务队列 */
-        ctx->taskq = (queue_t **)calloc(conf->worker.num, sizeof(queue_t *));
-        if (NULL == ctx->taskq)
+        ctx->workq = (queue_t **)calloc(conf->worker.num, sizeof(queue_t *));
+        if (NULL == ctx->workq)
         {
             log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
             break;
@@ -198,12 +198,11 @@ crwl_cntx_t *crwl_cntx_init(char *pname, const char *path)
 
         for (idx=0; idx<conf->worker.num; ++idx)
         {
-            ctx->taskq[idx] = queue_creat(
-                    conf->worker.taskq_count,
-                    sizeof(crwl_task_t) + sizeof(crwl_task_space_u));
-            if (NULL == ctx->taskq[idx])
+            ctx->workq[idx] = queue_creat(
+                    conf->workq_count, sizeof(crwl_task_t) + sizeof(crwl_task_space_u));
+            if (NULL == ctx->workq[idx])
             {
-                log_error(ctx->log, "Create queue failed! taskq_count:%d", conf->worker.taskq_count);
+                log_error(ctx->log, "Create queue failed! workq_count:%d", conf->workq_count);
                 break;
             }
         }
@@ -258,7 +257,7 @@ crwl_cntx_t *crwl_cntx_init(char *pname, const char *path)
 
     /* 释放内存 */
     if (ctx->conf) { crwl_conf_destroy(ctx->conf); }
-    if (ctx->taskq) { free(ctx->taskq); }
+    if (ctx->workq) { free(ctx->workq); }
     if (ctx->domain_ip_map) { hash_tab_destroy(ctx->domain_ip_map); }
     if (ctx->domain_blacklist) { hash_tab_destroy(ctx->domain_blacklist); }
     free(ctx);
@@ -285,9 +284,9 @@ void crwl_cntx_destroy(crwl_cntx_t *ctx)
 
     for (idx=0; idx<conf->worker.num; ++idx)
     {
-        queue_destroy(ctx->taskq[idx]);
+        queue_destroy(ctx->workq[idx]);
     }
-    Free(ctx->taskq);
+    Free(ctx->workq);
 
     crwl_workers_destroy(ctx);
     log_destroy(&ctx->log);

@@ -21,7 +21,6 @@ typedef struct
     int num;                                /* 爬虫线程数 */
     int conn_max_num;                       /* 并发网页连接数 */
     int conn_tmout_sec;                     /* 连接超时时间 */
-    int taskq_count;                        /* Undo任务队列容量 */
 } crwl_worker_conf_t;
 
 /* Parser配置信息 */
@@ -48,8 +47,9 @@ typedef struct
     char undo_taskq[QUEUE_NAME_MAX_LEN];    /* Undo任务队列名 */
     char done_tab[TABLE_NAME_MAX_LEN];      /* Done哈希表名 */
     char push_tab[TABLE_NAME_MAX_LEN];      /* Push哈希表名 */
+#define CRWL_REDIS_SLAVE_MAX_NUM  (10)      /* 最大副本数 */
     int slave_num;                          /* 副本数目 */
-    redis_conf_t *slaves;                   /* 副本配置信息 */
+    redis_conf_t slaves[CRWL_REDIS_SLAVE_MAX_NUM];  /* 副本配置信息 */
 } crwl_redis_conf_t;
 
 /* 爬虫配置信息 */
@@ -58,26 +58,30 @@ typedef struct
     struct
     {
         int level;                          /* 日志级别 */
-        int level2;                         /* 系统日志级别 */
+        int syslevel;                       /* 系统日志级别 */
     } log;                                  /* 日志配置 */
+
     struct
     {
-        uint32_t depth;                     /* 爬取最大深度 */
+        uint32_t depth;                     /* 最大爬取深度 */
         char path[FILE_PATH_MAX_LEN];       /* 网页存储路径 */
     } download;                             /* 下载配置 */
-    crwl_redis_conf_t redis;                /* REDIS配置信息 */
-    crwl_worker_conf_t worker;              /* Worker配置信息 */
-    crwl_filter_conf_t filter;              /* Filter配置信息 */
-    list_t seed;                            /* 种子信息 */
 
-    mem_pool_t *mem_pool;                   /* 内存池 */
+    int workq_count;                        /* 工作队列容量 */
+
+    crwl_redis_conf_t redis;                /* REDIS配置 */
+    crwl_worker_conf_t worker;              /* WORKER配置 */
+    crwl_filter_conf_t filter;              /* FILTER配置 */
+
+#define CRWL_SEED_MAX_NUM   (100)           /* 种子最大数 */
+    int seed_num;                           /* 种子实数 */
+    crwl_seed_conf_t seed[CRWL_SEED_MAX_NUM];  /* 种子配置 */
 } crwl_conf_t;
 
 crwl_conf_t *crwl_conf_load(const char *path, log_cycle_t *log);
 #define crwl_conf_destroy(conf)             /* 销毁配置对象 */\
 { \
-    mem_pool_destroy(conf->mem_pool); \
-    conf = NULL; \
+    free(conf); \
 }
 
 #endif /*__CRWL_CONF_H__*/
