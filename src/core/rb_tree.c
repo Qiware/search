@@ -189,7 +189,7 @@ rbt_tree_t *rbt_creat(rbt_option_t *opt)
         return NULL;
     }
 
-    tree->sentinel = (rbt_node_t *)tree->alloc(tree->pool, sizeof(rbt_node_t));
+    tree->sentinel = (rbt_node_t *)opt->alloc(opt->pool, sizeof(rbt_node_t));
     if(NULL == tree->sentinel)
     {
         tree->dealloc(tree->pool, tree);
