@@ -34,17 +34,15 @@ redis_cluster_t *redis_cluster_init(
     redis_cluster_t *cluster;
     const redis_conf_t *conf;
 
-    /* 1. 申请内存空间 */
-    cluster = (redis_cluster_t *)calloc(1, sizeof(redis_cluster_t));
-    if (NULL == cluster)
+    if (slave_num > REDIS_SLAVE_MAX_NUM)
     {
         return NULL;
     }
 
-    cluster->slave = (redisContext **)calloc(slave_num, sizeof(redisContext *));
-    if (NULL == cluster->slave)
+    /* 1. 申请内存空间 */
+    cluster = (redis_cluster_t *)calloc(1, sizeof(redis_cluster_t));
+    if (NULL == cluster)
     {
-        free(cluster);
         return NULL;
     }
 
@@ -61,7 +59,6 @@ redis_cluster_t *redis_cluster_init(
 
     /* 3. 依次连接Slave */
     cluster->slave_num = 0;
-
     for (idx=0; idx<slave_num; ++idx)
     {
         ++cluster->slave_num;

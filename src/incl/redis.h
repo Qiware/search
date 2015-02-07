@@ -17,8 +17,9 @@ typedef struct
 typedef struct
 {
     redisContext *master;           /* 主对象 */
+#define REDIS_SLAVE_MAX_NUM (20)    /* 最大REDIS副本数 */
     int slave_num;                  /* 副本数 */
-    redisContext **slave;           /* 副本对象 */
+    redisContext *slave[REDIS_SLAVE_MAX_NUM];   /* 副本对象 */
 } redis_cluster_t;
 
 redis_cluster_t *redis_cluster_init(
