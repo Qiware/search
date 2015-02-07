@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
     {
         log_error(log, "Initialize log failed!");
 
-        log2_destroy();
+        syslog_destroy();
         log_destroy(&log);
         return CRWL_ERR;
     }
@@ -88,7 +88,7 @@ int main(int argc, char *argv[])
         log_error(log, "Init filter failed!");
 
         crwl_conf_destroy(conf);
-        log2_destroy();
+        syslog_destroy();
         log_destroy(&log);
         return CRWL_ERR;
     }
@@ -130,7 +130,7 @@ crwl_filter_t *crwl_filter_init(crwl_conf_t *conf, log_cycle_t *log)
     filter->conf = conf;
 
     log_set_level(log, conf->log.level);
-    log2_set_level(conf->log.level2);
+    syslog_set_level(conf->log.level2);
 
     /* 2. 连接Redis集群 */
     filter->redis = redis_cluster_init(
@@ -164,7 +164,7 @@ void crwl_filter_destroy(crwl_filter_t *filter)
         log_destroy(&filter->log);
         filter->log = NULL;
     }
-    log2_destroy();
+    syslog_destroy();
     if (filter->redis)
     {
         redis_cluster_destroy(filter->redis);

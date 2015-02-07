@@ -111,7 +111,7 @@ shm_queue_t *shm_queue_creat(int key, int max, int size)
     {
         spin_unlock(&info->lock);
         free(shmq);
-        log2_error("Initialize shm slab failed!");
+        syslog_error("Initialize shm slab failed!");
         return NULL;
     }
 

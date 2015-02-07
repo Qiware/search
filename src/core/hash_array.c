@@ -41,7 +41,6 @@ hash_array_t *hash_array_init(int num, size_t slab_size, key_cb_t key_cb)
     hash = (hash_array_t *)calloc(1, sizeof(hash_array_t));
     if (NULL == hash)
     {
-        log2_error("errmsg:[%d] %s!", errno, strerror(errno));
         return NULL;
     }
 
@@ -50,7 +49,6 @@ hash_array_t *hash_array_init(int num, size_t slab_size, key_cb_t key_cb)
     if (NULL == addr)
     {
         free(hash);
-        log2_error("errmsg:[%d] %s!", errno, strerror(errno));
         return NULL;
     }
 
@@ -59,7 +57,6 @@ hash_array_t *hash_array_init(int num, size_t slab_size, key_cb_t key_cb)
     {
         free(addr);
         free(hash);
-        log2_error("Initialize slab failed!");
         return NULL;
     }
 
@@ -69,7 +66,6 @@ hash_array_t *hash_array_init(int num, size_t slab_size, key_cb_t key_cb)
     {
         slab_destroy(hash->slab);
         free(hash);
-        log2_error("Alloc memory from slab failed!");
         return NULL;
     }
 

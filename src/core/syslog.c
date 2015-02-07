@@ -19,7 +19,7 @@ static int syslog_write(syslog_cycle_t *log, int level,
 static int syslog_print_dump(syslog_cycle_t *log, const void *dump, int dumplen);
 
 /******************************************************************************
- **函数名称: syslog_get_level
+ **函数名称: log_get_level
  **功    能: 获取日志级别
  **输入参数: 
  **     level_str: 日志级别字串

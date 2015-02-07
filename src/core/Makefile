@@ -14,7 +14,7 @@ LIBS = -lpthread
 
 SRC_LIST = hash.c \
 			log.c \
-			log2.c \
+			syslog.c \
 			lock.c \
 			list.c \
 			list2.c \

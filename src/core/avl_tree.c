@@ -48,6 +48,7 @@ avl_tree_t *avl_creat(avl_option_t *opt, key_cb_t key_cb, avl_cmp_cb_t cmp_cb)
 {
     avl_tree_t *tree;
 
+    /* 合法性验证 */
     if (NULL == opt
         || NULL == key_cb
         || NULL == cmp_cb
@@ -57,6 +58,7 @@ avl_tree_t *avl_creat(avl_option_t *opt, key_cb_t key_cb, avl_cmp_cb_t cmp_cb)
         return NULL;
     }
 
+    /* 创建对象 */
     tree = (avl_tree_t *)opt->alloc(opt->pool, sizeof(avl_tree_t));
     if (NULL == tree)
     {

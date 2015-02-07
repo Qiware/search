@@ -143,40 +143,40 @@ typedef struct
     FILE *fp;       /* 文件指针 */
     int level;      /* 进程级别 */
     pid_t pid;      /* 进程ID */
-} log2_cycle_t;
+} syslog_cycle_t;
 
-extern log2_cycle_t g_log2;
+extern syslog_cycle_t g_syslog;
 
 /* 系统日志函数(无句柄) */
-#define log2_get_path(path, size, name) \
-            snprintf(path, size, "../log/%s.log2", name)
-int log2_init(int level, const char *path);
-void log2_core(int level, const char *fname, int lineno,
+#define syslog_get_path(path, size, name) \
+            snprintf(path, size, "../log/%s.syslog", name)
+int syslog_init(int level, const char *path);
+void syslog_core(int level, const char *fname, int lineno,
             const void *dump, int dumplen, const char *fmt, ...);
-int log2_get_level(const char *level_str);
-#define log2_set_level(_level) { g_log2.level = (_level); }
-void log2_destroy(void);
+int syslog_get_level(const char *level_str);
+#define syslog_set_level(_level) { g_syslog.level = (_level); }
+void syslog_destroy(void);
 
-#define log2_fatal(...) /* 撰写FATAL级别日志 */\
-    if (LOG_LEVEL_FATAL <= g_log2.level) \
-        log2_core(LOG_LEVEL_FATAL, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
-#define log2_error(...) /* 撰写ERROR级别日志 */\
-    if (LOG_LEVEL_ERROR <= g_log2.level) \
-        log2_core(LOG_LEVEL_ERROR, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
-#define log2_warn(...)  /* 撰写WARN级别日志 */\
-    if (LOG_LEVEL_WARN <= g_log2.level) \
-        log2_core(LOG_LEVEL_WARN, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
-#define log2_info(...)  /* 撰写INFO级别日志 */\
-    if (LOG_LEVEL_INFO <= g_log2.level) \
-        log2_core(LOG_LEVEL_INFO, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
-#define log2_debug(...) /* 撰写DEBUG级别日志 */\
-    if (LOG_LEVEL_DEBUG <= g_log2.level) \
-        log2_core(LOG_LEVEL_DEBUG, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
-#define log2_trace(...) /* 撰写TRACE级别日志 */\
-    if (LOG_LEVEL_TRACE <= g_log2.level) \
-        log2_core(LOG_LEVEL_TRACE, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
-#define log2_bin(addr, len, ...)   /* 撰写MEM-DUMP日志 */\
-    if (LOG_LEVEL_TRACE <= g_log2.level) \
-        log2_core(LOG_LEVEL_TRACE, __FILE__, __LINE__, addr, len, __VA_ARGS__)
+#define syslog_fatal(...) /* 撰写FATAL级别日志 */\
+    if (LOG_LEVEL_FATAL <= g_syslog.level) \
+        syslog_core(LOG_LEVEL_FATAL, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
+#define syslog_error(...) /* 撰写ERROR级别日志 */\
+    if (LOG_LEVEL_ERROR <= g_syslog.level) \
+        syslog_core(LOG_LEVEL_ERROR, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
+#define syslog_warn(...)  /* 撰写WARN级别日志 */\
+    if (LOG_LEVEL_WARN <= g_syslog.level) \
+        syslog_core(LOG_LEVEL_WARN, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
+#define syslog_info(...)  /* 撰写INFO级别日志 */\
+    if (LOG_LEVEL_INFO <= g_syslog.level) \
+        syslog_core(LOG_LEVEL_INFO, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
+#define syslog_debug(...) /* 撰写DEBUG级别日志 */\
+    if (LOG_LEVEL_DEBUG <= g_syslog.level) \
+        syslog_core(LOG_LEVEL_DEBUG, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
+#define syslog_trace(...) /* 撰写TRACE级别日志 */\
+    if (LOG_LEVEL_TRACE <= g_syslog.level) \
+        syslog_core(LOG_LEVEL_TRACE, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
+#define syslog_bin(addr, len, ...)   /* 撰写MEM-DUMP日志 */\
+    if (LOG_LEVEL_TRACE <= g_syslog.level) \
+        syslog_core(LOG_LEVEL_TRACE, __FILE__, __LINE__, addr, len, __VA_ARGS__)
 
 #endif /*__LOG_H__*/

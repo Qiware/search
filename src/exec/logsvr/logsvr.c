@@ -19,7 +19,7 @@
 #include "syscall.h"
 #include "thread_pool.h"
 
-#define LOG_SVR_LOG2_PATH   "../log/logsvr.log2"
+#define LOG_SVR_LOG2_PATH   "../log/logsvr.syslog"
 
 static int logsvr_init(logsvr_t *logsvr);
 static void *logsvr_timeout_routine(void *args);
@@ -50,7 +50,7 @@ int main(void)
     daemon(1, 0);
 
     /* 1. 初始化系统日志 */
-    ret = log2_init(LOG_LEVEL_DEBUG, LOG_SVR_LOG2_PATH);
+    ret = syslog_init(LOG_LEVEL_DEBUG, LOG_SVR_LOG2_PATH);
     if (0 != ret)
     {
         fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
@@ -61,7 +61,7 @@ int main(void)
     ret = logsvr_init(&logsvr);
     if(ret < 0)
     {
-        log2_error("Init log failed!");
+        syslog_error("Init log failed!");
         return -1;
     }
 
@@ -96,7 +96,7 @@ int logsvr_proc_lock(void)
     fd = Open(path, OPEN_FLAGS, OPEN_MODE);
     if(fd < 0)
     {
-        log2_error("errmsg:[%d]%s! path:[%s]", errno, strerror(errno), path);
+        syslog_error("errmsg:[%d]%s! path:[%s]", errno, strerror(errno), path);
         return -1;
     }
 
@@ -104,7 +104,7 @@ int logsvr_proc_lock(void)
     ret = logsvr_proc_trylock(fd);
     if(ret < 0)
     {
-        log2_error("errmsg:[%d]%s! path:[%s]", errno, strerror(errno), path);
+        syslog_error("errmsg:[%d]%s! path:[%s]", errno, strerror(errno), path);
         Close(fd);
         return -1;
     }
@@ -134,7 +134,7 @@ static int logsvr_init(logsvr_t *logsvr)
     ret = logsvr_proc_lock();
     if(ret < 0)
     {
-        log2_error("Log server is already running...");
+        syslog_error("Log server is already running...");
         return -1;    /* 日志服务进程正在运行... */
     }
 
@@ -146,7 +146,7 @@ static int logsvr_init(logsvr_t *logsvr)
     logsvr->fd = Open(path, OPEN_FLAGS, OPEN_MODE);
     if(logsvr->fd < 0)
     {
-        log2_error("errmsg:[%d] %s! path:[%s]", errno, strerror(errno), path);
+        syslog_error("errmsg:[%d] %s! path:[%s]", errno, strerror(errno), path);
         return -1;
     }
 
@@ -154,7 +154,7 @@ static int logsvr_init(logsvr_t *logsvr)
     logsvr->addr = logsvr_creat_shm(logsvr->fd);
     if(NULL == logsvr->addr)
     {
-        log2_error("Create SHM failed!");
+        syslog_error("Create SHM failed!");
         return -1;
     }
 
@@ -164,7 +164,7 @@ static int logsvr_init(logsvr_t *logsvr)
     {
         thread_pool_destroy(logsvr->pool);
         logsvr->pool = NULL;
-        log2_error("errmsg:[%d]%s!", errno, strerror(errno));
+        syslog_error("errmsg:[%d]%s!", errno, strerror(errno));
         return -1;
     }
 
@@ -222,7 +222,7 @@ static char *logsvr_creat_shm(int fd)
     addr = (void *)shmat(shmid, NULL, 0);
     if((void *)-1 == addr)
     {
-        log2_error("Attach shm failed! shmid:[%d] key:[0x%x]", shmid, key);
+        syslog_error("Attach shm failed! shmid:[%d] key:[0x%x]", shmid, key);
         return NULL;
     }
 

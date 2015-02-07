@@ -43,7 +43,6 @@ hash_tab_t *hash_tab_creat(slab_pool_t *slab, int mod, key_cb_t key_cb, avl_cmp_
     hash = (hash_tab_t *)calloc(1, sizeof(hash_tab_t));
     if (NULL == hash)
     {
-        log2_error("errmsg:[%d] %s!", errno, strerror(errno));
         return NULL;
     }
 
@@ -52,7 +51,6 @@ hash_tab_t *hash_tab_creat(slab_pool_t *slab, int mod, key_cb_t key_cb, avl_cmp_
     if (NULL == hash->tree)
     {
         free(hash);
-        log2_error("errmsg:[%d] %s!", errno, strerror(errno));
         return NULL;
     }
 
@@ -61,7 +59,6 @@ hash_tab_t *hash_tab_creat(slab_pool_t *slab, int mod, key_cb_t key_cb, avl_cmp_
     {
         free(hash->tree);
         free(hash);
-        log2_error("errmsg:[%d] %s!", errno, strerror(errno));
         return NULL;
     }
 
@@ -81,7 +78,6 @@ hash_tab_t *hash_tab_creat(slab_pool_t *slab, int mod, key_cb_t key_cb, avl_cmp_
         {
             free(hash->tree);
             free(hash);
-            log2_error("Create avl tree failed!");
             return NULL;
         }
 
