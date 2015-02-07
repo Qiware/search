@@ -15,8 +15,8 @@ static int sdtp_cli_shmat(sdtp_cli_t *cli);
 static int sdtp_cli_cmd_usck(sdtp_cli_t *cli, int idx);
 
 #define sdtp_cli_unix_path(cli, path, idx) \
-    snprintf(path, sizeof(path), "./temp/sdtp/snd/%s/usck/%s_cli_%d.usck", \
-        cli->conf.name, cli->conf.name, idx)
+    snprintf(path, sizeof(path), "./temp/sdtp/snd/%s/%s_cli_%d.usck", \
+            cli->conf.name, cli->conf.name, idx)
 
 /******************************************************************************
  **函数名称: sdtp_cli_init

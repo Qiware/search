@@ -13,6 +13,7 @@
 #include "redis.h"
 #include "common.h"
 #include "xml_tree.h"
+#include "mem_pool.h"
 
 /* Worker配置信息 */
 typedef struct

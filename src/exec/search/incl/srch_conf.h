@@ -11,6 +11,7 @@
 #define __SRCH_CONF_H__
 
 #include "common.h"
+#include "mem_pool.h"
 #include "xml_tree.h"
 
 /* 搜索引擎配置信息 */

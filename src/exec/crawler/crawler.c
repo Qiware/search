@@ -44,15 +44,13 @@
  ******************************************************************************/
 int main(int argc, char *argv[])
 {
-    int ret;
     crwl_opt_t opt;
     crwl_cntx_t *ctx;
 
     memset(&opt, 0, sizeof(opt));
 
     /* 1. 解析输入参数 */
-    ret = crwl_getopt(argc, argv, &opt);
-    if (CRWL_OK != ret)
+    if (crwl_getopt(argc, argv, &opt))
     {
         return crwl_usage(argv[0]);
     }
@@ -77,8 +75,7 @@ int main(int argc, char *argv[])
     }
 
     /* 3. 启动爬虫服务 */
-    ret = crwl_startup(ctx);
-    if (CRWL_OK != ret)
+    if (crwl_startup(ctx))
     {
         log_error(ctx->log, "Startup crawler failed!");
         goto ERROR;

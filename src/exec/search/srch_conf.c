@@ -28,8 +28,11 @@ static int srch_conf_load_comm(xml_tree_t *xml, srch_conf_t *conf, log_cycle_t *
 srch_conf_t *srch_conf_load(const char *path, log_cycle_t *log)
 {
     xml_tree_t *xml;
+    xml_option_t opt;
     srch_conf_t *conf;
     mem_pool_t *mem_pool;
+
+    memset(&opt, 0, sizeof(opt));
 
     /* 1. 创建配置内存池 */
     mem_pool = mem_pool_creat(4 * KB);
@@ -52,7 +55,7 @@ srch_conf_t *srch_conf_load(const char *path, log_cycle_t *log)
         conf->mem_pool = mem_pool;
 
         /* 2. 构建XML树 */
-        xml = xml_creat(path);
+        xml = xml_creat(path, &opt);
         if (NULL == xml)
         {
             log_error(log, "Create xml failed! path:%s", path);

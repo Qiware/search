@@ -331,9 +331,12 @@ static int crwl_task_parse(const char *str, crwl_task_t *task)
     int ret;
     xml_tree_t *xml;
     xml_node_t *node;
+    xml_option_t opt;
+
+    memset(&opt, 0, sizeof(opt));
 
     /* 1. 解析XML字串 */
-    xml = xml_screat(str);
+    xml = xml_screat(str, &opt);
     if (NULL == xml)
     {
         return CRWL_ERR;

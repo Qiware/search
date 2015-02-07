@@ -32,48 +32,31 @@ static xml_node_t *_xml_delete_empty(xml_tree_t *xml, Stack_t *stack, xml_node_t
 /******************************************************************************
  **函数名称: xml_creat_empty
  **功    能: 创建空XML树
- **输入参数: NONE
+ **输入参数:
+ **     opt: 选项信息
  **输出参数: NONE
  **返    回: XML树
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.06.12 #
  ******************************************************************************/
-xml_tree_t *xml_creat_empty(void)
+xml_tree_t *xml_creat_empty(xml_option_t *opt)
 {
-    xml_tree_t *xml = NULL;
-#if defined(__XML_MEM_POOL__)
-    mem_pool_t *pool;
+    xml_tree_t *xml;
 
-    /* 1. 创建内存池 */
-    pool = mem_pool_creat(4096);
-    if (NULL == pool)
-    {
-        syslog_error("Create memory pool failed!");
-        return NULL;
-    }
-#endif /*__XML_MEM_POOL__*/
-
-    /* 1. Create tree */
-#if defined(__XML_MEM_POOL__)
-    xml = (xml_tree_t*)mem_pool_calloc(pool, sizeof(xml_tree_t));
-#else /*!__XML_MEM_POOL__*/
-    xml = (xml_tree_t*)calloc(1, sizeof(xml_tree_t));
-#endif /*!__XML_MEM_POOL__*/
+    /* 1. 新建对象 */
+    xml = (xml_tree_t*)opt->alloc(opt->pool, sizeof(xml_tree_t));
     if (NULL == xml)
     {
-    #if defined(__XML_MEM_POOL__)
-        mem_pool_destroy(pool);
-    #endif /*__XML_MEM_POOL__*/
         syslog_error("Calloc failed!");
         return NULL;
     }
 
-#if defined(__XML_MEM_POOL__)
-    xml->pool = pool;
-#endif /*__XML_MEM_POOL__*/
+    xml->pool = opt->pool;
+    xml->alloc = opt->alloc;
+    xml->dealloc = opt->dealloc;
 
-    /* 2. Add root node */
+    /* 2. 添加根节点 */
     xml->root = xml_node_creat(xml, XML_NODE_ROOT);
     if (NULL == xml->root)
     {
@@ -82,12 +65,8 @@ xml_tree_t *xml_creat_empty(void)
         return NULL;
     }
 
-    /* 3. Set root name */
-#if defined(__XML_MEM_POOL__)
-    xml->root->name = (char *)mem_pool_calloc(pool, XML_ROOT_NAME_SIZE);
-#else /*!__XML_MEM_POOL__*/
-    xml->root->name = (char *)calloc(1, XML_ROOT_NAME_SIZE);
-#endif /*!__XML_MEM_POOL__*/
+    /* 3. 设置根节点名 */
+    xml->root->name = (char *)xml->alloc(xml->pool, XML_ROOT_NAME_SIZE);
     if (NULL == xml->root->name)
     {
         xml_destroy(xml);
@@ -104,7 +83,8 @@ xml_tree_t *xml_creat_empty(void)
  **函数名称: xml_creat
  **功    能: 将XML文件转化成XML树
  **输入参数:
- **     fcache: 文件缓存
+ **     fname: 文件路径
+ **     opt: 选项信息
  **输出参数:
  **返    回: XML树
  **实现描述: 
@@ -113,10 +93,10 @@ xml_tree_t *xml_creat_empty(void)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
-xml_tree_t *xml_creat(const char *fname)
+xml_tree_t *xml_creat(const char *fname, xml_option_t *opt)
 {
-    char *buff = NULL;
-    xml_tree_t *xml = NULL;
+    char *buff;
+    xml_tree_t *xml;
 
     /* 1. 将XML文件读入内存 */
     buff = xml_fload(fname);
@@ -127,7 +107,7 @@ xml_tree_t *xml_creat(const char *fname)
     }
 
     /* 2. 在内存中将XML文件转为XML树 */
-    xml = xml_screat(buff);
+    xml = xml_screat(buff, opt);
 
     free(buff), buff = NULL;
 
@@ -149,22 +129,22 @@ xml_tree_t *xml_creat(const char *fname)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.09.25 #
  ******************************************************************************/
-xml_tree_t *xml_screat_ext(const char *str, int length)
+xml_tree_t *xml_screat_ext(const char *str, int length, xml_option_t *opt)
 {
-    char *buff = NULL;
-    xml_tree_t *xml = NULL;
+    char *buff;
+    xml_tree_t *xml;
 
     if (0 == length)     /* 创建空树 */
     {
-        return xml_creat_empty(); 
+        return xml_creat_empty(opt); 
     }
     else if (length < 0) /* 长度无限制 */
     {
-        return xml_screat(str);
+        return xml_screat(str, opt);
     }
 
     /* length > 0 */
-    buff = (char *)calloc(1, length + 1);
+    buff = (char *)opt->alloc(opt->pool, length + 1);
     if (NULL == buff)
     {
         syslog_error("Alloc memory failed!");
@@ -173,9 +153,9 @@ xml_tree_t *xml_screat_ext(const char *str, int length)
 
     memcpy(buff, str, length);
 
-    xml = xml_screat(buff);
+    xml = xml_screat(buff, opt);
 
-    free(buff), buff = NULL;
+    opt->dealloc(opt->pool, buff);
 
     return xml;
 }
@@ -185,6 +165,7 @@ xml_tree_t *xml_screat_ext(const char *str, int length)
  **功    能: 将XML字串转为XML树
  **输入参数:
  **     str: XML字串
+ **     opt: 选项信息
  **输出参数:
  **返    回: XML树
  **实现描述: 
@@ -194,7 +175,7 @@ xml_tree_t *xml_screat_ext(const char *str, int length)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
-xml_tree_t *xml_screat(const char *str)
+xml_tree_t *xml_screat(const char *str, xml_option_t *opt)
 {
     Stack_t stack;
     xml_tree_t *xml;
@@ -202,7 +183,7 @@ xml_tree_t *xml_screat(const char *str)
     if ((NULL == str)
         || ('\0' == str[0]))
     {
-        return xml_creat_empty();
+        return xml_creat_empty(opt);
     }
     
     do
@@ -215,7 +196,8 @@ xml_tree_t *xml_screat(const char *str)
         }
 
         /* 2. 初始化XML树 */
-        if (xml_init(&xml))
+        xml = xml_init(opt); 
+        if (NULL == xml)
         {   
             syslog_error("Init xml tree failed!");
             break;
@@ -239,9 +221,8 @@ xml_tree_t *xml_screat(const char *str)
     return NULL;
 }
 
-#if !defined(__XML_MEM_POOL__)
 /* 释放属性节点 */
-#define xml_attr_free(node, child) \
+#define xml_attr_free(xml, node, child) \
 {   \
     if (xml_has_attr(node))    \
     {   \
@@ -251,7 +232,7 @@ xml_tree_t *xml_screat(const char *str)
             if (xml_is_attr(child))    \
             {   \
                 node->temp = child->next;   \
-                xml_node_free_one(child), child = NULL;    \
+                xml_node_free_one(xml, child);    \
                 continue;   \
             }   \
             node->child = node->temp; /* 让孩子指针指向真正的孩子节点 */  \
@@ -278,11 +259,10 @@ xml_tree_t *xml_screat(const char *str)
 int xml_node_free(xml_tree_t *xml, xml_node_t *node)
 {
     Stack_t _stack, *stack = &_stack;
-    xml_node_t *current = node,
-               *parent = node->parent, *child = NULL;
+    xml_node_t *curr = node, *parent = node->parent, *child;
 
     /* 1. 将此节点从孩子链表剔除 */
-    if ((NULL != parent) && (NULL != current))
+    if ((NULL != parent) && (NULL != curr))
     {
         if (xml_delete_child(xml, parent, node))
         {
@@ -299,8 +279,8 @@ int xml_node_free(xml_tree_t *xml, xml_node_t *node)
     do
     {
         /* 1. 节点入栈 */
-        current->temp = current->child;
-        if (stack_push(stack, current))
+        curr->temp = curr->child;
+        if (stack_push(stack, curr))
         {
             stack_destroy(stack);
             syslog_error("Push stack failed!");
@@ -308,12 +288,11 @@ int xml_node_free(xml_tree_t *xml, xml_node_t *node)
         }
 
         /* 2. 释放属性节点: 让孩子指针指向真正的孩子节点 */
-        xml_attr_free(current, child);
+        xml_attr_free(xml, curr, child);
 
         /* 3. 选择下一个处理的节点: 从父亲节点、兄弟节点、孩子节点中 */
-        current = xml_free_next(xml, stack, current); 
-        
-    }while (NULL != current);
+        curr = xml_free_next(xml, stack, curr); 
+    }while (NULL != curr);
 
     if (!stack_isempty(stack))
     {
@@ -325,7 +304,6 @@ int xml_node_free(xml_tree_t *xml, xml_node_t *node)
     stack_destroy(stack);
     return XML_OK;
 }
-#endif /*!__XML_MEM_POOL__*/
 
 /******************************************************************************
  **函数名称: xml_fprint
@@ -385,8 +363,8 @@ int xml_fprint(xml_tree_t *xml, FILE *fp)
  ******************************************************************************/
 int xml_fwrite(xml_tree_t *xml, const char *fname)
 {
+    FILE *fp;
     Stack_t stack;
-    FILE *fp = NULL;
     xml_node_t *child = xml->root->child;
 
     if (NULL == child) 
@@ -682,9 +660,7 @@ xml_node_t *xml_add_attr(
         return attr;
     }
 
-#if !defined(__XML_MEM_POOL__)
-    xml_node_free_one(attr);
-#endif /*__XML_MEM_POOL__*/
+    xml_node_free_one(xml, attr);
     
     syslog_error("Add attr node failed!");
     return NULL;
@@ -845,9 +821,8 @@ int xml_set_value(xml_tree_t *xml, xml_node_t *node, const char *value)
     
     if (NULL != node->value)
     {
-    #if !defined(__XML_MEM_POOL__)
-        free(node->value), node->value = NULL;
-    #endif /*__XML_MEM_POOL__*/
+        xml->dealloc(xml->pool, node->value);
+        node->value = NULL;
         xml_unset_value_flag(node);
     }
 
@@ -856,11 +831,7 @@ int xml_set_value(xml_tree_t *xml, xml_node_t *node, const char *value)
         if (xml_is_attr(node))
         {
             /* 注意: 属性节点的值不能为NULL，应为“” - 防止计算XML树长度时，出现计算错误 */
-        #if defined(__XML_MEM_POOL__)
-            node->value = (char *)mem_pool_calloc(xml->pool, sizeof(char));
-        #else /*!__XML_MEM_POOL__*/
-            node->value = (char *)calloc(1, sizeof(char));
-        #endif /*!__XML_MEM_POOL__*/
+            node->value = (char *)xml->alloc(xml->pool, sizeof(char));
             if (NULL == node->value)
             {
                 return XML_ERR;
@@ -876,11 +847,7 @@ int xml_set_value(xml_tree_t *xml, xml_node_t *node, const char *value)
 
     size = strlen(value) + 1;
     
-#if defined(__XML_MEM_POOL__)
-    node->value = (char *)mem_pool_calloc(xml->pool, size);
-#else /*!__XML_MEM_POOL__*/
-    node->value = (char *)calloc(1, size);
-#endif /*!__XML_MEM_POOL__*/
+    node->value = (char *)xml->alloc(xml->pool, size);
     if (NULL == node->value)
     {
         xml_unset_value_flag(node);
@@ -1066,7 +1033,7 @@ int xml_delete_empty(xml_tree_t *xml)
  ******************************************************************************/
 static xml_node_t *_xml_delete_empty(xml_tree_t *xml, Stack_t *stack, xml_node_t *node)
 {
-    xml_node_t *parent = NULL, *prev = NULL;
+    xml_node_t *parent, *prev;
 
     
     do
@@ -1078,9 +1045,7 @@ static xml_node_t *_xml_delete_empty(xml_tree_t *xml, Stack_t *stack, xml_node_t
         {
             parent->child = node->next;
             
-        #if !defined(__XML_MEM_POOL__)
-            xml_node_free_one(node);           /* 释放空节点 */
-        #endif /*!__XML_MEM_POOL__*/            
+            xml_node_free_one(xml, node);   /* 释放空节点 */
             
             if (NULL != parent->child)
             {
@@ -1099,9 +1064,7 @@ static xml_node_t *_xml_delete_empty(xml_tree_t *xml, Stack_t *stack, xml_node_t
             }
             prev->next = node->next;
             
-        #if !defined(__XML_MEM_POOL__)
-            xml_node_free_one(node);   /* 释放空节点 */
-        #endif /*!__XML_MEM_POOL__*/
+            xml_node_free_one(xml, node);   /* 释放空节点 */
             
             if (NULL != prev->next)
             {

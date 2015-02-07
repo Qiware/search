@@ -164,17 +164,21 @@ void crwl_filter_destroy(crwl_filter_t *filter)
         log_destroy(&filter->log);
         filter->log = NULL;
     }
+
     syslog_destroy();
+
     if (filter->redis)
     {
         redis_cluster_destroy(filter->redis);
         filter->redis = NULL;
     }
+
     if (filter->conf)
     {
         crwl_conf_destroy(filter->conf);
         filter->conf = NULL;
     }
+
     free(filter);
 }
 
@@ -216,8 +220,7 @@ int crwl_filter_work(crwl_filter_t *filter)
         /* 2. 遍历文件 */
         while (NULL != (item = readdir(dir)))
         {
-            snprintf(filter->info.fname,
-                    sizeof(filter->info.fname), "%s/%s", path, item->d_name); 
+            snprintf(filter->info.fname, sizeof(filter->info.fname), "%s/%s", path, item->d_name); 
 
             /* 判断文件类型 */
             stat(filter->info.fname, &st);
@@ -229,12 +232,9 @@ int crwl_filter_work(crwl_filter_t *filter)
             /* 获取网页信息 */
             if (crwl_filter_webpage_info(&filter->info, filter->log))
             {
-                snprintf(new_path, sizeof(new_path),
-                        "%s/%s", conf->filter.store.err_path, item->d_name);
+                snprintf(new_path, sizeof(new_path), "%s/%s", conf->filter.store.err_path, item->d_name);
                 rename(filter->info.fname, new_path);
-
-                snprintf(html_path, sizeof(html_path),
-                        "%s/%s", conf->download.path, filter->info.html);
+                snprintf(html_path, sizeof(html_path), "%s/%s", conf->download.path, filter->info.html);
                 remove(html_path);
                 continue;
             }
@@ -242,14 +242,9 @@ int crwl_filter_work(crwl_filter_t *filter)
             /* 主处理流程 */
             crwl_filter_work_flow(filter);
 
-            snprintf(new_path, sizeof(new_path),
-                    "%s/%s", conf->filter.store.path, item->d_name);
-
+            snprintf(new_path, sizeof(new_path), "%s/%s", conf->filter.store.path, item->d_name);
             rename(filter->info.fname, new_path);
-
-
-            snprintf(html_path, sizeof(html_path),
-                    "%s/%s", conf->download.path, filter->info.html);
+            snprintf(html_path, sizeof(html_path), "%s/%s", conf->download.path, filter->info.html);
             remove(html_path);
         }
 
@@ -280,11 +275,29 @@ static int crwl_filter_webpage_info(crwl_webpage_info_t *info, log_cycle_t *log)
 {
     xml_tree_t *xml;
     xml_node_t *node, *fix;
+    xml_option_t opt;
+    mem_pool_t *pool;
 
-    /* 1. 新建XML树 */
-    xml = xml_creat(info->fname);
+    memset(&opt, 0, sizeof(opt));
+
+
+    /* 1. 新建内存池 */
+    pool = mem_pool_creat(4 * KB);
+    if (NULL == pool)
+    {
+        log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
+        return CRWL_ERR;
+    }
+
+    /* 2. 新建XML树 */
+    opt.pool = pool;
+    opt.alloc = (mem_alloc_cb_t)mem_pool_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)mem_pool_dealloc;
+
+    xml = xml_creat(info->fname, &opt);
     if (NULL == xml)
     {
+        mem_pool_destroy(pool);
         log_error(log, "Create XML failed!");
         return CRWL_ERR;
     }
@@ -301,7 +314,7 @@ static int crwl_filter_webpage_info(crwl_webpage_info_t *info, log_cycle_t *log)
 
         /* 获取URI字段 */
         node = xml_rquery(xml, fix, "URI");
-        if (NULL == fix)
+        if (NULL == node)
         {
             log_error(log, "Get URI mark failed!");
             break;
@@ -311,7 +324,7 @@ static int crwl_filter_webpage_info(crwl_webpage_info_t *info, log_cycle_t *log)
 
         /* 获取DEPTH字段 */
         node = xml_rquery(xml, fix, "URI.DEPTH");
-        if (NULL == fix)
+        if (NULL == node)
         {
             log_error(log, "Get DEPTH mark failed!");
             break;
@@ -321,7 +334,7 @@ static int crwl_filter_webpage_info(crwl_webpage_info_t *info, log_cycle_t *log)
 
         /* 获取IP字段 */
         node = xml_rquery(xml, fix, "URI.IP");
-        if (NULL == fix)
+        if (NULL == node)
         {
             log_error(log, "Get IP mark failed!");
             break;
@@ -331,7 +344,7 @@ static int crwl_filter_webpage_info(crwl_webpage_info_t *info, log_cycle_t *log)
 
         /* 获取PORT字段 */
         node = xml_rquery(xml, fix, "URI.PORT");
-        if (NULL == fix)
+        if (NULL == node)
         {
             log_error(log, "Get PORT mark failed!");
             break;
@@ -341,7 +354,7 @@ static int crwl_filter_webpage_info(crwl_webpage_info_t *info, log_cycle_t *log)
 
         /* 获取HTML字段 */
         node = xml_rquery(xml, fix, "HTML");
-        if (NULL == fix)
+        if (NULL == node)
         {
             log_error(log, "Get HTML mark failed!");
             break;
@@ -351,7 +364,7 @@ static int crwl_filter_webpage_info(crwl_webpage_info_t *info, log_cycle_t *log)
 
         /* 获取HTML.SIZE字段 */
         node = xml_rquery(xml, fix, "HTML.SIZE");
-        if (NULL == fix)
+        if (NULL == node)
         {
             log_error(log, "Get HTML.SIZE mark failed!");
             break;
@@ -365,11 +378,13 @@ static int crwl_filter_webpage_info(crwl_webpage_info_t *info, log_cycle_t *log)
         }
 
         xml_destroy(xml);
+        mem_pool_destroy(pool);
         return CRWL_OK;
     } while(0);
 
     /* 3. 释放XML树 */
     xml_destroy(xml);
+    mem_pool_destroy(pool);
     return CRWL_ERR;
 }
 
@@ -395,8 +410,7 @@ static int crwl_filter_work_flow(crwl_filter_t *filter)
     /* 1. 判断网页深度 */
     if (info->depth > conf->download.depth)
     {
-        log_info(filter->log, "Drop handle webpage! uri:%s depth:%d",
-                info->uri, info->depth);
+        log_info(filter->log, "Drop handle webpage! uri:%s depth:%d", info->uri, info->depth);
         return CRWL_OK;
     }
 

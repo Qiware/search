@@ -33,6 +33,7 @@ static int crwl_conf_load_filter(xml_tree_t *xml, crwl_filter_conf_t *conf, log_
 crwl_conf_t *crwl_conf_load(const char *path, log_cycle_t *log)
 {
     xml_tree_t *xml;
+    xml_option_t opt;
     crwl_conf_t *conf;
     mem_pool_t *mem_pool;
 
@@ -57,7 +58,13 @@ crwl_conf_t *crwl_conf_load(const char *path, log_cycle_t *log)
         conf->mem_pool = mem_pool;
 
         /* 2. 构建XML树 */
-        xml = xml_creat(path);
+        memset(&opt, 0, sizeof(opt));
+
+        opt.pool = mem_pool;
+        opt.alloc = (mem_alloc_cb_t)mem_pool_alloc;
+        opt.dealloc = (mem_dealloc_cb_t)mem_pool_dealloc;
+
+        xml = xml_creat(path, &opt);
         if (NULL == xml)
         {
             log_error(log, "Create xml failed! path:%s", path);
