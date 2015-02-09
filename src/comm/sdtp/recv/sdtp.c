@@ -499,7 +499,7 @@ void sdtp_worktp_destroy(void *_ctx, void *args)
  ******************************************************************************/
 static int sdtp_proc_def_hdl(uint32_t type, char *buff, size_t len, void *args)
 {
-    syslog_error("Call %s() type:%u len:%d", __func__, type, len);
+    sys_debug("Call %s() type:%u len:%d", __func__, type, len);
 
     return SDTP_OK;
 }
