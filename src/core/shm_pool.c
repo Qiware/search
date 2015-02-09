@@ -135,7 +135,7 @@ shm_pool_t *shm_pool_init(void *addr, int max, size_t unit_size)
     {
         pool->page_data[idx] = (void *)(addr + page[idx].data);
 
-        syslog_debug("[%d] Page data:%p", idx, pool->page_data[idx]);
+        sys_debug("[%d] Page data:%p", idx, pool->page_data[idx]);
     }
 
     return pool;
@@ -196,7 +196,7 @@ shm_pool_t *shm_pool_get(void *addr)
     {
         pool->page_data[idx] = (void *)(addr + page[idx].data);
 
-        syslog_debug("[%d] Page data:%p", idx, pool->page_data[idx]);
+        sys_debug("[%d] Page data:%p", idx, pool->page_data[idx]);
     }
 
     return pool;

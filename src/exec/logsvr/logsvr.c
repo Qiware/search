@@ -66,7 +66,7 @@ int main(void)
     ret = logsvr_init(&logsvr);
     if(ret < 0)
     {
-        syslog_error("Init log failed!");
+        sys_error("Init log failed!");
         return -1;
     }
 
@@ -101,7 +101,7 @@ int logsvr_proc_lock(void)
     fd = Open(path, OPEN_FLAGS, OPEN_MODE);
     if(fd < 0)
     {
-        syslog_error("errmsg:[%d]%s! path:[%s]", errno, strerror(errno), path);
+        sys_error("errmsg:[%d]%s! path:[%s]", errno, strerror(errno), path);
         return -1;
     }
 
@@ -109,7 +109,7 @@ int logsvr_proc_lock(void)
     ret = logsvr_proc_trylock(fd);
     if(ret < 0)
     {
-        syslog_error("errmsg:[%d]%s! path:[%s]", errno, strerror(errno), path);
+        sys_error("errmsg:[%d]%s! path:[%s]", errno, strerror(errno), path);
         Close(fd);
         return -1;
     }
@@ -139,7 +139,7 @@ static int logsvr_init(logsvr_t *logsvr)
     ret = logsvr_proc_lock();
     if(ret < 0)
     {
-        syslog_error("Log server is already running...");
+        sys_error("Log server is already running...");
         return -1;    /* 日志服务进程正在运行... */
     }
 
@@ -151,7 +151,7 @@ static int logsvr_init(logsvr_t *logsvr)
     logsvr->fd = Open(path, OPEN_FLAGS, OPEN_MODE);
     if(logsvr->fd < 0)
     {
-        syslog_error("errmsg:[%d] %s! path:[%s]", errno, strerror(errno), path);
+        sys_error("errmsg:[%d] %s! path:[%s]", errno, strerror(errno), path);
         return -1;
     }
 
@@ -159,7 +159,7 @@ static int logsvr_init(logsvr_t *logsvr)
     logsvr->addr = logsvr_creat_shm(logsvr->fd);
     if(NULL == logsvr->addr)
     {
-        syslog_error("Create SHM failed!");
+        sys_error("Create SHM failed!");
         return -1;
     }
 
@@ -169,7 +169,7 @@ static int logsvr_init(logsvr_t *logsvr)
     {
         thread_pool_destroy(logsvr->pool);
         logsvr->pool = NULL;
-        syslog_error("errmsg:[%d]%s!", errno, strerror(errno));
+        sys_error("errmsg:[%d]%s!", errno, strerror(errno));
         return -1;
     }
 
@@ -227,7 +227,7 @@ static char *logsvr_creat_shm(int fd)
     addr = (void *)shmat(shmid, NULL, 0);
     if((void *)-1 == addr)
     {
-        syslog_error("Attach shm failed! shmid:[%d] key:[0x%x]", shmid, key);
+        sys_error("Attach shm failed! shmid:[%d] key:[0x%x]", shmid, key);
         return NULL;
     }
 

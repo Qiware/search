@@ -42,7 +42,7 @@ gumbo_html_t *gumbo_html_parse(const char *path)
     mem_pool = mem_pool_creat(1 * MB);
     if (NULL == mem_pool)
     {
-        syslog_error("Create memory pool failed!");
+        sys_error("Create memory pool failed!");
         return NULL;
     }
 
@@ -51,7 +51,7 @@ gumbo_html_t *gumbo_html_parse(const char *path)
     if (NULL == html)
     {
         mem_pool_destroy(mem_pool);
-        syslog_error("Alloc memory from slab failed!");
+        sys_error("Alloc memory from slab failed!");
         return NULL;
     }
 
@@ -64,7 +64,7 @@ gumbo_html_t *gumbo_html_parse(const char *path)
     if (0 != ret)
     {
         mem_pool_destroy(mem_pool);
-        syslog_error("Load html failed! path:%s", path);
+        sys_error("Load html failed! path:%s", path);
         return NULL;
     }
 
@@ -124,7 +124,7 @@ static int gumbo_load_html(gumbo_html_t *html)
     fp = fopen(html->path, "r");
     if (NULL == fp)
     {
-        syslog_error("errmsg:[%d] %s! path:%s", errno, strerror(errno), html->path);
+        sys_error("errmsg:[%d] %s! path:%s", errno, strerror(errno), html->path);
         return -1;
     }
 
@@ -136,7 +136,7 @@ static int gumbo_load_html(gumbo_html_t *html)
     html->input = mem_pool_alloc(html->mem_pool, html->input_length + 1);
     if (NULL == html->input)
     {
-        syslog_error("Alloc memory from slab failed!");
+        sys_error("Alloc memory from slab failed!");
         return -1;
     }
 
@@ -238,7 +238,7 @@ static void _gumbo_parse_href(GumboNode *node, gumbo_result_t *r)
         list_node = mem_pool_alloc(r->mem_pool, sizeof(list_node_t));
         if (NULL == list_node)
         {
-            syslog_error("Alloc memory from slab failed!");
+            sys_error("Alloc memory from slab failed!");
             return;
         }
 
@@ -249,7 +249,7 @@ static void _gumbo_parse_href(GumboNode *node, gumbo_result_t *r)
         if (NULL == list_node->data)
         {
             mem_pool_dealloc(r->mem_pool, list_node);
-            syslog_error("Alloc memory from slab failed!");
+            sys_error("Alloc memory from slab failed!");
             return;
         }
 
@@ -286,7 +286,7 @@ gumbo_result_t *gumbo_parse_href(const gumbo_html_t *html)
     mem_pool = mem_pool_creat(1 * MB);
     if (NULL == mem_pool)
     {
-        syslog_error("Create memory pool failed!");
+        sys_error("Create memory pool failed!");
         return NULL;
     }
 
@@ -295,7 +295,7 @@ gumbo_result_t *gumbo_parse_href(const gumbo_html_t *html)
     if (NULL == r)
     {
         mem_pool_destroy(mem_pool);
-        syslog_error("Alloc memory from slab failed!");
+        sys_error("Alloc memory from slab failed!");
         return NULL;
     }
 

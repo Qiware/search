@@ -125,13 +125,13 @@ static xml_node_t *xml_fprint_next(
         
         if (stack_pop(stack))
         {
-            syslog_error("Stack pop failed!");
+            sys_error("Stack pop failed!");
             return NULL;
         }
         
         if (stack_isempty(stack))
         {
-            syslog_error("Compelte fprint!");
+            sys_error("Compelte fprint!");
             return NULL;
         }
         
@@ -143,7 +143,7 @@ static xml_node_t *xml_fprint_next(
             top = stack_gettop(stack);
             if (stack_pop(stack))
             {
-                syslog_error("Stack pop failed!");
+                sys_error("Stack pop failed!");
                 return NULL;
             }
         
@@ -197,7 +197,7 @@ int xml_fprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, FILE *fp)
     depth = stack_depth(stack);
     if (0 != depth)
     {
-        syslog_error("Stack depth must empty. depth:[%d]", depth);
+        sys_error("Stack depth must empty. depth:[%d]", depth);
         return XML_ERR_STACK;
     }
 
@@ -207,7 +207,7 @@ int xml_fprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, FILE *fp)
         node->temp = node->child;
         if (stack_push(stack, node))
         {
-            syslog_error("Stack push failed!");
+            sys_error("Stack push failed!");
             return XML_ERR_STACK;
         }
         
@@ -376,14 +376,14 @@ static xml_node_t *xml_pack_next_length(
     if (stack_pop(stack))
     {
         *length += length2;
-        syslog_error("Stack pop failed!");
+        sys_error("Stack pop failed!");
         return NULL;
     }
 
     if (stack_isempty(stack))
     {
         *length += length2;
-        syslog_error("Compelte fprint!");
+        sys_error("Compelte fprint!");
         return NULL;
     }
 
@@ -396,7 +396,7 @@ static xml_node_t *xml_pack_next_length(
         if (stack_pop(stack))
         {
             *length += length2;
-            syslog_error("Stack pop failed!");
+            sys_error("Stack pop failed!");
             return NULL;
         }
 
@@ -441,7 +441,7 @@ int xml_pack_node_length(xml_tree_t *xml, xml_node_t *root, Stack_t *stack)
     depth = stack_depth(stack);
     if (0 != depth)
     {
-        syslog_error("Stack depth must empty. depth:[%d]", depth);
+        sys_error("Stack depth must empty. depth:[%d]", depth);
         return XML_ERR_STACK;
     }
 
@@ -454,7 +454,7 @@ int xml_pack_node_length(xml_tree_t *xml, xml_node_t *root, Stack_t *stack)
         
         if (stack_push(stack, node))
         {
-            syslog_error("Stack push failed!");
+            sys_error("Stack push failed!");
             return XML_ERR_STACK;
         }
         
@@ -611,13 +611,13 @@ static xml_node_t *xml_pack_next(
 
     if (stack_pop(stack))
     {
-        syslog_error("Stack pop failed!");
+        sys_error("Stack pop failed!");
         return NULL;
     }
 
     if (stack_isempty(stack))
     {
-        syslog_error("Compelte fprint!");
+        sys_error("Compelte fprint!");
         return NULL;
     }
 
@@ -629,7 +629,7 @@ static xml_node_t *xml_pack_next(
         top = stack_gettop(stack);
         if (stack_pop(stack))
         {
-            syslog_error("Stack pop failed!");
+            sys_error("Stack pop failed!");
             return NULL;
         }
 
@@ -676,7 +676,7 @@ int xml_pack_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, sprint_t *s
     depth = stack_depth(stack);
     if (0 != depth)
     {
-        syslog_error("Stack depth must empty. depth:[%d]", depth);
+        sys_error("Stack depth must empty. depth:[%d]", depth);
         return XML_ERR_STACK;
     }
 
@@ -686,7 +686,7 @@ int xml_pack_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, sprint_t *s
         node->temp = node->child;
         if (stack_push(stack, node))
         {
-            syslog_error("Stack push failed!");
+            sys_error("Stack push failed!");
             return XML_ERR_STACK;
         }
         
@@ -711,7 +711,7 @@ int xml_pack_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, sprint_t *s
 
     if (!stack_isempty(stack))
     {
-        syslog_error("Stack is not empty!");
+        sys_error("Stack is not empty!");
         return XML_ERR_STACK;
     }
     return XML_OK;
@@ -829,13 +829,13 @@ static xml_node_t *xml_sprint_next(
         
         if (stack_pop(stack))
         {
-            syslog_error("Stack pop failed!");
+            sys_error("Stack pop failed!");
             return NULL;
         }
         
         if (stack_isempty(stack))
         {
-            syslog_error("Compelte fprint!");
+            sys_error("Compelte fprint!");
             return NULL;
         }
         
@@ -847,7 +847,7 @@ static xml_node_t *xml_sprint_next(
             top = stack_gettop(stack);
             if (stack_pop(stack))
             {
-                syslog_error("Stack pop failed!");
+                sys_error("Stack pop failed!");
                 return NULL;
             }
         
@@ -903,7 +903,7 @@ int xml_sprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, sprint_t 
     depth = stack_depth(stack);
     if (0 != depth)
     {
-        syslog_error("Stack depth must empty. depth:[%d]", depth);
+        sys_error("Stack depth must empty. depth:[%d]", depth);
         return XML_ERR_STACK;
     }
 
@@ -913,7 +913,7 @@ int xml_sprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, sprint_t 
         node->temp = node->child;
         if (stack_push(stack, node))
         {
-            syslog_error("Stack push failed!");
+            sys_error("Stack push failed!");
             return XML_ERR_STACK;
         }
         
@@ -938,7 +938,7 @@ int xml_sprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, sprint_t 
 
     if (!stack_isempty(stack))
     {
-        syslog_error("Stack is not empty!");
+        sys_error("Stack is not empty!");
         return XML_ERR_STACK;
     }
 
