@@ -924,7 +924,7 @@ static int sdtp_ssvr_fill_send_buff(sdtp_ssvr_t *ssvr, sdtp_ssvr_sck_t *sck)
         head->checksum = htonl(head->checksum);
 
         /* 1.4 拷贝至发送缓存 */
-        memcpy(send->iptr, addr, mesg_len);
+        memcpy(send->iptr, (void *)head, mesg_len);
 
         send->iptr += mesg_len;
         continue;
