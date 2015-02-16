@@ -328,6 +328,8 @@ int crwl_worker_send_data(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t *sck
         /* 2. 发送数据 */
         left = sck->send.total - sck->send.off;
 
+        log_debug(worker->log, "[HTTP] %s", sck->send.addr + sck->send.off);
+
         n = Writen(sck->fd, sck->send.addr + sck->send.off, left);
         if (n < 0)
         {
@@ -621,21 +623,20 @@ socket_t *crwl_worker_query_sock(crwl_worker_t *worker, int fd)
  **     sck: 套接字
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: TODO: 进一步丰富链表接口
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.09.24 #
  ******************************************************************************/
 int crwl_worker_remove_sock(crwl_worker_t *worker, socket_t *sck)
 {
     void *p;
     struct epoll_event ev;
-    list_node_t *item, *prev;
     crwl_worker_socket_extra_t *extra = (crwl_worker_socket_extra_t *)sck->extra;
 
     log_debug(worker->log, "Remove socket! ip:%s port:%d",
             extra->webpage.ip, extra->webpage.port);
 
-    /* > 移除epoll监听 */
+    /* >> 移除epoll监听 */
     epoll_ctl(worker->epid, EPOLL_CTL_DEL, sck->fd, &ev);
 
     if (extra->webpage.fp)
@@ -644,7 +645,7 @@ int crwl_worker_remove_sock(crwl_worker_t *worker, socket_t *sck)
     }
     Close(sck->fd);
 
-    /* > 释放发送链表 */
+    /* >> 释放发送链表 */
     while (1)
     {
         p = list_pop(extra->send_list);
@@ -656,60 +657,16 @@ int crwl_worker_remove_sock(crwl_worker_t *worker, socket_t *sck)
         slab_dealloc(worker->slab, p);
     }
 
-    /* > 从套接字链表剔除SCK (TODO: 待完善) */
-    item = worker->sock_list->head;
-    prev = item;
-    while (NULL != item)
+    /* >> 从套接字链表剔除SCK */
+    if (list_remove(worker->sock_list, sck))
     {
-        if (item->data == sck)
-        {
-            /* 在链表头 */
-            if (prev == item)
-            {
-                if (worker->sock_list->head == worker->sock_list->tail)
-                {
-                    worker->sock_list->num = 0;
-                    worker->sock_list->head = NULL;
-                    worker->sock_list->tail = NULL;
-
-                    slab_dealloc(worker->slab, item);
-                    crwl_worker_socket_dealloc(worker, sck);
-                    return CRWL_OK;
-                }
-
-                --worker->sock_list->num;
-                worker->sock_list->head = item->next;
-
-                slab_dealloc(worker->slab, item);
-                crwl_worker_socket_dealloc(worker, sck);
-                return CRWL_OK;
-            }
-            /* 在链表尾 */
-            else if (item == worker->sock_list->tail)
-            {
-                --worker->sock_list->num;
-                prev->next = NULL;
-                worker->sock_list->tail = prev;
-
-                slab_dealloc(worker->slab, item);
-                crwl_worker_socket_dealloc(worker, sck);
-                return CRWL_OK;
-            }
-            /* 在链表中间 */
-            --worker->sock_list->num;
-            prev->next = item->next;
-
-            slab_dealloc(worker->slab, item);
-            crwl_worker_socket_dealloc(worker, sck);
-            return CRWL_OK;
-        }
-
-        prev = item;
-        item = item->next;
+        log_fatal(worker->log, "Didn't find special socket!");
+        return CRWL_OK; /* 未找到 */
     }
 
-    log_error(worker->log, "Didn't find special socket!");
-    return CRWL_OK; /* 未找到 */
+    crwl_worker_socket_dealloc(worker, sck);
+
+    return CRWL_OK;
 }
 
 /******************************************************************************
@@ -728,12 +685,13 @@ int crwl_worker_remove_sock(crwl_worker_t *worker, socket_t *sck)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.12 #
  ******************************************************************************/
-int crwl_worker_add_http_get_req(
-        crwl_worker_t *worker, socket_t *sck, const char *uri)
+int crwl_worker_add_http_get_req(crwl_worker_t *worker, socket_t *sck, const char *uri)
 {
     void *addr, *p;
     crwl_data_info_t *info;
     crwl_worker_socket_extra_t *extra = (crwl_worker_socket_extra_t *)sck->extra;
+
+    log_debug(worker->log, "Call %s()", __func__);
 
     do
     {
@@ -753,6 +711,8 @@ int crwl_worker_add_http_get_req(
             log_error(worker->log, "HTTP GET request string failed");
             break;
         }
+
+        log_debug(worker->log, "HTTP: %s", addr);
 
         info->type = CRWL_HTTP_GET_REQ;
         info->length = sizeof(crwl_data_info_t) + strlen((const char *)addr);

@@ -86,9 +86,9 @@ int crwl_worker_webpage_creat(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t 
  * */
 #define crwl_worker_webpage_fsync(worker, sck) \
 { \
-    crwl_worker_socket_extra_t *_data = sck->extra; \
+    crwl_worker_socket_extra_t *_ex = sck->extra; \
  \
-    fwrite(sck->recv.addr, sck->recv.off, 1, _data->webpage.fp); \
+    fwrite(sck->recv.addr, sck->recv.off, 1, _ex->webpage.fp); \
  \
     sck->recv.off = 0; \
     sck->recv.total = CRWL_RECV_SIZE; \

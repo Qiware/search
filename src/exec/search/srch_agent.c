@@ -370,6 +370,10 @@ static int srch_agent_event_timeout_hdl(srch_cntx_t *ctx, srch_agent_t *agt)
         for (;;)
         {
             sck = (socket_t *)list_pop(timeout.list);
+            if (NULL == sck)
+            {
+                break;
+            }
 
             srch_agent_del_conn(ctx, agt, sck);
         }

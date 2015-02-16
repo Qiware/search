@@ -49,7 +49,7 @@ void list_assert(list_t *list)
  **输入参数: 
  **     opt: 选项信息
  **输出参数: 
- **返    回: 链表
+ **返    回: 链表对象
  **实现描述: 
  **     新建链表对象, 并初始化相关变量成员.
  **注意事项: 
@@ -80,22 +80,21 @@ list_t *list_creat(list_option_t *opt)
  **函数名称: list_destroy
  **功    能: 销毁链表
  **输入参数: 
+ **     list: 链表对象
  **输出参数: 
  **返    回: 0:成功 !0:失败
  **实现描述: 
- **注意事项: TODO: 待完善
+ **注意事项: 在销毁链表之前, 请先释放结点空间!
  **作    者: # Qifeng.zou # 2015.02.17 #
  ******************************************************************************/
-int list_destroy(list_t *list)
+void list_destroy(list_t *list)
 {
     list->dealloc(list->pool, list);
-
-    return 0;
 }
 
 /******************************************************************************
  **函数名称: list_push
- **功    能: 插入链表头
+ **功    能: 链头插入
  **输入参数: 
  **     list: 单向链表
  **     data: 数据
@@ -140,7 +139,7 @@ int list_push(list_t *list, void *data)
 
 /******************************************************************************
  **函数名称: list_rpush
- **功    能: 插入链表尾
+ **功    能: 链尾插入
  **输入参数: 
  **     list: 单向链表
  **     data: 数据
@@ -186,7 +185,7 @@ int list_rpush(list_t *list, void *data)
 
 /******************************************************************************
  **函数名称: list_insert
- **功    能: 在PREV后插入结点NODE
+ **功    能: 在PREV后插入结点
  **输入参数: 
  **     list: 单向链表
  **     prev: 前一结点
@@ -232,13 +231,13 @@ int list_insert(list_t *list, list_node_t *prev, void *data)
 
 /******************************************************************************
  **函数名称: list_pop
- **功    能: 删除链头
+ **功    能: 弹出链头
  **输入参数: 
  **     list: 单向链表
  **输出参数: NONE
  **返    回: 链头数据
  **实现描述: 
- **注意事项: 
+ **注意事项: 请调用者自己释放node->data数据的内存空间
  **作    者: # Qifeng.zou # 2014.09.24 #
  ******************************************************************************/
 void *list_pop(list_t *list)
@@ -259,7 +258,10 @@ void *list_pop(list_t *list)
         list->tail = NULL;
         list->head = NULL;
         list->num = 0;
-        return head;
+
+        data = head->data;
+        list->dealloc(list->pool, head);
+        return data;
     }
 
     /* 3. 有多个结点 */
@@ -276,14 +278,13 @@ void *list_pop(list_t *list)
 
 /******************************************************************************
  **函数名称: list_rpop
- **功    能: 删除链尾
+ **功    能: 弹出链尾
  **输入参数: 
  **     list: 单向链表
  **输出参数: NONE
  **返    回: 链尾数据
  **实现描述: 
- **注意事项: 
- **     请调用者自己取释放返回结点和数据的内存空间
+ **注意事项: 请调用者自己释放node->data数据的内存空间
  **作    者: # Qifeng.zou # 2014.08.24 #
  ******************************************************************************/
 void *list_rpop(list_t *list)
@@ -333,14 +334,14 @@ void *list_rpop(list_t *list)
  **功    能: 删除PREV后的结点NODE
  **输入参数: 
  **     list: 单向链表
- **     node: 需删结点
+ **     data: 需删数据块
  **输出参数: NONE
- **返    回: 结点地址
+ **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.24 #
  ******************************************************************************/
-list_node_t *list_remove(list_t *list, list_node_t *node)
+int list_remove(list_t *list, void *data)
 {
     list_node_t *prev, *curr;
 
@@ -348,7 +349,7 @@ list_node_t *list_remove(list_t *list, list_node_t *node)
     curr = list->head;
     while (NULL != curr)
     {
-        if (curr == node)
+        if (curr->data == data)
         {
             /* 删除头结点 */
             if (list->head == curr)
@@ -358,12 +359,16 @@ list_node_t *list_remove(list_t *list, list_node_t *node)
                     list->head = NULL;
                     list->tail = NULL;
                     list->num = 0;
-                    return node;
+
+                    list->dealloc(list->pool, curr);
+                    return 0;
                 }
 
                 list->head = curr->next;
                 --list->num;
-                return node;
+
+                list->dealloc(list->pool, curr);
+                return 0;
             }
             /* 删除尾结点 */
             else if (curr == list->tail)
@@ -371,17 +376,21 @@ list_node_t *list_remove(list_t *list, list_node_t *node)
                 prev->next = curr->next;
                 list->tail = prev;
                 --list->num;
-                return node;
+
+                list->dealloc(list->pool, curr);
+                return 0;
             }
 
             prev->next = curr->next;
             --list->num;
-            return node;
+
+            list->dealloc(list->pool, curr);
+            return 0;
         }
 
         prev = curr;
         curr = curr->next;
     }
 
-    return node;
+    return -1;
 }

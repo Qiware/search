@@ -36,9 +36,9 @@ typedef struct
 void list_assert(list_t *list);
 
 list_t *list_creat(list_option_t *opt);
-int list_destroy(list_t *list);
+void list_destroy(list_t *list);
 int list_insert(list_t *list, list_node_t *prev, void *data);
-list_node_t *list_remove(list_t *list, list_node_t *node);
+int list_remove(list_t *list, void *data);
 
 int list_push(list_t *list, void *data);
 int list_rpush(list_t *list, void *data);
