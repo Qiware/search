@@ -22,7 +22,7 @@ typedef struct
 /* 查询结果 */
 typedef struct
 {
-    list_t list;                    /* 结果链表 */
+    list_t *list;                   /* 结果链表 */
     mem_pool_t *mem_pool;           /* 内存池 */
 } gumbo_result_t;
 

@@ -1488,4 +1488,3 @@ int avl_trav(avl_tree_t *tree, avl_trav_cb_t proc, void *args)
     stack_destroy(&stack);
     return AVL_OK;
 }
-

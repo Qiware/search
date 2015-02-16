@@ -21,6 +21,7 @@
 #define SDTP_MSG_DEF_LEN    (512)       /* Read length at one time */
 #define SDTP_CLOSE_TMOUT    (60)        /* 超时关闭时长 */
 #define SDTP_CMD_RESND_TIMES (3)        /* 命令重发次数 */
+#define SDTP_CTX_POOL_SIZE  (5 * MB)    /* 全局内存池空间 */
 
 #define SDTP_WORKER_HDL_QNUM (2)        /* 各Worker线程负责的队列数 */
 
@@ -86,7 +87,7 @@ typedef struct _sdtp_sck_t
     sdtp_snap_t recv;                   /* 接收快照 */
     sdtp_snap_t send;                   /* 发送快照 */
 
-    list_t mesg_list;                   /* 发送消息链表 */
+    list_t *mesg_list;                  /* 发送消息链表 */
 
     uint64_t recv_total;                /* 接收的数据条数 */
 } sdtp_sck_t;
@@ -134,6 +135,7 @@ typedef struct
 {
     sdtp_conf_t conf;                   /* 配置信息 */
     log_cycle_t *log;                   /* 日志对象 */ 
+    slab_pool_t *pool;                  /* 内存池对象 */
 
     sdtp_reg_t reg[SDTP_TYPE_MAX];      /* 回调注册对象 */
     

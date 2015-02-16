@@ -221,8 +221,8 @@ const char *gumbo_get_title(const gumbo_html_t *html)
  ******************************************************************************/
 static void _gumbo_parse_href(GumboNode *node, gumbo_result_t *r)
 {
+    char *data;
     int len, idx;
-    list_node_t *list_node;
     GumboAttribute *href;
     GumboVector *children;
 
@@ -234,29 +234,20 @@ static void _gumbo_parse_href(GumboNode *node, gumbo_result_t *r)
     if (GUMBO_TAG_A == node->v.element.tag
         && (href = gumbo_get_attribute(&node->v.element.attributes, "href")))
     {
-        /* 新建链表结点 */
-        list_node = mem_pool_alloc(r->mem_pool, sizeof(list_node_t));
-        if (NULL == list_node)
-        {
-            sys_error("Alloc memory from slab failed!");
-            return;
-        }
-
         /* 申请数据空间 */
         len = strlen(href->value);
 
-        list_node->data = mem_pool_alloc(r->mem_pool, len + 1);
-        if (NULL == list_node->data)
+        data = mem_pool_alloc(r->mem_pool, len + 1);
+        if (NULL == data)
         {
-            mem_pool_dealloc(r->mem_pool, list_node);
             sys_error("Alloc memory from slab failed!");
             return;
         }
 
-        snprintf(list_node->data, len+1, "%s", href->value);
+        snprintf(data, len+1, "%s", href->value);
 
         /* 插入链表尾部 */
-        list_insert_tail(&r->list, list_node);
+        list_rpush(r->list, data);
     }
 
     children = &node->v.element.children;
@@ -281,8 +272,9 @@ gumbo_result_t *gumbo_parse_href(const gumbo_html_t *html)
 {
     gumbo_result_t *r;
     mem_pool_t *mem_pool;
+    list_option_t option;
 
-    /* 1. 创建内存池 */
+    /* > 创建内存池 */
     mem_pool = mem_pool_creat(1 * MB);
     if (NULL == mem_pool)
     {
@@ -290,7 +282,7 @@ gumbo_result_t *gumbo_parse_href(const gumbo_html_t *html)
         return NULL;
     }
 
-    /* 2. 创建结果集对象 */
+    /* > 创建结果集对象 */
     r = mem_pool_alloc(mem_pool, sizeof(gumbo_result_t));
     if (NULL == r)
     {
@@ -299,12 +291,24 @@ gumbo_result_t *gumbo_parse_href(const gumbo_html_t *html)
         return NULL;
     }
 
-    r->list.num = 0;
-    r->list.head = NULL;
-    r->list.tail = NULL;
     r->mem_pool = mem_pool;
 
-    /* 3. 提取HREF字段 */
+    /* > 创建链表对象 */
+    memset(&option, 0, sizeof(option));
+
+    option.pool = (void *)mem_pool;
+    option.alloc = (mem_alloc_cb_t)mem_pool_alloc;
+    option.dealloc = (mem_dealloc_cb_t)mem_pool_dealloc;
+
+    r->list = list_creat(&option);
+    if (NULL == r->list)
+    {
+        mem_pool_destroy(mem_pool);
+        sys_error("Alloc memory from slab failed!");
+        return NULL;
+    }
+
+    /* > 提取HREF字段 */
     _gumbo_parse_href(html->output->root, r);
 
     return r;
@@ -323,7 +327,7 @@ gumbo_result_t *gumbo_parse_href(const gumbo_html_t *html)
  ******************************************************************************/
 void gumbo_print_result(gumbo_result_t *r)
 {
-    list_node_t *node = r->list.head;
+    list_node_t *node = r->list->head;
 
     while (NULL != node)
     {

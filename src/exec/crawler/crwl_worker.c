@@ -9,6 +9,7 @@
  ******************************************************************************/
 #include <time.h>
 
+#include "list.h"
 #include "http.h"
 #include "common.h"
 #include "syscall.h"
@@ -77,13 +78,14 @@ static crwl_worker_t *crwl_worker_get(crwl_cntx_t *ctx)
 int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker, int tidx)
 {
     void *addr;
+    list_option_t option;
     crwl_conf_t *conf = ctx->conf;
 
     worker->tidx = tidx;
     worker->log = ctx->log;
     worker->scan_tm = time(NULL);
 
-    /* 1. 创建SLAB内存池 */
+    /* > 创建SLAB内存池 */
     addr = calloc(1, CRWL_SLAB_SIZE);
     if (NULL == addr)
     {
@@ -99,29 +101,48 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker, int tidx)
         return CRWL_ERR;
     }
 
-    /* 2. 创建epoll对象 */
-    worker->epid = epoll_create(CRWL_EVENT_MAX_NUM);
-    if (worker->epid < 0)
+    do
     {
-        slab_destroy(worker->slab);
+        /* > 创建SCK链表 */
+        memset(&option, 0, sizeof(option));
 
-        log_error(worker->log, "Create epoll failed! errmsg:[%d] %s!");
-        return CRWL_ERR;
-    }
+        option.pool = (void *)worker->slab;
+        option.alloc = (mem_alloc_cb_t)slab_alloc;
+        option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-    worker->events = (struct epoll_event *)slab_alloc(
-            worker->slab,
-            conf->worker.conn_max_num * sizeof(struct epoll_event));
-    if (NULL == worker->events)
-    {
-        slab_destroy(worker->slab);
-        Close(worker->epid);
+        worker->sock_list = list_creat(&option);
+        if (NULL == worker->sock_list)
+        {
+            log_error(worker->log, "Create list failed!");
+            break;
+        }
 
-        log_error(worker->log, "Alloc memory from slab failed!");
-        return CRWL_ERR;
-    }
+        /* > 创建epoll对象 */
+        worker->epid = epoll_create(CRWL_EVENT_MAX_NUM);
+        if (worker->epid < 0)
+        {
+            log_error(worker->log, "Create epoll failed! errmsg:[%d] %s!");
+            break;
+        }
 
-    return CRWL_OK;
+        worker->events = (struct epoll_event *)slab_alloc(
+                worker->slab,
+                conf->worker.conn_max_num * sizeof(struct epoll_event));
+        if (NULL == worker->events)
+        {
+            Close(worker->epid);
+            log_error(worker->log, "Alloc memory from slab failed!");
+            break;
+        }
+
+        return CRWL_OK;
+    } while(0);
+
+    /* > 释放空间 */
+    free(addr);
+    Close(worker->epid);
+
+    return CRWL_ERR;
 }
 
 /******************************************************************************
@@ -165,13 +186,13 @@ static int crwl_worker_fetch_task(crwl_cntx_t *ctx, crwl_worker_t *worker)
 
     /* 1. 判断是否应该取任务 */
     if (0 == workq->queue.num
-        || worker->sock_list.num >= conf->worker.conn_max_num)
+        || worker->sock_list->num >= conf->worker.conn_max_num)
     {
         return CRWL_OK;
     }
 
     /* 2. 从任务队列取数据 */
-    num = conf->worker.conn_max_num - worker->sock_list.num;
+    num = conf->worker.conn_max_num - worker->sock_list->num;
 
     for (idx=0; idx<num; ++idx)
     {
@@ -275,7 +296,6 @@ int crwl_worker_recv_data(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t *sck
 int crwl_worker_send_data(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t *sck)
 {
     int n, left;
-    list_node_t *node;
     crwl_data_info_t *info;
     struct epoll_event ev;
     crwl_worker_socket_data_t *data = (crwl_worker_socket_data_t *)sck->data;
@@ -287,8 +307,8 @@ int crwl_worker_send_data(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t *sck
         /* 1. 从发送列表取数据 */
         if (!sck->send.addr)
         {
-            node = list_remove_head(&data->send_list);
-            if (NULL == node)
+            info = (crwl_data_info_t *)list_pop(data->send_list);
+            if (NULL == data)
             {
                 memset(&ev, 0, sizeof(ev));
 
@@ -300,13 +320,9 @@ int crwl_worker_send_data(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t *sck
                 return CRWL_OK;
             }
 
-            info = (crwl_data_info_t *)node->data;
-
-            sck->send.addr = (void *)node->data;
+            sck->send.addr = (void *)info;
             sck->send.off = sizeof(crwl_data_info_t); /* 不发送头部信息 */
             sck->send.total = info->length;
-
-            slab_dealloc(worker->slab, node);
         }
 
         /* 2. 发送数据 */
@@ -368,7 +384,7 @@ static int crwl_worker_timeout_hdl(crwl_cntx_t *ctx, crwl_worker_t *worker)
     crwl_conf_t *conf = ctx->conf;
 
     /* 1. 依次遍历套接字, 判断是否超时 */
-    node = worker->sock_list.head;
+    node = worker->sock_list->head;
     for (; NULL != node; node = next)
     {
         next = node->next;
@@ -540,33 +556,22 @@ void *crwl_worker_routine(void *_ctx)
  ******************************************************************************/
 int crwl_worker_add_sock(crwl_worker_t *worker, socket_t *sck)
 {
-    list_node_t *node;
     struct epoll_event ev;
     crwl_worker_socket_data_t *data = (crwl_worker_socket_data_t *)sck->data;
 
-    /* 1. 申请内存空间 */
-    node = slab_alloc(worker->slab, sizeof(list_node_t));
-    if (NULL == node)
-    {
-        log_error(worker->log, "Alloc memory failed!");
-        return CRWL_ERR;
-    }
-
+    /* > 设置标识量 */
     sck->recv.addr = data->recv;
     sck->recv.off = 0;
     sck->recv.total = CRWL_RECV_SIZE;
 
-    node->data = sck;
-
-    /* 2. 插入链表尾 */
-    if (list_insert_tail(&worker->sock_list, node))
+    /* > 插入链表尾 */
+    if (list_rpush(worker->sock_list, sck))
     {
         log_error(worker->log, "Insert socket node failed!");
-        slab_dealloc(worker->slab, node);
         return CRWL_ERR;
     }
 
-    /* 3. 加入epoll监听(首先是发送数据, 所以需设置EPOLLOUT,
+    /* > 加入epoll监听(首先是发送数据, 所以需设置EPOLLOUT,
      * 又可能服务端主动断开连接, 所以需要设置EPOLLIN, 否则可能出现EPIPE的异常) */
     memset(&ev, 0, sizeof(ev));
 
@@ -595,7 +600,7 @@ socket_t *crwl_worker_query_sock(crwl_worker_t *worker, int fd)
     list_node_t *node;
     socket_t *sck;
 
-    node = (list_node_t *)worker->sock_list.head;
+    node = (list_node_t *)worker->sock_list->head;
     for (; NULL != node; node = node->next)
     {
         sck = (socket_t *)node->data;
@@ -617,19 +622,20 @@ socket_t *crwl_worker_query_sock(crwl_worker_t *worker, int fd)
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
- **注意事项: 
+ **注意事项: TODO: 进一步丰富链表接口
  **作    者: # Qifeng.zou # 2014.09.24 #
  ******************************************************************************/
 int crwl_worker_remove_sock(crwl_worker_t *worker, socket_t *sck)
 {
+    void *p;
     struct epoll_event ev;
-    list_node_t *item, *next, *prev;
+    list_node_t *item, *prev;
     crwl_worker_socket_data_t *data = (crwl_worker_socket_data_t *)sck->data;
 
     log_debug(worker->log, "Remove socket! ip:%s port:%d",
             data->webpage.ip, data->webpage.port);
 
-    /* 移除epoll监听 */
+    /* > 移除epoll监听 */
     epoll_ctl(worker->epid, EPOLL_CTL_DEL, sck->fd, &ev);
 
     if (data->webpage.fp)
@@ -638,21 +644,20 @@ int crwl_worker_remove_sock(crwl_worker_t *worker, socket_t *sck)
     }
     Close(sck->fd);
 
-    /* 1. 释放发送链表 */
-    item = data->send_list.head;
-    while (NULL != item)
+    /* > 释放发送链表 */
+    while (1)
     {
-        slab_dealloc(worker->slab, item->data);
+        p = list_pop(data->send_list);
+        if (NULL == p)
+        {
+            break;
+        }
 
-        next = item->next;
-
-        slab_dealloc(worker->slab, item);
-
-        item = next;
+        slab_dealloc(worker->slab, p);
     }
 
-    /* 2. 从套接字链表剔除SCK */
-    item = worker->sock_list.head;
+    /* > 从套接字链表剔除SCK (TODO: 待完善) */
+    item = worker->sock_list->head;
     prev = item;
     while (NULL != item)
     {
@@ -661,37 +666,37 @@ int crwl_worker_remove_sock(crwl_worker_t *worker, socket_t *sck)
             /* 在链表头 */
             if (prev == item)
             {
-                if (worker->sock_list.head == worker->sock_list.tail)
+                if (worker->sock_list->head == worker->sock_list->tail)
                 {
-                    worker->sock_list.num = 0;
-                    worker->sock_list.head = NULL;
-                    worker->sock_list.tail = NULL;
+                    worker->sock_list->num = 0;
+                    worker->sock_list->head = NULL;
+                    worker->sock_list->tail = NULL;
 
                     slab_dealloc(worker->slab, item);
                     crwl_worker_socket_dealloc(worker, sck);
                     return CRWL_OK;
                 }
 
-                --worker->sock_list.num;
-                worker->sock_list.head = item->next;
+                --worker->sock_list->num;
+                worker->sock_list->head = item->next;
 
                 slab_dealloc(worker->slab, item);
                 crwl_worker_socket_dealloc(worker, sck);
                 return CRWL_OK;
             }
             /* 在链表尾 */
-            else if (item == worker->sock_list.tail)
+            else if (item == worker->sock_list->tail)
             {
-                --worker->sock_list.num;
+                --worker->sock_list->num;
                 prev->next = NULL;
-                worker->sock_list.tail = prev;
+                worker->sock_list->tail = prev;
 
                 slab_dealloc(worker->slab, item);
                 crwl_worker_socket_dealloc(worker, sck);
                 return CRWL_OK;
             }
             /* 在链表中间 */
-            --worker->sock_list.num;
+            --worker->sock_list->num;
             prev->next = item->next;
 
             slab_dealloc(worker->slab, item);
@@ -726,32 +731,22 @@ int crwl_worker_remove_sock(crwl_worker_t *worker, socket_t *sck)
 int crwl_worker_add_http_get_req(
         crwl_worker_t *worker, socket_t *sck, const char *uri)
 {
-    void *addr;
-    list_node_t *node;
+    void *addr, *p;
     crwl_data_info_t *info;
     crwl_worker_socket_data_t *data = (crwl_worker_socket_data_t *)sck->data;
 
     do
     {
-        /* 1. 创建链表结点 */
-        node = slab_alloc(worker->slab, sizeof(list_node_t));
-        if (NULL == node)
+        /* > 新建HTTP GET请求 */
+        p = slab_alloc(worker->slab, sizeof(crwl_data_info_t) + HTTP_GET_REQ_STR_LEN);
+        if (NULL == p)
         {
             log_error(worker->log, "Alloc memory from slab failed!");
             break;
         }
 
-        /* 2. 新建HTTP GET请求 */
-        node->data = slab_alloc(worker->slab,
-                        sizeof(crwl_data_info_t) + HTTP_GET_REQ_STR_LEN);
-        if (NULL == node->data)
-        {
-            log_error(worker->log, "Alloc memory from slab failed!");
-            break;
-        }
-
-        info = node->data;
-        addr = node->data + sizeof(crwl_data_info_t);
+        info = p;
+        addr = p + sizeof(crwl_data_info_t);
 
         if (http_get_request(uri, addr, HTTP_GET_REQ_STR_LEN))
         {
@@ -762,8 +757,8 @@ int crwl_worker_add_http_get_req(
         info->type = CRWL_HTTP_GET_REQ;
         info->length = sizeof(crwl_data_info_t) + strlen((const char *)addr);
 
-        /* 3. 将结点插入链表 */
-        if (list_insert_tail(&data->send_list, node))
+        /* > 将结点插入链表 */
+        if (list_rpush(data->send_list, p))
         {
             log_error(worker->log, "Insert list tail failed");
             break;
@@ -773,13 +768,9 @@ int crwl_worker_add_http_get_req(
     } while(0);
 
     /* 释放空间 */
-    if (NULL != node)
+    if (p)
     {
-        if (node->data)
-        {
-            slab_dealloc(worker->slab, node->data);
-        }
-        slab_dealloc(worker->slab, node);
+        slab_dealloc(worker->slab, p);
     }
 
     return CRWL_ERR;
@@ -891,18 +882,43 @@ int crwl_worker_webpage_finfo(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t 
 socket_t *crwl_worker_socket_alloc(crwl_worker_t *worker)
 {
     socket_t *sck;
+    list_option_t option;
+    crwl_worker_socket_data_t *data;
 
+    /* > 创建SCK对象 */
     sck = slab_alloc(worker->slab, sizeof(socket_t));
     if (NULL == sck)
     {
+        log_error(worker->log, "Alloc memory from slab failed!");
         return NULL;
     }
 
-    sck->data = slab_alloc(worker->slab, sizeof(crwl_worker_socket_data_t));
-    if (NULL == sck->data)
+    /* > 分配SCK数据 */
+    data = slab_alloc(worker->slab, sizeof(crwl_worker_socket_data_t));
+    if (NULL == data)
     {
+        log_error(worker->log, "Alloc memory from slab failed!");
+        slab_dealloc(worker->slab, sck);
         return NULL;
     }
+
+    /* > 创建发送链表 */
+    memset(&option, 0, sizeof(option));
+
+    option.pool = (void *)worker->slab;
+    option.alloc = (mem_alloc_cb_t)slab_alloc;
+    option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+
+    data->send_list = list_creat(&option);
+    if (NULL == data->send_list)
+    {
+        log_error(worker->log, "Create list failed!");
+        slab_dealloc(worker->slab, data);
+        slab_dealloc(worker->slab, sck);
+        return NULL;
+    }
+    
+    sck->data = data;
 
     return sck;
 }

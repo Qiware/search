@@ -236,10 +236,28 @@ static int sdtp_reg_init(sdtp_cntx_t *ctx)
  ******************************************************************************/
 static int _sdtp_init(sdtp_cntx_t *ctx)
 {
-    /* 1. 初始化注册信息 */
+    void *addr;
+
+    /* 1. 创建SLAB内存池 */
+    addr = calloc(1, SDTP_CTX_POOL_SIZE);
+    if (NULL == addr)
+    {
+        log_fatal(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        return SDTP_ERR;
+    }
+
+    ctx->pool = slab_init(addr, SDTP_CTX_POOL_SIZE);
+    if (NULL == ctx->pool)
+    {
+        log_error(ctx->log, "Initialize slab mem-pool failed!");
+        free(addr);
+        return SDTP_ERR;
+    }
+
+    /* 2. 初始化注册信息 */
     sdtp_reg_init(ctx);
 
-    /* 2. 创建接收队列 */
+    /* 3. 创建接收队列 */
     if (sdtp_creat_recvq(ctx))
     {
         log_error(ctx->log, "Create recv queue failed!");
@@ -322,10 +340,17 @@ static int sdtp_creat_recvtp(sdtp_cntx_t *ctx)
 {
     int idx;
     sdtp_rsvr_t *rsvr;
+    thread_pool_option_t option;
     sdtp_conf_t *conf = &ctx->conf;
 
+    memset(&option, 0, sizeof(option));
+
     /* 1. 创建线程池 */
-    ctx->recvtp = thread_pool_init(conf->recv_thd_num, 4*KB);
+    option.pool = (void *)ctx->pool;
+    option.alloc = (mem_alloc_cb_t)slab_alloc;
+    option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+
+    ctx->recvtp = thread_pool_init(conf->recv_thd_num, &option);
     if (NULL == ctx->recvtp)
     {
         log_error(ctx->log, "Initialize thread pool failed!");
@@ -414,10 +439,17 @@ static int sdtp_creat_worktp(sdtp_cntx_t *ctx)
 {
     int idx;
     sdtp_worker_t *worker;
+    thread_pool_option_t option;
     sdtp_conf_t *conf = &ctx->conf;
 
+    memset(&option, 0, sizeof(option));
+
+    option.pool = (void *)ctx->pool;
+    option.alloc = (mem_alloc_cb_t)slab_alloc;
+    option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+
     /* 1. 创建线程池 */
-    ctx->worktp = thread_pool_init(conf->work_thd_num, 4*KB);
+    ctx->worktp = thread_pool_init(conf->work_thd_num, &option);
     if (NULL == ctx->worktp)
     {
         log_error(ctx->log, "Initialize thread pool failed!");

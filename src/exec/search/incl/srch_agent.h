@@ -37,7 +37,7 @@ typedef struct
 
     srch_mesg_header_t *head;       /* 报头起始地址 */
     void *body;                     /* Body */
-    list_t send_list;               /* 发送链表 */
+    list_t *send_list;              /* 发送链表 */
 } srch_agent_sck_data_t;
 
 void *srch_agent_routine(void *_ctx);

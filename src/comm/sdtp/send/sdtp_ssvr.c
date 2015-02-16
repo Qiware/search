@@ -39,9 +39,40 @@ static int sdtp_ssvr_timeout_hdl(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr);
 static int sdtp_ssvr_proc_cmd(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr, const sdtp_cmd_t *cmd);
 static int sdtp_ssvr_send_data(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr);
 
-static int sdtp_ssvr_add_mesg(sdtp_ssvr_t *ssvr, void *addr);
-static void *sdtp_ssvr_get_mesg(sdtp_ssvr_t *ssvr);
 static int sdtp_ssvr_clear_mesg(sdtp_ssvr_t *ssvr);
+
+/******************************************************************************
+ **函数名称: sdtp_ssvr_add_mesg
+ **功    能: 添加发送消息
+ **输入参数: 
+ **     ssvr: 发送服务
+ **     addr: 消息地址
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **     1.创建新结点
+ **     2.插入链尾
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.01.16 #
+ ******************************************************************************/
+#define sdtp_ssvr_add_mesg(ssvr, addr) list_rpush(ssvr->sck.mesg_list, addr)
+
+/******************************************************************************
+ **函数名称: sdtp_ssvr_get_mesg
+ **功    能: 获取发送消息
+ **输入参数: 
+ **     ssvr: 发送服务
+ **     sck: 连接对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **     取出链首结点的数据
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.01.16 #
+ ******************************************************************************/
+#define sdtp_ssvr_get_mesg(ssvr) list_pop(ssvr->sck.mesg_list)
+
+
 
 /******************************************************************************
  **函数名称: sdtp_ssvr_startup
@@ -103,10 +134,17 @@ static int _sdtp_ssvr_startup(sdtp_ssvr_cntx_t *ctx)
 {
     int idx;
     sdtp_ssvr_t *ssvr;
+    thread_pool_option_t option;
     sdtp_ssvr_conf_t *conf = &ctx->conf;
 
+    memset(&option, 0, sizeof(option));
+
+    option.pool = (void *)ctx->slab;
+    option.alloc = (mem_alloc_cb_t)slab_alloc;
+    option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+
     /* 1. 创建发送线程池 */
-    ctx->sendtp = thread_pool_init(conf->snd_thd_num, 4 * KB);
+    ctx->sendtp = thread_pool_init(conf->snd_thd_num, &option);
     if (NULL == ctx->sendtp)
     {
         thread_pool_destroy(ctx->sendtp);
@@ -350,7 +388,7 @@ void sdtp_ssvr_set_rwset(sdtp_ssvr_t *ssvr)
     FD_SET(ssvr->sck.fd, &ssvr->rset);
 
     /* 2 设置写集合: 发送至接收端 */
-    if (NULL != ssvr->sck.mesg_list.head
+    if (NULL != ssvr->sck.mesg_list->head
         || 0 != shm_queue_data_count(ssvr->sq))
     {
         FD_SET(ssvr->sck.fd, &ssvr->wset);
@@ -851,7 +889,6 @@ static int sdtp_ssvr_proc_cmd(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr, const sd
 static int sdtp_ssvr_fill_send_buff(sdtp_ssvr_t *ssvr, sdtp_ssvr_sck_t *sck)
 {
     void *addr;
-    list_node_t *node;
     int left, mesg_len;
     sdtp_header_t *head;
     sdtp_snap_t *send = &sck->send;
@@ -860,14 +897,13 @@ static int sdtp_ssvr_fill_send_buff(sdtp_ssvr_t *ssvr, sdtp_ssvr_sck_t *sck)
     for (;;)
     {
         /* 1.1 是否有数据 */
-        node = ssvr->sck.mesg_list.head;
-        if (NULL == node)
+        head = (sdtp_header_t *)list_pop(ssvr->sck.mesg_list);
+        if (NULL == head)
         {
             break; /* 无数据 */
         }
 
         /* 1.2 判断剩余空间 */
-        head = (sdtp_header_t *)node->data;
         if (SDTP_CHECK_SUM != head->checksum)
         {
             assert(0);
@@ -877,18 +913,11 @@ static int sdtp_ssvr_fill_send_buff(sdtp_ssvr_t *ssvr, sdtp_ssvr_sck_t *sck)
         mesg_len = sizeof(sdtp_header_t) + head->length;
         if (left < mesg_len)
         {
+            list_push(ssvr->sck.mesg_list, head);
             break; /* 空间不足 */
         }
 
         /* 1.3 取发送的数据 */
-        addr = sdtp_ssvr_get_mesg(ssvr);
-
-        head = (sdtp_header_t *)addr;
-        if (SDTP_CHECK_SUM != head->checksum)
-        {
-            assert(0);
-        }
-
         head->type = htons(head->type);
         head->flag = head->flag;
         head->length = htonl(head->length);
@@ -1024,72 +1053,6 @@ static int sdtp_ssvr_send_data(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr)
 }
 
 /******************************************************************************
- **函数名称: sdtp_ssvr_add_mesg
- **功    能: 添加发送消息
- **输入参数: 
- **     ssvr: 发送服务
- **     addr: 消息地址
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **     1.创建新结点
- **     2.插入链尾
- **注意事项: 
- **作    者: # Qifeng.zou # 2015.01.16 #
- ******************************************************************************/
-static int sdtp_ssvr_add_mesg(sdtp_ssvr_t *ssvr, void *addr)
-{
-    list_node_t *add;
-
-    /* 1.创建新结点 */
-    add = slab_alloc(ssvr->pool, sizeof(list_node_t));
-    if (NULL == add)
-    {
-        log_debug(ssvr->log, "Alloc memory from slab failed!");
-        return SDTP_ERR;
-    }
-
-    add->data = addr;
-    add->next = NULL;
-
-    /* 2.插入链尾 */
-    list_insert_tail(&ssvr->sck.mesg_list, add);
-
-    return SDTP_OK;
-}
-
-/******************************************************************************
- **函数名称: sdtp_ssvr_get_mesg
- **功    能: 获取发送消息
- **输入参数: 
- **     ssvr: 发送服务
- **     sck: 连接对象
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **     取出链首结点的数据
- **注意事项: 
- **作    者: # Qifeng.zou # 2015.01.16 #
- ******************************************************************************/
-static void *sdtp_ssvr_get_mesg(sdtp_ssvr_t *ssvr)
-{
-    void *addr;
-    list_node_t *node;
-
-    node = list_remove_head(&ssvr->sck.mesg_list);
-    if (NULL == node)
-    {
-        return NULL;
-    }
-    
-    addr = node->data;
-
-    slab_dealloc(ssvr->pool, node);
-
-    return addr;
-}
-
-/******************************************************************************
  **函数名称: sdtp_ssvr_clear_mesg
  **功    能: 清空发送消息
  **输入参数: 
@@ -1104,15 +1067,19 @@ static void *sdtp_ssvr_get_mesg(sdtp_ssvr_t *ssvr)
  ******************************************************************************/
 static int sdtp_ssvr_clear_mesg(sdtp_ssvr_t *ssvr)
 {
-    list_node_t *node;
+    void *data;
 
-    while (NULL != (node = list_remove_head(&ssvr->sck.mesg_list)))
+    while (1)
     {
-        slab_dealloc(ssvr->pool, node->data);
-        slab_dealloc(ssvr->pool, node);
+        data = list_pop(ssvr->sck.mesg_list);
+        if (NULL == data)
+        {
+            return SDTP_OK;
+        }
+
+        slab_dealloc(ssvr->pool, data);
     }
 
-    ssvr->sck.mesg_list.head = NULL;
     return SDTP_OK;
 }
 

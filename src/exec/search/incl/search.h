@@ -1,6 +1,7 @@
 #if !defined(__SEARCH_H__)
 #define __SEARCH_H__
 
+#include "slab.h"
 #include "queue.h"
 #include "srch_conf.h"
 #include "srch_comm.h"

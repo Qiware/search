@@ -1,30 +1,49 @@
 #if !defined(__LIST_H__)
 #define __LIST_H__
 
+#include "common.h"
+
+/* 选项 */
+typedef struct
+{
+    void *pool;                     /* 内存池 */
+    mem_alloc_cb_t alloc;           /* 申请空间 */
+    mem_dealloc_cb_t dealloc;       /* 释放空间 */
+} list_option_t;
+
 /* 单向链表结点 */
 typedef struct _list_node_t
 {
-    void *data;
-    struct _list_node_t *next;
+    void *data;                     /* 数据块 */
+    struct _list_node_t *next;      /* 下一结点 */
 } list_node_t;
 
 /* 单向链表对象 */
 typedef struct
 {
-    int num;
-    list_node_t *head;
-    list_node_t *tail;
+    int num;                        /* 结点数 */
+    list_node_t *head;              /* 链表头 */
+    list_node_t *tail;              /* 链表尾 */
+
+    struct
+    {
+        void *pool;                 /* 内存池 */
+        mem_alloc_cb_t alloc;       /* 申请空间 */
+        mem_dealloc_cb_t dealloc;   /* 释放空间 */
+    };
 } list_t;
 
 void list_assert(list_t *list);
 
-int list_insert(list_t *list, list_node_t *prev, list_node_t *node);
+list_t *list_creat(list_option_t *opt);
+int list_destroy(list_t *list);
+int list_insert(list_t *list, list_node_t *prev, void *data);
 list_node_t *list_remove(list_t *list, list_node_t *node);
 
-int list_insert_head(list_t *list, list_node_t *node);
-int list_insert_tail(list_t *list, list_node_t *node);
+int list_push(list_t *list, void *data);
+int list_rpush(list_t *list, void *data);
 
-list_node_t *list_remove_head(list_t *list);
-list_node_t *list_remove_tail(list_t *list);
+void *list_pop(list_t *list);
+void *list_rpop(list_t *list);
 
 #endif /*__LIST_H__*/

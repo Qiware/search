@@ -7,6 +7,7 @@
  **         负责下载指定URL网页
  ** 作  者: # Qifeng.zou # 2014.09.04 #
  ******************************************************************************/
+#include <time.h>
 #include <stdio.h>
 #include <netdb.h>
 #include <stdlib.h>
@@ -27,6 +28,7 @@
 #include "syscall.h"
 #include "sck_api.h"
 #include "crwl_sched.h"
+#include "crwl_agent.h"
 #include "crwl_worker.h"
 
 #define CRWL_PROC_LOCK_PATH "../temp/crwl/crwl.lck"
@@ -308,6 +310,8 @@ void crwl_cntx_destroy(crwl_cntx_t *ctx)
 int crwl_startup(crwl_cntx_t *ctx)
 {
     int idx;
+    pthread_t tid;
+    time_t ctm = time(NULL);
     const crwl_conf_t *conf = ctx->conf;
 
     /* 1. 设置Worker线程回调 */
@@ -321,6 +325,16 @@ int crwl_startup(crwl_cntx_t *ctx)
     {
         thread_pool_add_worker(ctx->scheds, crwl_sched_routine, ctx);
     }
+
+    /* 3. 启动代理服务 */
+    if (thread_creat(&tid, crwl_agt_routine, ctx))
+    {
+        log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        return CRWL_ERR;
+    }
+
+    /* 4. 获取运行时间 */
+    localtime_r(&ctm, &ctx->run_tm);
 
     return CRWL_OK;
 }
@@ -338,12 +352,20 @@ int crwl_startup(crwl_cntx_t *ctx)
  ******************************************************************************/
 static int crwl_creat_workers(crwl_cntx_t *ctx)
 {
+    void *data;
     int idx, num;
     crwl_worker_t *worker;
+    thread_pool_option_t option;
     const crwl_worker_conf_t *conf = &ctx->conf->worker;
 
+    memset(&option, 0, sizeof(option));
+
     /* 1. 创建Worker线程池 */
-    ctx->workers = thread_pool_init(conf->num, 0);
+    option.pool = (void *)ctx->slab;
+    option.pool = (mem_alloc_cb_t)slab_alloc;
+    option.pool = (mem_dealloc_cb_t)slab_dealloc;
+
+    ctx->workers = thread_pool_init(conf->num, &option);
     if (NULL == ctx->workers)
     {
         log_error(ctx->log, "Initialize thread pool failed!");
@@ -351,18 +373,20 @@ static int crwl_creat_workers(crwl_cntx_t *ctx)
     }
 
     /* 2. 新建Worker对象 */
-    ctx->workers->data = (crwl_worker_t *)calloc(conf->num, sizeof(crwl_worker_t));
-    if (NULL == ctx->workers->data)
+    data = (crwl_worker_t *)calloc(conf->num, sizeof(crwl_worker_t));
+    if (NULL == data)
     {
         thread_pool_destroy(ctx->workers);
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return CRWL_ERR;
     }
 
+    ctx->workers->data = data;
+
     /* 3. 依次初始化Worker对象 */
     for (idx=0; idx<conf->num; ++idx)
     {
-        worker = (crwl_worker_t *)ctx->workers->data + idx;
+        worker = (crwl_worker_t *)data + idx;
 
         if (crwl_worker_init(ctx, worker, idx))
         {
@@ -439,8 +463,17 @@ int crwl_workers_destroy(crwl_cntx_t *ctx)
  ******************************************************************************/
 static int crwl_creat_scheds(crwl_cntx_t *ctx)
 {
-    /* 1. 创建Sched线程池 */
-    ctx->scheds = thread_pool_init(CRWL_SCHED_THD_NUM, 0);
+    thread_pool_option_t option;
+
+    memset(&option, 0, sizeof(option));
+
+    /* 1. 设置内存池信息 */
+    option.pool = (void *)ctx->slab;
+    option.pool = (mem_alloc_cb_t)slab_alloc;
+    option.pool = (mem_dealloc_cb_t)slab_dealloc;
+
+    /* 2. 创建Sched线程池 */
+    ctx->scheds = thread_pool_init(CRWL_SCHED_THD_NUM, &option);
     if (NULL == ctx->scheds)
     {
         log_error(ctx->log, "Initialize thread pool failed!");

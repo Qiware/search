@@ -38,7 +38,7 @@ typedef struct
                                         0: 未知状态
                                         1: 已发送保活
                                         2: 保活成功 */
-    list_t mesg_list;               /* 发送链表 */
+    list_t *mesg_list;              /* 发送链表 */
 
     sdtp_snap_t recv;               /* 接收快照 */
     sdtp_snap_t send;               /* 发送快照 */
@@ -67,9 +67,10 @@ typedef struct
 {
     sdtp_ssvr_conf_t conf;          /* 客户端配置信息 */
     log_cycle_t *log;               /* 日志对象 */
+    slab_pool_t *slab;              /* 内存池对象 */
 
-    thread_pool_t *sendtp;          /* Send thread pool */
-    thread_pool_t *worktp;          /* Work thread pool */
+    thread_pool_t *sendtp;          /* 发送线程池 */
+    thread_pool_t *worktp;          /* 工作线程池 */
 } sdtp_ssvr_cntx_t;
 
 /* 对外接口 */

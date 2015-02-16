@@ -141,7 +141,7 @@ static int sdtp_rsvr_clear_mesg(sdtp_rsvr_t *rsvr, sdtp_sck_t *sck);
     { \
         curr = (sdtp_sck_t *)node->data; \
         \
-        if ((NULL == curr->mesg_list.head) \
+        if ((NULL == curr->mesg_list->head) \
             && (curr->send.optr == curr->send.iptr)) \
         { \
             if (node == tail) \
@@ -1101,40 +1101,7 @@ void sdtp_rsvr_del_all_conn_hdl(sdtp_rsvr_t *rsvr)
  ******************************************************************************/
 static int sdtp_rsvr_add_mesg(sdtp_rsvr_t *rsvr, sdtp_sck_t *sck, void *addr)
 {
-    list_t *list = &sck->mesg_list;
-    list_node_t *add, *item, *tail = NULL;
-
-    /* 1.创建新结点 */
-    add = slab_alloc(rsvr->pool, sizeof(list_t));
-    if (NULL == add)
-    {
-        log_debug(rsvr->log, "Alloc memory failed!");
-        return SDTP_ERR;
-    }
-
-    add->data = addr;
-    add->next = NULL;
-
-    /* 2.插入链尾 */
-    item = list->head;
-    if (NULL == item)
-    {
-        list->head = add;
-        list->tail = add;
-        return SDTP_OK;
-    }
-
-    /* 3.查找链尾 */
-    do
-    {
-        tail = item;
-        item = item->next;
-    }while (NULL != item);
-
-    tail->next = add;
-    list->tail = add;
-
-    return SDTP_OK;
+    return list_rpush(sck->mesg_list, addr);
 }
 
 /******************************************************************************
@@ -1152,21 +1119,7 @@ static int sdtp_rsvr_add_mesg(sdtp_rsvr_t *rsvr, sdtp_sck_t *sck, void *addr)
  ******************************************************************************/
 static void *sdtp_rsvr_get_mesg(sdtp_rsvr_t *rsvr, sdtp_sck_t *sck)
 {
-    void *addr;
-    list_t *list = &sck->mesg_list;
-    list_node_t *curr = list->head;
-
-    if (NULL == curr)
-    {
-        return NULL;
-    }
-    
-    list->head = curr->next;
-    addr = curr->data;
-
-    slab_dealloc(rsvr->pool, curr);
-
-    return addr;
+    return list_pop(sck->mesg_list);
 }
 
 /******************************************************************************
@@ -1184,22 +1137,18 @@ static void *sdtp_rsvr_get_mesg(sdtp_rsvr_t *rsvr, sdtp_sck_t *sck)
  ******************************************************************************/
 static int sdtp_rsvr_clear_mesg(sdtp_rsvr_t *rsvr, sdtp_sck_t *sck)
 {
-    list_t *list = &sck->mesg_list;
-    list_node_t *curr, *next;
+    void *data;
 
-    curr = list->head; 
-    while (NULL != curr)
+    while (1)
     {
-        next = curr->next;
+        data = list_pop(sck->mesg_list);
+        if (NULL == data)
+        {
+            return SDTP_OK;
+        }
 
-        slab_dealloc(rsvr->pool, curr->data);
-        slab_dealloc(rsvr->pool, curr);
-
-        curr = next;
+        slab_dealloc(rsvr->pool, data);
     }
-
-    list->head = NULL;
-    list->tail = NULL;
 
     return SDTP_OK;
 }
@@ -1307,7 +1256,7 @@ static int sdtp_rsvr_fill_send_buff(sdtp_rsvr_t *rsvr, sdtp_sck_t *sck)
     list_node_t *node;
     int left, mesg_len;
     sdtp_header_t *head;
-    list_t *list = &sck->mesg_list;
+    list_t *list = sck->mesg_list;
     sdtp_snap_t *send = &sck->send;
 
     /* 1. 从消息链表取数据 */

@@ -25,6 +25,7 @@
 #include "sck_api.h"
 #include "crwl_priv.h"
 #include "crwl_sched.h"
+#include "crwl_agent.h"
 #include "crwl_worker.h"
 
 /******************************************************************************

@@ -4,14 +4,15 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
+#include <stdint.h>
 #include <sys/types.h>
 #include <sys/syscall.h>
 
 /* 自旋锁 */
 typedef struct
 {
-    unsigned short ticket;
-    unsigned short owner;
+    uint16_t ticket;
+    uint16_t owner;
 } spinlock_t;
 
 /* 初始化 */
@@ -26,7 +27,7 @@ typedef struct
 /* 加锁 */
 #define spin_lock(lock) \
 { \
-    unsigned short ticket = 0x01; \
+    uint16_t ticket = 0x01; \
     __asm__ __volatile__ ( \
         "lock xaddw %0, %1\n"   /* swap(ticket,lock->ticket); lock->ticket += ticket; */\
         "1:\n"                  /* RECHECK: */\

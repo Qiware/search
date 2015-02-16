@@ -295,8 +295,6 @@ static int srch_agent_event_hdl(srch_cntx_t *ctx, srch_agent_t *agt)
  ******************************************************************************/
 static int srch_agent_get_timeout_conn_list(socket_t *sck, srch_conn_timeout_list_t *timeout)
 {
-    list_node_t *node;
-
     /* 判断是否超时，则加入到timeout链表中 */
     if ((timeout->ctm - sck->rdtm <= 15)
         || (timeout->ctm - sck->wrtm <= 15))
@@ -304,15 +302,10 @@ static int srch_agent_get_timeout_conn_list(socket_t *sck, srch_conn_timeout_lis
         return SRCH_OK; /* 未超时 */
     }
 
-    node = mem_pool_alloc(timeout->pool, sizeof(list_node_t));
-    if (NULL == node)
+    if (list_push(timeout->list, sck))
     {
         return SRCH_ERR;
     }
-
-    node->data = (void *)sck;
-
-    list_insert_head(&timeout->list, node);
 
     return SRCH_OK;
 }
@@ -326,18 +319,18 @@ static int srch_agent_get_timeout_conn_list(socket_t *sck, srch_conn_timeout_lis
  **返    回: Agent对象
  **实现描述: 
  **注意事项: 
+ **     不必依次释放超时链表各结点的空间，只需一次性释放内存池便可释放所有空间.
  **作    者: # Qifeng.zou # 2014.11.28 #
  ******************************************************************************/
 static int srch_agent_event_timeout_hdl(srch_cntx_t *ctx, srch_agent_t *agt)
 {
-    int ret;
     socket_t *sck;
-    list_node_t *node;
+    list_option_t option;
     srch_conn_timeout_list_t timeout;
     
     memset(&timeout, 0, sizeof(timeout));
 
-    /* 1. 创建内存池 */
+    /* > 创建内存池 */
     timeout.pool = mem_pool_creat(1 * KB);
     if (NULL == timeout.pool)
     {
@@ -347,26 +340,42 @@ static int srch_agent_event_timeout_hdl(srch_cntx_t *ctx, srch_agent_t *agt)
 
     timeout.ctm = agt->ctm;
     
-    /* 2. 获取超时连接 */
-    ret = rbt_trav(agt->connections,
-            (rbt_trav_cb_t)srch_agent_get_timeout_conn_list, (void *)&timeout);
-    if (0 != ret)
+    do
     {
-        log_error(agt->log, "Traverse hash table failed!");
-    }
+        /* > 创建链表 */
+        memset(&option, 0, sizeof(option));
 
-    log_debug(agt->log, "Timeout num:%d!", timeout.list.num);
+        option.pool = (void *)timeout.pool;
+        option.alloc = (mem_alloc_cb_t)mem_pool_alloc;
+        option.dealloc = (mem_dealloc_cb_t)mem_pool_dealloc;
 
-    /* 3. 删除超时连接 */
-    node = timeout.list.head;
-    for (; NULL != node; node = node->next)
-    {
-        sck = (socket_t *)node->data;
+        timeout.list = list_creat(&option);
+        if (NULL == timeout.list)
+        {
+            log_error(agt->log, "Create list failed!");
+            break;
+        }
 
-        srch_agent_del_conn(ctx, agt, sck);
-    }
+        /* > 获取超时连接 */
+        if (rbt_trav(agt->connections,
+                (rbt_trav_cb_t)srch_agent_get_timeout_conn_list, (void *)&timeout))
+        {
+            log_error(agt->log, "Traverse hash table failed!");
+            break;
+        }
 
-    /* 4. 释放内存空间 */
+        log_debug(agt->log, "Timeout num:%d!", timeout.list->num);
+
+        /* > 删除超时连接 */
+        for (;;)
+        {
+            sck = (socket_t *)list_pop(timeout.list);
+
+            srch_agent_del_conn(ctx, agt, sck);
+        }
+    } while(0);
+
+    /* > 释放内存空间 */
     mem_pool_destroy(timeout.pool);
 
     return SRCH_OK;
@@ -389,19 +398,20 @@ static int srch_agent_add_conn(srch_cntx_t *ctx, srch_agent_t *agt)
     time_t ctm = time(NULL);
     socket_t *sck;
     srch_add_sck_t *add;
+    list_option_t option;
     srch_agent_sck_data_t *data;
     struct epoll_event ev;
 
     while (1)
     {
-        /* 1. 取数据 */
+        /* > 取数据 */
         add = queue_pop(ctx->connq[agt->tidx]);
         if (NULL == add)
         {
             return SRCH_OK;
         }
 
-        /* 2. 申请SCK空间 */
+        /* > 申请SCK空间 */
         sck = slab_alloc(agt->slab, sizeof(socket_t));
         if (NULL == sck)
         {
@@ -414,6 +424,7 @@ static int srch_agent_add_conn(srch_cntx_t *ctx, srch_agent_t *agt)
 
         memset(sck, 0, sizeof(socket_t));
 
+        /* > 创建SCK关联对象 */
         data = slab_alloc(agt->slab, sizeof(srch_agent_sck_data_t));
         if (NULL == data)
         {
@@ -423,9 +434,19 @@ static int srch_agent_add_conn(srch_cntx_t *ctx, srch_agent_t *agt)
             return SRCH_ERR;
         }
 
+        data->send_list = list_creat(&option);
+        if (NULL == data->send_list)
+        {
+            slab_dealloc(agt->slab, sck);
+            slab_dealloc(agt->slab, data);
+            queue_dealloc(ctx->connq[agt->tidx], add);
+            log_error(agt->log, "Alloc memory from slab failed!");
+            return SRCH_ERR;
+        }
+
         sck->data = data;
 
-        /* 3. 设置SCK信息 */
+        /* > 设置SCK信息 */
         sck->fd = add->fd;
         ftime(&sck->crtm);          /* 创建时间 */
         sck->wrtm = sck->rdtm = ctm;/* 记录当前时间 */
@@ -438,12 +459,13 @@ static int srch_agent_add_conn(srch_cntx_t *ctx, srch_agent_t *agt)
 
         queue_dealloc(ctx->connq[agt->tidx], add);  /* 释放连接队列空间 */
 
-        /* 4. 插入红黑树中(以序列号为主键) */
+        /* > 插入红黑树中(以序列号为主键) */
         if (rbt_insert(agt->connections, data->serial, sck))
         {
             log_error(agt->log, "Insert into avl failed! fd:%d seq:%lu", sck->fd, data->serial);
 
             Close(sck->fd);
+            list_destroy(data->send_list);
             slab_dealloc(agt->slab, sck->data);
             slab_dealloc(agt->slab, sck);
             return SRCH_ERR;
@@ -451,7 +473,7 @@ static int srch_agent_add_conn(srch_cntx_t *ctx, srch_agent_t *agt)
 
         log_debug(agt->log, "Insert into avl success! fd:%d seq:%lu", sck->fd, data->serial);
 
-        /* 5. 加入epoll监听(首先是接收客户端搜索请求, 所以设置EPOLLIN) */
+        /* > 加入epoll监听(首先是接收客户端搜索请求, 所以设置EPOLLIN) */
         memset(&ev, 0, sizeof(ev));
 
         ev.data.ptr = sck;
@@ -460,7 +482,7 @@ static int srch_agent_add_conn(srch_cntx_t *ctx, srch_agent_t *agt)
         epoll_ctl(agt->epid, EPOLL_CTL_ADD, sck->fd, &ev);
     }
 
-    return SRCH_OK;
+    return SRCH_ERR;
 }
 
 /******************************************************************************
@@ -477,8 +499,7 @@ static int srch_agent_add_conn(srch_cntx_t *ctx, srch_agent_t *agt)
  ******************************************************************************/
 static int srch_agent_del_conn(srch_cntx_t *ctx, srch_agent_t *agt, socket_t *sck)
 {
-    void *addr;
-    list_node_t *node;
+    void *addr, *p;
     srch_agent_sck_data_t *data = sck->data;
 
     log_debug(agt->log, "Call %s()! fd:%d", __func__, sck->fd);
@@ -496,14 +517,13 @@ static int srch_agent_del_conn(srch_cntx_t *ctx, srch_agent_t *agt, socket_t *sc
     Close(sck->fd);
     for (;;)    /* 释放发送链表 */
     {
-        node = list_remove_head(&data->send_list);
-        if (NULL == node)
+        p = list_pop(data->send_list);
+        if (NULL == p)
         {
             break;
         }
 
-        slab_dealloc(agt->slab, node->data);
-        slab_dealloc(agt->slab, node);
+        slab_dealloc(agt->slab, p);
     }
 
     if (NULL != sck->recv.addr)
@@ -868,21 +888,9 @@ static int srch_agent_recv(srch_cntx_t *ctx, srch_agent_t *agt, socket_t *sck)
  ******************************************************************************/
 static void *srch_agent_fetch_send_data(srch_agent_t *agt, socket_t *sck)
 {
-    void *addr;
-    list_node_t *node;
     srch_agent_sck_data_t *data = sck->data;
 
-    node = list_remove_head(&data->send_list);
-    if (NULL == node)
-    {
-        return NULL;
-    }
-
-    addr = node->data;
-
-    slab_dealloc(agt->slab, node);
-
-    return addr;
+    return list_pop(data->send_list);
 }
 
 /******************************************************************************

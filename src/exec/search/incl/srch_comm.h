@@ -48,8 +48,8 @@ typedef struct
 /* 超时连接链表 */
 typedef struct
 {
-    time_t ctm;
-    list_t list;
-    mem_pool_t *pool;
+    time_t ctm;                             /* 当前时间 */
+    list_t *list;                           /* 超时链表 */
+    mem_pool_t *pool;                       /* 内存池 */
 } srch_conn_timeout_list_t;
 #endif /*__SRCH_COMM_H__*/

@@ -43,7 +43,7 @@ typedef struct
     log_cycle_t *log;               /* 日志对象 */
 
     time_t scan_tm;                 /* 超时扫描时间 */
-    list_t sock_list;               /* 套接字列表
+    list_t *sock_list;              /* 套接字列表
                                        结点数据指针指向socket_t(TODO: 可使用红黑树) */
 
     uint64_t down_webpage_total;    /* 下载网页的计数 */
@@ -55,7 +55,7 @@ typedef struct
 {
     crwl_webpage_t webpage;         /* 网页信息 */
     char recv[CRWL_RECV_SIZE + 1];  /* 接收缓存 */
-    list_t send_list;               /* 发送链表 */
+    list_t *send_list;              /* 发送链表 */
 } crwl_worker_socket_data_t;
 
 /* 函数声明 */

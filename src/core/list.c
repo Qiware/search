@@ -44,20 +44,82 @@ void list_assert(list_t *list)
 }
 
 /******************************************************************************
- **函数名称: list_insert_head
+ **函数名称: list_creat
+ **功    能: 创建链表
+ **输入参数: 
+ **     opt: 选项信息
+ **输出参数: 
+ **返    回: 链表
+ **实现描述: 
+ **     新建链表对象, 并初始化相关变量成员.
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.02.16 #
+ ******************************************************************************/
+list_t *list_creat(list_option_t *opt)
+{
+    list_t *list;
+
+    list = opt->alloc(opt->pool, sizeof(list_t));
+    if (NULL == list)
+    {
+        return NULL;
+    }
+
+    list->num = 0;
+    list->head = NULL;
+    list->tail = NULL;
+
+    list->pool = opt->pool;
+    list->alloc = opt->alloc;
+    list->dealloc = opt->dealloc;
+
+    return list;
+}
+
+/******************************************************************************
+ **函数名称: list_destroy
+ **功    能: 销毁链表
+ **输入参数: 
+ **输出参数: 
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: TODO: 待完善
+ **作    者: # Qifeng.zou # 2015.02.17 #
+ ******************************************************************************/
+int list_destroy(list_t *list)
+{
+    list->dealloc(list->pool, list);
+
+    return 0;
+}
+
+/******************************************************************************
+ **函数名称: list_push
  **功    能: 插入链表头
  **输入参数: 
  **     list: 单向链表
- **     node: 新结点
+ **     data: 数据
  **输出参数: 
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.08.24 #
  ******************************************************************************/
-int list_insert_head(list_t *list, list_node_t *node)
+int list_push(list_t *list, void *data)
 {
-    /* 1. 链表为空时 */
+    list_node_t *node;
+
+    /* > 新建结点 */
+    node = list->alloc(list->pool, sizeof(list_node_t));
+    if (NULL == node)
+    {
+        return -1;
+    }
+
+    node->data = data;
+
+    /* > 插入链表
+     * 1. 链表为空时 */
     if (NULL == list->head)
     {
         list->head = node;
@@ -77,11 +139,11 @@ int list_insert_head(list_t *list, list_node_t *node)
 }
 
 /******************************************************************************
- **函数名称: list_insert_tail
+ **函数名称: list_rpush
  **功    能: 插入链表尾
  **输入参数: 
  **     list: 单向链表
- **     node: 新结点
+ **     data: 数据
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
@@ -89,9 +151,21 @@ int list_insert_head(list_t *list, list_node_t *node)
  **     请调用者自己取释放返回结点和数据的内存空间
  **作    者: # Qifeng.zou # 2014.08.24 #
  ******************************************************************************/
-int list_insert_tail(list_t *list, list_node_t *node)
+int list_rpush(list_t *list, void *data)
 {
-    /* 1. 链表为空时 */
+    list_node_t *node;
+
+    /* > 新建结点 */
+    node = list->alloc(list->pool, sizeof(list_node_t));
+    if (NULL == node)
+    {
+        return -1;
+    }
+
+    node->data = data;
+
+    /* > 插入链尾
+     * 1. 链表为空时 */
     if (!list->tail)
     {
         list->head = node;
@@ -116,7 +190,7 @@ int list_insert_tail(list_t *list, list_node_t *node)
  **输入参数: 
  **     list: 单向链表
  **     prev: 前一结点
- **     node: 新结点
+ **     data: 数据
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
@@ -126,17 +200,30 @@ int list_insert_tail(list_t *list, list_node_t *node)
  **     3. 如果结点prev不为NULL, 则将结点node插入prev后
  **作    者: # Qifeng.zou # 2014.09.24 #
  ******************************************************************************/
-int list_insert(list_t *list, list_node_t *prev, list_node_t *node)
+int list_insert(list_t *list, list_node_t *prev, void *data)
 {
+    list_node_t *node;
+
+    /* > 插入链头或链尾 */
     if (NULL == prev)
     {
-        return list_insert_head(list, node);
+        return list_push(list, data);
     }
     else if (list->tail == prev)
     {
-        return list_insert_tail(list, node);
+        return list_rpush(list, data);
     }
 
+    /* > 新建结点 */
+    node = list->alloc(list->pool, sizeof(list_node_t));
+    if (NULL == node)
+    {
+        return -1;
+    }
+
+    node->data = data;
+
+    /* > 插入链表 */
     node->next = prev->next;
     prev->next = node;
     ++list->num;
@@ -144,18 +231,19 @@ int list_insert(list_t *list, list_node_t *prev, list_node_t *node)
 }
 
 /******************************************************************************
- **函数名称: list_remove_head
- **功    能: 删除链表头
+ **函数名称: list_pop
+ **功    能: 删除链头
  **输入参数: 
  **     list: 单向链表
  **输出参数: NONE
- **返    回: 头结点地址
+ **返    回: 链头数据
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.24 #
  ******************************************************************************/
-list_node_t *list_remove_head(list_t *list)
+void *list_pop(list_t *list)
 {
+    void *data;
     list_node_t *head;
 
     /* 1. 无数据 */
@@ -178,23 +266,29 @@ list_node_t *list_remove_head(list_t *list)
     head = list->head;
     list->head = head->next;
     --list->num;
-    return head;
+
+    data = head->data;
+
+    list->dealloc(list->pool, head);
+
+    return data;
 }
 
 /******************************************************************************
- **函数名称: list_remove_tail
- **功    能: 删除链表尾
+ **函数名称: list_rpop
+ **功    能: 删除链尾
  **输入参数: 
  **     list: 单向链表
  **输出参数: NONE
- **返    回: 尾结点地址
+ **返    回: 链尾数据
  **实现描述: 
  **注意事项: 
  **     请调用者自己取释放返回结点和数据的内存空间
  **作    者: # Qifeng.zou # 2014.08.24 #
  ******************************************************************************/
-list_node_t *list_remove_tail(list_t *list)
+void *list_rpop(list_t *list)
 {
+    void *data;
     list_node_t *prev, *tail;
 
     /* 1. 无数据 */
@@ -210,7 +304,10 @@ list_node_t *list_remove_tail(list_t *list)
         list->tail = NULL;
         list->head = NULL;
         list->num = 0;
-        return tail;
+
+        data = tail->data;
+        list->dealloc(list->pool, tail);
+        return data;
     }
 
     /* 3. 有多个结点 */
@@ -225,7 +322,10 @@ list_node_t *list_remove_tail(list_t *list)
     list->tail = prev;
 
     --list->num;
-    return tail;
+
+    data = tail->data;
+    list->dealloc(list->pool, tail);
+    return data;
 }
 
 /******************************************************************************

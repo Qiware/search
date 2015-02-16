@@ -129,6 +129,5 @@ int unix_udp_recv(int fd, void *buff, int len)
 
     from.sun_family = AF_UNIX;
 
-    return recvfrom(fd, buff, len, 0,
-            (struct sockaddr *)&from, (socklen_t *)&addrlen);
+    return recvfrom(fd, buff, len, 0, (struct sockaddr *)&from, (socklen_t *)&addrlen);
 }

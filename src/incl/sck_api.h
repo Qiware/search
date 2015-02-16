@@ -75,4 +75,6 @@ int unix_udp_creat(const char *path);
 int unix_udp_send(int fd, const char *path, const void *buff, int len);
 int unix_udp_recv(int fd, void *buff, int len);
 
+int udp_listen(int port);
+
 #endif /*__SCK_API_H__*/
