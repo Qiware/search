@@ -104,7 +104,7 @@ void list_destroy(list_t *list)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.08.24 #
  ******************************************************************************/
-int list_push(list_t *list, void *data)
+int list_lpush(list_t *list, void *data)
 {
     list_node_t *node;
 
@@ -206,7 +206,7 @@ int list_insert(list_t *list, list_node_t *prev, void *data)
     /* > 插入链头或链尾 */
     if (NULL == prev)
     {
-        return list_push(list, data);
+        return list_lpush(list, data);
     }
     else if (list->tail == prev)
     {
@@ -230,7 +230,7 @@ int list_insert(list_t *list, list_node_t *prev, void *data)
 }
 
 /******************************************************************************
- **函数名称: list_pop
+ **函数名称: list_lpop
  **功    能: 弹出链头
  **输入参数: 
  **     list: 单向链表
@@ -240,7 +240,7 @@ int list_insert(list_t *list, list_node_t *prev, void *data)
  **注意事项: 请调用者自己释放node->data数据的内存空间
  **作    者: # Qifeng.zou # 2014.09.24 #
  ******************************************************************************/
-void *list_pop(list_t *list)
+void *list_lpop(list_t *list)
 {
     void *data;
     list_node_t *head;

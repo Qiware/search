@@ -40,10 +40,10 @@ void list_destroy(list_t *list);
 int list_insert(list_t *list, list_node_t *prev, void *data);
 int list_remove(list_t *list, void *data);
 
-int list_push(list_t *list, void *data);
+int list_lpush(list_t *list, void *data);
 int list_rpush(list_t *list, void *data);
 
-void *list_pop(list_t *list);
+void *list_lpop(list_t *list);
 void *list_rpop(list_t *list);
 
 #endif /*__LIST_H__*/

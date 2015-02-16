@@ -45,8 +45,6 @@ static int sdtp_rsvr_add_conn_hdl(sdtp_rsvr_t *rsvr, sdtp_cmd_add_sck_t *req);
 static int sdtp_rsvr_del_conn_hdl(sdtp_rsvr_t *rsvr, list2_node_t *node);
 
 static int sdtp_rsvr_fill_send_buff(sdtp_rsvr_t *rsvr, sdtp_sck_t *sck);
-static int sdtp_rsvr_add_mesg(sdtp_rsvr_t *rsvr, sdtp_sck_t *sck, void *addr);
-static void *sdtp_rsvr_get_mesg(sdtp_rsvr_t *rsvr, sdtp_sck_t *sck);
 static int sdtp_rsvr_clear_mesg(sdtp_rsvr_t *rsvr, sdtp_sck_t *sck);
 
 /* 随机选择接收线程 */
@@ -910,7 +908,7 @@ static int sdtp_rsvr_keepalive_req_hdl(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr, sdtp
     void *addr;
     sdtp_header_t *head;
 
-    /* 1. 分配消息空间 */
+    /* >> 分配消息空间 */
     addr = slab_alloc(rsvr->pool, sizeof(sdtp_header_t));
     if (NULL == addr)
     {
@@ -918,7 +916,7 @@ static int sdtp_rsvr_keepalive_req_hdl(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr, sdtp
         return SDTP_ERR;
     }
 
-    /* 2. 回复消息内容 */
+    /* >> 回复消息内容 */
     head = (sdtp_header_t *)addr;
 
     head->type = SDTP_KPALIVE_REP;
@@ -926,8 +924,13 @@ static int sdtp_rsvr_keepalive_req_hdl(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr, sdtp
     head->flag = SDTP_SYS_MESG;
     head->checksum = SDTP_CHECK_SUM;
     
-    /* 3. 加入发送列表 */
-    sdtp_rsvr_add_mesg(rsvr, sck, addr);
+    /* >> 加入发送列表 */
+    if (list_rpush(sck->mesg_list, addr))
+    {
+        slab_dealloc(rsvr->pool, addr);
+        log_error(rsvr->log, "Insert into list failed!");
+        return SDTP_ERR;
+    }
 
     log_debug(rsvr->log, "Add respond of keepalive request!");
 
@@ -1086,43 +1089,6 @@ void sdtp_rsvr_del_all_conn_hdl(sdtp_rsvr_t *rsvr)
 }
 
 /******************************************************************************
- **函数名称: sdtp_rsvr_add_mesg
- **功    能: 添加发送消息
- **输入参数: 
- **    rsvr: 接收服务
- **    sck: 套接字对象
- **    addr: 将要发送的数据
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **    将要发送的数据放在链表的末尾
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.07.04 #
- ******************************************************************************/
-static int sdtp_rsvr_add_mesg(sdtp_rsvr_t *rsvr, sdtp_sck_t *sck, void *addr)
-{
-    return list_rpush(sck->mesg_list, addr);
-}
-
-/******************************************************************************
- **函数名称: sdtp_rsvr_get_mesg
- **功    能: 获取发送消息
- **输入参数: 
- **    rsvr: 接收服务
- **    sck: 套接字对象
- **输出参数: NONE
- **返    回: 数据地址
- **实现描述: 
- **注意事项: 
- **     TODO: 待补充对list->tail的处理
- **作    者: # Qifeng.zou # 2015.01.01 #
- ******************************************************************************/
-static void *sdtp_rsvr_get_mesg(sdtp_rsvr_t *rsvr, sdtp_sck_t *sck)
-{
-    return list_pop(sck->mesg_list);
-}
-
-/******************************************************************************
  **函数名称: sdtp_rsvr_clear_mesg
  **功    能: 清空发送消息
  **输入参数: 
@@ -1141,7 +1107,7 @@ static int sdtp_rsvr_clear_mesg(sdtp_rsvr_t *rsvr, sdtp_sck_t *sck)
 
     while (1)
     {
-        data = list_pop(sck->mesg_list);
+        data = list_lpop(sck->mesg_list);
         if (NULL == data)
         {
             return SDTP_OK;
@@ -1252,25 +1218,21 @@ static int sdtp_rsvr_cmd_proc_all_req(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr)
  ******************************************************************************/
 static int sdtp_rsvr_fill_send_buff(sdtp_rsvr_t *rsvr, sdtp_sck_t *sck)
 {
-    void *addr;
-    list_node_t *node;
     int left, mesg_len;
     sdtp_header_t *head;
-    list_t *list = sck->mesg_list;
     sdtp_snap_t *send = &sck->send;
 
-    /* 1. 从消息链表取数据 */
+    /* >> 从消息链表取数据 */
     for (;;)
     {
-        /* 1.1 是否有数据 */
-        node = list->head;
-        if (NULL == node)
+        /* 1 是否有数据 */
+        head = (sdtp_header_t *)list_lpop(sck->mesg_list);;
+        if (NULL == head)
         {
             break; /* 无数据 */
         }
 
-        /* 1.2 判断剩余空间 */
-        head = (sdtp_header_t *)node->data;
+        /* 2 判断剩余空间 */
         if (SDTP_CHECK_SUM != head->checksum)
         {
             assert(0);
@@ -1281,28 +1243,21 @@ static int sdtp_rsvr_fill_send_buff(sdtp_rsvr_t *rsvr, sdtp_sck_t *sck)
         mesg_len = sizeof(sdtp_header_t) + head->length;
         if (left < mesg_len)
         {
+            list_lpush(sck->mesg_list, head);
             break; /* 空间不足 */
         }
 
-        /* 1.3 取发送的数据 */
-        addr = sdtp_rsvr_get_mesg(rsvr, sck);
-
-        head = (sdtp_header_t *)addr;
-        if (SDTP_CHECK_SUM != head->checksum)
-        {
-            assert(0);
-        }
-
+        /* 3 取发送的数据 */
         head->type = htons(head->type);
         head->flag = head->flag;
         head->length = htonl(head->length);
         head->checksum = htonl(head->checksum);
 
         /* 1.4 拷贝至发送缓存 */
-        memcpy(send->iptr, addr, mesg_len);
+        memcpy(send->iptr, (void *)head, mesg_len);
 
         /* 1.5 释放数据空间 */
-        slab_dealloc(rsvr->pool, addr);
+        slab_dealloc(rsvr->pool, head);
 
         send->iptr += mesg_len;
         continue;

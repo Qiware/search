@@ -302,7 +302,7 @@ static int srch_agent_get_timeout_conn_list(socket_t *sck, srch_conn_timeout_lis
         return SRCH_OK; /* 未超时 */
     }
 
-    if (list_push(timeout->list, sck))
+    if (list_lpush(timeout->list, sck))
     {
         return SRCH_ERR;
     }
@@ -369,7 +369,7 @@ static int srch_agent_event_timeout_hdl(srch_cntx_t *ctx, srch_agent_t *agt)
         /* > 删除超时连接 */
         for (;;)
         {
-            sck = (socket_t *)list_pop(timeout.list);
+            sck = (socket_t *)list_lpop(timeout.list);
             if (NULL == sck)
             {
                 break;
@@ -521,7 +521,7 @@ static int srch_agent_del_conn(srch_cntx_t *ctx, srch_agent_t *agt, socket_t *sc
     Close(sck->fd);
     for (;;)    /* 释放发送链表 */
     {
-        p = list_pop(extra->send_list);
+        p = list_lpop(extra->send_list);
         if (NULL == p)
         {
             break;
@@ -894,7 +894,7 @@ static void *srch_agent_fetch_send_data(srch_agent_t *agt, socket_t *sck)
 {
     srch_agent_socket_extra_t *extra = sck->extra;
 
-    return list_pop(extra->send_list);
+    return list_lpop(extra->send_list);
 }
 
 /******************************************************************************

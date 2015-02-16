@@ -50,7 +50,7 @@ int main(void)
 
     /* 删除测试 */
     //list_remove(&list, node);
-    list_pop(&list);
+    list_lpop(&list);
     //list_remove_tail(&list);
     //list_remove(&list, del);
 

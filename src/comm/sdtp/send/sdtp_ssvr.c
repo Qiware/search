@@ -42,39 +42,6 @@ static int sdtp_ssvr_send_data(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr);
 static int sdtp_ssvr_clear_mesg(sdtp_ssvr_t *ssvr);
 
 /******************************************************************************
- **函数名称: sdtp_ssvr_add_mesg
- **功    能: 添加发送消息
- **输入参数: 
- **     ssvr: 发送服务
- **     addr: 消息地址
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **     1.创建新结点
- **     2.插入链尾
- **注意事项: 
- **作    者: # Qifeng.zou # 2015.01.16 #
- ******************************************************************************/
-#define sdtp_ssvr_add_mesg(ssvr, addr) list_rpush(ssvr->sck.mesg_list, addr)
-
-/******************************************************************************
- **函数名称: sdtp_ssvr_get_mesg
- **功    能: 获取发送消息
- **输入参数: 
- **     ssvr: 发送服务
- **     sck: 连接对象
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **     取出链首结点的数据
- **注意事项: 
- **作    者: # Qifeng.zou # 2015.01.16 #
- ******************************************************************************/
-#define sdtp_ssvr_get_mesg(ssvr) list_pop(ssvr->sck.mesg_list)
-
-
-
-/******************************************************************************
  **函数名称: sdtp_ssvr_startup
  **功    能: 启动发送端
  **输入参数: 
@@ -536,7 +503,7 @@ static int sdtp_ssvr_kpalive_req(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr)
     if (NULL == addr)
     {
         log_error(ssvr->log, "Alloc memory from slab failed!");
-        return SDTP_OK;
+        return SDTP_ERR;
     }
 
     /* 2. 设置心跳数据 */
@@ -548,7 +515,12 @@ static int sdtp_ssvr_kpalive_req(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr)
     head->checksum = SDTP_CHECK_SUM;
 
     /* 3. 加入发送列表 */
-    sdtp_ssvr_add_mesg(ssvr, addr);
+    if (list_rpush(sck->mesg_list, addr))
+    {
+        slab_dealloc(ssvr->pool, addr);
+        log_error(ssvr->log, "Alloc memory from slab failed!");
+        return SDTP_ERR;
+    }
 
     log_debug(ssvr->log, "Add keepalive request success! fd:[%d]", sck->fd);
 
@@ -897,7 +869,7 @@ static int sdtp_ssvr_fill_send_buff(sdtp_ssvr_t *ssvr, sdtp_ssvr_sck_t *sck)
     for (;;)
     {
         /* 1.1 是否有数据 */
-        head = (sdtp_header_t *)list_pop(ssvr->sck.mesg_list);
+        head = (sdtp_header_t *)list_lpop(ssvr->sck.mesg_list);
         if (NULL == head)
         {
             break; /* 无数据 */
@@ -913,7 +885,7 @@ static int sdtp_ssvr_fill_send_buff(sdtp_ssvr_t *ssvr, sdtp_ssvr_sck_t *sck)
         mesg_len = sizeof(sdtp_header_t) + head->length;
         if (left < mesg_len)
         {
-            list_push(ssvr->sck.mesg_list, head);
+            list_lpush(ssvr->sck.mesg_list, head);
             break; /* 空间不足 */
         }
 
@@ -1071,7 +1043,7 @@ static int sdtp_ssvr_clear_mesg(sdtp_ssvr_t *ssvr)
 
     while (1)
     {
-        data = list_pop(ssvr->sck.mesg_list);
+        data = list_lpop(ssvr->sck.mesg_list);
         if (NULL == data)
         {
             return SDTP_OK;

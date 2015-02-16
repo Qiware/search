@@ -307,7 +307,7 @@ int crwl_worker_send_data(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t *sck
         /* 1. 从发送列表取数据 */
         if (!sck->send.addr)
         {
-            info = (crwl_data_info_t *)list_pop(extra->send_list);
+            info = (crwl_data_info_t *)list_lpop(extra->send_list);
             if (NULL == info)
             {
                 memset(&ev, 0, sizeof(ev));
@@ -374,7 +374,7 @@ int crwl_worker_send_data(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t *sck
  **实现描述: 
  **     1. 依次遍历套接字, 判断是否超时
  **     2. 超时关闭套接字、释放内存等
- **注意事项: 
+ **注意事项: TODO: 可通过封装链表操作+回调函数增强代码复用性
  **作    者: # Qifeng.zou # 2014.09.28 #
  ******************************************************************************/
 static int crwl_worker_timeout_hdl(crwl_cntx_t *ctx, crwl_worker_t *worker)
@@ -594,7 +594,7 @@ int crwl_worker_add_sock(crwl_worker_t *worker, socket_t *sck)
  **输出参数: NONE
  **返    回: Socket对象
  **实现描述: 
- **注意事项: 
+ **注意事项: TODO: 可通过封装链表操作+回调函数增强代码复用性
  **作    者: # Qifeng.zou # 2014.10.30 #
  ******************************************************************************/
 socket_t *crwl_worker_query_sock(crwl_worker_t *worker, int fd)
@@ -648,7 +648,7 @@ int crwl_worker_remove_sock(crwl_worker_t *worker, socket_t *sck)
     /* >> 释放发送链表 */
     while (1)
     {
-        p = list_pop(extra->send_list);
+        p = list_lpop(extra->send_list);
         if (NULL == p)
         {
             break;
