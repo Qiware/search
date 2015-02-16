@@ -308,7 +308,7 @@ int crwl_worker_send_data(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t *sck
         if (!sck->send.addr)
         {
             info = (crwl_data_info_t *)list_pop(data->send_list);
-            if (NULL == data)
+            if (NULL == info)
             {
                 memset(&ev, 0, sizeof(ev));
 

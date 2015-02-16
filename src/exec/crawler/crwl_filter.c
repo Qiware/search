@@ -238,7 +238,7 @@ int crwl_filter_work(crwl_filter_t *filter)
                 snprintf(new_path, sizeof(new_path), "%s/%s", conf->filter.store.err_path, item->d_name);
                 rename(filter->info.fname, new_path);
                 snprintf(html_path, sizeof(html_path), "%s/%s", conf->download.path, filter->info.html);
-                remove(html_path);
+                //remove(html_path);
                 continue;
             }
 
@@ -248,7 +248,7 @@ int crwl_filter_work(crwl_filter_t *filter)
             snprintf(new_path, sizeof(new_path), "%s/%s", conf->filter.store.path, item->d_name);
             rename(filter->info.fname, new_path);
             snprintf(html_path, sizeof(html_path), "%s/%s", conf->download.path, filter->info.html);
-            remove(html_path);
+            //remove(html_path);
         }
 
         /* 3. 关闭目录 */
@@ -490,7 +490,7 @@ static int crwl_filter_deep_hdl(crwl_filter_t *filter, gumbo_result_t *result)
     uri_field_t field;
     char task_str[CRWL_TASK_STR_LEN];
     crwl_conf_t *conf = filter->conf;
-    list_node_t *node = result->list.head;
+    list_node_t *node = result->list->head;
     crwl_webpage_info_t *info = &filter->info;
 
     /* 遍历URL集合 */

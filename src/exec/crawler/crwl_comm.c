@@ -310,7 +310,9 @@ void crwl_cntx_destroy(crwl_cntx_t *ctx)
 int crwl_startup(crwl_cntx_t *ctx)
 {
     int idx;
+#if defined(__CRWL_AGENT__)
     pthread_t tid;
+#endif /*__CRWL_AGENT__*/
     time_t ctm = time(NULL);
     const crwl_conf_t *conf = ctx->conf;
 
@@ -326,12 +328,14 @@ int crwl_startup(crwl_cntx_t *ctx)
         thread_pool_add_worker(ctx->scheds, crwl_sched_routine, ctx);
     }
 
+#if defined(__CRWL_AGENT__)
     /* 3. 启动代理服务 */
     if (thread_creat(&tid, crwl_agt_routine, ctx))
     {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return CRWL_ERR;
     }
+#endif /*__CRWL_AGENT__*/
 
     /* 4. 获取运行时间 */
     localtime_r(&ctm, &ctx->run_tm);
@@ -362,8 +366,8 @@ static int crwl_creat_workers(crwl_cntx_t *ctx)
 
     /* 1. 创建Worker线程池 */
     option.pool = (void *)ctx->slab;
-    option.pool = (mem_alloc_cb_t)slab_alloc;
-    option.pool = (mem_dealloc_cb_t)slab_dealloc;
+    option.alloc = (mem_alloc_cb_t)slab_alloc;
+    option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
     ctx->workers = thread_pool_init(conf->num, &option);
     if (NULL == ctx->workers)
@@ -469,8 +473,8 @@ static int crwl_creat_scheds(crwl_cntx_t *ctx)
 
     /* 1. 设置内存池信息 */
     option.pool = (void *)ctx->slab;
-    option.pool = (mem_alloc_cb_t)slab_alloc;
-    option.pool = (mem_dealloc_cb_t)slab_dealloc;
+    option.alloc = (mem_alloc_cb_t)slab_alloc;
+    option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
     /* 2. 创建Sched线程池 */
     ctx->scheds = thread_pool_init(CRWL_SCHED_THD_NUM, &option);
