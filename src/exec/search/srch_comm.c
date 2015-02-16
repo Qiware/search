@@ -355,10 +355,17 @@ static int srch_creat_workers(srch_cntx_t *ctx)
 {
     int idx, num;
     srch_worker_t *worker;
+    thread_pool_option_t option;
     const srch_conf_t *conf = ctx->conf;
 
     /* 1. 创建Worker线程池 */
-    ctx->workers = thread_pool_init(conf->worker_num, 0);
+    memset(&option, 0, sizeof(option));
+
+    option.pool = ctx->slab;
+    option.alloc = (mem_alloc_cb_t)slab_alloc;
+    option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+
+    ctx->workers = thread_pool_init(conf->worker_num, &option);
     if (NULL == ctx->workers)
     {
         log_error(ctx->log, "Initialize thread pool failed!");
