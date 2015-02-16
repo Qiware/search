@@ -39,5 +39,5 @@ $(OBJS): %.o : %.c
 	@echo "$(CC) $(PWD)/$<"
 
 clean:
-	@rm -fr *.o $(PROJ_LIB)/$(TARGET)
-	@echo "rm -fr *.o $(PROJ_LIB)/$(TARGET)"
+	@rm -fr *.o $(PROJ_LIB)/$(TARGET) $(OBJS)
+	@echo "rm -fr *.o $(PROJ_LIB)/$(TARGET) $(OBJS)"
