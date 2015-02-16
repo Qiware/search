@@ -56,7 +56,7 @@ typedef struct
     crwl_webpage_t webpage;         /* 网页信息 */
     char recv[CRWL_RECV_SIZE + 1];  /* 接收缓存 */
     list_t *send_list;              /* 发送链表 */
-} crwl_worker_socket_data_t;
+} crwl_worker_socket_extra_t;
 
 /* 函数声明 */
 int crwl_worker_add_sock(crwl_worker_t *worker, socket_t *sck);
@@ -86,7 +86,7 @@ int crwl_worker_webpage_creat(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t 
  * */
 #define crwl_worker_webpage_fsync(worker, sck) \
 { \
-    crwl_worker_socket_data_t *_data = sck->data; \
+    crwl_worker_socket_extra_t *_data = sck->data; \
  \
     fwrite(sck->recv.addr, sck->recv.off, 1, _data->webpage.fp); \
  \

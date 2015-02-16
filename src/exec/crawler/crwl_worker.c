@@ -229,7 +229,7 @@ static int crwl_worker_fetch_task(crwl_cntx_t *ctx, crwl_worker_t *worker)
 int crwl_worker_recv_data(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t *sck)
 {
     int n, left;
-    crwl_worker_socket_data_t *data = (crwl_worker_socket_data_t *)sck->data;
+    crwl_worker_socket_extra_t *extra = (crwl_worker_socket_extra_t *)sck->data;
 
     sck->rdtm = time(NULL);
 
@@ -240,9 +240,9 @@ int crwl_worker_recv_data(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t *sck
         n = read(sck->fd, sck->recv.addr + sck->recv.off, left);
         if (n > 0)
         {
-            log_debug(worker->log, "Recv! uri:%s n:%d", data->webpage.uri, n);
+            log_debug(worker->log, "Recv! uri:%s n:%d", extra->webpage.uri, n);
 
-            data->webpage.size += n;
+            extra->webpage.size += n;
 
             /* 将HTML数据写入文件 */
             sck->recv.off += n;
@@ -256,7 +256,7 @@ int crwl_worker_recv_data(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t *sck
         else if (0 == n)
         {
             log_info(worker->log, "End of recv! uri:%s size:%d",
-                    data->webpage.uri, data->webpage.size);
+                    extra->webpage.uri, extra->webpage.size);
 
             crwl_worker_webpage_fsync(worker, sck);
             crwl_worker_webpage_finfo(ctx, worker, sck);
@@ -265,7 +265,7 @@ int crwl_worker_recv_data(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t *sck
         }
         else if (n < 0 && EAGAIN == errno)
         {
-            log_debug(worker->log, "Again! uri:%s", data->webpage.uri);
+            log_debug(worker->log, "Again! uri:%s", extra->webpage.uri);
             return CRWL_OK;
         }
         else if (EINTR == errno)
@@ -298,7 +298,7 @@ int crwl_worker_send_data(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t *sck
     int n, left;
     crwl_data_info_t *info;
     struct epoll_event ev;
-    crwl_worker_socket_data_t *data = (crwl_worker_socket_data_t *)sck->data;
+    crwl_worker_socket_extra_t *extra = (crwl_worker_socket_extra_t *)sck->data;
 
     sck->wrtm = time(NULL);
 
@@ -307,7 +307,7 @@ int crwl_worker_send_data(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t *sck
         /* 1. 从发送列表取数据 */
         if (!sck->send.addr)
         {
-            info = (crwl_data_info_t *)list_pop(data->send_list);
+            info = (crwl_data_info_t *)list_pop(extra->send_list);
             if (NULL == info)
             {
                 memset(&ev, 0, sizeof(ev));
@@ -380,7 +380,7 @@ static int crwl_worker_timeout_hdl(crwl_cntx_t *ctx, crwl_worker_t *worker)
     time_t ctm = time(NULL);
     list_node_t *node, *next;
     socket_t *sck;
-    crwl_worker_socket_data_t *data;
+    crwl_worker_socket_extra_t *extra;
     crwl_conf_t *conf = ctx->conf;
 
     /* 1. 依次遍历套接字, 判断是否超时 */
@@ -395,7 +395,7 @@ static int crwl_worker_timeout_hdl(crwl_cntx_t *ctx, crwl_worker_t *worker)
             continue;
         }
 
-        data = (crwl_worker_socket_data_t *)sck->data;
+        extra = (crwl_worker_socket_extra_t *)sck->data;
 
         /* 超时未发送或接收数据时, 认为无数据传输, 将直接关闭套接字 */
         if ((ctm - sck->rdtm <= conf->worker.conn_tmout_sec)
@@ -405,7 +405,7 @@ static int crwl_worker_timeout_hdl(crwl_cntx_t *ctx, crwl_worker_t *worker)
         }
 
         log_warn(worker->log, "Timeout! uri:%s ip:%s size:%d!",
-                data->webpage.uri, data->webpage.ip, data->webpage.size);
+                extra->webpage.uri, extra->webpage.ip, extra->webpage.size);
 
         crwl_worker_webpage_fsync(worker, sck);
         crwl_worker_webpage_finfo(ctx, worker, sck);
@@ -557,10 +557,10 @@ void *crwl_worker_routine(void *_ctx)
 int crwl_worker_add_sock(crwl_worker_t *worker, socket_t *sck)
 {
     struct epoll_event ev;
-    crwl_worker_socket_data_t *data = (crwl_worker_socket_data_t *)sck->data;
+    crwl_worker_socket_extra_t *extra = (crwl_worker_socket_extra_t *)sck->data;
 
     /* > 设置标识量 */
-    sck->recv.addr = data->recv;
+    sck->recv.addr = extra->recv;
     sck->recv.off = 0;
     sck->recv.total = CRWL_RECV_SIZE;
 
@@ -630,24 +630,24 @@ int crwl_worker_remove_sock(crwl_worker_t *worker, socket_t *sck)
     void *p;
     struct epoll_event ev;
     list_node_t *item, *prev;
-    crwl_worker_socket_data_t *data = (crwl_worker_socket_data_t *)sck->data;
+    crwl_worker_socket_extra_t *extra = (crwl_worker_socket_extra_t *)sck->data;
 
     log_debug(worker->log, "Remove socket! ip:%s port:%d",
-            data->webpage.ip, data->webpage.port);
+            extra->webpage.ip, extra->webpage.port);
 
     /* > 移除epoll监听 */
     epoll_ctl(worker->epid, EPOLL_CTL_DEL, sck->fd, &ev);
 
-    if (data->webpage.fp)
+    if (extra->webpage.fp)
     {
-        fClose(data->webpage.fp);
+        fClose(extra->webpage.fp);
     }
     Close(sck->fd);
 
     /* > 释放发送链表 */
     while (1)
     {
-        p = list_pop(data->send_list);
+        p = list_pop(extra->send_list);
         if (NULL == p)
         {
             break;
@@ -733,7 +733,7 @@ int crwl_worker_add_http_get_req(
 {
     void *addr, *p;
     crwl_data_info_t *info;
-    crwl_worker_socket_data_t *data = (crwl_worker_socket_data_t *)sck->data;
+    crwl_worker_socket_extra_t *extra = (crwl_worker_socket_extra_t *)sck->data;
 
     do
     {
@@ -758,7 +758,7 @@ int crwl_worker_add_http_get_req(
         info->length = sizeof(crwl_data_info_t) + strlen((const char *)addr);
 
         /* > 将结点插入链表 */
-        if (list_rpush(data->send_list, p))
+        if (list_rpush(extra->send_list, p))
         {
             log_error(worker->log, "Insert list tail failed");
             break;
@@ -792,27 +792,27 @@ int crwl_worker_webpage_creat(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t 
 {
     struct tm loctm;
     char path[FILE_NAME_MAX_LEN];
-    crwl_worker_socket_data_t *data = (crwl_worker_socket_data_t *)sck->data;
+    crwl_worker_socket_extra_t *extra = (crwl_worker_socket_extra_t *)sck->data;
     crwl_conf_t *conf = ctx->conf;
 
     localtime_r(&sck->crtm.time, &loctm);
 
-    data->webpage.size = 0;
-    data->webpage.idx = ++worker->down_webpage_total;
+    extra->webpage.size = 0;
+    extra->webpage.idx = ++worker->down_webpage_total;
 
-    snprintf(data->webpage.fname, sizeof(data->webpage.fname),
+    snprintf(extra->webpage.fname, sizeof(extra->webpage.fname),
             "%02d-%08ld-%04d%02d%02d%02d%02d%02d%03d",
-            worker->tidx, data->webpage.idx,
+            worker->tidx, extra->webpage.idx,
             loctm.tm_year+1900, loctm.tm_mon+1, loctm.tm_mday,
             loctm.tm_hour, loctm.tm_min, loctm.tm_sec, sck->crtm.millitm);
 
     snprintf(path, sizeof(path), "%s/%s.html",
-            conf->download.path, data->webpage.fname);
+            conf->download.path, extra->webpage.fname);
 
     Mkdir2(path, 0777);
 
-    data->webpage.fp = fopen(path, "w");
-    if (NULL == data->webpage.fp)
+    extra->webpage.fp = fopen(path, "w");
+    if (NULL == extra->webpage.fp)
     {
         log_error(worker->log, "errmsg:[%d] %s! path:%s", errno, strerror(errno), path);
         return CRWL_ERR;
@@ -842,11 +842,11 @@ int crwl_worker_webpage_finfo(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t 
     char path[FILE_NAME_MAX_LEN],
          temp[FILE_NAME_MAX_LEN];
     crwl_conf_t *conf = ctx->conf;
-    crwl_worker_socket_data_t *data = (crwl_worker_socket_data_t *)sck->data;
+    crwl_worker_socket_extra_t *extra = (crwl_worker_socket_extra_t *)sck->data;
 
     localtime_r(&sck->crtm.time, &loctm);
-    snprintf(temp, sizeof(temp), "%s/wpi/.temp/%s.wpi", conf->download.path, data->webpage.fname);
-    snprintf(path, sizeof(path), "%s/wpi/%s.wpi", conf->download.path, data->webpage.fname);
+    snprintf(temp, sizeof(temp), "%s/wpi/.temp/%s.wpi", conf->download.path, extra->webpage.fname);
+    snprintf(path, sizeof(path), "%s/wpi/%s.wpi", conf->download.path, extra->webpage.fname);
 
     Mkdir2(temp, 0777);
 
@@ -859,7 +859,7 @@ int crwl_worker_webpage_finfo(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t 
     }
 
     /* 2. 写入校验内容 */
-    crwl_write_webpage_finfo(fp, data);
+    crwl_write_webpage_finfo(fp, extra);
 
     fclose(fp);
 
@@ -883,7 +883,7 @@ socket_t *crwl_worker_socket_alloc(crwl_worker_t *worker)
 {
     socket_t *sck;
     list_option_t option;
-    crwl_worker_socket_data_t *data;
+    crwl_worker_socket_extra_t *extra;
 
     /* > 创建SCK对象 */
     sck = slab_alloc(worker->slab, sizeof(socket_t));
@@ -894,8 +894,8 @@ socket_t *crwl_worker_socket_alloc(crwl_worker_t *worker)
     }
 
     /* > 分配SCK数据 */
-    data = slab_alloc(worker->slab, sizeof(crwl_worker_socket_data_t));
-    if (NULL == data)
+    extra = slab_alloc(worker->slab, sizeof(crwl_worker_socket_extra_t));
+    if (NULL == extra)
     {
         log_error(worker->log, "Alloc memory from slab failed!");
         slab_dealloc(worker->slab, sck);
@@ -909,16 +909,16 @@ socket_t *crwl_worker_socket_alloc(crwl_worker_t *worker)
     option.alloc = (mem_alloc_cb_t)slab_alloc;
     option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-    data->send_list = list_creat(&option);
-    if (NULL == data->send_list)
+    extra->send_list = list_creat(&option);
+    if (NULL == extra->send_list)
     {
         log_error(worker->log, "Create list failed!");
-        slab_dealloc(worker->slab, data);
+        slab_dealloc(worker->slab, extra);
         slab_dealloc(worker->slab, sck);
         return NULL;
     }
     
-    sck->data = data;
+    sck->data = extra;
 
     return sck;
 }
@@ -944,7 +944,7 @@ static int crwl_worker_task_down_webpage(
 {
     int fd;
     socket_t *sck;
-    crwl_worker_socket_data_t *data;
+    crwl_worker_socket_extra_t *extra;
 
     /* 1. 连接远程WEB服务器 */
     fd = tcp_connect_ex2(args->family, args->ip, args->port);
@@ -963,18 +963,18 @@ static int crwl_worker_task_down_webpage(
         return CRWL_ERR;
     }
 
-    data = (crwl_worker_socket_data_t *)sck->data;
+    extra = (crwl_worker_socket_extra_t *)sck->data;
 
     sck->fd = fd;
     ftime(&sck->crtm);
     sck->rdtm = sck->crtm.time;
     sck->wrtm = sck->crtm.time;
-    sck->recv.addr = data->recv;
+    sck->recv.addr = extra->recv;
 
-    snprintf(data->webpage.uri, sizeof(data->webpage.uri), "%s", args->uri);
-    snprintf(data->webpage.ip, sizeof(data->webpage.ip), "%s", args->ip);
-    data->webpage.port = args->port;
-    data->webpage.depth = args->depth;
+    snprintf(extra->webpage.uri, sizeof(extra->webpage.uri), "%s", args->uri);
+    snprintf(extra->webpage.ip, sizeof(extra->webpage.ip), "%s", args->ip);
+    extra->webpage.port = args->port;
+    extra->webpage.depth = args->depth;
 
     sck->recv_cb = (socket_recv_cb_t)crwl_worker_recv_data;
     sck->send_cb = (socket_send_cb_t)crwl_worker_send_data;
