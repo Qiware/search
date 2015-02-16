@@ -229,7 +229,7 @@ static int crwl_worker_fetch_task(crwl_cntx_t *ctx, crwl_worker_t *worker)
 int crwl_worker_recv_data(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t *sck)
 {
     int n, left;
-    crwl_worker_socket_extra_t *extra = (crwl_worker_socket_extra_t *)sck->data;
+    crwl_worker_socket_extra_t *extra = (crwl_worker_socket_extra_t *)sck->extra;
 
     sck->rdtm = time(NULL);
 
@@ -298,7 +298,7 @@ int crwl_worker_send_data(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t *sck
     int n, left;
     crwl_data_info_t *info;
     struct epoll_event ev;
-    crwl_worker_socket_extra_t *extra = (crwl_worker_socket_extra_t *)sck->data;
+    crwl_worker_socket_extra_t *extra = (crwl_worker_socket_extra_t *)sck->extra;
 
     sck->wrtm = time(NULL);
 
@@ -395,7 +395,7 @@ static int crwl_worker_timeout_hdl(crwl_cntx_t *ctx, crwl_worker_t *worker)
             continue;
         }
 
-        extra = (crwl_worker_socket_extra_t *)sck->data;
+        extra = (crwl_worker_socket_extra_t *)sck->extra;
 
         /* 超时未发送或接收数据时, 认为无数据传输, 将直接关闭套接字 */
         if ((ctm - sck->rdtm <= conf->worker.conn_tmout_sec)
@@ -557,7 +557,7 @@ void *crwl_worker_routine(void *_ctx)
 int crwl_worker_add_sock(crwl_worker_t *worker, socket_t *sck)
 {
     struct epoll_event ev;
-    crwl_worker_socket_extra_t *extra = (crwl_worker_socket_extra_t *)sck->data;
+    crwl_worker_socket_extra_t *extra = (crwl_worker_socket_extra_t *)sck->extra;
 
     /* > 设置标识量 */
     sck->recv.addr = extra->recv;
@@ -630,7 +630,7 @@ int crwl_worker_remove_sock(crwl_worker_t *worker, socket_t *sck)
     void *p;
     struct epoll_event ev;
     list_node_t *item, *prev;
-    crwl_worker_socket_extra_t *extra = (crwl_worker_socket_extra_t *)sck->data;
+    crwl_worker_socket_extra_t *extra = (crwl_worker_socket_extra_t *)sck->extra;
 
     log_debug(worker->log, "Remove socket! ip:%s port:%d",
             extra->webpage.ip, extra->webpage.port);
@@ -733,7 +733,7 @@ int crwl_worker_add_http_get_req(
 {
     void *addr, *p;
     crwl_data_info_t *info;
-    crwl_worker_socket_extra_t *extra = (crwl_worker_socket_extra_t *)sck->data;
+    crwl_worker_socket_extra_t *extra = (crwl_worker_socket_extra_t *)sck->extra;
 
     do
     {
@@ -792,7 +792,7 @@ int crwl_worker_webpage_creat(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t 
 {
     struct tm loctm;
     char path[FILE_NAME_MAX_LEN];
-    crwl_worker_socket_extra_t *extra = (crwl_worker_socket_extra_t *)sck->data;
+    crwl_worker_socket_extra_t *extra = (crwl_worker_socket_extra_t *)sck->extra;
     crwl_conf_t *conf = ctx->conf;
 
     localtime_r(&sck->crtm.time, &loctm);
@@ -842,7 +842,7 @@ int crwl_worker_webpage_finfo(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t 
     char path[FILE_NAME_MAX_LEN],
          temp[FILE_NAME_MAX_LEN];
     crwl_conf_t *conf = ctx->conf;
-    crwl_worker_socket_extra_t *extra = (crwl_worker_socket_extra_t *)sck->data;
+    crwl_worker_socket_extra_t *extra = (crwl_worker_socket_extra_t *)sck->extra;
 
     localtime_r(&sck->crtm.time, &loctm);
     snprintf(temp, sizeof(temp), "%s/wpi/.temp/%s.wpi", conf->download.path, extra->webpage.fname);
@@ -918,7 +918,7 @@ socket_t *crwl_worker_socket_alloc(crwl_worker_t *worker)
         return NULL;
     }
     
-    sck->data = extra;
+    sck->extra = extra;
 
     return sck;
 }
@@ -963,7 +963,7 @@ static int crwl_worker_task_down_webpage(
         return CRWL_ERR;
     }
 
-    extra = (crwl_worker_socket_extra_t *)sck->data;
+    extra = (crwl_worker_socket_extra_t *)sck->extra;
 
     sck->fd = fd;
     ftime(&sck->crtm);

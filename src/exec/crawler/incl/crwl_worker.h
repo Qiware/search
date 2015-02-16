@@ -72,9 +72,9 @@ int crwl_worker_add_http_get_req(
 socket_t *crwl_worker_socket_alloc(crwl_worker_t *worker);
 #define crwl_worker_socket_dealloc(worker, sck) /* 释放Socket空间 */\
 { \
-    if (NULL != sck->data) \
+    if (NULL != sck->extra) \
     { \
-        slab_dealloc(worker->slab, sck->data); \
+        slab_dealloc(worker->slab, sck->extra); \
     } \
     slab_dealloc(worker->slab, sck); \
 }
@@ -86,7 +86,7 @@ int crwl_worker_webpage_creat(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t 
  * */
 #define crwl_worker_webpage_fsync(worker, sck) \
 { \
-    crwl_worker_socket_extra_t *_data = sck->data; \
+    crwl_worker_socket_extra_t *_data = sck->extra; \
  \
     fwrite(sck->recv.addr, sck->recv.off, 1, _data->webpage.fp); \
  \

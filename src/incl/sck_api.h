@@ -57,7 +57,7 @@ typedef struct _socket_t
     socket_recv_cb_t recv_cb;       /* 接收回调 */
     socket_send_cb_t send_cb;       /* 发送回调 */
 
-    void *data;                     /* 附加数据(自定义数据) */
+    void *extra;                    /* 附加数据(自定义数据) */
 } socket_t;
 
 int tcp_listen(int port);

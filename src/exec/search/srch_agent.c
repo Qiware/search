@@ -444,7 +444,7 @@ static int srch_agent_add_conn(srch_cntx_t *ctx, srch_agent_t *agt)
             return SRCH_ERR;
         }
 
-        sck->data = extra;
+        sck->extra = extra;
 
         /* > 设置SCK信息 */
         sck->fd = add->fd;
@@ -466,7 +466,7 @@ static int srch_agent_add_conn(srch_cntx_t *ctx, srch_agent_t *agt)
 
             Close(sck->fd);
             list_destroy(extra->send_list);
-            slab_dealloc(agt->slab, sck->data);
+            slab_dealloc(agt->slab, sck->extra);
             slab_dealloc(agt->slab, sck);
             return SRCH_ERR;
         }
@@ -500,7 +500,7 @@ static int srch_agent_add_conn(srch_cntx_t *ctx, srch_agent_t *agt)
 static int srch_agent_del_conn(srch_cntx_t *ctx, srch_agent_t *agt, socket_t *sck)
 {
     void *addr, *p;
-    srch_agent_socket_extra_t *extra = sck->data;
+    srch_agent_socket_extra_t *extra = sck->extra;
 
     log_debug(agt->log, "Call %s()! fd:%d", __func__, sck->fd);
 
@@ -531,7 +531,7 @@ static int srch_agent_del_conn(srch_cntx_t *ctx, srch_agent_t *agt, socket_t *sc
         queue_dealloc(ctx->recvq[agt->tidx], sck->recv.addr);
     }
 
-    slab_dealloc(agt->slab, sck->data);
+    slab_dealloc(agt->slab, sck->extra);
     slab_dealloc(agt->slab, sck);
 
     return SRCH_OK;
@@ -556,7 +556,7 @@ int srch_agent_socket_cmp_cb(const void *pkey, const void *data)
 {
     uint64_t serial = *(const uint64_t *)pkey;
     const socket_t *sock = (const socket_t *)data;
-    const srch_agent_socket_extra_t *extra = sock->data;
+    const srch_agent_socket_extra_t *extra = sock->extra;
 
     return (serial - extra->serial);
 }
@@ -714,7 +714,7 @@ static int srch_agent_recv_body(srch_agent_t *agt, socket_t *sck)
  ******************************************************************************/
 static int srch_agent_recv_post(srch_cntx_t *ctx, srch_agent_t *agt, socket_t *sck)
 {
-    srch_agent_socket_extra_t *extra = (srch_agent_socket_extra_t *)sck->data;
+    srch_agent_socket_extra_t *extra = (srch_agent_socket_extra_t *)sck->extra;
 
     /* 1. 自定义消息的处理 */
     if (SRCH_MSG_FLAG_USR == extra->head->flag)
@@ -745,7 +745,7 @@ static int srch_agent_recv(srch_cntx_t *ctx, srch_agent_t *agt, socket_t *sck)
 {
     int ret;
     socket_snap_t *recv = &sck->recv;
-    srch_agent_socket_extra_t *extra = (srch_agent_socket_extra_t *)sck->data;
+    srch_agent_socket_extra_t *extra = (srch_agent_socket_extra_t *)sck->extra;
 
     for (;;)
     {
@@ -888,7 +888,7 @@ static int srch_agent_recv(srch_cntx_t *ctx, srch_agent_t *agt, socket_t *sck)
  ******************************************************************************/
 static void *srch_agent_fetch_send_data(srch_agent_t *agt, socket_t *sck)
 {
-    srch_agent_socket_extra_t *extra = sck->data;
+    srch_agent_socket_extra_t *extra = sck->extra;
 
     return list_pop(extra->send_list);
 }
