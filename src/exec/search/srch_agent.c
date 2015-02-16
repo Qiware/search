@@ -399,7 +399,7 @@ static int srch_agent_add_conn(srch_cntx_t *ctx, srch_agent_t *agt)
     socket_t *sck;
     srch_add_sck_t *add;
     list_option_t option;
-    srch_agent_sck_data_t *data;
+    srch_agent_socket_extra_t *extra;
     struct epoll_event ev;
 
     while (1)
@@ -425,8 +425,8 @@ static int srch_agent_add_conn(srch_cntx_t *ctx, srch_agent_t *agt)
         memset(sck, 0, sizeof(socket_t));
 
         /* > 创建SCK关联对象 */
-        data = slab_alloc(agt->slab, sizeof(srch_agent_sck_data_t));
-        if (NULL == data)
+        extra = slab_alloc(agt->slab, sizeof(srch_agent_socket_extra_t));
+        if (NULL == extra)
         {
             slab_dealloc(agt->slab, sck);
             queue_dealloc(ctx->connq[agt->tidx], add);
@@ -434,17 +434,17 @@ static int srch_agent_add_conn(srch_cntx_t *ctx, srch_agent_t *agt)
             return SRCH_ERR;
         }
 
-        data->send_list = list_creat(&option);
-        if (NULL == data->send_list)
+        extra->send_list = list_creat(&option);
+        if (NULL == extra->send_list)
         {
             slab_dealloc(agt->slab, sck);
-            slab_dealloc(agt->slab, data);
+            slab_dealloc(agt->slab, extra);
             queue_dealloc(ctx->connq[agt->tidx], add);
             log_error(agt->log, "Alloc memory from slab failed!");
             return SRCH_ERR;
         }
 
-        sck->data = data;
+        sck->data = extra;
 
         /* > 设置SCK信息 */
         sck->fd = add->fd;
@@ -455,23 +455,23 @@ static int srch_agent_add_conn(srch_cntx_t *ctx, srch_agent_t *agt)
         sck->recv_cb = (socket_recv_cb_t)srch_agent_recv;  /* Recv回调函数 */
         sck->send_cb = (socket_send_cb_t)srch_agent_send;  /* Send回调函数*/
 
-        data->serial = add->serial;
+        extra->serial = add->serial;
 
         queue_dealloc(ctx->connq[agt->tidx], add);  /* 释放连接队列空间 */
 
         /* > 插入红黑树中(以序列号为主键) */
-        if (rbt_insert(agt->connections, data->serial, sck))
+        if (rbt_insert(agt->connections, extra->serial, sck))
         {
-            log_error(agt->log, "Insert into avl failed! fd:%d seq:%lu", sck->fd, data->serial);
+            log_error(agt->log, "Insert into avl failed! fd:%d seq:%lu", sck->fd, extra->serial);
 
             Close(sck->fd);
-            list_destroy(data->send_list);
+            list_destroy(extra->send_list);
             slab_dealloc(agt->slab, sck->data);
             slab_dealloc(agt->slab, sck);
             return SRCH_ERR;
         }
 
-        log_debug(agt->log, "Insert into avl success! fd:%d seq:%lu", sck->fd, data->serial);
+        log_debug(agt->log, "Insert into avl success! fd:%d seq:%lu", sck->fd, extra->serial);
 
         /* > 加入epoll监听(首先是接收客户端搜索请求, 所以设置EPOLLIN) */
         memset(&ev, 0, sizeof(ev));
@@ -500,16 +500,16 @@ static int srch_agent_add_conn(srch_cntx_t *ctx, srch_agent_t *agt)
 static int srch_agent_del_conn(srch_cntx_t *ctx, srch_agent_t *agt, socket_t *sck)
 {
     void *addr, *p;
-    srch_agent_sck_data_t *data = sck->data;
+    srch_agent_socket_extra_t *extra = sck->data;
 
     log_debug(agt->log, "Call %s()! fd:%d", __func__, sck->fd);
 
     /* 1. 将套接字从红黑树中剔除 */
-    rbt_delete(agt->connections, data->serial, &addr);
+    rbt_delete(agt->connections, extra->serial, &addr);
     if (addr != sck)
     {
         log_fatal(agt->log, "Serior error! serial:%lu fd:%d addr:%p sck:%p",
-                data->serial, sck->fd, addr, sck);
+                extra->serial, sck->fd, addr, sck);
         abort();
     }
 
@@ -517,7 +517,7 @@ static int srch_agent_del_conn(srch_cntx_t *ctx, srch_agent_t *agt, socket_t *sc
     Close(sck->fd);
     for (;;)    /* 释放发送链表 */
     {
-        p = list_pop(data->send_list);
+        p = list_pop(extra->send_list);
         if (NULL == p)
         {
             break;
@@ -556,9 +556,9 @@ int srch_agent_socket_cmp_cb(const void *pkey, const void *data)
 {
     uint64_t serial = *(const uint64_t *)pkey;
     const socket_t *sock = (const socket_t *)data;
-    const srch_agent_sck_data_t *sock_data = sock->data;
+    const srch_agent_socket_extra_t *extra = sock->data;
 
-    return (serial - sock_data->serial);
+    return (serial - extra->serial);
 }
 
 /******************************************************************************
@@ -714,10 +714,10 @@ static int srch_agent_recv_body(srch_agent_t *agt, socket_t *sck)
  ******************************************************************************/
 static int srch_agent_recv_post(srch_cntx_t *ctx, srch_agent_t *agt, socket_t *sck)
 {
-    srch_agent_sck_data_t *data = (srch_agent_sck_data_t *)sck->data;
+    srch_agent_socket_extra_t *extra = (srch_agent_socket_extra_t *)sck->data;
 
     /* 1. 自定义消息的处理 */
-    if (SRCH_MSG_FLAG_USR == data->head->flag)
+    if (SRCH_MSG_FLAG_USR == extra->head->flag)
     {
         log_info(agt->log, "Push into user data queue!");
 
@@ -745,7 +745,7 @@ static int srch_agent_recv(srch_cntx_t *ctx, srch_agent_t *agt, socket_t *sck)
 {
     int ret;
     socket_snap_t *recv = &sck->recv;
-    srch_agent_sck_data_t *data = (srch_agent_sck_data_t *)sck->data;
+    srch_agent_socket_extra_t *extra = (srch_agent_socket_extra_t *)sck->data;
 
     for (;;)
     {
@@ -763,8 +763,8 @@ static int srch_agent_recv(srch_cntx_t *ctx, srch_agent_t *agt, socket_t *sck)
 
                 log_info(agt->log, "Alloc memory from queue success!");
 
-                data->head = (srch_mesg_header_t *)recv->addr;
-                data->body = (void *)(data->head + 1);
+                extra->head = (srch_mesg_header_t *)recv->addr;
+                extra->body = (void *)(extra->head + 1);
                 recv->off = 0;
                 recv->total = sizeof(srch_mesg_header_t);
 
@@ -782,7 +782,7 @@ static int srch_agent_recv(srch_cntx_t *ctx, srch_agent_t *agt, socket_t *sck)
                 {
                     case SRCH_OK:
                     {
-                        if (data->head->length)
+                        if (extra->head->length)
                         {
                             recv->phase = SOCK_PHASE_READY_BODY; /* 设置下步 */
                         }
@@ -811,7 +811,7 @@ static int srch_agent_recv(srch_cntx_t *ctx, srch_agent_t *agt, socket_t *sck)
             case SOCK_PHASE_READY_BODY:
             {
             READY_BODY:
-                recv->total += data->head->length;
+                recv->total += extra->head->length;
 
                 /* 设置下步 */
                 recv->phase = SOCK_PHASE_RECV_BODY;
@@ -888,9 +888,9 @@ static int srch_agent_recv(srch_cntx_t *ctx, srch_agent_t *agt, socket_t *sck)
  ******************************************************************************/
 static void *srch_agent_fetch_send_data(srch_agent_t *agt, socket_t *sck)
 {
-    srch_agent_sck_data_t *data = sck->data;
+    srch_agent_socket_extra_t *extra = sck->data;
 
-    return list_pop(data->send_list);
+    return list_pop(extra->send_list);
 }
 
 /******************************************************************************
