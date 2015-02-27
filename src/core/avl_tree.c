@@ -15,18 +15,18 @@
 #include "avl_tree.h"
 
 static int _avl_insert(avl_tree_t *tree, avl_node_t *node,
-        uint32_t key, const avl_pkey_t *pkey, bool *taller, void *data);
+        uint32_t idx, const avl_key_t *key, bool *taller, void *data);
 static void _avl_destroy(avl_tree_t *tree, avl_node_t *node);
 
 static int avl_right_balance(avl_tree_t *tree, avl_node_t *node);
 static int avl_left_balance(avl_tree_t *tree, avl_node_t *node);
 static int avl_insert_right(avl_tree_t *tree, avl_node_t *node,
-        uint32_t key, const avl_pkey_t *pkey, bool *taller, void *data);
+        uint32_t idx, const avl_key_t *key, bool *taller, void *data);
 static int avl_insert_left(avl_tree_t *tree, avl_node_t *node,
-        uint32_t key, const avl_pkey_t *pkey, bool *taller, void *data);
+        uint32_t idx, const avl_key_t *key, bool *taller, void *data);
 
 static int _avl_delete(avl_tree_t *tree, avl_node_t *node,
-        uint32_t key, const avl_pkey_t *pkey, bool *lower, void **data);
+        uint32_t idx, const avl_key_t *key, bool *lower, void **data);
 
 static int avl_replace_and_delete(avl_tree_t *tree,
         avl_node_t *node, avl_node_t *replace, bool *lower);
@@ -81,8 +81,8 @@ avl_tree_t *avl_creat(avl_option_t *opt, key_cb_t key_cb, avl_cmp_cb_t cmp_cb)
  **功    能: 插入新结点(对外接口)
  **输入参数: 
  **     tree: 平衡二叉树
- **     pkey: 主键(Primary key)
- **     pkey_len: 主键长
+ **     key: 主键(Primary idx)
+ **     len: 主键长
  **     data: 附加数据
  **输出参数: NONE
  **返    回:
@@ -97,14 +97,14 @@ avl_tree_t *avl_creat(avl_option_t *opt, key_cb_t key_cb, avl_cmp_cb_t cmp_cb)
  **     2. 如果要重置data值，请先执行删除操作.
  **作    者: # Qifeng.zou # 2013.12.12 #
  ******************************************************************************/
-int avl_insert(avl_tree_t *tree, void *pkey, int pkey_len, void *data)
+int avl_insert(avl_tree_t *tree, void *_key, int len, void *data)
 {
-    uint32_t key;   /* 非主键 */
+    uint32_t idx;   /* 非主键 */
+    avl_key_t key;  /* 主键 */
     bool taller = false;
-    avl_pkey_t primary;/* 主键 */
     avl_node_t *root = tree->root;
 
-    key = tree->key_cb(pkey, pkey_len);
+    idx = tree->key_cb(_key, len);
 
     /* 如果为空树，则创建第一个结点 */
     if (NULL == root)
@@ -118,17 +118,17 @@ int avl_insert(avl_tree_t *tree, void *pkey, int pkey_len, void *data)
         root->rchild = NULL;
         root->lchild = NULL;
         root->bf = AVL_EH;
-        root->key = key;
+        root->idx = idx;
         root->data = data;
        
         tree->root = root;
         return AVL_OK;
     }
 
-    primary.key = pkey;
-    primary.len = pkey_len;
+    key.v = _key;
+    key.len = len;
 
-    return _avl_insert(tree, root, key, &primary, &taller, data);
+    return _avl_insert(tree, root, idx, &key, &taller, data);
 }
 
 /******************************************************************************
@@ -136,9 +136,9 @@ int avl_insert(avl_tree_t *tree, void *pkey, int pkey_len, void *data)
  **功    能: 插入新结点(内部接口)
  **输入参数: 
  **     tree: 平衡二叉树
- **     node: 需在该结点的子树上插入key
- **     key: 需被插入的key
- **     pkey: 主键(Primary key)
+ **     node: 需在该结点的子树上插入IDX
+ **     idx: 需被插入的IDX
+ **     key: 主键(Primary idx)
  **     data: 附加数据
  **输出参数: 
  **     taller: 是否增高
@@ -151,13 +151,13 @@ int avl_insert(avl_tree_t *tree, void *pkey, int pkey_len, void *data)
  **作    者: # Qifeng.zou # 2013.12.13 #
  ******************************************************************************/
 static int _avl_insert(avl_tree_t *tree, avl_node_t *node,
-        uint32_t key, const avl_pkey_t *pkey, bool *taller, void *data)
+        uint32_t idx, const avl_key_t *key, bool *taller, void *data)
 {
     int ret;
     
-    if (key == node->key)        /* 结点已存在 */
+    if (idx == node->idx)        /* 结点已存在 */
     {
-        ret = tree->cmp_cb(pkey->key, node->data);
+        ret = tree->cmp_cb(key->v, node->data);
         if (0 == ret)
         {
             *taller = false;
@@ -165,18 +165,18 @@ static int _avl_insert(avl_tree_t *tree, avl_node_t *node,
         }
         else if (ret < 0)
         {
-            return avl_insert_left(tree, node, key, pkey, taller, data);
+            return avl_insert_left(tree, node, idx, key, taller, data);
         }
         
-        return avl_insert_right(tree, node, key, pkey, taller, data);
+        return avl_insert_right(tree, node, idx, key, taller, data);
     }
-    else if (key > node->key)    /* 插入右子树 */
+    else if (idx > node->idx)    /* 插入右子树 */
     {
-        return avl_insert_right(tree, node, key, pkey, taller, data);
+        return avl_insert_right(tree, node, idx, key, taller, data);
     }
 
     /* 插入左子树 */
-    return avl_insert_left(tree, node, key, pkey, taller, data);
+    return avl_insert_left(tree, node, idx, key, taller, data);
 }
 
 /******************************************************************************
@@ -185,8 +185,8 @@ static int _avl_insert(avl_tree_t *tree, avl_node_t *node,
  **输入参数: 
  **     tree: 平衡二叉树
  **     node: 需在该结点的子树上插入key
- **     key: 需被插入的key
- **     pkey: 主键(Primary key)
+ **     idx: 需被插入的key
+ **     key: 主键(Primary idx)
  **     data: 数据信息
  **输出参数: 
  **     taller: 是否增高
@@ -196,7 +196,7 @@ static int _avl_insert(avl_tree_t *tree, avl_node_t *node,
  **作    者: # Qifeng.zou # 2013.12.13 #
  ******************************************************************************/
 static int avl_insert_right(avl_tree_t *tree, avl_node_t *node,
-        uint32_t key, const avl_pkey_t *pkey, bool *taller, void *data)
+        uint32_t idx, const avl_key_t *key, bool *taller, void *data)
 {
     int ret = -1;
     avl_node_t *add = NULL;
@@ -214,7 +214,7 @@ static int avl_insert_right(avl_tree_t *tree, avl_node_t *node,
         add->lchild = NULL;
         add->rchild = NULL;
         add->parent = node;
-        add->key = key;
+        add->idx = idx;
         add->bf = AVL_EH;
         add->data = data;
 
@@ -223,7 +223,7 @@ static int avl_insert_right(avl_tree_t *tree, avl_node_t *node,
     }
     else
     {
-        ret = _avl_insert(tree, node->rchild, key, pkey, taller, data);
+        ret = _avl_insert(tree, node->rchild, idx, key, taller, data);
         if ((AVL_OK != ret))
         {
             return ret;
@@ -267,8 +267,8 @@ static int avl_insert_right(avl_tree_t *tree, avl_node_t *node,
  **输入参数: 
  **     tree: 平衡二叉树
  **     node: 需在该结点的子树上插入key
- **     key: 需被插入的key
- **     pkey: 主键(Primary key)
+ **     idx: 需被插入的key
+ **     key: 主键(Primary idx)
  **     data: 需要插入的数据
  **输出参数: 
  **     taller: 是否增高
@@ -278,7 +278,7 @@ static int avl_insert_right(avl_tree_t *tree, avl_node_t *node,
  **作    者: # Qifeng.zou # 2013.12.13 #
  ******************************************************************************/
 static int avl_insert_left(avl_tree_t *tree, avl_node_t *node,
-        uint32_t key, const avl_pkey_t *pkey, bool *taller, void *data)
+        uint32_t idx, const avl_key_t *key, bool *taller, void *data)
 {
     int ret = -1;
     avl_node_t *add;
@@ -296,7 +296,7 @@ static int avl_insert_left(avl_tree_t *tree, avl_node_t *node,
         add->lchild = NULL;
         add->rchild = NULL;
         add->parent = node;
-        add->key = key;
+        add->idx = idx;
         add->bf = AVL_EH;
         add->data = data;
 
@@ -305,7 +305,7 @@ static int avl_insert_left(avl_tree_t *tree, avl_node_t *node,
     }
     else
     {
-        ret = _avl_insert(tree, node->lchild, key, pkey, taller, data);
+        ret = _avl_insert(tree, node->lchild, idx, key, taller, data);
         if (AVL_OK != ret)
         {
             return ret;
@@ -674,27 +674,27 @@ int avl_left_balance(avl_tree_t *tree, avl_node_t *node)
  **功    能: 查找指定的结点
  **输入参数: 
  **     tree: 平衡二叉树
- **     pkey: 主键(Primary key)
- **     pkey_len: 主键长度
+ **     key: 主键(Primary idx)
+ **     key_len: 主键长度
  **输出参数: NONE
  **返    回: 结点地址
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.12 #
  ******************************************************************************/
-avl_node_t *avl_query(avl_tree_t *tree, void *pkey, int pkey_len)
+avl_node_t *avl_query(avl_tree_t *tree, void *key, int key_len)
 {
     int ret;
-    uint32_t key;
+    uint32_t idx;
     avl_node_t *node = tree->root;
 
-    key = tree->key_cb(pkey, pkey_len);
+    idx = tree->key_cb(key, key_len);
 
     while (NULL != node)
     {
-        if (node->key == key)
+        if (node->idx == idx)
         {
-            ret = tree->cmp_cb(pkey, node->data);
+            ret = tree->cmp_cb(key, node->data);
             if (0 == ret)
             {
                 return node;
@@ -708,7 +708,7 @@ avl_node_t *avl_query(avl_tree_t *tree, void *pkey, int pkey_len)
                 node = node->rchild;
             }
         }
-        else if (key < node->key)
+        else if (idx < node->idx)
         {
             node = node->lchild;
         }
@@ -781,6 +781,7 @@ void avl_assert(const avl_node_t *node)
  **输入参数: 
  **     tree: 平衡二叉树
  **     key: 被删除的关键字
+ **     len: 关键字长度
  **输出参数: 
  **     data: 附加数据
  **返    回: AVL_OK:成功 AVL_ERR:失败
@@ -788,10 +789,10 @@ void avl_assert(const avl_node_t *node)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.19 #
  ******************************************************************************/
-int avl_delete(avl_tree_t *tree, void *pkey, int pkey_len, void **data)
+int avl_delete(avl_tree_t *tree, void *_key, int len, void **data)
 {
-    uint32_t key;
-    avl_pkey_t primary;
+    uint32_t idx;
+    avl_key_t key;
     bool lower = false;
 
     if (NULL == tree->root)
@@ -800,12 +801,12 @@ int avl_delete(avl_tree_t *tree, void *pkey, int pkey_len, void **data)
         return AVL_OK;
     }
 
-    key = tree->key_cb(pkey, pkey_len);
+    idx = tree->key_cb(_key, len);
 
-    primary.key = pkey;
-    primary.len = pkey_len;
+    key.v = _key;
+    key.len = len;
 
-    return _avl_delete(tree, tree->root, key, &primary, &lower, data);
+    return _avl_delete(tree, tree->root, idx, &key, &lower, data);
 }
 
 /******************************************************************************
@@ -814,8 +815,8 @@ int avl_delete(avl_tree_t *tree, void *pkey, int pkey_len, void **data)
  **输入参数: 
  **     tree: 平衡二叉树
  **     node: 以node为根结点的子树
- **     key: 被删除的关键字
- **     pkey: 主键(Primary key)
+ **     idx: 被删除的关键字
+ **     key: 主键(Primary idx)
  **输出参数: 
  **     lower: 高度是否降低
  **     data: 附加数据
@@ -825,13 +826,13 @@ int avl_delete(avl_tree_t *tree, void *pkey, int pkey_len, void **data)
  **作    者: # Qifeng.zou # 2013.12.19 #
  ******************************************************************************/
 static int _avl_delete(avl_tree_t *tree, avl_node_t *node,
-        uint32_t key, const avl_pkey_t *pkey, bool *lower, void **data)
+        uint32_t idx, const avl_key_t *key, bool *lower, void **data)
 {
     int ret;
     avl_node_t *parent = node->parent;
 
     /* 1. 查找需要被删除的结点 */
-    if (key < node->key)         /* 左子树上查找 */
+    if (idx < node->idx)         /* 左子树上查找 */
     {
     AVL_LESS:
         if (NULL == node->lchild)
@@ -839,7 +840,7 @@ static int _avl_delete(avl_tree_t *tree, avl_node_t *node,
             return AVL_OK;
         }
         
-        _avl_delete(tree, node->lchild, key, pkey, lower, data);
+        _avl_delete(tree, node->lchild, idx, key, lower, data);
         avl_assert(node);
         avl_assert(node->lchild);
         if (true == *lower)
@@ -848,7 +849,7 @@ static int _avl_delete(avl_tree_t *tree, avl_node_t *node,
         }
         return AVL_OK;
     }
-    else if (key > node->key)    /* 右子树上查找 */
+    else if (idx > node->idx)    /* 右子树上查找 */
     {
     AVL_GREATER:
         if (NULL == node->rchild)
@@ -856,7 +857,7 @@ static int _avl_delete(avl_tree_t *tree, avl_node_t *node,
             return AVL_OK;
         }
         
-        _avl_delete(tree, node->rchild, key, pkey, lower, data);
+        _avl_delete(tree, node->rchild, idx, key, lower, data);
         avl_assert(node);
         avl_assert(node->rchild);
         if (true == *lower)
@@ -867,7 +868,7 @@ static int _avl_delete(avl_tree_t *tree, avl_node_t *node,
     }
     else
     {
-        ret = tree->cmp_cb(pkey->key, node->data);
+        ret = tree->cmp_cb(key->v, node->data);
         if (0 == ret)
         {
             goto AVL_EQUAL;
@@ -945,7 +946,7 @@ int avl_replace_and_delete(avl_tree_t *tree,
     {
         *lower = true;
         
-        node->key = prev->key;    /* 注: 将rnode的值给了dnode */
+        node->idx = prev->idx;    /* 注: 将rnode的值给了dnode */
         node->data = prev->data;
         if (prev == node->lchild)
         {
@@ -1313,11 +1314,11 @@ void avl_print_head(avl_node_t *node, int depth)
     if ((NULL == node->lchild)
         && (NULL == node->rchild))
     {
-        fprintf(stderr, "<%03d:%d/>\n", node->key, node->bf);
+        fprintf(stderr, "<%03d:%d/>\n", node->idx, node->bf);
     }
     else
     {
-        fprintf(stderr, "<%03d:%d>\n", node->key, node->bf);
+        fprintf(stderr, "<%03d:%d>\n", node->idx, node->bf);
     }
 }
 
@@ -1353,7 +1354,7 @@ void avl_print_tail(avl_node_t *node, int depth)
         depth--;
     }
 
-    fprintf(stderr, "</%03d>\n", node->key);
+    fprintf(stderr, "</%03d>\n", node->idx);
 }
 
 /******************************************************************************

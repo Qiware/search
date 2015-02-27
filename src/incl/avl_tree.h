@@ -49,32 +49,32 @@ typedef struct
 /* 主键 */
 typedef struct
 {
-    void *key;                  /* 主键 */
+    void *v;                    /* 主键值 */
     size_t len;                 /* 主键长度 */
-} avl_pkey_t;
+} avl_key_t;
 
 /******************************************************************************
  **函数名称: avl_cmp_cb_t
  **功    能: 主键与值的比较函数
  **输入参数: 
- **     pkey: 主键
+ **     key: 主键
  **     data: 与唯一键进行比较的数值
  **输出参数: NONE
  **返    回: 
  **     1. 0:相等
- **     2. < 0: 小于(pkey < data)
- **     3. > 0: 大于(pkey > data)
+ **     2. < 0: 小于(key < data)
+ **     3. > 0: 大于(key > data)
  **实现描述: 
  **注意事项: 
- **     数值中必须存有与之相关联pkey的值
+ **     数值中必须存有与之相关联key的值
  **作    者: # Qifeng.zou # 2014.11.09 #
  ******************************************************************************/
-typedef int (*avl_cmp_cb_t)(const void *pkey, const void *data);
+typedef int (*avl_cmp_cb_t)(const void *key, const void *data);
 
 /* 节点结构 */
 typedef struct _node_t
 {
-    int key;                    /* 节点值: 该值可能不唯一 */
+    uint32_t idx;               /* 索引值: 该值可能不唯一 */
 
     int bf;                     /* 平衡因子 */
 
@@ -142,9 +142,9 @@ typedef struct
 typedef int (*avl_trav_cb_t)(void *data, void *args);
 
 avl_tree_t *avl_creat(avl_option_t *opt, key_cb_t key_cb, avl_cmp_cb_t cmp_cb);
-int avl_insert(avl_tree_t *tree, void *pkey, int pkey_len, void *data);
-avl_node_t *avl_query(avl_tree_t *tree, void *pkey, int pkey_len);
-int avl_delete(avl_tree_t *tree, void *pkey, int pkey_len, void **data);
+int avl_insert(avl_tree_t *tree, void *key, int key_len, void *data);
+avl_node_t *avl_query(avl_tree_t *tree, void *key, int key_len);
+int avl_delete(avl_tree_t *tree, void *key, int key_len, void **data);
 int avl_print(avl_tree_t *tree);
 int avl_trav(avl_tree_t *tree, avl_trav_cb_t proc, void *args);
 void avl_destroy(avl_tree_t *tree);
