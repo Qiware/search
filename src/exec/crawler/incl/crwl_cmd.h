@@ -32,6 +32,11 @@ typedef struct
 /* 查询爬虫信息 */
 typedef struct
 {
+} crwl_cmd_worker_req_t;
+
+typedef struct
+{
+    int num;                        /* WORKER数 */
 } crwl_cmd_worker_resp_t;
 
 /* 反馈配置信息 */
@@ -53,7 +58,7 @@ typedef union
 typedef struct
 {
     uint16_t type;              /* 命令类型(范围:crwl_cmd_e) */
-    uint16_t length;            /* 数据长度 */
+    crwl_cmd_data_t data;       /* 命令内容 */
 } crwl_cmd_t;
 
 #endif /*__CRWL_CMD_H__*/

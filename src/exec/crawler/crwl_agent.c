@@ -355,11 +355,10 @@ static int crwl_agt_event_hdl(crwl_cntx_t *ctx, crwl_agent_t *agt)
 static int crwl_agt_cmd_recv(crwl_agent_t *agt)
 {
     ssize_t n;
-    crwl_cmd_t *cmd;
+    crwl_cmd_t cmd;
     avl_node_t *node;
     socklen_t addrlen;
     crwl_agt_reg_t *reg;
-    char buff[UDP_MAX_LEN];
     struct sockaddr_un from;
 
     /* > 接收命令 */
@@ -367,7 +366,7 @@ static int crwl_agt_cmd_recv(crwl_agent_t *agt)
 
     from.sun_family = AF_INET;
 
-    n = recvfrom(agt->fd, buff, sizeof(buff)-1, 0, (struct sockaddr *)&from, (socklen_t *)&addrlen);
+    n = recvfrom(agt->fd, &cmd, sizeof(cmd), 0, (struct sockaddr *)&from, (socklen_t *)&addrlen);
     if (n < 0)
     {
         log_error(agt->log, "errmsg:[%d] %s!", errno, strerror(errno));
@@ -375,19 +374,17 @@ static int crwl_agt_cmd_recv(crwl_agent_t *agt)
     }
 
     /* > 查找回调 */
-    cmd = (crwl_cmd_t *)buff;
-
-    node = avl_query(agt->reg, (void *)&cmd->type, sizeof(cmd->type));
+    node = avl_query(agt->reg, (void *)&cmd.type, sizeof(cmd.type));
     if (NULL == node)
     {
-        log_error(ctx->log, "Didn't register callback for type [%d]!", cmd->type);
+        log_error(ctx->log, "Didn't register callback for type [%d]!", cmd.type);
         return CRWL_ERR;
     }
 
     reg = (crwl_agt_reg_t *)node->data;
 
     /* > 执行回调 */
-    return reg->proc(cmd->type, buff + sizeof(crwl_cmd_t), reg->args);
+    return reg->proc(cmd->type, cmd.data, reg->args);
 }
 
 /******************************************************************************
@@ -431,6 +428,8 @@ static int crwl_cmd_query_conf_req_hdl(int type, void *buff, void *args)
     crwl_cmd_conf_resp_t *conf;
     crwl_agent_t *agt = (crwl_agent_t *)args;
 
+    log_debug(agt->log, "Call %s()!", __func__);
+
     conf = slab_slab(agt->slab, sizeof(crwl_cmd_conf_resp_t));
     if (NULL == conf)
     {
@@ -466,6 +465,7 @@ static int crwl_cmd_query_conf_req_hdl(int type, void *buff, void *args)
  ******************************************************************************/
 static int crwl_cmd_query_worker_req_hdl(int type, void *buff, void *args)
 {
+    log_debug(agt->log, "Call %s()!", __func__);
     return CRWL_OK;
 }
 
@@ -484,9 +484,12 @@ static int crwl_cmd_query_worker_req_hdl(int type, void *buff, void *args)
  ******************************************************************************/
 static int crwl_cmd_query_queue_req_hdl(int type, void *buff, void *args)
 {
+    log_debug(agt->log, "Call %s()!", __func__);
     return CRWL_OK;
 }
 
 static int crwl_agt_cmd_hdl(crwl_agent_t *agt)
 {
+    log_debug(agt->log, "Call %s()!", __func__);
+    return CRWL_OK;
 }
