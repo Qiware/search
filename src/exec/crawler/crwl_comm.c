@@ -27,8 +27,8 @@
 #include "crawler.h"
 #include "syscall.h"
 #include "sck_api.h"
+#include "crwl_man.h"
 #include "crwl_sched.h"
-#include "crwl_agent.h"
 #include "crwl_worker.h"
 
 #define CRWL_PROC_LOCK_PATH "../temp/crwl/crwl.lck"
@@ -310,9 +310,9 @@ void crwl_cntx_destroy(crwl_cntx_t *ctx)
 int crwl_startup(crwl_cntx_t *ctx)
 {
     int idx;
-#if defined(__CRWL_AGENT__)
+#if defined(__CRWL_MANAGER__)
     pthread_t tid;
-#endif /*__CRWL_AGENT__*/
+#endif /*__CRWL_MANAGER__*/
     time_t ctm = time(NULL);
     const crwl_conf_t *conf = ctx->conf;
 
@@ -328,14 +328,14 @@ int crwl_startup(crwl_cntx_t *ctx)
         thread_pool_add_worker(ctx->scheds, crwl_sched_routine, ctx);
     }
 
-#if defined(__CRWL_AGENT__)
+#if defined(__CRWL_MANAGER__)
     /* 3. 启动代理服务 */
-    if (thread_creat(&tid, crwl_agt_routine, ctx))
+    if (thread_creat(&tid, crwl_manager_routine, ctx))
     {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return CRWL_ERR;
     }
-#endif /*__CRWL_AGENT__*/
+#endif /*__CRWL_MANAGER__*/
 
     /* 4. 获取运行时间 */
     localtime_r(&ctm, &ctx->run_tm);

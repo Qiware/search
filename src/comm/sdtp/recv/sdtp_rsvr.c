@@ -139,7 +139,7 @@ static int sdtp_rsvr_clear_mesg(sdtp_rsvr_t *rsvr, sdtp_sck_t *sck);
     { \
         curr = (sdtp_sck_t *)node->data; \
         \
-        if ((NULL == curr->mesg_list->head) \
+        if (list_isempty(curr->mesg_list) \
             && (curr->send.optr == curr->send.iptr)) \
         { \
             if (node == tail) \

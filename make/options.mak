@@ -43,3 +43,8 @@ ifeq (POSIX_MEMALIGN, $(strip $(CONFIG_MEMALIGN_SUPPORT)))
 else ifeq (MEMALIGN, $(strip $(CONFIG_MEMALIGN_SUPPORT)))
 	OPTIONS += HAVE_MEMALIGN		# 内存对齐方式
 endif
+
+# 开启爬虫代理
+ifeq (__ON__, $(strip $(CONFIG_CRWL_MANAGER)))
+	OPTIONS += __CRWL_MANAGER__
+endif

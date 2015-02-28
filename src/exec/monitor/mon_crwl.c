@@ -87,12 +87,22 @@ menu_item_t *mon_crwl_menu(menu_cntx_t *ctx)
  ******************************************************************************/
 static int mon_crwl_query_worker(menu_item_t *menu)
 {
-    int fd;
+#define MON_CRWL_INTERVAL_SEC   (1)
+    int fd, ret, idx;
     ssize_t n;
     crwl_cmd_t cmd;
     socklen_t addrlen;
+    fd_set rdset, wrset;
+    struct timeval tmout;
+    time_t ctm = 0, wtm = 0;
     struct sockaddr_in to, from;
     crwl_cmd_worker_resp_t *resp;
+
+    memset(&to, 0, sizeof(to));
+
+    to.sin_family = AF_INET;
+    to.sin_port = htons(8888);
+    inet_pton(AF_INET, "127.0.0.1", &to.sin_addr);
 
     /* > 创建套接字 */
     fd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -103,43 +113,82 @@ static int mon_crwl_query_worker(menu_item_t *menu)
 
     while (1)
     {
+        ctm = time(NULL);
 
-        /* > 发送命令 */
-        memset(&to, 0, sizeof(to));
-        memset(&cmd, 0, sizeof(cmd));
+        FD_ZERO(&rdset);
+        FD_ZERO(&wrset);
 
-        cmd.type = CRWL_CMD_QUERY_WORKER_REQ;
-
-        to.sin_family = AF_INET;
-        inet_pton(AF_INET, "127.0.0.1", &to.sin_addr);
-        to.sin_port = htons(7777);
-
-        n = sendto(fd, &cmd, sizeof(cmd), 0, (struct sockaddr *)&to, sizeof(to));
-        if (n < 0)
+        FD_SET(fd, &rdset);
+        if (ctm - wtm >= MON_CRWL_INTERVAL_SEC)
         {
+            FD_SET(fd, &wrset);
+        }
+
+        /* > 等待事件 */
+        tmout.tv_sec = 1;
+        tmout.tv_usec = 0;
+
+        ret = select(fd+1, &rdset, &wrset, NULL, &tmout);
+        if (ret < 0)
+        {
+            if (EINTR == errno)
+            {
+                continue;
+            }
+
             fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
             break;
+        }
+        else if (0 == ret)
+        {
+            continue;
+        }
+
+        /* > 发送命令 */
+        if (FD_ISSET(fd, &wrset))
+        {
+            wtm = ctm;
+
+            memset(&cmd, 0, sizeof(cmd));
+
+            cmd.type = CRWL_CMD_QUERY_WORKER_REQ;
+
+            n = sendto(fd, &cmd, sizeof(cmd), 0, (const struct sockaddr *)&to, sizeof(to));
+            if (n < 0)
+            {
+                fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
+                break;
+            }
         }
 
         /* > 接收应答 */
-        memset(&from, 0, sizeof(from));
-
-        from.sin_family = AF_INET;
-
-        addrlen = sizeof(from);
-
-        n = recvfrom(fd, &cmd, sizeof(cmd), 0, (struct sockaddr *)&from, (socklen_t *)&addrlen);
-        if (n < 0)
+        if (FD_ISSET(fd, &rdset))
         {
-            fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
-            break;
+            memset(&from, 0, sizeof(from));
+
+            from.sin_family = AF_INET;
+
+            addrlen = sizeof(from);
+
+            n = recvfrom(fd, &cmd, sizeof(cmd), 0, (struct sockaddr *)&from, (socklen_t *)&addrlen);
+            if (n < 0)
+            {
+                fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
+                break;
+            }
+
+            resp = (crwl_cmd_worker_resp_t *)&cmd.data;
+
+            /* 显示结果 */
+            fprintf(stderr, "\tnum:%d\n", resp->num);
+            for (idx=0; idx<resp->num && idx<CRWL_CMD_WORKER_MAX_NUM; ++idx)
+            {
+                fprintf(stderr, "\tconnections:%d download:%ld error:%ld\n",
+                        resp->worker[idx].connections,
+                        resp->worker[idx].down_webpage_total,
+                        resp->worker[idx].err_webpage_total);
+            }
         }
-
-        resp = (crwl_cmd_worker_resp_t *)&cmd.data;
-
-        fprintf(stderr, "num:%d", resp->num);
-
-        Sleep(1);
     }
 
     Close(fd);

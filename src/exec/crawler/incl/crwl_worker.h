@@ -99,4 +99,6 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker, int tidx);
 int crwl_worker_destroy(crwl_cntx_t *ctx, crwl_worker_t *worker);
 void *crwl_worker_routine(void *_ctx);
 
+crwl_worker_t *crwl_worker_get_by_idx(crwl_cntx_t *ctx, int idx);
+
 #endif /*__CRWL_WORKER_H__*/

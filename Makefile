@@ -44,7 +44,7 @@ DIR += "${DEMO_DIR}/smtc/send"
 export DIR
 
 # 创建目录结构
-define mak_mkdir
+define MakMkdir
 	mkdir -p ${PROJ_LIB};
 	mkdir -p ${PROJ_BIN};
 	mkdir -p ${PROJ_LOG};
@@ -55,7 +55,7 @@ endef
 
 # 1. 编译操作
 all:
-	${mak_mkdir}
+	${MakMkdir}
 	@for SUBDIR in ${DIR}; \
 	do \
 		if [ -e $${SUBDIR}/Makefile ]; then \

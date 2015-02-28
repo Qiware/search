@@ -355,7 +355,7 @@ void sdtp_ssvr_set_rwset(sdtp_ssvr_t *ssvr)
     FD_SET(ssvr->sck.fd, &ssvr->rset);
 
     /* 2 设置写集合: 发送至接收端 */
-    if (NULL != ssvr->sck.mesg_list->head
+    if (!list_isempty(ssvr->sck.mesg_list)
         || 0 != shm_queue_data_count(ssvr->sq))
     {
         FD_SET(ssvr->sck.fd, &ssvr->wset);

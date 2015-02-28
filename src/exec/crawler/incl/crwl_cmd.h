@@ -26,7 +26,7 @@ typedef enum
 /* 添加种子信息 */
 typedef struct
 {
-    char url[URL_MAX_LEN];          /* URL */
+    char url[256];                  /* URL */
 } crwl_cmd_add_seed_t;
 
 /* 查询爬虫信息 */
@@ -34,9 +34,16 @@ typedef struct
 {
 } crwl_cmd_worker_req_t;
 
+#define CRWL_CMD_WORKER_MAX_NUM     (20)
 typedef struct
 {
     int num;                        /* WORKER数 */
+    struct
+    {
+        uint32_t connections;       /* 连接数 */
+        uint64_t down_webpage_total;/* 下载网页的计数 */
+        uint64_t err_webpage_total; /* 异常网页的计数 */
+    } worker[CRWL_CMD_WORKER_MAX_NUM];
 } crwl_cmd_worker_resp_t;
 
 /* 反馈配置信息 */

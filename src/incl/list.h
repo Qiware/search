@@ -34,6 +34,7 @@ typedef struct
 } list_t;
 
 void list_assert(list_t *list);
+#define list_isempty(list) (NULL == (list)->head)
 
 list_t *list_creat(list_option_t *opt);
 void list_destroy(list_t *list);

@@ -37,6 +37,7 @@ SRC_LIST = hash.c \
 			xml_tree.c \
 			thread_pool.c \
 			tcp_socket.c \
+			udp_socket.c \
 			unix_socket.c \
 			hash_tab.c \
 			hash_array.c \

@@ -58,7 +58,7 @@ static crwl_worker_t *crwl_worker_get(crwl_cntx_t *ctx)
         return NULL;
     }
 
-    return (crwl_worker_t *)ctx->workers->data + tidx;
+    return crwl_worker_get_by_idx(ctx, tidx);
 }
 
 /******************************************************************************
@@ -985,3 +985,19 @@ static int crwl_worker_task_unknown_hdl(crwl_cntx_t *ctx, crwl_worker_t *worker,
     return CRWL_ERR;
 }
 
+/******************************************************************************
+ **函数名称: crwl_worker_get_by_idx
+ **功    能: 通过索引获取WORKER对象
+ **输入参数:
+ **     ctx: 全局信息
+ **     idx: 索引号
+ **输出参数: NONE
+ **返    回: 爬虫对象
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.11.22 #
+ ******************************************************************************/
+crwl_worker_t *crwl_worker_get_by_idx(crwl_cntx_t *ctx, int idx)
+{
+    return (crwl_worker_t *)ctx->workers->data + idx;
+}
