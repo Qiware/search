@@ -231,12 +231,12 @@ static int mon_crwl_query_worker_stat_req(menu_item_t *menu)
 
             fprintf(stderr, "    当前时间: %04d-%02d-%02d %02d:%02d:%02d\n"
                     "    运行时长: %lu\n"
-                    "    平均速率: %ld\n"
+                    "    平均速率: %lf\n"
                     "    当前速率: %ld\n",
                     loctm.tm_year+1900, loctm.tm_mon+1, loctm.tm_mday,
                     loctm.tm_hour, loctm.tm_min, loctm.tm_sec,
                     stat->ctm - stat->stm,
-                    down_webpage_total / (stat->ctm - stat->stm),
+                    (double)down_webpage_total / (stat->ctm - stat->stm),
                     down_webpage_total - last_down_webpage_total);
 
             last_down_webpage_total = down_webpage_total;
