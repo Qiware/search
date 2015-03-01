@@ -49,20 +49,22 @@ static int crwl_man_reg_cmp_cb(void *type, const void *_reg);
 static int crwl_man_cmd_recv(crwl_cntx_t *ctx, crwl_manager_t *man);
 static int crwl_man_cmd_send(crwl_cntx_t *ctx, crwl_manager_t *man);
 
-static int crwl_cmd_add_seed_req_hdl(crwl_cntx_t *ctx,
+static int crwl_man_add_seed_req_hdl(crwl_cntx_t *ctx,
         crwl_manager_t *man, int type, void *buff, struct sockaddr_un *from, void *args);
-static int crwl_cmd_query_conf_req_hdl(crwl_cntx_t *ctx,
+static int crwl_man_query_conf_req_hdl(crwl_cntx_t *ctx,
         crwl_manager_t *man, int type, void *buff, struct sockaddr_un *from, void *args);
-static int crwl_cmd_query_queue_req_hdl(crwl_cntx_t *ctx,
+static int crwl_man_query_table_stat_req_hdl(crwl_cntx_t *ctx,
         crwl_manager_t *man, int type, void *buff, struct sockaddr_un *from, void *args);
-static int crwl_cmd_query_worker_req_hdl(crwl_cntx_t *ctx,
+static int crwl_man_query_worker_stat_req_hdl(crwl_cntx_t *ctx,
+        crwl_manager_t *man, int type, void *buff, struct sockaddr_un *from, void *args);
+static int crwl_man_query_workq_stat_req_hdl(crwl_cntx_t *ctx,
         crwl_manager_t *man, int type, void *buff, struct sockaddr_un *from, void *args);
 
 /******************************************************************************
  **函数名称: crwl_man_rwset
  **功    能: 设置读写集合
  **输入参数: 
- **     man: 代理对象
+ **     man: 管理对象
  **输出参数:
  **返    回: VOID
  **实现描述: 
@@ -143,7 +145,7 @@ void *crwl_manager_routine(void *_ctx)
  **输入参数: 
  **     ctx: 全局信息
  **输出参数:
- **返    回: 代理对象
+ **返    回: 管理对象
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.02.12 #
@@ -233,7 +235,7 @@ static crwl_manager_t *crwl_man_init(crwl_cntx_t *ctx)
  **函数名称: crwl_man_register
  **功    能: 注册回调函数
  **输入参数: 
- **     man: 代理对象
+ **     man: 管理对象
  **     type: 命令类型
  **     proc: 回调函数
  **     args: 附加参数
@@ -278,7 +280,7 @@ static int crwl_man_register(crwl_manager_t *man, int type, crwl_man_reg_cb_t pr
  **函数名称: crwl_man_set_reg
  **功    能: 设置命令处理函数
  **输入参数: 
- **     man: 代理对象
+ **     man: 管理对象
  **输出参数:
  **返    回: 0:成功 !0:失败
  **实现描述: 
@@ -295,13 +297,15 @@ static int crwl_man_set_reg(crwl_manager_t *man)
 
     /* 注册回调函数 */
     CRWL_CHECK(crwl_man_register(man, CRWL_CMD_ADD_SEED_REQ,
-                (crwl_man_reg_cb_t)crwl_cmd_add_seed_req_hdl, man));
+                (crwl_man_reg_cb_t)crwl_man_add_seed_req_hdl, man));
     CRWL_CHECK(crwl_man_register(man, CRWL_CMD_QUERY_CONF_REQ,
-                (crwl_man_reg_cb_t)crwl_cmd_query_conf_req_hdl, man));
-    CRWL_CHECK(crwl_man_register(man, CRWL_CMD_QUERY_QUEUE_REQ,
-                (crwl_man_reg_cb_t)crwl_cmd_query_queue_req_hdl, man));
-    CRWL_CHECK(crwl_man_register(man, CRWL_CMD_QUERY_WORKER_REQ,
-                (crwl_man_reg_cb_t)crwl_cmd_query_worker_req_hdl, man));
+                (crwl_man_reg_cb_t)crwl_man_query_conf_req_hdl, man));
+    CRWL_CHECK(crwl_man_register(man, CRWL_CMD_QUERY_TABLE_STAT_REQ,
+                (crwl_man_reg_cb_t)crwl_man_query_table_stat_req_hdl, man));
+    CRWL_CHECK(crwl_man_register(man, CRWL_CMD_QUERY_WORKER_STAT_REQ,
+                (crwl_man_reg_cb_t)crwl_man_query_worker_stat_req_hdl, man));
+    CRWL_CHECK(crwl_man_register(man, CRWL_CMD_QUERY_WORKQ_STAT_REQ,
+                (crwl_man_reg_cb_t)crwl_man_query_workq_stat_req_hdl, man));
 
     return CRWL_OK;
 }
@@ -329,7 +333,7 @@ static uint32_t crwl_man_reg_key_cb(void *_reg, size_t len)
  **函数名称: crwl_man_reg_cmp_cb
  **功    能: 比较KEY的函数
  **输入参数: 
- **     man: 代理对象
+ **     man: 管理对象
  **     _reg: 注册的数据信息(类型: crwl_man_reg_t)
  **输出参数:
  **返    回: =0:相等 <0:小于 >0:大于
@@ -387,7 +391,7 @@ static int crwl_man_event_hdl(crwl_cntx_t *ctx, crwl_manager_t *man)
  **函数名称: crwl_man_cmd_recv
  **功    能: 接收命令数据
  **输入参数: 
- **     man: 代理对象
+ **     man: 管理对象
  **     buff: 缓存空间
  **输出参数:
  **返    回: 0:成功 !0:失败
@@ -418,6 +422,8 @@ static int crwl_man_cmd_recv(crwl_cntx_t *ctx, crwl_manager_t *man)
         return CRWL_ERR;
     }
 
+    cmd.type = ntohl(cmd.type);
+
     /* > 查找回调 */
     node = avl_query(man->reg, (void *)&cmd.type, sizeof(cmd.type));
     if (NULL == node)
@@ -436,7 +442,7 @@ static int crwl_man_cmd_recv(crwl_cntx_t *ctx, crwl_manager_t *man)
  **函数名称: crwl_man_cmd_send
  **功    能: 发送应答数据
  **输入参数: 
- **     man: 代理对象
+ **     man: 管理对象
  **输出参数:
  **返    回: 0:成功 !0:失败
  **实现描述: 
@@ -473,7 +479,7 @@ static int crwl_man_cmd_send(crwl_cntx_t *ctx, crwl_manager_t *man)
 }
 
 /******************************************************************************
- **函数名称: crwl_cmd_add_seed_req_hdl
+ **函数名称: crwl_man_add_seed_req_hdl
  **功    能: 添加爬虫种子
  **输入参数: 
  **     ctx: 全局信息
@@ -487,7 +493,7 @@ static int crwl_man_cmd_send(crwl_cntx_t *ctx, crwl_manager_t *man)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.02.13 #
  ******************************************************************************/
-static int crwl_cmd_add_seed_req_hdl(crwl_cntx_t *ctx,
+static int crwl_man_add_seed_req_hdl(crwl_cntx_t *ctx,
         crwl_manager_t *man, int type, void *buff, struct sockaddr_un *from, void *args)
 {
     crwl_cmd_add_seed_t *seed = (crwl_cmd_add_seed_t *)buff;
@@ -498,7 +504,7 @@ static int crwl_cmd_add_seed_req_hdl(crwl_cntx_t *ctx,
 }
 
 /******************************************************************************
- **函数名称: crwl_cmd_query_conf_req_hdl
+ **函数名称: crwl_man_query_conf_req_hdl
  **功    能: 查询配置信息
  **输入参数: 
  **     ctx: 全局信息
@@ -512,7 +518,7 @@ static int crwl_cmd_add_seed_req_hdl(crwl_cntx_t *ctx,
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.02.13 #
  ******************************************************************************/
-static int crwl_cmd_query_conf_req_hdl(crwl_cntx_t *ctx,
+static int crwl_man_query_conf_req_hdl(crwl_cntx_t *ctx,
         crwl_manager_t *man, int type, void *buff, struct sockaddr_un *from, void *args)
 {
     crwl_cmd_conf_resp_t *conf;
@@ -540,7 +546,7 @@ static int crwl_cmd_query_conf_req_hdl(crwl_cntx_t *ctx,
 }
 
 /******************************************************************************
- **函数名称: crwl_cmd_query_worker_req_hdl
+ **函数名称: crwl_man_query_worker_stat_req_hdl
  **功    能: 查询爬虫信息
  **输入参数: 
  **     ctx: 全局信息
@@ -554,14 +560,14 @@ static int crwl_cmd_query_conf_req_hdl(crwl_cntx_t *ctx,
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.02.13 #
  ******************************************************************************/
-static int crwl_cmd_query_worker_req_hdl(crwl_cntx_t *ctx,
+static int crwl_man_query_worker_stat_req_hdl(crwl_cntx_t *ctx,
         crwl_manager_t *man, int type, void *buff, struct sockaddr_un *from, void *args)
 {
     int idx;
     crwl_cmd_t *cmd;
     crwl_worker_t *worker;
     crwl_cmd_resp_info_t *resp;
-    crwl_cmd_worker_resp_t *info;
+    crwl_cmd_worker_stat_t *stat;
     crwl_conf_t *conf = ctx->conf;
 
     /* > 新建应答 */
@@ -576,19 +582,26 @@ static int crwl_cmd_query_worker_req_hdl(crwl_cntx_t *ctx,
 
     /* > 设置信息 */
     cmd = &resp->cmd;
-    info = (crwl_cmd_worker_resp_t *)&cmd->data;
+    stat = (crwl_cmd_worker_stat_t *)&cmd->data;
 
-    cmd->type = CRWL_CMD_QUERY_WORKER_RESP;
+    cmd->type = htonl(CRWL_CMD_QUERY_WORKER_STAT_RESP);
 
-    info->num = conf->worker.num;
+    /* 1. 获取启动时间 */
+    stat->stm = htonl(ctx->run_tm);
+    stat->ctm = htonl(time(NULL));
+
+    /* 2. 获取工作状态 */
     for (idx=0; idx<conf->worker.num && idx<CRWL_CMD_WORKER_MAX_NUM; ++idx)
     {
         worker = crwl_worker_get_by_idx(ctx, idx);
 
-        info->worker[idx].connections = worker->sock_list->num;
-        info->worker[idx].down_webpage_total = worker->down_webpage_total;
-        info->worker[idx].err_webpage_total = worker->err_webpage_total;
+        stat->worker[idx].connections = htonl(worker->sock_list->num);
+        stat->worker[idx].down_webpage_total = hton64(worker->down_webpage_total);
+        stat->worker[idx].err_webpage_total = hton64(worker->err_webpage_total);
+        ++stat->num;
     }
+
+    stat->num = htonl(stat->num);
 
     /* > 放入队尾 */
     if (list_rpush(man->mesg_list, resp))
@@ -602,8 +615,8 @@ static int crwl_cmd_query_worker_req_hdl(crwl_cntx_t *ctx,
 }
 
 /******************************************************************************
- **函数名称: crwl_cmd_query_queue_req_hdl
- **功    能: 查询队列信息
+ **函数名称: crwl_man_query_table_stat_req_hdl
+ **功    能: 查询各表信息
  **输入参数: 
  **     ctx: 全局信息
  **     man: 管理对象
@@ -614,11 +627,114 @@ static int crwl_cmd_query_worker_req_hdl(crwl_cntx_t *ctx,
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
- **作    者: # Qifeng.zou # 2015.02.13 #
+ **作    者: # Qifeng.zou # 2015.02.28 #
  ******************************************************************************/
-static int crwl_cmd_query_queue_req_hdl(crwl_cntx_t *ctx,
+static int crwl_man_query_table_stat_req_hdl(crwl_cntx_t *ctx,
         crwl_manager_t *man, int type, void *buff, struct sockaddr_un *from, void *args)
 {
-    sys_debug("Call %s()!", __func__);
+    crwl_cmd_t *cmd;
+    crwl_cmd_resp_info_t *resp;
+    crwl_cmd_table_stat_t *stat;
+
+    /* > 新建应答 */
+    resp = slab_alloc(man->slab, sizeof(crwl_cmd_resp_info_t));
+    if (NULL == resp)
+    {
+        log_error(man->log, "Alloc from slab failed!");
+        return CRWL_ERR;
+    }
+
+    memcpy(&resp->to, from, sizeof(struct sockaddr_un));
+
+    /* > 设置信息 */
+    cmd = &resp->cmd;
+    stat = (crwl_cmd_table_stat_t *)&cmd->data;
+
+    cmd->type = htonl(CRWL_CMD_QUERY_TABLE_STAT_RESP);
+
+    snprintf(stat->table[stat->num].name, sizeof(stat->table[stat->num]), "DOMAIN IP MAP");
+    stat->table[stat->num].num = htonl(hash_tab_total(ctx->domain_ip_map));
+    stat->table[stat->num].max = -1;
+    ++stat->num;
+
+    snprintf(stat->table[stat->num].name, sizeof(stat->table[stat->num]), "DOMAIN BLACKLIST");
+    stat->table[stat->num].num = htonl(hash_tab_total(ctx->domain_blacklist));
+    stat->table[stat->num].max = -1;
+    ++stat->num;
+
+    stat->num = htonl(stat->num);
+
+    /* > 放入队尾 */
+    if (list_rpush(man->mesg_list, resp))
+    {
+        log_error(man->log, "Push into list failed!");
+        slab_dealloc(man->slab, resp);
+        return CRWL_ERR;
+    }
+
+    return CRWL_OK;
+}
+
+/******************************************************************************
+ **函数名称: crwl_man_query_workq_stat_req_hdl
+ **功    能: 查询工作队列信息
+ **输入参数: 
+ **     ctx: 全局信息
+ **     man: 管理对象
+ **     type: 命令类型
+ **     buff: 命令数据
+ **     args: 附加参数
+ **输出参数:
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.03.01 #
+ ******************************************************************************/
+static int crwl_man_query_workq_stat_req_hdl(crwl_cntx_t *ctx,
+        crwl_manager_t *man, int type, void *buff, struct sockaddr_un *from, void *args)
+{
+    int idx;
+    queue_t *workq;
+    crwl_cmd_t *cmd;
+    crwl_cmd_resp_info_t *resp;
+    crwl_cmd_workq_stat_t *stat;
+
+    /* > 新建应答 */
+    resp = slab_alloc(man->slab, sizeof(crwl_cmd_resp_info_t));
+    if (NULL == resp)
+    {
+        log_error(man->log, "Alloc from slab failed!");
+        return CRWL_ERR;
+    }
+
+    memcpy(&resp->to, from, sizeof(struct sockaddr_un));
+
+    /* > 设置信息 */
+    cmd = &resp->cmd;
+    stat = (crwl_cmd_workq_stat_t *)&cmd->data;
+
+    cmd->type = htonl(CRWL_CMD_QUERY_WORKQ_STAT_RESP);
+
+    for (idx=0; idx<ctx->conf->worker.num; ++idx)
+    {
+        workq = ctx->workq[idx];
+
+        snprintf(stat->queue[idx].name, sizeof(stat->queue[idx]), "WORKQ");
+        stat->queue[idx].num = htonl(workq->queue.num);
+        stat->queue[idx].max = htonl(workq->queue.max);
+
+        ++stat->num;
+    }
+
+    stat->num = htonl(stat->num);
+
+    /* > 放入队尾 */
+    if (list_rpush(man->mesg_list, resp))
+    {
+        log_error(man->log, "Push into list failed!");
+        slab_dealloc(man->slab, resp);
+        return CRWL_ERR;
+    }
+
     return CRWL_OK;
 }

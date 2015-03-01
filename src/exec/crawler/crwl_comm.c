@@ -313,7 +313,6 @@ int crwl_startup(crwl_cntx_t *ctx)
 #if defined(__CRWL_MANAGER__)
     pthread_t tid;
 #endif /*__CRWL_MANAGER__*/
-    time_t ctm = time(NULL);
     const crwl_conf_t *conf = ctx->conf;
 
     /* 1. 设置Worker线程回调 */
@@ -338,7 +337,7 @@ int crwl_startup(crwl_cntx_t *ctx)
 #endif /*__CRWL_MANAGER__*/
 
     /* 4. 获取运行时间 */
-    localtime_r(&ctm, &ctx->run_tm);
+    ctx->run_tm = time(NULL);
 
     return CRWL_OK;
 }

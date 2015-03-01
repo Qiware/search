@@ -46,6 +46,8 @@ hash_tab_t *hash_tab_creat(slab_pool_t *slab, int mod, key_cb_t key_cb, avl_cmp_
         return NULL;
     }
 
+    hash->total = 0;
+
     /* 2. 创建数组空间 */
     hash->tree = (avl_tree_t **)calloc(mod, sizeof(avl_tree_t *));
     if (NULL == hash->tree)
@@ -115,6 +117,10 @@ int hash_tab_insert(hash_tab_t *hash, void *pkey, int pkey_len, void *data)
 
     pthread_rwlock_wrlock(&hash->lock[idx]);
     ret = avl_insert(hash->tree[idx], pkey, pkey_len, data);
+    if (AVL_OK == ret)
+    {
+        ++hash->total;
+    }
     pthread_rwlock_unlock(&hash->lock[idx]);
 
     return ret;
@@ -181,6 +187,10 @@ void *hash_tab_remove(hash_tab_t *hash, void *pkey, int pkey_len)
 
     pthread_rwlock_wrlock(&hash->lock[idx]);
     avl_delete(hash->tree[idx], pkey, pkey_len, &data);
+    if (NULL != data)
+    {
+        --hash->total;
+    }
     pthread_rwlock_unlock(&hash->lock[idx]);
 
     return data;

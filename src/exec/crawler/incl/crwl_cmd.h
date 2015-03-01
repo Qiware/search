@@ -6,19 +6,22 @@
 /* 命令类型 */
 typedef enum
 {
-    CRWL_CMD_UNKNOWN                /* 未知指令 */
+    CRWL_CMD_UNKNOWN                    /* 未知指令 */
 
-    , CRWL_CMD_ADD_SEED_REQ         /* 请求添加种子 */
-    , CRWL_CMD_ADD_SEED_RESP        /* 反馈添加种子 */
+    , CRWL_CMD_ADD_SEED_REQ             /* 请求添加种子 */
+    , CRWL_CMD_ADD_SEED_RESP            /* 反馈添加种子 */
 
-    , CRWL_CMD_QUERY_CONF_REQ       /* 查询配置信息 */
-    , CRWL_CMD_QUERY_CONF_RESP      /* 反馈配置信息 */
+    , CRWL_CMD_QUERY_CONF_REQ           /* 查询配置信息 */
+    , CRWL_CMD_QUERY_CONF_RESP          /* 反馈配置信息 */
 
-    , CRWL_CMD_QUERY_WORKER_REQ     /* 查询爬取信息 */
-    , CRWL_CMD_QUERY_WORKER_RESP    /* 反馈爬取信息 */
+    , CRWL_CMD_QUERY_WORKER_STAT_REQ    /* 查询爬取信息 */
+    , CRWL_CMD_QUERY_WORKER_STAT_RESP   /* 反馈爬取信息 */
 
-    , CRWL_CMD_QUERY_QUEUE_REQ      /* 查询队列信息 */
-    , CRWL_CMD_QUERY_QUEUE_RESP     /* 反馈队列信息 */
+    , CRWL_CMD_QUERY_TABLE_STAT_REQ     /* 查询各表信息 */
+    , CRWL_CMD_QUERY_TABLE_STAT_RESP    /* 反馈各表信息 */
+
+    , CRWL_CMD_QUERY_WORKQ_STAT_REQ     /* 查询工作队列信息 */
+    , CRWL_CMD_QUERY_WORKQ_STAT_RESP    /* 反馈工作队列信息 */
         
     , CRWL_CMD_TOTAL
 } crwl_cmd_e;
@@ -37,6 +40,8 @@ typedef struct
 #define CRWL_CMD_WORKER_MAX_NUM     (20)
 typedef struct
 {
+    time_t stm;                     /* 开始时间 */
+    time_t ctm;                     /* 当前时间 */
     int num;                        /* WORKER数 */
     struct
     {
@@ -44,7 +49,43 @@ typedef struct
         uint64_t down_webpage_total;/* 下载网页的计数 */
         uint64_t err_webpage_total; /* 异常网页的计数 */
     } worker[CRWL_CMD_WORKER_MAX_NUM];
-} crwl_cmd_worker_resp_t;
+} crwl_cmd_worker_stat_t;
+
+/* 查询TABLE信息 */
+typedef struct
+{
+} crwl_cmd_table_req_t;
+
+#define CRWL_CMD_TAB_MAX_NUM        (20)
+typedef struct
+{
+    int num;                        /* Number */
+    struct
+    {
+    #define CRWL_TAB_NAME_LEN (32)        
+        char name[CRWL_TAB_NAME_LEN];
+        int num;
+        int max;
+    } table[CRWL_CMD_TAB_MAX_NUM];
+} crwl_cmd_table_stat_t;
+
+/* 查询QUEUE信息 */
+typedef struct
+{
+} crwl_cmd_queue_req_t;
+
+#define CRWL_CMD_QUEUE_MAX_NUM        (20)
+typedef struct
+{
+    int num;                        /* Number */
+    struct
+    {
+    #define CRWL_QUEUE_NAME_LEN (32)        
+        char name[CRWL_QUEUE_NAME_LEN];
+        int num;
+        int max;
+    } queue[CRWL_CMD_QUEUE_MAX_NUM];
+} crwl_cmd_workq_stat_t;
 
 /* 反馈配置信息 */
 typedef struct
@@ -57,14 +98,16 @@ typedef struct
 typedef union
 {
     crwl_cmd_add_seed_t add_seed;
-    crwl_cmd_worker_resp_t worker_resp;
     crwl_cmd_conf_resp_t conf_resp;
+    crwl_cmd_workq_stat_t workq_stat;
+    crwl_cmd_table_stat_t table_stat;
+    crwl_cmd_worker_stat_t worker_stat;
 } crwl_cmd_data_t;
 
 /* 命令信息结构体 */
 typedef struct
 {
-    uint16_t type;              /* 命令类型(范围:crwl_cmd_e) */
+    uint32_t type;              /* 命令类型(范围:crwl_cmd_e) */
     crwl_cmd_data_t data;       /* 命令内容 */
 } crwl_cmd_t;
 

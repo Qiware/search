@@ -47,7 +47,7 @@ void _queue_destroy(_queue_t *q);
 typedef struct
 {
     _queue_t queue;                         /* 队列 */
-    memblk_t *chunk;                     /* 内存池 */
+    memblk_t *chunk;                        /* 内存池 */
 } queue_t;
 
 queue_t *queue_creat(int max, int size);
