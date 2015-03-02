@@ -22,9 +22,11 @@
 
 #define MON_CRWL_INTERVAL_SEC   (1)
 
-static int mon_crwl_query_worker_stat_req(menu_item_t *menu);
+static int mon_crwl_add_seed_req(menu_item_t *menu);
+static int mon_crwl_query_conf_req(menu_item_t *menu);
 static int mon_crwl_query_table_stat_req(menu_item_t *menu);
 static int mon_crwl_query_workq_stat_req(menu_item_t *menu);
+static int mon_crwl_query_worker_stat_req(menu_item_t *menu);
 
 /******************************************************************************
  **函数名称: mon_crwl_menu
@@ -50,7 +52,16 @@ menu_item_t *mon_crwl_menu(menu_cntx_t *ctx)
     }
 
     /* 添加子菜单 */
-    child = menu_creat(ctx, "Query worker status", mon_crwl_query_worker_stat_req);
+    child = menu_creat(ctx, "Add seed", mon_crwl_add_seed_req);
+    if (NULL == child)
+    {
+        return menu;
+    }
+
+    menu_add(menu, child);
+
+    /* 添加子菜单 */
+    child = menu_creat(ctx, "Query configuration", mon_crwl_query_conf_req);
     if (NULL == child)
     {
         return menu;
@@ -69,6 +80,15 @@ menu_item_t *mon_crwl_menu(menu_cntx_t *ctx)
 
     /* 添加子菜单 */
     child = menu_creat(ctx, "Query work queue status", mon_crwl_query_workq_stat_req);
+    if (NULL == child)
+    {
+        return menu;
+    }
+
+    menu_add(menu, child);
+
+    /* 添加子菜单 */
+    child = menu_creat(ctx, "Query worker status", mon_crwl_query_worker_stat_req);
     if (NULL == child)
     {
         return menu;
@@ -199,26 +219,30 @@ static int mon_crwl_query_worker_stat_req(menu_item_t *menu)
             stat->num = ntohl(stat->num);
             for (idx=0; idx<stat->num && idx<CRWL_CMD_WORKER_MAX_NUM; ++idx)
             {
+                /* 字节序转换 */
                 stat->worker[idx].connections = ntohl(stat->worker[idx].connections);
                 stat->worker[idx].down_webpage_total = ntoh64(stat->worker[idx].down_webpage_total);
                 stat->worker[idx].err_webpage_total = ntoh64(stat->worker[idx].err_webpage_total);
 
+                /* 显示状态 */
                 fprintf(stderr, "    %8d | %-12d | %-8ld | %-8ld\n",
                         idx+1,
                         stat->worker[idx].connections,
                         stat->worker[idx].down_webpage_total,
                         stat->worker[idx].err_webpage_total);
 
+                /* 数量统计 */
                 connections += stat->worker[idx].connections;
                 down_webpage_total += stat->worker[idx].down_webpage_total;
                 err_webpage_total += stat->worker[idx].err_webpage_total;
             }
 
+            /* 显示统计 */
             fprintf(stderr, "    ----------------------------------------------\n");
             fprintf(stderr, "    %8d | %-12ld | %-8ld | %-8ld\n",
                     stat->num, connections, down_webpage_total, err_webpage_total);
 
-            /* 2. 启动/当前时间 */
+            /* 2. 其他信息 */
             stat->stm = ntohl(stat->stm);
             localtime_r(&stat->stm, &loctm);
 
@@ -490,6 +514,289 @@ static int mon_crwl_query_workq_stat_req(menu_item_t *menu)
                         ntohl(stat->queue[idx].num),
                         ntohl(stat->queue[idx].max));
             }
+        }
+    }
+
+    Close(fd);
+
+    return -1;
+}
+
+/******************************************************************************
+ **函数名称: mon_crwl_add_seed_req
+ **功    能: 添加种子
+ **输入参数:
+ **     menu: 菜单对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.03.02 #
+ ******************************************************************************/
+static int mon_crwl_add_seed_req(menu_item_t *menu)
+{
+    int fd, ret;
+    ssize_t n;
+    crwl_cmd_t cmd;
+    socklen_t addrlen;
+    fd_set rdset, wrset;
+    struct timeval tmout;
+    time_t ctm = 0, wtm = 0;
+    char url[FILE_LINE_MAX_LEN];
+    struct sockaddr_in to, from;
+    crwl_cmd_add_seed_req_t *req;
+    crwl_cmd_add_seed_rep_t *rep;
+
+    memset(&to, 0, sizeof(to));
+
+    to.sin_family = AF_INET;
+    to.sin_port = htons(8888);
+    inet_pton(AF_INET, "127.0.0.1", &to.sin_addr);
+
+    /* > 输入种子信息 */
+    fprintf(stdout, "    SEED:");
+    scanf(" %s", url);
+
+    /* > 创建套接字 */
+    fd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (fd < 0)
+    {
+        return -1;
+    }
+
+    while (1)
+    {
+        ctm = time(NULL);
+
+        FD_ZERO(&rdset);
+        FD_ZERO(&wrset);
+
+        FD_SET(fd, &rdset);
+        if (ctm - wtm >= MON_CRWL_INTERVAL_SEC)
+        {
+            FD_SET(fd, &wrset);
+        }
+
+        /* > 等待事件 */
+        tmout.tv_sec = MON_CRWL_INTERVAL_SEC;
+        tmout.tv_usec = 0;
+
+        ret = select(fd+1, &rdset, &wrset, NULL, &tmout);
+        if (ret < 0)
+        {
+            if (EINTR == errno)
+            {
+                continue;
+            }
+
+            fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
+            break;
+        }
+        else if (0 == ret)
+        {
+            break;
+        }
+
+        /* > 发送命令 */
+        if (FD_ISSET(fd, &wrset))
+        {
+            wtm = ctm;
+
+            memset(&cmd, 0, sizeof(cmd));
+
+            cmd.type = htonl(CRWL_CMD_ADD_SEED_REQ);
+
+            req = (crwl_cmd_add_seed_req_t *)&cmd.data;
+            snprintf(req->url, sizeof(req->url), "%s", url);
+
+            n = sendto(fd, &cmd, sizeof(cmd), 0, (const struct sockaddr *)&to, sizeof(to));
+            if (n < 0)
+            {
+                fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
+                break;
+            }
+
+            fprintf(stdout, "\n    Doing...\n");
+        }
+
+        /* > 接收应答 */
+        if (FD_ISSET(fd, &rdset))
+        {
+            memset(&from, 0, sizeof(from));
+
+            from.sin_family = AF_INET;
+
+            addrlen = sizeof(from);
+
+            n = recvfrom(fd, &cmd, sizeof(cmd), 0, (struct sockaddr *)&from, (socklen_t *)&addrlen);
+            if (n < 0)
+            {
+                fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
+                break;
+            }
+
+            cmd.type = ntohl(cmd.type);
+            rep = (crwl_cmd_add_seed_rep_t *)&cmd.data;
+
+            /* 显示结果 */
+            rep->stat = ntohl(rep->stat);
+            switch (rep->stat)
+            {
+                case CRWL_CMD_ADD_SEED_STAT_SUCC:
+                {
+                    fprintf(stderr, "    Add seed success!\n");
+                    break;
+                }
+                case CRWL_CMD_ADD_SEED_STAT_FAIL:
+                {
+                    fprintf(stderr, "    Add seed failed!\n");
+                    break;
+                }
+                case CRWL_CMD_ADD_SEED_STAT_EXIST:
+                {
+                    fprintf(stderr, "    Seed [%s] is exist!\n", rep->url);
+                    break;
+                }
+                case CRWL_CMD_ADD_SEED_STAT_UNKNOWN:
+                default:
+                {
+                    fprintf(stderr, "    Unknown status!\n");
+                    break;
+                }
+            }
+            break;
+        }
+    }
+
+    Close(fd);
+
+    return -1;
+}
+
+/******************************************************************************
+ **函数名称: mon_crwl_query_conf_req
+ **功    能: 查询爬虫配置
+ **输入参数:
+ **     menu: 菜单对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.03.02 #
+ ******************************************************************************/
+static int mon_crwl_query_conf_req(menu_item_t *menu)
+{
+    int fd, ret;
+    ssize_t n;
+    crwl_cmd_t cmd;
+    socklen_t addrlen;
+    fd_set rdset, wrset;
+    struct timeval tmout;
+    time_t ctm = 0, wtm = 0;
+    struct sockaddr_in to, from;
+    crwl_cmd_conf_t *conf;
+
+    memset(&to, 0, sizeof(to));
+
+    to.sin_family = AF_INET;
+    to.sin_port = htons(8888);
+    inet_pton(AF_INET, "127.0.0.1", &to.sin_addr);
+
+    /* > 创建套接字 */
+    fd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (fd < 0)
+    {
+        return -1;
+    }
+
+    while (1)
+    {
+        ctm = time(NULL);
+
+        FD_ZERO(&rdset);
+        FD_ZERO(&wrset);
+
+        FD_SET(fd, &rdset);
+        if (ctm - wtm >= MON_CRWL_INTERVAL_SEC)
+        {
+            FD_SET(fd, &wrset);
+        }
+
+        /* > 等待事件 */
+        tmout.tv_sec = MON_CRWL_INTERVAL_SEC;
+        tmout.tv_usec = 0;
+
+        ret = select(fd+1, &rdset, &wrset, NULL, &tmout);
+        if (ret < 0)
+        {
+            if (EINTR == errno)
+            {
+                continue;
+            }
+
+            fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
+            break;
+        }
+        else if (0 == ret)
+        {
+            continue;
+        }
+
+        /* > 发送命令 */
+        if (FD_ISSET(fd, &wrset))
+        {
+            wtm = ctm;
+
+            memset(&cmd, 0, sizeof(cmd));
+
+            cmd.type = htonl(CRWL_CMD_QUERY_CONF_REQ);
+
+            n = sendto(fd, &cmd, sizeof(cmd), 0, (const struct sockaddr *)&to, sizeof(to));
+            if (n < 0)
+            {
+                fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
+                break;
+            }
+        }
+
+        /* > 接收应答 */
+        if (FD_ISSET(fd, &rdset))
+        {
+            memset(&from, 0, sizeof(from));
+
+            from.sin_family = AF_INET;
+
+            addrlen = sizeof(from);
+
+            n = recvfrom(fd, &cmd, sizeof(cmd), 0, (struct sockaddr *)&from, (socklen_t *)&addrlen);
+            if (n < 0)
+            {
+                fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
+                break;
+            }
+
+            cmd.type = ntohl(cmd.type);
+            conf = (crwl_cmd_conf_t *)&cmd.data;
+
+            conf->log.level = ntohl(conf->log.level);
+            conf->log.syslevel = ntohl(conf->log.syslevel);
+            conf->download.depth = ntohl(conf->download.depth);
+            conf->worker.num = ntohl(conf->worker.num);
+            conf->worker.conn_max_num = ntohl(conf->worker.conn_max_num);
+            conf->worker.conn_tmout_sec = ntohl(conf->worker.conn_tmout_sec);
+
+            /* 显示结果 */
+            fprintf(stderr, "    日志信息:\n");
+            fprintf(stderr, "        LEVEL: %s\n", log_get_str(conf->log.level));
+            fprintf(stderr, "        SYSLEVEL: %s\n", log_get_str(conf->log.syslevel));
+            fprintf(stderr, "    爬取配置:\n");
+            fprintf(stderr, "        DEPTH: %d\n", conf->download.depth);
+            fprintf(stderr, "        PATH: %s\n", conf->download.path);
+            fprintf(stderr, "    爬虫配置:\n");
+            fprintf(stderr, "        NUM: %d\n", conf->worker.num);
+            fprintf(stderr, "        CONNECTIONS: %d\n", conf->worker.conn_max_num);
+            fprintf(stderr, "        TIMEOUT: %d\n", conf->worker.conn_tmout_sec);
+            break;
         }
     }
 
