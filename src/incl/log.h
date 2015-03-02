@@ -32,6 +32,7 @@ typedef enum
 #define LOG_LEVEL_INFO_STR      "info"      /* 信息级别字串 */
 #define LOG_LEVEL_DEBUG_STR     "debug"     /* 调试级别字串 */
 #define LOG_LEVEL_TRACE_STR     "trace"     /* 跟踪级别字串 */
+#define LOG_LEVEL_UNKNOWN_STR   "unknown"   /* 未知级别字串 */
 #define LOG_DEF_LEVEL_STR       LOG_LEVEL_TRACE_STR /* 默认日志级别字串 */
 
 #define LOG_FILE_MAX_NUM        (32)        /* 日志文件最大个数 */
@@ -103,6 +104,7 @@ typedef struct _log_cycle_t
 
 /* 外部接口 */
 int log_get_level(const char *level_str);
+const char *log_get_str(int level);
 log_cycle_t *log_init(int level, const char *path);
 #define log_set_level(log, _level) { (log)->level = (_level); }
 void log_core(log_cycle_t *log, int level,

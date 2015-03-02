@@ -279,6 +279,52 @@ int log_get_level(const char *level_str)
 }
 
 /******************************************************************************
+ **函数名称: log_get_str
+ **功    能: 获取日志级别字串
+ **输入参数: 
+ **     level: 日志级别
+ **输出参数: NONE
+ **返    回: 日志级别字串
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.03.02 #
+ ******************************************************************************/
+const char *log_get_str(int level)
+{
+    switch (level)
+    {
+        case LOG_LEVEL_FATAL:
+        {
+            return LOG_LEVEL_FATAL_STR;
+        }
+        case LOG_LEVEL_ERROR:
+        {
+            return LOG_LEVEL_ERROR_STR;
+        }
+        case LOG_LEVEL_WARN:
+        {
+            return LOG_LEVEL_WARN_STR;
+        }
+        case LOG_LEVEL_INFO:
+        {
+            return LOG_LEVEL_INFO_STR;
+        }
+        case LOG_LEVEL_DEBUG:
+        {
+            return LOG_LEVEL_DEBUG_STR;
+        }
+        case LOG_LEVEL_TRACE:
+        {
+            return LOG_LEVEL_TRACE_STR;
+        }
+        default:
+        {
+            return LOG_LEVEL_UNKNOWN_STR;
+        }
+    }
+}
+
+/******************************************************************************
  **函数名称: log_set_max_size
  **功    能: 设置日志尺寸的最大值
  **输入参数: 

@@ -160,7 +160,7 @@ slab_pool_t *slab_init(void *addr, size_t size)
         pool->pages->slab = pages;
     }
 
-    log2_info("start:%p end:%p left_size:%d pages:%d\n",
+    sys_info("start:%p end:%p left_size:%d pages:%d\n",
         pool->start, pool->end, pool->end - pool->start, pages);
 
     spin_lock_init(&pool->lock);
@@ -475,7 +475,7 @@ void slab_dealloc(slab_pool_t *pool, void *p)
 
     if ((u_char *) p < pool->start || (u_char *) p > pool->end)
     {
-        log2_error("Outside of pool. [%p]", p);
+        sys_error("Outside of pool. [%p]", p);
         goto fail;
     }
 
@@ -637,13 +637,13 @@ void slab_dealloc(slab_pool_t *pool, void *p)
 
             if (SLAB_PAGE_FREE == slab)
             {
-                log2_error("Page is already free");
+                sys_error("Page is already free");
                 goto fail;
             }
 
             if (SLAB_PAGE_BUSY == slab)
             {
-                log2_error("Pointer to wrong page");
+                sys_error("Pointer to wrong page");
                 goto fail;
             }
 
@@ -673,13 +673,13 @@ done:
 
 wrong_chunk:
 
-    log2_error("Pointer to wrong chunk");
+    sys_error("Pointer to wrong chunk");
 
     goto fail;
 
 chunk_already_free:
 
-    log2_error("Chunk is already free");
+    sys_error("Chunk is already free");
 
 fail:
 
@@ -747,7 +747,7 @@ static slab_page_t *slab_alloc_pages(slab_pool_t *pool, uint32_t pages)
         }
     }
 
-    log2_error("Not enough memory!");
+    sys_error("Not enough memory!");
 
     return NULL;
 }
@@ -828,7 +828,7 @@ int eslab_init(eslab_pool_t *eslab, size_t size)
     slab = eslab_add(eslab, size);
     if (NULL == slab)
     {
-        log2_error("Add slab node failed!");
+        sys_error("Add slab node failed!");
         return -1;
     }
     return 0;
@@ -882,7 +882,7 @@ static slab_pool_t *eslab_add(eslab_pool_t *eslab, size_t size)
     node = calloc(1, sizeof(eslab_node_t));
     if (NULL == node)
     {
-        log2_error("Alloc memory failed!");
+        sys_error("Alloc memory failed!");
         return NULL;
     }
 
@@ -891,7 +891,7 @@ static slab_pool_t *eslab_add(eslab_pool_t *eslab, size_t size)
     if (NULL == addr)
     {
         free(node), node=NULL;
-        log2_error("Alloc memory failed!");
+        sys_error("Alloc memory failed!");
         return NULL;
     }
 
@@ -929,7 +929,7 @@ void *eslab_alloc(eslab_pool_t *eslab, size_t size)
     slab_pool_t *slab;
     eslab_node_t *node, *next;
 
-    log2_info("[%d] Alloc size:%d!", ++num, size);
+    sys_info("[%d] Alloc size:%d!", ++num, size);
 
     /* 1. 申请内存空间 */
     p = slab_alloc(eslab->curr->pool, size);
@@ -976,11 +976,11 @@ void *eslab_alloc(eslab_pool_t *eslab, size_t size)
     slab = eslab_add(eslab, alloc_size);
     if (NULL == slab)
     {
-        log2_error("Add slab node failed!");
+        sys_error("Add slab node failed!");
         return NULL;
     }
 
-    log2_fatal("Add new slab block! size:%d count:[%d]", alloc_size, count++);
+    sys_fatal("Add new slab block! size:%d count:[%d]", alloc_size, count++);
 
     /* 3. Alloc memory from new slab pool */
     return slab_alloc(slab, size);
