@@ -1,5 +1,5 @@
-#if !defined(__CRWL_MANAGER_H__)
-#define __CRWL_MANAGER_H__
+#if !defined(__CRWL_MAN_H__)
+#define __CRWL_MAN_H__
 
 #include "log.h"
 #include "slab.h"
@@ -21,11 +21,11 @@ typedef struct
     avl_tree_t *reg;                    /* 回调注册 */
     log_cycle_t *log;                   /* 日志对象 */
     slab_pool_t *slab;                  /* 内存池对象 */
-} crwl_manager_t;
+} crwl_man_t;
 
 /* 回调函数类型 */
 typedef int (*crwl_man_reg_cb_t)(crwl_cntx_t *ctx,
-        crwl_manager_t *man, uint32_t type, char *buff, struct sockaddr_un *from, void *args);
+        crwl_man_t *man, uint32_t type, char *buff, struct sockaddr_un *from, void *args);
 
 /* 注册信息 */
 typedef struct
@@ -37,4 +37,4 @@ typedef struct
 
 void *crwl_manager_routine(void *_ctx);
 
-#endif /*__CRWL_MANAGER_H__*/
+#endif /*__CRWL_MAN_H__*/

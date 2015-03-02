@@ -30,12 +30,22 @@ typedef enum
 typedef struct
 {
     char url[256];                  /* URL */
-} crwl_cmd_add_seed_t;
+} crwl_cmd_add_seed_req_t;
+
+typedef struct
+{
+#define CRWL_CMD_ADD_SEED_STAT_UNKNOWN  (1)     /* 未知 */
+#define CRWL_CMD_ADD_SEED_STAT_SUCC     (2)     /* 成功 */
+#define CRWL_CMD_ADD_SEED_STAT_FAIL     (3)     /* 失败 */
+#define CRWL_CMD_ADD_SEED_STAT_EXIST    (4)     /* 已存在 */
+    int stat;                       /* 状态 */
+    char url[256];                  /* URL */
+} crwl_cmd_add_seed_rep_t;
 
 /* 查询爬虫信息 */
 typedef struct
 {
-} crwl_cmd_worker_req_t;
+} crwl_cmd_worker_stat_req_t;
 
 #define CRWL_CMD_WORKER_MAX_NUM     (20)
 typedef struct
@@ -54,7 +64,7 @@ typedef struct
 /* 查询TABLE信息 */
 typedef struct
 {
-} crwl_cmd_table_req_t;
+} crwl_cmd_table_stat_req_t;
 
 #define CRWL_CMD_TAB_MAX_NUM        (20)
 typedef struct
@@ -72,7 +82,7 @@ typedef struct
 /* 查询QUEUE信息 */
 typedef struct
 {
-} crwl_cmd_queue_req_t;
+} crwl_cmd_workq_stat_req_t;
 
 #define CRWL_CMD_QUEUE_MAX_NUM        (20)
 typedef struct
@@ -90,15 +100,34 @@ typedef struct
 /* 反馈配置信息 */
 typedef struct
 {
-    int sched_num;
-    int worker_num;
-} crwl_cmd_conf_resp_t;
+    struct
+    {
+        int level;                          /* 日志级别 */
+        int syslevel;                       /* 系统日志级别 */
+    } log;                                  /* 日志配置 */
+
+    struct
+    {
+        uint32_t depth;                     /* 最大爬取深度 */
+        char path[FILE_PATH_MAX_LEN];       /* 网页存储路径 */
+    } download;                             /* 下载配置 */
+
+    int workq_count;                        /* 工作队列容量 */
+
+    struct
+    {
+        int num;                            /* 爬虫线程数 */
+        int conn_max_num;                   /* 并发网页连接数 */
+        int conn_tmout_sec;                 /* 连接超时时间 */
+    } worker;
+} crwl_cmd_conf_t;
 
 /* 各命令数据 */
 typedef union
 {
-    crwl_cmd_add_seed_t add_seed;
-    crwl_cmd_conf_resp_t conf_resp;
+    crwl_cmd_add_seed_req_t add_seed_req;
+    crwl_cmd_add_seed_rep_t add_seed_rep;
+    crwl_cmd_conf_t conf;
     crwl_cmd_workq_stat_t workq_stat;
     crwl_cmd_table_stat_t table_stat;
     crwl_cmd_worker_stat_t worker_stat;
