@@ -401,3 +401,77 @@ int tcp_block_recv(int fd, void *addr, int len, int timeout)
         return 0; /* Done */
     }
 }
+
+/******************************************************************************
+ **函数名称: ip_isvalid
+ **功    能: 判断IP地址的合法性(是否符合点分十进制的格式)
+ **输入参数: 
+ **     ip: IP地址
+ **输出参数: NONE
+ **返    回: true:合法 false:非法
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.03.02 #
+ ******************************************************************************/
+bool ip_isvalid(const char *ip)
+{
+    int dots = 0, digits;
+    const char *p = ip;
+
+    while (' ' == *p) { ++p; }
+
+    digits = 0;
+    while ('\0' != *p)
+    {
+        while(isdigit(*p))
+        {
+            ++p;
+            ++digits;
+        }
+
+        if ((digits < 1) || (digits > 3))
+        {
+            return false;
+        }
+
+        if ('.' == *p)
+        {
+            ++dots;
+            if (dots > 3)
+            {
+                return false;
+            }
+            ++p;
+            digits = 0;
+            continue;
+        }
+        else if ('\0' == *p)
+        {
+            if (3 != dots)
+            {
+                return false;
+            }
+            return true;
+        }
+        else if (' ' == *p)
+        {
+            while (' ' == *p) { ++p; };
+            if ('\0' != *p)
+            {
+                return false;
+            }
+            return true;
+        }
+
+        return false;
+    }
+
+    if ((3 != dots)
+        || (0 == digits)
+        || (digits > 3))
+    {
+        return false;
+    }
+
+    return true;
+}

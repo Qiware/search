@@ -13,7 +13,9 @@ typedef struct _menu_item_t
 {
     char name[MENU_NAME_STR_LEN];           /* 菜单名 */
 
+    int (*init)(struct _menu_item_t *);     /* 进入之前 */
     int (*func)(struct _menu_item_t *);     /* 菜单对应的功能 */
+    int (*exit)(struct _menu_item_t *);     /* 退出菜单 */
 
     int num;                                /* 子菜单数 */
     struct _menu_item_t *child;             /* 子菜单列表 */
@@ -22,7 +24,12 @@ typedef struct _menu_item_t
 } menu_item_t;
 
 #define menu_set_name(menu, nm) snprintf((menu)->name, sizeof((menu)->name), "%s", nm)
-#define menu_set_func(menu, f) (menu)->func = (f)
+#define menu_set_func(menu, _init, _func, _exit) \
+{ \
+    (menu)->init = (_init); \
+    (menu)->func = (_func); \
+    (menu)->exit = (_exit); \
+}
 
 /* 全局信息 */
 typedef struct
@@ -32,7 +39,8 @@ typedef struct
 } menu_cntx_t;
 
 menu_cntx_t *menu_cntx_init(const char *title);
-menu_item_t *menu_creat(menu_cntx_t *ctx, const char *name, int (*func)(menu_item_t *));
+menu_item_t *menu_creat(menu_cntx_t *ctx, const char *name,
+        int (*init)(menu_item_t *), int (*func)(menu_item_t *), int (*exit)(menu_item_t *));
 int menu_display(menu_item_t *menu);
 int menu_add(menu_item_t *menu, menu_item_t *child);
 int menu_startup(menu_cntx_t *ctx);

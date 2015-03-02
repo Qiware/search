@@ -53,14 +53,14 @@ menu_item_t *mon_srch_menu(menu_cntx_t *ctx)
 {
     menu_item_t *menu, *child;
 
-    menu = menu_creat(ctx, "Monitor Search Engine", menu_display);
+    menu = menu_creat(ctx, "Monitor Search Engine", NULL, menu_display, NULL);
     if (NULL == menu)
     {
         return NULL;
     }
 
     /* 添加子菜单 */
-    child = menu_creat(ctx, "Get configuration", mon_srch_connect);
+    child = menu_creat(ctx, "Get configuration", NULL, mon_srch_connect, NULL);
     if (NULL == child)
     {
         return menu;
@@ -69,7 +69,7 @@ menu_item_t *mon_srch_menu(menu_cntx_t *ctx)
     menu_add(menu, child);
 
     /* 添加子菜单 */
-    child = menu_creat(ctx, "Get current status", mon_srch_connect);
+    child = menu_creat(ctx, "Get current status", NULL, mon_srch_connect, NULL);
     if (NULL == child)
     {
         return menu;
@@ -78,7 +78,7 @@ menu_item_t *mon_srch_menu(menu_cntx_t *ctx)
     menu_add(menu, child);
 
     /* 添加子菜单 */
-    child = menu_creat(ctx, "Test connect", mon_srch_connect);
+    child = menu_creat(ctx, "Test connect", NULL, mon_srch_connect, NULL);
     if (NULL == child)
     {
         return menu;

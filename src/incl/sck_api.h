@@ -88,4 +88,6 @@ int unix_udp_recv(int fd, void *buff, int len);
 
 int udp_listen(int port);
 
+bool ip_isvalid(const char *ip);
+
 #endif /*__SCK_API_H__*/

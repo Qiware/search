@@ -43,7 +43,7 @@ menu_cntx_t *menu_cntx_init(const char *title)
 
     ctx->pool = pool;
 
-    ctx->menu = menu_creat(ctx, title, menu_display);
+    ctx->menu = menu_creat(ctx, title, NULL, menu_display, NULL);
     if (NULL == ctx->menu)
     {
         free(pool);
@@ -65,7 +65,8 @@ menu_cntx_t *menu_cntx_init(const char *title)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.27 #
  ******************************************************************************/
-menu_item_t *menu_creat(menu_cntx_t *ctx, const char *name, int (*func)(menu_item_t *))
+menu_item_t *menu_creat(menu_cntx_t *ctx, const char *name,
+        int (*init)(menu_item_t *), int (*func)(menu_item_t *), int (*exit)(menu_item_t *))
 {
     menu_item_t *menu;
 
@@ -76,7 +77,7 @@ menu_item_t *menu_creat(menu_cntx_t *ctx, const char *name, int (*func)(menu_ite
     }
 
     menu_set_name(menu, name);
-    menu_set_func(menu, func);
+    menu_set_func(menu, init, func, exit);
 
     return menu;
 }
@@ -229,12 +230,22 @@ static menu_item_t *menu_exec(menu_item_t *menu, const char *opt)
 
             if (0 == strcasecmp(input, "yes"))
             {
+                if (menu->exit)
+                {
+                    menu->exit(menu);
+                }
                 exit(0);
                 return NULL;
             }
 
             menu->func(menu);
+
             return menu;
+        }
+
+        if (menu->exit)
+        {
+            menu->exit(menu);
         }
 
         menu->parent->func(menu->parent);
@@ -248,6 +259,11 @@ static menu_item_t *menu_exec(menu_item_t *menu, const char *opt)
     {
         if (i == num)
         {
+            if (child->init)
+            {
+                child->init(child);
+            }
+
             if (child->func)
             {
                 ret = child->func(child);
@@ -264,6 +280,7 @@ static menu_item_t *menu_exec(menu_item_t *menu, const char *opt)
     }
 
     menu->func(menu);
+
     return menu;
 }
 
@@ -283,6 +300,11 @@ int menu_startup(menu_cntx_t *ctx)
     int idx, len;
     menu_item_t *curr = ctx->menu;
     char opt[MENU_INPUT_LEN];
+
+    if (curr->init)
+    {
+        curr->init(curr);
+    }
 
     curr->func(curr);
 
