@@ -634,12 +634,12 @@ int crwl_get_domain_ip_map(crwl_cntx_t *ctx, char *host, crwl_domain_ip_map_t *m
         if (AVL_NODE_EXIST == ret)
         {
             memcpy(map, new, sizeof(crwl_domain_ip_map_t));
-            free(new);
+            slab_dealloc(ctx->slab, new);
             log_debug(ctx->log, "Domain is exist! host:[%s]", host);
             return 0;
         }
 
-        free(new);
+        slab_dealloc(ctx->slab, new);
         log_error(ctx->log, "Insert into hash table failed! ret:[%x/%x] host:[%s]",
                 ret, AVL_NODE_EXIST, host);
         return CRWL_ERR;
