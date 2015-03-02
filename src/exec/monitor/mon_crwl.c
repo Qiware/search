@@ -339,9 +339,10 @@ static int mon_crwl_query_worker_stat_print(crwl_cmd_t *cmd)
     int idx;
     struct tm loctm;
     crwl_cmd_worker_stat_t *stat;
-    uint64_t connections = 0, down_webpage_total = 0,
-             err_webpage_total = 0, last_down_webpage_total = 0;
-
+    uint64_t connections = 0, down_webpage_total = 0, err_webpage_total = 0;
+    static uint64_t last_down_webpage_total = 0;
+    static time_t last_query_tm = 0;
+    time_t diff_tm;
 
     cmd->type = ntohl(cmd->type);
     stat = (crwl_cmd_worker_stat_t *)&cmd->data;
@@ -392,6 +393,12 @@ static int mon_crwl_query_worker_stat_print(crwl_cmd_t *cmd)
     stat->ctm = ntohl(stat->ctm);
     localtime_r(&stat->ctm, &loctm);
 
+    diff_tm = stat->ctm - last_query_tm;
+    if (0 == diff_tm)
+    {
+        diff_tm = 1;
+    }
+
     fprintf(stderr, "    当前时间: %04d-%02d-%02d %02d:%02d:%02d\n"
             "    运行时长: %lu\n"
             "    平均速率: %lf\n"
@@ -400,8 +407,9 @@ static int mon_crwl_query_worker_stat_print(crwl_cmd_t *cmd)
             loctm.tm_hour, loctm.tm_min, loctm.tm_sec,
             stat->ctm - stat->stm,
             (double)down_webpage_total / (stat->ctm - stat->stm),
-            down_webpage_total - last_down_webpage_total);
+            (down_webpage_total - last_down_webpage_total) / diff_tm);
 
+    last_query_tm = stat->ctm;
     last_down_webpage_total = down_webpage_total;
 
     return 0;
