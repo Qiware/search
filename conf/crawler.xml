@@ -6,15 +6,19 @@
              1) LEVLE: 日志级别
              2) SYS_LEVEL: 系统日志级别
              3) 取值范围: trace|debug|info|warn|error|fatal -->
-        <LOG LEVEL="trace" SYS_LEVEL="trace" PATH="../log/" />
+        <LOG LEVEL="error" SYS_LEVEL="error" PATH="../log/" />
 
         <!-- 爬取配置
              1) DEPTH: 最大爬取深度
              2) PATH: 网页存储路径 -->
         <DOWNLOAD DEPTH="-1" PATH="../data/crwl/webpage" />
 
-         <!-- 工作队列配置 -->
+        <!-- 工作队列配置 -->
         <WORKQ COUNT="1000" SIZE="0" />
+
+        <!-- 管理服务: 负责对外提供管理服务(如:操作接口 监控信息等)
+          1) PORT: 侦听端口 -->
+        <MANAGER PORT="8888" />
 
         <!-- REDIS服务配置
              1) IP: IP地址

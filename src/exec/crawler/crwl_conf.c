@@ -130,7 +130,7 @@ static int crwl_conf_load_comm(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *
 {
     xml_node_t *node, *fix;
 
-    /* 1. 定位LOG标签
+    /* > 定位LOG标签
      *  获取日志级别信息
      * */
     fix = xml_query(xml, ".CRAWLER.COMMON.LOG");
@@ -163,7 +163,7 @@ static int crwl_conf_load_comm(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *
         log_warn(log, "Didn't configure log!");
     }
 
-    /* 2. 定位Download标签
+    /* > 定位Download标签
      *  获取网页抓取深度和存储路径
      * */
     fix = xml_query(xml, ".CRAWLER.COMMON.DOWNLOAD");
@@ -173,7 +173,7 @@ static int crwl_conf_load_comm(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *
         return CRWL_ERR;
     }
 
-    /* 2.1 获取抓取深度 */
+    /* 1 获取抓取深度 */
     node = xml_rquery(xml, fix, "DEPTH");
     if (NULL == node)
     {
@@ -183,7 +183,7 @@ static int crwl_conf_load_comm(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *
 
     conf->download.depth = atoi(node->value);
 
-    /* 2.2 获取存储路径 */
+    /* 2 获取存储路径 */
     node = xml_rquery(xml, fix, "PATH");
     if (NULL == node)
     {
@@ -193,7 +193,7 @@ static int crwl_conf_load_comm(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *
 
     snprintf(conf->download.path, sizeof(conf->download.path), "%s", node->value);
 
-    /* 2.3 任务队列配置(相对查找) */
+    /* 3 任务队列配置(相对查找) */
     node = xml_query(xml, "CRAWLER.COMMON.WORKQ.COUNT");
     if (NULL == node)
     {
@@ -207,7 +207,17 @@ static int crwl_conf_load_comm(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *
         conf->workq_count = CRWL_WORKQ_MAX_NUM;
     }
 
-    /* 3. 获取Redis配置信息 */
+    /* > 获取管理配置 */
+    node = xml_query(xml, "CRAWLER.COMMON.MANAGER.PORT");
+    if (NULL == node)
+    {
+        log_error(log, "Get manager port failed!");
+        return CRWL_ERR;
+    }
+
+    conf->man_port = atoi(node->value);
+
+    /* > 获取Redis配置 */
     if (crwl_conf_load_redis(xml, conf, log))
     {
         log_error(log, "Get redis configuration failed!");

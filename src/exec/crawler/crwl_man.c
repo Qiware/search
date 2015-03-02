@@ -207,10 +207,10 @@ static crwl_man_t *crwl_man_init(crwl_cntx_t *ctx)
         }
 
         /* > 新建套接字 */
-        man->fd = udp_listen(CRWL_MAN_PORT);
+        man->fd = udp_listen(ctx->conf->man_port);
         if (man->fd < 0)
         {
-            log_error(man->log, "Listen special port [%d] failed!", CRWL_MAN_PORT);
+            log_error(man->log, "Listen port [%d] failed!", ctx->conf->man_port);
             break;
         }
         return man;

@@ -68,6 +68,7 @@ typedef struct
     } download;                             /* 下载配置 */
 
     int workq_count;                        /* 工作队列容量 */
+    int man_port;                           /* 管理服务侦听端口 */
 
     crwl_redis_conf_t redis;                /* REDIS配置 */
     crwl_worker_conf_t worker;              /* WORKER配置 */
