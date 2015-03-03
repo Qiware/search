@@ -125,9 +125,9 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker, int tidx)
             break;
         }
 
-        worker->events = (struct epoll_event *)slab_alloc(
-                worker->slab,
-                conf->worker.conn_max_num * sizeof(struct epoll_event));
+        worker->events = (struct epoll_event *)calloc(
+                conf->worker.conn_max_num,
+                sizeof(struct epoll_event));
         if (NULL == worker->events)
         {
             Close(worker->epid);
@@ -161,6 +161,7 @@ int crwl_worker_destroy(crwl_cntx_t *ctx, crwl_worker_t *worker)
 {
     slab_destroy(worker->slab);
     close(worker->epid);
+    free(worker->events);
     free(worker);
     return CRWL_OK;
 }

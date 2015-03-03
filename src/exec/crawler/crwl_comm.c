@@ -586,7 +586,7 @@ int crwl_get_domain_ip_map(crwl_cntx_t *ctx, char *host, crwl_domain_ip_map_t *m
 
         if (hash_tab_insert(ctx->domain_blacklist, host, strlen(host), new_blacklist))
         {
-            free(new_blacklist);
+            slab_dealloc(ctx->slab, new_blacklist);
         }
 
         return CRWL_ERR;
