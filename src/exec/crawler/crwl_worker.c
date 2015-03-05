@@ -231,6 +231,7 @@ int crwl_worker_recv_data(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t *sck
 {
     int n, left;
     crwl_worker_socket_extra_t *extra = (crwl_worker_socket_extra_t *)sck->extra;
+    http_response_t *response = &extra->response;
 
     sck->rdtm = time(NULL);
 
@@ -243,19 +244,34 @@ int crwl_worker_recv_data(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t *sck
         {
             log_debug(worker->log, "Recv! uri:%s n:%d", extra->webpage.uri, n);
 
-            extra->webpage.size += n;
+            /* 提取应答信息 */
+            if (!response->status)
+            {
+                http_parse_response(sck->recv.addr, response);
+            }
 
             /* 将HTML数据写入文件 */
+            extra->webpage.size += n;
             sck->recv.off += n;
             sck->recv.addr[sck->recv.off] = '\0';
             if (sck->recv.off >= CRWL_SYNC_SIZE)
             {
                 crwl_worker_webpage_fsync(worker, sck);
             }
+
+            /* 判断是否接收完所有字节 */
+            if (response->status
+                && extra->webpage.size >= response->total_len)
+            {
+                log_info(worker->log, "Recv all bytes! uri:%s size:%d",
+                        extra->webpage.uri, extra->webpage.size);
+                goto RECV_DATA_END;
+            }
             continue;
         }
         else if (0 == n)
         {
+        RECV_DATA_END:
             log_info(worker->log, "End of recv! uri:%s size:%d",
                     extra->webpage.uri, extra->webpage.size);
 
@@ -862,6 +878,8 @@ socket_t *crwl_worker_socket_alloc(crwl_worker_t *worker)
         slab_dealloc(worker->slab, sck);
         return NULL;
     }
+
+    memset(extra, 0, sizeof(crwl_worker_socket_extra_t));
 
     /* > 创建发送链表 */
     memset(&option, 0, sizeof(option));

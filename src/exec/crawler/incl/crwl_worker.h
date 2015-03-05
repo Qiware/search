@@ -7,6 +7,7 @@
 #include "log.h"
 #include "slab.h"
 #include "list.h"
+#include "http.h"
 #include "queue.h"
 #include "common.h"
 #include "xml_tree.h"
@@ -28,6 +29,7 @@ typedef struct
     uint64_t idx;                   /* 网页编号 */
     FILE *fp;                       /* 文件指针 */
     size_t size;                    /* 网页总字节数 */
+    bool has_filter_http_header;    /* 是否已过滤HTTP头 */
 } crwl_webpage_t;
 
 /* 爬虫对象信息 */
@@ -54,6 +56,9 @@ typedef struct
 typedef struct
 {
     crwl_webpage_t webpage;         /* 网页信息 */
+
+    http_response_t response;       /* HTTP应答 */
+
     char recv[CRWL_RECV_SIZE + 1];  /* 接收缓存 */
     list_t *send_list;              /* 发送链表 */
 } crwl_worker_socket_extra_t;
@@ -88,7 +93,16 @@ int crwl_worker_webpage_creat(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t 
 { \
     crwl_worker_socket_extra_t *_ex = sck->extra; \
  \
-    fwrite(sck->recv.addr, sck->recv.off, 1, _ex->webpage.fp); \
+    if (!_ex->webpage.has_filter_http_header) \
+    { \
+        fwrite(sck->recv.addr + _ex->response.header_len, \
+                sck->recv.off - _ex->response.header_len, 1, _ex->webpage.fp); \
+        _ex->webpage.has_filter_http_header = true; \
+    } \
+    else \
+    { \
+        fwrite(sck->recv.addr, sck->recv.off, 1, _ex->webpage.fp); \
+    } \
  \
     sck->recv.off = 0; \
     sck->recv.total = CRWL_RECV_SIZE; \
