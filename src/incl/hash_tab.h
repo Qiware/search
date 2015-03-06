@@ -8,7 +8,7 @@
 /* 哈希数组 */
 typedef struct
 {
-    int num;                    /* 结点数 */
+    uint32_t num;               /* 结点数 */
     avl_tree_t **tree;          /* 平衡二叉树(数组成员: num个) */
     pthread_rwlock_t *lock;     /* 平衡二叉树锁 */
 

@@ -55,7 +55,7 @@
  ******************************************************************************/
 shm_pool_t *shm_pool_init(void *addr, int max, size_t unit_size)
 {
-    int i, m, idx, page_num, n;
+    uint32_t i, m, idx, page_num, n;
     uint32_t *bitmap;
     shm_pool_info_t *info;
     shm_pool_page_t *page;
@@ -165,7 +165,7 @@ shm_pool_t *shm_pool_init(void *addr, int max, size_t unit_size)
  ******************************************************************************/
 shm_pool_t *shm_pool_get(void *addr)
 {
-    int idx;
+    uint32_t idx;
     shm_pool_t *pool;
     shm_pool_info_t *info;
     shm_pool_page_t *page;

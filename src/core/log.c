@@ -70,7 +70,7 @@ static int log_rename(const log_file_info_t *file, const struct timeb *time);
 static size_t _log_sync(log_file_info_t *file, int *fd);
 
 /* 是否强制写(注意: 系数必须小于或等于0.8，否则可能出现严重问题) */
-static const int g_log_sync_size = 0.8 * LOG_FILE_CACHE_SIZE;
+static const size_t g_log_sync_size = 0.8 * LOG_FILE_CACHE_SIZE;
 #define log_is_over_limit(file) (((file)->in_offset - (file)->out_offset) > g_log_sync_size)
 
 /******************************************************************************
@@ -949,7 +949,7 @@ static size_t _log_sync(log_file_info_t *file, int *fd)
     int loc_fd = -1;
     void *addr = NULL;
     struct stat buff;
-    size_t n = 0, fsize = 0;
+    int n = 0, fsize = 0;
 
     memset(&buff, 0, sizeof(buff));
 

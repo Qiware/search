@@ -28,7 +28,7 @@
  ******************************************************************************/
 memblk_t *memblk_creat(int num, size_t size)
 {
-    int i, m, idx;
+    uint32_t i, m, idx;
     uint32_t *bitmap;
     memblk_t *blk;
     memblk_page_t *page;
@@ -199,7 +199,7 @@ void memblk_dealloc(memblk_t *blk, void *p)
  ******************************************************************************/
 void memblk_destroy(memblk_t *blk)
 {
-    int i;
+    uint32_t i;
     memblk_page_t *page;
 
     for (i=0; i<blk->pages; ++i)

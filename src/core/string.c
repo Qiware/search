@@ -202,7 +202,7 @@ int uri_trim(const char *in, char *out, size_t size)
  ******************************************************************************/
 int uri_reslove(const char *uri, uri_field_t *field)
 {
-    int len;
+    uint32_t len;
     const char *ch, *s, *suffix;
 
     memset(field, 0, sizeof(uri_field_t));
@@ -276,8 +276,7 @@ int uri_reslove(const char *uri, uri_field_t *field)
         {
             /* 提取协议 */
             len = ch - field->uri;
-            len = (len < (sizeof(field->protocol) - 1))?
-                        len : (sizeof(field->protocol) - 1);
+            len = (len < (sizeof(field->protocol) - 1))? len : (sizeof(field->protocol) - 1);
             memcpy(field->protocol, field->uri, len);
             field->protocol[len] = '\0';
 

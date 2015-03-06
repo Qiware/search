@@ -702,7 +702,7 @@ static int sdtp_ssvr_recv_proc(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr)
 static int sdtp_ssvr_data_proc(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr, sdtp_ssvr_sck_t *sck)
 {
     sdtp_header_t *head;
-    int len, mesg_len;
+    uint32_t len, mesg_len;
     sdtp_snap_t *recv = &sck->recv;
 
     while (1)
@@ -861,7 +861,7 @@ static int sdtp_ssvr_proc_cmd(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr, const sd
 static int sdtp_ssvr_fill_send_buff(sdtp_ssvr_t *ssvr, sdtp_ssvr_sck_t *sck)
 {
     void *addr;
-    int left, mesg_len;
+    uint32_t left, mesg_len;
     sdtp_header_t *head;
     sdtp_snap_t *send = &sck->send;
 
@@ -881,7 +881,7 @@ static int sdtp_ssvr_fill_send_buff(sdtp_ssvr_t *ssvr, sdtp_ssvr_sck_t *sck)
             assert(0);
         }
 
-        left = (int)(send->end - send->iptr);
+        left = (uint32_t)(send->end - send->iptr);
         mesg_len = sizeof(sdtp_header_t) + head->length;
         if (left < mesg_len)
         {
@@ -906,7 +906,7 @@ static int sdtp_ssvr_fill_send_buff(sdtp_ssvr_t *ssvr, sdtp_ssvr_sck_t *sck)
     for (;;)
     {
         /* 2.1 判断发送缓存的剩余空间是否足够 */
-        left = (int)(send->end - send->iptr);
+        left = (uint32_t)(send->end - send->iptr);
         if (left < ssvr->sq->info->size)
         {
             break;  /* 空间不足 */

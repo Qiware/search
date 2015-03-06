@@ -608,7 +608,7 @@ static int sdtp_rsvr_data_proc(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_sck_t *
 {
     bool flag = false;
     sdtp_header_t *head;
-    int len, one_mesg_len;
+    uint32_t len, one_mesg_len;
     sdtp_snap_t *recv = &sck->recv;
 
     while (1)
@@ -616,7 +616,7 @@ static int sdtp_rsvr_data_proc(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_sck_t *
         flag = false;
         head = (sdtp_header_t *)recv->optr;
 
-        len = (int)(recv->iptr - recv->optr);
+        len = (uint32_t)(recv->iptr - recv->optr);
         if (len >= sizeof(sdtp_header_t))
         {
             if (SDTP_CHECK_SUM != ntohl(head->checksum))

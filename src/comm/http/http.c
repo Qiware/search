@@ -40,7 +40,7 @@ int http_get_request(const char *uri, char *req, int size)
         "Accept: */*\r\n"
         "Accept-Language: zh-cn\r\n"
         "Accept-Charset: utf-8\r\n"
-        "Connection: close\r\n"
+        "Connection: close\r\n" /* keep-alive */
         "User-Agent: XunDao Crawler\r\n"
         "\r\n", field.path, field.host);
 
@@ -110,10 +110,12 @@ int http_parse_response(const char *str, http_response_t *rep)
 
     if (rep->status < 100 || rep->status > 999)
     {
+        rep->total_len = rep->header_len + rep->content_len;
         return rep->header_len;
     }
     else if (200 != rep->status)
     {
+        rep->total_len = rep->header_len + rep->content_len;
         return rep->header_len;
     }
 
@@ -159,6 +161,8 @@ int http_parse_response(const char *str, http_response_t *rep)
         {
             p += HTTP_KEY_CONTENT_LEN_LEN;
             while (' ' == *p) { ++p; }
+
+            rep->content_len = 0;
             while (isdigit(*p))
             {
                 rep->content_len *= 10;

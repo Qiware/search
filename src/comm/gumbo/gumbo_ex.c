@@ -166,7 +166,7 @@ static int gumbo_load_html(gumbo_html_t *html)
  ******************************************************************************/
 const char *gumbo_get_title(const gumbo_html_t *html)
 {
-    int idx;
+    uint32_t idx;
     const GumboNode *root, *head, *child, *title_text;
     const GumboVector *children;
 
@@ -222,7 +222,7 @@ const char *gumbo_get_title(const gumbo_html_t *html)
 static void _gumbo_parse_href(GumboNode *node, gumbo_result_t *r)
 {
     char *data;
-    int len, idx;
+    uint32_t len, idx;
     GumboAttribute *href;
     GumboVector *children;
 

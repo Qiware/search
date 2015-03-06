@@ -10,15 +10,20 @@ include $(PROJ)/make/switch.mak
 include $(PROJ)/make/options.mak
 
 CC = gcc
-CFLAGS = -Wall -gdwarf-2 -g3 -fPIC -O0 \
+CFLAGS = -Wall -gdwarf-2 -g3 -fPIC -O3 \
+			-Wall \
 			-Werror \
 			-Wshadow \
-			-Winline \
 			-Wcast-qual \
+			-Wcast-align \
+			-Wsign-compare \
+			-Wredundant-decls \
+			-finline-functions \
 			-Wunreachable-code \
 			-Waggregate-return \
-			-Wcast-align \
-			-Wredundant-decls
+			-Wno-unused-result \
+			-Wbad-function-cast \
+			-Wno-unused-function
 
 CFLAGS += $(patsubst %, -D%, $(OPTIONS))
 LFLAGS = -Wall -g -fPIC -shared

@@ -31,7 +31,7 @@ typedef struct
 typedef struct
 {
     int num;                        /* 内存块总数 */
-    int page_num;                   /* 总页数 */
+    uint32_t page_num;              /* 总页数 */
     size_t unit_size;               /* 各内存块SIZE */
     size_t page_size;               /* 各页SIZE */
 

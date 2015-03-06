@@ -50,7 +50,7 @@ static int g_shm_slab_exact_shift = 0;  /* SLOT精确内存分配单元对应的
 
 /* 静态函数声明 */
 static void shm_slab_init_param(void);
-static shm_slab_page_t *shm_slab_alloc_pages(shm_slab_pool_t *pool, int pages);
+static shm_slab_page_t *shm_slab_alloc_pages(shm_slab_pool_t *pool, size_t pages);
 static int shm_slab_free_pages(shm_slab_pool_t *pool, shm_slab_page_t *page);
 static void *shm_slab_alloc_slot(
         shm_slab_pool_t *pool, size_t size);
@@ -215,7 +215,7 @@ static void shm_slab_init_param(void)
  **Note  : 
  **Author: # Qifeng.zou # 2013.07.16 #
  ******************************************************************************/
-static int shm_slab_get_alloc_type(int32_t size)
+static int shm_slab_get_alloc_type(size_t size)
 {
     if(size < shm_slab_exact_size())
     {
@@ -303,7 +303,7 @@ void *shm_slab_alloc(shm_slab_pool_t *pool, size_t size)
  **Note  : 
  **Author: # Qifeng.zou # 2013.07.12 #
  ******************************************************************************/
-static shm_slab_page_t *shm_slab_alloc_pages(shm_slab_pool_t *pool, int pages)
+static shm_slab_page_t *shm_slab_alloc_pages(shm_slab_pool_t *pool, size_t pages)
 {
     void *addr;
     shm_slab_page_t *start_page, *page, *next, *prev;
@@ -461,7 +461,7 @@ static void *shm_slab_alloc_slot(shm_slab_pool_t *pool, size_t size)
 static void *_shm_slab_alloc_slot(
         shm_slab_pool_t *pool, int slot_idx, int type)
 {
-    int *bitmap;
+    uint32_t *bitmap;
     shm_slab_slot_t *slot;
     shm_slab_page_t *start_page, *page, *new_page;
     void *addr, *data, *ptr;
@@ -538,7 +538,7 @@ static void *_shm_slab_alloc_slot(
         else if(exp_bitmaps > 0)
         {
             /* 可分配空间的前几个int用作位图: 扩展位图 */
-            bitmap = (int32_t *)(data + (page->index << shm_slab_page_shift()));
+            bitmap = (uint32_t *)(data + (page->index << shm_slab_page_shift()));
             for(idx=0; idx<exp_bitmaps; idx++)
             {
                 if(shm_slab_is_busy_bitmap(bitmap[idx]))

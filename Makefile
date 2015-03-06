@@ -39,6 +39,7 @@ DEMO_DIR = "src/demo"
 #DIR += "${DEMO_DIR}/list"
 #DIR += "${DEMO_DIR}/redis"
 #DIR += "${DEMO_DIR}/gumbo"
+DIR += "${DEMO_DIR}/xml"
 DIR += "${DEMO_DIR}/smtc/recv"
 DIR += "${DEMO_DIR}/smtc/send"
 export DIR

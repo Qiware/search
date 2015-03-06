@@ -49,7 +49,7 @@ typedef struct
 
     size_t pool_size;       /* 内存空间总大小 */
     
-    int min_size;           /* 最小分配单元 */
+    size_t min_size;        /* 最小分配单元 */
     int min_shift;          /* 最小分配单元的位移 */
 
     size_t base_offset;     /* 基础偏移量 */

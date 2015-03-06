@@ -11,7 +11,7 @@ typedef struct
 {
     spinlock_t lock;                /* SPIN锁对象 */
 
-    int bitmaps;                    /* 位图长度 */
+    uint32_t bitmaps;               /* 位图长度 */
     uint32_t *bitmap;               /* 分配位图(0:未使用 1:使用) */
     void *addr;                     /* 各页内存起始地址(指向memblk_t->addr中的内存空间) */
 } memblk_page_t;
@@ -20,7 +20,7 @@ typedef struct
 typedef struct
 {
     int num;                        /* 内存块总数 */
-    int pages;                      /* 总页数 */
+    uint32_t pages;                 /* 总页数 */
     size_t size;                    /* 各内存块SIZE */
 
     void *addr;                     /* 总内存起始地址 */

@@ -49,11 +49,11 @@ typedef struct
 #define HTTP_CONNECTION_KEEPALIVE   (1) /* 保活 */
     int connection;                     /* 连接方式 */
 #define HTTP_CONTENT_MAX_LEN (0xFFFFFFFF)
-    int content_len;                    /* 应答内容长度 */
+    size_t content_len;                 /* 应答内容长度 */
 
     /* 计算而来 */
-    int header_len;                     /* HTTP头长度 */
-    int total_len;                      /* 总长: HTTP头长 + 内容长度(content_len) */
+    size_t header_len;                  /* HTTP头长度 */
+    size_t total_len;                   /* 总长: HTTP头长 + 内容长度(content_len) */
 } http_response_t;
 
 int http_get_request(const char *uri, char *req, int size);

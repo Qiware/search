@@ -20,7 +20,7 @@
 #include "monitor.h"
 #include "crwl_cmd.h"
 
-#define MON_CRWL_INTERVAL_SEC   (3)
+#define MON_CRWL_INTERVAL_SEC   (5)
 
 typedef int (*mon_crwl_setup_cb_t)(crwl_cmd_t *cmd);
 typedef int (*mon_crwl_print_cb_t)(crwl_cmd_t *cmd);
@@ -261,7 +261,7 @@ static int mon_crwl_frame(mon_crwl_setup_cb_t setup, mon_crwl_print_cb_t print)
         else if (0 == ret)
         {
             fprintf(stderr, "    Timeout!");
-            continue;
+            break;
         }
 
         /* > 发送命令 */
