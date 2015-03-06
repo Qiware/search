@@ -75,7 +75,7 @@ typedef struct
     crwl_filter_conf_t filter;              /* FILTER配置 */
 
 #define CRWL_SEED_MAX_NUM   (100)           /* 种子最大数 */
-    int seed_num;                           /* 种子实数 */
+    uint32_t seed_num;                      /* 种子实数 */
     crwl_seed_conf_t seed[CRWL_SEED_MAX_NUM];  /* 种子配置 */
 } crwl_conf_t;
 

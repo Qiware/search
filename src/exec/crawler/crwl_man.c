@@ -710,13 +710,13 @@ static int crwl_man_query_table_stat_req_hdl(crwl_cntx_t *ctx,
     cmd->type = htonl(CRWL_CMD_QUERY_TABLE_STAT_RESP);
 
     /* 1. 域名IP映射表 */
-    snprintf(stat->table[stat->num].name, sizeof(stat->table[stat->num]), "DOMAIN IP MAP");
+    snprintf(stat->table[stat->num].name, sizeof(stat->table[stat->num].name), "DOMAIN IP MAP");
     stat->table[stat->num].num = htonl(hash_tab_total(ctx->domain_ip_map));
     stat->table[stat->num].max = -1;
     ++stat->num;
 
     /* 2. 域名黑名单表 */
-    snprintf(stat->table[stat->num].name, sizeof(stat->table[stat->num]), "DOMAIN BLACKLIST");
+    snprintf(stat->table[stat->num].name, sizeof(stat->table[stat->num].name), "DOMAIN BLACKLIST");
     stat->table[stat->num].num = htonl(hash_tab_total(ctx->domain_blacklist));
     stat->table[stat->num].max = -1;
     ++stat->num;
@@ -779,7 +779,7 @@ static int crwl_man_query_workq_stat_req_hdl(crwl_cntx_t *ctx,
     {
         workq = ctx->workq[idx];
 
-        snprintf(stat->queue[idx].name, sizeof(stat->queue[idx]), "WORKQ-%02d", idx+1);
+        snprintf(stat->queue[idx].name, sizeof(stat->queue[idx].name), "WORKQ-%02d", idx+1);
         stat->queue[idx].num = htonl(workq->queue.num);
         stat->queue[idx].max = htonl(workq->queue.max);
 

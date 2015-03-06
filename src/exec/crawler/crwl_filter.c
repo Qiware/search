@@ -485,7 +485,7 @@ static int crwl_filter_work_flow(crwl_filter_t *filter)
  ******************************************************************************/
 static int crwl_filter_deep_hdl(crwl_filter_t *filter, gumbo_result_t *result)
 {
-    int len;
+    uint32_t len;
     redisReply *r; 
     uri_field_t field;
     char task_str[CRWL_TASK_STR_LEN];
@@ -592,7 +592,7 @@ bool crwl_set_uri_exists(redis_cluster_t *cluster, const char *hash, const char 
  ******************************************************************************/
 static int crwl_filter_push_task(crwl_filter_t *filter)
 {
-    int len, idx;
+    uint32_t len, idx;
     redisReply *r; 
     crwl_seed_conf_t *seed;
     char task_str[CRWL_TASK_STR_LEN];

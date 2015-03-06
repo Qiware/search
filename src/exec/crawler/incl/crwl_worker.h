@@ -29,6 +29,7 @@ typedef struct
     uint64_t idx;                   /* 网页编号 */
     FILE *fp;                       /* 文件指针 */
     size_t size;                    /* 网页总字节数 */
+
     bool has_filter_http_header;    /* 是否已过滤HTTP头 */
 } crwl_webpage_t;
 

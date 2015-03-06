@@ -263,8 +263,9 @@ int crwl_worker_recv_data(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t *sck
             if (response->status
                 && extra->webpage.size >= response->total_len)
             {
-                log_info(worker->log, "Recv all bytes! uri:%s size:%d",
-                        extra->webpage.uri, extra->webpage.size);
+                log_info(worker->log, "Recv all bytes! uri:%s size:%d total:%u fname:%s.html",
+                        extra->webpage.uri, extra->webpage.size,
+                        response->total_len, extra->webpage.fname);
                 goto RECV_DATA_END;
             }
             continue;
@@ -423,8 +424,9 @@ static int crwl_worker_timeout_hdl(crwl_cntx_t *ctx, crwl_worker_t *worker)
             continue; /* 未超时 */
         }
 
-        log_warn(worker->log, "Timeout! uri:%s ip:%s size:%d!",
-                extra->webpage.uri, extra->webpage.ip, extra->webpage.size);
+        log_warn(worker->log, "Timeout! uri:%s ip:%s size:%d fname:%s!",
+                extra->webpage.uri, extra->webpage.ip,
+                extra->webpage.size, extra->webpage.fname);
 
         crwl_worker_webpage_fsync(worker, sck);
         crwl_worker_webpage_finfo(ctx, worker, sck);
