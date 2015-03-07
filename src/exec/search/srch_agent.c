@@ -438,6 +438,12 @@ static int srch_agent_add_conn(srch_cntx_t *ctx, srch_agent_t *agt)
             return SRCH_ERR;
         }
 
+        memset(&option, 0, sizeof(option));
+
+        option.pool = (void *)agt->slab;
+        option.alloc = (mem_alloc_cb_t)slab_alloc;
+        option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+
         extra->send_list = list_creat(&option);
         if (NULL == extra->send_list)
         {
