@@ -178,6 +178,7 @@ slab_pool_t *slab_init(void *addr, size_t size)
  **返    回: VOID
  **实现描述: 
  **注意事项: 
+ **     当申请的内存大于2KB时, 将直接从操作系统申请内存!
  **作    者: # Nginx # YYYY.MM.DD #
  ******************************************************************************/
 void *slab_alloc(slab_pool_t *pool, size_t size)
@@ -188,14 +189,17 @@ void *slab_alloc(slab_pool_t *pool, size_t size)
     uint32_t i = 0, slot = 0, shift = 0, map = 0;
     slab_page_t *page = NULL, *prev = NULL, *slots = NULL;
 
+    if (size >= slab_get_max_size())
+    {
+        return calloc(1, size);
+    }
 
     spin_lock(&pool->lock);    /* 加锁 */
 
     if (size >= slab_get_max_size())
     {
         page = slab_alloc_pages(pool,
-                (size >> slab_get_page_shift())
-                    + ((size % slab_get_page_size()) ? 1 : 0));
+                (size >> slab_get_page_shift()) + ((size % slab_get_page_size()) ? 1 : 0));
         if (page)
         {
             p = (page - pool->pages) << slab_get_page_shift();
@@ -471,13 +475,13 @@ void slab_dealloc(slab_pool_t *pool, void *p)
     uint32_t n, type, slot, shift, map;
     slab_page_t *slots, *page;
 
-    spin_lock(&pool->lock);    /* 加锁 */
-
     if ((u_char *) p < pool->start || (u_char *) p > pool->end)
     {
-        sys_error("Outside of pool. [%p]", p);
-        goto fail;
+        free(p); /* 不在内存池的空间 */
+        return;
     }
+
+    spin_lock(&pool->lock);    /* 加锁 */
 
     n = ((u_char *) p - pool->start) >> slab_get_page_shift();
     page = &pool->pages[n];
