@@ -23,6 +23,8 @@
 #define HTTP_DEF_PORT           (80)    /* HTTP默认端口号 */
 #define HTTP_GET_REQ_STR_LEN    (3072)  /* HTTP GET请求的最大长度 */
 
+#define HTTP_REP_STATUS_OK      (200)   /* 应答码200 */
+
 typedef enum
 {
     HTTP_OK                             /* 正常 */
