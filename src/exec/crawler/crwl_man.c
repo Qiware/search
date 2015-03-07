@@ -36,29 +36,18 @@ typedef struct
 {
     crwl_cmd_t cmd;
     struct sockaddr_un to;
-} crwl_cmd_rep_t;
+} crwl_cmd_item_t;
 
 /* 静态函数 */
 static crwl_man_t *crwl_man_init(crwl_cntx_t *ctx);
 static int crwl_man_event_hdl(crwl_cntx_t *ctx, crwl_man_t *man);
 
-static int crwl_man_set_reg(crwl_man_t *man);
+static int crwl_man_set_callback(crwl_man_t *man);
 static uint32_t crwl_man_reg_key_cb(void *_reg, size_t len);
 static int crwl_man_reg_cmp_cb(void *type, const void *_reg);
 
 static int crwl_man_recv_cmd(crwl_cntx_t *ctx, crwl_man_t *man);
 static int crwl_man_send_cmd(crwl_cntx_t *ctx, crwl_man_t *man);
-
-static int crwl_man_add_seed_req_hdl(crwl_cntx_t *ctx,
-        crwl_man_t *man, int type, void *buff, struct sockaddr_un *from, void *args);
-static int crwl_man_query_conf_req_hdl(crwl_cntx_t *ctx,
-        crwl_man_t *man, int type, void *buff, struct sockaddr_un *from, void *args);
-static int crwl_man_query_table_stat_req_hdl(crwl_cntx_t *ctx,
-        crwl_man_t *man, int type, void *buff, struct sockaddr_un *from, void *args);
-static int crwl_man_query_worker_stat_req_hdl(crwl_cntx_t *ctx,
-        crwl_man_t *man, int type, void *buff, struct sockaddr_un *from, void *args);
-static int crwl_man_query_workq_stat_req_hdl(crwl_cntx_t *ctx,
-        crwl_man_t *man, int type, void *buff, struct sockaddr_un *from, void *args);
 
 /******************************************************************************
  **函数名称: crwl_man_rwset
@@ -200,7 +189,7 @@ static crwl_man_t *crwl_man_init(crwl_cntx_t *ctx)
         }
 
         /* > 注册回调函数 */
-        if (crwl_man_set_reg(man))
+        if (crwl_man_set_callback(man))
         {
             log_error(man->log, "Register callback failed!");
             break;
@@ -272,40 +261,6 @@ static int crwl_man_register(crwl_man_t *man, int type, crwl_man_reg_cb_t proc, 
         log_error(man->log, "Register failed! ret:%d", ret);
         return CRWL_ERR;
     }
-
-    return CRWL_OK;
-}
-
-/******************************************************************************
- **函数名称: crwl_man_set_reg
- **功    能: 设置命令处理函数
- **输入参数: 
- **     man: 管理对象
- **输出参数:
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2015.02.11 #
- ******************************************************************************/
-static int crwl_man_set_reg(crwl_man_t *man)
-{
-#define CRWL_CHECK(ret) \
-    if (0 != ret) \
-    { \
-        return CRWL_ERR; \
-    }
-
-    /* 注册回调函数 */
-    CRWL_CHECK(crwl_man_register(man, CRWL_CMD_ADD_SEED_REQ,
-                (crwl_man_reg_cb_t)crwl_man_add_seed_req_hdl, man));
-    CRWL_CHECK(crwl_man_register(man, CRWL_CMD_QUERY_CONF_REQ,
-                (crwl_man_reg_cb_t)crwl_man_query_conf_req_hdl, man));
-    CRWL_CHECK(crwl_man_register(man, CRWL_CMD_QUERY_TABLE_STAT_REQ,
-                (crwl_man_reg_cb_t)crwl_man_query_table_stat_req_hdl, man));
-    CRWL_CHECK(crwl_man_register(man, CRWL_CMD_QUERY_WORKER_STAT_REQ,
-                (crwl_man_reg_cb_t)crwl_man_query_worker_stat_req_hdl, man));
-    CRWL_CHECK(crwl_man_register(man, CRWL_CMD_QUERY_WORKQ_STAT_REQ,
-                (crwl_man_reg_cb_t)crwl_man_query_workq_stat_req_hdl, man));
 
     return CRWL_OK;
 }
@@ -453,27 +408,27 @@ static int crwl_man_recv_cmd(crwl_cntx_t *ctx, crwl_man_t *man)
 static int crwl_man_send_cmd(crwl_cntx_t *ctx, crwl_man_t *man)
 {
     int n;
-    crwl_cmd_rep_t *rep;
+    crwl_cmd_item_t *item;
 
     /* > 弹出数据 */
-    rep = list_lpop(man->mesg_list);
-    if (NULL == rep)
+    item = list_lpop(man->mesg_list);
+    if (NULL == item)
     {
         log_error(man->log, "Didn't pop data from list!");
         return CRWL_ERR;
     }
 
     /* > 发送命令 */
-    n = sendto(man->fd, &rep->cmd, sizeof(crwl_cmd_t), 0, (struct sockaddr *)&rep->to, sizeof(rep->to));
+    n = sendto(man->fd, &item->cmd, sizeof(crwl_cmd_t), 0, (struct sockaddr *)&item->to, sizeof(item->to));
     if (n < 0)
     {
         log_error(man->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        slab_dealloc(man->slab, rep);
+        slab_dealloc(man->slab, item);
         return CRWL_OK;
     }
 
     /* > 释放空间 */
-    slab_dealloc(man->slab, rep);
+    slab_dealloc(man->slab, item);
 
     return CRWL_OK;
 }
@@ -500,36 +455,36 @@ static int crwl_man_add_seed_req_hdl(crwl_cntx_t *ctx,
         crwl_man_t *man, int type, void *buff, struct sockaddr_un *from, void *args)
 {
     crwl_cmd_t *cmd;
-    crwl_cmd_rep_t *rep;
-    crwl_cmd_add_seed_req_t *add_seed = (crwl_cmd_add_seed_req_t *)buff;
-    crwl_cmd_add_seed_rep_t *add_seed_rep;
+    crwl_cmd_item_t *item;
+    crwl_cmd_add_seed_rep_t *rep;
+    crwl_cmd_add_seed_req_t *req = (crwl_cmd_add_seed_req_t *)buff;
 
-    log_debug(man->log, "Call %s(). Url:%s", __func__, add_seed->url);
+    log_debug(man->log, "Call %s(). Url:%s", __func__, req->url);
 
     /* > 申请应答空间 */
-    rep = slab_alloc(man->slab, sizeof(crwl_cmd_rep_t));
-    if (NULL == rep)
+    item = slab_alloc(man->slab, sizeof(crwl_cmd_item_t));
+    if (NULL == item)
     {
         log_error(man->log, "Alloc memory from slab failed!");
         return CRWL_ERR;
     }
 
-    memcpy(&rep->to, from, sizeof(struct sockaddr_un));
+    memcpy(&item->to, from, sizeof(struct sockaddr_un));
 
     /* > 设置应答信息 */
-    cmd = &rep->cmd;
-    add_seed_rep = (crwl_cmd_add_seed_rep_t *)&cmd->data;
+    cmd = &item->cmd;
+    rep = (crwl_cmd_add_seed_rep_t *)&cmd->data;
 
     cmd->type = htonl(CRWL_CMD_ADD_SEED_RESP);
 
-    add_seed_rep->stat = htonl(CRWL_CMD_ADD_SEED_STAT_SUCC);
-    snprintf(add_seed_rep->url, sizeof(add_seed_rep->url), "%s", add_seed->url);
+    rep->stat = htonl(CRWL_CMD_ADD_SEED_STAT_SUCC);
+    snprintf(rep->url, sizeof(rep->url), "%s", req->url);
 
     /* > 加入应答列表 */
-    if (list_rpush(man->mesg_list, rep))
+    if (list_rpush(man->mesg_list, item))
     {
         log_error(man->log, "Insert list failed!");
-        slab_dealloc(man->slab, rep);
+        slab_dealloc(man->slab, item);
         return CRWL_ERR;
     }
 
@@ -556,23 +511,23 @@ static int crwl_man_query_conf_req_hdl(crwl_cntx_t *ctx,
         crwl_man_t *man, int type, void *buff, struct sockaddr_un *from, void *args)
 {
     crwl_cmd_t *cmd;
-    crwl_cmd_rep_t *rep;
+    crwl_cmd_item_t *item;
     crwl_cmd_conf_t *conf;
 
     log_debug(man->log, "Call %s()!", __func__);
 
     /* > 申请应答空间 */
-    rep = slab_alloc(man->slab, sizeof(crwl_cmd_rep_t));
-    if (NULL == rep)
+    item = slab_alloc(man->slab, sizeof(crwl_cmd_item_t));
+    if (NULL == item)
     {
         log_error(man->log, "Alloc memory from slab failed!");
         return CRWL_ERR;
     }
 
-    memcpy(&rep->to, from, sizeof(struct sockaddr_un));
+    memcpy(&item->to, from, sizeof(struct sockaddr_un));
 
     /* > 设置应答信息 */
-    cmd = &rep->cmd;
+    cmd = &item->cmd;
     conf = (crwl_cmd_conf_t *)&cmd->data;
 
     cmd->type = htonl(CRWL_CMD_QUERY_CONF_RESP);
@@ -590,7 +545,7 @@ static int crwl_man_query_conf_req_hdl(crwl_cntx_t *ctx,
     conf->worker.conn_tmout_sec = htonl(ctx->conf->worker.conn_tmout_sec); /* 超时时间 */
 
     /* > 加入应答列表 */
-    if (list_rpush(man->mesg_list, rep))
+    if (list_rpush(man->mesg_list, item))
     {
         log_error(man->log, "Insert list failed!");
         slab_dealloc(man->slab, conf);
@@ -622,22 +577,22 @@ static int crwl_man_query_worker_stat_req_hdl(crwl_cntx_t *ctx,
     int idx;
     crwl_cmd_t *cmd;
     crwl_worker_t *worker;
-    crwl_cmd_rep_t *rep;
+    crwl_cmd_item_t *item;
     crwl_cmd_worker_stat_t *stat;
     crwl_conf_t *conf = ctx->conf;
 
     /* > 新建应答 */
-    rep = slab_alloc(man->slab, sizeof(crwl_cmd_rep_t));
-    if (NULL == rep)
+    item = slab_alloc(man->slab, sizeof(crwl_cmd_item_t));
+    if (NULL == item)
     {
         log_error(man->log, "Alloc from slab failed!");
         return CRWL_ERR;
     }
 
-    memcpy(&rep->to, from, sizeof(struct sockaddr_un));
+    memcpy(&item->to, from, sizeof(struct sockaddr_un));
 
     /* > 设置信息 */
-    cmd = &rep->cmd;
+    cmd = &item->cmd;
     stat = (crwl_cmd_worker_stat_t *)&cmd->data;
 
     cmd->type = htonl(CRWL_CMD_QUERY_WORKER_STAT_RESP);
@@ -660,10 +615,10 @@ static int crwl_man_query_worker_stat_req_hdl(crwl_cntx_t *ctx,
     stat->num = htonl(stat->num);
 
     /* > 放入队尾 */
-    if (list_rpush(man->mesg_list, rep))
+    if (list_rpush(man->mesg_list, item))
     {
         log_error(man->log, "Push into list failed!");
-        slab_dealloc(man->slab, rep);
+        slab_dealloc(man->slab, item);
         return CRWL_ERR;
     }
 
@@ -690,21 +645,21 @@ static int crwl_man_query_table_stat_req_hdl(crwl_cntx_t *ctx,
         crwl_man_t *man, int type, void *buff, struct sockaddr_un *from, void *args)
 {
     crwl_cmd_t *cmd;
-    crwl_cmd_rep_t *rep;
+    crwl_cmd_item_t *item;
     crwl_cmd_table_stat_t *stat;
 
     /* > 新建应答 */
-    rep = slab_alloc(man->slab, sizeof(crwl_cmd_rep_t));
-    if (NULL == rep)
+    item = slab_alloc(man->slab, sizeof(crwl_cmd_item_t));
+    if (NULL == item)
     {
         log_error(man->log, "Alloc from slab failed!");
         return CRWL_ERR;
     }
 
-    memcpy(&rep->to, from, sizeof(struct sockaddr_un));
+    memcpy(&item->to, from, sizeof(struct sockaddr_un));
 
     /* > 设置信息 */
-    cmd = &rep->cmd;
+    cmd = &item->cmd;
     stat = (crwl_cmd_table_stat_t *)&cmd->data;
 
     cmd->type = htonl(CRWL_CMD_QUERY_TABLE_STAT_RESP);
@@ -724,10 +679,10 @@ static int crwl_man_query_table_stat_req_hdl(crwl_cntx_t *ctx,
     stat->num = htonl(stat->num);
 
     /* > 放入队尾 */
-    if (list_rpush(man->mesg_list, rep))
+    if (list_rpush(man->mesg_list, item))
     {
         log_error(man->log, "Push into list failed!");
-        slab_dealloc(man->slab, rep);
+        slab_dealloc(man->slab, item);
         return CRWL_ERR;
     }
 
@@ -756,21 +711,21 @@ static int crwl_man_query_workq_stat_req_hdl(crwl_cntx_t *ctx,
     int idx;
     queue_t *workq;
     crwl_cmd_t *cmd;
-    crwl_cmd_rep_t *rep;
+    crwl_cmd_item_t *item;
     crwl_cmd_workq_stat_t *stat;
 
     /* > 新建应答 */
-    rep = slab_alloc(man->slab, sizeof(crwl_cmd_rep_t));
-    if (NULL == rep)
+    item = slab_alloc(man->slab, sizeof(crwl_cmd_item_t));
+    if (NULL == item)
     {
         log_error(man->log, "Alloc from slab failed!");
         return CRWL_ERR;
     }
 
-    memcpy(&rep->to, from, sizeof(struct sockaddr_un));
+    memcpy(&item->to, from, sizeof(struct sockaddr_un));
 
     /* > 设置信息 */
-    cmd = &rep->cmd;
+    cmd = &item->cmd;
     stat = (crwl_cmd_workq_stat_t *)&cmd->data;
 
     cmd->type = htonl(CRWL_CMD_QUERY_WORKQ_STAT_RESP);
@@ -789,12 +744,267 @@ static int crwl_man_query_workq_stat_req_hdl(crwl_cntx_t *ctx,
     stat->num = htonl(stat->num);
 
     /* > 放入队尾 */
-    if (list_rpush(man->mesg_list, rep))
+    if (list_rpush(man->mesg_list, item))
     {
         log_error(man->log, "Push into list failed!");
-        slab_dealloc(man->slab, rep);
+        slab_dealloc(man->slab, item);
         return CRWL_ERR;
     }
 
     return CRWL_OK;
 }
+
+typedef struct
+{
+    int idx;
+    FILE *fp;
+} crwl_man_domain_ip_map_trav_t;
+
+/******************************************************************************
+ **函数名称: crwl_man_store_domain_ip_map_hdl
+ **功    能: 存储域名IP映射表
+ **输入参数: 
+ **输出参数:
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.03.07 #
+ ******************************************************************************/
+static int crwl_man_store_domain_ip_map_hdl(crwl_domain_ip_map_t *map, void *args)
+{
+    int idx;
+    crwl_man_domain_ip_map_trav_t *trav = (crwl_man_domain_ip_map_trav_t *)args;
+
+    fprintf(trav->fp, "%05d|%s", ++trav->idx, map->host);
+    for (idx=0; idx<map->ip_num; ++idx)
+    {
+        fprintf(trav->fp, "|%s", map->ip[idx].ip);
+    }
+    fprintf(trav->fp, "\n");
+
+    return 0;
+}
+
+/******************************************************************************
+ **函数名称: crwl_man_store_domain_ip_map_req_hdl
+ **功    能: 存储域名IP映射表
+ **输入参数: 
+ **     ctx: 全局信息
+ **     man: 管理对象
+ **     type: 命令类型
+ **     buff: 命令数据
+ **     args: 附加参数
+ **输出参数:
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **     申请的应答数据空间, 需要在应答之后, 进行释放!
+ **作    者: # Qifeng.zou # 2015.03.07 #
+ ******************************************************************************/
+static int crwl_man_store_domain_ip_map_req_hdl(crwl_cntx_t *ctx,
+        crwl_man_t *man, int type, void *buff, struct sockaddr_un *from, void *args)
+{
+    static int idx = 0;
+    struct tm loctm;
+    struct timeb ctm;
+    crwl_cmd_t *cmd;
+    crwl_cmd_item_t *item;
+    char fname[FILE_PATH_MAX_LEN];
+    crwl_cmd_store_domain_ip_map_rep_t *rep;
+    crwl_man_domain_ip_map_trav_t trav;
+
+    memset(&trav, 0, sizeof(trav));
+
+    /* > 新建应答 */
+    item = slab_alloc(man->slab, sizeof(crwl_cmd_item_t));
+    if (NULL == item)
+    {
+        log_error(man->log, "Alloc from slab failed!");
+        return CRWL_ERR;
+    }
+
+    memcpy(&item->to, from, sizeof(struct sockaddr_un));
+
+    /* > 存储至文件 */
+    ftime(&ctm);
+    localtime_r(&ctm.time, &loctm);
+
+    snprintf(fname, sizeof(fname),
+            "%04d%02d%02d%02d%02d%02d%03d-%d.map",
+            loctm.tm_year+1900, loctm.tm_mon+1, loctm.tm_mday,
+            loctm.tm_hour, loctm.tm_min, loctm.tm_sec, ctm.millitm, ++idx);
+
+    trav.fp = fopen(fname, "w");
+    if (NULL == trav.fp)
+    {
+        log_error(man->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        slab_dealloc(man->slab, item);
+        return CRWL_ERR;
+    }
+
+    hash_tab_trav(ctx->domain_ip_map, (avl_trav_cb_t)crwl_man_store_domain_ip_map_hdl, &trav);
+
+    fClose(trav.fp);
+
+    /* > 设置信息 */
+    cmd = &item->cmd;
+    rep = (crwl_cmd_store_domain_ip_map_rep_t *)&cmd->data;
+
+    cmd->type = htonl(CRWL_CMD_STORE_DOMAIN_IP_MAP_RESP);
+
+    snprintf(rep->path, sizeof(rep->path), "%s", fname);
+
+    /* > 放入队尾 */
+    if (list_rpush(man->mesg_list, item))
+    {
+        log_error(man->log, "Push into list failed!");
+        slab_dealloc(man->slab, item);
+        return CRWL_ERR;
+    }
+
+    return CRWL_OK;
+}
+
+typedef struct
+{
+    int idx;
+    FILE *fp;
+} crwl_man_domain_blacklist_trav_t;
+
+/******************************************************************************
+ **函数名称: crwl_man_store_domain_blacklist_hdl
+ **功    能: 存储域名黑名单
+ **输入参数: 
+ **输出参数:
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.03.07 #
+ ******************************************************************************/
+static int crwl_man_store_domain_blacklist_hdl(crwl_domain_blacklist_t *blacklist, void *args)
+{
+    crwl_man_domain_blacklist_trav_t *trav = (crwl_man_domain_blacklist_trav_t *)args;
+
+    fprintf(trav->fp, "%05d|%s\n", ++trav->idx, blacklist->host);
+
+    return 0;
+}
+
+/******************************************************************************
+ **函数名称: crwl_man_store_domain_blacklist_req_hdl
+ **功    能: 存储域名IP映射表
+ **输入参数: 
+ **     ctx: 全局信息
+ **     man: 管理对象
+ **     type: 命令类型
+ **     buff: 命令数据
+ **     args: 附加参数
+ **输出参数:
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **     申请的应答数据空间, 需要在应答之后, 进行释放!
+ **作    者: # Qifeng.zou # 2015.03.07 #
+ ******************************************************************************/
+static int crwl_man_store_domain_blacklist_req_hdl(crwl_cntx_t *ctx,
+        crwl_man_t *man, int type, void *buff, struct sockaddr_un *from, void *args)
+{
+    static int idx = 0;
+    struct tm loctm;
+    struct timeb ctm;
+    crwl_cmd_t *cmd;
+    crwl_cmd_item_t *item;
+    char fname[FILE_PATH_MAX_LEN];
+    crwl_man_domain_blacklist_trav_t trav;
+    crwl_cmd_store_domain_blacklist_rep_t *rep;
+
+    memset(&trav, 0, sizeof(trav));
+
+    /* > 新建应答 */
+    item = slab_alloc(man->slab, sizeof(crwl_cmd_item_t));
+    if (NULL == item)
+    {
+        log_error(man->log, "Alloc from slab failed!");
+        return CRWL_ERR;
+    }
+
+    memcpy(&item->to, from, sizeof(struct sockaddr_un));
+
+    /* > 存储至文件 */
+    ftime(&ctm);
+    localtime_r(&ctm.time, &loctm);
+
+    snprintf(fname, sizeof(fname),
+            "%04d%02d%02d%02d%02d%02d%03d-%d.bls",
+            loctm.tm_year+1900, loctm.tm_mon+1, loctm.tm_mday,
+            loctm.tm_hour, loctm.tm_min, loctm.tm_sec, ctm.millitm, ++idx);
+
+    trav.fp = fopen(fname, "w");
+    if (NULL == trav.fp)
+    {
+        log_error(man->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        slab_dealloc(man->slab, item);
+        return CRWL_ERR;
+    }
+
+    hash_tab_trav(ctx->domain_blacklist, (avl_trav_cb_t)crwl_man_store_domain_blacklist_hdl, &trav);
+
+    fClose(trav.fp);
+
+    /* > 设置信息 */
+    cmd = &item->cmd;
+    rep = (crwl_cmd_store_domain_blacklist_rep_t *)&cmd->data;
+
+    cmd->type = htonl(CRWL_CMD_STORE_DOMAIN_BLACKLIST_RESP);
+
+    snprintf(rep->path, sizeof(rep->path), "%s", fname);
+
+    /* > 放入队尾 */
+    if (list_rpush(man->mesg_list, item))
+    {
+        log_error(man->log, "Push into list failed!");
+        slab_dealloc(man->slab, item);
+        return CRWL_ERR;
+    }
+
+    return CRWL_OK;
+}
+
+/******************************************************************************
+ **函数名称: crwl_man_set_callback
+ **功    能: 设置命令处理函数
+ **输入参数: 
+ **     man: 管理对象
+ **输出参数:
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.02.11 #
+ ******************************************************************************/
+static int crwl_man_set_callback(crwl_man_t *man)
+{
+#define CRWL_CHECK(ret) \
+    if (0 != ret) \
+    { \
+        return CRWL_ERR; \
+    }
+
+    /* 注册回调函数 */
+    CRWL_CHECK(crwl_man_register(man, CRWL_CMD_ADD_SEED_REQ,
+                (crwl_man_reg_cb_t)crwl_man_add_seed_req_hdl, man));
+    CRWL_CHECK(crwl_man_register(man, CRWL_CMD_QUERY_CONF_REQ,
+                (crwl_man_reg_cb_t)crwl_man_query_conf_req_hdl, man));
+    CRWL_CHECK(crwl_man_register(man, CRWL_CMD_QUERY_TABLE_STAT_REQ,
+                (crwl_man_reg_cb_t)crwl_man_query_table_stat_req_hdl, man));
+    CRWL_CHECK(crwl_man_register(man, CRWL_CMD_QUERY_WORKER_STAT_REQ,
+                (crwl_man_reg_cb_t)crwl_man_query_worker_stat_req_hdl, man));
+    CRWL_CHECK(crwl_man_register(man, CRWL_CMD_QUERY_WORKQ_STAT_REQ,
+                (crwl_man_reg_cb_t)crwl_man_query_workq_stat_req_hdl, man));
+    CRWL_CHECK(crwl_man_register(man, CRWL_CMD_STORE_DOMAIN_IP_MAP_REQ,
+                (crwl_man_reg_cb_t)crwl_man_store_domain_ip_map_req_hdl, man));
+    CRWL_CHECK(crwl_man_register(man, CRWL_CMD_STORE_DOMAIN_BLACKLIST_REQ,
+                (crwl_man_reg_cb_t)crwl_man_store_domain_blacklist_req_hdl, man));
+    return CRWL_OK;
+}
+
+

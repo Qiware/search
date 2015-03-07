@@ -23,6 +23,12 @@ typedef enum
     , CRWL_CMD_QUERY_WORKQ_STAT_REQ     /* 查询工作队列信息 */
     , CRWL_CMD_QUERY_WORKQ_STAT_RESP    /* 反馈工作队列信息 */
         
+    , CRWL_CMD_STORE_DOMAIN_IP_MAP_REQ  /* 存储域名IP映射信息 */
+    , CRWL_CMD_STORE_DOMAIN_IP_MAP_RESP /* 反馈存储域名IP映射信息 */
+ 
+    , CRWL_CMD_STORE_DOMAIN_BLACKLIST_REQ   /* 存储域名黑名单信息 */
+    , CRWL_CMD_STORE_DOMAIN_BLACKLIST_RESP  /* 反馈存储域名黑名单信息 */
+
     , CRWL_CMD_TOTAL
 } crwl_cmd_e;
 
@@ -122,6 +128,18 @@ typedef struct
     } worker;
 } crwl_cmd_conf_t;
 
+/* 存储DOMAIN IP映射表 */
+typedef struct
+{
+    char path[FILE_PATH_MAX_LEN];           /* 存储路径 */
+} crwl_cmd_store_domain_ip_map_rep_t;
+
+/* 存储DOMAIN黑名单 */
+typedef struct
+{
+    char path[FILE_PATH_MAX_LEN];           /* 存储路径 */
+} crwl_cmd_store_domain_blacklist_rep_t;
+
 /* 各命令数据 */
 typedef union
 {
@@ -131,6 +149,8 @@ typedef union
     crwl_cmd_workq_stat_t workq_stat;
     crwl_cmd_table_stat_t table_stat;
     crwl_cmd_worker_stat_t worker_stat;
+    crwl_cmd_store_domain_ip_map_rep_t domain_ip_map_rep;
+    crwl_cmd_store_domain_blacklist_rep_t domain_blacklist_rep;
 } crwl_cmd_data_t;
 
 /* 命令信息结构体 */

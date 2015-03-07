@@ -53,6 +53,8 @@ static int mon_crwl_query_conf_req(menu_item_t *menu);
 static int mon_crwl_query_table_stat_req(menu_item_t *menu);
 static int mon_crwl_query_workq_stat_req(menu_item_t *menu);
 static int mon_crwl_query_worker_stat_req(menu_item_t *menu);
+static int mon_crwl_store_domain_ip_map_req(menu_item_t *menu);
+static int mon_crwl_store_domain_blacklist_req(menu_item_t *menu);
 
 /******************************************************************************
  **函数名称: mon_crwl_init
@@ -204,6 +206,25 @@ menu_item_t *mon_crwl_menu(menu_cntx_t *ctx)
     }
 
     menu_add(menu, child);
+
+    /* 添加子菜单 */
+    child = menu_creat(ctx, "Store domain ip map", NULL, mon_crwl_store_domain_ip_map_req, NULL);
+    if (NULL == child)
+    {
+        return menu;
+    }
+
+    menu_add(menu, child);
+
+    /* 添加子菜单 */
+    child = menu_creat(ctx, "Store domain blacklist", NULL, mon_crwl_store_domain_blacklist_req, NULL);
+    if (NULL == child)
+    {
+        return menu;
+    }
+
+    menu_add(menu, child);
+
 
     return menu;
 }
@@ -746,4 +767,122 @@ static int mon_crwl_query_conf_req(menu_item_t *menu)
     return mon_crwl_frame(
             mon_crwl_query_conf_setup,
             mon_crwl_query_conf_print);
+}
+
+/******************************************************************************
+ **函数名称: mon_crwl_store_domain_ip_map_setup
+ **功    能: 设置存储域名IP映射表的参数
+ **输入参数:
+ **     menu: 菜单对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.03.07 #
+ ******************************************************************************/
+static int mon_crwl_store_domain_ip_map_setup(crwl_cmd_t *cmd)
+{
+    cmd->type = htonl(CRWL_CMD_STORE_DOMAIN_IP_MAP_REQ);
+    return 0;
+}
+
+/******************************************************************************
+ **函数名称: mon_crwl_store_domain_ip_map_print
+ **功    能: 显示存储域名IP映射表信息
+ **输入参数:
+ **     menu: 菜单对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.03.07 #
+ ******************************************************************************/
+static int mon_crwl_store_domain_ip_map_print(crwl_cmd_t *cmd)
+{
+    crwl_cmd_store_domain_ip_map_rep_t *rep;
+
+    /* 字节序转换 */
+    cmd->type = ntohl(cmd->type);
+    rep = (crwl_cmd_store_domain_ip_map_rep_t *)&cmd->data;
+
+    /* 显示结果 */
+    fprintf(stderr, "        PATH: %s\n", rep->path);
+    return 0;
+}
+
+/******************************************************************************
+ **函数名称: mon_crwl_store_domain_ip_map_req
+ **功    能: 存储域名IP映射表
+ **输入参数:
+ **     menu: 菜单对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.03.07 #
+ ******************************************************************************/
+static int mon_crwl_store_domain_ip_map_req(menu_item_t *menu)
+{
+    return mon_crwl_frame(
+            mon_crwl_store_domain_ip_map_setup,
+            mon_crwl_store_domain_ip_map_print);
+}
+
+/******************************************************************************
+ **函数名称: mon_crwl_store_domain_blacklist_setup
+ **功    能: 设置存储域名黑名单的参数
+ **输入参数:
+ **     menu: 菜单对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.03.07 #
+ ******************************************************************************/
+static int mon_crwl_store_domain_blacklist_setup(crwl_cmd_t *cmd)
+{
+    cmd->type = htonl(CRWL_CMD_STORE_DOMAIN_BLACKLIST_REQ);
+    return 0;
+}
+
+/******************************************************************************
+ **函数名称: mon_crwl_store_domain_blacklist_print
+ **功    能: 显示存储域名黑名单信息
+ **输入参数:
+ **     menu: 菜单对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.03.07 #
+ ******************************************************************************/
+static int mon_crwl_store_domain_blacklist_print(crwl_cmd_t *cmd)
+{
+    crwl_cmd_store_domain_ip_map_rep_t *rep;
+
+    /* 字节序转换 */
+    cmd->type = ntohl(cmd->type);
+    rep = (crwl_cmd_store_domain_ip_map_rep_t *)&cmd->data;
+
+    /* 显示结果 */
+    fprintf(stderr, "        PATH: %s\n", rep->path);
+    return 0;
+}
+
+/******************************************************************************
+ **函数名称: mon_crwl_store_domain_blacklist_req
+ **功    能: 存储域名黑名单
+ **输入参数:
+ **     menu: 菜单对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.03.07 #
+ ******************************************************************************/
+static int mon_crwl_store_domain_blacklist_req(menu_item_t *menu)
+{
+    return mon_crwl_frame(
+            mon_crwl_store_domain_blacklist_setup,
+            mon_crwl_store_domain_blacklist_print);
 }
