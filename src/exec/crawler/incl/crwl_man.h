@@ -8,6 +8,7 @@
 #include "avl_tree.h"
 
 #define CRWL_MAN_PORT   (8888)          /* 代理端口号 */
+#define CRWL_MAN_DATA_DIR "../data/crwl/man" /* 数据存储目录 */
 
 /* 爬虫代理 */
 typedef struct

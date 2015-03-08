@@ -815,6 +815,8 @@ static int crwl_man_store_domain_ip_map_req_hdl(crwl_cntx_t *ctx,
 
     memset(&trav, 0, sizeof(trav));
 
+    Mkdir(CRWL_MAN_DATA_DIR, 0777);
+
     /* > 新建应答 */
     item = slab_alloc(man->slab, sizeof(crwl_cmd_item_t));
     if (NULL == item)
@@ -830,7 +832,8 @@ static int crwl_man_store_domain_ip_map_req_hdl(crwl_cntx_t *ctx,
     localtime_r(&ctm.time, &loctm);
 
     snprintf(fname, sizeof(fname),
-            "%04d%02d%02d%02d%02d%02d%03d-%d.map",
+            "%s/%04d%02d%02d%02d%02d%02d%03d-%d.dim",
+            CRWL_MAN_DATA_DIR,
             loctm.tm_year+1900, loctm.tm_mon+1, loctm.tm_mday,
             loctm.tm_hour, loctm.tm_min, loctm.tm_sec, ctm.millitm, ++idx);
 
@@ -920,6 +923,8 @@ static int crwl_man_store_domain_blacklist_req_hdl(crwl_cntx_t *ctx,
 
     memset(&trav, 0, sizeof(trav));
 
+    Mkdir(CRWL_MAN_DATA_DIR, 0777);
+
     /* > 新建应答 */
     item = slab_alloc(man->slab, sizeof(crwl_cmd_item_t));
     if (NULL == item)
@@ -935,7 +940,8 @@ static int crwl_man_store_domain_blacklist_req_hdl(crwl_cntx_t *ctx,
     localtime_r(&ctm.time, &loctm);
 
     snprintf(fname, sizeof(fname),
-            "%04d%02d%02d%02d%02d%02d%03d-%d.bls",
+            "%s/%04d%02d%02d%02d%02d%02d%03d-%d.bl",
+            CRWL_MAN_DATA_DIR,
             loctm.tm_year+1900, loctm.tm_mon+1, loctm.tm_mday,
             loctm.tm_hour, loctm.tm_min, loctm.tm_sec, ctm.millitm, ++idx);
 
