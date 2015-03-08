@@ -12,6 +12,7 @@
 #define __LOG_SVR_H__
 
 #include "lock.h"
+#include "slab.h"
 #include "thread_pool.h"
 
 /* 服务进程互斥锁路径 */
@@ -30,6 +31,8 @@ typedef struct
 {
     int fd;                         /* 文件描述符 */
     void *addr;                     /* 共享内存首地址 */
+#define LOG_SVR_SLAB_SIZE   (1 * MB)
+    slab_pool_t *slab;              /* 内存池 */
     thread_pool_t *pool;            /* 内存池对象 */
 }logsvr_t;
 

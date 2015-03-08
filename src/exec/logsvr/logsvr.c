@@ -130,7 +130,9 @@ int logsvr_proc_lock(void)
 static int logsvr_init(logsvr_t *logsvr)
 {
     int ret;
+    void *addr;
     char path[FILE_PATH_MAX_LEN];
+    thread_pool_option_t option;
 
     /* 设置跟踪日志路径 */
     logsvr_log_path(path, sizeof(path));
@@ -163,8 +165,29 @@ static int logsvr_init(logsvr_t *logsvr)
         return -1;
     }
 
+    /* 4. 创建内存池 */
+    addr = (void *)calloc(1, LOG_SVR_SLAB_SIZE);
+    if (NULL == addr)
+    {
+        sys_error("errmsg:[%d] %s!", errno, strerror(errno));
+        return -1;
+    }
+
+    logsvr->slab = slab_init(addr, LOG_SVR_SLAB_SIZE);
+    if (NULL == logsvr->slab)
+    {
+        sys_error("Inititalize slab failed!");
+        return -1;
+    }
+
     /* 4. 启动多个线程 */
-    logsvr->pool = thread_pool_init(LOG_SVR_THREAD_NUM, 0);
+    memset(&option, 0, sizeof(option));
+
+    option.pool = (void *)logsvr->slab;
+    option.alloc = (mem_alloc_cb_t)slab_alloc;
+    option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+
+    logsvr->pool = thread_pool_init(LOG_SVR_THREAD_NUM, &option);
     if(NULL == logsvr->pool)
     {
         thread_pool_destroy(logsvr->pool);
