@@ -42,7 +42,7 @@ typedef struct
 static crwl_man_t *crwl_man_init(crwl_cntx_t *ctx);
 static int crwl_man_event_hdl(crwl_cntx_t *ctx, crwl_man_t *man);
 
-static int crwl_man_set_callback(crwl_man_t *man);
+static int crwl_man_reg_cb(crwl_man_t *man);
 static uint32_t crwl_man_reg_key_cb(void *_reg, size_t len);
 static int crwl_man_reg_cmp_cb(void *type, const void *_reg);
 
@@ -189,7 +189,7 @@ static crwl_man_t *crwl_man_init(crwl_cntx_t *ctx)
         }
 
         /* > 注册回调函数 */
-        if (crwl_man_set_callback(man))
+        if (crwl_man_reg_cb(man))
         {
             log_error(man->log, "Register callback failed!");
             break;
@@ -977,7 +977,7 @@ static int crwl_man_store_domain_blacklist_req_hdl(crwl_cntx_t *ctx,
 }
 
 /******************************************************************************
- **函数名称: crwl_man_set_callback
+ **函数名称: crwl_man_reg_cb
  **功    能: 设置命令处理函数
  **输入参数: 
  **     man: 管理对象
@@ -987,30 +987,22 @@ static int crwl_man_store_domain_blacklist_req_hdl(crwl_cntx_t *ctx,
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.02.11 #
  ******************************************************************************/
-static int crwl_man_set_callback(crwl_man_t *man)
+static int crwl_man_reg_cb(crwl_man_t *man)
 {
-#define CRWL_CHECK(ret) \
-    if (0 != ret) \
+#define CRWL_REG(man, type, proc, args) \
+    if (crwl_man_register(man, type, proc, args)) \
     { \
         return CRWL_ERR; \
     }
 
     /* 注册回调函数 */
-    CRWL_CHECK(crwl_man_register(man, CRWL_CMD_ADD_SEED_REQ,
-                (crwl_man_reg_cb_t)crwl_man_add_seed_req_hdl, man));
-    CRWL_CHECK(crwl_man_register(man, CRWL_CMD_QUERY_CONF_REQ,
-                (crwl_man_reg_cb_t)crwl_man_query_conf_req_hdl, man));
-    CRWL_CHECK(crwl_man_register(man, CRWL_CMD_QUERY_TABLE_STAT_REQ,
-                (crwl_man_reg_cb_t)crwl_man_query_table_stat_req_hdl, man));
-    CRWL_CHECK(crwl_man_register(man, CRWL_CMD_QUERY_WORKER_STAT_REQ,
-                (crwl_man_reg_cb_t)crwl_man_query_worker_stat_req_hdl, man));
-    CRWL_CHECK(crwl_man_register(man, CRWL_CMD_QUERY_WORKQ_STAT_REQ,
-                (crwl_man_reg_cb_t)crwl_man_query_workq_stat_req_hdl, man));
-    CRWL_CHECK(crwl_man_register(man, CRWL_CMD_STORE_DOMAIN_IP_MAP_REQ,
-                (crwl_man_reg_cb_t)crwl_man_store_domain_ip_map_req_hdl, man));
-    CRWL_CHECK(crwl_man_register(man, CRWL_CMD_STORE_DOMAIN_BLACKLIST_REQ,
-                (crwl_man_reg_cb_t)crwl_man_store_domain_blacklist_req_hdl, man));
+    CRWL_REG(man, CRWL_CMD_ADD_SEED_REQ, (crwl_man_reg_cb_t)crwl_man_add_seed_req_hdl, man);
+    CRWL_REG(man, CRWL_CMD_QUERY_CONF_REQ, (crwl_man_reg_cb_t)crwl_man_query_conf_req_hdl, man);
+    CRWL_REG(man, CRWL_CMD_QUERY_TABLE_STAT_REQ, (crwl_man_reg_cb_t)crwl_man_query_table_stat_req_hdl, man);
+    CRWL_REG(man, CRWL_CMD_QUERY_WORKER_STAT_REQ, (crwl_man_reg_cb_t)crwl_man_query_worker_stat_req_hdl, man);
+    CRWL_REG(man, CRWL_CMD_QUERY_WORKQ_STAT_REQ, (crwl_man_reg_cb_t)crwl_man_query_workq_stat_req_hdl, man);
+    CRWL_REG(man, CRWL_CMD_STORE_DOMAIN_IP_MAP_REQ, (crwl_man_reg_cb_t)crwl_man_store_domain_ip_map_req_hdl, man);
+    CRWL_REG(man, CRWL_CMD_STORE_DOMAIN_BLACKLIST_REQ, (crwl_man_reg_cb_t)crwl_man_store_domain_blacklist_req_hdl, man);
+
     return CRWL_OK;
 }
-
-
