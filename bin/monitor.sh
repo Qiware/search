@@ -119,14 +119,14 @@ main()
         echo "---------------------------------------------------------------------"
 
         # 显示上次获取的netstat信息(防止刷屏时间过长)
-        echo ""
-        echo "Network stat:"
-        echo "---------------------------------------------------------------------"
-        echo "PROC\t\tLISTEN\tESTAB\tCLOSE\tTOTAL"
+        #echo ""
+        #echo "Network stat:"
+        #echo "---------------------------------------------------------------------"
+        #echo "PROC\t\tLISTEN\tESTAB\tCLOSE\tTOTAL"
 
-        cat .netstat.ls
-        echo "---------------------------------------------------------------------"
-        print_netstat "crawler" "crwlfilter" "redis-server" "search"
+        #cat .netstat.ls
+        #echo "---------------------------------------------------------------------"
+        #print_netstat "crawler" "crwlfilter" "redis-server" "search"
 
         sleep 2
     done;

@@ -6,8 +6,8 @@ sudo redis-server /etc/redis/redis_slave_6380.conf
 
 # 日志服务
 n=`ps -axu | grep "logsvr" | wc -l`
-if [ $n gt 0 ]; then
-./logsvr
+if [ $n -gt 0 ]; then
+    ./logsvr
 fi
 
 # 爬虫服务
@@ -19,4 +19,5 @@ fi
 # 搜索引擎服务
 ./search -d
 
-./monitor.sh
+# 监控进程状态
+#./monitor.sh
