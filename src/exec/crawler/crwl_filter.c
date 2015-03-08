@@ -31,7 +31,7 @@
 #define CRWL_PARSER_LOG_NAME    "filter"
 
 static int crwl_filter_webpage_info(crwl_webpage_info_t *info, log_cycle_t *log);
-static int crwl_filter_work_flow(crwl_filter_t *filter);
+static int crwl_filter_process(crwl_filter_t *filter);
 static int crwl_filter_push_task(crwl_filter_t *filter);
 static int crwl_filter_deep_hdl(crwl_filter_t *filter, gumbo_result_t *result);
 
@@ -194,6 +194,7 @@ void crwl_filter_destroy(crwl_filter_t *filter)
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
+ **     当Redis UNDO队列数据条数超过一定阈值后，将暂停从网页中提取URL.
  **作    者: # Qifeng.zou # 2014.10.18 #
  ******************************************************************************/
 int crwl_filter_work(crwl_filter_t *filter)
@@ -223,6 +224,12 @@ int crwl_filter_work(crwl_filter_t *filter)
         /* 2. 遍历文件 */
         while (NULL != (item = readdir(dir)))
         {
+            /* 判断是否超过阈值 */
+            if (redis_llen(filter->redis->master, conf->redis.undo_taskq) > CRWL_REDIS_UNDO_LIMIT_NUM)
+            {
+                break;
+            }
+
             snprintf(filter->info.fname, sizeof(filter->info.fname), "%s/%s", path, item->d_name); 
 
             /* 判断文件类型 */
@@ -243,7 +250,7 @@ int crwl_filter_work(crwl_filter_t *filter)
             }
 
             /* 主处理流程 */
-            crwl_filter_work_flow(filter);
+            crwl_filter_process(filter);
 
             snprintf(new_path, sizeof(new_path), "%s/%s", conf->filter.store.path, item->d_name);
             rename(filter->info.fname, new_path);
@@ -256,7 +263,7 @@ int crwl_filter_work(crwl_filter_t *filter)
 
         Mkdir(conf->filter.store.path, 0777);
 
-        Sleep(5);
+        Sleep(1);
     }
 
     return CRWL_OK;
@@ -392,7 +399,7 @@ static int crwl_filter_webpage_info(crwl_webpage_info_t *info, log_cycle_t *log)
 }
 
 /******************************************************************************
- **函数名称: crwl_filter_work_flow
+ **函数名称: crwl_filter_process
  **功    能: 解析器处理流程
  **输入参数: 
  **     filter: 解析器对象
@@ -402,7 +409,7 @@ static int crwl_filter_webpage_info(crwl_webpage_info_t *info, log_cycle_t *log)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.17 #
  ******************************************************************************/
-static int crwl_filter_work_flow(crwl_filter_t *filter)
+static int crwl_filter_process(crwl_filter_t *filter)
 {
     gumbo_html_t *html;             /* HTML对象 */
     gumbo_result_t *result;         /* 结果集合 */

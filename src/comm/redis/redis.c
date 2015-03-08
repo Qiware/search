@@ -149,3 +149,37 @@ bool redis_hsetnx(redisContext *ctx,
     freeReplyObject(r);
     return false;
 }
+
+/******************************************************************************
+ **函数名称: redis_llen
+ **功    能: 获取列表长度
+ **输入参数: 
+ **     ctx: Redis信息
+ **     list: LIST名
+ **输出参数:
+ **返    回: 列表长度
+ **实现描述: 
+ **     HSETNX:
+ **         1. 表示新的Value被设置了新值
+ **         0. 表示Key已经存在,该命令没有进行任何操作.
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.03.08 #
+ ******************************************************************************/
+int redis_llen(redisContext *ctx, const char *list)
+{
+    int len;
+    redisReply *r;
+
+    r = redisCommand(ctx, "LLEN %s", list);
+    if (NULL == r
+        || REDIS_REPLY_INTEGER != r->type)
+    {
+        freeReplyObject(r);
+        return false;
+    }
+
+    len = r->integer;
+
+    freeReplyObject(r);
+    return len;
+}

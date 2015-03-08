@@ -16,6 +16,8 @@
 #include "gumbo_ex.h"
 #include <hiredis/hiredis.h>
 
+#define CRWL_REDIS_UNDO_LIMIT_NUM   (100000)
+
 /* 网页基本信息 */
 typedef struct
 {

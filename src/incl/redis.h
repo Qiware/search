@@ -68,4 +68,6 @@ bool redis_hsetnx(redisContext *ctx, const char *hash, const char *key, const ch
  ******************************************************************************/
 #define redis_lpop(ctx, key) redisCommand(ctx, "LPOP %s", key)
 
+int redis_llen(redisContext *ctx, const char *lname);
+
 #endif /*__HTTP_H__*/
