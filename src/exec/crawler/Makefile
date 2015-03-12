@@ -3,7 +3,7 @@
 ##
 ## 文件名: Makefile
 ## 版本号: 1.0
-## 描  述: 日志服务模块
+## 描  述: 爬虫模块
 ## 作  者: # Qifeng.zou # 2014.09.01 #
 ###############################################################################
 include $(PROJ)/make/build.mak
@@ -26,15 +26,12 @@ SRC_LIST = crwl_comm.c \
 			crwl_sched.c \
 			crwl_worker.c
 SRC_LIST2 = crawler.c
-SRC_LIST3 = crwl_filter.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST))
 OBJS2 = $(subst .c,.o, $(SRC_LIST2))
-OBJS3 = $(subst .c,.o, $(SRC_LIST3))
 
 TARGET = libxd_crwl.so
 TARGET2 = crawler
-TARGET3 = crwlfilter
 
 .PHONY: all clean
 
@@ -51,12 +48,6 @@ $(TARGET2): $(OBJS2)
 	@mv $@ $(PROJ_BIN)
 	@echo "$@ is OK!"
 
-$(TARGET3): $(OBJS3)
-	@$(CC) $(CFLAGS) -o $@ $(OBJS3) $(INCLUDE) $(LIBS_PATH) $(LIBS) $(LIBS2)
-	@echo "$(CC) $@"
-	@mv $@ $(PROJ_BIN)
-	@echo "$@ is OK!"
-
 $(OBJS): %.o : %.c
 	@$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
 	@echo "$(CC) $(PWD)/$<"
@@ -65,16 +56,10 @@ $(OBJS2): %.o : %.c
 	@$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
 	@echo "$(CC) $(PWD)/$<"
 
-$(OBJS3): %.o : %.c
-	@$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
-	@echo "$(CC) $(PWD)/$<"
-
 clean:
 	@rm -fr *.o \
 			$(PROJ_LIB)/$(TARGET) \
-			$(PROJ_BIN)/$(TARGET2) \
-			$(PROJ_BIN)/$(TARGET3)
+			$(PROJ_BIN)/$(TARGET2)
 	@echo "rm -fr *.o \
 			$(PROJ_LIB)/$(TARGET) \
-			$(PROJ_BIN)/$(TARGET2) \
-			$(PROJ_BIN)/$(TARGET3)"
+			$(PROJ_BIN)/$(TARGET2)"

@@ -2,7 +2,11 @@
 #define __SCK_API_H__
 
 #include "common.h"
+
+#include <netdb.h>
 #include <sys/timeb.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 
 #define ntoh64(v) ((uint64_t)( \
         (uint64_t)(v) & 0x00000000000000FF) << 56 \

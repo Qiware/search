@@ -11,8 +11,18 @@ cl=`find ../../ -name "*.c" | xargs grep "^$" | wc -l`
 empty=`expr $hl + $cl`
 
 # 注释数
-hl=`find ../../ -name "*.h" | xargs grep -e "^[[:space:]]\{0,\}\*\*" -e "^[[:space:]]\{0,\}/\*" -e "^[[:space:]]\{0,\}\*/" -e "^[[:space:]]\{0,\}//" | wc -l`
-cl=`find ../../ -name "*.c" | xargs grep -e "^[[:space:]]\{0,\}\*\*" -e "^[[:space:]]\{0,\}/\*" -e "^[[:space:]]\{0,\}\*/" -e "^[[:space:]]\{0,\}//" | wc -l`
+hl=`find ../../ -name "*.h" | xargs grep \
+   -e "^[[:space:]]\{0,\}/\*" \
+   -e "^[[:space:]]\{0,\}\*" \
+   -e "^[[:space:]]\{0,\}\*\*" \
+   -e "^[[:space:]]\{0,\}\*/" \
+   -e "^[[:space:]]\{0,\}//" | wc -l`
+cl=`find ../../ -name "*.c" | xargs grep \
+   -e "^[[:space:]]\{0,\}/\*" \
+   -e "^[[:space:]]\{0,\}\*" \
+   -e "^[[:space:]]\{0,\}\*\*" \
+   -e "^[[:space:]]\{0,\}\*/" \
+   -e "^[[:space:]]\{0,\}//" | wc -l`
 note=`expr $hl + $cl`
 
 # 实行数

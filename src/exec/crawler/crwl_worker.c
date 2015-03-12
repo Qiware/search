@@ -48,7 +48,7 @@ static crwl_worker_task_hdl_t g_crwl_worker_task_hdl[CRWL_TASK_TYPE_TOTAL] =
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.09 #
  ******************************************************************************/
-static crwl_worker_t *crwl_worker_get(crwl_cntx_t *ctx)
+static crwl_worker_t *crwl_worker_self(crwl_cntx_t *ctx)
 {
     int tidx;
 
@@ -516,8 +516,8 @@ void *crwl_worker_routine(void *_ctx)
     crwl_cntx_t *ctx = (crwl_cntx_t *)_ctx;
     crwl_conf_t *conf = ctx->conf;
 
-    /* 1. 创建爬虫对象 */
-    worker = crwl_worker_get(ctx);
+    /* 1. 获取爬虫对象 */
+    worker = crwl_worker_self(ctx);
     if (NULL == worker)
     {
         log_error(ctx->log, "Initialize worker failed!");
@@ -946,6 +946,7 @@ static int crwl_worker_task_down_webpage(
     sck = crwl_worker_socket_alloc(worker);
     if (NULL == sck)
     {
+        Close(fd);
         log_error(worker->log, "Alloc memory from slab failed!");
         return CRWL_ERR;
     }
@@ -968,6 +969,7 @@ static int crwl_worker_task_down_webpage(
 
     if (crwl_worker_add_sock(worker, sck))
     {
+        Close(fd);
         log_error(worker->log, "Add socket into list failed!");
         crwl_worker_socket_dealloc(worker, sck);
         return CRWL_ERR;

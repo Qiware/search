@@ -31,32 +31,6 @@ typedef struct
     int length;                             /* 数据长度(报头+报体) */
 } crwl_data_info_t;
 
-/* 域名IP映射信息 */
-typedef struct
-{
-    char host[URI_MAX_LEN];                 /* Host信息(域名) */
-
-    int ip_num;                             /* IP地址数 */
-#define CRWL_IP_MAX_NUM  (8)
-    ipaddr_t ip[CRWL_IP_MAX_NUM];           /* 域名对应的IP地址 */
-    time_t access_tm;                       /* 最近访问时间 */
-} crwl_domain_ip_map_t;
-
-/* 域名黑名单信息 */
-typedef struct
-{
-    char host[URI_MAX_LEN];                 /* Host信息(域名) */
-
-    time_t access_tm;                       /* 最近访问时间 */
-} crwl_domain_blacklist_t;
-
-/* 输入参数信息 */
-typedef struct
-{
-    char conf_path[FILE_NAME_MAX_LEN];      /* 配置文件路径 */
-    bool isdaemon;                          /* 是否后台运行 */
-} crwl_opt_t;
-
 /* 爬虫全局信息 */
 typedef struct
 {
@@ -73,12 +47,6 @@ typedef struct
     hash_tab_t *domain_ip_map;              /* 域名IP映射表: 通过域名找到IP地址 */
     hash_tab_t *domain_blacklist;           /* 域名黑名单 */
 } crwl_cntx_t;
-
-/* 对外接口 */
-int crwl_getopt(int argc, char **argv, crwl_opt_t *opt);
-int crwl_usage(const char *exec);
-int crwl_proc_lock(void);
-void crwl_set_signal(void);
 
 log_cycle_t *crwl_init_log(char *fname);
 crwl_cntx_t *crwl_cntx_init(char *pname, const char *path);

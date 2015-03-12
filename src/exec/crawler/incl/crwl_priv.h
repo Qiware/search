@@ -1,6 +1,8 @@
 #if !defined(__CRWL_PRIV_H__)
 #define __CRWL_PRIV_H__
 
+#include "sck_api.h"
+
 /* 宏定义 */
 #define CRWL_EVENT_TMOUT_MSEC       (2000)  /* 超时(毫秒) */
 #define CRWL_SCAN_TMOUT_SEC         (05)    /* 超时扫描间隔 */
@@ -32,15 +34,16 @@
 
 #define CRWL_TASK_STR_LEN           (8192)  /* TASK字串最大长度 */
 
-#define crwl_get_task_str(str, size, uri, deep) /* TASK字串格式 */\
+#define crwl_get_task_str(str, size, uri, deep, ip, family) /* TASK字串格式 */\
             snprintf(str, size, \
                 "<TASK>" \
                     "<TYPE>%d</TYPE>"   /* Task类型 */\
                     "<BODY>" \
-                        "<URI DEPTH=\"%d\">\"%s\"</URI>" /* 网页深度&URI */\
+                        "<IP FAMILY='%d'>%s</IP>"  /* IP地址和协议 */\
+                        "<URI DEPTH='%d'>%s</URI>" /* 网页深度&URI */\
                     "</BODY>" \
                 "</TASK>", \
-                CRWL_TASK_DOWN_WEBPAGE, deep, uri);
+                CRWL_TASK_DOWN_WEBPAGE, family, ip, deep, uri);
 
 #define crwl_write_webpage_finfo(fp, data)   /* 写入网页信息 */\
 { \
@@ -70,5 +73,40 @@ typedef enum
     CRWL_DATA_TYPE_UNKNOWN = 0              /* 未知数据 */
     , CRWL_HTTP_GET_REQ                     /* HTTP GET请求 */
 } crwl_data_type_e;
+
+/* 输入参数 */
+typedef struct
+{
+    char conf_path[FILE_NAME_MAX_LEN];      /* 配置文件路径 */
+    bool isdaemon;                          /* 是否后台运行 */
+} crwl_opt_t;
+
+/* 域名IP映射信息 */
+typedef struct
+{
+    char host[URI_MAX_LEN];                 /* Host信息(域名) */
+
+    int ip_num;                             /* IP地址数 */
+#define CRWL_IP_MAX_NUM  (8)
+    ipaddr_t ip[CRWL_IP_MAX_NUM];           /* 域名对应的IP地址 */
+    time_t access_tm;                       /* 最近访问时间 */
+} crwl_domain_ip_map_t;
+
+/* 域名黑名单信息 */
+typedef struct
+{
+    char host[URI_MAX_LEN];                 /* Host信息(域名) */
+
+    time_t access_tm;                       /* 最近访问时间 */
+} crwl_domain_blacklist_t;
+
+/* 对外接口 */
+int crwl_getopt(int argc, char **argv, crwl_opt_t *opt);
+int crwl_usage(const char *exec);
+int crwl_proc_lock(void);
+void crwl_set_signal(void);
+
+int crwl_domain_ip_map_cmp_cb(const char *domain, const crwl_domain_ip_map_t *map);
+int crwl_domain_blacklist_cmp_cb(const char *domain, const crwl_domain_blacklist_t *blacklist);
 
 #endif /*__CRWL_PRIV_H__*/

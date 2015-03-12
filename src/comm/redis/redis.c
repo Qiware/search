@@ -159,9 +159,9 @@ bool redis_hsetnx(redisContext *ctx,
  **输出参数:
  **返    回: 列表长度
  **实现描述: 
- **     HSETNX:
- **         1. 表示新的Value被设置了新值
- **         0. 表示Key已经存在,该命令没有进行任何操作.
+ **     LLEN:
+ **         1. 返回列表的长度
+ **         2. 当列表不存在时, 返回0
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.03.08 #
  ******************************************************************************/
@@ -175,7 +175,7 @@ int redis_llen(redisContext *ctx, const char *list)
         || REDIS_REPLY_INTEGER != r->type)
     {
         freeReplyObject(r);
-        return false;
+        return 0;
     }
 
     len = r->integer;

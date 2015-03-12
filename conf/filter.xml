@@ -1,11 +1,11 @@
-<!-- 爬虫系统配置信息 -->
-<CRAWLER>
+<!-- 过滤系统配置信息 -->
+<FILTER>
     <!-- 公共配置 -->
     <COMMON>
         <!-- 日志信息配置
-             1) LEVLE: 日志级别
-             2) SYS_LEVEL: 系统日志级别
-             3) 取值范围: trace|debug|info|warn|error|fatal -->
+            1) LEVLE: 日志级别
+            2) SYS_LEVEL: 系统日志级别
+            3) 取值范围: trace|debug|info|warn|error|fatal -->
         <LOG LEVEL="warn" SYS_LEVEL="error" PATH="../log/" />
 
         <!-- 爬取配置
@@ -18,7 +18,7 @@
 
         <!-- 管理服务: 负责对外提供管理服务(如:操作接口 监控信息等)
           1) PORT: 侦听端口 -->
-        <MANAGER PORT="8888" />
+        <MANAGER PORT="8889" />
 
         <!-- REDIS服务配置
              1) IP: IP地址
@@ -42,13 +42,23 @@
         </REDIS>
     </COMMON>
 
-    <!-- 调度进程: 负责任务调度
+    <!-- 工作进程: 负责网页分析
          1) NUM: 线程数 -->
-    <SCHED NUM="1" />
+    <WORKER NUM="3" />
 
-    <!-- 爬虫进程: 负责网页下载
-         1) NUM: 线程数 -->
-    <WORKER NUM="3">
-        <CONNECTIONS MAX="512" TIMEOUT="15" /> <!-- 爬取网页的并发(连接)数 -->
-    </WORKER>
-</CRAWLER>
+    <!-- 分析进程: 负责对网页的分析(内容分析、URL提取等) -->
+    <FILTER>
+        <!-- 被解析网页的存储路径 -->
+        <STORE PATH="../data/filter/webpage" ERR_PATH="../data/filter/error" />
+        <DATABASE SERVER="服务名" USER="用户名" PASSWD="密码" />  <!-- 数据库配置 -->
+    </FILTER>
+
+    <!-- 种子配置(DEPTH: 表示种子的当前深度) -->
+    <SEED>
+        <ITEM URI="www.baidu.com" DEPTH="0" />
+        <ITEM URI="www.ifeng.com" DEPTH="0" />
+        <ITEM URI="www.qq.com" DEPTH="0" />
+        <ITEM URI="www.163.com" DEPTH="0" />
+        <ITEM URI="www.52rd.com" DEPTH="0" />
+    </SEED>
+</FILTER>

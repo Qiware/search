@@ -44,9 +44,9 @@ typedef struct
     queue_t **sendq;                        /* 发送队列(注:数组长度与Agent相等) */
 } srch_cntx_t;
 
-#define srch_connq_used(ctx, idx) queue_used(&ctx->connq[idx]->queue) /* 已用连接队列空间 */
-#define srch_recvq_used(ctx, idx) queue_used(&ctx->recvq[idx]->queue) /* 已用接收队列空间 */
-#define srch_sendq_used(ctx, idx) queue_used(&ctx->sendq[idx]->queue) /* 已用发送队列空间 */
+#define srch_connq_used(ctx, idx) queue_used(ctx->connq[idx]) /* 已用连接队列空间 */
+#define srch_recvq_used(ctx, idx) queue_used(ctx->recvq[idx]) /* 已用接收队列空间 */
+#define srch_sendq_used(ctx, idx) queue_used(ctx->sendq[idx]) /* 已用发送队列空间 */
 
 srch_cntx_t *srch_cntx_init(char *pname, const char *conf_path);
 void srch_cntx_destroy(srch_cntx_t *ctx);

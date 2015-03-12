@@ -34,10 +34,6 @@ typedef struct
     spinlock_t lock;                        /* 队列锁 */
 } _queue_t;
 
-/* 获取队列剩余空间 */
-#define queue_space(q) ((q)->max - (q)->num)
-#define queue_used(q) ((q)->num)
-
 int _queue_creat(_queue_t *q, int max);
 int queue_push_lock(_queue_t *q, void *addr);
 void *queue_pop_lock(_queue_t *q);
@@ -56,5 +52,9 @@ queue_t *queue_creat(int max, int size);
 #define queue_push(q, addr) queue_push_lock(&((q)->queue), addr)
 #define queue_pop(q) queue_pop_lock(&((q)->queue))
 void queue_destroy(queue_t *q);
+
+/* 获取队列剩余空间 */
+#define queue_space(q) ((q)->queue.max - (q)->queue.num)
+#define queue_used(q) ((q)->queue.num)
 
 #endif /*__QUEUE_H__*/

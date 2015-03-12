@@ -14,10 +14,10 @@ fi
 ./crawler -d
 
 # 爬虫过滤服务
-./crwlfilter -d
+./filter -d
 
 # 搜索引擎服务
 ./search -d
 
 # 监控进程状态
-#./monitor.sh
+./monitor.sh

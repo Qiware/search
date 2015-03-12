@@ -9,7 +9,7 @@
 ###############################################################################
 print_proc()
 {
-    ps -axu | grep -e "crawler" -e "crwlfilter" -e "logsvr" -e "redis" -e "search" | grep -v "grep" | sort
+    ps -axu | grep -e "crawler" -e "filter" -e "logsvr" -e "redis" -e "search" | grep -v "grep" | sort
 }
 
 ###############################################################################
@@ -118,6 +118,12 @@ main()
         print_shm
         echo "---------------------------------------------------------------------"
 
+        echo ""
+        echo "Disk stat:"
+        echo "---------------------------------------------------------------------"
+        sudo df -l
+        echo "---------------------------------------------------------------------"
+
         # 显示上次获取的netstat信息(防止刷屏时间过长)
         #echo ""
         #echo "Network stat:"
@@ -126,7 +132,7 @@ main()
 
         #cat .netstat.ls
         #echo "---------------------------------------------------------------------"
-        #print_netstat "crawler" "crwlfilter" "redis-server" "search"
+        #print_netstat "crawler" "filter" "redis-server" "search"
 
         sleep 2
     done;

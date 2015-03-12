@@ -251,7 +251,7 @@ static int crwl_sched_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
 
         workq = ctx->workq[workq_id];
 
-        if (!queue_space(&workq->queue))
+        if (!queue_space(workq))
         {
             ++times;
             if (times >= conf->worker.num)
@@ -280,7 +280,7 @@ static int crwl_sched_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
         if (NULL == addr)
         {
             freeReplyObject(r);
-            log_error(ctx->log, "Alloc memory from queue failed!");
+            log_error(ctx->log, "Alloc memory from queue failed! num:%d", queue_space(workq));
             return CRWL_OK;
         }
 
@@ -398,8 +398,7 @@ static int crwl_task_parse(const char *str, crwl_task_t *task)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.28 #
  ******************************************************************************/
-static int crwl_task_parse_download_webpage(
-        xml_tree_t *xml, crwl_task_down_webpage_t *dw)
+static int crwl_task_parse_download_webpage(xml_tree_t *xml, crwl_task_down_webpage_t *dw)
 {
     xml_node_t *node, *body;
 
@@ -409,6 +408,24 @@ static int crwl_task_parse_download_webpage(
     {
         return CRWL_ERR;
     }
+
+    /* 获取IP */
+    node = xml_rquery(xml, body, "IP");
+    if (NULL == node)
+    {
+        return CRWL_ERR;
+    }
+
+    snprintf(dw->ip, sizeof(dw->ip), "%s", node->value);
+
+    /* 获取IP.FAMILY */
+    node = xml_rquery(xml, body, "IP.FAMILY");
+    if (NULL == node)
+    {
+        return CRWL_ERR;
+    }
+
+    dw->family = atoi(node->value);
 
     /* 获取URI */
     node = xml_rquery(xml, body, "URI");
@@ -456,25 +473,29 @@ static int crwl_sched_task_down_webpage_hdl(
     memset(&map, 0, sizeof(map));
     memset(&field, 0, sizeof(field));
 
-    /* 1. 解析URI字串 */
-    if(0 != uri_reslove(args->uri, &field))
+    if (0 == args->family
+        || 0 == strlen(args->ip))
     {
-        log_error(ctx->log, "Reslove uri [%s] failed!", args->uri);
-        return CRWL_ERR;
+        /* 1. 解析URI字串 */
+        if(0 != uri_reslove(args->uri, &field))
+        {
+            log_error(ctx->log, "Reslove uri [%s] failed!", args->uri);
+            return CRWL_ERR;
+        }
+
+        /* 2. 通过URL获取WEB服务器IP信息 */
+        ret = crwl_get_domain_ip_map(ctx, field.host, &map);
+        if (0 != ret || 0 == map.ip_num)
+        {
+            log_error(ctx->log, "Get ip failed! uri:%s host:%s", field.uri, field.host);
+            return CRWL_ERR;
+        }
+
+        idx = random() % map.ip_num;
+
+        args->family = map.ip[idx].family;
+        snprintf(args->ip, sizeof(args->ip), "%s", map.ip[idx].ip);
     }
-
-    /* 2. 通过URL获取WEB服务器IP信息 */
-    ret = crwl_get_domain_ip_map(ctx, field.host, &map);
-    if (0 != ret || 0 == map.ip_num)
-    {
-        log_error(ctx->log, "Get ip failed! uri:%s host:%s", field.uri, field.host);
-        return CRWL_ERR;
-    }
-
-    idx = random() % map.ip_num;
-
-    args->family = map.ip[idx].family;
-    snprintf(args->ip, sizeof(args->ip), "%s", map.ip[idx].ip);
 
     /* 3. 放入Worker任务队列 */
     if (queue_push(workq, (void *)task))
