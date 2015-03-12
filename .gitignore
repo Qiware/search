@@ -11,6 +11,7 @@ src/demo/*
 bin/*
 lib/*
 tmp/*
+log/*
 temp/*
 tags
 stderr
