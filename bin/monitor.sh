@@ -98,7 +98,7 @@ print_netstat()
 ###############################################################################
 main()
 {
-    touch .netstat.ls
+    #touch .netstat.ls
 
     while true
     do
