@@ -1,7 +1,7 @@
 #!/bin/sh
 
 pkill -9 crawler
-pkill -9 crwlfilter
+pkill -9 filter
 pkill -9 search
 pkill -9 client
 pkill -9 logsvr
