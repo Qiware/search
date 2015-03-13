@@ -266,7 +266,7 @@ static int crwl_sched_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
         times = 0;
 
         /* 2. 取Undo任务数据 */
-        r = redis_lpop(sched->redis, conf->redis.undo_taskq);
+        r = redis_lpop(sched->redis, conf->redis.taskq);
         if (REDIS_REPLY_NIL == r->type)
         {
             freeReplyObject(r);

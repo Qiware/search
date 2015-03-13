@@ -202,7 +202,7 @@ int uri_trim(const char *in, char *out, size_t size)
  ******************************************************************************/
 int uri_reslove(const char *uri, uri_field_t *field)
 {
-    uint32_t len;
+    unsigned int len;
     const char *ch, *s, *suffix;
 
     memset(field, 0, sizeof(uri_field_t));

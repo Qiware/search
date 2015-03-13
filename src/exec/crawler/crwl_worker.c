@@ -38,6 +38,27 @@ static crwl_worker_task_hdl_t g_crwl_worker_task_hdl[CRWL_TASK_TYPE_TOTAL] =
         g_crwl_worker_task_hdl[CRWL_TASK_TYPE_UNKNOWN](ctx, worker, task+1))
 
 /******************************************************************************
+ **函数名称: crwl_worker_get_by_idx
+ **功    能: 通过索引获取WORKER对象
+ **输入参数:
+ **     ctx: 全局信息
+ **     idx: 索引号
+ **输出参数: NONE
+ **返    回: 爬虫对象
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.11.22 #
+ ******************************************************************************/
+crwl_worker_t *crwl_worker_get_by_idx(crwl_cntx_t *ctx, int idx)
+{
+    crwl_worker_t *worker;
+
+    worker = thread_pool_get_args(ctx->worker_pool);
+
+    return worker + idx;
+}
+
+/******************************************************************************
  **函数名称: crwl_worker_get
  **功    能: 获取爬虫对象
  **输入参数: 
@@ -1012,21 +1033,4 @@ static int crwl_worker_task_unknown_hdl(crwl_cntx_t *ctx, crwl_worker_t *worker,
 {
     log_error(worker->log, "Task type is unknown!");
     return CRWL_ERR;
-}
-
-/******************************************************************************
- **函数名称: crwl_worker_get_by_idx
- **功    能: 通过索引获取WORKER对象
- **输入参数:
- **     ctx: 全局信息
- **     idx: 索引号
- **输出参数: NONE
- **返    回: 爬虫对象
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.11.22 #
- ******************************************************************************/
-crwl_worker_t *crwl_worker_get_by_idx(crwl_cntx_t *ctx, int idx)
-{
-    return (crwl_worker_t *)ctx->worker_pool->data + idx;
 }

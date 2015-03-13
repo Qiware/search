@@ -18,94 +18,12 @@
 #include "flt_conf.h"
 #include "flt_worker.h"
 
+/* 通过索引获取WORKER对象 */
+#define flt_worker_get_by_idx(ctx, idx) (&(ctx)->worker[idx])
+
+/* 静态函数 */
 static int flt_worker_workflow(flt_cntx_t *ctx, flt_worker_t *worker);
 static int flt_worker_deep_hdl(flt_cntx_t *ctx, flt_worker_t *worker, gumbo_result_t *result);
-
-/******************************************************************************
- **函数名称: flt_push_task
- **功    能: 将Seed放入UNDO队列
- **输入参数: 
- **     filter: Filter对象
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2015.03.11 #
- ******************************************************************************/
-static int flt_push_task(flt_cntx_t *ctx)
-{
-    int ret;
-    uint32_t len, idx, i;
-    redisReply *r; 
-    flt_seed_conf_t *seed;
-    char task_str[FLT_TASK_STR_LEN];
-    flt_conf_t *conf = ctx->conf;
-    uri_field_t field;
-    flt_domain_ip_map_t map;
-
-    for (idx=0; idx<conf->seed_num; ++idx)
-    {
-        seed = &conf->seed[idx];
-        if (seed->depth > conf->download.depth) /* 判断网页深度 */
-        {
-            continue;
-        }
-
-        /* > 将href转至uri */
-        if (0 != href_to_uri((const char *)seed->uri, "", &field))
-        {
-            log_info(ctx->log, "Uri [%s] is invalid!", (char *)seed->uri);
-            continue;
-        }
-
-        /* > 查询域名IP映射 */
-        ret = flt_get_domain_ip_map(ctx, seed->uri, &map);
-        if (0 != ret || 0 == map.ip_num)
-        {
-            log_error(ctx->log, "Get ip failed! uri:%s host:%s", field.uri, field.host);
-            return FLT_ERR;
-        }
-
-        i = rand() % map.ip_num;
-
-        /* > 组装任务格式 */
-        len = flt_get_task_str(task_str, sizeof(task_str),
-                seed->uri, seed->depth, map.ip[i].ip, map.ip[i].family);
-        if (len >= sizeof(task_str))
-        {
-            log_info(ctx->log, "Task string is too long! uri:[%s]", seed->uri);
-            continue;
-        }
-
-        /* 2. 插入Undo任务队列 */
-        r = redis_rpush(ctx->redis->master, ctx->conf->redis.undo_taskq, task_str);
-        if (NULL == r
-            || REDIS_REPLY_NIL == r->type)
-        {
-            if (r) { freeReplyObject(r); }
-            log_error(ctx->log, "Push into undo task queue failed!");
-            return FLT_ERR;
-        }
-
-        freeReplyObject(r);
-    }
-
-    return FLT_OK;
-}
-
-/******************************************************************************
- **函数名称: flt_worker_get_by_idx
- **功    能: 通过索引获取WORKER对象
- **输入参数:
- **     ctx: 全局信息
- **     idx: 索引号
- **输出参数: NONE
- **返    回: 工作对象
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2015.03.11 #
- ******************************************************************************/
-#define flt_worker_get_by_idx(ctx, idx) (&ctx->worker[idx])
 
 /******************************************************************************
  **函数名称: flt_worker_self
@@ -122,7 +40,7 @@ static flt_worker_t *flt_worker_self(flt_cntx_t *ctx)
 {
     int tidx;
 
-    tidx = thread_pool_get_tidx(ctx->worker_tp);
+    tidx = thread_pool_get_tidx(ctx->worker_pool);
     if (tidx < 0)
     {
         return NULL;
@@ -130,8 +48,6 @@ static flt_worker_t *flt_worker_self(flt_cntx_t *ctx)
 
     return flt_worker_get_by_idx(ctx, tidx);
 }
-
-
 
 /******************************************************************************
  **函数名称: flt_worker_get_webpage_info
@@ -160,7 +76,7 @@ static int flt_worker_get_webpage_info(
     if (NULL == pool)
     {
         log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return CRWL_ERR;
+        return FLT_ERR;
     }
 
     /* 2. 新建XML树 */
@@ -168,12 +84,12 @@ static int flt_worker_get_webpage_info(
     opt.alloc = (mem_alloc_cb_t)mem_pool_alloc;
     opt.dealloc = (mem_dealloc_cb_t)mem_pool_dealloc;
 
-    xml = xml_creat(info->fname, &opt);
+    xml = xml_creat(path, &opt);
     if (NULL == xml)
     {
         mem_pool_destroy(pool);
         log_error(log, "Create XML failed!");
-        return CRWL_ERR;
+        return FLT_ERR;
     }
 
     /* 2. 提取网页信息 */
@@ -251,15 +167,17 @@ static int flt_worker_get_webpage_info(
             break;
         }
 
+        snprintf(info->fname, sizeof(info->fname), "%s", path);
+
         xml_destroy(xml);
         mem_pool_destroy(pool);
-        return CRWL_OK;
+        return FLT_OK;
     } while(0);
 
     /* 3. 释放XML树 */
     xml_destroy(xml);
     mem_pool_destroy(pool);
-    return CRWL_ERR;
+    return FLT_ERR;
 }
 
 /******************************************************************************
@@ -292,7 +210,7 @@ void *flt_worker_routine(void *_ctx)
         }
 
         /* > 提取网页数据 */
-        if (flt_worker_get_webpage_info(task->path, &worker->info, ctx->log))
+        if (flt_worker_get_webpage_info(task->path, &worker->info, worker->log))
         {
             queue_dealloc(ctx->taskq, task);
             continue;
@@ -322,6 +240,7 @@ void *flt_worker_routine(void *_ctx)
 int flt_worker_init(flt_cntx_t *ctx, flt_worker_t *worker, int idx)
 {
     worker->tidx = idx;
+    worker->log = ctx->log;
     return FLT_OK;
 }
 
@@ -331,7 +250,7 @@ int flt_worker_init(flt_cntx_t *ctx, flt_worker_t *worker, int idx)
  **输入参数: 
  **     ctx: 全局对象
  **     worker: 工作对象
- **输出参数:
+ **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
@@ -359,11 +278,7 @@ int flt_worker_destroy(flt_cntx_t *ctx, flt_worker_t *worker)
  ******************************************************************************/
 static int flt_worker_deep_hdl(flt_cntx_t *ctx, flt_worker_t *worker, gumbo_result_t *result)
 {
-    uint32_t len, idx, ret;
-    redisReply *r; 
     uri_field_t field;
-    flt_domain_ip_map_t map;
-    char task_str[FLT_TASK_STR_LEN];
     flt_conf_t *conf = ctx->conf;
     list_node_t *node = result->list->head;
     flt_webpage_info_t *info = &worker->info;
@@ -385,35 +300,12 @@ static int flt_worker_deep_hdl(flt_cntx_t *ctx, flt_worker_t *worker, gumbo_resu
             continue;
         }
 
-        /* > 获取域名IP映射数据 */
-        ret = flt_get_domain_ip_map(ctx, field.host, &map);
-        if (0 != ret || 0 == map.ip_num)
+        /* > 推送到REDIS队列 */
+        if (flt_push_url_to_redis_taskq(ctx, field.uri, field.host, field.port, info->depth+1))
         {
-            log_error(ctx->log, "Get ip failed! uri:%s host:%s", field.uri, field.host);
-            return FLT_ERR;
-        }
-
-        idx = random() % map.ip_num;
-
-        /* > 组装任务格式 */
-        len = flt_get_task_str(task_str, sizeof(task_str),
-                field.uri, info->depth+1, map.ip[idx].ip, map.ip[idx].family);
-        if (len >= sizeof(task_str))
-        {
-            log_info(ctx->log, "Task string is too long! [%s]", task_str);
+            log_info(ctx->log, "Push url [%s] redis taskq failed!", (char *)node->data);
             continue;
         }
-
-        /* 4. 插入Undo任务队列 */
-        r = redis_rpush(ctx->redis->master, ctx->conf->redis.undo_taskq, task_str);
-        if (REDIS_REPLY_NIL == r->type)
-        {
-            freeReplyObject(r);
-            log_error(ctx->log, "Push into undo task queue failed!");
-            return FLT_ERR;
-        }
-
-        freeReplyObject(r);
     }
 
     return FLT_OK;

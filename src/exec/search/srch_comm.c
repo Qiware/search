@@ -490,7 +490,7 @@ static int srch_creat_agent_pool(srch_cntx_t *ctx)
     /* 3. 依次初始化Agent对象 */
     for (idx=0; idx<conf->agent_num; ++idx)
     {
-        if (srch_agent_init(ctx, agent, idx))
+        if (srch_agent_init(ctx, agent+idx, idx))
         {
             log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
             break;

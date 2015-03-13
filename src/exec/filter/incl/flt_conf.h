@@ -42,7 +42,7 @@ typedef struct
 typedef struct
 {
     redis_conf_t master;                    /* Master配置 */
-    char undo_taskq[QUEUE_NAME_MAX_LEN];    /* Undo任务队列名 */
+    char taskq[QUEUE_NAME_MAX_LEN];         /* 任务队列名 */
     char done_tab[TABLE_NAME_MAX_LEN];      /* Done哈希表名 */
     char push_tab[TABLE_NAME_MAX_LEN];      /* Push哈希表名 */
 #define FLT_REDIS_SLAVE_MAX_NUM  (10)      /* 最大副本数 */

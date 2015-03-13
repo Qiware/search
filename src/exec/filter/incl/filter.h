@@ -40,7 +40,7 @@ typedef struct
     time_t run_tm;                          /* 运行时间 */
 
     pthread_t sched_tid;                    /* Sched线程ID */
-    thread_pool_t *worker_tp;               /* Worker线程池 */
+    thread_pool_t *worker_pool;             /* Worker线程池 */
     flt_worker_t *worker;                   /* 工作对象 */
 
     queue_t *taskq;                         /* 任务队列 */
@@ -58,5 +58,8 @@ int flt_get_domain_ip_map(flt_cntx_t *ctx, char *host, flt_domain_ip_map_t *map)
 
 int flt_worker_init(flt_cntx_t *ctx, flt_worker_t *worker, int idx);
 int flt_worker_destroy(flt_cntx_t *ctx, flt_worker_t *worker);
+
+int flt_push_url_to_redis_taskq(flt_cntx_t *ctx, const char *url, char *host, int port, int depth);
+int flt_push_seed_to_redis_taskq(flt_cntx_t *ctx);
 
 #endif /*__FILTER_H__*/

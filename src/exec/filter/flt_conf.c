@@ -288,7 +288,7 @@ static int flt_conf_load_redis(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *l
         return FLT_ERR;
     }
 
-    snprintf(redis->undo_taskq, sizeof(redis->undo_taskq), "%s", node->value);
+    snprintf(redis->taskq, sizeof(redis->taskq), "%s", node->value);
 
     /* 获取哈希表名 */
     node = xml_rquery(xml, fix, "DONE_TAB.NAME");  /* DONE哈希表 */

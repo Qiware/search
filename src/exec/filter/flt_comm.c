@@ -31,7 +31,7 @@
 
 #define FLT_PROC_LOCK_PATH "../temp/filter/filter.lck"
 
-static int flt_creat_worker_tpool(flt_cntx_t *ctx);
+static int flt_worker_pool_creat(flt_cntx_t *ctx);
 
 /******************************************************************************
  **函数名称: flt_getopt 
@@ -219,7 +219,7 @@ flt_cntx_t *flt_init(char *pname, const char *path)
         }
 
         /* > 创建工作线程池 */
-        if (flt_creat_worker_tpool(ctx))
+        if (flt_worker_pool_creat(ctx))
         {
             log_error(log, "Initialize thread pool failed!");
             break;
@@ -253,10 +253,17 @@ int flt_startup(flt_cntx_t *ctx)
     int idx;
     const flt_conf_t *conf = ctx->conf;
 
+    /* > 推送SEED至REDIS任务队列 */
+    if (flt_push_seed_to_redis_taskq(ctx))
+    {
+        log_error(ctx->log, "Push seed to redis taskq failed!");
+        return FLT_ERR;
+    }
+
     /* > 设置Worker线程回调 */
     for (idx=0; idx<conf->worker.num; ++idx)
     {
-        thread_pool_add_worker(ctx->worker_tp, flt_worker_routine, ctx);
+        thread_pool_add_worker(ctx->worker_pool, flt_worker_routine, ctx);
     }
     
     /* > 启动Sched线程 */
@@ -266,14 +273,14 @@ int flt_startup(flt_cntx_t *ctx)
         return FLT_ERR;
     }
 
-    /* 4. 获取运行时间 */
+    /* > 获取运行时间 */
     ctx->run_tm = time(NULL);
 
     return FLT_OK;
 }
 
 /******************************************************************************
- **函数名称: flt_creat_worker_tpool
+ **函数名称: flt_worker_pool_creat
  **功    能: 初始化工作线程池
  **输入参数: 
  **     ctx: 全局信息
@@ -283,9 +290,9 @@ int flt_startup(flt_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.11 #
  ******************************************************************************/
-static int flt_creat_worker_tpool(flt_cntx_t *ctx)
+static int flt_worker_pool_creat(flt_cntx_t *ctx)
 {
-    int idx, num = 0;
+    int idx, num;
     thread_pool_option_t option;
     flt_worker_conf_t *conf = &ctx->conf->worker;
 
@@ -296,8 +303,8 @@ static int flt_creat_worker_tpool(flt_cntx_t *ctx)
     option.alloc = (mem_alloc_cb_t)slab_alloc;
     option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-    ctx->worker_tp = thread_pool_init(conf->num, &option, NULL);
-    if (NULL == ctx->worker_tp)
+    ctx->worker_pool = thread_pool_init(conf->num, &option, NULL);
+    if (NULL == ctx->worker_pool)
     {
         log_error(ctx->log, "Initialize thread pool failed!");
         return FLT_ERR;
@@ -307,12 +314,13 @@ static int flt_creat_worker_tpool(flt_cntx_t *ctx)
     ctx->worker = (flt_worker_t *)calloc(conf->num, sizeof(flt_worker_t));
     if (NULL == ctx->worker)
     {
-        thread_pool_destroy(ctx->worker_tp);
+        thread_pool_destroy(ctx->worker_pool);
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return FLT_ERR;
     }
 
     /* 3. 依次初始化Worker对象 */
+    num = 0;
     for (idx=0; idx<conf->num; ++idx, ++num)
     {
         if (flt_worker_init(ctx, ctx->worker+idx, idx))
@@ -332,7 +340,7 @@ FLT_PROC_ERR:
     }
 
     free(ctx->worker);
-    thread_pool_destroy(ctx->worker_tp);
+    thread_pool_destroy(ctx->worker_pool);
 
     return FLT_ERR;
 }
@@ -783,4 +791,104 @@ bool flt_set_uri_exists(redis_cluster_t *cluster, const char *hash, const char *
     freeReplyObject(r);
 
     return !redis_hsetnx(cluster->master, hash, uri, "1");
+}
+
+/******************************************************************************
+ **函数名称: flt_push_url_to_redis_taskq
+ **功    能: 将URL推送到REDIS队列
+ **输入参数: 
+ **     ctx: 全局对象
+ **     url: 被推送的URL
+ **     depth: URL的深度
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.03.13 #
+ ******************************************************************************/
+int flt_push_url_to_redis_taskq(flt_cntx_t *ctx,
+        const char *url, char *host, int port, int depth)
+{
+    int ret;
+    unsigned int len, idx;
+    redisReply *r; 
+    flt_domain_ip_map_t map;
+    char task_str[FLT_TASK_STR_LEN];
+
+    /* > 查询域名IP映射 */
+    ret = flt_get_domain_ip_map(ctx, host, &map);
+    if (0 != ret || 0 == map.ip_num)
+    {
+        log_error(ctx->log, "Get ip failed! uri:%s host:%s", url, host);
+        return FLT_ERR;
+    }
+
+    idx = rand() % map.ip_num;
+
+    /* > 组装任务格式 */
+    len = flt_get_task_str(task_str, sizeof(task_str),
+            url, depth, map.ip[idx].ip, map.ip[idx].family);
+    if (len >= sizeof(task_str))
+    {
+        log_info(ctx->log, "Task string is too long! uri:[%s]", url);
+        return FLT_ERR;
+    }
+
+    /* > 推至REDIS任务队列 */
+    r = redis_rpush(ctx->redis->master, ctx->conf->redis.taskq, task_str);
+    if (NULL == r
+        || REDIS_REPLY_NIL == r->type)
+    {
+        if (r) { freeReplyObject(r); }
+        log_error(ctx->log, "Push into undo task queue failed!");
+        return FLT_ERR;
+    }
+
+    freeReplyObject(r);
+
+    return FLT_OK;
+}
+
+/******************************************************************************
+ **函数名称: flt_push_seed_to_redis_taskq
+ **功    能: 将Seed放入UNDO队列
+ **输入参数: 
+ **     ctx: 全局对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.03.11 #
+ ******************************************************************************/
+int flt_push_seed_to_redis_taskq(flt_cntx_t *ctx)
+{
+    unsigned int idx;
+    uri_field_t field;
+    flt_seed_conf_t *seed;
+    flt_conf_t *conf = ctx->conf;
+
+    for (idx=0; idx<conf->seed_num; ++idx)
+    {
+        seed = &conf->seed[idx];
+        if (seed->depth > conf->download.depth) /* 判断网页深度 */
+        {
+            continue;
+        }
+
+        /* > 解析URI字串 */
+        if(0 != uri_reslove(seed->uri, &field))
+        {
+            log_error(ctx->log, "Reslove url [%s] failed!", seed->uri);
+            return FLT_ERR;
+        }
+
+        /* > 推送至REDIS队列 */
+        if (flt_push_url_to_redis_taskq(ctx, seed->uri, field.host, field.port, seed->depth))
+        {
+            log_info(ctx->log, "Uri [%s] is invalid!", (char *)seed->uri);
+            continue;
+        }
+    }
+
+    return FLT_OK;
 }

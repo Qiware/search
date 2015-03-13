@@ -111,7 +111,7 @@ hash_tab_t *hash_tab_creat(slab_pool_t *slab, int mod, key_cb_t key_cb, avl_cmp_
 int hash_tab_insert(hash_tab_t *hash, void *pkey, int pkey_len, void *data)
 {
     int ret;
-    uint32_t idx;
+    unsigned int idx;
 
     idx = hash->key_cb(pkey, pkey_len) % hash->num;
 
@@ -143,7 +143,7 @@ int hash_tab_insert(hash_tab_t *hash, void *pkey, int pkey_len, void *data)
  ******************************************************************************/
 int hash_tab_query(hash_tab_t *hash, void *pkey, int pkey_len, void *data, int data_len)
 {
-    uint32_t idx;
+    unsigned int idx;
     avl_node_t *node;
 
 
@@ -180,7 +180,7 @@ int hash_tab_query(hash_tab_t *hash, void *pkey, int pkey_len, void *data, int d
 void *hash_tab_remove(hash_tab_t *hash, void *pkey, int pkey_len)
 {
     void *data;
-    uint32_t idx;
+    unsigned int idx;
 
 
     idx = hash->key_cb(pkey, pkey_len) % hash->num;
@@ -210,7 +210,7 @@ void *hash_tab_remove(hash_tab_t *hash, void *pkey, int pkey_len)
  ******************************************************************************/
 int hash_tab_destroy(hash_tab_t *hash)
 {
-    uint32_t idx;
+    unsigned int idx;
 
     for (idx=0; idx<hash->num; ++idx)
     {
@@ -236,7 +236,7 @@ int hash_tab_destroy(hash_tab_t *hash)
  ******************************************************************************/
 int hash_tab_trav(hash_tab_t *hash, avl_trav_cb_t proc, void *args)
 {
-    uint32_t idx;
+    unsigned int idx;
 
     for (idx=0; idx<hash->num; ++idx)
     {

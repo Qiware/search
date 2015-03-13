@@ -12,7 +12,7 @@
 #include "srch_agent.h"
 #include "thread_pool.h"
 
-static srch_agent_t *srch_agent_get(srch_cntx_t *ctx);
+static srch_agent_t *srch_agent_self(srch_cntx_t *ctx);
 static int srch_agent_add_conn(srch_cntx_t *ctx, srch_agent_t *agt);
 int srch_agent_socket_cmp_cb(const void *pkey, const void *data);
 static int srch_agent_del_conn(srch_cntx_t *ctx, srch_agent_t *agt, socket_t *sck);
@@ -40,7 +40,7 @@ void *srch_agent_routine(void *_ctx)
     srch_cntx_t *ctx = (srch_cntx_t *)_ctx;
 
     /* 1. 获取Agent对象 */
-    agt = srch_agent_get(ctx);
+    agt = srch_agent_self(ctx);
     if (NULL == agt)
     {
         log_error(agt->log, "Get agent failed!");
@@ -201,7 +201,7 @@ int srch_agent_destroy(srch_agent_t *agt)
 }
 
 /******************************************************************************
- **函数名称: srch_agent_get
+ **函数名称: srch_agent_self
  **功    能: 获取Agent对象
  **输入参数: 
  **     ctx: 全局信息
@@ -211,13 +211,15 @@ int srch_agent_destroy(srch_agent_t *agt)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.26 #
  ******************************************************************************/
-static srch_agent_t *srch_agent_get(srch_cntx_t *ctx)
+static srch_agent_t *srch_agent_self(srch_cntx_t *ctx)
 {
     int tidx;
+    srch_agent_t *agt;
 
     tidx = thread_pool_get_tidx(ctx->agent_pool);
+    agt = thread_pool_get_args(ctx->agent_pool);
 
-    return (srch_agent_t *)ctx->agent_pool->data + tidx;
+    return agt + tidx;
 }
 
 /******************************************************************************
