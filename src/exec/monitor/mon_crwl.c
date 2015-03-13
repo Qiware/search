@@ -364,6 +364,7 @@ static int mon_crwl_query_worker_stat_print(crwl_cmd_t *cmd)
     static uint64_t last_down_webpage_total = 0;
     static time_t last_query_tm = 0;
     time_t diff_tm;
+    unsigned long day, hour, min, sec;
 
     cmd->type = ntohl(cmd->type);
     stat = (crwl_cmd_worker_stat_t *)&cmd->data;
@@ -420,14 +421,18 @@ static int mon_crwl_query_worker_stat_print(crwl_cmd_t *cmd)
         diff_tm = 1;
     }
 
+    day = (stat->ctm - stat->stm) / (24 * 60 * 60);
+    hour = ((stat->ctm - stat->stm) % (24 * 60 * 60)) / (60 * 60);
+    min = (((stat->ctm - stat->stm) % (24 * 60 * 60)) % (60 * 60)) / 60;
+    sec = (((stat->ctm - stat->stm) % (24 * 60 * 60)) % (60 * 60)) % 60;
     fprintf(stderr, "    当前时间: %04d-%02d-%02d %02d:%02d:%02d\n"
-            "    运行时长: %lu\n"
+            "    运行时长: %lud:%luh:%lum:%lus\n"
             "    平均速率: %lf\n"
             "    当前速率: %lf\n"
             "    异常比率: %lf%%\n",
             loctm.tm_year+1900, loctm.tm_mon+1, loctm.tm_mday,
             loctm.tm_hour, loctm.tm_min, loctm.tm_sec,
-            stat->ctm - stat->stm,
+            day, hour, min, sec,
             (double)down_webpage_total / (stat->ctm - stat->stm),
             (double)(down_webpage_total - last_down_webpage_total) / diff_tm,
             (double)err_webpage_total / (down_webpage_total+1) * 100);
