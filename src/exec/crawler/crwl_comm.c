@@ -33,9 +33,9 @@
 
 #define CRWL_PROC_LOCK_PATH "../temp/crwl/crwl.lck"
 
-static int crwl_creat_workers(crwl_cntx_t *ctx);
-int crwl_workers_destroy(crwl_cntx_t *ctx);
-static int crwl_creat_scheds(crwl_cntx_t *ctx);
+static int crwl_worker_tpool_creat(crwl_cntx_t *ctx);
+int crwl_worker_tpool_destroy(crwl_cntx_t *ctx);
+static int crwl_sched_tpool_creat(crwl_cntx_t *ctx);
 static void crwl_signal_hdl(int signum);
 
 /******************************************************************************
@@ -237,14 +237,14 @@ crwl_cntx_t *crwl_cntx_init(char *pname, const char *path)
         }
 
         /* 9. 创建Worker线程池 */
-        if (crwl_creat_workers(ctx))
+        if (crwl_worker_tpool_creat(ctx))
         {
             log_error(log, "Initialize thread pool failed!");
             break;
         }
 
         /* 10. 创建Sched线程池 */
-        if (crwl_creat_scheds(ctx))
+        if (crwl_sched_tpool_creat(ctx))
         {
             log_error(log, "Initialize thread pool failed!");
             break;
@@ -286,7 +286,7 @@ void crwl_cntx_destroy(crwl_cntx_t *ctx)
     }
     Free(ctx->workq);
 
-    crwl_workers_destroy(ctx);
+    crwl_worker_tpool_destroy(ctx);
     log_destroy(&ctx->log);
     syslog_destroy();
 }
@@ -314,7 +314,7 @@ int crwl_startup(crwl_cntx_t *ctx)
     /* 1. 设置Worker线程回调 */
     for (idx=0; idx<conf->worker.num; ++idx)
     {
-        thread_pool_add_worker(ctx->workers, crwl_worker_routine, ctx);
+        thread_pool_add_worker(ctx->worker_pool, crwl_worker_routine, ctx);
     }
     
     /* 2. 设置Sched线程回调 */
@@ -339,7 +339,7 @@ int crwl_startup(crwl_cntx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: crwl_creat_workers
+ **函数名称: crwl_worker_tpool_creat
  **功    能: 初始化爬虫线程池
  **输入参数: 
  **     ctx: 全局信息
@@ -349,45 +349,40 @@ int crwl_startup(crwl_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.11 #
  ******************************************************************************/
-static int crwl_creat_workers(crwl_cntx_t *ctx)
+static int crwl_worker_tpool_creat(crwl_cntx_t *ctx)
 {
-    void *data;
     int idx, num;
     crwl_worker_t *worker;
     thread_pool_option_t option;
     const crwl_worker_conf_t *conf = &ctx->conf->worker;
 
-    memset(&option, 0, sizeof(option));
-
-    /* 1. 创建Worker线程池 */
-    option.pool = (void *)ctx->slab;
-    option.alloc = (mem_alloc_cb_t)slab_alloc;
-    option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
-
-    ctx->workers = thread_pool_init(conf->num, &option);
-    if (NULL == ctx->workers)
+    /* > 新建Worker对象 */
+    worker = (crwl_worker_t *)calloc(conf->num, sizeof(crwl_worker_t));
+    if (NULL == worker)
     {
-        log_error(ctx->log, "Initialize thread pool failed!");
-        return CRWL_ERR;
-    }
-
-    /* 2. 新建Worker对象 */
-    data = (crwl_worker_t *)calloc(conf->num, sizeof(crwl_worker_t));
-    if (NULL == data)
-    {
-        thread_pool_destroy(ctx->workers);
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return CRWL_ERR;
     }
 
-    ctx->workers->data = data;
+    /* > 创建Worker线程池 */
+    memset(&option, 0, sizeof(option));
+
+    option.pool = (void *)ctx->slab;
+    option.alloc = (mem_alloc_cb_t)slab_alloc;
+    option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+
+    ctx->worker_pool = thread_pool_init(conf->num, &option, worker);
+    if (NULL == ctx->worker_pool)
+    {
+        log_error(ctx->log, "Initialize thread pool failed!");
+        free(worker);
+        return CRWL_ERR;
+    }
 
     /* 3. 依次初始化Worker对象 */
     for (idx=0; idx<conf->num; ++idx)
     {
-        worker = (crwl_worker_t *)data + idx;
-
-        if (crwl_worker_init(ctx, worker, idx))
+        if (crwl_worker_init(ctx, worker+idx, idx))
         {
             log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
             break;
@@ -403,19 +398,17 @@ static int crwl_creat_workers(crwl_cntx_t *ctx)
     num = idx;
     for (idx=0; idx<num; ++idx)
     {
-        worker = (crwl_worker_t *)ctx->workers->data + idx;
-
-        crwl_worker_destroy(ctx, worker);
+        crwl_worker_destroy(ctx, worker+idx);
     }
 
-    free(ctx->workers->data);
-    thread_pool_destroy(ctx->workers);
+    free(worker);
+    thread_pool_destroy(ctx->worker_pool);
 
     return CRWL_ERR;
 }
 
 /******************************************************************************
- **函数名称: crwl_workers_destroy
+ **函数名称: crwl_worker_tpool_destroy
  **功    能: 销毁爬虫线程池
  **输入参数: 
  **     ctx: 全局信息
@@ -425,7 +418,7 @@ static int crwl_creat_workers(crwl_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.14 #
  ******************************************************************************/
-int crwl_workers_destroy(crwl_cntx_t *ctx)
+int crwl_worker_tpool_destroy(crwl_cntx_t *ctx)
 {
     int idx;
     crwl_worker_t *worker;
@@ -434,23 +427,23 @@ int crwl_workers_destroy(crwl_cntx_t *ctx)
     /* 1. 释放Worker对象 */
     for (idx=0; idx<conf->num; ++idx)
     {
-        worker = (crwl_worker_t *)ctx->workers->data + idx;
+        worker = (crwl_worker_t *)ctx->worker_pool->data + idx;
 
         crwl_worker_destroy(ctx, worker);
     }
 
-    free(ctx->workers->data);
+    free(ctx->worker_pool->data);
 
     /* 2. 释放线程池对象 */
-    thread_pool_destroy(ctx->workers);
+    thread_pool_destroy(ctx->worker_pool);
 
-    ctx->workers = NULL;
+    ctx->worker_pool = NULL;
 
     return CRWL_ERR;
 }
 
 /******************************************************************************
- **函数名称: crwl_creat_scheds
+ **函数名称: crwl_sched_tpool_creat
  **功    能: 初始化Sched线程池
  **输入参数: 
  **     ctx: 全局信息
@@ -460,7 +453,7 @@ int crwl_workers_destroy(crwl_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.15 #
  ******************************************************************************/
-static int crwl_creat_scheds(crwl_cntx_t *ctx)
+static int crwl_sched_tpool_creat(crwl_cntx_t *ctx)
 {
     thread_pool_option_t option;
 
@@ -472,7 +465,7 @@ static int crwl_creat_scheds(crwl_cntx_t *ctx)
     option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
     /* 2. 创建Sched线程池 */
-    ctx->scheds = thread_pool_init(CRWL_SCHED_THD_NUM, &option);
+    ctx->scheds = thread_pool_init(CRWL_SCHED_THD_NUM, &option, NULL);
     if (NULL == ctx->scheds)
     {
         log_error(ctx->log, "Initialize thread pool failed!");

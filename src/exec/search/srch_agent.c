@@ -109,7 +109,7 @@ void *srch_agent_routine(void *_ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.28 #
  ******************************************************************************/
-int srch_agent_init(srch_cntx_t *ctx, srch_agent_t *agt)
+int srch_agent_init(srch_cntx_t *ctx, srch_agent_t *agt, int idx)
 {
     void *addr;
     rbt_option_t opt;
@@ -215,9 +215,9 @@ static srch_agent_t *srch_agent_get(srch_cntx_t *ctx)
 {
     int tidx;
 
-    tidx = thread_pool_get_tidx(ctx->agents);
+    tidx = thread_pool_get_tidx(ctx->agent_pool);
 
-    return (srch_agent_t *)ctx->agents->data + tidx;
+    return (srch_agent_t *)ctx->agent_pool->data + tidx;
 }
 
 /******************************************************************************

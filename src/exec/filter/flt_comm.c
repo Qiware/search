@@ -25,7 +25,6 @@
 #include "hash.h"
 #include "common.h"
 #include "syscall.h"
-#include "sck_api.h"
 #include "filter.h"
 #include "flt_sched.h"
 #include "flt_worker.h"
@@ -111,27 +110,29 @@ int flt_usage(const char *exec)
 
 /******************************************************************************
  **函数名称: flt_init
- **功    能: 初始化过滤模块
+ **功    能: 初始化模块
  **输入参数: 
  **     pname: 进程名
  **     path: 配置路径
  **输出参数:
  **返    回: 全局对象
  **实现描述: 
+ **     创建各对象(表,队列, 内存池, 线程池等)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.03.11 #
  ******************************************************************************/
 flt_cntx_t *flt_init(char *pname, const char *path)
 {
-    void *addr = NULL;
-    log_cycle_t *log;
+    void *addr;
     flt_cntx_t *ctx;
     flt_conf_t *conf;
+    log_cycle_t *log;
 
     /* > 初始化日志模块 */
     log = flt_init_log(pname);
     if (NULL == log)
     {
+        fprintf(stderr, "Initialize log failed!\n");
         return NULL;
     }
 
@@ -147,24 +148,13 @@ flt_cntx_t *flt_init(char *pname, const char *path)
 
     do
     {
-        /* > 加载配置信息 */
-        ctx->conf = flt_conf_load(path, log);
-        if (NULL == ctx->conf)
-        {
-            log_error(log, "Initialize log failed!");
-            break;
-        }
-
-        conf = ctx->conf;
-        log_set_level(log, conf->log.level);
-        syslog_set_level(conf->log.syslevel);
-
         /* > 创建内存池 */
         addr = (void *)calloc(1, FLT_SLAB_SIZE);
         if (NULL == addr)
         {
             log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
-            break;
+            free(ctx);
+            return NULL;
         }
 
         ctx->slab = slab_init(addr, FLT_SLAB_SIZE);
@@ -173,6 +163,18 @@ flt_cntx_t *flt_init(char *pname, const char *path)
             log_error(log, "Init slab failed!");
             break;
         }
+
+        /* > 加载配置信息 */
+        conf = flt_conf_load(path, log);
+        if (NULL == conf)
+        {
+            log_error(log, "Initialize log failed!");
+            break;
+        }
+
+        ctx->conf = conf;
+        log_set_level(log, conf->log.level);
+        syslog_set_level(conf->log.syslevel);
 
         /* > 连接Redis集群 */
         ctx->redis = redis_cluster_init(
@@ -216,7 +218,7 @@ flt_cntx_t *flt_init(char *pname, const char *path)
             break;
         }
 
-        /* > 创建Worker线程池 */
+        /* > 创建工作线程池 */
         if (flt_creat_worker_tpool(ctx))
         {
             log_error(log, "Initialize thread pool failed!");
@@ -226,6 +228,7 @@ flt_cntx_t *flt_init(char *pname, const char *path)
         return ctx;
     } while(0);
 
+    /* > 释放内存空间 */
     if (addr) { free(addr); }
     if (ctx->redis) { redis_cluster_destroy(ctx->redis); }
     if (ctx->taskq) { queue_destroy(ctx->taskq); }    
@@ -282,7 +285,7 @@ int flt_startup(flt_cntx_t *ctx)
  ******************************************************************************/
 static int flt_creat_worker_tpool(flt_cntx_t *ctx)
 {
-    int idx, num;
+    int idx, num = 0;
     thread_pool_option_t option;
     flt_worker_conf_t *conf = &ctx->conf->worker;
 
@@ -293,7 +296,7 @@ static int flt_creat_worker_tpool(flt_cntx_t *ctx)
     option.alloc = (mem_alloc_cb_t)slab_alloc;
     option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-    ctx->worker_tp = thread_pool_init(conf->num, &option);
+    ctx->worker_tp = thread_pool_init(conf->num, &option, NULL);
     if (NULL == ctx->worker_tp)
     {
         log_error(ctx->log, "Initialize thread pool failed!");
@@ -310,22 +313,19 @@ static int flt_creat_worker_tpool(flt_cntx_t *ctx)
     }
 
     /* 3. 依次初始化Worker对象 */
-    for (idx=0; idx<conf->num; ++idx)
+    for (idx=0; idx<conf->num; ++idx, ++num)
     {
         if (flt_worker_init(ctx, ctx->worker+idx, idx))
         {
             log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
-            break;
+            goto FLT_PROC_ERR;
         }
     }
 
-    if (idx == conf->num)
-    {
-        return FLT_OK; /* 成功 */
-    }
+    return FLT_OK; /* 成功 */
 
+FLT_PROC_ERR:
     /* 4. 释放Worker对象 */
-    num = idx;
     for (idx=0; idx<num; ++idx)
     {
         flt_worker_destroy(ctx, ctx->worker+idx);

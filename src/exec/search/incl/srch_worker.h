@@ -13,7 +13,7 @@ typedef struct
 
 void *srch_worker_routine(void *_ctx);
 
-int srch_worker_init(srch_cntx_t *ctx, srch_worker_t *worker);
+int srch_worker_init(srch_cntx_t *ctx, srch_worker_t *worker, int idx);
 int srch_worker_destroy(srch_worker_t *worker);
 
 #endif /*__SRCH_WORKER_H__*/

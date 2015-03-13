@@ -3,7 +3,7 @@
 #include "srch_worker.h"
 
 /******************************************************************************
- **函数名称: srch_worker_get
+ **函数名称: srch_worker_self
  **功    能: 获取Worker对象
  **输入参数: 
  **     ctx: 全局信息
@@ -13,13 +13,15 @@
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.20 #
  ******************************************************************************/
-static srch_worker_t *srch_worker_get(srch_cntx_t *ctx)
+static srch_worker_t *srch_worker_self(srch_cntx_t *ctx)
 {
     int tidx;
+    srch_worker_t *worker;
 
-    tidx = thread_pool_get_tidx(ctx->workers);
+    tidx = thread_pool_get_tidx(ctx->worker_pool);
+    worker = thread_pool_get_args(ctx->worker_pool);
 
-    return (srch_worker_t *)ctx->workers->data + tidx;
+    return worker + tidx;
 }
 
 /******************************************************************************
@@ -43,7 +45,7 @@ void *srch_worker_routine(void *_ctx)
     srch_mesg_header_t *head;
     srch_cntx_t *ctx = (srch_cntx_t *)_ctx;
 
-    worker = srch_worker_get(ctx);
+    worker = srch_worker_self(ctx);
 
     while (1)
     {
@@ -86,9 +88,10 @@ void *srch_worker_routine(void *_ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.18 #
  ******************************************************************************/
-int srch_worker_init(srch_cntx_t *ctx, srch_worker_t *worker)
+int srch_worker_init(srch_cntx_t *ctx, srch_worker_t *worker, int idx)
 {
     worker->log = ctx->log;
+    worker->tidx = idx;
     return SRCH_OK;
 }
 

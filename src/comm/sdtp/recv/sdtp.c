@@ -345,37 +345,35 @@ static int sdtp_creat_recvtp(sdtp_cntx_t *ctx)
 
     memset(&option, 0, sizeof(option));
 
-    /* 1. 创建线程池 */
+    /* > 创建接收对象 */
+    rsvr = (sdtp_rsvr_t *)calloc(conf->recv_thd_num, sizeof(sdtp_rsvr_t));
+    if (NULL == rsvr)
+    {
+        log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        return SDTP_ERR;
+    }
+
+    /* > 创建线程池 */
     option.pool = (void *)ctx->pool;
     option.alloc = (mem_alloc_cb_t)slab_alloc;
     option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-    ctx->recvtp = thread_pool_init(conf->recv_thd_num, &option);
+    ctx->recvtp = thread_pool_init(conf->recv_thd_num, &option, (void *)rsvr);
     if (NULL == ctx->recvtp)
     {
         log_error(ctx->log, "Initialize thread pool failed!");
+        free(rsvr);
         return SDTP_ERR;
     }
 
-    /* 2. 创建接收对象 */
-    ctx->recvtp->data = (void *)calloc(conf->recv_thd_num, sizeof(sdtp_rsvr_t));
-    if (NULL == ctx->recvtp->data)
+    /* > 初始化接收对象 */
+    for (idx=0; idx<conf->recv_thd_num; ++idx)
     {
-        log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
-
-        thread_pool_destroy(ctx->recvtp);
-        ctx->recvtp = NULL;
-        return SDTP_ERR;
-    }
-
-    /* 3. 初始化接收对象 */
-    rsvr = (sdtp_rsvr_t *)ctx->recvtp->data;
-    for (idx=0; idx<conf->recv_thd_num; ++idx, ++rsvr)
-    {
-        if (sdtp_rsvr_init(ctx, rsvr, idx))
+        if (sdtp_rsvr_init(ctx, rsvr+idx, idx))
         {
             log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
 
+            free(rsvr);
             thread_pool_destroy(ctx->recvtp);
             ctx->recvtp = NULL;
 
@@ -442,42 +440,39 @@ static int sdtp_creat_worktp(sdtp_cntx_t *ctx)
     thread_pool_option_t option;
     sdtp_conf_t *conf = &ctx->conf;
 
+
+    /* > 创建工作对象 */
+    worker = (void *)calloc(conf->work_thd_num, sizeof(sdtp_worker_t));
+    if (NULL == worker)
+    {
+        log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        return SDTP_ERR;
+    }
+
+    /* > 创建线程池 */
     memset(&option, 0, sizeof(option));
 
     option.pool = (void *)ctx->pool;
     option.alloc = (mem_alloc_cb_t)slab_alloc;
     option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-    /* 1. 创建线程池 */
-    ctx->worktp = thread_pool_init(conf->work_thd_num, &option);
+    ctx->worktp = thread_pool_init(conf->work_thd_num, &option, (void *)worker);
     if (NULL == ctx->worktp)
     {
         log_error(ctx->log, "Initialize thread pool failed!");
+        free(worker);
         return SDTP_ERR;
     }
 
-    /* 2. 创建工作对象 */
-    ctx->worktp->data = (void *)calloc(conf->work_thd_num, sizeof(sdtp_worker_t));
-    if (NULL == ctx->worktp->data)
+    /* > 初始化工作对象 */
+    for (idx=0; idx<conf->work_thd_num; ++idx)
     {
-        log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
-
-        thread_pool_destroy(ctx->worktp);
-        ctx->worktp = NULL;
-        return SDTP_ERR;
-    }
-
-    /* 3. 初始化工作对象 */
-    worker = ctx->worktp->data;
-    for (idx=0; idx<conf->work_thd_num; ++idx, ++worker)
-    {
-        if (sdtp_worker_init(ctx, worker, idx))
+        if (sdtp_worker_init(ctx, worker+idx, idx))
         {
             log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
-
+            free(worker);
             thread_pool_destroy(ctx->recvtp);
             ctx->recvtp = NULL;
-
             return SDTP_ERR;
         }
     }

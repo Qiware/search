@@ -52,7 +52,7 @@ static crwl_worker_t *crwl_worker_self(crwl_cntx_t *ctx)
 {
     int tidx;
 
-    tidx = thread_pool_get_tidx(ctx->workers);
+    tidx = thread_pool_get_tidx(ctx->worker_pool);
     if (tidx < 0)
     {
         return NULL;
@@ -1028,5 +1028,5 @@ static int crwl_worker_task_unknown_hdl(crwl_cntx_t *ctx, crwl_worker_t *worker,
  ******************************************************************************/
 crwl_worker_t *crwl_worker_get_by_idx(crwl_cntx_t *ctx, int idx)
 {
-    return (crwl_worker_t *)ctx->workers->data + idx;
+    return (crwl_worker_t *)ctx->worker_pool->data + idx;
 }

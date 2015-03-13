@@ -5,30 +5,30 @@
  ** 版本号: 1.0
  ** 描  述: 超链接的提取程序
  **         从爬取的网页中提取超链接
- ** 作  者: # Qifeng.zou # 2014.10.17 #
+ ** 作  者: # Qifeng.zou # 2015.03.11 #
  ******************************************************************************/
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <dirent.h>
-#include <libgen.h>
-#include <sys/stat.h>
-#include <sys/types.h>
 
 #include "log.h"
 #include "str.h"
-#include "list.h"
-#include "hash.h"
-#include "http.h"
-#include "redis.h"
 #include "filter.h"
 #include "common.h"
 #include "syscall.h"
-#include "sck_api.h"
-#include "xml_tree.h"
 
-/* 网页分析过滤模块主函数 */
+/******************************************************************************
+ **函数名称: main 
+ **功    能: 网页分析过滤模块主函数
+ **输入参数: 
+ **     argc: 参数个数
+ **     argv: 参数列表
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **     1. 接收输入参数
+ **     2. 初始化模块
+ **     3. 启动过滤功能
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.03.11 #
+ ******************************************************************************/
 int main(int argc, char *argv[])
 {
     flt_opt_t opt;
@@ -55,14 +55,14 @@ int main(int argc, char *argv[])
     ctx = flt_init(argv[0], opt.conf_path);
     if (NULL == ctx)
     {
-        fprintf(stderr, "Initialize filter failed!");
+        fprintf(stderr, "Initialize filter failed!\n");
         return FLT_ERR;
     }
 
     /* > 启动过滤模块 */
     if (flt_startup(ctx))
     {
-        fprintf(stderr, "Startup filterfailed!");
+        fprintf(stderr, "Startup filterfailed!\n");
         return FLT_ERR;
     }
 

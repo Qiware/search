@@ -48,10 +48,13 @@ typedef struct
 } thread_pool_t;
 
 int thread_creat(pthread_t *tid, void *(*process)(void *args), void *args);
-thread_pool_t *thread_pool_init(int num, const thread_pool_option_t *opt);
+thread_pool_t *thread_pool_init(int num, const thread_pool_option_t *opt, void *args);
 int thread_pool_add_worker(thread_pool_t *tp, void *(*process)(void *arg), void *arg);
 int thread_pool_keepalive(thread_pool_t *tp);
 int thread_pool_get_tidx(thread_pool_t *tp);
 int thread_pool_destroy(thread_pool_t *tp);
+
+/* 获取附加数据 */
+#define thread_pool_get_args(tpool) ((tpool)->data)
 
 #endif /*__THREAD_POOL_H__*/

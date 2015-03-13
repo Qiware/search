@@ -41,7 +41,7 @@ typedef struct
     slab_pool_t *slab;                      /* 内存池 */
 
     thread_pool_t *scheds;                  /* Sched线程池 */
-    thread_pool_t *workers;                 /* Worker线程池 */
+    thread_pool_t *worker_pool;             /* Worker线程池 */
 
     queue_t **workq;                        /* 工作队列(注: 与WORKER线程一一对象) */
     hash_tab_t *domain_ip_map;              /* 域名IP映射表: 通过域名找到IP地址 */

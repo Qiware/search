@@ -187,7 +187,7 @@ static int logsvr_init(logsvr_t *logsvr)
     option.alloc = (mem_alloc_cb_t)slab_alloc;
     option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-    logsvr->pool = thread_pool_init(LOG_SVR_THREAD_NUM, &option);
+    logsvr->pool = thread_pool_init(LOG_SVR_THREAD_NUM, &option, NULL);
     if(NULL == logsvr->pool)
     {
         thread_pool_destroy(logsvr->pool);

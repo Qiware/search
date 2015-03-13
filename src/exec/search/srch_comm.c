@@ -34,10 +34,10 @@
 
 static log_cycle_t *srch_init_log(char *fname);
 static int srch_proc_lock(void);
-static int srch_creat_agents(srch_cntx_t *ctx);
-static int srch_agents_destroy(srch_cntx_t *ctx);
-static int srch_creat_workers(srch_cntx_t *ctx);
-static int srch_workers_destroy(srch_cntx_t *ctx);
+static int srch_creat_agent_pool(srch_cntx_t *ctx);
+static int srch_agent_pool_destroy(srch_cntx_t *ctx);
+static int srch_creat_worker_pool(srch_cntx_t *ctx);
+static int srch_worker_pool_destroy(srch_cntx_t *ctx);
 static int srch_creat_queue(srch_cntx_t *ctx);
 
 /******************************************************************************
@@ -257,14 +257,14 @@ srch_cntx_t *srch_cntx_init(char *pname, const char *conf_path)
         }
 
         /* 7. 创建Worker线程池 */
-        if (srch_creat_workers(ctx))
+        if (srch_creat_worker_pool(ctx))
         {
             log_error(log, "Initialize worker thread pool failed!");
             break;
         }
 
         /* 8. 创建Agent线程池 */
-        if (srch_creat_agents(ctx))
+        if (srch_creat_agent_pool(ctx))
         {
             log_error(log, "Initialize agent thread pool failed!");
             break;
@@ -293,8 +293,8 @@ srch_cntx_t *srch_cntx_init(char *pname, const char *conf_path)
 void srch_cntx_destroy(srch_cntx_t *ctx)
 {
     pthread_cancel(ctx->lsn_tid);
-    srch_workers_destroy(ctx);
-    srch_agents_destroy(ctx);
+    srch_worker_pool_destroy(ctx);
+    srch_agent_pool_destroy(ctx);
 
     log_destroy(&ctx->log);
     syslog_destroy();
@@ -321,13 +321,13 @@ int srch_startup(srch_cntx_t *ctx)
     /* 1. 设置Worker线程回调 */
     for (idx=0; idx<conf->worker_num; ++idx)
     {
-        thread_pool_add_worker(ctx->workers, srch_worker_routine, ctx);
+        thread_pool_add_worker(ctx->worker_pool, srch_worker_routine, ctx);
     }
 
     /* 2. 设置Agent线程回调 */
     for (idx=0; idx<conf->agent_num; ++idx)
     {
-        thread_pool_add_worker(ctx->agents, srch_agent_routine, ctx);
+        thread_pool_add_worker(ctx->agent_pool, srch_agent_routine, ctx);
     }
     
     /* 3. 设置Listen线程回调 */
@@ -341,7 +341,7 @@ int srch_startup(srch_cntx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: srch_creat_workers
+ **函数名称: srch_creat_worker_pool
  **功    能: 创建Worker线程池
  **输入参数: 
  **     ctx: 全局信息
@@ -351,44 +351,39 @@ int srch_startup(srch_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
-static int srch_creat_workers(srch_cntx_t *ctx)
+static int srch_creat_worker_pool(srch_cntx_t *ctx)
 {
     int idx, num;
     srch_worker_t *worker;
     thread_pool_option_t option;
     const srch_conf_t *conf = ctx->conf;
 
-    /* 1. 创建Worker线程池 */
+    /* > 新建Worker对象 */
+    worker = (srch_worker_t *)calloc(conf->worker_num, sizeof(srch_worker_t));
+    if (NULL == worker)
+    {
+        log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        return SRCH_ERR;
+    }
+
+    /* > 创建Worker线程池 */
     memset(&option, 0, sizeof(option));
 
     option.pool = ctx->slab;
     option.alloc = (mem_alloc_cb_t)slab_alloc;
     option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-    ctx->workers = thread_pool_init(conf->worker_num, &option);
-    if (NULL == ctx->workers)
+    ctx->worker_pool = thread_pool_init(conf->worker_num, &option, worker);
+    if (NULL == ctx->worker_pool)
     {
         log_error(ctx->log, "Initialize thread pool failed!");
-        return SRCH_ERR;
-    }
-
-    /* 2. 新建Worker对象 */
-    ctx->workers->data = (srch_worker_t *)calloc(conf->worker_num, sizeof(srch_worker_t));
-    if (NULL == ctx->workers->data)
-    {
-        thread_pool_destroy(ctx->workers);
-        log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return SRCH_ERR;
     }
 
     /* 3. 依次初始化Worker对象 */
     for (idx=0; idx<conf->worker_num; ++idx)
     {
-        worker = (srch_worker_t *)ctx->workers->data + idx;
-
-        worker->tidx = idx;
-
-        if (srch_worker_init(ctx, worker))
+        if (srch_worker_init(ctx, worker+idx, idx))
         {
             log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
             break;
@@ -404,19 +399,17 @@ static int srch_creat_workers(srch_cntx_t *ctx)
     num = idx;
     for (idx=0; idx<num; ++idx)
     {
-        worker = (srch_worker_t *)ctx->workers->data + idx;
-
-        srch_worker_destroy(worker);
+        srch_worker_destroy(worker+idx);
     }
 
-    free(ctx->workers->data);
-    thread_pool_destroy(ctx->workers);
+    free(worker);
+    thread_pool_destroy(ctx->worker_pool);
 
     return SRCH_ERR;
 }
 
 /******************************************************************************
- **函数名称: srch_workers_destroy
+ **函数名称: srch_worker_pool_destroy
  **功    能: 销毁爬虫线程池
  **输入参数: 
  **     ctx: 全局信息
@@ -426,7 +419,7 @@ static int srch_creat_workers(srch_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.14 #
  ******************************************************************************/
-static int srch_workers_destroy(srch_cntx_t *ctx)
+static int srch_worker_pool_destroy(srch_cntx_t *ctx)
 {
     int idx;
     void *data;
@@ -436,25 +429,25 @@ static int srch_workers_destroy(srch_cntx_t *ctx)
     /* 1. 释放Worker对象 */
     for (idx=0; idx<conf->worker_num; ++idx)
     {
-        worker = (srch_worker_t *)ctx->workers->data + idx;
+        worker = (srch_worker_t *)ctx->worker_pool->data + idx;
 
         srch_worker_destroy(worker);
     }
 
     /* 2. 释放线程池对象 */
-    data = ctx->workers->data;
+    data = ctx->worker_pool->data;
 
-    thread_pool_destroy(ctx->workers);
+    thread_pool_destroy(ctx->worker_pool);
 
     free(data);
 
-    ctx->workers = NULL;
+    ctx->worker_pool = NULL;
 
     return SRCH_ERR;
 }
 
 /******************************************************************************
- **函数名称: srch_creat_agents
+ **函数名称: srch_creat_agent_pool
  **功    能: 创建Agent线程池
  **输入参数: 
  **     ctx: 全局信息
@@ -464,45 +457,40 @@ static int srch_workers_destroy(srch_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
-static int srch_creat_agents(srch_cntx_t *ctx)
+static int srch_creat_agent_pool(srch_cntx_t *ctx)
 {
     int idx, num;
     srch_agent_t *agent;
     thread_pool_option_t option;
     const srch_conf_t *conf = ctx->conf;
 
-    /* 1. 创建Worker线程池 */
+    /* > 新建Agent对象 */
+    agent = (srch_agent_t *)calloc(conf->agent_num, sizeof(srch_agent_t));
+    if (NULL == agent)
+    {
+        log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        return SRCH_ERR;
+    }
+
+    /* > 创建Worker线程池 */
     memset(&option, 0, sizeof(option));
 
     option.pool = ctx->slab;
     option.alloc = (mem_alloc_cb_t)slab_alloc;
     option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-    ctx->agents = thread_pool_init(conf->agent_num, &option);
-    if (NULL == ctx->agents)
+    ctx->agent_pool = thread_pool_init(conf->agent_num, &option, agent);
+    if (NULL == ctx->agent_pool)
     {
         log_error(ctx->log, "Initialize thread pool failed!");
-        return SRCH_ERR;
-    }
-
-    /* 2. 新建Agent对象 */
-    ctx->agents->data = (srch_agent_t *)calloc(conf->agent_num, sizeof(srch_agent_t));
-    if (NULL == ctx->agents->data)
-    {
-        thread_pool_destroy(ctx->agents);
-        log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        free(agent);
         return SRCH_ERR;
     }
 
     /* 3. 依次初始化Agent对象 */
     for (idx=0; idx<conf->agent_num; ++idx)
     {
-        agent = (srch_agent_t *)ctx->agents->data + idx;
-
-        agent->tidx = idx;
-        agent->log = ctx->log;
-
-        if (srch_agent_init(ctx, agent))
+        if (srch_agent_init(ctx, agent, idx))
         {
             log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
             break;
@@ -518,19 +506,17 @@ static int srch_creat_agents(srch_cntx_t *ctx)
     num = idx;
     for (idx=0; idx<num; ++idx)
     {
-        agent = (srch_agent_t *)ctx->agents->data + idx;
-
-        srch_agent_destroy(agent);
+        srch_agent_destroy(agent+idx);
     }
 
-    free(ctx->agents->data);
-    thread_pool_destroy(ctx->agents);
+    free(agent);
+    thread_pool_destroy(ctx->agent_pool);
 
     return SRCH_ERR;
 }
 
 /******************************************************************************
- **函数名称: srch_agents_destroy
+ **函数名称: srch_agent_pool_destroy
  **功    能: 销毁Agent线程池
  **输入参数: 
  **     ctx: 全局信息
@@ -540,7 +526,7 @@ static int srch_creat_agents(srch_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
-static int srch_agents_destroy(srch_cntx_t *ctx)
+static int srch_agent_pool_destroy(srch_cntx_t *ctx)
 {
     int idx;
     void *data;
@@ -550,19 +536,19 @@ static int srch_agents_destroy(srch_cntx_t *ctx)
     /* 1. 释放Agent对象 */
     for (idx=0; idx<conf->agent_num; ++idx)
     {
-        agent = (srch_agent_t *)ctx->agents->data + idx;
+        agent = (srch_agent_t *)ctx->agent_pool->data + idx;
 
         srch_agent_destroy(agent);
     }
 
     /* 2. 释放线程池对象 */
-    data = ctx->agents->data;
+    data = ctx->agent_pool->data;
 
-    thread_pool_destroy(ctx->agents);
+    thread_pool_destroy(ctx->agent_pool);
 
     free(data);
 
-    ctx->agents = NULL;
+    ctx->agent_pool = NULL;
 
     return SRCH_ERR;
 }

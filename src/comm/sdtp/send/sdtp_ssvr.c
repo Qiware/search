@@ -104,35 +104,38 @@ static int _sdtp_ssvr_startup(sdtp_ssvr_cntx_t *ctx)
     thread_pool_option_t option;
     sdtp_ssvr_conf_t *conf = &ctx->conf;
 
+    /* > 创建发送线程对象 */
+    ssvr = calloc(conf->snd_thd_num, sizeof(sdtp_ssvr_t));
+    if (NULL == ssvr)
+    {
+        log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        return SDTP_ERR;
+    }
+
+    /* 1. 创建发送线程池 */
     memset(&option, 0, sizeof(option));
 
     option.pool = (void *)ctx->slab;
     option.alloc = (mem_alloc_cb_t)slab_alloc;
     option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-    /* 1. 创建发送线程池 */
-    ctx->sendtp = thread_pool_init(conf->snd_thd_num, &option);
+    ctx->sendtp = thread_pool_init(conf->snd_thd_num, &option, (void *)ssvr);
     if (NULL == ctx->sendtp)
     {
+        free(ssvr);
         thread_pool_destroy(ctx->sendtp);
         ctx->sendtp = NULL;
-        return SDTP_ERR;
-    }
-
-    /* 2. 创建发送线程对象 */
-    ctx->sendtp->data = calloc(conf->snd_thd_num, sizeof(sdtp_ssvr_t));
-    if (NULL == ctx->sendtp->data)
-    {
-        log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        log_error(ctx->log, "Initialize thread pool failed!");
         return SDTP_ERR;
     }
 
     /* 3. 设置发送线程对象 */
-    ssvr = (sdtp_ssvr_t *)ctx->sendtp->data;
-    for (idx=0; idx<conf->snd_thd_num; ++idx, ++ssvr)
+    for (idx=0; idx<conf->snd_thd_num; ++idx)
     {
-        if (sdtp_ssvr_init(ctx, ssvr, idx))
+        if (sdtp_ssvr_init(ctx, ssvr+idx, idx))
         {
+            free(ssvr);
+            thread_pool_destroy(ctx->sendtp);
             log_fatal(ctx->log, "Initialize send thread failed!");
             return SDTP_ERR;
         }

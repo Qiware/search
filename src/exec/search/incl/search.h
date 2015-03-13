@@ -35,8 +35,8 @@ typedef struct
     slab_pool_t *slab;                      /* 内存池 */
 
     pthread_t lsn_tid;                      /* Listen线程 */
-    thread_pool_t *agents;                  /* Agent线程池 */
-    thread_pool_t *workers;                 /* Worker线程池 */
+    thread_pool_t *agent_pool;              /* Agent线程池 */
+    thread_pool_t *worker_pool;             /* Worker线程池 */
     srch_reg_t reg[SRCH_MSG_TYPE_MAX];      /* 消息注册 */
 
     queue_t **connq;                        /* 连接队列(注:数组长度与Agent相等) */

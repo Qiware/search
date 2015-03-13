@@ -42,7 +42,7 @@ typedef struct
 
 void *srch_agent_routine(void *_ctx);
 
-int srch_agent_init(srch_cntx_t *ctx, srch_agent_t *agent);
+int srch_agent_init(srch_cntx_t *ctx, srch_agent_t *agent, int idx);
 int srch_agent_destroy(srch_agent_t *agent);
 
 #endif /*__SRCH_AGENT_H__*/
