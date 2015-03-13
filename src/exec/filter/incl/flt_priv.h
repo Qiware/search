@@ -2,6 +2,7 @@
 #define __FLT_PRIV_H__
 
 #include "log.h"
+#include "redis.h"
 #include "sck_api.h"
 
 /* 宏定义 */

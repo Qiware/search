@@ -194,6 +194,14 @@ flt_cntx_t *flt_init(char *pname, const char *path)
             break;
         }
 
+        /* > 创建工作队列 */
+        ctx->crwlq = queue_creat(10000, sizeof(flt_crwl_t));
+        if (NULL == ctx->crwlq)
+        {
+            log_error(ctx->log, "Create queue failed!");
+            break;
+        }
+
         /* > 新建域名IP映射表 */
         ctx->domain_ip_map = hash_tab_creat(
                 ctx->slab,
@@ -253,10 +261,17 @@ int flt_startup(flt_cntx_t *ctx)
     int idx;
     const flt_conf_t *conf = ctx->conf;
 
-    /* > 推送SEED至REDIS任务队列 */
-    if (flt_push_seed_to_redis_taskq(ctx))
+    /* > 推送SEED至CRWL队列 */
+    if (flt_push_seed_to_crwlq(ctx))
     {
         log_error(ctx->log, "Push seed to redis taskq failed!");
+        return FLT_ERR;
+    }
+
+    /* > 启动Push线程 */
+    if (thread_creat(&ctx->sched_tid, flt_push_routine, ctx))
+    {
+        log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return FLT_ERR;
     }
 
@@ -794,8 +809,8 @@ bool flt_set_uri_exists(redis_clst_t *ctx, const char *hash, const char *uri)
 }
 
 /******************************************************************************
- **函数名称: flt_push_url_to_redis_taskq
- **功    能: 将URL推送到REDIS队列
+ **函数名称: flt_push_url_to_crwlq
+ **功    能: 将URL推送到CRWL队列
  **输入参数: 
  **     ctx: 全局对象
  **     url: 被推送的URL
@@ -806,14 +821,13 @@ bool flt_set_uri_exists(redis_clst_t *ctx, const char *hash, const char *uri)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.03.13 #
  ******************************************************************************/
-int flt_push_url_to_redis_taskq(flt_cntx_t *ctx,
+int flt_push_url_to_crwlq(flt_cntx_t *ctx,
         const char *url, char *host, int port, int depth)
 {
     int ret;
+    flt_crwl_t *crwl;
     unsigned int len, idx;
-    redisReply *r; 
     flt_domain_ip_map_t map;
-    char task_str[FLT_TASK_STR_LEN];
 
     /* > 查询域名IP映射 */
     ret = flt_get_domain_ip_map(ctx, host, &map);
@@ -825,42 +839,51 @@ int flt_push_url_to_redis_taskq(flt_cntx_t *ctx,
 
     idx = rand() % map.ip_num;
 
-    /* > 组装任务格式 */
-    len = flt_get_task_str(task_str, sizeof(task_str),
-            url, depth, map.ip[idx].ip, map.ip[idx].family);
-    if (len >= sizeof(task_str))
+    while (1)
     {
-        log_info(ctx->log, "Task string is too long! uri:[%s]", url);
-        return FLT_ERR;
-    }
+        /* > 申请队列空间 */
+        crwl = queue_malloc(ctx->crwlq);
+        if (NULL == crwl)
+        {
+            Sleep(1);
+            continue;
+        }
 
-    /* > 推至REDIS任务队列 */
-    r = redis_rpush(ctx->redis->redis[REDIS_MASTER_IDX], ctx->conf->redis.taskq, task_str);
-    if (NULL == r
-        || REDIS_REPLY_NIL == r->type)
-    {
-        if (r) { freeReplyObject(r); }
-        log_error(ctx->log, "Push into undo task queue failed!");
-        return FLT_ERR;
-    }
+        /* > 组装任务格式 */
+        len = flt_get_task_str(crwl->task_str, sizeof(crwl->task_str),
+                url, depth, map.ip[idx].ip, map.ip[idx].family);
+        if (len >= sizeof(crwl->task_str))
+        {
+            log_info(ctx->log, "Task string is too long! uri:[%s]", url);
+            queue_dealloc(ctx->crwlq, crwl);
+            return FLT_ERR;
+        }
 
-    freeReplyObject(r);
+        /* > 推至CRWL队列 */
+        if (queue_push(ctx->crwlq, crwl))
+        {
+            log_info(ctx->log, "Push into queue failed! uri:[%s]", url);
+            queue_dealloc(ctx->crwlq, crwl);
+            return FLT_ERR;
+        }
+        break;
+    }
 
     return FLT_OK;
 }
 
 /******************************************************************************
- **函数名称: flt_push_seed_to_redis_taskq
- **功    能: 将Seed放入UNDO队列
+ **函数名称: flt_push_seed_to_crwlq
+ **功    能: 将Seed放入CRWL队列
  **输入参数: 
  **     ctx: 全局对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
- **作    者: # Qifeng.zou # 2015.03.11 #
+ **作    者: # Qifeng.zou # 2015.03.13 #
  ******************************************************************************/
-int flt_push_seed_to_redis_taskq(flt_cntx_t *ctx)
+int flt_push_seed_to_crwlq(flt_cntx_t *ctx)
 {
     unsigned int idx;
     uri_field_t field;
@@ -882,8 +905,8 @@ int flt_push_seed_to_redis_taskq(flt_cntx_t *ctx)
             return FLT_ERR;
         }
 
-        /* > 推送至REDIS队列 */
-        if (flt_push_url_to_redis_taskq(ctx, seed->uri, field.host, field.port, seed->depth))
+        /* > 推送至CRWL队列 */
+        if (flt_push_url_to_crwlq(ctx, seed->uri, field.host, field.port, seed->depth))
         {
             log_info(ctx->log, "Uri [%s] is invalid!", (char *)seed->uri);
             continue;

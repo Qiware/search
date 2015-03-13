@@ -2,6 +2,7 @@
 #define __GUMBO_EX_H__
 
 #include "slab.h"
+#include "list.h"
 #include "mem_pool.h"
 
 #include <gumbo.h>

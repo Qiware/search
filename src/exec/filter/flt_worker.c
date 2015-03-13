@@ -216,10 +216,12 @@ void *flt_worker_routine(void *_ctx)
             continue;
         }
 
-        queue_dealloc(ctx->taskq, task);
-
         /* > 进行网页处理 */
         flt_worker_workflow(ctx, worker);
+
+        /* > 释放内存和磁盘 */
+        remove(task->path);
+        queue_dealloc(ctx->taskq, task);
     }
     return (void *)-1;
 }
@@ -241,6 +243,18 @@ int flt_worker_init(flt_cntx_t *ctx, flt_worker_t *worker, int idx)
 {
     worker->tidx = idx;
     worker->log = ctx->log;
+
+    /* > 连接Redis集群 */
+    worker->redis = redis_clst_init(
+            &ctx->conf->redis.master,
+            ctx->conf->redis.slaves,
+            ctx->conf->redis.slave_num);
+    if (NULL == worker->redis)
+    {
+        log_error(worker->log, "Initialize redis context failed!");
+        return FLT_ERR;
+    }
+
     return FLT_OK;
 }
 
@@ -294,14 +308,14 @@ static int flt_worker_deep_hdl(flt_cntx_t *ctx, flt_worker_t *worker, gumbo_resu
         }
 
         /* > 判断URI是否已经被推送到队列中 */
-        if (flt_is_uri_push(ctx->redis, conf->redis.push_tab, field.uri))
+        if (flt_is_uri_push(worker->redis, conf->redis.push_tab, field.uri))
         {
             log_info(ctx->log, "Uri [%s] was pushed!", (char *)node->data);
             continue;
         }
 
-        /* > 推送到REDIS队列 */
-        if (flt_push_url_to_redis_taskq(ctx, field.uri, field.host, field.port, info->depth+1))
+        /* > 推送到CRWL队列 */
+        if (flt_push_url_to_crwlq(ctx, field.uri, field.host, field.port, info->depth+1))
         {
             log_info(ctx->log, "Push url [%s] redis taskq failed!", (char *)node->data);
             continue;
@@ -341,7 +355,7 @@ static int flt_worker_workflow(flt_cntx_t *ctx, flt_worker_t *worker)
      *  判断的同时设置网页的下载标志
      *  如果已下载，则不做提取该网页中的超链接
      * */
-    if (flt_is_uri_down(ctx->redis, conf->redis.done_tab, info->uri))
+    if (flt_is_uri_down(worker->redis, conf->redis.done_tab, info->uri))
     {
         log_info(ctx->log, "Uri [%s] was downloaded!", info->uri);
         return FLT_OK;

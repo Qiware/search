@@ -67,12 +67,6 @@ void *flt_sched_routine(void *_ctx)
         /* > 遍历文件 */
         while (NULL != (item = readdir(dir)))
         {
-            /* 1. 是否超过阈值 */
-            if (redis_llen(ctx->redis->redis[REDIS_MASTER_IDX], conf->redis.taskq) > FLT_REDIS_UNDO_LIMIT_NUM)
-            {
-                break;
-            }
-
             snprintf(fname, sizeof(fname), "%s/%s", path, item->d_name); 
 
             /* 2. 判断文件类型 */

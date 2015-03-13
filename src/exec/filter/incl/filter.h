@@ -11,7 +11,6 @@
 #define __FILTER_H__
 
 #include "log.h"
-#include "redis.h"
 #include "queue.h"
 #include "hash_tab.h"
 #include "gumbo_ex.h"
@@ -30,6 +29,12 @@ typedef struct
     char path[FILE_PATH_MAX_LEN];           /* 文件路径 */
 } flt_task_t;
 
+/* 爬取对象 */
+typedef struct
+{
+    char task_str[FLT_TASK_STR_LEN];        /* 任务字串 */
+} flt_crwl_t;
+
 /* 全局对象 */
 typedef struct
 {
@@ -43,7 +48,8 @@ typedef struct
     thread_pool_t *worker_pool;             /* Worker线程池 */
     flt_worker_t *worker;                   /* 工作对象 */
 
-    queue_t *taskq;                         /* 任务队列 */
+    queue_t *taskq;                         /* 处理队列 */
+    queue_t *crwlq;                         /* 爬取队列 */
     redis_clst_t *redis;                    /* Redis集群 */
 
     hash_tab_t *domain_ip_map;              /* 域名IP映射表: 通过域名找到IP地址 */
@@ -54,12 +60,14 @@ flt_cntx_t *flt_init(char *pname, const char *path);
 int flt_startup(flt_cntx_t *ctx);
 void flt_destroy(flt_cntx_t *ctx);
 
+void *flt_push_routine(void *_ctx);
+
 int flt_get_domain_ip_map(flt_cntx_t *ctx, char *host, flt_domain_ip_map_t *map);
 
 int flt_worker_init(flt_cntx_t *ctx, flt_worker_t *worker, int idx);
 int flt_worker_destroy(flt_cntx_t *ctx, flt_worker_t *worker);
 
-int flt_push_url_to_redis_taskq(flt_cntx_t *ctx, const char *url, char *host, int port, int depth);
-int flt_push_seed_to_redis_taskq(flt_cntx_t *ctx);
+int flt_push_url_to_crwlq(flt_cntx_t *ctx, const char *url, char *host, int port, int depth);
+int flt_push_seed_to_crwlq(flt_cntx_t *ctx);
 
 #endif /*__FILTER_H__*/

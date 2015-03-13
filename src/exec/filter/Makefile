@@ -21,6 +21,7 @@ LIBS = -lpthread \
 			-lxd_gumbo_ex 
 SRC_LIST = filter.c \
 			flt_comm.c \
+			flt_push.c \
 			flt_conf.c \
 			flt_sched.c \
 			flt_worker.c
