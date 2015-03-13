@@ -68,7 +68,7 @@ void *flt_sched_routine(void *_ctx)
         while (NULL != (item = readdir(dir)))
         {
             /* 1. 是否超过阈值 */
-            if (redis_llen(ctx->redis->master, conf->redis.taskq) > FLT_REDIS_UNDO_LIMIT_NUM)
+            if (redis_llen(ctx->redis->redis[REDIS_MASTER_IDX], conf->redis.taskq) > FLT_REDIS_UNDO_LIMIT_NUM)
             {
                 break;
             }

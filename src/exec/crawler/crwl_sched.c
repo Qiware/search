@@ -236,7 +236,7 @@ static int crwl_sched_event_hdl(crwl_cntx_t *ctx, crwl_sched_t *sched)
  ******************************************************************************/
 static int crwl_sched_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
 {
-    int times, workq_id;
+    int times, idx;
     void *addr;
     redisReply *r;
     queue_t *workq;
@@ -247,9 +247,9 @@ static int crwl_sched_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
     while (1)
     {
         /* 1. 随机选择任务队列 */
-        workq_id = rand() % conf->worker.num;
+        idx = rand() % conf->worker.num;
 
-        workq = ctx->workq[workq_id];
+        workq = ctx->workq[idx];
 
         if (!queue_space(workq))
         {
@@ -273,7 +273,7 @@ static int crwl_sched_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
             return CRWL_OK;
         }
 
-        log_trace(ctx->log, "TQ:%02d URL:%s!", workq_id, r->str);
+        log_trace(ctx->log, "TQ:%02d URL:%s!", idx, r->str);
 
         /* 3. 新建crwl_task_t对象 */
         addr = queue_malloc(workq);
@@ -450,7 +450,7 @@ static int crwl_task_parse_download_webpage(xml_tree_t *xml, crwl_task_down_webp
 }
 
 /******************************************************************************
- **函数名称: crwl_sched_task_down_webpage_hdl
+ **函数名称: crwl_sched_download_webpage_task_hdl
  **功    能: 任务TASK_DOWN_WEBPAGE的处理
  **输入参数: 
  **     ctx: 全局信息
@@ -462,42 +462,10 @@ static int crwl_task_parse_download_webpage(xml_tree_t *xml, crwl_task_down_webp
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.12 #
  ******************************************************************************/
-static int crwl_sched_task_down_webpage_hdl(
+static int crwl_sched_download_webpage_task_hdl(
         crwl_cntx_t *ctx, queue_t *workq, crwl_task_t *task)
 {
-    int ret, idx;
-    uri_field_t field;
-    crwl_domain_ip_map_t map;
-    crwl_task_down_webpage_t *args = (crwl_task_down_webpage_t *)(task + 1);
-
-    memset(&map, 0, sizeof(map));
-    memset(&field, 0, sizeof(field));
-
-    if (0 == args->family
-        || 0 == strlen(args->ip))
-    {
-        /* 1. 解析URI字串 */
-        if(0 != uri_reslove(args->uri, &field))
-        {
-            log_error(ctx->log, "Reslove uri [%s] failed!", args->uri);
-            return CRWL_ERR;
-        }
-
-        /* 2. 通过URL获取WEB服务器IP信息 */
-        ret = crwl_get_domain_ip_map(ctx, field.host, &map);
-        if (0 != ret || 0 == map.ip_num)
-        {
-            log_error(ctx->log, "Get ip failed! uri:%s host:%s", field.uri, field.host);
-            return CRWL_ERR;
-        }
-
-        idx = random() % map.ip_num;
-
-        args->family = map.ip[idx].family;
-        snprintf(args->ip, sizeof(args->ip), "%s", map.ip[idx].ip);
-    }
-
-    /* 3. 放入Worker任务队列 */
+    /* > 放入任务队列 */
     if (queue_push(workq, (void *)task))
     {
         log_error(ctx->log, "Push into worker queue failed!");
@@ -526,7 +494,7 @@ static int crwl_sched_task_hdl(crwl_cntx_t *ctx, queue_t *workq, crwl_task_t *ta
     {
         case CRWL_TASK_DOWN_WEBPAGE:
         {
-            return crwl_sched_task_down_webpage_hdl(ctx, workq, task);
+            return crwl_sched_download_webpage_task_hdl(ctx, workq, task);
         }
         default:
         {

@@ -11,7 +11,7 @@
 #include "common.h"
 
 /******************************************************************************
- **函数名称: redis_cluster_init
+ **函数名称: redis_clst_init
  **功    能: 初始化Redis集群
  **输入参数: 
  **     master_cf: Master配置
@@ -26,64 +26,69 @@
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.04 #
  ******************************************************************************/
-redis_cluster_t *redis_cluster_init(
-        const redis_conf_t *master_cf, const redis_conf_t *slave_cf, int slave_num)
+redis_clst_t *redis_clst_init(const redis_conf_t *master_cf, const redis_conf_t *slave_cf, int slave_num)
 {
     int idx;
     struct timeval tv;
-    redis_cluster_t *cluster;
+    redis_clst_t *clst;
+    redisContext *redis;
     const redis_conf_t *conf;
 
-    if (slave_num > REDIS_SLAVE_MAX_NUM)
+    /* 1. 申请内存空间 */
+    clst = (redis_clst_t *)calloc(1, sizeof(redis_clst_t));
+    if (NULL == clst)
     {
         return NULL;
     }
 
-    /* 1. 申请内存空间 */
-    cluster = (redis_cluster_t *)calloc(1, sizeof(redis_cluster_t));
-    if (NULL == cluster)
+    clst->redis = (redisContext **)calloc(1, slave_num + 1);
+    if (NULL == clst->redis)
     {
+        free(clst);
         return NULL;
     }
 
     /* 2. 连接Master */
     tv.tv_sec = 30;
     tv.tv_usec = 0;
-    cluster->master = redisConnectWithTimeout(master_cf->ip, master_cf->port, tv);
-    if (cluster->master->err)
+    clst->redis[0] = redisConnectWithTimeout(master_cf->ip, master_cf->port, tv);
+    if (clst->redis[0]->err)
     {
-        free(cluster->slave);
-        free(cluster);
+        free(clst->redis);
+        free(clst);
         return NULL;
     }
 
+    ++clst->num;
+
     /* 3. 依次连接Slave */
-    cluster->slave_num = 0;
+    clst->num = 0;
     for (idx=0; idx<slave_num; ++idx)
     {
-        ++cluster->slave_num;
+        redis = clst->redis[1] + idx;
+        ++clst->num;
 
         tv.tv_sec = 30;
         tv.tv_usec = 0;
 
         conf = slave_cf + idx;
 
-        cluster->slave[idx] = redisConnectWithTimeout(conf->ip, conf->port, tv);
-        if (cluster->slave[idx]->err)
+        redis = redisConnectWithTimeout(conf->ip, conf->port, tv);
+        if (redis->err)
         {
-            redis_cluster_destroy(cluster);
+            redis_clst_destroy(clst);
             return NULL;
         }
     }
 
-    return cluster;
+    return clst;
 }
 
 /******************************************************************************
- **函数名称: redis_cluster_destroy
+ **函数名称: redis_clst_destroy
  **功    能: 销毁Redis集群
  **输入参数: 
- **     cluster: Redis集群
+ **     clst: Redis集群
  **输出参数: NONE
  **返    回: VOID
  **实现描述: 
@@ -92,29 +97,28 @@ redis_cluster_t *redis_cluster_init(
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.04 #
  ******************************************************************************/
-void redis_cluster_destroy(redis_cluster_t *cluster)
+void redis_clst_destroy(redis_clst_t *clst)
 {
     int idx;
 
-    for (idx=0; idx<cluster->slave_num; ++idx)
+    for (idx=0; idx<clst->num; ++idx)
     {
-        if (NULL != cluster->slave[idx])
+        if (NULL != clst->redis[idx])
         {
-            redisFree(cluster->slave[idx]);
-            cluster->slave[idx] = NULL;
+            redisFree(clst->redis[idx]);
+            clst->redis[idx] = NULL;
         }
     }
 
-    redisFree(cluster->master);
-    free(cluster->slave);
-    free(cluster);
+    free(clst->redis);
+    free(clst);
 }
 
 /******************************************************************************
  **函数名称: redis_hsetnx
  **功    能: 设置HASH表中指定KEY的值(前提: 当指定KEY不存在时才更新)
  **输入参数: 
- **     ctx: Redis信息
+ **     redis: Redis信息
  **     hash: HASH表名
  **     key: 指定KEY
  **     value: 设置值
@@ -127,12 +131,12 @@ void redis_cluster_destroy(redis_cluster_t *cluster)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.26 #
  ******************************************************************************/
-bool redis_hsetnx(redisContext *ctx,
+bool redis_hsetnx(redisContext *redis,
         const char *hash, const char *key, const char *value)
 {
     redisReply *r;
 
-    r = redisCommand(ctx, "HSETNX %s %s %s", hash, key, value);
+    r = redisCommand(redis, "HSETNX %s %s %s", hash, key, value);
     if (NULL == r
         || REDIS_REPLY_INTEGER != r->type)
     {
@@ -154,7 +158,7 @@ bool redis_hsetnx(redisContext *ctx,
  **函数名称: redis_llen
  **功    能: 获取列表长度
  **输入参数: 
- **     ctx: Redis信息
+ **     redis: Redis信息
  **     list: LIST名
  **输出参数:
  **返    回: 列表长度
@@ -165,12 +169,12 @@ bool redis_hsetnx(redisContext *ctx,
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.03.08 #
  ******************************************************************************/
-int redis_llen(redisContext *ctx, const char *list)
+int redis_llen(redisContext *redis, const char *list)
 {
     int len;
     redisReply *r;
 
-    r = redisCommand(ctx, "LLEN %s", list);
+    r = redisCommand(redis, "LLEN %s", list);
     if (NULL == r
         || REDIS_REPLY_INTEGER != r->type)
     {

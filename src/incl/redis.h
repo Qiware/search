@@ -1,10 +1,9 @@
 #if !defined(__REDIS_H__)
 #define __REDIS_H__
 
-#include <hiredis/hiredis.h>
-
 #include "list.h"
 #include "common.h"
+#include <hiredis/hiredis.h>
 
 /* Redis配置 */
 typedef struct
@@ -16,15 +15,13 @@ typedef struct
 /* Redis集群对象 */
 typedef struct
 {
-    redisContext *master;           /* 主对象 */
-#define REDIS_SLAVE_MAX_NUM (20)    /* 最大REDIS副本数 */
-    int slave_num;                  /* 副本数 */
-    redisContext *slave[REDIS_SLAVE_MAX_NUM];   /* 副本对象 */
-} redis_cluster_t;
+    int num;                        /* REDIS对象数 */
+#define REDIS_MASTER_IDX (0)        /* MASTER索引 */
+    redisContext **redis;           /* REDIS对象(注: [0]为Master [1~num-1]为Slave */
+} redis_clst_t;
 
-redis_cluster_t *redis_cluster_init(
-        const redis_conf_t *mcf, const redis_conf_t *scf, int slave_num);
-void redis_cluster_destroy(redis_cluster_t *ctx);
+redis_clst_t *redis_clst_init(const redis_conf_t *mcf, const redis_conf_t *scf, int slave_num);
+void redis_clst_destroy(redis_clst_t *clst);
 
 bool redis_hsetnx(redisContext *ctx, const char *hash, const char *key, const char *value);
 

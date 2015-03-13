@@ -53,6 +53,4 @@ crwl_cntx_t *crwl_cntx_init(char *pname, const char *path);
 void crwl_cntx_destroy(crwl_cntx_t *ctx);
 int crwl_startup(crwl_cntx_t *ctx);
 
-int crwl_get_domain_ip_map(crwl_cntx_t *ctx, char *host, crwl_domain_ip_map_t *map);
-
 #endif /*__CRAWLER_H__*/

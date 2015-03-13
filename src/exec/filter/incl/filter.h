@@ -44,7 +44,7 @@ typedef struct
     flt_worker_t *worker;                   /* 工作对象 */
 
     queue_t *taskq;                         /* 任务队列 */
-    redis_cluster_t *redis;                 /* Redis集群 */
+    redis_clst_t *redis;                    /* Redis集群 */
 
     hash_tab_t *domain_ip_map;              /* 域名IP映射表: 通过域名找到IP地址 */
     hash_tab_t *domain_blacklist;           /* 域名黑名单 */

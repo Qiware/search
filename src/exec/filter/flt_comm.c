@@ -177,7 +177,7 @@ flt_cntx_t *flt_init(char *pname, const char *path)
         syslog_set_level(conf->log.syslevel);
 
         /* > 连接Redis集群 */
-        ctx->redis = redis_cluster_init(
+        ctx->redis = redis_clst_init(
                 &conf->redis.master,
                 conf->redis.slaves, conf->redis.slave_num);
         if (NULL == ctx->redis)
@@ -230,7 +230,7 @@ flt_cntx_t *flt_init(char *pname, const char *path)
 
     /* > 释放内存空间 */
     if (addr) { free(addr); }
-    if (ctx->redis) { redis_cluster_destroy(ctx->redis); }
+    if (ctx->redis) { redis_clst_destroy(ctx->redis); }
     if (ctx->taskq) { queue_destroy(ctx->taskq); }    
     free(ctx);
     return NULL;
@@ -607,7 +607,7 @@ void flt_destroy(flt_cntx_t *ctx)
 
     if (ctx->redis)
     {
-        redis_cluster_destroy(ctx->redis);
+        redis_clst_destroy(ctx->redis);
         ctx->redis = NULL;
     }
 
@@ -751,7 +751,7 @@ static int ctx_get_domain_ip_map(flt_cntx_t *ctx, char *host, flt_domain_ip_map_
  **函数名称: flt_set_uri_exists
  **功    能: 设置uri是否已存在
  **输入参数: 
- **     cluster: Redis集群
+ **     ctx: Redis集群
  **     hash: 哈希表名
  **     uri: 判断对象-URI
  **输出参数:
@@ -762,18 +762,18 @@ static int ctx_get_domain_ip_map(flt_cntx_t *ctx, char *host, flt_domain_ip_map_
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.04 #
  ******************************************************************************/
-bool flt_set_uri_exists(redis_cluster_t *cluster, const char *hash, const char *uri)
+bool flt_set_uri_exists(redis_clst_t *ctx, const char *hash, const char *uri)
 {
     redisReply *r;
 
-    if (0 == cluster->slave_num)
+    if (0 == ctx->num)
     {
-        return !redis_hsetnx(cluster->master, hash, uri, "1");
+        return !redis_hsetnx(ctx->redis[REDIS_MASTER_IDX], hash, uri, "1");
     }
 
     do
     {
-        r = redisCommand(cluster->slave[random() % cluster->slave_num], "HEXISTS %s %s", hash, uri);
+        r = redisCommand(ctx->redis[random() % ctx->num], "HEXISTS %s %s", hash, uri);
         if (REDIS_REPLY_INTEGER != r->type)
         {
             break;
@@ -790,7 +790,7 @@ bool flt_set_uri_exists(redis_cluster_t *cluster, const char *hash, const char *
 
     freeReplyObject(r);
 
-    return !redis_hsetnx(cluster->master, hash, uri, "1");
+    return !redis_hsetnx(ctx->redis[REDIS_MASTER_IDX], hash, uri, "1");
 }
 
 /******************************************************************************
@@ -835,7 +835,7 @@ int flt_push_url_to_redis_taskq(flt_cntx_t *ctx,
     }
 
     /* > 推至REDIS任务队列 */
-    r = redis_rpush(ctx->redis->master, ctx->conf->redis.taskq, task_str);
+    r = redis_rpush(ctx->redis->redis[REDIS_MASTER_IDX], ctx->conf->redis.taskq, task_str);
     if (NULL == r
         || REDIS_REPLY_NIL == r->type)
     {
