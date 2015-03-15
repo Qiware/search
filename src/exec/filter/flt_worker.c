@@ -88,7 +88,7 @@ static int flt_worker_get_webpage_info(
     if (NULL == xml)
     {
         mem_pool_destroy(pool);
-        log_error(log, "Create XML failed!");
+        log_error(log, "Create XML failed! path:%s", path);
         return FLT_ERR;
     }
 
