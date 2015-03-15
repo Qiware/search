@@ -236,36 +236,16 @@ static int crwl_sched_event_hdl(crwl_cntx_t *ctx, crwl_sched_t *sched)
  ******************************************************************************/
 static int crwl_sched_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
 {
-    int times, idx;
+    int idx;
     void *addr;
     redisReply *r;
     queue_t *workq;
     crwl_task_t *task;
     crwl_conf_t *conf = ctx->conf;
 
-    times = 0;
     while (1)
     {
-        /* 1. 随机选择任务队列 */
-        idx = rand() % conf->worker.num;
-
-        workq = ctx->workq[idx];
-
-        if (!queue_space(workq))
-        {
-            ++times;
-            if (times >= conf->worker.num)
-            {
-                times = 0;
-                log_trace(ctx->log, "Undo task queue space isn't enough!");
-                return CRWL_OK;
-            }
-            continue;
-        }
-
-        times = 0;
-
-        /* 2. 取Undo任务数据 */
+        /* > 取Undo任务数据 */
         r = redis_lpop(sched->redis, conf->redis.taskq);
         if (REDIS_REPLY_NIL == r->type)
         {
@@ -273,34 +253,38 @@ static int crwl_sched_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
             return CRWL_OK;
         }
 
+        /* > 随机选择任务队列 */
+        idx = rand() % conf->worker.num;
+
+        workq = ctx->workq[idx];
+
         log_trace(ctx->log, "TQ:%02d URL:%s!", idx, r->str);
 
-        /* 3. 新建crwl_task_t对象 */
+        /* > 申请队列空间 */
+    QUEUE_MALLOC:
         addr = queue_malloc(workq);
         if (NULL == addr)
         {
-            freeReplyObject(r);
-            log_error(ctx->log, "Alloc memory from queue failed! num:%d", queue_space(workq));
-            return CRWL_OK;
+            log_warn(ctx->log, "Alloc memory from queue again! num:%d", queue_space(workq));
+            usleep(500);
+            goto QUEUE_MALLOC;
         }
 
         task = (crwl_task_t *)addr;
 
-        /* 4. 解析Undo数据信息 */
+        /* > 解析Undo数据信息 */
         if (crwl_task_parse(r->str, task))
         {
             log_error(ctx->log, "Parse task string failed! %s", r->str);
-
             freeReplyObject(r);
             queue_dealloc(workq, addr);
             return CRWL_ERR;
         }
 
-        /* 5. 处理Undo任务 */
+        /* > 处理Undo任务 */
         if (crwl_sched_task_hdl(ctx, workq, task))
         {
             log_error(ctx->log, "Handle undo task failed! %s", r->str);
-
             freeReplyObject(r);
             queue_dealloc(workq, addr);
             return CRWL_ERR;

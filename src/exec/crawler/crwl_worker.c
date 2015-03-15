@@ -176,6 +176,7 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker, int tidx)
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
+ **     TODO: 未完成所有内存的释放!
  **作    者: # Qifeng.zou # 2014.09.23 #
  ******************************************************************************/
 int crwl_worker_destroy(crwl_cntx_t *ctx, crwl_worker_t *worker)
@@ -696,6 +697,8 @@ int crwl_worker_remove_sock(crwl_worker_t *worker, socket_t *sck)
 
         slab_dealloc(worker->slab, p);
     }
+
+    list_destroy(extra->send_list);
 
     /* >> 从套接字链表剔除SCK */
     if (list_remove(worker->sock_list, sck))

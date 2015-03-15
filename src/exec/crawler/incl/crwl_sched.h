@@ -4,7 +4,7 @@
 #include <sys/select.h>
 #include <hiredis/hiredis.h>
 
-#define CRWL_SCHED_THD_NUM  (2)             /* SCHED线程数 */
+#define CRWL_SCHED_THD_NUM  (1)             /* SCHED线程数 */
 
 /* 调度器对象 */
 typedef struct
