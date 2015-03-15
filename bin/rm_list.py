@@ -31,11 +31,11 @@ def rm_list(out_path):
         try:
             os.remove(item.strip())
         except BaseException, e:
-            print "[ERROR]: %s %s" % (item, str(e))
+            #print "[ERROR]: %s %s" % (item, str(e))
             continue
         idx += 1
         print "[%d] %s" % (idx, item.strip())
-    os.remove(out_path)
+    #os.remove(out_path)
 
 if __name__ == '__main__':
     out_path = "list.rm"

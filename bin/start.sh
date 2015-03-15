@@ -4,8 +4,6 @@ ulimit -c unlimited
 # 准备阶段
 sudo redis-server /etc/redis/redis_slave_6380.conf
 
-sleep 5
-
 # 日志服务
 n=`ps -axu | grep "logsvr" | wc -l`
 if [ $n -gt 0 ]; then
