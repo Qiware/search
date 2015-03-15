@@ -45,4 +45,4 @@ $(OBJS): %.o : %.c
 
 clean:
 	rm -fr *.o $(PROJ_BIN)/$(TARGET)
-	@echo "rm -fr *.o $(PROJ_BIN)/$(TARGET)
+	@echo "rm -fr *.o $(PROJ_BIN)/$(TARGET)"

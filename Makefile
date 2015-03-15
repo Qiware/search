@@ -40,9 +40,9 @@ DEMO_DIR = "src/demo"
 #DIR += "${DEMO_DIR}/list"
 #DIR += "${DEMO_DIR}/redis"
 #DIR += "${DEMO_DIR}/gumbo"
-DIR += "${DEMO_DIR}/xml"
-DIR += "${DEMO_DIR}/smtc/recv"
-DIR += "${DEMO_DIR}/smtc/send"
+#DIR += "${DEMO_DIR}/xml"
+#DIR += "${DEMO_DIR}/sdtp/recv"
+#DIR += "${DEMO_DIR}/sdtp/send"
 export DIR
 
 # 创建目录结构
