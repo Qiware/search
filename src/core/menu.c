@@ -81,6 +81,11 @@ menu_item_t *menu_creat(menu_cntx_t *ctx, const char *name,
         return NULL;
     }
 
+    menu->num = 0;
+    menu->child = NULL;
+    menu->parent = NULL;
+    menu->next = NULL;
+
     menu_set_name(menu, name);
     menu_set_func(menu, init, func, exit);
     menu_set_args(menu, args);
