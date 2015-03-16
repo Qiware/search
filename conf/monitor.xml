@@ -1,0 +1,4 @@
+<MONITOR>
+    <CRAWLER IP="127.0.0.1" PORT="8888"/> <!-- 爬虫系统 -->
+    <FILTER IP="127.0.0.1" PORT="8889"/>  <!-- 过滤系统 -->
+</MONITOR>
