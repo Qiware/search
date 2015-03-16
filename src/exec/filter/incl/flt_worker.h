@@ -16,4 +16,7 @@ typedef struct
 
 void *flt_worker_routine(void *_ctx);
 
+/* 通过索引获取WORKER对象 */
+#define flt_worker_get_by_idx(ctx, idx) (&(ctx)->worker[idx])
+
 #endif /*__FLT_WORKER_H__*/

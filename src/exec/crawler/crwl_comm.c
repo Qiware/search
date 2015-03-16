@@ -205,31 +205,7 @@ crwl_cntx_t *crwl_cntx_init(char *pname, const char *path)
             }
         }
 
-        /* 7. 新建域名IP映射表 */
-        ctx->domain_ip_map = hash_tab_creat(
-                ctx->slab,
-                CRWL_DOMAIN_IP_MAP_HASH_MOD,
-                hash_time33_ex,
-                (avl_cmp_cb_t)crwl_domain_ip_map_cmp_cb);
-        if (NULL == ctx->domain_ip_map)
-        {
-            log_error(log, "Initialize hash table failed!");
-            break;
-        }
-
-        /* 8. 新建域名黑名单表 */
-        ctx->domain_blacklist = hash_tab_creat(
-                ctx->slab,
-                CRWL_DOMAIN_BLACKLIST_HASH_MOD,
-                hash_time33_ex,
-                (avl_cmp_cb_t)crwl_domain_blacklist_cmp_cb);
-        if (NULL == ctx->domain_blacklist)
-        {
-            log_error(log, "Initialize hash table failed!");
-            break;
-        }
-
-
+        /* 8. 修改进程打开文件描述符的最大限制 */
         if(limit_file_num(4096))
         {
             log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
@@ -256,8 +232,6 @@ crwl_cntx_t *crwl_cntx_init(char *pname, const char *path)
     /* 释放内存 */
     if (ctx->conf) { crwl_conf_destroy(ctx->conf); }
     if (ctx->workq) { free(ctx->workq); }
-    if (ctx->domain_ip_map) { hash_tab_destroy(ctx->domain_ip_map); }
-    if (ctx->domain_blacklist) { hash_tab_destroy(ctx->domain_blacklist); }
     free(ctx);
 
     return NULL;

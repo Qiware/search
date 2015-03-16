@@ -20,6 +20,7 @@ LIBS = -lpthread \
 			-lxd_http \
 			-lxd_gumbo_ex 
 SRC_LIST = filter.c \
+			flt_man.c \
 			flt_comm.c \
 			flt_push.c \
 			flt_conf.c \

@@ -26,27 +26,32 @@
 menu_cntx_t *menu_cntx_init(const char *title)
 {
     menu_cntx_t *ctx;
-    mem_pool_t *pool;
 
-    pool = mem_pool_creat(1 * KB);
-    if (NULL == pool)
-    {
-        return NULL;
-    }
-
-    ctx = (menu_cntx_t *)mem_pool_alloc(pool, sizeof(menu_cntx_t));
+    /* > 创建全局对象 */
+    ctx = (menu_cntx_t *)calloc(1, sizeof(menu_cntx_t));
     if (NULL == ctx)
     {
-        free(pool);
+        free(ctx);
         return NULL;
     }
 
-    ctx->pool = pool;
+    /* > 创建内存池 */
+    ctx->pool = mem_pool_creat(1 * KB);
+    if (NULL == ctx->pool)
+    {
+        free(ctx);
+        return NULL;
+    }
 
-    ctx->menu = menu_creat(ctx, title, NULL, menu_display, NULL);
+    ctx->alloc = (mem_alloc_cb_t)mem_pool_alloc;
+    ctx->dealloc = (mem_dealloc_cb_t)mem_pool_dealloc;
+
+    /* > 创建主菜单 */
+    ctx->menu = menu_creat(ctx, title, NULL, menu_display, NULL, NULL);
     if (NULL == ctx->menu)
     {
-        free(pool);
+        mem_pool_destroy(ctx->pool);
+        free(ctx);
         return NULL;
     }
 
@@ -66,11 +71,11 @@ menu_cntx_t *menu_cntx_init(const char *title)
  **作    者: # Qifeng.zou # 2014.12.27 #
  ******************************************************************************/
 menu_item_t *menu_creat(menu_cntx_t *ctx, const char *name,
-        int (*init)(menu_item_t *), int (*func)(menu_item_t *), int (*exit)(menu_item_t *))
+        menu_cb_t init, menu_cb_t func, menu_cb_t exit, void *args)
 {
     menu_item_t *menu;
 
-    menu = (menu_item_t *)mem_pool_alloc(ctx->pool, sizeof(menu_item_t));
+    menu = (menu_item_t *)ctx->alloc(ctx->pool, sizeof(menu_item_t));
     if (NULL == menu)
     {
         return NULL;
@@ -78,6 +83,7 @@ menu_item_t *menu_creat(menu_cntx_t *ctx, const char *name,
 
     menu_set_name(menu, name);
     menu_set_func(menu, init, func, exit);
+    menu_set_args(menu, args);
 
     return menu;
 }
@@ -131,7 +137,7 @@ int menu_add(menu_item_t *menu, menu_item_t *child)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.27 #
  ******************************************************************************/
-int menu_display(menu_item_t *menu)
+int menu_display(menu_item_t *menu, void *args)
 {
     int i, off, len, n;
     menu_item_t *child = menu->child;
@@ -232,23 +238,23 @@ static menu_item_t *menu_exec(menu_item_t *menu, const char *opt)
             {
                 if (menu->exit)
                 {
-                    menu->exit(menu);
+                    menu->exit(menu, menu->args);
                 }
                 exit(0);
                 return NULL;
             }
 
-            menu->func(menu);
+            menu->func(menu, menu->args);
 
             return menu;
         }
 
         if (menu->exit)
         {
-            menu->exit(menu);
+            menu->exit(menu, menu->args);
         }
 
-        menu->parent->func(menu->parent);
+        menu->parent->func(menu->parent, menu->parent->args);
 
         return menu->parent;
     }
@@ -261,12 +267,12 @@ static menu_item_t *menu_exec(menu_item_t *menu, const char *opt)
         {
             if (child->init)
             {
-                child->init(child);
+                child->init(child, child->args);
             }
 
             if (child->func)
             {
-                ret = child->func(child);
+                ret = child->func(child, child->args);
                 if (0 != ret                /* 失败或无子菜单时，均返回到上级菜单 */
                         || NULL == child->child)
                 {
@@ -279,7 +285,7 @@ static menu_item_t *menu_exec(menu_item_t *menu, const char *opt)
         }
     }
 
-    menu->func(menu);
+    menu->func(menu, menu->args);
 
     return menu;
 }
@@ -303,10 +309,10 @@ int menu_startup(menu_cntx_t *ctx)
 
     if (curr->init)
     {
-        curr->init(curr);
+        curr->init(curr, curr->args);
     }
 
-    curr->func(curr);
+    curr->func(curr, curr->args);
 
     while (1)
     {
@@ -328,7 +334,7 @@ int menu_startup(menu_cntx_t *ctx)
                 {
                     fprintf(stdout, "\nNot right!\n");
 
-                    curr->func(curr);
+                    curr->func(curr, curr->args);
                     goto BEGIN;
                 }
                 goto EXEC;

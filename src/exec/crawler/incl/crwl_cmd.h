@@ -8,45 +8,17 @@ typedef enum
 {
     CRWL_CMD_UNKNOWN                    /* 未知指令 */
 
-    , CRWL_CMD_ADD_SEED_REQ             /* 请求添加种子 */
-    , CRWL_CMD_ADD_SEED_RESP            /* 反馈添加种子 */
-
     , CRWL_CMD_QUERY_CONF_REQ           /* 查询配置信息 */
     , CRWL_CMD_QUERY_CONF_RESP          /* 反馈配置信息 */
 
     , CRWL_CMD_QUERY_WORKER_STAT_REQ    /* 查询爬取信息 */
     , CRWL_CMD_QUERY_WORKER_STAT_RESP   /* 反馈爬取信息 */
 
-    , CRWL_CMD_QUERY_TABLE_STAT_REQ     /* 查询各表信息 */
-    , CRWL_CMD_QUERY_TABLE_STAT_RESP    /* 反馈各表信息 */
-
     , CRWL_CMD_QUERY_WORKQ_STAT_REQ     /* 查询工作队列信息 */
     , CRWL_CMD_QUERY_WORKQ_STAT_RESP    /* 反馈工作队列信息 */
         
-    , CRWL_CMD_STORE_DOMAIN_IP_MAP_REQ  /* 存储域名IP映射信息 */
-    , CRWL_CMD_STORE_DOMAIN_IP_MAP_RESP /* 反馈存储域名IP映射信息 */
- 
-    , CRWL_CMD_STORE_DOMAIN_BLACKLIST_REQ   /* 存储域名黑名单信息 */
-    , CRWL_CMD_STORE_DOMAIN_BLACKLIST_RESP  /* 反馈存储域名黑名单信息 */
-
     , CRWL_CMD_TOTAL
 } crwl_cmd_e;
-
-/* 添加种子信息 */
-typedef struct
-{
-    char url[256];                  /* URL */
-} crwl_cmd_add_seed_req_t;
-
-typedef struct
-{
-#define CRWL_CMD_ADD_SEED_STAT_UNKNOWN  (1)     /* 未知 */
-#define CRWL_CMD_ADD_SEED_STAT_SUCC     (2)     /* 成功 */
-#define CRWL_CMD_ADD_SEED_STAT_FAIL     (3)     /* 失败 */
-#define CRWL_CMD_ADD_SEED_STAT_EXIST    (4)     /* 已存在 */
-    int stat;                       /* 状态 */
-    char url[256];                  /* URL */
-} crwl_cmd_add_seed_rep_t;
 
 /* 查询爬虫信息 */
 typedef struct
@@ -66,24 +38,6 @@ typedef struct
         uint64_t err_webpage_total; /* 异常网页的计数 */
     } worker[CRWL_CMD_WORKER_MAX_NUM];
 } crwl_cmd_worker_stat_t;
-
-/* 查询TABLE信息 */
-typedef struct
-{
-} crwl_cmd_table_stat_req_t;
-
-#define CRWL_CMD_TAB_MAX_NUM        (20)
-typedef struct
-{
-    int num;                        /* Number */
-    struct
-    {
-    #define CRWL_TAB_NAME_LEN (32)        
-        char name[CRWL_TAB_NAME_LEN];
-        int num;
-        int max;
-    } table[CRWL_CMD_TAB_MAX_NUM];
-} crwl_cmd_table_stat_t;
 
 /* 查询QUEUE信息 */
 typedef struct
@@ -128,29 +82,12 @@ typedef struct
     } worker;
 } crwl_cmd_conf_t;
 
-/* 存储DOMAIN IP映射表 */
-typedef struct
-{
-    char path[FILE_PATH_MAX_LEN];           /* 存储路径 */
-} crwl_cmd_store_domain_ip_map_rep_t;
-
-/* 存储DOMAIN黑名单 */
-typedef struct
-{
-    char path[FILE_PATH_MAX_LEN];           /* 存储路径 */
-} crwl_cmd_store_domain_blacklist_rep_t;
-
 /* 各命令数据 */
 typedef union
 {
-    crwl_cmd_add_seed_req_t add_seed_req;
-    crwl_cmd_add_seed_rep_t add_seed_rep;
     crwl_cmd_conf_t conf;
     crwl_cmd_workq_stat_t workq_stat;
-    crwl_cmd_table_stat_t table_stat;
     crwl_cmd_worker_stat_t worker_stat;
-    crwl_cmd_store_domain_ip_map_rep_t domain_ip_map_rep;
-    crwl_cmd_store_domain_blacklist_rep_t domain_blacklist_rep;
 } crwl_cmd_data_t;
 
 /* 命令信息结构体 */

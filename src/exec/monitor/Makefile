@@ -10,13 +10,18 @@ include $(PROJ)/make/build.mak
 
 INCLUDE = -I. -I$(PROJ)/src/incl \
 		  -I$(PROJ)/src/exec/search/incl \
-		  -I$(PROJ)/src/exec/crawler/incl
+		  -I$(PROJ)/src/exec/filter/incl \
+		  -I$(PROJ)/src/exec/crawler/incl \
+		  -I$(PROJ)/src/exec/monitor/incl
+
 LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lpthread -lxd_core -lxd_srch -lxd_crwl
 
 SRC_LIST = monitor.c \
+			mon_conf.c \
 			mon_srch.c \
 			mon_crwl.c \
+			mon_filter.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
 

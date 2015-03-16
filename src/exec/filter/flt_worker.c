@@ -18,9 +18,6 @@
 #include "flt_conf.h"
 #include "flt_worker.h"
 
-/* 通过索引获取WORKER对象 */
-#define flt_worker_get_by_idx(ctx, idx) (&(ctx)->worker[idx])
-
 /* 静态函数 */
 static int flt_worker_workflow(flt_cntx_t *ctx, flt_worker_t *worker);
 static int flt_worker_deep_hdl(flt_cntx_t *ctx, flt_worker_t *worker, gumbo_result_t *result);

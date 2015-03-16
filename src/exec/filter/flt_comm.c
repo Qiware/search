@@ -26,6 +26,7 @@
 #include "common.h"
 #include "syscall.h"
 #include "filter.h"
+#include "flt_man.h"
 #include "flt_sched.h"
 #include "flt_worker.h"
 
@@ -287,6 +288,14 @@ int flt_startup(flt_cntx_t *ctx)
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return FLT_ERR;
     }
+
+    /* > 启动Manager线程 */
+    if (thread_creat(&ctx->sched_tid, flt_manager_routine, ctx))
+    {
+        log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        return FLT_ERR;
+    }
+
 
     /* > 获取运行时间 */
     ctx->run_tm = time(NULL);

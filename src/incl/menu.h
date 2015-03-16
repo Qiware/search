@@ -13,14 +13,16 @@ typedef struct _menu_item_t
 {
     char name[MENU_NAME_STR_LEN];           /* 菜单名 */
 
-    int (*init)(struct _menu_item_t *);     /* 进入之前 */
-    int (*func)(struct _menu_item_t *);     /* 菜单对应的功能 */
-    int (*exit)(struct _menu_item_t *);     /* 退出菜单 */
+    int (*init)(struct _menu_item_t *menu, void *args);     /* 进入之前 */
+    int (*func)(struct _menu_item_t *menu, void *args);     /* 菜单对应的功能 */
+    int (*exit)(struct _menu_item_t *menu, void *args);     /* 退出菜单 */
 
     int num;                                /* 子菜单数 */
     struct _menu_item_t *child;             /* 子菜单列表 */
     struct _menu_item_t *parent;            /* 父菜单 */
     struct _menu_item_t *next;              /* 兄弟菜单 */
+
+    void *args;                             /* 附加参数 */
 } menu_item_t;
 
 #define menu_set_name(menu, nm) snprintf((menu)->name, sizeof((menu)->name), "%s", nm)
@@ -30,18 +32,23 @@ typedef struct _menu_item_t
     (menu)->func = (_func); \
     (menu)->exit = (_exit); \
 }
+#define menu_set_args(menu, _args) (menu)->args = (_args)
+
+typedef int (*menu_cb_t)(menu_item_t *menu, void *args);
 
 /* 全局信息 */
 typedef struct
 {
-    mem_pool_t *pool;                       /* 内存池 */
     menu_item_t *menu;                      /* 主菜单 */
+
+    mem_pool_t *pool;                       /* 内存池 */
+    mem_alloc_cb_t alloc;                   /* 申请内存 */
+    mem_dealloc_cb_t dealloc;               /* 释放内存 */
 } menu_cntx_t;
 
 menu_cntx_t *menu_cntx_init(const char *title);
-menu_item_t *menu_creat(menu_cntx_t *ctx, const char *name,
-        int (*init)(menu_item_t *), int (*func)(menu_item_t *), int (*exit)(menu_item_t *));
-int menu_display(menu_item_t *menu);
+menu_item_t *menu_creat(menu_cntx_t *ctx, const char *name, menu_cb_t init, menu_cb_t func, menu_cb_t exit, void *args);
+int menu_display(menu_item_t *menu, void *args);
 int menu_add(menu_item_t *menu, menu_item_t *child);
 int menu_startup(menu_cntx_t *ctx);
 

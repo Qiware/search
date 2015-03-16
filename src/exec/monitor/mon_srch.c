@@ -34,7 +34,7 @@
 
 #define SRCH_CLIENT_NUM     (4000)
 
-static int mon_srch_connect(menu_item_t *menu);
+static int mon_srch_connect(menu_item_t *menu, void *args);
 
 /******************************************************************************
  **函数名称: mon_srch_menu
@@ -49,18 +49,18 @@ static int mon_srch_connect(menu_item_t *menu);
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.27 #
  ******************************************************************************/
-menu_item_t *mon_srch_menu(menu_cntx_t *ctx)
+menu_item_t *mon_srch_menu(menu_cntx_t *ctx, void *args)
 {
     menu_item_t *menu, *child;
 
-    menu = menu_creat(ctx, "Monitor Search Engine", NULL, menu_display, NULL);
+    menu = menu_creat(ctx, "Monitor Search Engine", NULL, menu_display, NULL, args);
     if (NULL == menu)
     {
         return NULL;
     }
 
     /* 添加子菜单 */
-    child = menu_creat(ctx, "Get configuration", NULL, mon_srch_connect, NULL);
+    child = menu_creat(ctx, "Get configuration", NULL, mon_srch_connect, NULL, args);
     if (NULL == child)
     {
         return menu;
@@ -69,7 +69,7 @@ menu_item_t *mon_srch_menu(menu_cntx_t *ctx)
     menu_add(menu, child);
 
     /* 添加子菜单 */
-    child = menu_creat(ctx, "Get current status", NULL, mon_srch_connect, NULL);
+    child = menu_creat(ctx, "Get current status", NULL, mon_srch_connect, NULL, args);
     if (NULL == child)
     {
         return menu;
@@ -78,7 +78,7 @@ menu_item_t *mon_srch_menu(menu_cntx_t *ctx)
     menu_add(menu, child);
 
     /* 添加子菜单 */
-    child = menu_creat(ctx, "Test connect", NULL, mon_srch_connect, NULL);
+    child = menu_creat(ctx, "Test connect", NULL, mon_srch_connect, NULL, args);
     if (NULL == child)
     {
         return menu;
@@ -100,7 +100,7 @@ menu_item_t *mon_srch_menu(menu_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.27 #
  ******************************************************************************/
-static int mon_srch_connect(menu_item_t *menu)
+static int mon_srch_connect(menu_item_t *menu, void *args)
 {
     char ip[IP_ADDR_MAX_LEN], input[128];
     int port = SRCH_SVR_PORT, num = SRCH_CLIENT_NUM;
