@@ -38,6 +38,12 @@
 #define MB                  (1024 * KB) /* MB */
 #define GB                  (1024 * MB) /* GB */
 
+/* 将秒折算成: D天H时M分S秒 */
+#define DAY(sec)  ((sec)/(24*60*60))                /* 天 */
+#define HOUR(sec) (((sec)%(24*60*60))/(60*60))      /* 时 */
+#define MIN(sec)  ((((sec)%(24*60*60))%(60*60))/60) /* 分 */
+#define SEC(sec)  ((((sec)%(24*60*60))%(60*60))%60) /* 秒 */
+
 /* 字符定义 */
 #define is_uline_char(ch)   ('_' == ch)     /* 下划线 */
 #define is_tab_char(ch)     ('\t' == ch)    /* 制表符 */
