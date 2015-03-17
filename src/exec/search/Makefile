@@ -54,9 +54,5 @@ $(OBJS2): %.o : %.c
 	@echo "$(CC) $(PWD)/$<"
 
 clean:
-	@rm -fr *.o \
-			$(PROJ_LIB)/$(TARGET) \
-			$(PROJ_BIN)/$(TARGET2)
-	@echo "rm -fr *.o \
-			$(PROJ_LIB)/$(TARGET) \
-			$(PROJ_BIN)/$(TARGET2)"
+	@rm -fr *.o $(PROJ_LIB)/$(TARGET) $(PROJ_BIN)/$(TARGET2)
+	@echo "rm -fr *.o $(PROJ_LIB)/$(TARGET) $(PROJ_BIN)/$(TARGET2)"
