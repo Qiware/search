@@ -8,24 +8,15 @@
 ###############################################################################
 include $(PROJ)/make/build.mak
 
-INCLUDE = -I. -I$(PROJ)/src/incl \
-		  -I$(PROJ)/src/exec/search/incl \
-		  -I$(PROJ)/src/exec/filter/incl \
-		  -I$(PROJ)/src/exec/crawler/incl \
-		  -I$(PROJ)/src/exec/monitor/incl
-
+INCLUDE = -I. -I$(PROJ)/src/incl
 LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lpthread -lxd_core
 
-SRC_LIST = monitor.c \
-			mon_conf.c \
-			mon_srch.c \
-			mon_crwl.c \
-			mon_filter.c
+SRC_LIST = test.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
 
-TARGET = monitor
+TARGET = test
 
 .PHONY: all clean
 
@@ -33,7 +24,7 @@ all: $(TARGET)
 $(TARGET): $(OBJS)
 	@$(CC) $(CFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS)
 	@echo "$(CC) $@"
-	@mv $@ $(PROJ_BIN)
+	@rm -fr $(OBJS)
 	@echo "$@ is OK!"
 
 $(OBJS): %.o : %.c
@@ -41,5 +32,5 @@ $(OBJS): %.o : %.c
 	@echo "$(CC) $(PWD)/$<"
 
 clean:
-	@rm -fr *.o $(PROJ_BIN)/$(TARGET)
-	@echo "rm -fr *.o $(PROJ_BIN)/$(TARGET)"
+	@rm -fr $(OBJS) $(TARGET)
+	@echo "rm -fr *.o $(TARGET)"

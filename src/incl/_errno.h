@@ -9,7 +9,7 @@ typedef enum
     , XDS_CONTINUE                  /* 继续执行 */
     , XDS_BREAK                     /* Break */
 
-    , XDS_ERR                       /* 失败 */
+    , XDS_ERR = ~0x7fffffff         /* 失败 */
     , XDS_ERR_MEM_NOT_ENOUGH        /* 内存不足 */
     , XDS_ERR_SPACE_NOT_ENOUGH      /* 空间不足 */
     , XDS_ERR_PARAM_NOT_RIGHT       /* 参数错误 */
