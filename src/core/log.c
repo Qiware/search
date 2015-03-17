@@ -80,7 +80,7 @@ static const size_t g_log_sync_size = 0.8 * LOG_FILE_CACHE_SIZE;
  **     level: 日志级别(其值：LOG_LEVEL_TRACE~LOG_LEVEL_FATAL的"或"值)
  **     path: 日志路径
  **输出参数: NONE
- **返    回: 0:success !0:failed
+ **返    回: 0:成功 !0:失败
  **实现描述: 
  **     1. 日志模块初始化
  **     2. 将日志信息写入共享内存
@@ -351,7 +351,7 @@ void log_set_max_size(size_t size)
  **     file: 文件信息
  **     time: 当前时间
  **输出参数: NONE
- **返    回: 0:success !0:failed
+ **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.10.31 #
@@ -421,7 +421,7 @@ void *log_creat_shm(void)
  **功    能: 初始化全局数据
  **输入参数: 
  **输出参数: NONE
- **返    回: 0:success !0:failed
+ **返    回: 0:成功 !0:失败
  **实现描述: 
  **     1. 连接共享内存
  **     2. 打开消息队列
@@ -478,7 +478,7 @@ static int _log_init_global(void)
  **     idx: 索引
  **输出参数: 
  **     newpath: 新日志名
- **返    回: 0:success !0:failed
+ **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.05 #
@@ -529,7 +529,7 @@ static int log_name_conflict_handler(
  **     addr: 共享内存首地址
  **     path: 日志绝对路径
  **输出参数: NONE
- **返    回: 0:success !0:failed
+ **返    回: 0:成功 !0:失败
  **实现描述: 
  **     1. 判断当前功能内存中是否有文件名一致的日志
  **     2. 选择合适的日志缓存，并返回
@@ -637,7 +637,7 @@ static log_file_info_t *log_creat(void *addr, const char *path)
  **输入参数: 
  **     file: 日志对象
  **输出参数: NONE
- **返    回: 0:success !0:failed
+ **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.11.05 #
@@ -671,7 +671,7 @@ static void log_release(log_file_info_t *file)
  **     dumplen: 需打印的地址长度
  **     msg: 日志内容
  **输出参数: NONE
- **返    回: 0:success !0:failed
+ **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.10.31 #
