@@ -110,6 +110,45 @@ int flt_usage(const char *exec)
 }
 
 /******************************************************************************
+ **函数名称: flt_init_log
+ **功    能: 初始化日志模块
+ **输入参数:
+ **     fname: 日志文件名
+ **输出参数: NONE
+ **返    回: 日志对象
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.10.21 #
+ ******************************************************************************/
+static log_cycle_t *flt_init_log(char *fname)
+{
+    log_cycle_t *log;
+    char path[FILE_NAME_MAX_LEN];
+
+    /* 1. 初始化系统日志 */
+    syslog_get_path(path, sizeof(path), basename(fname));
+
+    if (syslog_init(LOG_LEVEL_ERROR, path))
+    {
+        fprintf(stderr, "Init syslog failed!");
+        return NULL;
+    }
+
+    /* 2. 初始化业务日志 */
+    log_get_path(path, sizeof(path), basename(fname));
+
+    log = log_init(LOG_LEVEL_ERROR, path);
+    if (NULL == log)
+    {
+        sys_error("Initialize log failed!");
+        syslog_destroy();
+        return NULL;
+    }
+
+    return log;
+}
+
+/******************************************************************************
  **函数名称: flt_init
  **功    能: 初始化模块
  **输入参数: 
@@ -244,6 +283,44 @@ flt_cntx_t *flt_init(char *pname, const char *path)
     free(ctx);
     return NULL;
 }
+
+/******************************************************************************
+ **函数名称: flt_destroy
+ **功    能: 销毁Filter对象
+ **输入参数: 
+ **     filter: Filter对象
+ **输出参数:
+ **返    回: VOID
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.11.04 #
+ ******************************************************************************/
+void flt_destroy(flt_cntx_t *ctx)
+{
+    if (ctx->log)
+    {
+        log_destroy(&ctx->log);
+        ctx->log = NULL;
+    }
+
+    syslog_destroy();
+
+    if (ctx->redis)
+    {
+        redis_clst_destroy(ctx->redis);
+        ctx->redis = NULL;
+    }
+
+    if (ctx->conf)
+    {
+        flt_conf_destroy(ctx->conf);
+        ctx->conf = NULL;
+    }
+
+    free(ctx);
+}
+
+
 
 /******************************************************************************
  **函数名称: flt_startup
@@ -519,7 +596,7 @@ int flt_get_domain_ip_map(flt_cntx_t *ctx, char *host, flt_domain_ip_map_t *map)
             memcpy(map, new, sizeof(flt_domain_ip_map_t));
             slab_dealloc(ctx->slab, new);
             log_debug(ctx->log, "Domain is exist! host:[%s]", host);
-            return 0;
+            return FLT_OK;
         }
 
         slab_dealloc(ctx->slab, new);
@@ -530,7 +607,7 @@ int flt_get_domain_ip_map(flt_cntx_t *ctx, char *host, flt_domain_ip_map_t *map)
 
     memcpy(map, new, sizeof(flt_domain_ip_map_t));
 
-    return 0;
+    return FLT_OK;
 }
 
 /******************************************************************************
@@ -567,208 +644,6 @@ int flt_domain_ip_map_cmp_cb(const char *domain, const flt_domain_ip_map_t *map)
 int flt_domain_blacklist_cmp_cb(const char *domain, const flt_domain_blacklist_t *blacklist)
 {
     return strcmp(domain, blacklist->host);
-}
-
-/******************************************************************************
- **函数名称: flt_init_log
- **功    能: 初始化日志模块
- **输入参数:
- **     fname: 日志文件名
- **输出参数: NONE
- **返    回: 日志对象
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.10.21 #
- ******************************************************************************/
-log_cycle_t *flt_init_log(char *fname)
-{
-    log_cycle_t *log;
-    char path[FILE_NAME_MAX_LEN];
-
-    /* 1. 初始化系统日志 */
-    syslog_get_path(path, sizeof(path), basename(fname));
-
-    if (syslog_init(LOG_LEVEL_ERROR, path))
-    {
-        fprintf(stderr, "Init syslog failed!");
-        return NULL;
-    }
-
-    /* 2. 初始化业务日志 */
-    log_get_path(path, sizeof(path), basename(fname));
-
-    log = log_init(LOG_LEVEL_ERROR, path);
-    if (NULL == log)
-    {
-        sys_error("Initialize log failed!");
-        syslog_destroy();
-        return NULL;
-    }
-
-    return log;
-}
-
-/******************************************************************************
- **函数名称: flt_destroy
- **功    能: 销毁Filter对象
- **输入参数: 
- **     filter: Filter对象
- **输出参数:
- **返    回: VOID
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.11.04 #
- ******************************************************************************/
-void flt_destroy(flt_cntx_t *ctx)
-{
-    if (ctx->log)
-    {
-        log_destroy(&ctx->log);
-        ctx->log = NULL;
-    }
-
-    syslog_destroy();
-
-    if (ctx->redis)
-    {
-        redis_clst_destroy(ctx->redis);
-        ctx->redis = NULL;
-    }
-
-    if (ctx->conf)
-    {
-        flt_conf_destroy(ctx->conf);
-        ctx->conf = NULL;
-    }
-
-    free(ctx);
-}
-
-/******************************************************************************
- **函数名称: flt_get_domain_ip_map
- **功    能: 获取域名IP映射
- **输入参数:
- **     ctx: 全局信息
- **     host: 域名
- **输出参数:
- **     map: 域名IP映射
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **     1. 从域名IP映射表中查询
- **     2. 通过DNS服务器查询
- **注意事项: 
- **     如果域名不存在, getaddrinfo()将阻塞30s左右的时间!
- **作    者: # Qifeng.zou # 2014.10.21 #
- ******************************************************************************/
-static int ctx_get_domain_ip_map(flt_cntx_t *ctx, char *host, flt_domain_ip_map_t *map)
-{
-    int ret;
-    flt_domain_ip_map_t *new;
-    flt_domain_blacklist_t blacklist;
-    flt_domain_blacklist_t *new_blacklist;
-    struct sockaddr_in *sockaddr;
-    struct addrinfo *addrinfo, *curr;
-    struct addrinfo hints;
-
-    /* 1. 从域名IP映射表中查找 */
-    if (!hash_tab_query(ctx->domain_ip_map,
-            host, strlen(host), map, sizeof(flt_domain_ip_map_t)))
-    {
-        log_trace(ctx->log, "Found domain ip map in talbe! %s", host);
-        return FLT_OK; /* 成功 */
-    }
-
-    /* 2. 从域名黑名单中查找 */
-    if (!hash_tab_query(ctx->domain_blacklist,
-            host, strlen(host), &blacklist, sizeof(blacklist)))
-    {
-        log_info(ctx->log, "Host [%s] in blacklist!", host);
-        return FLT_ERR; /* 在黑名单中 */
-    }
-
-    /* 2. 通过DNS服务器查询 */
-    memset(&hints, 0, sizeof(hints));
-
-    hints.ai_socktype = SOCK_STREAM;
-
-    if (0 != getaddrinfo(host, NULL, &hints, &addrinfo))
-    {
-        log_error(ctx->log, "Get address info failed! host:%s", host);
-
-        /* 插入域名黑名单中 */
-        new_blacklist = slab_alloc(ctx->slab, sizeof(flt_domain_blacklist_t));
-        if (NULL == new_blacklist)
-        {
-            return FLT_ERR;
-        }
-
-        snprintf(new_blacklist->host, sizeof(new_blacklist->host), "%s", host);
-        new_blacklist->access_tm = time(NULL);
-
-        if (hash_tab_insert(ctx->domain_blacklist, host, strlen(host), new_blacklist))
-        {
-            slab_dealloc(ctx->slab, new_blacklist);
-        }
-
-        return FLT_ERR;
-    }
-
-    /* 3. 申请新的内存空间(此处不释放空间) */
-    new = (flt_domain_ip_map_t *)slab_alloc(ctx->slab, sizeof(flt_domain_ip_map_t));
-    if (NULL == new)
-    {
-        freeaddrinfo(addrinfo);
-
-        log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return FLT_ERR;
-    }
-
-    snprintf(new->host, sizeof(new->host), "%s", host);
-    new->ip_num = 0;
-
-    curr = addrinfo;
-    while ((NULL != curr) && (new->ip_num < FLT_IP_MAX_NUM))
-    {
-        sockaddr = (struct sockaddr_in *)curr->ai_addr;
-        if (0 == sockaddr->sin_addr.s_addr)
-        {
-            curr = curr->ai_next;
-            continue;
-        }
-
-        new->ip[new->ip_num].family = curr->ai_family;
-        inet_ntop(curr->ai_family,
-                &sockaddr->sin_addr.s_addr,
-                new->ip[new->ip_num].ip,
-                sizeof(new->ip[new->ip_num].ip));
-        ++new->ip_num;
-
-        curr = curr->ai_next;
-    }
-
-    freeaddrinfo(addrinfo);
-
-    /* 4. 插入域名IP映射表 */
-    ret = hash_tab_insert(ctx->domain_ip_map, host, strlen(host), new);
-    if (0 != ret)
-    {
-        if (AVL_NODE_EXIST == ret)
-        {
-            memcpy(map, new, sizeof(flt_domain_ip_map_t));
-            slab_dealloc(ctx->slab, new);
-            log_debug(ctx->log, "Domain is exist! host:[%s]", host);
-            return 0;
-        }
-
-        slab_dealloc(ctx->slab, new);
-        log_error(ctx->log, "Insert into hash table failed! ret:[%x/%x] host:[%s]",
-                ret, AVL_NODE_EXIST, host);
-        return FLT_ERR;
-    }
-
-    memcpy(map, new, sizeof(flt_domain_ip_map_t));
-
-    return 0;
 }
 
 /******************************************************************************
@@ -837,6 +712,12 @@ int flt_push_url_to_crwlq(flt_cntx_t *ctx,
     flt_crwl_t *crwl;
     unsigned int len, idx;
     flt_domain_ip_map_t map;
+
+    if ('\0' == host[0])
+    {
+        log_error(ctx->log, "Host is invalid! url:%s", url);
+        return FLT_ERR;
+    }
 
     /* > 查询域名IP映射 */
     ret = flt_get_domain_ip_map(ctx, host, &map);

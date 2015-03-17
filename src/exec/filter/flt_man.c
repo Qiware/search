@@ -631,11 +631,14 @@ static int flt_man_store_domain_ip_map_hdl(flt_domain_ip_map_t *map, void *args)
     int idx;
     flt_man_domain_ip_map_trav_t *trav = (flt_man_domain_ip_map_trav_t *)args;
 
-    fprintf(trav->fp, "%05d|%s", ++trav->idx, map->host);
+    fprintf(trav->fp, "%05d|%s|%d", ++trav->idx, map->host, map->ip_num);
+
+#if 1
     for (idx=0; idx<map->ip_num; ++idx)
     {
         fprintf(trav->fp, "|%s", map->ip[idx].ip);
     }
+#endif
     fprintf(trav->fp, "\n");
 
     return 0;

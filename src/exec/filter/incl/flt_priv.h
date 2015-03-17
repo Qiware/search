@@ -65,20 +65,20 @@ typedef struct
 /* 域名IP映射信息 */
 typedef struct
 {
-    char host[URI_MAX_LEN];                 /* Host信息(域名) */
+    char host[HOST_MAX_LEN];        /* Host信息(域名) */
 
-    int ip_num;                             /* IP地址数 */
+    int ip_num;                     /* IP地址数 */
 #define FLT_IP_MAX_NUM  (8)
-    ipaddr_t ip[FLT_IP_MAX_NUM];           /* 域名对应的IP地址 */
-    time_t access_tm;                       /* 最近访问时间 */
+    ipaddr_t ip[FLT_IP_MAX_NUM];    /* 域名对应的IP地址 */
+    time_t access_tm;               /* 最近访问时间 */
 } flt_domain_ip_map_t;
 
 /* 域名黑名单信息 */
 typedef struct
 {
-    char host[URI_MAX_LEN];                 /* Host信息(域名) */
+    char host[HOST_MAX_LEN];        /* Host信息(域名) */
 
-    time_t access_tm;                       /* 最近访问时间 */
+    time_t access_tm;               /* 最近访问时间 */
 } flt_domain_blacklist_t;
 
 /* 内部接口 */
@@ -86,7 +86,6 @@ int flt_getopt(int argc, char **argv, flt_opt_t *opt);
 int flt_usage(const char *exec);
 int flt_proc_lock(void);
 void flt_set_signal(void);
-log_cycle_t *flt_init_log(char *fname);
 
 int flt_domain_ip_map_cmp_cb(const char *domain, const flt_domain_ip_map_t *map);
 int flt_domain_blacklist_cmp_cb(const char *domain, const flt_domain_blacklist_t *blacklist);
