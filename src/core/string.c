@@ -315,8 +315,7 @@ int uri_reslove(const char *uri, uri_field_t *field)
             URI_GET_HOST:
                 /* 提取域名 */
                 len = ch - s;
-                len = (len < sizeof(field->host) - 1)?
-                            len : sizeof(field->host) - 1;
+                len = (len < sizeof(field->host) - 1)? len : sizeof(field->host) - 1;
                 memcpy(field->host, s, len);
                 field->host[len] = '\0';
 
@@ -362,11 +361,8 @@ int uri_reslove(const char *uri, uri_field_t *field)
                 snprintf(field->path, sizeof(field->path), "%s", ch);
                 return 0;
             }
-            else
-            {
-                return -1;  /* 格式有误 */
-            }
-            return 0;
+
+            return -1;  /* 格式有误 */
         }
         /* 无协议、有端口号 */
         else if (isdigit(*(ch + 1)))
