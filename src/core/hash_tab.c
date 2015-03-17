@@ -198,14 +198,14 @@ void *hash_tab_remove(hash_tab_t *hash, void *pkey, int pkey_len)
 
 /******************************************************************************
  **函数名称: hash_tab_destroy
- **功    能: 销毁哈希数组(TODO:未完成)
+ **功    能: 销毁哈希数组
  **输入参数:
  **     hash: 哈希数组
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
- **     注意: 该函数还未完成: 未释放DATA空间
+ **     TODO: 未释放DATA空间
  **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
 int hash_tab_destroy(hash_tab_t *hash)
@@ -214,9 +214,15 @@ int hash_tab_destroy(hash_tab_t *hash)
 
     for (idx=0; idx<hash->num; ++idx)
     {
+        pthread_rwlock_wrlock(&hash->lock[idx]);
         avl_destroy(hash->tree[idx]);
+        pthread_rwlock_unlock(&hash->lock[idx]);
+
+        pthread_rwlock_destroy(&hash->lock[idx]);
     }
 
+    free(hash->tree);
+    free(hash->lock);
     free(hash);
 
     return 0;
@@ -240,7 +246,9 @@ int hash_tab_trav(hash_tab_t *hash, avl_trav_cb_t proc, void *args)
 
     for (idx=0; idx<hash->num; ++idx)
     {
+        pthread_rwlock_rdlock(&hash->lock[idx]);
         avl_trav(hash->tree[idx], proc, args);
+        pthread_rwlock_unlock(&hash->lock[idx]);
     }
 
     return 0;
