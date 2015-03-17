@@ -24,15 +24,15 @@
  **     2. 连接Master
  **     3. 依次连接Slave
  **注意事项: 
+ **     conf[0]: 表示的是Master配置
+ **     conf[1~num-1]: 表示的是副本配置
  **作    者: # Qifeng.zou # 2014.11.04 #
  ******************************************************************************/
-redis_clst_t *redis_clst_init(const redis_conf_t *master_cf, const redis_conf_t *slave_cf, int slave_num)
+redis_clst_t *redis_clst_init(const redis_conf_t *conf, int num)
 {
     int idx;
     struct timeval tv;
     redis_clst_t *clst;
-    redisContext *redis;
-    const redis_conf_t *conf;
 
     /* 1. 申请内存空间 */
     clst = (redis_clst_t *)calloc(1, sizeof(redis_clst_t));
@@ -41,40 +41,22 @@ redis_clst_t *redis_clst_init(const redis_conf_t *master_cf, const redis_conf_t 
         return NULL;
     }
 
-    clst->redis = (redisContext **)calloc(1, slave_num + 1);
+    clst->redis = (redisContext **)calloc(num, sizeof(redisContext *));
     if (NULL == clst->redis)
     {
         free(clst);
         return NULL;
     }
 
-    /* 2. 连接Master */
-    tv.tv_sec = 30;
-    tv.tv_usec = 0;
-    clst->redis[0] = redisConnectWithTimeout(master_cf->ip, master_cf->port, tv);
-    if (clst->redis[0]->err)
+    /* 2. 依次连接REDIS */
+    clst->num = num;
+    for (idx=0; idx<num; ++idx)
     {
-        free(clst->redis);
-        free(clst);
-        return NULL;
-    }
-
-    ++clst->num;
-
-    /* 3. 依次连接Slave */
-    clst->num = 0;
-    for (idx=0; idx<slave_num; ++idx)
-    {
-        redis = clst->redis[1] + idx;
-        ++clst->num;
-
         tv.tv_sec = 30;
         tv.tv_usec = 0;
 
-        conf = slave_cf + idx;
-
-        redis = redisConnectWithTimeout(conf->ip, conf->port, tv);
-        if (redis->err)
+        clst->redis[idx] = redisConnectWithTimeout(conf[idx].ip, conf[idx].port, tv);
+        if (clst->redis[idx]->err)
         {
             redis_clst_destroy(clst);
             return NULL;

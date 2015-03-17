@@ -217,9 +217,7 @@ flt_cntx_t *flt_init(char *pname, const char *path)
         syslog_set_level(conf->log.syslevel);
 
         /* > 连接Redis集群 */
-        ctx->redis = redis_clst_init(
-                &conf->redis.master,
-                conf->redis.slaves, conf->redis.slave_num);
+        ctx->redis = redis_clst_init(conf->redis.conf, conf->redis.num);
         if (NULL == ctx->redis)
         {
             log_error(ctx->log, "Initialize redis context failed!");

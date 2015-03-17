@@ -1,0 +1,8 @@
+<!-- 种子配置(DEPTH: 表示种子的当前深度) -->
+<SEED>
+    <ITEM URI="www.baidu.com" DEPTH="0" />
+    <ITEM URI="www.ifeng.com" DEPTH="0" />
+    <ITEM URI="www.qq.com" DEPTH="0" />
+    <ITEM URI="www.163.com" DEPTH="0" />
+    <ITEM URI="www.52rd.com" DEPTH="0" />
+</SEED>

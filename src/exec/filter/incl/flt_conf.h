@@ -41,13 +41,12 @@ typedef struct
 /* Redis配置信息 */
 typedef struct
 {
-    redis_conf_t master;                    /* Master配置 */
+    int num;                                /* 配置数目 */
+    redis_conf_t *conf;                     /* 配置数组(注: [0]为MASTER配置 [1~N]为副本配置 */
+
     char taskq[QUEUE_NAME_MAX_LEN];         /* 任务队列名 */
-    char done_tab[TABLE_NAME_MAX_LEN];      /* Done哈希表名 */
-    char push_tab[TABLE_NAME_MAX_LEN];      /* Push哈希表名 */
-#define FLT_REDIS_SLAVE_MAX_NUM  (10)      /* 最大副本数 */
-    int slave_num;                          /* 副本数目 */
-    redis_conf_t slaves[FLT_REDIS_SLAVE_MAX_NUM];  /* 副本配置信息 */
+    char done_tab[TABLE_NAME_MAX_LEN];      /* DONE哈希表名 */
+    char push_tab[TABLE_NAME_MAX_LEN];      /* PUSHED哈希表名 */
 } flt_redis_conf_t;
 
 /* 爬虫配置信息 */

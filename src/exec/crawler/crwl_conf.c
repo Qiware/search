@@ -229,14 +229,12 @@ static int crwl_conf_load_comm(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *
  ******************************************************************************/
 static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
 {
-    int max;
-    xml_node_t *fix, *node, *item;
+    int idx;
+    xml_node_t *fix, *node, *start, *item;
     crwl_redis_conf_t *redis = &conf->redis;
-    redis_conf_t *slave;
 
-    /* 1. 定位REDIS标签
-     *  获取Redis的IP地址、端口号、队列、副本等信息
-     * */
+    /* > 定位REDIS标签
+     *  获取Redis的IP地址、端口号、队列、副本等信息 */
     fix = xml_query(xml, ".CRAWLER.COMMON.REDIS");
     if (NULL == fix)
     {
@@ -244,27 +242,65 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
         return CRWL_ERR;
     }
 
-    /* 获取IP地址 */
-    node = xml_rquery(xml, fix, "IP");
-    if (NULL == node)
+    /* > 计算REDIS网络配置项总数 */
+    start = xml_rquery(xml, fix, "NETWORK.ITEM");
+    if (NULL == start)
     {
-        log_error(log, "Get redis ip address failed!");
+        log_error(log, "Query item of network failed!");
+        return CRWL_ERR;
+    }
+    
+    redis->num = 0;
+    item = start;
+    while (NULL != item)
+    {
+        if (strcmp(item->name, "ITEM"))
+        {
+            log_error(log, "Mark name isn't right! mark:%s", item->name);
+            return CRWL_ERR;
+        }
+        ++redis->num;
+        item = item->next;
+    }
+
+    redis->conf = (redis_conf_t *)calloc(redis->num, sizeof(redis_conf_t));
+    if (NULL == redis->conf)
+    {
+        log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
         return CRWL_ERR;
     }
 
-    snprintf(redis->master.ip, sizeof(redis->master.ip), "%s", node->value);
-
-    /* 获取端口号 */
-    node = xml_rquery(xml, fix, "PORT");
-    if (NULL == node)
+    /* 注: 出现异常情况时 内存在此不必释放 */
+    idx = 0;
+    item = start;
+    while (NULL != item)
     {
-        log_error(log, "Get redis port failed!");
-        return CRWL_ERR;
+        /* 获取IP地址 */
+        node = xml_rquery(xml, item, "IP");
+        if (NULL == node)
+        {
+            log_error(log, "Mark name isn't right! mark:%s", item->name);
+            return CRWL_ERR;
+        }
+
+        snprintf(redis->conf[idx].ip, sizeof(redis->conf[idx].ip), "%s", node->value);
+
+        /* 获取PORT地址 */
+        node = xml_rquery(xml, item, "PORT");
+        if (NULL == node)
+        {
+            log_error(log, "Mark name isn't right! mark:%s", item->name);
+            return CRWL_ERR;
+        }
+
+        redis->conf[idx].port = atoi(node->value);
+
+        /* 下一结点 */
+        item = item->next;
+        ++idx;
     }
 
-    redis->master.port = atoi(node->value);
-
-    /* 获取队列名 */
+    /* > 获取队列名 */
     node = xml_rquery(xml, fix, "TASKQ.NAME");
     if (NULL == node)
     {
@@ -274,7 +310,7 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
 
     snprintf(redis->taskq, sizeof(redis->taskq), "%s", node->value);
 
-    /* 获取哈希表名 */
+    /* > 获取哈希表名 */
     node = xml_rquery(xml, fix, "DONE_TAB.NAME");  /* DONE哈希表 */
     if (NULL == node)
     {
@@ -292,61 +328,6 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
     }
 
     snprintf(redis->push_tab, sizeof(redis->push_tab), "%s", node->value);
-
-    /* 获取REDIS副本配置 */
-    node = xml_rquery(xml, fix, "SLAVE.MAX");
-    if (NULL == node)
-    {
-        log_error(log, "Get max number of redis-slaves failed!");
-        return CRWL_ERR;
-    }
-
-    max = atoi(node->value);
-    if (max > CRWL_REDIS_SLAVE_MAX_NUM)
-    {
-        log_error(log, "Redis slave number is too many!");
-        return CRWL_ERR;
-    }
-
-    /* 注: 出现异常情况时 内存在此不必释放 */
-    redis->slave_num = 0;
-
-    item = xml_rquery(xml, fix, "SLAVE.ITEM");
-    while (NULL != item && redis->slave_num < max)
-    {
-        if (0 != strcmp(item->name, "ITEM"))
-        {
-            item = item->next;
-            continue;
-        }
-
-        slave = redis->slaves + redis->slave_num;
-
-        /* 获取IP地址 */
-        node = xml_rquery(xml, item, "IP");
-        if (NULL == node)
-        {
-            item = item->next;
-            continue;
-        }
-
-        snprintf(slave->ip, sizeof(slave->ip), "%s", node->value);
-
-        /* 获取PORT地址 */
-        node = xml_rquery(xml, item, "PORT");
-        if (NULL == node)
-        {
-            item = item->next;
-            continue;
-        }
-
-        slave->port = atoi(node->value);
-
-        ++redis->slave_num;
-
-        /* 下一结点 */
-        item = item->next;
-    }
 
     return CRWL_OK;
 }

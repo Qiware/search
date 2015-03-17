@@ -20,7 +20,7 @@ typedef struct
     redisContext **redis;           /* REDIS对象(注: [0]为Master [1~num-1]为Slave */
 } redis_clst_t;
 
-redis_clst_t *redis_clst_init(const redis_conf_t *mcf, const redis_conf_t *scf, int slave_num);
+redis_clst_t *redis_clst_init(const redis_conf_t *conf, int num);
 void redis_clst_destroy(redis_clst_t *clst);
 
 bool redis_hsetnx(redisContext *ctx, const char *hash, const char *key, const char *value);

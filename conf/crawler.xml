@@ -20,10 +20,8 @@
           1) PORT: 侦听端口 -->
         <MANAGER PORT="8888" />
 
-        <!-- REDIS服务配置
-             1) IP: IP地址
-             2) PORT: 端口号 -->
-        <REDIS IP="127.0.0.1" PORT="6379">
+        <!-- REDIS服务配置 -->
+        <REDIS>
             <!-- 队列配置
                  TASKQ: UNDO队列 -->
             <TASKQ NAME="CRWL_UNDO_TASKQ" />
@@ -34,11 +32,12 @@
             <DONE_TAB NAME="CRWL_DONE_TAB" />
             <PUSH_TAB NAME="CRWL_PUSH_TAB" />
 
-            <!-- 副本配置
-                 MAX: 最大有效副本数 -->
-            <SLAVE MAX="1">
+            <!-- REDIS网络配置
+                 ITEM: 第1项为MASTER, 其他项为副本 -->
+            <NETWORK>
+                <ITEM IP="127.0.0.1" PORT="6379" /> <!-- MASTER配置 -->
                 <ITEM IP="127.0.0.1" PORT="6380" />
-            </SLAVE>
+            </NETWORK>
         </REDIS>
     </COMMON>
 
