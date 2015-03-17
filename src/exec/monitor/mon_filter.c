@@ -28,6 +28,7 @@ typedef int (*mon_filter_print_cb_t)(flt_cmd_t *cmd);
 /* 静态函数 */
 static int mon_filter_add_seed_req(menu_item_t *menu, void *args);
 static int mon_filter_query_conf_req(menu_item_t *menu, void *args);
+static int mon_filter_query_table_stat_req(menu_item_t *menu, void *args);
 static int mon_filter_store_domain_ip_map_req(menu_item_t *menu, void *args);
 static int mon_filter_store_domain_blacklist_req(menu_item_t *menu, void *args);
 
@@ -90,6 +91,15 @@ menu_item_t *mon_filter_menu(menu_cntx_t *ctx, void *args)
 
     /* 添加子菜单 */
     child = menu_creat(ctx, "Query configuration", NULL, mon_filter_query_conf_req, NULL, args);
+    if (NULL == child)
+    {
+        return menu;
+    }
+
+    menu_add(menu, child);
+
+    /* 添加子菜单 */
+    child = menu_creat(ctx, "Query table status", NULL, mon_filter_query_table_stat_req, NULL, args);
     if (NULL == child)
     {
         return menu;
@@ -370,6 +380,77 @@ static int mon_filter_query_conf_req(menu_item_t *menu, void *args)
     return mon_filter_frame(
             mon_filter_query_conf_setup,
             mon_filter_query_conf_print, args);
+}
+
+/******************************************************************************
+ **函数名称: mon_filter_query_table_stat_setup
+ **功    能: 设置查询各表状态的参数
+ **输入参数:
+ **     menu: 菜单对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.03.02 #
+ ******************************************************************************/
+static int mon_filter_query_table_stat_setup(flt_cmd_t *cmd)
+{
+    cmd->type = htonl(FLT_CMD_QUERY_TABLE_STAT_REQ);
+    return 0;
+}
+
+/******************************************************************************
+ **函数名称: mon_filter_query_table_stat_print
+ **功    能: 打印查询各表状态
+ **输入参数:
+ **     menu: 菜单对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.03.02 #
+ ******************************************************************************/
+static int mon_filter_query_table_stat_print(flt_cmd_t *cmd)
+{
+    int idx, num;
+    flt_cmd_table_stat_t *stat;
+
+    cmd->type = ntohl(cmd->type);
+    stat = (flt_cmd_table_stat_t *)&cmd->data;
+
+    /* 显示结果 */
+    fprintf(stderr, "    %8s | %-16s| %-8s | %-8s\n", "IDX", "NAME", "NUMBER", "MAX");
+    fprintf(stderr, "    ----------------------------------------------\n");
+
+    num = ntohl(stat->num);
+    for (idx=0; idx<num; ++idx)
+    {
+        fprintf(stderr, "    %8d | %-16s| %-8d | %-8u\n",
+                idx+1,
+                stat->table[idx].name,
+                ntohl(stat->table[idx].num),
+                ntohl(stat->table[idx].max));
+    }
+
+    return 0;
+}
+
+/******************************************************************************
+ **函数名称: mon_filter_query_table_stat_req
+ **功    能: 查询各表状态
+ **输入参数:
+ **     menu: 菜单对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.02.28 #
+ ******************************************************************************/
+static int mon_filter_query_table_stat_req(menu_item_t *menu, void *args)
+{
+    return mon_filter_frame(
+            mon_filter_query_table_stat_setup,
+            mon_filter_query_table_stat_print, args);
 }
 
 /******************************************************************************
