@@ -14,9 +14,6 @@ typedef enum
     , FLT_CMD_QUERY_CONF_REQ                /* 查询配置信息 */
     , FLT_CMD_QUERY_CONF_RESP               /* 反馈配置信息 */
 
-    , FLT_CMD_QUERY_WORKER_STAT_REQ         /* 查询爬取信息 */
-    , FLT_CMD_QUERY_WORKER_STAT_RESP        /* 反馈爬取信息 */
-
     , FLT_CMD_QUERY_TABLE_STAT_REQ          /* 查询各表信息 */
     , FLT_CMD_QUERY_TABLE_STAT_RESP         /* 反馈各表信息 */
 
@@ -47,25 +44,6 @@ typedef struct
     int stat;                       /* 状态 */
     char url[256];                  /* URL */
 } flt_cmd_add_seed_rep_t;
-
-/* 查询过滤信息 */
-typedef struct
-{
-} flt_cmd_worker_stat_req_t;
-
-#define FLT_CMD_WORKER_MAX_NUM     (20)
-typedef struct
-{
-    time_t stm;                     /* 开始时间 */
-    time_t ctm;                     /* 当前时间 */
-    int num;                        /* WORKER数 */
-    struct
-    {
-        uint32_t connections;       /* 连接数 */
-        uint64_t down_webpage_total;/* 下载网页的计数 */
-        uint64_t err_webpage_total; /* 异常网页的计数 */
-    } worker[FLT_CMD_WORKER_MAX_NUM];
-} flt_cmd_worker_stat_t;
 
 /* 查询TABLE信息 */
 typedef struct
@@ -133,7 +111,6 @@ typedef union
     flt_cmd_conf_t conf;
     flt_cmd_workq_stat_t workq_stat;
     flt_cmd_table_stat_t table_stat;
-    flt_cmd_worker_stat_t worker_stat;
     flt_cmd_store_domain_ip_map_rep_t domain_ip_map_rep;
     flt_cmd_store_domain_blacklist_rep_t domain_blacklist_rep;
 } flt_cmd_data_t;

@@ -547,8 +547,8 @@ static int flt_man_query_conf_req_hdl(flt_cntx_t *ctx,
 }
 
 /******************************************************************************
- **函数名称: flt_man_query_worker_stat_req_hdl
- **功    能: 查询爬虫信息
+ **函数名称: crwl_man_query_table_stat_req_hdl
+ **功    能: 查询各表信息
  **输入参数: 
  **     ctx: 全局信息
  **     man: 管理对象
@@ -560,16 +560,14 @@ static int flt_man_query_conf_req_hdl(flt_cntx_t *ctx,
  **实现描述: 
  **注意事项: 
  **     申请的应答数据空间, 需要在应答之后, 进行释放!
- **作    者: # Qifeng.zou # 2015.02.13 #
+ **作    者: # Qifeng.zou # 2015.03.17 #
  ******************************************************************************/
-static int flt_man_query_worker_stat_req_hdl(flt_cntx_t *ctx,
+static int flt_man_query_table_stat_req_hdl(flt_cntx_t *ctx,
         flt_man_t *man, int type, void *buff, struct sockaddr_un *from, void *args)
 {
-    int idx;
     flt_cmd_t *cmd;
     flt_cmd_item_t *item;
-    flt_cmd_worker_stat_t *stat;
-    flt_conf_t *conf = ctx->conf;
+    flt_cmd_table_stat_t *stat;
 
     /* > 新建应答 */
     item = slab_alloc(man->slab, sizeof(flt_cmd_item_t));
@@ -583,19 +581,32 @@ static int flt_man_query_worker_stat_req_hdl(flt_cntx_t *ctx,
 
     /* > 设置信息 */
     cmd = &item->cmd;
-    stat = (flt_cmd_worker_stat_t *)&cmd->data;
+    stat = (flt_cmd_table_stat_t *)&cmd->data;
 
-    cmd->type = htonl(FLT_CMD_QUERY_WORKER_STAT_RESP);
+    cmd->type = htonl(FLT_CMD_QUERY_TABLE_STAT_RESP);
 
-    /* 1. 获取启动时间 */
-    stat->stm = htonl(ctx->run_tm);
-    stat->ctm = htonl(time(NULL));
+    /* 1. 域名IP映射表 */
+    snprintf(stat->table[stat->num].name, sizeof(stat->table[stat->num].name), "DOMAIN IP MAP");
 
-    /* 2. 获取工作状态 */
-    for (idx=0; idx<conf->worker.num && idx<FLT_CMD_WORKER_MAX_NUM; ++idx)
-    {
-        ++stat->num;
-    }
+    memcpy(&item->to, from, sizeof(struct sockaddr_un));
+
+    /* > 设置信息 */
+    cmd = &item->cmd;
+    stat = (flt_cmd_table_stat_t *)&cmd->data;
+
+    cmd->type = htonl(FLT_CMD_QUERY_TABLE_STAT_RESP);
+
+    /* 1. 域名IP映射表 */
+    snprintf(stat->table[stat->num].name, sizeof(stat->table[stat->num].name), "DOMAIN IP MAP");
+    stat->table[stat->num].num = htonl(hash_tab_total(ctx->domain_ip_map));
+    stat->table[stat->num].max = -1;
+    ++stat->num;
+
+    /* 2. 域名黑名单表 */
+    snprintf(stat->table[stat->num].name, sizeof(stat->table[stat->num].name), "DOMAIN BLACKLIST");
+    stat->table[stat->num].num = htonl(hash_tab_total(ctx->domain_blacklist));
+    stat->table[stat->num].max = -1;
+    ++stat->num;
 
     stat->num = htonl(stat->num);
 
@@ -857,6 +868,7 @@ static int flt_man_reg_cb(flt_man_t *man)
     /* 注册回调函数 */
     FLT_REG(man, FLT_CMD_ADD_SEED_REQ, (flt_man_reg_cb_t)flt_man_add_seed_req_hdl, man);
     FLT_REG(man, FLT_CMD_QUERY_CONF_REQ, (flt_man_reg_cb_t)flt_man_query_conf_req_hdl, man);
+    FLT_REG(man, FLT_CMD_QUERY_TABLE_STAT_REQ, (flt_man_reg_cb_t)flt_man_query_table_stat_req_hdl, man);
     FLT_REG(man, FLT_CMD_STORE_DOMAIN_IP_MAP_REQ, (flt_man_reg_cb_t)flt_man_store_domain_ip_map_req_hdl, man);
     FLT_REG(man, FLT_CMD_STORE_DOMAIN_BLACKLIST_REQ, (flt_man_reg_cb_t)flt_man_store_domain_blacklist_req_hdl, man);
 
