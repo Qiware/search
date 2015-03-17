@@ -172,7 +172,7 @@ void _queue_destroy(_queue_t *q)
  **输出参数: NONE
  **返    回: 加锁队列对象
  **实现描述: 
- **注意事项: 
+ **注意事项: 内存池中的块数必须与队列长度一致, 否则可能出现PUSH失败的情况出现!
  **作    者: # Qifeng.zou # 2014.10.12 #
  ******************************************************************************/
 queue_t *queue_creat(int max, int size)
@@ -188,7 +188,7 @@ queue_t *queue_creat(int max, int size)
     }
 
     /* 2. 创建内存池 */
-    chunk = memblk_creat(max+8, size);
+    chunk = memblk_creat(max, size);
     if (NULL == chunk)
     {
         free(q);
