@@ -67,17 +67,17 @@ typedef struct
     int workq_count;                        /* 工作队列容量 */
     int man_port;                           /* 管理服务侦听端口 */
 
-    flt_redis_conf_t redis;                /* REDIS配置 */
-    flt_worker_conf_t worker;              /* WORKER配置 */
-    flt_filter_conf_t filter;              /* FILTER配置 */
+    flt_redis_conf_t redis;                 /* REDIS配置 */
+    flt_worker_conf_t worker;               /* WORKER配置 */
+    flt_filter_conf_t filter;               /* FILTER配置 */
 
-#define FLT_SEED_MAX_NUM   (100)           /* 种子最大数 */
+#define FLT_SEED_MAX_NUM   (100)            /* 种子最大数 */
     uint32_t seed_num;                      /* 种子实数 */
-    flt_seed_conf_t seed[FLT_SEED_MAX_NUM];  /* 种子配置 */
+    flt_seed_conf_t seed[FLT_SEED_MAX_NUM]; /* 种子配置 */
 } flt_conf_t;
 
 flt_conf_t *flt_conf_load(const char *path, log_cycle_t *log);
-#define flt_conf_destroy(conf)             /* 销毁配置对象 */\
+#define flt_conf_destroy(conf)              /* 销毁配置对象 */\
 { \
     free(conf); \
 }

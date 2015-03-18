@@ -7,18 +7,6 @@
  **         负责过滤HTML网页
  ** 作  者: # Qifeng.zou # 2014.09.04 #
  ******************************************************************************/
-#include <time.h>
-#include <stdio.h>
-#include <netdb.h>
-#include <stdlib.h>
-#include <string.h>
-#include <getopt.h>
-#include <signal.h>
-#include <libgen.h>
-#include <sys/wait.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-
 #include "log.h"
 #include "str.h"
 #include "lock.h"

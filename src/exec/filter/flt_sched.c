@@ -7,9 +7,6 @@
  **         负责将要处理的文件放入到工作队列中
  ** 作  者: # Qifeng.zou # 2015.03.11 #
  ******************************************************************************/
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
 #include <dirent.h>
 #include <libgen.h>
 #include <sys/stat.h>

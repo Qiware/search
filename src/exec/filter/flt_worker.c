@@ -14,7 +14,6 @@
 #include "filter.h"
 #include "common.h"
 #include "syscall.h"
-#include "crawler.h"
 #include "flt_conf.h"
 #include "flt_worker.h"
 

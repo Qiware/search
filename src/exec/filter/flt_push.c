@@ -7,13 +7,6 @@
  **         负责任务推送到REDIS队列
  ** 作  者: # Qifeng.zou # 2015.03.14 #
  ******************************************************************************/
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <dirent.h>
-#include <libgen.h>
-#include <sys/stat.h>
-#include <sys/types.h>
 
 #include "log.h"
 #include "filter.h"

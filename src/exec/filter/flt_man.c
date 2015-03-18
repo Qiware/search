@@ -7,21 +7,6 @@
  **         负责对外提供查询、操作的接口
  ** 作  者: # Qifeng.zou # 2015.03.15 #
  ******************************************************************************/
-#include <stdio.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <stdarg.h>
-#include <sys/un.h>
-#include <signal.h>
-#include <pthread.h>
-#include <sys/time.h>
-#include <arpa/inet.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
 
 #include "common.h"
 #include "syscall.h"
