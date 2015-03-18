@@ -233,7 +233,7 @@ static menu_item_t *menu_exec(menu_item_t *menu, const char *opt)
     {
         if (!menu->parent)
         {
-            fprintf(stdout, "Are you sure exit?[No/Yes] ");
+            fprintf(stdout, "    Are you sure exit?[No/Yes] ");
             if (scanf(" %s", input) < 0)
             {
                 return NULL;
@@ -285,7 +285,7 @@ static menu_item_t *menu_exec(menu_item_t *menu, const char *opt)
                 }
                 return child;
             }
-            fprintf(stdout, "errmsg: Didn't register function!\n");
+            fprintf(stdout, "    errmsg: Didn't register function!\n");
             break;
         }
     }
@@ -337,7 +337,7 @@ int menu_startup(menu_cntx_t *ctx)
                     && 0 != strcasecmp(opt, "quit")
                     && 0 != strcasecmp(opt, "exit"))
                 {
-                    fprintf(stdout, "\nNot right!\n");
+                    fprintf(stdout, "\n    Not right!\n");
 
                     curr->func(curr, curr->args);
                     goto BEGIN;
