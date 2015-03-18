@@ -79,7 +79,7 @@ menu_item_t *mon_crwl_menu(menu_cntx_t *ctx, void *args)
     }
 
 #define ADD_CHILD(ctx, menu, title, entry, func, exit, args) \
-    if (menu_child(ctx, menu, title, entry, func, exit, args)) \
+    if (!menu_child(ctx, menu, title, entry, func, exit, args)) \
     { \
         return menu; \
     }
