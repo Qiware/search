@@ -106,7 +106,7 @@ static int _crwl_conf_load(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
     fix = xml_query(xml, ".CRAWLER.LOG");
     if (NULL != fix)
     {
-        /* 1.1 日志级别 */
+        /* 1. 日志级别 */
         node = xml_rquery(xml, fix, "LEVEL");
         if (NULL != node)
         {
@@ -117,7 +117,7 @@ static int _crwl_conf_load(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
             conf->log.level = log_get_level(LOG_DEF_LEVEL_STR);
         }
 
-        /* 1.2 系统日志级别 */
+        /* 2. 系统日志级别 */
         node = xml_rquery(xml, fix, "SYS_LEVEL");
         if (NULL != node)
         {
