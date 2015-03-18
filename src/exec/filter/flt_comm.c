@@ -318,8 +318,6 @@ void flt_destroy(flt_cntx_t *ctx)
     free(ctx);
 }
 
-
-
 /******************************************************************************
  **函数名称: flt_startup
  **功    能: 启动过滤服务
@@ -337,12 +335,8 @@ int flt_startup(flt_cntx_t *ctx)
     int idx;
     const flt_conf_t *conf = ctx->conf;
 
-    /* > 推送SEED至CRWL队列 */
-    if (flt_push_seed_to_crwlq(ctx))
-    {
-        log_error(ctx->log, "Push seed to redis taskq failed!");
-        return FLT_ERR;
-    }
+    /* > 获取运行时间 */
+    ctx->run_tm = time(NULL);
 
     /* > 启动Push线程 */
     if (thread_creat(&ctx->sched_tid, flt_push_routine, ctx))
@@ -371,9 +365,12 @@ int flt_startup(flt_cntx_t *ctx)
         return FLT_ERR;
     }
 
-
-    /* > 获取运行时间 */
-    ctx->run_tm = time(NULL);
+    /* > 推送SEED至CRWL队列 */
+    if (flt_push_seed_to_crwlq(ctx))
+    {
+        log_error(ctx->log, "Push seed to redis taskq failed!");
+        return FLT_ERR;
+    }
 
     return FLT_OK;
 }
