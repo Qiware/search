@@ -12,9 +12,8 @@
 #include "crawler.h"
 #include "crwl_conf.h"
 
-static int crwl_conf_load_comm(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log);
+static int _crwl_conf_load(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log);
 static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log);
-static int crwl_conf_load_worker(xml_tree_t *xml, crwl_worker_conf_t *conf, log_cycle_t *log);
 
 /******************************************************************************
  **函数名称: crwl_conf_load
@@ -35,7 +34,7 @@ crwl_conf_t *crwl_conf_load(const char *path, log_cycle_t *log)
     crwl_conf_t *conf;
     mem_pool_t *pool;
 
-    /* 1. 创建配置对象 */
+    /* > 创建配置对象 */
     conf = (crwl_conf_t *)calloc(1, sizeof(crwl_conf_t));
     if (NULL == conf)
     {
@@ -43,7 +42,7 @@ crwl_conf_t *crwl_conf_load(const char *path, log_cycle_t *log)
         return NULL;
     }
 
-    /* 2. 构建XML树 */
+    /* > 构建XML树 */
     pool = mem_pool_creat(4 * KB);
     if (NULL == pool)
     {
@@ -52,52 +51,40 @@ crwl_conf_t *crwl_conf_load(const char *path, log_cycle_t *log)
         return NULL;
     }
 
-    do
+    memset(&opt, 0, sizeof(opt));
+
+    opt.pool = pool;
+    opt.alloc = (mem_alloc_cb_t)mem_pool_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)mem_pool_dealloc;
+
+    xml = xml_creat(path, &opt);
+    if (NULL == xml)
     {
-        memset(&opt, 0, sizeof(opt));
+        log_error(log, "Create xml failed! path:%s", path);
+        free(conf);
+        mem_pool_destroy(pool);
+        return NULL;
+    }
 
-        opt.pool = pool;
-        opt.alloc = (mem_alloc_cb_t)mem_pool_alloc;
-        opt.dealloc = (mem_dealloc_cb_t)mem_pool_dealloc;
-
-        xml = xml_creat(path, &opt);
-        if (NULL == xml)
-        {
-            log_error(log, "Create xml failed! path:%s", path);
-            break;
-        }
-
-        /* 3. 加载通用配置 */
-        if (crwl_conf_load_comm(xml, conf, log))
-        {
-            log_error(log, "Load common conf failed! path:%s", path);
-            break;
-        }
-
-        /* 4. 提取爬虫配置 */
-        if (crwl_conf_load_worker(xml, &conf->worker, log))
-        {
-            log_error(log, "Parse worker configuration failed! path:%s", path);
-            break;
-        }
-
-        /* 5. 释放XML树 */
+    /* > 提取配置信息 */
+    if (_crwl_conf_load(xml, conf, log))
+    {
+        log_error(log, "Load conf failed! path:%s", path);
+        free(conf);
         xml_destroy(xml);
         mem_pool_destroy(pool);
+        return NULL;
+    }
 
-        return conf;
-    } while(0);
-
-    /* 异常处理 */
-    free(conf);
+    /* > 释放XML树 */
     xml_destroy(xml);
     mem_pool_destroy(pool);
 
-    return NULL;
+    return conf;
 }
 
 /******************************************************************************
- **函数名称: crwl_conf_load_comm
+ **函数名称: _crwl_conf_load
  **功    能: 加载通用配置
  **输入参数: 
  **     xml: XML配置
@@ -110,14 +97,13 @@ crwl_conf_t *crwl_conf_load(const char *path, log_cycle_t *log)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.16 #
  ******************************************************************************/
-static int crwl_conf_load_comm(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
+static int _crwl_conf_load(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
 {
     xml_node_t *node, *fix;
+    crwl_worker_conf_t *worker = &conf->worker;
 
-    /* > 定位LOG标签
-     *  获取日志级别信息
-     * */
-    fix = xml_query(xml, ".CRAWLER.COMMON.LOG");
+    /* > 定位LOG标签: 获取日志级别信息 */
+    fix = xml_query(xml, ".CRAWLER.LOG");
     if (NULL != fix)
     {
         /* 1.1 日志级别 */
@@ -147,10 +133,68 @@ static int crwl_conf_load_comm(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *
         log_warn(log, "Didn't configure log!");
     }
 
+    /* > 定位WORKER配置 */
+    fix = xml_query(xml, ".CRAWLER.WORKER");
+    if (NULL == fix)
+    {
+        log_error(log, "Didn't configure worker process!");
+        return CRWL_ERR;
+    }
+
+    /* 1. 爬虫线程数(相对查找) */
+    node = xml_rquery(xml, fix, "NUM");
+    if (NULL == node)
+    {
+        worker->num = CRWL_THD_DEF_NUM;
+        log_warn(log, "Set thread number: %d!", worker->num);
+    }
+    else
+    {
+        worker->num = atoi(node->value);
+    }
+
+    if (worker->num <= 0)
+    {
+        worker->num = CRWL_THD_MIN_NUM;
+        log_warn(log, "Set thread number: %d!", worker->num);
+    }
+
+    /* 2. 并发网页连接数(相对查找) */
+    node = xml_rquery(xml, fix, "CONNECTIONS.MAX");
+    if (NULL == node)
+    {
+        log_error(log, "Didn't configure download webpage number!");
+        return CRWL_ERR;
+    }
+
+    worker->conn_max_num = atoi(node->value);
+    if (worker->conn_max_num <= 0)
+    {
+        worker->conn_max_num = CRWL_CONN_MIN_NUM;
+    }
+    else if (worker->conn_max_num >= CRWL_CONN_MAX_NUM)
+    {
+        worker->conn_max_num = CRWL_CONN_MAX_NUM;
+    }
+
+    /* 3. 连接超时时间 */
+    node = xml_rquery(xml, fix, "CONNECTIONS.TIMEOUT");
+    if (NULL == node)
+    {
+        log_error(log, "Didn't configure download webpage number!");
+        return CRWL_ERR;
+    }
+
+    worker->conn_tmout_sec = atoi(node->value);
+    if (worker->conn_tmout_sec <= 0)
+    {
+        worker->conn_tmout_sec = CRWL_CONN_TMOUT_SEC;
+    }
+
     /* > 定位Download标签
      *  获取网页抓取深度和存储路径
      * */
-    fix = xml_query(xml, ".CRAWLER.COMMON.DOWNLOAD");
+    fix = xml_query(xml, ".CRAWLER.DOWNLOAD");
     if (NULL == fix)
     {
         log_error(log, "Didn't configure download!");
@@ -178,7 +222,7 @@ static int crwl_conf_load_comm(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *
     snprintf(conf->download.path, sizeof(conf->download.path), "%s", node->value);
 
     /* 3 任务队列配置(相对查找) */
-    node = xml_query(xml, "CRAWLER.COMMON.WORKQ.COUNT");
+    node = xml_query(xml, "CRAWLER.WORKQ.COUNT");
     if (NULL == node)
     {
         log_error(log, "Didn't configure count of work task queue unit!");
@@ -192,7 +236,7 @@ static int crwl_conf_load_comm(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *
     }
 
     /* > 获取管理配置 */
-    node = xml_query(xml, "CRAWLER.COMMON.MANAGER.PORT");
+    node = xml_query(xml, "CRAWLER.MANAGER.PORT");
     if (NULL == node)
     {
         log_error(log, "Get manager port failed!");
@@ -235,7 +279,7 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
 
     /* > 定位REDIS标签
      *  获取Redis的IP地址、端口号、队列、副本等信息 */
-    fix = xml_query(xml, ".CRAWLER.COMMON.REDIS");
+    fix = xml_query(xml, ".CRAWLER.REDIS");
     if (NULL == fix)
     {
         log_error(log, "Didn't configure redis!");
@@ -328,84 +372,6 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
     }
 
     snprintf(redis->push_tab, sizeof(redis->push_tab), "%s", node->value);
-
-    return CRWL_OK;
-}
-
-/******************************************************************************
- **函数名称: crwl_conf_load_worker
- **功    能: 提取配置信息
- **输入参数: 
- **     xml: 配置文件
- **输出参数:
- **     conf: 配置信息
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.09.05 #
- ******************************************************************************/
-static int crwl_conf_load_worker(xml_tree_t *xml, crwl_worker_conf_t *conf, log_cycle_t *log)
-{
-    xml_node_t *curr, *node;
-
-    /* 1. 定位工作进程配置 */
-    curr = xml_query(xml, ".CRAWLER.WORKER");
-    if (NULL == curr)
-    {
-        log_error(log, "Didn't configure worker process!");
-        return CRWL_ERR;
-    }
-
-    /* 2. 爬虫线程数(相对查找) */
-    node = xml_rquery(xml, curr, "NUM");
-    if (NULL == node)
-    {
-        conf->num = CRWL_THD_DEF_NUM;
-        log_warn(log, "Set thread number: %d!", conf->num);
-    }
-    else
-    {
-        conf->num = atoi(node->value);
-    }
-
-    if (conf->num <= 0)
-    {
-        conf->num = CRWL_THD_MIN_NUM;
-        log_warn(log, "Set thread number: %d!", conf->num);
-    }
-
-    /* 3. 并发网页连接数(相对查找) */
-    node = xml_rquery(xml, curr, "CONNECTIONS.MAX");
-    if (NULL == node)
-    {
-        log_error(log, "Didn't configure download webpage number!");
-        return CRWL_ERR;
-    }
-
-    conf->conn_max_num = atoi(node->value);
-    if (conf->conn_max_num <= 0)
-    {
-        conf->conn_max_num = CRWL_CONN_MIN_NUM;
-    }
-    else if (conf->conn_max_num >= CRWL_CONN_MAX_NUM)
-    {
-        conf->conn_max_num = CRWL_CONN_MAX_NUM;
-    }
-
-    /* 连接超时时间 */
-    node = xml_rquery(xml, curr, "CONNECTIONS.TIMEOUT");
-    if (NULL == node)
-    {
-        conf->conn_tmout_sec = CRWL_CONN_TMOUT_SEC;
-
-        log_error(log, "Didn't configure download webpage number!");
-    }
-
-    conf->conn_tmout_sec = atoi(node->value);
-    if (conf->conn_tmout_sec <= 0)
-    {
-        conf->conn_tmout_sec = CRWL_CONN_TMOUT_SEC;
-    }
 
     return CRWL_OK;
 }
