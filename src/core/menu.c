@@ -15,8 +15,7 @@
  **函数名称: menu_cntx_init
  **功    能: 初始化上下文
  **输入参数:
- **     menu: 菜单
- **     child: 子菜单
+ **     title: 主标题
  **输出参数: NONE
  **返    回: VOID
  **实现描述: 
@@ -62,8 +61,12 @@ menu_cntx_t *menu_cntx_init(const char *title)
  **函数名称: menu_creat
  **功    能: 新建菜单
  **输入参数:
- **     menu: 菜单
- **     child: 子菜单
+ **     ctx: 全局对象
+ **     name: 菜单名
+ **     entry: 进入菜单的处理
+ **     func: 菜单功能
+ **     exit: 退出菜单的处理
+ **     args: 附加参数
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
@@ -71,7 +74,7 @@ menu_cntx_t *menu_cntx_init(const char *title)
  **作    者: # Qifeng.zou # 2014.12.27 #
  ******************************************************************************/
 menu_item_t *menu_creat(menu_cntx_t *ctx, const char *name,
-        menu_cb_t init, menu_cb_t func, menu_cb_t exit, void *args)
+        menu_cb_t entry, menu_cb_t func, menu_cb_t exit, void *args)
 {
     menu_item_t *menu;
 
@@ -87,7 +90,7 @@ menu_item_t *menu_creat(menu_cntx_t *ctx, const char *name,
     menu->next = NULL;
 
     menu_set_name(menu, name);
-    menu_set_func(menu, init, func, exit);
+    menu_set_func(menu, entry, func, exit);
     menu_set_args(menu, args);
 
     return menu;
@@ -129,6 +132,41 @@ int menu_add(menu_item_t *menu, menu_item_t *child)
     ++menu->num;
 
     return 0;
+}
+
+/******************************************************************************
+ **函数名称: menu_child
+ **功    能: 创建并添加子菜单
+ **输入参数:
+ **     ctx: 全局对象
+ **     parent: 父菜单
+ **     name: 菜单名
+ **     entry: 进入菜单的处理
+ **     func: 菜单功能
+ **     exit: 退出菜单的处理
+ **     args: 附加参数
+ **输出参数: NONE
+ **返    回: VOID
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.03.18 #
+ ******************************************************************************/
+menu_item_t *menu_child(menu_cntx_t *ctx, menu_item_t *parent,
+        const char *name, menu_cb_t entry, menu_cb_t func, menu_cb_t exit, void *args)
+{
+    menu_item_t *child;
+
+    /* > 创建子菜单 */
+    child = menu_creat(ctx, name, entry, func, exit, args);
+    if (NULL == child)
+    {
+        return NULL;
+    }
+
+    /* > 插入子菜单 */
+    menu_add(parent, child);
+
+    return child;
 }
 
 /******************************************************************************
@@ -270,9 +308,9 @@ static menu_item_t *menu_exec(menu_item_t *menu, const char *opt)
     {
         if (i == num)
         {
-            if (child->init)
+            if (child->entry)
             {
-                child->init(child, child->args);
+                child->entry(child, child->args);
             }
 
             if (child->func)
@@ -312,9 +350,9 @@ int menu_startup(menu_cntx_t *ctx)
     menu_item_t *curr = ctx->menu;
     char opt[MENU_INPUT_LEN];
 
-    if (curr->init)
+    if (curr->entry)
     {
-        curr->init(curr, curr->args);
+        curr->entry(curr, curr->args);
     }
 
     curr->func(curr, curr->args);

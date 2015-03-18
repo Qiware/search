@@ -51,7 +51,7 @@ static int mon_srch_connect(menu_item_t *menu, void *args);
  ******************************************************************************/
 menu_item_t *mon_srch_menu(menu_cntx_t *ctx, void *args)
 {
-    menu_item_t *menu, *child;
+    menu_item_t *menu;
 
     menu = menu_creat(ctx, "Monitor Search Engine", NULL, menu_display, NULL, args);
     if (NULL == menu)
@@ -59,33 +59,16 @@ menu_item_t *mon_srch_menu(menu_cntx_t *ctx, void *args)
         return NULL;
     }
 
-    /* 添加子菜单 */
-    child = menu_creat(ctx, "Get configuration", NULL, mon_srch_connect, NULL, args);
-    if (NULL == child)
-    {
-        return menu;
+#define ADD_CHILD(ctx, menu, title, entry, func, exit, args) \
+    if (menu_child(ctx, menu, title, entry, func, exit, args)) \
+    { \
+        return menu; \
     }
 
-    menu_add(menu, child);
-
     /* 添加子菜单 */
-    child = menu_creat(ctx, "Get current status", NULL, mon_srch_connect, NULL, args);
-    if (NULL == child)
-    {
-        return menu;
-    }
-
-    menu_add(menu, child);
-
-    /* 添加子菜单 */
-    child = menu_creat(ctx, "Test connect", NULL, mon_srch_connect, NULL, args);
-    if (NULL == child)
-    {
-        return menu;
-    }
-
-    menu_add(menu, child);
-
+    ADD_CHILD(ctx, menu, "Get configuration", NULL, mon_srch_connect, NULL, args);
+    ADD_CHILD(ctx, menu, "Get current status", NULL, mon_srch_connect, NULL, args);
+    ADD_CHILD(ctx, menu, "Test connect", NULL, mon_srch_connect, NULL, args);
     return menu;
 }
 

@@ -72,7 +72,7 @@ static int mon_filter_entry(menu_item_t *menu, void *args)
  ******************************************************************************/
 menu_item_t *mon_filter_menu(menu_cntx_t *ctx, void *args)
 {
-    menu_item_t *menu, *child;
+    menu_item_t *menu;
 
     menu = menu_creat(ctx, "Monitor filter", mon_filter_entry, menu_display, NULL, args);
     if (NULL == menu)
@@ -80,52 +80,18 @@ menu_item_t *mon_filter_menu(menu_cntx_t *ctx, void *args)
         return NULL;
     }
 
-    /* 添加子菜单 */
-    child = menu_creat(ctx, "Add seed", NULL, mon_filter_add_seed_req, NULL, args);
-    if (NULL == child)
-    {
-        return menu;
+#define ADD_CHILD(ctx, menu, title, entry, func, exit, args) \
+    if (menu_child(ctx, menu, title, entry, func, exit, args)) \
+    { \
+        return menu; \
     }
 
-    menu_add(menu, child);
-
     /* 添加子菜单 */
-    child = menu_creat(ctx, "Query configuration", NULL, mon_filter_query_conf_req, NULL, args);
-    if (NULL == child)
-    {
-        return menu;
-    }
-
-    menu_add(menu, child);
-
-    /* 添加子菜单 */
-    child = menu_creat(ctx, "Query table status", NULL, mon_filter_query_table_stat_req, NULL, args);
-    if (NULL == child)
-    {
-        return menu;
-    }
-
-    menu_add(menu, child);
-
-    /* 添加子菜单 */
-    child = menu_creat(ctx, "Store domain ip map", NULL, mon_filter_store_domain_ip_map_req, NULL, args);
-    if (NULL == child)
-    {
-        return menu;
-    }
-
-    menu_add(menu, child);
-
-    /* 添加子菜单 */
-    child = menu_creat(ctx, "Store domain blacklist", NULL, mon_filter_store_domain_blacklist_req, NULL, args);
-    if (NULL == child)
-    {
-        return menu;
-    }
-
-    menu_add(menu, child);
-
-
+    ADD_CHILD(ctx, menu, "Add seed", NULL, mon_filter_add_seed_req, NULL, args);
+    ADD_CHILD(ctx, menu, "Query configuration", NULL, mon_filter_query_conf_req, NULL, args);
+    ADD_CHILD(ctx, menu, "Query table status", NULL, mon_filter_query_table_stat_req, NULL, args);
+    ADD_CHILD(ctx, menu, "Store domain ip map", NULL, mon_filter_store_domain_ip_map_req, NULL, args);
+    ADD_CHILD(ctx, menu, "Store domain blacklist", NULL, mon_filter_store_domain_blacklist_req, NULL, args);
     return menu;
 }
 

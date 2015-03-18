@@ -38,8 +38,7 @@ trie_tree_t *trie_tree_creat(int count)
 
     /* 2. 创建结点 */
     tree->count = count;
-    tree->root = (trie_tree_node_t *)calloc(
-                    tree->count, sizeof(trie_tree_node_t));
+    tree->root = (trie_tree_node_t *)calloc(tree->count, sizeof(trie_tree_node_t));
     if (NULL == tree->root)
     {
         free(tree);

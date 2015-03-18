@@ -70,7 +70,7 @@ static int mon_crwl_entry(menu_item_t *menu, void *args)
  ******************************************************************************/
 menu_item_t *mon_crwl_menu(menu_cntx_t *ctx, void *args)
 {
-    menu_item_t *menu, *child;
+    menu_item_t *menu;
 
     menu = menu_creat(ctx, "Monitor Crawler", mon_crwl_entry, menu_display, NULL, args);
     if (NULL == menu)
@@ -78,33 +78,16 @@ menu_item_t *mon_crwl_menu(menu_cntx_t *ctx, void *args)
         return NULL;
     }
 
-    /* 添加子菜单 */
-    child = menu_creat(ctx, "Query configuration", NULL, mon_crwl_query_conf_req, NULL, args);
-    if (NULL == child)
-    {
-        return menu;
+#define ADD_CHILD(ctx, menu, title, entry, func, exit, args) \
+    if (menu_child(ctx, menu, title, entry, func, exit, args)) \
+    { \
+        return menu; \
     }
 
-    menu_add(menu, child);
-
     /* 添加子菜单 */
-    child = menu_creat(ctx, "Query work queue status", NULL, mon_crwl_query_workq_stat_req, NULL, args);
-    if (NULL == child)
-    {
-        return menu;
-    }
-
-    menu_add(menu, child);
-
-    /* 添加子菜单 */
-    child = menu_creat(ctx, "Query worker status", NULL, mon_crwl_query_worker_stat_req, NULL, args);
-    if (NULL == child)
-    {
-        return menu;
-    }
-
-    menu_add(menu, child);
-
+    ADD_CHILD(ctx, menu, "Query configuration", NULL, mon_crwl_query_conf_req, NULL, args);
+    ADD_CHILD(ctx, menu, "Query work queue status", NULL, mon_crwl_query_workq_stat_req, NULL, args);
+    ADD_CHILD(ctx, menu, "Query worker status", NULL, mon_crwl_query_worker_stat_req, NULL, args);
     return menu;
 }
 
