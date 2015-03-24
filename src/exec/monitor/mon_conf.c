@@ -19,7 +19,7 @@ mon_conf_t *mon_conf_load(const char *path)
     xml_option_t opt;
     mon_conf_t *conf;
     mem_pool_t *pool;
-    xml_node_t *node, *fix;
+    xml_node_t *node, *nail;
 
     /* > 创建配置对象 */
     conf = (mon_conf_t *)calloc(1, sizeof(mon_conf_t));
@@ -53,13 +53,13 @@ mon_conf_t *mon_conf_load(const char *path)
 
         /* > 提取有效信息 */
         /* 1. 爬虫配置 */
-        fix = xml_query(xml, ".MONITOR.CRAWLER");
-        if (NULL == fix)
+        nail = xml_query(xml, ".MONITOR.CRAWLER");
+        if (NULL == nail)
         {
             break;
         }
 
-        node = xml_rquery(xml, fix, "IP");
+        node = xml_rquery(xml, nail, "IP");
         if (NULL == node)
         {
             break;
@@ -67,7 +67,7 @@ mon_conf_t *mon_conf_load(const char *path)
 
         snprintf(conf->crwl.ip, sizeof(conf->crwl.ip), "%s", (char *)node->value);
 
-        node = xml_rquery(xml, fix, "PORT");
+        node = xml_rquery(xml, nail, "PORT");
         if (NULL == node)
         {
             break;
@@ -76,13 +76,13 @@ mon_conf_t *mon_conf_load(const char *path)
         conf->crwl.port = atoi(node->value);
 
         /* 2. 过滤配置 */
-        fix = xml_query(xml, ".MONITOR.FILTER");
-        if (NULL == fix)
+        nail = xml_query(xml, ".MONITOR.FILTER");
+        if (NULL == nail)
         {
             break;
         }
 
-        node = xml_rquery(xml, fix, "IP");
+        node = xml_rquery(xml, nail, "IP");
         if (NULL == node)
         {
             break;
@@ -90,7 +90,7 @@ mon_conf_t *mon_conf_load(const char *path)
 
         snprintf(conf->filter.ip, sizeof(conf->filter.ip), "%s", (char *)node->value);
 
-        node = xml_rquery(xml, fix, "PORT");
+        node = xml_rquery(xml, nail, "PORT");
         if (NULL == node)
         {
             break;
@@ -112,4 +112,3 @@ mon_conf_t *mon_conf_load(const char *path)
 
     return NULL;
 }
-
