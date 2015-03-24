@@ -30,6 +30,6 @@ typedef struct
 
 menu_item_t *mon_srch_menu(menu_cntx_t *ctx, void *args);
 menu_item_t *mon_crwl_menu(menu_cntx_t *ctx, void *args);
-menu_item_t *mon_filter_menu(menu_cntx_t *ctx, void *args);
+menu_item_t *mon_flt_menu(menu_cntx_t *ctx, void *args);
 
 #endif /*__MONITOR_H__*/

@@ -22,18 +22,18 @@
 
 #define MON_FLT_INTERVAL_SEC   (5)
 
-typedef int (*mon_filter_setup_cb_t)(flt_cmd_t *cmd);
-typedef int (*mon_filter_print_cb_t)(flt_cmd_t *cmd);
+typedef int (*mon_flt_setup_cb_t)(flt_cmd_t *cmd);
+typedef int (*mon_flt_print_cb_t)(flt_cmd_t *cmd);
 
 /* 静态函数 */
-static int mon_filter_add_seed_req(menu_item_t *menu, void *args);
-static int mon_filter_query_conf_req(menu_item_t *menu, void *args);
-static int mon_filter_query_table_stat_req(menu_item_t *menu, void *args);
-static int mon_filter_store_domain_ip_map_req(menu_item_t *menu, void *args);
-static int mon_filter_store_domain_blacklist_req(menu_item_t *menu, void *args);
+static int mon_flt_add_seed_req(menu_item_t *menu, void *args);
+static int mon_flt_query_conf_req(menu_item_t *menu, void *args);
+static int mon_flt_query_table_stat_req(menu_item_t *menu, void *args);
+static int mon_flt_store_domain_ip_map_req(menu_item_t *menu, void *args);
+static int mon_flt_store_domain_blacklist_req(menu_item_t *menu, void *args);
 
 /******************************************************************************
- **函数名称: mon_filter_entry
+ **函数名称: mon_flt_entry
  **功    能: 进入监控FILTER界面
  **输入参数:
  **     menu: 菜单对象
@@ -45,7 +45,7 @@ static int mon_filter_store_domain_blacklist_req(menu_item_t *menu, void *args);
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.03.02 #
  ******************************************************************************/
-static int mon_filter_entry(menu_item_t *menu, void *args)
+static int mon_flt_entry(menu_item_t *menu, void *args)
 {
     mon_cntx_t *ctx = (mon_cntx_t *)args;
 
@@ -56,7 +56,7 @@ static int mon_filter_entry(menu_item_t *menu, void *args)
 }
 
 /******************************************************************************
- **函数名称: mon_filter_menu
+ **函数名称: mon_flt_menu
  **功    能: 爬虫引擎菜单
  **输入参数:
  **     ctx: 菜单对象
@@ -70,11 +70,11 @@ static int mon_filter_entry(menu_item_t *menu, void *args)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.28 #
  ******************************************************************************/
-menu_item_t *mon_filter_menu(menu_cntx_t *ctx, void *args)
+menu_item_t *mon_flt_menu(menu_cntx_t *ctx, void *args)
 {
     menu_item_t *menu;
 
-    menu = menu_creat(ctx, "Monitor filter", mon_filter_entry, menu_display, NULL, args);
+    menu = menu_creat(ctx, "Monitor Filter", mon_flt_entry, menu_display, NULL, args);
     if (NULL == menu)
     {
         return NULL;
@@ -87,16 +87,16 @@ menu_item_t *mon_filter_menu(menu_cntx_t *ctx, void *args)
     }
 
     /* 添加子菜单 */
-    ADD_CHILD(ctx, menu, "Add seed", NULL, mon_filter_add_seed_req, NULL, args);
-    ADD_CHILD(ctx, menu, "Query configuration", NULL, mon_filter_query_conf_req, NULL, args);
-    ADD_CHILD(ctx, menu, "Query table status", NULL, mon_filter_query_table_stat_req, NULL, args);
-    ADD_CHILD(ctx, menu, "Store domain ip map", NULL, mon_filter_store_domain_ip_map_req, NULL, args);
-    ADD_CHILD(ctx, menu, "Store domain blacklist", NULL, mon_filter_store_domain_blacklist_req, NULL, args);
+    ADD_CHILD(ctx, menu, "Add seed", NULL, mon_flt_add_seed_req, NULL, args);
+    ADD_CHILD(ctx, menu, "Query configuration", NULL, mon_flt_query_conf_req, NULL, args);
+    ADD_CHILD(ctx, menu, "Query table status", NULL, mon_flt_query_table_stat_req, NULL, args);
+    ADD_CHILD(ctx, menu, "Store domain ip map", NULL, mon_flt_store_domain_ip_map_req, NULL, args);
+    ADD_CHILD(ctx, menu, "Store domain blacklist", NULL, mon_flt_store_domain_blacklist_req, NULL, args);
     return menu;
 }
 
 /******************************************************************************
- **函数名称: mon_filter_frame
+ **函数名称: mon_flt_frame
  **功    能: 过滤系统监控的框架
  **输入参数:
  **     setup: 设置参数
@@ -107,7 +107,7 @@ menu_item_t *mon_filter_menu(menu_cntx_t *ctx, void *args)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.03.02 #
  ******************************************************************************/
-static int mon_filter_frame(mon_filter_setup_cb_t setup, mon_filter_print_cb_t print, void *args)
+static int mon_flt_frame(mon_flt_setup_cb_t setup, mon_flt_print_cb_t print, void *args)
 {
     int ret, flag = 0;
     ssize_t n;
@@ -192,7 +192,7 @@ static int mon_filter_frame(mon_filter_setup_cb_t setup, mon_filter_print_cb_t p
 }
 
 /******************************************************************************
- **函数名称: mon_filter_add_seed_setup
+ **函数名称: mon_flt_add_seed_setup
  **功    能: 设置添加种子的参数
  **输入参数:
  **     menu: 菜单对象
@@ -202,7 +202,7 @@ static int mon_filter_frame(mon_filter_setup_cb_t setup, mon_filter_print_cb_t p
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.03.02 #
  ******************************************************************************/
-static int mon_filter_add_seed_setup(flt_cmd_t *cmd)
+static int mon_flt_add_seed_setup(flt_cmd_t *cmd)
 {
     char url[256];
     flt_cmd_add_seed_req_t *req;
@@ -219,7 +219,7 @@ static int mon_filter_add_seed_setup(flt_cmd_t *cmd)
 }
 
 /******************************************************************************
- **函数名称: mon_filter_add_seed_print
+ **函数名称: mon_flt_add_seed_print
  **功    能: 打印添加种子的结果反馈
  **输入参数:
  **     menu: 菜单对象
@@ -229,7 +229,7 @@ static int mon_filter_add_seed_setup(flt_cmd_t *cmd)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.03.02 #
  ******************************************************************************/
-static int mon_filter_add_seed_print(flt_cmd_t *cmd)
+static int mon_flt_add_seed_print(flt_cmd_t *cmd)
 {
     flt_cmd_add_seed_rep_t *rep;
 
@@ -267,7 +267,7 @@ static int mon_filter_add_seed_print(flt_cmd_t *cmd)
 }
 
 /******************************************************************************
- **函数名称: mon_filter_add_seed_req
+ **函数名称: mon_flt_add_seed_req
  **功    能: 添加种子
  **输入参数:
  **     menu: 菜单对象
@@ -277,15 +277,15 @@ static int mon_filter_add_seed_print(flt_cmd_t *cmd)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.03.02 #
  ******************************************************************************/
-static int mon_filter_add_seed_req(menu_item_t *menu, void *args)
+static int mon_flt_add_seed_req(menu_item_t *menu, void *args)
 {
-    return mon_filter_frame(
-            mon_filter_add_seed_setup,
-            mon_filter_add_seed_print, args);
+    return mon_flt_frame(
+            mon_flt_add_seed_setup,
+            mon_flt_add_seed_print, args);
 }
 
 /******************************************************************************
- **函数名称: mon_filter_query_conf_setup
+ **函数名称: mon_flt_query_conf_setup
  **功    能: 设置查询爬虫配置的参数
  **输入参数:
  **     menu: 菜单对象
@@ -295,14 +295,14 @@ static int mon_filter_add_seed_req(menu_item_t *menu, void *args)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.03.02 #
  ******************************************************************************/
-static int mon_filter_query_conf_setup(flt_cmd_t *cmd)
+static int mon_flt_query_conf_setup(flt_cmd_t *cmd)
 {
     cmd->type = htonl(FLT_CMD_QUERY_CONF_REQ);
     return 0;
 }
 
 /******************************************************************************
- **函数名称: mon_filter_query_conf_print
+ **函数名称: mon_flt_query_conf_print
  **功    能: 显示爬虫配置
  **输入参数:
  **     menu: 菜单对象
@@ -312,7 +312,7 @@ static int mon_filter_query_conf_setup(flt_cmd_t *cmd)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.03.02 #
  ******************************************************************************/
-static int mon_filter_query_conf_print(flt_cmd_t *cmd)
+static int mon_flt_query_conf_print(flt_cmd_t *cmd)
 {
     flt_cmd_conf_t *conf;
 
@@ -331,7 +331,7 @@ static int mon_filter_query_conf_print(flt_cmd_t *cmd)
 }
 
 /******************************************************************************
- **函数名称: mon_filter_query_conf_req
+ **函数名称: mon_flt_query_conf_req
  **功    能: 查询爬虫配置
  **输入参数:
  **     menu: 菜单对象
@@ -341,15 +341,15 @@ static int mon_filter_query_conf_print(flt_cmd_t *cmd)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.03.02 #
  ******************************************************************************/
-static int mon_filter_query_conf_req(menu_item_t *menu, void *args)
+static int mon_flt_query_conf_req(menu_item_t *menu, void *args)
 {
-    return mon_filter_frame(
-            mon_filter_query_conf_setup,
-            mon_filter_query_conf_print, args);
+    return mon_flt_frame(
+            mon_flt_query_conf_setup,
+            mon_flt_query_conf_print, args);
 }
 
 /******************************************************************************
- **函数名称: mon_filter_query_table_stat_setup
+ **函数名称: mon_flt_query_table_stat_setup
  **功    能: 设置查询各表状态的参数
  **输入参数:
  **     menu: 菜单对象
@@ -359,14 +359,14 @@ static int mon_filter_query_conf_req(menu_item_t *menu, void *args)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.03.02 #
  ******************************************************************************/
-static int mon_filter_query_table_stat_setup(flt_cmd_t *cmd)
+static int mon_flt_query_table_stat_setup(flt_cmd_t *cmd)
 {
     cmd->type = htonl(FLT_CMD_QUERY_TABLE_STAT_REQ);
     return 0;
 }
 
 /******************************************************************************
- **函数名称: mon_filter_query_table_stat_print
+ **函数名称: mon_flt_query_table_stat_print
  **功    能: 打印查询各表状态
  **输入参数:
  **     menu: 菜单对象
@@ -376,7 +376,7 @@ static int mon_filter_query_table_stat_setup(flt_cmd_t *cmd)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.03.02 #
  ******************************************************************************/
-static int mon_filter_query_table_stat_print(flt_cmd_t *cmd)
+static int mon_flt_query_table_stat_print(flt_cmd_t *cmd)
 {
     int idx, num;
     flt_cmd_table_stat_t *stat;
@@ -402,7 +402,7 @@ static int mon_filter_query_table_stat_print(flt_cmd_t *cmd)
 }
 
 /******************************************************************************
- **函数名称: mon_filter_query_table_stat_req
+ **函数名称: mon_flt_query_table_stat_req
  **功    能: 查询各表状态
  **输入参数:
  **     menu: 菜单对象
@@ -412,15 +412,15 @@ static int mon_filter_query_table_stat_print(flt_cmd_t *cmd)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.02.28 #
  ******************************************************************************/
-static int mon_filter_query_table_stat_req(menu_item_t *menu, void *args)
+static int mon_flt_query_table_stat_req(menu_item_t *menu, void *args)
 {
-    return mon_filter_frame(
-            mon_filter_query_table_stat_setup,
-            mon_filter_query_table_stat_print, args);
+    return mon_flt_frame(
+            mon_flt_query_table_stat_setup,
+            mon_flt_query_table_stat_print, args);
 }
 
 /******************************************************************************
- **函数名称: mon_filter_store_domain_ip_map_setup
+ **函数名称: mon_flt_store_domain_ip_map_setup
  **功    能: 设置存储域名IP映射表的参数
  **输入参数:
  **     menu: 菜单对象
@@ -430,14 +430,14 @@ static int mon_filter_query_table_stat_req(menu_item_t *menu, void *args)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.03.07 #
  ******************************************************************************/
-static int mon_filter_store_domain_ip_map_setup(flt_cmd_t *cmd)
+static int mon_flt_store_domain_ip_map_setup(flt_cmd_t *cmd)
 {
     cmd->type = htonl(FLT_CMD_STORE_DOMAIN_IP_MAP_REQ);
     return 0;
 }
 
 /******************************************************************************
- **函数名称: mon_filter_store_domain_ip_map_print
+ **函数名称: mon_flt_store_domain_ip_map_print
  **功    能: 显示存储域名IP映射表信息
  **输入参数:
  **     menu: 菜单对象
@@ -447,7 +447,7 @@ static int mon_filter_store_domain_ip_map_setup(flt_cmd_t *cmd)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.03.07 #
  ******************************************************************************/
-static int mon_filter_store_domain_ip_map_print(flt_cmd_t *cmd)
+static int mon_flt_store_domain_ip_map_print(flt_cmd_t *cmd)
 {
     flt_cmd_store_domain_ip_map_rep_t *rep;
 
@@ -461,7 +461,7 @@ static int mon_filter_store_domain_ip_map_print(flt_cmd_t *cmd)
 }
 
 /******************************************************************************
- **函数名称: mon_filter_store_domain_ip_map_req
+ **函数名称: mon_flt_store_domain_ip_map_req
  **功    能: 存储域名IP映射表
  **输入参数:
  **     menu: 菜单对象
@@ -471,15 +471,15 @@ static int mon_filter_store_domain_ip_map_print(flt_cmd_t *cmd)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.03.07 #
  ******************************************************************************/
-static int mon_filter_store_domain_ip_map_req(menu_item_t *menu, void *args)
+static int mon_flt_store_domain_ip_map_req(menu_item_t *menu, void *args)
 {
-    return mon_filter_frame(
-            mon_filter_store_domain_ip_map_setup,
-            mon_filter_store_domain_ip_map_print, args);
+    return mon_flt_frame(
+            mon_flt_store_domain_ip_map_setup,
+            mon_flt_store_domain_ip_map_print, args);
 }
 
 /******************************************************************************
- **函数名称: mon_filter_store_domain_blacklist_setup
+ **函数名称: mon_flt_store_domain_blacklist_setup
  **功    能: 设置存储域名黑名单的参数
  **输入参数:
  **     menu: 菜单对象
@@ -489,14 +489,14 @@ static int mon_filter_store_domain_ip_map_req(menu_item_t *menu, void *args)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.03.07 #
  ******************************************************************************/
-static int mon_filter_store_domain_blacklist_setup(flt_cmd_t *cmd)
+static int mon_flt_store_domain_blacklist_setup(flt_cmd_t *cmd)
 {
     cmd->type = htonl(FLT_CMD_STORE_DOMAIN_BLACKLIST_REQ);
     return 0;
 }
 
 /******************************************************************************
- **函数名称: mon_filter_store_domain_blacklist_print
+ **函数名称: mon_flt_store_domain_blacklist_print
  **功    能: 显示存储域名黑名单信息
  **输入参数:
  **     menu: 菜单对象
@@ -506,7 +506,7 @@ static int mon_filter_store_domain_blacklist_setup(flt_cmd_t *cmd)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.03.07 #
  ******************************************************************************/
-static int mon_filter_store_domain_blacklist_print(flt_cmd_t *cmd)
+static int mon_flt_store_domain_blacklist_print(flt_cmd_t *cmd)
 {
     flt_cmd_store_domain_ip_map_rep_t *rep;
 
@@ -520,7 +520,7 @@ static int mon_filter_store_domain_blacklist_print(flt_cmd_t *cmd)
 }
 
 /******************************************************************************
- **函数名称: mon_filter_store_domain_blacklist_req
+ **函数名称: mon_flt_store_domain_blacklist_req
  **功    能: 存储域名黑名单
  **输入参数:
  **     menu: 菜单对象
@@ -530,9 +530,9 @@ static int mon_filter_store_domain_blacklist_print(flt_cmd_t *cmd)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.03.07 #
  ******************************************************************************/
-static int mon_filter_store_domain_blacklist_req(menu_item_t *menu, void *args)
+static int mon_flt_store_domain_blacklist_req(menu_item_t *menu, void *args)
 {
-    return mon_filter_frame(
-            mon_filter_store_domain_blacklist_setup,
-            mon_filter_store_domain_blacklist_print, args);
+    return mon_flt_frame(
+            mon_flt_store_domain_blacklist_setup,
+            mon_flt_store_domain_blacklist_print, args);
 }

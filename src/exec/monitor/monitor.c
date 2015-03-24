@@ -230,7 +230,7 @@ static menu_cntx_t *mon_menu_init(mon_cntx_t *ctx)
     menu_add(menu_ctx->menu, child);
 
     /* > 加载爬虫系统菜单 */
-    child = mon_filter_menu(menu_ctx, ctx);
+    child = mon_flt_menu(menu_ctx, ctx);
 
     menu_add(menu_ctx->menu, child);
 
