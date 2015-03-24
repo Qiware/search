@@ -253,14 +253,12 @@ static int crwl_sched_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
         }
 
         /* > 随机选择任务队列 */
+    QUEUE_MALLOC:
         idx = rand() % conf->worker.num;
 
         workq = ctx->workq[idx];
 
-        log_trace(ctx->log, "TQ:%02d URL:%s!", idx, r->str);
-
         /* > 申请队列空间 */
-    QUEUE_MALLOC:
         addr = queue_malloc(workq);
         if (NULL == addr)
         {
