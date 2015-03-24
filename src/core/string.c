@@ -168,7 +168,7 @@ int uri_trim(const char *in, char *out, size_t size)
     while (e > s)
     {
         if ((' ' == *e)
-            || ('/' == *s)
+            || ('/' == *e)
             || ('\n' == *e)
             || ('\r' == *e))
         {
