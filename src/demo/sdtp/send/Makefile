@@ -25,14 +25,14 @@ TARGET = sdtp_ssvr
 all: $(TARGET)
 $(TARGET): $(OBJS)
 	@$(CC) $(CFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS)
-	@echo "$(CC) $@"
+	@echo "CC $@"
 	@mv $@ $(PROJ_BIN)
 	@rm -fr $(OBJS)
 	@echo "$@ is OK!"
 
 $(OBJS): %.o : %.c
 	@$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
-	@echo "$(CC) $(PWD)/$<"
+	@echo "CC $(PWD)/$<"
 
 clean:
 	@rm -fr *.o $(PROJ_BIN)/$(TARGET)

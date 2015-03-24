@@ -30,13 +30,13 @@ TARGET = libsdtp.so
 all: $(TARGET)
 $(TARGET): $(OBJS)
 	@$(CC) $(LFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS)
-	@echo "$(CC) $@"
+	@echo "CC $@"
 	@mv $@ $(PROJ_LIB)
 	@echo "$@ is OK!"
 
 $(OBJS): %.o : %.c
 	@$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
-	@echo "$(CC) $(PWD)/$<"
+	@echo "CC $(PWD)/$<"
 
 clean:
 	@rm -fr *.o $(PROJ_LIB)/$(TARGET) $(OBJS)

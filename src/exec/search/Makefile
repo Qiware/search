@@ -35,23 +35,23 @@ TARGET2 = search
 all: $(TARGET) $(TARGET2)
 $(TARGET): $(OBJS)
 	@$(CC) $(LFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS)
-	@echo "$(CC) $@"
+	@echo "CC $@"
 	@mv $@ $(PROJ_LIB)
 	@echo "$@ is OK!"
 
 $(TARGET2): $(OBJS2)
 	@$(CC) $(CFLAGS) -o $@ $(OBJS2) $(INCLUDE) $(LIBS_PATH) $(LIBS) $(LIBS2)
-	@echo "$(CC) $@"
+	@echo "CC $@"
 	@mv $@ $(PROJ_BIN)
 	@echo "$@ is OK!"
 
 $(OBJS): %.o : %.c
 	@$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
-	@echo "$(CC) $(PWD)/$<"
+	@echo "CC $(PWD)/$<"
 
 $(OBJS2): %.o : %.c
 	@$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
-	@echo "$(CC) $(PWD)/$<"
+	@echo "CC $(PWD)/$<"
 
 clean:
 	@rm -fr *.o $(PROJ_LIB)/$(TARGET) $(PROJ_BIN)/$(TARGET2)
