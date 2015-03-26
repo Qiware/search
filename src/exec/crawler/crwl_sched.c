@@ -48,6 +48,7 @@ void *crwl_sched_routine(void *_ctx)
     struct timeval tv;
     crwl_sched_t *sched;
     crwl_cntx_t *ctx = (crwl_cntx_t *)_ctx;
+    crwl_conf_t *conf = ctx->conf;
 
     /* 1. 初始化调度器 */
     sched = crwl_sched_init(ctx);
@@ -60,6 +61,12 @@ void *crwl_sched_routine(void *_ctx)
 
     while (1)
     {
+        if (!conf->sched_stat)
+        {
+            Sleep(1);
+            continue;
+        }
+
         /* 2. 等待事件通知 */
         FD_ZERO(&sched->rdset);
         FD_ZERO(&sched->wrset);
@@ -242,7 +249,7 @@ static int crwl_sched_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
     crwl_task_t *task;
     crwl_conf_t *conf = ctx->conf;
 
-    while (1)
+    while (conf->sched_stat)
     {
         /* > 取Undo任务数据 */
         r = redis_lpop(sched->redis, conf->redis.taskq);

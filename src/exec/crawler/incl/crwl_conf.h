@@ -71,6 +71,8 @@ typedef struct
 
     crwl_redis_conf_t redis;                /* REDIS配置 */
     crwl_worker_conf_t worker;              /* WORKER配置 */
+
+    bool sched_stat;                        /* 调度状态(false:暂停 true:运行) */
 } crwl_conf_t;
 
 crwl_conf_t *crwl_conf_load(const char *path, log_cycle_t *log);

@@ -29,6 +29,7 @@ typedef int (*mon_crwl_print_cb_t)(crwl_cmd_t *cmd);
 static int mon_crwl_query_conf_req(menu_item_t *menu, void *args);
 static int mon_crwl_query_workq_stat_req(menu_item_t *menu, void *args);
 static int mon_crwl_query_worker_stat_req(menu_item_t *menu, void *args);
+static int mon_crwl_switch_sched_req(menu_item_t *menu, void *args);
 
 /******************************************************************************
  **函数名称: mon_crwl_entry
@@ -86,8 +87,9 @@ menu_item_t *mon_crwl_menu(menu_cntx_t *ctx, void *args)
 
     /* 添加子菜单 */
     ADD_CHILD(ctx, menu, "Query configuration", NULL, mon_crwl_query_conf_req, NULL, args);
-    ADD_CHILD(ctx, menu, "Query work queue status", NULL, mon_crwl_query_workq_stat_req, NULL, args);
+    ADD_CHILD(ctx, menu, "Query workq status", NULL, mon_crwl_query_workq_stat_req, NULL, args);
     ADD_CHILD(ctx, menu, "Query worker status", NULL, mon_crwl_query_worker_stat_req, NULL, args);
+    ADD_CHILD(ctx, menu, "Switch sched status", NULL, mon_crwl_switch_sched_req, NULL, args);
     return menu;
 }
 
@@ -464,4 +466,72 @@ static int mon_crwl_query_conf_req(menu_item_t *menu, void *args)
     return mon_crwl_frame(
             mon_crwl_query_conf_setup,
             mon_crwl_query_conf_print, args);
+}
+
+/******************************************************************************
+ **函数名称: mon_crwl_switch_sched_setup
+ **功    能: 设置切换调度的参数
+ **输入参数:
+ **     menu: 菜单对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.03.26 #
+ ******************************************************************************/
+static int mon_crwl_switch_sched_setup(crwl_cmd_t *cmd)
+{
+    cmd->type = htonl(CRWL_CMD_SWITCH_SCHED_REQ);
+    return 0;
+}
+
+/******************************************************************************
+ **函数名称: mon_crwl_switch_sched_print
+ **功    能: 显示切换调度的反馈
+ **输入参数:
+ **     menu: 菜单对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.03.26 #
+ ******************************************************************************/
+static int mon_crwl_switch_sched_print(crwl_cmd_t *cmd)
+{
+    crwl_cmd_sched_stat_t *stat;
+
+    /* 字节序转换 */
+    cmd->type = ntohl(cmd->type);
+    stat = (crwl_cmd_sched_stat_t *)&cmd->data;
+
+    stat->sched_stat = ntohl(stat->sched_stat);
+
+    /* 显示结果 */
+    if (stat->sched_stat)
+    {
+        fprintf(stderr, "    调度状态: PAUSE\n");
+    }
+    else
+    {
+        fprintf(stderr, "    调度状态: NORMAL\n");
+    }
+    return 0;
+}
+
+/******************************************************************************
+ **函数名称: mon_crwl_switch_sched_req
+ **功    能: 设置切换调度
+ **输入参数:
+ **     menu: 菜单对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.03.26 #
+ ******************************************************************************/
+static int mon_crwl_switch_sched_req(menu_item_t *menu, void *args)
+{
+    return mon_crwl_frame(
+            mon_crwl_switch_sched_setup,
+            mon_crwl_switch_sched_print, args);
 }

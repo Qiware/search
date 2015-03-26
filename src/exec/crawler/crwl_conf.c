@@ -102,6 +102,8 @@ static int _crwl_conf_load(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
     xml_node_t *node, *nail;
     crwl_worker_conf_t *worker = &conf->worker;
 
+    conf->sched_stat = true;
+
     /* > 定位LOG标签: 获取日志级别信息 */
     nail = xml_query(xml, ".CRAWLER.LOG");
     if (NULL != nail)

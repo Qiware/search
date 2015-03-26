@@ -16,7 +16,10 @@ typedef enum
 
     , CRWL_CMD_QUERY_WORKQ_STAT_REQ     /* 查询工作队列信息 */
     , CRWL_CMD_QUERY_WORKQ_STAT_RESP    /* 反馈工作队列信息 */
-        
+
+    , CRWL_CMD_SWITCH_SCHED_REQ         /* 切换调度 */
+    , CRWL_CMD_SWITCH_SCHED_RESP        /* 反馈切换调度信息 */
+
     , CRWL_CMD_TOTAL
 } crwl_cmd_e;
 
@@ -82,12 +85,24 @@ typedef struct
     } worker;
 } crwl_cmd_conf_t;
 
+/* 切换调度 */
+typedef struct
+{
+} crwl_cmd_switch_sched_t;
+
+typedef struct
+{
+    bool sched_stat;                        /* 调度状态(true:运行 false:暂停) */
+} crwl_cmd_sched_stat_t;
+
 /* 各命令数据 */
 typedef union
 {
     crwl_cmd_conf_t conf;
     crwl_cmd_workq_stat_t workq_stat;
     crwl_cmd_worker_stat_t worker_stat;
+    crwl_cmd_switch_sched_t switch_sched;
+    crwl_cmd_sched_stat_t sched_stat;
 } crwl_cmd_data_t;
 
 /* 命令信息结构体 */

@@ -193,7 +193,7 @@ crwl_cntx_t *crwl_cntx_init(char *pname, const char *path)
         }
 
         /* 8. 修改进程打开文件描述符的最大限制 */
-        if(limit_file_num(4096))
+        if(limit_file_num(65535))
         {
             log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
             break;

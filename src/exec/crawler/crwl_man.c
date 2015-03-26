@@ -618,6 +618,60 @@ static int crwl_man_query_workq_stat_req_hdl(crwl_cntx_t *ctx,
 }
 
 /******************************************************************************
+ **函数名称: crwl_man_switch_sched_req_hdl
+ **功    能: 切换调度功能
+ **输入参数: 
+ **     ctx: 全局信息
+ **     man: 管理对象
+ **     type: 命令类型
+ **     buff: 命令数据
+ **     args: 附加参数
+ **输出参数:
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **     申请的应答数据空间, 需要在应答之后, 进行释放!
+ **作    者: # Qifeng.zou # 2015.03.25 #
+ ******************************************************************************/
+static int crwl_man_switch_sched_req_hdl(crwl_cntx_t *ctx,
+        crwl_man_t *man, int type, void *buff, struct sockaddr_un *from, void *args)
+{
+    crwl_cmd_t *cmd;
+    crwl_cmd_item_t *item;
+    crwl_cmd_sched_stat_t *stat;
+    crwl_conf_t *conf = ctx->conf;
+
+    /* > 新建应答 */
+    item = slab_alloc(man->slab, sizeof(crwl_cmd_item_t));
+    if (NULL == item)
+    {
+        log_error(man->log, "Alloc from slab failed!");
+        return CRWL_ERR;
+    }
+
+    memcpy(&item->to, from, sizeof(struct sockaddr_un));
+
+    /* > 设置信息 */
+    cmd = &item->cmd;
+    stat = (crwl_cmd_sched_stat_t *)&cmd->data;
+
+    conf->sched_stat = conf->sched_stat? false : true; /* 切换状态 */
+
+    cmd->type = htonl(CRWL_CMD_SWITCH_SCHED_RESP);
+    stat->sched_stat = htonl(conf->sched_stat);
+
+    /* > 放入队尾 */
+    if (list_rpush(man->mesg_list, item))
+    {
+        log_error(man->log, "Push into list failed!");
+        slab_dealloc(man->slab, item);
+        return CRWL_ERR;
+    }
+
+    return CRWL_OK;
+}
+
+/******************************************************************************
  **函数名称: crwl_man_reg_cb
  **功    能: 设置命令处理函数
  **输入参数: 
@@ -640,6 +694,7 @@ static int crwl_man_reg_cb(crwl_man_t *man)
     CRWL_REG(man, CRWL_CMD_QUERY_CONF_REQ, (crwl_man_reg_cb_t)crwl_man_query_conf_req_hdl, man);
     CRWL_REG(man, CRWL_CMD_QUERY_WORKER_STAT_REQ, (crwl_man_reg_cb_t)crwl_man_query_worker_stat_req_hdl, man);
     CRWL_REG(man, CRWL_CMD_QUERY_WORKQ_STAT_REQ, (crwl_man_reg_cb_t)crwl_man_query_workq_stat_req_hdl, man);
+    CRWL_REG(man, CRWL_CMD_SWITCH_SCHED_REQ, (crwl_man_reg_cb_t)crwl_man_switch_sched_req_hdl, man);
 
     return CRWL_OK;
 }
