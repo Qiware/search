@@ -34,7 +34,7 @@ def rm_list(out_path):
             #print "[ERROR]: %s %s" % (item, str(e))
             continue
         idx += 1
-        print "[%d] %s" % (idx, item.strip())
+        #print "[%d] %s" % (idx, item.strip())
     #os.remove(out_path)
 
 if __name__ == '__main__':
