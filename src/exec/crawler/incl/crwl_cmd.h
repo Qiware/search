@@ -6,19 +6,19 @@
 /* 命令类型 */
 typedef enum
 {
-    CRWL_CMD_UNKNOWN                    /* 未知指令 */
+    CRWL_CMD_UNKNOWN                        /* 未知指令 */
 
-    , CRWL_CMD_QUERY_CONF_REQ           /* 查询配置信息 */
-    , CRWL_CMD_QUERY_CONF_RESP          /* 反馈配置信息 */
+    , CRWL_CMD_QUERY_CONF_REQ               /* 查询配置信息 */
+    , CRWL_CMD_QUERY_CONF_RESP              /* 反馈配置信息 */
 
-    , CRWL_CMD_QUERY_WORKER_STAT_REQ    /* 查询爬取信息 */
-    , CRWL_CMD_QUERY_WORKER_STAT_RESP   /* 反馈爬取信息 */
+    , CRWL_CMD_QUERY_WORKER_STAT_REQ        /* 查询爬取信息 */
+    , CRWL_CMD_QUERY_WORKER_STAT_RESP       /* 反馈爬取信息 */
 
-    , CRWL_CMD_QUERY_WORKQ_STAT_REQ     /* 查询工作队列信息 */
-    , CRWL_CMD_QUERY_WORKQ_STAT_RESP    /* 反馈工作队列信息 */
+    , CRWL_CMD_QUERY_WORKQ_STAT_REQ         /* 查询工作队列信息 */
+    , CRWL_CMD_QUERY_WORKQ_STAT_RESP        /* 反馈工作队列信息 */
 
-    , CRWL_CMD_SWITCH_SCHED_REQ         /* 切换调度 */
-    , CRWL_CMD_SWITCH_SCHED_RESP        /* 反馈切换调度信息 */
+    , CRWL_CMD_SWITCH_SCHED_REQ             /* 切换调度 */
+    , CRWL_CMD_SWITCH_SCHED_RESP            /* 反馈切换调度信息 */
 
     , CRWL_CMD_TOTAL
 } crwl_cmd_e;
@@ -31,14 +31,14 @@ typedef struct
 #define CRWL_CMD_WORKER_MAX_NUM     (20)
 typedef struct
 {
-    time_t stm;                     /* 开始时间 */
-    time_t ctm;                     /* 当前时间 */
-    int num;                        /* WORKER数 */
+    time_t stm;                             /* 开始时间 */
+    time_t ctm;                             /* 当前时间 */
+    int num;                                /* WORKER数 */
     struct
     {
-        uint32_t connections;       /* 连接数 */
-        uint64_t down_webpage_total;/* 下载网页的计数 */
-        uint64_t err_webpage_total; /* 异常网页的计数 */
+        uint32_t connections;               /* 连接数 */
+        uint64_t down_webpage_total;        /* 下载网页的计数 */
+        uint64_t err_webpage_total;         /* 异常网页的计数 */
     } worker[CRWL_CMD_WORKER_MAX_NUM];
 } crwl_cmd_worker_stat_t;
 
@@ -50,13 +50,13 @@ typedef struct
 #define CRWL_CMD_QUEUE_MAX_NUM        (20)
 typedef struct
 {
-    int num;                        /* Number */
+    int num;                                /* 队列数 */
     struct
     {
     #define CRWL_QUEUE_NAME_LEN (32)        
-        char name[CRWL_QUEUE_NAME_LEN];
-        int num;
-        int max;
+        char name[CRWL_QUEUE_NAME_LEN];     /* 队列名 */
+        int num;                            /* 被占用空间 */
+        int max;                            /* 最大容量 */
     } queue[CRWL_CMD_QUEUE_MAX_NUM];
 } crwl_cmd_workq_stat_t;
 
@@ -108,8 +108,8 @@ typedef union
 /* 命令信息结构体 */
 typedef struct
 {
-    uint32_t type;              /* 命令类型(范围:crwl_cmd_e) */
-    crwl_cmd_data_t data;       /* 命令内容 */
+    uint32_t type;                          /* 命令类型(范围:crwl_cmd_e) */
+    crwl_cmd_data_t data;                   /* 命令内容 */
 } crwl_cmd_t;
 
 #endif /*__CRWL_CMD_H__*/
