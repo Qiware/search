@@ -509,11 +509,11 @@ static int mon_crwl_switch_sched_print(crwl_cmd_t *cmd)
     /* 显示结果 */
     if (stat->sched_stat)
     {
-        fprintf(stderr, "    调度状态: PAUSE\n");
+        fprintf(stderr, "    调度状态: SCHED\n");
     }
     else
     {
-        fprintf(stderr, "    调度状态: NORMAL\n");
+        fprintf(stderr, "    调度状态: PAUSE\n");
     }
     return 0;
 }
