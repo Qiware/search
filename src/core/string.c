@@ -440,23 +440,31 @@ int href_to_uri(const char *href, const char *site, uri_field_t *field)
     {
         return uri_reslove(tmp, field);
     }
+    else if (!strncmp(URI_HTTPS_STR, tmp, URI_HTTPS_STR_LEN)
+        || !strncmp(URI_FTP_STR, tmp, URI_FTP_STR_LEN)
+        || !strncmp(URI_MAILTO_STR, tmp, URI_MAILTO_STR_LEN)
+        || !strncmp(URI_THUNDER_STR, tmp, URI_THUNDER_STR_LEN)
+        || !strncmp(URI_ITEM_STR, tmp, URI_ITEM_STR_LEN)
+        || !strncmp(URI_ED2K_STR, tmp, URI_ED2K_STR_LEN))
+    {
+        return -1;  /* 不支持的协议类型 */
+    }
 
-    /* 绝对路径 */
-    if (href_is_abs(tmp))
+    /* 绝对路径(以斜杠'/'开头或以字母或数字开头的路径，都可视为绝对路径) */
+    if (href_is_abs(tmp) || isalpha(*tmp))
     {
         if (0 != uri_reslove(site, field))
         {
             return -1;
         }
 
-        if (URI_DEF_PORT == field->port)
+        if (isalpha(*tmp))
         {
-            snprintf(uri, sizeof(uri), "%s%s%s", URI_HTTP_STR, field->host, tmp);
+            snprintf(uri, sizeof(uri), "%s%s:%d/%s", URI_HTTP_STR, field->host, field->port, tmp);
         }
         else
         {
-            snprintf(uri, sizeof(uri), "%s%s:%d%s",
-                    URI_HTTP_STR, field->host, field->port, tmp);
+            snprintf(uri, sizeof(uri), "%s%s:%d%s", URI_HTTP_STR, field->host, field->port, tmp);
         }
 
         return uri_reslove(uri, field);

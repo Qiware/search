@@ -26,6 +26,7 @@
 #define URI_MIN_LEN     URL_MIN_LEN /* URI最小长度 */
 #define URI_MAX_LEN     URL_MAX_LEN /* URI最大长度 */
 #define HOST_MAX_LEN        (256)   /* 域名最大长度 */
+#define PORT_MAX_LEN        (12)    /* 端口号最大长度 */
 #define URI_SUFFIX_LEN      (8)     /* 后缀长度 */
 #define URI_PROTOCOL_MAX_LEN    (32)/* 协议类型 */
 
