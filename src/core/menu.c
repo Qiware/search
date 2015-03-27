@@ -226,7 +226,7 @@ int menu_display(menu_item_t *menu, void *args)
             fprintf(stdout, " ");
         }
 
-        fprintf(stdout, "%2d: %s", n, child->name);
+        fprintf(stdout, "%2d: %s", n+1, child->name);
 
         len = strlen(child->name)+4;
 
@@ -303,8 +303,14 @@ static menu_item_t *menu_exec(menu_item_t *menu, const char *opt)
     }
 
     num = atoi(opt);
+    if ((num <= 0) || (num > menu->num))
+    {
+        fprintf(stdout, "\n    Not right!\n");
+        menu->func(menu, menu->args);
+        return menu;
+    }
 
-    for (i=0; NULL != child; child = child->next, ++i)
+    for (i=1; NULL != child; child = child->next, ++i)
     {
         if (i == num)
         {
@@ -317,7 +323,7 @@ static menu_item_t *menu_exec(menu_item_t *menu, const char *opt)
             {
                 ret = child->func(child, child->args);
                 if (0 != ret                /* 失败或无子菜单时，均返回到上级菜单 */
-                        || NULL == child->child)
+                    || NULL == child->child)
                 {
                     break;
                 }
