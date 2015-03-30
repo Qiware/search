@@ -33,6 +33,20 @@ str_t *str_to_upper(str_t *s);
 #define URI_ED2K_STR        "ed2k://"       /* 电驴连接 */
 #define URI_ED2K_STR_LEN    (7)
 
+typedef enum
+{
+    URI_UNKNOWN_PROTOCOL
+    , URI_HTTP_PROTOCOL
+    , URI_HTTPS_PROTOCOL
+    , URI_FTP_PROTOCOL
+    , URI_MAIL_PROTOCOL
+    , URI_THUNDER_PROTOCOL
+    , URI_ITEM_PROTOCOL
+    , URI_ED2K_PROTOCOL
+
+    , URI_PROTOCOL_TOTAL
+} uri_protocol_e;
+
 #define href_is_abs(str) ('/' == str[0])            /* href是绝对路径 */
 #define href_is_up(str) (!strncmp("../", str, 3))   /* href是上级路径 */
 #define href_is_loc(str) (!strncmp("./", str, 2))   /* href是当前路径 */

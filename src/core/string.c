@@ -187,6 +187,265 @@ int uri_trim(const char *in, char *out, size_t size)
 }
 
 /******************************************************************************
+ **函数名称: uri_get_protocol
+ **功    能: 获取协议类型
+ **输入参数:
+ **     uri: URI
+ **输出参数:
+ **返    回: 协议类型
+ **实现描述: 
+ **		依次与各协议标签进行比较
+ **注意事项:
+ **作    者: # Qifeng.zou # 2015.03.28 #
+ ******************************************************************************/
+int uri_get_protocol(const char *uri)
+{
+	const char *p= uri;
+
+	if (!strncmp(uri, URI_WWW_STR, URI_WWW_STR_LEN))
+	{
+		return  URI_HTTP_PROTOCOL;
+	}
+	else if (!strncmp(uri, URI_HTTP_STR, URI_HTTP_STR_LEN))
+	{
+		return URI_HTTP_PROTOCOL;
+	}
+	else if (!strncmp(uri, URI_HTTPS_STR, URI_HTTPS_STR_LEN))
+	{
+		return URI_HTTPS_PROTOCOL;
+	}
+	else if (!strncmp(uri, URI_FTP_STR, URI_FTP_STR_LEN))
+	{
+		return URI_FTP_PROTOCOL;
+	}
+	else if (!strncmp(uri, URI_THUNDER_STR, URI_THUNDER_STR_LEN))
+	{
+		return URI_THUNDER_PROTOCOL;
+	}
+	else if (!strncmp(uri, URI_ITEM_STR, URI_ITEM_STR_LEN))
+	{
+		return URI_ITEM_PROTOCOL;
+	}
+	else if (!strncmp(uri, URI_ED2K_STR, URI_ED2K_STR_LEN))
+	{
+		return URI_ED2K_PROTOCOL;
+	}
+
+	while ('\0' != *p)
+	{
+		if (isalpha(*p))
+		{
+			++p;
+			continue;
+		}
+		else if ('.' == *p)
+		{
+			return URI_HTTP_PROTOCOL; /* 如：baidu.com */
+		}
+
+		return URI_UNKNOWN_PROTOCOL;
+	}
+
+	return URI_UNKNOWN_PROTOCOL;
+}
+
+/******************************************************************************
+ **函数名称: uri_get_host
+ **功    能: 获取HOST(IP或域名)
+ **输入参数:
+ **     uri: URI
+ **		size: host空间大小
+ **输出参数:
+ **		host: 主机IP或域名
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项:
+ **作    者: # Qifeng.zou # 2015.03.28 #
+ ******************************************************************************/
+int uri_get_host(const char *uri, char *host, int size)
+{
+	int len;
+	const char *p, *s;
+
+	p = s = uri;
+
+	while (isalpha(*p) || isdigit(*p))
+	{
+		++p;
+	}
+
+    switch (*p)
+    {
+        case ':':
+        {
+            if ('/' == *(p+1)) {
+                if ('/' == *(p+2)) {
+                    s = p + 3;
+                }
+                else {
+                    return -1;
+                }
+            }
+            else if (isdigit(*(p+1))) {
+                goto GET_HOST;
+            }
+            return -1;
+        }
+        case '\0':
+        {
+            goto GET_HOST;
+        }
+	    case '.':
+        {
+            break; /* 继续处理 */
+        }
+        default:
+        {
+            return -1;
+        }
+    }
+
+	++p;
+	while (isalpha(*p) || isdigit(*p) || '.' == *p)
+	{
+		++p;
+	}
+
+GET_HOST:
+	len = p - s;
+	if (len >= size)
+	{
+		return -1;
+	}
+
+	memcpy(host, s, len);
+	host[len] = '\0';
+
+	return 0;
+}
+
+/******************************************************************************
+ **函数名称: uri_get_port
+ **功    能: 获取通信端口号
+ **输入参数:
+ **     uri: URI
+ **输出参数:
+ **返    回: 通信端口号
+ **实现描述: 
+ **注意事项:
+ **作    者: # Qifeng.zou # 2015.03.28 #
+ ******************************************************************************/
+int uri_get_port(const char *uri)
+{
+	int len;
+	const char *p, *s;
+    char port[PORT_MAX_LEN];
+
+	p = s = uri;
+
+	while (isalpha(*p) || isdigit(*p) || '.' == *p)
+	{
+		++p;
+	}
+
+    switch (*p)
+    {
+        case ':':
+        {
+            if ('/' == *(p+1)) {
+                if ('/' == *(p+2)) {
+                    p += 3;
+                    break;
+                }
+                else {
+                    return -1;
+                }
+            }
+            else if (isdigit(*(p+1))) {
+                ++p;
+                goto GET_PORT;
+            }
+            return -1;
+        }
+        case '\0':
+        default:
+        {
+            return URI_DEF_PORT;
+        }
+    }
+
+	while (isalpha(*p) || isdigit(*p) || '.' == (*p))
+    {
+        ++p;
+    }
+
+    if ('\0' == *p || ':' != *p)
+    {
+        return URI_DEF_PORT;
+    }
+
+GET_PORT:
+	++p;
+    s = p;
+	while (isdigit(*p))
+	{
+		++p;
+	}
+
+	len = p - s;
+    if (0 == len || len > (int)sizeof(port))
+    {
+        return -1;
+    }
+
+    memcpy(port, s, len);
+
+	return atoi(port);
+}
+
+/******************************************************************************
+ **函数名称: uri_get_path
+ **功    能: 获取URI路径
+ **输入参数:
+ **     uri: URI
+ **		size: path空间大小
+ **输出参数:
+ **		path: 网页路径
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项:
+ **作    者: # Qifeng.zou # 2015.03.29 #
+ ******************************************************************************/
+int uri_get_path(const char *uri, char *path, int size)
+{
+    const char *p;
+
+    p = strstr(uri, "/");
+	if (NULL == p)
+	{
+        snprintf(path, size, "/");
+        return 0;
+	}
+
+    if ('/' != *(p+1))
+    {
+        snprintf(path, size, "%s", p);
+        return 0;
+    }
+
+    p = strstr(p+2, "/");
+    if (NULL == p)
+    {
+        snprintf(path, size, "/");
+        return 0;
+    }
+
+    snprintf(path, size, "%s", p);
+
+	return 0;
+}
+
+/******************************************************************************
  **函数名称: uri_reslove
  **功    能: 分解URI字串
  **输入参数:
@@ -202,8 +461,7 @@ int uri_trim(const char *in, char *out, size_t size)
  ******************************************************************************/
 int uri_reslove(const char *uri, uri_field_t *field)
 {
-    unsigned int len;
-    const char *ch, *s, *suffix;
+	int protocol;
 
     memset(field, 0, sizeof(uri_field_t));
 
@@ -214,191 +472,24 @@ int uri_reslove(const char *uri, uri_field_t *field)
         return -1;  /* 长度非法 */
     }
     
-    /* 2. 从URI中提取后缀 */
-    len = 0;
-    suffix = field->uri + field->len - 1;
-    while ((len < URI_SUFFIX_LEN)
-        && (suffix != field->uri))
-    {
-        if ('.' == *suffix)
-        {
-            if (!uri_is_valid_suffix(suffix))
-            {
-                return -1;  /* 后缀不合法 */
-            }
+	/* 2. 获取协议类型 */
+	protocol = uri_get_protocol(uri);
+	if (URI_HTTP_PROTOCOL != protocol)
+	{
+		return -1; /* 只支持HTTP协议 */
+	}
 
-            snprintf(field->suffix, sizeof(field->suffix), "%s", suffix);
+	snprintf(field->protocol, sizeof(field->protocol), "%s", URI_DEF_PROTOCOL);
 
-            break;
-        }
-        ++len;
-        --suffix;
-    }
-    
-    /* 3. 从URI中提取域名、端口、路径等信息 */
-    ch = field->uri;
-    s = ch;
+	/* 3. 获取HOST 端口 路径等 */
+	if (uri_get_host(uri, field->host, sizeof(field->host))
+		|| (field->port = uri_get_port(uri)) < 0
+		|| uri_get_path(uri, field->path, sizeof(field->path)))
+	{
+		return -1;
+	}
 
-    /* 判断是否有协议(http:// | https:// | ftp:// ...) */
-    while ('\0' != *ch)
-    {
-        if (isalpha(*ch)
-            || isdigit(*ch)
-            || ('.' == *ch)
-            || ('-' == *ch)
-            || ('_' == *ch))
-        {
-            ++ch;
-            continue;
-        }
-        if (':' != *ch && '/' != *ch)
-        {
-            return -1;  /* 异常:在路径符号'/'之前, 不允许出现特殊符号:# ?等 */
-        }
-        break;
-    }
-
-    if ('\0' == *ch)
-    {
-        /* 只有域名: (协议/端口/路径 使用默认值) */
-        snprintf(field->protocol, sizeof(field->protocol), "%s", URI_DEF_PROTOCOL);
-        snprintf(field->host, sizeof(field->host), "%s", field->uri);
-        snprintf(field->path, sizeof(field->path), "/");
-        field->port = URI_DEF_PORT;
-        return 0;
-    }
-    /* 1. 有协议 或 有端口号 */
-    else if (':' == *ch)
-    {
-        /* 有协议类型 */
-        if ('/' == *(ch + 1)
-            && '/' == *(ch + 1))
-        {
-            /* 提取协议 */
-            len = ch - field->uri;
-            len = (len < (sizeof(field->protocol) - 1))? len : (sizeof(field->protocol) - 1);
-            memcpy(field->protocol, field->uri, len);
-            field->protocol[len] = '\0';
-
-            /* 提取域名 */
-            ch += 3;
-            s = ch;
-            while ('\0' != *ch)
-            {
-                if (isalpha(*ch)
-                    || isdigit(*ch)
-                    || ('.' == *ch)
-                    || ('-' == *ch)
-                    || ('_' == *ch))
-                {
-                    ++ch;
-                    continue;
-                }
-                break;
-            }
-
-            if ('\0' == *ch)        /* 无端口、无路径 */
-            {
-                /* 有协议与域名: (端口/路径 使用默认值) */
-                snprintf(field->host, sizeof(field->host), "%s", s);
-                snprintf(field->path, sizeof(field->path), "/");
-                field->port = URI_DEF_PORT;
-                return 0;
-            }
-            else if (':' == *ch)    /* 有端口 */
-            {
-                if (!isdigit(*(ch + 1)))
-                {
-                    return -1;  /* 格式有误 */
-                }
-
-            URI_GET_HOST:
-                /* 提取域名 */
-                len = ch - s;
-                len = (len < sizeof(field->host) - 1)? len : sizeof(field->host) - 1;
-                memcpy(field->host, s, len);
-                field->host[len] = '\0';
-
-            URI_GET_PORT:
-                /* 提取端口号 */
-                ++ch;
-                s = ch;
-                while ('\0' != *ch)
-                {
-                    if (isdigit(*ch))
-                    {
-                        ++ch;
-                        continue;
-                    }
-                    break;
-                }
-
-                field->port = atoi(s);
-
-                /* 提取路径 */
-                if ('\0' == *ch)
-                {
-                    snprintf(field->path, sizeof(field->path), "/");
-                    return 0;
-                }
-                else if ('/' != *ch)
-                {
-                    return -1;  /* 格式有误 */
-                }
-
-                snprintf(field->path, sizeof(field->path), "%s", ch);
-                return 0;
-            }
-            else if ('/' == *ch)     /* 无端口、有路径 */
-            {
-                /* 提取域名 */
-                len = ch - s;
-                len = (len < sizeof(field->host) - 1)?
-                            len : sizeof(field->host) - 1;
-                memcpy(field->host, s, len);
-                field->host[len] = '\0';
-                field->port = URI_DEF_PORT;   /* 默认值 */
-                snprintf(field->path, sizeof(field->path), "%s", ch);
-                return 0;
-            }
-
-            return -1;  /* 格式有误 */
-        }
-        /* 无协议、有端口号 */
-        else if (isdigit(*(ch + 1)))
-        {
-            /* 设置协议(默认:HTTP) */
-            snprintf(field->protocol, sizeof(field->protocol), "%s", URI_DEF_PROTOCOL);
-
-            /* 提取域名 */
-            s = field->uri;
-
-            len = ch - s;
-            len = (len < sizeof(field->host) - 1)? len : sizeof(field->host) - 1;
-            memcpy(field->host, s, len);
-            field->host[len] = '\0';
-
-            /* 提取端口号 */
-            goto URI_GET_PORT;
-        }
-
-        return -1; /* 格式有误 */
-    }
-    /* 2. 无协议 且 无端口号 */
-    else if ('/' == *ch)
-    {
-        if (s == ch)
-        {
-            return -1;  /* 此URL为相对地址: /Default.asp?opt=query&tel=123 */
-        }
-
-        /* 设置协议(默认:HTTP) */
-        snprintf(field->protocol, sizeof(field->protocol), "%s", URI_DEF_PROTOCOL);
-
-        goto URI_GET_HOST;
-    }
-
-    return -1;
+    return 0;
 }
 
 /******************************************************************************
