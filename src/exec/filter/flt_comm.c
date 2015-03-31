@@ -696,9 +696,7 @@ int flt_push_url_to_crwlq(flt_cntx_t *ctx,
     unsigned int len, idx;
     flt_domain_ip_map_t map;
 
-    if ('\0' == host[0]
-        || NULL == strstr(url, "69cheng")
-        || NULL == strstr(url, "second"))
+    if ('\0' == host[0])
     {
         log_error(ctx->log, "Host is invalid! url:%s", url);
         return FLT_ERR;
