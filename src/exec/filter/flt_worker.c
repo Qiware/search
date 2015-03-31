@@ -300,9 +300,9 @@ static int flt_worker_deep_hdl(flt_cntx_t *ctx, flt_worker_t *worker, gumbo_resu
             continue;
         }
 
-        if (URI_HTTP_PROTOCOL != field->protocol)
+        if (URI_HTTP_PROTOCOL != field.protocol)
         {
-            log_warn(ctx->log, "Uri [%s] isn't base http protocol!", fiedl->uri);
+            log_warn(ctx->log, "Uri [%s] isn't base http protocol!", field.uri);
             continue;
         }
 
