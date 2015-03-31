@@ -8,7 +8,7 @@
  ** 作  者: # Qifeng.zou # 2014.09.04 #
  ******************************************************************************/
 #include "log.h"
-#include "str.h"
+#include "uri.h"
 #include "lock.h"
 #include "hash.h"
 #include "common.h"

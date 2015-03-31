@@ -1,125 +1,4 @@
-#include <string.h>
-
-#include "str.h"
-#include <ctype.h>
-
-/******************************************************************************
- **函数名称: str_to_lower
- **功    能: 将字串转为小字母
- **输入参数:
- **     str: 字串
- **输出参数:
- **返    回: 字串对象
- **实现描述: 
- **注意事项:
- **作    者: # Qifeng.zou # 2014.09.18 #
- ******************************************************************************/
-str_t *str_to_lower(str_t *s)
-{
-    int idx;
-
-    for (idx=0; idx<s->len; ++idx)
-    {
-        switch (s->str[idx])
-        {
-            case 'A':
-            case 'B':
-            case 'C':
-            case 'D':
-            case 'E':
-            case 'F':
-            case 'G':
-            case 'H':
-            case 'I':
-            case 'J':
-            case 'K':
-            case 'L':
-            case 'M':
-            case 'N':
-            case 'O':
-            case 'P':
-            case 'Q':
-            case 'R':
-            case 'S':
-            case 'T':
-            case 'U':
-            case 'V':
-            case 'W':
-            case 'X':
-            case 'Y':
-            case 'Z':
-            {
-                s->str[idx] += 32;
-                break;
-            }
-            default:
-            {
-                break;
-            }
-        }
-    }
-
-    return s;
-}
-
-/******************************************************************************
- **函数名称: str_to_upper
- **功    能: 将字串转为大字母
- **输入参数:
- **     str: 字串
- **输出参数:
- **返    回: 字串对象
- **实现描述: 
- **注意事项:
- **作    者: # Qifeng.zou # 2014.09.18 #
- ******************************************************************************/
-str_t *str_to_upper(str_t *s)
-{
-    int idx;
-
-    for (idx=0; idx<s->len; ++idx)
-    {
-        switch (s->str[idx])
-        {
-            case 'a':
-            case 'b':
-            case 'c':
-            case 'd':
-            case 'e':
-            case 'f':
-            case 'g':
-            case 'h':
-            case 'i':
-            case 'j':
-            case 'k':
-            case 'l':
-            case 'm':
-            case 'n':
-            case 'o':
-            case 'p':
-            case 'q':
-            case 'r':
-            case 's':
-            case 't':
-            case 'u':
-            case 'v':
-            case 'w':
-            case 'x':
-            case 'y':
-            case 'z':
-            {
-                s->str[idx] -= 32;
-                break;
-            }
-            default:
-            {
-                break;
-            }
-        }
-    }
-
-    return s;
-}
+#include "uri.h"
 
 /******************************************************************************
  **函数名称: uri_trim
@@ -493,6 +372,105 @@ int uri_reslove(const char *uri, uri_field_t *field)
 }
 
 /******************************************************************************
+ **函数名称: uri_is_valid
+ **功    能: 判断URI的合法性
+ **输入参数: 
+ **     uri: URI
+ **输出参数: NONE
+ **返    回: true:合法 false:不合法
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.10.31 #
+ ******************************************************************************/
+bool uri_is_valid(const char *uri)
+{
+    if (NULL == uri
+        || '\0' == *uri)
+    {
+        return false;
+    }
+
+    for (; '\0' != *uri; ++uri)
+    {
+        switch (*uri)
+        {
+            case ' ':
+            case '\n':
+            case '\r':
+            case '[':
+            case ']':
+            case '(':
+            case ')':
+            case ';':
+            {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+/* URI合法后缀 */
+static const char g_uri_suffix[][URI_SUFFIX_LEN] = 
+{
+    /* 按网页划分 */
+    ".html"         /* 静态网页 */
+    , ".htm"        /* 静态网页 */
+    , ".asp"        /* ASP动态网页 */
+    , ".aspx"       /* ASP动态网页 */
+    , ".php"        /* PHP动态网页 */
+    , ".shtml"      /* 静态网页 */
+    , ".shtm"       /* 静态网页 */
+    , ".stm"        /* 静态网页 */
+
+    /* 按机构划分 */
+    , ".rec"        /* 娱乐类 */
+    , ".arts"       /* 艺术类 */
+    , ".hom"        /* 个人类 */
+    , ".com"        /* 商业类 */
+    , ".edu"        /* 教育类 */
+    , ".gov"        /* 政府类 */
+    , ".org"        /* 非盈利类 */
+    , ".info"       /* 信息服务类 */
+    , ".net"        /* 网络服务机构类 */
+
+    /* 按地域划分 */
+    , ".cn"         /* 中国大陆 */
+    , ".hk"         /* 中国香港 */
+    , ".tw"         /* 中国台湾 */
+
+    /* 结束标志: 请在此行上方添加合法后缀 */
+    , ""
+};
+
+/******************************************************************************
+ **函数名称: uri_is_valid_suffix
+ **功    能: 判断URI的后缀是否合法性
+ **输入参数: 
+ **     uri: URI
+ **输出参数: NONE
+ **返    回: true:合法 false:不合法
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.11.04 #
+ ******************************************************************************/
+bool uri_is_valid_suffix(const char *suffix)
+{
+    int idx;
+
+    for (idx=0; '\0' != g_uri_suffix[idx][0]; ++idx)
+    {
+        if (!strcmp(suffix, g_uri_suffix[idx]))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/******************************************************************************
  **函数名称: href_to_uri
  **功    能: 将href字段转化成uri
  **输入参数: 
@@ -637,103 +615,4 @@ int href_to_uri(const char *href, const char *site, uri_field_t *field)
     goto HREF_IS_LOCAL_PATH;
 
     return -1;
-}
-
-/******************************************************************************
- **函数名称: uri_is_valid
- **功    能: 判断URI的合法性
- **输入参数: 
- **     uri: URI
- **输出参数: NONE
- **返    回: true:合法 false:不合法
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.10.31 #
- ******************************************************************************/
-bool uri_is_valid(const char *uri)
-{
-    if (NULL == uri
-        || '\0' == *uri)
-    {
-        return false;
-    }
-
-    for (; '\0' != *uri; ++uri)
-    {
-        switch (*uri)
-        {
-            case ' ':
-            case '\n':
-            case '\r':
-            case '[':
-            case ']':
-            case '(':
-            case ')':
-            case ';':
-            {
-                return false;
-            }
-        }
-    }
-
-    return true;
-}
-
-/* URI合法后缀 */
-static const char g_uri_suffix[][URI_SUFFIX_LEN] = 
-{
-    /* 按网页划分 */
-    ".html"         /* 静态网页 */
-    , ".htm"        /* 静态网页 */
-    , ".asp"        /* ASP动态网页 */
-    , ".aspx"       /* ASP动态网页 */
-    , ".php"        /* PHP动态网页 */
-    , ".shtml"      /* 静态网页 */
-    , ".shtm"       /* 静态网页 */
-    , ".stm"        /* 静态网页 */
-
-    /* 按机构划分 */
-    , ".rec"        /* 娱乐类 */
-    , ".arts"       /* 艺术类 */
-    , ".hom"        /* 个人类 */
-    , ".com"        /* 商业类 */
-    , ".edu"        /* 教育类 */
-    , ".gov"        /* 政府类 */
-    , ".org"        /* 非盈利类 */
-    , ".info"       /* 信息服务类 */
-    , ".net"        /* 网络服务机构类 */
-
-    /* 按地域划分 */
-    , ".cn"         /* 中国大陆 */
-    , ".hk"         /* 中国香港 */
-    , ".tw"         /* 中国台湾 */
-
-    /* 结束标志: 请在此行上方添加合法后缀 */
-    , ""
-};
-
-/******************************************************************************
- **函数名称: uri_is_valid_suffix
- **功    能: 判断URI的后缀是否合法性
- **输入参数: 
- **     uri: URI
- **输出参数: NONE
- **返    回: true:合法 false:不合法
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.11.04 #
- ******************************************************************************/
-bool uri_is_valid_suffix(const char *suffix)
-{
-    int idx;
-
-    for (idx=0; '\0' != g_uri_suffix[idx][0]; ++idx)
-    {
-        if (!strcmp(suffix, g_uri_suffix[idx]))
-        {
-            return true;
-        }
-    }
-
-    return false;
 }

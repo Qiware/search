@@ -6,7 +6,7 @@
 #include <string.h>
 
 #include "log.h"
-#include "str.h"
+#include "uri.h"
 #include "http.h"
 #include "common.h"
 

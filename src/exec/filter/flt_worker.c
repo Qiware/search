@@ -9,7 +9,7 @@
  ******************************************************************************/
 
 #include "log.h"
-#include "str.h"
+#include "uri.h"
 #include "http.h"
 #include "filter.h"
 #include "common.h"

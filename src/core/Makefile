@@ -41,7 +41,8 @@ SRC_LIST = hash.c \
 			unix_socket.c \
 			hash_tab.c \
 			hash_array.c \
-			string.c
+			str.c \
+			uri.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST))
 
