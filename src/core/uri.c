@@ -157,15 +157,19 @@ int uri_get_host(const char *uri, char *host, int size)
     {
         case ':':
         {
-            if ('/' == *(p+1)) {
-                if ('/' == *(p+2)) {
-                    s = p + 3;
+            if ('/' == *(p+1))
+            {
+                if ('/' == *(p+2))
+                {
+                    p += 3;
+                    s = p;
+                    break;
                 }
-                else {
-                    return -1;
-                }
+                return -1;
             }
-            else if (isdigit(*(p+1))) {
+            else if (isdigit(*(p+1)))
+            {
+                ++p;
                 goto GET_HOST;
             }
             return -1;
@@ -176,6 +180,7 @@ int uri_get_host(const char *uri, char *host, int size)
         }
 	    case '.':
         {
+            ++p;
             break; /* 继续处理 */
         }
         default:
@@ -184,8 +189,8 @@ int uri_get_host(const char *uri, char *host, int size)
         }
     }
 
-	++p;
-	while (isalpha(*p) || isdigit(*p) || '.' == *p)
+	while (isalpha(*p) || isdigit(*p)
+        || '.' == *p || '-' == *p || '_' == *p)
 	{
 		++p;
 	}
