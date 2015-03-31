@@ -56,5 +56,6 @@ void queue_destroy(queue_t *q);
 /* 获取队列剩余空间 */
 #define queue_space(q) ((q)->queue.max - (q)->queue.num)
 #define queue_used(q) ((q)->queue.num)
+#define queue_size(q) ((q)->queue.size)
 
 #endif /*__QUEUE_H__*/
