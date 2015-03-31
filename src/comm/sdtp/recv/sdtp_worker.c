@@ -230,7 +230,8 @@ static int sdtp_worker_event_core_hdl(sdtp_cntx_t *ctx, sdtp_worker_t *worker)
  ******************************************************************************/
 static int sdtp_worker_cmd_proc_req_hdl(sdtp_cntx_t *ctx, sdtp_worker_t *worker, const sdtp_cmd_t *cmd)
 {
-    void *addr;
+    int *num, idx;
+    void *addr, *ptr;
     queue_t *rq;
     sdtp_header_t *head;
     sdtp_reg_t *reg;
@@ -248,18 +249,38 @@ static int sdtp_worker_cmd_proc_req_hdl(sdtp_cntx_t *ctx, sdtp_worker_t *worker,
             log_trace(worker->log, "Didn't get data from queue!");
             return SDTP_OK;
         }
+
+        num = (int *)addr;
+        ptr = addr + sizeof(int);
         
-        /* 3. 执行回调函数 */
-        head = (sdtp_header_t *)addr;
+        for (idx=0; idx<*num; ++idx)
+        {
+            /* 3. 执行回调函数 */
+            head = (sdtp_header_t *)ptr;
 
-        reg = &ctx->reg[head->type];
+            reg = &ctx->reg[head->type];
+            if (NULL == reg->proc)
+            {
+                ptr += head->length + sizeof(sdtp_header_t);
+                ++worker->drop_total;   /* 丢弃计数 */
+                continue;
+            }
 
-        reg->proc(head->type, addr+sizeof(sdtp_header_t), head->length, reg->args);
+            if (reg->proc(head->type, addr+sizeof(sdtp_header_t), head->length, reg->args))
+            {
+                ++worker->err_total;    /* 错误计数 */
+            }
+            else
+            {
+                ++worker->proc_total;   /* 处理计数 */
+            }
+
+            ptr += head->length + sizeof(sdtp_header_t);
+        }
 
         /* 4. 释放内存空间 */
         queue_dealloc(rq, addr);
 
-        ++worker->proc_total; /* 处理计数 */
     }
 
     return SDTP_OK;

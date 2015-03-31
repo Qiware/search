@@ -47,6 +47,19 @@ static int sdtp_rsvr_del_conn_hdl(sdtp_rsvr_t *rsvr, list2_node_t *node);
 static int sdtp_rsvr_fill_send_buff(sdtp_rsvr_t *rsvr, sdtp_sck_t *sck);
 static int sdtp_rsvr_clear_mesg(sdtp_rsvr_t *rsvr, sdtp_sck_t *sck);
 
+static int sdtp_rsvr_queue_alloc(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr);
+#define sdtp_rsvr_queue_push(ctx, rsvr) /* 将输入推入队列 */\
+    queue_push(ctx->recvq[rsvr->queue.rqid], rsvr->queue.start)
+#define sdtp_rsvr_queue_reset(rsvr) \
+{ \
+    (rsvr)->queue.rqid = -1; \
+    (rsvr)->queue.start = NULL; \
+    (rsvr)->queue.addr = NULL; \
+    (rsvr)->queue.end = NULL; \
+    (rsvr)->queue.num = NULL; \
+    (rsvr)->queue.size = 0; \
+}
+
 /* 随机选择接收线程 */
 #define sdtp_rand_recv(ctx) ((ctx)->listen.total++ % (ctx->recvtp->num))
 
@@ -279,15 +292,7 @@ int sdtp_rsvr_init(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr, int tidx)
     rsvr->log = ctx->log;
     rsvr->ctm = time(NULL);
 
-    /* 1. 创建各队列滞留条数数组 */
-    rsvr->delay_total = calloc(ctx->conf.rqnum, sizeof(uint64_t));
-    if (NULL == rsvr->delay_total)
-    {
-        log_fatal(rsvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return SDTP_ERR;
-    }
-
-    /* 2. 创建CMD套接字 */
+    /* > 创建CMD套接字 */
     sdtp_rsvr_usck_path(conf, path, rsvr->tidx);
     
     rsvr->cmd_sck_id = unix_udp_creat(path);
@@ -297,7 +302,7 @@ int sdtp_rsvr_init(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr, int tidx)
         return SDTP_ERR;
     }
 
-    /* 3. 创建SLAB内存池 */
+    /* > 创建SLAB内存池 */
     addr = calloc(1, SDTP_MEM_POOL_SIZE);
     if (NULL == addr)
     {
@@ -311,6 +316,9 @@ int sdtp_rsvr_init(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr, int tidx)
         log_error(rsvr->log, "Initialize slab mem-pool failed!");
         return SDTP_ERR;
     }
+
+    /* > 初始化队列设置 */
+    sdtp_rsvr_queue_reset(rsvr);
 
     return SDTP_OK;
 }
@@ -722,6 +730,44 @@ static int sdtp_rsvr_sys_mesg_proc(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_sck
 }
 
 /******************************************************************************
+ **函数名称: sdtp_rsvr_queue_alloc
+ **功    能: 申请队列空间
+ **输入参数: 
+ **     ctx: 全局对象
+ **     rsvr: 接收服务
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.04.01 #
+ ******************************************************************************/
+static int sdtp_rsvr_queue_alloc(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr)
+{
+    rsvr->queue.rqid = rand() % ctx->conf.rqnum;
+
+    rsvr->queue.start = queue_malloc(ctx->recvq[rsvr->queue.rqid]);
+    if (NULL == rsvr->queue.start)
+    {
+        rsvr->queue.rqid = -1;
+        sdtp_rsvr_cmd_proc_all_req(ctx, rsvr);
+
+        log_warn(rsvr->log, "Recv queue was full! Perhaps lock conflicts too much!"
+                "recv:%llu drop:%llu error:%llu",
+                rsvr->recv_total, rsvr->drop_total, rsvr->err_total);
+        return SDTP_ERR;
+    }
+
+    rsvr->queue.num = (int *)rsvr->queue.start;
+    *rsvr->queue.num = 0;
+    rsvr->queue.addr = rsvr->queue.start + sizeof(int);
+    rsvr->queue.end = rsvr->queue.start + queue_size(ctx->recvq[rsvr->queue.rqid]);
+    rsvr->queue.size = queue_size(ctx->recvq[rsvr->queue.rqid]);
+    rsvr->queue.alloc_tm = time(NULL);
+
+    return SDTP_OK;
+}
+
+/******************************************************************************
  **函数名称: sdtp_rsvr_exp_mesg_proc
  **功    能: 自定义消息处理
  **输入参数: 
@@ -739,55 +785,42 @@ static int sdtp_rsvr_sys_mesg_proc(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_sck
  ******************************************************************************/
 static int sdtp_rsvr_exp_mesg_proc(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_sck_t *sck)
 {
-    void *addr;
-    int times = 0, rqid;
-    static uint8_t num = 0;
+    int len;
     sdtp_snap_t *recv = &sck->recv;
     sdtp_header_t *head = (sdtp_header_t *)recv->optr;
 
     ++rsvr->recv_total; /* 总数 */
 
-AGAIN:
-    /* 1. 从队列申请空间 */
-    rqid = rand() % ctx->conf.rqnum;
-
-    addr = queue_malloc(ctx->recvq[rqid]);
-    if (NULL == addr)
+    while (1)
     {
-        sdtp_rsvr_cmd_proc_all_req(ctx, rsvr);
-
-        if (times++ < 3)
+        /* > 从队列申请空间 */
+        if (-1 == rsvr->queue.rqid)
         {
-            goto AGAIN;
+            if (sdtp_rsvr_queue_alloc(ctx, rsvr))
+            {
+                ++rsvr->drop_total; /* 丢弃计数 */
+                log_error(rsvr->log, "Alloc from queue failed!");
+                return SDTP_ERR;
+            }
         }
 
-        log_error(rsvr->log, "Recv queue was full! Perhaps lock conflicts too much!"
-                "recv:%llu delay:%llu drop:%llu error:%llu",
-                rsvr->recv_total, rsvr->delay_total[rqid],
-                rsvr->drop_total, rsvr->err_total);
-        return SDTP_OK;
-    }
+        /* > 进行数据拷贝 */
+        len = head->length + sizeof(sdtp_header_t);
+        if (rsvr->queue.end - rsvr->queue.addr >= len)
+        {
+            memcpy(rsvr->queue.addr, recv->optr, len);
+            rsvr->queue.addr += len;
+            ++(*rsvr->queue.num);
+            return SDTP_OK;
+        }
 
-    /* 2. 进行数据拷贝 */
-    memcpy(addr, recv->optr, sizeof(sdtp_header_t) + head->length);
+        /* > 将数据放入队列 */
+        sdtp_rsvr_queue_push(ctx, rsvr);
 
-    /* 3. 将数据放入队列 */
-    if (queue_push(ctx->recvq[rqid], addr))
-    {
-        queue_dealloc(ctx->recvq[rqid], addr);
+        /* > 发送处理请求 */
+        sdtp_rsvr_cmd_proc_req(ctx, rsvr, rsvr->queue.rqid);
 
-        ++rsvr->drop_total;  /* 丢弃计数 */
-
-        log_error(rsvr->log, "Push failed! tidx:[%d] recv:%llu drop:%llu error:%llu",
-                rsvr->tidx, rsvr->recv_total,
-                rsvr->drop_total, rsvr->err_total);
-        return SDTP_OK;  /* Note: Don't return error */
-    }
-
-    /* 4. 发送处理请求 */
-    if ((++num)%2)
-    {
-        sdtp_rsvr_cmd_proc_req(ctx, rsvr, rqid);
+        sdtp_rsvr_queue_reset(rsvr);
     }
 
     return SDTP_OK;
@@ -844,7 +877,17 @@ static int sdtp_rsvr_event_timeout_hdl(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr)
     sdtp_sck_t *curr;
     list2_node_t *node, *next, *tail;
 
-    /* 1. 检测超时连接 */
+    rsvr->ctm = time(NULL);
+
+    /* > 将数据放入队列 */
+    if (-1 != rsvr->queue.rqid
+        && (rsvr->ctm - rsvr->queue.alloc_tm > 5))
+    {
+        sdtp_rsvr_queue_push(ctx, rsvr);
+        sdtp_rsvr_queue_reset(rsvr);
+    }
+
+    /* > 检测超时连接 */
     node = rsvr->conn_list.head;
     if (NULL == node)
     {
@@ -852,7 +895,6 @@ static int sdtp_rsvr_event_timeout_hdl(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr)
     }
 
     tail = node->prev;
-    rsvr->ctm = time(NULL);
     while ((NULL != node) && (false == is_end))
     {
         if (tail == node)
@@ -1142,7 +1184,7 @@ static int sdtp_rsvr_cmd_proc_req(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr, int rqid)
 
     cmd.type = SDTP_CMD_PROC_REQ;
     req->ori_rsvr_tidx = rsvr->tidx;
-    req->num = ++rsvr->delay_total[rqid]; /* +1 */
+    req->num = -1;
     req->rqidx = rqid;
 
     /* 1. 随机选择Work线程 */
@@ -1158,8 +1200,6 @@ static int sdtp_rsvr_cmd_proc_req(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr, int rqid)
                 errno, strerror(errno), path);
         return SDTP_ERR;
     }
-
-    rsvr->delay_total[rqid] = 0;
 
     return SDTP_OK;
 }
@@ -1183,10 +1223,7 @@ static int sdtp_rsvr_cmd_proc_all_req(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr)
     /* 依次遍历滞留总数 */
     for (idx=0; idx<ctx->conf.rqnum; ++idx)
     {
-        if (rsvr->delay_total[idx] > 0)
-        {
-            sdtp_rsvr_cmd_proc_req(ctx, rsvr, idx);
-        }
+        sdtp_rsvr_cmd_proc_req(ctx, rsvr, idx);
     }
 
     return SDTP_OK;

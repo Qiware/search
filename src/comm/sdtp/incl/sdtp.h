@@ -107,11 +107,23 @@ typedef struct
     fd_set wrset;                       /* 可写集合 */
     list2_t conn_list;                  /* 套接字链表 */
 
+    /* 队列缓存 */
+    struct
+    {
+        int rqid;
+        void *start;
+        void *addr;
+        void *end;
+        int *num;
+        int size;
+        time_t alloc_tm;
+    } queue;
+
+    /* 统计信息 */
     uint32_t connections;               /* TCP连接数 */
     uint64_t recv_total;                /* 获取的数据总条数 */
     uint64_t err_total;                 /* 错误的数据条数 */
     uint64_t drop_total;                /* 丢弃的数据条数 */
-    uint64_t *delay_total;              /* 滞留处理的数据条数 */
 } sdtp_rsvr_t;
 
 /* 工作对象 */
