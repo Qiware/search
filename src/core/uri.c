@@ -345,8 +345,6 @@ int uri_get_path(const char *uri, char *path, int size)
  ******************************************************************************/
 int uri_reslove(const char *uri, uri_field_t *field)
 {
-	int protocol;
-
     memset(field, 0, sizeof(uri_field_t));
 
     /* 1. 剔除URI前后的非法字符 */
@@ -357,18 +355,25 @@ int uri_reslove(const char *uri, uri_field_t *field)
     }
     
 	/* 2. 获取协议类型 */
-	protocol = uri_get_protocol(uri);
-	if (URI_HTTP_PROTOCOL != protocol)
-	{
+	field->protocol = uri_get_protocol(uri);
+    if (URI_UNKNOWN_PROTOCOL == field->protocol)
+    {
 		return -1; /* 只支持HTTP协议 */
-	}
-
-	snprintf(field->protocol, sizeof(field->protocol), "%s", URI_DEF_PROTOCOL);
+    }
 
 	/* 3. 获取HOST 端口 路径等 */
-	if (uri_get_host(uri, field->host, sizeof(field->host))
-		|| (field->port = uri_get_port(uri)) < 0
-		|| uri_get_path(uri, field->path, sizeof(field->path)))
+    if (uri_get_host(uri, field->host, sizeof(field->host)))
+    {
+        return -1;
+    }
+
+    field->port = uri_get_port(uri);
+	if (field->port < 0)
+    {
+        return -1;
+    }
+
+	if (uri_get_path(uri, field->path, sizeof(field->path)))
 	{
 		return -1;
 	}

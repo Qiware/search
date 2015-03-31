@@ -47,7 +47,7 @@ typedef struct
     char uri[URI_MAX_LEN];      /* URI */
     int len;                    /* URI长度 */
 
-    char protocol[URI_PROTOCOL_MAX_LEN];    /* 协议类型 */
+    uri_protocol_e protocol;    /* 协议类型 */
     char host[URI_MAX_LEN];     /* 域名 */
     char path[URI_MAX_LEN];     /* 路径信息 */
     int port;                   /* 端口号 */
