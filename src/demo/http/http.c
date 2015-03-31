@@ -25,7 +25,7 @@ int main(int argc, char *argv[])
 
     href_to_uri(href, site, &field);
 
-    fprintf(stdout, "P:%s H:%s P:%d P:%s R:%d\n",
+    fprintf(stdout, "P:%d H:%s P:%d P:%s R:%d\n",
             field.protocol, field.host, field.port, field.path, ret);
     return 0;
 }

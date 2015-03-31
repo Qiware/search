@@ -296,21 +296,27 @@ static int flt_worker_deep_hdl(flt_cntx_t *ctx, flt_worker_t *worker, gumbo_resu
         /* > 将href转至uri */
         if (0 != href_to_uri((const char *)node->data, info->uri, &field))
         {
-            log_info(ctx->log, "Uri [%s] is invalid!", (char *)node->data);
+            log_warn(ctx->log, "Href [%s] of uri [%s] is invalid!", (char *)node->data, info->uri);
+            continue;
+        }
+
+        if (URI_HTTP_PROTOCOL != field->protocol)
+        {
+            log_warn(ctx->log, "Uri [%s] isn't base http protocol!", fiedl->uri);
             continue;
         }
 
         /* > 判断URI是否已经被推送到队列中 */
         if (flt_is_uri_push(worker->redis, conf->redis.push_tab, field.uri))
         {
-            log_info(ctx->log, "Uri [%s] was pushed!", (char *)node->data);
+            log_warn(ctx->log, "Uri [%s] was pushed!", field.uri);
             continue;
         }
 
         /* > 推送到CRWL队列 */
         if (flt_push_url_to_crwlq(ctx, field.uri, field.host, field.port, info->depth+1))
         {
-            log_info(ctx->log, "Push url [%s] redis taskq failed!", (char *)node->data);
+            log_error(ctx->log, "Push url [%s] redis taskq failed!", (char *)node->data);
             continue;
         }
     }
