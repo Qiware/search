@@ -484,75 +484,72 @@ bool uri_is_valid_suffix(const char *suffix)
  **函数名称: href_to_uri
  **功    能: 将href字段转化成uri
  **输入参数: 
- **     href: 从网页site中提取出来的href字段
+ **     ori_href: 从网页site中提取出来的原始href字段
  **     site: 网址
  **输出参数:
  **     field: 解析href后URI的各域信息
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
- **     href字段值可能为正常的URI, 也可能为绝对路径, 也可能为相对路径,也可能错误.
+ **     ori_href字段值可能为完整的URI, 也可能为绝对路径, 也可能为相对路径,也可能错误.
  **作    者: # Qifeng.zou # 2014.10.30 #
  ******************************************************************************/
-int href_to_uri(const char *href, const char *site, uri_field_t *field)
+int href_to_uri(const char *ori_href, const char *site, uri_field_t *field)
 {
     int len, up = 0;
     const char *p, *p2;
-    char uri[URI_MAX_LEN], tmp[URI_MAX_LEN];
+    char uri[URI_MAX_LEN], href[URI_MAX_LEN];
 
     /* 1. 踢出URI前后的空格 */
-    len = uri_trim(href, tmp, sizeof(tmp));
+    len = uri_trim(ori_href, href, sizeof(href));
     if (len <= 0)
     {
         return -1;
     }
 
-    if (!uri_is_valid(tmp))
+    if (!uri_is_valid(href))
     {
         return -1;
     }
 
     /* 2. 判断URI类型(正常的URI, 相对路径, 绝对路径, 也可能异常) */
     /* 类似格式: http://www.baidu.com */
-    if (!strncmp(URI_HTTP_STR, tmp, URI_HTTP_STR_LEN)
-        || !strncmp(URI_WWW_STR, tmp, URI_WWW_STR_LEN))
+    if (!strncmp(URI_HTTP_STR, href, URI_HTTP_STR_LEN)
+        || !strncmp(URI_WWW_STR, href, URI_WWW_STR_LEN)
+        || !strncmp(URI_HTTPS_STR, href, URI_HTTPS_STR_LEN)
+        || !strncmp(URI_FTP_STR, href, URI_FTP_STR_LEN)
+        || !strncmp(URI_MAILTO_STR, href, URI_MAILTO_STR_LEN)
+        || !strncmp(URI_THUNDER_STR, href, URI_THUNDER_STR_LEN)
+        || !strncmp(URI_ITEM_STR, href, URI_ITEM_STR_LEN)
+        || !strncmp(URI_ED2K_STR, href, URI_ED2K_STR_LEN))
     {
-        return uri_reslove(tmp, field);
-    }
-    else if (!strncmp(URI_HTTPS_STR, tmp, URI_HTTPS_STR_LEN)
-        || !strncmp(URI_FTP_STR, tmp, URI_FTP_STR_LEN)
-        || !strncmp(URI_MAILTO_STR, tmp, URI_MAILTO_STR_LEN)
-        || !strncmp(URI_THUNDER_STR, tmp, URI_THUNDER_STR_LEN)
-        || !strncmp(URI_ITEM_STR, tmp, URI_ITEM_STR_LEN)
-        || !strncmp(URI_ED2K_STR, tmp, URI_ED2K_STR_LEN))
-    {
-        return -1;  /* 不支持的协议类型 */
+        return uri_reslove(href, field);
     }
 
     /* 绝对路径(以斜杠'/'开头或以字母或数字开头的路径，都可视为绝对路径) */
-    if (href_is_abs(tmp) || isalpha(*tmp))
+    if (href_is_abs(href) || isalpha(*href))
     {
         if (0 != uri_reslove(site, field))
         {
             return -1;
         }
 
-        if (isalpha(*tmp))
+        if (isalpha(*href))
         {
-            snprintf(uri, sizeof(uri), "%s%s:%d/%s", URI_HTTP_STR, field->host, field->port, tmp);
+            snprintf(uri, sizeof(uri), "%s%s:%d/%s", URI_HTTP_STR, field->host, field->port, href);
         }
         else
         {
-            snprintf(uri, sizeof(uri), "%s%s:%d%s", URI_HTTP_STR, field->host, field->port, tmp);
+            snprintf(uri, sizeof(uri), "%s%s:%d%s", URI_HTTP_STR, field->host, field->port, href);
         }
 
         return uri_reslove(uri, field);
     }
 
     /* 相对路径 */
-    if (href_is_up(tmp)) /* 上一级目录 */
+    if (href_is_up(href)) /* 上一级目录 */
     {
-        p = tmp;
+        p = href;
         do
         {
             ++up;
@@ -590,9 +587,9 @@ int href_to_uri(const char *href, const char *site, uri_field_t *field)
 
         return uri_reslove(uri, field);
     }
-    else if (href_is_loc(tmp)) /* 本级目录 */
+    else if (href_is_loc(href)) /* 本级目录 */
     {
-        p = tmp + 2;
+        p = href + 2;
 
     HREF_IS_LOCAL_PATH:
         p2 = site + strlen(site) - 1;
@@ -621,7 +618,7 @@ int href_to_uri(const char *href, const char *site, uri_field_t *field)
     }
 
     /* 本级目录分析 */
-    p = tmp;
+    p = href;
     goto HREF_IS_LOCAL_PATH;
 
     return -1;
