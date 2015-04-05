@@ -19,12 +19,12 @@
 #include <sys/socket.h>
 
 #include "log.h"
+#include "sck.h"
 #include "lock.h"
 #include "hash.h"
 #include "common.h"
 #include "search.h"
 #include "syscall.h"
-#include "sck_api.h"
 #include "srch_worker.h"
 #include "srch_listen.h"
 #include "srch_agent.h"

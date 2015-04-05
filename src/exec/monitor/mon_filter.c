@@ -15,7 +15,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
-#include "sck_api.h"
+#include "sck.h"
 #include "syscall.h"
 #include "monitor.h"
 #include "flt_cmd.h"

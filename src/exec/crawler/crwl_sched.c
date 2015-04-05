@@ -7,14 +7,12 @@
  **         负责将REDIS任务队列中的数据分发到不同的爬虫工作队列中
  ** 作  者: # Qifeng.zou # 2014.10.12 #
  ******************************************************************************/
-#include <stdint.h>
-
 #include "log.h"
 #include "str.h"
+#include "sck.h"
 #include "redis.h"
 #include "common.h"
 #include "crawler.h"
-#include "sck_api.h"
 #include "syscall.h"
 #include "crwl_task.h"
 #include "crwl_sched.h"

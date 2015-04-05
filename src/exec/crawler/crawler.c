@@ -7,22 +7,12 @@
  **         负责下载指定URL网页
  ** 作  者: # Qifeng.zou # 2014.09.04 #
  ******************************************************************************/
-#include <stdio.h>
-#include <netdb.h>
-#include <stdlib.h>
-#include <string.h>
-#include <getopt.h>
-#include <libgen.h>
-#include <sys/wait.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-
+#include "sck.h"
 #include "lock.h"
 #include "hash.h"
 #include "common.h"
 #include "crawler.h"
 #include "syscall.h"
-#include "sck_api.h"
 #include "crwl_man.h"
 #include "crwl_priv.h"
 #include "crwl_sched.h"

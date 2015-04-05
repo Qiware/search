@@ -7,10 +7,10 @@
 #include <stdint.h>
 #include <unistd.h>
 
+#include "sck.h"
 #include "log.h"
 #include "queue.h"
 #include "common.h"
-#include "sck_api.h"
 
 #define SDTP_NAME_MAX_LEN       (64)    /* 名称长度 */
 #define SDTP_RECONN_INTV        (2)     /* 连接重连间隔 */

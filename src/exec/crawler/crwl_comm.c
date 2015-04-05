@@ -8,12 +8,12 @@
  ** 作  者: # Qifeng.zou # 2014.09.04 #
  ******************************************************************************/
 #include "log.h"
+#include "sck.h"
 #include "lock.h"
 #include "hash.h"
 #include "common.h"
 #include "crawler.h"
 #include "syscall.h"
-#include "sck_api.h"
 #include "crwl_man.h"
 #include "crwl_sched.h"
 #include "crwl_worker.h"

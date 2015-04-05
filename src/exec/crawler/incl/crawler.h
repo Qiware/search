@@ -13,11 +13,11 @@
 #include <stdint.h>
 
 #include "log.h"
+#include "sck.h"
 #include "slab.h"
 #include "list.h"
 #include "queue.h"
 #include "common.h"
-#include "sck_api.h"
 #include "hash_tab.h"
 #include "crwl_priv.h"
 #include "crwl_task.h"

@@ -7,8 +7,6 @@
  **         负责下载指定URL网页
  ** 作  者: # Qifeng.zou # 2014.09.04 #
  ******************************************************************************/
-#include <time.h>
-
 #include "list.h"
 #include "http.h"
 #include "common.h"

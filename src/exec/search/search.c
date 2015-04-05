@@ -18,11 +18,11 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
+#include "sck.h"
 #include "lock.h"
 #include "hash.h"
 #include "common.h"
 #include "search.h"
-#include "sck_api.h"
 #include "syscall.h"
 #include "srch_worker.h"
 

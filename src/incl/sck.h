@@ -1,12 +1,12 @@
-#if !defined(__SCK_API_H__)
-#define __SCK_API_H__
-
-#include "common.h"
+#if !defined(__SCK_H__)
+#define __SCK_H__
 
 #include <netdb.h>
 #include <sys/timeb.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+
+#include "common.h"
 
 #define ntoh64(v) ((uint64_t)( \
         (uint64_t)(v) & 0x00000000000000FF) << 56 \
@@ -94,4 +94,4 @@ int udp_listen(int port);
 
 bool ip_isvalid(const char *ip);
 
-#endif /*__SCK_API_H__*/
+#endif /*__SCK_H__*/

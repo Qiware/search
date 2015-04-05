@@ -1,36 +1,28 @@
-###############################################################################
-## Coypright(C) 2014-2024 Xundao technology Co., Ltd
-##
-## 文件名: Makefile
-## 版本号: 1.0
-## 描  述: 日志服务模块
-## 作  者: # Qifeng.zou # 2014.09.01 #
-###############################################################################
-include $(PROJ)/make/build.mak
+CC = gcc
+CFLAGS = -Wall -O2
 
-INCLUDE = -I. -I$(PROJ)/src/incl
-LIBS_PATH = -L$(PROJ)/lib
-LIBS = -lpthread -lxd_core
+SRCS = recv.c
+OBJS = recv.o
+TARGET = recv
 
-SRC_LIST = connect.c
+SRCS2 = send.c
+OBJS2 = send.o
+TARGET2 = send 
 
-OBJS = $(subst .c,.o, $(SRC_LIST)) 
+.PHONY: clean
 
-TARGET = connect
-
-.PHONY: all clean
-
-all: $(TARGET)
+all: $(TARGET) $(TARGET2)
 $(TARGET): $(OBJS)
-	@$(CC) $(CFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS)
-	@echo "CC $@"
-	@rm -fr $(OBJS)
-	@echo "$@ is OK!"
+	$(CC) $(CFLAGS) -o $@ $(OBJS)
+$(TARGET2): $(OBJS2)
+	$(CC) $(CFLAGS) -o $@ $(OBJS2)
 
 $(OBJS): %.o : %.c
-	@$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
-	@echo "CC $(PWD)/$<"
+	$(CC) $(CFLAGS) -o $@ -c $<
+
+$(OBJS2): %.o : %.c
+	$(CC) $(CFLAGS) -o $@ -c $<
+
 
 clean:
-	@rm -fr $(OBJS) $(TARGET)
-	@echo "rm -fr *.o $(TARGET)"
+	rm -fr $(TARGET2) $(TARGET) $(OBJS2) $(OBJS)

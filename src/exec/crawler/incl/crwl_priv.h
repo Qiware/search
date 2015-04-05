@@ -1,7 +1,8 @@
 #if !defined(__CRWL_PRIV_H__)
 #define __CRWL_PRIV_H__
 
-#include "sck_api.h"
+#include "uri.h"
+#include "sck.h"
 
 /* 宏定义 */
 #define CRWL_EVENT_TMOUT_MSEC       (2000)  /* 超时(毫秒) */

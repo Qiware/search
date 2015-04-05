@@ -8,8 +8,8 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
+#include "sck.h"
 #include "menu.h"
-#include "sck_api.h"
 #include "mon_conf.h"
 
 /* 输入参数 */

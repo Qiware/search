@@ -14,8 +14,8 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
+#include "sck.h"
 #include "syscall.h"
-#include "sck_api.h"
 
 /******************************************************************************
  **函数名称: udp_listen

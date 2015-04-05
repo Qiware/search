@@ -493,7 +493,7 @@ void mem_dealloc(void *pool, void *p)
  **作    者: # Qifeng.zou # 2015.04.04 #
  ******************************************************************************/
 #define ONE_YEAR_HOURS  (8760)  /* 一年小时数 (365 * 24) */
-#define EIGHT_EAST_AREA_TM_DIFF_SEC     (28800)     /* 东八区时差: (8 * 60 *60) */
+#define EIGHT_EAST_AREA_TM_DIFF_SEC     (28800)     /* 东八区时差: (8 * 60 * 60) */
 struct tm *local_time(const time_t *timep, struct tm *result)
 {
     time_t time = *timep;

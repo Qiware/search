@@ -4,11 +4,11 @@
 #include <stdint.h>
 
 #include "log.h"
+#include "sck.h"
 #include "slab.h"
 #include "list.h"
 #include "list2.h"
 #include "queue.h"
-#include "sck_api.h"
 #include "sdtp_priv.h"
 #include "thread_pool.h"
 

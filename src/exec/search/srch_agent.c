@@ -3,12 +3,12 @@
 #include <sys/socket.h>
 #include <sys/epoll.h>
 
+#include "sck.h"
 #include "hash.h"
 #include "list.h"
 #include "common.h"
 #include "syscall.h"
 #include "xml_tree.h"
-#include "sck_api.h"
 #include "srch_agent.h"
 #include "thread_pool.h"
 

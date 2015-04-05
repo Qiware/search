@@ -7,7 +7,6 @@
  **         负责爬虫配置信息(crawler.xml)的解析加载
  ** 作  者: # Qifeng.zou # 2014.10.28 #
  ******************************************************************************/
-
 #include "syscall.h"
 #include "crawler.h"
 #include "crwl_conf.h"

@@ -2,9 +2,9 @@
 #define __FLT_PRIV_H__
 
 #include "log.h"
+#include "sck.h"
 #include "redis.h"
 #include "crawler.h"
-#include "sck_api.h"
 
 /* 宏定义 */
 #define FLT_THD_DEF_NUM             (05)    /* 默认线程数 */

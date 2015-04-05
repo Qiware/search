@@ -24,9 +24,9 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
+#include "sck.h"
 #include "syscall.h"
 #include "monitor.h"
-#include "sck_api.h"
 #include "srch_mesg.h"
 
 #define SRCH_SVR_IP_ADDR    "127.0.0.1"

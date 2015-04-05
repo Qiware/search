@@ -15,7 +15,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
-#include "sck_api.h"
+#include "sck.h"
 #include "syscall.h"
 #include "monitor.h"
 #include "crwl_cmd.h"
@@ -289,8 +289,8 @@ static int mon_crwl_query_worker_stat_print(crwl_cmd_t *cmd)
             "    异常比率: %lf%%\n",
             loctm.tm_year+1900, loctm.tm_mon+1, loctm.tm_mday,
             loctm.tm_hour, loctm.tm_min, loctm.tm_sec,
-            DAY(stat->ctm - stat->stm), HOUR(stat->ctm - stat->stm),
-            MIN(stat->ctm - stat->stm), SEC(stat->ctm - stat->stm),
+            TM_DAY(stat->ctm - stat->stm), TM_HOUR(stat->ctm - stat->stm),
+            TM_MIN(stat->ctm - stat->stm), TM_SEC(stat->ctm - stat->stm),
             (double)down_webpage_total / (stat->ctm - stat->stm),
             (double)(down_webpage_total - last_down_webpage_total) / diff_tm,
             (double)err_webpage_total / (down_webpage_total+1) * 100);
