@@ -177,7 +177,7 @@ static int syslog_write(syslog_cycle_t *log, int level,
 {
     struct tm loctm;
 
-    localtime_r(&ctm->time, &loctm);      /* 获取当前系统时间 */
+    local_time(&ctm->time, &loctm);      /* 获取当前系统时间 */
 
     switch (level)
     {

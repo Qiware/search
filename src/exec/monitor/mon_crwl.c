@@ -267,14 +267,14 @@ static int mon_crwl_query_worker_stat_print(crwl_cmd_t *cmd)
 
     /* 2. 其他信息 */
     stat->stm = ntohl(stat->stm);
-    localtime_r(&stat->stm, &loctm);
+    local_time(&stat->stm, &loctm);
 
     fprintf(stderr, "    启动时间: %04d-%02d-%02d %02d:%02d:%02d\n",
             loctm.tm_year+1900, loctm.tm_mon+1, loctm.tm_mday,
             loctm.tm_hour, loctm.tm_min, loctm.tm_sec);
 
     stat->ctm = ntohl(stat->ctm);
-    localtime_r(&stat->ctm, &loctm);
+    local_time(&stat->ctm, &loctm);
 
     diff_tm = stat->ctm - last_query_tm;
     if (0 == diff_tm)

@@ -361,7 +361,7 @@ static int log_rename(const log_file_info_t *file, const struct timeb *time)
     struct tm loctm;
     char newpath[FILE_PATH_MAX_LEN];
 
-    localtime_r(&time->time, &loctm);
+    local_time(&time->time, &loctm);
 
     /* FORMAT: *.logYYYYMMDDHHMMSS.bak */
     snprintf(newpath, sizeof(newpath), 
@@ -685,7 +685,7 @@ static int log_write(log_cycle_t *log, int level,
     time_t difftm;
     log_file_info_t *file = log->file;
 
-    localtime_r(&ctm->time, &loctm);        /* 获取当前系统时间 */
+    local_time(&ctm->time, &loctm);        /* 获取当前系统时间 */
 
     log_fcache_wrlock(file);                /* 缓存加锁 */
     pthread_mutex_lock(&log->lock);

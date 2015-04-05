@@ -452,3 +452,139 @@ void mem_dealloc(void *pool, void *p)
 {
     free(p);
 }
+
+/******************************************************************************
+ **函数名称: local_time
+ **功    能: 获取当前时间
+ **输入参数: 
+ **     timep: 当前秒(从1970年1月1日开始计时)
+ **输出参数:
+ **     result: 当前时间
+ **返    回: 当前时间
+ **实现描述: 
+ **     公历闰年的简单计算方法(符合以下条件之一的年份即为闰年)
+ **     1.能被4整除而不能被100整除.
+ **     2.能被400整除.
+ **     详情如下:
+ **       闰年(leap year),指在公历(格里历)或夏历中有闰日的年份,以及在中国旧历农历
+ **     中有闰月的年份.
+ **       地球绕太阳运行周期为365天5小时48分46秒(合365.24219天),即一回归年(tropical year).
+ **     公历的平年只有365日,比回归年短约0.2422日,每四年累积约一天,把这一天加于2月
+ **     末(2月29日),使当年的历年长度为366日,这一年就为闰年. 按照每四年一个闰年计算,
+ **     平均每年就要多算出0.0078天,经过四百年就会多出大约3天来,因此,每四百年中要减少
+ **     三个闰年.所以规定公历年份是整百数的,必须是400的倍数才是闰年,不是400的倍数的
+ **     就是平年.比如,1700年、1800年和1900年为平年,2000年为闰年.闰年的计算,归结起来
+ **     就是通常说的：四年一闰；百年不闰,四百年再闰；千年不闰,四千年再闰；万年不闰,
+ **     五十万年再闰.
+ **注意事项: 
+ **     1. 此函数相对localtime()而言, 是线程安全的
+ **     2. 此函数相对localtime_r()而言, 无加锁、拥有更高性能!
+ **     struct tm {
+ **        int tm_sec;    -- seconds
+ **        int tm_min;    -- minutes
+ **        int tm_hour;   -- hours
+ **        int tm_mday;   -- day of the month
+ **        int tm_mon;    -- month
+ **        int tm_year;   -- year
+ **        int tm_wday;   -- day of the week
+ **        int tm_yday;   -- day in the year
+ **        int tm_isdst;  -- daylight saving time(夏令制)
+ **     };
+ **作    者: # Qifeng.zou # 2015.04.04 #
+ ******************************************************************************/
+#define ONE_YEAR_HOURS  (8760)  /* 一年小时数 (365 * 24) */
+#define EIGHT_EAST_AREA_TM_DIFF_SEC     (28800)     /* 东八区时差: (8 * 60 *60) */
+struct tm *local_time(const time_t *timep, struct tm *result)
+{
+    time_t time = *timep;
+    long int pass_4year_num, n32_hpery;
+    static const int mon_days[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}; /* 各月天数(非闰年) */
+
+    /* > 计算时差: 北京时间处在东八区 */
+    time += EIGHT_EAST_AREA_TM_DIFF_SEC;
+    result->tm_isdst = 0;
+
+    /* 取秒时间 */
+    result->tm_sec = (int)(time % 60);
+
+    time /= 60; /* 总分钟数 */
+
+    /* 取分钟时间 */
+    result->tm_min = (int)(time % 60);
+
+    time /= 60; /* 总小时数 */
+
+    /* 计算星期几: 1970.01.01是星期四 */
+    result->tm_wday = (int)(time/24 + 4) % 7;
+
+    /* 取过去多少个四年，每四年有(3 * 365 + 366) * 24 = 35064 小时
+     * 注：假设每4年出现一次闰年，不过再后面会进行校正处理 */
+    pass_4year_num = ((unsigned int)time / 35064);
+
+    /* 计算年份 */
+    result->tm_year = (pass_4year_num << 2) + 70;
+
+    /* 四年中剩下的小时数 */
+    time %= 35064;
+
+    /* 计算在这一年的第几天 */
+    result->tm_yday = (time / 24) % 365;
+
+    /* 校正闰年影响的年份，计算一年中剩下的小时数 */
+    for (;;)
+    {
+        /* 一年的小时数 */
+        n32_hpery = ONE_YEAR_HOURS;
+
+        /* 判断闰年 */
+        if (0 == (result->tm_year & 3))
+        {
+            /* 是闰年, 一年则多24小时, 即一天 */
+            n32_hpery += 24;
+        }
+
+        if (time < n32_hpery)
+        {
+            break;
+        }
+
+        result->tm_year++;
+        time -= n32_hpery;
+    }
+
+    /* 小时数 */
+    result->tm_hour = (int)(time % 24);
+
+    /* 一年中剩下的天数 */
+    time /= 24;
+
+    //假定为闰年
+    time++;
+
+    //校正润年的误差 计算月份 日期
+    if (0 == (result->tm_year & 3))
+    {
+        if (time > 60)
+        {
+            time--;
+        }
+        else
+        {
+            if (60 == time)
+            {
+                result->tm_mon = 1;
+                result->tm_mday = 29;
+                return result;
+            }
+        }
+    }
+
+    //计算月日
+    for (result->tm_mon = 0; mon_days[result->tm_mon] < time; ++result->tm_mon)
+    {
+        time -= mon_days[result->tm_mon];
+    }
+
+    result->tm_mday = (int)(time);
+    return result;
+}

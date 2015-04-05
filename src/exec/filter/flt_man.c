@@ -684,7 +684,7 @@ static int flt_man_store_domain_ip_map_req_hdl(flt_cntx_t *ctx,
 
     /* > 存储至文件 */
     ftime(&ctm);
-    localtime_r(&ctm.time, &loctm);
+    local_time(&ctm.time, &loctm);
 
     snprintf(fname, sizeof(fname),
             "%s/%04d%02d%02d%02d%02d%02d%03d-%d.dim",
@@ -792,7 +792,7 @@ static int flt_man_store_domain_blacklist_req_hdl(flt_cntx_t *ctx,
 
     /* > 存储至文件 */
     ftime(&ctm);
-    localtime_r(&ctm.time, &loctm);
+    local_time(&ctm.time, &loctm);
 
     snprintf(fname, sizeof(fname),
             "%s/%04d%02d%02d%02d%02d%02d%03d-%d.bl",

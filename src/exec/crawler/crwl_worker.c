@@ -798,7 +798,7 @@ int crwl_worker_webpage_creat(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t 
     crwl_worker_socket_extra_t *extra = (crwl_worker_socket_extra_t *)sck->extra;
     crwl_conf_t *conf = ctx->conf;
 
-    localtime_r(&sck->crtm.time, &loctm);
+    local_time(&sck->crtm.time, &loctm);
 
     extra->webpage.size = 0;
     extra->webpage.idx = ++worker->total;
@@ -853,7 +853,7 @@ int crwl_worker_webpage_finfo(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t 
         ++worker->err_webpage_total;
     }
 
-    localtime_r(&sck->crtm.time, &loctm);
+    local_time(&sck->crtm.time, &loctm);
     snprintf(temp, sizeof(temp), "%s/wpi/.temp/%s.wpi", conf->download.path, extra->webpage.fname);
     snprintf(path, sizeof(path), "%s/wpi/%s.wpi", conf->download.path, extra->webpage.fname);
 

@@ -56,4 +56,6 @@ int limit_file_num(int max);
 /* 取数值上限 */
 #define div_ceiling(num, mod) ((num)%(mod)? (num)/(mod)+1 : (num)/(mod))
 
+struct tm *local_time(const time_t *timep, struct tm *result);
+
 #endif /*__XDO_UNISTD_H__*/
