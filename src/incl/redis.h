@@ -23,7 +23,8 @@ typedef struct
 redis_clst_t *redis_clst_init(const redis_conf_t *conf, int num);
 void redis_clst_destroy(redis_clst_t *clst);
 
-bool redis_hsetnx(redisContext *ctx, const char *hash, const char *key, const char *value);
+bool redis_hsetnx(redisContext *ctx, const char *hname, const char *key, const char *value);
+int redis_hlen(redisContext *redis, const char *hname);
 
 /******************************************************************************
  **函数名称: redis_rpush
