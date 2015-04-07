@@ -90,7 +90,10 @@ int tcp_listen(int port)
 int tcp_accept(int lsnfd, struct sockaddr *cliaddr)
 {
     int fd, opt = 1;
+    struct linger ln;
     socklen_t len = sizeof(cliaddr);
+
+    memset(&ln, 0, sizeof(ln));
 
     /* > 接收连接请求 */
     fd = accept(lsnfd, (struct sockaddr *)cliaddr, &len);
@@ -100,7 +103,13 @@ int tcp_accept(int lsnfd, struct sockaddr *cliaddr)
     }
 
     /* > 设置套接字属性 */
+    /* 解决: 端口被占用的问题 */
     setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(int));
+
+    /* 解决: 过多CLOSE_WAIT造成TOO MANY FILES TO OPEN */
+    ln.l_onoff = 1;
+    ln.l_linger = 0;
+    setsockopt(fd, SOL_SOCKET, SO_LINGER, (char *)&ln, sizeof(ln)); 
 
     fd_set_nonblocking(fd);
 
