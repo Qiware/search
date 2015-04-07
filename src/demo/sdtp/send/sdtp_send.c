@@ -47,9 +47,9 @@ int sdtp_send_debug(sdtp_cli_t *cli, int secs)
         sleep2 = 0;
         fails = 0;
         total = 0;
-        for(idx=0; idx<loop; idx++)
+        for (idx=0; idx<loop; idx++)
         {
-            if(sdtp_cli_send(cli, idx%3, data, rand()%SIZE + 1))
+            if (sdtp_cli_send(cli, idx%3, data, rand()%SIZE + 1))
             {
                 idx--;
                 usleep(2);
@@ -62,7 +62,7 @@ int sdtp_send_debug(sdtp_cli_t *cli, int secs)
         }
 
         gettimeofday(&etime, NULL);
-        if(etime.tv_usec < stime.tv_usec)
+        if (etime.tv_usec < stime.tv_usec)
         {
             etime.tv_sec--;
             etime.tv_usec += 1000000;
@@ -119,7 +119,7 @@ int main(int argc, const char *argv[])
     log = log_init(LOG_LEVEL_DEBUG, "./sdtp_ssvr.log");
 
     ctx = sdtp_ssvr_startup(&conf, log);
-    if(NULL == ctx) 
+    if (NULL == ctx) 
     {
         fprintf(stderr, "Start up send-server failed!");
         return -1;
@@ -127,14 +127,14 @@ int main(int argc, const char *argv[])
 
     Sleep(5);
     cli = sdtp_cli_init(&conf, 0, log);
-    if(NULL == cli)
+    if (NULL == cli)
     {
         fprintf(stderr, "Initialize send module failed!");
         return -1;
     }
 
     cli2 = sdtp_cli_init(&conf, 1, log);
-    if(NULL == cli2)
+    if (NULL == cli2)
     {
         fprintf(stderr, "Initialize send module failed!");
         return -1;
@@ -144,7 +144,7 @@ int main(int argc, const char *argv[])
 
     sdtp_send_debug(cli, sleep);
 
-    while(1) { pause(); }
+    while (1) { pause(); }
 
     fprintf(stderr, "Exit send server!");
 

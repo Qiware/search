@@ -193,7 +193,7 @@ crwl_cntx_t *crwl_cntx_init(char *pname, const char *path)
         }
 
         /* 8. 修改进程打开文件描述符的最大限制 */
-        if(limit_file_num(65535))
+        if (limit_file_num(65535))
         {
             log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
             break;
@@ -214,7 +214,7 @@ crwl_cntx_t *crwl_cntx_init(char *pname, const char *path)
         }
 
         return ctx;
-    } while(0);
+    } while (0);
 
     /* 释放内存 */
     if (ctx->conf) { crwl_conf_destroy(ctx->conf); }
@@ -458,13 +458,13 @@ int crwl_proc_lock(void)
 
     /* 2. 打开文件 */
     fd = Open(path, OPEN_FLAGS, OPEN_MODE);
-    if(fd < 0)
+    if (fd < 0)
     {
         return CRWL_ERR;
     }
 
     /* 3. 尝试加锁 */
-    if(proc_try_wrlock(fd) < 0)
+    if (proc_try_wrlock(fd) < 0)
     {
         Close(fd);
         return CRWL_ERR;

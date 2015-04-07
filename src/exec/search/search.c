@@ -8,16 +8,6 @@
  ** 作  者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
 
-#include <stdio.h>
-#include <netdb.h>
-#include <stdlib.h>
-#include <string.h>
-#include <getopt.h>
-#include <libgen.h>
-#include <sys/wait.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-
 #include "sck.h"
 #include "lock.h"
 #include "hash.h"

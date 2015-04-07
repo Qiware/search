@@ -137,22 +137,6 @@ srch_listen_t *srch_listen_init(srch_cntx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: srch_listen_destroy
- **功    能: 销毁侦听线程
- **输入参数:
- **     lsn: 侦听对象
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.11.18 #
- ******************************************************************************/
-int srch_listen_destroy(srch_listen_t *lsn)
-{
-    return SRCH_OK;
-}
-
-/******************************************************************************
  **函数名称: srch_listen_accept
  **功    能: 接收连接请求
  **输入参数:
@@ -169,14 +153,11 @@ int srch_listen_destroy(srch_listen_t *lsn)
 static int srch_listen_accept(srch_cntx_t *ctx, srch_listen_t *lsn)
 {
     int fd, tidx;
-    socklen_t len;
     srch_add_sck_t *add;
     struct sockaddr_in cliaddr;
 
-    len = sizeof(cliaddr);
-
     /* 1. 接收连接请求 */
-    fd = accept(lsn->lsn_sck_id, (struct sockaddr *)&cliaddr, &len);
+    fd = tcp_accept(lsn->lsn_sck_id, (struct sockaddr *)&cliaddr);
     if (fd < 0)
     {
         log_error(lsn->log, "errmsg:[%d] %s!", errno, strerror(errno));
@@ -184,7 +165,6 @@ static int srch_listen_accept(srch_cntx_t *ctx, srch_listen_t *lsn)
     }
 
     ++lsn->serial;
-    fd_set_nonblocking(fd);
 
     /* 2. 将通信套接字放入队列 */
     tidx = lsn->serial % ctx->conf->agent_num;

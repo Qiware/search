@@ -55,7 +55,7 @@ uint64_t sha256_reset(sha256_t* t)
     t->reg[6]=0x1f83d9ab;
     t->reg[7]=0x5be0cd19;
 
-    for(x = 0; x < 16; x ++)
+    for (x = 0; x < 16; x ++)
     {
         t->Padding[ x ] = t->DwordBuf[ x ] = 0;
     }
@@ -81,13 +81,13 @@ uint64_t sha256_calculate(sha256_t* t, char* dp, uint64_t dl)
     x = ((t->ByteNumLo >> 31) & 0x01) + ((z >> 31) & 0x01);
     z = (z & 0x7fffffff) | (x << 31);
     y = t->ByteNumHi + (x >> 1);
-    if(y > 0x1fffffff){ return -1; }
+    if (y > 0x1fffffff) { return -1; }
 
     t->ByteNumLo = z; 
     t->ByteNumHi = y;
 
-    for(w = 0; w < 16; w ++){ t->Padding[ w ] = t->DwordBuf[ w ]; }
-    for(w = 0; w < 8; w ++){ reg[ w ] = t->reg[ w ]; }
+    for (w = 0; w < 16; w ++) { t->Padding[ w ] = t->DwordBuf[ w ]; }
+    for (w = 0; w < 8; w ++) { reg[ w ] = t->reg[ w ]; }
     x = t->DwordBufBytes / 4;
     y = (t->DwordBufBytes & 3) * 8;
     w = (int)(((t->DwordBufBytes + dl) >> 6) & 0x03ffffff);
@@ -96,8 +96,8 @@ uint64_t sha256_calculate(sha256_t* t, char* dp, uint64_t dl)
     /** 
         64Bytes Full Blocks Loop -- SHA1 is Big endian Order !
     */
-    while(w > 0){
-        while(x < 16){
+    while (w > 0) {
+        while (x < 16) {
             t->Padding[ x ] = (t->Padding[ x ] & ~(0x000000ff << (24 - y)))
                                     | ((dp[ z ] & 0x000000ff) << (24 - y));
             y = y + 8; x += (y >> 5); y &= 0x1f; z ++; 
@@ -107,8 +107,8 @@ uint64_t sha256_calculate(sha256_t* t, char* dp, uint64_t dl)
     }
     
     /** Clear Dirty Data */
-    if((x | y) == 0){
-        for(w = 0; w < 16; w ++)
+    if ((x | y) == 0) {
+        for (w = 0; w < 16; w ++)
         {
             t->DwordBuf[ w ] = t->Padding[ w ] = 0;
         }
@@ -119,7 +119,7 @@ uint64_t sha256_calculate(sha256_t* t, char* dp, uint64_t dl)
        z is how many bytes used. dl is bigger than z. -- Also Big endian Order !
     */
     w = (int)(dl - z); 
-    while(w > 0){
+    while (w > 0) {
         t->DwordBuf[ x ] = t->Padding[ x ] =
             (t->Padding[ x ] & ~(0x000000ff << (24 - y)))
                 | ((dp[ z ] & 0x000000ff) << (24 - y));
@@ -131,16 +131,16 @@ uint64_t sha256_calculate(sha256_t* t, char* dp, uint64_t dl)
     t->Padding[ x ] |= 0x00000080 << (24 - y); 
 
     /** Save Old Value */
-    for(w = 0; w < 8; w ++)
+    for (w = 0; w < 8; w ++)
     {
         t->reg[ w ] = reg[ w ];
     }
     
     /** Check if Length + 0x80 could append */
     t->DwordBufBytes =  x * 4  + (y >> 3);
-    if(t->DwordBufBytes > 55){
+    if (t->DwordBufBytes > 55) {
         sha256_calc_block(t->Padding, reg);
-        for(w = 0; w < 16; w ++){ t->Padding[ w ] = 0; }
+        for (w = 0; w < 16; w ++) { t->Padding[ w ] = 0; }
     }
         
     /** Append Length */
@@ -149,7 +149,7 @@ uint64_t sha256_calculate(sha256_t* t, char* dp, uint64_t dl)
     sha256_calc_block(t->Padding, reg);
 
     /** Output ordered Value -- big endian order */
-    for(w = 0, x = 0; w < 32; w ++, x = (x + 8) & 0x1f){
+    for (w = 0, x = 0; w < 32; w ++, x = (x + 8) & 0x1f) {
         /** high byte first output value */
         t->Value[ w ] = (char)(reg[ w >> 2 ] >> (24 - x));
     }
@@ -166,7 +166,7 @@ static uint64_t sha256_calc_block(int* dp, int* rp)
     int x;
 
     /** extend 16s dword to 64 dwords */    
-    for(x = 16; x < 64; x ++){
+    for (x = 16; x < 64; x ++) {
 
         t0 =  (((dp[ x - 15 ] >> 7) & 0x1ffffff)  | (dp[ x - 15 ] << 25)) ^ 
               (((dp[ x - 15 ] >> 18) & 0x3fff)    | (dp[ x - 15 ] << 14)) ^ 
@@ -183,7 +183,7 @@ static uint64_t sha256_calc_block(int* dp, int* rp)
      a = rp[0]; b = rp[1]; c = rp[2]; d = rp[3]; e = rp[4]; f = rp[5]; g = rp[6]; h = rp[ 7 ];
 
     /** main loop */
-    for(x = 0; x < 64; x ++){
+    for (x = 0; x < 64; x ++) {
       
         t2 = (((a >> 2) & 0x3fffffff) | (a << 30)) ^ 
              (((a >> 13) & 0x7ffff) | (a << 19)) ^

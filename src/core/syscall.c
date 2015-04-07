@@ -341,14 +341,14 @@ int System(const char *cmd)
     int status;
     
     status = system(cmd);
-    if(-1 == status)
+    if (-1 == status)
     {
         return -1;
     }
 
-    if(WIFEXITED(status))
+    if (WIFEXITED(status))
     {
-        if(0 == WEXITSTATUS(status))
+        if (0 == WEXITSTATUS(status))
         {
             return WEXITSTATUS(status);
         }

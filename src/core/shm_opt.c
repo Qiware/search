@@ -58,27 +58,27 @@ void *shm_creat(int key, size_t size)
 
     /* 1 判断是否已经创建 */
     shmid = shmget(key, 0, 0);
-    if(shmid >= 0)
+    if (shmid >= 0)
     {
         return NULL;  /* 已创建 */
     }
 
     /* 2 异常，则退出处理 */
-    if(ENOENT != errno)
+    if (ENOENT != errno)
     {
         return NULL;
     }
 
     /* 3 创建共享内存 */
     shmid = shmget(key, size, IPC_CREAT|0666);
-    if(shmid < 0)
+    if (shmid < 0)
     {
         return NULL;
     }
 
     /* 4. ATTACH共享内存 */
     addr = (void *)shmat(shmid, NULL, 0);
-    if((void *)-1 == addr)
+    if ((void *)-1 == addr)
     {
         return NULL;
     }
@@ -107,7 +107,7 @@ void *shm_attach(int key)
 
     /* 1 判断是否已经创建 */
     shmid = shmget(key, 0, 0666);
-    if(shmid >= 0)
+    if (shmid >= 0)
     {
         return shmat(shmid, NULL, 0);  /* 已创建 */
     }
@@ -134,27 +134,27 @@ void *shm_creat_and_attach(int key, size_t size)
 
     /* 1 判断是否已经创建 */
     shmid = shmget(key, 0, 0666);
-    if(shmid >= 0)
+    if (shmid >= 0)
     {
         return shmat(shmid, NULL, 0);  /* 已创建 */
     }
 
     /* 2 异常，则退出处理 */
-    if(ENOENT != errno)
+    if (ENOENT != errno)
     {
         return NULL;
     }
 
     /* 3 创建共享内存 */
     shmid = shmget(key, size, IPC_CREAT|0666);
-    if(shmid < 0)
+    if (shmid < 0)
     {
         return NULL;
     }
 
     /* 4. ATTACH共享内存 */
     addr = (void *)shmat(shmid, NULL, 0);
-    if((void *)-1 == addr)
+    if ((void *)-1 == addr)
     {
         return NULL;
     }

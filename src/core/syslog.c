@@ -247,7 +247,7 @@ static int syslog_write(syslog_cycle_t *log, int level,
     } 
 
     /* 打印DUMP数据 */
-    if((NULL != dump) && (dumplen > 0)) 
+    if ((NULL != dump) && (dumplen > 0)) 
     {
         syslog_print_dump(log, dump, dumplen);
     }
@@ -278,12 +278,12 @@ static int syslog_print_dump(syslog_cycle_t *log, const void *dump, int dumplen)
     dump_end = dump + dumplen;                  /* 内存结束地址 */
     rows = (dumplen - 1)/LOG_DUMP_COL_NUM;      /* 每页行数 */
 
-    while(dump_ptr < dump_end) 
+    while (dump_ptr < dump_end) 
     {        
-        for(row=0; row<=rows; row++) 
+        for (row=0; row<=rows; row++) 
         {
             /* 1. 判断是否打印头部字串 */
-            if(0 == (row + 1)%LOG_DUMP_PAGE_MAX_ROWS)
+            if (0 == (row + 1)%LOG_DUMP_PAGE_MAX_ROWS)
             {
                 fprintf(log->fp, "%s", LOG_DUMP_HEAD_STR);
             }
@@ -296,14 +296,14 @@ static int syslog_print_dump(syslog_cycle_t *log, const void *dump, int dumplen)
             fprintf(log->fp, "(%05x) ", count);        
 
             /* >>3.1 16进制打印一行 */
-            for(idx=0; (idx<LOG_DUMP_COL_NUM) && (dump_ptr<dump_end); idx++)
+            for (idx=0; (idx<LOG_DUMP_COL_NUM) && (dump_ptr<dump_end); idx++)
             {
                 fprintf(log->fp, "%02x ", *dump_ptr);
                 dump_ptr++;
             }        
 
             /* >>3.2 最后数据不足一行时，使用空格补上 */
-            for(n=0; n<LOG_DUMP_COL_NUM-idx; n++) 
+            for (n=0; n<LOG_DUMP_COL_NUM-idx; n++) 
             {
                 fprintf(log->fp, "   ");
             }            
@@ -312,9 +312,9 @@ static int syslog_print_dump(syslog_cycle_t *log, const void *dump, int dumplen)
             dump_ptr -= idx;
 
             /* >>3.3 以字符方式打印信息 */
-            for(n=0; n<idx; n++) 
+            for (n=0; n<idx; n++) 
             {
-                if(((unsigned char)(*dump_ptr) <= (var[1])) 
+                if (((unsigned char)(*dump_ptr) <= (var[1])) 
                     && ((unsigned char)(*dump_ptr) >= (var[0]))) 
                 {
                     fprintf(log->fp, "*");            

@@ -8,16 +8,6 @@
  ** 作  者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
 
-#include <stdio.h>
-#include <netdb.h>
-#include <stdlib.h>
-#include <string.h>
-#include <getopt.h>
-#include <libgen.h>
-#include <sys/wait.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-
 #include "log.h"
 #include "sck.h"
 #include "lock.h"
@@ -271,7 +261,7 @@ srch_cntx_t *srch_cntx_init(char *pname, const char *conf_path)
         }
 
         return ctx;
-    } while(0);
+    } while (0);
 
     srch_conf_destroy(ctx->conf);
     free(ctx);
@@ -575,13 +565,13 @@ static int srch_proc_lock(void)
 
     /* 2. 打开文件 */
     fd = Open(path, OPEN_FLAGS, OPEN_MODE);
-    if(fd < 0)
+    if (fd < 0)
     {
         return -1;
     }
 
     /* 3. 尝试加锁 */
-    if(proc_try_wrlock(fd) < 0)
+    if (proc_try_wrlock(fd) < 0)
     {
         Close(fd);
         return -1;

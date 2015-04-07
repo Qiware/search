@@ -113,7 +113,7 @@ log_cycle_t *log_init(int level, const char *path)
     {
         /* 2. 初始化全局数据 */
         ret = _log_init_global();
-        if(ret < 0)
+        if (ret < 0)
         {
             fprintf(stderr, "Initialize trace log failed!");
             break;
@@ -123,7 +123,7 @@ log_cycle_t *log_init(int level, const char *path)
         addr = log_get_shm_addr();
 
         log->file = log_creat(addr, path);
-        if(NULL == log->file)
+        if (NULL == log->file)
         {
             fprintf(stderr, "Create [%s] failed!", path);
             break;
@@ -131,7 +131,7 @@ log_cycle_t *log_init(int level, const char *path)
 
         /* 4. 新建日志文件 */
         log->fd = Open(path, OPEN_FLAGS, OPEN_MODE);
-        if(log->fd < 0)
+        if (log->fd < 0)
         {
             fprintf(stderr, "errmsg:[%d] %s! path:[%s]", errno, strerror(errno), path);
             break;
@@ -139,7 +139,7 @@ log_cycle_t *log_init(int level, const char *path)
 
         log_mutex_unlock();
 	    return log;
-    } while(0);
+    } while (0);
 
     /* 5. 异常处理 */
     if (NULL != log->file)
@@ -396,10 +396,10 @@ void *log_creat_shm(void)
     }
     
     shmid = shmget(key, 0, 0);
-    if(shmid < 0)
+    if (shmid < 0)
     {
         shmid = shmget(key, LOG_SHM_SIZE, IPC_CREAT|0666);
-        if(shmid < 0)
+        if (shmid < 0)
         {
             fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
             return NULL;
@@ -407,7 +407,7 @@ void *log_creat_shm(void)
     }
 
     addr = shmat(shmid, NULL, 0);
-    if((void *)-1 == addr)
+    if ((void *)-1 == addr)
     {
         fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
         return NULL;
@@ -436,10 +436,10 @@ static int _log_init_global(void)
     char path[FILE_PATH_MAX_LEN];
 
     /* 1. 连接共享内存 */
-    if(!log_is_shm_addr_valid())
+    if (!log_is_shm_addr_valid())
     {
         addr = log_creat_shm();
-        if(NULL == addr)
+        if (NULL == addr)
         {
             fprintf(stderr, "[%s][%d] Create share-memory failed!\n",
                     __FILE__, __LINE__);
@@ -449,14 +449,14 @@ static int _log_init_global(void)
         log_set_shm_addr(addr);
     }
 
-    if(!log_is_lock_fd_valid())
+    if (!log_is_lock_fd_valid())
     {
         log_get_lock_path(path, sizeof(path));
 
         Mkdir2(path, DIR_MODE);
         
         fd = Open(path, OPEN_FLAGS, OPEN_MODE);
-        if(fd < 0)
+        if (fd < 0)
         {
             fprintf(stderr, "[%s][%d] errmsg:[%d] %s! [%s]\n",
                     __FILE__, __LINE__, errno, strerror(errno), path);
@@ -497,7 +497,7 @@ static int log_name_conflict_handler(
     snprintf(suffix, sizeof(suffix), "-[%02d].log", idx);
 
     len = strlen(newpath) + strlen(suffix) - strlen(LOG_SUFFIX);
-    if(len >= size)
+    if (len >= size)
     {
         fprintf(stderr, "Not enough memory! newpath:[%s] suffix:[%s] len:[%d]/[%d]",
             newpath, suffix, len, size);
@@ -505,9 +505,9 @@ static int log_name_conflict_handler(
     }
 
     ptr = strrchr(newpath, '.');
-    if(NULL != ptr)
+    if (NULL != ptr)
     {
-        if(0 == strcasecmp(ptr, LOG_SUFFIX))
+        if (0 == strcasecmp(ptr, LOG_SUFFIX))
         {
             sprintf(ptr, "%s", suffix);
         }
@@ -551,23 +551,23 @@ static log_file_info_t *log_creat(void *addr, const char *path)
 
     log_fcache_all_wrlock();
     
-    for(idx=0; idx<LOG_FILE_MAX_NUM; idx++, hash_idx++)
+    for (idx=0; idx<LOG_FILE_MAX_NUM; idx++, hash_idx++)
     {
         hash_idx %= LOG_FILE_MAX_NUM;
 
         file = (log_file_info_t *)(addr + hash_idx * LOG_FILE_CACHE_SIZE);
         
         /* 1. 判断文件名是否一致 */
-        if(!strcmp(file->path, ptr))   /* 文件名出现一致 */
+        if (!strcmp(file->path, ptr))   /* 文件名出现一致 */
         {
             /* 判断进程是否存在，是否和当前进程ID一致 */
-            if(file->pid == pid)
+            if (file->pid == pid)
             {
                 log_fcache_all_unlock();
                 return file;
             }
             
-            if(!proc_is_exist(file->pid))
+            if (!proc_is_exist(file->pid))
             {
                 file->pid = pid;
                 log_sync(file);
@@ -589,10 +589,10 @@ static log_file_info_t *log_creat(void *addr, const char *path)
             idx = -1;
             continue;
         }
-        else if(-1 == idle_idx)  /* 当为找到空闲时，则进行后续判断 */
+        else if (-1 == idle_idx)  /* 当为找到空闲时，则进行后续判断 */
         {
             /* 路径是否为空 */
-            if('\0' == file->path[0])
+            if ('\0' == file->path[0])
             {
                 idle_idx = hash_idx;
 
@@ -615,7 +615,7 @@ static log_file_info_t *log_creat(void *addr, const char *path)
         }
     }
 
-    if(-1 == idle_idx)
+    if (-1 == idle_idx)
     {
         log_fcache_all_unlock();
         return NULL;
@@ -766,7 +766,7 @@ static int log_write(log_cycle_t *log, int level,
     left -= msglen;
 
     /* 打印DUMP数据 */
-    if((NULL != dump) && (dumplen > 0) && (left > dumplen)) 
+    if ((NULL != dump) && (dumplen > 0) && (left > dumplen)) 
     {
         msglen = log_print_dump(addr, dump, dumplen);
 
@@ -775,7 +775,7 @@ static int log_write(log_cycle_t *log, int level,
 
     /* 判断是否强制写或发送通知 */
     difftm = ctm->time - file->sync_tm.time;
-    if(log_is_over_limit(file)  
+    if (log_is_over_limit(file)  
         || log_is_timeout(difftm))
     {
         memcpy(&file->sync_tm, ctm, sizeof(file->sync_tm));
@@ -805,22 +805,22 @@ static int log_write(log_cycle_t *log, int level,
 static int log_print_dump(char *addr, const void *dump, int dumplen)
 {
     char *in = addr;
-    const char *dump_ptr = NULL, *dump_end = NULL;    
+    const char *dump_ptr, *dump_end;
     unsigned char var[2] = {0, 31};    
-    int idx = 0, n = 0, row = 0, count = 0, rows = 0, head_len = 0;
+    int idx, n, row, count, rows, head_len;
 
 
     dump_ptr = (const char *)dump;
-    dump_end = dump + dumplen;                  /* 内存结束地址 */
-    rows = (dumplen - 1)/LOG_DUMP_COL_NUM;    /* 每页行数 */
+    dump_end = dump + dumplen;              /* 内存结束地址 */
+    rows = (dumplen - 1)/LOG_DUMP_COL_NUM;  /* 每页行数 */
     head_len = strlen(LOG_DUMP_HEAD_STR);
 
-    while(dump_ptr < dump_end) 
+    while (dump_ptr < dump_end) 
     {        
-        for(row=0; row<=rows; row++) 
+        for (row=0; row<=rows; row++) 
         {
             /* 1. 判断是否打印头部字串 */
-            if(0 == (row + 1)%LOG_DUMP_PAGE_MAX_ROWS)
+            if (0 == (row + 1)%LOG_DUMP_PAGE_MAX_ROWS)
             {
                 sprintf(in, "%s", LOG_DUMP_HEAD_STR);
                 in += head_len;
@@ -836,7 +836,7 @@ static int log_print_dump(char *addr, const void *dump, int dumplen)
             in += 8;
 
             /* >>3.1 16进制打印一行 */
-            for(idx=0; (idx<LOG_DUMP_COL_NUM) && (dump_ptr<dump_end); idx++)
+            for (idx=0; (idx<LOG_DUMP_COL_NUM) && (dump_ptr<dump_end); idx++)
             {
                 sprintf(in, "%02x ", *dump_ptr);
                 in += 3;
@@ -844,7 +844,7 @@ static int log_print_dump(char *addr, const void *dump, int dumplen)
             }        
 
             /* >>3.2 最后数据不足一行时，使用空格补上 */
-            for(n=0; n<LOG_DUMP_COL_NUM-idx; n++) 
+            for (n=0; n<LOG_DUMP_COL_NUM-idx; n++) 
             {
                 sprintf(in, "   ");
                 in += 3;
@@ -855,9 +855,9 @@ static int log_print_dump(char *addr, const void *dump, int dumplen)
             dump_ptr -= idx;
 
             /* >>3.3 以字符方式打印信息 */
-            for(n=0; n<idx; n++) 
+            for (n=0; n<idx; n++) 
             {
-                if(((unsigned char)(*dump_ptr) <= (var[1])) 
+                if (((unsigned char)(*dump_ptr) <= (var[1])) 
                     &&    ((unsigned char)(*dump_ptr) >= (var[0]))) 
                 {
                     *(in++) = '*';
@@ -895,7 +895,7 @@ void log_sync(log_file_info_t *file)
     fsize = _log_sync(file, NULL);
 
     /* 2. 文件是否过大 */
-    if(log_is_too_large(fsize))
+    if (log_is_too_large(fsize))
     {
         log_rename(file, &file->sync_tm);
     }
@@ -920,7 +920,7 @@ static int log_sync_ext(log_cycle_t *log)
     fsize = _log_sync(log->file, &log->fd);
 
     /* 2. 文件是否过大 */
-    if(log_is_too_large(fsize))
+    if (log_is_too_large(fsize))
     {
         Close(log->fd);
         return log_rename(log->file, &log->file->sync_tm);
@@ -944,17 +944,16 @@ static int log_sync_ext(log_cycle_t *log)
  **     3) 在此函数中不允许调用错误级别的日志函数 可能死锁!
  ** Author: # Qifeng.zou # 2013.11.08 #
  ******************************************************************************/
-static size_t _log_sync(log_file_info_t *file, int *fd)
+static size_t _log_sync(log_file_info_t *file, int *_fd)
 {
-    int loc_fd = -1;
-    void *addr = NULL;
-    struct stat buff;
-    int n = 0, fsize = 0;
+    void *addr;
+    struct stat fstat;
+    int n, fsize, fd = -1;
 
-    memset(&buff, 0, sizeof(buff));
+    memset(&fstat, 0, sizeof(fstat));
 
     /* 1. 判断是否需要同步 */
-    if(file->in_offset == file->out_offset)
+    if (file->in_offset == file->out_offset)
     {
         return 0;
     }
@@ -962,52 +961,49 @@ static size_t _log_sync(log_file_info_t *file, int *fd)
     /* 2. 计算同步地址和长度 */
     addr = (void *)(file + 1);
     n = file->in_offset - file->out_offset;
-    loc_fd = (NULL != fd)? *fd : INVALID_FD;
+    fd = (NULL != _fd)? *_fd : INVALID_FD;
 
     /* 撰写日志文件 */
     do
     {
         /* 3. 文件是否存在 */
-        if (lstat(file->path, &buff) < 0)
+        if (lstat(file->path, &fstat) < 0)
         {
-            if(ENOENT != errno)
+            if (ENOENT != errno)
             {
-                Close(loc_fd);
-                fprintf(stderr, "errmsg:[%d]%s path:[%s]",
-                        errno, strerror(errno), file->path);
+                Close(fd);
+                fprintf(stderr, "errmsg:[%d]%s path:[%s]\n", errno, strerror(errno), file->path);
                 break;
             }
-            Close(loc_fd);
+            Close(fd);
             Mkdir2(file->path, DIR_MODE);
         }
 
         /* 4. 是否重新创建文件 */
-        if(loc_fd < 0)
+        if (fd < 0)
         {
-            loc_fd = Open(file->path, OPEN_FLAGS, OPEN_MODE);
-            if(loc_fd < 0)
+            fd = Open(file->path, OPEN_FLAGS, OPEN_MODE);
+            if (fd < 0)
             {
-                fprintf(stderr, "errmsg:[%d] %s! path:[%s]",
-                        errno, strerror(errno), file->path);
+                fprintf(stderr, "errmsg:[%d] %s! path:[%s]\n", errno, strerror(errno), file->path);
                 break;
             }
         }
 
         /* 5. 定位到文件末尾 */
-        fsize = lseek(loc_fd, 0, SEEK_END);
-        if(-1 == fsize)
+        fsize = lseek(fd, 0, SEEK_END);
+        if (-1 == fsize)
         {
-            Close(loc_fd);
-            fprintf(stderr, "errmsg:[%d] %s! path:[%s]",
-                    errno, strerror(errno), file->path);
+            Close(fd);
+            fprintf(stderr, "errmsg:[%d] %s! path:[%s]\n", errno, strerror(errno), file->path);
             break;
         }
         
         /* 6. 写入指定日志文件 */
-        Writen(loc_fd, addr, n);
+        Writen(fd, addr, n);
 
         fsize += n;
-    }while(0);
+    } while(0);
     
     /* 7. 标志复位 */
     memset(addr, 0, n);
@@ -1015,13 +1011,13 @@ static size_t _log_sync(log_file_info_t *file, int *fd)
     file->out_offset = 0;
     ftime(&file->sync_tm);
 
-    if(NULL != fd)
+    if (NULL != _fd)
     {
-        *fd = loc_fd;
+        *_fd = fd;
     }
     else
     {
-        Close(loc_fd);
+        Close(fd);
     }
     return fsize;
 }

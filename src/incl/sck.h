@@ -76,6 +76,7 @@ typedef struct _socket_t
 } socket_t;
 
 int tcp_listen(int port);
+int tcp_accept(int lsnfd, struct sockaddr *cliaddr);
 int tcp_connect(int family, const char *ipaddr, int port);
 int tcp_connect_ex(int family, const char *ipaddr, int port, int sec);
 int tcp_connect_ex2(int family, const char *ipaddr, int port);

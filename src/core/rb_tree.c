@@ -32,27 +32,27 @@ static int rbt_delete_fixup(rbt_tree_t *tree, rbt_node_t *node);
  ******************************************************************************/
 void rbt_assert(const rbt_tree_t *tree, const rbt_node_t *node)
 {
-    if((NULL == node)
+    if ((NULL == node)
         || (tree->sentinel == node)
         || (tree->sentinel == node->parent)) 
     {
         return;
     }
 
-    if((node->parent == node->lchild)
+    if ((node->parent == node->lchild)
         || (node->parent == node->rchild))
     {
         assert(0);
     }
 
-    if((node->parent->lchild != node)
+    if ((node->parent->lchild != node)
         && (node->parent->rchild != node)
         && (tree->sentinel != node)) 
     {
         assert(0);
     }
 
-    if((node->parent == node->lchild)
+    if ((node->parent == node->lchild)
         || (node->parent == node->rchild))
     {
         assert(0);
@@ -85,12 +85,12 @@ static void rbt_right_rotate(rbt_tree_t *tree, rbt_node_t *node)
 {
     rbt_node_t *parent = node->parent, *lchild = node->lchild;
     
-    if(tree->sentinel == parent)
+    if (tree->sentinel == parent)
     {
         tree->root = lchild;
         lchild->parent = tree->sentinel;
     }
-    else if(node == parent->lchild)
+    else if (node == parent->lchild)
     {
         rbt_set_lchild(tree, parent, lchild);
     }
@@ -132,12 +132,12 @@ static void rbt_left_rotate(rbt_tree_t *tree, rbt_node_t *node)
 {
     rbt_node_t *parent = node->parent, *rchild = node->rchild;
     
-    if(tree->sentinel == parent)
+    if (tree->sentinel == parent)
     {
         tree->root = rchild;
         rchild->parent = tree->sentinel;
     }
-    else if(node == parent->lchild)
+    else if (node == parent->lchild)
     {
         rbt_set_lchild(tree, parent, rchild);
     }
@@ -184,13 +184,13 @@ rbt_tree_t *rbt_creat(rbt_option_t *opt)
     }
 
     tree = (rbt_tree_t *)opt->alloc(opt->pool, sizeof(rbt_tree_t));
-    if(NULL == tree)
+    if (NULL == tree)
     {
         return NULL;
     }
 
     tree->sentinel = (rbt_node_t *)opt->alloc(opt->pool, sizeof(rbt_node_t));
-    if(NULL == tree->sentinel)
+    if (NULL == tree->sentinel)
     {
         tree->dealloc(tree->pool, tree);
         return NULL;
@@ -225,7 +225,7 @@ static rbt_node_t *rbt_creat_node(rbt_tree_t *tree, int64_t key, int color, int 
     rbt_node_t *node;
 
     node = (rbt_node_t *)tree->alloc(tree->pool, sizeof(rbt_node_t));
-    if(NULL == node)
+    if (NULL == node)
     {
         return NULL;
     }
@@ -234,7 +234,7 @@ static rbt_node_t *rbt_creat_node(rbt_tree_t *tree, int64_t key, int color, int 
     node->key = key;
     node->lchild = tree->sentinel;
     node->rchild = tree->sentinel;
-    if(NULL != parent)
+    if (NULL != parent)
     {
         rbt_set_child(tree, parent, type, node);
     }
@@ -274,11 +274,11 @@ int rbt_insert(rbt_tree_t *tree, int64_t key, void *data)
     rbt_node_t *node = tree->root, *add;
 
     /* 1. 当根节点为空时，直接添加 */
-    if(tree->sentinel == tree->root)
+    if (tree->sentinel == tree->root)
     {
         /* 性质2: 根结点是黑色的 */
         tree->root = rbt_creat_node(tree, key, RBT_COLOR_BLACK, 0, NULL);
-        if(tree->sentinel == tree->root)
+        if (tree->sentinel == tree->root)
         {
             return RBT_FAILED;
         }
@@ -289,18 +289,18 @@ int rbt_insert(rbt_tree_t *tree, int64_t key, void *data)
     }
     
     /* 2. 将节点插入树中, 检查并修复新节点造成红黑树性质的破坏 */
-    while(tree->sentinel != node)
+    while (tree->sentinel != node)
     {
-        if(key == node->key)
+        if (key == node->key)
         {
             return RBT_NODE_EXIST;
         }
-        else if(key < node->key)
+        else if (key < node->key)
         {
-            if(tree->sentinel == node->lchild)
+            if (tree->sentinel == node->lchild)
             {
                 add = rbt_creat_node(tree, key, RBT_COLOR_RED, RBT_LCHILD, node);
-                if(NULL == add)
+                if (NULL == add)
                 {
                     return RBT_FAILED;
                 }
@@ -313,10 +313,10 @@ int rbt_insert(rbt_tree_t *tree, int64_t key, void *data)
         }
         else
         {
-            if(tree->sentinel == node->rchild)
+            if (tree->sentinel == node->rchild)
             {
                 add = rbt_creat_node(tree, key, RBT_COLOR_RED, RBT_RCHILD, node);
-                if(NULL == add)
+                if (NULL == add)
                 {
                     return RBT_FAILED;
                 }
@@ -350,25 +350,25 @@ static int rbt_insert_fixup(rbt_tree_t *tree, rbt_node_t *node)
 {
     rbt_node_t *parent = NULL, *uncle = NULL, *grandpa = NULL, *gparent = NULL;
 
-    while(rbt_is_red(node))
+    while (rbt_is_red(node))
     {
         parent = node->parent;
-        if(rbt_is_black(parent))
+        if (rbt_is_black(parent))
         {
             return RBT_SUCCESS;
         }
         
         grandpa = parent->parent;
-        if(parent == grandpa->lchild) /* 父节点为左节点 */
+        if (parent == grandpa->lchild) /* 父节点为左节点 */
         {
             uncle = grandpa->rchild;
             
             /* case 1: 父节点和叔节点为红色 */
-            if(rbt_is_red(uncle))
+            if (rbt_is_red(uncle))
             {
                 rbt_set_black(parent);
                 rbt_set_black(uncle);
-                if(grandpa != tree->root)
+                if (grandpa != tree->root)
                 {
                     rbt_set_red(grandpa);
                 }
@@ -376,7 +376,7 @@ static int rbt_insert_fixup(rbt_tree_t *tree, rbt_node_t *node)
                 continue;
             }
             /* case 2: 叔结点为黑色，结点为左孩子 */
-            else if(node == parent->lchild)
+            else if (node == parent->lchild)
             {
                 /* 右旋转: 以grandpa为支点 */
                 gparent = grandpa->parent;
@@ -402,11 +402,11 @@ static int rbt_insert_fixup(rbt_tree_t *tree, rbt_node_t *node)
             uncle = grandpa->lchild;
             
             /* case 1: 父节点和叔节点为红色 */
-            if(rbt_is_red(uncle))
+            if (rbt_is_red(uncle))
             {
                 rbt_set_black(parent);
                 rbt_set_black(uncle);
-                if(grandpa != tree->root)
+                if (grandpa != tree->root)
                 {
                     rbt_set_red(grandpa);
                 }
@@ -415,7 +415,7 @@ static int rbt_insert_fixup(rbt_tree_t *tree, rbt_node_t *node)
                 continue;
             }
             /* case 2: 叔结点为黑色，结点为左孩子 */
-            else if(node == parent->lchild)
+            else if (node == parent->lchild)
             {
                 /* 右旋转: 以parent为支点 */
                 rbt_right_rotate(tree, parent);
@@ -457,15 +457,15 @@ int rbt_delete(rbt_tree_t *tree, int64_t key, void **data)
 {
     rbt_node_t *node = tree->root;
 
-    while(tree->sentinel != node)
+    while (tree->sentinel != node)
     {
-        if(key == node->key)
+        if (key == node->key)
         {
             *data = node->data;
 
             return _rbt_delete(tree, node);
         }
-        else if(key < node->key)
+        else if (key < node->key)
         {
             node = node->lchild;
         }
@@ -497,17 +497,17 @@ static int _rbt_delete(rbt_tree_t *tree, rbt_node_t *dnode)
     rbt_node_t *parent, *next, *refer;
 
     /* Case 1: 被删结点D的左孩子为叶子结点, 右孩子无限制(可为叶子结点，也可为非叶子结点) */
-    if(tree->sentinel == dnode->lchild)
+    if (tree->sentinel == dnode->lchild)
     {
         parent = dnode->parent;
         refer = dnode->rchild;
 
         refer->parent = parent;
-        if(tree->sentinel == parent)
+        if (tree->sentinel == parent)
         {
             tree->root = refer;
         }
-        else if(dnode == parent->lchild)
+        else if (dnode == parent->lchild)
         {
             parent->lchild = refer;
         }
@@ -516,7 +516,7 @@ static int _rbt_delete(rbt_tree_t *tree, rbt_node_t *dnode)
             parent->rchild = refer;
         }
 
-        if(rbt_is_red(dnode))
+        if (rbt_is_red(dnode))
         {
             tree->dealloc(tree->pool, dnode);
             return RBT_SUCCESS;
@@ -527,17 +527,17 @@ static int _rbt_delete(rbt_tree_t *tree, rbt_node_t *dnode)
         return rbt_delete_fixup(tree, refer);
     }
     /* Case 2: 被删结点D的右孩子为叶子结点, 左孩子不为叶子结点 */
-    else if(tree->sentinel == dnode->rchild)
+    else if (tree->sentinel == dnode->rchild)
     {
         parent = dnode->parent;
         refer = dnode->lchild;
 
         refer->parent = parent;
-        if(tree->sentinel == parent)
+        if (tree->sentinel == parent)
         {
             tree->root = refer;
         }
-        else if(dnode == parent->lchild)
+        else if (dnode == parent->lchild)
         {
             parent->lchild = refer;
         }
@@ -546,7 +546,7 @@ static int _rbt_delete(rbt_tree_t *tree, rbt_node_t *dnode)
             parent->rchild = refer;
         }
 
-        if(rbt_is_red(dnode))
+        if (rbt_is_red(dnode))
         {
             tree->dealloc(tree->pool, dnode);
             return RBT_SUCCESS;
@@ -560,7 +560,7 @@ static int _rbt_delete(rbt_tree_t *tree, rbt_node_t *dnode)
     /* Case 3: 被删结点D的左右孩子均不为叶子节点 */
     /* 3.1 查找dnode的后继结点next */
     next = dnode->rchild;
-    while(tree->sentinel != next->lchild)
+    while (tree->sentinel != next->lchild)
     {
         next = next->lchild;
     }
@@ -569,7 +569,7 @@ static int _rbt_delete(rbt_tree_t *tree, rbt_node_t *dnode)
     refer = next->rchild;
 
     refer->parent = parent;
-    if(next == parent->lchild)
+    if (next == parent->lchild)
     {
         parent->lchild = refer;
     }
@@ -581,7 +581,7 @@ static int _rbt_delete(rbt_tree_t *tree, rbt_node_t *dnode)
     dnode->key = next->key;
     dnode->data = next->data; /* Copy next's satellite data into dnode */
 
-    if(rbt_is_red(next)) /* Not black */
+    if (rbt_is_red(next)) /* Not black */
     {
         tree->dealloc(tree->pool, next);
         return RBT_SUCCESS;
@@ -609,17 +609,17 @@ static int rbt_delete_fixup(rbt_tree_t *tree, rbt_node_t *node)
 {
     rbt_node_t *parent = NULL, *brother = NULL;
 
-    while(rbt_is_black(node) && (tree->root != node))
+    while (rbt_is_black(node) && (tree->root != node))
     {   
         /* Set parent and brother */
         parent = node->parent;
         
-        if(node == parent->lchild)
+        if (node == parent->lchild)
         {
             brother = parent->rchild;
 
             /* Case 1: 兄弟结点为红色:  以parent为支点, 左旋处理 */
-            if(rbt_is_red(brother))
+            if (rbt_is_red(brother))
             {
                 rbt_set_red(parent);
                 rbt_set_black(brother);
@@ -632,7 +632,7 @@ static int rbt_delete_fixup(rbt_tree_t *tree, rbt_node_t *node)
             }
 
             /* Case 2: 兄弟结点为黑色(默认), 且兄弟结点的2个子结点都为黑色 */
-            if(rbt_is_black(brother->lchild) && rbt_is_black(brother->rchild))
+            if (rbt_is_black(brother->lchild) && rbt_is_black(brother->rchild))
             {
                 rbt_set_red(brother);
                 node = parent;
@@ -641,7 +641,7 @@ static int rbt_delete_fixup(rbt_tree_t *tree, rbt_node_t *node)
             {
                 /* Case 3: 兄弟结点为黑色(默认),
                     兄弟节点的左子结点为红色, 右子结点为黑色:  以brother为支点, 右旋处理 */
-                if(rbt_is_black(brother->rchild))
+                if (rbt_is_black(brother->rchild))
                 {
                     rbt_set_black(brother->lchild);
                     rbt_set_red(brother);
@@ -668,7 +668,7 @@ static int rbt_delete_fixup(rbt_tree_t *tree, rbt_node_t *node)
             brother = parent->lchild;
 
             /* Case 5: 兄弟结点为红色:  以parent为支点, 右旋处理 */
-            if(rbt_is_red(brother))
+            if (rbt_is_red(brother))
             {
                 rbt_set_red(parent);
                 rbt_set_black(brother);
@@ -682,7 +682,7 @@ static int rbt_delete_fixup(rbt_tree_t *tree, rbt_node_t *node)
             }
 
             /* Case 6: 兄弟结点为黑色(默认), 且兄弟结点的2个子结点都为黑色 */
-            if(rbt_is_black(brother->lchild) && rbt_is_black(brother->rchild))
+            if (rbt_is_black(brother->lchild) && rbt_is_black(brother->rchild))
             {
                 rbt_set_red(brother);
                 node = parent;
@@ -691,7 +691,7 @@ static int rbt_delete_fixup(rbt_tree_t *tree, rbt_node_t *node)
             {
                 /* Case 7: 兄弟结点为黑色(默认),
                     兄弟节点的右子结点为红色, 左子结点为黑色:  以brother为支点, 左旋处理 */
-                if(rbt_is_black(brother->lchild))
+                if (rbt_is_black(brother->lchild))
                 {
                     rbt_set_red(brother);
                     rbt_set_black(brother->rchild);
@@ -740,16 +740,16 @@ static void rbt_print_head(const rbt_tree_t *tree, const rbt_node_t *node, int d
     int idx;
     rbt_node_t *parent = node->parent;
 
-    while(depth > 0 && (NULL != parent))
+    while (depth > 0 && (NULL != parent))
     {
-        if(1 == depth)
+        if (1 == depth)
         {
             fprintf(stderr, "|");
-            for(idx=0; idx<8; idx++)
+            for (idx=0; idx<8; idx++)
             {
-                if(0 == idx)
+                if (0 == idx)
                 {
-                    if(parent->lchild == node)
+                    if (parent->lchild == node)
                     {
                         fprintf(stderr, "l");
                     }
@@ -767,7 +767,7 @@ static void rbt_print_head(const rbt_tree_t *tree, const rbt_node_t *node, int d
         else
         {
             fprintf(stderr, "|");
-            for(idx=0; idx<8; idx++)
+            for (idx=0; idx<8; idx++)
             {
                 fprintf(stderr, " ");
             }
@@ -775,7 +775,7 @@ static void rbt_print_head(const rbt_tree_t *tree, const rbt_node_t *node, int d
         depth--;
     }
     
-    if((tree->sentinel == node->lchild)
+    if ((tree->sentinel == node->lchild)
         && (tree->sentinel == node->rchild))
     {
         fprintf(stderr, "<%03ld:%c/>\n", node->key, node->color);
@@ -802,16 +802,16 @@ static void rbt_print_tail(const rbt_tree_t *tree, const rbt_node_t *node, int d
 {
     int idx;
 
-    if((tree->sentinel == node->lchild)
+    if ((tree->sentinel == node->lchild)
         && (tree->sentinel == node->rchild))
     {
         return;
     }
 
-    while(depth > 0)
+    while (depth > 0)
     {
         fprintf(stderr, "|");
-        for(idx=0; idx<8; idx++)
+        for (idx=0; idx<8; idx++)
         {
             fprintf(stderr, " ");
         }
@@ -838,14 +838,14 @@ int rbt_print(rbt_tree_t *tree)
     Stack_t _stack, *stack = &_stack;
     rbt_node_t *node = tree->root, *parent = NULL;
 
-    if(tree->sentinel == node) return 0;
+    if (tree->sentinel == node) return 0;
 
     stack_init(stack, RBT_MAX_DEPTH);
 
-    while(tree->sentinel != node)
+    while (tree->sentinel != node)
     {
         /* 压左孩子入栈 */
-        while(tree->sentinel != node->lchild)
+        while (tree->sentinel != node->lchild)
         {
             rbt_assert(tree, node);
             
@@ -863,7 +863,7 @@ int rbt_print(rbt_tree_t *tree)
         rbt_print_head(tree, node, depth);
 
         /* 最左端的孩子有右孩子 */
-        if(tree->sentinel != node->rchild)
+        if (tree->sentinel != node->rchild)
         {
             stack_push(stack, node);
             node = node->rchild;
@@ -874,13 +874,13 @@ int rbt_print(rbt_tree_t *tree)
         rbt_print_tail(tree, node, depth);
 
         parent = stack_gettop(stack);
-        if(NULL == parent)
+        if (NULL == parent)
         {
             return stack_destroy(stack);
         }
 
         /* 判断最左结点的父结点未处理完成 */
-        if((parent->lchild == node)
+        if ((parent->lchild == node)
             && (tree->sentinel != parent->rchild))
         {
             node = parent->rchild;
@@ -888,7 +888,7 @@ int rbt_print(rbt_tree_t *tree)
         }
 
         /* 判断最左结点的父结点已处理完成 */
-        while((node == parent->rchild)
+        while ((node == parent->rchild)
             || (tree->sentinel == parent->rchild))
         {
             stack_pop(stack);
@@ -898,7 +898,7 @@ int rbt_print(rbt_tree_t *tree)
 
             node = parent;
             parent = stack_gettop(stack);
-            if(NULL == parent)
+            if (NULL == parent)
             {
                 return stack_destroy(stack);
             }
@@ -926,13 +926,13 @@ rbt_node_t *rbt_search(rbt_tree_t *tree, int64_t key)
 {
     rbt_node_t *node = tree->root;
 
-    while(NULL != node)
+    while (NULL != node)
     {
-        if(key == node->key)
+        if (key == node->key)
         {
             return node;
         }
-        else if(key < node->key)
+        else if (key < node->key)
         {
             node = node->lchild;
         }
@@ -964,14 +964,14 @@ int rbt_destroy(rbt_tree_t *tree)
     Stack_t _stack, *stack = &_stack;
     rbt_node_t *node = tree->root, *parent;
 
-    if(tree->sentinel == node) return 0;
+    if (tree->sentinel == node) return 0;
 
     stack_init(stack, RBT_MAX_DEPTH);
 
-    while(tree->sentinel != node)
+    while (tree->sentinel != node)
     {
         /* 压左孩子入栈 */
-        while(tree->sentinel != node->lchild)
+        while (tree->sentinel != node->lchild)
         {
             stack_push(stack, node);
             
@@ -979,7 +979,7 @@ int rbt_destroy(rbt_tree_t *tree)
         }
 
         /* 最左端的孩子有右孩子 */
-        if(tree->sentinel != node->rchild)
+        if (tree->sentinel != node->rchild)
         {
             stack_push(stack, node);
             node = node->rchild;
@@ -987,7 +987,7 @@ int rbt_destroy(rbt_tree_t *tree)
         }
         
         parent = stack_gettop(stack);
-        if(NULL == parent)
+        if (NULL == parent)
         {
             tree->dealloc(tree->pool, node);
             tree->dealloc(tree->pool, tree->sentinel);
@@ -996,7 +996,7 @@ int rbt_destroy(rbt_tree_t *tree)
             return RBT_SUCCESS;
         }
 
-        if((parent->lchild == node) /* 右孩子是否已处理 */
+        if ((parent->lchild == node) /* 右孩子是否已处理 */
             && (tree->sentinel != parent->rchild))
         {
             tree->dealloc(tree->pool, node);
@@ -1005,7 +1005,7 @@ int rbt_destroy(rbt_tree_t *tree)
         }
 
         /* 其他树内结点出栈时释放 */
-        while((node == parent->rchild)
+        while ((node == parent->rchild)
             || (tree->sentinel == parent->rchild))
         {
             stack_pop(stack);
@@ -1014,7 +1014,7 @@ int rbt_destroy(rbt_tree_t *tree)
 
             node = parent;
             parent = stack_gettop(stack);
-            if(NULL == parent)
+            if (NULL == parent)
             {
                 tree->dealloc(tree->pool, node);
                 tree->dealloc(tree->pool, tree->sentinel);
@@ -1024,7 +1024,7 @@ int rbt_destroy(rbt_tree_t *tree)
             }
         }
 
-        if(NULL != node)    /* 释放上面出栈的结点 */
+        if (NULL != node)    /* 释放上面出栈的结点 */
         {
             tree->dealloc(tree->pool, node);
         }
@@ -1056,14 +1056,14 @@ int rbt_trav(rbt_tree_t *tree, rbt_trav_cb_t proc, void *args)
     Stack_t _stack, *stack = &_stack;
     rbt_node_t *node = tree->root, *parent;
 
-    if(tree->sentinel == node) return 0;
+    if (tree->sentinel == node) return 0;
 
     stack_init(stack, RBT_MAX_DEPTH);
 
-    while(tree->sentinel != node)
+    while (tree->sentinel != node)
     {
         /* 压左孩子入栈 */
-        while(tree->sentinel != node->lchild)
+        while (tree->sentinel != node->lchild)
         {
             rbt_assert(tree, node);
 
@@ -1078,7 +1078,7 @@ int rbt_trav(rbt_tree_t *tree, rbt_trav_cb_t proc, void *args)
         proc(node->data, args);
 
         /* 最左端的孩子有右孩子 */
-        if(tree->sentinel != node->rchild)
+        if (tree->sentinel != node->rchild)
         {
             stack_push(stack, node);
             node = node->rchild;
@@ -1088,13 +1088,13 @@ int rbt_trav(rbt_tree_t *tree, rbt_trav_cb_t proc, void *args)
         /* 最左端的孩子无右孩子 */
 
         parent = stack_gettop(stack);
-        if(NULL == parent)
+        if (NULL == parent)
         {
             return stack_destroy(stack);
         }
 
         /* 判断最左结点的父结点未处理完成 */
-        if((parent->lchild == node)
+        if ((parent->lchild == node)
             && (tree->sentinel != parent->rchild))
         {
             node = parent->rchild;
@@ -1102,14 +1102,14 @@ int rbt_trav(rbt_tree_t *tree, rbt_trav_cb_t proc, void *args)
         }
 
         /* 判断最左结点的父结点已处理完成 */
-        while((node == parent->rchild)
+        while ((node == parent->rchild)
             || (tree->sentinel == parent->rchild))
         {
             stack_pop(stack);
             
             node = parent;
             parent = stack_gettop(stack);
-            if(NULL == parent)
+            if (NULL == parent)
             {
                 return stack_destroy(stack);
             }

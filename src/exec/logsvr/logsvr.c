@@ -64,7 +64,7 @@ int main(void)
 
     /* 2. 初始化日志服务 */
     ret = logsvr_init(&logsvr);
-    if(ret < 0)
+    if (ret < 0)
     {
         sys_error("Init log failed!");
         return -1;
@@ -73,7 +73,7 @@ int main(void)
     /* 3. 启动超时扫描线程 */
     thread_pool_add_worker(logsvr.pool, logsvr_timeout_routine, &logsvr);
 
-    while(1){ pause(); }
+    while (1){ pause(); }
     return 0;
 }
 
@@ -99,7 +99,7 @@ int logsvr_proc_lock(void)
 
     /* 2. 打开服务进程锁文件 */
     fd = Open(path, OPEN_FLAGS, OPEN_MODE);
-    if(fd < 0)
+    if (fd < 0)
     {
         sys_error("errmsg:[%d]%s! path:[%s]", errno, strerror(errno), path);
         return -1;
@@ -107,7 +107,7 @@ int logsvr_proc_lock(void)
 
     /* 3. 尝试加锁 */
     ret = logsvr_proc_trylock(fd);
-    if(ret < 0)
+    if (ret < 0)
     {
         sys_error("errmsg:[%d]%s! path:[%s]", errno, strerror(errno), path);
         Close(fd);
@@ -139,7 +139,7 @@ static int logsvr_init(logsvr_t *logsvr)
 
     /* 1. 加服务进程锁 */
     ret = logsvr_proc_lock();
-    if(ret < 0)
+    if (ret < 0)
     {
         sys_error("Log server is already running...");
         return -1;    /* 日志服务进程正在运行... */
@@ -151,7 +151,7 @@ static int logsvr_init(logsvr_t *logsvr)
     Mkdir2(path, DIR_MODE);
 
     logsvr->fd = Open(path, OPEN_FLAGS, OPEN_MODE);
-    if(logsvr->fd < 0)
+    if (logsvr->fd < 0)
     {
         sys_error("errmsg:[%d] %s! path:[%s]", errno, strerror(errno), path);
         return -1;
@@ -159,7 +159,7 @@ static int logsvr_init(logsvr_t *logsvr)
 
     /* 3. 创建/连接共享内存 */
     logsvr->addr = logsvr_creat_shm(logsvr->fd);
-    if(NULL == logsvr->addr)
+    if (NULL == logsvr->addr)
     {
         sys_error("Create SHM failed!");
         return -1;
@@ -188,7 +188,7 @@ static int logsvr_init(logsvr_t *logsvr)
     option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
     logsvr->pool = thread_pool_init(LOG_SVR_THREAD_NUM, &option, NULL);
-    if(NULL == logsvr->pool)
+    if (NULL == logsvr->pool)
     {
         thread_pool_destroy(logsvr->pool);
         logsvr->pool = NULL;
@@ -228,27 +228,27 @@ static char *logsvr_creat_shm(int fd)
     /* 1. 创建共享内存 */
     /* 1.1 判断是否已经创建 */
     shmid = shmget(key, 0, 0666);
-    if(shmid >= 0)
+    if (shmid >= 0)
     {
         return shmat(shmid, NULL, 0);  /* 已创建 */
     }
 
     /* 1.2 异常，则退出处理 */
-    if(ENOENT != errno)
+    if (ENOENT != errno)
     {
         return NULL;
     }
 
     /* 1.3 创建共享内存 */
     shmid = shmget(key, LOG_SHM_SIZE, IPC_CREAT|0666);
-    if(shmid < 0)
+    if (shmid < 0)
     {
         return NULL;
     }
 
     /* 2. ATTACH共享内存 */
     addr = (void *)shmat(shmid, NULL, 0);
-    if((void *)-1 == addr)
+    if ((void *)-1 == addr)
     {
         sys_error("Attach shm failed! shmid:[%d] key:[0x%x]", shmid, key);
         return NULL;
@@ -256,7 +256,7 @@ static char *logsvr_creat_shm(int fd)
 
     /* 3. 初始化共享内存 */
     p = addr;
-    for(idx=0; idx<LOG_FILE_MAX_NUM; idx++)
+    for (idx=0; idx<LOG_FILE_MAX_NUM; idx++)
     {
         file = (log_file_info_t *)(p + idx * LOG_FILE_CACHE_SIZE);
 
@@ -294,20 +294,20 @@ static void *logsvr_timeout_routine(void *args)
     logsvr_t *logsvr = (logsvr_t *)args;
 
 
-    while(1)
+    while (1)
     {
         memset(&ctm, 0, sizeof(ctm));
 
         ftime(&ctm);
 
-        for(idx=0; idx<LOG_FILE_MAX_NUM; idx++)
+        for (idx=0; idx<LOG_FILE_MAX_NUM; idx++)
         {
             /* 1. 尝试加锁 */
             proc_spin_wrlock_b(logsvr->fd, idx+1);
 
             /* 2. 路径为空，则不用同步 */
             file = (log_file_info_t *)(logsvr->addr + idx*LOG_FILE_CACHE_SIZE);
-            if('\0' == file->path[0])
+            if ('\0' == file->path[0])
             {
                 proc_unlock_b(logsvr->fd, idx+1);
                 continue;
@@ -316,7 +316,7 @@ static void *logsvr_timeout_routine(void *args)
             log_sync(file);
         
             /* 判断文件是否还有运行的进程正在使用文件缓存 */
-            if(!proc_is_exist(file->pid))
+            if (!proc_is_exist(file->pid))
             {
                 memset(file, 0, sizeof(log_file_info_t));
 

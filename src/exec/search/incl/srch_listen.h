@@ -17,6 +17,4 @@ typedef struct
 
 void *srch_listen_routine(void *_ctx);
 
-int srch_listen_destroy(srch_listen_t *lsn);
-
 #endif /*__SRCH_LISTEN_H__*/

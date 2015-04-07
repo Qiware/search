@@ -53,7 +53,7 @@ int main(int argc, const char *argv[])
 
     /* 1. 接收端初始化 */
     ctx = sdtp_init(&conf, log);
-    if(NULL == ctx)
+    if (NULL == ctx)
     {
         fprintf(stderr, "Initialize rcvsvr failed!");
         return SDTP_ERR;
@@ -69,7 +69,7 @@ int main(int argc, const char *argv[])
 
     /* 2. 接收服务端工作 */
     ret = sdtp_startup(ctx);
-    if(0 != ret)
+    if (0 != ret)
     {
         fprintf(stderr, "Work failed!");
     }

@@ -260,7 +260,7 @@ flt_cntx_t *flt_init(char *pname, const char *path)
         }
 
         return ctx;
-    } while(0);
+    } while (0);
 
     /* > 释放内存空间 */
     if (addr) { free(addr); }
@@ -451,13 +451,13 @@ int flt_proc_lock(void)
 
     /* 2. 打开文件 */
     fd = Open(path, OPEN_FLAGS, OPEN_MODE);
-    if(fd < 0)
+    if (fd < 0)
     {
         return FLT_ERR;
     }
 
     /* 3. 尝试加锁 */
-    if(proc_try_wrlock(fd) < 0)
+    if (proc_try_wrlock(fd) < 0)
     {
         Close(fd);
         return FLT_ERR;
@@ -668,7 +668,7 @@ bool flt_set_uri_exists(redis_clst_t *ctx, const char *hash, const char *uri)
 
         freeReplyObject(r);
         return true; /* 已存在 */
-    } while(0);
+    } while (0);
 
     freeReplyObject(r);
 
@@ -772,7 +772,7 @@ int flt_push_seed_to_crwlq(flt_cntx_t *ctx)
         }
 
         /* > 解析URI字串 */
-        if(0 != uri_reslove(seed->uri, &field))
+        if (0 != uri_reslove(seed->uri, &field))
         {
             log_error(ctx->log, "Reslove url [%s] failed!", seed->uri);
             return FLT_ERR;
