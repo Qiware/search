@@ -8,13 +8,6 @@
  ** 注  意: 请勿显示中文，否则将会出现对齐异常!
  ** 作  者: # Qifeng.zou # 2014.12.27 #
  ******************************************************************************/
-#include <unistd.h>
-#include <time.h>
-#include <sys/types.h>
-#include <arpa/inet.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-
 #include "sck.h"
 #include "syscall.h"
 #include "monitor.h"

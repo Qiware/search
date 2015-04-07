@@ -8,10 +8,8 @@
  ** 注  意: 请勿显示中文，否则将会出现对齐异常!
  ** 作  者: # Qifeng.zou # 2014.12.26 #
  ******************************************************************************/
-#include <memory.h>
-#include <strings.h>
-
 #include "common.h"
+#include "syscall.h"
 #include "monitor.h"
 #include "mon_conf.h"
 
@@ -107,6 +105,8 @@ int main(int argc, char *argv[])
     mon_cntx_t *ctx;
 
     memset(&opt, 0, sizeof(opt));
+
+    set_fd_limit(65535);
 
     /* > 解析输入参数 */
     if (mon_getopt(argc, argv, &opt))

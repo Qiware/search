@@ -8,29 +8,10 @@
  ** 注  意: 请勿显示中文，否则将会出现对齐异常!
  ** 作  者: # Qifeng.zou # 2014.12.27 #
  ******************************************************************************/
-#include <stdio.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <stdarg.h>
-#include <sys/un.h>
-#include <signal.h>
-#include <pthread.h>
-#include <sys/time.h>
-#include <arpa/inet.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-
 #include "sck.h"
 #include "syscall.h"
 #include "monitor.h"
 #include "srch_mesg.h"
-
-#define SRCH_SVR_IP_ADDR    "127.0.0.1"
-#define SRCH_SVR_PORT       (8888)
 
 #define SRCH_CLIENT_NUM     (4000)
 
@@ -85,83 +66,40 @@ menu_item_t *mon_srch_menu(menu_cntx_t *ctx, void *args)
  ******************************************************************************/
 static int mon_srch_connect(menu_item_t *menu, void *args)
 {
-    char ip[IP_ADDR_MAX_LEN], input[128];
-    int port = SRCH_SVR_PORT, num = SRCH_CLIENT_NUM;
-    int *fd, idx, n;
+    int idx, n, num;
+    int fd[SRCH_CLIENT_NUM];
     srch_mesg_body_t body;
     srch_mesg_header_t header;
-
-    fprintf(stdout, "Use default configuration? [Y/n]");
-    if (scanf(" %s", input) < 0)
-    {
-        return 0;
-    }
-
-    if (0 == strcasecmp(input, "Y")
-        || 0 == strcasecmp(input, "Yes"))
-    {
-        snprintf(ip, sizeof(ip), "%s", SRCH_SVR_IP_ADDR);
-        port = SRCH_SVR_PORT;
-        num = SRCH_CLIENT_NUM;
-    }
-    else
-    {
-        fprintf(stdout, "Input ip:");
-        if (scanf(" %s", ip) < 0)
-        {
-            return 0;
-        }
-
-        fprintf(stdout, "Input port:");
-        if (scanf(" %s", input) < 0)
-        {
-            return 0;
-        }
-
-        port = atoi(input);
-
-        fprintf(stdout, "Input num:");
-        if (scanf(" %s", input) < 0)
-        {
-            return 0;
-        }
-
-        num = atoi(input);
-    }
-
-    limit_file_num(4096); /* 设置进程打开文件的最大数目 */
-
-    fd = (int *)malloc(num * sizeof(int));
+    mon_cntx_t *ctx = (mon_cntx_t *)args;
 
     /* 连接搜索引擎 */
-    for (idx=0; idx<num; ++idx)
+    num = 0;
+    for (idx=0; idx<SRCH_CLIENT_NUM; ++idx)
     {
-        fd[idx] = tcp_connect(AF_INET, ip, port);
+        fd[idx] = tcp_connect(AF_INET, ctx->conf->search.ip, ctx->conf->search.port);
         if (fd[idx] < 0)
         {
             fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
             break;
         }
+        ++num;
     }
 
     /* 发送搜索数据 */
     for (idx=0; idx<num; ++idx)
     {
-        if (fd[idx] > 0)
-        {
-            header.type = idx%0xFF;
-            header.flag = SRCH_MSG_FLAG_USR;
-            header.mark = htonl(SRCH_MSG_MARK_KEY);
-            header.length = htons(sizeof(body));
+        header.type = idx%0xFF;
+        header.flag = SRCH_MSG_FLAG_USR;
+        header.mark = htonl(SRCH_MSG_MARK_KEY);
+        header.length = htons(sizeof(body));
 
-            snprintf(body.words, sizeof(body.words), "爱我中华");
+        snprintf(body.words, sizeof(body.words), "爱我中华");
 
-            n = Writen(fd[idx], (void *)&header, sizeof(header));
+        n = Writen(fd[idx], (void *)&header, sizeof(header));
 
-            n = Writen(fd[idx], (void *)&body, sizeof(body));
+        n = Writen(fd[idx], (void *)&body, sizeof(body));
 
-            fprintf(stdout, "idx:%d n:%d!\n", idx, n);
-        }
+        fprintf(stdout, "idx:%d n:%d!\n", idx, n);
     }
 
     Sleep(5);

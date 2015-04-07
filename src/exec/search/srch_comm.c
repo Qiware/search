@@ -225,35 +225,35 @@ srch_cntx_t *srch_cntx_init(char *pname, const char *conf_path)
 
     do
     {
-        /* 6. 注册消息处理 */
+        /* > 注册消息处理 */
         if (srch_init_register(ctx))
         {
             log_error(log, "Initialize register failed!");
             break;
         }
 
-        /* 6. 设置进程打开文件数 */
-        if (limit_file_num(conf->connections.max)) /* 设置进程打开文件的最大数目 */
+        /* > 设置进程打开文件数 */
+        if (set_fd_limit(conf->connections.max))
         {
             log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
             break;
         }
 
-        /* 6. 创建队列 */
+        /* > 创建队列 */
         if (srch_creat_queue(ctx))
         {
             log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
             break;
         }
 
-        /* 7. 创建Worker线程池 */
+        /* > 创建Worker线程池 */
         if (srch_creat_worker_pool(ctx))
         {
             log_error(log, "Initialize worker thread pool failed!");
             break;
         }
 
-        /* 8. 创建Agent线程池 */
+        /* > 创建Agent线程池 */
         if (srch_creat_agent_pool(ctx))
         {
             log_error(log, "Initialize agent thread pool failed!");

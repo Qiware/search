@@ -2,6 +2,33 @@
 #include "mon_conf.h"
 #include "mem_pool.h"
 
+/* 加载IP和端口 */
+#define MON_LOAD_CONF(conf, nail, _path) \
+{\
+    xml_node_t *node; \
+    char node_path[FILE_PATH_MAX_LEN]; \
+    \
+    snprintf(node_path, sizeof(node_path), "%s.IP", _path); \
+    \
+    node = xml_rquery(xml, nail, node_path); \
+    if (NULL == node) \
+    { \
+        break; \
+    } \
+    \
+    snprintf((conf)->ip, sizeof((conf)->ip), "%s", (char *)node->value); \
+    \
+    snprintf(node_path, sizeof(node_path), "%s.PORT", _path); \
+    \
+    node = xml_rquery(xml, nail, node_path); \
+    if (NULL == node) \
+    { \
+        break; \
+    } \
+    \
+    (conf)->port = atoi(node->value); \
+}
+
 /******************************************************************************
  **函数名称: mon_conf_load
  **功    能: 加载配置信息
@@ -19,7 +46,8 @@ mon_conf_t *mon_conf_load(const char *path)
     xml_option_t opt;
     mon_conf_t *conf;
     mem_pool_t *pool;
-    xml_node_t *node, *nail;
+    xml_node_t *nail;
+
 
     /* > 创建配置对象 */
     conf = (mon_conf_t *)calloc(1, sizeof(mon_conf_t));
@@ -51,52 +79,16 @@ mon_conf_t *mon_conf_load(const char *path)
             break;
         }
 
-        /* > 提取有效信息 */
-        /* 1. 爬虫配置 */
-        nail = xml_query(xml, ".MONITOR.CRAWLER");
+        /* > 提取配置信息 */
+        nail = xml_query(xml, ".MONITOR");
         if (NULL == nail)
         {
             break;
         }
 
-        node = xml_rquery(xml, nail, "IP");
-        if (NULL == node)
-        {
-            break;
-        }
-
-        snprintf(conf->crwl.ip, sizeof(conf->crwl.ip), "%s", (char *)node->value);
-
-        node = xml_rquery(xml, nail, "PORT");
-        if (NULL == node)
-        {
-            break;
-        }
-
-        conf->crwl.port = atoi(node->value);
-
-        /* 2. 过滤配置 */
-        nail = xml_query(xml, ".MONITOR.FILTER");
-        if (NULL == nail)
-        {
-            break;
-        }
-
-        node = xml_rquery(xml, nail, "IP");
-        if (NULL == node)
-        {
-            break;
-        }
-
-        snprintf(conf->filter.ip, sizeof(conf->filter.ip), "%s", (char *)node->value);
-
-        node = xml_rquery(xml, nail, "PORT");
-        if (NULL == node)
-        {
-            break;
-        }
-
-        conf->filter.port = atoi(node->value);
+        MON_LOAD_CONF(&conf->crwl, nail, ".CRAWLER");
+        MON_LOAD_CONF(&conf->filter, nail, ".FILTER");
+        MON_LOAD_CONF(&conf->search, nail, ".SEARCH");
 
         /* > 释放XML树 */
         xml_destroy(xml);

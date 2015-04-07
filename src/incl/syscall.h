@@ -51,7 +51,7 @@ void *memalign_alloc(size_t alignment, size_t size);
 #endif
 
 int bind_cpu(uint16_t id);
-int limit_file_num(int max);
+int set_fd_limit(int max);
 
 /* 取数值上限 */
 #define div_ceiling(num, mod) ((num)%(mod)? (num)/(mod)+1 : (num)/(mod))

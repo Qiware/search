@@ -7,19 +7,15 @@
 
 typedef struct
 {
-    /* 爬虫配置 */
-    struct
-    {
-        char ip[IP_ADDR_MAX_LEN];   /* IP地址 */
-        int port;                   /* 端口号 */
-    } crwl;
+    char ip[IP_ADDR_MAX_LEN];   /* IP地址 */
+    int port;                   /* 端口号 */
+} ip_port_t;
 
-    /* 过滤配置 */
-    struct
-    {
-        char ip[IP_ADDR_MAX_LEN];   /* IP地址 */
-        int port;                   /* 端口号 */
-    } filter;
+typedef struct
+{
+    ip_port_t  crwl;            /* 爬虫配置 */
+    ip_port_t  filter;          /* 过滤配置 */
+    ip_port_t  search;          /* 搜索引擎配置 */
 } mon_conf_t;
 
 mon_conf_t *mon_conf_load(const char *path);
