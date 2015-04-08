@@ -8,19 +8,15 @@
 #include "thread_pool.h"
 
 /* 宏定义 */
-#define SRCH_TMOUT_SCAN_SEC         (15)    /* 超时扫描间隔 */
+#define SRCH_TMOUT_SCAN_SEC         (15)        /* 超时扫描间隔 */
 
 #define SRCH_SLAB_SIZE              (30 * MB)   /* SLAB内存池大小 */
 #define SRCH_RECV_SIZE              (8 * KB)    /* 缓存SIZE(接收缓存) */
 #define SRCH_SYNC_SIZE  (SRCH_RECV_SIZE >> 1)   /* 缓存同步SIZE */
 
-#define SRCH_CONNQ_LEN              (10000) /* 连接队列长度 */
-#define SRCH_RECVQ_LEN              (10000) /* 接收队列长度 */
-#define SRCH_RECVQ_SIZE             (2 * KB)/* 接收队列SIZE */
+#define SRCH_MSG_TYPE_MAX           (0xFF)      /* 消息最大类型 */
 
-#define SRCH_MSG_TYPE_MAX           (0xFF)  /* 消息最大类型 */
-
-#define SRCH_DEF_CONF_PATH  "../conf/search.xml"   /* 默认配置路径 */
+#define SRCH_DEF_CONF_PATH  "../conf/search.xml"/* 默认配置路径 */
 
 /* 命令路径 */
 #define SRCH_LSN_CMD_PATH "../temp/srch/lsn_cmd.usck"       /* 侦听线程 */
@@ -30,18 +26,18 @@
 /* 搜索引擎对象 */
 typedef struct
 {
-    srch_conf_t *conf;                      /* 配置信息 */
-    log_cycle_t *log;                       /* 日志对象 */
-    slab_pool_t *slab;                      /* 内存池 */
+    srch_conf_t *conf;                          /* 配置信息 */
+    log_cycle_t *log;                           /* 日志对象 */
+    slab_pool_t *slab;                          /* 内存池 */
 
-    pthread_t lsn_tid;                      /* Listen线程 */
-    thread_pool_t *agent_pool;              /* Agent线程池 */
-    thread_pool_t *worker_pool;             /* Worker线程池 */
-    srch_reg_t reg[SRCH_MSG_TYPE_MAX];      /* 消息注册 */
+    pthread_t lsn_tid;                          /* Listen线程 */
+    thread_pool_t *agent_pool;                  /* Agent线程池 */
+    thread_pool_t *worker_pool;                 /* Worker线程池 */
+    srch_reg_t reg[SRCH_MSG_TYPE_MAX];          /* 消息注册 */
 
-    queue_t **connq;                        /* 连接队列(注:数组长度与Agent相等) */
-    queue_t **recvq;                        /* 接收队列(注:数组长度与Agent相等) */
-    queue_t **sendq;                        /* 发送队列(注:数组长度与Agent相等) */
+    queue_t **connq;                            /* 连接队列(注:数组长度与Agent相等) */
+    queue_t **recvq;                            /* 接收队列(注:数组长度与Agent相等) */
+    queue_t **sendq;                            /* 发送队列(注:数组长度与Agent相等) */
 } srch_cntx_t;
 
 #define srch_connq_used(ctx, idx) queue_used(ctx->connq[idx]) /* 已用连接队列空间 */

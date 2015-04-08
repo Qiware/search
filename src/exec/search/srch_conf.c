@@ -11,7 +11,7 @@
 #include "syscall.h"
 #include "srch_conf.h"
 
-static int srch_conf_load_comm(xml_tree_t *xml, srch_conf_t *conf, log_cycle_t *log);
+static int srch_conf_parse(xml_tree_t *xml, srch_conf_t *conf, log_cycle_t *log);
 
 /******************************************************************************
  **函数名称: srch_conf_load
@@ -65,7 +65,7 @@ srch_conf_t *srch_conf_load(const char *path, log_cycle_t *log)
         }
 
         /* 3. 加载通用配置 */
-        if (srch_conf_load_comm(xml, conf, log))
+        if (srch_conf_parse(xml, conf, log))
         {
             log_error(log, "Load common conf failed! path:%s", path);
             break;
@@ -85,63 +85,51 @@ srch_conf_t *srch_conf_load(const char *path, log_cycle_t *log)
     return NULL;
 }
 
-/******************************************************************************
- **函数名称: srch_conf_load_comm
- **功    能: 加载通用配置
- **输入参数: 
- **     xml: XML配置
- **     log: 日志对象
- **输出参数:
- **     conf: 配置信息
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **     通过XML查询接口查找对应的配置信息
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.11.16 #
- ******************************************************************************/
-static int srch_conf_load_comm(xml_tree_t *xml, srch_conf_t *conf, log_cycle_t *log)
+/* 解析日志级别配置 */
+static int srch_conf_parse_log(xml_tree_t *xml, srch_conf_t *conf, log_cycle_t *log)
 {
     xml_node_t *node, *fix;
 
-    /* 1. 定位LOG标签
-     *  获取日志级别信息
-     * */
+    /* > 定位日志标签 */
     fix = xml_query(xml, ".SEARCH-ENGINE.LOG");
-    if (NULL != fix)
+    if (NULL == fix)
     {
-        /* 1.1 日志级别 */
-        node = xml_rquery(xml, fix, "LEVEL");
-        if (NULL != node)
-        {
-            conf->log.level = log_get_level(node->value);
-        }
-        else
-        {
-            conf->log.level = log_get_level(LOG_DEF_LEVEL_STR);
-        }
+        conf->log.level = log_get_level(LOG_DEF_LEVEL_STR);
+        conf->log.syslevel = log_get_level(LOG_DEF_LEVEL_STR);
+        return SRCH_OK;
+    }
 
-        /* 1.2 系统日志级别 */
-        node = xml_rquery(xml, fix, "SYS_LEVEL");
-        if (NULL != node)
-        {
-            conf->log.syslevel = log_get_level(node->value);
-        }
-        else
-        {
-            conf->log.syslevel = log_get_level(LOG_DEF_LEVEL_STR);
-        }
+    /* > 日志级别 */
+    node = xml_rquery(xml, fix, "LEVEL");
+    if (NULL != node)
+    {
+        conf->log.level = log_get_level(node->value);
     }
     else
     {
         conf->log.level = log_get_level(LOG_DEF_LEVEL_STR);
-        conf->log.syslevel = log_get_level(LOG_DEF_LEVEL_STR);
-
-        log_warn(log, "Didn't configure log!");
     }
 
-    /* 2. 定位Connections标签
-     *  获取网页抓取深度和存储路径
-     * */
+    /* > 系统日志级别 */
+    node = xml_rquery(xml, fix, "SYS_LEVEL");
+    if (NULL != node)
+    {
+        conf->log.syslevel = log_get_level(node->value);
+    }
+    else
+    {
+        conf->log.syslevel = log_get_level(LOG_DEF_LEVEL_STR);
+    }
+
+    return SRCH_OK;
+}
+
+/* 解析并发信息配置 */
+static int srch_conf_parse_connections(xml_tree_t *xml, srch_conf_t *conf, log_cycle_t *log)
+{
+    xml_node_t *node, *fix;
+
+    /* > 定位并发配置 */
     fix = xml_query(xml, ".SEARCH-ENGINE.CONNECTIONS");
     if (NULL == fix)
     {
@@ -149,7 +137,7 @@ static int srch_conf_load_comm(xml_tree_t *xml, srch_conf_t *conf, log_cycle_t *
         return SRCH_ERR;
     }
 
-    /* 2.1 获取最大并发数 */
+    /* > 获取最大并发数 */
     node = xml_rquery(xml, fix, "MAX");
     if (NULL == node)
     {
@@ -159,7 +147,7 @@ static int srch_conf_load_comm(xml_tree_t *xml, srch_conf_t *conf, log_cycle_t *
 
     conf->connections.max = atoi(node->value);
 
-    /* 2.2 获取连接超时时间 */
+    /* > 获取连接超时时间 */
     node = xml_rquery(xml, fix, "TIMEOUT");
     if (NULL == node)
     {
@@ -169,7 +157,7 @@ static int srch_conf_load_comm(xml_tree_t *xml, srch_conf_t *conf, log_cycle_t *
 
     conf->connections.timeout = atoi(node->value);
 
-    /* 2.3 获取侦听端口 */
+    /* > 获取侦听端口 */
     node = xml_rquery(xml, fix, "PORT");
     if (NULL == node)
     {
@@ -179,9 +167,84 @@ static int srch_conf_load_comm(xml_tree_t *xml, srch_conf_t *conf, log_cycle_t *
 
     conf->connections.port = atoi(node->value);
 
+    return SRCH_OK;
+}
+
+/* 解析队列配置 */
+static int srch_conf_parse_queue(xml_tree_t *xml, srch_conf_t *conf, log_cycle_t *log)
+{
+    xml_node_t *node, *fix;
+
+    /* 加载队列信息 */
+#define SRCH_LOAD_QUEUE(xml, fix,  _path, conf) \
+    {\
+        char node_path[FILE_PATH_MAX_LEN]; \
+        \
+        snprintf(node_path, sizeof(node_path), "%s.MAX", _path); \
+        \
+        node = xml_rquery(xml, fix, node_path); \
+        if (NULL == node) \
+        { \
+            return SRCH_ERR; \
+        } \
+        \
+        (conf)->max = atoi(node->value); \
+        \
+        snprintf(node_path, sizeof(node_path), "%s.SIZE", _path); \
+        \
+        node = xml_rquery(xml, fix, node_path); \
+        if (NULL == node) \
+        { \
+            return SRCH_ERR; \
+        } \
+        \
+        (conf)->size = atoi(node->value); \
+    }
+
+    /* > 定位队列标签 */
+    fix = xml_query(xml, ".SEARCH-ENGINE.QUEUE");
+    if (NULL == fix)
+    {
+        log_error(log, "Get queue configuration failed!");
+        return SRCH_ERR;
+    }
+
+    /* > 获取队列配置 */
+    SRCH_LOAD_QUEUE(xml, fix, ".CONNQ", &conf->connq);
+    SRCH_LOAD_QUEUE(xml, fix, ".TASKQ", &conf->taskq);
+
+    return SRCH_OK;
+}
+
+/* 解析配置信息 */
+static int srch_conf_parse(xml_tree_t *xml, srch_conf_t *conf, log_cycle_t *log)
+{
+    xml_node_t *node;
+
+    /* > 获取日志级别信息*/
+    if (srch_conf_parse_log(xml, conf, log))
+    {
+        log_error(log, "Parse log configuration failed!");
+        return SRCH_ERR;
+    }
+
+    /* > 获取连接配置 */
+    if (srch_conf_parse_connections(xml, conf, log))
+    {
+        log_error(log, "Parse connections configuration failed!");
+        return SRCH_ERR;
+    }
+
+    /* > 获取队列配置 */
+    if (srch_conf_parse_queue(xml, conf, log))
+    {
+        log_error(log, "Parse queue configuration failed!");
+        return SRCH_ERR;
+    }
+
     /* 3. 获取WORKER.NUM标签 */
     node = xml_query(xml, ".SEARCH-ENGINE.WORKER.NUM");
-    if (NULL == fix)
+    if (NULL == node)
     {
         log_error(log, "Didn't configure worker!");
         return SRCH_ERR;
@@ -191,9 +254,9 @@ static int srch_conf_load_comm(xml_tree_t *xml, srch_conf_t *conf, log_cycle_t *
 
     /* 4. 获取AGENT.NUM标签 */
     node = xml_query(xml, ".SEARCH-ENGINE.AGENT.NUM");
-    if (NULL == fix)
+    if (NULL == node)
     {
-        log_error(log, "Didn't configure receiver!");
+        log_error(log, "Didn't configure agent!");
         return SRCH_ERR;
     }
 

@@ -648,14 +648,10 @@ int srch_register(srch_cntx_t *ctx, uint32_t type, srch_reg_cb_t proc, void *arg
 {
     srch_reg_t *reg;
 
-    if (type >= SRCH_MSG_TYPE_MAX)
+    if (type >= SRCH_MSG_TYPE_MAX
+        || 0 != ctx->reg[type].flag)
     {
-        log_error(ctx->log, "Type [0x%02X] is out of range!", type);
-        return SRCH_ERR;
-    }
-    else if (0 != ctx->reg[type].flag)
-    {
-        log_error(ctx->log, "Repeat register [0x%02X]!", type);
+        log_error(ctx->log, "Type 0x%02X is invalid or repeat reg!", type);
         return SRCH_ERR;
     }
 
@@ -695,7 +691,7 @@ static int srch_creat_queue(srch_cntx_t *ctx)
 
     for (idx=0; idx<conf->agent_num; ++idx)
     {
-        ctx->connq[idx] = queue_creat(SRCH_CONNQ_LEN, sizeof(srch_add_sck_t));
+        ctx->connq[idx] = queue_creat(conf->connq.max, sizeof(srch_add_sck_t));
         if (NULL == ctx->connq)
         {
             log_error(ctx->log, "Initialize lock queue failed!");
@@ -713,26 +709,8 @@ static int srch_creat_queue(srch_cntx_t *ctx)
 
     for (idx=0; idx<conf->agent_num; ++idx)
     {
-        ctx->recvq[idx] = queue_creat(SRCH_RECVQ_LEN, SRCH_RECVQ_SIZE);
+        ctx->recvq[idx] = queue_creat(conf->taskq.max, conf->taskq.size);
         if (NULL == ctx->recvq)
-        {
-            log_error(ctx->log, "Initialize lock queue failed!");
-            return SRCH_ERR;
-        }
-    }
-
-    /* 3. 创建连接队列(与Agent数一致) */
-    ctx->connq = (queue_t **)calloc(conf->agent_num, sizeof(queue_t*));
-    if (NULL == ctx->connq)
-    {
-        log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return SRCH_ERR;
-    }
-
-    for (idx=0; idx<conf->agent_num; ++idx)
-    {
-        ctx->connq[idx] = queue_creat(SRCH_CONNQ_LEN, sizeof(srch_add_sck_t));
-        if (NULL == ctx->connq)
         {
             log_error(ctx->log, "Initialize lock queue failed!");
             return SRCH_ERR;

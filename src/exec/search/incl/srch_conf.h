@@ -31,6 +31,9 @@ typedef struct
 
     int agent_num;                          /* Agent线程数 */
     int worker_num;                         /* Worker线程数 */
+
+    queue_conf_t connq;                     /* 连接队列 */
+    queue_conf_t taskq;                     /* 任务队列 */
 } srch_conf_t;
 
 srch_conf_t *srch_conf_load(const char *path, log_cycle_t *log);

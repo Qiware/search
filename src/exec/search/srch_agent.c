@@ -32,6 +32,7 @@ static int srch_agent_event_timeout_hdl(srch_cntx_t *ctx, srch_agent_t *agt);
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
+ **     TODO: 可使用事件触发添加套接字
  **作    者: # Qifeng.zou # 2014.11.18 #
  ******************************************************************************/
 void *srch_agent_routine(void *_ctx)
@@ -99,7 +100,8 @@ void *srch_agent_routine(void *_ctx)
  **功    能: 初始化Agent线程
  **输入参数:
  **     ctx: 全局信息
- **     r: 接收对象
+ **     agt: 接收对象
+ **     idx: 线程索引
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
@@ -179,9 +181,7 @@ int srch_agent_init(srch_cntx_t *ctx, srch_agent_t *agt, int idx)
         return SRCH_OK;
     } while(0);
 
-    slab_destroy(agt->slab);
-    Close(agt->epid);
-    Close(agt->cmd_sck_id);
+    srch_agent_destroy(agt);
     return SRCH_ERR;
 }
 
@@ -192,12 +192,18 @@ int srch_agent_init(srch_cntx_t *ctx, srch_agent_t *agt, int idx)
  **     agt: 接收对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述: 依次释放所有内存空间
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.18 #
  ******************************************************************************/
 int srch_agent_destroy(srch_agent_t *agt)
 {
+    slab_dealloc(agt->slab, agt->events);
+    rbt_destroy(agt->connections);
+    free(agt->slab);
+    Close(agt->epid);
+    Close(agt->cmd_sck_id);
+    slab_destroy(agt->slab);
     return SRCH_OK;
 }
 
@@ -227,7 +233,8 @@ static srch_agent_t *srch_agent_self(srch_cntx_t *ctx)
  **函数名称: srch_agent_event_hdl
  **功    能: 事件通知处理
  **输入参数: 
- **     r: Agent对象
+ **     ctx: 全局对象
+ **     agt: Agent对象
  **输出参数: NONE
  **返    回: Agent对象
  **实现描述: 
