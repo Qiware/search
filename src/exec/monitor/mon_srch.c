@@ -13,7 +13,7 @@
 #include "monitor.h"
 #include "srch_mesg.h"
 
-#define SRCH_CLIENT_NUM     (4000)
+#define SRCH_CLIENT_NUM     (50000)
 
 static int mon_srch_connect(menu_item_t *menu, void *args);
 
@@ -66,10 +66,8 @@ menu_item_t *mon_srch_menu(menu_cntx_t *ctx, void *args)
  ******************************************************************************/
 static int mon_srch_connect(menu_item_t *menu, void *args)
 {
-    int idx, n, num;
+    int idx, num;
     int fd[SRCH_CLIENT_NUM];
-    srch_mesg_body_t body;
-    srch_mesg_header_t header;
     mon_cntx_t *ctx = (mon_cntx_t *)args;
 
     /* 连接搜索引擎 */
@@ -82,8 +80,14 @@ static int mon_srch_connect(menu_item_t *menu, void *args)
             fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
             break;
         }
+        fprintf(stdout, "idx:%d fd:%d!\n", idx, fd[idx]);
         ++num;
     }
+
+#if 0
+    int n;
+    srch_mesg_body_t body;
+    srch_mesg_header_t header;
 
     /* 发送搜索数据 */
     for (idx=0; idx<num; ++idx)
@@ -99,8 +103,8 @@ static int mon_srch_connect(menu_item_t *menu, void *args)
 
         n = Writen(fd[idx], (void *)&body, sizeof(body));
 
-        fprintf(stdout, "idx:%d n:%d!\n", idx, n);
     }
+#endif
 
     Sleep(5);
 

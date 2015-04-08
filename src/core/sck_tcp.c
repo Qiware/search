@@ -90,10 +90,10 @@ int tcp_listen(int port)
 int tcp_accept(int lsnfd, struct sockaddr *cliaddr)
 {
     int fd, opt = 1;
-    struct linger ln;
+    struct linger lg;
     socklen_t len = sizeof(cliaddr);
 
-    memset(&ln, 0, sizeof(ln));
+    memset(&lg, 0, sizeof(lg));
 
     /* > 接收连接请求 */
     fd = accept(lsnfd, (struct sockaddr *)cliaddr, &len);
@@ -107,9 +107,9 @@ int tcp_accept(int lsnfd, struct sockaddr *cliaddr)
     setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(int));
 
     /* 解决: 过多CLOSE_WAIT造成TOO MANY FILES TO OPEN */
-    ln.l_onoff = 1;
-    ln.l_linger = 0;
-    setsockopt(fd, SOL_SOCKET, SO_LINGER, (char *)&ln, sizeof(ln)); 
+    lg.l_onoff = 1;
+    lg.l_linger = 0;
+    setsockopt(fd, SOL_SOCKET, SO_LINGER, (char *)&lg, sizeof(lg)); 
 
     fd_set_nonblocking(fd);
 
