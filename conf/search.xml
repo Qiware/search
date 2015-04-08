@@ -10,7 +10,7 @@
         1) MAX: 最大并发数
         2) TIMEOUT: 连接超时时间
         3) PORT: 侦听端口 -->
-    <CONNECTIONS MAX="4096" TIMEOUT="15" PORT="8888" />
+    <CONNECTIONS MAX="4096" TIMEOUT="15" PORT="9002" />
 
     <!-- 队列配置
         1) NAME: 队列名称

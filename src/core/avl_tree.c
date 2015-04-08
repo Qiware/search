@@ -207,7 +207,6 @@ static int avl_insert_right(avl_tree_t *tree, avl_node_t *node,
         if (NULL == add)
         {
             *taller = false;
-            fprintf(stderr, "[%s][%d] Calloc failed!\n", __FILE__, __LINE__);
             return AVL_ERR;
         }
 
@@ -289,7 +288,6 @@ static int avl_insert_left(avl_tree_t *tree, avl_node_t *node,
         if (NULL == add)
         {
             *taller = false;
-            fprintf(stderr, "[%s][%d] Calloc failed!\n", __FILE__, __LINE__);
             return AVL_ERR;
         }
 

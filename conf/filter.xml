@@ -13,21 +13,21 @@
     <!-- 分析进程: 负责对网页的分析(内容分析、URL提取等) -->
     <FILTER>
         <!-- 被解析网页的存储路径 -->
-        <STORE PATH="../data/filter/webpage" ERR_PATH="../data/filter/error" />
+        <STORE PATH="../../data/filter/webpage" ERR_PATH="../../data/filter/error" />
         <DATABASE SERVER="服务名" USER="用户名" PASSWD="密码" />  <!-- 数据库配置 -->
     </FILTER>
 
     <!-- 爬取配置
          1) DEPTH: 最大爬取深度
          2) PATH: 网页存储路径 -->
-    <DOWNLOAD DEPTH="-1" PATH="../data/crwl/webpage" />
+    <DOWNLOAD DEPTH="-1" PATH="../../data/crwl/webpage" />
 
     <!-- 工作队列配置 -->
     <WORKQ COUNT="1000" SIZE="0" />
 
     <!-- 管理服务: 负责对外提供管理服务(如:操作接口 监控信息等)
       1) PORT: 侦听端口 -->
-    <MANAGER PORT="8889" />
+    <MANAGER PORT="9001" />
 
     <!-- REDIS服务配置 -->
     <REDIS>
