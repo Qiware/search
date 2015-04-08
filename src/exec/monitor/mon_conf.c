@@ -3,7 +3,7 @@
 #include "mem_pool.h"
 
 /* 加载IP和端口 */
-#define MON_LOAD_CONF(conf, _path) \
+#define MON_LOAD_CONF(xml,  _path, conf) \
 {\
     xml_node_t *node; \
     char node_path[FILE_PATH_MAX_LEN]; \
@@ -78,9 +78,9 @@ mon_conf_t *mon_conf_load(const char *path)
         }
 
         /* > 提取配置信息 */
-        MON_LOAD_CONF(&conf->crwl, ".MONITOR.CRAWLER");
-        MON_LOAD_CONF(&conf->filter, ".MONITOR.FILTER");
-        MON_LOAD_CONF(&conf->search, ".MONITOR.SEARCH");
+        MON_LOAD_CONF(xml, ".MONITOR.CRAWLER", &conf->crwl);
+        MON_LOAD_CONF(xml, ".MONITOR.FILTER", &conf->filter);
+        MON_LOAD_CONF(xml, ".MONITOR.SEARCH", &conf->search);
 
         /* > 释放XML树 */
         xml_destroy(xml);
