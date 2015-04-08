@@ -66,21 +66,28 @@ menu_item_t *mon_srch_menu(menu_cntx_t *ctx, void *args)
  ******************************************************************************/
 static int mon_srch_connect(menu_item_t *menu, void *args)
 {
-    int idx, num;
+    char digit[256];
+    int idx, num, max;
     int fd[SRCH_CLIENT_NUM];
     mon_cntx_t *ctx = (mon_cntx_t *)args;
 
-    /* 连接搜索引擎 */
+    /* > 输入最大连接数 */
+    fprintf(stderr, "    Max connections: ");
+    scanf(" %s", digit);
+
+    max = atoi(digit);
+
+    /* > 连接搜索引擎 */
     num = 0;
-    for (idx=0; idx<SRCH_CLIENT_NUM; ++idx)
+    for (idx=0; idx<max; ++idx)
     {
         fd[idx] = tcp_connect(AF_INET, ctx->conf->search.ip, ctx->conf->search.port);
         if (fd[idx] < 0)
         {
-            fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
+            fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
             break;
         }
-        fprintf(stdout, "idx:%d fd:%d!\n", idx, fd[idx]);
+        fprintf(stdout, "    idx:%d fd:%d!\n", idx, fd[idx]);
         ++num;
     }
 
@@ -105,6 +112,11 @@ static int mon_srch_connect(menu_item_t *menu, void *args)
 
     }
 #endif
+
+    if (num <= 0)
+    {
+        return 0;
+    }
 
     Sleep(5);
 
