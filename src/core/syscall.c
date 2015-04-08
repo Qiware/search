@@ -408,12 +408,16 @@ int bind_cpu(uint16_t id)
  ******************************************************************************/
 int set_fd_limit(int max)
 {
+#if defined(__MEM_LEAK_CHECK__)
+    return 0;
+#else /*!__MEM_LEAK_CHECK__*/
     struct rlimit limit;
 
     limit.rlim_cur = max;
     limit.rlim_max = max;
 
     return setrlimit(RLIMIT_NOFILE, &limit);
+#endif /*!__MEM_LEAK_CHECK__*/
 }
 
 /******************************************************************************
