@@ -235,7 +235,7 @@ srch_cntx_t *srch_cntx_init(char *pname, const char *conf_path)
         /* > 设置进程打开文件数 */
         if (set_fd_limit(conf->connections.max))
         {
-            log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
+            log_error(log, "errmsg:[%d] %s! max:%d", errno, strerror(errno), conf->connections.max);
             break;
         }
 
