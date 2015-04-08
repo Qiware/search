@@ -115,6 +115,7 @@ int srch_agent_init(srch_cntx_t *ctx, srch_agent_t *agt, int idx)
     rbt_option_t opt;
     char path[FILE_NAME_MAX_LEN];
 
+    agt->tidx = idx;
     agt->log = ctx->log;
 
     /* 1. 创建SLAB内存池 */
@@ -492,6 +493,7 @@ static int srch_agent_add_conn(srch_cntx_t *ctx, srch_agent_t *agt)
         ev.events = EPOLLIN | EPOLLET; /* 边缘触发 */
 
         epoll_ctl(agt->epid, EPOLL_CTL_ADD, sck->fd, &ev);
+        ++agt->conn_total;
     }
 
     return SRCH_ERR;
@@ -546,6 +548,7 @@ static int srch_agent_del_conn(srch_cntx_t *ctx, srch_agent_t *agt, socket_t *sc
     slab_dealloc(agt->slab, sck->extra);
     slab_dealloc(agt->slab, sck);
 
+    --agt->conn_total;
     return SRCH_OK;
 }
 

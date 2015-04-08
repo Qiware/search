@@ -25,6 +25,7 @@ typedef struct
 
     int cmd_sck_id;                 /* 命令套接字 */
     rbt_tree_t *connections;        /* 套接字表(挂载数据socket_t) */
+    unsigned int conn_total;        /* 当前连接数 */
 
     time_t ctm;                     /* 当前时间 */
     time_t scan_tm;                 /* 前一次超时扫描的时间 */
