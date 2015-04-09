@@ -1,13 +1,5 @@
-#include <memory.h>
-#include <assert.h>
-#include <signal.h>
-#include <arpa/inet.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
 
 #include "sdtp.h"
-
 
 #define SDTP_LOG_LEVEL   LOG_LEVEL_TRACE
 #define SDTP_LOG_SIZE    (100*1024*1024)

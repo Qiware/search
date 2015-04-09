@@ -2,6 +2,7 @@
 #define __SDTP_H__
 
 #include <stdint.h>
+#include <assert.h>
 
 #include "log.h"
 #include "sck.h"

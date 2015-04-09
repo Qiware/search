@@ -1,12 +1,6 @@
 #if !defined(__SDTP_PRIV_H__)
 #define __SDTP_PRIV_H__
 
-#include <stdio.h>
-#include <errno.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <unistd.h>
-
 #include "sck.h"
 #include "log.h"
 #include "queue.h"

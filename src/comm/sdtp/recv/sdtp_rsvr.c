@@ -7,14 +7,6 @@
  **         1. 主要用于异步系统之间数据消息的传输
  ** 作  者: # Qifeng.zou # 2014.12.29 #
  ******************************************************************************/
-#include <memory.h>
-#include <assert.h>
-#include <signal.h>
-#include <stdint.h>
-#include <arpa/inet.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
 
 #include "sdtp.h"
 #include "syscall.h"

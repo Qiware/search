@@ -1,14 +1,3 @@
-#include <fcntl.h>
-#include <memory.h>
-#include <stdarg.h>
-#include <sys/un.h>
-#include <signal.h>
-#include <pthread.h>
-#include <sys/time.h>
-#include <arpa/inet.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
 
 #include "shm_opt.h"
 #include "syscall.h"

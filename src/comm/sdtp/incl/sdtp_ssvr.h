@@ -1,8 +1,6 @@
 #if !defined(__SDTP_SSVR_H__)
 #define __SDTP_SSVR_H__
 
-#include <sys/types.h>
-
 #include "log.h"
 #include "slab.h"
 #include "list.h"

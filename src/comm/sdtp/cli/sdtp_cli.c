@@ -5,11 +5,6 @@
 #include "sdtp_ssvr.h"
 #include "sdtp_priv.h"
 
-#include <unistd.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <sys/select.h>
-
 static int _sdtp_cli_init(sdtp_cli_t *cli, int idx);
 static int sdtp_cli_shmat(sdtp_cli_t *cli);
 static int sdtp_cli_cmd_usck(sdtp_cli_t *cli, int idx);
