@@ -64,7 +64,7 @@ sdtp_cntx_t *sdtp_init(const sdtp_conf_t *conf, log_cycle_t *log)
     /* 3. 初始化接收端 */
     if (_sdtp_init(ctx))
     {
-        Free(ctx);
+        FREE(ctx);
         log_error(ctx->log, "Initialize recv failed!");
         return NULL;
     }
@@ -181,7 +181,7 @@ int sdtp_destroy(sdtp_cntx_t **ctx)
     thread_pool_destroy_ext((*ctx)->worktp, sdtp_worktp_destroy, *ctx);
 #endif
 
-    Free(*ctx);
+    FREE(*ctx);
     return SDTP_OK;
 }
 
@@ -406,7 +406,7 @@ void sdtp_recvtp_destroy(void *_ctx, void *args)
         slab_destroy(rsvr->pool);
     }
 
-    Free(ctx->recvtp->data);
+    FREE(ctx->recvtp->data);
     thread_pool_destroy(ctx->recvtp);
 
     return;
@@ -497,7 +497,7 @@ void sdtp_worktp_destroy(void *_ctx, void *args)
         Close(worker->cmd_sck_id);
     }
 
-    Free(ctx->worktp->data);
+    FREE(ctx->worktp->data);
     thread_pool_destroy(ctx->recvtp);
 
     return;

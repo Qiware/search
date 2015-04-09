@@ -1,22 +1,6 @@
 #if !defined(__XDO_UNISTD_H__)
 #define __XDO_UNISTD_H__
 
-#include <stdio.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <memory.h>
-#include <stdarg.h>
-#include <sys/un.h>
-#include <signal.h>
-#include <pthread.h>
-#include <sys/time.h>
-#include <arpa/inet.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
 
 #include "common.h"
 
@@ -32,7 +16,7 @@ int Open(const char *fpath, int flags, mode_t mode);
     if(fd > 0) { close(fd), fd = -1; } \
 }
 #define fClose(fp) {fclose(fp), fp = NULL;}
-#define Free(p) { if (p) { free(p), p = NULL; } }
+#define FREE(p) { if (p) { free(p), p = NULL; } }
 
 void Sleep(int sec);
 int Mkdir(const char *dir, mode_t mode);

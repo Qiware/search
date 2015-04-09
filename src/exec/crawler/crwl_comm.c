@@ -245,7 +245,7 @@ void crwl_cntx_destroy(crwl_cntx_t *ctx)
     {
         queue_destroy(ctx->workq[idx]);
     }
-    Free(ctx->workq);
+    FREE(ctx->workq);
 
     crwl_worker_tpool_destroy(ctx);
     log_destroy(&ctx->log);

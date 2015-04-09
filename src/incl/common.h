@@ -9,7 +9,18 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <stdint.h>
+#include <stdarg.h>
+#include <sys/un.h>
+#include <signal.h>
+#include <pthread.h>
 #include <stdbool.h>
+#include <sys/time.h>
+#include <arpa/inet.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+
 
 /* 宏定义 */
 #define FILE_NAME_MAX_LEN   (256)           /* 文件名最大长度 */

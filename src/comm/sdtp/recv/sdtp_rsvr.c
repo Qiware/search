@@ -902,7 +902,7 @@ static int sdtp_rsvr_event_timeout_hdl(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr)
                     curr->fd, curr->ipaddr);
 
             /* 释放数据 */
-            Free(curr->recv.addr);
+            FREE(curr->recv.addr);
 
             /* 删除连接 */
             if (node == tail)
@@ -1073,8 +1073,8 @@ static int sdtp_rsvr_del_conn_hdl(sdtp_rsvr_t *rsvr, list2_node_t *node)
     /* 2. 释放数据空间 */
     Close(curr->fd);
 
-    Free(curr->recv.addr);
-    Free(curr->send.addr);
+    FREE(curr->recv.addr);
+    FREE(curr->send.addr);
     sdtp_rsvr_clear_mesg(rsvr, curr);
     curr->recv_total = 0;
     slab_dealloc(rsvr->pool, curr);

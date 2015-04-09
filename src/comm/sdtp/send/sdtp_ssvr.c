@@ -485,7 +485,7 @@ static int sdtp_ssvr_kpalive_req(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr)
         || (SDTP_KPALIVE_STAT_SENT == sck->kpalive)) 
     {
         Close(sck->fd);
-        Free(send->addr);
+        FREE(send->addr);
 
         log_error(ssvr->log, "Didn't get keepalive respond for a long time!");
         return SDTP_OK;
