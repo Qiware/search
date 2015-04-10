@@ -100,8 +100,7 @@ flt_conf_t *flt_conf_load(const char *path, log_cycle_t *log)
 static int _flt_conf_load(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *log)
 {
     xml_node_t *node, *nail;
-    flt_worker_conf_t *worker = &conf->worker;
-    flt_filter_conf_t *filter = &conf->filter;
+    flt_work_conf_t *work = &conf->work;
 
     /* > 定位LOG标签
      *  获取日志级别信息 */
@@ -147,51 +146,32 @@ static int _flt_conf_load(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *log)
     node = xml_rquery(xml, nail, "NUM");
     if (NULL == node)
     {
-        worker->num = FLT_THD_DEF_NUM;
-        log_warn(log, "Set thread number: %d!", worker->num);
+        work->num = FLT_THD_DEF_NUM;
+        log_warn(log, "Set thread number: %d!", work->num);
     }
     else
     {
-        worker->num = atoi(node->value);
+        work->num = atoi(node->value);
     }
 
-    if (worker->num <= 0)
-    {
-        worker->num = FLT_THD_MIN_NUM;
-        log_warn(log, "Set thread number: %d!", worker->num);
-    }
-
-    /* > 定位工作进程配置 */
-    nail = xml_query(xml, ".FILTER.FILTER");
-    if (NULL == nail)
-    {
-        log_error(log, "Didn't configure filter process!");
-        return FLT_ERR;
-    }
-
-    /* 1. 存储路径(相对查找) */
-    node = xml_rquery(xml, nail, "STORE.PATH");
+    /* 2. 工作路径(相对查找) */
+    node = xml_rquery(xml, nail, "PATH");
     if (NULL == node)
     {
-        log_error(log, "Didn't configure store path!");
+        log_error(log, "Didn't configure workspace path!");
         return FLT_ERR;
     }
 
-    snprintf(filter->store.path, sizeof(filter->store.path), "%s", node->value);
+    snprintf(work->path, sizeof(work->path), "%s", node->value);
 
-    Mkdir(filter->store.path, DIR_MODE);
+    Mkdir(work->path, DIR_MODE);
 
-    /* 2. 错误信息存储路径(相对查找) */
-    node = xml_rquery(xml, nail, "STORE.ERR_PATH");
-    if (NULL == node)
-    {
-        log_error(log, "Didn't configure error store path!");
-        return FLT_ERR;
-    }
-
-    snprintf(filter->store.err_path, sizeof(filter->store.err_path), "%s", node->value);
-
-    Mkdir(filter->store.err_path, 0777);
+    snprintf(work->err_path, sizeof(work->err_path), "%s/error", node->value);
+    Mkdir(work->err_path, DIR_MODE);
+    snprintf(work->man_path, sizeof(work->man_path), "%s/manage", node->value);
+    Mkdir(work->man_path, DIR_MODE);
+    snprintf(work->webpage_path, sizeof(work->webpage_path), "%s/webpage", node->value);
+    Mkdir(work->webpage_path, DIR_MODE);
 
     /* > 定位Download标签
      *  获取网页抓取深度和存储路径

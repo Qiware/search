@@ -7,8 +7,6 @@
 #include "filter.h"
 #include "avl_tree.h"
 
-#define FLT_MAN_DATA_DIR "../data/filter/man" /* 数据存储目录 */
-
 /* 过滤代理 */
 typedef struct
 {

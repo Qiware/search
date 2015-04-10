@@ -670,7 +670,7 @@ static int flt_man_store_domain_ip_map_req_hdl(flt_cntx_t *ctx,
 
     memset(&trav, 0, sizeof(trav));
 
-    Mkdir(FLT_MAN_DATA_DIR, 0777);
+    Mkdir(ctx->conf->work.man_path, 0777);
 
     /* > 新建应答 */
     item = slab_alloc(man->slab, sizeof(flt_cmd_item_t));
@@ -688,7 +688,7 @@ static int flt_man_store_domain_ip_map_req_hdl(flt_cntx_t *ctx,
 
     snprintf(fname, sizeof(fname),
             "%s/%04d%02d%02d%02d%02d%02d%03d-%d.dim",
-            FLT_MAN_DATA_DIR,
+            ctx->conf->work.man_path,
             loctm.tm_year+1900, loctm.tm_mon+1, loctm.tm_mday,
             loctm.tm_hour, loctm.tm_min, loctm.tm_sec, ctm.millitm, ++idx);
 
@@ -778,7 +778,7 @@ static int flt_man_store_domain_blacklist_req_hdl(flt_cntx_t *ctx,
 
     memset(&trav, 0, sizeof(trav));
 
-    Mkdir(FLT_MAN_DATA_DIR, 0777);
+    Mkdir(ctx->conf->work.man_path, 0777);
 
     /* > 新建应答 */
     item = slab_alloc(man->slab, sizeof(flt_cmd_item_t));
@@ -796,7 +796,7 @@ static int flt_man_store_domain_blacklist_req_hdl(flt_cntx_t *ctx,
 
     snprintf(fname, sizeof(fname),
             "%s/%04d%02d%02d%02d%02d%02d%03d-%d.bl",
-            FLT_MAN_DATA_DIR,
+            ctx->conf->work.man_path,
             loctm.tm_year+1900, loctm.tm_mon+1, loctm.tm_mday,
             loctm.tm_hour, loctm.tm_min, loctm.tm_sec, ctm.millitm, ++idx);
 

@@ -15,21 +15,16 @@
 #include "xml_tree.h"
 #include "mem_pool.h"
 
-/* Worker配置信息 */
+/* 工作配置信息 */
 typedef struct
 {
-    int num;                                /* 爬虫线程数 */
-} flt_worker_conf_t;
+    int num;                                /* 工作线程数 */
 
-/* Parser配置信息 */
-typedef struct
-{
-    struct
-    {
-        char path[FILE_PATH_MAX_LEN];       /* 数据存储路径 */
-        char err_path[FILE_PATH_MAX_LEN];   /* 错误数据存储路径 */
-    } store;
-} flt_filter_conf_t;
+    char path[FILE_PATH_MAX_LEN];           /* 工作路径 */
+    char webpage_path[FILE_PATH_MAX_LEN];   /* 网页存储路径 */
+    char err_path[FILE_PATH_MAX_LEN];       /* 错误数据存储路径 */
+    char man_path[FILE_PATH_MAX_LEN];       /* 管理数据存储路径 */
+} flt_work_conf_t;
 
 /* Seed配置信息 */
 typedef struct
@@ -49,7 +44,7 @@ typedef struct
     char push_tab[TABLE_NAME_MAX_LEN];      /* PUSHED哈希表名 */
 } flt_redis_conf_t;
 
-/* 爬虫配置信息 */
+/* 配置信息 */
 typedef struct
 {
     struct
@@ -68,8 +63,7 @@ typedef struct
     int man_port;                           /* 管理服务侦听端口 */
 
     flt_redis_conf_t redis;                 /* REDIS配置 */
-    flt_worker_conf_t worker;               /* WORKER配置 */
-    flt_filter_conf_t filter;               /* FILTER配置 */
+    flt_work_conf_t work;                   /* 工作配置 */
 
 #define FLT_SEED_MAX_NUM   (100)            /* 种子最大数 */
     uint32_t seed_num;                      /* 种子实数 */

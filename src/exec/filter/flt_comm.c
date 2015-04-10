@@ -334,7 +334,7 @@ int flt_startup(flt_cntx_t *ctx)
     }
 
     /* > 设置Worker线程回调 */
-    for (idx=0; idx<conf->worker.num; ++idx)
+    for (idx=0; idx<conf->work.num; ++idx)
     {
         thread_pool_add_worker(ctx->worker_pool, flt_worker_routine, ctx);
     }
@@ -378,7 +378,7 @@ static int flt_worker_pool_creat(flt_cntx_t *ctx)
 {
     int idx, num;
     thread_pool_option_t option;
-    flt_worker_conf_t *conf = &ctx->conf->worker;
+    flt_work_conf_t *conf = &ctx->conf->work;
 
     memset(&option, 0, sizeof(option));
 

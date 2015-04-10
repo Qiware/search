@@ -7,15 +7,9 @@
     <LOG LEVEL="warn" SYS_LEVEL="error" PATH="../log/" />
 
     <!-- 工作进程: 负责网页分析
-         1) NUM: 线程数 -->
-    <WORKER NUM="3" />
-
-    <!-- 分析进程: 负责对网页的分析(内容分析、URL提取等) -->
-    <FILTER>
-        <!-- 被解析网页的存储路径 -->
-        <STORE PATH="../../data/filter/webpage" ERR_PATH="../../data/filter/error" />
-        <DATABASE SERVER="服务名" USER="用户名" PASSWD="密码" />  <!-- 数据库配置 -->
-    </FILTER>
+         1) NUM: 线程数
+         2) PATH: 工作目录 -->
+    <WORKER NUM="3" PATH="../../data/filter/" />
 
     <!-- 爬取配置
          1) DEPTH: 最大爬取深度
@@ -45,7 +39,6 @@
              ITEM: 第1项为MASTER, 其他项为副本 -->
         <NETWORK>
             <ITEM IP="127.0.0.1" PORT="6379" /> <!-- MASTER配置 -->
-            <ITEM IP="127.0.0.1" PORT="6380" />
         </NETWORK>
     </REDIS>
 

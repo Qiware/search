@@ -44,8 +44,6 @@ void *flt_sched_routine(void *_ctx)
 
     while (1)
     {
-        Mkdir(path, 0777);
-
         /* > 当队列中无数据时, 才往队列中放数据
          *  原因: 防止文件名被重复放入队列中, 造成异常情况 */
         if (0 != queue_used(ctx->taskq))
@@ -58,6 +56,7 @@ void *flt_sched_routine(void *_ctx)
         dir = opendir(path);
         if (NULL == dir)
         {
+            Sleep(1);
             continue;
         }
 
@@ -91,8 +90,6 @@ void *flt_sched_routine(void *_ctx)
 
         /* > 关闭目录 */
         closedir(dir);
-
-        Mkdir(conf->filter.store.path, 0777);
         Sleep(5);
     }
 
