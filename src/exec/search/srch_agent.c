@@ -201,8 +201,8 @@ int srch_agent_destroy(srch_agent_t *agt)
     slab_dealloc(agt->slab, agt->events);
     rbt_destroy(agt->connections);
     free(agt->slab);
-    Close(agt->epid);
-    Close(agt->cmd_sck_id);
+    CLOSE(agt->epid);
+    CLOSE(agt->cmd_sck_id);
     slab_destroy(agt->slab);
     return SRCH_OK;
 }
@@ -484,7 +484,7 @@ static int srch_agent_add_conn(srch_cntx_t *ctx, srch_agent_t *agt)
         {
             log_error(agt->log, "Insert into avl failed! fd:%d seq:%lu", sck->fd, extra->serial);
 
-            Close(sck->fd);
+            CLOSE(sck->fd);
             list_destroy(extra->send_list);
             slab_dealloc(agt->slab, sck->extra);
             slab_dealloc(agt->slab, sck);
@@ -535,7 +535,7 @@ static int srch_agent_del_conn(srch_cntx_t *ctx, srch_agent_t *agt, socket_t *sc
     }
 
     /* 2. 释放套接字空间 */
-    Close(sck->fd);
+    CLOSE(sck->fd);
     for (;;)    /* 释放发送链表 */
     {
         p = list_lpop(extra->send_list);

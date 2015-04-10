@@ -19,10 +19,10 @@ typedef int (*mon_crwl_setup_cb_t)(crwl_cmd_t *cmd);
 typedef int (*mon_crwl_print_cb_t)(crwl_cmd_t *cmd);
 
 /* 静态函数 */
-static int mon_crwl_query_conf_req(menu_item_t *menu, void *args);
-static int mon_crwl_query_workq_stat_req(menu_item_t *menu, void *args);
-static int mon_crwl_query_worker_stat_req(menu_item_t *menu, void *args);
-static int mon_crwl_switch_sched_req(menu_item_t *menu, void *args);
+static int mon_crwl_query_conf_req(menu_cntx_t *ctx, menu_item_t *menu, void *args);
+static int mon_crwl_query_workq_stat_req(menu_cntx_t *ctx, menu_item_t *menu, void *args);
+static int mon_crwl_query_worker_stat_req(menu_cntx_t *ctx, menu_item_t *menu, void *args);
+static int mon_crwl_switch_sched_req(menu_cntx_t *ctx, menu_item_t *menu, void *args);
 
 /******************************************************************************
  **函数名称: mon_crwl_entry
@@ -37,7 +37,7 @@ static int mon_crwl_switch_sched_req(menu_item_t *menu, void *args);
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.03.02 #
  ******************************************************************************/
-static int mon_crwl_entry(menu_item_t *menu, void *args)
+static int mon_crwl_entry(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args)
 {
     mon_cntx_t *ctx = (mon_cntx_t *)args;
 
@@ -305,7 +305,7 @@ static int mon_crwl_query_worker_stat_print(crwl_cmd_t *cmd)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.02.27 #
  ******************************************************************************/
-static int mon_crwl_query_worker_stat_req(menu_item_t *menu, void *args)
+static int mon_crwl_query_worker_stat_req(menu_cntx_t *ctx, menu_item_t *menu, void *args)
 {
     return mon_crwl_frame(
             mon_crwl_query_worker_stat_setup,
@@ -379,7 +379,7 @@ static int mon_crwl_query_workq_stat_print(crwl_cmd_t *cmd)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.03.02 #
  ******************************************************************************/
-static int mon_crwl_query_workq_stat_req(menu_item_t *menu, void *args)
+static int mon_crwl_query_workq_stat_req(menu_cntx_t *ctx, menu_item_t *menu, void *args)
 {
     return mon_crwl_frame(
             mon_crwl_query_workq_stat_setup,
@@ -454,7 +454,7 @@ static int mon_crwl_query_conf_print(crwl_cmd_t *cmd)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.03.02 #
  ******************************************************************************/
-static int mon_crwl_query_conf_req(menu_item_t *menu, void *args)
+static int mon_crwl_query_conf_req(menu_cntx_t *ctx, menu_item_t *menu, void *args)
 {
     return mon_crwl_frame(
             mon_crwl_query_conf_setup,
@@ -522,7 +522,7 @@ static int mon_crwl_switch_sched_print(crwl_cmd_t *cmd)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.03.26 #
  ******************************************************************************/
-static int mon_crwl_switch_sched_req(menu_item_t *menu, void *args)
+static int mon_crwl_switch_sched_req(menu_cntx_t *ctx, menu_item_t *menu, void *args)
 {
     return mon_crwl_frame(
             mon_crwl_switch_sched_setup,

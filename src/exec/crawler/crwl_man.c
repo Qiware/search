@@ -198,7 +198,7 @@ static crwl_man_t *crwl_man_init(crwl_cntx_t *ctx)
     {
         list_destroy(man->mesg_list);
     }
-    Close(man->fd);
+    CLOSE(man->fd);
     slab_dealloc(ctx->slab, man);
 
     return NULL;

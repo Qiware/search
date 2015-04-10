@@ -149,7 +149,7 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker, int tidx)
                 sizeof(struct epoll_event));
         if (NULL == worker->events)
         {
-            Close(worker->epid);
+            CLOSE(worker->epid);
             log_error(worker->log, "Alloc memory from slab failed!");
             break;
         }
@@ -159,7 +159,7 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker, int tidx)
 
     /* > 释放空间 */
     free(addr);
-    Close(worker->epid);
+    CLOSE(worker->epid);
 
     return CRWL_ERR;
 }
@@ -680,9 +680,9 @@ int crwl_worker_remove_sock(crwl_worker_t *worker, socket_t *sck)
 
     if (extra->webpage.fp)
     {
-        fClose(extra->webpage.fp);
+        FCLOSE(extra->webpage.fp);
     }
-    Close(sck->fd);
+    CLOSE(sck->fd);
 
     /* >> 释放发送链表 */
     while (1)
@@ -786,7 +786,7 @@ int crwl_worker_add_http_get_req(crwl_worker_t *worker, socket_t *sck, const cha
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
- **     网页存储文件在此fopen(), 在crwl_worker_remove_sock()中fClose().
+ **     网页存储文件在此fopen(), 在crwl_worker_remove_sock()中fclose().
  **作    者: # Qifeng.zou # 2014.10.15 #
  ******************************************************************************/
 int crwl_worker_webpage_creat(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t *sck)
@@ -968,7 +968,7 @@ static int crwl_worker_task_down_webpage(
     sck = crwl_worker_socket_alloc(worker);
     if (NULL == sck)
     {
-        Close(fd);
+        CLOSE(fd);
         log_error(worker->log, "Alloc memory from slab failed!");
         return CRWL_ERR;
     }
@@ -991,7 +991,7 @@ static int crwl_worker_task_down_webpage(
 
     if (crwl_worker_add_sock(worker, sck))
     {
-        Close(fd);
+        CLOSE(fd);
         log_error(worker->log, "Add socket into list failed!");
         crwl_worker_socket_dealloc(worker, sck);
         return CRWL_ERR;

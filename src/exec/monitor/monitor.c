@@ -213,7 +213,7 @@ static menu_cntx_t *mon_menu_init(mon_cntx_t *ctx)
     menu_cntx_t *menu_ctx;
 
     /* > 初始化菜单 */
-    menu_ctx = menu_cntx_init("Monitor System");
+    menu_ctx = menu_cntx_init("Monitor System", &ctx->conf->menu);
     if (NULL == menu_ctx)
     {
         fprintf(stderr, "Init menu context failed!\n");

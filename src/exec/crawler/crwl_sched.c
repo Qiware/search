@@ -163,7 +163,7 @@ static void crwl_sched_destroy(crwl_sched_t *sched)
 {
     redisFree(sched->redis);
     sched->redis = NULL;
-    Close(sched->cmd_sck_id);
+    CLOSE(sched->cmd_sck_id);
     free(sched);
 }
 

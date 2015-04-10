@@ -130,8 +130,8 @@ srch_listen_t *srch_listen_init(srch_cntx_t *ctx)
         return lsn;
     } while(0);
 
-    Close(lsn->lsn_sck_id);
-    Close(lsn->cmd_sck_id);
+    CLOSE(lsn->lsn_sck_id);
+    CLOSE(lsn->cmd_sck_id);
     free(lsn);
     return NULL;
 }
@@ -173,7 +173,7 @@ static int srch_listen_accept(srch_cntx_t *ctx, srch_listen_t *lsn)
     if (NULL == add)
     {
         log_error(lsn->log, "Alloc memory from queue failed! fd:%d", fd);
-        Close(fd);
+        CLOSE(fd);
         return SRCH_ERR;
     }
 
@@ -186,7 +186,7 @@ static int srch_listen_accept(srch_cntx_t *ctx, srch_listen_t *lsn)
     {
         log_error(lsn->log, "Push into queue failed! fd:%d", fd);
         queue_dealloc(ctx->connq[tidx], add);
-        Close(fd);
+        CLOSE(fd);
         return SRCH_ERR;
     }
 

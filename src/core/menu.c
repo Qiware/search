@@ -22,7 +22,7 @@
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.27 #
  ******************************************************************************/
-menu_cntx_t *menu_cntx_init(const char *title)
+menu_cntx_t *menu_cntx_init(const char *title, menu_conf_t *conf)
 {
     menu_cntx_t *ctx;
 
@@ -33,6 +33,8 @@ menu_cntx_t *menu_cntx_init(const char *title)
         free(ctx);
         return NULL;
     }
+
+    memcpy(&ctx->conf, conf, sizeof(menu_conf_t));
 
     /* > 创建内存池 */
     ctx->pool = mem_pool_creat(1 * KB);
@@ -173,6 +175,7 @@ menu_item_t *menu_child(menu_cntx_t *ctx, menu_item_t *parent,
  **函数名称: menu_display
  **功    能: 显示菜单
  **输入参数:
+ **     ctx: 全局对象
  **     menu: 需要显示的菜单
  **输出参数: NONE
  **返    回: VOID
@@ -180,14 +183,15 @@ menu_item_t *menu_child(menu_cntx_t *ctx, menu_item_t *parent,
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.27 #
  ******************************************************************************/
-int menu_display(menu_item_t *menu, void *args)
+int menu_display(menu_cntx_t *ctx, menu_item_t *menu, void *args)
 {
     int i, off, len, n;
     menu_item_t *child = menu->child;
+    menu_conf_t *conf = &ctx->conf;
 
     /* 1. Display top line */ 
     fprintf(stdout, "\n╔");
-    for (i=0; i<MENU_WIDTH; ++i)
+    for (i=0; i<conf->width; ++i)
     {
         fprintf(stdout, "═");
     }
@@ -195,14 +199,14 @@ int menu_display(menu_item_t *menu, void *args)
 
     /* 2. Display title */
     len = strlen(menu->name);
-    off = (MENU_WIDTH - len)/2;
+    off = (conf->width - len)/2;
     fprintf(stdout, "║");
     for (i=0; i<off; ++i)
     {
         fprintf(stdout, " ");
     }
     fprintf(stdout, "%s", menu->name);
-    for (i=off+len; i<MENU_WIDTH; ++i)
+    for (i=off+len; i<conf->width; ++i)
     {
         fprintf(stdout, " ");
     }
@@ -210,7 +214,7 @@ int menu_display(menu_item_t *menu, void *args)
 
     /* 3. Display sep line */
     fprintf(stdout, "║");
-    for (i=0; i<MENU_WIDTH; ++i)
+    for (i=0; i<conf->width; ++i)
     {
         fprintf(stdout, "═");
     }
@@ -230,7 +234,7 @@ int menu_display(menu_item_t *menu, void *args)
 
         len = strlen(child->name)+4;
 
-        for (i=len+MENU_TAB_LEN; i<MENU_WIDTH; ++i)
+        for (i=len+MENU_TAB_LEN; i<conf->width; ++i)
         {
             fprintf(stdout, " ");
         }
@@ -239,7 +243,7 @@ int menu_display(menu_item_t *menu, void *args)
 
     /* 5. Display low line */ 
     fprintf(stdout, "╚");
-    for (i=0; i<MENU_WIDTH; ++i)
+    for (i=0; i<conf->width; ++i)
     {
         fprintf(stdout, "═");
     }
@@ -252,14 +256,16 @@ int menu_display(menu_item_t *menu, void *args)
  **函数名称: menu_exec
  **功    能: 执行菜单的功能
  **输入参数:
+ **     ctx: 全局对象
  **     menu: 需要显示的菜单
+ **     opt: 操作选项
  **输出参数: NONE
- **返    回: VOID
+ **返    回: 当前显示的菜单项
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.27 #
  ******************************************************************************/
-static menu_item_t *menu_exec(menu_item_t *menu, const char *opt)
+static menu_item_t *menu_exec(menu_cntx_t *ctx, menu_item_t *menu, const char *opt)
 {
     char input[MENU_INPUT_LEN];
     int ret, i, num;
@@ -281,23 +287,23 @@ static menu_item_t *menu_exec(menu_item_t *menu, const char *opt)
             {
                 if (menu->exit)
                 {
-                    menu->exit(menu, menu->args);
+                    menu->exit(ctx, menu, menu->args);
                 }
                 exit(0);
                 return NULL;
             }
 
-            menu->func(menu, menu->args);
+            menu->func(ctx, menu, menu->args);
 
             return menu;
         }
 
         if (menu->exit)
         {
-            menu->exit(menu, menu->args);
+            menu->exit(ctx, menu, menu->args);
         }
 
-        menu->parent->func(menu->parent, menu->parent->args);
+        menu->parent->func(ctx, menu->parent, menu->parent->args);
 
         return menu->parent;
     }
@@ -306,7 +312,7 @@ static menu_item_t *menu_exec(menu_item_t *menu, const char *opt)
     if ((num <= 0) || (num > menu->num))
     {
         fprintf(stdout, "\n    Not right!\n");
-        menu->func(menu, menu->args);
+        menu->func(ctx, menu, menu->args);
         return menu;
     }
 
@@ -316,12 +322,12 @@ static menu_item_t *menu_exec(menu_item_t *menu, const char *opt)
         {
             if (child->entry)
             {
-                child->entry(child, child->args);
+                child->entry(ctx, child, child->args);
             }
 
             if (child->func)
             {
-                ret = child->func(child, child->args);
+                ret = child->func(ctx, child, child->args);
                 if (0 != ret                /* 失败或无子菜单时，均返回到上级菜单 */
                     || NULL == child->child)
                 {
@@ -334,7 +340,7 @@ static menu_item_t *menu_exec(menu_item_t *menu, const char *opt)
         }
     }
 
-    menu->func(menu, menu->args);
+    menu->func(ctx, menu, menu->args);
 
     return menu;
 }
@@ -358,10 +364,10 @@ int menu_startup(menu_cntx_t *ctx)
 
     if (curr->entry)
     {
-        curr->entry(curr, curr->args);
+        curr->entry(ctx, curr, curr->args);
     }
 
-    curr->func(curr, curr->args);
+    curr->func(ctx, curr, curr->args);
 
     while (1)
     {
@@ -383,7 +389,7 @@ int menu_startup(menu_cntx_t *ctx)
                 {
                     fprintf(stdout, "\n    Not right!\n");
 
-                    curr->func(curr, curr->args);
+                    curr->func(ctx, curr, curr->args);
                     goto BEGIN;
                 }
                 goto EXEC;
@@ -391,7 +397,7 @@ int menu_startup(menu_cntx_t *ctx)
         }
 
     EXEC:
-        curr = menu_exec(curr, opt);
+        curr = menu_exec(ctx, curr, opt);
     }
 
     return 0;

@@ -15,7 +15,7 @@
 
 #define SRCH_CLIENT_NUM     (50000)
 
-static int mon_srch_connect(menu_item_t *menu, void *args);
+static int mon_srch_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args);
 
 /******************************************************************************
  **函数名称: mon_srch_menu
@@ -64,7 +64,7 @@ menu_item_t *mon_srch_menu(menu_cntx_t *ctx, void *args)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.27 #
  ******************************************************************************/
-static int mon_srch_connect(menu_item_t *menu, void *args)
+static int mon_srch_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args)
 {
     char digit[256];
     int idx, num, max;
@@ -123,7 +123,7 @@ static int mon_srch_connect(menu_item_t *menu, void *args)
     /* 关闭网络连接 */
     for (idx=0; idx<num; ++idx)
     {
-        Close(fd[idx]);
+        CLOSE(fd[idx]);
     }
 
     return 0;

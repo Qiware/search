@@ -573,7 +573,7 @@ static int srch_proc_lock(void)
     /* 3. 尝试加锁 */
     if (proc_try_wrlock(fd) < 0)
     {
-        Close(fd);
+        CLOSE(fd);
         return -1;
     }
 

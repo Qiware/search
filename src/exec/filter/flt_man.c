@@ -199,7 +199,7 @@ static flt_man_t *flt_man_init(flt_cntx_t *ctx)
     {
         list_destroy(man->mesg_list);
     }
-    Close(man->fd);
+    CLOSE(man->fd);
     slab_dealloc(ctx->slab, man);
 
     return NULL;
@@ -702,7 +702,7 @@ static int flt_man_store_domain_ip_map_req_hdl(flt_cntx_t *ctx,
 
     hash_tab_trav(ctx->domain_ip_map, (avl_trav_cb_t)flt_man_store_domain_ip_map_hdl, &trav);
 
-    fClose(trav.fp);
+    FCLOSE(trav.fp);
 
     /* > 设置信息 */
     cmd = &item->cmd;
@@ -810,7 +810,7 @@ static int flt_man_store_domain_blacklist_req_hdl(flt_cntx_t *ctx,
 
     hash_tab_trav(ctx->domain_blacklist, (avl_trav_cb_t)flt_man_store_domain_blacklist_hdl, &trav);
 
-    fClose(trav.fp);
+    FCLOSE(trav.fp);
 
     /* > 设置信息 */
     cmd = &item->cmd;

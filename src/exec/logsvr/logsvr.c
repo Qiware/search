@@ -110,7 +110,7 @@ int logsvr_proc_lock(void)
     if (ret < 0)
     {
         sys_error("errmsg:[%d]%s! path:[%s]", errno, strerror(errno), path);
-        Close(fd);
+        CLOSE(fd);
         return -1;
     }
 

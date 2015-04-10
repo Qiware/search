@@ -2,6 +2,42 @@
 #include "mon_conf.h"
 #include "mem_pool.h"
 
+#define MON_MENU_WIDTH          (58)            /* 菜单宽度 */
+
+/******************************************************************************
+ **函数名称: mon_conf_load
+ **功    能: 加载配置信息
+ **输入参数:
+ **     path: 配置路径
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.04.11 #
+ ******************************************************************************/
+static int mon_conf_load_menu(xml_tree_t *xml, mon_conf_t *conf)
+{
+    xml_node_t *node, *nail;
+
+    nail = xml_query(xml, ".MONITOR.MENU");
+    if (NULL == nail)
+    {
+        return -1;
+    }
+
+    node = xml_rquery(xml, nail, ".WIDTH");
+    if (NULL == node)
+    {
+        conf->menu.width = MON_MENU_WIDTH;
+    }
+    else
+    {
+        conf->menu.width = atoi(node->value);
+    }
+
+    return 0;
+}
+
 /* 加载IP和端口 */
 #define MON_LOAD_CONF(xml,  _path, conf) \
 {\
@@ -78,6 +114,11 @@ mon_conf_t *mon_conf_load(const char *path)
         }
 
         /* > 提取配置信息 */
+        if (mon_conf_load_menu(xml, conf))
+        {
+            break;
+        }
+
         MON_LOAD_CONF(xml, ".MONITOR.CRAWLER", &conf->crwl);
         MON_LOAD_CONF(xml, ".MONITOR.FILTER", &conf->filter);
         MON_LOAD_CONF(xml, ".MONITOR.SEARCH", &conf->search);
