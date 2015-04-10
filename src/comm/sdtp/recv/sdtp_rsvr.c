@@ -1071,7 +1071,7 @@ static int sdtp_rsvr_del_conn_hdl(sdtp_rsvr_t *rsvr, list2_node_t *node)
     slab_dealloc(rsvr->pool, node);
 
     /* 2. 释放数据空间 */
-    Close(curr->fd);
+    CLOSE(curr->fd);
 
     FREE(curr->recv.addr);
     FREE(curr->send.addr);

@@ -31,7 +31,7 @@ key_t shm_ftok(const char *path, int id)
             return -1;
         }
 
-        fClose(fp);
+        FCLOSE(fp);
     }
     
     return ftok(path, id);

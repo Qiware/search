@@ -153,7 +153,7 @@ void syslog_core(int level,
 void syslog_destroy(void)
 {
     fflush(g_syslog.fp);
-    fClose(g_syslog.fp);
+    FCLOSE(g_syslog.fp);
 }
 
 /******************************************************************************

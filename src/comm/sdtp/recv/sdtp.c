@@ -398,7 +398,7 @@ void sdtp_recvtp_destroy(void *_ctx, void *args)
     for (idx=0; idx<ctx->conf.recv_thd_num; ++idx, ++rsvr)
     {
         /* 1. 关闭命令套接字 */
-        Close(rsvr->cmd_sck_id);
+        CLOSE(rsvr->cmd_sck_id);
 
         /* 2. 关闭通信套接字 */
         sdtp_rsvr_del_all_conn_hdl(rsvr);
@@ -494,7 +494,7 @@ void sdtp_worktp_destroy(void *_ctx, void *args)
 
     for (idx=0; idx<conf->work_thd_num; ++idx, ++worker)
     {
-        Close(worker->cmd_sck_id);
+        CLOSE(worker->cmd_sck_id);
     }
 
     FREE(ctx->worktp->data);

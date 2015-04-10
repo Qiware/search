@@ -922,7 +922,7 @@ static int log_sync_ext(log_cycle_t *log)
     /* 2. 文件是否过大 */
     if (log_is_too_large(fsize))
     {
-        Close(log->fd);
+        CLOSE(log->fd);
         return log_rename(log->file, &log->file->sync_tm);
     }
 
@@ -971,11 +971,11 @@ static size_t _log_sync(log_file_info_t *file, int *_fd)
         {
             if (ENOENT != errno)
             {
-                Close(fd);
+                CLOSE(fd);
                 fprintf(stderr, "errmsg:[%d]%s path:[%s]\n", errno, strerror(errno), file->path);
                 break;
             }
-            Close(fd);
+            CLOSE(fd);
             Mkdir2(file->path, DIR_MODE);
         }
 
@@ -994,7 +994,7 @@ static size_t _log_sync(log_file_info_t *file, int *_fd)
         fsize = lseek(fd, 0, SEEK_END);
         if (-1 == fsize)
         {
-            Close(fd);
+            CLOSE(fd);
             fprintf(stderr, "errmsg:[%d] %s! path:[%s]\n", errno, strerror(errno), file->path);
             break;
         }
@@ -1017,7 +1017,7 @@ static size_t _log_sync(log_file_info_t *file, int *_fd)
     }
     else
     {
-        Close(fd);
+        CLOSE(fd);
     }
     return fsize;
 }

@@ -142,7 +142,7 @@ static sdtp_lsn_t *sdtp_listen_init(sdtp_cntx_t *ctx)
     lsn->cmd_sck_id = unix_udp_creat(path);
     if (lsn->cmd_sck_id < 0)
     {
-        Close(lsn->lsn_sck_id);
+        CLOSE(lsn->lsn_sck_id);
         log_error(lsn->log, "Create unix udp socket failed!");
         return NULL;
     }
@@ -163,8 +163,8 @@ static sdtp_lsn_t *sdtp_listen_init(sdtp_cntx_t *ctx)
  ******************************************************************************/
 int sdtp_listen_destroy(sdtp_lsn_t *lsn)
 {
-    Close(lsn->lsn_sck_id);
-    Close(lsn->cmd_sck_id);
+    CLOSE(lsn->lsn_sck_id);
+    CLOSE(lsn->cmd_sck_id);
 
     pthread_cancel(lsn->tid);
     return SDTP_OK;
@@ -228,7 +228,7 @@ static int sdtp_lsn_accept(sdtp_cntx_t *ctx, sdtp_lsn_t *lsn)
 
     if (sdtp_cmd_rand_to_recv(ctx, lsn->cmd_sck_id, &cmd) < 0)
     {
-        Close(sckid);
+        CLOSE(sckid);
         log_error(lsn->log, "Send command failed! sckid:[%d]", sckid);
         return SDTP_ERR;
     }

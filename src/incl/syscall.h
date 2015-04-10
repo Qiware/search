@@ -11,11 +11,11 @@
 int Readn(int fd, void *buff, int n);
 int Writen(int fd, const void *buff, int n);
 int Open(const char *fpath, int flags, mode_t mode);
-#define Close(fd)  \
+#define CLOSE(fd)  \
 { \
     if(fd > 0) { close(fd), fd = -1; } \
 }
-#define fClose(fp) {fclose(fp), fp = NULL;}
+#define FCLOSE(fp) {fclose(fp), fp = NULL;}
 #define FREE(p) { if (p) { free(p), p = NULL; } }
 
 void Sleep(int sec);

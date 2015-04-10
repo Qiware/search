@@ -273,7 +273,6 @@ static int sdtp_worker_cmd_proc_req_hdl(sdtp_cntx_t *ctx, sdtp_worker_t *worker,
 
         /* 4. 释放内存空间 */
         queue_dealloc(rq, addr);
-
     }
 
     return SDTP_OK;

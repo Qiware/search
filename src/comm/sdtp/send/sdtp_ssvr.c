@@ -484,7 +484,7 @@ static int sdtp_ssvr_kpalive_req(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr)
     if ((sck->fd < 0) 
         || (SDTP_KPALIVE_STAT_SENT == sck->kpalive)) 
     {
-        Close(sck->fd);
+        CLOSE(sck->fd);
         FREE(send->addr);
 
         log_error(ssvr->log, "Didn't get keepalive respond for a long time!");
@@ -632,7 +632,7 @@ static int sdtp_ssvr_recv_proc(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr)
             {
                 log_error(ssvr->log, "Proc data failed! fd:%d", sck->fd);
 
-                Close(sck->fd);
+                CLOSE(sck->fd);
                 sdtp_snap_reset(recv);
                 return SDTP_ERR;
             }
@@ -641,7 +641,7 @@ static int sdtp_ssvr_recv_proc(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr)
         else if (0 == n)
         {
             log_info(ssvr->log, "Client disconnected. fd:%d n:%d/%d", sck->fd, n, left);
-            Close(sck->fd);
+            CLOSE(sck->fd);
             sdtp_snap_reset(recv);
             return SDTP_DISCONN;
         }
@@ -657,7 +657,7 @@ static int sdtp_ssvr_recv_proc(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr)
 
         log_error(ssvr->log, "errmsg:[%d] %s. fd:%d", errno, strerror(errno), sck->fd);
 
-        Close(sck->fd);
+        CLOSE(sck->fd);
         sdtp_snap_reset(recv);
         return SDTP_ERR;
     }
@@ -991,7 +991,7 @@ static int sdtp_ssvr_send_data(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr)
             log_error(ssvr->log, "errmsg:[%d] %s! fd:%d len:[%d]",
                     errno, strerror(errno), sck->fd, len);
 
-            Close(sck->fd);
+            CLOSE(sck->fd);
             sdtp_snap_reset(send);
             return SDTP_ERR;
         }
