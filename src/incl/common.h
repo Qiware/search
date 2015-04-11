@@ -43,6 +43,9 @@
 #define MB                  (1024 * KB)     /* MB */
 #define GB                  (1024 * MB)     /* GB */
 
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+
 /* 将秒折算成: D天H时M分S秒 */
 #define TM_DAY(sec)  ((sec) / (24*60*60))                /* 天 */
 #define TM_HOUR(sec) (((sec) % (24*60*60))/(60*60))      /* 时 */

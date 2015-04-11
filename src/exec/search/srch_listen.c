@@ -45,7 +45,7 @@ void *srch_listen_routine(void *_ctx)
         FD_SET(lsn->lsn_sck_id, &rdset);
         FD_SET(lsn->cmd_sck_id, &rdset);
 
-        max = (lsn->lsn_sck_id > lsn->cmd_sck_id)? lsn->lsn_sck_id : lsn->cmd_sck_id;
+        max = MAX(lsn->lsn_sck_id, lsn->cmd_sck_id);
 
         /* 2.1 等待事件通知 */
         tv.tv_sec = 30;
