@@ -354,7 +354,7 @@ void sdtp_switch_send_data(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr)
         case SDTP_SNAP_SYS_DATA:
         {
             send = &sck->send[SDTP_SNAP_SYS_DATA];
-            if ((NULL != sck->mesg_list)
+            if (!list_isempty(sck->mesg_list)
                 || (send->iptr != send->optr))
             {
                 return; /* 系统消息还未发送完成: 不用切换 */
@@ -371,7 +371,7 @@ void sdtp_switch_send_data(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr)
                 return; /* 缓存数据仍然未发送完全 */
             }
 
-            if (NULL != sck->mesg_list)
+            if (!list_isempty(sck->mesg_list))
             {
                 sck->send_type = SDTP_SNAP_SYS_DATA;
                 return; /* 有消息可发送 */

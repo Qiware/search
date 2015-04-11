@@ -470,6 +470,10 @@ static int sdtp_rsvr_trav_send(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr)
 
                 /* 2. 发送缓存数据 */
                 len = send->iptr - send->optr;
+                if (0 == len)
+                {
+                    break;
+                }
 
                 n = Writen(curr->fd, send->optr, len);
                 if (n != len)
@@ -787,6 +791,19 @@ static int sdtp_rsvr_exp_mesg_proc(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_sck
                 log_error(rsvr->log, "Alloc from queue failed!");
                 return SDTP_ERR;
             }
+
+            len = head->length + sizeof(sdtp_header_t);
+            if (rsvr->queue.end - rsvr->queue.addr < len)
+            {
+                ++rsvr->drop_total; /* 丢弃计数 */
+                log_error(rsvr->log, "Queue size is too small!");
+                return SDTP_ERR;
+            }
+
+            memcpy(rsvr->queue.addr, recv->optr, len);
+            rsvr->queue.addr += len;
+            ++(*rsvr->queue.num);
+            return SDTP_OK;
         }
 
         /* > 进行数据拷贝 */

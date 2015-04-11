@@ -163,10 +163,10 @@ int sdtp_pool_push(sdtp_pool_t *pool, int type, const void *data, size_t len)
         /* > 设置报头信息 */
         head = (sdtp_header_t *)(pool->addr[idx] + page->off);
 
-        head->type = type;
-        head->length = len;
+        head->type = htons(type);
+        head->length = htonl(len);
         head->flag = SDTP_EXP_MESG;  /* 外部数据 */
-        head->checksum = SDTP_CHECK_SUM;
+        head->checksum = htonl(SDTP_CHECK_SUM);
 
         /* > 设置报体信息 */
         page->off += sizeof(sdtp_header_t);
