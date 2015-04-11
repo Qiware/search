@@ -1,7 +1,5 @@
 #!/bin/sh
 
-sudo su # 获取ROOT权限
-
 ulimit -c unlimited
 
 export LD_LIBRARY_PATH='/usr/lib/x86_64-linux-gnu:../lib'
