@@ -190,64 +190,64 @@ int menu_display(menu_cntx_t *ctx, menu_item_t *menu, void *args)
     menu_conf_t *conf = &ctx->conf;
 
     /* 1. Display top line */ 
-    fprintf(stdout, "\n╔");
+    fprintf(stderr, "\n╔");
     for (i=0; i<conf->width; ++i)
     {
-        fprintf(stdout, "═");
+        fprintf(stderr, "═");
     }
-    fprintf(stdout, "╗\n");
+    fprintf(stderr, "╗\n");
 
     /* 2. Display title */
     len = strlen(menu->name);
     off = (conf->width - len)/2;
-    fprintf(stdout, "║");
+    fprintf(stderr, "║");
     for (i=0; i<off; ++i)
     {
-        fprintf(stdout, " ");
+        fprintf(stderr, " ");
     }
-    fprintf(stdout, "%s", menu->name);
+    fprintf(stderr, "%s", menu->name);
     for (i=off+len; i<conf->width; ++i)
     {
-        fprintf(stdout, " ");
+        fprintf(stderr, " ");
     }
-    fprintf(stdout, "║\n");
+    fprintf(stderr, "║\n");
 
     /* 3. Display sep line */
-    fprintf(stdout, "║");
+    fprintf(stderr, "║");
     for (i=0; i<conf->width; ++i)
     {
-        fprintf(stdout, "═");
+        fprintf(stderr, "═");
     }
-    fprintf(stdout, "║\n");
+    fprintf(stderr, "║\n");
 
     /* 4. Display child menu */
     for (n=0; NULL != child; child = child->next, ++n)
     {
-        fprintf(stdout, "║");
+        fprintf(stderr, "║");
 
         for (i=0; i<MENU_TAB_LEN; ++i)
         {
-            fprintf(stdout, " ");
+            fprintf(stderr, " ");
         }
 
-        fprintf(stdout, "%2d: %s", n+1, child->name);
+        fprintf(stderr, "%2d: %s", n+1, child->name);
 
         len = strlen(child->name)+4;
 
         for (i=len+MENU_TAB_LEN; i<conf->width; ++i)
         {
-            fprintf(stdout, " ");
+            fprintf(stderr, " ");
         }
-        fprintf(stdout, "║\n");
+        fprintf(stderr, "║\n");
     }
 
     /* 5. Display low line */ 
-    fprintf(stdout, "╚");
+    fprintf(stderr, "╚");
     for (i=0; i<conf->width; ++i)
     {
-        fprintf(stdout, "═");
+        fprintf(stderr, "═");
     }
-    fprintf(stdout, "╝\n");
+    fprintf(stderr, "╝\n");
 
     return 0;
 }
@@ -277,7 +277,7 @@ static menu_item_t *menu_exec(menu_cntx_t *ctx, menu_item_t *menu, const char *o
     {
         if (!menu->parent)
         {
-            fprintf(stdout, "    Are you sure exit?[No/Yes] ");
+            fprintf(stderr, "    Are you sure exit?[No/Yes] ");
             if (scanf(" %s", input) < 0)
             {
                 return NULL;
@@ -311,7 +311,7 @@ static menu_item_t *menu_exec(menu_cntx_t *ctx, menu_item_t *menu, const char *o
     num = atoi(opt);
     if ((num <= 0) || (num > menu->num))
     {
-        fprintf(stdout, "\n    Not right!\n");
+        fprintf(stderr, "\n    Not right!\n");
         menu->func(ctx, menu, menu->args);
         return menu;
     }
@@ -335,7 +335,7 @@ static menu_item_t *menu_exec(menu_cntx_t *ctx, menu_item_t *menu, const char *o
                 }
                 return child;
             }
-            fprintf(stdout, "    errmsg: Didn't register function!\n");
+            fprintf(stderr, "    errmsg: Didn't register function!\n");
             break;
         }
     }
@@ -372,7 +372,7 @@ int menu_startup(menu_cntx_t *ctx)
     while (1)
     {
     BEGIN:
-        fprintf(stdout, "Option: ");
+        fprintf(stderr, "Option: ");
         if (scanf(" %s", opt) < 0)
         {
             return 0;
@@ -387,7 +387,7 @@ int menu_startup(menu_cntx_t *ctx)
                     && 0 != strcasecmp(opt, "quit")
                     && 0 != strcasecmp(opt, "exit"))
                 {
-                    fprintf(stdout, "\n    Not right!\n");
+                    fprintf(stderr, "\n    Not right!\n");
 
                     curr->func(ctx, curr, curr->args);
                     goto BEGIN;
