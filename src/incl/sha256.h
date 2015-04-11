@@ -10,13 +10,13 @@
 
 typedef struct _sha256_t
 { 
-    char  Value[ SHA256_DIGEST_LEN ]; 
-    int  DwordBufBytes;
-    int  ByteNumLo;
-    int  ByteNumHi;
-    int  reg[ 8 ]; /** h0 to h 7 -- old value store*/
-    int  DwordBuf[ 16 ]; /** data store */
-    int  Padding[ 64 ];
+    char Value[SHA256_DIGEST_LEN]; 
+    int DwordBufBytes;
+    int ByteNumLo;
+    int ByteNumHi;
+    int reg[8]; /* h0 to h 7 -- old value store */
+    int DwordBuf[16]; /** data store */
+    int Padding[64];
 } sha256_t;
 
 uint64_t sha256_init(sha256_t* sha256);

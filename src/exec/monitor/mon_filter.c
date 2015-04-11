@@ -272,9 +272,7 @@ static int mon_flt_add_seed_print(flt_cmd_t *cmd)
  ******************************************************************************/
 static int mon_flt_add_seed_req(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args)
 {
-    return mon_flt_frame(
-            mon_flt_add_seed_setup,
-            mon_flt_add_seed_print, args);
+    return mon_flt_frame(mon_flt_add_seed_setup, mon_flt_add_seed_print, args);
 }
 
 /******************************************************************************
@@ -336,9 +334,7 @@ static int mon_flt_query_conf_print(flt_cmd_t *cmd)
  ******************************************************************************/
 static int mon_flt_query_conf_req(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args)
 {
-    return mon_flt_frame(
-            mon_flt_query_conf_setup,
-            mon_flt_query_conf_print, args);
+    return mon_flt_frame(mon_flt_query_conf_setup, mon_flt_query_conf_print, args);
 }
 
 /******************************************************************************
@@ -466,9 +462,7 @@ static int mon_flt_store_domain_ip_map_print(flt_cmd_t *cmd)
  ******************************************************************************/
 static int mon_flt_store_domain_ip_map_req(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args)
 {
-    return mon_flt_frame(
-            mon_flt_store_domain_ip_map_setup,
-            mon_flt_store_domain_ip_map_print, args);
+    return mon_flt_frame(mon_flt_store_domain_ip_map_setup, mon_flt_store_domain_ip_map_print, args);
 }
 
 /******************************************************************************
