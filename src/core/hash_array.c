@@ -33,7 +33,6 @@
 hash_array_t *hash_array_init(int num, size_t slab_size, key_cb_t key_cb)
 {
     int idx;
-    void *addr;
     hash_array_t *hash;
     rbt_option_t opt;
         
@@ -45,17 +44,9 @@ hash_array_t *hash_array_init(int num, size_t slab_size, key_cb_t key_cb)
     }
 
     /* 2. 创建内存池 */
-    addr = calloc(1, slab_size);
-    if (NULL == addr)
-    {
-        free(hash);
-        return NULL;
-    }
-
-    hash->slab = slab_init(addr, slab_size);
+    hash->slab = slab_creat_by_calloc(slab_size);
     if (NULL == hash->slab)
     {
-        free(addr);
         free(hash);
         return NULL;
     }

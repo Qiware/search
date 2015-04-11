@@ -69,7 +69,7 @@ void *sdtp_listen_routine(void *args)
         FD_SET(lsn->lsn_sck_id, &rdset);
         FD_SET(lsn->cmd_sck_id, &rdset);
 
-        max = (lsn->lsn_sck_id > lsn->cmd_sck_id)? lsn->lsn_sck_id : lsn->cmd_sck_id;
+        max = MAX(lsn->lsn_sck_id, lsn->cmd_sck_id);
 
         timeout.tv_sec = SDTP_LSN_TMOUT_SEC;
         timeout.tv_usec = SDTP_LSN_TMOUT_USEC;

@@ -5,23 +5,15 @@
 
 int main(int argc, char *argv[])
 {
-    void *addr;
-    slab_pool_t *slab;
     xml_tree_t *xml;
+    slab_pool_t *slab;
     xml_option_t option;
 
     memset(&option, 0, sizeof(option));
 
     syslog_init(7, "test.log");
 
-    addr = calloc(1, MEM_SIZE);
-    if (NULL == addr)
-    {
-        fprintf(stdout, "errmsg:[%d] %s!", errno, strerror(errno));
-        return -1;
-    }
-
-    slab = slab_init(addr, MEM_SIZE);
+    slab = slab_creat_by_calloc(MEM_SIZE);
     if (NULL == slab)
     {
         return -1;

@@ -19,7 +19,7 @@ typedef enum
 static void sdtp_setup_conf(sdtp_conf_t *conf)
 {
     snprintf(conf->name, sizeof(conf->name), "SDTP-RECV");
-    conf->port = 54321;
+    conf->port = 4444;
     conf->recv_thd_num = 1;
     conf->work_thd_num = 3;
     conf->rqnum = 3;
@@ -40,7 +40,7 @@ int main(int argc, const char *argv[])
 
     signal(SIGPIPE, SIG_IGN);
                                        
-    log2_init(LOG_LEVEL_DEBUG, "./sdtp.log2");
+    syslog_init(LOG_LEVEL_DEBUG, "./sdtp.log2");
     log = log_init(LOG_LEVEL_DEBUG, "./sdtp.log");
 
     /* 1. 接收端初始化 */

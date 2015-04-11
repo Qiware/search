@@ -795,236 +795,41 @@ static void slab_dealloc_pages(slab_pool_t *pool, slab_page_t *page, uint32_t pa
     pool->free.next = page;
 }
 
-/*******************************************************************************
- ** Copyright (C) 2013-2014 Xundao technology Cot,. Ltd
- **
- ** 模块: 扩展SLAB模块
- ** 作用: 使SLAB机制管理的空间可以动态增加
- ** 说明: 
- **      通过链表的方式将多个SLAB管理空间串联起来，从而实现SLAB空间的扩展.
- ** 注意: 
- ** 作者: # Qifeng.zou # 2013.08.15 #
- ******************************************************************************/
-static slab_pool_t *eslab_add(eslab_pool_t *eslab, size_t size);
-
 /******************************************************************************
- ** Name : eslab_init
- ** Func : Initialize expand slab pool.
- ** Input: 
- **     eslab: Expand slab pool
- **     size: Size(bytes) of new slab pool.
- **Output: NONE
- **Return: 0:success !0:failed
- ** Proc :
- **     1. Destory expand slab pool.
- **     2. Add node into link.
- ** Note : 
- **Author: # Qifeng.zou # 2013.08.15 #
+ **函数名称: slab_creat_by_calloc
+ **功    能: 通过calloc()申请SLAB空间
+ **输入参数:
+ **     size: 总空间
+ **输出参数:
+ **返    回: Slab对象
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.04.12 #
  ******************************************************************************/
-int eslab_init(eslab_pool_t *eslab, size_t size)
+slab_pool_t *slab_creat_by_calloc(size_t size)
 {
-    slab_pool_t *slab;
-    
-    eslab_destroy(eslab);
+    void *addr;
+    slab_pool_t *pool;
 
-    eslab->incr = size;
-    
-    slab = eslab_add(eslab, size);
-    if (NULL == slab)
-    {
-        sys_error("Add slab node failed!");
-        return -1;
-    }
-    return 0;
-}
-
-/******************************************************************************
- ** Name : eslab_destroy
- ** Func : Destory expand slab pool.
- ** Input: 
- **     eslab: Expand slab pool
- **Output: NONE
- **Return: 0:success !0:failed
- ** Note : 
- **Author: # Qifeng.zou # 2013.08.15 #
- ******************************************************************************/
-int eslab_destroy(eslab_pool_t *eslab)
-{
-    eslab_node_t *node = NULL, *next = NULL;
-
-    node = eslab->node;
-    while (NULL != node)
-    {
-        next = node->next;
-        if (node->pool)
-        {
-            free(node->pool);
-        }
-        free(node);
-        node = next;
-    }
-    return 0;
-}
-
-/******************************************************************************
- ** Name : eslab_add
- ** Func : Add into expand slab pool.
- ** Input: 
- **     eslab: Expand slab pool
- **     size: Size of new slab pool.
- **Output: NONE
- **Return: Address of new slab.
- ** Note : 
- **Author: # Qifeng.zou # 2013.08.15 #
- ******************************************************************************/
-static slab_pool_t *eslab_add(eslab_pool_t *eslab, size_t size)
-{
-    void *addr = NULL;
-    eslab_node_t *node, *next = NULL;
-
-    /* 1. Alloc memory for node. */
-    node = calloc(1, sizeof(eslab_node_t));
-    if (NULL == node)
-    {
-        sys_error("Alloc memory failed!");
-        return NULL;
-    }
-
-    /* 2. Alloc memory for slab pool */
-    addr = calloc(1, size);
+    addr = (void *)calloc(1, size);
     if (NULL == addr)
     {
-        free(node), node=NULL;
-        sys_error("Alloc memory failed!");
         return NULL;
     }
 
-    node->pool = slab_init(addr, size);
-
-    /* 3. Add node into link */
-    next = eslab->node;
-    eslab->node = node;
-    eslab->curr = node;
-
-    node->next = next;
-
-    eslab->count++;
-
-    return (slab_pool_t *)addr;
-}
-
-/******************************************************************************
- ** Name : eslab_alloc
- ** Func : Alloc memory from slab pool.
- ** Input: 
- **     eslab: Expand slab pool
- **     size: Size of new slab pool.
- **Output: NONE
- **Return: Memory address
- ** Note : 
- **Author: # Qifeng.zou # 2013.08.15 #
- ******************************************************************************/
-void *eslab_alloc(eslab_pool_t *eslab, size_t size)
-{
-    static int num = 0;
-    void *p;
-    int block, count = 0;
-    size_t alloc_size;
-    slab_pool_t *slab;
-    eslab_node_t *node, *next;
-
-    sys_info("[%d] Alloc size:%d!", ++num, size);
-
-    /* 1. 申请内存空间 */
-    p = slab_alloc(eslab->curr->pool, size);
-    if (NULL != p)
+    pool = slab_init(addr, size);
+    if (NULL == pool)
     {
-        return p;
-    }
-
-    /* 2. 查找可申请空间的内存池 */
-    node = eslab->curr->next;
-    if (NULL == node)
-    {
-        node = eslab->node;
-    }
-
-    while (node != eslab->curr)
-    {
-        next = node->next;
-        
-        p = slab_alloc(node->pool, size);
-        if (NULL != p)
-        {
-            eslab->curr = node;
-            return p;
-        }
-
-        node = next;
-        if (NULL == node)
-        {
-            node = eslab->node;
-        }
-        count++;
-    }
-
-    /* 3. 遍历完所有内存池依然未申请到内存 */
-    block = size / eslab->incr;
-    if (size % eslab->incr)
-    {
-        block++;
-    }
-
-    alloc_size = (block * eslab->incr + SLAB_EXTRA_SIZE);
-    
-    slab = eslab_add(eslab, alloc_size);
-    if (NULL == slab)
-    {
-        sys_error("Add slab node failed!");
+        free(addr);
         return NULL;
     }
 
-    sys_fatal("Add new slab block! size:%d count:[%d]", alloc_size, count++);
-
-    /* 3. Alloc memory from new slab pool */
-    return slab_alloc(slab, size);
+    return pool;
 }
 
-/******************************************************************************
- ** Name : eslab_dealloc
- ** Func : Free special memory from expand slab pool.
- ** Input: 
- **     eslab: Expadnd slab pool
- **     p: Needed to be free.
- **Output: NONE
- **Return: VOID
- ** Note : 
- **Author: # Qifeng.zou # 2013.08.15 #
- ******************************************************************************/
-void eslab_dealloc(eslab_pool_t *eslab, void *p)
-{
-    eslab_node_t *node = eslab->node, *next = NULL;
-
-    while (NULL != node)
-    {
-        next = node->next;
-        
-        if ((p >= (void *)node->pool->start) && (p < (void *)node->pool->end))
-        {
-            slab_dealloc(node->pool, p);
-            return;
-        }
-        node = next;
-    }
-    return; /* 异常 */
-}
 #else /*__MEM_LEAK_CHECK__*/
 slab_pool_t *slab_init(void *addr, size_t size) { return calloc(1, sizeof(slab_pool_t)); }
 void *slab_alloc(slab_pool_t *pool, size_t size) { return calloc(1, size); }
 void slab_dealloc(slab_pool_t *pool, void *p) { free(p); }
-
-int eslab_init(eslab_pool_t *spl, size_t size) { return 0; }
-int eslab_destroy(eslab_pool_t *spl) { return 0; }
-void *eslab_alloc(eslab_pool_t *spl, size_t size) { return calloc(1, size); }
-void eslab_dealloc(eslab_pool_t *spl, void *p) { free(p); }
+slab_pool_t *slab_creat_by_calloc(size_t size) { return calloc(1, size); }
 #endif /*__MEM_LEAK_CHECK__*/

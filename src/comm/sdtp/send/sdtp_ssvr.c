@@ -10,7 +10,7 @@ static int _sdtp_ssvr_startup(sdtp_ssvr_cntx_t *ctx);
 static void *sdtp_ssvr_routine(void *_ctx);
 
 static int sdtp_ssvr_init(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr, int tidx);
-static sdtp_ssvr_t *sdtp_ssvr_get_curr(sdtp_ssvr_cntx_t *ctx);
+static sdtp_ssvr_t *sdtp_ssvr_get_self(sdtp_ssvr_cntx_t *ctx);
 
 static int sdtp_ssvr_creat_sendq(sdtp_ssvr_t *ssvr, const sdtp_ssvr_conf_t *conf);
 static int sdtp_ssvr_creat_usck(sdtp_ssvr_t *ssvr, const sdtp_ssvr_conf_t *conf);
@@ -101,7 +101,16 @@ static int _sdtp_ssvr_startup(sdtp_ssvr_cntx_t *ctx)
         return SDTP_ERR;
     }
 
-    /* 1. 创建发送线程池 */
+    /* > 创建内存池 */
+    ctx->slab = slab_creat_by_calloc(30 * MB);
+    if (NULL == ctx->slab)
+    {
+        log_error(ctx->log, "Initialize slab failed!");
+        FREE(ssvr);
+        return SDTP_ERR;
+    }
+
+    /* > 创建发送线程池 */
     memset(&option, 0, sizeof(option));
 
     option.pool = (void *)ctx->slab;
@@ -144,7 +153,7 @@ static int _sdtp_ssvr_startup(sdtp_ssvr_cntx_t *ctx)
  **功    能: 初始化发送线程
  **输入参数: 
  **     ctx: 全局信息
- **     ssvr: 发送线程对象
+ **     ssvr: 发送服务对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
@@ -154,43 +163,51 @@ static int _sdtp_ssvr_startup(sdtp_ssvr_cntx_t *ctx)
 static int sdtp_ssvr_init(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr, int tidx)
 {
     void *addr;
+    list_option_t opt;
     sdtp_ssvr_conf_t *conf = &ctx->conf;
     sdtp_snap_t *recv = &ssvr->sck.recv;
-    sdtp_snap_t *send = &ssvr->sck.send;
+    sdtp_snap_t *send = &ssvr->sck.send[SDTP_SNAP_SYS_DATA];
 
     ssvr->tidx = tidx;
     ssvr->log = ctx->log;
 
-    /* 1. 创建发送队列 */
+    /* > 创建发送队列 */
     if (sdtp_ssvr_creat_sendq(ssvr, conf))
     {
         log_error(ssvr->log, "Initialize send queue failed!");
         return SDTP_ERR;
     }
 
-    /* 2. 创建unix套接字 */
+    /* > 创建unix套接字 */
     if (sdtp_ssvr_creat_usck(ssvr, conf))
     {
         log_error(ssvr->log, "Initialize send queue failed!");
         return SDTP_ERR;
     }
 
-    /* 3. 创建SLAB内存池 */
-    addr = calloc(1, SDTP_MEM_POOL_SIZE);
-    if (NULL == addr)
-    {
-        log_error(ssvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return SDTP_ERR;
-    }
-
-    ssvr->pool = slab_init(addr, SDTP_MEM_POOL_SIZE);
+    /* > 创建SLAB内存池 */
+    ssvr->pool = slab_creat_by_calloc(SDTP_MEM_POOL_SIZE);
     if (NULL == ssvr->pool)
     {
         log_error(ssvr->log, "Initialize slab mem-pool failed!");
         return SDTP_ERR;
     }
 
-    /* 4. 初始化发送缓存 */
+    /* > 创建发送链表 */
+    memset(&opt, 0, sizeof(opt));
+
+    opt.pool = (void *)ssvr->pool;
+    opt.alloc = (mem_alloc_cb_t)slab_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+
+    ssvr->sck.mesg_list = list_creat(&opt);
+    if (NULL == ssvr->sck.mesg_list)
+    {
+        log_error(ssvr->log, "Create list failed!");
+        return SDTP_ERR;
+    }
+
+    /* > 初始化发送缓存 */
     addr = calloc(1, conf->send_buff_size);
     if (NULL == addr)
     {
@@ -224,7 +241,7 @@ static int sdtp_ssvr_init(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr, int tidx)
  **函数名称: sdtp_ssvr_creat_sendq
  **功    能: 创建发送线程的发送队列
  **输入参数: 
- **     ssvr: 发送线程对象
+ **     ssvr: 发送服务对象
  **     conf: 配置信息
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
@@ -234,18 +251,13 @@ static int sdtp_ssvr_init(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr, int tidx)
  ******************************************************************************/
 static int sdtp_ssvr_creat_sendq(sdtp_ssvr_t *ssvr, const sdtp_ssvr_conf_t *conf)
 {
-    key_t key;
+    char path[FILE_PATH_MAX_LEN];
     const sdtp_queue_conf_t *qcf = &conf->qcf;
 
     /* 1. 创建/连接发送队列 */
-    key = shm_ftok(qcf->name, ssvr->tidx);
-    if (-1 == key)
-    {
-        log_error(ssvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return SDTP_ERR;
-    }
+    snprintf(path, sizeof(path), "%s-%d", qcf->name, ssvr->tidx);
 
-    ssvr->sq = shm_queue_creat(key, qcf->count, qcf->size);
+    ssvr->sq = sdtp_pool_creat(path, qcf->count, qcf->size);
     if (NULL == ssvr->sq)
     {
         log_error(ssvr->log, "Create send-queue failed!");
@@ -259,7 +271,7 @@ static int sdtp_ssvr_creat_sendq(sdtp_ssvr_t *ssvr, const sdtp_ssvr_conf_t *conf
  **函数名称: sdtp_ssvr_creat_usck
  **功    能: 创建发送线程的命令接收套接字
  **输入参数: 
- **     ssvr: 发送线程对象
+ **     ssvr: 发送服务对象
  **     conf: 配置信息
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
@@ -319,10 +331,91 @@ static void sdtp_ssvr_bind_cpu(sdtp_ssvr_cntx_t *ctx, int tidx)
 }
 
 /******************************************************************************
+ **函数名称: sdtp_switch_send_data
+ **功    能: 切换发送数据的处理
+ **输入参数: 
+ **     ctx: 全局信息
+ **     ssvr: 
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.04.11 #
+ ******************************************************************************/
+void sdtp_switch_send_data(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr)
+{
+    sdtp_snap_t *send;
+    sdtp_pool_page_t *page;
+    sdtp_ssvr_sck_t *sck = &ssvr->sck;
+
+    /* > 检查是否发送完系统消息 */
+    switch (sck->send_type)
+    {
+        case SDTP_SNAP_SYS_DATA:
+        {
+            send = &sck->send[SDTP_SNAP_SYS_DATA];
+            if ((NULL != sck->mesg_list)
+                || (send->iptr != send->optr))
+            {
+                return; /* 系统消息还未发送完成: 不用切换 */
+            }
+            break;
+        }
+        case SDTP_SNAP_EXP_DATA:
+        default:
+        {
+            /* > 检查是否发送完外部数据 */
+            send = &sck->send[SDTP_SNAP_EXP_DATA];
+            if (send->iptr != send->optr)
+            {
+                return; /* 缓存数据仍然未发送完全 */
+            }
+
+            if (NULL != sck->mesg_list)
+            {
+                sck->send_type = SDTP_SNAP_SYS_DATA;
+                return; /* 有消息可发送 */
+            }
+            break;
+        }
+    }
+
+    page = sdtp_pool_switch(ssvr->sq);
+    if (NULL == page)
+    {
+        return; /* 无可发送的数据 */
+    }
+
+    sck->send_type = SDTP_SNAP_EXP_DATA;
+    send = &sck->send[SDTP_SNAP_EXP_DATA];
+
+    send->addr = (void *)ssvr->sq->head + page->begin;
+    send->end = send->addr + page->off;
+    send->total = page->off;
+    send->optr = send->addr;
+    send->iptr = send->addr + page->off;
+
+#if 0
+    /* > 校验数据合法性(测试数据时使用) */
+    head = (sdtp_header_t *)send->addr;
+    for (idx=0; idx<page->num; ++idx)
+    {
+        if (!dtsd_header_isvalid(ctx, head))
+        {
+            assert(0);
+        }
+        head = (void *)head + sizeof(sdtp_header_t) + head->length;
+    }
+#endif
+
+    return;
+}
+
+/******************************************************************************
  **函数名称: sdtp_ssvr_set_rwset
  **功    能: 设置读写集
  **输入参数: 
- **     ssvr: 发送线程对象
+ **     ssvr: 发送服务对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
@@ -331,6 +424,9 @@ static void sdtp_ssvr_bind_cpu(sdtp_ssvr_cntx_t *ctx, int tidx)
  ******************************************************************************/
 void sdtp_ssvr_set_rwset(sdtp_ssvr_t *ssvr) 
 { 
+    int idx;
+    sdtp_snap_t *snap;
+
     FD_ZERO(&ssvr->rset);
     FD_ZERO(&ssvr->wset);
 
@@ -341,16 +437,26 @@ void sdtp_ssvr_set_rwset(sdtp_ssvr_t *ssvr)
         return;
     }
 
-    ssvr->max = (ssvr->cmd_sck_id > ssvr->sck.fd)? ssvr->cmd_sck_id : ssvr->sck.fd;
+    ssvr->max = MAX(ssvr->cmd_sck_id, ssvr->sck.fd);
 
     /* 1 设置读集合 */
     FD_SET(ssvr->sck.fd, &ssvr->rset);
 
     /* 2 设置写集合: 发送至接收端 */
-    if (!list_isempty(ssvr->sck.mesg_list)
-        || 0 != shm_queue_data_count(ssvr->sq))
+    if (!list_isempty(ssvr->sck.mesg_list))
     {
         FD_SET(ssvr->sck.fd, &ssvr->wset);
+        return;
+    }
+
+    snap = &ssvr->sck.send[SDTP_SNAP_SYS_DATA];
+    for (idx=0; idx<SDTP_SNAP_TOTAL; ++idx, ++snap)
+    {
+        if (snap->iptr != snap->optr)
+        {
+            FD_SET(ssvr->sck.fd, &ssvr->wset);
+            return;
+        }
     }
 
     return;
@@ -381,7 +487,7 @@ static void *sdtp_ssvr_routine(void *_ctx)
 
 
     /* 1. 获取发送线程 */
-    ssvr = sdtp_ssvr_get_curr(ctx);
+    ssvr = sdtp_ssvr_get_self(ctx);
     if (NULL == ssvr)
     {
         log_fatal(ssvr->log, "Get current thread failed!");
@@ -411,6 +517,8 @@ static void *sdtp_ssvr_routine(void *_ctx)
                 continue;
             }
         }
+
+        sdtp_switch_send_data(ctx, ssvr);
 
         /* 3.2 等待事件通知 */
         sdtp_ssvr_set_rwset(ssvr);
@@ -478,7 +586,7 @@ static int sdtp_ssvr_kpalive_req(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr)
     sdtp_header_t *head;
     int size = sizeof(sdtp_header_t);
     sdtp_ssvr_sck_t *sck = &ssvr->sck;
-    sdtp_snap_t *send = &ssvr->sck.send;
+    sdtp_snap_t *send = &ssvr->sck.send[SDTP_SNAP_SYS_DATA];
 
     /* 1. 上次发送保活请求之后 仍未收到应答 */
     if ((sck->fd < 0) 
@@ -521,10 +629,10 @@ static int sdtp_ssvr_kpalive_req(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr)
 }
 
 /******************************************************************************
- **函数名称: sdtp_ssvr_get_curr
+ **函数名称: sdtp_ssvr_get_self
  **功    能: 获取当前发送线程的上下文
  **输入参数: 
- **     ssvr: 发送线程对象
+ **     ssvr: 发送服务对象
  **     conf: 配置信息
  **输出参数: NONE
  **返    回: Address of sndsvr
@@ -532,7 +640,7 @@ static int sdtp_ssvr_kpalive_req(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static sdtp_ssvr_t *sdtp_ssvr_get_curr(sdtp_ssvr_cntx_t *ctx)
+static sdtp_ssvr_t *sdtp_ssvr_get_self(sdtp_ssvr_cntx_t *ctx)
 {
     int tidx;
 
@@ -553,7 +661,7 @@ static sdtp_ssvr_t *sdtp_ssvr_get_curr(sdtp_ssvr_cntx_t *ctx)
  **功    能: 超时处理
  **输入参数: 
  **     ctx: 全局信息
- **     ssvr: 发送线程全局信息
+ **     ssvr: 发送服务全局信息
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
@@ -764,7 +872,7 @@ static int sdtp_ssvr_data_proc(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr, sdtp_ss
  **功    能: 接收命令数据
  **输入参数: 
  **     ctx: 全局信息
- **     ssvr: 发送线程对象
+ **     ssvr: 发送服务对象
  **输出参数: 
  **返    回: 0:成功 !0:失败
  **实现描述: 
@@ -794,7 +902,7 @@ static int sdtp_ssvr_recv_cmd(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr)
  **函数名称: sdtp_ssvr_proc_cmd
  **功    能: 命令处理
  **输入参数: 
- **     ssvr: 发送线程对象
+ **     ssvr: 发送服务对象
  **     cmd: 接收到的命令信息
  **输出参数: 
  **返    回: 0:成功 !0:失败
@@ -830,10 +938,10 @@ static int sdtp_ssvr_proc_cmd(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr, const sd
  **函数名称: sdtp_ssvr_fill_send_buff
  **功    能: 填充发送缓冲区
  **输入参数: 
- **     ssvr: 发送线程
+ **     ssvr: 发送服务
  **     sck: 连接对象
  **输出参数: 
- **返    回: 0:成功 !0:失败
+ **返    回: 需要发送的数据长度
  **实现描述: 
  **     1. 从消息链表取数据
  **     2. 从发送队列取数据
@@ -852,22 +960,21 @@ static int sdtp_ssvr_proc_cmd(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr, const sd
  ******************************************************************************/
 static int sdtp_ssvr_fill_send_buff(sdtp_ssvr_t *ssvr, sdtp_ssvr_sck_t *sck)
 {
-    void *addr;
     uint32_t left, mesg_len;
     sdtp_header_t *head;
-    sdtp_snap_t *send = &sck->send;
+    sdtp_snap_t *send = &sck->send[SDTP_SNAP_SYS_DATA];
 
-    /* 1. 从消息链表取数据 */
+    /* > 从消息链表取数据 */
     for (;;)
     {
-        /* 1.1 是否有数据 */
+        /* 1. 是否有数据 */
         head = (sdtp_header_t *)list_lpop(ssvr->sck.mesg_list);
         if (NULL == head)
         {
-            break; /* 无数据 */
+            return (send->iptr - send->optr);
         }
 
-        /* 1.2 判断剩余空间 */
+        /* 2. 判断剩余空间 */
         if (SDTP_CHECK_SUM != head->checksum)
         {
             assert(0);
@@ -881,63 +988,27 @@ static int sdtp_ssvr_fill_send_buff(sdtp_ssvr_t *ssvr, sdtp_ssvr_sck_t *sck)
             break; /* 空间不足 */
         }
 
-        /* 1.3 取发送的数据 */
+        /* 3. 取发送的数据 */
         head->type = htons(head->type);
         head->flag = head->flag;
         head->length = htonl(head->length);
         head->checksum = htonl(head->checksum);
 
-        /* 1.4 拷贝至发送缓存 */
+        /* 4. 拷贝至发送缓存 */
         memcpy(send->iptr, (void *)head, mesg_len);
 
         send->iptr += mesg_len;
-        continue;
     }
 
-    /* 2. 从发送队列取数据 */
-    for (;;)
-    {
-        /* 2.1 判断发送缓存的剩余空间是否足够 */
-        left = (uint32_t)(send->end - send->iptr);
-        if (left < ssvr->sq->info->size)
-        {
-            break;  /* 空间不足 */
-        }
-
-        /* 2.2 取发送的数据 */
-        addr = shm_queue_pop(ssvr->sq);
-        if (NULL == addr)
-        {
-            break;  /* 无数据 */
-        }
-
-        head = (sdtp_header_t *)addr;
-
-        mesg_len = sizeof(sdtp_header_t) + head->length;
-
-        head->type = htons(head->type);
-        head->flag = head->flag;
-        head->length = htonl(head->length);
-        head->checksum = htonl(head->checksum);
-
-        /* 2.3 拷贝至发送缓存 */
-        memcpy(send->iptr, addr, mesg_len);
-
-        send->iptr += mesg_len;
-
-        shm_queue_dealloc(ssvr->sq, addr);
-        continue;
-    }
-
-    return SDTP_OK;
+    return (send->iptr - send->optr);
 }
 
 /******************************************************************************
  **函数名称: sdtp_ssvr_send_data
- **功    能: 发送数据的请求处理
+ **功    能: 发送系统消息
  **输入参数: 
  **     ctx: 全局信息
- **     ssvr: 发送线程
+ **     ssvr: 发送服务
  **输出参数: 
  **返    回: 0:成功 !0:失败
  **实现描述: 
@@ -957,40 +1028,35 @@ static int sdtp_ssvr_fill_send_buff(sdtp_ssvr_t *ssvr, sdtp_ssvr_sck_t *sck)
  **     addr     optr             iptr                   end
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static int sdtp_ssvr_send_data(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr)
+static int sdtp_ssvr_send_sys_data(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr)
 {
     int n, len;
-    time_t ctm = time(NULL);
     sdtp_ssvr_sck_t *sck = &ssvr->sck;
-    sdtp_snap_t *send = &sck->send;
+    sdtp_snap_t *send = &sck->send[SDTP_SNAP_SYS_DATA];
 
-    sck->wrtm = ctm;
+    sck->wrtm = time(NULL);
 
     for (;;)
     {
         /* 1. 填充发送缓存 */
         if (send->iptr == send->optr)
         {
-            sdtp_ssvr_fill_send_buff(ssvr, sck);
+            if ((len = sdtp_ssvr_fill_send_buff(ssvr, sck)) <= 0)
+            {
+                break;
+            }
+        }
+        else
+        {
+            len = send->iptr - send->optr;
         }
 
         /* 2. 发送缓存数据 */
-        len = send->iptr - send->optr;
-        if (0 == len)
-        {
-            break;
-        }
-
         n = Writen(sck->fd, send->optr, len);
         if (n < 0)
         {
-        #if defined(__SDTP_DEBUG__)
-            send->fail++;
-        #endif /*__SDTP_DEBUG__*/
-
             log_error(ssvr->log, "errmsg:[%d] %s! fd:%d len:[%d]",
                     errno, strerror(errno), sck->fd, len);
-
             CLOSE(sck->fd);
             sdtp_snap_reset(send);
             return SDTP_ERR;
@@ -999,21 +1065,93 @@ static int sdtp_ssvr_send_data(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr)
         else if (n != len)
         {
             send->optr += n;
-        #if defined(__SDTP_DEBUG__)
-            send->again++;
-        #endif /*__SDTP_DEBUG__*/
             return SDTP_OK;
         }
 
         /* 3. 重置标识量 */
         sdtp_snap_reset(send);
-
-    #if defined(__SDTP_DEBUG__)
-        send->succ++;
-    #endif /*__SDTP_DEBUG__*/
     }
 
     return SDTP_OK;
+}
+
+/******************************************************************************
+ **函数名称: sdtp_ssvr_send_data
+ **功    能: 发送扩展消息
+ **输入参数: 
+ **     ctx: 全局信息
+ **     ssvr: 发送服务
+ **输出参数: 
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **     1. 发送缓存数据
+ **     2. 重置标识量
+ **注意事项: 
+ **       ------------------------------------------------
+ **      | 已发送 |     待发送     |       剩余空间       |
+ **       ------------------------------------------------
+ **      |XXXXXXXX|////////////////|                      |
+ **      |XXXXXXXX|////////////////|         left         |
+ **      |XXXXXXXX|////////////////|                      |
+ **       ------------------------------------------------
+ **      ^        ^                ^                      ^
+ **      |        |                |                      |
+ **     addr     optr             iptr                   end
+ **作    者: # Qifeng.zou # 2015.01.14 #
+ ******************************************************************************/
+static int sdtp_ssvr_send_exp_data(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr)
+{
+    int n, len;
+    sdtp_ssvr_sck_t *sck = &ssvr->sck;
+    sdtp_snap_t *send = &sck->send[SDTP_SNAP_EXP_DATA];
+
+    sck->wrtm = time(NULL);
+
+    /* > 发送缓存数据 */
+    len = send->iptr - send->optr;
+
+    n = Writen(sck->fd, send->optr, len);
+    if (n < 0)
+    {
+        log_error(ssvr->log, "errmsg:[%d] %s! fd:%d len:[%d]",
+                errno, strerror(errno), sck->fd, len);
+        CLOSE(sck->fd);
+        sdtp_snap_reset(send);
+        return SDTP_ERR;
+    }
+    /* 只发送了部分数据 */
+    else if (n != len)
+    {
+        send->optr += n;
+        return SDTP_OK;
+    }
+
+    /* > 重置标识量 */
+    sdtp_snap_reset(send);
+    return SDTP_OK;
+}
+
+/******************************************************************************
+ **函数名称: sdtp_ssvr_send_data
+ **功    能: 发送数据的请求处理
+ **输入参数: 
+ **     ctx: 全局信息
+ **     ssvr: 发送服务
+ **输出参数: 
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **作    者: # Qifeng.zou # 2015.04.11 #
+ ******************************************************************************/
+static int sdtp_ssvr_send_data(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr)
+{
+    sdtp_ssvr_sck_t *sck = &ssvr->sck;
+
+    if (SDTP_SNAP_SYS_DATA == sck->send_type)
+    {
+        return sdtp_ssvr_send_sys_data(ctx, ssvr);
+    }
+
+    return sdtp_ssvr_send_exp_data(ctx, ssvr);
 }
 
 /******************************************************************************

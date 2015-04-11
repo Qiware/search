@@ -88,14 +88,14 @@ static void sdtp_setup_conf(sdtp_ssvr_conf_t *conf)
 {
     snprintf(conf->name, sizeof(conf->name), "SDTP-SEND");
     snprintf(conf->ipaddr, sizeof(conf->ipaddr), "127.0.0.1");
-    conf->port = 54321;
+    conf->port = 4444;
     conf->snd_thd_num = 1;
     conf->send_buff_size = 5 * MB;
     conf->recv_buff_size = 2 * MB;
 
     snprintf(conf->qcf.name, sizeof(conf->qcf.name), "../temp/sdtp/sdtp-ssvr.key");
     conf->qcf.size = 4096;
-    conf->qcf.count = 10000;
+    conf->qcf.count = 2000;
 }
 
 int main(int argc, const char *argv[])
@@ -115,7 +115,7 @@ int main(int argc, const char *argv[])
 
     sdtp_setup_conf(&conf);
 
-    log2_init(LOG_LEVEL_DEBUG, "./sdtp_ssvr.log2");
+    syslog_init(LOG_LEVEL_DEBUG, "./sdtp_ssvr.log2");
     log = log_init(LOG_LEVEL_DEBUG, "./sdtp_ssvr.log");
 
     ctx = sdtp_ssvr_startup(&conf, log);

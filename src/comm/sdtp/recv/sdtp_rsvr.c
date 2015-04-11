@@ -70,50 +70,50 @@ static int sdtp_rsvr_queue_alloc(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr);
  **     如果超时未接收或发送数据，则关闭连接!
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-#define sdtp_rsvr_set_rdset(rsvr) \
-{ \
-    sdtp_sck_t *curr; \
-    list2_node_t *node, *next, *tail; \
-    \
-    FD_ZERO(&rsvr->rdset); \
-    \
-    FD_SET(rsvr->cmd_sck_id, &rsvr->rdset); \
-    rsvr->max = rsvr->cmd_sck_id; \
-    \
-    node = rsvr->conn_list.head; \
-    if (NULL != node) \
-    { \
-        tail = node->prev; \
-    } \
-    while (NULL != node) \
-    { \
-        curr = (sdtp_sck_t *)node->data; \
-        if ((rsvr->ctm - curr->rdtm > 30) \
-            && (rsvr->ctm - curr->wrtm > 30)) \
-        { \
-            log_trace(rsvr->log, "Didn't active for along time! fd:%d ip:%s", \
-                    curr->fd, curr->ipaddr); \
-            \
-            if (node == tail) \
-            { \
-                sdtp_rsvr_del_conn_hdl(rsvr, node); \
-                break; \
-            } \
-            next = node->next; \
-            sdtp_rsvr_del_conn_hdl(rsvr, node); \
-            node = next; \
-            continue; \
-        } \
-        \
-        FD_SET(curr->fd, &rsvr->rdset); \
-        rsvr->max = (rsvr->max > curr->fd)? rsvr->max : curr->fd; \
-        \
-        if (node == tail) \
-        { \
-            break; \
-        } \
-        node = node->next; \
-    } \
+static void sdtp_rsvr_set_rdset(sdtp_rsvr_t *rsvr)
+{
+    sdtp_sck_t *curr;
+    list2_node_t *node, *next, *tail;
+
+    FD_ZERO(&rsvr->rdset);
+
+    FD_SET(rsvr->cmd_sck_id, &rsvr->rdset);
+    rsvr->max = rsvr->cmd_sck_id;
+
+    node = rsvr->conn_list.head;
+    if (NULL != node)
+    {
+        tail = node->prev;
+    }
+    while (NULL != node)
+    {
+        curr = (sdtp_sck_t *)node->data;
+        if ((rsvr->ctm - curr->rdtm > 30)
+            && (rsvr->ctm - curr->wrtm > 30))
+        {
+            log_trace(rsvr->log, "Didn't active for along time! fd:%d ip:%s",
+                    curr->fd, curr->ipaddr);
+
+            if (node == tail)
+            {
+                sdtp_rsvr_del_conn_hdl(rsvr, node);
+                break;
+            }
+            next = node->next;
+            sdtp_rsvr_del_conn_hdl(rsvr, node);
+            node = next;
+            continue;
+        }
+
+        FD_SET(curr->fd, &rsvr->rdset);
+        rsvr->max = MAX(rsvr->max, curr->fd);
+
+        if (node == tail)
+        {
+            break;
+        }
+        node = node->next;
+    }
 }
 
 /******************************************************************************
@@ -128,41 +128,42 @@ static int sdtp_rsvr_queue_alloc(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr);
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-#define sdtp_rsvr_set_wrset(rsvr) \
-{ \
-    sdtp_sck_t *curr; \
-    list2_node_t *node, *tail; \
-    \
-    FD_ZERO(&rsvr->wrset); \
-    \
-    node = rsvr->conn_list.head; \
-    if (NULL != node) \
-    { \
-        tail = node->prev; \
-    } \
-    while (NULL != node) \
-    { \
-        curr = (sdtp_sck_t *)node->data; \
-        \
-        if (list_isempty(curr->mesg_list) \
-            && (curr->send.optr == curr->send.iptr)) \
-        { \
-            if (node == tail) \
-            { \
-                break; \
-            } \
-            node = node->next; \
-            continue; \
-        } \
-        \
-        FD_SET(curr->fd, &rsvr->wrset); \
-        \
-        if (node == tail) \
-        { \
-            break; \
-        } \
-        node = node->next; \
-    } \
+static void sdtp_rsvr_set_wrset(sdtp_rsvr_t *rsvr)
+{
+    sdtp_sck_t *curr;
+    list2_node_t *node, *tail;
+
+    FD_ZERO(&rsvr->wrset);
+
+    node = rsvr->conn_list.head;
+    if (NULL != node)
+    {
+        tail = node->prev;
+    }
+
+    while (NULL != node)
+    {
+        curr = (sdtp_sck_t *)node->data;
+
+        if (list_isempty(curr->mesg_list)
+            && (curr->send.optr == curr->send.iptr))
+        {
+            if (node == tail)
+            {
+                break;
+            }
+            node = node->next;
+            continue;
+        }
+
+        FD_SET(curr->fd, &rsvr->wrset);
+
+        if (node == tail)
+        {
+            break;
+        }
+        node = node->next;
+    }
 }
 
 /******************************************************************************
@@ -276,7 +277,6 @@ static sdtp_rsvr_t *sdtp_rsvr_get_curr(sdtp_cntx_t *ctx)
  ******************************************************************************/
 int sdtp_rsvr_init(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr, int tidx)
 {
-    void *addr;
     char path[FILE_PATH_MAX_LEN];
     sdtp_conf_t *conf = &ctx->conf;
 
@@ -295,14 +295,7 @@ int sdtp_rsvr_init(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr, int tidx)
     }
 
     /* > 创建SLAB内存池 */
-    addr = calloc(1, SDTP_MEM_POOL_SIZE);
-    if (NULL == addr)
-    {
-        log_fatal(rsvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return SDTP_ERR;
-    }
-
-    rsvr->pool = slab_init(addr, SDTP_MEM_POOL_SIZE);
+    rsvr->pool = slab_creat_by_calloc(SDTP_MEM_POOL_SIZE);
     if (NULL == rsvr->pool)
     {
         log_error(rsvr->log, "Initialize slab mem-pool failed!");
@@ -987,8 +980,9 @@ static int sdtp_rsvr_add_conn_hdl(sdtp_rsvr_t *rsvr, sdtp_cmd_add_sck_t *req)
     void *addr;
     sdtp_sck_t *sck;
     list2_node_t *node;
+    list_option_t option;
 
-    /* 1. 分配连接空间 */
+    /* > 分配连接空间 */
     sck = slab_alloc(rsvr->pool, sizeof(sdtp_sck_t));
     if (NULL == sck)
     {
@@ -1002,11 +996,27 @@ static int sdtp_rsvr_add_conn_hdl(sdtp_rsvr_t *rsvr, sdtp_cmd_add_sck_t *req)
     sck->wrtm = sck->ctm;
     snprintf(sck->ipaddr, sizeof(sck->ipaddr), "%s", req->ipaddr);
 
+    /* > 创建发送链表 */
+    memset(&option, 0, sizeof(option));
+
+    option.pool = (void *)rsvr->pool;
+    option.alloc = (mem_alloc_cb_t)slab_alloc;
+    option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+
+    sck->mesg_list = list_creat(&option);
+    if (NULL == sck->mesg_list)
+    {
+        log_error(rsvr->log, "Create list failed!");
+        slab_dealloc(rsvr->pool, sck);
+        return SDTP_ERR;
+    }
+
     /* 2. 申请接收缓存 */
     addr = (void *)calloc(1, SDTP_BUFF_SIZE);
     if (NULL == addr)
     {
         log_error(rsvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        list_destroy(sck->mesg_list);
         slab_dealloc(rsvr->pool, sck);
         return SDTP_ERR;
     }
@@ -1019,6 +1029,7 @@ static int sdtp_rsvr_add_conn_hdl(sdtp_rsvr_t *rsvr, sdtp_cmd_add_sck_t *req)
     {
         log_error(rsvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
         free(sck->recv.addr);
+        list_destroy(sck->mesg_list);
         slab_dealloc(rsvr->pool, sck);
         return SDTP_ERR;
     }
@@ -1032,6 +1043,7 @@ static int sdtp_rsvr_add_conn_hdl(sdtp_rsvr_t *rsvr, sdtp_cmd_add_sck_t *req)
         log_error(rsvr->log, "Alloc memory failed!");
         free(sck->recv.addr);
         free(sck->send.addr);
+        list_destroy(sck->mesg_list);
         slab_dealloc(rsvr->pool, sck);
         return SDTP_ERR;
     }

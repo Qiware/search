@@ -85,7 +85,7 @@ void *shm_creat(int key, size_t size)
 
     memset(addr, 0, size);
 
-    shmctl(shmid, IPC_RMID, NULL);
+    //shmctl(shmid, IPC_RMID, NULL);
 
     return addr;
 }
@@ -120,7 +120,7 @@ void *shm_attach(int key)
         return NULL;
     }
 
-    shmctl(shmid, IPC_RMID, NULL);
+    //shmctl(shmid, IPC_RMID, NULL);
 
     return addr;
 }
@@ -169,7 +169,7 @@ SHM_AT:
         return NULL;
     }
 
-    shmctl(shmid, IPC_RMID, NULL);
+    //shmctl(shmid, IPC_RMID, NULL);
 
     return addr;
 }

@@ -5,8 +5,17 @@
 #include "slab.h"
 #include "list.h"
 #include "avl_tree.h"
-#include "shm_queue.h"
+#include "sdtp_pool.h"
 #include "thread_pool.h"
+
+/* 发送类型 */
+typedef enum
+{
+    SDTP_SNAP_SYS_DATA
+    , SDTP_SNAP_EXP_DATA 
+
+    , SDTP_SNAP_TOTAL
+} sdtp_send_snap_e;
 
 /* 发送端配置 */
 typedef struct
@@ -39,7 +48,8 @@ typedef struct
     list_t *mesg_list;              /* 发送链表 */
 
     sdtp_snap_t recv;               /* 接收快照 */
-    sdtp_snap_t send;               /* 发送快照 */
+    sdtp_send_snap_e send_type;
+    sdtp_snap_t send[SDTP_SNAP_TOTAL]; /* 发送快照 */
 } sdtp_ssvr_sck_t;
 
 #define sdtp_set_kpalive_stat(sck, _stat) (sck)->kpalive = (_stat)
@@ -48,7 +58,7 @@ typedef struct
 typedef struct
 {
     int tidx;                       /* 线程索引 */
-    shm_queue_t *sq;                /* 发送缓冲队列 */
+    sdtp_pool_t *sq;                /* 发送缓存 */
     log_cycle_t *log;               /* 日志对象 */
 
     int cmd_sck_id;                 /* 命令通信套接字ID */

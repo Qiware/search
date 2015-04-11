@@ -229,21 +229,11 @@ static int sdtp_reg_init(sdtp_cntx_t *ctx)
  ******************************************************************************/
 static int _sdtp_init(sdtp_cntx_t *ctx)
 {
-    void *addr;
-
     /* 1. 创建SLAB内存池 */
-    addr = calloc(1, SDTP_CTX_POOL_SIZE);
-    if (NULL == addr)
-    {
-        log_fatal(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return SDTP_ERR;
-    }
-
-    ctx->pool = slab_init(addr, SDTP_CTX_POOL_SIZE);
+    ctx->pool = slab_creat_by_calloc(SDTP_CTX_POOL_SIZE);
     if (NULL == ctx->pool)
     {
         log_error(ctx->log, "Initialize slab mem-pool failed!");
-        free(addr);
         return SDTP_ERR;
     }
 

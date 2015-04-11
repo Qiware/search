@@ -4,6 +4,7 @@
 #include "sdtp_cli.h"
 #include "sdtp_ssvr.h"
 #include "sdtp_priv.h"
+#include "sdtp_pool.h"
 
 static int _sdtp_cli_init(sdtp_cli_t *cli, int idx);
 static int sdtp_cli_shmat(sdtp_cli_t *cli);
@@ -109,12 +110,12 @@ static int _sdtp_cli_init(sdtp_cli_t *cli, int idx)
 static int sdtp_cli_shmat(sdtp_cli_t *cli)
 {
     int idx;
-    key_t key;
     sdtp_queue_conf_t *qcf;
+    char path[FILE_NAME_MAX_LEN];
     sdtp_ssvr_conf_t *conf = &cli->conf;
 
     /* 1. 新建队列对象 */
-    cli->sq = (shm_queue_t **)mem_pool_alloc(cli->pool, conf->snd_thd_num * sizeof(shm_queue_t *));
+    cli->sq = (sdtp_pool_t **)mem_pool_alloc(cli->pool, conf->snd_thd_num * sizeof(shm_queue_t *));
     if (NULL == cli->sq)
     {
         log_error(cli->log, "errmsg:[%d] %s!", errno, strerror(errno));
@@ -125,9 +126,9 @@ static int sdtp_cli_shmat(sdtp_cli_t *cli)
     qcf = &conf->qcf;
     for (idx=0; idx<conf->snd_thd_num; ++idx)
     {
-        key = shm_ftok(qcf->name, idx);
+        snprintf(path, sizeof(path), "%s-%d", qcf->name, idx);
 
-        cli->sq[idx] = shm_queue_attach(key);
+        cli->sq[idx] = sdtp_pool_attach(path);
         if (NULL == cli->sq[idx])
         {
             log_error(cli->log, "errmsg:[%d] %s! path:[%s]", errno, strerror(errno), qcf->name);
@@ -216,65 +217,27 @@ static int sdtp_cli_cmd_send_req(sdtp_cli_t *cli, int idx)
  ******************************************************************************/
 int sdtp_cli_send(sdtp_cli_t *cli, int type, const void *data, size_t size)
 {
-    void *addr;
-    uint32_t idx;
-    static uint32_t num = 0;
-    sdtp_header_t *header;
+    int i, idx;
+    static uint8_t num = 0;
     sdtp_ssvr_conf_t *conf = &cli->conf;
-    shm_queue_info_t *info;
 
-    idx = (num++) % conf->snd_thd_num;
-
-    /* 1. 校验类型和长度 */
-    info = cli->sq[idx]->info;
-
-    if ((type >= SDTP_TYPE_MAX)
-        || info->num >= info->max
-        || (size + sizeof(sdtp_header_t) > info->size))
+    /* > 随机放入发送池 */
+    for (i=0; i<conf->snd_thd_num; ++i)
     {
-        log_error(cli->log, "Type or length is invalid! type:%d size:%u num:%d/%d",
-                type, size, info->num, info->max);
-        return SDTP_ERR;
-    }
+        idx = (num++)%conf->snd_thd_num;
 
-    /* 2. 申请存储空间 */
-    addr = shm_queue_malloc(cli->sq[idx]);
-    if (NULL == addr)
-    {
-        if (0 == num%2)
+        if (sdtp_pool_push(cli->sq[idx], type, data, size))
+        {
+            continue;
+        }
+
+        /* > 通知Send线程 */
+        if(0 == num%1000)
         {
             sdtp_cli_cmd_send_req(cli, idx);
         }
-        log_error(cli->log, "Queue space isn't enough!");
-        return SDTP_ERR;
+        return SDTP_OK;
     }
 
-    log_debug(cli->log, "%d: max:%d num:%d", num, info->max, info->num);
-
-    /* 3. 放入队列空间 */
-    header = (sdtp_header_t *)addr;
-    header->type = type;
-    header->length = size;
-    header->flag = SDTP_EXP_MESG; /* 自定义类型 */
-    header->checksum = SDTP_CHECK_SUM;
-
-    memcpy(addr + sizeof(sdtp_header_t), data, size);
-
-    /* 4. 压入发送队列 */
-    if (shm_queue_push(cli->sq[idx], addr))
-    {
-        log_error(cli->log, "Push data into queue failed!");
-        shm_queue_dealloc(cli->sq[idx], addr);
-        return SDTP_ERR;
-    }
-
-    /* 5. 通知发送服务 */
-    if (0 == num % 50)
-    {
-        sdtp_cli_cmd_send_req(cli, idx);
-    }
-
-    log_debug(cli->log, "[%d] Push Success! type:%d size:%u", num, type, size);
-
-    return SDTP_OK;
+    return SDTP_ERR;
 }

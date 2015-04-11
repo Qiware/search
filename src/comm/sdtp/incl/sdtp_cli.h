@@ -19,7 +19,7 @@ typedef struct
     mem_pool_t *pool;               /* 内存池 */
     
     int cmdfd;                      /* 命令套接字 */
-    shm_queue_t **sq;               /* 发送缓冲队列 */
+    sdtp_pool_t **sq;               /* 发送缓冲队列 */
 } sdtp_cli_t;
 
 extern sdtp_cli_t *sdtp_cli_init(const sdtp_ssvr_conf_t *conf, int idx, log_cycle_t *log);
