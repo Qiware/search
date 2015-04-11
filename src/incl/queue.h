@@ -9,16 +9,16 @@
 /* 队列配置 */
 typedef struct
 {
-    int max;                /* 单元总数 */
-    int size;               /* 单元大小 */
+    int max;                                /* 单元总数 */
+    int size;                               /* 单元大小 */
 } queue_conf_t;
 
 /* 循环队列结点 */
-typedef struct __qnode_t
+typedef struct _queue_node_t
 {
-    struct __qnode_t *next;
+    struct _queue_node_t *next;
     void *data;
-} _qnode_t;
+} queue_node_t;
 
 /* 循环队列 */
 typedef struct
@@ -27,9 +27,9 @@ typedef struct
     int num;                                /* 队列成员个数 */
     int size;
 
-    _qnode_t *base;                         /* 队列基址 */
-    _qnode_t *head;                         /* 队列头 */
-    _qnode_t *tail;                         /* 队列尾 */
+    queue_node_t *base;                     /* 队列基址 */
+    queue_node_t *head;                     /* 队列头 */
+    queue_node_t *tail;                     /* 队列尾 */
 
     spinlock_t lock;                        /* 队列锁 */
 } _queue_t;

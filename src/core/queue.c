@@ -32,19 +32,19 @@
 int _queue_creat(_queue_t *q, int max)
 {
     int idx;
-    _qnode_t *node;
+    queue_node_t *node;
     
     memset(q, 0, sizeof(_queue_t));
 
     /* 1. 申请内存空间 */
-    q->base = (_qnode_t *)calloc(max, sizeof(_qnode_t));
+    q->base = (queue_node_t *)calloc(max, sizeof(queue_node_t));
     if (NULL == q->base)
     {
         return -1;
     }
 
     /* 2. 设为循环队列 */
-    node = (_qnode_t *)q->base;
+    node = (queue_node_t *)q->base;
     for (idx=0; idx<max-1; ++idx, ++node)
     {
         node->next = node + 1;
@@ -76,7 +76,7 @@ int _queue_creat(_queue_t *q, int max)
  ******************************************************************************/
 int queue_push_lock(_queue_t *q, void *addr)
 {
-    _qnode_t *node = q->tail;
+    queue_node_t *node = q->tail;
 
     spin_lock(&q->lock);
 
