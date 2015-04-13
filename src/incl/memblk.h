@@ -9,7 +9,7 @@
 /* 页对象 */
 typedef struct
 {
-    spinlock_t lock;                /* SPIN锁对象 */
+    ticket_spinlock_t lock;         /* SPIN锁对象 */
 
     uint32_t bitmaps;               /* 位图长度 */
     uint32_t *bitmap;               /* 分配位图(0:未使用 1:使用) */

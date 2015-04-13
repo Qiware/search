@@ -31,7 +31,7 @@ typedef struct
     void *data;
     void *addr;
 
-    spinlock_t lock;                        /* 内存锁 */
+    ticket_spinlock_t lock;                    /* 内存锁 */
 } slab_pool_t;
 
 slab_pool_t *slab_init(void *addr, size_t size);

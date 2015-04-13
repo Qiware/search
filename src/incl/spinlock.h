@@ -13,17 +13,17 @@ typedef struct
 {
     uint16_t ticket;
     uint16_t owner;
-} spinlock_t;
+} ticket_spinlock_t;
 
 /* 初始化 */
-static inline void spin_lock_init(spinlock_t *lock)
+static inline void ticket_spin_lock_init(ticket_spinlock_t *lock)
 {
     (lock)->ticket = 0;
     (lock)->owner = 0;
 }
 
 /* 加锁 */
-static inline void spin_lock(spinlock_t *lock)
+static inline void ticket_spin_lock(ticket_spinlock_t *lock)
 {
     uint16_t ticket = 0x01;
 
@@ -48,7 +48,7 @@ static inline void spin_lock(spinlock_t *lock)
 }
 
 /* 解锁 */
-static inline void spin_unlock(spinlock_t *lock)
+static inline void ticket_spin_unlock(ticket_spinlock_t *lock)
 {
     __asm__ __volatile__(
         "lock incw %0"
@@ -58,6 +58,6 @@ static inline void spin_unlock(spinlock_t *lock)
 }
 
 /* 销毁 */
-#define spin_lock_destroy(lock) spin_lock_init(lock)
+#define ticket_spin_lock_destroy(lock) ticket_spin_lock_init(lock)
 
 #endif /*__SPIN_LOCK_H__*/

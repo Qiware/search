@@ -56,7 +56,7 @@ int _queue_creat(_queue_t *q, int max)
     q->head = q->tail = q->base;
     q->max = max;
 
-    spin_lock_init(&q->lock);
+    ticket_spin_lock_init(&q->lock);
 
     return 0;
 }
@@ -78,12 +78,12 @@ int queue_push_lock(_queue_t *q, void *addr)
 {
     queue_node_t *node = q->tail;
 
-    spin_lock(&q->lock);
+    ticket_spin_lock(&q->lock);
 
     /* 1. 检查合法性 */
     if (q->num >= q->max)
     {
-        spin_unlock(&q->lock);
+        ticket_spin_unlock(&q->lock);
         return -1;
     }
 
@@ -92,7 +92,7 @@ int queue_push_lock(_queue_t *q, void *addr)
     q->tail = q->tail->next;
     ++q->num;
 
-    spin_unlock(&q->lock);
+    ticket_spin_unlock(&q->lock);
 
     return 0;
 }
@@ -117,11 +117,11 @@ void *queue_pop_lock(_queue_t *q)
         return NULL;
     }
 
-    spin_lock(&q->lock);
+    ticket_spin_lock(&q->lock);
 
     if (0 == q->num)
     {
-        spin_unlock(&q->lock);
+        ticket_spin_unlock(&q->lock);
         return NULL;
     }
 
@@ -130,7 +130,7 @@ void *queue_pop_lock(_queue_t *q)
     q->head = q->head->next;
     --q->num;
 
-    spin_unlock(&q->lock);
+    ticket_spin_unlock(&q->lock);
 
     return data;
 }
@@ -148,7 +148,7 @@ void *queue_pop_lock(_queue_t *q)
  ******************************************************************************/
 void _queue_destroy(_queue_t *q)
 {
-    spin_lock(&q->lock);
+    ticket_spin_lock(&q->lock);
 
     free(q->base);
 
@@ -158,9 +158,9 @@ void _queue_destroy(_queue_t *q)
     q->max = 0;
     q->num = 0;
 
-    spin_unlock(&q->lock);
+    ticket_spin_unlock(&q->lock);
 
-    spin_lock_destroy(&q->lock);
+    ticket_spin_lock_destroy(&q->lock);
 }
 
 /******************************************************************************

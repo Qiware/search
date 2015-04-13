@@ -20,7 +20,7 @@
 typedef struct
 {
     int idx;                                /* 页号 */
-    spinlock_t lock;                        /* 锁 */
+    ticket_spinlock_t lock;                 /* 锁 */
 
     size_t begin;                           /* 开始偏移(从共享内存起始处计算) */
     size_t size;                            /* 缓存总长 */

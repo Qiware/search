@@ -79,8 +79,7 @@ shm_pool_t *shm_pool_init(void *addr, int max, size_t unit_size)
 
     for (idx=0; idx<info->page_num; ++idx, ++page)
     {
-
-        spin_lock_init(&page->lock);
+        ticket_spin_lock_init(&page->lock);
 
         /* 3.1 设置bitmap */
         if (idx != (info->page_num - 1))
@@ -227,7 +226,7 @@ void *shm_pool_alloc(shm_pool_t *pool)
         idx %= info->page_num;
         page = pool->page + idx;
 
-        spin_lock(&page->lock);
+        ticket_spin_lock(&page->lock);
 
         for (i=0; i<page->bitmap_num; ++i)
         {
@@ -243,14 +242,14 @@ void *shm_pool_alloc(shm_pool_t *pool)
                 {
                     *bitmap |= (1 << j);
 
-                    spin_unlock(&page->lock);
+                    ticket_spin_unlock(&page->lock);
 
                     return (pool->page_data[idx] + (i*32 + j) * info->unit_size);
                 }
             }
         }
 
-        spin_unlock(&page->lock);
+        ticket_spin_unlock(&page->lock);
     }
 
     return NULL;
@@ -281,9 +280,9 @@ void shm_pool_dealloc(shm_pool_t *pool, void *p)
     i = (p - pool->page_data[idx]) / (info->unit_size << 5); /* 计算页内bitmap索引 */
     j = (p - (pool->page_data[idx] + i * (info->unit_size << 5))) / info->unit_size;   /* 计算bitmap内偏移 */
 
-    spin_lock(&page->lock);
+    ticket_spin_lock(&page->lock);
     page->bitmap[i] &= ~(1 << j);
-    spin_unlock(&page->lock);
+    ticket_spin_unlock(&page->lock);
     return;
 }
 

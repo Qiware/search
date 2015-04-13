@@ -31,7 +31,7 @@ typedef struct
     queue_node_t *head;                     /* 队列头 */
     queue_node_t *tail;                     /* 队列尾 */
 
-    spinlock_t lock;                        /* 队列锁 */
+    ticket_spinlock_t lock;                 /* 队列锁 */
 } _queue_t;
 
 int _queue_creat(_queue_t *q, int max);

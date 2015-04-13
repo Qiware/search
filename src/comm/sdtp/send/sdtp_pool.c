@@ -56,7 +56,7 @@ sdtp_pool_t *sdtp_pool_creat(const char *fpath, int max, int size)
 
     for (idx=0; idx<SDTP_POOL_PAGE_NUM; ++idx)
     {
-        spin_lock_init(&head->page[idx].lock);
+        ticket_spin_lock_init(&head->page[idx].lock);
         head->page[idx].idx = idx;
         head->page[idx].size = size * max;
         head->page[idx].begin = sizeof(sdtp_pool_head_t) + idx*size*max; /* 偏移量 */
@@ -146,17 +146,17 @@ int sdtp_pool_push(sdtp_pool_t *pool, int type, const void *data, size_t len)
 
         page  = &pool->head->page[idx];
 
-        spin_lock(&page->lock);     /* 加锁 */
+        ticket_spin_lock(&page->lock);     /* 加锁 */
 
         if (SDTP_MOD_WR != page->mode)
         {
-            spin_unlock(&page->lock);
+            ticket_spin_unlock(&page->lock);
             continue; /* 无写入权限 */
         }
 
         if ((page->size - page->off) < (sizeof(sdtp_header_t) + len))
         {
-            spin_unlock(&page->lock);
+            ticket_spin_unlock(&page->lock);
             continue; /* 空间不足 */
         }
 
@@ -174,7 +174,7 @@ int sdtp_pool_push(sdtp_pool_t *pool, int type, const void *data, size_t len)
         page->off += len;
         ++page->num;
 
-        spin_unlock(&page->lock);   /* 加锁 */
+        ticket_spin_unlock(&page->lock);   /* 加锁 */
         return SDTP_OK;
     }
 
@@ -223,9 +223,9 @@ sdtp_pool_page_t *sdtp_pool_switch(sdtp_pool_t *pool)
         if ((page->off > (page->size >> 1))
             || ((ctm - page->send_tm >= 5) && (page->off > 0)))
         {
-            spin_lock(&page->lock);
+            ticket_spin_lock(&page->lock);
             page->mode = SDTP_MOD_RD;
-            spin_unlock(&page->lock);
+            ticket_spin_unlock(&page->lock);
             return page;
         }
     }

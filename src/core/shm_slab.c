@@ -154,7 +154,7 @@ int shm_slab_init(shm_slab_pool_t *pool)
 
     pool->data_offset = pool->page_offset + page_num * sizeof(shm_slab_page_t);
     
-    spin_lock_init(&pool->lock);
+    ticket_spin_lock_init(&pool->lock);
     return 0;
 }
 
@@ -259,7 +259,7 @@ void *shm_slab_alloc(shm_slab_pool_t *pool, size_t size)
         return NULL;
     }
 
-    spin_lock(&pool->lock);
+    ticket_spin_lock(&pool->lock);
 
     /* 1. Alloc large memory */
     if (size >= shm_slab_max_size())
@@ -271,13 +271,13 @@ void *shm_slab_alloc(shm_slab_pool_t *pool, size_t size)
         if (NULL == page)
         {
             sys_error("Alloc pages failed!");
-            spin_unlock(&pool->lock);
+            ticket_spin_unlock(&pool->lock);
             return NULL;
         }
         
         p = (addr + pool->data_offset + (page->index << shm_slab_page_shift()));
 
-        spin_unlock(&pool->lock);
+        ticket_spin_unlock(&pool->lock);
 
         memset(p, 0, size);
         return p;
@@ -286,7 +286,7 @@ void *shm_slab_alloc(shm_slab_pool_t *pool, size_t size)
     /* 2. Alloc small memory */
     p = shm_slab_alloc_slot(pool, size);
 
-    spin_unlock(&pool->lock);
+    ticket_spin_unlock(&pool->lock);
 
     return p;
 }
@@ -791,7 +791,7 @@ void shm_slab_dealloc(shm_slab_pool_t *pool, void *p)
         return;
     }
 
-    spin_lock(&pool->lock);
+    ticket_spin_lock(&pool->lock);
 
     slot = (shm_slab_slot_t *)(addr + pool->slot_offset);
 
@@ -845,7 +845,7 @@ void shm_slab_dealloc(shm_slab_pool_t *pool, void *p)
                 shm_slab_free_pages(pool, page);
                 break;
             }
-            spin_unlock(&pool->lock);
+            ticket_spin_unlock(&pool->lock);
             break;
         }
         case SHM_SLAB_ALLOC_EXACT:
@@ -887,7 +887,7 @@ void shm_slab_dealloc(shm_slab_pool_t *pool, void *p)
         }
     }
 
-    spin_unlock(&pool->lock);
+    ticket_spin_unlock(&pool->lock);
     return;
 }
 

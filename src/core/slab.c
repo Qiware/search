@@ -163,7 +163,7 @@ slab_pool_t *slab_init(void *addr, size_t size)
     sys_info("start:%p end:%p left_size:%d pages:%d\n",
         pool->start, pool->end, pool->end - pool->start, pages);
 
-    spin_lock_init(&pool->lock);
+    ticket_spin_lock_init(&pool->lock);
 
     return pool;
 }
@@ -194,7 +194,7 @@ void *slab_alloc(slab_pool_t *pool, size_t size)
         return calloc(1, size);
     }
 
-    spin_lock(&pool->lock);    /* 加锁 */
+    ticket_spin_lock(&pool->lock);    /* 加锁 */
 
     if (size >= slab_get_max_size())
     {
@@ -451,7 +451,7 @@ done:
         memset((void *)p, 0, size);
     }
 
-    spin_unlock(&pool->lock);    /* 解锁 */
+    ticket_spin_unlock(&pool->lock);    /* 解锁 */
 
     return (void *) p;
 }
@@ -481,7 +481,7 @@ void slab_dealloc(slab_pool_t *pool, void *p)
         return;
     }
 
-    spin_lock(&pool->lock);    /* 加锁 */
+    ticket_spin_lock(&pool->lock);    /* 加锁 */
 
     n = ((u_char *) p - pool->start) >> slab_get_page_shift();
     page = &pool->pages[n];
@@ -658,13 +658,13 @@ void slab_dealloc(slab_pool_t *pool, void *p)
 
             slab_junk(p, size << slab_get_page_shift());
 
-            spin_unlock(&pool->lock); /* 解锁 */
+            ticket_spin_unlock(&pool->lock); /* 解锁 */
             return;
         }
     }
 
     /* not reached */
-    spin_unlock(&pool->lock); /* 解锁 */
+    ticket_spin_unlock(&pool->lock); /* 解锁 */
 
     return;
 
@@ -672,7 +672,7 @@ done:
 
     slab_junk(p, size);
 
-    spin_unlock(&pool->lock);
+    ticket_spin_unlock(&pool->lock);
     return;
 
 wrong_chunk:
@@ -687,7 +687,7 @@ chunk_already_free:
 
 fail:
 
-    spin_unlock(&pool->lock); /* 解锁 */
+    ticket_spin_unlock(&pool->lock); /* 解锁 */
     return;
 }
 
