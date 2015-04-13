@@ -5,13 +5,6 @@
 #include "sdtp_cli.h"
 #include "sdtp_ssvr.h"
 
-#define SDTP_LOG_LEVEL   LOG_LEVEL_TRACE
-#define SDTP_LOG_SIZE    (100*1024*1024)
-#define SDTP_LOG_COUNT   (10)
-#define SDTP_LOG_PATH    ("./sdtp_snd.log")
-#define SDTP_LOG_TYPE    (LOG_TO_FILE)
-
-
 /******************************************************************************
  **函数名称: sdtp_send_debug 
  **功    能: 发送端调试
@@ -115,8 +108,8 @@ int main(int argc, const char *argv[])
 
     sdtp_setup_conf(&conf);
 
-    syslog_init(LOG_LEVEL_DEBUG, "./sdtp_ssvr.log2");
-    log = log_init(LOG_LEVEL_DEBUG, "./sdtp_ssvr.log");
+    syslog_init(LOG_LEVEL_ERROR, "./sdtp_ssvr.log2");
+    log = log_init(LOG_LEVEL_ERROR, "./sdtp_ssvr.log");
 
     ctx = sdtp_ssvr_startup(&conf, log);
     if (NULL == ctx) 

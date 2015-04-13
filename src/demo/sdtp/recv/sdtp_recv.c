@@ -1,12 +1,6 @@
 
 #include "sdtp.h"
 
-#define SDTP_LOG_LEVEL   LOG_LEVEL_TRACE
-#define SDTP_LOG_SIZE    (100*1024*1024)
-#define SDTP_LOG_COUNT   (10)
-#define SDTP_LOG_PATH    ("./sdtp_rcv.log")
-#define SDTP_LOG_TYPE    (LOG_TO_FILE)
-
 typedef enum
 {
     AAAA
@@ -40,8 +34,8 @@ int main(int argc, const char *argv[])
 
     signal(SIGPIPE, SIG_IGN);
                                        
-    syslog_init(LOG_LEVEL_DEBUG, "./sdtp.log2");
-    log = log_init(LOG_LEVEL_DEBUG, "./sdtp.log");
+    syslog_init(LOG_LEVEL_ERROR, "./sdtp.log2");
+    log = log_init(LOG_LEVEL_ERROR, "./sdtp.log");
 
     /* 1. 接收端初始化 */
     ctx = sdtp_init(&conf, log);
