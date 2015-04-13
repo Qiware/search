@@ -10,15 +10,14 @@
         1) MAX: 最大并发数
         2) TIMEOUT: 连接超时时间
         3) PORT: 侦听端口 -->
-    <CONNECTIONS MAX="4096" TIMEOUT="15" PORT="9002" />
+    <CONNECTIONS MAX="1000" TIMEOUT="15" PORT="9002" />
 
     <!-- 队列配置
-        1) NAME: 队列名称
-        2) COUNT: 队列容量 
-        3) SIZE: 队列单元大小 -->
+        1) MAX: 队列容量 
+        2) SIZE: 队列单元大小(0:表示自定义) -->
     <QUEUE>
-        <ITEM NAME="Q_SCK" COUNT="1000" SIZE="128" />  <!-- 套接字队列 -->
-        <ITEM NAME="Q_TASK" COUNT="1000" SIZE="128" /> <!-- 任务接收队列 -->
+        <CONNQ MAX="10000" SIZE="0" />  <!-- 连接队列 -->
+        <TASKQ MAX="10000" SIZE="2048" />   <!-- 任务队列 -->
     </QUEUE>
 
     <!-- Agent配置
