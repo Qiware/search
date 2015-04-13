@@ -16,38 +16,45 @@ typedef struct
 } spinlock_t;
 
 /* 初始化 */
-#define spin_lock_init(lock) \
-{ \
-    do { \
-        (lock)->ticket = 0; \
-        (lock)->owner = 0; \
-    } while(0); \
+static inline void spin_lock_init(spinlock_t *lock)
+{
+    (lock)->ticket = 0;
+    (lock)->owner = 0;
 }
 
 /* 加锁 */
-#define spin_lock(lock) \
-{ \
-    uint16_t ticket = 0x01; \
-    __asm__ __volatile__ ( \
-        "lock xaddw %0, %1\n"   /* swap(ticket,lock->ticket); lock->ticket += ticket; */\
-        "1:\n"                  /* RECHECK: */\
-        "cmpw %0, %2\n"         /* if (ticket == owner) */\
-        "je 2f\n"               /*   goto QUIT; */\
-        "jmp 1b\n"              /* goto RECHECK; */\
-        "2:"                    /* QUIT: */\
-        :"+q" (ticket), "+m" ((lock)->ticket), "+m" ((lock)->owner) \
-        : \
-        :"memory", "cc"); \
+static inline void spin_lock(spinlock_t *lock)
+{
+    uint16_t ticket = 0x01;
+
+    __asm__ __volatile__ (
+        /* 取票: 每张票有唯一的编号
+         * lock: 锁定操作数的内存地址
+         * xddw: 两边操作数交换后 再相加 */
+        "lock xaddw %0, %1\n"   /* swap(ticket, lock->ticket); lock->ticket += ticket; */
+        /* 跳转标记: RECHECK */
+        "1:\n"                  /* RECHECK: */
+        /* 比较票的编号是否与下一个票的拥有者一致 */
+        "cmpw %0, %2\n"         /* if (ticket == owner) */
+        /* 如果相等, 则退出 */
+        "je 2f\n"               /* goto QUIT; */
+        /* 如果不等, 则继续比较 */
+        "jmp 1b\n"              /* goto RECHECK; */
+        /* 跳转标记: 退出 */
+        "2:"                    /* QUIT: */
+        :"+q" (ticket), "+m" ((lock)->ticket), "+m" ((lock)->owner)
+        :
+        :"memory", "cc");
 }
 
 /* 解锁 */
-#define spin_unlock(lock) \
-{ \
-    __asm__ __volatile__( \
-        "lock incw %0" \
-        :"+m" ((lock)->owner) \
-        : \
-        :"memory", "cc"); \
+static inline void spin_unlock(spinlock_t *lock)
+{
+    __asm__ __volatile__(
+        "lock incw %0"
+        :"+m" ((lock)->owner)
+        :
+        :"memory", "cc");
 }
 
 /* 销毁 */
