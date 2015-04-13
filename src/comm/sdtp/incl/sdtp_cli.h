@@ -8,7 +8,7 @@
 
 /* 发送服务命令套接字 */
 #define sdtp_ssvr_usck_path(conf, path, tidx) \
-    snprintf(path, sizeof(path), "./tmp/sdtp/snd/%s/usck/%s_ssvr_%d.usck", \
+    snprintf(path, sizeof(path), "./temp/sdtp/snd/%s/usck/%s_ssvr_%d.usck", \
         conf->name, conf->name, tidx+1)
 
 /* 发送对象信息 */
