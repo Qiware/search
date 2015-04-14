@@ -13,7 +13,7 @@
 #define __SHM_POOL_H__
 
 #include <stdint.h>
-#include <spinlock.h>
+#include "ticket_lock.h"
 
 #define SHM_POOL_PAGE_SLOT_NUM  (256) /* 单页的内存块数目(注意:为32的整数倍) */
 #define SHM_POOL_BITMAP_MAX    SHM_POOL_PAGE_SLOT_NUM >> 5
@@ -21,7 +21,7 @@
 /* 页对象 */
 typedef struct
 {
-    ticket_spinlock_t lock;         /* SPIN锁对象 */
+    ticketlock_t lock;              /* SPIN锁对象 */
     uint32_t bitmap_num;            /* 实际使用的BITMAP数 */
     uint32_t bitmap[SHM_POOL_BITMAP_MAX];  /* 分配位图(0:未使用 1:使用) */
     size_t data;                    /* 页可支配空间(相对于info->data的偏移) */

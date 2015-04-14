@@ -1,29 +1,22 @@
-#if !defined(__SPIN_LOCK_H__)
-#define __SPIN_LOCK_H__
-
-#include <stdio.h>
-#include <unistd.h>
-#include <string.h>
-#include <stdint.h>
-#include <sys/types.h>
-#include <sys/syscall.h>
+#if !defined(__TICKET_LOCK_H__)
+#define __TICKET_LOCK_H__
 
 /* 自旋锁 */
 typedef struct
 {
     uint16_t ticket;
     uint16_t owner;
-} ticket_spinlock_t;
+} ticketlock_t;
 
 /* 初始化 */
-static inline void ticket_spin_lock_init(ticket_spinlock_t *lock)
+static inline void ticket_lock_init(ticketlock_t *lock)
 {
     (lock)->ticket = 0;
     (lock)->owner = 0;
 }
 
 /* 加锁 */
-static inline void ticket_spin_lock(ticket_spinlock_t *lock)
+static inline void ticket_lock(ticketlock_t *lock)
 {
     uint16_t ticket = 0x01;
 
@@ -48,7 +41,7 @@ static inline void ticket_spin_lock(ticket_spinlock_t *lock)
 }
 
 /* 解锁 */
-static inline void ticket_spin_unlock(ticket_spinlock_t *lock)
+static inline void ticket_unlock(ticketlock_t *lock)
 {
     __asm__ __volatile__(
         "lock incw %0"
@@ -58,6 +51,6 @@ static inline void ticket_spin_unlock(ticket_spinlock_t *lock)
 }
 
 /* 销毁 */
-#define ticket_spin_lock_destroy(lock) ticket_spin_lock_init(lock)
+#define ticket_lock_destroy(lock) ticket_lock_init(lock)
 
-#endif /*__SPIN_LOCK_H__*/
+#endif /*__TICKET_LOCK_H__*/

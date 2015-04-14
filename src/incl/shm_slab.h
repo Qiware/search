@@ -9,7 +9,7 @@
 #include <memory.h>
 
 #include "log.h"
-#include "spinlock.h"
+#include "ticket_lock.h"
 
 /* 内存分配方式 */
 typedef enum
@@ -45,7 +45,7 @@ typedef struct
 
 typedef struct
 {
-    ticket_spinlock_t lock;     /* 锁 */
+    ticketlock_t lock;          /* 锁 */
 
     size_t pool_size;           /* 内存空间总大小 */
     

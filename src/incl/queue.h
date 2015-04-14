@@ -3,8 +3,8 @@
 
 #include <pthread.h>
 
-#include "spinlock.h"
 #include "memblk.h"
+#include "ticket_lock.h"
 
 /* 队列配置 */
 typedef struct
@@ -31,7 +31,7 @@ typedef struct
     queue_node_t *head;                     /* 队列头 */
     queue_node_t *tail;                     /* 队列尾 */
 
-    ticket_spinlock_t lock;                 /* 队列锁 */
+    ticketlock_t lock;                      /* 队列锁 */
 } _queue_t;
 
 int _queue_creat(_queue_t *q, int max);
