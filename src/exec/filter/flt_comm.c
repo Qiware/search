@@ -532,16 +532,16 @@ int flt_get_domain_ip_map(flt_cntx_t *ctx, char *host, ipaddr_t *ip)
     flt_domain_blacklist_t blacklist, *new_blacklist;
 
     /* > 从域名IP映射表中查找 */
-    if (!hash_tab_query(ctx->domain_ip_map,
-            host, strlen(host), (hash_tab_query_cb_t)flt_domain_ip_map_query, ip))
+    if (!hash_tab_query(ctx->domain_ip_map, host, strlen(host),
+            (hash_tab_query_cb_t)flt_domain_ip_map_query, ip))
     {
         log_trace(ctx->log, "Found domain ip map in talbe! %s", host);
         return FLT_OK; /* 成功 */
     }
 
     /* > 从域名黑名单中查找 */
-    if (!hash_tab_query(ctx->domain_blacklist,
-            host, strlen(host), (hash_tab_query_cb_t)flt_domain_blacklist_query, &blacklist))
+    if (!hash_tab_query(ctx->domain_blacklist, host, strlen(host),
+            (hash_tab_query_cb_t)flt_domain_blacklist_query, &blacklist))
     {
         log_info(ctx->log, "Host [%s] in blacklist!", host);
         return FLT_ERR; /* 在黑名单中 */

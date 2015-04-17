@@ -1,10 +1,10 @@
-#if !defined(__MEMBLK_H__)
-#define __MEMBLK_H__
+#if !defined(__MEM_BLK_H__)
+#define __MEM_BLK_H__
 
 #include <stdint.h>
 #include "ticket_lock.h"
 
-#define MEMBLK_PAGE_SLOT_NUM  (256) /* 单页的内存块数目 */
+#define MEM_BLK_PAGE_SLOT_NUM  (256) /* 单页的内存块数目 */
 
 /* 页对象 */
 typedef struct
@@ -13,8 +13,8 @@ typedef struct
 
     uint32_t bitmaps;               /* 位图长度 */
     uint32_t *bitmap;               /* 分配位图(0:未使用 1:使用) */
-    void *addr;                     /* 各页内存起始地址(指向memblk_t->addr中的内存空间) */
-} memblk_page_t;
+    void *addr;                     /* 各页内存起始地址(指向mem_blk_t->addr中的内存空间) */
+} mem_blk_page_t;
 
 /* 内存数据块对象 */
 typedef struct
@@ -25,12 +25,12 @@ typedef struct
 
     void *addr;                     /* 总内存起始地址 */
 
-    memblk_page_t *page;         /* 内存页 */
-} memblk_t;
+    mem_blk_page_t *page;         /* 内存页 */
+} mem_blk_t;
 
-memblk_t *memblk_creat(int num, size_t size);
-void *memblk_alloc(memblk_t *blk);
-void memblk_dealloc(memblk_t *blk, void *p);
-void memblk_destroy(memblk_t *blk);
+mem_blk_t *mem_blk_creat(int num, size_t size);
+void *mem_blk_alloc(mem_blk_t *blk);
+void mem_blk_dealloc(mem_blk_t *blk, void *p);
+void mem_blk_destroy(mem_blk_t *blk);
 
-#endif /*__MEMBLK_H__*/
+#endif /*__MEM_BLK_H__*/
