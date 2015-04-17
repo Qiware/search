@@ -267,9 +267,7 @@ void crwl_cntx_destroy(crwl_cntx_t *ctx)
 int crwl_startup(crwl_cntx_t *ctx)
 {
     int idx;
-#if defined(__CRWL_MANAGER__)
     pthread_t tid;
-#endif /*__CRWL_MANAGER__*/
     const crwl_conf_t *conf = ctx->conf;
 
     /* 1. 设置Worker线程回调 */
@@ -284,14 +282,12 @@ int crwl_startup(crwl_cntx_t *ctx)
         thread_pool_add_worker(ctx->scheds, crwl_sched_routine, ctx);
     }
 
-#if defined(__CRWL_MANAGER__)
     /* 3. 启动代理服务 */
     if (thread_creat(&tid, crwl_manager_routine, ctx))
     {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return CRWL_ERR;
     }
-#endif /*__CRWL_MANAGER__*/
 
     /* 4. 获取运行时间 */
     ctx->run_tm = time(NULL);

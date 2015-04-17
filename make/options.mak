@@ -11,17 +11,9 @@
 # 默认开启的功能
 ifeq (__ON__, $(strip $(CONFIG_DEFAULT_SUPPORT)))
 	# XML相关功能
-	OPTIONS += __XML_MEM_POOL__			# XML的处理过程的内存从内存池申请
 	# 功能: 节点只有孩子节点或只有数值(Either Child Or Value)
 	# OPTIONS += __XML_EITHER_CHILD_OR_VALUE__
 	# OPTIONS += __XML_ESC_PARSE__		# XML支持转义处理
-
-	# HTML相关功能
-	OPTIONS += __HTML_AUTO_RESTORE__	# HTML自动修复功能
-	OPTIONS += __HTML_DEL_BR__			# HTML处理过程中，自动删除<br />
-
-	# AVL平衡二叉树功能
-	OPTIONS += __AVL_MEM_POOL__ 		# AVL使用内存池
 
 	# 系统通用宏 
 	OPTIONS += _GNU_SOURCE
@@ -42,9 +34,4 @@ ifeq (POSIX_MEMALIGN, $(strip $(CONFIG_MEMALIGN_SUPPORT)))
 	OPTIONS += HAVE_POSIX_MEMALIGN	# POSIX内存对齐方式
 else ifeq (MEMALIGN, $(strip $(CONFIG_MEMALIGN_SUPPORT)))
 	OPTIONS += HAVE_MEMALIGN		# 内存对齐方式
-endif
-
-# 开启爬虫代理
-ifeq (__ON__, $(strip $(CONFIG_CRWL_MANAGER)))
-	OPTIONS += __CRWL_MANAGER__
 endif
