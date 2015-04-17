@@ -1,7 +1,7 @@
 #!/bin/sh
 
 DIR="../../src"
-SRC="$DIR/comm $DIR/core $DIR/exec $DIR/incl"
+SRC="$DIR/sdtp $DIR/gumbo $DIR/redis $DIR/http $DIR/core $DIR/exec $DIR/incl"
 
 # 总行数
 hl=`find $SRC -name "*.h" | xargs cat | wc -l`
