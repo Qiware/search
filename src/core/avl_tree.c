@@ -198,7 +198,7 @@ static int _avl_insert(avl_tree_t *tree, avl_node_t *node,
 static int avl_insert_right(avl_tree_t *tree, avl_node_t *node,
         uint32_t idx, const avl_key_t *key, bool *taller, void *data)
 {
-    int ret = -1;
+    int ret;
     avl_node_t *add = NULL;
     
     if (NULL == node->rchild)
@@ -223,7 +223,7 @@ static int avl_insert_right(avl_tree_t *tree, avl_node_t *node,
     else
     {
         ret = _avl_insert(tree, node->rchild, idx, key, taller, data);
-        if ((AVL_OK != ret))
+        if (AVL_OK != ret)
         {
             return ret;
         }
@@ -279,7 +279,7 @@ static int avl_insert_right(avl_tree_t *tree, avl_node_t *node,
 static int avl_insert_left(avl_tree_t *tree, avl_node_t *node,
         uint32_t idx, const avl_key_t *key, bool *taller, void *data)
 {
-    int ret = -1;
+    int ret;
     avl_node_t *add;
     
     if (NULL == node->lchild)
@@ -1235,7 +1235,6 @@ int _avl_print(avl_node_t *node, Stack_t *stack);
  ******************************************************************************/
 int avl_print(avl_tree_t *tree)
 {
-    int ret = 0;
     Stack_t stack;
 
     memset(&stack, 0, sizeof(stack));
@@ -1245,8 +1244,7 @@ int avl_print(avl_tree_t *tree)
         return AVL_OK;
     }
 
-    ret = stack_init(&stack, AVL_MAX_DEPTH);
-    if (AVL_OK != ret)
+    if (stack_init(&stack, AVL_MAX_DEPTH))
     {
         return AVL_ERR_STACK;
     }
@@ -1466,7 +1464,6 @@ static int _avl_trav(avl_node_t *root, Stack_t *stack, avl_trav_cb_t proc, void 
  ******************************************************************************/
 int avl_trav(avl_tree_t *tree, avl_trav_cb_t proc, void *args)
 {
-    int ret;
     Stack_t stack;
 
     memset(&stack, 0, sizeof(stack));
@@ -1476,8 +1473,7 @@ int avl_trav(avl_tree_t *tree, avl_trav_cb_t proc, void *args)
         return AVL_OK;
     }
 
-    ret = stack_init(&stack, AVL_MAX_DEPTH);
-    if (AVL_OK != ret)
+    if (stack_init(&stack, AVL_MAX_DEPTH))
     {
         return AVL_ERR_STACK;
     }
