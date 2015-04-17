@@ -467,6 +467,46 @@ int flt_proc_lock(void)
 }
 
 /******************************************************************************
+ **函数名称: flt_domain_ip_map_query
+ **功    能: 获取域名IP映射
+ **输入参数:
+ **     map: 域名IP映射
+ **输出参数:
+ **     ip: IP地址(随机选择一个IP)
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.04.18 #
+ ******************************************************************************/
+static int flt_domain_ip_map_query(flt_domain_ip_map_t *map, ipaddr_t *ip)
+{
+    int idx = rand() % map->ip_num;
+
+    memcpy(ip, &map->ip[idx], sizeof(ipaddr_t));
+
+    return FLT_OK;
+}
+
+/******************************************************************************
+ **函数名称: flt_domain_blacklist_query
+ **功    能: 域名黑名单查询
+ **输入参数:
+ **     bl: 域名黑名单
+ **输出参数:
+ **     out: 域名黑名单
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.04.18 #
+ ******************************************************************************/
+static int flt_domain_blacklist_query(flt_domain_blacklist_t *bl, flt_domain_blacklist_t *out)
+{
+    memcpy(out, bl, sizeof(flt_domain_blacklist_t));
+
+    return FLT_OK;
+}
+
+/******************************************************************************
  **函数名称: flt_get_domain_ip_map
  **功    能: 获取域名IP映射
  **输入参数:
@@ -482,33 +522,32 @@ int flt_proc_lock(void)
  **     如果域名不存在, getaddrinfo()将阻塞30s左右的时间!
  **作    者: # Qifeng.zou # 2014.10.21 #
  ******************************************************************************/
-int flt_get_domain_ip_map(flt_cntx_t *ctx, char *host, flt_domain_ip_map_t *map)
+int flt_get_domain_ip_map(flt_cntx_t *ctx, char *host, ipaddr_t *ip)
 {
-    int ret;
-    flt_domain_ip_map_t *new;
-    flt_domain_blacklist_t blacklist;
-    flt_domain_blacklist_t *new_blacklist;
+    int ret, ip_num;
+    struct addrinfo hints;
+    flt_domain_ip_map_t *new_map;
     struct sockaddr_in *sockaddr;
     struct addrinfo *addrinfo, *curr;
-    struct addrinfo hints;
+    flt_domain_blacklist_t blacklist, *new_blacklist;
 
-    /* 1. 从域名IP映射表中查找 */
+    /* > 从域名IP映射表中查找 */
     if (!hash_tab_query(ctx->domain_ip_map,
-            host, strlen(host), map, sizeof(flt_domain_ip_map_t)))
+            host, strlen(host), (hash_tab_query_cb_t)flt_domain_ip_map_query, ip))
     {
         log_trace(ctx->log, "Found domain ip map in talbe! %s", host);
         return FLT_OK; /* 成功 */
     }
 
-    /* 2. 从域名黑名单中查找 */
+    /* > 从域名黑名单中查找 */
     if (!hash_tab_query(ctx->domain_blacklist,
-            host, strlen(host), &blacklist, sizeof(blacklist)))
+            host, strlen(host), (hash_tab_query_cb_t)flt_domain_blacklist_query, &blacklist))
     {
         log_info(ctx->log, "Host [%s] in blacklist!", host);
         return FLT_ERR; /* 在黑名单中 */
     }
 
-    /* 2. 通过DNS服务器查询 */
+    /* > 通过DNS服务器查询 */
     memset(&hints, 0, sizeof(hints));
 
     hints.ai_socktype = SOCK_STREAM;
@@ -525,7 +564,8 @@ int flt_get_domain_ip_map(flt_cntx_t *ctx, char *host, flt_domain_ip_map_t *map)
         }
 
         snprintf(new_blacklist->host, sizeof(new_blacklist->host), "%s", host);
-        new_blacklist->access_tm = time(NULL);
+        new_blacklist->create_tm = time(NULL);
+        new_blacklist->access_tm = new_blacklist->create_tm;
 
         if (hash_tab_insert(ctx->domain_blacklist, host, strlen(host), new_blacklist))
         {
@@ -535,21 +575,38 @@ int flt_get_domain_ip_map(flt_cntx_t *ctx, char *host, flt_domain_ip_map_t *map)
         return FLT_ERR;
     }
 
-    /* 3. 申请新的内存空间(此处不释放空间) */
-    new = (flt_domain_ip_map_t *)slab_alloc(ctx->slab, sizeof(flt_domain_ip_map_t));
-    if (NULL == new)
+    /* 计算IP地址个数 */
+    ip_num = 0;
+    for (curr = addrinfo; NULL != curr; ++ip_num, curr = curr->ai_next)
+    {
+        NULL;
+    }
+
+    /* > 申请新的内存空间(此处不释放空间) */
+    new_map = (flt_domain_ip_map_t *)slab_alloc(ctx->slab, sizeof(flt_domain_ip_map_t));
+    if (NULL == new_map)
     {
         freeaddrinfo(addrinfo);
-
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return FLT_ERR;
     }
 
-    snprintf(new->host, sizeof(new->host), "%s", host);
-    new->ip_num = 0;
+    new_map->ip = (ipaddr_t *)slab_alloc(ctx->slab, ip_num * sizeof(ipaddr_t));
+    if (NULL == new_map->ip)
+    {
+        freeaddrinfo(addrinfo);
+        slab_dealloc(ctx->slab, new_map);
+        log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        return FLT_ERR;
+    }
+
+    snprintf(new_map->host, sizeof(new_map->host), "%s", host);
+    new_map->ip_num = 0;
+    new_map->create_tm = time(NULL);
+    new_map->access_tm = new_map->create_tm;
 
     curr = addrinfo;
-    while ((NULL != curr) && (new->ip_num < FLT_IP_MAX_NUM))
+    while (NULL != curr)
     {
         sockaddr = (struct sockaddr_in *)curr->ai_addr;
         if (0 == sockaddr->sin_addr.s_addr)
@@ -558,12 +615,12 @@ int flt_get_domain_ip_map(flt_cntx_t *ctx, char *host, flt_domain_ip_map_t *map)
             continue;
         }
 
-        new->ip[new->ip_num].family = curr->ai_family;
+        new_map->ip[new_map->ip_num].family = curr->ai_family;
         inet_ntop(curr->ai_family,
                 &sockaddr->sin_addr.s_addr,
-                new->ip[new->ip_num].ip,
-                sizeof(new->ip[new->ip_num].ip));
-        ++new->ip_num;
+                new_map->ip[new_map->ip_num].addr,
+                sizeof(new_map->ip[new_map->ip_num].addr));
+        ++new_map->ip_num;
 
         curr = curr->ai_next;
     }
@@ -571,24 +628,25 @@ int flt_get_domain_ip_map(flt_cntx_t *ctx, char *host, flt_domain_ip_map_t *map)
     freeaddrinfo(addrinfo);
 
     /* 4. 插入域名IP映射表 */
-    ret = hash_tab_insert(ctx->domain_ip_map, host, strlen(host), new);
+    ret = hash_tab_insert(ctx->domain_ip_map, host, strlen(host), new_map);
     if (0 != ret)
     {
         if (AVL_NODE_EXIST == ret)
         {
-            memcpy(map, new, sizeof(flt_domain_ip_map_t));
-            slab_dealloc(ctx->slab, new);
+            memcpy(ip, &new_map->ip[rand()%new_map->ip_num], sizeof(ipaddr_t));
+            slab_dealloc(ctx->slab, new_map->ip);
+            slab_dealloc(ctx->slab, new_map);
             log_debug(ctx->log, "Domain is exist! host:[%s]", host);
             return FLT_OK;
         }
 
-        slab_dealloc(ctx->slab, new);
+        slab_dealloc(ctx->slab, new_map);
         log_error(ctx->log, "Insert into hash table failed! ret:[%x/%x] host:[%s]",
                 ret, AVL_NODE_EXIST, host);
         return FLT_ERR;
     }
 
-    memcpy(map, new, sizeof(flt_domain_ip_map_t));
+    memcpy(ip, &new_map->ip[rand()%new_map->ip_num], sizeof(ipaddr_t));
 
     return FLT_OK;
 }
@@ -691,10 +749,9 @@ bool flt_set_uri_exists(redis_clst_t *ctx, const char *hash, const char *uri)
 int flt_push_url_to_crwlq(flt_cntx_t *ctx,
         const char *url, char *host, int port, int depth)
 {
-    int ret;
+    ipaddr_t ip;
     flt_crwl_t *crwl;
-    unsigned int len, idx;
-    flt_domain_ip_map_t map;
+    unsigned int len;
 
     if ('\0' == host[0])
     {
@@ -703,14 +760,11 @@ int flt_push_url_to_crwlq(flt_cntx_t *ctx,
     }
 
     /* > 查询域名IP映射 */
-    ret = flt_get_domain_ip_map(ctx, host, &map);
-    if (0 != ret || 0 == map.ip_num)
+    if (flt_get_domain_ip_map(ctx, host, &ip))
     {
         log_error(ctx->log, "Get ip failed! uri:%s host:%s", url, host);
         return FLT_ERR;
     }
-
-    idx = rand() % map.ip_num;
 
     while (1)
     {
@@ -724,7 +778,7 @@ int flt_push_url_to_crwlq(flt_cntx_t *ctx,
 
         /* > 组装任务格式 */
         len = flt_get_task_str(crwl->task_str, sizeof(crwl->task_str),
-                url, depth, map.ip[idx].ip, map.ip[idx].family);
+                url, depth, ip.addr, ip.family);
         if (len >= sizeof(crwl->task_str))
         {
             log_info(ctx->log, "Task string is too long! uri:[%s]", url);

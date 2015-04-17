@@ -62,7 +62,7 @@ void flt_destroy(flt_cntx_t *ctx);
 
 void *flt_push_routine(void *_ctx);
 
-int flt_get_domain_ip_map(flt_cntx_t *ctx, char *host, flt_domain_ip_map_t *map);
+int flt_get_domain_ip_map(flt_cntx_t *ctx, char *host, ipaddr_t *ip);
 
 int flt_worker_init(flt_cntx_t *ctx, flt_worker_t *worker, int idx);
 int flt_worker_destroy(flt_cntx_t *ctx, flt_worker_t *worker);

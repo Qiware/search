@@ -67,11 +67,11 @@ typedef struct
 typedef struct
 {
     char host[HOST_MAX_LEN];        /* Host信息(域名) */
+    time_t create_tm;               /* 创建时间 */
+    time_t access_tm;               /* 最近访问时间 */
 
     int ip_num;                     /* IP地址数 */
-#define FLT_IP_MAX_NUM  (8)
-    ipaddr_t ip[FLT_IP_MAX_NUM];    /* 域名对应的IP地址 */
-    time_t access_tm;               /* 最近访问时间 */
+    ipaddr_t *ip;                   /* 域名对应的IP地址列表 */
 } flt_domain_ip_map_t;
 
 /* 域名黑名单信息 */
@@ -79,6 +79,7 @@ typedef struct
 {
     char host[HOST_MAX_LEN];        /* Host信息(域名) */
 
+    time_t create_tm;               /* 创建时间 */
     time_t access_tm;               /* 最近访问时间 */
 } flt_domain_blacklist_t;
 
