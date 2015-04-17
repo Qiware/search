@@ -5,6 +5,8 @@
 
 #include "avl_tree.h"
 
+typedef int (*hash_tab_query_cb_t)(void *data, void *out);
+
 /* 哈希数组 */
 typedef struct
 {
@@ -20,7 +22,7 @@ typedef struct
 
 hash_tab_t *hash_tab_creat(slab_pool_t *slab, int mod, key_cb_t key_cb, avl_cmp_cb_t cmp_cb);
 int hash_tab_insert(hash_tab_t *hash, void *pkey, int pkey_len, void *addr);
-int hash_tab_query(hash_tab_t *hash, void *pkey, int pkey_len, void *data, int data_len);
+int hash_tab_query(hash_tab_t *hash, void *pkey, int pkey_len, hash_tab_query_cb_t query_cb, void *data);
 void *hash_tab_remove(hash_tab_t *hash, void *pkey, int pkey_len);
 int hash_tab_destroy(hash_tab_t *hash);
 int hash_tab_trav(hash_tab_t *hash, avl_trav_cb_t proc, void *args);

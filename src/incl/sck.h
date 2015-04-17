@@ -24,7 +24,7 @@
 typedef struct
 {
     int family;                     /* TCP协议(AF_INET/AF_INET6) */
-    char ip[IP_ADDR_MAX_LEN];       /* IP地址信息 */
+    char addr[IP_ADDR_MAX_LEN];       /* IP地址信息 */
 } ipaddr_t;
 
 /* 接收(发送)数据阶段 */

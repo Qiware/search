@@ -141,11 +141,12 @@ int hash_tab_insert(hash_tab_t *hash, void *pkey, int pkey_len, void *data)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
-int hash_tab_query(hash_tab_t *hash, void *pkey, int pkey_len, void *data, int data_len)
+int hash_tab_query(hash_tab_t *hash, void *pkey, int pkey_len,
+        hash_tab_query_cb_t query_cb, void *data)
 {
+    int ret;
     unsigned int idx;
     avl_node_t *node;
-
 
     idx = hash->key_cb(pkey, pkey_len) % hash->num;
 
@@ -156,11 +157,12 @@ int hash_tab_query(hash_tab_t *hash, void *pkey, int pkey_len, void *data, int d
         pthread_rwlock_unlock(&hash->lock[idx]);
         return -1; /* 未找到 */
     }
+    
+    ret = query_cb(node->data, data);
 
-    memcpy(data, node->data, data_len);
     pthread_rwlock_unlock(&hash->lock[idx]);
 
-    return 0;
+    return ret;
 }
 
 /******************************************************************************
