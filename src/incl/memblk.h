@@ -2,14 +2,14 @@
 #define __MEMBLK_H__
 
 #include <stdint.h>
-#include <spinlock.h>
+#include "ticket_lock.h"
 
 #define MEMBLK_PAGE_SLOT_NUM  (256) /* 单页的内存块数目 */
 
 /* 页对象 */
 typedef struct
 {
-    ticket_spinlock_t lock;         /* SPIN锁对象 */
+    ticketlock_t lock;              /* SPIN锁对象 */
 
     uint32_t bitmaps;               /* 位图长度 */
     uint32_t *bitmap;               /* 分配位图(0:未使用 1:使用) */

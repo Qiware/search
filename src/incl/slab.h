@@ -8,7 +8,7 @@
 #include <stdint.h>
 
 #include "log.h"
-#include "spinlock.h"
+#include "ticket_lock.h"
 
 typedef struct _slab_page_t
 {
@@ -31,7 +31,7 @@ typedef struct
     void *data;
     void *addr;
 
-    ticket_spinlock_t lock;                    /* 内存锁 */
+    ticketlock_t lock;                  /* 内存锁 */
 } slab_pool_t;
 
 slab_pool_t *slab_init(void *addr, size_t size);

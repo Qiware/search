@@ -1,7 +1,7 @@
 #if !defined(__SDTP_POOL_H__)
 #define __SDTP_POOL_H__
 
-#include "spinlock.h"
+#include "ticket_lock.h"
 
 #define SDTP_POOL_PAGE_NUM   (4)    /* 缓存池页数: 页越多锁冲突越小 但消耗更多的内存 */
 
@@ -20,7 +20,7 @@
 typedef struct
 {
     int idx;                                /* 页号 */
-    ticket_spinlock_t lock;                 /* 锁 */
+    ticketlock_t lock;                      /* 锁 */
 
     size_t begin;                           /* 开始偏移(从共享内存起始处计算) */
     size_t size;                            /* 缓存总长 */
