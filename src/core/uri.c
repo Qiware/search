@@ -4,7 +4,7 @@
  **函数名称: uri_trim
  **功    能: 删除URI中的无效字符(如:前后的空格、换行符、井号以后的字符等)
  **输入参数:
- **     str: 字串
+ **     ori_uri: 原始URI
  **     size: out空间大小
  **输出参数:
  **     out_uri: 输出URI
@@ -16,8 +16,7 @@
 int uri_trim(const char *ori_uri, char *out_uri, size_t size)
 {
     size_t len;
-    const char *s = ori_uri, *p,
-          *e = ori_uri + strlen(ori_uri);
+    const char *s = ori_uri, *p, *e = ori_uri + strlen(ori_uri);
 
     /* 1. 删除头部空格、换行符等 */
     while ('\0' != *s)
@@ -35,9 +34,12 @@ int uri_trim(const char *ori_uri, char *out_uri, size_t size)
     /* 判断合法性
      * 1. 长度是否为0
      * 2. 首字符是否合法
+     *      合法: /abc/bcdef/adad.htm
+     *      合法: abc/bcdef/adab.html
+     *      合法: 123/sdsdasd/sdas.htm
      * */
     if ((e == s)
-        || (!isalpha(*s) && !isdigit(*s)))
+        || (!isalpha(*s) && !isdigit(*s) && ('/' != *s)))
     {
         out_uri[0] = '\0';
         return 0;
@@ -70,7 +72,13 @@ int uri_trim(const char *ori_uri, char *out_uri, size_t size)
     }
 
     /* 4. 设置输出URI */
-    len = MIN(e - s + 1, (int)size - 1);
+    len = e - s + 1;
+    if (len >= size)
+    {
+        out_uri[0] = '\0';
+        return 0; /* 空间不足 */
+    }
+
     strncpy(out_uri, s, len);
     out_uri[len] = '\0';
    
@@ -363,34 +371,34 @@ int uri_reslove(const char *uri, uri_field_t *field)
     field->len = uri_trim(uri, field->uri, sizeof(field->uri));
     if (field->len <= URI_MIN_LEN)
     {
-        return -1;  /* 长度非法 */
+        return URI_ERR_LEN;  /* 长度非法 */
     }
     
 	/* 2. 获取协议类型 */
 	field->protocol = uri_get_protocol(uri);
     if (URI_UNKNOWN_PROTOCOL == field->protocol)
     {
-		return -1; /* 只支持HTTP协议 */
+		return URI_ERR_PROTO;
     }
 
 	/* 3. 获取HOST 端口 路径等 */
     if (uri_get_host(uri, field->host, sizeof(field->host)))
     {
-        return -1;
+        return URI_ERR_HOST;
     }
 
     field->port = uri_get_port(uri);
 	if (field->port < 0)
     {
-        return -1;
+        return URI_ERR_PORT;
     }
 
 	if (uri_get_path(uri, field->path, sizeof(field->path)))
 	{
-		return -1;
+		return URI_ERR_PATH;
 	}
 
-    return 0;
+    return URI_OK;
 }
 
 /******************************************************************************
@@ -433,65 +441,6 @@ bool uri_is_valid(const char *uri)
     return true;
 }
 
-/* URI合法后缀 */
-static const char g_uri_suffix[][URI_SUFFIX_LEN] = 
-{
-    /* 按网页划分 */
-    ".html"         /* 静态网页 */
-    , ".htm"        /* 静态网页 */
-    , ".asp"        /* ASP动态网页 */
-    , ".aspx"       /* ASP动态网页 */
-    , ".php"        /* PHP动态网页 */
-    , ".shtml"      /* 静态网页 */
-    , ".shtm"       /* 静态网页 */
-    , ".stm"        /* 静态网页 */
-
-    /* 按机构划分 */
-    , ".rec"        /* 娱乐类 */
-    , ".arts"       /* 艺术类 */
-    , ".hom"        /* 个人类 */
-    , ".com"        /* 商业类 */
-    , ".edu"        /* 教育类 */
-    , ".gov"        /* 政府类 */
-    , ".org"        /* 非盈利类 */
-    , ".info"       /* 信息服务类 */
-    , ".net"        /* 网络服务机构类 */
-
-    /* 按地域划分 */
-    , ".cn"         /* 中国大陆 */
-    , ".hk"         /* 中国香港 */
-    , ".tw"         /* 中国台湾 */
-
-    /* 结束标志: 请在此行上方添加合法后缀 */
-    , ""
-};
-
-/******************************************************************************
- **函数名称: uri_is_valid_suffix
- **功    能: 判断URI的后缀是否合法性
- **输入参数: 
- **     uri: URI
- **输出参数: NONE
- **返    回: true:合法 false:不合法
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.11.04 #
- ******************************************************************************/
-bool uri_is_valid_suffix(const char *suffix)
-{
-    int idx;
-
-    for (idx=0; '\0' != g_uri_suffix[idx][0]; ++idx)
-    {
-        if (!strcmp(suffix, g_uri_suffix[idx]))
-        {
-            return true;
-        }
-    }
-
-    return false;
-}
-
 /******************************************************************************
  **函数名称: href_to_uri
  **功    能: 将href字段转化成uri
@@ -516,12 +465,12 @@ int href_to_uri(const char *ori_href, const char *site, uri_field_t *field)
     len = uri_trim(ori_href, href, sizeof(href));
     if (len <= 0)
     {
-        return -1;
+        return URI_ERR_TRIM;
     }
 
     if (!uri_is_valid(href))
     {
-        return -1;
+        return URI_ERR_INVALID;
     }
 
     /* 2. 判断URI类型(正常的URI, 相对路径, 绝对路径, 也可能异常) */
@@ -543,7 +492,7 @@ int href_to_uri(const char *ori_href, const char *site, uri_field_t *field)
     {
         if (0 != uri_reslove(site, field))
         {
-            return -1;
+            return URI_ERR_RESLOVE;
         }
 
         if (isalpha(*href))
@@ -583,7 +532,7 @@ int href_to_uri(const char *ori_href, const char *site, uri_field_t *field)
 
             if (p2 == site)
             {
-                return -1;
+                return URI_ERR_PATH;
             }
 
             --p2;
@@ -592,7 +541,7 @@ int href_to_uri(const char *ori_href, const char *site, uri_field_t *field)
         ++p2; /* 指向'/' */
         if (p2 - site <= URI_HTTP_STR_LEN)
         {
-            return -1;
+            return URI_ERR_PATH;
         }
 
         snprintf(uri, sizeof(uri), "%s%s", p2, p);
@@ -620,7 +569,7 @@ int href_to_uri(const char *ori_href, const char *site, uri_field_t *field)
         if (len <= URI_HTTP_STR_LEN
             || len >= URI_MAX_LEN)
         {
-            return -1;
+            return URI_ERR_LEN;
         }
 
         snprintf(uri, sizeof(uri), "%s", site);
@@ -633,5 +582,5 @@ int href_to_uri(const char *ori_href, const char *site, uri_field_t *field)
     p = href;
     goto HREF_IS_LOCAL_PATH;
 
-    return -1;
+    return URI_ERR;
 }
