@@ -948,7 +948,7 @@ static size_t _log_sync(log_file_info_t *file, int *_fd)
 {
     void *addr;
     struct stat fstat;
-    int n, fsize, fd = -1;
+    int n, fd = -1, fsize = 0;
 
     memset(&fstat, 0, sizeof(fstat));
 
