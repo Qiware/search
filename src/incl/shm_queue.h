@@ -2,7 +2,7 @@
 #define __SHM_QUEUE_H__
 
 #include "shm_pool.h"
-#include "ticket_lock.h"
+#include "spinlock.h"
 
 /* 结点当前状态 */
 #define SHMQ_NODE_FLAG_IDLE     (0) /* 未被占用 */
@@ -20,7 +20,7 @@ typedef struct _shm_queue_node_t
 /* 队列信息 */
 typedef struct
 {
-    ticketlock_t lock;              /* 锁 */
+    spinlock_t lock;                /* 锁 */
 
     uint32_t max;                   /* 队列容量 */
     uint32_t num;                   /* 占用个数 */

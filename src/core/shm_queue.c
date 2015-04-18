@@ -74,9 +74,9 @@ shm_queue_t *shm_queue_creat(int key, int max, int size)
     off = 0;
     info = (shm_queue_info_t *)addr;
 
-    ticket_lock_init(&info->lock);
+    spin_lock_init(&info->lock);
 
-    ticket_lock(&info->lock);
+    spin_lock(&info->lock);
 
     info->num = 0;
     info->max = max;
@@ -109,13 +109,13 @@ shm_queue_t *shm_queue_creat(int key, int max, int size)
     pool = shm_pool_init(addr + info->pool_off, max, size);
     if (NULL == pool)
     {
-        ticket_unlock(&info->lock);
+        spin_unlock(&info->lock);
         free(shmq);
         sys_error("Initialize shm slab failed!");
         return NULL;
     }
 
-    ticket_unlock(&info->lock);
+    spin_unlock(&info->lock);
 
     shmq->info = info;
     shmq->pool = pool;
@@ -191,12 +191,12 @@ int shm_queue_push(shm_queue_t *shmq, void *p)
     shm_queue_node_t *node;
     shm_queue_info_t *info = shmq->info;
 
-    ticket_lock(&info->lock);
+    spin_lock(&info->lock);
 
     /* 1. 检查队列空间 */
     if (info->num >= info->max)
     {
-        ticket_unlock(&info->lock);
+        spin_unlock(&info->lock);
         return -1;
     }
 
@@ -209,7 +209,7 @@ int shm_queue_push(shm_queue_t *shmq, void *p)
     info->tail = node->next;
     ++info->num;
 
-    ticket_unlock(&info->lock);
+    spin_unlock(&info->lock);
 
     return 0;
 }
@@ -239,10 +239,10 @@ void *shm_queue_pop(shm_queue_t *shmq)
         return NULL;
     }
 
-    ticket_lock(&info->lock);
+    spin_lock(&info->lock);
     if (0 == info->num)
     {
-        ticket_unlock(&info->lock);
+        spin_unlock(&info->lock);
         return NULL;
     }
 
@@ -260,7 +260,7 @@ void *shm_queue_pop(shm_queue_t *shmq)
     info->head = node->next;
     --info->num;
 
-    ticket_unlock(&info->lock);
+    spin_unlock(&info->lock);
 
     return p;
 }

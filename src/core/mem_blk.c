@@ -68,7 +68,7 @@ mem_blk_t *mem_blk_creat(int num, size_t size)
     {
         page = &blk->page[idx];
 
-        ticket_lock_init(&page->lock);
+        spin_lock_init(&page->lock);
 
         /* 3.1 设置bitmap */
         if (idx == (blk->pages - 1))
@@ -134,7 +134,7 @@ void *mem_blk_alloc(mem_blk_t *blk)
         n %= blk->pages;
         page = &blk->page[n];
 
-        ticket_lock(&page->lock);
+        spin_lock(&page->lock);
 
         for (i=0; i<page->bitmaps; ++i)
         {
@@ -150,14 +150,14 @@ void *mem_blk_alloc(mem_blk_t *blk)
                 {
                     *bitmap |= (1 << j);
 
-                    ticket_unlock(&page->lock);
+                    spin_unlock(&page->lock);
 
                     return page->addr + (i*32 + j)*blk->size;
                 }
             }
         }
 
-        ticket_unlock(&page->lock);
+        spin_unlock(&page->lock);
     }
     return NULL;
 }
@@ -182,9 +182,9 @@ void mem_blk_dealloc(mem_blk_t *blk, void *p)
     i = (p - blk->page[n].addr) / (32 * blk->size); /* 计算页内bitmap索引 */
     j = (p - (blk->page[n].addr + i * (32 * blk->size))) / blk->size; /* 计算bitmap内偏移 */
 
-    ticket_lock(&blk->page[n].lock);
+    spin_lock(&blk->page[n].lock);
     blk->page[n].bitmap[i] &= ~(1 << j);
-    ticket_unlock(&blk->page[n].lock);
+    spin_unlock(&blk->page[n].lock);
 }
 
 /******************************************************************************
@@ -208,7 +208,7 @@ void mem_blk_destroy(mem_blk_t *blk)
         page = &blk->page[i];
 
         free(page->bitmap);
-        ticket_lock_destroy(&page->lock);
+        spin_lock_destroy(&page->lock);
     }
 
     free(blk->page);

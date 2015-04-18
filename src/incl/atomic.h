@@ -34,7 +34,7 @@ static inline uint32_t atomic32_xset(volatile uint32_t *v, uint32_t i)
         :
         :"memory");
 
-        return i;
+    return i; /* i此时值等于v的原始值 */
 }
 
 static inline uint64_t atomic64_xset(volatile uint64_t *v, uint64_t i)
@@ -45,7 +45,7 @@ static inline uint64_t atomic64_xset(volatile uint64_t *v, uint64_t i)
         :
         :"memory");
 
-    return i;
+    return i; /* i此时值等于v的原始值 */
 }
 
 /******************************************************************************
@@ -79,7 +79,7 @@ static inline uint32_t atomic32_xadd(volatile uint32_t *v, uint32_t i)
         :
         :"memory");
 
-    return i;
+    return i; /* i此时值等于v的原始值 */
 }
 
 static inline uint64_t atomic64_xadd(volatile uint64_t *v, uint64_t i)
@@ -90,7 +90,7 @@ static inline uint64_t atomic64_xadd(volatile uint64_t *v, uint64_t i)
         :
         :"memory");
 
-    return i;
+    return i; /* i此时值等于v的原始值 */
 }
 
 /******************************************************************************
