@@ -32,6 +32,22 @@
 #define URI_ED2K_STR        "ed2k://"       /* 电驴连接 */
 #define URI_ED2K_STR_LEN    (7)
 
+/* 错误码 */
+typedef enum
+{
+    URI_OK
+    , URI_ERR = ~0x7fffffff                 /* 异常 */
+    , URI_ERR_TRIM                          /* URI过滤有误 */
+    , URI_ERR_INVALID                       /* URI非法 */
+    , URI_ERR_LEN                           /* 长度非法 */
+    , URI_ERR_PROTO                         /* 协议非法 */
+    , URI_ERR_HOST                          /* HOST非法 */
+    , URI_ERR_PORT                          /* PORT非法 */
+    , URI_ERR_PATH                          /* PATH非法 */
+    , URI_ERR_RESLOVE                       /* 解析错误 */
+} uri_err_e;
+
+/* 协议类型 */
 typedef enum
 {
     URI_UNKNOWN_PROTOCOL

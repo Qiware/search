@@ -285,6 +285,7 @@ int flt_worker_destroy(flt_cntx_t *ctx, flt_worker_t *worker)
  ******************************************************************************/
 static int flt_worker_deep_hdl(flt_cntx_t *ctx, flt_worker_t *worker, gumbo_result_t *result)
 {
+    int ret;
     uri_field_t field;
     flt_conf_t *conf = ctx->conf;
     list_node_t *node = result->list->head;
@@ -294,9 +295,11 @@ static int flt_worker_deep_hdl(flt_cntx_t *ctx, flt_worker_t *worker, gumbo_resu
     for (; NULL != node; node = node->next)
     {
         /* > 将href转至uri */
-        if (0 != href_to_uri((const char *)node->data, info->uri, &field))
+        ret = href_to_uri((const char *)node->data, info->uri, &field);
+        if (0 != ret)
         {
-            log_warn(ctx->log, "Href [%s] of uri [%s] is invalid!", (char *)node->data, info->uri);
+            log_warn(ctx->log, "Href [%s] of uri [%s] is invalid! ret:%d",
+                    (char *)node->data, info->uri, ret);
             continue;
         }
 
