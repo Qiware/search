@@ -2,21 +2,22 @@
 
 /******************************************************************************
  **函数名称: uri_trim
- **功    能: 删除字串前后的空格、换行符.
+ **功    能: 删除URI中的无效字符(如:前后的空格、换行符、井号以后的字符等)
  **输入参数:
  **     str: 字串
  **     size: out空间大小
  **输出参数:
- **     out: 输出字符串
- **返    回: out长度
+ **     out_uri: 输出URI
+ **返    回: out_uri长度
  **实现描述: 
  **注意事项:
  **作    者: # Qifeng.zou # 2014.09.19 #
  ******************************************************************************/
-int uri_trim(const char *in, char *out, size_t size)
+int uri_trim(const char *ori_uri, char *out_uri, size_t size)
 {
     size_t len;
-    const char *s = in, *e = in + strlen(in);
+    const char *s = ori_uri, *p,
+          *e = ori_uri + strlen(ori_uri);
 
     /* 1. 删除头部空格、换行符等 */
     while ('\0' != *s)
@@ -38,7 +39,7 @@ int uri_trim(const char *in, char *out, size_t size)
     if ((e == s)
         || (!isalpha(*s) && !isdigit(*s)))
     {
-        out[0] = '\0';
+        out_uri[0] = '\0';
         return 0;
     }
 
@@ -57,10 +58,21 @@ int uri_trim(const char *in, char *out, size_t size)
         break;
     }
 
-    len = e - s + 1;
-    len = (len < size)? len : (size - 1);
-    strncpy(out, s, len);
-    out[len] = '\0';
+    /* 3. 判断是否存在#等无效字符 */
+    p = e;
+    while (p > s)
+    {
+        if ('#' == *p)
+        {
+            e = p - 1;
+        }
+        --p;
+    }
+
+    /* 4. 设置输出URI */
+    len = MIN(e - s + 1, (int)size - 1);
+    strncpy(out_uri, s, len);
+    out_uri[len] = '\0';
    
     return len;
 }
@@ -500,7 +512,7 @@ int href_to_uri(const char *ori_href, const char *site, uri_field_t *field)
     const char *p, *p2;
     char uri[URI_MAX_LEN], href[URI_MAX_LEN];
 
-    /* 1. 踢出URI前后的空格 */
+    /* 1. 剔除URI中的无效字符 */
     len = uri_trim(ori_href, href, sizeof(href));
     if (len <= 0)
     {
