@@ -21,11 +21,14 @@ typedef struct
 {
     int num;                        /* 内存块总数 */
     uint32_t pages;                 /* 总页数 */
-    size_t size;                    /* 各内存块SIZE */
+    size_t size;                    /* 各内存块SIZE(size of slot) */
 
     void *addr;                     /* 总内存起始地址 */
 
-    mem_blk_page_t *page;         /* 内存页 */
+    mem_blk_page_t *page;           /* 内存页 */
+
+    /* 计算而来 */
+    size_t page_size;               /* 页尺寸: MEM_BLK_PAGE_SLOT_NUM * size */
 } mem_blk_t;
 
 mem_blk_t *mem_blk_creat(int num, size_t size);

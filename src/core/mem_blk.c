@@ -42,6 +42,7 @@ mem_blk_t *mem_blk_creat(int num, size_t size)
 
     blk->num = num;
     blk->size = size;
+    blk->page_size = MEM_BLK_PAGE_SLOT_NUM * size;
 
     /* 2. 计算页数, 并分配页空间 */
     blk->pages = div_ceiling(num, MEM_BLK_PAGE_SLOT_NUM);
@@ -103,7 +104,7 @@ mem_blk_t *mem_blk_creat(int num, size_t size)
         }
 
         /* 3.2 设置数据空间 */
-        page->addr = blk->addr + idx * MEM_BLK_PAGE_SLOT_NUM * size;
+        page->addr = blk->addr + idx * blk->page_size;
     }
 
     return blk;
@@ -177,8 +178,8 @@ void mem_blk_dealloc(mem_blk_t *blk, void *p)
 {
     int i, j, n;
 
-    n = (p - blk->addr) / (MEM_BLK_PAGE_SLOT_NUM * blk->size);        /* 计算页号 */
-    i = (p - blk->page[n].addr) / (32 * blk->size);                     /* 计算页内bitmap索引 */
+    n = (p - blk->addr) / blk->page_size;           /* 计算页号 */
+    i = (p - blk->page[n].addr) / (32 * blk->size); /* 计算页内bitmap索引 */
     j = (p - (blk->page[n].addr + i * (32 * blk->size))) / blk->size; /* 计算bitmap内偏移 */
 
     ticket_lock(&blk->page[n].lock);
