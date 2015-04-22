@@ -35,7 +35,7 @@ invert_cntx_t *invert_creat(const char *path, int max)
     ctx->max = max;
     snprintf(ctx->path, sizeof(ctx->path), "%s", ctx->path);
 
-    ctx->fd = open(path, "w+");
+    ctx->fd = Open(path, OPEN_FLAGS, OPEN_MODE);
     if (ctx->fd < 0)
     {
         free(ctx);
