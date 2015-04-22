@@ -7,7 +7,7 @@
  **         负责对外提供查询、操作的接口
  ** 作  者: # Qifeng.zou # 2015.02.11 #
  ******************************************************************************/
-#include "common.h"
+#include "comm.h"
 #include "syscall.h"
 #include "crawler.h"
 #include "crwl_cmd.h"

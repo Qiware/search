@@ -1,7 +1,8 @@
 #if !defined(__INVERT_H__)
 #define __INVERT_H__
 
-#include "common.h"
+#include "comm.h"
+#include "list.h"
 
 /* 倒排文件 */
 typedef struct

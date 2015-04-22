@@ -20,7 +20,7 @@
  ** 作  者: # Qifeng.zou # 2015.01.22 #
  ******************************************************************************/
 #include "log.h"
-#include "common.h"
+#include "comm.h"
 #include "syscall.h"
 #include "shm_opt.h"
 #include "shm_pool.h"

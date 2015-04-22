@@ -1,6 +1,6 @@
 #include "sck.h"
+#include "comm.h"
 #include "search.h"
-#include "common.h"
 #include "syscall.h"
 #include "srch_agent.h"
 #include "srch_listen.h"

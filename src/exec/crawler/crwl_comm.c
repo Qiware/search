@@ -11,7 +11,7 @@
 #include "sck.h"
 #include "lock.h"
 #include "hash.h"
-#include "common.h"
+#include "comm.h"
 #include "crawler.h"
 #include "syscall.h"
 #include "crwl_man.h"

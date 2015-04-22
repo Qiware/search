@@ -51,7 +51,6 @@ typedef enum
     XML_NODE_ROOT,     /* 根节点 */
     XML_NODE_CHILD,    /* 孩子节点 */
     XML_NODE_ATTR,     /* 属性节点 */
-    XML_NODE_NOTE,     /* 注释结点 */
     XML_NODE_UNKNOWN,  /* 未知节点 */
     XML_NODE_TYPE_TOTAL = XML_NODE_UNKNOWN    /* 节点类型数 */
 } xml_node_type_e;

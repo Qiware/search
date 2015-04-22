@@ -1,9 +1,8 @@
 #if !defined(__SRCH_COMM_H__)
 #define __SRCH_COMM_H__
 
-#include <stdint.h>
+#include "comm.h"
 #include "list.h"
-#include "common.h"
 
 /* 错误码 */
 typedef enum

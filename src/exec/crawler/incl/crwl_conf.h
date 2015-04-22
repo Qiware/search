@@ -10,8 +10,8 @@
 #if !defined(__CRWL_CONF_H__)
 #define __CRWL_CONF_H__
 
+#include "comm.h"
 #include "redis.h"
-#include "common.h"
 #include "xml_tree.h"
 #include "mem_pool.h"
 

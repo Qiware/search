@@ -1,7 +1,7 @@
 #if !defined(__URI_H__)
 #define __URI_H__
 
-#include "common.h"
+#include "comm.h"
 
 #define URL_MIN_LEN         (3)             /* URL最小长度 */
 #define URL_MAX_LEN         (2048)          /* URL最大长度 */

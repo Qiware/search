@@ -8,10 +8,10 @@
  ** 作  者: # Qifeng.zou # 2013.11.07 #
  ******************************************************************************/
 #include "log.h"
+#include "comm.h"
 #include "lock.h"
 #include "hash.h"
 #include "shm_opt.h"
-#include "common.h"
 #include "syscall.h"
 
 /* 共享内存 */

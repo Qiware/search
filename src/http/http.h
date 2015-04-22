@@ -1,7 +1,7 @@
 #if !defined(__HTTP_H__)
 #define __HTTP_H__
 
-#include "common.h"
+#include "comm.h"
 
 /* 关键词定义 */
 #define HTTP_KEY_VERS_09        "HTTP/0.9 "

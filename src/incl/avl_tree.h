@@ -1,18 +1,9 @@
 #if !defined(__AVL_TREE_H__)
 #define __AVL_TREE_H__
 
-#include <stdio.h>
-#include <errno.h>
-#include <assert.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <memory.h>
-#include <stdint.h>
-
+#include "comm.h"
 #include "slab.h"
 #include "stack.h"
-#include "common.h"
 
 #define AVL_RH    (-1)          /* 右子树增高 */
 #define AVL_EH    (0)           /* 高度未发生变化 */

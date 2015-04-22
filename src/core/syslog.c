@@ -9,7 +9,7 @@
 #include <sys/types.h>
 
 #include "log.h"
-#include "common.h"
+#include "comm.h"
 #include "syscall.h"
 
 syslog_cycle_t g_syslog = {NULL, LOG_LEVEL_TRACE, -1};

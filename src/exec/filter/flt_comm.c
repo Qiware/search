@@ -9,9 +9,9 @@
  ******************************************************************************/
 #include "log.h"
 #include "uri.h"
+#include "comm.h"
 #include "lock.h"
 #include "hash.h"
-#include "common.h"
 #include "syscall.h"
 #include "filter.h"
 #include "flt_man.h"

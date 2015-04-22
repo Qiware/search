@@ -1,7 +1,7 @@
 #include "log.h"
 #include "str.h"
+#include "comm.h"
 #include "redis.h"
-#include "common.h"
 
 /******************************************************************************
  **函数名称: redis_llen

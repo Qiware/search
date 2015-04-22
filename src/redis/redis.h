@@ -1,8 +1,8 @@
 #if !defined(__REDIS_H__)
 #define __REDIS_H__
 
+#include "comm.h"
 #include "list.h"
-#include "common.h"
 #include <hiredis/hiredis.h>
 
 /* Redis配置 */

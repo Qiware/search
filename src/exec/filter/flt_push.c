@@ -9,9 +9,9 @@
  ******************************************************************************/
 
 #include "log.h"
+#include "comm.h"
 #include "filter.h"
 #include "flt_priv.h"
-#include "common.h"
 #include "syscall.h"
 #include "flt_conf.h"
 

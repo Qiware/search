@@ -7,9 +7,9 @@
  **         负责下载指定URL网页
  ** 作  者: # Qifeng.zou # 2014.09.04 #
  ******************************************************************************/
+#include "comm.h"
 #include "list.h"
 #include "http.h"
-#include "common.h"
 #include "syscall.h"
 #include "crawler.h"
 #include "xml_tree.h"

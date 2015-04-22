@@ -14,10 +14,10 @@
 
 #include "log.h"
 #include "sck.h"
+#include "comm.h"
 #include "slab.h"
 #include "list.h"
 #include "queue.h"
-#include "common.h"
 #include "hash_tab.h"
 #include "crwl_priv.h"
 #include "crwl_task.h"
