@@ -61,7 +61,7 @@ int main(void)
             scanf(" %s", input);
             key = atoi(input);
 
-            btree_delete(btree, key);
+            btree_remove(btree, key);
             btree_print(btree);
             continue;
         }
