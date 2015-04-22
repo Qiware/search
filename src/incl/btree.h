@@ -31,5 +31,13 @@ extern int btree_creat(btree_t **btree, int max);
 extern int btree_insert(btree_t *btree, int key);
 extern int btree_remove(btree_t *btree, int key);
 extern int btree_destroy(btree_t **btree);
+void _btree_print(const btree_node_t *node, int deep);
+#define btree_print(btree) /* 打印B树 */\
+{ \
+    if (NULL != btree->root) \
+    { \
+        _btree_print(btree->root, 0); \
+    } \
+}
 
 #endif /*__B_TREE_H__*/

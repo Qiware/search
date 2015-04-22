@@ -5,17 +5,7 @@ static int _btree_insert(btree_t *btree, btree_node_t *node, int key, int idx);
 static int btree_split(btree_t *btree, btree_node_t *node);
 static int _btree_remove(btree_t *btree, btree_node_t *node, int idx);
 static int btree_merge(btree_t *btree, btree_node_t *node);
-static void _btree_print(const btree_node_t *node, int deep);
 static int _btree_merge(btree_t *btree, btree_node_t *left, btree_node_t *right, int idx);
-
-
-#define btree_print(btree) \
-{ \
-    if (NULL != btree->root) \
-    { \
-        _btree_print(btree->root, 0); \
-    } \
-}
 
 /******************************************************************************
  **函数名称: btree_creat 
@@ -552,7 +542,7 @@ int btree_destroy(btree_t **btree)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.03.12 #
  ******************************************************************************/
-static void _btree_print(const btree_node_t *node, int deep)
+void _btree_print(const btree_node_t *node, int deep)
 {
     int idx, d, flag = 0;
 
