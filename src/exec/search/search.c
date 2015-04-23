@@ -9,9 +9,9 @@
  ******************************************************************************/
 
 #include "sck.h"
+#include "comm.h"
 #include "lock.h"
 #include "hash.h"
-#include "common.h"
 #include "search.h"
 #include "syscall.h"
 #include "srch_worker.h"

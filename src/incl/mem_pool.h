@@ -1,11 +1,8 @@
 #if !defined(__MEM_POOL_H__)
 #define __MEM_POOL_H__
 
-#include <stdint.h>
-
-#include "common.h"
 #include "log.h"
-
+#include "comm.h"
 
 /*
  * MEM_POOL_MAX_ALLOC_FROM_POOL should be (ngx_pagesize - 1), i.e. 4095 on x86.

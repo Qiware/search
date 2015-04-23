@@ -7,8 +7,7 @@
  **         负责对外提供查询、操作的接口
  ** 作  者: # Qifeng.zou # 2015.03.15 #
  ******************************************************************************/
-
-#include "common.h"
+#include "comm.h"
 #include "syscall.h"
 #include "filter.h"
 #include "flt_cmd.h"

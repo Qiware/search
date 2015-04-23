@@ -2,8 +2,8 @@
 #define __CRWL_MAN_H__
 
 #include "log.h"
+#include "comm.h"
 #include "slab.h"
-#include "common.h"
 #include "crawler.h"
 #include "avl_tree.h"
 

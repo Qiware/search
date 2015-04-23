@@ -8,7 +8,7 @@
  ** 注  意: 请勿显示中文，否则将会出现对齐异常!
  ** 作  者: # Qifeng.zou # 2014.12.26 #
  ******************************************************************************/
-#include "common.h"
+#include "comm.h"
 #include "syscall.h"
 #include "monitor.h"
 #include "mon_conf.h"

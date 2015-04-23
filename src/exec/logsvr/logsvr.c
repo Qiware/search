@@ -13,8 +13,8 @@
 #include <sys/types.h>
 
 #include "log.h"
+#include "comm.h"
 #include "lock.h"
-#include "common.h"
 #include "logsvr.h"
 #include "shm_opt.h"
 #include "syscall.h"

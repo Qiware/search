@@ -20,10 +20,11 @@ export GCC_LOG = ${PROJ_LOG}/gcc.log
 
 # 编译目录(注：编译按顺序执行　注意库之间的依赖关系)
 DIR = "src/core"
+DIR += "src/sdtp"
 DIR += "src/http"
 DIR += "src/gumbo"
 DIR += "src/redis"
-DIR += "src/sdtp"
+DIR += "src/invert"
 
 DIR += "src/exec/crawler"
 DIR += "src/exec/filter"
@@ -41,6 +42,7 @@ DEMO_DIR = "src/demo"
 #DIR += "${DEMO_DIR}/redis"
 #DIR += "${DEMO_DIR}/gumbo"
 #DIR += "${DEMO_DIR}/xml"
+DIR += "${DEMO_DIR}/btree"
 #DIR += "${DEMO_DIR}/lock"
 #DIR += "${DEMO_DIR}/sdtp/recv"
 #DIR += "${DEMO_DIR}/sdtp/send"

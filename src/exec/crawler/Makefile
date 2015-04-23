@@ -10,7 +10,10 @@ include $(PROJ)/make/build.mak
 
 INCLUDE = -I. \
 			-I./incl \
-			-I$(PROJ)/src/incl
+			-I$(PROJ)/src/incl \
+			-I$(PROJ)/src/http \
+			-I$(PROJ)/src/redis \
+			-I$(PROJ)/src/gumbo
 LIBS_PATH = -L$(PROJ)/lib -L/usr/lib/hiredis
 LIBS = -lpthread \
 	   		-lhiredis \

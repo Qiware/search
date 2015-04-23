@@ -13,18 +13,10 @@
  ** 修  改:
  **     1. # 增加转义字符的处理 # Qifeng.zou # 2014.01.06 #
  ******************************************************************************/
-#include <stdio.h>
-#include <ctype.h>
-#include <errno.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-
+#include "log.h"
+#include "comm.h"
 #include "xml_tree.h"
 #include "xml_comm.h"
-#include "common.h"
-#include "log.h"
 
 static int xml_parse_version(xml_tree_t *xml, xml_parse_t *parse);
 static int xml_parse_note(xml_tree_t *xml, xml_parse_t *parse);

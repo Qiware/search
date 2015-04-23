@@ -3,51 +3,20 @@
 ##
 ## 文件名: Makefile
 ## 版本号: 1.0
-## 描  述: 核心模块的编译
-## 作  者: # Qifeng.zou # 2014.08.28 #
+## 描  述: 倒排索引模块的编译
+## 作  者: # Qifeng.zou # 2015.04.22 #
 ###############################################################################
 include $(PROJ)/make/build.mak
 
 INCLUDE = -I. -I$(PROJ)/src/incl
 LIBS_PATH = -L$(PROJ)/lib
-LIBS = -lpthread
+LIBS = -lpthread -lxd_core
 
-SRC_LIST = hash.c \
-			log.c \
-			syslog.c \
-			lock.c \
-			list.c \
-			list2.c \
-			menu.c \
-			queue.c \
-			sha256.c \
-			slab.c \
-			syscall.c \
-			shm_slab.c \
-			shm_opt.c \
-			mem_blk.c \
-			mem_pool.c \
-			shm_pool.c \
-			shm_queue.c \
-			btree.c \
-			rb_tree.c \
-			avl_tree.c \
-			trie_tree.c \
-			xml_comm.c \
-			xml_print.c \
-			xml_tree.c \
-			thread_pool.c \
-			sck_tcp.c \
-			sck_udp.c \
-			sck_unix.c \
-			hash_tab.c \
-			hash_array.c \
-			str.c \
-			uri.c
+SRC_LIST = invert.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST))
 
-TARGET = libxd_core.so
+TARGET = libxd_invert.so
 
 .PHONY: all clean
 

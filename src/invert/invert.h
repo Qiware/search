@@ -1,7 +1,8 @@
-#if !defined(__INVERTED_H__)
-#define __INVERTED_H__
+#if !defined(__INVERT_H__)
+#define __INVERT_H__
 
-#include "common.h"
+#include "comm.h"
+#include "list.h"
 
 /* 倒排文件 */
 typedef struct
@@ -28,4 +29,4 @@ int invert_insert(const char *keyword, const char *doc);
 int invert_query(const char *keyword, list_t *list);
 int invert_remove(const char *keyword);
 
-#endif /*__INVERTED_H__*/
+#endif /*__INVERT_H__*/

@@ -1,13 +1,15 @@
-#if !defined(__COMMON_H__)
-#define __COMMON_H__
+#if !defined(__COMM_H__)
+#define __COMM_H__
 
 #include <stdio.h>
 #include <ctype.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <netdb.h>
 #include <memory.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <assert.h>
 #include <stdint.h>
 #include <stdarg.h>
 #include <sys/un.h>
@@ -15,6 +17,7 @@
 #include <pthread.h>
 #include <stdbool.h>
 #include <sys/time.h>
+#include <sys/timeb.h>
 #include <arpa/inet.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -104,4 +107,4 @@ typedef void (*mem_dealloc_cb_t)(void *pool, void *p);
 
 void mem_dealloc(void *pool, void *p);
 
-#endif /*__COMMON_H__*/
+#endif /*__COMM_H__*/

@@ -1,8 +1,7 @@
 #if !defined(__XDO_UNISTD_H__)
 #define __XDO_UNISTD_H__
 
-
-#include "common.h"
+#include "comm.h"
 
 #define OPEN_MODE           (0666)  /* 文件权值 */
 #define OPEN_FLAGS          (O_CREAT|O_WRONLY|O_APPEND) /* 文件标志 */

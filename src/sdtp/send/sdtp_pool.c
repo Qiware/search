@@ -1,4 +1,4 @@
-#include "common.h"
+#include "comm.h"
 #include "shm_opt.h"
 #include "sdtp_priv.h"
 #include "sdtp_pool.h"

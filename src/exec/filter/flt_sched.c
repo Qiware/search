@@ -9,12 +9,10 @@
  ******************************************************************************/
 #include <dirent.h>
 #include <libgen.h>
-#include <sys/stat.h>
-#include <sys/types.h>
 
 #include "log.h"
+#include "comm.h"
 #include "filter.h"
-#include "common.h"
 #include "syscall.h"
 #include "flt_conf.h"
 

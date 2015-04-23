@@ -10,7 +10,7 @@
 #if !defined(__SRCH_CONF_H__)
 #define __SRCH_CONF_H__
 
-#include "common.h"
+#include "comm.h"
 #include "mem_pool.h"
 #include "xml_tree.h"
 

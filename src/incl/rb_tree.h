@@ -1,15 +1,8 @@
 #if !defined(__RB_TREE_H__)
 #define __RB_TREE_H__
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <assert.h>
-#include <unistd.h>
-#include <string.h>
-#include <memory.h>
-
+#include "comm.h"
 #include "stack.h"
-#include "common.h"
 
 #define RBT_COLOR_BLACK  'b'        /* 黑色 */
 #define RBT_COLOR_RED    'r'        /* 红色 */

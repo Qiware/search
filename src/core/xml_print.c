@@ -7,18 +7,10 @@
  **        将XML树打印成XML格式的文件、字符串等.
  ** 作  者: # Qifeng.zou # 2013.02.18 #
  ******************************************************************************/
-#include <stdio.h>
-#include <ctype.h>
-#include <errno.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-
+#include "log.h"
+#include "comm.h"
 #include "xml_tree.h"
 #include "xml_comm.h"
-#include "common.h"
-#include "log.h"
 
 /******************************************************************************
  **                                                                         **

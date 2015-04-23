@@ -10,9 +10,9 @@
 
 #include "log.h"
 #include "uri.h"
+#include "comm.h"
 #include "http.h"
 #include "filter.h"
-#include "common.h"
 #include "syscall.h"
 #include "flt_conf.h"
 #include "flt_worker.h"

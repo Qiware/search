@@ -1,8 +1,7 @@
 #if !defined(__LOG_H__)
 #define __LOG_H__
 
-#include <sys/timeb.h>
-#include "common.h"
+#include "comm.h"
 
 /* 宏定义 */
 

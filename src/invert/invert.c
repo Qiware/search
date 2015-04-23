@@ -7,7 +7,8 @@
  **         如: 创建、插入、查找、删除、归并等
  ** 作  者: # Qifeng.zou # 2015.01.29 #
  ******************************************************************************/
-#include "inverted.h"
+#include "invert.h"
+#include "syscall.h"
 
 /******************************************************************************
  **函数名称: invert_creat
@@ -35,7 +36,7 @@ invert_cntx_t *invert_creat(const char *path, int max)
     ctx->max = max;
     snprintf(ctx->path, sizeof(ctx->path), "%s", ctx->path);
 
-    ctx->fd = open(path, "w+");
+    ctx->fd = Open(path, OPEN_FLAGS, OPEN_MODE);
     if (ctx->fd < 0)
     {
         free(ctx);

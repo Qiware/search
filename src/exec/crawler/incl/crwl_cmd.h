@@ -1,7 +1,7 @@
 #if !defined(__CRWL_CMD_H__)
 #define __CRWL_CMD_H__
 
-#include "common.h"
+#include "comm.h"
 
 /* 命令类型 */
 typedef enum

@@ -1,7 +1,7 @@
 #if !defined(__SPIN_LOCK_H__)
 #define __SPIN_LOCK_H__
 
-#include "common.h"
+#include "comm.h"
 #include "atomic.h"
 
 #define SPIN_LOCK_LOCKED  (0)   /* 已锁 */

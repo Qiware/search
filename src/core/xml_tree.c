@@ -7,16 +7,8 @@
  **         这此文件中主要包含了XML处理的对外接口
  ** 作  者: # Qifeng.zou # 2013.02.18 #
  ******************************************************************************/
-#include <stdio.h>
-#include <ctype.h>
-#include <errno.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-
 #include "log.h"
-#include "common.h"
+#include "comm.h"
 #include "xml_tree.h"
 #include "xml_comm.h"
 

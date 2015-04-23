@@ -7,8 +7,8 @@
 
 #include "log.h"
 #include "uri.h"
+#include "comm.h"
 #include "http.h"
-#include "common.h"
 
 /******************************************************************************
  **函数名称: http_get_request

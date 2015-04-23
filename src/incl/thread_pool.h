@@ -1,9 +1,7 @@
 #if !defined(__THREAD_POOL_H__)
 #define __THREAD_POOL_H__
 
-#include <pthread.h>
-
-#include "common.h"
+#include "comm.h"
 
 #define THREAD_ATTR_STACK_SIZE  (0x800000)  /* 线程栈SIZE */
 #define THREAD_POOL_SLAB_SIZE   (16 * KB)   /* 线程池Slab空间SIZE */

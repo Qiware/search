@@ -1,12 +1,7 @@
 #if !defined(__SCK_H__)
 #define __SCK_H__
 
-#include <netdb.h>
-#include <sys/timeb.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-
-#include "common.h"
+#include "comm.h"
 
 #define ntoh64(v) ((uint64_t)( \
         (uint64_t)(v) & 0x00000000000000FF) << 56 \

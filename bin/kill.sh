@@ -14,6 +14,7 @@ sleep 1
 list=`ipcs -m | grep -v 'dest' | awk '{ if ($6 == 0) { print $2 }}'`
 for shm in $list
 do
+    echo $shm
     ipcrm -m $shm
 done
 

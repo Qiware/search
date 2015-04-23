@@ -10,8 +10,8 @@
 
 #include "log.h"
 #include "str.h"
+#include "comm.h"
 #include "filter.h"
-#include "common.h"
 #include "syscall.h"
 
 /******************************************************************************

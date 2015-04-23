@@ -1,7 +1,7 @@
 #include "slab.h"
 #include "xml_tree.h"
 
-#define MEM_SIZE (10 * 1024 * 1024)
+#define MEM_SIZE (20 * 1024 * 1024)
 
 int main(int argc, char *argv[])
 {
