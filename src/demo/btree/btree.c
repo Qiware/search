@@ -1,7 +1,7 @@
 #include "btree.h"
 
 #define BTREE_M     (3)
-#define BTREE_NUM   (10)
+#define BTREE_NUM   (1000)
 #define INPUT_LEN   (32)
 #define __AUTO_INPUT__
 
@@ -9,9 +9,14 @@ int main(void)
 {
     int ret, key, idx;
     btree_t *btree;
+    btree_option_t option;
     char input[INPUT_LEN];
 
-    btree = btree_creat(BTREE_M);
+    option.pool = (void *)NULL;
+    option.alloc = (mem_alloc_cb_t)mem_alloc;
+    option.dealloc = (mem_dealloc_cb_t)mem_dealloc;
+
+    btree = btree_creat(BTREE_M, &option);
     if (NULL == btree)
     {
         fprintf(stderr, "[%s][%d] Create btree failed!\n", __FILE__, __LINE__);
@@ -22,7 +27,7 @@ int main(void)
 
     for(idx=0; idx<BTREE_NUM; idx++)
     {
-        btree_insert(btree, random()%50);
+        btree_insert(btree, random());
     }
 
 	btree_insert(btree, 14);
@@ -35,6 +40,9 @@ int main(void)
 	btree_insert(btree, 40);
 
     btree_print(btree);
+
+    btree_destroy(btree);
+    return 0;
 
     while(1)
     {
@@ -79,6 +87,6 @@ int main(void)
         btree_print(btree);
     }
 
-    btree_destroy(&btree);
+    btree_destroy(btree);
     return 0;
 }

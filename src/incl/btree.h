@@ -1,13 +1,14 @@
 #if !defined(__B_TREE_H__)
 #define __B_TREE_H__
 
-#include <stdio.h>
-#include <ctype.h>
-#include <errno.h>
-#include <assert.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <memory.h>
+#include "comm.h"
+
+typedef struct
+{
+    void *pool;                                     /* 内存池 */
+    mem_alloc_cb_t alloc;                           /* 申请内存 */
+    mem_dealloc_cb_t dealloc;                       /* 释放内存 */
+} btree_option_t;
 
 /* B树结点 */
 typedef struct _btree_node_t
@@ -25,12 +26,16 @@ typedef struct
     int min;                                        /* 最小关键字个数 */
     int sep_idx;                                    /* 结点分化的分割索引 */
     btree_node_t *root;                             /* 根结点 */
+
+    void *pool;                                     /* 内存池 */
+    mem_alloc_cb_t alloc;                           /* 申请内存 */
+    mem_dealloc_cb_t dealloc;                       /* 释放内存 */
 }btree_t;
 
-extern btree_t *btree_creat(int m);
+extern btree_t *btree_creat(int m, btree_option_t *opt);
 extern int btree_insert(btree_t *btree, int key);
 extern int btree_remove(btree_t *btree, int key);
-extern int btree_destroy(btree_t **btree);
+extern int btree_destroy(btree_t *btree);
 void _btree_print(const btree_node_t *node, int deep);
 #define btree_print(btree) /* 打印B树 */\
 { \
