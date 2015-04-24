@@ -25,7 +25,7 @@
         fprintf(fp, "\t"); \
         depth--; \
     } \
-    fprintf(fp, "<%s", node->name); \
+    fprintf(fp, "<%s", node->name.str); \
 }
 
 /* 打印属性节点(注: XML有层次格式) */
@@ -35,7 +35,7 @@
     { \
         if (xml_is_attr(node->temp)) \
         { \
-            fprintf(fp, " %s=\"%s\"", node->temp->name, node->temp->value); \
+            fprintf(fp, " %s=\"%s\"", node->temp->name.str, node->temp->value.str); \
             node->temp = node->temp->next; \
             continue; \
         } \
@@ -50,11 +50,11 @@
     { \
         if (xml_has_child(node))  /* 此时temp指向node的孩子节点 或 NULL */ \
         { \
-            fprintf(fp, ">%s\n", node->value); \
+            fprintf(fp, ">%s\n", node->value.str); \
         } \
         else \
         { \
-            fprintf(fp, ">%s</%s>\n", node->value, node->name); \
+            fprintf(fp, ">%s</%s>\n", node->value.str, node->name.str); \
         } \
     } \
     else \
@@ -112,7 +112,7 @@ static xml_node_t *xml_fprint_next(
                 fprintf(fp, "\t");
                 level--;
             }
-            fprintf(fp, "</%s>\n", top->name);
+            fprintf(fp, "</%s>\n", top->name.str);
         }
         
         if (stack_pop(stack))
@@ -149,7 +149,7 @@ static xml_node_t *xml_fprint_next(
                     fprintf(fp, "\t");
                     level--;
                 }
-                fprintf(fp, "</%s>\n", top->name);
+                fprintf(fp, "</%s>\n", top->name.str);
             }
             
             if (stack_isempty(stack))
@@ -237,7 +237,7 @@ int xml_fprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, FILE *fp)
 #define xml_pack_name_length(node, length) \
 { \
     /*fprintf(fp, "<%s", node->name);*/ \
-    length += (1 + strlen(node->name)); \
+    length += (1 + node->name.len); \
 }
 
 /* 组包属性节点的长度(注: XML无层次格式) */
@@ -249,7 +249,7 @@ int xml_fprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, FILE *fp)
         { \
             /* sprintf(sp->ptr, " %s=\"%s\"", node->temp->name, node->temp->value); */ \
             /* sp->ptr += strlen(sp->ptr); */ \
-            length += strlen(node->temp->name) + strlen(node->temp->value) + 4; \
+            length += node->temp->name.len + node->temp->value.len + 4; \
             node->temp = node->temp->next; \
             continue; \
         } \
@@ -266,12 +266,12 @@ int xml_fprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, FILE *fp)
         if (xml_has_child(node))  /* 此时temp指向node的孩子节点 或 NULL */ \
         { \
             /* sprintf(sp->ptr, ">%s", node->value); */ \
-            length += strlen(node->value)+1; \
+            length += node->value.len+1; \
         } \
         else \
         { \
             /* sprintf(sp->ptr, ">%s</%s>", node->value, node->name); */ \
-            length += strlen(node->value) + strlen(node->name) + 4; \
+            length += node->value.len + node->name.len + 4; \
         } \
     } \
     else \
@@ -284,7 +284,7 @@ int xml_fprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, FILE *fp)
         else \
         { \
             /* sprintf(sp->ptr, "></%s>", node->name); */ \
-            length += strlen(node->name) + 4; \
+            length += node->name.len + 4; \
         } \
     } \
 }
@@ -297,12 +297,12 @@ int xml_fprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, FILE *fp)
         if (xml_has_child(node))  /* 此时temp指向node的孩子节点 或 NULL */ \
         { \
             /* sprintf(sp->ptr, ">%s", node->value); */ \
-            length += strlen(node->value)+1; \
+            length += node->value.len+1; \
         } \
         else \
         { \
             /* sprintf(sp->ptr, ">%s</%s>", node->value, node->name); */ \
-            length += strlen(node->value) + strlen(node->name) + 4; \
+            length += node->value.len + node->name.len + 4; \
         } \
     } \
     else \
@@ -362,7 +362,7 @@ static xml_node_t *xml_pack_next_length(
     if (xml_has_child(top))
     {
         /* sprintf(sp->ptr, "</%s>", top->name); */
-        length2 += strlen(top->name) + 3;
+        length2 += top->name.len + 3;
     }
 
     if (stack_pop(stack))
@@ -396,7 +396,7 @@ static xml_node_t *xml_pack_next_length(
         if (xml_has_child(top))
         {
             /* sprintf(sp->ptr, "</%s>", top->name); */
-            length2 += strlen(top->name)+3;
+            length2 += top->name.len+3;
         }
 
         if (stack_isempty(stack))
@@ -480,8 +480,8 @@ int xml_pack_node_length(xml_tree_t *xml, xml_node_t *root, Stack_t *stack)
 /* 打印节点名(注: XML无层次格式) */
 #define xml_pack_name(sp, node) \
 { \
-    sprintf(sp->ptr, "<%s", node->name);\
-    sp->ptr += strlen(sp->ptr);\
+    sprintf(sp->ptr, "<%s", node->name.str);\
+    sp->ptr += (1+node->name.len);\
 }
 
 /* 打印属性节点(注: XML无层次格式) */
@@ -491,8 +491,8 @@ int xml_pack_node_length(xml_tree_t *xml, xml_node_t *root, Stack_t *stack)
     { \
         if (xml_is_attr(node->temp)) \
         { \
-            sprintf(sp->ptr, " %s=\"%s\"", node->temp->name, node->temp->value); \
-            sp->ptr += strlen(sp->ptr); \
+            sprintf(sp->ptr, " %s=\"%s\"", node->temp->name.str, node->temp->value.str); \
+            sp->ptr += (node->temp->name.len+node->temp->value.len+4); \
             node->temp = node->temp->next; \
             continue; \
         } \
@@ -508,13 +508,14 @@ int xml_pack_node_length(xml_tree_t *xml, xml_node_t *root, Stack_t *stack)
     { \
         if (xml_has_child(node))  /* 此时temp指向node的孩子节点 或 NULL */ \
         { \
-            sprintf(sp->ptr, ">%s", node->value); \
+            sprintf(sp->ptr, ">%s", node->value.str); \
+            sp->ptr += (node->value.len + 1); \
         } \
         else \
         { \
-            sprintf(sp->ptr, ">%s</%s>", node->value, node->name); \
+            sprintf(sp->ptr, ">%s</%s>", node->value.str, node->name.str); \
+            sp->ptr += (node->value.len + node->name.len + 4); \
         } \
-        sp->ptr += strlen(sp->ptr); \
     } \
     else \
     { \
@@ -525,8 +526,8 @@ int xml_pack_node_length(xml_tree_t *xml, xml_node_t *root, Stack_t *stack)
         } \
         else \
         { \
-            sprintf(sp->ptr, "></%s>", node->name); \
-            sp->ptr += strlen(sp->ptr); \
+            sprintf(sp->ptr, "></%s>", node->name.str); \
+            sp->ptr += (node->name.len + 4); \
         } \
     } \
 }
@@ -538,13 +539,14 @@ int xml_pack_node_length(xml_tree_t *xml, xml_node_t *root, Stack_t *stack)
     { \
         if (xml_has_child(node))  /* 此时temp指向node的孩子节点 或 NULL */ \
         { \
-            sprintf(sp->ptr, ">%s", node->value); \
+            sprintf(sp->ptr, ">%s", node->value.str); \
+            sp->ptr += (node->value.len + 1); \
         } \
         else \
         { \
-            sprintf(sp->ptr, ">%s</%s>", node->value, node->name); \
+            sprintf(sp->ptr, ">%s</%s>", node->value.str, node->name.str); \
+            sp->ptr += (node->value.len + node->name.len + 4); \
         } \
-        sp->ptr += strlen(sp->ptr); \
     } \
     else \
     { \
@@ -597,8 +599,8 @@ static xml_node_t *xml_pack_next(
     top = stack_gettop(stack);
     if (xml_has_child(top))
     {
-        sprintf(sp->ptr, "</%s>", top->name);
-        sp->ptr += strlen(sp->ptr);
+        sprintf(sp->ptr, "</%s>", top->name.str);
+        sp->ptr += (top->name.len + 3);
     }
 
     if (stack_pop(stack))
@@ -628,8 +630,8 @@ static xml_node_t *xml_pack_next(
         /* 4. 打印父亲节点结束标志 */
         if (xml_has_child(top))
         {
-            sprintf(sp->ptr, "</%s>", top->name);
-            sp->ptr += strlen(sp->ptr);
+            sprintf(sp->ptr, "</%s>", top->name.str);
+            sp->ptr += (top->name.len + 3);
         }
 
         if (stack_isempty(stack))
@@ -722,8 +724,8 @@ int xml_pack_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, sprint_t *s
         sprintf(sp->ptr, "\t"); sp->ptr++;\
         depth--; \
     } \
-    sprintf(sp->ptr, "<%s", node->name);\
-    sp->ptr += strlen(sp->ptr);\
+    sprintf(sp->ptr, "<%s", node->name.str);\
+    sp->ptr += (node->name.len + 1);\
 }
 
 /* 打印属性节点(注: XML有层次格式) */
@@ -733,8 +735,8 @@ int xml_pack_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, sprint_t *s
     { \
         if (xml_is_attr(node->temp)) \
         { \
-            sprintf(sp->ptr, " %s=\"%s\"", node->temp->name, node->temp->value); \
-            sp->ptr += strlen(sp->ptr); \
+            sprintf(sp->ptr, " %s=\"%s\"", node->temp->name.str, node->temp->value.str); \
+            sp->ptr += (node->temp->name.len + node->temp->value.len + 4); \
             node->temp = node->temp->next; \
             continue; \
         } \
@@ -749,13 +751,14 @@ int xml_pack_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, sprint_t *s
     { \
         if (xml_has_child(node))  /* 此时temp指向node的孩子节点 或 NULL */ \
         { \
-            sprintf(sp->ptr, ">%s\n", node->value); \
+            sprintf(sp->ptr, ">%s\n", node->value.str); \
+            sp->ptr += (node->value.len + 2); \
         } \
         else \
         { \
-            sprintf(sp->ptr, ">%s</%s>\n", node->value, node->name); \
+            sprintf(sp->ptr, ">%s</%s>\n", node->value.str, node->name.str); \
+            sp->ptr += (node->value.len + node->name.len + 5); \
         } \
-        sp->ptr += strlen(sp->ptr); \
     } \
     else \
     { \
@@ -815,8 +818,8 @@ static xml_node_t *xml_sprint_next(
                 sp->ptr++;
                 level--;
             }
-            sprintf(sp->ptr, "</%s>\n", top->name);
-            sp->ptr += strlen(sp->ptr);
+            sprintf(sp->ptr, "</%s>\n", top->name.str);
+            sp->ptr += (top->name.len + 4);
         }
         
         if (stack_pop(stack))
@@ -854,8 +857,8 @@ static xml_node_t *xml_sprint_next(
                     sp->ptr++;
                     level--;
                 }
-                sprintf(sp->ptr, "</%s>\n", top->name);
-                sp->ptr += strlen(sp->ptr);
+                sprintf(sp->ptr, "</%s>\n", top->name.str);
+                sp->ptr += (top->name.len + 4);
             }
             
             if (stack_isempty(stack))

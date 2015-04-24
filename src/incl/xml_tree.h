@@ -1,9 +1,8 @@
 #if !defined(__XML_TREE_H__)
 #define __XML_TREE_H__
 
-#include <stdio.h>
-
 #include "log.h"
+#include "str.h"
 
 /* 功能宏: 当组报文时，且结点无孩子结点时，必须使用组合标签:
     <NAME attr1="av1" attr2="av2"></NAME> */
@@ -66,8 +65,8 @@ typedef struct
 /* XML节点 */
 typedef struct _xml_node_t
 {
-    char *name;                 /* 节点名 */
-    char *value;                /* 节点值 */
+    str_t name;                 /* 节点名 */
+    str_t value;                /* 节点值 */
     xml_node_type_e type;       /* 节点类型 */
 
     struct _xml_node_t *next;   /* 兄弟节点链表 */
@@ -83,8 +82,10 @@ typedef struct _xml_node_t
 /* 结点初始化 */
 #define xml_node_init(node, _type)  \
 { \
-    (node)->name = NULL; \
-    (node)->value = NULL; \
+    (node)->name.str = NULL; \
+    (node)->name.len = 0; \
+    (node)->value.str = NULL; \
+    (node)->value.len = 0; \
     (node)->type = (_type); \
     (node)->next = NULL; \
     (node)->child = NULL; \

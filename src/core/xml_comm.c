@@ -113,14 +113,14 @@ xml_node_t *xml_node_creat_ext(xml_tree_t *xml,
 
     /* 2. 设置节点名 */
     size = strlen(name) + 1;
-    node->name = (char *)xml->alloc(xml->pool, size);
-    if (NULL == node->name)
+    node->name.str = (char *)xml->alloc(xml->pool, size);
+    if (NULL == node->name.str)
     {
         xml_node_free_one(xml, node);
         return NULL;
     }
 
-    snprintf(node->name, size, "%s", name);
+    node->name.len = snprintf(node->name.str, size, "%s", name);
 
     /* 3. 设置节点值 */
     if (xml_set_value(xml, node, value))
@@ -574,7 +574,7 @@ static int xml_parse_mark(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse)
  ******************************************************************************/
 static int xml_parse_end(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse)
 {
-    size_t len;
+    int len;
     xml_node_t *top;
     const char *ptr;
 
@@ -601,10 +601,10 @@ static int xml_parse_end(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse)
     }
 
     /* 3. 节点名是否一致 */
-    if (len != strlen(top->name)
-        || (0 != strncmp(top->name, parse->ptr, len)))
+    if (len != top->name.len
+        || (0 != strncmp(top->name.str, parse->ptr, len)))
     {
-        sys_error("Mark name is not match![%s][%-.32s]", top->name, parse->ptr);
+        sys_error("Mark name is not match![%s][%-.32s]", top->name.str, parse->ptr);
         return XML_ERR_MARK_MISMATCH;
     }
 
@@ -696,15 +696,16 @@ static int xml_mark_get_name(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse
     len = ptr - parse->ptr;
 
     /* 5. 提取出节点名 */
-    node->name = (char *)xml->alloc(xml->pool, len + 1);
-    if (NULL == node->name)
+    node->name.str = (char *)xml->alloc(xml->pool, len + 1);
+    if (NULL == node->name.str)
     {
         sys_error("Calloc failed!");
         return XML_ERR_CALLOC;
     }
 
-    strncpy(node->name, parse->ptr, len);
-    node->name[len] = '\0';
+    strncpy(node->name.str, parse->ptr, len);
+    node->name.len = len;
+    node->name.str[len] = '\0';
 
     /* 6. 将节点入栈 */
     if (stack_push(stack, (void*)node))
@@ -806,16 +807,17 @@ static int xml_mark_get_attr(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse
         while (XmlIsMarkChar(*ptr)) { ++ptr; }  /* 查找属性名的边界 */
 
         len = ptr - parse->ptr;
-        node->name = (char *)xml->alloc(xml->pool, (len+1)*sizeof(char));
-        if (NULL == node->name)
+        node->name.str = (char *)xml->alloc(xml->pool, (len+1)*sizeof(char));
+        if (NULL == node->name.str)
         {
             errflg = 1;
             sys_error("Calloc failed!");
             break;
         }
 
-        memcpy(node->name, parse->ptr, len);
-        node->name[len] = '\0';
+        memcpy(node->name.str, parse->ptr, len);
+        node->name.len = len;
+        node->name.str[len] = '\0';
         
         /* 3.3 获取属性值 */
         while (XmlIsIgnoreChar(*ptr)) { ++ptr; }        /* 跳过=之前的无意义字符 */
@@ -903,16 +905,17 @@ static int xml_mark_get_attr(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse
         else
     #endif /*__XML_ESC_PARSE__*/
         {
-            node->value = (char *)xml->alloc(xml->pool, len+1);
-            if (NULL == node->value)
+            node->value.str = (char *)xml->alloc(xml->pool, len+1);
+            if (NULL == node->value.str)
             {
                 errflg = 1;
                 sys_error("Calloc failed!");
                 break;
             }
 
-            memcpy(node->value, parse->ptr, len);
-            node->value[len] = '\0';
+            memcpy(node->value.str, parse->ptr, len);
+            node->value.len = len;
+            node->value.str[len] = '\0';
         }
 
         /* 3.4 将节点加入属性链表 */
@@ -1111,8 +1114,8 @@ static int xml_mark_get_value(xml_tree_t *xml, Stack_t *stack, xml_parse_t *pars
 #endif /*__XML_ESC_PARSE__*/
     size += len+1;
 
-    curr->value = (char *)xml->alloc(xml->pool, size*sizeof(char));
-    if (NULL == curr->value)
+    curr->value.str = (char *)xml->alloc(xml->pool, size*sizeof(char));
+    if (NULL == curr->value.str)
     {
     #if defined(__XML_ESC_PARSE__)
         xml_esc_free(&split);
@@ -1124,19 +1127,21 @@ static int xml_mark_get_value(xml_tree_t *xml, Stack_t *stack, xml_parse_t *pars
 #if defined(__XML_ESC_PARSE__)
     if (NULL != split.head)
     {
-        curr->value[0] = '\0';
+        curr->value.str[0] = '\0';
 
         xml_esc_merge(&split, curr->value);
 
-        strncat(curr->value, parse->ptr, len);
+        strncat(curr->value.str, parse->ptr, len);
+        curr->value.len = len;
 
         xml_esc_free(&split);
     }
     else
 #endif /*__XML_ESC_PARSE__*/
     {
-        strncpy(curr->value, parse->ptr, len);
-        curr->value[len] = '\0';
+        strncpy(curr->value.str, parse->ptr, len);
+        curr->value.len = len;
+        curr->value.str[len] = '\0';
     }
 
     parse->ptr = p2;
@@ -1170,14 +1175,14 @@ static int xml_mark_get_value(xml_tree_t *xml, Stack_t *stack, xml_parse_t *pars
  ******************************************************************************/
 int xml_node_free_one(xml_tree_t *xml, xml_node_t *node)
 {
-    if (NULL != node->name)
+    if (NULL != node->name.str)
     {
-        xml->dealloc(xml->pool, node->name);
+        xml->dealloc(xml->pool, node->name.str);
     }
 
-    if (NULL != node->value)
+    if (NULL != node->value.str)
     {
-        xml->dealloc(xml->pool, node->value);
+        xml->dealloc(xml->pool, node->value.str);
     }
 
     xml->dealloc(xml->pool, node);
@@ -1332,7 +1337,7 @@ int xml_delete_child(xml_tree_t *xml, xml_node_t *node, xml_node_t *child)
         depth--; \
     } \
     /*fprintf(fp, "<%s", node->name);*/ \
-    length += (1 + strlen(node->name)); \
+    length += (node->name.len + 1); \
 }
 
 /* 打印属性节点长度(注: XML有层次格式) */
@@ -1343,7 +1348,7 @@ int xml_delete_child(xml_tree_t *xml, xml_node_t *node, xml_node_t *child)
         if (xml_is_attr(node->temp)) \
         { \
             /*fprintf(fp, " %s=\"%s\"", node->temp->name, node->temp->value);*/ \
-            length += strlen(node->temp->name) + strlen(node->temp->value) + 4; \
+            length += (node->temp->name.len + node->temp->value.len + 4); \
             node->temp = node->temp->next; \
             continue; \
         } \
@@ -1359,12 +1364,12 @@ int xml_delete_child(xml_tree_t *xml, xml_node_t *node, xml_node_t *child)
         if (xml_has_child(node))  /* 此时temp指向node的孩子节点 或 NULL */ \
         { \
             /* fprintf(fp, ">%s\n", node->value); */ \
-            length += strlen(node->value) + 2; \
+            length += (node->value.len + 2); \
         } \
         else \
         { \
             /* fprintf(fp, ">%s</%s>\n", node->value, node->name); */ \
-            length += strlen(node->value) + strlen(node->name) + 5; \
+            length += (node->value.len + node->name.len + 5); \
         } \
     } \
     else \
@@ -1426,7 +1431,7 @@ static xml_node_t *xml_node_next_length(
             level--;
         }
         /* fprintf(fp, "</%s>\n", top->name); */
-        length2 += strlen(top->name) + 4;
+        length2 += (top->name.len + 4);
     }
 
     if (stack_pop(stack))
@@ -1468,7 +1473,7 @@ static xml_node_t *xml_node_next_length(
                 level--;
             }
             /* fprintf(fp, "</%s>\n", top->name); */
-            length2 += strlen(top->name) + 4;
+            length2 += (top->name.len + 4);
         }
 
         if (stack_isempty(stack))

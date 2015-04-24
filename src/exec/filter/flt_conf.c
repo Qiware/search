@@ -111,7 +111,7 @@ static int _flt_conf_load(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *log)
         node = xml_rquery(xml, nail, "LEVEL");
         if (NULL != node)
         {
-            conf->log.level = log_get_level(node->value);
+            conf->log.level = log_get_level(node->value.str);
         }
         else
         {
@@ -122,7 +122,7 @@ static int _flt_conf_load(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *log)
         node = xml_rquery(xml, nail, "SYS_LEVEL");
         if (NULL != node)
         {
-            conf->log.syslevel = log_get_level(node->value);
+            conf->log.syslevel = log_get_level(node->value.str);
         }
         else
         {
@@ -151,7 +151,7 @@ static int _flt_conf_load(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *log)
     }
     else
     {
-        work->num = atoi(node->value);
+        work->num = atoi(node->value.str);
     }
 
     /* 2. 工作路径(相对查找) */
@@ -162,15 +162,15 @@ static int _flt_conf_load(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *log)
         return FLT_ERR;
     }
 
-    snprintf(work->path, sizeof(work->path), "%s", node->value);
+    snprintf(work->path, sizeof(work->path), "%s", node->value.str);
 
     Mkdir(work->path, DIR_MODE);
 
-    snprintf(work->err_path, sizeof(work->err_path), "%s/error", node->value);
+    snprintf(work->err_path, sizeof(work->err_path), "%s/error", node->value.str);
     Mkdir(work->err_path, DIR_MODE);
-    snprintf(work->man_path, sizeof(work->man_path), "%s/manage", node->value);
+    snprintf(work->man_path, sizeof(work->man_path), "%s/manage", node->value.str);
     Mkdir(work->man_path, DIR_MODE);
-    snprintf(work->webpage_path, sizeof(work->webpage_path), "%s/webpage", node->value);
+    snprintf(work->webpage_path, sizeof(work->webpage_path), "%s/webpage", node->value.str);
     Mkdir(work->webpage_path, DIR_MODE);
 
     /* > 定位Download标签
@@ -191,7 +191,7 @@ static int _flt_conf_load(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *log)
         return FLT_ERR;
     }
 
-    conf->download.depth = atoi(node->value);
+    conf->download.depth = atoi(node->value.str);
 
     /* 2 获取存储路径 */
     node = xml_rquery(xml, nail, "PATH");
@@ -201,7 +201,7 @@ static int _flt_conf_load(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *log)
         return FLT_ERR;
     }
 
-    snprintf(conf->download.path, sizeof(conf->download.path), "%s", node->value);
+    snprintf(conf->download.path, sizeof(conf->download.path), "%s", node->value.str);
 
     /* 3 任务队列配置(相对查找) */
     node = xml_query(xml, "FILTER.WORKQ.COUNT");
@@ -211,7 +211,7 @@ static int _flt_conf_load(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *log)
         return FLT_ERR;
     }
 
-    conf->workq_count = atoi(node->value);
+    conf->workq_count = atoi(node->value.str);
     if (conf->workq_count <= 0)
     {
         conf->workq_count = FLT_WORKQ_MAX_NUM;
@@ -225,7 +225,7 @@ static int _flt_conf_load(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *log)
         return FLT_ERR;
     }
 
-    conf->man_port = atoi(node->value);
+    conf->man_port = atoi(node->value.str);
 
     /* > 获取Redis配置 */
     if (flt_conf_load_redis(xml, conf, log))
@@ -287,7 +287,7 @@ static int flt_conf_load_redis(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *l
     item = start;
     while (NULL != item)
     {
-        if (strcmp(item->name, "ITEM"))
+        if (strcmp(item->name.str, "ITEM"))
         {
             log_error(log, "Mark name isn't right! mark:%s", item->name);
             return FLT_ERR;
@@ -318,7 +318,7 @@ static int flt_conf_load_redis(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *l
                 break;
             }
 
-            snprintf(redis->conf[idx].ip, sizeof(redis->conf[idx].ip), "%s", node->value);
+            snprintf(redis->conf[idx].ip, sizeof(redis->conf[idx].ip), "%s", node->value.str);
 
             /* 获取PORT地址 */
             node = xml_rquery(xml, item, "PORT");
@@ -328,7 +328,7 @@ static int flt_conf_load_redis(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *l
                 break;
             }
 
-            redis->conf[idx].port = atoi(node->value);
+            redis->conf[idx].port = atoi(node->value.str);
 
             /* 下一结点 */
             item = item->next;
@@ -343,7 +343,7 @@ static int flt_conf_load_redis(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *l
             break;
         }
 
-        snprintf(redis->taskq, sizeof(redis->taskq), "%s", node->value);
+        snprintf(redis->taskq, sizeof(redis->taskq), "%s", node->value.str);
 
         /* > 获取哈希表名 */
         node = xml_rquery(xml, nail, "DONE_TAB.NAME");  /* DONE哈希表 */
@@ -353,7 +353,7 @@ static int flt_conf_load_redis(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *l
             break;
         }
 
-        snprintf(redis->done_tab, sizeof(redis->done_tab), "%s", node->value);
+        snprintf(redis->done_tab, sizeof(redis->done_tab), "%s", node->value.str);
 
         node = xml_rquery(xml, nail, "PUSH_TAB.NAME");  /* PUSH哈希表 */
         if (NULL == node)
@@ -362,7 +362,7 @@ static int flt_conf_load_redis(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *l
             break;
         }
 
-        snprintf(redis->push_tab, sizeof(redis->push_tab), "%s", node->value);
+        snprintf(redis->push_tab, sizeof(redis->push_tab), "%s", node->value.str);
 
         return FLT_OK;
     } while(0);
@@ -404,7 +404,7 @@ static int flt_conf_load_seed(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *lo
     conf->seed_num = 0;
     while (NULL != item)
     {
-        if (0 != strcasecmp(item->name, "ITEM"))
+        if (0 != strcasecmp(item->name.str, "ITEM"))
         {
             item = item->next;
             continue;
@@ -426,7 +426,7 @@ static int flt_conf_load_seed(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *lo
             return FLT_ERR;
         }
 
-        snprintf(seed->uri, sizeof(seed->uri), "%s", node->value);
+        snprintf(seed->uri, sizeof(seed->uri), "%s", node->value.str);
 
         /* 获取DEPTH */
         node = xml_rquery(xml, item, "DEPTH");
@@ -437,7 +437,7 @@ static int flt_conf_load_seed(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *lo
         }
         else
         {
-            seed->depth = atoi(node->value);
+            seed->depth = atoi(node->value.str);
         }
 
         item = item->next;

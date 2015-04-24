@@ -103,7 +103,7 @@ static int srch_conf_parse_log(xml_tree_t *xml, srch_conf_t *conf, log_cycle_t *
     node = xml_rquery(xml, fix, "LEVEL");
     if (NULL != node)
     {
-        conf->log.level = log_get_level(node->value);
+        conf->log.level = log_get_level(node->value.str);
     }
     else
     {
@@ -114,7 +114,7 @@ static int srch_conf_parse_log(xml_tree_t *xml, srch_conf_t *conf, log_cycle_t *
     node = xml_rquery(xml, fix, "SYS_LEVEL");
     if (NULL != node)
     {
-        conf->log.syslevel = log_get_level(node->value);
+        conf->log.syslevel = log_get_level(node->value.str);
     }
     else
     {
@@ -145,7 +145,7 @@ static int srch_conf_parse_connections(xml_tree_t *xml, srch_conf_t *conf, log_c
         return SRCH_ERR;
     }
 
-    conf->connections.max = atoi(node->value);
+    conf->connections.max = atoi(node->value.str);
 
     /* > 获取连接超时时间 */
     node = xml_rquery(xml, fix, "TIMEOUT");
@@ -155,7 +155,7 @@ static int srch_conf_parse_connections(xml_tree_t *xml, srch_conf_t *conf, log_c
         return SRCH_ERR;
     }
 
-    conf->connections.timeout = atoi(node->value);
+    conf->connections.timeout = atoi(node->value.str);
 
     /* > 获取侦听端口 */
     node = xml_rquery(xml, fix, "PORT");
@@ -165,7 +165,7 @@ static int srch_conf_parse_connections(xml_tree_t *xml, srch_conf_t *conf, log_c
         return SRCH_ERR;
     }
 
-    conf->connections.port = atoi(node->value);
+    conf->connections.port = atoi(node->value.str);
 
     return SRCH_OK;
 }
@@ -188,7 +188,7 @@ static int srch_conf_parse_queue(xml_tree_t *xml, srch_conf_t *conf, log_cycle_t
             return SRCH_ERR; \
         } \
         \
-        (conf)->max = atoi(node->value); \
+        (conf)->max = atoi(node->value.str); \
         \
         snprintf(node_path, sizeof(node_path), "%s.SIZE", _path); \
         \
@@ -198,7 +198,7 @@ static int srch_conf_parse_queue(xml_tree_t *xml, srch_conf_t *conf, log_cycle_t
             return SRCH_ERR; \
         } \
         \
-        (conf)->size = atoi(node->value); \
+        (conf)->size = atoi(node->value.str); \
     }
 
     /* > 定位队列标签 */
@@ -250,7 +250,7 @@ static int srch_conf_parse(xml_tree_t *xml, srch_conf_t *conf, log_cycle_t *log)
         return SRCH_ERR;
     }
 
-    conf->worker_num = atoi(node->value);
+    conf->worker_num = atoi(node->value.str);
 
     /* 4. 获取AGENT.NUM标签 */
     node = xml_query(xml, ".SEARCH-ENGINE.AGENT.NUM");
@@ -260,7 +260,7 @@ static int srch_conf_parse(xml_tree_t *xml, srch_conf_t *conf, log_cycle_t *log)
         return SRCH_ERR;
     }
 
-    conf->agent_num = atoi(node->value);
+    conf->agent_num = atoi(node->value.str);
 
     return SRCH_OK;
 }

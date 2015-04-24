@@ -349,7 +349,7 @@ static int crwl_task_parse(const char *str, crwl_task_t *task)
         return CRWL_ERR;
     }
 
-    task->type = atoi(node->value);
+    task->type = atoi(node->value.str);
     switch(task->type)
     {
         case CRWL_TASK_DOWN_WEBPAGE:
@@ -402,7 +402,7 @@ static int crwl_task_parse_download_webpage(xml_tree_t *xml, crwl_task_down_webp
         return CRWL_ERR;
     }
 
-    snprintf(dw->ip, sizeof(dw->ip), "%s", node->value);
+    snprintf(dw->ip, sizeof(dw->ip), "%s", node->value.str);
 
     /* 获取IP.FAMILY */
     node = xml_rquery(xml, body, "IP.FAMILY");
@@ -411,7 +411,7 @@ static int crwl_task_parse_download_webpage(xml_tree_t *xml, crwl_task_down_webp
         return CRWL_ERR;
     }
 
-    dw->family = atoi(node->value);
+    dw->family = atoi(node->value.str);
 
     /* 获取URI */
     node = xml_rquery(xml, body, "URI");
@@ -420,7 +420,7 @@ static int crwl_task_parse_download_webpage(xml_tree_t *xml, crwl_task_down_webp
         return CRWL_ERR;
     }
 
-    snprintf(dw->uri, sizeof(dw->uri), "%s", node->value);
+    snprintf(dw->uri, sizeof(dw->uri), "%s", node->value.str);
 
     /* 获取URI.DEPTH */
     node = xml_rquery(xml, body, "URI.DEPTH");
@@ -429,7 +429,7 @@ static int crwl_task_parse_download_webpage(xml_tree_t *xml, crwl_task_down_webp
         return CRWL_ERR;
     }
 
-    dw->depth = atoi(node->value);
+    dw->depth = atoi(node->value.str);
     dw->port = CRWL_WEB_SVR_PORT;
 
     return CRWL_OK;

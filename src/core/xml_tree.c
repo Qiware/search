@@ -57,15 +57,15 @@ xml_tree_t *xml_creat_empty(xml_option_t *opt)
     }
 
     /* 3. 设置根节点名 */
-    xml->root->name = (char *)xml->alloc(xml->pool, XML_ROOT_NAME_SIZE);
-    if (NULL == xml->root->name)
+    xml->root->name.str = (char *)xml->alloc(xml->pool, XML_ROOT_NAME_SIZE);
+    if (NULL == xml->root->name.str)
     {
         xml_destroy(xml);
         sys_error("Calloc failed!");
         return NULL;
     }
     
-    snprintf(xml->root->name, XML_ROOT_NAME_SIZE, "%s", XML_ROOT_NAME);
+    xml->root->name.len = snprintf(xml->root->name.str, XML_ROOT_NAME_SIZE, "%s", XML_ROOT_NAME);
 
     return xml;
 }
@@ -491,8 +491,9 @@ extern int xml_spack(xml_tree_t *xml, char *str)
  **函数名称: xml_rquery
  **功    能: 搜索指定节点的信息(相对路径)
  **输入参数:
+ **     xml: XML树
  **     curr: 参照结点
- **     path: 查找路径
+ **     path: 查找路径(相对路径)
  **输出参数:
  **返    回: 查找到的节点地址
  **实现描述: 
@@ -502,7 +503,7 @@ extern int xml_spack(xml_tree_t *xml, char *str)
  ******************************************************************************/
 xml_node_t *xml_rquery(xml_tree_t *xml, xml_node_t *curr, const char *path)
 {
-    size_t len;
+    int len;
     xml_node_t *node = curr;
     const char *str = path, *ptr;
 
@@ -539,8 +540,8 @@ xml_node_t *xml_rquery(xml_tree_t *xml, xml_node_t *curr, const char *path)
         /* 2.2 兄弟节点中查找 */
         while (NULL != node)
         {
-            if ((len == strlen(node->name))
-                && (0 == strncmp(node->name, str, len)))
+            if ((len == node->name.len)
+                && (0 == strncmp(node->name.str, str, len)))
             {
                 break;
             }
@@ -805,10 +806,11 @@ int xml_set_value(xml_tree_t *xml, xml_node_t *node, const char *value)
 {
     int size;
     
-    if (NULL != node->value)
+    if (NULL != node->value.str)
     {
-        xml->dealloc(xml->pool, node->value);
-        node->value = NULL;
+        xml->dealloc(xml->pool, node->value.str);
+        node->value.str = NULL;
+        node->value.len = 0;
         xml_unset_value_flag(node);
     }
 
@@ -817,11 +819,12 @@ int xml_set_value(xml_tree_t *xml, xml_node_t *node, const char *value)
         if (xml_is_attr(node))
         {
             /* 注意: 属性节点的值不能为NULL，应为“” - 防止计算XML树长度时，出现计算错误 */
-            node->value = (char *)xml->alloc(xml->pool, sizeof(char));
-            if (NULL == node->value)
+            node->value.str = (char *)xml->alloc(xml->pool, sizeof(char));
+            if (NULL == node->value.str)
             {
                 return XML_ERR;
             }
+            node->value.len = 0;
 			
             xml_set_value_flag(node);
             return XML_OK;
@@ -833,14 +836,15 @@ int xml_set_value(xml_tree_t *xml, xml_node_t *node, const char *value)
 
     size = strlen(value) + 1;
     
-    node->value = (char *)xml->alloc(xml->pool, size);
-    if (NULL == node->value)
+    node->value.str = (char *)xml->alloc(xml->pool, size);
+    if (NULL == node->value.str)
     {
         xml_unset_value_flag(node);
         return XML_ERR;
     }
 
-    snprintf(node->value, size, "%s", value);
+    snprintf(node->value.str, size, "%s", value);
+    node->value.len = size - 1;
     xml_set_value_flag(node);
     
     return XML_OK;
