@@ -7,6 +7,7 @@
  **         用于管理界面显示和菜单功能的执行
  ** 作  者: # Qifeng.zou # 2014.12.27 #
  ******************************************************************************/
+#include "str.h"
 #include "menu.h"
 #include "comm.h"
 
@@ -357,7 +358,6 @@ static menu_item_t *menu_exec(menu_cntx_t *ctx, menu_item_t *menu, const char *o
  ******************************************************************************/
 int menu_startup(menu_cntx_t *ctx)
 {
-    int idx, len;
     menu_item_t *curr = ctx->menu;
     char opt[MENU_INPUT_LEN];
 
@@ -377,22 +377,18 @@ int menu_startup(menu_cntx_t *ctx)
             return 0;
         }
 
-        len = strlen(opt);
-        for (idx=0; idx<len; ++idx)
+        if (!str_isdigit(opt))
         {
-            if (!isdigit(opt[idx]))
+            if (0 != strcasecmp(opt, "q")
+                && 0 != strcasecmp(opt, "quit")
+                && 0 != strcasecmp(opt, "exit"))
             {
-                if (0 != strcasecmp(opt, "q")
-                    && 0 != strcasecmp(opt, "quit")
-                    && 0 != strcasecmp(opt, "exit"))
-                {
-                    fprintf(stderr, "\n    Not right!\n");
+                fprintf(stderr, "\n    Not right!\n");
 
-                    curr->func(ctx, curr, curr->args);
-                    goto BEGIN;
-                }
-                goto EXEC;
+                curr->func(ctx, curr, curr->args);
+                goto BEGIN;
             }
+            goto EXEC;
         }
 
     EXEC:
