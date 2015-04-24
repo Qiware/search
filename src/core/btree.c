@@ -303,10 +303,7 @@ static int _btree_remove(btree_t *btree, btree_node_t *node, int idx)
         child = node->child[child->num];
     }
 
-    if (node != orig)
-    {
-        orig->key[idx] = node->key[node->num - 1];
-    }
+    orig->key[idx] = node->key[node->num - 1];
 
     /* 最终其处理过程相当于是删除最底层结点的关键字 */
     node->key[--node->num] = 0;
