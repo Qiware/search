@@ -23,11 +23,11 @@ typedef struct
 {
     int max;                                        /* 关键字最大个数 */
     int min;                                        /* 最小关键字个数 */
-    int sidx;                                       /* 结点分化的分割索引 */
+    int sep_idx;                                    /* 结点分化的分割索引 */
     btree_node_t *root;                             /* 根结点 */
 }btree_t;
 
-extern int btree_creat(btree_t **btree, int max);
+extern btree_t *btree_creat(int m);
 extern int btree_insert(btree_t *btree, int key);
 extern int btree_remove(btree_t *btree, int key);
 extern int btree_destroy(btree_t **btree);

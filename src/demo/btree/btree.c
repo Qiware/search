@@ -7,12 +7,12 @@
 
 int main(void)
 {
-    int ret = 0, key = 0, idx = 0;
-    btree_t *btree = NULL;
-    char input[INPUT_LEN] = {0};
+    int ret, key, idx;
+    btree_t *btree;
+    char input[INPUT_LEN];
 
-    ret = btree_creat(&btree, BTREE_M);
-    if (0 != ret)
+    btree = btree_creat(BTREE_M);
+    if (NULL == btree)
     {
         fprintf(stderr, "[%s][%d] Create btree failed!\n", __FILE__, __LINE__);
         return -1;

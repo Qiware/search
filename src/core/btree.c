@@ -35,21 +35,21 @@ static int _btree_merge(btree_t *btree, btree_node_t *left, btree_node_t *right,
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.03.12 #
  ******************************************************************************/
-int btree_creat(btree_t **_btree, int m)
+btree_t *btree_creat(int m)
 {
-    btree_t *btree = NULL;
+    btree_t *btree;
 
     if (m < 3)
     {
         fprintf(stderr, "[%s][%d] Parameter 'm' must geater than 2!\n", __FILE__, __LINE__);
-        return -1;
+        return NULL;
     }
 
     btree = (btree_t *)calloc(1, sizeof(btree_t));
     if (NULL == btree)
     {
         fprintf(stderr, "[%s][%d] errmsg:[%d] %s!\n", __FILE__, __LINE__, errno, strerror(errno));
-        return -1;
+        return NULL;
     }
 
     btree->max= m - 1;
@@ -59,12 +59,11 @@ int btree_creat(btree_t **_btree, int m)
         btree->min++;
     }
     btree->min--;
-    btree->sidx = m/2;
+    btree->sep_idx = m/2;
     btree->root = NULL;
-    fprintf(stderr, "max:%d min:%d sidx:%d\n", btree->max, btree->min, btree->sidx);
+    fprintf(stderr, "max:%d min:%d sep_idx:%d\n", btree->max, btree->min, btree->sep_idx);
 
-    *_btree = btree;
-    return 0;
+    return btree;
 }
 
 /******************************************************************************
@@ -175,8 +174,6 @@ static int _btree_insert(btree_t *btree, btree_node_t *node, int key, int idx)
  **输入参数: 
  **     btree: B树
  **     node: 指定节点
- **     key: 需被插入的关键字
- **     idx: 插入位置
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
@@ -185,7 +182,7 @@ static int _btree_insert(btree_t *btree, btree_node_t *node, int key, int idx)
  ******************************************************************************/
 static int btree_split(btree_t *btree, btree_node_t *node)
 {
-    int idx, total, sidx = btree->sidx;
+    int idx, total, sep_idx = btree->sep_idx;
     btree_node_t *parent, *node2;
 
     while(node->num > btree->max)
@@ -201,13 +198,13 @@ static int btree_split(btree_t *btree, btree_node_t *node)
         }
 
         /* Copy data */
-        memcpy(node2->key, node->key+sidx+1, (total-sidx-1) * sizeof(int));
-        memcpy(node2->child, node->child+sidx+1, (total-sidx) * sizeof(btree_node_t *));
+        memcpy(node2->key, node->key+sep_idx+1, (total-sep_idx-1) * sizeof(int));
+        memcpy(node2->child, node->child+sep_idx+1, (total-sep_idx) * sizeof(btree_node_t *));
 
-        node2->num = (total - sidx - 1);
+        node2->num = (total - sep_idx - 1);
         node2->parent  = node->parent;
 
-        node->num = sidx;
+        node->num = sep_idx;
 
         /* Insert into parent */
 	    parent  = node->parent;
@@ -226,7 +223,7 @@ static int btree_split(btree_t *btree, btree_node_t *node)
             node->parent = parent;
             node2->parent = parent;
 
-            parent->key[0] = node->key[sidx];
+            parent->key[0] = node->key[sep_idx];
             parent->child[1] = node2;
             parent->num++;
         }
@@ -235,14 +232,14 @@ static int btree_split(btree_t *btree, btree_node_t *node)
             /* Insert into parent node */
             for(idx=parent->num; idx>0; idx--)
             {
-                if (node->key[sidx] < parent->key[idx-1])
+                if (node->key[sep_idx] < parent->key[idx-1])
                 {
                     parent->key[idx] = parent->key[idx-1];
                     parent->child[idx+1] = parent->child[idx];
                 }
                 else
                 {
-                    parent->key[idx] = node->key[sidx];
+                    parent->key[idx] = node->key[sep_idx];
                     parent->child[idx+1] = node2;
                     node2->parent = parent;
                     parent->num++;
@@ -252,15 +249,15 @@ static int btree_split(btree_t *btree, btree_node_t *node)
 
             if (0 == idx)
             {
-                parent->key[0] = node->key[sidx];
+                parent->key[0] = node->key[sep_idx];
                 parent->child[1] = node2;
                 node2->parent = parent;
                 parent->num++;               
             }
         }
 
-        memset(node->key+sidx, 0, (total - sidx) * sizeof(int));
-        memset(node->child+sidx+1, 0, (total - sidx) * sizeof(btree_node_t *));
+        memset(node->key+sep_idx, 0, (total - sep_idx) * sizeof(int));
+        memset(node->child+sep_idx+1, 0, (total - sep_idx) * sizeof(btree_node_t *));
 
         /* Change node2's child->parent */
         for(idx=0; idx<=node2->num; idx++)
@@ -334,7 +331,7 @@ static int _btree_remove(btree_t *btree, btree_node_t *node, int idx)
 static int btree_merge(btree_t *btree, btree_node_t *node)
 {
     int idx, m, mid;
-    btree_node_t *parent = node->parent, *right = NULL, *left = NULL;
+    btree_node_t *parent = node->parent, *right, *left;
 
     /* 1. node是根结点, 不必进行合并处理 */
     if (NULL == parent)
