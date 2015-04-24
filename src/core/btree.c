@@ -1,9 +1,25 @@
+/******************************************************************************
+ ** Coypright(C) 2014-2024 Xundao technology Co., Ltd
+ **
+ ** 文件名: btree.c
+ ** 版本号: 1.0
+ ** 描  述: B树
+ **         一棵m阶的B树, 或为空树, 或为满足下列特征的m叉树:
+ **         ①. 树中每个结点至多有m棵子树;
+ **         ②. 若根结点不是终端结点, 则至少有2棵子树;
+ **         ③. 除根之外, 所有非终端结点至少有棵子树;
+ **         ④. 所有的非终端结点中包含下列信息数据;
+ **            [n, C0, K0, C1, K1, C2, K2, ...., Kn-1, Cn]
+ **            其中：Ki[i=0,1,...,n-1]为关键字, 且Ki<Ki+1[i=0,1,...,n-2];
+ **            Ci[i=0,1,...,n]为至上子树根结点的指针, 且指针Ci所指子树中所有结点的
+ **            关键字均小于Ki[i=0,1,...,n-1], 但都大于Ki-1[i=1,...,n-1];
+ ** 作  者: # Qifeng.zou # 2014.03.12 #
+ ******************************************************************************/
 #include "btree.h"
 
 static btree_node_t *btree_creat_node(btree_t *btree);
 static int _btree_insert(btree_t *btree, btree_node_t *node, int key, int idx);
 static int btree_split(btree_t *btree, btree_node_t *node);
-static int _btree_remove(btree_t *btree, btree_node_t *node, int idx);
 static int btree_merge(btree_t *btree, btree_node_t *node);
 static int _btree_merge(btree_t *btree, btree_node_t *left, btree_node_t *right, int idx);
 
@@ -261,43 +277,6 @@ static int btree_split(btree_t *btree, btree_node_t *node)
 }
 
 /******************************************************************************
- **函数名称: btree_remove
- **功    能: 删除指定关键字
- **输入参数: 
- **     btree: B树
- **     key: 关键字
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.03.12 #
- ******************************************************************************/
-int btree_remove(btree_t *btree, int key)
-{
-    int idx;
-    btree_node_t *node = btree->root;
-
-    while(NULL != node)
-    {
-        for(idx=0; idx<node->num; idx++)
-        {
-            if (key == node->key[idx])
-            {
-                return _btree_remove(btree, node, idx);
-            }
-            else if (key < node->key[idx])
-            {
-                break;
-            }
-        }
-
-        node = node->child[idx];
-    }
-
-    return 0;
-}
-
-/******************************************************************************
  **函数名称: _btree_remove
  **功    能: 在指定结点删除指定关键字
  **输入参数: 
@@ -324,7 +303,10 @@ static int _btree_remove(btree_t *btree, btree_node_t *node, int idx)
         child = node->child[child->num];
     }
 
-	orig->key[idx] = node->key[node->num - 1];
+    if (node != orig)
+    {
+        orig->key[idx] = node->key[node->num - 1];
+    }
 
     /* 最终其处理过程相当于是删除最底层结点的关键字 */
     node->key[--node->num] = 0;
@@ -354,7 +336,7 @@ static int _btree_remove(btree_t *btree, btree_node_t *node, int idx)
  ******************************************************************************/
 static int btree_merge(btree_t *btree, btree_node_t *node)
 {
-    int idx = 0, m = 0, mid = 0;
+    int idx, m, mid;
     btree_node_t *parent = node->parent, *right = NULL, *left = NULL;
 
     /* 1. node是根结点, 不必进行合并处理 */
@@ -387,7 +369,7 @@ static int btree_merge(btree_t *btree, btree_node_t *node)
 
     if (idx > parent->num)
     {
-        fprintf(stderr, "[%s][%d] Didn't find node in parent's children array!\n", __FILE__, __LINE__);
+        fprintf(stderr, "[%s][%d] Didn't find node from parent's children set!\n", __FILE__, __LINE__);
         return -1;
     }
     /* 3. node: 最后一个孩子结点(left < node)
@@ -471,13 +453,13 @@ static int btree_merge(btree_t *btree, btree_node_t *node)
  ******************************************************************************/
 static int _btree_merge(btree_t *btree, btree_node_t *left, btree_node_t *right, int mid)
 {
-    int m = 0;
+    int m;
     btree_node_t *parent = left->parent;
 
     left->key[left->num++] = parent->key[mid];
 
     memcpy(left->key + left->num, right->key, right->num*sizeof(int));
-    memcpy(left->child + left->num, right->child, (right->num+1)*sizeof(int));
+    memcpy(left->child + left->num, right->child, (right->num+1)*sizeof(btree_node_t *));
     for(m=0; m<=right->num; m++)
     {
         if (NULL != right->child[m])
@@ -639,3 +621,42 @@ static btree_node_t *btree_creat_node(btree_t *btree)
 
     return node;
 }
+
+/******************************************************************************
+ **函数名称: btree_remove
+ **功    能: 删除指定关键字
+ **输入参数: 
+ **     btree: B树
+ **     key: 关键字
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.03.12 #
+ ******************************************************************************/
+int btree_remove(btree_t *btree, int key)
+{
+    int idx;
+    btree_node_t *node = btree->root;
+
+    while(NULL != node)
+    {
+        for(idx=0; idx<node->num; idx++)
+        {
+            if (key == node->key[idx])
+            {
+                return _btree_remove(btree, node, idx);
+            }
+            else if (key < node->key[idx])
+            {
+                break;
+            }
+        }
+
+        node = node->child[idx];
+    }
+
+    return 0;
+}
+
+
