@@ -537,6 +537,7 @@ int btree_destroy(btree_t *btree)
 
     if (NULL == node)
     {
+        btree->dealloc(btree->pool, btree);
         return 0;
     }
 
