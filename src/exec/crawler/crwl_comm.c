@@ -115,7 +115,6 @@ int crwl_usage(const char *exec)
 crwl_cntx_t *crwl_cntx_init(char *pname, const char *path)
 {
     int idx;
-    void *addr;
     log_cycle_t *log;
     crwl_cntx_t *ctx;
     crwl_conf_t *conf;
@@ -159,14 +158,7 @@ crwl_cntx_t *crwl_cntx_init(char *pname, const char *path)
         syslog_set_level(conf->log.syslevel);
 
         /* 5. 创建内存池 */
-        addr = (void *)calloc(1, 30 * MB);
-        if (NULL == addr)
-        {
-            log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
-            break;
-        }
-
-        ctx->slab = slab_init(addr, 30 * MB);
+        ctx->slab = slab_creat_by_calloc(30 * MB);
         if (NULL == ctx->slab)
         {
             log_error(log, "Init slab failed!");

@@ -20,7 +20,9 @@
 #include "thread_pool.h"
 #include <hiredis/hiredis.h>
 
-#define FLT_REDIS_UNDO_LIMIT_NUM   (20000)
+#define FLT_REDIS_UNDO_LIMIT_NUM    (20000)
+#define FLT_TASKQ_LEN               (1000)  /* 工作队列 */
+#define FLT_CRWLQ_LEN               (1000)  /* 爬取队列 */
 
 
 /* 任务对象 */
@@ -48,8 +50,8 @@ typedef struct
     thread_pool_t *worker_pool;             /* Worker线程池 */
     flt_worker_t *worker;                   /* 工作对象 */
 
-    queue_t *taskq;                         /* 处理队列 */
-    queue_t *crwlq;                         /* 爬取队列 */
+    queue_t *taskq;                         /* 处理队列(存放的是将要被解析的网页索引文件) */
+    queue_t *crwlq;                         /* 爬取队列(存放的是将被推送至REDIS's TASKQ的URL) */
     redis_clst_t *redis;                    /* Redis集群 */
 
     hash_tab_t *domain_ip_map;              /* 域名IP映射表: 通过域名找到IP地址 */

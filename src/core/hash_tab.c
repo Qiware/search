@@ -33,14 +33,14 @@
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
-hash_tab_t *hash_tab_creat(slab_pool_t *slab, int mod, key_cb_t key_cb, avl_cmp_cb_t cmp_cb)
+hash_tab_t *hash_tab_creat(int mod, key_cb_t key_cb, avl_cmp_cb_t cmp_cb, hash_tab_option_t *option)
 {
     int idx;
     hash_tab_t *hash;
-    avl_option_t opt;
+    avl_option_t avl_opt;
 
     /* 1. 创建哈希数组 */
-    hash = (hash_tab_t *)calloc(1, sizeof(hash_tab_t));
+    hash = (hash_tab_t *)option->alloc(option->pool, sizeof(hash_tab_t));
     if (NULL == hash)
     {
         return NULL;
@@ -49,37 +49,36 @@ hash_tab_t *hash_tab_creat(slab_pool_t *slab, int mod, key_cb_t key_cb, avl_cmp_
     hash->total = 0;
 
     /* 2. 创建数组空间 */
-    hash->tree = (avl_tree_t **)calloc(mod, sizeof(avl_tree_t *));
+    hash->tree = (avl_tree_t **)option->alloc(option->pool, mod*sizeof(avl_tree_t *));
     if (NULL == hash->tree)
     {
-        free(hash);
+        option->dealloc(option->pool, hash);
         return NULL;
     }
 
-    hash->lock = (pthread_rwlock_t *)calloc(mod, sizeof(pthread_rwlock_t));
+    hash->lock = (pthread_rwlock_t *)option->alloc(option->pool, mod * sizeof(pthread_rwlock_t));
     if (NULL == hash->lock)
     {
-        free(hash->tree);
-        free(hash);
+        option->dealloc(option->pool, hash->tree);
+        option->dealloc(option->pool, hash);
         return NULL;
     }
 
     /* 3. 创建平衡二叉树 */
     for (idx=0; idx<mod; ++idx)
     {
-        memset(&opt, 0, sizeof(opt));
+        memset(&avl_opt, 0, sizeof(avl_opt));
 
-        opt.pool = (void *)slab;
-        opt.alloc = (mem_alloc_cb_t)slab_alloc;
-        opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+        avl_opt.pool = (void *)option->pool;
+        avl_opt.alloc = (mem_alloc_cb_t)option->alloc;
+        avl_opt.dealloc = (mem_dealloc_cb_t)option->dealloc;
 
         pthread_rwlock_init(&hash->lock[idx], NULL);
 
-        hash->tree[idx] = avl_creat(&opt, key_cb, cmp_cb);
+        hash->tree[idx] = avl_creat(&avl_opt, key_cb, cmp_cb);
         if (NULL == hash->tree[idx])
         {
-            free(hash->tree);
-            free(hash);
+            hash_tab_destroy(hash);
             return NULL;
         }
 
@@ -217,15 +216,18 @@ int hash_tab_destroy(hash_tab_t *hash)
     for (idx=0; idx<hash->num; ++idx)
     {
         pthread_rwlock_wrlock(&hash->lock[idx]);
-        avl_destroy(hash->tree[idx]);
+        if (NULL != hash->tree[idx])
+        {
+            avl_destroy(hash->tree[idx]);
+        } 
         pthread_rwlock_unlock(&hash->lock[idx]);
 
         pthread_rwlock_destroy(&hash->lock[idx]);
     }
 
-    free(hash->tree);
-    free(hash->lock);
-    free(hash);
+    hash->dealloc(hash->pool, hash->tree);
+    hash->dealloc(hash->pool, hash->lock);
+    hash->dealloc(hash->pool, hash);
 
     return 0;
 }

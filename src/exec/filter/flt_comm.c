@@ -151,10 +151,10 @@ static log_cycle_t *flt_init_log(char *fname)
  ******************************************************************************/
 flt_cntx_t *flt_init(char *pname, const char *path)
 {
-    void *addr;
     flt_cntx_t *ctx;
     flt_conf_t *conf;
     log_cycle_t *log;
+    hash_tab_option_t opt;
 
     /* > 初始化日志模块 */
     log = flt_init_log(pname);
@@ -177,15 +177,7 @@ flt_cntx_t *flt_init(char *pname, const char *path)
     do
     {
         /* > 创建内存池 */
-        addr = (void *)calloc(1, FLT_SLAB_SIZE);
-        if (NULL == addr)
-        {
-            log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
-            free(ctx);
-            return NULL;
-        }
-
-        ctx->slab = slab_init(addr, FLT_SLAB_SIZE);
+        ctx->slab = slab_creat_by_calloc(FLT_SLAB_SIZE);
         if (NULL == ctx->slab)
         {
             log_error(log, "Init slab failed!");
@@ -213,7 +205,7 @@ flt_cntx_t *flt_init(char *pname, const char *path)
         }
 
         /* > 创建工作队列 */
-        ctx->taskq = queue_creat(10000, sizeof(flt_task_t));
+        ctx->taskq = queue_creat(FLT_TASKQ_LEN, sizeof(flt_task_t));
         if (NULL == ctx->taskq)
         {
             log_error(ctx->log, "Create queue failed!");
@@ -221,7 +213,7 @@ flt_cntx_t *flt_init(char *pname, const char *path)
         }
 
         /* > 创建工作队列 */
-        ctx->crwlq = queue_creat(10000, sizeof(flt_crwl_t));
+        ctx->crwlq = queue_creat(FLT_CRWLQ_LEN, sizeof(flt_crwl_t));
         if (NULL == ctx->crwlq)
         {
             log_error(ctx->log, "Create queue failed!");
@@ -229,11 +221,16 @@ flt_cntx_t *flt_init(char *pname, const char *path)
         }
 
         /* > 新建域名IP映射表 */
+        memset(&opt, 0, sizeof(opt));
+
+        opt.pool = (void *)ctx->slab;
+        opt.alloc = (mem_alloc_cb_t)slab_alloc;
+        opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+
         ctx->domain_ip_map = hash_tab_creat(
-                ctx->slab,
                 FLT_DOMAIN_IP_MAP_HASH_MOD,
                 hash_time33_ex,
-                (avl_cmp_cb_t)flt_domain_ip_map_cmp_cb);
+                (avl_cmp_cb_t)flt_domain_ip_map_cmp_cb, &opt);
         if (NULL == ctx->domain_ip_map)
         {
             log_error(log, "Initialize hash table failed!");
@@ -241,11 +238,16 @@ flt_cntx_t *flt_init(char *pname, const char *path)
         }
 
         /* > 新建域名黑名单表 */
+        memset(&opt, 0, sizeof(opt));
+
+        opt.pool = (void *)ctx->slab;
+        opt.alloc = (mem_alloc_cb_t)slab_alloc;
+        opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+
         ctx->domain_blacklist = hash_tab_creat(
-                ctx->slab,
                 FLT_DOMAIN_BLACKLIST_HASH_MOD,
                 hash_time33_ex,
-                (avl_cmp_cb_t)flt_domain_blacklist_cmp_cb);
+                (avl_cmp_cb_t)flt_domain_blacklist_cmp_cb, &opt);
         if (NULL == ctx->domain_blacklist)
         {
             log_error(log, "Initialize hash table failed!");
@@ -263,7 +265,6 @@ flt_cntx_t *flt_init(char *pname, const char *path)
     } while (0);
 
     /* > 释放内存空间 */
-    if (addr) { free(addr); }
     if (ctx->redis) { redis_clst_destroy(ctx->redis); }
     if (ctx->taskq) { queue_destroy(ctx->taskq); }    
     free(ctx);

@@ -164,7 +164,6 @@ static log_cycle_t *srch_init_log(char *fname)
  ******************************************************************************/
 srch_cntx_t *srch_cntx_init(char *pname, const char *conf_path)
 {
-    void *addr;
     log_cycle_t *log;
     srch_cntx_t *ctx;
     srch_conf_t *conf;
@@ -207,15 +206,7 @@ srch_cntx_t *srch_cntx_init(char *pname, const char *conf_path)
     syslog_set_level(conf->log.syslevel);
 
     /* 5. 创建内存池 */
-    addr = (void *)calloc(1, 30 * MB);
-    if (NULL == addr)
-    {
-        free(ctx);
-        log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return NULL;
-    }
-
-    ctx->slab = slab_init(addr, 30 * MB);
+    ctx->slab = slab_creat_by_calloc(30 * MB);
     if (NULL == ctx->slab)
     {
         free(ctx);

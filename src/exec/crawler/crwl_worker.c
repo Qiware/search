@@ -96,7 +96,6 @@ static crwl_worker_t *crwl_worker_self(crwl_cntx_t *ctx)
  ******************************************************************************/
 int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker, int tidx)
 {
-    void *addr;
     list_option_t option;
     crwl_conf_t *conf = ctx->conf;
 
@@ -105,17 +104,9 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker, int tidx)
     worker->scan_tm = time(NULL);
 
     /* > 创建SLAB内存池 */
-    addr = calloc(1, CRWL_SLAB_SIZE);
-    if (NULL == addr)
-    {
-        log_fatal(worker->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return CRWL_ERR;
-    }
-
-    worker->slab = slab_init(addr, CRWL_SLAB_SIZE);
+    worker->slab = slab_creat_by_calloc(CRWL_SLAB_SIZE);
     if (NULL == worker->slab)
     {
-        free(addr);
         log_error(worker->log, "Initialize slab pool failed!");
         return CRWL_ERR;
     }
@@ -158,7 +149,6 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker, int tidx)
     } while(0);
 
     /* > 释放空间 */
-    free(addr);
     CLOSE(worker->epid);
 
     return CRWL_ERR;

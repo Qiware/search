@@ -111,7 +111,6 @@ void *srch_agent_routine(void *_ctx)
  ******************************************************************************/
 int srch_agent_init(srch_cntx_t *ctx, srch_agent_t *agt, int idx)
 {
-    void *addr;
     rbt_option_t opt;
     char path[FILE_NAME_MAX_LEN];
 
@@ -119,17 +118,9 @@ int srch_agent_init(srch_cntx_t *ctx, srch_agent_t *agt, int idx)
     agt->log = ctx->log;
 
     /* 1. 创建SLAB内存池 */
-    addr = calloc(1, SRCH_SLAB_SIZE);
-    if (NULL == addr)
-    {
-        log_fatal(agt->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return SRCH_ERR;
-    }
-
-    agt->slab = slab_init(addr, SRCH_SLAB_SIZE);
+    agt->slab = slab_creat_by_calloc(SRCH_SLAB_SIZE);
     if (NULL == agt->slab)
     {
-        free(addr);
         log_error(agt->log, "Initialize slab pool failed!");
         return SRCH_ERR;
     }
