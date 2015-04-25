@@ -1,6 +1,5 @@
 #include "str.h"
-#include <ctype.h>
-#include <string.h>
+#include "comm.h"
 
 /******************************************************************************
  **函数名称: str_to_lower

@@ -5,9 +5,6 @@
  ** 注  意: 
  ** 作  者: # Qifeng.zou # 2014.09.11 #
  ******************************************************************************/
-#include <sys/shm.h>
-#include <sys/types.h>
-
 #include "log.h"
 #include "comm.h"
 #include "syscall.h"

@@ -14,16 +14,17 @@
 #include <stdarg.h>
 #include <sys/un.h>
 #include <signal.h>
+#include <sys/shm.h>
 #include <pthread.h>
 #include <stdbool.h>
+#include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/timeb.h>
 #include <arpa/inet.h>
-#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-
+#include <sys/resource.h>
 
 /* 宏定义 */
 #define FILE_NAME_MAX_LEN   (256)           /* 文件名最大长度 */

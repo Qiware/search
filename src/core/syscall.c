@@ -1,6 +1,3 @@
-#include <pthread.h>
-#include <sys/resource.h>
-
 #include "syscall.h"
 
 /******************************************************************************

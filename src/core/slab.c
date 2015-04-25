@@ -9,9 +9,8 @@
  **         如果反复进行大量大小内存分配的混合空间申请和释放, "可能"出现分配空间失败的情况.
  ** 作  者: # Nginx # 2013.07.12 # 来自Nginx #
  ******************************************************************************/
-#include "slab.h"
 #include "log.h"
-#include <assert.h>
+#include "slab.h"
 
 #define SLAB_PAGE_MASK   3
 #define SLAB_PAGE        0

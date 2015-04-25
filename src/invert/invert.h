@@ -3,6 +3,7 @@
 
 #include "comm.h"
 #include "list.h"
+#include "btree.h"
 
 /* 倒排文件 */
 typedef struct

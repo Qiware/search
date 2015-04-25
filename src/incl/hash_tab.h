@@ -15,7 +15,7 @@ typedef int (*hash_tab_query_cb_t)(void *data, void *out);
 /* 哈希数组 */
 typedef struct
 {
-    uint32_t num;                                   /* 结点数 */
+    int num;                                        /* 结点数 */
     avl_tree_t **tree;                              /* 平衡二叉树(数组成员: num个) */
     pthread_rwlock_t *lock;                         /* 平衡二叉树锁 */
 

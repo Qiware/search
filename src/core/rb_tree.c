@@ -11,7 +11,6 @@
  ** 作  者: # Qifeng.zou # 2013.12.28 #
  ******************************************************************************/
 #include "rb_tree.h"
-#include <assert.h>
 
 static int rbt_insert_fixup(rbt_tree_t *tree, rbt_node_t *node);
 static int _rbt_delete(rbt_tree_t *tree, rbt_node_t *dnode);

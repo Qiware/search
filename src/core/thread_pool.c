@@ -8,17 +8,6 @@
  **         效增强模块的复用性和程序的稳定性。
  ** 作  者: # Qifeng.zou # 2012.12.26 #
  ******************************************************************************/
-#include <stdio.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <memory.h>
-#include <stdarg.h>
-#include <signal.h>
-#include <sys/time.h>
-#include <sys/types.h>
-
 #include "thread_pool.h"
 
 static void *thread_routine(void *_tpool);

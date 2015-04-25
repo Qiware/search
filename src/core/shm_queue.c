@@ -7,11 +7,6 @@
  **         使用SHM_SLAB机制管理共享内存.
  ** 作  者: # Qifeng.zou # 2014.09.09 #
  ******************************************************************************/
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <assert.h>
-
 #include "shm_opt.h"
 #include "syscall.h"
 #include "shm_slab.h"

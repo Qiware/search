@@ -1,19 +1,3 @@
-#include <stdio.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <stdarg.h>
-#include <sys/un.h>
-#include <signal.h>
-#include <pthread.h>
-#include <sys/time.h>
-#include <arpa/inet.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-
 #include "sck.h"
 #include "syscall.h"
 

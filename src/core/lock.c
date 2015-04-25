@@ -1,9 +1,3 @@
-#include <stdio.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <stdlib.h>
-#include <unistd.h>
-
 #include "lock.h"
 
 /******************************************************************************
@@ -24,7 +18,7 @@
  **         如果无法建立锁定，则返回-1，错误代码为EACCES 或EAGAIN。
  **作    者: # Qifeng.zou # 2013.09.06 #
  ******************************************************************************/
-int _try_flock(int32_t fd, int type, int whence, int start, int len)
+int _try_flock(int fd, int type, int whence, int start, int len)
 {
     struct flock fl;
 
@@ -55,7 +49,7 @@ int _try_flock(int32_t fd, int type, int whence, int start, int len)
  **         若在等待锁定的过程中被信号中断时，会立即返回-1，错误代码为EINTR。
  **作    者: # Qifeng.zou # 2013.09.06 #
  ******************************************************************************/
-int _flock(int32_t fd, int type, int whence, int offset, int len)
+int _flock(int fd, int type, int whence, int offset, int len)
 {
     struct flock fl;
 

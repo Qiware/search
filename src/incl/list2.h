@@ -1,6 +1,8 @@
 #if !defined(__LIST2_H__)
 #define __LIST2_H__
 
+#include "comm.h"
+
 /* 双向链表结点 */
 typedef struct _list2_node_t
 {

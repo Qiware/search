@@ -8,11 +8,6 @@
  **         2. 使用平衡树解决数据查找的性能问题
  ** 作  者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
-
 #include "log.h"
 #include "avl_tree.h"
 #include "hash_tab.h"
@@ -183,7 +178,6 @@ void *hash_tab_remove(hash_tab_t *hash, void *pkey, int pkey_len)
     void *data;
     unsigned int idx;
 
-
     idx = hash->key_cb(pkey, pkey_len) % hash->num;
 
     pthread_rwlock_wrlock(&hash->lock[idx]);
@@ -205,13 +199,12 @@ void *hash_tab_remove(hash_tab_t *hash, void *pkey, int pkey_len)
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
- **注意事项: 
- **     TODO: 未释放DATA空间
+ **注意事项: TODO: 未释放DATA空间
  **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
 int hash_tab_destroy(hash_tab_t *hash)
 {
-    unsigned int idx;
+    int idx;
 
     for (idx=0; idx<hash->num; ++idx)
     {
@@ -246,7 +239,7 @@ int hash_tab_destroy(hash_tab_t *hash)
  ******************************************************************************/
 int hash_tab_trav(hash_tab_t *hash, avl_trav_cb_t proc, void *args)
 {
-    unsigned int idx;
+    int idx;
 
     for (idx=0; idx<hash->num; ++idx)
     {

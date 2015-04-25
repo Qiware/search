@@ -9,11 +9,6 @@
  ** 作  者: # Qifeng.zou # 2014.09.08 #
  ******************************************************************************/
 
-#include <stdio.h>
-#include <unistd.h>
-#include <memory.h>
-#include <string.h>
-
 #include "syscall.h"
 #include "mem_pool.h"
 
