@@ -5,11 +5,32 @@
  ** 版本号: 1.0
  ** 描  述: 倒排索引、倒排文件处理
  **         如: 创建、插入、查找、删除、归并等
- ** 作  者: # Qifeng.zou # 2015.01.29 #
+ **     1. 单词词典: 使用平衡二叉树组织(原因: 查询会比修改删除更加频繁)
+ **     2. 文档列表: 使用B树组织
+ ** 作  者: # Qifeng.zou # 2015.04.29 #
  ******************************************************************************/
 #include "hash.h"
 #include "invert.h"
 #include "syscall.h"
+
+/******************************************************************************
+ **函数名称: invert_dic_word_cmp
+ **功    能: 比较单词的大小
+ **输入参数: 
+ **     word: 单词
+ **     data: 与word进行比较的单词对应的数据
+ **输出参数:
+ **返    回: KEY值
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.04.28 #
+ ******************************************************************************/
+static int invert_dic_word_cmp(char *word, void *data)
+{
+    invt_word_item_t *item = (invt_word_item_t *)data;
+
+    return strcmp(word, item->word.str);
+}
 
 /******************************************************************************
  **函数名称: invert_creat
@@ -23,14 +44,14 @@
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.04.28 #
  ******************************************************************************/
-invert_cntx_t *invert_creat(int max, log_cycle_t *log)
+invt_cntx_t *invert_creat(int max, log_cycle_t *log)
 {
     int idx;
-    invert_cntx_t *ctx;
-    btree_option_t option;
+    invt_cntx_t *ctx;
+    avl_option_t option;
 
     /* > 创建对象 */
-    ctx = (invert_cntx_t *)calloc(1, sizeof(invert_cntx_t));
+    ctx = (invt_cntx_t *)calloc(1, sizeof(invt_cntx_t));
     if (NULL == ctx)
     {
         log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
@@ -43,9 +64,9 @@ invert_cntx_t *invert_creat(int max, log_cycle_t *log)
     ctx->alloc = mem_alloc;
     ctx->dealloc = mem_dealloc;
 
-    /* > 创建B树对象 */
-    ctx->tree = (btree_t **)calloc(max, sizeof(btree_t *));
-    if (NULL == ctx->tree)
+    /* > 创建单词词典 */
+    ctx->dic = (avl_tree_t **)calloc(max, sizeof(avl_tree_t *));
+    if (NULL == ctx->dic)
     {
         log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
         FREE(ctx);
@@ -60,8 +81,10 @@ invert_cntx_t *invert_creat(int max, log_cycle_t *log)
         option.alloc = mem_alloc;
         option.dealloc = mem_dealloc;
 
-        ctx->tree[idx] = (btree_t *)btree_creat(3, &option);
-        if (NULL == ctx->tree[idx])
+        ctx->dic[idx] = avl_creat(&option,
+                            (key_cb_t)hash_time33_ex,
+                            (avl_cmp_cb_t)invert_dic_word_cmp);
+        if (NULL == ctx->dic[idx])
         {
             log_error(log, "Create btree failed! idx:%d", idx);
             return NULL;
@@ -72,10 +95,84 @@ invert_cntx_t *invert_creat(int max, log_cycle_t *log)
 }
 
 /******************************************************************************
+ **函数名称: invt_word_add
+ **功    能: 新建单词
+ **输入参数: 
+ **     ctx: 全局对象
+ **     word: 单词
+ **     len: 单词长度
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.04.29 #
+ ******************************************************************************/
+static invt_word_item_t *invt_word_add(invt_cntx_t *ctx, char *word, int len)
+{
+    int idx;
+    btree_option_t option;
+    invt_word_item_t *item;
+
+    idx = hash_time33(word) % ctx->mod;
+
+    /* > 创建数据对象 */
+    item = ctx->alloc(ctx->pool, sizeof(invt_word_item_t));
+    if (NULL == item)
+    {
+        log_error(ctx->log, "Alloc memory failed!");
+        return NULL;
+    }
+
+    memset(item, 0, sizeof(invt_word_item_t));
+
+    do
+    {
+        /* > 设置word标签 */
+        item->word.str = ctx->alloc(ctx->pool, len + 1);
+        if (NULL == item->word.str)
+        {
+            log_error(ctx->log, "Alloc memory failed!");
+            break;
+        }
+
+        snprintf(item->word.str, len + 1, "%s", word);
+        item->word.len = strlen(word);
+
+        /* > 创建文档列表 */
+        option.pool = (void *)NULL;
+        option.alloc = mem_alloc;
+        option.dealloc = mem_dealloc;
+
+        item->doc_list = (btree_t *)btree_creat(3, &option);
+        if (NULL == item->doc_list)
+        {
+            log_error(ctx->log, "Create btree failed! word:%s", word);
+            break;
+        }
+
+        /* > 插入单词词典 */
+        if (avl_insert(ctx->dic[idx], word, len, (void *)item))
+        {
+            log_error(ctx->log, "Insert avl failed! word:%s idx:%d", word, idx);
+            break;
+        }
+
+        return item;
+    } while(0);
+
+    if (item->doc_list) { ctx->dealloc(ctx->pool, item->doc_list); }
+    if (item->word.str) { ctx->dealloc(ctx->pool, item->word.str); }
+    if (item) { ctx->dealloc(ctx->pool, item); }
+
+    return NULL;
+}
+
+/******************************************************************************
  **函数名称: invert_insert
  **功    能: 插入倒排信息
  **输入参数: 
- **     key: 关键字
+ **     ctx: 全局对象
+ **     word: 关键字
  **     doc: 包含关键字的文档
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
@@ -83,20 +180,33 @@ invert_cntx_t *invert_creat(int max, log_cycle_t *log)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.04.28 #
  ******************************************************************************/
-int invert_insert(invert_cntx_t *ctx, const char *word, const char *doc)
+int invert_insert(invt_cntx_t *ctx, char *word, invt_doc_t *doc)
 {
     int idx;
-    unsigned int key;
+    avl_node_t *node;
+    invt_word_item_t *item;
 
-    key = hash_time33(word);
-    idx = key % ctx->mod;
+    idx = hash_time33(word) % ctx->mod;
 
-    if (btree_insert(ctx->tree[idx], key))
+    /* > 查找单词项 */
+    node = avl_query(ctx->dic[idx], word, strlen(word));
+    if (NULL == node)
     {
-        log_error(ctx->log, "Insert red-black-tree failed! word:%s doc:%s key:%lu idx:%d", word, doc, key, idx);
-        return INVT_ERR;
+        item = invt_word_add(ctx, word, strlen(word));
+        if (NULL == item)
+        {
+            log_error(ctx->log, "Create word item failed!");
+            return INVT_ERR;
+        }
     }
-    
+    else
+    {
+        item = (invt_word_item_t *)node->data;
+    }
+
+    /* > 插入文档列表 */
+    //btree_insert(item->doc_list, );
+   
     return INVT_OK;
 }
 
@@ -104,55 +214,53 @@ int invert_insert(invert_cntx_t *ctx, const char *word, const char *doc)
  **函数名称: invert_query
  **功    能: 查询倒排信息
  **输入参数: 
+ **     ctx: 全局对象
  **     word: 关键字
- **     list: 文档列表
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.04.28 #
  ******************************************************************************/
-int invert_query(invert_cntx_t *ctx, const char *word, list_t *list)
+invt_word_item_t *invert_query(invt_cntx_t *ctx, char *word)
 {
     int idx;
-    void *addr;
-    unsigned int key;
+    avl_node_t *node;
 
-    key = hash_time33(word);
-    idx = key % ctx->mod;
+    idx = hash_time33(word) % ctx->mod;
 
-    addr = btree_query(ctx->tree[idx], key);
-    if (NULL == addr)
+    node = avl_query(ctx->dic[idx], word, strlen(word));
+    if (NULL == node)
     {
-        log_error(ctx->log, "Query word [%s] failed! key:%d idx:%d", word, key, idx);
-        return INVT_ERR;
+        log_error(ctx->log, "Query word [%s] failed! idx:%d", word, idx);
+        return NULL;
     }
     
-    return INVT_OK;
+    return (invt_word_item_t *)node->data;
 }
 
 /******************************************************************************
  **函数名称: invert_remove
  **功    能: 删除倒排信息
  **输入参数: 
+ **     ctx: 全局对象
  **     word: 关键字
- **输出参数: NONE
+ **输出参数:
+ **     item: 单词项数据
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.04.28 #
  ******************************************************************************/
-int invert_remove(invert_cntx_t *ctx, const char *word)
+int invert_remove(invt_cntx_t *ctx, char *word, invt_word_item_t **item)
 {
     int idx;
-    unsigned int key;
 
-    key = hash_time33(word);
-    idx = key % ctx->mod;
+    idx = hash_time33(word) % ctx->mod;
 
-    if (btree_remove(ctx->tree[idx], key))
+    if (avl_delete(ctx->dic[idx], word, strlen(word), (void **)item))
     {
-        log_error(ctx->log, "Query word [%s] failed! key:%d idx:%d", word, key, idx);
+        log_error(ctx->log, "Query word [%s] failed! idx:%d", word, idx);
         return INVT_ERR;
     }
     
@@ -169,16 +277,16 @@ int invert_remove(invert_cntx_t *ctx, const char *word)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.04.28 #
  ******************************************************************************/
-int invert_destroy(invert_cntx_t *ctx)
+int invert_destroy(invt_cntx_t *ctx)
 {
     int idx;
 
     for (idx=0; idx<ctx->mod; ++idx)
     {
-        btree_destroy(ctx->tree[idx]);
+        avl_destroy(ctx->dic[idx]);
     }
 
-    FREE(ctx->tree);
+    FREE(ctx->dic);
     FREE(ctx);
 
     return 0;
