@@ -5,7 +5,8 @@
  ** 版本号: 1.0
  ** 描  述: 哈希表模块
  **         1. 使用哈希数组分解锁的压力
- **         2. 使用平衡树解决数据查找的性能问题
+ **         2. 使用平衡二叉树解决数据查找的性能问题
+ **         3. TODO: 可使用红黑树、链表等操作回调复用该框架!
  ** 作  者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
 #include "log.h"
@@ -81,7 +82,7 @@ hash_tab_t *hash_tab_creat(int mod, key_cb_t key_cb, avl_cmp_cb_t cmp_cb, hash_t
         hash->tree[idx]->cmp_cb = cmp_cb;
     }
 
-    hash->num = mod;
+    hash->mod = mod;
     hash->key_cb = key_cb;
     hash->cmp_cb = cmp_cb;
 
@@ -107,7 +108,7 @@ int hash_tab_insert(hash_tab_t *hash, void *pkey, int pkey_len, void *data)
     int ret;
     unsigned int idx;
 
-    idx = hash->key_cb(pkey, pkey_len) % hash->num;
+    idx = hash->key_cb(pkey, pkey_len) % hash->mod;
 
     pthread_rwlock_wrlock(&hash->lock[idx]);
     ret = avl_insert(hash->tree[idx], pkey, pkey_len, data);
@@ -142,7 +143,7 @@ int hash_tab_query(hash_tab_t *hash, void *pkey, int pkey_len,
     unsigned int idx;
     avl_node_t *node;
 
-    idx = hash->key_cb(pkey, pkey_len) % hash->num;
+    idx = hash->key_cb(pkey, pkey_len) % hash->mod;
 
     pthread_rwlock_rdlock(&hash->lock[idx]);
     node = avl_query(hash->tree[idx], pkey, pkey_len);
@@ -178,7 +179,7 @@ void *hash_tab_remove(hash_tab_t *hash, void *pkey, int pkey_len)
     void *data;
     unsigned int idx;
 
-    idx = hash->key_cb(pkey, pkey_len) % hash->num;
+    idx = hash->key_cb(pkey, pkey_len) % hash->mod;
 
     pthread_rwlock_wrlock(&hash->lock[idx]);
     avl_delete(hash->tree[idx], pkey, pkey_len, &data);
@@ -206,7 +207,7 @@ int hash_tab_destroy(hash_tab_t *hash)
 {
     int idx;
 
-    for (idx=0; idx<hash->num; ++idx)
+    for (idx=0; idx<hash->mod; ++idx)
     {
         pthread_rwlock_wrlock(&hash->lock[idx]);
         if (NULL != hash->tree[idx])
@@ -241,7 +242,7 @@ int hash_tab_trav(hash_tab_t *hash, avl_trav_cb_t proc, void *args)
 {
     int idx;
 
-    for (idx=0; idx<hash->num; ++idx)
+    for (idx=0; idx<hash->mod; ++idx)
     {
         pthread_rwlock_rdlock(&hash->lock[idx]);
         avl_trav(hash->tree[idx], proc, args);
