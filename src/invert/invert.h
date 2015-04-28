@@ -18,7 +18,6 @@ typedef struct
 {
     str_t url;                      /* 文档路径 */
     int freq;                       /* 单词次数 */
-    int off;                        /* 单词位置 */
 } invt_doc_t;
 
 /* 单词项 */
@@ -45,9 +44,9 @@ typedef struct
 
 /* 对外接口 */
 invt_cntx_t *invert_creat(int max, log_cycle_t *log);
-int invert_insert(invt_cntx_t *ctx, char *word, invt_doc_t *doc);
+int invert_insert(invt_cntx_t *ctx, char *word, const char *url, int freq);
 invt_word_item_t *invert_query(invt_cntx_t *ctx, char *word);
-int invert_remove(invt_cntx_t *ctx, char *word, invt_word_item_t **item);
+int invert_remove(invt_cntx_t *ctx, char *word);
 int invert_destroy(invt_cntx_t *ctx);
 
 #endif /*__INVERT_H__*/

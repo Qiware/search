@@ -168,19 +168,65 @@ static invt_word_item_t *invt_word_add(invt_cntx_t *ctx, char *word, int len)
 }
 
 /******************************************************************************
+ **函数名称: invt_word_add_doc
+ **功    能: 添加文档列表
+ **输入参数: 
+ **     ctx: 全局对象
+ **     word: 单词
+ **     len: 单词长度
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.04.29 #
+ ******************************************************************************/
+static int invt_word_add_doc(invt_cntx_t *ctx, invt_word_item_t *item, const char *url, int freq)
+{
+    int len;
+    invt_doc_t *doc;
+
+    /* > 创建文档项 */
+    doc = ctx->alloc(ctx->pool, sizeof(invt_doc_t));
+    if (NULL == doc)
+    {
+        log_error(ctx->log, "Alloc memory failed!");
+        return INVT_ERR;
+    }
+
+    len = strlen(url);
+    doc->url.str = ctx->alloc(ctx->pool, len + 1);
+    if (NULL == doc->url.str)
+    {
+        log_error(ctx->log, "Alloc memory failed!");
+        ctx->dealloc(ctx->pool, doc);
+        return INVT_ERR;
+    }
+
+    snprintf(doc->url.str, len+1, "%s", url);
+    doc->url.len = len;
+    doc->freq = freq;
+
+    /* > 插入文档列表 */
+    // btree_insert(item->doc_list, url, len,doc);
+
+    return INVT_OK;
+}
+
+/******************************************************************************
  **函数名称: invert_insert
  **功    能: 插入倒排信息
  **输入参数: 
  **     ctx: 全局对象
  **     word: 关键字
- **     doc: 包含关键字的文档
+ **     url: 包含关键字的文档
+ **     freq: 词频
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.04.28 #
  ******************************************************************************/
-int invert_insert(invt_cntx_t *ctx, char *word, invt_doc_t *doc)
+int invert_insert(invt_cntx_t *ctx, char *word, const char *url, int freq)
 {
     int idx;
     avl_node_t *node;
@@ -205,7 +251,11 @@ int invert_insert(invt_cntx_t *ctx, char *word, invt_doc_t *doc)
     }
 
     /* > 插入文档列表 */
-    //btree_insert(item->doc_list, );
+    if (invt_word_add_doc(ctx, item, url, freq))
+    {
+        log_error(ctx->log, "Add document item failed!");
+        return INVT_ERR;
+    }
    
     return INVT_OK;
 }
@@ -252,17 +302,23 @@ invt_word_item_t *invert_query(invt_cntx_t *ctx, char *word)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.04.28 #
  ******************************************************************************/
-int invert_remove(invt_cntx_t *ctx, char *word, invt_word_item_t **item)
+int invert_remove(invt_cntx_t *ctx, char *word)
 {
     int idx;
+    invt_word_item_t *item;
 
     idx = hash_time33(word) % ctx->mod;
 
-    if (avl_delete(ctx->dic[idx], word, strlen(word), (void **)item))
+    if (avl_delete(ctx->dic[idx], word, strlen(word), (void **)&item))
     {
         log_error(ctx->log, "Query word [%s] failed! idx:%d", word, idx);
         return INVT_ERR;
     }
+
+    btree_destroy(item->doc_list);
+
+    ctx->dealloc(ctx->pool, item->word.str);
+    ctx->dealloc(ctx->pool, item);
     
     return INVT_OK;
 }
