@@ -35,6 +35,7 @@ typedef struct
 extern btree_t *btree_creat(int m, btree_option_t *opt);
 extern int btree_insert(btree_t *btree, int key);
 extern int btree_remove(btree_t *btree, int key);
+void *btree_query(btree_t *btree, int key);
 extern int btree_destroy(btree_t *btree);
 void _btree_print(const btree_node_t *node, int deep);
 #define btree_print(btree) /* 打印B树 */\

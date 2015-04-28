@@ -109,7 +109,8 @@ int btree_insert(btree_t *btree, int key)
     /* 2. 查找关键字的插入位置 */
     while (NULL != node)
     {
-        for (idx=0; idx<node->num; idx++) /* FIXME: 可使用二分查找算法进行优化 */
+        /* FIXME: 可使用二分查找算法进行优化 */
+        for (idx=0; idx<node->num; idx++)
         {
             if (key == node->key[idx])
             {
@@ -677,7 +678,6 @@ static btree_node_t *btree_creat_node(btree_t *btree)
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
- **     FIXME: 可使用二分查找算法进行优化
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.03.12 #
  ******************************************************************************/
@@ -688,6 +688,7 @@ int btree_remove(btree_t *btree, int key)
 
     while (NULL != node)
     {
+        /* FIXME: 可使用二分查找算法进行优化 */
         for (idx=0; idx<node->num; idx++)
         {
             if (key == node->key[idx])
@@ -704,4 +705,43 @@ int btree_remove(btree_t *btree, int key)
     }
 
     return 0;
+}
+
+/******************************************************************************
+ **函数名称: btree_query
+ **功    能: 查询指定关键字
+ **输入参数: 
+ **     btree: B树
+ **     key: 关键字
+ **输出参数: NONE
+ **返    回: key对应的数据
+ **实现描述: 
+ **注意事项:
+ **作    者: # Qifeng.zou # 2015.04.28 #
+ ******************************************************************************/
+void *btree_query(btree_t *btree, int key)
+{
+    int idx;
+    btree_node_t *node = btree->root;
+
+    while (NULL != node)
+    {
+        /* FIXME: 可使用二分查找算法进行优化 */
+        for (idx=0; idx<node->num; idx++)
+        {
+            if (key == node->key[idx])
+            {
+                fprintf(stdout, "Found! key:%d idx:%d", key, idx);
+                return (void *)0; /* 找到 */
+            }
+            else if (key < node->key[idx])
+            {
+                break;
+            }
+        }
+
+        node = node->child[idx];
+    }
+
+    return (void *)-1; /* 未找到 */
 }
