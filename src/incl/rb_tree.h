@@ -18,8 +18,8 @@ typedef int (*rbt_trav_cb_t)(void *data, void *args);
 /* 错误码定义 */
 typedef enum
 {
-    RBT_SUCCESS                     /* 成功 */
-    , RBT_FAILED = ~0x7fffffff      /* 失败 */
+    RBT_OK                          /* 成功 */
+    , RBT_ERR = ~0x7fffffff         /* 失败 */
     , RBT_NODE_EXIST                /* 结点存在 */
 } rbt_ret_e;
 
