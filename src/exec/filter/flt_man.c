@@ -272,7 +272,7 @@ static uint32_t flt_man_reg_key_cb(void *_reg, size_t len)
  **函数名称: flt_man_reg_cmp_cb
  **功    能: 比较KEY的函数
  **输入参数: 
- **     man: 管理对象
+ **     type: 类型(唯一值)
  **     _reg: 注册的数据信息(类型: flt_man_reg_t)
  **输出参数:
  **返    回: =0:相等 <0:小于 >0:大于
