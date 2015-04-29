@@ -151,7 +151,7 @@ static crwl_man_t *crwl_man_init(crwl_cntx_t *ctx)
         option.alloc = (mem_alloc_cb_t)slab_alloc;
         option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-        man->reg = avl_creat(&option, (key_cb_t)crwl_man_reg_key_cb, (avl_cmp_cb_t)crwl_man_reg_cmp_cb);
+        man->reg = avl_creat(&option, (key_cb_t)avl_key_cb_int, (avl_cmp_cb_t)avl_cmp_cb_int);
         if (NULL == man->reg)
         {
             log_error(man->log, "Create AVL failed!");
@@ -247,44 +247,6 @@ static int crwl_man_register(crwl_man_t *man, int type, crwl_man_reg_cb_t proc, 
     }
 
     return CRWL_OK;
-}
-
-/******************************************************************************
- **函数名称: crwl_man_reg_key_cb
- **功    能: 生成KEY的函数
- **输入参数: 
- **     _reg: 注册数据
- **     len: 注册数据长度
- **输出参数:
- **返    回: KEY值
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2015.02.11 #
- ******************************************************************************/
-static uint32_t crwl_man_reg_key_cb(void *_reg, size_t len)
-{
-    crwl_man_reg_t *reg = (crwl_man_reg_t *)_reg;
-
-    return reg->type;
-}
-
-/******************************************************************************
- **函数名称: crwl_man_reg_cmp_cb
- **功    能: 比较KEY的函数
- **输入参数: 
- **     man: 管理对象
- **     _reg: 注册的数据信息(类型: crwl_man_reg_t)
- **输出参数:
- **返    回: =0:相等 <0:小于 >0:大于
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2015.02.11 #
- ******************************************************************************/
-static int crwl_man_reg_cmp_cb(void *type, const void *_reg)
-{
-    const crwl_man_reg_t *reg = (const crwl_man_reg_t *)_reg;
-
-    return (*(uint32_t *)type - reg->type);
 }
 
 /******************************************************************************

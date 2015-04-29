@@ -14,6 +14,47 @@
  ******************************************************************************/
 #include "avl_tree.h"
 
+/* 设置node的左孩子节点 */
+#define avl_set_lchild(node, _lchild) \
+{ \
+    (node)->lchild = (_lchild); \
+    if(NULL != (_lchild)) \
+    { \
+        (_lchild)->parent = (node); \
+    } \
+} 
+
+/* 设置node的右孩子节点 */
+#define avl_set_rchild(node, _rchild) \
+{ \
+    (node)->rchild = (_rchild); \
+    if(NULL != (_rchild)) \
+    { \
+        (_rchild)->parent = (node); \
+    } \
+} 
+
+/* 替换父节点的孩子节点 */
+#define avl_replace_child(tree, _parent, old, _new) \
+{ \
+    if(NULL == _parent) \
+    { \
+        (tree)->root = (_new); \
+        if(NULL != (_new)) \
+        { \
+            (_new)->parent = NULL; \
+        } \
+    } \
+    else if(_parent->lchild == old) \
+    { \
+        avl_set_lchild(_parent, _new); \
+    } \
+    else if(_parent->rchild == old) \
+    { \
+        avl_set_rchild(_parent, _new); \
+    } \
+} 
+
 static int _avl_insert(avl_tree_t *tree, avl_node_t *node,
         uint32_t idx, const avl_key_t *key, bool *taller, void *data);
 static void _avl_destroy(avl_tree_t *tree, avl_node_t *node);
@@ -1482,4 +1523,72 @@ int avl_trav(avl_tree_t *tree, avl_trav_cb_t proc, void *args)
 
     stack_destroy(&stack);
     return AVL_OK;
+}
+
+/******************************************************************************
+ **函数名称: avl_key_cb_int32
+ **功    能: 当主键为int32类型时的主键生成函数(外部接口)
+ **输入参数: 
+ **     key: 主键
+ **     len: 主键长度
+ **输出参数: NONE
+ **返    回: 主键
+ **实现描述: 
+ **注意事项: 此时*key必须为int32类型
+ **作    者: # Qifeng.zou # 2015.04.29 #
+ ******************************************************************************/
+int avl_key_cb_int32(const int *key, size_t len)
+{
+    return *key;
+}
+
+/******************************************************************************
+ **函数名称: avl_cmp_cb_int32
+ **功    能: 当主键为int类型时的主键比较函数(外部接口)
+ **输入参数: 
+ **     key: 主键
+ **     data: 与key值相等的键值对应的数据块
+ **输出参数: NONE
+ **返    回: 主键
+ **实现描述: 
+ **注意事项: 因主键为int32类型, 因此调此函数时, 肯定返回相等
+ **作    者: # Qifeng.zou # 2015.04.29 #
+ ******************************************************************************/
+int avl_cmp_cb_int32(int *key, const void *data)
+{
+    return 0; /* 因主键为int类型, 因此调此函数时, 肯定返回相等 */
+}
+
+/******************************************************************************
+ **函数名称: avl_key_cb_int64
+ **功    能: 当主键为int64类型时的主键生成函数(外部接口)
+ **输入参数: 
+ **     key: 主键
+ **     len: 主键长度
+ **输出参数: NONE
+ **返    回: 主键
+ **实现描述: 
+ **注意事项: 此时*key必须为uint64_t类型
+ **作    者: # Qifeng.zou # 2015.04.29 #
+ ******************************************************************************/
+uint64_t avl_key_cb_int64(const int64_t *key, size_t len)
+{
+    return *key;
+}
+
+/******************************************************************************
+ **函数名称: avl_cmp_cb_int64
+ **功    能: 当主键为int64类型时的主键比较函数(外部接口)
+ **输入参数: 
+ **     key: 主键
+ **     data: 与key值相等的键值对应的数据块
+ **输出参数: NONE
+ **返    回: 主键
+ **实现描述: 
+ **注意事项: 因主键为int64类型, 因此调此函数时, 肯定返回相等
+ **作    者: # Qifeng.zou # 2015.04.29 #
+ ******************************************************************************/
+int avl_cmp_cb_int64(const int64_t *key, const void *data)
+{
+    return 0; /* 因主键为int64_t类型, 因此调此函数时, 肯定返回相等 */
 }

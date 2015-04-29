@@ -29,14 +29,6 @@ typedef struct
     mem_dealloc_cb_t dealloc;   /* 释放内存 */
 } avl_option_t;
 
-/* 设置默认选项 */
-#define avl_setup_option(opt)   \
-{ \
-    (opt)->pool = NULL; \
-    (opt)->alloc = mem_alloc; \
-    (opt)->dealloc = mem_dealloc; \
-}
-
 /* 主键 */
 typedef struct
 {
@@ -89,47 +81,6 @@ typedef struct
     mem_dealloc_cb_t dealloc;   /* 释放内存 */
 } avl_tree_t;
 
-/* 设置node的左孩子节点 */
-#define avl_set_lchild(node, lc) \
-{ \
-    (node)->lchild = (lc); \
-    if(NULL != (lc)) \
-    { \
-        (lc)->parent = (node); \
-    } \
-} 
-
-/* 设置node的右孩子节点 */
-#define avl_set_rchild(node, rc) \
-{ \
-    (node)->rchild = (rc); \
-    if(NULL != (rc)) \
-    { \
-        (rc)->parent = (node); \
-    } \
-} 
-
-/* 替换父节点的孩子节点 */
-#define avl_replace_child(tree, _parent, old, _new) \
-{ \
-    if(NULL == _parent) \
-    { \
-        (tree)->root = (_new); \
-        if(NULL != (_new)) \
-        { \
-            (_new)->parent = NULL; \
-        } \
-    } \
-    else if(_parent->lchild == old) \
-    { \
-        avl_set_lchild(_parent, _new); \
-    } \
-    else if(_parent->rchild == old) \
-    { \
-        avl_set_rchild(_parent, _new); \
-    } \
-} 
-
 typedef int (*avl_trav_cb_t)(void *data, void *args);
 
 avl_tree_t *avl_creat(avl_option_t *opt, key_cb_t key_cb, avl_cmp_cb_t cmp_cb);
@@ -139,6 +90,13 @@ int avl_delete(avl_tree_t *tree, void *key, int key_len, void **data);
 int avl_print(avl_tree_t *tree);
 int avl_trav(avl_tree_t *tree, avl_trav_cb_t proc, void *args);
 void avl_destroy(avl_tree_t *tree);
+
+/* 通用回调 */
+int avl_key_cb_int32(const void *key, size_t len);
+int avl_cmp_cb_int32(void *key, const void *data);
+
+int avl_key_cb_int64(const void *key, size_t len);
+int avl_cmp_cb_int64(void *key, const void *data);
 
 /* 测试使用 */
 void avl_assert(const avl_node_t *node);
