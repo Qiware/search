@@ -20,7 +20,7 @@ typedef struct
     int freq;                       /* 单词次数 */
 } invt_word_doc_t;
 
-/* 单词项 */
+/* 词典单词 */
 typedef struct
 {
     str_t word;                     /* 单词 */

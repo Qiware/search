@@ -12,7 +12,8 @@ INCLUDE = -I. -I$(PROJ)/src/incl
 LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lpthread -lxd_core
 
-SRC_LIST = invert.c
+SRC_LIST = invert.c \
+			invt_sync.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST))
 
