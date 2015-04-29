@@ -1,13 +1,11 @@
 #if !defined(__SDTP_H__)
 #define __SDTP_H__
 
-#include <stdint.h>
-#include <assert.h>
-
 #include "log.h"
 #include "sck.h"
 #include "slab.h"
 #include "list.h"
+#include "comm.h"
 #include "list2.h"
 #include "queue.h"
 #include "sdtp_priv.h"
@@ -52,13 +50,13 @@ typedef struct
 } sdtp_conf_t;
 
 /* 回调注册 */
-typedef int (*sdtp_reg_cb_t)(uint32_t type, char *buff, size_t len, void *args);
+typedef int (*sdtp_reg_cb_t)(int type, char *buff, size_t len, void *args);
 typedef struct
 {
-    uint32_t type;                      /* 消息类型. Range: 0~SDTP_TYPE_MAX */
+    int type;                           /* 消息类型. Range: 0~SDTP_TYPE_MAX */
 #define SDTP_FLAG_UNREG     (0)         /* 0: 未注册 */
 #define SDTP_FLAG_REGED     (1)         /* 1: 已注册 */
-    uint32_t flag;                      /* 注册标识 
+    int flag;                           /* 注册标识 
                                             - 0: 未注册
                                             - 1: 已注册 */
     sdtp_reg_cb_t proc;                 /* 回调函数指针 */
@@ -161,7 +159,7 @@ typedef struct
 
 /* 外部接口 */
 sdtp_cntx_t *sdtp_init(const sdtp_conf_t *conf, log_cycle_t *log);
-int sdtp_register(sdtp_cntx_t *ctx, uint32_t type, sdtp_reg_cb_t proc, void *args);
+int sdtp_register(sdtp_cntx_t *ctx, int type, sdtp_reg_cb_t proc, void *args);
 int sdtp_startup(sdtp_cntx_t *ctx);
 int sdtp_destroy(sdtp_cntx_t **ctx);
 

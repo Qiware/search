@@ -25,7 +25,7 @@ void sdtp_recvtp_destroy(void *_ctx, void *args);
 static int sdtp_creat_worktp(sdtp_cntx_t *ctx);
 void sdtp_worktp_destroy(void *_ctx, void *args);
 
-static int sdtp_proc_def_hdl(uint32_t type, char *buff, size_t len, void *args);
+static int sdtp_proc_def_hdl(int type, char *buff, size_t len, void *args);
 
 /******************************************************************************
  **函数名称: sdtp_init
@@ -132,7 +132,7 @@ int sdtp_startup(sdtp_cntx_t *ctx)
  **     2. 不允许重复注册 
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-int sdtp_register(sdtp_cntx_t *ctx, uint32_t type, sdtp_reg_cb_t proc, void *args)
+int sdtp_register(sdtp_cntx_t *ctx, int type, sdtp_reg_cb_t proc, void *args)
 {
     sdtp_reg_t *reg;
 
@@ -507,7 +507,7 @@ void sdtp_worktp_destroy(void *_ctx, void *args)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.06 #
  ******************************************************************************/
-static int sdtp_proc_def_hdl(uint32_t type, char *buff, size_t len, void *args)
+static int sdtp_proc_def_hdl(int type, char *buff, size_t len, void *args)
 {
     sys_debug("Call %s() type:%u len:%d", __func__, type, len);
 
