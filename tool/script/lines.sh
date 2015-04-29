@@ -1,7 +1,15 @@
 #!/bin/sh
 
+# 设置统计目录
 DIR="../../src"
-SRC="$DIR/sdtp $DIR/gumbo $DIR/redis $DIR/http $DIR/core $DIR/exec $DIR/incl"
+SRC="$DIR/exec"
+SRC="$SRC $DIR/incl"
+SRC="$SRC $DIR/lib/core"
+SRC="$SRC $DIR/lib/sdtp"
+SRC="$SRC $DIR/lib/http"
+SRC="$SRC $DIR/lib/gumbo"
+SRC="$SRC $DIR/lib/redis"
+SRC="$SRC $DIR/lib/invert"
 
 # 总行数
 hl=`find $SRC -name "*.h" | xargs cat | wc -l`
