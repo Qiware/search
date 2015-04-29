@@ -65,7 +65,7 @@ invt_cntx_t *invert_creat(int max, log_cycle_t *log)
     ctx->dealloc = mem_dealloc;
 
     /* > 创建单词词典 */
-    ctx->dic = (avl_tree_t **)calloc(max, sizeof(avl_tree_t *));
+    ctx->dic = (avl_tree_t **)ctx->alloc(ctx->pool, max * sizeof(avl_tree_t *));
     if (NULL == ctx->dic)
     {
         log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
@@ -86,7 +86,8 @@ invt_cntx_t *invert_creat(int max, log_cycle_t *log)
                             (avl_cmp_cb_t)invert_dic_word_cmp);
         if (NULL == ctx->dic[idx])
         {
-            log_error(log, "Create btree failed! idx:%d", idx);
+            log_error(log, "Create avl-tree failed! idx:%d", idx);
+            invert_destroy(ctx);
             return NULL;
         }
     }
@@ -349,7 +350,7 @@ int invert_destroy(invt_cntx_t *ctx)
         avl_destroy(ctx->dic[idx]);
     }
 
-    FREE(ctx->dic);
+    ctx->dealloc(ctx->pool, ctx->dic);
     FREE(ctx);
 
     return 0;
