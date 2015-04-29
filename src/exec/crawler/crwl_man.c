@@ -151,7 +151,7 @@ static crwl_man_t *crwl_man_init(crwl_cntx_t *ctx)
         option.alloc = (mem_alloc_cb_t)slab_alloc;
         option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-        man->reg = avl_creat(&option, (key_cb_t)avl_key_cb_int, (avl_cmp_cb_t)avl_cmp_cb_int);
+        man->reg = avl_creat(&option, (key_cb_t)avl_key_cb_int32, (avl_cmp_cb_t)avl_cmp_cb_int32);
         if (NULL == man->reg)
         {
             log_error(man->log, "Create AVL failed!");
@@ -190,10 +190,7 @@ static crwl_man_t *crwl_man_init(crwl_cntx_t *ctx)
     } while(0);
 
     /* > 释放空间 */
-    if (NULL != man->reg)
-    {
-        avl_destroy(man->reg);
-    }
+    if (NULL != man->reg) { avl_destroy(man->reg); }
     if (NULL != man->mesg_list)
     {
         list_destroy(man->mesg_list, man->slab, (mem_dealloc_cb_t)slab_dealloc);

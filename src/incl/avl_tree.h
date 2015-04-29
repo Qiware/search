@@ -92,11 +92,11 @@ int avl_trav(avl_tree_t *tree, avl_trav_cb_t proc, void *args);
 void avl_destroy(avl_tree_t *tree);
 
 /* 通用回调 */
-int avl_key_cb_int32(const void *key, size_t len);
-int avl_cmp_cb_int32(void *key, const void *data);
+int avl_key_cb_int32(const int *key, size_t len);
+int avl_cmp_cb_int32(const int *key, const void *data);
 
-int avl_key_cb_int64(const void *key, size_t len);
-int avl_cmp_cb_int64(void *key, const void *data);
+int64_t avl_key_cb_int64(const int64_t *key, size_t len);
+int avl_cmp_cb_int64(const int64_t *key, const void *data);
 
 /* 测试使用 */
 void avl_assert(const avl_node_t *node);

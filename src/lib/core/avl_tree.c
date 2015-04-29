@@ -1554,7 +1554,7 @@ int avl_key_cb_int32(const int *key, size_t len)
  **注意事项: 因主键为int32类型, 因此调此函数时, 肯定返回相等
  **作    者: # Qifeng.zou # 2015.04.29 #
  ******************************************************************************/
-int avl_cmp_cb_int32(int *key, const void *data)
+int avl_cmp_cb_int32(const int *key, const void *data)
 {
     return 0; /* 因主键为int类型, 因此调此函数时, 肯定返回相等 */
 }
@@ -1571,7 +1571,7 @@ int avl_cmp_cb_int32(int *key, const void *data)
  **注意事项: 此时*key必须为uint64_t类型
  **作    者: # Qifeng.zou # 2015.04.29 #
  ******************************************************************************/
-uint64_t avl_key_cb_int64(const int64_t *key, size_t len)
+int64_t avl_key_cb_int64(const int64_t *key, size_t len)
 {
     return *key;
 }
