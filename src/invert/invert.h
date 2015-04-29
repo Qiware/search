@@ -4,7 +4,7 @@
 #include "log.h"
 #include "str.h"
 #include "comm.h"
-#include "btree.h"
+#include "list.h"
 #include "avl_tree.h"
 
 typedef enum
@@ -18,16 +18,16 @@ typedef struct
 {
     str_t url;                      /* 文档路径 */
     int freq;                       /* 单词次数 */
-} invt_doc_t;
+} invt_word_doc_t;
 
 /* 单词项 */
 typedef struct
 {
     str_t word;                     /* 单词 */
 
-    btree_t *doc_list;              /* 文档列表(记录了该单词的所有文档的文档列表
+    list_t *doc_list;               /* 文档列表(记录了该单词的所有文档的文档列表
                                        及单词在该文档出现的位置信息, etc. */
-} invt_word_item_t;
+} invt_dic_word_t;
 
 /* 倒排对象 */
 typedef struct
@@ -45,7 +45,7 @@ typedef struct
 /* 对外接口 */
 invt_cntx_t *invert_creat(int max, log_cycle_t *log);
 int invert_insert(invt_cntx_t *ctx, char *word, const char *url, int freq);
-invt_word_item_t *invert_query(invt_cntx_t *ctx, char *word);
+invt_dic_word_t *invert_query(invt_cntx_t *ctx, char *word);
 int invert_remove(invt_cntx_t *ctx, char *word);
 int invert_destroy(invt_cntx_t *ctx);
 
