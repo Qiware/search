@@ -77,14 +77,25 @@ list_t *list_creat(list_option_t *opt)
  **功    能: 销毁链表
  **输入参数: 
  **     list: 链表对象
+ **     pool: 内存池(正对链表结点所挂的数据块)
+ **     dealloc: 释放回调(正对链表结点所挂的数据块)
  **输出参数: 
  **返    回: 0:成功 !0:失败
  **实现描述: 
- **注意事项: 在销毁链表之前, 请先释放结点空间!
+ **注意事项: FIXME: 在销毁链表之前, 请先释放结点空间!
  **作    者: # Qifeng.zou # 2015.02.17 #
  ******************************************************************************/
-void list_destroy(list_t *list)
+void list_destroy(list_t *list, void *pool, mem_dealloc_cb_t dealloc)
 {
+    list_node_t *curr, *next;
+
+    for (curr = list->head; NULL != curr; curr = next)
+    {
+       next = curr->next; 
+       dealloc(pool, curr->data);
+       list->dealloc(list->pool, curr);
+    }
+
     list->dealloc(list->pool, list);
 }
 

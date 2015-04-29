@@ -474,7 +474,7 @@ static int srch_agent_add_conn(srch_cntx_t *ctx, srch_agent_t *agt)
             log_error(agt->log, "Insert into avl failed! fd:%d seq:%lu", sck->fd, extra->serial);
 
             CLOSE(sck->fd);
-            list_destroy(extra->send_list);
+            list_destroy(extra->send_list, agt->slab, (mem_dealloc_cb_t)slab_dealloc);
             slab_dealloc(agt->slab, sck->extra);
             slab_dealloc(agt->slab, sck);
             return SRCH_ERR;

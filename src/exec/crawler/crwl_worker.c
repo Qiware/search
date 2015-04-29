@@ -686,7 +686,7 @@ int crwl_worker_remove_sock(crwl_worker_t *worker, socket_t *sck)
         slab_dealloc(worker->slab, p);
     }
 
-    list_destroy(extra->send_list);
+    list_destroy(extra->send_list, worker->slab, (mem_dealloc_cb_t)slab_dealloc);
 
     /* >> 从套接字链表剔除SCK */
     if (list_remove(worker->sock_list, sck))

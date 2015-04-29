@@ -1033,7 +1033,7 @@ static int sdtp_rsvr_add_conn_hdl(sdtp_rsvr_t *rsvr, sdtp_cmd_add_sck_t *req)
     if (NULL == addr)
     {
         log_error(rsvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        list_destroy(sck->mesg_list);
+        list_destroy(sck->mesg_list, rsvr->pool, (mem_dealloc_cb_t)slab_dealloc);
         slab_dealloc(rsvr->pool, sck);
         return SDTP_ERR;
     }
@@ -1046,7 +1046,7 @@ static int sdtp_rsvr_add_conn_hdl(sdtp_rsvr_t *rsvr, sdtp_cmd_add_sck_t *req)
     {
         log_error(rsvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
         free(sck->recv.addr);
-        list_destroy(sck->mesg_list);
+        list_destroy(sck->mesg_list, rsvr->pool, (mem_dealloc_cb_t)slab_dealloc);
         slab_dealloc(rsvr->pool, sck);
         return SDTP_ERR;
     }
@@ -1060,7 +1060,7 @@ static int sdtp_rsvr_add_conn_hdl(sdtp_rsvr_t *rsvr, sdtp_cmd_add_sck_t *req)
         log_error(rsvr->log, "Alloc memory failed!");
         free(sck->recv.addr);
         free(sck->send.addr);
-        list_destroy(sck->mesg_list);
+        list_destroy(sck->mesg_list, rsvr->pool, (mem_dealloc_cb_t)slab_dealloc);
         slab_dealloc(rsvr->pool, sck);
         return SDTP_ERR;
     }

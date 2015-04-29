@@ -196,7 +196,7 @@ static crwl_man_t *crwl_man_init(crwl_cntx_t *ctx)
     }
     if (NULL != man->mesg_list)
     {
-        list_destroy(man->mesg_list);
+        list_destroy(man->mesg_list, man->slab, (mem_dealloc_cb_t)slab_dealloc);
     }
     CLOSE(man->fd);
     slab_dealloc(ctx->slab, man);

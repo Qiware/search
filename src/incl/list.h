@@ -37,7 +37,7 @@ void list_assert(list_t *list);
 #define list_isempty(list) (NULL == (list)->head)
 
 list_t *list_creat(list_option_t *opt);
-void list_destroy(list_t *list);
+void list_destroy(list_t *list, void *pool, mem_dealloc_cb_t dealloc);
 int list_insert(list_t *list, list_node_t *prev, void *data);
 int list_remove(list_t *list, void *data);
 
