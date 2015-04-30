@@ -42,7 +42,7 @@ gumbo_html_t *gumbo_html_parse(const char *path)
     mem_pool = mem_pool_creat(1 * MB);
     if (NULL == mem_pool)
     {
-        sys_error("Create memory pool failed!");
+        log_error2("Create memory pool failed!");
         return NULL;
     }
 
@@ -51,7 +51,7 @@ gumbo_html_t *gumbo_html_parse(const char *path)
     if (NULL == html)
     {
         mem_pool_destroy(mem_pool);
-        sys_error("Alloc memory from slab failed!");
+        log_error2("Alloc memory from slab failed!");
         return NULL;
     }
 
@@ -64,7 +64,7 @@ gumbo_html_t *gumbo_html_parse(const char *path)
     if (0 != ret)
     {
         mem_pool_destroy(mem_pool);
-        sys_error("Load html failed! path:%s", path);
+        log_error2("Load html failed! path:%s", path);
         return NULL;
     }
 
@@ -124,7 +124,7 @@ static int gumbo_load_html(gumbo_html_t *html)
     fp = fopen(html->path, "r");
     if (NULL == fp)
     {
-        sys_error("errmsg:[%d] %s! path:%s", errno, strerror(errno), html->path);
+        log_error2("errmsg:[%d] %s! path:%s", errno, strerror(errno), html->path);
         return -1;
     }
 
@@ -136,7 +136,7 @@ static int gumbo_load_html(gumbo_html_t *html)
     html->input = mem_pool_alloc(html->mem_pool, html->input_length + 1);
     if (NULL == html->input)
     {
-        sys_error("Alloc memory from slab failed!");
+        log_error2("Alloc memory from slab failed!");
         return -1;
     }
 
@@ -240,7 +240,7 @@ static void _gumbo_parse_href(GumboNode *node, gumbo_result_t *r)
         data = mem_pool_alloc(r->mem_pool, len + 1);
         if (NULL == data)
         {
-            sys_error("Alloc memory from slab failed!");
+            log_error2("Alloc memory from slab failed!");
             return;
         }
 
@@ -278,7 +278,7 @@ gumbo_result_t *gumbo_parse_href(const gumbo_html_t *html)
     mem_pool = mem_pool_creat(1 * MB);
     if (NULL == mem_pool)
     {
-        sys_error("Create memory pool failed!");
+        log_error2("Create memory pool failed!");
         return NULL;
     }
 
@@ -287,7 +287,7 @@ gumbo_result_t *gumbo_parse_href(const gumbo_html_t *html)
     if (NULL == r)
     {
         mem_pool_destroy(mem_pool);
-        sys_error("Alloc memory from slab failed!");
+        log_error2("Alloc memory from slab failed!");
         return NULL;
     }
 
@@ -304,7 +304,7 @@ gumbo_result_t *gumbo_parse_href(const gumbo_html_t *html)
     if (NULL == r->list)
     {
         mem_pool_destroy(mem_pool);
-        sys_error("Alloc memory from slab failed!");
+        log_error2("Alloc memory from slab failed!");
         return NULL;
     }
 

@@ -151,25 +151,25 @@ int syslog_get_level(const char *level_str);
 #define syslog_set_level(_level) { g_syslog.level = (_level); }
 void syslog_destroy(void);
 
-#define sys_fatal(...) /* 撰写FATAL级别日志 */\
+#define log_fatal2(...) /* 撰写FATAL级别日志 */\
     if (LOG_LEVEL_FATAL <= g_syslog.level) \
         syslog_core(LOG_LEVEL_FATAL, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
-#define sys_error(...) /* 撰写ERROR级别日志 */\
+#define log_error2(...) /* 撰写ERROR级别日志 */\
     if (LOG_LEVEL_ERROR <= g_syslog.level) \
         syslog_core(LOG_LEVEL_ERROR, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
-#define sys_warn(...)  /* 撰写WARN级别日志 */\
+#define log_warn2(...)  /* 撰写WARN级别日志 */\
     if (LOG_LEVEL_WARN <= g_syslog.level) \
         syslog_core(LOG_LEVEL_WARN, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
-#define sys_info(...)  /* 撰写INFO级别日志 */\
+#define log_info2(...)  /* 撰写INFO级别日志 */\
     if (LOG_LEVEL_INFO <= g_syslog.level) \
         syslog_core(LOG_LEVEL_INFO, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
-#define sys_debug(...) /* 撰写DEBUG级别日志 */\
+#define log_debug2(...) /* 撰写DEBUG级别日志 */\
     if (LOG_LEVEL_DEBUG <= g_syslog.level) \
         syslog_core(LOG_LEVEL_DEBUG, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
-#define sys_trace(...) /* 撰写TRACE级别日志 */\
+#define log_trace2(...) /* 撰写TRACE级别日志 */\
     if (LOG_LEVEL_TRACE <= g_syslog.level) \
         syslog_core(LOG_LEVEL_TRACE, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
-#define sys_bin(addr, len, ...)   /* 撰写MEM-DUMP日志 */\
+#define log_bin2(addr, len, ...)   /* 撰写MEM-DUMP日志 */\
     if (LOG_LEVEL_TRACE <= g_syslog.level) \
         syslog_core(LOG_LEVEL_TRACE, __FILE__, __LINE__, addr, len, __VA_ARGS__)
 

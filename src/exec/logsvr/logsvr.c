@@ -66,7 +66,7 @@ int main(void)
     ret = logsvr_init(&logsvr);
     if (ret < 0)
     {
-        sys_error("Init log failed!");
+        log_error2("Init log failed!");
         return -1;
     }
 
@@ -101,7 +101,7 @@ int logsvr_proc_lock(void)
     fd = Open(path, OPEN_FLAGS, OPEN_MODE);
     if (fd < 0)
     {
-        sys_error("errmsg:[%d]%s! path:[%s]", errno, strerror(errno), path);
+        log_error2("errmsg:[%d]%s! path:[%s]", errno, strerror(errno), path);
         return -1;
     }
 
@@ -109,7 +109,7 @@ int logsvr_proc_lock(void)
     ret = logsvr_proc_trylock(fd);
     if (ret < 0)
     {
-        sys_error("errmsg:[%d]%s! path:[%s]", errno, strerror(errno), path);
+        log_error2("errmsg:[%d]%s! path:[%s]", errno, strerror(errno), path);
         CLOSE(fd);
         return -1;
     }
@@ -141,7 +141,7 @@ static int logsvr_init(logsvr_t *logsvr)
     ret = logsvr_proc_lock();
     if (ret < 0)
     {
-        sys_error("Log server is already running...");
+        log_error2("Log server is already running...");
         return -1;    /* 日志服务进程正在运行... */
     }
 
@@ -153,7 +153,7 @@ static int logsvr_init(logsvr_t *logsvr)
     logsvr->fd = Open(path, OPEN_FLAGS, OPEN_MODE);
     if (logsvr->fd < 0)
     {
-        sys_error("errmsg:[%d] %s! path:[%s]", errno, strerror(errno), path);
+        log_error2("errmsg:[%d] %s! path:[%s]", errno, strerror(errno), path);
         return -1;
     }
 
@@ -161,7 +161,7 @@ static int logsvr_init(logsvr_t *logsvr)
     logsvr->addr = logsvr_creat_shm(logsvr->fd);
     if (NULL == logsvr->addr)
     {
-        sys_error("Create SHM failed!");
+        log_error2("Create SHM failed!");
         return -1;
     }
 
@@ -169,14 +169,14 @@ static int logsvr_init(logsvr_t *logsvr)
     addr = (void *)calloc(1, LOG_SVR_SLAB_SIZE);
     if (NULL == addr)
     {
-        sys_error("errmsg:[%d] %s!", errno, strerror(errno));
+        log_error2("errmsg:[%d] %s!", errno, strerror(errno));
         return -1;
     }
 
     logsvr->slab = slab_init(addr, LOG_SVR_SLAB_SIZE);
     if (NULL == logsvr->slab)
     {
-        sys_error("Inititalize slab failed!");
+        log_error2("Inititalize slab failed!");
         return -1;
     }
 
@@ -192,7 +192,7 @@ static int logsvr_init(logsvr_t *logsvr)
     {
         thread_pool_destroy(logsvr->pool);
         logsvr->pool = NULL;
-        sys_error("errmsg:[%d]%s!", errno, strerror(errno));
+        log_error2("errmsg:[%d]%s!", errno, strerror(errno));
         return -1;
     }
 
@@ -250,7 +250,7 @@ static char *logsvr_creat_shm(int fd)
     addr = (void *)shmat(shmid, NULL, 0);
     if ((void *)-1 == addr)
     {
-        sys_error("Attach shm failed! shmid:[%d] key:[0x%x]", shmid, key);
+        log_error2("Attach shm failed! shmid:[%d] key:[0x%x]", shmid, key);
         return NULL;
     }
 

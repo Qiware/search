@@ -39,7 +39,7 @@ xml_tree_t *xml_creat_empty(xml_option_t *opt)
     xml = (xml_tree_t*)opt->alloc(opt->pool, sizeof(xml_tree_t));
     if (NULL == xml)
     {
-        sys_error("Calloc failed!");
+        log_error2("Calloc failed!");
         return NULL;
     }
 
@@ -52,7 +52,7 @@ xml_tree_t *xml_creat_empty(xml_option_t *opt)
     if (NULL == xml->root)
     {
         xml_destroy(xml);
-        sys_error("Create node failed!");
+        log_error2("Create node failed!");
         return NULL;
     }
 
@@ -61,7 +61,7 @@ xml_tree_t *xml_creat_empty(xml_option_t *opt)
     if (NULL == xml->root->name.str)
     {
         xml_destroy(xml);
-        sys_error("Calloc failed!");
+        log_error2("Calloc failed!");
         return NULL;
     }
     
@@ -93,7 +93,7 @@ xml_tree_t *xml_creat(const char *fname, xml_option_t *opt)
     buff = xml_fload(fname, opt);
     if (NULL == buff)
     {
-        sys_error("Load xml file into memory failed![%s]", fname);
+        log_error2("Load xml file into memory failed![%s]", fname);
         return NULL;
     }
 
@@ -138,7 +138,7 @@ xml_tree_t *xml_screat_ext(const char *str, int length, xml_option_t *opt)
     buff = (char *)opt->alloc(opt->pool, length + 1);
     if (NULL == buff)
     {
-        sys_error("Alloc memory failed!");
+        log_error2("Alloc memory failed!");
         return NULL;
     }
 
@@ -182,7 +182,7 @@ xml_tree_t *xml_screat(const char *str, xml_option_t *opt)
         /* 1. 初始化栈 */
         if (stack_init(&stack, XML_MAX_DEPTH))
         {
-            sys_error("Init xml stack failed!");
+            log_error2("Init xml stack failed!");
             break;
         }
 
@@ -190,14 +190,14 @@ xml_tree_t *xml_screat(const char *str, xml_option_t *opt)
         xml = xml_init(opt); 
         if (NULL == xml)
         {   
-            sys_error("Init xml tree failed!");
+            log_error2("Init xml tree failed!");
             break;
         }
 
         /* 3. 解析XML文件缓存 */
         if (xml_parse(xml, &stack, str))
         {
-            sys_error("Parse xml failed!");
+            log_error2("Parse xml failed!");
             xml_destroy(xml);
             break;
         }
@@ -263,7 +263,7 @@ int xml_node_free(xml_tree_t *xml, xml_node_t *node)
 
     if (stack_init(stack, XML_MAX_DEPTH))
     {
-        sys_error("Init stack failed!");
+        log_error2("Init stack failed!");
         return XML_ERR_STACK;
     }
 
@@ -274,7 +274,7 @@ int xml_node_free(xml_tree_t *xml, xml_node_t *node)
         if (stack_push(stack, curr))
         {
             stack_destroy(stack);
-            sys_error("Push stack failed!");
+            log_error2("Push stack failed!");
             return XML_ERR_STACK;
         }
 
@@ -288,7 +288,7 @@ int xml_node_free(xml_tree_t *xml, xml_node_t *node)
     if (!stack_isempty(stack))
     {
         stack_destroy(stack);
-        sys_error("Stack is not empty!");
+        log_error2("Stack is not empty!");
         return XML_ERR_STACK;
     }
 
@@ -315,13 +315,13 @@ int xml_fprint(xml_tree_t *xml, FILE *fp)
 
     if (NULL == child) 
     {
-        sys_error("The tree is empty!");
+        log_error2("The tree is empty!");
         return XML_ERR_EMPTY_TREE;
     }
     
     if (stack_init(&stack, XML_MAX_DEPTH))
     {
-        sys_error("Stack init failed!");
+        log_error2("Stack init failed!");
         return XML_ERR_STACK;
     }
 
@@ -329,7 +329,7 @@ int xml_fprint(xml_tree_t *xml, FILE *fp)
     {
         if (xml_fprint_tree(xml, child, &stack, fp))
         {
-            sys_error("fPrint tree failed!");
+            log_error2("fPrint tree failed!");
             stack_destroy(&stack);
             return XML_ERR;
         }
@@ -360,21 +360,21 @@ int xml_fwrite(xml_tree_t *xml, const char *fname)
 
     if (NULL == child) 
     {
-        sys_error("The tree is empty!");
+        log_error2("The tree is empty!");
         return XML_ERR_EMPTY_TREE;
     }
 
     fp = fopen(fname, "wb");
     if (NULL == fp)
     {
-        sys_error("Call fopen() failed![%s]", fname);
+        log_error2("Call fopen() failed![%s]", fname);
         return XML_ERR_FOPEN;
     }
     
     if (stack_init(&stack, XML_MAX_DEPTH))
     {
         fclose(fp), fp = NULL;
-        sys_error("Stack init failed!");
+        log_error2("Stack init failed!");
         return XML_ERR_STACK;
     }
 
@@ -382,7 +382,7 @@ int xml_fwrite(xml_tree_t *xml, const char *fname)
     {
         if (xml_fprint_tree(xml, child, &stack, fp))
         {
-            sys_error("fPrint tree failed!");
+            log_error2("fPrint tree failed!");
             fclose(fp), fp = NULL;
             stack_destroy(&stack);
             return XML_ERR;
@@ -422,7 +422,7 @@ int xml_sprint(xml_tree_t *xml, char *str)
     
     if (stack_init(&stack, XML_MAX_DEPTH))
     {
-        sys_error("Stack init failed!");
+        log_error2("Stack init failed!");
         return XML_ERR_STACK;
     }
 
@@ -430,7 +430,7 @@ int xml_sprint(xml_tree_t *xml, char *str)
     {
         if (xml_sprint_tree(xml, child, &stack, &sp))
         {
-            sys_error("Sprint tree failed!");
+            log_error2("Sprint tree failed!");
             stack_destroy(&stack);
             return XML_ERR;
         }
@@ -468,7 +468,7 @@ extern int xml_spack(xml_tree_t *xml, char *str)
     
     if (stack_init(&stack, XML_MAX_DEPTH))
     {
-        sys_error("Stack init failed!");
+        log_error2("Stack init failed!");
         return XML_ERR_STACK;
     }
 
@@ -476,7 +476,7 @@ extern int xml_spack(xml_tree_t *xml, char *str)
     {
         if (xml_pack_tree(xml, child, &stack, &sp))
         {
-            sys_error("Sprint tree failed!");
+            log_error2("Sprint tree failed!");
             stack_destroy(&stack);
             return XML_ERR;
         }
@@ -586,13 +586,13 @@ xml_node_t *xml_add_attr(
 
     if (NULL == parent)
     {
-        sys_error("Please create root node at first!");
+        log_error2("Please create root node at first!");
         return NULL;
     }
 
     if (xml_is_attr(node))
     {
-        sys_error("Can't add attr for attribute node!");
+        log_error2("Can't add attr for attribute node!");
         return NULL;
     }
 
@@ -600,7 +600,7 @@ xml_node_t *xml_add_attr(
     attr = xml_node_creat_ext(xml, XML_NODE_ATTR, name, value);
     if (NULL == attr)
     {
-        sys_error("Create node failed!");
+        log_error2("Create node failed!");
         return NULL;
     }
     
@@ -652,7 +652,7 @@ xml_node_t *xml_add_attr(
 
     xml_node_free_one(xml, attr);
     
-    sys_error("Add attr node failed!");
+    log_error2("Add attr node failed!");
     return NULL;
 }
 
@@ -677,13 +677,13 @@ xml_node_t *xml_add_child(xml_tree_t *xml, xml_node_t *node, const char *name, c
 
     if (xml_is_attr(node))
     {
-        sys_error("Can't add child for attribute node![%s]", node->name);
+        log_error2("Can't add child for attribute node![%s]", node->name);
         return NULL;
     }
 #if defined(__XML_EITHER_CHILD_OR_VALUE__)
     else if (xml_has_value(node))
     {
-        sys_error("Can't add child for the node which has value![%s]", node->name);
+        log_error2("Can't add child for the node which has value![%s]", node->name);
         return NULL;
     }
 #endif /*__XML_EITHER_CHILD_OR_VALUE__*/
@@ -692,7 +692,7 @@ xml_node_t *xml_add_child(xml_tree_t *xml, xml_node_t *node, const char *name, c
     child = xml_node_creat_ext(xml, XML_NODE_CHILD, name, value);
     if (NULL == child)
     {
-        sys_error("Create node failed![%s]", name);
+        log_error2("Create node failed![%s]", name);
         return NULL;
     }
 
@@ -767,20 +767,20 @@ int xml_node_length(xml_tree_t *xml, xml_node_t *node)
     
     if (NULL == node)
     {
-        sys_error("The node is empty!");
+        log_error2("The node is empty!");
         return 0;
     }
     
     if (stack_init(&stack, XML_MAX_DEPTH))
     {
-        sys_error("Stack init failed!");
+        log_error2("Stack init failed!");
         return -1;
     }
 
     length = _xml_node_length(xml, node, &stack);
     if (length < 0)
     {
-        sys_error("Get the length of node failed!");
+        log_error2("Get the length of node failed!");
         stack_destroy(&stack);
         return -1;
     }
@@ -869,13 +869,13 @@ int _xml_pack_length(xml_tree_t *xml, xml_node_t *node)
     
     if (NULL == node)
     {
-        sys_error("The node is empty!");
+        log_error2("The node is empty!");
         return 0;
     }
     
     if (stack_init(&stack, XML_MAX_DEPTH))
     {
-        sys_error("Stack init failed!");
+        log_error2("Stack init failed!");
         return -1;
     }
 
@@ -888,7 +888,7 @@ int _xml_pack_length(xml_tree_t *xml, xml_node_t *node)
             length = xml_pack_node_length(xml, node, &stack);
             if (length < 0)
             {
-                sys_error("Get length of the node failed!");
+                log_error2("Get length of the node failed!");
                 stack_destroy(&stack);
                 return -1;
             }
@@ -902,7 +902,7 @@ int _xml_pack_length(xml_tree_t *xml, xml_node_t *node)
                 length2 = xml_pack_node_length(xml, child, &stack);
                 if (length2 < 0)
                 {
-                    sys_error("Get length of the node failed!");
+                    log_error2("Get length of the node failed!");
                     stack_destroy(&stack);
                     return -1;
                 }
@@ -949,7 +949,7 @@ int xml_delete_empty(xml_tree_t *xml)
 
     if (stack_init(stack, XML_MAX_DEPTH))
     {
-        sys_error("Init stack failed!");
+        log_error2("Init stack failed!");
         return XML_ERR_STACK;
     }
 
@@ -966,7 +966,7 @@ int xml_delete_empty(xml_tree_t *xml)
             }
 
             /* 属性节点后续无孩子节点: 说明其父节点无孩子节点, 此类父节点不应该入栈 */
-            sys_error("Push is not right!");
+            log_error2("Push is not right!");
             return XML_ERR_STACK;
         }
         /* 2. 此节点有孩子节点: 入栈, 并处理其孩子节点 */
@@ -974,7 +974,7 @@ int xml_delete_empty(xml_tree_t *xml)
         {
             if (stack_push(stack, node))
             {
-                sys_error("Push failed!");
+                log_error2("Push failed!");
                 return XML_ERR_STACK;
             }
             

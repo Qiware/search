@@ -159,7 +159,7 @@ slab_pool_t *slab_init(void *addr, size_t size)
         pool->pages->slab = pages;
     }
 
-    sys_info("start:%p end:%p left_size:%d pages:%d\n",
+    log_info2("start:%p end:%p left_size:%d pages:%d\n",
         pool->start, pool->end, pool->end - pool->start, pages);
 
     spin_lock_init(&pool->lock);
@@ -640,13 +640,13 @@ void slab_dealloc(slab_pool_t *pool, void *p)
 
             if (SLAB_PAGE_FREE == slab)
             {
-                sys_error("Page is already free");
+                log_error2("Page is already free");
                 goto fail;
             }
 
             if (SLAB_PAGE_BUSY == slab)
             {
-                sys_error("Pointer to wrong page");
+                log_error2("Pointer to wrong page");
                 goto fail;
             }
 
@@ -676,13 +676,13 @@ done:
 
 wrong_chunk:
 
-    sys_error("Pointer to wrong chunk");
+    log_error2("Pointer to wrong chunk");
 
     goto fail;
 
 chunk_already_free:
 
-    sys_error("Chunk is already free");
+    log_error2("Chunk is already free");
 
 fail:
 
@@ -750,7 +750,7 @@ static slab_page_t *slab_alloc_pages(slab_pool_t *pool, uint32_t pages)
         }
     }
 
-    sys_error("Not enough memory!");
+    log_error2("Not enough memory!");
 
     return NULL;
 }

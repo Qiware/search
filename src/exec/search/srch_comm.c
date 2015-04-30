@@ -136,7 +136,7 @@ static log_cycle_t *srch_init_log(char *fname)
     log = log_init(LOG_LEVEL_ERROR, path);
     if (NULL == log)
     {
-        sys_error("Initialize log failed!");
+        log_error2("Initialize log failed!");
         syslog_destroy();
         return NULL;
     }
