@@ -17,6 +17,8 @@
  ******************************************************************************/
 #include "btree.h"
 
+#define __BTREE_BSEARCH__
+
 static btree_node_t *btree_creat_node(btree_t *btree);
 static int _btree_insert(btree_t *btree, btree_node_t *node, int key, int idx);
 static int btree_split(btree_t *btree, btree_node_t *node);
@@ -72,6 +74,50 @@ btree_t *btree_creat(int m, btree_option_t *opt)
 }
 
 /******************************************************************************
+ **函数名称: btree_key_bsearch
+ **功    能: B树键的二分查找
+ **输入参数: 
+ **     keys: B树键值数组
+ **     num: 键值数组长度
+ **     key: 需要查找的键
+ **输出参数: NONE
+ **返    回: 离key最近的键值索引
+ **实现描述: 使用二分查找算法实现
+ **注意事项: 
+ **     返回值存mid在以下几种可能性:
+ **     1. 返回等于key的值索引: keys[mid] == key
+ **     2. 返回小于key的最大值索引: (keys[mid] < key) && (keys[mid+1] > key)
+ **     3. 返回大于key的最小值索引: (keys[mid-1] < key) && (keys[mid] > key)
+ **作    者: # Qifeng.zou # 2015.04.30 #
+ ******************************************************************************/
+static int btree_key_bsearch(const int *keys, int num, int key)
+{
+    int low, mid, high;
+
+    low = 0;
+    high = num - 1;
+
+    while (high >= low)
+    {
+        mid = (low + high) >> 1;
+
+        if (key == keys[mid])
+        {
+            return mid;
+        }
+        else if (key < keys[mid])
+        {
+            high = mid - 1;
+            continue;
+        }
+
+        low = mid + 1;
+    }
+
+    return mid;
+}
+
+/******************************************************************************
  **函数名称: btree_insert
  **功    能: 向B树中插入一个关键字
  **输入参数: 
@@ -109,6 +155,7 @@ int btree_insert(btree_t *btree, int key)
     /* 2. 查找关键字的插入位置 */
     while (NULL != node)
     {
+    #if !defined(__BTREE_BSEARCH__)
         /* FIXME: 可使用二分查找算法进行优化 */
         for (idx=0; idx<node->num; idx++)
         {
@@ -122,15 +169,26 @@ int btree_insert(btree_t *btree, int key)
                 break;
             }
         }
-
-        if (NULL != node->child[idx])
+    #else /*__BTREE_BSEARCH__*/
+        /* 二分查找算法实现 */
+        idx = btree_key_bsearch(node->key, node->num, key);
+        if (key == node->key[idx])
         {
-            node = node->child[idx];
+            fprintf(stderr, "[%s][%d] The node is exist!\n", __FILE__, __LINE__);
+            return 0;
         }
-        else
+        else if (key > node->key[idx])
+        {
+            idx += 1;
+        }
+    #endif /*__BTREE_BSEARCH__*/
+
+        if (NULL == node->child[idx])
         {
             break;
         }
+
+        node = node->child[idx];
     }
 
     /* 3. 执行插入操作 */
@@ -688,6 +746,7 @@ int btree_remove(btree_t *btree, int key)
 
     while (NULL != node)
     {
+    #if !defined(__BTREE_BSEARCH__)        
         /* FIXME: 可使用二分查找算法进行优化 */
         for (idx=0; idx<node->num; idx++)
         {
@@ -702,6 +761,20 @@ int btree_remove(btree_t *btree, int key)
         }
 
         node = node->child[idx];
+    #else /*__BTREE_BSEARCH__*/
+        idx = btree_key_bsearch(node->key, node->num, key);
+        if (key == node->key[idx])
+        {
+            return _btree_remove(btree, node, idx);
+        }
+        else if (key < node->key[idx])
+        {
+            node = node->child[idx];
+            continue;
+        }
+
+        node = node->child[idx+1];
+    #endif /*__BTREE_BSEARCH__*/
     }
 
     return 0;
@@ -726,6 +799,7 @@ void *btree_query(btree_t *btree, int key)
 
     while (NULL != node)
     {
+    #if !defined(__BTREE_BSEARCH__)
         /* FIXME: 可使用二分查找算法进行优化 */
         for (idx=0; idx<node->num; idx++)
         {
@@ -741,6 +815,21 @@ void *btree_query(btree_t *btree, int key)
         }
 
         node = node->child[idx];
+    #else /*__BTREE_BSEARCH__*/
+        idx = btree_key_bsearch(node->key, node->num, key);
+        if (key == node->key[idx])
+        {
+            fprintf(stdout, "Found! key:%d idx:%d", key, idx);
+            return (void *)0; /* 找到 */
+        } 
+        else if (key < node->key[idx])
+        {
+            node = node->child[idx];
+            continue;
+        }
+
+        node = node->child[idx+1];
+    #endif /*__BTREE_BSEARCH__*/
     }
 
     return (void *)-1; /* 未找到 */

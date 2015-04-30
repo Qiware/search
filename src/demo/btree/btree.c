@@ -1,7 +1,7 @@
 #include "btree.h"
 
 #define BTREE_M     (3)
-#define BTREE_NUM   (1000)
+#define BTREE_NUM   (20)
 #define INPUT_LEN   (32)
 #define __AUTO_INPUT__
 
@@ -40,9 +40,6 @@ int main(void)
 	btree_insert(btree, 40);
 
     btree_print(btree);
-
-    btree_destroy(btree);
-    return 0;
 
     while(1)
     {
