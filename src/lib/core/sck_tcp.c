@@ -334,8 +334,7 @@ int fd_is_writable(int fd)
  **输出参数: NONE
  **返    回: 0:Succ !0:Fail
  **实现描述: 
- **注意事项: 
- **    等待所有字节发送完成后才返回，除非出现严重错误.
+ **注意事项: 等待所有字节发送完成后才返回，除非出现严重错误.
  **作    者: # Qifeng.zou # 2014.06.24 #
  ******************************************************************************/
 int tcp_block_send(int fd, const void *addr, int len, int timeout)
@@ -393,8 +392,7 @@ int tcp_block_send(int fd, const void *addr, int len, int timeout)
  **输出参数: NONE
  **返    回: 0:Succ !0:Fail
  **实现描述: 
- **注意事项: 
- **    等待所有字节接收完成后才返回，除非出现严重错误或超时.
+ **注意事项: 等待所有字节接收完成后才返回，除非出现严重错误或超时.
  **作    者: # Qifeng.zou # 2014.06.24 #
  ******************************************************************************/
 int tcp_block_recv(int fd, void *addr, int len, int timeout)

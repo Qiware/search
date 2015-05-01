@@ -175,8 +175,7 @@ shm_queue_t *shm_queue_attach(int key)
  **输出参数:
  **返    回: 0:成功 !0:失败
  **实现描述: 
- **注意事项: 
- **     注意：内存地址p必须是从shm_queue_malloc()分配的，否则会出严重错误！
+ **注意事项: 内存地址p必须是从shm_queue_malloc()分配的，否则会出严重错误！
  **作    者: # Qifeng.zou # 2014.09.11 #
  ******************************************************************************/
 int shm_queue_push(shm_queue_t *shmq, void *p)
@@ -219,7 +218,6 @@ int shm_queue_push(shm_queue_t *shmq, void *p)
  **返    回: 队列ID
  **实现描述: 
  **注意事项: 
- **     执行该操作后，
  **作    者: # Qifeng.zou # 2014.09.09 #
  ******************************************************************************/
 void *shm_queue_pop(shm_queue_t *shmq)

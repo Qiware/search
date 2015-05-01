@@ -18,8 +18,6 @@
 #include "log.h"
 #include "btree.h"
 
-#define __BTREE_BSEARCH__
-
 static btree_node_t *btree_creat_node(btree_t *btree);
 static int _btree_insert(btree_t *btree, btree_node_t *node, int key, int idx);
 static int btree_split(btree_t *btree, btree_node_t *node);
@@ -154,33 +152,17 @@ int btree_insert(btree_t *btree, int key)
     /* 2. 查找关键字的插入位置 */
     while (NULL != node)
     {
-    #if !defined(__BTREE_BSEARCH__)
-        /* FIXME: 可使用二分查找算法进行优化 */
-        for (idx=0; idx<node->num; idx++)
-        {
-            if (key == node->key[idx])
-            {
-                log_error2("Node exist! key:%d", key);
-                return 0;
-            }
-            else if (key < node->key[idx])
-            {
-                break;
-            }
-        }
-    #else /*__BTREE_BSEARCH__*/
         /* 二分查找算法实现 */
         idx = btree_key_bsearch(node->key, node->num, key);
         if (key == node->key[idx])
         {
-            log_error2("Node exist! key:%d", key);
+            log_info2("Key [%d] exist!", key);
             return 0;
         }
         else if (key > node->key[idx])
         {
             idx += 1;
         }
-    #endif /*__BTREE_BSEARCH__*/
 
         if (NULL == node->child[idx])
         {
@@ -744,22 +726,6 @@ int btree_remove(btree_t *btree, int key)
 
     while (NULL != node)
     {
-    #if !defined(__BTREE_BSEARCH__)        
-        /* FIXME: 可使用二分查找算法进行优化 */
-        for (idx=0; idx<node->num; idx++)
-        {
-            if (key == node->key[idx])
-            {
-                return _btree_remove(btree, node, idx);
-            }
-            else if (key < node->key[idx])
-            {
-                break;
-            }
-        }
-
-        node = node->child[idx];
-    #else /*__BTREE_BSEARCH__*/
         idx = btree_key_bsearch(node->key, node->num, key);
         if (key == node->key[idx])
         {
@@ -772,7 +738,6 @@ int btree_remove(btree_t *btree, int key)
         }
 
         node = node->child[idx+1];
-    #endif /*__BTREE_BSEARCH__*/
     }
 
     return 0;
@@ -797,23 +762,6 @@ void *btree_query(btree_t *btree, int key)
 
     while (NULL != node)
     {
-    #if !defined(__BTREE_BSEARCH__)
-        /* FIXME: 可使用二分查找算法进行优化 */
-        for (idx=0; idx<node->num; idx++)
-        {
-            if (key == node->key[idx])
-            {
-                log_debug2("Found! key:%d idx:%d", key, idx);
-                return (void *)0; /* 找到 */
-            }
-            else if (key < node->key[idx])
-            {
-                break;
-            }
-        }
-
-        node = node->child[idx];
-    #else /*__BTREE_BSEARCH__*/
         idx = btree_key_bsearch(node->key, node->num, key);
         if (key == node->key[idx])
         {
@@ -827,7 +775,6 @@ void *btree_query(btree_t *btree, int key)
         }
 
         node = node->child[idx+1];
-    #endif /*__BTREE_BSEARCH__*/
     }
 
     return (void *)-1; /* 未找到 */

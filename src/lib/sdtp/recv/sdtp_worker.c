@@ -14,7 +14,6 @@
 #include "sdtp_priv.h"
 #include "thread_pool.h"
 
-
 /* 静态函数 */
 static sdtp_worker_t *sdtp_worker_get_curr(sdtp_cntx_t *ctx);
 static int sdtp_worker_event_core_hdl(sdtp_cntx_t *ctx, sdtp_worker_t *worker);

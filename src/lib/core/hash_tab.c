@@ -170,8 +170,7 @@ int hash_tab_query(hash_tab_t *hash, void *pkey, int pkey_len,
  **输出参数: NONE
  **返    回: 数据地址
  **实现描述: 
- **注意事项: 
- **     注意: 返回地址的内存空间由外部释放
+ **注意事项: 返回地址的内存空间由外部释放
  **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
 void *hash_tab_remove(hash_tab_t *hash, void *pkey, int pkey_len)

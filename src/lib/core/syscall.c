@@ -254,8 +254,7 @@ int Mkdir(const char *dir, mode_t mode)
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
- **注意事项: 
- **     如果fname为/home/svn/etc/lsn.log, 则会构建目录/home/svn/etc/
+ **注意事项: 如果fname为/home/svn/etc/lsn.log, 则会构建目录/home/svn/etc/
  **作    者: # Qifeng.zou # 2014.04.18 #
  ******************************************************************************/
 int Mkdir2(const char *fname, mode_t mode)
@@ -366,8 +365,7 @@ int System(const char *cmd)
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
- **注意事项:
- **     如果id大于最大cpu编号，将id %= cpu_num重新计算id值.
+ **注意事项: 如果id大于最大cpu编号，将id %= cpu_num重新计算id值.
  **作    者: # Qifeng.zou # 2014.10.24 #
  ******************************************************************************/
 int bind_cpu(uint16_t id)

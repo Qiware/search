@@ -92,8 +92,7 @@ int uri_trim(const char *ori_uri, char *out_uri, size_t size)
  **     uri: URI
  **输出参数:
  **返    回: 协议类型
- **实现描述: 
- **		依次与各协议标签进行比较
+ **实现描述: 依次与各协议标签进行比较
  **注意事项:
  **作    者: # Qifeng.zou # 2015.03.28 #
  ******************************************************************************/
@@ -297,7 +296,7 @@ GET_PORT:
 	}
 
 	len = p - s;
-    if (0 == len || len > (int)sizeof(port))
+    if ((0 == len) || (len > (int)sizeof(port)))
     {
         return -1;
     }
@@ -451,8 +450,7 @@ bool uri_is_valid(const char *uri)
  **     field: 解析href后URI的各域信息
  **返    回: 0:成功 !0:失败
  **实现描述: 
- **注意事项: 
- **     ori_href字段值可能为完整的URI, 也可能为绝对路径, 也可能为相对路径,也可能错误.
+ **注意事项: ori_href字段值可能为完整的URI, 也可能为绝对路径, 也可能为相对路径,也可能错误.
  **作    者: # Qifeng.zou # 2014.10.30 #
  ******************************************************************************/
 int href_to_uri(const char *ori_href, const char *site, uri_field_t *field)

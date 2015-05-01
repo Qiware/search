@@ -60,8 +60,7 @@ int unix_udp_creat(const char *path)
  **输出参数: NONE
  **返    回: 发送长度
  **实现描述: 
- **注意事项: 
- **     因使用的是UNIX-UDP协议, 因此, 要么都成功, 要么都发送失败!
+ **注意事项: 因使用的是UNIX-UDP协议, 因此, 要么都成功, 要么都发送失败!
  **作    者: # Qifeng.zou # 2014.03.24 #
  ******************************************************************************/
 int unix_udp_send(int fd, const char *path, const void *buff, int len)

@@ -300,8 +300,7 @@ static int sdtp_lsn_cmd_core_hdl(sdtp_cntx_t *ctx, sdtp_lsn_t *lsn)
  **实现描述: 
  **     1. 随机选择接收线程
  **     2. 发送命令至接收线程
- **注意事项: 
- **     如果发送失败，最多重复3次发送!
+ **注意事项: 如果发送失败，最多重复3次发送!
  **作    者: # Qifeng.zou # 2015.01.09 #
  ******************************************************************************/
 static int sdtp_cmd_rand_to_recv(sdtp_cntx_t *ctx, int cmd_sck_id, const sdtp_cmd_t *cmd)

@@ -182,8 +182,7 @@ xml_tree_t *xml_init(xml_option_t *opt)
  **输出参数:
  **返    回: 文件缓存
  **实现描述: 
- **注意事项: 
- **     内存分配的最小单位为1KB, 防止内存碎片.
+ **注意事项: 内存分配的最小单位为1KB, 防止内存碎片.
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
 char *xml_fload(const char *fname, xml_option_t *opt)
@@ -348,8 +347,7 @@ int xml_parse(xml_tree_t *xml, Stack_t *stack, const char *str)
  **输出参数:
  **返    回: 0: 成功  !0: 失败
  **实现描述: 
- **注意事项: 
- **     1. XML大小写敏感
+ **注意事项: XML大小写敏感
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
 static int xml_parse_version(xml_tree_t *xml, xml_parse_t *parse)
@@ -446,8 +444,7 @@ static int xml_parse_version(xml_tree_t *xml, xml_parse_t *parse)
  **输出参数:
  **返    回: 0: 成功  !0: 失败
  **实现描述: 
- **注意事项: 
- **     1. XML大小写敏感
+ **注意事项: XML大小写敏感
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
 static int xml_parse_note(xml_tree_t *xml, xml_parse_t *parse)
@@ -568,8 +565,7 @@ static int xml_parse_mark(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse)
  **输出参数:
  **返    回: 0: 成功  !0: 失败
  **实现描述: 
- **注意事项: 
- **     1. XML大小写敏感
+ **注意事项: XML大小写敏感
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
 static int xml_parse_end(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse)
@@ -632,8 +628,8 @@ static int xml_parse_end(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse)
  **返    回: 0: 成功  !0: 失败
  **实现描述: 
  **注意事项: 
- **     注意: 1. 因新建节点已加入XML树中，因此在此不必去释放新节点的内存空间
- **           2. 此时tail用来记录孩子节点链表尾
+ **     1. 因新建节点已加入XML树中，因此在此不必去释放新节点的内存空间
+ **     2. 此时tail用来记录孩子节点链表尾
  **作    者: # Qifeng.zou # 2013.02.23 #
  ******************************************************************************/
 static int xml_mark_get_name(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse)
@@ -960,8 +956,7 @@ static int xml_mark_get_attr(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse
  **输出参数:
  **返    回: 0: 成功  !0: 失败
  **实现描述: 
- **注意事项: 
- **     1. XML大小写敏感
+ **注意事项: XML大小写敏感
  **作    者: # Qifeng.zou # 2013.02.23 #
  ******************************************************************************/
 static int xml_mark_is_end(xml_parse_t *parse)

@@ -162,7 +162,7 @@ void trie_tree_destroy(trie_tree_t **tree)
  **输出参数: NONE
  **返    回: VOID
  **实现描述: 
- **注意事项: 未完成：未释放结点DATA内存
+ **注意事项: TODO：未释放结点DATA内存
  **作    者: # Qifeng.zou # 2014.09.01 #
  ******************************************************************************/
 static void trie_tree_node_free(trie_tree_t *tree, trie_tree_node_t *node)
