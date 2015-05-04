@@ -16,8 +16,9 @@
          2) PATH: 网页存储路径 -->
     <DOWNLOAD DEPTH="-1" PATH="../../data/crwl/webpage" />
 
-    <!-- 工作队列配置 -->
-    <WORKQ COUNT="1000" SIZE="0" />
+    <!-- 工作队列配置
+         COUNT: 队列长度(必须为2的次方) -->
+    <WORKQ COUNT="1024" SIZE="0" />
 
     <!-- 管理服务: 负责对外提供管理服务(如:操作接口 监控信息等)
       1) PORT: 侦听端口 -->
