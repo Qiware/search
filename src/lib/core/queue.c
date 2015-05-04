@@ -5,61 +5,58 @@
  ** 版本号: 1.0
  ** 描  述: 队列模块
  **     1. 先进先出的一种数据结构
+ **     2. 循环无锁队列
  ** 作  者: # Qifeng.zou # 2014.04.28 #
  ******************************************************************************/
 #include "queue.h"
+#include "syscall.h"
 
 /******************************************************************************
- **函数名称: _queue_creat
- **功    能: 队列初始化
+ **函数名称: ring_queue_creat
+ **功    能: 环形队列初始化
  **输入参数:
- **     q: 队列
  **     max: 队列容量
  **输出参数:
- **返    回: 0: 成功  !0: 失败
+ **返    回: 0:成功 !0:失败
  **实现描述: 
- **     1. 申请内存空间
- **     2. 设为循环队列
- **注意事项: 
+ **注意事项: max必须为2的n次方
  **作    者: # Qifeng.zou # 2014.04.28 #
  ******************************************************************************/
-int _queue_creat(_queue_t *q, int max)
+ring_queue_t *ring_queue_creat(int max)
 {
-    int idx;
-    queue_node_t *node;
-    
-    memset(q, 0, sizeof(_queue_t));
+    ring_queue_t *rq;
 
-    /* 1. 申请内存空间 */
-    q->base = (queue_node_t *)calloc(max, sizeof(queue_node_t));
-    if (NULL == q->base)
+    /* > max必须为2的n次方 */
+    if (!ISPOWEROF2(max)) { return NULL; }
+
+    /* > 申请内存空间 */
+    rq = (ring_queue_t *)calloc(1, sizeof(ring_queue_t));
+    if (NULL == rq)
     {
-        return -1;
+        return NULL;
     }
 
-    /* 2. 设为循环队列 */
-    node = (queue_node_t *)q->base;
-    for (idx=0; idx<max-1; ++idx, ++node)
+    rq->data = (void **)calloc(max, sizeof(void *));
+    if (NULL == rq->data)
     {
-        node->next = node + 1;
-        node->data = NULL;
+        FREE(rq);
+        return NULL;
     }
-    
-    node->next = q->base;
-    node->data = NULL;
-    q->head = q->tail = q->base;
-    q->max = max;
 
-    spin_lock_init(&q->lock);
+    /* > 设置相关标志 */
+    rq->max = max;
+    rq->mask = max - 1;
+    rq->prod.head = rq->prod.tail = 0;
+    rq->cons.head = rq->cons.tail = 0;
 
-    return 0;
+    return rq;
 }
 
 /******************************************************************************
- **函数名称: queue_push_lock
+ **函数名称: ring_queue_push
  **功    能: 入队列
  **输入参数:
- **     q: 队列
+ **     rq: 环形队列
  **     addr: 数据地址
  **输出参数:
  **返    回: 0:成功 !0:失败
@@ -67,100 +64,102 @@ int _queue_creat(_queue_t *q, int max)
  **注意事项: addr指向的地址必须为堆地址
  **作    者: # Qifeng.zou # 2014.04.28 #
  ******************************************************************************/
-int queue_push_lock(_queue_t *q, void *addr)
+int ring_queue_push(ring_queue_t *rq, void *addr)
 {
-    queue_node_t *node = q->tail;
+    int succ;
+    unsigned int prod_head, prod_next, cons_tail;
 
-    spin_lock(&q->lock);
-
-    /* 1. 检查合法性 */
-    if (q->num >= q->max)
+    /* > 申请队列空间 */
+    do
     {
-        spin_unlock(&q->lock);
-        return -1;
-    }
+        prod_head = rq->prod.head;
+        cons_tail = rq->cons.tail;
+        if (1 > (rq->mask + cons_tail - prod_head))
+        {
+            return -1; /* 空间不足 */
+        }
 
-    /* 2. 设置数据地址 */
-    node->data = addr;
-    q->tail = q->tail->next;
-    ++q->num;
+        prod_next = prod_head + 1;
 
-    spin_unlock(&q->lock);
+        succ = atomic32_cmpset(&rq->prod.head, prod_head, prod_next);
+    } while (0 == succ);
+
+    /* > 放入队列空间 */
+    rq->data[prod_head & rq->mask] = addr;
+    while (rq->prod.tail != prod_head) { NULL; }
+    rq->prod.tail = prod_next;
+
+    atomic32_inc(&rq->num); /* 计数 */
 
     return 0;
 }
 
 /******************************************************************************
- **函数名称: queue_pop_lock
+ **函数名称: ring_queue_pop
  **功    能: 出队列
  **输入参数:
- **     q: 队列
+ **     rq: 队列
  **输出参数:
  **返    回: 数据地址
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.04.28 #
  ******************************************************************************/
-void *queue_pop_lock(_queue_t *q)
+void *ring_queue_pop(ring_queue_t *rq)
 {
     void *data;
+    int succ;
+    unsigned int cons_head, cons_next, prod_tail;
 
-    if (0 == q->num)
+    do
     {
-        return NULL;
-    }
+        cons_head = rq->cons.head;
+        prod_tail = rq->prod.tail;
 
-    spin_lock(&q->lock);
+        if (1 > prod_tail - cons_head)
+        {
+            return NULL; /* 无数据 */
+        }
 
-    if (0 == q->num)
-    {
-        spin_unlock(&q->lock);
-        return NULL;
-    }
+        cons_next = cons_head + 1;
 
-    data = q->head->data;
-    q->head->data = NULL;
-    q->head = q->head->next;
-    --q->num;
+        succ = atomic32_cmpset(&rq->cons.head, cons_head, cons_next);
+    } while(0 == succ);
 
-    spin_unlock(&q->lock);
+    data = rq->data[cons_head];
+
+    while (rq->cons.tail != cons_head) { NULL; }
+
+    rq->cons.tail = cons_next;
+
+    atomic32_dec(&rq->num); /* 计数 */
 
     return data;
 }
 
 /******************************************************************************
- **函数名称: _queue_destroy
- **功    能: 销毁队列
+ **函数名称: ring_queue_destroy
+ **功    能: 销毁环形队列
  **输入参数:
- **     q: 队列
- **输出参数:
- **返    回: 0:成功 !0:失败
- **实现描述: 
+ **     rq: 环形队列
+ **输出参数: NONE
+ **返    回: VOID
+ **实现描述: 释放环形队列空间
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.11 #
  ******************************************************************************/
-void _queue_destroy(_queue_t *q)
+void ring_queue_destroy(ring_queue_t *rq)
 {
-    spin_lock(&q->lock);
-
-    free(q->base);
-
-    q->base = NULL;
-    q->head = NULL;
-    q->tail = NULL;
-    q->max = 0;
-    q->num = 0;
-
-    spin_unlock(&q->lock);
-
-    spin_lock_destroy(&q->lock);
+    FREE(rq->data);
+    rq->max = 0;
+    rq->num = 0;
 }
 
 /******************************************************************************
  **函数名称: queue_creat
  **功    能: 初始化加锁队列
  **输入参数: 
- **     max: 队列长度
+ **     max: 队列长度(必须为2的次方)
  **     size: 内存单元SIZE
  **输出参数: NONE
  **返    回: 加锁队列对象
@@ -170,53 +169,52 @@ void _queue_destroy(_queue_t *q)
  ******************************************************************************/
 queue_t *queue_creat(int max, int size)
 {
-    queue_t *q;
-    mem_blk_t *chunk;
+    queue_t *queue;
+    chunk_t *chunk;
 
-    /* 1. 新建对象 */
-    q = (queue_t *)calloc(1, sizeof(queue_t));
-    if (NULL == q)
+    /* > 新建对象 */
+    queue = (queue_t *)calloc(1, sizeof(queue_t));
+    if (NULL == queue)
     {
         return NULL;
     }
 
-    /* 2. 创建内存池 */
-    chunk = mem_blk_creat(max, size);
+    /* > 创建队列 */
+    queue->ring = ring_queue_creat(max);
+    if (NULL == queue->ring)
+    {
+        FREE(queue);
+        return NULL;
+    }
+
+    /* > 创建内存池 */
+    chunk = chunk_creat(max, size);
     if (NULL == chunk)
     {
-        free(q);
+        FREE(queue);
+        ring_queue_destroy(queue->ring);
         return NULL;
     }
 
-    q->chunk = chunk;
+    queue->chunk = chunk;
 
-    /* 3. 创建队列 */
-    if (_queue_creat(&q->queue, max))
-    {
-        free(q);
-        mem_blk_destroy(chunk);
-        return NULL;
-    }
-
-    q->queue.size = size;
-
-    return q;
+    return queue;
 }
 
 /******************************************************************************
  **函数名称: queue_destroy
  **功    能: 销毁加锁队列
  **输入参数: 
- **     q: 加锁队列
+ **     queue: 队列
  **输出参数: NONE
  **返    回: VOID
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.12 #
  ******************************************************************************/
-void queue_destroy(queue_t *q)
+void queue_destroy(queue_t *queue)
 {
-    _queue_destroy(&q->queue);
-    mem_blk_destroy(q->chunk);
-    free(q);
+    ring_queue_destroy(queue->ring);
+    chunk_destroy(queue->chunk);
+    free(queue);
 }

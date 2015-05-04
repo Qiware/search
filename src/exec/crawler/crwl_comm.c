@@ -180,7 +180,7 @@ crwl_cntx_t *crwl_cntx_init(char *pname, const char *path)
             if (NULL == ctx->workq[idx])
             {
                 log_error(ctx->log, "Create queue failed! workq_count:%d", conf->workq_count);
-                break;
+                goto CRWL_INIT_ERR;
             }
         }
 
@@ -208,6 +208,7 @@ crwl_cntx_t *crwl_cntx_init(char *pname, const char *path)
         return ctx;
     } while (0);
 
+CRWL_INIT_ERR:
     /* 释放内存 */
     if (ctx->conf) { crwl_conf_destroy(ctx->conf); }
     if (ctx->workq) { free(ctx->workq); }

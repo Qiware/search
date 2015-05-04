@@ -345,7 +345,7 @@ static inline int atomic16_cmpset(volatile uint16_t *v, uint16_t cmp, uint16_t i
 			  "a" (cmp),
 			  "m" (*v)
 			: "memory");            /* no-clobber list */
-	return res;
+	return (int)res;
 }
 
 static inline int atomic32_cmpset(volatile uint32_t *v, uint32_t cmp, uint32_t i)
@@ -361,7 +361,7 @@ static inline int atomic32_cmpset(volatile uint32_t *v, uint32_t cmp, uint32_t i
 			  "a" (cmp),
 			  "m" (*v)
 			: "memory");            /* no-clobber list */
-	return res;
+	return (int)res;
 }
 
 static inline int atomic64_cmpset(volatile uint64_t *v, uint64_t cmp, uint64_t i)
@@ -378,6 +378,6 @@ static inline int atomic64_cmpset(volatile uint64_t *v, uint64_t cmp, uint64_t i
 			  "m" (*v)
 			: "memory");            /* no-clobber list */
 
-	return res;
+	return (int)res;
 }
 #endif /*__ATOMIC_H__*/

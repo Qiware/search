@@ -42,6 +42,8 @@
 #define INVALID_FD          (-1)            /* 非法文件描述符 */
 #define INVALID_PID         (-1)            /* 非法进程ID */
 
+#define ISPOWEROF2(x)    (0 == (((x)-1) & (x))) /* 判断x是否为2的n次方(2^n) */
+
 /* 内存单位 */
 #define KB                  (1024)          /* KB */
 #define MB                  (1024 * KB)     /* MB */
@@ -61,6 +63,11 @@
 #define mem_align_ptr(p, a)                                                   \
     (u_char *) (((uintptr_t) (p) + ((uintptr_t) a - 1)) & ~((uintptr_t) a - 1))
 #define PTR_ALIGNMENT   sizeof(unsigned long)
+
+/* 变量成员在结构体中的偏移量 */
+#if !defined(offsetof)
+#define offsetof(type, field)   ((size_t)&(((type *)0)->field))
+#endif /*offsetof*/
 
 /******************************************************************************
  **函数名称: key_cb_t

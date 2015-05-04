@@ -556,8 +556,8 @@ static int crwl_man_query_workq_stat_req_hdl(crwl_cntx_t *ctx,
         workq = ctx->workq[idx];
 
         snprintf(stat->queue[idx].name, sizeof(stat->queue[idx].name), "WORKQ-%02d", idx+1);
-        stat->queue[idx].num = htonl(workq->queue.num);
-        stat->queue[idx].max = htonl(workq->queue.max);
+        stat->queue[idx].num = htonl(workq->ring->num);
+        stat->queue[idx].max = htonl(workq->ring->max);
 
         ++stat->num;
     }

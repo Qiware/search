@@ -21,8 +21,8 @@
 #include <hiredis/hiredis.h>
 
 #define FLT_REDIS_UNDO_LIMIT_NUM    (20000)
-#define FLT_TASKQ_LEN               (1000)  /* 工作队列 */
-#define FLT_CRWLQ_LEN               (1000)  /* 爬取队列 */
+#define FLT_TASKQ_LEN               (1024)  /* 工作队列 */
+#define FLT_CRWLQ_LEN               (1024)  /* 爬取队列 */
 
 
 /* 任务对象 */

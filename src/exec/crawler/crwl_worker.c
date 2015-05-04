@@ -196,7 +196,7 @@ static int crwl_worker_fetch_task(crwl_cntx_t *ctx, crwl_worker_t *worker)
     queue_t *workq = ctx->workq[worker->tidx];
 
     /* 1. 判断是否应该取任务 */
-    if (0 == workq->queue.num
+    if (0 == queue_used(workq)
         || worker->sock_list->num >= conf->worker.conn_max_num)
     {
         return CRWL_OK;

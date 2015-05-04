@@ -14,6 +14,7 @@ LIBS = -lpthread
 
 SRC_LIST = hash.c \
 			log.c \
+			chunk.c \
 			syslog.c \
 			lock.c \
 			list.c \
@@ -25,7 +26,6 @@ SRC_LIST = hash.c \
 			syscall.c \
 			shm_slab.c \
 			shm_opt.c \
-			mem_blk.c \
 			mem_pool.c \
 			shm_pool.c \
 			shm_queue.c \

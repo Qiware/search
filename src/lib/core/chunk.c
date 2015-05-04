@@ -10,11 +10,11 @@
  ******************************************************************************/
 #include "log.h"
 #include "comm.h"
+#include "chunk.h"
 #include "syscall.h"
-#include "mem_blk.h"
 
 /******************************************************************************
- **函数名称: mem_blk_creat
+ **函数名称: chunk_creat
  **功    能: 创建内存池
  **输入参数: 
  **     num: 内存块数
@@ -25,15 +25,15 @@
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.18 #
  ******************************************************************************/
-mem_blk_t *mem_blk_creat(int num, size_t size)
+chunk_t *chunk_creat(int num, size_t size)
 {
     uint32_t i, m, idx;
     uint32_t *bitmap;
-    mem_blk_t *blk;
-    mem_blk_page_t *page;
+    chunk_t *blk;
+    chunk_page_t *page;
 
     /* 1. 创建对象 */
-    blk = (mem_blk_t *)calloc(1, sizeof(mem_blk_t));
+    blk = (chunk_t *)calloc(1, sizeof(chunk_t));
     if (NULL == blk)
     {
         return NULL;
@@ -41,12 +41,12 @@ mem_blk_t *mem_blk_creat(int num, size_t size)
 
     blk->num = num;
     blk->size = size;
-    blk->page_size = MEM_BLK_PAGE_SLOT_NUM * size;
+    blk->page_size = CHUNK_PAGE_SLOT_NUM * size;
 
     /* 2. 计算页数, 并分配页空间 */
-    blk->pages = div_ceiling(num, MEM_BLK_PAGE_SLOT_NUM);
+    blk->pages = div_ceiling(num, CHUNK_PAGE_SLOT_NUM);
 
-    blk->page = (mem_blk_page_t *)calloc(blk->pages, sizeof(mem_blk_page_t));
+    blk->page = (chunk_page_t *)calloc(blk->pages, sizeof(chunk_page_t));
     if (NULL == blk->page)
     {
         free(blk);
@@ -72,15 +72,15 @@ mem_blk_t *mem_blk_creat(int num, size_t size)
         /* 3.1 设置bitmap */
         if (idx == (blk->pages - 1))
         {
-            m = (num - idx*MEM_BLK_PAGE_SLOT_NUM) % 32;
+            m = (num - idx*CHUNK_PAGE_SLOT_NUM) % 32;
 
-            page->bitmaps = div_ceiling(num - idx*MEM_BLK_PAGE_SLOT_NUM, 32);
+            page->bitmaps = div_ceiling(num - idx*CHUNK_PAGE_SLOT_NUM, 32);
         }
         else
         {
-            m = MEM_BLK_PAGE_SLOT_NUM % 32;
+            m = CHUNK_PAGE_SLOT_NUM % 32;
 
-            page->bitmaps = div_ceiling(MEM_BLK_PAGE_SLOT_NUM, 32);
+            page->bitmaps = div_ceiling(CHUNK_PAGE_SLOT_NUM, 32);
         }
 
         page->bitmap = (uint32_t *)calloc(page->bitmaps, sizeof(uint32_t));
@@ -110,7 +110,7 @@ mem_blk_t *mem_blk_creat(int num, size_t size)
 }
 
 /******************************************************************************
- **函数名称: mem_blk_alloc
+ **函数名称: chunk_alloc
  **功    能: 申请空间
  **输入参数: 
  **     blk: 内存块对象
@@ -120,11 +120,11 @@ mem_blk_t *mem_blk_creat(int num, size_t size)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.18 #
  ******************************************************************************/
-void *mem_blk_alloc(mem_blk_t *blk)
+void *chunk_alloc(chunk_t *blk)
 {
     uint32_t i, j, n, p;
     uint32_t *bitmap;
-    mem_blk_page_t *page;
+    chunk_page_t *page;
 
     n = rand(); /* 随机选择页 */
 
@@ -162,7 +162,7 @@ void *mem_blk_alloc(mem_blk_t *blk)
 }
 
 /******************************************************************************
- **函数名称: mem_blk_dealloc
+ **函数名称: chunk_dealloc
  **功    能: 回收空间
  **输入参数: 
  **     blk: 内存块对象
@@ -173,7 +173,7 @@ void *mem_blk_alloc(mem_blk_t *blk)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.18 #
  ******************************************************************************/
-void mem_blk_dealloc(mem_blk_t *blk, void *p)
+void chunk_dealloc(chunk_t *blk, void *p)
 {
     int i, j, n;
 
@@ -187,7 +187,7 @@ void mem_blk_dealloc(mem_blk_t *blk, void *p)
 }
 
 /******************************************************************************
- **函数名称: mem_blk_destroy
+ **函数名称: chunk_destroy
  **功    能: 销毁内存块
  **输入参数: 
  **     blk: 内存块对象
@@ -197,10 +197,10 @@ void mem_blk_dealloc(mem_blk_t *blk, void *p)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.18 #
  ******************************************************************************/
-void mem_blk_destroy(mem_blk_t *blk)
+void chunk_destroy(chunk_t *blk)
 {
     uint32_t i;
-    mem_blk_page_t *page;
+    chunk_page_t *page;
 
     for (i=0; i<blk->pages; ++i)
     {

@@ -1,10 +1,10 @@
-#if !defined(__MEM_BLK_H__)
-#define __MEM_BLK_H__
+#if !defined(__CHUNK_H__)
+#define __CHUNK_H__
 
 #include <stdint.h>
 #include "spinlock.h"
 
-#define MEM_BLK_PAGE_SLOT_NUM  (256) /* 单页的内存块数目 */
+#define CHUNK_PAGE_SLOT_NUM  (256) /* 单页的内存块数目 */
 
 /* 页对象 */
 typedef struct
@@ -13,8 +13,8 @@ typedef struct
 
     uint32_t bitmaps;               /* 位图长度 */
     uint32_t *bitmap;               /* 分配位图(0:未使用 1:使用) */
-    void *addr;                     /* 各页内存起始地址(指向mem_blk_t->addr中的内存空间) */
-} mem_blk_page_t;
+    void *addr;                     /* 各页内存起始地址(指向chunk_t->addr中的内存空间) */
+} chunk_page_t;
 
 /* 内存数据块对象 */
 typedef struct
@@ -25,15 +25,15 @@ typedef struct
 
     void *addr;                     /* 总内存起始地址 */
 
-    mem_blk_page_t *page;           /* 内存页 */
+    chunk_page_t *page;           /* 内存页 */
 
     /* 计算而来 */
     size_t page_size;               /* 页尺寸: MEM_BLK_PAGE_SLOT_NUM * size */
-} mem_blk_t;
+} chunk_t;
 
-mem_blk_t *mem_blk_creat(int num, size_t size);
-void *mem_blk_alloc(mem_blk_t *blk);
-void mem_blk_dealloc(mem_blk_t *blk, void *p);
-void mem_blk_destroy(mem_blk_t *blk);
+chunk_t *chunk_creat(int num, size_t size);
+void *chunk_alloc(chunk_t *blk);
+void chunk_dealloc(chunk_t *blk, void *p);
+void chunk_destroy(chunk_t *blk);
 
-#endif /*__MEM_BLK_H__*/
+#endif /*__CHUNK_H__*/

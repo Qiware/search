@@ -208,7 +208,7 @@ flt_cntx_t *flt_init(char *pname, const char *path)
         ctx->taskq = queue_creat(FLT_TASKQ_LEN, sizeof(flt_task_t));
         if (NULL == ctx->taskq)
         {
-            log_error(ctx->log, "Create queue failed!");
+            log_error(ctx->log, "Create queue failed! max:%d", FLT_TASKQ_LEN);
             break;
         }
 
@@ -216,7 +216,7 @@ flt_cntx_t *flt_init(char *pname, const char *path)
         ctx->crwlq = queue_creat(FLT_CRWLQ_LEN, sizeof(flt_crwl_t));
         if (NULL == ctx->crwlq)
         {
-            log_error(ctx->log, "Create queue failed!");
+            log_error(ctx->log, "Create queue failed! max:%d", FLT_CRWLQ_LEN);
             break;
         }
 
