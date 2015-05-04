@@ -64,39 +64,18 @@ ring_queue_t *ring_queue_creat(int max)
  **注意事项: addr指向的地址必须为堆地址
  **作    者: # Qifeng.zou # 2014.04.28 #
  ******************************************************************************/
-int ring_queue_push(ring_queue_t *rq, void *addr)
+int ring_queue_push(ring_queue_t *rq, void *_addr)
 {
-    int succ;
-    unsigned int prod_head, prod_next, cons_tail;
+    void *addr[1];
 
-    /* > 申请队列空间 */
-    do
-    {
-        prod_head = rq->prod.head;
-        cons_tail = rq->cons.tail;
-        if (1 > (rq->mask + cons_tail - prod_head))
-        {
-            return -1; /* 空间不足 */
-        }
+    addr[0] = _addr;
 
-        prod_next = prod_head + 1;
-
-        succ = atomic32_cmpset(&rq->prod.head, prod_head, prod_next);
-    } while (0 == succ);
-
-    /* > 放入队列空间 */
-    rq->data[prod_head & rq->mask] = addr;
-    while (rq->prod.tail != prod_head) { NULL; }
-    rq->prod.tail = prod_next;
-
-    atomic32_inc(&rq->num); /* 计数 */
-
-    return 0;
+    return ring_queue_mpush(rq, addr, 1);
 }
 
 /******************************************************************************
  **函数名称: ring_queue_pop
- **功    能: 出队列
+ **功    能: 弹出队列
  **输入参数:
  **     rq: 队列
  **输出参数:
@@ -107,34 +86,110 @@ int ring_queue_push(ring_queue_t *rq, void *addr)
  ******************************************************************************/
 void *ring_queue_pop(ring_queue_t *rq)
 {
-    void *data;
-    int succ;
-    unsigned int cons_head, cons_next, prod_tail;
+    void *addr[1];
+    
+    if (ring_queue_mpop(rq, addr, 1))
+    {
+        return NULL;
+    }
 
+    return addr[0];
+}
+
+/******************************************************************************
+ **函数名称: ring_queue_mpush
+ **功    能: 同时插入多个数据
+ **输入参数:
+ **     rq: 环形队列
+ **     addr: 数据地址数组
+ **     num: 数组长度
+ **输出参数:
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: addr指向的地址必须为堆地址
+ **作    者: # Qifeng.zou # 2015.05.05 #
+ ******************************************************************************/
+int ring_queue_mpush(ring_queue_t *rq, void **addr, unsigned int num)
+{
+    int succ;
+    unsigned int prod_head, prod_next, cons_tail, i;
+
+    /* > 申请队列空间 */
+    do
+    {
+        prod_head = rq->prod.head;
+        cons_tail = rq->cons.tail;
+        if (num > (rq->mask + cons_tail - prod_head))
+        {
+            return -1; /* 空间不足 */
+        }
+
+        prod_next = prod_head + num;
+
+        succ = atomic32_cmpset(&rq->prod.head, prod_head, prod_next);
+    } while (0 == succ);
+
+    /* > 放入队列空间 */
+    for (i=0; i<num; ++i)
+    {
+        rq->data[(prod_head+i) & rq->mask] = addr[i];
+    }
+    while (rq->prod.tail != prod_head) { NULL; }
+    rq->prod.tail = prod_next;
+
+    atomic32_add(&rq->num, num); /* 计数 */
+
+    return 0;
+}
+
+/******************************************************************************
+ **函数名称: ring_queue_mpop
+ **功    能: 同时弹出多个数据
+ **输入参数:
+ **     rq: 队列
+ **     num: 弹出n个地址
+ **输出参数:
+ **     addr: 指针数组
+ **返    回: 0:成功 !0:失败
+ **实现描述: 无锁编程 
+ **注意事项:
+ **作    者: # Qifeng.zou # 2015.05.05 #
+ ******************************************************************************/
+int ring_queue_mpop(ring_queue_t *rq, void **addr, unsigned int num)
+{
+    int succ;
+    unsigned int cons_head, cons_next, prod_tail, i;
+
+    /* > 申请队列空间 */
     do
     {
         cons_head = rq->cons.head;
         prod_tail = rq->prod.tail;
 
-        if (1 > prod_tail - cons_head)
+        if (num > prod_tail - cons_head)
         {
-            return NULL; /* 无数据 */
+            return -1; /* 无数据 */
         }
 
-        cons_next = cons_head + 1;
+        cons_next = cons_head + num;
 
         succ = atomic32_cmpset(&rq->cons.head, cons_head, cons_next);
     } while(0 == succ);
 
-    data = rq->data[cons_head];
+    /* > 地址弹出队列 */
+    for (i=0; i<num; ++i)
+    {
+        addr[i] = (void *)rq->data[cons_head+i];
+    }
 
+    /* > 判断是否其他线程也在进行处理, 是的话, 则等待对方完成处理 */
     while (rq->cons.tail != cons_head) { NULL; }
 
     rq->cons.tail = cons_next;
 
-    atomic32_dec(&rq->num); /* 计数 */
+    atomic32_sub(&rq->num, num); /* 计数 */
 
-    return data;
+    return 0;
 }
 
 /******************************************************************************
