@@ -9,18 +9,9 @@
 
 int main(int argc, char *argv[])
 {
-    time_t ctm;
     int idx, level;
     log_cycle_t *log;
     char path[FILE_PATH_MAX_LEN];
-
-    ctm = -1;
-    if (ctm < 0)
-        fprintf(stderr, "ctm [%lu] is less than 0", ctm);
-    else
-        fprintf(stderr, "ctm [%lu] is biger than 0", ctm);
-
-    return 0;
 
     level = log_get_level("error");
 
