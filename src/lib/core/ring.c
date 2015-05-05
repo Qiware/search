@@ -8,6 +8,7 @@
  **     2. 环形无锁队列
  ** 作  者: # Qifeng.zou # 2014.05.04 #
  ******************************************************************************/
+
 #include "ring.h"
 #include "atomic.h"
 #include "syscall.h"
@@ -46,6 +47,7 @@ ring_t *ring_creat(int max)
 
     /* > 设置相关标志 */
     rq->max = max;
+    rq->num = 0;
     rq->mask = max - 1;
     rq->prod.head = rq->prod.tail = 0;
     rq->cons.head = rq->cons.tail = 0;
@@ -116,7 +118,7 @@ int ring_mpush(ring_t *rq, void **addr, unsigned int num)
     {
         prod_head = rq->prod.head;
         cons_tail = rq->cons.tail;
-        if (num > (rq->mask + cons_tail - prod_head))
+        if (num > (rq->mask + cons_tail - prod_head) + 1)
         {
             return -1; /* 空间不足 */
         }
@@ -176,7 +178,7 @@ int ring_mpop(ring_t *rq, void **addr, unsigned int num)
     /* > 地址弹出队列 */
     for (i=0; i<num; ++i)
     {
-        addr[i] = (void *)rq->data[cons_head+i];
+        addr[i] = (void *)rq->data[(cons_head+i) & rq->mask];
     }
 
     /* > 判断是否其他线程也在进行处理, 是的话, 则等待对方完成处理 */
@@ -205,4 +207,25 @@ void ring_destroy(ring_t *rq)
     FREE(rq->data);
     rq->max = 0;
     rq->num = 0;
+}
+
+/******************************************************************************
+ **函数名称: ring_print
+ **功    能: 打印环形队列
+ **输入参数:
+ **     rq: 环形队列
+ **输出参数: NONE
+ **返    回: VOID
+ **实现描述: 依次打印环形队列的指针值
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.05.05 #
+ ******************************************************************************/
+void ring_print(ring_t *rq, log_cycle_t *log)
+{
+    unsigned int i;
+
+    for (i=0; i<rq->num; ++i)
+    {
+        log_fatal(log, "ptr[%d]: %p", rq->prod.head+i, rq->data[(rq->prod.head+i)&rq->mask]);
+    }
 }
