@@ -14,12 +14,13 @@ LIBS = -lpthread
 
 SRC_LIST = hash.c \
 			log.c \
-			chunk.c \
+			slot.c \
 			syslog.c \
 			lock.c \
 			list.c \
 			list2.c \
 			menu.c \
+			ring.c \
 			queue.c \
 			sha256.c \
 			slab.c \
