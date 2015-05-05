@@ -26,7 +26,6 @@
 queue_t *queue_creat(int max, int size)
 {
     queue_t *queue;
-    slot_t *slot;
 
     /* > 新建对象 */
     queue = (queue_t *)calloc(1, sizeof(queue_t));
@@ -44,15 +43,13 @@ queue_t *queue_creat(int max, int size)
     }
 
     /* > 创建内存池 */
-    slot = slot_creat(max, size);
-    if (NULL == slot)
+    queue->slot = slot_creat(max, size);
+    if (NULL == queue->slot)
     {
-        FREE(queue);
         ring_destroy(queue->ring);
+        FREE(queue);
         return NULL;
     }
-
-    queue->slot = slot;
 
     return queue;
 }

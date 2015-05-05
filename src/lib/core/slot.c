@@ -70,7 +70,7 @@ slot_t *slot_creat(int num, size_t size)
         }
     }
 
-    return addr;
+    return slot;
 }
 
 /******************************************************************************
