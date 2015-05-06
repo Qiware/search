@@ -57,7 +57,7 @@ size_t shm_queue_total(int max, size_t size)
 shm_queue_t *shm_queue_creat(int key, int max, int size)
 {
     void *addr;
-    size_t total, off, sz;
+    size_t total;
     shm_queue_t *shmq;
 
     /* > 计算内存空间 */
@@ -83,27 +83,16 @@ shm_queue_t *shm_queue_creat(int key, int max, int size)
     }
 
     /* > 初始化环形队列 */
-    shmq->ring = (shm_ring_t *)addr;
-    sz = shm_ring_init(shmq->ring, max);
-    if ((size_t)-1 == sz)
+    shmq->ring = shm_ring_init(addr, max);
+    if (NULL == shmq->ring)
     {
         free(shmq);
         return NULL;
     }
-
-    off = sz;
-    shmq->slot = (shm_slot_t *)(addr + off);
 
     /* > 初始化内存池 */
-    sz = shm_slot_init((void *)shmq->slot, max, size);
-    if ((size_t)-1 == sz)
-    {
-        free(shmq);
-        return NULL;
-    }
-
-    /* > 校验合法性 */
-    if (off + sz != total)
+    shmq->slot = shm_slot_init(addr + shm_ring_total(max), max, size);
+    if (NULL == shmq->slot)
     {
         free(shmq);
         return NULL;
