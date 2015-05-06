@@ -88,7 +88,7 @@ static void sdtp_setup_conf(sdtp_ssvr_conf_t *conf)
 
     snprintf(conf->qcf.name, sizeof(conf->qcf.name), "../temp/sdtp/sdtp-ssvr.key");
     conf->qcf.size = 4096;
-    conf->qcf.count = 2000;
+    conf->qcf.count = 2048;
 }
 
 int main(int argc, const char *argv[])

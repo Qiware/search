@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    ring_print(queue->slot->ring, log);
+    queue_print(queue);
 
     for (i=0; i<QUEUE_LEN; ++i)
     {
