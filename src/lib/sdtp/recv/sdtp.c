@@ -64,8 +64,8 @@ sdtp_cntx_t *sdtp_init(const sdtp_conf_t *conf, log_cycle_t *log)
     /* 3. 初始化接收端 */
     if (_sdtp_init(ctx))
     {
-        FREE(ctx);
         log_error(ctx->log, "Initialize recv failed!");
+        FREE(ctx);
         return NULL;
     }
 

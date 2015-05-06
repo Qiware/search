@@ -260,7 +260,7 @@ static int sdtp_ssvr_creat_sendq(sdtp_ssvr_t *ssvr, const sdtp_ssvr_conf_t *conf
     ssvr->sq = sdtp_pool_creat(path, qcf->count, qcf->size);
     if (NULL == ssvr->sq)
     {
-        log_error(ssvr->log, "Create send-queue failed!");
+        log_error(ssvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return SDTP_ERR;
     }
 
