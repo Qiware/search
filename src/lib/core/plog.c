@@ -1,8 +1,10 @@
-/*******************************************************************************
- ** 模  块: 同步日志模块
- ** 说  明: 
- **     主要负责系统内部模块错误的跟踪处理.
- ** 注  意: 
+/******************************************************************************
+ ** Coypright(C) 2014-2024 Xundao technology Co., Ltd
+ **
+ ** 文件名: plog.c
+ ** 版本号: 1.0
+ ** 描  述: 平台日志模块
+ **         主要负责系统内部模块错误的跟踪处理
  ** 作  者: # Qifeng.zou # 2014.09.11 #
  ******************************************************************************/
 #include "log.h"
@@ -75,23 +77,23 @@ int plog_get_level(const char *level_str)
  ******************************************************************************/
 int plog_init(int level, const char *path)
 {
-    plog_cycle_t *syslog = &g_plog;
+    plog_cycle_t *plog = &g_plog;
 
-    if (NULL != syslog->fp)
+    if (NULL != plog->fp)
     {
         return 0;
     }
 
     Mkdir2(path, DIR_MODE);
 
-    syslog->fp = fopen(path, "aw+");
-    if (NULL == syslog->fp)
+    plog->fp = fopen(path, "aw+");
+    if (NULL == plog->fp)
     {
         return -1;
     }
 
-    syslog->level = level;
-    syslog->pid = getpid();
+    plog->level = level;
+    plog->pid = getpid();
     return 0;
 }
 
@@ -141,7 +143,7 @@ void plog_core(int level,
  **输入参数: NONE
  **输出参数: NONE
  **返    回: VOID
- **实现描述: 
+ **实现描述: 将所有缓存的数据同步至磁盘
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.11 #
  ******************************************************************************/

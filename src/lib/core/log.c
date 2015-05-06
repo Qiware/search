@@ -71,7 +71,7 @@ static size_t _log_sync(log_file_info_t *file, int *fd);
 
 /* 是否强制写(注意: 系数必须小于或等于0.8，否则可能出现严重问题) */
 static const size_t g_log_sync_size = 0.8 * LOG_FILE_CACHE_SIZE;
-#define log_is_over_limit(file) (((file)->in_offset - (file)->out_offset) > g_log_sync_size)
+#define log_is_over_limit(file) (((file)->ioff - (file)->ooff) > g_log_sync_size)
 
 /******************************************************************************
  **函数名称: log_init
@@ -648,9 +648,7 @@ static void log_release(log_file_info_t *file)
     log_sync(file);
 
     memset(file, 0, sizeof(log_file_info_t));
-
     file->pid = INVALID_PID;
-
     file->idx = idx;
     
     log_fcache_unlock(file);
@@ -685,8 +683,8 @@ static int log_write(log_cycle_t *log, int level,
     log_fcache_wrlock(file);                /* 缓存加锁 */
     pthread_mutex_lock(&log->lock);
 
-    addr = (char *)(file + 1) + file->in_offset;
-    left = log_get_data_size() - file->in_offset;
+    addr = (char *)(file + 1) + file->ioff;
+    left = log_get_data_size() - file->ioff;
 
     switch (level)
     {
@@ -756,7 +754,7 @@ static int log_write(log_cycle_t *log, int level,
     } 
 
     msglen = strlen(addr);
-    file->in_offset += msglen;
+    file->ioff += msglen;
     addr += msglen;
     left -= msglen;
 
@@ -765,7 +763,7 @@ static int log_write(log_cycle_t *log, int level,
     {
         msglen = log_print_dump(addr, dump, dumplen);
 
-        file->in_offset += msglen;
+        file->ioff += msglen;
     }
 
     /* 判断是否强制写或发送通知 */
@@ -803,7 +801,6 @@ static int log_print_dump(char *addr, const void *dump, int dumplen)
     const char *dump_ptr, *dump_end;
     unsigned char var[2] = {0, 31};    
     int idx, n, row, count, rows, head_len;
-
 
     dump_ptr = (const char *)dump;
     dump_end = dump + dumplen;              /* 内存结束地址 */
@@ -948,14 +945,14 @@ static size_t _log_sync(log_file_info_t *file, int *_fd)
     memset(&fstat, 0, sizeof(fstat));
 
     /* 1. 判断是否需要同步 */
-    if (file->in_offset == file->out_offset)
+    if (file->ioff == file->ooff)
     {
         return 0;
     }
 
     /* 2. 计算同步地址和长度 */
     addr = (void *)(file + 1);
-    n = file->in_offset - file->out_offset;
+    n = file->ioff - file->ooff;
     fd = (NULL != _fd)? *_fd : INVALID_FD;
 
     /* 撰写日志文件 */
@@ -1002,8 +999,8 @@ static size_t _log_sync(log_file_info_t *file, int *_fd)
     
     /* 7. 标志复位 */
     memset(addr, 0, n);
-    file->in_offset = 0;
-    file->out_offset = 0;
+    file->ioff = 0;
+    file->ooff = 0;
     ftime(&file->sync_tm);
 
     if (NULL != _fd)
