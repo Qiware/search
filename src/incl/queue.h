@@ -23,6 +23,7 @@ queue_t *queue_creat(int max, int size);
 #define queue_dealloc(q, p) slot_dealloc((q)->slot, p)
 #define queue_push(q, addr) ring_push((q)->ring, addr)
 #define queue_pop(q) ring_pop((q)->ring)
+#define queue_print(q) ring_print((q)->ring)
 void queue_destroy(queue_t *q);
 
 /* 获取队列剩余空间 */
