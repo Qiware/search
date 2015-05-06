@@ -5,12 +5,34 @@
  ** 版本号: 1.0
  ** 描  述: 共享内存版队列
  **         使用SHM_SLAB机制管理共享内存.
- ** 作  者: # Qifeng.zou # 2014.09.09 #
+ ** 作  者: # Qifeng.zou # 2015.05.06 #
  ******************************************************************************/
 #include "shm_opt.h"
-#include "syscall.h"
-#include "shm_slab.h"
+#include "shm_ring.h"
+#include "shm_slot.h"
 #include "shm_queue.h"
+
+/* 计算队列总空间 */
+size_t shm_queue_total(int max, size_t size)
+{
+    size_t total, sz;
+
+    sz = shm_slot_total(max, size);
+    if ((size_t)-1 == sz)
+    {
+        return (size_t)-1;
+    }
+
+    total = sz;
+
+    sz = shm_ring_total(max);
+    if ((size_t)-1 == sz)
+    {
+        return (size_t)-1;
+    }
+
+    return total;
+}
 
 /******************************************************************************
  **函数名称: shm_queue_creat
@@ -19,45 +41,40 @@
  **     key: 共享内存KEY
  **     max: 队列单元数
  **     size: 队列单元SIZE
- **输出参数:
+ **输出参数: NONE
  **返    回: 共享内存队列
- **实现描述: 
- **     1. 计算内存空间
- **     2. 创建共享内存
- **     3. 初始化标志量
+ **实现描述: 接合共享内存环形队列和内存池实现
+ **      -------------- --------------
+ **     |              |              |
+ **     |     ring     |     slot     |
+ **     |  (环形队列)  |   (内存池)   |
+ **      -------------- --------------
+ **     环形队列: 负责数据的弹出和插入等操作
+ **     内存池  : 负责内存空间的申请和回收等操作
  **注意事项: 
- **      -----------------------------------------------------------------
- **     |      |        |                                                 |
- **     | 队列 | 内存池 |                   可分配空间                    |
- **     |      |        |                                                 |
- **      -----------------------------------------------------------------
- **作    者: # Qifeng.zou # 2014.09.10 #
+ **作    者: # Qifeng.zou # 2015.05.06 #
  ******************************************************************************/
 shm_queue_t *shm_queue_creat(int key, int max, int size)
 {
-    int idx;
     void *addr;
-    size_t total, off;
-    shm_pool_t *pool;
+    size_t total, off, sz;
     shm_queue_t *shmq;
-    shm_queue_info_t *info;
-    shm_queue_node_t *node;
 
+    /* > 计算内存空间 */
+    total = shm_queue_total(max, size);
+    if ((size_t)-1 == total)
+    {
+        return NULL;
+    }
 
-    /* 1. 新建全局对象 */
+    /* > 新建队列对象 */
     shmq = (shm_queue_t *)calloc(1, sizeof(shm_queue_t));
     if (NULL == shmq)
     {
         return NULL;
     }
 
-    /* 2. 计算内存空间 */
-    total = sizeof(shm_queue_info_t);
-    total += max * sizeof(shm_queue_node_t);
-
-    total += shm_pool_total(max, size);
-
-    /* 3. 创建共享内存 */
+    /* > 创建共享内存 */
     addr = shm_creat(key, total);
     if (NULL == addr)
     {
@@ -65,55 +82,32 @@ shm_queue_t *shm_queue_creat(int key, int max, int size)
         return NULL;
     }
 
-    /* 3. 初始化标志量 */
-    off = 0;
-    info = (shm_queue_info_t *)addr;
-
-    spin_lock_init(&info->lock);
-
-    spin_lock(&info->lock);
-
-    info->num = 0;
-    info->max = max;
-    info->size = size;
-
-    off += sizeof(shm_queue_info_t);
-    info->base = off;
-    info->head = off;
-    info->tail = off;
-
-    node = (shm_queue_node_t *)(addr + info->base);
-    for (idx=0; idx<max-1; ++idx, ++node)
+    /* > 初始化环形队列 */
+    shmq->ring = (shm_ring_t *)addr;
+    sz = shm_ring_init(shmq->ring, max);
+    if ((size_t)-1 == sz)
     {
-        off += sizeof(shm_queue_node_t);
-
-        node->id = idx;
-        node->flag = SHMQ_NODE_FLAG_IDLE;
-        node->next = off;
-        node->data = 0;
-    }
-    
-    node->id = idx;
-    node->flag = SHMQ_NODE_FLAG_IDLE;
-    node->next = info->base;
-    node->data = 0;
-
-    /* 4. 初始化SHM内存池 */
-    info->pool_off = sizeof(shm_queue_info_t) + max * sizeof(shm_queue_node_t);
-
-    pool = shm_pool_init(addr + info->pool_off, max, size);
-    if (NULL == pool)
-    {
-        spin_unlock(&info->lock);
         free(shmq);
-        log_error2("Initialize shm slab failed!");
         return NULL;
     }
 
-    spin_unlock(&info->lock);
+    off = sz;
+    shmq->slot = (shm_slot_t *)(addr + off);
 
-    shmq->info = info;
-    shmq->pool = pool;
+    /* > 初始化内存池 */
+    sz = shm_slot_init((void *)shmq->slot, max, size);
+    if ((size_t)-1 == sz)
+    {
+        free(shmq);
+        return NULL;
+    }
+
+    /* > 校验合法性 */
+    if (off + sz != total)
+    {
+        free(shmq);
+        return NULL;
+    }
 
     return shmq;
 }
@@ -139,29 +133,24 @@ shm_queue_t *shm_queue_attach(int key)
     void *addr;
     shm_queue_t *shmq;
 
-    /* 1. 新建队列对象 */
+    /* > 新建队列对象 */
     shmq = (shm_queue_t *)calloc(1, sizeof(shm_queue_t));
     if (NULL == shmq)
     {
         return NULL;
     }
 
-    /* 2. 附着共享内存 */
-    addr = (shm_queue_info_t *)shm_attach(key);
+    /* > 附着共享内存 */
+    addr = (void *)shm_attach(key);
     if (NULL == addr)
     {
         free(shmq);
         return NULL;
     }
 
-    /* 3. 设置指针对象 */
-    shmq->info = (shm_queue_info_t *)addr;
-    shmq->pool = shm_pool_get(addr + shmq->info->pool_off);
-    if (NULL == shmq->pool)
-    {
-        free(shmq);
-        return NULL;
-    }
+    /* > 设置指针对象 */
+    shmq->ring = (shm_ring_t *)addr;
+    shmq->slot = (shm_slot_t *)(addr + shm_ring_total(shmq->ring->max));
 
     return shmq;
 }
@@ -176,36 +165,13 @@ shm_queue_t *shm_queue_attach(int key)
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 内存地址p必须是从shm_queue_malloc()分配的，否则会出严重错误！
- **作    者: # Qifeng.zou # 2014.09.11 #
+ **作    者: # Qifeng.zou # 2014.05.06 #
  ******************************************************************************/
 int shm_queue_push(shm_queue_t *shmq, void *p)
 {
-    void *addr = (void *)shmq->info;
-    shm_pool_t *pool = shmq->pool;
-    shm_queue_node_t *node;
-    shm_queue_info_t *info = shmq->info;
+    if (NULL == p) return -1;
 
-    spin_lock(&info->lock);
-
-    /* 1. 检查队列空间 */
-    if (info->num >= info->max)
-    {
-        spin_unlock(&info->lock);
-        return -1;
-    }
-
-    /* 2. 占用空闲结点 */
-    node = (shm_queue_node_t *)(addr + info->tail);
-
-    node->flag = SHMQ_NODE_FLAG_USED;
-    node->data = p - pool->page_data[0];
-
-    info->tail = node->next;
-    ++info->num;
-
-    spin_unlock(&info->lock);
-
-    return 0;
+    return shm_ring_push(shmq->ring, p - (void *)shmq->ring);
 }
 
 /******************************************************************************
@@ -218,42 +184,17 @@ int shm_queue_push(shm_queue_t *shmq, void *p)
  **返    回: 队列ID
  **实现描述: 
  **注意事项: 
- **作    者: # Qifeng.zou # 2014.09.09 #
+ **作    者: # Qifeng.zou # 2015.05.06 #
  ******************************************************************************/
 void *shm_queue_pop(shm_queue_t *shmq)
 {
-    void *p, *addr = (void *)shmq->info;
-    shm_queue_info_t *info = shmq->info;
-    shm_queue_node_t *node;
-    shm_pool_t *pool = shmq->pool;
+    off_t off;
 
-    if (0 == info->num)
+    off = shm_ring_pop(shmq->ring);
+    if ((off_t)-1 == off)
     {
         return NULL;
     }
 
-    spin_lock(&info->lock);
-    if (0 == info->num)
-    {
-        spin_unlock(&info->lock);
-        return NULL;
-    }
-
-    node = (shm_queue_node_t *)(addr + info->head);
-    if (SHMQ_NODE_FLAG_USED != node->flag)
-    {
-        assert(0);
-    }
-
-    p = (void *)(pool->page_data[0] + node->data);
-
-    node->flag = SHMQ_NODE_FLAG_IDLE;
-    node->data = 0;
-
-    info->head = node->next;
-    --info->num;
-
-    spin_unlock(&info->lock);
-
-    return p;
+    return (void *)shmq->ring + off;
 }
