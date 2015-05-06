@@ -31,7 +31,7 @@ int ring_push(ring_t *rq, void *addr);
 int ring_mpush(ring_t *rq, void **addr, unsigned int num);
 void *ring_pop(ring_t *rq);
 int ring_mpop(ring_t *rq, void **addr, unsigned int num);
-void ring_print(ring_t *rq, log_cycle_t *log);
+void ring_print(ring_t *rq);
 void ring_destroy(ring_t *rq);
 
 #endif /*__RING_H__*/

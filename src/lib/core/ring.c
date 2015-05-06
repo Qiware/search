@@ -11,7 +11,6 @@
 
 #include "ring.h"
 #include "atomic.h"
-#include "syscall.h"
 
 /******************************************************************************
  **函数名称: ring_creat
@@ -41,7 +40,7 @@ ring_t *ring_creat(int max)
     rq->data = (void **)calloc(max, sizeof(void *));
     if (NULL == rq->data)
     {
-        FREE(rq);
+        free(rq);
         return NULL;
     }
 
@@ -204,7 +203,7 @@ int ring_mpop(ring_t *rq, void **addr, unsigned int num)
  ******************************************************************************/
 void ring_destroy(ring_t *rq)
 {
-    FREE(rq->data);
+    free(rq->data);
     rq->max = 0;
     rq->num = 0;
 }
@@ -220,12 +219,12 @@ void ring_destroy(ring_t *rq)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.05.05 #
  ******************************************************************************/
-void ring_print(ring_t *rq, log_cycle_t *log)
+void ring_print(ring_t *rq)
 {
     unsigned int i;
 
     for (i=0; i<rq->num; ++i)
     {
-        log_fatal(log, "ptr[%d]: %p", rq->prod.head+i, rq->data[(rq->prod.head+i)&rq->mask]);
+        fprintf(stderr, "ptr[%d]: %p", rq->prod.head+i, rq->data[(rq->prod.head+i)&rq->mask]);
     }
 }
