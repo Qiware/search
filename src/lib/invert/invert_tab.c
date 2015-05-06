@@ -10,11 +10,11 @@
  ** 作  者: # Qifeng.zou # 2015.04.29 #
  ******************************************************************************/
 #include "hash.h"
-#include "invert.h"
+#include "invert_tab.h"
 #include "syscall.h"
 
 /******************************************************************************
- **函数名称: invert_dic_word_cmp
+ **函数名称: invert_tab_dic_word_cmp
  **功    能: 比较单词的大小
  **输入参数: 
  **     word: 单词
@@ -25,7 +25,7 @@
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.04.28 #
  ******************************************************************************/
-static int invert_dic_word_cmp(char *word, void *data)
+static int invert_tab_dic_word_cmp(char *word, void *data)
 {
     invt_dic_word_t *dw = (invt_dic_word_t *)data;
 
@@ -33,8 +33,8 @@ static int invert_dic_word_cmp(char *word, void *data)
 }
 
 /******************************************************************************
- **函数名称: invert_creat
- **功    能: 创建倒排对象
+ **函数名称: invert_tab_creat
+ **功    能: 创建倒排表
  **输入参数: 
  **     max: 数组长度
  **     log: 日志对象
@@ -44,32 +44,32 @@ static int invert_dic_word_cmp(char *word, void *data)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.04.28 #
  ******************************************************************************/
-invt_cntx_t *invert_creat(int max, log_cycle_t *log)
+invt_tab_t *invert_tab_creat(int max, log_cycle_t *log)
 {
     int idx;
-    invt_cntx_t *ctx;
+    invt_tab_t *tab;
     avl_option_t option;
 
     /* > 创建对象 */
-    ctx = (invt_cntx_t *)calloc(1, sizeof(invt_cntx_t));
-    if (NULL == ctx)
+    tab = (invt_tab_t *)calloc(1, sizeof(invt_tab_t));
+    if (NULL == tab)
     {
         log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
         return NULL;
     }
 
-    ctx->mod = max;
-    ctx->log = log;
-    ctx->pool = (void *)NULL;
-    ctx->alloc = mem_alloc;
-    ctx->dealloc = mem_dealloc;
+    tab->mod = max;
+    tab->log = log;
+    tab->pool = (void *)NULL;
+    tab->alloc = mem_alloc;
+    tab->dealloc = mem_dealloc;
 
     /* > 创建单词词典 */
-    ctx->dic = (avl_tree_t **)ctx->alloc(ctx->pool, max * sizeof(avl_tree_t *));
-    if (NULL == ctx->dic)
+    tab->dic = (avl_tree_t **)tab->alloc(tab->pool, max * sizeof(avl_tree_t *));
+    if (NULL == tab->dic)
     {
         log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
-        FREE(ctx);
+        FREE(tab);
         return NULL;
     }
 
@@ -81,25 +81,25 @@ invt_cntx_t *invert_creat(int max, log_cycle_t *log)
         option.alloc = mem_alloc;
         option.dealloc = mem_dealloc;
 
-        ctx->dic[idx] = avl_creat(&option,
+        tab->dic[idx] = avl_creat(&option,
                             (key_cb_t)hash_time33_ex,
-                            (avl_cmp_cb_t)invert_dic_word_cmp);
-        if (NULL == ctx->dic[idx])
+                            (avl_cmp_cb_t)invert_tab_dic_word_cmp);
+        if (NULL == tab->dic[idx])
         {
             log_error(log, "Create avl-tree failed! idx:%d", idx);
-            invert_destroy(ctx);
+            invert_tab_destroy(tab);
             return NULL;
         }
     }
 
-    return ctx;
+    return tab;
 }
 
 /******************************************************************************
  **函数名称: invt_word_add
  **功    能: 新建单词
  **输入参数: 
- **     ctx: 全局对象
+ **     tab: 全局对象
  **     word: 单词
  **     len: 单词长度
  **输出参数: NONE
@@ -108,19 +108,19 @@ invt_cntx_t *invert_creat(int max, log_cycle_t *log)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.04.29 #
  ******************************************************************************/
-static invt_dic_word_t *invt_word_add(invt_cntx_t *ctx, char *word, int len)
+static invt_dic_word_t *invt_word_add(invt_tab_t *tab, char *word, int len)
 {
     int idx;
     list_option_t option;
     invt_dic_word_t *dw;
 
-    idx = hash_time33(word) % ctx->mod;
+    idx = hash_time33(word) % tab->mod;
 
     /* > 创建数据对象 */
-    dw = ctx->alloc(ctx->pool, sizeof(invt_dic_word_t));
+    dw = tab->alloc(tab->pool, sizeof(invt_dic_word_t));
     if (NULL == dw)
     {
-        log_error(ctx->log, "Alloc memory failed!");
+        log_error(tab->log, "Alloc memory failed!");
         return NULL;
     }
 
@@ -129,10 +129,10 @@ static invt_dic_word_t *invt_word_add(invt_cntx_t *ctx, char *word, int len)
     do
     {
         /* > 设置word标签 */
-        dw->word.str = ctx->alloc(ctx->pool, len + 1);
+        dw->word.str = tab->alloc(tab->pool, len + 1);
         if (NULL == dw->word.str)
         {
-            log_error(ctx->log, "Alloc memory failed!");
+            log_error(tab->log, "Alloc memory failed!");
             break;
         }
 
@@ -147,23 +147,23 @@ static invt_dic_word_t *invt_word_add(invt_cntx_t *ctx, char *word, int len)
         dw->doc_list = (list_t *)list_creat(&option);
         if (NULL == dw->doc_list)
         {
-            log_error(ctx->log, "Create btree failed! word:%s", word);
+            log_error(tab->log, "Create btree failed! word:%s", word);
             break;
         }
 
         /* > 插入单词词典 */
-        if (avl_insert(ctx->dic[idx], word, len, (void *)dw))
+        if (avl_insert(tab->dic[idx], word, len, (void *)dw))
         {
-            log_error(ctx->log, "Insert avl failed! word:%s idx:%d", word, idx);
+            log_error(tab->log, "Insert avl failed! word:%s idx:%d", word, idx);
             break;
         }
 
         return dw;
     } while(0);
 
-    if (dw->doc_list) { ctx->dealloc(ctx->pool, dw->doc_list); }
-    if (dw->word.str) { ctx->dealloc(ctx->pool, dw->word.str); }
-    if (dw) { ctx->dealloc(ctx->pool, dw); }
+    if (dw->doc_list) { tab->dealloc(tab->pool, dw->doc_list); }
+    if (dw->word.str) { tab->dealloc(tab->pool, dw->word.str); }
+    if (dw) { tab->dealloc(tab->pool, dw); }
 
     return NULL;
 }
@@ -172,7 +172,7 @@ static invt_dic_word_t *invt_word_add(invt_cntx_t *ctx, char *word, int len)
  **函数名称: invt_word_add_doc
  **功    能: 添加文档列表
  **输入参数: 
- **     ctx: 全局对象
+ **     tab: 全局对象
  **     word: 单词
  **     len: 单词长度
  **输出参数: NONE
@@ -183,25 +183,25 @@ static invt_dic_word_t *invt_word_add(invt_cntx_t *ctx, char *word, int len)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.04.29 #
  ******************************************************************************/
-static int invt_word_add_doc(invt_cntx_t *ctx, invt_dic_word_t *dw, const char *url, int freq)
+static int invt_word_add_doc(invt_tab_t *tab, invt_dic_word_t *dw, const char *url, int freq)
 {
     int len;
     invt_word_doc_t *doc;
 
     /* > 创建文档项 */
-    doc = ctx->alloc(ctx->pool, sizeof(invt_word_doc_t));
+    doc = tab->alloc(tab->pool, sizeof(invt_word_doc_t));
     if (NULL == doc)
     {
-        log_error(ctx->log, "Alloc memory failed!");
+        log_error(tab->log, "Alloc memory failed!");
         return INVT_ERR;
     }
 
     len = strlen(url);
-    doc->url.str = ctx->alloc(ctx->pool, len + 1);
+    doc->url.str = tab->alloc(tab->pool, len + 1);
     if (NULL == doc->url.str)
     {
-        log_error(ctx->log, "Alloc memory failed!");
-        ctx->dealloc(ctx->pool, doc);
+        log_error(tab->log, "Alloc memory failed!");
+        tab->dealloc(tab->pool, doc);
         return INVT_ERR;
     }
 
@@ -212,9 +212,9 @@ static int invt_word_add_doc(invt_cntx_t *ctx, invt_dic_word_t *dw, const char *
     /* > 插入文档列表 */
     if (list_lpush(dw->doc_list, doc))
     {
-        log_error(ctx->log, "Push into list failed! word:%s url:%s", dw->word.str, url);
-        ctx->dealloc(ctx->pool, doc->url.str);
-        ctx->dealloc(ctx->pool, doc);
+        log_error(tab->log, "Push into list failed! word:%s url:%s", dw->word.str, url);
+        tab->dealloc(tab->pool, doc->url.str);
+        tab->dealloc(tab->pool, doc);
         return INVT_ERR;
     }
 
@@ -222,10 +222,10 @@ static int invt_word_add_doc(invt_cntx_t *ctx, invt_dic_word_t *dw, const char *
 }
 
 /******************************************************************************
- **函数名称: invert_insert
+ **函数名称: invert_tab_insert
  **功    能: 插入倒排信息
  **输入参数: 
- **     ctx: 全局对象
+ **     tab: 全局对象
  **     word: 关键字
  **     url: 包含关键字的文档
  **     freq: 词频
@@ -235,22 +235,22 @@ static int invt_word_add_doc(invt_cntx_t *ctx, invt_dic_word_t *dw, const char *
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.04.28 #
  ******************************************************************************/
-int invert_insert(invt_cntx_t *ctx, char *word, const char *url, int freq)
+int invert_tab_insert(invt_tab_t *tab, char *word, const char *url, int freq)
 {
     int idx;
     avl_node_t *node;
     invt_dic_word_t *dw;
 
-    idx = hash_time33(word) % ctx->mod;
+    idx = hash_time33(word) % tab->mod;
 
     /* > 查找单词项 */
-    node = avl_query(ctx->dic[idx], word, strlen(word));
+    node = avl_query(tab->dic[idx], word, strlen(word));
     if (NULL == node)
     {
-        dw = invt_word_add(ctx, word, strlen(word));
+        dw = invt_word_add(tab, word, strlen(word));
         if (NULL == dw)
         {
-            log_error(ctx->log, "Create word dw failed!");
+            log_error(tab->log, "Create word dw failed!");
             return INVT_ERR;
         }
     }
@@ -260,9 +260,9 @@ int invert_insert(invt_cntx_t *ctx, char *word, const char *url, int freq)
     }
 
     /* > 插入文档列表 */
-    if (invt_word_add_doc(ctx, dw, url, freq))
+    if (invt_word_add_doc(tab, dw, url, freq))
     {
-        log_error(ctx->log, "Add document dw failed!");
+        log_error(tab->log, "Add document dw failed!");
         return INVT_ERR;
     }
    
@@ -270,10 +270,10 @@ int invert_insert(invt_cntx_t *ctx, char *word, const char *url, int freq)
 }
 
 /******************************************************************************
- **函数名称: invert_query
+ **函数名称: invert_tab_query
  **功    能: 查询倒排信息
  **输入参数: 
- **     ctx: 全局对象
+ **     tab: 全局对象
  **     word: 关键字
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
@@ -281,17 +281,17 @@ int invert_insert(invt_cntx_t *ctx, char *word, const char *url, int freq)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.04.28 #
  ******************************************************************************/
-invt_dic_word_t *invert_query(invt_cntx_t *ctx, char *word)
+invt_dic_word_t *invert_tab_query(invt_tab_t *tab, char *word)
 {
     int idx;
     avl_node_t *node;
 
-    idx = hash_time33(word) % ctx->mod;
+    idx = hash_time33(word) % tab->mod;
 
-    node = avl_query(ctx->dic[idx], word, strlen(word));
+    node = avl_query(tab->dic[idx], word, strlen(word));
     if (NULL == node)
     {
-        log_error(ctx->log, "Query word [%s] failed! idx:%d", word, idx);
+        log_error(tab->log, "Query word [%s] failed! idx:%d", word, idx);
         return NULL;
     }
     
@@ -299,10 +299,10 @@ invt_dic_word_t *invert_query(invt_cntx_t *ctx, char *word)
 }
 
 /******************************************************************************
- **函数名称: invert_remove
+ **函数名称: invert_tab_remove
  **功    能: 删除倒排信息
  **输入参数: 
- **     ctx: 全局对象
+ **     tab: 全局对象
  **     word: 关键字
  **输出参数:
  **     dw: 单词项数据
@@ -311,28 +311,28 @@ invt_dic_word_t *invert_query(invt_cntx_t *ctx, char *word)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.04.28 #
  ******************************************************************************/
-int invert_remove(invt_cntx_t *ctx, char *word)
+int invert_tab_remove(invt_tab_t *tab, char *word)
 {
     int idx;
     invt_dic_word_t *dw;
 
-    idx = hash_time33(word) % ctx->mod;
+    idx = hash_time33(word) % tab->mod;
 
-    if (avl_delete(ctx->dic[idx], word, strlen(word), (void **)&dw))
+    if (avl_delete(tab->dic[idx], word, strlen(word), (void **)&dw))
     {
-        log_error(ctx->log, "Query word [%s] failed! idx:%d", word, idx);
+        log_error(tab->log, "Query word [%s] failed! idx:%d", word, idx);
         return INVT_ERR;
     }
     
-    list_destroy(dw->doc_list, ctx->pool, (mem_dealloc_cb_t)mem_dealloc);
-    ctx->dealloc(ctx->pool, dw->word.str);
-    ctx->dealloc(ctx->pool, dw);
+    list_destroy(dw->doc_list, tab->pool, (mem_dealloc_cb_t)mem_dealloc);
+    tab->dealloc(tab->pool, dw->word.str);
+    tab->dealloc(tab->pool, dw);
     
     return INVT_OK;
 }
 
 /******************************************************************************
- **函数名称: invert_destroy
+ **函数名称: invert_tab_destroy
  **功    能: 销毁倒排对象
  **输入参数: 
  **输出参数: NONE
@@ -341,17 +341,17 @@ int invert_remove(invt_cntx_t *ctx, char *word)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.04.28 #
  ******************************************************************************/
-int invert_destroy(invt_cntx_t *ctx)
+int invert_tab_destroy(invt_tab_t *tab)
 {
     int idx;
 
-    for (idx=0; idx<ctx->mod; ++idx)
+    for (idx=0; idx<tab->mod; ++idx)
     {
-        avl_destroy(ctx->dic[idx]);
+        avl_destroy(tab->dic[idx]);
     }
 
-    ctx->dealloc(ctx->pool, ctx->dic);
-    FREE(ctx);
+    tab->dealloc(tab->pool, tab->dic);
+    FREE(tab);
 
     return 0;
 }

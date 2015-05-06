@@ -3,8 +3,6 @@
 
 #include "comm.h"
 
-/* 宏定义 */
-
 /* 日志级别 */
 typedef enum
 {
@@ -18,6 +16,7 @@ typedef enum
     , LOG_LEVEL_TOTAL                       /* 级别总数 */
 } log_level_e;
 
+/* 宏定义 */
 #define LOG_LEVEL_FATAL_STR     "fatal"     /* 严重级别字串 */
 #define LOG_LEVEL_ERROR_STR     "error"     /* 错误级别字串 */
 #define LOG_LEVEL_WARN_STR      "warn"      /* 警告级别字串 */
@@ -61,8 +60,8 @@ typedef struct
 {
     int idx;                                /* 索引号 */
     char path[FILE_NAME_MAX_LEN];           /* 日志文件绝对路径 */
-    size_t in_offset;                       /* 写入偏移 */
-    size_t out_offset;                      /* 同步偏移 */
+    size_t ioff;                            /* 写入偏移 */
+    size_t ooff;                            /* 同步偏移 */
     pid_t pid;                              /* 使用日志缓存的进程ID */
     struct timeb sync_tm;                   /* 上次同步的时间 */
 } log_file_info_t;
@@ -72,8 +71,8 @@ typedef struct
 {
     int max_num;                            /* 日志缓存数 */
     char path[FILE_NAME_MAX_LEN];           /* 日志文件绝对路径 */
-    size_t in_offset;                       /* 写入偏移 */
-    size_t out_offset;                      /* 同步偏移 */
+    size_t ioff;                            /* 写入偏移 */
+    size_t ooff;                            /* 同步偏移 */
     pid_t pid;                              /* 使用日志缓存的进程ID */
     struct timeb sync_tm;                   /* 上次同步的时间 */
 } log_shm_t;
@@ -142,8 +141,7 @@ typedef struct
 extern plog_cycle_t g_plog;
 
 /* 系统日志函数(无句柄) */
-#define plog_get_path(path, size, name) \
-            snprintf(path, size, "../log/%s.syslog", name)
+#define plog_get_path(path, size, name) snprintf(path, size, "../log/%s.plog", name)
 int plog_init(int level, const char *path);
 void plog_core(int level, const char *fname, int lineno,
             const void *dump, int dumplen, const char *fmt, ...);

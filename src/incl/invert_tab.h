@@ -1,5 +1,5 @@
-#if !defined(__INVERT_H__)
-#define __INVERT_H__
+#if !defined(__INVERT_TAB_H__)
+#define __INVERT_TAB_H__
 
 #include "log.h"
 #include "str.h"
@@ -40,13 +40,13 @@ typedef struct
     void *pool;                     /* 内存池 */
     mem_alloc_cb_t alloc;           /* 申请内存 */
     mem_dealloc_cb_t dealloc;       /* 释放内存 */
-} invt_cntx_t;
+} invt_tab_t;
 
 /* 对外接口 */
-invt_cntx_t *invert_creat(int max, log_cycle_t *log);
-int invert_insert(invt_cntx_t *ctx, char *word, const char *url, int freq);
-invt_dic_word_t *invert_query(invt_cntx_t *ctx, char *word);
-int invert_remove(invt_cntx_t *ctx, char *word);
-int invert_destroy(invt_cntx_t *ctx);
+invt_tab_t *invert_tab_creat(int max, log_cycle_t *log);
+int invert_tab_insert(invt_tab_t *ctx, char *word, const char *url, int freq);
+invt_dic_word_t *invert_tab_query(invt_tab_t *ctx, char *word);
+int invert_tab_remove(invt_tab_t *ctx, char *word);
+int invert_tab_destroy(invt_tab_t *ctx);
 
-#endif /*__INVERT_H__*/
+#endif /*__INVERT_TAB_H__*/

@@ -12,12 +12,11 @@ INCLUDE = -I. -I$(PROJ)/src/incl
 LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lpthread -lxd_core
 
-SRC_LIST = invert.c \
-			invt_sync.c
+SRC_LIST = invert_tab.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST))
 
-TARGET = libxd_invert.so
+TARGET = libxd_invert_tab.so
 
 .PHONY: all clean
 
