@@ -11,7 +11,6 @@
 #include "log.h"
 #include "comm.h"
 #include "slot.h"
-#include "syscall.h"
 
 /******************************************************************************
  **函数名称: slot_creat
