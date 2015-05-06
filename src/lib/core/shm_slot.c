@@ -53,10 +53,10 @@ size_t shm_slot_total(int num, size_t size)
  **注意事项: 放入队列的偏移量是相对内存池首地址而言的! 
  **作    者: # Qifeng.zou # 2015.05.06 #
  ******************************************************************************/
-int shm_slot_init(void *addr, int num, size_t size)
+shm_slot_t *shm_slot_init(void *addr, int num, size_t size)
 {
     int i;
-    off_t off;
+    off_t off, tsz;
     shm_slot_t *slot;
     shm_ring_t *ring;
 
@@ -65,24 +65,29 @@ int shm_slot_init(void *addr, int num, size_t size)
     slot->max = num;
     slot->size = size;
 
-    ring = (shm_ring_t *)(addr + sizeof(shm_slot_t));
-    size = shm_ring_init(ring, num);
-    if ((size_t)-1 == size)
+    tsz = shm_ring_total(num);
+    if ((off_t)-1 == tsz)
     {
-        return -1;
+        return NULL;
+    }
+
+    ring = shm_ring_init(addr + sizeof(shm_slot_t), num);
+    if (NULL == ring)
+    {
+        return NULL;
     }
 
     /* > 插入管理队列 */
-    off = sizeof(shm_slot_t) + size;
+    off = sizeof(shm_slot_t) + tsz;
     for (i=0; i<num; ++i, off+=size)
     {
         if (shm_ring_push(ring, off))
         {
-            return -1;
+            return NULL;
         }
     }
 
-    return 0;
+    return slot;
 }
 
 /******************************************************************************
