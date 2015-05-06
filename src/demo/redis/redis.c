@@ -11,7 +11,7 @@
 
 void redis_test(void)
 {
-    int i;
+    unsigned int i;
     redisReply *r;
     redisContext *ctx;
     struct timeval tv;

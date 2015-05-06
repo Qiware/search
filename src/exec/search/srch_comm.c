@@ -122,9 +122,9 @@ static log_cycle_t *srch_init_log(char *fname)
     char path[FILE_NAME_MAX_LEN];
 
     /* 1. 初始化系统日志 */
-    syslog_get_path(path, sizeof(path), basename(fname));
+    plog_get_path(path, sizeof(path), basename(fname));
 
-    if (syslog_init(LOG_LEVEL_ERROR, path))
+    if (plog_init(LOG_LEVEL_ERROR, path))
     {
         fprintf(stderr, "Init syslog failed!");
         return NULL;
@@ -136,8 +136,8 @@ static log_cycle_t *srch_init_log(char *fname)
     log = log_init(LOG_LEVEL_ERROR, path);
     if (NULL == log)
     {
-        log_error2("Initialize log failed!");
-        syslog_destroy();
+        plog_error("Initialize log failed!");
+        plog_destroy();
         return NULL;
     }
 
@@ -203,7 +203,7 @@ srch_cntx_t *srch_cntx_init(char *pname, const char *conf_path)
     ctx->log = log;
     ctx->conf = conf;
     log_set_level(log, conf->log.level);
-    syslog_set_level(conf->log.syslevel);
+    plog_set_level(conf->log.syslevel);
 
     /* 5. 创建内存池 */
     ctx->slab = slab_creat_by_calloc(30 * MB);
@@ -278,7 +278,7 @@ void srch_cntx_destroy(srch_cntx_t *ctx)
     srch_agent_pool_destroy(ctx);
 
     log_destroy(&ctx->log);
-    syslog_destroy();
+    plog_destroy();
 }
 
 /******************************************************************************

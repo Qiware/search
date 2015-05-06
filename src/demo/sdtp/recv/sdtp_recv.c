@@ -34,7 +34,7 @@ int main(int argc, const char *argv[])
 
     signal(SIGPIPE, SIG_IGN);
                                        
-    syslog_init(LOG_LEVEL_ERROR, "./sdtp.log2");
+    plog_init(LOG_LEVEL_ERROR, "./sdtp.log2");
     log = log_init(LOG_LEVEL_ERROR, "./sdtp.log");
 
     /* 1. 接收端初始化 */

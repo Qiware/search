@@ -18,6 +18,6 @@ shm_queue_t *shm_queue_attach(int key);
 int shm_queue_push(shm_queue_t *shmq, void *p);
 void *shm_queue_pop(shm_queue_t *shmq);
 
-#define shm_queue_data_count(shmq) ((shmq)->info->max - (shmq)->info->num)
+#define shm_queue_print(shmq) shm_ring_print((shmq)->ring)
 
 #endif /*__SHM_QUEUE_H__*/

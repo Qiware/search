@@ -19,7 +19,7 @@ int main(void)
     int idx;
     list_t list;
     list_data_t *data;
-    list_node_t *prev, *del;
+    list_node_t *prev;
 
     memset(&list, 0, sizeof(list));
 
@@ -41,11 +41,6 @@ int main(void)
     #else        
         list_insert(&list, prev, data);
     #endif
-        prev = node;
-        if (5 == idx)
-        {
-            del = node;
-        }
     }
 
     /* 删除测试 */
@@ -53,17 +48,6 @@ int main(void)
     list_lpop(&list);
     //list_remove_tail(&list);
     //list_remove(&list, del);
-
-    /* 显示结果 */
-    node = list.head;
-    while (NULL != node)
-    {
-        data = (list_data_t *)node->data;
-
-        fprintf(stderr, "idx:%d\n", data->idx);
-
-        node = node->next;
-    }
 
     return 0;
 }

@@ -12,6 +12,7 @@ int main(void)
     btree_option_t option;
     char input[INPUT_LEN];
 
+    /* > 创建B树 */
     option.pool = (void *)NULL;
     option.alloc = (mem_alloc_cb_t)mem_alloc;
     option.dealloc = (mem_dealloc_cb_t)mem_dealloc;
@@ -25,6 +26,7 @@ int main(void)
 
     fprintf(stderr, "[%s][%d] Create btree success!\n", __FILE__, __LINE__);
 
+    /* > 插入关键字 */
     for(idx=0; idx<BTREE_NUM; idx++)
     {
         btree_insert(btree, random());
@@ -41,6 +43,7 @@ int main(void)
 
     btree_print(btree);
 
+    /* > 操作B树 */
     while(1)
     {
         memset(input, 0, sizeof(input));
@@ -62,7 +65,6 @@ int main(void)
         else if (0 == strcasecmp(input, "d")
             || 0 == strcasecmp(input, "delete"))
         {
-            
             scanf(" %s", input);
             key = atoi(input);
 
@@ -70,7 +72,6 @@ int main(void)
             btree_print(btree);
             continue;
         }
-
 
         ret = btree_insert(btree, key);
         if (0 != ret)

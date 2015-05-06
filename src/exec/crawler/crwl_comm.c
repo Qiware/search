@@ -155,7 +155,7 @@ crwl_cntx_t *crwl_cntx_init(char *pname, const char *path)
         ctx->conf = conf;
         ctx->log = log;
         log_set_level(log, conf->log.level);
-        syslog_set_level(conf->log.syslevel);
+        plog_set_level(conf->log.syslevel);
 
         /* 5. 创建内存池 */
         ctx->slab = slab_creat_by_calloc(30 * MB);
@@ -242,7 +242,7 @@ void crwl_cntx_destroy(crwl_cntx_t *ctx)
 
     crwl_worker_tpool_destroy(ctx);
     log_destroy(&ctx->log);
-    syslog_destroy();
+    plog_destroy();
 }
 
 /******************************************************************************
@@ -516,9 +516,9 @@ log_cycle_t *crwl_init_log(char *fname)
     char path[FILE_NAME_MAX_LEN];
 
     /* 1. 初始化系统日志 */
-    syslog_get_path(path, sizeof(path), basename(fname));
+    plog_get_path(path, sizeof(path), basename(fname));
 
-    if (syslog_init(LOG_LEVEL_ERROR, path))
+    if (plog_init(LOG_LEVEL_ERROR, path))
     {
         fprintf(stderr, "Init syslog failed!");
         return NULL;
@@ -530,8 +530,8 @@ log_cycle_t *crwl_init_log(char *fname)
     log = log_init(LOG_LEVEL_ERROR, path);
     if (NULL == log)
     {
-        log_error2("Initialize log failed!");
-        syslog_destroy();
+        plog_error("Initialize log failed!");
+        plog_destroy();
         return NULL;
     }
 
@@ -592,17 +592,17 @@ static void crwl_signal_hdl(int signum)
     {
         case SIGINT:
         {
-            log_error2("Catch SIGINT [%d] signal!", signum);
+            plog_error("Catch SIGINT [%d] signal!", signum);
             return;
         }
         case SIGPIPE:
         {
-            log_error2("Catch SIGPIPE [%d] signal!", signum);
+            plog_error("Catch SIGPIPE [%d] signal!", signum);
             return;
         }
         default:
         {
-            log_error2("Catch unknown signal! signum:[%d]", signum);
+            plog_error("Catch unknown signal! signum:[%d]", signum);
             return;
         }
     }

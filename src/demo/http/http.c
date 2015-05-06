@@ -5,8 +5,9 @@
 #include <string.h>
 #include <stdint.h>
 
+#include "str.h"
+#include "uri.h"
 #include "http.h"
-#include "xd_str.h"
 
 
 int main(int argc, char *argv[])

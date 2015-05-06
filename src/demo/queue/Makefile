@@ -3,20 +3,20 @@
 ##
 ## 文件名: Makefile
 ## 版本号: 1.0
-## 描  述: 日志服务模块
-## 作  者: # Qifeng.zou # 2014.09.01 #
+## 描  述: B树的测试代码
+## 作  者: # Qifeng.zou # 2015.04.21 #
 ###############################################################################
 include $(PROJ)/make/build.mak
 
 INCLUDE = -I. -I$(PROJ)/src/incl
 LIBS_PATH = -L$(PROJ)/lib
-LIBS = -lpthread -lxd_core
+LIBS = -lxd_core
 
-SRC_LIST = html_test.c
+SRC_LIST = queue_demo.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
 
-TARGET = html_test
+TARGET = queue_demo
 
 .PHONY: all clean
 
@@ -24,6 +24,7 @@ all: $(TARGET)
 $(TARGET): $(OBJS)
 	@$(CC) $(CFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS)
 	@echo "CC $@"
+	@mv $@ $(PROJ_BIN) 
 	@rm -fr $(OBJS)
 	@echo "$@ is OK!"
 

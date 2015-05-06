@@ -114,9 +114,9 @@ static log_cycle_t *flt_init_log(char *fname)
     char path[FILE_NAME_MAX_LEN];
 
     /* 1. 初始化系统日志 */
-    syslog_get_path(path, sizeof(path), basename(fname));
+    plog_get_path(path, sizeof(path), basename(fname));
 
-    if (syslog_init(LOG_LEVEL_ERROR, path))
+    if (plog_init(LOG_LEVEL_ERROR, path))
     {
         fprintf(stderr, "Init syslog failed!");
         return NULL;
@@ -128,8 +128,8 @@ static log_cycle_t *flt_init_log(char *fname)
     log = log_init(LOG_LEVEL_ERROR, path);
     if (NULL == log)
     {
-        log_error2("Initialize log failed!");
-        syslog_destroy();
+        plog_error("Initialize log failed!");
+        plog_destroy();
         return NULL;
     }
 
@@ -194,7 +194,7 @@ flt_cntx_t *flt_init(char *pname, const char *path)
 
         ctx->conf = conf;
         log_set_level(log, conf->log.level);
-        syslog_set_level(conf->log.syslevel);
+        plog_set_level(conf->log.syslevel);
 
         /* > 连接Redis集群 */
         ctx->redis = redis_clst_init(conf->redis.conf, conf->redis.num);
@@ -290,7 +290,7 @@ void flt_destroy(flt_cntx_t *ctx)
         ctx->log = NULL;
     }
 
-    syslog_destroy();
+    plog_destroy();
 
     if (ctx->redis)
     {

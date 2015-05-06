@@ -9,14 +9,14 @@
 #include "comm.h"
 #include "syscall.h"
 
-syslog_cycle_t g_syslog = {NULL, LOG_LEVEL_TRACE, -1};
+plog_cycle_t g_plog = {NULL, LOG_LEVEL_TRACE, -1};
 
-static int syslog_write(syslog_cycle_t *log, int level,
+static int plog_write(plog_cycle_t *log, int level,
     const void *dump, int dumplen, const char *errmsg, const struct timeb *ctm);
-static int syslog_print_dump(syslog_cycle_t *log, const void *dump, int dumplen);
+static int plog_print_dump(plog_cycle_t *log, const void *dump, int dumplen);
 
 /******************************************************************************
- **函数名称: log_get_level
+ **函数名称: plog_get_level
  **功    能: 获取日志级别
  **输入参数: 
  **     level_str: 日志级别字串
@@ -26,7 +26,7 @@ static int syslog_print_dump(syslog_cycle_t *log, const void *dump, int dumplen)
  **注意事项: 当级别匹配失败时，默认情况下将开启所有日志级别.
  **作    者: # Qifeng.zou # 2014.09.03 #
  ******************************************************************************/
-int syslog_get_level(const char *level_str)
+int plog_get_level(const char *level_str)
 {
     if (!strcasecmp(level_str, LOG_LEVEL_FATAL_STR))
     {
@@ -62,7 +62,7 @@ int syslog_get_level(const char *level_str)
 }
 
 /******************************************************************************
- **函数名称: syslog_init
+ **函数名称: plog_init
  **功    能: 初始化日志模块
  **输入参数: 
  **     level: 日志级别(LOG_LEVEL_TRACE ~ LOG_LEVEL_FATAL)
@@ -73,9 +73,9 @@ int syslog_get_level(const char *level_str)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.11 #
  ******************************************************************************/
-int syslog_init(int level, const char *path)
+int plog_init(int level, const char *path)
 {
-    syslog_cycle_t *syslog = &g_syslog;
+    plog_cycle_t *syslog = &g_plog;
 
     if (NULL != syslog->fp)
     {
@@ -96,7 +96,7 @@ int syslog_init(int level, const char *path)
 }
 
 /******************************************************************************
- **函数名称: syslog_core
+ **函数名称: plog_core
  **功    能: 日志核心调用
  **输入参数: 
  **     level: 日志级别(LOG_LEVEL_TRACE ~ LOG_LEVEL_FATAL)
@@ -115,7 +115,7 @@ int syslog_init(int level, const char *path)
  **注意事项: 日志级别的判断在函数外进行判断
  **作    者: # Qifeng.zou # 2014.09.11 #
  ******************************************************************************/
-void syslog_core(int level,
+void plog_core(int level,
             const char *fname, int lineno,
             const void *dump, int dumplen,
             const char *fmt, ...)
@@ -132,11 +132,11 @@ void syslog_core(int level,
 
     ftime(&ctm);
     
-    syslog_write(&g_syslog, level, dump, dumplen, errmsg, &ctm);
+    plog_write(&g_plog, level, dump, dumplen, errmsg, &ctm);
 }
 
 /******************************************************************************
- **函数名称: syslog_destroy
+ **函数名称: plog_destroy
  **功    能: 销毁日志模块
  **输入参数: NONE
  **输出参数: NONE
@@ -145,14 +145,14 @@ void syslog_core(int level,
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.11 #
  ******************************************************************************/
-void syslog_destroy(void)
+void plog_destroy(void)
 {
-    fflush(g_syslog.fp);
-    FCLOSE(g_syslog.fp);
+    fflush(g_plog.fp);
+    FCLOSE(g_plog.fp);
 }
 
 /******************************************************************************
- **函数名称: syslog_write
+ **函数名称: plog_write
  **功    能: 将日志信息写入缓存
  **输入参数: 
  **     fp: 文件指针
@@ -166,7 +166,7 @@ void syslog_destroy(void)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.11 #
  ******************************************************************************/
-static int syslog_write(syslog_cycle_t *log, int level,
+static int plog_write(plog_cycle_t *log, int level,
     const void *dump, int dumplen,
     const char *errmsg, const struct timeb *ctm)
 {
@@ -244,14 +244,14 @@ static int syslog_write(syslog_cycle_t *log, int level,
     /* 打印DUMP数据 */
     if ((NULL != dump) && (dumplen > 0)) 
     {
-        syslog_print_dump(log, dump, dumplen);
+        plog_print_dump(log, dump, dumplen);
     }
 
     return 0;
 }
 
 /******************************************************************************
- **函数名称: syslog_print_dump
+ **函数名称: plog_print_dump
  **功    能: 以16进制打印日志信息
  **输入参数: 
  **     fp: 文件指针
@@ -263,7 +263,7 @@ static int syslog_write(syslog_cycle_t *log, int level,
  **注意事项: 
  **修    改: # Qifeng.zou # 2014.09.11 #
  ******************************************************************************/
-static int syslog_print_dump(syslog_cycle_t *log, const void *dump, int dumplen)
+static int plog_print_dump(plog_cycle_t *log, const void *dump, int dumplen)
 {
     const char *dump_ptr, *dump_end;
     unsigned char var[2] = {0, 31};    

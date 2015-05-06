@@ -7,24 +7,37 @@
 #include "log.h"
 #include "syscall.h"
 
-int main(int argc, char *argv[])
+/* 初始化日志模块 */
+log_cycle_t *demo_init_log(const char *_path)
 {
-    int idx, level;
+    int level;
     log_cycle_t *log;
     char path[FILE_PATH_MAX_LEN];
 
-    level = log_get_level("error");
+    level = log_get_level("debug");
 
-    snprintf(path, sizeof(path), "../log/%s.log", basename(argv[0]));
+    snprintf(path, sizeof(path), "%s.log", _path);
 
     log = log_init(level, path);
     if (NULL == log)
     {
-        fprintf(stderr, "Init log failed!");
-        return -1;
+        fprintf(stderr, "Init log failed! level:%d", level);
+        return NULL;
     }
 
-    syslog_init(2, "../log/syslog.log");
+    snprintf(path, sizeof(path), "%s.plog", _path);
+
+    plog_init(level, path);
+
+    return log;
+}
+
+int main(int argc, char *argv[])
+{
+    int idx;
+    log_cycle_t *log;
+
+    log = demo_init_log(basename(argv[0]));
 
     for (idx=0; idx<1000000; ++idx)
     {

@@ -11,7 +11,7 @@ int main(int argc, char *argv[])
 
     memset(&option, 0, sizeof(option));
 
-    syslog_init(7, "test.log");
+    plog_init(LOG_LEVEL_DEBUG, "test.log");
 
     pool = mem_pool_creat(MEM_SIZE);
     if (NULL == pool)
