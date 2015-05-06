@@ -3,6 +3,7 @@
 # 设置统计目录
 DIR="../../src"
 SRC="$DIR/exec"
+SRC="$SRC $DIR/demo"
 SRC="$SRC $DIR/incl"
 SRC="$SRC $DIR/lib/core"
 SRC="$SRC $DIR/lib/sdtp"
