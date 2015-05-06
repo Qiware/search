@@ -27,7 +27,7 @@ typedef struct
 } shm_ring_t;
 
 size_t shm_ring_total(int max);
-size_t shm_ring_init(shm_ring_t *rq, int max);
+shm_ring_t *shm_ring_init(void *addr, int max);
 int shm_ring_push(shm_ring_t *rq, off_t off);
 int shm_ring_mpush(shm_ring_t *rq, off_t *off, unsigned int num);
 off_t shm_ring_pop(shm_ring_t *rq);

@@ -43,12 +43,14 @@ size_t shm_ring_total(int max)
  **注意事项: max必须为2的n次方
  **作    者: # Qifeng.zou # 2014.05.05 #
  ******************************************************************************/
-size_t shm_ring_init(shm_ring_t *rq, int max)
+shm_ring_t *shm_ring_init(void *addr, int max)
 {
+    shm_ring_t *rq = (shm_ring_t *)addr;
+
     /* > max必须为2的n次方 */
     if (!ISPOWEROF2(max))
     {
-        return (size_t)-1;
+        return NULL;
     }
 
     /* > 设置相关标志 */
@@ -58,7 +60,7 @@ size_t shm_ring_init(shm_ring_t *rq, int max)
     rq->prod.head = rq->prod.tail = 0;
     rq->cons.head = rq->cons.tail = 0;
 
-    return sizeof(shm_ring_t) + max * sizeof(off_t);
+    return rq;
 }
 
 /******************************************************************************
