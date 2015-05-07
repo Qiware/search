@@ -34,7 +34,6 @@ typedef enum
 #define LOG_LEVEL_MAX_LEN       (16)        /* 日志级别字串的长度 */
 
 #define LOG_MSG_MAX_LEN         (2048)      /* 日志行最大长度 */
-#define LOG_SVR_THREAD_NUM      (1)         /* 服务线程数 */
 #define LOG_FILE_MAX_SIZE       (8 * MB)    /* 单个日志文件的最大SIZE */
 
 #define LOG_KEY_PATH            "../temp/log/log.key"  /* 键值路径 */
