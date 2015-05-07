@@ -8,32 +8,32 @@
  **         2. 负责把共享内存中的日志同步到指定文件。
  ** 作  者: # Qifeng.zou # 2013.11.07 #
  ******************************************************************************/
-#if !defined(__LOG_SVR_H__)
-#define __LOG_SVR_H__
+#if !defined(__LOGD_H__)
+#define __LOGD_H__
 
 #include "lock.h"
 #include "slab.h"
 #include "thread_pool.h"
 
+#define LOGD_THREAD_NUM     (1)     /* 服务线程数 */
+
 /* 服务进程互斥锁路径 */
-#define LOG_SVR_PROC_LOCK  "log_svr.lck"
-#define logsvr_proc_lock_path(path, size) \
-    snprintf(path, size, "../temp/log/%s",  LOG_SVR_PROC_LOCK)
-#define logsvr_proc_trylock(fd) proc_try_wrlock(fd)
+#define LOGD_PROC_LOCK  "log_svr.lck"
+#define logd_proc_lock_path(path, size) snprintf(path, size, "../temp/log/%s",  LOGD_PROC_LOCK)
+#define logd_proc_trylock(fd) proc_try_wrlock(fd)
 
 /* 服务进程日志文件路径 */
-#define LOG_SVR_LOG_NAME   "log_svr.log"
-#define logsvr_log_path(path, size) \
-    snprintf(path, size, "../logs/%s", LOG_SVR_LOG_NAME)
+#define LOGD_LOG_NAME   "log_svr.log"
+#define logd_log_path(path, size) snprintf(path, size, "../log/%s", LOGD_LOG_NAME)
 
 /* 日志服务 */
 typedef struct
 {
     int fd;                         /* 文件描述符 */
     void *addr;                     /* 共享内存首地址 */
-#define LOG_SVR_SLAB_SIZE   (1 * MB)
+#define LOGD_SLAB_SIZE   (1 * MB)
     slab_pool_t *slab;              /* 内存池 */
     thread_pool_t *pool;            /* 内存池对象 */
-}logsvr_t;
+} logd_cntx_t;
 
-#endif /*__LOG_SVR_H__*/
+#endif /*__LOGD_H__*/
