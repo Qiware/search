@@ -39,11 +39,7 @@ int main(void)
 {
     logd_cntx_t *ctx;
 
-    if (daemon(1, 0))
-    {
-        fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
-        return -1;
-    }
+    daemon(1, 1);
 
     /* 2. 初始化日志服务 */
     ctx = logd_cntx_init();

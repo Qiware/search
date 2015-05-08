@@ -31,9 +31,8 @@ static srch_worker_t *srch_worker_self(srch_cntx_t *ctx)
  **     _ctx: 全局信息
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **     TODO: 后续改成事件触发机制
- **注意事项: 
+ **实现描述:
+ **注意事项: TODO: 后续改成事件触发机制 
  **作    者: # Qifeng.zou # 2014.12.20 #
  ******************************************************************************/
 void *srch_worker_routine(void *_ctx)
@@ -67,8 +66,8 @@ void *srch_worker_routine(void *_ctx)
         reg = &ctx->reg[head->type];
 
         reg->proc(head->type,
-                addr + sizeof(srch_mesg_header_t),
-                head->length, reg->args, worker->log);
+            addr + sizeof(srch_mesg_header_t),
+            head->length, reg->args, worker->log);
 
         /* 3. 释放内存空间 */
         queue_dealloc(ctx->recvq[rqid], addr);

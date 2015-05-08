@@ -9,6 +9,7 @@
  ** 作  者: # Qifeng.zou # 2014.12.27 #
  ******************************************************************************/
 #include "sck.h"
+#include "mesg.h"
 #include "syscall.h"
 #include "monitor.h"
 #include "srch_mesg.h"
@@ -91,7 +92,7 @@ static int mon_srch_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args
         ++num;
     }
 
-#if 0
+#if 1
     int n;
     srch_mesg_body_t body;
     srch_mesg_header_t header;
@@ -99,7 +100,7 @@ static int mon_srch_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args
     /* 发送搜索数据 */
     for (idx=0; idx<num; ++idx)
     {
-        header.type = idx%0xFF;
+        header.type = MSG_TYPE_SEARCH_REQ;
         header.flag = SRCH_MSG_FLAG_USR;
         header.mark = htonl(SRCH_MSG_MARK_KEY);
         header.length = htons(sizeof(body));
@@ -107,9 +108,12 @@ static int mon_srch_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args
         snprintf(body.words, sizeof(body.words), "爱我中华");
 
         n = Writen(fd[idx], (void *)&header, sizeof(header));
+        if (n < 0)
+        {
+            break;
+        }
 
         n = Writen(fd[idx], (void *)&body, sizeof(body));
-
     }
 #endif
 

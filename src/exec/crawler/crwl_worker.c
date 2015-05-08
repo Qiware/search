@@ -792,7 +792,7 @@ int crwl_worker_webpage_creat(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t 
     extra->webpage.idx = ++worker->total;
 
     snprintf(extra->webpage.fname, sizeof(extra->webpage.fname),
-            "%02d-%08ld-%04d%02d%02d%02d%02d%02d%03d",
+            "%02d-%08llu-%04d%02d%02d%02d%02d%02d%03d",
             worker->tidx, extra->webpage.idx,
             loctm.tm_year+1900, loctm.tm_mon+1, loctm.tm_mday,
             loctm.tm_hour, loctm.tm_min, loctm.tm_sec, sck->crtm.millitm);

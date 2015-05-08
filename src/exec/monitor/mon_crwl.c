@@ -241,7 +241,7 @@ static int mon_crwl_query_worker_stat_print(crwl_cmd_t *cmd)
         stat->worker[idx].err_webpage_total = ntoh64(stat->worker[idx].err_webpage_total);
 
         /* 显示状态 */
-        fprintf(stderr, "    %8d | %-12d | %-8ld | %-8ld\n",
+        fprintf(stderr, "    %8d | %-12d | %-8llu | %-8llu\n",
                 idx+1,
                 stat->worker[idx].connections,
                 stat->worker[idx].down_webpage_total,

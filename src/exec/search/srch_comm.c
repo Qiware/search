@@ -298,7 +298,6 @@ int srch_startup(srch_cntx_t *ctx)
     int idx;
     const srch_conf_t *conf = ctx->conf;
 
-
     /* 1. 设置Worker线程回调 */
     for (idx=0; idx<conf->worker_num; ++idx)
     {
@@ -581,7 +580,7 @@ static int srch_proc_lock(void)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.20 #
  ******************************************************************************/
-static int srch_reg_def_hdl(uint8_t type, char *buff, size_t len, void *args, log_cycle_t *log)
+static int srch_reg_def_hdl(unsigned int type, char *buff, size_t len, void *args, log_cycle_t *log)
 {
     static int total = 0;
 
@@ -603,7 +602,7 @@ static int srch_reg_def_hdl(uint8_t type, char *buff, size_t len, void *args, lo
  ******************************************************************************/
 int srch_init_register(srch_cntx_t *ctx)
 {
-    uint32_t idx;
+    unsigned int idx;
     srch_reg_t *reg;
 
     for (idx=0; idx<=SRCH_MSG_TYPE_MAX; ++idx)
@@ -635,7 +634,7 @@ int srch_init_register(srch_cntx_t *ctx)
  **     2. 不允许重复注册 
  **作    者: # Qifeng.zou # 2014.12.20 #
  ******************************************************************************/
-int srch_register(srch_cntx_t *ctx, uint32_t type, srch_reg_cb_t proc, void *args)
+int srch_register(srch_cntx_t *ctx, unsigned int type, srch_reg_cb_t proc, void *args)
 {
     srch_reg_t *reg;
 

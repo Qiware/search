@@ -749,7 +749,7 @@ static int srch_agent_recv_post(srch_cntx_t *ctx, srch_agent_t *agt, socket_t *s
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
- **注意事项: 
+ **注意事项: TODO: 此处理流程可进一步进行优化
  **作    者: # Qifeng.zou # 2014.11.29 #
  ******************************************************************************/
 static int srch_agent_recv(srch_cntx_t *ctx, srch_agent_t *agt, socket_t *sck)

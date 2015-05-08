@@ -19,14 +19,14 @@ typedef enum
 typedef struct
 {
     crwl_task_type_e type;                  /* 任务类型 */
-    uint32_t length;                        /* 数据长度(头+体) */
+    unsigned int length;                    /* 数据长度(头+体) */
 } crwl_task_t;
 
 /* 通过URL加载网页 */
 typedef struct
 {
     char uri[URL_MAX_LEN];                  /* URI */
-    uint32_t depth;                         /* 当前URI的深度(0:表示深度未知) */
+    unsigned int depth;                     /* 当前URI的深度(0:表示深度未知) */
     int port;                               /* 端口号 */
 
     /* 查询到的信息 */
