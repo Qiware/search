@@ -16,7 +16,8 @@ LIBS = -lpthread -lxd_core -lxd_invert_tab -lsdtp
 
 SRC_LIST = invertd.c \
             invtd_comm.c \
-            invtd_conf.c
+            invtd_conf.c \
+            invtd_sdtp.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
 

@@ -6,6 +6,7 @@
 #include "invtd_conf.h"
 #include "invert_tab.h"
 
+/* 全局信息 */
 typedef struct
 {
     invtd_conf_t conf;                      /* 配置信息 */

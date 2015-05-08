@@ -196,5 +196,12 @@ invtd_cntx_t *invtd_init(const char *conf_path)
  ******************************************************************************/
 int invtd_startup(invtd_cntx_t *ctx)
 {
-    return 0;
+    /* 启动SDTP */
+    if (invtd_start_sdtp(ctx))
+    {
+        log_fatal(ctx->log, "Startup sdtp failed!");
+        return INVT_ERR;
+    }
+
+    return INVT_OK;
 }
