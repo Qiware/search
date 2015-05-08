@@ -415,7 +415,7 @@ static int crwl_man_query_conf_req_hdl(crwl_cntx_t *ctx,
     cmd = &item->cmd;
     conf = (crwl_cmd_conf_t *)&cmd->data;
 
-    cmd->type = htonl(CRWL_CMD_QUERY_CONF_RESP);
+    cmd->type = htonl(MSG_QUERY_CONF_RESP);
 
     conf->log.level = htonl(ctx->conf->log.level);      /* 日志级别 */
     conf->log.syslevel = htonl(ctx->conf->log.syslevel);    /* 系统日志级别 */
@@ -480,7 +480,7 @@ static int crwl_man_query_worker_stat_req_hdl(crwl_cntx_t *ctx,
     cmd = &item->cmd;
     stat = (crwl_cmd_worker_stat_t *)&cmd->data;
 
-    cmd->type = htonl(CRWL_CMD_QUERY_WORKER_STAT_RESP);
+    cmd->type = htonl(MSG_QUERY_WORKER_STAT_RESP);
 
     /* 1. 获取启动时间 */
     stat->stm = htonl(ctx->run_tm);
@@ -549,7 +549,7 @@ static int crwl_man_query_workq_stat_req_hdl(crwl_cntx_t *ctx,
     cmd = &item->cmd;
     stat = (crwl_cmd_workq_stat_t *)&cmd->data;
 
-    cmd->type = htonl(CRWL_CMD_QUERY_WORKQ_STAT_RESP);
+    cmd->type = htonl(MSG_QUERY_WORKQ_STAT_RESP);
 
     for (idx=0; idx<ctx->conf->worker.num; ++idx)
     {
@@ -615,7 +615,7 @@ static int crwl_man_switch_sched_req_hdl(crwl_cntx_t *ctx,
 
     conf->sched_stat = conf->sched_stat? false : true; /* 切换状态 */
 
-    cmd->type = htonl(CRWL_CMD_SWITCH_SCHED_RESP);
+    cmd->type = htonl(MSG_SWITCH_SCHED_RESP);
     stat->sched_stat = htonl(conf->sched_stat);
 
     /* > 放入队尾 */
@@ -649,10 +649,10 @@ static int crwl_man_reg_cb(crwl_man_t *man)
     }
 
     /* 注册回调函数 */
-    CRWL_REG(man, CRWL_CMD_QUERY_CONF_REQ, (crwl_man_reg_cb_t)crwl_man_query_conf_req_hdl, man);
-    CRWL_REG(man, CRWL_CMD_QUERY_WORKER_STAT_REQ, (crwl_man_reg_cb_t)crwl_man_query_worker_stat_req_hdl, man);
-    CRWL_REG(man, CRWL_CMD_QUERY_WORKQ_STAT_REQ, (crwl_man_reg_cb_t)crwl_man_query_workq_stat_req_hdl, man);
-    CRWL_REG(man, CRWL_CMD_SWITCH_SCHED_REQ, (crwl_man_reg_cb_t)crwl_man_switch_sched_req_hdl, man);
+    CRWL_REG(man, MSG_QUERY_CONF_REQ, (crwl_man_reg_cb_t)crwl_man_query_conf_req_hdl, man);
+    CRWL_REG(man, MSG_QUERY_WORKER_STAT_REQ, (crwl_man_reg_cb_t)crwl_man_query_worker_stat_req_hdl, man);
+    CRWL_REG(man, MSG_QUERY_WORKQ_STAT_REQ, (crwl_man_reg_cb_t)crwl_man_query_workq_stat_req_hdl, man);
+    CRWL_REG(man, MSG_SWITCH_SCHED_REQ, (crwl_man_reg_cb_t)crwl_man_switch_sched_req_hdl, man);
 
     return CRWL_OK;
 }

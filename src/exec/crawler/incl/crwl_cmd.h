@@ -2,26 +2,7 @@
 #define __CRWL_CMD_H__
 
 #include "comm.h"
-
-/* 命令类型 */
-typedef enum
-{
-    CRWL_CMD_UNKNOWN                            /* 未知指令 */
-
-    , CRWL_CMD_QUERY_CONF_REQ                   /* 查询配置信息 */
-    , CRWL_CMD_QUERY_CONF_RESP                  /* 反馈配置信息 */
-
-    , CRWL_CMD_QUERY_WORKER_STAT_REQ            /* 查询爬取信息 */
-    , CRWL_CMD_QUERY_WORKER_STAT_RESP           /* 反馈爬取信息 */
-
-    , CRWL_CMD_QUERY_WORKQ_STAT_REQ             /* 查询工作队列信息 */
-    , CRWL_CMD_QUERY_WORKQ_STAT_RESP            /* 反馈工作队列信息 */
-
-    , CRWL_CMD_SWITCH_SCHED_REQ                 /* 切换调度 */
-    , CRWL_CMD_SWITCH_SCHED_RESP                /* 反馈切换调度信息 */
-
-    , CRWL_CMD_TOTAL
-} crwl_cmd_e;
+#include "mesg.h"
 
 /* 查询爬虫信息 */
 typedef struct

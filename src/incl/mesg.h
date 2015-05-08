@@ -12,14 +12,26 @@
 /* 消息类型 */
 typedef enum
 {
-    MSG_TYPE_UNKNOWN                       /* 未知消息 */
+    MSG_TYPE_UNKNOWN                        /* 未知消息 */
 
-    , MSG_TYPE_SEARCH_REQ                  /* 搜索请求 */
-    , MSG_TYPE_SEARCH_REP                  /* 搜索应答 */
+    , MSG_SEARCH_REQ                        /* 搜索请求 */
+    , MSG_SEARCH_REP                        /* 搜索应答 */
 
-    , MSG_TYPE_PRINT_INVT_TAB_REQ          /* 打印倒排表的请求 */
+    , MSG_PRINT_INVT_TAB_REQ                /* 打印倒排表的请求 */
 
-    , MSG_TYPE_TOTAL                       /* 消息类型总数 */
+    , MSG_QUERY_CONF_REQ                    /* 查询配置信息 */
+    , MSG_QUERY_CONF_RESP                   /* 反馈配置信息 */
+
+    , MSG_QUERY_WORKER_STAT_REQ             /* 查询工作信息 */
+    , MSG_QUERY_WORKER_STAT_RESP            /* 反馈工作信息 */
+
+    , MSG_QUERY_WORKQ_STAT_REQ              /* 查询工作队列信息 */
+    , MSG_QUERY_WORKQ_STAT_RESP             /* 反馈工作队列信息 */
+
+    , MSG_SWITCH_SCHED_REQ                  /* 切换调度 */
+    , MSG_SWITCH_SCHED_RESP                 /* 反馈切换调度信息 */
+
+    , MSG_TYPE_TOTAL                        /* 消息类型总数 */
 } mesg_type_e;
 
 /* 报体 */

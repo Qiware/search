@@ -88,8 +88,8 @@ static int invtd_print_invt_tab_req_hdl(int type, char *buff, size_t len, void *
  ******************************************************************************/
 static int invtd_sdtp_reg(invtd_cntx_t *ctx)
 {
-    if (sdtp_register(ctx->sdtp, MSG_TYPE_SEARCH_REQ, invtd_search_req_hdl, ctx)
-        || sdtp_register(ctx->sdtp, MSG_TYPE_PRINT_INVT_TAB_REQ, invtd_print_invt_tab_req_hdl, ctx))
+    if (sdtp_register(ctx->sdtp, MSG_SEARCH_REQ, invtd_search_req_hdl, ctx)
+        || sdtp_register(ctx->sdtp, MSG_PRINT_INVT_TAB_REQ, invtd_print_invt_tab_req_hdl, ctx))
     {
         log_error(ctx->log, "Register callback failed!");
         return INVT_ERR;
