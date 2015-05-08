@@ -10,7 +10,9 @@
 typedef enum
 {
     INVT_OK                         /* 成功 */
+
     , INVT_ERR = ~0x7FFFFFFF        /* 错误 */
+    , INVT_ERR_CONF                 /* 配置有误 */
 } invert_err_e;
 
 /* 文档对象 */

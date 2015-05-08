@@ -8,6 +8,7 @@
  ******************************************************************************/
 
 #include "invertd.h"
+#include "invtd_conf.h"
 
 #define INVTD_LOG_PATH      "../log/invertd.log"
 #define INVTD_PLOG_PATH     "../log/invertd.plog"
