@@ -10,6 +10,7 @@
 typedef enum
 {
     INVT_OK                         /* 成功 */
+    , INVT_SHOW_HELP                /* 显示帮助 */
 
     , INVT_ERR = ~0x7FFFFFFF        /* 错误 */
     , INVT_ERR_CONF                 /* 配置有误 */

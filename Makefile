@@ -33,6 +33,7 @@ DIR += "$(EXEC_DIR)/filter"
 DIR += "$(EXEC_DIR)/logsvr"
 DIR += "$(EXEC_DIR)/search"
 DIR += "$(EXEC_DIR)/monitor"
+DIR += "$(EXEC_DIR)/invertd"
 
 # 测试目录
 DEMO_DIR = "src/demo"

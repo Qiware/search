@@ -15,6 +15,7 @@ LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lpthread -lxd_core -lxd_invert_tab -lsdtp
 
 SRC_LIST = invertd.c \
+            invtd_comm.c \
             invtd_conf.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 

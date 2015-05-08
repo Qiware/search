@@ -3,7 +3,7 @@
  **
  ** 文件名: invtd_conf.c
  ** 版本号: 1.0
- ** 描  述: 
+ ** 描  述: 加载倒排服务的配置信息
  ** 作  者: # Qifeng.zou # Fri 08 May 2015 08:27:51 AM CST #
  ******************************************************************************/
 
@@ -12,6 +12,7 @@
 #include "invtd_conf.h"
 
 static int invtd_conf_load_sdtp(xml_tree_t *xml, invtd_conf_t *conf);
+static int invtd_conf_load_comm(xml_tree_t *xml, invtd_conf_t *conf);
 
 /******************************************************************************
  **函数名称: invtd_conf_load
@@ -30,6 +31,7 @@ int invtd_conf_load(const char *path, invtd_conf_t *conf)
     xml_tree_t *xml;
     xml_option_t option;
 
+    /* > 创建XML树 */
     option.pool = (void *)NULL;
     option.alloc = (mem_alloc_cb_t)mem_alloc;
     option.dealloc = (mem_dealloc_cb_t)mem_dealloc;
@@ -41,7 +43,15 @@ int invtd_conf_load(const char *path, invtd_conf_t *conf)
         return INVT_ERR_CONF;
     }
 
+    /* > 加载SDTP配置 */
     if (invtd_conf_load_sdtp(xml, conf))
+    {
+        xml_destroy(xml);
+        return INVT_ERR_CONF;
+    }
+
+    /* > 加载其他配置 */
+    if (invtd_conf_load_comm(xml, conf))
     {
         xml_destroy(xml);
         return INVT_ERR_CONF;
@@ -133,6 +143,34 @@ static int invtd_conf_load_sdtp(xml_tree_t *xml, invtd_conf_t *conf)
     }
 
     conf->sdtp.recvq.size = atoi(node->value.str);
+
+    return INVT_OK;
+}
+
+/******************************************************************************
+ **函数名称: invtd_conf_load_comm
+ **功    能: 加载其他配置信息
+ **输入参数:
+ **     path: 配置文件路径
+ **输出参数:
+ **     conf: 配置信息
+ **返    回: 0:成功 !0:失败
+ **实现描述: 从配置文件取出通用配置数据
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.05.08 #
+ ******************************************************************************/
+static int invtd_conf_load_comm(xml_tree_t *xml, invtd_conf_t *conf)
+{
+    xml_node_t *node;
+
+    /* > 倒排表长度 */
+    node = xml_query(xml, ".INVTERD.INVT_TAB.MAX");
+    if (NULL == node)
+    {
+        return INVT_ERR_CONF;
+    }
+
+    conf->invt_tab_max = atoi(node->value.str);
 
     return INVT_OK;
 }
