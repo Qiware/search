@@ -991,9 +991,9 @@ static int sdtp_rsvr_keepalive_req_hdl(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr, sdtp
 static int sdtp_rsvr_add_conn_hdl(sdtp_rsvr_t *rsvr, sdtp_cmd_add_sck_t *req)
 {
     void *addr;
+    list_opt_t opt;
     sdtp_sck_t *sck;
     list2_node_t *node;
-    list_option_t option;
 
     /* > 分配连接空间 */
     sck = slab_alloc(rsvr->pool, sizeof(sdtp_sck_t));
@@ -1010,13 +1010,13 @@ static int sdtp_rsvr_add_conn_hdl(sdtp_rsvr_t *rsvr, sdtp_cmd_add_sck_t *req)
     snprintf(sck->ipaddr, sizeof(sck->ipaddr), "%s", req->ipaddr);
 
     /* > 创建发送链表 */
-    memset(&option, 0, sizeof(option));
+    memset(&opt, 0, sizeof(opt));
 
-    option.pool = (void *)rsvr->pool;
-    option.alloc = (mem_alloc_cb_t)slab_alloc;
-    option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+    opt.pool = (void *)rsvr->pool;
+    opt.alloc = (mem_alloc_cb_t)slab_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-    sck->mesg_list = list_creat(&option);
+    sck->mesg_list = list_creat(&opt);
     if (NULL == sck->mesg_list)
     {
         log_error(rsvr->log, "Create list failed!");

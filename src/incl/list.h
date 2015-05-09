@@ -9,7 +9,7 @@ typedef struct
     void *pool;                     /* 内存池 */
     mem_alloc_cb_t alloc;           /* 申请空间 */
     mem_dealloc_cb_t dealloc;       /* 释放空间 */
-} list_option_t;
+} list_opt_t;
 
 /* 单向链表结点 */
 typedef struct _list_node_t
@@ -36,7 +36,7 @@ typedef struct
 void list_assert(list_t *list);
 #define list_isempty(list) (NULL == (list)->head)
 
-list_t *list_creat(list_option_t *opt);
+list_t *list_creat(list_opt_t *opt);
 void list_destroy(list_t *list, void *pool, mem_dealloc_cb_t dealloc);
 int list_insert(list_t *list, list_node_t *prev, void *data);
 int list_remove(list_t *list, void *data);

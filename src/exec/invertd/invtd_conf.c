@@ -28,15 +28,15 @@ static int invtd_conf_load_comm(xml_tree_t *xml, invtd_conf_t *conf);
  ******************************************************************************/
 int invtd_conf_load(const char *path, invtd_conf_t *conf)
 {
+    xml_opt_t opt;
     xml_tree_t *xml;
-    xml_option_t option;
 
     /* > 创建XML树 */
-    option.pool = (void *)NULL;
-    option.alloc = (mem_alloc_cb_t)mem_alloc;
-    option.dealloc = (mem_dealloc_cb_t)mem_dealloc;
+    opt.pool = (void *)NULL;
+    opt.alloc = (mem_alloc_cb_t)mem_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
-    xml = xml_creat(path, &option);
+    xml = xml_creat(path, &opt);
     if (NULL == xml)
     {
         xml_destroy(xml);

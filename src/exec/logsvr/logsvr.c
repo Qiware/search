@@ -108,7 +108,7 @@ static logd_cntx_t *logd_cntx_init(void)
     void *addr;
     logd_cntx_t *ctx;
     char path[FILE_PATH_MAX_LEN];
-    thread_pool_option_t option;
+    thread_pool_opt_t opt;
 
     /* > 初始化日志 */
     if (plog_init(LOG_LEVEL_DEBUG, LOGD_PLOG_PATH))
@@ -167,13 +167,13 @@ static logd_cntx_t *logd_cntx_init(void)
     }
 
     /* > 启动多个线程 */
-    memset(&option, 0, sizeof(option));
+    memset(&opt, 0, sizeof(opt));
 
-    option.pool = (void *)ctx->slab;
-    option.alloc = (mem_alloc_cb_t)slab_alloc;
-    option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+    opt.pool = (void *)ctx->slab;
+    opt.alloc = (mem_alloc_cb_t)slab_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-    ctx->pool = thread_pool_init(LOGD_THREAD_NUM, &option, NULL);
+    ctx->pool = thread_pool_init(LOGD_THREAD_NUM, &opt, NULL);
     if (NULL == ctx->pool)
     {
         thread_pool_destroy(ctx->pool);

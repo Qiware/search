@@ -126,8 +126,8 @@ void *crwl_manager_routine(void *_ctx)
 static crwl_man_t *crwl_man_init(crwl_cntx_t *ctx)
 {
     crwl_man_t *man;
-    avl_option_t option;
-    list_option_t list_option;
+    avl_opt_t opt;
+    list_opt_t list_opt;
 
     /* > 创建对象 */
     man = (crwl_man_t *)slab_alloc(ctx->slab, sizeof(crwl_man_t));
@@ -145,13 +145,13 @@ static crwl_man_t *crwl_man_init(crwl_cntx_t *ctx)
     do
     {
         /* > 创建AVL树 */
-        memset(&option, 0, sizeof(option));
+        memset(&opt, 0, sizeof(opt));
 
-        option.pool = man->slab;
-        option.alloc = (mem_alloc_cb_t)slab_alloc;
-        option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+        opt.pool = man->slab;
+        opt.alloc = (mem_alloc_cb_t)slab_alloc;
+        opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-        man->reg = avl_creat(&option, (key_cb_t)avl_key_cb_int32, (avl_cmp_cb_t)avl_cmp_cb_int32);
+        man->reg = avl_creat(&opt, (key_cb_t)avl_key_cb_int32, (avl_cmp_cb_t)avl_cmp_cb_int32);
         if (NULL == man->reg)
         {
             log_error(man->log, "Create AVL failed!");
@@ -159,13 +159,13 @@ static crwl_man_t *crwl_man_init(crwl_cntx_t *ctx)
         }
 
         /* > 创建链表 */
-        memset(&list_option, 0, sizeof(list_option));
+        memset(&list_opt, 0, sizeof(list_opt));
 
-        list_option.pool = man->slab;
-        list_option.alloc = (mem_alloc_cb_t)slab_alloc;
-        list_option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+        list_opt.pool = man->slab;
+        list_opt.alloc = (mem_alloc_cb_t)slab_alloc;
+        list_opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-        man->mesg_list = list_creat(&list_option);
+        man->mesg_list = list_creat(&list_opt);
         if (NULL == man->mesg_list)
         {
             log_error(man->log, "Create list failed!");

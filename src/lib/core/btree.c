@@ -36,7 +36,7 @@ static int _btree_merge(btree_t *btree, btree_node_t *left, btree_node_t *right,
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.03.12 #
  ******************************************************************************/
-btree_t *btree_creat(int m, btree_option_t *opt)
+btree_t *btree_creat(int m, btree_opt_t *opt)
 {
     btree_t *btree;
 

@@ -78,8 +78,8 @@ static int mon_conf_load_menu(xml_tree_t *xml, mon_conf_t *conf)
  ******************************************************************************/
 mon_conf_t *mon_conf_load(const char *path)
 {
+    xml_opt_t opt;
     xml_tree_t *xml;
-    xml_option_t opt;
     mon_conf_t *conf;
     mem_pool_t *pool;
 

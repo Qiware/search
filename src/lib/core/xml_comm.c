@@ -143,7 +143,7 @@ xml_node_t *xml_node_creat_ext(xml_tree_t *xml,
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
-xml_tree_t *xml_init(xml_option_t *opt)
+xml_tree_t *xml_init(xml_opt_t *opt)
 {
     xml_tree_t *xml;
     xml_node_t *root;
@@ -185,7 +185,7 @@ xml_tree_t *xml_init(xml_option_t *opt)
  **注意事项: 内存分配的最小单位为1KB, 防止内存碎片.
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
-char *xml_fload(const char *fname, xml_option_t *opt)
+char *xml_fload(const char *fname, xml_opt_t *opt)
 {
     FILE *fp;
     char *buff;

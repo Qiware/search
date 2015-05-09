@@ -169,7 +169,7 @@ static void rbt_left_rotate(rbt_tree_t *tree, rbt_node_t *node)
  **        的所有路径上包含相同数目的黑结点。
  **作    者: # Qifeng.zou # 2013.12.21 #
  ******************************************************************************/
-rbt_tree_t *rbt_creat(rbt_option_t *opt)
+rbt_tree_t *rbt_creat(rbt_opt_t *opt)
 {
     rbt_tree_t *tree;
 

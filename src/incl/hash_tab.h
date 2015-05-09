@@ -8,7 +8,7 @@ typedef struct
     void *pool;                                     /* 内存池 */
     mem_alloc_cb_t alloc;                           /* 申请内存 */
     mem_dealloc_cb_t dealloc;                       /* 释放内存 */
-} hash_tab_option_t;
+} hash_tab_opt_t;
 
 typedef int (*hash_tab_query_cb_t)(void *data, void *out);
 
@@ -31,7 +31,7 @@ typedef struct
     mem_dealloc_cb_t dealloc;                       /* 释放内存 */
 } hash_tab_t;
 
-hash_tab_t *hash_tab_creat(int mod, key_cb_t key_cb, avl_cmp_cb_t cmp_cb, hash_tab_option_t *option);
+hash_tab_t *hash_tab_creat(int mod, key_cb_t key_cb, avl_cmp_cb_t cmp_cb, hash_tab_opt_t *opt);
 int hash_tab_insert(hash_tab_t *hash, void *pkey, int pkey_len, void *addr);
 int hash_tab_query(hash_tab_t *hash, void *pkey, int pkey_len, hash_tab_query_cb_t query_cb, void *data);
 void *hash_tab_remove(hash_tab_t *hash, void *pkey, int pkey_len);

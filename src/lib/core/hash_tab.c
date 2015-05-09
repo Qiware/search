@@ -29,14 +29,14 @@
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
-hash_tab_t *hash_tab_creat(int mod, key_cb_t key_cb, avl_cmp_cb_t cmp_cb, hash_tab_option_t *option)
+hash_tab_t *hash_tab_creat(int mod, key_cb_t key_cb, avl_cmp_cb_t cmp_cb, hash_tab_opt_t *opt)
 {
     int idx;
     hash_tab_t *hash;
-    avl_option_t avl_opt;
+    avl_opt_t avl_opt;
 
     /* 1. 创建哈希数组 */
-    hash = (hash_tab_t *)option->alloc(option->pool, sizeof(hash_tab_t));
+    hash = (hash_tab_t *)opt->alloc(opt->pool, sizeof(hash_tab_t));
     if (NULL == hash)
     {
         return NULL;
@@ -45,18 +45,18 @@ hash_tab_t *hash_tab_creat(int mod, key_cb_t key_cb, avl_cmp_cb_t cmp_cb, hash_t
     hash->total = 0;
 
     /* 2. 创建数组空间 */
-    hash->tree = (avl_tree_t **)option->alloc(option->pool, mod*sizeof(avl_tree_t *));
+    hash->tree = (avl_tree_t **)opt->alloc(opt->pool, mod*sizeof(avl_tree_t *));
     if (NULL == hash->tree)
     {
-        option->dealloc(option->pool, hash);
+        opt->dealloc(opt->pool, hash);
         return NULL;
     }
 
-    hash->lock = (pthread_rwlock_t *)option->alloc(option->pool, mod * sizeof(pthread_rwlock_t));
+    hash->lock = (pthread_rwlock_t *)opt->alloc(opt->pool, mod * sizeof(pthread_rwlock_t));
     if (NULL == hash->lock)
     {
-        option->dealloc(option->pool, hash->tree);
-        option->dealloc(option->pool, hash);
+        opt->dealloc(opt->pool, hash->tree);
+        opt->dealloc(opt->pool, hash);
         return NULL;
     }
 
@@ -65,9 +65,9 @@ hash_tab_t *hash_tab_creat(int mod, key_cb_t key_cb, avl_cmp_cb_t cmp_cb, hash_t
     {
         memset(&avl_opt, 0, sizeof(avl_opt));
 
-        avl_opt.pool = (void *)option->pool;
-        avl_opt.alloc = (mem_alloc_cb_t)option->alloc;
-        avl_opt.dealloc = (mem_dealloc_cb_t)option->dealloc;
+        avl_opt.pool = (void *)opt->pool;
+        avl_opt.alloc = (mem_alloc_cb_t)opt->alloc;
+        avl_opt.dealloc = (mem_dealloc_cb_t)opt->dealloc;
 
         pthread_rwlock_init(&hash->lock[idx], NULL);
 

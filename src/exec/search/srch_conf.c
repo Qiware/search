@@ -27,7 +27,7 @@ static int srch_conf_parse(xml_tree_t *xml, srch_conf_t *conf, log_cycle_t *log)
  ******************************************************************************/
 srch_conf_t *srch_conf_load(const char *path, log_cycle_t *log)
 {
-    xml_option_t opt;
+    xml_opt_t opt;
     srch_conf_t *conf;
     mem_pool_t *mem_pool;
     xml_tree_t *xml = NULL;

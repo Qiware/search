@@ -26,7 +26,7 @@ static void *thread_routine(void *_tpool);
  **注意事项: 
  **作    者: # Qifeng.zou # 2012.12.26 #
  ******************************************************************************/
-thread_pool_t *thread_pool_init(int num, const thread_pool_option_t *opt, void *args)
+thread_pool_t *thread_pool_init(int num, const thread_pool_opt_t *opt, void *args)
 {
     int idx;
     thread_pool_t *tpool;

@@ -60,7 +60,7 @@ typedef struct
     void *pool;                 /* 内存池 */
     mem_alloc_cb_t alloc;       /* 申请内存 */
     mem_dealloc_cb_t dealloc;   /* 释放内存 */
-} xml_option_t;
+} xml_opt_t;
 
 /* XML节点 */
 typedef struct _xml_node_t
@@ -120,9 +120,9 @@ xml_node_t *xml_node_creat_ext(xml_tree_t *xml,
         xml_node_type_e type, const char *name, const char *value);
 int xml_node_free(xml_tree_t *xml, xml_node_t *node);
 
-xml_tree_t *xml_creat(const char *fname, xml_option_t *opt);
-xml_tree_t *xml_screat(const char *str, xml_option_t *opt);
-xml_tree_t *xml_screat_ext(const char *str, int length, xml_option_t *opt);
+xml_tree_t *xml_creat(const char *fname, xml_opt_t *opt);
+xml_tree_t *xml_screat(const char *str, xml_opt_t *opt);
+xml_tree_t *xml_screat_ext(const char *str, int length, xml_opt_t *opt);
 
 int xml_fwrite(xml_tree_t *xml, const char *fname);
 int xml_fprint(xml_tree_t *xml, FILE *fp);

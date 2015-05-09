@@ -28,8 +28,8 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
  ******************************************************************************/
 crwl_conf_t *crwl_conf_load(const char *path, log_cycle_t *log)
 {
+    xml_opt_t opt;
     xml_tree_t *xml;
-    xml_option_t opt;
     crwl_conf_t *conf;
     mem_pool_t *pool;
 

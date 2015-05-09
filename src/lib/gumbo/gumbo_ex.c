@@ -272,7 +272,7 @@ gumbo_result_t *gumbo_parse_href(const gumbo_html_t *html)
 {
     gumbo_result_t *r;
     mem_pool_t *mem_pool;
-    list_option_t option;
+    list_opt_t opt;
 
     /* > 创建内存池 */
     mem_pool = mem_pool_creat(1 * MB);
@@ -294,13 +294,13 @@ gumbo_result_t *gumbo_parse_href(const gumbo_html_t *html)
     r->mem_pool = mem_pool;
 
     /* > 创建链表对象 */
-    memset(&option, 0, sizeof(option));
+    memset(&opt, 0, sizeof(opt));
 
-    option.pool = (void *)mem_pool;
-    option.alloc = (mem_alloc_cb_t)mem_pool_alloc;
-    option.dealloc = (mem_dealloc_cb_t)mem_pool_dealloc;
+    opt.pool = (void *)mem_pool;
+    opt.alloc = (mem_alloc_cb_t)mem_pool_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)mem_pool_dealloc;
 
-    r->list = list_creat(&option);
+    r->list = list_creat(&opt);
     if (NULL == r->list)
     {
         mem_pool_destroy(mem_pool);

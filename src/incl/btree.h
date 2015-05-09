@@ -8,7 +8,7 @@ typedef struct
     void *pool;                                     /* 内存池 */
     mem_alloc_cb_t alloc;                           /* 申请内存 */
     mem_dealloc_cb_t dealloc;                       /* 释放内存 */
-} btree_option_t;
+} btree_opt_t;
 
 /* B树结点 */
 typedef struct _btree_node_t
@@ -17,7 +17,7 @@ typedef struct _btree_node_t
     int *key;                                       /* 关键字指针 */
     struct _btree_node_t **child;                   /* 孩子结点 */
     struct _btree_node_t *parent;                   /* 父亲结点 */
-}btree_node_t;
+} btree_node_t;
 
 /* B树结构 */
 typedef struct
@@ -30,9 +30,9 @@ typedef struct
     void *pool;                                     /* 内存池 */
     mem_alloc_cb_t alloc;                           /* 申请内存 */
     mem_dealloc_cb_t dealloc;                       /* 释放内存 */
-}btree_t;
+} btree_t;
 
-extern btree_t *btree_creat(int m, btree_option_t *opt);
+extern btree_t *btree_creat(int m, btree_opt_t *opt);
 extern int btree_insert(btree_t *btree, int key);
 extern int btree_remove(btree_t *btree, int key);
 void *btree_query(btree_t *btree, int key);

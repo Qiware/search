@@ -27,7 +27,7 @@ typedef struct
     void *pool;                 /* 内存池 */
     mem_alloc_cb_t alloc;       /* 申请内存 */
     mem_dealloc_cb_t dealloc;   /* 释放内存 */
-} avl_option_t;
+} avl_opt_t;
 
 /* 主键 */
 typedef struct
@@ -83,7 +83,7 @@ typedef struct
 
 typedef int (*avl_trav_cb_t)(void *data, void *args);
 
-avl_tree_t *avl_creat(avl_option_t *opt, key_cb_t key_cb, avl_cmp_cb_t cmp_cb);
+avl_tree_t *avl_creat(avl_opt_t *opt, key_cb_t key_cb, avl_cmp_cb_t cmp_cb);
 int avl_insert(avl_tree_t *tree, void *key, int key_len, void *data);
 avl_node_t *avl_query(avl_tree_t *tree, void *key, int key_len);
 int avl_delete(avl_tree_t *tree, void *key, int key_len, void **data);

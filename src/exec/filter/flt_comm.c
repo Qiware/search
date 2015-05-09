@@ -154,7 +154,7 @@ flt_cntx_t *flt_init(char *pname, const char *path)
     flt_cntx_t *ctx;
     flt_conf_t *conf;
     log_cycle_t *log;
-    hash_tab_option_t opt;
+    hash_tab_opt_t opt;
 
     /* > 初始化日志模块 */
     log = flt_init_log(pname);
@@ -378,17 +378,17 @@ int flt_startup(flt_cntx_t *ctx)
 static int flt_worker_pool_creat(flt_cntx_t *ctx)
 {
     int idx, num;
-    thread_pool_option_t option;
+    thread_pool_opt_t opt;
     flt_work_conf_t *conf = &ctx->conf->work;
 
-    memset(&option, 0, sizeof(option));
+    memset(&opt, 0, sizeof(opt));
 
     /* 1. 创建Worker线程池 */
-    option.pool = (void *)ctx->slab;
-    option.alloc = (mem_alloc_cb_t)slab_alloc;
-    option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+    opt.pool = (void *)ctx->slab;
+    opt.alloc = (mem_alloc_cb_t)slab_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-    ctx->worker_pool = thread_pool_init(conf->num, &option, NULL);
+    ctx->worker_pool = thread_pool_init(conf->num, &opt, NULL);
     if (NULL == ctx->worker_pool)
     {
         log_error(ctx->log, "Initialize thread pool failed!");

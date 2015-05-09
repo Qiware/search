@@ -30,8 +30,8 @@ static int flt_conf_load_seed(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *lo
  ******************************************************************************/
 flt_conf_t *flt_conf_load(const char *path, log_cycle_t *log)
 {
+    xml_opt_t opt;
     xml_tree_t *xml;
-    xml_option_t opt;
     flt_conf_t *conf;
     mem_pool_t *pool;
 

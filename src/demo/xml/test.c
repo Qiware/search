@@ -5,11 +5,11 @@
 
 int main(int argc, char *argv[])
 {
+    xml_opt_t opt;
     xml_tree_t *xml;
     mem_pool_t *pool;
-    xml_option_t option;
 
-    memset(&option, 0, sizeof(option));
+    memset(&opt, 0, sizeof(opt));
 
     plog_init(LOG_LEVEL_DEBUG, "test.log");
 
@@ -19,11 +19,11 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    option.pool = (void *)pool;
-    option.alloc = (mem_alloc_cb_t)mem_pool_alloc;
-    option.dealloc = (mem_dealloc_cb_t)mem_pool_dealloc;
+    opt.pool = (void *)pool;
+    opt.alloc = (mem_alloc_cb_t)mem_pool_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)mem_pool_dealloc;
 
-    xml = xml_creat(argv[1], &option);
+    xml = xml_creat(argv[1], &opt);
     if (NULL == xml)
     {
         fprintf(stdout, "Create XML failed!");

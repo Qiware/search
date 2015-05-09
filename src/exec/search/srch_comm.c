@@ -335,7 +335,7 @@ static int srch_creat_worker_pool(srch_cntx_t *ctx)
 {
     int idx, num;
     srch_worker_t *worker;
-    thread_pool_option_t option;
+    thread_pool_opt_t opt;
     const srch_conf_t *conf = ctx->conf;
 
     /* > 新建Worker对象 */
@@ -347,13 +347,13 @@ static int srch_creat_worker_pool(srch_cntx_t *ctx)
     }
 
     /* > 创建Worker线程池 */
-    memset(&option, 0, sizeof(option));
+    memset(&opt, 0, sizeof(opt));
 
-    option.pool = ctx->slab;
-    option.alloc = (mem_alloc_cb_t)slab_alloc;
-    option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+    opt.pool = ctx->slab;
+    opt.alloc = (mem_alloc_cb_t)slab_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-    ctx->worker_pool = thread_pool_init(conf->worker_num, &option, worker);
+    ctx->worker_pool = thread_pool_init(conf->worker_num, &opt, worker);
     if (NULL == ctx->worker_pool)
     {
         log_error(ctx->log, "Initialize thread pool failed!");
@@ -441,7 +441,7 @@ static int srch_creat_agent_pool(srch_cntx_t *ctx)
 {
     int idx, num;
     srch_agent_t *agent;
-    thread_pool_option_t option;
+    thread_pool_opt_t opt;
     const srch_conf_t *conf = ctx->conf;
 
     /* > 新建Agent对象 */
@@ -453,13 +453,13 @@ static int srch_creat_agent_pool(srch_cntx_t *ctx)
     }
 
     /* > 创建Worker线程池 */
-    memset(&option, 0, sizeof(option));
+    memset(&opt, 0, sizeof(opt));
 
-    option.pool = ctx->slab;
-    option.alloc = (mem_alloc_cb_t)slab_alloc;
-    option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+    opt.pool = ctx->slab;
+    opt.alloc = (mem_alloc_cb_t)slab_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-    ctx->agent_pool = thread_pool_init(conf->agent_num, &option, agent);
+    ctx->agent_pool = thread_pool_init(conf->agent_num, &opt, agent);
     if (NULL == ctx->agent_pool)
     {
         log_error(ctx->log, "Initialize thread pool failed!");

@@ -303,7 +303,7 @@ static int crwl_worker_tpool_creat(crwl_cntx_t *ctx)
 {
     int idx, num;
     crwl_worker_t *worker;
-    thread_pool_option_t option;
+    thread_pool_opt_t opt;
     const crwl_worker_conf_t *conf = &ctx->conf->worker;
 
     /* > 新建Worker对象 */
@@ -315,13 +315,13 @@ static int crwl_worker_tpool_creat(crwl_cntx_t *ctx)
     }
 
     /* > 创建Worker线程池 */
-    memset(&option, 0, sizeof(option));
+    memset(&opt, 0, sizeof(opt));
 
-    option.pool = (void *)ctx->slab;
-    option.alloc = (mem_alloc_cb_t)slab_alloc;
-    option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+    opt.pool = (void *)ctx->slab;
+    opt.alloc = (mem_alloc_cb_t)slab_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-    ctx->worker_pool = thread_pool_init(conf->num, &option, worker);
+    ctx->worker_pool = thread_pool_init(conf->num, &opt, worker);
     if (NULL == ctx->worker_pool)
     {
         log_error(ctx->log, "Initialize thread pool failed!");
@@ -405,17 +405,17 @@ int crwl_worker_tpool_destroy(crwl_cntx_t *ctx)
  ******************************************************************************/
 static int crwl_sched_tpool_creat(crwl_cntx_t *ctx)
 {
-    thread_pool_option_t option;
+    thread_pool_opt_t opt;
 
-    memset(&option, 0, sizeof(option));
+    memset(&opt, 0, sizeof(opt));
 
     /* 1. 设置内存池信息 */
-    option.pool = (void *)ctx->slab;
-    option.alloc = (mem_alloc_cb_t)slab_alloc;
-    option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+    opt.pool = (void *)ctx->slab;
+    opt.alloc = (mem_alloc_cb_t)slab_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
     /* 2. 创建Sched线程池 */
-    ctx->scheds = thread_pool_init(CRWL_SCHED_THD_NUM, &option, NULL);
+    ctx->scheds = thread_pool_init(CRWL_SCHED_THD_NUM, &opt, NULL);
     if (NULL == ctx->scheds)
     {
         log_error(ctx->log, "Initialize thread pool failed!");

@@ -9,15 +9,15 @@ int main(void)
 {
     int ret, key, idx;
     btree_t *btree;
-    btree_option_t option;
+    btree_opt_t opt;
     char input[INPUT_LEN];
 
     /* > 创建B树 */
-    option.pool = (void *)NULL;
-    option.alloc = (mem_alloc_cb_t)mem_alloc;
-    option.dealloc = (mem_dealloc_cb_t)mem_dealloc;
+    opt.pool = (void *)NULL;
+    opt.alloc = (mem_alloc_cb_t)mem_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
-    btree = btree_creat(BTREE_M, &option);
+    btree = btree_creat(BTREE_M, &opt);
     if (NULL == btree)
     {
         fprintf(stderr, "[%s][%d] Create btree failed!\n", __FILE__, __LINE__);

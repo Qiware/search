@@ -315,9 +315,9 @@ static int crwl_sched_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
 static int crwl_task_parse(const char *str, crwl_task_t *task)
 {
     int ret;
+    xml_opt_t opt;
     xml_tree_t *xml;
     xml_node_t *node;
-    xml_option_t opt;
     mem_pool_t *pool;
 
     /* 1. 解析XML字串 */

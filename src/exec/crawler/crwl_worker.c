@@ -96,7 +96,7 @@ static crwl_worker_t *crwl_worker_self(crwl_cntx_t *ctx)
  ******************************************************************************/
 int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker, int tidx)
 {
-    list_option_t option;
+    list_opt_t opt;
     crwl_conf_t *conf = ctx->conf;
 
     worker->tidx = tidx;
@@ -114,13 +114,13 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker, int tidx)
     do
     {
         /* > 创建SCK链表 */
-        memset(&option, 0, sizeof(option));
+        memset(&opt, 0, sizeof(opt));
 
-        option.pool = (void *)worker->slab;
-        option.alloc = (mem_alloc_cb_t)slab_alloc;
-        option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+        opt.pool = (void *)worker->slab;
+        opt.alloc = (mem_alloc_cb_t)slab_alloc;
+        opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-        worker->sock_list = list_creat(&option);
+        worker->sock_list = list_creat(&opt);
         if (NULL == worker->sock_list)
         {
             log_error(worker->log, "Create list failed!");
@@ -879,7 +879,7 @@ int crwl_worker_webpage_finfo(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t 
 socket_t *crwl_worker_socket_alloc(crwl_worker_t *worker)
 {
     socket_t *sck;
-    list_option_t option;
+    list_opt_t opt;
     crwl_worker_socket_extra_t *extra;
 
     /* > 创建SCK对象 */
@@ -902,13 +902,13 @@ socket_t *crwl_worker_socket_alloc(crwl_worker_t *worker)
     memset(extra, 0, sizeof(crwl_worker_socket_extra_t));
 
     /* > 创建发送链表 */
-    memset(&option, 0, sizeof(option));
+    memset(&opt, 0, sizeof(opt));
 
-    option.pool = (void *)worker->slab;
-    option.alloc = (mem_alloc_cb_t)slab_alloc;
-    option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+    opt.pool = (void *)worker->slab;
+    opt.alloc = (mem_alloc_cb_t)slab_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-    extra->send_list = list_creat(&option);
+    extra->send_list = list_creat(&opt);
     if (NULL == extra->send_list)
     {
         log_error(worker->log, "Create list failed!");

@@ -34,7 +34,7 @@ typedef enum
     , MSG_TYPE_TOTAL                        /* 消息类型总数 */
 } mesg_type_e;
 
-/* 报体 */
+/* 搜索关键字 */
 typedef struct
 {
 #define SRCH_WORDS_LEN      (128)

@@ -323,10 +323,10 @@ static int sdtp_creat_recvtp(sdtp_cntx_t *ctx)
 {
     int idx;
     sdtp_rsvr_t *rsvr;
-    thread_pool_option_t option;
+    thread_pool_opt_t opt;
     sdtp_conf_t *conf = &ctx->conf;
 
-    memset(&option, 0, sizeof(option));
+    memset(&opt, 0, sizeof(opt));
 
     /* > 创建接收对象 */
     rsvr = (sdtp_rsvr_t *)calloc(conf->recv_thd_num, sizeof(sdtp_rsvr_t));
@@ -337,11 +337,11 @@ static int sdtp_creat_recvtp(sdtp_cntx_t *ctx)
     }
 
     /* > 创建线程池 */
-    option.pool = (void *)ctx->pool;
-    option.alloc = (mem_alloc_cb_t)slab_alloc;
-    option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+    opt.pool = (void *)ctx->pool;
+    opt.alloc = (mem_alloc_cb_t)slab_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-    ctx->recvtp = thread_pool_init(conf->recv_thd_num, &option, (void *)rsvr);
+    ctx->recvtp = thread_pool_init(conf->recv_thd_num, &opt, (void *)rsvr);
     if (NULL == ctx->recvtp)
     {
         log_error(ctx->log, "Initialize thread pool failed!");
@@ -420,7 +420,7 @@ static int sdtp_creat_worktp(sdtp_cntx_t *ctx)
 {
     int idx;
     sdtp_worker_t *worker;
-    thread_pool_option_t option;
+    thread_pool_opt_t opt;
     sdtp_conf_t *conf = &ctx->conf;
 
 
@@ -433,13 +433,13 @@ static int sdtp_creat_worktp(sdtp_cntx_t *ctx)
     }
 
     /* > 创建线程池 */
-    memset(&option, 0, sizeof(option));
+    memset(&opt, 0, sizeof(opt));
 
-    option.pool = (void *)ctx->pool;
-    option.alloc = (mem_alloc_cb_t)slab_alloc;
-    option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+    opt.pool = (void *)ctx->pool;
+    opt.alloc = (mem_alloc_cb_t)slab_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-    ctx->worktp = thread_pool_init(conf->work_thd_num, &option, (void *)worker);
+    ctx->worktp = thread_pool_init(conf->work_thd_num, &opt, (void *)worker);
     if (NULL == ctx->worktp)
     {
         log_error(ctx->log, "Initialize thread pool failed!");

@@ -48,7 +48,7 @@ invt_tab_t *invert_tab_creat(int max, log_cycle_t *log)
 {
     int idx;
     invt_tab_t *tab;
-    avl_option_t option;
+    avl_opt_t opt;
 
     /* > 创建对象 */
     tab = (invt_tab_t *)calloc(1, sizeof(invt_tab_t));
@@ -75,13 +75,13 @@ invt_tab_t *invert_tab_creat(int max, log_cycle_t *log)
 
     for (idx=0; idx<max; ++idx)
     {
-        memset(&option, 0, sizeof(option));
+        memset(&opt, 0, sizeof(opt));
 
-        option.pool = (void *)NULL;
-        option.alloc = mem_alloc;
-        option.dealloc = mem_dealloc;
+        opt.pool = (void *)NULL;
+        opt.alloc = mem_alloc;
+        opt.dealloc = mem_dealloc;
 
-        tab->dic[idx] = avl_creat(&option,
+        tab->dic[idx] = avl_creat(&opt,
                             (key_cb_t)hash_time33_ex,
                             (avl_cmp_cb_t)invert_tab_dic_word_cmp);
         if (NULL == tab->dic[idx])
@@ -111,7 +111,7 @@ invt_tab_t *invert_tab_creat(int max, log_cycle_t *log)
 static invt_dic_word_t *invt_word_add(invt_tab_t *tab, char *word, int len)
 {
     int idx;
-    list_option_t option;
+    list_opt_t opt;
     invt_dic_word_t *dw;
 
     idx = hash_time33(word) % tab->mod;
@@ -140,11 +140,11 @@ static invt_dic_word_t *invt_word_add(invt_tab_t *tab, char *word, int len)
         dw->word.len = strlen(word);
 
         /* > 创建文档列表 */
-        option.pool = (void *)NULL;
-        option.alloc = mem_alloc;
-        option.dealloc = mem_dealloc;
+        opt.pool = (void *)NULL;
+        opt.alloc = mem_alloc;
+        opt.dealloc = mem_dealloc;
 
-        dw->doc_list = (list_t *)list_creat(&option);
+        dw->doc_list = (list_t *)list_creat(&opt);
         if (NULL == dw->doc_list)
         {
             log_error(tab->log, "Create btree failed! word:%s", word);

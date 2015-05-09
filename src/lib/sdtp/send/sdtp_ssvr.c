@@ -90,7 +90,7 @@ static int _sdtp_ssvr_startup(sdtp_ssvr_cntx_t *ctx)
 {
     int idx;
     sdtp_ssvr_t *ssvr;
-    thread_pool_option_t option;
+    thread_pool_opt_t opt;
     sdtp_ssvr_conf_t *conf = &ctx->conf;
 
     /* > 创建发送线程对象 */
@@ -111,13 +111,13 @@ static int _sdtp_ssvr_startup(sdtp_ssvr_cntx_t *ctx)
     }
 
     /* > 创建发送线程池 */
-    memset(&option, 0, sizeof(option));
+    memset(&opt, 0, sizeof(opt));
 
-    option.pool = (void *)ctx->slab;
-    option.alloc = (mem_alloc_cb_t)slab_alloc;
-    option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+    opt.pool = (void *)ctx->slab;
+    opt.alloc = (mem_alloc_cb_t)slab_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-    ctx->sendtp = thread_pool_init(conf->snd_thd_num, &option, (void *)ssvr);
+    ctx->sendtp = thread_pool_init(conf->snd_thd_num, &opt, (void *)ssvr);
     if (NULL == ctx->sendtp)
     {
         free(ssvr);
@@ -163,7 +163,7 @@ static int _sdtp_ssvr_startup(sdtp_ssvr_cntx_t *ctx)
 static int sdtp_ssvr_init(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr, int tidx)
 {
     void *addr;
-    list_option_t opt;
+    list_opt_t opt;
     sdtp_ssvr_conf_t *conf = &ctx->conf;
     sdtp_snap_t *recv = &ssvr->sck.recv;
     sdtp_snap_t *send = &ssvr->sck.send[SDTP_SNAP_SYS_DATA];

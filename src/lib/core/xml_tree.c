@@ -31,7 +31,7 @@ static xml_node_t *_xml_delete_empty(xml_tree_t *xml, Stack_t *stack, xml_node_t
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.06.12 #
  ******************************************************************************/
-xml_tree_t *xml_creat_empty(xml_option_t *opt)
+xml_tree_t *xml_creat_empty(xml_opt_t *opt)
 {
     xml_tree_t *xml;
 
@@ -84,7 +84,7 @@ xml_tree_t *xml_creat_empty(xml_option_t *opt)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
-xml_tree_t *xml_creat(const char *fname, xml_option_t *opt)
+xml_tree_t *xml_creat(const char *fname, xml_opt_t *opt)
 {
     char *buff;
     xml_tree_t *xml;
@@ -120,7 +120,7 @@ xml_tree_t *xml_creat(const char *fname, xml_option_t *opt)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.09.25 #
  ******************************************************************************/
-xml_tree_t *xml_screat_ext(const char *str, int length, xml_option_t *opt)
+xml_tree_t *xml_screat_ext(const char *str, int length, xml_opt_t *opt)
 {
     char *buff;
     xml_tree_t *xml;
@@ -166,7 +166,7 @@ xml_tree_t *xml_screat_ext(const char *str, int length, xml_option_t *opt)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
-xml_tree_t *xml_screat(const char *str, xml_option_t *opt)
+xml_tree_t *xml_screat(const char *str, xml_opt_t *opt)
 {
     Stack_t stack;
     xml_tree_t *xml;

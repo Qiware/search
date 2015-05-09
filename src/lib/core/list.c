@@ -50,7 +50,7 @@ void list_assert(list_t *list)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.02.16 #
  ******************************************************************************/
-list_t *list_creat(list_option_t *opt)
+list_t *list_creat(list_opt_t *opt)
 {
     list_t *list;
 

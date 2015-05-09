@@ -29,10 +29,10 @@ typedef struct
     void *pool;                     /* 内存池 */
     mem_alloc_cb_t alloc;           /* 申请内存 */
     mem_dealloc_cb_t dealloc;       /* 释放内存 */
-} rbt_option_t;
+} rbt_opt_t;
 
 /* 设置默认选项 */
-#define rbt_setup_option(opt)   \
+#define rbt_setup_opt(opt)   \
 { \
     (opt)->pool = NULL; \
     (opt)->alloc = mem_alloc; \
@@ -105,7 +105,7 @@ typedef struct
     } \
 } 
 
-rbt_tree_t *rbt_creat(rbt_option_t *opt);
+rbt_tree_t *rbt_creat(rbt_opt_t *opt);
 int rbt_insert(rbt_tree_t *tree, int64_t key, void *data);
 int rbt_delete(rbt_tree_t *tree, int64_t key, void **data);
 rbt_node_t *rbt_search(rbt_tree_t *tree, int64_t key);

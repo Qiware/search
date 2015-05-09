@@ -60,8 +60,8 @@ static flt_worker_t *flt_worker_self(flt_cntx_t *ctx)
 static int flt_worker_get_webpage_info(
         const char *path, flt_webpage_info_t *info, log_cycle_t *log)
 {
+    xml_opt_t opt;
     xml_tree_t *xml;
-    xml_option_t opt;
     mem_pool_t *pool;
     xml_node_t *node, *fix;
 
