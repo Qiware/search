@@ -57,7 +57,7 @@ typedef int (*avl_cmp_cb_t)(const void *key, const void *data);
 /* 节点结构 */
 typedef struct _node_t
 {
-    uint32_t idx;               /* 索引值: 该值有key_cb生成 可能不唯一 */
+    unsigned int idx;           /* 索引值: 该值有key_cb生成 可能不唯一 */
 
     int bf;                     /* 平衡因子 */
 

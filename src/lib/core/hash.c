@@ -11,10 +11,10 @@
  **注意事项: 该算法特点: 算法简单、性能高效、散列效果佳.
  **作    者: # Qifeng.zou # 2015.01.28 #
  ******************************************************************************/
-uint32_t hash_time33(const char *str)
+unsigned int hash_time33(const char *str)
 {
     const char *p = str;
-    uint32_t hash = 5381;
+    unsigned int hash = 5381;
 
     while (*p)
     {
@@ -36,10 +36,10 @@ uint32_t hash_time33(const char *str)
  **注意事项: 该算法特点: 算法简单、性能高效、散列效果佳.
  **作    者: # Qifeng.zou # 2015.01.28 #
  ******************************************************************************/
-uint32_t hash_time33_ex(const void *addr, size_t len)
+unsigned int hash_time33_ex(const void *addr, size_t len)
 {
-    uint32_t hash = 5381;
     const char *p = addr;
+    unsigned int hash = 5381;
 
     while (len-- > 0)
     {
