@@ -879,7 +879,7 @@ static int sdtp_rsvr_event_timeout_hdl(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr)
 
     /* > 将数据放入队列 */
     if (-1 != rsvr->queue.rqid
-        && (rsvr->ctm - rsvr->queue.alloc_tm > 5))
+        && (rsvr->ctm - rsvr->queue.alloc_tm > 1))
     {
         sdtp_rsvr_queue_push(ctx, rsvr);
         sdtp_rsvr_queue_reset(rsvr);

@@ -94,7 +94,7 @@ static int _sdtp_ssvr_startup(sdtp_ssvr_cntx_t *ctx)
     sdtp_ssvr_conf_t *conf = &ctx->conf;
 
     /* > 创建发送线程对象 */
-    ssvr = calloc(conf->snd_thd_num, sizeof(sdtp_ssvr_t));
+    ssvr = (sdtp_ssvr_t *)calloc(conf->snd_thd_num, sizeof(sdtp_ssvr_t));
     if (NULL == ssvr)
     {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));

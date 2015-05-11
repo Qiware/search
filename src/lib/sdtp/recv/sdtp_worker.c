@@ -258,7 +258,7 @@ static int sdtp_worker_cmd_proc_req_hdl(sdtp_cntx_t *ctx, sdtp_worker_t *worker,
                 continue;
             }
 
-            if (reg->proc(head->type, addr+sizeof(sdtp_header_t), head->length, reg->args))
+            if (reg->proc(head->type, ptr+sizeof(sdtp_header_t), head->length, reg->args))
             {
                 ++worker->err_total;    /* 错误计数 */
             }
