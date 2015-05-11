@@ -15,16 +15,25 @@ LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lpthread -lxd_core -lsdtp
 
 SRC_LIST = sdtp_send.c
+SRC_LIST2 = sdtp_recv.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
+OBJS2 = $(subst .c,.o, $(SRC_LIST2)) 
 
-TARGET = sdtp_ssvr
+TARGET = sdtp_send
+TARGET2 = sdtp_recv
 
 .PHONY: all clean
 
-all: $(TARGET)
+all: $(TARGET) $(TARGET2)
 $(TARGET): $(OBJS)
 	@$(CC) $(CFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS)
+	@echo "CC $@"
+	@mv $@ $(PROJ_BIN)
+	@rm -fr $(OBJS)
+	@echo "$@ is OK!"
+$(TARGET2): $(OBJS2)
+	@$(CC) $(CFLAGS) -o $@ $(OBJS2) $(INCLUDE) $(LIBS_PATH) $(LIBS)
 	@echo "CC $@"
 	@mv $@ $(PROJ_BIN)
 	@rm -fr $(OBJS)
@@ -33,7 +42,11 @@ $(TARGET): $(OBJS)
 $(OBJS): %.o : %.c
 	@$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
 	@echo "CC $(PWD)/$<"
+$(OBJS2): %.o : %.c
+	@$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
+	@echo "CC $(PWD)/$<"
+
 
 clean:
-	@rm -fr *.o $(PROJ_BIN)/$(TARGET)
-	@echo "rm -fr *.o $(PROJ_BIN)/$(TARGET)"
+	@rm -fr *.o $(PROJ_BIN)/$(TARGET) $(PROJ_BIN)/$(TARGET2)
+	@echo "rm -fr *.o $(PROJ_BIN)/$(TARGET) $(PROJ)/$(TARGET2)"

@@ -48,8 +48,7 @@ DEMO_DIR = "src/demo"
 #DIR += "${DEMO_DIR}/lock"
 #DIR += "${DEMO_DIR}/ring"
 #DIR += "${DEMO_DIR}/queue"
-#DIR += "${DEMO_DIR}/sdtp/recv"
-#DIR += "${DEMO_DIR}/sdtp/send"
+DIR += "${DEMO_DIR}/sdtp"
 export DIR
 
 # 创建目录结构

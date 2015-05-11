@@ -1,19 +1,19 @@
 
 #include "sdtp.h"
+#include "mesg.h"
 
-typedef enum
+/* 回调函数 */
+static int sdtp_work_def_hdl(int type, char *buff, size_t len, void *args)
 {
-    AAAA
-    , BBBB
-    , CCCC
-    , DDDD
-    , EEEE
-}MYSELT_DATA_TYPE_e;
+    fprintf(stderr, "type:%d buff:%p len:%ld args:%p\n", type, buff, len, args);
+    return 0;
+}
 
-static void sdtp_setup_conf(sdtp_conf_t *conf)
+/* 配置SDTP */
+static void sdtp_setup_conf(sdtp_conf_t *conf, int port)
 {
     snprintf(conf->name, sizeof(conf->name), "SDTP-RECV");
-    conf->port = 4444;
+    conf->port = port;
     conf->recv_thd_num = 1;
     conf->work_thd_num = 1;
     conf->rqnum = 3;
@@ -23,14 +23,22 @@ static void sdtp_setup_conf(sdtp_conf_t *conf)
 
 int main(int argc, const char *argv[])
 {
-    int ret;
+    int ret, port;
     sdtp_cntx_t *ctx;
     log_cycle_t *log;
     sdtp_conf_t conf;
 
     memset(&conf, 0, sizeof(conf));
 
-    sdtp_setup_conf(&conf);
+    if (2 != argc)
+    {
+        fprintf(stderr, "Didn't special port!");
+        return -1;
+    }
+
+    port = atoi(argv[1]);
+
+    sdtp_setup_conf(&conf, port);
 
     signal(SIGPIPE, SIG_IGN);
                                        
@@ -45,13 +53,11 @@ int main(int argc, const char *argv[])
         return SDTP_ERR;
     }
 
-#if 0
-    sdtp_register(ctx, AAAA, sdtp_worker_def_hdl, NULL);
-    sdtp_register(ctx, BBBB, sdtp_work_def_hdl, NULL);
-    sdtp_register(ctx, CCCC, sdtp_work_def_hdl, NULL);
-    sdtp_register(ctx, DDDD, sdtp_work_def_hdl, NULL);
-    sdtp_register(ctx, EEEE, sdtp_work_def_hdl, NULL);
-#endif
+    sdtp_register(ctx, MSG_SEARCH_REQ, sdtp_work_def_hdl, NULL);
+    sdtp_register(ctx, MSG_PRINT_INVT_TAB_REQ, sdtp_work_def_hdl, NULL);
+    sdtp_register(ctx, MSG_QUERY_CONF_REQ, sdtp_work_def_hdl, NULL);
+    sdtp_register(ctx, MSG_QUERY_WORKER_STAT_REQ, sdtp_work_def_hdl, NULL);
+    sdtp_register(ctx, MSG_QUERY_WORKQ_STAT_REQ, sdtp_work_def_hdl, NULL);
 
     /* 2. 接收服务端工作 */
     ret = sdtp_startup(ctx);

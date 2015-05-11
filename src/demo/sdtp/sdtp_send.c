@@ -77,11 +77,11 @@ int sdtp_send_debug(sdtp_cli_t *cli, int secs)
     return 0;
 }
 
-static void sdtp_setup_conf(sdtp_ssvr_conf_t *conf)
+static void sdtp_setup_conf(sdtp_ssvr_conf_t *conf, int port)
 {
     snprintf(conf->name, sizeof(conf->name), "SDTP-SEND");
     snprintf(conf->ipaddr, sizeof(conf->ipaddr), "127.0.0.1");
-    conf->port = 4444;
+    conf->port = port;
     conf->snd_thd_num = 1;
     conf->send_buff_size = 5 * MB;
     conf->recv_buff_size = 2 * MB;
@@ -93,12 +93,18 @@ static void sdtp_setup_conf(sdtp_ssvr_conf_t *conf)
 
 int main(int argc, const char *argv[])
 {
-    int sleep = 5;
+    int sleep = 5, port;
     log_cycle_t *log;
     sdtp_ssvr_cntx_t *ctx;
     sdtp_cli_t *cli;
     sdtp_cli_t *cli2;
     sdtp_ssvr_conf_t conf;
+
+    if (2 != argc)
+    {
+        fprintf(stderr, "Didn't special port!");
+        return -1;
+    }
 
     memset(&conf, 0, sizeof(conf));
 
@@ -106,7 +112,8 @@ int main(int argc, const char *argv[])
 
     nice(-20);
 
-    sdtp_setup_conf(&conf);
+    port = atoi(argv[1]);
+    sdtp_setup_conf(&conf, port);
 
     plog_init(LOG_LEVEL_ERROR, "./sdtp_ssvr.plog");
     log = log_init(LOG_LEVEL_ERROR, "./sdtp_ssvr.log");
