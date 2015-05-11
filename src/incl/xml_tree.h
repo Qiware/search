@@ -37,13 +37,6 @@
 #define XML_NODE_HAS_ATTR   (0x00000002)    /* 有属性节点 */
 #define XML_NODE_HAS_VALUE  (0x00000004)    /* 有节点值 */
 
-#if !defined(false)
-    #define false (0)
-#endif
-#if !defined(true)
-    #define true (1)
-#endif
-
 /* XML节点类型 */
 typedef enum
 {
@@ -98,7 +91,7 @@ typedef struct _xml_node_t
 /* XML树 */
 typedef struct
 {
-    xml_node_t *root;           /* 根节点: 注意root的第一个子节点才是真正的根节点 */
+    xml_node_t *root;               /* 根节点: 注意root的第一个子节点才是真正的根节点 */
 
     struct
     {
