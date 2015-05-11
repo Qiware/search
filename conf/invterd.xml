@@ -1,7 +1,9 @@
+<!-- 倒排服务配置信息 -->
 <INVTERD>
-    <INVT_TAB MAX="1024" />
+    <INVT_TAB MAX="1024" /> <!-- 倒排表配置 -->
+    <!-- SDTP服务配置 -->
     <SDTP NAME="../temp/invertd.sdtp" PORT="28888">
         <THDNUM RECV_THD_NUM="2" WORK_THD_NUM="4" />
-        <RECVQ NUM="4" MAX="8092" SIZE="1024" />
+        <RECVQ NUM="4" MAX="8192" SIZE="1024" />
     </SDTP>
 </INVTERD>
