@@ -46,7 +46,7 @@ static int invtd_search_req_hdl(int type, char *buff, size_t len, void *args)
     /* > 打印搜索结果 */
     idx = 0;
     node = word->doc_list->head;
-    while (NULL != node)
+    for (; NULL!=node; node=node->next)
     {
         doc = (invt_word_doc_t *)node->data;
 
