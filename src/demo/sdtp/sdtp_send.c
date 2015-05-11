@@ -1,6 +1,7 @@
 #include <signal.h>
 #include <sys/time.h>
 
+#include "mesg.h"
 #include "syscall.h"
 #include "sdtp_cli.h"
 #include "sdtp_ssvr.h"
@@ -22,17 +23,12 @@
 
 int sdtp_send_debug(sdtp_cli_t *cli, int secs)
 {
-    size_t loop = 0, idx = 0;
+    size_t idx = 0;
     double sleep2 = 0;
     struct timeval stime, etime;
     int total = 0, fails = 0;
-    char data[SIZE] = {0};
-
-    memset(data, 'A', sizeof(data)-2);
-    data[SIZE-1] = '\n';
-
-    loop = 1000000;
-    Sleep(2);
+    char data[SIZE];
+    srch_mesg_body_t *body;
 
     for (;;)
     {
@@ -40,9 +36,13 @@ int sdtp_send_debug(sdtp_cli_t *cli, int secs)
         sleep2 = 0;
         fails = 0;
         total = 0;
-        for (idx=0; idx<loop; idx++)
+        for (idx=0; idx<LOOP; idx++)
         {
-            if (sdtp_cli_send(cli, idx%3, data, rand()%SIZE + 1))
+            body = (srch_mesg_body_t *)data;
+
+            snprintf(body->words, sizeof(body->words), "%s", "BAIDU");
+
+            if (sdtp_cli_send(cli, MSG_SEARCH_REQ, body, sizeof(srch_mesg_body_t)))
             {
                 idx--;
                 usleep(2);
@@ -70,6 +70,7 @@ int sdtp_send_debug(sdtp_cli_t *cli, int secs)
                 etime.tv_sec - stime.tv_sec,
                 etime.tv_usec - stime.tv_usec,
                 total, fails);
+
     }
 
     pause();
