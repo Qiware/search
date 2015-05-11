@@ -9,7 +9,7 @@
 ###############################################################################
 print_proc()
 {
-    ps -axu | grep -e "crawler" -e "filter" -e "logsvr" -e "redis" -e "search" | grep -v "grep" | sort
+    ps -axu | grep -e "crawler" -e "filter" -e "logsvr" -e "redis" -e "search" -e "invertd" | grep -v "grep" | sort
 }
 
 ###############################################################################
@@ -21,7 +21,7 @@ print_proc()
 ###############################################################################
 print_shm()
 {
-    ipcs -m | grep -e "^0x" -e "key" | grep -v "dest" | grep -v "grep"
+    ipcs -m | awk '{ if ($6 ~ /nattch/ || $6 >= 1) { print $0 }}' | grep -v "grep"
 }
 
 ###############################################################################
