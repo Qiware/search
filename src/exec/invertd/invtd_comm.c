@@ -185,6 +185,41 @@ invtd_cntx_t *invtd_init(const char *conf_path)
     return NULL;
 }
 
+#if defined(__INVTD_DEBUG__)
+/******************************************************************************
+ **函数名称: invtd_insert_word
+ **功    能: 插入倒排关键字
+ **输入参数:
+ **     ctx: 全局对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.05.11 #
+ ******************************************************************************/
+static int invtd_insert_word(invtd_cntx_t *ctx)
+{
+#define INVERT_INSERT(ctx, word, url, freq) \
+    if (invert_tab_insert(ctx->tab, word, url, freq)) \
+    { \
+        return INVT_ERR; \
+    }
+
+    INVERT_INSERT(tab, "CSDN", "www.csdn.net", 5);
+    INVERT_INSERT(tab, "BAIDU", "www.baidu.com", 5);
+    INVERT_INSERT(tab, "BAIDU", "www.baidu2.com", 4);
+    INVERT_INSERT(tab, "BAIDU", "www.baidu3.com", 2);
+    INVERT_INSERT(tab, "BAIDU", "www.baidu4.com", 3);
+    INVERT_INSERT(tab, "BAIDU", "www.baidu5.com", 10);
+    INVERT_INSERT(tab, "凤凰网", "www.ifeng.com", 10);
+    INVERT_INSERT(tab, "QQ", "www.qq.com", 10);
+    INVERT_INSERT(tab, "SINA", "www.sina.com", 6);
+    INVERT_INSERT(tab, "搜狐", "www.sohu.com", 7);
+
+    return INVT_OK;
+}
+#endif /*__INVTD_DEBUG__*/
+
 /******************************************************************************
  **函数名称: invtd_startup
  **功    能: 启动服务
@@ -204,6 +239,15 @@ int invtd_startup(invtd_cntx_t *ctx)
         log_fatal(ctx->log, "Startup sdtp failed!");
         return INVT_ERR;
     }
+
+#if defined(__INVTD_DEBUG__)
+    /* 插入关键字 */
+    if (invtd_insert_word(ctx))
+    {
+        log_fatal(ctx->log, "Insert key-word failed!");
+        return INVT_ERR;
+    }
+#endif /*__INVTD_DEBUG__*/
 
     return INVT_OK;
 }
