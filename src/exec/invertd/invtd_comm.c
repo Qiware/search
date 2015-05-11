@@ -34,6 +34,8 @@ int invtd_getopt(int argc, char **argv, invtd_opt_t *opt)
 {
     int ch;
 
+    memset(opt, 0, sizeof(invtd_opt_t));
+
     /* 1. 解析输入参数 */
     while (-1 != (ch = getopt(argc, argv, "c:hd")))
     {
