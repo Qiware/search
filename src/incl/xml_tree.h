@@ -1,9 +1,8 @@
 #if !defined(__XML_TREE_H__)
 #define __XML_TREE_H__
 
-#include <stdio.h>
-
 #include "log.h"
+#include "str.h"
 
 /* 功能宏: 当组报文时，且结点无孩子结点时，必须使用组合标签:
     <NAME attr1="av1" attr2="av2"></NAME> */
@@ -38,13 +37,6 @@
 #define XML_NODE_HAS_ATTR   (0x00000002)    /* 有属性节点 */
 #define XML_NODE_HAS_VALUE  (0x00000004)    /* 有节点值 */
 
-#if !defined(false)
-    #define false (0)
-#endif
-#if !defined(true)
-    #define true (1)
-#endif
-
 /* XML节点类型 */
 typedef enum
 {
@@ -61,13 +53,13 @@ typedef struct
     void *pool;                 /* 内存池 */
     mem_alloc_cb_t alloc;       /* 申请内存 */
     mem_dealloc_cb_t dealloc;   /* 释放内存 */
-} xml_option_t;
+} xml_opt_t;
 
 /* XML节点 */
 typedef struct _xml_node_t
 {
-    char *name;                 /* 节点名 */
-    char *value;                /* 节点值 */
+    str_t name;                 /* 节点名 */
+    str_t value;                /* 节点值 */
     xml_node_type_e type;       /* 节点类型 */
 
     struct _xml_node_t *next;   /* 兄弟节点链表 */
@@ -83,8 +75,10 @@ typedef struct _xml_node_t
 /* 结点初始化 */
 #define xml_node_init(node, _type)  \
 { \
-    (node)->name = NULL; \
-    (node)->value = NULL; \
+    (node)->name.str = NULL; \
+    (node)->name.len = 0; \
+    (node)->value.str = NULL; \
+    (node)->value.len = 0; \
     (node)->type = (_type); \
     (node)->next = NULL; \
     (node)->child = NULL; \
@@ -97,7 +91,7 @@ typedef struct _xml_node_t
 /* XML树 */
 typedef struct
 {
-    xml_node_t *root;           /* 根节点: 注意root的第一个子节点才是真正的根节点 */
+    xml_node_t *root;               /* 根节点: 注意root的第一个子节点才是真正的根节点 */
 
     struct
     {
@@ -119,9 +113,9 @@ xml_node_t *xml_node_creat_ext(xml_tree_t *xml,
         xml_node_type_e type, const char *name, const char *value);
 int xml_node_free(xml_tree_t *xml, xml_node_t *node);
 
-xml_tree_t *xml_creat(const char *fname, xml_option_t *opt);
-xml_tree_t *xml_screat(const char *str, xml_option_t *opt);
-xml_tree_t *xml_screat_ext(const char *str, int length, xml_option_t *opt);
+xml_tree_t *xml_creat(const char *fname, xml_opt_t *opt);
+xml_tree_t *xml_screat(const char *str, xml_opt_t *opt);
+xml_tree_t *xml_screat_ext(const char *str, int length, xml_opt_t *opt);
 
 int xml_fwrite(xml_tree_t *xml, const char *fname);
 int xml_fprint(xml_tree_t *xml, FILE *fp);

@@ -111,25 +111,16 @@ void *srch_agent_routine(void *_ctx)
  ******************************************************************************/
 int srch_agent_init(srch_cntx_t *ctx, srch_agent_t *agt, int idx)
 {
-    void *addr;
-    rbt_option_t opt;
+    rbt_opt_t opt;
     char path[FILE_NAME_MAX_LEN];
 
     agt->tidx = idx;
     agt->log = ctx->log;
 
     /* 1. 创建SLAB内存池 */
-    addr = calloc(1, SRCH_SLAB_SIZE);
-    if (NULL == addr)
-    {
-        log_fatal(agt->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return SRCH_ERR;
-    }
-
-    agt->slab = slab_init(addr, SRCH_SLAB_SIZE);
+    agt->slab = slab_creat_by_calloc(SRCH_SLAB_SIZE);
     if (NULL == agt->slab)
     {
-        free(addr);
         log_error(agt->log, "Initialize slab pool failed!");
         return SRCH_ERR;
     }
@@ -333,7 +324,7 @@ static int srch_agent_get_timeout_conn_list(socket_t *sck, srch_conn_timeout_lis
 static int srch_agent_event_timeout_hdl(srch_cntx_t *ctx, srch_agent_t *agt)
 {
     socket_t *sck;
-    list_option_t option;
+    list_opt_t opt;
     srch_conn_timeout_list_t timeout;
     
     memset(&timeout, 0, sizeof(timeout));
@@ -351,13 +342,13 @@ static int srch_agent_event_timeout_hdl(srch_cntx_t *ctx, srch_agent_t *agt)
     do
     {
         /* > 创建链表 */
-        memset(&option, 0, sizeof(option));
+        memset(&opt, 0, sizeof(opt));
 
-        option.pool = (void *)timeout.pool;
-        option.alloc = (mem_alloc_cb_t)mem_pool_alloc;
-        option.dealloc = (mem_dealloc_cb_t)mem_pool_dealloc;
+        opt.pool = (void *)timeout.pool;
+        opt.alloc = (mem_alloc_cb_t)mem_pool_alloc;
+        opt.dealloc = (mem_dealloc_cb_t)mem_pool_dealloc;
 
-        timeout.list = list_creat(&option);
+        timeout.list = list_creat(&opt);
         if (NULL == timeout.list)
         {
             log_error(agt->log, "Create list failed!");
@@ -409,8 +400,8 @@ static int srch_agent_add_conn(srch_cntx_t *ctx, srch_agent_t *agt)
 {
     time_t ctm = time(NULL);
     socket_t *sck;
+    list_opt_t opt;
     srch_add_sck_t *add;
-    list_option_t option;
     srch_agent_socket_extra_t *extra;
     struct epoll_event ev;
 
@@ -446,13 +437,13 @@ static int srch_agent_add_conn(srch_cntx_t *ctx, srch_agent_t *agt)
             return SRCH_ERR;
         }
 
-        memset(&option, 0, sizeof(option));
+        memset(&opt, 0, sizeof(opt));
 
-        option.pool = (void *)agt->slab;
-        option.alloc = (mem_alloc_cb_t)slab_alloc;
-        option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+        opt.pool = (void *)agt->slab;
+        opt.alloc = (mem_alloc_cb_t)slab_alloc;
+        opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-        extra->send_list = list_creat(&option);
+        extra->send_list = list_creat(&opt);
         if (NULL == extra->send_list)
         {
             slab_dealloc(agt->slab, sck);
@@ -483,7 +474,7 @@ static int srch_agent_add_conn(srch_cntx_t *ctx, srch_agent_t *agt)
             log_error(agt->log, "Insert into avl failed! fd:%d seq:%lu", sck->fd, extra->serial);
 
             CLOSE(sck->fd);
-            list_destroy(extra->send_list);
+            list_destroy(extra->send_list, agt->slab, (mem_dealloc_cb_t)slab_dealloc);
             slab_dealloc(agt->slab, sck->extra);
             slab_dealloc(agt->slab, sck);
             return SRCH_ERR;
@@ -758,7 +749,7 @@ static int srch_agent_recv_post(srch_cntx_t *ctx, srch_agent_t *agt, socket_t *s
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
- **注意事项: 
+ **注意事项: TODO: 此处理流程可进一步进行优化
  **作    者: # Qifeng.zou # 2014.11.29 #
  ******************************************************************************/
 static int srch_agent_recv(srch_cntx_t *ctx, srch_agent_t *agt, socket_t *sck)

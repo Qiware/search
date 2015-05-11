@@ -18,14 +18,14 @@
 typedef struct
 {
     char uri[URL_MAX_LEN];          /* 原始URL */
-    uint32_t depth;                 /* 网页深度 */
+    unsigned int depth;             /* 网页深度 */
 
     char ip[IP_ADDR_MAX_LEN];       /* IP地址 */
     int port;                       /* 端口号 */
 
     /* 网页存储信息 */
     char fname[FILE_NAME_MAX_LEN];  /* 文件名 - 无后缀 */
-    uint64_t idx;                   /* 网页编号 */
+    unsigned long long idx;                   /* 网页编号 */
     FILE *fp;                       /* 文件指针 */
     size_t size;                    /* 网页总字节数 */
 
@@ -48,9 +48,9 @@ typedef struct
     list_t *sock_list;              /* 套接字列表
                                        结点数据指针指向socket_t(TODO: 可使用红黑树) */
 
-    uint64_t total;                 /* 计数 */
-    uint64_t err_webpage_total;     /* 异常网页的计数 */
-    uint64_t down_webpage_total;    /* 已爬网页的计数 */
+    unsigned long long total;               /* 计数 */
+    unsigned long long err_webpage_total;   /* 异常网页的计数 */
+    unsigned long long down_webpage_total;  /* 已爬网页的计数 */
 } crwl_worker_t;
 
 /* 网页加载套接字信息 */

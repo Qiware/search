@@ -96,8 +96,7 @@ static crwl_worker_t *crwl_worker_self(crwl_cntx_t *ctx)
  ******************************************************************************/
 int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker, int tidx)
 {
-    void *addr;
-    list_option_t option;
+    list_opt_t opt;
     crwl_conf_t *conf = ctx->conf;
 
     worker->tidx = tidx;
@@ -105,17 +104,9 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker, int tidx)
     worker->scan_tm = time(NULL);
 
     /* > 创建SLAB内存池 */
-    addr = calloc(1, CRWL_SLAB_SIZE);
-    if (NULL == addr)
-    {
-        log_fatal(worker->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return CRWL_ERR;
-    }
-
-    worker->slab = slab_init(addr, CRWL_SLAB_SIZE);
+    worker->slab = slab_creat_by_calloc(CRWL_SLAB_SIZE);
     if (NULL == worker->slab)
     {
-        free(addr);
         log_error(worker->log, "Initialize slab pool failed!");
         return CRWL_ERR;
     }
@@ -123,13 +114,13 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker, int tidx)
     do
     {
         /* > 创建SCK链表 */
-        memset(&option, 0, sizeof(option));
+        memset(&opt, 0, sizeof(opt));
 
-        option.pool = (void *)worker->slab;
-        option.alloc = (mem_alloc_cb_t)slab_alloc;
-        option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+        opt.pool = (void *)worker->slab;
+        opt.alloc = (mem_alloc_cb_t)slab_alloc;
+        opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-        worker->sock_list = list_creat(&option);
+        worker->sock_list = list_creat(&opt);
         if (NULL == worker->sock_list)
         {
             log_error(worker->log, "Create list failed!");
@@ -158,7 +149,6 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker, int tidx)
     } while(0);
 
     /* > 释放空间 */
-    free(addr);
     CLOSE(worker->epid);
 
     return CRWL_ERR;
@@ -206,7 +196,7 @@ static int crwl_worker_fetch_task(crwl_cntx_t *ctx, crwl_worker_t *worker)
     queue_t *workq = ctx->workq[worker->tidx];
 
     /* 1. 判断是否应该取任务 */
-    if (0 == workq->queue.num
+    if (0 == queue_used(workq)
         || worker->sock_list->num >= conf->worker.conn_max_num)
     {
         return CRWL_OK;
@@ -696,7 +686,7 @@ int crwl_worker_remove_sock(crwl_worker_t *worker, socket_t *sck)
         slab_dealloc(worker->slab, p);
     }
 
-    list_destroy(extra->send_list);
+    list_destroy(extra->send_list, worker->slab, (mem_dealloc_cb_t)slab_dealloc);
 
     /* >> 从套接字链表剔除SCK */
     if (list_remove(worker->sock_list, sck))
@@ -802,7 +792,7 @@ int crwl_worker_webpage_creat(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t 
     extra->webpage.idx = ++worker->total;
 
     snprintf(extra->webpage.fname, sizeof(extra->webpage.fname),
-            "%02d-%08ld-%04d%02d%02d%02d%02d%02d%03d",
+            "%02d-%08llu-%04d%02d%02d%02d%02d%02d%03d",
             worker->tidx, extra->webpage.idx,
             loctm.tm_year+1900, loctm.tm_mon+1, loctm.tm_mday,
             loctm.tm_hour, loctm.tm_min, loctm.tm_sec, sck->crtm.millitm);
@@ -889,7 +879,7 @@ int crwl_worker_webpage_finfo(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t 
 socket_t *crwl_worker_socket_alloc(crwl_worker_t *worker)
 {
     socket_t *sck;
-    list_option_t option;
+    list_opt_t opt;
     crwl_worker_socket_extra_t *extra;
 
     /* > 创建SCK对象 */
@@ -912,13 +902,13 @@ socket_t *crwl_worker_socket_alloc(crwl_worker_t *worker)
     memset(extra, 0, sizeof(crwl_worker_socket_extra_t));
 
     /* > 创建发送链表 */
-    memset(&option, 0, sizeof(option));
+    memset(&opt, 0, sizeof(opt));
 
-    option.pool = (void *)worker->slab;
-    option.alloc = (mem_alloc_cb_t)slab_alloc;
-    option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+    opt.pool = (void *)worker->slab;
+    opt.alloc = (mem_alloc_cb_t)slab_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-    extra->send_list = list_creat(&option);
+    extra->send_list = list_creat(&opt);
     if (NULL == extra->send_list)
     {
         log_error(worker->log, "Create list failed!");

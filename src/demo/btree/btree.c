@@ -1,18 +1,24 @@
 #include "btree.h"
 
 #define BTREE_M     (3)
-#define BTREE_NUM   (10)
+#define BTREE_NUM   (20)
 #define INPUT_LEN   (32)
 #define __AUTO_INPUT__
 
 int main(void)
 {
-    int ret = 0, key = 0, idx = 0;
-    btree_t *btree = NULL;
-    char input[INPUT_LEN] = {0};
+    int ret, key, idx;
+    btree_t *btree;
+    btree_opt_t opt;
+    char input[INPUT_LEN];
 
-    ret = btree_creat(&btree, BTREE_M);
-    if (0 != ret)
+    /* > 创建B树 */
+    opt.pool = (void *)NULL;
+    opt.alloc = (mem_alloc_cb_t)mem_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
+
+    btree = btree_creat(BTREE_M, &opt);
+    if (NULL == btree)
     {
         fprintf(stderr, "[%s][%d] Create btree failed!\n", __FILE__, __LINE__);
         return -1;
@@ -20,9 +26,10 @@ int main(void)
 
     fprintf(stderr, "[%s][%d] Create btree success!\n", __FILE__, __LINE__);
 
+    /* > 插入关键字 */
     for(idx=0; idx<BTREE_NUM; idx++)
     {
-        btree_insert(btree, random()%50);
+        btree_insert(btree, random());
     }
 
 	btree_insert(btree, 14);
@@ -36,6 +43,7 @@ int main(void)
 
     btree_print(btree);
 
+    /* > 操作B树 */
     while(1)
     {
         memset(input, 0, sizeof(input));
@@ -57,7 +65,6 @@ int main(void)
         else if (0 == strcasecmp(input, "d")
             || 0 == strcasecmp(input, "delete"))
         {
-            
             scanf(" %s", input);
             key = atoi(input);
 
@@ -65,7 +72,6 @@ int main(void)
             btree_print(btree);
             continue;
         }
-
 
         ret = btree_insert(btree, key);
         if (0 != ret)
@@ -79,6 +85,6 @@ int main(void)
         btree_print(btree);
     }
 
-    btree_destroy(&btree);
+    btree_destroy(btree);
     return 0;
 }

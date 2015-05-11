@@ -195,7 +195,7 @@ static int mon_crwl_frame(mon_crwl_setup_cb_t setup, mon_crwl_print_cb_t print, 
  ******************************************************************************/
 static int mon_crwl_query_worker_stat_setup(crwl_cmd_t *cmd)
 {
-    cmd->type = htonl(CRWL_CMD_QUERY_WORKER_STAT_REQ);
+    cmd->type = htonl(MSG_QUERY_WORKER_STAT_REQ);
     return 0;
 }
 
@@ -241,7 +241,7 @@ static int mon_crwl_query_worker_stat_print(crwl_cmd_t *cmd)
         stat->worker[idx].err_webpage_total = ntoh64(stat->worker[idx].err_webpage_total);
 
         /* 显示状态 */
-        fprintf(stderr, "    %8d | %-12d | %-8ld | %-8ld\n",
+        fprintf(stderr, "    %8d | %-12d | %-8llu | %-8llu\n",
                 idx+1,
                 stat->worker[idx].connections,
                 stat->worker[idx].down_webpage_total,
@@ -325,7 +325,7 @@ static int mon_crwl_query_worker_stat_req(menu_cntx_t *ctx, menu_item_t *menu, v
  ******************************************************************************/
 static int mon_crwl_query_workq_stat_setup(crwl_cmd_t *cmd)
 {
-    cmd->type = htonl(CRWL_CMD_QUERY_WORKQ_STAT_REQ);
+    cmd->type = htonl(MSG_QUERY_WORKQ_STAT_REQ);
     return 0;
 }
 
@@ -399,7 +399,7 @@ static int mon_crwl_query_workq_stat_req(menu_cntx_t *ctx, menu_item_t *menu, vo
  ******************************************************************************/
 static int mon_crwl_query_conf_setup(crwl_cmd_t *cmd)
 {
-    cmd->type = htonl(CRWL_CMD_QUERY_CONF_REQ);
+    cmd->type = htonl(MSG_QUERY_CONF_REQ);
     return 0;
 }
 
@@ -474,7 +474,7 @@ static int mon_crwl_query_conf_req(menu_cntx_t *ctx, menu_item_t *menu, void *ar
  ******************************************************************************/
 static int mon_crwl_switch_sched_setup(crwl_cmd_t *cmd)
 {
-    cmd->type = htonl(CRWL_CMD_SWITCH_SCHED_REQ);
+    cmd->type = htonl(MSG_SWITCH_SCHED_REQ);
     return 0;
 }
 

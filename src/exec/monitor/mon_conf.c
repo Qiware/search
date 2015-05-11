@@ -32,7 +32,7 @@ static int mon_conf_load_menu(xml_tree_t *xml, mon_conf_t *conf)
     }
     else
     {
-        conf->menu.width = atoi(node->value);
+        conf->menu.width = atoi(node->value.str);
     }
 
     return 0;
@@ -52,7 +52,7 @@ static int mon_conf_load_menu(xml_tree_t *xml, mon_conf_t *conf)
         break; \
     } \
     \
-    snprintf((conf)->ip, sizeof((conf)->ip), "%s", (char *)node->value); \
+    snprintf((conf)->ip, sizeof((conf)->ip), "%s", (char *)node->value.str); \
     \
     snprintf(node_path, sizeof(node_path), "%s.PORT", _path); \
     \
@@ -62,7 +62,7 @@ static int mon_conf_load_menu(xml_tree_t *xml, mon_conf_t *conf)
         break; \
     } \
     \
-    (conf)->port = atoi(node->value); \
+    (conf)->port = atoi(node->value.str); \
 }
 
 /******************************************************************************
@@ -78,8 +78,8 @@ static int mon_conf_load_menu(xml_tree_t *xml, mon_conf_t *conf)
  ******************************************************************************/
 mon_conf_t *mon_conf_load(const char *path)
 {
+    xml_opt_t opt;
     xml_tree_t *xml;
-    xml_option_t opt;
     mon_conf_t *conf;
     mem_pool_t *pool;
 

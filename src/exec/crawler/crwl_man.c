@@ -126,8 +126,8 @@ void *crwl_manager_routine(void *_ctx)
 static crwl_man_t *crwl_man_init(crwl_cntx_t *ctx)
 {
     crwl_man_t *man;
-    avl_option_t option;
-    list_option_t list_option;
+    avl_opt_t opt;
+    list_opt_t list_opt;
 
     /* > 创建对象 */
     man = (crwl_man_t *)slab_alloc(ctx->slab, sizeof(crwl_man_t));
@@ -145,13 +145,13 @@ static crwl_man_t *crwl_man_init(crwl_cntx_t *ctx)
     do
     {
         /* > 创建AVL树 */
-        memset(&option, 0, sizeof(option));
+        memset(&opt, 0, sizeof(opt));
 
-        option.pool = man->slab;
-        option.alloc = (mem_alloc_cb_t)slab_alloc;
-        option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+        opt.pool = man->slab;
+        opt.alloc = (mem_alloc_cb_t)slab_alloc;
+        opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-        man->reg = avl_creat(&option, (key_cb_t)crwl_man_reg_key_cb, (avl_cmp_cb_t)crwl_man_reg_cmp_cb);
+        man->reg = avl_creat(&opt, (key_cb_t)avl_key_cb_int32, (avl_cmp_cb_t)avl_cmp_cb_int32);
         if (NULL == man->reg)
         {
             log_error(man->log, "Create AVL failed!");
@@ -159,13 +159,13 @@ static crwl_man_t *crwl_man_init(crwl_cntx_t *ctx)
         }
 
         /* > 创建链表 */
-        memset(&list_option, 0, sizeof(list_option));
+        memset(&list_opt, 0, sizeof(list_opt));
 
-        list_option.pool = man->slab;
-        list_option.alloc = (mem_alloc_cb_t)slab_alloc;
-        list_option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+        list_opt.pool = man->slab;
+        list_opt.alloc = (mem_alloc_cb_t)slab_alloc;
+        list_opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-        man->mesg_list = list_creat(&list_option);
+        man->mesg_list = list_creat(&list_opt);
         if (NULL == man->mesg_list)
         {
             log_error(man->log, "Create list failed!");
@@ -190,13 +190,10 @@ static crwl_man_t *crwl_man_init(crwl_cntx_t *ctx)
     } while(0);
 
     /* > 释放空间 */
-    if (NULL != man->reg)
-    {
-        avl_destroy(man->reg);
-    }
+    if (NULL != man->reg) { avl_destroy(man->reg); }
     if (NULL != man->mesg_list)
     {
-        list_destroy(man->mesg_list);
+        list_destroy(man->mesg_list, man->slab, (mem_dealloc_cb_t)slab_dealloc);
     }
     CLOSE(man->fd);
     slab_dealloc(ctx->slab, man);
@@ -247,44 +244,6 @@ static int crwl_man_register(crwl_man_t *man, int type, crwl_man_reg_cb_t proc, 
     }
 
     return CRWL_OK;
-}
-
-/******************************************************************************
- **函数名称: crwl_man_reg_key_cb
- **功    能: 生成KEY的函数
- **输入参数: 
- **     _reg: 注册数据
- **     len: 注册数据长度
- **输出参数:
- **返    回: KEY值
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2015.02.11 #
- ******************************************************************************/
-static uint32_t crwl_man_reg_key_cb(void *_reg, size_t len)
-{
-    crwl_man_reg_t *reg = (crwl_man_reg_t *)_reg;
-
-    return reg->type;
-}
-
-/******************************************************************************
- **函数名称: crwl_man_reg_cmp_cb
- **功    能: 比较KEY的函数
- **输入参数: 
- **     man: 管理对象
- **     _reg: 注册的数据信息(类型: crwl_man_reg_t)
- **输出参数:
- **返    回: =0:相等 <0:小于 >0:大于
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2015.02.11 #
- ******************************************************************************/
-static int crwl_man_reg_cmp_cb(void *type, const void *_reg)
-{
-    const crwl_man_reg_t *reg = (const crwl_man_reg_t *)_reg;
-
-    return (*(uint32_t *)type - reg->type);
 }
 
 /******************************************************************************
@@ -456,7 +415,7 @@ static int crwl_man_query_conf_req_hdl(crwl_cntx_t *ctx,
     cmd = &item->cmd;
     conf = (crwl_cmd_conf_t *)&cmd->data;
 
-    cmd->type = htonl(CRWL_CMD_QUERY_CONF_RESP);
+    cmd->type = htonl(MSG_QUERY_CONF_RESP);
 
     conf->log.level = htonl(ctx->conf->log.level);      /* 日志级别 */
     conf->log.syslevel = htonl(ctx->conf->log.syslevel);    /* 系统日志级别 */
@@ -521,7 +480,7 @@ static int crwl_man_query_worker_stat_req_hdl(crwl_cntx_t *ctx,
     cmd = &item->cmd;
     stat = (crwl_cmd_worker_stat_t *)&cmd->data;
 
-    cmd->type = htonl(CRWL_CMD_QUERY_WORKER_STAT_RESP);
+    cmd->type = htonl(MSG_QUERY_WORKER_STAT_RESP);
 
     /* 1. 获取启动时间 */
     stat->stm = htonl(ctx->run_tm);
@@ -590,15 +549,15 @@ static int crwl_man_query_workq_stat_req_hdl(crwl_cntx_t *ctx,
     cmd = &item->cmd;
     stat = (crwl_cmd_workq_stat_t *)&cmd->data;
 
-    cmd->type = htonl(CRWL_CMD_QUERY_WORKQ_STAT_RESP);
+    cmd->type = htonl(MSG_QUERY_WORKQ_STAT_RESP);
 
     for (idx=0; idx<ctx->conf->worker.num; ++idx)
     {
         workq = ctx->workq[idx];
 
         snprintf(stat->queue[idx].name, sizeof(stat->queue[idx].name), "WORKQ-%02d", idx+1);
-        stat->queue[idx].num = htonl(workq->queue.num);
-        stat->queue[idx].max = htonl(workq->queue.max);
+        stat->queue[idx].num = htonl(workq->ring->num);
+        stat->queue[idx].max = htonl(workq->ring->max);
 
         ++stat->num;
     }
@@ -656,7 +615,7 @@ static int crwl_man_switch_sched_req_hdl(crwl_cntx_t *ctx,
 
     conf->sched_stat = conf->sched_stat? false : true; /* 切换状态 */
 
-    cmd->type = htonl(CRWL_CMD_SWITCH_SCHED_RESP);
+    cmd->type = htonl(MSG_SWITCH_SCHED_RESP);
     stat->sched_stat = htonl(conf->sched_stat);
 
     /* > 放入队尾 */
@@ -690,10 +649,10 @@ static int crwl_man_reg_cb(crwl_man_t *man)
     }
 
     /* 注册回调函数 */
-    CRWL_REG(man, CRWL_CMD_QUERY_CONF_REQ, (crwl_man_reg_cb_t)crwl_man_query_conf_req_hdl, man);
-    CRWL_REG(man, CRWL_CMD_QUERY_WORKER_STAT_REQ, (crwl_man_reg_cb_t)crwl_man_query_worker_stat_req_hdl, man);
-    CRWL_REG(man, CRWL_CMD_QUERY_WORKQ_STAT_REQ, (crwl_man_reg_cb_t)crwl_man_query_workq_stat_req_hdl, man);
-    CRWL_REG(man, CRWL_CMD_SWITCH_SCHED_REQ, (crwl_man_reg_cb_t)crwl_man_switch_sched_req_hdl, man);
+    CRWL_REG(man, MSG_QUERY_CONF_REQ, (crwl_man_reg_cb_t)crwl_man_query_conf_req_hdl, man);
+    CRWL_REG(man, MSG_QUERY_WORKER_STAT_REQ, (crwl_man_reg_cb_t)crwl_man_query_worker_stat_req_hdl, man);
+    CRWL_REG(man, MSG_QUERY_WORKQ_STAT_REQ, (crwl_man_reg_cb_t)crwl_man_query_workq_stat_req_hdl, man);
+    CRWL_REG(man, MSG_SWITCH_SCHED_REQ, (crwl_man_reg_cb_t)crwl_man_switch_sched_req_hdl, man);
 
     return CRWL_OK;
 }

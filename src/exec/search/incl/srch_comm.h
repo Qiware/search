@@ -24,15 +24,15 @@ typedef struct
 } srch_opt_t;
 
 /* 注册回调类型 */
-typedef int (*srch_reg_cb_t)(uint8_t type, char *buff, size_t len, void *args, log_cycle_t *log);
+typedef int (*srch_reg_cb_t)(unsigned int type, char *buff, size_t len, void *args, log_cycle_t *log);
 
 /* 注册对象 */
 typedef struct
 {
-    uint8_t type;                           /* 数据类型 范围:(0 ~ SRCH_MSG_TYPE_MAX) */
+    unsigned int type:8;                    /* 数据类型 范围:(0 ~ SRCH_MSG_TYPE_MAX) */
 #define SRCH_REG_FLAG_UNREG     (0)         /* 0: 未注册 */
 #define SRCH_REG_FLAG_REGED     (1)         /* 1: 已注册 */
-    uint8_t flag;                           /* 注册标志 范围:(0: 未注册 1: 已注册) */
+    unsigned int flag:8;                    /* 注册标志 范围:(0: 未注册 1: 已注册) */
     srch_reg_cb_t proc;                     /* 对应数据类型的处理函数 */
     void *args;                             /* 附加参数 */
 } srch_reg_t;
@@ -41,7 +41,7 @@ typedef struct
 typedef struct
 {
     int fd;                                 /* 套接字 */
-    uint64_t serial;                        /* SCK流水号 */
+    unsigned long long serial;              /* SCK流水号 */
 } srch_add_sck_t;
 
 /* 超时连接链表 */

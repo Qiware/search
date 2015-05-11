@@ -161,9 +161,9 @@ typedef struct
 #define sprint_init(sp, s) ((sp)->str = (s), (sp)->ptr = s)
 
 
-char *xml_fload(const char *fname, xml_option_t *opt);
+char *xml_fload(const char *fname, xml_opt_t *opt);
 
-xml_tree_t *xml_init(xml_option_t *opt);
+xml_tree_t *xml_init(xml_opt_t *opt);
 int xml_parse(xml_tree_t *xml, Stack_t *stack, const char *str);
 int xml_fprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, FILE *fp);
 int xml_sprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, sprint_t *sp);

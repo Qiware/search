@@ -14,16 +14,17 @@
 #include <stdarg.h>
 #include <sys/un.h>
 #include <signal.h>
+#include <sys/shm.h>
 #include <pthread.h>
 #include <stdbool.h>
+#include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/timeb.h>
 #include <arpa/inet.h>
-#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-
+#include <sys/resource.h>
 
 /* 宏定义 */
 #define FILE_NAME_MAX_LEN   (256)           /* 文件名最大长度 */
@@ -40,6 +41,8 @@
 
 #define INVALID_FD          (-1)            /* 非法文件描述符 */
 #define INVALID_PID         (-1)            /* 非法进程ID */
+
+#define ISPOWEROF2(x)    (0 == (((x)-1) & (x))) /* 判断x是否为2的n次方(2^n) */
 
 /* 内存单位 */
 #define KB                  (1024)          /* KB */
@@ -61,6 +64,11 @@
     (u_char *) (((uintptr_t) (p) + ((uintptr_t) a - 1)) & ~((uintptr_t) a - 1))
 #define PTR_ALIGNMENT   sizeof(unsigned long)
 
+/* 变量成员在结构体中的偏移量 */
+#if !defined(offsetof)
+#define offsetof(type, field)   ((size_t)&(((type *)0)->field))
+#endif /*offsetof*/
+
 /******************************************************************************
  **函数名称: key_cb_t
  **功    能: 为唯一键产生KEY值
@@ -73,7 +81,7 @@
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.09 #
  ******************************************************************************/
-typedef uint32_t (*key_cb_t)(const void *pkey, size_t pkey_len);
+typedef unsigned int (*key_cb_t)(const void *pkey, size_t pkey_len);
 
 /******************************************************************************
  **函数名称: mem_alloc_cb_t

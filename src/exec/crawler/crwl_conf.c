@@ -28,8 +28,8 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
  ******************************************************************************/
 crwl_conf_t *crwl_conf_load(const char *path, log_cycle_t *log)
 {
+    xml_opt_t opt;
     xml_tree_t *xml;
-    xml_option_t opt;
     crwl_conf_t *conf;
     mem_pool_t *pool;
 
@@ -111,7 +111,7 @@ static int _crwl_conf_load(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
         node = xml_rquery(xml, nail, "LEVEL");
         if (NULL != node)
         {
-            conf->log.level = log_get_level(node->value);
+            conf->log.level = log_get_level(node->value.str);
         }
         else
         {
@@ -122,7 +122,7 @@ static int _crwl_conf_load(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
         node = xml_rquery(xml, nail, "SYS_LEVEL");
         if (NULL != node)
         {
-            conf->log.syslevel = log_get_level(node->value);
+            conf->log.syslevel = log_get_level(node->value.str);
         }
         else
         {
@@ -151,7 +151,7 @@ static int _crwl_conf_load(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
     }
     else
     {
-        worker->num = atoi(node->value);
+        worker->num = atoi(node->value.str);
     }
 
     if (worker->num <= 0)
@@ -168,7 +168,7 @@ static int _crwl_conf_load(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
         return CRWL_ERR;
     }
 
-    worker->conn_max_num = atoi(node->value);
+    worker->conn_max_num = atoi(node->value.str);
     if (worker->conn_max_num <= 0)
     {
         worker->conn_max_num = CRWL_CONN_MIN_NUM;
@@ -186,7 +186,7 @@ static int _crwl_conf_load(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
         return CRWL_ERR;
     }
 
-    worker->conn_tmout_sec = atoi(node->value);
+    worker->conn_tmout_sec = atoi(node->value.str);
     if (worker->conn_tmout_sec <= 0)
     {
         worker->conn_tmout_sec = CRWL_CONN_TMOUT_SEC;
@@ -210,7 +210,7 @@ static int _crwl_conf_load(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
         return CRWL_ERR;
     }
 
-    conf->download.depth = atoi(node->value);
+    conf->download.depth = atoi(node->value.str);
 
     /* 2 获取存储路径 */
     node = xml_rquery(xml, nail, "PATH");
@@ -220,7 +220,7 @@ static int _crwl_conf_load(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
         return CRWL_ERR;
     }
 
-    snprintf(conf->download.path, sizeof(conf->download.path), "%s", node->value);
+    snprintf(conf->download.path, sizeof(conf->download.path), "%s", node->value.str);
 
     /* 3 任务队列配置(相对查找) */
     node = xml_query(xml, "CRAWLER.WORKQ.COUNT");
@@ -230,7 +230,7 @@ static int _crwl_conf_load(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
         return CRWL_ERR;
     }
 
-    conf->workq_count = atoi(node->value);
+    conf->workq_count = atoi(node->value.str);
     if (conf->workq_count <= 0)
     {
         conf->workq_count = CRWL_WORKQ_MAX_NUM;
@@ -244,7 +244,7 @@ static int _crwl_conf_load(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
         return CRWL_ERR;
     }
 
-    conf->man_port = atoi(node->value);
+    conf->man_port = atoi(node->value.str);
 
     /* > 获取Redis配置 */
     if (crwl_conf_load_redis(xml, conf, log))
@@ -299,9 +299,9 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
     item = start;
     while (NULL != item)
     {
-        if (strcmp(item->name, "ITEM"))
+        if (strcmp(item->name.str, "ITEM"))
         {
-            log_error(log, "Mark name isn't right! mark:%s", item->name);
+            log_error(log, "Mark name isn't right! mark:%s", item->name.str);
             return CRWL_ERR;
         }
         ++redis->num;
@@ -328,7 +328,7 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
             return CRWL_ERR;
         }
 
-        snprintf(redis->conf[idx].ip, sizeof(redis->conf[idx].ip), "%s", node->value);
+        snprintf(redis->conf[idx].ip, sizeof(redis->conf[idx].ip), "%s", node->value.str);
 
         /* 获取PORT地址 */
         node = xml_rquery(xml, item, "PORT");
@@ -338,7 +338,7 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
             return CRWL_ERR;
         }
 
-        redis->conf[idx].port = atoi(node->value);
+        redis->conf[idx].port = atoi(node->value.str);
 
         /* 下一结点 */
         item = item->next;
@@ -353,7 +353,7 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
         return CRWL_ERR;
     }
 
-    snprintf(redis->taskq, sizeof(redis->taskq), "%s", node->value);
+    snprintf(redis->taskq, sizeof(redis->taskq), "%s", node->value.str);
 
     /* > 获取哈希表名 */
     node = xml_rquery(xml, nail, "DONE_TAB.NAME");  /* DONE哈希表 */
@@ -363,7 +363,7 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
         return CRWL_ERR;
     }
 
-    snprintf(redis->done_tab, sizeof(redis->done_tab), "%s", node->value);
+    snprintf(redis->done_tab, sizeof(redis->done_tab), "%s", node->value.str);
 
     node = xml_rquery(xml, nail, "PUSH_TAB.NAME");  /* PUSH哈希表 */
     if (NULL == node)
@@ -372,7 +372,7 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
         return CRWL_ERR;
     }
 
-    snprintf(redis->push_tab, sizeof(redis->push_tab), "%s", node->value);
+    snprintf(redis->push_tab, sizeof(redis->push_tab), "%s", node->value.str);
 
     return CRWL_OK;
 }

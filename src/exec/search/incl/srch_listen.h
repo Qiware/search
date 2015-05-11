@@ -12,7 +12,7 @@ typedef struct
     int lsn_sck_id;             /* 侦听套接字 */
     int cmd_sck_id;             /* 命令套接字 */
     log_cycle_t *log;           /* 日志对象 */
-    uint64_t serial;            /* SCK流水号 */
+    unsigned long long serial;  /* SCK流水号 */
 } srch_listen_t;
 
 void *srch_listen_routine(void *_ctx);

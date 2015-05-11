@@ -3,7 +3,8 @@
 pkill -9 crawler
 pkill -9 filter
 pkill -9 search
-pkill -9 client
+pkill -9 monitor
+pkill -9 invertd
 pkill -9 logsvr
 pkill -9 smtc_rsvr
 pkill -9 smtc_ssvr

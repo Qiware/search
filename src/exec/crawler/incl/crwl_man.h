@@ -25,12 +25,12 @@ typedef struct
 
 /* 回调函数类型 */
 typedef int (*crwl_man_reg_cb_t)(crwl_cntx_t *ctx,
-        crwl_man_t *man, uint32_t type, char *buff, struct sockaddr_un *from, void *args);
+        crwl_man_t *man, unsigned int type, char *buff, struct sockaddr_un *from, void *args);
 
 /* 注册信息 */
 typedef struct
 {
-    uint32_t type;                      /* 消息类型 */
+    unsigned int type;                  /* 消息类型 */
     crwl_man_reg_cb_t proc;             /* 回调函数指针 */
     void *args;                         /* 附加参数 */
 } crwl_man_reg_t;

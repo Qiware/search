@@ -126,8 +126,8 @@ void *flt_manager_routine(void *_ctx)
 static flt_man_t *flt_man_init(flt_cntx_t *ctx)
 {
     flt_man_t *man;
-    avl_option_t option;
-    list_option_t list_option;
+    avl_opt_t opt;
+    list_opt_t list_opt;
 
     /* > 创建对象 */
     man = (flt_man_t *)slab_alloc(ctx->slab, sizeof(flt_man_t));
@@ -145,13 +145,13 @@ static flt_man_t *flt_man_init(flt_cntx_t *ctx)
     do
     {
         /* > 创建AVL树 */
-        memset(&option, 0, sizeof(option));
+        memset(&opt, 0, sizeof(opt));
 
-        option.pool = man->slab;
-        option.alloc = (mem_alloc_cb_t)slab_alloc;
-        option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+        opt.pool = man->slab;
+        opt.alloc = (mem_alloc_cb_t)slab_alloc;
+        opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-        man->reg = avl_creat(&option, (key_cb_t)flt_man_reg_key_cb, (avl_cmp_cb_t)flt_man_reg_cmp_cb);
+        man->reg = avl_creat(&opt, (key_cb_t)flt_man_reg_key_cb, (avl_cmp_cb_t)flt_man_reg_cmp_cb);
         if (NULL == man->reg)
         {
             log_error(man->log, "Create AVL failed!");
@@ -159,13 +159,13 @@ static flt_man_t *flt_man_init(flt_cntx_t *ctx)
         }
 
         /* > 创建链表 */
-        memset(&list_option, 0, sizeof(list_option));
+        memset(&list_opt, 0, sizeof(list_opt));
 
-        list_option.pool = man->slab;
-        list_option.alloc = (mem_alloc_cb_t)slab_alloc;
-        list_option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+        list_opt.pool = man->slab;
+        list_opt.alloc = (mem_alloc_cb_t)slab_alloc;
+        list_opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-        man->mesg_list = list_creat(&list_option);
+        man->mesg_list = list_creat(&list_opt);
         if (NULL == man->mesg_list)
         {
             log_error(man->log, "Create list failed!");
@@ -196,7 +196,7 @@ static flt_man_t *flt_man_init(flt_cntx_t *ctx)
     }
     if (NULL != man->mesg_list)
     {
-        list_destroy(man->mesg_list);
+        list_destroy(man->mesg_list, man->slab, (mem_dealloc_cb_t)slab_dealloc);
     }
     CLOSE(man->fd);
     slab_dealloc(ctx->slab, man);
@@ -272,7 +272,7 @@ static uint32_t flt_man_reg_key_cb(void *_reg, size_t len)
  **函数名称: flt_man_reg_cmp_cb
  **功    能: 比较KEY的函数
  **输入参数: 
- **     man: 管理对象
+ **     type: 类型(唯一值)
  **     _reg: 注册的数据信息(类型: flt_man_reg_t)
  **输出参数:
  **返    回: =0:相等 <0:小于 >0:大于

@@ -17,7 +17,7 @@ static void sdtp_setup_conf(sdtp_conf_t *conf)
     conf->recv_thd_num = 1;
     conf->work_thd_num = 1;
     conf->rqnum = 3;
-    conf->recvq.max = 500;
+    conf->recvq.max = 1024;
     conf->recvq.size = 40960;
 }
 
@@ -34,7 +34,7 @@ int main(int argc, const char *argv[])
 
     signal(SIGPIPE, SIG_IGN);
                                        
-    syslog_init(LOG_LEVEL_ERROR, "./sdtp.log2");
+    plog_init(LOG_LEVEL_ERROR, "./sdtp.log2");
     log = log_init(LOG_LEVEL_ERROR, "./sdtp.log");
 
     /* 1. 接收端初始化 */

@@ -115,7 +115,6 @@ int crwl_usage(const char *exec)
 crwl_cntx_t *crwl_cntx_init(char *pname, const char *path)
 {
     int idx;
-    void *addr;
     log_cycle_t *log;
     crwl_cntx_t *ctx;
     crwl_conf_t *conf;
@@ -156,17 +155,10 @@ crwl_cntx_t *crwl_cntx_init(char *pname, const char *path)
         ctx->conf = conf;
         ctx->log = log;
         log_set_level(log, conf->log.level);
-        syslog_set_level(conf->log.syslevel);
+        plog_set_level(conf->log.syslevel);
 
         /* 5. 创建内存池 */
-        addr = (void *)calloc(1, 30 * MB);
-        if (NULL == addr)
-        {
-            log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
-            break;
-        }
-
-        ctx->slab = slab_init(addr, 30 * MB);
+        ctx->slab = slab_creat_by_calloc(30 * MB);
         if (NULL == ctx->slab)
         {
             log_error(log, "Init slab failed!");
@@ -188,7 +180,7 @@ crwl_cntx_t *crwl_cntx_init(char *pname, const char *path)
             if (NULL == ctx->workq[idx])
             {
                 log_error(ctx->log, "Create queue failed! workq_count:%d", conf->workq_count);
-                break;
+                goto CRWL_INIT_ERR;
             }
         }
 
@@ -216,6 +208,7 @@ crwl_cntx_t *crwl_cntx_init(char *pname, const char *path)
         return ctx;
     } while (0);
 
+CRWL_INIT_ERR:
     /* 释放内存 */
     if (ctx->conf) { crwl_conf_destroy(ctx->conf); }
     if (ctx->workq) { free(ctx->workq); }
@@ -249,7 +242,7 @@ void crwl_cntx_destroy(crwl_cntx_t *ctx)
 
     crwl_worker_tpool_destroy(ctx);
     log_destroy(&ctx->log);
-    syslog_destroy();
+    plog_destroy();
 }
 
 /******************************************************************************
@@ -310,7 +303,7 @@ static int crwl_worker_tpool_creat(crwl_cntx_t *ctx)
 {
     int idx, num;
     crwl_worker_t *worker;
-    thread_pool_option_t option;
+    thread_pool_opt_t opt;
     const crwl_worker_conf_t *conf = &ctx->conf->worker;
 
     /* > 新建Worker对象 */
@@ -322,13 +315,13 @@ static int crwl_worker_tpool_creat(crwl_cntx_t *ctx)
     }
 
     /* > 创建Worker线程池 */
-    memset(&option, 0, sizeof(option));
+    memset(&opt, 0, sizeof(opt));
 
-    option.pool = (void *)ctx->slab;
-    option.alloc = (mem_alloc_cb_t)slab_alloc;
-    option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+    opt.pool = (void *)ctx->slab;
+    opt.alloc = (mem_alloc_cb_t)slab_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-    ctx->worker_pool = thread_pool_init(conf->num, &option, worker);
+    ctx->worker_pool = thread_pool_init(conf->num, &opt, worker);
     if (NULL == ctx->worker_pool)
     {
         log_error(ctx->log, "Initialize thread pool failed!");
@@ -412,17 +405,17 @@ int crwl_worker_tpool_destroy(crwl_cntx_t *ctx)
  ******************************************************************************/
 static int crwl_sched_tpool_creat(crwl_cntx_t *ctx)
 {
-    thread_pool_option_t option;
+    thread_pool_opt_t opt;
 
-    memset(&option, 0, sizeof(option));
+    memset(&opt, 0, sizeof(opt));
 
     /* 1. 设置内存池信息 */
-    option.pool = (void *)ctx->slab;
-    option.alloc = (mem_alloc_cb_t)slab_alloc;
-    option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+    opt.pool = (void *)ctx->slab;
+    opt.alloc = (mem_alloc_cb_t)slab_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
     /* 2. 创建Sched线程池 */
-    ctx->scheds = thread_pool_init(CRWL_SCHED_THD_NUM, &option, NULL);
+    ctx->scheds = thread_pool_init(CRWL_SCHED_THD_NUM, &opt, NULL);
     if (NULL == ctx->scheds)
     {
         log_error(ctx->log, "Initialize thread pool failed!");
@@ -523,9 +516,9 @@ log_cycle_t *crwl_init_log(char *fname)
     char path[FILE_NAME_MAX_LEN];
 
     /* 1. 初始化系统日志 */
-    syslog_get_path(path, sizeof(path), basename(fname));
+    plog_get_path(path, sizeof(path), basename(fname));
 
-    if (syslog_init(LOG_LEVEL_ERROR, path))
+    if (plog_init(LOG_LEVEL_ERROR, path))
     {
         fprintf(stderr, "Init syslog failed!");
         return NULL;
@@ -537,8 +530,8 @@ log_cycle_t *crwl_init_log(char *fname)
     log = log_init(LOG_LEVEL_ERROR, path);
     if (NULL == log)
     {
-        sys_error("Initialize log failed!");
-        syslog_destroy();
+        plog_error("Initialize log failed!");
+        plog_destroy();
         return NULL;
     }
 
@@ -599,17 +592,17 @@ static void crwl_signal_hdl(int signum)
     {
         case SIGINT:
         {
-            sys_error("Catch SIGINT [%d] signal!", signum);
+            plog_error("Catch SIGINT [%d] signal!", signum);
             return;
         }
         case SIGPIPE:
         {
-            sys_error("Catch SIGPIPE [%d] signal!", signum);
+            plog_error("Catch SIGPIPE [%d] signal!", signum);
             return;
         }
         default:
         {
-            sys_error("Catch unknown signal! signum:[%d]", signum);
+            plog_error("Catch unknown signal! signum:[%d]", signum);
             return;
         }
     }

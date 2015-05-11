@@ -122,9 +122,9 @@ static log_cycle_t *srch_init_log(char *fname)
     char path[FILE_NAME_MAX_LEN];
 
     /* 1. 初始化系统日志 */
-    syslog_get_path(path, sizeof(path), basename(fname));
+    plog_get_path(path, sizeof(path), basename(fname));
 
-    if (syslog_init(LOG_LEVEL_ERROR, path))
+    if (plog_init(LOG_LEVEL_ERROR, path))
     {
         fprintf(stderr, "Init syslog failed!");
         return NULL;
@@ -136,8 +136,8 @@ static log_cycle_t *srch_init_log(char *fname)
     log = log_init(LOG_LEVEL_ERROR, path);
     if (NULL == log)
     {
-        sys_error("Initialize log failed!");
-        syslog_destroy();
+        plog_error("Initialize log failed!");
+        plog_destroy();
         return NULL;
     }
 
@@ -164,7 +164,6 @@ static log_cycle_t *srch_init_log(char *fname)
  ******************************************************************************/
 srch_cntx_t *srch_cntx_init(char *pname, const char *conf_path)
 {
-    void *addr;
     log_cycle_t *log;
     srch_cntx_t *ctx;
     srch_conf_t *conf;
@@ -204,18 +203,10 @@ srch_cntx_t *srch_cntx_init(char *pname, const char *conf_path)
     ctx->log = log;
     ctx->conf = conf;
     log_set_level(log, conf->log.level);
-    syslog_set_level(conf->log.syslevel);
+    plog_set_level(conf->log.syslevel);
 
     /* 5. 创建内存池 */
-    addr = (void *)calloc(1, 30 * MB);
-    if (NULL == addr)
-    {
-        free(ctx);
-        log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return NULL;
-    }
-
-    ctx->slab = slab_init(addr, 30 * MB);
+    ctx->slab = slab_creat_by_calloc(30 * MB);
     if (NULL == ctx->slab)
     {
         free(ctx);
@@ -287,7 +278,7 @@ void srch_cntx_destroy(srch_cntx_t *ctx)
     srch_agent_pool_destroy(ctx);
 
     log_destroy(&ctx->log);
-    syslog_destroy();
+    plog_destroy();
 }
 
 /******************************************************************************
@@ -306,7 +297,6 @@ int srch_startup(srch_cntx_t *ctx)
 {
     int idx;
     const srch_conf_t *conf = ctx->conf;
-
 
     /* 1. 设置Worker线程回调 */
     for (idx=0; idx<conf->worker_num; ++idx)
@@ -345,7 +335,7 @@ static int srch_creat_worker_pool(srch_cntx_t *ctx)
 {
     int idx, num;
     srch_worker_t *worker;
-    thread_pool_option_t option;
+    thread_pool_opt_t opt;
     const srch_conf_t *conf = ctx->conf;
 
     /* > 新建Worker对象 */
@@ -357,13 +347,13 @@ static int srch_creat_worker_pool(srch_cntx_t *ctx)
     }
 
     /* > 创建Worker线程池 */
-    memset(&option, 0, sizeof(option));
+    memset(&opt, 0, sizeof(opt));
 
-    option.pool = ctx->slab;
-    option.alloc = (mem_alloc_cb_t)slab_alloc;
-    option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+    opt.pool = ctx->slab;
+    opt.alloc = (mem_alloc_cb_t)slab_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-    ctx->worker_pool = thread_pool_init(conf->worker_num, &option, worker);
+    ctx->worker_pool = thread_pool_init(conf->worker_num, &opt, worker);
     if (NULL == ctx->worker_pool)
     {
         log_error(ctx->log, "Initialize thread pool failed!");
@@ -451,7 +441,7 @@ static int srch_creat_agent_pool(srch_cntx_t *ctx)
 {
     int idx, num;
     srch_agent_t *agent;
-    thread_pool_option_t option;
+    thread_pool_opt_t opt;
     const srch_conf_t *conf = ctx->conf;
 
     /* > 新建Agent对象 */
@@ -463,13 +453,13 @@ static int srch_creat_agent_pool(srch_cntx_t *ctx)
     }
 
     /* > 创建Worker线程池 */
-    memset(&option, 0, sizeof(option));
+    memset(&opt, 0, sizeof(opt));
 
-    option.pool = ctx->slab;
-    option.alloc = (mem_alloc_cb_t)slab_alloc;
-    option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+    opt.pool = ctx->slab;
+    opt.alloc = (mem_alloc_cb_t)slab_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-    ctx->agent_pool = thread_pool_init(conf->agent_num, &option, agent);
+    ctx->agent_pool = thread_pool_init(conf->agent_num, &opt, agent);
     if (NULL == ctx->agent_pool)
     {
         log_error(ctx->log, "Initialize thread pool failed!");
@@ -590,7 +580,7 @@ static int srch_proc_lock(void)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.20 #
  ******************************************************************************/
-static int srch_reg_def_hdl(uint8_t type, char *buff, size_t len, void *args, log_cycle_t *log)
+static int srch_reg_def_hdl(unsigned int type, char *buff, size_t len, void *args, log_cycle_t *log)
 {
     static int total = 0;
 
@@ -612,7 +602,7 @@ static int srch_reg_def_hdl(uint8_t type, char *buff, size_t len, void *args, lo
  ******************************************************************************/
 int srch_init_register(srch_cntx_t *ctx)
 {
-    uint32_t idx;
+    unsigned int idx;
     srch_reg_t *reg;
 
     for (idx=0; idx<=SRCH_MSG_TYPE_MAX; ++idx)
@@ -644,7 +634,7 @@ int srch_init_register(srch_cntx_t *ctx)
  **     2. 不允许重复注册 
  **作    者: # Qifeng.zou # 2014.12.20 #
  ******************************************************************************/
-int srch_register(srch_cntx_t *ctx, uint32_t type, srch_reg_cb_t proc, void *args)
+int srch_register(srch_cntx_t *ctx, unsigned int type, srch_reg_cb_t proc, void *args)
 {
     srch_reg_t *reg;
 

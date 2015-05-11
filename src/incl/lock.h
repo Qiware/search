@@ -1,6 +1,8 @@
 #if !defined(__LOCK_H__)
 #define __LOCK_H__
 
+#include "comm.h"
+
 int _flock(int fd, int type, int whence, int offset, int len);
 int _try_flock(int fd, int type, int whence, int offset, int len);
 

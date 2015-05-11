@@ -88,7 +88,7 @@ static void sdtp_setup_conf(sdtp_ssvr_conf_t *conf)
 
     snprintf(conf->qcf.name, sizeof(conf->qcf.name), "../temp/sdtp/sdtp-ssvr.key");
     conf->qcf.size = 4096;
-    conf->qcf.count = 2000;
+    conf->qcf.count = 2048;
 }
 
 int main(int argc, const char *argv[])
@@ -108,7 +108,7 @@ int main(int argc, const char *argv[])
 
     sdtp_setup_conf(&conf);
 
-    syslog_init(LOG_LEVEL_ERROR, "./sdtp_ssvr.log2");
+    plog_init(LOG_LEVEL_ERROR, "./sdtp_ssvr.plog");
     log = log_init(LOG_LEVEL_ERROR, "./sdtp_ssvr.log");
 
     ctx = sdtp_ssvr_startup(&conf, log);

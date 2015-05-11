@@ -60,8 +60,8 @@ static flt_worker_t *flt_worker_self(flt_cntx_t *ctx)
 static int flt_worker_get_webpage_info(
         const char *path, flt_webpage_info_t *info, log_cycle_t *log)
 {
+    xml_opt_t opt;
     xml_tree_t *xml;
-    xml_option_t opt;
     mem_pool_t *pool;
     xml_node_t *node, *fix;
 
@@ -106,7 +106,7 @@ static int flt_worker_get_webpage_info(
             break;
         }
 
-        snprintf(info->uri, sizeof(info->uri), "%s", node->value);
+        snprintf(info->uri, sizeof(info->uri), "%s", node->value.str);
 
         /* 获取DEPTH字段 */
         node = xml_rquery(xml, fix, "URI.DEPTH");
@@ -116,7 +116,7 @@ static int flt_worker_get_webpage_info(
             break;
         }
 
-        info->depth = atoi(node->value);
+        info->depth = atoi(node->value.str);
 
         /* 获取IP字段 */
         node = xml_rquery(xml, fix, "URI.IP");
@@ -126,7 +126,7 @@ static int flt_worker_get_webpage_info(
             break;
         }
 
-        snprintf(info->ip, sizeof(info->ip), "%s", node->value);
+        snprintf(info->ip, sizeof(info->ip), "%s", node->value.str);
 
         /* 获取PORT字段 */
         node = xml_rquery(xml, fix, "URI.PORT");
@@ -136,7 +136,7 @@ static int flt_worker_get_webpage_info(
             break;
         }
 
-        info->port = atoi(node->value);
+        info->port = atoi(node->value.str);
 
         /* 获取HTML字段 */
         node = xml_rquery(xml, fix, "HTML");
@@ -146,7 +146,7 @@ static int flt_worker_get_webpage_info(
             break;
         }
 
-        snprintf(info->html, sizeof(info->html), "%s", node->value);
+        snprintf(info->html, sizeof(info->html), "%s", node->value.str);
 
         /* 获取HTML.SIZE字段 */
         node = xml_rquery(xml, fix, "HTML.SIZE");
@@ -156,7 +156,7 @@ static int flt_worker_get_webpage_info(
             break;
         }
 
-        info->size = atoi(node->value);
+        info->size = atoi(node->value.str);
         if (info->size <= 0)
         {
             log_info(log, "Html size is zero!");

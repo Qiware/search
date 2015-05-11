@@ -114,9 +114,9 @@ static log_cycle_t *flt_init_log(char *fname)
     char path[FILE_NAME_MAX_LEN];
 
     /* 1. 初始化系统日志 */
-    syslog_get_path(path, sizeof(path), basename(fname));
+    plog_get_path(path, sizeof(path), basename(fname));
 
-    if (syslog_init(LOG_LEVEL_ERROR, path))
+    if (plog_init(LOG_LEVEL_ERROR, path))
     {
         fprintf(stderr, "Init syslog failed!");
         return NULL;
@@ -128,8 +128,8 @@ static log_cycle_t *flt_init_log(char *fname)
     log = log_init(LOG_LEVEL_ERROR, path);
     if (NULL == log)
     {
-        sys_error("Initialize log failed!");
-        syslog_destroy();
+        plog_error("Initialize log failed!");
+        plog_destroy();
         return NULL;
     }
 
@@ -151,10 +151,10 @@ static log_cycle_t *flt_init_log(char *fname)
  ******************************************************************************/
 flt_cntx_t *flt_init(char *pname, const char *path)
 {
-    void *addr;
     flt_cntx_t *ctx;
     flt_conf_t *conf;
     log_cycle_t *log;
+    hash_tab_opt_t opt;
 
     /* > 初始化日志模块 */
     log = flt_init_log(pname);
@@ -177,15 +177,7 @@ flt_cntx_t *flt_init(char *pname, const char *path)
     do
     {
         /* > 创建内存池 */
-        addr = (void *)calloc(1, FLT_SLAB_SIZE);
-        if (NULL == addr)
-        {
-            log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
-            free(ctx);
-            return NULL;
-        }
-
-        ctx->slab = slab_init(addr, FLT_SLAB_SIZE);
+        ctx->slab = slab_creat_by_calloc(FLT_SLAB_SIZE);
         if (NULL == ctx->slab)
         {
             log_error(log, "Init slab failed!");
@@ -202,7 +194,7 @@ flt_cntx_t *flt_init(char *pname, const char *path)
 
         ctx->conf = conf;
         log_set_level(log, conf->log.level);
-        syslog_set_level(conf->log.syslevel);
+        plog_set_level(conf->log.syslevel);
 
         /* > 连接Redis集群 */
         ctx->redis = redis_clst_init(conf->redis.conf, conf->redis.num);
@@ -213,27 +205,32 @@ flt_cntx_t *flt_init(char *pname, const char *path)
         }
 
         /* > 创建工作队列 */
-        ctx->taskq = queue_creat(10000, sizeof(flt_task_t));
+        ctx->taskq = queue_creat(FLT_TASKQ_LEN, sizeof(flt_task_t));
         if (NULL == ctx->taskq)
         {
-            log_error(ctx->log, "Create queue failed!");
+            log_error(ctx->log, "Create queue failed! max:%d", FLT_TASKQ_LEN);
             break;
         }
 
         /* > 创建工作队列 */
-        ctx->crwlq = queue_creat(10000, sizeof(flt_crwl_t));
+        ctx->crwlq = queue_creat(FLT_CRWLQ_LEN, sizeof(flt_crwl_t));
         if (NULL == ctx->crwlq)
         {
-            log_error(ctx->log, "Create queue failed!");
+            log_error(ctx->log, "Create queue failed! max:%d", FLT_CRWLQ_LEN);
             break;
         }
 
         /* > 新建域名IP映射表 */
+        memset(&opt, 0, sizeof(opt));
+
+        opt.pool = (void *)ctx->slab;
+        opt.alloc = (mem_alloc_cb_t)slab_alloc;
+        opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+
         ctx->domain_ip_map = hash_tab_creat(
-                ctx->slab,
                 FLT_DOMAIN_IP_MAP_HASH_MOD,
                 hash_time33_ex,
-                (avl_cmp_cb_t)flt_domain_ip_map_cmp_cb);
+                (avl_cmp_cb_t)flt_domain_ip_map_cmp_cb, &opt);
         if (NULL == ctx->domain_ip_map)
         {
             log_error(log, "Initialize hash table failed!");
@@ -241,11 +238,16 @@ flt_cntx_t *flt_init(char *pname, const char *path)
         }
 
         /* > 新建域名黑名单表 */
+        memset(&opt, 0, sizeof(opt));
+
+        opt.pool = (void *)ctx->slab;
+        opt.alloc = (mem_alloc_cb_t)slab_alloc;
+        opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+
         ctx->domain_blacklist = hash_tab_creat(
-                ctx->slab,
                 FLT_DOMAIN_BLACKLIST_HASH_MOD,
                 hash_time33_ex,
-                (avl_cmp_cb_t)flt_domain_blacklist_cmp_cb);
+                (avl_cmp_cb_t)flt_domain_blacklist_cmp_cb, &opt);
         if (NULL == ctx->domain_blacklist)
         {
             log_error(log, "Initialize hash table failed!");
@@ -263,7 +265,6 @@ flt_cntx_t *flt_init(char *pname, const char *path)
     } while (0);
 
     /* > 释放内存空间 */
-    if (addr) { free(addr); }
     if (ctx->redis) { redis_clst_destroy(ctx->redis); }
     if (ctx->taskq) { queue_destroy(ctx->taskq); }    
     free(ctx);
@@ -289,7 +290,7 @@ void flt_destroy(flt_cntx_t *ctx)
         ctx->log = NULL;
     }
 
-    syslog_destroy();
+    plog_destroy();
 
     if (ctx->redis)
     {
@@ -377,17 +378,17 @@ int flt_startup(flt_cntx_t *ctx)
 static int flt_worker_pool_creat(flt_cntx_t *ctx)
 {
     int idx, num;
-    thread_pool_option_t option;
+    thread_pool_opt_t opt;
     flt_work_conf_t *conf = &ctx->conf->work;
 
-    memset(&option, 0, sizeof(option));
+    memset(&opt, 0, sizeof(opt));
 
     /* 1. 创建Worker线程池 */
-    option.pool = (void *)ctx->slab;
-    option.alloc = (mem_alloc_cb_t)slab_alloc;
-    option.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+    opt.pool = (void *)ctx->slab;
+    opt.alloc = (mem_alloc_cb_t)slab_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-    ctx->worker_pool = thread_pool_init(conf->num, &option, NULL);
+    ctx->worker_pool = thread_pool_init(conf->num, &opt, NULL);
     if (NULL == ctx->worker_pool)
     {
         log_error(ctx->log, "Initialize thread pool failed!");

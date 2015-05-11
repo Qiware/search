@@ -37,7 +37,7 @@ typedef struct
 typedef struct
 {
     char uri[URI_MAX_LEN];                  /* 网页URI */
-    uint32_t depth;                         /* 网页深度 */
+    unsigned int depth;                     /* 网页深度 */
 } crwl_seed_conf_t;
 
 /* Redis配置信息 */
@@ -62,7 +62,7 @@ typedef struct
 
     struct
     {
-        uint32_t depth;                     /* 最大爬取深度 */
+        unsigned int depth;                 /* 最大爬取深度 */
         char path[FILE_PATH_MAX_LEN];       /* 网页存储路径 */
     } download;                             /* 下载配置 */
 

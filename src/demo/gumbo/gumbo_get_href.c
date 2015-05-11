@@ -19,7 +19,7 @@ int main(int argc, const char** argv)
         exit(EXIT_FAILURE);
     }
 
-    log2_init(LOG_LEVEL_DEBUG, "./gumbo.log");
+    plog_init(LOG_LEVEL_DEBUG, "./gumbo.log");
 
     html = gumbo_html_parse(fname);
     if (NULL == html)
