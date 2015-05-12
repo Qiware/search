@@ -33,8 +33,8 @@ SRC_LIST = hash.c \
 			shm_queue.c \
 			btree.c \
 			rb_tree.c \
+			kw_tree.c \
 			avl_tree.c \
-			trie_tree.c \
 			xml_comm.c \
 			xml_print.c \
 			xml_tree.c \
