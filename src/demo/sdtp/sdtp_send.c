@@ -1,6 +1,7 @@
 #include <signal.h>
 #include <sys/time.h>
 
+#include "mesg.h"
 #include "syscall.h"
 #include "sdtp_cli.h"
 #include "sdtp_ssvr.h"
@@ -22,17 +23,12 @@
 
 int sdtp_send_debug(sdtp_cli_t *cli, int secs)
 {
-    size_t loop = 0, idx = 0;
+    size_t idx = 0;
     double sleep2 = 0;
     struct timeval stime, etime;
     int total = 0, fails = 0;
-    char data[SIZE] = {0};
-
-    memset(data, 'A', sizeof(data)-2);
-    data[SIZE-1] = '\n';
-
-    loop = 1000000;
-    Sleep(2);
+    char data[SIZE];
+    srch_mesg_body_t *body;
 
     for (;;)
     {
@@ -40,9 +36,13 @@ int sdtp_send_debug(sdtp_cli_t *cli, int secs)
         sleep2 = 0;
         fails = 0;
         total = 0;
-        for (idx=0; idx<loop; idx++)
+        for (idx=0; idx<LOOP; idx++)
         {
-            if (sdtp_cli_send(cli, idx%3, data, rand()%SIZE + 1))
+            body = (srch_mesg_body_t *)data;
+
+            snprintf(body->words, sizeof(body->words), "%s", "BAIDU");
+
+            if (sdtp_cli_send(cli, MSG_SEARCH_REQ, body, sizeof(srch_mesg_body_t)))
             {
                 idx--;
                 usleep(2);
@@ -70,6 +70,7 @@ int sdtp_send_debug(sdtp_cli_t *cli, int secs)
                 etime.tv_sec - stime.tv_sec,
                 etime.tv_usec - stime.tv_usec,
                 total, fails);
+
     }
 
     pause();
@@ -77,11 +78,11 @@ int sdtp_send_debug(sdtp_cli_t *cli, int secs)
     return 0;
 }
 
-static void sdtp_setup_conf(sdtp_ssvr_conf_t *conf)
+static void sdtp_setup_conf(sdtp_ssvr_conf_t *conf, int port)
 {
     snprintf(conf->name, sizeof(conf->name), "SDTP-SEND");
     snprintf(conf->ipaddr, sizeof(conf->ipaddr), "127.0.0.1");
-    conf->port = 4444;
+    conf->port = port;
     conf->snd_thd_num = 1;
     conf->send_buff_size = 5 * MB;
     conf->recv_buff_size = 2 * MB;
@@ -93,12 +94,18 @@ static void sdtp_setup_conf(sdtp_ssvr_conf_t *conf)
 
 int main(int argc, const char *argv[])
 {
-    int sleep = 5;
+    int sleep = 5, port;
     log_cycle_t *log;
     sdtp_ssvr_cntx_t *ctx;
     sdtp_cli_t *cli;
     sdtp_cli_t *cli2;
     sdtp_ssvr_conf_t conf;
+
+    if (2 != argc)
+    {
+        fprintf(stderr, "Didn't special port!");
+        return -1;
+    }
 
     memset(&conf, 0, sizeof(conf));
 
@@ -106,7 +113,8 @@ int main(int argc, const char *argv[])
 
     nice(-20);
 
-    sdtp_setup_conf(&conf);
+    port = atoi(argv[1]);
+    sdtp_setup_conf(&conf, port);
 
     plog_init(LOG_LEVEL_ERROR, "./sdtp_ssvr.plog");
     log = log_init(LOG_LEVEL_ERROR, "./sdtp_ssvr.log");

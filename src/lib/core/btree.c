@@ -89,7 +89,7 @@ btree_t *btree_creat(int m, btree_opt_t *opt)
  ******************************************************************************/
 static int btree_key_bsearch(const int *keys, int num, int key)
 {
-    int low, mid, high;
+    int low, mid = 0, high;
 
     low = 0;
     high = num - 1;
