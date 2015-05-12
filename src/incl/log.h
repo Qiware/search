@@ -28,8 +28,7 @@ typedef enum
 
 #define LOG_FILE_MAX_NUM        (32)        /* 日志文件最大个数 */
 #define LOG_FILE_CACHE_SIZE     (1 * MB)    /* 日志文件的缓存SIZE */
-#define LOG_SHM_SIZE                        /* 日志共享内存SIZE */\
-    (LOG_FILE_MAX_NUM * LOG_FILE_CACHE_SIZE)
+#define LOG_SHM_SIZE            (LOG_FILE_MAX_NUM * LOG_FILE_CACHE_SIZE) /* 日志共享内存SIZE */
 #define LOG_SYNC_TIMEOUT        (1)         /* 日志超时同步时间 */
 #define LOG_LEVEL_MAX_LEN       (16)        /* 日志级别字串的长度 */
 
@@ -39,11 +38,11 @@ typedef enum
 #define LOG_KEY_PATH            "../temp/log/log.key"  /* 键值路径 */
 #define LOG_SUFFIX              ".log"      /* 日志文件后缀 */
 #define LOG_DEFAULT_TRCLOG      "trc.log"   /* 默认日志名 */
-#define log_default_path(path, size)        /* 默认日志文件路径 */ \
-    snprintf(path, size, "../logs/%s", LOG_DEFAULT_TRCLOG);
-#define LOG_LOCK_FILE           "log_cache.lck" /* 日志锁 */
+#define LOG_LOCK_FILE           "log.lck"   /* 日志锁 */
 #define log_get_lock_path(path, size)       /* 日志锁路径 */ \
-    snprintf(path, size, "../temp/log/%s", LOG_LOCK_FILE)
+{ \
+    snprintf(path, size, "../temp/log/%s", LOG_LOCK_FILE); \
+}
 
 /* DUMP设置 */
 #define LOG_DUMP_COL_NUM        (16)        /* DUMP列数 */

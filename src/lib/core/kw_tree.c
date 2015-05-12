@@ -4,25 +4,12 @@
  ** 文件名: kw_tree.c
  ** 版本号: 1.0
  ** 描  述: KW树的实现
- **
- **  -----------------------------------
- ** |  0x00  |  ....  |  ....  |  0xFF  |
- **  -----------------------------------
- **                  /
- **                 /
- **                 -----------------------------------
- **                |  0x00  |  ....  |  ....  |  0xFF  |
- **                 -----------------------------------
- **                        /
- **                       /
- **                       -----------------------------------
- **                      |  0x00  |  ....  |  ....  |  0xFF  |
- **                       -----------------------------------
- ** 作  者: # Qifeng.zou # 20104.09.01 #
+ ** 作  者: # Qifeng.zou # 2015.05.12 #
  ******************************************************************************/
+#include "comm.h"
 #include "kw_tree.h"
 
-static void kwt_node_free(kwt_tree_t *tree, kwt_node_t *node);
+static void kwt_node_free(kwt_tree_t *tree, kwt_node_t *node, void *mempool, mem_dealloc_cb_t dealloc);
 
 /******************************************************************************
  **函数名称: kwt_creat
@@ -32,11 +19,14 @@ static void kwt_node_free(kwt_tree_t *tree, kwt_node_t *node);
  **返    回: KW树
  **实现描述: 
  **注意事项:
- **作    者: # Qifeng.zou # 2014.09.01 #
+ **作    者: # Qifeng.zou # 2015.05.12 #
  ******************************************************************************/
-kwt_tree_t *kwt_creat(int count)
+kwt_tree_t *kwt_creat(void)
 {
+    int max = 256;
     kwt_tree_t *tree;
+
+    if (!ISPOWEROF2(max)) { return NULL; }
 
     /* 1. 创建对象 */
     tree = (kwt_tree_t *)calloc(1, sizeof(kwt_tree_t));
@@ -46,8 +36,8 @@ kwt_tree_t *kwt_creat(int count)
     }
 
     /* 2. 创建结点 */
-    tree->count = count;
-    tree->root = (kwt_node_t *)calloc(tree->count, sizeof(kwt_node_t));
+    tree->max = max;
+    tree->root = (kwt_node_t *)calloc(max, sizeof(kwt_node_t));
     if (NULL == tree->root)
     {
         free(tree);
@@ -64,37 +54,33 @@ kwt_tree_t *kwt_creat(int count)
  **     tree: KW树
  **     str: 字串(各字符取值：0x00~0XFF)
  **     len: 字串长度
+ **     data: 附加数据
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项:
- **作    者: # Qifeng.zou # 2014.09.01 #
+ **作    者: # Qifeng.zou # 2015.05.12 #
  ******************************************************************************/
-int kwt_insert(kwt_tree_t *tree, const char *str, int len)
+int kwt_insert(kwt_tree_t *tree, const unsigned char *str, int len, void *data)
 {
-    int idx, max = len - 1;
+    int i, max = len - 1;
     kwt_node_t *node = tree->root;
 
-    /* 1. 构建KW树 */
-    for (idx=0; idx<max; ++idx)
+    if (len <= 0) { return -1; }
+
+    for (i=0; i<len; ++i)
     {
-        if (NULL == node[(uint8_t)str[idx]].next)
+        node += str[i];
+        node->key = str[i];
+        if ((i < max) && (NULL == node->child))
         {
-            node[(uint8_t)str[idx]].next =
-                (kwt_node_t *)calloc(tree->count, sizeof(kwt_node_t));
-            if (NULL == node[(uint8_t)str[idx]].next)
+            node->child = (kwt_node_t *)calloc(tree->max, sizeof(kwt_node_t));
+            if (NULL == node->child)
             {
                 return -1;
             }
         }
-
-        node = node[(uint8_t)str[idx]].next;
-    }
-
-    /* 2. 插入数据信息(待续) */
-    if (NULL == node[(uint8_t)str[len-1]].data)
-    {
-        return 0;
+        node = node->child;
     }
 
     return 0;
@@ -107,29 +93,38 @@ int kwt_insert(kwt_tree_t *tree, const char *str, int len)
  **     tree: KW树
  **     str: 字串(各字符取值：0x00~0XFF)
  **     len: 字串长度
- **输出参数: NONE
- **返    回: 结点地址
+ **输出参数:
+ **     data: 附加参数
+ **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项:
- **作    者: # Qifeng.zou # 2014.09.01 #
+ **作    者: # Qifeng.zou # 2015.05.12 #
  ******************************************************************************/
-const kwt_node_t *kwt_search(kwt_tree_t *tree, const char *str, int len)
+int kwt_search(kwt_tree_t *tree, const unsigned char *str, int len, void **data)
 {
-    int idx, max = len - 1;
+    int i, max = len - 1;
     kwt_node_t *node = tree->root;
 
     /* 1. 搜索KW树 */
-    for (idx=0; idx<max; ++idx)
+    for (i=0; i<len; ++i)
     {
-        if (NULL == node[(uint8_t)str[idx]].next)
+        node += str[i];
+        if (node->key != str[i])
         {
-            return NULL;
+            *data = NULL;
+            return -1;
+        }
+        else if (i == max)
+        {
+            *data = node->data;
+            return 0;
         }
 
-        node = node[(uint8_t)str[idx]].next;
+        node = node->child;
     }
 
-    return &node[(uint8_t)str[len - 1]];
+    *data = NULL;
+    return -1;
 }
 
 /******************************************************************************
@@ -137,20 +132,22 @@ const kwt_node_t *kwt_search(kwt_tree_t *tree, const char *str, int len)
  **功    能: 销毁KW树
  **输入参数: 
  **     tree: KW树
+ **     mempool: 附加数据的内存池
+ **     dealloc: 释放附加数据空间的毁掉函数
  **输出参数: NONE
  **返    回: VOID
  **实现描述: 
  **注意事项:
- **作    者: # Qifeng.zou # 2014.09.01 #
+ **作    者: # Qifeng.zou # 2015.05.12 #
  ******************************************************************************/
-void kwt_destroy(kwt_tree_t **tree)
+void kwt_destroy(kwt_tree_t *tree, void *mempool, mem_dealloc_cb_t dealloc)
 {
-    if (NULL != (*tree)->root)
+    if (NULL != tree->root)
     {
-        kwt_node_free(*tree, (*tree)->root);
+        kwt_node_free(tree, tree->root, mempool, dealloc);
     }
 
-    free(*tree), *tree = NULL;
+    free(tree);
 }
 
 /******************************************************************************
@@ -159,26 +156,27 @@ void kwt_destroy(kwt_tree_t **tree)
  **输入参数: 
  **     tree: KW树
  **     node: KW树结点
+ **     mempool: 附加数据的内存池
+ **     dealloc: 释放附加数据空间的毁掉函数
  **输出参数: NONE
  **返    回: VOID
  **实现描述: 
- **注意事项: TODO: 未释放结点DATA内存
- **作    者: # Qifeng.zou # 2014.09.01 #
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.05.12 #
  ******************************************************************************/
-static void kwt_node_free(kwt_tree_t *tree, kwt_node_t *node)
+static void kwt_node_free(kwt_tree_t *tree, kwt_node_t *node, void *mempool, mem_dealloc_cb_t dealloc)
 {
-    int idx;
+    int i;
 
-    for (idx=0;idx<tree->count; ++idx)
+    for (i=0;i<tree->max; ++i)
     {
-        if (NULL == node[idx].next)
+        if (NULL == node[i].child)
         {
             continue;
         }
-
-        kwt_node_free(tree, node[idx].next);
-
-        node[idx].next = NULL;
+        dealloc(mempool, node[i].data);
+        kwt_node_free(tree, node[i].child, mempool, dealloc);
+        node[i].child = NULL;
     }
 
     free(node);

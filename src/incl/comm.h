@@ -49,14 +49,18 @@
 #define MB                  (1024 * KB)     /* MB */
 #define GB                  (1024 * MB)     /* GB */
 
-#define MAX(a, b) ((a) > (b) ? (a) : (b))
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#define MAX(a, b) ((a) > (b) ? (a) : (b))   /* 获取较大值 */
+#define MIN(a, b) ((a) < (b) ? (a) : (b))   /* 获取较小值 */
 
 /* 将秒折算成: D天H时M分S秒 */
-#define TM_DAY(sec)  ((sec) / (24*60*60))                /* 天 */
-#define TM_HOUR(sec) (((sec) % (24*60*60))/(60*60))      /* 时 */
-#define TM_MIN(sec)  ((((sec) % (24*60*60))%(60*60))/60) /* 分 */
-#define TM_SEC(sec)  ((((sec) % (24*60*60))%(60*60))%60) /* 秒 */
+/* #define TM_DAY(sec)  ((sec) / (24*60*60)) */             /* 天 */
+#define TM_DAY(sec)  ((sec) / (86400))                      /* 天 */
+/* #define TM_HOUR(sec) (((sec) % (24*60*60))/(60*60)) */   /* 时 */
+#define TM_HOUR(sec) (((sec) % (86400))/(3600))             /* 时 */
+/* #define TM_MIN(sec)  ((((sec) % (24*60*60))%(60*60))/60) */ /* 分 */
+#define TM_MIN(sec)  ((((sec) % (86400))%(3600))/60)        /* 分 */
+/* #define TM_SEC(sec)  ((((sec) % (24*60*60))%(60*60))%60) */ /* 秒 */
+#define TM_SEC(sec)  ((((sec) % (86400))%(3600))%60)        /* 秒 */
 
 /* 内存对齐 */
 #define mem_align(d, a)     (((d) + (a - 1)) & ~(a - 1))
