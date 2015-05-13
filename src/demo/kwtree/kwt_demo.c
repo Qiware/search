@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
     {
         scanf(" %s", input);
 
-        ret = kwt_search(kwt,(unsigned char *)input, strlen(input), (void **)&str2);
+        ret = kwt_query(kwt,(unsigned char *)input, strlen(input), (void **)&str2);
         fprintf(stderr, "ret:%d input:%s str2:%p\n", ret, input, str2);
     }
 
