@@ -14,14 +14,15 @@ static void kwt_node_free(kwt_tree_t *tree, kwt_node_t *node, void *mempool, mem
 /******************************************************************************
  **函数名称: kwt_creat
  **功    能: 创建KW树
- **输入参数: NONE
+ **输入参数:
+ **     opt: 选项
  **输出参数: NONE
  **返    回: KW树
  **实现描述: 
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.12 #
  ******************************************************************************/
-kwt_tree_t *kwt_creat(void)
+kwt_tree_t *kwt_creat(kwt_opt_t *opt)
 {
     int max = 256;
     kwt_tree_t *tree;
@@ -29,20 +30,28 @@ kwt_tree_t *kwt_creat(void)
     if (!ISPOWEROF2(max)) { return NULL; }
 
     /* 1. 创建对象 */
-    tree = (kwt_tree_t *)calloc(1, sizeof(kwt_tree_t));
+    tree = (kwt_tree_t *)opt->alloc(opt->pool, sizeof(kwt_tree_t));
     if (NULL == tree)
     {
         return NULL;
     }
 
+    memset(tree, 0, sizeof(kwt_tree_t));
+
+    tree->pool = opt->pool;
+    tree->alloc = opt->alloc;
+    tree->dealloc = opt->dealloc;
+
     /* 2. 创建结点 */
     tree->max = max;
-    tree->root = (kwt_node_t *)calloc(max, sizeof(kwt_node_t));
+    tree->root = (kwt_node_t *)tree->alloc(tree->pool, max * sizeof(kwt_node_t));
     if (NULL == tree->root)
     {
-        free(tree);
+        tree->dealloc(tree->pool, tree);
         return NULL;
     }
+
+    memset(tree->root, 0, sizeof(kwt_node_t));
 
     return tree; 
 }
@@ -61,7 +70,7 @@ kwt_tree_t *kwt_creat(void)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.12 #
  ******************************************************************************/
-int kwt_insert(kwt_tree_t *tree, const unsigned char *str, int len, void *data)
+int kwt_insert(kwt_tree_t *tree, const uchar *str, int len, void *data)
 {
     int i, max = len - 1;
     kwt_node_t *node = tree->root;
@@ -74,11 +83,18 @@ int kwt_insert(kwt_tree_t *tree, const unsigned char *str, int len, void *data)
         node->key = str[i];
         if ((i < max) && (NULL == node->child))
         {
-            node->child = (kwt_node_t *)calloc(tree->max, sizeof(kwt_node_t));
+            node->child = (kwt_node_t *)tree->alloc(tree->pool, tree->max * sizeof(kwt_node_t));
             if (NULL == node->child)
             {
                 return -1;
             }
+
+            memset(node->child, 0, sizeof(kwt_node_t));
+        }
+        else if (i == max)
+        {
+            node->data = data;
+            return 0;
         }
         node = node->child;
     }
@@ -87,7 +103,7 @@ int kwt_insert(kwt_tree_t *tree, const unsigned char *str, int len, void *data)
 }
 
 /******************************************************************************
- **函数名称: kwt_search
+ **函数名称: kwt_query
  **功    能: 搜索字符串
  **输入参数:
  **     tree: KW树
@@ -100,7 +116,7 @@ int kwt_insert(kwt_tree_t *tree, const unsigned char *str, int len, void *data)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.12 #
  ******************************************************************************/
-int kwt_search(kwt_tree_t *tree, const unsigned char *str, int len, void **data)
+int kwt_query(kwt_tree_t *tree, const uchar *str, int len, void **data)
 {
     int i, max = len - 1;
     kwt_node_t *node = tree->root;
@@ -147,7 +163,7 @@ void kwt_destroy(kwt_tree_t *tree, void *mempool, mem_dealloc_cb_t dealloc)
         kwt_node_free(tree, tree->root, mempool, dealloc);
     }
 
-    free(tree);
+    tree->dealloc(tree->pool, tree);
 }
 
 /******************************************************************************
@@ -179,5 +195,5 @@ static void kwt_node_free(kwt_tree_t *tree, kwt_node_t *node, void *mempool, mem
         node[i].child = NULL;
     }
 
-    free(node);
+    tree->dealloc(tree->pool, node);
 }
