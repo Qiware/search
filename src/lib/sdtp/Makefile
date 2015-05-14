@@ -14,11 +14,12 @@ LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lxd_core
 
 SRC_LIST = recv/sdtp.c \
-			recv/sdtp_lsn.c \
+			recv/sdtp_rlsn.c \
 			recv/sdtp_rsvr.c \
-			recv/sdtp_worker.c \
+			recv/sdtp_rwrk.c \
 			send/sdtp_pool.c \
 			send/sdtp_ssvr.c \
+			send/sdtp_swrk.c \
 			cli/sdtp_cli.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 

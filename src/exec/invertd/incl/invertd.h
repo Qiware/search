@@ -13,7 +13,7 @@ typedef struct
 
     log_cycle_t *log;                       /* 日志对象 */
     invt_tab_t *tab;                        /* 倒排表 */
-    sdtp_cntx_t *sdtp;                      /* SDTP服务 */
+    sdtp_rctx_t *sdtp;                      /* SDTP服务 */
 } invtd_cntx_t;
 
 /* 输入参数 */

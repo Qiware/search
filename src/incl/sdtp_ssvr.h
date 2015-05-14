@@ -68,6 +68,11 @@ typedef struct
     fd_set rset;                    /* 读集合 */
     fd_set wset;                    /* 写集合 */
     slab_pool_t *pool;              /* 内存池 */
+
+    /* 统计信息 */
+    uint64_t recv_total;            /* 获取的数据总条数 */
+    uint64_t err_total;             /* 错误的数据条数 */
+    uint64_t drop_total;            /* 丢弃的数据条数 */
 } sdtp_ssvr_t;
 
 /* 发送端上下文信息 */
@@ -79,9 +84,9 @@ typedef struct
 
     thread_pool_t *sendtp;          /* 发送线程池 */
     thread_pool_t *worktp;          /* 工作线程池 */
-} sdtp_ssvr_cntx_t;
+} sdtp_sctx_t;
 
 /* 对外接口 */
-sdtp_ssvr_cntx_t *sdtp_ssvr_startup(const sdtp_ssvr_conf_t *conf, log_cycle_t *log);
+sdtp_sctx_t *sdtp_ssvr_startup(const sdtp_ssvr_conf_t *conf, log_cycle_t *log);
 
 #endif /*__SDTP_SSVR_H__*/

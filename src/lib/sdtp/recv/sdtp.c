@@ -16,13 +16,13 @@
 #include "sdtp_priv.h"
 #include "thread_pool.h"
 
-static int _sdtp_init(sdtp_cntx_t *ctx);
-static int sdtp_creat_recvq(sdtp_cntx_t *ctx);
+static int _sdtp_init(sdtp_rctx_t *ctx);
+static int sdtp_creat_recvq(sdtp_rctx_t *ctx);
 
-static int sdtp_creat_recvtp(sdtp_cntx_t *ctx);
+static int sdtp_creat_recvtp(sdtp_rctx_t *ctx);
 void sdtp_recvtp_destroy(void *_ctx, void *args);
 
-static int sdtp_creat_worktp(sdtp_cntx_t *ctx);
+static int sdtp_creat_worktp(sdtp_rctx_t *ctx);
 void sdtp_worktp_destroy(void *_ctx, void *args);
 
 static int sdtp_proc_def_hdl(int type, char *buff, size_t len, void *args);
@@ -42,12 +42,12 @@ static int sdtp_proc_def_hdl(int type, char *buff, size_t len, void *args);
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-sdtp_cntx_t *sdtp_init(const sdtp_conf_t *conf, log_cycle_t *log)
+sdtp_rctx_t *sdtp_init(const sdtp_conf_t *conf, log_cycle_t *log)
 {
-    sdtp_cntx_t *ctx;
+    sdtp_rctx_t *ctx;
 
     /* 1. 创建全局对象 */
-    ctx = (sdtp_cntx_t *)calloc(1, sizeof(sdtp_cntx_t));
+    ctx = (sdtp_rctx_t *)calloc(1, sizeof(sdtp_rctx_t));
     if (NULL == ctx)
     {
         printf("errmsg:[%d] %s!", errno, strerror(errno));
@@ -86,11 +86,11 @@ sdtp_cntx_t *sdtp_init(const sdtp_conf_t *conf, log_cycle_t *log)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-int sdtp_startup(sdtp_cntx_t *ctx)
+int sdtp_startup(sdtp_rctx_t *ctx)
 {
     int idx;
     thread_pool_t *tp;
-    sdtp_lsn_t *lsn = &ctx->listen;
+    sdtp_rlsn_t *lsn = &ctx->listen;
 
     /* 1. 设置接收线程回调 */
     tp = ctx->recvtp;
@@ -103,7 +103,7 @@ int sdtp_startup(sdtp_cntx_t *ctx)
     tp = ctx->worktp;
     for (idx=0; idx<tp->num; ++idx)
     {
-        thread_pool_add_worker(tp, sdtp_worker_routine, ctx);
+        thread_pool_add_worker(tp, sdtp_rwrk_routine, ctx);
     }
     
     /* 3. 创建侦听线程 */
@@ -132,7 +132,7 @@ int sdtp_startup(sdtp_cntx_t *ctx)
  **     2. 不允许重复注册 
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-int sdtp_register(sdtp_cntx_t *ctx, int type, sdtp_reg_cb_t proc, void *args)
+int sdtp_register(sdtp_rctx_t *ctx, int type, sdtp_reg_cb_t proc, void *args)
 {
     sdtp_reg_t *reg;
 
@@ -168,7 +168,7 @@ int sdtp_register(sdtp_cntx_t *ctx, int type, sdtp_reg_cb_t proc, void *args)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-int sdtp_destroy(sdtp_cntx_t **ctx)
+int sdtp_destroy(sdtp_rctx_t **ctx)
 {
     /* 1. 销毁侦听线程 */
     sdtp_listen_destroy(&(*ctx)->listen);
@@ -196,7 +196,7 @@ int sdtp_destroy(sdtp_cntx_t **ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-static int sdtp_reg_init(sdtp_cntx_t *ctx)
+static int sdtp_reg_init(sdtp_rctx_t *ctx)
 {
     int idx;
     sdtp_reg_t *reg = &ctx->reg[0];
@@ -227,7 +227,7 @@ static int sdtp_reg_init(sdtp_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-static int _sdtp_init(sdtp_cntx_t *ctx)
+static int _sdtp_init(sdtp_rctx_t *ctx)
 {
     /* 1. 创建SLAB内存池 */
     ctx->pool = slab_creat_by_calloc(SDTP_CTX_POOL_SIZE);
@@ -277,7 +277,7 @@ static int _sdtp_init(sdtp_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-static int sdtp_creat_recvq(sdtp_cntx_t *ctx)
+static int sdtp_creat_recvq(sdtp_rctx_t *ctx)
 {
     int idx;
     sdtp_conf_t *conf = &ctx->conf;
@@ -319,7 +319,7 @@ static int sdtp_creat_recvq(sdtp_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int sdtp_creat_recvtp(sdtp_cntx_t *ctx)
+static int sdtp_creat_recvtp(sdtp_rctx_t *ctx)
 {
     int idx;
     sdtp_rsvr_t *rsvr;
@@ -382,7 +382,7 @@ static int sdtp_creat_recvtp(sdtp_cntx_t *ctx)
 void sdtp_recvtp_destroy(void *_ctx, void *args)
 {
     int idx;
-    sdtp_cntx_t *ctx = (sdtp_cntx_t *)_ctx;
+    sdtp_rctx_t *ctx = (sdtp_rctx_t *)_ctx;
     sdtp_rsvr_t *rsvr = (sdtp_rsvr_t *)ctx->recvtp->data;
 
     for (idx=0; idx<ctx->conf.recv_thd_num; ++idx, ++rsvr)
@@ -416,17 +416,17 @@ void sdtp_recvtp_destroy(void *_ctx, void *args)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.06 #
  ******************************************************************************/
-static int sdtp_creat_worktp(sdtp_cntx_t *ctx)
+static int sdtp_creat_worktp(sdtp_rctx_t *ctx)
 {
     int idx;
-    sdtp_worker_t *worker;
+    sdtp_rwrk_t *wrk;
     thread_pool_opt_t opt;
     sdtp_conf_t *conf = &ctx->conf;
 
 
     /* > 创建工作对象 */
-    worker = (void *)calloc(conf->work_thd_num, sizeof(sdtp_worker_t));
-    if (NULL == worker)
+    wrk = (void *)calloc(conf->work_thd_num, sizeof(sdtp_rwrk_t));
+    if (NULL == wrk)
     {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return SDTP_ERR;
@@ -439,21 +439,21 @@ static int sdtp_creat_worktp(sdtp_cntx_t *ctx)
     opt.alloc = (mem_alloc_cb_t)slab_alloc;
     opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-    ctx->worktp = thread_pool_init(conf->work_thd_num, &opt, (void *)worker);
+    ctx->worktp = thread_pool_init(conf->work_thd_num, &opt, (void *)wrk);
     if (NULL == ctx->worktp)
     {
         log_error(ctx->log, "Initialize thread pool failed!");
-        free(worker);
+        free(wrk);
         return SDTP_ERR;
     }
 
     /* > 初始化工作对象 */
     for (idx=0; idx<conf->work_thd_num; ++idx)
     {
-        if (sdtp_worker_init(ctx, worker+idx, idx))
+        if (sdtp_rwrk_init(ctx, wrk+idx, idx))
         {
             log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
-            free(worker);
+            free(wrk);
             thread_pool_destroy(ctx->recvtp);
             ctx->recvtp = NULL;
             return SDTP_ERR;
@@ -478,13 +478,13 @@ static int sdtp_creat_worktp(sdtp_cntx_t *ctx)
 void sdtp_worktp_destroy(void *_ctx, void *args)
 {
     int idx;
-    sdtp_cntx_t *ctx = (sdtp_cntx_t *)_ctx;
+    sdtp_rctx_t *ctx = (sdtp_rctx_t *)_ctx;
     sdtp_conf_t *conf = &ctx->conf;
-    sdtp_worker_t *worker = (sdtp_worker_t *)ctx->worktp->data;
+    sdtp_rwrk_t *wrk = (sdtp_rwrk_t *)ctx->worktp->data;
 
-    for (idx=0; idx<conf->work_thd_num; ++idx, ++worker)
+    for (idx=0; idx<conf->work_thd_num; ++idx, ++wrk)
     {
-        CLOSE(worker->cmd_sck_id);
+        CLOSE(wrk->cmd_sck_id);
     }
 
     FREE(ctx->worktp->data);

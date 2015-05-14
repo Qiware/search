@@ -29,11 +29,11 @@
     snprintf(path, sizeof(path), "../temp/sdtp/recv/%s/usck/%s_rsvr_%d.usck", \
         conf->name, conf->name, tidx+1)
 /* Worker线程的UNIX-UDP路径 */
-#define sdtp_worker_usck_path(conf, path, tidx) \
+#define sdtp_rwrk_usck_path(conf, path, tidx) \
     snprintf(path, sizeof(path), "../temp/sdtp/recv/%s/usck/%s_wsvr_%d.usck", \
         conf->name, conf->name, tidx+1)
 /* Listen线程的UNIX-UDP路径 */
-#define sdtp_lsn_usck_path(conf, path) \
+#define sdtp_rlsn_usck_path(conf, path) \
     snprintf(path, sizeof(path), "../temp/sdtp/recv/%s/usck/%s_listen.usck", \
         conf->name, conf->name)
 
@@ -72,7 +72,7 @@ typedef struct
     int lsn_sck_id;                     /* 侦听套接字 */
 
     uint64_t total;                     /* 连接请求总数 */
-} sdtp_lsn_t;
+} sdtp_rlsn_t;
 
 /* 套接字信息 */
 typedef struct _sdtp_sck_t
@@ -139,7 +139,7 @@ typedef struct
     uint64_t proc_total;                /* 已处理条数 */
     uint64_t drop_total;                /* 丢弃条数 */
     uint64_t err_total;                 /* 错误条数 */
-} sdtp_worker_t;
+} sdtp_rwrk_t;
 
 /* 全局对象 */
 typedef struct
@@ -150,28 +150,28 @@ typedef struct
 
     sdtp_reg_t reg[SDTP_TYPE_MAX];      /* 回调注册对象 */
     
-    sdtp_lsn_t listen;                  /* 侦听对象 */
+    sdtp_rlsn_t listen;                 /* 侦听对象 */
     thread_pool_t *recvtp;              /* 接收线程池 */
     thread_pool_t *worktp;              /* 工作线程池 */ 
 
     queue_t **recvq;                    /* 接收队列 */
-} sdtp_cntx_t;
+} sdtp_rctx_t;
 
 /* 外部接口 */
-sdtp_cntx_t *sdtp_init(const sdtp_conf_t *conf, log_cycle_t *log);
-int sdtp_register(sdtp_cntx_t *ctx, int type, sdtp_reg_cb_t proc, void *args);
-int sdtp_startup(sdtp_cntx_t *ctx);
-int sdtp_destroy(sdtp_cntx_t **ctx);
+sdtp_rctx_t *sdtp_init(const sdtp_conf_t *conf, log_cycle_t *log);
+int sdtp_register(sdtp_rctx_t *ctx, int type, sdtp_reg_cb_t proc, void *args);
+int sdtp_startup(sdtp_rctx_t *ctx);
+int sdtp_destroy(sdtp_rctx_t **ctx);
 
 /* 内部接口 */
 void *sdtp_listen_routine(void *_ctx);
-int sdtp_listen_destroy(sdtp_lsn_t *lsn);
+int sdtp_listen_destroy(sdtp_rlsn_t *lsn);
 
 void *sdtp_rsvr_routine(void *_ctx);
-int sdtp_rsvr_init(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr, int tidx);
+int sdtp_rsvr_init(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, int tidx);
 
-void *sdtp_worker_routine(void *_ctx);
-int sdtp_worker_init(sdtp_cntx_t *ctx, sdtp_worker_t *worker, int tidx);
+void *sdtp_rwrk_routine(void *_ctx);
+int sdtp_rwrk_init(sdtp_rctx_t *ctx, sdtp_rwrk_t *worker, int tidx);
 
 void sdtp_rsvr_del_all_conn_hdl(sdtp_rsvr_t *rsvr);
 

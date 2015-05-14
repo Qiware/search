@@ -6,27 +6,27 @@
 #include "sdtp_ssvr.h"
 
 /* 静态函数 */
-static int _sdtp_ssvr_startup(sdtp_ssvr_cntx_t *ctx);
+static int _sdtp_ssvr_startup(sdtp_sctx_t *ctx);
 static void *sdtp_ssvr_routine(void *_ctx);
 
-static int sdtp_ssvr_init(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr, int tidx);
-static sdtp_ssvr_t *sdtp_ssvr_get_self(sdtp_ssvr_cntx_t *ctx);
+static int sdtp_ssvr_init(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, int tidx);
+static sdtp_ssvr_t *sdtp_ssvr_get_self(sdtp_sctx_t *ctx);
 
 static int sdtp_ssvr_creat_sendq(sdtp_ssvr_t *ssvr, const sdtp_ssvr_conf_t *conf);
 static int sdtp_ssvr_creat_usck(sdtp_ssvr_t *ssvr, const sdtp_ssvr_conf_t *conf);
 
-static int sdtp_ssvr_kpalive_req(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr);
+static int sdtp_ssvr_kpalive_req(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr);
 
-static int sdtp_ssvr_recv_cmd(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr);
-static int sdtp_ssvr_recv_proc(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr);
+static int sdtp_ssvr_recv_cmd(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr);
+static int sdtp_ssvr_recv_proc(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr);
 
-static int sdtp_ssvr_data_proc(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr, sdtp_ssvr_sck_t *sck);
+static int sdtp_ssvr_data_proc(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, sdtp_ssvr_sck_t *sck);
 static int sdtp_ssvr_sys_mesg_proc(sdtp_ssvr_t *ssvr, sdtp_ssvr_sck_t *sck, void *addr);
 static int sdtp_ssvr_exp_mesg_proc(sdtp_ssvr_t *ssvr, sdtp_ssvr_sck_t *sck, void *addr);
 
-static int sdtp_ssvr_timeout_hdl(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr);
-static int sdtp_ssvr_proc_cmd(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr, const sdtp_cmd_t *cmd);
-static int sdtp_ssvr_send_data(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr);
+static int sdtp_ssvr_timeout_hdl(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr);
+static int sdtp_ssvr_proc_cmd(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, const sdtp_cmd_t *cmd);
+static int sdtp_ssvr_send_data(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr);
 
 static int sdtp_ssvr_clear_mesg(sdtp_ssvr_t *ssvr);
 
@@ -44,12 +44,12 @@ static int sdtp_ssvr_clear_mesg(sdtp_ssvr_t *ssvr);
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-sdtp_ssvr_cntx_t *sdtp_ssvr_startup(const sdtp_ssvr_conf_t *conf, log_cycle_t *log)
+sdtp_sctx_t *sdtp_ssvr_startup(const sdtp_ssvr_conf_t *conf, log_cycle_t *log)
 {
-    sdtp_ssvr_cntx_t *ctx;
+    sdtp_sctx_t *ctx;
 
     /* 1. 创建上下文对象 */
-    ctx = (sdtp_ssvr_cntx_t *)calloc(1, sizeof(sdtp_ssvr_cntx_t));
+    ctx = (sdtp_sctx_t *)calloc(1, sizeof(sdtp_sctx_t));
     if (NULL == ctx)
     {
         printf("errmsg:[%d] %s!", errno, strerror(errno));
@@ -86,7 +86,7 @@ sdtp_ssvr_cntx_t *sdtp_ssvr_startup(const sdtp_ssvr_conf_t *conf, log_cycle_t *l
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static int _sdtp_ssvr_startup(sdtp_ssvr_cntx_t *ctx)
+static int _sdtp_ssvr_startup(sdtp_sctx_t *ctx)
 {
     int idx;
     sdtp_ssvr_t *ssvr;
@@ -160,7 +160,7 @@ static int _sdtp_ssvr_startup(sdtp_ssvr_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static int sdtp_ssvr_init(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr, int tidx)
+static int sdtp_ssvr_init(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, int tidx)
 {
     void *addr;
     list_opt_t opt;
@@ -308,7 +308,7 @@ static int sdtp_ssvr_creat_usck(sdtp_ssvr_t *ssvr, const sdtp_ssvr_conf_t *conf)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.16 #
  ******************************************************************************/
-static void sdtp_ssvr_bind_cpu(sdtp_ssvr_cntx_t *ctx, int tidx)
+static void sdtp_ssvr_bind_cpu(sdtp_sctx_t *ctx, int tidx)
 {
     int idx, mod;
     cpu_set_t cpuset;
@@ -342,7 +342,7 @@ static void sdtp_ssvr_bind_cpu(sdtp_ssvr_cntx_t *ctx, int tidx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.04.11 #
  ******************************************************************************/
-void sdtp_switch_send_data(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr)
+void sdtp_switch_send_data(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
 {
     sdtp_snap_t *send;
     sdtp_pool_page_t *page;
@@ -482,7 +482,7 @@ static void *sdtp_ssvr_routine(void *_ctx)
     sdtp_ssvr_t *ssvr;
     sdtp_ssvr_sck_t *sck;
     struct timeval timeout;
-    sdtp_ssvr_cntx_t *ctx = (sdtp_ssvr_cntx_t *)_ctx;
+    sdtp_sctx_t *ctx = (sdtp_sctx_t *)_ctx;
     sdtp_ssvr_conf_t *conf = &ctx->conf;
 
 
@@ -580,7 +580,7 @@ static void *sdtp_ssvr_routine(void *_ctx)
  **     因此发送数据时，不用判断EAGAIN的情况是否存在。
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static int sdtp_ssvr_kpalive_req(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr)
+static int sdtp_ssvr_kpalive_req(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
 {
     void *addr;
     sdtp_header_t *head;
@@ -640,7 +640,7 @@ static int sdtp_ssvr_kpalive_req(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static sdtp_ssvr_t *sdtp_ssvr_get_self(sdtp_ssvr_cntx_t *ctx)
+static sdtp_ssvr_t *sdtp_ssvr_get_self(sdtp_sctx_t *ctx)
 {
     int tidx;
 
@@ -670,7 +670,7 @@ static sdtp_ssvr_t *sdtp_ssvr_get_self(sdtp_ssvr_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static int sdtp_ssvr_timeout_hdl(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr)
+static int sdtp_ssvr_timeout_hdl(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
 {
     time_t curr_tm = time(NULL);
     sdtp_ssvr_sck_t *sck = &ssvr->sck;
@@ -717,7 +717,7 @@ static int sdtp_ssvr_timeout_hdl(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr)
  **     addr     optr             iptr                   end
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static int sdtp_ssvr_recv_proc(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr)
+static int sdtp_ssvr_recv_proc(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
 {
     int n, left;
     sdtp_ssvr_sck_t *sck = &ssvr->sck;
@@ -799,7 +799,7 @@ static int sdtp_ssvr_recv_proc(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr)
  **     addr     optr             iptr                   end
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static int sdtp_ssvr_data_proc(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr, sdtp_ssvr_sck_t *sck)
+static int sdtp_ssvr_data_proc(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, sdtp_ssvr_sck_t *sck)
 {
     sdtp_header_t *head;
     uint32_t len, mesg_len;
@@ -846,6 +846,7 @@ static int sdtp_ssvr_data_proc(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr, sdtp_ss
         /* 2.2 校验合法性 */
         if (!SDTP_HEAD_ISVALID(head))
         {
+            ++ssvr->err_total;
             log_error(ssvr->log, "Header is invalid! CheckSum:%u/%u type:%d len:%d flag:%d",
                     head->checksum, SDTP_CHECK_SUM, head->type, head->length, head->flag);
             return SDTP_ERR;
@@ -881,7 +882,7 @@ static int sdtp_ssvr_data_proc(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr, sdtp_ss
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static int sdtp_ssvr_recv_cmd(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr)
+static int sdtp_ssvr_recv_cmd(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
 {
     sdtp_cmd_t cmd;
 
@@ -910,7 +911,7 @@ static int sdtp_ssvr_recv_cmd(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static int sdtp_ssvr_proc_cmd(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr, const sdtp_cmd_t *cmd)
+static int sdtp_ssvr_proc_cmd(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, const sdtp_cmd_t *cmd)
 {
     sdtp_ssvr_sck_t *sck = &ssvr->sck;
 
@@ -1028,7 +1029,7 @@ static int sdtp_ssvr_fill_send_buff(sdtp_ssvr_t *ssvr, sdtp_ssvr_sck_t *sck)
  **     addr     optr             iptr                   end
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static int sdtp_ssvr_send_sys_data(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr)
+static int sdtp_ssvr_send_sys_data(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
 {
     int n, len;
     sdtp_ssvr_sck_t *sck = &ssvr->sck;
@@ -1099,7 +1100,7 @@ static int sdtp_ssvr_send_sys_data(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr)
  **     addr     optr             iptr                   end
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static int sdtp_ssvr_send_exp_data(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr)
+static int sdtp_ssvr_send_exp_data(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
 {
     int n, len;
     sdtp_ssvr_sck_t *sck = &ssvr->sck;
@@ -1142,7 +1143,7 @@ static int sdtp_ssvr_send_exp_data(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr)
  **实现描述: 
  **作    者: # Qifeng.zou # 2015.04.11 #
  ******************************************************************************/
-static int sdtp_ssvr_send_data(sdtp_ssvr_cntx_t *ctx, sdtp_ssvr_t *ssvr)
+static int sdtp_ssvr_send_data(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
 {
     sdtp_ssvr_sck_t *sck = &ssvr->sck;
 
@@ -1229,11 +1230,13 @@ static int sdtp_ssvr_sys_mesg_proc(sdtp_ssvr_t *ssvr, sdtp_ssvr_sck_t *sck, void
  **     sck: 连接对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述: 将自定义消息放入工作队列中
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.16 #
  ******************************************************************************/
 static int sdtp_ssvr_exp_mesg_proc(sdtp_ssvr_t *ssvr, sdtp_ssvr_sck_t *sck, void *addr)
 {
+    ++ssvr->recv_total;
+    ++ssvr->drop_total;
     return SDTP_OK;
 }

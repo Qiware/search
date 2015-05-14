@@ -16,22 +16,22 @@
 #include "thread_pool.h"
 
 /* 静态函数 */
-static sdtp_rsvr_t *sdtp_rsvr_get_curr(sdtp_cntx_t *ctx);
-static int sdtp_rsvr_event_core_hdl(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr);
-static int sdtp_rsvr_event_timeout_hdl(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr);
+static sdtp_rsvr_t *sdtp_rsvr_get_curr(sdtp_rctx_t *ctx);
+static int sdtp_rsvr_event_core_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr);
+static int sdtp_rsvr_event_timeout_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr);
 
-static int sdtp_rsvr_trav_recv(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr);
-static int sdtp_rsvr_trav_send(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr);
+static int sdtp_rsvr_trav_recv(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr);
+static int sdtp_rsvr_trav_send(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr);
 
-static int sdtp_rsvr_recv_proc(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_sck_t *sck);
-static int sdtp_rsvr_data_proc(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_sck_t *sck);
+static int sdtp_rsvr_recv_proc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_sck_t *sck);
+static int sdtp_rsvr_data_proc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_sck_t *sck);
 
-static int sdtp_rsvr_sys_mesg_proc(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_sck_t *sck);
-static int sdtp_rsvr_exp_mesg_proc(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_sck_t *sck);
+static int sdtp_rsvr_sys_mesg_proc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_sck_t *sck);
+static int sdtp_rsvr_exp_mesg_proc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_sck_t *sck);
 
-static int sdtp_rsvr_keepalive_req_hdl(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_sck_t *sck);
-static int sdtp_rsvr_cmd_proc_req(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr, int rqid);
-static int sdtp_rsvr_cmd_proc_all_req(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr);
+static int sdtp_rsvr_keepalive_req_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_sck_t *sck);
+static int sdtp_rsvr_cmd_proc_req(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, int rqid);
+static int sdtp_rsvr_cmd_proc_all_req(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr);
 
 static int sdtp_rsvr_add_conn_hdl(sdtp_rsvr_t *rsvr, sdtp_cmd_add_sck_t *req);
 static int sdtp_rsvr_del_conn_hdl(sdtp_rsvr_t *rsvr, list2_node_t *node);
@@ -39,7 +39,7 @@ static int sdtp_rsvr_del_conn_hdl(sdtp_rsvr_t *rsvr, list2_node_t *node);
 static int sdtp_rsvr_fill_send_buff(sdtp_rsvr_t *rsvr, sdtp_sck_t *sck);
 static int sdtp_rsvr_clear_mesg(sdtp_rsvr_t *rsvr, sdtp_sck_t *sck);
 
-static int sdtp_rsvr_queue_alloc(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr);
+static int sdtp_rsvr_queue_alloc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr);
 #define sdtp_rsvr_queue_push(ctx, rsvr) /* 将输入推入队列 */\
     queue_push(ctx->recvq[rsvr->queue.rqid], rsvr->queue.start)
 #define sdtp_rsvr_queue_reset(rsvr) \
@@ -183,7 +183,7 @@ void *sdtp_rsvr_routine(void *_ctx)
     int ret;
     sdtp_rsvr_t *rsvr;
     struct timeval timeout;
-    sdtp_cntx_t *ctx = (sdtp_cntx_t *)_ctx;
+    sdtp_rctx_t *ctx = (sdtp_rctx_t *)_ctx;
 
     /* 1. 获取接收服务 */
     rsvr = sdtp_rsvr_get_curr(ctx);
@@ -242,7 +242,7 @@ void *sdtp_rsvr_routine(void *_ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static sdtp_rsvr_t *sdtp_rsvr_get_curr(sdtp_cntx_t *ctx)
+static sdtp_rsvr_t *sdtp_rsvr_get_curr(sdtp_rctx_t *ctx)
 {
     int tidx;
 
@@ -273,7 +273,7 @@ static sdtp_rsvr_t *sdtp_rsvr_get_curr(sdtp_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-int sdtp_rsvr_init(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr, int tidx)
+int sdtp_rsvr_init(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, int tidx)
 {
     char path[FILE_PATH_MAX_LEN];
     sdtp_conf_t *conf = &ctx->conf;
@@ -320,7 +320,7 @@ int sdtp_rsvr_init(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr, int tidx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int sdtp_rsvr_recv_cmd(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr)
+static int sdtp_rsvr_recv_cmd(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr)
 {
     sdtp_cmd_t cmd;
 
@@ -362,7 +362,7 @@ static int sdtp_rsvr_recv_cmd(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int sdtp_rsvr_trav_recv(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr)
+static int sdtp_rsvr_trav_recv(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr)
 {
     sdtp_sck_t *curr;
     list2_node_t *node, *next, *tail;
@@ -432,7 +432,7 @@ static int sdtp_rsvr_trav_recv(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr)
  **     addr     optr             iptr                   end
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int sdtp_rsvr_trav_send(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr)
+static int sdtp_rsvr_trav_send(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr)
 {
     int n, len;
     sdtp_sck_t *curr;
@@ -528,7 +528,7 @@ static int sdtp_rsvr_trav_send(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr)
  **     addr     optr             iptr                   end
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int sdtp_rsvr_recv_proc(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_sck_t *sck)
+static int sdtp_rsvr_recv_proc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_sck_t *sck)
 {
     int n, left;
     sdtp_snap_t *recv = &sck->recv;
@@ -597,7 +597,7 @@ static int sdtp_rsvr_recv_proc(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_sck_t *
  **     addr     optr             iptr                   end
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int sdtp_rsvr_data_proc(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_sck_t *sck)
+static int sdtp_rsvr_data_proc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_sck_t *sck)
 {
     bool flag = false;
     sdtp_header_t *head;
@@ -693,7 +693,7 @@ static int sdtp_rsvr_data_proc(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_sck_t *
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int sdtp_rsvr_sys_mesg_proc(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_sck_t *sck)
+static int sdtp_rsvr_sys_mesg_proc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_sck_t *sck)
 {
     sdtp_snap_t *recv = &sck->recv;
     sdtp_header_t *head = (sdtp_header_t *)recv->addr;
@@ -726,7 +726,7 @@ static int sdtp_rsvr_sys_mesg_proc(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_sck
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.04.01 #
  ******************************************************************************/
-static int sdtp_rsvr_queue_alloc(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr)
+static int sdtp_rsvr_queue_alloc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr)
 {
     rsvr->queue.rqid = rand() % ctx->conf.rqnum;
 
@@ -768,7 +768,7 @@ static int sdtp_rsvr_queue_alloc(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int sdtp_rsvr_exp_mesg_proc(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_sck_t *sck)
+static int sdtp_rsvr_exp_mesg_proc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_sck_t *sck)
 {
     int len;
     sdtp_snap_t *recv = &sck->recv;
@@ -839,7 +839,7 @@ static int sdtp_rsvr_exp_mesg_proc(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_sck
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int sdtp_rsvr_event_core_hdl(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr)
+static int sdtp_rsvr_event_core_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr)
 {
     /* 1. 接收命令数据 */
     if (FD_ISSET(rsvr->cmd_sck_id, &rsvr->rdset))
@@ -869,7 +869,7 @@ static int sdtp_rsvr_event_core_hdl(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int sdtp_rsvr_event_timeout_hdl(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr)
+static int sdtp_rsvr_event_timeout_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr)
 {
     bool is_end = false;
     sdtp_sck_t *curr;
@@ -943,7 +943,7 @@ static int sdtp_rsvr_event_timeout_hdl(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int sdtp_rsvr_keepalive_req_hdl(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_sck_t *sck)
+static int sdtp_rsvr_keepalive_req_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_sck_t *sck)
 {
     void *addr;
     sdtp_header_t *head;
@@ -1189,7 +1189,7 @@ static int sdtp_rsvr_clear_mesg(sdtp_rsvr_t *rsvr, sdtp_sck_t *sck)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int sdtp_rsvr_cmd_proc_req(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr, int rqid)
+static int sdtp_rsvr_cmd_proc_req(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, int rqid)
 {
     int widx;
     sdtp_cmd_t cmd;
@@ -1206,7 +1206,7 @@ static int sdtp_rsvr_cmd_proc_req(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr, int rqid)
     /* widx = sdtp_rand_work(ctx); */
     widx = rqid / SDTP_WORKER_HDL_QNUM;
 
-    sdtp_worker_usck_path(conf, path, widx);
+    sdtp_rwrk_usck_path(conf, path, widx);
 
     /* 2. 发送处理命令 */
     if (unix_udp_send(rsvr->cmd_sck_id, path, &cmd, sizeof(sdtp_cmd_t)) < 0)
@@ -1231,7 +1231,7 @@ static int sdtp_rsvr_cmd_proc_req(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr, int rqid)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int sdtp_rsvr_cmd_proc_all_req(sdtp_cntx_t *ctx, sdtp_rsvr_t *rsvr)
+static int sdtp_rsvr_cmd_proc_all_req(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr)
 {
     int idx;
 
