@@ -20,7 +20,7 @@ SRC_LIST = recv/sdtp.c \
 			send/sdtp_pool.c \
 			send/sdtp_ssvr.c \
 			send/sdtp_swrk.c \
-			cli/sdtp_cli.c
+			send/sdtp_cli.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
 
