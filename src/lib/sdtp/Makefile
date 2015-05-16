@@ -14,6 +14,7 @@ LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lxd_core
 
 SRC_LIST = recv/sdtp.c \
+			recv/sdtp_comm.c \
 			recv/sdtp_rlsn.c \
 			recv/sdtp_rsvr.c \
 			recv/sdtp_rwrk.c \

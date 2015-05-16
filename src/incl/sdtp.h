@@ -8,6 +8,7 @@
 #include "comm.h"
 #include "list2.h"
 #include "queue.h"
+#include "sdtp_cmd.h"
 #include "sdtp_priv.h"
 #include "thread_pool.h"
 
@@ -175,4 +176,5 @@ int sdtp_rwrk_init(sdtp_rctx_t *ctx, sdtp_rwrk_t *worker, int tidx);
 
 void sdtp_rsvr_del_all_conn_hdl(sdtp_rsvr_t *rsvr);
 
+int sdtp_cmd_to_rsvr(sdtp_rctx_t *ctx, int cmd_sck_id, const sdtp_cmd_t *cmd, int idx);
 #endif /*__SDTP_H__*/

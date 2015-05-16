@@ -1,7 +1,7 @@
 /******************************************************************************
  ** Coypright(C) 2014-2024 Xundao technology Co., Ltd
  **
- ** 文件名: sdtp.c
+ ** 文件名: sdtp_rlsn.c
  ** 版本号: 1.0
  ** 描  述: 共享消息传输通道(Sharing Message Transaction Channel)
  **         1. 主要用于异步系统之间数据消息的传输
@@ -15,17 +15,16 @@
 #include "thread_pool.h"
 
 /* 静态函数 */
-static sdtp_rlsn_t *sdtp_listen_init(sdtp_rctx_t *ctx);
+static sdtp_rlsn_t *sdtp_rlsn_init(sdtp_rctx_t *ctx);
 static int sdtp_rlsn_accept(sdtp_rctx_t *ctx, sdtp_rlsn_t *lsn);
 
 static int sdtp_rlsn_cmd_core_hdl(sdtp_rctx_t *ctx, sdtp_rlsn_t *lsn);
-static int sdtp_cmd_rand_to_recv(sdtp_rctx_t *ctx, int cmd_sck_id, const sdtp_cmd_t *cmd);
 static int sdtp_rlsn_cmd_query_conf_hdl(sdtp_rctx_t *ctx, sdtp_rlsn_t *lsn, sdtp_cmd_t *cmd);
 static int sdtp_rlsn_cmd_query_recv_stat_hdl(sdtp_rctx_t *ctx, sdtp_rlsn_t *lsn, sdtp_cmd_t *cmd);
 static int sdtp_rlsn_cmd_query_proc_stat_hdl(sdtp_rctx_t *ctx, sdtp_rlsn_t *lsn, sdtp_cmd_t *cmd);
 
 /* 随机选择接收线程 */
-#define sdtp_rand_recv(ctx) ((ctx)->listen.total++ % (ctx->recvtp->num))
+#define sdtp_rand_rsvr(ctx) ((ctx)->listen.total++ % (ctx->recvtp->num))
 
 /******************************************************************************
  **函数名称: sdtp_listen_routine
@@ -53,7 +52,7 @@ void *sdtp_listen_routine(void *args)
     sdtp_rctx_t *ctx = (sdtp_rctx_t *)args;
 
     /* 1. 初始化侦听 */
-    lsn = sdtp_listen_init(ctx);
+    lsn = sdtp_rlsn_init(ctx);
     if (NULL == lsn)
     {
         log_error(ctx->log, "Initialize listen failed!");
@@ -108,7 +107,7 @@ void *sdtp_listen_routine(void *args)
 }
 
 /******************************************************************************
- **函数名称: sdtp_listen_init
+ **函数名称: sdtp_rlsn_init
  **功    能: 启动SDTP侦听线程
  **输入参数: 
  **     conf: 配置信息
@@ -120,7 +119,7 @@ void *sdtp_listen_routine(void *args)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-static sdtp_rlsn_t *sdtp_listen_init(sdtp_rctx_t *ctx)
+static sdtp_rlsn_t *sdtp_rlsn_init(sdtp_rctx_t *ctx)
 {
     char path[FILE_NAME_MAX_LEN];
     sdtp_rlsn_t *lsn = &ctx->listen;
@@ -226,7 +225,7 @@ static int sdtp_rlsn_accept(sdtp_rctx_t *ctx, sdtp_rlsn_t *lsn)
     args->sckid = sckid; 
     snprintf(args->ipaddr, sizeof(args->ipaddr), "%s", inet_ntoa(cliaddr.sin_addr));
 
-    if (sdtp_cmd_rand_to_recv(ctx, lsn->cmd_sck_id, &cmd) < 0)
+    if (sdtp_cmd_to_rsvr(ctx, lsn->cmd_sck_id, &cmd, sdtp_rand_rsvr(ctx)) < 0)
     {
         CLOSE(sckid);
         log_error(lsn->log, "Send command failed! sckid:[%d]", sckid);
@@ -286,49 +285,6 @@ static int sdtp_rlsn_cmd_core_hdl(sdtp_rctx_t *ctx, sdtp_rlsn_t *lsn)
     }
 
     return SDTP_ERR_UNKNOWN_CMD;
-}
-
-/******************************************************************************
- **函数名称: sdtp_cmd_rand_to_recv
- **功    能: 发送命令到接收线程
- **输入参数: 
- **     ctx: 全局对象
- **     cmd_sck_id: 命令套接字
- **     cmd: 处理命令
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **     1. 随机选择接收线程
- **     2. 发送命令至接收线程
- **注意事项: 如果发送失败，最多重复3次发送!
- **作    者: # Qifeng.zou # 2015.01.09 #
- ******************************************************************************/
-static int sdtp_cmd_rand_to_recv(sdtp_rctx_t *ctx, int cmd_sck_id, const sdtp_cmd_t *cmd)
-{
-    int tidx, times = 0;
-    char path[FILE_PATH_MAX_LEN];
-    sdtp_conf_t *conf = &ctx->conf;
-
-AGAIN:
-    /* 1. 随机选择接收线程 */
-    tidx = sdtp_rand_recv(ctx);
-
-    sdtp_rsvr_usck_path(conf, path, tidx);
-
-    /* 2. 发送命令至接收线程 */
-    if (unix_udp_send(cmd_sck_id, path, cmd, sizeof(sdtp_cmd_t)) < 0)
-    {
-        if (times++ < 3)
-        {
-            goto AGAIN;
-        }
-        
-        log_error(ctx->log, "errmsg:[%d] %s! path:%s type:%d",
-                errno, strerror(errno), path, cmd->type);
-        return SDTP_ERR;
-    }
-
-    return SDTP_OK;
 }
 
 /******************************************************************************
