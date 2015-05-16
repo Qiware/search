@@ -634,6 +634,11 @@ int flt_get_domain_ip_map(flt_cntx_t *ctx, char *host, ipaddr_t *ip)
     {
         if (AVL_NODE_EXIST == ret)
         {
+            if (!new_map->ip_num)
+            {
+                log_error(ctx->log, "IP num [%d] isn't right!", new_map->ip_num);
+                return FLT_ERR;
+            }
             memcpy(ip, &new_map->ip[rand()%new_map->ip_num], sizeof(ipaddr_t));
             slab_dealloc(ctx->slab, new_map->ip);
             slab_dealloc(ctx->slab, new_map);
@@ -644,6 +649,12 @@ int flt_get_domain_ip_map(flt_cntx_t *ctx, char *host, ipaddr_t *ip)
         slab_dealloc(ctx->slab, new_map);
         log_error(ctx->log, "Insert into hash table failed! ret:[%x/%x] host:[%s]",
                 ret, AVL_NODE_EXIST, host);
+        return FLT_ERR;
+    }
+
+    if (!new_map->ip_num)
+    {
+        log_error(ctx->log, "IP num [%d] isn't right!", new_map->ip_num);
         return FLT_ERR;
     }
 
