@@ -393,7 +393,7 @@ static int sdtp_rlsn_cmd_query_proc_stat_hdl(sdtp_rctx_t *ctx, sdtp_rlsn_t *lsn,
 {
     int idx;
     sdtp_cmd_t rep;
-    const sdtp_rwrk_t *wrk = (sdtp_rwrk_t *)ctx->worktp->data;
+    const sdtp_worker_t *wrk = (sdtp_worker_t *)ctx->worktp->data;
     sdtp_cmd_proc_stat_t *stat = (sdtp_cmd_proc_stat_t *)&rep.args;
 
     for (idx=0; idx<ctx->conf.work_thd_num; ++idx, ++wrk)

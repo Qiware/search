@@ -419,13 +419,13 @@ void sdtp_recvtp_destroy(void *_ctx, void *args)
 static int sdtp_creat_worktp(sdtp_rctx_t *ctx)
 {
     int idx;
-    sdtp_rwrk_t *wrk;
+    sdtp_worker_t *wrk;
     thread_pool_opt_t opt;
     sdtp_conf_t *conf = &ctx->conf;
 
 
     /* > 创建工作对象 */
-    wrk = (void *)calloc(conf->work_thd_num, sizeof(sdtp_rwrk_t));
+    wrk = (void *)calloc(conf->work_thd_num, sizeof(sdtp_worker_t));
     if (NULL == wrk)
     {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
@@ -480,7 +480,7 @@ void sdtp_worktp_destroy(void *_ctx, void *args)
     int idx;
     sdtp_rctx_t *ctx = (sdtp_rctx_t *)_ctx;
     sdtp_conf_t *conf = &ctx->conf;
-    sdtp_rwrk_t *wrk = (sdtp_rwrk_t *)ctx->worktp->data;
+    sdtp_worker_t *wrk = (sdtp_worker_t *)ctx->worktp->data;
 
     for (idx=0; idx<conf->work_thd_num; ++idx, ++wrk)
     {
@@ -509,6 +509,5 @@ void sdtp_worktp_destroy(void *_ctx, void *args)
  ******************************************************************************/
 static int sdtp_proc_def_hdl(int type, char *buff, size_t len, void *args)
 {
-    plog_debug("Call %s() type:%u len:%d", __func__, type, len);
     return SDTP_OK;
 }

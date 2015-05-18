@@ -14,8 +14,8 @@
 #define SDTP_SSVR_TMOUT_SEC     (1)     /* SND超时: 秒 */
 #define SDTP_SSVR_TMOUT_USEC    (0)     /* SND超时: 微妙 */
 
+#define SDTP_WORKER_HDL_QNUM    (2)     /* 各Worker线程负责的队列数 */
 #define SDTP_TYPE_MAX           (0xFF)  /* 自定义数据类型的最大值 */
-
 #define SDTP_MEM_POOL_SIZE      (10*MB) /* 内存池大小 */
 
 /* 系统数据类型 */
@@ -118,5 +118,35 @@ typedef struct
     short ison;                     /* 是否开启绑定CPU功能 */
     short start;                    /* 绑定CPU的起始CPU编号 */
 } sdtp_cpu_conf_t;
+
+/* 工作对象 */
+typedef struct
+{
+    int tidx;                           /* 线程索引 */
+    log_cycle_t *log;                   /* 日志对象 */
+
+    int cmd_sck_id;                     /* 命令套接字 */
+
+    int max;                            /* 套接字最大值 */
+    fd_set rdset;                       /* 可读套接字集合 */
+
+    uint64_t proc_total;                /* 已处理条数 */
+    uint64_t drop_total;                /* 丢弃条数 */
+    uint64_t err_total;                 /* 错误条数 */
+} sdtp_worker_t;
+
+/* 回调注册 */
+typedef int (*sdtp_reg_cb_t)(int type, char *buff, size_t len, void *args);
+typedef struct
+{
+    int type;                           /* 消息类型. Range: 0~SDTP_TYPE_MAX */
+#define SDTP_FLAG_UNREG     (0)         /* 0: 未注册 */
+#define SDTP_FLAG_REGED     (1)         /* 1: 已注册 */
+    int flag;                           /* 注册标识 
+                                            - 0: 未注册
+                                            - 1: 已注册 */
+    sdtp_reg_cb_t proc;                 /* 回调函数指针 */
+    void *args;                         /* 附加参数 */
+} sdtp_reg_t;
 
 #endif /*__SDTP_PRIV_H__*/

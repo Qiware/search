@@ -15,9 +15,9 @@
 #include "thread_pool.h"
 
 /* 静态函数 */
-static sdtp_rwrk_t *sdtp_rwrk_get_curr(sdtp_rctx_t *ctx);
-static int sdtp_rwrk_event_core_hdl(sdtp_rctx_t *ctx, sdtp_rwrk_t *wrk);
-static int sdtp_rwrk_cmd_proc_req_hdl(sdtp_rctx_t *ctx, sdtp_rwrk_t *wrk, const sdtp_cmd_t *cmd);
+static sdtp_worker_t *sdtp_rwrk_get_curr(sdtp_rctx_t *ctx);
+static int sdtp_rwrk_event_core_hdl(sdtp_rctx_t *ctx, sdtp_worker_t *wrk);
+static int sdtp_rwrk_cmd_proc_req_hdl(sdtp_rctx_t *ctx, sdtp_worker_t *wrk, const sdtp_cmd_t *cmd);
 
 /******************************************************************************
  **函数名称: sdtp_rwrk_routine
@@ -36,7 +36,7 @@ static int sdtp_rwrk_cmd_proc_req_hdl(sdtp_rctx_t *ctx, sdtp_rwrk_t *wrk, const 
 void *sdtp_rwrk_routine(void *_ctx)
 {
     int ret, idx;
-    sdtp_rwrk_t *wrk;
+    sdtp_worker_t *wrk;
     sdtp_cmd_proc_req_t *req;
     struct timeval timeout;
     sdtp_rctx_t *ctx = (sdtp_rctx_t *)_ctx;
@@ -112,7 +112,7 @@ void *sdtp_rwrk_routine(void *_ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.06 #
  ******************************************************************************/
-static sdtp_rwrk_t *sdtp_rwrk_get_curr(sdtp_rctx_t *ctx)
+static sdtp_worker_t *sdtp_rwrk_get_curr(sdtp_rctx_t *ctx)
 {
     int tidx;
     
@@ -125,7 +125,7 @@ static sdtp_rwrk_t *sdtp_rwrk_get_curr(sdtp_rctx_t *ctx)
     }
 
     /* 2. 返回工作对象 */
-    return (sdtp_rwrk_t *)(ctx->worktp->data + tidx * sizeof(sdtp_rwrk_t));
+    return (sdtp_worker_t *)(ctx->worktp->data + tidx * sizeof(sdtp_worker_t));
 }
 
 /******************************************************************************
@@ -142,7 +142,7 @@ static sdtp_rwrk_t *sdtp_rwrk_get_curr(sdtp_rctx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.06 #
  ******************************************************************************/
-int sdtp_rwrk_init(sdtp_rctx_t *ctx, sdtp_rwrk_t *wrk, int tidx)
+int sdtp_rwrk_init(sdtp_rctx_t *ctx, sdtp_worker_t *wrk, int tidx)
 {
     char path[FILE_PATH_MAX_LEN];
     sdtp_conf_t *conf = &ctx->conf; 
@@ -176,7 +176,7 @@ int sdtp_rwrk_init(sdtp_rctx_t *ctx, sdtp_rwrk_t *wrk, int tidx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.06 #
  ******************************************************************************/
-static int sdtp_rwrk_event_core_hdl(sdtp_rctx_t *ctx, sdtp_rwrk_t *wrk)
+static int sdtp_rwrk_event_core_hdl(sdtp_rctx_t *ctx, sdtp_worker_t *wrk)
 {
     sdtp_cmd_t cmd;
 
@@ -220,7 +220,7 @@ static int sdtp_rwrk_event_core_hdl(sdtp_rctx_t *ctx, sdtp_rwrk_t *wrk)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.06 #
  ******************************************************************************/
-static int sdtp_rwrk_cmd_proc_req_hdl(sdtp_rctx_t *ctx, sdtp_rwrk_t *wrk, const sdtp_cmd_t *cmd)
+static int sdtp_rwrk_cmd_proc_req_hdl(sdtp_rctx_t *ctx, sdtp_worker_t *wrk, const sdtp_cmd_t *cmd)
 {
     int *num, idx;
     void *addr, *ptr;

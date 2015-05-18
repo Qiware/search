@@ -23,20 +23,15 @@
 #define SDTP_CMD_RESND_TIMES (3)        /* 命令重发次数 */
 #define SDTP_CTX_POOL_SIZE  (5 * MB)    /* 全局内存池空间 */
 
-#define SDTP_WORKER_HDL_QNUM (2)        /* 各Worker线程负责的队列数 */
-
 /* Recv线程的UNIX-UDP路径 */
 #define sdtp_rsvr_usck_path(conf, path, tidx) \
-    snprintf(path, sizeof(path), "../temp/sdtp/recv/%s/usck/%s_rsvr_%d.usck", \
-        conf->name, conf->name, tidx+1)
+    snprintf(path, sizeof(path), "../temp/sdtp/recv/%s/usck/%s_rsvr_%d.usck", conf->name, conf->name, tidx+1)
 /* Worker线程的UNIX-UDP路径 */
 #define sdtp_rwrk_usck_path(conf, path, tidx) \
-    snprintf(path, sizeof(path), "../temp/sdtp/recv/%s/usck/%s_wsvr_%d.usck", \
-        conf->name, conf->name, tidx+1)
+    snprintf(path, sizeof(path), "../temp/sdtp/recv/%s/usck/%s_wsvr_%d.usck", conf->name, conf->name, tidx+1)
 /* Listen线程的UNIX-UDP路径 */
 #define sdtp_rlsn_usck_path(conf, path) \
-    snprintf(path, sizeof(path), "../temp/sdtp/recv/%s/usck/%s_listen.usck", \
-        conf->name, conf->name)
+    snprintf(path, sizeof(path), "../temp/sdtp/recv/%s/usck/%s_listen.usck", conf->name, conf->name)
 
 /* 配置信息 */
 typedef struct
@@ -49,20 +44,6 @@ typedef struct
 
     queue_conf_t recvq;                 /* 队列配置信息 */
 } sdtp_conf_t;
-
-/* 回调注册 */
-typedef int (*sdtp_reg_cb_t)(int type, char *buff, size_t len, void *args);
-typedef struct
-{
-    int type;                           /* 消息类型. Range: 0~SDTP_TYPE_MAX */
-#define SDTP_FLAG_UNREG     (0)         /* 0: 未注册 */
-#define SDTP_FLAG_REGED     (1)         /* 1: 已注册 */
-    int flag;                           /* 注册标识 
-                                            - 0: 未注册
-                                            - 1: 已注册 */
-    sdtp_reg_cb_t proc;                 /* 回调函数指针 */
-    void *args;                         /* 附加参数 */
-} sdtp_reg_t;
 
 /* 侦听对象 */
 typedef struct
@@ -126,22 +107,6 @@ typedef struct
     uint64_t drop_total;                /* 丢弃的数据条数 */
 } sdtp_rsvr_t;
 
-/* 工作对象 */
-typedef struct
-{
-    int tidx;                           /* 线程索引 */
-    log_cycle_t *log;                   /* 日志对象 */
-
-    int cmd_sck_id;                     /* 命令套接字 */
-
-    int max;                            /* 套接字最大值 */
-    fd_set rdset;                       /* 可读套接字集合 */
-
-    uint64_t proc_total;                /* 已处理条数 */
-    uint64_t drop_total;                /* 丢弃条数 */
-    uint64_t err_total;                 /* 错误条数 */
-} sdtp_rwrk_t;
-
 /* 全局对象 */
 typedef struct
 {
@@ -172,7 +137,7 @@ void *sdtp_rsvr_routine(void *_ctx);
 int sdtp_rsvr_init(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, int tidx);
 
 void *sdtp_rwrk_routine(void *_ctx);
-int sdtp_rwrk_init(sdtp_rctx_t *ctx, sdtp_rwrk_t *worker, int tidx);
+int sdtp_rwrk_init(sdtp_rctx_t *ctx, sdtp_worker_t *worker, int tidx);
 
 void sdtp_rsvr_del_all_conn_hdl(sdtp_rsvr_t *rsvr);
 
