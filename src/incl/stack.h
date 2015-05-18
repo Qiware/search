@@ -19,7 +19,7 @@ typedef struct
 {
     void **base;    /* 栈基地址 */
     void **top;     /* 栈顶地址 */
-    int size;       /* 栈的大小 */
+    int max;        /* 栈的大小 */
 } Stack_t;
 
 /******************************************************************************
@@ -27,24 +27,24 @@ typedef struct
  **功    能: 栈初始化
  **输入参数:
  **      stack: 栈
- **      size: 栈的大小
+ **      max: 栈的大小
  **输出参数:
  **返    回: 0: 成功  !0: 失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
-static inline int stack_init(Stack_t *stack, int size)
+static inline int stack_init(Stack_t *stack, int max)
 {
     memset(stack, 0, sizeof(Stack_t));
 
-    stack->base = (void**)calloc(size, sizeof(void*));
+    stack->base = (void**)calloc(max, sizeof(void*));
     if (NULL == stack->base)
     {
         return -1;
     }
     stack->top= stack->base;
-    stack->size = size;
+    stack->max = max;
 
     return 0;
 }
@@ -67,7 +67,7 @@ static inline int stack_destroy(Stack_t *stack)
     free(stack->base);
     stack->base = NULL;
     stack->top = NULL;
-    stack->size = 0;
+    stack->max = 0;
 
     return 0;
 }
@@ -85,7 +85,7 @@ static inline int stack_destroy(Stack_t *stack)
  ******************************************************************************/
 static inline int stack_push(Stack_t *stack, void *node)
 {
-    if ((stack->top - stack->base) >= stack->size)
+    if ((stack->top - stack->base) >= stack->max)
     {
         return -1;
     }
@@ -108,21 +108,20 @@ static inline int stack_push(Stack_t *stack, void *node)
  **      在此只负责将节点弹出栈，并不负责内存空间的释放
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
-static inline int stack_pop(Stack_t *stack)
+static inline void *stack_pop(Stack_t *stack)
 {
     if (stack->base == stack->top)
     {
-        return -1;
+        return NULL;
     }
 
     stack->top--;
-    *(stack->top) = NULL;
-    return 0;
+    return *(stack->top);
 }
 
 #define stack_isempty(stack) (((stack)->base == (stack)->top)? true : false) /* 栈是否为空 */
 #define stack_gettop(stack) (((stack)->base == (stack)->top)? NULL: *((stack)->top-1)) /* 取栈顶元素 */
 #define stack_depth(stack) ((stack)->top - (stack)->base)  /* 栈当前深度 */
-#define stack_maxdepth(stack) ((stack)->size)   /* 栈最大深度 */
+#define stack_maxdepth(stack) ((stack)->max)   /* 栈最大深度 */
 
 #endif /*__STACK_H__*/

@@ -990,9 +990,7 @@ int xml_delete_empty(xml_tree_t *xml)
                 }
 
                 /* 3.2 已无兄弟节点: 则处理父节点的兄弟节点 */
-                node = stack_gettop(stack);
-
-                stack_pop(stack);
+                node = stack_pop(stack);
             } while(1);
             continue;
         }
@@ -1070,7 +1068,7 @@ static xml_node_t *_xml_delete_empty(xml_tree_t *xml, Stack_t *stack, xml_node_t
 
         /* 开始处理父节点 */
         node = parent;
-        
+
         stack_pop(stack);
 
         /* 删除无属性、无孩子、无节点值的节点 */
@@ -1084,9 +1082,7 @@ static xml_node_t *_xml_delete_empty(xml_tree_t *xml, Stack_t *stack, xml_node_t
             return node->next; /* 处理父节点的兄弟节点 */
         }
 
-        node = stack_gettop(stack);
-        
-        stack_pop(stack);
+        node = stack_pop(stack);
     } while(NULL != node);
 
     return NULL;

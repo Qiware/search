@@ -485,7 +485,7 @@ static int xml_parse_note(xml_tree_t *xml, xml_parse_t *parse)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.02.23 #
  ******************************************************************************/
-#define xml_mark_end(stack, parse) (parse->ptr+=XML_MARK_END2_LEN, stack_pop(stack))
+#define xml_mark_end(stack, parse) (parse->ptr+=XML_MARK_END2_LEN, stack_pop(stack), 0)
 
 /******************************************************************************
  **函数名称: xml_parse_mark
@@ -589,7 +589,7 @@ static int xml_parse_end(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse)
     len = ptr - parse->ptr;
 
     /* 2. 获取栈中顶节点信息 */
-    top = (xml_node_t*)stack_gettop(stack);
+    top = (xml_node_t*)stack_pop(stack);
     if (NULL == top)
     {
         plog_error("Get stack top member failed!");
@@ -602,13 +602,6 @@ static int xml_parse_end(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse)
     {
         plog_error("Mark name is not match![%s][%-.32s]", top->name.str, parse->ptr);
         return XML_ERR_MARK_MISMATCH;
-    }
-
-    /* 4. 弹出栈顶节点 */
-    if (stack_pop(stack))
-    {
-        plog_error("Pop failed!");
-        return XML_ERR_STACK;
     }
 
     ptr++;
@@ -1211,9 +1204,8 @@ xml_node_t *xml_free_next(xml_tree_t *xml, Stack_t *stack, xml_node_t *curr)
     else                            /* 再次: 处理其兄弟节点: 选出下一个兄弟节点 */
     {
         /* 1. 弹出已经处理完成的节点, 并释放 */
-        top = stack_gettop(stack);
-
-        if (stack_pop(stack))
+        top = stack_pop(stack);
+        if (NULL == top)
         {
             plog_error("Stack pop failed!");
             return NULL;
@@ -1231,8 +1223,8 @@ xml_node_t *xml_free_next(xml_tree_t *xml, Stack_t *stack, xml_node_t *curr)
         while (NULL == curr)     /* 所有兄弟节点已经处理完成，说明父亲节点也处理完成 */
         {
             /* 3. 父亲节点出栈 */
-            top = stack_gettop(stack);
-            if (stack_pop(stack))
+            top = stack_pop(stack);
+            if (NULL == top)
             {
                 plog_error("Stack pop failed!");
                 return NULL;
@@ -1429,7 +1421,7 @@ static xml_node_t *xml_node_next_length(
         length2 += (top->name.len + 4);
     }
 
-    if (stack_pop(stack))
+    if (NULL == stack_pop(stack))
     {
         *length += length2;
         plog_error("Stack pop failed!");
@@ -1448,8 +1440,8 @@ static xml_node_t *xml_node_next_length(
     while (NULL == node)     /* 所有兄弟节点已经处理完成，说明父亲节点也处理完成 */
     {
         /* 3. 父亲节点出栈 */
-        top = stack_gettop(stack);
-        if (stack_pop(stack))
+        top = stack_pop(stack);
+        if (NULL == top)
         {
             *length += length2;
             plog_error("Stack pop failed!");

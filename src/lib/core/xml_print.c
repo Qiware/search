@@ -102,7 +102,7 @@ static xml_node_t *xml_fprint_next(
     else                        /* 再次: 处理其兄弟节点: 选出下一个兄弟节点 */
     {
         /* 1. 弹出已经处理完成的节点 */
-        top = stack_gettop(stack);
+        top = stack_pop(stack);
         if (xml_has_child(top))
         {
             depth = stack_depth(stack);
@@ -114,13 +114,7 @@ static xml_node_t *xml_fprint_next(
             }
             fprintf(fp, "</%s>\n", top->name.str);
         }
-        
-        if (stack_pop(stack))
-        {
-            plog_error("Stack pop failed!");
-            return NULL;
-        }
-        
+
         if (stack_isempty(stack))
         {
             plog_error("Compelte fprint!");
@@ -132,8 +126,8 @@ static xml_node_t *xml_fprint_next(
         while (NULL == node)     /* 所有兄弟节点已经处理完成，说明父亲节点也处理完成 */
         {
             /* 3. 父亲节点出栈 */
-            top = stack_gettop(stack);
-            if (stack_pop(stack))
+            top = stack_pop(stack);
+            if (NULL == top)
             {
                 plog_error("Stack pop failed!");
                 return NULL;
@@ -365,7 +359,7 @@ static xml_node_t *xml_pack_next_length(
         length2 += top->name.len + 3;
     }
 
-    if (stack_pop(stack))
+    if (NULL == stack_pop(stack))
     {
         *length += length2;
         plog_error("Stack pop failed!");
@@ -384,8 +378,8 @@ static xml_node_t *xml_pack_next_length(
     while (NULL == node)     /* 所有兄弟节点已经处理完成，说明父亲节点也处理完成 */
     {
         /* 3. 父亲节点出栈 */
-        top = stack_gettop(stack);
-        if (stack_pop(stack))
+        top = stack_pop(stack);
+        if (NULL == top)
         {
             *length += length2;
             plog_error("Stack pop failed!");
@@ -596,17 +590,17 @@ static xml_node_t *xml_pack_next(
     /* 再次: 处理其兄弟节点: 选出下一个兄弟节点 */
 
     /* 1. 弹出已经处理完成的节点 */
-    top = stack_gettop(stack);
+    top = stack_pop(stack);
+    if (NULL == top)
+    {
+        plog_error("Stack pop failed!");
+        return NULL;
+    }
+
     if (xml_has_child(top))
     {
         sprintf(sp->ptr, "</%s>", top->name.str);
         sp->ptr += (top->name.len + 3);
-    }
-
-    if (stack_pop(stack))
-    {
-        plog_error("Stack pop failed!");
-        return NULL;
     }
 
     if (stack_isempty(stack))
@@ -620,8 +614,8 @@ static xml_node_t *xml_pack_next(
     while (NULL == node)     /* 所有兄弟节点已经处理完成，说明父亲节点也处理完成 */
     {
         /* 3. 父亲节点出栈 */
-        top = stack_gettop(stack);
-        if (stack_pop(stack))
+        top = stack_pop(stack);
+        if (NULL == top)
         {
             plog_error("Stack pop failed!");
             return NULL;
@@ -807,7 +801,7 @@ static xml_node_t *xml_sprint_next(
     else                        /* 再次: 处理其兄弟节点: 选出下一个兄弟节点 */
     {
         /* 1. 弹出已经处理完成的节点 */
-        top = stack_gettop(stack);
+        top = stack_pop(stack);
         if (xml_has_child(top))
         {
             depth = stack_depth(stack);
@@ -822,12 +816,6 @@ static xml_node_t *xml_sprint_next(
             sp->ptr += (top->name.len + 4);
         }
         
-        if (stack_pop(stack))
-        {
-            plog_error("Stack pop failed!");
-            return NULL;
-        }
-        
         if (stack_isempty(stack))
         {
             plog_error("Compelte fprint!");
@@ -839,8 +827,8 @@ static xml_node_t *xml_sprint_next(
         while (NULL == node)     /* 所有兄弟节点已经处理完成，说明父亲节点也处理完成 */
         {
             /* 3. 父亲节点出栈 */
-            top = stack_gettop(stack);
-            if (stack_pop(stack))
+            top = stack_pop(stack);
+            if (NULL == top)
             {
                 plog_error("Stack pop failed!");
                 return NULL;
