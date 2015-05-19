@@ -16,31 +16,11 @@
 /* 发送类型 */
 typedef enum
 {
-    SDTP_SNAP_SYS_DATA
-    , SDTP_SNAP_EXP_DATA 
+    SDTP_SHOT_SNAP_SYS_DATA
+    , SDTP_SHOT_SNAP_EXP_DATA 
 
-    , SDTP_SNAP_TOTAL
+    , SDTP_SHOT_SNAP_TOTAL
 } sdtp_send_snap_e;
-
-/* 发送端配置 */
-typedef struct
-{
-    char name[SDTP_NAME_MAX_LEN];       /* 发送端名称 */
-
-    char ipaddr[IP_ADDR_MAX_LEN];       /* 服务端IP地址 */
-    int port;                           /* 服务端端口号 */
-
-    int send_thd_num;                   /* 发送线程数 */
-    int work_thd_num;                   /* 工作线程数 */
-
-    size_t send_buff_size;              /* 发送缓存大小 */
-    size_t recv_buff_size;              /* 接收缓存大小 */
-
-    sdtp_cpu_conf_t cpu;                /* CPU亲和性配置 */
-
-    sdtp_queue_conf_t sendq;            /* 发送队列配置 */
-    queue_conf_t recvq;                 /* 接收队列配置 */
-} sdtp_ssvr_conf_t;
 
 /* 套接字信息 */
 typedef struct
@@ -60,7 +40,7 @@ typedef struct
 
     sdtp_snap_t recv;                   /* 接收快照 */
     sdtp_send_snap_e send_type;         /* 发送类型(系统数据或自定义数据) */
-    sdtp_snap_t send[SDTP_SNAP_TOTAL];  /* 发送快照 */
+    sdtp_snap_t send[SDTP_SHOT_SNAP_TOTAL];  /* 发送快照 */
 } sdtp_ssck_t;
 
 #define sdtp_set_kpalive_stat(sck, _stat) (sck)->kpalive = (_stat)
@@ -69,7 +49,7 @@ typedef struct
 typedef struct
 {
     int tidx;                           /* 线程索引 */
-    sdtp_pool_t *sq;                    /* 发送缓存 */
+    sdtp_pool_t *sendq;                 /* 发送缓存 */
     log_cycle_t *log;                   /* 日志对象 */
 
     int cmd_sck_id;                     /* 命令通信套接字ID */

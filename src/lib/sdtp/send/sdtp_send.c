@@ -169,7 +169,7 @@ sdtp_sctx_t *sdtp_send_init(const sdtp_ssvr_conf_t *conf, log_cycle_t *log)
 }
 
 /******************************************************************************
- **函数名称: sdtp_send_startup
+ **函数名称: sdtp_send_start
  **功    能: 启动发送端
  **输入参数: 
  **     ctx: 全局信息
@@ -181,7 +181,7 @@ sdtp_sctx_t *sdtp_send_init(const sdtp_ssvr_conf_t *conf, log_cycle_t *log)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-int sdtp_send_startup(sdtp_sctx_t *ctx)
+int sdtp_send_start(sdtp_sctx_t *ctx)
 {
     /* > 创建工作线程池 */
     if (sdtp_send_creat_worktp(ctx))

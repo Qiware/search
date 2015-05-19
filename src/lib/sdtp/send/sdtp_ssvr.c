@@ -45,7 +45,7 @@ int sdtp_ssvr_init(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, int tidx)
     list_opt_t opt;
     sdtp_ssvr_conf_t *conf = &ctx->conf;
     sdtp_snap_t *recv = &ssvr->sck.recv;
-    sdtp_snap_t *send = &ssvr->sck.send[SDTP_SNAP_SYS_DATA];
+    sdtp_snap_t *send = &ssvr->sck.send[SDTP_SHOT_SNAP_SYS_DATA];
 
     ssvr->tidx = tidx;
     ssvr->log = ctx->log;
@@ -175,8 +175,8 @@ static int sdtp_ssvr_creat_sendq(sdtp_ssvr_t *ssvr, const sdtp_ssvr_conf_t *conf
     /* 1. 创建/连接发送队列 */
     snprintf(path, sizeof(path), "%s-%d", qcf->name, ssvr->tidx);
 
-    ssvr->sq = sdtp_pool_creat(path, qcf->count, qcf->size);
-    if (NULL == ssvr->sq)
+    ssvr->sendq = sdtp_pool_creat(path, qcf->count, qcf->size);
+    if (NULL == ssvr->sendq)
     {
         log_error(ssvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return SDTP_ERR;
@@ -269,9 +269,9 @@ void sdtp_switch_send_data(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
     /* > 检查是否发送完系统消息 */
     switch (sck->send_type)
     {
-        case SDTP_SNAP_SYS_DATA:
+        case SDTP_SHOT_SNAP_SYS_DATA:
         {
-            send = &sck->send[SDTP_SNAP_SYS_DATA];
+            send = &sck->send[SDTP_SHOT_SNAP_SYS_DATA];
             if (!list_isempty(sck->mesg_list)
                 || (send->iptr != send->optr))
             {
@@ -279,11 +279,11 @@ void sdtp_switch_send_data(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
             }
             break;
         }
-        case SDTP_SNAP_EXP_DATA:
+        case SDTP_SHOT_SNAP_EXP_DATA:
         default:
         {
             /* > 检查是否发送完外部数据 */
-            send = &sck->send[SDTP_SNAP_EXP_DATA];
+            send = &sck->send[SDTP_SHOT_SNAP_EXP_DATA];
             if (send->iptr != send->optr)
             {
                 return; /* 缓存数据仍然未发送完全 */
@@ -291,23 +291,23 @@ void sdtp_switch_send_data(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
 
             if (!list_isempty(sck->mesg_list))
             {
-                sck->send_type = SDTP_SNAP_SYS_DATA;
+                sck->send_type = SDTP_SHOT_SNAP_SYS_DATA;
                 return; /* 有消息可发送 */
             }
             break;
         }
     }
 
-    page = sdtp_pool_switch(ssvr->sq);
+    page = sdtp_pool_switch(ssvr->sendq);
     if (NULL == page)
     {
         return; /* 无可发送的数据 */
     }
 
-    sck->send_type = SDTP_SNAP_EXP_DATA;
-    send = &sck->send[SDTP_SNAP_EXP_DATA];
+    sck->send_type = SDTP_SHOT_SNAP_EXP_DATA;
+    send = &sck->send[SDTP_SHOT_SNAP_EXP_DATA];
 
-    send->addr = (void *)ssvr->sq->head + page->begin;
+    send->addr = (void *)ssvr->sendq->head + page->begin;
     send->end = send->addr + page->off;
     send->total = page->off;
     send->optr = send->addr;
@@ -367,8 +367,8 @@ void sdtp_ssvr_set_rwset(sdtp_ssvr_t *ssvr)
         return;
     }
 
-    snap = &ssvr->sck.send[SDTP_SNAP_SYS_DATA];
-    for (idx=0; idx<SDTP_SNAP_TOTAL; ++idx, ++snap)
+    snap = &ssvr->sck.send[SDTP_SHOT_SNAP_SYS_DATA];
+    for (idx=0; idx<SDTP_SHOT_SNAP_TOTAL; ++idx, ++snap)
     {
         if (snap->iptr != snap->optr)
         {
@@ -504,7 +504,7 @@ static int sdtp_ssvr_kpalive_req(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
     sdtp_header_t *head;
     int size = sizeof(sdtp_header_t);
     sdtp_ssck_t *sck = &ssvr->sck;
-    sdtp_snap_t *send = &ssvr->sck.send[SDTP_SNAP_SYS_DATA];
+    sdtp_snap_t *send = &ssvr->sck.send[SDTP_SHOT_SNAP_SYS_DATA];
 
     /* 1. 上次发送保活请求之后 仍未收到应答 */
     if ((sck->fd < 0) 
@@ -881,7 +881,7 @@ static int sdtp_ssvr_fill_send_buff(sdtp_ssvr_t *ssvr, sdtp_ssck_t *sck)
 {
     uint32_t left, mesg_len;
     sdtp_header_t *head;
-    sdtp_snap_t *send = &sck->send[SDTP_SNAP_SYS_DATA];
+    sdtp_snap_t *send = &sck->send[SDTP_SHOT_SNAP_SYS_DATA];
 
     /* > 从消息链表取数据 */
     for (;;)
@@ -951,7 +951,7 @@ static int sdtp_ssvr_send_sys_data(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
 {
     int n, len;
     sdtp_ssck_t *sck = &ssvr->sck;
-    sdtp_snap_t *send = &sck->send[SDTP_SNAP_SYS_DATA];
+    sdtp_snap_t *send = &sck->send[SDTP_SHOT_SNAP_SYS_DATA];
 
     sck->wrtm = time(NULL);
 
@@ -1022,7 +1022,7 @@ static int sdtp_ssvr_send_exp_data(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
 {
     int n, len;
     sdtp_ssck_t *sck = &ssvr->sck;
-    sdtp_snap_t *send = &sck->send[SDTP_SNAP_EXP_DATA];
+    sdtp_snap_t *send = &sck->send[SDTP_SHOT_SNAP_EXP_DATA];
 
     sck->wrtm = time(NULL);
 
@@ -1065,7 +1065,7 @@ static int sdtp_ssvr_send_data(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
 {
     sdtp_ssck_t *sck = &ssvr->sck;
 
-    if (SDTP_SNAP_SYS_DATA == sck->send_type)
+    if (SDTP_SHOT_SNAP_SYS_DATA == sck->send_type)
     {
         return sdtp_ssvr_send_sys_data(ctx, ssvr);
     }

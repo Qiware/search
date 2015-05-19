@@ -114,8 +114,8 @@ static int sdtp_cli_shmat(sdtp_cli_t *cli)
     sdtp_ssvr_conf_t *conf = &cli->conf;
 
     /* 1. 新建队列对象 */
-    cli->sq = (sdtp_pool_t **)mem_pool_alloc(cli->pool, conf->send_thd_num * sizeof(shm_queue_t *));
-    if (NULL == cli->sq)
+    cli->sendq = (sdtp_pool_t **)mem_pool_alloc(cli->pool, conf->send_thd_num * sizeof(shm_queue_t *));
+    if (NULL == cli->sendq)
     {
         log_error(cli->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return SDTP_ERR;
@@ -127,8 +127,8 @@ static int sdtp_cli_shmat(sdtp_cli_t *cli)
     {
         snprintf(path, sizeof(path), "%s-%d", qcf->name, idx);
 
-        cli->sq[idx] = sdtp_pool_attach(path);
-        if (NULL == cli->sq[idx])
+        cli->sendq[idx] = sdtp_pool_attach(path);
+        if (NULL == cli->sendq[idx])
         {
             log_error(cli->log, "errmsg:[%d] %s! path:[%s]", errno, strerror(errno), qcf->name);
             return SDTP_ERR;
@@ -224,7 +224,7 @@ int sdtp_cli_send(sdtp_cli_t *cli, int type, const void *data, size_t size)
     {
         idx = (num++)%conf->send_thd_num;
 
-        if (sdtp_pool_push(cli->sq[idx], type, data, size))
+        if (sdtp_pool_push(cli->sendq[idx], type, data, size))
         {
             continue;
         }
