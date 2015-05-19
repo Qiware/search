@@ -5,7 +5,7 @@
 #include "slab.h"
 #include "list.h"
 #include "avl_tree.h"
-#include "sdtp_priv.h"
+#include "sdtp_comm.h"
 #include "sdtp_pool.h"
 #include "thread_pool.h"
 
@@ -25,15 +25,21 @@ typedef enum
 /* 发送端配置 */
 typedef struct
 {
-    char name[SDTP_NAME_MAX_LEN];   /* 发送端名称 */
-    char ipaddr[IP_ADDR_MAX_LEN];   /* 服务端IP地址 */
-    int port;                       /* 服务端端口号 */
-    int snd_thd_num;                /* 发送线程数 */
+    char name[SDTP_NAME_MAX_LEN];       /* 发送端名称 */
 
-    size_t send_buff_size;          /* 发送缓存大小 */
-    size_t recv_buff_size;          /* 接收缓存大小 */
-    sdtp_cpu_conf_t cpu;            /* CPU亲和性配置 */
-    sdtp_queue_conf_t qcf;          /* 发送队列配置 */
+    char ipaddr[IP_ADDR_MAX_LEN];       /* 服务端IP地址 */
+    int port;                           /* 服务端端口号 */
+
+    int send_thd_num;                   /* 发送线程数 */
+    int work_thd_num;                   /* 工作线程数 */
+
+    size_t send_buff_size;              /* 发送缓存大小 */
+    size_t recv_buff_size;              /* 接收缓存大小 */
+
+    sdtp_cpu_conf_t cpu;                /* CPU亲和性配置 */
+
+    sdtp_queue_conf_t sendq;            /* 发送队列配置 */
+    queue_conf_t recvq;                 /* 接收队列配置 */
 } sdtp_ssvr_conf_t;
 
 /* 套接字信息 */
@@ -55,7 +61,7 @@ typedef struct
     sdtp_snap_t recv;                   /* 接收快照 */
     sdtp_send_snap_e send_type;         /* 发送类型(系统数据或自定义数据) */
     sdtp_snap_t send[SDTP_SNAP_TOTAL];  /* 发送快照 */
-} sdtp_ssvr_sck_t;
+} sdtp_ssck_t;
 
 #define sdtp_set_kpalive_stat(sck, _stat) (sck)->kpalive = (_stat)
 
@@ -67,7 +73,7 @@ typedef struct
     log_cycle_t *log;                   /* 日志对象 */
 
     int cmd_sck_id;                     /* 命令通信套接字ID */
-    sdtp_ssvr_sck_t sck;                /* 发送套接字 */
+    sdtp_ssck_t sck;                    /* 发送套接字 */
 
     int max;                            /* 套接字最大值 */
     fd_set rset;                        /* 读集合 */
@@ -79,22 +85,5 @@ typedef struct
     uint64_t err_total;                 /* 错误的数据条数 */
     uint64_t drop_total;                /* 丢弃的数据条数 */
 } sdtp_ssvr_t;
-
-/* 发送端上下文信息 */
-typedef struct
-{
-    sdtp_ssvr_conf_t conf;              /* 配置信息 */
-    log_cycle_t *log;                   /* 日志对象 */
-    slab_pool_t *slab;                  /* 内存池对象 */
-
-    thread_pool_t *sendtp;              /* 发送线程池 */
-    thread_pool_t *worktp;              /* 工作线程池 */
-
-    sdtp_reg_t reg[SDTP_TYPE_MAX];      /* 回调注册对象 */
-    queue_t **recvq;                    /* 接收队列 */
-} sdtp_sctx_t;
-
-/* 对外接口 */
-sdtp_sctx_t *sdtp_ssvr_startup(const sdtp_ssvr_conf_t *conf, log_cycle_t *log);
 
 #endif /*__SDTP_SSVR_H__*/

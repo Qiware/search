@@ -3,7 +3,7 @@
 
 #include "mem_pool.h"
 #include "shm_queue.h"
-#include "sdtp_priv.h"
+#include "sdtp_comm.h"
 #include "sdtp_ssvr.h"
 
 /* 发送服务命令套接字 */

@@ -10,7 +10,7 @@
 
 #include "xml_tree.h"
 #include "sdtp_cmd.h"
-#include "sdtp_ssvr.h"
+#include "sdtp_send.h"
 #include "thread_pool.h"
 
 /* 静态函数 */
@@ -39,6 +39,7 @@ void *sdtp_swrk_routine(void *_ctx)
     sdtp_cmd_proc_req_t *req;
     struct timeval timeout;
     sdtp_sctx_t *ctx = (sdtp_sctx_t *)_ctx;
+    sdtp_ssvr_conf_t *conf = (sdtp_ssvr_conf_t *)&ctx->conf;
 
     /* 1. 获取工作对象 */
     wrk = sdtp_swrk_get_curr(ctx);
@@ -77,13 +78,13 @@ void *sdtp_swrk_routine(void *_ctx)
             sdtp_cmd_t cmd;
             req = (sdtp_cmd_proc_req_t *)&cmd.args;
 
-            for (idx=0; idx<SDTP_WORKER_HDL_QNUM; ++idx)
+            for (idx=0; idx<conf->work_thd_num; ++idx)
             {
                 memset(&cmd, 0, sizeof(cmd));
 
                 cmd.type = SDTP_CMD_PROC_REQ;
                 req->num = -1;
-                req->rqidx = SDTP_WORKER_HDL_QNUM * wrk->tidx + idx;
+                req->rqidx = idx;
 
                 sdtp_swrk_cmd_proc_req_hdl(ctx, wrk, &cmd);
             }

@@ -1,6 +1,6 @@
 #include "comm.h"
 #include "shm_opt.h"
-#include "sdtp_priv.h"
+#include "sdtp_comm.h"
 #include "sdtp_pool.h"
 
 /******************************************************************************

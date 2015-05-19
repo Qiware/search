@@ -1,6 +1,6 @@
 #include "sdtp.h"
 #include "sdtp_cmd.h"
-#include "sdtp_priv.h"
+#include "sdtp_comm.h"
 
 /******************************************************************************
  **函数名称: sdtp_cmd_to_rsvr

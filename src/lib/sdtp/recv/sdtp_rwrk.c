@@ -11,7 +11,7 @@
 #include "sdtp.h"
 #include "xml_tree.h"
 #include "sdtp_cmd.h"
-#include "sdtp_priv.h"
+#include "sdtp_comm.h"
 #include "thread_pool.h"
 
 /* 静态函数 */

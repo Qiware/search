@@ -13,7 +13,7 @@
 #include "syscall.h"
 #include "xml_tree.h"
 #include "sdtp_cmd.h"
-#include "sdtp_priv.h"
+#include "sdtp_comm.h"
 #include "thread_pool.h"
 
 static int _sdtp_init(sdtp_rctx_t *ctx);

@@ -9,7 +9,7 @@
 #include "list2.h"
 #include "queue.h"
 #include "sdtp_cmd.h"
-#include "sdtp_priv.h"
+#include "sdtp_comm.h"
 #include "thread_pool.h"
 
 /* 宏定义 */
@@ -57,7 +57,7 @@ typedef struct
 } sdtp_rlsn_t;
 
 /* 套接字信息 */
-typedef struct _sdtp_sck_t
+typedef struct _sdtp_rsck_t
 {
     int fd;                             /* 套接字ID */
     time_t ctm;                         /* 创建时间 */
@@ -71,7 +71,7 @@ typedef struct _sdtp_sck_t
     list_t *mesg_list;                  /* 发送消息链表 */
 
     uint64_t recv_total;                /* 接收的数据条数 */
-} sdtp_sck_t;
+} sdtp_rsck_t;
 
 /* 接收对象 */
 typedef struct

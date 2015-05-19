@@ -83,13 +83,13 @@ static void sdtp_setup_conf(sdtp_ssvr_conf_t *conf, int port)
     snprintf(conf->name, sizeof(conf->name), "SDTP-SEND");
     snprintf(conf->ipaddr, sizeof(conf->ipaddr), "127.0.0.1");
     conf->port = port;
-    conf->snd_thd_num = 1;
+    conf->send_thd_num = 1;
     conf->send_buff_size = 5 * MB;
     conf->recv_buff_size = 2 * MB;
 
-    snprintf(conf->qcf.name, sizeof(conf->qcf.name), "../temp/sdtp/sdtp-ssvr.key");
-    conf->qcf.size = 4096;
-    conf->qcf.count = 2048;
+    snprintf(conf->sendq.name, sizeof(conf->sendq.name), "../temp/sdtp/sdtp-ssvr.key");
+    conf->sendq.size = 4096;
+    conf->sendq.count = 2048;
 }
 
 int main(int argc, const char *argv[])

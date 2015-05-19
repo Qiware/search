@@ -12,7 +12,7 @@
 #include "syscall.h"
 #include "xml_tree.h"
 #include "sdtp_cmd.h"
-#include "sdtp_priv.h"
+#include "sdtp_comm.h"
 #include "thread_pool.h"
 
 /* 静态函数 */
@@ -23,21 +23,21 @@ static int sdtp_rsvr_event_timeout_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr);
 static int sdtp_rsvr_trav_recv(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr);
 static int sdtp_rsvr_trav_send(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr);
 
-static int sdtp_rsvr_recv_proc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_sck_t *sck);
-static int sdtp_rsvr_data_proc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_sck_t *sck);
+static int sdtp_rsvr_recv_proc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_rsck_t *sck);
+static int sdtp_rsvr_data_proc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_rsck_t *sck);
 
-static int sdtp_rsvr_sys_mesg_proc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_sck_t *sck);
-static int sdtp_rsvr_exp_mesg_proc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_sck_t *sck);
+static int sdtp_rsvr_sys_mesg_proc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_rsck_t *sck);
+static int sdtp_rsvr_exp_mesg_proc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_rsck_t *sck);
 
-static int sdtp_rsvr_keepalive_req_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_sck_t *sck);
+static int sdtp_rsvr_keepalive_req_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_rsck_t *sck);
 static int sdtp_rsvr_cmd_proc_req(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, int rqid);
 static int sdtp_rsvr_cmd_proc_all_req(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr);
 
 static int sdtp_rsvr_add_conn_hdl(sdtp_rsvr_t *rsvr, sdtp_cmd_add_sck_t *req);
 static int sdtp_rsvr_del_conn_hdl(sdtp_rsvr_t *rsvr, list2_node_t *node);
 
-static int sdtp_rsvr_fill_send_buff(sdtp_rsvr_t *rsvr, sdtp_sck_t *sck);
-static int sdtp_rsvr_clear_mesg(sdtp_rsvr_t *rsvr, sdtp_sck_t *sck);
+static int sdtp_rsvr_fill_send_buff(sdtp_rsvr_t *rsvr, sdtp_rsck_t *sck);
+static int sdtp_rsvr_clear_mesg(sdtp_rsvr_t *rsvr, sdtp_rsck_t *sck);
 
 static int sdtp_rsvr_queue_alloc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr);
 #define sdtp_rsvr_queue_push(ctx, rsvr) /* 将输入推入队列 */\
@@ -71,7 +71,7 @@ static int sdtp_rsvr_queue_alloc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr);
  ******************************************************************************/
 static void sdtp_rsvr_set_rdset(sdtp_rsvr_t *rsvr)
 {
-    sdtp_sck_t *curr;
+    sdtp_rsck_t *curr;
     list2_node_t *node, *next, *tail;
 
     FD_ZERO(&rsvr->rdset);
@@ -86,7 +86,7 @@ static void sdtp_rsvr_set_rdset(sdtp_rsvr_t *rsvr)
     }
     while (NULL != node)
     {
-        curr = (sdtp_sck_t *)node->data;
+        curr = (sdtp_rsck_t *)node->data;
         if ((rsvr->ctm - curr->rdtm > 30)
             && (rsvr->ctm - curr->wrtm > 30))
         {
@@ -128,7 +128,7 @@ static void sdtp_rsvr_set_rdset(sdtp_rsvr_t *rsvr)
  ******************************************************************************/
 static void sdtp_rsvr_set_wrset(sdtp_rsvr_t *rsvr)
 {
-    sdtp_sck_t *curr;
+    sdtp_rsck_t *curr;
     list2_node_t *node, *tail;
 
     FD_ZERO(&rsvr->wrset);
@@ -141,7 +141,7 @@ static void sdtp_rsvr_set_wrset(sdtp_rsvr_t *rsvr)
 
     while (NULL != node)
     {
-        curr = (sdtp_sck_t *)node->data;
+        curr = (sdtp_rsck_t *)node->data;
 
         if (list_isempty(curr->mesg_list)
             && (curr->send.optr == curr->send.iptr))
@@ -364,7 +364,7 @@ static int sdtp_rsvr_recv_cmd(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr)
  ******************************************************************************/
 static int sdtp_rsvr_trav_recv(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr)
 {
-    sdtp_sck_t *curr;
+    sdtp_rsck_t *curr;
     list2_node_t *node, *next, *tail;
 
     rsvr->ctm = time(NULL);
@@ -377,7 +377,7 @@ static int sdtp_rsvr_trav_recv(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr)
 
     while (NULL != node)
     {
-        curr = (sdtp_sck_t *)node->data;
+        curr = (sdtp_rsck_t *)node->data;
 
         if (FD_ISSET(curr->fd, &rsvr->rdset))
         {
@@ -435,7 +435,7 @@ static int sdtp_rsvr_trav_recv(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr)
 static int sdtp_rsvr_trav_send(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr)
 {
     int n, len;
-    sdtp_sck_t *curr;
+    sdtp_rsck_t *curr;
     sdtp_snap_t *send;
     list2_node_t *node, *tail;
 
@@ -449,7 +449,7 @@ static int sdtp_rsvr_trav_send(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr)
 
     while (NULL != node)
     {
-        curr = (sdtp_sck_t *)node->data;
+        curr = (sdtp_rsck_t *)node->data;
 
         if (FD_ISSET(curr->fd, &rsvr->wrset))
         {
@@ -528,7 +528,7 @@ static int sdtp_rsvr_trav_send(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr)
  **     addr     optr             iptr                   end
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int sdtp_rsvr_recv_proc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_sck_t *sck)
+static int sdtp_rsvr_recv_proc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_rsck_t *sck)
 {
     int n, left;
     sdtp_snap_t *recv = &sck->recv;
@@ -597,7 +597,7 @@ static int sdtp_rsvr_recv_proc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_sck_t *
  **     addr     optr             iptr                   end
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int sdtp_rsvr_data_proc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_sck_t *sck)
+static int sdtp_rsvr_data_proc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_rsck_t *sck)
 {
     bool flag = false;
     sdtp_header_t *head;
@@ -693,7 +693,7 @@ static int sdtp_rsvr_data_proc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_sck_t *
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int sdtp_rsvr_sys_mesg_proc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_sck_t *sck)
+static int sdtp_rsvr_sys_mesg_proc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_rsck_t *sck)
 {
     sdtp_snap_t *recv = &sck->recv;
     sdtp_header_t *head = (sdtp_header_t *)recv->addr;
@@ -768,7 +768,7 @@ static int sdtp_rsvr_queue_alloc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int sdtp_rsvr_exp_mesg_proc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_sck_t *sck)
+static int sdtp_rsvr_exp_mesg_proc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_rsck_t *sck)
 {
     int len;
     sdtp_snap_t *recv = &sck->recv;
@@ -872,7 +872,7 @@ static int sdtp_rsvr_event_core_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr)
 static int sdtp_rsvr_event_timeout_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr)
 {
     bool is_end = false;
-    sdtp_sck_t *curr;
+    sdtp_rsck_t *curr;
     list2_node_t *node, *next, *tail;
 
     rsvr->ctm = time(NULL);
@@ -900,7 +900,7 @@ static int sdtp_rsvr_event_timeout_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr)
             is_end = true;
         }
 
-        curr = (sdtp_sck_t *)node->data;
+        curr = (sdtp_rsck_t *)node->data;
 
         if (rsvr->ctm - curr->rdtm >= 60)
         {
@@ -943,7 +943,7 @@ static int sdtp_rsvr_event_timeout_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int sdtp_rsvr_keepalive_req_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_sck_t *sck)
+static int sdtp_rsvr_keepalive_req_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_rsck_t *sck)
 {
     void *addr;
     sdtp_header_t *head;
@@ -992,11 +992,11 @@ static int sdtp_rsvr_add_conn_hdl(sdtp_rsvr_t *rsvr, sdtp_cmd_add_sck_t *req)
 {
     void *addr;
     list_opt_t opt;
-    sdtp_sck_t *sck;
+    sdtp_rsck_t *sck;
     list2_node_t *node;
 
     /* > 分配连接空间 */
-    sck = slab_alloc(rsvr->pool, sizeof(sdtp_sck_t));
+    sck = slab_alloc(rsvr->pool, sizeof(sdtp_rsck_t));
     if (NULL == sck)
     {
         log_error(rsvr->log, "Alloc memory failed!");
@@ -1087,7 +1087,7 @@ static int sdtp_rsvr_add_conn_hdl(sdtp_rsvr_t *rsvr, sdtp_cmd_add_sck_t *req)
  ******************************************************************************/
 static int sdtp_rsvr_del_conn_hdl(sdtp_rsvr_t *rsvr, list2_node_t *node)
 {
-    sdtp_sck_t *curr = (sdtp_sck_t *)node->data;
+    sdtp_rsck_t *curr = (sdtp_rsck_t *)node->data;
 
     /* 1. 从链表剔除结点 */
     list2_delete(&rsvr->conn_list, node);
@@ -1158,7 +1158,7 @@ void sdtp_rsvr_del_all_conn_hdl(sdtp_rsvr_t *rsvr)
  **注意事项: TODO: 待补充对list->tail的处理
  **作    者: # Qifeng.zou # 2014.07.04 #
  ******************************************************************************/
-static int sdtp_rsvr_clear_mesg(sdtp_rsvr_t *rsvr, sdtp_sck_t *sck)
+static int sdtp_rsvr_clear_mesg(sdtp_rsvr_t *rsvr, sdtp_rsck_t *sck)
 {
     void *data;
 
@@ -1268,7 +1268,7 @@ static int sdtp_rsvr_cmd_proc_all_req(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr)
  **     addr     optr             iptr                   end
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static int sdtp_rsvr_fill_send_buff(sdtp_rsvr_t *rsvr, sdtp_sck_t *sck)
+static int sdtp_rsvr_fill_send_buff(sdtp_rsvr_t *rsvr, sdtp_rsck_t *sck)
 {
     int left, mesg_len;
     sdtp_header_t *head;
