@@ -44,6 +44,8 @@ void *sdtp_ssvr_routine(void *_ctx);
 int sdtp_swrk_init(sdtp_sctx_t *ctx, sdtp_worker_t *wrk, int tidx);
 void *sdtp_swrk_routine(void *_ctx);
 
+sdtp_worker_t *sdtp_swrk_get_by_idx(sdtp_sctx_t *ctx, int idx);
+
 /* 对外接口 */
 sdtp_sctx_t *sdtp_send_init(const sdtp_ssvr_conf_t *conf, log_cycle_t *log);
 int sdtp_send_start(sdtp_sctx_t *ctx);

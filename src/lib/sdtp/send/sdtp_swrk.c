@@ -100,6 +100,23 @@ void *sdtp_swrk_routine(void *_ctx)
 }
 
 /******************************************************************************
+ **函数名称: sdtp_swrk_get_by_idx
+ **功    能: 通过索引查找对象
+ **输入参数: 
+ **     ctx: 全局对象
+ **     idx: 索引号
+ **输出参数: NONE
+ **返    回: 工作对象
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.05.19 #
+ ******************************************************************************/
+sdtp_worker_t *sdtp_swrk_get_by_idx(sdtp_sctx_t *ctx, int idx)
+{
+    return (sdtp_worker_t *)(ctx->worktp->data + idx * sizeof(sdtp_worker_t));
+}
+
+/******************************************************************************
  **函数名称: sdtp_swrk_get_curr
  **功    能: 获取工作对象
  **输入参数: 
@@ -116,7 +133,7 @@ static sdtp_worker_t *sdtp_swrk_get_curr(sdtp_sctx_t *ctx)
 {
     int tidx;
     
-    /* 1. 获取线程编号 */
+    /* > 获取线程编号 */
     tidx = thread_pool_get_tidx(ctx->worktp);
     if (tidx < 0)
     {
@@ -124,8 +141,8 @@ static sdtp_worker_t *sdtp_swrk_get_curr(sdtp_sctx_t *ctx)
         return NULL;
     }
 
-    /* 2. 返回工作对象 */
-    return (sdtp_worker_t *)(ctx->worktp->data + tidx * sizeof(sdtp_worker_t));
+    /* > 返回工作对象 */
+    return sdtp_swrk_get_by_idx(ctx, tidx);
 }
 
 /******************************************************************************
