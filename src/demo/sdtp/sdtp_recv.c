@@ -46,21 +46,21 @@ int main(int argc, const char *argv[])
     log = log_init(LOG_LEVEL_ERROR, "./sdtp.log");
 
     /* 1. 接收端初始化 */
-    ctx = sdtp_init(&conf, log);
+    ctx = sdtp_recv_init(&conf, log);
     if (NULL == ctx)
     {
         fprintf(stderr, "Initialize rcvsvr failed!");
         return SDTP_ERR;
     }
 
-    sdtp_register(ctx, MSG_SEARCH_REQ, sdtp_work_def_hdl, NULL);
-    sdtp_register(ctx, MSG_PRINT_INVT_TAB_REQ, sdtp_work_def_hdl, NULL);
-    sdtp_register(ctx, MSG_QUERY_CONF_REQ, sdtp_work_def_hdl, NULL);
-    sdtp_register(ctx, MSG_QUERY_WORKER_STAT_REQ, sdtp_work_def_hdl, NULL);
-    sdtp_register(ctx, MSG_QUERY_WORKQ_STAT_REQ, sdtp_work_def_hdl, NULL);
+    sdtp_recv_register(ctx, MSG_SEARCH_REQ, sdtp_work_def_hdl, NULL);
+    sdtp_recv_register(ctx, MSG_PRINT_INVT_TAB_REQ, sdtp_work_def_hdl, NULL);
+    sdtp_recv_register(ctx, MSG_QUERY_CONF_REQ, sdtp_work_def_hdl, NULL);
+    sdtp_recv_register(ctx, MSG_QUERY_WORKER_STAT_REQ, sdtp_work_def_hdl, NULL);
+    sdtp_recv_register(ctx, MSG_QUERY_WORKQ_STAT_REQ, sdtp_work_def_hdl, NULL);
 
     /* 2. 接收服务端工作 */
-    ret = sdtp_startup(ctx);
+    ret = sdtp_recv_startup(ctx);
     if (0 != ret)
     {
         fprintf(stderr, "Work failed!");
@@ -69,5 +69,5 @@ int main(int argc, const char *argv[])
     while(1) pause();
 
     /* 3. 接收端释放 */
-    return sdtp_destroy(&ctx);
+    return sdtp_recv_destroy(&ctx);
 }

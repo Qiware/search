@@ -2,7 +2,7 @@
 #define __INVERTD_H__
 
 #include "log.h"
-#include "sdtp.h"
+#include "sdtp_recv.h"
 #include "invtd_conf.h"
 #include "invert_tab.h"
 

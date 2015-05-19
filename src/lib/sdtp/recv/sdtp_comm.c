@@ -1,5 +1,5 @@
-#include "sdtp.h"
 #include "sdtp_cmd.h"
+#include "sdtp_recv.h"
 #include "sdtp_comm.h"
 
 /******************************************************************************

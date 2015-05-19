@@ -8,10 +8,10 @@
  ** 作  者: # Qifeng.zou # 2015.01.06 #
  ******************************************************************************/
 
-#include "sdtp.h"
 #include "xml_tree.h"
 #include "sdtp_cmd.h"
 #include "sdtp_comm.h"
+#include "sdtp_recv.h"
 #include "thread_pool.h"
 
 /* 静态函数 */

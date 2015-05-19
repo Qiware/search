@@ -171,7 +171,7 @@ invtd_cntx_t *invtd_init(const char *conf_path)
         }
 
         /* > 初始化SDTP服务 */
-        ctx->sdtp = sdtp_init(&ctx->conf.sdtp, log);
+        ctx->sdtp = sdtp_recv_init(&ctx->conf.sdtp, log);
         if (NULL == ctx->sdtp)
         {
             log_error(log, "Init sdtp failed!");

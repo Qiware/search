@@ -13,7 +13,7 @@ INCLUDE = -I. -I$(PROJ)/src/incl
 LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lxd_core
 
-SRC_LIST = recv/sdtp.c \
+SRC_LIST = recv/sdtp_recv.c \
 			recv/sdtp_comm.c \
 			recv/sdtp_rlsn.c \
 			recv/sdtp_rsvr.c \

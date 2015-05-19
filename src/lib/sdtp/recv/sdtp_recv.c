@@ -9,14 +9,14 @@
  ******************************************************************************/
 
 #include "log.h"
-#include "sdtp.h"
 #include "syscall.h"
 #include "xml_tree.h"
 #include "sdtp_cmd.h"
 #include "sdtp_comm.h"
+#include "sdtp_recv.h"
 #include "thread_pool.h"
 
-static int _sdtp_init(sdtp_rctx_t *ctx);
+static int _sdtp_recv_init(sdtp_rctx_t *ctx);
 static int sdtp_creat_recvq(sdtp_rctx_t *ctx);
 
 static int sdtp_creat_recvtp(sdtp_rctx_t *ctx);
@@ -28,7 +28,7 @@ void sdtp_worktp_destroy(void *_ctx, void *args);
 static int sdtp_proc_def_hdl(int type, char *buff, size_t len, void *args);
 
 /******************************************************************************
- **函数名称: sdtp_init
+ **函数名称: sdtp_recv_init
  **功    能: 初始化SDTP接收端
  **输入参数: 
  **     conf: 配置信息
@@ -42,7 +42,7 @@ static int sdtp_proc_def_hdl(int type, char *buff, size_t len, void *args);
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-sdtp_rctx_t *sdtp_init(const sdtp_conf_t *conf, log_cycle_t *log)
+sdtp_rctx_t *sdtp_recv_init(const sdtp_conf_t *conf, log_cycle_t *log)
 {
     sdtp_rctx_t *ctx;
 
@@ -62,7 +62,7 @@ sdtp_rctx_t *sdtp_init(const sdtp_conf_t *conf, log_cycle_t *log)
     ctx->conf.rqnum = SDTP_WORKER_HDL_QNUM * conf->work_thd_num;
 
     /* 3. 初始化接收端 */
-    if (_sdtp_init(ctx))
+    if (_sdtp_recv_init(ctx))
     {
         log_error(ctx->log, "Initialize recv failed!");
         FREE(ctx);
@@ -73,7 +73,7 @@ sdtp_rctx_t *sdtp_init(const sdtp_conf_t *conf, log_cycle_t *log)
 }
 
 /******************************************************************************
- **函数名称: sdtp_startup
+ **函数名称: sdtp_recv_startup
  **功    能: 启动SDTP接收端
  **输入参数: 
  **     conf: 配置信息
@@ -86,7 +86,7 @@ sdtp_rctx_t *sdtp_init(const sdtp_conf_t *conf, log_cycle_t *log)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-int sdtp_startup(sdtp_rctx_t *ctx)
+int sdtp_recv_startup(sdtp_rctx_t *ctx)
 {
     int idx;
     thread_pool_t *tp;
@@ -107,7 +107,7 @@ int sdtp_startup(sdtp_rctx_t *ctx)
     }
     
     /* 3. 创建侦听线程 */
-    if (thread_creat(&lsn->tid, sdtp_listen_routine, ctx))
+    if (thread_creat(&lsn->tid, sdtp_rlsn_routine, ctx))
     {
         log_error(ctx->log, "Start listen failed");
         return SDTP_ERR;
@@ -117,7 +117,7 @@ int sdtp_startup(sdtp_rctx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: sdtp_register
+ **函数名称: sdtp_recv_register
  **功    能: 消息处理的注册接口
  **输入参数: 
  **     ctx: 全局对象
@@ -132,7 +132,7 @@ int sdtp_startup(sdtp_rctx_t *ctx)
  **     2. 不允许重复注册 
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-int sdtp_register(sdtp_rctx_t *ctx, int type, sdtp_reg_cb_t proc, void *args)
+int sdtp_recv_register(sdtp_rctx_t *ctx, int type, sdtp_reg_cb_t proc, void *args)
 {
     sdtp_reg_t *reg;
 
@@ -158,7 +158,7 @@ int sdtp_register(sdtp_rctx_t *ctx, int type, sdtp_reg_cb_t proc, void *args)
 }
 
 /******************************************************************************
- **函数名称: sdtp_destroy
+ **函数名称: sdtp_recv_destroy
  **功    能: 销毁SDTP对象
  **输入参数: 
  **     ctx: 全局对象
@@ -168,20 +168,20 @@ int sdtp_register(sdtp_rctx_t *ctx, int type, sdtp_reg_cb_t proc, void *args)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-int sdtp_destroy(sdtp_rctx_t **ctx)
+int sdtp_recv_destroy(sdtp_rctx_t *ctx)
 {
     /* 1. 销毁侦听线程 */
-    sdtp_listen_destroy(&(*ctx)->listen);
+    sdtp_rlsn_destroy(&ctx->listen);
 
 #if 0
     /* 2. 销毁接收线程池 */
-    thread_pool_destroy_ext((*ctx)->recvtp, sdtp_recvtp_destroy, *ctx);
+    thread_pool_destroy_ext(ctx->recvtp, sdtp_recvtp_destroy, ctx);
 
     /* 3. 销毁工作线程池 */
-    thread_pool_destroy_ext((*ctx)->worktp, sdtp_worktp_destroy, *ctx);
+    thread_pool_destroy_ext(ctx->worktp, sdtp_worktp_destroy, ctx);
 #endif
 
-    FREE(*ctx);
+    FREE(ctx);
     return SDTP_OK;
 }
 
@@ -213,7 +213,7 @@ static int sdtp_reg_init(sdtp_rctx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: _sdtp_init
+ **函数名称: _sdtp_recv_init
  **功    能: 初始化接收对象
  **输入参数: 
  **     ctx: 全局对象
@@ -227,7 +227,7 @@ static int sdtp_reg_init(sdtp_rctx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-static int _sdtp_init(sdtp_rctx_t *ctx)
+static int _sdtp_recv_init(sdtp_rctx_t *ctx)
 {
     /* 1. 创建SLAB内存池 */
     ctx->pool = slab_creat_by_calloc(SDTP_CTX_POOL_SIZE);

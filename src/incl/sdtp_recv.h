@@ -1,5 +1,5 @@
-#if !defined(__SDTP_H__)
-#define __SDTP_H__
+#if !defined(__SDTP_RECV_H__)
+#define __SDTP_RECV_H__
 
 #include "log.h"
 #include "sck.h"
@@ -124,14 +124,14 @@ typedef struct
 } sdtp_rctx_t;
 
 /* 外部接口 */
-sdtp_rctx_t *sdtp_init(const sdtp_conf_t *conf, log_cycle_t *log);
-int sdtp_register(sdtp_rctx_t *ctx, int type, sdtp_reg_cb_t proc, void *args);
-int sdtp_startup(sdtp_rctx_t *ctx);
-int sdtp_destroy(sdtp_rctx_t **ctx);
+sdtp_rctx_t *sdtp_recv_init(const sdtp_conf_t *conf, log_cycle_t *log);
+int sdtp_recv_register(sdtp_rctx_t *ctx, int type, sdtp_reg_cb_t proc, void *args);
+int sdtp_recv_startup(sdtp_rctx_t *ctx);
+int sdtp_recv_destroy(sdtp_rctx_t *ctx);
 
 /* 内部接口 */
-void *sdtp_listen_routine(void *_ctx);
-int sdtp_listen_destroy(sdtp_rlsn_t *lsn);
+void *sdtp_rlsn_routine(void *_ctx);
+int sdtp_rlsn_destroy(sdtp_rlsn_t *lsn);
 
 void *sdtp_rsvr_routine(void *_ctx);
 int sdtp_rsvr_init(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, int tidx);
@@ -142,4 +142,4 @@ int sdtp_rwrk_init(sdtp_rctx_t *ctx, sdtp_worker_t *worker, int tidx);
 void sdtp_rsvr_del_all_conn_hdl(sdtp_rsvr_t *rsvr);
 
 int sdtp_cmd_to_rsvr(sdtp_rctx_t *ctx, int cmd_sck_id, const sdtp_cmd_t *cmd, int idx);
-#endif /*__SDTP_H__*/
+#endif /*__SDTP_RECV_H__*/

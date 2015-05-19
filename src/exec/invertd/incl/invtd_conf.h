@@ -1,7 +1,7 @@
 #if !defined(__INVTD_CONF_H__)
 #define __INVTD_CONF_H__
 
-#include "sdtp.h"
+#include "sdtp_recv.h"
 
 /* 配置信息 */
 typedef struct

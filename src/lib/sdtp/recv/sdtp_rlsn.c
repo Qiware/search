@@ -8,10 +8,10 @@
  ** 作  者: # Qifeng.zou # 2014.12.29 #
  ******************************************************************************/
 
-#include "sdtp.h"
 #include "syscall.h"
 #include "sdtp_cmd.h"
 #include "sdtp_comm.h"
+#include "sdtp_recv.h"
 #include "thread_pool.h"
 
 /* 静态函数 */
@@ -27,7 +27,7 @@ static int sdtp_rlsn_cmd_query_proc_stat_hdl(sdtp_rctx_t *ctx, sdtp_rlsn_t *lsn,
 #define sdtp_rand_rsvr(ctx) ((ctx)->listen.total++ % (ctx->recvtp->num))
 
 /******************************************************************************
- **函数名称: sdtp_listen_routine
+ **函数名称: sdtp_rlsn_routine
  **功    能: 启动SDTP侦听线程
  **输入参数: 
  **     conf: 配置信息
@@ -41,7 +41,7 @@ static int sdtp_rlsn_cmd_query_proc_stat_hdl(sdtp_rctx_t *ctx, sdtp_rlsn_t *lsn,
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-void *sdtp_listen_routine(void *args)
+void *sdtp_rlsn_routine(void *args)
 {
 #define SDTP_LSN_TMOUT_SEC 30
 #define SDTP_LSN_TMOUT_USEC 0
@@ -160,7 +160,7 @@ static sdtp_rlsn_t *sdtp_rlsn_init(sdtp_rctx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.07 #
  ******************************************************************************/
-int sdtp_listen_destroy(sdtp_rlsn_t *lsn)
+int sdtp_rlsn_destroy(sdtp_rlsn_t *lsn)
 {
     CLOSE(lsn->lsn_sck_id);
     CLOSE(lsn->cmd_sck_id);
