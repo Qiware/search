@@ -56,6 +56,7 @@ void *sdtp_swrk_routine(void *_ctx)
         FD_ZERO(&wrk->rdset);
 
         FD_SET(wrk->cmd_sck_id, &wrk->rdset);
+
         wrk->max = wrk->cmd_sck_id;
 
         timeout.tv_sec = 30;

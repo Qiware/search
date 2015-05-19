@@ -16,10 +16,10 @@
 /* 发送类型 */
 typedef enum
 {
-    SDTP_SHOT_SNAP_SYS_DATA
-    , SDTP_SHOT_SNAP_EXP_DATA 
+    SDTP_SNAP_SHOT_SYS_DATA
+    , SDTP_SNAP_SHOT_EXP_DATA 
 
-    , SDTP_SHOT_SNAP_TOTAL
+    , SDTP_SNAP_SHOT_TOTAL
 } sdtp_send_snap_e;
 
 /* 套接字信息 */
@@ -40,7 +40,7 @@ typedef struct
 
     sdtp_snap_t recv;                   /* 接收快照 */
     sdtp_send_snap_e send_type;         /* 发送类型(系统数据或自定义数据) */
-    sdtp_snap_t send[SDTP_SHOT_SNAP_TOTAL];  /* 发送快照 */
+    sdtp_snap_t send[SDTP_SNAP_SHOT_TOTAL];  /* 发送快照 */
 } sdtp_ssck_t;
 
 #define sdtp_set_kpalive_stat(sck, _stat) (sck)->kpalive = (_stat)

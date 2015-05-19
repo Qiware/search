@@ -8,14 +8,14 @@
 typedef struct
 {
     int max;                                /* 单元总数 */
-    int size;                               /* 单元大小 */
+    size_t size;                            /* 单元大小 */
 } queue_conf_t;
 
 /* 加锁队列 */
 typedef struct
 {
     slot_t *slot;                           /* 内存池 */
-    ring_t *ring;                     /* 队列 */
+    ring_t *ring;                           /* 队列 */
 } queue_t;
 
 queue_t *queue_creat(int max, int size);

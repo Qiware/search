@@ -19,7 +19,7 @@ static int sdtp_ssvr_recv_proc(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr);
 
 static int sdtp_ssvr_data_proc(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, sdtp_ssck_t *sck);
 static int sdtp_ssvr_sys_mesg_proc(sdtp_ssvr_t *ssvr, sdtp_ssck_t *sck, void *addr);
-static int sdtp_ssvr_exp_mesg_proc(sdtp_ssvr_t *ssvr, sdtp_ssck_t *sck, void *addr);
+static int sdtp_ssvr_exp_mesg_proc(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, sdtp_ssck_t *sck, void *addr);
 
 static int sdtp_ssvr_timeout_hdl(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr);
 static int sdtp_ssvr_proc_cmd(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, const sdtp_cmd_t *cmd);
@@ -45,7 +45,7 @@ int sdtp_ssvr_init(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, int tidx)
     list_opt_t opt;
     sdtp_ssvr_conf_t *conf = &ctx->conf;
     sdtp_snap_t *recv = &ssvr->sck.recv;
-    sdtp_snap_t *send = &ssvr->sck.send[SDTP_SHOT_SNAP_SYS_DATA];
+    sdtp_snap_t *send = &ssvr->sck.send[SDTP_SNAP_SHOT_SYS_DATA];
 
     ssvr->tidx = tidx;
     ssvr->log = ctx->log;
@@ -269,9 +269,9 @@ void sdtp_switch_send_data(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
     /* > 检查是否发送完系统消息 */
     switch (sck->send_type)
     {
-        case SDTP_SHOT_SNAP_SYS_DATA:
+        case SDTP_SNAP_SHOT_SYS_DATA:
         {
-            send = &sck->send[SDTP_SHOT_SNAP_SYS_DATA];
+            send = &sck->send[SDTP_SNAP_SHOT_SYS_DATA];
             if (!list_isempty(sck->mesg_list)
                 || (send->iptr != send->optr))
             {
@@ -279,11 +279,11 @@ void sdtp_switch_send_data(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
             }
             break;
         }
-        case SDTP_SHOT_SNAP_EXP_DATA:
+        case SDTP_SNAP_SHOT_EXP_DATA:
         default:
         {
             /* > 检查是否发送完外部数据 */
-            send = &sck->send[SDTP_SHOT_SNAP_EXP_DATA];
+            send = &sck->send[SDTP_SNAP_SHOT_EXP_DATA];
             if (send->iptr != send->optr)
             {
                 return; /* 缓存数据仍然未发送完全 */
@@ -291,7 +291,7 @@ void sdtp_switch_send_data(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
 
             if (!list_isempty(sck->mesg_list))
             {
-                sck->send_type = SDTP_SHOT_SNAP_SYS_DATA;
+                sck->send_type = SDTP_SNAP_SHOT_SYS_DATA;
                 return; /* 有消息可发送 */
             }
             break;
@@ -304,8 +304,8 @@ void sdtp_switch_send_data(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
         return; /* 无可发送的数据 */
     }
 
-    sck->send_type = SDTP_SHOT_SNAP_EXP_DATA;
-    send = &sck->send[SDTP_SHOT_SNAP_EXP_DATA];
+    sck->send_type = SDTP_SNAP_SHOT_EXP_DATA;
+    send = &sck->send[SDTP_SNAP_SHOT_EXP_DATA];
 
     send->addr = (void *)ssvr->sendq->head + page->begin;
     send->end = send->addr + page->off;
@@ -367,8 +367,8 @@ void sdtp_ssvr_set_rwset(sdtp_ssvr_t *ssvr)
         return;
     }
 
-    snap = &ssvr->sck.send[SDTP_SHOT_SNAP_SYS_DATA];
-    for (idx=0; idx<SDTP_SHOT_SNAP_TOTAL; ++idx, ++snap)
+    snap = &ssvr->sck.send[SDTP_SNAP_SHOT_SYS_DATA];
+    for (idx=0; idx<SDTP_SNAP_SHOT_TOTAL; ++idx, ++snap)
     {
         if (snap->iptr != snap->optr)
         {
@@ -504,7 +504,7 @@ static int sdtp_ssvr_kpalive_req(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
     sdtp_header_t *head;
     int size = sizeof(sdtp_header_t);
     sdtp_ssck_t *sck = &ssvr->sck;
-    sdtp_snap_t *send = &ssvr->sck.send[SDTP_SHOT_SNAP_SYS_DATA];
+    sdtp_snap_t *send = &ssvr->sck.send[SDTP_SNAP_SHOT_SYS_DATA];
 
     /* 1. 上次发送保活请求之后 仍未收到应答 */
     if ((sck->fd < 0) 
@@ -777,7 +777,7 @@ static int sdtp_ssvr_data_proc(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, sdtp_ssck_t 
         }
         else
         {
-            sdtp_ssvr_exp_mesg_proc(ssvr, sck, recv->addr);
+            sdtp_ssvr_exp_mesg_proc(ctx, ssvr, sck, recv->addr);
         }
 
         recv->optr += mesg_len;
@@ -881,7 +881,7 @@ static int sdtp_ssvr_fill_send_buff(sdtp_ssvr_t *ssvr, sdtp_ssck_t *sck)
 {
     uint32_t left, mesg_len;
     sdtp_header_t *head;
-    sdtp_snap_t *send = &sck->send[SDTP_SHOT_SNAP_SYS_DATA];
+    sdtp_snap_t *send = &sck->send[SDTP_SNAP_SHOT_SYS_DATA];
 
     /* > 从消息链表取数据 */
     for (;;)
@@ -951,7 +951,7 @@ static int sdtp_ssvr_send_sys_data(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
 {
     int n, len;
     sdtp_ssck_t *sck = &ssvr->sck;
-    sdtp_snap_t *send = &sck->send[SDTP_SHOT_SNAP_SYS_DATA];
+    sdtp_snap_t *send = &sck->send[SDTP_SNAP_SHOT_SYS_DATA];
 
     sck->wrtm = time(NULL);
 
@@ -1022,7 +1022,7 @@ static int sdtp_ssvr_send_exp_data(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
 {
     int n, len;
     sdtp_ssck_t *sck = &ssvr->sck;
-    sdtp_snap_t *send = &sck->send[SDTP_SHOT_SNAP_EXP_DATA];
+    sdtp_snap_t *send = &sck->send[SDTP_SNAP_SHOT_EXP_DATA];
 
     sck->wrtm = time(NULL);
 
@@ -1065,7 +1065,7 @@ static int sdtp_ssvr_send_data(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
 {
     sdtp_ssck_t *sck = &ssvr->sck;
 
-    if (SDTP_SHOT_SNAP_SYS_DATA == sck->send_type)
+    if (SDTP_SNAP_SHOT_SYS_DATA == sck->send_type)
     {
         return sdtp_ssvr_send_sys_data(ctx, ssvr);
     }
@@ -1146,15 +1146,57 @@ static int sdtp_ssvr_sys_mesg_proc(sdtp_ssvr_t *ssvr, sdtp_ssck_t *sck, void *ad
  **     ctx: 全局信息
  **     ssvr: 发送服务
  **     sck: 连接对象
+ **     addr: 数据地址
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 将自定义消息放入工作队列中
+ **实现描述: 将自定义消息放入工作队列中, 一次只放入一条数据
  **注意事项: 
- **作    者: # Qifeng.zou # 2015.01.16 #
+ **作    者: # Qifeng.zou # 2015.05.19 #
  ******************************************************************************/
-static int sdtp_ssvr_exp_mesg_proc(sdtp_ssvr_t *ssvr, sdtp_ssck_t *sck, void *addr)
+static int sdtp_ssvr_exp_mesg_proc(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, sdtp_ssck_t *sck, void *addr)
 {
+    void *data;
+    int *num;
+    int idx, len;
+    sdtp_header_t *head = (sdtp_header_t *)addr;
+
     ++ssvr->recv_total;
-    ++ssvr->drop_total;
+
+    idx = rand() % ctx->conf.work_thd_num;
+
+    /* > 验证长度 */
+    len = SDTP_DATA_TOTAL_LEN(head); 
+    if ((int)(len + sizeof(int)) > queue_size(ctx->recvq[0]))
+    {
+        ++ssvr->drop_total;
+        log_error(ctx->log, "Data is too long! len:%d drop:%lu total:%lu",
+                len, ssvr->drop_total, ssvr->recv_total);
+        return SDTP_ERR_TOO_LONG;
+    }
+
+    /* > 申请空间 */
+    data = queue_malloc(ctx->recvq[idx]);
+    if (NULL == data)
+    {
+        ++ssvr->drop_total;
+        log_error(ctx->log, "errmsg:[%d] %s! drop:%lu recv:%lu",
+                errno, strerror(errno), ssvr->recv_total, ssvr->drop_total);
+        return SDTP_ERR;
+    }
+
+    /* > 放入队列 */
+    num = (int *)data;
+    *num = 1; /* 放入一条数据 */
+    memcpy(data+sizeof(int), addr, len);
+
+    if (queue_push(ctx->recvq[idx], data))
+    {
+        ++ssvr->drop_total;
+        log_error(ctx->log, "Push into queue failed! len:%d drop:%lu total:%lu",
+                len, ssvr->drop_total, ssvr->recv_total);
+        queue_dealloc(ctx->recvq[idx], data);
+        return SDTP_ERR;
+    }
+
     return SDTP_OK;
 }

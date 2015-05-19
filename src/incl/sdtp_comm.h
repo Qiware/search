@@ -46,6 +46,7 @@ typedef enum
     , SDTP_ERR_DATA_TYPE                /* 错误的数据类型 */
     , SDTP_ERR_RECV_CMD                 /* 命令接收失败 */
     , SDTP_ERR_REPEAT_REG               /* 重复注册 */
+    , SDTP_ERR_TOO_LONG                 /* 数据太长 */
     , SDTP_ERR_UNKNOWN_CMD              /* 未知命令类型 */
 } sdtp_err_e;
 
@@ -99,6 +100,7 @@ typedef struct
 } __attribute__((packed)) sdtp_header_t;
 
 #define SDTP_TYPE_ISVALID(head) ((head)->type < SDTP_TYPE_MAX)
+#define SDTP_DATA_TOTAL_LEN(head) (head->length + sizeof(sdtp_header_t))
 #define SDTP_CHECKSUM_ISVALID(head) (SDTP_CHECK_SUM == (head)->checksum)
 
 /* 校验数据头 */
