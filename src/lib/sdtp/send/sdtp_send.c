@@ -1,11 +1,3 @@
-/******************************************************************************
- ** Coypright(C) 2014-2024 Xundao technology Co., Ltd
- **
- ** 文件名: sdtp_send.c
- ** 版本号: 1.0
- ** 描  述: 
- ** 作  者: # Qifeng.zou # Tue 19 May 2015 06:18:11 PM CST #
- ******************************************************************************/
 #include "syscall.h"
 #include "sdtp_send.h"
 
@@ -28,7 +20,7 @@ static int sdtp_send_creat_worktp(sdtp_sctx_t *ctx)
     sdtp_ssvr_conf_t *conf = &ctx->conf;
 
     /* > 创建对象 */
-    worker = (sdtp_worker_t *)calloc(conf->work_thd_num, sizeof(sdtp_worker_t));
+    worker = (sdtp_worker_t *)slab_alloc(ctx->slab, conf->work_thd_num * sizeof(sdtp_worker_t));
     if (NULL == worker)
     {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
@@ -46,7 +38,7 @@ static int sdtp_send_creat_worktp(sdtp_sctx_t *ctx)
     if (NULL == ctx->worktp)
     {
         log_error(ctx->log, "Initialize thread pool failed!");
-        FREE(worker);
+        slab_dealloc(ctx->slab, worker);
         return SDTP_ERR;
     }
 
@@ -56,7 +48,7 @@ static int sdtp_send_creat_worktp(sdtp_sctx_t *ctx)
         if (sdtp_swrk_init(ctx, worker+idx, idx))
         {
             log_fatal(ctx->log, "Initialize work thread failed!");
-            FREE(worker);
+            slab_dealloc(ctx->slab, worker);
             thread_pool_destroy(ctx->worktp);
             return SDTP_ERR;
         }
@@ -90,7 +82,7 @@ static int sdtp_send_creat_sendtp(sdtp_sctx_t *ctx)
     sdtp_ssvr_conf_t *conf = &ctx->conf;
 
     /* > 创建对象 */
-    ssvr = (sdtp_ssvr_t *)calloc(conf->send_thd_num, sizeof(sdtp_ssvr_t));
+    ssvr = (sdtp_ssvr_t *)slab_alloc(ctx->slab, conf->send_thd_num * sizeof(sdtp_ssvr_t));
     if (NULL == ssvr)
     {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
@@ -108,7 +100,7 @@ static int sdtp_send_creat_sendtp(sdtp_sctx_t *ctx)
     if (NULL == ctx->sendtp)
     {
         log_error(ctx->log, "Initialize thread pool failed!");
-        FREE(ssvr);
+        slab_dealloc(ctx->slab, ssvr);
         return SDTP_ERR;
     }
 
@@ -118,7 +110,7 @@ static int sdtp_send_creat_sendtp(sdtp_sctx_t *ctx)
         if (sdtp_ssvr_init(ctx, ssvr+idx, idx))
         {
             log_fatal(ctx->log, "Initialize send thread failed!");
-            FREE(ssvr);
+            slab_dealloc(ctx->slab, ssvr);
             thread_pool_destroy(ctx->sendtp);
             return SDTP_ERR;
         }
@@ -134,43 +126,74 @@ static int sdtp_send_creat_sendtp(sdtp_sctx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: _sdtp_send_startup
+ **函数名称: sdtp_send_init
+ **功    能: 初始化发送端
+ **输入参数: 
+ **     conf: 配置信息
+ **     log: 日志对象
+ **输出参数: NONE
+ **返    回: 全局对象
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.05.19 #
+ ******************************************************************************/
+sdtp_sctx_t *sdtp_send_init(const sdtp_ssvr_conf_t *conf, log_cycle_t *log)
+{
+    sdtp_sctx_t *ctx;
+    slab_pool_t *slab;
+
+    /* > 创建内存池 */
+    slab = slab_creat_by_calloc(30 * MB);
+    if (NULL == slab)
+    {
+        log_error(log, "Initialize slab failed!");
+        return NULL;
+    }
+
+    /* > 创建对象 */
+    ctx = (sdtp_sctx_t *)slab_alloc(slab, sizeof(sdtp_sctx_t));
+    if (NULL == ctx)
+    {
+        log_fatal(log, "errmsg:[%d] %s!", errno, strerror(errno));
+        slab_destroy(slab);
+        return NULL;
+    }
+
+    ctx->log = log;
+    ctx->slab = slab;
+
+    /* > 加载配置信息 */
+    memcpy(&ctx->conf, conf, sizeof(sdtp_ssvr_conf_t));
+
+    return ctx;
+}
+
+/******************************************************************************
+ **函数名称: sdtp_send_startup
  **功    能: 启动发送端
  **输入参数: 
  **     ctx: 全局信息
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
- **     1. 创建发送线程池
- **     2. 创建发送线程对象
- **     3. 设置发送线程对象
- **     4. 注册发送线程回调
+ **     1. 创建工作线程池
+ **     2. 创建发送线程池
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static int _sdtp_send_startup(sdtp_sctx_t *ctx)
+int sdtp_send_startup(sdtp_sctx_t *ctx)
 {
-    /* > 创建内存池 */
-    ctx->slab = slab_creat_by_calloc(30 * MB);
-    if (NULL == ctx->slab)
-    {
-        log_error(ctx->log, "Initialize slab failed!");
-        return SDTP_ERR;
-    }
-
     /* > 创建工作线程池 */
     if (sdtp_send_creat_worktp(ctx))
     {
-        log_error(ctx->log, "Create work thread pool failed!");
-        FREE(ctx->slab);
+        log_fatal(ctx->log, "Create work thread pool failed!");
         return SDTP_ERR;
     }
 
     /* > 创建发送线程池 */
     if (sdtp_send_creat_sendtp(ctx))
     {
-        log_error(ctx->log, "Create send thread pool failed!");
-        FREE(ctx->slab);
+        log_fatal(ctx->log, "Create send thread pool failed!");
         return SDTP_ERR;
     }
 
@@ -178,42 +201,59 @@ static int _sdtp_send_startup(sdtp_sctx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: sdtp_send_startup
- **功    能: 启动发送端
+ **函数名称: sdtp_send_register
+ **功    能: 消息处理的注册接口
  **输入参数: 
- **     conf: 配置信息
+ **     ctx: 全局对象
+ **     type: 扩展消息类型 Range:(0 ~ SDTP_TYPE_MAX)
+ **     proc: 回调函数
+ **     args: 附加参数
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
- **     1. 创建上下文对象
- **     2. 加载配置文件
- **     3. 启动各发送服务
  **注意事项: 
- **作    者: # Qifeng.zou # 2015.01.14 #
+ **     1. 只能用于注册处理扩展数据类型的处理
+ **     2. 不允许重复注册
+ **作    者: # Qifeng.zou # 2015.05.19 #
  ******************************************************************************/
-sdtp_sctx_t *sdtp_send_startup(const sdtp_ssvr_conf_t *conf, log_cycle_t *log)
+int sdtp_send_register(sdtp_sctx_t *ctx, int type, sdtp_reg_cb_t proc, void *args)
 {
-    sdtp_sctx_t *ctx;
+    sdtp_reg_t *reg;
 
-    /* 1. 创建上下文对象 */
-    ctx = (sdtp_sctx_t *)calloc(1, sizeof(sdtp_sctx_t));
-    if (NULL == ctx)
+    if (type >= SDTP_TYPE_MAX)
     {
-        log_fatal(log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return NULL;
+        log_error(ctx->log, "Data type [%d] is out of range!", type);
+        return SDTP_ERR;
     }
 
-    ctx->log = log;
-
-    /* 2. 加载配置信息 */
-    memcpy(&ctx->conf, conf, sizeof(sdtp_ssvr_conf_t));
-
-    /* 3. 启动各发送服务 */
-    if (_sdtp_send_startup(ctx))
+    if (0 != ctx->reg[type].flag)
     {
-        log_fatal(log, "Startup send server failed!");
-        return NULL;
+        log_error(ctx->log, "Repeat register type [%d]!", type);
+        return SDTP_ERR_REPEAT_REG;
     }
 
-    return ctx;
+    reg = &ctx->reg[type];
+    reg->type = type;
+    reg->proc = proc;
+    reg->args = args;
+    reg->flag = 1;
+
+    return SDTP_OK;
+}
+
+/******************************************************************************
+ **函数名称: sdtp_send_destroy
+ **功    能: 销毁发送端
+ **输入参数: 
+ **     ctx: 全局对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.05.19 #
+ ******************************************************************************/
+int sdtp_send_destroy(sdtp_sctx_t *ctx)
+{
+    slab_destroy(ctx->slab);
+    return SDTP_OK;
 }
