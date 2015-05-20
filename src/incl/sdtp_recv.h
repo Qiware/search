@@ -10,6 +10,7 @@
 #include "queue.h"
 #include "sdtp_cmd.h"
 #include "sdtp_comm.h"
+#include "shm_queue.h"
 #include "thread_pool.h"
 
 /* 宏定义 */
@@ -32,6 +33,11 @@
 /* Listen线程的UNIX-UDP路径 */
 #define sdtp_rlsn_usck_path(conf, path) \
     snprintf(path, sizeof(path), "../temp/sdtp/recv/%s/usck/%s_listen.usck", conf->name, conf->name)
+/* 发送队列的共享内存KEY路径 */
+#define sdtp_sendq_shm_path(conf, path) \
+    snprintf(path, sizeof(path), "../temp/sdtp/recv/%s/%s_sendq.usck", conf->name, conf->name)
+
+
 
 /* 配置信息 */
 typedef struct
@@ -42,7 +48,8 @@ typedef struct
     int work_thd_num;                   /* 工作线程数 */
     int rqnum;                          /* 接收队列数 */
 
-    queue_conf_t recvq;                 /* 队列配置信息 */
+    queue_conf_t recvq;                 /* 接收队列配置 */
+    queue_conf_t sendq;                 /* 发送队列配置 */
 } sdtp_conf_t;
 
 /* 侦听对象 */
@@ -121,6 +128,7 @@ typedef struct
     thread_pool_t *worktp;              /* 工作线程池 */ 
 
     queue_t **recvq;                    /* 接收队列 */
+    shm_queue_t *sendq;                 /* 发送队列 */
 } sdtp_rctx_t;
 
 /* 外部接口 */
