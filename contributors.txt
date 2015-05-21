@@ -1,3 +1,3 @@
 姓名(Name)              邮箱(EMail)                 电话(Tel)           博客(Blog)                          时间(Time)
-Qifeng.zou(邹祁峰)      Qifeng.zou.job@gmail.com    186-0052-2324       http://blog.csdn.net/qifengzou      2013 ~ NOW
+Qifeng.zou(邹祁峰)      Qifeng.zou.job@hotmail.com  186-0052-2324       http://blog.csdn.net/qifengzou      2013 ~ NOW
 
