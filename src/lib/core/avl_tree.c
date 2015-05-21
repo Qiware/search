@@ -1310,7 +1310,7 @@ int avl_print(avl_tree_t *tree)
  ******************************************************************************/
 void avl_print_head(avl_node_t *node, int depth)
 {
-    int idx = 0;
+    int idx;
     avl_node_t *parent = node->parent;
     
     while (depth > 1)
@@ -1373,7 +1373,7 @@ void avl_print_head(avl_node_t *node, int depth)
  ******************************************************************************/
 void avl_print_tail(avl_node_t *node, int depth)
 {
-    int idx = 0;
+    int idx;
 
     if ((NULL == node->lchild)
         && (NULL == node->rchild))
@@ -1413,7 +1413,7 @@ void avl_print_tail(avl_node_t *node, int depth)
  ******************************************************************************/
 int _avl_print(avl_node_t *root, Stack_t *stack)
 {
-    int depth = 0;
+    int depth;
     avl_node_t *node = root;
 
 

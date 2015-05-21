@@ -9,7 +9,6 @@
  ******************************************************************************/
 
 #include "syscall.h"
-#include "xml_tree.h"
 #include "sdtp_cmd.h"
 #include "sdtp_comm.h"
 #include "sdtp_recv.h"
@@ -1154,8 +1153,8 @@ void sdtp_rsvr_del_all_conn_hdl(sdtp_rsvr_t *rsvr)
  **    sck: 将要清空的套接字对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: TODO: 待补充对list->tail的处理
+ **实现描述: 将数据从链表中弹出, 再回收对应内存
+ **注意事项: 
  **作    者: # Qifeng.zou # 2014.07.04 #
  ******************************************************************************/
 static int sdtp_rsvr_clear_mesg(sdtp_rsvr_t *rsvr, sdtp_rsck_t *sck)

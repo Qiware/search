@@ -8,7 +8,6 @@
  ** 作  者: # Qifeng.zou # 2015.01.06 #
  ******************************************************************************/
 
-#include "xml_tree.h"
 #include "sdtp_cmd.h"
 #include "sdtp_comm.h"
 #include "sdtp_recv.h"

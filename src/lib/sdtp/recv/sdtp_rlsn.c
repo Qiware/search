@@ -169,8 +169,6 @@ int sdtp_rlsn_destroy(sdtp_rlsn_t *lsn)
     return SDTP_OK;
 }
 
-
-
 /******************************************************************************
  **函数名称: sdtp_listen_accept
  **功    能: 接收连接请求

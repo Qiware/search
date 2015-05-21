@@ -11,7 +11,6 @@
 #include "log.h"
 #include "shm_opt.h"
 #include "syscall.h"
-#include "xml_tree.h"
 #include "sdtp_cmd.h"
 #include "sdtp_comm.h"
 #include "sdtp_recv.h"
@@ -49,7 +48,7 @@ sdtp_rctx_t *sdtp_recv_init(const sdtp_conf_t *conf, log_cycle_t *log)
 {
     sdtp_rctx_t *ctx;
 
-    /* 1. 创建全局对象 */
+    /* > 创建全局对象 */
     ctx = (sdtp_rctx_t *)calloc(1, sizeof(sdtp_rctx_t));
     if (NULL == ctx)
     {
@@ -59,16 +58,16 @@ sdtp_rctx_t *sdtp_recv_init(const sdtp_conf_t *conf, log_cycle_t *log)
 
     ctx->log = log;
 
-    /* 2. 备份配置信息 */
+    /* > 备份配置信息 */
     memcpy(&ctx->conf, conf, sizeof(sdtp_conf_t));
 
     ctx->conf.rqnum = SDTP_WORKER_HDL_QNUM * conf->work_thd_num;
 
-    /* 3. 初始化接收端 */
+    /* > 初始化接收端 */
     if (_sdtp_recv_init(ctx))
     {
-        log_error(ctx->log, "Initialize recv failed!");
         FREE(ctx);
+        log_error(ctx->log, "Initialize recv failed!");
         return NULL;
     }
 
@@ -95,27 +94,27 @@ int sdtp_recv_startup(sdtp_rctx_t *ctx)
     thread_pool_t *tp;
     sdtp_rlsn_t *lsn = &ctx->listen;
 
-    /* 1. 设置接收线程回调 */
+    /* > 设置接收线程回调 */
     tp = ctx->recvtp;
     for (idx=0; idx<tp->num; ++idx)
     {
         thread_pool_add_worker(tp, sdtp_rsvr_routine, ctx);
     }
 
-    /* 2. 设置工作线程回调 */
+    /* > 设置工作线程回调 */
     tp = ctx->worktp;
     for (idx=0; idx<tp->num; ++idx)
     {
         thread_pool_add_worker(tp, sdtp_rwrk_routine, ctx);
     }
     
-    /* 3. 创建侦听线程 */
+    /* > 创建侦听线程 */
     if (thread_creat(&lsn->tid, sdtp_rlsn_routine, ctx))
     {
         log_error(ctx->log, "Start listen failed");
         return SDTP_ERR;
     }
-    
+
     return SDTP_OK;
 }
 
@@ -173,14 +172,14 @@ int sdtp_recv_register(sdtp_rctx_t *ctx, int type, sdtp_reg_cb_t proc, void *arg
  ******************************************************************************/
 int sdtp_recv_destroy(sdtp_rctx_t *ctx)
 {
-    /* 1. 销毁侦听线程 */
+    /* > 销毁侦听线程 */
     sdtp_rlsn_destroy(&ctx->listen);
 
 #if 0
-    /* 2. 销毁接收线程池 */
+    /* > 销毁接收线程池 */
     thread_pool_destroy_ext(ctx->recvtp, sdtp_recvtp_destroy, ctx);
 
-    /* 3. 销毁工作线程池 */
+    /* > 销毁工作线程池 */
     thread_pool_destroy_ext(ctx->worktp, sdtp_worktp_destroy, ctx);
 #endif
 
@@ -292,7 +291,7 @@ static int sdtp_creat_recvq(sdtp_rctx_t *ctx)
     int idx;
     sdtp_conf_t *conf = &ctx->conf;
 
-    /* 1. 创建队列数组 */
+    /* > 创建队列数组 */
     ctx->recvq = calloc(conf->rqnum, sizeof(queue_t *));
     if (NULL == ctx->recvq)
     {
@@ -300,7 +299,7 @@ static int sdtp_creat_recvq(sdtp_rctx_t *ctx)
         return SDTP_ERR;
     }
 
-    /* 2. 依次创建接收队列 */
+    /* > 依次创建接收队列 */
     for(idx=0; idx<conf->rqnum; ++idx)
     {
         ctx->recvq[idx] = queue_creat(conf->recvq.max, conf->recvq.size);
@@ -436,10 +435,10 @@ void sdtp_recvtp_destroy(void *_ctx, void *args)
 
     for (idx=0; idx<ctx->conf.recv_thd_num; ++idx, ++rsvr)
     {
-        /* 1. 关闭命令套接字 */
+        /* > 关闭命令套接字 */
         CLOSE(rsvr->cmd_sck_id);
 
-        /* 2. 关闭通信套接字 */
+        /* > 关闭通信套接字 */
         sdtp_rsvr_del_all_conn_hdl(rsvr);
 
         slab_destroy(rsvr->pool);
