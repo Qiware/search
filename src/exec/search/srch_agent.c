@@ -630,9 +630,9 @@ static int srch_agent_recv_head(srch_agent_t *agt, socket_t *sck)
     /* 3. 校验报头数据 */
     head = (srch_mesg_header_t *)sck->recv.addr;
 
-    /* head->type = head->type; */
-    /* head->flag = head->flag; */
-    head->length = ntohs(head->length);
+    head->type = ntohl(head->type);
+    head->flag = ntohl(head->flag);
+    head->length = ntohl(head->length);
     head->mark = ntohl(head->mark);
 
     if (SRCH_MSG_MARK_KEY != head->mark)
