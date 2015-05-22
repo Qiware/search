@@ -3,10 +3,20 @@
 
 #include "sdtp_ssvr.h"
 
+/* 鉴权配置 */
+typedef struct
+{
+    char usr[SDTP_USR_MAX_LEN];         /* 用户名 */
+    char passwd[SDTP_PWD_MAX_LEN];      /* 登录密码 */
+} sdtp_auth_conf_t;
+
 /* 配置信息 */
 typedef struct
 {
+    int devid;                          /* 设备ID: 唯一值 */
     char name[SDTP_NAME_MAX_LEN];       /* 发送端名称 */
+
+    sdtp_auth_conf_t auth;              /* 鉴权信息 */
 
     char ipaddr[IP_ADDR_MAX_LEN];       /* 服务端IP地址 */
     int port;                           /* 服务端端口号 */

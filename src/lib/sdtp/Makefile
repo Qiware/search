@@ -8,7 +8,9 @@
 ###############################################################################
 include $(PROJ)/make/build.mak
 
-INCLUDE = -I. -I$(PROJ)/src/incl
+INCLUDE = -I. \
+		  -I$(PROJ)/src/incl \
+		  -I$(PROJ)/src/incl/sdtp
 
 LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lxd_core

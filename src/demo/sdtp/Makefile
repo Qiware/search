@@ -10,7 +10,7 @@ include $(PROJ)/make/build.mak
 
 INCLUDE = -I. \
 		  -I$(PROJ)/src/incl \
-		  -I$(PROJ)/src/comm/sdtp/incl
+		  -I$(PROJ)/src/incl/sdtp
 LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lpthread -lxd_core -lsdtp
 

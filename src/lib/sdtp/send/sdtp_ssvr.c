@@ -12,13 +12,11 @@ static sdtp_ssvr_t *sdtp_ssvr_get_curr(sdtp_sctx_t *ctx);
 static int sdtp_ssvr_creat_sendq(sdtp_ssvr_t *ssvr, const sdtp_ssvr_conf_t *conf);
 static int sdtp_ssvr_creat_usck(sdtp_ssvr_t *ssvr, const sdtp_ssvr_conf_t *conf);
 
-static int sdtp_ssvr_kpalive_req(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr);
-
 static int sdtp_ssvr_recv_cmd(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr);
 static int sdtp_ssvr_recv_proc(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr);
 
 static int sdtp_ssvr_data_proc(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, sdtp_ssck_t *sck);
-static int sdtp_ssvr_sys_mesg_proc(sdtp_ssvr_t *ssvr, sdtp_ssck_t *sck, void *addr);
+static int sdtp_ssvr_sys_mesg_proc(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, sdtp_ssck_t *sck, void *addr);
 static int sdtp_ssvr_exp_mesg_proc(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, sdtp_ssck_t *sck, void *addr);
 
 static int sdtp_ssvr_timeout_hdl(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr);
@@ -26,6 +24,11 @@ static int sdtp_ssvr_proc_cmd(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, const sdtp_cm
 static int sdtp_ssvr_send_data(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr);
 
 static int sdtp_ssvr_clear_mesg(sdtp_ssvr_t *ssvr);
+
+static int sdtp_ssvr_kpalive_req(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr);
+
+static int sdtp_link_auth_req(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr);
+static int sdtp_link_auth_rep_hdl(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, sdtp_ssck_t *sck, sdtp_link_auth_rep_t *rep);
 
 /******************************************************************************
  **函数名称: sdtp_ssvr_init
@@ -106,13 +109,6 @@ int sdtp_ssvr_init(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, int tidx)
 
     sdtp_snap_setup(recv, addr, conf->recv_buff_size);
 
-    /* 6. 连接接收服务器 */
-    if ((ssvr->sck.fd = tcp_connect(AF_INET, conf->ipaddr, conf->port)) < 0)
-    {
-        log_error(ssvr->log, "Connect recv server failed!");
-        /* Note: Don't return error! */
-    }
- 
     return SDTP_OK;
 }
 
@@ -434,6 +430,8 @@ void *sdtp_ssvr_routine(void *_ctx)
                 Sleep(SDTP_RECONN_INTV);
                 continue;
             }
+
+            sdtp_link_auth_req(ctx, ssvr); /* 发起鉴权请求 */
         }
 
         sdtp_switch_send_data(ctx, ssvr);
@@ -773,7 +771,7 @@ static int sdtp_ssvr_data_proc(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, sdtp_ssck_t 
         /* 2.3 进行数据处理 */
         if (SDTP_SYS_MESG == head->flag)
         {
-            sdtp_ssvr_sys_mesg_proc(ssvr, sck, recv->addr);
+            sdtp_ssvr_sys_mesg_proc(ctx, ssvr, sck, recv->addr);
         }
         else
         {
@@ -1116,18 +1114,22 @@ static int sdtp_ssvr_clear_mesg(sdtp_ssvr_t *ssvr)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.16 #
  ******************************************************************************/
-static int sdtp_ssvr_sys_mesg_proc(sdtp_ssvr_t *ssvr, sdtp_ssck_t *sck, void *addr)
+static int sdtp_ssvr_sys_mesg_proc(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, sdtp_ssck_t *sck, void *addr)
 {
     sdtp_header_t *head = (sdtp_header_t *)addr;
 
     switch (head->type)
     {
-        case SDTP_KPALIVE_REP:  /* 保活应答 */
+        case SDTP_KPALIVE_REP:      /* 保活应答 */
         {
             log_debug(ssvr->log, "Received keepalive respond!");
 
             sdtp_set_kpalive_stat(sck, SDTP_KPALIVE_STAT_SUCC);
             return SDTP_OK;
+        }
+        case SDTP_LINK_AUTH_REP:    /* 链路鉴权应答 */
+        {
+            return sdtp_link_auth_rep_hdl(ctx, ssvr, sck, addr + sizeof(sdtp_header_t));
         }
         default:
         {
@@ -1153,7 +1155,8 @@ static int sdtp_ssvr_sys_mesg_proc(sdtp_ssvr_t *ssvr, sdtp_ssck_t *sck, void *ad
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.05.19 #
  ******************************************************************************/
-static int sdtp_ssvr_exp_mesg_proc(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, sdtp_ssck_t *sck, void *addr)
+static int sdtp_ssvr_exp_mesg_proc(
+        sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, sdtp_ssck_t *sck, void *addr)
 {
     void *data;
     int *num;
@@ -1199,4 +1202,81 @@ static int sdtp_ssvr_exp_mesg_proc(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, sdtp_ssc
     }
 
     return SDTP_OK;
+}
+
+/******************************************************************************
+ **函数名称: sdtp_link_auth_req
+ **功    能: 发起链路鉴权请求
+ **输入参数: 
+ **     ctx: 全局信息
+ **     ssvr: 发送服务
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 将鉴权请求放入发送队列中
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.05.22 #
+ ******************************************************************************/
+static int sdtp_link_auth_req(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
+{
+    int size;
+    void *addr;
+    sdtp_header_t *head;
+    sdtp_ssck_t *sck = &ssvr->sck;
+    sdtp_link_auth_req_t *link_auth_req;
+
+    /* > 申请内存空间 */
+    size = sizeof(sdtp_header_t) + sizeof(sdtp_link_auth_req_t);
+
+    addr = slab_alloc(ssvr->pool, size);
+    if (NULL == addr)
+    {
+        log_error(ssvr->log, "Alloc memory from slab failed!");
+        return SDTP_ERR;
+    }
+
+    /* > 设置头部数据 */
+    head = (sdtp_header_t *)addr;
+
+    head->type = SDTP_LINK_AUTH_REQ;
+    head->length = 0;
+    head->flag = SDTP_SYS_MESG;
+    head->checksum = SDTP_CHECK_SUM;
+
+    /* > 设置鉴权信息 */
+    link_auth_req = addr + sizeof(sdtp_header_t);
+    
+    link_auth_req->devid = ctx->conf.devid;
+    snprintf(link_auth_req->usr, sizeof(link_auth_req->usr), "%s", ctx->conf.auth.usr);
+    snprintf(link_auth_req->passwd, sizeof(link_auth_req->passwd), "%s", ctx->conf.auth.passwd);
+
+    /* > 加入发送列表 */
+    if (list_rpush(sck->mesg_list, addr))
+    {
+        slab_dealloc(ssvr->pool, addr);
+        log_error(ssvr->log, "Alloc memory from slab failed!");
+        return SDTP_ERR;
+    }
+
+    log_debug(ssvr->log, "Add link auth request success! fd:[%d]", sck->fd);
+
+    return SDTP_OK;
+}
+/******************************************************************************
+ **函数名称: sdtp_link_auth_rep_hdl
+ **功    能: 链路鉴权请求应答的处理
+ **输入参数: 
+ **     ctx: 全局信息
+ **     ssvr: 发送服务
+ **     sck: 连接对象
+ **     addr: 数据地址
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 判断鉴权成功还是失败
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.05.22 #
+ ******************************************************************************/
+static int sdtp_link_auth_rep_hdl(
+        sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, sdtp_ssck_t *sck, sdtp_link_auth_rep_t *rep)
+{
+    return ntohl(rep->is_succ)? SDTP_OK : SDTP_ERR;
 }

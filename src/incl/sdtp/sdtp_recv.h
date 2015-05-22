@@ -14,15 +14,7 @@
 #include "thread_pool.h"
 
 /* 宏定义 */
-#define SDTP_THD_DEF_NUM    (01)        /* 默认线程数 */
-#define SDTP_THD_MIN_NUM    (01)        /* 最小线程数 */
-#define SDTP_THD_MAX_NUM    (64)        /* 最大线程数 */
-#define SDTP_CONN_MAX_NUM   (512)       /* 最大链接数 */
-#define SDTP_SCK_DEF_NUM    (32)        /* Default SCK number */
-#define SDTP_MSG_DEF_LEN    (512)       /* Read length at one time */
-#define SDTP_CLOSE_TMOUT    (60)        /* 超时关闭时长 */
-#define SDTP_CMD_RESND_TIMES (3)        /* 命令重发次数 */
-#define SDTP_CTX_POOL_SIZE  (5 * MB)    /* 全局内存池空间 */
+#define SDTP_CTX_POOL_SIZE      (5 * MB)/* 全局内存池空间 */
 
 /* Recv线程的UNIX-UDP路径 */
 #define sdtp_rsvr_usck_path(conf, path, tidx) \
@@ -128,7 +120,10 @@ typedef struct
     thread_pool_t *worktp;              /* 工作线程池 */ 
 
     queue_t **recvq;                    /* 接收队列 */
-    shm_queue_t *sendq;                 /* 发送队列 */
+    queue_t **sendq;                    /* 发送队列 */
+    shm_queue_t *shm_sendq;             /* 发送队列
+                                           注: 外部接口首先将要发送的数据放入
+                                           此队列, 再从此队列分发到不同的线程队列 */
 } sdtp_rctx_t;
 
 /* 外部接口 */
