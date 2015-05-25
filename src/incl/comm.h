@@ -69,9 +69,7 @@
 #define PTR_ALIGNMENT   sizeof(unsigned long)
 
 /* 变量成员在结构体中的偏移量 */
-#if !defined(offsetof)
 #define offsetof(type, field)   ((size_t)&(((type *)0)->field))
-#endif /*offsetof*/
 
 /******************************************************************************
  **函数名称: key_cb_t

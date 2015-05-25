@@ -34,6 +34,16 @@ typedef enum
     , MSG_TYPE_TOTAL                        /* 消息类型总数 */
 } mesg_type_e;
 
+/* 消息路由信息
+ * 各设备必须记录处理过的流水, 以便在收到应答时,
+ * 能够正确的将应答数据发送给在此之前的设备 */
+typedef struct
+{
+    unsigned long long serial;              /* 流水号(全局唯一编号) */
+    int orig;                               /* 源设备ID */
+    int dest;                               /* 目的设备ID */
+} mesg_route_t;
+
 /* 搜索关键字 */
 typedef struct
 {

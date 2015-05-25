@@ -148,7 +148,7 @@ shm_queue_t *shm_queue_attach(int key)
  **函数名称: shm_queue_push
  **功    能: 压入队列
  **输入参数:
- **     info: 共享内存队列
+ **     shmq: 共享内存队列
  **     p: 内存地址
  **输出参数:
  **返    回: 0:成功 !0:失败
@@ -167,10 +167,9 @@ int shm_queue_push(shm_queue_t *shmq, void *p)
  **函数名称: shm_queue_pop
  **功    能: 出队列
  **输入参数:
- **     info: 共享内存队列
- **输出参数:
- **     data: 数据地址
- **返    回: 队列ID
+ **     shmq: 共享内存队列
+ **输出参数: NONE
+ **返    回: 数据地址
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.05.06 #

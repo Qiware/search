@@ -34,3 +34,34 @@ sdtp_rdsp_t *sdtp_rdsp_init(sdtp_rctx_t *ctx)
 
     return dsp
 }
+
+/******************************************************************************
+ **函数名称: sdtp_rdsp_routine
+ **功    能: 运行分发线程
+ **输入参数: 
+ **     ctx: 全局信息
+ **输出参数: NONE
+ **返    回: 分发对象
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.05.15 #
+ ******************************************************************************/
+void *sdtp_rdsp_routine(void *_ctx)
+{
+    void *addr;
+    sdtp_rctx_t *ctx = (sdtp_rctx_t *)_ctx;
+    sdtp_rdsp_t *dsp = ctx->rdsp;
+
+    while (1)
+    {
+        /* > 弹出发送数据 */
+        addr = shm_queue_pop(ctx->shm_sendq); 
+        if (NULL == addr)
+        {
+            usleep(500); /* TODO: 可使用消息机制减少CPU的消耗 */
+            continue;
+        }
+
+        /* > 将数据压入各接收服务的发送队列 */
+    }
+}
