@@ -40,6 +40,13 @@ typedef enum
     , SDTP_ERR_UNKNOWN_CMD              /* 未知命令类型 */
 } sdtp_err_e;
 
+/* 鉴权配置 */
+typedef struct
+{
+    char usr[SDTP_USR_MAX_LEN];         /* 用户名 */
+    char passwd[SDTP_PWD_MAX_LEN];      /* 登录密码 */
+} sdtp_auth_conf_t;
+
 /* 接收/发送快照 */
 typedef struct
 {

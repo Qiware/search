@@ -3,13 +3,6 @@
 
 #include "sdtp_ssvr.h"
 
-/* 鉴权配置 */
-typedef struct
-{
-    char usr[SDTP_USR_MAX_LEN];         /* 用户名 */
-    char passwd[SDTP_PWD_MAX_LEN];      /* 登录密码 */
-} sdtp_auth_conf_t;
-
 /* 配置信息 */
 typedef struct
 {

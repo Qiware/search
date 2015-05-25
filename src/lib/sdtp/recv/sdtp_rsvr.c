@@ -29,6 +29,8 @@ static int sdtp_rsvr_sys_mesg_proc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_rsc
 static int sdtp_rsvr_exp_mesg_proc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_rsck_t *sck);
 
 static int sdtp_rsvr_keepalive_req_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_rsck_t *sck);
+static int sdtp_rsvr_link_auth_req_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_rsck_t *sck);
+
 static int sdtp_rsvr_cmd_proc_req(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, int rqid);
 static int sdtp_rsvr_cmd_proc_all_req(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr);
 
@@ -703,6 +705,10 @@ static int sdtp_rsvr_sys_mesg_proc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_rsc
         {
             return sdtp_rsvr_keepalive_req_hdl(ctx, rsvr, sck);
         }
+        case SDTP_LINK_AUTH_REQ:
+        {
+            return sdtp_rsvr_link_auth_req_hdl(ctx, rsvr, sck);
+        }
         default:
         {
             log_error(rsvr->log, "Unknown message type! [%d]", head->type);
@@ -947,7 +953,7 @@ static int sdtp_rsvr_keepalive_req_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp
     void *addr;
     sdtp_header_t *head;
 
-    /* >> 分配消息空间 */
+    /* > 分配消息空间 */
     addr = slab_alloc(rsvr->pool, sizeof(sdtp_header_t));
     if (NULL == addr)
     {
@@ -955,7 +961,7 @@ static int sdtp_rsvr_keepalive_req_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp
         return SDTP_ERR;
     }
 
-    /* >> 回复消息内容 */
+    /* > 回复消息内容 */
     head = (sdtp_header_t *)addr;
 
     head->type = SDTP_KPALIVE_REP;
@@ -963,7 +969,7 @@ static int sdtp_rsvr_keepalive_req_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp
     head->flag = SDTP_SYS_MESG;
     head->checksum = SDTP_CHECK_SUM;
     
-    /* >> 加入发送列表 */
+    /* > 加入发送列表 */
     if (list_rpush(sck->mesg_list, addr))
     {
         slab_dealloc(rsvr->pool, addr);
@@ -972,6 +978,82 @@ static int sdtp_rsvr_keepalive_req_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp
     }
 
     log_debug(rsvr->log, "Add respond of keepalive request!");
+
+    return SDTP_OK;
+}
+
+/******************************************************************************
+ **函数名称: sdtp_rsvr_link_auth_req_hdl
+ **功    能: 链路鉴权请求处理
+ **输入参数: 
+ **     ctx: 全局对象
+ **     rsvr: 接收对象
+ **     sck: 套接字对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 校验鉴权是否通过, 并应答鉴权请求
+ **注意事项: TODO: 待注册DEVID与RSVR的映射关系, 为自定义数据的应答做铺垫!
+ **作    者: # Qifeng.zou # 2015.05.22 #
+ ******************************************************************************/
+static int sdtp_rsvr_link_auth_req_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_rsck_t *sck)
+{
+    int flag;
+    void *addr;
+    sdtp_header_t *head;
+    sdtp_snap_t *recv = &sck->recv;
+    sdtp_link_auth_req_t *link_auth_req;
+    sdtp_link_auth_rep_t *link_auth_rep;
+
+    /* > 字节序转换 */
+    link_auth_req = (sdtp_link_auth_req_t *)(recv->addr + sizeof(sdtp_header_t));
+   
+    link_auth_req->devid = ntohl(link_auth_req->devid);
+
+    /* > 验证鉴权合法性 */
+    if (0 != strcmp(link_auth_req->usr, ctx->conf.auth.usr)
+        || 0 != strcmp(link_auth_req->passwd, ctx->conf.auth.passwd))
+    {
+        log_error(rsvr->log, "Link auth failed! devid:%d usr:%s passwd:%s",
+                link_auth_req->devid, link_auth_req->usr, link_auth_req->passwd);
+        flag = SDTP_LINK_AUTH_FAIL;
+    }
+    else
+    {
+        log_error(rsvr->log, "Link auth success! devid:%d usr:%s passwd:%s",
+                link_auth_req->devid, link_auth_req->usr, link_auth_req->passwd);
+        flag = SDTP_LINK_AUTH_SUCC;
+    }
+
+    sck->auth_succ = flag;
+
+    /* > 分配消息空间 */
+    addr = slab_alloc(rsvr->pool, sizeof(sdtp_header_t));
+    if (NULL == addr)
+    {
+        log_error(rsvr->log, "Alloc memory from slab failed!");
+        return SDTP_ERR;
+    }
+
+    /* > 回复消息内容 */
+    head = (sdtp_header_t *)addr;
+    link_auth_rep = (sdtp_link_auth_rep_t *)(addr + sizeof(sdtp_header_t));
+
+    head->type = SDTP_LINK_AUTH_REP;
+    head->length = sizeof(sdtp_link_auth_rep_t);
+    head->flag = SDTP_SYS_MESG;
+    head->checksum = SDTP_CHECK_SUM;
+
+    link_auth_rep->is_succ = htonl(flag);
+    
+    /* > 加入发送列表 */
+    if (list_rpush(sck->mesg_list, addr))
+    {
+        slab_dealloc(rsvr->pool, addr);
+        log_error(rsvr->log, "Insert into list failed!");
+        return SDTP_ERR;
+    }
+
+    log_debug(rsvr->log, "Add respond of link-auth request!");
 
     return SDTP_OK;
 }
@@ -1273,7 +1355,7 @@ static int sdtp_rsvr_fill_send_buff(sdtp_rsvr_t *rsvr, sdtp_rsck_t *sck)
     sdtp_header_t *head;
     sdtp_snap_t *send = &sck->send;
 
-    /* >> 从消息链表取数据 */
+    /* > 从消息链表取数据 */
     for (;;)
     {
         /* 1 是否有数据 */

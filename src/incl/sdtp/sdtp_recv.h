@@ -35,6 +35,9 @@
 typedef struct
 {
     char name[FILE_NAME_MAX_LEN];       /* 服务名: 不允许重复出现 */
+
+    sdtp_auth_conf_t auth;              /* 鉴权配置 */
+
     int port;                           /* 侦听端口 */
     int recv_thd_num;                   /* 接收线程数 */
     int work_thd_num;                   /* 工作线程数 */
@@ -63,6 +66,8 @@ typedef struct _sdtp_rsck_t
     time_t rdtm;                        /* 最近读取时间 */
     time_t wrtm;                        /* 最近写入时间 */
     char ipaddr[IP_ADDR_MAX_LEN];       /* IP地址 */
+
+    int auth_succ;                      /* 鉴权成功(1:成功 0:失败)  */
 
     sdtp_snap_t recv;                   /* 接收快照 */
     sdtp_snap_t send;                   /* 发送快照 */

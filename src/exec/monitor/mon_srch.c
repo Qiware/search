@@ -100,10 +100,10 @@ static int mon_srch_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args
     /* 发送搜索数据 */
     for (idx=0; idx<num; ++idx)
     {
-        header.type = MSG_SEARCH_REQ;
-        header.flag = SRCH_MSG_FLAG_USR;
+        header.type = htonl(MSG_SEARCH_REQ);
+        header.flag = htonl(SRCH_MSG_FLAG_USR);
         header.mark = htonl(SRCH_MSG_MARK_KEY);
-        header.length = htons(sizeof(body));
+        header.length = htonl(sizeof(body));
 
         snprintf(body.words, sizeof(body.words), "爱我中华");
 

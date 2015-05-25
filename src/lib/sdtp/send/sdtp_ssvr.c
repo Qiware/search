@@ -1238,7 +1238,7 @@ static int sdtp_link_auth_req(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
     head = (sdtp_header_t *)addr;
 
     head->type = SDTP_LINK_AUTH_REQ;
-    head->length = 0;
+    head->length = sizeof(sdtp_link_auth_req_t);
     head->flag = SDTP_SYS_MESG;
     head->checksum = SDTP_CHECK_SUM;
 
