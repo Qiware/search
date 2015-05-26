@@ -91,6 +91,7 @@ sdtp_rctx_t *sdtp_recv_init(const sdtp_conf_t *conf, log_cycle_t *log)
 int sdtp_recv_startup(sdtp_rctx_t *ctx)
 {
     int idx;
+    pthread_t tid;
     thread_pool_t *tp;
     sdtp_rlsn_t *lsn = &ctx->listen;
 
@@ -112,6 +113,13 @@ int sdtp_recv_startup(sdtp_rctx_t *ctx)
     if (thread_creat(&lsn->tid, sdtp_rlsn_routine, ctx))
     {
         log_error(ctx->log, "Start listen failed");
+        return SDTP_ERR;
+    }
+
+    /* > 创建分发线程 */
+    if (thread_creat(&tid, sdtp_disp_routine, ctx))
+    {
+        log_error(ctx->log, "Start dispatch failed");
         return SDTP_ERR;
     }
 

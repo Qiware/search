@@ -9,6 +9,8 @@
 #if !defined(__MESG_H__)
 #define __MESG_H__
 
+#include <stdint.h>
+
 /* 消息类型 */
 typedef enum
 {
@@ -39,9 +41,10 @@ typedef enum
  * 能够正确的将应答数据发送给在此之前的设备 */
 typedef struct
 {
-    unsigned long long serial;              /* 流水号(全局唯一编号) */
-    int orig;                               /* 源设备ID */
-    int dest;                               /* 目的设备ID */
+    uint64_t  serial;                       /* 流水号(全局唯一编号) */
+    int orig_devid;                         /* 源设备ID */
+    int dest_devid;                         /* 目的设备ID */
+    int length;                             /* 消息体长度 */
 } mesg_route_t;
 
 /* 搜索关键字 */
