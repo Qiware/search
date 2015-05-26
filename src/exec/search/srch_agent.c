@@ -4,6 +4,7 @@
 #include "comm.h"
 #include "hash.h"
 #include "list.h"
+#include "mesg.h"
 #include "search.h"
 #include "syscall.h"
 #include "xml_tree.h"
@@ -586,6 +587,7 @@ int srch_agent_socket_cmp_cb(const void *pkey, const void *data)
  ******************************************************************************/
 static int srch_agent_recv_head(srch_agent_t *agt, socket_t *sck)
 {
+    void *addr;
     int n, left;
     socket_snap_t *recv = &sck->recv;
     srch_mesg_header_t *head;
@@ -596,7 +598,9 @@ static int srch_agent_recv_head(srch_agent_t *agt, socket_t *sck)
     /* 2. 接收报头数据 */
     while (1)
     {
-        n = read(sck->fd, recv->addr + recv->off, left);
+        addr = recv->addr + sizeof(mesg_route_t);
+
+        n = read(sck->fd, addr + recv->off, left);
         if (n == left)
         {
             recv->off += n;
@@ -628,7 +632,7 @@ static int srch_agent_recv_head(srch_agent_t *agt, socket_t *sck)
     }
 
     /* 3. 校验报头数据 */
-    head = (srch_mesg_header_t *)sck->recv.addr;
+    head = (srch_mesg_header_t *)(sck->recv.addr + sizeof(mesg_route_t));
 
     head->type = ntohl(head->type);
     head->flag = ntohl(head->flag);
@@ -662,16 +666,18 @@ static int srch_agent_recv_head(srch_agent_t *agt, socket_t *sck)
  ******************************************************************************/
 static int srch_agent_recv_body(srch_agent_t *agt, socket_t *sck)
 {
+    void *addr;
     int n, left;
     socket_snap_t *recv = &sck->recv;
-    srch_mesg_header_t *head = (srch_mesg_header_t *)recv->addr;
+    srch_mesg_header_t *head = (srch_mesg_header_t *)(recv->addr + sizeof(mesg_route_t));
 
     /* 1. 接收报体 */
     while (1)
     {
         left = recv->total - recv->off;
+        addr = recv->addr + sizeof(mesg_route_t);
 
-        n = read(sck->fd, recv->addr + recv->off, left);
+        n = read(sck->fd, addr + recv->off, left);
         if (n == left)
         {
             recv->off += n;
@@ -698,8 +704,7 @@ static int srch_agent_recv_body(srch_agent_t *agt, socket_t *sck)
             continue;
         }
 
-        log_error(agt->log, "errmsg:[%d] %s!"
-                " fd:%d type:%d length:%d n:%d total:%d offset:%d addr:%p",
+        log_error(agt->log, "errmsg:[%d] %s! fd:%d type:%d length:%d n:%d total:%d offset:%d addr:%p",
                 errno, strerror(errno), head->type,
                 sck->fd, head->length, n, recv->total, recv->off, recv->addr);
         return SRCH_ERR;
@@ -774,7 +779,7 @@ static int srch_agent_recv(srch_cntx_t *ctx, srch_agent_t *agt, socket_t *sck)
 
                 log_info(agt->log, "Alloc memory from queue success!");
 
-                extra->head = (srch_mesg_header_t *)recv->addr;
+                extra->head = (srch_mesg_header_t *)(recv->addr + sizeof(mesg_route_t));
                 extra->body = (void *)(extra->head + 1);
                 recv->off = 0;
                 recv->total = sizeof(srch_mesg_header_t);

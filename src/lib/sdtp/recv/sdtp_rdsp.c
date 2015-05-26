@@ -69,7 +69,6 @@ void *sdtp_disp_routine(void *_ctx)
         sendq = ctx->sendq[idx];
 
         /* > 获取发送队列 */
-
         addr2 = queue_malloc(sendq);
         if (NULL == addr2)
         {
@@ -86,4 +85,6 @@ void *sdtp_disp_routine(void *_ctx)
 
         shm_queue_dealloc(ctx->shm_sendq, addr);
     }
+
+    return (void *)-1;
 }
