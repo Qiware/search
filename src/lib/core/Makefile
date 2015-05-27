@@ -13,6 +13,7 @@ LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lpthread
 
 SRC_LIST = hash.c \
+			kmp.c \
 			log.c \
 			plog.c \
 			slot.c \
