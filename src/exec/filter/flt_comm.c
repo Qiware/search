@@ -229,7 +229,7 @@ flt_cntx_t *flt_init(char *pname, const char *path)
 
         ctx->domain_ip_map = hash_tab_creat(
                 FLT_DOMAIN_IP_MAP_HASH_MOD,
-                hash_time33_ex,
+                (key_cb_t)hash_time33_ex,
                 (avl_cmp_cb_t)flt_domain_ip_map_cmp_cb, &opt);
         if (NULL == ctx->domain_ip_map)
         {
@@ -246,7 +246,7 @@ flt_cntx_t *flt_init(char *pname, const char *path)
 
         ctx->domain_blacklist = hash_tab_creat(
                 FLT_DOMAIN_BLACKLIST_HASH_MOD,
-                hash_time33_ex,
+                (key_cb_t)hash_time33_ex,
                 (avl_cmp_cb_t)flt_domain_blacklist_cmp_cb, &opt);
         if (NULL == ctx->domain_blacklist)
         {
