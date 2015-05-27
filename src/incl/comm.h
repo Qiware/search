@@ -83,7 +83,7 @@
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.09 #
  ******************************************************************************/
-typedef unsigned int (*key_cb_t)(const void *pkey, size_t pkey_len);
+typedef int64_t (*key_cb_t)(const void *pkey, size_t pkey_len);
 
 /******************************************************************************
  **函数名称: mem_alloc_cb_t

@@ -56,18 +56,18 @@
 } 
 
 static int _avl_insert(avl_tree_t *tree, avl_node_t *node,
-        unsigned int idx, const avl_key_t *key, bool *taller, void *data);
+        int64_t idx, const avl_key_t *key, bool *taller, void *data);
 static void _avl_destroy(avl_tree_t *tree, avl_node_t *node);
 
 static int avl_right_balance(avl_tree_t *tree, avl_node_t *node);
 static int avl_left_balance(avl_tree_t *tree, avl_node_t *node);
 static int avl_insert_right(avl_tree_t *tree, avl_node_t *node,
-        unsigned int idx, const avl_key_t *key, bool *taller, void *data);
+        int64_t idx, const avl_key_t *key, bool *taller, void *data);
 static int avl_insert_left(avl_tree_t *tree, avl_node_t *node,
-        unsigned int idx, const avl_key_t *key, bool *taller, void *data);
+        int64_t idx, const avl_key_t *key, bool *taller, void *data);
 
 static int _avl_delete(avl_tree_t *tree, avl_node_t *node,
-        unsigned int idx, const avl_key_t *key, bool *lower, void **data);
+        int64_t idx, const avl_key_t *key, bool *lower, void **data);
 
 static int avl_replace_and_delete(avl_tree_t *tree,
         avl_node_t *node, avl_node_t *replace, bool *lower);
@@ -140,7 +140,7 @@ avl_tree_t *avl_creat(avl_opt_t *opt, key_cb_t key_cb, avl_cmp_cb_t cmp_cb)
  ******************************************************************************/
 int avl_insert(avl_tree_t *tree, void *_key, int len, void *data)
 {
-    unsigned int idx;   /* 非主键 */
+    int64_t idx;   /* 非主键 */
     avl_key_t key;  /* 主键 */
     bool taller = false;
     avl_node_t *root = tree->root;
@@ -192,7 +192,7 @@ int avl_insert(avl_tree_t *tree, void *_key, int len, void *data)
  **作    者: # Qifeng.zou # 2013.12.13 #
  ******************************************************************************/
 static int _avl_insert(avl_tree_t *tree, avl_node_t *node,
-        unsigned int idx, const avl_key_t *key, bool *taller, void *data)
+        int64_t idx, const avl_key_t *key, bool *taller, void *data)
 {
     int ret;
     
@@ -237,7 +237,7 @@ static int _avl_insert(avl_tree_t *tree, avl_node_t *node,
  **作    者: # Qifeng.zou # 2013.12.13 #
  ******************************************************************************/
 static int avl_insert_right(avl_tree_t *tree, avl_node_t *node,
-        unsigned int idx, const avl_key_t *key, bool *taller, void *data)
+        int64_t idx, const avl_key_t *key, bool *taller, void *data)
 {
     int ret;
     avl_node_t *add = NULL;
@@ -318,7 +318,7 @@ static int avl_insert_right(avl_tree_t *tree, avl_node_t *node,
  **作    者: # Qifeng.zou # 2013.12.13 #
  ******************************************************************************/
 static int avl_insert_left(avl_tree_t *tree, avl_node_t *node,
-        unsigned int idx, const avl_key_t *key, bool *taller, void *data)
+        int64_t idx, const avl_key_t *key, bool *taller, void *data)
 {
     int ret;
     avl_node_t *add;
@@ -724,7 +724,7 @@ int avl_left_balance(avl_tree_t *tree, avl_node_t *node)
 avl_node_t *avl_query(avl_tree_t *tree, void *key, int key_len)
 {
     int ret;
-    unsigned int idx;
+    int64_t idx;
     avl_node_t *node = tree->root;
 
     idx = tree->key_cb(key, key_len);
@@ -830,7 +830,7 @@ void avl_assert(const avl_node_t *node)
  ******************************************************************************/
 int avl_delete(avl_tree_t *tree, void *_key, int len, void **data)
 {
-    unsigned int idx;
+    int64_t idx;
     avl_key_t key;
     bool lower = false;
 
@@ -865,7 +865,7 @@ int avl_delete(avl_tree_t *tree, void *_key, int len, void **data)
  **作    者: # Qifeng.zou # 2013.12.19 #
  ******************************************************************************/
 static int _avl_delete(avl_tree_t *tree, avl_node_t *node,
-        unsigned int idx, const avl_key_t *key, bool *lower, void **data)
+        int64_t idx, const avl_key_t *key, bool *lower, void **data)
 {
     int ret;
     avl_node_t *parent = node->parent;
@@ -1351,11 +1351,11 @@ void avl_print_head(avl_node_t *node, int depth)
     if ((NULL == node->lchild)
         && (NULL == node->rchild))
     {
-        fprintf(stderr, "<%03d:%d/>\n", node->idx, node->bf);
+        fprintf(stderr, "<%03ld:%d/>\n", node->idx, node->bf);
     }
     else
     {
-        fprintf(stderr, "<%03d:%d>\n", node->idx, node->bf);
+        fprintf(stderr, "<%03ld:%d>\n", node->idx, node->bf);
     }
 }
 
@@ -1391,7 +1391,7 @@ void avl_print_tail(avl_node_t *node, int depth)
         depth--;
     }
 
-    fprintf(stderr, "</%03d>\n", node->idx);
+    fprintf(stderr, "</%03ld>\n", node->idx);
 }
 
 /******************************************************************************
