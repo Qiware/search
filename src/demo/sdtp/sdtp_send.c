@@ -102,7 +102,7 @@ int main(int argc, const char *argv[])
 {
     int sleep = 5, port;
     log_cycle_t *log;
-    sdtp_ssvr_cntx_t *ctx;
+    sdtp_sctx_t *ctx;
     sdtp_cli_t *cli;
     sdtp_cli_t *cli2;
     sdtp_ssvr_conf_t conf;
@@ -125,8 +125,14 @@ int main(int argc, const char *argv[])
     plog_init(LOG_LEVEL_ERROR, "./sdtp_ssvr.plog");
     log = log_init(LOG_LEVEL_ERROR, "./sdtp_ssvr.log");
 
-    ctx = sdtp_ssvr_startup(&conf, log);
+    ctx = sdtp_send_init(&conf, log);
     if (NULL == ctx) 
+    {
+        fprintf(stderr, "Initialize send-server failed!");
+        return -1;
+    }
+
+    if (sdtp_send_start(ctx))
     {
         fprintf(stderr, "Start up send-server failed!");
         return -1;

@@ -1,6 +1,6 @@
 
-#include "sdtp.h"
 #include "mesg.h"
+#include "sdtp_recv.h"
 
 /* 回调函数 */
 static int sdtp_work_def_hdl(int type, char *buff, size_t len, void *args)
@@ -24,7 +24,7 @@ static void sdtp_setup_conf(sdtp_conf_t *conf, int port)
 int main(int argc, const char *argv[])
 {
     int ret, port;
-    sdtp_cntx_t *ctx;
+    sdtp_rctx_t *ctx;
     log_cycle_t *log;
     sdtp_conf_t conf;
 
@@ -69,5 +69,5 @@ int main(int argc, const char *argv[])
     while(1) pause();
 
     /* 3. 接收端释放 */
-    return sdtp_recv_destroy(&ctx);
+    return sdtp_recv_destroy(ctx);
 }
