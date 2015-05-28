@@ -5,12 +5,7 @@ DIR="../../src"
 SRC="$DIR/exec"
 SRC="$SRC $DIR/demo"
 SRC="$SRC $DIR/incl"
-SRC="$SRC $DIR/lib/core"
-SRC="$SRC $DIR/lib/sdtp"
-SRC="$SRC $DIR/lib/http"
-SRC="$SRC $DIR/lib/gumbo"
-SRC="$SRC $DIR/lib/redis"
-SRC="$SRC $DIR/lib/invert"
+SRC="$SRC $DIR/lib/"
 
 # 总行数
 hl=`find $SRC -name "*.h" | xargs cat | wc -l`
