@@ -51,7 +51,7 @@ static int srch_set_reg(srch_proc_t *proc);
 int main(int argc, char *argv[])
 {
     srch_opt_t opt;
-    srch_proc_t proc;
+    srch_proc_t *proc;
 
     memset(&opt, 0, sizeof(opt));
 
@@ -71,21 +71,22 @@ int main(int argc, char *argv[])
     }
 
     /* > 进程初始化 */
-    if (srch_proc_init(argv[0], opt.conf_path))
+    proc = srch_proc_init(argv[0], opt.conf_path);
+    if (NULL == proc)
     {
         fprintf(stderr, "Initialize proc failed!");
         return SRCH_ERR;
     }
  
     /* 注册回调函数 */
-    if (srch_set_reg(&proc))
+    if (srch_set_reg(proc))
     {
         fprintf(stderr, "Set register callback failed!");
         return SRCH_ERR;
     }
 
     /* 3. 启动爬虫服务 */
-    if (srch_startup(proc.srch))
+    if (srch_startup(proc->srch))
     {
         fprintf(stderr, "Startup search-engine failed!");
         goto ERROR;
@@ -95,7 +96,7 @@ int main(int argc, char *argv[])
 
 ERROR:
     /* 4. 销毁全局信息 */
-    srch_cntx_destroy(proc.srch);
+    srch_cntx_destroy(proc->srch);
 
     return SRCH_ERR;
 }
