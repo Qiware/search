@@ -19,19 +19,19 @@
 #include "prob_mesg.h"
 #include "prob_worker.h"
 
-#define PROB_PROC_LOCK_PATH "../temp/srch/srch.lck"
+#define PROB_PROC_LOCK_PATH "../temp/prob/prob.lck"
 
 typedef struct
 {
-    prob_cntx_t *srch;                  /* 搜索服务 */
     sdtp_cli_t *sdtp;                   /* SDTP服务 */
+    prob_cntx_t *prob;                  /* 探针服务 */
 
     int len;                            /* 业务请求树长 */
     avl_tree_t **req_list;              /* 业务请求信息表 */
-} prob_proc_t;
+} probd_cycle_t;
 
-static prob_proc_t *prob_proc_init(char *pname, const char *path);
-static int prob_set_reg(prob_proc_t *proc);
+static probd_cycle_t *prob_proc_init(char *pname, const char *path);
+static int prob_set_reg(probd_cycle_t *proc);
 
 /******************************************************************************
  **函数名称: main 
@@ -51,7 +51,7 @@ static int prob_set_reg(prob_proc_t *proc);
 int main(int argc, char *argv[])
 {
     prob_opt_t opt;
-    prob_proc_t *proc;
+    probd_cycle_t *proc;
 
     memset(&opt, 0, sizeof(opt));
 
@@ -86,7 +86,7 @@ int main(int argc, char *argv[])
     }
 
     /* 3. 启动爬虫服务 */
-    if (prob_startup(proc->srch))
+    if (prob_startup(proc->prob))
     {
         fprintf(stderr, "Startup search-engine failed!");
         goto ERROR;
@@ -96,7 +96,7 @@ int main(int argc, char *argv[])
 
 ERROR:
     /* 4. 销毁全局信息 */
-    prob_cntx_destroy(proc->srch);
+    prob_cntx_destroy(proc->prob);
 
     return PROB_ERR;
 }
@@ -165,7 +165,7 @@ static sdtp_cli_t *prob_sdtp_init(log_cycle_t *log)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.05.28 23:41:39 #
  ******************************************************************************/
-static int prob_init_req_list(prob_proc_t *proc)
+static int prob_init_req_list(probd_cycle_t *proc)
 {
     int i;
     avl_opt_t opt;
@@ -214,7 +214,7 @@ static int prob_search_req_hdl(unsigned int type, void *data, int length, void *
     prob_flow_t *flow, *f;
     srch_mesg_body_t *body;
     prob_mesg_header_t *head;
-    prob_proc_t *proc = (prob_proc_t *)args;
+    probd_cycle_t *proc = (probd_cycle_t *)args;
 
     flow = (prob_flow_t *)data;
     head = (prob_mesg_header_t *)(flow + 1);
@@ -258,9 +258,9 @@ static int prob_search_req_hdl(unsigned int type, void *data, int length, void *
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.05.28 23:11:54 #
  ******************************************************************************/
-static int prob_set_reg(prob_proc_t *proc)
+static int prob_set_reg(probd_cycle_t *proc)
 {
-    if (prob_register(proc->srch, MSG_SEARCH_REQ, (prob_reg_cb_t)prob_search_req_hdl, (void *)proc))
+    if (prob_register(proc->prob, MSG_SEARCH_REQ, (prob_reg_cb_t)prob_search_req_hdl, (void *)proc))
     {
         return PROB_ERR;
     }
@@ -280,28 +280,28 @@ static int prob_set_reg(prob_proc_t *proc)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.05.28 23:11:54 #
  ******************************************************************************/
-static prob_proc_t *prob_proc_init(char *pname, const char *path)
+static probd_cycle_t *prob_proc_init(char *pname, const char *path)
 {
     sdtp_cli_t *sdtp;
-    prob_cntx_t *srch;
-    prob_proc_t *proc;
+    prob_cntx_t *prob;
+    probd_cycle_t *proc;
 
-    proc = (prob_proc_t *)calloc(1, sizeof(prob_proc_t));
+    proc = (probd_cycle_t *)calloc(1, sizeof(probd_cycle_t));
     if (NULL == proc)
     {
         return NULL;
     }
 
     /* > 初始化全局信息 */
-    srch = prob_cntx_init(pname, path);
-    if (NULL == srch)
+    prob = prob_cntx_init(pname, path);
+    if (NULL == prob)
     {
         fprintf(stderr, "Initialize search-engine failed!");
         return NULL;
     }
 
     /* > 初始化SDTP信息 */
-    sdtp = prob_sdtp_init(srch->log);
+    sdtp = prob_sdtp_init(prob->log);
     if (NULL == sdtp)
     {
         fprintf(stderr, "Initialize sdtp failed!");
@@ -315,7 +315,7 @@ static prob_proc_t *prob_proc_init(char *pname, const char *path)
         return NULL;
     }
 
-    proc->srch = srch;
+    proc->prob = prob;
     proc->sdtp = sdtp;
 
     return proc;

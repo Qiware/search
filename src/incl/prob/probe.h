@@ -16,12 +16,12 @@
 
 #define PROB_MSG_TYPE_MAX           (0xFF)      /* 消息最大类型 */
 
-#define PROB_DEF_CONF_PATH  "../conf/search.xml"/* 默认配置路径 */
+#define PROB_DEF_CONF_PATH  "../conf/probd.xml"/* 默认配置路径 */
 
 /* 命令路径 */
-#define PROB_LSN_CMD_PATH "../temp/srch/lsn_cmd.usck"       /* 侦听线程 */
-#define PROB_RCV_CMD_PATH "../temp/srch/rcv_cmd_%02d.usck"  /* 接收线程 */
-#define PROB_WRK_CMD_PATH "../temp/srch/wrk_cmd_%02d.usck"  /* 工作线程 */
+#define PROB_LSN_CMD_PATH "../temp/prob/lsn_cmd.usck"       /* 侦听线程 */
+#define PROB_RCV_CMD_PATH "../temp/prob/rcv_cmd_%02d.usck"  /* 接收线程 */
+#define PROB_WRK_CMD_PATH "../temp/prob/wrk_cmd_%02d.usck"  /* 工作线程 */
 
 /* 搜索引擎对象 */
 typedef struct
