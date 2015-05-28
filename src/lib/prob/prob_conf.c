@@ -91,7 +91,7 @@ static int prob_conf_parse_log(xml_tree_t *xml, prob_conf_t *conf, log_cycle_t *
     xml_node_t *node, *fix;
 
     /* > 定位日志标签 */
-    fix = xml_query(xml, ".SEARCH-ENGINE.LOG");
+    fix = xml_query(xml, ".PROBD.LOG");
     if (NULL == fix)
     {
         conf->log.level = log_get_level(LOG_DEF_LEVEL_STR);
@@ -130,7 +130,7 @@ static int prob_conf_parse_connections(xml_tree_t *xml, prob_conf_t *conf, log_c
     xml_node_t *node, *fix;
 
     /* > 定位并发配置 */
-    fix = xml_query(xml, ".SEARCH-ENGINE.CONNECTIONS");
+    fix = xml_query(xml, ".PROBD.CONNECTIONS");
     if (NULL == fix)
     {
         log_error(log, "Didn't configure connections!");
@@ -202,7 +202,7 @@ static int prob_conf_parse_queue(xml_tree_t *xml, prob_conf_t *conf, log_cycle_t
     }
 
     /* > 定位队列标签 */
-    fix = xml_query(xml, ".SEARCH-ENGINE.QUEUE");
+    fix = xml_query(xml, ".PROBD.QUEUE");
     if (NULL == fix)
     {
         log_error(log, "Get queue configuration failed!");
@@ -243,7 +243,7 @@ static int prob_conf_parse(xml_tree_t *xml, prob_conf_t *conf, log_cycle_t *log)
     }
 
     /* 3. 获取WORKER.NUM标签 */
-    node = xml_query(xml, ".SEARCH-ENGINE.WORKER.NUM");
+    node = xml_query(xml, ".PROBD.WORKER.NUM");
     if (NULL == node)
     {
         log_error(log, "Didn't configure worker!");
@@ -253,7 +253,7 @@ static int prob_conf_parse(xml_tree_t *xml, prob_conf_t *conf, log_cycle_t *log)
     conf->worker_num = atoi(node->value.str);
 
     /* 4. 获取AGENT.NUM标签 */
-    node = xml_query(xml, ".SEARCH-ENGINE.AGENT.NUM");
+    node = xml_query(xml, ".PROBD.AGENT.NUM");
     if (NULL == node)
     {
         log_error(log, "Didn't configure agent!");
