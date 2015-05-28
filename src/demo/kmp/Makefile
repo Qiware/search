@@ -12,7 +12,7 @@ INCLUDE = -I. -I$(PROJ)/src/incl
 LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lxd_core
 
-SRC_LIST = kmp_demo.c
+SRC_LIST = kmp.c kmp_demo.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
 
