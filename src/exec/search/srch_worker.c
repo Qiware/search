@@ -56,18 +56,16 @@ void *srch_worker_routine(void *_ctx)
         addr = queue_pop(ctx->recvq[rqid]);
         if (NULL == addr)
         {
-            usleep(5000);
+            usleep(500);
             continue;
         }
 
         /* 2. 对数据进行处理 */
-        head = (srch_mesg_header_t *)addr;
+        head = (srch_mesg_header_t *)(addr + sizeof(srch_flow_t));
 
         reg = &ctx->reg[head->type];
 
-        reg->proc(head->type,
-            addr + sizeof(srch_mesg_header_t),
-            head->length, reg->args, worker->log);
+        reg->proc(head->type, addr, head->length + sizeof(srch_flow_t), reg->args, worker->log);
 
         /* 3. 释放内存空间 */
         queue_dealloc(ctx->recvq[rqid], addr);

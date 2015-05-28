@@ -39,7 +39,7 @@ void *srch_agent_routine(void *_ctx)
     srch_agent_t *agt;
     srch_cntx_t *ctx = (srch_cntx_t *)_ctx;
 
-    /* 1. 获取Agent对象 */
+    /* 1. 获取代理对象 */
     agt = srch_agent_self(ctx);
     if (NULL == agt)
     {
@@ -199,11 +199,11 @@ int srch_agent_destroy(srch_agent_t *agt)
 
 /******************************************************************************
  **函数名称: srch_agent_self
- **功    能: 获取Agent对象
+ **功    能: 获取代理对象
  **输入参数: 
  **     ctx: 全局信息
  **输出参数: NONE
- **返    回: Agent对象
+ **返    回: 代理对象
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.26 #
@@ -224,9 +224,9 @@ static srch_agent_t *srch_agent_self(srch_cntx_t *ctx)
  **功    能: 事件通知处理
  **输入参数: 
  **     ctx: 全局对象
- **     agt: Agent对象
+ **     agt: 代理对象
  **输出参数: NONE
- **返    回: Agent对象
+ **返    回: 代理对象
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.28 #
@@ -288,7 +288,7 @@ static int srch_agent_event_hdl(srch_cntx_t *ctx, srch_agent_t *agt)
  **     node: 平衡二叉树结点
  **     timeout: 超时链表
  **输出参数: NONE
- **返    回: Agent对象
+ **返    回: 代理对象
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.24 #
@@ -314,9 +314,9 @@ static int srch_agent_get_timeout_conn_list(socket_t *sck, srch_conn_timeout_lis
  **函数名称: srch_agent_event_timeout_hdl
  **功    能: 事件超时处理
  **输入参数: 
- **     agt: Agent对象
+ **     agt: 代理对象
  **输出参数: NONE
- **返    回: Agent对象
+ **返    回: 代理对象
  **实现描述: 
  **注意事项: 
  **     不必依次释放超时链表各结点的空间，只需一次性释放内存池便可释放所有空间.
@@ -390,9 +390,9 @@ static int srch_agent_event_timeout_hdl(srch_cntx_t *ctx, srch_agent_t *agt)
  **功    能: 添加新的连接
  **输入参数: 
  **     ctx: 全局信息
- **     agt: Agent对象
+ **     agt: 代理对象
  **输出参数: NONE
- **返    回: Agent对象
+ **返    回: 代理对象
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.29 #
@@ -500,7 +500,7 @@ static int srch_agent_add_conn(srch_cntx_t *ctx, srch_agent_t *agt)
  **函数名称: srch_agent_del_conn
  **功    能: 删除指定套接字
  **输入参数:
- **     agt: Agent对象
+ **     agt: 代理对象
  **     sck: SCK对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
@@ -577,7 +577,7 @@ int srch_agent_socket_cmp_cb(const void *pkey, const void *data)
  **函数名称: srch_agent_recv_head
  **功    能: 接收报头
  **输入参数:
- **     agt: Agent对象
+ **     agt: 代理对象
  **     sck: SCK对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
@@ -589,17 +589,17 @@ static int srch_agent_recv_head(srch_agent_t *agt, socket_t *sck)
 {
     void *addr;
     int n, left;
-    socket_snap_t *recv = &sck->recv;
     srch_mesg_header_t *head;
+    socket_snap_t *recv = &sck->recv;
 
     /* 1. 计算剩余字节 */
     left = sizeof(srch_mesg_header_t) - recv->off;
 
+    addr = recv->addr + sizeof(srch_flow_t);
+
     /* 2. 接收报头数据 */
     while (1)
     {
-        addr = recv->addr + sizeof(mesg_route_t);
-
         n = read(sck->fd, addr + recv->off, left);
         if (n == left)
         {
@@ -632,7 +632,7 @@ static int srch_agent_recv_head(srch_agent_t *agt, socket_t *sck)
     }
 
     /* 3. 校验报头数据 */
-    head = (srch_mesg_header_t *)(sck->recv.addr + sizeof(mesg_route_t));
+    head = (srch_mesg_header_t *)addr;
 
     head->type = ntohl(head->type);
     head->flag = ntohl(head->flag);
@@ -656,7 +656,7 @@ static int srch_agent_recv_head(srch_agent_t *agt, socket_t *sck)
  **函数名称: srch_agent_recv_body
  **功    能: 接收报体
  **输入参数:
- **     agt: Agent对象
+ **     agt: 代理对象
  **     sck: SCK对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
@@ -668,14 +668,16 @@ static int srch_agent_recv_body(srch_agent_t *agt, socket_t *sck)
 {
     void *addr;
     int n, left;
+    srch_mesg_header_t *head;
     socket_snap_t *recv = &sck->recv;
-    srch_mesg_header_t *head = (srch_mesg_header_t *)(recv->addr + sizeof(mesg_route_t));
+
+    addr = recv->addr + sizeof(srch_flow_t);
+    head  = (srch_mesg_header_t *)addr;
 
     /* 1. 接收报体 */
     while (1)
     {
         left = recv->total - recv->off;
-        addr = recv->addr + sizeof(mesg_route_t);
 
         n = read(sck->fd, addr + recv->off, left);
         if (n == left)
@@ -717,10 +719,28 @@ static int srch_agent_recv_body(srch_agent_t *agt, socket_t *sck)
 }
 
 /******************************************************************************
+ **函数名称: srch_sys_msg_hdl
+ **功    能: 系统消息的处理
+ **输入参数:
+ **     ctx: 全局对象
+ **     agt: 代理对象
+ **     sck: SCK对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.05.28 #
+ ******************************************************************************/
+static int srch_sys_msg_hdl(srch_cntx_t *ctx, srch_agent_t *agt, socket_t *sck)
+{
+    return SRCH_OK;
+}
+
+/******************************************************************************
  **函数名称: srch_agent_recv_post
  **功    能: 数据接收完毕，进行数据处理
  **输入参数:
- **     agt: Agent对象
+ **     agt: 代理对象
  **     sck: SCK对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
@@ -740,16 +760,15 @@ static int srch_agent_recv_post(srch_cntx_t *ctx, srch_agent_t *agt, socket_t *s
         return queue_push(ctx->recvq[agt->tidx], sck->recv.addr);
     }
 
-    /* TODO: 2. 系统消息的处理 */
-    //return srch_sys_msg_hdl(agt, sck);
-    return SRCH_ERR;
+    /* 2. 系统消息的处理 */
+    return srch_sys_msg_hdl(ctx, agt, sck);
 }
 
 /******************************************************************************
  **函数名称: srch_agent_recv
  **功    能: 接收数据
  **输入参数:
- **     agt: Agent对象
+ **     agt: 代理对象
  **     sck: SCK对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
@@ -761,6 +780,7 @@ static int srch_agent_recv(srch_cntx_t *ctx, srch_agent_t *agt, socket_t *sck)
 {
     int ret;
     socket_snap_t *recv = &sck->recv;
+    static volatile uint64_t serial = 0;
     srch_agent_socket_extra_t *extra = (srch_agent_socket_extra_t *)sck->extra;
 
     for (;;)
@@ -779,10 +799,15 @@ static int srch_agent_recv(srch_cntx_t *ctx, srch_agent_t *agt, socket_t *sck)
 
                 log_info(agt->log, "Alloc memory from queue success!");
 
-                extra->head = (srch_mesg_header_t *)(recv->addr + sizeof(mesg_route_t));
+                extra->flow = (srch_flow_t *)recv->addr;
+                extra->head = (srch_mesg_header_t *)(extra->flow + 1);
                 extra->body = (void *)(extra->head + 1);
                 recv->off = 0;
                 recv->total = sizeof(srch_mesg_header_t);
+
+                extra->flow->serial = atomic64_inc(&serial);
+                extra->flow->sck_serial = extra->serial;
+                extra->flow->srch_agt_idx = agt->tidx;
 
                 /* 设置下步 */
                 recv->phase = SOCK_PHASE_RECV_HEAD;
@@ -893,7 +918,7 @@ static int srch_agent_recv(srch_cntx_t *ctx, srch_agent_t *agt, socket_t *sck)
  **函数名称: srch_agent_fetch_send_data
  **功    能: 取发送数据
  **输入参数:
- **     agt: Agent对象
+ **     agt: 代理对象
  **     sck: SCK对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
@@ -913,7 +938,7 @@ static void *srch_agent_fetch_send_data(srch_agent_t *agt, socket_t *sck)
  **函数名称: srch_agent_send
  **功    能: 发送数据
  **输入参数:
- **     agt: Agent对象
+ **     agt: 代理对象
  **     sck: SCK对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败

@@ -80,8 +80,14 @@ int sdtp_send_debug(sdtp_cli_t *cli, int secs)
 
 static void sdtp_setup_conf(sdtp_ssvr_conf_t *conf, int port)
 {
+    conf->devid = 1;
     snprintf(conf->name, sizeof(conf->name), "SDTP-SEND");
+
+    snprintf(conf->auth.usr, sizeof(conf->auth.usr), "qifeng");
+    snprintf(conf->auth.passwd, sizeof(conf->auth.passwd), "111111");
+
     snprintf(conf->ipaddr, sizeof(conf->ipaddr), "127.0.0.1");
+
     conf->port = port;
     conf->send_thd_num = 1;
     conf->send_buff_size = 5 * MB;

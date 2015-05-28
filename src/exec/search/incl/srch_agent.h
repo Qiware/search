@@ -36,6 +36,7 @@ typedef struct
 {
     uint64_t serial;                /* 序列号(主键) */
 
+    srch_flow_t *flow;              /* 流水信息 */
     srch_mesg_header_t *head;       /* 报头起始地址 */
     void *body;                     /* Body */
     list_t *send_list;              /* 发送链表 */

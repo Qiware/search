@@ -46,7 +46,6 @@ static int sdtp_disp_query_by_dest(sdtp_rctx_t *ctx, int dest)
 void *sdtp_disp_routine(void *_ctx)
 {
     int idx;
-    queue_t *sendq;
     void *addr, *addr2;
     mesg_route_t *route;
     sdtp_rctx_t *ctx = (sdtp_rctx_t *)_ctx;
@@ -66,10 +65,8 @@ void *sdtp_disp_routine(void *_ctx)
 
         idx = sdtp_disp_query_by_dest(ctx, route->dest_devid);
 
-        sendq = ctx->sendq[idx];
-
         /* > 获取发送队列 */
-        addr2 = queue_malloc(sendq);
+        addr2 = queue_malloc(ctx->sendq[idx]);
         if (NULL == addr2)
         {
             shm_queue_dealloc(ctx->shm_sendq, addr);
@@ -78,9 +75,9 @@ void *sdtp_disp_routine(void *_ctx)
 
         memcpy(addr2, addr, route->length);
 
-        if (queue_push(sendq, addr2))
+        if (queue_push(ctx->sendq[idx], addr2))
         {
-            queue_dealloc(sendq, addr2);
+            queue_dealloc(ctx->sendq[idx], addr2);
         }
 
         shm_queue_dealloc(ctx->shm_sendq, addr);

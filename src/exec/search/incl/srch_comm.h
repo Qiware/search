@@ -23,6 +23,15 @@ typedef struct
     bool isdaemon;                          /* 是否后台运行 */
 } srch_opt_t;
 
+/* 消息流水信息 */
+typedef struct
+{
+    uint64_t  serial;                       /* 流水号(全局唯一编号) */
+
+    int srch_agt_idx;                       /* 搜索代理索引 */
+    int sck_serial;                         /* 套接字编号 */
+} srch_flow_t;
+
 /* 注册回调类型 */
 typedef int (*srch_reg_cb_t)(unsigned int type, char *buff, size_t len, void *args, log_cycle_t *log);
 

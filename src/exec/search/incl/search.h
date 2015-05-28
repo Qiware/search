@@ -23,12 +23,6 @@
 #define SRCH_RCV_CMD_PATH "../temp/srch/rcv_cmd_%02d.usck"  /* 接收线程 */
 #define SRCH_WRK_CMD_PATH "../temp/srch/wrk_cmd_%02d.usck"  /* 工作线程 */
 
-/* 请求流信息 */
-typedef struct
-{
-    int serial;                                 /* 流水号(每个业务请求都有唯一的流水号) */
-} srch_flow_info_t;
-
 /* 搜索引擎对象 */
 typedef struct
 {

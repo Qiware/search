@@ -10,10 +10,11 @@ include $(PROJ)/make/build.mak
 
 INCLUDE = -I. \
 			-I./incl \
-			-I$(PROJ)/src/incl
+			-I$(PROJ)/src/incl \
+			-I$(PROJ)/src/incl/sdtp
 LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lpthread
-LIBS2 = -lxd_srch -lxd_core
+LIBS2 = -lxd_srch -lxd_core -lsdtp
 
 SRC_LIST = srch_comm.c \
 			srch_conf.c \
