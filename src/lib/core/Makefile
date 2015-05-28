@@ -17,6 +17,7 @@ SRC_LIST = hash.c \
 			plog.c \
 			slot.c \
 			lock.c \
+			http.c \
 			list.c \
 			list2.c \
 			menu.c \

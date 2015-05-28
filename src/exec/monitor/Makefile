@@ -9,7 +9,7 @@
 include $(PROJ)/make/build.mak
 
 INCLUDE = -I. -I$(PROJ)/src/incl \
-		  -I$(PROJ)/src/exec/search/incl \
+		  -I$(PROJ)/src/incl/srch \
 		  -I$(PROJ)/src/exec/filter/incl \
 		  -I$(PROJ)/src/exec/crawler/incl \
 		  -I$(PROJ)/src/exec/monitor/incl

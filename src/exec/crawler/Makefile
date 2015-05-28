@@ -19,7 +19,6 @@ LIBS = -lpthread \
 	   		-lhiredis \
 			-lxd_redis \
 			-lxd_core \
-			-lxd_http \
 			-lxd_gumbo_ex 
 
 SRC_LIST = crwl_comm.c \
