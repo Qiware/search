@@ -25,9 +25,9 @@ TARGET = probd
 
 all: $(TARGET)
 $(TARGET): $(OBJS)
-	@$(CC) $(LFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS)
+	@$(CC) $(CFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS)
 	@echo "CC $@"
-	@mv $@ $(PROJ_LIB)
+	@mv $@ $(PROJ_BIN)
 	@echo "$@ is OK!"
 
 $(OBJS): %.o : %.c
@@ -35,5 +35,5 @@ $(OBJS): %.o : %.c
 	@echo "CC $(PWD)/$<"
 
 clean:
-	@rm -fr *.o $(PROJ_LIB)/$(TARGET)
-	@echo "rm -fr *.o $(PROJ_LIB)/$(TARGET)"
+	@rm -fr *.o $(PROJ_BIN)/$(TARGET)
+	@echo "rm -fr *.o $(PROJ_BIN)/$(TARGET)"
