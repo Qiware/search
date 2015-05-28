@@ -3,26 +3,23 @@
 ##
 ## 文件名: Makefile
 ## 版本号: 1.0
-## 描  述: 日志服务模块
+## 描  述: 探针服务模块
 ## 作  者: # Qifeng.zou # 2014.11.15 #
 ###############################################################################
 include $(PROJ)/make/build.mak
 
 INCLUDE = -I. \
 			-I$(PROJ)/src/incl \
-			-I$(PROJ)/src/incl/srch
+			-I$(PROJ)/src/incl/prob \
+			-I$(PROJ)/src/incl/sdtp
 LIBS_PATH = -L$(PROJ)/lib
-LIBS = -lpthread
+LIBS = -lxd_prob -lxd_core -lsdtp
 
-SRC_LIST = srch_comm.c \
-			srch_conf.c \
-			srch_agent.c \
-			srch_listen.c \
-			srch_worker.c
+SRC_LIST = probd.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST))
 
-TARGET = libxd_srch.so
+TARGET = probd
 
 .PHONY: all clean
 

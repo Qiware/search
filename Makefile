@@ -25,14 +25,14 @@ DIR += "$(LIB_DIR)/sdtp"
 DIR += "$(LIB_DIR)/gumbo"
 DIR += "$(LIB_DIR)/redis"
 
+DIR += "$(LIB_DIR)/prob"
 DIR += "$(LIB_DIR)/invert"
-DIR += "$(LIB_DIR)/search"
 
 EXEC_DIR = "src/exec"
 DIR += "$(EXEC_DIR)/crawler"
 DIR += "$(EXEC_DIR)/filter"
 DIR += "$(EXEC_DIR)/logsvr"
-DIR += "$(EXEC_DIR)/search"
+DIR += "$(EXEC_DIR)/probd"
 DIR += "$(EXEC_DIR)/monitor"
 DIR += "$(EXEC_DIR)/invertd"
 

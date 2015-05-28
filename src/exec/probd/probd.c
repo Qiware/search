@@ -13,25 +13,25 @@
 #include "lock.h"
 #include "hash.h"
 #include "mesg.h"
-#include "search.h"
+#include "probe.h"
 #include "syscall.h"
 #include "sdtp_cli.h"
-#include "srch_mesg.h"
-#include "srch_worker.h"
+#include "prob_mesg.h"
+#include "prob_worker.h"
 
-#define SRCH_PROC_LOCK_PATH "../temp/srch/srch.lck"
+#define PROB_PROC_LOCK_PATH "../temp/srch/srch.lck"
 
 typedef struct
 {
-    srch_cntx_t *srch;                  /* 搜索服务 */
+    prob_cntx_t *srch;                  /* 搜索服务 */
     sdtp_cli_t *sdtp;                   /* SDTP服务 */
 
     int len;                            /* 业务请求树长 */
     avl_tree_t **req_list;              /* 业务请求信息表 */
-} srch_proc_t;
+} prob_proc_t;
 
-static srch_proc_t *srch_proc_init(char *pname, const char *path);
-static int srch_set_reg(srch_proc_t *proc);
+static prob_proc_t *prob_proc_init(char *pname, const char *path);
+static int prob_set_reg(prob_proc_t *proc);
 
 /******************************************************************************
  **函数名称: main 
@@ -50,15 +50,15 @@ static int srch_set_reg(srch_proc_t *proc);
  ******************************************************************************/
 int main(int argc, char *argv[])
 {
-    srch_opt_t opt;
-    srch_proc_t *proc;
+    prob_opt_t opt;
+    prob_proc_t *proc;
 
     memset(&opt, 0, sizeof(opt));
 
     /* > 解析输入参数 */
-    if (srch_getopt(argc, argv, &opt))
+    if (prob_getopt(argc, argv, &opt))
     {
-        return srch_usage(argv[0]);
+        return prob_usage(argv[0]);
     }
 
     if (opt.isdaemon)
@@ -71,22 +71,22 @@ int main(int argc, char *argv[])
     }
 
     /* > 进程初始化 */
-    proc = srch_proc_init(argv[0], opt.conf_path);
+    proc = prob_proc_init(argv[0], opt.conf_path);
     if (NULL == proc)
     {
         fprintf(stderr, "Initialize proc failed!");
-        return SRCH_ERR;
+        return PROB_ERR;
     }
  
     /* 注册回调函数 */
-    if (srch_set_reg(proc))
+    if (prob_set_reg(proc))
     {
         fprintf(stderr, "Set register callback failed!");
-        return SRCH_ERR;
+        return PROB_ERR;
     }
 
     /* 3. 启动爬虫服务 */
-    if (srch_startup(proc->srch))
+    if (prob_startup(proc->srch))
     {
         fprintf(stderr, "Startup search-engine failed!");
         goto ERROR;
@@ -96,13 +96,13 @@ int main(int argc, char *argv[])
 
 ERROR:
     /* 4. 销毁全局信息 */
-    srch_cntx_destroy(proc->srch);
+    prob_cntx_destroy(proc->srch);
 
-    return SRCH_ERR;
+    return PROB_ERR;
 }
 
 /******************************************************************************
- **函数名称: srch_sdtp_set_conf
+ **函数名称: prob_sdtp_set_conf
  **功    能: 设置SDTP配置信息
  **输入参数: NONE
  **输出参数:
@@ -112,7 +112,7 @@ ERROR:
  **注意事项: TODO: 可改为使用配置文件的方式加载配置信息
  **作    者: # Qifeng.zou # 2015.05.28 22:58:17 #
  ******************************************************************************/
-static int srch_sdtp_set_conf(sdtp_ssvr_conf_t *conf)
+static int prob_sdtp_set_conf(sdtp_ssvr_conf_t *conf)
 {
     memset(conf, 0, sizeof(sdtp_ssvr_conf_t));
 
@@ -131,11 +131,11 @@ static int srch_sdtp_set_conf(sdtp_ssvr_conf_t *conf)
     conf->sendq.size = 4096;
     conf->sendq.count = 2048;
 
-    return SRCH_OK;
+    return PROB_OK;
 }
 
 /******************************************************************************
- **函数名称: srch_sdtp_init
+ **函数名称: prob_sdtp_init
  **功    能: 初始化SDTP对象
  **输入参数: NONE
  **输出参数:
@@ -145,17 +145,17 @@ static int srch_sdtp_set_conf(sdtp_ssvr_conf_t *conf)
  **注意事项: TODO: 可改为使用配置文件的方式加载配置信息
  **作    者: # Qifeng.zou # 2015.05.28 22:58:17 #
  ******************************************************************************/
-static sdtp_cli_t *srch_sdtp_init(log_cycle_t *log)
+static sdtp_cli_t *prob_sdtp_init(log_cycle_t *log)
 {
     sdtp_ssvr_conf_t conf;
 
-    srch_sdtp_set_conf(&conf);
+    prob_sdtp_set_conf(&conf);
 
     return sdtp_cli_init(&conf, 0, log);
 }
 
 /******************************************************************************
- **函数名称: srch_init_req_list
+ **函数名称: prob_init_req_list
  **功    能: 初始化请求列表
  **输入参数:
  **     proc: 全局信息
@@ -165,7 +165,7 @@ static sdtp_cli_t *srch_sdtp_init(log_cycle_t *log)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.05.28 23:41:39 #
  ******************************************************************************/
-static int srch_init_req_list(srch_proc_t *proc)
+static int prob_init_req_list(prob_proc_t *proc)
 {
     int i;
     avl_opt_t opt;
@@ -176,7 +176,7 @@ static int srch_init_req_list(srch_proc_t *proc)
     proc->req_list = (avl_tree_t **)calloc(proc->len, sizeof(avl_tree_t *));
     if (NULL == proc->req_list)
     {
-        return SRCH_ERR;
+        return PROB_ERR;
     }
 
     for (i=0; i<proc->len; ++i)
@@ -188,15 +188,15 @@ static int srch_init_req_list(srch_proc_t *proc)
         proc->req_list[i] = avl_creat(&opt, (key_cb_t)avl_key_cb_int64, (avl_cmp_cb_t)avl_cmp_cb_int64);
         if (NULL == proc->req_list[i])
         {
-            return SRCH_ERR;
+            return PROB_ERR;
         }
     }
 
-    return SRCH_OK;
+    return PROB_OK;
 }
 
 /******************************************************************************
- **函数名称: srch_search_req_hdl
+ **函数名称: prob_search_req_hdl
  **功    能: 搜索请求的处理函数
  **输入参数:
  **     type: 全局对象
@@ -207,37 +207,37 @@ static int srch_init_req_list(srch_proc_t *proc)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.05.28 23:11:54 #
  ******************************************************************************/
-static int srch_search_req_hdl(unsigned int type, void *data, int length, void *args, log_cycle_t *log)
+static int prob_search_req_hdl(unsigned int type, void *data, int length, void *args, log_cycle_t *log)
 {
     int idx;
     mesg_search_req_t req;
-    srch_flow_t *flow, *f;
+    prob_flow_t *flow, *f;
     srch_mesg_body_t *body;
-    srch_mesg_header_t *head;
-    srch_proc_t *proc = (srch_proc_t *)args;
+    prob_mesg_header_t *head;
+    prob_proc_t *proc = (prob_proc_t *)args;
 
-    flow = (srch_flow_t *)data;
-    head = (srch_mesg_header_t *)(flow + 1);
+    flow = (prob_flow_t *)data;
+    head = (prob_mesg_header_t *)(flow + 1);
     body = (srch_mesg_body_t *)(head + 1);
 
     /* > 将流水信息插入请求列表 */
-    f = (srch_flow_t *)malloc(sizeof(srch_flow_t));
+    f = (prob_flow_t *)malloc(sizeof(prob_flow_t));
     if (NULL == f)
     {
         log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return SRCH_ERR;
+        return PROB_ERR;
     }
 
-    memcpy(f, flow, sizeof(srch_flow_t));
+    memcpy(f, flow, sizeof(prob_flow_t));
 
     idx = flow->serial % proc->len;
 
     if (avl_insert(proc->req_list[idx], &flow->serial, sizeof(flow->serial), f))
     {
         free(f);
-        log_error(log, "Insert into avl failed! idx:%d serial:%lu sck_serial:%lu srch_agt_idx:%d",
-                idx, flow->serial, flow->sck_serial, flow->srch_agt_idx);
-        return SRCH_ERR;
+        log_error(log, "Insert into avl failed! idx:%d serial:%lu sck_serial:%lu prob_agt_idx:%d",
+                idx, flow->serial, flow->sck_serial, flow->prob_agt_idx);
+        return PROB_ERR;
     }
 
     /* > 转发搜索请求 */
@@ -248,7 +248,7 @@ static int srch_search_req_hdl(unsigned int type, void *data, int length, void *
 }
 
 /******************************************************************************
- **函数名称: srch_set_reg
+ **函数名称: prob_set_reg
  **功    能: 设置注册函数
  **输入参数:
  **     proc: 全局信息
@@ -258,18 +258,18 @@ static int srch_search_req_hdl(unsigned int type, void *data, int length, void *
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.05.28 23:11:54 #
  ******************************************************************************/
-static int srch_set_reg(srch_proc_t *proc)
+static int prob_set_reg(prob_proc_t *proc)
 {
-    if (srch_register(proc->srch, MSG_SEARCH_REQ, (srch_reg_cb_t)srch_search_req_hdl, (void *)proc))
+    if (prob_register(proc->srch, MSG_SEARCH_REQ, (prob_reg_cb_t)prob_search_req_hdl, (void *)proc))
     {
-        return SRCH_ERR;
+        return PROB_ERR;
     }
 
-    return SRCH_OK;
+    return PROB_OK;
 }
 
 /******************************************************************************
- **函数名称: srch_proc_init
+ **函数名称: prob_proc_init
  **功    能: 初始化进程
  **输入参数:
  **     pname: 进程名
@@ -280,20 +280,20 @@ static int srch_set_reg(srch_proc_t *proc)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.05.28 23:11:54 #
  ******************************************************************************/
-static srch_proc_t *srch_proc_init(char *pname, const char *path)
+static prob_proc_t *prob_proc_init(char *pname, const char *path)
 {
     sdtp_cli_t *sdtp;
-    srch_cntx_t *srch;
-    srch_proc_t *proc;
+    prob_cntx_t *srch;
+    prob_proc_t *proc;
 
-    proc = (srch_proc_t *)calloc(1, sizeof(srch_proc_t));
+    proc = (prob_proc_t *)calloc(1, sizeof(prob_proc_t));
     if (NULL == proc)
     {
         return NULL;
     }
 
     /* > 初始化全局信息 */
-    srch = srch_cntx_init(pname, path);
+    srch = prob_cntx_init(pname, path);
     if (NULL == srch)
     {
         fprintf(stderr, "Initialize search-engine failed!");
@@ -301,7 +301,7 @@ static srch_proc_t *srch_proc_init(char *pname, const char *path)
     }
 
     /* > 初始化SDTP信息 */
-    sdtp = srch_sdtp_init(srch->log);
+    sdtp = prob_sdtp_init(srch->log);
     if (NULL == sdtp)
     {
         fprintf(stderr, "Initialize sdtp failed!");
@@ -309,7 +309,7 @@ static srch_proc_t *srch_proc_init(char *pname, const char *path)
     }
 
     /* > 初始化请求列表 */
-    if (srch_init_req_list(proc))
+    if (prob_init_req_list(proc))
     {
         fprintf(stderr, "Initialize sdtp failed!");
         return NULL;

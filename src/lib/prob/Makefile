@@ -3,23 +3,26 @@
 ##
 ## 文件名: Makefile
 ## 版本号: 1.0
-## 描  述: 搜索服务模块
+## 描  述: 日志服务模块
 ## 作  者: # Qifeng.zou # 2014.11.15 #
 ###############################################################################
 include $(PROJ)/make/build.mak
 
 INCLUDE = -I. \
 			-I$(PROJ)/src/incl \
-			-I$(PROJ)/src/incl/srch \
-			-I$(PROJ)/src/incl/sdtp
+			-I$(PROJ)/src/incl/prob
 LIBS_PATH = -L$(PROJ)/lib
-LIBS = -lxd_srch -lxd_core -lsdtp
+LIBS = -lpthread -lxd_core
 
-SRC_LIST = search.c
+SRC_LIST = prob_comm.c \
+			prob_conf.c \
+			prob_agent.c \
+			prob_listen.c \
+			prob_worker.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST))
 
-TARGET = search
+TARGET = libxd_prob.so
 
 .PHONY: all clean
 

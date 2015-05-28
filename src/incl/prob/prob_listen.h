@@ -1,5 +1,5 @@
-#if !defined(__SRCH_LISTEN_H__)
-#define __SRCH_LISTEN_H__
+#if !defined(__PROB_LISTEN_H__)
+#define __PROB_LISTEN_H__
 
 #include <stdint.h>
 
@@ -13,8 +13,8 @@ typedef struct
     int cmd_sck_id;             /* 命令套接字 */
     log_cycle_t *log;           /* 日志对象 */
     unsigned long long serial;  /* SCK流水号 */
-} srch_listen_t;
+} prob_listen_t;
 
-void *srch_listen_routine(void *_ctx);
+void *prob_listen_routine(void *_ctx);
 
-#endif /*__SRCH_LISTEN_H__*/
+#endif /*__PROB_LISTEN_H__*/
