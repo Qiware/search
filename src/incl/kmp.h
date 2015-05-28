@@ -13,6 +13,7 @@ typedef struct
 
 kmp_t *kmp_creat(char *p, int len);
 int kmp_match(kmp_t *kmp, const char *data, int len);
+void kmp_print(kmp_t *kmp);
 void kmp_destroy(kmp_t *kmp);
 
 #endif /*__KMP_H__*/

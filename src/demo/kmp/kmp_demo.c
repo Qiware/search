@@ -12,7 +12,7 @@ int main(void)
 {
     kmp_t *kmp;
     char input[256];
-    char *pat = "abcdef";
+    char *pat = "abaabcd";
 
     kmp = kmp_creat(pat, strlen(pat));
     if (NULL == kmp)
@@ -20,8 +20,12 @@ int main(void)
         return -1;
     }
 
+    kmp_print(kmp);
+
     while (1)
     {
+        fprintf(stdout, "Pattern: %s\n", kmp->p);
+        fprintf(stdout, "Input string:");
         scanf(" %s", input);
         fprintf(stdout, "idx:%d", kmp_match(kmp, input, strlen(input)));
     }
