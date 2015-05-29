@@ -435,6 +435,7 @@ void *sdtp_ssvr_routine(void *_ctx)
                 continue;
             }
 
+            sdtp_set_kpalive_stat(sck, SDTP_KPALIVE_STAT_UNKNOWN);
             sdtp_link_auth_req(ctx, ssvr); /* 发起鉴权请求 */
         }
 
@@ -1248,7 +1249,7 @@ static int sdtp_link_auth_req(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
     /* > 设置鉴权信息 */
     link_auth_req = addr + sizeof(sdtp_header_t);
     
-    link_auth_req->devid = ctx->conf.devid;
+    link_auth_req->devid = htonl(ctx->conf.devid);
     snprintf(link_auth_req->usr, sizeof(link_auth_req->usr), "%s", ctx->conf.auth.usr);
     snprintf(link_auth_req->passwd, sizeof(link_auth_req->passwd), "%s", ctx->conf.auth.passwd);
 
