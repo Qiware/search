@@ -306,16 +306,19 @@ void sdtp_switch_send_data(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
 
     send->addr = (void *)ssvr->sendq->head + page->begin;
     send->end = send->addr + page->off;
-    send->total = page->off;
+    send->size = page->off;
     send->optr = send->addr;
     send->iptr = send->addr + page->off;
 
-#if 0
+#if 1
+    int idx;
+    sdtp_header_t *head;
+
     /* > 校验数据合法性(测试数据时使用) */
     head = (sdtp_header_t *)send->addr;
     for (idx=0; idx<page->num; ++idx)
     {
-        if (!dtsd_header_isvalid(ctx, head))
+        if (!SDTP_HEAD_ISVALID(head))
         {
             assert(0);
         }
@@ -510,8 +513,7 @@ static int sdtp_ssvr_kpalive_req(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
         || (SDTP_KPALIVE_STAT_SENT == sck->kpalive)) 
     {
         CLOSE(sck->fd);
-        FREE(send->addr);
-
+        sdtp_snap_reset(send);
         log_error(ssvr->log, "Didn't get keepalive respond for a long time!");
         return SDTP_OK;
     }

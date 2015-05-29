@@ -65,16 +65,16 @@ typedef struct
     char *addr;                         /* 发送缓存 */
     char *end;                          /* 结束地址 */
 
-    int total;                          /* 缓存大小 */
+    size_t size;                        /* 缓存大小 */
 
     char *optr;                         /* 发送偏移 */
     char *iptr;                         /* 输入偏移 */
 } sdtp_snap_t;
 
-#define sdtp_snap_setup(snap, _addr, _total) \
+#define sdtp_snap_setup(snap, _addr, _size) \
    (snap)->addr = (_addr);  \
-   (snap)->end = (_addr) + (_total); \
-   (snap)->total = (_total); \
+   (snap)->end = (_addr) + (_size); \
+   (snap)->size = (_size); \
    (snap)->optr = (_addr);  \
    (snap)->iptr = (_addr); 
 

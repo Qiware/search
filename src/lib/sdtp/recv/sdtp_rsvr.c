@@ -1019,7 +1019,7 @@ static int sdtp_rsvr_link_auth_req_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp
     }
     else
     {
-        log_error(rsvr->log, "Link auth success! devid:%d usr:%s passwd:%s",
+        log_debug(rsvr->log, "Link auth success! devid:%d usr:%s passwd:%s",
                 link_auth_req->devid, link_auth_req->usr, link_auth_req->passwd);
         flag = SDTP_LINK_AUTH_SUCC;
     }
