@@ -104,7 +104,7 @@ static int invtd_conf_load_sdtp(xml_tree_t *xml, invtd_conf_t *conf)
 
     /* > 鉴权配置信息 */
     node = xml_rquery(xml, nail, "AUTH.USR");
-    if (NULL != node)
+    if (NULL == node)
     {
         return INVT_ERR_CONF;
     }
@@ -112,7 +112,7 @@ static int invtd_conf_load_sdtp(xml_tree_t *xml, invtd_conf_t *conf)
     snprintf(conf->sdtp.auth.usr, sizeof(conf->sdtp.auth.usr), "%s", node->value.str);
 
     node = xml_rquery(xml, nail, "AUTH.PASSWD");
-    if (NULL != node)
+    if (NULL == node)
     {
         return INVT_ERR_CONF;
     }
