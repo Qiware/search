@@ -9,7 +9,13 @@
 ###############################################################################
 print_proc()
 {
-    ps -axu | grep -e "crawler" -e "filter" -e "logsvr" -e "redis" -e "search" -e "invertd" | grep -v "grep" | sort
+    ps -axu | grep -e "crawler" \
+				   -e "filter"  \
+				   -e "logsvr" \
+				   -e "redis" \
+				   -e "probd" \
+				   -e "invertd" \
+				   -e "sdtp" | grep -v "grep" | sort
 }
 
 ###############################################################################
