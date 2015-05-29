@@ -697,7 +697,7 @@ static int sdtp_rsvr_data_proc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_rsck_t 
 static int sdtp_rsvr_sys_mesg_proc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_rsck_t *sck)
 {
     sdtp_snap_t *recv = &sck->recv;
-    sdtp_header_t *head = (sdtp_header_t *)recv->addr;
+    sdtp_header_t *head = (sdtp_header_t *)recv->optr;
 
     switch (head->type)
     {
