@@ -25,8 +25,8 @@ static int sdtp_rsvr_trav_send(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr);
 static int sdtp_rsvr_recv_proc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_rsck_t *sck);
 static int sdtp_rsvr_data_proc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_rsck_t *sck);
 
-static int sdtp_rsvr_sys_mesg_proc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_rsck_t *sck);
-static int sdtp_rsvr_exp_mesg_proc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_rsck_t *sck);
+static int sdtp_rsvr_sys_mesg_proc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_rsck_t *sck, void *addr);
+static int sdtp_rsvr_exp_mesg_proc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_rsck_t *sck, void *addr);
 
 static int sdtp_rsvr_keepalive_req_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_rsck_t *sck);
 static int sdtp_rsvr_link_auth_req_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_rsck_t *sck);
@@ -668,11 +668,11 @@ static int sdtp_rsvr_data_proc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_rsck_t 
         /* 2.3 进行数据处理 */
         if (SDTP_SYS_MESG == head->flag)
         {
-            sdtp_rsvr_sys_mesg_proc(ctx, rsvr, sck);
+            sdtp_rsvr_sys_mesg_proc(ctx, rsvr, sck, recv->optr);
         }
         else
         {
-            sdtp_rsvr_exp_mesg_proc(ctx, rsvr, sck);
+            sdtp_rsvr_exp_mesg_proc(ctx, rsvr, sck, recv->optr);
         }
 
         recv->optr += one_mesg_len;
@@ -694,10 +694,10 @@ static int sdtp_rsvr_data_proc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_rsck_t 
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int sdtp_rsvr_sys_mesg_proc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_rsck_t *sck)
+static int sdtp_rsvr_sys_mesg_proc(sdtp_rctx_t *ctx,
+        sdtp_rsvr_t *rsvr, sdtp_rsck_t *sck, void *addr)
 {
-    sdtp_snap_t *recv = &sck->recv;
-    sdtp_header_t *head = (sdtp_header_t *)recv->optr;
+    sdtp_header_t *head = (sdtp_header_t *)addr;
 
     switch (head->type)
     {
@@ -773,11 +773,11 @@ static int sdtp_rsvr_queue_alloc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int sdtp_rsvr_exp_mesg_proc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_rsck_t *sck)
+static int sdtp_rsvr_exp_mesg_proc(sdtp_rctx_t *ctx,
+        sdtp_rsvr_t *rsvr, sdtp_rsck_t *sck, void *addr)
 {
     int len;
-    sdtp_snap_t *recv = &sck->recv;
-    sdtp_header_t *head = (sdtp_header_t *)recv->optr;
+    sdtp_header_t *head = (sdtp_header_t *)addr;
 
     ++rsvr->recv_total; /* 总数 */
 
@@ -801,7 +801,7 @@ static int sdtp_rsvr_exp_mesg_proc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_rsc
                 return SDTP_ERR;
             }
 
-            memcpy(rsvr->queue.addr, recv->optr, len);
+            memcpy(rsvr->queue.addr, addr, len);
             rsvr->queue.addr += len;
             ++(*rsvr->queue.num);
             return SDTP_OK;
@@ -811,7 +811,7 @@ static int sdtp_rsvr_exp_mesg_proc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_rsc
         len = head->length + sizeof(sdtp_header_t);
         if (rsvr->queue.end - rsvr->queue.addr >= len)
         {
-            memcpy(rsvr->queue.addr, recv->optr, len);
+            memcpy(rsvr->queue.addr, addr, len);
             rsvr->queue.addr += len;
             ++(*rsvr->queue.num);
             return SDTP_OK;

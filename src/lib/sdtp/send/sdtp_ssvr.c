@@ -775,11 +775,11 @@ static int sdtp_ssvr_data_proc(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, sdtp_ssck_t 
         /* 2.3 进行数据处理 */
         if (SDTP_SYS_MESG == head->flag)
         {
-            sdtp_ssvr_sys_mesg_proc(ctx, ssvr, sck, recv->addr);
+            sdtp_ssvr_sys_mesg_proc(ctx, ssvr, sck, recv->optr);
         }
         else
         {
-            sdtp_ssvr_exp_mesg_proc(ctx, ssvr, sck, recv->addr);
+            sdtp_ssvr_exp_mesg_proc(ctx, ssvr, sck, recv->optr);
         }
 
         recv->optr += mesg_len;
