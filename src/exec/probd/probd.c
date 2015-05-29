@@ -319,5 +319,4 @@ static probd_cycle_t *prob_proc_init(char *pname, const char *path)
     proc->sdtp = sdtp;
 
     return proc;
-
 }

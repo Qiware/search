@@ -52,6 +52,7 @@ int sdtp_ssvr_init(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, int tidx)
 
     ssvr->tidx = tidx;
     ssvr->log = ctx->log;
+    ssvr->sck.fd = INVALID_FD;
 
     /* > 创建发送队列 */
     if (sdtp_ssvr_creat_sendq(ssvr, conf))
