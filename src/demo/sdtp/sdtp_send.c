@@ -100,12 +100,10 @@ static void sdtp_setup_conf(sdtp_ssvr_conf_t *conf, int port)
 
 int main(int argc, const char *argv[])
 {
-    int sleep = 5, port;
+    int port;
     log_cycle_t *log;
     sdtp_sctx_t *ctx;
-    sdtp_cli_t *cli;
-    sdtp_cli_t *cli2;
-    sdtp_ssvr_conf_t conf;
+   sdtp_ssvr_conf_t conf;
 
     if (2 != argc)
     {
@@ -124,6 +122,11 @@ int main(int argc, const char *argv[])
 
     plog_init(LOG_LEVEL_ERROR, "./sdtp_ssvr.plog");
     log = log_init(LOG_LEVEL_ERROR, "./sdtp_ssvr.log");
+    if (NULL == log)
+    {
+        fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
+        return -1;
+    }
 
     ctx = sdtp_send_init(&conf, log);
     if (NULL == ctx) 
@@ -138,6 +141,10 @@ int main(int argc, const char *argv[])
         return -1;
     }
 
+#if defined(__SDTP_DEBUG_SEND__)
+    sdtp_cli_t *cli;
+    sdtp_cli_t *cli2;
+ 
     Sleep(5);
     cli = sdtp_cli_init(&conf, 0, log);
     if (NULL == cli)
@@ -155,7 +162,8 @@ int main(int argc, const char *argv[])
 
     Sleep(5);
 
-    sdtp_send_debug(cli, sleep);
+    sdtp_send_debug(cli, 5);
+#endif /*__SDTP_DEBUG_SEND__*/
 
     while (1) { pause(); }
 
