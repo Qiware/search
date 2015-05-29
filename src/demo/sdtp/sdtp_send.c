@@ -120,8 +120,8 @@ int main(int argc, const char *argv[])
     port = atoi(argv[1]);
     sdtp_setup_conf(&conf, port);
 
-    plog_init(LOG_LEVEL_ERROR, "./sdtp_ssvr.plog");
-    log = log_init(LOG_LEVEL_ERROR, "./sdtp_ssvr.log");
+    plog_init(LOG_LEVEL_DEBUG, "./sdtp_ssvr.plog");
+    log = log_init(LOG_LEVEL_DEBUG, "./sdtp_ssvr.log");
     if (NULL == log)
     {
         fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
