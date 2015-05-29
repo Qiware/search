@@ -102,6 +102,23 @@ static int invtd_conf_load_sdtp(xml_tree_t *xml, invtd_conf_t *conf)
 
     conf->sdtp.port = atoi(node->value.str);
 
+    /* > 鉴权配置信息 */
+    node = xml_rquery(xml, nail, "AUTH.USR");
+    if (NULL != node)
+    {
+        return INVT_ERR_CONF;
+    }
+
+    snprintf(conf->sdtp.auth.usr, sizeof(conf->sdtp.auth.usr), "%s", node->value.str);
+
+    node = xml_rquery(xml, nail, "AUTH.PASSWD");
+    if (NULL != node)
+    {
+        return INVT_ERR_CONF;
+    }
+
+    snprintf(conf->sdtp.auth.passwd, sizeof(conf->sdtp.auth.passwd), "%s", node->value.str);
+
     /* > 线程数配置 */
     node = xml_rquery(xml, nail, "THDNUM.RECV_THD_NUM");
     if (NULL == node)
