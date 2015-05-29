@@ -2,7 +2,7 @@
 
 pkill -9 crawler
 pkill -9 filter
-pkill -9 search
+pkill -9 probd
 pkill -9 monitor
 pkill -9 invertd
 pkill -9 logsvr

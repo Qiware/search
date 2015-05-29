@@ -3,8 +3,8 @@
  **
  ** 文件名: search.c
  ** 版本号: 1.0
- ** 描  述: 搜索引擎
- **         负责接受搜索请求，并将搜索结果返回给客户端
+ ** 描  述: 探针服务
+ **         负责接受各种请求，并将最终结果返回给客户端
  ** 作  者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
 
@@ -15,23 +15,23 @@
 #include "hash.h"
 #include "search.h"
 #include "syscall.h"
-#include "srch_worker.h"
-#include "srch_listen.h"
-#include "srch_agent.h"
+#include "prob_worker.h"
+#include "prob_listen.h"
+#include "prob_agent.h"
 
-#define SRCH_PROC_LOCK_PATH "../temp/srch/srch.lck"
+#define PROB_PROC_LOCK_PATH "../temp/srch/srch.lck"
 
 
-static log_cycle_t *srch_init_log(char *fname);
-static int srch_proc_lock(void);
-static int srch_creat_agent_pool(srch_cntx_t *ctx);
-static int srch_agent_pool_destroy(srch_cntx_t *ctx);
-static int srch_creat_worker_pool(srch_cntx_t *ctx);
-static int srch_worker_pool_destroy(srch_cntx_t *ctx);
-static int srch_creat_queue(srch_cntx_t *ctx);
+static log_cycle_t *prob_init_log(char *fname);
+static int prob_proc_lock(void);
+static int prob_creat_agent_pool(prob_cntx_t *ctx);
+static int prob_agent_pool_destroy(prob_cntx_t *ctx);
+static int prob_creat_worker_pool(prob_cntx_t *ctx);
+static int prob_worker_pool_destroy(prob_cntx_t *ctx);
+static int prob_creat_queue(prob_cntx_t *ctx);
 
 /******************************************************************************
- **函数名称: srch_getopt 
+ **函数名称: prob_getopt 
  **功    能: 解析输入参数
  **输入参数: 
  **     argc: 参数个数
@@ -47,7 +47,7 @@ static int srch_creat_queue(srch_cntx_t *ctx);
  **     h: 帮助手册
  **作    者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
-int srch_getopt(int argc, char **argv, srch_opt_t *opt)
+int prob_getopt(int argc, char **argv, prob_opt_t *opt)
 {
     int ch;
 
@@ -69,7 +69,7 @@ int srch_getopt(int argc, char **argv, srch_opt_t *opt)
             case 'h':   /* 显示帮助信息 */
             default:
             {
-                return SRCH_SHOW_HELP;
+                return PROB_SHOW_HELP;
             }
         }
     }
@@ -80,14 +80,14 @@ int srch_getopt(int argc, char **argv, srch_opt_t *opt)
     /* 2. 验证输入参数 */
     if (!strlen(opt->conf_path))
     {
-        snprintf(opt->conf_path, sizeof(opt->conf_path), "%s", SRCH_DEF_CONF_PATH);
+        snprintf(opt->conf_path, sizeof(opt->conf_path), "%s", PROB_DEF_CONF_PATH);
     }
 
-    return SRCH_OK;
+    return PROB_OK;
 }
 
 /******************************************************************************
- **函数名称: srch_usage
+ **函数名称: prob_usage
  **功    能: 显示启动参数帮助信息
  **输入参数:
  **     name: 程序名
@@ -97,16 +97,16 @@ int srch_getopt(int argc, char **argv, srch_opt_t *opt)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
-int srch_usage(const char *exec)
+int prob_usage(const char *exec)
 {
     printf("\nUsage: %s [-h] [-d] -c <config file> [-l log_level]\n", exec);
     printf("\t-h\tShow help\n"
            "\t-c\tConfiguration path\n\n");
-    return SRCH_OK;
+    return PROB_OK;
 }
 
 /******************************************************************************
- **函数名称: srch_init_log
+ **函数名称: prob_init_log
  **功    能: 初始化日志模块
  **输入参数:
  **     fname: 日志文件名
@@ -116,7 +116,7 @@ int srch_usage(const char *exec)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
-static log_cycle_t *srch_init_log(char *fname)
+static log_cycle_t *prob_init_log(char *fname)
 {
     log_cycle_t *log;
     char path[FILE_NAME_MAX_LEN];
@@ -145,7 +145,7 @@ static log_cycle_t *srch_init_log(char *fname)
 }
 
 /******************************************************************************
- **函数名称: srch_cntx_init
+ **函数名称: prob_cntx_init
  **功    能: 初始化全局信息
  **输入参数: 
  **     pname: 进程名
@@ -162,14 +162,14 @@ static log_cycle_t *srch_init_log(char *fname)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
-srch_cntx_t *srch_cntx_init(char *pname, const char *conf_path)
+prob_cntx_t *prob_cntx_init(char *pname, const char *conf_path)
 {
     log_cycle_t *log;
-    srch_cntx_t *ctx;
-    srch_conf_t *conf;
+    prob_cntx_t *ctx;
+    prob_conf_t *conf;
 
     /* 1. 初始化日志模块 */
-    log = srch_init_log(pname);
+    log = prob_init_log(pname);
     if (NULL == log)
     {
         fprintf(stderr, "Initialize log failed!");
@@ -177,14 +177,14 @@ srch_cntx_t *srch_cntx_init(char *pname, const char *conf_path)
     }
 
     /* 2. 判断程序是否已运行 */
-    if (0 != srch_proc_lock())
+    if (0 != prob_proc_lock())
     {
         log_error(log, "Search-engine is running!");
         return NULL;
     }
 
     /* 3. 创建全局对象 */
-    ctx = (srch_cntx_t *)calloc(1, sizeof(srch_cntx_t));
+    ctx = (prob_cntx_t *)calloc(1, sizeof(prob_cntx_t));
     if (NULL == ctx)
     {
         log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
@@ -192,7 +192,7 @@ srch_cntx_t *srch_cntx_init(char *pname, const char *conf_path)
     }
 
     /* 4. 加载配置文件 */
-    conf = srch_conf_load(conf_path, log);
+    conf = prob_conf_load(conf_path, log);
     if (NULL == conf)
     {
         free(ctx);
@@ -217,7 +217,7 @@ srch_cntx_t *srch_cntx_init(char *pname, const char *conf_path)
     do
     {
         /* > 注册消息处理 */
-        if (srch_init_register(ctx))
+        if (prob_init_register(ctx))
         {
             log_error(log, "Initialize register failed!");
             break;
@@ -231,21 +231,21 @@ srch_cntx_t *srch_cntx_init(char *pname, const char *conf_path)
         }
 
         /* > 创建队列 */
-        if (srch_creat_queue(ctx))
+        if (prob_creat_queue(ctx))
         {
             log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
             break;
         }
 
         /* > 创建Worker线程池 */
-        if (srch_creat_worker_pool(ctx))
+        if (prob_creat_worker_pool(ctx))
         {
             log_error(log, "Initialize worker thread pool failed!");
             break;
         }
 
         /* > 创建Agent线程池 */
-        if (srch_creat_agent_pool(ctx))
+        if (prob_creat_agent_pool(ctx))
         {
             log_error(log, "Initialize agent thread pool failed!");
             break;
@@ -254,14 +254,14 @@ srch_cntx_t *srch_cntx_init(char *pname, const char *conf_path)
         return ctx;
     } while (0);
 
-    srch_conf_destroy(ctx->conf);
+    prob_conf_destroy(ctx->conf);
     free(ctx);
     return NULL;
 }
 
 /******************************************************************************
- **函数名称: srch_cntx_destroy
- **功    能: 销毁搜索引擎上下文
+ **函数名称: prob_cntx_destroy
+ **功    能: 销毁探针服务上下文
  **输入参数: 
  **     ctx: 全局信息
  **输出参数: NONE
@@ -271,19 +271,19 @@ srch_cntx_t *srch_cntx_init(char *pname, const char *conf_path)
  **注意事项: 按序销毁
  **作    者: # Qifeng.zou # 2014.11.17 #
  ******************************************************************************/
-void srch_cntx_destroy(srch_cntx_t *ctx)
+void prob_cntx_destroy(prob_cntx_t *ctx)
 {
     pthread_cancel(ctx->lsn_tid);
-    srch_worker_pool_destroy(ctx);
-    srch_agent_pool_destroy(ctx);
+    prob_worker_pool_destroy(ctx);
+    prob_agent_pool_destroy(ctx);
 
     log_destroy(&ctx->log);
     plog_destroy();
 }
 
 /******************************************************************************
- **函数名称: srch_startup
- **功    能: 启动搜索引擎服务
+ **函数名称: prob_startup
+ **功    能: 启动探针服务服务
  **输入参数: 
  **     ctx: 全局信息
  **输出参数: NONE
@@ -293,35 +293,35 @@ void srch_cntx_destroy(srch_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
-int srch_startup(srch_cntx_t *ctx)
+int prob_startup(prob_cntx_t *ctx)
 {
     int idx;
-    const srch_conf_t *conf = ctx->conf;
+    const prob_conf_t *conf = ctx->conf;
 
     /* 1. 设置Worker线程回调 */
     for (idx=0; idx<conf->worker_num; ++idx)
     {
-        thread_pool_add_worker(ctx->worker_pool, srch_worker_routine, ctx);
+        thread_pool_add_worker(ctx->worker_pool, prob_worker_routine, ctx);
     }
 
     /* 2. 设置Agent线程回调 */
     for (idx=0; idx<conf->agent_num; ++idx)
     {
-        thread_pool_add_worker(ctx->agent_pool, srch_agent_routine, ctx);
+        thread_pool_add_worker(ctx->agent_pool, prob_agent_routine, ctx);
     }
     
     /* 3. 设置Listen线程回调 */
-    if (thread_creat(&ctx->lsn_tid, srch_listen_routine, ctx))
+    if (thread_creat(&ctx->lsn_tid, prob_listen_routine, ctx))
     {
         log_error(ctx->log, "Create listen thread failed!");
-        return SRCH_ERR;
+        return PROB_ERR;
     }
 
-    return SRCH_OK;
+    return PROB_OK;
 }
 
 /******************************************************************************
- **函数名称: srch_creat_worker_pool
+ **函数名称: prob_creat_worker_pool
  **功    能: 创建Worker线程池
  **输入参数: 
  **     ctx: 全局信息
@@ -331,19 +331,19 @@ int srch_startup(srch_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
-static int srch_creat_worker_pool(srch_cntx_t *ctx)
+static int prob_creat_worker_pool(prob_cntx_t *ctx)
 {
     int idx, num;
-    srch_worker_t *worker;
+    prob_worker_t *worker;
     thread_pool_opt_t opt;
-    const srch_conf_t *conf = ctx->conf;
+    const prob_conf_t *conf = ctx->conf;
 
     /* > 新建Worker对象 */
-    worker = (srch_worker_t *)calloc(conf->worker_num, sizeof(srch_worker_t));
+    worker = (prob_worker_t *)calloc(conf->worker_num, sizeof(prob_worker_t));
     if (NULL == worker)
     {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return SRCH_ERR;
+        return PROB_ERR;
     }
 
     /* > 创建Worker线程池 */
@@ -357,13 +357,13 @@ static int srch_creat_worker_pool(srch_cntx_t *ctx)
     if (NULL == ctx->worker_pool)
     {
         log_error(ctx->log, "Initialize thread pool failed!");
-        return SRCH_ERR;
+        return PROB_ERR;
     }
 
     /* 3. 依次初始化Worker对象 */
     for (idx=0; idx<conf->worker_num; ++idx)
     {
-        if (srch_worker_init(ctx, worker+idx, idx))
+        if (prob_worker_init(ctx, worker+idx, idx))
         {
             log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
             break;
@@ -372,24 +372,24 @@ static int srch_creat_worker_pool(srch_cntx_t *ctx)
 
     if (idx == conf->worker_num)
     {
-        return SRCH_OK; /* 成功 */
+        return PROB_OK; /* 成功 */
     }
 
     /* 4. 释放Worker对象 */
     num = idx;
     for (idx=0; idx<num; ++idx)
     {
-        srch_worker_destroy(worker+idx);
+        prob_worker_destroy(worker+idx);
     }
 
     free(worker);
     thread_pool_destroy(ctx->worker_pool);
 
-    return SRCH_ERR;
+    return PROB_ERR;
 }
 
 /******************************************************************************
- **函数名称: srch_worker_pool_destroy
+ **函数名称: prob_worker_pool_destroy
  **功    能: 销毁爬虫线程池
  **输入参数: 
  **     ctx: 全局信息
@@ -399,19 +399,19 @@ static int srch_creat_worker_pool(srch_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.14 #
  ******************************************************************************/
-static int srch_worker_pool_destroy(srch_cntx_t *ctx)
+static int prob_worker_pool_destroy(prob_cntx_t *ctx)
 {
     int idx;
     void *data;
-    srch_worker_t *worker;
-    const srch_conf_t *conf = ctx->conf;
+    prob_worker_t *worker;
+    const prob_conf_t *conf = ctx->conf;
 
     /* 1. 释放Worker对象 */
     for (idx=0; idx<conf->worker_num; ++idx)
     {
-        worker = (srch_worker_t *)ctx->worker_pool->data + idx;
+        worker = (prob_worker_t *)ctx->worker_pool->data + idx;
 
-        srch_worker_destroy(worker);
+        prob_worker_destroy(worker);
     }
 
     /* 2. 释放线程池对象 */
@@ -423,11 +423,11 @@ static int srch_worker_pool_destroy(srch_cntx_t *ctx)
 
     ctx->worker_pool = NULL;
 
-    return SRCH_ERR;
+    return PROB_ERR;
 }
 
 /******************************************************************************
- **函数名称: srch_creat_agent_pool
+ **函数名称: prob_creat_agent_pool
  **功    能: 创建Agent线程池
  **输入参数: 
  **     ctx: 全局信息
@@ -437,19 +437,19 @@ static int srch_worker_pool_destroy(srch_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
-static int srch_creat_agent_pool(srch_cntx_t *ctx)
+static int prob_creat_agent_pool(prob_cntx_t *ctx)
 {
     int idx, num;
-    srch_agent_t *agent;
+    prob_agent_t *agent;
     thread_pool_opt_t opt;
-    const srch_conf_t *conf = ctx->conf;
+    const prob_conf_t *conf = ctx->conf;
 
     /* > 新建Agent对象 */
-    agent = (srch_agent_t *)calloc(conf->agent_num, sizeof(srch_agent_t));
+    agent = (prob_agent_t *)calloc(conf->agent_num, sizeof(prob_agent_t));
     if (NULL == agent)
     {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return SRCH_ERR;
+        return PROB_ERR;
     }
 
     /* > 创建Worker线程池 */
@@ -464,13 +464,13 @@ static int srch_creat_agent_pool(srch_cntx_t *ctx)
     {
         log_error(ctx->log, "Initialize thread pool failed!");
         free(agent);
-        return SRCH_ERR;
+        return PROB_ERR;
     }
 
     /* 3. 依次初始化Agent对象 */
     for (idx=0; idx<conf->agent_num; ++idx)
     {
-        if (srch_agent_init(ctx, agent+idx, idx))
+        if (prob_agent_init(ctx, agent+idx, idx))
         {
             log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
             break;
@@ -479,24 +479,24 @@ static int srch_creat_agent_pool(srch_cntx_t *ctx)
 
     if (idx == conf->agent_num)
     {
-        return SRCH_OK; /* 成功 */
+        return PROB_OK; /* 成功 */
     }
 
     /* 4. 释放Agent对象 */
     num = idx;
     for (idx=0; idx<num; ++idx)
     {
-        srch_agent_destroy(agent+idx);
+        prob_agent_destroy(agent+idx);
     }
 
     free(agent);
     thread_pool_destroy(ctx->agent_pool);
 
-    return SRCH_ERR;
+    return PROB_ERR;
 }
 
 /******************************************************************************
- **函数名称: srch_agent_pool_destroy
+ **函数名称: prob_agent_pool_destroy
  **功    能: 销毁Agent线程池
  **输入参数: 
  **     ctx: 全局信息
@@ -506,19 +506,19 @@ static int srch_creat_agent_pool(srch_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
-static int srch_agent_pool_destroy(srch_cntx_t *ctx)
+static int prob_agent_pool_destroy(prob_cntx_t *ctx)
 {
     int idx;
     void *data;
-    srch_agent_t *agent;
-    const srch_conf_t *conf = ctx->conf;
+    prob_agent_t *agent;
+    const prob_conf_t *conf = ctx->conf;
 
     /* 1. 释放Agent对象 */
     for (idx=0; idx<conf->agent_num; ++idx)
     {
-        agent = (srch_agent_t *)ctx->agent_pool->data + idx;
+        agent = (prob_agent_t *)ctx->agent_pool->data + idx;
 
-        srch_agent_destroy(agent);
+        prob_agent_destroy(agent);
     }
 
     /* 2. 释放线程池对象 */
@@ -530,12 +530,12 @@ static int srch_agent_pool_destroy(srch_cntx_t *ctx)
 
     ctx->agent_pool = NULL;
 
-    return SRCH_ERR;
+    return PROB_ERR;
 }
 
 /******************************************************************************
- **函数名称: srch_proc_lock
- **功    能: 搜索引擎进程锁(防止同时启动两个服务进程)
+ **函数名称: prob_proc_lock
+ **功    能: 探针服务进程锁(防止同时启动两个服务进程)
  **输入参数: NONE
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
@@ -543,13 +543,13 @@ static int srch_agent_pool_destroy(srch_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
-static int srch_proc_lock(void)
+static int prob_proc_lock(void)
 {
     int fd;
     char path[FILE_PATH_MAX_LEN];
 
     /* 1. 获取路径 */
-    snprintf(path, sizeof(path), "%s", SRCH_PROC_LOCK_PATH);
+    snprintf(path, sizeof(path), "%s", PROB_PROC_LOCK_PATH);
 
     Mkdir2(path, DIR_MODE);
 
@@ -571,7 +571,7 @@ static int srch_proc_lock(void)
 }
 
 /******************************************************************************
- **函数名称: srch_reg_def_hdl
+ **函数名称: prob_reg_def_hdl
  **功    能: 默认注册函数
  **输入参数:
  **输出参数: NONE
@@ -580,17 +580,17 @@ static int srch_proc_lock(void)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.20 #
  ******************************************************************************/
-static int srch_reg_def_hdl(unsigned int type, char *buff, size_t len, void *args, log_cycle_t *log)
+static int prob_reg_def_hdl(unsigned int type, char *buff, size_t len, void *args, log_cycle_t *log)
 {
     static int total = 0;
 
     log_info(log, "Call: %s()! total:%d", __func__, ++total);
 
-    return SRCH_OK;
+    return PROB_OK;
 }
 
 /******************************************************************************
- **函数名称: srch_init_register
+ **函数名称: prob_init_register
  **功    能: 初始化注册消息处理
  **输入参数:
  **     ctx: 全局信息
@@ -600,30 +600,30 @@ static int srch_reg_def_hdl(unsigned int type, char *buff, size_t len, void *arg
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.20 #
  ******************************************************************************/
-int srch_init_register(srch_cntx_t *ctx)
+int prob_init_register(prob_cntx_t *ctx)
 {
     unsigned int idx;
-    srch_reg_t *reg;
+    prob_reg_t *reg;
 
-    for (idx=0; idx<=SRCH_MSG_TYPE_MAX; ++idx)
+    for (idx=0; idx<=PROB_MSG_TYPE_MAX; ++idx)
     {
         reg = &ctx->reg[idx];
 
         reg->type = idx;
-        reg->proc = srch_reg_def_hdl;
+        reg->proc = prob_reg_def_hdl;
         reg->args = NULL;
-        reg->flag = SRCH_REG_FLAG_UNREG;
+        reg->flag = PROB_REG_FLAG_UNREG;
     }
 
-    return SRCH_OK;
+    return PROB_OK;
 }
 
 /******************************************************************************
- **函数名称: srch_register
+ **函数名称: prob_register
  **功    能: 注册消息处理函数
  **输入参数:
  **     ctx: 全局信息
- **     type: 扩展消息类型. Range:(0 ~ SRCH_MSG_TYPE_MAX)
+ **     type: 扩展消息类型. Range:(0 ~ PROB_MSG_TYPE_MAX)
  **     proc: 指定消息类型对应的处理函数
  **     args: 附加参数
  **输出参数: NONE
@@ -634,15 +634,15 @@ int srch_init_register(srch_cntx_t *ctx)
  **     2. 不允许重复注册 
  **作    者: # Qifeng.zou # 2014.12.20 #
  ******************************************************************************/
-int srch_register(srch_cntx_t *ctx, unsigned int type, srch_reg_cb_t proc, void *args)
+int prob_register(prob_cntx_t *ctx, unsigned int type, prob_reg_cb_t proc, void *args)
 {
-    srch_reg_t *reg;
+    prob_reg_t *reg;
 
-    if (type >= SRCH_MSG_TYPE_MAX
+    if (type >= PROB_MSG_TYPE_MAX
         || 0 != ctx->reg[type].flag)
     {
         log_error(ctx->log, "Type 0x%02X is invalid or repeat reg!", type);
-        return SRCH_ERR;
+        return PROB_ERR;
     }
 
     reg = &ctx->reg[type];
@@ -651,11 +651,11 @@ int srch_register(srch_cntx_t *ctx, unsigned int type, srch_reg_cb_t proc, void 
     reg->args = args;
     reg->flag = 1;
 
-    return SRCH_OK;
+    return PROB_OK;
 }
 
 /******************************************************************************
- **函数名称: srch_creat_queue
+ **函数名称: prob_creat_queue
  **功    能: 创建队列
  **输入参数:
  **     ctx: 全局信息
@@ -666,26 +666,26 @@ int srch_register(srch_cntx_t *ctx, unsigned int type, srch_reg_cb_t proc, void 
  **     此过程一旦失败, 程序必须推出运行. 因此, 在此申请的内存未被主动释放也不算内存泄露!
  **作    者: # Qifeng.zou # 2014.12.21 #
  ******************************************************************************/
-static int srch_creat_queue(srch_cntx_t *ctx)
+static int prob_creat_queue(prob_cntx_t *ctx)
 {
     int idx;
-    const srch_conf_t *conf = ctx->conf;
+    const prob_conf_t *conf = ctx->conf;
 
     /* 1. 创建连接队列(与Agent数一致) */
     ctx->connq = (queue_t **)calloc(conf->agent_num, sizeof(queue_t*));
     if (NULL == ctx->connq)
     {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return SRCH_ERR;
+        return PROB_ERR;
     }
 
     for (idx=0; idx<conf->agent_num; ++idx)
     {
-        ctx->connq[idx] = queue_creat(conf->connq.max, sizeof(srch_add_sck_t));
+        ctx->connq[idx] = queue_creat(conf->connq.max, sizeof(prob_add_sck_t));
         if (NULL == ctx->connq)
         {
             log_error(ctx->log, "Initialize lock queue failed!");
-            return SRCH_ERR;
+            return PROB_ERR;
         }
     }
 
@@ -694,7 +694,7 @@ static int srch_creat_queue(srch_cntx_t *ctx)
     if (NULL == ctx->recvq)
     {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return SRCH_ERR;
+        return PROB_ERR;
     }
 
     for (idx=0; idx<conf->agent_num; ++idx)
@@ -703,9 +703,9 @@ static int srch_creat_queue(srch_cntx_t *ctx)
         if (NULL == ctx->recvq)
         {
             log_error(ctx->log, "Initialize lock queue failed!");
-            return SRCH_ERR;
+            return PROB_ERR;
         }
     }
 
-    return SRCH_OK;
+    return PROB_OK;
 }

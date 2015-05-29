@@ -80,8 +80,14 @@ int sdtp_send_debug(sdtp_cli_t *cli, int secs)
 
 static void sdtp_setup_conf(sdtp_ssvr_conf_t *conf, int port)
 {
+    conf->devid = 1;
     snprintf(conf->name, sizeof(conf->name), "SDTP-SEND");
+
+    snprintf(conf->auth.usr, sizeof(conf->auth.usr), "qifeng");
+    snprintf(conf->auth.passwd, sizeof(conf->auth.passwd), "111111");
+
     snprintf(conf->ipaddr, sizeof(conf->ipaddr), "127.0.0.1");
+
     conf->port = port;
     conf->send_thd_num = 1;
     conf->send_buff_size = 5 * MB;
@@ -96,7 +102,7 @@ int main(int argc, const char *argv[])
 {
     int sleep = 5, port;
     log_cycle_t *log;
-    sdtp_ssvr_cntx_t *ctx;
+    sdtp_sctx_t *ctx;
     sdtp_cli_t *cli;
     sdtp_cli_t *cli2;
     sdtp_ssvr_conf_t conf;
@@ -119,8 +125,14 @@ int main(int argc, const char *argv[])
     plog_init(LOG_LEVEL_ERROR, "./sdtp_ssvr.plog");
     log = log_init(LOG_LEVEL_ERROR, "./sdtp_ssvr.log");
 
-    ctx = sdtp_ssvr_startup(&conf, log);
+    ctx = sdtp_send_init(&conf, log);
     if (NULL == ctx) 
+    {
+        fprintf(stderr, "Initialize send-server failed!");
+        return -1;
+    }
+
+    if (sdtp_send_start(ctx))
     {
         fprintf(stderr, "Start up send-server failed!");
         return -1;

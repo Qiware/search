@@ -22,16 +22,17 @@ export GCC_LOG = ${PROJ_LOG}/gcc.log
 LIB_DIR = "src/lib"
 DIR = "$(LIB_DIR)/core"
 DIR += "$(LIB_DIR)/sdtp"
-DIR += "$(LIB_DIR)/http"
 DIR += "$(LIB_DIR)/gumbo"
 DIR += "$(LIB_DIR)/redis"
+
+DIR += "$(LIB_DIR)/prob"
 DIR += "$(LIB_DIR)/invert"
 
 EXEC_DIR = "src/exec"
 DIR += "$(EXEC_DIR)/crawler"
 DIR += "$(EXEC_DIR)/filter"
 DIR += "$(EXEC_DIR)/logsvr"
-DIR += "$(EXEC_DIR)/search"
+DIR += "$(EXEC_DIR)/probd"
 DIR += "$(EXEC_DIR)/monitor"
 DIR += "$(EXEC_DIR)/invertd"
 
@@ -49,7 +50,7 @@ DEMO_DIR = "src/demo"
 #DIR += "${DEMO_DIR}/lock"
 #DIR += "${DEMO_DIR}/ring"
 #DIR += "${DEMO_DIR}/queue"
-#DIR += "${DEMO_DIR}/sdtp"
+DIR += "${DEMO_DIR}/sdtp"
 #DIR += "${DEMO_DIR}/kwtree"
 export DIR
 

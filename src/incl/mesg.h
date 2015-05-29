@@ -42,16 +42,24 @@ typedef enum
 typedef struct
 {
     uint64_t  serial;                       /* 流水号(全局唯一编号) */
+
     int orig_devid;                         /* 源设备ID */
     int dest_devid;                         /* 目的设备ID */
     int length;                             /* 消息体长度 */
 } mesg_route_t;
 
-/* 搜索关键字 */
+/* 搜索关键字(外部使用) */
 typedef struct
 {
 #define SRCH_WORDS_LEN      (128)
     char words[SRCH_WORDS_LEN];             /* 搜索关键字 */
 } srch_mesg_body_t;
+
+/* 搜索消息结构(内部使用) */
+typedef struct
+{
+    int serial;                             /* 流水号(全局唯一编号) */ 
+    srch_mesg_body_t body;                  /* 报体信息 */
+} mesg_search_req_t;
 
 #endif /*__MESG_H__*/

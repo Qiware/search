@@ -1,14 +1,14 @@
 /******************************************************************************
  ** Coypright(C) 2014-2024 Xundao technology Co., Ltd
  **
- ** 文件名: srch_conf.h
+ ** 文件名: prob_conf.h
  ** 版本号: 1.0
  ** 描  述: 搜索引擎配置
  **         定义搜索引擎配置相关的结构体
  ** 作  者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
-#if !defined(__SRCH_CONF_H__)
-#define __SRCH_CONF_H__
+#if !defined(__PROB_CONF_H__)
+#define __PROB_CONF_H__
 
 #include "comm.h"
 #include "mem_pool.h"
@@ -34,12 +34,12 @@ typedef struct
 
     queue_conf_t connq;                     /* 连接队列 */
     queue_conf_t taskq;                     /* 任务队列 */
-} srch_conf_t;
+} prob_conf_t;
 
-srch_conf_t *srch_conf_load(const char *path, log_cycle_t *log);
-#define srch_conf_destroy(conf)             /* 销毁配置对象 */\
+prob_conf_t *prob_conf_load(const char *path, log_cycle_t *log);
+#define prob_conf_destroy(conf)             /* 销毁配置对象 */\
 { \
     free(conf); \
 }
 
-#endif /*__SRCH_CONF_H__*/
+#endif /*__PROB_CONF_H__*/

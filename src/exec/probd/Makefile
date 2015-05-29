@@ -3,29 +3,23 @@
 ##
 ## 文件名: Makefile
 ## 版本号: 1.0
-## 描  述: 日志服务模块
-## 作  者: # Qifeng.zou # 2014.09.01 #
+## 描  述: 探针服务模块
+## 作  者: # Qifeng.zou # 2014.11.15 #
 ###############################################################################
 include $(PROJ)/make/build.mak
 
-INCLUDE = -I. -I$(PROJ)/src/incl \
-		  -I$(PROJ)/src/incl/prob \
-		  -I$(PROJ)/src/exec/filter/incl \
-		  -I$(PROJ)/src/exec/crawler/incl \
-		  -I$(PROJ)/src/exec/monitor/incl
-
+INCLUDE = -I. \
+			-I$(PROJ)/src/incl \
+			-I$(PROJ)/src/incl/prob \
+			-I$(PROJ)/src/incl/sdtp
 LIBS_PATH = -L$(PROJ)/lib
-LIBS = -lpthread -lxd_core
+LIBS = -lxd_prob -lxd_core -lsdtp
 
-SRC_LIST = monitor.c \
-			mon_conf.c \
-			mon_prob.c \
-			mon_crwl.c \
-			mon_filter.c
+SRC_LIST = probd.c
 
-OBJS = $(subst .c,.o, $(SRC_LIST)) 
+OBJS = $(subst .c,.o, $(SRC_LIST))
 
-TARGET = monitor
+TARGET = probd
 
 .PHONY: all clean
 

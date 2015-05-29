@@ -1,16 +1,16 @@
-#if !defined(__SRCH_AGENT_H__)
-#define __SRCH_AGENT_H__
+#if !defined(__PROB_AGENT_H__)
+#define __PROB_AGENT_H__
 
 #include "list.h"
 #include "queue.h"
-#include "search.h"
+#include "probe.h"
 #include "rb_tree.h"
-#include "srch_mesg.h"
+#include "prob_mesg.h"
 
-#define SRCH_AGENT_TMOUT_MSEC       (500)   /* 超时(豪秒) */
+#define PROB_AGENT_TMOUT_MSEC       (500)   /* 超时(豪秒) */
 
-#define SRCH_AGENT_EVENT_MAX_NUM    (4096)  /* 事件最大数 */
-#define SRCH_AGENT_SCK_HASH_MOD     (7)     /* 套接字哈希长度 */
+#define PROB_AGENT_EVENT_MAX_NUM    (4096)  /* 事件最大数 */
+#define PROB_AGENT_SCK_HASH_MOD     (7)     /* 套接字哈希长度 */
 
 typedef struct
 {
@@ -29,21 +29,22 @@ typedef struct
 
     time_t ctm;                     /* 当前时间 */
     time_t scan_tm;                 /* 前一次超时扫描的时间 */
-} srch_agent_t;
+} prob_agent_t;
 
 /* 套接字信息 */
 typedef struct
 {
     uint64_t serial;                /* 序列号(主键) */
 
-    srch_mesg_header_t *head;       /* 报头起始地址 */
+    prob_flow_t *flow;              /* 流水信息 */
+    prob_mesg_header_t *head;       /* 报头起始地址 */
     void *body;                     /* Body */
     list_t *send_list;              /* 发送链表 */
-} srch_agent_socket_extra_t;
+} prob_agent_socket_extra_t;
 
-void *srch_agent_routine(void *_ctx);
+void *prob_agent_routine(void *_ctx);
 
-int srch_agent_init(srch_cntx_t *ctx, srch_agent_t *agent, int idx);
-int srch_agent_destroy(srch_agent_t *agent);
+int prob_agent_init(prob_cntx_t *ctx, prob_agent_t *agent, int idx);
+int prob_agent_destroy(prob_agent_t *agent);
 
-#endif /*__SRCH_AGENT_H__*/
+#endif /*__PROB_AGENT_H__*/

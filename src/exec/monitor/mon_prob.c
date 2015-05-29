@@ -3,8 +3,8 @@
  **
  ** 文件名: mon_srch.c
  ** 版本号: 1.0
- ** 描  述: 监控搜索引擎
- **         测试或获取搜索引擎的详细数据信息.
+ ** 描  述: 监控探针服务
+ **         测试或获取探针服务的详细数据信息.
  ** 注  意: 请勿显示中文，否则将会出现对齐异常!
  ** 作  者: # Qifeng.zou # 2014.12.27 #
  ******************************************************************************/
@@ -12,18 +12,18 @@
 #include "mesg.h"
 #include "syscall.h"
 #include "monitor.h"
-#include "srch_mesg.h"
+#include "prob_mesg.h"
 
-#define SRCH_CLIENT_NUM     (50000)
+#define PROB_CLIENT_NUM     (50000)
 
-static int mon_srch_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args);
+static int mon_prob_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args);
 
 /******************************************************************************
- **函数名称: mon_srch_menu
- **功    能: 搜索引擎菜单
+ **函数名称: mon_prob_menu
+ **功    能: 探针服务菜单
  **输入参数: NONE
  **输出参数: NONE
- **返    回: 搜索引擎菜单
+ **返    回: 探针服务菜单
  **实现描述: 
  **     1. 初始化菜单环境
  **     2. 加载子菜单
@@ -31,7 +31,7 @@ static int mon_srch_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.27 #
  ******************************************************************************/
-menu_item_t *mon_srch_menu(menu_cntx_t *ctx, void *args)
+menu_item_t *mon_prob_menu(menu_cntx_t *ctx, void *args)
 {
     menu_item_t *menu;
 
@@ -48,28 +48,28 @@ menu_item_t *mon_srch_menu(menu_cntx_t *ctx, void *args)
     }
 
     /* 添加子菜单 */
-    ADD_CHILD(ctx, menu, "Get configuration", NULL, mon_srch_connect, NULL, args);
-    ADD_CHILD(ctx, menu, "Get current status", NULL, mon_srch_connect, NULL, args);
-    ADD_CHILD(ctx, menu, "Test connect", NULL, mon_srch_connect, NULL, args);
+    ADD_CHILD(ctx, menu, "Get configuration", NULL, mon_prob_connect, NULL, args);
+    ADD_CHILD(ctx, menu, "Get current status", NULL, mon_prob_connect, NULL, args);
+    ADD_CHILD(ctx, menu, "Test connect", NULL, mon_prob_connect, NULL, args);
     return menu;
 }
 
 /******************************************************************************
- **函数名称: mon_srch_connect
- **功    能: 测试搜索引擎处理大并发连接的能力
+ **函数名称: mon_prob_connect
+ **功    能: 测试探针服务处理大并发连接的能力
  **输入参数:
  **     menu: 菜单
  **输出参数: NONE
- **返    回: 连接搜索引擎
+ **返    回: 连接探针服务
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.27 #
  ******************************************************************************/
-static int mon_srch_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args)
+static int mon_prob_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args)
 {
     char digit[256];
     int idx, num, max;
-    int fd[SRCH_CLIENT_NUM];
+    int fd[PROB_CLIENT_NUM];
     mon_cntx_t *ctx = (mon_cntx_t *)args;
 
     /* > 输入最大连接数 */
@@ -78,7 +78,7 @@ static int mon_srch_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args
 
     max = atoi(digit);
 
-    /* > 连接搜索引擎 */
+    /* > 连接探针服务 */
     num = 0;
     for (idx=0; idx<max; ++idx)
     {
@@ -95,14 +95,14 @@ static int mon_srch_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args
 #if 1
     int n;
     srch_mesg_body_t body;
-    srch_mesg_header_t header;
+    prob_mesg_header_t header;
 
     /* 发送搜索数据 */
     for (idx=0; idx<num; ++idx)
     {
         header.type = htonl(MSG_SEARCH_REQ);
-        header.flag = htonl(SRCH_MSG_FLAG_USR);
-        header.mark = htonl(SRCH_MSG_MARK_KEY);
+        header.flag = htonl(PROB_MSG_FLAG_USR);
+        header.mark = htonl(PROB_MSG_MARK_KEY);
         header.length = htonl(sizeof(body));
 
         snprintf(body.words, sizeof(body.words), "爱我中华");
