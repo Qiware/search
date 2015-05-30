@@ -115,6 +115,53 @@ int sdtp_sck_dev_map_init(sdtp_rctx_t *ctx)
 }
 
 /******************************************************************************
+ **函数名称: sdtp_sck2dev_map_add
+ **功    能: 添加SCK->DEV映射
+ **输入参数:
+ **     ctx: 全局对象
+ **     sck_serial: 套接字序列号
+ **     devid: 设备ID
+ **     rsvr_idx: 接收服务索引
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述:
+ **注意事项: TODO: 待注册DEVID与RSVR的映射关系, 为自定义数据的应答做铺垫!
+ **作    者: # Qifeng.zou # 2015.05.30 #
+ ******************************************************************************/
+static int sdtp_sck2dev_map_add(sdtp_rctx_t *ctx,
+        uint64_t sck_serial, int devid, int rsvr_idx)
+{
+    sdtp_sck2dev_item_t *item;
+
+    /* > 新增SCK->DEV映射 */
+    item = slab_alloc(ctx->pool, sizeof(sdtp_sck2dev_item_t));
+    if (NULL == item)
+    {
+        log_error(ctx->log, "Alloc memory from slab failed!");
+        return SDTP_ERR;
+    }
+
+    item->sck_serial = sck_serial;
+    item->devid = devid;
+    item->rsvr_idx = rsvr_idx;
+
+    pthread_rwlock_wrlock(&ctx->sck2dev_map_lock);
+
+    if (avl_insert(ctx->sck2dev_map, &item->sck_serial, sizeof(item->sck_serial), (void *)item))
+    {
+        pthread_rwlock_unlock(&ctx->sck2dev_map_lock);
+        log_error(ctx->log, "Insert into sck2dev table failed! serial:%ld devid:%d",
+                sck_serial, devid);
+        slab_dealloc(ctx->pool, item);
+        return SDTP_ERR;
+    }
+
+    pthread_rwlock_unlock(&ctx->sck2dev_map_lock);
+
+    return SDTP_OK;
+}
+
+/******************************************************************************
  **函数名称: sdtp_dev2sck_map_add
  **功    能: 添加DEV->SCK映射
  **输入参数:
@@ -282,30 +329,11 @@ static int sdtp_dev2sck_map_del(sdtp_rctx_t *ctx, int devid, uint64_t sck_serial
 int sdtp_sck_dev_map_add(sdtp_rctx_t *ctx,
         int rsvr_idx, sdtp_rsck_t *sck, sdtp_link_auth_req_t *link_auth_req)
 {
-    sdtp_sck2dev_item_t *item;
-
-    /* > 新增SCK->DEV映射 */
-    item = slab_alloc(ctx->pool, sizeof(sdtp_sck2dev_item_t));
-    if (NULL == item)
+    if (sdtp_sck2dev_map_add(ctx, sck->serial, link_auth_req->devid, rsvr_idx))
     {
-        log_error(ctx->log, "Alloc memory from slab failed!");
+        log_error(ctx->log, "Add into sck2dev map failed!");
         return SDTP_ERR;
     }
-
-    item->sck_serial = sck->serial;
-    item->devid = link_auth_req->devid;
-    item->rsvr_idx = rsvr_idx;
-
-    pthread_rwlock_wrlock(&ctx->sck2dev_map_lock);
-    if (avl_insert(ctx->sck2dev_map, &item->sck_serial, sizeof(item->sck_serial), (void *)item))
-    {
-        pthread_rwlock_unlock(&ctx->sck2dev_map_lock);
-        log_error(ctx->log, "Insert into sck2dev table failed! fd:%d serial:%ld devid:%d",
-                sck->fd, sck->serial, link_auth_req->devid);
-        slab_dealloc(ctx->pool, item);
-        return SDTP_ERR;
-    }
-    pthread_rwlock_unlock(&ctx->sck2dev_map_lock);
 
     /* > 新增DEV->SCK映射 */
     return sdtp_dev2sck_map_add(ctx, link_auth_req->devid, sck->serial, rsvr_idx);
