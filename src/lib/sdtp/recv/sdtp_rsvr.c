@@ -983,34 +983,6 @@ static int sdtp_rsvr_keepalive_req_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp
 }
 
 /******************************************************************************
- **函数名称: sdtp_rsvr_link_auth_check
- **功    能: 链路鉴权检测
- **输入参数:
- **     ctx: 全局对象
- **     link_auth_req: 鉴权请求
- **输出参数: NONE
- **返    回: succ:成功 fail:失败
- **实现描述: 检测用户名和密码是否正确
- **注意事项: 
- **作    者: # Qifeng.zou # 2015.05.22 #
- ******************************************************************************/
-static int sdtp_rsvr_link_auth_check(sdtp_rctx_t *ctx, sdtp_link_auth_req_t *link_auth_req)
-{
-    if (0 != strcmp(link_auth_req->usr, ctx->conf.auth.usr)
-        || 0 != strcmp(link_auth_req->passwd, ctx->conf.auth.passwd))
-    {
-        log_error(ctx->log, "Link auth failed! devid:%d usr:%s passwd:%s",
-                link_auth_req->devid, link_auth_req->usr, link_auth_req->passwd);
-        return SDTP_LINK_AUTH_FAIL;
-    }
-
-    log_debug(ctx->log, "Link auth success! devid:%d usr:%s passwd:%s",
-            link_auth_req->devid, link_auth_req->usr, link_auth_req->passwd);
-
-    return SDTP_LINK_AUTH_SUCC;
-}
-
-/******************************************************************************
  **函数名称: sdtp_rsvr_link_auth_rep
  **功    能: 链路鉴权应答
  **输入参数:
@@ -1076,7 +1048,6 @@ static int sdtp_rsvr_link_auth_rep(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_rsc
  ******************************************************************************/
 static int sdtp_rsvr_link_auth_req_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_rsck_t *sck)
 {
-    sdtp_sck2dev_item_t *item;
     sdtp_snap_t *recv = &sck->recv;
     sdtp_link_auth_req_t *link_auth_req;
 
@@ -1086,26 +1057,14 @@ static int sdtp_rsvr_link_auth_req_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp
     link_auth_req->devid = ntohl(link_auth_req->devid);
 
     /* > 验证鉴权合法性 */
-    sck->auth_succ = sdtp_rsvr_link_auth_check(ctx, link_auth_req);
+    sck->auth_succ = sdtp_link_auth_check(ctx, link_auth_req);
     if (sck->auth_succ)
     {
         /* > 插入DEV与SCK的映射 */
-        item = slab_alloc(ctx->pool, sizeof(sdtp_sck2dev_item_t));
-        if (NULL == item)
-        {
-            log_error(rsvr->log, "Alloc memory from slab failed!");
-            return SDTP_ERR;
-        }
-
-        item->sck_serial = sck->serial;
-        item->devid = link_auth_req->devid;
-        item->rsvr_idx = rsvr->tidx;
-
-        if (avl_insert(ctx->sck2dev_map, &item->sck_serial, sizeof(item->sck_serial), (void *)item))
+        if (sdtp_sck_dev_map_add(ctx, rsvr->tidx, sck, link_auth_req))
         {
             log_error(rsvr->log, "Insert into sck2dev table failed! fd:%d serial:%ld devid:%d",
                     sck->fd, sck->serial, link_auth_req->devid);
-            slab_dealloc(ctx->pool, item);
             return SDTP_ERR;
         }
     }
@@ -1225,7 +1184,6 @@ static int sdtp_rsvr_add_conn_hdl(sdtp_rsvr_t *rsvr, sdtp_cmd_add_sck_t *req)
  ******************************************************************************/
 static int sdtp_rsvr_del_conn_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, list2_node_t *node)
 {
-    sdtp_sck2dev_item_t *item;
     sdtp_rsck_t *curr = (sdtp_rsck_t *)node->data;
 
     /* > 从链表剔除结点 */
@@ -1234,11 +1192,7 @@ static int sdtp_rsvr_del_conn_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, list2_nod
     slab_dealloc(rsvr->pool, node);
 
     /* > 从SCK<->DEV映射表中剔除 */
-    avl_delete(ctx->sck2dev_map, &curr->serial, sizeof(curr->serial), (void **)&item);
-    if (NULL != item)
-    {
-        slab_dealloc(ctx->pool, item);
-    }
+    sdtp_sck_dev_map_del(ctx, curr->serial);
 
     /* > 释放数据空间 */
     CLOSE(curr->fd);

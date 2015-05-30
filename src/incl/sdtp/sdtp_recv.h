@@ -90,12 +90,9 @@ typedef struct
 /* DEV->SCK的映射 */
 typedef struct
 {
-    int devid;                          /* 设备ID(主键) */
-    
-    list_t *list;                       /* SCK信息列表 */
+    uint64_t sck_serial;                /* 设备ID(主键) */
+    int rsvr_idx;                       /* 接收服务的索引 */
 } sdtp_dev2sck_item_t;
-
-
 
 /* 接收对象 */
 typedef struct
@@ -135,14 +132,14 @@ typedef struct
 typedef struct
 {
     sdtp_conf_t conf;                   /* 配置信息 */
-    log_cycle_t *log;                   /* 日志对象 */ 
+    log_cycle_t *log;                   /* 日志对象 */
     slab_pool_t *pool;                  /* 内存池对象 */
 
     sdtp_reg_t reg[SDTP_TYPE_MAX];      /* 回调注册对象 */
-    
+
     sdtp_rlsn_t listen;                 /* 侦听对象 */
     thread_pool_t *recvtp;              /* 接收线程池 */
-    thread_pool_t *worktp;              /* 工作线程池 */ 
+    thread_pool_t *worktp;              /* 工作线程池 */
 
     queue_t **recvq;                    /* 接收队列 */
     queue_t **sendq;                    /* 发送队列 */
@@ -176,6 +173,12 @@ void *sdtp_rwrk_routine(void *_ctx);
 int sdtp_rwrk_init(sdtp_rctx_t *ctx, sdtp_worker_t *worker, int tidx);
 
 void sdtp_rsvr_del_all_conn_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr);
+
 int sdtp_cmd_to_rsvr(sdtp_rctx_t *ctx, int cmd_sck_id, const sdtp_cmd_t *cmd, int idx);
+int sdtp_link_auth_check(sdtp_rctx_t *ctx, sdtp_link_auth_req_t *link_auth_req);
+
+int sdtp_sck_dev_map_init(sdtp_rctx_t *ctx);
+int sdtp_sck_dev_map_add(sdtp_rctx_t *ctx, int rsvr_idx, sdtp_rsck_t *sck, sdtp_link_auth_req_t *link_auth_req);
+int sdtp_sck_dev_map_del(sdtp_rctx_t *ctx, uint64_t sck_serial);
 
 #endif /*__SDTP_RECV_H__*/
