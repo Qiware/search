@@ -245,18 +245,18 @@ static void sdtp_ssvr_bind_cpu(sdtp_sctx_t *ctx, int tidx)
 }
 
 /******************************************************************************
- **函数名称: sdtp_switch_send_data
- **功    能: 切换发送数据的处理
+ **函数名称: sdtp_ssvr_switch_send_buff
+ **功    能: 切换发送缓存
  **输入参数:
  **     ctx: 全局信息
- **     ssvr:
+ **     ssvr: 发送服务
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述:
  **注意事项:
  **作    者: # Qifeng.zou # 2015.04.11 #
  ******************************************************************************/
-void sdtp_switch_send_data(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
+void sdtp_ssvr_switch_send_buff(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
 {
     sdtp_snap_t *send;
     sdtp_pool_page_t *page;
@@ -438,7 +438,7 @@ void *sdtp_ssvr_routine(void *_ctx)
             sdtp_link_auth_req(ctx, ssvr); /* 发起鉴权请求 */
         }
 
-        sdtp_switch_send_data(ctx, ssvr);
+        sdtp_ssvr_switch_send_buff(ctx, ssvr);
 
         /* 3.2 等待事件通知 */
         sdtp_ssvr_set_rwset(ssvr);
@@ -1134,14 +1134,10 @@ static int sdtp_ssvr_sys_mesg_proc(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, sdtp_ssc
         {
             return sdtp_link_auth_rep_hdl(ctx, ssvr, sck, addr + sizeof(sdtp_header_t));
         }
-        default:
-        {
-            log_error(ssvr->log, "Unknown type [%d]!", head->type);
-            return SDTP_ERR;
-        }
     }
 
-    return SDTP_OK;
+    log_error(ssvr->log, "Unknown type [%d]!", head->type);
+    return SDTP_ERR;
 }
 
 /******************************************************************************
