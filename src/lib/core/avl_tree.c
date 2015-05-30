@@ -876,6 +876,7 @@ static int _avl_delete(avl_tree_t *tree, avl_node_t *node,
     AVL_LESS:
         if (NULL == node->lchild)
         {
+            *data = NULL;
             return AVL_OK;
         }
 
@@ -893,6 +894,7 @@ static int _avl_delete(avl_tree_t *tree, avl_node_t *node,
     AVL_GREATER:
         if (NULL == node->rchild)
         {
+            *data = NULL;
             return AVL_OK;
         }
 
@@ -959,6 +961,7 @@ AVL_EQUAL:
         avl_assert(node);
         return avl_delete_left_balance(tree, node, lower);
     }
+
     return AVL_OK;
 }
 
