@@ -105,7 +105,7 @@ int Readn(int fd, void *buff, int n)
  ******************************************************************************/
 int Writen(int fd, const void *buff, int n)
 {
-    int left = n, len = 0;
+    int left = n, len;
     const char *ptr = (const char *)buff;
 
     while (left > 0)
@@ -146,10 +146,9 @@ void Sleep(int sec)
 {
     int left = sec;
 
-    do
-    {
+    do {
         left = sleep(left);
-    }while (left > 0);
+    } while(left > 0);
 }
 
 /******************************************************************************
@@ -167,8 +166,6 @@ void Sleep(int sec)
 int Random(void)
 {
     struct timeval ctm;
-
-    memset(&ctm, 0, sizeof(ctm));
 
     gettimeofday(&ctm, NULL);
 
