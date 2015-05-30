@@ -18,7 +18,7 @@ static void kwt_node_free(kwt_tree_t *tree, kwt_node_t *node, void *mempool, mem
  **     opt: 选项
  **输出参数: NONE
  **返    回: KW树
- **实现描述: 
+ **实现描述:
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.12 #
  ******************************************************************************/
@@ -53,7 +53,7 @@ kwt_tree_t *kwt_creat(kwt_opt_t *opt)
 
     memset(tree->root, 0, sizeof(kwt_node_t));
 
-    return tree; 
+    return tree;
 }
 
 /******************************************************************************
@@ -66,7 +66,7 @@ kwt_tree_t *kwt_creat(kwt_opt_t *opt)
  **     data: 附加数据
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述:
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.12 #
  ******************************************************************************/
@@ -112,7 +112,7 @@ int kwt_insert(kwt_tree_t *tree, const uchar *str, int len, void *data)
  **输出参数:
  **     data: 附加参数
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述:
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.12 #
  ******************************************************************************/
@@ -146,13 +146,13 @@ int kwt_query(kwt_tree_t *tree, const uchar *str, int len, void **data)
 /******************************************************************************
  **函数名称: kwt_destroy
  **功    能: 销毁KW树
- **输入参数: 
+ **输入参数:
  **     tree: KW树
  **     mempool: 附加数据的内存池
  **     dealloc: 释放附加数据空间的毁掉函数
  **输出参数: NONE
  **返    回: VOID
- **实现描述: 
+ **实现描述:
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.12 #
  ******************************************************************************/
@@ -169,15 +169,15 @@ void kwt_destroy(kwt_tree_t *tree, void *mempool, mem_dealloc_cb_t dealloc)
 /******************************************************************************
  **函数名称: kwt_node_free
  **功    能: 销毁Trie结点
- **输入参数: 
+ **输入参数:
  **     tree: KW树
  **     node: KW树结点
  **     mempool: 附加数据的内存池
  **     dealloc: 释放附加数据空间的毁掉函数
  **输出参数: NONE
  **返    回: VOID
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.05.12 #
  ******************************************************************************/
 static void kwt_node_free(kwt_tree_t *tree, kwt_node_t *node, void *mempool, mem_dealloc_cb_t dealloc)

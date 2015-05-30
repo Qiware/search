@@ -25,15 +25,15 @@ static int btree_merge(btree_t *btree, btree_node_t *node);
 static int _btree_merge(btree_t *btree, btree_node_t *left, btree_node_t *right, int idx);
 
 /******************************************************************************
- **函数名称: btree_creat 
+ **函数名称: btree_creat
  **功    能: 创建B树
- **输入参数: 
+ **输入参数:
  **     m: 阶(m >= 3)
  **     opt: 参数选项
  **输出参数: NONE
  **返    回: B树
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.03.12 #
  ******************************************************************************/
 btree_t *btree_creat(int m, btree_opt_t *opt)
@@ -73,14 +73,14 @@ btree_t *btree_creat(int m, btree_opt_t *opt)
 /******************************************************************************
  **函数名称: btree_key_bsearch
  **功    能: B树键的二分查找
- **输入参数: 
+ **输入参数:
  **     keys: B树键值数组
  **     num: 键值数组长度
  **     key: 需要查找的键
  **输出参数: NONE
  **返    回: 离key最近的键值索引
  **实现描述: 使用二分查找算法实现
- **注意事项: 
+ **注意事项:
  **     返回值存mid在以下几种可能性:
  **     1. 返回等于key的值索引: keys[mid] == key
  **     2. 返回小于key的最大值索引: (keys[mid] < key) && (keys[mid+1] > key)
@@ -117,13 +117,13 @@ static int btree_key_bsearch(const int *keys, int num, int key)
 /******************************************************************************
  **函数名称: btree_insert
  **功    能: 向B树中插入一个关键字
- **输入参数: 
+ **输入参数:
  **     btree: B树
  **     key: 将被插入的关键字
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.03.12 #
  ******************************************************************************/
 int btree_insert(btree_t *btree, int key)
@@ -141,7 +141,7 @@ int btree_insert(btree_t *btree, int key)
             return -1;
         }
 
-        node->num = 1; 
+        node->num = 1;
         node->key[0] = key;
         node->parent = NULL;
 
@@ -179,15 +179,15 @@ int btree_insert(btree_t *btree, int key)
 /******************************************************************************
  **函数名称: _btree_insert
  **功    能: 插入关键字到指定节点
- **输入参数: 
+ **输入参数:
  **     btree: B树
  **     node: 指定节点
  **     key: 需被插入的关键字
  **     idx: 插入位置
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.03.12 #
  ******************************************************************************/
 static int _btree_insert(btree_t *btree, btree_node_t *node, int key, int idx)
@@ -215,13 +215,13 @@ static int _btree_insert(btree_t *btree, btree_node_t *node, int key, int idx)
 /******************************************************************************
  **函数名称: btree_split
  **功    能: 插入关键字到指定节点, 并进行分裂处理
- **输入参数: 
+ **输入参数:
  **     btree: B树
  **     node: 指定节点
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.03.12 #
  ******************************************************************************/
 static int btree_split(btree_t *btree, btree_node_t *node)
@@ -296,7 +296,7 @@ static int btree_split(btree_t *btree, btree_node_t *node)
                 parent->key[0] = node->key[sep_idx];
                 parent->child[1] = node2;
                 node2->parent = parent;
-                parent->num++;               
+                parent->num++;
             }
         }
 
@@ -320,17 +320,17 @@ static int btree_split(btree_t *btree, btree_node_t *node)
 /******************************************************************************
  **函数名称: _btree_remove
  **功    能: 在指定结点删除指定关键字
- **输入参数: 
+ **输入参数:
  **     btree: B树
  **     node: 指定结点
  **     idx: 将被删除的关键字在结点node中位置(0 ~ node->num - 1)
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **     使用node->child[idx]中的最大值替代被删除的关键字, 
- **     并依次向下处理直至最底层结点, 
+ **实现描述:
+ **     使用node->child[idx]中的最大值替代被删除的关键字,
+ **     并依次向下处理直至最底层结点,
  **     -- 其实最终其处理过程相当于是删除最底层结点的关键字
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.03.12 #
  ******************************************************************************/
 static int _btree_remove(btree_t *btree, btree_node_t *node, int idx)
@@ -359,16 +359,16 @@ static int _btree_remove(btree_t *btree, btree_node_t *node, int idx)
 /******************************************************************************
  **函数名称: btree_merge
  **功    能: 合并结点
- **输入参数: 
+ **输入参数:
  **     btree: B树
  **     node: 该结点关键字数num<min
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述:
  **    处理情况分类:
  **     1) 合并结点的情况: node->num + brother->num + 1 <= max
  **     2) 借用结点的情况: node->num + brother->num + 1 >  max
- **注意事项: 
+ **注意事项:
  **     node此时为最底层结点
  **作    者: # Qifeng.zou # 2014.03.12 #
  ******************************************************************************/
@@ -445,7 +445,7 @@ static int btree_merge(btree_t *btree, btree_node_t *node)
         left->num--;
         return 0;
     }
-    
+
     /* 4. node: 非最后一个孩子结点(node < right)
      * node as left child */
     mid = idx;
@@ -479,14 +479,14 @@ static int btree_merge(btree_t *btree, btree_node_t *node)
 /******************************************************************************
  **函数名称: _btree_merge
  **功    能: 合并结点
- **输入参数: 
+ **输入参数:
  **     btree: B树
- **     node: 
+ **     node:
  **     brother:
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.03.12 #
  ******************************************************************************/
 static int _btree_merge(btree_t *btree, btree_node_t *left, btree_node_t *right, int mid)
@@ -530,13 +530,13 @@ static int _btree_merge(btree_t *btree, btree_node_t *left, btree_node_t *right,
 /******************************************************************************
  **函数名称: btree_node_dealloc
  **功    能: 销毁B树
- **输入参数: 
+ **输入参数:
  **     btree: B树
  **     node: 将被销毁的结点
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 使用递归算法释放结点空间
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.04.25 #
  ******************************************************************************/
 static int btree_node_dealloc(btree_t *btree, btree_node_t *node)
@@ -561,12 +561,12 @@ static int btree_node_dealloc(btree_t *btree, btree_node_t *node)
 /******************************************************************************
  **函数名称: btree_destroy
  **功    能: 销毁B树
- **输入参数: 
+ **输入参数:
  **     btree: B树
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.03.12 #
  ******************************************************************************/
 int btree_destroy(btree_t *btree)
@@ -599,13 +599,13 @@ int btree_destroy(btree_t *btree)
 /******************************************************************************
  **函数名称: _btree_print
  **功    能: 打印B树结构
- **输入参数: 
+ **输入参数:
  **     node: B树结点
  **     deep: 结点深度
  **输出参数: NONE
  **返    回: 节点地址
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.03.12 #
  ******************************************************************************/
 void _btree_print(const btree_node_t *node, int deep)
@@ -637,7 +637,7 @@ void _btree_print(const btree_node_t *node, int deep)
     for (idx=0; idx<node->num+1; idx++)
     {
         if (NULL != node->child[idx])
-        { 
+        {
             _btree_print(node->child[idx], deep+1);
             flag = 1;
         }
@@ -663,12 +663,12 @@ void _btree_print(const btree_node_t *node, int deep)
 /******************************************************************************
  **函数名称: btree_creat_node
  **功    能: 创建一个节点
- **输入参数: 
+ **输入参数:
  **     btree: B树
  **输出参数: NONE
  **返    回: 节点地址
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.03.12 #
  ******************************************************************************/
 static btree_node_t *btree_creat_node(btree_t *btree)
@@ -710,13 +710,13 @@ static btree_node_t *btree_creat_node(btree_t *btree)
 /******************************************************************************
  **函数名称: btree_remove
  **功    能: 删除指定关键字
- **输入参数: 
+ **输入参数:
  **     btree: B树
  **     key: 关键字
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.03.12 #
  ******************************************************************************/
 int btree_remove(btree_t *btree, int key)
@@ -746,12 +746,12 @@ int btree_remove(btree_t *btree, int key)
 /******************************************************************************
  **函数名称: btree_query
  **功    能: 查询指定关键字
- **输入参数: 
+ **输入参数:
  **     btree: B树
  **     key: 关键字
  **输出参数: NONE
  **返    回: key对应的数据
- **实现描述: 
+ **实现描述:
  **注意事项:
  **作    者: # Qifeng.zou # 2015.04.28 #
  ******************************************************************************/
@@ -767,7 +767,7 @@ void *btree_query(btree_t *btree, int key)
         {
             plog_debug("Found! key:%d idx:%d", key, idx);
             return (void *)0; /* 找到 */
-        } 
+        }
         else if (key < node->key[idx])
         {
             node = node->child[idx];

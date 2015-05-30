@@ -18,8 +18,8 @@
  **     title: 主标题
  **输出参数: NONE
  **返    回: VOID
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.12.27 #
  ******************************************************************************/
 menu_cntx_t *menu_cntx_init(const char *title, menu_conf_t *conf)
@@ -71,8 +71,8 @@ menu_cntx_t *menu_cntx_init(const char *title, menu_conf_t *conf)
  **     args: 附加参数
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.12.27 #
  ******************************************************************************/
 menu_item_t *menu_creat(menu_cntx_t *ctx, const char *name,
@@ -106,8 +106,8 @@ menu_item_t *menu_creat(menu_cntx_t *ctx, const char *name,
  **     child: 子菜单
  **输出参数: NONE
  **返    回: VOID
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.12.27 #
  ******************************************************************************/
 int menu_add(menu_item_t *menu, menu_item_t *child)
@@ -149,8 +149,8 @@ int menu_add(menu_item_t *menu, menu_item_t *child)
  **     args: 附加参数
  **输出参数: NONE
  **返    回: VOID
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.03.18 #
  ******************************************************************************/
 menu_item_t *menu_child(menu_cntx_t *ctx, menu_item_t *parent,
@@ -179,8 +179,8 @@ menu_item_t *menu_child(menu_cntx_t *ctx, menu_item_t *parent,
  **     menu: 需要显示的菜单
  **输出参数: NONE
  **返    回: VOID
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.12.27 #
  ******************************************************************************/
 int menu_display(menu_cntx_t *ctx, menu_item_t *menu, void *args)
@@ -189,7 +189,7 @@ int menu_display(menu_cntx_t *ctx, menu_item_t *menu, void *args)
     menu_item_t *child = menu->child;
     menu_conf_t *conf = &ctx->conf;
 
-    /* 1. Display top line */ 
+    /* 1. Display top line */
     fprintf(stderr, "\n╔");
     for (i=0; i<conf->width; ++i)
     {
@@ -241,7 +241,7 @@ int menu_display(menu_cntx_t *ctx, menu_item_t *menu, void *args)
         fprintf(stderr, "║\n");
     }
 
-    /* 5. Display low line */ 
+    /* 5. Display low line */
     fprintf(stderr, "╚");
     for (i=0; i<conf->width; ++i)
     {
@@ -261,8 +261,8 @@ int menu_display(menu_cntx_t *ctx, menu_item_t *menu, void *args)
  **     opt: 操作选项
  **输出参数: NONE
  **返    回: 当前显示的菜单项
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.12.27 #
  ******************************************************************************/
 static menu_item_t *menu_exec(menu_cntx_t *ctx, menu_item_t *menu, const char *opt)
@@ -352,8 +352,8 @@ static menu_item_t *menu_exec(menu_cntx_t *ctx, menu_item_t *menu, const char *o
  **     ctx: 全局信息
  **输出参数: NONE
  **返    回: VOID
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.12.27 #
  ******************************************************************************/
 int menu_startup(menu_cntx_t *ctx)

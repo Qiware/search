@@ -62,11 +62,11 @@ static int sdtp_rsvr_queue_alloc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr);
 /******************************************************************************
  **函数名称: sdtp_rsvr_set_rdset
  **功    能: 设置可读集合
- **输入参数: 
+ **输入参数:
  **     rsvr: 接收服务
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述:
  **注意事项: 如果超时未接收或发送数据，则关闭连接!
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
@@ -119,12 +119,12 @@ static void sdtp_rsvr_set_rdset(sdtp_rsvr_t *rsvr)
 /******************************************************************************
  **函数名称: sdtp_rsvr_set_wrset
  **功    能: 设置可写集合
- **输入参数: 
+ **输入参数:
  **     rsvr: 接收服务
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 只有发送链表中存在数据时，才将该套接字加入到可写侦听集合!
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
 static void sdtp_rsvr_set_wrset(sdtp_rsvr_t *rsvr)
@@ -168,15 +168,15 @@ static void sdtp_rsvr_set_wrset(sdtp_rsvr_t *rsvr)
 /******************************************************************************
  **函数名称: sdtp_rsvr_routine
  **功    能: 运行接收服务线程
- **输入参数: 
+ **输入参数:
  **     _ctx: 全局对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述:
  **     1. 获取接收服务
  **     2. 等待事件通知
  **     3. 进行事件处理
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
 void *sdtp_rsvr_routine(void *_ctx)
@@ -233,14 +233,14 @@ void *sdtp_rsvr_routine(void *_ctx)
 /******************************************************************************
  **函数名称: sdtp_rsvr_get_curr
  **功    能: 获取当前线程对应的接收服务
- **输入参数: 
+ **输入参数:
  **     ctx: 全局对象
  **输出参数: NONE
  **返    回: 当前接收服务
- **实现描述: 
+ **实现描述:
  **     1. 获取当前线程的索引
  **     2. 返回当前线程对应的接收服务
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
 static sdtp_rsvr_t *sdtp_rsvr_get_curr(sdtp_rctx_t *ctx)
@@ -262,16 +262,16 @@ static sdtp_rsvr_t *sdtp_rsvr_get_curr(sdtp_rctx_t *ctx)
 /******************************************************************************
  **函数名称: sdtp_rsvr_init
  **功    能: 初始化接收服务
- **输入参数: 
+ **输入参数:
  **     ctx: 全局对象
  **     tidx: 接收服务编号
  **输出参数:
  **     rsvr: 接收服务
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述:
  **     1. 获取当前线程的索引
  **     2. 返回当前线程对应的接收服务
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
 int sdtp_rsvr_init(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, int tidx)
@@ -285,7 +285,7 @@ int sdtp_rsvr_init(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, int tidx)
 
     /* > 创建CMD套接字 */
     sdtp_rsvr_usck_path(conf, path, rsvr->tidx);
-    
+
     rsvr->cmd_sck_id = unix_udp_creat(path);
     if (rsvr->cmd_sck_id < 0)
     {
@@ -310,15 +310,15 @@ int sdtp_rsvr_init(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, int tidx)
 /******************************************************************************
  **函数名称: sdtp_rsvr_recv_cmd
  **功    能: 接收命令数据
- **输入参数: 
+ **输入参数:
  **     ctx: 全局对象
  **     rsvr: 接收服务
  **输出参数:
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述:
  **     1. 接收命令数据
  **     2. 进行命令处理
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
 static int sdtp_rsvr_recv_cmd(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr)
@@ -354,13 +354,13 @@ static int sdtp_rsvr_recv_cmd(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr)
 /******************************************************************************
  **函数名称: sdtp_rsvr_trav_recv
  **功    能: 遍历接收数据
- **输入参数: 
+ **输入参数:
  **     ctx: 全局对象
  **     rsvr: 接收服务
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 遍历判断套接字是否可读，并接收数据!
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
 static int sdtp_rsvr_trav_recv(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr)
@@ -414,13 +414,13 @@ static int sdtp_rsvr_trav_recv(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr)
 /******************************************************************************
  **函数名称: sdtp_rsvr_trav_send
  **功    能: 遍历发送数据
- **输入参数: 
+ **输入参数:
  **     ctx: 全局对象
  **     rsvr: 接收服务
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 遍历判断套接字是否可写，并发送数据!
- **注意事项: 
+ **注意事项:
  **       ------------------------------------------------
  **      | 已发送 |     待发送     |       剩余空间       |
  **       ------------------------------------------------
@@ -506,18 +506,18 @@ static int sdtp_rsvr_trav_send(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr)
 /******************************************************************************
  **函数名称: sdtp_rsvr_recv_proc
  **功    能: 接收数据并做相应处理
- **输入参数: 
+ **输入参数:
  **     ctx: 全局对象
  **     rsvr: 接收服务
  **     sck: 被操作的套接字
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述:
  **     1. 初始化接收
  **     2. 接收数据头
  **     3. 接收数据体
  **     4. 进行数据处理
- **注意事项: 
+ **注意事项:
  **      | 已处理 |     未处理     |       剩余空间       |
  **       ------------------------------------------------
  **      |XXXXXXXX|////////////////|                      |
@@ -577,16 +577,16 @@ static int sdtp_rsvr_recv_proc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_rsck_t 
 /******************************************************************************
  **函数名称: sdtp_rsvr_recv_post
  **功    能: 数据接收完成后的处理
- **输入参数: 
+ **输入参数:
  **     ctx: 全局对象
  **     rsvr: 接收服务
  **     sck: 套接字对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述:
  **     1. 系统数据处理
  **     2. 自定义数据处理
- **注意事项: 
+ **注意事项:
  **      | 已处理 |     未处理     |       剩余空间       |
  **       ------------------------------------------------
  **      |XXXXXXXX|////////////////|                      |
@@ -631,7 +631,7 @@ static int sdtp_rsvr_data_proc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_rsck_t 
         /* 1. 不足一条数据时 */
         if (!flag)
         {
-            if (recv->iptr == recv->end) 
+            if (recv->iptr == recv->end)
             {
                 /* 防止OverWrite的情况发生 */
                 if ((recv->optr - recv->addr) < (recv->end - recv->iptr))
@@ -684,14 +684,14 @@ static int sdtp_rsvr_data_proc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_rsck_t 
 /******************************************************************************
  **函数名称: sdtp_rsvr_sys_mesg_proc
  **功    能: 系统消息处理
- **输入参数: 
+ **输入参数:
  **     ctx: 全局对象
  **     rsvr: 接收服务
  **     sck: 套接字对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
 static int sdtp_rsvr_sys_mesg_proc(sdtp_rctx_t *ctx,
@@ -715,20 +715,20 @@ static int sdtp_rsvr_sys_mesg_proc(sdtp_rctx_t *ctx,
             return SDTP_ERR;
         }
     }
-    
+
     return SDTP_OK;
 }
 
 /******************************************************************************
  **函数名称: sdtp_rsvr_queue_alloc
  **功    能: 申请队列空间
- **输入参数: 
+ **输入参数:
  **     ctx: 全局对象
  **     rsvr: 接收服务
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.04.01 #
  ******************************************************************************/
 static int sdtp_rsvr_queue_alloc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr)
@@ -760,17 +760,17 @@ static int sdtp_rsvr_queue_alloc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr)
 /******************************************************************************
  **函数名称: sdtp_rsvr_exp_mesg_proc
  **功    能: 自定义消息处理
- **输入参数: 
+ **输入参数:
  **     ctx: 全局对象
  **     rsvr: 接收服务
  **     sck: 套接字对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述:
  **     1. 是否在NULL空间: 直接丢弃
  **     2. 放入队列中
  **     3. 发送处理请求
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
 static int sdtp_rsvr_exp_mesg_proc(sdtp_rctx_t *ctx,
@@ -832,16 +832,16 @@ static int sdtp_rsvr_exp_mesg_proc(sdtp_rctx_t *ctx,
 /******************************************************************************
  **函数名称: sdtp_rsvr_event_core_hdl
  **功    能: 事件核心处理
- **输入参数: 
+ **输入参数:
  **     ctx: 全局对象
  **     rsvr: 接收服务
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述:
  **     1. 接收命令数据
  **     2. 遍历接收数据
  **     3. 遍历发送数据
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
 static int sdtp_rsvr_event_core_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr)
@@ -864,14 +864,14 @@ static int sdtp_rsvr_event_core_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr)
 /******************************************************************************
  **函数名称: sdtp_rsvr_event_timeout_hdl
  **功    能: 事件超时处理
- **输入参数: 
+ **输入参数:
  **     ctx: 全局对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述:
  **     1. 检测超时连接
  **     2. 删除超时连接
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
 static int sdtp_rsvr_event_timeout_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr)
@@ -940,12 +940,12 @@ static int sdtp_rsvr_event_timeout_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr)
 /******************************************************************************
  **函数名称: sdtp_rsvr_keepalive_req_hdl
  **功    能: 保活请求处理
- **输入参数: 
+ **输入参数:
  **     ctx: 全局对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
 static int sdtp_rsvr_keepalive_req_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_rsck_t *sck)
@@ -968,7 +968,7 @@ static int sdtp_rsvr_keepalive_req_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp
     head->length = 0;
     head->flag = SDTP_SYS_MESG;
     head->checksum = SDTP_CHECK_SUM;
-    
+
     /* > 加入发送列表 */
     if (list_rpush(sck->mesg_list, addr))
     {
@@ -985,7 +985,7 @@ static int sdtp_rsvr_keepalive_req_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp
 /******************************************************************************
  **函数名称: sdtp_rsvr_link_auth_req_hdl
  **功    能: 链路鉴权请求处理
- **输入参数: 
+ **输入参数:
  **     ctx: 全局对象
  **     rsvr: 接收对象
  **     sck: 套接字对象
@@ -1006,7 +1006,7 @@ static int sdtp_rsvr_link_auth_req_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp
 
     /* > 字节序转换 */
     link_auth_req = (sdtp_link_auth_req_t *)(recv->addr + sizeof(sdtp_header_t));
-   
+
     link_auth_req->devid = ntohl(link_auth_req->devid);
 
     /* > 验证鉴权合法性 */
@@ -1044,7 +1044,7 @@ static int sdtp_rsvr_link_auth_req_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp
     head->checksum = SDTP_CHECK_SUM;
 
     link_auth_rep->is_succ = htonl(flag);
-    
+
     /* > 加入发送列表 */
     if (list_rpush(sck->mesg_list, addr))
     {
@@ -1061,12 +1061,12 @@ static int sdtp_rsvr_link_auth_req_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp
 /******************************************************************************
  **函数名称: sdtp_rsvr_add_conn_hdl
  **功    能: 添加网络连接
- **输入参数: 
+ **输入参数:
  **     ctx: 全局对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
 static int sdtp_rsvr_add_conn_hdl(sdtp_rsvr_t *rsvr, sdtp_cmd_add_sck_t *req)
@@ -1157,12 +1157,12 @@ static int sdtp_rsvr_add_conn_hdl(sdtp_rsvr_t *rsvr, sdtp_cmd_add_sck_t *req)
 /******************************************************************************
  **函数名称: sdtp_rsvr_del_conn_hdl
  **功    能: 删除网络连接
- **输入参数: 
+ **输入参数:
  **     rsvr: 接收服务
  **     node: 套接字对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述:
  **注意事项: 释放接收缓存和发送缓存空间!
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
@@ -1192,19 +1192,19 @@ static int sdtp_rsvr_del_conn_hdl(sdtp_rsvr_t *rsvr, list2_node_t *node)
 /******************************************************************************
  **函数名称: sdtp_rsvr_del_all_conn_hdl
  **功    能: 删除接收线程所有的套接字
- **输入参数: 
+ **输入参数:
  **     rsvr: 接收服务
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
 void sdtp_rsvr_del_all_conn_hdl(sdtp_rsvr_t *rsvr)
 {
     list2_node_t *node, *next, *tail;
 
-    node = rsvr->conn_list.head; 
+    node = rsvr->conn_list.head;
     if (NULL != node)
     {
         tail = node->prev;
@@ -1230,13 +1230,13 @@ void sdtp_rsvr_del_all_conn_hdl(sdtp_rsvr_t *rsvr)
 /******************************************************************************
  **函数名称: sdtp_rsvr_clear_mesg
  **功    能: 清空发送消息
- **输入参数: 
+ **输入参数:
  **    rsvr: 接收服务
  **    sck: 将要清空的套接字对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 将数据从链表中弹出, 再回收对应内存
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.07.04 #
  ******************************************************************************/
 static int sdtp_rsvr_clear_mesg(sdtp_rsvr_t *rsvr, sdtp_rsck_t *sck)
@@ -1260,14 +1260,14 @@ static int sdtp_rsvr_clear_mesg(sdtp_rsvr_t *rsvr, sdtp_rsck_t *sck)
 /******************************************************************************
  **函数名称: sdtp_rsvr_cmd_proc_req
  **功    能: 发送处理请求
- **输入参数: 
+ **输入参数:
  **     ctx: 全局对象
  **     rsvr: 接收服务
  **     rqid: 队列ID
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
 static int sdtp_rsvr_cmd_proc_req(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, int rqid)
@@ -1303,13 +1303,13 @@ static int sdtp_rsvr_cmd_proc_req(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, int rqid)
 /******************************************************************************
  **函数名称: sdtp_rsvr_cmd_proc_all_req
  **功    能: 重复发送处理请求
- **输入参数: 
+ **输入参数:
  **     ctx: 全局对象
  **     rsvr: 接收服务
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
 static int sdtp_rsvr_cmd_proc_all_req(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr)
@@ -1328,15 +1328,15 @@ static int sdtp_rsvr_cmd_proc_all_req(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr)
 /******************************************************************************
  **函数名称: sdtp_rsvr_fill_send_buff
  **功    能: 填充发送缓冲区
- **输入参数: 
+ **输入参数:
  **     rsvr: 接收线程
  **     sck: 连接对象
- **输出参数: 
+ **输出参数:
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述:
  **     1. 从消息链表取数据
  **     2. 从发送队列取数据
- **注意事项: 
+ **注意事项:
  **       ------------------------------------------------
  **      | 已发送 |     待发送     |       剩余空间       |
  **       ------------------------------------------------

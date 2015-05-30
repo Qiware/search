@@ -29,16 +29,16 @@ static int sdtp_rlsn_cmd_query_proc_stat_hdl(sdtp_rctx_t *ctx, sdtp_rlsn_t *lsn,
 /******************************************************************************
  **函数名称: sdtp_rlsn_routine
  **功    能: 启动SDTP侦听线程
- **输入参数: 
+ **输入参数:
  **     conf: 配置信息
  **     log: 日志对象
  **输出参数: NONE
  **返    回: 全局对象
- **实现描述: 
+ **实现描述:
  **     1. 初始化侦听
  **     2. 等待请求和命令
  **     3. 接收请求和命令
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
 void *sdtp_rlsn_routine(void *args)
@@ -109,14 +109,14 @@ void *sdtp_rlsn_routine(void *args)
 /******************************************************************************
  **函数名称: sdtp_rlsn_init
  **功    能: 启动SDTP侦听线程
- **输入参数: 
+ **输入参数:
  **     conf: 配置信息
  **输出参数: NONE
  **返    回: 侦听对象
- **实现描述: 
+ **实现描述:
  **     1. 侦听指定端口
  **     2. 创建CMD套接字
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
 static sdtp_rlsn_t *sdtp_rlsn_init(sdtp_rctx_t *ctx)
@@ -152,12 +152,12 @@ static sdtp_rlsn_t *sdtp_rlsn_init(sdtp_rctx_t *ctx)
 /******************************************************************************
  **函数名称: sdtp_rlsn_destroy
  **功    能: 销毁侦听线程
- **输入参数: 
+ **输入参数:
  **     lsn: 侦听对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.01.07 #
  ******************************************************************************/
 int sdtp_rlsn_destroy(sdtp_rlsn_t *lsn)
@@ -172,15 +172,15 @@ int sdtp_rlsn_destroy(sdtp_rlsn_t *lsn)
 /******************************************************************************
  **函数名称: sdtp_listen_accept
  **功    能: 接收连接请求
- **输入参数: 
+ **输入参数:
  **     ctx: 全局对象
  **     lsn: 侦听对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述:
  **     1. 接收连接请求
  **     2. 发送至接收端
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
 static int sdtp_rlsn_accept(sdtp_rctx_t *ctx, sdtp_rlsn_t *lsn)
@@ -197,7 +197,7 @@ static int sdtp_rlsn_accept(sdtp_rctx_t *ctx, sdtp_rlsn_t *lsn)
         memset(&cliaddr, 0, sizeof(cliaddr));
 
         len = sizeof(struct sockaddr_in);
-        
+
         sckid = accept(lsn->lsn_sck_id, (struct sockaddr *)&cliaddr, &len);
         if (sckid >= 0)
         {
@@ -220,7 +220,7 @@ static int sdtp_rlsn_accept(sdtp_rctx_t *ctx, sdtp_rlsn_t *lsn)
     memset(&cmd, 0, sizeof(cmd));
 
     cmd.type = SDTP_CMD_ADD_SCK;
-    args->sckid = sckid; 
+    args->sckid = sckid;
     snprintf(args->ipaddr, sizeof(args->ipaddr), "%s", inet_ntoa(cliaddr.sin_addr));
 
     if (sdtp_cmd_to_rsvr(ctx, lsn->cmd_sck_id, &cmd, sdtp_rand_rsvr(ctx)) < 0)
@@ -236,15 +236,15 @@ static int sdtp_rlsn_accept(sdtp_rctx_t *ctx, sdtp_rlsn_t *lsn)
 /******************************************************************************
  **函数名称: sdtp_rlsn_cmd_core_hdl
  **功    能: 接收和处理命令
- **输入参数: 
+ **输入参数:
  **     ctx: 全局对象
  **     lsn: 侦听对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述:
  **     1. 接收命令
  **     2. 处理命令
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
 static int sdtp_rlsn_cmd_core_hdl(sdtp_rctx_t *ctx, sdtp_rlsn_t *lsn)
@@ -288,16 +288,16 @@ static int sdtp_rlsn_cmd_core_hdl(sdtp_rctx_t *ctx, sdtp_rlsn_t *lsn)
 /******************************************************************************
  **函数名称: sdtp_rlsn_cmd_query_conf_hdl
  **功    能: 查询配置信息
- **输入参数: 
+ **输入参数:
  **     ctx: 全局对象
  **     lsn: 侦听对象
  **     cmd: 处理命令
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述:
  **     1. 设置应答参数
  **     2. 发送应答信息
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
 static int sdtp_rlsn_cmd_query_conf_hdl(sdtp_rctx_t *ctx, sdtp_rlsn_t *lsn, sdtp_cmd_t *cmd)
@@ -333,16 +333,16 @@ static int sdtp_rlsn_cmd_query_conf_hdl(sdtp_rctx_t *ctx, sdtp_rlsn_t *lsn, sdtp
 /******************************************************************************
  **函数名称: sdtp_rlsn_cmd_query_recv_stat_hdl
  **功    能: 查询接收线程状态
- **输入参数: 
+ **输入参数:
  **     ctx: 全局对象
  **     lsn: 侦听对象
  **     cmd: 处理命令
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述:
  **     1. 设置应答信息
  **     2. 发送应答信息
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
 static int sdtp_rlsn_cmd_query_recv_stat_hdl(sdtp_rctx_t *ctx, sdtp_rlsn_t *lsn, sdtp_cmd_t *cmd)
@@ -375,16 +375,16 @@ static int sdtp_rlsn_cmd_query_recv_stat_hdl(sdtp_rctx_t *ctx, sdtp_rlsn_t *lsn,
 /******************************************************************************
  **函数名称: sdtp_rlsn_cmd_query_proc_stat_hdl
  **功    能: 查询工作线程状态
- **输入参数: 
+ **输入参数:
  **     ctx: 全局对象
  **     lsn: 侦听对象
  **     cmd: 处理命令
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述:
  **     1. 设置应答信息
  **     2. 发送应答信息
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
 static int sdtp_rlsn_cmd_query_proc_stat_hdl(sdtp_rctx_t *ctx, sdtp_rlsn_t *lsn, sdtp_cmd_t *cmd)

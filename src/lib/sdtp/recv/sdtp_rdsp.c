@@ -14,13 +14,13 @@
 /******************************************************************************
  **函数名称: sdtp_disp_query_by_dest
  **功    能: 通过目的ID查询发送线程索引
- **输入参数: 
+ **输入参数:
  **     ctx: 全局信息
  **     dest: 目标设备ID
  **输出参数: NONE
  **返    回: 线程索引
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.05.15 #
  ******************************************************************************/
 static int sdtp_disp_query_by_dest(sdtp_rctx_t *ctx, int dest)
@@ -35,12 +35,12 @@ static int sdtp_disp_query_by_dest(sdtp_rctx_t *ctx, int dest)
 /******************************************************************************
  **函数名称: sdtp_disp_routine
  **功    能: 运行分发线程
- **输入参数: 
+ **输入参数:
  **     ctx: 全局信息
  **输出参数: NONE
  **返    回: 分发对象
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.05.15 #
  ******************************************************************************/
 void *sdtp_disp_routine(void *_ctx)
@@ -53,7 +53,7 @@ void *sdtp_disp_routine(void *_ctx)
     while (1)
     {
         /* > 弹出发送数据 */
-        addr = shm_queue_pop(ctx->shm_sendq); 
+        addr = shm_queue_pop(ctx->shm_sendq);
         if (NULL == addr)
         {
             usleep(500); /* TODO: 可使用消息机制减少CPU的消耗 */

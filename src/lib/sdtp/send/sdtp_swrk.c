@@ -21,15 +21,15 @@ static int sdtp_swrk_cmd_proc_req_hdl(sdtp_sctx_t *ctx, sdtp_worker_t *wrk, cons
 /******************************************************************************
  **函数名称: sdtp_swrk_routine
  **功    能: 运行工作线程
- **输入参数: 
+ **输入参数:
  **     _ctx: 全局对象
  **输出参数: NONE
  **返    回: VOID *
- **实现描述: 
+ **实现描述:
  **     1. 获取工作对象
  **     2. 等待事件通知
  **     3. 进行事件处理
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.05.18 #
  ******************************************************************************/
 void *sdtp_swrk_routine(void *_ctx)
@@ -103,13 +103,13 @@ void *sdtp_swrk_routine(void *_ctx)
 /******************************************************************************
  **函数名称: sdtp_swrk_get_by_idx
  **功    能: 通过索引查找对象
- **输入参数: 
+ **输入参数:
  **     ctx: 全局对象
  **     idx: 索引号
  **输出参数: NONE
  **返    回: 工作对象
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.05.19 #
  ******************************************************************************/
 sdtp_worker_t *sdtp_swrk_get_by_idx(sdtp_sctx_t *ctx, int idx)
@@ -120,20 +120,20 @@ sdtp_worker_t *sdtp_swrk_get_by_idx(sdtp_sctx_t *ctx, int idx)
 /******************************************************************************
  **函数名称: sdtp_swrk_get_curr
  **功    能: 获取工作对象
- **输入参数: 
+ **输入参数:
  **     ctx: 全局对象
  **输出参数: NONE
  **返    回: 工作对象
- **实现描述: 
+ **实现描述:
  **     1. 获取线程编号
  **     2. 返回工作对象
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.05.18 #
  ******************************************************************************/
 static sdtp_worker_t *sdtp_swrk_get_curr(sdtp_sctx_t *ctx)
 {
     int tidx;
-    
+
     /* > 获取线程编号 */
     tidx = thread_pool_get_tidx(ctx->worktp);
     if (tidx < 0)
@@ -149,28 +149,28 @@ static sdtp_worker_t *sdtp_swrk_get_curr(sdtp_sctx_t *ctx)
 /******************************************************************************
  **函数名称: sdtp_swrk_init
  **功    能: 初始化工作服务
- **输入参数: 
+ **输入参数:
  **     ctx: 全局对象
  **     worker: 工作对象
  **     tidx: 工作对象编号
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述:
  **     1. 创建命令套接字
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.05.18 #
  ******************************************************************************/
 int sdtp_swrk_init(sdtp_sctx_t *ctx, sdtp_worker_t *wrk, int tidx)
 {
     char path[FILE_PATH_MAX_LEN];
-    sdtp_ssvr_conf_t *conf = &ctx->conf; 
+    sdtp_ssvr_conf_t *conf = &ctx->conf;
 
     wrk->tidx = tidx;
     wrk->log = ctx->log;
 
     /* 1. 创建命令套接字 */
     sdtp_swrk_usck_path(conf, path, wrk->tidx);
-    
+
     wrk->cmd_sck_id = unix_udp_creat(path);
     if (wrk->cmd_sck_id < 0)
     {
@@ -184,14 +184,14 @@ int sdtp_swrk_init(sdtp_sctx_t *ctx, sdtp_worker_t *wrk, int tidx)
 /******************************************************************************
  **函数名称: sdtp_swrk_event_core_hdl
  **功    能: 核心事件处理
- **输入参数: 
+ **输入参数:
  **     ctx: 全局对象
  **     worker: 工作对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述:
  **     1. 创建命令套接字
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.05.18 #
  ******************************************************************************/
 static int sdtp_swrk_event_core_hdl(sdtp_sctx_t *ctx, sdtp_worker_t *wrk)
@@ -228,14 +228,14 @@ static int sdtp_swrk_event_core_hdl(sdtp_sctx_t *ctx, sdtp_worker_t *wrk)
 /******************************************************************************
  **函数名称: sdtp_swrk_cmd_proc_req_hdl
  **功    能: 处理请求的处理
- **输入参数: 
+ **输入参数:
  **     ctx: 全局对象
  **     worker: 工作对象
  **     cmd: 命令信息
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.05.18 #
  ******************************************************************************/
 static int sdtp_swrk_cmd_proc_req_hdl(sdtp_sctx_t *ctx, sdtp_worker_t *wrk, const sdtp_cmd_t *cmd)
@@ -249,20 +249,20 @@ static int sdtp_swrk_cmd_proc_req_hdl(sdtp_sctx_t *ctx, sdtp_worker_t *wrk, cons
 
     /* 1. 获取接收队列 */
     rq = ctx->recvq[work_cmd->rqidx];
-   
+
     while (1)
     {
         /* 2. 从接收队列获取数据 */
         addr = queue_pop(rq);
         if (NULL == addr)
-        {   
+        {
             log_trace(wrk->log, "Didn't get data from queue!");
             return SDTP_OK;
         }
 
         num = (int *)addr;
         ptr = addr + sizeof(int);
-        
+
         for (idx=0; idx<*num; ++idx)
         {
             /* 3. 执行回调函数 */

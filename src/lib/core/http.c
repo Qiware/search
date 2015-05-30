@@ -12,8 +12,8 @@
  **输出参数:
  **     req: HTTP GET请求字串
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.09.23 #
  ******************************************************************************/
 int http_get_request(const char *uri, char *req, int size)
@@ -48,8 +48,8 @@ int http_get_request(const char *uri, char *req, int size)
  **输出参数:
  **     resp: 应答信息
  **返    回: 应答头长度
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.03.03 #
  ******************************************************************************/
 int http_parse_response(const char *str, http_response_t *rep)

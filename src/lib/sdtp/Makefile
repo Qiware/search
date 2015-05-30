@@ -27,7 +27,7 @@ SRC_LIST = recv/sdtp_recv.c \
 			send/sdtp_swrk.c \
 			send/sdtp_cli.c
 
-OBJS = $(subst .c,.o, $(SRC_LIST)) 
+OBJS = $(subst .c,.o, $(SRC_LIST))
 
 TARGET = libsdtp.so
 

@@ -22,11 +22,11 @@
  **     cmp: 数据比较函数
  **输出参数: NONE
  **返    回: 哈希数组地址
- **实现描述: 
+ **实现描述:
  **     1. 创建哈希对象
  **     2. 创建内存池
  **     3. 创建数组空间
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
 hash_tab_t *hash_tab_creat(int mod, key_cb_t key_cb, avl_cmp_cb_t cmp_cb, hash_tab_opt_t *opt)
@@ -99,8 +99,8 @@ hash_tab_t *hash_tab_creat(int mod, key_cb_t key_cb, avl_cmp_cb_t cmp_cb, hash_t
  **输出参数:
  **     data: 数据
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
 int hash_tab_insert(hash_tab_t *hash, void *pkey, int pkey_len, void *data)
@@ -132,8 +132,8 @@ int hash_tab_insert(hash_tab_t *hash, void *pkey, int pkey_len, void *data)
  **输出参数:
  **     data: 查找结果
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
 int hash_tab_query(hash_tab_t *hash, void *pkey, int pkey_len,
@@ -152,7 +152,7 @@ int hash_tab_query(hash_tab_t *hash, void *pkey, int pkey_len,
         pthread_rwlock_unlock(&hash->lock[idx]);
         return -1; /* 未找到 */
     }
-    
+
     ret = query_cb(node->data, data);
 
     pthread_rwlock_unlock(&hash->lock[idx]);
@@ -169,7 +169,7 @@ int hash_tab_query(hash_tab_t *hash, void *pkey, int pkey_len,
  **     pkey_len: 主键长度
  **输出参数: NONE
  **返    回: 数据地址
- **实现描述: 
+ **实现描述:
  **注意事项: 返回地址的内存空间由外部释放
  **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
@@ -198,7 +198,7 @@ void *hash_tab_remove(hash_tab_t *hash, void *pkey, int pkey_len)
  **     hash: 哈希数组
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述:
  **注意事项: TODO: 未释放DATA空间
  **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
@@ -212,7 +212,7 @@ int hash_tab_destroy(hash_tab_t *hash)
         if (NULL != hash->tree[idx])
         {
             avl_destroy(hash->tree[idx]);
-        } 
+        }
         pthread_rwlock_unlock(&hash->lock[idx]);
 
         pthread_rwlock_destroy(&hash->lock[idx]);
@@ -233,8 +233,8 @@ int hash_tab_destroy(hash_tab_t *hash)
  **     proc: 回调函数
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.12.24 #
  ******************************************************************************/
 int hash_tab_trav(hash_tab_t *hash, avl_trav_cb_t proc, void *args)

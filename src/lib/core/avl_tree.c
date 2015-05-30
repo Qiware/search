@@ -22,7 +22,7 @@
     { \
         (_lchild)->parent = (node); \
     } \
-} 
+}
 
 /* 设置node的右孩子节点 */
 #define avl_set_rchild(node, _rchild) \
@@ -32,7 +32,7 @@
     { \
         (_rchild)->parent = (node); \
     } \
-} 
+}
 
 /* 替换父节点的孩子节点 */
 #define avl_replace_child(tree, _parent, old, _new) \
@@ -53,7 +53,7 @@
     { \
         avl_set_rchild(_parent, _new); \
     } \
-} 
+}
 
 static int _avl_insert(avl_tree_t *tree, avl_node_t *node,
         int64_t idx, const avl_key_t *key, bool *taller, void *data);
@@ -77,12 +77,12 @@ static int avl_delete_right_balance(avl_tree_t *tree, avl_node_t *node, bool *lo
 /******************************************************************************
  **函数名称: avl_creat
  **功    能: 创建平衡二叉树对象(对外接口)
- **输入参数: 
+ **输入参数:
  **     tree: 平衡二叉树
  **输出参数: NONE
  **返    回: AVL_OK:成功 AVL_ERR:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2013.12.19 #
  ******************************************************************************/
 avl_tree_t *avl_creat(avl_opt_t *opt, key_cb_t key_cb, avl_cmp_cb_t cmp_cb)
@@ -120,7 +120,7 @@ avl_tree_t *avl_creat(avl_opt_t *opt, key_cb_t key_cb, avl_cmp_cb_t cmp_cb)
 /******************************************************************************
  **函数名称: avl_insert
  **功    能: 插入新结点(对外接口)
- **输入参数: 
+ **输入参数:
  **     tree: 平衡二叉树
  **     key: 主键(Primary idx)
  **     len: 主键长
@@ -130,11 +130,11 @@ avl_tree_t *avl_creat(avl_opt_t *opt, key_cb_t key_cb, avl_cmp_cb_t cmp_cb)
  **     1. AVL_OK:成功
  **     2. AVL_ERR:失败
  **     3. AVL_NODE_EXIST:已存在
- **实现描述: 
+ **实现描述:
  **     1. 当树的根结点为空时，则直接创建根结点，并赋值
  **     2. 当树的根结点不为空时，则调用_insert()进行处理
- **注意事项: 
- **     1. 当key已经存在时，并不会重置data值. 
+ **注意事项:
+ **     1. 当key已经存在时，并不会重置data值.
  **     2. 如果要重置data值，请先执行删除操作.
  **作    者: # Qifeng.zou # 2013.12.12 #
  ******************************************************************************/
@@ -161,7 +161,7 @@ int avl_insert(avl_tree_t *tree, void *_key, int len, void *data)
         root->bf = AVL_EH;
         root->idx = idx;
         root->data = data;
-       
+
         tree->root = root;
         return AVL_OK;
     }
@@ -175,27 +175,27 @@ int avl_insert(avl_tree_t *tree, void *_key, int len, void *data)
 /******************************************************************************
  **函数名称: _avl_insert
  **功    能: 插入新结点(内部接口)
- **输入参数: 
+ **输入参数:
  **     tree: 平衡二叉树
  **     node: 需在该结点的子树上插入IDX
  **     idx: 需被插入的IDX
  **     key: 主键(Primary idx)
  **     data: 附加数据
- **输出参数: 
+ **输出参数:
  **     taller: 是否增高
  **返    回: AVL_OK:成功 AVL_NODE_EXIST:已存在 AVL_ERR:失败
- **实现描述: 
+ **实现描述:
  **     1. 当结点关键字等于key值时，结点已存在
  **     2. 当结点关键字小于key值时，插入右子树
  **     3. 当结点关键字大于key值时，插入左子树
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2013.12.13 #
  ******************************************************************************/
 static int _avl_insert(avl_tree_t *tree, avl_node_t *node,
         int64_t idx, const avl_key_t *key, bool *taller, void *data)
 {
     int ret;
-    
+
     if (idx == node->idx)        /* 结点已存在 */
     {
         ret = tree->cmp_cb(key->v, node->data);
@@ -208,7 +208,7 @@ static int _avl_insert(avl_tree_t *tree, avl_node_t *node,
         {
             return avl_insert_left(tree, node, idx, key, taller, data);
         }
-        
+
         return avl_insert_right(tree, node, idx, key, taller, data);
     }
     else if (idx > node->idx)    /* 插入右子树 */
@@ -223,17 +223,17 @@ static int _avl_insert(avl_tree_t *tree, avl_node_t *node,
 /******************************************************************************
  **函数名称: avl_insert_right
  **功    能: 在node的右子树中插入新结点(内部接口)
- **输入参数: 
+ **输入参数:
  **     tree: 平衡二叉树
  **     node: 需在该结点的子树上插入key
  **     idx: 需被插入的key
  **     key: 主键(Primary idx)
  **     data: 数据信息
- **输出参数: 
+ **输出参数:
  **     taller: 是否增高
  **返    回: AVL_OK:成功 AVL_NODE_EXIST:已存在 AVL_ERR:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2013.12.13 #
  ******************************************************************************/
 static int avl_insert_right(avl_tree_t *tree, avl_node_t *node,
@@ -241,7 +241,7 @@ static int avl_insert_right(avl_tree_t *tree, avl_node_t *node,
 {
     int ret;
     avl_node_t *add = NULL;
-    
+
     if (NULL == node->rchild)
     {
         add = (avl_node_t *)tree->alloc(tree->pool, sizeof(avl_node_t));
@@ -304,17 +304,17 @@ static int avl_insert_right(avl_tree_t *tree, avl_node_t *node,
 /******************************************************************************
  **函数名称: avl_insert_left
  **功    能: 在node的左子树中插入新结点(内部接口)
- **输入参数: 
+ **输入参数:
  **     tree: 平衡二叉树
  **     node: 需在该结点的子树上插入key
  **     idx: 需被插入的key
  **     key: 主键(Primary idx)
  **     data: 需要插入的数据
- **输出参数: 
+ **输出参数:
  **     taller: 是否增高
  **返    回: AVL_OK:成功 AVL_NODE_EXIST:已存在 AVL_ERR:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2013.12.13 #
  ******************************************************************************/
 static int avl_insert_left(avl_tree_t *tree, avl_node_t *node,
@@ -322,7 +322,7 @@ static int avl_insert_left(avl_tree_t *tree, avl_node_t *node,
 {
     int ret;
     avl_node_t *add;
-    
+
     if (NULL == node->lchild)
     {
         add = (avl_node_t *)tree->alloc(tree->pool, sizeof(avl_node_t));
@@ -385,7 +385,7 @@ static int avl_insert_left(avl_tree_t *tree, avl_node_t *node,
 /******************************************************************************
  **函数名称: avl_rr_balance
  **功    能: RR型平衡化处理 - 向左旋转(内部接口)
- **输入参数: 
+ **输入参数:
  **     tree: 平衡二叉树
  **     node: 右边失去平衡的结点
  **输出参数: NONE
@@ -400,7 +400,7 @@ static int avl_insert_left(avl_tree_t *tree, avl_node_t *node,
  **                    X
  **              (1)                (2)
  ** 说明: 结点A是失衡结点，此时当结点C的平衡因子为-1时，可判断为RR型。
- **注意事项: 
+ **注意事项:
  **     1. 图(1)中A表示右边失衡的结点 图(2)表示平衡处理的结果
  **作    者: # Qifeng.zou # 2013.12.13 #
  ******************************************************************************/
@@ -422,12 +422,12 @@ static int avl_rr_balance(avl_tree_t *tree, avl_node_t *node)
 /******************************************************************************
  **函数名称: avl_rl_balance
  **功    能: RL型平衡化处理 - 先向右旋转 再向左旋转(内部接口)
- **输入参数: 
+ **输入参数:
  **     tree: 平衡二叉树
  **     node: 右边失去平衡的结点
  **输出参数: NONE
  **返    回: AVL_OK:成功 AVL_ERR:失败
- **实现描述: 
+ **实现描述:
  ** 场景1: RL型
  **              A                    B
  **             / \                /    \
@@ -438,9 +438,9 @@ static int avl_rr_balance(avl_tree_t *tree, avl_node_t *node)
  **            BL BR
  **              (1)                (2)
  ** 说明: 结点A是失衡结点，此时当结点C的平衡因子为1时，可判断为RL型。
- **       虽然此时结点B的平衡因子的值可能为:-1, 0, 1. 
+ **       虽然此时结点B的平衡因子的值可能为:-1, 0, 1.
  **       但旋转处理的方式是一致的，只是旋转之后的平衡因子不一致.
- **注意事项: 
+ **注意事项:
  **     1. 图(1)中A表示右边失衡的结点 图(2)表示平衡处理的结果
  **作    者: # Qifeng.zou # 2013.12.13 #
  ******************************************************************************/
@@ -448,7 +448,7 @@ int avl_rl_balance(avl_tree_t *tree, avl_node_t *node)
 {
     avl_node_t *rchild = node->rchild,
         *parent = node->parent, *rlchild = NULL;
-    
+
     rlchild = rchild->lchild;
     switch(rlchild->bf)
     {
@@ -476,24 +476,24 @@ int avl_rl_balance(avl_tree_t *tree, avl_node_t *node)
     }
 
     avl_set_lchild(rchild, rlchild->rchild);
-    avl_set_rchild(rlchild, rchild); 
+    avl_set_rchild(rlchild, rchild);
     avl_set_rchild(node, rlchild->lchild);
     avl_set_lchild(rlchild, node);
 
     avl_replace_child(tree, parent, node, rlchild);
-    
+
     return AVL_OK;
 }
 
 /******************************************************************************
  **函数名称: avl_right_balance
  **功    能: 对右边失去平衡的结点进行平衡化处理(内部接口)
- **输入参数: 
+ **输入参数:
  **     tree: 平衡二叉树
  **     node: 右边失去平衡的结点
  **输出参数: NONE
  **返    回: AVL_OK:成功 AVL_ERR:失败
- **实现描述: 
+ **实现描述:
  ** 场景1: RR型
  **              A                  C
  **             / \                / \
@@ -514,9 +514,9 @@ int avl_rl_balance(avl_tree_t *tree, avl_node_t *node)
  **            BL BR
  **              (1)                (2)
  ** 说明: 结点A是失衡结点，此时当结点C的平衡因子为1时，可判断为RL型。
- **       虽然此时结点B的平衡因子的值可能为:-1, 0, 1. 
+ **       虽然此时结点B的平衡因子的值可能为:-1, 0, 1.
  **       但旋转处理的方式是一致的，只是旋转之后的平衡因子不一致.
- **注意事项: 
+ **注意事项:
  **     1. 图(1)中A表示右边失衡的结点 图(2)表示平衡处理的结果
  **作    者: # Qifeng.zou # 2013.12.13 #
  ******************************************************************************/
@@ -535,19 +535,19 @@ static int avl_right_balance(avl_tree_t *tree, avl_node_t *node)
             return avl_rl_balance(tree, node);
         }
     }
-    
+
     return AVL_ERR;
 }
 
 /******************************************************************************
  **函数名称: avl_ll_balance
  **功    能: LL型平衡化处理 - 向右旋转(内部接口)
- **输入参数: 
+ **输入参数:
  **     tree: 平衡二叉树
  **     node: 左边失去平衡的结点
  **输出参数: NONE
  **返    回: AVL_OK:成功 AVL_ERR:失败
- **实现描述: 
+ **实现描述:
  ** 场景1: LL型
  **              A                  B
  **             / \                / \
@@ -558,7 +558,7 @@ static int avl_right_balance(avl_tree_t *tree, avl_node_t *node)
  **        X
  **             (1)                (2)
  ** 说明: 结点A是失衡结点，此时当结点B的平衡因子为1时，可判断为LL型。
- **注意事项: 
+ **注意事项:
  **     1. 图(1)中A表示左边失衡的结点 图(2)表示平衡处理的结果
  **作    者: # Qifeng.zou # 2013.12.13 #
  ******************************************************************************/
@@ -580,12 +580,12 @@ int avl_ll_balance(avl_tree_t *tree, avl_node_t *node)
 /******************************************************************************
  **函数名称: avl_lr_balance
  **功    能: LR型平衡化处理 - 先左旋转 再向右旋转(内部接口)
- **输入参数: 
+ **输入参数:
  **     tree: 平衡二叉树
  **     node: 左边失去平衡的结点
  **输出参数: NONE
  **返    回: AVL_OK:成功 AVL_ERR:失败
- **实现描述: 
+ **实现描述:
  ** 场景1: LL型
  **              A                  B
  **             / \                / \
@@ -606,9 +606,9 @@ int avl_ll_balance(avl_tree_t *tree, avl_node_t *node)
  **            CL CR
  **             (1)                (2)
  ** 说明: 结点A是失衡结点，此时当结点B的平衡因子为-1时，可判断为LR型。
- **       虽然此时结点C的平衡因子的值可能为:-1, 0, 1. 
+ **       虽然此时结点C的平衡因子的值可能为:-1, 0, 1.
  **       但旋转处理的方式是一致的，只是旋转之后的平衡因子不一致.
- **注意事项: 
+ **注意事项:
  **     1. 图(1)中A表示左边失衡的结点 图(2)表示平衡处理的结果
  **作    者: # Qifeng.zou # 2013.12.13 #
  ******************************************************************************/
@@ -647,7 +647,7 @@ int avl_lr_balance(avl_tree_t *tree, avl_node_t *node)
     avl_set_rchild(lchild, lrchild->lchild);
     avl_set_lchild(lrchild, lchild);
     avl_set_lchild(node, lrchild->rchild);
-    avl_set_rchild(lrchild, node); 
+    avl_set_rchild(lrchild, node);
 
     avl_replace_child(tree, parent, node, lrchild);
 
@@ -657,12 +657,12 @@ int avl_lr_balance(avl_tree_t *tree, avl_node_t *node)
 /******************************************************************************
  **函数名称: avl_left_balance
  **功    能: 对左边失去平衡的结点进行平衡化处理(内部接口)
- **输入参数: 
+ **输入参数:
  **     tree: 平衡二叉树
  **     node: 左边失去平衡的结点
  **输出参数: NONE
  **返    回: AVL_OK:成功 AVL_ERR:失败
- **实现描述: 
+ **实现描述:
  ** 场景1: LL型
  **              A                  B
  **             / \                / \
@@ -683,9 +683,9 @@ int avl_lr_balance(avl_tree_t *tree, avl_node_t *node)
  **            CL CR
  **             (1)                (2)
  ** 说明: 结点A是失衡结点，此时当结点B的平衡因子为-1时，可判断为LR型。
- **       虽然此时结点C的平衡因子的值可能为:-1, 0, 1. 
+ **       虽然此时结点C的平衡因子的值可能为:-1, 0, 1.
  **       但旋转处理的方式是一致的，只是旋转之后的平衡因子不一致.
- **注意事项: 
+ **注意事项:
  **     1. 图(1)中A表示左边失衡的结点 图(2)表示平衡处理的结果
  **作    者: # Qifeng.zou # 2013.12.13 #
  ******************************************************************************/
@@ -711,14 +711,14 @@ int avl_left_balance(avl_tree_t *tree, avl_node_t *node)
 /******************************************************************************
  **函数名称: avl_query
  **功    能: 查找指定的结点
- **输入参数: 
+ **输入参数:
  **     tree: 平衡二叉树
  **     key: 主键(Primary idx)
  **     key_len: 主键长度
  **输出参数: NONE
  **返    回: 结点地址
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2013.12.12 #
  ******************************************************************************/
 avl_node_t *avl_query(avl_tree_t *tree, void *key, int key_len)
@@ -763,12 +763,12 @@ avl_node_t *avl_query(avl_tree_t *tree, void *key, int key_len)
 /******************************************************************************
  **函数名称: avl_destroy
  **功    能: 销毁AVL树(对外接口)
- **输入参数: 
+ **输入参数:
  **     tree: 平衡二叉树
  **输出参数: NONE
  **返    回: VOID
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2013.12.15 #
  ******************************************************************************/
 void avl_destroy(avl_tree_t *tree)
@@ -785,24 +785,24 @@ void avl_destroy(avl_tree_t *tree)
 /******************************************************************************
  **函数名称: avl_assert
  **功    能: 检测结点是否正常
- **输入参数: 
+ **输入参数:
  **     node: 被检测的结点
  **输出参数: NONE
  **返    回: VOID
- **实现描述: 
+ **实现描述:
  **注意事项: # 非常有效 #
  **作    者: # Qifeng.zou # 2013.12.20 #
  ******************************************************************************/
 void avl_assert(const avl_node_t *node)
 {
     if ((NULL == node)
-        || (NULL == node->parent)) 
+        || (NULL == node->parent))
     {
         return;
     }
 
     if ((node->parent->lchild != node)
-        && (node->parent->rchild != node)) 
+        && (node->parent->rchild != node))
     {
         assert(0);
     }
@@ -817,15 +817,15 @@ void avl_assert(const avl_node_t *node)
 /******************************************************************************
  **函数名称: avl_delete
  **功    能: 删除key值结点(对外接口)
- **输入参数: 
+ **输入参数:
  **     tree: 平衡二叉树
  **     key: 被删除的关键字
  **     len: 关键字长度
- **输出参数: 
+ **输出参数:
  **     data: 附加数据
  **返    回: AVL_OK:成功 AVL_ERR:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2013.12.19 #
  ******************************************************************************/
 int avl_delete(avl_tree_t *tree, void *_key, int len, void **data)
@@ -851,17 +851,17 @@ int avl_delete(avl_tree_t *tree, void *_key, int len, void **data)
 /******************************************************************************
  **函数名称: _avl_delete
  **功    能: 搜索并删除指定的key值结点(内部接口)
- **输入参数: 
+ **输入参数:
  **     tree: 平衡二叉树
  **     node: 以node为根结点的子树
  **     idx: 被删除的关键字
  **     key: 主键(Primary idx)
- **输出参数: 
+ **输出参数:
  **     lower: 高度是否降低
  **     data: 附加数据
  **返    回: AVL_OK:成功 AVL_ERR:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2013.12.19 #
  ******************************************************************************/
 static int _avl_delete(avl_tree_t *tree, avl_node_t *node,
@@ -878,7 +878,7 @@ static int _avl_delete(avl_tree_t *tree, avl_node_t *node,
         {
             return AVL_OK;
         }
-        
+
         _avl_delete(tree, node->lchild, idx, key, lower, data);
         avl_assert(node);
         avl_assert(node->lchild);
@@ -895,7 +895,7 @@ static int _avl_delete(avl_tree_t *tree, avl_node_t *node,
         {
             return AVL_OK;
         }
-        
+
         _avl_delete(tree, node->rchild, idx, key, lower, data);
         avl_assert(node);
         avl_assert(node->rchild);
@@ -923,7 +923,7 @@ static int _avl_delete(avl_tree_t *tree, avl_node_t *node,
     }
 
 AVL_EQUAL:
-    
+
     /* 2. 已找到将被删除的结点node */
     *data = node->data;
 
@@ -965,15 +965,15 @@ AVL_EQUAL:
 /******************************************************************************
  **函数名称: avl_replace_and_delete
  **功    能: 找到替换结点, 并替换被删除的结点(内部接口)
- **输入参数: 
+ **输入参数:
  **     tree: 平衡二叉树
  **     node: 将被删除的结点
  **     prev: 前继结点:此结点最右端的结点将会用来替换被删除的结点.
- **输出参数: 
+ **输出参数:
  **     lower: 高度是否变化
  **返    回: AVL_OK:成功 AVL_ERR:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **     >> 在此其实并不会删除node, 而是将replace的值给了node, 再删了replace.
  **         因为在此使用的递归算法, 如果真把node给释放了，会造成压栈的信息出现错误!
  **作    者: # Qifeng.zou # 2013.12.19 #
@@ -984,7 +984,7 @@ int avl_replace_and_delete(avl_tree_t *tree,
     if (NULL == prev->rchild)
     {
         *lower = true;
-        
+
         node->idx = prev->idx;    /* 注: 将rnode的值给了dnode */
         node->data = prev->data;
         if (prev == node->lchild)
@@ -1019,14 +1019,14 @@ int avl_replace_and_delete(avl_tree_t *tree,
 /******************************************************************************
  **函数名称: avl_delete_left_balance
  **功    能: 结点node的左子树某结点被删除, 左高度降低后, 平衡化处理(内部接口)
- **输入参数: 
+ **输入参数:
  **     tree: 平衡二叉树
  **     node: 结点node的左子树的某个结点已被删除
- **输出参数: 
+ **输出参数:
  **     lower: 高度是否变化
  **返    回: AVL_OK:成功 AVL_ERR:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2013.12.19 #
  ******************************************************************************/
 int avl_delete_left_balance(avl_tree_t *tree, avl_node_t *node, bool *lower)
@@ -1108,7 +1108,7 @@ int avl_delete_left_balance(avl_tree_t *tree, avl_node_t *node, bool *lower)
                     avl_set_rchild(node, rlchild->lchild);
                     avl_set_lchild(rchild, rlchild->rchild);
                     avl_set_lchild(rlchild, node);
-                    avl_set_rchild(rlchild, rchild); 
+                    avl_set_rchild(rlchild, rchild);
 
                     avl_replace_child(tree, parent, node, rlchild);
 
@@ -1129,14 +1129,14 @@ int avl_delete_left_balance(avl_tree_t *tree, avl_node_t *node, bool *lower)
 /******************************************************************************
  **函数名称: avl_delete_right_balance
  **功    能: 结点node的右子树某结点被删除, 左高度降低后, 平衡化处理(内部接口)
- **输入参数: 
+ **输入参数:
  **     tree: 平衡二叉树
  **     node: 结点node的右子树的某个结点已被删除
- **输出参数: 
+ **输出参数:
  **     lower: 高度是否变化
  **返    回: AVL_OK:成功 AVL_ERR:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2013.12.19 #
  ******************************************************************************/
 int avl_delete_right_balance(avl_tree_t *tree, avl_node_t *node, bool *lower)
@@ -1167,7 +1167,7 @@ int avl_delete_right_balance(avl_tree_t *tree, avl_node_t *node, bool *lower)
                     }
 
                     avl_set_lchild(node, lchild->rchild);
-                    avl_set_rchild(lchild, node); 
+                    avl_set_rchild(lchild, node);
                     avl_replace_child(tree, parent, node, lchild);
 
                     avl_assert(parent);
@@ -1239,12 +1239,12 @@ int avl_delete_right_balance(avl_tree_t *tree, avl_node_t *node, bool *lower)
 /******************************************************************************
  **函数名称: _avl_destroy
  **功    能: 销毁AVL树(内部接口)
- **输入参数: 
+ **输入参数:
  **     node: 需要被销毁的结点
  **输出参数: NONE
  **返    回: VOID
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2013.12.15 #
  ******************************************************************************/
 static void _avl_destroy(avl_tree_t *tree, avl_node_t *node)
@@ -1266,12 +1266,12 @@ int _avl_print(avl_node_t *node, Stack_t *stack);
 /******************************************************************************
  **函数名称: avl_print
  **功    能: 打印平衡二叉树(外部接口)
- **输入参数: 
+ **输入参数:
  **     tree: 平衡二叉树
  **输出参数: NONE
  **返    回: VOID
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2013.12.17 #
  ******************************************************************************/
 int avl_print(avl_tree_t *tree)
@@ -1289,7 +1289,7 @@ int avl_print(avl_tree_t *tree)
     {
         return AVL_ERR_STACK;
     }
-    
+
     _avl_print(tree->root, &stack);
 
     stack_destroy(&stack);
@@ -1299,20 +1299,20 @@ int avl_print(avl_tree_t *tree)
 /******************************************************************************
  **函数名称: avl_print_head
  **功    能: 打印结点头(内部接口)
- **输入参数: 
+ **输入参数:
  **     node: 被打印的结点
  **     depth: 结点深度
  **输出参数: NONE
  **返    回: VOID
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2013.12.17 #
  ******************************************************************************/
 void avl_print_head(avl_node_t *node, int depth)
 {
     int idx;
     avl_node_t *parent = node->parent;
-    
+
     while (depth > 1)
     {
         depth--;
@@ -1347,7 +1347,7 @@ void avl_print_head(avl_node_t *node, int depth)
 			}
         }
     }
-    
+
     if ((NULL == node->lchild)
         && (NULL == node->rchild))
     {
@@ -1362,13 +1362,13 @@ void avl_print_head(avl_node_t *node, int depth)
 /******************************************************************************
  **函数名称: avl_print_tail
  **功    能: 打印结点尾(内部接口)
- **输入参数: 
+ **输入参数:
  **     node: 被打印的结点
  **     depth: 结点深度
  **输出参数: NONE
  **返    回: VOID
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2013.12.17 #
  ******************************************************************************/
 void avl_print_tail(avl_node_t *node, int depth)
@@ -1397,18 +1397,18 @@ void avl_print_tail(avl_node_t *node, int depth)
 /******************************************************************************
  **函数名称: _avl_print
  **功    能: 打印平衡二叉树(内部接口)
- **输入参数: 
+ **输入参数:
  **     tree: 平衡二叉树
  **输出参数: NONE
  **返    回: VOID
- **实现描述: 
- **     1. 结点入栈 
+ **实现描述:
+ **     1. 结点入栈
  **     2. 打印该结点(头)
  **     3. 打印该结点的右子树
  **     4. 打印该结点的左子树
  **     5. 打印该结点(尾)
  **     6. 结点出栈
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2013.12.17 #
  ******************************************************************************/
 int _avl_print(avl_node_t *root, Stack_t *stack)
@@ -1419,7 +1419,7 @@ int _avl_print(avl_node_t *root, Stack_t *stack)
 
     /* 1. 将要处理的结点压栈 */
     stack_push(stack, node);
-    
+
     depth = stack_depth(stack);
 
     /* 2. 打印结点头 */
@@ -1440,7 +1440,7 @@ int _avl_print(avl_node_t *root, Stack_t *stack)
     depth = stack_depth(stack);
 
     /* 5. 打印结点尾 */
-    avl_print_tail(node, depth);    
+    avl_print_tail(node, depth);
 
     /* 6. 出栈 */
     stack_pop(stack);
@@ -1450,17 +1450,17 @@ int _avl_print(avl_node_t *root, Stack_t *stack)
 /******************************************************************************
  **函数名称: _avl_trav
  **功    能: 遍历平衡二叉树(内部接口)
- **输入参数: 
+ **输入参数:
  **     tree: 平衡二叉树
  **输出参数: NONE
  **返    回: VOID
- **实现描述: 
- **     1. 结点入栈 
+ **实现描述:
+ **     1. 结点入栈
  **     2. 处理该结点
  **     3. 处理该结点的右子树
  **     4. 处理该结点的左子树
  **     5. 结点出栈
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.12.24 #
  ******************************************************************************/
 static int _avl_trav(avl_node_t *root, Stack_t *stack, avl_trav_cb_t proc, void *args)
@@ -1470,7 +1470,7 @@ static int _avl_trav(avl_node_t *root, Stack_t *stack, avl_trav_cb_t proc, void 
 
     /* 1. 将要处理的结点压栈 */
     stack_push(stack, node);
-    
+
     /* 2. 处理当前结点 */
     proc(node->data, args);
 
@@ -1495,12 +1495,12 @@ static int _avl_trav(avl_node_t *root, Stack_t *stack, avl_trav_cb_t proc, void 
 /******************************************************************************
  **函数名称: avl_trav
  **功    能: 遍历平衡二叉树(外部接口)
- **输入参数: 
+ **输入参数:
  **     tree: 平衡二叉树
  **输出参数: NONE
  **返    回: VOID
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.12.23 #
  ******************************************************************************/
 int avl_trav(avl_tree_t *tree, avl_trav_cb_t proc, void *args)
@@ -1518,7 +1518,7 @@ int avl_trav(avl_tree_t *tree, avl_trav_cb_t proc, void *args)
     {
         return AVL_ERR_STACK;
     }
-    
+
     _avl_trav(tree->root, &stack, proc, args);
 
     stack_destroy(&stack);
@@ -1528,12 +1528,12 @@ int avl_trav(avl_tree_t *tree, avl_trav_cb_t proc, void *args)
 /******************************************************************************
  **函数名称: avl_key_cb_int32
  **功    能: 当主键为int32类型时的主键生成函数(外部接口)
- **输入参数: 
+ **输入参数:
  **     key: 主键
  **     len: 主键长度
  **输出参数: NONE
  **返    回: 主键
- **实现描述: 
+ **实现描述:
  **注意事项: 此时*key必须为int32类型
  **作    者: # Qifeng.zou # 2015.04.29 #
  ******************************************************************************/
@@ -1545,12 +1545,12 @@ int avl_key_cb_int32(const int *key, size_t len)
 /******************************************************************************
  **函数名称: avl_cmp_cb_int32
  **功    能: 当主键为int类型时的主键比较函数(外部接口)
- **输入参数: 
+ **输入参数:
  **     key: 主键
  **     data: 与key值相等的键值对应的数据块
  **输出参数: NONE
  **返    回: 主键
- **实现描述: 
+ **实现描述:
  **注意事项: 因主键为int32类型, 因此调此函数时, 肯定返回相等
  **作    者: # Qifeng.zou # 2015.04.29 #
  ******************************************************************************/
@@ -1562,12 +1562,12 @@ int avl_cmp_cb_int32(const int *key, const void *data)
 /******************************************************************************
  **函数名称: avl_key_cb_int64
  **功    能: 当主键为int64类型时的主键生成函数(外部接口)
- **输入参数: 
+ **输入参数:
  **     key: 主键
  **     len: 主键长度
  **输出参数: NONE
  **返    回: 主键
- **实现描述: 
+ **实现描述:
  **注意事项: 此时*key必须为uint64_t类型
  **作    者: # Qifeng.zou # 2015.04.29 #
  ******************************************************************************/
@@ -1579,12 +1579,12 @@ int64_t avl_key_cb_int64(const int64_t *key, size_t len)
 /******************************************************************************
  **函数名称: avl_cmp_cb_int64
  **功    能: 当主键为int64类型时的主键比较函数(外部接口)
- **输入参数: 
+ **输入参数:
  **     key: 主键
  **     data: 与key值相等的键值对应的数据块
  **输出参数: NONE
  **返    回: 主键
- **实现描述: 
+ **实现描述:
  **注意事项: 因主键为int64类型, 因此调此函数时, 肯定返回相等
  **作    者: # Qifeng.zou # 2015.04.29 #
  ******************************************************************************/

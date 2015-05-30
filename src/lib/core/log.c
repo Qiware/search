@@ -1,9 +1,9 @@
 /*******************************************************************************
  ** 模  块: 异步日志模块 - 客户端代码
- ** 说  明: 
+ ** 说  明:
  **     考虑性能要求, 日志首先存储在缓冲区中, 当缓存区中的日志达到一定量、或超
  **     过一定时间未同步、或出现错误级别日志时, 则将日志同步到日志文件中.
- ** 注  意: 
+ ** 注  意:
  **     不同的"进程"和"线程"是不能使用的同名的日志文件
  ** 作  者: # Qifeng.zou # 2013.11.07 #
  ******************************************************************************/
@@ -43,7 +43,7 @@ static size_t g_log_max_size = LOG_FILE_MAX_SIZE;
 static pthread_key_t g_log_specific_key;        /* 线程私有数据KEY */
 
 /* 日志线程互斥锁: 日志对象和配置信息锁 */
-static pthread_mutex_t g_log_mutex = PTHREAD_MUTEX_INITIALIZER;  
+static pthread_mutex_t g_log_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 #define log_mutex_lock() pthread_mutex_lock(&g_log_mutex)
 #define log_mutex_trylock() pthread_mutex_trylock(&g_log_mutex)
@@ -76,12 +76,12 @@ static const size_t g_log_sync_size = 0.8 * LOG_FILE_CACHE_SIZE;
 /******************************************************************************
  **函数名称: log_init
  **功    能: 初始化日志信息
- **输入参数: 
+ **输入参数:
  **     level: 日志级别(其值：LOG_LEVEL_TRACE~LOG_LEVEL_FATAL的"或"值)
  **     path: 日志路径
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述:
  **     1. 日志模块初始化
  **     2. 将日志信息写入共享内存
  **注意事项: 此函数中不能调用错误日志函数 - 可能死锁!
@@ -105,7 +105,7 @@ log_cycle_t *log_init(int level, const char *path)
     log->level = level;
     log->pid = getpid();
     pthread_mutex_init(&log->lock, NULL);
-    
+
     log_mutex_lock();
 
     do
@@ -154,7 +154,7 @@ log_cycle_t *log_init(int level, const char *path)
 /******************************************************************************
  **函数名称: log_core
  **功    能: 日志核心调用
- **输入参数: 
+ **输入参数:
  **     log: 日志对象
  **     level: 日志级别(LOG_LEVEL_TRACE ~ LOG_LEVEL_FATAL)
  **     fname: 文件名
@@ -164,7 +164,7 @@ log_cycle_t *log_init(int level, const char *path)
  **     fmt: 格式化输出
  **输出参数: NONE
  **返    回: VOID
- **实现描述: 
+ **实现描述:
  **     1. 判断日志级别
  **     2. 获取系统时间
  **     3. 组合日志信息
@@ -188,19 +188,19 @@ void log_core(log_cycle_t *log, int level,
     va_end(args);
 
     ftime(&ctm);
-    
+
     log_write(log, level, dump, dumplen, errmsg, &ctm);
 }
 
 /******************************************************************************
  **函数名称: log_destroy
  **功    能: 销毁日志模块
- **输入参数: 
+ **输入参数:
  **     log: 日志对象
  **输出参数: NONE
  **返    回: VOID
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.09.02 #
  ******************************************************************************/
 void log_destroy(log_cycle_t **log)
@@ -220,8 +220,8 @@ void log_destroy(log_cycle_t **log)
  **输入参数: NONE
  **输出参数: NONE
  **返    回: 日志对象
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2013.11.04 #
  ******************************************************************************/
 log_cycle_t *log_get_cycle(void)
@@ -232,11 +232,11 @@ log_cycle_t *log_get_cycle(void)
 /******************************************************************************
  **函数名称: log_get_level
  **功    能: 获取日志级别
- **输入参数: 
+ **输入参数:
  **     level_str: 日志级别字串
  **输出参数: NONE
  **返    回: 日志级别
- **实现描述: 
+ **实现描述:
  **注意事项: 当级别匹配失败时，默认情况下将开启所有日志级别.
  **作    者: # Qifeng.zou # 2014.09.03 #
  ******************************************************************************/
@@ -278,12 +278,12 @@ int log_get_level(const char *level_str)
 /******************************************************************************
  **函数名称: log_get_str
  **功    能: 获取日志级别字串
- **输入参数: 
+ **输入参数:
  **     level: 日志级别
  **输出参数: NONE
  **返    回: 日志级别字串
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.03.02 #
  ******************************************************************************/
 const char *log_get_str(int level)
@@ -324,18 +324,18 @@ const char *log_get_str(int level)
 /******************************************************************************
  **函数名称: log_set_max_size
  **功    能: 设置日志尺寸的最大值
- **输入参数: 
+ **输入参数:
  **     size: 日志尺寸
  **输出参数: NONE
  **返    回: VOID
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2013.10.29 #
  ******************************************************************************/
 void log_set_max_size(size_t size)
 {
     log_mutex_lock();
-    
+
     _log_set_max_size(size);
 
     log_mutex_unlock();
@@ -344,13 +344,13 @@ void log_set_max_size(size_t size)
 /******************************************************************************
  **函数名称: log_rename
  **功    能: 获取备份日志文件名
- **输入参数: 
+ **输入参数:
  **     file: 文件信息
  **     time: 当前时间
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2013.10.31 #
  ******************************************************************************/
 static int log_rename(const log_file_info_t *file, const struct timeb *time)
@@ -361,7 +361,7 @@ static int log_rename(const log_file_info_t *file, const struct timeb *time)
     local_time(&time->time, &loctm);
 
     /* FORMAT: *.logYYYYMMDDHHMMSS.bak */
-    snprintf(newpath, sizeof(newpath), 
+    snprintf(newpath, sizeof(newpath),
         "%s%04d%02d%02d%02d%02d%02d.bak",
         file->path, loctm.tm_year+1900, loctm.tm_mon+1, loctm.tm_mday,
         loctm.tm_hour, loctm.tm_min, loctm.tm_sec);
@@ -375,7 +375,7 @@ static int log_rename(const log_file_info_t *file, const struct timeb *time)
  **输入参数: NONE
  **输出参数: NONE
  **返    回: 共享内存地址
- **实现描述: 
+ **实现描述:
  **注意事项: 此函数中不能调用错误日志函数 - 可能死锁!
  **作    者: # Qifeng.zou # 2013.12.06 #
  ******************************************************************************/
@@ -390,7 +390,7 @@ void *log_creat_shm(void)
     {
         return NULL;
     }
-    
+
     shmid = shmget(key, 0, 0);
     if (shmid < 0)
     {
@@ -415,10 +415,10 @@ void *log_creat_shm(void)
 /******************************************************************************
  **函数名称: _log_init_global
  **功    能: 初始化全局数据
- **输入参数: 
+ **输入参数:
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述:
  **     1. 连接共享内存
  **     2. 打开消息队列
  **注意事项: 此函数中不能调用错误日志函数 - 可能死锁!
@@ -440,7 +440,7 @@ static int _log_init_global(void)
                     __FILE__, __LINE__);
             return -1;
         }
-        
+
         log_set_shm_addr(addr);
     }
 
@@ -449,7 +449,7 @@ static int _log_init_global(void)
         log_get_lock_path(path, sizeof(path));
 
         Mkdir2(path, DIR_MODE);
-        
+
         fd = Open(path, OPEN_FLAGS, OPEN_MODE);
         if (fd < 0)
         {
@@ -467,15 +467,15 @@ static int _log_init_global(void)
 /******************************************************************************
  **函数名称: log_name_conflict_handler
  **功    能: 日志名冲突时，产生新的日志名
- **输入参数: 
+ **输入参数:
  **     oripath: 原始日志名
  **     size: newpath的空间大小
  **     idx: 索引
- **输出参数: 
+ **输出参数:
  **     newpath: 新日志名
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2013.12.05 #
  ******************************************************************************/
 static int log_name_conflict_handler(
@@ -485,7 +485,7 @@ static int log_name_conflict_handler(
     int len = 0;
     char *ptr = NULL;
     char suffix[FILE_NAME_MAX_LEN];
-    
+
 	memset(newpath, 0, size);
 	
     snprintf(newpath, size, "%s", oripath);
@@ -512,7 +512,7 @@ static int log_name_conflict_handler(
         }
         return 0;
     }
-    
+
     strcat(newpath, suffix);
     return 0;
 }
@@ -520,15 +520,15 @@ static int log_name_conflict_handler(
 /******************************************************************************
  **函数名称: log_creat
  **功    能: 创建日志信息
- **输入参数: 
+ **输入参数:
  **     addr: 共享内存首地址
  **     path: 日志绝对路径
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述:
  **     1. 判断当前功能内存中是否有文件名一致的日志
  **     2. 选择合适的日志缓存，并返回
- **注意事项: 
+ **注意事项:
  **     1. 当存在日志名一致的日志时, 判断进程ID是否一样.
  **        如果不一样, 且对应进程, 依然正在运行, 则提示创建日志失败!
  **     2. 请勿在此函数中调用错误日志函数 - 小心死锁!
@@ -545,13 +545,13 @@ static log_file_info_t *log_creat(void *addr, const char *path)
     hash_idx = log_hash(path);
 
     log_fcache_all_wrlock();
-    
+
     for (idx=0; idx<LOG_FILE_MAX_NUM; idx++, hash_idx++)
     {
         hash_idx %= LOG_FILE_MAX_NUM;
 
         file = (log_file_info_t *)(addr + hash_idx * LOG_FILE_CACHE_SIZE);
-        
+
         /* 1. 判断文件名是否一致 */
         if (!strcmp(file->path, ptr))   /* 文件名出现一致 */
         {
@@ -561,7 +561,7 @@ static log_file_info_t *log_creat(void *addr, const char *path)
                 log_fcache_all_unlock();
                 return file;
             }
-            
+
             if (!proc_is_exist(file->pid))
             {
                 file->pid = pid;
@@ -577,7 +577,7 @@ static log_file_info_t *log_creat(void *addr, const char *path)
                 log_fcache_all_unlock();
                 return NULL;
             }
-            
+
             ptr = newpath;
             hash_idx = log_hash(ptr);
             idle_idx = -1;
@@ -601,7 +601,7 @@ static log_file_info_t *log_creat(void *addr, const char *path)
             if (proc_is_exist(file->pid))
             {
                 idle_idx = hash_idx;
-                
+
                 memset(file, 0, sizeof(log_file_info_t));
                 file->idx = hash_idx;
                 file->pid = INVALID_PID;
@@ -629,12 +629,12 @@ static log_file_info_t *log_creat(void *addr, const char *path)
 /******************************************************************************
  **函数名称: log_release
  **功    能: 释放申请的日志缓存
- **输入参数: 
+ **输入参数:
  **     file: 日志对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2013.11.05 #
  ******************************************************************************/
 static void log_release(log_file_info_t *file)
@@ -642,7 +642,7 @@ static void log_release(log_file_info_t *file)
     int idx;
 
     idx = file->idx;
-    
+
     log_fcache_wrlock(file);
 
     log_sync(file);
@@ -650,14 +650,14 @@ static void log_release(log_file_info_t *file)
     memset(file, 0, sizeof(log_file_info_t));
     file->pid = INVALID_PID;
     file->idx = idx;
-    
+
     log_fcache_unlock(file);
 }
 
 /******************************************************************************
  **函数名称: log_write
  **功    能: 将日志信息写入缓存
- **输入参数: 
+ **输入参数:
  **     cycle: 日志对象
  **     level: 日志级别
  **     dump: 内存地址
@@ -665,8 +665,8 @@ static void log_release(log_file_info_t *file)
  **     msg: 日志内容
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2013.10.31 #
  ******************************************************************************/
 static int log_write(log_cycle_t *log, int level,
@@ -751,7 +751,7 @@ static int log_write(log_cycle_t *log, int level,
                     ctm->millitm, errmsg);
             break;
         }
-    } 
+    }
 
     msglen = strlen(addr);
     file->ioff += msglen;
@@ -759,7 +759,7 @@ static int log_write(log_cycle_t *log, int level,
     left -= msglen;
 
     /* 打印DUMP数据 */
-    if ((NULL != dump) && (dumplen > 0) && (left > dumplen)) 
+    if ((NULL != dump) && (dumplen > 0) && (left > dumplen))
     {
         msglen = log_print_dump(addr, dump, dumplen);
 
@@ -768,11 +768,11 @@ static int log_write(log_cycle_t *log, int level,
 
     /* 判断是否强制写或发送通知 */
     difftm = ctm->time - file->sync_tm.time;
-    if (log_is_over_limit(file)  
+    if (log_is_over_limit(file)
         || log_is_timeout(difftm))
     {
         memcpy(&file->sync_tm, ctm, sizeof(file->sync_tm));
-        
+
         log_sync_ext(log);
     }
 
@@ -785,21 +785,21 @@ static int log_write(log_cycle_t *log, int level,
 /******************************************************************************
  **函数名称: log_print_dump
  **功    能: 以16进制打印日志信息
- **输入参数: 
+ **输入参数:
  **     fd: 日志文件描述符
  **     dump: 内存首地址
  **     dumplen: 打印长度
  **输出参数: NONE
  **返    回: 长度
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **修    改: # Qifeng.zou # 2013.10.30 #
  ******************************************************************************/
 static int log_print_dump(char *addr, const void *dump, int dumplen)
 {
     char *in = addr;
     const char *dump_ptr, *dump_end;
-    unsigned char var[2] = {0, 31};    
+    unsigned char var[2] = {0, 31};
     int idx, n, row, count, rows, head_len;
 
     dump_ptr = (const char *)dump;
@@ -807,9 +807,9 @@ static int log_print_dump(char *addr, const void *dump, int dumplen)
     rows = (dumplen - 1)/LOG_DUMP_COL_NUM;  /* 每页行数 */
     head_len = strlen(LOG_DUMP_HEAD_STR);
 
-    while (dump_ptr < dump_end) 
-    {        
-        for (row=0; row<=rows; row++) 
+    while (dump_ptr < dump_end)
+    {
+        for (row=0; row<=rows; row++)
         {
             /* 1. 判断是否打印头部字串 */
             if (0 == (row + 1)%LOG_DUMP_PAGE_MAX_ROWS)
@@ -819,12 +819,12 @@ static int log_print_dump(char *addr, const void *dump, int dumplen)
             }
 
             /* 2. 计算偏移量 */
-            count = row * LOG_DUMP_COL_NUM;            
+            count = row * LOG_DUMP_COL_NUM;
 
             /* 3. 将信息写入缓存 */
             sprintf(in, "%05d", count);
             in += 5;
-            sprintf(in, "(%05x) ", count);        
+            sprintf(in, "(%05x) ", count);
             in += 8;
 
             /* >>3.1 16进制打印一行 */
@@ -833,37 +833,37 @@ static int log_print_dump(char *addr, const void *dump, int dumplen)
                 sprintf(in, "%02x ", *dump_ptr);
                 in += 3;
                 dump_ptr++;
-            }        
+            }
 
             /* >>3.2 最后数据不足一行时，使用空格补上 */
-            for (n=0; n<LOG_DUMP_COL_NUM-idx; n++) 
+            for (n=0; n<LOG_DUMP_COL_NUM-idx; n++)
             {
                 sprintf(in, "   ");
                 in += 3;
-            }            
+            }
 
-            sprintf(in, " ");            
+            sprintf(in, " ");
             in++;
             dump_ptr -= idx;
 
             /* >>3.3 以字符方式打印信息 */
-            for (n=0; n<idx; n++) 
+            for (n=0; n<idx; n++)
             {
-                if (((unsigned char)(*dump_ptr) <= (var[1])) 
-                    &&    ((unsigned char)(*dump_ptr) >= (var[0]))) 
+                if (((unsigned char)(*dump_ptr) <= (var[1]))
+                    &&    ((unsigned char)(*dump_ptr) >= (var[0])))
                 {
                     *(in++) = '*';
-                }     
-                else 
-                {                    
+                }
+                else
+                {
                     *(in++) = *dump_ptr;
-                }                
+                }
                 dump_ptr++;
-            }        
+            }
 
             *(in++) = '\n';
-        } /* dump_end of for    */    
-    } /* dump_end of while    */    
+        } /* dump_end of for    */
+    } /* dump_end of while    */
 
     return (in - addr);
 }
@@ -871,12 +871,12 @@ static int log_print_dump(char *addr, const void *dump, int dumplen)
 /******************************************************************************
  **函数名称: log_sync
  **功    能: 强制同步日志信息到日志文件
- **输入参数: 
+ **输入参数:
  **     file: 日志文件信息
  **输出参数: NONE
  **返    回: VOID
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2013.10.30 #
  ******************************************************************************/
 void log_sync(log_file_info_t *file)
@@ -896,12 +896,12 @@ void log_sync(log_file_info_t *file)
 /******************************************************************************
  **函数名称: log_sync_ext
  **功    能: 强制同步日志信息到日志文件
- **输入参数: 
+ **输入参数:
  **     file: 日志文件信息
  **输出参数: NONE
  **返    回: VOID
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2013.10.30 #
  ******************************************************************************/
 static int log_sync_ext(log_cycle_t *log)
@@ -924,7 +924,7 @@ static int log_sync_ext(log_cycle_t *log)
 /******************************************************************************
  **函数名称: _log_sync
  **功    能: 强制同步业务日志
- **输入参数: 
+ **输入参数:
  **     file: 文件缓存
  **输出参数:
  **     fd: 文件描述符
@@ -990,13 +990,13 @@ static size_t _log_sync(log_file_info_t *file, int *_fd)
             fprintf(stderr, "errmsg:[%d] %s! path:[%s]\n", errno, strerror(errno), file->path);
             break;
         }
-        
+
         /* 6. 写入指定日志文件 */
         Writen(fd, addr, n);
 
         fsize += n;
     } while(0);
-    
+
     /* 7. 标志复位 */
     memset(addr, 0, n);
     file->ioff = 0;

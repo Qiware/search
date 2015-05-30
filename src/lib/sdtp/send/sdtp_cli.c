@@ -16,13 +16,13 @@ static int sdtp_cli_cmd_usck(sdtp_cli_t *cli, int idx);
 /******************************************************************************
  **函数名称: sdtp_cli_init
  **功    能: 发送端初始化(对外接口)
- **输入参数: 
+ **输入参数:
  **     conf: 配置信息
  **     idx: CLI编号
  **     log: 日志对象
  **输出参数: NONE
  **返    回: 发送对象
- **实现描述: 
+ **实现描述:
  **     1. 创建CLI对象
  **     2. 加载配置信息
  **     3. 初始化处理
@@ -53,7 +53,7 @@ sdtp_cli_t *sdtp_cli_init(const sdtp_ssvr_conf_t *conf, int idx, log_cycle_t *lo
 
     cli->log = log;
     cli->pool = pool;
-    
+
     /* 2. 加载配置信息 */
     memcpy(&cli->conf, conf, sizeof(sdtp_ssvr_conf_t));
 
@@ -71,13 +71,13 @@ sdtp_cli_t *sdtp_cli_init(const sdtp_ssvr_conf_t *conf, int idx, log_cycle_t *lo
 /******************************************************************************
  **函数名称: _sdtp_cli_init
  **功    能: 发送端初始化
- **输入参数: 
+ **输入参数:
  **     cli: CLI对象
  **     idx: CLI编号
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
 static int _sdtp_cli_init(sdtp_cli_t *cli, int idx)
@@ -97,12 +97,12 @@ static int _sdtp_cli_init(sdtp_cli_t *cli, int idx)
 /******************************************************************************
  **函数名称: sdtp_cli_shmat
  **功    能: Attach发送队列
- **输入参数: 
+ **输入参数:
  **     cli: 上下文信息
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
 static int sdtp_cli_shmat(sdtp_cli_t *cli)
@@ -140,12 +140,12 @@ static int sdtp_cli_shmat(sdtp_cli_t *cli)
 /******************************************************************************
  **函数名称: sdtp_cli_cmd_usck
  **功    能: 创建命令套接字
- **输入参数: 
+ **输入参数:
  **     cli: 上下文信息
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
 static int sdtp_cli_cmd_usck(sdtp_cli_t *cli, int idx)
@@ -158,7 +158,7 @@ static int sdtp_cli_cmd_usck(sdtp_cli_t *cli, int idx)
     if (cli->cmdfd < 0)
     {
         log_error(cli->log, "errmsg:[%d] %s! path:%s", errno, strerror(errno), path);
-        return SDTP_ERR;                    
+        return SDTP_ERR;
     }
 
     return SDTP_OK;
@@ -167,13 +167,13 @@ static int sdtp_cli_cmd_usck(sdtp_cli_t *cli, int idx)
 /******************************************************************************
  **函数名称: sdtp_cli_cmd_send_req
  **功    能: 通知Send服务线程
- **输入参数: 
+ **输入参数:
  **     cli: 上下文信息
  **     idx: 发送服务ID
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
 static int sdtp_cli_cmd_send_req(sdtp_cli_t *cli, int idx)
@@ -199,7 +199,7 @@ static int sdtp_cli_cmd_send_req(sdtp_cli_t *cli, int idx)
 /******************************************************************************
  **函数名称: sdtp_cli_send
  **功    能: 发送指定数据(对外接口)
- **输入参数: 
+ **输入参数:
  **     cli: 上下文信息
  **     type: 数据类型
  **     data: 数据地址
@@ -207,7 +207,7 @@ static int sdtp_cli_cmd_send_req(sdtp_cli_t *cli, int idx)
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 将数据按照约定格式放入队列中
- **注意事项: 
+ **注意事项:
  **     1. 只能用于发送自定义数据类型, 而不能用于系统数据类型
  **     2. 不用关注变量num在多线程中的值, 因其不影响安全性
  **作    者: # Qifeng.zou # 2015.01.14 #

@@ -1,4 +1,3 @@
-
 #include "shm_opt.h"
 #include "syscall.h"
 #include "sdtp_cmd.h"
@@ -33,13 +32,13 @@ static int sdtp_link_auth_rep_hdl(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, sdtp_ssck
 /******************************************************************************
  **函数名称: sdtp_ssvr_init
  **功    能: 初始化发送线程
- **输入参数: 
+ **输入参数:
  **     ctx: 全局信息
  **     ssvr: 发送服务对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
 int sdtp_ssvr_init(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, int tidx)
@@ -90,7 +89,7 @@ int sdtp_ssvr_init(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, int tidx)
         return SDTP_ERR;
     }
 
-    /* > 初始化发送缓存 */
+    /* > 初始化发送缓存(注: 程序退出时才可释放此空间，其他任何情况下均不释放) */
     addr = calloc(1, conf->send_buff_size);
     if (NULL == addr)
     {
@@ -100,7 +99,7 @@ int sdtp_ssvr_init(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, int tidx)
 
     sdtp_snap_setup(send, addr, conf->send_buff_size);
 
-    /* 5. 初始化接收缓存 */
+    /* 5. 初始化接收缓存(注: 程序退出时才可释放此空间，其他任何情况下均不释放) */
     addr = calloc(1, conf->recv_buff_size);
     if (NULL == addr)
     {
@@ -116,13 +115,13 @@ int sdtp_ssvr_init(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, int tidx)
 /******************************************************************************
  **函数名称: sdtp_ssvr_creat_recvq
  **功    能: 创建发送线程的接收队列
- **输入参数: 
+ **输入参数:
  **     ssvr: 发送服务对象
  **     conf: 配置信息
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 依次创建接收队列
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.05.19 #
  ******************************************************************************/
 static int sdtp_ssvr_creat_recvq(sdtp_sctx_t *ctx, const sdtp_ssvr_conf_t *conf)
@@ -155,13 +154,13 @@ static int sdtp_ssvr_creat_recvq(sdtp_sctx_t *ctx, const sdtp_ssvr_conf_t *conf)
 /******************************************************************************
  **函数名称: sdtp_ssvr_creat_sendq
  **功    能: 创建发送线程的发送队列
- **输入参数: 
+ **输入参数:
  **     ssvr: 发送服务对象
  **     conf: 配置信息
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
 static int sdtp_ssvr_creat_sendq(sdtp_ssvr_t *ssvr, const sdtp_ssvr_conf_t *conf)
@@ -185,13 +184,13 @@ static int sdtp_ssvr_creat_sendq(sdtp_ssvr_t *ssvr, const sdtp_ssvr_conf_t *conf
 /******************************************************************************
  **函数名称: sdtp_ssvr_creat_usck
  **功    能: 创建发送线程的命令接收套接字
- **输入参数: 
+ **输入参数:
  **     ssvr: 发送服务对象
  **     conf: 配置信息
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
 static int sdtp_ssvr_creat_usck(sdtp_ssvr_t *ssvr, const sdtp_ssvr_conf_t *conf)
@@ -199,7 +198,7 @@ static int sdtp_ssvr_creat_usck(sdtp_ssvr_t *ssvr, const sdtp_ssvr_conf_t *conf)
     char path[FILE_PATH_MAX_LEN];
 
     sdtp_ssvr_usck_path(conf, path, ssvr->tidx);
-    
+
     ssvr->cmd_sck_id = unix_udp_creat(path);
     if (ssvr->cmd_sck_id < 0)
     {
@@ -214,13 +213,13 @@ static int sdtp_ssvr_creat_usck(sdtp_ssvr_t *ssvr, const sdtp_ssvr_conf_t *conf)
 /******************************************************************************
  **函数名称: sdtp_ssvr_bind_cpu
  **功    能: 绑定CPU
- **输入参数: 
+ **输入参数:
  **     ctx: 全局信息
  **     ssvr: 线程对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.01.16 #
  ******************************************************************************/
 static void sdtp_ssvr_bind_cpu(sdtp_sctx_t *ctx, int tidx)
@@ -248,13 +247,13 @@ static void sdtp_ssvr_bind_cpu(sdtp_sctx_t *ctx, int tidx)
 /******************************************************************************
  **函数名称: sdtp_switch_send_data
  **功    能: 切换发送数据的处理
- **输入参数: 
+ **输入参数:
  **     ctx: 全局信息
- **     ssvr: 
+ **     ssvr:
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.04.11 #
  ******************************************************************************/
 void sdtp_switch_send_data(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
@@ -332,16 +331,16 @@ void sdtp_switch_send_data(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
 /******************************************************************************
  **函数名称: sdtp_ssvr_set_rwset
  **功    能: 设置读写集
- **输入参数: 
+ **输入参数:
  **     ssvr: 发送服务对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.01.16 #
  ******************************************************************************/
-void sdtp_ssvr_set_rwset(sdtp_ssvr_t *ssvr) 
-{ 
+void sdtp_ssvr_set_rwset(sdtp_ssvr_t *ssvr)
+{
     int idx;
     sdtp_snap_t *snap;
 
@@ -383,15 +382,15 @@ void sdtp_ssvr_set_rwset(sdtp_ssvr_t *ssvr)
 /******************************************************************************
  **函数名称: sdtp_ssvr_routine
  **功    能: Snd线程调用的主程序
- **输入参数: 
+ **输入参数:
  **     _ctx: 全局信息
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述:
  **     1. 获取发送线程
  **     2. 绑定CPU
  **     3. 调用发送主程
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.01.16 #
  ******************************************************************************/
 void *sdtp_ssvr_routine(void *_ctx)
@@ -490,13 +489,13 @@ void *sdtp_ssvr_routine(void *_ctx)
 /******************************************************************************
  **函数名称: sdtp_ssvr_kpalive_req
  **功    能: 发送保活命令
- **输入参数: 
+ **输入参数:
  **     ctx: 全局信息
  **     ssvr: Snd线程对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **     因发送KeepAlive请求时，说明链路空闲时间较长，
  **     因此发送数据时，不用判断EAGAIN的情况是否存在。
  **作    者: # Qifeng.zou # 2015.01.14 #
@@ -510,8 +509,8 @@ static int sdtp_ssvr_kpalive_req(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
     sdtp_snap_t *send = &ssvr->sck.send[SDTP_SNAP_SHOT_SYS_DATA];
 
     /* 1. 上次发送保活请求之后 仍未收到应答 */
-    if ((sck->fd < 0) 
-        || (SDTP_KPALIVE_STAT_SENT == sck->kpalive)) 
+    if ((sck->fd < 0)
+        || (SDTP_KPALIVE_STAT_SENT == sck->kpalive))
     {
         CLOSE(sck->fd);
         sdtp_snap_reset(send);
@@ -551,13 +550,13 @@ static int sdtp_ssvr_kpalive_req(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
 /******************************************************************************
  **函数名称: sdtp_ssvr_get_curr
  **功    能: 获取当前发送线程的上下文
- **输入参数: 
+ **输入参数:
  **     ssvr: 发送服务对象
  **     conf: 配置信息
  **输出参数: NONE
  **返    回: Address of sndsvr
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
 static sdtp_ssvr_t *sdtp_ssvr_get_curr(sdtp_sctx_t *ctx)
@@ -579,15 +578,15 @@ static sdtp_ssvr_t *sdtp_ssvr_get_curr(sdtp_sctx_t *ctx)
 /******************************************************************************
  **函数名称: sdtp_ssvr_timeout_hdl
  **功    能: 超时处理
- **输入参数: 
+ **输入参数:
  **     ctx: 全局信息
  **     ssvr: 发送服务全局信息
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述:
  **     1. 判断是否长时间无数据通信
  **     2. 发送保活数据
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
 static int sdtp_ssvr_timeout_hdl(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
@@ -616,15 +615,15 @@ static int sdtp_ssvr_timeout_hdl(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
 /******************************************************************************
  **函数名称: sdtp_ssvr_recv_proc
  **功    能: 接收网络数据
- **输入参数: 
+ **输入参数:
  **     ctx: 全局信息
  **     ssvr: 发送服务
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述:
  **     1. 接收网络数据
  **     2. 进行数据处理
- **注意事项: 
+ **注意事项:
  **       ------------------------------------------------
  **      | 已处理 |     未处理     |       剩余空间       |
  **       ------------------------------------------------
@@ -696,17 +695,17 @@ static int sdtp_ssvr_recv_proc(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
 /******************************************************************************
  **函数名称: sdtp_ssvr_data_proc
  **功    能: 进行数据处理
- **输入参数: 
+ **输入参数:
  **     ctx: 全局信息
  **     ssvr: 发送服务
  **     sck: 连接对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述:
  **     1. 是否含有完整数据
  **     2. 校验数据合法性
  **     3. 进行数据处理
- **注意事项: 
+ **注意事项:
  **       ------------------------------------------------
  **      | 已处理 |     未处理     |       剩余空间       |
  **       ------------------------------------------------
@@ -739,7 +738,7 @@ static int sdtp_ssvr_data_proc(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, sdtp_ssck_t 
         if (len < mesg_len)
         {
         LEN_NOT_ENOUGH:
-            if (recv->iptr == recv->end) 
+            if (recv->iptr == recv->end)
             {
                 /* 防止OverWrite的情况发生 */
                 if ((recv->optr - recv->addr) < (recv->end - recv->iptr))
@@ -791,15 +790,15 @@ static int sdtp_ssvr_data_proc(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, sdtp_ssck_t 
 /******************************************************************************
  **函数名称: sdtp_ssvr_recv_cmd
  **功    能: 接收命令数据
- **输入参数: 
+ **输入参数:
  **     ctx: 全局信息
  **     ssvr: 发送服务对象
- **输出参数: 
+ **输出参数:
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述:
  **     1. 接收命令
  **     2. 处理命令
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
 static int sdtp_ssvr_recv_cmd(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
@@ -822,13 +821,13 @@ static int sdtp_ssvr_recv_cmd(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
 /******************************************************************************
  **函数名称: sdtp_ssvr_proc_cmd
  **功    能: 命令处理
- **输入参数: 
+ **输入参数:
  **     ssvr: 发送服务对象
  **     cmd: 接收到的命令信息
- **输出参数: 
+ **输出参数:
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
 static int sdtp_ssvr_proc_cmd(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, const sdtp_cmd_t *cmd)
@@ -858,15 +857,15 @@ static int sdtp_ssvr_proc_cmd(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, const sdtp_cm
 /******************************************************************************
  **函数名称: sdtp_ssvr_fill_send_buff
  **功    能: 填充发送缓冲区
- **输入参数: 
+ **输入参数:
  **     ssvr: 发送服务
  **     sck: 连接对象
- **输出参数: 
+ **输出参数:
  **返    回: 需要发送的数据长度
- **实现描述: 
+ **实现描述:
  **     1. 从消息链表取数据
  **     2. 从发送队列取数据
- **注意事项: 
+ **注意事项:
  **       ------------------------------------------------
  **      | 已处理 |     未处理     |       剩余空间       |
  **       ------------------------------------------------
@@ -927,16 +926,16 @@ static int sdtp_ssvr_fill_send_buff(sdtp_ssvr_t *ssvr, sdtp_ssck_t *sck)
 /******************************************************************************
  **函数名称: sdtp_ssvr_send_data
  **功    能: 发送系统消息
- **输入参数: 
+ **输入参数:
  **     ctx: 全局信息
  **     ssvr: 发送服务
- **输出参数: 
+ **输出参数:
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述:
  **     1. 填充发送缓存
  **     2. 发送缓存数据
  **     3. 重置标识量
- **注意事项: 
+ **注意事项:
  **       ------------------------------------------------
  **      | 已发送 |     待发送     |       剩余空间       |
  **       ------------------------------------------------
@@ -999,15 +998,15 @@ static int sdtp_ssvr_send_sys_data(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
 /******************************************************************************
  **函数名称: sdtp_ssvr_send_data
  **功    能: 发送扩展消息
- **输入参数: 
+ **输入参数:
  **     ctx: 全局信息
  **     ssvr: 发送服务
- **输出参数: 
+ **输出参数:
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述:
  **     1. 发送缓存数据
  **     2. 重置标识量
- **注意事项: 
+ **注意事项:
  **       ------------------------------------------------
  **      | 已发送 |     待发送     |       剩余空间       |
  **       ------------------------------------------------
@@ -1055,12 +1054,12 @@ static int sdtp_ssvr_send_exp_data(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
 /******************************************************************************
  **函数名称: sdtp_ssvr_send_data
  **功    能: 发送数据的请求处理
- **输入参数: 
+ **输入参数:
  **     ctx: 全局信息
  **     ssvr: 发送服务
- **输出参数: 
+ **输出参数:
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述:
  **作    者: # Qifeng.zou # 2015.04.11 #
  ******************************************************************************/
 static int sdtp_ssvr_send_data(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
@@ -1078,13 +1077,13 @@ static int sdtp_ssvr_send_data(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
 /******************************************************************************
  **函数名称: sdtp_ssvr_clear_mesg
  **功    能: 清空发送消息
- **输入参数: 
+ **输入参数:
  **     ssvr: 发送服务
  **     sck: 连接对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 依次取出每条消息, 并释放所占有的空间
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.01.16 #
  ******************************************************************************/
 static int sdtp_ssvr_clear_mesg(sdtp_ssvr_t *ssvr)
@@ -1108,14 +1107,14 @@ static int sdtp_ssvr_clear_mesg(sdtp_ssvr_t *ssvr)
 /******************************************************************************
  **函数名称: sdtp_ssvr_sys_mesg_proc
  **功    能: 系统消息的处理
- **输入参数: 
+ **输入参数:
  **     ctx: 全局信息
  **     ssvr: 发送服务
  **     sck: 连接对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 根据消息类型调用对应的处理接口
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.01.16 #
  ******************************************************************************/
 static int sdtp_ssvr_sys_mesg_proc(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, sdtp_ssck_t *sck, void *addr)
@@ -1141,14 +1140,14 @@ static int sdtp_ssvr_sys_mesg_proc(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, sdtp_ssc
             return SDTP_ERR;
         }
     }
-    
+
     return SDTP_OK;
 }
 
 /******************************************************************************
  **函数名称: sdtp_ssvr_exp_mesg_proc
  **功    能: 自定义消息的处理
- **输入参数: 
+ **输入参数:
  **     ctx: 全局信息
  **     ssvr: 发送服务
  **     sck: 连接对象
@@ -1156,7 +1155,7 @@ static int sdtp_ssvr_sys_mesg_proc(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, sdtp_ssc
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 将自定义消息放入工作队列中, 一次只放入一条数据
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.05.19 #
  ******************************************************************************/
 static int sdtp_ssvr_exp_mesg_proc(
@@ -1172,7 +1171,7 @@ static int sdtp_ssvr_exp_mesg_proc(
     idx = rand() % ctx->conf.work_thd_num;
 
     /* > 验证长度 */
-    len = SDTP_DATA_TOTAL_LEN(head); 
+    len = SDTP_DATA_TOTAL_LEN(head);
     if ((int)(len + sizeof(int)) > queue_size(ctx->recvq[0]))
     {
         ++ssvr->drop_total;
@@ -1211,13 +1210,13 @@ static int sdtp_ssvr_exp_mesg_proc(
 /******************************************************************************
  **函数名称: sdtp_link_auth_req
  **功    能: 发起链路鉴权请求
- **输入参数: 
+ **输入参数:
  **     ctx: 全局信息
  **     ssvr: 发送服务
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 将鉴权请求放入发送队列中
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.05.22 #
  ******************************************************************************/
 static int sdtp_link_auth_req(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
@@ -1248,7 +1247,7 @@ static int sdtp_link_auth_req(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
 
     /* > 设置鉴权信息 */
     link_auth_req = addr + sizeof(sdtp_header_t);
-    
+
     link_auth_req->devid = htonl(ctx->conf.devid);
     snprintf(link_auth_req->usr, sizeof(link_auth_req->usr), "%s", ctx->conf.auth.usr);
     snprintf(link_auth_req->passwd, sizeof(link_auth_req->passwd), "%s", ctx->conf.auth.passwd);
@@ -1268,7 +1267,7 @@ static int sdtp_link_auth_req(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
 /******************************************************************************
  **函数名称: sdtp_link_auth_rep_hdl
  **功    能: 链路鉴权请求应答的处理
- **输入参数: 
+ **输入参数:
  **     ctx: 全局信息
  **     ssvr: 发送服务
  **     sck: 连接对象
@@ -1276,7 +1275,7 @@ static int sdtp_link_auth_req(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 判断鉴权成功还是失败
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.05.22 #
  ******************************************************************************/
 static int sdtp_link_auth_rep_hdl(
