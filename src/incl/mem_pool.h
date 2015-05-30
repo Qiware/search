@@ -49,14 +49,7 @@ typedef struct _mem_pool_t
     size_t               max;
     struct _mem_pool_t   *current;
     mem_pool_large_t     *large;
-    mem_pool_cleanup_t   *cleanup;
 } mem_pool_t;
-
-typedef struct
-{
-    int              fd;
-    u_char               *name;
-} mem_pool_cleanup_file_t;
 
 mem_pool_t *mem_pool_creat(size_t size);
 void mem_pool_destroy(mem_pool_t *pool);
@@ -69,8 +62,4 @@ void *mem_pool_mem_align(mem_pool_t *pool, size_t size, size_t alignment);
 int mem_pool_dealloc(mem_pool_t *pool, void *p);
 int _mem_pool_dealloc(mem_pool_t *pool, void *p); /* 无效函数 */
 
-mem_pool_cleanup_t *mem_pool_cleanup_add(mem_pool_t *p, size_t size);
-void mem_pool_run_cleanup_file(mem_pool_t *p, int fd);
-void mem_pool_cleanup_file(void *data);
-void mem_pool_delete_file(void *data);
 #endif /* _NGX_PALLOC_H_INCLUDED_ */
