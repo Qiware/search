@@ -239,11 +239,45 @@ static int sdtp_reg_init(sdtp_rctx_t *ctx)
  ******************************************************************************/
 static int _sdtp_recv_init(sdtp_rctx_t *ctx)
 {
+    avl_opt_t opt;
+
     /* > 创建SLAB内存池 */
     ctx->pool = slab_creat_by_calloc(SDTP_CTX_POOL_SIZE);
     if (NULL == ctx->pool)
     {
         log_error(ctx->log, "Initialize slab mem-pool failed!");
+        return SDTP_ERR;
+    }
+
+    /* > 创构建建SCK->DEV的映射表 */
+    memset(&opt, 0, sizeof(opt));
+
+    opt.pool = (void *)ctx->pool;
+    opt.alloc = (mem_alloc_cb_t)slab_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+
+    ctx->sck2dev_map = avl_creat(&opt,
+                (key_cb_t)avl_key_cb_int64,
+                (avl_cmp_cb_t)avl_cmp_cb_int64);
+    if (NULL == ctx->sck2dev_map)
+    {
+        log_error(ctx->log, "Create sck2dev map table failed!");
+        return SDTP_ERR;
+    }
+
+    /* > 创建DEV->SCK的映射表 */
+    memset(&opt, 0, sizeof(opt));
+
+    opt.pool = (void *)ctx->pool;
+    opt.alloc = (mem_alloc_cb_t)slab_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+
+    ctx->dev2sck_map = avl_creat(&opt,
+                (key_cb_t)avl_key_cb_int64,
+                (avl_cmp_cb_t)avl_cmp_cb_int64);
+    if (NULL == ctx->dev2sck_map)
+    {
+        log_error(ctx->log, "Create dev2sck map table failed!");
         return SDTP_ERR;
     }
 
@@ -516,7 +550,7 @@ void sdtp_recvtp_destroy(void *_ctx, void *args)
         CLOSE(rsvr->cmd_sck_id);
 
         /* > 关闭通信套接字 */
-        sdtp_rsvr_del_all_conn_hdl(rsvr);
+        sdtp_rsvr_del_all_conn_hdl(ctx, rsvr);
 
         slab_destroy(rsvr->pool);
     }

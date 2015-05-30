@@ -8,6 +8,7 @@
 #include "comm.h"
 #include "list2.h"
 #include "queue.h"
+#include "avl_tree.h"
 #include "sdtp_cmd.h"
 #include "sdtp_comm.h"
 #include "shm_queue.h"
@@ -28,8 +29,6 @@
 /* 发送队列的共享内存KEY路径 */
 #define sdtp_sendq_shm_path(conf, path) \
     snprintf(path, sizeof(path), "../temp/sdtp/recv/%s/%s_sendq.usck", conf->name, conf->name)
-
-
 
 /* 配置信息 */
 typedef struct
@@ -55,13 +54,15 @@ typedef struct
     int cmd_sck_id;                     /* 命令套接字 */
     int lsn_sck_id;                     /* 侦听套接字 */
 
-    uint64_t total;                     /* 连接请求总数 */
+    uint64_t serial;                     /* 连接请求序列 */
 } sdtp_rlsn_t;
 
 /* 套接字信息 */
 typedef struct _sdtp_rsck_t
 {
     int fd;                             /* 套接字ID */
+    uint64_t serial;                    /* 套接字序列号 */
+
     time_t ctm;                         /* 创建时间 */
     time_t rdtm;                        /* 最近读取时间 */
     time_t wrtm;                        /* 最近写入时间 */
@@ -76,6 +77,25 @@ typedef struct _sdtp_rsck_t
 
     uint64_t recv_total;                /* 接收的数据条数 */
 } sdtp_rsck_t;
+
+/* SCK->DEV的映射 */
+typedef struct
+{
+    uint64_t sck_serial;                /* 套接字序列号(主键) */
+
+    int devid;                          /* 设备ID */
+    int rsvr_idx;                       /* 接收服务的索引 */
+} sdtp_sck2dev_item_t;
+
+/* DEV->SCK的映射 */
+typedef struct
+{
+    int devid;                          /* 设备ID(主键) */
+    
+    list_t *list;                       /* SCK信息列表 */
+} sdtp_dev2sck_item_t;
+
+
 
 /* 接收对象 */
 typedef struct
@@ -129,6 +149,12 @@ typedef struct
     shm_queue_t *shm_sendq;             /* 发送队列
                                            注: 外部接口首先将要发送的数据放入
                                            此队列, 再从此队列分发到不同的线程队列 */
+
+    pthread_rwlock_t sck2dev_map_lock;  /* 读写锁: 套接字->DEV的映射表 */
+    avl_tree_t *sck2dev_map;            /* 套接字->DEV的映射表(以sck_serial为主键)
+                                           (注: 由于套接字连上基本就不会断开， 因此选择平衡二叉树) */
+    pthread_rwlock_t dev2sck_map_lock;  /* 读写锁: 套接字->DEV的映射表 */
+    avl_tree_t *dev2sck_map;            /* DEV->套接字的映射表(以devid为主键) */
 } sdtp_rctx_t;
 
 /* 外部接口 */
@@ -149,7 +175,7 @@ int sdtp_rsvr_init(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, int tidx);
 void *sdtp_rwrk_routine(void *_ctx);
 int sdtp_rwrk_init(sdtp_rctx_t *ctx, sdtp_worker_t *worker, int tidx);
 
-void sdtp_rsvr_del_all_conn_hdl(sdtp_rsvr_t *rsvr);
-
+void sdtp_rsvr_del_all_conn_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr);
 int sdtp_cmd_to_rsvr(sdtp_rctx_t *ctx, int cmd_sck_id, const sdtp_cmd_t *cmd, int idx);
+
 #endif /*__SDTP_RECV_H__*/

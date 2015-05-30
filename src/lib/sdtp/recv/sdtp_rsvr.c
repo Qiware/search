@@ -35,7 +35,7 @@ static int sdtp_rsvr_cmd_proc_req(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, int rqid)
 static int sdtp_rsvr_cmd_proc_all_req(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr);
 
 static int sdtp_rsvr_add_conn_hdl(sdtp_rsvr_t *rsvr, sdtp_cmd_add_sck_t *req);
-static int sdtp_rsvr_del_conn_hdl(sdtp_rsvr_t *rsvr, list2_node_t *node);
+static int sdtp_rsvr_del_conn_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, list2_node_t *node);
 
 static int sdtp_rsvr_fill_send_buff(sdtp_rsvr_t *rsvr, sdtp_rsck_t *sck);
 static int sdtp_rsvr_clear_mesg(sdtp_rsvr_t *rsvr, sdtp_rsck_t *sck);
@@ -70,7 +70,7 @@ static int sdtp_rsvr_queue_alloc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr);
  **注意事项: 如果超时未接收或发送数据，则关闭连接!
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static void sdtp_rsvr_set_rdset(sdtp_rsvr_t *rsvr)
+static void sdtp_rsvr_set_rdset(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr)
 {
     sdtp_rsck_t *curr;
     list2_node_t *node, *next, *tail;
@@ -96,11 +96,11 @@ static void sdtp_rsvr_set_rdset(sdtp_rsvr_t *rsvr)
 
             if (node == tail)
             {
-                sdtp_rsvr_del_conn_hdl(rsvr, node);
+                sdtp_rsvr_del_conn_hdl(ctx, rsvr, node);
                 break;
             }
             next = node->next;
-            sdtp_rsvr_del_conn_hdl(rsvr, node);
+            sdtp_rsvr_del_conn_hdl(ctx, rsvr, node);
             node = next;
             continue;
         }
@@ -198,7 +198,7 @@ void *sdtp_rsvr_routine(void *_ctx)
     for (;;)
     {
         /* 2. 等待事件通知 */
-        sdtp_rsvr_set_rdset(rsvr);
+        sdtp_rsvr_set_rdset(ctx, rsvr);
         sdtp_rsvr_set_wrset(rsvr);
 
         timeout.tv_sec = 30;
@@ -390,11 +390,11 @@ static int sdtp_rsvr_trav_recv(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr)
                 log_error(rsvr->log, "Recv proc failed! fd:%d ip:%s", curr->fd, curr->ipaddr);
                 if (node == tail)
                 {
-                    sdtp_rsvr_del_conn_hdl(rsvr, node);
+                    sdtp_rsvr_del_conn_hdl(ctx, rsvr, node);
                     break;
                 }
                 next = node->next;
-                sdtp_rsvr_del_conn_hdl(rsvr, node);
+                sdtp_rsvr_del_conn_hdl(ctx, rsvr, node);
                 node = next;
                 continue;
             }
@@ -483,7 +483,7 @@ static int sdtp_rsvr_trav_send(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr)
 
                     log_error(rsvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
 
-                    sdtp_rsvr_del_conn_hdl(rsvr, node);
+                    sdtp_rsvr_del_conn_hdl(ctx, rsvr, node);
                     return SDTP_ERR;
                 }
 
@@ -918,12 +918,12 @@ static int sdtp_rsvr_event_timeout_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr)
             /* 删除连接 */
             if (node == tail)
             {
-                sdtp_rsvr_del_conn_hdl(rsvr, node);
+                sdtp_rsvr_del_conn_hdl(ctx, rsvr, node);
                 break;
             }
 
             next = node->next;
-            sdtp_rsvr_del_conn_hdl(rsvr, node);
+            sdtp_rsvr_del_conn_hdl(ctx, rsvr, node);
             node = next;
             continue;
         }
@@ -1000,6 +1000,7 @@ static int sdtp_rsvr_link_auth_req_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp
     int flag;
     void *addr;
     sdtp_header_t *head;
+    sdtp_sck2dev_item_t *item;
     sdtp_snap_t *recv = &sck->recv;
     sdtp_link_auth_req_t *link_auth_req;
     sdtp_link_auth_rep_t *link_auth_rep;
@@ -1013,15 +1014,37 @@ static int sdtp_rsvr_link_auth_req_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp
     if (0 != strcmp(link_auth_req->usr, ctx->conf.auth.usr)
         || 0 != strcmp(link_auth_req->passwd, ctx->conf.auth.passwd))
     {
+        flag = SDTP_LINK_AUTH_FAIL;
+
         log_error(rsvr->log, "Link auth failed! devid:%d usr:%s passwd:%s",
                 link_auth_req->devid, link_auth_req->usr, link_auth_req->passwd);
-        flag = SDTP_LINK_AUTH_FAIL;
     }
     else
     {
+        flag = SDTP_LINK_AUTH_SUCC;
+
         log_debug(rsvr->log, "Link auth success! devid:%d usr:%s passwd:%s",
                 link_auth_req->devid, link_auth_req->usr, link_auth_req->passwd);
-        flag = SDTP_LINK_AUTH_SUCC;
+
+        /* > 插入DEV与SCK的映射 */
+        item = slab_alloc(ctx->pool, sizeof(sdtp_sck2dev_item_t));
+        if (NULL == item)
+        {
+            log_error(rsvr->log, "Alloc memory from slab failed!");
+            return SDTP_ERR;
+        }
+
+        item->sck_serial = sck->serial;
+        item->devid = link_auth_req->devid;
+        item->rsvr_idx = rsvr->tidx;
+
+        if (avl_insert(ctx->sck2dev_map, &item->sck_serial, sizeof(item->sck_serial), (void *)item))
+        {
+            log_error(rsvr->log, "Insert into sck2dev table failed! fd:%d serial:%ld devid:%d",
+                    sck->fd, sck->serial, link_auth_req->devid);
+            slab_dealloc(ctx->pool, item);
+            return SDTP_ERR;
+        }
     }
 
     sck->auth_succ = flag;
@@ -1085,6 +1108,7 @@ static int sdtp_rsvr_add_conn_hdl(sdtp_rsvr_t *rsvr, sdtp_cmd_add_sck_t *req)
     }
 
     sck->fd = req->sckid;
+    sck->serial = req->sck_serial;
     sck->ctm = time(NULL);
     sck->rdtm = sck->ctm;
     sck->wrtm = sck->ctm;
@@ -1166,16 +1190,24 @@ static int sdtp_rsvr_add_conn_hdl(sdtp_rsvr_t *rsvr, sdtp_cmd_add_sck_t *req)
  **注意事项: 释放接收缓存和发送缓存空间!
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int sdtp_rsvr_del_conn_hdl(sdtp_rsvr_t *rsvr, list2_node_t *node)
+static int sdtp_rsvr_del_conn_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, list2_node_t *node)
 {
+    sdtp_sck2dev_item_t *item;
     sdtp_rsck_t *curr = (sdtp_rsck_t *)node->data;
 
-    /* 1. 从链表剔除结点 */
+    /* > 从链表剔除结点 */
     list2_delete(&rsvr->conn_list, node);
 
     slab_dealloc(rsvr->pool, node);
 
-    /* 2. 释放数据空间 */
+    /* > 从SCK<->DEV映射表中剔除 */
+    avl_delete(ctx->sck2dev_map, &curr->serial, sizeof(curr->serial), (void **)&item);
+    if (NULL != item)
+    {
+        slab_dealloc(ctx->pool, item);
+    }
+
+    /* > 释放数据空间 */
     CLOSE(curr->fd);
 
     FREE(curr->recv.addr);
@@ -1200,7 +1232,7 @@ static int sdtp_rsvr_del_conn_hdl(sdtp_rsvr_t *rsvr, list2_node_t *node)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-void sdtp_rsvr_del_all_conn_hdl(sdtp_rsvr_t *rsvr)
+void sdtp_rsvr_del_all_conn_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr)
 {
     list2_node_t *node, *next, *tail;
 
@@ -1214,12 +1246,12 @@ void sdtp_rsvr_del_all_conn_hdl(sdtp_rsvr_t *rsvr)
     {
         if (node == tail)
         {
-            sdtp_rsvr_del_conn_hdl(rsvr, node);
+            sdtp_rsvr_del_conn_hdl(ctx, rsvr, node);
             break;
         }
 
         next = node->next;
-        sdtp_rsvr_del_conn_hdl(rsvr, node);
+        sdtp_rsvr_del_conn_hdl(ctx, rsvr, node);
         node = next;
     }
 
