@@ -63,7 +63,7 @@ void *sdtp_disp_routine(void *_ctx)
         /* > 获取发送队列 */
         route = (mesg_route_t *)addr;
 
-        idx = sdtp_disp_query_by_dest(ctx, route->dest_devid);
+        idx = sdtp_dev_svr_map_rand(ctx, route->dest_devid);
 
         /* > 获取发送队列 */
         addr2 = queue_malloc(ctx->sendq[idx]);

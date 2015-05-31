@@ -61,6 +61,7 @@ typedef struct
 typedef struct _sdtp_rsck_t
 {
     int fd;                             /* 套接字ID */
+    int devid;                          /* 设备ID */
     uint64_t serial;                    /* 套接字序列号 */
 
     time_t ctm;                         /* 创建时间 */
@@ -78,21 +79,12 @@ typedef struct _sdtp_rsck_t
     uint64_t recv_total;                /* 接收的数据条数 */
 } sdtp_rsck_t;
 
-/* SCK->DEV的映射 */
+/* DEV->SVR的映射 */
 typedef struct
 {
-    uint64_t sck_serial;                /* 套接字序列号(主键) */
-
-    int devid;                          /* 设备ID */
-    int rsvr_idx;                       /* 接收服务的索引 */
-} sdtp_sck2dev_item_t;
-
-/* DEV->SCK的映射 */
-typedef struct
-{
-    uint64_t sck_serial;                /* 设备ID(主键) */
-    int rsvr_idx;                       /* 接收服务的索引 */
-} sdtp_dev2sck_item_t;
+    int rsvr_idx;                       /* 接收服务的索引(链表主键) */
+    int count;                          /* 引用计数 */
+} sdtp_dev_svr_item_t;
 
 /* 接收对象 */
 typedef struct
@@ -147,11 +139,8 @@ typedef struct
                                            注: 外部接口首先将要发送的数据放入
                                            此队列, 再从此队列分发到不同的线程队列 */
 
-    pthread_rwlock_t sck2dev_map_lock;  /* 读写锁: 套接字->DEV的映射表 */
-    avl_tree_t *sck2dev_map;            /* 套接字->DEV的映射表(以sck_serial为主键)
-                                           (注: 由于套接字连上基本就不会断开， 因此选择平衡二叉树) */
-    pthread_rwlock_t dev2sck_map_lock;  /* 读写锁: 套接字->DEV的映射表 */
-    avl_tree_t *dev2sck_map;            /* DEV->套接字的映射表(以devid为主键) */
+    pthread_rwlock_t dev_svr_map_lock;  /* 读写锁: DEV->SVR映射表 */
+    avl_tree_t *dev_svr_map;            /* DEV->SVR的映射表(以devid为主键) */
 } sdtp_rctx_t;
 
 /* 外部接口 */
@@ -177,8 +166,9 @@ void sdtp_rsvr_del_all_conn_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr);
 int sdtp_cmd_to_rsvr(sdtp_rctx_t *ctx, int cmd_sck_id, const sdtp_cmd_t *cmd, int idx);
 int sdtp_link_auth_check(sdtp_rctx_t *ctx, sdtp_link_auth_req_t *link_auth_req);
 
-int sdtp_sck_dev_map_init(sdtp_rctx_t *ctx);
-int sdtp_sck_dev_map_add(sdtp_rctx_t *ctx, int rsvr_idx, sdtp_rsck_t *sck, sdtp_link_auth_req_t *link_auth_req);
-int sdtp_sck_dev_map_del(sdtp_rctx_t *ctx, uint64_t sck_serial);
+int sdtp_dev_svr_map_init(sdtp_rctx_t *ctx);
+int sdtp_dev_svr_map_add(sdtp_rctx_t *ctx, int devid, int rsvr_idx);
+int sdtp_dev_svr_map_rand(sdtp_rctx_t *ctx, int devid);
+int sdtp_dev_svr_map_del(sdtp_rctx_t *ctx, int devid, int rsvr_idx);
 
 #endif /*__SDTP_RECV_H__*/

@@ -247,8 +247,8 @@ static int _sdtp_recv_init(sdtp_rctx_t *ctx)
         return SDTP_ERR;
     }
 
-    /* > 构建SCK与DEV映射表 */
-    if (sdtp_sck_dev_map_init(ctx))
+    /* > 构建DEV->SVR映射表 */
+    if (sdtp_dev_svr_map_init(ctx))
     {
         log_error(ctx->log, "Initialize sck-dev map table failed!");
         return SDTP_ERR;

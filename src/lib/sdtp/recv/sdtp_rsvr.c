@@ -1060,8 +1060,10 @@ static int sdtp_rsvr_link_auth_req_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp
     sck->auth_succ = sdtp_link_auth_check(ctx, link_auth_req);
     if (sck->auth_succ)
     {
+        sck->devid = link_auth_req->devid;
+
         /* > 插入DEV与SCK的映射 */
-        if (sdtp_sck_dev_map_add(ctx, rsvr->tidx, sck, link_auth_req))
+        if (sdtp_dev_svr_map_add(ctx, link_auth_req->devid, rsvr->tidx))
         {
             log_error(rsvr->log, "Insert into sck2dev table failed! fd:%d serial:%ld devid:%d",
                     sck->fd, sck->serial, link_auth_req->devid);
@@ -1100,6 +1102,7 @@ static int sdtp_rsvr_add_conn_hdl(sdtp_rsvr_t *rsvr, sdtp_cmd_add_sck_t *req)
     }
 
     sck->fd = req->sckid;
+    sck->devid = -1;
     sck->serial = req->sck_serial;
     sck->ctm = time(NULL);
     sck->rdtm = sck->ctm;
@@ -1192,7 +1195,7 @@ static int sdtp_rsvr_del_conn_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, list2_nod
     slab_dealloc(rsvr->pool, node);
 
     /* > 从SCK<->DEV映射表中剔除 */
-    sdtp_sck_dev_map_del(ctx, curr->serial);
+    sdtp_dev_svr_map_del(ctx, curr->devid, rsvr->tidx);
 
     /* > 释放数据空间 */
     CLOSE(curr->fd);
