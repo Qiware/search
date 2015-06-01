@@ -9,15 +9,15 @@
 #include "comm.h"
 #include "kw_tree.h"
 
-static void kwt_node_free(kwt_tree_t *tree, kwt_node_t *node, void *mempool, mem_dealloc_cb_t dealloc);
+static void kwt_node_free(kwt_tree_t *kwt, kwt_node_t *node, void *mempool, mem_dealloc_cb_t dealloc);
 
 /******************************************************************************
  **函数名称: kwt_creat
- **功    能: 创建KW树
+ **功    能: 创建键树
  **输入参数:
  **     opt: 选项
  **输出参数: NONE
- **返    回: KW树
+ **返    回: 键树
  **实现描述:
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.12 #
@@ -25,40 +25,40 @@ static void kwt_node_free(kwt_tree_t *tree, kwt_node_t *node, void *mempool, mem
 kwt_tree_t *kwt_creat(kwt_opt_t *opt)
 {
     int max = 256;
-    kwt_tree_t *tree;
+    kwt_tree_t *kwt;
 
     if (!ISPOWEROF2(max)) { return NULL; }
 
     /* 1. 创建对象 */
-    tree = (kwt_tree_t *)opt->alloc(opt->pool, sizeof(kwt_tree_t));
-    if (NULL == tree)
+    kwt = (kwt_tree_t *)opt->alloc(opt->pool, sizeof(kwt_tree_t));
+    if (NULL == kwt)
     {
         return NULL;
     }
 
-    tree->pool = opt->pool;
-    tree->alloc = opt->alloc;
-    tree->dealloc = opt->dealloc;
+    kwt->pool = opt->pool;
+    kwt->alloc = opt->alloc;
+    kwt->dealloc = opt->dealloc;
 
     /* 2. 创建结点 */
-    tree->max = max;
-    tree->root = (kwt_node_t *)tree->alloc(tree->pool, max * sizeof(kwt_node_t));
-    if (NULL == tree->root)
+    kwt->max = max;
+    kwt->root = (kwt_node_t *)kwt->alloc(kwt->pool, max * sizeof(kwt_node_t));
+    if (NULL == kwt->root)
     {
-        tree->dealloc(tree->pool, tree);
+        kwt->dealloc(kwt->pool, kwt);
         return NULL;
     }
 
-    memset(tree->root, 0, sizeof(kwt_node_t));
+    memset(kwt->root, 0, sizeof(kwt_node_t));
 
-    return tree;
+    return kwt;
 }
 
 /******************************************************************************
  **函数名称: kwt_insert
  **功    能: 插入字符串
  **输入参数:
- **     tree: KW树
+ **     kwt: 键树
  **     str: 字串(各字符取值：0x00~0XFF)
  **     len: 字串长度
  **     data: 附加数据
@@ -68,10 +68,10 @@ kwt_tree_t *kwt_creat(kwt_opt_t *opt)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.12 #
  ******************************************************************************/
-int kwt_insert(kwt_tree_t *tree, const u_char *str, int len, void *data)
+int kwt_insert(kwt_tree_t *kwt, const u_char *str, int len, void *data)
 {
     int i, max = len - 1;
-    kwt_node_t *node = tree->root;
+    kwt_node_t *node = kwt->root;
 
     if (len <= 0) { return -1; }
 
@@ -81,7 +81,7 @@ int kwt_insert(kwt_tree_t *tree, const u_char *str, int len, void *data)
         node->key = str[i];
         if ((i < max) && (NULL == node->child))
         {
-            node->child = (kwt_node_t *)tree->alloc(tree->pool, tree->max * sizeof(kwt_node_t));
+            node->child = (kwt_node_t *)kwt->alloc(kwt->pool, kwt->max * sizeof(kwt_node_t));
             if (NULL == node->child)
             {
                 return -1;
@@ -104,7 +104,7 @@ int kwt_insert(kwt_tree_t *tree, const u_char *str, int len, void *data)
  **函数名称: kwt_query
  **功    能: 搜索字符串
  **输入参数:
- **     tree: KW树
+ **     kwt: 键树
  **     str: 字串(各字符取值：0x00~0XFF)
  **     len: 字串长度
  **输出参数:
@@ -114,12 +114,12 @@ int kwt_insert(kwt_tree_t *tree, const u_char *str, int len, void *data)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.12 #
  ******************************************************************************/
-int kwt_query(kwt_tree_t *tree, const u_char *str, int len, void **data)
+int kwt_query(kwt_tree_t *kwt, const u_char *str, int len, void **data)
 {
     int i, max = len - 1;
-    kwt_node_t *node = tree->root;
+    kwt_node_t *node = kwt->root;
 
-    /* 1. 搜索KW树 */
+    /* 1. 搜索键树 */
     for (i=0; i<len; ++i)
     {
         node += str[i];
@@ -142,10 +142,84 @@ int kwt_query(kwt_tree_t *tree, const u_char *str, int len, void **data)
 }
 
 /******************************************************************************
- **函数名称: kwt_destroy
- **功    能: 销毁KW树
+ **函数名称: _kwt_print
+ **功    能: 打印键树
  **输入参数:
- **     tree: KW树
+ **     kwt: 键树
+ **输出参数:
+ **返    回: VOID
+ **实现描述: 遍历打印树中所有结点
+ **注意事项:
+ **作    者: # Qifeng.zou # 2015.06.01 17:00:37 #
+ ******************************************************************************/
+void _kwt_print(kwt_tree_t *kwt, kwt_node_t *node, int depth)
+{
+    int i, n;
+    kwt_node_t *item = node;
+
+    for (i=0; i<kwt->max; ++i, ++item)
+    {
+        if (0 == item->key)
+        {
+            continue;
+        }
+
+        for (n=0; n<depth; ++n)
+        {
+            fprintf(stderr, "| ");
+        }
+        fprintf(stderr, "|%c\n", item->key);
+
+        if (NULL == item->child)
+        {
+            continue;
+        }
+
+        _kwt_print(kwt, item->child, depth+1);
+    }
+}
+
+/******************************************************************************
+ **函数名称: kwt_print
+ **功    能: 打印键树
+ **输入参数:
+ **     kwt: 键树
+ **输出参数:
+ **返    回: VOID
+ **实现描述: 遍历打印树中所有结点
+ **注意事项:
+ **作    者: # Qifeng.zou # 2015.06.01 17:00:37 #
+ ******************************************************************************/
+void kwt_print(kwt_tree_t *kwt)
+{
+    int i;
+    kwt_node_t *node = kwt->root;
+
+    fprintf(stderr, "\n\n");
+
+    for (i=0; i<kwt->max; ++i, ++node)
+    {
+        if (0 == node->key)
+        {
+            continue;
+        }
+
+        fprintf(stderr, " %c\n", node->key);
+
+        if (NULL == node->child)
+        {
+            continue;
+        }
+
+        _kwt_print(kwt, node->child, 1);
+    }
+}
+
+/******************************************************************************
+ **函数名称: kwt_destroy
+ **功    能: 销毁键树
+ **输入参数:
+ **     kwt: 键树
  **     mempool: 附加数据的内存池
  **     dealloc: 释放附加数据空间的毁掉函数
  **输出参数: NONE
@@ -154,22 +228,22 @@ int kwt_query(kwt_tree_t *tree, const u_char *str, int len, void **data)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.12 #
  ******************************************************************************/
-void kwt_destroy(kwt_tree_t *tree, void *mempool, mem_dealloc_cb_t dealloc)
+void kwt_destroy(kwt_tree_t *kwt, void *mempool, mem_dealloc_cb_t dealloc)
 {
-    if (NULL != tree->root)
+    if (NULL != kwt->root)
     {
-        kwt_node_free(tree, tree->root, mempool, dealloc);
+        kwt_node_free(kwt, kwt->root, mempool, dealloc);
     }
 
-    tree->dealloc(tree->pool, tree);
+    kwt->dealloc(kwt->pool, kwt);
 }
 
 /******************************************************************************
  **函数名称: kwt_node_free
- **功    能: 销毁Trie结点
+ **功    能: 销毁键树结点
  **输入参数:
- **     tree: KW树
- **     node: KW树结点
+ **     kwt: 键树
+ **     node: 键树结点
  **     mempool: 附加数据的内存池
  **     dealloc: 释放附加数据空间的毁掉函数
  **输出参数: NONE
@@ -178,20 +252,20 @@ void kwt_destroy(kwt_tree_t *tree, void *mempool, mem_dealloc_cb_t dealloc)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.12 #
  ******************************************************************************/
-static void kwt_node_free(kwt_tree_t *tree, kwt_node_t *node, void *mempool, mem_dealloc_cb_t dealloc)
+static void kwt_node_free(kwt_tree_t *kwt, kwt_node_t *node, void *mempool, mem_dealloc_cb_t dealloc)
 {
     int i;
 
-    for (i=0;i<tree->max; ++i)
-    {
+    for (i=0;i<kwt->max; ++i)
+    {   
         if (NULL == node[i].child)
         {
             continue;
         }
         dealloc(mempool, node[i].data);
-        kwt_node_free(tree, node[i].child, mempool, dealloc);
+        kwt_node_free(kwt, node[i].child, mempool, dealloc);
         node[i].child = NULL;
     }
 
-    tree->dealloc(tree->pool, node);
+    kwt->dealloc(kwt->pool, node);
 }

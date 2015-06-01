@@ -1,15 +1,116 @@
 #include "kw_tree.h"
+#include "xml_tree.h"
 
 #define DATA_LEN (10)
 
+static int proto_load_conf(kwt_tree_t *kwt, const char *path);
+
+/* 初始化日志模块 */
+log_cycle_t *demo_init_log(const char *_path)
+{
+    int level;
+    log_cycle_t *log;
+    char path[FILE_PATH_MAX_LEN];
+
+    level = log_get_level("debug");
+
+    snprintf(path, sizeof(path), "%s.log", _path);
+
+    log = log_init(level, path);
+    if (NULL == log)
+    {
+        fprintf(stderr, "Init log failed! level:%d", level);
+        return NULL;
+    }
+
+    snprintf(path, sizeof(path), "%s.plog", _path);
+
+    plog_init(level, path);
+
+    return log;
+}
+
 int main(int argc, char *argv[])
 {
+    kwt_opt_t opt;
+    kwt_tree_t *kwt;
+
+    demo_init_log(argv[0]);
+
+    opt.pool = (void *)NULL;
+    opt.alloc = (mem_alloc_cb_t)mem_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
+
+    kwt = kwt_creat(&opt);
+    if (NULL == kwt)
+    {
+        fprintf(stderr, "Create keyword-tree failed!");
+        return -1;
+    }
+
+    return proto_load_conf(kwt, argv[1]);
+}
+
+static int proto_load_conf(kwt_tree_t *kwt, const char *path)
+{
+    int count = 0;
+    xml_opt_t opt;
+    xml_tree_t *xml;
+    xml_node_t *protocol, *words, *word, *key;
+
+    opt.pool = (void *)NULL;
+    opt.alloc = (mem_alloc_cb_t)mem_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
+
+    xml = xml_creat(path, &opt);
+    if (NULL == xml)
+    {
+        return -1;
+    }
+
+    protocol = xml_query(xml, ".orphic.protocols.protocol");
+    for (; NULL != protocol; protocol = protocol->next) {
+        words = xml_rquery(xml, protocol, "key-words.words");
+        for (; NULL != words; words = words->next) {
+            word = xml_rquery(xml, words, "word");
+            for (; NULL != word; word = word->next) {
+                key = xml_rquery(xml, word, "value");
+                if (NULL == key) {
+                    assert(0);
+                }
+
+                ++count;
+                if (kwt_insert(kwt, (u_char *)key->value.str, key->value.len, (void *)1))
+                {
+                    assert(0);
+                }
+            }
+        }
+    }
+
+    xml_destroy(xml);
+
+    fprintf(stderr, "count: %d", count);
+    kwt_print(kwt);
+    pause();
+
+    return 0;
+}
+
+int kwt_test(void)
+{
     int i, ret;
+    kwt_opt_t opt;
     kwt_tree_t *kwt;
     char *str[DATA_LEN], *str2;
     char input[1024];
 
-    kwt = kwt_creat();
+    opt.pool = (void *)NULL;
+    opt.alloc = (mem_alloc_cb_t)mem_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
+
+ 
+    kwt = kwt_creat(&opt);
     if (NULL == kwt)
     {
         fprintf(stderr, "Create keyword-tree failed!");
@@ -45,4 +146,5 @@ int main(int argc, char *argv[])
     kwt_destroy(kwt, NULL, mem_dealloc);
 
     return 0;
+
 }

@@ -11,7 +11,7 @@ typedef struct
     mem_dealloc_cb_t dealloc;           /* 释放空间 */
 } kwt_opt_t;
 
-/* KW树的结点 */
+/* 键树的结点 */
 typedef struct _kwt_node_t
 {
     u_char key;                         /* 键值 */
@@ -19,11 +19,11 @@ typedef struct _kwt_node_t
     struct _kwt_node_t *child;          /* 后续节点 */
 } kwt_node_t;
 
-/* KW树 */
+/* 键树 */
 typedef struct
 {
     int max;                            /* 结点个数(必须为2的次方) */
-    kwt_node_t *root;                   /* KW树根结点 */
+    kwt_node_t *root;                   /* 键树根结点 */
 
     /* 选项 */
     void *pool;                         /* 内存池 */
@@ -34,6 +34,7 @@ typedef struct
 kwt_tree_t *kwt_creat(kwt_opt_t *opt);
 int kwt_insert(kwt_tree_t *tree, const u_char *str, int len, void *data);
 int kwt_query(kwt_tree_t *tree, const u_char *str, int len, void **data);
+void kwt_print(kwt_tree_t *kwt);
 void kwt_destroy(kwt_tree_t *tree, void *mempool, mem_dealloc_cb_t dealloc);
 
 #endif /*__KW_TREE_H__*/
