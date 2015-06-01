@@ -24,24 +24,20 @@ static int *kmp_gen_next(char *p, int len)
     }
 
     next[0] = -1;
-    while (j < max)
-    {
+    while (j < max) {
         /* p[k]表示前缀, p[j]表示后缀 */
-        if ((-1 == k) || (p[j] == p[k]))
-        {
+        if ((-1 == k) || (p[j] == p[k])) {
             ++k;
             ++j;
-            if (p[k] != p[j])
-            {
+            next[j] = k;
+            if (p[k] != p[j]) {
                 next[j] = k;
             }
-            else
-            {
+            else {
                 next[j] = next[k];
             }
         }
-        else
-        {
+        else {
             k = next[k];
         }
     }

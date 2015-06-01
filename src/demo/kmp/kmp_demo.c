@@ -8,12 +8,19 @@
  ******************************************************************************/
 #include "kmp.h"
 
-int main(void)
+int main(int argc, char *argv[])
 {
     kmp_t *kmp;
+    char *pat;
     char input[256];
-    char *pat = "abaabcd";
 
+    if (2 != argc)
+    {
+        fprintf(stderr, "Arugment number isn't right!");
+        return -1;
+    }
+
+    pat = argv[1];
     kmp = kmp_creat(pat, strlen(pat));
     if (NULL == kmp)
     {
