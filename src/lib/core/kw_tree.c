@@ -3,7 +3,7 @@
  **
  ** 文件名: kw_tree.c
  ** 版本号: 1.0
- ** 描  述: KW树的实现
+ ** 描  述: 键树的实现
  ** 作  者: # Qifeng.zou # 2015.05.12 #
  ******************************************************************************/
 #include "comm.h"
@@ -35,8 +35,6 @@ kwt_tree_t *kwt_creat(kwt_opt_t *opt)
     {
         return NULL;
     }
-
-    memset(tree, 0, sizeof(kwt_tree_t));
 
     tree->pool = opt->pool;
     tree->alloc = opt->alloc;
@@ -70,7 +68,7 @@ kwt_tree_t *kwt_creat(kwt_opt_t *opt)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.12 #
  ******************************************************************************/
-int kwt_insert(kwt_tree_t *tree, const uchar *str, int len, void *data)
+int kwt_insert(kwt_tree_t *tree, const u_char *str, int len, void *data)
 {
     int i, max = len - 1;
     kwt_node_t *node = tree->root;
@@ -116,7 +114,7 @@ int kwt_insert(kwt_tree_t *tree, const uchar *str, int len, void *data)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.12 #
  ******************************************************************************/
-int kwt_query(kwt_tree_t *tree, const uchar *str, int len, void **data)
+int kwt_query(kwt_tree_t *tree, const u_char *str, int len, void **data)
 {
     int i, max = len - 1;
     kwt_node_t *node = tree->root;

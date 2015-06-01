@@ -2,7 +2,6 @@
 #define __KW_TREE_H__
 
 #include "comm.h"
-#include "type.h"
 
 /* 选项 */
 typedef struct
@@ -15,7 +14,7 @@ typedef struct
 /* KW树的结点 */
 typedef struct _kwt_node_t
 {
-    uchar key;                  /* 键值 */
+    u_char key;                         /* 键值 */
     void *data;                         /* 结点数据 */
     struct _kwt_node_t *child;          /* 后续节点 */
 } kwt_node_t;
@@ -33,8 +32,8 @@ typedef struct
 } kwt_tree_t;
 
 kwt_tree_t *kwt_creat(kwt_opt_t *opt);
-int kwt_insert(kwt_tree_t *tree, const uchar *str, int len, void *data);
-int kwt_query(kwt_tree_t *tree, const uchar *str, int len, void **data);
+int kwt_insert(kwt_tree_t *tree, const u_char *str, int len, void *data);
+int kwt_query(kwt_tree_t *tree, const u_char *str, int len, void **data);
 void kwt_destroy(kwt_tree_t *tree, void *mempool, mem_dealloc_cb_t dealloc);
 
 #endif /*__KW_TREE_H__*/
