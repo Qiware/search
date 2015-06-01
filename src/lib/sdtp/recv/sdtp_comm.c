@@ -312,3 +312,61 @@ int sdtp_dev_svr_map_rand(sdtp_rctx_t *ctx, int devid)
     pthread_rwlock_unlock(&ctx->dev_svr_map_lock);
     return -1;
 }
+
+/******************************************************************************
+ **函数名称: sdtp_shm_sendq_creat
+ **功    能: 创建SHM发送队列
+ **输入参数:
+ **     ctx: 全局对象
+ **输出参数: NONE
+ **返    回: 共享内存队列
+ **实现描述: 通过路径生成KEY，再根据KEY创建共享内存队列
+ **注意事项:
+ **作    者: # Qifeng.zou # 2015.05.20 #
+ ******************************************************************************/
+shm_queue_t *sdtp_shm_sendq_creat(const sdtp_conf_t *conf)
+{
+    key_t key;
+    char path[FILE_NAME_MAX_LEN];
+
+    /* > 通过路径生成KEY */
+    sdtp_sendq_shm_path(conf, path);
+
+    key = shm_ftok(path, 0);
+    if ((key_t)-1 == key)
+    {
+        return NULL;
+    }
+
+    /* > 通过KEY创建共享内存队列 */
+    return shm_queue_creat(key, conf->sendq.max, conf->sendq.size);
+}
+
+/******************************************************************************
+ **函数名称: sdtp_shm_sendq_attach
+ **功    能: 附着SHM发送队列
+ **输入参数:
+ **     ctx: 全局对象
+ **输出参数: NONE
+ **返    回: 共享内存队列
+ **实现描述: 通过路径生成KEY，再根据KEY附着共享内存队列
+ **注意事项:
+ **作    者: # Qifeng.zou # 2015.06.01 #
+ ******************************************************************************/
+shm_queue_t *sdtp_shm_sendq_attach(const sdtp_conf_t *conf)
+{
+    key_t key;
+    char path[FILE_NAME_MAX_LEN];
+
+    /* > 通过路径生成KEY */
+    sdtp_sendq_shm_path(conf, path);
+
+    key = shm_ftok(path, 0);
+    if ((key_t)-1 == key)
+    {
+        return NULL;
+    }
+
+    /* > 通过KEY创建共享内存队列 */
+    return shm_queue_attach(key);
+}

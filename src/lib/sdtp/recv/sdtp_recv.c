@@ -330,45 +330,6 @@ static int sdtp_creat_recvq(sdtp_rctx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: sdtp_creat_shm_sendq
- **功    能: 创建SHM发送队列
- **输入参数:
- **     ctx: 全局对象
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述: 通过路径生成KEY，再根据KEY创建共享内存队列
- **注意事项:
- **作    者: # Qifeng.zou # 2015.05.20 #
- ******************************************************************************/
-static int sdtp_creat_shm_sendq(sdtp_rctx_t *ctx)
-{
-    key_t key;
-    char path[FILE_NAME_MAX_LEN];
-    sdtp_conf_t *conf = &ctx->conf;
-
-    /* > 通过路径生成KEY */
-    sdtp_sendq_shm_path(conf, path);
-
-    key = shm_ftok(path, 0);
-    if ((key_t)-1 == key)
-    {
-        log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return SDTP_ERR;
-    }
-
-    /* > 通过KEY创建共享内存队列 */
-    ctx->shm_sendq = shm_queue_creat(key, conf->sendq.max, conf->sendq.size);
-    if (NULL == ctx->shm_sendq)
-    {
-        log_error(ctx->log, "errmsg:[%d] %s! key:%lu max:%d size:%d",
-                errno, strerror(errno), key, conf->sendq.max, conf->sendq.size);
-        return SDTP_ERR;
-    }
-
-    return SDTP_OK;
-}
-
-/******************************************************************************
  **函数名称: _sdtp_creat_sendq
  **功    能: 创建发送队列
  **输入参数:
@@ -422,7 +383,8 @@ static int _sdtp_creat_sendq(sdtp_rctx_t *ctx)
  ******************************************************************************/
 static int sdtp_creat_sendq(sdtp_rctx_t *ctx)
 {
-    if (sdtp_creat_shm_sendq(ctx))
+    ctx->shm_sendq = sdtp_shm_sendq_creat(&ctx->conf);
+    if (NULL == ctx->shm_sendq)
     {
         log_error(ctx->log, "Create shm-queue failed!");
         return SDTP_ERR;

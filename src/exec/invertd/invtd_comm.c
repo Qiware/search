@@ -178,6 +178,13 @@ invtd_cntx_t *invtd_init(const char *conf_path)
             break;
         }
 
+        ctx->sdtp_rcli = sdtp_rcli_init(&ctx->conf.sdtp);
+        if (NULL == ctx->sdtp_rcli)
+        {
+            log_error(log, "Init sdtp-rcli failed!");
+            break;
+        }
+
         return ctx;
     } while(0);
 
