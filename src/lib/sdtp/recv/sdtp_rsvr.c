@@ -40,6 +40,8 @@ static int sdtp_rsvr_del_conn_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, list2_nod
 static int sdtp_rsvr_fill_send_buff(sdtp_rsvr_t *rsvr, sdtp_rsck_t *sck);
 static int sdtp_rsvr_clear_mesg(sdtp_rsvr_t *rsvr, sdtp_rsck_t *sck);
 
+static int sdtp_rsvr_disp_send_data(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr);
+
 static int sdtp_rsvr_queue_alloc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr);
 #define sdtp_rsvr_queue_push(ctx, rsvr) /* 将输入推入队列 */\
     queue_push(ctx->recvq[rsvr->queue.rqid], rsvr->queue.start)
@@ -127,7 +129,7 @@ static void sdtp_rsvr_set_rdset(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static void sdtp_rsvr_set_wrset(sdtp_rsvr_t *rsvr)
+static void sdtp_rsvr_set_wrset(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr)
 {
     sdtp_rsck_t *curr;
     list2_node_t *node, *tail;
@@ -199,7 +201,7 @@ void *sdtp_rsvr_routine(void *_ctx)
     {
         /* 2. 等待事件通知 */
         sdtp_rsvr_set_rdset(ctx, rsvr);
-        sdtp_rsvr_set_wrset(rsvr);
+        sdtp_rsvr_set_wrset(ctx, rsvr);
 
         timeout.tv_sec = 30;
         timeout.tv_usec = 0;
@@ -613,7 +615,7 @@ static int sdtp_rsvr_data_proc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_rsck_t 
         len = (uint32_t)(recv->iptr - recv->optr);
         if (len >= sizeof(sdtp_header_t))
         {
-            if (ntohl(head->devid) == sck->devid
+            if (sck->devid != (int)ntohl(head->devid)
                 || SDTP_CHECK_SUM != ntohl(head->checksum))
             {
                 log_error(rsvr->log, "Header is invalid! devid:%d Mark:%X/%X type:%d len:%d flag:%d",
@@ -892,6 +894,9 @@ static int sdtp_rsvr_event_timeout_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr)
         sdtp_rsvr_queue_reset(rsvr);
     }
 
+    /* > 将发送队列的数据放入发送链表 */
+    sdtp_rsvr_disp_send_data(ctx, rsvr);
+
     /* > 检测超时连接 */
     node = rsvr->conn_list.head;
     if (NULL == node)
@@ -933,7 +938,7 @@ static int sdtp_rsvr_event_timeout_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr)
         node = node->next;
     }
 
-    /* 2. 重复发送处理命令 */
+    /* > 重复发送处理命令 */
     sdtp_rsvr_cmd_proc_all_req(ctx, rsvr);
 
     return SDTP_OK;
@@ -1425,3 +1430,131 @@ static int sdtp_rsvr_fill_send_buff(sdtp_rsvr_t *rsvr, sdtp_rsck_t *sck)
 
     return SDTP_OK;
 }
+
+/******************************************************************************
+ **函数名称: sdtp_rsvr_conn_list_with_same_devid
+ **功    能: 获取相同的DEVID的连接链表
+ **输入参数:
+ **     sck: 套接字数据
+ **     c: 连接链表
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述:
+ **注意事项:
+ **作    者: # Qifeng.zou # 2015.06.02 #
+ ******************************************************************************/
+typedef struct
+{
+    int devid;                  /* 设备ID */
+    list_t *list;               /* 拥有相同DEVID的套接字链表 */
+} conn_list_with_same_devid_t;
+
+static int sdtp_rsvr_conn_list_with_same_devid(sdtp_rsck_t *sck, conn_list_with_same_devid_t *c)
+{
+    if (sck->devid != c->devid)
+    {
+        return -1;
+    }
+
+    return list_rpush(c->list, sck); /* 注意: 销毁c->list时, 不必释放sck空间 */
+}
+
+/******************************************************************************
+ **函数名称: sdtp_rsvr_disp_send_data
+ **功    能: 分发连接队列中的数据
+ **输入参数:
+ **     ctx: 全局对象
+ **     rsvr: 接收服务
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述:
+ **注意事项:
+ **作    者: # Qifeng.zou # 2015.06.02 #
+ ******************************************************************************/
+static int sdtp_rsvr_disp_send_data(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr)
+{
+    int len;
+    queue_t *sendq;
+    void *data, *addr;
+    sdtp_frwd_t *frwd;
+    list_opt_t opt;
+    sdtp_rsck_t *sck;
+    sdtp_header_t *head;
+    conn_list_with_same_devid_t conn;
+
+    sendq = ctx->sendq[rsvr->tidx];
+
+    while (1)
+    {
+        /* > 弹出队列数据 */
+        data = queue_pop(sendq);
+        if (NULL == data)
+        {
+            break; /* 无数据 */
+        }
+
+        frwd = (sdtp_frwd_t *)data;
+
+        /* > 查找发送连接 */
+        memset(&opt, 0, sizeof(opt));
+
+        opt.pool = (void *)rsvr->pool;
+        opt.alloc = (mem_alloc_cb_t)slab_alloc;
+        opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+
+        conn.devid = frwd->dest;
+        conn.list = list_creat(&opt);
+        if (NULL == conn.list)
+        {
+            queue_dealloc(sendq, data);
+            log_error(rsvr->log, "Create list failed!");
+            continue;
+        }
+
+        list2_trav(&rsvr->conn_list, (list2_trav_cb_t)sdtp_rsvr_conn_list_with_same_devid, &conn);
+        if (0 == conn.list->num)
+        {
+            queue_dealloc(sendq, data);
+            list_destroy(conn.list, NULL, NULL);
+            log_error(rsvr->log, "Didn't find connection by devid [%d]!", conn.devid);
+            continue;
+        }
+
+        sck = (sdtp_rsck_t *)conn.list->head->data; /* TODO: 暂时选择第一个 */
+        
+        /* > 设置发送数据 */
+        len = sizeof(sdtp_header_t) + frwd->length;
+
+        addr = slab_alloc(rsvr->pool, len);
+        if (NULL == addr)
+        {
+            queue_dealloc(sendq, data);
+            list_destroy(conn.list, NULL, NULL);
+            log_error(rsvr->log, "Alloc memory from slab failed!");
+            continue;
+        }
+
+        head = (sdtp_header_t *)addr;
+
+        head->type = frwd->type;
+        head->devid = frwd->dest;
+        head->flag = SDTP_EXP_MESG;
+        head->checksum = SDTP_CHECK_SUM;
+        head->length = frwd->length;
+
+        memcpy(addr+sizeof(sdtp_header_t), data+sizeof(sdtp_frwd_t), head->length);
+
+        /* > 放入发送链表 */
+        if (list_rpush(sck->mesg_list, addr))
+        {
+            queue_dealloc(sendq, data);
+            log_error(rsvr->log, "Push input list failed!");
+        }
+
+        list_destroy(conn.list, NULL, NULL);
+    }
+
+    return SDTP_OK;
+}
+
+

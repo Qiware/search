@@ -140,9 +140,9 @@ typedef struct
     thread_pool_t *recvtp;              /* 接收线程池 */
     thread_pool_t *worktp;              /* 工作线程池 */
 
-    queue_t **recvq;                    /* 接收队列 */
-    queue_t **sendq;                    /* 发送队列 */
-    shm_queue_t *shm_sendq;             /* 发送队列
+    queue_t **recvq;                    /* 接收队列(内部队列) */
+    queue_t **sendq;                    /* 发送队列(内部队列) */
+    shm_queue_t *shm_sendq;             /* 发送队列(外部队列)
                                            注: 外部接口首先将要发送的数据放入
                                            此队列, 再从此队列分发到不同的线程队列 */
 
