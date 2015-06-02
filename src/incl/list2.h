@@ -18,6 +18,10 @@ typedef struct
     list2_node_t *head;
 } list2_t;
 
+typedef int (*list2_trav_cb_t)(void *data, void *args);
+
+int list2_trav(list2_t *list, list2_trav_cb_t cb, void *args);
+
 /******************************************************************************
  **函数名称: list2_insert
  **功    能: 插入链表头
@@ -98,6 +102,7 @@ static inline list2_node_t *list2_remove_head(list2_t *list)
     --list->num;
     return curr;
 }
+
 /******************************************************************************
  **函数名称: list2_delete
  **功    能: 删除链表头

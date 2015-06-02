@@ -49,3 +49,32 @@ void list2_assert(list2_t *list)
         abort();
     }
 }
+
+/******************************************************************************
+ **函数名称: list2_trav
+ **功    能: 遍历扫描链表
+ **输入参数:
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述:
+ **注意事项:
+ **作    者: # Qifeng.zou # 2015.06.02 #
+ ******************************************************************************/
+int list2_trav(list2_t *list, list2_trav_cb_t cb, void *args)
+{
+    list2_node_t *node, *tail;
+
+    node = list->head;
+    if (NULL != node) {
+        tail = node->prev;
+    }
+
+    for (; NULL != node; node = node->next)
+    {
+        cb(node->data, args);
+
+        if (node == tail) { break; }
+    }
+
+    return 0;
+}
