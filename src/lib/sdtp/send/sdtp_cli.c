@@ -202,6 +202,7 @@ static int sdtp_cli_cmd_send_req(sdtp_cli_t *cli, int idx)
  **输入参数:
  **     cli: 上下文信息
  **     type: 数据类型
+ **     devid: 源设备ID
  **     data: 数据地址
  **     size: 数据长度
  **输出参数: NONE
@@ -223,7 +224,7 @@ int sdtp_cli_send(sdtp_cli_t *cli, int type, const void *data, size_t size)
     {
         idx = (num++)%conf->send_thd_num;
 
-        if (sdtp_pool_push(cli->sendq[idx], type, data, size))
+        if (sdtp_pool_push(cli->sendq[idx], type, conf->auth.devid, data, size))
         {
             continue;
         }

@@ -257,7 +257,8 @@ static int sdtp_rwrk_cmd_proc_req_hdl(sdtp_rctx_t *ctx, sdtp_worker_t *wrk, cons
                 continue;
             }
 
-            if (reg->proc(head->type, ptr+sizeof(sdtp_header_t), head->length, reg->args))
+            if (reg->proc(head->type, head->devid,
+                        ptr+sizeof(sdtp_header_t), head->length, reg->args))
             {
                 ++wrk->err_total;    /* 错误计数 */
             }

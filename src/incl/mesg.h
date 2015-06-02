@@ -9,7 +9,7 @@
 #if !defined(__MESG_H__)
 #define __MESG_H__
 
-#include <stdint.h>
+#include "uri.h"
 
 /* 消息类型 */
 typedef enum
@@ -36,18 +36,6 @@ typedef enum
     , MSG_TYPE_TOTAL                        /* 消息类型总数 */
 } mesg_type_e;
 
-/* 消息路由信息
- * 各设备必须记录处理过的流水, 以便在收到应答时,
- * 能够正确的将应答数据发送给在此之前的设备 */
-typedef struct
-{
-    uint64_t  serial;                       /* 流水号(全局唯一编号) */
-
-    int orig_devid;                         /* 源设备ID */
-    int dest_devid;                         /* 目的设备ID */
-    int length;                             /* 消息体长度 */
-} mesg_route_t;
-
 /* 搜索关键字(外部使用) */
 typedef struct
 {
@@ -58,8 +46,16 @@ typedef struct
 /* 搜索消息结构(内部使用) */
 typedef struct
 {
-    int serial;                             /* 流水号(全局唯一编号) */ 
+    uint64_t serial;                        /* 流水号(全局唯一编号) */ 
     srch_mesg_body_t body;                  /* 报体信息 */
 } mesg_search_req_t;
+
+/* 搜索应答信息(内部使用) */
+typedef struct
+{
+    uint64_t serial;                        /* 流水号(全局唯一编号) */
+#define MSG_SRCH_REP_URL_NUM    (5)
+    char url[MSG_SRCH_REP_URL_NUM][URL_MAX_LEN]; /* 网址: 查找结果 */
+} mesg_search_rep_t;
 
 #endif /*__MESG_H__*/

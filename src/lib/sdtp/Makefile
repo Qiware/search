@@ -19,7 +19,6 @@ SRC_LIST = recv/sdtp_recv.c \
 			recv/sdtp_comm.c \
 			recv/sdtp_rlsn.c \
 			recv/sdtp_rsvr.c \
-			recv/sdtp_rdsp.c \
 			recv/sdtp_rwrk.c \
 			recv/sdtp_rcli.c \
 			send/sdtp_send.c \

@@ -16,6 +16,7 @@
  **功    能: 处理搜索请求
  **输入参数:
  **     type: 消息类型
+ **     orig: 源设备ID
  **     buff: 搜索请求的数据
  **     len: 数据长度
  **     args: 附加参数
@@ -25,17 +26,18 @@
  **注意事项: TODO: 将搜索结果返回给客户端
  **作    者: # Qifeng.zou # 2015.05.08 #
  ******************************************************************************/
-static int invtd_search_req_hdl(int type, char *buff, size_t len, void *args)
+static int invtd_search_req_hdl(int type, int orig, char *buff, size_t len, void *args)
 {
     int idx;
     list_node_t *node;
     invt_word_doc_t *doc;
     invt_dic_word_t *word;
     invtd_cntx_t *ctx = (invtd_cntx_t *)args;
-    srch_mesg_body_t *body = (srch_mesg_body_t *)buff;
+    mesg_search_req_t *req = (mesg_search_req_t *)buff; /* 请求 */
+    mesg_search_rep_t rep; /* 应答 */
 
     /* > 搜索倒排表 */
-    word = invert_tab_query(ctx->tab, body->words);
+    word = invert_tab_query(ctx->tab, req->body.words);
     if (NULL == word
         || NULL == word->doc_list)
     {
@@ -46,11 +48,21 @@ static int invtd_search_req_hdl(int type, char *buff, size_t len, void *args)
     /* > 打印搜索结果 */
     idx = 0;
     node = word->doc_list->head;
-    for (; NULL!=node; node=node->next)
+    for (; NULL!=node && idx < MSG_SRCH_REP_URL_NUM; node=node->next, ++idx)
     {
         doc = (invt_word_doc_t *)node->data;
 
-        log_debug(ctx->log, "[%d]: url:%s freq:%d", ++idx, doc->url.str, doc->freq);
+        log_trace(ctx->log, "[%d]: url:%s freq:%d", idx+1, doc->url.str, doc->freq);
+
+        snprintf(rep.url[idx], sizeof(rep.url[idx]), "%s:%d", doc->url.str, doc->freq);
+    }
+
+    /* > 应答搜索结果 */
+    rep.serial = req->serial;
+    if (sdtp_rcli_send(ctx->sdtp_rcli, MSG_SEARCH_REP, orig, (void *)&rep, sizeof(rep)))
+    {
+        log_error(ctx->log, "Send response failed! serial:%ld words:%s",
+                req->serial, req->body.words);
     }
 
     return 0;
@@ -61,6 +73,7 @@ static int invtd_search_req_hdl(int type, char *buff, size_t len, void *args)
  **功    能: 处理打印倒排表的请求
  **输入参数:
  **     type: 消息类型
+ **     orig: 源设备ID
  **     buff: 搜索请求的数据
  **     len: 数据长度
  **     args: 附加参数
@@ -70,7 +83,7 @@ static int invtd_search_req_hdl(int type, char *buff, size_t len, void *args)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.05.08 #
  ******************************************************************************/
-static int invtd_print_invt_tab_req_hdl(int type, char *buff, size_t len, void *args)
+static int invtd_print_invt_tab_req_hdl(int type, int orig, char *buff, size_t len, void *args)
 {
     return 0;
 }

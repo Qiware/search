@@ -613,11 +613,12 @@ static int sdtp_rsvr_data_proc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_rsck_t 
         len = (uint32_t)(recv->iptr - recv->optr);
         if (len >= sizeof(sdtp_header_t))
         {
-            if (SDTP_CHECK_SUM != ntohl(head->checksum))
+            if (ntohl(head->devid) == sck->devid
+                || SDTP_CHECK_SUM != ntohl(head->checksum))
             {
-                log_error(rsvr->log, "Header is invalid! Mark:%X/%X type:%d len:%d flag:%d",
-                        ntohl(head->checksum), SDTP_CHECK_SUM, ntohs(head->type),
-                        ntohl(head->length), head->flag);
+                log_error(rsvr->log, "Header is invalid! devid:%d Mark:%X/%X type:%d len:%d flag:%d",
+                        ntohl(head->devid), ntohl(head->checksum), SDTP_CHECK_SUM,
+                        ntohs(head->type), ntohl(head->length), head->flag);
                 return SDTP_ERR;
             }
 
@@ -652,6 +653,7 @@ static int sdtp_rsvr_data_proc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_rsck_t 
         /* 2. 至少一条数据时 */
         /* 2.1 转化字节序 */
         head->type = ntohs(head->type);
+        head->devid = ntohl(head->devid);
         head->flag = head->flag;
         head->length = ntohl(head->length);
         head->checksum = ntohl(head->checksum);
@@ -965,6 +967,7 @@ static int sdtp_rsvr_keepalive_req_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp
     head = (sdtp_header_t *)addr;
 
     head->type = SDTP_KPALIVE_REP;
+    head->devid = ctx->conf.auth.devid;
     head->length = 0;
     head->flag = SDTP_SYS_MESG;
     head->checksum = SDTP_CHECK_SUM;
@@ -1014,6 +1017,7 @@ static int sdtp_rsvr_link_auth_rep(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_rsc
     link_auth_rep = (sdtp_link_auth_rep_t *)(addr + sizeof(sdtp_header_t));
 
     head->type = SDTP_LINK_AUTH_REP;
+    head->devid = ctx->conf.auth.devid;
     head->length = sizeof(sdtp_link_auth_rep_t);
     head->flag = SDTP_SYS_MESG;
     head->checksum = SDTP_CHECK_SUM;
@@ -1063,7 +1067,7 @@ static int sdtp_rsvr_link_auth_req_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp
         sck->devid = link_auth_req->devid;
 
         /* > 插入DEV与SCK的映射 */
-        if (sdtp_dev_svr_map_add(ctx, link_auth_req->devid, rsvr->tidx))
+        if (sdtp_dev_to_svr_map_add(ctx, link_auth_req->devid, rsvr->tidx))
         {
             log_error(rsvr->log, "Insert into sck2dev table failed! fd:%d serial:%ld devid:%d",
                     sck->fd, sck->serial, link_auth_req->devid);
@@ -1195,7 +1199,7 @@ static int sdtp_rsvr_del_conn_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, list2_nod
     slab_dealloc(rsvr->pool, node);
 
     /* > 从SCK<->DEV映射表中剔除 */
-    sdtp_dev_svr_map_del(ctx, curr->devid, rsvr->tidx);
+    sdtp_dev_to_svr_map_del(ctx, curr->devid, rsvr->tidx);
 
     /* > 释放数据空间 */
     CLOSE(curr->fd);
@@ -1404,6 +1408,7 @@ static int sdtp_rsvr_fill_send_buff(sdtp_rsvr_t *rsvr, sdtp_rsck_t *sck)
 
         /* 3 取发送的数据 */
         head->type = htons(head->type);
+        head->devid = htonl(head->devid);
         head->flag = head->flag;
         head->length = htonl(head->length);
         head->checksum = htonl(head->checksum);

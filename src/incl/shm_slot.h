@@ -16,4 +16,7 @@ void *shm_slot_alloc(shm_slot_t *slot);
 void shm_slot_dealloc(shm_slot_t *slot, void *p);
 void shm_slot_print(shm_slot_t *slot);
 
+#define shm_slot_get_max(slot) ((slot)->max)
+#define shm_slot_get_size(slot) ((slot)->size)
+
 #endif /*__SHM_SLOT_H__*/

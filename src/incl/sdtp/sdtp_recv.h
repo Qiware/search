@@ -146,8 +146,8 @@ typedef struct
                                            注: 外部接口首先将要发送的数据放入
                                            此队列, 再从此队列分发到不同的线程队列 */
 
-    pthread_rwlock_t dev_svr_map_lock;  /* 读写锁: DEV->SVR映射表 */
-    avl_tree_t *dev_svr_map;            /* DEV->SVR的映射表(以devid为主键) */
+    pthread_rwlock_t dev_to_svr_map_lock;  /* 读写锁: DEV->SVR映射表 */
+    avl_tree_t *dev_to_svr_map;         /* DEV->SVR的映射表(以devid为主键) */
 } sdtp_rctx_t;
 
 /* 外部接口 */
@@ -157,7 +157,7 @@ int sdtp_recv_startup(sdtp_rctx_t *ctx);
 int sdtp_recv_destroy(sdtp_rctx_t *ctx);
 
 sdtp_rcli_t *sdtp_rcli_init(const sdtp_conf_t *conf);
-int sdtp_rcli_send(sdtp_rcli_t *cli, int dest_devid, void *data, int len);
+int sdtp_rcli_send(sdtp_rcli_t *cli, int type, int dest, void *data, int len);
 
 /* 内部接口 */
 void *sdtp_rlsn_routine(void *_ctx);
@@ -179,9 +179,9 @@ int sdtp_link_auth_check(sdtp_rctx_t *ctx, sdtp_link_auth_req_t *link_auth_req);
 shm_queue_t *sdtp_shm_sendq_creat(const sdtp_conf_t *conf );
 shm_queue_t *sdtp_shm_sendq_attach(const sdtp_conf_t *conf);
 
-int sdtp_dev_svr_map_init(sdtp_rctx_t *ctx);
-int sdtp_dev_svr_map_add(sdtp_rctx_t *ctx, int devid, int rsvr_idx);
-int sdtp_dev_svr_map_rand(sdtp_rctx_t *ctx, int devid);
-int sdtp_dev_svr_map_del(sdtp_rctx_t *ctx, int devid, int rsvr_idx);
+int sdtp_dev_to_svr_map_init(sdtp_rctx_t *ctx);
+int sdtp_dev_to_svr_map_add(sdtp_rctx_t *ctx, int devid, int rsvr_idx);
+int sdtp_dev_to_svr_map_rand(sdtp_rctx_t *ctx, int devid);
+int sdtp_dev_to_svr_map_del(sdtp_rctx_t *ctx, int devid, int rsvr_idx);
 
 #endif /*__SDTP_RECV_H__*/

@@ -43,6 +43,7 @@ typedef enum
 /* 鉴权配置 */
 typedef struct
 {
+    int devid;                          /* 设备ID */
     char usr[SDTP_USR_MAX_LEN];         /* 用户名 */
     char passwd[SDTP_PWD_MAX_LEN];      /* 登录密码 */
 } sdtp_auth_conf_t;
@@ -113,8 +114,19 @@ typedef struct
     uint64_t err_total;                 /* 错误条数 */
 } sdtp_worker_t;
 
-/* 回调注册 */
-typedef int (*sdtp_reg_cb_t)(int type, char *buff, size_t len, void *args);
+/******************************************************************************
+ **函数名称: sdtp_reg_cb_t
+ **功    能: 回调注册类型
+ **输入参数:
+ **     type: 扩展消息类型 Range:(0 ~ SDTP_TYPE_MAX)
+ **     orig: 源设备ID
+ **     data: 数据
+ **     len: 数据长度
+ **     args: 附加参数
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ ******************************************************************************/
+typedef int (*sdtp_reg_cb_t)(int type, int orig, char *data, size_t len, void *args);
 typedef struct
 {
     int type;                           /* 消息类型. Range: 0~SDTP_TYPE_MAX */

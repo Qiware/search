@@ -24,6 +24,7 @@ typedef enum
 typedef struct
 {
     unsigned short type;                /* 数据类型 */
+    int devid;                          /* 源设备ID */
 #define SDTP_SYS_MESG   (0)             /* 系统类型 */
 #define SDTP_EXP_MESG   (1)             /* 自定义类型 */
     uint8_t flag;                       /* 消息标志
@@ -40,6 +41,14 @@ typedef struct
 
 /* 校验数据头 */
 #define SDTP_HEAD_ISVALID(head) (SDTP_CHECKSUM_ISVALID(head) && SDTP_TYPE_ISVALID(head))
+
+/* 转发信息 */
+typedef struct
+{
+    int type;                           /* 消息类型 */
+    int dest;                           /* 目标设备ID */
+    int length;                         /* 报体长度 */
+} sdtp_frwd_t;
 
 /* 链路鉴权请求 */
 typedef struct

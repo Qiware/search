@@ -27,7 +27,7 @@ void sdtp_recvtp_destroy(void *_ctx, void *args);
 static int sdtp_creat_worktp(sdtp_rctx_t *ctx);
 void sdtp_worktp_destroy(void *_ctx, void *args);
 
-static int sdtp_proc_def_hdl(int type, char *buff, size_t len, void *args);
+static int sdtp_proc_def_hdl(int type, int orig, char *buff, size_t len, void *args);
 
 /******************************************************************************
  **函数名称: sdtp_recv_init
@@ -248,7 +248,7 @@ static int _sdtp_recv_init(sdtp_rctx_t *ctx)
     }
 
     /* > 构建DEV->SVR映射表 */
-    if (sdtp_dev_svr_map_init(ctx))
+    if (sdtp_dev_to_svr_map_init(ctx))
     {
         log_error(ctx->log, "Initialize sck-dev map table failed!");
         return SDTP_ERR;
@@ -592,6 +592,7 @@ void sdtp_worktp_destroy(void *_ctx, void *args)
  **功    能: 默认消息处理函数
  **输入参数:
  **     type: 消息类型
+ **     orig: 源设备ID
  **     buff: 消息内容
  **     len: 内容长度
  **     args: 附加参数
@@ -601,7 +602,7 @@ void sdtp_worktp_destroy(void *_ctx, void *args)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.06 #
  ******************************************************************************/
-static int sdtp_proc_def_hdl(int type, char *buff, size_t len, void *args)
+static int sdtp_proc_def_hdl(int type, int orig, char *buff, size_t len, void *args)
 {
     return SDTP_OK;
 }

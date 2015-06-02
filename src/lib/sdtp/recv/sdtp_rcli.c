@@ -44,29 +44,37 @@ sdtp_rcli_t *sdtp_rcli_init(const sdtp_conf_t *conf)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.06.01 #
  ******************************************************************************/
-int sdtp_rcli_send(sdtp_rcli_t *cli, int dest_devid, void *data, int len)
+int sdtp_rcli_send(sdtp_rcli_t *cli, int type, int dest, void *data, int len)
 {
     void *addr;
-    mesg_route_t *route;
+    sdtp_frwd_t *frwd;
 
-    addr = shm_queue_malloc(cli->sendq);
-    if (NULL == addr)
+    /* > 合法性检测 */
+    if (len > (int)sizeof(sdtp_frwd_t) + shm_queue_size(cli->sendq))
     {
         return -1;
     }
 
-    route = (mesg_route_t *)addr;
+    /* > 申请队列空间 */
+    addr = shm_queue_malloc(cli->sendq);
+    if (NULL == addr)
+    {
+        return SDTP_ERR;
+    }
 
-    route->dest_devid = dest_devid;
-    route->length = len + sizeof(mesg_route_t);
+    frwd = (sdtp_frwd_t *)addr;
 
-    memcpy(addr, route, sizeof(mesg_route_t));
-    memcpy(addr+sizeof(mesg_route_t), data, len);
+    frwd->type = type; 
+    frwd->dest = dest;
+    frwd->length = len;
 
+    memcpy(addr+sizeof(sdtp_frwd_t), data, len);
+
+    /* > 压入队列空间 */
     if (shm_queue_push(cli->sendq, addr))
     {
         shm_queue_dealloc(cli->sendq, addr);
     }
 
-    return 0;
+    return SDTP_OK;
 }

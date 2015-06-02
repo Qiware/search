@@ -61,7 +61,7 @@ int sdtp_link_auth_check(sdtp_rctx_t *ctx, sdtp_link_auth_req_t *link_auth_req)
 }
 
 /******************************************************************************
- **函数名称: sdtp_dev_svr_map_init
+ **函数名称: sdtp_dev_to_svr_map_init
  **功    能: 创建DEV与SVR的映射表
  **输入参数:
  **     ctx: 全局对象
@@ -71,7 +71,7 @@ int sdtp_link_auth_check(sdtp_rctx_t *ctx, sdtp_link_auth_req_t *link_auth_req)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.30 20:29:26 #
  ******************************************************************************/
-int sdtp_dev_svr_map_init(sdtp_rctx_t *ctx)
+int sdtp_dev_to_svr_map_init(sdtp_rctx_t *ctx)
 {
     avl_opt_t opt;
 
@@ -81,23 +81,23 @@ int sdtp_dev_svr_map_init(sdtp_rctx_t *ctx)
     opt.alloc = (mem_alloc_cb_t)slab_alloc;
     opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-    ctx->dev_svr_map = avl_creat(&opt,
+    ctx->dev_to_svr_map = avl_creat(&opt,
                 (key_cb_t)avl_key_cb_int32,
                 (avl_cmp_cb_t)avl_cmp_cb_int32);
-    if (NULL == ctx->dev_svr_map)
+    if (NULL == ctx->dev_to_svr_map)
     {
         log_error(ctx->log, "Initialize dev->svr map failed!");
         return SDTP_ERR;
     }
 
     /* > 初始化读写锁 */
-    pthread_rwlock_init(&ctx->dev_svr_map_lock, NULL);
+    pthread_rwlock_init(&ctx->dev_to_svr_map_lock, NULL);
 
     return SDTP_OK;
 }
 
 /******************************************************************************
- **函数名称: sdtp_dev_svr_map_add
+ **函数名称: sdtp_dev_to_svr_map_add
  **功    能: 添加DEV->SVR映射
  **输入参数:
  **     ctx: 全局对象
@@ -109,7 +109,7 @@ int sdtp_dev_svr_map_init(sdtp_rctx_t *ctx)
  **注意事项: 注册DEVID与RSVR的映射关系, 为自定义数据的应答做铺垫!
  **作    者: # Qifeng.zou # 2015.05.30 #
  ******************************************************************************/
-int sdtp_dev_svr_map_add(sdtp_rctx_t *ctx, int devid, int rsvr_idx)
+int sdtp_dev_to_svr_map_add(sdtp_rctx_t *ctx, int devid, int rsvr_idx)
 {
     list_t *list;
     list_opt_t opt;
@@ -117,12 +117,12 @@ int sdtp_dev_svr_map_add(sdtp_rctx_t *ctx, int devid, int rsvr_idx)
     list_node_t *list_node;
     sdtp_dev_svr_item_t *item;
 
-    pthread_rwlock_wrlock(&ctx->dev_svr_map_lock); /* 加锁 */
+    pthread_rwlock_wrlock(&ctx->dev_to_svr_map_lock); /* 加锁 */
 
     while (1)
     {
         /* > 查找是否已经存在 */
-        avl_node = avl_query(ctx->dev_svr_map, &devid, sizeof(devid));
+        avl_node = avl_query(ctx->dev_to_svr_map, &devid, sizeof(devid));
         if (NULL == avl_node)
         {
             /* > 构建链表对象 */
@@ -138,9 +138,9 @@ int sdtp_dev_svr_map_add(sdtp_rctx_t *ctx, int devid, int rsvr_idx)
                 return SDTP_ERR;
             }
 
-            if (avl_insert(ctx->dev_svr_map, &devid, sizeof(devid), (void *)list))
+            if (avl_insert(ctx->dev_to_svr_map, &devid, sizeof(devid), (void *)list))
             {
-                pthread_rwlock_unlock(&ctx->dev_svr_map_lock); /* 解锁 */
+                pthread_rwlock_unlock(&ctx->dev_to_svr_map_lock); /* 解锁 */
                 log_error(ctx->log, "Insert into dev2sck table failed! devid:%d rsvr_idx:%d",
                         devid, rsvr_idx);
                 list_destroy(list, NULL, NULL);
@@ -159,7 +159,7 @@ int sdtp_dev_svr_map_add(sdtp_rctx_t *ctx, int devid, int rsvr_idx)
             if (rsvr_idx == item->rsvr_idx) /* 判断是否重复 */
             {
                 ++item->count;
-                pthread_rwlock_unlock(&ctx->dev_svr_map_lock); /* 解锁 */
+                pthread_rwlock_unlock(&ctx->dev_to_svr_map_lock); /* 解锁 */
                 return SDTP_OK;
             }
         }
@@ -167,7 +167,7 @@ int sdtp_dev_svr_map_add(sdtp_rctx_t *ctx, int devid, int rsvr_idx)
         item = slab_alloc(ctx->pool, sizeof(sdtp_dev_svr_item_t));
         if (NULL == item)
         {
-            pthread_rwlock_unlock(&ctx->dev_svr_map_lock); /* 解锁 */
+            pthread_rwlock_unlock(&ctx->dev_to_svr_map_lock); /* 解锁 */
             log_error(ctx->log, "Alloc memory failed! devid:%d rsvr_idx:%d",
                     devid, rsvr_idx);
             return SDTP_ERR;
@@ -178,25 +178,25 @@ int sdtp_dev_svr_map_add(sdtp_rctx_t *ctx, int devid, int rsvr_idx)
 
         if (list_lpush(list, item))
         {
-            pthread_rwlock_unlock(&ctx->dev_svr_map_lock); /* 解锁 */
+            pthread_rwlock_unlock(&ctx->dev_to_svr_map_lock); /* 解锁 */
             log_error(ctx->log, "Alloc memory failed! devid:%d rsvr_idx:%d",
                     devid, rsvr_idx);
             slab_dealloc(ctx->pool, item);
             return SDTP_ERR;
         }
 
-        pthread_rwlock_unlock(&ctx->dev_svr_map_lock); /* 解锁 */
+        pthread_rwlock_unlock(&ctx->dev_to_svr_map_lock); /* 解锁 */
 
         return SDTP_OK;
     }
 
-    pthread_rwlock_unlock(&ctx->dev_svr_map_lock); /* 解锁 */
+    pthread_rwlock_unlock(&ctx->dev_to_svr_map_lock); /* 解锁 */
 
     return SDTP_OK;
 }
 
 /******************************************************************************
- **函数名称: sdtp_dev_svr_map_del
+ **函数名称: sdtp_dev_to_svr_map_del
  **功    能: 删除DEV -> SVR映射
  **输入参数:
  **     ctx: 全局对象
@@ -208,20 +208,20 @@ int sdtp_dev_svr_map_add(sdtp_rctx_t *ctx, int devid, int rsvr_idx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.30 22:25:20 #
  ******************************************************************************/
-int sdtp_dev_svr_map_del(sdtp_rctx_t *ctx, int devid, int rsvr_idx)
+int sdtp_dev_to_svr_map_del(sdtp_rctx_t *ctx, int devid, int rsvr_idx)
 {
     list_t *list;
     list_node_t *node;
     avl_node_t *avl_node;
     sdtp_dev_svr_item_t *item;
 
-    pthread_rwlock_wrlock(&ctx->dev_svr_map_lock);
+    pthread_rwlock_wrlock(&ctx->dev_to_svr_map_lock);
 
     /* > 获取链表对象 */
-    avl_node = avl_query(ctx->dev_svr_map, &devid, sizeof(devid));
+    avl_node = avl_query(ctx->dev_to_svr_map, &devid, sizeof(devid));
     if (NULL == avl_node)
     {
-        pthread_rwlock_unlock(&ctx->dev_svr_map_lock);
+        pthread_rwlock_unlock(&ctx->dev_to_svr_map_lock);
         log_error(ctx->log, "Query devid [%d] failed!", devid);
         return SDTP_ERR;
     }
@@ -230,7 +230,7 @@ int sdtp_dev_svr_map_del(sdtp_rctx_t *ctx, int devid, int rsvr_idx)
     list = (list_t *)avl_node->data;
     if (NULL == list)
     {
-        pthread_rwlock_unlock(&ctx->dev_svr_map_lock);
+        pthread_rwlock_unlock(&ctx->dev_to_svr_map_lock);
         return SDTP_OK;
     }
 
@@ -245,7 +245,7 @@ int sdtp_dev_svr_map_del(sdtp_rctx_t *ctx, int devid, int rsvr_idx)
             {
                 list_remove(list, item);
             }
-            pthread_rwlock_unlock(&ctx->dev_svr_map_lock);
+            pthread_rwlock_unlock(&ctx->dev_to_svr_map_lock);
             slab_dealloc(ctx->pool, item);
             log_debug(ctx->log, "Delete dev svr map success! devid:%d rsvr_idx:%d",
                     devid, rsvr_idx);
@@ -253,12 +253,12 @@ int sdtp_dev_svr_map_del(sdtp_rctx_t *ctx, int devid, int rsvr_idx)
         }
     }
 
-    pthread_rwlock_unlock(&ctx->dev_svr_map_lock);
+    pthread_rwlock_unlock(&ctx->dev_to_svr_map_lock);
     return SDTP_OK;
 }
 
 /******************************************************************************
- **函数名称: sdtp_dev_svr_map_rand
+ **函数名称: sdtp_dev_to_svr_map_rand
  **功    能: 随机选择DEV -> SVR映射
  **输入参数:
  **     ctx: 全局对象
@@ -269,7 +269,7 @@ int sdtp_dev_svr_map_del(sdtp_rctx_t *ctx, int devid, int rsvr_idx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.30 22:25:20 #
  ******************************************************************************/
-int sdtp_dev_svr_map_rand(sdtp_rctx_t *ctx, int devid)
+int sdtp_dev_to_svr_map_rand(sdtp_rctx_t *ctx, int devid)
 {
     int idx, n, rsvr_idx;
     list_t *list;
@@ -277,13 +277,13 @@ int sdtp_dev_svr_map_rand(sdtp_rctx_t *ctx, int devid)
     avl_node_t *avl_node;
     sdtp_dev_svr_item_t *item;
 
-    pthread_rwlock_rdlock(&ctx->dev_svr_map_lock);
+    pthread_rwlock_rdlock(&ctx->dev_to_svr_map_lock);
 
     /* > 获取链表对象 */
-    avl_node = avl_query(ctx->dev_svr_map, &devid, sizeof(devid));
+    avl_node = avl_query(ctx->dev_to_svr_map, &devid, sizeof(devid));
     if (NULL == avl_node)
     {
-        pthread_rwlock_unlock(&ctx->dev_svr_map_lock);
+        pthread_rwlock_unlock(&ctx->dev_to_svr_map_lock);
         log_error(ctx->log, "Query devid [%d] failed!", devid);
         return -1;
     }
@@ -292,7 +292,7 @@ int sdtp_dev_svr_map_rand(sdtp_rctx_t *ctx, int devid)
     list = (list_t *)avl_node->data;
     if (NULL == list || 0 == list->num)
     {
-        pthread_rwlock_unlock(&ctx->dev_svr_map_lock);
+        pthread_rwlock_unlock(&ctx->dev_to_svr_map_lock);
         return -1;
     }
 
@@ -304,12 +304,12 @@ int sdtp_dev_svr_map_rand(sdtp_rctx_t *ctx, int devid)
         if (n == idx)
         {
             rsvr_idx = item->rsvr_idx;
-            pthread_rwlock_unlock(&ctx->dev_svr_map_lock);
+            pthread_rwlock_unlock(&ctx->dev_to_svr_map_lock);
             return rsvr_idx;
         }
     }
 
-    pthread_rwlock_unlock(&ctx->dev_svr_map_lock);
+    pthread_rwlock_unlock(&ctx->dev_to_svr_map_lock);
     return -1;
 }
 
@@ -317,7 +317,7 @@ int sdtp_dev_svr_map_rand(sdtp_rctx_t *ctx, int devid)
  **函数名称: sdtp_shm_sendq_creat
  **功    能: 创建SHM发送队列
  **输入参数:
- **     ctx: 全局对象
+ **     conf: 配置信息
  **输出参数: NONE
  **返    回: 共享内存队列
  **实现描述: 通过路径生成KEY，再根据KEY创建共享内存队列
@@ -346,7 +346,7 @@ shm_queue_t *sdtp_shm_sendq_creat(const sdtp_conf_t *conf)
  **函数名称: sdtp_shm_sendq_attach
  **功    能: 附着SHM发送队列
  **输入参数:
- **     ctx: 全局对象
+ **     conf: 配置信息
  **输出参数: NONE
  **返    回: 共享内存队列
  **实现描述: 通过路径生成KEY，再根据KEY附着共享内存队列
@@ -369,4 +369,63 @@ shm_queue_t *sdtp_shm_sendq_attach(const sdtp_conf_t *conf)
 
     /* > 通过KEY创建共享内存队列 */
     return shm_queue_attach(key);
+}
+
+/******************************************************************************
+ **函数名称: sdtp_disp_routine
+ **功    能: 运行分发线程
+ **输入参数:
+ **     ctx: 全局信息
+ **输出参数: NONE
+ **返    回: 分发对象
+ **实现描述:
+ **注意事项:
+ **作    者: # Qifeng.zou # 2015.05.15 #
+ ******************************************************************************/
+void *sdtp_disp_routine(void *_ctx)
+{
+    int idx;
+    void *addr, *addr2;
+    sdtp_frwd_t *frwd;
+    sdtp_rctx_t *ctx = (sdtp_rctx_t *)_ctx;
+
+    while (1)
+    {
+        /* > 弹出发送数据 */
+        addr = shm_queue_pop(ctx->shm_sendq);
+        if (NULL == addr)
+        {
+            usleep(500); /* TODO: 可使用事件通知机制减少CPU的消耗 */
+            continue;
+        }
+
+        /* > 获取发送队列 */
+        frwd = (sdtp_frwd_t *)addr;
+
+        idx = sdtp_dev_to_svr_map_rand(ctx, frwd->dest);
+        if (idx < 0)
+        {
+            log_error(ctx->log, "Didn't find dev to svr map! devid:%d", frwd->dest);
+            continue;
+        }
+
+        /* > 获取发送队列 */
+        addr2 = queue_malloc(ctx->sendq[idx]);
+        if (NULL == addr2)
+        {
+            shm_queue_dealloc(ctx->shm_sendq, addr);
+            continue;
+        }
+
+        memcpy(addr2, addr, frwd->length);
+
+        if (queue_push(ctx->sendq[idx], addr2))
+        {
+            queue_dealloc(ctx->sendq[idx], addr2);
+        }
+
+        shm_queue_dealloc(ctx->shm_sendq, addr);
+    }
+
+    return (void *)-1;
 }
