@@ -8,6 +8,7 @@
 #include "comm.h"
 #include "list2.h"
 #include "queue.h"
+#include "shm_opt.h"
 #include "avl_tree.h"
 #include "sdtp_cmd.h"
 #include "sdtp_comm.h"
@@ -120,6 +121,12 @@ typedef struct
     uint64_t drop_total;                /* 丢弃的数据条数 */
 } sdtp_rsvr_t;
 
+/* 服务端外部对象 */
+typedef struct
+{
+    shm_queue_t *sendq;                 /* 发送队列 */
+} sdtp_rcli_t;
+
 /* 全局对象 */
 typedef struct
 {
@@ -149,6 +156,9 @@ int sdtp_recv_register(sdtp_rctx_t *ctx, int type, sdtp_reg_cb_t proc, void *arg
 int sdtp_recv_startup(sdtp_rctx_t *ctx);
 int sdtp_recv_destroy(sdtp_rctx_t *ctx);
 
+sdtp_rcli_t *sdtp_rcli_init(const sdtp_conf_t *conf);
+int sdtp_rcli_send(sdtp_rcli_t *cli, int dest_devid, void *data, int len);
+
 /* 内部接口 */
 void *sdtp_rlsn_routine(void *_ctx);
 int sdtp_rlsn_destroy(sdtp_rlsn_t *lsn);
@@ -165,6 +175,9 @@ void sdtp_rsvr_del_all_conn_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr);
 
 int sdtp_cmd_to_rsvr(sdtp_rctx_t *ctx, int cmd_sck_id, const sdtp_cmd_t *cmd, int idx);
 int sdtp_link_auth_check(sdtp_rctx_t *ctx, sdtp_link_auth_req_t *link_auth_req);
+
+shm_queue_t *sdtp_shm_sendq_creat(const sdtp_conf_t *conf );
+shm_queue_t *sdtp_shm_sendq_attach(const sdtp_conf_t *conf);
 
 int sdtp_dev_svr_map_init(sdtp_rctx_t *ctx);
 int sdtp_dev_svr_map_add(sdtp_rctx_t *ctx, int devid, int rsvr_idx);

@@ -158,7 +158,7 @@ shm_queue_t *shm_queue_attach(int key)
  ******************************************************************************/
 int shm_queue_push(shm_queue_t *shmq, void *p)
 {
-    if (NULL == p) return -1;
+    if (NULL == p) { return -1; }
 
     return shm_ring_push(shmq->ring, p - (void *)shmq->ring);
 }
