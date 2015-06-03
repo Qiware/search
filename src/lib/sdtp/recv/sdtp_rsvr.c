@@ -40,7 +40,7 @@ static int sdtp_rsvr_del_conn_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, list2_nod
 static int sdtp_rsvr_fill_send_buff(sdtp_rsvr_t *rsvr, sdtp_rsck_t *sck);
 static int sdtp_rsvr_clear_mesg(sdtp_rsvr_t *rsvr, sdtp_rsck_t *sck);
 
-static int sdtp_rsvr_disp_send_data(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr);
+static int sdtp_rsvr_dist_send_data(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr);
 
 static int sdtp_rsvr_queue_alloc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr);
 #define sdtp_rsvr_queue_push(ctx, rsvr) /* 将输入推入队列 */\
@@ -199,6 +199,9 @@ void *sdtp_rsvr_routine(void *_ctx)
 
     for (;;)
     {
+        /* > 分发发送数据 */
+        sdtp_rsvr_dist_send_data(ctx, rsvr);
+
         /* 2. 等待事件通知 */
         sdtp_rsvr_set_rdset(ctx, rsvr);
         sdtp_rsvr_set_wrset(ctx, rsvr);
@@ -894,9 +897,6 @@ static int sdtp_rsvr_event_timeout_hdl(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr)
         sdtp_rsvr_queue_reset(rsvr);
     }
 
-    /* > 将发送队列的数据放入发送链表 */
-    sdtp_rsvr_disp_send_data(ctx, rsvr);
-
     /* > 检测超时连接 */
     node = rsvr->conn_list.head;
     if (NULL == node)
@@ -1460,7 +1460,7 @@ static int sdtp_rsvr_conn_list_with_same_devid(sdtp_rsck_t *sck, conn_list_with_
 }
 
 /******************************************************************************
- **函数名称: sdtp_rsvr_disp_send_data
+ **函数名称: sdtp_rsvr_dist_send_data
  **功    能: 分发连接队列中的数据
  **输入参数:
  **     ctx: 全局对象
@@ -1471,7 +1471,7 @@ static int sdtp_rsvr_conn_list_with_same_devid(sdtp_rsck_t *sck, conn_list_with_
  **注意事项:
  **作    者: # Qifeng.zou # 2015.06.02 #
  ******************************************************************************/
-static int sdtp_rsvr_disp_send_data(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr)
+static int sdtp_rsvr_dist_send_data(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr)
 {
     int len;
     queue_t *sendq;
@@ -1502,7 +1502,7 @@ static int sdtp_rsvr_disp_send_data(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr)
         opt.alloc = (mem_alloc_cb_t)slab_alloc;
         opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-        conn.devid = frwd->dest;
+        conn.devid = frwd->dest_devid;
         conn.list = list_creat(&opt);
         if (NULL == conn.list)
         {
@@ -1537,7 +1537,7 @@ static int sdtp_rsvr_disp_send_data(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr)
         head = (sdtp_header_t *)addr;
 
         head->type = frwd->type;
-        head->devid = frwd->dest;
+        head->devid = frwd->dest_devid;
         head->flag = SDTP_EXP_MESG;
         head->checksum = SDTP_CHECK_SUM;
         head->length = frwd->length;

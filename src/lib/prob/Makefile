@@ -15,7 +15,6 @@ LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lpthread -lxd_core
 
 SRC_LIST = prob_comm.c \
-			prob_conf.c \
 			prob_agent.c \
 			prob_listen.c \
 			prob_worker.c

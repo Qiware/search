@@ -3,6 +3,7 @@
 
 #include "comm.h"
 #include "list.h"
+#include "mem_pool.h"
 
 /* 错误码 */
 typedef enum
@@ -15,13 +16,6 @@ typedef enum
 
     , PROB_ERR = ~0x7FFFFFFF                /* 失败、错误 */
 } prob_err_code_e;
-
-/* 输入参数 */
-typedef struct
-{
-    char conf_path[FILE_NAME_MAX_LEN];      /* 配置文件路径 */
-    bool isdaemon;                          /* 是否后台运行 */
-} prob_opt_t;
 
 /* 消息流水信息 */
 typedef struct

@@ -1,17 +1,23 @@
 /******************************************************************************
  ** Coypright(C) 2014-2024 Xundao technology Co., Ltd
  **
- ** 文件名: prob_conf.c
+ ** 文件名: agtd_conf.c
  ** 版本号: 1.0
- ** 描  述: 探针服务配置
- **         负责从探针服务配置文件(search.xml)中提取有效信息
+ ** 描  述: 代理服务配置
+ **         负责从代理服务配置文件(agentd.xml)中提取有效信息
  ** 作  者: # Qifeng.zou # 2014.10.28 #
  ******************************************************************************/
-#include "probe.h"
+#include "agentd.h"
 #include "syscall.h"
-#include "prob_conf.h"
+#include "xml_tree.h" 
+#include "mem_pool.h"
+#include "agtd_conf.h"
 
-static int prob_conf_parse(xml_tree_t *xml, prob_conf_t *conf, log_cycle_t *log);
+static int agtd_conf_parse(xml_tree_t *xml, prob_conf_t *conf, log_cycle_t *log);
+
+static int agtd_conf_load_comm(xml_tree_t *xml, agtd_conf_t *conf, log_cycle_t *log);
+static int agtd_conf_load_prob(xml_tree_t *xml, prob_conf_t *conf, log_cycle_t *log);
+static int agtd_conf_load_sdtp(xml_tree_t *xml, sdtp_ssvr_conf_t *conf, log_cycle_t *log);
 
 /******************************************************************************
  **函数名称: prob_conf_load
@@ -25,14 +31,14 @@ static int prob_conf_parse(xml_tree_t *xml, prob_conf_t *conf, log_cycle_t *log)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
-prob_conf_t *prob_conf_load(const char *path, log_cycle_t *log)
+agtd_conf_t *agtd_conf_load(const char *path, log_cycle_t *log)
 {
     xml_opt_t opt;
-    prob_conf_t *conf;
+    agtd_conf_t *conf;
     mem_pool_t *mem_pool;
     xml_tree_t *xml = NULL;
 
-    /* 1. 创建配置内存池 */
+    /* > 创建配置内存池 */
     mem_pool = mem_pool_creat(4 * KB);
     if (NULL == mem_pool)
     {
@@ -42,15 +48,15 @@ prob_conf_t *prob_conf_load(const char *path, log_cycle_t *log)
 
     do
     {
-        /* 2. 创建配置对象 */
-        conf = (prob_conf_t *)calloc(1, sizeof(prob_conf_t));
+        /* > 创建配置对象 */
+        conf = (agtd_conf_t *)calloc(1, sizeof(agtd_conf_t));
         if (NULL == conf)
         {
             log_error(log, "Alloc memory from pool failed!");
             break;
         }
 
-       /* 2. 构建XML树 */
+        /* > 构建XML树 */
         memset(&opt, 0, sizeof(opt));
 
         opt.pool = mem_pool;
@@ -64,14 +70,28 @@ prob_conf_t *prob_conf_load(const char *path, log_cycle_t *log)
             break;
         }
 
-        /* 3. 加载通用配置 */
-        if (prob_conf_parse(xml, conf, log))
+        /* > 加载通用配置 */
+        if (agtd_conf_load_comm(xml, conf, log))
         {
-            log_error(log, "Load common conf failed! path:%s", path);
+            log_error(log, "Load common configuration failed!");
             break;
         }
 
-        /* 4. 释放XML树 */
+        /* > 加载PROB配置 */
+        if (agtd_conf_load_prob(xml, &conf->prob, log))
+        {
+            log_error(log, "Load prob conf failed! path:%s", path);
+            break;
+        }
+
+        /* > 加载SDTP配置 */
+        if (agtd_conf_load_sdtp(xml, &conf->sdtp, log))
+        {
+            log_error(log, "Load sdtp conf failed! path:%s", path);
+            break;
+        }
+
+        /* > 释放XML树 */
         xml_destroy(xml);
         return conf;
     } while(0);
@@ -86,55 +106,57 @@ prob_conf_t *prob_conf_load(const char *path, log_cycle_t *log)
 }
 
 /* 解析日志级别配置 */
-static int prob_conf_parse_log(xml_tree_t *xml, prob_conf_t *conf, log_cycle_t *log)
+static int agtd_conf_parse_log(xml_tree_t *xml, agtd_conf_t *conf, log_cycle_t *log)
 {
     xml_node_t *node, *fix;
 
     /* > 定位日志标签 */
-    fix = xml_query(xml, ".PROBD.LOG");
+    fix = xml_query(xml, ".AGENTD.LOG");
     if (NULL == fix)
     {
-        conf->log.level = log_get_level(LOG_DEF_LEVEL_STR);
-        conf->log.syslevel = log_get_level(LOG_DEF_LEVEL_STR);
-        return PROB_OK;
+        conf->log_level = log_get_level(LOG_DEF_LEVEL_STR);
+        return AGTD_OK;
     }
 
     /* > 日志级别 */
     node = xml_rquery(xml, fix, "LEVEL");
     if (NULL != node)
     {
-        conf->log.level = log_get_level(node->value.str);
+        conf->log_level = log_get_level(node->value.str);
     }
     else
     {
-        conf->log.level = log_get_level(LOG_DEF_LEVEL_STR);
+        conf->log_level = log_get_level(LOG_DEF_LEVEL_STR);
     }
 
-    /* > 系统日志级别 */
-    node = xml_rquery(xml, fix, "SYS_LEVEL");
-    if (NULL != node)
-    {
-        conf->log.syslevel = log_get_level(node->value.str);
-    }
-    else
-    {
-        conf->log.syslevel = log_get_level(LOG_DEF_LEVEL_STR);
-    }
-
-    return PROB_OK;
+    return AGTD_OK;
 }
 
-/* 解析并发信息配置 */
-static int prob_conf_parse_connections(xml_tree_t *xml, prob_conf_t *conf, log_cycle_t *log)
+/* 加载公共配置 */
+static int agtd_conf_load_comm(xml_tree_t *xml, agtd_conf_t *conf, log_cycle_t *log)
+{
+    /* > 加载日志配置 */
+    if (agtd_conf_parse_log(xml, conf, log))
+    {
+        log_error(log, "Parse log configuration failed!");
+        return AGTD_ERR;
+    }
+
+    return AGTD_OK;
+}
+
+/* 解析并发配置 */
+static int agtd_conf_parse_prob_connections(
+        xml_tree_t *xml, prob_conf_t *conf, log_cycle_t *log)
 {
     xml_node_t *node, *fix;
 
     /* > 定位并发配置 */
-    fix = xml_query(xml, ".PROBD.CONNECTIONS");
+    fix = xml_query(xml, ".AGENTD.PROB.CONNECTIONS");
     if (NULL == fix)
     {
         log_error(log, "Didn't configure connections!");
-        return PROB_ERR;
+        return AGTD_ERR;
     }
 
     /* > 获取最大并发数 */
@@ -142,7 +164,7 @@ static int prob_conf_parse_connections(xml_tree_t *xml, prob_conf_t *conf, log_c
     if (NULL == node)
     {
         log_error(log, "Get max number of connections failed!");
-        return PROB_ERR;
+        return AGTD_ERR;
     }
 
     conf->connections.max = atoi(node->value.str);
@@ -152,7 +174,7 @@ static int prob_conf_parse_connections(xml_tree_t *xml, prob_conf_t *conf, log_c
     if (NULL == node)
     {
         log_error(log, "Get timeout of connection failed!");
-        return PROB_ERR;
+        return AGTD_ERR;
     }
 
     conf->connections.timeout = atoi(node->value.str);
@@ -162,21 +184,21 @@ static int prob_conf_parse_connections(xml_tree_t *xml, prob_conf_t *conf, log_c
     if (NULL == node)
     {
         log_error(log, "Get port of connection failed!");
-        return PROB_ERR;
+        return AGTD_ERR;
     }
 
     conf->connections.port = atoi(node->value.str);
 
-    return PROB_OK;
+    return AGTD_OK;
 }
 
 /* 解析队列配置 */
-static int prob_conf_parse_queue(xml_tree_t *xml, prob_conf_t *conf, log_cycle_t *log)
+static int agtd_conf_parse_prob_queue(xml_tree_t *xml, prob_conf_t *conf, log_cycle_t *log)
 {
     xml_node_t *node, *fix;
 
     /* 加载队列信息 */
-#define PROB_LOAD_QUEUE(xml, fix,  _path, conf) \
+#define AGTD_LOAD_QUEUE(xml, fix,  _path, conf) \
     {\
         char node_path[FILE_PATH_MAX_LEN]; \
         \
@@ -185,7 +207,7 @@ static int prob_conf_parse_queue(xml_tree_t *xml, prob_conf_t *conf, log_cycle_t
         node = xml_rquery(xml, fix, node_path); \
         if (NULL == node) \
         { \
-            return PROB_ERR; \
+            return AGTD_ERR; \
         } \
         \
         (conf)->max = atoi(node->value.str); \
@@ -195,72 +217,71 @@ static int prob_conf_parse_queue(xml_tree_t *xml, prob_conf_t *conf, log_cycle_t
         node = xml_rquery(xml, fix, node_path); \
         if (NULL == node) \
         { \
-            return PROB_ERR; \
+            return AGTD_ERR; \
         } \
         \
         (conf)->size = atoi(node->value.str); \
     }
 
     /* > 定位队列标签 */
-    fix = xml_query(xml, ".PROBD.QUEUE");
+    fix = xml_query(xml, ".AGENTD.PROB.QUEUE");
     if (NULL == fix)
     {
         log_error(log, "Get queue configuration failed!");
-        return PROB_ERR;
+        return AGTD_ERR;
     }
 
     /* > 获取队列配置 */
-    PROB_LOAD_QUEUE(xml, fix, ".CONNQ", &conf->connq);
-    PROB_LOAD_QUEUE(xml, fix, ".TASKQ", &conf->taskq);
+    AGTD_LOAD_QUEUE(xml, fix, ".CONNQ", &conf->connq);
+    AGTD_LOAD_QUEUE(xml, fix, ".TASKQ", &conf->taskq);
 
-    return PROB_OK;
+    return AGTD_OK;
 }
 
-/* 解析配置信息 */
-static int prob_conf_parse(xml_tree_t *xml, prob_conf_t *conf, log_cycle_t *log)
+/* 加载PROB配置 */
+static int agtd_conf_load_prob(xml_tree_t *xml, prob_conf_t *conf, log_cycle_t *log)
 {
     xml_node_t *node;
 
-    /* > 获取日志级别信息*/
-    if (prob_conf_parse_log(xml, conf, log))
+    /* > 加载连接配置 */
+    if (agtd_conf_parse_prob_connections(xml, conf, log))
     {
-        log_error(log, "Parse log configuration failed!");
-        return PROB_ERR;
+        log_error(log, "Parse connections of probe configuration failed!");
+        return AGTD_ERR;
     }
 
-    /* > 获取连接配置 */
-    if (prob_conf_parse_connections(xml, conf, log))
+    /* > 加载连接配置 */
+    if (agtd_conf_parse_prob_queue(xml, conf, log))
     {
-        log_error(log, "Parse connections configuration failed!");
-        return PROB_ERR;
+        log_error(log, "Parse queue of probe configuration failed!");
+        return AGTD_ERR;
     }
 
-    /* > 获取队列配置 */
-    if (prob_conf_parse_queue(xml, conf, log))
-    {
-        log_error(log, "Parse queue configuration failed!");
-        return PROB_ERR;
-    }
-
-    /* 3. 获取WORKER.NUM标签 */
-    node = xml_query(xml, ".PROBD.WORKER.NUM");
+    /* > 获取WORKER.NUM标签 */
+    node = xml_query(xml, ".AGENTD.PROB.WORKER.NUM");
     if (NULL == node)
     {
-        log_error(log, "Didn't configure worker!");
-        return PROB_ERR;
+        log_error(log, "Didn't configure number of worker!");
+        return AGTD_ERR;
     }
 
     conf->worker_num = atoi(node->value.str);
 
     /* 4. 获取AGENT.NUM标签 */
-    node = xml_query(xml, ".PROBD.AGENT.NUM");
+    node = xml_query(xml, ".AGENTD.PROB.AGENT.NUM");
     if (NULL == node)
     {
-        log_error(log, "Didn't configure agent!");
-        return PROB_ERR;
+        log_error(log, "Didn't configure number of agent!");
+        return AGTD_ERR;
     }
 
     conf->agent_num = atoi(node->value.str);
 
-    return PROB_OK;
+    return AGTD_OK;
+}
+
+/* 加载SDTP配置 */
+static int agtd_conf_load_sdtp(xml_tree_t *xml, sdtp_ssvr_conf_t *conf, log_cycle_t *log)
+{
+    return AGTD_OK;
 }

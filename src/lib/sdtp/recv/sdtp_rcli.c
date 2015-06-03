@@ -65,7 +65,7 @@ int sdtp_rcli_send(sdtp_rcli_t *cli, int type, int dest, void *data, int len)
     frwd = (sdtp_frwd_t *)addr;
 
     frwd->type = type; 
-    frwd->dest = dest;
+    frwd->dest_devid = dest;
     frwd->length = len;
 
     memcpy(addr+sizeof(sdtp_frwd_t), data, len);

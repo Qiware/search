@@ -163,7 +163,7 @@ int sdtp_rcli_send(sdtp_rcli_t *cli, int type, int dest, void *data, int len);
 void *sdtp_rlsn_routine(void *_ctx);
 int sdtp_rlsn_destroy(sdtp_rlsn_t *lsn);
 
-void *sdtp_disp_routine(void *_ctx);
+void *sdtp_dist_routine(void *_ctx);
 
 void *sdtp_rsvr_routine(void *_ctx);
 int sdtp_rsvr_init(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, int tidx);

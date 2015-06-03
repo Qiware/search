@@ -117,9 +117,9 @@ int sdtp_recv_startup(sdtp_rctx_t *ctx)
     }
 
     /* > 创建分发线程 */
-    if (thread_creat(&tid, sdtp_disp_routine, ctx))
+    if (thread_creat(&tid, sdtp_dist_routine, ctx))
     {
-        log_error(ctx->log, "Start dispatch failed");
+        log_error(ctx->log, "Start distribute thread failed");
         return SDTP_ERR;
     }
 

@@ -372,7 +372,7 @@ shm_queue_t *sdtp_shm_sendq_attach(const sdtp_conf_t *conf)
 }
 
 /******************************************************************************
- **函数名称: sdtp_disp_routine
+ **函数名称: sdtp_dist_routine
  **功    能: 运行分发线程
  **输入参数:
  **     ctx: 全局信息
@@ -382,7 +382,7 @@ shm_queue_t *sdtp_shm_sendq_attach(const sdtp_conf_t *conf)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.15 #
  ******************************************************************************/
-void *sdtp_disp_routine(void *_ctx)
+void *sdtp_dist_routine(void *_ctx)
 {
     int idx;
     void *addr, *addr2;
@@ -402,10 +402,10 @@ void *sdtp_disp_routine(void *_ctx)
         /* > 获取发送队列 */
         frwd = (sdtp_frwd_t *)addr;
 
-        idx = sdtp_dev_to_svr_map_rand(ctx, frwd->dest);
+        idx = sdtp_dev_to_svr_map_rand(ctx, frwd->dest_devid);
         if (idx < 0)
         {
-            log_error(ctx->log, "Didn't find dev to svr map! devid:%d", frwd->dest);
+            log_error(ctx->log, "Didn't find dev to svr map! devid:%d", frwd->dest_devid);
             continue;
         }
 

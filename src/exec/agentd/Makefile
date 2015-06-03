@@ -8,18 +8,20 @@
 ###############################################################################
 include $(PROJ)/make/build.mak
 
-INCLUDE = -I. \
+INCLUDE = -I./incl \
 			-I$(PROJ)/src/incl \
 			-I$(PROJ)/src/incl/prob \
 			-I$(PROJ)/src/incl/sdtp
 LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lxd_prob -lxd_core -lsdtp
 
-SRC_LIST = probd.c
+SRC_LIST = agentd.c \
+			agtd_comm.c \
+			agtd_conf.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST))
 
-TARGET = probd
+TARGET = agentd
 
 .PHONY: all clean
 

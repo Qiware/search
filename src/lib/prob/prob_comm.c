@@ -21,7 +21,6 @@
 
 #define PROB_PROC_LOCK_PATH "../temp/srch/srch.lck"
 
-
 static log_cycle_t *prob_init_log(char *fname);
 static int prob_proc_lock(void);
 static int prob_creat_agent_pool(prob_cntx_t *ctx);
@@ -31,124 +30,9 @@ static int prob_worker_pool_destroy(prob_cntx_t *ctx);
 static int prob_creat_queue(prob_cntx_t *ctx);
 
 /******************************************************************************
- **函数名称: prob_getopt 
- **功    能: 解析输入参数
- **输入参数: 
- **     argc: 参数个数
- **     argv: 参数列表
- **输出参数:
- **     opt: 参数选项
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **     1. 解析输入参数
- **     2. 验证输入参数
- **注意事项: 
- **     c: 配置文件路径
- **     h: 帮助手册
- **作    者: # Qifeng.zou # 2014.11.15 #
- ******************************************************************************/
-int prob_getopt(int argc, char **argv, prob_opt_t *opt)
-{
-    int ch;
-
-    /* 1. 解析输入参数 */
-    while (-1 != (ch = getopt(argc, argv, "c:hd")))
-    {
-        switch (ch)
-        {
-            case 'c':   /* 指定配置文件 */
-            {
-                snprintf(opt->conf_path, sizeof(opt->conf_path), "%s", optarg);
-                break;
-            }
-            case 'd':
-            {
-                opt->isdaemon = true;
-                break;
-            }
-            case 'h':   /* 显示帮助信息 */
-            default:
-            {
-                return PROB_SHOW_HELP;
-            }
-        }
-    }
-
-    optarg = NULL;
-    optind = 1;
-
-    /* 2. 验证输入参数 */
-    if (!strlen(opt->conf_path))
-    {
-        snprintf(opt->conf_path, sizeof(opt->conf_path), "%s", PROB_DEF_CONF_PATH);
-    }
-
-    return PROB_OK;
-}
-
-/******************************************************************************
- **函数名称: prob_usage
- **功    能: 显示启动参数帮助信息
- **输入参数:
- **     name: 程序名
- **输出参数: NULL
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.11.15 #
- ******************************************************************************/
-int prob_usage(const char *exec)
-{
-    printf("\nUsage: %s [-h] [-d] -c <config file> [-l log_level]\n", exec);
-    printf("\t-h\tShow help\n"
-           "\t-c\tConfiguration path\n\n");
-    return PROB_OK;
-}
-
-/******************************************************************************
- **函数名称: prob_init_log
- **功    能: 初始化日志模块
- **输入参数:
- **     fname: 日志文件名
- **输出参数: NONE
- **返    回: 获取域名对应的地址信息
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.11.15 #
- ******************************************************************************/
-static log_cycle_t *prob_init_log(char *fname)
-{
-    log_cycle_t *log;
-    char path[FILE_NAME_MAX_LEN];
-
-    /* 1. 初始化系统日志 */
-    plog_get_path(path, sizeof(path), basename(fname));
-
-    if (plog_init(LOG_LEVEL_ERROR, path))
-    {
-        fprintf(stderr, "Init syslog failed!");
-        return NULL;
-    }
-
-    /* 2. 初始化业务日志 */
-    log_get_path(path, sizeof(path), basename(fname));
-
-    log = log_init(LOG_LEVEL_ERROR, path);
-    if (NULL == log)
-    {
-        plog_error("Initialize log failed!");
-        plog_destroy();
-        return NULL;
-    }
-
-    return log;
-}
-
-/******************************************************************************
  **函数名称: prob_cntx_init
  **功    能: 初始化全局信息
  **输入参数: 
- **     pname: 进程名
  **     conf_path: 配置文件路径
  **输出参数: NONE
  **返    回: 全局对象
@@ -162,41 +46,15 @@ static log_cycle_t *prob_init_log(char *fname)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
-prob_cntx_t *prob_cntx_init(char *pname, const char *conf_path)
+prob_cntx_t *prob_cntx_init(prob_conf_t *conf, log_cycle_t *log)
 {
-    log_cycle_t *log;
     prob_cntx_t *ctx;
-    prob_conf_t *conf;
 
-    /* 1. 初始化日志模块 */
-    log = prob_init_log(pname);
-    if (NULL == log)
-    {
-        fprintf(stderr, "Initialize log failed!");
-        return NULL;
-    }
-
-    /* 2. 判断程序是否已运行 */
-    if (0 != prob_proc_lock())
-    {
-        log_error(log, "Search-engine is running!");
-        return NULL;
-    }
-
-    /* 3. 创建全局对象 */
+    /* > 创建全局对象 */
     ctx = (prob_cntx_t *)calloc(1, sizeof(prob_cntx_t));
     if (NULL == ctx)
     {
         log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return NULL;
-    }
-
-    /* 4. 加载配置文件 */
-    conf = prob_conf_load(conf_path, log);
-    if (NULL == conf)
-    {
-        free(ctx);
-        log_error(log, "Load configuration failed! path:%s", conf_path);
         return NULL;
     }
 
@@ -205,7 +63,7 @@ prob_cntx_t *prob_cntx_init(char *pname, const char *conf_path)
     log_set_level(log, conf->log.level);
     plog_set_level(conf->log.syslevel);
 
-    /* 5. 创建内存池 */
+    /* > 创建内存池 */
     ctx->slab = slab_creat_by_calloc(30 * MB);
     if (NULL == ctx->slab)
     {
@@ -296,7 +154,7 @@ void prob_cntx_destroy(prob_cntx_t *ctx)
 int prob_startup(prob_cntx_t *ctx)
 {
     int idx;
-    const prob_conf_t *conf = ctx->conf;
+    prob_conf_t *conf = ctx->conf;
 
     /* 1. 设置Worker线程回调 */
     for (idx=0; idx<conf->worker_num; ++idx)

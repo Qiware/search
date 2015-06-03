@@ -16,8 +16,6 @@
 
 #define PROB_MSG_TYPE_MAX           (0xFF)      /* 消息最大类型 */
 
-#define PROB_DEF_CONF_PATH  "../conf/probd.xml"/* 默认配置路径 */
-
 /* 命令路径 */
 #define PROB_LSN_CMD_PATH "../temp/prob/lsn_cmd.usck"       /* 侦听线程 */
 #define PROB_RCV_CMD_PATH "../temp/prob/rcv_cmd_%02d.usck"  /* 接收线程 */
@@ -44,10 +42,8 @@ typedef struct
 #define prob_recvq_used(ctx, idx) queue_used(ctx->recvq[idx]) /* 已用接收队列空间 */
 #define prob_sendq_used(ctx, idx) queue_used(ctx->sendq[idx]) /* 已用发送队列空间 */
 
-prob_cntx_t *prob_cntx_init(char *pname, const char *conf_path);
+prob_cntx_t *prob_cntx_init(prob_conf_t *conf, log_cycle_t *log);
 void prob_cntx_destroy(prob_cntx_t *ctx);
-int prob_getopt(int argc, char **argv, prob_opt_t *opt);
-int prob_usage(const char *exec);
 
 int prob_startup(prob_cntx_t *ctx);
 int prob_init_register(prob_cntx_t *ctx);

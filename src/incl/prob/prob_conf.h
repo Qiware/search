@@ -1,18 +1,8 @@
-/******************************************************************************
- ** Coypright(C) 2014-2024 Xundao technology Co., Ltd
- **
- ** 文件名: prob_conf.h
- ** 版本号: 1.0
- ** 描  述: 搜索引擎配置
- **         定义搜索引擎配置相关的结构体
- ** 作  者: # Qifeng.zou # 2014.11.15 #
- ******************************************************************************/
 #if !defined(__PROB_CONF_H__)
 #define __PROB_CONF_H__
 
 #include "comm.h"
-#include "mem_pool.h"
-#include "xml_tree.h"
+#include "queue.h"
 
 /* 搜索引擎配置信息 */
 typedef struct
