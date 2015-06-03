@@ -1,3 +1,6 @@
+#ifndef __KWT_DEMO_C__
+#define __KWT_DEMO_C__
+
 #include "kw_tree.h"
 #include "xml_tree.h"
 
@@ -53,10 +56,11 @@ int main(int argc, char *argv[])
 
 static int proto_load_conf(kwt_tree_t *kwt, const char *path)
 {
-    int count = 0;
+    int count = 0, oct;
     xml_opt_t opt;
     xml_tree_t *xml;
-    xml_node_t *protocol, *words, *word, *key;
+    char hex[1024];
+    xml_node_t *protocol, *words, *word, *key, *oct_node;
 
     opt.pool = (void *)NULL;
     opt.alloc = (mem_alloc_cb_t)mem_alloc;
@@ -79,10 +83,31 @@ static int proto_load_conf(kwt_tree_t *kwt, const char *path)
                     assert(0);
                 }
 
-                ++count;
-                if (kwt_insert(kwt, (u_char *)key->value.str, key->value.len, (void *)1))
+                oct_node = xml_rquery(xml, word, "octet");
+                if (NULL == oct_node)
                 {
-                    assert(0);
+                    oct = 0;
+                }
+                else
+                {
+                    oct = atoi(oct_node->value.str);
+                }
+                
+                ++count;
+                if (0 == oct)
+                {
+                    if (kwt_insert(kwt, (u_char *)key->value.str, key->value.len, (void *)1))
+                    {
+                        assert(0);
+                    }
+                }
+                else
+                {
+                    str_to_hex(key->value.str, key->value.len, hex);
+                    if (kwt_insert(kwt, (u_char *)hex, key->value.len/2, (void *)1))
+                    {
+                        assert(0);
+                    }
                 }
             }
         }
@@ -146,5 +171,5 @@ int kwt_test(void)
     kwt_destroy(kwt, NULL, mem_dealloc);
 
     return 0;
-
 }
+#endif // __KWT_DEMO_C__

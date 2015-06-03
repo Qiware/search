@@ -168,7 +168,8 @@ void _kwt_print(kwt_tree_t *kwt, kwt_node_t *node, int depth)
         {
             fprintf(stderr, "| ");
         }
-        fprintf(stderr, "|%c\n", item->key);
+
+        fprintf(stderr, "|%02X\n", item->key);
 
         if (NULL == item->child)
         {
@@ -204,7 +205,7 @@ void kwt_print(kwt_tree_t *kwt)
             continue;
         }
 
-        fprintf(stderr, " %c\n", node->key);
+        fprintf(stderr, " %02X\n", node->key);
 
         if (NULL == node->child)
         {
