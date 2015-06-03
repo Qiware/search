@@ -46,13 +46,13 @@ DEMO_DIR = "src/demo"
 #DIR += "${DEMO_DIR}/redis"
 #DIR += "${DEMO_DIR}/gumbo"
 #DIR += "${DEMO_DIR}/xml"
-DIR += "${DEMO_DIR}/kmp"
+#DIR += "${DEMO_DIR}/kmp"
 #DIR += "${DEMO_DIR}/btree"
 #DIR += "${DEMO_DIR}/lock"
 #DIR += "${DEMO_DIR}/ring"
 #DIR += "${DEMO_DIR}/queue"
-DIR += "${DEMO_DIR}/sdtp"
-DIR += "${DEMO_DIR}/kwtree"
+#DIR += "${DEMO_DIR}/sdtp"
+#DIR += "${DEMO_DIR}/kwtree"
 export DIR
 
 # 创建目录结构
