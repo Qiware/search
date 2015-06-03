@@ -618,8 +618,7 @@ static int sdtp_rsvr_data_proc(sdtp_rctx_t *ctx, sdtp_rsvr_t *rsvr, sdtp_rsck_t 
         len = (uint32_t)(recv->iptr - recv->optr);
         if (len >= sizeof(sdtp_header_t))
         {
-            if (sck->devid != (int)ntohl(head->devid)
-                || SDTP_CHECK_SUM != ntohl(head->checksum))
+            if (SDTP_CHECK_SUM != ntohl(head->checksum))
             {
                 log_error(rsvr->log, "Header is invalid! devid:%d Mark:%X/%X type:%d len:%d flag:%d",
                         ntohl(head->devid), ntohl(head->checksum), SDTP_CHECK_SUM,
