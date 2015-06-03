@@ -159,33 +159,34 @@ bool str_isdigit(const char *str)
  ******************************************************************************/
 int str_to_hex(const char *str, int len, char *hex)
 {
-    int i;
+    int i, j;
 
     for (i=0; i<len; ++i) {
+        j = i>>1;
         if (str[i] >= 'A' && str[i] <= 'F') {
-            if (0 == i%2) {
-                hex[i>>1] = (str[i]-'A'+10)<<4;
+            if (0 == j) {
+                hex[j] = (str[i]-'A'+10)<<4;
             }
             else {
-                hex[i>>1] |= str[i]-'A'+10;
+                hex[j] |= str[i]-'A'+10;
             }
             continue;
         }
         else if (str[i] >= 'a' && str[i] <= 'f') {
-            if (0 == i%2) {
-                hex[i>>1] = (str[i]-'a'+10)<<4;
+            if (0 == j) {
+                hex[j] = (str[i]-'a'+10)<<4;
             }
             else {
-                hex[i>>1] |= str[i]-'a'+10;
+                hex[j] |= str[i]-'a'+10;
             }
             continue;
         }
         else if (str[i] >= '0' && str[i] <= '9') {
-            if (0 == i%2) {
-                hex[i>>1] = (str[i]-'0')<<4;
+            if (0 == j) {
+                hex[j] = (str[i]-'0')<<4;
             }
             else {
-                hex[i>>1] |= (str[i]-'0');
+                hex[j] |= (str[i]-'0');
             }
             continue;
         }
