@@ -6,6 +6,20 @@
 #include "sdtp_cli.h"
 #include "sdtp_ssvr.h"
 
+/* 配置信息 */
+typedef struct
+{
+    sdtp_ssvr_conf_t sdtp;      /* SDTP配置 */
+} frwd_conf_t;
+
+/* 全局对象 */
+typedef struct
+{
+    frwd_conf_t conf;           /* 配置信息 */
+    log_cycle_t *log;           /* 日志对象 */
+    sdtp_sctx_t *sdtp;          /* SDTP对象 */
+} frwd_cntx_t;
+
 int sdtp_setup_conf(sdtp_ssvr_conf_t *conf, int port);
 int frwd_set_reg(sdtp_sctx_t *ctx);
 
@@ -13,9 +27,7 @@ int frwd_set_reg(sdtp_sctx_t *ctx);
 int main(int argc, const char *argv[])
 {
     int port;
-    log_cycle_t *log;
-    sdtp_sctx_t *ctx;
-    sdtp_ssvr_conf_t conf;
+    frwd_cntx_t *frwd;
 
     if (2 != argc)
     {
@@ -23,40 +35,45 @@ int main(int argc, const char *argv[])
         return -1;
     }
 
-    memset(&conf, 0, sizeof(conf));
+    /* > 创建全局对象 */
+    frwd = (frwd_cntx_t *)calloc(1, sizeof(frwd_cntx_t));
+    if (NULL == frwd)
+    {
+        fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
+        return -1;
+    }
 
-    signal(SIGPIPE, SIG_IGN);
+    memset(&frwd->conf, 0, sizeof(frwd->conf));
 
-    nice(-20);
-
+    /* > 初始化日志 */
     port = atoi(argv[1]);
-    sdtp_setup_conf(&conf, port);
+    sdtp_setup_conf(&frwd->conf.sdtp, port);
 
     plog_init(LOG_LEVEL_DEBUG, "./sdtp_ssvr.plog");
-    log = log_init(LOG_LEVEL_DEBUG, "./sdtp_ssvr.log");
-    if (NULL == log)
+    frwd->log = log_init(LOG_LEVEL_DEBUG, "./sdtp_ssvr.log");
+    if (NULL == frwd->log)
     {
         fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
         return -1;
     }
 
     /* > 初始化SDTP发送服务 */
-    ctx = sdtp_send_init(&conf, log);
-    if (NULL == ctx) 
+    frwd->sdtp = sdtp_send_init(&frwd->conf.sdtp, frwd->log);
+    if (NULL == frwd->sdtp) 
     {
         fprintf(stderr, "Initialize send-server failed!");
         return -1;
     }
 
     /* > 注册SDTP回调 */
-    if (frwd_set_reg(ctx))
+    if (frwd_set_reg(frwd->sdtp))
     {
         fprintf(stderr, "Register callback failed!");
         return -1;
     }
 
     /* > 启动SDTP发送服务 */
-    if (sdtp_send_start(ctx))
+    if (sdtp_send_start(frwd->sdtp))
     {
         fprintf(stderr, "Start up send-server failed!");
         return -1;
@@ -91,6 +108,7 @@ int sdtp_setup_conf(sdtp_ssvr_conf_t *conf, int port)
     return 0;
 }
 
+/* 搜索应答处理 */
 int frwd_search_rep_hdl(int type, int orig, char *data, size_t len, void *args)
 {
     return 0;
