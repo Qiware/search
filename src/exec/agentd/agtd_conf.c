@@ -13,24 +13,13 @@
 #include "mem_pool.h"
 #include "agtd_conf.h"
 
-static int agtd_conf_parse(xml_tree_t *xml, prob_conf_t *conf, log_cycle_t *log);
+static int agtd_conf_parse(xml_tree_t *xml, gate_conf_t *conf, log_cycle_t *log);
 
 static int agtd_conf_load_comm(xml_tree_t *xml, agtd_conf_t *conf, log_cycle_t *log);
-static int agtd_conf_load_prob(xml_tree_t *xml, prob_conf_t *conf, log_cycle_t *log);
+static int agtd_conf_load_GATE(xml_tree_t *xml, gate_conf_t *conf, log_cycle_t *log);
 static int agtd_conf_load_sdtp(xml_tree_t *xml, sdtp_ssvr_conf_t *conf, log_cycle_t *log);
 
-/******************************************************************************
- **函数名称: prob_conf_load
- **功    能: 加载配置信息
- **输入参数:
- **     path: 配置路径
- **     log: 日志对象
- **输出参数: NONE
- **返    回: 配置对象
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.11.15 #
- ******************************************************************************/
+/* 加载配置信息 */
 agtd_conf_t *agtd_conf_load(const char *path, log_cycle_t *log)
 {
     xml_opt_t opt;
@@ -77,10 +66,10 @@ agtd_conf_t *agtd_conf_load(const char *path, log_cycle_t *log)
             break;
         }
 
-        /* > 加载PROB配置 */
-        if (agtd_conf_load_prob(xml, &conf->prob, log))
+        /* > 加载GATE配置 */
+        if (agtd_conf_load_GATE(xml, &conf->gate, log))
         {
-            log_error(log, "Load prob conf failed! path:%s", path);
+            log_error(log, "Load GATE conf failed! path:%s", path);
             break;
         }
 
@@ -146,13 +135,13 @@ static int agtd_conf_load_comm(xml_tree_t *xml, agtd_conf_t *conf, log_cycle_t *
 }
 
 /* 解析并发配置 */
-static int agtd_conf_parse_prob_connections(
-        xml_tree_t *xml, prob_conf_t *conf, log_cycle_t *log)
+static int agtd_conf_parse_GATE_connections(
+        xml_tree_t *xml, gate_conf_t *conf, log_cycle_t *log)
 {
     xml_node_t *node, *fix;
 
     /* > 定位并发配置 */
-    fix = xml_query(xml, ".AGENTD.PROB.CONNECTIONS");
+    fix = xml_query(xml, ".AGENTD.GATE.CONNECTIONS");
     if (NULL == fix)
     {
         log_error(log, "Didn't configure connections!");
@@ -193,7 +182,7 @@ static int agtd_conf_parse_prob_connections(
 }
 
 /* 解析队列配置 */
-static int agtd_conf_parse_prob_queue(xml_tree_t *xml, prob_conf_t *conf, log_cycle_t *log)
+static int agtd_conf_parse_GATE_queue(xml_tree_t *xml, gate_conf_t *conf, log_cycle_t *log)
 {
     xml_node_t *node, *fix;
 
@@ -224,7 +213,7 @@ static int agtd_conf_parse_prob_queue(xml_tree_t *xml, prob_conf_t *conf, log_cy
     }
 
     /* > 定位队列标签 */
-    fix = xml_query(xml, ".AGENTD.PROB.QUEUE");
+    fix = xml_query(xml, ".AGENTD.GATE.QUEUE");
     if (NULL == fix)
     {
         log_error(log, "Get queue configuration failed!");
@@ -238,27 +227,27 @@ static int agtd_conf_parse_prob_queue(xml_tree_t *xml, prob_conf_t *conf, log_cy
     return AGTD_OK;
 }
 
-/* 加载PROB配置 */
-static int agtd_conf_load_prob(xml_tree_t *xml, prob_conf_t *conf, log_cycle_t *log)
+/* 加载GATE配置 */
+static int agtd_conf_load_GATE(xml_tree_t *xml, gate_conf_t *conf, log_cycle_t *log)
 {
     xml_node_t *node;
 
     /* > 加载连接配置 */
-    if (agtd_conf_parse_prob_connections(xml, conf, log))
+    if (agtd_conf_parse_GATE_connections(xml, conf, log))
     {
-        log_error(log, "Parse connections of probe configuration failed!");
+        log_error(log, "Parse connections of GATEe configuration failed!");
         return AGTD_ERR;
     }
 
     /* > 加载连接配置 */
-    if (agtd_conf_parse_prob_queue(xml, conf, log))
+    if (agtd_conf_parse_GATE_queue(xml, conf, log))
     {
-        log_error(log, "Parse queue of probe configuration failed!");
+        log_error(log, "Parse queue of GATEe configuration failed!");
         return AGTD_ERR;
     }
 
     /* > 获取WORKER.NUM标签 */
-    node = xml_query(xml, ".AGENTD.PROB.WORKER.NUM");
+    node = xml_query(xml, ".AGENTD.GATE.WORKER.NUM");
     if (NULL == node)
     {
         log_error(log, "Didn't configure number of worker!");
@@ -268,7 +257,7 @@ static int agtd_conf_load_prob(xml_tree_t *xml, prob_conf_t *conf, log_cycle_t *
     conf->worker_num = atoi(node->value.str);
 
     /* 4. 获取AGENT.NUM标签 */
-    node = xml_query(xml, ".AGENTD.PROB.AGENT.NUM");
+    node = xml_query(xml, ".AGENTD.GATE.AGENT.NUM");
     if (NULL == node)
     {
         log_error(log, "Didn't configure number of agent!");
@@ -283,5 +272,22 @@ static int agtd_conf_load_prob(xml_tree_t *xml, prob_conf_t *conf, log_cycle_t *
 /* 加载SDTP配置 */
 static int agtd_conf_load_sdtp(xml_tree_t *xml, sdtp_ssvr_conf_t *conf, log_cycle_t *log)
 {
+    memset(conf, 0, sizeof(sdtp_ssvr_conf_t));
+
+    snprintf(conf->name, sizeof(conf->name), "SDTP-SEND");
+
+    snprintf(conf->auth.usr, sizeof(conf->auth.usr), "qifeng");
+    snprintf(conf->auth.passwd, sizeof(conf->auth.passwd), "111111");
+
+    snprintf(conf->ipaddr, sizeof(conf->ipaddr), "127.0.0.1");
+
+    conf->send_thd_num = 1;
+    conf->send_buff_size = 5 * MB;
+    conf->recv_buff_size = 2 * MB;
+
+    snprintf(conf->sendq.name, sizeof(conf->sendq.name), "../temp/sdtp/sdtp-ssvr.key");
+    conf->sendq.size = 4096;
+    conf->sendq.count = 2048;
+
     return AGTD_OK;
 }

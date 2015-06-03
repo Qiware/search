@@ -2,14 +2,14 @@
 #include "comm.h"
 #include "search.h"
 #include "syscall.h"
-#include "prob_agent.h"
-#include "prob_listen.h"
+#include "gate_agent.h"
+#include "gate_listen.h"
 
-prob_listen_t *prob_listen_init(prob_cntx_t *ctx);
-static int prob_listen_accept(prob_cntx_t *ctx, prob_listen_t *lsn);
+gate_listen_t *gate_listen_init(gate_cntx_t *ctx);
+static int gate_listen_accept(gate_cntx_t *ctx, gate_listen_t *lsn);
 
 /******************************************************************************
- **函数名称: prob_listen_routine
+ **函数名称: gate_listen_routine
  **功    能: 运行侦听线程
  **输入参数:
  **     _ctx: 全局信息
@@ -21,16 +21,16 @@ static int prob_listen_accept(prob_cntx_t *ctx, prob_listen_t *lsn);
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.18 #
  ******************************************************************************/
-void *prob_listen_routine(void *_ctx)
+void *gate_listen_routine(void *_ctx)
 {
     int ret, max;
     fd_set rdset;
     struct timeval tv;
-    prob_listen_t *lsn;
-    prob_cntx_t *ctx = (prob_cntx_t *)_ctx;
+    gate_listen_t *lsn;
+    gate_cntx_t *ctx = (gate_cntx_t *)_ctx;
 
     /* 1. 初始化侦听线程 */
-    lsn = prob_listen_init(ctx);
+    lsn = gate_listen_init(ctx);
     if (NULL == lsn)
     {
         log_error(ctx->log, "Initialize listen thread failed!");
@@ -69,7 +69,7 @@ void *prob_listen_routine(void *_ctx)
         /* 2.2 接收网络连接 */
         if (FD_ISSET(lsn->lsn_sck_id, &rdset))
         {
-            prob_listen_accept(ctx, lsn);
+            gate_listen_accept(ctx, lsn);
         }
 
         /* 2.3 接收操作命令 */
@@ -81,7 +81,7 @@ void *prob_listen_routine(void *_ctx)
 }
 
 /******************************************************************************
- **函数名称: prob_listen_init
+ **函数名称: gate_listen_init
  **功    能: 初始化侦听线程
  **输入参数:
  **     ctx: 全局信息
@@ -94,12 +94,12 @@ void *prob_listen_routine(void *_ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.19 #
  ******************************************************************************/
-prob_listen_t *prob_listen_init(prob_cntx_t *ctx)
+gate_listen_t *gate_listen_init(gate_cntx_t *ctx)
 {
-    prob_listen_t *lsn;
+    gate_listen_t *lsn;
 
     /* 1. 创建LSN对象 */
-    lsn = (prob_listen_t *)calloc(1, sizeof(prob_listen_t));
+    lsn = (gate_listen_t *)calloc(1, sizeof(gate_listen_t));
     if (NULL == lsn)
     {
         log_error(lsn->log, "errmsg:[%d] %s!", errno, strerror(errno));
@@ -120,7 +120,7 @@ prob_listen_t *prob_listen_init(prob_cntx_t *ctx)
         }
 
         /* 3. 创建命令套接字 */
-        lsn->cmd_sck_id = unix_udp_creat(PROB_LSN_CMD_PATH);
+        lsn->cmd_sck_id = unix_udp_creat(GATE_LSN_CMD_PATH);
         if (lsn->cmd_sck_id < 0)
         {
             log_error(lsn->log, "errmsg:[%d] %s!", errno, strerror(errno));
@@ -137,7 +137,7 @@ prob_listen_t *prob_listen_init(prob_cntx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: prob_listen_accept
+ **函数名称: gate_listen_accept
  **功    能: 接收连接请求
  **输入参数:
  **     ctx: 全局信息
@@ -150,10 +150,10 @@ prob_listen_t *prob_listen_init(prob_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.20 #
  ******************************************************************************/
-static int prob_listen_accept(prob_cntx_t *ctx, prob_listen_t *lsn)
+static int gate_listen_accept(gate_cntx_t *ctx, gate_listen_t *lsn)
 {
     int fd, tidx;
-    prob_add_sck_t *add;
+    gate_add_sck_t *add;
     struct sockaddr_in cliaddr;
 
     /* 1. 接收连接请求 */
@@ -161,7 +161,7 @@ static int prob_listen_accept(prob_cntx_t *ctx, prob_listen_t *lsn)
     if (fd < 0)
     {
         log_error(lsn->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return PROB_ERR;
+        return GATE_ERR;
     }
 
     ++lsn->serial;
@@ -174,7 +174,7 @@ static int prob_listen_accept(prob_cntx_t *ctx, prob_listen_t *lsn)
     {
         log_error(lsn->log, "Alloc memory from queue failed! fd:%d", fd);
         CLOSE(fd);
-        return PROB_ERR;
+        return GATE_ERR;
     }
 
     add->fd = fd;
@@ -187,8 +187,8 @@ static int prob_listen_accept(prob_cntx_t *ctx, prob_listen_t *lsn)
         log_error(lsn->log, "Push into queue failed! fd:%d", fd);
         queue_dealloc(ctx->connq[tidx], add);
         CLOSE(fd);
-        return PROB_ERR;
+        return GATE_ERR;
     }
 
-    return PROB_OK;
+    return GATE_OK;
 }

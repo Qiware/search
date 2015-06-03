@@ -10,10 +10,10 @@ include $(PROJ)/make/build.mak
 
 INCLUDE = -I./incl \
 			-I$(PROJ)/src/incl \
-			-I$(PROJ)/src/incl/prob \
+			-I$(PROJ)/src/incl/gate \
 			-I$(PROJ)/src/incl/sdtp
 LIBS_PATH = -L$(PROJ)/lib
-LIBS = -lxd_prob -lxd_core -lsdtp
+LIBS = -lxd_gate -lxd_core -lsdtp
 
 SRC_LIST = agentd.c \
 			agtd_comm.c \

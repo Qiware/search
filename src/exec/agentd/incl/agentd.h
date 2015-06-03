@@ -2,6 +2,7 @@
 #define __AGENTD_H__
 
 #include "log.h"
+#include "gate.h"
 #include "comm.h"
 #include "sdtp_cli.h"
 #include "agtd_conf.h"
@@ -33,7 +34,7 @@ typedef struct
     agtd_conf_t *conf;                  /* 配置信息 */
 
     sdtp_cli_t *sdtp;                   /* SDTP服务 */
-    prob_cntx_t *prob;                  /* 探针服务 */
+    gate_cntx_t *gate;                  /* 探针服务 */
     log_cycle_t *log;                   /* 日志对象 */
 
     int len;                            /* 业务请求树长 */

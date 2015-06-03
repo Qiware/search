@@ -4,36 +4,32 @@
 ## 文件名: Makefile
 ## 版本号: 1.0
 ## 描  述: 日志服务模块
-## 作  者: # Qifeng.zou # 2014.09.01 #
+## 作  者: # Qifeng.zou # 2014.11.15 #
 ###############################################################################
 include $(PROJ)/make/build.mak
 
-INCLUDE = -I. -I$(PROJ)/src/incl \
-		  -I$(PROJ)/src/incl/gate \
-		  -I$(PROJ)/src/exec/filter/incl \
-		  -I$(PROJ)/src/exec/crawler/incl \
-		  -I$(PROJ)/src/exec/monitor/incl
-
+INCLUDE = -I. \
+			-I$(PROJ)/src/incl \
+			-I$(PROJ)/src/incl/gate
 LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lpthread -lxd_core
 
-SRC_LIST = monitor.c \
-			mon_conf.c \
-			mon_gate.c \
-			mon_crwl.c \
-			mon_filter.c
+SRC_LIST = gate_comm.c \
+			gate_agent.c \
+			gate_listen.c \
+			gate_worker.c
 
-OBJS = $(subst .c,.o, $(SRC_LIST)) 
+OBJS = $(subst .c,.o, $(SRC_LIST))
 
-TARGET = monitor
+TARGET = libxd_gate.so
 
 .PHONY: all clean
 
 all: $(TARGET)
 $(TARGET): $(OBJS)
-	@$(CC) $(CFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS)
+	@$(CC) $(LFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS)
 	@echo "CC $@"
-	@mv $@ $(PROJ_BIN)
+	@mv $@ $(PROJ_LIB)
 	@echo "$@ is OK!"
 
 $(OBJS): %.o : %.c
@@ -41,5 +37,5 @@ $(OBJS): %.o : %.c
 	@echo "CC $(PWD)/$<"
 
 clean:
-	@rm -fr *.o $(PROJ_BIN)/$(TARGET)
-	@echo "rm -fr *.o $(PROJ_BIN)/$(TARGET)"
+	@rm -fr *.o $(PROJ_LIB)/$(TARGET)
+	@echo "rm -fr *.o $(PROJ_LIB)/$(TARGET)"

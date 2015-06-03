@@ -15,19 +15,19 @@
 #include "hash.h"
 #include "search.h"
 #include "syscall.h"
-#include "prob_worker.h"
-#include "prob_listen.h"
-#include "prob_agent.h"
+#include "gate_worker.h"
+#include "gate_listen.h"
+#include "gate_agent.h"
 
-static log_cycle_t *prob_init_log(char *fname);
-static int prob_creat_agent_pool(prob_cntx_t *ctx);
-static int prob_agent_pool_destroy(prob_cntx_t *ctx);
-static int prob_creat_worker_pool(prob_cntx_t *ctx);
-static int prob_worker_pool_destroy(prob_cntx_t *ctx);
-static int prob_creat_queue(prob_cntx_t *ctx);
+static log_cycle_t *gate_init_log(char *fname);
+static int gate_creat_agent_pool(gate_cntx_t *ctx);
+static int gate_agent_pool_destroy(gate_cntx_t *ctx);
+static int gate_creat_worker_pool(gate_cntx_t *ctx);
+static int gate_worker_pool_destroy(gate_cntx_t *ctx);
+static int gate_creat_queue(gate_cntx_t *ctx);
 
 /******************************************************************************
- **函数名称: prob_cntx_init
+ **函数名称: gate_cntx_init
  **功    能: 初始化全局信息
  **输入参数: 
  **     conf_path: 配置文件路径
@@ -43,12 +43,12 @@ static int prob_creat_queue(prob_cntx_t *ctx);
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
-prob_cntx_t *prob_cntx_init(prob_conf_t *conf, log_cycle_t *log)
+gate_cntx_t *gate_cntx_init(gate_conf_t *conf, log_cycle_t *log)
 {
-    prob_cntx_t *ctx;
+    gate_cntx_t *ctx;
 
     /* > 创建全局对象 */
-    ctx = (prob_cntx_t *)calloc(1, sizeof(prob_cntx_t));
+    ctx = (gate_cntx_t *)calloc(1, sizeof(gate_cntx_t));
     if (NULL == ctx)
     {
         log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
@@ -70,7 +70,7 @@ prob_cntx_t *prob_cntx_init(prob_conf_t *conf, log_cycle_t *log)
     do
     {
         /* > 注册消息处理 */
-        if (prob_init_register(ctx))
+        if (gate_init_register(ctx))
         {
             log_error(log, "Initialize register failed!");
             break;
@@ -84,21 +84,21 @@ prob_cntx_t *prob_cntx_init(prob_conf_t *conf, log_cycle_t *log)
         }
 
         /* > 创建队列 */
-        if (prob_creat_queue(ctx))
+        if (gate_creat_queue(ctx))
         {
             log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
             break;
         }
 
         /* > 创建Worker线程池 */
-        if (prob_creat_worker_pool(ctx))
+        if (gate_creat_worker_pool(ctx))
         {
             log_error(log, "Initialize worker thread pool failed!");
             break;
         }
 
         /* > 创建Agent线程池 */
-        if (prob_creat_agent_pool(ctx))
+        if (gate_creat_agent_pool(ctx))
         {
             log_error(log, "Initialize agent thread pool failed!");
             break;
@@ -107,13 +107,13 @@ prob_cntx_t *prob_cntx_init(prob_conf_t *conf, log_cycle_t *log)
         return ctx;
     } while (0);
 
-    prob_conf_destroy(ctx->conf);
+    gate_conf_destroy(ctx->conf);
     free(ctx);
     return NULL;
 }
 
 /******************************************************************************
- **函数名称: prob_cntx_destroy
+ **函数名称: gate_cntx_destroy
  **功    能: 销毁探针服务上下文
  **输入参数: 
  **     ctx: 全局信息
@@ -124,18 +124,18 @@ prob_cntx_t *prob_cntx_init(prob_conf_t *conf, log_cycle_t *log)
  **注意事项: 按序销毁
  **作    者: # Qifeng.zou # 2014.11.17 #
  ******************************************************************************/
-void prob_cntx_destroy(prob_cntx_t *ctx)
+void gate_cntx_destroy(gate_cntx_t *ctx)
 {
     pthread_cancel(ctx->lsn_tid);
-    prob_worker_pool_destroy(ctx);
-    prob_agent_pool_destroy(ctx);
+    gate_worker_pool_destroy(ctx);
+    gate_agent_pool_destroy(ctx);
 
     log_destroy(&ctx->log);
     plog_destroy();
 }
 
 /******************************************************************************
- **函数名称: prob_startup
+ **函数名称: gate_startup
  **功    能: 启动探针服务服务
  **输入参数: 
  **     ctx: 全局信息
@@ -146,35 +146,35 @@ void prob_cntx_destroy(prob_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
-int prob_startup(prob_cntx_t *ctx)
+int gate_startup(gate_cntx_t *ctx)
 {
     int idx;
-    prob_conf_t *conf = ctx->conf;
+    gate_conf_t *conf = ctx->conf;
 
     /* 1. 设置Worker线程回调 */
     for (idx=0; idx<conf->worker_num; ++idx)
     {
-        thread_pool_add_worker(ctx->worker_pool, prob_worker_routine, ctx);
+        thread_pool_add_worker(ctx->worker_pool, gate_worker_routine, ctx);
     }
 
     /* 2. 设置Agent线程回调 */
     for (idx=0; idx<conf->agent_num; ++idx)
     {
-        thread_pool_add_worker(ctx->agent_pool, prob_agent_routine, ctx);
+        thread_pool_add_worker(ctx->agent_pool, gate_agent_routine, ctx);
     }
     
     /* 3. 设置Listen线程回调 */
-    if (thread_creat(&ctx->lsn_tid, prob_listen_routine, ctx))
+    if (thread_creat(&ctx->lsn_tid, gate_listen_routine, ctx))
     {
         log_error(ctx->log, "Create listen thread failed!");
-        return PROB_ERR;
+        return GATE_ERR;
     }
 
-    return PROB_OK;
+    return GATE_OK;
 }
 
 /******************************************************************************
- **函数名称: prob_creat_worker_pool
+ **函数名称: gate_creat_worker_pool
  **功    能: 创建Worker线程池
  **输入参数: 
  **     ctx: 全局信息
@@ -184,19 +184,19 @@ int prob_startup(prob_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
-static int prob_creat_worker_pool(prob_cntx_t *ctx)
+static int gate_creat_worker_pool(gate_cntx_t *ctx)
 {
     int idx, num;
-    prob_worker_t *worker;
+    gate_worker_t *worker;
     thread_pool_opt_t opt;
-    const prob_conf_t *conf = ctx->conf;
+    const gate_conf_t *conf = ctx->conf;
 
     /* > 新建Worker对象 */
-    worker = (prob_worker_t *)calloc(conf->worker_num, sizeof(prob_worker_t));
+    worker = (gate_worker_t *)calloc(conf->worker_num, sizeof(gate_worker_t));
     if (NULL == worker)
     {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return PROB_ERR;
+        return GATE_ERR;
     }
 
     /* > 创建Worker线程池 */
@@ -210,13 +210,13 @@ static int prob_creat_worker_pool(prob_cntx_t *ctx)
     if (NULL == ctx->worker_pool)
     {
         log_error(ctx->log, "Initialize thread pool failed!");
-        return PROB_ERR;
+        return GATE_ERR;
     }
 
     /* 3. 依次初始化Worker对象 */
     for (idx=0; idx<conf->worker_num; ++idx)
     {
-        if (prob_worker_init(ctx, worker+idx, idx))
+        if (gate_worker_init(ctx, worker+idx, idx))
         {
             log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
             break;
@@ -225,24 +225,24 @@ static int prob_creat_worker_pool(prob_cntx_t *ctx)
 
     if (idx == conf->worker_num)
     {
-        return PROB_OK; /* 成功 */
+        return GATE_OK; /* 成功 */
     }
 
     /* 4. 释放Worker对象 */
     num = idx;
     for (idx=0; idx<num; ++idx)
     {
-        prob_worker_destroy(worker+idx);
+        gate_worker_destroy(worker+idx);
     }
 
     free(worker);
     thread_pool_destroy(ctx->worker_pool);
 
-    return PROB_ERR;
+    return GATE_ERR;
 }
 
 /******************************************************************************
- **函数名称: prob_worker_pool_destroy
+ **函数名称: gate_worker_pool_destroy
  **功    能: 销毁爬虫线程池
  **输入参数: 
  **     ctx: 全局信息
@@ -252,19 +252,19 @@ static int prob_creat_worker_pool(prob_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.14 #
  ******************************************************************************/
-static int prob_worker_pool_destroy(prob_cntx_t *ctx)
+static int gate_worker_pool_destroy(gate_cntx_t *ctx)
 {
     int idx;
     void *data;
-    prob_worker_t *worker;
-    const prob_conf_t *conf = ctx->conf;
+    gate_worker_t *worker;
+    const gate_conf_t *conf = ctx->conf;
 
     /* 1. 释放Worker对象 */
     for (idx=0; idx<conf->worker_num; ++idx)
     {
-        worker = (prob_worker_t *)ctx->worker_pool->data + idx;
+        worker = (gate_worker_t *)ctx->worker_pool->data + idx;
 
-        prob_worker_destroy(worker);
+        gate_worker_destroy(worker);
     }
 
     /* 2. 释放线程池对象 */
@@ -276,11 +276,11 @@ static int prob_worker_pool_destroy(prob_cntx_t *ctx)
 
     ctx->worker_pool = NULL;
 
-    return PROB_ERR;
+    return GATE_ERR;
 }
 
 /******************************************************************************
- **函数名称: prob_creat_agent_pool
+ **函数名称: gate_creat_agent_pool
  **功    能: 创建Agent线程池
  **输入参数: 
  **     ctx: 全局信息
@@ -290,19 +290,19 @@ static int prob_worker_pool_destroy(prob_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
-static int prob_creat_agent_pool(prob_cntx_t *ctx)
+static int gate_creat_agent_pool(gate_cntx_t *ctx)
 {
     int idx, num;
-    prob_agent_t *agent;
+    gate_agent_t *agent;
     thread_pool_opt_t opt;
-    const prob_conf_t *conf = ctx->conf;
+    const gate_conf_t *conf = ctx->conf;
 
     /* > 新建Agent对象 */
-    agent = (prob_agent_t *)calloc(conf->agent_num, sizeof(prob_agent_t));
+    agent = (gate_agent_t *)calloc(conf->agent_num, sizeof(gate_agent_t));
     if (NULL == agent)
     {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return PROB_ERR;
+        return GATE_ERR;
     }
 
     /* > 创建Worker线程池 */
@@ -317,13 +317,13 @@ static int prob_creat_agent_pool(prob_cntx_t *ctx)
     {
         log_error(ctx->log, "Initialize thread pool failed!");
         free(agent);
-        return PROB_ERR;
+        return GATE_ERR;
     }
 
     /* 3. 依次初始化Agent对象 */
     for (idx=0; idx<conf->agent_num; ++idx)
     {
-        if (prob_agent_init(ctx, agent+idx, idx))
+        if (gate_agent_init(ctx, agent+idx, idx))
         {
             log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
             break;
@@ -332,24 +332,24 @@ static int prob_creat_agent_pool(prob_cntx_t *ctx)
 
     if (idx == conf->agent_num)
     {
-        return PROB_OK; /* 成功 */
+        return GATE_OK; /* 成功 */
     }
 
     /* 4. 释放Agent对象 */
     num = idx;
     for (idx=0; idx<num; ++idx)
     {
-        prob_agent_destroy(agent+idx);
+        gate_agent_destroy(agent+idx);
     }
 
     free(agent);
     thread_pool_destroy(ctx->agent_pool);
 
-    return PROB_ERR;
+    return GATE_ERR;
 }
 
 /******************************************************************************
- **函数名称: prob_agent_pool_destroy
+ **函数名称: gate_agent_pool_destroy
  **功    能: 销毁Agent线程池
  **输入参数: 
  **     ctx: 全局信息
@@ -359,19 +359,19 @@ static int prob_creat_agent_pool(prob_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
-static int prob_agent_pool_destroy(prob_cntx_t *ctx)
+static int gate_agent_pool_destroy(gate_cntx_t *ctx)
 {
     int idx;
     void *data;
-    prob_agent_t *agent;
-    const prob_conf_t *conf = ctx->conf;
+    gate_agent_t *agent;
+    const gate_conf_t *conf = ctx->conf;
 
     /* 1. 释放Agent对象 */
     for (idx=0; idx<conf->agent_num; ++idx)
     {
-        agent = (prob_agent_t *)ctx->agent_pool->data + idx;
+        agent = (gate_agent_t *)ctx->agent_pool->data + idx;
 
-        prob_agent_destroy(agent);
+        gate_agent_destroy(agent);
     }
 
     /* 2. 释放线程池对象 */
@@ -383,11 +383,11 @@ static int prob_agent_pool_destroy(prob_cntx_t *ctx)
 
     ctx->agent_pool = NULL;
 
-    return PROB_ERR;
+    return GATE_ERR;
 }
 
 /******************************************************************************
- **函数名称: prob_reg_def_hdl
+ **函数名称: gate_reg_def_hdl
  **功    能: 默认注册函数
  **输入参数:
  **输出参数: NONE
@@ -396,17 +396,17 @@ static int prob_agent_pool_destroy(prob_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.20 #
  ******************************************************************************/
-static int prob_reg_def_hdl(unsigned int type, char *buff, size_t len, void *args, log_cycle_t *log)
+static int gate_reg_def_hdl(unsigned int type, char *buff, size_t len, void *args, log_cycle_t *log)
 {
     static int total = 0;
 
     log_info(log, "Call: %s()! total:%d", __func__, ++total);
 
-    return PROB_OK;
+    return GATE_OK;
 }
 
 /******************************************************************************
- **函数名称: prob_init_register
+ **函数名称: gate_init_register
  **功    能: 初始化注册消息处理
  **输入参数:
  **     ctx: 全局信息
@@ -416,30 +416,30 @@ static int prob_reg_def_hdl(unsigned int type, char *buff, size_t len, void *arg
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.20 #
  ******************************************************************************/
-int prob_init_register(prob_cntx_t *ctx)
+int gate_init_register(gate_cntx_t *ctx)
 {
     unsigned int idx;
-    prob_reg_t *reg;
+    gate_reg_t *reg;
 
-    for (idx=0; idx<=PROB_MSG_TYPE_MAX; ++idx)
+    for (idx=0; idx<=GATE_MSG_TYPE_MAX; ++idx)
     {
         reg = &ctx->reg[idx];
 
         reg->type = idx;
-        reg->proc = prob_reg_def_hdl;
+        reg->proc = gate_reg_def_hdl;
         reg->args = NULL;
-        reg->flag = PROB_REG_FLAG_UNREG;
+        reg->flag = GATE_REG_FLAG_UNREG;
     }
 
-    return PROB_OK;
+    return GATE_OK;
 }
 
 /******************************************************************************
- **函数名称: prob_register
+ **函数名称: gate_register
  **功    能: 注册消息处理函数
  **输入参数:
  **     ctx: 全局信息
- **     type: 扩展消息类型. Range:(0 ~ PROB_MSG_TYPE_MAX)
+ **     type: 扩展消息类型. Range:(0 ~ GATE_MSG_TYPE_MAX)
  **     proc: 指定消息类型对应的处理函数
  **     args: 附加参数
  **输出参数: NONE
@@ -450,15 +450,15 @@ int prob_init_register(prob_cntx_t *ctx)
  **     2. 不允许重复注册 
  **作    者: # Qifeng.zou # 2014.12.20 #
  ******************************************************************************/
-int prob_register(prob_cntx_t *ctx, unsigned int type, prob_reg_cb_t proc, void *args)
+int gate_register(gate_cntx_t *ctx, unsigned int type, gate_reg_cb_t proc, void *args)
 {
-    prob_reg_t *reg;
+    gate_reg_t *reg;
 
-    if (type >= PROB_MSG_TYPE_MAX
+    if (type >= GATE_MSG_TYPE_MAX
         || 0 != ctx->reg[type].flag)
     {
         log_error(ctx->log, "Type 0x%02X is invalid or repeat reg!", type);
-        return PROB_ERR;
+        return GATE_ERR;
     }
 
     reg = &ctx->reg[type];
@@ -467,11 +467,11 @@ int prob_register(prob_cntx_t *ctx, unsigned int type, prob_reg_cb_t proc, void 
     reg->args = args;
     reg->flag = 1;
 
-    return PROB_OK;
+    return GATE_OK;
 }
 
 /******************************************************************************
- **函数名称: prob_creat_queue
+ **函数名称: gate_creat_queue
  **功    能: 创建队列
  **输入参数:
  **     ctx: 全局信息
@@ -482,26 +482,26 @@ int prob_register(prob_cntx_t *ctx, unsigned int type, prob_reg_cb_t proc, void 
  **     此过程一旦失败, 程序必须推出运行. 因此, 在此申请的内存未被主动释放也不算内存泄露!
  **作    者: # Qifeng.zou # 2014.12.21 #
  ******************************************************************************/
-static int prob_creat_queue(prob_cntx_t *ctx)
+static int gate_creat_queue(gate_cntx_t *ctx)
 {
     int idx;
-    const prob_conf_t *conf = ctx->conf;
+    const gate_conf_t *conf = ctx->conf;
 
     /* 1. 创建连接队列(与Agent数一致) */
     ctx->connq = (queue_t **)calloc(conf->agent_num, sizeof(queue_t*));
     if (NULL == ctx->connq)
     {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return PROB_ERR;
+        return GATE_ERR;
     }
 
     for (idx=0; idx<conf->agent_num; ++idx)
     {
-        ctx->connq[idx] = queue_creat(conf->connq.max, sizeof(prob_add_sck_t));
+        ctx->connq[idx] = queue_creat(conf->connq.max, sizeof(gate_add_sck_t));
         if (NULL == ctx->connq)
         {
             log_error(ctx->log, "Initialize lock queue failed!");
-            return PROB_ERR;
+            return GATE_ERR;
         }
     }
 
@@ -510,7 +510,7 @@ static int prob_creat_queue(prob_cntx_t *ctx)
     if (NULL == ctx->recvq)
     {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return PROB_ERR;
+        return GATE_ERR;
     }
 
     for (idx=0; idx<conf->agent_num; ++idx)
@@ -519,9 +519,9 @@ static int prob_creat_queue(prob_cntx_t *ctx)
         if (NULL == ctx->recvq)
         {
             log_error(ctx->log, "Initialize lock queue failed!");
-            return PROB_ERR;
+            return GATE_ERR;
         }
     }
 
-    return PROB_OK;
+    return GATE_OK;
 }

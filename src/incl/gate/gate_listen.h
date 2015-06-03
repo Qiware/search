@@ -1,9 +1,8 @@
-#if !defined(__PROB_LISTEN_H__)
-#define __PROB_LISTEN_H__
+#if !defined(__GATE_LISTEN_H__)
+#define __GATE_LISTEN_H__
 
+#include "log.h"
 #include <stdint.h>
-
-#include "search.h"
 
 /* 侦听线程 */
 typedef struct
@@ -13,8 +12,8 @@ typedef struct
     int cmd_sck_id;             /* 命令套接字 */
     log_cycle_t *log;           /* 日志对象 */
     unsigned long long serial;  /* SCK流水号 */
-} prob_listen_t;
+} gate_listen_t;
 
-void *prob_listen_routine(void *_ctx);
+void *gate_listen_routine(void *_ctx);
 
-#endif /*__PROB_LISTEN_H__*/
+#endif /*__GATE_LISTEN_H__*/

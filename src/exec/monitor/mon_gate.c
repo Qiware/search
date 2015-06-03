@@ -12,14 +12,14 @@
 #include "mesg.h"
 #include "syscall.h"
 #include "monitor.h"
-#include "prob_mesg.h"
+#include "gate_mesg.h"
 
-#define PROB_CLIENT_NUM     (50000)
+#define GATE_CLIENT_NUM     (50000)
 
-static int mon_prob_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args);
+static int mon_gate_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args);
 
 /******************************************************************************
- **函数名称: mon_prob_menu
+ **函数名称: mon_gate_menu
  **功    能: 探针服务菜单
  **输入参数: NONE
  **输出参数: NONE
@@ -31,7 +31,7 @@ static int mon_prob_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.27 #
  ******************************************************************************/
-menu_item_t *mon_prob_menu(menu_cntx_t *ctx, void *args)
+menu_item_t *mon_gate_menu(menu_cntx_t *ctx, void *args)
 {
     menu_item_t *menu;
 
@@ -48,14 +48,14 @@ menu_item_t *mon_prob_menu(menu_cntx_t *ctx, void *args)
     }
 
     /* 添加子菜单 */
-    ADD_CHILD(ctx, menu, "Get configuration", NULL, mon_prob_connect, NULL, args);
-    ADD_CHILD(ctx, menu, "Get current status", NULL, mon_prob_connect, NULL, args);
-    ADD_CHILD(ctx, menu, "Test connect", NULL, mon_prob_connect, NULL, args);
+    ADD_CHILD(ctx, menu, "Get configuration", NULL, mon_gate_connect, NULL, args);
+    ADD_CHILD(ctx, menu, "Get current status", NULL, mon_gate_connect, NULL, args);
+    ADD_CHILD(ctx, menu, "Test connect", NULL, mon_gate_connect, NULL, args);
     return menu;
 }
 
 /******************************************************************************
- **函数名称: mon_prob_connect
+ **函数名称: mon_gate_connect
  **功    能: 测试探针服务处理大并发连接的能力
  **输入参数:
  **     menu: 菜单
@@ -65,11 +65,11 @@ menu_item_t *mon_prob_menu(menu_cntx_t *ctx, void *args)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.27 #
  ******************************************************************************/
-static int mon_prob_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args)
+static int mon_gate_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args)
 {
     char digit[256];
     int idx, num, max;
-    int fd[PROB_CLIENT_NUM];
+    int fd[GATE_CLIENT_NUM];
     mon_cntx_t *ctx = (mon_cntx_t *)args;
 
     /* > 输入最大连接数 */
@@ -95,14 +95,14 @@ static int mon_prob_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args
 #if 1
     int n;
     srch_mesg_body_t body;
-    prob_mesg_header_t header;
+    gate_mesg_header_t header;
 
     /* 发送搜索数据 */
     for (idx=0; idx<num; ++idx)
     {
         header.type = htonl(MSG_SEARCH_REQ);
-        header.flag = htonl(PROB_MSG_FLAG_USR);
-        header.mark = htonl(PROB_MSG_MARK_KEY);
+        header.flag = htonl(GATE_MSG_FLAG_USR);
+        header.mark = htonl(GATE_MSG_MARK_KEY);
         header.length = htonl(sizeof(body));
 
         snprintf(body.words, sizeof(body.words), "爱我中华");

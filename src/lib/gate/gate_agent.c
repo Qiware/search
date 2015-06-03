@@ -3,25 +3,25 @@
 #include "hash.h"
 #include "list.h"
 #include "mesg.h"
-#include "probe.h"
+#include "gate.h"
 #include "syscall.h"
 #include "xml_tree.h"
-#include "prob_agent.h"
+#include "gate_agent.h"
 #include "thread_pool.h"
 
-static prob_agent_t *prob_agent_self(prob_cntx_t *ctx);
-static int prob_agent_add_conn(prob_cntx_t *ctx, prob_agent_t *agt);
-int prob_agent_socket_cmp_cb(const void *pkey, const void *data);
-static int prob_agent_del_conn(prob_cntx_t *ctx, prob_agent_t *agt, socket_t *sck);
+static gate_agent_t *gate_agent_self(gate_cntx_t *ctx);
+static int gate_agent_add_conn(gate_cntx_t *ctx, gate_agent_t *agt);
+int gate_agent_socket_cmp_cb(const void *pkey, const void *data);
+static int gate_agent_del_conn(gate_cntx_t *ctx, gate_agent_t *agt, socket_t *sck);
 
-static int prob_agent_recv(prob_cntx_t *ctx, prob_agent_t *agt, socket_t *sck);
-static int prob_agent_send(prob_cntx_t *ctx, prob_agent_t *agt, socket_t *sck);
+static int gate_agent_recv(gate_cntx_t *ctx, gate_agent_t *agt, socket_t *sck);
+static int gate_agent_send(gate_cntx_t *ctx, gate_agent_t *agt, socket_t *sck);
 
-static int prob_agent_event_hdl(prob_cntx_t *ctx, prob_agent_t *agt);
-static int prob_agent_event_timeout_hdl(prob_cntx_t *ctx, prob_agent_t *agt);
+static int gate_agent_event_hdl(gate_cntx_t *ctx, gate_agent_t *agt);
+static int gate_agent_event_timeout_hdl(gate_cntx_t *ctx, gate_agent_t *agt);
 
 /******************************************************************************
- **函数名称: prob_agent_routine
+ **函数名称: gate_agent_routine
  **功    能: 运行Agent线程
  **输入参数:
  **     _ctx: 全局对象
@@ -32,13 +32,13 @@ static int prob_agent_event_timeout_hdl(prob_cntx_t *ctx, prob_agent_t *agt);
  **     TODO: 可使用事件触发添加套接字
  **作    者: # Qifeng.zou # 2014.11.18 #
  ******************************************************************************/
-void *prob_agent_routine(void *_ctx)
+void *gate_agent_routine(void *_ctx)
 {
-    prob_agent_t *agt;
-    prob_cntx_t *ctx = (prob_cntx_t *)_ctx;
+    gate_agent_t *agt;
+    gate_cntx_t *ctx = (gate_cntx_t *)_ctx;
 
     /* 1. 获取代理对象 */
-    agt = prob_agent_self(ctx);
+    agt = gate_agent_self(ctx);
     if (NULL == agt)
     {
         log_error(agt->log, "Get agent failed!");
@@ -49,9 +49,9 @@ void *prob_agent_routine(void *_ctx)
     while (1)
     {
         /* 2. 从连接队列取数据 */
-        if (prob_connq_used(ctx, agt->tidx))
+        if (gate_connq_used(ctx, agt->tidx))
         {
-            if (prob_agent_add_conn(ctx, agt))
+            if (gate_agent_add_conn(ctx, agt))
             {
                 log_error(agt->log, "Add connection failed!");
             }
@@ -59,7 +59,7 @@ void *prob_agent_routine(void *_ctx)
 
         /* 3. 等待事件通知 */
         agt->fds = epoll_wait(agt->epid, agt->events,
-                PROB_AGENT_EVENT_MAX_NUM, PROB_AGENT_TMOUT_MSEC);
+                GATE_AGENT_EVENT_MAX_NUM, GATE_AGENT_TMOUT_MSEC);
         if (agt->fds < 0)
         {
             if (EINTR == errno)
@@ -76,24 +76,24 @@ void *prob_agent_routine(void *_ctx)
         else if (0 == agt->fds)
         {
             agt->ctm = time(NULL);
-            if (agt->ctm - agt->scan_tm > PROB_TMOUT_SCAN_SEC)
+            if (agt->ctm - agt->scan_tm > GATE_TMOUT_SCAN_SEC)
             {
                 agt->scan_tm = agt->ctm;
 
-                prob_agent_event_timeout_hdl(ctx, agt);
+                gate_agent_event_timeout_hdl(ctx, agt);
             }
             continue;
         }
 
         /* 4. 处理事件通知 */
-        prob_agent_event_hdl(ctx, agt);
+        gate_agent_event_hdl(ctx, agt);
     }
 
     return NULL;
 }
 
 /******************************************************************************
- **函数名称: prob_agent_init
+ **函数名称: gate_agent_init
  **功    能: 初始化Agent线程
  **输入参数:
  **     ctx: 全局信息
@@ -108,7 +108,7 @@ void *prob_agent_routine(void *_ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.28 #
  ******************************************************************************/
-int prob_agent_init(prob_cntx_t *ctx, prob_agent_t *agt, int idx)
+int gate_agent_init(gate_cntx_t *ctx, gate_agent_t *agt, int idx)
 {
     rbt_opt_t opt;
     char path[FILE_NAME_MAX_LEN];
@@ -117,11 +117,11 @@ int prob_agent_init(prob_cntx_t *ctx, prob_agent_t *agt, int idx)
     agt->log = ctx->log;
 
     /* 1. 创建SLAB内存池 */
-    agt->slab = slab_creat_by_calloc(PROB_SLAB_SIZE);
+    agt->slab = slab_creat_by_calloc(GATE_SLAB_SIZE);
     if (NULL == agt->slab)
     {
         log_error(agt->log, "Initialize slab pool failed!");
-        return PROB_ERR;
+        return GATE_ERR;
     }
 
     /* 2. 创建连接红黑树 */
@@ -135,13 +135,13 @@ int prob_agent_init(prob_cntx_t *ctx, prob_agent_t *agt, int idx)
     if (NULL == agt->connections)
     {
         log_error(agt->log, "Create socket hash table failed!");
-        return PROB_ERR;
+        return GATE_ERR;
     }
 
     do
     {
         /* 3. 创建epoll对象 */
-        agt->epid = epoll_create(PROB_AGENT_EVENT_MAX_NUM);
+        agt->epid = epoll_create(GATE_AGENT_EVENT_MAX_NUM);
         if (agt->epid < 0)
         {
             log_error(agt->log, "errmsg:[%d] %s!", errno, strerror(errno));
@@ -149,7 +149,7 @@ int prob_agent_init(prob_cntx_t *ctx, prob_agent_t *agt, int idx)
         }
 
         agt->events = slab_alloc(agt->slab,
-                PROB_AGENT_EVENT_MAX_NUM * sizeof(struct epoll_event));
+                GATE_AGENT_EVENT_MAX_NUM * sizeof(struct epoll_event));
         if (NULL == agt->events)
         {
             log_error(agt->log, "errmsg:[%d] %s!", errno, strerror(errno));
@@ -157,7 +157,7 @@ int prob_agent_init(prob_cntx_t *ctx, prob_agent_t *agt, int idx)
         }
 
         /* 4. 创建命令套接字 */
-        snprintf(path, sizeof(path), PROB_RCV_CMD_PATH, agt->tidx);
+        snprintf(path, sizeof(path), GATE_RCV_CMD_PATH, agt->tidx);
 
         agt->cmd_sck_id = unix_udp_creat(path);
         if (agt->cmd_sck_id < 0)
@@ -166,15 +166,15 @@ int prob_agent_init(prob_cntx_t *ctx, prob_agent_t *agt, int idx)
             break;
         }
 
-        return PROB_OK;
+        return GATE_OK;
     } while(0);
 
-    prob_agent_destroy(agt);
-    return PROB_ERR;
+    gate_agent_destroy(agt);
+    return GATE_ERR;
 }
 
 /******************************************************************************
- **函数名称: prob_agent_destroy
+ **函数名称: gate_agent_destroy
  **功    能: 销毁Agent线程
  **输入参数:
  **     agt: 接收对象
@@ -184,7 +184,7 @@ int prob_agent_init(prob_cntx_t *ctx, prob_agent_t *agt, int idx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.18 #
  ******************************************************************************/
-int prob_agent_destroy(prob_agent_t *agt)
+int gate_agent_destroy(gate_agent_t *agt)
 {
     slab_dealloc(agt->slab, agt->events);
     rbt_destroy(agt->connections);
@@ -192,11 +192,11 @@ int prob_agent_destroy(prob_agent_t *agt)
     CLOSE(agt->epid);
     CLOSE(agt->cmd_sck_id);
     slab_destroy(agt->slab);
-    return PROB_OK;
+    return GATE_OK;
 }
 
 /******************************************************************************
- **函数名称: prob_agent_self
+ **函数名称: gate_agent_self
  **功    能: 获取代理对象
  **输入参数: 
  **     ctx: 全局信息
@@ -206,10 +206,10 @@ int prob_agent_destroy(prob_agent_t *agt)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.26 #
  ******************************************************************************/
-static prob_agent_t *prob_agent_self(prob_cntx_t *ctx)
+static gate_agent_t *gate_agent_self(gate_cntx_t *ctx)
 {
     int tidx;
-    prob_agent_t *agt;
+    gate_agent_t *agt;
 
     tidx = thread_pool_get_tidx(ctx->agent_pool);
     agt = thread_pool_get_args(ctx->agent_pool);
@@ -218,7 +218,7 @@ static prob_agent_t *prob_agent_self(prob_cntx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: prob_agent_event_hdl
+ **函数名称: gate_agent_event_hdl
  **功    能: 事件通知处理
  **输入参数: 
  **     ctx: 全局对象
@@ -229,7 +229,7 @@ static prob_agent_t *prob_agent_self(prob_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.28 #
  ******************************************************************************/
-static int prob_agent_event_hdl(prob_cntx_t *ctx, prob_agent_t *agt)
+static int gate_agent_event_hdl(gate_cntx_t *ctx, gate_agent_t *agt)
 {
     int idx, ret;
     socket_t *sck;
@@ -246,10 +246,10 @@ static int prob_agent_event_hdl(prob_cntx_t *ctx, prob_agent_t *agt)
         {
             /* 接收网络数据 */
             ret = sck->recv_cb(ctx, agt, sck);
-            if (PROB_SCK_AGAIN != ret)
+            if (GATE_SCK_AGAIN != ret)
             {
                 log_info(agt->log, "Delete connection! fd:%d", sck->fd);
-                prob_agent_del_conn(ctx, agt, sck);
+                gate_agent_del_conn(ctx, agt, sck);
                 continue; /* 异常-关闭SCK: 不必判断是否可写 */
             }
         }
@@ -259,28 +259,28 @@ static int prob_agent_event_hdl(prob_cntx_t *ctx, prob_agent_t *agt)
         {
             /* 发送网络数据 */
             ret = sck->send_cb(ctx, agt, sck);
-            if (PROB_ERR == ret)
+            if (GATE_ERR == ret)
             {
                 log_info(agt->log, "Delete connection! fd:%d", sck->fd);
-                prob_agent_del_conn(ctx, agt, sck);
+                gate_agent_del_conn(ctx, agt, sck);
                 continue; /* 异常: 套接字已关闭 */
             }
         }
     }
 
     /* 2. 超时扫描 */
-    if (agt->ctm - agt->scan_tm > PROB_TMOUT_SCAN_SEC)
+    if (agt->ctm - agt->scan_tm > GATE_TMOUT_SCAN_SEC)
     {
         agt->scan_tm = agt->ctm;
 
-        prob_agent_event_timeout_hdl(ctx, agt);
+        gate_agent_event_timeout_hdl(ctx, agt);
     }
 
-    return PROB_OK;
+    return GATE_OK;
 }
 
 /******************************************************************************
- **函数名称: prob_agent_get_timeout_conn_list
+ **函数名称: gate_agent_get_timeout_conn_list
  **功    能: 将超时连接加入链表
  **输入参数: 
  **     node: 平衡二叉树结点
@@ -291,25 +291,25 @@ static int prob_agent_event_hdl(prob_cntx_t *ctx, prob_agent_t *agt)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.24 #
  ******************************************************************************/
-static int prob_agent_get_timeout_conn_list(socket_t *sck, prob_conn_timeout_list_t *timeout)
+static int gate_agent_get_timeout_conn_list(socket_t *sck, gate_conn_timeout_list_t *timeout)
 {
     /* 判断是否超时，则加入到timeout链表中 */
     if ((timeout->ctm - sck->rdtm <= 15)
         || (timeout->ctm - sck->wrtm <= 15))
     {
-        return PROB_OK; /* 未超时 */
+        return GATE_OK; /* 未超时 */
     }
 
     if (list_lpush(timeout->list, sck))
     {
-        return PROB_ERR;
+        return GATE_ERR;
     }
 
-    return PROB_OK;
+    return GATE_OK;
 }
 
 /******************************************************************************
- **函数名称: prob_agent_event_timeout_hdl
+ **函数名称: gate_agent_event_timeout_hdl
  **功    能: 事件超时处理
  **输入参数: 
  **     agt: 代理对象
@@ -320,11 +320,11 @@ static int prob_agent_get_timeout_conn_list(socket_t *sck, prob_conn_timeout_lis
  **     不必依次释放超时链表各结点的空间，只需一次性释放内存池便可释放所有空间.
  **作    者: # Qifeng.zou # 2014.11.28 #
  ******************************************************************************/
-static int prob_agent_event_timeout_hdl(prob_cntx_t *ctx, prob_agent_t *agt)
+static int gate_agent_event_timeout_hdl(gate_cntx_t *ctx, gate_agent_t *agt)
 {
     socket_t *sck;
     list_opt_t opt;
-    prob_conn_timeout_list_t timeout;
+    gate_conn_timeout_list_t timeout;
     
     memset(&timeout, 0, sizeof(timeout));
 
@@ -333,7 +333,7 @@ static int prob_agent_event_timeout_hdl(prob_cntx_t *ctx, prob_agent_t *agt)
     if (NULL == timeout.pool)
     {
         log_error(agt->log, "Create memory pool failed!");
-        return PROB_ERR;
+        return GATE_ERR;
     }
 
     timeout.ctm = agt->ctm;
@@ -356,7 +356,7 @@ static int prob_agent_event_timeout_hdl(prob_cntx_t *ctx, prob_agent_t *agt)
 
         /* > 获取超时连接 */
         if (rbt_trav(agt->connections,
-                (rbt_trav_cb_t)prob_agent_get_timeout_conn_list, (void *)&timeout))
+                (rbt_trav_cb_t)gate_agent_get_timeout_conn_list, (void *)&timeout))
         {
             log_error(agt->log, "Traverse hash table failed!");
             break;
@@ -373,18 +373,18 @@ static int prob_agent_event_timeout_hdl(prob_cntx_t *ctx, prob_agent_t *agt)
                 break;
             }
 
-            prob_agent_del_conn(ctx, agt, sck);
+            gate_agent_del_conn(ctx, agt, sck);
         }
     } while(0);
 
     /* > 释放内存空间 */
     mem_pool_destroy(timeout.pool);
 
-    return PROB_OK;
+    return GATE_OK;
 }
 
 /******************************************************************************
- **函数名称: prob_agent_add_conn
+ **函数名称: gate_agent_add_conn
  **功    能: 添加新的连接
  **输入参数: 
  **     ctx: 全局信息
@@ -395,13 +395,13 @@ static int prob_agent_event_timeout_hdl(prob_cntx_t *ctx, prob_agent_t *agt)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.29 #
  ******************************************************************************/
-static int prob_agent_add_conn(prob_cntx_t *ctx, prob_agent_t *agt)
+static int gate_agent_add_conn(gate_cntx_t *ctx, gate_agent_t *agt)
 {
     time_t ctm = time(NULL);
     socket_t *sck;
     list_opt_t opt;
-    prob_add_sck_t *add;
-    prob_agent_socket_extra_t *extra;
+    gate_add_sck_t *add;
+    gate_agent_socket_extra_t *extra;
     struct epoll_event ev;
 
     while (1)
@@ -410,7 +410,7 @@ static int prob_agent_add_conn(prob_cntx_t *ctx, prob_agent_t *agt)
         add = queue_pop(ctx->connq[agt->tidx]);
         if (NULL == add)
         {
-            return PROB_OK;
+            return GATE_OK;
         }
 
         /* > 申请SCK空间 */
@@ -419,7 +419,7 @@ static int prob_agent_add_conn(prob_cntx_t *ctx, prob_agent_t *agt)
         {
             queue_dealloc(ctx->connq[agt->tidx], add);
             log_error(agt->log, "Alloc memory from slab failed!");
-            return PROB_ERR;
+            return GATE_ERR;
         }
 
         log_debug(agt->log, "Pop data! fd:%d addr:%p sck:%p", add->fd, add, sck);
@@ -427,13 +427,13 @@ static int prob_agent_add_conn(prob_cntx_t *ctx, prob_agent_t *agt)
         memset(sck, 0, sizeof(socket_t));
 
         /* > 创建SCK关联对象 */
-        extra = slab_alloc(agt->slab, sizeof(prob_agent_socket_extra_t));
+        extra = slab_alloc(agt->slab, sizeof(gate_agent_socket_extra_t));
         if (NULL == extra)
         {
             slab_dealloc(agt->slab, sck);
             queue_dealloc(ctx->connq[agt->tidx], add);
             log_error(agt->log, "Alloc memory from slab failed!");
-            return PROB_ERR;
+            return GATE_ERR;
         }
 
         memset(&opt, 0, sizeof(opt));
@@ -449,7 +449,7 @@ static int prob_agent_add_conn(prob_cntx_t *ctx, prob_agent_t *agt)
             slab_dealloc(agt->slab, extra);
             queue_dealloc(ctx->connq[agt->tidx], add);
             log_error(agt->log, "Alloc memory from slab failed!");
-            return PROB_ERR;
+            return GATE_ERR;
         }
 
         sck->extra = extra;
@@ -460,8 +460,8 @@ static int prob_agent_add_conn(prob_cntx_t *ctx, prob_agent_t *agt)
         sck->wrtm = sck->rdtm = ctm;/* 记录当前时间 */
 
         sck->recv.phase = SOCK_PHASE_RECV_INIT;
-        sck->recv_cb = (socket_recv_cb_t)prob_agent_recv;  /* Recv回调函数 */
-        sck->send_cb = (socket_send_cb_t)prob_agent_send;  /* Send回调函数*/
+        sck->recv_cb = (socket_recv_cb_t)gate_agent_recv;  /* Recv回调函数 */
+        sck->send_cb = (socket_send_cb_t)gate_agent_send;  /* Send回调函数*/
 
         extra->serial = add->serial;
 
@@ -476,7 +476,7 @@ static int prob_agent_add_conn(prob_cntx_t *ctx, prob_agent_t *agt)
             list_destroy(extra->send_list, agt->slab, (mem_dealloc_cb_t)slab_dealloc);
             slab_dealloc(agt->slab, sck->extra);
             slab_dealloc(agt->slab, sck);
-            return PROB_ERR;
+            return GATE_ERR;
         }
 
         log_debug(agt->log, "Insert into avl success! fd:%d seq:%lu", sck->fd, extra->serial);
@@ -491,11 +491,11 @@ static int prob_agent_add_conn(prob_cntx_t *ctx, prob_agent_t *agt)
         ++agt->conn_total;
     }
 
-    return PROB_ERR;
+    return GATE_ERR;
 }
 
 /******************************************************************************
- **函数名称: prob_agent_del_conn
+ **函数名称: gate_agent_del_conn
  **功    能: 删除指定套接字
  **输入参数:
  **     agt: 代理对象
@@ -506,10 +506,10 @@ static int prob_agent_add_conn(prob_cntx_t *ctx, prob_agent_t *agt)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.06 #
  ******************************************************************************/
-static int prob_agent_del_conn(prob_cntx_t *ctx, prob_agent_t *agt, socket_t *sck)
+static int gate_agent_del_conn(gate_cntx_t *ctx, gate_agent_t *agt, socket_t *sck)
 {
     void *addr, *p;
-    prob_agent_socket_extra_t *extra = sck->extra;
+    gate_agent_socket_extra_t *extra = sck->extra;
 
     log_debug(agt->log, "Call %s()! fd:%d", __func__, sck->fd);
 
@@ -544,11 +544,11 @@ static int prob_agent_del_conn(prob_cntx_t *ctx, prob_agent_t *agt, socket_t *sc
     slab_dealloc(agt->slab, sck);
 
     --agt->conn_total;
-    return PROB_OK;
+    return GATE_OK;
 }
 
 /******************************************************************************
- **函数名称: prob_agent_socket_cmp_cb
+ **函数名称: gate_agent_socket_cmp_cb
  **功    能: 哈希表中查找套接字信息的比较回调函数
  **输入参数:
  **     pkey: 主键
@@ -562,17 +562,17 @@ static int prob_agent_del_conn(prob_cntx_t *ctx, prob_agent_t *agt, socket_t *sc
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.29 #
  ******************************************************************************/
-int prob_agent_socket_cmp_cb(const void *pkey, const void *data)
+int gate_agent_socket_cmp_cb(const void *pkey, const void *data)
 {
     uint64_t serial = *(const uint64_t *)pkey;
     const socket_t *sock = (const socket_t *)data;
-    const prob_agent_socket_extra_t *extra = sock->extra;
+    const gate_agent_socket_extra_t *extra = sock->extra;
 
     return (serial - extra->serial);
 }
 
 /******************************************************************************
- **函数名称: prob_agent_recv_head
+ **函数名称: gate_agent_recv_head
  **功    能: 接收报头
  **输入参数:
  **     agt: 代理对象
@@ -583,17 +583,17 @@ int prob_agent_socket_cmp_cb(const void *pkey, const void *data)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.01 #
  ******************************************************************************/
-static int prob_agent_recv_head(prob_agent_t *agt, socket_t *sck)
+static int gate_agent_recv_head(gate_agent_t *agt, socket_t *sck)
 {
     void *addr;
     int n, left;
-    prob_mesg_header_t *head;
+    gate_mesg_header_t *head;
     socket_snap_t *recv = &sck->recv;
 
     /* 1. 计算剩余字节 */
-    left = sizeof(prob_mesg_header_t) - recv->off;
+    left = sizeof(gate_mesg_header_t) - recv->off;
 
-    addr = recv->addr + sizeof(prob_flow_t);
+    addr = recv->addr + sizeof(gate_flow_t);
 
     /* 2. 接收报头数据 */
     while (1)
@@ -613,11 +613,11 @@ static int prob_agent_recv_head(prob_agent_t *agt, socket_t *sck)
         {
             log_info(agt->log, "Client disconnected. errmsg:[%d] %s! fd:[%d] n:[%d/%d]",
                     errno, strerror(errno), sck->fd, n, left);
-            return PROB_SCK_CLOSE;
+            return GATE_SCK_CLOSE;
         }
         else if ((n < 0) && (EAGAIN == errno))
         {
-            return PROB_SCK_AGAIN; /* 等待下次事件通知 */
+            return GATE_SCK_AGAIN; /* 等待下次事件通知 */
         }
 
         if (EINTR == errno)
@@ -626,32 +626,32 @@ static int prob_agent_recv_head(prob_agent_t *agt, socket_t *sck)
         }
 
         log_error(agt->log, "errmsg:[%d] %s. fd:[%d]", errno, strerror(errno), sck->fd);
-        return PROB_ERR;
+        return GATE_ERR;
     }
 
     /* 3. 校验报头数据 */
-    head = (prob_mesg_header_t *)addr;
+    head = (gate_mesg_header_t *)addr;
 
     head->type = ntohl(head->type);
     head->flag = ntohl(head->flag);
     head->length = ntohl(head->length);
     head->mark = ntohl(head->mark);
 
-    if (PROB_MSG_MARK_KEY != head->mark)
+    if (GATE_MSG_MARK_KEY != head->mark)
     {
         log_error(agt->log, "Check head failed! type:%d len:%d flag:%d mark:[%u/%u]",
-            head->type, head->length, head->flag, head->mark, PROB_MSG_MARK_KEY);
-        return PROB_ERR;
+            head->type, head->length, head->flag, head->mark, GATE_MSG_MARK_KEY);
+        return GATE_ERR;
     }
 
     log_info(agt->log, "Recv head success! type:%d len:%d flag:%d mark:[%u/%u]",
-            head->type, head->length, head->flag, head->mark, PROB_MSG_MARK_KEY);
+            head->type, head->length, head->flag, head->mark, GATE_MSG_MARK_KEY);
 
-    return PROB_OK;
+    return GATE_OK;
 }
 
 /******************************************************************************
- **函数名称: prob_agent_recv_body
+ **函数名称: gate_agent_recv_body
  **功    能: 接收报体
  **输入参数:
  **     agt: 代理对象
@@ -662,15 +662,15 @@ static int prob_agent_recv_head(prob_agent_t *agt, socket_t *sck)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.02 #
  ******************************************************************************/
-static int prob_agent_recv_body(prob_agent_t *agt, socket_t *sck)
+static int gate_agent_recv_body(gate_agent_t *agt, socket_t *sck)
 {
     void *addr;
     int n, left;
-    prob_mesg_header_t *head;
+    gate_mesg_header_t *head;
     socket_snap_t *recv = &sck->recv;
 
-    addr = recv->addr + sizeof(prob_flow_t);
-    head  = (prob_mesg_header_t *)addr;
+    addr = recv->addr + sizeof(gate_flow_t);
+    head  = (gate_mesg_header_t *)addr;
 
     /* 1. 接收报体 */
     while (1)
@@ -692,11 +692,11 @@ static int prob_agent_recv_body(prob_agent_t *agt, socket_t *sck)
         {
             log_info(agt->log, "Client disconnected. errmsg:[%d] %s! fd:[%d] n:[%d/%d]",
                     errno, strerror(errno), sck->fd, n, left);
-            return PROB_SCK_CLOSE;
+            return GATE_SCK_CLOSE;
         }
         else if ((n < 0) && (EAGAIN == errno))
         {
-            return PROB_SCK_AGAIN;
+            return GATE_SCK_AGAIN;
         }
 
         if (EINTR == errno)
@@ -707,17 +707,17 @@ static int prob_agent_recv_body(prob_agent_t *agt, socket_t *sck)
         log_error(agt->log, "errmsg:[%d] %s! fd:%d type:%d length:%d n:%d total:%d offset:%d addr:%p",
                 errno, strerror(errno), head->type,
                 sck->fd, head->length, n, recv->total, recv->off, recv->addr);
-        return PROB_ERR;
+        return GATE_ERR;
     }
 
     log_trace(agt->log, "Recv body success! fd:%d type:%d length:%d total:%d off:%d",
             sck->fd, head->type, head->length, recv->total, recv->off);
 
-    return PROB_OK;
+    return GATE_OK;
 }
 
 /******************************************************************************
- **函数名称: prob_sys_msg_hdl
+ **函数名称: gate_sys_msg_hdl
  **功    能: 系统消息的处理
  **输入参数:
  **     ctx: 全局对象
@@ -729,13 +729,13 @@ static int prob_agent_recv_body(prob_agent_t *agt, socket_t *sck)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.05.28 #
  ******************************************************************************/
-static int prob_sys_msg_hdl(prob_cntx_t *ctx, prob_agent_t *agt, socket_t *sck)
+static int gate_sys_msg_hdl(gate_cntx_t *ctx, gate_agent_t *agt, socket_t *sck)
 {
-    return PROB_OK;
+    return GATE_OK;
 }
 
 /******************************************************************************
- **函数名称: prob_agent_recv_post
+ **函数名称: gate_agent_recv_post
  **功    能: 数据接收完毕，进行数据处理
  **输入参数:
  **     agt: 代理对象
@@ -746,12 +746,12 @@ static int prob_sys_msg_hdl(prob_cntx_t *ctx, prob_agent_t *agt, socket_t *sck)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.21 #
  ******************************************************************************/
-static int prob_agent_recv_post(prob_cntx_t *ctx, prob_agent_t *agt, socket_t *sck)
+static int gate_agent_recv_post(gate_cntx_t *ctx, gate_agent_t *agt, socket_t *sck)
 {
-    prob_agent_socket_extra_t *extra = (prob_agent_socket_extra_t *)sck->extra;
+    gate_agent_socket_extra_t *extra = (gate_agent_socket_extra_t *)sck->extra;
 
     /* 1. 自定义消息的处理 */
-    if (PROB_MSG_FLAG_USR == extra->head->flag)
+    if (GATE_MSG_FLAG_USR == extra->head->flag)
     {
         log_info(agt->log, "Push into user data queue!");
 
@@ -759,11 +759,11 @@ static int prob_agent_recv_post(prob_cntx_t *ctx, prob_agent_t *agt, socket_t *s
     }
 
     /* 2. 系统消息的处理 */
-    return prob_sys_msg_hdl(ctx, agt, sck);
+    return gate_sys_msg_hdl(ctx, agt, sck);
 }
 
 /******************************************************************************
- **函数名称: prob_agent_recv
+ **函数名称: gate_agent_recv
  **功    能: 接收数据
  **输入参数:
  **     agt: 代理对象
@@ -774,12 +774,12 @@ static int prob_agent_recv_post(prob_cntx_t *ctx, prob_agent_t *agt, socket_t *s
  **注意事项: TODO: 此处理流程可进一步进行优化
  **作    者: # Qifeng.zou # 2014.11.29 #
  ******************************************************************************/
-static int prob_agent_recv(prob_cntx_t *ctx, prob_agent_t *agt, socket_t *sck)
+static int gate_agent_recv(gate_cntx_t *ctx, gate_agent_t *agt, socket_t *sck)
 {
     int ret;
     socket_snap_t *recv = &sck->recv;
     static volatile uint64_t serial = 0;
-    prob_agent_socket_extra_t *extra = (prob_agent_socket_extra_t *)sck->extra;
+    gate_agent_socket_extra_t *extra = (gate_agent_socket_extra_t *)sck->extra;
 
     for (;;)
     {
@@ -792,20 +792,20 @@ static int prob_agent_recv(prob_cntx_t *ctx, prob_agent_t *agt, socket_t *sck)
                 if (NULL == recv->addr)
                 {
                     log_error(agt->log, "Alloc memory from queue failed!");
-                    return PROB_ERR;
+                    return GATE_ERR;
                 }
 
                 log_info(agt->log, "Alloc memory from queue success!");
 
-                extra->flow = (prob_flow_t *)recv->addr;
-                extra->head = (prob_mesg_header_t *)(extra->flow + 1);
+                extra->flow = (gate_flow_t *)recv->addr;
+                extra->head = (gate_mesg_header_t *)(extra->flow + 1);
                 extra->body = (void *)(extra->head + 1);
                 recv->off = 0;
-                recv->total = sizeof(prob_mesg_header_t);
+                recv->total = sizeof(gate_mesg_header_t);
 
                 extra->flow->serial = atomic64_inc(&serial);
                 extra->flow->sck_serial = extra->serial;
-                extra->flow->prob_agt_idx = agt->tidx;
+                extra->flow->gate_agt_idx = agt->tidx;
 
                 /* 设置下步 */
                 recv->phase = SOCK_PHASE_RECV_HEAD;
@@ -816,10 +816,10 @@ static int prob_agent_recv(prob_cntx_t *ctx, prob_agent_t *agt, socket_t *sck)
             case SOCK_PHASE_RECV_HEAD:
             {
             RECV_HEAD:
-                ret = prob_agent_recv_head(agt, sck);
+                ret = gate_agent_recv_head(agt, sck);
                 switch (ret)
                 {
-                    case PROB_OK:
+                    case GATE_OK:
                     {
                         if (extra->head->length)
                         {
@@ -832,7 +832,7 @@ static int prob_agent_recv(prob_cntx_t *ctx, prob_agent_t *agt, socket_t *sck)
                         }
                         break;      /* 继续后续处理 */
                     }
-                    case PROB_SCK_AGAIN:
+                    case GATE_SCK_AGAIN:
                     {
                         return ret; /* 下次继续处理 */
                     }
@@ -861,15 +861,15 @@ static int prob_agent_recv(prob_cntx_t *ctx, prob_agent_t *agt, socket_t *sck)
             case SOCK_PHASE_RECV_BODY:
             {
             RECV_BODY:
-                ret = prob_agent_recv_body(agt, sck);
+                ret = gate_agent_recv_body(agt, sck);
                 switch (ret)
                 {
-                    case PROB_OK:
+                    case GATE_OK:
                     {
                         recv->phase = SOCK_PHASE_RECV_POST; /* 设置下步 */
                         break;      /* 继续后续处理 */
                     }
-                    case PROB_SCK_AGAIN:
+                    case GATE_SCK_AGAIN:
                     {
                         return ret; /* 下次继续处理 */
                     }
@@ -888,10 +888,10 @@ static int prob_agent_recv(prob_cntx_t *ctx, prob_agent_t *agt, socket_t *sck)
             {
             RECV_POST:
                 /* 将数据放入接收队列 */
-                ret = prob_agent_recv_post(ctx, agt, sck);
+                ret = gate_agent_recv_post(ctx, agt, sck);
                 switch (ret)
                 {
-                    case PROB_OK:
+                    case GATE_OK:
                     {
                         recv->phase = SOCK_PHASE_RECV_INIT;
                         recv->addr = NULL;
@@ -901,19 +901,19 @@ static int prob_agent_recv(prob_cntx_t *ctx, prob_agent_t *agt, socket_t *sck)
                     {
                         queue_dealloc(ctx->recvq[agt->tidx], recv->addr);
                         recv->addr = NULL;
-                        return PROB_ERR;
+                        return GATE_ERR;
                     }
                 }
-                return PROB_ERR;
+                return GATE_ERR;
             }
         }
     }
 
-    return PROB_ERR;
+    return GATE_ERR;
 }
 
 /******************************************************************************
- **函数名称: prob_agent_fetch_send_data
+ **函数名称: gate_agent_fetch_send_data
  **功    能: 取发送数据
  **输入参数:
  **     agt: 代理对象
@@ -925,15 +925,15 @@ static int prob_agent_recv(prob_cntx_t *ctx, prob_agent_t *agt, socket_t *sck)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.22 #
  ******************************************************************************/
-static void *prob_agent_fetch_send_data(prob_agent_t *agt, socket_t *sck)
+static void *gate_agent_fetch_send_data(gate_agent_t *agt, socket_t *sck)
 {
-    prob_agent_socket_extra_t *extra = sck->extra;
+    gate_agent_socket_extra_t *extra = sck->extra;
 
     return list_lpop(extra->send_list);
 }
 
 /******************************************************************************
- **函数名称: prob_agent_send
+ **函数名称: gate_agent_send
  **功    能: 发送数据
  **输入参数:
  **     agt: 代理对象
@@ -944,10 +944,10 @@ static void *prob_agent_fetch_send_data(prob_agent_t *agt, socket_t *sck)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.29 #
  ******************************************************************************/
-static int prob_agent_send(prob_cntx_t *ctx, prob_agent_t *agt, socket_t *sck)
+static int gate_agent_send(gate_cntx_t *ctx, gate_agent_t *agt, socket_t *sck)
 {
     int n, left;
-    prob_mesg_header_t *head;
+    gate_mesg_header_t *head;
     socket_snap_t *send = &sck->send;
 
     sck->wrtm = time(NULL);
@@ -957,16 +957,16 @@ static int prob_agent_send(prob_cntx_t *ctx, prob_agent_t *agt, socket_t *sck)
         /* 1. 取发送的数据 */
         if (NULL == send->addr)
         {
-            send->addr = prob_agent_fetch_send_data(agt, sck);
+            send->addr = gate_agent_fetch_send_data(agt, sck);
             if (NULL == send->addr)
             {
-                return PROB_OK; /* 无数据 */
+                return GATE_OK; /* 无数据 */
             }
 
-            head = (prob_mesg_header_t *)send->addr;
+            head = (gate_mesg_header_t *)send->addr;
 
             send->off = 0;
-            send->total = head->length + sizeof(prob_mesg_header_t);
+            send->total = head->length + sizeof(gate_mesg_header_t);
         }
 
         /* 2. 发送数据 */
@@ -978,7 +978,7 @@ static int prob_agent_send(prob_cntx_t *ctx, prob_agent_t *agt, socket_t *sck)
             if (n > 0)
             {
                 send->off += n;
-                return PROB_SCK_AGAIN;
+                return GATE_SCK_AGAIN;
             }
 
             log_error(agt->log, "errmsg:[%d] %s!", errno, strerror(errno));
@@ -986,7 +986,7 @@ static int prob_agent_send(prob_cntx_t *ctx, prob_agent_t *agt, socket_t *sck)
             /* 释放空间 */
             slab_dealloc(agt->slab, send->addr);
             send->addr = NULL;
-            return PROB_ERR;
+            return GATE_ERR;
         }
 
         /* 3. 释放空间 */
@@ -994,5 +994,5 @@ static int prob_agent_send(prob_cntx_t *ctx, prob_agent_t *agt, socket_t *sck)
         send->addr = NULL;
     }
 
-    return PROB_ERR;
+    return GATE_ERR;
 }

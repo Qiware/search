@@ -12,10 +12,10 @@
 #include "lock.h"
 #include "hash.h"
 #include "mesg.h"
-#include "probe.h"
+#include "gate.h"
 #include "agentd.h"
 #include "syscall.h"
-#include "prob_mesg.h"
+#include "gate_mesg.h"
 
 #define AGTD_PROC_LOCK_PATH "../temp/agtd/agtd.lck"
 
@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
     }
 
     /* 3. 启动爬虫服务 */
-    if (prob_startup(agtd->prob))
+    if (gate_startup(agtd->gate))
     {
         fprintf(stderr, "Startup search-engine failed!");
         goto ERROR;
@@ -82,7 +82,7 @@ int main(int argc, char *argv[])
 
 ERROR:
     /* 4. 销毁全局信息 */
-    prob_cntx_destroy(agtd->prob);
+    gate_cntx_destroy(agtd->gate);
 
     return -1;
 }
@@ -124,57 +124,10 @@ static int agtd_proc_lock(void)
     return 0;
 }
 
-/******************************************************************************
- **函数名称: agtd_sdtp_set_conf
- **功    能: 设置SDTP配置信息
- **输入参数: NONE
- **输出参数:
- **     conf: 配置信息
- **返    回: 0:成功 !0:失败
- **实现描述: 设置SDTP的配置信息
- **注意事项: TODO: 可改为使用配置文件的方式加载配置信息
- **作    者: # Qifeng.zou # 2015.05.28 22:58:17 #
- ******************************************************************************/
-static int agtd_sdtp_set_conf(sdtp_ssvr_conf_t *conf)
+/* 初始化SDTP对象 */
+static sdtp_cli_t *agtd_sdtp_init(sdtp_ssvr_conf_t *conf, log_cycle_t *log)
 {
-    memset(conf, 0, sizeof(sdtp_ssvr_conf_t));
-
-    snprintf(conf->name, sizeof(conf->name), "SDTP-SEND");
-
-    snprintf(conf->auth.usr, sizeof(conf->auth.usr), "qifeng");
-    snprintf(conf->auth.passwd, sizeof(conf->auth.passwd), "111111");
-
-    snprintf(conf->ipaddr, sizeof(conf->ipaddr), "127.0.0.1");
-
-    conf->send_thd_num = 1;
-    conf->send_buff_size = 5 * MB;
-    conf->recv_buff_size = 2 * MB;
-
-    snprintf(conf->sendq.name, sizeof(conf->sendq.name), "../temp/sdtp/sdtp-ssvr.key");
-    conf->sendq.size = 4096;
-    conf->sendq.count = 2048;
-
-    return 0;
-}
-
-/******************************************************************************
- **函数名称: agtd_sdtp_init
- **功    能: 初始化SDTP对象
- **输入参数: NONE
- **输出参数:
- **     conf: 配置信息
- **返    回: 0:成功 !0:失败
- **实现描述: 设置SDTP的配置信息
- **注意事项: TODO: 可改为使用配置文件的方式加载配置信息
- **作    者: # Qifeng.zou # 2015.05.28 22:58:17 #
- ******************************************************************************/
-static sdtp_cli_t *agtd_sdtp_init(log_cycle_t *log)
-{
-    sdtp_ssvr_conf_t conf;
-
-    agtd_sdtp_set_conf(&conf);
-
-    return sdtp_cli_init(&conf, 0, log);
+    return sdtp_cli_init(conf, 0, log);
 }
 
 /******************************************************************************
@@ -199,7 +152,7 @@ static int agtd_serial_to_sck_map_init(agtd_cntx_t *agtd)
     agtd->serial_to_sck_map = (avl_tree_t **)calloc(agtd->len, sizeof(avl_tree_t *));
     if (NULL == agtd->serial_to_sck_map)
     {
-        return PROB_ERR;
+        return AGTD_ERR;
     }
 
     for (i=0; i<agtd->len; ++i)
@@ -211,11 +164,11 @@ static int agtd_serial_to_sck_map_init(agtd_cntx_t *agtd)
         agtd->serial_to_sck_map[i] = avl_creat(&opt, (key_cb_t)avl_key_cb_int64, (avl_cmp_cb_t)avl_cmp_cb_int64);
         if (NULL == agtd->serial_to_sck_map[i])
         {
-            return PROB_ERR;
+            return AGTD_ERR;
         }
     }
 
-    return PROB_OK;
+    return AGTD_OK;
 }
 
 /******************************************************************************
@@ -234,33 +187,33 @@ static int agtd_search_req_hdl(unsigned int type, void *data, int length, void *
 {
     int idx;
     mesg_search_req_t req;
-    prob_flow_t *flow, *f;
+    gate_flow_t *flow, *f;
     srch_mesg_body_t *body;
-    prob_mesg_header_t *head;
+    gate_mesg_header_t *head;
     agtd_cntx_t *agtd = (agtd_cntx_t *)args;
 
-    flow = (prob_flow_t *)data;
-    head = (prob_mesg_header_t *)(flow + 1);
+    flow = (gate_flow_t *)data;
+    head = (gate_mesg_header_t *)(flow + 1);
     body = (srch_mesg_body_t *)(head + 1);
 
     /* > 将流水信息插入请求列表 */
-    f = (prob_flow_t *)malloc(sizeof(prob_flow_t));
+    f = (gate_flow_t *)malloc(sizeof(gate_flow_t));
     if (NULL == f)
     {
         log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return PROB_ERR;
+        return AGTD_ERR;
     }
 
-    memcpy(f, flow, sizeof(prob_flow_t));
+    memcpy(f, flow, sizeof(gate_flow_t));
 
     idx = flow->serial % agtd->len;
 
     if (avl_insert(agtd->serial_to_sck_map[idx], &flow->serial, sizeof(flow->serial), f))
     {
         free(f);
-        log_error(log, "Insert into avl failed! idx:%d serial:%lu sck_serial:%lu prob_agt_idx:%d",
-                idx, flow->serial, flow->sck_serial, flow->prob_agt_idx);
-        return PROB_ERR;
+        log_error(log, "Insert into avl failed! idx:%d serial:%lu sck_serial:%lu gate_agt_idx:%d",
+                idx, flow->serial, flow->sck_serial, flow->gate_agt_idx);
+        return AGTD_ERR;
     }
 
     /* > 转发搜索请求 */
@@ -283,12 +236,12 @@ static int agtd_search_req_hdl(unsigned int type, void *data, int length, void *
  ******************************************************************************/
 static int agtd_set_reg(agtd_cntx_t *agtd)
 {
-    if (prob_register(agtd->prob, MSG_SEARCH_REQ, (prob_reg_cb_t)agtd_search_req_hdl, (void *)agtd))
+    if (gate_register(agtd->gate, MSG_SEARCH_REQ, (gate_reg_cb_t)agtd_search_req_hdl, (void *)agtd))
     {
-        return PROB_ERR;
+        return AGTD_ERR;
     }
 
-    return PROB_OK;
+    return AGTD_OK;
 }
 
 /******************************************************************************
@@ -307,7 +260,7 @@ static agtd_cntx_t *agtd_init(char *pname, const char *path)
 {
     log_cycle_t *log;
     sdtp_cli_t *sdtp;
-    prob_cntx_t *prob;
+    gate_cntx_t *gate;
     agtd_cntx_t *agtd;
 
     /* > 加进程锁 */
@@ -344,15 +297,15 @@ static agtd_cntx_t *agtd_init(char *pname, const char *path)
     }
 
     /* > 初始化全局信息 */
-    prob = prob_cntx_init(&agtd->conf->prob, log);
-    if (NULL == prob)
+    gate = gate_cntx_init(&agtd->conf->gate, log);
+    if (NULL == gate)
     {
         fprintf(stderr, "Initialize search-engine failed!");
         return NULL;
     }
 
     /* > 初始化SDTP信息 */
-    sdtp = agtd_sdtp_init(log);
+    sdtp = agtd_sdtp_init(&agtd->conf->sdtp, log);
     if (NULL == sdtp)
     {
         fprintf(stderr, "Initialize sdtp failed!");
@@ -366,10 +319,8 @@ static agtd_cntx_t *agtd_init(char *pname, const char *path)
         return NULL;
     }
 
-    agtd->prob = prob;
+    agtd->gate = gate;
     agtd->sdtp = sdtp;
 
     return agtd;
 }
-
-
