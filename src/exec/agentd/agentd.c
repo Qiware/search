@@ -1,39 +1,23 @@
 /******************************************************************************
  ** Coypright(C) 2014-2024 Xundao technology Co., Ltd
  **
- ** 文件名: search.c
+ ** 文件名: agentd.c
  ** 版本号: 1.0
- ** 描  述: 搜索引擎
- **         负责接受搜索请求，并将搜索结果返回给客户端
+ ** 描  述: 代理服务
+ **         负责接受外界请求，并将处理结果返回给外界
  ** 作  者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
 
 #include "sck.h"
-#include "comm.h"
 #include "lock.h"
 #include "hash.h"
 #include "mesg.h"
 #include "probe.h"
 #include "agentd.h"
 #include "syscall.h"
-#include "sdtp_cli.h"
-#include "agtd_conf.h"
 #include "prob_mesg.h"
-#include "prob_worker.h"
 
-#define AGTD_PROC_LOCK_PATH "../temp/prob/prob.lck"
-
-typedef struct
-{
-    agtd_conf_t *conf;                  /* 配置信息 */
-
-    sdtp_cli_t *sdtp;                   /* SDTP服务 */
-    prob_cntx_t *prob;                  /* 探针服务 */
-    log_cycle_t *log;                   /* 日志对象 */
-
-    int len;                            /* 业务请求树长 */
-    avl_tree_t **serial_to_sck_map;     /* 序列与SCK的映射 */
-} agtd_cntx_t;
+#define AGTD_PROC_LOCK_PATH "../temp/agtd/agtd.lck"
 
 static agtd_cntx_t *agtd_init(char *pname, const char *path);
 static int agtd_set_reg(agtd_cntx_t *agtd);
@@ -104,6 +88,43 @@ ERROR:
 }
 
 /******************************************************************************
+ **函数名称: agtd_proc_lock
+ **功    能: 代理服务进程锁(防止同时启动两个服务进程)
+ **输入参数: NONE
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2014.11.15 #
+ ******************************************************************************/
+static int agtd_proc_lock(void)
+{
+    int fd;
+    char path[FILE_PATH_MAX_LEN];
+
+    /* 1. 获取路径 */
+    snprintf(path, sizeof(path), "%s", AGTD_PROC_LOCK_PATH);
+
+    Mkdir2(path, DIR_MODE);
+
+    /* 2. 打开文件 */
+    fd = Open(path, OPEN_FLAGS, OPEN_MODE);
+    if (fd < 0)
+    {
+        return -1;
+    }
+
+    /* 3. 尝试加锁 */
+    if (proc_try_wrlock(fd) < 0)
+    {
+        CLOSE(fd);
+        return -1;
+    }
+
+    return 0;
+}
+
+/******************************************************************************
  **函数名称: agtd_sdtp_set_conf
  **功    能: 设置SDTP配置信息
  **输入参数: NONE
@@ -157,7 +178,7 @@ static sdtp_cli_t *agtd_sdtp_init(log_cycle_t *log)
 }
 
 /******************************************************************************
- **函数名称: prob_init_req_list
+ **函数名称: agtd_serial_to_sck_map_init
  **功    能: 初始化请求列表
  **输入参数:
  **     agtd: 全局信息
@@ -167,7 +188,7 @@ static sdtp_cli_t *agtd_sdtp_init(log_cycle_t *log)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.05.28 23:41:39 #
  ******************************************************************************/
-static int prob_init_req_list(agtd_cntx_t *agtd)
+static int agtd_serial_to_sck_map_init(agtd_cntx_t *agtd)
 {
     int i;
     avl_opt_t opt;
@@ -198,7 +219,7 @@ static int prob_init_req_list(agtd_cntx_t *agtd)
 }
 
 /******************************************************************************
- **函数名称: prob_search_req_hdl
+ **函数名称: agtd_search_req_hdl
  **功    能: 搜索请求的处理函数
  **输入参数:
  **     type: 全局对象
@@ -209,7 +230,7 @@ static int prob_init_req_list(agtd_cntx_t *agtd)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.05.28 23:11:54 #
  ******************************************************************************/
-static int prob_search_req_hdl(unsigned int type, void *data, int length, void *args, log_cycle_t *log)
+static int agtd_search_req_hdl(unsigned int type, void *data, int length, void *args, log_cycle_t *log)
 {
     int idx;
     mesg_search_req_t req;
@@ -262,7 +283,7 @@ static int prob_search_req_hdl(unsigned int type, void *data, int length, void *
  ******************************************************************************/
 static int agtd_set_reg(agtd_cntx_t *agtd)
 {
-    if (prob_register(agtd->prob, MSG_SEARCH_REQ, (prob_reg_cb_t)prob_search_req_hdl, (void *)agtd))
+    if (prob_register(agtd->prob, MSG_SEARCH_REQ, (prob_reg_cb_t)agtd_search_req_hdl, (void *)agtd))
     {
         return PROB_ERR;
     }
@@ -284,11 +305,19 @@ static int agtd_set_reg(agtd_cntx_t *agtd)
  ******************************************************************************/
 static agtd_cntx_t *agtd_init(char *pname, const char *path)
 {
+    log_cycle_t *log;
     sdtp_cli_t *sdtp;
     prob_cntx_t *prob;
     agtd_cntx_t *agtd;
-    log_cycle_t *log;
 
+    /* > 加进程锁 */
+    if (agtd_proc_lock())
+    {
+        fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
+        return NULL;
+    }
+
+    /* > 创建全局对象 */
     agtd = (agtd_cntx_t *)calloc(1, sizeof(agtd_cntx_t));
     if (NULL == agtd)
     {
@@ -302,6 +331,8 @@ static agtd_cntx_t *agtd_init(char *pname, const char *path)
         fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
         return NULL;
     }
+
+    agtd->log = log;
 
     /* > 加载配置信息 */
     agtd->conf = agtd_conf_load(path, log);
@@ -321,15 +352,15 @@ static agtd_cntx_t *agtd_init(char *pname, const char *path)
     }
 
     /* > 初始化SDTP信息 */
-    sdtp = agtd_sdtp_init(prob->log);
+    sdtp = agtd_sdtp_init(log);
     if (NULL == sdtp)
     {
         fprintf(stderr, "Initialize sdtp failed!");
         return NULL;
     }
 
-    /* > 初始化请求列表 */
-    if (prob_init_req_list(agtd))
+    /* > 初始化序列号->SCK映射表 */
+    if (agtd_serial_to_sck_map_init(agtd))
     {
         fprintf(stderr, "Initialize sdtp failed!");
         return NULL;
@@ -340,3 +371,5 @@ static agtd_cntx_t *agtd_init(char *pname, const char *path)
 
     return agtd;
 }
+
+

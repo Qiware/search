@@ -3,6 +3,8 @@
 
 #include "log.h"
 #include "comm.h"
+#include "sdtp_cli.h"
+#include "agtd_conf.h"
 
 #define AGTD_DEF_CONF_PATH  "../conf/agentd.xml"/* 默认配置路径 */
 
@@ -25,6 +27,18 @@ typedef struct
     char conf_path[FILE_NAME_MAX_LEN];      /* 配置文件路径 */
     bool isdaemon;                          /* 是否后台运行 */
 } agtd_opt_t;
+
+typedef struct
+{
+    agtd_conf_t *conf;                  /* 配置信息 */
+
+    sdtp_cli_t *sdtp;                   /* SDTP服务 */
+    prob_cntx_t *prob;                  /* 探针服务 */
+    log_cycle_t *log;                   /* 日志对象 */
+
+    int len;                            /* 业务请求树长 */
+    avl_tree_t **serial_to_sck_map;     /* 序列与SCK的映射 */
+} agtd_cntx_t;
 
 int agtd_getopt(int argc, char **argv, agtd_opt_t *opt);
 int agtd_usage(const char *exec);

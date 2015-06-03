@@ -19,10 +19,7 @@
 #include "prob_listen.h"
 #include "prob_agent.h"
 
-#define PROB_PROC_LOCK_PATH "../temp/srch/srch.lck"
-
 static log_cycle_t *prob_init_log(char *fname);
-static int prob_proc_lock(void);
 static int prob_creat_agent_pool(prob_cntx_t *ctx);
 static int prob_agent_pool_destroy(prob_cntx_t *ctx);
 static int prob_creat_worker_pool(prob_cntx_t *ctx);
@@ -60,8 +57,6 @@ prob_cntx_t *prob_cntx_init(prob_conf_t *conf, log_cycle_t *log)
 
     ctx->log = log;
     ctx->conf = conf;
-    log_set_level(log, conf->log.level);
-    plog_set_level(conf->log.syslevel);
 
     /* > 创建内存池 */
     ctx->slab = slab_creat_by_calloc(30 * MB);
@@ -389,43 +384,6 @@ static int prob_agent_pool_destroy(prob_cntx_t *ctx)
     ctx->agent_pool = NULL;
 
     return PROB_ERR;
-}
-
-/******************************************************************************
- **函数名称: prob_proc_lock
- **功    能: 探针服务进程锁(防止同时启动两个服务进程)
- **输入参数: NONE
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.11.15 #
- ******************************************************************************/
-static int prob_proc_lock(void)
-{
-    int fd;
-    char path[FILE_PATH_MAX_LEN];
-
-    /* 1. 获取路径 */
-    snprintf(path, sizeof(path), "%s", PROB_PROC_LOCK_PATH);
-
-    Mkdir2(path, DIR_MODE);
-
-    /* 2. 打开文件 */
-    fd = Open(path, OPEN_FLAGS, OPEN_MODE);
-    if (fd < 0)
-    {
-        return -1;
-    }
-
-    /* 3. 尝试加锁 */
-    if (proc_try_wrlock(fd) < 0)
-    {
-        CLOSE(fd);
-        return -1;
-    }
-
-    return 0;
 }
 
 /******************************************************************************

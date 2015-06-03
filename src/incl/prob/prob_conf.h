@@ -9,11 +9,6 @@ typedef struct
 {
     struct
     {
-        int level;                          /* 日志级别 */
-        int syslevel;                       /* 系统日志级别 */
-    } log;                                  /* 日志配置 */
-    struct
-    {
         int max;                            /* 最大并发数 */
         int timeout;                        /* 连接超时时间 */
         int port;                           /* 侦听端口 */
