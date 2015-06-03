@@ -41,7 +41,7 @@ static int invtd_search_req_hdl(int type, int orig, char *buff, size_t len, void
     if (NULL == word
         || NULL == word->doc_list)
     {
-        log_debug(ctx->log, "Didn't find anything!");
+        log_error(ctx->log, "Didn't search anything! words:%s", req->body.words);
         return 0;
     }
 
