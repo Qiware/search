@@ -143,3 +143,54 @@ bool str_isdigit(const char *str)
     }
     return true;
 }
+
+/******************************************************************************
+ **函数名称: str_to_hex
+ **功    能: 将十六进制字符串转换为十六进制数据
+ **输入参数:
+ **     str: 源字串
+ **     len: 源字串长度
+ **输出参数:
+ **     hex: 十六进制数据
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015-06-03 11:45:50 #
+ ******************************************************************************/
+int str_to_hex(const char *str, int len, char *hex)
+{
+    int i;
+
+    for (i=0; i<len; ++i) {
+        if (str[i] >= 'A' && str[i] <= 'F') {
+            if (0 == i%2) {
+                hex[i>>1] = (str[i]-'A'+10)<<4;
+            }
+            else {
+                hex[i>>1] |= str[i]-'A'+10;
+            }
+            continue;
+        }
+        else if (str[i] >= 'a' && str[i] <= 'f') {
+            if (0 == i%2) {
+                hex[i>>1] = (str[i]-'a'+10)<<4;
+            }
+            else {
+                hex[i>>1] |= str[i]-'a'+10;
+            }
+            continue;
+        }
+        else if (str[i] >= '0' && str[i] <= '9') {
+            if (0 == i%2) {
+                hex[i>>1] = (str[i]-'0')<<4;
+            }
+            else {
+                hex[i>>1] |= (str[i]-'0');
+            }
+            continue;
+        }
+        return -1;
+    }
+
+    return 0;
+}

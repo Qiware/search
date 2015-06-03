@@ -12,6 +12,7 @@ typedef struct
  
 str_t *str_to_lower(str_t *s);
 str_t *str_to_upper(str_t *s);
+int str_to_hex(const char *str, int len, char *hex);
 bool str_isdigit(const char *str);
 
 #endif /*__STR_H__*/
