@@ -161,6 +161,10 @@ static int invtd_conf_load_sdtp(xml_tree_t *xml, invtd_conf_t *conf)
 
     conf->sdtp.recvq.size = atoi(node->value.str);
 
+    /* > 发送队列配置 */
+    conf->sdtp.sendq.max = conf->sdtp.recvq.max;
+    conf->sdtp.sendq.size = conf->sdtp.recvq.size;
+
     return INVT_OK;
 }
 

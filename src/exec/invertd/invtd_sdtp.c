@@ -36,13 +36,15 @@ static int invtd_search_req_hdl(int type, int orig, char *buff, size_t len, void
     mesg_search_req_t *req = (mesg_search_req_t *)buff; /* 请求 */
     mesg_search_rep_t rep; /* 应答 */
 
+    memset(&rep, 0, sizeof(rep));
+
     /* > 搜索倒排表 */
     word = invert_tab_query(ctx->tab, req->body.words);
     if (NULL == word
         || NULL == word->doc_list)
     {
         log_error(ctx->log, "Didn't search anything! words:%s", req->body.words);
-        return 0;
+        goto INVTD_SRCH_REP;
     }
 
     /* > 打印搜索结果 */
@@ -54,9 +56,11 @@ static int invtd_search_req_hdl(int type, int orig, char *buff, size_t len, void
 
         log_trace(ctx->log, "[%d]: url:%s freq:%d", idx+1, doc->url.str, doc->freq);
 
+        ++rep.url_num;
         snprintf(rep.url[idx], sizeof(rep.url[idx]), "%s:%d", doc->url.str, doc->freq);
     }
 
+INVTD_SRCH_REP:
     /* > 应答搜索结果 */
     rep.serial = req->serial;
     if (sdtp_rcli_send(ctx->sdtp_rcli, MSG_SEARCH_REP, orig, (void *)&rep, sizeof(rep)))
