@@ -16,7 +16,7 @@
 static int agtd_conf_parse(xml_tree_t *xml, gate_conf_t *conf, log_cycle_t *log);
 
 static int agtd_conf_load_comm(xml_tree_t *xml, agtd_conf_t *conf, log_cycle_t *log);
-static int agtd_conf_load_GATE(xml_tree_t *xml, gate_conf_t *conf, log_cycle_t *log);
+static int agtd_conf_load_gate(xml_tree_t *xml, gate_conf_t *conf, log_cycle_t *log);
 static int agtd_conf_load_sdtp(xml_tree_t *xml, sdtp_ssvr_conf_t *conf, log_cycle_t *log);
 
 /* 加载配置信息 */
@@ -67,7 +67,7 @@ agtd_conf_t *agtd_conf_load(const char *path, log_cycle_t *log)
         }
 
         /* > 加载GATE配置 */
-        if (agtd_conf_load_GATE(xml, &conf->gate, log))
+        if (agtd_conf_load_gate(xml, &conf->gate, log))
         {
             log_error(log, "Load GATE conf failed! path:%s", path);
             break;
@@ -228,7 +228,7 @@ static int agtd_conf_parse_GATE_queue(xml_tree_t *xml, gate_conf_t *conf, log_cy
 }
 
 /* 加载GATE配置 */
-static int agtd_conf_load_GATE(xml_tree_t *xml, gate_conf_t *conf, log_cycle_t *log)
+static int agtd_conf_load_gate(xml_tree_t *xml, gate_conf_t *conf, log_cycle_t *log)
 {
     xml_node_t *node;
 

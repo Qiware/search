@@ -197,7 +197,7 @@ static int agtd_search_req_hdl(unsigned int type, void *data, int length, void *
     body = (srch_mesg_body_t *)(head + 1);
 
     /* > 将流水信息插入请求列表 */
-    f = (gate_flow_t *)malloc(sizeof(gate_flow_t));
+    f = (gate_flow_t *)calloc(1, sizeof(gate_flow_t));
     if (NULL == f)
     {
         log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));

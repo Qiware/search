@@ -2,8 +2,8 @@
 #define __GATE_AGENT_H__
 
 #include "list.h"
-#include "queue.h"
 #include "gate.h"
+#include "queue.h"
 #include "rb_tree.h"
 #include "gate_mesg.h"
 
