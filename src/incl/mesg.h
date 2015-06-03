@@ -54,8 +54,9 @@ typedef struct
 typedef struct
 {
     uint64_t serial;                        /* 流水号(全局唯一编号) */
+    int url_num;                            /* 网址个数 */
 #define MSG_SRCH_REP_URL_NUM    (5)
-    char url[MSG_SRCH_REP_URL_NUM][URL_MAX_LEN]; /* 网址: 查找结果 */
+    char url[MSG_SRCH_REP_URL_NUM][128];    /* 网址: 查找结果 */
 } mesg_search_rep_t;
 
 #endif /*__MESG_H__*/
