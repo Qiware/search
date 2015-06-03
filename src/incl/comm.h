@@ -43,6 +43,12 @@
 #define INVALID_FD          (-1)            /* 非法文件描述符 */
 #define INVALID_PID         (-1)            /* 非法进程ID */
 
+/* 进制 */
+#define BIN                 (2)             /* 二进制 */
+#define OCT                 (8)             /* 八进制 */
+#define DEC                 (10)            /* 十进制 */
+#define HEX                 (16)            /* 十六进制 */
+
 #define ISPOWEROF2(x)    (0 == (((x)-1) & (x))) /* 判断x是否为2的n次方(2^n) */
 
 /* 内存单位 */
