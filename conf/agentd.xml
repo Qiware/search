@@ -6,7 +6,7 @@
         3) 取值范围: trace|debug|info|warn|error|fatal -->
     <LOG LEVEL="error" LEVEL2="error" PATH="../log/" />
 
-    <PROB>
+    <GATE>
         <!-- 并发(连接)配置
             1) MAX: 最大并发数(必须为2的次方)
             2) TIMEOUT: 连接超时时间
@@ -27,5 +27,5 @@
         <!-- Worker配置
             1) NUM: 线程数 -->
         <WORKER NUM="3" />
-    </PROB>
+    </GATE>
 </AGENTD>
