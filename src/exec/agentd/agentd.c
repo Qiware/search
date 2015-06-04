@@ -176,14 +176,16 @@ static int agtd_serial_to_sck_map_init(agtd_cntx_t *agtd)
  **功    能: 搜索请求的处理函数
  **输入参数:
  **     type: 全局对象
- **     sdtp: SDTP客户端对象
+ **     data: 数据内容
+ **     length: 数据长度
+ **     args: 附加参数
  **输出参数:
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.05.28 23:11:54 #
  ******************************************************************************/
-static int agtd_search_req_hdl(unsigned int type, void *data, int length, void *args, log_cycle_t *log)
+static int agtd_search_req_hdl(unsigned int type, void *data, int length, void *args)
 {
     int idx;
     mesg_search_req_t req;
@@ -200,7 +202,7 @@ static int agtd_search_req_hdl(unsigned int type, void *data, int length, void *
     f = (agent_flow_t *)calloc(1, sizeof(agent_flow_t));
     if (NULL == f)
     {
-        log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
+        log_error(agtd->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return AGTD_ERR;
     }
 
@@ -211,7 +213,7 @@ static int agtd_search_req_hdl(unsigned int type, void *data, int length, void *
     if (avl_insert(agtd->serial_to_sck_map[idx], &flow->serial, sizeof(flow->serial), f))
     {
         free(f);
-        log_error(log, "Insert into avl failed! idx:%d serial:%lu sck_serial:%lu agt_idx:%d",
+        log_error(agtd->log, "Insert into avl failed! idx:%d serial:%lu sck_serial:%lu agt_idx:%d",
                 idx, flow->serial, flow->sck_serial, flow->agt_idx);
         return AGTD_ERR;
     }

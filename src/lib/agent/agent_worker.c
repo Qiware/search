@@ -65,7 +65,7 @@ void *agent_worker_routine(void *_ctx)
 
         reg = &ctx->reg[head->type];
 
-        reg->proc(head->type, addr, head->length + sizeof(agent_flow_t), reg->args, worker->log);
+        reg->proc(head->type, addr, head->length + sizeof(agent_flow_t), reg->args);
 
         /* 3. 释放内存空间 */
         queue_dealloc(ctx->recvq[rqid], addr);

@@ -386,11 +386,12 @@ static int agent_rsvr_pool_destroy(agent_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.20 #
  ******************************************************************************/
-static int agent_reg_def_hdl(unsigned int type, char *buff, size_t len, void *args, log_cycle_t *log)
+static int agent_reg_def_hdl(unsigned int type, char *buff, size_t len, void *args)
 {
     static int total = 0;
+    agent_cntx_t *ctx = (agent_cntx_t *)args;
 
-    log_info(log, "Call: %s()! total:%d", __func__, ++total);
+    log_info(ctx->log, "Call: %s()! total:%d", __func__, ++total);
 
     return AGENT_OK;
 }
@@ -417,7 +418,7 @@ int agent_init_register(agent_cntx_t *ctx)
 
         reg->type = idx;
         reg->proc = agent_reg_def_hdl;
-        reg->args = NULL;
+        reg->args = ctx;
         reg->flag = AGENT_REG_FLAG_UNREG;
     }
 

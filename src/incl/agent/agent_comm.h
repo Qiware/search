@@ -27,7 +27,7 @@ typedef struct
 } agent_flow_t;
 
 /* 注册回调类型 */
-typedef int (*agent_reg_cb_t)(unsigned int type, char *buff, size_t len, void *args, log_cycle_t *log);
+typedef int (*agent_reg_cb_t)(unsigned int type, char *buff, size_t len, void *args);
 
 /* 注册对象 */
 typedef struct
