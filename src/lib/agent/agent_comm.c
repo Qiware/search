@@ -1,4 +1,5 @@
 #include "agent.h"
+#include "agent_mesg.h"
 
 /******************************************************************************
  **函数名称: agent_serial_to_sck_map_init
@@ -73,7 +74,7 @@ int agent_serial_to_sck_map_insert(agent_cntx_t *ctx, agent_flow_t *_flow)
     int idx;
     agent_flow_t *flow;
 
-    /* > 将流水信息插入请求列表 */
+    /* > 申请内存空间 */
     flow = (agent_flow_t *)calloc(1, sizeof(agent_flow_t));
     if (NULL == flow)
     {
@@ -87,6 +88,7 @@ int agent_serial_to_sck_map_insert(agent_cntx_t *ctx, agent_flow_t *_flow)
 
     idx = flow->serial % ctx->serial_to_sck_map_len;
 
+    /* > 插入流水->SCK映射 */
     spin_lock(&ctx->serial_to_sck_map_lock[idx]);
 
     if (avl_insert(ctx->serial_to_sck_map[idx], &flow->serial, sizeof(flow->serial), flow))
@@ -147,7 +149,7 @@ int agent_serial_to_sck_map_delete(agent_cntx_t *ctx, uint64_t serial)
  **     ctx: 全局对象
  **     serial: 流水号
  **输出参数:
- **     flow: 流水->SCK映射项
+ **     flow: 流水->SCK映射
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
@@ -173,6 +175,73 @@ int agent_serial_to_sck_map_query(agent_cntx_t *ctx, uint64_t serial, agent_flow
     memcpy(flow, node->data, sizeof(agent_flow_t));
 
     spin_unlock(&ctx->serial_to_sck_map_lock[idx]);
+
+    return AGENT_OK;
+}
+
+/******************************************************************************
+ **函数名称: agent_send
+ **功    能: 发送数据
+ **输入参数:
+ **     ctx: 全局对象
+ **     type: 数据类型
+ **     serial: 流水号
+ **     data: 数据内容
+ **     len: 数据长度
+ **输出参数:
+ **返    回: 0:成功 !0:失败
+ **实现描述: 将数据放入发送队列
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015-06-04 #
+ ******************************************************************************/
+int agent_send(agent_cntx_t *ctx, int type, uint64_t serial, void *data, int len)
+{
+    int size;
+    void *addr;
+    queue_t *sendq;
+    agent_flow_t flow;
+    agent_mesg_header_t *head;
+
+    /* > 查找SERIAL->SCK映射 */
+    if (agent_serial_to_sck_map_query(ctx, serial, &flow))
+    {
+        log_error(ctx->log, "Query serial->sck map failed! serial:%lu", serial);
+        return AGENT_ERR;
+    }
+
+    sendq = ctx->sendq[flow.agt_idx];
+    size = sizeof(flow) + sizeof(agent_mesg_header_t) + len;
+    if (size > queue_size(sendq))
+    {
+        log_error(ctx->log, "Queue size is too small! size:%d/%d", size, queue_size(sendq));
+        return AGENT_ERR;
+    }
+
+    /* > 放入指定发送队列 */
+    addr = queue_malloc(sendq);
+    if (NULL == addr)
+    {
+        return AGENT_ERR;
+    }
+
+    memcpy(addr, &flow, sizeof(flow));
+    head = (agent_mesg_header_t *)(addr + sizeof(flow));
+
+    head->type = type;
+    head->flag = AGENT_MSG_FLAG_USR;
+    head->length = len;
+    head->mark = AGENT_MSG_MARK_KEY;
+
+    memcpy(head+1, data, len);
+
+    if (queue_push(sendq, addr))
+    {
+        queue_dealloc(sendq, addr);
+        return AGENT_ERR;
+    }
+
+    /* > 成功后, 删除映射 */
+    agent_serial_to_sck_map_delete(ctx, serial);
 
     return AGENT_OK;
 }
