@@ -40,7 +40,6 @@ log_cycle_t *demo_init_log(const char *_path)
 int main(int argc, char *argv[])
 {
     int i;
-    key_t key;
     log_cycle_t *log;
     shm_queue_t *queue;
     void *addr[QUEUE_LEN], *addr2[QUEUE_LEN];
@@ -53,14 +52,7 @@ int main(int argc, char *argv[])
     }
 
     /* > 创建共享内存队列 */
-    key = ftok(basename(argv[0]), 0);
-    if (-1 == key)
-    {
-        fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
-        return -1;
-    }
-
-    queue = shm_queue_creat(key, QUEUE_LEN, QUEUE_SIZE);
+    queue = shm_queue_creat_ex(basename(argv[0]), QUEUE_LEN, QUEUE_SIZE);
     if (NULL == queue)
     {
         fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
