@@ -1,7 +1,7 @@
 #include "agentd.h"
 
 /******************************************************************************
- **函数名称: agtd_getopt 
+ **函数名称: agentd_getopt 
  **功    能: 解析输入参数
  **输入参数: 
  **     argc: 参数个数
@@ -17,7 +17,7 @@
  **     h: 帮助手册
  **作    者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
-int agtd_getopt(int argc, char **argv, agtd_opt_t *opt)
+int agentd_getopt(int argc, char **argv, agentd_opt_t *opt)
 {
     int ch;
 
@@ -57,7 +57,7 @@ int agtd_getopt(int argc, char **argv, agtd_opt_t *opt)
 }
 
 /* 显示启动参数帮助信息 */
-int agtd_usage(const char *exec)
+int agentd_usage(const char *exec)
 {
     printf("\nUsage: %s [-h] [-d] -c <config file> [-l log_level]\n", exec);
     printf("\t-h\tShow help\n"
@@ -66,7 +66,7 @@ int agtd_usage(const char *exec)
 }
 
 /* 初始化日志模块 */
-log_cycle_t *agtd_init_log(char *fname)
+log_cycle_t *agentd_init_log(char *fname)
 {
     log_cycle_t *log;
     char path[FILE_NAME_MAX_LEN];

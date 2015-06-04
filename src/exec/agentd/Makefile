@@ -16,8 +16,8 @@ LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lxd_agent -lxd_core -lsdtp
 
 SRC_LIST = agentd.c \
-			agtd_comm.c \
-			agtd_conf.c
+			agentd_comm.c \
+			agentd_conf.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST))
 

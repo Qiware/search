@@ -1,7 +1,7 @@
 /******************************************************************************
  ** Coypright(C) 2014-2024 Xundao technology Co., Ltd
  **
- ** 文件名: agtd_conf.c
+ ** 文件名: agentd_conf.c
  ** 版本号: 1.0
  ** 描  述: 代理服务配置
  **         负责从代理服务配置文件(agentd.xml)中提取有效信息
@@ -11,19 +11,19 @@
 #include "syscall.h"
 #include "xml_tree.h" 
 #include "mem_pool.h"
-#include "agtd_conf.h"
+#include "agentd_conf.h"
 
-static int agtd_conf_parse(xml_tree_t *xml, agent_conf_t *conf, log_cycle_t *log);
+static int agentd_conf_parse(xml_tree_t *xml, agent_conf_t *conf, log_cycle_t *log);
 
-static int agtd_conf_load_comm(xml_tree_t *xml, agtd_conf_t *conf, log_cycle_t *log);
-static int agtd_conf_load_agent(xml_tree_t *xml, agent_conf_t *conf, log_cycle_t *log);
-static int agtd_conf_load_sdtp(xml_tree_t *xml, dsnd_conf_t *conf, log_cycle_t *log);
+static int agentd_conf_load_comm(xml_tree_t *xml, agentd_conf_t *conf, log_cycle_t *log);
+static int agentd_conf_load_agent(xml_tree_t *xml, agent_conf_t *conf, log_cycle_t *log);
+static int agentd_conf_load_sdtp(xml_tree_t *xml, dsnd_conf_t *conf, log_cycle_t *log);
 
 /* 加载配置信息 */
-agtd_conf_t *agtd_conf_load(const char *path, log_cycle_t *log)
+agentd_conf_t *agentd_conf_load(const char *path, log_cycle_t *log)
 {
     xml_opt_t opt;
-    agtd_conf_t *conf;
+    agentd_conf_t *conf;
     mem_pool_t *mem_pool;
     xml_tree_t *xml = NULL;
 
@@ -38,7 +38,7 @@ agtd_conf_t *agtd_conf_load(const char *path, log_cycle_t *log)
     do
     {
         /* > 创建配置对象 */
-        conf = (agtd_conf_t *)calloc(1, sizeof(agtd_conf_t));
+        conf = (agentd_conf_t *)calloc(1, sizeof(agentd_conf_t));
         if (NULL == conf)
         {
             log_error(log, "Alloc memory from pool failed!");
@@ -60,21 +60,21 @@ agtd_conf_t *agtd_conf_load(const char *path, log_cycle_t *log)
         }
 
         /* > 加载通用配置 */
-        if (agtd_conf_load_comm(xml, conf, log))
+        if (agentd_conf_load_comm(xml, conf, log))
         {
             log_error(log, "Load common configuration failed!");
             break;
         }
 
         /* > 加载AGENT配置 */
-        if (agtd_conf_load_agent(xml, &conf->agent, log))
+        if (agentd_conf_load_agent(xml, &conf->agent, log))
         {
             log_error(log, "Load AGENT conf failed! path:%s", path);
             break;
         }
 
         /* > 加载SDTP配置 */
-        if (agtd_conf_load_sdtp(xml, &conf->sdtp, log))
+        if (agentd_conf_load_sdtp(xml, &conf->sdtp, log))
         {
             log_error(log, "Load sdtp conf failed! path:%s", path);
             break;
@@ -95,7 +95,7 @@ agtd_conf_t *agtd_conf_load(const char *path, log_cycle_t *log)
 }
 
 /* 解析日志级别配置 */
-static int agtd_conf_parse_log(xml_tree_t *xml, agtd_conf_t *conf, log_cycle_t *log)
+static int agentd_conf_parse_log(xml_tree_t *xml, agentd_conf_t *conf, log_cycle_t *log)
 {
     xml_node_t *node, *fix;
 
@@ -122,10 +122,10 @@ static int agtd_conf_parse_log(xml_tree_t *xml, agtd_conf_t *conf, log_cycle_t *
 }
 
 /* 加载公共配置 */
-static int agtd_conf_load_comm(xml_tree_t *xml, agtd_conf_t *conf, log_cycle_t *log)
+static int agentd_conf_load_comm(xml_tree_t *xml, agentd_conf_t *conf, log_cycle_t *log)
 {
     /* > 加载日志配置 */
-    if (agtd_conf_parse_log(xml, conf, log))
+    if (agentd_conf_parse_log(xml, conf, log))
     {
         log_error(log, "Parse log configuration failed!");
         return AGTD_ERR;
@@ -135,7 +135,7 @@ static int agtd_conf_load_comm(xml_tree_t *xml, agtd_conf_t *conf, log_cycle_t *
 }
 
 /* 解析并发配置 */
-static int agtd_conf_parse_agent_connections(
+static int agentd_conf_parse_agent_connections(
         xml_tree_t *xml, agent_conf_t *conf, log_cycle_t *log)
 {
     xml_node_t *node, *fix;
@@ -182,7 +182,7 @@ static int agtd_conf_parse_agent_connections(
 }
 
 /* 解析队列配置 */
-static int agtd_conf_parse_agent_queue(xml_tree_t *xml, agent_conf_t *conf, log_cycle_t *log)
+static int agentd_conf_parse_agent_queue(xml_tree_t *xml, agent_conf_t *conf, log_cycle_t *log)
 {
     xml_node_t *node, *fix;
 
@@ -229,19 +229,19 @@ static int agtd_conf_parse_agent_queue(xml_tree_t *xml, agent_conf_t *conf, log_
 }
 
 /* 加载AGENT配置 */
-static int agtd_conf_load_agent(xml_tree_t *xml, agent_conf_t *conf, log_cycle_t *log)
+static int agentd_conf_load_agent(xml_tree_t *xml, agent_conf_t *conf, log_cycle_t *log)
 {
     xml_node_t *node;
 
     /* > 加载连接配置 */
-    if (agtd_conf_parse_agent_connections(xml, conf, log))
+    if (agentd_conf_parse_agent_connections(xml, conf, log))
     {
         log_error(log, "Parse connections of AGENTe configuration failed!");
         return AGTD_ERR;
     }
 
     /* > 加载连接配置 */
-    if (agtd_conf_parse_agent_queue(xml, conf, log))
+    if (agentd_conf_parse_agent_queue(xml, conf, log))
     {
         log_error(log, "Parse queue of AGENTe configuration failed!");
         return AGTD_ERR;
@@ -271,7 +271,7 @@ static int agtd_conf_load_agent(xml_tree_t *xml, agent_conf_t *conf, log_cycle_t
 }
 
 /* 加载SDTP配置 */
-static int agtd_conf_load_sdtp(xml_tree_t *xml, dsnd_conf_t *conf, log_cycle_t *log)
+static int agentd_conf_load_sdtp(xml_tree_t *xml, dsnd_conf_t *conf, log_cycle_t *log)
 {
     memset(conf, 0, sizeof(dsnd_conf_t));
 
