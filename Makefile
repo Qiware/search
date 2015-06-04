@@ -25,7 +25,7 @@ DIR += "$(LIB_DIR)/sdtp"
 DIR += "$(LIB_DIR)/gumbo"
 DIR += "$(LIB_DIR)/redis"
 
-DIR += "$(LIB_DIR)/gate"
+DIR += "$(LIB_DIR)/agent"
 DIR += "$(LIB_DIR)/invert"
 
 EXEC_DIR = "src/exec"

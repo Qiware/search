@@ -9,7 +9,7 @@
 include $(PROJ)/make/build.mak
 
 INCLUDE = -I. -I$(PROJ)/src/incl \
-		  -I$(PROJ)/src/incl/gate \
+		  -I$(PROJ)/src/incl/agent \
 		  -I$(PROJ)/src/exec/filter/incl \
 		  -I$(PROJ)/src/exec/crawler/incl \
 		  -I$(PROJ)/src/exec/monitor/incl
@@ -19,7 +19,7 @@ LIBS = -lpthread -lxd_core
 
 SRC_LIST = monitor.c \
 			mon_conf.c \
-			mon_gate.c \
+			mon_agent.c \
 			mon_crwl.c \
 			mon_filter.c
 

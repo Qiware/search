@@ -10,18 +10,18 @@ include $(PROJ)/make/build.mak
 
 INCLUDE = -I. \
 			-I$(PROJ)/src/incl \
-			-I$(PROJ)/src/incl/gate
+			-I$(PROJ)/src/incl/agent
 LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lpthread -lxd_core
 
-SRC_LIST = gate_comm.c \
-			gate_agent.c \
-			gate_listen.c \
-			gate_worker.c
+SRC_LIST = agent_comm.c \
+			agent_rsvr.c \
+			agent_listen.c \
+			agent_worker.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST))
 
-TARGET = libxd_gate.so
+TARGET = libxd_agent.so
 
 .PHONY: all clean
 
