@@ -206,7 +206,7 @@ void *drcv_rsvr_routine(void *_ctx)
         drcv_rsvr_set_rdset(ctx, rsvr);
         drcv_rsvr_set_wrset(ctx, rsvr);
 
-        timeout.tv_sec = 30;
+        timeout.tv_sec = 1;
         timeout.tv_usec = 0;
         ret = select(rsvr->max+1, &rsvr->rdset, &rsvr->wrset, NULL, &timeout);
         if (ret < 0)
@@ -560,7 +560,7 @@ static int drcv_rsvr_recv_proc(drcv_cntx_t *ctx, drcv_rsvr_t *rsvr, drcv_sck_t *
         else if (0 == n)
         {
             log_info(rsvr->log, "Client disconnected. fd:%d n:%d/%d", sck->fd, n, left);
-            return SDTP_DISCONN;
+            return SDTP_SCK_DISCONN;
         }
         else if ((n < 0) && (EAGAIN == errno))
         {

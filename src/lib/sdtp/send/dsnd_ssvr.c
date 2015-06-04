@@ -666,7 +666,7 @@ static int dsnd_ssvr_recv_proc(dsnd_cntx_t *ctx, dsnd_ssvr_t *ssvr)
             log_info(ssvr->log, "Client disconnected. fd:%d n:%d/%d", sck->fd, n, left);
             CLOSE(sck->fd);
             sdtp_snap_reset(recv);
-            return SDTP_DISCONN;
+            return SDTP_SCK_DISCONN;
         }
         else if ((n < 0) && (EAGAIN == errno))
         {

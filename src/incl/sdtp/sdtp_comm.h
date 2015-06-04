@@ -17,7 +17,7 @@
 
 #define SDTP_WORKER_HDL_QNUM    (2)     /* 各Worker线程负责的队列数 */
 #define SDTP_TYPE_MAX           (0xFF)  /* 自定义数据类型的最大值 */
-#define SDTP_MEM_POOL_SIZE      (10*MB) /* 内存池大小 */
+#define SDTP_MEM_POOL_SIZE      (10 * MB) /* 内存池大小 */
 
 /* 返回码 */
 typedef enum
@@ -26,7 +26,7 @@ typedef enum
     , SDTP_DONE                         /* 处理完成 */
     , SDTP_RECONN                       /* 重连处理 */
     , SDTP_AGAIN                        /* 未完成 */
-    , SDTP_DISCONN                      /* 连接断开 */
+    , SDTP_SCK_DISCONN                  /* 连接断开 */
 
     , SDTP_ERR = ~0x7FFFFFFF            /* 失败 */
     , SDTP_ERR_CALLOC                   /* Calloc错误 */
