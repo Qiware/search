@@ -106,7 +106,7 @@ static int invtd_print_invt_tab_req_hdl(int type, int orig, char *buff, size_t l
 static int invtd_sdtp_reg(invtd_cntx_t *ctx)
 {
 #define INVTD_SDTP_REG(sdtp, type, proc, args) \
-    if (drcv_recv_register(sdtp, type, proc, args)) \
+    if (drcv_register(sdtp, type, proc, args)) \
     { \
         log_error(ctx->log, "Register callback failed!"); \
         return INVT_ERR; \
@@ -136,5 +136,5 @@ int invtd_start_sdtp(invtd_cntx_t *ctx)
         return INVT_ERR;
     }
 
-    return drcv_recv_startup(ctx->sdtp);
+    return drcv_startup(ctx->sdtp);
 }

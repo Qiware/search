@@ -152,9 +152,9 @@ typedef struct
 
 /* 外部接口 */
 drcv_cntx_t *drcv_init(const drcv_conf_t *conf, log_cycle_t *log);
-int drcv_recv_register(drcv_cntx_t *ctx, int type, sdtp_reg_cb_t proc, void *args);
-int drcv_recv_startup(drcv_cntx_t *ctx);
-int drcv_recv_destroy(drcv_cntx_t *ctx);
+int drcv_register(drcv_cntx_t *ctx, int type, sdtp_reg_cb_t proc, void *args);
+int drcv_startup(drcv_cntx_t *ctx);
+int drcv_destroy(drcv_cntx_t *ctx);
 
 drcv_cli_t *drcv_cli_init(const drcv_conf_t *conf);
 int drcv_cli_send(drcv_cli_t *cli, int type, int dest, void *data, int len);

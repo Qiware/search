@@ -75,7 +75,7 @@ drcv_cntx_t *drcv_init(const drcv_conf_t *conf, log_cycle_t *log)
 }
 
 /******************************************************************************
- **函数名称: drcv_recv_startup
+ **函数名称: drcv_startup
  **功    能: 启动SDTP接收端
  **输入参数:
  **     conf: 配置信息
@@ -88,7 +88,7 @@ drcv_cntx_t *drcv_init(const drcv_conf_t *conf, log_cycle_t *log)
  **注意事项:
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-int drcv_recv_startup(drcv_cntx_t *ctx)
+int drcv_startup(drcv_cntx_t *ctx)
 {
     int idx;
     pthread_t tid;
@@ -127,7 +127,7 @@ int drcv_recv_startup(drcv_cntx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: drcv_recv_register
+ **函数名称: drcv_register
  **功    能: 消息处理的注册接口
  **输入参数:
  **     ctx: 全局对象
@@ -142,7 +142,7 @@ int drcv_recv_startup(drcv_cntx_t *ctx)
  **     2. 不允许重复注册
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-int drcv_recv_register(drcv_cntx_t *ctx, int type, sdtp_reg_cb_t proc, void *args)
+int drcv_register(drcv_cntx_t *ctx, int type, sdtp_reg_cb_t proc, void *args)
 {
     sdtp_reg_t *reg;
 
@@ -168,7 +168,7 @@ int drcv_recv_register(drcv_cntx_t *ctx, int type, sdtp_reg_cb_t proc, void *arg
 }
 
 /******************************************************************************
- **函数名称: drcv_recv_destroy
+ **函数名称: drcv_destroy
  **功    能: 销毁SDTP对象
  **输入参数:
  **     ctx: 全局对象
@@ -178,7 +178,7 @@ int drcv_recv_register(drcv_cntx_t *ctx, int type, sdtp_reg_cb_t proc, void *arg
  **注意事项:
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-int drcv_recv_destroy(drcv_cntx_t *ctx)
+int drcv_destroy(drcv_cntx_t *ctx)
 {
     /* > 销毁侦听线程 */
     drcv_lsn_destroy(&ctx->listen);
@@ -516,7 +516,6 @@ static int drcv_creat_worktp(drcv_cntx_t *ctx)
     sdtp_worker_t *wrk;
     thread_pool_opt_t opt;
     drcv_conf_t *conf = &ctx->conf;
-
 
     /* > 创建工作对象 */
     wrk = (void *)calloc(conf->work_thd_num, sizeof(sdtp_worker_t));
