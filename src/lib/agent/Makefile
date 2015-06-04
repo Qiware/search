@@ -15,6 +15,7 @@ LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lpthread -lxd_core
 
 SRC_LIST = agent.c \
+			agent_comm.c \
 			agent_rsvr.c \
 			agent_listen.c \
 			agent_worker.c

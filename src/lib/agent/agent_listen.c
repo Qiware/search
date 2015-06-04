@@ -75,6 +75,7 @@ void *agent_listen_routine(void *_ctx)
         /* 2.3 接收操作命令 */
         if (FD_ISSET(lsn->cmd_sck_id, &rdset))
         {
+            /* TODO: 待完善 */
         }
     }
     return (void *)0;
@@ -164,7 +165,7 @@ static int agent_listen_accept(agent_cntx_t *ctx, agent_listen_t *lsn)
         return AGENT_ERR;
     }
 
-    ++lsn->serial;
+    ++lsn->serial; /* 计数 */
 
     /* 2. 将通信套接字放入队列 */
     tidx = lsn->serial % ctx->conf->agent_num;
@@ -180,7 +181,7 @@ static int agent_listen_accept(agent_cntx_t *ctx, agent_listen_t *lsn)
     add->fd = fd;
     add->serial = lsn->serial;
 
-    log_debug(lsn->log, "Push data! fd:%d addr:%p", fd, add);
+    log_debug(lsn->log, "Push data! fd:%d addr:%p serial:%ld", fd, add, lsn->serial);
 
     if (queue_push(ctx->connq[tidx], add))
     {

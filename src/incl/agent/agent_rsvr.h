@@ -40,7 +40,7 @@ typedef struct
     agent_mesg_header_t *head;       /* 报头起始地址 */
     void *body;                     /* Body */
     list_t *send_list;              /* 发送链表 */
-} agent_rsvr_socket_extra_t;
+} agent_socket_extra_t;
 
 void *agent_rsvr_routine(void *_ctx);
 

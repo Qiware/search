@@ -10,6 +10,7 @@
 #include "agent_listen.h"
 
 static log_cycle_t *agent_init_log(char *fname);
+static int agent_init_reg(agent_cntx_t *ctx);
 static int agent_creat_agent_pool(agent_cntx_t *ctx);
 static int agent_rsvr_pool_destroy(agent_cntx_t *ctx);
 static int agent_creat_worker_pool(agent_cntx_t *ctx);
@@ -17,23 +18,18 @@ static int agent_worker_pool_destroy(agent_cntx_t *ctx);
 static int agent_creat_queue(agent_cntx_t *ctx);
 
 /******************************************************************************
- **函数名称: agent_cntx_init
+ **函数名称: agent_init
  **功    能: 初始化全局信息
  **输入参数: 
- **     conf_path: 配置文件路径
+ **     conf_path: 配置路径
+ **     log: 日志对象
  **输出参数: NONE
  **返    回: 全局对象
  **实现描述: 
- **     1. 初始化日志模块
- **     2. 判断程序是否已运行
- **     3. 创建全局对象 
- **     4. 加载配置文件
- **     5. 创建Worker线程池
- **     6. 创建Agent线程池
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
-agent_cntx_t *agent_cntx_init(agent_conf_t *conf, log_cycle_t *log)
+agent_cntx_t *agent_init(agent_conf_t *conf, log_cycle_t *log)
 {
     agent_cntx_t *ctx;
 
@@ -60,9 +56,16 @@ agent_cntx_t *agent_cntx_init(agent_conf_t *conf, log_cycle_t *log)
     do
     {
         /* > 注册消息处理 */
-        if (agent_init_register(ctx))
+        if (agent_init_reg(ctx))
         {
             log_error(log, "Initialize register failed!");
+            break;
+        }
+
+        /* > 创建流水->SCK映射表 */
+        if (agent_serial_to_sck_map_init(ctx))
+        {
+            log_error(log, "Initialize serial to sck map failed!");
             break;
         }
 
@@ -102,18 +105,17 @@ agent_cntx_t *agent_cntx_init(agent_conf_t *conf, log_cycle_t *log)
 }
 
 /******************************************************************************
- **函数名称: agent_cntx_destroy
- **功    能: 销毁探针服务上下文
+ **函数名称: agent_destroy
+ **功    能: 销毁代理服务上下文
  **输入参数: 
  **     ctx: 全局信息
  **输出参数: NONE
  **返    回: VOID
- **实现描述: 
- **     依次销毁侦听线程、接收线程、工作线程、日志对象等
+ **实现描述: 依次销毁侦听线程、接收线程、工作线程、日志对象等
  **注意事项: 按序销毁
  **作    者: # Qifeng.zou # 2014.11.17 #
  ******************************************************************************/
-void agent_cntx_destroy(agent_cntx_t *ctx)
+void agent_destroy(agent_cntx_t *ctx)
 {
     pthread_cancel(ctx->lsn_tid);
     agent_worker_pool_destroy(ctx);
@@ -125,7 +127,7 @@ void agent_cntx_destroy(agent_cntx_t *ctx)
 
 /******************************************************************************
  **函数名称: agent_startup
- **功    能: 启动探针服务服务
+ **功    能: 启动代理服务
  **输入参数: 
  **     ctx: 全局信息
  **输出参数: NONE
@@ -396,7 +398,7 @@ static int agent_reg_def_hdl(unsigned int type, char *buff, size_t len, void *ar
 }
 
 /******************************************************************************
- **函数名称: agent_init_register
+ **函数名称: agent_init_reg
  **功    能: 初始化注册消息处理
  **输入参数:
  **     ctx: 全局信息
@@ -406,7 +408,7 @@ static int agent_reg_def_hdl(unsigned int type, char *buff, size_t len, void *ar
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.20 #
  ******************************************************************************/
-int agent_init_register(agent_cntx_t *ctx)
+static int agent_init_reg(agent_cntx_t *ctx)
 {
     unsigned int idx;
     agent_reg_t *reg;

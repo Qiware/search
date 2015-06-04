@@ -3,6 +3,8 @@
 
 #include "slab.h"
 #include "queue.h"
+#include "spinlock.h"
+#include "avl_tree.h"
 #include "shm_queue.h"
 #include "agent_comm.h"
 #include "thread_pool.h"
@@ -55,17 +57,25 @@ typedef struct
     queue_t **recvq;                            /* 接收队列(注:数组长度与Agent相等) */
     queue_t **sendq;                            /* 发送队列(注:数组长度与Agent相等) */
     shm_queue_t *shm_sendq;                     /* 发送队列(外部可见) */
+
+    int serial_to_sck_map_len;                  /* 流水号->SCK映射表数组长度 */
+    spinlock_t *serial_to_sck_map_lock;         /* 流水号->SCK映射表锁 */
+    avl_tree_t **serial_to_sck_map;             /* 流水号->SCK映射表 */
 } agent_cntx_t;
 
-#define agent_connq_used(ctx, idx) queue_used(ctx->connq[idx]) /* 已用连接队列空间 */
-#define agent_recvq_used(ctx, idx) queue_used(ctx->recvq[idx]) /* 已用接收队列空间 */
-#define agent_sendq_used(ctx, idx) queue_used(ctx->sendq[idx]) /* 已用发送队列空间 */
+#define agent_connq_used(ctx, idx) queue_used(ctx->connq[idx]) /* 连接队列已用空间 */
+#define agent_recvq_used(ctx, idx) queue_used(ctx->recvq[idx]) /* 接收队列已用空间 */
+#define agent_sendq_used(ctx, idx) queue_used(ctx->sendq[idx]) /* 发送队列已用空间 */
 
-agent_cntx_t *agent_cntx_init(agent_conf_t *conf, log_cycle_t *log);
-void agent_cntx_destroy(agent_cntx_t *ctx);
+agent_cntx_t *agent_init(agent_conf_t *conf, log_cycle_t *log);
+void agent_destroy(agent_cntx_t *ctx);
 
 int agent_startup(agent_cntx_t *ctx);
-int agent_init_register(agent_cntx_t *ctx);
 int agent_register(agent_cntx_t *ctx, unsigned int type, agent_reg_cb_t proc, void *args);
+
+int agent_serial_to_sck_map_init(agent_cntx_t *ctx);
+int agent_serial_to_sck_map_insert(agent_cntx_t *ctx, agent_flow_t *_flow);
+int agent_serial_to_sck_map_query(agent_cntx_t *ctx, uint64_t serial, agent_flow_t *flow);
+int agent_serial_to_sck_map_delete(agent_cntx_t *ctx, uint64_t serial);
 
 #endif /*__AGENT_H__*/

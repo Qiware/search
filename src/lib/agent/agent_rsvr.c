@@ -227,7 +227,7 @@ static agent_rsvr_t *agent_rsvr_self(agent_cntx_t *ctx)
  **功    能: 事件通知处理
  **输入参数: 
  **     ctx: 全局对象
- **     rsvr: 代理对象
+ **     rsvr: 接收服务
  **输出参数: NONE
  **返    回: 代理对象
  **实现描述: 
@@ -317,7 +317,7 @@ static int agent_rsvr_get_timeout_conn_list(socket_t *sck, agent_conn_timeout_li
  **函数名称: agent_rsvr_event_timeout_hdl
  **功    能: 事件超时处理
  **输入参数: 
- **     rsvr: 代理对象
+ **     rsvr: 接收服务
  **输出参数: NONE
  **返    回: 代理对象
  **实现描述: 
@@ -393,7 +393,7 @@ static int agent_rsvr_event_timeout_hdl(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
  **功    能: 添加新的连接
  **输入参数: 
  **     ctx: 全局信息
- **     rsvr: 代理对象
+ **     rsvr: 接收服务
  **输出参数: NONE
  **返    回: 代理对象
  **实现描述: 
@@ -406,7 +406,7 @@ static int agent_rsvr_add_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
     socket_t *sck;
     list_opt_t opt;
     agent_add_sck_t *add;
-    agent_rsvr_socket_extra_t *extra;
+    agent_socket_extra_t *extra;
     struct epoll_event ev;
 
     while (1)
@@ -432,7 +432,7 @@ static int agent_rsvr_add_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
         memset(sck, 0, sizeof(socket_t));
 
         /* > 创建SCK关联对象 */
-        extra = slab_alloc(rsvr->slab, sizeof(agent_rsvr_socket_extra_t));
+        extra = slab_alloc(rsvr->slab, sizeof(agent_socket_extra_t));
         if (NULL == extra)
         {
             slab_dealloc(rsvr->slab, sck);
@@ -503,7 +503,7 @@ static int agent_rsvr_add_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
  **函数名称: agent_rsvr_del_conn
  **功    能: 删除指定套接字
  **输入参数:
- **     rsvr: 代理对象
+ **     rsvr: 接收服务
  **     sck: SCK对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
@@ -514,7 +514,7 @@ static int agent_rsvr_add_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
 static int agent_rsvr_del_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
 {
     void *addr, *p;
-    agent_rsvr_socket_extra_t *extra = sck->extra;
+    agent_socket_extra_t *extra = sck->extra;
 
     log_debug(rsvr->log, "Call %s()! fd:%d", __func__, sck->fd);
 
@@ -571,7 +571,7 @@ int agent_rsvr_socket_cmp_cb(const void *pkey, const void *data)
 {
     uint64_t serial = *(const uint64_t *)pkey;
     const socket_t *sock = (const socket_t *)data;
-    const agent_rsvr_socket_extra_t *extra = sock->extra;
+    const agent_socket_extra_t *extra = sock->extra;
 
     return (serial - extra->serial);
 }
@@ -580,7 +580,7 @@ int agent_rsvr_socket_cmp_cb(const void *pkey, const void *data)
  **函数名称: agent_rsvr_recv_head
  **功    能: 接收报头
  **输入参数:
- **     rsvr: 代理对象
+ **     rsvr: 接收服务
  **     sck: SCK对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
@@ -659,7 +659,7 @@ static int agent_rsvr_recv_head(agent_rsvr_t *rsvr, socket_t *sck)
  **函数名称: agent_rsvr_recv_body
  **功    能: 接收报体
  **输入参数:
- **     rsvr: 代理对象
+ **     rsvr: 接收服务
  **     sck: SCK对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
@@ -726,7 +726,7 @@ static int agent_rsvr_recv_body(agent_rsvr_t *rsvr, socket_t *sck)
  **功    能: 系统消息的处理
  **输入参数:
  **     ctx: 全局对象
- **     rsvr: 代理对象
+ **     rsvr: 接收服务
  **     sck: SCK对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
@@ -743,7 +743,7 @@ static int agent_sys_msg_hdl(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sc
  **函数名称: agent_rsvr_recv_post
  **功    能: 数据接收完毕，进行数据处理
  **输入参数:
- **     rsvr: 代理对象
+ **     rsvr: 接收服务
  **     sck: SCK对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
@@ -753,7 +753,7 @@ static int agent_sys_msg_hdl(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sc
  ******************************************************************************/
 static int agent_rsvr_recv_post(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
 {
-    agent_rsvr_socket_extra_t *extra = (agent_rsvr_socket_extra_t *)sck->extra;
+    agent_socket_extra_t *extra = (agent_socket_extra_t *)sck->extra;
 
     /* 1. 自定义消息的处理 */
     if (AGENT_MSG_FLAG_USR == extra->head->flag)
@@ -771,7 +771,7 @@ static int agent_rsvr_recv_post(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t 
  **函数名称: agent_rsvr_recv
  **功    能: 接收数据
  **输入参数:
- **     rsvr: 代理对象
+ **     rsvr: 接收服务
  **     sck: SCK对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
@@ -784,7 +784,7 @@ static int agent_rsvr_recv(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
     int ret;
     socket_snap_t *recv = &sck->recv;
     static volatile uint64_t serial = 0;
-    agent_rsvr_socket_extra_t *extra = (agent_rsvr_socket_extra_t *)sck->extra;
+    agent_socket_extra_t *extra = (agent_socket_extra_t *)sck->extra;
 
     for (;;)
     {
@@ -921,7 +921,7 @@ static int agent_rsvr_recv(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
  **函数名称: agent_rsvr_fetch_send_data
  **功    能: 取发送数据
  **输入参数:
- **     rsvr: 代理对象
+ **     rsvr: 接收服务
  **     sck: SCK对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
@@ -932,7 +932,7 @@ static int agent_rsvr_recv(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
  ******************************************************************************/
 static void *agent_rsvr_fetch_send_data(agent_rsvr_t *rsvr, socket_t *sck)
 {
-    agent_rsvr_socket_extra_t *extra = sck->extra;
+    agent_socket_extra_t *extra = sck->extra;
 
     return list_lpop(extra->send_list);
 }
@@ -941,7 +941,7 @@ static void *agent_rsvr_fetch_send_data(agent_rsvr_t *rsvr, socket_t *sck)
  **函数名称: agent_rsvr_send
  **功    能: 发送数据
  **输入参数:
- **     rsvr: 代理对象
+ **     rsvr: 接收服务
  **     sck: SCK对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
