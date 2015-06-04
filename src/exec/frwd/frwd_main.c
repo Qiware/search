@@ -9,15 +9,16 @@
 /* 配置信息 */
 typedef struct
 {
-    dsnd_conf_t sdtp;      /* SDTP配置 */
+    dsnd_conf_t sdtp;               /* SDTP配置 */
 } frwd_conf_t;
 
 /* 全局对象 */
 typedef struct
 {
-    frwd_conf_t conf;           /* 配置信息 */
-    log_cycle_t *log;           /* 日志对象 */
-    dsnd_cntx_t *sdtp;          /* SDTP对象 */
+    frwd_conf_t conf;               /* 配置信息 */
+    log_cycle_t *log;               /* 日志对象 */
+    shm_queue_t *agentd_sendq;      /* Agtend发送队列 */
+    dsnd_cntx_t *sdtp;              /* SDTP对象 */
 } frwd_cntx_t;
 
 int sdtp_setup_conf(dsnd_conf_t *conf, int port);
@@ -28,6 +29,7 @@ int main(int argc, const char *argv[])
 {
     int port;
     frwd_cntx_t *frwd;
+    char shmq_path[FILE_PATH_MAX_LEN];
 
     if (2 != argc)
     {
@@ -52,6 +54,16 @@ int main(int argc, const char *argv[])
     plog_init(LOG_LEVEL_DEBUG, "./sdtp_ssvr.plog");
     frwd->log = log_init(LOG_LEVEL_DEBUG, "./sdtp_ssvr.log");
     if (NULL == frwd->log)
+    {
+        fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
+        return -1;
+    }
+
+    /* > 发送队列 */
+    snprintf(shmq_path, sizeof(shmq_path), "../temp/agentd/sendq");
+
+    frwd->agentd_sendq = shm_queue_attach(shmq_path);
+    if (NULL == frwd->agentd_sendq)
     {
         fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
         return -1;
