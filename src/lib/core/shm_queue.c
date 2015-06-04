@@ -132,6 +132,35 @@ shm_queue_t *shm_queue_creat_ex(int key, int max, int size)
  **函数名称: shm_queue_attach
  **功    能: 附着共享内存队列
  **输入参数:
+ **     path: KEY值路径
+ **输出参数:
+ **返    回: 共享内存队列
+ **实现描述: 
+ **     1. 计算内存空间
+ **     2. 创建共享内存
+ **     3. 初始化标志量
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.01.25 #
+ ******************************************************************************/
+shm_queue_t *shm_queue_attach(const char *path)
+{
+    key_t key;
+
+    /* > 通过路径生成KEY */
+    key = shm_ftok(path, 0);
+    if ((key_t)-1 == key)
+    {
+        return NULL;
+    }
+
+    /* > 附着共享内存 */
+    return shm_queue_attach_ex(key);
+}
+
+/******************************************************************************
+ **函数名称: shm_queue_attach_ex
+ **功    能: 附着共享内存队列
+ **输入参数:
  **     key: 共享内存KEY
  **     max: 队列单元数
  **     size: 队列单元SIZE
@@ -144,7 +173,7 @@ shm_queue_t *shm_queue_creat_ex(int key, int max, int size)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.01.25 #
  ******************************************************************************/
-shm_queue_t *shm_queue_attach(int key)
+shm_queue_t *shm_queue_attach_ex(int key)
 {
     void *addr;
     shm_queue_t *shmq;

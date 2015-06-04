@@ -13,7 +13,8 @@ typedef struct
 
 shm_queue_t *shm_queue_creat(const char *path, int max, int size);
 shm_queue_t *shm_queue_creat_ex(int key, int max, int size);
-shm_queue_t *shm_queue_attach(int key);
+shm_queue_t *shm_queue_attach(const char *path);
+shm_queue_t *shm_queue_attach_ex(int key);
 #define shm_queue_malloc(shmq) shm_slot_alloc((shmq)->slot)
 #define shm_queue_dealloc(shmq, p) shm_slot_dealloc((shmq)->slot, p)
 int shm_queue_push(shm_queue_t *shmq, void *p);
