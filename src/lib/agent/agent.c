@@ -476,7 +476,6 @@ int agent_register(agent_cntx_t *ctx, unsigned int type, agent_reg_cb_t proc, vo
 static int agent_creat_queue(agent_cntx_t *ctx)
 {
     int idx;
-    key_t key;
     const agent_conf_t *conf = ctx->conf;
 
     /* > 创建CONN队列(与Agent数一致) */
@@ -531,15 +530,6 @@ static int agent_creat_queue(agent_cntx_t *ctx)
             log_error(ctx->log, "Create send queue failed!");
             return AGENT_ERR;
         }
-    }
-
-    /* > 创建SHM-SEND队列 */
-    key = 0;
-    ctx->shm_sendq = shm_queue_creat(key, conf->sendq.max, conf->sendq.size);
-    if (NULL == ctx->shm_sendq)
-    {
-        log_error(ctx->log, "Create shm-send-queue failed!");
-        return AGENT_ERR;
     }
 
     return AGENT_OK;

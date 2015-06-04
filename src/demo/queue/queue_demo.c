@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
     }
 
     /* > 创建共享内存队列 */
-    queue = shm_queue_creat_ex(basename(argv[0]), QUEUE_LEN, QUEUE_SIZE);
+    queue = shm_queue_creat(basename(argv[0]), QUEUE_LEN, QUEUE_SIZE);
     if (NULL == queue)
     {
         fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));

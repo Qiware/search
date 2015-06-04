@@ -56,7 +56,6 @@ typedef struct
     queue_t **connq;                            /* 连接队列(注:数组长度与Agent相等) */
     queue_t **recvq;                            /* 接收队列(注:数组长度与Agent相等) */
     queue_t **sendq;                            /* 发送队列(注:数组长度与Agent相等) */
-    shm_queue_t *shm_sendq;                     /* 发送队列(外部可见) */
 
     int serial_to_sck_map_len;                  /* 流水号->SCK映射表数组长度 */
     spinlock_t *serial_to_sck_map_lock;         /* 流水号->SCK映射表锁 */

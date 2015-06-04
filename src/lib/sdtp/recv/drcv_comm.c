@@ -332,7 +332,7 @@ shm_queue_t *drcv_shm_sendq_creat(const drcv_conf_t *conf)
     drcv_sendq_shm_path(conf, path);
 
     /* > 通过路径创建共享内存队列 */
-    return shm_queue_creat_ex(path, conf->sendq.max, conf->sendq.size);
+    return shm_queue_creat(path, conf->sendq.max, conf->sendq.size);
 }
 
 /******************************************************************************

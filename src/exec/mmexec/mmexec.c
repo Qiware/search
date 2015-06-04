@@ -12,4 +12,16 @@
 /* 主函数 */
 int main(int argc, char *argv[])
 {
+    shm_queue_t *shmq;
+    char path[FILE_PATH_MAX_LEN];
+
+    /* > 创建共享内存 */
+    snprintf(path, sizeof(path), "../temp/");
+
+    shmq = shm_queue_creat_ex(path, max, size);
+    if (NULL == shmq)
+    {
+        return -1;
+    }
+    return 0;
 }

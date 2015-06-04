@@ -54,7 +54,7 @@ size_t shm_queue_total(int max, size_t size)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.05.06 #
  ******************************************************************************/
-shm_queue_t *shm_queue_creat(int key, int max, int size)
+shm_queue_t *shm_queue_creat_ex(int key, int max, int size)
 {
     void *addr;
     size_t total;
@@ -188,7 +188,7 @@ void *shm_queue_pop(shm_queue_t *shmq)
 }
 
 /******************************************************************************
- **函数名称: shm_queue_creat_ex
+ **函数名称: shm_queue_creat
  **功    能: 创建共享内存队列
  **输入参数:
  **     path: KEY路径
@@ -200,7 +200,7 @@ void *shm_queue_pop(shm_queue_t *shmq)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.06.04 #
  ******************************************************************************/
-shm_queue_t *shm_queue_creat_ex(const char *path, int max, int size)
+shm_queue_t *shm_queue_creat(const char *path, int max, int size)
 {
     key_t key;
 
@@ -211,5 +211,5 @@ shm_queue_t *shm_queue_creat_ex(const char *path, int max, int size)
     }
 
     /* > 通过KEY创建共享内存队列 */
-    return shm_queue_creat(key, max, size);
+    return shm_queue_creat_ex(key, max, size);
 }
