@@ -30,6 +30,7 @@ DIR += "$(LIB_DIR)/invert"
 
 EXEC_DIR = "src/exec"
 DIR += "$(EXEC_DIR)/frwd"
+DIR += "$(EXEC_DIR)/mmexec"
 DIR += "$(EXEC_DIR)/crawler"
 DIR += "$(EXEC_DIR)/filter"
 DIR += "$(EXEC_DIR)/logsvr"
