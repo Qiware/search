@@ -28,8 +28,8 @@
 #define drcv_lsn_usck_path(conf, path) \
     snprintf(path, sizeof(path), "../temp/sdtp/recv/%s/usck/%s_listen.usck", conf->name, conf->name)
 /* 发送队列的共享内存KEY路径 */
-#define drcv_sendq_shm_path(conf, path) \
-    snprintf(path, sizeof(path), "../temp/sdtp/recv/%s/%s_sendq.usck", conf->name, conf->name)
+#define drcv_shm_sendq_path(conf, path) \
+    snprintf(path, sizeof(path), "../temp/sdtp/recv/%s/%s_shm_sendq", conf->name, conf->name)
 
 /* 配置信息 */
 typedef struct
