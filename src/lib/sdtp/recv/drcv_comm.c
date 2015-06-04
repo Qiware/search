@@ -326,20 +326,13 @@ int drcv_dev_to_svr_map_rand(drcv_cntx_t *ctx, int devid)
  ******************************************************************************/
 shm_queue_t *drcv_shm_sendq_creat(const drcv_conf_t *conf)
 {
-    key_t key;
     char path[FILE_NAME_MAX_LEN];
 
-    /* > 通过路径生成KEY */
+    /* > 获取KEY路径 */
     drcv_sendq_shm_path(conf, path);
 
-    key = shm_ftok(path, 0);
-    if ((key_t)-1 == key)
-    {
-        return NULL;
-    }
-
-    /* > 通过KEY创建共享内存队列 */
-    return shm_queue_creat(key, conf->sendq.max, conf->sendq.size);
+    /* > 通过路径创建共享内存队列 */
+    return shm_queue_creat_ex(path, conf->sendq.max, conf->sendq.size);
 }
 
 /******************************************************************************
