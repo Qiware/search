@@ -82,7 +82,7 @@ int main(int argc, char *argv[])
 
 ERROR:
     /* 4. 销毁全局信息 */
-    agent_cntx_destroy(agtd->agent);
+    agent_destroy(agtd->agent);
 
     return -1;
 }
@@ -131,47 +131,6 @@ static dsnd_cli_t *agtd_sdtp_init(dsnd_conf_t *conf, log_cycle_t *log)
 }
 
 /******************************************************************************
- **函数名称: agtd_serial_to_sck_map_init
- **功    能: 初始化请求列表
- **输入参数:
- **     agtd: 全局信息
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述: 构建平衡二叉树
- **注意事项: 
- **作    者: # Qifeng.zou # 2015.05.28 23:41:39 #
- ******************************************************************************/
-static int agtd_serial_to_sck_map_init(agtd_cntx_t *agtd)
-{
-    int i;
-    avl_opt_t opt;
-
-    memset(&opt, 0, sizeof(opt));
-
-    agtd->len = 10;
-    agtd->serial_to_sck_map = (avl_tree_t **)calloc(agtd->len, sizeof(avl_tree_t *));
-    if (NULL == agtd->serial_to_sck_map)
-    {
-        return AGTD_ERR;
-    }
-
-    for (i=0; i<agtd->len; ++i)
-    {
-        opt.pool = (void *)NULL;
-        opt.alloc = (mem_alloc_cb_t)mem_alloc;
-        opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
-
-        agtd->serial_to_sck_map[i] = avl_creat(&opt, (key_cb_t)avl_key_cb_int64, (avl_cmp_cb_t)avl_cmp_cb_int64);
-        if (NULL == agtd->serial_to_sck_map[i])
-        {
-            return AGTD_ERR;
-        }
-    }
-
-    return AGTD_OK;
-}
-
-/******************************************************************************
  **函数名称: agtd_search_req_hdl
  **功    能: 搜索请求的处理函数
  **输入参数:
@@ -187,9 +146,8 @@ static int agtd_serial_to_sck_map_init(agtd_cntx_t *agtd)
  ******************************************************************************/
 static int agtd_search_req_hdl(unsigned int type, void *data, int length, void *args)
 {
-    int idx;
     mesg_search_req_t req;
-    agent_flow_t *flow, *f;
+    agent_flow_t *flow;
     srch_mesg_body_t *body;
     agent_mesg_header_t *head;
     agtd_cntx_t *agtd = (agtd_cntx_t *)args;
@@ -197,26 +155,6 @@ static int agtd_search_req_hdl(unsigned int type, void *data, int length, void *
     flow = (agent_flow_t *)data;
     head = (agent_mesg_header_t *)(flow + 1);
     body = (srch_mesg_body_t *)(head + 1);
-
-    /* > 将流水信息插入请求列表 */
-    f = (agent_flow_t *)calloc(1, sizeof(agent_flow_t));
-    if (NULL == f)
-    {
-        log_error(agtd->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return AGTD_ERR;
-    }
-
-    memcpy(f, flow, sizeof(agent_flow_t));
-
-    idx = flow->serial % agtd->len;
-
-    if (avl_insert(agtd->serial_to_sck_map[idx], &flow->serial, sizeof(flow->serial), f))
-    {
-        free(f);
-        log_error(agtd->log, "Insert into avl failed! idx:%d serial:%lu sck_serial:%lu agt_idx:%d",
-                idx, flow->serial, flow->sck_serial, flow->agt_idx);
-        return AGTD_ERR;
-    }
 
     /* > 转发搜索请求 */
     req.serial = flow->serial;
@@ -302,7 +240,7 @@ static agtd_cntx_t *agtd_init(char *pname, const char *path)
     agtd->conf = conf;
 
     /* > 初始化全局信息 */
-    agent = agent_cntx_init(&conf->agent, log);
+    agent = agent_init(&conf->agent, log);
     if (NULL == agent)
     {
         fprintf(stderr, "Initialize search-engine failed!");
@@ -312,13 +250,6 @@ static agtd_cntx_t *agtd_init(char *pname, const char *path)
     /* > 初始化SDTP信息 */
     sdtp = agtd_sdtp_init(&conf->sdtp, log);
     if (NULL == sdtp)
-    {
-        fprintf(stderr, "Initialize sdtp failed!");
-        return NULL;
-    }
-
-    /* > 初始化序列号->SCK映射表 */
-    if (agtd_serial_to_sck_map_init(agtd))
     {
         fprintf(stderr, "Initialize sdtp failed!");
         return NULL;
