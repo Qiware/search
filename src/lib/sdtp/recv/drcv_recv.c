@@ -168,34 +168,6 @@ int drcv_register(drcv_cntx_t *ctx, int type, sdtp_reg_cb_t proc, void *args)
 }
 
 /******************************************************************************
- **函数名称: drcv_destroy
- **功    能: 销毁SDTP对象
- **输入参数:
- **     ctx: 全局对象
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述:
- **注意事项:
- **作    者: # Qifeng.zou # 2014.12.30 #
- ******************************************************************************/
-int drcv_destroy(drcv_cntx_t *ctx)
-{
-    /* > 销毁侦听线程 */
-    drcv_lsn_destroy(&ctx->listen);
-
-#if 0
-    /* > 销毁接收线程池 */
-    thread_pool_destroy_ext(ctx->recvtp, drcv_recvtp_destroy, ctx);
-
-    /* > 销毁工作线程池 */
-    thread_pool_destroy_ext(ctx->worktp, drcv_worktp_destroy, ctx);
-#endif
-
-    FREE(ctx);
-    return SDTP_OK;
-}
-
-/******************************************************************************
  **函数名称: drcv_reg_init
  **功    能: 初始化注册对象
  **输入参数:
