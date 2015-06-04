@@ -15,17 +15,17 @@ INCLUDE = -I. \
 LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lxd_core
 
-SRC_LIST = recv/sdtp_recv.c \
-			recv/sdtp_comm.c \
-			recv/sdtp_rlsn.c \
-			recv/sdtp_rsvr.c \
-			recv/sdtp_rwrk.c \
-			recv/sdtp_rcli.c \
-			send/sdtp_send.c \
-			send/sdtp_pool.c \
-			send/sdtp_ssvr.c \
-			send/sdtp_swrk.c \
-			send/sdtp_cli.c
+SRC_LIST = recv/drcv_recv.c \
+			recv/drcv_comm.c \
+			recv/drcv_lsn.c \
+			recv/drcv_rsvr.c \
+			recv/drcv_worker.c \
+			recv/drcv_cli.c \
+			send/dsnd_send.c \
+			send/dsnd_pool.c \
+			send/dsnd_ssvr.c \
+			send/dsnd_worker.c \
+			send/dsnd_cli.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST))
 

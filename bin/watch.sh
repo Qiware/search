@@ -13,8 +13,9 @@ print_proc()
 				   -e "filter"  \
 				   -e "logsvr" \
 				   -e "redis" \
-				   -e "probd" \
+				   -e "agentd" \
 				   -e "invertd" \
+				   -e "frwd_exec" \
 				   -e "sdtp" | grep -v "grep" | sort
 }
 

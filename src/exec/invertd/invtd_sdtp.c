@@ -63,7 +63,7 @@ static int invtd_search_req_hdl(int type, int orig, char *buff, size_t len, void
 INVTD_SRCH_REP:
     /* > 应答搜索结果 */
     rep.serial = req->serial;
-    if (sdtp_rcli_send(ctx->sdtp_rcli, MSG_SEARCH_REP, orig, (void *)&rep, sizeof(rep)))
+    if (drcv_cli_send(ctx->sdtp_rcli, MSG_SEARCH_REP, orig, (void *)&rep, sizeof(rep)))
     {
         log_error(ctx->log, "Send response failed! serial:%ld words:%s",
                 req->serial, req->body.words);
@@ -106,7 +106,7 @@ static int invtd_print_invt_tab_req_hdl(int type, int orig, char *buff, size_t l
 static int invtd_sdtp_reg(invtd_cntx_t *ctx)
 {
 #define INVTD_SDTP_REG(sdtp, type, proc, args) \
-    if (sdtp_recv_register(sdtp, type, proc, args)) \
+    if (drcv_recv_register(sdtp, type, proc, args)) \
     { \
         log_error(ctx->log, "Register callback failed!"); \
         return INVT_ERR; \
@@ -136,5 +136,5 @@ int invtd_start_sdtp(invtd_cntx_t *ctx)
         return INVT_ERR;
     }
 
-    return sdtp_recv_startup(ctx->sdtp);
+    return drcv_recv_startup(ctx->sdtp);
 }

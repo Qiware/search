@@ -2,12 +2,11 @@
 
 pkill -9 crawler
 pkill -9 filter
-pkill -9 probd
+pkill -9 agentd
 pkill -9 monitor
 pkill -9 invertd
 pkill -9 logsvr
-pkill -9 smtc_rsvr
-pkill -9 smtc_ssvr
+pkill -9 frwd_exec
 
 sleep 1
 

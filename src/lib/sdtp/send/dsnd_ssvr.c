@@ -1,36 +1,36 @@
 #include "shm_opt.h"
 #include "syscall.h"
 #include "sdtp_cmd.h"
-#include "sdtp_cli.h"
+#include "dsnd_cli.h"
 #include "sdtp_comm.h"
 #include "sdtp_send.h"
 
 /* 静态函数 */
-static sdtp_ssvr_t *sdtp_ssvr_get_curr(sdtp_sctx_t *ctx);
+static dsnd_ssvr_t *dsnd_ssvr_get_curr(dsnd_cntx_t *ctx);
 
-static int sdtp_ssvr_creat_sendq(sdtp_ssvr_t *ssvr, const sdtp_ssvr_conf_t *conf);
-static int sdtp_ssvr_creat_usck(sdtp_ssvr_t *ssvr, const sdtp_ssvr_conf_t *conf);
+static int dsnd_ssvr_creat_sendq(dsnd_ssvr_t *ssvr, const dsnd_conf_t *conf);
+static int dsnd_ssvr_creat_usck(dsnd_ssvr_t *ssvr, const dsnd_conf_t *conf);
 
-static int sdtp_ssvr_recv_cmd(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr);
-static int sdtp_ssvr_recv_proc(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr);
+static int dsnd_ssvr_recv_cmd(dsnd_cntx_t *ctx, dsnd_ssvr_t *ssvr);
+static int dsnd_ssvr_recv_proc(dsnd_cntx_t *ctx, dsnd_ssvr_t *ssvr);
 
-static int sdtp_ssvr_data_proc(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, sdtp_ssck_t *sck);
-static int sdtp_ssvr_sys_mesg_proc(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, sdtp_ssck_t *sck, void *addr);
-static int sdtp_ssvr_exp_mesg_proc(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, sdtp_ssck_t *sck, void *addr);
+static int dsnd_ssvr_data_proc(dsnd_cntx_t *ctx, dsnd_ssvr_t *ssvr, dsnd_sck_t *sck);
+static int dsnd_ssvr_sys_mesg_proc(dsnd_cntx_t *ctx, dsnd_ssvr_t *ssvr, dsnd_sck_t *sck, void *addr);
+static int dsnd_ssvr_exp_mesg_proc(dsnd_cntx_t *ctx, dsnd_ssvr_t *ssvr, dsnd_sck_t *sck, void *addr);
 
-static int sdtp_ssvr_timeout_hdl(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr);
-static int sdtp_ssvr_proc_cmd(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, const sdtp_cmd_t *cmd);
-static int sdtp_ssvr_send_data(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr);
+static int dsnd_ssvr_timeout_hdl(dsnd_cntx_t *ctx, dsnd_ssvr_t *ssvr);
+static int dsnd_ssvr_proc_cmd(dsnd_cntx_t *ctx, dsnd_ssvr_t *ssvr, const sdtp_cmd_t *cmd);
+static int dsnd_ssvr_send_data(dsnd_cntx_t *ctx, dsnd_ssvr_t *ssvr);
 
-static int sdtp_ssvr_clear_mesg(sdtp_ssvr_t *ssvr);
+static int dsnd_ssvr_clear_mesg(dsnd_ssvr_t *ssvr);
 
-static int sdtp_ssvr_kpalive_req(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr);
+static int dsnd_ssvr_kpalive_req(dsnd_cntx_t *ctx, dsnd_ssvr_t *ssvr);
 
-static int sdtp_link_auth_req(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr);
-static int sdtp_link_auth_rep_hdl(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, sdtp_ssck_t *sck, sdtp_link_auth_rep_t *rep);
+static int sdtp_link_auth_req(dsnd_cntx_t *ctx, dsnd_ssvr_t *ssvr);
+static int sdtp_link_auth_rep_hdl(dsnd_cntx_t *ctx, dsnd_ssvr_t *ssvr, dsnd_sck_t *sck, sdtp_link_auth_rep_t *rep);
 
 /******************************************************************************
- **函数名称: sdtp_ssvr_init
+ **函数名称: dsnd_ssvr_init
  **功    能: 初始化发送线程
  **输入参数:
  **     ctx: 全局信息
@@ -41,11 +41,11 @@ static int sdtp_link_auth_rep_hdl(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, sdtp_ssck
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-int sdtp_ssvr_init(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, int tidx)
+int dsnd_ssvr_init(dsnd_cntx_t *ctx, dsnd_ssvr_t *ssvr, int tidx)
 {
     void *addr;
     list_opt_t opt;
-    sdtp_ssvr_conf_t *conf = &ctx->conf;
+    dsnd_conf_t *conf = &ctx->conf;
     sdtp_snap_t *recv = &ssvr->sck.recv;
     sdtp_snap_t *send = &ssvr->sck.send[SDTP_SNAP_SHOT_SYS_DATA];
 
@@ -54,14 +54,14 @@ int sdtp_ssvr_init(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, int tidx)
     ssvr->sck.fd = INVALID_FD;
 
     /* > 创建发送队列 */
-    if (sdtp_ssvr_creat_sendq(ssvr, conf))
+    if (dsnd_ssvr_creat_sendq(ssvr, conf))
     {
         log_error(ssvr->log, "Initialize send queue failed!");
         return SDTP_ERR;
     }
 
     /* > 创建unix套接字 */
-    if (sdtp_ssvr_creat_usck(ssvr, conf))
+    if (dsnd_ssvr_creat_usck(ssvr, conf))
     {
         log_error(ssvr->log, "Initialize send queue failed!");
         return SDTP_ERR;
@@ -113,7 +113,7 @@ int sdtp_ssvr_init(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, int tidx)
 }
 
 /******************************************************************************
- **函数名称: sdtp_ssvr_creat_recvq
+ **函数名称: dsnd_ssvr_creat_recvq
  **功    能: 创建发送线程的接收队列
  **输入参数:
  **     ssvr: 发送服务对象
@@ -124,7 +124,7 @@ int sdtp_ssvr_init(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, int tidx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.19 #
  ******************************************************************************/
-static int sdtp_ssvr_creat_recvq(sdtp_sctx_t *ctx, const sdtp_ssvr_conf_t *conf)
+static int dsnd_ssvr_creat_recvq(dsnd_cntx_t *ctx, const dsnd_conf_t *conf)
 {
     int idx;
     const queue_conf_t *qcf = &conf->recvq;
@@ -152,7 +152,7 @@ static int sdtp_ssvr_creat_recvq(sdtp_sctx_t *ctx, const sdtp_ssvr_conf_t *conf)
 }
 
 /******************************************************************************
- **函数名称: sdtp_ssvr_creat_sendq
+ **函数名称: dsnd_ssvr_creat_sendq
  **功    能: 创建发送线程的发送队列
  **输入参数:
  **     ssvr: 发送服务对象
@@ -163,7 +163,7 @@ static int sdtp_ssvr_creat_recvq(sdtp_sctx_t *ctx, const sdtp_ssvr_conf_t *conf)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static int sdtp_ssvr_creat_sendq(sdtp_ssvr_t *ssvr, const sdtp_ssvr_conf_t *conf)
+static int dsnd_ssvr_creat_sendq(dsnd_ssvr_t *ssvr, const dsnd_conf_t *conf)
 {
     char path[FILE_PATH_MAX_LEN];
     const sdtp_queue_conf_t *qcf = &conf->sendq;
@@ -171,7 +171,7 @@ static int sdtp_ssvr_creat_sendq(sdtp_ssvr_t *ssvr, const sdtp_ssvr_conf_t *conf
     /* 1. 创建/连接发送队列 */
     snprintf(path, sizeof(path), "%s-%d", qcf->name, ssvr->tidx);
 
-    ssvr->sendq = sdtp_pool_creat(path, qcf->count, qcf->size);
+    ssvr->sendq = dsnd_pool_creat(path, qcf->count, qcf->size);
     if (NULL == ssvr->sendq)
     {
         log_error(ssvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
@@ -182,7 +182,7 @@ static int sdtp_ssvr_creat_sendq(sdtp_ssvr_t *ssvr, const sdtp_ssvr_conf_t *conf
 }
 
 /******************************************************************************
- **函数名称: sdtp_ssvr_creat_usck
+ **函数名称: dsnd_ssvr_creat_usck
  **功    能: 创建发送线程的命令接收套接字
  **输入参数:
  **     ssvr: 发送服务对象
@@ -193,11 +193,11 @@ static int sdtp_ssvr_creat_sendq(sdtp_ssvr_t *ssvr, const sdtp_ssvr_conf_t *conf
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static int sdtp_ssvr_creat_usck(sdtp_ssvr_t *ssvr, const sdtp_ssvr_conf_t *conf)
+static int dsnd_ssvr_creat_usck(dsnd_ssvr_t *ssvr, const dsnd_conf_t *conf)
 {
     char path[FILE_PATH_MAX_LEN];
 
-    sdtp_ssvr_usck_path(conf, path, ssvr->tidx);
+    dsnd_ssvr_usck_path(conf, path, ssvr->tidx);
 
     ssvr->cmd_sck_id = unix_udp_creat(path);
     if (ssvr->cmd_sck_id < 0)
@@ -211,7 +211,7 @@ static int sdtp_ssvr_creat_usck(sdtp_ssvr_t *ssvr, const sdtp_ssvr_conf_t *conf)
 }
 
 /******************************************************************************
- **函数名称: sdtp_ssvr_bind_cpu
+ **函数名称: dsnd_ssvr_bind_cpu
  **功    能: 绑定CPU
  **输入参数:
  **     ctx: 全局信息
@@ -222,7 +222,7 @@ static int sdtp_ssvr_creat_usck(sdtp_ssvr_t *ssvr, const sdtp_ssvr_conf_t *conf)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.16 #
  ******************************************************************************/
-static void sdtp_ssvr_bind_cpu(sdtp_sctx_t *ctx, int tidx)
+static void dsnd_ssvr_bind_cpu(dsnd_cntx_t *ctx, int tidx)
 {
     int idx, mod;
     cpu_set_t cpuset;
@@ -245,7 +245,7 @@ static void sdtp_ssvr_bind_cpu(sdtp_sctx_t *ctx, int tidx)
 }
 
 /******************************************************************************
- **函数名称: sdtp_ssvr_switch_send_buff
+ **函数名称: dsnd_ssvr_switch_send_buff
  **功    能: 切换发送缓存
  **输入参数:
  **     ctx: 全局信息
@@ -256,11 +256,11 @@ static void sdtp_ssvr_bind_cpu(sdtp_sctx_t *ctx, int tidx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.04.11 #
  ******************************************************************************/
-void sdtp_ssvr_switch_send_buff(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
+void dsnd_ssvr_switch_send_buff(dsnd_cntx_t *ctx, dsnd_ssvr_t *ssvr)
 {
     sdtp_snap_t *send;
-    sdtp_pool_page_t *page;
-    sdtp_ssck_t *sck = &ssvr->sck;
+    dsnd_pool_page_t *page;
+    dsnd_sck_t *sck = &ssvr->sck;
 
     /* > 检查是否发送完系统消息 */
     switch (sck->send_type)
@@ -294,7 +294,7 @@ void sdtp_ssvr_switch_send_buff(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
         }
     }
 
-    page = sdtp_pool_switch(ssvr->sendq);
+    page = dsnd_pool_switch(ssvr->sendq);
     if (NULL == page)
     {
         return; /* 无可发送的数据 */
@@ -329,7 +329,7 @@ void sdtp_ssvr_switch_send_buff(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
 }
 
 /******************************************************************************
- **函数名称: sdtp_ssvr_set_rwset
+ **函数名称: dsnd_ssvr_set_rwset
  **功    能: 设置读写集
  **输入参数:
  **     ssvr: 发送服务对象
@@ -339,7 +339,7 @@ void sdtp_ssvr_switch_send_buff(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.16 #
  ******************************************************************************/
-void sdtp_ssvr_set_rwset(sdtp_ssvr_t *ssvr)
+void dsnd_ssvr_set_rwset(dsnd_ssvr_t *ssvr)
 {
     int idx;
     sdtp_snap_t *snap;
@@ -380,31 +380,27 @@ void sdtp_ssvr_set_rwset(sdtp_ssvr_t *ssvr)
 }
 
 /******************************************************************************
- **函数名称: sdtp_ssvr_routine
- **功    能: Snd线程调用的主程序
+ **函数名称: dsnd_ssvr_routine
+ **功    能: 发送线程入口函数
  **输入参数:
  **     _ctx: 全局信息
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述:
- **     1. 获取发送线程
- **     2. 绑定CPU
- **     3. 调用发送主程
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.16 #
  ******************************************************************************/
-void *sdtp_ssvr_routine(void *_ctx)
+void *dsnd_ssvr_routine(void *_ctx)
 {
     int ret;
-    sdtp_ssvr_t *ssvr;
-    sdtp_ssck_t *sck;
+    dsnd_sck_t *sck;
+    dsnd_ssvr_t *ssvr;
     struct timeval timeout;
-    sdtp_sctx_t *ctx = (sdtp_sctx_t *)_ctx;
-    sdtp_ssvr_conf_t *conf = &ctx->conf;
-
+    dsnd_cntx_t *ctx = (dsnd_cntx_t *)_ctx;
+    dsnd_conf_t *conf = &ctx->conf;
 
     /* 1. 获取发送线程 */
-    ssvr = sdtp_ssvr_get_curr(ctx);
+    ssvr = dsnd_ssvr_get_curr(ctx);
     if (NULL == ssvr)
     {
         log_fatal(ssvr->log, "Get current thread failed!");
@@ -415,7 +411,7 @@ void *sdtp_ssvr_routine(void *_ctx)
     sck = &ssvr->sck;
 
     /* 2. 绑定指定CPU */
-    sdtp_ssvr_bind_cpu(ctx, ssvr->tidx);
+    dsnd_ssvr_bind_cpu(ctx, ssvr->tidx);
 
     /* 3. 进行事件处理 */
     for (;;)
@@ -423,7 +419,7 @@ void *sdtp_ssvr_routine(void *_ctx)
         /* 3.1 连接合法性判断 */
         if (sck->fd < 0)
         {
-            sdtp_ssvr_clear_mesg(ssvr);
+            dsnd_ssvr_clear_mesg(ssvr);
 
             /* 重连Recv端 */
             if ((sck->fd = tcp_connect(AF_INET, conf->ipaddr, conf->port)) < 0)
@@ -438,10 +434,10 @@ void *sdtp_ssvr_routine(void *_ctx)
             sdtp_link_auth_req(ctx, ssvr); /* 发起鉴权请求 */
         }
 
-        sdtp_ssvr_switch_send_buff(ctx, ssvr);
+        dsnd_ssvr_switch_send_buff(ctx, ssvr);
 
         /* 3.2 等待事件通知 */
-        sdtp_ssvr_set_rwset(ssvr);
+        dsnd_ssvr_set_rwset(ssvr);
 
         timeout.tv_sec = SDTP_SSVR_TMOUT_SEC;
         timeout.tv_usec = SDTP_SSVR_TMOUT_USEC;
@@ -459,26 +455,26 @@ void *sdtp_ssvr_routine(void *_ctx)
         }
         else if (0 == ret)
         {
-            sdtp_ssvr_timeout_hdl(ctx, ssvr);
+            dsnd_ssvr_timeout_hdl(ctx, ssvr);
             continue;
         }
 
         /* 发送数据: 发送优先 */
         if (FD_ISSET(sck->fd, &ssvr->wset))
         {
-            sdtp_ssvr_send_data(ctx, ssvr);
+            dsnd_ssvr_send_data(ctx, ssvr);
         }
 
         /* 接收命令 */
         if (FD_ISSET(ssvr->cmd_sck_id, &ssvr->rset))
         {
-            sdtp_ssvr_recv_cmd(ctx, ssvr);
+            dsnd_ssvr_recv_cmd(ctx, ssvr);
         }
 
         /* 接收Recv服务的数据 */
         if (FD_ISSET(sck->fd, &ssvr->rset))
         {
-            sdtp_ssvr_recv_proc(ctx, ssvr);
+            dsnd_ssvr_recv_proc(ctx, ssvr);
         }
     }
 
@@ -487,7 +483,7 @@ void *sdtp_ssvr_routine(void *_ctx)
 }
 
 /******************************************************************************
- **函数名称: sdtp_ssvr_kpalive_req
+ **函数名称: dsnd_ssvr_kpalive_req
  **功    能: 发送保活命令
  **输入参数:
  **     ctx: 全局信息
@@ -500,12 +496,12 @@ void *sdtp_ssvr_routine(void *_ctx)
  **     因此发送数据时，不用判断EAGAIN的情况是否存在。
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static int sdtp_ssvr_kpalive_req(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
+static int dsnd_ssvr_kpalive_req(dsnd_cntx_t *ctx, dsnd_ssvr_t *ssvr)
 {
     void *addr;
     sdtp_header_t *head;
     int size = sizeof(sdtp_header_t);
-    sdtp_ssck_t *sck = &ssvr->sck;
+    dsnd_sck_t *sck = &ssvr->sck;
     sdtp_snap_t *send = &ssvr->sck.send[SDTP_SNAP_SHOT_SYS_DATA];
 
     /* 1. 上次发送保活请求之后 仍未收到应答 */
@@ -548,7 +544,7 @@ static int sdtp_ssvr_kpalive_req(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
 }
 
 /******************************************************************************
- **函数名称: sdtp_ssvr_get_curr
+ **函数名称: dsnd_ssvr_get_curr
  **功    能: 获取当前发送线程的上下文
  **输入参数:
  **     ssvr: 发送服务对象
@@ -559,7 +555,7 @@ static int sdtp_ssvr_kpalive_req(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static sdtp_ssvr_t *sdtp_ssvr_get_curr(sdtp_sctx_t *ctx)
+static dsnd_ssvr_t *dsnd_ssvr_get_curr(dsnd_cntx_t *ctx)
 {
     int tidx;
 
@@ -572,11 +568,11 @@ static sdtp_ssvr_t *sdtp_ssvr_get_curr(sdtp_sctx_t *ctx)
     }
 
     /* 2. 返回线程对象 */
-    return (sdtp_ssvr_t *)(ctx->sendtp->data + tidx * sizeof(sdtp_ssvr_t));
+    return (dsnd_ssvr_t *)(ctx->sendtp->data + tidx * sizeof(dsnd_ssvr_t));
 }
 
 /******************************************************************************
- **函数名称: sdtp_ssvr_timeout_hdl
+ **函数名称: dsnd_ssvr_timeout_hdl
  **功    能: 超时处理
  **输入参数:
  **     ctx: 全局信息
@@ -589,10 +585,10 @@ static sdtp_ssvr_t *sdtp_ssvr_get_curr(sdtp_sctx_t *ctx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static int sdtp_ssvr_timeout_hdl(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
+static int dsnd_ssvr_timeout_hdl(dsnd_cntx_t *ctx, dsnd_ssvr_t *ssvr)
 {
     time_t curr_tm = time(NULL);
-    sdtp_ssck_t *sck = &ssvr->sck;
+    dsnd_sck_t *sck = &ssvr->sck;
 
     /* 1. 判断是否长时无数据 */
     if ((curr_tm - sck->wrtm) < SDTP_KPALIVE_INTV)
@@ -601,7 +597,7 @@ static int sdtp_ssvr_timeout_hdl(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
     }
 
     /* 2. 发送保活请求 */
-    if (sdtp_ssvr_kpalive_req(ctx, ssvr))
+    if (dsnd_ssvr_kpalive_req(ctx, ssvr))
     {
         log_error(ssvr->log, "Connection keepalive failed!");
         return SDTP_ERR;
@@ -613,7 +609,7 @@ static int sdtp_ssvr_timeout_hdl(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
 }
 
 /******************************************************************************
- **函数名称: sdtp_ssvr_recv_proc
+ **函数名称: dsnd_ssvr_recv_proc
  **功    能: 接收网络数据
  **输入参数:
  **     ctx: 全局信息
@@ -636,10 +632,10 @@ static int sdtp_ssvr_timeout_hdl(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
  **     addr     optr             iptr                   end
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static int sdtp_ssvr_recv_proc(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
+static int dsnd_ssvr_recv_proc(dsnd_cntx_t *ctx, dsnd_ssvr_t *ssvr)
 {
     int n, left;
-    sdtp_ssck_t *sck = &ssvr->sck;
+    dsnd_sck_t *sck = &ssvr->sck;
     sdtp_snap_t *recv = &sck->recv;
 
     sck->rdtm = time(NULL);
@@ -655,7 +651,7 @@ static int sdtp_ssvr_recv_proc(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
             recv->iptr += n;
 
             /* 2. 进行数据处理 */
-            if (sdtp_ssvr_data_proc(ctx, ssvr, sck))
+            if (dsnd_ssvr_data_proc(ctx, ssvr, sck))
             {
                 log_error(ssvr->log, "Proc data failed! fd:%d", sck->fd);
 
@@ -693,7 +689,7 @@ static int sdtp_ssvr_recv_proc(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
 }
 
 /******************************************************************************
- **函数名称: sdtp_ssvr_data_proc
+ **函数名称: dsnd_ssvr_data_proc
  **功    能: 进行数据处理
  **输入参数:
  **     ctx: 全局信息
@@ -718,7 +714,7 @@ static int sdtp_ssvr_recv_proc(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
  **     addr     optr             iptr                   end
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static int sdtp_ssvr_data_proc(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, sdtp_ssck_t *sck)
+static int dsnd_ssvr_data_proc(dsnd_cntx_t *ctx, dsnd_ssvr_t *ssvr, dsnd_sck_t *sck)
 {
     sdtp_header_t *head;
     uint32_t len, mesg_len;
@@ -774,11 +770,11 @@ static int sdtp_ssvr_data_proc(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, sdtp_ssck_t 
         /* 2.3 进行数据处理 */
         if (SDTP_SYS_MESG == head->flag)
         {
-            sdtp_ssvr_sys_mesg_proc(ctx, ssvr, sck, recv->optr);
+            dsnd_ssvr_sys_mesg_proc(ctx, ssvr, sck, recv->optr);
         }
         else
         {
-            sdtp_ssvr_exp_mesg_proc(ctx, ssvr, sck, recv->optr);
+            dsnd_ssvr_exp_mesg_proc(ctx, ssvr, sck, recv->optr);
         }
 
         recv->optr += mesg_len;
@@ -788,7 +784,7 @@ static int sdtp_ssvr_data_proc(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, sdtp_ssck_t 
 }
 
 /******************************************************************************
- **函数名称: sdtp_ssvr_recv_cmd
+ **函数名称: dsnd_ssvr_recv_cmd
  **功    能: 接收命令数据
  **输入参数:
  **     ctx: 全局信息
@@ -801,7 +797,7 @@ static int sdtp_ssvr_data_proc(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, sdtp_ssck_t 
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static int sdtp_ssvr_recv_cmd(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
+static int dsnd_ssvr_recv_cmd(dsnd_cntx_t *ctx, dsnd_ssvr_t *ssvr)
 {
     sdtp_cmd_t cmd;
 
@@ -815,11 +811,11 @@ static int sdtp_ssvr_recv_cmd(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
     }
 
     /* 2. 处理命令 */
-    return sdtp_ssvr_proc_cmd(ctx, ssvr, &cmd);
+    return dsnd_ssvr_proc_cmd(ctx, ssvr, &cmd);
 }
 
 /******************************************************************************
- **函数名称: sdtp_ssvr_proc_cmd
+ **函数名称: dsnd_ssvr_proc_cmd
  **功    能: 命令处理
  **输入参数:
  **     ssvr: 发送服务对象
@@ -830,9 +826,9 @@ static int sdtp_ssvr_recv_cmd(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static int sdtp_ssvr_proc_cmd(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, const sdtp_cmd_t *cmd)
+static int dsnd_ssvr_proc_cmd(dsnd_cntx_t *ctx, dsnd_ssvr_t *ssvr, const sdtp_cmd_t *cmd)
 {
-    sdtp_ssck_t *sck = &ssvr->sck;
+    dsnd_sck_t *sck = &ssvr->sck;
 
     switch (cmd->type)
     {
@@ -841,7 +837,7 @@ static int sdtp_ssvr_proc_cmd(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, const sdtp_cm
         {
             if (fd_is_writable(sck->fd))
             {
-                return sdtp_ssvr_send_data(ctx, ssvr);
+                return dsnd_ssvr_send_data(ctx, ssvr);
             }
             return SDTP_OK;
         }
@@ -855,7 +851,7 @@ static int sdtp_ssvr_proc_cmd(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, const sdtp_cm
 }
 
 /******************************************************************************
- **函数名称: sdtp_ssvr_fill_send_buff
+ **函数名称: dsnd_ssvr_fill_send_buff
  **功    能: 填充发送缓冲区
  **输入参数:
  **     ssvr: 发送服务
@@ -878,7 +874,7 @@ static int sdtp_ssvr_proc_cmd(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, const sdtp_cm
  **     addr     optr             iptr                   end
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static int sdtp_ssvr_fill_send_buff(sdtp_ssvr_t *ssvr, sdtp_ssck_t *sck)
+static int dsnd_ssvr_fill_send_buff(dsnd_ssvr_t *ssvr, dsnd_sck_t *sck)
 {
     uint32_t left, mesg_len;
     sdtp_header_t *head;
@@ -924,7 +920,7 @@ static int sdtp_ssvr_fill_send_buff(sdtp_ssvr_t *ssvr, sdtp_ssck_t *sck)
 }
 
 /******************************************************************************
- **函数名称: sdtp_ssvr_send_data
+ **函数名称: dsnd_ssvr_send_data
  **功    能: 发送系统消息
  **输入参数:
  **     ctx: 全局信息
@@ -948,10 +944,10 @@ static int sdtp_ssvr_fill_send_buff(sdtp_ssvr_t *ssvr, sdtp_ssck_t *sck)
  **     addr     optr             iptr                   end
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static int sdtp_ssvr_send_sys_data(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
+static int dsnd_ssvr_send_sys_data(dsnd_cntx_t *ctx, dsnd_ssvr_t *ssvr)
 {
     int n, len;
-    sdtp_ssck_t *sck = &ssvr->sck;
+    dsnd_sck_t *sck = &ssvr->sck;
     sdtp_snap_t *send = &sck->send[SDTP_SNAP_SHOT_SYS_DATA];
 
     sck->wrtm = time(NULL);
@@ -961,7 +957,7 @@ static int sdtp_ssvr_send_sys_data(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
         /* 1. 填充发送缓存 */
         if (send->iptr == send->optr)
         {
-            if ((len = sdtp_ssvr_fill_send_buff(ssvr, sck)) <= 0)
+            if ((len = dsnd_ssvr_fill_send_buff(ssvr, sck)) <= 0)
             {
                 break;
             }
@@ -996,7 +992,7 @@ static int sdtp_ssvr_send_sys_data(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
 }
 
 /******************************************************************************
- **函数名称: sdtp_ssvr_send_data
+ **函数名称: dsnd_ssvr_send_data
  **功    能: 发送扩展消息
  **输入参数:
  **     ctx: 全局信息
@@ -1019,10 +1015,10 @@ static int sdtp_ssvr_send_sys_data(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
  **     addr     optr             iptr                   end
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static int sdtp_ssvr_send_exp_data(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
+static int dsnd_ssvr_send_exp_data(dsnd_cntx_t *ctx, dsnd_ssvr_t *ssvr)
 {
     int n, len;
-    sdtp_ssck_t *sck = &ssvr->sck;
+    dsnd_sck_t *sck = &ssvr->sck;
     sdtp_snap_t *send = &sck->send[SDTP_SNAP_SHOT_EXP_DATA];
 
     sck->wrtm = time(NULL);
@@ -1052,7 +1048,7 @@ static int sdtp_ssvr_send_exp_data(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
 }
 
 /******************************************************************************
- **函数名称: sdtp_ssvr_send_data
+ **函数名称: dsnd_ssvr_send_data
  **功    能: 发送数据的请求处理
  **输入参数:
  **     ctx: 全局信息
@@ -1062,20 +1058,20 @@ static int sdtp_ssvr_send_exp_data(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
  **实现描述:
  **作    者: # Qifeng.zou # 2015.04.11 #
  ******************************************************************************/
-static int sdtp_ssvr_send_data(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
+static int dsnd_ssvr_send_data(dsnd_cntx_t *ctx, dsnd_ssvr_t *ssvr)
 {
-    sdtp_ssck_t *sck = &ssvr->sck;
+    dsnd_sck_t *sck = &ssvr->sck;
 
     if (SDTP_SNAP_SHOT_SYS_DATA == sck->send_type)
     {
-        return sdtp_ssvr_send_sys_data(ctx, ssvr);
+        return dsnd_ssvr_send_sys_data(ctx, ssvr);
     }
 
-    return sdtp_ssvr_send_exp_data(ctx, ssvr);
+    return dsnd_ssvr_send_exp_data(ctx, ssvr);
 }
 
 /******************************************************************************
- **函数名称: sdtp_ssvr_clear_mesg
+ **函数名称: dsnd_ssvr_clear_mesg
  **功    能: 清空发送消息
  **输入参数:
  **     ssvr: 发送服务
@@ -1086,7 +1082,7 @@ static int sdtp_ssvr_send_data(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.16 #
  ******************************************************************************/
-static int sdtp_ssvr_clear_mesg(sdtp_ssvr_t *ssvr)
+static int dsnd_ssvr_clear_mesg(dsnd_ssvr_t *ssvr)
 {
     void *data;
 
@@ -1105,7 +1101,7 @@ static int sdtp_ssvr_clear_mesg(sdtp_ssvr_t *ssvr)
 }
 
 /******************************************************************************
- **函数名称: sdtp_ssvr_sys_mesg_proc
+ **函数名称: dsnd_ssvr_sys_mesg_proc
  **功    能: 系统消息的处理
  **输入参数:
  **     ctx: 全局信息
@@ -1117,7 +1113,7 @@ static int sdtp_ssvr_clear_mesg(sdtp_ssvr_t *ssvr)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.16 #
  ******************************************************************************/
-static int sdtp_ssvr_sys_mesg_proc(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, sdtp_ssck_t *sck, void *addr)
+static int dsnd_ssvr_sys_mesg_proc(dsnd_cntx_t *ctx, dsnd_ssvr_t *ssvr, dsnd_sck_t *sck, void *addr)
 {
     sdtp_header_t *head = (sdtp_header_t *)addr;
 
@@ -1141,7 +1137,7 @@ static int sdtp_ssvr_sys_mesg_proc(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, sdtp_ssc
 }
 
 /******************************************************************************
- **函数名称: sdtp_ssvr_exp_mesg_proc
+ **函数名称: dsnd_ssvr_exp_mesg_proc
  **功    能: 自定义消息的处理
  **输入参数:
  **     ctx: 全局信息
@@ -1154,8 +1150,8 @@ static int sdtp_ssvr_sys_mesg_proc(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, sdtp_ssc
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.19 #
  ******************************************************************************/
-static int sdtp_ssvr_exp_mesg_proc(
-        sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, sdtp_ssck_t *sck, void *addr)
+static int dsnd_ssvr_exp_mesg_proc(
+        dsnd_cntx_t *ctx, dsnd_ssvr_t *ssvr, dsnd_sck_t *sck, void *addr)
 {
     void *data;
     int *num;
@@ -1215,12 +1211,12 @@ static int sdtp_ssvr_exp_mesg_proc(
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.22 #
  ******************************************************************************/
-static int sdtp_link_auth_req(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
+static int sdtp_link_auth_req(dsnd_cntx_t *ctx, dsnd_ssvr_t *ssvr)
 {
     int size;
     void *addr;
     sdtp_header_t *head;
-    sdtp_ssck_t *sck = &ssvr->sck;
+    dsnd_sck_t *sck = &ssvr->sck;
     sdtp_link_auth_req_t *link_auth_req;
 
     /* > 申请内存空间 */
@@ -1275,7 +1271,7 @@ static int sdtp_link_auth_req(sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr)
  **作    者: # Qifeng.zou # 2015.05.22 #
  ******************************************************************************/
 static int sdtp_link_auth_rep_hdl(
-        sdtp_sctx_t *ctx, sdtp_ssvr_t *ssvr, sdtp_ssck_t *sck, sdtp_link_auth_rep_t *rep)
+        dsnd_cntx_t *ctx, dsnd_ssvr_t *ssvr, dsnd_sck_t *sck, sdtp_link_auth_rep_t *rep)
 {
     return ntohl(rep->is_succ)? SDTP_OK : SDTP_ERR;
 }

@@ -11,7 +11,7 @@ typedef struct
     int log_level;                  /* 日志级别 */
 
     gate_conf_t gate;               /* 探针配置 */
-    sdtp_ssvr_conf_t sdtp;          /* SDTP配置 */
+    dsnd_conf_t sdtp;               /* SDTP配置 */
 } agtd_conf_t;
 
 agtd_conf_t *agtd_conf_load(const char *path, log_cycle_t *log);

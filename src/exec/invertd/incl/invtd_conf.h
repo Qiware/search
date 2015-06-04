@@ -7,7 +7,7 @@
 typedef struct
 {
     int invt_tab_max;                   /* 倒排表长度 */
-    sdtp_conf_t sdtp;                   /* SDTP配置 */
+    drcv_conf_t sdtp;                   /* SDTP配置 */
 } invtd_conf_t;
 
 int invtd_conf_load(const char *path, invtd_conf_t *conf);

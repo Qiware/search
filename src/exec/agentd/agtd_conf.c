@@ -17,7 +17,7 @@ static int agtd_conf_parse(xml_tree_t *xml, gate_conf_t *conf, log_cycle_t *log)
 
 static int agtd_conf_load_comm(xml_tree_t *xml, agtd_conf_t *conf, log_cycle_t *log);
 static int agtd_conf_load_gate(xml_tree_t *xml, gate_conf_t *conf, log_cycle_t *log);
-static int agtd_conf_load_sdtp(xml_tree_t *xml, sdtp_ssvr_conf_t *conf, log_cycle_t *log);
+static int agtd_conf_load_sdtp(xml_tree_t *xml, dsnd_conf_t *conf, log_cycle_t *log);
 
 /* 加载配置信息 */
 agtd_conf_t *agtd_conf_load(const char *path, log_cycle_t *log)
@@ -135,7 +135,7 @@ static int agtd_conf_load_comm(xml_tree_t *xml, agtd_conf_t *conf, log_cycle_t *
 }
 
 /* 解析并发配置 */
-static int agtd_conf_parse_GATE_connections(
+static int agtd_conf_parse_gate_connections(
         xml_tree_t *xml, gate_conf_t *conf, log_cycle_t *log)
 {
     xml_node_t *node, *fix;
@@ -182,7 +182,7 @@ static int agtd_conf_parse_GATE_connections(
 }
 
 /* 解析队列配置 */
-static int agtd_conf_parse_GATE_queue(xml_tree_t *xml, gate_conf_t *conf, log_cycle_t *log)
+static int agtd_conf_parse_gate_queue(xml_tree_t *xml, gate_conf_t *conf, log_cycle_t *log)
 {
     xml_node_t *node, *fix;
 
@@ -233,14 +233,14 @@ static int agtd_conf_load_gate(xml_tree_t *xml, gate_conf_t *conf, log_cycle_t *
     xml_node_t *node;
 
     /* > 加载连接配置 */
-    if (agtd_conf_parse_GATE_connections(xml, conf, log))
+    if (agtd_conf_parse_gate_connections(xml, conf, log))
     {
         log_error(log, "Parse connections of GATEe configuration failed!");
         return AGTD_ERR;
     }
 
     /* > 加载连接配置 */
-    if (agtd_conf_parse_GATE_queue(xml, conf, log))
+    if (agtd_conf_parse_gate_queue(xml, conf, log))
     {
         log_error(log, "Parse queue of GATEe configuration failed!");
         return AGTD_ERR;
@@ -270,12 +270,13 @@ static int agtd_conf_load_gate(xml_tree_t *xml, gate_conf_t *conf, log_cycle_t *
 }
 
 /* 加载SDTP配置 */
-static int agtd_conf_load_sdtp(xml_tree_t *xml, sdtp_ssvr_conf_t *conf, log_cycle_t *log)
+static int agtd_conf_load_sdtp(xml_tree_t *xml, dsnd_conf_t *conf, log_cycle_t *log)
 {
-    memset(conf, 0, sizeof(sdtp_ssvr_conf_t));
+    memset(conf, 0, sizeof(dsnd_conf_t));
 
     snprintf(conf->name, sizeof(conf->name), "SDTP-SEND");
 
+    conf->auth.devid = 1;
     snprintf(conf->auth.usr, sizeof(conf->auth.usr), "qifeng");
     snprintf(conf->auth.passwd, sizeof(conf->auth.passwd), "111111");
 

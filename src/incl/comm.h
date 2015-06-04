@@ -123,5 +123,6 @@ void *mem_alloc(void *pool, size_t size);
 typedef void (*mem_dealloc_cb_t)(void *pool, void *p);
 
 void mem_dealloc(void *pool, void *p);
+static inline void mem_dummy_dealloc(void *pool, void *p) {};
 
 #endif /*__COMM_H__*/

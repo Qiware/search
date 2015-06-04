@@ -4,7 +4,7 @@
 #include "log.h"
 #include "gate.h"
 #include "comm.h"
-#include "sdtp_cli.h"
+#include "dsnd_cli.h"
 #include "agtd_conf.h"
 
 #define AGTD_DEF_CONF_PATH  "../conf/agentd.xml"/* 默认配置路径 */
@@ -33,7 +33,7 @@ typedef struct
 {
     agtd_conf_t *conf;                  /* 配置信息 */
 
-    sdtp_cli_t *sdtp;                   /* SDTP服务 */
+    dsnd_cli_t *sdtp;                   /* SDTP服务 */
     gate_cntx_t *gate;                  /* 探针服务 */
     log_cycle_t *log;                   /* 日志对象 */
 

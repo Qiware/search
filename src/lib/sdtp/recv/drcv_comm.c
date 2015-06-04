@@ -3,7 +3,7 @@
 #include "sdtp_comm.h"
 
 /******************************************************************************
- **函数名称: sdtp_cmd_to_rsvr
+ **函数名称: drcv_cmd_to_rsvr
  **功    能: 发送命令到指定的接收线程
  **输入参数:
  **     ctx: 全局对象
@@ -17,12 +17,12 @@
  **注意事项: 如果发送失败，最多重复3次发送!
  **作    者: # Qifeng.zou # 2015.01.09 #
  ******************************************************************************/
-int sdtp_cmd_to_rsvr(sdtp_rctx_t *ctx, int cmd_sck_id, const sdtp_cmd_t *cmd, int idx)
+int drcv_cmd_to_rsvr(drcv_cntx_t *ctx, int cmd_sck_id, const sdtp_cmd_t *cmd, int idx)
 {
     char path[FILE_PATH_MAX_LEN];
-    sdtp_conf_t *conf = &ctx->conf;
+    drcv_conf_t *conf = &ctx->conf;
 
-    sdtp_rsvr_usck_path(conf, path, idx);
+    drcv_rsvr_usck_path(conf, path, idx);
 
     /* 发送命令至接收线程 */
     if (unix_udp_send(cmd_sck_id, path, cmd, sizeof(sdtp_cmd_t)) < 0)
@@ -36,7 +36,7 @@ int sdtp_cmd_to_rsvr(sdtp_rctx_t *ctx, int cmd_sck_id, const sdtp_cmd_t *cmd, in
 }
 
 /******************************************************************************
- **函数名称: sdtp_link_auth_check
+ **函数名称: drcv_link_auth_check
  **功    能: 链路鉴权检测
  **输入参数:
  **     ctx: 全局对象
@@ -47,9 +47,9 @@ int sdtp_cmd_to_rsvr(sdtp_rctx_t *ctx, int cmd_sck_id, const sdtp_cmd_t *cmd, in
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.22 #
  ******************************************************************************/
-int sdtp_link_auth_check(sdtp_rctx_t *ctx, sdtp_link_auth_req_t *link_auth_req)
+int drcv_link_auth_check(drcv_cntx_t *ctx, sdtp_link_auth_req_t *link_auth_req)
 {
-    sdtp_conf_t *conf = &ctx->conf;
+    drcv_conf_t *conf = &ctx->conf;
 
     if (0 != strcmp(link_auth_req->usr, conf->auth.usr)
         || 0 != strcmp(link_auth_req->passwd, conf->auth.passwd))
@@ -61,7 +61,7 @@ int sdtp_link_auth_check(sdtp_rctx_t *ctx, sdtp_link_auth_req_t *link_auth_req)
 }
 
 /******************************************************************************
- **函数名称: sdtp_dev_to_svr_map_init
+ **函数名称: drcv_dev_to_svr_map_init
  **功    能: 创建DEV与SVR的映射表
  **输入参数:
  **     ctx: 全局对象
@@ -71,7 +71,7 @@ int sdtp_link_auth_check(sdtp_rctx_t *ctx, sdtp_link_auth_req_t *link_auth_req)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.30 20:29:26 #
  ******************************************************************************/
-int sdtp_dev_to_svr_map_init(sdtp_rctx_t *ctx)
+int drcv_dev_to_svr_map_init(drcv_cntx_t *ctx)
 {
     avl_opt_t opt;
 
@@ -97,7 +97,7 @@ int sdtp_dev_to_svr_map_init(sdtp_rctx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: sdtp_dev_to_svr_map_add
+ **函数名称: drcv_dev_to_svr_map_add
  **功    能: 添加DEV->SVR映射
  **输入参数:
  **     ctx: 全局对象
@@ -109,13 +109,13 @@ int sdtp_dev_to_svr_map_init(sdtp_rctx_t *ctx)
  **注意事项: 注册DEVID与RSVR的映射关系, 为自定义数据的应答做铺垫!
  **作    者: # Qifeng.zou # 2015.05.30 #
  ******************************************************************************/
-int sdtp_dev_to_svr_map_add(sdtp_rctx_t *ctx, int devid, int rsvr_idx)
+int drcv_dev_to_svr_map_add(drcv_cntx_t *ctx, int devid, int rsvr_idx)
 {
     list_t *list;
     list_opt_t opt;
     avl_node_t *avl_node;
     list_node_t *list_node;
-    sdtp_dev_svr_item_t *item;
+    drcv_dev_to_svr_item_t *item;
 
     pthread_rwlock_wrlock(&ctx->dev_to_svr_map_lock); /* 加锁 */
 
@@ -155,7 +155,7 @@ int sdtp_dev_to_svr_map_add(sdtp_rctx_t *ctx, int devid, int rsvr_idx)
         list_node = list->head;
         for (; NULL != list_node; list_node = list_node->next)
         {
-            item = (sdtp_dev_svr_item_t *)list_node->data;
+            item = (drcv_dev_to_svr_item_t *)list_node->data;
             if (rsvr_idx == item->rsvr_idx) /* 判断是否重复 */
             {
                 ++item->count;
@@ -164,7 +164,7 @@ int sdtp_dev_to_svr_map_add(sdtp_rctx_t *ctx, int devid, int rsvr_idx)
             }
         }
 
-        item = slab_alloc(ctx->pool, sizeof(sdtp_dev_svr_item_t));
+        item = slab_alloc(ctx->pool, sizeof(drcv_dev_to_svr_item_t));
         if (NULL == item)
         {
             pthread_rwlock_unlock(&ctx->dev_to_svr_map_lock); /* 解锁 */
@@ -196,7 +196,7 @@ int sdtp_dev_to_svr_map_add(sdtp_rctx_t *ctx, int devid, int rsvr_idx)
 }
 
 /******************************************************************************
- **函数名称: sdtp_dev_to_svr_map_del
+ **函数名称: drcv_dev_to_svr_map_del
  **功    能: 删除DEV -> SVR映射
  **输入参数:
  **     ctx: 全局对象
@@ -208,12 +208,12 @@ int sdtp_dev_to_svr_map_add(sdtp_rctx_t *ctx, int devid, int rsvr_idx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.30 22:25:20 #
  ******************************************************************************/
-int sdtp_dev_to_svr_map_del(sdtp_rctx_t *ctx, int devid, int rsvr_idx)
+int drcv_dev_to_svr_map_del(drcv_cntx_t *ctx, int devid, int rsvr_idx)
 {
     list_t *list;
     list_node_t *node;
     avl_node_t *avl_node;
-    sdtp_dev_svr_item_t *item;
+    drcv_dev_to_svr_item_t *item;
 
     pthread_rwlock_wrlock(&ctx->dev_to_svr_map_lock);
 
@@ -237,7 +237,7 @@ int sdtp_dev_to_svr_map_del(sdtp_rctx_t *ctx, int devid, int rsvr_idx)
     node = list->head;
     for (; NULL != node; node = node->next)
     {
-        item = (sdtp_dev_svr_item_t *)node->data;
+        item = (drcv_dev_to_svr_item_t *)node->data;
         if (item->rsvr_idx == rsvr_idx)
         {
             --item->count;
@@ -258,7 +258,7 @@ int sdtp_dev_to_svr_map_del(sdtp_rctx_t *ctx, int devid, int rsvr_idx)
 }
 
 /******************************************************************************
- **函数名称: sdtp_dev_to_svr_map_rand
+ **函数名称: drcv_dev_to_svr_map_rand
  **功    能: 随机选择DEV -> SVR映射
  **输入参数:
  **     ctx: 全局对象
@@ -269,13 +269,13 @@ int sdtp_dev_to_svr_map_del(sdtp_rctx_t *ctx, int devid, int rsvr_idx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.30 22:25:20 #
  ******************************************************************************/
-int sdtp_dev_to_svr_map_rand(sdtp_rctx_t *ctx, int devid)
+int drcv_dev_to_svr_map_rand(drcv_cntx_t *ctx, int devid)
 {
     int idx, n, rsvr_idx;
     list_t *list;
     list_node_t *node;
     avl_node_t *avl_node;
-    sdtp_dev_svr_item_t *item;
+    drcv_dev_to_svr_item_t *item;
 
     pthread_rwlock_rdlock(&ctx->dev_to_svr_map_lock);
 
@@ -300,7 +300,7 @@ int sdtp_dev_to_svr_map_rand(sdtp_rctx_t *ctx, int devid)
     node = list->head;
     for (n = 0; NULL != node; node = node->next, ++n)
     {
-        item = (sdtp_dev_svr_item_t *)node->data;
+        item = (drcv_dev_to_svr_item_t *)node->data;
         if (n == idx)
         {
             rsvr_idx = item->rsvr_idx;
@@ -314,7 +314,7 @@ int sdtp_dev_to_svr_map_rand(sdtp_rctx_t *ctx, int devid)
 }
 
 /******************************************************************************
- **函数名称: sdtp_shm_sendq_creat
+ **函数名称: drcv_shm_sendq_creat
  **功    能: 创建SHM发送队列
  **输入参数:
  **     conf: 配置信息
@@ -324,13 +324,13 @@ int sdtp_dev_to_svr_map_rand(sdtp_rctx_t *ctx, int devid)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.20 #
  ******************************************************************************/
-shm_queue_t *sdtp_shm_sendq_creat(const sdtp_conf_t *conf)
+shm_queue_t *drcv_shm_sendq_creat(const drcv_conf_t *conf)
 {
     key_t key;
     char path[FILE_NAME_MAX_LEN];
 
     /* > 通过路径生成KEY */
-    sdtp_sendq_shm_path(conf, path);
+    drcv_sendq_shm_path(conf, path);
 
     key = shm_ftok(path, 0);
     if ((key_t)-1 == key)
@@ -343,7 +343,7 @@ shm_queue_t *sdtp_shm_sendq_creat(const sdtp_conf_t *conf)
 }
 
 /******************************************************************************
- **函数名称: sdtp_shm_sendq_attach
+ **函数名称: drcv_shm_sendq_attach
  **功    能: 附着SHM发送队列
  **输入参数:
  **     conf: 配置信息
@@ -353,13 +353,13 @@ shm_queue_t *sdtp_shm_sendq_creat(const sdtp_conf_t *conf)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.06.01 #
  ******************************************************************************/
-shm_queue_t *sdtp_shm_sendq_attach(const sdtp_conf_t *conf)
+shm_queue_t *drcv_shm_sendq_attach(const drcv_conf_t *conf)
 {
     key_t key;
     char path[FILE_NAME_MAX_LEN];
 
     /* > 通过路径生成KEY */
-    sdtp_sendq_shm_path(conf, path);
+    drcv_sendq_shm_path(conf, path);
 
     key = shm_ftok(path, 0);
     if ((key_t)-1 == key)
@@ -372,7 +372,7 @@ shm_queue_t *sdtp_shm_sendq_attach(const sdtp_conf_t *conf)
 }
 
 /******************************************************************************
- **函数名称: sdtp_dist_routine
+ **函数名称: drcv_dist_routine
  **功    能: 运行分发线程
  **输入参数:
  **     ctx: 全局信息
@@ -382,12 +382,12 @@ shm_queue_t *sdtp_shm_sendq_attach(const sdtp_conf_t *conf)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.15 #
  ******************************************************************************/
-void *sdtp_dist_routine(void *_ctx)
+void *drcv_dist_routine(void *_ctx)
 {
     int idx;
     void *addr, *addr2;
     sdtp_frwd_t *frwd;
-    sdtp_rctx_t *ctx = (sdtp_rctx_t *)_ctx;
+    drcv_cntx_t *ctx = (drcv_cntx_t *)_ctx;
 
     while (1)
     {
@@ -402,7 +402,7 @@ void *sdtp_dist_routine(void *_ctx)
         /* > 获取发送队列 */
         frwd = (sdtp_frwd_t *)addr;
 
-        idx = sdtp_dev_to_svr_map_rand(ctx, frwd->dest_devid);
+        idx = drcv_dev_to_svr_map_rand(ctx, frwd->dest_devid);
         if (idx < 0)
         {
             log_error(ctx->log, "Didn't find dev to svr map! devid:%d", frwd->dest_devid);

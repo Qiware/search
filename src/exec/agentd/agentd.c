@@ -125,9 +125,9 @@ static int agtd_proc_lock(void)
 }
 
 /* 初始化SDTP对象 */
-static sdtp_cli_t *agtd_sdtp_init(sdtp_ssvr_conf_t *conf, log_cycle_t *log)
+static dsnd_cli_t *agtd_sdtp_init(dsnd_conf_t *conf, log_cycle_t *log)
 {
-    return sdtp_cli_init(conf, 0, log);
+    return dsnd_cli_init(conf, 0, log);
 }
 
 /******************************************************************************
@@ -220,7 +220,7 @@ static int agtd_search_req_hdl(unsigned int type, void *data, int length, void *
     req.serial = flow->serial;
     memcpy(&req.body, body, sizeof(srch_mesg_body_t));
 
-    return sdtp_cli_send(agtd->sdtp, type, &req, sizeof(req));
+    return dsnd_cli_send(agtd->sdtp, type, &req, sizeof(req));
 }
 
 /******************************************************************************
@@ -259,7 +259,7 @@ static int agtd_set_reg(agtd_cntx_t *agtd)
 static agtd_cntx_t *agtd_init(char *pname, const char *path)
 {
     log_cycle_t *log;
-    sdtp_cli_t *sdtp;
+    dsnd_cli_t *sdtp;
     gate_cntx_t *gate;
     agtd_cntx_t *agtd;
 
