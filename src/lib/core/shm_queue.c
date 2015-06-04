@@ -38,6 +38,33 @@ size_t shm_queue_total(int max, size_t size)
  **函数名称: shm_queue_creat
  **功    能: 创建共享内存队列
  **输入参数:
+ **     path: KEY路径
+ **     max: 队列单元数
+ **     size: 队列单元SIZE
+ **输出参数: NONE
+ **返    回: 共享内存队列
+ **实现描述: 通过路径生成KEY，再根据KEY创建共享内存队列
+ **注意事项:
+ **作    者: # Qifeng.zou # 2015.06.04 #
+ ******************************************************************************/
+shm_queue_t *shm_queue_creat(const char *path, int max, int size)
+{
+    key_t key;
+
+    key = shm_ftok(path, 0);
+    if ((key_t)-1 == key)
+    {
+        return NULL;
+    }
+
+    /* > 通过KEY创建共享内存队列 */
+    return shm_queue_creat_ex(key, max, size);
+}
+
+/******************************************************************************
+ **函数名称: shm_queue_creat_ex
+ **功    能: 创建共享内存队列
+ **输入参数:
  **     key: 共享内存KEY
  **     max: 队列单元数
  **     size: 队列单元SIZE
@@ -185,31 +212,4 @@ void *shm_queue_pop(shm_queue_t *shmq)
     }
 
     return (void *)shmq->ring + off;
-}
-
-/******************************************************************************
- **函数名称: shm_queue_creat
- **功    能: 创建共享内存队列
- **输入参数:
- **     path: KEY路径
- **     max: 队列单元数
- **     size: 队列单元SIZE
- **输出参数: NONE
- **返    回: 共享内存队列
- **实现描述: 通过路径生成KEY，再根据KEY创建共享内存队列
- **注意事项:
- **作    者: # Qifeng.zou # 2015.06.04 #
- ******************************************************************************/
-shm_queue_t *shm_queue_creat(const char *path, int max, int size)
-{
-    key_t key;
-
-    key = shm_ftok(path, 0);
-    if ((key_t)-1 == key)
-    {
-        return NULL;
-    }
-
-    /* > 通过KEY创建共享内存队列 */
-    return shm_queue_creat_ex(key, max, size);
 }
