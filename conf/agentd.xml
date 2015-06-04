@@ -6,7 +6,14 @@
         3) 取值范围: trace|debug|info|warn|error|fatal -->
     <LOG LEVEL="error" LEVEL2="error" PATH="../log/" />
 
-    <GATE>
+    <!-- SDTP信息配置 -->
+    <SDTP>
+        <THD-NUM SEND="2" WORKER="3" />       <!-- 线程数配置 -->
+        <SERV IP="127.0.0.1" PORT="28888" />  <!-- 接收服务配置 -->
+    </SDTP>
+
+    <!-- 代理信息配置 -->
+    <AGENT>
         <!-- 并发(连接)配置
             1) MAX: 最大并发数(必须为2的次方)
             2) TIMEOUT: 连接超时时间
@@ -17,8 +24,9 @@
             1) MAX: 队列容量 
             2) SIZE: 队列单元大小(0:表示自定义) -->
         <QUEUE>
-            <CONNQ MAX="1024" SIZE="0" />  <!-- 连接队列 -->
-            <TASKQ MAX="1024" SIZE="2048" />   <!-- 任务队列 -->
+            <CONNQ MAX="1024" SIZE="0" />     <!-- 连接队列 -->
+            <RECVQ MAX="1024" SIZE="2048" />  <!-- 接收队列 -->
+            <SENDQ MAX="1024" SIZE="2048" />  <!-- 发送队列 -->
         </QUEUE>
 
         <!-- Agent配置
@@ -27,5 +35,5 @@
         <!-- Worker配置
             1) NUM: 线程数 -->
         <WORKER NUM="3" />
-    </GATE>
+    </AGENT>
 </AGENTD>
