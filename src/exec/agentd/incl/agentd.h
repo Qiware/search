@@ -2,8 +2,8 @@
 #define __AGENTD_H__
 
 #include "log.h"
-#include "gate.h"
 #include "comm.h"
+#include "agent.h"
 #include "dsnd_cli.h"
 #include "agtd_conf.h"
 
@@ -34,7 +34,7 @@ typedef struct
     agtd_conf_t *conf;                  /* 配置信息 */
 
     dsnd_cli_t *sdtp;                   /* SDTP服务 */
-    gate_cntx_t *gate;                  /* 探针服务 */
+    agent_cntx_t *gate;                 /* 探针服务 */
     log_cycle_t *log;                   /* 日志对象 */
 
     int len;                            /* 业务请求树长 */

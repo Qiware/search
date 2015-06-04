@@ -12,10 +12,10 @@
 #include "lock.h"
 #include "hash.h"
 #include "mesg.h"
-#include "gate.h"
+#include "agent.h"
 #include "agentd.h"
 #include "syscall.h"
-#include "gate_mesg.h"
+#include "agent_mesg.h"
 
 #define AGTD_PROC_LOCK_PATH "../temp/agtd/agtd.lck"
 
@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
     }
 
     /* 3. 启动爬虫服务 */
-    if (gate_startup(agtd->gate))
+    if (agent_startup(agtd->gate))
     {
         fprintf(stderr, "Startup search-engine failed!");
         goto ERROR;
@@ -82,7 +82,7 @@ int main(int argc, char *argv[])
 
 ERROR:
     /* 4. 销毁全局信息 */
-    gate_cntx_destroy(agtd->gate);
+    agent_cntx_destroy(agtd->gate);
 
     return -1;
 }
@@ -187,32 +187,32 @@ static int agtd_search_req_hdl(unsigned int type, void *data, int length, void *
 {
     int idx;
     mesg_search_req_t req;
-    gate_flow_t *flow, *f;
+    agent_flow_t *flow, *f;
     srch_mesg_body_t *body;
-    gate_mesg_header_t *head;
+    agent_mesg_header_t *head;
     agtd_cntx_t *agtd = (agtd_cntx_t *)args;
 
-    flow = (gate_flow_t *)data;
-    head = (gate_mesg_header_t *)(flow + 1);
+    flow = (agent_flow_t *)data;
+    head = (agent_mesg_header_t *)(flow + 1);
     body = (srch_mesg_body_t *)(head + 1);
 
     /* > 将流水信息插入请求列表 */
-    f = (gate_flow_t *)calloc(1, sizeof(gate_flow_t));
+    f = (agent_flow_t *)calloc(1, sizeof(agent_flow_t));
     if (NULL == f)
     {
         log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
         return AGTD_ERR;
     }
 
-    memcpy(f, flow, sizeof(gate_flow_t));
+    memcpy(f, flow, sizeof(agent_flow_t));
 
     idx = flow->serial % agtd->len;
 
     if (avl_insert(agtd->serial_to_sck_map[idx], &flow->serial, sizeof(flow->serial), f))
     {
         free(f);
-        log_error(log, "Insert into avl failed! idx:%d serial:%lu sck_serial:%lu gate_agt_idx:%d",
-                idx, flow->serial, flow->sck_serial, flow->gate_agt_idx);
+        log_error(log, "Insert into avl failed! idx:%d serial:%lu sck_serial:%lu agt_idx:%d",
+                idx, flow->serial, flow->sck_serial, flow->agt_idx);
         return AGTD_ERR;
     }
 
@@ -236,7 +236,7 @@ static int agtd_search_req_hdl(unsigned int type, void *data, int length, void *
  ******************************************************************************/
 static int agtd_set_reg(agtd_cntx_t *agtd)
 {
-    if (gate_register(agtd->gate, MSG_SEARCH_REQ, (gate_reg_cb_t)agtd_search_req_hdl, (void *)agtd))
+    if (agent_register(agtd->gate, MSG_SEARCH_REQ, (agent_reg_cb_t)agtd_search_req_hdl, (void *)agtd))
     {
         return AGTD_ERR;
     }
@@ -260,7 +260,7 @@ static agtd_cntx_t *agtd_init(char *pname, const char *path)
 {
     log_cycle_t *log;
     dsnd_cli_t *sdtp;
-    gate_cntx_t *gate;
+    agent_cntx_t *gate;
     agtd_cntx_t *agtd;
 
     /* > 加进程锁 */
@@ -297,7 +297,7 @@ static agtd_cntx_t *agtd_init(char *pname, const char *path)
     }
 
     /* > 初始化全局信息 */
-    gate = gate_cntx_init(&agtd->conf->gate, log);
+    gate = agent_cntx_init(&agtd->conf->gate, log);
     if (NULL == gate)
     {
         fprintf(stderr, "Initialize search-engine failed!");

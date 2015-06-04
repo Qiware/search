@@ -36,6 +36,9 @@ static int invtd_search_req_hdl(int type, int orig, char *buff, size_t len, void
     mesg_search_req_t *req = (mesg_search_req_t *)buff; /* 请求 */
     mesg_search_rep_t rep; /* 应答 */
 
+    log_debug(ctx->log, "Call %s()! serial:%ld words:%s",
+            __func__, req->serial, req->body.words);
+
     memset(&rep, 0, sizeof(rep));
 
     /* > 搜索倒排表 */

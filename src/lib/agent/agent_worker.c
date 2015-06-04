@@ -1,9 +1,9 @@
 #include "syscall.h"
-#include "gate_mesg.h"
-#include "gate_worker.h"
+#include "agent_mesg.h"
+#include "agent_worker.h"
 
 /******************************************************************************
- **函数名称: gate_worker_self
+ **函数名称: agent_worker_self
  **功    能: 获取Worker对象
  **输入参数: 
  **     ctx: 全局信息
@@ -13,10 +13,10 @@
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.20 #
  ******************************************************************************/
-static gate_worker_t *gate_worker_self(gate_cntx_t *ctx)
+static agent_worker_t *agent_worker_self(agent_cntx_t *ctx)
 {
     int tidx;
-    gate_worker_t *worker;
+    agent_worker_t *worker;
 
     tidx = thread_pool_get_tidx(ctx->worker_pool);
     worker = thread_pool_get_args(ctx->worker_pool);
@@ -25,7 +25,7 @@ static gate_worker_t *gate_worker_self(gate_cntx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: gate_worker_routine
+ **函数名称: agent_worker_routine
  **功    能: 运行Worker线程
  **输入参数:
  **     _ctx: 全局信息
@@ -35,16 +35,16 @@ static gate_worker_t *gate_worker_self(gate_cntx_t *ctx)
  **注意事项: TODO: 后续改成事件触发机制 
  **作    者: # Qifeng.zou # 2014.12.20 #
  ******************************************************************************/
-void *gate_worker_routine(void *_ctx)
+void *agent_worker_routine(void *_ctx)
 {
     int rqid; /* 接收队列ID */
     void *addr;
-    gate_reg_t *reg;
-    gate_worker_t *worker;
-    gate_mesg_header_t *head;
-    gate_cntx_t *ctx = (gate_cntx_t *)_ctx;
+    agent_reg_t *reg;
+    agent_worker_t *worker;
+    agent_mesg_header_t *head;
+    agent_cntx_t *ctx = (agent_cntx_t *)_ctx;
 
-    worker = gate_worker_self(ctx);
+    worker = agent_worker_self(ctx);
 
     while (1)
     {
@@ -61,11 +61,11 @@ void *gate_worker_routine(void *_ctx)
         }
 
         /* 2. 对数据进行处理 */
-        head = (gate_mesg_header_t *)(addr + sizeof(gate_flow_t));
+        head = (agent_mesg_header_t *)(addr + sizeof(agent_flow_t));
 
         reg = &ctx->reg[head->type];
 
-        reg->proc(head->type, addr, head->length + sizeof(gate_flow_t), reg->args, worker->log);
+        reg->proc(head->type, addr, head->length + sizeof(agent_flow_t), reg->args, worker->log);
 
         /* 3. 释放内存空间 */
         queue_dealloc(ctx->recvq[rqid], addr);
@@ -74,7 +74,7 @@ void *gate_worker_routine(void *_ctx)
 }
 
 /******************************************************************************
- **函数名称: gate_worker_init
+ **函数名称: agent_worker_init
  **功    能: 初始化Worker线程
  **输入参数:
  **     ctx: 全局信息
@@ -85,15 +85,15 @@ void *gate_worker_routine(void *_ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.18 #
  ******************************************************************************/
-int gate_worker_init(gate_cntx_t *ctx, gate_worker_t *worker, int idx)
+int agent_worker_init(agent_cntx_t *ctx, agent_worker_t *worker, int idx)
 {
     worker->log = ctx->log;
     worker->tidx = idx;
-    return GATE_OK;
+    return AGENT_OK;
 }
 
 /******************************************************************************
- **函数名称: gate_worker_destroy
+ **函数名称: agent_worker_destroy
  **功    能: 销毁Worker线程
  **输入参数:
  **     worker: Worker对象
@@ -103,7 +103,7 @@ int gate_worker_init(gate_cntx_t *ctx, gate_worker_t *worker, int idx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.18 #
  ******************************************************************************/
-int gate_worker_destroy(gate_worker_t *worker)
+int agent_worker_destroy(agent_worker_t *worker)
 {
-    return GATE_OK;
+    return AGENT_OK;
 }

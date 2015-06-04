@@ -1,16 +1,16 @@
-#if !defined(__GATE_AGENT_H__)
-#define __GATE_AGENT_H__
+#if !defined(__AGENT_RSVR_H__)
+#define __AGENT_RSVR_H__
 
 #include "list.h"
-#include "gate.h"
+#include "agent.h"
 #include "queue.h"
 #include "rb_tree.h"
-#include "gate_mesg.h"
+#include "agent_mesg.h"
 
-#define GATE_AGENT_TMOUT_MSEC       (500)   /* 超时(豪秒) */
+#define AGENT_TMOUT_MSEC       (500)   /* 超时(豪秒) */
 
-#define GATE_AGENT_EVENT_MAX_NUM    (4096)  /* 事件最大数 */
-#define GATE_AGENT_SCK_HASH_MOD     (7)     /* 套接字哈希长度 */
+#define AGENT_EVENT_MAX_NUM    (4096)  /* 事件最大数 */
+#define AGENT_SCK_HASH_MOD     (7)     /* 套接字哈希长度 */
 
 typedef struct
 {
@@ -29,22 +29,22 @@ typedef struct
 
     time_t ctm;                     /* 当前时间 */
     time_t scan_tm;                 /* 前一次超时扫描的时间 */
-} gate_agent_t;
+} agent_rsvr_t;
 
 /* 套接字信息 */
 typedef struct
 {
     uint64_t serial;                /* 序列号(主键) */
 
-    gate_flow_t *flow;              /* 流水信息 */
-    gate_mesg_header_t *head;       /* 报头起始地址 */
+    agent_flow_t *flow;              /* 流水信息 */
+    agent_mesg_header_t *head;       /* 报头起始地址 */
     void *body;                     /* Body */
     list_t *send_list;              /* 发送链表 */
-} gate_agent_socket_extra_t;
+} agent_rsvr_socket_extra_t;
 
-void *gate_agent_routine(void *_ctx);
+void *agent_rsvr_routine(void *_ctx);
 
-int gate_agent_init(gate_cntx_t *ctx, gate_agent_t *agent, int idx);
-int gate_agent_destroy(gate_agent_t *agent);
+int agent_rsvr_init(agent_cntx_t *ctx, agent_rsvr_t *agent, int idx);
+int agent_rsvr_destroy(agent_rsvr_t *agent);
 
-#endif /*__GATE_AGENT_H__*/
+#endif /*__AGENT_RSVR_H__*/
