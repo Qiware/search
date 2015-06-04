@@ -19,6 +19,11 @@ static agent_worker_t *agent_worker_self(agent_cntx_t *ctx)
     agent_worker_t *worker;
 
     tidx = thread_pool_get_tidx(ctx->worker_pool);
+    if (tidx < 0)
+    {
+        return NULL;
+    }
+
     worker = thread_pool_get_args(ctx->worker_pool);
 
     return worker + tidx;

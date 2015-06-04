@@ -3,7 +3,7 @@
 
 #include "slab.h"
 #include "queue.h"
-#include "agent_conf.h"
+#include "shm_queue.h"
 #include "agent_comm.h"
 #include "thread_pool.h"
 
@@ -21,6 +21,24 @@
 #define AGENT_RCV_CMD_PATH "../temp/agent/rcv_cmd_%02d.usck"  /* 接收线程 */
 #define AGENT_WRK_CMD_PATH "../temp/agent/wrk_cmd_%02d.usck"  /* 工作线程 */
 
+/* 配置信息 */
+typedef struct
+{
+    struct
+    {
+        int max;                            /* 最大并发数 */
+        int timeout;                        /* 连接超时时间 */
+        int port;                           /* 侦听端口 */
+    } connections;
+
+    int agent_num;                          /* Agent线程数 */
+    int worker_num;                         /* Worker线程数 */
+
+    queue_conf_t connq;                     /* 连接队列 */
+    queue_conf_t recvq;                     /* 接收队列 */
+    queue_conf_t sendq;                     /* 发送队列 */
+} agent_conf_t;
+
 /* 代理对象 */
 typedef struct
 {
@@ -36,6 +54,7 @@ typedef struct
     queue_t **connq;                            /* 连接队列(注:数组长度与Agent相等) */
     queue_t **recvq;                            /* 接收队列(注:数组长度与Agent相等) */
     queue_t **sendq;                            /* 发送队列(注:数组长度与Agent相等) */
+    shm_queue_t *shm_sendq;                     /* 发送队列(外部可见) */
 } agent_cntx_t;
 
 #define agent_connq_used(ctx, idx) queue_used(ctx->connq[idx]) /* 已用连接队列空间 */

@@ -97,7 +97,6 @@ agent_cntx_t *agent_cntx_init(agent_conf_t *conf, log_cycle_t *log)
         return ctx;
     } while (0);
 
-    agent_conf_destroy(ctx->conf);
     free(ctx);
     return NULL;
 }
@@ -469,16 +468,16 @@ int agent_register(agent_cntx_t *ctx, unsigned int type, agent_reg_cb_t proc, vo
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
- **注意事项: 
- **     此过程一旦失败, 程序必须推出运行. 因此, 在此申请的内存未被主动释放也不算内存泄露!
+ **注意事项: 此过程一旦失败, 程序必须退出运行. 因此, 在此申请的内存未被主动释放也不算内存泄露!
  **作    者: # Qifeng.zou # 2014.12.21 #
  ******************************************************************************/
 static int agent_creat_queue(agent_cntx_t *ctx)
 {
     int idx;
+    key_t key;
     const agent_conf_t *conf = ctx->conf;
 
-    /* 1. 创建连接队列(与Agent数一致) */
+    /* > 创建CONN队列(与Agent数一致) */
     ctx->connq = (queue_t **)calloc(conf->agent_num, sizeof(queue_t*));
     if (NULL == ctx->connq)
     {
@@ -491,12 +490,12 @@ static int agent_creat_queue(agent_cntx_t *ctx)
         ctx->connq[idx] = queue_creat(conf->connq.max, sizeof(agent_add_sck_t));
         if (NULL == ctx->connq)
         {
-            log_error(ctx->log, "Initialize lock queue failed!");
+            log_error(ctx->log, "Create conn queue failed!");
             return AGENT_ERR;
         }
     }
 
-    /* 2. 创建接收队列(与Agent数一致) */
+    /* > 创建RECV队列(与Agent数一致) */
     ctx->recvq = (queue_t **)calloc(conf->agent_num, sizeof(queue_t*));
     if (NULL == ctx->recvq)
     {
@@ -506,12 +505,39 @@ static int agent_creat_queue(agent_cntx_t *ctx)
 
     for (idx=0; idx<conf->agent_num; ++idx)
     {
-        ctx->recvq[idx] = queue_creat(conf->taskq.max, conf->taskq.size);
+        ctx->recvq[idx] = queue_creat(conf->recvq.max, conf->recvq.size);
         if (NULL == ctx->recvq)
         {
-            log_error(ctx->log, "Initialize lock queue failed!");
+            log_error(ctx->log, "Create recv queue failed!");
             return AGENT_ERR;
         }
+    }
+
+    /* > 创建SEND队列(与Agent数一致) */
+    ctx->sendq = (queue_t **)calloc(conf->agent_num, sizeof(queue_t*));
+    if (NULL == ctx->sendq)
+    {
+        log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        return AGENT_ERR;
+    }
+
+    for (idx=0; idx<conf->agent_num; ++idx)
+    {
+        ctx->sendq[idx] = queue_creat(conf->sendq.max, conf->sendq.size);
+        if (NULL == ctx->sendq)
+        {
+            log_error(ctx->log, "Create send queue failed!");
+            return AGENT_ERR;
+        }
+    }
+
+    /* > 创建SHM-SEND队列 */
+    key = 0;
+    ctx->shm_sendq = shm_queue_creat(key, conf->sendq.max, conf->sendq.size);
+    if (NULL == ctx->shm_sendq)
+    {
+        log_error(ctx->log, "Create shm-send-queue failed!");
+        return AGENT_ERR;
     }
 
     return AGENT_OK;

@@ -212,6 +212,11 @@ static agent_rsvr_t *agent_rsvr_self(agent_cntx_t *ctx)
     agent_rsvr_t *rsvr;
 
     tidx = thread_pool_get_tidx(ctx->agent_pool);
+    if (tidx < 0)
+    {
+        return NULL;
+    }
+
     rsvr = thread_pool_get_args(ctx->agent_pool);
 
     return rsvr + tidx;

@@ -16,7 +16,7 @@
 static int agtd_conf_parse(xml_tree_t *xml, agent_conf_t *conf, log_cycle_t *log);
 
 static int agtd_conf_load_comm(xml_tree_t *xml, agtd_conf_t *conf, log_cycle_t *log);
-static int agtd_conf_load_gate(xml_tree_t *xml, agent_conf_t *conf, log_cycle_t *log);
+static int agtd_conf_load_agent(xml_tree_t *xml, agent_conf_t *conf, log_cycle_t *log);
 static int agtd_conf_load_sdtp(xml_tree_t *xml, dsnd_conf_t *conf, log_cycle_t *log);
 
 /* 加载配置信息 */
@@ -66,10 +66,10 @@ agtd_conf_t *agtd_conf_load(const char *path, log_cycle_t *log)
             break;
         }
 
-        /* > 加载GATE配置 */
-        if (agtd_conf_load_gate(xml, &conf->gate, log))
+        /* > 加载AGENT配置 */
+        if (agtd_conf_load_agent(xml, &conf->agent, log))
         {
-            log_error(log, "Load GATE conf failed! path:%s", path);
+            log_error(log, "Load AGENT conf failed! path:%s", path);
             break;
         }
 
@@ -141,7 +141,7 @@ static int agtd_conf_parse_agent_connections(
     xml_node_t *node, *fix;
 
     /* > 定位并发配置 */
-    fix = xml_query(xml, ".AGENTD.GATE.CONNECTIONS");
+    fix = xml_query(xml, ".AGENTD.AGENT.CONNECTIONS");
     if (NULL == fix)
     {
         log_error(log, "Didn't configure connections!");
@@ -213,7 +213,7 @@ static int agtd_conf_parse_agent_queue(xml_tree_t *xml, agent_conf_t *conf, log_
     }
 
     /* > 定位队列标签 */
-    fix = xml_query(xml, ".AGENTD.GATE.QUEUE");
+    fix = xml_query(xml, ".AGENTD.AGENT.QUEUE");
     if (NULL == fix)
     {
         log_error(log, "Get queue configuration failed!");
@@ -222,32 +222,33 @@ static int agtd_conf_parse_agent_queue(xml_tree_t *xml, agent_conf_t *conf, log_
 
     /* > 获取队列配置 */
     AGTD_LOAD_QUEUE(xml, fix, ".CONNQ", &conf->connq);
-    AGTD_LOAD_QUEUE(xml, fix, ".TASKQ", &conf->taskq);
+    AGTD_LOAD_QUEUE(xml, fix, ".RECVQ", &conf->recvq);
+    AGTD_LOAD_QUEUE(xml, fix, ".SENDQ", &conf->sendq);
 
     return AGTD_OK;
 }
 
-/* 加载GATE配置 */
-static int agtd_conf_load_gate(xml_tree_t *xml, agent_conf_t *conf, log_cycle_t *log)
+/* 加载AGENT配置 */
+static int agtd_conf_load_agent(xml_tree_t *xml, agent_conf_t *conf, log_cycle_t *log)
 {
     xml_node_t *node;
 
     /* > 加载连接配置 */
     if (agtd_conf_parse_agent_connections(xml, conf, log))
     {
-        log_error(log, "Parse connections of GATEe configuration failed!");
+        log_error(log, "Parse connections of AGENTe configuration failed!");
         return AGTD_ERR;
     }
 
     /* > 加载连接配置 */
     if (agtd_conf_parse_agent_queue(xml, conf, log))
     {
-        log_error(log, "Parse queue of GATEe configuration failed!");
+        log_error(log, "Parse queue of AGENTe configuration failed!");
         return AGTD_ERR;
     }
 
     /* > 获取WORKER.NUM标签 */
-    node = xml_query(xml, ".AGENTD.GATE.WORKER.NUM");
+    node = xml_query(xml, ".AGENTD.AGENT.WORKER.NUM");
     if (NULL == node)
     {
         log_error(log, "Didn't configure number of worker!");
@@ -257,7 +258,7 @@ static int agtd_conf_load_gate(xml_tree_t *xml, agent_conf_t *conf, log_cycle_t 
     conf->worker_num = atoi(node->value.str);
 
     /* 4. 获取AGENT.NUM标签 */
-    node = xml_query(xml, ".AGENTD.GATE.AGENT.NUM");
+    node = xml_query(xml, ".AGENTD.AGENT.AGENT.NUM");
     if (NULL == node)
     {
         log_error(log, "Didn't configure number of agent!");

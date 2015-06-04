@@ -31,14 +31,14 @@ typedef struct
 
 typedef struct
 {
-    agtd_conf_t *conf;                  /* 配置信息 */
+    agtd_conf_t *conf;                      /* 配置信息 */
 
-    dsnd_cli_t *sdtp;                   /* SDTP服务 */
-    agent_cntx_t *gate;                 /* 探针服务 */
-    log_cycle_t *log;                   /* 日志对象 */
+    dsnd_cli_t *sdtp;                       /* SDTP服务 */
+    agent_cntx_t *agent;                    /* 代理服务 */
+    log_cycle_t *log;                       /* 日志对象 */
 
-    int len;                            /* 业务请求树长 */
-    avl_tree_t **serial_to_sck_map;     /* 序列与SCK的映射 */
+    int len;                                /* 业务请求树长 */
+    avl_tree_t **serial_to_sck_map;         /* 序列与SCK的映射 */
 } agtd_cntx_t;
 
 int agtd_getopt(int argc, char **argv, agtd_opt_t *opt);

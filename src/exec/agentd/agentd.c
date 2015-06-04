@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
     }
 
     /* 3. 启动爬虫服务 */
-    if (agent_startup(agtd->gate))
+    if (agent_startup(agtd->agent))
     {
         fprintf(stderr, "Startup search-engine failed!");
         goto ERROR;
@@ -82,7 +82,7 @@ int main(int argc, char *argv[])
 
 ERROR:
     /* 4. 销毁全局信息 */
-    agent_cntx_destroy(agtd->gate);
+    agent_cntx_destroy(agtd->agent);
 
     return -1;
 }
@@ -238,7 +238,7 @@ static int agtd_search_req_hdl(unsigned int type, void *data, int length, void *
  ******************************************************************************/
 static int agtd_set_reg(agtd_cntx_t *agtd)
 {
-    if (agent_register(agtd->gate, MSG_SEARCH_REQ, (agent_reg_cb_t)agtd_search_req_hdl, (void *)agtd))
+    if (agent_register(agtd->agent, MSG_SEARCH_REQ, (agent_reg_cb_t)agtd_search_req_hdl, (void *)agtd))
     {
         return AGTD_ERR;
     }
@@ -262,8 +262,9 @@ static agtd_cntx_t *agtd_init(char *pname, const char *path)
 {
     log_cycle_t *log;
     dsnd_cli_t *sdtp;
-    agent_cntx_t *gate;
+    agtd_conf_t *conf;
     agtd_cntx_t *agtd;
+    agent_cntx_t *agent;
 
     /* > 加进程锁 */
     if (agtd_proc_lock())
@@ -290,24 +291,26 @@ static agtd_cntx_t *agtd_init(char *pname, const char *path)
     agtd->log = log;
 
     /* > 加载配置信息 */
-    agtd->conf = agtd_conf_load(path, log);
-    if (NULL == agtd->conf)
+    conf = agtd_conf_load(path, log);
+    if (NULL == conf)
     {
         FREE(agtd);
         fprintf(stderr, "Load configuration failed!\n");
         return NULL;
     }
 
+    agtd->conf = conf;
+
     /* > 初始化全局信息 */
-    gate = agent_cntx_init(&agtd->conf->gate, log);
-    if (NULL == gate)
+    agent = agent_cntx_init(&conf->agent, log);
+    if (NULL == agent)
     {
         fprintf(stderr, "Initialize search-engine failed!");
         return NULL;
     }
 
     /* > 初始化SDTP信息 */
-    sdtp = agtd_sdtp_init(&agtd->conf->sdtp, log);
+    sdtp = agtd_sdtp_init(&conf->sdtp, log);
     if (NULL == sdtp)
     {
         fprintf(stderr, "Initialize sdtp failed!");
@@ -321,7 +324,7 @@ static agtd_cntx_t *agtd_init(char *pname, const char *path)
         return NULL;
     }
 
-    agtd->gate = gate;
+    agtd->agent = agent;
     agtd->sdtp = sdtp;
 
     return agtd;
