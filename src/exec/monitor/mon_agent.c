@@ -116,7 +116,7 @@ static int mon_agent_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void 
 {
     int fd, ret;
     fd_set rdset;
-    time_t ctm = time(NULL);
+    time_t ctm;
     char word[1024];
     agent_header_t head;
     srch_mesg_body_t body;
@@ -145,6 +145,8 @@ static int mon_agent_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void 
     Writen(fd, (void *)&head, sizeof(head));
     Writen(fd, (void *)&body, sizeof(body));
 
+    ctm = time(NULL);
+
     /* 等待应答数据 */
     while (1)
     {
@@ -162,15 +164,14 @@ static int mon_agent_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void 
         }
         else if (0 == ret)
         {
-            fprintf(stderr, "    Didn't receive response for along time!\n");
+            fprintf(stderr, "    Timeout!\n");
             break;
         }
 
         if (FD_ISSET(fd, &rdset))
         {
-            fprintf(stderr, "    Ready recvice data!\n");
             mon_agent_search_rep_hdl(fd);
-            fprintf(stderr, "    Spend: %lu!\n", time(NULL) - ctm);
+            fprintf(stderr, "    Spend: %lu(s)\n", time(NULL) - ctm);
             break;
         }
     }
