@@ -95,7 +95,7 @@ static int mon_agent_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *arg
 #if 1
     int n;
     srch_mesg_body_t body;
-    agent_mesg_header_t header;
+    agent_header_t header;
 
     /* 发送搜索数据 */
     for (idx=0; idx<num; ++idx)
