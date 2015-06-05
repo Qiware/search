@@ -66,8 +66,8 @@ drcv_cntx_t *drcv_init(const drcv_conf_t *conf, log_cycle_t *log)
     /* > 初始化接收端 */
     if (_drcv_init(ctx))
     {
-        FREE(ctx);
         log_error(ctx->log, "Initialize recv failed!");
+        FREE(ctx);
         return NULL;
     }
 
