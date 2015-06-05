@@ -11,16 +11,39 @@
 
 #include "shm_queue.h"
 
+#define AGTD_SHM_SENDQ_MAX      (1024)          /* 发送队列容量 */
+#define AGTD_SHM_SENDQ_SIZE     (4096)          /* 发送队列尺寸 */
+#define AGTD_SHM_SENDQ_PATH     "../temp/agentd/send.shmq"  /* 发送队列路径 */
+
+static int mm_agentd_creat_sendq(void);
+
 /* 主函数 */
 int main(int argc, char *argv[])
 {
+    if (mm_agentd_creat_sendq())
+    {
+        fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
+        return -1;
+    }
+
+    return 0;
+}
+
+/******************************************************************************
+ **函数名称: mm_agentd_creat_sendq
+ **功    能: 为Agentd创建发送队列
+ **输入参数: NONE
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 通过路径创建共享内存队列
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015-06-05 10:09:34 #
+ ******************************************************************************/
+static int mm_agentd_creat_sendq(void)
+{
     shm_queue_t *shmq;
-    char path[FILE_PATH_MAX_LEN];
 
-    /* > 创建Agentd发送队列 */
-    snprintf(path, sizeof(path), "../temp/agentd/sendq");
-
-    shmq = shm_queue_creat(path, 4096, 1024);
+    shmq = shm_queue_creat(AGTD_SHM_SENDQ_PATH, AGTD_SHM_SENDQ_MAX, AGTD_SHM_SENDQ_SIZE);
     if (NULL == shmq)
     {
         return -1;
