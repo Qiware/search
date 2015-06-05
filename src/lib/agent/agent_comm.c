@@ -134,7 +134,7 @@ int agent_serial_to_sck_map_delete(agent_cntx_t *ctx, uint64_t serial)
         return AGENT_ERR;
     }
 
-    spin_lock(&ctx->serial_to_sck_map_lock[idx]);
+    spin_unlock(&ctx->serial_to_sck_map_lock[idx]);
 
     log_trace(ctx->log, "idx:%d serial:%lu sck_serial:%lu", idx, serial, flow->serial);
 
@@ -181,7 +181,7 @@ int agent_serial_to_sck_map_query(agent_cntx_t *ctx, uint64_t serial, agent_flow
 
 /******************************************************************************
  **函数名称: agent_send
- **功    能: 发送数据
+ **功    能: 发送数据(外部接口)
  **输入参数:
  **     ctx: 全局对象
  **     type: 数据类型
@@ -200,7 +200,7 @@ int agent_send(agent_cntx_t *ctx, int type, uint64_t serial, void *data, int len
     void *addr;
     queue_t *sendq;
     agent_flow_t flow;
-    agent_mesg_header_t *head;
+    agent_header_t *head;
 
     /* > 查找SERIAL->SCK映射 */
     if (agent_serial_to_sck_map_query(ctx, serial, &flow))
@@ -210,7 +210,7 @@ int agent_send(agent_cntx_t *ctx, int type, uint64_t serial, void *data, int len
     }
 
     sendq = ctx->sendq[flow.agt_idx];
-    size = sizeof(flow) + sizeof(agent_mesg_header_t) + len;
+    size = sizeof(flow) + sizeof(agent_header_t) + len;
     if (size > queue_size(sendq))
     {
         log_error(ctx->log, "Queue size is too small! size:%d/%d", size, queue_size(sendq));
@@ -225,7 +225,7 @@ int agent_send(agent_cntx_t *ctx, int type, uint64_t serial, void *data, int len
     }
 
     memcpy(addr, &flow, sizeof(flow));
-    head = (agent_mesg_header_t *)(addr + sizeof(flow));
+    head = (agent_header_t *)(addr + sizeof(flow));
 
     head->type = type;
     head->flag = AGENT_MSG_FLAG_USR;

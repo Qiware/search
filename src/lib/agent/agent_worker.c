@@ -47,7 +47,7 @@ void *agent_worker_routine(void *_ctx)
     agent_reg_t *reg;
     agent_flow_t *flow;
     agent_worker_t *worker;
-    agent_mesg_header_t *head;
+    agent_header_t *head;
     agent_cntx_t *ctx = (agent_cntx_t *)_ctx;
 
     worker = agent_worker_self(ctx);
@@ -68,7 +68,7 @@ void *agent_worker_routine(void *_ctx)
 
         /* > 对数据进行处理 */
         flow = (agent_flow_t *)addr;
-        head = (agent_mesg_header_t *)(flow + 1);
+        head = (agent_header_t *)(flow + 1);
 
         reg = &ctx->reg[head->type];
 

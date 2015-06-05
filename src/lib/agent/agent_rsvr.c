@@ -592,11 +592,11 @@ static int agent_rsvr_recv_head(agent_rsvr_t *rsvr, socket_t *sck)
 {
     void *addr;
     int n, left;
-    agent_mesg_header_t *head;
+    agent_header_t *head;
     socket_snap_t *recv = &sck->recv;
 
     /* 1. 计算剩余字节 */
-    left = sizeof(agent_mesg_header_t) - recv->off;
+    left = sizeof(agent_header_t) - recv->off;
 
     addr = recv->addr + sizeof(agent_flow_t);
 
@@ -635,7 +635,7 @@ static int agent_rsvr_recv_head(agent_rsvr_t *rsvr, socket_t *sck)
     }
 
     /* 3. 校验报头数据 */
-    head = (agent_mesg_header_t *)addr;
+    head = (agent_header_t *)addr;
 
     head->type = ntohl(head->type);
     head->flag = ntohl(head->flag);
@@ -671,11 +671,11 @@ static int agent_rsvr_recv_body(agent_rsvr_t *rsvr, socket_t *sck)
 {
     void *addr;
     int n, left;
-    agent_mesg_header_t *head;
+    agent_header_t *head;
     socket_snap_t *recv = &sck->recv;
 
     addr = recv->addr + sizeof(agent_flow_t);
-    head  = (agent_mesg_header_t *)addr;
+    head  = (agent_header_t *)addr;
 
     /* 1. 接收报体 */
     while (1)
@@ -803,10 +803,10 @@ static int agent_rsvr_recv(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
                 log_info(rsvr->log, "Alloc memory from queue success!");
 
                 extra->flow = (agent_flow_t *)recv->addr;
-                extra->head = (agent_mesg_header_t *)(extra->flow + 1);
+                extra->head = (agent_header_t *)(extra->flow + 1);
                 extra->body = (void *)(extra->head + 1);
                 recv->off = 0;
-                recv->total = sizeof(agent_mesg_header_t);
+                recv->total = sizeof(agent_header_t);
 
                 extra->flow->serial = atomic64_inc(&serial); /* 获取流水号 */
                 extra->flow->sck_serial = extra->serial;
@@ -952,7 +952,7 @@ static void *agent_rsvr_fetch_send_data(agent_rsvr_t *rsvr, socket_t *sck)
 static int agent_rsvr_send(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
 {
     int n, left;
-    agent_mesg_header_t *head;
+    agent_header_t *head;
     socket_snap_t *send = &sck->send;
 
     sck->wrtm = time(NULL);
@@ -968,10 +968,10 @@ static int agent_rsvr_send(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
                 return AGENT_OK; /* 无数据 */
             }
 
-            head = (agent_mesg_header_t *)send->addr;
+            head = (agent_header_t *)send->addr;
 
             send->off = 0;
-            send->total = head->length + sizeof(agent_mesg_header_t);
+            send->total = head->length + sizeof(agent_header_t);
         }
 
         /* 2. 发送数据 */

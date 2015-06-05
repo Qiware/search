@@ -36,8 +36,8 @@ typedef struct
 {
     uint64_t serial;                /* 序列号(主键) */
 
-    agent_flow_t *flow;              /* 流水信息 */
-    agent_mesg_header_t *head;       /* 报头起始地址 */
+    agent_flow_t *flow;             /* 流水信息 */
+    agent_header_t *head;           /* 报头起始地址 */
     void *body;                     /* Body */
     list_t *send_list;              /* 发送链表 */
 } agent_socket_extra_t;
