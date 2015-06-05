@@ -4,7 +4,7 @@
 #include "log.h"
 #include "comm.h"
 #include "agentd.h"
-#include "dsnd_cli.h"
+#include "sdsd_cli.h"
 #include "shm_queue.h"
 #include "agentd_conf.h"
 
@@ -33,7 +33,7 @@ typedef struct
     agentd_conf_t *conf;                    /* 配置信息 */
     log_cycle_t *log;                       /* 日志对象 */
 
-    dsnd_cli_t *send_to_invtd;              /* SDTP服务(发送至倒排服务) */
+    sdsd_cli_t *send_to_invtd;              /* SDTP服务(发送至倒排服务) */
     agent_cntx_t *agent;                    /* 代理服务 */
     shm_queue_t *sendq;                     /* 发送队列 */
 } agentd_cntx_t;

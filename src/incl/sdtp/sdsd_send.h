@@ -1,7 +1,7 @@
 #if !defined(__SDTP_SEND_H__)
 #define __SDTP_SEND_H__
 
-#include "dsnd_ssvr.h"
+#include "sdsd_ssvr.h"
 
 /* 配置信息 */
 typedef struct
@@ -24,12 +24,12 @@ typedef struct
 
     sdtp_queue_conf_t sendq;            /* 发送队列配置 */
     queue_conf_t recvq;                 /* 接收队列配置 */
-} dsnd_conf_t;
+} sdsd_conf_t;
 
 /* 全局信息 */
 typedef struct
 {
-    dsnd_conf_t conf;              /* 配置信息 */
+    sdsd_conf_t conf;              /* 配置信息 */
     log_cycle_t *log;                   /* 日志对象 */
     slab_pool_t *slab;                  /* 内存池对象 */
 
@@ -38,21 +38,21 @@ typedef struct
 
     sdtp_reg_t reg[SDTP_TYPE_MAX];      /* 回调注册对象(TODO: 如果类型过多，可构造平衡二叉树) */
     queue_t **recvq;                    /* 接收队列 */
-} dsnd_cntx_t;
+} sdsd_cntx_t;
 
 /* 内部接口 */
-int dsnd_ssvr_init(dsnd_cntx_t *ctx, dsnd_ssvr_t *ssvr, int tidx);
-void *dsnd_ssvr_routine(void *_ctx);
+int sdsd_ssvr_init(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr, int tidx);
+void *sdsd_ssvr_routine(void *_ctx);
 
-int dsnd_worker_init(dsnd_cntx_t *ctx, sdtp_worker_t *wrk, int tidx);
-void *dsnd_worker_routine(void *_ctx);
+int sdsd_worker_init(sdsd_cntx_t *ctx, sdtp_worker_t *wrk, int tidx);
+void *sdsd_worker_routine(void *_ctx);
 
-sdtp_worker_t *dsnd_worker_get_by_idx(dsnd_cntx_t *ctx, int idx);
+sdtp_worker_t *sdsd_worker_get_by_idx(sdsd_cntx_t *ctx, int idx);
 
 /* 对外接口 */
-dsnd_cntx_t *dsnd_init(const dsnd_conf_t *conf, log_cycle_t *log);
-int dsnd_start(dsnd_cntx_t *ctx);
-int dsnd_register(dsnd_cntx_t *ctx, int type, sdtp_reg_cb_t proc, void *args);
-int dsnd_destroy(dsnd_cntx_t *ctx);
+sdsd_cntx_t *sdsd_init(const sdsd_conf_t *conf, log_cycle_t *log);
+int sdsd_start(sdsd_cntx_t *ctx);
+int sdsd_register(sdsd_cntx_t *ctx, int type, sdtp_reg_cb_t proc, void *args);
+int sdsd_destroy(sdsd_cntx_t *ctx);
 
 #endif /*__SDTP_SEND_H__*/

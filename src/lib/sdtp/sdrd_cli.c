@@ -1,8 +1,8 @@
 #include "mesg.h"
-#include "sdtp_recv.h"
+#include "sdrd_recv.h"
 
 /******************************************************************************
- **函数名称: drcv_cli_init
+ **函数名称: sdrd_cli_init
  **功    能: 初始化接收客户端
  **输入参数:
  **     conf: 配置信息
@@ -12,19 +12,19 @@
  **注意事项:
  **作    者: # Qifeng.zou # 2015.06.01 #
  ******************************************************************************/
-drcv_cli_t *drcv_cli_init(const drcv_conf_t *conf)
+sdrd_cli_t *sdrd_cli_init(const sdrd_conf_t *conf)
 {
-    drcv_cli_t *cli;
+    sdrd_cli_t *cli;
 
     /* > 创建对象 */
-    cli = (drcv_cli_t *)calloc(1, sizeof(drcv_cli_t));
+    cli = (sdrd_cli_t *)calloc(1, sizeof(sdrd_cli_t));
     if (NULL == cli)
     {
         return NULL;
     }
 
     /* > 附着共享内存队列 */
-    cli->sendq = drcv_shm_sendq_attach(conf);
+    cli->sendq = sdrd_shm_sendq_attach(conf);
     if (NULL == cli->sendq)
     {
         free(cli);
@@ -35,7 +35,7 @@ drcv_cli_t *drcv_cli_init(const drcv_conf_t *conf)
 }
 
 /******************************************************************************
- **函数名称: drcv_cli_send
+ **函数名称: sdrd_cli_send
  **功    能: 接收客户端发送数据
  **输入参数:
  **输出参数: NONE
@@ -44,7 +44,7 @@ drcv_cli_t *drcv_cli_init(const drcv_conf_t *conf)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.06.01 #
  ******************************************************************************/
-int drcv_cli_send(drcv_cli_t *cli, int type, int dest, void *data, int len)
+int sdrd_cli_send(sdrd_cli_t *cli, int type, int dest, void *data, int len)
 {
     void *addr;
     sdtp_frwd_t *frwd;

@@ -125,9 +125,9 @@ static int agentd_proc_lock(void)
 }
 
 /* 初始化SDTP对象 */
-static dsnd_cli_t *agentd_to_invtd_init(dsnd_conf_t *conf, log_cycle_t *log)
+static sdsd_cli_t *agentd_to_invtd_init(sdsd_conf_t *conf, log_cycle_t *log)
 {
-    return dsnd_cli_init(conf, 0, log);
+    return sdsd_cli_init(conf, 0, log);
 }
 
 /******************************************************************************
@@ -160,7 +160,7 @@ static int agentd_search_req_hdl(unsigned int type, void *data, int length, void
     req.serial = flow->serial;
     memcpy(&req.body, body, sizeof(srch_mesg_body_t));
 
-    return dsnd_cli_send(ctx->send_to_invtd, type, &req, sizeof(req));
+    return sdsd_cli_send(ctx->send_to_invtd, type, &req, sizeof(req));
 }
 
 /******************************************************************************
@@ -203,7 +203,7 @@ static agentd_cntx_t *agentd_init(char *pname, const char *path)
     agentd_cntx_t *ctx;
     agentd_conf_t *conf;
     agent_cntx_t *agent;
-    dsnd_cli_t *send_to_invtd;
+    sdsd_cli_t *send_to_invtd;
 
     /* > 加进程锁 */
     if (agentd_proc_lock())

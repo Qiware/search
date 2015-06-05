@@ -6,11 +6,11 @@
 #include "list.h"
 #include "avl_tree.h"
 #include "sdtp_comm.h"
-#include "dsnd_pool.h"
+#include "sdsd_pool.h"
 #include "thread_pool.h"
 
 /* WORKER线程的UNIX-UDP路径 */
-#define dsnd_worker_usck_path(conf, path, tidx) \
+#define sdsd_worker_usck_path(conf, path, tidx) \
     snprintf(path, sizeof(path), "../temp/sdtp/send/%s/usck/%s_swrk_%d.usck", conf->name, conf->name, tidx+1)
 
 /* 发送类型 */
@@ -41,7 +41,7 @@ typedef struct
     sdtp_snap_t recv;                   /* 接收快照 */
     sdtp_send_snap_e send_type;         /* 发送类型(系统数据或自定义数据) */
     sdtp_snap_t send[SDTP_SNAP_SHOT_TOTAL];  /* 发送快照 */
-} dsnd_sck_t;
+} sdsd_sck_t;
 
 #define sdtp_set_kpalive_stat(sck, _stat) (sck)->kpalive = (_stat)
 
@@ -49,11 +49,11 @@ typedef struct
 typedef struct
 {
     int tidx;                           /* 线程索引 */
-    dsnd_pool_t *sendq;                 /* 发送缓存 */
+    sdsd_pool_t *sendq;                 /* 发送缓存 */
     log_cycle_t *log;                   /* 日志对象 */
 
     int cmd_sck_id;                     /* 命令通信套接字ID */
-    dsnd_sck_t sck;                    /* 发送套接字 */
+    sdsd_sck_t sck;                    /* 发送套接字 */
 
     int max;                            /* 套接字最大值 */
     fd_set rset;                        /* 读集合 */
@@ -64,6 +64,6 @@ typedef struct
     uint64_t recv_total;                /* 获取的数据总条数 */
     uint64_t err_total;                 /* 错误的数据条数 */
     uint64_t drop_total;                /* 丢弃的数据条数 */
-} dsnd_ssvr_t;
+} sdsd_ssvr_t;
 
 #endif /*__SDTP_SSVR_H__*/

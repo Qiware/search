@@ -11,23 +11,23 @@
 #include "syscall.h"
 #include "sdtp_cmd.h"
 #include "sdtp_comm.h"
-#include "sdtp_recv.h"
+#include "sdrd_recv.h"
 #include "thread_pool.h"
 
 /* 静态函数 */
-static drcv_lsn_t *drcv_lsn_init(drcv_cntx_t *ctx);
-static int drcv_lsn_accept(drcv_cntx_t *ctx, drcv_lsn_t *lsn);
+static sdrd_lsn_t *sdrd_lsn_init(sdrd_cntx_t *ctx);
+static int sdrd_lsn_accept(sdrd_cntx_t *ctx, sdrd_lsn_t *lsn);
 
-static int drcv_lsn_cmd_core_hdl(drcv_cntx_t *ctx, drcv_lsn_t *lsn);
-static int drcv_lsn_cmd_query_conf_hdl(drcv_cntx_t *ctx, drcv_lsn_t *lsn, sdtp_cmd_t *cmd);
-static int drcv_lsn_cmd_query_recv_stat_hdl(drcv_cntx_t *ctx, drcv_lsn_t *lsn, sdtp_cmd_t *cmd);
-static int drcv_lsn_cmd_query_proc_stat_hdl(drcv_cntx_t *ctx, drcv_lsn_t *lsn, sdtp_cmd_t *cmd);
+static int sdrd_lsn_cmd_core_hdl(sdrd_cntx_t *ctx, sdrd_lsn_t *lsn);
+static int sdrd_lsn_cmd_query_conf_hdl(sdrd_cntx_t *ctx, sdrd_lsn_t *lsn, sdtp_cmd_t *cmd);
+static int sdrd_lsn_cmd_query_recv_stat_hdl(sdrd_cntx_t *ctx, sdrd_lsn_t *lsn, sdtp_cmd_t *cmd);
+static int sdrd_lsn_cmd_query_proc_stat_hdl(sdrd_cntx_t *ctx, sdrd_lsn_t *lsn, sdtp_cmd_t *cmd);
 
 /* 随机选择接收线程 */
-#define drcv_rand_rsvr(ctx) ((ctx)->listen.serial % (ctx->recvtp->num))
+#define sdrd_rand_rsvr(ctx) ((ctx)->listen.serial % (ctx->recvtp->num))
 
 /******************************************************************************
- **函数名称: drcv_lsn_routine
+ **函数名称: sdrd_lsn_routine
  **功    能: 启动SDTP侦听线程
  **输入参数:
  **     conf: 配置信息
@@ -41,18 +41,18 @@ static int drcv_lsn_cmd_query_proc_stat_hdl(drcv_cntx_t *ctx, drcv_lsn_t *lsn, s
  **注意事项:
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-void *drcv_lsn_routine(void *args)
+void *sdrd_lsn_routine(void *args)
 {
 #define SDTP_LSN_TMOUT_SEC 30
 #define SDTP_LSN_TMOUT_USEC 0
     fd_set rdset;
     int ret, max;
-    drcv_lsn_t *lsn;
+    sdrd_lsn_t *lsn;
     struct timeval timeout;
-    drcv_cntx_t *ctx = (drcv_cntx_t *)args;
+    sdrd_cntx_t *ctx = (sdrd_cntx_t *)args;
 
     /* 1. 初始化侦听 */
-    lsn = drcv_lsn_init(ctx);
+    lsn = sdrd_lsn_init(ctx);
     if (NULL == lsn)
     {
         log_error(ctx->log, "Initialize listen failed!");
@@ -92,13 +92,13 @@ void *drcv_lsn_routine(void *args)
         /* 3. 接收连接请求 */
         if (FD_ISSET(lsn->lsn_sck_id, &rdset))
         {
-            drcv_lsn_accept(ctx, lsn);
+            sdrd_lsn_accept(ctx, lsn);
         }
 
         /* 4. 接收处理命令 */
         if (FD_ISSET(lsn->cmd_sck_id, &rdset))
         {
-            drcv_lsn_cmd_core_hdl(ctx, lsn);
+            sdrd_lsn_cmd_core_hdl(ctx, lsn);
         }
     }
 
@@ -107,7 +107,7 @@ void *drcv_lsn_routine(void *args)
 }
 
 /******************************************************************************
- **函数名称: drcv_lsn_init
+ **函数名称: sdrd_lsn_init
  **功    能: 启动SDTP侦听线程
  **输入参数:
  **     conf: 配置信息
@@ -119,11 +119,11 @@ void *drcv_lsn_routine(void *args)
  **注意事项:
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-static drcv_lsn_t *drcv_lsn_init(drcv_cntx_t *ctx)
+static sdrd_lsn_t *sdrd_lsn_init(sdrd_cntx_t *ctx)
 {
     char path[FILE_NAME_MAX_LEN];
-    drcv_lsn_t *lsn = &ctx->listen;
-    drcv_conf_t *conf = &ctx->conf;
+    sdrd_lsn_t *lsn = &ctx->listen;
+    sdrd_conf_t *conf = &ctx->conf;
 
     lsn->log = ctx->log;
 
@@ -136,7 +136,7 @@ static drcv_lsn_t *drcv_lsn_init(drcv_cntx_t *ctx)
     }
 
     /* 2. 创建CMD套接字 */
-    drcv_lsn_usck_path(conf, path);
+    sdrd_lsn_usck_path(conf, path);
 
     lsn->cmd_sck_id = unix_udp_creat(path);
     if (lsn->cmd_sck_id < 0)
@@ -150,7 +150,7 @@ static drcv_lsn_t *drcv_lsn_init(drcv_cntx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: drcv_lsn_destroy
+ **函数名称: sdrd_lsn_destroy
  **功    能: 销毁侦听线程
  **输入参数:
  **     lsn: 侦听对象
@@ -160,7 +160,7 @@ static drcv_lsn_t *drcv_lsn_init(drcv_cntx_t *ctx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.07 #
  ******************************************************************************/
-int drcv_lsn_destroy(drcv_lsn_t *lsn)
+int sdrd_lsn_destroy(sdrd_lsn_t *lsn)
 {
     CLOSE(lsn->lsn_sck_id);
     CLOSE(lsn->cmd_sck_id);
@@ -183,7 +183,7 @@ int drcv_lsn_destroy(drcv_lsn_t *lsn)
  **注意事项:
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-static int drcv_lsn_accept(drcv_cntx_t *ctx, drcv_lsn_t *lsn)
+static int sdrd_lsn_accept(sdrd_cntx_t *ctx, sdrd_lsn_t *lsn)
 {
     int sckid;
     socklen_t len;
@@ -224,7 +224,7 @@ static int drcv_lsn_accept(drcv_cntx_t *ctx, drcv_lsn_t *lsn)
     args->sck_serial = ++lsn->serial;
     snprintf(args->ipaddr, sizeof(args->ipaddr), "%s", inet_ntoa(cliaddr.sin_addr));
 
-    if (drcv_cmd_to_rsvr(ctx, lsn->cmd_sck_id, &cmd, drcv_rand_rsvr(ctx)) < 0)
+    if (sdrd_cmd_to_rsvr(ctx, lsn->cmd_sck_id, &cmd, sdrd_rand_rsvr(ctx)) < 0)
     {
         CLOSE(sckid);
         log_error(lsn->log, "Send command failed! sckid:[%d]", sckid);
@@ -235,7 +235,7 @@ static int drcv_lsn_accept(drcv_cntx_t *ctx, drcv_lsn_t *lsn)
 }
 
 /******************************************************************************
- **函数名称: drcv_lsn_cmd_core_hdl
+ **函数名称: sdrd_lsn_cmd_core_hdl
  **功    能: 接收和处理命令
  **输入参数:
  **     ctx: 全局对象
@@ -248,7 +248,7 @@ static int drcv_lsn_accept(drcv_cntx_t *ctx, drcv_lsn_t *lsn)
  **注意事项:
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-static int drcv_lsn_cmd_core_hdl(drcv_cntx_t *ctx, drcv_lsn_t *lsn)
+static int sdrd_lsn_cmd_core_hdl(sdrd_cntx_t *ctx, sdrd_lsn_t *lsn)
 {
     sdtp_cmd_t cmd;
 
@@ -266,15 +266,15 @@ static int drcv_lsn_cmd_core_hdl(drcv_cntx_t *ctx, drcv_lsn_t *lsn)
     {
         case SDTP_CMD_QUERY_CONF_REQ:
         {
-            return drcv_lsn_cmd_query_conf_hdl(ctx, lsn, &cmd);
+            return sdrd_lsn_cmd_query_conf_hdl(ctx, lsn, &cmd);
         }
         case SDTP_CMD_QUERY_RECV_STAT_REQ:
         {
-            return drcv_lsn_cmd_query_recv_stat_hdl(ctx, lsn, &cmd);
+            return sdrd_lsn_cmd_query_recv_stat_hdl(ctx, lsn, &cmd);
         }
         case SDTP_CMD_QUERY_PROC_STAT_REQ:
         {
-            return drcv_lsn_cmd_query_proc_stat_hdl(ctx, lsn, &cmd);
+            return sdrd_lsn_cmd_query_proc_stat_hdl(ctx, lsn, &cmd);
         }
         default:
         {
@@ -287,7 +287,7 @@ static int drcv_lsn_cmd_core_hdl(drcv_cntx_t *ctx, drcv_lsn_t *lsn)
 }
 
 /******************************************************************************
- **函数名称: drcv_lsn_cmd_query_conf_hdl
+ **函数名称: sdrd_lsn_cmd_query_conf_hdl
  **功    能: 查询配置信息
  **输入参数:
  **     ctx: 全局对象
@@ -301,10 +301,10 @@ static int drcv_lsn_cmd_core_hdl(drcv_cntx_t *ctx, drcv_lsn_t *lsn)
  **注意事项:
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-static int drcv_lsn_cmd_query_conf_hdl(drcv_cntx_t *ctx, drcv_lsn_t *lsn, sdtp_cmd_t *cmd)
+static int sdrd_lsn_cmd_query_conf_hdl(sdrd_cntx_t *ctx, sdrd_lsn_t *lsn, sdtp_cmd_t *cmd)
 {
     sdtp_cmd_t rep;
-    drcv_conf_t *cf = &ctx->conf;
+    sdrd_conf_t *cf = &ctx->conf;
     sdtp_cmd_conf_t *args = (sdtp_cmd_conf_t *)&rep.args;
 
     memset(&rep, 0, sizeof(rep));
@@ -332,7 +332,7 @@ static int drcv_lsn_cmd_query_conf_hdl(drcv_cntx_t *ctx, drcv_lsn_t *lsn, sdtp_c
 }
 
 /******************************************************************************
- **函数名称: drcv_lsn_cmd_query_recv_stat_hdl
+ **函数名称: sdrd_lsn_cmd_query_recv_stat_hdl
  **功    能: 查询接收线程状态
  **输入参数:
  **     ctx: 全局对象
@@ -346,12 +346,12 @@ static int drcv_lsn_cmd_query_conf_hdl(drcv_cntx_t *ctx, drcv_lsn_t *lsn, sdtp_c
  **注意事项:
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-static int drcv_lsn_cmd_query_recv_stat_hdl(drcv_cntx_t *ctx, drcv_lsn_t *lsn, sdtp_cmd_t *cmd)
+static int sdrd_lsn_cmd_query_recv_stat_hdl(sdrd_cntx_t *ctx, sdrd_lsn_t *lsn, sdtp_cmd_t *cmd)
 {
     int idx;
     sdtp_cmd_t rep;
     sdtp_cmd_recv_stat_t *stat = (sdtp_cmd_recv_stat_t *)&rep.args;
-    const drcv_rsvr_t *rsvr = (const drcv_rsvr_t *)ctx->recvtp->data;
+    const sdrd_rsvr_t *rsvr = (const sdrd_rsvr_t *)ctx->recvtp->data;
 
     for (idx=0; idx<ctx->conf.recv_thd_num; ++idx, ++rsvr)
     {
@@ -374,7 +374,7 @@ static int drcv_lsn_cmd_query_recv_stat_hdl(drcv_cntx_t *ctx, drcv_lsn_t *lsn, s
 }
 
 /******************************************************************************
- **函数名称: drcv_lsn_cmd_query_proc_stat_hdl
+ **函数名称: sdrd_lsn_cmd_query_proc_stat_hdl
  **功    能: 查询工作线程状态
  **输入参数:
  **     ctx: 全局对象
@@ -388,7 +388,7 @@ static int drcv_lsn_cmd_query_recv_stat_hdl(drcv_cntx_t *ctx, drcv_lsn_t *lsn, s
  **注意事项:
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-static int drcv_lsn_cmd_query_proc_stat_hdl(drcv_cntx_t *ctx, drcv_lsn_t *lsn, sdtp_cmd_t *cmd)
+static int sdrd_lsn_cmd_query_proc_stat_hdl(sdrd_cntx_t *ctx, sdrd_lsn_t *lsn, sdtp_cmd_t *cmd)
 {
     int idx;
     sdtp_cmd_t rep;

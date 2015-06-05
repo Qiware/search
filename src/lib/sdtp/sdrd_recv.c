@@ -1,7 +1,7 @@
 /******************************************************************************
  ** Coypright(C) 2014-2024 Xundao technology Co., Ltd
  **
- ** 文件名: drcv_recv.c
+ ** 文件名: sdrd_recv.c
  ** 版本号: 1.0
  ** 描  述: 共享消息传输通道(Sharing Message Transaction Channel)
  **         1. 主要用于异步系统之间数据消息的传输
@@ -13,24 +13,24 @@
 #include "syscall.h"
 #include "sdtp_cmd.h"
 #include "sdtp_comm.h"
-#include "sdtp_recv.h"
+#include "sdrd_recv.h"
 #include "thread_pool.h"
 
-static int _drcv_init(drcv_cntx_t *ctx);
+static int _sdrd_init(sdrd_cntx_t *ctx);
 
-static int drcv_creat_recvq(drcv_cntx_t *ctx);
-static int drcv_creat_sendq(drcv_cntx_t *ctx);
+static int sdrd_creat_recvq(sdrd_cntx_t *ctx);
+static int sdrd_creat_sendq(sdrd_cntx_t *ctx);
 
-static int drcv_creat_recvtp(drcv_cntx_t *ctx);
-void drcv_recvtp_destroy(void *_ctx, void *args);
+static int sdrd_creat_recvtp(sdrd_cntx_t *ctx);
+void sdrd_recvtp_destroy(void *_ctx, void *args);
 
-static int drcv_creat_worktp(drcv_cntx_t *ctx);
-void drcv_worktp_destroy(void *_ctx, void *args);
+static int sdrd_creat_worktp(sdrd_cntx_t *ctx);
+void sdrd_worktp_destroy(void *_ctx, void *args);
 
-static int drcv_proc_def_hdl(int type, int orig, char *buff, size_t len, void *args);
+static int sdrd_proc_def_hdl(int type, int orig, char *buff, size_t len, void *args);
 
 /******************************************************************************
- **函数名称: drcv_init
+ **函数名称: sdrd_init
  **功    能: 初始化SDTP接收端
  **输入参数:
  **     conf: 配置信息
@@ -44,12 +44,12 @@ static int drcv_proc_def_hdl(int type, int orig, char *buff, size_t len, void *a
  **注意事项:
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-drcv_cntx_t *drcv_init(const drcv_conf_t *conf, log_cycle_t *log)
+sdrd_cntx_t *sdrd_init(const sdrd_conf_t *conf, log_cycle_t *log)
 {
-    drcv_cntx_t *ctx;
+    sdrd_cntx_t *ctx;
 
     /* > 创建全局对象 */
-    ctx = (drcv_cntx_t *)calloc(1, sizeof(drcv_cntx_t));
+    ctx = (sdrd_cntx_t *)calloc(1, sizeof(sdrd_cntx_t));
     if (NULL == ctx)
     {
         fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
@@ -59,12 +59,12 @@ drcv_cntx_t *drcv_init(const drcv_conf_t *conf, log_cycle_t *log)
     ctx->log = log;
 
     /* > 备份配置信息 */
-    memcpy(&ctx->conf, conf, sizeof(drcv_conf_t));
+    memcpy(&ctx->conf, conf, sizeof(sdrd_conf_t));
 
     ctx->conf.rqnum = SDTP_WORKER_HDL_QNUM * conf->work_thd_num;
 
     /* > 初始化接收端 */
-    if (_drcv_init(ctx))
+    if (_sdrd_init(ctx))
     {
         log_error(ctx->log, "Initialize recv failed!");
         FREE(ctx);
@@ -75,7 +75,7 @@ drcv_cntx_t *drcv_init(const drcv_conf_t *conf, log_cycle_t *log)
 }
 
 /******************************************************************************
- **函数名称: drcv_startup
+ **函数名称: sdrd_startup
  **功    能: 启动SDTP接收端
  **输入参数:
  **     conf: 配置信息
@@ -88,36 +88,36 @@ drcv_cntx_t *drcv_init(const drcv_conf_t *conf, log_cycle_t *log)
  **注意事项:
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-int drcv_startup(drcv_cntx_t *ctx)
+int sdrd_startup(sdrd_cntx_t *ctx)
 {
     int idx;
     pthread_t tid;
     thread_pool_t *tp;
-    drcv_lsn_t *lsn = &ctx->listen;
+    sdrd_lsn_t *lsn = &ctx->listen;
 
     /* > 设置接收线程回调 */
     tp = ctx->recvtp;
     for (idx=0; idx<tp->num; ++idx)
     {
-        thread_pool_add_worker(tp, drcv_rsvr_routine, ctx);
+        thread_pool_add_worker(tp, sdrd_rsvr_routine, ctx);
     }
 
     /* > 设置工作线程回调 */
     tp = ctx->worktp;
     for (idx=0; idx<tp->num; ++idx)
     {
-        thread_pool_add_worker(tp, drcv_worker_routine, ctx);
+        thread_pool_add_worker(tp, sdrd_worker_routine, ctx);
     }
 
     /* > 创建侦听线程 */
-    if (thread_creat(&lsn->tid, drcv_lsn_routine, ctx))
+    if (thread_creat(&lsn->tid, sdrd_lsn_routine, ctx))
     {
         log_error(ctx->log, "Start listen failed");
         return SDTP_ERR;
     }
 
     /* > 创建分发线程 */
-    if (thread_creat(&tid, drcv_dist_routine, ctx))
+    if (thread_creat(&tid, sdrd_dist_routine, ctx))
     {
         log_error(ctx->log, "Start distribute thread failed");
         return SDTP_ERR;
@@ -127,7 +127,7 @@ int drcv_startup(drcv_cntx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: drcv_register
+ **函数名称: sdrd_register
  **功    能: 消息处理的注册接口
  **输入参数:
  **     ctx: 全局对象
@@ -142,7 +142,7 @@ int drcv_startup(drcv_cntx_t *ctx)
  **     2. 不允许重复注册
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-int drcv_register(drcv_cntx_t *ctx, int type, sdtp_reg_cb_t proc, void *args)
+int sdrd_register(sdrd_cntx_t *ctx, int type, sdtp_reg_cb_t proc, void *args)
 {
     sdtp_reg_t *reg;
 
@@ -168,7 +168,7 @@ int drcv_register(drcv_cntx_t *ctx, int type, sdtp_reg_cb_t proc, void *args)
 }
 
 /******************************************************************************
- **函数名称: drcv_reg_init
+ **函数名称: sdrd_reg_init
  **功    能: 初始化注册对象
  **输入参数:
  **     ctx: 全局对象
@@ -178,7 +178,7 @@ int drcv_register(drcv_cntx_t *ctx, int type, sdtp_reg_cb_t proc, void *args)
  **注意事项:
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-static int drcv_reg_init(drcv_cntx_t *ctx)
+static int sdrd_reg_init(sdrd_cntx_t *ctx)
 {
     int idx;
     sdtp_reg_t *reg = &ctx->reg[0];
@@ -186,7 +186,7 @@ static int drcv_reg_init(drcv_cntx_t *ctx)
     for (idx=0; idx<SDTP_TYPE_MAX; ++idx, ++reg)
     {
         reg->type = idx;
-        reg->proc = drcv_proc_def_hdl;
+        reg->proc = sdrd_proc_def_hdl;
         reg->flag = 0;
         reg->args = NULL;
     }
@@ -195,7 +195,7 @@ static int drcv_reg_init(drcv_cntx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: _drcv_init
+ **函数名称: _sdrd_init
  **功    能: 初始化接收对象
  **输入参数:
  **     ctx: 全局对象
@@ -209,7 +209,7 @@ static int drcv_reg_init(drcv_cntx_t *ctx)
  **注意事项:
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-static int _drcv_init(drcv_cntx_t *ctx)
+static int _sdrd_init(sdrd_cntx_t *ctx)
 {
     /* > 创建SLAB内存池 */
     ctx->pool = slab_creat_by_calloc(SDTP_CTX_POOL_SIZE);
@@ -220,38 +220,38 @@ static int _drcv_init(drcv_cntx_t *ctx)
     }
 
     /* > 构建DEV->SVR映射表 */
-    if (drcv_dev_to_svr_map_init(ctx))
+    if (sdrd_dev_to_svr_map_init(ctx))
     {
         log_error(ctx->log, "Initialize sck-dev map table failed!");
         return SDTP_ERR;
     }
 
     /* > 初始化注册信息 */
-    drcv_reg_init(ctx);
+    sdrd_reg_init(ctx);
 
     /* > 创建接收队列 */
-    if (drcv_creat_recvq(ctx))
+    if (sdrd_creat_recvq(ctx))
     {
         log_error(ctx->log, "Create recv queue failed!");
         return SDTP_ERR;
     }
 
     /* > 创建发送队列 */
-    if (drcv_creat_sendq(ctx))
+    if (sdrd_creat_sendq(ctx))
     {
         log_error(ctx->log, "Create send queue failed!");
         return SDTP_ERR;
     }
 
     /* > 创建接收线程池 */
-    if (drcv_creat_recvtp(ctx))
+    if (sdrd_creat_recvtp(ctx))
     {
         log_error(ctx->log, "Create recv thread pool failed!");
         return SDTP_ERR;
     }
 
     /* > 创建工作线程池 */
-    if (drcv_creat_worktp(ctx))
+    if (sdrd_creat_worktp(ctx))
     {
         log_error(ctx->log, "Create worker thread pool failed!");
         return SDTP_ERR;
@@ -261,7 +261,7 @@ static int _drcv_init(drcv_cntx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: drcv_creat_recvq
+ **函数名称: sdrd_creat_recvq
  **功    能: 创建接收队列
  **输入参数:
  **     ctx: 全局对象
@@ -273,10 +273,10 @@ static int _drcv_init(drcv_cntx_t *ctx)
  **注意事项:
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-static int drcv_creat_recvq(drcv_cntx_t *ctx)
+static int sdrd_creat_recvq(sdrd_cntx_t *ctx)
 {
     int idx;
-    drcv_conf_t *conf = &ctx->conf;
+    sdrd_conf_t *conf = &ctx->conf;
 
     /* > 创建队列数组 */
     ctx->recvq = calloc(conf->rqnum, sizeof(queue_t *));
@@ -302,7 +302,7 @@ static int drcv_creat_recvq(drcv_cntx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: _drcv_creat_sendq
+ **函数名称: _sdrd_creat_sendq
  **功    能: 创建发送队列
  **输入参数:
  **     ctx: 全局对象
@@ -314,10 +314,10 @@ static int drcv_creat_recvq(drcv_cntx_t *ctx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.22 #
  ******************************************************************************/
-static int _drcv_creat_sendq(drcv_cntx_t *ctx)
+static int _sdrd_creat_sendq(sdrd_cntx_t *ctx)
 {
     int idx;
-    drcv_conf_t *conf = &ctx->conf;
+    sdrd_conf_t *conf = &ctx->conf;
 
     /* > 创建队列数组 */
     ctx->sendq = calloc(conf->recv_thd_num, sizeof(queue_t *));
@@ -343,7 +343,7 @@ static int _drcv_creat_sendq(drcv_cntx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: drcv_creat_sendq
+ **函数名称: sdrd_creat_sendq
  **功    能: 创建发送队列
  **输入参数:
  **     ctx: 全局对象
@@ -353,16 +353,16 @@ static int _drcv_creat_sendq(drcv_cntx_t *ctx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.20 #
  ******************************************************************************/
-static int drcv_creat_sendq(drcv_cntx_t *ctx)
+static int sdrd_creat_sendq(sdrd_cntx_t *ctx)
 {
-    ctx->shm_sendq = drcv_shm_sendq_creat(&ctx->conf);
+    ctx->shm_sendq = sdrd_shm_sendq_creat(&ctx->conf);
     if (NULL == ctx->shm_sendq)
     {
         log_error(ctx->log, "Create shm-queue failed!");
         return SDTP_ERR;
     }
 
-    if (_drcv_creat_sendq(ctx))
+    if (_sdrd_creat_sendq(ctx))
     {
         log_error(ctx->log, "Create queue failed!");
         return SDTP_ERR;
@@ -372,7 +372,7 @@ static int drcv_creat_sendq(drcv_cntx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: drcv_creat_recvtp
+ **函数名称: sdrd_creat_recvtp
  **功    能: 创建接收线程池
  **输入参数:
  **     ctx: 全局对象
@@ -385,17 +385,17 @@ static int drcv_creat_sendq(drcv_cntx_t *ctx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int drcv_creat_recvtp(drcv_cntx_t *ctx)
+static int sdrd_creat_recvtp(sdrd_cntx_t *ctx)
 {
     int idx;
-    drcv_rsvr_t *rsvr;
+    sdrd_rsvr_t *rsvr;
     thread_pool_opt_t opt;
-    drcv_conf_t *conf = &ctx->conf;
+    sdrd_conf_t *conf = &ctx->conf;
 
     memset(&opt, 0, sizeof(opt));
 
     /* > 创建接收对象 */
-    rsvr = (drcv_rsvr_t *)calloc(conf->recv_thd_num, sizeof(drcv_rsvr_t));
+    rsvr = (sdrd_rsvr_t *)calloc(conf->recv_thd_num, sizeof(sdrd_rsvr_t));
     if (NULL == rsvr)
     {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
@@ -418,7 +418,7 @@ static int drcv_creat_recvtp(drcv_cntx_t *ctx)
     /* > 初始化接收对象 */
     for (idx=0; idx<conf->recv_thd_num; ++idx)
     {
-        if (drcv_rsvr_init(ctx, rsvr+idx, idx))
+        if (sdrd_rsvr_init(ctx, rsvr+idx, idx))
         {
             log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
 
@@ -434,7 +434,7 @@ static int drcv_creat_recvtp(drcv_cntx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: drcv_recvtp_destroy
+ **函数名称: sdrd_recvtp_destroy
  **功    能: 销毁接收线程池
  **输入参数:
  **     ctx: 全局对象
@@ -445,11 +445,11 @@ static int drcv_creat_recvtp(drcv_cntx_t *ctx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-void drcv_recvtp_destroy(void *_ctx, void *args)
+void sdrd_recvtp_destroy(void *_ctx, void *args)
 {
     int idx;
-    drcv_cntx_t *ctx = (drcv_cntx_t *)_ctx;
-    drcv_rsvr_t *rsvr = (drcv_rsvr_t *)ctx->recvtp->data;
+    sdrd_cntx_t *ctx = (sdrd_cntx_t *)_ctx;
+    sdrd_rsvr_t *rsvr = (sdrd_rsvr_t *)ctx->recvtp->data;
 
     for (idx=0; idx<ctx->conf.recv_thd_num; ++idx, ++rsvr)
     {
@@ -457,7 +457,7 @@ void drcv_recvtp_destroy(void *_ctx, void *args)
         CLOSE(rsvr->cmd_sck_id);
 
         /* > 关闭通信套接字 */
-        drcv_rsvr_del_all_conn_hdl(ctx, rsvr);
+        sdrd_rsvr_del_all_conn_hdl(ctx, rsvr);
 
         slab_destroy(rsvr->pool);
     }
@@ -469,7 +469,7 @@ void drcv_recvtp_destroy(void *_ctx, void *args)
 }
 
 /******************************************************************************
- **函数名称: drcv_creat_worktp
+ **函数名称: sdrd_creat_worktp
  **功    能: 创建工作线程池
  **输入参数:
  **     ctx: 全局对象
@@ -482,12 +482,12 @@ void drcv_recvtp_destroy(void *_ctx, void *args)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.06 #
  ******************************************************************************/
-static int drcv_creat_worktp(drcv_cntx_t *ctx)
+static int sdrd_creat_worktp(sdrd_cntx_t *ctx)
 {
     int idx;
     sdtp_worker_t *wrk;
     thread_pool_opt_t opt;
-    drcv_conf_t *conf = &ctx->conf;
+    sdrd_conf_t *conf = &ctx->conf;
 
     /* > 创建工作对象 */
     wrk = (void *)calloc(conf->work_thd_num, sizeof(sdtp_worker_t));
@@ -515,7 +515,7 @@ static int drcv_creat_worktp(drcv_cntx_t *ctx)
     /* > 初始化工作对象 */
     for (idx=0; idx<conf->work_thd_num; ++idx)
     {
-        if (drcv_worker_init(ctx, wrk+idx, idx))
+        if (sdrd_worker_init(ctx, wrk+idx, idx))
         {
             log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
             free(wrk);
@@ -529,7 +529,7 @@ static int drcv_creat_worktp(drcv_cntx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: drcv_worktp_destroy
+ **函数名称: sdrd_worktp_destroy
  **功    能: 销毁工作线程池
  **输入参数:
  **     ctx: 全局对象
@@ -540,11 +540,11 @@ static int drcv_creat_worktp(drcv_cntx_t *ctx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.06 #
  ******************************************************************************/
-void drcv_worktp_destroy(void *_ctx, void *args)
+void sdrd_worktp_destroy(void *_ctx, void *args)
 {
     int idx;
-    drcv_cntx_t *ctx = (drcv_cntx_t *)_ctx;
-    drcv_conf_t *conf = &ctx->conf;
+    sdrd_cntx_t *ctx = (sdrd_cntx_t *)_ctx;
+    sdrd_conf_t *conf = &ctx->conf;
     sdtp_worker_t *wrk = (sdtp_worker_t *)ctx->worktp->data;
 
     for (idx=0; idx<conf->work_thd_num; ++idx, ++wrk)
@@ -559,7 +559,7 @@ void drcv_worktp_destroy(void *_ctx, void *args)
 }
 
 /******************************************************************************
- **函数名称: drcv_proc_def_hdl
+ **函数名称: sdrd_proc_def_hdl
  **功    能: 默认消息处理函数
  **输入参数:
  **     type: 消息类型
@@ -573,7 +573,7 @@ void drcv_worktp_destroy(void *_ctx, void *args)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.06 #
  ******************************************************************************/
-static int drcv_proc_def_hdl(int type, int orig, char *buff, size_t len, void *args)
+static int sdrd_proc_def_hdl(int type, int orig, char *buff, size_t len, void *args)
 {
     return SDTP_OK;
 }

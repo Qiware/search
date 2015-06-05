@@ -1,25 +1,25 @@
 /******************************************************************************
  ** Coypright(C) 2014-2024 Xundao technology Co., Ltd
  **
- ** 文件名: sdtp_swrk.c
+ ** 文件名: sdtp.c
  ** 版本号: 1.0
  ** 描  述: 共享消息传输通道(Sharing Message Transaction Channel)
  **         1. 主要用于异步系统之间数据消息的传输
- ** 作  者: # Qifeng.zou # 2015.05.18 #
+ ** 作  者: # Qifeng.zou # 2015.01.06 #
  ******************************************************************************/
 
-#include "xml_tree.h"
 #include "sdtp_cmd.h"
-#include "sdtp_send.h"
+#include "sdtp_comm.h"
+#include "sdrd_recv.h"
 #include "thread_pool.h"
 
 /* 静态函数 */
-static sdtp_worker_t *dsnd_worker_get_curr(dsnd_cntx_t *ctx);
-static int dsnd_worker_event_core_hdl(dsnd_cntx_t *ctx, sdtp_worker_t *wrk);
-static int dsnd_worker_cmd_proc_req_hdl(dsnd_cntx_t *ctx, sdtp_worker_t *wrk, const sdtp_cmd_t *cmd);
+static sdtp_worker_t *sdrd_worker_get_curr(sdrd_cntx_t *ctx);
+static int sdrd_worker_event_core_hdl(sdrd_cntx_t *ctx, sdtp_worker_t *wrk);
+static int sdrd_worker_cmd_proc_req_hdl(sdrd_cntx_t *ctx, sdtp_worker_t *wrk, const sdtp_cmd_t *cmd);
 
 /******************************************************************************
- **函数名称: dsnd_worker_routine
+ **函数名称: sdrd_worker_routine
  **功    能: 运行工作线程
  **输入参数:
  **     _ctx: 全局对象
@@ -30,19 +30,18 @@ static int dsnd_worker_cmd_proc_req_hdl(dsnd_cntx_t *ctx, sdtp_worker_t *wrk, co
  **     2. 等待事件通知
  **     3. 进行事件处理
  **注意事项:
- **作    者: # Qifeng.zou # 2015.05.18 #
+ **作    者: # Qifeng.zou # 2015.01.06 #
  ******************************************************************************/
-void *dsnd_worker_routine(void *_ctx)
+void *sdrd_worker_routine(void *_ctx)
 {
     int ret, idx;
     sdtp_worker_t *wrk;
     sdtp_cmd_proc_req_t *req;
     struct timeval timeout;
-    dsnd_cntx_t *ctx = (dsnd_cntx_t *)_ctx;
-    dsnd_conf_t *conf = (dsnd_conf_t *)&ctx->conf;
+    sdrd_cntx_t *ctx = (sdrd_cntx_t *)_ctx;
 
     /* 1. 获取工作对象 */
-    wrk = dsnd_worker_get_curr(ctx);
+    wrk = sdrd_worker_get_curr(ctx);
     if (NULL == wrk)
     {
         log_fatal(ctx->log, "Get current wrk failed!");
@@ -56,7 +55,6 @@ void *dsnd_worker_routine(void *_ctx)
         FD_ZERO(&wrk->rdset);
 
         FD_SET(wrk->cmd_sck_id, &wrk->rdset);
-
         wrk->max = wrk->cmd_sck_id;
 
         timeout.tv_sec = 30;
@@ -79,21 +77,21 @@ void *dsnd_worker_routine(void *_ctx)
             sdtp_cmd_t cmd;
             req = (sdtp_cmd_proc_req_t *)&cmd.args;
 
-            for (idx=0; idx<conf->work_thd_num; ++idx)
+            for (idx=0; idx<SDTP_WORKER_HDL_QNUM; ++idx)
             {
                 memset(&cmd, 0, sizeof(cmd));
 
                 cmd.type = SDTP_CMD_PROC_REQ;
                 req->num = -1;
-                req->rqidx = idx;
+                req->rqidx = SDTP_WORKER_HDL_QNUM * wrk->tidx + idx;
 
-                dsnd_worker_cmd_proc_req_hdl(ctx, wrk, &cmd);
+                sdrd_worker_cmd_proc_req_hdl(ctx, wrk, &cmd);
             }
             continue;
         }
 
         /* 3. 进行事件处理 */
-        dsnd_worker_event_core_hdl(ctx, wrk);
+        sdrd_worker_event_core_hdl(ctx, wrk);
     }
 
     abort();
@@ -101,24 +99,7 @@ void *dsnd_worker_routine(void *_ctx)
 }
 
 /******************************************************************************
- **函数名称: dsnd_worker_get_by_idx
- **功    能: 通过索引查找对象
- **输入参数:
- **     ctx: 全局对象
- **     idx: 索引号
- **输出参数: NONE
- **返    回: 工作对象
- **实现描述:
- **注意事项:
- **作    者: # Qifeng.zou # 2015.05.19 #
- ******************************************************************************/
-sdtp_worker_t *dsnd_worker_get_by_idx(dsnd_cntx_t *ctx, int idx)
-{
-    return (sdtp_worker_t *)(ctx->worktp->data + idx * sizeof(sdtp_worker_t));
-}
-
-/******************************************************************************
- **函数名称: dsnd_worker_get_curr
+ **函数名称: sdrd_worker_get_curr
  **功    能: 获取工作对象
  **输入参数:
  **     ctx: 全局对象
@@ -128,13 +109,13 @@ sdtp_worker_t *dsnd_worker_get_by_idx(dsnd_cntx_t *ctx, int idx)
  **     1. 获取线程编号
  **     2. 返回工作对象
  **注意事项:
- **作    者: # Qifeng.zou # 2015.05.18 #
+ **作    者: # Qifeng.zou # 2015.01.06 #
  ******************************************************************************/
-static sdtp_worker_t *dsnd_worker_get_curr(dsnd_cntx_t *ctx)
+static sdtp_worker_t *sdrd_worker_get_curr(sdrd_cntx_t *ctx)
 {
     int tidx;
 
-    /* > 获取线程编号 */
+    /* 1. 获取线程编号 */
     tidx = thread_pool_get_tidx(ctx->worktp);
     if (tidx < 0)
     {
@@ -142,12 +123,12 @@ static sdtp_worker_t *dsnd_worker_get_curr(dsnd_cntx_t *ctx)
         return NULL;
     }
 
-    /* > 返回工作对象 */
-    return dsnd_worker_get_by_idx(ctx, tidx);
+    /* 2. 返回工作对象 */
+    return (sdtp_worker_t *)(ctx->worktp->data + tidx * sizeof(sdtp_worker_t));
 }
 
 /******************************************************************************
- **函数名称: dsnd_worker_init
+ **函数名称: sdrd_worker_init
  **功    能: 初始化工作服务
  **输入参数:
  **     ctx: 全局对象
@@ -158,18 +139,18 @@ static sdtp_worker_t *dsnd_worker_get_curr(dsnd_cntx_t *ctx)
  **实现描述:
  **     1. 创建命令套接字
  **注意事项:
- **作    者: # Qifeng.zou # 2015.05.18 #
+ **作    者: # Qifeng.zou # 2015.01.06 #
  ******************************************************************************/
-int dsnd_worker_init(dsnd_cntx_t *ctx, sdtp_worker_t *wrk, int tidx)
+int sdrd_worker_init(sdrd_cntx_t *ctx, sdtp_worker_t *wrk, int tidx)
 {
     char path[FILE_PATH_MAX_LEN];
-    dsnd_conf_t *conf = &ctx->conf;
+    sdrd_conf_t *conf = &ctx->conf;
 
     wrk->tidx = tidx;
     wrk->log = ctx->log;
 
     /* 1. 创建命令套接字 */
-    dsnd_worker_usck_path(conf, path, wrk->tidx);
+    sdrd_worker_usck_path(conf, path, wrk->tidx);
 
     wrk->cmd_sck_id = unix_udp_creat(path);
     if (wrk->cmd_sck_id < 0)
@@ -182,7 +163,7 @@ int dsnd_worker_init(dsnd_cntx_t *ctx, sdtp_worker_t *wrk, int tidx)
 }
 
 /******************************************************************************
- **函数名称: dsnd_worker_event_core_hdl
+ **函数名称: sdrd_worker_event_core_hdl
  **功    能: 核心事件处理
  **输入参数:
  **     ctx: 全局对象
@@ -192,9 +173,9 @@ int dsnd_worker_init(dsnd_cntx_t *ctx, sdtp_worker_t *wrk, int tidx)
  **实现描述:
  **     1. 创建命令套接字
  **注意事项:
- **作    者: # Qifeng.zou # 2015.05.18 #
+ **作    者: # Qifeng.zou # 2015.01.06 #
  ******************************************************************************/
-static int dsnd_worker_event_core_hdl(dsnd_cntx_t *ctx, sdtp_worker_t *wrk)
+static int sdrd_worker_event_core_hdl(sdrd_cntx_t *ctx, sdtp_worker_t *wrk)
 {
     sdtp_cmd_t cmd;
 
@@ -213,7 +194,7 @@ static int dsnd_worker_event_core_hdl(dsnd_cntx_t *ctx, sdtp_worker_t *wrk)
     {
         case SDTP_CMD_PROC_REQ:
         {
-            return dsnd_worker_cmd_proc_req_hdl(ctx, wrk, &cmd);
+            return sdrd_worker_cmd_proc_req_hdl(ctx, wrk, &cmd);
         }
         default:
         {
@@ -226,7 +207,7 @@ static int dsnd_worker_event_core_hdl(dsnd_cntx_t *ctx, sdtp_worker_t *wrk)
 }
 
 /******************************************************************************
- **函数名称: dsnd_worker_cmd_proc_req_hdl
+ **函数名称: sdrd_worker_cmd_proc_req_hdl
  **功    能: 处理请求的处理
  **输入参数:
  **     ctx: 全局对象
@@ -236,9 +217,9 @@ static int dsnd_worker_event_core_hdl(dsnd_cntx_t *ctx, sdtp_worker_t *wrk)
  **返    回: 0:成功 !0:失败
  **实现描述:
  **注意事项:
- **作    者: # Qifeng.zou # 2015.05.18 #
+ **作    者: # Qifeng.zou # 2015.01.06 #
  ******************************************************************************/
-static int dsnd_worker_cmd_proc_req_hdl(dsnd_cntx_t *ctx, sdtp_worker_t *wrk, const sdtp_cmd_t *cmd)
+static int sdrd_worker_cmd_proc_req_hdl(sdrd_cntx_t *ctx, sdtp_worker_t *wrk, const sdtp_cmd_t *cmd)
 {
     int *num, idx;
     void *addr, *ptr;
@@ -256,7 +237,6 @@ static int dsnd_worker_cmd_proc_req_hdl(dsnd_cntx_t *ctx, sdtp_worker_t *wrk, co
         addr = queue_pop(rq);
         if (NULL == addr)
         {
-            log_trace(wrk->log, "Didn't get data from queue!");
             return SDTP_OK;
         }
 

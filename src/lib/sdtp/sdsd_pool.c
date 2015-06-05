@@ -1,10 +1,10 @@
 #include "comm.h"
 #include "shm_opt.h"
 #include "sdtp_comm.h"
-#include "dsnd_pool.h"
+#include "sdsd_pool.h"
 
 /******************************************************************************
- **函数名称: dsnd_pool_creat
+ **函数名称: sdsd_pool_creat
  **描    述: 创建发送池
  **输入参数:
  **     fpath: 共享内存路径
@@ -16,16 +16,16 @@
  **注意事项:
  **作    者: # Qifeng.zou # 2015.04.11 #
  ******************************************************************************/
-dsnd_pool_t *dsnd_pool_creat(const char *fpath, int max, int size)
+sdsd_pool_t *sdsd_pool_creat(const char *fpath, int max, int size)
 {
     int idx;
     key_t key;
     void *addr;
     size_t total;
-    dsnd_pool_t *pool;
-    dsnd_pool_head_t *head;
+    sdsd_pool_t *pool;
+    sdsd_pool_head_t *head;
 
-    total = DSND_POOL_PAGE_NUM * (max * size) + sizeof(dsnd_pool_head_t);
+    total = DSND_POOL_PAGE_NUM * (max * size) + sizeof(sdsd_pool_head_t);
 
     /* > 创建共享内存 */
     if ((key = shm_ftok(fpath, 0)) < 0)
@@ -40,7 +40,7 @@ dsnd_pool_t *dsnd_pool_creat(const char *fpath, int max, int size)
     }
 
     /* > 创建全局对象 */
-    pool = (dsnd_pool_t *)calloc(1, sizeof(dsnd_pool_t));
+    pool = (sdsd_pool_t *)calloc(1, sizeof(sdsd_pool_t));
     if (NULL == pool)
     {
         return NULL;
@@ -49,7 +49,7 @@ dsnd_pool_t *dsnd_pool_creat(const char *fpath, int max, int size)
     /* > 初始化处理 */
     head = addr;
 
-    memset(head, 0, sizeof(dsnd_pool_head_t));
+    memset(head, 0, sizeof(sdsd_pool_head_t));
 
     head->size = size;
     pool->head = head;
@@ -59,8 +59,8 @@ dsnd_pool_t *dsnd_pool_creat(const char *fpath, int max, int size)
         ticket_lock_init(&head->page[idx].lock);
         head->page[idx].idx = idx;
         head->page[idx].size = size * max;
-        head->page[idx].begin = sizeof(dsnd_pool_head_t) + idx*size*max; /* 偏移量 */
-        head->page[idx].end =  sizeof(dsnd_pool_head_t) + (idx+1)*size*max;
+        head->page[idx].begin = sizeof(sdsd_pool_head_t) + idx*size*max; /* 偏移量 */
+        head->page[idx].end =  sizeof(sdsd_pool_head_t) + (idx+1)*size*max;
         head->page[idx].off = 0;
         head->page[idx].mode = DSND_MOD_WR;
         head->page[idx].send_tm = time(NULL);
@@ -72,7 +72,7 @@ dsnd_pool_t *dsnd_pool_creat(const char *fpath, int max, int size)
 }
 
 /******************************************************************************
- **函数名称: dsnd_pool_attach
+ **函数名称: sdsd_pool_attach
  **描    述: 附着发送池
  **输入参数:
  **     fpath: 共享内存路径
@@ -82,12 +82,12 @@ dsnd_pool_t *dsnd_pool_creat(const char *fpath, int max, int size)
  **注意事项: 因创建时已经初始化相关数据, 因此此过程不用再初始化相关值.
  **作    者: # Qifeng.zou # 2015.04.11 #
  ******************************************************************************/
-dsnd_pool_t *dsnd_pool_attach(const char *fpath)
+sdsd_pool_t *sdsd_pool_attach(const char *fpath)
 {
     int idx;
     key_t key;
     void *addr;
-    dsnd_pool_t *pool;
+    sdsd_pool_t *pool;
 
     /* > 附着共享内存 */
     if ((key = shm_ftok(fpath, 0)) < 0)
@@ -102,13 +102,13 @@ dsnd_pool_t *dsnd_pool_attach(const char *fpath)
     }
 
     /* > 创建全局对象 */
-    pool = (dsnd_pool_t *)calloc(1, sizeof(dsnd_pool_t));
+    pool = (sdsd_pool_t *)calloc(1, sizeof(sdsd_pool_t));
     if (NULL == pool)
     {
         return NULL;
     }
 
-    pool->head = (dsnd_pool_head_t *)addr;
+    pool->head = (sdsd_pool_head_t *)addr;
     for (idx=0; idx<DSND_POOL_PAGE_NUM; ++idx)
     {
         pool->addr[idx] = addr + pool->head->page[idx].begin;
@@ -118,7 +118,7 @@ dsnd_pool_t *dsnd_pool_attach(const char *fpath)
 }
 
 /******************************************************************************
- **函数名称: dsnd_pool_push
+ **函数名称: sdsd_pool_push
  **描    述: 将数据放入发送池
  **输入参数:
  **     pool: 发送池
@@ -131,11 +131,11 @@ dsnd_pool_t *dsnd_pool_attach(const char *fpath)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.04.11 #
  ******************************************************************************/
-int dsnd_pool_push(dsnd_pool_t *pool, int type, int devid, const void *data, size_t len)
+int sdsd_pool_push(sdsd_pool_t *pool, int type, int devid, const void *data, size_t len)
 {
     int idx, num;
     sdtp_header_t *head;
-    dsnd_pool_page_t *page;
+    sdsd_pool_page_t *page;
 
     idx = rand() % DSND_POOL_PAGE_NUM;
 
@@ -182,7 +182,7 @@ int dsnd_pool_push(dsnd_pool_t *pool, int type, int devid, const void *data, siz
 }
 
 /******************************************************************************
- **函数名称: dsnd_pool_switch
+ **函数名称: sdsd_pool_switch
  **描    述: 切换发送池
  **输入参数:
  **     pool: 发送池
@@ -192,11 +192,11 @@ int dsnd_pool_push(dsnd_pool_t *pool, int type, int devid, const void *data, siz
  **注意事项:
  **作    者: # Qifeng.zou # 2015.04.11 #
  ******************************************************************************/
-dsnd_pool_page_t *dsnd_pool_switch(dsnd_pool_t *pool)
+sdsd_pool_page_t *sdsd_pool_switch(sdsd_pool_t *pool)
 {
     int idx;
     time_t ctm = time(NULL);
-    dsnd_pool_page_t *page;
+    sdsd_pool_page_t *page;
 
     /* > 改变状态 */
     for (idx=0; idx<DSND_POOL_PAGE_NUM; ++idx)

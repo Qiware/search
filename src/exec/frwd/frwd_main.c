@@ -5,7 +5,7 @@
 #include "syscall.h"
 #include "agent_mesg.h"
 
-int sdtp_setup_conf(dsnd_conf_t *conf, int port);
+int sdtp_setup_conf(sdsd_conf_t *conf, int port);
 int frwd_set_reg(frwd_cntx_t *frwd);
 
 /* 主函数 */
@@ -53,7 +53,7 @@ int main(int argc, const char *argv[])
     }
 
     /* > 初始化SDTP发送服务 */
-    frwd->sdtp = dsnd_init(&frwd->conf.sdtp, frwd->log);
+    frwd->sdtp = sdsd_init(&frwd->conf.sdtp, frwd->log);
     if (NULL == frwd->sdtp) 
     {
         fprintf(stderr, "Initialize send-server failed!");
@@ -68,7 +68,7 @@ int main(int argc, const char *argv[])
     }
 
     /* > 启动SDTP发送服务 */
-    if (dsnd_start(frwd->sdtp))
+    if (sdsd_start(frwd->sdtp))
     {
         fprintf(stderr, "Start up send-server failed!");
         return -1;
@@ -82,7 +82,7 @@ int main(int argc, const char *argv[])
 }
 
 /* 设置SDTP配置 */
-int sdtp_setup_conf(dsnd_conf_t *conf, int port)
+int sdtp_setup_conf(sdsd_conf_t *conf, int port)
 {
     conf->devid = 1;
     snprintf(conf->name, sizeof(conf->name), "SDTP-SEND");
@@ -160,6 +160,6 @@ int frwd_search_rep_hdl(int type, int orig, char *data, size_t len, void *args)
 /* 注册处理回调 */
 int frwd_set_reg(frwd_cntx_t *frwd)
 {
-    dsnd_register(frwd->sdtp, MSG_SEARCH_REP, frwd_search_rep_hdl, frwd);
+    sdsd_register(frwd->sdtp, MSG_SEARCH_REP, frwd_search_rep_hdl, frwd);
     return 0;
 }

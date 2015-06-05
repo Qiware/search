@@ -19,16 +19,16 @@
 #define SDTP_CTX_POOL_SIZE      (5 * MB)/* 全局内存池空间 */
 
 /* Recv线程的UNIX-UDP路径 */
-#define drcv_rsvr_usck_path(conf, path, tidx) \
+#define sdrd_rsvr_usck_path(conf, path, tidx) \
     snprintf(path, sizeof(path), "../temp/sdtp/recv/%s/usck/%s_rsvr_%d.usck", conf->name, conf->name, tidx+1)
 /* Worker线程的UNIX-UDP路径 */
-#define drcv_worker_usck_path(conf, path, tidx) \
+#define sdrd_worker_usck_path(conf, path, tidx) \
     snprintf(path, sizeof(path), "../temp/sdtp/recv/%s/usck/%s_wsvr_%d.usck", conf->name, conf->name, tidx+1)
 /* Listen线程的UNIX-UDP路径 */
-#define drcv_lsn_usck_path(conf, path) \
+#define sdrd_lsn_usck_path(conf, path) \
     snprintf(path, sizeof(path), "../temp/sdtp/recv/%s/usck/%s_listen.usck", conf->name, conf->name)
 /* 发送队列的共享内存KEY路径 */
-#define drcv_shm_sendq_path(conf, path) \
+#define sdrd_shm_sendq_path(conf, path) \
     snprintf(path, sizeof(path), "../temp/sdtp/recv/%s/%s_shm_sendq", conf->name, conf->name)
 
 /* 配置信息 */
@@ -45,7 +45,7 @@ typedef struct
 
     queue_conf_t recvq;                 /* 接收队列配置 */
     queue_conf_t sendq;                 /* 发送队列配置 */
-} drcv_conf_t;
+} sdrd_conf_t;
 
 /* 侦听对象 */
 typedef struct
@@ -56,10 +56,10 @@ typedef struct
     int lsn_sck_id;                     /* 侦听套接字 */
 
     uint64_t serial;                     /* 连接请求序列 */
-} drcv_lsn_t;
+} sdrd_lsn_t;
 
 /* 套接字信息 */
-typedef struct _drcv_sck_t
+typedef struct _sdrd_sck_t
 {
     int fd;                             /* 套接字ID */
     int devid;                          /* 设备ID */
@@ -78,14 +78,14 @@ typedef struct _drcv_sck_t
     list_t *mesg_list;                  /* 发送消息链表 */
 
     uint64_t recv_total;                /* 接收的数据条数 */
-} drcv_sck_t;
+} sdrd_sck_t;
 
 /* DEV->SVR的映射 */
 typedef struct
 {
     int rsvr_idx;                       /* 接收服务的索引(链表主键) */
     int count;                          /* 引用计数 */
-} drcv_dev_to_svr_item_t;
+} sdrd_dev_to_svr_item_t;
 
 /* 接收对象 */
 typedef struct
@@ -119,24 +119,24 @@ typedef struct
     uint64_t recv_total;                /* 获取的数据总条数 */
     uint64_t err_total;                 /* 错误的数据条数 */
     uint64_t drop_total;                /* 丢弃的数据条数 */
-} drcv_rsvr_t;
+} sdrd_rsvr_t;
 
 /* 服务端外部对象 */
 typedef struct
 {
     shm_queue_t *sendq;                 /* 发送队列 */
-} drcv_cli_t;
+} sdrd_cli_t;
 
 /* 全局对象 */
 typedef struct
 {
-    drcv_conf_t conf;                   /* 配置信息 */
+    sdrd_conf_t conf;                   /* 配置信息 */
     log_cycle_t *log;                   /* 日志对象 */
     slab_pool_t *pool;                  /* 内存池对象 */
 
     sdtp_reg_t reg[SDTP_TYPE_MAX];      /* 回调注册对象 */
 
-    drcv_lsn_t listen;                 /* 侦听对象 */
+    sdrd_lsn_t listen;                 /* 侦听对象 */
     thread_pool_t *recvtp;              /* 接收线程池 */
     thread_pool_t *worktp;              /* 工作线程池 */
 
@@ -148,39 +148,39 @@ typedef struct
 
     pthread_rwlock_t dev_to_svr_map_lock;  /* 读写锁: DEV->SVR映射表 */
     avl_tree_t *dev_to_svr_map;         /* DEV->SVR的映射表(以devid为主键) */
-} drcv_cntx_t;
+} sdrd_cntx_t;
 
 /* 外部接口 */
-drcv_cntx_t *drcv_init(const drcv_conf_t *conf, log_cycle_t *log);
-int drcv_register(drcv_cntx_t *ctx, int type, sdtp_reg_cb_t proc, void *args);
-int drcv_startup(drcv_cntx_t *ctx);
+sdrd_cntx_t *sdrd_init(const sdrd_conf_t *conf, log_cycle_t *log);
+int sdrd_register(sdrd_cntx_t *ctx, int type, sdtp_reg_cb_t proc, void *args);
+int sdrd_startup(sdrd_cntx_t *ctx);
 
-drcv_cli_t *drcv_cli_init(const drcv_conf_t *conf);
-int drcv_cli_send(drcv_cli_t *cli, int type, int dest, void *data, int len);
+sdrd_cli_t *sdrd_cli_init(const sdrd_conf_t *conf);
+int sdrd_cli_send(sdrd_cli_t *cli, int type, int dest, void *data, int len);
 
 /* 内部接口 */
-void *drcv_lsn_routine(void *_ctx);
-int drcv_lsn_destroy(drcv_lsn_t *lsn);
+void *sdrd_lsn_routine(void *_ctx);
+int sdrd_lsn_destroy(sdrd_lsn_t *lsn);
 
-void *drcv_dist_routine(void *_ctx);
+void *sdrd_dist_routine(void *_ctx);
 
-void *drcv_rsvr_routine(void *_ctx);
-int drcv_rsvr_init(drcv_cntx_t *ctx, drcv_rsvr_t *rsvr, int tidx);
+void *sdrd_rsvr_routine(void *_ctx);
+int sdrd_rsvr_init(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, int tidx);
 
-void *drcv_worker_routine(void *_ctx);
-int drcv_worker_init(drcv_cntx_t *ctx, sdtp_worker_t *worker, int tidx);
+void *sdrd_worker_routine(void *_ctx);
+int sdrd_worker_init(sdrd_cntx_t *ctx, sdtp_worker_t *worker, int tidx);
 
-void drcv_rsvr_del_all_conn_hdl(drcv_cntx_t *ctx, drcv_rsvr_t *rsvr);
+void sdrd_rsvr_del_all_conn_hdl(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr);
 
-int drcv_cmd_to_rsvr(drcv_cntx_t *ctx, int cmd_sck_id, const sdtp_cmd_t *cmd, int idx);
-int drcv_link_auth_check(drcv_cntx_t *ctx, sdtp_link_auth_req_t *link_auth_req);
+int sdrd_cmd_to_rsvr(sdrd_cntx_t *ctx, int cmd_sck_id, const sdtp_cmd_t *cmd, int idx);
+int sdrd_link_auth_check(sdrd_cntx_t *ctx, sdtp_link_auth_req_t *link_auth_req);
 
-shm_queue_t *drcv_shm_sendq_creat(const drcv_conf_t *conf );
-shm_queue_t *drcv_shm_sendq_attach(const drcv_conf_t *conf);
+shm_queue_t *sdrd_shm_sendq_creat(const sdrd_conf_t *conf );
+shm_queue_t *sdrd_shm_sendq_attach(const sdrd_conf_t *conf);
 
-int drcv_dev_to_svr_map_init(drcv_cntx_t *ctx);
-int drcv_dev_to_svr_map_add(drcv_cntx_t *ctx, int devid, int rsvr_idx);
-int drcv_dev_to_svr_map_rand(drcv_cntx_t *ctx, int devid);
-int drcv_dev_to_svr_map_del(drcv_cntx_t *ctx, int devid, int rsvr_idx);
+int sdrd_dev_to_svr_map_init(sdrd_cntx_t *ctx);
+int sdrd_dev_to_svr_map_add(sdrd_cntx_t *ctx, int devid, int rsvr_idx);
+int sdrd_dev_to_svr_map_rand(sdrd_cntx_t *ctx, int devid);
+int sdrd_dev_to_svr_map_del(sdrd_cntx_t *ctx, int devid, int rsvr_idx);
 
 #endif /*__SDTP_RECV_H__*/

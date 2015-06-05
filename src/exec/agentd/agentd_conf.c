@@ -17,7 +17,7 @@ static int agentd_conf_parse(xml_tree_t *xml, agent_conf_t *conf, log_cycle_t *l
 
 static int agentd_conf_load_comm(xml_tree_t *xml, agentd_conf_t *conf, log_cycle_t *log);
 static int agentd_conf_load_agent(xml_tree_t *xml, agent_conf_t *conf, log_cycle_t *log);
-static int agentd_conf_load_sdtp(xml_tree_t *xml, dsnd_conf_t *conf, log_cycle_t *log);
+static int agentd_conf_load_sdtp(xml_tree_t *xml, sdsd_conf_t *conf, log_cycle_t *log);
 
 /* 加载配置信息 */
 agentd_conf_t *agentd_load_conf(const char *path, log_cycle_t *log)
@@ -271,9 +271,9 @@ static int agentd_conf_load_agent(xml_tree_t *xml, agent_conf_t *conf, log_cycle
 }
 
 /* 加载SDTP配置 */
-static int agentd_conf_load_sdtp(xml_tree_t *xml, dsnd_conf_t *conf, log_cycle_t *log)
+static int agentd_conf_load_sdtp(xml_tree_t *xml, sdsd_conf_t *conf, log_cycle_t *log)
 {
-    memset(conf, 0, sizeof(dsnd_conf_t));
+    memset(conf, 0, sizeof(sdsd_conf_t));
 
     snprintf(conf->name, sizeof(conf->name), "SDTP-SEND");
 

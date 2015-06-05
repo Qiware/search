@@ -171,15 +171,15 @@ invtd_cntx_t *invtd_init(const char *conf_path)
         }
 
         /* > 初始化SDTP服务 */
-        ctx->sdtp = drcv_init(&ctx->conf.sdtp, log);
-        if (NULL == ctx->sdtp)
+        ctx->sdrd = sdrd_init(&ctx->conf.sdrd, log);
+        if (NULL == ctx->sdrd)
         {
             log_error(log, "Init sdtp failed!");
             break;
         }
 
-        ctx->sdtp_rcli = drcv_cli_init(&ctx->conf.sdtp);
-        if (NULL == ctx->sdtp_rcli)
+        ctx->sdrd_cli = sdrd_cli_init(&ctx->conf.sdrd);
+        if (NULL == ctx->sdrd_cli)
         {
             log_error(log, "Init sdtp-rcli failed!");
             break;

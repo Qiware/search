@@ -1,5 +1,5 @@
-#if !defined(__H__)
-#define __H__
+#if !defined(__SDSD_H__)
+#define __SDSD_H__
 
 #include "ticket_lock.h"
 
@@ -33,25 +33,25 @@ typedef struct
     int mode;                               /* 当前权限(只能由发送线程修改) */
     int num;                                /* 数据块数 */
     time_t send_tm;                         /* 上次数据发送时间 */
-} dsnd_pool_page_t;
+} sdsd_pool_page_t;
 
 typedef struct
 {
     size_t size;                            /* 空间总长 */
-    dsnd_pool_page_t page[DSND_POOL_PAGE_NUM]; /* 缓存页对象 */
-} dsnd_pool_head_t;
+    sdsd_pool_page_t page[DSND_POOL_PAGE_NUM]; /* 缓存页对象 */
+} sdsd_pool_head_t;
 
 typedef struct
 {
     void *addr[DSND_POOL_PAGE_NUM];         /* 各页首地址 */
-    dsnd_pool_head_t *head;                 /* 共享内存头部数据 */
-} dsnd_pool_t;
+    sdsd_pool_head_t *head;                 /* 共享内存头部数据 */
+} sdsd_pool_t;
 
-dsnd_pool_t *dsnd_pool_creat(const char *fpath, int max, int _size);
-dsnd_pool_t *dsnd_pool_attach(const char *fpath);
-int dsnd_pool_push(dsnd_pool_t *pool, int type, int devid, const void *data, size_t len);
-dsnd_pool_page_t *dsnd_pool_switch(dsnd_pool_t *pool);
+sdsd_pool_t *sdsd_pool_creat(const char *fpath, int max, int _size);
+sdsd_pool_t *sdsd_pool_attach(const char *fpath);
+int sdsd_pool_push(sdsd_pool_t *pool, int type, int devid, const void *data, size_t len);
+sdsd_pool_page_t *sdsd_pool_switch(sdsd_pool_t *pool);
 
-#define dsnd_pool_destroy(pool)
+#define sdsd_pool_destroy(pool)
 
-#endif /*__H__*/
+#endif /*__SDSD_H__*/
