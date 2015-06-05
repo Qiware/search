@@ -152,6 +152,8 @@ int frwd_search_rep_hdl(int type, int orig, char *data, size_t len, void *args)
 {
     frwd_cntx_t *ctx = (frwd_cntx_t *)args;
 
+    log_trace(ctx->log, "Call %s()", __func__);
+
     return frwd_shmq_push(ctx->send_to_agentd, type, orig, data, len);
 }
 

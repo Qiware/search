@@ -451,14 +451,7 @@ static int crwl_task_parse_download_webpage(xml_tree_t *xml, crwl_task_down_webp
 static int crwl_sched_download_webpage_task_hdl(
         crwl_cntx_t *ctx, queue_t *workq, crwl_task_t *task)
 {
-    /* > 放入任务队列 */
-    if (queue_push(workq, (void *)task))
-    {
-        log_error(ctx->log, "Push into worker queue failed!");
-        return CRWL_ERR;
-    }
-
-    return CRWL_OK;
+    return queue_push(workq, (void *)task);
 }
 
 /******************************************************************************

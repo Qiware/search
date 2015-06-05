@@ -799,12 +799,7 @@ int flt_push_url_to_crwlq(flt_cntx_t *ctx,
         }
 
         /* > 推至CRWL队列 */
-        if (queue_push(ctx->crwlq, crwl))
-        {
-            log_info(ctx->log, "Push into queue failed! uri:[%s]", url);
-            queue_dealloc(ctx->crwlq, crwl);
-            return FLT_ERR;
-        }
+        queue_push(ctx->crwlq, crwl);
         break;
     }
 

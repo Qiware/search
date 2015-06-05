@@ -183,13 +183,7 @@ static int agent_listen_accept(agent_cntx_t *ctx, agent_listen_t *lsn)
 
     log_debug(lsn->log, "Push data! fd:%d addr:%p serial:%ld", fd, add, lsn->serial);
 
-    if (queue_push(ctx->connq[tidx], add))
-    {
-        log_error(lsn->log, "Push into queue failed! fd:%d", fd);
-        queue_dealloc(ctx->connq[tidx], add);
-        CLOSE(fd);
-        return AGENT_ERR;
-    }
+    queue_push(ctx->connq[tidx], add);
 
     return AGENT_OK;
 }

@@ -1187,14 +1187,7 @@ static int dsnd_ssvr_exp_mesg_proc(
     *num = 1; /* 放入一条数据 */
     memcpy(data+sizeof(int), addr, len);
 
-    if (queue_push(ctx->recvq[idx], data))
-    {
-        ++ssvr->drop_total;
-        log_error(ctx->log, "Push into queue failed! len:%d drop:%lu total:%lu",
-                len, ssvr->drop_total, ssvr->recv_total);
-        queue_dealloc(ctx->recvq[idx], data);
-        return SDTP_ERR;
-    }
+    queue_push(ctx->recvq[idx], data);
 
     return SDTP_OK;
 }

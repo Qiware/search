@@ -80,10 +80,7 @@ void *flt_sched_routine(void *_ctx)
 
             snprintf(task->path, sizeof(task->path), "%s", fname); 
 
-            if (queue_push(ctx->taskq, task))
-            {
-                queue_dealloc(ctx->taskq, task);
-            }
+            queue_push(ctx->taskq, task);
         }
 
         /* > 关闭目录 */

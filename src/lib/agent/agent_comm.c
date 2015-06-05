@@ -234,11 +234,7 @@ int agent_send(agent_cntx_t *ctx, int type, uint64_t serial, void *data, int len
 
     memcpy(head+1, data, len);
 
-    if (queue_push(sendq, addr))
-    {
-        queue_dealloc(sendq, addr);
-        return AGENT_ERR;
-    }
+    queue_push(sendq, addr);
 
     return AGENT_OK;
 }

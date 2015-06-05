@@ -405,10 +405,7 @@ void *drcv_dist_routine(void *_ctx)
 
         memcpy(addr2, addr, frwd->length);
 
-        if (queue_push(ctx->sendq[idx], addr2))
-        {
-            queue_dealloc(ctx->sendq[idx], addr2);
-        }
+        queue_push(ctx->sendq[idx], addr2);
 
         shm_queue_dealloc(ctx->shm_sendq, addr);
     }
