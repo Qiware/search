@@ -237,7 +237,6 @@ static int drcv_worker_cmd_proc_req_hdl(drcv_cntx_t *ctx, sdtp_worker_t *wrk, co
         addr = queue_pop(rq);
         if (NULL == addr)
         {
-            log_trace(wrk->log, "Didn't get data from queue!");
             return SDTP_OK;
         }
 

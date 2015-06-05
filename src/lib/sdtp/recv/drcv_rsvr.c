@@ -93,7 +93,7 @@ static void drcv_rsvr_set_rdset(drcv_cntx_t *ctx, drcv_rsvr_t *rsvr)
         if ((rsvr->ctm - curr->rdtm > 30)
             && (rsvr->ctm - curr->wrtm > 30))
         {
-            log_trace(rsvr->log, "Didn't active for along time! fd:%d ip:%s",
+            log_error(rsvr->log, "Didn't active for along time! fd:%d ip:%s",
                     curr->fd, curr->ipaddr);
 
             if (node == tail)

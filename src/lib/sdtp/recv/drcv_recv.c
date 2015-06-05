@@ -52,7 +52,7 @@ drcv_cntx_t *drcv_init(const drcv_conf_t *conf, log_cycle_t *log)
     ctx = (drcv_cntx_t *)calloc(1, sizeof(drcv_cntx_t));
     if (NULL == ctx)
     {
-        printf("errmsg:[%d] %s!", errno, strerror(errno));
+        fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
         return NULL;
     }
 

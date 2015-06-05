@@ -220,7 +220,7 @@ dsnd_pool_page_t *dsnd_pool_switch(dsnd_pool_t *pool)
 
         /* 当缓存分配超过50%或超时5s时 则可发送缓存内容 */
         if ((page->off > (page->size >> 1))
-            || ((ctm - page->send_tm >= 5) && (page->off > 0)))
+            || ((ctm - page->send_tm >= 1) && (page->off > 0)))
         {
             ticket_lock(&page->lock);
             page->mode = DSND_MOD_RD;
