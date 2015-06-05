@@ -7,8 +7,8 @@
 /* 队列对象 */
 typedef struct
 {
-    shm_ring_t *ring;
-    shm_slot_t *slot;
+    shm_ring_t *ring;       /* 环形队列 */
+    shm_slot_t *slot;       /* 内存池对象 */
 } shm_queue_t;
 
 shm_queue_t *shm_queue_creat(const char *path, int max, int size);
