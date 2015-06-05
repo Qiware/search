@@ -56,8 +56,6 @@ void *agent_worker_routine(void *_ctx)
     {
         rqid = rand() % ctx->conf->agent_num;
 
-        log_trace(worker->log, "widx:%d rqid:%d", worker->tidx, rqid);
-
         /* > 从队列中取数据 */
         addr = queue_pop(ctx->recvq[rqid]);
         if (NULL == addr)

@@ -23,7 +23,7 @@ typedef struct
     uint64_t  serial;                       /* 流水号(全局唯一编号) */
 
     int agt_idx;                            /* 代理索引 */
-    int sck_serial;                         /* 套接字编号 */
+    uint64_t sck_serial;                    /* 套接字编号 */
 } agent_flow_t;
 
 /* 注册回调类型 */

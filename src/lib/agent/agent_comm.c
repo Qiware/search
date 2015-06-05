@@ -240,8 +240,5 @@ int agent_send(agent_cntx_t *ctx, int type, uint64_t serial, void *data, int len
         return AGENT_ERR;
     }
 
-    /* > 成功后, 删除映射 */
-    agent_serial_to_sck_map_delete(ctx, serial);
-
     return AGENT_OK;
 }
