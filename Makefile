@@ -21,6 +21,7 @@ export GCC_LOG = ${PROJ_LOG}/gcc.log
 # 编译目录(注：编译按顺序执行　注意库之间的依赖关系)
 LIB_DIR = "src/lib"
 DIR = "$(LIB_DIR)/core"
+DIR += "$(LIB_DIR)/rtdt"
 DIR += "$(LIB_DIR)/sdtp"
 DIR += "$(LIB_DIR)/gumbo"
 DIR += "$(LIB_DIR)/redis"
