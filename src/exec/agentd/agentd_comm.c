@@ -75,7 +75,7 @@ log_cycle_t *agentd_init_log(char *fname)
     /* 1. 初始化系统日志 */
     plog_get_path(path, sizeof(path), basename(fname));
 
-    if (plog_init(LOG_LEVEL_ERROR, path))
+    if (plog_init(LOG_LEVEL_TRACE, path))
     {
         fprintf(stderr, "Init syslog failed!");
         return NULL;
@@ -84,7 +84,7 @@ log_cycle_t *agentd_init_log(char *fname)
     /* 2. 初始化业务日志 */
     log_get_path(path, sizeof(path), basename(fname));
 
-    log = log_init(LOG_LEVEL_ERROR, path);
+    log = log_init(LOG_LEVEL_TRACE, path);
     if (NULL == log)
     {
         plog_error("Initialize log failed!");
@@ -126,6 +126,8 @@ void *agentd_dist_routine(void *_ctx)
         /* > 获取发送队列 */
         head = (sdtp_header_t *)addr;
         rep = (mesg_search_rep_t *)(head + 1);
+
+        log_debug(ctx->log, "Call %s()! type:%d len:%d", __func__, head->type, head->length);
 
         agent_send(ctx->agent, head->type, rep->serial, head+1, head->length);
 

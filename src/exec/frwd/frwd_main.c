@@ -34,10 +34,10 @@ int main(int argc, const char *argv[])
     sdtp_setup_conf(&frwd->conf.sdtp, atoi(argv[1]));
 
     snprintf(path, sizeof(path), "../log/%s.plog", basename(argv[0]));
-    plog_init(LOG_LEVEL_DEBUG, path);
+    plog_init(LOG_LEVEL_TRACE, path);
 
     snprintf(path, sizeof(path), "../log/%s.log", basename(argv[0]));
-    frwd->log = log_init(LOG_LEVEL_DEBUG, path);
+    frwd->log = log_init(LOG_LEVEL_TRACE, path);
     if (NULL == frwd->log)
     {
         fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
