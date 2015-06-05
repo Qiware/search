@@ -20,7 +20,7 @@ static int agentd_conf_load_agent(xml_tree_t *xml, agent_conf_t *conf, log_cycle
 static int agentd_conf_load_sdtp(xml_tree_t *xml, dsnd_conf_t *conf, log_cycle_t *log);
 
 /* 加载配置信息 */
-agentd_conf_t *agentd_conf_load(const char *path, log_cycle_t *log)
+agentd_conf_t *agentd_load_conf(const char *path, log_cycle_t *log)
 {
     xml_opt_t opt;
     agentd_conf_t *conf;

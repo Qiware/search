@@ -1,3 +1,4 @@
+#include "mesg.h"
 #include "agentd.h"
 
 /******************************************************************************
@@ -92,4 +93,44 @@ log_cycle_t *agentd_init_log(char *fname)
     }
 
     return log;
+}
+
+/******************************************************************************
+ **函数名称: drcv_dist_routine
+ **功    能: 运行分发线程
+ **输入参数:
+ **     ctx: 全局信息
+ **输出参数: NONE
+ **返    回: 分发对象
+ **实现描述:
+ **注意事项:
+ **作    者: # Qifeng.zou # 2015.05.15 #
+ ******************************************************************************/
+void *agentd_dist_routine(void *_ctx)
+{
+    void *addr;
+    sdtp_header_t *head;
+    mesg_search_rep_t *rep;
+    agentd_cntx_t *ctx = (agentd_cntx_t *)_ctx;
+
+    while (1)
+    {
+        /* > 弹出发送数据 */
+        addr = shm_queue_pop(ctx->sendq);
+        if (NULL == addr)
+        {
+            usleep(500); /* TODO: 可使用事件通知机制减少CPU的消耗 */
+            continue;
+        }
+
+        /* > 获取发送队列 */
+        head = (sdtp_header_t *)addr;
+        rep = (mesg_search_rep_t *)(head + 1);
+
+        agent_send(ctx->agent, head->type, rep->serial, head+1, head->length);
+
+        shm_queue_dealloc(ctx->sendq, addr);
+    }
+
+    return (void *)-1;
 }

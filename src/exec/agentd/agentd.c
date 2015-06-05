@@ -125,7 +125,7 @@ static int agentd_proc_lock(void)
 }
 
 /* 初始化SDTP对象 */
-static dsnd_cli_t *agentd_sdtp_init(dsnd_conf_t *conf, log_cycle_t *log)
+static dsnd_cli_t *agentd_to_invtd_init(dsnd_conf_t *conf, log_cycle_t *log)
 {
     return dsnd_cli_init(conf, 0, log);
 }
@@ -149,18 +149,18 @@ static int agentd_search_req_hdl(unsigned int type, void *data, int length, void
     mesg_search_req_t req;
     agent_flow_t *flow;
     srch_mesg_body_t *body;
-    agent_mesg_header_t *head;
+    agent_header_t *head;
     agentd_cntx_t *ctx = (agentd_cntx_t *)args;
 
     flow = (agent_flow_t *)data;
-    head = (agent_mesg_header_t *)(flow + 1);
+    head = (agent_header_t *)(flow + 1);
     body = (srch_mesg_body_t *)(head + 1);
 
     /* > 转发搜索请求 */
     req.serial = flow->serial;
     memcpy(&req.body, body, sizeof(srch_mesg_body_t));
 
-    return dsnd_cli_send(ctx->sdtp, type, &req, sizeof(req));
+    return dsnd_cli_send(ctx->send_to_invtd, type, &req, sizeof(req));
 }
 
 /******************************************************************************
@@ -198,12 +198,12 @@ static int agentd_set_reg(agentd_cntx_t *ctx)
  ******************************************************************************/
 static agentd_cntx_t *agentd_init(char *pname, const char *path)
 {
+    pthread_t tid;
     log_cycle_t *log;
-    dsnd_cli_t *sdtp;
     agentd_cntx_t *ctx;
     agentd_conf_t *conf;
     agent_cntx_t *agent;
-    char shmq_path[FILE_PATH_MAX_LEN];
+    dsnd_cli_t *send_to_invtd;
 
     /* > 加进程锁 */
     if (agentd_proc_lock())
@@ -216,6 +216,7 @@ static agentd_cntx_t *agentd_init(char *pname, const char *path)
     ctx = (agentd_cntx_t *)calloc(1, sizeof(agentd_cntx_t));
     if (NULL == ctx)
     {
+        fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
         return NULL;
     }
 
@@ -227,10 +228,8 @@ static agentd_cntx_t *agentd_init(char *pname, const char *path)
         return NULL;
     }
 
-    ctx->log = log;
-
     /* > 加载配置信息 */
-    conf = agentd_conf_load(path, log);
+    conf = agentd_load_conf(path, log);
     if (NULL == conf)
     {
         FREE(ctx);
@@ -238,12 +237,11 @@ static agentd_cntx_t *agentd_init(char *pname, const char *path)
         return NULL;
     }
 
+    ctx->log = log;
     ctx->conf = conf;
 
     /* > 创建Agentd发送队列 */
-    snprintf(shmq_path, sizeof(shmq_path), "../temp/agentd/sendq");
-
-    ctx->sendq = shm_queue_attach(shmq_path);
+    ctx->sendq = shm_queue_attach(AGTD_SHM_SENDQ_PATH);
     if (NULL == ctx->sendq)
     {
         fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
@@ -259,15 +257,18 @@ static agentd_cntx_t *agentd_init(char *pname, const char *path)
     }
 
     /* > 初始化SDTP信息 */
-    sdtp = agentd_sdtp_init(&conf->sdtp, log);
-    if (NULL == sdtp)
+    send_to_invtd = agentd_to_invtd_init(&conf->sdtp, log);
+    if (NULL == send_to_invtd)
     {
         fprintf(stderr, "Initialize sdtp failed!");
         return NULL;
     }
 
+    /* 启动分发线程 */
+    thread_creat(&tid, agentd_dist_routine, ctx);
+
+    ctx->send_to_invtd = send_to_invtd;
     ctx->agent = agent;
-    ctx->sdtp = sdtp;
 
     return ctx;
 }

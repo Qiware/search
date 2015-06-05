@@ -3,12 +3,13 @@
 
 #include "log.h"
 #include "comm.h"
-#include "agent.h"
+#include "agentd.h"
 #include "dsnd_cli.h"
 #include "shm_queue.h"
 #include "agentd_conf.h"
 
-#define AGTD_DEF_CONF_PATH  "../conf/agentd.xml"/* 默认配置路径 */
+#define AGTD_DEF_CONF_PATH      "../conf/agentd.xml"        /* 默认配置路径 */
+#define AGTD_SHM_SENDQ_PATH     "../temp/agentd/send.shmq"  /* 发送队列路径 */
 
 /* 错误码 */
 typedef enum
@@ -29,10 +30,10 @@ typedef struct
 
 typedef struct
 {
-    agentd_conf_t *conf;                      /* 配置信息 */
+    agentd_conf_t *conf;                    /* 配置信息 */
     log_cycle_t *log;                       /* 日志对象 */
 
-    dsnd_cli_t *sdtp;                       /* SDTP服务 */
+    dsnd_cli_t *send_to_invtd;              /* SDTP服务(发送至倒排服务) */
     agent_cntx_t *agent;                    /* 代理服务 */
     shm_queue_t *sendq;                     /* 发送队列 */
 } agentd_cntx_t;
@@ -40,5 +41,6 @@ typedef struct
 int agentd_getopt(int argc, char **argv, agentd_opt_t *opt);
 int agentd_usage(const char *exec);
 log_cycle_t *agentd_init_log(char *fname);
+void *agentd_dist_routine(void *_ctx);
 
 #endif /*__AGENTD_H__*/

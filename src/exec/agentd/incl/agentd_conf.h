@@ -14,6 +14,6 @@ typedef struct
     dsnd_conf_t sdtp;               /* SDTP配置 */
 } agentd_conf_t;
 
-agentd_conf_t *agentd_conf_load(const char *path, log_cycle_t *log);
+agentd_conf_t *agentd_load_conf(const char *path, log_cycle_t *log);
 
 #endif /*__AGENTD_CONF_H__*/
