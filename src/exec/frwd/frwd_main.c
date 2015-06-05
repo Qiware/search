@@ -1,35 +1,18 @@
-#include <signal.h>
-#include <sys/time.h>
-
+#include "comm.h"
 #include "mesg.h"
+#include "frwd.h"
+#include "agent.h"
 #include "syscall.h"
-#include "dsnd_cli.h"
-#include "dsnd_ssvr.h"
-
-/* 配置信息 */
-typedef struct
-{
-    dsnd_conf_t sdtp;               /* SDTP配置 */
-} frwd_conf_t;
-
-/* 全局对象 */
-typedef struct
-{
-    frwd_conf_t conf;               /* 配置信息 */
-    log_cycle_t *log;               /* 日志对象 */
-    shm_queue_t *agentd_sendq;      /* Agtend发送队列 */
-    dsnd_cntx_t *sdtp;              /* SDTP对象 */
-} frwd_cntx_t;
+#include "agent_mesg.h"
 
 int sdtp_setup_conf(dsnd_conf_t *conf, int port);
-int frwd_set_reg(dsnd_cntx_t *ctx);
+int frwd_set_reg(frwd_cntx_t *frwd);
 
 /* 主函数 */
 int main(int argc, const char *argv[])
 {
-    int port;
     frwd_cntx_t *frwd;
-    char shmq_path[FILE_PATH_MAX_LEN];
+    char path[FILE_PATH_MAX_LEN];
 
     if (2 != argc)
     {
@@ -48,11 +31,13 @@ int main(int argc, const char *argv[])
     memset(&frwd->conf, 0, sizeof(frwd->conf));
 
     /* > 初始化日志 */
-    port = atoi(argv[1]);
-    sdtp_setup_conf(&frwd->conf.sdtp, port);
+    sdtp_setup_conf(&frwd->conf.sdtp, atoi(argv[1]));
 
-    plog_init(LOG_LEVEL_DEBUG, "./sdtp_ssvr.plog");
-    frwd->log = log_init(LOG_LEVEL_DEBUG, "./sdtp_ssvr.log");
+    snprintf(path, sizeof(path), "../log/%s.plog", basename(argv[0]));
+    plog_init(LOG_LEVEL_DEBUG, path);
+
+    snprintf(path, sizeof(path), "../log/%s.log", basename(argv[0]));
+    frwd->log = log_init(LOG_LEVEL_DEBUG, path);
     if (NULL == frwd->log)
     {
         fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
@@ -60,10 +45,8 @@ int main(int argc, const char *argv[])
     }
 
     /* > 发送队列 */
-    snprintf(shmq_path, sizeof(shmq_path), "../temp/agentd/sendq");
-
-    frwd->agentd_sendq = shm_queue_attach(shmq_path);
-    if (NULL == frwd->agentd_sendq)
+    frwd->send_to_agentd = shm_queue_attach(AGTD_SHM_SENDQ_PATH);
+    if (NULL == frwd->send_to_agentd)
     {
         fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
         return -1;
@@ -78,7 +61,7 @@ int main(int argc, const char *argv[])
     }
 
     /* > 注册SDTP回调 */
-    if (frwd_set_reg(frwd->sdtp))
+    if (frwd_set_reg(frwd))
     {
         fprintf(stderr, "Register callback failed!");
         return -1;
@@ -124,15 +107,57 @@ int sdtp_setup_conf(dsnd_conf_t *conf, int port)
     return 0;
 }
 
-/* 搜索应答处理 */
-int frwd_search_rep_hdl(int type, int orig, char *data, size_t len, void *args)
+/* 转发到指定SHMQ队列 */
+static int frwd_shmq_push(shm_queue_t *shmq, int type, int orig, char *data, size_t len)
 {
+    void *addr;
+    size_t size;
+    sdtp_header_t *head;
+
+    size = sizeof(sdtp_header_t) + shm_queue_size(shmq);
+    if (size < len)
+    {
+        return -1;
+    }
+
+    /* > 申请队列空间 */
+    addr = shm_queue_malloc(shmq);
+    if (NULL == addr)
+    {
+        return -1;
+    }
+
+    /* > 设置应答数据 */
+    head = (sdtp_header_t *)addr;
+
+    head->type = type;
+    head->devid = orig;
+    head->length = len;
+    head->flag = SDTP_EXP_MESG;
+    head->checksum = SDTP_CHECK_SUM;
+
+    memcpy(head+1, data, len);
+
+    if (shm_queue_push(shmq, addr))
+    {
+        shm_queue_dealloc(shmq, addr);
+        return -1;
+    }
+
     return 0;
 }
 
-/* 注册处理回调 */
-int frwd_set_reg(dsnd_cntx_t *ctx)
+/* 搜索应答处理 */
+int frwd_search_rep_hdl(int type, int orig, char *data, size_t len, void *args)
 {
-    dsnd_register(ctx, MSG_SEARCH_REP, frwd_search_rep_hdl, NULL);
+    frwd_cntx_t *ctx = (frwd_cntx_t *)args;
+
+    return frwd_shmq_push(ctx->send_to_agentd, type, orig, data, len);
+}
+
+/* 注册处理回调 */
+int frwd_set_reg(frwd_cntx_t *frwd)
+{
+    dsnd_register(frwd->sdtp, MSG_SEARCH_REP, frwd_search_rep_hdl, frwd);
     return 0;
 }
