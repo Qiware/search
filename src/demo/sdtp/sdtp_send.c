@@ -3,8 +3,10 @@
 
 #include "mesg.h"
 #include "syscall.h"
-#include "sdtp_cli.h"
-#include "sdtp_ssvr.h"
+#include "sdsd_cli.h"
+#include "sdsd_ssvr.h"
+
+#define __SDTP_DEBUG_SEND__
 
 /******************************************************************************
  **函数名称: sdtp_send_debug 
@@ -21,7 +23,7 @@
 #define USLEEP      (10)
 #define SIZE        (4096)
 
-int sdtp_send_debug(sdtp_cli_t *cli, int secs)
+int sdtp_send_debug(sdsd_cli_t *cli, int secs)
 {
     size_t idx = 0;
     double sleep2 = 0;
@@ -42,7 +44,7 @@ int sdtp_send_debug(sdtp_cli_t *cli, int secs)
 
             snprintf(body->words, sizeof(body->words), "%s", "BAIDU");
 
-            if (sdtp_cli_send(cli, MSG_SEARCH_REQ, body, sizeof(srch_mesg_body_t)))
+            if (sdsd_cli_send(cli, MSG_SEARCH_REQ, body, sizeof(srch_mesg_body_t)))
             {
                 idx--;
                 usleep(2);
@@ -78,7 +80,7 @@ int sdtp_send_debug(sdtp_cli_t *cli, int secs)
     return 0;
 }
 
-static void sdtp_setup_conf(sdtp_ssvr_conf_t *conf, int port)
+static void sdtp_setup_conf(sdsd_conf_t *conf, int port)
 {
     conf->devid = 1;
     snprintf(conf->name, sizeof(conf->name), "SDTP-SEND");
@@ -102,8 +104,8 @@ int main(int argc, const char *argv[])
 {
     int port;
     log_cycle_t *log;
-    sdtp_sctx_t *ctx;
-   sdtp_ssvr_conf_t conf;
+    sdsd_cntx_t *ctx;
+    sdsd_conf_t conf;
 
     if (2 != argc)
     {
@@ -128,32 +130,32 @@ int main(int argc, const char *argv[])
         return -1;
     }
 
-    ctx = sdtp_send_init(&conf, log);
+    ctx = sdsd_init(&conf, log);
     if (NULL == ctx) 
     {
         fprintf(stderr, "Initialize send-server failed!");
         return -1;
     }
 
-    if (sdtp_send_start(ctx))
+    if (sdsd_start(ctx))
     {
         fprintf(stderr, "Start up send-server failed!");
         return -1;
     }
 
 #if defined(__SDTP_DEBUG_SEND__)
-    sdtp_cli_t *cli;
-    sdtp_cli_t *cli2;
+    sdsd_cli_t *cli;
+    sdsd_cli_t *cli2;
  
     Sleep(5);
-    cli = sdtp_cli_init(&conf, 0, log);
+    cli = sdsd_cli_init(&conf, 0, log);
     if (NULL == cli)
     {
         fprintf(stderr, "Initialize send module failed!");
         return -1;
     }
 
-    cli2 = sdtp_cli_init(&conf, 1, log);
+    cli2 = sdsd_cli_init(&conf, 1, log);
     if (NULL == cli2)
     {
         fprintf(stderr, "Initialize send module failed!");
