@@ -309,6 +309,11 @@ void sdsd_ssvr_switch_send_buff(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr)
     send->optr = send->addr;
     send->iptr = send->addr + page->off;
 
+    if (page->off > 1 * GB)
+    {
+        assert(0);
+    }
+
 #if 0
     int idx;
     sdtp_header_t *head;

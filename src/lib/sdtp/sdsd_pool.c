@@ -19,21 +19,15 @@
 sdsd_pool_t *sdsd_pool_creat(const char *fpath, int max, int size)
 {
     int idx;
-    key_t key;
     void *addr;
     size_t total;
     sdsd_pool_t *pool;
     sdsd_pool_head_t *head;
 
-    total = DSND_POOL_PAGE_NUM * (max * size) + sizeof(sdsd_pool_head_t);
+    total = SDSD_POOL_PAGE_NUM * (max * size) + sizeof(sdsd_pool_head_t);
 
     /* > 创建共享内存 */
-    if ((key = shm_ftok(fpath, 0)) < 0)
-    {
-        return NULL;
-    }
-
-    addr = shm_creat(key, total);
+    addr = shm_creat(fpath, total);
     if (NULL == addr)
     {
         return NULL;
@@ -47,14 +41,14 @@ sdsd_pool_t *sdsd_pool_creat(const char *fpath, int max, int size)
     }
 
     /* > 初始化处理 */
-    head = addr;
+    head = (sdsd_pool_head_t *)addr;
 
     memset(head, 0, sizeof(sdsd_pool_head_t));
 
     head->size = size;
     pool->head = head;
 
-    for (idx=0; idx<DSND_POOL_PAGE_NUM; ++idx)
+    for (idx=0; idx<SDSD_POOL_PAGE_NUM; ++idx)
     {
         ticket_lock_init(&head->page[idx].lock);
         head->page[idx].idx = idx;
@@ -62,7 +56,7 @@ sdsd_pool_t *sdsd_pool_creat(const char *fpath, int max, int size)
         head->page[idx].begin = sizeof(sdsd_pool_head_t) + idx*size*max; /* 偏移量 */
         head->page[idx].end =  sizeof(sdsd_pool_head_t) + (idx+1)*size*max;
         head->page[idx].off = 0;
-        head->page[idx].mode = DSND_MOD_WR;
+        head->page[idx].mode = SDSD_MOD_WR;
         head->page[idx].send_tm = time(NULL);
 
         pool->addr[idx] = addr + head->page[idx].begin;
@@ -85,17 +79,11 @@ sdsd_pool_t *sdsd_pool_creat(const char *fpath, int max, int size)
 sdsd_pool_t *sdsd_pool_attach(const char *fpath)
 {
     int idx;
-    key_t key;
     void *addr;
     sdsd_pool_t *pool;
 
     /* > 附着共享内存 */
-    if ((key = shm_ftok(fpath, 0)) < 0)
-    {
-        return NULL;
-    }
-
-    addr = shm_attach(key);
+    addr = shm_attach(fpath, 0);
     if (NULL == addr)
     {
         return NULL;
@@ -109,7 +97,7 @@ sdsd_pool_t *sdsd_pool_attach(const char *fpath)
     }
 
     pool->head = (sdsd_pool_head_t *)addr;
-    for (idx=0; idx<DSND_POOL_PAGE_NUM; ++idx)
+    for (idx=0; idx<SDSD_POOL_PAGE_NUM; ++idx)
     {
         pool->addr[idx] = addr + pool->head->page[idx].begin;
     }
@@ -137,17 +125,22 @@ int sdsd_pool_push(sdsd_pool_t *pool, int type, int devid, const void *data, siz
     sdtp_header_t *head;
     sdsd_pool_page_t *page;
 
-    idx = rand() % DSND_POOL_PAGE_NUM;
+    idx = rand() % SDSD_POOL_PAGE_NUM;
 
-    for (num=0; num<DSND_POOL_PAGE_NUM; ++num, ++idx)
+    for (num=0; num<SDSD_POOL_PAGE_NUM; ++num, ++idx)
     {
-        idx = idx % DSND_POOL_PAGE_NUM;
+        idx = idx % SDSD_POOL_PAGE_NUM;
 
         page  = &pool->head->page[idx];
 
+        if (page->off > 1 * GB)
+        {
+            assert(0);
+        }
+
         ticket_lock(&page->lock);     /* 加锁 */
 
-        if (DSND_MOD_WR != page->mode)
+        if (SDSD_MOD_WR != page->mode)
         {
             ticket_unlock(&page->lock);
             continue; /* 无写入权限 */
@@ -174,6 +167,11 @@ int sdsd_pool_push(sdsd_pool_t *pool, int type, int devid, const void *data, siz
         page->off += len;
         ++page->num;
 
+        if (page->off > 1 * GB)
+        {
+            assert(0);
+        }
+
         ticket_unlock(&page->lock);   /* 加锁 */
         return SDTP_OK;
     }
@@ -199,31 +197,41 @@ sdsd_pool_page_t *sdsd_pool_switch(sdsd_pool_t *pool)
     sdsd_pool_page_t *page;
 
     /* > 改变状态 */
-    for (idx=0; idx<DSND_POOL_PAGE_NUM; ++idx)
+    for (idx=0; idx<SDSD_POOL_PAGE_NUM; ++idx)
     {
         page = &pool->head->page[idx];
 
-        if (DSND_MOD_RD == page->mode)
+        if (page->off > page->size)
+        {
+            assert(0);
+        }
+
+        if (SDSD_MOD_RD == page->mode)
         {
             page->off = 0;
             page->num = 0;
             page->send_tm = ctm;
-            page->mode = DSND_MOD_WR; /* 发送完全 */
+            page->mode = SDSD_MOD_WR; /* 发送完全 */
             continue;
         }
     }
 
     /* > 选择发送缓存 */
-    for (idx=0; idx<DSND_POOL_PAGE_NUM; ++idx)
+    for (idx=0; idx<SDSD_POOL_PAGE_NUM; ++idx)
     {
         page = &pool->head->page[idx];
 
+        if (page->off > 1 * GB)
+        {
+            assert(0);
+        }
+
         /* 当缓存分配超过50%或超时5s时 则可发送缓存内容 */
         if ((page->off > (page->size >> 1))
-            || ((ctm - page->send_tm >= 1) && (page->off > 0)))
+            || ((ctm - page->send_tm >= 5) && (page->off > 0)))
         {
             ticket_lock(&page->lock);
-            page->mode = DSND_MOD_RD;
+            page->mode = SDSD_MOD_RD;
             ticket_unlock(&page->lock);
             return page;
         }

@@ -3,7 +3,7 @@
 
 #include "ticket_lock.h"
 
-#define DSND_POOL_PAGE_NUM   (4)    /* 缓存池页数: 页越多锁冲突越小 但消耗更多的内存 */
+#define SDSD_POOL_PAGE_NUM   (4)    /* 缓存池页数: 页越多锁冲突越小 但消耗更多的内存 */
 
 /**
  *   |<------------------------------ 共享内存 ------------------------------>|
@@ -28,8 +28,8 @@ typedef struct
 
     size_t off;                             /* 已用长度 */
 
-#define DSND_MOD_WR        (0)              /* 权限:写 */
-#define DSND_MOD_RD        (1)              /* 权限:读 */
+#define SDSD_MOD_WR        (0)              /* 权限:写 */
+#define SDSD_MOD_RD        (1)              /* 权限:读 */
     int mode;                               /* 当前权限(只能由发送线程修改) */
     int num;                                /* 数据块数 */
     time_t send_tm;                         /* 上次数据发送时间 */
@@ -38,12 +38,12 @@ typedef struct
 typedef struct
 {
     size_t size;                            /* 空间总长 */
-    sdsd_pool_page_t page[DSND_POOL_PAGE_NUM]; /* 缓存页对象 */
+    sdsd_pool_page_t page[SDSD_POOL_PAGE_NUM]; /* 缓存页对象 */
 } sdsd_pool_head_t;
 
 typedef struct
 {
-    void *addr[DSND_POOL_PAGE_NUM];         /* 各页首地址 */
+    void *addr[SDSD_POOL_PAGE_NUM];         /* 各页首地址 */
     sdsd_pool_head_t *head;                 /* 共享内存头部数据 */
 } sdsd_pool_t;
 
