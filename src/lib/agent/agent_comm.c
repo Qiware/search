@@ -165,7 +165,7 @@ int agent_serial_to_sck_map_query(agent_cntx_t *ctx, uint64_t serial, agent_flow
     spin_lock(&ctx->serial_to_sck_map_lock[idx]);
 
     node = avl_query(ctx->serial_to_sck_map[idx], &serial, sizeof(serial)); 
-    if (NULL == flow)
+    if (NULL == node)
     {
         spin_unlock(&ctx->serial_to_sck_map_lock[idx]);
         log_error(ctx->log, "Query serial to sck map failed! idx:%d serial:%lu", idx, serial);
