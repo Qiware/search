@@ -1,7 +1,7 @@
 /******************************************************************************
  ** Coypright(C) 2014-2024 Xundao technology Co., Ltd
  **
- ** 文件名: rtdt_rlsn.c
+ ** 文件名: rttp_rlsn.c
  ** 版本号: 1.0
  ** 描  述: 共享消息传输通道(Sharing Message Transaction Channel)
  **         1. 主要用于异步系统之间数据消息的传输
@@ -9,8 +9,8 @@
  ******************************************************************************/
 
 #include "syscall.h"
-#include "rtdt_cmd.h"
-#include "rtdt_comm.h"
+#include "rttp_cmd.h"
+#include "rttp_comm.h"
 #include "rtrd_recv.h"
 #include "thread_pool.h"
 
@@ -19,9 +19,9 @@ static rtrd_lsn_t *rtrd_lsn_init(rtrd_cntx_t *ctx);
 static int rtrd_lsn_accept(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn);
 
 static int rtrd_lsn_cmd_core_hdl(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn);
-static int rtrd_lsn_cmd_query_conf_hdl(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn, rtdt_cmd_t *cmd);
-static int rtrd_lsn_cmd_query_recv_stat_hdl(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn, rtdt_cmd_t *cmd);
-static int rtrd_lsn_cmd_query_proc_stat_hdl(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn, rtdt_cmd_t *cmd);
+static int rtrd_lsn_cmd_query_conf_hdl(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn, rttp_cmd_t *cmd);
+static int rtrd_lsn_cmd_query_recv_stat_hdl(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn, rttp_cmd_t *cmd);
+static int rtrd_lsn_cmd_query_proc_stat_hdl(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn, rttp_cmd_t *cmd);
 
 /* 随机选择接收线程 */
 #define rtrd_rand_rsvr(ctx) ((ctx)->listen.serial % (ctx->recvtp->num))
@@ -43,8 +43,8 @@ static int rtrd_lsn_cmd_query_proc_stat_hdl(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn, r
  ******************************************************************************/
 void *rtrd_lsn_routine(void *args)
 {
-#define RTDT_LSN_TMOUT_SEC 30
-#define RTDT_LSN_TMOUT_USEC 0
+#define RTTP_LSN_TMOUT_SEC 30
+#define RTTP_LSN_TMOUT_USEC 0
     fd_set rdset;
     int ret, max;
     rtrd_lsn_t *lsn;
@@ -70,8 +70,8 @@ void *rtrd_lsn_routine(void *args)
 
         max = MAX(lsn->lsn_sck_id, lsn->cmd_sck_id);
 
-        timeout.tv_sec = RTDT_LSN_TMOUT_SEC;
-        timeout.tv_usec = RTDT_LSN_TMOUT_USEC;
+        timeout.tv_sec = RTTP_LSN_TMOUT_SEC;
+        timeout.tv_usec = RTTP_LSN_TMOUT_USEC;
         ret = select(max+1, &rdset, NULL, NULL, &timeout);
         if (ret < 0)
         {
@@ -166,11 +166,11 @@ int rtrd_lsn_destroy(rtrd_lsn_t *lsn)
     CLOSE(lsn->cmd_sck_id);
 
     pthread_cancel(lsn->tid);
-    return RTDT_OK;
+    return RTTP_OK;
 }
 
 /******************************************************************************
- **函数名称: rtdt_listen_accept
+ **函数名称: rttp_listen_accept
  **功    能: 接收连接请求
  **输入参数:
  **     ctx: 全局对象
@@ -187,9 +187,9 @@ static int rtrd_lsn_accept(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn)
 {
     int sckid;
     socklen_t len;
-    rtdt_cmd_t cmd;
+    rttp_cmd_t cmd;
     struct sockaddr_in cliaddr;
-    rtdt_cmd_add_sck_t *args = (rtdt_cmd_add_sck_t *)&cmd.args;
+    rttp_cmd_add_sck_t *args = (rttp_cmd_add_sck_t *)&cmd.args;
 
     /* 1. 接收连接请求 */
     for (;;)
@@ -211,7 +211,7 @@ static int rtrd_lsn_accept(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn)
         }
 
         log_error(lsn->log, "errmsg:[%d] %s", errno, strerror(errno));
-        return RTDT_ERR;
+        return RTTP_ERR;
     }
 
     fd_set_nonblocking(sckid);
@@ -219,7 +219,7 @@ static int rtrd_lsn_accept(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn)
     /* 2. 发送至接收端 */
     memset(&cmd, 0, sizeof(cmd));
 
-    cmd.type = RTDT_CMD_ADD_SCK;
+    cmd.type = RTTP_CMD_ADD_SCK;
     args->sckid = sckid;
     args->sck_serial = ++lsn->serial;
     snprintf(args->ipaddr, sizeof(args->ipaddr), "%s", inet_ntoa(cliaddr.sin_addr));
@@ -228,10 +228,10 @@ static int rtrd_lsn_accept(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn)
     {
         CLOSE(sckid);
         log_error(lsn->log, "Send command failed! sckid:[%d]", sckid);
-        return RTDT_ERR;
+        return RTTP_ERR;
     }
 
-    return RTDT_OK;
+    return RTTP_OK;
 }
 
 /******************************************************************************
@@ -250,7 +250,7 @@ static int rtrd_lsn_accept(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn)
  ******************************************************************************/
 static int rtrd_lsn_cmd_core_hdl(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn)
 {
-    rtdt_cmd_t cmd;
+    rttp_cmd_t cmd;
 
     memset(&cmd, 0, sizeof(cmd));
 
@@ -258,32 +258,32 @@ static int rtrd_lsn_cmd_core_hdl(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn)
     if (unix_udp_recv(lsn->cmd_sck_id, (void *)&cmd, sizeof(cmd)) < 0)
     {
         log_error(lsn->log, "Recv command failed! errmsg:[%d] %s", errno, strerror(errno));
-        return RTDT_ERR_RECV_CMD;
+        return RTTP_ERR_RECV_CMD;
     }
 
     /* 2. 处理命令 */
     switch (cmd.type)
     {
-        case RTDT_CMD_QUERY_CONF_REQ:
+        case RTTP_CMD_QUERY_CONF_REQ:
         {
             return rtrd_lsn_cmd_query_conf_hdl(ctx, lsn, &cmd);
         }
-        case RTDT_CMD_QUERY_RECV_STAT_REQ:
+        case RTTP_CMD_QUERY_RECV_STAT_REQ:
         {
             return rtrd_lsn_cmd_query_recv_stat_hdl(ctx, lsn, &cmd);
         }
-        case RTDT_CMD_QUERY_PROC_STAT_REQ:
+        case RTTP_CMD_QUERY_PROC_STAT_REQ:
         {
             return rtrd_lsn_cmd_query_proc_stat_hdl(ctx, lsn, &cmd);
         }
         default:
         {
             log_error(lsn->log, "Unknown command! type:%d", cmd.type);
-            return RTDT_ERR_UNKNOWN_CMD;
+            return RTTP_ERR_UNKNOWN_CMD;
         }
     }
 
-    return RTDT_ERR_UNKNOWN_CMD;
+    return RTTP_ERR_UNKNOWN_CMD;
 }
 
 /******************************************************************************
@@ -301,16 +301,16 @@ static int rtrd_lsn_cmd_core_hdl(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn)
  **注意事项:
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-static int rtrd_lsn_cmd_query_conf_hdl(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn, rtdt_cmd_t *cmd)
+static int rtrd_lsn_cmd_query_conf_hdl(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn, rttp_cmd_t *cmd)
 {
-    rtdt_cmd_t rep;
+    rttp_cmd_t rep;
     rtrd_conf_t *cf = &ctx->conf;
-    rtdt_cmd_conf_t *args = (rtdt_cmd_conf_t *)&rep.args;
+    rttp_cmd_conf_t *args = (rttp_cmd_conf_t *)&rep.args;
 
     memset(&rep, 0, sizeof(rep));
 
     /* 1. 设置应答信息 */
-    rep.type = RTDT_CMD_QUERY_CONF_REP;
+    rep.type = RTTP_CMD_QUERY_CONF_REP;
 
     snprintf(args->name, sizeof(args->name), "%s", cf->name);
     args->port = cf->port;
@@ -325,10 +325,10 @@ static int rtrd_lsn_cmd_query_conf_hdl(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn, rtdt_c
     if (unix_udp_send(lsn->cmd_sck_id, cmd->src_path, &rep, sizeof(rep)) < 0)
     {
         log_error(lsn->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return RTDT_ERR;
+        return RTTP_ERR;
     }
 
-    return RTDT_OK;
+    return RTTP_OK;
 }
 
 /******************************************************************************
@@ -346,17 +346,17 @@ static int rtrd_lsn_cmd_query_conf_hdl(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn, rtdt_c
  **注意事项:
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-static int rtrd_lsn_cmd_query_recv_stat_hdl(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn, rtdt_cmd_t *cmd)
+static int rtrd_lsn_cmd_query_recv_stat_hdl(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn, rttp_cmd_t *cmd)
 {
     int idx;
-    rtdt_cmd_t rep;
-    rtdt_cmd_recv_stat_t *stat = (rtdt_cmd_recv_stat_t *)&rep.args;
+    rttp_cmd_t rep;
+    rttp_cmd_recv_stat_t *stat = (rttp_cmd_recv_stat_t *)&rep.args;
     const rtrd_rsvr_t *rsvr = (const rtrd_rsvr_t *)ctx->recvtp->data;
 
     for (idx=0; idx<ctx->conf.recv_thd_num; ++idx, ++rsvr)
     {
         /* 1. 设置应答信息 */
-        rep.type = RTDT_CMD_QUERY_RECV_STAT_REP;
+        rep.type = RTTP_CMD_QUERY_RECV_STAT_REP;
 
         stat->connections = rsvr->connections;
         stat->recv_total = rsvr->recv_total;
@@ -367,10 +367,10 @@ static int rtrd_lsn_cmd_query_recv_stat_hdl(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn, r
         if (unix_udp_send(rsvr->cmd_sck_id, cmd->src_path, &rep, sizeof(rep)) < 0)
         {
             log_error(lsn->log, "errmsg:[%d] %s!", errno, strerror(errno));
-            return RTDT_ERR;
+            return RTTP_ERR;
         }
     }
-    return RTDT_OK;
+    return RTTP_OK;
 }
 
 /******************************************************************************
@@ -388,17 +388,17 @@ static int rtrd_lsn_cmd_query_recv_stat_hdl(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn, r
  **注意事项:
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-static int rtrd_lsn_cmd_query_proc_stat_hdl(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn, rtdt_cmd_t *cmd)
+static int rtrd_lsn_cmd_query_proc_stat_hdl(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn, rttp_cmd_t *cmd)
 {
     int idx;
-    rtdt_cmd_t rep;
-    const rtdt_worker_t *wrk = (rtdt_worker_t *)ctx->worktp->data;
-    rtdt_cmd_proc_stat_t *stat = (rtdt_cmd_proc_stat_t *)&rep.args;
+    rttp_cmd_t rep;
+    const rttp_worker_t *wrk = (rttp_worker_t *)ctx->worktp->data;
+    rttp_cmd_proc_stat_t *stat = (rttp_cmd_proc_stat_t *)&rep.args;
 
     for (idx=0; idx<ctx->conf.work_thd_num; ++idx, ++wrk)
     {
         /* 1. 设置应答信息 */
-        rep.type = RTDT_CMD_QUERY_PROC_STAT_REP;
+        rep.type = RTTP_CMD_QUERY_PROC_STAT_REP;
 
         stat->proc_total = wrk->proc_total;
         stat->drop_total = wrk->drop_total;
@@ -408,9 +408,9 @@ static int rtrd_lsn_cmd_query_proc_stat_hdl(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn, r
         if (unix_udp_send(wrk->cmd_sck_id, cmd->src_path, &rep, sizeof(rep)) < 0)
         {
             log_error(lsn->log, "errmsg:[%d] %s!", errno, strerror(errno));
-            return RTDT_ERR;
+            return RTTP_ERR;
         }
     }
 
-    return RTDT_OK;
+    return RTTP_OK;
 }

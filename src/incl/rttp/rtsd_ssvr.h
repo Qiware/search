@@ -6,7 +6,7 @@
 #include "list.h"
 #include "avl_tree.h"
 #include "shm_queue.h"
-#include "rtdt_comm.h"
+#include "rttp_comm.h"
 #include "thread_pool.h"
 
 /* WORKER线程的UNIX-UDP路径 */
@@ -16,11 +16,11 @@
 /* 发送类型 */
 typedef enum
 {
-    RTDT_SNAP_SHOT_SYS_DATA
-    , RTDT_SNAP_SHOT_EXP_DATA 
+    RTTP_SNAP_SHOT_SYS_DATA
+    , RTTP_SNAP_SHOT_EXP_DATA 
 
-    , RTDT_SNAP_SHOT_TOTAL
-} rtdt_send_snap_e;
+    , RTTP_SNAP_SHOT_TOTAL
+} rttp_send_snap_e;
 
 /* 套接字信息 */
 typedef struct
@@ -29,21 +29,21 @@ typedef struct
     time_t wrtm;                        /* 最近写入操作时间 */
     time_t rdtm;                        /* 最近读取操作时间 */
 
-#define RTDT_KPALIVE_STAT_UNKNOWN   (0) /* 未知状态 */
-#define RTDT_KPALIVE_STAT_SENT      (1) /* 已发送保活 */
-#define RTDT_KPALIVE_STAT_SUCC      (2) /* 保活成功 */
+#define RTTP_KPALIVE_STAT_UNKNOWN   (0) /* 未知状态 */
+#define RTTP_KPALIVE_STAT_SENT      (1) /* 已发送保活 */
+#define RTTP_KPALIVE_STAT_SUCC      (2) /* 保活成功 */
     int kpalive;                        /* 保活状态
                                             0: 未知状态
                                             1: 已发送保活
                                             2: 保活成功 */
     list_t *mesg_list;                  /* 发送链表 */
 
-    rtdt_snap_t recv;                   /* 接收快照 */
-    rtdt_send_snap_e send_type;         /* 发送类型(系统数据或自定义数据) */
-    rtdt_snap_t send[RTDT_SNAP_SHOT_TOTAL];  /* 发送快照 */
+    rttp_snap_t recv;                   /* 接收快照 */
+    rttp_send_snap_e send_type;         /* 发送类型(系统数据或自定义数据) */
+    rttp_snap_t send[RTTP_SNAP_SHOT_TOTAL];  /* 发送快照 */
 } rtsd_sck_t;
 
-#define rtdt_set_kpalive_stat(sck, _stat) (sck)->kpalive = (_stat)
+#define rttp_set_kpalive_stat(sck, _stat) (sck)->kpalive = (_stat)
 
 /* SND线程上下文 */
 typedef struct

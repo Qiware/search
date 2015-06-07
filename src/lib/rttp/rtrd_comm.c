@@ -1,5 +1,5 @@
-#include "rtdt_cmd.h"
-#include "rtdt_comm.h"
+#include "rttp_cmd.h"
+#include "rttp_comm.h"
 #include "rtrd_recv.h"
 
 /******************************************************************************
@@ -17,7 +17,7 @@
  **注意事项: 如果发送失败，最多重复3次发送!
  **作    者: # Qifeng.zou # 2015.01.09 #
  ******************************************************************************/
-int rtrd_cmd_to_rsvr(rtrd_cntx_t *ctx, int cmd_sck_id, const rtdt_cmd_t *cmd, int idx)
+int rtrd_cmd_to_rsvr(rtrd_cntx_t *ctx, int cmd_sck_id, const rttp_cmd_t *cmd, int idx)
 {
     char path[FILE_PATH_MAX_LEN];
     rtrd_conf_t *conf = &ctx->conf;
@@ -25,14 +25,14 @@ int rtrd_cmd_to_rsvr(rtrd_cntx_t *ctx, int cmd_sck_id, const rtdt_cmd_t *cmd, in
     rtrd_rsvr_usck_path(conf, path, idx);
 
     /* 发送命令至接收线程 */
-    if (unix_udp_send(cmd_sck_id, path, cmd, sizeof(rtdt_cmd_t)) < 0)
+    if (unix_udp_send(cmd_sck_id, path, cmd, sizeof(rttp_cmd_t)) < 0)
     {
         log_error(ctx->log, "errmsg:[%d] %s! path:%s type:%d",
                 errno, strerror(errno), path, cmd->type);
-        return RTDT_ERR;
+        return RTTP_ERR;
     }
 
-    return RTDT_OK;
+    return RTTP_OK;
 }
 
 /******************************************************************************
@@ -47,17 +47,17 @@ int rtrd_cmd_to_rsvr(rtrd_cntx_t *ctx, int cmd_sck_id, const rtdt_cmd_t *cmd, in
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.22 #
  ******************************************************************************/
-int rtrd_link_auth_check(rtrd_cntx_t *ctx, rtdt_link_auth_req_t *link_auth_req)
+int rtrd_link_auth_check(rtrd_cntx_t *ctx, rttp_link_auth_req_t *link_auth_req)
 {
     rtrd_conf_t *conf = &ctx->conf;
 
     if (0 != strcmp(link_auth_req->usr, conf->auth.usr)
         || 0 != strcmp(link_auth_req->passwd, conf->auth.passwd))
     {
-        return RTDT_LINK_AUTH_FAIL;
+        return RTTP_LINK_AUTH_FAIL;
     }
 
-    return RTDT_LINK_AUTH_SUCC;
+    return RTTP_LINK_AUTH_SUCC;
 }
 
 /******************************************************************************
@@ -87,13 +87,13 @@ int rtrd_dev_to_svr_map_init(rtrd_cntx_t *ctx)
     if (NULL == ctx->dev_to_svr_map)
     {
         log_error(ctx->log, "Initialize dev->svr map failed!");
-        return RTDT_ERR;
+        return RTTP_ERR;
     }
 
     /* > 初始化读写锁 */
     pthread_rwlock_init(&ctx->dev_to_svr_map_lock, NULL);
 
-    return RTDT_OK;
+    return RTTP_OK;
 }
 
 /******************************************************************************
@@ -135,7 +135,7 @@ int rtrd_dev_to_svr_map_add(rtrd_cntx_t *ctx, int devid, int rsvr_idx)
             list = list_creat(&opt);
             if (NULL == list)
             {
-                return RTDT_ERR;
+                return RTTP_ERR;
             }
 
             if (avl_insert(ctx->dev_to_svr_map, &devid, sizeof(devid), (void *)list))
@@ -144,7 +144,7 @@ int rtrd_dev_to_svr_map_add(rtrd_cntx_t *ctx, int devid, int rsvr_idx)
                 log_error(ctx->log, "Insert into dev2sck table failed! devid:%d rsvr_idx:%d",
                         devid, rsvr_idx);
                 list_destroy(list, NULL, NULL);
-                return RTDT_ERR;
+                return RTTP_ERR;
             }
 
             continue;
@@ -160,7 +160,7 @@ int rtrd_dev_to_svr_map_add(rtrd_cntx_t *ctx, int devid, int rsvr_idx)
             {
                 ++item->count;
                 pthread_rwlock_unlock(&ctx->dev_to_svr_map_lock); /* 解锁 */
-                return RTDT_OK;
+                return RTTP_OK;
             }
         }
 
@@ -170,7 +170,7 @@ int rtrd_dev_to_svr_map_add(rtrd_cntx_t *ctx, int devid, int rsvr_idx)
             pthread_rwlock_unlock(&ctx->dev_to_svr_map_lock); /* 解锁 */
             log_error(ctx->log, "Alloc memory failed! devid:%d rsvr_idx:%d",
                     devid, rsvr_idx);
-            return RTDT_ERR;
+            return RTTP_ERR;
         }
 
         item->rsvr_idx = rsvr_idx;
@@ -182,17 +182,17 @@ int rtrd_dev_to_svr_map_add(rtrd_cntx_t *ctx, int devid, int rsvr_idx)
             log_error(ctx->log, "Alloc memory failed! devid:%d rsvr_idx:%d",
                     devid, rsvr_idx);
             slab_dealloc(ctx->pool, item);
-            return RTDT_ERR;
+            return RTTP_ERR;
         }
 
         pthread_rwlock_unlock(&ctx->dev_to_svr_map_lock); /* 解锁 */
 
-        return RTDT_OK;
+        return RTTP_OK;
     }
 
     pthread_rwlock_unlock(&ctx->dev_to_svr_map_lock); /* 解锁 */
 
-    return RTDT_OK;
+    return RTTP_OK;
 }
 
 /******************************************************************************
@@ -223,7 +223,7 @@ int rtrd_dev_to_svr_map_del(rtrd_cntx_t *ctx, int devid, int rsvr_idx)
     {
         pthread_rwlock_unlock(&ctx->dev_to_svr_map_lock);
         log_error(ctx->log, "Query devid [%d] failed!", devid);
-        return RTDT_ERR;
+        return RTTP_ERR;
     }
 
     /* > 遍历链表查找sck_serial结点 */
@@ -231,7 +231,7 @@ int rtrd_dev_to_svr_map_del(rtrd_cntx_t *ctx, int devid, int rsvr_idx)
     if (NULL == list)
     {
         pthread_rwlock_unlock(&ctx->dev_to_svr_map_lock);
-        return RTDT_OK;
+        return RTTP_OK;
     }
 
     node = list->head;
@@ -249,12 +249,12 @@ int rtrd_dev_to_svr_map_del(rtrd_cntx_t *ctx, int devid, int rsvr_idx)
             slab_dealloc(ctx->pool, item);
             log_debug(ctx->log, "Delete dev svr map success! devid:%d rsvr_idx:%d",
                     devid, rsvr_idx);
-            return RTDT_OK;
+            return RTTP_OK;
         }
     }
 
     pthread_rwlock_unlock(&ctx->dev_to_svr_map_lock);
-    return RTDT_OK;
+    return RTTP_OK;
 }
 
 /******************************************************************************
@@ -372,7 +372,7 @@ void *rtrd_dist_routine(void *_ctx)
 {
     int idx;
     void *addr, *addr2;
-    rtdt_frwd_t *frwd;
+    rttp_frwd_t *frwd;
     rtrd_cntx_t *ctx = (rtrd_cntx_t *)_ctx;
 
     while (1)
@@ -386,7 +386,7 @@ void *rtrd_dist_routine(void *_ctx)
         }
 
         /* > 获取发送队列 */
-        frwd = (rtdt_frwd_t *)addr;
+        frwd = (rttp_frwd_t *)addr;
 
         idx = rtrd_dev_to_svr_map_rand(ctx, frwd->dest_devid);
         if (idx < 0)

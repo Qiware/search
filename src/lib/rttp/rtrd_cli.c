@@ -47,10 +47,10 @@ rtrd_cli_t *rtrd_cli_init(const rtrd_conf_t *conf)
 int rtrd_cli_send(rtrd_cli_t *cli, int type, int dest, void *data, int len)
 {
     void *addr;
-    rtdt_frwd_t *frwd;
+    rttp_frwd_t *frwd;
 
     /* > 合法性检测 */
-    if (len > (int)sizeof(rtdt_frwd_t) + shm_queue_size(cli->sendq))
+    if (len > (int)sizeof(rttp_frwd_t) + shm_queue_size(cli->sendq))
     {
         return -1;
     }
@@ -59,16 +59,16 @@ int rtrd_cli_send(rtrd_cli_t *cli, int type, int dest, void *data, int len)
     addr = shm_queue_malloc(cli->sendq);
     if (NULL == addr)
     {
-        return RTDT_ERR;
+        return RTTP_ERR;
     }
 
-    frwd = (rtdt_frwd_t *)addr;
+    frwd = (rttp_frwd_t *)addr;
 
     frwd->type = type; 
     frwd->dest_devid = dest;
     frwd->length = len;
 
-    memcpy(addr+sizeof(rtdt_frwd_t), data, len);
+    memcpy(addr+sizeof(rttp_frwd_t), data, len);
 
     /* > 压入队列空间 */
     if (shm_queue_push(cli->sendq, addr))
@@ -76,5 +76,5 @@ int rtrd_cli_send(rtrd_cli_t *cli, int type, int dest, void *data, int len)
         shm_queue_dealloc(cli->sendq, addr);
     }
 
-    return RTDT_OK;
+    return RTTP_OK;
 }

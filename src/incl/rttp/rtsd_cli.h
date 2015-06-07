@@ -3,12 +3,12 @@
 
 #include "mem_pool.h"
 #include "shm_queue.h"
-#include "rtdt_comm.h"
+#include "rttp_comm.h"
 #include "rtsd_send.h"
 
 /* 发送服务命令套接字 */
 #define rtsd_ssvr_usck_path(conf, path, tidx) \
-    snprintf(path, sizeof(path), "../temp/rtdt/snd/%s/usck/%s_ssvr_%d.usck", conf->name, conf->name, tidx+1)
+    snprintf(path, sizeof(path), "../temp/rttp/snd/%s/usck/%s_ssvr_%d.usck", conf->name, conf->name, tidx+1)
 
 /* 发送对象信息 */
 typedef struct

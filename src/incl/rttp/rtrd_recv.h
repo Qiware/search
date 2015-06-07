@@ -10,33 +10,33 @@
 #include "queue.h"
 #include "shm_opt.h"
 #include "avl_tree.h"
-#include "rtdt_cmd.h"
-#include "rtdt_comm.h"
+#include "rttp_cmd.h"
+#include "rttp_comm.h"
 #include "shm_queue.h"
 #include "thread_pool.h"
 
 /* 宏定义 */
-#define RTDT_CTX_POOL_SIZE      (5 * MB)/* 全局内存池空间 */
+#define RTTP_CTX_POOL_SIZE      (5 * MB)/* 全局内存池空间 */
 
 /* Recv线程的UNIX-UDP路径 */
 #define rtrd_rsvr_usck_path(conf, path, tidx) \
-    snprintf(path, sizeof(path), "../temp/rtdt/recv/%s/usck/%s_rsvr_%d.usck", conf->name, conf->name, tidx+1)
+    snprintf(path, sizeof(path), "../temp/rttp/recv/%s/usck/%s_rsvr_%d.usck", conf->name, conf->name, tidx+1)
 /* Worker线程的UNIX-UDP路径 */
 #define rtrd_worker_usck_path(conf, path, tidx) \
-    snprintf(path, sizeof(path), "../temp/rtdt/recv/%s/usck/%s_wsvr_%d.usck", conf->name, conf->name, tidx+1)
+    snprintf(path, sizeof(path), "../temp/rttp/recv/%s/usck/%s_wsvr_%d.usck", conf->name, conf->name, tidx+1)
 /* Listen线程的UNIX-UDP路径 */
 #define rtrd_lsn_usck_path(conf, path) \
-    snprintf(path, sizeof(path), "../temp/rtdt/recv/%s/usck/%s_listen.usck", conf->name, conf->name)
+    snprintf(path, sizeof(path), "../temp/rttp/recv/%s/usck/%s_listen.usck", conf->name, conf->name)
 /* 发送队列的共享内存KEY路径 */
 #define rtrd_shm_sendq_path(conf, path) \
-    snprintf(path, sizeof(path), "../temp/rtdt/recv/%s/%s_shm_sendq", conf->name, conf->name)
+    snprintf(path, sizeof(path), "../temp/rttp/recv/%s/%s_shm_sendq", conf->name, conf->name)
 
 /* 配置信息 */
 typedef struct
 {
     char name[FILE_NAME_MAX_LEN];       /* 服务名: 不允许重复出现 */
 
-    rtdt_auth_conf_t auth;              /* 鉴权配置 */
+    rttp_auth_conf_t auth;              /* 鉴权配置 */
 
     int port;                           /* 侦听端口 */
     int recv_thd_num;                   /* 接收线程数 */
@@ -72,8 +72,8 @@ typedef struct _rtrd_sck_t
 
     int auth_succ;                      /* 鉴权成功(1:成功 0:失败)  */
 
-    rtdt_snap_t recv;                   /* 接收快照 */
-    rtdt_snap_t send;                   /* 发送快照 */
+    rttp_snap_t recv;                   /* 接收快照 */
+    rttp_snap_t send;                   /* 发送快照 */
 
     list_t *mesg_list;                  /* 发送消息链表 */
 
@@ -122,7 +122,7 @@ typedef struct
     log_cycle_t *log;                   /* 日志对象 */
     slab_pool_t *pool;                  /* 内存池对象 */
 
-    rtdt_reg_t reg[RTDT_TYPE_MAX];      /* 回调注册对象 */
+    rttp_reg_t reg[RTTP_TYPE_MAX];      /* 回调注册对象 */
 
     rtrd_lsn_t listen;                  /* 侦听对象 */
     thread_pool_t *recvtp;              /* 接收线程池 */
@@ -140,7 +140,7 @@ typedef struct
 
 /* 外部接口 */
 rtrd_cntx_t *rtrd_init(const rtrd_conf_t *conf, log_cycle_t *log);
-int rtrd_register(rtrd_cntx_t *ctx, int type, rtdt_reg_cb_t proc, void *args);
+int rtrd_register(rtrd_cntx_t *ctx, int type, rttp_reg_cb_t proc, void *args);
 int rtrd_startup(rtrd_cntx_t *ctx);
 
 rtrd_cli_t *rtrd_cli_init(const rtrd_conf_t *conf);
@@ -156,12 +156,12 @@ void *rtrd_rsvr_routine(void *_ctx);
 int rtrd_rsvr_init(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, int tidx);
 
 void *rtrd_worker_routine(void *_ctx);
-int rtrd_worker_init(rtrd_cntx_t *ctx, rtdt_worker_t *worker, int tidx);
+int rtrd_worker_init(rtrd_cntx_t *ctx, rttp_worker_t *worker, int tidx);
 
 void rtrd_rsvr_del_all_conn_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr);
 
-int rtrd_cmd_to_rsvr(rtrd_cntx_t *ctx, int cmd_sck_id, const rtdt_cmd_t *cmd, int idx);
-int rtrd_link_auth_check(rtrd_cntx_t *ctx, rtdt_link_auth_req_t *link_auth_req);
+int rtrd_cmd_to_rsvr(rtrd_cntx_t *ctx, int cmd_sck_id, const rttp_cmd_t *cmd, int idx);
+int rtrd_link_auth_check(rtrd_cntx_t *ctx, rttp_link_auth_req_t *link_auth_req);
 
 shm_queue_t *rtrd_shm_sendq_creat(const rtrd_conf_t *conf );
 shm_queue_t *rtrd_shm_sendq_attach(const rtrd_conf_t *conf);

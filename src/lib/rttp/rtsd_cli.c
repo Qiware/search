@@ -1,9 +1,9 @@
 #include "shm_opt.h"
 #include "syscall.h"
-#include "rtdt_cmd.h"
+#include "rttp_cmd.h"
 #include "rtsd_cli.h"
 #include "rtsd_ssvr.h"
-#include "rtdt_comm.h"
+#include "rttp_comm.h"
 
 static int _rtsd_cli_init(rtsd_cli_t *cli, int idx);
 static int rtsd_cli_shmat(rtsd_cli_t *cli);
@@ -87,10 +87,10 @@ static int _rtsd_cli_init(rtsd_cli_t *cli, int idx)
         || rtsd_cli_cmd_usck(cli, idx))
     {
         log_error(cli->log, "Initialize client of sdtp failed!");
-        return RTDT_ERR;
+        return RTTP_ERR;
     }
 
-    return RTDT_OK;
+    return RTTP_OK;
 }
 
 /******************************************************************************
@@ -107,7 +107,7 @@ static int _rtsd_cli_init(rtsd_cli_t *cli, int idx)
 static int rtsd_cli_shmat(rtsd_cli_t *cli)
 {
     int idx;
-    rtdt_queue_conf_t *qcf;
+    rttp_queue_conf_t *qcf;
     char path[FILE_NAME_MAX_LEN];
     rtsd_conf_t *conf = &cli->conf;
 
@@ -116,7 +116,7 @@ static int rtsd_cli_shmat(rtsd_cli_t *cli)
     if (NULL == cli->sendq)
     {
         log_error(cli->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return RTDT_ERR;
+        return RTTP_ERR;
     }
 
     /* 2. 连接共享队列 */
@@ -129,11 +129,11 @@ static int rtsd_cli_shmat(rtsd_cli_t *cli)
         if (NULL == cli->sendq[idx])
         {
             log_error(cli->log, "errmsg:[%d] %s! path:[%s]", errno, strerror(errno), qcf->name);
-            return RTDT_ERR;
+            return RTTP_ERR;
         }
     }
 
-    return RTDT_OK;
+    return RTTP_OK;
 }
 
 /******************************************************************************
@@ -157,10 +157,10 @@ static int rtsd_cli_cmd_usck(rtsd_cli_t *cli, int idx)
     if (cli->cmdfd < 0)
     {
         log_error(cli->log, "errmsg:[%d] %s! path:%s", errno, strerror(errno), path);
-        return RTDT_ERR;
+        return RTTP_ERR;
     }
 
-    return RTDT_OK;
+    return RTTP_OK;
 }
 
 /******************************************************************************
@@ -177,13 +177,13 @@ static int rtsd_cli_cmd_usck(rtsd_cli_t *cli, int idx)
  ******************************************************************************/
 static int rtsd_cli_cmd_send_req(rtsd_cli_t *cli, int idx)
 {
-    rtdt_cmd_t cmd;
+    rttp_cmd_t cmd;
     char path[FILE_NAME_MAX_LEN];
     rtsd_conf_t *conf = &cli->conf;
 
     memset(&cmd, 0, sizeof(cmd));
 
-    cmd.type = RTDT_CMD_SEND_ALL;
+    cmd.type = RTTP_CMD_SEND_ALL;
 
     rtsd_ssvr_usck_path(conf, path, idx);
 
@@ -211,7 +211,7 @@ int rtsd_cli_send(rtsd_cli_t *cli, int type, const void *data, size_t size)
 {
     int idx;
     void *addr;
-    rtdt_header_t *head;
+    rttp_header_t *head;
     static uint8_t num = 0;
     rtsd_conf_t *conf = &cli->conf;
 
@@ -222,17 +222,17 @@ int rtsd_cli_send(rtsd_cli_t *cli, int type, const void *data, size_t size)
     if (NULL == addr)
     {
         log_error(cli->log, "Alloc from shmq failed!");
-        return RTDT_ERR;
+        return RTTP_ERR;
     }
 
     /* > 设置发送数据 */
-    head = (rtdt_header_t *)addr;
+    head = (rttp_header_t *)addr;
 
-    head->type = htons(type);
-    head->devid = htonl(conf->auth.devid);
-    head->length = htonl(size);
-    head->flag = RTDT_EXP_MESG;
-    head->checksum = htonl(RTDT_CHECK_SUM);
+    head->type = type;
+    head->devid = conf->auth.devid;
+    head->length = size;
+    head->flag = RTTP_EXP_MESG;
+    head->checksum = RTTP_CHECK_SUM;
 
     memcpy(head+1, addr, size);
 
@@ -241,11 +241,11 @@ int rtsd_cli_send(rtsd_cli_t *cli, int type, const void *data, size_t size)
     {
         log_error(cli->log, "Push into shmq failed!");
         shm_queue_dealloc(cli->sendq[idx], addr);
-        return RTDT_ERR;
+        return RTTP_ERR;
     }
 
     /* > 通知发送线程 */
     rtsd_cli_cmd_send_req(cli, idx);
 
-    return RTDT_OK;
+    return RTTP_OK;
 }

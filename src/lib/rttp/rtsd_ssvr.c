@@ -1,8 +1,8 @@
 #include "shm_opt.h"
 #include "syscall.h"
-#include "rtdt_cmd.h"
+#include "rttp_cmd.h"
 #include "rtsd_cli.h"
-#include "rtdt_comm.h"
+#include "rttp_comm.h"
 #include "rtsd_send.h"
 
 /* 静态函数 */
@@ -19,15 +19,15 @@ static int rtsd_ssvr_sys_mesg_proc(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, rtsd_sck
 static int rtsd_ssvr_exp_mesg_proc(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, rtsd_sck_t *sck, void *addr);
 
 static int rtsd_ssvr_timeout_hdl(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr);
-static int rtsd_ssvr_proc_cmd(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, const rtdt_cmd_t *cmd);
+static int rtsd_ssvr_proc_cmd(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, const rttp_cmd_t *cmd);
 static int rtsd_ssvr_send_data(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr);
 
 static int rtsd_ssvr_clear_mesg(rtsd_ssvr_t *ssvr);
 
 static int rtsd_ssvr_kpalive_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr);
 
-static int rtdt_link_auth_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr);
-static int rtdt_link_auth_rep_hdl(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, rtsd_sck_t *sck, rtdt_link_auth_rep_t *rep);
+static int rttp_link_auth_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr);
+static int rttp_link_auth_rep_hdl(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, rtsd_sck_t *sck, rttp_link_auth_rep_t *rep);
 
 /******************************************************************************
  **函数名称: rtsd_ssvr_init
@@ -46,8 +46,8 @@ int rtsd_ssvr_init(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, int tidx)
     void *addr;
     list_opt_t opt;
     rtsd_conf_t *conf = &ctx->conf;
-    rtdt_snap_t *recv = &ssvr->sck.recv;
-    rtdt_snap_t *send = &ssvr->sck.send[RTDT_SNAP_SHOT_SYS_DATA];
+    rttp_snap_t *recv = &ssvr->sck.recv;
+    rttp_snap_t *send = &ssvr->sck.send[RTTP_SNAP_SHOT_SYS_DATA];
 
     ssvr->tidx = tidx;
     ssvr->log = ctx->log;
@@ -57,22 +57,22 @@ int rtsd_ssvr_init(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, int tidx)
     if (rtsd_ssvr_creat_sendq(ssvr, conf))
     {
         log_error(ssvr->log, "Initialize send queue failed!");
-        return RTDT_ERR;
+        return RTTP_ERR;
     }
 
     /* > 创建unix套接字 */
     if (rtsd_ssvr_creat_usck(ssvr, conf))
     {
         log_error(ssvr->log, "Initialize send queue failed!");
-        return RTDT_ERR;
+        return RTTP_ERR;
     }
 
     /* > 创建SLAB内存池 */
-    ssvr->pool = slab_creat_by_calloc(RTDT_MEM_POOL_SIZE);
+    ssvr->pool = slab_creat_by_calloc(RTTP_MEM_POOL_SIZE);
     if (NULL == ssvr->pool)
     {
         log_error(ssvr->log, "Initialize slab mem-pool failed!");
-        return RTDT_ERR;
+        return RTTP_ERR;
     }
 
     /* > 创建发送链表 */
@@ -86,7 +86,7 @@ int rtsd_ssvr_init(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, int tidx)
     if (NULL == ssvr->sck.mesg_list)
     {
         log_error(ssvr->log, "Create list failed!");
-        return RTDT_ERR;
+        return RTTP_ERR;
     }
 
     /* > 初始化发送缓存(注: 程序退出时才可释放此空间，其他任何情况下均不释放) */
@@ -94,22 +94,22 @@ int rtsd_ssvr_init(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, int tidx)
     if (NULL == addr)
     {
         log_error(ssvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return RTDT_ERR;
+        return RTTP_ERR;
     }
 
-    rtdt_snap_setup(send, addr, conf->send_buff_size);
+    rttp_snap_setup(send, addr, conf->send_buff_size);
 
     /* 5. 初始化接收缓存(注: 程序退出时才可释放此空间，其他任何情况下均不释放) */
     addr = calloc(1, conf->recv_buff_size);
     if (NULL == addr)
     {
         log_error(ssvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return RTDT_ERR;
+        return RTTP_ERR;
     }
 
-    rtdt_snap_setup(recv, addr, conf->recv_buff_size);
+    rttp_snap_setup(recv, addr, conf->recv_buff_size);
 
-    return RTDT_OK;
+    return RTTP_OK;
 }
 
 /******************************************************************************
@@ -134,7 +134,7 @@ static int rtsd_ssvr_creat_recvq(rtsd_cntx_t *ctx, const rtsd_conf_t *conf)
     if (NULL == ctx->recvq)
     {
         log_fatal(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return RTDT_ERR;
+        return RTTP_ERR;
     }
 
     /* > 创建队列 */
@@ -144,11 +144,11 @@ static int rtsd_ssvr_creat_recvq(rtsd_cntx_t *ctx, const rtsd_conf_t *conf)
         if (NULL == ctx->recvq[idx])
         {
             log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
-            return RTDT_ERR;
+            return RTTP_ERR;
         }
     }
 
-    return RTDT_OK;
+    return RTTP_OK;
 }
 
 /******************************************************************************
@@ -166,7 +166,7 @@ static int rtsd_ssvr_creat_recvq(rtsd_cntx_t *ctx, const rtsd_conf_t *conf)
 static int rtsd_ssvr_creat_sendq(rtsd_ssvr_t *ssvr, const rtsd_conf_t *conf)
 {
     char path[FILE_PATH_MAX_LEN];
-    const rtdt_queue_conf_t *qcf = &conf->sendq;
+    const rttp_queue_conf_t *qcf = &conf->sendq;
 
     /* 1. 创建/连接发送队列 */
     snprintf(path, sizeof(path), "%s-%d", qcf->name, ssvr->tidx);
@@ -175,10 +175,10 @@ static int rtsd_ssvr_creat_sendq(rtsd_ssvr_t *ssvr, const rtsd_conf_t *conf)
     if (NULL == ssvr->sendq)
     {
         log_error(ssvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return RTDT_ERR;
+        return RTTP_ERR;
     }
 
-    return RTDT_OK;
+    return RTTP_OK;
 }
 
 /******************************************************************************
@@ -203,11 +203,11 @@ static int rtsd_ssvr_creat_usck(rtsd_ssvr_t *ssvr, const rtsd_conf_t *conf)
     if (ssvr->cmd_sck_id < 0)
     {
         log_error(ssvr->log, "errmsg:[%d] %s! path:%s", errno, strerror(errno), path);
-        return RTDT_ERR;
+        return RTTP_ERR;
     }
 
     log_trace(ssvr->log, "cmd_sck_id:[%d] path:%s", ssvr->cmd_sck_id, path);
-    return RTDT_OK;
+    return RTTP_OK;
 }
 
 /******************************************************************************
@@ -226,7 +226,7 @@ static void rtsd_ssvr_bind_cpu(rtsd_cntx_t *ctx, int tidx)
 {
     int idx, mod;
     cpu_set_t cpuset;
-    rtdt_cpu_conf_t *cpu = &ctx->conf.cpu;
+    rttp_cpu_conf_t *cpu = &ctx->conf.cpu;
 
     mod = sysconf(_SC_NPROCESSORS_CONF) - cpu->start;
     if (mod <= 0)
@@ -258,7 +258,7 @@ static void rtsd_ssvr_bind_cpu(rtsd_cntx_t *ctx, int tidx)
 void rtsd_ssvr_set_rwset(rtsd_ssvr_t *ssvr)
 {
     int idx;
-    rtdt_snap_t *snap;
+    rttp_snap_t *snap;
 
     FD_ZERO(&ssvr->rset);
     FD_ZERO(&ssvr->wset);
@@ -282,8 +282,8 @@ void rtsd_ssvr_set_rwset(rtsd_ssvr_t *ssvr)
         return;
     }
 
-    snap = &ssvr->sck.send[RTDT_SNAP_SHOT_SYS_DATA];
-    for (idx=0; idx<RTDT_SNAP_SHOT_TOTAL; ++idx, ++snap)
+    snap = &ssvr->sck.send[RTTP_SNAP_SHOT_SYS_DATA];
+    for (idx=0; idx<RTTP_SNAP_SHOT_TOTAL; ++idx, ++snap)
     {
         if (snap->iptr != snap->optr)
         {
@@ -342,12 +342,12 @@ void *rtsd_ssvr_routine(void *_ctx)
             {
                 log_error(ssvr->log, "Conncet receive-server failed!");
 
-                Sleep(RTDT_RECONN_INTV);
+                Sleep(RTTP_RECONN_INTV);
                 continue;
             }
 
-            rtdt_set_kpalive_stat(sck, RTDT_KPALIVE_STAT_UNKNOWN);
-            rtdt_link_auth_req(ctx, ssvr); /* 发起鉴权请求 */
+            rttp_set_kpalive_stat(sck, RTTP_KPALIVE_STAT_UNKNOWN);
+            rttp_link_auth_req(ctx, ssvr); /* 发起鉴权请求 */
         }
 
         //rtsd_ssvr_switch_send_buff(ctx, ssvr);
@@ -355,8 +355,8 @@ void *rtsd_ssvr_routine(void *_ctx)
         /* 3.2 等待事件通知 */
         rtsd_ssvr_set_rwset(ssvr);
 
-        timeout.tv_sec = RTDT_SSVR_TMOUT_SEC;
-        timeout.tv_usec = RTDT_SSVR_TMOUT_USEC;
+        timeout.tv_sec = RTTP_SSVR_TMOUT_SEC;
+        timeout.tv_usec = RTTP_SSVR_TMOUT_USEC;
         ret = select(ssvr->max+1, &ssvr->rset, &ssvr->wset, NULL, &timeout);
         if (ret < 0)
         {
@@ -415,48 +415,48 @@ void *rtsd_ssvr_routine(void *_ctx)
 static int rtsd_ssvr_kpalive_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
 {
     void *addr;
-    rtdt_header_t *head;
-    int size = sizeof(rtdt_header_t);
+    rttp_header_t *head;
+    int size = sizeof(rttp_header_t);
     rtsd_sck_t *sck = &ssvr->sck;
-    rtdt_snap_t *send = &ssvr->sck.send[RTDT_SNAP_SHOT_SYS_DATA];
+    rttp_snap_t *send = &ssvr->sck.send[RTTP_SNAP_SHOT_SYS_DATA];
 
     /* 1. 上次发送保活请求之后 仍未收到应答 */
     if ((sck->fd < 0)
-        || (RTDT_KPALIVE_STAT_SENT == sck->kpalive))
+        || (RTTP_KPALIVE_STAT_SENT == sck->kpalive))
     {
         CLOSE(sck->fd);
-        rtdt_snap_reset(send);
+        rttp_snap_reset(send);
         log_error(ssvr->log, "Didn't get keepalive respond for a long time!");
-        return RTDT_OK;
+        return RTTP_OK;
     }
 
     addr = slab_alloc(ssvr->pool, size);
     if (NULL == addr)
     {
         log_error(ssvr->log, "Alloc memory from slab failed!");
-        return RTDT_ERR;
+        return RTTP_ERR;
     }
 
     /* 2. 设置心跳数据 */
-    head = (rtdt_header_t *)addr;
+    head = (rttp_header_t *)addr;
 
-    head->type = RTDT_KPALIVE_REQ;
+    head->type = RTTP_KPALIVE_REQ;
     head->length = 0;
-    head->flag = RTDT_SYS_MESG;
-    head->checksum = RTDT_CHECK_SUM;
+    head->flag = RTTP_SYS_MESG;
+    head->checksum = RTTP_CHECK_SUM;
 
     /* 3. 加入发送列表 */
     if (list_rpush(sck->mesg_list, addr))
     {
         slab_dealloc(ssvr->pool, addr);
         log_error(ssvr->log, "Alloc memory from slab failed!");
-        return RTDT_ERR;
+        return RTTP_ERR;
     }
 
     log_debug(ssvr->log, "Add keepalive request success! fd:[%d]", sck->fd);
 
-    rtdt_set_kpalive_stat(sck, RTDT_KPALIVE_STAT_SENT);
-    return RTDT_OK;
+    rttp_set_kpalive_stat(sck, RTTP_KPALIVE_STAT_SENT);
+    return RTTP_OK;
 }
 
 /******************************************************************************
@@ -507,21 +507,21 @@ static int rtsd_ssvr_timeout_hdl(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
     rtsd_sck_t *sck = &ssvr->sck;
 
     /* 1. 判断是否长时无数据 */
-    if ((curr_tm - sck->wrtm) < RTDT_KPALIVE_INTV)
+    if ((curr_tm - sck->wrtm) < RTTP_KPALIVE_INTV)
     {
-        return RTDT_OK;
+        return RTTP_OK;
     }
 
     /* 2. 发送保活请求 */
     if (rtsd_ssvr_kpalive_req(ctx, ssvr))
     {
         log_error(ssvr->log, "Connection keepalive failed!");
-        return RTDT_ERR;
+        return RTTP_ERR;
     }
 
     sck->wrtm = curr_tm;
 
-    return RTDT_OK;
+    return RTTP_OK;
 }
 
 /******************************************************************************
@@ -552,7 +552,7 @@ static int rtsd_ssvr_recv_proc(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
 {
     int n, left;
     rtsd_sck_t *sck = &ssvr->sck;
-    rtdt_snap_t *recv = &sck->recv;
+    rttp_snap_t *recv = &sck->recv;
 
     sck->rdtm = time(NULL);
 
@@ -572,8 +572,8 @@ static int rtsd_ssvr_recv_proc(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
                 log_error(ssvr->log, "Proc data failed! fd:%d", sck->fd);
 
                 CLOSE(sck->fd);
-                rtdt_snap_reset(recv);
-                return RTDT_ERR;
+                rttp_snap_reset(recv);
+                return RTTP_ERR;
             }
             continue;
         }
@@ -581,12 +581,12 @@ static int rtsd_ssvr_recv_proc(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
         {
             log_info(ssvr->log, "Client disconnected. fd:%d n:%d/%d", sck->fd, n, left);
             CLOSE(sck->fd);
-            rtdt_snap_reset(recv);
-            return RTDT_SCK_DISCONN;
+            rttp_snap_reset(recv);
+            return RTTP_SCK_DISCONN;
         }
         else if ((n < 0) && (EAGAIN == errno))
         {
-            return RTDT_OK; /* Again */
+            return RTTP_OK; /* Again */
         }
 
         if (EINTR == errno)
@@ -597,11 +597,11 @@ static int rtsd_ssvr_recv_proc(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
         log_error(ssvr->log, "errmsg:[%d] %s. fd:%d", errno, strerror(errno), sck->fd);
 
         CLOSE(sck->fd);
-        rtdt_snap_reset(recv);
-        return RTDT_ERR;
+        rttp_snap_reset(recv);
+        return RTTP_ERR;
     }
 
-    return RTDT_OK;
+    return RTTP_OK;
 }
 
 /******************************************************************************
@@ -632,21 +632,21 @@ static int rtsd_ssvr_recv_proc(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
  ******************************************************************************/
 static int rtsd_ssvr_data_proc(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, rtsd_sck_t *sck)
 {
-    rtdt_header_t *head;
+    rttp_header_t *head;
     uint32_t len, mesg_len;
-    rtdt_snap_t *recv = &sck->recv;
+    rttp_snap_t *recv = &sck->recv;
 
     while (1)
     {
-        head = (rtdt_header_t *)recv->optr;
+        head = (rttp_header_t *)recv->optr;
         len = (int)(recv->iptr - recv->optr);
-        if (len < sizeof(rtdt_header_t))
+        if (len < sizeof(rttp_header_t))
         {
             goto LEN_NOT_ENOUGH; /* 不足一条数据时 */
         }
 
         /* 1. 是否不足一条数据 */
-        mesg_len = sizeof(rtdt_header_t) + ntohl(head->length);
+        mesg_len = sizeof(rttp_header_t) + ntohl(head->length);
         if (len < mesg_len)
         {
         LEN_NOT_ENOUGH:
@@ -656,15 +656,15 @@ static int rtsd_ssvr_data_proc(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, rtsd_sck_t *
                 if ((recv->optr - recv->addr) < (recv->end - recv->iptr))
                 {
                     log_error(ssvr->log, "Data length is invalid!");
-                    return RTDT_ERR;
+                    return RTTP_ERR;
                 }
 
                 memcpy(recv->addr, recv->optr, len);
                 recv->optr = recv->addr;
                 recv->iptr = recv->optr + len;
-                return RTDT_OK;
+                return RTTP_OK;
             }
-            return RTDT_OK;
+            return RTTP_OK;
         }
 
         /* 2. 至少一条数据时 */
@@ -675,16 +675,16 @@ static int rtsd_ssvr_data_proc(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, rtsd_sck_t *
         head->checksum = ntohl(head->checksum);
 
         /* 2.2 校验合法性 */
-        if (!RTDT_HEAD_ISVALID(head))
+        if (!RTTP_HEAD_ISVALID(head))
         {
             ++ssvr->err_total;
             log_error(ssvr->log, "Header is invalid! CheckSum:%u/%u type:%d len:%d flag:%d",
-                    head->checksum, RTDT_CHECK_SUM, head->type, head->length, head->flag);
-            return RTDT_ERR;
+                    head->checksum, RTTP_CHECK_SUM, head->type, head->length, head->flag);
+            return RTTP_ERR;
         }
 
         /* 2.3 进行数据处理 */
-        if (RTDT_SYS_MESG == head->flag)
+        if (RTTP_SYS_MESG == head->flag)
         {
             rtsd_ssvr_sys_mesg_proc(ctx, ssvr, sck, recv->optr);
         }
@@ -696,7 +696,7 @@ static int rtsd_ssvr_data_proc(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, rtsd_sck_t *
         recv->optr += mesg_len;
     }
 
-    return RTDT_OK;
+    return RTTP_OK;
 }
 
 /******************************************************************************
@@ -715,7 +715,7 @@ static int rtsd_ssvr_data_proc(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, rtsd_sck_t *
  ******************************************************************************/
 static int rtsd_ssvr_recv_cmd(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
 {
-    rtdt_cmd_t cmd;
+    rttp_cmd_t cmd;
 
     memset(&cmd, 0, sizeof(cmd));
 
@@ -723,7 +723,7 @@ static int rtsd_ssvr_recv_cmd(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
     if (unix_udp_recv(ssvr->cmd_sck_id, &cmd, sizeof(cmd)) < 0)
     {
         log_error(ssvr->log, "Recv command failed! errmsg:[%d] %s!", errno, strerror(errno));
-        return RTDT_ERR;
+        return RTTP_ERR;
     }
 
     /* 2. 处理命令 */
@@ -742,28 +742,28 @@ static int rtsd_ssvr_recv_cmd(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static int rtsd_ssvr_proc_cmd(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, const rtdt_cmd_t *cmd)
+static int rtsd_ssvr_proc_cmd(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, const rttp_cmd_t *cmd)
 {
     rtsd_sck_t *sck = &ssvr->sck;
 
     switch (cmd->type)
     {
-        case RTDT_CMD_SEND:
-        case RTDT_CMD_SEND_ALL:
+        case RTTP_CMD_SEND:
+        case RTTP_CMD_SEND_ALL:
         {
             if (fd_is_writable(sck->fd))
             {
                 return rtsd_ssvr_send_data(ctx, ssvr);
             }
-            return RTDT_OK;
+            return RTTP_OK;
         }
         default:
         {
             log_error(ssvr->log, "Unknown command! type:[%d]", cmd->type);
-            return RTDT_OK;
+            return RTTP_OK;
         }
     }
-    return RTDT_OK;
+    return RTTP_OK;
 }
 
 /******************************************************************************
@@ -793,27 +793,27 @@ static int rtsd_ssvr_proc_cmd(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, const rtdt_cm
 static int rtsd_ssvr_fill_send_buff(rtsd_ssvr_t *ssvr, rtsd_sck_t *sck)
 {
     uint32_t left, mesg_len;
-    rtdt_header_t *head;
-    rtdt_snap_t *send = &sck->send[RTDT_SNAP_SHOT_SYS_DATA];
+    rttp_header_t *head;
+    rttp_snap_t *send = &sck->send[RTTP_SNAP_SHOT_SYS_DATA];
 
     /* > 从消息链表取数据 */
     for (;;)
     {
         /* 1. 是否有数据 */
-        head = (rtdt_header_t *)list_lpop(ssvr->sck.mesg_list);
+        head = (rttp_header_t *)list_lpop(ssvr->sck.mesg_list);
         if (NULL == head)
         {
             return (send->iptr - send->optr);
         }
 
         /* 2. 判断剩余空间 */
-        if (RTDT_CHECK_SUM != head->checksum)
+        if (RTTP_CHECK_SUM != head->checksum)
         {
             assert(0);
         }
 
         left = (uint32_t)(send->end - send->iptr);
-        mesg_len = sizeof(rtdt_header_t) + head->length;
+        mesg_len = sizeof(rttp_header_t) + head->length;
         if (left < mesg_len)
         {
             list_lpush(ssvr->sck.mesg_list, head);
@@ -821,6 +821,43 @@ static int rtsd_ssvr_fill_send_buff(rtsd_ssvr_t *ssvr, rtsd_sck_t *sck)
         }
 
         /* 3. 取发送的数据 */
+        head->type = htons(head->type);
+        head->flag = head->flag;
+        head->length = htonl(head->length);
+        head->checksum = htonl(head->checksum);
+
+        /* 4. 拷贝至发送缓存 */
+        memcpy(send->iptr, (void *)head, mesg_len);
+
+        send->iptr += mesg_len;
+    }
+
+    /* > 从发送队列取数据 */
+    for (;;)
+    {
+        /* 1. 判断剩余空间 */
+        left = (uint32_t)(send->end - send->iptr);
+        if (left < (uint32_t)shm_queue_size(ssvr->sendq))
+        {
+            break; /* 空间不足 */
+        }
+
+        /* 2. 是否有数据 */
+        head = (rttp_header_t *)shm_queue_pop(ssvr->sendq);
+        if (NULL == head)
+        {
+            return (send->iptr - send->optr);
+        }
+
+        /* 3. 校验合法性 */
+        if (RTTP_CHECK_SUM != head->checksum)
+        {
+            assert(0);
+        }
+
+        mesg_len = sizeof(rttp_header_t) + head->length;
+
+        /* 4. 设置发送数据 */
         head->type = htons(head->type);
         head->flag = head->flag;
         head->length = htonl(head->length);
@@ -864,7 +901,7 @@ static int rtsd_ssvr_send_sys_data(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
 {
     int n, len;
     rtsd_sck_t *sck = &ssvr->sck;
-    rtdt_snap_t *send = &sck->send[RTDT_SNAP_SHOT_SYS_DATA];
+    rttp_snap_t *send = &sck->send[RTTP_SNAP_SHOT_SYS_DATA];
 
     sck->wrtm = time(NULL);
 
@@ -890,21 +927,21 @@ static int rtsd_ssvr_send_sys_data(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
             log_error(ssvr->log, "errmsg:[%d] %s! fd:%d len:[%d]",
                     errno, strerror(errno), sck->fd, len);
             CLOSE(sck->fd);
-            rtdt_snap_reset(send);
-            return RTDT_ERR;
+            rttp_snap_reset(send);
+            return RTTP_ERR;
         }
         /* 只发送了部分数据 */
         else if (n != len)
         {
             send->optr += n;
-            return RTDT_OK;
+            return RTTP_OK;
         }
 
         /* 3. 重置标识量 */
-        rtdt_snap_reset(send);
+        rttp_snap_reset(send);
     }
 
-    return RTDT_OK;
+    return RTTP_OK;
 }
 
 /******************************************************************************
@@ -935,7 +972,7 @@ static int rtsd_ssvr_send_exp_data(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
 {
     int n, len;
     rtsd_sck_t *sck = &ssvr->sck;
-    rtdt_snap_t *send = &sck->send[RTDT_SNAP_SHOT_EXP_DATA];
+    rttp_snap_t *send = &sck->send[RTTP_SNAP_SHOT_EXP_DATA];
 
     sck->wrtm = time(NULL);
 
@@ -948,19 +985,19 @@ static int rtsd_ssvr_send_exp_data(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
         log_error(ssvr->log, "errmsg:[%d] %s! fd:%d len:[%d]",
                 errno, strerror(errno), sck->fd, len);
         CLOSE(sck->fd);
-        rtdt_snap_reset(send);
-        return RTDT_ERR;
+        rttp_snap_reset(send);
+        return RTTP_ERR;
     }
     /* 只发送了部分数据 */
     else if (n != len)
     {
         send->optr += n;
-        return RTDT_OK;
+        return RTTP_OK;
     }
 
     /* > 重置标识量 */
-    rtdt_snap_reset(send);
-    return RTDT_OK;
+    rttp_snap_reset(send);
+    return RTTP_OK;
 }
 
 /******************************************************************************
@@ -978,7 +1015,7 @@ static int rtsd_ssvr_send_data(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
 {
     rtsd_sck_t *sck = &ssvr->sck;
 
-    if (RTDT_SNAP_SHOT_SYS_DATA == sck->send_type)
+    if (RTTP_SNAP_SHOT_SYS_DATA == sck->send_type)
     {
         return rtsd_ssvr_send_sys_data(ctx, ssvr);
     }
@@ -1007,13 +1044,13 @@ static int rtsd_ssvr_clear_mesg(rtsd_ssvr_t *ssvr)
         data = list_lpop(ssvr->sck.mesg_list);
         if (NULL == data)
         {
-            return RTDT_OK;
+            return RTTP_OK;
         }
 
         slab_dealloc(ssvr->pool, data);
     }
 
-    return RTDT_OK;
+    return RTTP_OK;
 }
 
 /******************************************************************************
@@ -1031,25 +1068,25 @@ static int rtsd_ssvr_clear_mesg(rtsd_ssvr_t *ssvr)
  ******************************************************************************/
 static int rtsd_ssvr_sys_mesg_proc(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, rtsd_sck_t *sck, void *addr)
 {
-    rtdt_header_t *head = (rtdt_header_t *)addr;
+    rttp_header_t *head = (rttp_header_t *)addr;
 
     switch (head->type)
     {
-        case RTDT_KPALIVE_REP:      /* 保活应答 */
+        case RTTP_KPALIVE_REP:      /* 保活应答 */
         {
             log_debug(ssvr->log, "Received keepalive respond!");
 
-            rtdt_set_kpalive_stat(sck, RTDT_KPALIVE_STAT_SUCC);
-            return RTDT_OK;
+            rttp_set_kpalive_stat(sck, RTTP_KPALIVE_STAT_SUCC);
+            return RTTP_OK;
         }
-        case RTDT_LINK_AUTH_REP:    /* 链路鉴权应答 */
+        case RTTP_LINK_AUTH_REP:    /* 链路鉴权应答 */
         {
-            return rtdt_link_auth_rep_hdl(ctx, ssvr, sck, addr + sizeof(rtdt_header_t));
+            return rttp_link_auth_rep_hdl(ctx, ssvr, sck, addr + sizeof(rttp_header_t));
         }
     }
 
     log_error(ssvr->log, "Unknown type [%d]!", head->type);
-    return RTDT_ERR;
+    return RTTP_ERR;
 }
 
 /******************************************************************************
@@ -1072,20 +1109,20 @@ static int rtsd_ssvr_exp_mesg_proc(
     void *data;
     int *num;
     int idx, len;
-    rtdt_header_t *head = (rtdt_header_t *)addr;
+    rttp_header_t *head = (rttp_header_t *)addr;
 
     ++ssvr->recv_total;
 
     idx = rand() % ctx->conf.work_thd_num;
 
     /* > 验证长度 */
-    len = RTDT_DATA_TOTAL_LEN(head);
+    len = RTTP_DATA_TOTAL_LEN(head);
     if ((int)(len + sizeof(int)) > queue_size(ctx->recvq[0]))
     {
         ++ssvr->drop_total;
         log_error(ctx->log, "Data is too long! len:%d drop:%lu total:%lu",
                 len, ssvr->drop_total, ssvr->recv_total);
-        return RTDT_ERR_TOO_LONG;
+        return RTTP_ERR_TOO_LONG;
     }
 
     /* > 申请空间 */
@@ -1095,7 +1132,7 @@ static int rtsd_ssvr_exp_mesg_proc(
         ++ssvr->drop_total;
         log_error(ctx->log, "errmsg:[%d] %s! drop:%lu recv:%lu",
                 errno, strerror(errno), ssvr->recv_total, ssvr->drop_total);
-        return RTDT_ERR;
+        return RTTP_ERR;
     }
 
     /* > 放入队列 */
@@ -1109,14 +1146,14 @@ static int rtsd_ssvr_exp_mesg_proc(
         log_error(ctx->log, "Push into queue failed! len:%d drop:%lu total:%lu",
                 len, ssvr->drop_total, ssvr->recv_total);
         queue_dealloc(ctx->recvq[idx], data);
-        return RTDT_ERR;
+        return RTTP_ERR;
     }
 
-    return RTDT_OK;
+    return RTTP_OK;
 }
 
 /******************************************************************************
- **函数名称: rtdt_link_auth_req
+ **函数名称: rttp_link_auth_req
  **功    能: 发起链路鉴权请求
  **输入参数:
  **     ctx: 全局信息
@@ -1127,34 +1164,34 @@ static int rtsd_ssvr_exp_mesg_proc(
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.22 #
  ******************************************************************************/
-static int rtdt_link_auth_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
+static int rttp_link_auth_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
 {
     int size;
     void *addr;
-    rtdt_header_t *head;
+    rttp_header_t *head;
     rtsd_sck_t *sck = &ssvr->sck;
-    rtdt_link_auth_req_t *link_auth_req;
+    rttp_link_auth_req_t *link_auth_req;
 
     /* > 申请内存空间 */
-    size = sizeof(rtdt_header_t) + sizeof(rtdt_link_auth_req_t);
+    size = sizeof(rttp_header_t) + sizeof(rttp_link_auth_req_t);
 
     addr = slab_alloc(ssvr->pool, size);
     if (NULL == addr)
     {
         log_error(ssvr->log, "Alloc memory from slab failed!");
-        return RTDT_ERR;
+        return RTTP_ERR;
     }
 
     /* > 设置头部数据 */
-    head = (rtdt_header_t *)addr;
+    head = (rttp_header_t *)addr;
 
-    head->type = RTDT_LINK_AUTH_REQ;
-    head->length = sizeof(rtdt_link_auth_req_t);
-    head->flag = RTDT_SYS_MESG;
-    head->checksum = RTDT_CHECK_SUM;
+    head->type = RTTP_LINK_AUTH_REQ;
+    head->length = sizeof(rttp_link_auth_req_t);
+    head->flag = RTTP_SYS_MESG;
+    head->checksum = RTTP_CHECK_SUM;
 
     /* > 设置鉴权信息 */
-    link_auth_req = addr + sizeof(rtdt_header_t);
+    link_auth_req = addr + sizeof(rttp_header_t);
 
     link_auth_req->devid = htonl(ctx->conf.devid);
     snprintf(link_auth_req->usr, sizeof(link_auth_req->usr), "%s", ctx->conf.auth.usr);
@@ -1165,15 +1202,15 @@ static int rtdt_link_auth_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
     {
         slab_dealloc(ssvr->pool, addr);
         log_error(ssvr->log, "Alloc memory from slab failed!");
-        return RTDT_ERR;
+        return RTTP_ERR;
     }
 
     log_debug(ssvr->log, "Add link auth request success! fd:[%d]", sck->fd);
 
-    return RTDT_OK;
+    return RTTP_OK;
 }
 /******************************************************************************
- **函数名称: rtdt_link_auth_rep_hdl
+ **函数名称: rttp_link_auth_rep_hdl
  **功    能: 链路鉴权请求应答的处理
  **输入参数:
  **     ctx: 全局信息
@@ -1186,8 +1223,8 @@ static int rtdt_link_auth_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.22 #
  ******************************************************************************/
-static int rtdt_link_auth_rep_hdl(rtsd_cntx_t *ctx,
-        rtsd_ssvr_t *ssvr, rtsd_sck_t *sck, rtdt_link_auth_rep_t *rep)
+static int rttp_link_auth_rep_hdl(rtsd_cntx_t *ctx,
+        rtsd_ssvr_t *ssvr, rtsd_sck_t *sck, rttp_link_auth_rep_t *rep)
 {
-    return ntohl(rep->is_succ)? RTDT_OK : RTDT_ERR;
+    return ntohl(rep->is_succ)? RTTP_OK : RTTP_ERR;
 }
