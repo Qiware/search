@@ -36,3 +36,8 @@ ifeq (POSIX_MEMALIGN, $(strip $(CONFIG_MEMALIGN_SUPPORT)))
 else ifeq (MEMALIGN, $(strip $(CONFIG_MEMALIGN_SUPPORT)))
 	OPTIONS += HAVE_MEMALIGN		# 内存对齐方式
 endif
+
+# 实时传输协议
+ifeq (__ON__, $(strip $(CONFIG_RTTP_SUPPORT)))
+	OPTIONS += __RTTP_SUPPORT__
+endif
