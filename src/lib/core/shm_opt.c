@@ -1,8 +1,43 @@
 #include "shm_opt.h"
 #include "syscall.h"
 
-static void *shm_creat_ex(int key, size_t size);
-static void *shm_attach_ex(key_t key, size_t size);
+static void *shm_at_or_creat(const char *path, size_t size);
+
+/* 读取SHM数据 */
+static int shm_read(const char *path, shm_data_t *shm)
+{
+    FILE *fp;
+
+    fp = fopen(path, "r");
+    if (NULL == fp)
+    {
+        return -1;
+    }
+
+    fread(shm, sizeof(shm_data_t), 1, fp);
+
+    fclose(fp);
+
+    return 0;
+}
+
+/* 写入SHM数据 */
+static int shm_write(const char *path, shm_data_t *shm)
+{
+    FILE *fp;
+
+    fp = fopen(path, "w");
+    if (NULL == fp)
+    {
+        return -1;
+    }
+
+    fwrite(shm, sizeof(shm_data_t), 1, fp);
+
+    fclose(fp);
+
+    return 0;
+}
 
 /******************************************************************************
  **函数名称: shm_ftok
@@ -39,36 +74,32 @@ key_t shm_ftok(const char *path, int id)
 /* 创建不存在的共享内存 */
 static void *_shm_creat(const char *path, size_t size)
 {
-    FILE *fp;
     void *addr;
     shm_data_t shm;
 
-    /* > 生成KEY值 */
-    shm.key = shm_ftok(path, 0);
-    if (-1 == shm.key)
+    /* > 创建共享内存 */
+    shm.shmid = shmget(IPC_PRIVATE, size, IPC_CREAT|0666);
+    if (shm.shmid < 0)
     {
         return NULL;
     }
+
     shm.size = size;
     shm.checksum = SHM_CHECK_SUM;
 
-    /* > 创建共享内存 */
-    addr = shm_creat_ex(shm.key, shm.size);
-    if (NULL == addr)
+    /* > ATTACH共享内存 */
+    addr = (void *)shmat(shm.shmid, NULL, 0);
+    if ((void *)-1 == addr)
     {
         return NULL;
     }
+
+    memset(addr, 0, size);
+
+    shmctl(shm.shmid, IPC_RMID, NULL);
 
     /* 写入SHM数据 */
-    fp = fopen(path, "w");
-    if (NULL == fp)
-    {
-        return NULL;
-    }
-
-    fwrite(&shm, sizeof(shm), 1, fp);
-
-    fclose(fp);
+    shm_write(path, &shm);
 
     return addr;
 }
@@ -100,18 +131,20 @@ void *shm_creat(const char *path, size_t size)
         }
         return _shm_creat(path, size);  /* 创建 */
     }
-
-    if (0 != st.st_size
-        || st.st_size != sizeof(shm_data_t))
+    else if (0 == st.st_size)
+    {
+        return _shm_creat(path, size);  /* 创建 */
+    }
+    else if (st.st_size != sizeof(shm_data_t))
     {
         return NULL;
     }
 
-    return shm_attach(path, size);   /* 附着 */
+    return shm_at_or_creat(path, size);  /* 附着 */
 }
 
 /******************************************************************************
- **函数名称: shm_creat_ex
+ **函数名称: shm_creat_by_key
  **功    能: 创建共享内存
  **输入参数: 
  **     key: KEY值
@@ -124,7 +157,7 @@ void *shm_creat(const char *path, size_t size)
  **     SHMMAX的默认值为32MB, 可在/proc/sys/kernel/shmmax中查看到SHMMAX的值
  **作    者: # Qifeng.zou # 2014.09.08 #
  ******************************************************************************/
-static void *shm_creat_ex(int key, size_t size)
+void *shm_creat_by_key(int key, size_t size)
 {
     int shmid;
     void *addr;
@@ -158,8 +191,6 @@ static void *shm_creat_ex(int key, size_t size)
 
     memset(addr, 0, size);
 
-    shmctl(shmid, IPC_RMID, NULL);
-
     return addr;
 }
 
@@ -177,23 +208,14 @@ static void *shm_creat_ex(int key, size_t size)
  ******************************************************************************/
 void *shm_attach(const char *path, size_t size)
 {
-    FILE *fp;
-    int shmid;
     void *addr;
     shm_data_t shm;
 
-    memset(&shm, 0, sizeof(shm));
-
     /* 加载SHM数据 */
-    fp = fopen(path, "r");
-    if (NULL == fp)
+    if (shm_read(path, &shm))
     {
         return NULL;
     }
-
-    fread(&shm, sizeof(shm), 1, fp);
-
-    fclose(fp);
 
     /* 验证合法性 */
     if (SHM_DATA_INVALID(&shm)
@@ -202,21 +224,14 @@ void *shm_attach(const char *path, size_t size)
         return NULL;
     }
  
-    /* > 判断是否已经创建 */
-    shmid = shmget(shm.key, 0, 0666);
-    if (shmid < 0)
-    {
-        return NULL;
-    }
-
     /* > 已创建: 直接附着 */
-    addr = shmat(shmid, NULL, 0);
+    addr = shmat(shm.shmid, NULL, 0);
     if ((void *)-1 == addr)
     {
         return NULL;
     }
 
-    shmctl(shmid, IPC_RMID, NULL);
+    shmctl(shm.shmid, IPC_RMID, NULL);
 
     return addr;
 }
@@ -232,7 +247,7 @@ void *shm_attach(const char *path, size_t size)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.22 #
  ******************************************************************************/
-static void *shm_attach_ex(key_t key, size_t size)
+void *shm_attach_by_key(key_t key, size_t size)
 {
     int shmid;
     void *addr;
@@ -251,7 +266,51 @@ static void *shm_attach_ex(key_t key, size_t size)
         return NULL;
     }
 
-    //shmctl(shmid, IPC_RMID, NULL);
+    return addr;
+}
+
+/******************************************************************************
+ **函数名称: shm_at_or_creat
+ **功    能: 附着共享内存
+ **输入参数: 
+ **     path: 共享内存路径
+ **     size: 共享内存大小(0: 默认值)
+ **输出参数: NONE
+ **返    回: 内存地址
+ **实现描述: 从文件中读取共享内存数据, 再附着到指定共享内存!
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.06.06 #
+ ******************************************************************************/
+static void *shm_at_or_creat(const char *path, size_t size)
+{
+    void *addr;
+    shm_data_t shm;
+
+    /* 加载SHM数据 */
+    if (shm_read(path, &shm))
+    {
+        return NULL;
+    }
+
+    /* 验证合法性 */
+    if (SHM_DATA_INVALID(&shm)
+        || ((0 != size) && (shm.size != size)))
+    {
+        return NULL;
+    }
+ 
+    /* > 直接附着 */
+    addr = shmat(shm.shmid, NULL, 0);
+    if ((void *)-1 == addr)
+    {
+        if (EINVAL == errno)
+        {
+            return _shm_creat(path, size); /* 未创建 */
+        }
+        return NULL;
+    }
+
+    shmctl(shm.shmid, IPC_RMID, NULL);
 
     return addr;
 }

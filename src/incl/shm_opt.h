@@ -7,18 +7,22 @@
 /* SHM数据 */
 typedef struct
 {
-    key_t key;                  /* KEY值 */
-    size_t size;                /* 总大小 */
+    int shmid;                  /* ID */
+    size_t size;                /* 空间 */
 #define SHM_CHECK_SUM   (0x12345678)
     int checksum;               /* 校验值 */
 } shm_data_t;
 
 #define SHM_DATA_INVALID(shm)     /* 验证合法性 */\
-    ((0 == (shm)->key) \
-        || (0 == (shm)->size) \
+    ((0 == (shm)->size) \
+        || (0 == (shm)->shmid) \
+        || (-1 == (shm)->shmid) \
         || (SHM_CHECK_SUM != (shm)->checksum))
 
 key_t shm_ftok(const char *path, int id);
+void *shm_creat_by_key(int key, size_t size);
+void *shm_attach_by_key(key_t key, size_t size);
+
 void *shm_creat(const char *path, size_t size);
 void *shm_attach(const char *path, size_t size);
 
