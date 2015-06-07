@@ -256,7 +256,6 @@ static int rtsd_worker_cmd_proc_req_hdl(rtsd_cntx_t *ctx, rttp_worker_t *wrk, co
         addr = queue_pop(rq);
         if (NULL == addr)
         {
-            log_trace(wrk->log, "Didn't get data from queue!");
             return RTTP_OK;
         }
 

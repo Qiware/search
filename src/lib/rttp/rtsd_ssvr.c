@@ -437,6 +437,7 @@ static int rtsd_ssvr_kpalive_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
     head = (rttp_header_t *)addr;
 
     head->type = RTTP_KPALIVE_REQ;
+    head->devid = ctx->conf.auth.devid;
     head->length = 0;
     head->flag = RTTP_SYS_MESG;
     head->checksum = RTTP_CHECK_SUM;
@@ -799,7 +800,7 @@ static int rtsd_ssvr_fill_send_buff(rtsd_ssvr_t *ssvr, rtsd_sck_t *sck)
         head = (rttp_header_t *)list_lpop(ssvr->sck.mesg_list);
         if (NULL == head)
         {
-            return (send->iptr - send->optr);
+            break; /* 无数据 */
         }
 
         /* 2. 判断剩余空间 */
@@ -818,6 +819,7 @@ static int rtsd_ssvr_fill_send_buff(rtsd_ssvr_t *ssvr, rtsd_sck_t *sck)
 
         /* 3. 取发送的数据 */
         head->type = htons(head->type);
+        head->devid = htonl(head->devid);
         head->flag = head->flag;
         head->length = htonl(head->length);
         head->checksum = htonl(head->checksum);
@@ -826,6 +828,9 @@ static int rtsd_ssvr_fill_send_buff(rtsd_ssvr_t *ssvr, rtsd_sck_t *sck)
         memcpy(send->iptr, (void *)head, mesg_len);
 
         send->iptr += mesg_len;
+
+        /* > 释放空间 */
+        slab_dealloc(ssvr->pool, (void *)head);
     }
 
     /* > 从发送队列取数据 */
@@ -856,6 +861,7 @@ static int rtsd_ssvr_fill_send_buff(rtsd_ssvr_t *ssvr, rtsd_sck_t *sck)
         /* 4. 设置发送数据 */
         head->type = htons(head->type);
         head->flag = head->flag;
+        head->devid = htonl(head->devid);
         head->length = htonl(head->length);
         head->checksum = htonl(head->checksum);
 
@@ -863,6 +869,9 @@ static int rtsd_ssvr_fill_send_buff(rtsd_ssvr_t *ssvr, rtsd_sck_t *sck)
         memcpy(send->iptr, (void *)head, mesg_len);
 
         send->iptr += mesg_len;
+
+        /* > 释放空间 */
+        shm_queue_dealloc(ssvr->sendq, (void *)head);
     }
 
     return (send->iptr - send->optr);
@@ -937,62 +946,6 @@ static int rtsd_ssvr_send_data(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
         rttp_snap_reset(send);
     }
 
-    return RTTP_OK;
-}
-
-/******************************************************************************
- **函数名称: rtsd_ssvr_send_data
- **功    能: 发送扩展消息
- **输入参数:
- **     ctx: 全局信息
- **     ssvr: 发送服务
- **输出参数:
- **返    回: 0:成功 !0:失败
- **实现描述:
- **     1. 发送缓存数据
- **     2. 重置标识量
- **注意事项:
- **       ------------------------------------------------
- **      | 已发送 |     待发送     |       剩余空间       |
- **       ------------------------------------------------
- **      |XXXXXXXX|////////////////|                      |
- **      |XXXXXXXX|////////////////|         left         |
- **      |XXXXXXXX|////////////////|                      |
- **       ------------------------------------------------
- **      ^        ^                ^                      ^
- **      |        |                |                      |
- **     addr     optr             iptr                   end
- **作    者: # Qifeng.zou # 2015.01.14 #
- ******************************************************************************/
-static int rtsd_ssvr_send_exp_data(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
-{
-    int n, len;
-    rtsd_sck_t *sck = &ssvr->sck;
-    rttp_snap_t *send = &sck->send;
-
-    sck->wrtm = time(NULL);
-
-    /* > 发送缓存数据 */
-    len = send->iptr - send->optr;
-
-    n = Writen(sck->fd, send->optr, len);
-    if (n < 0)
-    {
-        log_error(ssvr->log, "errmsg:[%d] %s! fd:%d len:[%d]",
-                errno, strerror(errno), sck->fd, len);
-        CLOSE(sck->fd);
-        rttp_snap_reset(send);
-        return RTTP_ERR;
-    }
-    /* 只发送了部分数据 */
-    else if (n != len)
-    {
-        send->optr += n;
-        return RTTP_OK;
-    }
-
-    /* > 重置标识量 */
-    rttp_snap_reset(send);
     return RTTP_OK;
 }
 
@@ -1174,7 +1127,7 @@ static int rttp_link_auth_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
     if (list_rpush(sck->mesg_list, addr))
     {
         slab_dealloc(ssvr->pool, addr);
-        log_error(ssvr->log, "Alloc memory from slab failed!");
+        log_error(ssvr->log, "Insert mesg list failed!");
         return RTTP_ERR;
     }
 
