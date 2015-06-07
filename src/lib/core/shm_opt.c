@@ -3,8 +3,19 @@
 
 static void *shm_at_or_creat(const char *path, size_t size);
 
-/* 读取SHM数据 */
-static int shm_read(const char *path, shm_data_t *shm)
+/******************************************************************************
+ **函数名称: shm_data_reat
+ **功    能: 读取SHM数据
+ **输入参数: 
+ **     path: 共享内存路径
+ **输出参数:
+ **     shm: 共享内存数据
+ **返    回: 0:成功 !0:失败
+ **实现描述: 读取文件中存储的共享内存数据
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.06.06 #
+ ******************************************************************************/
+static int shm_data_read(const char *path, shm_data_t *shm)
 {
     FILE *fp;
 
@@ -21,8 +32,19 @@ static int shm_read(const char *path, shm_data_t *shm)
     return 0;
 }
 
-/* 写入SHM数据 */
-static int shm_write(const char *path, shm_data_t *shm)
+/******************************************************************************
+ **函数名称: shm_data_write
+ **功    能: 写入SHM数据
+ **输入参数: 
+ **     path: 共享内存路径
+ **     shm: 共享内存数据
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 将共享内存数据写入文件
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.06.06 #
+ ******************************************************************************/
+static int shm_data_write(const char *path, shm_data_t *shm)
 {
     FILE *fp;
 
@@ -99,7 +121,7 @@ static void *_shm_creat(const char *path, size_t size)
     shmctl(shm.shmid, IPC_RMID, NULL);
 
     /* 写入SHM数据 */
-    shm_write(path, &shm);
+    shm_data_write(path, &shm);
 
     return addr;
 }
@@ -212,7 +234,7 @@ void *shm_attach(const char *path, size_t size)
     shm_data_t shm;
 
     /* 加载SHM数据 */
-    if (shm_read(path, &shm))
+    if (shm_data_read(path, &shm))
     {
         return NULL;
     }
@@ -287,7 +309,7 @@ static void *shm_at_or_creat(const char *path, size_t size)
     shm_data_t shm;
 
     /* 加载SHM数据 */
-    if (shm_read(path, &shm))
+    if (shm_data_read(path, &shm))
     {
         return NULL;
     }
