@@ -109,7 +109,11 @@ log_cycle_t *agentd_init_log(char *fname)
 void *agentd_dist_routine(void *_ctx)
 {
     void *addr;
+#if defined(__RTTP_SUPPORT__)
+    rttp_header_t *head;
+#else /*__RTTP_SUPPORT__*/
     sdtp_header_t *head;
+#endif /*__RTTP_SUPPORT__*/
     mesg_search_rep_t *rep;
     agentd_cntx_t *ctx = (agentd_cntx_t *)_ctx;
 
@@ -124,7 +128,11 @@ void *agentd_dist_routine(void *_ctx)
         }
 
         /* > 获取发送队列 */
+    #if defined(__RTTP_SUPPORT__)
+        head = (rttp_header_t *)addr;
+    #else /*__RTTP_SUPPORT__*/
         head = (sdtp_header_t *)addr;
+    #endif /*__RTTP_SUPPORT__*/
         rep = (mesg_search_rep_t *)(head + 1);
 
         log_debug(ctx->log, "Call %s()! type:%d len:%d", __func__, head->type, head->length);

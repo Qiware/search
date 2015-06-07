@@ -125,10 +125,17 @@ static int agentd_proc_lock(void)
 }
 
 /* 初始化SDTP对象 */
+#if defined(__RTTP_SUPPORT__)
+static rtsd_cli_t *agentd_to_invtd_init(rtsd_conf_t *conf, log_cycle_t *log)
+{
+    return rtsd_cli_init(conf, 0, log);
+}
+#else /*__RTTP_SUPPORT__*/
 static sdsd_cli_t *agentd_to_invtd_init(sdsd_conf_t *conf, log_cycle_t *log)
 {
     return sdsd_cli_init(conf, 0, log);
 }
+#endif /*__RTTP_SUPPORT__*/
 
 /******************************************************************************
  **函数名称: agentd_search_req_hdl
@@ -160,7 +167,11 @@ static int agentd_search_req_hdl(unsigned int type, void *data, int length, void
     req.serial = flow->serial;
     memcpy(&req.body, body, sizeof(srch_mesg_body_t));
 
+#if defined(__RTTP_SUPPORT__)
+    return rtsd_cli_send(ctx->send_to_invtd, type, &req, sizeof(req));
+#else /*__RTTP_SUPPORT__*/
     return sdsd_cli_send(ctx->send_to_invtd, type, &req, sizeof(req));
+#endif /*__RTTP_SUPPORT__*/
 }
 
 /******************************************************************************
@@ -203,7 +214,11 @@ static agentd_cntx_t *agentd_init(char *pname, const char *path)
     agentd_cntx_t *ctx;
     agentd_conf_t *conf;
     agent_cntx_t *agent;
+#if defined(__RTTP_SUPPORT__)
+    rtsd_cli_t *send_to_invtd;
+#else /*__RTTP_SUPPORT__*/
     sdsd_cli_t *send_to_invtd;
+#endif /*__RTTP_SUPPORT__*/
 
     /* > 加进程锁 */
     if (agentd_proc_lock())

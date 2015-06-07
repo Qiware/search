@@ -17,7 +17,11 @@ static int agentd_conf_parse(xml_tree_t *xml, agent_conf_t *conf, log_cycle_t *l
 
 static int agentd_conf_load_comm(xml_tree_t *xml, agentd_conf_t *conf, log_cycle_t *log);
 static int agentd_conf_load_agent(xml_tree_t *xml, agent_conf_t *conf, log_cycle_t *log);
+#if defined(__RTTP_SUPPORT__)
+static int agentd_conf_load_sdtp(xml_tree_t *xml, rtsd_conf_t *conf, log_cycle_t *log);
+#else /*__RTTP_SUPPORT__*/
 static int agentd_conf_load_sdtp(xml_tree_t *xml, sdsd_conf_t *conf, log_cycle_t *log);
+#endif /*__RTTP_SUPPORT__*/
 
 /* 加载配置信息 */
 agentd_conf_t *agentd_load_conf(const char *path, log_cycle_t *log)
@@ -271,9 +275,17 @@ static int agentd_conf_load_agent(xml_tree_t *xml, agent_conf_t *conf, log_cycle
 }
 
 /* 加载SDTP配置 */
+#if defined(__RTTP_SUPPORT__)
+static int agentd_conf_load_sdtp(xml_tree_t *xml, rtsd_conf_t *conf, log_cycle_t *log)
+#else /*__RTTP_SUPPORT__*/
 static int agentd_conf_load_sdtp(xml_tree_t *xml, sdsd_conf_t *conf, log_cycle_t *log)
+#endif /*__RTTP_SUPPORT__*/
 {
+#if defined(__RTTP_SUPPORT__)
+    memset(conf, 0, sizeof(rtsd_conf_t));
+#else /*__RTTP_SUPPORT__*/
     memset(conf, 0, sizeof(sdsd_conf_t));
+#endif /*__RTTP_SUPPORT__*/
 
     snprintf(conf->name, sizeof(conf->name), "SDTP-SEND");
 

@@ -11,10 +11,11 @@ include $(PROJ)/make/build.mak
 INCLUDE = -I./incl \
 			-I$(PROJ)/src/incl \
 			-I$(PROJ)/src/incl/sdtp \
+			-I$(PROJ)/src/incl/rttp \
 			-I$(PROJ)/src/incl/agent
 
 LIBS_PATH = -L$(PROJ)/lib
-LIBS = -lpthread -lxd_core -lsdtp
+LIBS = -lpthread -lxd_core -lsdtp -lrttp
 
 SRC_LIST = frwd_main.c
 

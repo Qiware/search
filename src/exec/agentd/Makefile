@@ -11,9 +11,10 @@ include $(PROJ)/make/build.mak
 INCLUDE = -I./incl \
 			-I$(PROJ)/src/incl \
 			-I$(PROJ)/src/incl/sdtp \
+			-I$(PROJ)/src/incl/rttp \
 			-I$(PROJ)/src/incl/agent
 LIBS_PATH = -L$(PROJ)/lib
-LIBS = -lxd_agent -lxd_core -lsdtp
+LIBS = -lxd_agent -lxd_core -lsdtp -lrttp
 
 SRC_LIST = agentd.c \
 			agentd_comm.c \

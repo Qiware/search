@@ -2,7 +2,11 @@
 #define __INVERTD_H__
 
 #include "log.h"
+#if defined(__RTTP_SUPPORT__)
+#include "rtrd_recv.h"
+#else /*__RTTP_SUPPORT__*/
 #include "sdrd_recv.h"
+#endif /*__RTTP_SUPPORT__*/
 #include "invtd_conf.h"
 #include "invert_tab.h"
 
@@ -13,8 +17,13 @@ typedef struct
 
     log_cycle_t *log;                       /* 日志对象 */
     invt_tab_t *tab;                        /* 倒排表 */
+#if defined(__RTTP_SUPPORT__)
+    rtrd_cntx_t *sdrd;                      /* SDRD服务 */
+    rtrd_cli_t *sdrd_cli;                   /* SDRD客户端 */
+#else /*__RTTP_SUPPORT__*/
     sdrd_cntx_t *sdrd;                      /* SDRD服务 */
     sdrd_cli_t *sdrd_cli;                   /* SDRD客户端 */
+#endif /*__RTTP_SUPPORT__*/
 } invtd_cntx_t;
 
 /* 输入参数 */
