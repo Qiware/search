@@ -13,15 +13,6 @@
 #define rtsd_worker_usck_path(conf, path, tidx) \
     snprintf(path, sizeof(path), "../temp/sdtp/send/%s/usck/%s_swrk_%d.usck", conf->name, conf->name, tidx+1)
 
-/* 发送类型 */
-typedef enum
-{
-    RTTP_SNAP_SHOT_SYS_DATA
-    , RTTP_SNAP_SHOT_EXP_DATA 
-
-    , RTTP_SNAP_SHOT_TOTAL
-} rttp_send_snap_e;
-
 /* 套接字信息 */
 typedef struct
 {
@@ -39,8 +30,7 @@ typedef struct
     list_t *mesg_list;                  /* 发送链表 */
 
     rttp_snap_t recv;                   /* 接收快照 */
-    rttp_send_snap_e send_type;         /* 发送类型(系统数据或自定义数据) */
-    rttp_snap_t send[RTTP_SNAP_SHOT_TOTAL];  /* 发送快照 */
+    rttp_snap_t send;                   /* 发送快照 */
 } rtsd_sck_t;
 
 #define rttp_set_kpalive_stat(sck, _stat) (sck)->kpalive = (_stat)

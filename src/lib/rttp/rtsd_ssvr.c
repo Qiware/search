@@ -47,7 +47,7 @@ int rtsd_ssvr_init(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, int tidx)
     list_opt_t opt;
     rtsd_conf_t *conf = &ctx->conf;
     rttp_snap_t *recv = &ssvr->sck.recv;
-    rttp_snap_t *send = &ssvr->sck.send[RTTP_SNAP_SHOT_SYS_DATA];
+    rttp_snap_t *send = &ssvr->sck.send;
 
     ssvr->tidx = tidx;
     ssvr->log = ctx->log;
@@ -257,7 +257,6 @@ static void rtsd_ssvr_bind_cpu(rtsd_cntx_t *ctx, int tidx)
  ******************************************************************************/
 void rtsd_ssvr_set_rwset(rtsd_ssvr_t *ssvr)
 {
-    int idx;
     rttp_snap_t *snap;
 
     FD_ZERO(&ssvr->rset);
@@ -282,14 +281,11 @@ void rtsd_ssvr_set_rwset(rtsd_ssvr_t *ssvr)
         return;
     }
 
-    snap = &ssvr->sck.send[RTTP_SNAP_SHOT_SYS_DATA];
-    for (idx=0; idx<RTTP_SNAP_SHOT_TOTAL; ++idx, ++snap)
+    snap = &ssvr->sck.send;
+    if (snap->iptr != snap->optr)
     {
-        if (snap->iptr != snap->optr)
-        {
-            FD_SET(ssvr->sck.fd, &ssvr->wset);
-            return;
-        }
+        FD_SET(ssvr->sck.fd, &ssvr->wset);
+        return;
     }
 
     return;
@@ -418,7 +414,7 @@ static int rtsd_ssvr_kpalive_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
     rttp_header_t *head;
     int size = sizeof(rttp_header_t);
     rtsd_sck_t *sck = &ssvr->sck;
-    rttp_snap_t *send = &ssvr->sck.send[RTTP_SNAP_SHOT_SYS_DATA];
+    rttp_snap_t *send = &ssvr->sck.send;
 
     /* 1. 上次发送保活请求之后 仍未收到应答 */
     if ((sck->fd < 0)
@@ -794,7 +790,7 @@ static int rtsd_ssvr_fill_send_buff(rtsd_ssvr_t *ssvr, rtsd_sck_t *sck)
 {
     uint32_t left, mesg_len;
     rttp_header_t *head;
-    rttp_snap_t *send = &sck->send[RTTP_SNAP_SHOT_SYS_DATA];
+    rttp_snap_t *send = &sck->send;
 
     /* > 从消息链表取数据 */
     for (;;)
@@ -897,11 +893,11 @@ static int rtsd_ssvr_fill_send_buff(rtsd_ssvr_t *ssvr, rtsd_sck_t *sck)
  **     addr     optr             iptr                   end
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static int rtsd_ssvr_send_sys_data(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
+static int rtsd_ssvr_send_data(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
 {
     int n, len;
     rtsd_sck_t *sck = &ssvr->sck;
-    rttp_snap_t *send = &sck->send[RTTP_SNAP_SHOT_SYS_DATA];
+    rttp_snap_t *send = &sck->send;
 
     sck->wrtm = time(NULL);
 
@@ -972,7 +968,7 @@ static int rtsd_ssvr_send_exp_data(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
 {
     int n, len;
     rtsd_sck_t *sck = &ssvr->sck;
-    rttp_snap_t *send = &sck->send[RTTP_SNAP_SHOT_EXP_DATA];
+    rttp_snap_t *send = &sck->send;
 
     sck->wrtm = time(NULL);
 
@@ -998,29 +994,6 @@ static int rtsd_ssvr_send_exp_data(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
     /* > 重置标识量 */
     rttp_snap_reset(send);
     return RTTP_OK;
-}
-
-/******************************************************************************
- **函数名称: rtsd_ssvr_send_data
- **功    能: 发送数据的请求处理
- **输入参数:
- **     ctx: 全局信息
- **     ssvr: 发送服务
- **输出参数:
- **返    回: 0:成功 !0:失败
- **实现描述:
- **作    者: # Qifeng.zou # 2015.04.11 #
- ******************************************************************************/
-static int rtsd_ssvr_send_data(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
-{
-    rtsd_sck_t *sck = &ssvr->sck;
-
-    if (RTTP_SNAP_SHOT_SYS_DATA == sck->send_type)
-    {
-        return rtsd_ssvr_send_sys_data(ctx, ssvr);
-    }
-
-    return rtsd_ssvr_send_exp_data(ctx, ssvr);
 }
 
 /******************************************************************************
