@@ -20,6 +20,9 @@ static int mm_agentd_creat_sendq(void);
 /* 主函数 */
 int main(int argc, char *argv[])
 {
+    daemon(1, 1); /* 切后台运行 */
+
+    /* > 创建Agentd发送队列 */
     if (mm_agentd_creat_sendq())
     {
         fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
