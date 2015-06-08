@@ -196,13 +196,13 @@ static int mon_agent_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void 
  ******************************************************************************/
 static int mon_agent_multi_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args)
 {
+    int *fd;
     time_t ctm;
     fd_set rdset;
     agent_header_t head;
     srch_mesg_body_t body;
     int ret, idx, max, num;
     struct timeval timeout;
-    int fd[AGENT_CLIENT_NUM];
     char digit[256], word[1024];
     mon_cntx_t *ctx = (mon_cntx_t *)args;
 
@@ -215,6 +215,7 @@ static int mon_agent_multi_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu,
     scanf(" %s", digit);
 
     num = atoi(digit);
+    fd = (int *)calloc(num, sizeof(int));
 
     /* > 连接代理服务 */
     for (idx=0; idx<num; ++idx)
@@ -225,6 +226,7 @@ static int mon_agent_multi_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu,
             fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
             break;
         }
+
         fprintf(stdout, "    idx:%d fd:%d!\n", idx, fd[idx]);
 
         head.type = htonl(MSG_SEARCH_REQ);
@@ -239,6 +241,8 @@ static int mon_agent_multi_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu,
 
         ctm = time(NULL);
     }
+
+    num = idx;
 
     /* 等待应答数据 */
     while (1)
@@ -271,10 +275,14 @@ static int mon_agent_multi_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu,
 
         for (idx=0; idx<num; ++idx)
         {
-            if (FD_ISSET(fd[idx], &rdset))
+            if (fd[idx] <= 0)
+            {
+                continue;
+            }
+            else if (FD_ISSET(fd[idx], &rdset))
             {
                 mon_agent_search_rep_hdl(fd[idx]);
-                fprintf(stderr, "    Spend: %lu(s)\n", time(NULL) - ctm);
+                fprintf(stderr, "    fd:%d Spend: %lu(s)\n", fd[idx], time(NULL) - ctm);
                 CLOSE(fd[idx]);
             }
         }
@@ -282,8 +290,13 @@ static int mon_agent_multi_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu,
 
     for (idx=0; idx<num; ++idx)
     {
-        CLOSE(fd[idx]);
+        if (fd[idx] > 0)
+        {
+            CLOSE(fd[idx]);
+        }
     }
+
+    free(fd);
 
     return 0;
 }
@@ -303,7 +316,7 @@ static int mon_agent_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *arg
 {
     char digit[256];
     int idx, num, max;
-    int fd[AGENT_CLIENT_NUM];
+    int *fd;
     mon_cntx_t *ctx = (mon_cntx_t *)args;
 
     /* > 输入最大连接数 */
@@ -311,6 +324,7 @@ static int mon_agent_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *arg
     scanf(" %s", digit);
 
     max = atoi(digit);
+    fd = (int *)calloc(max, sizeof(int));
 
     /* > 连接代理服务 */
     num = 0;
@@ -363,6 +377,8 @@ static int mon_agent_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *arg
     {
         CLOSE(fd[idx]);
     }
+
+    free(fd);
 
     return 0;
 }
