@@ -66,8 +66,8 @@ rtrd_cntx_t *rtrd_init(const rtrd_conf_t *conf, log_cycle_t *log)
     /* > 初始化接收端 */
     if (_rtrd_init(ctx))
     {
+        log_error(ctx->log, "Initialize recv-daemon of rttp failed!");
         FREE(ctx);
-        log_error(ctx->log, "Initialize recv failed!");
         return NULL;
     }
 
