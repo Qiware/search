@@ -28,9 +28,6 @@ typedef struct
     u_char *start;
     u_char *end;
 
-    void *data;
-    void *addr;
-
     spinlock_t lock;                  /* 内存锁 */
 } slab_pool_t;
 
