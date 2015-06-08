@@ -9,8 +9,15 @@
 
 #include "shm_queue.h"
 
-#define QUEUE_LEN       (16)
+#define QUEUE_LEN       (8192)
 #define QUEUE_SIZE      (1024)
+#define QUEUE_CHECK_SUM (0x12345678)
+
+typedef struct
+{
+    int check;         /* 校验值 */
+} queue_header_t;
+
 
 /* 初始化日志模块 */
 log_cycle_t *demo_init_log(const char *_path)
@@ -42,6 +49,8 @@ int main(int argc, char *argv[])
     int i;
     log_cycle_t *log;
     shm_queue_t *queue;
+    queue_header_t *head;
+    char path[FILE_PATH_MAX_LEN];
     void *addr[QUEUE_LEN], *addr2[QUEUE_LEN];
 
     /* > 初始化日志模块 */
@@ -52,7 +61,9 @@ int main(int argc, char *argv[])
     }
 
     /* > 创建共享内存队列 */
-    queue = shm_queue_creat(basename(argv[0]), QUEUE_LEN, QUEUE_SIZE);
+    snprintf(path, sizeof(path), "%s.key", basename(argv[0]));
+
+    queue = shm_queue_creat(path, QUEUE_LEN, QUEUE_SIZE);
     if (NULL == queue)
     {
         fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
@@ -66,6 +77,10 @@ int main(int argc, char *argv[])
     {
         addr[i] = shm_queue_malloc(queue);
 
+        head = (queue_header_t *)addr[i];
+
+        head->check = QUEUE_CHECK_SUM;
+
         shm_queue_push(queue, addr[i]);
     }
 
@@ -75,6 +90,12 @@ int main(int argc, char *argv[])
         if (addr[i] != addr2[i])
         {
             assert(0);
+        }
+
+        head = (queue_header_t *)addr2[i];
+        if (QUEUE_CHECK_SUM != head->check)
+        {
+            abort();
         }
 
         shm_queue_dealloc(queue, addr2[i]);
