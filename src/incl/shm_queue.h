@@ -4,6 +4,9 @@
 #include "shm_ring.h"
 #include "shm_slot.h"
 
+#define SHMQ_MPUSH_MAX_NUM  (512)   /* 一次最大压入条数 */
+#define SHMQ_MPOP_MAX_NUM   (512)   /* 一次最大弹出条数 */
+
 /* 队列对象 */
 typedef struct
 {
@@ -16,7 +19,9 @@ shm_queue_t *shm_queue_attach(const char *path);
 #define shm_queue_malloc(shmq) shm_slot_alloc((shmq)->slot)
 #define shm_queue_dealloc(shmq, p) shm_slot_dealloc((shmq)->slot, p)
 int shm_queue_push(shm_queue_t *shmq, void *p);
+int shm_queue_mpush(shm_queue_t *shmq, void **p, int num);
 void *shm_queue_pop(shm_queue_t *shmq);
+int shm_queue_mpop(shm_queue_t *shmq, void **p, int _num);
 
 #define shm_queue_print(shmq) shm_ring_print((shmq)->ring)
 #define shm_queue_size(shmq) shm_slot_get_size((shmq)->slot)

@@ -164,6 +164,41 @@ int shm_queue_push(shm_queue_t *shmq, void *p)
 }
 
 /******************************************************************************
+ **函数名称: shm_queue_mpush
+ **功    能: 压入多条数据
+ **输入参数:
+ **     shmq: 共享内存队列
+ **     p: 内存地址数组
+ **     num: 数组长度
+ **输出参数:
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 1. 内存地址p必须是从shm_queue_malloc()分配的，否则会出严重错误！
+ **          2. 一次最大压入数据不能超过SHMQ_MPUSH_MAX_NUM个数
+ **作    者: # Qifeng.zou # 2014.06.08 10:58:11 #
+ ******************************************************************************/
+int shm_queue_mpush(shm_queue_t *shmq, void **p, int num)
+{
+    int idx;
+    off_t off[SHMQ_MPUSH_MAX_NUM];
+
+    memset(off, 0, sizeof(off));
+
+    if (NULL == p) { return -1; }
+    if (num > SHMQ_MPUSH_MAX_NUM)
+    {
+        return -1;
+    }
+
+    for (idx=0; idx<num; ++idx)
+    {
+        off[idx] = (off_t)(p[idx] - (void *)shmq->ring);
+    }
+
+    return shm_ring_mpush(shmq->ring, off, num);
+}
+
+/******************************************************************************
  **函数名称: shm_queue_pop
  **功    能: 出队列
  **输入参数:
@@ -185,4 +220,35 @@ void *shm_queue_pop(shm_queue_t *shmq)
     }
 
     return (void *)shmq->ring + off;
+}
+
+/******************************************************************************
+ **函数名称: shm_queue_mpop
+ **功    能: 弹出多个数据
+ **输入参数:
+ **     shmq: 共享内存队列
+ **输出参数: NONE
+ **返    回: 实际数据条数
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.06.08 11:07:45 #
+ ******************************************************************************/
+int shm_queue_mpop(shm_queue_t *shmq, void **p, int _num)
+{
+    int num, idx;
+    off_t off[SHMQ_MPUSH_MAX_NUM];
+
+    num = (_num > SHMQ_MPUSH_MAX_NUM)? SHMQ_MPUSH_MAX_NUM : _num;
+
+    if (shm_ring_mpop(shmq->ring, off, num))
+    {
+        return 0;
+    }
+
+    for (idx=0; idx<num; ++num)
+    {
+        p[idx] = (void *)((void *)shmq->ring + off[idx]);
+    }
+
+    return num;
 }
