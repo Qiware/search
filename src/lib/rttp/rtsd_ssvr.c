@@ -29,6 +29,9 @@ static int rtsd_ssvr_kpalive_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr);
 static int rttp_link_auth_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr);
 static int rttp_link_auth_rep_hdl(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, rtsd_sck_t *sck, rttp_link_auth_rep_t *rep);
 
+static int rtsd_ssvr_cmd_proc_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, int rqid);
+static int rtsd_ssvr_cmd_proc_all_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr);
+
 /******************************************************************************
  **函数名称: rtsd_ssvr_init
  **功    能: 初始化发送线程
@@ -847,7 +850,7 @@ static int rtsd_ssvr_fill_send_buff(rtsd_ssvr_t *ssvr, rtsd_sck_t *sck)
         head = (rttp_header_t *)shm_queue_pop(ssvr->sendq);
         if (NULL == head)
         {
-            return (send->iptr - send->optr);
+            break;
         }
 
         /* 3. 校验合法性 */
@@ -1033,7 +1036,6 @@ static int rtsd_ssvr_exp_mesg_proc(
         rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, rtsd_sck_t *sck, void *addr)
 {
     void *data;
-    int *num;
     int idx, len;
     rttp_header_t *head = (rttp_header_t *)addr;
 
@@ -1043,7 +1045,7 @@ static int rtsd_ssvr_exp_mesg_proc(
 
     /* > 验证长度 */
     len = RTTP_DATA_TOTAL_LEN(head);
-    if ((int)(len + sizeof(int)) > queue_size(ctx->recvq[0]))
+    if ((int)len > queue_size(ctx->recvq[0]))
     {
         ++ssvr->drop_total;
         log_error(ctx->log, "Data is too long! len:%d drop:%lu total:%lu",
@@ -1062,9 +1064,7 @@ static int rtsd_ssvr_exp_mesg_proc(
     }
 
     /* > 放入队列 */
-    num = (int *)data;
-    *num = 1; /* 放入一条数据 */
-    memcpy(data+sizeof(int), addr, len);
+    memcpy(data, addr, len);
 
     if (queue_push(ctx->recvq[idx], data))
     {
@@ -1074,6 +1074,8 @@ static int rtsd_ssvr_exp_mesg_proc(
         queue_dealloc(ctx->recvq[idx], data);
         return RTTP_ERR;
     }
+
+    rtsd_ssvr_cmd_proc_req(ctx, ssvr, idx);    /* 发送处理请求 */
 
     return RTTP_OK;
 }
@@ -1153,4 +1155,67 @@ static int rttp_link_auth_rep_hdl(rtsd_cntx_t *ctx,
         rtsd_ssvr_t *ssvr, rtsd_sck_t *sck, rttp_link_auth_rep_t *rep)
 {
     return ntohl(rep->is_succ)? RTTP_OK : RTTP_ERR;
+}
+
+/******************************************************************************
+ **函数名称: rtsd_ssvr_cmd_proc_req
+ **功    能: 发送处理请求
+ **输入参数:
+ **     ctx: 全局对象
+ **     ssvr: 接收服务
+ **     rqid: 队列ID
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述:
+ **注意事项:
+ **作    者: # Qifeng.zou # 2015.06.08 #
+ ******************************************************************************/
+static int rtsd_ssvr_cmd_proc_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, int rqid)
+{
+    rttp_cmd_t cmd;
+    char path[FILE_PATH_MAX_LEN];
+    rtsd_conf_t *conf = &ctx->conf;
+    rttp_cmd_proc_req_t *req = (rttp_cmd_proc_req_t *)&cmd.args;
+
+    cmd.type = RTTP_CMD_PROC_REQ;
+    req->ori_svr_tidx = ssvr->tidx;
+    req->num = -1;
+    req->rqidx = rqid;
+
+    /* > 获取Worker路径 */
+    rtsd_worker_usck_path(conf, path, rqid);
+
+    /* > 发送处理命令 */
+    if (unix_udp_send(ssvr->cmd_sck_id, path, &cmd, sizeof(rttp_cmd_t)) < 0)
+    {
+        log_debug(ssvr->log, "Send command failed! errmsg:[%d] %s! path:[%s]",
+                errno, strerror(errno), path);
+        return RTTP_ERR;
+    }
+
+    return RTTP_OK;
+}
+
+/******************************************************************************
+ **函数名称: rtsd_ssvr_cmd_proc_all_req
+ **功    能: 发送处理请求
+ **输入参数:
+ **     ctx: 全局对象
+ **     ssvr: 接收服务
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 遍历所有接收队列, 并发送处理请求
+ **注意事项:
+ **作    者: # Qifeng.zou # 2015.06.08 #
+ ******************************************************************************/
+static int rtsd_ssvr_cmd_proc_all_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
+{
+    int idx;
+
+    for (idx=0; idx<ctx->conf.send_thd_num; ++idx)
+    {
+        rtsd_ssvr_cmd_proc_req(ctx, ssvr, idx);
+    }
+
+    return RTTP_OK;
 }

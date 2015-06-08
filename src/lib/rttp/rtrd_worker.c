@@ -15,8 +15,8 @@
 
 /* 静态函数 */
 static rttp_worker_t *rtrd_worker_get_curr(rtrd_cntx_t *ctx);
-static int rtrd_worker_event_core_hdl(rtrd_cntx_t *ctx, rttp_worker_t *wrk);
-static int rtrd_worker_cmd_proc_req_hdl(rtrd_cntx_t *ctx, rttp_worker_t *wrk, const rttp_cmd_t *cmd);
+static int rtrd_worker_event_core_hdl(rtrd_cntx_t *ctx, rttp_worker_t *worker);
+static int rtrd_worker_cmd_proc_req_hdl(rtrd_cntx_t *ctx, rttp_worker_t *worker, const rttp_cmd_t *cmd);
 
 /******************************************************************************
  **函数名称: rtrd_worker_routine
@@ -35,16 +35,16 @@ static int rtrd_worker_cmd_proc_req_hdl(rtrd_cntx_t *ctx, rttp_worker_t *wrk, co
 void *rtrd_worker_routine(void *_ctx)
 {
     int ret, idx;
-    rttp_worker_t *wrk;
+    rttp_worker_t *worker;
     rttp_cmd_proc_req_t *req;
     struct timeval timeout;
     rtrd_cntx_t *ctx = (rtrd_cntx_t *)_ctx;
 
     /* 1. 获取工作对象 */
-    wrk = rtrd_worker_get_curr(ctx);
-    if (NULL == wrk)
+    worker = rtrd_worker_get_curr(ctx);
+    if (NULL == worker)
     {
-        log_fatal(ctx->log, "Get current wrk failed!");
+        log_fatal(ctx->log, "Get current worker failed!");
         abort();
         return (void *)-1;
     }
@@ -52,14 +52,14 @@ void *rtrd_worker_routine(void *_ctx)
     for (;;)
     {
         /* 2. 等待事件通知 */
-        FD_ZERO(&wrk->rdset);
+        FD_ZERO(&worker->rdset);
 
-        FD_SET(wrk->cmd_sck_id, &wrk->rdset);
-        wrk->max = wrk->cmd_sck_id;
+        FD_SET(worker->cmd_sck_id, &worker->rdset);
+        worker->max = worker->cmd_sck_id;
 
         timeout.tv_sec = 30;
         timeout.tv_usec = 0;
-        ret = select(wrk->max+1, &wrk->rdset, NULL, NULL, &timeout);
+        ret = select(worker->max+1, &worker->rdset, NULL, NULL, &timeout);
         if (ret < 0)
         {
             if (EINTR == errno)
@@ -67,7 +67,7 @@ void *rtrd_worker_routine(void *_ctx)
                 continue;
             }
 
-            log_fatal(wrk->log, "errmsg:[%d] %s", errno, strerror(errno));
+            log_fatal(worker->log, "errmsg:[%d] %s", errno, strerror(errno));
             abort();
             return (void *)-1;
         }
@@ -83,15 +83,15 @@ void *rtrd_worker_routine(void *_ctx)
 
                 cmd.type = RTTP_CMD_PROC_REQ;
                 req->num = -1;
-                req->rqidx = RTTP_WORKER_HDL_QNUM * wrk->tidx + idx;
+                req->rqidx = RTTP_WORKER_HDL_QNUM * worker->tidx + idx;
 
-                rtrd_worker_cmd_proc_req_hdl(ctx, wrk, &cmd);
+                rtrd_worker_cmd_proc_req_hdl(ctx, worker, &cmd);
             }
             continue;
         }
 
         /* 3. 进行事件处理 */
-        rtrd_worker_event_core_hdl(ctx, wrk);
+        rtrd_worker_event_core_hdl(ctx, worker);
     }
 
     abort();
@@ -141,21 +141,21 @@ static rttp_worker_t *rtrd_worker_get_curr(rtrd_cntx_t *ctx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.06 #
  ******************************************************************************/
-int rtrd_worker_init(rtrd_cntx_t *ctx, rttp_worker_t *wrk, int tidx)
+int rtrd_worker_init(rtrd_cntx_t *ctx, rttp_worker_t *worker, int tidx)
 {
     char path[FILE_PATH_MAX_LEN];
     rtrd_conf_t *conf = &ctx->conf;
 
-    wrk->tidx = tidx;
-    wrk->log = ctx->log;
+    worker->tidx = tidx;
+    worker->log = ctx->log;
 
     /* 1. 创建命令套接字 */
-    rtrd_worker_usck_path(conf, path, wrk->tidx);
+    rtrd_worker_usck_path(conf, path, worker->tidx);
 
-    wrk->cmd_sck_id = unix_udp_creat(path);
-    if (wrk->cmd_sck_id < 0)
+    worker->cmd_sck_id = unix_udp_creat(path);
+    if (worker->cmd_sck_id < 0)
     {
-        log_error(wrk->log, "Create unix-udp socket failed!");
+        log_error(worker->log, "Create unix-udp socket failed!");
         return RTTP_ERR;
     }
 
@@ -175,18 +175,18 @@ int rtrd_worker_init(rtrd_cntx_t *ctx, rttp_worker_t *wrk, int tidx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.06 #
  ******************************************************************************/
-static int rtrd_worker_event_core_hdl(rtrd_cntx_t *ctx, rttp_worker_t *wrk)
+static int rtrd_worker_event_core_hdl(rtrd_cntx_t *ctx, rttp_worker_t *worker)
 {
     rttp_cmd_t cmd;
 
-    if (!FD_ISSET(wrk->cmd_sck_id, &wrk->rdset))
+    if (!FD_ISSET(worker->cmd_sck_id, &worker->rdset))
     {
         return RTTP_OK; /* 无数据 */
     }
 
-    if (unix_udp_recv(wrk->cmd_sck_id, (void *)&cmd, sizeof(cmd)) < 0)
+    if (unix_udp_recv(worker->cmd_sck_id, (void *)&cmd, sizeof(cmd)) < 0)
     {
-        log_error(wrk->log, "errmsg:[%d] %s", errno, strerror(errno));
+        log_error(worker->log, "errmsg:[%d] %s", errno, strerror(errno));
         return RTTP_ERR_RECV_CMD;
     }
 
@@ -194,11 +194,11 @@ static int rtrd_worker_event_core_hdl(rtrd_cntx_t *ctx, rttp_worker_t *wrk)
     {
         case RTTP_CMD_PROC_REQ:
         {
-            return rtrd_worker_cmd_proc_req_hdl(ctx, wrk, &cmd);
+            return rtrd_worker_cmd_proc_req_hdl(ctx, worker, &cmd);
         }
         default:
         {
-            log_error(wrk->log, "Received unknown type! %d", cmd.type);
+            log_error(worker->log, "Received unknown type! %d", cmd.type);
             return RTTP_ERR_UNKNOWN_CMD;
         }
     }
@@ -219,7 +219,7 @@ static int rtrd_worker_event_core_hdl(rtrd_cntx_t *ctx, rttp_worker_t *wrk)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.06 #
  ******************************************************************************/
-static int rtrd_worker_cmd_proc_req_hdl(rtrd_cntx_t *ctx, rttp_worker_t *wrk, const rttp_cmd_t *cmd)
+static int rtrd_worker_cmd_proc_req_hdl(rtrd_cntx_t *ctx, rttp_worker_t *worker, const rttp_cmd_t *cmd)
 {
     void *addr;
     queue_t *rq;
@@ -245,7 +245,7 @@ static int rtrd_worker_cmd_proc_req_hdl(rtrd_cntx_t *ctx, rttp_worker_t *wrk, co
         reg = &ctx->reg[head->type];
         if (NULL == reg->proc)
         {
-            ++wrk->drop_total;   /* 丢弃计数 */
+            ++worker->drop_total;   /* 丢弃计数 */
             continue;
         }
 
@@ -254,11 +254,11 @@ static int rtrd_worker_cmd_proc_req_hdl(rtrd_cntx_t *ctx, rttp_worker_t *wrk, co
                 addr + sizeof(rttp_header_t),
                 head->length, reg->args))
         {
-            ++wrk->err_total;    /* 错误计数 */
+            ++worker->err_total;    /* 错误计数 */
         }
         else
         {
-            ++wrk->proc_total;   /* 处理计数 */
+            ++worker->proc_total;   /* 处理计数 */
         }
 
         /* > 释放内存空间 */

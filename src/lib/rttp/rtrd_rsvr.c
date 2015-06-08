@@ -761,6 +761,7 @@ static int rtrd_rsvr_exp_mesg_proc(rtrd_cntx_t *ctx,
     memcpy(addr, data, head->length + sizeof(rttp_header_t));
 
     queue_push(ctx->recvq[rqid], addr);         /* 放入处理队列 */
+
     rtrd_rsvr_cmd_proc_req(ctx, rsvr, rqid);    /* 发送处理请求 */
 
     return RTTP_OK;
@@ -1232,7 +1233,7 @@ static int rtrd_rsvr_cmd_proc_req(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, int rqid)
     rttp_cmd_proc_req_t *req = (rttp_cmd_proc_req_t *)&cmd.args;
 
     cmd.type = RTTP_CMD_PROC_REQ;
-    req->ori_rsvr_tidx = rsvr->tidx;
+    req->ori_svr_tidx = rsvr->tidx;
     req->num = -1;
     req->rqidx = rqid;
 

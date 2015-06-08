@@ -15,8 +15,8 @@
 
 /* 静态函数 */
 static rttp_worker_t *rtsd_worker_get_curr(rtsd_cntx_t *ctx);
-static int rtsd_worker_event_core_hdl(rtsd_cntx_t *ctx, rttp_worker_t *wrk);
-static int rtsd_worker_cmd_proc_req_hdl(rtsd_cntx_t *ctx, rttp_worker_t *wrk, const rttp_cmd_t *cmd);
+static int rtsd_worker_event_core_hdl(rtsd_cntx_t *ctx, rttp_worker_t *worker);
+static int rtsd_worker_cmd_proc_req_hdl(rtsd_cntx_t *ctx, rttp_worker_t *worker, const rttp_cmd_t *cmd);
 
 /******************************************************************************
  **函数名称: rtsd_worker_routine
@@ -35,17 +35,17 @@ static int rtsd_worker_cmd_proc_req_hdl(rtsd_cntx_t *ctx, rttp_worker_t *wrk, co
 void *rtsd_worker_routine(void *_ctx)
 {
     int ret, idx;
-    rttp_worker_t *wrk;
+    rttp_worker_t *worker;
     rttp_cmd_proc_req_t *req;
     struct timeval timeout;
     rtsd_cntx_t *ctx = (rtsd_cntx_t *)_ctx;
     rtsd_conf_t *conf = (rtsd_conf_t *)&ctx->conf;
 
     /* 1. 获取工作对象 */
-    wrk = rtsd_worker_get_curr(ctx);
-    if (NULL == wrk)
+    worker = rtsd_worker_get_curr(ctx);
+    if (NULL == worker)
     {
-        log_fatal(ctx->log, "Get current wrk failed!");
+        log_fatal(ctx->log, "Get current worker failed!");
         abort();
         return (void *)-1;
     }
@@ -53,15 +53,15 @@ void *rtsd_worker_routine(void *_ctx)
     for (;;)
     {
         /* 2. 等待事件通知 */
-        FD_ZERO(&wrk->rdset);
+        FD_ZERO(&worker->rdset);
 
-        FD_SET(wrk->cmd_sck_id, &wrk->rdset);
+        FD_SET(worker->cmd_sck_id, &worker->rdset);
 
-        wrk->max = wrk->cmd_sck_id;
+        worker->max = worker->cmd_sck_id;
 
-        timeout.tv_sec = 30;
+        timeout.tv_sec = 1;
         timeout.tv_usec = 0;
-        ret = select(wrk->max+1, &wrk->rdset, NULL, NULL, &timeout);
+        ret = select(worker->max+1, &worker->rdset, NULL, NULL, &timeout);
         if (ret < 0)
         {
             if (EINTR == errno)
@@ -69,7 +69,7 @@ void *rtsd_worker_routine(void *_ctx)
                 continue;
             }
 
-            log_fatal(wrk->log, "errmsg:[%d] %s", errno, strerror(errno));
+            log_fatal(worker->log, "errmsg:[%d] %s", errno, strerror(errno));
             abort();
             return (void *)-1;
         }
@@ -87,13 +87,13 @@ void *rtsd_worker_routine(void *_ctx)
                 req->num = -1;
                 req->rqidx = idx;
 
-                rtsd_worker_cmd_proc_req_hdl(ctx, wrk, &cmd);
+                rtsd_worker_cmd_proc_req_hdl(ctx, worker, &cmd);
             }
             continue;
         }
 
         /* 3. 进行事件处理 */
-        rtsd_worker_event_core_hdl(ctx, wrk);
+        rtsd_worker_event_core_hdl(ctx, worker);
     }
 
     abort();
@@ -160,21 +160,21 @@ static rttp_worker_t *rtsd_worker_get_curr(rtsd_cntx_t *ctx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.18 #
  ******************************************************************************/
-int rtsd_worker_init(rtsd_cntx_t *ctx, rttp_worker_t *wrk, int tidx)
+int rtsd_worker_init(rtsd_cntx_t *ctx, rttp_worker_t *worker, int tidx)
 {
     char path[FILE_PATH_MAX_LEN];
     rtsd_conf_t *conf = &ctx->conf;
 
-    wrk->tidx = tidx;
-    wrk->log = ctx->log;
+    worker->tidx = tidx;
+    worker->log = ctx->log;
 
     /* 1. 创建命令套接字 */
-    rtsd_worker_usck_path(conf, path, wrk->tidx);
+    rtsd_worker_usck_path(conf, path, worker->tidx);
 
-    wrk->cmd_sck_id = unix_udp_creat(path);
-    if (wrk->cmd_sck_id < 0)
+    worker->cmd_sck_id = unix_udp_creat(path);
+    if (worker->cmd_sck_id < 0)
     {
-        log_error(wrk->log, "Create unix-udp socket failed!");
+        log_error(worker->log, "Create unix-udp socket failed!");
         return RTTP_ERR;
     }
 
@@ -194,18 +194,18 @@ int rtsd_worker_init(rtsd_cntx_t *ctx, rttp_worker_t *wrk, int tidx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.18 #
  ******************************************************************************/
-static int rtsd_worker_event_core_hdl(rtsd_cntx_t *ctx, rttp_worker_t *wrk)
+static int rtsd_worker_event_core_hdl(rtsd_cntx_t *ctx, rttp_worker_t *worker)
 {
     rttp_cmd_t cmd;
 
-    if (!FD_ISSET(wrk->cmd_sck_id, &wrk->rdset))
+    if (!FD_ISSET(worker->cmd_sck_id, &worker->rdset))
     {
         return RTTP_OK; /* 无数据 */
     }
 
-    if (unix_udp_recv(wrk->cmd_sck_id, (void *)&cmd, sizeof(cmd)) < 0)
+    if (unix_udp_recv(worker->cmd_sck_id, (void *)&cmd, sizeof(cmd)) < 0)
     {
-        log_error(wrk->log, "errmsg:[%d] %s", errno, strerror(errno));
+        log_error(worker->log, "errmsg:[%d] %s", errno, strerror(errno));
         return RTTP_ERR_RECV_CMD;
     }
 
@@ -213,11 +213,11 @@ static int rtsd_worker_event_core_hdl(rtsd_cntx_t *ctx, rttp_worker_t *wrk)
     {
         case RTTP_CMD_PROC_REQ:
         {
-            return rtsd_worker_cmd_proc_req_hdl(ctx, wrk, &cmd);
+            return rtsd_worker_cmd_proc_req_hdl(ctx, worker, &cmd);
         }
         default:
         {
-            log_error(wrk->log, "Received unknown type! %d", cmd.type);
+            log_error(worker->log, "Received unknown type! %d", cmd.type);
             return RTTP_ERR_UNKNOWN_CMD;
         }
     }
@@ -238,13 +238,12 @@ static int rtsd_worker_event_core_hdl(rtsd_cntx_t *ctx, rttp_worker_t *wrk)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.18 #
  ******************************************************************************/
-static int rtsd_worker_cmd_proc_req_hdl(rtsd_cntx_t *ctx, rttp_worker_t *wrk, const rttp_cmd_t *cmd)
+static int rtsd_worker_cmd_proc_req_hdl(rtsd_cntx_t *ctx, rttp_worker_t *worker, const rttp_cmd_t *cmd)
 {
-    int *num, idx;
-    void *addr, *ptr;
+    void *addr;
     queue_t *rq;
-    rttp_header_t *head;
     rttp_reg_t *reg;
+    rttp_header_t *head;
     const rttp_cmd_proc_req_t *work_cmd = (const rttp_cmd_proc_req_t *)&cmd->args;
 
     /* 1. 获取接收队列 */
@@ -259,33 +258,24 @@ static int rtsd_worker_cmd_proc_req_hdl(rtsd_cntx_t *ctx, rttp_worker_t *wrk, co
             return RTTP_OK;
         }
 
-        num = (int *)addr;
-        ptr = addr + sizeof(int);
+        /* 3. 执行回调函数 */
+        head = (rttp_header_t *)addr;
 
-        for (idx=0; idx<*num; ++idx)
+        reg = &ctx->reg[head->type];
+        if (NULL == reg->proc)
         {
-            /* 3. 执行回调函数 */
-            head = (rttp_header_t *)ptr;
+            ++worker->drop_total;   /* 丢弃计数 */
+            continue;
+        }
 
-            reg = &ctx->reg[head->type];
-            if (NULL == reg->proc)
-            {
-                ptr += head->length + sizeof(rttp_header_t);
-                ++wrk->drop_total;   /* 丢弃计数 */
-                continue;
-            }
-
-            if (reg->proc(head->type, head->devid,
-                        ptr+sizeof(rttp_header_t), head->length, reg->args))
-            {
-                ++wrk->err_total;    /* 错误计数 */
-            }
-            else
-            {
-                ++wrk->proc_total;   /* 处理计数 */
-            }
-
-            ptr += head->length + sizeof(rttp_header_t);
+        if (reg->proc(head->type, head->devid,
+                    addr+sizeof(rttp_header_t), head->length, reg->args))
+        {
+            ++worker->err_total;    /* 错误计数 */
+        }
+        else
+        {
+            ++worker->proc_total;   /* 处理计数 */
         }
 
         /* 4. 释放内存空间 */

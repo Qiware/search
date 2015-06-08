@@ -234,7 +234,7 @@ int rtsd_cli_send(rtsd_cli_t *cli, int type, const void *data, size_t size)
     head->flag = RTTP_EXP_MESG;
     head->checksum = RTTP_CHECK_SUM;
 
-    memcpy(head+1, addr, size);
+    memcpy(head+1, data, size);
 
     /* > 放入发送队列 */
     if (shm_queue_push(cli->sendq[idx], addr))
