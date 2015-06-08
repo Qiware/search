@@ -154,7 +154,7 @@ static int mon_agent_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void 
 
         FD_SET(fd, &rdset);
 
-        timeout.tv_sec = 5 * 60;
+        timeout.tv_sec = 10;
         timeout.tv_usec = 0;
         ret = select(fd+1, &rdset, NULL, NULL, &timeout);
         if (ret < 0)
