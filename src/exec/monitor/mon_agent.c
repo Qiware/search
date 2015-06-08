@@ -201,7 +201,7 @@ static int mon_agent_multi_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu,
     fd_set rdset;
     agent_header_t head;
     srch_mesg_body_t body;
-    int ret, idx, max, num;
+    int ret, idx, max, num, left;
     struct timeval timeout;
     char digit[256], word[1024];
     mon_cntx_t *ctx = (mon_cntx_t *)args;
@@ -243,6 +243,7 @@ static int mon_agent_multi_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu,
     }
 
     num = idx;
+    left = num;
 
     /* 等待应答数据 */
     while (1)
@@ -250,6 +251,11 @@ static int mon_agent_multi_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu,
         FD_ZERO(&rdset);
 
         max = -1;
+        if (0 == left)
+        {
+            break;
+        }
+
         for (idx=0; idx<num; ++idx)
         {
             if (fd[idx] > 0)
@@ -284,6 +290,7 @@ static int mon_agent_multi_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu,
                 mon_agent_search_rep_hdl(fd[idx]);
                 fprintf(stderr, "    fd:%d Spend: %lu(s)\n", fd[idx], time(NULL) - ctm);
                 CLOSE(fd[idx]);
+                --left;
             }
         }
     }
