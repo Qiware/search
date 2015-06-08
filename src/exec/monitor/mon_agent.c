@@ -18,6 +18,7 @@
 
 static int mon_agent_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args);
 static int mon_agent_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args);
+static int mon_agent_multi_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args);
 
 /******************************************************************************
  **函数名称: mon_agent_menu
@@ -50,7 +51,7 @@ menu_item_t *mon_agent_menu(menu_cntx_t *ctx, void *args)
 
     /* 添加子菜单 */
     ADD_CHILD(ctx, menu, "Search word", NULL, mon_agent_search_word, NULL, args);
-    ADD_CHILD(ctx, menu, "Get current status", NULL, mon_agent_connect, NULL, args);
+    ADD_CHILD(ctx, menu, "Multi search word", NULL, mon_agent_multi_search_word, NULL, args);
     ADD_CHILD(ctx, menu, "Test connect", NULL, mon_agent_connect, NULL, args);
     return menu;
 }
@@ -93,6 +94,7 @@ static int mon_agent_search_rep_hdl(int fd)
     head = (agent_header_t *)buff;
     resp = (mesg_search_rep_t *)(head + 1);
 
+    fprintf(stderr, "    url num: %d\n", resp->url_num);
     for (i=0; i<resp->url_num; ++i)
     {
         fprintf(stderr, "    url: %s\n", resp->url[i]);
@@ -177,6 +179,111 @@ static int mon_agent_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void 
     }
 
     close(fd);
+
+    return 0;
+}
+
+/******************************************************************************
+ **函数名称: mon_agent_multi_search_word
+ **功    能: 搜索单词
+ **输入参数:
+ **     menu: 菜单
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.06.05 #
+ ******************************************************************************/
+static int mon_agent_multi_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args)
+{
+    time_t ctm;
+    fd_set rdset;
+    agent_header_t head;
+    srch_mesg_body_t body;
+    int ret, idx, max, num;
+    struct timeval timeout;
+    int fd[AGENT_CLIENT_NUM];
+    char digit[256], word[1024];
+    mon_cntx_t *ctx = (mon_cntx_t *)args;
+
+    /* > 发送搜索请求 */
+    fprintf(stderr, "    Word: ");
+    scanf(" %s", word);
+
+    /* > 最大连接数 */
+    fprintf(stderr, "    Connections: ");
+    scanf(" %s", digit);
+
+    num = atoi(digit);
+
+    /* > 连接代理服务 */
+    for (idx=0; idx<num; ++idx)
+    {
+        fd[idx] = tcp_connect(AF_INET, ctx->conf->search.ip, ctx->conf->search.port);
+        if (fd[idx] < 0)
+        {
+            fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
+            break;
+        }
+        fprintf(stdout, "    idx:%d fd:%d!\n", idx, fd[idx]);
+
+        head.type = htonl(MSG_SEARCH_REQ);
+        head.flag = htonl(AGENT_MSG_FLAG_USR);
+        head.mark = htonl(AGENT_MSG_MARK_KEY);
+        head.length = htonl(sizeof(body));
+
+        snprintf(body.words, sizeof(body.words), "%s", word);
+
+        Writen(fd[idx], (void *)&head, sizeof(head));
+        Writen(fd[idx], (void *)&body, sizeof(body));
+
+        ctm = time(NULL);
+    }
+
+    /* 等待应答数据 */
+    while (1)
+    {
+        FD_ZERO(&rdset);
+
+        max = -1;
+        for (idx=0; idx<num; ++idx)
+        {
+            if (fd[idx] > 0)
+            {
+                FD_SET(fd[idx], &rdset);
+                max = (fd[idx] > max)? fd[idx] : max; 
+            }
+        }
+
+        timeout.tv_sec = 10;
+        timeout.tv_usec = 0;
+        ret = select(max+1, &rdset, NULL, NULL, &timeout);
+        if (ret < 0)
+        {
+            fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
+            break;
+        }
+        else if (0 == ret)
+        {
+            fprintf(stderr, "    Timeout!\n");
+            break;
+        }
+
+        for (idx=0; idx<num; ++idx)
+        {
+            if (FD_ISSET(fd[idx], &rdset))
+            {
+                mon_agent_search_rep_hdl(fd[idx]);
+                fprintf(stderr, "    Spend: %lu(s)\n", time(NULL) - ctm);
+                CLOSE(fd[idx]);
+            }
+        }
+    }
+
+    for (idx=0; idx<num; ++idx)
+    {
+        CLOSE(fd[idx]);
+    }
 
     return 0;
 }
