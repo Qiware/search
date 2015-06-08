@@ -11,7 +11,6 @@
 
 static agent_rsvr_t *agent_rsvr_self(agent_cntx_t *ctx);
 static int agent_rsvr_add_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr);
-int agent_rsvr_socket_cmp_cb(const void *pkey, const void *data);
 static int agent_rsvr_del_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck);
 
 static int agent_rsvr_recv(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck);
@@ -373,7 +372,7 @@ static int agent_rsvr_event_timeout_hdl(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
             break;
         }
 
-        log_debug(rsvr->log, "Timeout num:%d!", timeout.list->num);
+        log_debug(rsvr->log, "Timeout connections: %d!", timeout.list->num);
 
         /* > 删除超时连接 */
         for (;;)
@@ -559,30 +558,6 @@ static int agent_rsvr_del_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *
 }
 
 /******************************************************************************
- **函数名称: agent_rsvr_socket_cmp_cb
- **功    能: 哈希表中查找套接字信息的比较回调函数
- **输入参数:
- **     pkey: 主键
- **     data: 哈希表树中结点所挂载的数据
- **输出参数: NONE
- **返    回:
- **     1. =0: 相等
- **     2. <0: 小于
- **     3. >0: 大于
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.11.29 #
- ******************************************************************************/
-int agent_rsvr_socket_cmp_cb(const void *pkey, const void *data)
-{
-    uint64_t serial = *(const uint64_t *)pkey;
-    const socket_t *sock = (const socket_t *)data;
-    const agent_socket_extra_t *extra = sock->extra;
-
-    return (serial - extra->serial);
-}
-
-/******************************************************************************
  **函数名称: agent_rsvr_recv_head
  **功    能: 接收报头
  **输入参数:
@@ -650,12 +625,12 @@ static int agent_rsvr_recv_head(agent_rsvr_t *rsvr, socket_t *sck)
 
     if (AGENT_MSG_MARK_KEY != head->mark)
     {
-        log_error(rsvr->log, "Check head failed! type:%d len:%d flag:%d mark:[%u/%u]",
+        log_error(rsvr->log, "Check head failed! type:%d len:%d flag:%d mark:[0x%X/0x%X]",
             head->type, head->length, head->flag, head->mark, AGENT_MSG_MARK_KEY);
         return AGENT_ERR;
     }
 
-    log_info(rsvr->log, "Recv head success! type:%d len:%d flag:%d mark:[%u/%u]",
+    log_trace(rsvr->log, "Recv head success! type:%d len:%d flag:%d mark:[0x%X/0x%X]",
             head->type, head->length, head->flag, head->mark, AGENT_MSG_MARK_KEY);
 
     return AGENT_OK;
