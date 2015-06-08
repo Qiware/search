@@ -159,6 +159,8 @@ static int agentd_search_req_hdl(unsigned int type, void *data, int length, void
     agent_header_t *head;
     agentd_cntx_t *ctx = (agentd_cntx_t *)args;
 
+    log_debug(ctx->log, "Call %s()!", __func__);
+
     flow = (agent_flow_t *)data;
     head = (agent_header_t *)(flow + 1);
     body = (srch_mesg_body_t *)(head + 1);
