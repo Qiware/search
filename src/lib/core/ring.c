@@ -117,14 +117,14 @@ int ring_mpush(ring_t *rq, void **addr, unsigned int num)
     {
         prod_head = rq->prod.head;
         cons_tail = rq->cons.tail;
-        if (num > (rq->mask + cons_tail - prod_head) + 1)
+        if (num > (rq->max + cons_tail - prod_head))
         {
             return -1; /* 空间不足 */
         }
 
         prod_next = prod_head + num;
 
-        succ = atomic32_cmpset(&rq->prod.head, prod_head, prod_next);
+        succ = atomic32_cmp_and_set(&rq->prod.head, prod_head, prod_next);
     } while (0 == succ);
 
     /* > 放入队列空间 */
@@ -171,7 +171,7 @@ int ring_mpop(ring_t *rq, void **addr, unsigned int num)
 
         cons_next = cons_head + num;
 
-        succ = atomic32_cmpset(&rq->cons.head, cons_head, cons_next);
+        succ = atomic32_cmp_and_set(&rq->cons.head, cons_head, cons_next);
     } while(0 == succ);
 
     /* > 地址弹出队列 */

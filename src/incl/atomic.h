@@ -312,7 +312,7 @@ static inline uint64_t atomic64_dec(volatile uint64_t *v)
 }
 
 /******************************************************************************
- **函数名称: atomic16_cmpset
+ **函数名称: atomic16_cmp_and_set
  **功    能: 如果(*v) == cmp, 则执行(*v) = i, 并返回true; 否则, 返回false!
  **输入参数:
  **     cmp: 比较值
@@ -331,7 +331,7 @@ static inline uint64_t atomic64_dec(volatile uint64_t *v)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.04.18 #
  ******************************************************************************/
-static inline int atomic16_cmpset(volatile uint16_t *v, uint16_t cmp, uint16_t i)
+static inline int atomic16_cmp_and_set(volatile uint16_t *v, uint16_t cmp, uint16_t i)
 {
 	uint8_t res;
 
@@ -347,7 +347,7 @@ static inline int atomic16_cmpset(volatile uint16_t *v, uint16_t cmp, uint16_t i
 	return (int)res;
 }
 
-static inline int atomic32_cmpset(volatile uint32_t *v, uint32_t cmp, uint32_t i)
+static inline int atomic32_cmp_and_set(volatile uint32_t *v, uint32_t cmp, uint32_t i)
 {
 	uint8_t res;
 
@@ -363,7 +363,7 @@ static inline int atomic32_cmpset(volatile uint32_t *v, uint32_t cmp, uint32_t i
 	return (int)res;
 }
 
-static inline int atomic64_cmpset(volatile uint64_t *v, uint64_t cmp, uint64_t i)
+static inline int atomic64_cmp_and_set(volatile uint64_t *v, uint64_t cmp, uint64_t i)
 {
 	uint8_t res;
 

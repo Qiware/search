@@ -126,14 +126,14 @@ int shm_ring_mpush(shm_ring_t *rq, off_t *off, unsigned int num)
     {
         prod_head = rq->prod.head;
         cons_tail = rq->cons.tail;
-        if (num > (rq->mask + cons_tail - prod_head) + 1)
+        if (num > (rq->max + cons_tail - prod_head))
         {
             return -1; /* 空间不足 */
         }
 
         prod_next = prod_head + num;
 
-        succ = atomic32_cmpset(&rq->prod.head, prod_head, prod_next);
+        succ = atomic32_cmp_and_set(&rq->prod.head, prod_head, prod_next);
     } while (0 == succ);
 
     /* > 放入队列空间 */
@@ -170,8 +170,8 @@ int shm_ring_mpop(shm_ring_t *rq, off_t *off, unsigned int num)
     /* > 申请队列空间 */
     do
     {
-        cons_head = rq->cons.head;
-        prod_tail = rq->prod.tail;
+        cons_head = rq->cons.head; /* 消费者头 */
+        prod_tail = rq->prod.tail; /* 生产者尾 */
 
         if (num > prod_tail - cons_head)
         {
@@ -180,7 +180,7 @@ int shm_ring_mpop(shm_ring_t *rq, off_t *off, unsigned int num)
 
         cons_next = cons_head + num;
 
-        succ = atomic32_cmpset(&rq->cons.head, cons_head, cons_next);
+        succ = atomic32_cmp_and_set(&rq->cons.head, cons_head, cons_next);
     } while(0 == succ);
 
     /* > 地址弹出队列 */

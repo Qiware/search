@@ -42,7 +42,7 @@ static inline void spin_lock_init(spinlock_t *lck)
  ******************************************************************************/
 static inline void spin_lock(spinlock_t *lck)
 {
-    do {} while(!atomic16_cmpset(&lck->l, SPIN_LOCK_UNLOCK, SPIN_LOCK_LOCKED));
+    do {} while(!atomic16_cmp_and_set(&lck->l, SPIN_LOCK_UNLOCK, SPIN_LOCK_LOCKED));
 }
 
 /******************************************************************************
@@ -58,7 +58,7 @@ static inline void spin_lock(spinlock_t *lck)
  ******************************************************************************/
 static inline int spin_trylock(spinlock_t *lck)
 {
-    return atomic16_cmpset(&lck->l, SPIN_LOCK_UNLOCK, SPIN_LOCK_LOCKED)? 0 : -1;
+    return atomic16_cmp_and_set(&lck->l, SPIN_LOCK_UNLOCK, SPIN_LOCK_LOCKED)? 0 : -1;
 }
 
 /******************************************************************************
@@ -74,7 +74,7 @@ static inline int spin_trylock(spinlock_t *lck)
  ******************************************************************************/
 static inline int spin_unlock(spinlock_t *lck)
 {
-    return atomic16_cmpset(&lck->l, SPIN_LOCK_LOCKED, SPIN_LOCK_UNLOCK)? 0 : -1;
+    return atomic16_cmp_and_set(&lck->l, SPIN_LOCK_LOCKED, SPIN_LOCK_UNLOCK)? 0 : -1;
 }
 
 /******************************************************************************
