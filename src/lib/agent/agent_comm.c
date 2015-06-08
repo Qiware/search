@@ -21,16 +21,14 @@ int agent_serial_to_sck_map_init(agent_cntx_t *ctx)
     memset(&opt, 0, sizeof(opt));
 
     ctx->serial_to_sck_map_len = SERIAL_TO_SCK_MAP_LEN;
-    ctx->serial_to_sck_map = (avl_tree_t **)calloc(
-            ctx->serial_to_sck_map_len, sizeof(avl_tree_t *));
+    ctx->serial_to_sck_map = (avl_tree_t **)calloc(ctx->serial_to_sck_map_len, sizeof(avl_tree_t *));
     if (NULL == ctx->serial_to_sck_map)
     {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return AGENT_ERR;
     }
 
-    ctx->serial_to_sck_map_lock = (spinlock_t *)calloc(
-            ctx->serial_to_sck_map_len, sizeof(spinlock_t));
+    ctx->serial_to_sck_map_lock = (spinlock_t *)calloc(ctx->serial_to_sck_map_len, sizeof(spinlock_t));
     if (NULL == ctx->serial_to_sck_map_lock)
     {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
@@ -61,8 +59,7 @@ int agent_serial_to_sck_map_init(agent_cntx_t *ctx)
  **功    能: 插入流水->SCK的映射
  **输入参数:
  **     ctx: 全局对象
- **     serial: 流水号
- **     sck_serial: 套接字流水号
+ **     flow: 流水信息
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
