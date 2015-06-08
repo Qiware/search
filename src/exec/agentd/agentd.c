@@ -153,10 +153,10 @@ static sdsd_cli_t *agentd_to_invtd_init(sdsd_conf_t *conf, log_cycle_t *log)
  ******************************************************************************/
 static int agentd_search_req_hdl(unsigned int type, void *data, int length, void *args)
 {
-    mesg_search_req_t req;
     agent_flow_t *flow;
-    srch_mesg_body_t *body;
     agent_header_t *head;
+    srch_mesg_body_t *body;
+    mesg_search_req_t req;
     agentd_cntx_t *ctx = (agentd_cntx_t *)args;
 
     log_debug(ctx->log, "Call %s()!", __func__);
