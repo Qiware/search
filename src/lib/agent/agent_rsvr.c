@@ -789,7 +789,6 @@ static int agent_rsvr_recv(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
                 recv->off = 0;
                 recv->total = sizeof(agent_header_t);
 
-                extra->flow->serial = atomic64_inc(&serial); /* 获取流水号 */
                 extra->flow->sck_serial = extra->serial;
                 extra->flow->agt_idx = rsvr->tidx;
 
@@ -807,6 +806,11 @@ static int agent_rsvr_recv(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
                 {
                     case AGENT_OK:
                     {
+                        extra->flow = (agent_flow_t *)recv->addr;
+                        extra->flow->serial = atomic64_inc(&serial); /* 获取流水号 */
+
+                        log_info(rsvr->log, "Call %s()! serial:%lu", __func__, extra->flow->serial);
+
                         if (extra->head->length)
                         {
                             recv->phase = SOCK_PHASE_READY_BODY; /* 设置下步 */
