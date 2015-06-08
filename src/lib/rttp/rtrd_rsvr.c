@@ -1,7 +1,7 @@
 /******************************************************************************
  ** Coypright(C) 2014-2024 Xundao technology Co., Ltd
  **
- ** 文件名: sdtp.c
+ ** 文件名: rttp.c
  ** 版本号: 1.0
  ** 描  述: 共享消息传输通道(Sharing Message Transaction Channel)
  **         1. 主要用于异步系统之间数据消息的传输

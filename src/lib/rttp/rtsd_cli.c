@@ -10,7 +10,7 @@ static int rtsd_cli_shmat(rtsd_cli_t *cli);
 static int rtsd_cli_cmd_usck(rtsd_cli_t *cli, int idx);
 
 #define rtsd_cli_unix_path(cli, path, idx) \
-    snprintf(path, sizeof(path), "./temp/sdtp/snd/%s/%s_cli_%d.usck", cli->conf.name, cli->conf.name, idx)
+    snprintf(path, sizeof(path), "./temp/rttp/snd/%s/%s_cli_%d.usck", cli->conf.name, cli->conf.name, idx)
 
 /******************************************************************************
  **函数名称: rtsd_cli_init
@@ -59,7 +59,7 @@ rtsd_cli_t *rtsd_cli_init(const rtsd_conf_t *conf, int idx, log_cycle_t *log)
     /* 3. 根据配置进行初始化 */
     if (_rtsd_cli_init(cli, idx))
     {
-        log_error(log, "Initialize client of sdtp failed!");
+        log_error(log, "Initialize client of rttp failed!");
         mem_pool_destroy(pool);
         return NULL;
     }
@@ -86,7 +86,7 @@ static int _rtsd_cli_init(rtsd_cli_t *cli, int idx)
     if (rtsd_cli_shmat(cli)
         || rtsd_cli_cmd_usck(cli, idx))
     {
-        log_error(cli->log, "Initialize client of sdtp failed!");
+        log_error(cli->log, "Initialize client of rttp failed!");
         return RTTP_ERR;
     }
 
@@ -236,6 +236,8 @@ int rtsd_cli_send(rtsd_cli_t *cli, int type, const void *data, size_t size)
 
     memcpy(head+1, data, size);
 
+    plog_debug("rq:%p Head type:%d devid:%d length:%d flag:%d checksum:%d!",
+            cli->sendq[idx]->ring, head->type, head->devid, head->length, head->flag, head->checksum);
     /* > 放入发送队列 */
     if (shm_queue_push(cli->sendq[idx], addr))
     {
