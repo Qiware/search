@@ -10,13 +10,13 @@
 #include "thread_pool.h"
 
 /* 宏定义 */
-#define AGENT_TMOUT_SCAN_SEC         (15)        /* 超时扫描间隔 */
+#define AGENT_TMOUT_SCAN_SEC    (15)        /* 超时扫描间隔 */
 
-#define AGENT_SLAB_SIZE              (30 * MB)   /* SLAB内存池大小 */
-#define AGENT_RECV_SIZE              (8 * KB)    /* 缓存SIZE(接收缓存) */
-#define AGENT_SYNC_SIZE  (AGENT_RECV_SIZE >> 1)   /* 缓存同步SIZE */
+#define AGENT_SLAB_SIZE         (30 * MB)   /* SLAB内存池大小 */
+#define AGENT_RECV_SIZE         (8 * KB)    /* 缓存SIZE(接收缓存) */
+#define AGENT_SYNC_SIZE         (AGENT_RECV_SIZE >> 1)  /* 缓存同步SIZE */
 
-#define AGENT_MSG_TYPE_MAX           (0xFF)      /* 消息最大类型 */
+#define AGENT_MSG_TYPE_MAX      (0xFF)      /* 消息最大类型 */
 
 /* 命令路径 */
 #define AGENT_LSN_CMD_PATH "../temp/agent/lsn_cmd.usck"       /* 侦听线程 */
@@ -44,22 +44,22 @@ typedef struct
 /* 代理对象 */
 typedef struct
 {
-    agent_conf_t *conf;                          /* 配置信息 */
-    log_cycle_t *log;                           /* 日志对象 */
-    slab_pool_t *slab;                          /* 内存池 */
+    agent_conf_t *conf;                     /* 配置信息 */
+    log_cycle_t *log;                       /* 日志对象 */
+    slab_pool_t *slab;                      /* 内存池 */
 
-    pthread_t lsn_tid;                          /* Listen线程 */
-    thread_pool_t *agent_pool;                  /* Agent线程池 */
-    thread_pool_t *worker_pool;                 /* Worker线程池 */
-    agent_reg_t reg[AGENT_MSG_TYPE_MAX];        /* 消息注册 */
+    pthread_t lsn_tid;                      /* Listen线程 */
+    thread_pool_t *agent_pool;              /* Agent线程池 */
+    thread_pool_t *worker_pool;             /* Worker线程池 */
+    agent_reg_t reg[AGENT_MSG_TYPE_MAX];    /* 消息注册 */
 
-    queue_t **connq;                            /* 连接队列(注:数组长度与Agent相等) */
-    queue_t **recvq;                            /* 接收队列(注:数组长度与Agent相等) */
-    queue_t **sendq;                            /* 发送队列(注:数组长度与Agent相等) */
+    queue_t **connq;                        /* 连接队列(注:数组长度与Agent相等) */
+    queue_t **recvq;                        /* 接收队列(注:数组长度与Agent相等) */
+    queue_t **sendq;                        /* 发送队列(注:数组长度与Agent相等) */
 
-    int serial_to_sck_map_len;                  /* 流水号->SCK映射表数组长度 */
-    spinlock_t *serial_to_sck_map_lock;         /* 流水号->SCK映射表锁 */
-    avl_tree_t **serial_to_sck_map;             /* 流水号->SCK映射表 */
+    int serial_to_sck_map_len;              /* 流水号->SCK映射表数组长度 */
+    spinlock_t *serial_to_sck_map_lock;     /* 流水号->SCK映射表锁 */
+    avl_tree_t **serial_to_sck_map;         /* 流水号->SCK映射表 */
 } agent_cntx_t;
 
 #define agent_connq_used(ctx, idx) queue_used(ctx->connq[idx]) /* 连接队列已用空间 */
