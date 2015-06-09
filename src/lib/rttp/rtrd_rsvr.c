@@ -186,9 +186,6 @@ void *rtrd_rsvr_routine(void *_ctx)
 
     for (;;)
     {
-        /* > 分发发送数据 */
-        rtrd_rsvr_dist_send_data(ctx, rsvr);
-
         /* 2. 等待事件通知 */
         rtrd_rsvr_set_rdset(ctx, rsvr);
         rtrd_rsvr_set_wrset(ctx, rsvr);
@@ -326,9 +323,13 @@ static int rtrd_rsvr_recv_cmd(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
     /* 2. 进行命令处理 */
     switch (cmd.type)
     {
-        case RTTP_CMD_ADD_SCK:
+        case RTTP_CMD_ADD_SCK:      /* 添加套接字 */
         {
             return rtrd_rsvr_add_conn_hdl(rsvr, (rttp_cmd_add_sck_t *)&cmd.args);
+        }
+        case RTTP_CMD_DIST_REQ:     /* 分发发送数据 */
+        {
+            return rtrd_rsvr_dist_send_data(ctx, rsvr);
         }
         default:
         {

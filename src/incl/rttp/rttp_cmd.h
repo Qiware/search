@@ -6,19 +6,20 @@
 /* 命令类型 */
 typedef enum
 {
-    RTTP_CMD_UNKNOWN                 /* 未知请求 */
-    , RTTP_CMD_ADD_SCK               /* 接收客户端数据-请求 */
-    , RTTP_CMD_PROC_REQ              /* 处理客户端数据-请求 */
-    , RTTP_CMD_SEND                  /* 发送数据-请求 */
-    , RTTP_CMD_SEND_ALL              /* 发送所有数据-请求 */
+    RTTP_CMD_UNKNOWN                /* 未知请求 */
+    , RTTP_CMD_ADD_SCK              /* 接收客户端数据-请求 */
+    , RTTP_CMD_DIST_REQ             /* 分发任务请求 */
+    , RTTP_CMD_PROC_REQ             /* 处理客户端数据-请求 */
+    , RTTP_CMD_SEND                 /* 发送数据-请求 */
+    , RTTP_CMD_SEND_ALL             /* 发送所有数据-请求 */
 
     /* 查询命令 */
-    , RTTP_CMD_QUERY_CONF_REQ        /* 查询配置信息-请求 */
-    , RTTP_CMD_QUERY_CONF_REP        /* 查询配置信息-应答 */
-    , RTTP_CMD_QUERY_RECV_STAT_REQ   /* 查询接收状态-请求 */
-    , RTTP_CMD_QUERY_RECV_STAT_REP   /* 查询接收状态-应答 */
-    , RTTP_CMD_QUERY_PROC_STAT_REQ   /* 查询处理状态-请求 */
-    , RTTP_CMD_QUERY_PROC_STAT_REP   /* 查询处理状态-应答 */
+    , RTTP_CMD_QUERY_CONF_REQ       /* 查询配置信息-请求 */
+    , RTTP_CMD_QUERY_CONF_REP       /* 查询配置信息-应答 */
+    , RTTP_CMD_QUERY_RECV_STAT_REQ  /* 查询接收状态-请求 */
+    , RTTP_CMD_QUERY_RECV_STAT_REP  /* 查询接收状态-应答 */
+    , RTTP_CMD_QUERY_PROC_STAT_REQ  /* 查询处理状态-请求 */
+    , RTTP_CMD_QUERY_PROC_STAT_REP  /* 查询处理状态-应答 */
         
     , RTTP_CMD_TOTAL
 } rttp_cmd_e;

@@ -76,5 +76,7 @@ int rtrd_cli_send(rtrd_cli_t *cli, int type, int dest, void *data, int len)
         shm_queue_dealloc(cli->sendq, addr);
     }
 
+    //rtrd_cli_cmd_dist_req(cli, idx);
+
     return RTTP_OK;
 }

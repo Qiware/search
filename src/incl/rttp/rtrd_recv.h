@@ -30,6 +30,9 @@
 /* 发送队列的共享内存KEY路径 */
 #define rtrd_shm_sendq_path(conf, path) \
     snprintf(path, sizeof(path), "../temp/rttp/recv/%s/%s_shm_sendq", conf->name, conf->name)
+/* 分发线程的UNIX-UDP路径 */
+#define rtrd_dist_unix_path(conf, path) \
+    snprintf(path, sizeof(path), "../temp/rttp/recv/%s/usck/%s_disp.usck", conf->name, conf->name)
 
 /* 配置信息 */
 typedef struct
@@ -112,6 +115,7 @@ typedef struct
 /* 服务端外部对象 */
 typedef struct
 {
+    int cmd_sck_id;                     /* 命令套接字 */
     shm_queue_t *sendq;                 /* 发送队列 */
 } rtrd_cli_t;
 
