@@ -325,7 +325,8 @@ static void *shm_at_or_creat(const char *path, size_t size)
     addr = shmat(shm.shmid, NULL, 0);
     if ((void *)-1 == addr)
     {
-        if (EINVAL == errno)
+        if ((EIDRM == errno)
+            || (EINVAL == errno))
         {
             return _shm_creat(path, size); /* 未创建 */
         }
