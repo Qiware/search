@@ -153,8 +153,8 @@ static int rtsd_cli_cmd_usck(rtsd_cli_t *cli, int idx)
 
     rtsd_cli_unix_path(cli, path, idx);
 
-    cli->cmdfd = unix_udp_creat(path);
-    if (cli->cmdfd < 0)
+    cli->cmd_sck_id = unix_udp_creat(path);
+    if (cli->cmd_sck_id < 0)
     {
         log_error(cli->log, "errmsg:[%d] %s! path:%s", errno, strerror(errno), path);
         return RTTP_ERR;
@@ -187,7 +187,7 @@ static int rtsd_cli_cmd_send_req(rtsd_cli_t *cli, int idx)
 
     rtsd_ssvr_usck_path(conf, path, idx);
 
-    return unix_udp_send(cli->cmdfd, path, &cmd, sizeof(cmd));
+    return unix_udp_send(cli->cmd_sck_id, path, &cmd, sizeof(cmd));
 }
 
 /******************************************************************************
