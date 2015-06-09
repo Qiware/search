@@ -15,7 +15,7 @@
 typedef struct
 {
 #if defined(__RTTP_SUPPORT__)
-    rtsd_conf_t sdtp;               /* SDTP配置 */
+    rtsd_conf_t rttp;               /* RTTP配置 */
 #else /*__RTTP_SUPPORT__*/
     sdsd_conf_t sdtp;               /* SDTP配置 */
 #endif /*__RTTP_SUPPORT__*/
@@ -28,7 +28,7 @@ typedef struct
     log_cycle_t *log;               /* 日志对象 */
     shm_queue_t *send_to_agentd;    /* 发送至Agentd */
 #if defined(__RTTP_SUPPORT__)
-    rtsd_cntx_t *sdtp;              /* SDTP对象 */
+    rtsd_cntx_t *rttp;              /* RTTP对象 */
 #else /*__RTTP_SUPPORT__*/
     sdsd_cntx_t *sdtp;              /* SDTP对象 */
 #endif /*__RTTP_SUPPORT__*/

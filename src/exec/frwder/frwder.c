@@ -36,7 +36,7 @@ int main(int argc, const char *argv[])
 
     /* > 初始化日志 */
 #if defined(__RTTP_SUPPORT__)
-    rttp_setup_conf(&frwd->conf.sdtp, atoi(argv[1]));
+    rttp_setup_conf(&frwd->conf.rttp, atoi(argv[1]));
 #else /*__RTTP_SUPPORT__*/
     sdtp_setup_conf(&frwd->conf.sdtp, atoi(argv[1]));
 #endif /*__RTTP_SUPPORT__*/
@@ -62,8 +62,8 @@ int main(int argc, const char *argv[])
 
     /* > 初始化SDTP发送服务 */
 #if defined(__RTTP_SUPPORT__)
-    frwd->sdtp = rtsd_init(&frwd->conf.sdtp, frwd->log);
-    if (NULL == frwd->sdtp) 
+    frwd->rttp = rtsd_init(&frwd->conf.rttp, frwd->log);
+    if (NULL == frwd->rttp) 
 #else /*__RTTP_SUPPORT__*/
     frwd->sdtp = sdsd_init(&frwd->conf.sdtp, frwd->log);
     if (NULL == frwd->sdtp) 
@@ -82,7 +82,7 @@ int main(int argc, const char *argv[])
 
     /* > 启动SDTP发送服务 */
 #if defined(__RTTP_SUPPORT__)
-    if (rtsd_start(frwd->sdtp))
+    if (rtsd_start(frwd->rttp))
 #else /*__RTTP_SUPPORT__*/
     if (sdsd_start(frwd->sdtp))
 #endif /*__RTTP_SUPPORT__*/
@@ -223,7 +223,7 @@ int frwd_search_rep_hdl(int type, int orig, char *data, size_t len, void *args)
 int frwd_set_reg(frwd_cntx_t *frwd)
 {
 #if defined(__RTTP_SUPPORT__)
-    rtsd_register(frwd->sdtp, MSG_SEARCH_REP, frwd_search_rep_hdl, frwd);
+    rtsd_register(frwd->rttp, MSG_SEARCH_REP, frwd_search_rep_hdl, frwd);
 #else /*__RTTP_SUPPORT__*/
     sdsd_register(frwd->sdtp, MSG_SEARCH_REP, frwd_search_rep_hdl, frwd);
 #endif /*__RTTP_SUPPORT__*/
