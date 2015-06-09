@@ -10,8 +10,8 @@
 #include "shm_queue.h"
 #include "thread_pool.h"
 
-#define QUEUE_LEN       (8192)
-#define QUEUE_SIZE      (1024)
+#define QUEUE_LEN       (2048)
+#define QUEUE_SIZE      (4096)
 #define QUEUE_CHECK_SUM (0x12345678)
 
 typedef struct
@@ -45,11 +45,23 @@ log_cycle_t *demo_init_log(const char *_path)
     return log;
 }
 
-void *queue_push_routine(void *q)
+void *queue_push_routine(void *str)
 {
     void *addr;
+    shm_queue_t *queue;
     queue_header_t *head;
-    shm_queue_t *queue = (shm_queue_t *)q;
+    char path[FILE_PATH_MAX_LEN];
+
+    /* > 创建共享内存队列 */
+    snprintf(path, sizeof(path), "%s.key", (const char *)str);
+
+    queue = shm_queue_attach(path);
+    if (NULL == queue)
+    {
+        fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
+        return (void *)-1;
+    }
+
 
     while (1)
     {
@@ -124,7 +136,7 @@ int main(int argc, char *argv[])
     shm_queue_print(queue);
 
     /* > 操作共享内存队列(申请 放入 弹出 回收等操作) */
-    thread_creat(&tid, queue_push_routine, (void *)queue);
+    thread_creat(&tid, queue_push_routine, (void *)basename(argv[0]));
     thread_creat(&tid, queue_pop_routine, (void *)queue);
 
     while (1) { pause(); }
