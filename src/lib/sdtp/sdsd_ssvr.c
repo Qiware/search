@@ -1159,8 +1159,8 @@ static int sdsd_ssvr_exp_mesg_proc(
         sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr, sdsd_sck_t *sck, void *addr)
 {
     void *data;
-    int *num;
     int idx, len;
+    sdtp_group_t *group;
     sdtp_header_t *head = (sdtp_header_t *)addr;
 
     ++ssvr->recv_total;
@@ -1188,9 +1188,9 @@ static int sdsd_ssvr_exp_mesg_proc(
     }
 
     /* > 放入队列 */
-    num = (int *)data;
-    *num = 1; /* 放入一条数据 */
-    memcpy(data+sizeof(int), addr, len);
+    group = (sdtp_group_t *)data;
+    group->num = 1; /* 放入一条数据 */
+    memcpy(data+sizeof(sdtp_group_t), addr, len);
 
     queue_push(ctx->recvq[idx], data);
 

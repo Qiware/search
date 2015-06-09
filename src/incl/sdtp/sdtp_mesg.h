@@ -42,6 +42,12 @@ typedef struct
 /* 校验数据头 */
 #define SDTP_HEAD_ISVALID(head) (SDTP_CHECKSUM_ISVALID(head) && SDTP_TYPE_ISVALID(head))
 
+/* 分组信息 */
+typedef struct
+{
+    int num;                            /* 组中条数 */
+} sdtp_group_t;
+
 /* 转发信息 */
 typedef struct
 {

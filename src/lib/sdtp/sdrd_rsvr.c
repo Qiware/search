@@ -51,7 +51,7 @@ static int sdrd_rsvr_queue_alloc(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr);
     (rsvr)->queue.start = NULL; \
     (rsvr)->queue.addr = NULL; \
     (rsvr)->queue.end = NULL; \
-    (rsvr)->queue.num = NULL; \
+    (rsvr)->queue.group = NULL; \
     (rsvr)->queue.size = 0; \
 }
 
@@ -753,9 +753,9 @@ static int sdrd_rsvr_queue_alloc(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr)
         return SDTP_ERR;
     }
 
-    rsvr->queue.num = (int *)rsvr->queue.start;
-    *rsvr->queue.num = 0;
-    rsvr->queue.addr = rsvr->queue.start + sizeof(int);
+    rsvr->queue.group = (sdtp_group_t *)rsvr->queue.start;
+    rsvr->queue.group->num = 0;
+    rsvr->queue.addr = rsvr->queue.start + sizeof(sdtp_group_t);
     rsvr->queue.end = rsvr->queue.start + queue_size(ctx->recvq[rsvr->queue.rqid]);
     rsvr->queue.size = queue_size(ctx->recvq[rsvr->queue.rqid]);
     rsvr->queue.alloc_tm = time(NULL);
@@ -816,7 +816,7 @@ static int sdrd_rsvr_exp_mesg_proc(sdrd_cntx_t *ctx,
 
             memcpy(rsvr->queue.addr, addr, len);
             rsvr->queue.addr += len;
-            ++(*rsvr->queue.num);
+            ++(rsvr->queue.group->num);
             return SDTP_OK;
         }
 
@@ -826,7 +826,7 @@ static int sdrd_rsvr_exp_mesg_proc(sdrd_cntx_t *ctx,
         {
             memcpy(rsvr->queue.addr, addr, len);
             rsvr->queue.addr += len;
-            ++(*rsvr->queue.num);
+            ++(rsvr->queue.group->num);
             return SDTP_OK;
         }
 

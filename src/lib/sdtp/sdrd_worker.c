@@ -221,9 +221,10 @@ static int sdrd_worker_event_core_hdl(sdrd_cntx_t *ctx, sdtp_worker_t *worker)
  ******************************************************************************/
 static int sdrd_worker_cmd_proc_req_hdl(sdrd_cntx_t *ctx, sdtp_worker_t *worker, const sdtp_cmd_t *cmd)
 {
-    int *num, idx;
+    int idx;
     void *addr, *ptr;
     queue_t *rq;
+    sdtp_group_t *group;
     sdtp_header_t *head;
     sdtp_reg_t *reg;
     const sdtp_cmd_proc_req_t *work_cmd = (const sdtp_cmd_proc_req_t *)&cmd->args;
@@ -240,10 +241,10 @@ static int sdrd_worker_cmd_proc_req_hdl(sdrd_cntx_t *ctx, sdtp_worker_t *worker,
             return SDTP_OK;
         }
 
-        num = (int *)addr;
-        ptr = addr + sizeof(int);
+        group = (sdtp_group_t *)addr;
+        ptr = addr + sizeof(sdtp_group_t);
 
-        for (idx=0; idx<*num; ++idx)
+        for (idx=0; idx<group->num; ++idx)
         {
             /* 3. 执行回调函数 */
             head = (sdtp_header_t *)ptr;

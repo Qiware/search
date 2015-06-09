@@ -109,7 +109,7 @@ typedef struct
         void *start;
         void *addr;
         void *end;
-        int *num;
+        sdtp_group_t *group;
         int size;
         time_t alloc_tm;
     } queue;

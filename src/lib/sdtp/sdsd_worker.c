@@ -240,11 +240,12 @@ static int sdsd_worker_event_core_hdl(sdsd_cntx_t *ctx, sdtp_worker_t *worker)
  ******************************************************************************/
 static int sdsd_worker_cmd_proc_req_hdl(sdsd_cntx_t *ctx, sdtp_worker_t *worker, const sdtp_cmd_t *cmd)
 {
-    int *num, idx;
-    void *addr, *ptr;
+    int idx;
     queue_t *rq;
-    sdtp_header_t *head;
     sdtp_reg_t *reg;
+    void *addr, *ptr;
+    sdtp_group_t *group;
+    sdtp_header_t *head;
     const sdtp_cmd_proc_req_t *work_cmd = (const sdtp_cmd_proc_req_t *)&cmd->args;
 
     /* 1. 获取接收队列 */
@@ -260,10 +261,10 @@ static int sdsd_worker_cmd_proc_req_hdl(sdsd_cntx_t *ctx, sdtp_worker_t *worker,
             return SDTP_OK;
         }
 
-        num = (int *)addr;
-        ptr = addr + sizeof(int);
+        group = (sdtp_group_t *)addr;
+        ptr = addr + sizeof(sdtp_group_t);
 
-        for (idx=0; idx<*num; ++idx)
+        for (idx=0; idx<group->num; ++idx)
         {
             /* 3. 执行回调函数 */
             head = (sdtp_header_t *)ptr;
