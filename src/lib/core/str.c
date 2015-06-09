@@ -61,6 +61,72 @@ str_t *str_to_lower(str_t *s)
 }
 
 /******************************************************************************
+ **函数名称: char_to_lower
+ **功    能: 将字串转为小字母
+ **输入参数:
+ **     str: 字串(源)
+ **     dstr: 目的字串
+ **     len: 指定长度
+ **输出参数:
+ **返    回: 字串对象
+ **实现描述: 
+ **注意事项:
+ **作    者: # Qifeng.zou # 2014.09.18 #
+ ******************************************************************************/
+char *char_to_lower(const char *str, char *dstr, int len)
+{
+    int idx;
+
+    for (idx=0; idx<len && '\0'!=str[idx]; ++idx)
+    {
+        switch (str[idx])
+        {
+            case 'A':
+            case 'B':
+            case 'C':
+            case 'D':
+            case 'E':
+            case 'F':
+            case 'G':
+            case 'H':
+            case 'I':
+            case 'J':
+            case 'K':
+            case 'L':
+            case 'M':
+            case 'N':
+            case 'O':
+            case 'P':
+            case 'Q':
+            case 'R':
+            case 'S':
+            case 'T':
+            case 'U':
+            case 'V':
+            case 'W':
+            case 'X':
+            case 'Y':
+            case 'Z':
+            {
+                dstr[idx] = str[idx] + 32;
+                break;
+            }
+            default:
+            {
+                dstr[idx] = str[idx];
+                break;
+            }
+        }
+    }
+
+    dstr[idx] = '\0';
+
+    return dstr;
+}
+
+
+
+/******************************************************************************
  **函数名称: str_to_upper
  **功    能: 将字串转为大字母
  **输入参数:
