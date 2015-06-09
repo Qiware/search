@@ -140,8 +140,6 @@ int shm_ring_mpush(shm_ring_t *rq, off_t *off, unsigned int num)
     for (i=0; i<num; ++i)
     {
         rq->off[(prod_head+i) & rq->mask] = off[i];
-
-        plog_error("rq:%p Push off[%d]: %d", rq, prod_head + i, off[i]);
     }
     while (rq->prod.tail != prod_head) { NULL; }
     rq->prod.tail = prod_next;
@@ -189,8 +187,6 @@ int shm_ring_mpop(shm_ring_t *rq, off_t *off, unsigned int num)
     for (i=0; i<num; ++i)
     {
         off[i] = (off_t)rq->off[(cons_head+i) & rq->mask];
-
-        plog_error("rq:%p Pop off[%d]: %d", rq, cons_head + i, off[i]);
     }
 
     /* > 判断是否其他线程也在进行处理, 是的话, 则等待对方完成处理 */
