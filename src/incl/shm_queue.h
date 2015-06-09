@@ -7,11 +7,19 @@
 #define SHMQ_MPUSH_MAX_NUM  (512)   /* 一次最大压入条数 */
 #define SHMQ_MPOP_MAX_NUM   (512)   /* 一次最大弹出条数 */
 
+/* 队列配置 */
+typedef struct
+{
+    char path[FILE_PATH_MAX_LEN];   /* 路径 */
+    int max;                        /* 单元总数 */
+    int size;                       /* 各单元大小 */
+} shmq_conf_t;
+
 /* 队列对象 */
 typedef struct
 {
-    shm_ring_t *ring;       /* 环形队列 */
-    shm_slot_t *slot;       /* 内存池对象 */
+    shm_ring_t *ring;               /* 环形队列 */
+    shm_slot_t *slot;               /* 内存池对象 */
 } shm_queue_t;
 
 shm_queue_t *shm_queue_creat(const char *path, int max, int size);
