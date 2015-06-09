@@ -1,5 +1,6 @@
 #!/bin/sh
 
+pkill -9 mmexec
 pkill -9 crawler
 pkill -9 filter
 pkill -9 agentd
@@ -7,6 +8,10 @@ pkill -9 monitor
 pkill -9 invertd
 pkill -9 logsvr
 pkill -9 frwd_exec
+pkill -9 rttp_recv
+pkill -9 rttp_send
+pkill -9 sdtp_recv
+pkill -9 sdtp_send
 
 sleep 1
 

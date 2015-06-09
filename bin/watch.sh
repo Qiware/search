@@ -9,14 +9,17 @@
 ###############################################################################
 print_proc()
 {
-    ps -axu | grep -e "crawler" \
-				   -e "filter"  \
-				   -e "logsvr" \
-				   -e "redis" \
-				   -e "agentd" \
-				   -e "invertd" \
-				   -e "frwd_exec" \
-				   -e "sdtp" | grep -v "grep" | sort
+    ps -axu | grep -e "mmexec" \
+                    -e "crawler" \
+                    -e "filter"  \
+                    -e "logsvr" \
+                    -e "redis" \
+                    -e "agentd" \
+                    -e "invertd" \
+                    -e "mmexec" \
+                    -e "rttp" \
+                    -e "frwd_exec" \
+                    -e "sdtp" | grep -v "grep" | sort
 }
 
 ###############################################################################
@@ -139,7 +142,7 @@ main()
 
         #cat .netstat.ls
         #echo "---------------------------------------------------------------------"
-        #print_netstat "crawler" "filter" "redis-server" "search"
+        print_netstat "crawler" "filter" "redis-server" "search"
 
         sleep 2
     done;
