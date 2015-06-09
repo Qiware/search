@@ -62,6 +62,7 @@ void *rtrd_dist_routine(void *_ctx)
         if (NULL == addr)
         {
             shm_queue_dealloc(ctx->shm_sendq, data);
+            log_error(ctx->log, "Alloc memory from queue failed!");
             continue;
         }
 

@@ -1468,10 +1468,12 @@ static int rtrd_rsvr_dist_send_data(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
 
         memcpy(addr+sizeof(rttp_header_t), data+sizeof(rttp_frwd_t), head->length);
 
+        queue_dealloc(sendq, data);
+
         /* > 放入发送链表 */
         if (list_rpush(sck->mesg_list, addr))
         {
-            queue_dealloc(sendq, data);
+            slab_dealloc(rsvr->pool, addr);
             log_error(rsvr->log, "Push input list failed!");
         }
 
