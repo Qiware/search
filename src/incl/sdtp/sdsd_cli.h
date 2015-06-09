@@ -17,7 +17,7 @@ typedef struct
     log_cycle_t *log;               /* 日志对象 */
     mem_pool_t *pool;               /* 内存池 */
     
-    int cmdfd;                      /* 命令套接字 */
+    int cmd_sck_id;                 /* 命令套接字 */
     sdsd_pool_t **sendq;            /* 发送缓冲队列 */
 } sdsd_cli_t;
 
