@@ -799,19 +799,18 @@ static int rtsd_ssvr_fill_send_buff(rtsd_ssvr_t *ssvr, rtsd_sck_t *sck)
     /* > 从消息链表取数据 */
     for (;;)
     {
-        /* 1. 是否有数据 */
+        /* > 是否有数据 */
         head = (rttp_header_t *)list_lpop(ssvr->sck.mesg_list);
         if (NULL == head)
         {
             break; /* 无数据 */
         }
-
-        /* 2. 判断剩余空间 */
-        if (RTTP_CHECK_SUM != head->checksum)
+        else if (RTTP_CHECK_SUM != head->checksum)
         {
             assert(0);
         }
 
+        /* > 判断剩余空间 */
         left = (uint32_t)(send->end - send->iptr);
         mesg_len = sizeof(rttp_header_t) + head->length;
         if (left < mesg_len)
@@ -820,14 +819,14 @@ static int rtsd_ssvr_fill_send_buff(rtsd_ssvr_t *ssvr, rtsd_sck_t *sck)
             break; /* 空间不足 */
         }
 
-        /* 3. 取发送的数据 */
+        /* > 取发送的数据 */
         head->type = htons(head->type);
         head->devid = htonl(head->devid);
         head->flag = head->flag;
         head->length = htonl(head->length);
         head->checksum = htonl(head->checksum);
 
-        /* 4. 拷贝至发送缓存 */
+        /* > 拷贝至发送缓存 */
         memcpy(send->iptr, (void *)head, mesg_len);
 
         send->iptr += mesg_len;
@@ -839,36 +838,34 @@ static int rtsd_ssvr_fill_send_buff(rtsd_ssvr_t *ssvr, rtsd_sck_t *sck)
     /* > 从发送队列取数据 */
     for (;;)
     {
-        /* 1. 判断剩余空间 */
+        /* > 判断剩余空间 */
         left = (uint32_t)(send->end - send->iptr);
         if (left < (uint32_t)shm_queue_size(ssvr->sendq))
         {
             break; /* 空间不足 */
         }
 
-        /* 2. 是否有数据 */
+        /* > 是否有数据 */
         head = (rttp_header_t *)shm_queue_pop(ssvr->sendq);
         if (NULL == head)
         {
             break;
         }
-
-        /* 3. 校验合法性 */
-        if (RTTP_CHECK_SUM != head->checksum)
+        else if (RTTP_CHECK_SUM != head->checksum)
         {
             assert(0);
         }
 
         mesg_len = sizeof(rttp_header_t) + head->length;
 
-        /* 4. 设置发送数据 */
+        /* > 设置发送数据 */
         head->type = htons(head->type);
         head->flag = head->flag;
         head->devid = htonl(head->devid);
         head->length = htonl(head->length);
         head->checksum = htonl(head->checksum);
 
-        /* 4. 拷贝至发送缓存 */
+        /* > 拷贝至发送缓存 */
         memcpy(send->iptr, (void *)head, mesg_len);
 
         send->iptr += mesg_len;

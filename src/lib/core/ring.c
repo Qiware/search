@@ -84,14 +84,14 @@ int ring_push(ring_t *rq, void *addr)
  ******************************************************************************/
 void *ring_pop(ring_t *rq)
 {
-    void *addr;
+    void *addr[1];
     
-    if (ring_mpop(rq, &addr, 1))
+    if (ring_mpop(rq, addr, 1))
     {
         return NULL;
     }
 
-    return addr;
+    return addr[0];
 }
 
 /******************************************************************************

@@ -8,9 +8,17 @@
  ******************************************************************************/
 
 #include "shm_queue.h"
+#include "thread_pool.h"
 
-#define QUEUE_LEN       (16)
+#define QUEUE_LEN       (8192)
 #define QUEUE_SIZE      (1024)
+#define QUEUE_CHECK_SUM (0x12345678)
+
+typedef struct
+{
+    int check;         /* 校验值 */
+} queue_header_t;
+
 
 /* 初始化日志模块 */
 log_cycle_t *demo_init_log(const char *_path)
@@ -37,12 +45,64 @@ log_cycle_t *demo_init_log(const char *_path)
     return log;
 }
 
+void *queue_push_routine(void *q)
+{
+    void *addr;
+    queue_header_t *head;
+    shm_queue_t *queue = (shm_queue_t *)q;
+
+    while (1)
+    {
+        addr = shm_queue_malloc(queue);
+        if (NULL == addr)
+        {
+            usleep(5000);
+            continue;
+        }
+
+        head = (queue_header_t *)addr;
+
+        head->check = QUEUE_CHECK_SUM;
+
+        shm_queue_push(queue, addr);
+    }
+
+    return (void *)0;
+}
+
+void *queue_pop_routine(void *q)
+{
+    void *addr;
+    queue_header_t *head;
+    shm_queue_t *queue = (shm_queue_t *)q;
+
+    while (1)
+    {
+        addr = shm_queue_pop(queue);
+        if (NULL == addr)
+        {
+            usleep(5000);
+            continue;
+        }
+
+        head = (queue_header_t *)addr;
+        if (QUEUE_CHECK_SUM != head->check)
+        {
+            abort();
+        }
+
+        shm_queue_dealloc(queue, addr);
+    }
+
+    return (void *)0;
+}
+
 int main(int argc, char *argv[])
 {
-    int i;
+    pthread_t tid;
     log_cycle_t *log;
     shm_queue_t *queue;
-    void *addr[QUEUE_LEN], *addr2[QUEUE_LEN];
+    char path[FILE_PATH_MAX_LEN];
 
     /* > 初始化日志模块 */
     log = demo_init_log(basename(argv[0]));
@@ -52,7 +112,9 @@ int main(int argc, char *argv[])
     }
 
     /* > 创建共享内存队列 */
-    queue = shm_queue_creat(basename(argv[0]), QUEUE_LEN, QUEUE_SIZE);
+    snprintf(path, sizeof(path), "%s.key", basename(argv[0]));
+
+    queue = shm_queue_creat(path, QUEUE_LEN, QUEUE_SIZE);
     if (NULL == queue)
     {
         fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
@@ -62,23 +124,10 @@ int main(int argc, char *argv[])
     shm_queue_print(queue);
 
     /* > 操作共享内存队列(申请 放入 弹出 回收等操作) */
-    for (i=0; i<QUEUE_LEN; ++i)
-    {
-        addr[i] = shm_queue_malloc(queue);
+    thread_creat(&tid, queue_push_routine, (void *)queue);
+    thread_creat(&tid, queue_pop_routine, (void *)queue);
 
-        shm_queue_push(queue, addr[i]);
-    }
-
-    for (i=0; i<QUEUE_LEN; ++i)
-    {
-        addr2[i] = shm_queue_pop(queue);
-        if (addr[i] != addr2[i])
-        {
-            assert(0);
-        }
-
-        shm_queue_dealloc(queue, addr2[i]);
-    }
+    while (1) { pause(); }
 
     return 0;
 }
