@@ -9,6 +9,7 @@
  **     2. 文档列表: 使用B树组织(TODO: 目前暂时用链表组织)
  ** 作  者: # Qifeng.zou # 2015.04.29 #
  ******************************************************************************/
+#include "str.h"
 #include "hash.h"
 #include "invtab.h"
 #include "syscall.h"
@@ -231,23 +232,30 @@ static int invt_word_add_doc(invt_tab_t *tab, invt_dic_word_t *dw, const char *u
  **     freq: 词频
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项: 将关键词统一转换为小写字符再进行后续处理
  **作    者: # Qifeng.zou # 2015.04.28 #
  ******************************************************************************/
 int invtab_insert(invt_tab_t *tab, char *word, const char *url, int freq)
 {
-    int idx;
+    int idx, len;
     avl_node_t *node;
     invt_dic_word_t *dw;
+    char lower_word[INVT_WORD_MAX_LEN];
 
-    idx = hash_time33(word) % tab->mod;
+    /* > 转化为小写字符 */
+    len = strlen(word);
+    len = len+1 > INVT_WORD_MAX_LEN? INVT_WORD_MAX_LEN : len;
+
+    char_to_lower(word, lower_word, len);
 
     /* > 查找单词项 */
-    node = avl_query(tab->dic[idx], word, strlen(word));
+    idx = hash_time33(lower_word) % tab->mod;
+
+    node = avl_query(tab->dic[idx], lower_word, len);
     if (NULL == node)
     {
-        dw = invt_word_add(tab, word, strlen(word));
+        dw = invt_word_add(tab, lower_word, len);
         if (NULL == dw)
         {
             log_error(tab->log, "Create word dw failed!");
@@ -283,15 +291,23 @@ int invtab_insert(invt_tab_t *tab, char *word, const char *url, int freq)
  ******************************************************************************/
 invt_dic_word_t *invtab_query(invt_tab_t *tab, char *word)
 {
-    int idx;
+    int idx, len;
     avl_node_t *node;
+    char lower_word[INVT_WORD_MAX_LEN];
 
-    idx = hash_time33(word) % tab->mod;
+    /* > 转化为小写字符 */
+    len = strlen(word);
+    len = len+1 > INVT_WORD_MAX_LEN? INVT_WORD_MAX_LEN : len;
 
-    node = avl_query(tab->dic[idx], word, strlen(word));
+    char_to_lower(word, lower_word, len);
+
+    /* > 查找关键字 */
+    idx = hash_time33(lower_word) % tab->mod;
+
+    node = avl_query(tab->dic[idx], lower_word, len);
     if (NULL == node)
     {
-        log_error(tab->log, "Query word [%s] failed! idx:%d", word, idx);
+        log_error(tab->log, "Query word [%s] failed! idx:%d", lower_word, idx);
         return NULL;
     }
     
@@ -313,12 +329,20 @@ invt_dic_word_t *invtab_query(invt_tab_t *tab, char *word)
  ******************************************************************************/
 int invtab_remove(invt_tab_t *tab, char *word)
 {
-    int idx;
+    int idx, len;
     invt_dic_word_t *dw;
+    char lower_word[INVT_WORD_MAX_LEN];
 
-    idx = hash_time33(word) % tab->mod;
+    /* > 转化为小写字符 */
+    len = strlen(word);
+    len = len+1 > INVT_WORD_MAX_LEN? INVT_WORD_MAX_LEN : len;
 
-    if (avl_delete(tab->dic[idx], word, strlen(word), (void **)&dw))
+    char_to_lower(word, lower_word, len);
+
+    /* > 删除关键字 */
+    idx = hash_time33(lower_word) % tab->mod;
+
+    if (avl_delete(tab->dic[idx], lower_word, len, (void **)&dw))
     {
         log_error(tab->log, "Query word [%s] failed! idx:%d", word, idx);
         return INVT_ERR;

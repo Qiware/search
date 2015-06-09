@@ -7,6 +7,8 @@
 #include "list.h"
 #include "avl_tree.h"
 
+#define INVT_WORD_MAX_LEN   (64)    /* 关键词最大长度 */
+
 typedef enum
 {
     INVT_OK                         /* 成功 */
