@@ -10,7 +10,7 @@ static int rtsd_cli_shmat(rtsd_cli_t *cli);
 static int rtsd_cli_cmd_usck(rtsd_cli_t *cli, int idx);
 
 #define rtsd_cli_unix_path(cli, path, idx) \
-    snprintf(path, sizeof(path), "./temp/rttp/snd/%s/%s_cli_%d.usck", cli->conf.name, cli->conf.name, idx)
+    snprintf(path, sizeof(path), "../temp/rttp/send/%s/%s_cli_%d.usck", cli->conf.name, cli->conf.name, idx)
 
 /******************************************************************************
  **函数名称: rtsd_cli_init
