@@ -4,11 +4,7 @@
 #include "log.h"
 #include "comm.h"
 #include "agentd.h"
-#if defined(__RTTP_SUPPORT__)
 #include "rtsd_cli.h"
-#else /*__RTTP_SUPPORT__*/
-#include "sdsd_cli.h"
-#endif /*__RTTP_SUPPORT__*/
 #include "shm_queue.h"
 #include "agentd_conf.h"
 
@@ -37,11 +33,7 @@ typedef struct
     agentd_conf_t *conf;                    /* 配置信息 */
     log_cycle_t *log;                       /* 日志对象 */
 
-#if defined(__RTTP_SUPPORT__)
     rtsd_cli_t *send_to_invtd;              /* SDTP服务(发送至倒排服务) */
-#else /*__RTTP_SUPPORT__*/
-    sdsd_cli_t *send_to_invtd;              /* SDTP服务(发送至倒排服务) */
-#endif /*__RTTP_SUPPORT__*/
     agent_cntx_t *agent;                    /* 代理服务 */
     shm_queue_t *sendq;                     /* 发送队列 */
 } agentd_cntx_t;

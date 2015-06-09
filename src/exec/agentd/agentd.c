@@ -125,17 +125,10 @@ static int agentd_proc_lock(void)
 }
 
 /* 初始化SDTP对象 */
-#if defined(__RTTP_SUPPORT__)
 static rtsd_cli_t *agentd_to_invtd_init(rtsd_conf_t *conf, log_cycle_t *log)
 {
     return rtsd_cli_init(conf, 0, log);
 }
-#else /*__RTTP_SUPPORT__*/
-static sdsd_cli_t *agentd_to_invtd_init(sdsd_conf_t *conf, log_cycle_t *log)
-{
-    return sdsd_cli_init(conf, 0, log);
-}
-#endif /*__RTTP_SUPPORT__*/
 
 /******************************************************************************
  **函数名称: agentd_search_req_hdl
@@ -274,7 +267,7 @@ static agentd_cntx_t *agentd_init(char *pname, const char *path)
     }
 
     /* > 初始化SDTP信息 */
-    send_to_invtd = agentd_to_invtd_init(&conf->sdtp, log);
+    send_to_invtd = agentd_to_invtd_init(&conf->to_frwd, log);
     if (NULL == send_to_invtd)
     {
         fprintf(stderr, "Initialize sdtp failed!");

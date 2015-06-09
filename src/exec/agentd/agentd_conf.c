@@ -17,11 +17,7 @@ static int agentd_conf_parse(xml_tree_t *xml, agent_conf_t *conf, log_cycle_t *l
 
 static int agentd_conf_load_comm(xml_tree_t *xml, agentd_conf_t *conf, log_cycle_t *log);
 static int agentd_conf_load_agent(xml_tree_t *xml, agent_conf_t *conf, log_cycle_t *log);
-#if defined(__RTTP_SUPPORT__)
-static int agentd_conf_load_sdtp(xml_tree_t *xml, rtsd_conf_t *conf, log_cycle_t *log);
-#else /*__RTTP_SUPPORT__*/
-static int agentd_conf_load_sdtp(xml_tree_t *xml, sdsd_conf_t *conf, log_cycle_t *log);
-#endif /*__RTTP_SUPPORT__*/
+static int agentd_conf_load_rttp(xml_tree_t *xml, rtsd_conf_t *conf, log_cycle_t *log);
 
 /* 加载配置信息 */
 agentd_conf_t *agentd_load_conf(const char *path, log_cycle_t *log)
@@ -77,10 +73,10 @@ agentd_conf_t *agentd_load_conf(const char *path, log_cycle_t *log)
             break;
         }
 
-        /* > 加载SDTP配置 */
-        if (agentd_conf_load_sdtp(xml, &conf->sdtp, log))
+        /* > 加载RTTP配置 */
+        if (agentd_conf_load_rttp(xml, &conf->to_frwd, log))
         {
-            log_error(log, "Load sdtp conf failed! path:%s", path);
+            log_error(log, "Load rttp conf failed! path:%s", path);
             break;
         }
 
@@ -274,20 +270,12 @@ static int agentd_conf_load_agent(xml_tree_t *xml, agent_conf_t *conf, log_cycle
     return AGTD_OK;
 }
 
-/* 加载SDTP配置 */
-#if defined(__RTTP_SUPPORT__)
-static int agentd_conf_load_sdtp(xml_tree_t *xml, rtsd_conf_t *conf, log_cycle_t *log)
-#else /*__RTTP_SUPPORT__*/
-static int agentd_conf_load_sdtp(xml_tree_t *xml, sdsd_conf_t *conf, log_cycle_t *log)
-#endif /*__RTTP_SUPPORT__*/
+/* 加载RTTP配置 */
+static int agentd_conf_load_rttp(xml_tree_t *xml, rtsd_conf_t *conf, log_cycle_t *log)
 {
-#if defined(__RTTP_SUPPORT__)
     memset(conf, 0, sizeof(rtsd_conf_t));
-#else /*__RTTP_SUPPORT__*/
-    memset(conf, 0, sizeof(sdsd_conf_t));
-#endif /*__RTTP_SUPPORT__*/
 
-    snprintf(conf->name, sizeof(conf->name), "SDTP-SEND");
+    snprintf(conf->name, sizeof(conf->name), "RTTP-SEND");
 
     conf->auth.devid = 1;
     snprintf(conf->auth.usr, sizeof(conf->auth.usr), "qifeng");
@@ -299,7 +287,7 @@ static int agentd_conf_load_sdtp(xml_tree_t *xml, sdsd_conf_t *conf, log_cycle_t
     conf->send_buff_size = 5 * MB;
     conf->recv_buff_size = 2 * MB;
 
-    snprintf(conf->sendq.name, sizeof(conf->sendq.name), "../temp/sdtp/sdtp-ssvr.key");
+    snprintf(conf->sendq.name, sizeof(conf->sendq.name), "../temp/rttp/rttp-ssvr.key");
     conf->sendq.size = 4096;
     conf->sendq.count = 2048;
 
