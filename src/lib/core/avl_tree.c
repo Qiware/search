@@ -615,7 +615,7 @@ int avl_ll_balance(avl_tree_t *tree, avl_node_t *node)
 int avl_lr_balance(avl_tree_t *tree, avl_node_t *node)
 {
     avl_node_t *lchild = node->lchild,
-        *parent = node->parent, *lrchild = NULL;
+               *parent = node->parent, *lrchild = NULL;
 
 
     lrchild = lchild->rchild;
@@ -630,10 +630,10 @@ int avl_lr_balance(avl_tree_t *tree, avl_node_t *node)
         }
         case AVL_EH:
         {
-           node->bf = AVL_EH;
-           lchild->bf = AVL_EH;
-           lrchild->bf = AVL_EH;
-           break;
+            node->bf = AVL_EH;
+            lchild->bf = AVL_EH;
+            lrchild->bf = AVL_EH;
+            break;
         }
         case AVL_RH:
         {
