@@ -97,7 +97,7 @@ static int mon_agent_search_rep_hdl(int fd)
     fprintf(stderr, "    url num: %d\n", resp->url_num);
     for (i=0; i<resp->url_num; ++i)
     {
-        fprintf(stderr, "    url: %s\n", resp->url[i]);
+        fprintf(stderr, "        [%02d] url: %s\n", i+1, resp->url[i]);
     }
 
     return 0;
@@ -197,7 +197,7 @@ static int mon_agent_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void 
 static int mon_agent_multi_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args)
 {
     int *fd;
-    time_t ctm;
+    time_t *ctm;
     fd_set rdset;
     agent_header_t head;
     srch_mesg_body_t body;
@@ -216,6 +216,18 @@ static int mon_agent_multi_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu,
 
     num = atoi(digit);
     fd = (int *)calloc(num, sizeof(int));
+    if (NULL == fd)
+    {
+        fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
+        return -1;
+    }
+    ctm = (time_t *)calloc(num, sizeof(time_t));
+    if (NULL == ctm)
+    {
+        fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
+        free(ctm);
+        return -1;
+    }
 
     /* > 连接代理服务 */
     for (idx=0; idx<num; ++idx)
@@ -239,7 +251,7 @@ static int mon_agent_multi_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu,
         Writen(fd[idx], (void *)&head, sizeof(head));
         Writen(fd[idx], (void *)&body, sizeof(body));
 
-        ctm = time(NULL);
+        ctm[idx] = time(NULL);
     }
 
     num = idx;
@@ -288,7 +300,7 @@ static int mon_agent_multi_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu,
             else if (FD_ISSET(fd[idx], &rdset))
             {
                 mon_agent_search_rep_hdl(fd[idx]);
-                fprintf(stderr, "    fd:%d Spend: %lu(s)\n", fd[idx], time(NULL) - ctm);
+                fprintf(stderr, "    fd:%d Spend: %lu(s)\n", fd[idx], time(NULL) - ctm[idx]);
                 CLOSE(fd[idx]);
                 --left;
             }
@@ -304,6 +316,7 @@ static int mon_agent_multi_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu,
     }
 
     free(fd);
+    free(ctm);
 
     return 0;
 }
