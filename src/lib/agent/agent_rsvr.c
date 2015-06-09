@@ -521,7 +521,7 @@ static int agent_rsvr_del_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *
     void *addr, *p;
     agent_socket_extra_t *extra = sck->extra;
 
-    log_debug(rsvr->log, "Call %s()! fd:%d", __func__, sck->fd);
+    log_debug(rsvr->log, "Call %s()! fd:%d serial:%ld", __func__, sck->fd, extra->serial);
 
     /* 1. 将套接字从红黑树中剔除 */
     rbt_delete(rsvr->connections, extra->serial, &addr);
