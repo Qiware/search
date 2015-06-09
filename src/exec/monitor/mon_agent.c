@@ -116,9 +116,9 @@ static int mon_agent_search_rep_hdl(int fd)
  ******************************************************************************/
 static int mon_agent_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args)
 {
-    int fd, ret;
+    int fd, ret, sec, msec;
     fd_set rdset;
-    time_t ctm;
+    struct timeb ctm, old_tm;
     char word[1024];
     agent_header_t head;
     srch_mesg_body_t body;
@@ -147,7 +147,7 @@ static int mon_agent_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void 
     Writen(fd, (void *)&head, sizeof(head));
     Writen(fd, (void *)&body, sizeof(body));
 
-    ctm = time(NULL);
+    ftime(&old_tm);
 
     /* 等待应答数据 */
     while (1)
@@ -173,7 +173,15 @@ static int mon_agent_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void 
         if (FD_ISSET(fd, &rdset))
         {
             mon_agent_search_rep_hdl(fd);
-            fprintf(stderr, "    Spend: %lu(s)\n", time(NULL) - ctm);
+            ftime(&ctm);
+            sec = ctm.time - old_tm.time;
+            msec = ctm.millitm - old_tm.millitm;
+            if (msec < 0)
+            {
+                msec += 1000;
+                sec -= 1;
+            }
+            fprintf(stderr, "    Spend: %d.%03d(s)\n", sec, msec);
             break;
         }
     }
@@ -196,8 +204,8 @@ static int mon_agent_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void 
  ******************************************************************************/
 static int mon_agent_multi_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args)
 {
-    int *fd;
-    time_t *ctm;
+    int *fd, sec, msec;
+    struct timeb *crtm, ctm;
     fd_set rdset;
     agent_header_t head;
     srch_mesg_body_t body;
@@ -221,11 +229,11 @@ static int mon_agent_multi_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu,
         fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
         return -1;
     }
-    ctm = (time_t *)calloc(num, sizeof(time_t));
-    if (NULL == ctm)
+    crtm = (struct timeb *)calloc(num, sizeof(struct timeb));
+    if (NULL == crtm)
     {
         fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
-        free(ctm);
+        free(crtm);
         return -1;
     }
 
@@ -251,7 +259,7 @@ static int mon_agent_multi_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu,
         Writen(fd[idx], (void *)&head, sizeof(head));
         Writen(fd[idx], (void *)&body, sizeof(body));
 
-        ctm[idx] = time(NULL);
+        ftime(&crtm[idx]);
     }
 
     num = idx;
@@ -300,7 +308,15 @@ static int mon_agent_multi_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu,
             else if (FD_ISSET(fd[idx], &rdset))
             {
                 mon_agent_search_rep_hdl(fd[idx]);
-                fprintf(stderr, "    fd:%d Spend: %lu(s)\n", fd[idx], time(NULL) - ctm[idx]);
+                ftime(&ctm);
+                sec = ctm.time - crtm[idx].time;
+                msec = ctm.millitm - crtm[idx].millitm;
+                if (msec < 0)
+                {
+                    msec += 1000;
+                    sec -= 1;
+                }
+                fprintf(stderr, "    fd:%d Spend: %d.%03d(s)\n", fd[idx], sec, msec);
                 CLOSE(fd[idx]);
                 --left;
             }
@@ -316,7 +332,7 @@ static int mon_agent_multi_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu,
     }
 
     free(fd);
-    free(ctm);
+    free(crtm);
 
     return 0;
 }
