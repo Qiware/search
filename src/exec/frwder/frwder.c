@@ -35,11 +35,7 @@ int main(int argc, const char *argv[])
     memset(&frwd->conf, 0, sizeof(frwd->conf));
 
     /* > 初始化日志 */
-#if defined(__RTTP_SUPPORT__)
-    rttp_setup_conf(&frwd->conf.rttp, atoi(argv[1]));
-#else /*__RTTP_SUPPORT__*/
-    sdtp_setup_conf(&frwd->conf.sdtp, atoi(argv[1]));
-#endif /*__RTTP_SUPPORT__*/
+    rttp_setup_conf(&frwd->conf.conn_invtd, atoi(argv[1]));
 
     snprintf(path, sizeof(path), "../log/%s.plog", basename(argv[0]));
     plog_init(LOG_LEVEL_TRACE, path);
@@ -62,10 +58,10 @@ int main(int argc, const char *argv[])
 
     /* > 初始化SDTP发送服务 */
 #if defined(__RTTP_SUPPORT__)
-    frwd->rttp = rtsd_init(&frwd->conf.rttp, frwd->log);
+    frwd->rttp = rtsd_init(&frwd->conf.conn_invtd, frwd->log);
     if (NULL == frwd->rttp) 
 #else /*__RTTP_SUPPORT__*/
-    frwd->sdtp = sdsd_init(&frwd->conf.sdtp, frwd->log);
+    frwd->sdtp = sdsd_init(&frwd->conf.conn_invtd, frwd->log);
     if (NULL == frwd->sdtp) 
 #endif /*__RTTP_SUPPORT__*/
     {

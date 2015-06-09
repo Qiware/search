@@ -8,18 +8,15 @@
 #include "sdsd_cli.h"
 #include "sdsd_ssvr.h"
 #endif /*__RTTP_SUPPORT__*/
+#include "frwd_conf.h"
 
 #define AGTD_SHM_SENDQ_PATH     "../temp/agentd/send.shmq"  /* 发送队列路径 */
 
-/* 配置信息 */
-typedef struct
+typedef enum
 {
-#if defined(__RTTP_SUPPORT__)
-    rtsd_conf_t rttp;               /* RTTP配置 */
-#else /*__RTTP_SUPPORT__*/
-    sdsd_conf_t sdtp;               /* SDTP配置 */
-#endif /*__RTTP_SUPPORT__*/
-} frwd_conf_t;
+    FRWD_OK
+    , FRWD_ERR = ~0x7fffffff
+} frwd_err_code_e;
 
 /* 全局对象 */
 typedef struct
