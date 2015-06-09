@@ -46,7 +46,7 @@ static int invtd_search_req_hdl(int type, int orig, char *buff, size_t len, void
     memset(&rep, 0, sizeof(rep));
 
     /* > 搜索倒排表 */
-    word = invert_tab_query(ctx->tab, req->body.words);
+    word = invtab_query(ctx->tab, req->body.words);
     if (NULL == word
         || NULL == word->doc_list)
     {

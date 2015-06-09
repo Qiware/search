@@ -14,7 +14,7 @@ INCLUDE = -I./incl \
 			-I$(PROJ)/src/incl/sdtp
 
 LIBS_PATH = -L$(PROJ)/lib
-LIBS = -lpthread -lxd_core -lxd_invert_tab -lsdtp -lrttp
+LIBS = -lpthread -lxd_core -lxd_invtab -lsdtp -lrttp
 
 SRC_LIST = invertd.c \
             invtd_comm.c \

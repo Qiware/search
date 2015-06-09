@@ -7,8 +7,8 @@
 #else /*__RTTP_SUPPORT__*/
 #include "sdrd_recv.h"
 #endif /*__RTTP_SUPPORT__*/
+#include "invtab.h"
 #include "invtd_conf.h"
-#include "invert_tab.h"
 
 /* 全局信息 */
 typedef struct

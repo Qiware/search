@@ -1,7 +1,7 @@
 /******************************************************************************
  ** Coypright(C) 2014-2024 Xundao technology Co., Ltd
  **
- ** 文件名: invert.c
+ ** 文件名: invtab.c
  ** 版本号: 1.0
  ** 描  述: 倒排索引、倒排文件处理
  **         如: 创建、插入、查找、删除、归并等
@@ -10,11 +10,11 @@
  ** 作  者: # Qifeng.zou # 2015.04.29 #
  ******************************************************************************/
 #include "hash.h"
-#include "invert_tab.h"
+#include "invtab.h"
 #include "syscall.h"
 
 /******************************************************************************
- **函数名称: invert_tab_dic_word_cmp
+ **函数名称: invtab_dic_word_cmp
  **功    能: 比较单词的大小
  **输入参数: 
  **     word: 单词
@@ -25,7 +25,7 @@
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.04.28 #
  ******************************************************************************/
-static int invert_tab_dic_word_cmp(char *word, void *data)
+static int invtab_dic_word_cmp(char *word, void *data)
 {
     invt_dic_word_t *dw = (invt_dic_word_t *)data;
 
@@ -33,7 +33,7 @@ static int invert_tab_dic_word_cmp(char *word, void *data)
 }
 
 /******************************************************************************
- **函数名称: invert_tab_creat
+ **函数名称: invtab_creat
  **功    能: 创建倒排表
  **输入参数: 
  **     max: 数组长度
@@ -44,7 +44,7 @@ static int invert_tab_dic_word_cmp(char *word, void *data)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.04.28 #
  ******************************************************************************/
-invt_tab_t *invert_tab_creat(int max, log_cycle_t *log)
+invt_tab_t *invtab_creat(int max, log_cycle_t *log)
 {
     int idx;
     invt_tab_t *tab;
@@ -83,11 +83,11 @@ invt_tab_t *invert_tab_creat(int max, log_cycle_t *log)
 
         tab->dic[idx] = avl_creat(&opt,
                             (key_cb_t)hash_time33_ex,
-                            (avl_cmp_cb_t)invert_tab_dic_word_cmp);
+                            (avl_cmp_cb_t)invtab_dic_word_cmp);
         if (NULL == tab->dic[idx])
         {
             log_error(log, "Create avl-tree failed! idx:%d", idx);
-            invert_tab_destroy(tab);
+            invtab_destroy(tab);
             return NULL;
         }
     }
@@ -222,7 +222,7 @@ static int invt_word_add_doc(invt_tab_t *tab, invt_dic_word_t *dw, const char *u
 }
 
 /******************************************************************************
- **函数名称: invert_tab_insert
+ **函数名称: invtab_insert
  **功    能: 插入倒排信息
  **输入参数: 
  **     tab: 全局对象
@@ -235,7 +235,7 @@ static int invt_word_add_doc(invt_tab_t *tab, invt_dic_word_t *dw, const char *u
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.04.28 #
  ******************************************************************************/
-int invert_tab_insert(invt_tab_t *tab, char *word, const char *url, int freq)
+int invtab_insert(invt_tab_t *tab, char *word, const char *url, int freq)
 {
     int idx;
     avl_node_t *node;
@@ -270,7 +270,7 @@ int invert_tab_insert(invt_tab_t *tab, char *word, const char *url, int freq)
 }
 
 /******************************************************************************
- **函数名称: invert_tab_query
+ **函数名称: invtab_query
  **功    能: 查询倒排信息
  **输入参数: 
  **     tab: 全局对象
@@ -281,7 +281,7 @@ int invert_tab_insert(invt_tab_t *tab, char *word, const char *url, int freq)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.04.28 #
  ******************************************************************************/
-invt_dic_word_t *invert_tab_query(invt_tab_t *tab, char *word)
+invt_dic_word_t *invtab_query(invt_tab_t *tab, char *word)
 {
     int idx;
     avl_node_t *node;
@@ -299,7 +299,7 @@ invt_dic_word_t *invert_tab_query(invt_tab_t *tab, char *word)
 }
 
 /******************************************************************************
- **函数名称: invert_tab_remove
+ **函数名称: invtab_remove
  **功    能: 删除倒排信息
  **输入参数: 
  **     tab: 全局对象
@@ -311,7 +311,7 @@ invt_dic_word_t *invert_tab_query(invt_tab_t *tab, char *word)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.04.28 #
  ******************************************************************************/
-int invert_tab_remove(invt_tab_t *tab, char *word)
+int invtab_remove(invt_tab_t *tab, char *word)
 {
     int idx;
     invt_dic_word_t *dw;
@@ -332,7 +332,7 @@ int invert_tab_remove(invt_tab_t *tab, char *word)
 }
 
 /******************************************************************************
- **函数名称: invert_tab_destroy
+ **函数名称: invtab_destroy
  **功    能: 销毁倒排对象
  **输入参数: 
  **输出参数: NONE
@@ -341,7 +341,7 @@ int invert_tab_remove(invt_tab_t *tab, char *word)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.04.28 #
  ******************************************************************************/
-int invert_tab_destroy(invt_tab_t *tab)
+int invtab_destroy(invt_tab_t *tab)
 {
     int idx;
 

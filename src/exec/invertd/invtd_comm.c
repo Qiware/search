@@ -7,9 +7,9 @@
  ** 作  者: # Qifeng.zou # Fri 08 May 2015 07:14:11 PM CST #
  ******************************************************************************/
 
+#include "invtab.h"
 #include "invertd.h"
 #include "invtd_priv.h"
-#include "invert_tab.h"
 
 #define INVTD_LOG_PATH      "../log/invertd.log"
 #define INVTD_PLOG_PATH     "../log/invertd.plog"
@@ -163,7 +163,7 @@ invtd_cntx_t *invtd_init(const char *conf_path)
         }
 
         /* > 创建倒排表 */
-        ctx->tab = invert_tab_creat(ctx->conf.invt_tab_max, log);
+        ctx->tab = invtab_creat(ctx->conf.invt_tab_max, log);
         if (NULL == ctx->tab)
         {
             log_error(log, "Create invert table failed!");
@@ -215,7 +215,7 @@ invtd_cntx_t *invtd_init(const char *conf_path)
 static int invtd_insert_word(invtd_cntx_t *ctx)
 {
 #define INVERT_INSERT(ctx, word, url, freq) \
-    if (invert_tab_insert(ctx->tab, word, url, freq)) \
+    if (invtab_insert(ctx->tab, word, url, freq)) \
     { \
         return INVT_ERR; \
     }

@@ -7,8 +7,8 @@
  ** 作  者: # Qifeng.zou # Fri 08 May 2015 08:27:51 AM CST #
  ******************************************************************************/
 
+#include "invtab.h"
 #include "xml_tree.h"
-#include "invert_tab.h"
 #include "invtd_conf.h"
 
 static int invtd_conf_load_sdtp(xml_tree_t *xml, invtd_conf_t *conf);
