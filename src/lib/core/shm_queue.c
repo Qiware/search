@@ -31,6 +31,8 @@ size_t shm_queue_total(int max, size_t size)
         return (size_t)-1;
     }
 
+    total += sz;
+
     return total;
 }
 
