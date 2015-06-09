@@ -17,11 +17,11 @@ INCLUDE = -I./incl \
 LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lpthread -lxd_core -lsdtp -lrttp
 
-SRC_LIST = frwd_main.c
+SRC_LIST = frwder.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
 
-TARGET = frwd_exec
+TARGET = frwder
 
 .PHONY: all clean
 
