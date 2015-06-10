@@ -126,8 +126,8 @@ int xml_fprint(xml_tree_t *xml, FILE *fp);
 int xml_sprint(xml_tree_t *xml, char *str);
 int xml_spack(xml_tree_t *xml, char *str);
 
-xml_node_t *xml_rquery(xml_tree_t *xml, xml_node_t *curr, const char *path);
-#define xml_query(xml, path) xml_rquery(xml, xml->root, path)
+xml_node_t *xml_search(xml_tree_t *xml, xml_node_t *curr, const char *path);
+#define xml_query(xml, path) xml_search(xml, xml->root, path)
 
 xml_node_t *xml_add_node(
         xml_tree_t *xml, xml_node_t *node,

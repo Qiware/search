@@ -109,7 +109,7 @@ static int _flt_conf_load(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *log)
     if (NULL != nail)
     {
         /* 1. 日志级别 */
-        node = xml_rquery(xml, nail, "LEVEL");
+        node = xml_search(xml, nail, "LEVEL");
         if (NULL != node)
         {
             conf->log.level = log_get_level(node->value.str);
@@ -120,7 +120,7 @@ static int _flt_conf_load(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *log)
         }
 
         /* 2. 系统日志级别 */
-        node = xml_rquery(xml, nail, "SYS_LEVEL");
+        node = xml_search(xml, nail, "SYS_LEVEL");
         if (NULL != node)
         {
             conf->log.syslevel = log_get_level(node->value.str);
@@ -144,7 +144,7 @@ static int _flt_conf_load(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *log)
     }
 
     /* 1. 爬虫线程数(相对查找) */
-    node = xml_rquery(xml, nail, "NUM");
+    node = xml_search(xml, nail, "NUM");
     if (NULL == node)
     {
         work->num = FLT_THD_DEF_NUM;
@@ -156,7 +156,7 @@ static int _flt_conf_load(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *log)
     }
 
     /* 2. 工作路径(相对查找) */
-    node = xml_rquery(xml, nail, "PATH");
+    node = xml_search(xml, nail, "PATH");
     if (NULL == node)
     {
         log_error(log, "Didn't configure workspace path!");
@@ -185,7 +185,7 @@ static int _flt_conf_load(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *log)
     }
 
     /* 1 获取抓取深度 */
-    node = xml_rquery(xml, nail, "DEPTH");
+    node = xml_search(xml, nail, "DEPTH");
     if (NULL == node)
     {
         log_error(log, "Get download depth failed!");
@@ -195,7 +195,7 @@ static int _flt_conf_load(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *log)
     conf->download.depth = atoi(node->value.str);
 
     /* 2 获取存储路径 */
-    node = xml_rquery(xml, nail, "PATH");
+    node = xml_search(xml, nail, "PATH");
     if (NULL == node)
     {
         log_error(log, "Get download path failed!");
@@ -277,7 +277,7 @@ static int flt_conf_load_redis(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *l
     }
 
     /* > 计算REDIS网络配置项总数 */
-    start = xml_rquery(xml, nail, "NETWORK.ITEM");
+    start = xml_search(xml, nail, "NETWORK.ITEM");
     if (NULL == start)
     {
         log_error(log, "Query item of network failed!");
@@ -312,7 +312,7 @@ static int flt_conf_load_redis(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *l
         while (NULL != item)
         {
             /* 获取IP地址 */
-            node = xml_rquery(xml, item, "IP");
+            node = xml_search(xml, item, "IP");
             if (NULL == node)
             {
                 log_error(log, "Mark name isn't right! mark:%s", item->name);
@@ -322,7 +322,7 @@ static int flt_conf_load_redis(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *l
             snprintf(redis->conf[idx].ip, sizeof(redis->conf[idx].ip), "%s", node->value.str);
 
             /* 获取PORT地址 */
-            node = xml_rquery(xml, item, "PORT");
+            node = xml_search(xml, item, "PORT");
             if (NULL == node)
             {
                 log_error(log, "Mark name isn't right! mark:%s", item->name);
@@ -337,7 +337,7 @@ static int flt_conf_load_redis(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *l
         }
 
         /* > 获取队列名 */
-        node = xml_rquery(xml, nail, "TASKQ.NAME");
+        node = xml_search(xml, nail, "TASKQ.NAME");
         if (NULL == node)
         {
             log_error(log, "Get undo task queue failed!");
@@ -347,7 +347,7 @@ static int flt_conf_load_redis(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *l
         snprintf(redis->taskq, sizeof(redis->taskq), "%s", node->value.str);
 
         /* > 获取哈希表名 */
-        node = xml_rquery(xml, nail, "DONE_TAB.NAME");  /* DONE哈希表 */
+        node = xml_search(xml, nail, "DONE_TAB.NAME");  /* DONE哈希表 */
         if (NULL == node)
         {
             log_error(log, "Get done hash table failed!");
@@ -356,7 +356,7 @@ static int flt_conf_load_redis(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *l
 
         snprintf(redis->done_tab, sizeof(redis->done_tab), "%s", node->value.str);
 
-        node = xml_rquery(xml, nail, "PUSH_TAB.NAME");  /* PUSH哈希表 */
+        node = xml_search(xml, nail, "PUSH_TAB.NAME");  /* PUSH哈希表 */
         if (NULL == node)
         {
             log_error(log, "Get pushed hash table failed!");
@@ -420,7 +420,7 @@ static int flt_conf_load_seed(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *lo
         seed = &conf->seed[conf->seed_num++];
 
         /* 提取URI */
-        node = xml_rquery(xml, item, "URI");
+        node = xml_search(xml, item, "URI");
         if (NULL == node)
         {
             log_error(log, "Get uri failed!");
@@ -430,7 +430,7 @@ static int flt_conf_load_seed(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *lo
         snprintf(seed->uri, sizeof(seed->uri), "%s", node->value.str);
 
         /* 获取DEPTH */
-        node = xml_rquery(xml, item, "DEPTH");
+        node = xml_search(xml, item, "DEPTH");
         if (NULL == node)
         {
             seed->depth = 0;

@@ -397,7 +397,7 @@ static int crwl_task_parse_download_webpage(xml_tree_t *xml, crwl_task_down_webp
     }
 
     /* 获取IP */
-    node = xml_rquery(xml, body, "IP");
+    node = xml_search(xml, body, "IP");
     if (NULL == node)
     {
         return CRWL_ERR;
@@ -406,7 +406,7 @@ static int crwl_task_parse_download_webpage(xml_tree_t *xml, crwl_task_down_webp
     snprintf(dw->ip, sizeof(dw->ip), "%s", node->value.str);
 
     /* 获取IP.FAMILY */
-    node = xml_rquery(xml, body, "IP.FAMILY");
+    node = xml_search(xml, body, "IP.FAMILY");
     if (NULL == node)
     {
         return CRWL_ERR;
@@ -415,7 +415,7 @@ static int crwl_task_parse_download_webpage(xml_tree_t *xml, crwl_task_down_webp
     dw->family = atoi(node->value.str);
 
     /* 获取URI */
-    node = xml_rquery(xml, body, "URI");
+    node = xml_search(xml, body, "URI");
     if (NULL == node)
     {
         return CRWL_ERR;
@@ -424,7 +424,7 @@ static int crwl_task_parse_download_webpage(xml_tree_t *xml, crwl_task_down_webp
     snprintf(dw->uri, sizeof(dw->uri), "%s", node->value.str);
 
     /* 获取URI.DEPTH */
-    node = xml_rquery(xml, body, "URI.DEPTH");
+    node = xml_search(xml, body, "URI.DEPTH");
     if (NULL == node)
     {
         return CRWL_ERR;

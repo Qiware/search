@@ -128,7 +128,7 @@ static int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t 
     }
 
     /* > 设备ID */
-    node = xml_rquery(xml, parent, "DEVID");
+    node = xml_search(xml, parent, "DEVID");
     if (NULL == node
         || 0 == node->value.len)
     {
@@ -141,7 +141,7 @@ static int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t 
     snprintf(conf->name, sizeof(conf->name), "%05d", conf->devid);
 
     /* > 服务端IP */
-    node = xml_rquery(xml, parent, "SERVER.IP");
+    node = xml_search(xml, parent, "SERVER.IP");
     if (NULL == node
         || 0 == node->value.len)
     {
@@ -150,7 +150,7 @@ static int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t 
 
     snprintf(conf->ipaddr, sizeof(conf->ipaddr), "%s", node->value.str);
 
-    node = xml_rquery(xml, parent, "SERVER.PORT");
+    node = xml_search(xml, parent, "SERVER.PORT");
     if (NULL == node
         || 0 == node->value.len)
     {
@@ -160,7 +160,7 @@ static int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t 
     conf->port = atoi(node->value.str);
 
     /* > 鉴权信息 */
-    node = xml_rquery(xml, parent, "AUTH.USER");
+    node = xml_search(xml, parent, "AUTH.USR");
     if (NULL == node
         || 0 == node->value.len)
     {
@@ -169,7 +169,7 @@ static int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t 
 
     snprintf(conf->auth.usr, sizeof(conf->auth.usr), "%s", node->value.str);
 
-    node = xml_rquery(xml, parent, "AUTH.PASSWD");
+    node = xml_search(xml, parent, "AUTH.PASSWD");
     if (NULL == node
         || 0 == node->value.len)
     {
@@ -179,7 +179,7 @@ static int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t 
     snprintf(conf->auth.passwd, sizeof(conf->auth.passwd), "%s", node->value.str);
 
     /* > 线程数目 */
-    node = xml_rquery(xml, parent, "THDNUM.SEND");  /* 发送线程数 */
+    node = xml_search(xml, parent, "THDNUM.SEND");  /* 发送线程数 */
     if (NULL == node
         || 0 == node->value.len)
     {
@@ -192,7 +192,7 @@ static int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t 
         return FRWD_ERR;
     }
 
-    node = xml_rquery(xml, parent, "THDNUM.WORK");  /* 工作线程数 */
+    node = xml_search(xml, parent, "THDNUM.WORK");  /* 工作线程数 */
     if (NULL == node
         || 0 == node->value.len)
     {
@@ -206,7 +206,7 @@ static int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t 
     }
 
     /* > 缓存大小配置 */
-    node = xml_rquery(xml, parent, "BUFF.SEND");    /* 发送缓存(MB) */
+    node = xml_search(xml, parent, "BUFF.SEND");    /* 发送缓存(MB) */
     if (NULL == node
         || 0 == node->value.len)
     {
@@ -219,7 +219,7 @@ static int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t 
         return FRWD_ERR;
     }
 
-    node = xml_rquery(xml, parent, "BUFF.RECV");  /* 接收缓存(MB) */
+    node = xml_search(xml, parent, "BUFF.RECV");  /* 接收缓存(MB) */
     if (NULL == node
         || 0 == node->value.len)
     {
@@ -233,7 +233,7 @@ static int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t 
     }
 
     /* > 接收队列 */
-    node = xml_rquery(xml, parent, "RECVQ.MAX");
+    node = xml_search(xml, parent, "RECVQ.MAX");
     if (NULL == node
         || 0 == node->value.len)
     {
@@ -246,7 +246,7 @@ static int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t 
         return FRWD_ERR;
     }
 
-    node = xml_rquery(xml, parent, "SENDQ.SIZE");
+    node = xml_search(xml, parent, "SENDQ.SIZE");
     if (NULL == node
         || 0 == node->value.len)
     {
@@ -260,7 +260,7 @@ static int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t 
     }
 
     /* > 发送队列 */
-    node = xml_rquery(xml, parent, "SENDQ.MAX");
+    node = xml_search(xml, parent, "SENDQ.MAX");
     if (NULL == node
         || 0 == node->value.len)
     {
@@ -276,7 +276,7 @@ static int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t 
     snprintf(conf->sendq.path, sizeof(conf->sendq.path),
              "../temp/frwder/sendq-%05d.key", conf->devid);
 
-    node = xml_rquery(xml, parent, "SENDQ.SIZE");
+    node = xml_search(xml, parent, "SENDQ.SIZE");
     if (NULL == node
         || 0 == node->value.len)
     {

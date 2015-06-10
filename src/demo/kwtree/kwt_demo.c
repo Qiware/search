@@ -74,16 +74,16 @@ static int proto_load_conf(kwt_tree_t *kwt, const char *path)
 
     protocol = xml_query(xml, ".orphic.protocols.protocol");
     for (; NULL != protocol; protocol = protocol->next) {
-        words = xml_rquery(xml, protocol, "key-words.words");
+        words = xml_search(xml, protocol, "key-words.words");
         for (; NULL != words; words = words->next) {
-            word = xml_rquery(xml, words, "word");
+            word = xml_search(xml, words, "word");
             for (; NULL != word; word = word->next) {
-                key = xml_rquery(xml, word, "value");
+                key = xml_search(xml, word, "value");
                 if (NULL == key) {
                     assert(0);
                 }
 
-                oct_node = xml_rquery(xml, word, "octet");
+                oct_node = xml_search(xml, word, "octet");
                 if (NULL == oct_node)
                 {
                     oct = 0;

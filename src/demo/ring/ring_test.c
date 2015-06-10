@@ -10,7 +10,7 @@
 #include "queue.h"
 
 #define QUEUE_LEN       (1024)
-#define QUEUE_SIZE      (1024)
+#define QUEUE_SIZE      (8192)
 
 /* 初始化日志模块 */
 log_cycle_t *demo_init_log(const char *_path)

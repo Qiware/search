@@ -100,7 +100,7 @@ static int flt_worker_get_webpage_info(
         }
 
         /* 获取URI字段 */
-        node = xml_rquery(xml, fix, "URI");
+        node = xml_search(xml, fix, "URI");
         if (NULL == node)
         {
             log_error(log, "Get URI mark failed!");
@@ -110,7 +110,7 @@ static int flt_worker_get_webpage_info(
         snprintf(info->uri, sizeof(info->uri), "%s", node->value.str);
 
         /* 获取DEPTH字段 */
-        node = xml_rquery(xml, fix, "URI.DEPTH");
+        node = xml_search(xml, fix, "URI.DEPTH");
         if (NULL == node)
         {
             log_error(log, "Get DEPTH mark failed!");
@@ -120,7 +120,7 @@ static int flt_worker_get_webpage_info(
         info->depth = atoi(node->value.str);
 
         /* 获取IP字段 */
-        node = xml_rquery(xml, fix, "URI.IP");
+        node = xml_search(xml, fix, "URI.IP");
         if (NULL == node)
         {
             log_error(log, "Get IP mark failed!");
@@ -130,7 +130,7 @@ static int flt_worker_get_webpage_info(
         snprintf(info->ip, sizeof(info->ip), "%s", node->value.str);
 
         /* 获取PORT字段 */
-        node = xml_rquery(xml, fix, "URI.PORT");
+        node = xml_search(xml, fix, "URI.PORT");
         if (NULL == node)
         {
             log_error(log, "Get PORT mark failed!");
@@ -140,7 +140,7 @@ static int flt_worker_get_webpage_info(
         info->port = atoi(node->value.str);
 
         /* 获取HTML字段 */
-        node = xml_rquery(xml, fix, "HTML");
+        node = xml_search(xml, fix, "HTML");
         if (NULL == node)
         {
             log_error(log, "Get HTML mark failed!");
@@ -150,7 +150,7 @@ static int flt_worker_get_webpage_info(
         snprintf(info->html, sizeof(info->html), "%s", node->value.str);
 
         /* 获取HTML.SIZE字段 */
-        node = xml_rquery(xml, fix, "HTML.SIZE");
+        node = xml_search(xml, fix, "HTML.SIZE");
         if (NULL == node)
         {
             log_error(log, "Get HTML.SIZE mark failed!");
