@@ -53,6 +53,8 @@ typedef struct
     void *pool;                 /* 内存池 */
     mem_alloc_cb_t alloc;       /* 申请内存 */
     mem_dealloc_cb_t dealloc;   /* 释放内存 */
+
+    log_cycle_t *log;           /* 日志对象 */
 } xml_opt_t;
 
 /* XML节点 */
@@ -98,6 +100,8 @@ typedef struct
         void *pool;                 /* 内存池 */
         mem_alloc_cb_t alloc;       /* 申请内存 */
         mem_dealloc_cb_t dealloc;   /* 释放内存 */
+
+        log_cycle_t *log;           /* 日志对象 */
     };
 } xml_tree_t;
 
