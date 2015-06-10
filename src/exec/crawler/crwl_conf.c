@@ -52,6 +52,7 @@ crwl_conf_t *crwl_conf_load(const char *path, log_cycle_t *log)
 
     memset(&opt, 0, sizeof(opt));
 
+    opt.log = log;
     opt.pool = pool;
     opt.alloc = (mem_alloc_cb_t)mem_pool_alloc;
     opt.dealloc = (mem_dealloc_cb_t)mem_pool_dealloc;

@@ -76,6 +76,7 @@ static int flt_worker_get_webpage_info(
     }
 
     /* 2. 新建XML树 */
+    opt.log = log;
     opt.pool = pool;
     opt.alloc = (mem_alloc_cb_t)mem_pool_alloc;
     opt.dealloc = (mem_dealloc_cb_t)mem_pool_dealloc;
