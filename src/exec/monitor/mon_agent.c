@@ -100,6 +100,8 @@ static int mon_agent_search_rep_hdl(int fd)
         fprintf(stderr, "        [%02d] url: %s\n", i+1, resp->url[i]);
     }
 
+    free(buff);
+
     return 0;
 }
 
