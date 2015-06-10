@@ -182,7 +182,7 @@ sdsd_cntx_t *sdsd_init(const sdsd_conf_t *conf, log_cycle_t *log)
     slab_pool_t *slab;
 
     /* > 创建内存池 */
-    slab = slab_creat_by_calloc(30 * MB);
+    slab = slab_creat_by_calloc(30 * MB, log);
     if (NULL == slab)
     {
         log_error(log, "Initialize slab failed!");

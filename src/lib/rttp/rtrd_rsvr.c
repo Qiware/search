@@ -283,7 +283,7 @@ int rtrd_rsvr_init(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, int tidx)
     }
 
     /* > 创建SLAB内存池 */
-    rsvr->pool = slab_creat_by_calloc(RTTP_MEM_POOL_SIZE);
+    rsvr->pool = slab_creat_by_calloc(RTTP_MEM_POOL_SIZE, rsvr->log);
     if (NULL == rsvr->pool)
     {
         log_error(rsvr->log, "Initialize slab mem-pool failed!");

@@ -212,7 +212,7 @@ static int rtrd_reg_init(rtrd_cntx_t *ctx)
 static int _rtrd_init(rtrd_cntx_t *ctx)
 {
     /* > 创建SLAB内存池 */
-    ctx->pool = slab_creat_by_calloc(RTTP_CTX_POOL_SIZE);
+    ctx->pool = slab_creat_by_calloc(RTTP_CTX_POOL_SIZE, ctx->log);
     if (NULL == ctx->pool)
     {
         log_error(ctx->log, "Initialize slab mem-pool failed!");

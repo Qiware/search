@@ -86,14 +86,14 @@ static uint32_t slab_page_shift = SLAB_PAGE_SHIFT;
  **注意事项: 
  **作    者: # Nginx # YYYY.MM.DD #
  ******************************************************************************/
-slab_pool_t *slab_init(void *addr, size_t size)
+slab_pool_t *slab_init(void *addr, size_t size, log_cycle_t *log)
 {
+    int m;
     u_char *p;
     size_t left_size;
     slab_pool_t *pool;
-    int m;
-    uint32_t i, n, pages, shift = 0;
     slab_page_t *slots;
+    uint32_t i, n, pages, shift = 0;
 
     if (size < (sizeof(slab_pool_t) + slab_get_page_size()))
     {
@@ -101,6 +101,7 @@ slab_pool_t *slab_init(void *addr, size_t size)
     }
 
     pool = (slab_pool_t *)addr;
+    pool->log = log;
     pool->end = addr + size;
 
     /* STUB */
@@ -159,7 +160,7 @@ slab_pool_t *slab_init(void *addr, size_t size)
         pool->pages->slab = pages;
     }
 
-    plog_info("start:%p end:%p left_size:%d pages:%d\n",
+    log_info(pool->log, "start:%p end:%p left_size:%d pages:%d\n",
         pool->start, pool->end, pool->end - pool->start, pages);
 
     spin_lock_init(&pool->lock);
@@ -640,13 +641,13 @@ void slab_dealloc(slab_pool_t *pool, void *p)
 
             if (SLAB_PAGE_FREE == slab)
             {
-                plog_error("Page is already free");
+                log_error(pool->log, "Page is already free");
                 goto fail;
             }
 
             if (SLAB_PAGE_BUSY == slab)
             {
-                plog_error("Pointer to wrong page");
+                log_error(pool->log, "Pointer to wrong page");
                 goto fail;
             }
 
@@ -676,13 +677,13 @@ done:
 
 wrong_chunk:
 
-    plog_error("Pointer to wrong chunk");
+    log_error(pool->log, "Pointer to wrong chunk");
 
     goto fail;
 
 chunk_already_free:
 
-    plog_error("Chunk is already free");
+    log_error(pool->log, "Chunk is already free");
 
 fail:
 
@@ -750,7 +751,7 @@ static slab_page_t *slab_alloc_pages(slab_pool_t *pool, uint32_t pages)
         }
     }
 
-    plog_error("Not enough memory!");
+    log_error(pool->log, "Not enough memory!");
 
     return NULL;
 }
@@ -805,7 +806,7 @@ static void slab_dealloc_pages(slab_pool_t *pool, slab_page_t *page, uint32_t pa
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.04.12 #
  ******************************************************************************/
-slab_pool_t *slab_creat_by_calloc(size_t size)
+slab_pool_t *slab_creat_by_calloc(size_t size, log_cycle_t *log)
 {
     void *addr;
     slab_pool_t *pool;
@@ -816,7 +817,7 @@ slab_pool_t *slab_creat_by_calloc(size_t size)
         return NULL;
     }
 
-    pool = slab_init(addr, size);
+    pool = slab_init(addr, size, log);
     if (NULL == pool)
     {
         free(addr);
@@ -825,9 +826,8 @@ slab_pool_t *slab_creat_by_calloc(size_t size)
 
     return pool;
 }
-
 #else /*__MEM_LEAK_CHECK__*/
-slab_pool_t *slab_init(void *addr, size_t size) { return calloc(1, sizeof(slab_pool_t)); }
+slab_pool_t *slab_init(void *addr, size_t size, log_cycle_t *log) { return calloc(1, sizeof(slab_pool_t)); }
 void *slab_alloc(slab_pool_t *pool, size_t size) { return calloc(1, size); }
 void slab_dealloc(slab_pool_t *pool, void *p) { free(p); }
 slab_pool_t *slab_creat_by_calloc(size_t size) { return calloc(1, size); }

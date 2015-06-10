@@ -299,7 +299,7 @@ int sdrd_rsvr_init(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, int tidx)
     }
 
     /* > 创建SLAB内存池 */
-    rsvr->pool = slab_creat_by_calloc(SDTP_MEM_POOL_SIZE);
+    rsvr->pool = slab_creat_by_calloc(SDTP_MEM_POOL_SIZE, rsvr->log);
     if (NULL == rsvr->pool)
     {
         log_error(rsvr->log, "Initialize slab mem-pool failed!");

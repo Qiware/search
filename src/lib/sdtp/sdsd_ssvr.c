@@ -68,7 +68,7 @@ int sdsd_ssvr_init(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr, int tidx)
     }
 
     /* > 创建SLAB内存池 */
-    ssvr->pool = slab_creat_by_calloc(SDTP_MEM_POOL_SIZE);
+    ssvr->pool = slab_creat_by_calloc(SDTP_MEM_POOL_SIZE, ssvr->log);
     if (NULL == ssvr->pool)
     {
         log_error(ssvr->log, "Initialize slab mem-pool failed!");

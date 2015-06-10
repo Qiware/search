@@ -212,7 +212,7 @@ static int sdrd_reg_init(sdrd_cntx_t *ctx)
 static int _sdrd_init(sdrd_cntx_t *ctx)
 {
     /* > 创建SLAB内存池 */
-    ctx->pool = slab_creat_by_calloc(SDTP_CTX_POOL_SIZE);
+    ctx->pool = slab_creat_by_calloc(SDTP_CTX_POOL_SIZE, ctx->log);
     if (NULL == ctx->pool)
     {
         log_error(ctx->log, "Initialize slab mem-pool failed!");
