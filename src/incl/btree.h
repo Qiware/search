@@ -5,6 +5,8 @@
 
 typedef struct
 {
+    log_cycle_t *log;                               /* 日志对象 */
+
     void *pool;                                     /* 内存池 */
     mem_alloc_cb_t alloc;                           /* 申请内存 */
     mem_dealloc_cb_t dealloc;                       /* 释放内存 */
@@ -27,9 +29,14 @@ typedef struct
     int sep_idx;                                    /* 结点分化的分割索引 */
     btree_node_t *root;                             /* 根结点 */
 
-    void *pool;                                     /* 内存池 */
-    mem_alloc_cb_t alloc;                           /* 申请内存 */
-    mem_dealloc_cb_t dealloc;                       /* 释放内存 */
+    struct
+    {
+        log_cycle_t *log;                           /* 日志对象 */
+
+        void *pool;                                 /* 内存池 */
+        mem_alloc_cb_t alloc;                       /* 申请内存 */
+        mem_dealloc_cb_t dealloc;                   /* 释放内存 */
+    };
 } btree_t;
 
 extern btree_t *btree_creat(int m, btree_opt_t *opt);

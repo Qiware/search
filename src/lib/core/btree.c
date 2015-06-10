@@ -42,14 +42,14 @@ btree_t *btree_creat(int m, btree_opt_t *opt)
 
     if (m < 3)
     {
-        plog_error("Parameter 'm' must geater than 2!");
+        log_error(opt->log, "Parameter 'm' must geater than 2!");
         return NULL;
     }
 
     btree = (btree_t *)opt->alloc(opt->pool, sizeof(btree_t));
     if (NULL == btree)
     {
-        plog_error("Alloc memory failed!");
+        log_error(opt->log, "Alloc memory failed!");
         return NULL;
     }
 
@@ -63,6 +63,7 @@ btree_t *btree_creat(int m, btree_opt_t *opt)
     btree->sep_idx = m/2;
     btree->root = NULL;
 
+    btree->log = opt->log;
     btree->pool = opt->pool;
     btree->alloc = opt->alloc;
     btree->dealloc = opt->dealloc;
@@ -137,7 +138,7 @@ int btree_insert(btree_t *btree, int key)
         node = btree_creat_node(btree);
         if (NULL == node)
         {
-            plog_error("Create node failed!");
+            log_error(btree->log, "Create node failed!");
             return -1;
         }
 
@@ -156,7 +157,7 @@ int btree_insert(btree_t *btree, int key)
         idx = btree_key_bsearch(node->key, node->num, key);
         if (key == node->key[idx])
         {
-            plog_info("Key [%d] exist!", key);
+            log_warn(btree->log, "Key [%d] exist!", key);
             return 0;
         }
         else if (key > node->key[idx])
@@ -237,7 +238,7 @@ static int btree_split(btree_t *btree, btree_node_t *node)
         node2 = btree_creat_node(btree);
         if (NULL == node2)
         {
-            plog_error("Create node failed!");
+            log_error(btree->log, "Create node failed!");
             return -1;
         }
 
@@ -258,7 +259,7 @@ static int btree_split(btree_t *btree, btree_node_t *node)
             parent = btree_creat_node(btree);
             if (NULL == parent)
             {
-                plog_error("[%s][%d] Create root failed!", __FILE__, __LINE__);
+                log_error(btree->log, "[%s][%d] Create root failed!", __FILE__, __LINE__);
                 return -1;
             }
 
@@ -407,7 +408,7 @@ static int btree_merge(btree_t *btree, btree_node_t *node)
 
     if (idx > parent->num)
     {
-        plog_error("Didn't find node from parent's children set!");
+        log_error(btree->log, "Didn't find node from parent's children set!");
         return -1;
     }
     /* 3. node: 最后一个孩子结点(left < node)
@@ -678,7 +679,7 @@ static btree_node_t *btree_creat_node(btree_t *btree)
     node = (btree_node_t *)btree->alloc(btree->pool, sizeof(btree_node_t));
     if (NULL == node)
     {
-        plog_error("Alloc memory failed!");
+        log_error(btree->log, "Alloc memory failed!");
         return NULL;
     }
 
@@ -690,7 +691,7 @@ static btree_node_t *btree_creat_node(btree_t *btree)
     if (NULL == node->key)
     {
         btree->dealloc(btree->pool, node);
-        plog_error("Alloc memory failed!");
+        log_error(btree->log, "Alloc memory failed!");
         return NULL;
     }
 
@@ -700,7 +701,7 @@ static btree_node_t *btree_creat_node(btree_t *btree)
     {
         btree->dealloc(btree->pool, node->key);
         btree->dealloc(btree->pool, node);
-        plog_error("Alloc memory failed!");
+        log_error(btree->log, "Alloc memory failed!");
         return NULL;
     }
 
@@ -765,7 +766,7 @@ void *btree_query(btree_t *btree, int key)
         idx = btree_key_bsearch(node->key, node->num, key);
         if (key == node->key[idx])
         {
-            plog_debug("Found! key:%d idx:%d", key, idx);
+            log_debug(btree->log, "Found! key:%d idx:%d", key, idx);
             return (void *)0; /* 找到 */
         }
         else if (key < node->key[idx])
