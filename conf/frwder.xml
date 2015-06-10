@@ -7,7 +7,7 @@
     <CONN-INVTD DEVID="10001">                  <!-- ID: 设备ID(必须唯一) -->
         <PATH>../temp/frwd/</PATH>              <!-- PATH -->
         <SERVER IP="127.0.0.1" PORT="28888" />  <!-- 服务端地址(IP:IP地址 PORT:服务端口) -->
-        <AUTH   USR="qifeng" PASSWD="111111" /> <!-- 鉴权配置(USER:用户名 PASSWD:登录密码) -->
+        <AUTH   USR="qifeng" PASSWD="111111" /> <!-- 鉴权配置(USR:用户名 PASSWD:登录密码) -->
         <THDNUM SEND="2" WORK="4" />            <!-- 线程数目(SEND:发送线程 WORK:工作线程) -->
         <BUFF   SEND="5" RECV="5" />            <!-- 缓存配置(SEND:发送缓存(MB) RECV:接收缓存(MB)) -->
         <RECVQ  MAX="4096" SIZE="2048" />       <!-- 接收队列(MAX:总容量 SIZE:单元大小) -->

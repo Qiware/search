@@ -6,8 +6,10 @@
         3) 取值范围: trace|debug|info|warn|error|fatal -->
     <LOG LEVEL="error" LEVEL2="error" PATH="../log/" />
 
-    <!-- 转发信息配置 -->
-    <FRWD PATH="../conf/frwder.xml" MARK="CONN-INVTD" DEVID="10001">
+    <!-- 指定转发配置
+         PATH: 转发配置路径
+         MARK: 指定转发配置的标签 -->
+    <FRWD PATH="../conf/frwder.xml" MARK=".FRWDER.CONN-INVTD" />
 
     <!-- 代理信息配置 -->
     <AGENT>
