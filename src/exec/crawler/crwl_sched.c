@@ -24,7 +24,7 @@ static int crwl_sched_timeout_hdl(crwl_cntx_t *ctx, crwl_sched_t *sched);
 static int crwl_sched_event_hdl(crwl_cntx_t *ctx, crwl_sched_t *sched);
 static int crwl_sched_task(crwl_cntx_t *ctx, crwl_sched_t *sched);
 
-static int crwl_task_parse(const char *str, crwl_task_t *task);
+static int crwl_task_parse(const char *str, crwl_task_t *task, log_cycle_t *log);
 static int crwl_task_parse_download_webpage(xml_tree_t *xml, crwl_task_down_webpage_t *dw);
 static int crwl_sched_task_hdl(crwl_cntx_t *ctx, queue_t *workq, crwl_task_t *task);
 
@@ -275,7 +275,7 @@ static int crwl_sched_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
         task = (crwl_task_t *)addr;
 
         /* > 解析Undo数据信息 */
-        if (crwl_task_parse(r->str, task))
+        if (crwl_task_parse(r->str, task, ctx->log))
         {
             log_error(ctx->log, "Parse task string failed! %s", r->str);
             freeReplyObject(r);
@@ -312,7 +312,7 @@ static int crwl_sched_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
  **     接于该字段内存地址后面。
  **作    者: # Qifeng.zou # 2014.10.28 #
  ******************************************************************************/
-static int crwl_task_parse(const char *str, crwl_task_t *task)
+static int crwl_task_parse(const char *str, crwl_task_t *task, log_cycle_t *log)
 {
     int ret;
     xml_opt_t opt;
@@ -329,6 +329,7 @@ static int crwl_task_parse(const char *str, crwl_task_t *task)
 
     memset(&opt, 0, sizeof(opt));
 
+    opt.log = log;
     opt.pool = pool;
     opt.alloc = (mem_alloc_cb_t)mem_pool_alloc;
     opt.dealloc = (mem_dealloc_cb_t)mem_pool_dealloc;
