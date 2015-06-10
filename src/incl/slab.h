@@ -19,6 +19,8 @@ typedef struct _slab_page_t
 
 typedef struct
 {
+    log_cycle_t *log;               /* 日志对象 */
+
     size_t min_size;
     size_t min_shift;
 
@@ -31,10 +33,10 @@ typedef struct
     spinlock_t lock;                  /* 内存锁 */
 } slab_pool_t;
 
-slab_pool_t *slab_init(void *addr, size_t size);
+slab_pool_t *slab_init(void *addr, size_t size, log_cycle_t *log);
 void *slab_alloc(slab_pool_t *pool, size_t size);
 void slab_dealloc(slab_pool_t *pool, void *p);
 #define slab_destroy(pool) { free(pool); pool = NULL; }
 
-slab_pool_t *slab_creat_by_calloc(size_t size);
+slab_pool_t *slab_creat_by_calloc(size_t size, log_cycle_t *log);
 #endif /*__SLAB_H__*/

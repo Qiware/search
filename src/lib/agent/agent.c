@@ -45,7 +45,7 @@ agent_cntx_t *agent_init(agent_conf_t *conf, log_cycle_t *log)
     ctx->conf = conf;
 
     /* > 创建内存池 */
-    ctx->slab = slab_creat_by_calloc(30 * MB);
+    ctx->slab = slab_creat_by_calloc(30 * MB, log);
     if (NULL == ctx->slab)
     {
         free(ctx);

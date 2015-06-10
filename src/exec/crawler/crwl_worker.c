@@ -104,7 +104,7 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker, int tidx)
     worker->scan_tm = time(NULL);
 
     /* > 创建SLAB内存池 */
-    worker->slab = slab_creat_by_calloc(CRWL_SLAB_SIZE);
+    worker->slab = slab_creat_by_calloc(CRWL_SLAB_SIZE, worker->log);
     if (NULL == worker->slab)
     {
         log_error(worker->log, "Initialize slab pool failed!");

@@ -177,7 +177,7 @@ flt_cntx_t *flt_init(char *pname, const char *path)
     do
     {
         /* > 创建内存池 */
-        ctx->slab = slab_creat_by_calloc(FLT_SLAB_SIZE);
+        ctx->slab = slab_creat_by_calloc(FLT_SLAB_SIZE, log);
         if (NULL == ctx->slab)
         {
             log_error(log, "Init slab failed!");

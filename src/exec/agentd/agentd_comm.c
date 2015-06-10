@@ -69,7 +69,6 @@ int agentd_usage(const char *exec)
 /* 初始化日志模块 */
 log_cycle_t *agentd_init_log(char *fname)
 {
-    log_cycle_t *log;
     char path[FILE_NAME_MAX_LEN];
 
     /* 1. 初始化系统日志 */
@@ -84,15 +83,7 @@ log_cycle_t *agentd_init_log(char *fname)
     /* 2. 初始化业务日志 */
     log_get_path(path, sizeof(path), basename(fname));
 
-    log = log_init(LOG_LEVEL_ERROR, path);
-    if (NULL == log)
-    {
-        plog_error("Initialize log failed!");
-        plog_destroy();
-        return NULL;
-    }
-
-    return log;
+    return log_init(LOG_LEVEL_ERROR, path);
 }
 
 /******************************************************************************

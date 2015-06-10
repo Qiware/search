@@ -17,7 +17,7 @@ static int agentd_conf_parse(xml_tree_t *xml, agent_conf_t *conf, log_cycle_t *l
 
 static int agentd_conf_load_comm(xml_tree_t *xml, agentd_conf_t *conf, log_cycle_t *log);
 static int agentd_conf_load_agent(xml_tree_t *xml, agent_conf_t *conf, log_cycle_t *log);
-static int agentd_conf_load_rttp(xml_tree_t *xml, rtsd_conf_t *conf, log_cycle_t *log);
+static int agentd_conf_load_frwd(xml_tree_t *xml, rtsd_conf_t *conf, log_cycle_t *log);
 
 /* 加载配置信息 */
 agentd_conf_t *agentd_load_conf(const char *path, log_cycle_t *log)
@@ -48,6 +48,7 @@ agentd_conf_t *agentd_load_conf(const char *path, log_cycle_t *log)
         /* > 构建XML树 */
         memset(&opt, 0, sizeof(opt));
 
+        opt.log = log;
         opt.pool = mem_pool;
         opt.alloc = (mem_alloc_cb_t)mem_pool_alloc;
         opt.dealloc = (mem_dealloc_cb_t)mem_pool_dealloc;
@@ -73,8 +74,8 @@ agentd_conf_t *agentd_load_conf(const char *path, log_cycle_t *log)
             break;
         }
 
-        /* > 加载RTTP配置 */
-        if (agentd_conf_load_rttp(xml, &conf->to_frwd, log))
+        /* > 加载转发配置 */
+        if (agentd_conf_load_frwd(xml, &conf->to_frwd, log))
         {
             log_error(log, "Load rttp conf failed! path:%s", path);
             break;
@@ -94,41 +95,21 @@ agentd_conf_t *agentd_load_conf(const char *path, log_cycle_t *log)
     return NULL;
 }
 
-/* 解析日志级别配置 */
-static int agentd_conf_parse_log(xml_tree_t *xml, agentd_conf_t *conf, log_cycle_t *log)
-{
-    xml_node_t *node, *fix;
-
-    /* > 定位日志标签 */
-    fix = xml_query(xml, ".AGENTD.LOG");
-    if (NULL == fix)
-    {
-        conf->log_level = log_get_level(LOG_DEF_LEVEL_STR);
-        return AGTD_OK;
-    }
-
-    /* > 日志级别 */
-    node = xml_rquery(xml, fix, "LEVEL");
-    if (NULL != node)
-    {
-        conf->log_level = log_get_level(node->value.str);
-    }
-    else
-    {
-        conf->log_level = log_get_level(LOG_DEF_LEVEL_STR);
-    }
-
-    return AGTD_OK;
-}
-
 /* 加载公共配置 */
 static int agentd_conf_load_comm(xml_tree_t *xml, agentd_conf_t *conf, log_cycle_t *log)
 {
+    xml_node_t *node;
+
     /* > 加载日志配置 */
-    if (agentd_conf_parse_log(xml, conf, log))
+    node = xml_query(xml, ".AGENTD.LOG.LEVEL");
+    if (NULL == node
+        || 0 == node->value.len)
     {
-        log_error(log, "Parse log configuration failed!");
-        return AGTD_ERR;
+        conf->log_level = log_get_level(LOG_DEF_LEVEL_STR);
+    }
+    else
+    {
+        conf->log_level = log_get_level(node->value.str);
     }
 
     return AGTD_OK;
@@ -138,46 +119,6 @@ static int agentd_conf_load_comm(xml_tree_t *xml, agentd_conf_t *conf, log_cycle
 static int agentd_conf_parse_agent_connections(
         xml_tree_t *xml, agent_conf_t *conf, log_cycle_t *log)
 {
-    xml_node_t *node, *fix;
-
-    /* > 定位并发配置 */
-    fix = xml_query(xml, ".AGENTD.AGENT.CONNECTIONS");
-    if (NULL == fix)
-    {
-        log_error(log, "Didn't configure connections!");
-        return AGTD_ERR;
-    }
-
-    /* > 获取最大并发数 */
-    node = xml_rquery(xml, fix, "MAX");
-    if (NULL == node)
-    {
-        log_error(log, "Get max number of connections failed!");
-        return AGTD_ERR;
-    }
-
-    conf->connections.max = atoi(node->value.str);
-
-    /* > 获取连接超时时间 */
-    node = xml_rquery(xml, fix, "TIMEOUT");
-    if (NULL == node)
-    {
-        log_error(log, "Get timeout of connection failed!");
-        return AGTD_ERR;
-    }
-
-    conf->connections.timeout = atoi(node->value.str);
-
-    /* > 获取侦听端口 */
-    node = xml_rquery(xml, fix, "PORT");
-    if (NULL == node)
-    {
-        log_error(log, "Get port of connection failed!");
-        return AGTD_ERR;
-    }
-
-    conf->connections.port = atoi(node->value.str);
-
     return AGTD_OK;
 }
 
@@ -231,9 +172,45 @@ static int agentd_conf_parse_agent_queue(xml_tree_t *xml, agent_conf_t *conf, lo
 /* 加载AGENT配置 */
 static int agentd_conf_load_agent(xml_tree_t *xml, agent_conf_t *conf, log_cycle_t *log)
 {
-    xml_node_t *node;
+    xml_node_t *node, *fix;
 
-    /* > 加载连接配置 */
+    /* > 定位并发配置 */
+    fix = xml_query(xml, ".AGENTD.AGENT.CONNECTIONS");
+    if (NULL == fix)
+    {
+        log_error(log, "Didn't configure connections!");
+        return AGTD_ERR;
+    }
+
+    node = xml_rquery(xml, fix, "MAX");         /* > 获取最大并发数 */
+    if (NULL == node)
+    {
+        log_error(log, "Get max number of connections failed!");
+        return AGTD_ERR;
+    }
+
+    conf->connections.max = atoi(node->value.str);
+
+    node = xml_rquery(xml, fix, "TIMEOUT");     /* > 获取连接超时时间 */
+    if (NULL == node)
+    {
+        log_error(log, "Get timeout of connection failed!");
+        return AGTD_ERR;
+    }
+
+    conf->connections.timeout = atoi(node->value.str);
+
+    /* > 获取侦听端口 */
+    node = xml_rquery(xml, fix, "PORT");
+    if (NULL == node)
+    {
+        log_error(log, "Get port of connection failed!");
+        return AGTD_ERR;
+    }
+
+    conf->connections.port = atoi(node->value.str);
+
+
     if (agentd_conf_parse_agent_connections(xml, conf, log))
     {
         log_error(log, "Parse connections of AGENTe configuration failed!");
@@ -271,7 +248,7 @@ static int agentd_conf_load_agent(xml_tree_t *xml, agent_conf_t *conf, log_cycle
 }
 
 /* 加载RTTP配置 */
-static int agentd_conf_load_rttp(xml_tree_t *xml, rtsd_conf_t *conf, log_cycle_t *log)
+static int agentd_conf_load_frwd(xml_tree_t *xml, rtsd_conf_t *conf, log_cycle_t *log)
 {
     memset(conf, 0, sizeof(rtsd_conf_t));
 

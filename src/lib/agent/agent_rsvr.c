@@ -120,7 +120,7 @@ int agent_rsvr_init(agent_cntx_t *ctx, agent_rsvr_t *rsvr, int idx)
     rsvr->log = ctx->log;
 
     /* 1. 创建SLAB内存池 */
-    rsvr->slab = slab_creat_by_calloc(AGENT_SLAB_SIZE);
+    rsvr->slab = slab_creat_by_calloc(AGENT_SLAB_SIZE, rsvr->log);
     if (NULL == rsvr->slab)
     {
         log_error(rsvr->log, "Initialize slab pool failed!");
