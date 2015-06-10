@@ -1,6 +1,6 @@
 <!-- 转发器配置 -->
 <FRWDER>
-    <LOG LEVEL="ERROR" />                       <!-- 日志级别配置 -->
+    <LOG LEVEL="trace" />                       <!-- 日志级别配置 -->
     <TO_AGTD PATH="../temp/agentd/send.shmq" /> <!-- 发送至Agentd服务的队列 -->
 
     <!-- 连接倒排服务的配置 -->
