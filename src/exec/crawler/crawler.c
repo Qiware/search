@@ -45,8 +45,7 @@ int main(int argc, char *argv[])
     {
         return crwl_usage(argv[0]);
     }
-
-    if (opt.isdaemon)
+    else if (opt.isdaemon)
     {
         /* int daemon(int nochdir, int noclose);
          *  1. daemon()函数主要用于希望脱离控制台, 以守护进程形式在后台运行的程序.
