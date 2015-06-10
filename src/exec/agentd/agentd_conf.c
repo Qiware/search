@@ -287,9 +287,9 @@ static int agentd_conf_load_rttp(xml_tree_t *xml, rtsd_conf_t *conf, log_cycle_t
     conf->send_buff_size = 5 * MB;
     conf->recv_buff_size = 2 * MB;
 
-    snprintf(conf->sendq.name, sizeof(conf->sendq.name), "../temp/rttp/rttp-ssvr.key");
+    snprintf(conf->sendq.path, sizeof(conf->sendq.path), "../temp/rttp/rttp-ssvr.key");
+    conf->sendq.max = 2048;
     conf->sendq.size = 4096;
-    conf->sendq.count = 2048;
 
     return AGTD_OK;
 }

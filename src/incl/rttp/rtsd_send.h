@@ -22,7 +22,7 @@ typedef struct
 
     rttp_cpu_conf_t cpu;                /* CPU亲和性配置 */
 
-    rttp_queue_conf_t sendq;            /* 发送队列配置 */
+    shmq_conf_t sendq;                  /* 发送队列配置 */
     queue_conf_t recvq;                 /* 接收队列配置 */
 } rtsd_conf_t;
 
@@ -37,7 +37,7 @@ typedef struct
     thread_pool_t *worktp;              /* 工作线程池 */
 
     rttp_reg_t reg[RTTP_TYPE_MAX];      /* 回调注册对象(TODO: 如果类型过多，可构造平衡二叉树) */
-    queue_t **recvq;                    /* 接收队列 */
+    queue_t **recvq;                    /* 接收队列(数组长度与send_thd_num一致) */
 } rtsd_cntx_t;
 
 /* 内部接口 */

@@ -136,7 +136,7 @@ invtd_cntx_t *invtd_init(const char *conf_path)
     invtd_cntx_t *ctx;
 
     /* > 初始化日志 */
-    log = invtd_init_log(LOG_LEVEL_TRACE);
+    log = invtd_init_log(LOG_LEVEL_ERROR);
     if (NULL == log)
     {
         fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
@@ -171,22 +171,14 @@ invtd_cntx_t *invtd_init(const char *conf_path)
         }
 
         /* > 初始化SDTP服务 */
-    #if defined(__RTTP_SUPPORT__)
         ctx->sdrd = rtrd_init(&ctx->conf.sdrd, log);
-    #else /*__RTTP_SUPPORT__*/
-        ctx->sdrd = sdrd_init(&ctx->conf.sdrd, log);
-    #endif /*__RTTP_SUPPORT__*/
         if (NULL == ctx->sdrd)
         {
             log_error(log, "Init sdtp failed!");
             break;
         }
 
-    #if defined(__RTTP_SUPPORT__)
         ctx->sdrd_cli = rtrd_cli_init(&ctx->conf.sdrd);
-    #else /*__RTTP_SUPPORT__*/
-        ctx->sdrd_cli = sdrd_cli_init(&ctx->conf.sdrd);
-    #endif /*__RTTP_SUPPORT__*/
         if (NULL == ctx->sdrd_cli)
         {
             log_error(log, "Init sdtp-rcli failed!");
@@ -250,7 +242,7 @@ static int invtd_insert_word(invtd_cntx_t *ctx)
 int invtd_startup(invtd_cntx_t *ctx)
 {
     /* 启动SDTP */
-    if (invtd_start_sdtp(ctx))
+    if (invtd_start_rttp(ctx))
     {
         log_fatal(ctx->log, "Startup sdtp failed!");
         return INVT_ERR;

@@ -9,11 +9,7 @@
 
 #include "mesg.h"
 #include "invertd.h"
-#if defined(__RTTP_SUPPORT__)
 #include "rtrd_recv.h"
-#else /*__RTTP_SUPPORT__*/
-#include "sdrd_recv.h"
-#endif /*__RTTP_SUPPORT__*/
 
 /******************************************************************************
  **函数名称: invtd_search_req_hdl
@@ -70,11 +66,7 @@ static int invtd_search_req_hdl(int type, int orig, char *buff, size_t len, void
 INVTD_SRCH_REP:
     /* > 应答搜索结果 */
     rep.serial = req->serial;
-#if defined(__RTTP_SUPPORT__)
     if (rtrd_cli_send(ctx->sdrd_cli, MSG_SEARCH_REP, orig, (void *)&rep, sizeof(rep)))
-#else /*__RTTP_SUPPORT__*/
-    if (sdrd_cli_send(ctx->sdrd_cli, MSG_SEARCH_REP, orig, (void *)&rep, sizeof(rep)))
-#endif /*__RTTP_SUPPORT__*/
     {
         log_error(ctx->log, "Send response failed! serial:%ld words:%s",
                 req->serial, req->body.words);
@@ -104,8 +96,8 @@ static int invtd_print_invt_tab_req_hdl(int type, int orig, char *buff, size_t l
 }
 
 /******************************************************************************
- **函数名称: invtd_sdtp_reg
- **功    能: 注册SDTP回调
+ **函数名称: invtd_rttp_reg
+ **功    能: 注册RTTP回调
  **输入参数:
  **     ctx: SDTP对象
  **输出参数: NONE
@@ -114,33 +106,24 @@ static int invtd_print_invt_tab_req_hdl(int type, int orig, char *buff, size_t l
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.05.08 #
  ******************************************************************************/
-static int invtd_sdtp_reg(invtd_cntx_t *ctx)
+static int invtd_rttp_reg(invtd_cntx_t *ctx)
 {
-#if defined(__RTTP_SUPPORT__)
-#define INVTD_SDTP_REG(rtrd, type, proc, args) \
+#define INVTD_RTTP_REG(rtrd, type, proc, args) \
     if (rtrd_register(rtrd, type, proc, args)) \
     { \
         log_error(ctx->log, "Register callback failed!"); \
         return INVT_ERR; \
     }
-#else /*__RTTP_SUPPORT__*/
-#define INVTD_SDTP_REG(sdrd, type, proc, args) \
-    if (sdrd_register(sdrd, type, proc, args)) \
-    { \
-        log_error(ctx->log, "Register callback failed!"); \
-        return INVT_ERR; \
-    }
-#endif /*__RTTP_SUPPORT__*/
 
-   INVTD_SDTP_REG(ctx->sdrd, MSG_SEARCH_REQ, invtd_search_req_hdl, ctx);
-   INVTD_SDTP_REG(ctx->sdrd, MSG_PRINT_INVT_TAB_REQ, invtd_print_invt_tab_req_hdl, ctx);
+   INVTD_RTTP_REG(ctx->sdrd, MSG_SEARCH_REQ, invtd_search_req_hdl, ctx);
+   INVTD_RTTP_REG(ctx->sdrd, MSG_PRINT_INVT_TAB_REQ, invtd_print_invt_tab_req_hdl, ctx);
 
     return INVT_OK;
 }
 
 /******************************************************************************
- **函数名称: invtd_start_sdtp
- **功    能: 启动SDTP服务
+ **函数名称: invtd_start_rttp
+ **功    能: 启动RTTP服务
  **输入参数:
  **     ctx: SDTP对象
  **输出参数: NONE
@@ -149,16 +132,12 @@ static int invtd_sdtp_reg(invtd_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.05.08 #
  ******************************************************************************/
-int invtd_start_sdtp(invtd_cntx_t *ctx)
+int invtd_start_rttp(invtd_cntx_t *ctx)
 {
-    if (invtd_sdtp_reg(ctx))
+    if (invtd_rttp_reg(ctx))
     {
         return INVT_ERR;
     }
 
-#if defined(__RTTP_SUPPORT__)
     return rtrd_startup(ctx->sdrd);
-#else /*__RTTP_SUPPORT__*/
-    return sdrd_startup(ctx->sdrd);
-#endif /*__RTTP_SUPPORT__*/
 }

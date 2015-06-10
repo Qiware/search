@@ -141,7 +141,7 @@ static int rtsd_ssvr_creat_recvq(rtsd_cntx_t *ctx, const rtsd_conf_t *conf)
     }
 
     /* > 创建队列 */
-    for (idx=0; idx<conf->work_thd_num; ++idx)
+    for (idx=0; idx<conf->send_thd_num; ++idx)
     {
         ctx->recvq[idx] = queue_creat(qcf->max, qcf->size);
         if (NULL == ctx->recvq[idx])
@@ -169,12 +169,12 @@ static int rtsd_ssvr_creat_recvq(rtsd_cntx_t *ctx, const rtsd_conf_t *conf)
 static int rtsd_ssvr_creat_sendq(rtsd_ssvr_t *ssvr, const rtsd_conf_t *conf)
 {
     char path[FILE_PATH_MAX_LEN];
-    const rttp_queue_conf_t *qcf = &conf->sendq;
+    const shmq_conf_t *qcf = &conf->sendq;
 
     /* 1. 创建/连接发送队列 */
-    snprintf(path, sizeof(path), "%s-%d", qcf->name, ssvr->tidx);
+    snprintf(path, sizeof(path), "%s-%d", qcf->path, ssvr->tidx);
 
-    ssvr->sendq = shm_queue_creat(path, qcf->count, qcf->size);
+    ssvr->sendq = shm_queue_creat(path, qcf->max, qcf->size);
     if (NULL == ssvr->sendq)
     {
         log_error(ssvr->log, "errmsg:[%d] %s!", errno, strerror(errno));

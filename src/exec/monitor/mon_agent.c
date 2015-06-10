@@ -237,6 +237,7 @@ static int mon_agent_multi_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu,
         return -1;
     }
 
+SRCH_AGAIN:
     /* > 连接代理服务 */
     for (idx=0; idx<num; ++idx)
     {
@@ -330,6 +331,8 @@ static int mon_agent_multi_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu,
             CLOSE(fd[idx]);
         }
     }
+
+    goto SRCH_AGAIN;
 
     free(fd);
     free(crtm);

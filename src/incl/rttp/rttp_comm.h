@@ -83,14 +83,6 @@ typedef struct
    (snap)->optr = (snap)->addr;  \
    (snap)->iptr = (snap)->addr; 
 
-/* 队列配置 */
-typedef struct
-{
-    char name[FILE_NAME_MAX_LEN];       /* 队列路径 */
-    int size;                           /* 单元大小 */
-    int count;                          /* 队列长度 */
-} rttp_queue_conf_t;
-
 /* 绑定CPU配置信息 */
 typedef struct
 {

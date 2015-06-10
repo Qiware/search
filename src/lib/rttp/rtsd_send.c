@@ -151,7 +151,7 @@ static int rtsd_creat_recvq(rtsd_cntx_t *ctx)
     }
 
     /* > 创建接收队列 */
-    for (idx=0; idx<conf->send_thd_num; ++idx)
+    for (idx=0; idx<conf->work_thd_num; ++idx)
     {
         ctx->recvq[idx] = queue_creat(conf->recvq.max, conf->recvq.size);
         if (NULL == ctx->recvq[idx])

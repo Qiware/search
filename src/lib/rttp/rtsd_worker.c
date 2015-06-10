@@ -79,7 +79,7 @@ void *rtsd_worker_routine(void *_ctx)
             rttp_cmd_t cmd;
             req = (rttp_cmd_proc_req_t *)&cmd.args;
 
-            for (idx=0; idx<conf->work_thd_num; ++idx)
+            for (idx=0; idx<conf->send_thd_num; ++idx)
             {
                 memset(&cmd, 0, sizeof(cmd));
 

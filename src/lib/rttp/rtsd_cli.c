@@ -107,7 +107,7 @@ static int _rtsd_cli_init(rtsd_cli_t *cli, int idx)
 static int rtsd_cli_shmat(rtsd_cli_t *cli)
 {
     int idx;
-    rttp_queue_conf_t *qcf;
+    shmq_conf_t *qcf;
     char path[FILE_NAME_MAX_LEN];
     rtsd_conf_t *conf = &cli->conf;
 
@@ -123,12 +123,12 @@ static int rtsd_cli_shmat(rtsd_cli_t *cli)
     qcf = &conf->sendq;
     for (idx=0; idx<conf->send_thd_num; ++idx)
     {
-        snprintf(path, sizeof(path), "%s-%d", qcf->name, idx);
+        snprintf(path, sizeof(path), "%s-%d", qcf->path, idx);
 
         cli->sendq[idx] = shm_queue_attach(path);
         if (NULL == cli->sendq[idx])
         {
-            log_error(cli->log, "errmsg:[%d] %s! path:[%s]", errno, strerror(errno), qcf->name);
+            log_error(cli->log, "errmsg:[%d] %s! path:[%s]", errno, strerror(errno), qcf->path);
             return RTTP_ERR;
         }
     }
