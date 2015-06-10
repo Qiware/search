@@ -3,20 +3,15 @@
 
 #include "sck.h"
 #include "comm.h"
-#if defined(__RTTP_SUPPORT__)
 #include "rtsd_send.h"
-#else /*__RTTP_SUPPORT__*/
-#include "sdsd_send.h"
-#endif /*__RTTP_SUPPORT__*/
 
 /* 配置信息 */
 typedef struct
 {
-#if defined(__RTTP_SUPPORT__)
-    rtsd_conf_t conn_invtd;               /* RTTP配置 */
-#else /*__RTTP_SUPPORT__*/
-    sdsd_conf_t conn_invtd;               /* SDTP配置 */
-#endif /*__RTTP_SUPPORT__*/
+    int log_level;                          /* 日志级别 */
+    char to_agentd[FILE_NAME_MAX_LEN];      /* 发送至Agentd */
+    rtsd_conf_t conn_invtd;                 /* RTTP配置 */
 } frwd_conf_t;
 
+int frwd_load_conf(const char *path, frwd_conf_t *conf);
 #endif /*__FRWD_CONF_H__*/

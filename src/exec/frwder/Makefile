@@ -17,7 +17,9 @@ INCLUDE = -I./incl \
 LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lpthread -lxd_core -lsdtp -lrttp
 
-SRC_LIST = frwder.c
+SRC_LIST = frwder.c \
+			frwd_comm.c \
+			frwd_conf.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
 

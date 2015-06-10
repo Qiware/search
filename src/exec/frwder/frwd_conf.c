@@ -1,19 +1,38 @@
-#include "frwd_conf.h"
+/******************************************************************************
+ ** Coypright(C) 2014-2024 Xundao technology Co., Ltd
+ **
+ ** 文件名: frwd_conf.c
+ ** 版本号: 1.0
+ ** 描  述: 转发配置
+ **         负责转发器配置(frwder.xml)的解析加载
+ ** 作  者: # Qifeng.zou # 2015.06.09 #
+ ******************************************************************************/
 
-#if defined(__RTTP_SUPPORT__)
-static int frwd_conf_load_rttp(const char *path, rtsd_conf_t *conf);
-#else /*__RTTP_SUPPORT__*/
-static int frwd_conf_load_sdtp(const char *path, sdsd_conf_t *conf);
-#endif /*__RTTP_SUPPORT__*/
+#include "frwd.h"
+#include "xml_tree.h"
 
-/* 加载配置信息 */
+static int frwd_conf_load_comm(xml_tree_t *xml, frwd_conf_t *conf);
+static int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t *conf);
+
+/******************************************************************************
+ **函数名称: frwd_load_conf
+ **功    能: 加载配置信息
+ **输入参数: 
+ **     path: 配置路径
+ **输出参数:
+ **     conf: 配置信息
+ **返    回: 0:成功 !0:失败
+ **实现描述: 载入配置文件，再依次解析各标签内容
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.06.10 #
+ ******************************************************************************/
 int frwd_load_conf(const char *path, frwd_conf_t *conf)
 {
     xml_opt_t opt;
     xml_tree_t *xml;
-    xml_node_t *node;
 
     memset(&opt, 0, sizeof(opt));
+    memset(conf, 0, sizeof(frwd_conf_t));
 
     /* > 加载配置 */
     opt.pool = (void *)NULL;
@@ -26,13 +45,16 @@ int frwd_load_conf(const char *path, frwd_conf_t *conf)
         return FRWD_ERR;
     }
 
-    /* > 提取信息 */
-#if defined(__RTTP_SUPPORT__)
-    if (frwd_conf_load_rttp(".FRWD.CONN-INVTD", &conf->conn_invtd))
-#else /*__RTTP_SUPPORT__*/
-    if (frwd_conf_load_sdtp(".FRWD.CONN-INVTD", &conf->conn_invtd))
-#endif /*__RTTP_SUPPORT__*/
+    /* > 提取通用配置 */
+    if (frwd_conf_load_comm(xml, conf))
     {
+        xml_destroy(xml);
+        return FRWD_ERR;
+    }
+    /* > 提取发送配置 */
+    if (frwd_conf_load_frwder(xml, ".FRWDER.CONN-INVTD", &conf->conn_invtd))
+    {
+        xml_destroy(xml);
         return FRWD_ERR;
     }
 
@@ -41,11 +63,61 @@ int frwd_load_conf(const char *path, frwd_conf_t *conf)
     return FRWD_OK;
 }
 
-#if defined(__RTTP_SUPPORT__)
-static int frwd_conf_load_rttp(const char *path, rtsd_conf_t *conf)
-#else /*__RTTP_SUPPORT__*/
-static int frwd_conf_load_rttp(const char *path, sdsd_conf_t *conf)
-#endif /*__RTTP_SUPPORT__*/
+/******************************************************************************
+ **函数名称: frwd_conf_load_comm
+ **功    能: 加载通用配置
+ **输入参数: 
+ **     xml: XML树
+ **输出参数:
+ **     conf: 发送配置
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.06.10 11:38:57 #
+ ******************************************************************************/
+static int frwd_conf_load_comm(xml_tree_t *xml, frwd_conf_t *conf)
+{
+    xml_node_t *node;
+
+    /* > 日志级别 */
+    node = xml_query(xml, ".FRWDER.LOG.LEVEL");
+    if (NULL == node
+        || 0 == node->value.len)
+    {
+        conf->log_level = LOG_LEVEL_TRACE;
+    }
+    else
+    {
+        conf->log_level = atoi(node->value.str);
+    }
+
+    /* > 发送至Agentd */
+    node = xml_query(xml, ".FRWDER.TO_AGTD.PATH");
+    if (NULL == node
+        || 0 == node->value.len)
+    {
+        return FRWD_ERR;
+    }
+
+    snprintf(conf->to_agentd, sizeof(conf->to_agentd), "%s", node->value.str);
+
+    return FRWD_OK;
+}
+
+/******************************************************************************
+ **函数名称: frwd_conf_load_frwder
+ **功    能: 加载转发配置
+ **输入参数: 
+ **     xml: XML树
+ **     path: 结点路径
+ **输出参数:
+ **     conf: 发送配置
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.06.09 #
+ ******************************************************************************/
+static int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t *conf)
 {
     xml_node_t *parent, *node;
 
@@ -63,17 +135,10 @@ static int frwd_conf_load_rttp(const char *path, sdsd_conf_t *conf)
         return FRWD_ERR;
     }
 
-    conf->devid = atoi(node->devid);
+    conf->devid = atoi(node->value.str);
 
     /* > 设备名 */
-    node = xml_rquery(xml, parent, "NAME");
-    if (NULL == node
-        || 0 == node->value.len)
-    {
-        return FRWD_ERR;
-    }
-
-    snprintf(conf->name, sizeof(conf->name), "%s", node->value.str);
+    snprintf(conf->name, sizeof(conf->name), "%05d", conf->devid);
 
     /* > 服务端IP */
     node = xml_rquery(xml, parent, "SERVER.IP");
@@ -150,7 +215,7 @@ static int frwd_conf_load_rttp(const char *path, sdsd_conf_t *conf)
         return FRWD_ERR;
     }
 
-    conf->send_buff_size = atoi(node->value.str);
+    conf->send_buff_size = atoi(node->value.str) * MB;
     if (0 == conf->send_buff_size)
     {
         return FRWD_ERR;
@@ -163,7 +228,7 @@ static int frwd_conf_load_rttp(const char *path, sdsd_conf_t *conf)
         return FRWD_ERR;
     }
 
-    conf->recv_buff_size = atoi(node->value.str);
+    conf->recv_buff_size = atoi(node->value.str) * MB;
     if (0 == conf->recv_buff_size)
     {
         return FRWD_ERR;
@@ -210,6 +275,9 @@ static int frwd_conf_load_rttp(const char *path, sdsd_conf_t *conf)
         return FRWD_ERR;
     }
 
+    snprintf(conf->sendq.path, sizeof(conf->sendq.path),
+             "../temp/frwder/sendq-%05d.key", conf->devid);
+
     node = xml_rquery(xml, parent, "SENDQ.SIZE");
     if (NULL == node
         || 0 == node->value.len)
@@ -222,8 +290,6 @@ static int frwd_conf_load_rttp(const char *path, sdsd_conf_t *conf)
     {
         return FRWD_ERR;
     }
-
-
 
     return FRWD_OK;
 }
