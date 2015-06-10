@@ -9,7 +9,7 @@
 #include "lsnd_conf.h"
 
 #define LSND_DEF_CONF_PATH      "../conf/listend.xml"     /* 默认配置路径 */
-#define LSND_SHM_SENDQ_PATH     "../temp/lsnd/send.shmq"  /* 发送队列路径 */
+#define LSND_SHM_SENDQ_PATH     "../temp/listend/send.shmq"  /* 发送队列路径 */
 
 /* 错误码 */
 typedef enum
