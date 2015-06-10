@@ -13,17 +13,11 @@ if [ $n -gt 0 ]; then
     ./logsvr
 fi
 
-# 发送服务
-./sdtp_send 28888 &
-
-# 爬虫服务
-#./crawler -d
-
-# 爬虫过滤服务
-#./filter -d
-
-# 探针服务
-./probd -d
-
-# 监控进程状态
-./watch.sh
+# 启动服务
+./mmexec        # 内存服务
+./invtd -d      # 倒排服务
+./frwder -d     # 转发服务
+./agentd -d     # 代理服务
+#./crawler -d    # 爬虫服务
+#./filter -d     # 爬虫过滤服务
+./watch.sh      # 监控进程状态

@@ -7,7 +7,7 @@ pkill -9 agentd
 pkill -9 monitor
 pkill -9 invertd
 pkill -9 logsvr
-pkill -9 frwd_exec
+pkill -9 frwder
 pkill -9 rttp_recv
 pkill -9 rttp_send
 pkill -9 sdtp_recv

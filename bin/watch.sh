@@ -18,7 +18,8 @@ print_proc()
                     -e "invertd" \
                     -e "mmexec" \
                     -e "rttp" \
-                    -e "frwd_exec" \
+                    -e "./monitor" \
+                    -e "frwder" \
                     -e "sdtp" | grep -v "grep" | sort
 }
 
@@ -142,7 +143,8 @@ main()
 
         #cat .netstat.ls
         #echo "---------------------------------------------------------------------"
-        print_netstat "crawler" "filter" "redis-server" "search"
+        #print_netstat "crawler" "filter" "redis-server" "search" "invertd" "frwder"
+        netstat -natp | grep "28888"
 
         sleep 2
     done;
