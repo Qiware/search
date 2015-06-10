@@ -107,25 +107,25 @@ void log_destroy(log_cycle_t **log);
 
 /* 日志模块接口 */
 #define log_fatal(log, ...) /* 撰写FATAL级别日志 */\
-    if (LOG_LEVEL_FATAL >= (log)->level) \
+    if (NULL != (log) && LOG_LEVEL_FATAL >= (log)->level) \
         log_core(log, LOG_LEVEL_FATAL, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
 #define log_error(log, ...) /* 撰写ERROR级别日志 */\
-    if (LOG_LEVEL_ERROR >= (log)->level) \
+    if (NULL != (log) && LOG_LEVEL_ERROR >= (log)->level) \
         log_core(log, LOG_LEVEL_ERROR, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
 #define log_warn(log, ...)  /* 撰写WARN级别日志 */\
-    if (LOG_LEVEL_WARN >= (log)->level) \
+    if (NULL != (log) && LOG_LEVEL_WARN >= (log)->level) \
         log_core(log, LOG_LEVEL_WARN, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
 #define log_info(log, ...)  /* 撰写INFO级别日志 */\
-    if (LOG_LEVEL_INFO >= (log)->level) \
+    if (NULL != (log) && LOG_LEVEL_INFO >= (log)->level) \
         log_core(log, LOG_LEVEL_INFO, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
 #define log_debug(log, ...) /* 撰写DEBUG级别日志 */\
-    if (LOG_LEVEL_DEBUG >= (log)->level) \
+    if (NULL != (log) && LOG_LEVEL_DEBUG >= (log)->level) \
         log_core(log, LOG_LEVEL_DEBUG, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
 #define log_trace(log, ...) /* 撰写TRACE级别日志 */\
-    if (LOG_LEVEL_TRACE >= (log)->level) \
+    if (NULL != (log) && LOG_LEVEL_TRACE >= (log)->level) \
         log_core(log, LOG_LEVEL_TRACE, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
 #define log_bin(log, addr, len, ...)   /* 撰写MEM-DUMP日志 */\
-    if (LOG_LEVEL_TRACE >= (log)->level) \
+    if (NULL != (log) && LOG_LEVEL_TRACE >= (log)->level) \
         log_core(log, LOG_LEVEL_TRACE, __FILE__, __LINE__, addr, len, __VA_ARGS__)
 
 /* 日志对象 */
