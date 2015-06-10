@@ -9,6 +9,7 @@
 
 int main(int argc, const char** argv)
 {
+    log_cycle_t *log;
     gumbo_html_t *html;
     gumbo_result_t *r;
     const char *fname = argv[1];
@@ -19,20 +20,24 @@ int main(int argc, const char** argv)
         exit(EXIT_FAILURE);
     }
 
-    plog_init(LOG_LEVEL_DEBUG, "./gumbo.log");
+    log = log_init(LOG_LEVEL_DEBUG, "./gumbo.log");
+    if (NULL == log)
+    {
+        fprintf(stderr, "Initialize log failed!\n");
+    }
 
     html = gumbo_html_parse(fname);
     if (NULL == html)
     {
-        fprintf(stderr, "Parse html failed! [%s]", fname);
+        fprintf(stderr, "Parse html failed! [%s]\n", fname);
         return -1;
     }
 
-    r = gumbo_parse_href(html);
+    r = gumbo_parse_href(html, log);
     if (NULL == r)
     {
         gumbo_html_destroy(html);
-        fprintf(stderr, "Search href failed!");
+        fprintf(stderr, "Search href failed!\n");
         return -1;
     }
 

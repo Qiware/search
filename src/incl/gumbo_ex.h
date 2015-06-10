@@ -1,6 +1,7 @@
 #if !defined(__GUMBO_EX_H__)
 #define __GUMBO_EX_H__
 
+#include "log.h"
 #include "slab.h"
 #include "list.h"
 #include "mem_pool.h"
@@ -24,16 +25,17 @@ typedef struct
 typedef struct
 {
     list_t *list;                   /* 结果链表 */
+    log_cycle_t *log;               /* 日志对象 */
     mem_pool_t *mem_pool;           /* 内存池 */
 } gumbo_result_t;
 
-gumbo_html_t *gumbo_html_parse(const char *path);
+gumbo_html_t *gumbo_html_parse(const char *path, log_cycle_t *log);
 void gumbo_html_destroy(gumbo_html_t *html);
 
 void gumbo_print_result(gumbo_result_t *r);
 void gumbo_result_destroy(gumbo_result_t *r);
 
 const char *gumbo_get_title(const gumbo_html_t *html);
-gumbo_result_t *gumbo_parse_href(const gumbo_html_t *html);
+gumbo_result_t *gumbo_parse_href(const gumbo_html_t *html, log_cycle_t *log);
 
 #endif /*__GUMBO_EX_H__*/

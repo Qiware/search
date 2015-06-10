@@ -19,20 +19,21 @@
 #include "list.h"
 #include "gumbo_ex.h"
 
-static int gumbo_load_html(gumbo_html_t *html);
+static int gumbo_load_html(gumbo_html_t *html, log_cycle_t *log);
 
 /******************************************************************************
  **函数名称: gumbo_html_parse
  **功    能: 解析指定的HTML文件
  **输入参数:
  **     path: HTML文件路径
+ **     log: 日志对象
  **输出参数:
  **返    回: HTML对象
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.14 #
  ******************************************************************************/
-gumbo_html_t *gumbo_html_parse(const char *path)
+gumbo_html_t *gumbo_html_parse(const char *path, log_cycle_t *log)
 {
     int ret;
     gumbo_html_t *html;
@@ -42,7 +43,7 @@ gumbo_html_t *gumbo_html_parse(const char *path)
     mem_pool = mem_pool_creat(1 * MB);
     if (NULL == mem_pool)
     {
-        plog_error("Create memory pool failed!");
+        log_error(log, "Create memory pool failed!");
         return NULL;
     }
 
@@ -51,7 +52,7 @@ gumbo_html_t *gumbo_html_parse(const char *path)
     if (NULL == html)
     {
         mem_pool_destroy(mem_pool);
-        plog_error("Alloc memory from slab failed!");
+        log_error(log, "Alloc memory from slab failed!");
         return NULL;
     }
 
@@ -60,11 +61,11 @@ gumbo_html_t *gumbo_html_parse(const char *path)
     /* 3. 加载HTML文件 */
     snprintf(html->path, sizeof(html->path), "%s", path);
 
-    ret = gumbo_load_html(html);
+    ret = gumbo_load_html(html, log);
     if (0 != ret)
     {
         mem_pool_destroy(mem_pool);
-        plog_error("Load html failed! path:%s", path);
+        log_error(log, "Load html failed! path:%s", path);
         return NULL;
     }
 
@@ -114,7 +115,7 @@ void gumbo_html_destroy(gumbo_html_t *html)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.14 #
  ******************************************************************************/
-static int gumbo_load_html(gumbo_html_t *html)
+static int gumbo_load_html(gumbo_html_t *html, log_cycle_t *log)
 {
     FILE *fp;
     int fd, off, n;
@@ -124,7 +125,7 @@ static int gumbo_load_html(gumbo_html_t *html)
     fp = fopen(html->path, "r");
     if (NULL == fp)
     {
-        plog_error("errmsg:[%d] %s! path:%s", errno, strerror(errno), html->path);
+        log_error(log, "errmsg:[%d] %s! path:%s", errno, strerror(errno), html->path);
         return -1;
     }
 
@@ -136,7 +137,7 @@ static int gumbo_load_html(gumbo_html_t *html)
     html->input = mem_pool_alloc(html->mem_pool, html->input_length + 1);
     if (NULL == html->input)
     {
-        plog_error("Alloc memory from slab failed!");
+        log_error(log, "Alloc memory from slab failed!");
         return -1;
     }
 
@@ -240,7 +241,7 @@ static void _gumbo_parse_href(GumboNode *node, gumbo_result_t *r)
         data = mem_pool_alloc(r->mem_pool, len + 1);
         if (NULL == data)
         {
-            plog_error("Alloc memory from slab failed!");
+            log_error(r->log, "Alloc memory from slab failed!");
             return;
         }
 
@@ -268,17 +269,17 @@ static void _gumbo_parse_href(GumboNode *node, gumbo_result_t *r)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.14 #
  ******************************************************************************/
-gumbo_result_t *gumbo_parse_href(const gumbo_html_t *html)
+gumbo_result_t *gumbo_parse_href(const gumbo_html_t *html, log_cycle_t *log)
 {
+    list_opt_t opt;
     gumbo_result_t *r;
     mem_pool_t *mem_pool;
-    list_opt_t opt;
 
     /* > 创建内存池 */
     mem_pool = mem_pool_creat(1 * MB);
     if (NULL == mem_pool)
     {
-        plog_error("Create memory pool failed!");
+        log_error(log, "Create memory pool failed!");
         return NULL;
     }
 
@@ -287,10 +288,11 @@ gumbo_result_t *gumbo_parse_href(const gumbo_html_t *html)
     if (NULL == r)
     {
         mem_pool_destroy(mem_pool);
-        plog_error("Alloc memory from slab failed!");
+        log_error(log, "Alloc memory from slab failed!");
         return NULL;
     }
 
+    r->log = log;
     r->mem_pool = mem_pool;
 
     /* > 创建链表对象 */
@@ -304,7 +306,7 @@ gumbo_result_t *gumbo_parse_href(const gumbo_html_t *html)
     if (NULL == r->list)
     {
         mem_pool_destroy(mem_pool);
-        plog_error("Alloc memory from slab failed!");
+        log_error(log, "Alloc memory from slab failed!");
         return NULL;
     }
 

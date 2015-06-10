@@ -367,7 +367,7 @@ static int flt_worker_workflow(flt_cntx_t *ctx, flt_worker_t *worker)
     snprintf(fpath, sizeof(fpath), "%s/%s", conf->download.path, info->html);
 
     /* > 解析HTML文件 */
-    html = gumbo_html_parse(fpath);
+    html = gumbo_html_parse(fpath, ctx->log);
     if (NULL == html)
     {
         log_error(ctx->log, "Parse html failed! fpath:%s", fpath);
@@ -375,7 +375,7 @@ static int flt_worker_workflow(flt_cntx_t *ctx, flt_worker_t *worker)
     }
 
     /* > 提取超链接 */
-    result = gumbo_parse_href(html);
+    result = gumbo_parse_href(html, ctx->log);
     if (NULL == result)
     {
         log_error(ctx->log, "Parse href failed! fpath:%s", fpath);

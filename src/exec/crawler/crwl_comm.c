@@ -530,7 +530,7 @@ log_cycle_t *crwl_init_log(char *fname)
     log = log_init(LOG_LEVEL_ERROR, path);
     if (NULL == log)
     {
-        plog_error("Initialize log failed!");
+        fprintf(stderr, "Initialize log failed!");
         plog_destroy();
         return NULL;
     }
@@ -592,17 +592,17 @@ static void crwl_signal_hdl(int signum)
     {
         case SIGINT:
         {
-            plog_error("Catch SIGINT [%d] signal!", signum);
+            fprintf(stderr, "Catch SIGINT [%d] signal!", signum);
             return;
         }
         case SIGPIPE:
         {
-            plog_error("Catch SIGPIPE [%d] signal!", signum);
+            fprintf(stderr, "Catch SIGPIPE [%d] signal!", signum);
             return;
         }
         default:
         {
-            plog_error("Catch unknown signal! signum:[%d]", signum);
+            fprintf(stderr, "Catch unknown signal! signum:[%d]", signum);
             return;
         }
     }
