@@ -92,14 +92,14 @@ static int frwd_conf_load_comm(xml_tree_t *xml, frwd_conf_t *conf)
     }
 
     /* > 发送至Agentd */
-    node = xml_query(xml, ".FRWDER.TO_AGTD.PATH");
+    node = xml_query(xml, ".FRWDER.TO_LSND.PATH");
     if (NULL == node
         || 0 == node->value.len)
     {
         return FRWD_ERR;
     }
 
-    snprintf(conf->to_agentd, sizeof(conf->to_agentd), "%s", node->value.str);
+    snprintf(conf->to_listend, sizeof(conf->to_listend), "%s", node->value.str);
 
     return FRWD_OK;
 }

@@ -45,8 +45,8 @@ frwd_cntx_t *frwd_init(const frwd_conf_t *conf)
         }
 
         /* > 连接发送队列 */
-        frwd->send_to_agentd = shm_queue_attach(conf->to_agentd);
-        if (NULL == frwd->send_to_agentd)
+        frwd->send_to_listend = shm_queue_attach(conf->to_listend);
+        if (NULL == frwd->send_to_listend)
         {
             log_fatal(frwd->log, "errmsg:[%d] %s!", errno, strerror(errno));
             break;
@@ -280,7 +280,7 @@ static int frwd_search_rep_hdl(int type, int orig, char *data, size_t len, void 
 
     log_trace(ctx->log, "Call %s()", __func__);
 
-    return frwd_shmq_push(ctx->send_to_agentd, type, orig, data, len);
+    return frwd_shmq_push(ctx->send_to_listend, type, orig, data, len);
 }
 
 /******************************************************************************

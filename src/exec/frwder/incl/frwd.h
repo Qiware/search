@@ -25,7 +25,7 @@ typedef struct
 {
     frwd_conf_t conf;                       /* 配置信息 */
     log_cycle_t *log;                       /* 日志对象 */
-    shm_queue_t *send_to_agentd;            /* 发送至Agentd */
+    shm_queue_t *send_to_listend;           /* 发送至Listend */
     rtsd_cntx_t *rttp;                      /* RTTP对象 */
 } frwd_cntx_t;
 

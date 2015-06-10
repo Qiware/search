@@ -9,17 +9,16 @@
 ###############################################################################
 print_proc()
 {
-    ps -axu | grep -e "mmexec" \
-                    -e "crawler" \
-                    -e "filter"  \
-                    -e "logsvr" \
+    ps -axu | grep -e "rttp" \
                     -e "redis" \
-                    -e "agentd" \
-                    -e "invertd" \
-                    -e "mmexec" \
-                    -e "rttp" \
-                    -e "./monitor" \
+                    -e "filter" \
                     -e "frwder" \
+                    -e "logsvr" \
+                    -e "mmexec" \
+                    -e "crawler" \
+                    -e "listend" \
+                    -e "invertd" \
+                    -e "./monitor" \
                     -e "sdtp" | grep -v "grep" | sort
 }
 
