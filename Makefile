@@ -35,7 +35,7 @@ DIR += "$(EXEC_DIR)/mmexec"
 DIR += "$(EXEC_DIR)/crawler"
 DIR += "$(EXEC_DIR)/filter"
 DIR += "$(EXEC_DIR)/logsvr"
-DIR += "$(EXEC_DIR)/agentd"
+DIR += "$(EXEC_DIR)/listend"
 DIR += "$(EXEC_DIR)/monitor"
 DIR += "$(EXEC_DIR)/invertd"
 

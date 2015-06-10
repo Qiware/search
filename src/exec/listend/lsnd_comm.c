@@ -1,8 +1,8 @@
 #include "mesg.h"
-#include "agentd.h"
+#include "listend.h"
 
 /******************************************************************************
- **函数名称: agentd_getopt 
+ **函数名称: lsnd_getopt 
  **功    能: 解析输入参数
  **输入参数: 
  **     argc: 参数个数
@@ -18,7 +18,7 @@
  **     h: 帮助手册
  **作    者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
-int agentd_getopt(int argc, char **argv, agentd_opt_t *opt)
+int lsnd_getopt(int argc, char **argv, lsnd_opt_t *opt)
 {
     int ch;
 
@@ -40,7 +40,7 @@ int agentd_getopt(int argc, char **argv, agentd_opt_t *opt)
             case 'h':   /* 显示帮助信息 */
             default:
             {
-                return AGTD_SHOW_HELP;
+                return LSND_SHOW_HELP;
             }
         }
     }
@@ -51,14 +51,14 @@ int agentd_getopt(int argc, char **argv, agentd_opt_t *opt)
     /* 2. 验证输入参数 */
     if (!strlen(opt->conf_path))
     {
-        snprintf(opt->conf_path, sizeof(opt->conf_path), "%s", AGTD_DEF_CONF_PATH);
+        snprintf(opt->conf_path, sizeof(opt->conf_path), "%s", LSND_DEF_CONF_PATH);
     }
 
     return 0;
 }
 
 /* 显示启动参数帮助信息 */
-int agentd_usage(const char *exec)
+int lsnd_usage(const char *exec)
 {
     printf("\nUsage: %s [-h] [-d] -c <config file> [-l log_level]\n", exec);
     printf("\t-h\tShow help\n"
@@ -67,7 +67,7 @@ int agentd_usage(const char *exec)
 }
 
 /* 初始化日志模块 */
-log_cycle_t *agentd_init_log(char *fname)
+log_cycle_t *lsnd_init_log(char *fname)
 {
     char path[FILE_NAME_MAX_LEN];
 
@@ -97,12 +97,12 @@ log_cycle_t *agentd_init_log(char *fname)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.15 #
  ******************************************************************************/
-void *agentd_dist_routine(void *_ctx)
+void *lsnd_dist_routine(void *_ctx)
 {
     void *addr;
     rttp_header_t *head;
     mesg_search_rep_t *rep;
-    agentd_cntx_t *ctx = (agentd_cntx_t *)_ctx;
+    lsnd_cntx_t *ctx = (lsnd_cntx_t *)_ctx;
 
     while (1)
     {

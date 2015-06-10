@@ -1,29 +1,29 @@
 /******************************************************************************
  ** Coypright(C) 2014-2024 Xundao technology Co., Ltd
  **
- ** 文件名: agentd_conf.c
+ ** 文件名: lsnd_conf.c
  ** 版本号: 1.0
  ** 描  述: 代理服务配置
- **         负责从代理服务配置文件(agentd.xml)中提取有效信息
+ **         负责从代理服务配置文件(lsnd.xml)中提取有效信息
  ** 作  者: # Qifeng.zou # 2014.10.28 #
  ******************************************************************************/
-#include "agentd.h"
+#include "listend.h"
 #include "syscall.h"
 #include "xml_tree.h" 
 #include "mem_pool.h"
-#include "agentd_conf.h"
+#include "lsnd_conf.h"
 
-static int agentd_conf_parse(xml_tree_t *xml, agent_conf_t *conf, log_cycle_t *log);
+static int lsnd_conf_parse(xml_tree_t *xml, agent_conf_t *conf, log_cycle_t *log);
 
-static int agentd_conf_load_comm(xml_tree_t *xml, agentd_conf_t *conf, log_cycle_t *log);
-static int agentd_conf_load_agent(xml_tree_t *xml, agent_conf_t *conf, log_cycle_t *log);
-static int agentd_conf_load_frwd(xml_tree_t *xml, rtsd_conf_t *conf, log_cycle_t *log);
+static int lsnd_conf_load_comm(xml_tree_t *xml, lsnd_conf_t *conf, log_cycle_t *log);
+static int lsnd_conf_load_agent(xml_tree_t *xml, agent_conf_t *conf, log_cycle_t *log);
+static int lsnd_conf_load_frwd(xml_tree_t *xml, rtsd_conf_t *conf, log_cycle_t *log);
 
 /* 加载配置信息 */
-agentd_conf_t *agentd_load_conf(const char *path, log_cycle_t *log)
+lsnd_conf_t *lsnd_load_conf(const char *path, log_cycle_t *log)
 {
     xml_opt_t opt;
-    agentd_conf_t *conf;
+    lsnd_conf_t *conf;
     mem_pool_t *mem_pool;
     xml_tree_t *xml = NULL;
 
@@ -38,7 +38,7 @@ agentd_conf_t *agentd_load_conf(const char *path, log_cycle_t *log)
     do
     {
         /* > 创建配置对象 */
-        conf = (agentd_conf_t *)calloc(1, sizeof(agentd_conf_t));
+        conf = (lsnd_conf_t *)calloc(1, sizeof(lsnd_conf_t));
         if (NULL == conf)
         {
             log_error(log, "Alloc memory from pool failed!");
@@ -61,21 +61,21 @@ agentd_conf_t *agentd_load_conf(const char *path, log_cycle_t *log)
         }
 
         /* > 加载通用配置 */
-        if (agentd_conf_load_comm(xml, conf, log))
+        if (lsnd_conf_load_comm(xml, conf, log))
         {
             log_error(log, "Load common configuration failed!");
             break;
         }
 
         /* > 加载AGENT配置 */
-        if (agentd_conf_load_agent(xml, &conf->agent, log))
+        if (lsnd_conf_load_agent(xml, &conf->agent, log))
         {
             log_error(log, "Load AGENT conf failed! path:%s", path);
             break;
         }
 
         /* > 加载转发配置 */
-        if (agentd_conf_load_frwd(xml, &conf->to_frwd, log))
+        if (lsnd_conf_load_frwd(xml, &conf->to_frwd, log))
         {
             log_error(log, "Load rttp conf failed! path:%s", path);
             break;
@@ -96,12 +96,12 @@ agentd_conf_t *agentd_load_conf(const char *path, log_cycle_t *log)
 }
 
 /* 加载公共配置 */
-static int agentd_conf_load_comm(xml_tree_t *xml, agentd_conf_t *conf, log_cycle_t *log)
+static int lsnd_conf_load_comm(xml_tree_t *xml, lsnd_conf_t *conf, log_cycle_t *log)
 {
     xml_node_t *node;
 
     /* > 加载日志配置 */
-    node = xml_query(xml, ".AGENTD.LOG.LEVEL");
+    node = xml_query(xml, ".LISTEND.LOG.LEVEL");
     if (NULL == node
         || 0 == node->value.len)
     {
@@ -112,23 +112,23 @@ static int agentd_conf_load_comm(xml_tree_t *xml, agentd_conf_t *conf, log_cycle
         conf->log_level = log_get_level(node->value.str);
     }
 
-    return AGTD_OK;
+    return LSND_OK;
 }
 
 /* 解析并发配置 */
-static int agentd_conf_parse_agent_connections(
+static int lsnd_conf_parse_agent_connections(
         xml_tree_t *xml, agent_conf_t *conf, log_cycle_t *log)
 {
-    return AGTD_OK;
+    return LSND_OK;
 }
 
 /* 解析队列配置 */
-static int agentd_conf_parse_agent_queue(xml_tree_t *xml, agent_conf_t *conf, log_cycle_t *log)
+static int lsnd_conf_parse_agent_queue(xml_tree_t *xml, agent_conf_t *conf, log_cycle_t *log)
 {
     xml_node_t *node, *fix;
 
     /* 加载队列信息 */
-#define AGTD_LOAD_QUEUE(xml, fix,  _path, conf) \
+#define LSND_LOAD_QUEUE(xml, fix,  _path, conf) \
     {\
         char node_path[FILE_PATH_MAX_LEN]; \
         \
@@ -137,7 +137,7 @@ static int agentd_conf_parse_agent_queue(xml_tree_t *xml, agent_conf_t *conf, lo
         node = xml_search(xml, fix, node_path); \
         if (NULL == node) \
         { \
-            return AGTD_ERR; \
+            return LSND_ERR; \
         } \
         \
         (conf)->max = atoi(node->value.str); \
@@ -147,46 +147,46 @@ static int agentd_conf_parse_agent_queue(xml_tree_t *xml, agent_conf_t *conf, lo
         node = xml_search(xml, fix, node_path); \
         if (NULL == node) \
         { \
-            return AGTD_ERR; \
+            return LSND_ERR; \
         } \
         \
         (conf)->size = atoi(node->value.str); \
     }
 
     /* > 定位队列标签 */
-    fix = xml_query(xml, ".AGENTD.AGENT.QUEUE");
+    fix = xml_query(xml, ".LISTEND.AGENT.QUEUE");
     if (NULL == fix)
     {
         log_error(log, "Get queue configuration failed!");
-        return AGTD_ERR;
+        return LSND_ERR;
     }
 
     /* > 获取队列配置 */
-    AGTD_LOAD_QUEUE(xml, fix, ".CONNQ", &conf->connq);
-    AGTD_LOAD_QUEUE(xml, fix, ".RECVQ", &conf->recvq);
-    AGTD_LOAD_QUEUE(xml, fix, ".SENDQ", &conf->sendq);
+    LSND_LOAD_QUEUE(xml, fix, ".CONNQ", &conf->connq);
+    LSND_LOAD_QUEUE(xml, fix, ".RECVQ", &conf->recvq);
+    LSND_LOAD_QUEUE(xml, fix, ".SENDQ", &conf->sendq);
 
-    return AGTD_OK;
+    return LSND_OK;
 }
 
 /* 加载AGENT配置 */
-static int agentd_conf_load_agent(xml_tree_t *xml, agent_conf_t *conf, log_cycle_t *log)
+static int lsnd_conf_load_agent(xml_tree_t *xml, agent_conf_t *conf, log_cycle_t *log)
 {
     xml_node_t *node, *fix;
 
     /* > 定位并发配置 */
-    fix = xml_query(xml, ".AGENTD.AGENT.CONNECTIONS");
+    fix = xml_query(xml, ".LISTEND.AGENT.CONNECTIONS");
     if (NULL == fix)
     {
         log_error(log, "Didn't configure connections!");
-        return AGTD_ERR;
+        return LSND_ERR;
     }
 
     node = xml_search(xml, fix, "MAX");         /* > 获取最大并发数 */
     if (NULL == node)
     {
         log_error(log, "Get max number of connections failed!");
-        return AGTD_ERR;
+        return LSND_ERR;
     }
 
     conf->connections.max = atoi(node->value.str);
@@ -195,7 +195,7 @@ static int agentd_conf_load_agent(xml_tree_t *xml, agent_conf_t *conf, log_cycle
     if (NULL == node)
     {
         log_error(log, "Get timeout of connection failed!");
-        return AGTD_ERR;
+        return LSND_ERR;
     }
 
     conf->connections.timeout = atoi(node->value.str);
@@ -205,50 +205,50 @@ static int agentd_conf_load_agent(xml_tree_t *xml, agent_conf_t *conf, log_cycle
     if (NULL == node)
     {
         log_error(log, "Get port of connection failed!");
-        return AGTD_ERR;
+        return LSND_ERR;
     }
 
     conf->connections.port = atoi(node->value.str);
 
 
-    if (agentd_conf_parse_agent_connections(xml, conf, log))
+    if (lsnd_conf_parse_agent_connections(xml, conf, log))
     {
         log_error(log, "Parse connections of AGENTe configuration failed!");
-        return AGTD_ERR;
+        return LSND_ERR;
     }
 
     /* > 加载连接配置 */
-    if (agentd_conf_parse_agent_queue(xml, conf, log))
+    if (lsnd_conf_parse_agent_queue(xml, conf, log))
     {
         log_error(log, "Parse queue of AGENTe configuration failed!");
-        return AGTD_ERR;
+        return LSND_ERR;
     }
 
     /* > 获取WORKER.NUM标签 */
-    node = xml_query(xml, ".AGENTD.AGENT.WORKER.NUM");
+    node = xml_query(xml, ".LISTEND.AGENT.WORKER.NUM");
     if (NULL == node)
     {
         log_error(log, "Didn't configure number of worker!");
-        return AGTD_ERR;
+        return LSND_ERR;
     }
 
     conf->worker_num = atoi(node->value.str);
 
     /* 4. 获取AGENT.NUM标签 */
-    node = xml_query(xml, ".AGENTD.AGENT.AGENT.NUM");
+    node = xml_query(xml, ".LISTEND.AGENT.AGENT.NUM");
     if (NULL == node)
     {
         log_error(log, "Didn't configure number of agent!");
-        return AGTD_ERR;
+        return LSND_ERR;
     }
 
     conf->agent_num = atoi(node->value.str);
 
-    return AGTD_OK;
+    return LSND_OK;
 }
 
-static int _agentd_conf_load_frwder(
-        const char *path, const char *mark, rtsd_conf_t *conf, log_cycle_t *log)
+static int _lsnd_conf_load_frwder(const char *path,
+        const char *mark, rtsd_conf_t *conf, log_cycle_t *log)
 {
     xml_opt_t opt;
     xml_tree_t *xml;
@@ -266,7 +266,7 @@ static int _agentd_conf_load_frwder(
     if (NULL == xml)
     {
         log_error(log, "Create XML failed! path:%s", path);
-        return AGTD_ERR;
+        return LSND_ERR;
     }
 
     do
@@ -458,25 +458,25 @@ static int _agentd_conf_load_frwder(
         }
 
         xml_destroy(xml);
-        return AGTD_OK;
+        return LSND_OK;
     } while(0);
 
     xml_destroy(xml);
-    return AGTD_ERR;
+    return LSND_ERR;
 }
 
 /* 加载RTTP配置 */
-static int agentd_conf_load_frwd(xml_tree_t *xml, rtsd_conf_t *conf, log_cycle_t *log)
+static int lsnd_conf_load_frwd(xml_tree_t *xml, rtsd_conf_t *conf, log_cycle_t *log)
 {
     xml_node_t *node, *fix;
     char path[FILE_PATH_MAX_LEN], mark[FILE_PATH_MAX_LEN];
 
     /* > 获取配置路径和标签 */
-    fix = xml_query(xml, ".AGENTD.FRWD");
+    fix = xml_query(xml, ".LISTEND.FRWD");
     if (NULL == fix)
     {
         log_error(xml->log, "Didn't find frwd node!");
-        return AGTD_ERR;
+        return LSND_ERR;
     }
 
     node = xml_search(xml, fix, "PATH");
@@ -484,7 +484,7 @@ static int agentd_conf_load_frwd(xml_tree_t *xml, rtsd_conf_t *conf, log_cycle_t
         || 0 == node->value.len)
     {
         log_error(xml->log, "Didn't find frwd path!");
-        return AGTD_ERR;
+        return LSND_ERR;
     }
 
     snprintf(path, sizeof(path), "%s", node->value.str);
@@ -494,11 +494,11 @@ static int agentd_conf_load_frwd(xml_tree_t *xml, rtsd_conf_t *conf, log_cycle_t
         || 0 == node->value.len)
     {
         log_error(xml->log, "Didn't find frwd mark!");
-        return AGTD_ERR;
+        return LSND_ERR;
     }
 
     snprintf(mark, sizeof(mark), "%s", node->value.str);
 
     /* > 加载FRWD配置 */
-    return _agentd_conf_load_frwder(path, mark, conf, log);
+    return _lsnd_conf_load_frwder(path, mark, conf, log);
 }

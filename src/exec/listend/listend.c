@@ -1,7 +1,7 @@
 /******************************************************************************
  ** Coypright(C) 2014-2024 Xundao technology Co., Ltd
  **
- ** 文件名: agentd.c
+ ** 文件名: lsnd.c
  ** 版本号: 1.0
  ** 描  述: 代理服务
  **         负责接受外界请求，并将处理结果返回给外界
@@ -13,14 +13,14 @@
 #include "hash.h"
 #include "mesg.h"
 #include "agent.h"
-#include "agentd.h"
+#include "listend.h"
 #include "syscall.h"
 #include "agent_mesg.h"
 
-#define AGTD_PROC_LOCK_PATH "../temp/agentd/agentd.lck"
+#define LSND_PROC_LOCK_PATH "../temp/lsnd/lsnd.lck"
 
-static agentd_cntx_t *agentd_init(char *pname, const char *path);
-static int agentd_set_reg(agentd_cntx_t *ctx);
+static lsnd_cntx_t *lsnd_init(char *pname, const char *path);
+static int lsnd_set_reg(lsnd_cntx_t *ctx);
 
 /******************************************************************************
  **函数名称: main 
@@ -36,15 +36,15 @@ static int agentd_set_reg(agentd_cntx_t *ctx);
  ******************************************************************************/
 int main(int argc, char *argv[])
 {
-    agentd_opt_t opt;
-    agentd_cntx_t *ctx;
+    lsnd_opt_t opt;
+    lsnd_cntx_t *ctx;
 
     memset(&opt, 0, sizeof(opt));
 
     /* > 解析输入参数 */
-    if (agentd_getopt(argc, argv, &opt))
+    if (lsnd_getopt(argc, argv, &opt))
     {
-        return agentd_usage(argv[0]);
+        return lsnd_usage(argv[0]);
     }
     else if (opt.isdaemon)
     {
@@ -56,15 +56,15 @@ int main(int argc, char *argv[])
     }
 
     /* > 进程初始化 */
-    ctx = agentd_init(argv[0], opt.conf_path);
+    ctx = lsnd_init(argv[0], opt.conf_path);
     if (NULL == ctx)
     {
-        fprintf(stderr, "Initialize agentd failed!");
+        fprintf(stderr, "Initialize lsnd failed!");
         return -1;
     }
  
     /* 注册回调函数 */
-    if (agentd_set_reg(ctx))
+    if (lsnd_set_reg(ctx))
     {
         fprintf(stderr, "Set register callback failed!");
         return -1;
@@ -87,7 +87,7 @@ ERROR:
 }
 
 /******************************************************************************
- **函数名称: agentd_proc_lock
+ **函数名称: lsnd_proc_lock
  **功    能: 代理服务进程锁(防止同时启动两个服务进程)
  **输入参数: NONE
  **输出参数: NONE
@@ -96,13 +96,13 @@ ERROR:
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
-static int agentd_proc_lock(void)
+static int lsnd_proc_lock(void)
 {
     int fd;
     char path[FILE_PATH_MAX_LEN];
 
     /* 1. 获取路径 */
-    snprintf(path, sizeof(path), "%s", AGTD_PROC_LOCK_PATH);
+    snprintf(path, sizeof(path), "%s", LSND_PROC_LOCK_PATH);
 
     Mkdir2(path, DIR_MODE);
 
@@ -124,13 +124,13 @@ static int agentd_proc_lock(void)
 }
 
 /* 初始化SDTP对象 */
-static rtsd_cli_t *agentd_to_invtd_init(rtsd_conf_t *conf, log_cycle_t *log)
+static rtsd_cli_t *lsnd_to_invtd_init(rtsd_conf_t *conf, log_cycle_t *log)
 {
     return rtsd_cli_init(conf, 0, log);
 }
 
 /******************************************************************************
- **函数名称: agentd_search_req_hdl
+ **函数名称: lsnd_search_req_hdl
  **功    能: 搜索请求的处理函数
  **输入参数:
  **     type: 全局对象
@@ -143,13 +143,13 @@ static rtsd_cli_t *agentd_to_invtd_init(rtsd_conf_t *conf, log_cycle_t *log)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.05.28 23:11:54 #
  ******************************************************************************/
-static int agentd_search_req_hdl(unsigned int type, void *data, int length, void *args)
+static int lsnd_search_req_hdl(unsigned int type, void *data, int length, void *args)
 {
     agent_flow_t *flow;
     agent_header_t *head;
     srch_mesg_body_t *body;
     mesg_search_req_t req;
-    agentd_cntx_t *ctx = (agentd_cntx_t *)args;
+    lsnd_cntx_t *ctx = (lsnd_cntx_t *)args;
 
     log_debug(ctx->log, "Call %s()!", __func__);
 
@@ -165,7 +165,7 @@ static int agentd_search_req_hdl(unsigned int type, void *data, int length, void
 }
 
 /******************************************************************************
- **函数名称: agentd_set_reg
+ **函数名称: lsnd_set_reg
  **功    能: 设置注册函数
  **输入参数:
  **     ctx: 全局信息
@@ -175,18 +175,18 @@ static int agentd_search_req_hdl(unsigned int type, void *data, int length, void
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.05.28 23:11:54 #
  ******************************************************************************/
-static int agentd_set_reg(agentd_cntx_t *ctx)
+static int lsnd_set_reg(lsnd_cntx_t *ctx)
 {
-    if (agent_register(ctx->agent, MSG_SEARCH_REQ, (agent_reg_cb_t)agentd_search_req_hdl, (void *)ctx))
+    if (agent_register(ctx->agent, MSG_SEARCH_REQ, (agent_reg_cb_t)lsnd_search_req_hdl, (void *)ctx))
     {
-        return AGTD_ERR;
+        return LSND_ERR;
     }
 
-    return AGTD_OK;
+    return LSND_OK;
 }
 
 /******************************************************************************
- **函数名称: agentd_init
+ **函数名称: lsnd_init
  **功    能: 初始化进程
  **输入参数:
  **     pname: 进程名
@@ -197,24 +197,24 @@ static int agentd_set_reg(agentd_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.05.28 23:11:54 #
  ******************************************************************************/
-static agentd_cntx_t *agentd_init(char *pname, const char *path)
+static lsnd_cntx_t *lsnd_init(char *pname, const char *path)
 {
     pthread_t tid;
     log_cycle_t *log;
-    agentd_cntx_t *ctx;
-    agentd_conf_t *conf;
+    lsnd_cntx_t *ctx;
+    lsnd_conf_t *conf;
     agent_cntx_t *agent;
     rtsd_cli_t *send_to_invtd;
 
     /* > 加进程锁 */
-    if (agentd_proc_lock())
+    if (lsnd_proc_lock())
     {
         fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
         return NULL;
     }
 
     /* > 创建全局对象 */
-    ctx = (agentd_cntx_t *)calloc(1, sizeof(agentd_cntx_t));
+    ctx = (lsnd_cntx_t *)calloc(1, sizeof(lsnd_cntx_t));
     if (NULL == ctx)
     {
         fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
@@ -222,7 +222,7 @@ static agentd_cntx_t *agentd_init(char *pname, const char *path)
     }
 
     /* > 初始化日志 */
-    log = agentd_init_log(pname);
+    log = lsnd_init_log(pname);
     if (NULL == log)
     {
         fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
@@ -230,7 +230,7 @@ static agentd_cntx_t *agentd_init(char *pname, const char *path)
     }
 
     /* > 加载配置信息 */
-    conf = agentd_load_conf(path, log);
+    conf = lsnd_load_conf(path, log);
     if (NULL == conf)
     {
         FREE(ctx);
@@ -242,7 +242,7 @@ static agentd_cntx_t *agentd_init(char *pname, const char *path)
     ctx->conf = conf;
 
     /* > 创建Agentd发送队列 */
-    ctx->sendq = shm_queue_attach(AGTD_SHM_SENDQ_PATH);
+    ctx->sendq = shm_queue_attach(LSND_SHM_SENDQ_PATH);
     if (NULL == ctx->sendq)
     {
         fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
@@ -258,7 +258,7 @@ static agentd_cntx_t *agentd_init(char *pname, const char *path)
     }
 
     /* > 初始化SDTP信息 */
-    send_to_invtd = agentd_to_invtd_init(&conf->to_frwd, log);
+    send_to_invtd = lsnd_to_invtd_init(&conf->to_frwd, log);
     if (NULL == send_to_invtd)
     {
         fprintf(stderr, "Initialize sdtp failed!");
@@ -266,7 +266,7 @@ static agentd_cntx_t *agentd_init(char *pname, const char *path)
     }
 
     /* 启动分发线程 */
-    thread_creat(&tid, agentd_dist_routine, ctx);
+    thread_creat(&tid, lsnd_dist_routine, ctx);
 
     ctx->send_to_invtd = send_to_invtd;
     ctx->agent = agent;

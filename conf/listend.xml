@@ -1,5 +1,5 @@
 <!-- 代理服务配置信息 -->
-<AGENTD>
+<LISTEND>
     <!-- 日志信息配置
         1) LEVLE: 日志级别
         2) LEVEL2: 系统日志级别
@@ -35,4 +35,4 @@
             1) NUM: 线程数 -->
         <WORKER NUM="3" />
     </AGENT>
-</AGENTD>
+</LISTEND>

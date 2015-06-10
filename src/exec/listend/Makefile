@@ -16,13 +16,13 @@ INCLUDE = -I./incl \
 LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lxd_agent -lxd_core -lsdtp -lrttp
 
-SRC_LIST = agentd.c \
-			agentd_comm.c \
-			agentd_conf.c
+SRC_LIST = listend.c \
+			lsnd_comm.c \
+			lsnd_conf.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST))
 
-TARGET = agentd
+TARGET = listend
 
 .PHONY: all clean
 
