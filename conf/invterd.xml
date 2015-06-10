@@ -1,10 +1,11 @@
 <!-- 倒排服务配置信息 -->
 <INVTERD>
-    <INVT_TAB MAX="1024" /> <!-- 倒排表配置 -->
+    <LOG LEVEL="error" />       <!-- 日志级别 -->
+    <INVT_TAB MAX="1024" />     <!-- 倒排表配置 -->
     <!-- SDTP服务配置 -->
     <SDTP NAME="../temp/invertd.sdtp" PORT="28888">
-        <AUTH USR="qifeng" PASSWD="111111" /> <!-- 鉴权信息 -->
-        <THDNUM RECV_THD_NUM="2" WORK_THD_NUM="4" />
-        <RECVQ NUM="4" MAX="8192" SIZE="1024" />
+        <AUTH USR="qifeng" PASSWD="111111" />         <!-- 鉴权配置 -->
+        <THDNUM RECV_THD_NUM="2" WORK_THD_NUM="4" />  <!-- 线程数据 -->
+        <RECVQ NUM="4" MAX="8192" SIZE="1024" />      <!-- 接收队列(MAX:单元总数 SIZE:单元大小) -->
     </SDTP>
 </INVTERD>

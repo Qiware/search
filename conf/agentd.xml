@@ -6,11 +6,8 @@
         3) 取值范围: trace|debug|info|warn|error|fatal -->
     <LOG LEVEL="error" LEVEL2="error" PATH="../log/" />
 
-    <!-- SDTP信息配置 -->
-    <SDTP>
-        <THD-NUM SEND="2" WORKER="3" />       <!-- 线程数配置 -->
-        <SERV IP="127.0.0.1" PORT="28888" />  <!-- 接收服务配置 -->
-    </SDTP>
+    <!-- 转发信息配置 -->
+    <FRWD PATH="../conf/frwder.xml" MARK="CONN-INVTD" DEVID="10001">
 
     <!-- 代理信息配置 -->
     <AGENT>
