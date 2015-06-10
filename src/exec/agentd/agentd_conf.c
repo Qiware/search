@@ -275,9 +275,9 @@ static int agentd_conf_load_rttp(xml_tree_t *xml, rtsd_conf_t *conf, log_cycle_t
 {
     memset(conf, 0, sizeof(rtsd_conf_t));
 
-    snprintf(conf->name, sizeof(conf->name), "RTTP-SEND");
+    conf->auth.devid = 10001;
+    snprintf(conf->name, sizeof(conf->name), "%05d", conf->auth.devid);
 
-    conf->auth.devid = 1;
     snprintf(conf->auth.usr, sizeof(conf->auth.usr), "qifeng");
     snprintf(conf->auth.passwd, sizeof(conf->auth.passwd), "111111");
 
@@ -287,7 +287,7 @@ static int agentd_conf_load_rttp(xml_tree_t *xml, rtsd_conf_t *conf, log_cycle_t
     conf->send_buff_size = 5 * MB;
     conf->recv_buff_size = 2 * MB;
 
-    snprintf(conf->sendq.path, sizeof(conf->sendq.path), "../temp/rttp/rttp-ssvr.key");
+    snprintf(conf->sendq.path, sizeof(conf->sendq.path), "../temp/frwder/sendq-%05d.key", conf->auth.devid);
     conf->sendq.max = 2048;
     conf->sendq.size = 4096;
 
