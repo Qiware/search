@@ -1,7 +1,7 @@
 <!-- 倒排服务配置信息 -->
 <INVTERD>
-    <LOG LEVEL="error" />       <!-- 日志级别 -->
-    <INVT_TAB MAX="1024" />     <!-- 倒排表配置 -->
+    <LOG LEVEL="error" PATH="../log" />       <!-- 日志级别 -->
+    <INVT_TAB MAX="1024" />                   <!-- 倒排表配置 -->
     <!-- SDTP服务配置 -->
     <SDTP NAME="../temp/invertd.sdtp" PORT="28888">
         <AUTH USR="qifeng" PASSWD="111111" />         <!-- 鉴权配置 -->
