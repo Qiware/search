@@ -32,6 +32,9 @@ int invtd_conf_load(const char *path, invtd_conf_t *conf)
     xml_tree_t *xml;
 
     /* > 创建XML树 */
+    memset(&opt, 0, sizeof(opt));
+
+    opt.log = NULL;
     opt.pool = (void *)NULL;
     opt.alloc = (mem_alloc_cb_t)mem_alloc;
     opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
