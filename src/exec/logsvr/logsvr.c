@@ -16,7 +16,7 @@
 
 #define LOGD_PLOG_PATH   "../log/logd.plog"
 
-static logd_cntx_t *logd_cntx_init(void);
+static logd_cntx_t *logd_init(void);
 static void *logd_timeout_routine(void *args);
 int logd_sync_work(int idx, logd_cntx_t *ctx);
 static int logd_proc_lock(void);
@@ -42,7 +42,7 @@ int main(void)
     daemon(1, 1);
 
     /* 2. 初始化日志服务 */
-    ctx = logd_cntx_init();
+    ctx = logd_init();
     if (NULL == ctx)
     {
         plog_error("Init log failed!");
@@ -94,7 +94,7 @@ int logd_proc_lock(void)
 }
 
 /******************************************************************************
- **函数名称: logd_cntx_init
+ **函数名称: logd_init
  **功    能: 初始化处理
  **输入参数: NONE
  **输出参数: NONE
@@ -103,12 +103,12 @@ int logd_proc_lock(void)
  **注意事项: 加文件锁防止同时启动多个日志服务进程
  **作    者: # Qifeng.zou # 2013.10.28 #
  ******************************************************************************/
-static logd_cntx_t *logd_cntx_init(void)
+static logd_cntx_t *logd_init(void)
 {
     void *addr;
     logd_cntx_t *ctx;
-    char path[FILE_PATH_MAX_LEN];
     thread_pool_opt_t opt;
+    char path[FILE_PATH_MAX_LEN];
 
     /* > 初始化日志 */
     if (plog_init(LOG_LEVEL_DEBUG, LOGD_PLOG_PATH))
@@ -159,7 +159,7 @@ static logd_cntx_t *logd_cntx_init(void)
         return NULL;
     }
 
-    ctx->slab = slab_init(addr, LOGD_SLAB_SIZE);
+    ctx->slab = slab_init(addr, LOGD_SLAB_SIZE, NULL);
     if (NULL == ctx->slab)
     {
         plog_error("Inititalize slab failed!");
