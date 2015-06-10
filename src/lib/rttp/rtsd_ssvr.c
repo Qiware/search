@@ -439,7 +439,7 @@ static int rtsd_ssvr_kpalive_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
     head = (rttp_header_t *)addr;
 
     head->type = RTTP_KPALIVE_REQ;
-    head->devid = ctx->conf.auth.devid;
+    head->devid = ctx->conf.devid;
     head->length = 0;
     head->flag = RTTP_SYS_MESG;
     head->checksum = RTTP_CHECK_SUM;

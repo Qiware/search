@@ -160,8 +160,6 @@ static int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t 
     conf->port = atoi(node->value.str);
 
     /* > 鉴权信息 */
-    conf->auth.devid = conf->devid;
-
     node = xml_rquery(xml, parent, "AUTH.USER");
     if (NULL == node
         || 0 == node->value.len)

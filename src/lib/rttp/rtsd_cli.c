@@ -229,7 +229,7 @@ int rtsd_cli_send(rtsd_cli_t *cli, int type, const void *data, size_t size)
     head = (rttp_header_t *)addr;
 
     head->type = type;
-    head->devid = conf->auth.devid;
+    head->devid = conf->devid;
     head->length = size;
     head->flag = RTTP_EXP_MESG;
     head->checksum = RTTP_CHECK_SUM;

@@ -9,7 +9,11 @@ typedef struct
     int devid;                          /* 设备ID: 唯一值 */
     char name[RTTP_NAME_MAX_LEN];       /* 发送端名称 */
 
-    rttp_auth_conf_t auth;              /* 鉴权信息 */
+    struct
+    {
+        char usr[RTTP_USR_MAX_LEN];     /* 用户名 */
+        char passwd[RTTP_PWD_MAX_LEN];  /* 登录密码 */
+    } auth;                             /* 鉴权信息 */
 
     char ipaddr[IP_ADDR_MAX_LEN];       /* 服务端IP地址 */
     int port;                           /* 服务端端口号 */
