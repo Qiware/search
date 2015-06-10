@@ -278,7 +278,8 @@ void rtsd_ssvr_set_rwset(rtsd_ssvr_t *ssvr)
     FD_SET(ssvr->sck.fd, &ssvr->rset);
 
     /* 2 设置写集合: 发送至接收端 */
-    if (!list_isempty(ssvr->sck.mesg_list))
+    if (!list_isempty(ssvr->sck.mesg_list)
+        || !shm_queue_isempty(ssvr->sendq))
     {
         FD_SET(ssvr->sck.fd, &ssvr->wset);
         return;
@@ -348,8 +349,6 @@ void *rtsd_ssvr_routine(void *_ctx)
             rttp_set_kpalive_stat(sck, RTTP_KPALIVE_STAT_UNKNOWN);
             rttp_link_auth_req(ctx, ssvr); /* 发起鉴权请求 */
         }
-
-        //rtsd_ssvr_switch_send_buff(ctx, ssvr);
 
         /* 3.2 等待事件通知 */
         rtsd_ssvr_set_rwset(ssvr);
