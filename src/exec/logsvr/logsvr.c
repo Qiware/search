@@ -45,7 +45,7 @@ int main(void)
     ctx = logd_init();
     if (NULL == ctx)
     {
-        plog_error("Init log failed!");
+        fprintf(stderr, "Init log failed!");
         return -1;
     }
 
@@ -79,13 +79,13 @@ int logd_proc_lock(void)
     fd = Open(path, OPEN_FLAGS, OPEN_MODE);
     if (fd < 0)
     {
-        plog_error("errmsg:[%d]%s! path:[%s]", errno, strerror(errno), path);
+        fprintf(stderr, "errmsg:[%d]%s! path:[%s]", errno, strerror(errno), path);
         return -1;
     }
 
     if (logd_proc_trylock(fd))
     {
-        plog_error("errmsg:[%d]%s! path:[%s]", errno, strerror(errno), path);
+        fprintf(stderr, "errmsg:[%d]%s! path:[%s]", errno, strerror(errno), path);
         CLOSE(fd);
         return -1;
     }
@@ -105,29 +105,21 @@ int logd_proc_lock(void)
  ******************************************************************************/
 static logd_cntx_t *logd_init(void)
 {
-    void *addr;
     logd_cntx_t *ctx;
     thread_pool_opt_t opt;
     char path[FILE_PATH_MAX_LEN];
 
-    /* > 初始化日志 */
-    if (plog_init(LOG_LEVEL_DEBUG, LOGD_PLOG_PATH))
-    {
-        fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
-        return NULL;
-    }
-
     /* > 服务进程锁 */
     if (logd_proc_lock())
     {
-        plog_fatal("Log server is already running...");
+        fprintf(stderr, "Log server is already running...");
         return NULL;    /* 日志服务进程正在运行... */
     }
 
     ctx = (logd_cntx_t *)calloc(1, sizeof(logd_cntx_t));
     if (NULL == ctx)
     {
-        plog_fatal("errmsg:[%d] %s!\n", errno, strerror(errno));
+        fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
         return NULL;
     }
 
@@ -139,7 +131,7 @@ static logd_cntx_t *logd_init(void)
     ctx->fd = Open(path, OPEN_FLAGS, OPEN_MODE);
     if (ctx->fd < 0)
     {
-        plog_error("errmsg:[%d] %s! path:[%s]", errno, strerror(errno), path);
+        fprintf(stderr, "errmsg:[%d] %s! path:[%s]", errno, strerror(errno), path);
         return NULL;
     }
 
@@ -147,22 +139,15 @@ static logd_cntx_t *logd_init(void)
     ctx->addr = logd_creat_shm(ctx->fd);
     if (NULL == ctx->addr)
     {
-        plog_error("Create SHM failed!");
+        fprintf(stderr, "Create SHM failed!");
         return NULL;
     }
 
     /* > 创建内存池 */
-    addr = (void *)calloc(1, LOGD_SLAB_SIZE);
-    if (NULL == addr)
-    {
-        plog_error("errmsg:[%d] %s!", errno, strerror(errno));
-        return NULL;
-    }
-
-    ctx->slab = slab_init(addr, LOGD_SLAB_SIZE, NULL);
+    ctx->slab = slab_creat_by_calloc(LOGD_SLAB_SIZE, NULL);
     if (NULL == ctx->slab)
     {
-        plog_error("Inititalize slab failed!");
+        fprintf(stderr, "Inititalize slab failed!");
         return NULL;
     }
 
@@ -178,7 +163,7 @@ static logd_cntx_t *logd_init(void)
     {
         thread_pool_destroy(ctx->pool);
         ctx->pool = NULL;
-        plog_error("errmsg:[%d]%s!", errno, strerror(errno));
+        fprintf(stderr, "errmsg:[%d]%s!", errno, strerror(errno));
         return NULL;
     }
 
@@ -192,55 +177,25 @@ static logd_cntx_t *logd_init(void)
  **输出参数: 
  **     cfg: 日志配置信息
  **返    回: Address of SHM
- **实现描述: 
- **     1. 创建共享内存
- **     2. 连接共享内存
+ **实现描述: 创建并初始化共享内存
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.10.28 #
  ******************************************************************************/
 static char *logd_creat_shm(int fd)
 {
-    key_t key;
-    int idx, shmid;
-    void *addr = NULL, *p = NULL;
-    log_file_info_t *file = NULL;
+    int idx;
+    void *addr, *p;
+    log_file_info_t *file;
 
-    key = shm_ftok(LOG_KEY_PATH, 0);
-    if (-1 == key)
+    /* > 创建共享内存 */
+    addr = shm_creat(LOG_KEY_PATH, LOG_SHM_SIZE);
+    if (NULL == addr)
     {
+        fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
         return NULL;
     }
 
-    /* 1. 创建共享内存 */
-    /* 1.1 判断是否已经创建 */
-    shmid = shmget(key, 0, 0666);
-    if (shmid >= 0)
-    {
-        return shmat(shmid, NULL, 0);  /* 已创建 */
-    }
-
-    /* 1.2 异常，则退出处理 */
-    if (ENOENT != errno)
-    {
-        return NULL;
-    }
-
-    /* 1.3 创建共享内存 */
-    shmid = shmget(key, LOG_SHM_SIZE, IPC_CREAT|0666);
-    if (shmid < 0)
-    {
-        return NULL;
-    }
-
-    /* 2. ATTACH共享内存 */
-    addr = (void *)shmat(shmid, NULL, 0);
-    if ((void *)-1 == addr)
-    {
-        plog_error("Attach shm failed! shmid:[%d] key:[0x%x]", shmid, key);
-        return NULL;
-    }
-
-    /* 3. 初始化共享内存 */
+    /* > 初始化共享内存 */
     p = addr;
     for (idx=0; idx<LOG_FILE_MAX_NUM; idx++)
     {

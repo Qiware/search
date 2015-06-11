@@ -370,49 +370,6 @@ static int log_rename(const log_file_info_t *file, const struct timeb *time)
 }
 
 /******************************************************************************
- **函数名称: log_creat_shm
- **功    能: 创建共享内存
- **输入参数: NONE
- **输出参数: NONE
- **返    回: 共享内存地址
- **实现描述:
- **注意事项: 此函数中不能调用错误日志函数 - 可能死锁!
- **作    者: # Qifeng.zou # 2013.12.06 #
- ******************************************************************************/
-void *log_creat_shm(void)
-{
-    int shmid;
-    key_t key;
-    void *addr;
-
-    key = shm_ftok(LOG_KEY_PATH, 0);
-    if (-1 == key)
-    {
-        return NULL;
-    }
-
-    shmid = shmget(key, 0, 0);
-    if (shmid < 0)
-    {
-        shmid = shmget(key, LOG_SHM_SIZE, IPC_CREAT|0666);
-        if (shmid < 0)
-        {
-            fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
-            return NULL;
-        }
-    }
-
-    addr = shmat(shmid, NULL, 0);
-    if ((void *)-1 == addr)
-    {
-        fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
-        return NULL;
-    }
-
-    return addr;
-}
-
-/******************************************************************************
  **函数名称: _log_init_global
  **功    能: 初始化全局数据
  **输入参数:
@@ -433,11 +390,11 @@ static int _log_init_global(void)
     /* 1. 连接共享内存 */
     if (!log_is_shm_addr_valid())
     {
-        addr = log_creat_shm();
+        addr = shm_creat(LOG_KEY_PATH, LOG_SHM_SIZE);
         if (NULL == addr)
         {
-            fprintf(stderr, "[%s][%d] Create share-memory failed!\n",
-                    __FILE__, __LINE__);
+            fprintf(stderr, "[%s][%d] errmsg:[%d] %s!\n",
+                    __FILE__, __LINE__, errno, strerror(errno));
             return -1;
         }
 
@@ -482,12 +439,10 @@ static int log_name_conflict_handler(
             const char *oripath,
             char *newpath, int size, int idx)
 {
-    int len = 0;
-    char *ptr = NULL;
+    int len;
+    char *ptr;
     char suffix[FILE_NAME_MAX_LEN];
 
-	memset(newpath, 0, size);
-	
     snprintf(newpath, size, "%s", oripath);
     snprintf(suffix, sizeof(suffix), "-[%02d].log", idx);
 
