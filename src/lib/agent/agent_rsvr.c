@@ -310,32 +310,27 @@ static int agent_rsvr_get_timeout_conn_list(socket_t *sck, agent_conn_timeout_li
         return AGENT_OK; /* 未超时 */
     }
 
-    if (list_lpush(timeout->list, sck))
-    {
-        return AGENT_ERR;
-    }
-
-    return AGENT_OK;
+    return list_lpush(timeout->list, sck);
 }
 
 /******************************************************************************
- **函数名称: agent_rsvr_event_timeout_hdl
- **功    能: 事件超时处理
+ **函数名称: agent_rsvr_conn_timeout
+ **功    能: 删除超时连接
  **输入参数: 
+ **     ctx: 全局信息
  **     rsvr: 接收服务
  **输出参数: NONE
- **返    回: 代理对象
+ **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
- **     不必依次释放超时链表各结点的空间，只需一次性释放内存池便可释放所有空间.
- **作    者: # Qifeng.zou # 2014.11.28 #
+ **作    者: # Qifeng.zou # 2015.06.11 15:02:33 #
  ******************************************************************************/
-static int agent_rsvr_event_timeout_hdl(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
+static int agent_rsvr_conn_timeout(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
 {
     socket_t *sck;
     list_opt_t opt;
     agent_conn_timeout_list_t timeout;
-    
+
     memset(&timeout, 0, sizeof(timeout));
 
     /* > 创建内存池 */
@@ -347,7 +342,7 @@ static int agent_rsvr_event_timeout_hdl(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
     }
 
     timeout.ctm = rsvr->ctm;
-    
+
     do
     {
         /* > 创建链表 */
@@ -365,12 +360,8 @@ static int agent_rsvr_event_timeout_hdl(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
         }
 
         /* > 获取超时连接 */
-        if (rbt_trav(rsvr->connections,
-                (rbt_trav_cb_t)agent_rsvr_get_timeout_conn_list, (void *)&timeout))
-        {
-            log_error(rsvr->log, "Traverse hash table failed!");
-            break;
-        }
+        rbt_trav(rsvr->connections,
+             (rbt_trav_cb_t)agent_rsvr_get_timeout_conn_list, (void *)&timeout);
 
         log_debug(rsvr->log, "Timeout connections: %d!", timeout.list->num);
 
@@ -390,6 +381,25 @@ static int agent_rsvr_event_timeout_hdl(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
     /* > 释放内存空间 */
     mem_pool_destroy(timeout.pool);
 
+    return AGENT_OK;
+}
+
+/******************************************************************************
+ **函数名称: agent_rsvr_event_timeout_hdl
+ **功    能: 事件超时处理
+ **输入参数: 
+ **     rsvr: 接收服务
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **     不必依次释放超时链表各结点的空间，只需一次性释放内存池便可释放所有空间.
+ **作    者: # Qifeng.zou # 2014.11.28 #
+ ******************************************************************************/
+static int agent_rsvr_event_timeout_hdl(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
+{
+    agent_rsvr_conn_timeout(ctx, rsvr);
+    agent_serial_to_sck_map_timeout(ctx);
     return AGENT_OK;
 }
 
@@ -808,6 +818,7 @@ static int agent_rsvr_recv(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
                     {
                         extra->flow = (agent_flow_t *)recv->addr;
                         extra->flow->serial = atomic64_inc(&serial); /* 获取流水号 */
+                        extra->flow->create_tm = rsvr->ctm;
 
                         log_info(rsvr->log, "Call %s()! serial:%lu", __func__, extra->flow->serial);
 

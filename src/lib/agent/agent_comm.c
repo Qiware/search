@@ -83,6 +83,7 @@ int agent_serial_to_sck_map_insert(agent_cntx_t *ctx, agent_flow_t *_flow)
     }
 
     flow->serial = _flow->serial;
+    flow->create_tm = _flow->create_tm;
     flow->agt_idx = _flow->agt_idx;
     flow->sck_serial = _flow->sck_serial;
 
@@ -139,6 +140,113 @@ int agent_serial_to_sck_map_delete(agent_cntx_t *ctx, uint64_t serial)
     log_trace(ctx->log, "idx:%d serial:%lu sck_serial:%lu", idx, serial, flow->serial);
 
     free(flow);
+    return AGENT_OK;
+}
+
+/******************************************************************************
+ **函数名称: agent_serial_get_timeout_list
+ **功    能: 将超时连接加入链表
+ **输入参数: 
+ **     node: 平衡二叉树结点
+ **     timeout: 超时链表
+ **输出参数: NONE
+ **返    回: 代理对象
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.06.11 15:36:36 #
+ ******************************************************************************/
+static int agent_serial_get_timeout_list(agent_flow_t *flow, agent_conn_timeout_list_t *timeout)
+{
+#define AGENT_SERIAL_TIMEOUT_SEC (30)
+
+    /* 判断是否超时，则加入到timeout链表中 */
+    if (timeout->ctm - flow->create_tm <= AGENT_SERIAL_TIMEOUT_SEC)
+    {
+        return AGENT_OK; /* 未超时 */
+    }
+
+    return list_lpush(timeout->list, flow);
+}
+
+/******************************************************************************
+ **函数名称: agent_serial_to_sck_map_timeout
+ **功    能: 删除超时流水->SCK的映射
+ **输入参数:
+ **     ctx: 全局对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.06.11 #
+ ******************************************************************************/
+int agent_serial_to_sck_map_timeout(agent_cntx_t *ctx)
+{
+    int idx;
+    list_opt_t opt;
+    agent_flow_t *flow;
+    time_t ctm = time(NULL);
+    agent_conn_timeout_list_t timeout;
+
+    for (idx=0; idx<ctx->serial_to_sck_map_len; ++idx)
+    {
+        if (avl_isempty(ctx->serial_to_sck_map[idx]))
+        {
+            continue;
+        }
+
+        memset(&timeout, 0, sizeof(timeout));
+
+        /* > 创建内存池 */
+        timeout.pool = mem_pool_creat(1 * KB);
+        if (NULL == timeout.pool)
+        {
+            log_error(ctx->log, "Create memory pool failed!");
+            return AGENT_ERR;
+        }
+
+        timeout.ctm = ctm;
+
+        /* > 创建链表 */
+        memset(&opt, 0, sizeof(opt));
+
+        opt.pool = (void *)timeout.pool;
+        opt.alloc = (mem_alloc_cb_t)mem_pool_alloc;
+        opt.dealloc = (mem_dealloc_cb_t)mem_pool_dealloc;
+
+        timeout.list = list_creat(&opt);
+        if (NULL == timeout.list)
+        {
+            log_error(ctx->log, "Create list failed!");
+            mem_pool_destroy(timeout.pool);
+            break;
+        }
+
+        /* > 获取超时流水 */
+        spin_lock(&ctx->serial_to_sck_map_lock[idx]);
+
+        avl_trav(ctx->serial_to_sck_map[idx],
+             (avl_trav_cb_t)agent_serial_get_timeout_list, &timeout);
+
+        /* > 删除超时连接 */
+        for (;;)
+        {
+            flow = (agent_flow_t *)list_lpop(timeout.list);
+            if (NULL == flow)
+            {
+                break;
+            }
+
+            log_trace(ctx->log, "Delete timeout serial:%lu!", flow->serial);
+
+            agent_serial_to_sck_map_delete(ctx, flow->serial);
+        }
+
+        spin_unlock(&ctx->serial_to_sck_map_lock[idx]);
+
+        /* > 释放内存空间 */
+        mem_pool_destroy(timeout.pool);
+    }
+
     return AGENT_OK;
 }
 
