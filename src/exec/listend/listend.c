@@ -225,7 +225,7 @@ static lsnd_cntx_t *lsnd_init(char *pname, const char *path)
     /* > 初始化日志 */
     log_get_path(log_path, sizeof(log_path), basename(pname));
 
-    log = log_init(LOG_LEVEL_ERROR, log_path);
+    log = log_init(LOG_LEVEL_TRACE, log_path);
     if (NULL == log)
     {
         fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));

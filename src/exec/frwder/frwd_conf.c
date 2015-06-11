@@ -137,8 +137,15 @@ static int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t 
 
     conf->nodeid = atoi(node->value.str);
 
-    /* > 设备名 */
-    snprintf(conf->name, sizeof(conf->name), "%05d", conf->nodeid);
+    /* > 工作路径 */
+    node = xml_search(xml, parent, "PATH");
+    if (NULL == node
+        || 0 == node->value.len)
+    {
+        return FRWD_ERR;
+    }
+
+    snprintf(conf->path, sizeof(conf->path), "%s", node->value.str);
 
     /* > 服务端IP */
     node = xml_search(xml, parent, "SERVER.IP");
@@ -273,8 +280,8 @@ static int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t 
         return FRWD_ERR;
     }
 
-    snprintf(conf->sendq.path, sizeof(conf->sendq.path),
-             "../temp/frwder/sendq-%05d.key", conf->nodeid);
+    snprintf(conf->sendq.path,
+         sizeof(conf->sendq.path), "%s/%05d.sq", conf->path, conf->nodeid);
 
     node = xml_search(xml, parent, "SENDQ.SIZE");
     if (NULL == node

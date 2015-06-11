@@ -21,6 +21,7 @@ typedef enum
 typedef struct
 {
     uint64_t  serial;                       /* 流水号(全局唯一编号) */
+    time_t create_tm;                       /* 生成时间 */
 
     int agt_idx;                            /* 代理索引 */
     uint64_t sck_serial;                    /* 套接字编号 */

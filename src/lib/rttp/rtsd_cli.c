@@ -9,8 +9,8 @@ static int _rtsd_cli_init(rtsd_cli_t *cli, int idx);
 static int rtsd_cli_shmat(rtsd_cli_t *cli);
 static int rtsd_cli_cmd_usck(rtsd_cli_t *cli, int idx);
 
-#define rtsd_cli_unix_path(cli, path, idx) \
-    snprintf(path, sizeof(path), "../temp/rttp/send/%s/%s_cli_%d.usck", cli->conf.name, cli->conf.name, idx)
+#define rtsd_cli_unix_path(conf, path, idx) \
+    snprintf(path, sizeof(path), "%s/%d_cli_%d.usck", (conf)->path, (conf)->nodeid, idx)
 
 /******************************************************************************
  **函数名称: rtsd_cli_init
@@ -22,45 +22,31 @@ static int rtsd_cli_cmd_usck(rtsd_cli_t *cli, int idx);
  **输出参数: NONE
  **返    回: 发送对象
  **实现描述:
- **     1. 创建CLI对象
- **     2. 加载配置信息
- **     3. 初始化处理
  **注意事项: 某发送服务的不同cli对象的编号必须不同，否则将会出现绑定失败的问题!
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
 rtsd_cli_t *rtsd_cli_init(const rtsd_conf_t *conf, int idx, log_cycle_t *log)
 {
     rtsd_cli_t *cli;
-    mem_pool_t *pool;
 
-    /* 1. 创建内存池 */
-    pool = mem_pool_creat(1 * KB);
-    if (NULL == pool)
-    {
-        log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return NULL;
-    }
-
-    /* 2. 创建CLI对象 */
-    cli = (rtsd_cli_t *)mem_pool_alloc(pool, sizeof(rtsd_cli_t));
+    /* > 创建CLI对象 */
+    cli = (rtsd_cli_t *)calloc(1, sizeof(rtsd_cli_t));
     if (NULL == cli)
     {
         log_error(log, "Alloc memory from pool failed!");
-        mem_pool_destroy(pool);
         return NULL;
     }
 
     cli->log = log;
-    cli->pool = pool;
 
-    /* 2. 加载配置信息 */
+    /* > 加载配置信息 */
     memcpy(&cli->conf, conf, sizeof(rtsd_conf_t));
 
-    /* 3. 根据配置进行初始化 */
+    /* > 根据配置进行初始化 */
     if (_rtsd_cli_init(cli, idx))
     {
         log_error(log, "Initialize client of rttp failed!");
-        mem_pool_destroy(pool);
+        free(cli);
         return NULL;
     }
 
@@ -87,6 +73,7 @@ static int _rtsd_cli_init(rtsd_cli_t *cli, int idx)
         || rtsd_cli_cmd_usck(cli, idx))
     {
         log_error(cli->log, "Initialize client of rttp failed!");
+        FREE(cli->sendq);
         return RTTP_ERR;
     }
 
@@ -111,15 +98,15 @@ static int rtsd_cli_shmat(rtsd_cli_t *cli)
     char path[FILE_NAME_MAX_LEN];
     rtsd_conf_t *conf = &cli->conf;
 
-    /* 1. 新建队列对象 */
-    cli->sendq = (shm_queue_t **)mem_pool_alloc(cli->pool, conf->send_thd_num * sizeof(shm_queue_t *));
+    /* > 新建队列对象 */
+    cli->sendq = (shm_queue_t **)calloc(conf->send_thd_num, sizeof(shm_queue_t *));
     if (NULL == cli->sendq)
     {
         log_error(cli->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return RTTP_ERR;
     }
 
-    /* 2. 连接共享队列 */
+    /* > 连接共享队列 */
     qcf = &conf->sendq;
     for (idx=0; idx<conf->send_thd_num; ++idx)
     {
@@ -129,6 +116,7 @@ static int rtsd_cli_shmat(rtsd_cli_t *cli)
         if (NULL == cli->sendq[idx])
         {
             log_error(cli->log, "errmsg:[%d] %s! path:[%s]", errno, strerror(errno), qcf->path);
+            FREE(cli->sendq);
             return RTTP_ERR;
         }
     }
@@ -151,7 +139,7 @@ static int rtsd_cli_cmd_usck(rtsd_cli_t *cli, int idx)
 {
     char path[FILE_NAME_MAX_LEN];
 
-    rtsd_cli_unix_path(cli, path, idx);
+    rtsd_cli_unix_path(&cli->conf, path, idx);
 
     cli->cmd_sck_id = unix_udp_creat(path);
     if (cli->cmd_sck_id < 0)

@@ -8,7 +8,7 @@
 
 /* 发送服务命令套接字 */
 #define rtsd_ssvr_usck_path(conf, path, tidx) \
-    snprintf(path, sizeof(path), "../temp/rttp/snd/%s/usck/%s_ssvr_%d.usck", conf->name, conf->name, tidx+1)
+    snprintf(path, sizeof(path), "%s/%d_ssvr_%d.usck", conf->path, conf->nodeid, tidx+1)
 
 /* 发送对象信息 */
 typedef struct

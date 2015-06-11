@@ -7,7 +7,7 @@
 typedef struct
 {
     int nodeid;                         /* 设备ID: 唯一值 */
-    char name[RTTP_NAME_MAX_LEN];       /* 发送端名称 */
+    char path[FILE_LINE_MAX_LEN];       /* 工作路径 */
 
     struct
     {
