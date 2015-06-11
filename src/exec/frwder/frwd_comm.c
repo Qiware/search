@@ -36,6 +36,8 @@ frwd_cntx_t *frwd_init(const frwd_conf_t *conf)
         return NULL;
     }
 
+    memcpy(&frwd->conf, conf, sizeof(frwd_conf_t));
+
     do {
         /* > 初始化日志 */
         if (frwd_init_log(frwd, "frwder"))
