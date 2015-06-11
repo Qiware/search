@@ -100,7 +100,7 @@ typedef struct
     time_t ctm;                         /* 当前时间 */
     fd_set rdset;                       /* 可读集合 */
     fd_set wrset;                       /* 可写集合 */
-    list2_t conn_list;                  /* 套接字链表 */
+    list2_t *conn_list;                 /* 套接字链表 */
 
     /* 队列缓存 */
     struct
