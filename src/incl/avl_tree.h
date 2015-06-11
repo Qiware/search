@@ -90,6 +90,7 @@ int avl_delete(avl_tree_t *tree, void *key, int key_len, void **data);
 int avl_print(avl_tree_t *tree);
 int avl_trav(avl_tree_t *tree, avl_trav_cb_t proc, void *args);
 void avl_destroy(avl_tree_t *tree);
+#define avl_isempty(tree) (NULL == (tree)->root)
 
 /* 通用回调 */
 int avl_key_cb_int32(const int *key, size_t len);
