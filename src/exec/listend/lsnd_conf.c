@@ -279,7 +279,7 @@ static int _lsnd_conf_load_frwder(const char *path,
         }
 
         /* > 结点ID */
-        node = xml_search(xml, fix, "NDID");
+        node = xml_search(xml, fix, "NODE");
         if (NULL == node
             || 0 == node->value.len)
         {
