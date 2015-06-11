@@ -236,8 +236,9 @@ int rtsd_cli_send(rtsd_cli_t *cli, int type, const void *data, size_t size)
 
     memcpy(head+1, data, size);
 
-    plog_debug("rq:%p Head type:%d devid:%d length:%d flag:%d checksum:%d!",
+    log_debug(cli->log, "rq:%p Head type:%d devid:%d length:%d flag:%d checksum:%d!",
             cli->sendq[idx]->ring, head->type, head->devid, head->length, head->flag, head->checksum);
+
     /* > 放入发送队列 */
     if (shm_queue_push(cli->sendq[idx], addr))
     {
