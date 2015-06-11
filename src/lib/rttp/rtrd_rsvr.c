@@ -71,7 +71,7 @@ static void rtrd_rsvr_set_rdset(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
     FD_SET(rsvr->cmd_sck_id, &rsvr->rdset);
     rsvr->max = rsvr->cmd_sck_id;
 
-    node = rsvr->conn_list.head;
+    node = rsvr->conn_list->head;
     if (NULL != node)
     {
         tail = node->prev;
@@ -125,7 +125,7 @@ static void rtrd_rsvr_set_wrset(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
 
     FD_ZERO(&rsvr->wrset);
 
-    node = rsvr->conn_list.head;
+    node = rsvr->conn_list->head;
     if (NULL != node)
     {
         tail = node->prev;
@@ -267,6 +267,7 @@ static rtrd_rsvr_t *rtrd_rsvr_get_curr(rtrd_cntx_t *ctx)
  ******************************************************************************/
 int rtrd_rsvr_init(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, int tidx)
 {
+    list2_opt_t opt;
     char path[FILE_PATH_MAX_LEN];
     rtrd_conf_t *conf = &ctx->conf;
 
@@ -289,6 +290,23 @@ int rtrd_rsvr_init(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, int tidx)
     if (NULL == rsvr->pool)
     {
         log_error(rsvr->log, "Initialize slab mem-pool failed!");
+        CLOSE(rsvr->cmd_sck_id);
+        return RTTP_ERR;
+    }
+
+    /* > 创建套接字链表 */
+    memset(&opt, 0, sizeof(opt));
+
+    opt.pool = (void *)rsvr->pool;
+    opt.alloc = (mem_alloc_cb_t)slab_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+
+    rsvr->conn_list = list2_creat(&opt);
+    if (NULL == rsvr->conn_list)
+    {
+        log_error(rsvr->log, "Create list2 failed!");
+        FREE(rsvr->pool);
+        CLOSE(rsvr->cmd_sck_id);
         return RTTP_ERR;
     }
 
@@ -362,7 +380,7 @@ static int rtrd_rsvr_trav_recv(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
 
     rsvr->ctm = time(NULL);
 
-    node = rsvr->conn_list.head;
+    node = rsvr->conn_list->head;
     if (NULL != node)
     {
         tail = node->prev;
@@ -434,7 +452,7 @@ static int rtrd_rsvr_trav_send(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
 
     rsvr->ctm = time(NULL);
 
-    node = rsvr->conn_list.head;
+    node = rsvr->conn_list->head;
     if (NULL != node)
     {
         tail = node->prev;
@@ -824,7 +842,7 @@ static int rtrd_rsvr_event_timeout_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
     rsvr->ctm = time(NULL);
 
     /* > 检测超时连接 */
-    node = rsvr->conn_list.head;
+    node = rsvr->conn_list->head;
     if (NULL == node)
     {
         return RTTP_OK;
@@ -1129,7 +1147,6 @@ static void rtrd_rsvr_sck_free(rtrd_rsvr_t *rsvr, rtrd_sck_t *sck)
 static int rtrd_rsvr_add_conn_hdl(rtrd_rsvr_t *rsvr, rttp_cmd_add_sck_t *req)
 {
     rtrd_sck_t *sck;
-    list2_node_t *node;
 
     /* > 创建套接字对象 */
     sck = rtrd_rsvr_sck_creat(rsvr, req);
@@ -1140,16 +1157,12 @@ static int rtrd_rsvr_add_conn_hdl(rtrd_rsvr_t *rsvr, rttp_cmd_add_sck_t *req)
     }
 
     /* > 加入套接字链尾 */
-    node = slab_alloc(rsvr->pool, sizeof(list2_node_t));
-    if (NULL == node)
+    if (list2_rpush(rsvr->conn_list, (void *)sck))
     {
-        log_error(rsvr->log, "Alloc memory failed!");
+        log_error(rsvr->log, "Insert into list failed!");
         rtrd_rsvr_sck_free(rsvr, sck);
         return RTTP_ERR;
     }
-
-    node->data = (void *)sck;
-    list2_insert_tail(&rsvr->conn_list, node);
 
     ++rsvr->connections; /* 统计TCP连接数 */
 
@@ -1176,9 +1189,7 @@ static int rtrd_rsvr_del_conn_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, list2_nod
     rtrd_sck_t *curr = (rtrd_sck_t *)node->data;
 
     /* > 从链表剔除结点 */
-    list2_delete(&rsvr->conn_list, node);
-
-    slab_dealloc(rsvr->pool, node);
+    list2_delete(rsvr->conn_list, node);
 
     /* > 从SCK<->DEV映射表中剔除 */
     rtrd_node_to_svr_map_del(ctx, curr->nodeid, rsvr->tidx);
@@ -1206,7 +1217,7 @@ void rtrd_rsvr_del_all_conn_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
 {
     list2_node_t *node, *next, *tail;
 
-    node = rsvr->conn_list.head;
+    node = rsvr->conn_list->head;
     if (NULL != node)
     {
         tail = node->prev;
@@ -1454,7 +1465,7 @@ static int rtrd_rsvr_dist_send_data(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
             continue;
         }
 
-        list2_trav(&rsvr->conn_list, (list2_trav_cb_t)rtrd_rsvr_conn_list_with_same_nodeid, &conn);
+        list2_trav(rsvr->conn_list, (list2_trav_cb_t)rtrd_rsvr_conn_list_with_same_nodeid, &conn);
         if (0 == conn.list->num)
         {
             queue_dealloc(sendq, data);
