@@ -20,9 +20,8 @@
 int rtrd_cmd_to_rsvr(rtrd_cntx_t *ctx, int cmd_sck_id, const rttp_cmd_t *cmd, int idx)
 {
     char path[FILE_PATH_MAX_LEN];
-    rtrd_conf_t *conf = &ctx->conf;
 
-    rtrd_rsvr_usck_path(conf, path, idx);
+    rtrd_rsvr_usck_path(&ctx->conf, path, idx);
 
     /* 发送命令至接收线程 */
     if (unix_udp_send(cmd_sck_id, path, cmd, sizeof(rttp_cmd_t)) < 0)

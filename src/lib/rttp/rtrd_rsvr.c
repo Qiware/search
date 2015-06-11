@@ -34,11 +34,13 @@ static int rtrd_rsvr_link_auth_req_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd
 static int rtrd_rsvr_cmd_proc_req(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, int rqid);
 static int rtrd_rsvr_cmd_proc_all_req(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr);
 
+static rtrd_sck_t *rtrd_rsvr_sck_creat(rtrd_rsvr_t *rsvr, rttp_cmd_add_sck_t *req);
+static void rtrd_rsvr_sck_free(rtrd_rsvr_t *rsvr, rtrd_sck_t *sck);
+
 static int rtrd_rsvr_add_conn_hdl(rtrd_rsvr_t *rsvr, rttp_cmd_add_sck_t *req);
 static int rtrd_rsvr_del_conn_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, list2_node_t *node);
 
 static int rtrd_rsvr_fill_send_buff(rtrd_rsvr_t *rsvr, rtrd_sck_t *sck);
-static int rtrd_rsvr_clear_mesg(rtrd_rsvr_t *rsvr, rtrd_sck_t *sck);
 
 static int rtrd_rsvr_dist_send_data(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr);
 
@@ -1009,30 +1011,33 @@ static int rtrd_rsvr_link_auth_req_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd
 }
 
 /******************************************************************************
- **函数名称: rtrd_rsvr_add_conn_hdl
- **功    能: 添加网络连接
+ **函数名称: rtrd_rsvr_sck_creat
+ **功    能: 创建套接字对象
  **输入参数:
- **     ctx: 全局对象
+ **     rsvr: 接收服务
+ **     req: 添加套接字请求
  **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述:
- **注意事项:
- **作    者: # Qifeng.zou # 2015.01.01 #
+ **返    回: 套接字对象
+ **实现描述: 创建套接字对象, 并依次初始化其成员变量
+ **注意事项: 套接字关闭时, 记得释放空间, 防止内存泄露!
+ **作    者: # Qifeng.zou # 2015.06.11 #
  ******************************************************************************/
-static int rtrd_rsvr_add_conn_hdl(rtrd_rsvr_t *rsvr, rttp_cmd_add_sck_t *req)
+static rtrd_sck_t *rtrd_rsvr_sck_creat(rtrd_rsvr_t *rsvr, rttp_cmd_add_sck_t *req)
 {
     void *addr;
     list_opt_t opt;
     rtrd_sck_t *sck;
-    list2_node_t *node;
 
     /* > 分配连接空间 */
     sck = slab_alloc(rsvr->pool, sizeof(rtrd_sck_t));
     if (NULL == sck)
     {
         log_error(rsvr->log, "Alloc memory failed!");
-        return RTTP_ERR;
+        CLOSE(req->sckid);
+        return NULL;
     }
+
+    memset(sck, 0, sizeof(rtrd_sck_t));
 
     sck->fd = req->sckid;
     sck->nodeid = -1;
@@ -1042,60 +1047,108 @@ static int rtrd_rsvr_add_conn_hdl(rtrd_rsvr_t *rsvr, rttp_cmd_add_sck_t *req)
     sck->wrtm = sck->ctm;
     snprintf(sck->ipaddr, sizeof(sck->ipaddr), "%s", req->ipaddr);
 
-    /* > 创建发送链表 */
-    memset(&opt, 0, sizeof(opt));
-
-    opt.pool = (void *)rsvr->pool;
-    opt.alloc = (mem_alloc_cb_t)slab_alloc;
-    opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
-
-    sck->mesg_list = list_creat(&opt);
-    if (NULL == sck->mesg_list)
+    do
     {
-        log_error(rsvr->log, "Create list failed!");
-        slab_dealloc(rsvr->pool, sck);
-        return RTTP_ERR;
-    }
+        /* > 创建发送链表 */
+        memset(&opt, 0, sizeof(opt));
 
-    /* 2. 申请接收缓存 */
-    addr = (void *)calloc(1, RTTP_BUFF_SIZE);
-    if (NULL == addr)
-    {
-        log_error(rsvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        opt.pool = (void *)rsvr->pool;
+        opt.alloc = (mem_alloc_cb_t)slab_alloc;
+        opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+
+        sck->mesg_list = list_creat(&opt);
+        if (NULL == sck->mesg_list)
+        {
+            log_error(rsvr->log, "Create list failed!");
+            break;
+        }
+
+        /* > 申请接收缓存 */
+        addr = (void *)calloc(1, RTTP_BUFF_SIZE);
+        if (NULL == addr)
+        {
+            log_error(rsvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
+            break;
+        }
+
+        rttp_snap_setup(&sck->recv, addr, RTTP_BUFF_SIZE);
+
+        /* > 申请发送缓存 */
+        addr = (void *)calloc(1, RTTP_BUFF_SIZE);
+        if (NULL == addr)
+        {
+            log_error(rsvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
+            break;
+        }
+
+        rttp_snap_setup(&sck->send, addr, RTTP_BUFF_SIZE);
+
+        return sck;
+    } while (0);
+
+    /* > 释放套接字对象 */
+    rtrd_rsvr_sck_free(rsvr, sck);
+    return NULL;
+}
+
+/******************************************************************************
+ **函数名称: rtrd_rsvr_sck_free
+ **功    能: 释放指定套接字对象的空间
+ **输入参数:
+ **     rsvr: 接收服务
+ **     sck: 套接字对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述:
+ **注意事项: 释放该套接字对象所有相关内存, 防止内存泄露!
+ **作    者: # Qifeng.zou # 2015.06.11 23:31:48 #
+ ******************************************************************************/
+static void rtrd_rsvr_sck_free(rtrd_rsvr_t *rsvr, rtrd_sck_t *sck)
+{
+    if (NULL == sck) { return; }
+    FREE(sck->send.addr);
+    FREE(sck->recv.addr);
+    if (sck->mesg_list) {
         list_destroy(sck->mesg_list, rsvr->pool, (mem_dealloc_cb_t)slab_dealloc);
-        slab_dealloc(rsvr->pool, sck);
-        return RTTP_ERR;
     }
+    CLOSE(sck->fd);
+    slab_dealloc(rsvr->pool, sck);
+}
 
-    rttp_snap_setup(&sck->recv, addr, RTTP_BUFF_SIZE);
+/******************************************************************************
+ **函数名称: rtrd_rsvr_add_conn_hdl
+ **功    能: 添加网络连接
+ **输入参数:
+ **     ctx: 全局对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 将套接字对象加入到套接字链表中
+ **注意事项:
+ **作    者: # Qifeng.zou # 2015.01.01 #
+ ******************************************************************************/
+static int rtrd_rsvr_add_conn_hdl(rtrd_rsvr_t *rsvr, rttp_cmd_add_sck_t *req)
+{
+    rtrd_sck_t *sck;
+    list2_node_t *node;
 
-    /* 3. 申请发送缓存 */
-    addr = (void *)calloc(1, RTTP_BUFF_SIZE);
-    if (NULL == addr)
+    /* > 创建套接字对象 */
+    sck = rtrd_rsvr_sck_creat(rsvr, req);
+    if (NULL == sck)
     {
-        log_error(rsvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        free(sck->recv.addr);
-        list_destroy(sck->mesg_list, rsvr->pool, (mem_dealloc_cb_t)slab_dealloc);
-        slab_dealloc(rsvr->pool, sck);
+        log_error(rsvr->log, "Create socket object failed!");
         return RTTP_ERR;
     }
 
-    rttp_snap_setup(&sck->send, addr, RTTP_BUFF_SIZE);
-
-    /* 4. 加入链尾 */
+    /* > 加入套接字链尾 */
     node = slab_alloc(rsvr->pool, sizeof(list2_node_t));
     if (NULL == node)
     {
         log_error(rsvr->log, "Alloc memory failed!");
-        free(sck->recv.addr);
-        free(sck->send.addr);
-        list_destroy(sck->mesg_list, rsvr->pool, (mem_dealloc_cb_t)slab_dealloc);
-        slab_dealloc(rsvr->pool, sck);
+        rtrd_rsvr_sck_free(rsvr, sck);
         return RTTP_ERR;
     }
 
     node->data = (void *)sck;
-
     list2_insert_tail(&rsvr->conn_list, node);
 
     ++rsvr->connections; /* 统计TCP连接数 */
@@ -1131,13 +1184,7 @@ static int rtrd_rsvr_del_conn_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, list2_nod
     rtrd_node_to_svr_map_del(ctx, curr->nodeid, rsvr->tidx);
 
     /* > 释放数据空间 */
-    CLOSE(curr->fd);
-
-    FREE(curr->recv.addr);
-    FREE(curr->send.addr);
-    rtrd_rsvr_clear_mesg(rsvr, curr);
-    curr->recv_total = 0;
-    slab_dealloc(rsvr->pool, curr);
+    rtrd_rsvr_sck_free(rsvr, curr);
 
     --rsvr->connections; /* 统计TCP连接数 */
 
@@ -1180,36 +1227,6 @@ void rtrd_rsvr_del_all_conn_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
 
     rsvr->connections = 0; /* 统计TCP连接数 */
     return;
-}
-
-/******************************************************************************
- **函数名称: rtrd_rsvr_clear_mesg
- **功    能: 清空发送消息
- **输入参数:
- **    rsvr: 接收服务
- **    sck: 将要清空的套接字对象
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述: 将数据从链表中弹出, 再回收对应内存
- **注意事项:
- **作    者: # Qifeng.zou # 2014.07.04 #
- ******************************************************************************/
-static int rtrd_rsvr_clear_mesg(rtrd_rsvr_t *rsvr, rtrd_sck_t *sck)
-{
-    void *data;
-
-    while (1)
-    {
-        data = list_lpop(sck->mesg_list);
-        if (NULL == data)
-        {
-            return RTTP_OK;
-        }
-
-        slab_dealloc(rsvr->pool, data);
-    }
-
-    return RTTP_OK;
 }
 
 /******************************************************************************

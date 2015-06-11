@@ -201,8 +201,6 @@ static int rtrd_lsn_accept(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn)
         sckid = accept(lsn->lsn_sck_id, (struct sockaddr *)&cliaddr, &len);
         if (sckid >= 0)
         {
-            log_debug(lsn->log, "New connection! sckid:%d ip:%s",
-                    sckid, inet_ntoa(cliaddr.sin_addr));
             break;
         }
         else if (EINTR == errno)
@@ -221,13 +219,16 @@ static int rtrd_lsn_accept(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn)
 
     cmd.type = RTTP_CMD_ADD_SCK;
     args->sckid = sckid;
-    args->sck_serial = ++lsn->serial;
+    args->sck_serial = ++lsn->serial; /* 设置套接字序列号 */
     snprintf(args->ipaddr, sizeof(args->ipaddr), "%s", inet_ntoa(cliaddr.sin_addr));
+
+    log_trace(lsn->log, "New connection! serial:%lu sckid:%d ip:%s",
+            lsn->serial, sckid, inet_ntoa(cliaddr.sin_addr));
 
     if (rtrd_cmd_to_rsvr(ctx, lsn->cmd_sck_id, &cmd, rtrd_rand_rsvr(ctx)) < 0)
     {
         CLOSE(sckid);
-        log_error(lsn->log, "Send command failed! sckid:[%d]", sckid);
+        log_error(lsn->log, "Send command failed! serial:%lu sckid:[%d]", lsn->serial, sckid);
         return RTTP_ERR;
     }
 

@@ -20,19 +20,19 @@
 
 /* Recv线程的UNIX-UDP路径 */
 #define rtrd_rsvr_usck_path(conf, path, tidx) \
-    snprintf(path, sizeof(path), "../temp/rttp/recv/%s/usck/%s_rsvr_%d.usck", conf->name, conf->name, tidx+1)
+    snprintf(path, sizeof(path), "../temp/rttp/recv/%s/usck/%s_rsvr_%d.usck", (conf)->name, (conf)->name, tidx+1)
 /* Worker线程的UNIX-UDP路径 */
 #define rtrd_worker_usck_path(conf, path, tidx) \
-    snprintf(path, sizeof(path), "../temp/rttp/recv/%s/usck/%s_wsvr_%d.usck", conf->name, conf->name, tidx+1)
+    snprintf(path, sizeof(path), "../temp/rttp/recv/%s/usck/%s_wsvr_%d.usck", (conf)->name, (conf)->name, tidx+1)
 /* Listen线程的UNIX-UDP路径 */
 #define rtrd_lsn_usck_path(conf, path) \
-    snprintf(path, sizeof(path), "../temp/rttp/recv/%s/usck/%s_listen.usck", conf->name, conf->name)
+    snprintf(path, sizeof(path), "../temp/rttp/recv/%s/usck/%s_listen.usck", (conf)->name, (conf)->name)
 /* 发送队列的共享内存KEY路径 */
 #define rtrd_shm_sendq_path(conf, path) \
-    snprintf(path, sizeof(path), "../temp/rttp/recv/%s/%s_shm_sendq", conf->name, conf->name)
+    snprintf(path, sizeof(path), "../temp/rttp/recv/%s/%s_shm_sendq", (conf)->name, (conf)->name)
 /* 分发线程的UNIX-UDP路径 */
 #define rtrd_dist_unix_path(conf, path) \
-    snprintf(path, sizeof(path), "../temp/rttp/recv/%s/usck/%s_disp.usck", conf->name, conf->name)
+    snprintf(path, sizeof(path), "../temp/rttp/recv/%s/usck/%s_disp.usck", (conf)->name, (conf)->name)
 
 /* 配置信息 */
 typedef struct
