@@ -3,7 +3,7 @@
 pkill -9 mmexec
 pkill -9 crawler
 pkill -9 filter
-pkill -9 agentd
+pkill -9 listend
 pkill -9 monitor
 pkill -9 invertd
 pkill -9 logsvr
