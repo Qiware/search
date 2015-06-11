@@ -275,8 +275,9 @@ int rbt_insert(rbt_tree_t *tree, int64_t key, void *data)
     {
         /* 性质2: 根结点是黑色的 */
         tree->root = rbt_creat_node(tree, key, RBT_COLOR_BLACK, 0, NULL);
-        if (tree->sentinel == tree->root)
+        if (NULL == tree->root)
         {
+            tree->root = tree->sentinel;
             return RBT_ERR;
         }
 
