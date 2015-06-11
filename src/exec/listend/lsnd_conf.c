@@ -419,7 +419,7 @@ static int _lsnd_conf_load_frwder(const char *path,
             break;
         }
 
-        node = xml_search(xml, fix, "SENDQ.SIZE");
+        node = xml_search(xml, fix, "RECVQ.SIZE");
         if (NULL == node
             || 0 == node->value.len)
         {
@@ -447,9 +447,6 @@ static int _lsnd_conf_load_frwder(const char *path,
         {
             break;
         }
-
-        snprintf(conf->sendq.path,
-             sizeof(conf->sendq.path), "%s/%05d.sq", conf->path, conf->nodeid);
 
         node = xml_search(xml, fix, "SENDQ.SIZE");
         if (NULL == node
