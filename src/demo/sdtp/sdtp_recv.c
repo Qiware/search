@@ -52,7 +52,7 @@ int main(int argc, const char *argv[])
         return SDTP_ERR;
     }
 
-    sdrd_register(ctx, MSG_SEARCH_REQ, sdtp_work_def_hdl, NULL);
+    sdrd_register(ctx, MSG_SEARCH_WORD_REQ, sdtp_work_def_hdl, NULL);
     sdrd_register(ctx, MSG_PRINT_INVT_TAB_REQ, sdtp_work_def_hdl, NULL);
     sdrd_register(ctx, MSG_QUERY_CONF_REQ, sdtp_work_def_hdl, NULL);
     sdrd_register(ctx, MSG_QUERY_WORKER_STAT_REQ, sdtp_work_def_hdl, NULL);

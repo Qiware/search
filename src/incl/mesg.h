@@ -16,8 +16,8 @@ typedef enum
 {
     MSG_TYPE_UNKNOWN                        /* 未知消息 */
 
-    , MSG_SEARCH_REQ                        /* 搜索请求 */
-    , MSG_SEARCH_REP                        /* 搜索应答 */
+    , MSG_SEARCH_WORD_REQ                   /* 搜索关键字请求 */
+    , MSG_SEARCH_WORD_REP                   /* 搜索关键字应答 */
 
     , MSG_PRINT_INVT_TAB_REQ                /* 打印倒排表的请求 */
 

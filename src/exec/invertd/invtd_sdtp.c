@@ -36,7 +36,7 @@ static int invtd_search_req_hdl(int type, int orig, char *buff, size_t len, void
     mesg_search_req_t *req = (mesg_search_req_t *)buff; /* 请求 */
     mesg_search_rep_t rep; /* 应答 */
 
-    log_debug(ctx->log, "Call %s()! serial:%ld words:%s",
+    log_trace(ctx->log, "Call %s()! serial:%ld words:%s",
             __func__, req->serial, req->body.words);
 
     memset(&rep, 0, sizeof(rep));
@@ -66,7 +66,7 @@ static int invtd_search_req_hdl(int type, int orig, char *buff, size_t len, void
 INVTD_SRCH_REP:
     /* > 应答搜索结果 */
     rep.serial = req->serial;
-    if (rtrd_cli_send(ctx->sdrd_cli, MSG_SEARCH_REP, orig, (void *)&rep, sizeof(rep)))
+    if (rtrd_cli_send(ctx->sdrd_cli, MSG_SEARCH_WORD_REP, orig, (void *)&rep, sizeof(rep)))
     {
         log_error(ctx->log, "Send response failed! serial:%ld words:%s",
                 req->serial, req->body.words);
@@ -115,7 +115,7 @@ static int invtd_rttp_reg(invtd_cntx_t *ctx)
         return INVT_ERR; \
     }
 
-   INVTD_RTTP_REG(ctx->sdrd, MSG_SEARCH_REQ, invtd_search_req_hdl, ctx);
+   INVTD_RTTP_REG(ctx->sdrd, MSG_SEARCH_WORD_REQ, invtd_search_req_hdl, ctx);
    INVTD_RTTP_REG(ctx->sdrd, MSG_PRINT_INVT_TAB_REQ, invtd_print_invt_tab_req_hdl, ctx);
 
     return INVT_OK;

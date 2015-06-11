@@ -139,7 +139,7 @@ static int mon_agent_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void 
     fprintf(stderr, "    Word: ");
     scanf(" %s", word);
 
-    head.type = htonl(MSG_SEARCH_REQ);
+    head.type = htonl(MSG_SEARCH_WORD_REQ);
     head.flag = htonl(AGENT_MSG_FLAG_USR);
     head.mark = htonl(AGENT_MSG_MARK_KEY);
     head.length = htonl(sizeof(body));
@@ -252,7 +252,7 @@ SRCH_AGAIN:
 
         fprintf(stdout, "    idx:%d fd:%d!\n", idx, fd[idx]);
 
-        head.type = htonl(MSG_SEARCH_REQ);
+        head.type = htonl(MSG_SEARCH_WORD_REQ);
         head.flag = htonl(AGENT_MSG_FLAG_USR);
         head.mark = htonl(AGENT_MSG_MARK_KEY);
         head.length = htonl(sizeof(body));
@@ -389,7 +389,7 @@ static int mon_agent_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *arg
     /* 发送搜索数据 */
     for (idx=0; idx<num; ++idx)
     {
-        header.type = htonl(MSG_SEARCH_REQ);
+        header.type = htonl(MSG_SEARCH_WORD_REQ);
         header.flag = htonl(AGENT_MSG_FLAG_USR);
         header.mark = htonl(AGENT_MSG_MARK_KEY);
         header.length = htonl(sizeof(body));

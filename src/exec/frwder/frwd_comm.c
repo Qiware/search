@@ -286,6 +286,13 @@ static int frwd_search_rep_hdl(int type, int orig, char *data, size_t len, void 
  ******************************************************************************/
 int frwd_set_reg(frwd_cntx_t *frwd)
 {
-    rtsd_register(frwd->rttp, MSG_SEARCH_REP, frwd_search_rep_hdl, frwd);
-    return 0;
+#define FRWD_REG_CB(frwd, type, proc, args) \
+    if (rtsd_register((frwd)->rttp, type, (rttp_reg_cb_t)proc, (void *)args)) \
+    { \
+        log_error((frwd)->log, "Register type [%d] failed!", type); \
+        return FRWD_ERR; \
+    }
+
+    FRWD_REG_CB(frwd, MSG_SEARCH_WORD_REP, frwd_search_rep_hdl, frwd);
+    return FRWD_OK;
 }

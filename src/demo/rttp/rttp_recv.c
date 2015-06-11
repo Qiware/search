@@ -52,7 +52,7 @@ int main(int argc, const char *argv[])
         return RTTP_ERR;
     }
 
-    rtrd_register(ctx, MSG_SEARCH_REQ, rttp_work_def_hdl, NULL);
+    rtrd_register(ctx, MSG_SEARCH_WORD_REQ, rttp_work_def_hdl, NULL);
     rtrd_register(ctx, MSG_PRINT_INVT_TAB_REQ, rttp_work_def_hdl, NULL);
     rtrd_register(ctx, MSG_QUERY_CONF_REQ, rttp_work_def_hdl, NULL);
     rtrd_register(ctx, MSG_QUERY_WORKER_STAT_REQ, rttp_work_def_hdl, NULL);

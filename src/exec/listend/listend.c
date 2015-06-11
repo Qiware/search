@@ -177,11 +177,13 @@ static int lsnd_search_req_hdl(unsigned int type, void *data, int length, void *
  ******************************************************************************/
 static int lsnd_set_reg(lsnd_cntx_t *ctx)
 {
-    if (agent_register(ctx->agent, MSG_SEARCH_REQ, (agent_reg_cb_t)lsnd_search_req_hdl, (void *)ctx))
-    {
-        return LSND_ERR;
+#define LSND_REG_CB(ctx, type, proc, args) /* 注册回调 */\
+    if (agent_register((ctx)->agent, type, (agent_reg_cb_t)proc, (void *)args)) \
+    { \
+        return LSND_ERR; \
     }
 
+    LSND_REG_CB(ctx, MSG_SEARCH_WORD_REQ, lsnd_search_req_hdl, ctx);
     return LSND_OK;
 }
 
