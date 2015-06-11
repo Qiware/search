@@ -266,11 +266,6 @@ void rtsd_ssvr_set_rwset(rtsd_ssvr_t *ssvr)
 
     FD_SET(ssvr->cmd_sck_id, &ssvr->rset);
 
-    if (ssvr->sck.fd < 0)
-    {
-        return;
-    }
-
     ssvr->max = MAX(ssvr->cmd_sck_id, ssvr->sck.fd);
 
     /* 1 设置读集合 */
@@ -586,8 +581,7 @@ static int rtsd_ssvr_recv_proc(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
         {
             return RTTP_OK; /* Again */
         }
-
-        if (EINTR == errno)
+        else if (EINTR == errno)
         {
             continue;
         }
@@ -653,7 +647,7 @@ static int rtsd_ssvr_data_proc(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, rtsd_sck_t *
                 /* 防止OverWrite的情况发生 */
                 if ((recv->optr - recv->addr) < (recv->end - recv->iptr))
                 {
-                    log_error(ssvr->log, "Data length is invalid!");
+                    log_fatal(ssvr->log, "Data length is invalid!");
                     return RTTP_ERR;
                 }
 
@@ -798,7 +792,7 @@ static int rtsd_ssvr_fill_send_buff(rtsd_ssvr_t *ssvr, rtsd_sck_t *sck)
     for (;;)
     {
         /* > 是否有数据 */
-        head = (rttp_header_t *)list_lpop(ssvr->sck.mesg_list);
+        head = (rttp_header_t *)list_lpop(sck->mesg_list);
         if (NULL == head)
         {
             break; /* 无数据 */
@@ -813,7 +807,7 @@ static int rtsd_ssvr_fill_send_buff(rtsd_ssvr_t *ssvr, rtsd_sck_t *sck)
         mesg_len = sizeof(rttp_header_t) + head->length;
         if (left < mesg_len)
         {
-            list_lpush(ssvr->sck.mesg_list, head);
+            list_lpush(sck->mesg_list, head);
             break; /* 空间不足 */
         }
 
@@ -911,16 +905,13 @@ static int rtsd_ssvr_send_data(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
     for (;;)
     {
         /* 1. 填充发送缓存 */
-        if (send->iptr == send->optr)
+        len = send->iptr - send->optr;
+        if (0 == len)
         {
             if ((len = rtsd_ssvr_fill_send_buff(ssvr, sck)) <= 0)
             {
                 break;
             }
-        }
-        else
-        {
-            len = send->iptr - send->optr;
         }
 
         /* 2. 发送缓存数据 */
@@ -952,7 +943,6 @@ static int rtsd_ssvr_send_data(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
  **功    能: 清空发送消息
  **输入参数:
  **     ssvr: 发送服务
- **     sck: 连接对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 依次取出每条消息, 并释放所占有的空间
@@ -963,14 +953,11 @@ static int rtsd_ssvr_clear_mesg(rtsd_ssvr_t *ssvr)
 {
     void *data;
 
-    while (1)
-    {
+    while (1) {
         data = list_lpop(ssvr->sck.mesg_list);
-        if (NULL == data)
-        {
+        if (NULL == data) {
             return RTTP_OK;
         }
-
         slab_dealloc(ssvr->pool, data);
     }
 
@@ -1036,8 +1023,6 @@ static int rtsd_ssvr_exp_mesg_proc(
 
     ++ssvr->recv_total;
 
-    idx = rand() % ctx->conf.work_thd_num;
-
     /* > 验证长度 */
     len = RTTP_DATA_TOTAL_LEN(head);
     if ((int)len > queue_size(ctx->recvq[0]))
@@ -1048,7 +1033,9 @@ static int rtsd_ssvr_exp_mesg_proc(
         return RTTP_ERR_TOO_LONG;
     }
 
-    /* > 申请空间 */
+   /* > 申请空间 */
+    idx = rand() % ctx->conf.work_thd_num;
+
     data = queue_malloc(ctx->recvq[idx]);
     if (NULL == data)
     {
@@ -1160,7 +1147,7 @@ static int rttp_link_auth_rep_hdl(rtsd_cntx_t *ctx,
  **     ssvr: 接收服务
  **     rqid: 队列ID
  **输出参数: NONE
- **返    回: 0:成功 !0:失败
+ **返    回: >0:成功 <=0:失败
  **实现描述:
  **注意事项:
  **作    者: # Qifeng.zou # 2015.06.08 #
@@ -1169,8 +1156,9 @@ static int rtsd_ssvr_cmd_proc_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, int rqid)
 {
     rttp_cmd_t cmd;
     char path[FILE_PATH_MAX_LEN];
-    rtsd_conf_t *conf = &ctx->conf;
     rttp_cmd_proc_req_t *req = (rttp_cmd_proc_req_t *)&cmd.args;
+
+    memset(&cmd, 0, sizeof(cmd));
 
     cmd.type = RTTP_CMD_PROC_REQ;
     req->ori_svr_tidx = ssvr->tidx;
@@ -1178,17 +1166,10 @@ static int rtsd_ssvr_cmd_proc_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, int rqid)
     req->rqidx = rqid;
 
     /* > 获取Worker路径 */
-    rtsd_worker_usck_path(conf, path, rqid);
+    rtsd_worker_usck_path(&ctx->conf, path, rqid);
 
     /* > 发送处理命令 */
-    if (unix_udp_send(ssvr->cmd_sck_id, path, &cmd, sizeof(rttp_cmd_t)) < 0)
-    {
-        log_debug(ssvr->log, "Send command failed! errmsg:[%d] %s! path:[%s]",
-                errno, strerror(errno), path);
-        return RTTP_ERR;
-    }
-
-    return RTTP_OK;
+    return unix_udp_send(ssvr->cmd_sck_id, path, &cmd, sizeof(rttp_cmd_t));
 }
 
 /******************************************************************************

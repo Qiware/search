@@ -11,7 +11,7 @@
 
 /* WORKER线程的UNIX-UDP路径 */
 #define rtsd_worker_usck_path(conf, path, tidx) \
-    snprintf(path, sizeof(path), "%s/%d_swrk_%d.usck", conf->path, conf->nodeid, tidx+1)
+    snprintf(path, sizeof(path), "%s/%d_swrk_%d.usck", (conf)->path, (conf)->nodeid, tidx+1)
 
 /* 套接字信息 */
 typedef struct
