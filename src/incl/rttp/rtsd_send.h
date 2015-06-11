@@ -26,9 +26,12 @@ typedef struct
 
     rttp_cpu_conf_t cpu;                /* CPU亲和性配置 */
 
-    shmq_conf_t sendq;                  /* 发送队列配置 */
+    queue_conf_t sendq;                 /* 发送队列配置 */
     queue_conf_t recvq;                 /* 接收队列配置 */
 } rtsd_conf_t;
+
+#define rtsd_get_sendq_path(conf, tidx, path, size) /* 发送队列路径 */\
+    snprintf(path, size, "%s/%d-%d.sq", conf->path, conf->nodeid, tidx)
 
 /* 全局信息 */
 typedef struct

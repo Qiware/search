@@ -94,7 +94,6 @@ static int _rtsd_cli_init(rtsd_cli_t *cli, int idx)
 static int rtsd_cli_shmat(rtsd_cli_t *cli)
 {
     int idx;
-    shmq_conf_t *qcf;
     char path[FILE_NAME_MAX_LEN];
     rtsd_conf_t *conf = &cli->conf;
 
@@ -107,15 +106,14 @@ static int rtsd_cli_shmat(rtsd_cli_t *cli)
     }
 
     /* > 连接共享队列 */
-    qcf = &conf->sendq;
     for (idx=0; idx<conf->send_thd_num; ++idx)
     {
-        snprintf(path, sizeof(path), "%s-%d", qcf->path, idx);
+        rtsd_get_sendq_path(conf, idx, path, sizeof(path));
 
         cli->sendq[idx] = shm_queue_attach(path);
         if (NULL == cli->sendq[idx])
         {
-            log_error(cli->log, "errmsg:[%d] %s! path:[%s]", errno, strerror(errno), qcf->path);
+            log_error(cli->log, "errmsg:[%d] %s! path:[%s]", errno, strerror(errno), path);
             FREE(cli->sendq);
             return RTTP_ERR;
         }

@@ -169,12 +169,11 @@ static int rtsd_ssvr_creat_recvq(rtsd_cntx_t *ctx, const rtsd_conf_t *conf)
 static int rtsd_ssvr_creat_sendq(rtsd_ssvr_t *ssvr, const rtsd_conf_t *conf)
 {
     char path[FILE_PATH_MAX_LEN];
-    const shmq_conf_t *qcf = &conf->sendq;
 
     /* 1. 创建/连接发送队列 */
-    snprintf(path, sizeof(path), "%s-%d", qcf->path, ssvr->tidx);
+    rtsd_get_sendq_path(conf, ssvr->tidx, path, sizeof(path));
 
-    ssvr->sendq = shm_queue_creat(path, qcf->max, qcf->size);
+    ssvr->sendq = shm_queue_creat(path, conf->sendq.max, conf->sendq.size);
     if (NULL == ssvr->sendq)
     {
         log_error(ssvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
