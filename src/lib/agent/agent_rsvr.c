@@ -1046,6 +1046,8 @@ static int agent_rsvr_disp_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
             continue;
         }
 
+        agent_serial_to_sck_map_delete(ctx, flow->serial); /* 查询完成删除 */
+
         /* 校验映射项合法性 */
         if (flow->agt_idx != newest.agt_idx
             || flow->sck_serial != newest.sck_serial)
