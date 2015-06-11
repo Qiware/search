@@ -182,16 +182,6 @@ static int frwd_init_log(frwd_cntx_t *frwd, const char *pname)
     char path[FILE_PATH_MAX_LEN];
     frwd_conf_t *conf = &frwd->conf;
 
-    /* > 设置系统日志 */
-    snprintf(path, sizeof(path), "../log/%s.plog", pname);
-
-    if (plog_init(conf->log_level, path))
-    {
-        fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
-        return FRWD_ERR;
-    }
-
-    /* > 设置业务日志 */
     snprintf(path, sizeof(path), "../log/%s.log", pname);
 
     frwd->log = log_init(conf->log_level, path);

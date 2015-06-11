@@ -42,7 +42,6 @@ int main(int argc, const char *argv[])
 
     signal(SIGPIPE, SIG_IGN);
                                        
-    plog_init(LOG_LEVEL_ERROR, "./rttp.log2");
     log = log_init(LOG_LEVEL_ERROR, "./rttp.log");
 
     /* 1. 接收端初始化 */

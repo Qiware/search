@@ -146,15 +146,6 @@ int main(int argc, char *argv[])
 static mon_cntx_t *mon_cntx_init(const char *path)
 {
     mon_cntx_t *ctx;
-    char log_path[FILE_NAME_MAX_LEN];
-
-    plog_get_path(log_path, sizeof(log_path), "monitor");
-
-    if (plog_init(LOG_LEVEL_DEBUG, log_path))
-    {
-        fprintf(stderr, "Init syslog failed!");
-        return NULL;
-    }
 
     /* > 创建全局对象 */
     ctx = (mon_cntx_t *)calloc(1, sizeof(mon_cntx_t));

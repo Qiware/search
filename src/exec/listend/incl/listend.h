@@ -40,7 +40,6 @@ typedef struct
 
 int lsnd_getopt(int argc, char **argv, lsnd_opt_t *opt);
 int lsnd_usage(const char *exec);
-log_cycle_t *lsnd_init_log(char *fname);
 void *lsnd_dist_routine(void *_ctx);
 
 #endif /*__LISTEND_H__*/

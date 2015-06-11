@@ -122,7 +122,6 @@ int main(int argc, const char *argv[])
     port = atoi(argv[1]);
     rttp_setup_conf(&conf, port);
 
-    plog_init(LOG_LEVEL_DEBUG, "./rttp_ssvr.plog");
     log = log_init(LOG_LEVEL_DEBUG, "./rttp_ssvr.log");
     if (NULL == log)
     {

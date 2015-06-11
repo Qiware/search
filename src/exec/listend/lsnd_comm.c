@@ -71,16 +71,6 @@ log_cycle_t *lsnd_init_log(char *fname)
 {
     char path[FILE_NAME_MAX_LEN];
 
-    /* 1. 初始化系统日志 */
-    plog_get_path(path, sizeof(path), basename(fname));
-
-    if (plog_init(LOG_LEVEL_ERROR, path))
-    {
-        fprintf(stderr, "Init syslog failed!");
-        return NULL;
-    }
-
-    /* 2. 初始化业务日志 */
     log_get_path(path, sizeof(path), basename(fname));
 
     return log_init(LOG_LEVEL_ERROR, path);

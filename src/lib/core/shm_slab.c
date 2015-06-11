@@ -132,9 +132,6 @@ int shm_slab_init(shm_slab_pool_t *pool)
         return -1;  /* Not enough memory */
     }
 
-    fprintf(stdout, "min_size:%d min_shift:%d slot_off:%d page_off:%d page_num:%d ",
-        pool->min_size, pool->min_shift, pool->slot_offset, pool->page_offset, page_num);
-    
     page = (shm_slab_page_t *)(addr + pool->page_offset);
     for (idx=0; idx<page_num; idx++)
     {

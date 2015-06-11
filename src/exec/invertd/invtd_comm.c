@@ -91,35 +91,6 @@ int invtd_usage(const char *exec)
 }
 
 /******************************************************************************
- **函数名称: invtd_init_log
- **功    能: 初始化日志模块
- **输入参数:
- **     level: 日志级别
- **输出参数: NONE
- **返    回: 日志对象
- **实现描述: 初始化应用日志和平台日志
- **注意事项: 
- **作    者: # Qifeng.zou # 2015.05.07 #
- ******************************************************************************/
-static log_cycle_t *invtd_init_log(int level)
-{
-    log_cycle_t *log;
-
-    log = log_init(level, INVTD_LOG_PATH);
-    if (NULL == log)
-    {
-        return NULL;
-    }
-
-    if (plog_init(level, INVTD_PLOG_PATH))
-    {
-        return NULL;
-    }
-
-    return log;
-}
-
-/******************************************************************************
  **函数名称: invtd_init 
  **功    能: 初始化倒排服务
  **输入参数:
@@ -136,7 +107,7 @@ invtd_cntx_t *invtd_init(const char *conf_path)
     invtd_cntx_t *ctx;
 
     /* > 初始化日志 */
-    log = invtd_init_log(LOG_LEVEL_TRACE);
+    log = log_init(LOG_LEVEL_TRACE, INVTD_LOG_PATH);
     if (NULL == log)
     {
         fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));

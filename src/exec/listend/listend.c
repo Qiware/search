@@ -205,6 +205,7 @@ static lsnd_cntx_t *lsnd_init(char *pname, const char *path)
     lsnd_conf_t *conf;
     agent_cntx_t *agent;
     rtsd_cli_t *send_to_invtd;
+    char log_path[FILE_NAME_MAX_LEN];
 
     /* > 加进程锁 */
     if (lsnd_proc_lock())
@@ -222,7 +223,9 @@ static lsnd_cntx_t *lsnd_init(char *pname, const char *path)
     }
 
     /* > 初始化日志 */
-    log = lsnd_init_log(pname);
+    log_get_path(log_path, sizeof(log_path), basename(pname));
+
+    log = log_init(LOG_LEVEL_ERROR, log_path);
     if (NULL == log)
     {
         fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));

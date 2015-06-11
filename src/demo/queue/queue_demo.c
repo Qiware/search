@@ -38,10 +38,6 @@ log_cycle_t *demo_init_log(const char *_path)
         return NULL;
     }
 
-    snprintf(path, sizeof(path), "%s.plog", _path);
-
-    plog_init(level, path);
-
     return log;
 }
 
