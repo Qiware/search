@@ -830,5 +830,5 @@ slab_pool_t *slab_creat_by_calloc(size_t size, log_cycle_t *log)
 slab_pool_t *slab_init(void *addr, size_t size, log_cycle_t *log) { return calloc(1, sizeof(slab_pool_t)); }
 void *slab_alloc(slab_pool_t *pool, size_t size) { return calloc(1, size); }
 void slab_dealloc(slab_pool_t *pool, void *p) { free(p); }
-slab_pool_t *slab_creat_by_calloc(size_t size) { return calloc(1, size); }
+slab_pool_t *slab_creat_by_calloc(size_t size, log_cycle_t *log) { return calloc(1, size); }
 #endif /*__MEM_LEAK_CHECK__*/
