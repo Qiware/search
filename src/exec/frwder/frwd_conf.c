@@ -96,6 +96,7 @@ static int frwd_conf_load_comm(xml_tree_t *xml, frwd_conf_t *conf)
     if (NULL == node
         || 0 == node->value.len)
     {
+        fprintf(stderr, "Didn't find .FRWDER.TO_LSND.PATH!\n");
         return FRWD_ERR;
     }
 
@@ -124,6 +125,7 @@ static int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t 
     parent = xml_query(xml, path);
     if (NULL == parent)
     {
+        fprintf(stderr, "Didn't find %s!\n", path);
         return FRWD_ERR;
     }
 
@@ -132,6 +134,7 @@ static int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t 
     if (NULL == node
         || 0 == node->value.len)
     {
+        fprintf(stderr, "Didn't find %s.NODE!\n", path);
         return FRWD_ERR;
     }
 
@@ -142,6 +145,7 @@ static int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t 
     if (NULL == node
         || 0 == node->value.len)
     {
+        fprintf(stderr, "Didn't find %s.PATH!\n", path);
         return FRWD_ERR;
     }
 
@@ -152,6 +156,7 @@ static int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t 
     if (NULL == node
         || 0 == node->value.len)
     {
+        fprintf(stderr, "Didn't find %s.SERVER.IP!\n", path);
         return FRWD_ERR;
     }
 
@@ -161,6 +166,7 @@ static int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t 
     if (NULL == node
         || 0 == node->value.len)
     {
+        fprintf(stderr, "Didn't find %s.SERVER.PORT!\n", path);
         return FRWD_ERR;
     }
 
@@ -171,6 +177,7 @@ static int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t 
     if (NULL == node
         || 0 == node->value.len)
     {
+        fprintf(stderr, "Didn't find %s.AUTH.USR!\n", path);
         return FRWD_ERR;
     }
 
@@ -180,6 +187,7 @@ static int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t 
     if (NULL == node
         || 0 == node->value.len)
     {
+        fprintf(stderr, "Didn't find %s.AUTH.PASSWD!\n", path);
         return FRWD_ERR;
     }
 
@@ -190,12 +198,14 @@ static int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t 
     if (NULL == node
         || 0 == node->value.len)
     {
+        fprintf(stderr, "Didn't find %s.THDNUM.SEND!\n", path);
         return FRWD_ERR;
     }
 
     conf->send_thd_num = atoi(node->value.str);
     if (0 == conf->send_thd_num)
     {
+        fprintf(stderr, "%s.THDNUM.SEND is zero!\n", path);
         return FRWD_ERR;
     }
 
@@ -203,12 +213,14 @@ static int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t 
     if (NULL == node
         || 0 == node->value.len)
     {
+        fprintf(stderr, "Didn't find %s.THDNUM.WORK!\n", path);
         return FRWD_ERR;
     }
 
     conf->work_thd_num = atoi(node->value.str);
     if (0 == conf->work_thd_num)
     {
+        fprintf(stderr, "%s.THDNUM.WORK is zero!\n", path);
         return FRWD_ERR;
     }
 
@@ -217,6 +229,7 @@ static int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t 
     if (NULL == node
         || 0 == node->value.len)
     {
+        fprintf(stderr, "Didn't find %s.BUFF.SEND!\n", path);
         return FRWD_ERR;
     }
 
@@ -230,6 +243,7 @@ static int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t 
     if (NULL == node
         || 0 == node->value.len)
     {
+        fprintf(stderr, "Didn't find %s.BUFF.RECV!\n", path);
         return FRWD_ERR;
     }
 
@@ -244,25 +258,29 @@ static int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t 
     if (NULL == node
         || 0 == node->value.len)
     {
+        fprintf(stderr, "Didn't find %s.RECVQ.MAX!\n", path);
         return FRWD_ERR;
     }
 
     conf->recvq.max = atoi(node->value.str);
     if (0 == conf->recvq.max)
     {
+        fprintf(stderr, "%s.RECVQ.MAX is zero!\n", path);
         return FRWD_ERR;
     }
 
-    node = xml_search(xml, parent, "SENDQ.SIZE");
+    node = xml_search(xml, parent, "RECVQ.SIZE");
     if (NULL == node
         || 0 == node->value.len)
     {
+        fprintf(stderr, "Didn't find %s.RECVQ.SIZE!\n", path);
         return FRWD_ERR;
     }
 
     conf->recvq.size = atoi(node->value.str);
     if (0 == conf->recvq.size)
     {
+        fprintf(stderr, "%s.RECVQ.SIZE is zero!\n", path);
         return FRWD_ERR;
     }
 
@@ -271,28 +289,29 @@ static int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t 
     if (NULL == node
         || 0 == node->value.len)
     {
+        fprintf(stderr, "Didn't find %s.SENDQ.MAX!\n", path);
         return FRWD_ERR;
     }
 
     conf->sendq.max = atoi(node->value.str);
     if (0 == conf->sendq.max)
     {
+        fprintf(stderr, "%s.SENDQ.MAX is zero!\n", path);
         return FRWD_ERR;
     }
-
-    snprintf(conf->sendq.path,
-         sizeof(conf->sendq.path), "%s/%05d.sq", conf->path, conf->nodeid);
 
     node = xml_search(xml, parent, "SENDQ.SIZE");
     if (NULL == node
         || 0 == node->value.len)
     {
+        fprintf(stderr, "Didn't find %s.SENDQ.SIZE!\n", path);
         return FRWD_ERR;
     }
 
     conf->sendq.size = atoi(node->value.str);
     if (0 == conf->sendq.size)
     {
+        fprintf(stderr, "%s.SENDQ.SIZE is zero!\n", path);
         return FRWD_ERR;
     }
 

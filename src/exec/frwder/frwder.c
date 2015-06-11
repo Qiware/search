@@ -4,7 +4,7 @@
  ** 文件名: frwder.c
  ** 版本号: 1.0
  ** 描  述: 转发器
- **         负责转发器的处理
+ **         转发器负责数据的转发
  ** 作  者: # Qifeng.zou # 2015.06.08 #
  ******************************************************************************/
 #include "comm.h"
@@ -33,14 +33,14 @@ int main(int argc, char *argv[])
         daemon(1, 1);   /* 后台运行 */
     }
 
-    /* 加载配置信息 */
+    /* > 加载配置信息 */
     if (frwd_load_conf(opt.conf_path, &conf))
     {
         fprintf(stderr, "Load configuration failed!\n");
         return FRWD_ERR;
     }
 
-    /* 初始化服务 */
+    /* > 初始化服务 */
     frwd = frwd_init(&conf);
     if (NULL == frwd)
     {
