@@ -4,7 +4,7 @@
         1) LEVLE: 日志级别
         2) PATH: 输出路径
         3) 取值范围: trace|debug|info|warn|error|fatal -->
-    <LOG LEVEL="error" PATH="../log/" />
+    <LOG LEVEL="trace" PATH="../log/" />
 
     <!-- 指定转发配置
          PATH: 转发配置路径
