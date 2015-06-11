@@ -11,7 +11,7 @@
 #include "xml_tree.h"
 #include "invtd_conf.h"
 
-static int invtd_conf_load_sdtp(xml_tree_t *xml, invtd_conf_t *conf);
+static int invtd_conf_load_sdtp(xml_tree_t *xml, rtrd_conf_t *conf);
 static int invtd_conf_load_comm(xml_tree_t *xml, invtd_conf_t *conf);
 
 /******************************************************************************
@@ -47,7 +47,7 @@ int invtd_conf_load(const char *path, invtd_conf_t *conf)
     }
 
     /* > 加载SDTP配置 */
-    if (invtd_conf_load_sdtp(xml, conf))
+    if (invtd_conf_load_sdtp(xml, &conf->rtrd))
     {
         xml_destroy(xml);
         return INVT_ERR_CONF;
@@ -77,7 +77,7 @@ int invtd_conf_load(const char *path, invtd_conf_t *conf)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.05.08 #
  ******************************************************************************/
-static int invtd_conf_load_sdtp(xml_tree_t *xml, invtd_conf_t *conf)
+static int invtd_conf_load_sdtp(xml_tree_t *xml, rtrd_conf_t *conf)
 {
     xml_node_t *nail, *node;
 
@@ -87,14 +87,23 @@ static int invtd_conf_load_sdtp(xml_tree_t *xml, invtd_conf_t *conf)
         return INVT_ERR_CONF;
     }
 
-    /* > SDTP名称 */
-    node = xml_search(xml, nail, "NAME");
+    /* > 节点ID */
+    node = xml_search(xml, nail, "NODE");
     if (NULL == node)
     {
         return INVT_ERR_CONF;
     }
 
-    snprintf(conf->sdrd.name, sizeof(conf->sdrd.name), "%s", node->value.str);
+    conf->nodeid = atoi(node->value.str);
+
+    /* > 工作路径 */
+    node = xml_search(xml, nail, "PATH");
+    if (NULL == node)
+    {
+        return INVT_ERR_CONF;
+    }
+
+    snprintf(conf->path, sizeof(conf->path), "%s", node->value.str);
 
     /* > 端口号 */
     node = xml_search(xml, nail, "PORT");
@@ -103,7 +112,7 @@ static int invtd_conf_load_sdtp(xml_tree_t *xml, invtd_conf_t *conf)
         return INVT_ERR_CONF;
     }
 
-    conf->sdrd.port = atoi(node->value.str);
+    conf->port = atoi(node->value.str);
 
     /* > 鉴权配置信息 */
     node = xml_search(xml, nail, "AUTH.USR");
@@ -112,7 +121,7 @@ static int invtd_conf_load_sdtp(xml_tree_t *xml, invtd_conf_t *conf)
         return INVT_ERR_CONF;
     }
 
-    snprintf(conf->sdrd.auth.usr, sizeof(conf->sdrd.auth.usr), "%s", node->value.str);
+    snprintf(conf->auth.usr, sizeof(conf->auth.usr), "%s", node->value.str);
 
     node = xml_search(xml, nail, "AUTH.PASSWD");
     if (NULL == node)
@@ -120,7 +129,7 @@ static int invtd_conf_load_sdtp(xml_tree_t *xml, invtd_conf_t *conf)
         return INVT_ERR_CONF;
     }
 
-    snprintf(conf->sdrd.auth.passwd, sizeof(conf->sdrd.auth.passwd), "%s", node->value.str);
+    snprintf(conf->auth.passwd, sizeof(conf->auth.passwd), "%s", node->value.str);
 
     /* > 线程数配置 */
     node = xml_search(xml, nail, "THDNUM.RECV_THD_NUM");
@@ -129,7 +138,7 @@ static int invtd_conf_load_sdtp(xml_tree_t *xml, invtd_conf_t *conf)
         return INVT_ERR_CONF;
     }
 
-    conf->sdrd.recv_thd_num = atoi(node->value.str);
+    conf->recv_thd_num = atoi(node->value.str);
 
     node = xml_search(xml, nail, "THDNUM.WORK_THD_NUM");
     if (NULL == node)
@@ -137,7 +146,7 @@ static int invtd_conf_load_sdtp(xml_tree_t *xml, invtd_conf_t *conf)
         return INVT_ERR_CONF;
     }
 
-    conf->sdrd.work_thd_num = atoi(node->value.str);
+    conf->work_thd_num = atoi(node->value.str);
 
     /* > 接收队列配置 */
     node = xml_search(xml, nail, "RECVQ.NUM");
@@ -146,7 +155,7 @@ static int invtd_conf_load_sdtp(xml_tree_t *xml, invtd_conf_t *conf)
         return INVT_ERR_CONF;
     }
 
-    conf->sdrd.rqnum = atoi(node->value.str);
+    conf->rqnum = atoi(node->value.str);
 
     node = xml_search(xml, nail, "RECVQ.MAX");
     if (NULL == node)
@@ -154,7 +163,7 @@ static int invtd_conf_load_sdtp(xml_tree_t *xml, invtd_conf_t *conf)
         return INVT_ERR_CONF;
     }
 
-    conf->sdrd.recvq.max = atoi(node->value.str);
+    conf->recvq.max = atoi(node->value.str);
 
     node = xml_search(xml, nail, "RECVQ.SIZE");
     if (NULL == node)
@@ -162,11 +171,11 @@ static int invtd_conf_load_sdtp(xml_tree_t *xml, invtd_conf_t *conf)
         return INVT_ERR_CONF;
     }
 
-    conf->sdrd.recvq.size = atoi(node->value.str);
+    conf->recvq.size = atoi(node->value.str);
 
     /* > 发送队列配置 */
-    conf->sdrd.sendq.max = conf->sdrd.recvq.max;
-    conf->sdrd.sendq.size = conf->sdrd.recvq.size;
+    conf->sendq.max = conf->recvq.max;
+    conf->sendq.size = conf->recvq.size;
 
     return INVT_OK;
 }

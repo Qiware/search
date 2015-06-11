@@ -13,8 +13,8 @@ typedef struct
 
     log_cycle_t *log;                       /* 日志对象 */
     invt_tab_t *tab;                        /* 倒排表 */
-    rtrd_cntx_t *sdrd;                      /* SDRD服务 */
-    rtrd_cli_t *sdrd_cli;                   /* SDRD客户端 */
+    rtrd_cntx_t *rtrd;                      /* RTRD服务 */
+    rtrd_cli_t *rtrd_cli;                   /* RTRD客户端 */
 } invtd_cntx_t;
 
 /* 输入参数 */

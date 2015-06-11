@@ -107,7 +107,7 @@ invtd_cntx_t *invtd_init(const char *conf_path)
     invtd_cntx_t *ctx;
 
     /* > 初始化日志 */
-    log = log_init(LOG_LEVEL_TRACE, INVTD_LOG_PATH);
+    log = log_init(LOG_LEVEL_ERROR, INVTD_LOG_PATH);
     if (NULL == log)
     {
         fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
@@ -142,15 +142,15 @@ invtd_cntx_t *invtd_init(const char *conf_path)
         }
 
         /* > 初始化SDTP服务 */
-        ctx->sdrd = rtrd_init(&ctx->conf.sdrd, log);
-        if (NULL == ctx->sdrd)
+        ctx->rtrd = rtrd_init(&ctx->conf.rtrd, log);
+        if (NULL == ctx->rtrd)
         {
             log_error(log, "Init sdtp failed!");
             break;
         }
 
-        ctx->sdrd_cli = rtrd_cli_init(&ctx->conf.sdrd);
-        if (NULL == ctx->sdrd_cli)
+        ctx->rtrd_cli = rtrd_cli_init(&ctx->conf.rtrd);
+        if (NULL == ctx->rtrd_cli)
         {
             log_error(log, "Init sdtp-rcli failed!");
             break;

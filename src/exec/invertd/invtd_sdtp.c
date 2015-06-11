@@ -66,7 +66,7 @@ static int invtd_search_req_hdl(int type, int orig, char *buff, size_t len, void
 INVTD_SRCH_REP:
     /* > 应答搜索结果 */
     rep.serial = req->serial;
-    if (rtrd_cli_send(ctx->sdrd_cli, MSG_SEARCH_WORD_REP, orig, (void *)&rep, sizeof(rep)))
+    if (rtrd_cli_send(ctx->rtrd_cli, MSG_SEARCH_WORD_REP, orig, (void *)&rep, sizeof(rep)))
     {
         log_error(ctx->log, "Send response failed! serial:%ld words:%s",
                 req->serial, req->body.words);
@@ -108,15 +108,15 @@ static int invtd_print_invt_tab_req_hdl(int type, int orig, char *buff, size_t l
  ******************************************************************************/
 static int invtd_rttp_reg(invtd_cntx_t *ctx)
 {
-#define INVTD_RTTP_REG(rtrd, type, proc, args) \
-    if (rtrd_register(rtrd, type, proc, args)) \
+#define INVTD_RTTP_REG(ctx, type, proc, args) \
+    if (rtrd_register((ctx)->rtrd, type, proc, args)) \
     { \
         log_error(ctx->log, "Register callback failed!"); \
         return INVT_ERR; \
     }
 
-   INVTD_RTTP_REG(ctx->sdrd, MSG_SEARCH_WORD_REQ, invtd_search_req_hdl, ctx);
-   INVTD_RTTP_REG(ctx->sdrd, MSG_PRINT_INVT_TAB_REQ, invtd_print_invt_tab_req_hdl, ctx);
+   INVTD_RTTP_REG(ctx, MSG_SEARCH_WORD_REQ, invtd_search_req_hdl, ctx);
+   INVTD_RTTP_REG(ctx, MSG_PRINT_INVT_TAB_REQ, invtd_print_invt_tab_req_hdl, ctx);
 
     return INVT_OK;
 }
@@ -139,5 +139,5 @@ int invtd_start_rttp(invtd_cntx_t *ctx)
         return INVT_ERR;
     }
 
-    return rtrd_startup(ctx->sdrd);
+    return rtrd_startup(ctx->rtrd);
 }
