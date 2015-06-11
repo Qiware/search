@@ -6,7 +6,7 @@
 /* 配置信息 */
 typedef struct
 {
-    int devid;                          /* 设备ID: 唯一值 */
+    int nodeid;                         /* 设备ID: 唯一值 */
     char name[RTTP_NAME_MAX_LEN];       /* 发送端名称 */
 
     struct

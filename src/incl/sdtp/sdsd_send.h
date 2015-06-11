@@ -6,7 +6,7 @@
 /* 配置信息 */
 typedef struct
 {
-    int devid;                          /* 设备ID: 唯一值 */
+    int nodeid;                         /* 结点ID: 唯一值 */
     char name[SDTP_NAME_MAX_LEN];       /* 发送端名称 */
 
     sdtp_auth_conf_t auth;              /* 鉴权信息 */
@@ -29,7 +29,7 @@ typedef struct
 /* 全局信息 */
 typedef struct
 {
-    sdsd_conf_t conf;              /* 配置信息 */
+    sdsd_conf_t conf;                   /* 配置信息 */
     log_cycle_t *log;                   /* 日志对象 */
     slab_pool_t *slab;                  /* 内存池对象 */
 

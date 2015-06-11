@@ -65,7 +65,7 @@ int rtrd_cli_send(rtrd_cli_t *cli, int type, int dest, void *data, int len)
     frwd = (rttp_frwd_t *)addr;
 
     frwd->type = type; 
-    frwd->dest_devid = dest;
+    frwd->dest_nodeid = dest;
     frwd->length = len;
 
     memcpy(addr+sizeof(rttp_frwd_t), data, len);

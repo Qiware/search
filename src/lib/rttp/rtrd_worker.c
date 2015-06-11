@@ -252,7 +252,7 @@ static int rtrd_worker_cmd_proc_req_hdl(rtrd_cntx_t *ctx, rttp_worker_t *worker,
         }
 
         if (reg->proc(
-                head->type, head->devid,
+                head->type, head->nodeid,
                 addr + sizeof(rttp_header_t),
                 head->length, reg->args))
         {

@@ -620,8 +620,8 @@ static int sdrd_rsvr_data_proc(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, sdrd_sck_t *
         {
             if (SDTP_CHECK_SUM != ntohl(head->checksum))
             {
-                log_error(rsvr->log, "Header is invalid! devid:%d Mark:%X/%X type:%d len:%d flag:%d",
-                        ntohl(head->devid), ntohl(head->checksum), SDTP_CHECK_SUM,
+                log_error(rsvr->log, "Header is invalid! nodeid:%d Mark:%X/%X type:%d len:%d flag:%d",
+                        ntohl(head->nodeid), ntohl(head->checksum), SDTP_CHECK_SUM,
                         ntohs(head->type), ntohl(head->length), head->flag);
                 return SDTP_ERR;
             }
@@ -657,7 +657,7 @@ static int sdrd_rsvr_data_proc(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, sdrd_sck_t *
         /* 2. 至少一条数据时 */
         /* 2.1 转化字节序 */
         head->type = ntohs(head->type);
-        head->devid = ntohl(head->devid);
+        head->nodeid = ntohl(head->nodeid);
         head->flag = head->flag;
         head->length = ntohl(head->length);
         head->checksum = ntohl(head->checksum);
@@ -787,10 +787,10 @@ static int sdrd_rsvr_exp_mesg_proc(sdrd_cntx_t *ctx,
 
     ++rsvr->recv_total; /* 总数 */
 
-    if (head->devid != sck->devid)
+    if (head->nodeid != sck->nodeid)
     {
         ++rsvr->drop_total;
-        log_error(rsvr->log, "Devid isn't right! devid:%d/%d", head->devid, sck->devid);
+        log_error(rsvr->log, "Devid isn't right! nodeid:%d/%d", head->nodeid, sck->nodeid);
         return SDTP_ERR;
     };
 
@@ -978,7 +978,7 @@ static int sdrd_rsvr_keepalive_req_hdl(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, sdrd
     head = (sdtp_header_t *)addr;
 
     head->type = SDTP_KPALIVE_REP;
-    head->devid = ctx->conf.auth.devid;
+    head->nodeid = ctx->conf.auth.nodeid;
     head->length = 0;
     head->flag = SDTP_SYS_MESG;
     head->checksum = SDTP_CHECK_SUM;
@@ -1028,7 +1028,7 @@ static int sdrd_rsvr_link_auth_rep(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, sdrd_sck
     link_auth_rep = (sdtp_link_auth_rep_t *)(addr + sizeof(sdtp_header_t));
 
     head->type = SDTP_LINK_AUTH_REP;
-    head->devid = ctx->conf.auth.devid;
+    head->nodeid = ctx->conf.auth.nodeid;
     head->length = sizeof(sdtp_link_auth_rep_t);
     head->flag = SDTP_SYS_MESG;
     head->checksum = SDTP_CHECK_SUM;
@@ -1058,7 +1058,7 @@ static int sdrd_rsvr_link_auth_rep(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, sdrd_sck
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 校验鉴权是否通过, 并应答鉴权请求
- **注意事项: TODO: 待注册DEVID与RSVR的映射关系, 为自定义数据的应答做铺垫!
+ **注意事项: TODO: 待注册NODE与RSVR的映射关系, 为自定义数据的应答做铺垫!
  **作    者: # Qifeng.zou # 2015.05.22 #
  ******************************************************************************/
 static int sdrd_rsvr_link_auth_req_hdl(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, sdrd_sck_t *sck)
@@ -1069,19 +1069,19 @@ static int sdrd_rsvr_link_auth_req_hdl(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, sdrd
     /* > 字节序转换 */
     link_auth_req = (sdtp_link_auth_req_t *)(recv->addr + sizeof(sdtp_header_t));
 
-    link_auth_req->devid = ntohl(link_auth_req->devid);
+    link_auth_req->nodeid = ntohl(link_auth_req->nodeid);
 
     /* > 验证鉴权合法性 */
     sck->auth_succ = sdrd_link_auth_check(ctx, link_auth_req);
     if (sck->auth_succ)
     {
-        sck->devid = link_auth_req->devid;
+        sck->nodeid = link_auth_req->nodeid;
 
-        /* > 插入DEV与SCK的映射 */
-        if (sdrd_dev_to_svr_map_add(ctx, link_auth_req->devid, rsvr->tidx))
+        /* > 插入NODE与SCK的映射 */
+        if (sdrd_node_to_svr_map_add(ctx, link_auth_req->nodeid, rsvr->tidx))
         {
-            log_error(rsvr->log, "Insert into sck2dev table failed! fd:%d serial:%ld devid:%d",
-                    sck->fd, sck->serial, link_auth_req->devid);
+            log_error(rsvr->log, "Insert into sck2dev table failed! fd:%d serial:%ld nodeid:%d",
+                    sck->fd, sck->serial, link_auth_req->nodeid);
             return SDTP_ERR;
         }
     }
@@ -1117,7 +1117,7 @@ static int sdrd_rsvr_add_conn_hdl(sdrd_rsvr_t *rsvr, sdtp_cmd_add_sck_t *req)
     }
 
     sck->fd = req->sckid;
-    sck->devid = -1;
+    sck->nodeid = -1;
     sck->serial = req->sck_serial;
     sck->ctm = time(NULL);
     sck->rdtm = sck->ctm;
@@ -1209,8 +1209,8 @@ static int sdrd_rsvr_del_conn_hdl(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, list2_nod
 
     slab_dealloc(rsvr->pool, node);
 
-    /* > 从SCK<->DEV映射表中剔除 */
-    sdrd_dev_to_svr_map_del(ctx, curr->devid, rsvr->tidx);
+    /* > 从SCK<->NODE映射表中剔除 */
+    sdrd_node_to_svr_map_del(ctx, curr->nodeid, rsvr->tidx);
 
     /* > 释放数据空间 */
     CLOSE(curr->fd);
@@ -1419,7 +1419,7 @@ static int sdrd_rsvr_fill_send_buff(sdrd_rsvr_t *rsvr, sdrd_sck_t *sck)
 
         /* 3 取发送的数据 */
         head->type = htons(head->type);
-        head->devid = htonl(head->devid);
+        head->nodeid = htonl(head->nodeid);
         head->flag = head->flag;
         head->length = htonl(head->length);
         head->checksum = htonl(head->checksum);
@@ -1438,8 +1438,8 @@ static int sdrd_rsvr_fill_send_buff(sdrd_rsvr_t *rsvr, sdrd_sck_t *sck)
 }
 
 /******************************************************************************
- **函数名称: sdrd_rsvr_conn_list_with_same_devid
- **功    能: 获取相同的DEVID的连接链表
+ **函数名称: sdrd_rsvr_conn_list_with_same_nodeid
+ **功    能: 获取相同的NODE的连接链表
  **输入参数:
  **     sck: 套接字数据
  **     c: 连接链表
@@ -1451,13 +1451,13 @@ static int sdrd_rsvr_fill_send_buff(sdrd_rsvr_t *rsvr, sdrd_sck_t *sck)
  ******************************************************************************/
 typedef struct
 {
-    int devid;                  /* 设备ID */
-    list_t *list;               /* 拥有相同DEVID的套接字链表 */
-} conn_list_with_same_devid_t;
+    int nodeid;                  /* 结点ID */
+    list_t *list;               /* 拥有相同NODE的套接字链表 */
+} conn_list_with_same_nodeid_t;
 
-static int sdrd_rsvr_conn_list_with_same_devid(sdrd_sck_t *sck, conn_list_with_same_devid_t *c)
+static int sdrd_rsvr_conn_list_with_same_nodeid(sdrd_sck_t *sck, conn_list_with_same_nodeid_t *c)
 {
-    if (sck->devid != c->devid)
+    if (sck->nodeid != c->nodeid)
     {
         return -1;
     }
@@ -1486,7 +1486,7 @@ static int sdrd_rsvr_dist_send_data(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr)
     list_opt_t opt;
     sdrd_sck_t *sck;
     sdtp_header_t *head;
-    conn_list_with_same_devid_t conn;
+    conn_list_with_same_nodeid_t conn;
 
     sendq = ctx->sendq[rsvr->tidx];
 
@@ -1508,7 +1508,7 @@ static int sdrd_rsvr_dist_send_data(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr)
         opt.alloc = (mem_alloc_cb_t)slab_alloc;
         opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-        conn.devid = frwd->dest_devid;
+        conn.nodeid = frwd->dest_nodeid;
         conn.list = list_creat(&opt);
         if (NULL == conn.list)
         {
@@ -1517,12 +1517,12 @@ static int sdrd_rsvr_dist_send_data(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr)
             continue;
         }
 
-        list2_trav(&rsvr->conn_list, (list2_trav_cb_t)sdrd_rsvr_conn_list_with_same_devid, &conn);
+        list2_trav(&rsvr->conn_list, (list2_trav_cb_t)sdrd_rsvr_conn_list_with_same_nodeid, &conn);
         if (0 == conn.list->num)
         {
             queue_dealloc(sendq, data);
             list_destroy(conn.list, NULL, mem_dummy_dealloc);
-            log_error(rsvr->log, "Didn't find connection by devid [%d]!", conn.devid);
+            log_error(rsvr->log, "Didn't find connection by nodeid [%d]!", conn.nodeid);
             continue;
         }
 
@@ -1543,7 +1543,7 @@ static int sdrd_rsvr_dist_send_data(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr)
         head = (sdtp_header_t *)addr;
 
         head->type = frwd->type;
-        head->devid = frwd->dest_devid;
+        head->nodeid = frwd->dest_nodeid;
         head->flag = SDTP_EXP_MESG;
         head->checksum = SDTP_CHECK_SUM;
         head->length = frwd->length;

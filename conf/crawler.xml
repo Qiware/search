@@ -1,10 +1,10 @@
 <!-- 爬虫系统配置信息 -->
 <CRAWLER>
-    <!-- 日志信息配置
-         1) LEVLE: 日志级别
-         2) SYS_LEVEL: 系统日志级别
-         3) 取值范围: trace|debug|info|warn|error|fatal -->
-    <LOG LEVEL="warn" SYS_LEVEL="error" PATH="../log/" />
+    <!-- 日志配置
+        1) LEVLE: 日志级别
+        2) PATH: 输出路径
+        3) 取值范围: trace|debug|info|warn|error|fatal -->
+    <LOG LEVEL="warn" PATH="../log/" />
 
     <!-- 爬虫进程: 负责网页下载
          1) NUM: 线程数 -->
@@ -18,7 +18,8 @@
     <DOWNLOAD DEPTH="-1" PATH="../../data/crwl/webpage" />
 
     <!-- 工作队列配置
-         COUNT: 队列长度(必须为2的次方) -->
+         COUNT: 队列长度(必须为2的次方)
+         SIZE: 单元大小(0: 默认代码内部设置)-->
     <WORKQ COUNT="1024" SIZE="0" />
 
     <!-- 管理服务: 负责对外提供管理服务(如:操作接口 监控信息等)

@@ -605,8 +605,8 @@ static int rtrd_rsvr_data_proc(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd_sck_t *
         {
             if (RTTP_CHECK_SUM != ntohl(head->checksum))
             {
-                log_error(rsvr->log, "Header is invalid! devid:%d Mark:%X/%X type:%d len:%d flag:%d",
-                        ntohl(head->devid), ntohl(head->checksum), RTTP_CHECK_SUM,
+                log_error(rsvr->log, "Header is invalid! nodeid:%d Mark:%X/%X type:%d len:%d flag:%d",
+                        ntohl(head->nodeid), ntohl(head->checksum), RTTP_CHECK_SUM,
                         ntohs(head->type), ntohl(head->length), head->flag);
                 return RTTP_ERR;
             }
@@ -642,7 +642,7 @@ static int rtrd_rsvr_data_proc(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd_sck_t *
         /* 2. 至少一条数据时 */
         /* 2.1 转化字节序 */
         head->type = ntohs(head->type);
-        head->devid = ntohl(head->devid);
+        head->nodeid = ntohl(head->nodeid);
         head->flag = head->flag;
         head->length = ntohl(head->length);
         head->checksum = ntohl(head->checksum);
@@ -736,10 +736,10 @@ static int rtrd_rsvr_exp_mesg_proc(rtrd_cntx_t *ctx,
     ++rsvr->recv_total; /* 总数 */
 
     /* > 合法性验证 */
-    if (head->devid != sck->devid)
+    if (head->nodeid != sck->nodeid)
     {
         ++rsvr->drop_total;
-        log_error(rsvr->log, "Devid isn't right! devid:%d/%d", head->devid, sck->devid);
+        log_error(rsvr->log, "Devid isn't right! nodeid:%d/%d", head->nodeid, sck->nodeid);
         return RTTP_ERR;
     }
 
@@ -896,7 +896,7 @@ static int rtrd_rsvr_keepalive_req_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd
     head = (rttp_header_t *)addr;
 
     head->type = RTTP_KPALIVE_REP;
-    head->devid = ctx->conf.auth.devid;
+    head->nodeid = ctx->conf.auth.nodeid;
     head->length = 0;
     head->flag = RTTP_SYS_MESG;
     head->checksum = RTTP_CHECK_SUM;
@@ -946,7 +946,7 @@ static int rtrd_rsvr_link_auth_rep(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd_sck
     link_auth_rep = (rttp_link_auth_rep_t *)(addr + sizeof(rttp_header_t));
 
     head->type = RTTP_LINK_AUTH_REP;
-    head->devid = ctx->conf.auth.devid;
+    head->nodeid = ctx->conf.auth.nodeid;
     head->length = sizeof(rttp_link_auth_rep_t);
     head->flag = RTTP_SYS_MESG;
     head->checksum = RTTP_CHECK_SUM;
@@ -987,19 +987,19 @@ static int rtrd_rsvr_link_auth_req_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd
     /* > 字节序转换 */
     link_auth_req = (rttp_link_auth_req_t *)(recv->addr + sizeof(rttp_header_t));
 
-    link_auth_req->devid = ntohl(link_auth_req->devid);
+    link_auth_req->nodeid = ntohl(link_auth_req->nodeid);
 
     /* > 验证鉴权合法性 */
     sck->auth_succ = rtrd_link_auth_check(ctx, link_auth_req);
     if (sck->auth_succ)
     {
-        sck->devid = link_auth_req->devid;
+        sck->nodeid = link_auth_req->nodeid;
 
         /* > 插入DEV与SCK的映射 */
-        if (rtrd_dev_to_svr_map_add(ctx, link_auth_req->devid, rsvr->tidx))
+        if (rtrd_node_to_svr_map_add(ctx, link_auth_req->nodeid, rsvr->tidx))
         {
-            log_error(rsvr->log, "Insert into sck2dev table failed! fd:%d serial:%ld devid:%d",
-                    sck->fd, sck->serial, link_auth_req->devid);
+            log_error(rsvr->log, "Insert into sck2dev table failed! fd:%d serial:%ld nodeid:%d",
+                    sck->fd, sck->serial, link_auth_req->nodeid);
             return RTTP_ERR;
         }
     }
@@ -1035,7 +1035,7 @@ static int rtrd_rsvr_add_conn_hdl(rtrd_rsvr_t *rsvr, rttp_cmd_add_sck_t *req)
     }
 
     sck->fd = req->sckid;
-    sck->devid = -1;
+    sck->nodeid = -1;
     sck->serial = req->sck_serial;
     sck->ctm = time(NULL);
     sck->rdtm = sck->ctm;
@@ -1128,7 +1128,7 @@ static int rtrd_rsvr_del_conn_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, list2_nod
     slab_dealloc(rsvr->pool, node);
 
     /* > 从SCK<->DEV映射表中剔除 */
-    rtrd_dev_to_svr_map_del(ctx, curr->devid, rsvr->tidx);
+    rtrd_node_to_svr_map_del(ctx, curr->nodeid, rsvr->tidx);
 
     /* > 释放数据空间 */
     CLOSE(curr->fd);
@@ -1339,7 +1339,7 @@ static int rtrd_rsvr_fill_send_buff(rtrd_rsvr_t *rsvr, rtrd_sck_t *sck)
 
         /* 3 取发送的数据 */
         head->type = htons(head->type);
-        head->devid = htonl(head->devid);
+        head->nodeid = htonl(head->nodeid);
         head->flag = head->flag;
         head->length = htonl(head->length);
         head->checksum = htonl(head->checksum);
@@ -1358,7 +1358,7 @@ static int rtrd_rsvr_fill_send_buff(rtrd_rsvr_t *rsvr, rtrd_sck_t *sck)
 }
 
 /******************************************************************************
- **函数名称: rtrd_rsvr_conn_list_with_same_devid
+ **函数名称: rtrd_rsvr_conn_list_with_same_nodeid
  **功    能: 获取相同的DEVID的连接链表
  **输入参数:
  **     sck: 套接字数据
@@ -1371,13 +1371,13 @@ static int rtrd_rsvr_fill_send_buff(rtrd_rsvr_t *rsvr, rtrd_sck_t *sck)
  ******************************************************************************/
 typedef struct
 {
-    int devid;                  /* 设备ID */
+    int nodeid;                 /* 结点ID */
     list_t *list;               /* 拥有相同DEVID的套接字链表 */
-} conn_list_with_same_devid_t;
+} conn_list_with_same_nodeid_t;
 
-static int rtrd_rsvr_conn_list_with_same_devid(rtrd_sck_t *sck, conn_list_with_same_devid_t *c)
+static int rtrd_rsvr_conn_list_with_same_nodeid(rtrd_sck_t *sck, conn_list_with_same_nodeid_t *c)
 {
-    if (sck->devid != c->devid)
+    if (sck->nodeid != c->nodeid)
     {
         return -1;
     }
@@ -1406,7 +1406,7 @@ static int rtrd_rsvr_dist_send_data(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
     list_opt_t opt;
     rtrd_sck_t *sck;
     rttp_header_t *head;
-    conn_list_with_same_devid_t conn;
+    conn_list_with_same_nodeid_t conn;
 
     sendq = ctx->sendq[rsvr->tidx];
 
@@ -1428,7 +1428,7 @@ static int rtrd_rsvr_dist_send_data(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
         opt.alloc = (mem_alloc_cb_t)slab_alloc;
         opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-        conn.devid = frwd->dest_devid;
+        conn.nodeid = frwd->dest_nodeid;
         conn.list = list_creat(&opt);
         if (NULL == conn.list)
         {
@@ -1437,12 +1437,12 @@ static int rtrd_rsvr_dist_send_data(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
             continue;
         }
 
-        list2_trav(&rsvr->conn_list, (list2_trav_cb_t)rtrd_rsvr_conn_list_with_same_devid, &conn);
+        list2_trav(&rsvr->conn_list, (list2_trav_cb_t)rtrd_rsvr_conn_list_with_same_nodeid, &conn);
         if (0 == conn.list->num)
         {
             queue_dealloc(sendq, data);
             list_destroy(conn.list, NULL, mem_dummy_dealloc);
-            log_error(rsvr->log, "Didn't find connection by devid [%d]!", conn.devid);
+            log_error(rsvr->log, "Didn't find connection by nodeid [%d]!", conn.nodeid);
             continue;
         }
 
@@ -1463,7 +1463,7 @@ static int rtrd_rsvr_dist_send_data(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
         head = (rttp_header_t *)addr;
 
         head->type = frwd->type;
-        head->devid = frwd->dest_devid;
+        head->nodeid = frwd->dest_nodeid;
         head->flag = RTTP_EXP_MESG;
         head->checksum = RTTP_CHECK_SUM;
         head->length = frwd->length;

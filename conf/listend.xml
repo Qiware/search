@@ -1,10 +1,10 @@
 <!-- 代理服务配置信息 -->
 <LISTEND>
-    <!-- 日志信息配置
+    <!-- 日志配置
         1) LEVLE: 日志级别
-        2) LEVEL2: 系统日志级别
+        2) PATH: 输出路径
         3) 取值范围: trace|debug|info|warn|error|fatal -->
-    <LOG LEVEL="error" LEVEL2="error" PATH="../log/" />
+    <LOG LEVEL="error" PATH="../log/" />
 
     <!-- 指定转发配置
          PATH: 转发配置路径

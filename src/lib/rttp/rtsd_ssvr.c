@@ -439,7 +439,7 @@ static int rtsd_ssvr_kpalive_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
     head = (rttp_header_t *)addr;
 
     head->type = RTTP_KPALIVE_REQ;
-    head->devid = ctx->conf.devid;
+    head->nodeid = ctx->conf.nodeid;
     head->length = 0;
     head->flag = RTTP_SYS_MESG;
     head->checksum = RTTP_CHECK_SUM;
@@ -820,7 +820,7 @@ static int rtsd_ssvr_fill_send_buff(rtsd_ssvr_t *ssvr, rtsd_sck_t *sck)
 
         /* > 取发送的数据 */
         head->type = htons(head->type);
-        head->devid = htonl(head->devid);
+        head->nodeid = htonl(head->nodeid);
         head->flag = head->flag;
         head->length = htonl(head->length);
         head->checksum = htonl(head->checksum);
@@ -860,7 +860,7 @@ static int rtsd_ssvr_fill_send_buff(rtsd_ssvr_t *ssvr, rtsd_sck_t *sck)
         /* > 设置发送数据 */
         head->type = htons(head->type);
         head->flag = head->flag;
-        head->devid = htonl(head->devid);
+        head->nodeid = htonl(head->nodeid);
         head->length = htonl(head->length);
         head->checksum = htonl(head->checksum);
 
@@ -1117,7 +1117,7 @@ static int rttp_link_auth_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
     /* > 设置鉴权信息 */
     link_auth_req = addr + sizeof(rttp_header_t);
 
-    link_auth_req->devid = htonl(ctx->conf.devid);
+    link_auth_req->nodeid = htonl(ctx->conf.nodeid);
     snprintf(link_auth_req->usr, sizeof(link_auth_req->usr), "%s", ctx->conf.auth.usr);
     snprintf(link_auth_req->passwd, sizeof(link_auth_req->passwd), "%s", ctx->conf.auth.passwd);
 

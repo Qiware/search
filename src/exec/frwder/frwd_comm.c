@@ -200,7 +200,7 @@ static int frwd_init_log(frwd_cntx_t *frwd, const char *pname)
  **输入参数: 
  **     shmq: SHM队列
  **     type: 数据类型
- **     orig: 源设备ID
+ **     orig: 源结点ID
  **     data: 需要转发的数据
  **     len: 数据长度
  **输出参数: NONE
@@ -233,7 +233,7 @@ static int frwd_shmq_push(shm_queue_t *shmq, int type, int orig, char *data, siz
     head = (rttp_header_t *)addr;
 
     head->type = type;
-    head->devid = orig;
+    head->nodeid = orig;
     head->length = len;
     head->flag = RTTP_EXP_MESG;
     head->checksum = RTTP_CHECK_SUM;
@@ -254,7 +254,7 @@ static int frwd_shmq_push(shm_queue_t *shmq, int type, int orig, char *data, siz
  **功    能: 搜索应答处理
  **输入参数:
  **     type: 数据类型
- **     orig: 源设备ID
+ **     orig: 源结点ID
  **     data: 需要转发的数据
  **     len: 数据长度
  **     args: 附加参数

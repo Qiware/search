@@ -155,7 +155,6 @@ crwl_cntx_t *crwl_cntx_init(char *pname, const char *path)
         ctx->conf = conf;
         ctx->log = log;
         log_set_level(log, conf->log.level);
-        plog_set_level(conf->log.syslevel);
 
         /* 5. 创建内存池 */
         ctx->slab = slab_creat_by_calloc(30 * MB, log);

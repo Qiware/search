@@ -50,10 +50,10 @@ void *rtrd_dist_routine(void *_ctx)
         /* > 获取发送队列 */
         frwd = (rttp_frwd_t *)data;
 
-        idx = rtrd_dev_to_svr_map_rand(ctx, frwd->dest_devid);
+        idx = rtrd_node_to_svr_map_rand(ctx, frwd->dest_nodeid);
         if (idx < 0)
         {
-            log_error(ctx->log, "Didn't find dev to svr map! devid:%d", frwd->dest_devid);
+            log_error(ctx->log, "Didn't find dev to svr map! nodeid:%d", frwd->dest_nodeid);
             continue;
         }
 

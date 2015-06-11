@@ -82,7 +82,7 @@ int sdtp_send_debug(sdsd_cli_t *cli, int secs)
 
 static void sdtp_setup_conf(sdsd_conf_t *conf, int port)
 {
-    conf->devid = 1;
+    conf->nodeid = 1;
     snprintf(conf->name, sizeof(conf->name), "SDTP-SEND");
 
     snprintf(conf->auth.usr, sizeof(conf->auth.usr), "qifeng");

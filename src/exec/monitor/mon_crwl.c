@@ -423,7 +423,6 @@ static int mon_crwl_query_conf_print(crwl_cmd_t *cmd)
     conf = (crwl_cmd_conf_t *)&cmd->data;
 
     conf->log.level = ntohl(conf->log.level);
-    conf->log.syslevel = ntohl(conf->log.syslevel);
     conf->download.depth = ntohl(conf->download.depth);
     conf->worker.num = ntohl(conf->worker.num);
     conf->worker.conn_max_num = ntohl(conf->worker.conn_max_num);
@@ -432,7 +431,7 @@ static int mon_crwl_query_conf_print(crwl_cmd_t *cmd)
     /* 显示结果 */
     fprintf(stderr, "    日志信息:\n");
     fprintf(stderr, "        LEVEL: %s\n", log_get_str(conf->log.level));
-    fprintf(stderr, "        SYSLEVEL: %s\n", log_get_str(conf->log.syslevel));
+    fprintf(stderr, "        PATH: %s\n", conf->log.path);
     fprintf(stderr, "    爬取配置:\n");
     fprintf(stderr, "        DEPTH: %d\n", conf->download.depth);
     fprintf(stderr, "        PATH: %s\n", conf->download.path);

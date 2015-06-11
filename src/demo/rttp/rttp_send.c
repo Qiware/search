@@ -82,7 +82,7 @@ int rttp_send_debug(rtsd_cli_t *cli, int secs)
 
 static void rttp_setup_conf(rtsd_conf_t *conf, int port)
 {
-    conf->devid = 1;
+    conf->nodeid = 1;
     snprintf(conf->name, sizeof(conf->name), "RTTP-SEND");
 
     snprintf(conf->auth.usr, sizeof(conf->auth.usr), "qifeng");

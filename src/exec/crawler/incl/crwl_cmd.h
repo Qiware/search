@@ -47,7 +47,7 @@ typedef struct
     struct
     {
         int level;                              /* 日志级别 */
-        int syslevel;                           /* 系统日志级别 */
+        char path[FILE_PATH_MAX_LEN];           /* 日志路径 */
     } log;                                      /* 日志配置 */
 
     struct

@@ -196,7 +196,7 @@ static int rtsd_cli_cmd_send_req(rtsd_cli_t *cli, int idx)
  **输入参数:
  **     cli: 上下文信息
  **     type: 数据类型
- **     devid: 源设备ID
+ **     nodeid: 源结点ID
  **     data: 数据地址
  **     size: 数据长度
  **输出参数: NONE
@@ -229,15 +229,15 @@ int rtsd_cli_send(rtsd_cli_t *cli, int type, const void *data, size_t size)
     head = (rttp_header_t *)addr;
 
     head->type = type;
-    head->devid = conf->devid;
+    head->nodeid = conf->nodeid;
     head->length = size;
     head->flag = RTTP_EXP_MESG;
     head->checksum = RTTP_CHECK_SUM;
 
     memcpy(head+1, data, size);
 
-    log_debug(cli->log, "rq:%p Head type:%d devid:%d length:%d flag:%d checksum:%d!",
-            cli->sendq[idx]->ring, head->type, head->devid, head->length, head->flag, head->checksum);
+    log_debug(cli->log, "rq:%p Head type:%d nodeid:%d length:%d flag:%d checksum:%d!",
+            cli->sendq[idx]->ring, head->type, head->nodeid, head->length, head->flag, head->checksum);
 
     /* > 放入发送队列 */
     if (shm_queue_push(cli->sendq[idx], addr))

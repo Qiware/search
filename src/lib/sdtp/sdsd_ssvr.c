@@ -1238,7 +1238,7 @@ static int sdtp_link_auth_req(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr)
     /* > 设置鉴权信息 */
     link_auth_req = addr + sizeof(sdtp_header_t);
 
-    link_auth_req->devid = htonl(ctx->conf.devid);
+    link_auth_req->nodeid = htonl(ctx->conf.nodeid);
     snprintf(link_auth_req->usr, sizeof(link_auth_req->usr), "%s", ctx->conf.auth.usr);
     snprintf(link_auth_req->passwd, sizeof(link_auth_req->passwd), "%s", ctx->conf.auth.passwd);
 

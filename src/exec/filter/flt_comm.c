@@ -176,7 +176,6 @@ flt_cntx_t *flt_init(char *pname, const char *path)
 
         ctx->conf = conf;
         log_set_level(log, conf->log.level);
-        plog_set_level(conf->log.syslevel);
 
         /* > 连接Redis集群 */
         ctx->redis = redis_clst_init(conf->redis.conf, conf->redis.num);

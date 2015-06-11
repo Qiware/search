@@ -120,14 +120,14 @@ static int _flt_conf_load(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *log)
         }
 
         /* 2. 系统日志级别 */
-        node = xml_search(xml, nail, "SYS_LEVEL");
-        if (NULL != node)
+        node = xml_search(xml, nail, "PATH");
+        if (NULL == node)
         {
-            conf->log.syslevel = log_get_level(node->value.str);
+            snprintf(conf->log.path, sizeof(conf->log.path), "../log/");
         }
         else
         {
-            conf->log.syslevel = log_get_level(LOG_DEF_LEVEL_STR);
+            snprintf(conf->log.path, sizeof(conf->log.path), "%s", node->value.str);
         }
     }
     else

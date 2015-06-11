@@ -268,7 +268,7 @@ static int rtsd_worker_cmd_proc_req_hdl(rtsd_cntx_t *ctx, rttp_worker_t *worker,
             continue;
         }
 
-        if (reg->proc(head->type, head->devid,
+        if (reg->proc(head->type, head->nodeid,
                     addr+sizeof(rttp_header_t), head->length, reg->args))
         {
             ++worker->err_total;    /* 错误计数 */

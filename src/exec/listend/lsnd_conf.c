@@ -278,19 +278,19 @@ static int _lsnd_conf_load_frwder(const char *path,
             break;
         }
 
-        /* > 设备ID */
-        node = xml_search(xml, fix, "DEVID");
+        /* > 结点ID */
+        node = xml_search(xml, fix, "NDID");
         if (NULL == node
             || 0 == node->value.len)
         {
-            log_error(log, "Didn't find devid!");
+            log_error(log, "Didn't find nodeid!");
             break;
         }
 
-        conf->devid = atoi(node->value.str);
+        conf->nodeid = atoi(node->value.str);
 
         /* > 设备名 */
-        snprintf(conf->name, sizeof(conf->name), "%05d", conf->devid);
+        snprintf(conf->name, sizeof(conf->name), "%05d", conf->nodeid);
 
         /* > 服务端IP */
         node = xml_search(xml, fix, "SERVER.IP");
@@ -441,7 +441,7 @@ static int _lsnd_conf_load_frwder(const char *path,
         }
 
         snprintf(conf->sendq.path, sizeof(conf->sendq.path),
-                 "../temp/frwder/sendq-%05d.key", conf->devid);
+                 "../temp/frwder/sendq-%05d.key", conf->nodeid);
 
         node = xml_search(xml, fix, "SENDQ.SIZE");
         if (NULL == node

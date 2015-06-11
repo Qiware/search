@@ -219,8 +219,8 @@ static int _sdrd_init(sdrd_cntx_t *ctx)
         return SDTP_ERR;
     }
 
-    /* > 构建DEV->SVR映射表 */
-    if (sdrd_dev_to_svr_map_init(ctx))
+    /* > 构建NODE->SVR映射表 */
+    if (sdrd_node_to_svr_map_init(ctx))
     {
         log_error(ctx->log, "Initialize sck-dev map table failed!");
         return SDTP_ERR;

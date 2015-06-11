@@ -119,7 +119,7 @@ sdsd_pool_t *sdsd_pool_attach(const char *fpath)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.04.11 #
  ******************************************************************************/
-int sdsd_pool_push(sdsd_pool_t *pool, int type, int devid, const void *data, size_t len)
+int sdsd_pool_push(sdsd_pool_t *pool, int type, int nodeid, const void *data, size_t len)
 {
     int idx, num;
     sdtp_header_t *head;
@@ -156,7 +156,7 @@ int sdsd_pool_push(sdsd_pool_t *pool, int type, int devid, const void *data, siz
         head = (sdtp_header_t *)(pool->addr[idx] + page->off);
 
         head->type = htons(type);
-        head->devid = htonl(devid);
+        head->nodeid = htonl(nodeid);
         head->length = htonl(len);
         head->flag = SDTP_EXP_MESG;  /* 外部数据 */
         head->checksum = htonl(SDTP_CHECK_SUM);

@@ -49,7 +49,7 @@ typedef struct
 
 sdsd_pool_t *sdsd_pool_creat(const char *fpath, int max, int _size);
 sdsd_pool_t *sdsd_pool_attach(const char *fpath);
-int sdsd_pool_push(sdsd_pool_t *pool, int type, int devid, const void *data, size_t len);
+int sdsd_pool_push(sdsd_pool_t *pool, int type, int nodeid, const void *data, size_t len);
 sdsd_pool_page_t *sdsd_pool_switch(sdsd_pool_t *pool);
 
 #define sdsd_pool_destroy(pool)

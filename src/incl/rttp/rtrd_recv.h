@@ -65,7 +65,7 @@ typedef struct
 typedef struct _rtrd_sck_t
 {
     int fd;                             /* 套接字ID */
-    int devid;                          /* 设备ID */
+    int nodeid;                         /* 结点ID */
     uint64_t serial;                    /* 套接字序列号 */
 
     time_t ctm;                         /* 创建时间 */
@@ -88,7 +88,7 @@ typedef struct
 {
     int rsvr_idx;                       /* 接收服务的索引(链表主键) */
     int count;                          /* 引用计数 */
-} rtrd_dev_to_svr_item_t;
+} rtrd_node_to_svr_item_t;
 
 /* 接收对象 */
 typedef struct
@@ -138,8 +138,8 @@ typedef struct
                                            注: 外部接口首先将要发送的数据放入
                                            此队列, 再从此队列分发到不同的线程队列 */
 
-    pthread_rwlock_t dev_to_svr_map_lock;  /* 读写锁: DEV->SVR映射表 */
-    avl_tree_t *dev_to_svr_map;         /* DEV->SVR的映射表(以devid为主键) */
+    pthread_rwlock_t node_to_svr_map_lock;  /* 读写锁: NODE->SVR映射表 */
+    avl_tree_t *node_to_svr_map;         /* NODE->SVR的映射表(以nodeid为主键) */
 } rtrd_cntx_t;
 
 /* 外部接口 */
@@ -170,9 +170,9 @@ int rtrd_link_auth_check(rtrd_cntx_t *ctx, rttp_link_auth_req_t *link_auth_req);
 shm_queue_t *rtrd_shm_sendq_creat(const rtrd_conf_t *conf );
 shm_queue_t *rtrd_shm_sendq_attach(const rtrd_conf_t *conf);
 
-int rtrd_dev_to_svr_map_init(rtrd_cntx_t *ctx);
-int rtrd_dev_to_svr_map_add(rtrd_cntx_t *ctx, int devid, int rsvr_idx);
-int rtrd_dev_to_svr_map_rand(rtrd_cntx_t *ctx, int devid);
-int rtrd_dev_to_svr_map_del(rtrd_cntx_t *ctx, int devid, int rsvr_idx);
+int rtrd_node_to_svr_map_init(rtrd_cntx_t *ctx);
+int rtrd_node_to_svr_map_add(rtrd_cntx_t *ctx, int nodeid, int rsvr_idx);
+int rtrd_node_to_svr_map_rand(rtrd_cntx_t *ctx, int nodeid);
+int rtrd_node_to_svr_map_del(rtrd_cntx_t *ctx, int nodeid, int rsvr_idx);
 
 #endif /*__RTRD_RECV_H__*/

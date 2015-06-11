@@ -312,12 +312,11 @@ static int mon_flt_query_conf_print(flt_cmd_t *cmd)
     conf = (flt_cmd_conf_t *)&cmd->data;
 
     conf->log.level = ntohl(conf->log.level);
-    conf->log.syslevel = ntohl(conf->log.syslevel);
 
     /* 显示结果 */
     fprintf(stderr, "    日志信息:\n");
     fprintf(stderr, "        LEVEL: %s\n", log_get_str(conf->log.level));
-    fprintf(stderr, "        SYSLEVEL: %s\n", log_get_str(conf->log.syslevel));
+    fprintf(stderr, "        PATH: %s\n", conf->log.path);
     return 0;
 }
 

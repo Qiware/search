@@ -3,9 +3,9 @@
 #include "sdrd_recv.h"
 
 /* 回调函数 */
-static int sdtp_work_def_hdl(int type, int devid, char *buff, size_t len, void *args)
+static int sdtp_work_def_hdl(int type, int nodeid, char *buff, size_t len, void *args)
 {
-    fprintf(stderr, "type:%d devid:%d buff:%p len:%ld args:%p\n", type, devid, buff, len, args);
+    fprintf(stderr, "type:%d nodeid:%d buff:%p len:%ld args:%p\n", type, nodeid, buff, len, args);
     return 0;
 }
 

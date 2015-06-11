@@ -43,7 +43,7 @@ typedef enum
 /* 鉴权配置 */
 typedef struct
 {
-    int devid;                          /* 设备ID */
+    int nodeid;                         /* 结点ID */
     char usr[SDTP_USR_MAX_LEN];         /* 用户名 */
     char passwd[SDTP_PWD_MAX_LEN];      /* 登录密码 */
 } sdtp_auth_conf_t;
@@ -119,7 +119,7 @@ typedef struct
  **功    能: 回调注册类型
  **输入参数:
  **     type: 扩展消息类型 Range:(0 ~ SDTP_TYPE_MAX)
- **     orig: 源设备ID
+ **     orig: 源结点
  **     data: 数据
  **     len: 数据长度
  **     args: 附加参数
