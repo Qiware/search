@@ -1,4 +1,5 @@
 #include "agent.h"
+#include "syscall.h"
 #include "agent_mesg.h"
 
 /******************************************************************************
@@ -32,6 +33,7 @@ int agent_serial_to_sck_map_init(agent_cntx_t *ctx)
     if (NULL == ctx->serial_to_sck_map_lock)
     {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        FREE(ctx->serial_to_sck_map);
         return AGENT_ERR;
     }
 
@@ -45,9 +47,10 @@ int agent_serial_to_sck_map_init(agent_cntx_t *ctx)
         if (NULL == ctx->serial_to_sck_map[i])
         {
             log_error(ctx->log, "Create avl failed!");
+            FREE(ctx->serial_to_sck_map);
+            FREE(ctx->serial_to_sck_map_lock);
             return AGENT_ERR;
         }
-
         spin_lock_init(&ctx->serial_to_sck_map_lock[i]);
     }
 
