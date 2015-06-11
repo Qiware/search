@@ -916,7 +916,7 @@ static int rtrd_rsvr_keepalive_req_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd
     head = (rttp_header_t *)addr;
 
     head->type = RTTP_KPALIVE_REP;
-    head->nodeid = ctx->conf.auth.nodeid;
+    head->nodeid = ctx->conf.nodeid;
     head->length = 0;
     head->flag = RTTP_SYS_MESG;
     head->checksum = RTTP_CHECK_SUM;
@@ -966,7 +966,7 @@ static int rtrd_rsvr_link_auth_rep(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd_sck
     link_auth_rep = (rttp_link_auth_rep_t *)(addr + sizeof(rttp_header_t));
 
     head->type = RTTP_LINK_AUTH_REP;
-    head->nodeid = ctx->conf.auth.nodeid;
+    head->nodeid = ctx->conf.nodeid;
     head->length = sizeof(rttp_link_auth_rep_t);
     head->flag = RTTP_SYS_MESG;
     head->checksum = RTTP_CHECK_SUM;

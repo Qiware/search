@@ -313,7 +313,7 @@ static int rtrd_lsn_cmd_query_conf_hdl(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn, rttp_c
     /* 1. 设置应答信息 */
     rep.type = RTTP_CMD_QUERY_CONF_REP;
 
-    snprintf(args->name, sizeof(args->name), "%s", cf->name);
+    snprintf(args->path, sizeof(args->path), "%s", cf->path);
     args->port = cf->port;
     args->recv_thd_num = cf->recv_thd_num;
     args->work_thd_num = cf->work_thd_num;

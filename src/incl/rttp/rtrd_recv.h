@@ -19,27 +19,32 @@
 #define RTTP_CTX_POOL_SIZE      (5 * MB)/* 全局内存池空间 */
 
 /* Recv线程的UNIX-UDP路径 */
-#define rtrd_rsvr_usck_path(conf, path, tidx) \
-    snprintf(path, sizeof(path), "../temp/rttp/recv/%s/usck/%s_rsvr_%d.usck", (conf)->name, (conf)->name, tidx+1)
+#define rtrd_rsvr_usck_path(conf, _path, tidx) \
+    snprintf(_path, sizeof(_path), "%s/%d_rsvr_%d.usck", (conf)->path, (conf)->nodeid, tidx+1)
 /* Worker线程的UNIX-UDP路径 */
-#define rtrd_worker_usck_path(conf, path, tidx) \
-    snprintf(path, sizeof(path), "../temp/rttp/recv/%s/usck/%s_wsvr_%d.usck", (conf)->name, (conf)->name, tidx+1)
+#define rtrd_worker_usck_path(conf, _path, tidx) \
+    snprintf(_path, sizeof(_path), "%s/%d_wsvr_%d.usck", (conf)->path, (conf)->nodeid, tidx+1)
 /* Listen线程的UNIX-UDP路径 */
-#define rtrd_lsn_usck_path(conf, path) \
-    snprintf(path, sizeof(path), "../temp/rttp/recv/%s/usck/%s_listen.usck", (conf)->name, (conf)->name)
+#define rtrd_lsn_usck_path(conf, _path) \
+    snprintf(_path, sizeof(_path), "%s/%d_lsn.usck", (conf)->path, (conf)->nodeid)
 /* 发送队列的共享内存KEY路径 */
-#define rtrd_shm_sendq_path(conf, path) \
-    snprintf(path, sizeof(path), "../temp/rttp/recv/%s/%s_shm_sendq", (conf)->name, (conf)->name)
+#define rtrd_shm_sendq_path(conf, _path) \
+    snprintf(_path, sizeof(_path), "%s/%d_shm.sq", (conf)->path, (conf)->nodeid)
 /* 分发线程的UNIX-UDP路径 */
-#define rtrd_dist_unix_path(conf, path) \
-    snprintf(path, sizeof(path), "../temp/rttp/recv/%s/usck/%s_disp.usck", (conf)->name, (conf)->name)
+#define rtrd_dist_unix_path(conf, _path) \
+    snprintf(_path, sizeof(_path), "%s/%d_disp.usck", (conf)->path, (conf)->nodeid)
 
 /* 配置信息 */
 typedef struct
 {
-    char name[FILE_NAME_MAX_LEN];       /* 服务名: 不允许重复出现 */
+    int nodeid;                         /* 节点ID(唯一值: 不允许重复) */
+    char path[FILE_NAME_MAX_LEN];       /* 工作路径 */
 
-    rttp_auth_conf_t auth;              /* 鉴权配置 */
+    struct
+    {
+        char usr[RTTP_USR_MAX_LEN];     /* 用户名 */
+        char passwd[RTTP_PWD_MAX_LEN];  /* 登录密码 */
+    } auth;
 
     int port;                           /* 侦听端口 */
     int recv_thd_num;                   /* 接收线程数 */

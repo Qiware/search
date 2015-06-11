@@ -49,7 +49,8 @@ typedef struct
 /* 配置信息 */
 typedef struct
 {
-    char name[FILE_NAME_MAX_LEN];   /* 服务名: 不允许重复出现 */
+    int nodeid;                     /* 节点ID: 不允许重复 */
+    char path[FILE_NAME_MAX_LEN];   /* 工作路径 */
     int port;                       /* 侦听端口 */
     int recv_thd_num;               /* 接收线程数 */
     int work_thd_num;               /* 工作线程数 */
