@@ -354,11 +354,6 @@ void sdsd_ssvr_set_rwset(sdsd_ssvr_t *ssvr)
 
     FD_SET(ssvr->cmd_sck_id, &ssvr->rset);
 
-    if (ssvr->sck.fd < 0)
-    {
-        return;
-    }
-
     ssvr->max = MAX(ssvr->cmd_sck_id, ssvr->sck.fd);
 
     /* 1 设置读集合 */
