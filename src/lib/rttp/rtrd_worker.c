@@ -179,6 +179,8 @@ static int rtrd_worker_event_core_hdl(rtrd_cntx_t *ctx, rttp_worker_t *worker)
 {
     rttp_cmd_t cmd;
 
+    memset(&cmd, 0, sizeof(cmd));
+
     if (!FD_ISSET(worker->cmd_sck_id, &worker->rdset))
     {
         return RTTP_OK; /* 无数据 */

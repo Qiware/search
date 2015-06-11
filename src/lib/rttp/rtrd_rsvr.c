@@ -1233,6 +1233,8 @@ static int rtrd_rsvr_cmd_proc_req(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, int rqid)
     rtrd_conf_t *conf = &ctx->conf;
     rttp_cmd_proc_req_t *req = (rttp_cmd_proc_req_t *)&cmd.args;
 
+    memset(&cmd, 0, sizeof(cmd));
+
     cmd.type = RTTP_CMD_PROC_REQ;
     req->ori_svr_tidx = rsvr->tidx;
     req->num = -1;
