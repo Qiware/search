@@ -88,7 +88,7 @@ static int frwd_conf_load_comm(xml_tree_t *xml, frwd_conf_t *conf)
     }
     else
     {
-        conf->log_level = atoi(node->value.str);
+        conf->log_level = log_get_level(node->value.str);
     }
 
     /* > 发送至Agentd */
