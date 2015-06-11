@@ -3,217 +3,44 @@
 
 #include "comm.h"
 
-/* 双向链表结点 */
-typedef struct _list2_node_t
-{
-    void *data;
-    struct _list2_node_t *prev;
-    struct _list2_node_t *next;
-} list2_node_t;
-
-/* 双向链表对象 */
+/* 链表选项 */
 typedef struct
 {
-    int num;
-    list2_node_t *head;
+    void *pool;                     /* 内存池 */
+    mem_alloc_cb_t alloc;           /* 申请空间 */
+    mem_dealloc_cb_t dealloc;       /* 释放空间 */
+} list2_opt_t;
+
+/* 链表结点 */
+typedef struct _list2_node_t
+{
+    void *data;                     /* 数据指针 */
+    struct _list2_node_t *prev;     /* 前节点 */
+    struct _list2_node_t *next;     /* 后节点 */
+} list2_node_t;
+
+/* 双向链表 */
+typedef struct
+{
+    int num;                        /* 成员个数 */
+    list2_node_t *head;             /* 链表头 */
+
+    struct
+    {
+        void *pool;                 /* 内存池 */
+        mem_alloc_cb_t alloc;       /* 申请空间 */
+        mem_dealloc_cb_t dealloc;   /* 释放空间 */
+    };
 } list2_t;
 
-typedef int (*list2_trav_cb_t)(void *data, void *args);
+list2_t *list2_creat(list2_opt_t *opt);
+int list2_lpush(list2_t *list, void *data);
+int list2_rpush(list2_t *list, void *data);
+void *list2_lpop(list2_t *list);
+void *list2_rpop(list2_t *list);
+void *list2_delete(list2_t *list, list2_node_t *node);
 
+typedef int (*list2_trav_cb_t)(void *data, void *args);
 int list2_trav(list2_t *list, list2_trav_cb_t cb, void *args);
 
-/******************************************************************************
- **函数名称: list2_insert
- **功    能: 插入链表头
- **输入参数: 
- **     list: 双向链表
- **     node: 新节点
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 新结点的空间有外界分配，删除时，请记得释放空间.
- **作    者: # Qifeng.zou # 2014.08.24 #
- ******************************************************************************/
-static inline int list2_insert(list2_t *list, list2_node_t *node)
-{
-    list2_node_t *tail;
-
-    /* 1. 链表为空时 */
-    if (NULL == list->head)
-    {
-        list->head = node;
-        node->prev = node;
-        node->next = node;
-        list->num = 1;
-        return 0;
-    }
-
-    /* 2. 链表不空时 */
-    tail = list->head->prev;
-
-    node->next = list->head;
-    list->head->prev = node;
-    node->prev = tail;
-    tail->next = node;
-    list->head = node;
-    ++list->num;
-    return 0;
-}
-
-/******************************************************************************
- **函数名称: list2_remove_head
- **功    能: 删除链表头
- **输入参数: 
- **     list: 双向链表
- **输出参数: 
- **返    回: 头结点地址
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.08.24 #
- ******************************************************************************/
-static inline list2_node_t *list2_remove_head(list2_t *list)
-{
-    list2_node_t *tail, *curr;
-
-    /* 1. 链表为空 */
-    if (NULL == list->head)
-    {
-        return NULL;
-    }
-
-    tail = list->head->prev;
-
-    /* 2. 链表只有１个结点 */
-    if (list->head == tail)
-    {
-        list->head = NULL;
-        list->num = 0;
-        return tail;
-    }
-
-    /* 3. 链表有多个结点 */
-    curr = list->head;
-
-    list->head = list->head->next;
-    tail->next = list->head;
-    list->head->prev = tail;
-
-    --list->num;
-    return curr;
-}
-
-/******************************************************************************
- **函数名称: list2_delete
- **功    能: 删除链表头
- **输入参数: 
- **     list: 双向链表
- **     node: 被删结点
- **输出参数: 
- **返    回: 结点地址
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2015.01.10 #
- ******************************************************************************/
-static inline list2_node_t *list2_delete(list2_t *list, list2_node_t *node)
-{
-    /* 1. 只有一个结点时 */
-    if (node == node->prev)
-    {
-        list->num = 0;
-        list->head = NULL;
-        return node;
-    }
-
-    /* 2. 含有多个结点时 */
-    if (node == list->head)
-    {
-        list->head = node->next;
-    }
-
-    node->prev->next = node->next;
-    node->next->prev = node->prev;
-
-    --list->num;
-    return node;
-}
-
-/******************************************************************************
- **函数名称: list2_insert_tail
- **功    能: 插入链表尾
- **输入参数: 
- **     list: 双向链表
- **     node: 新结点
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 请调用者自己取释放返回结点和数据的内存空间
- **作    者: # Qifeng.zou # 2014.08.24 #
- ******************************************************************************/
-static inline int list2_insert_tail(list2_t *list, list2_node_t *node)
-{
-    list2_node_t *tail;
-
-    /* 1. 链表为空 */
-    if (NULL == list->head)
-    {
-        list->head = node;
-        list->head->prev = node;
-        node->prev = node;
-        node->next = node;
-
-        list->num = 1;
-        return 0;
-    }
-
-    tail = list->head->prev;
-    /* 2. 链表不空时 */
-    tail->next = node;
-    node->prev = tail;
-    node->next = list->head;
-    list->head->prev = node;
-
-    ++list->num;
-    return 0;
-}
-
-/******************************************************************************
- **函数名称: list2_delete_tail
- **功    能: 删除链表尾
- **输入参数: 
- **     list: 双向链表
- **输出参数: NONE
- **返    回: 尾结点地址
- **实现描述: 
- **注意事项: 请调用者自己取释放返回结点和数据的内存空间
- **作    者: # Qifeng.zou # 2014.08.24 #
- ******************************************************************************/
-static inline list2_node_t *list2_delete_tail(list2_t *list)
-{
-    list2_node_t *prev, *tail;
-
-    /* 1. 无数据 */
-    if (NULL == list->head)
-    {
-        return NULL;
-    }
-    /* 2. 只有１个结点 */
-    else if (list->head == list->head->prev)
-    {
-        tail = list->head;
-
-        list->head = NULL;
-        list->num = 0;
-        return tail;
-    }
-
-    /* 3. 有多个结点 */
-    tail = list->head->prev;
-    prev = tail->prev;
-
-    prev->next = list->head;
-    list->head->prev = prev;
-
-    --list->num;
-    return tail;
-}
 #endif /*__LIST2_H__*/
