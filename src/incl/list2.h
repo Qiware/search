@@ -31,8 +31,7 @@ int list2_trav(list2_t *list, list2_trav_cb_t cb, void *args);
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
- **注意事项: 
- **     新结点的空间有外界分配，删除时，请记得释放空间.
+ **注意事项: 新结点的空间有外界分配，删除时，请记得释放空间.
  **作    者: # Qifeng.zou # 2014.08.24 #
  ******************************************************************************/
 static inline int list2_insert(list2_t *list, list2_node_t *node)
@@ -147,8 +146,7 @@ static inline list2_node_t *list2_delete(list2_t *list, list2_node_t *node)
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
- **注意事项: 
- **     请调用者自己取释放返回结点和数据的内存空间
+ **注意事项: 请调用者自己取释放返回结点和数据的内存空间
  **作    者: # Qifeng.zou # 2014.08.24 #
  ******************************************************************************/
 static inline int list2_insert_tail(list2_t *list, list2_node_t *node)
@@ -186,8 +184,7 @@ static inline int list2_insert_tail(list2_t *list, list2_node_t *node)
  **输出参数: NONE
  **返    回: 尾结点地址
  **实现描述: 
- **注意事项: 
- **     请调用者自己取释放返回结点和数据的内存空间
+ **注意事项: 请调用者自己取释放返回结点和数据的内存空间
  **作    者: # Qifeng.zou # 2014.08.24 #
  ******************************************************************************/
 static inline list2_node_t *list2_delete_tail(list2_t *list)
