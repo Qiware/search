@@ -1427,9 +1427,11 @@ static int rtrd_rsvr_conn_list_with_same_nodeid(rtrd_sck_t *sck, conn_list_with_
  ******************************************************************************/
 static int rtrd_rsvr_dist_send_data(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
 {
-    int len;
+#define RTRD_POP_MAX_NUM (32)
+    int len, idx, num;
     queue_t *sendq;
-    void *data, *addr;
+    void *addr;
+    void *data[RTRD_POP_MAX_NUM];
     rttp_frwd_t *frwd;
     list_opt_t opt;
     rtrd_sck_t *sck;
@@ -1441,73 +1443,78 @@ static int rtrd_rsvr_dist_send_data(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
     while (1)
     {
         /* > 弹出队列数据 */
-        data = queue_pop(sendq);
-        if (NULL == data)
+        num = MAX(queue_used(sendq), RTRD_POP_MAX_NUM);
+        if (queue_mpop(sendq, data, num))
         {
-            break; /* 无数据 */
-        }
-
-        frwd = (rttp_frwd_t *)data;
-
-        /* > 查找发送连接 */
-        memset(&opt, 0, sizeof(opt));
-
-        opt.pool = (void *)rsvr->pool;
-        opt.alloc = (mem_alloc_cb_t)slab_alloc;
-        opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
-
-        conn.nodeid = frwd->dest_nodeid;
-        conn.list = list_creat(&opt);
-        if (NULL == conn.list)
-        {
-            queue_dealloc(sendq, data);
-            log_error(rsvr->log, "Create list failed!");
+            usleep(500);
             continue;
         }
 
-        list2_trav(rsvr->conn_list, (list2_trav_cb_t)rtrd_rsvr_conn_list_with_same_nodeid, &conn);
-        if (0 == conn.list->num)
+        /* > 逐条处理数据 */
+        for (idx=0; idx<num; ++idx)
         {
-            queue_dealloc(sendq, data);
+            frwd = (rttp_frwd_t *)data[idx];
+
+            /* > 查找发送连接 */
+            memset(&opt, 0, sizeof(opt));
+
+            opt.pool = (void *)rsvr->pool;
+            opt.alloc = (mem_alloc_cb_t)slab_alloc;
+            opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+
+            conn.nodeid = frwd->dest_nodeid;
+            conn.list = list_creat(&opt);
+            if (NULL == conn.list)
+            {
+                queue_dealloc(sendq, data[idx]);
+                log_error(rsvr->log, "Create list failed!");
+                continue;
+            }
+
+            list2_trav(rsvr->conn_list, (list2_trav_cb_t)rtrd_rsvr_conn_list_with_same_nodeid, &conn);
+            if (0 == conn.list->num)
+            {
+                queue_dealloc(sendq, data[idx]);
+                list_destroy(conn.list, NULL, mem_dummy_dealloc);
+                log_error(rsvr->log, "Didn't find connection by nodeid [%d]!", conn.nodeid);
+                continue;
+            }
+
+            sck = (rtrd_sck_t *)conn.list->head->data; /* TODO: 暂时选择第一个 */
+            
+            /* > 设置发送数据 */
+            len = sizeof(rttp_header_t) + frwd->length;
+
+            addr = slab_alloc(rsvr->pool, len);
+            if (NULL == addr)
+            {
+                queue_dealloc(sendq, data[idx]);
+                list_destroy(conn.list, NULL, mem_dummy_dealloc);
+                log_error(rsvr->log, "Alloc memory from slab failed!");
+                continue;
+            }
+
+            head = (rttp_header_t *)addr;
+
+            head->type = frwd->type;
+            head->nodeid = frwd->dest_nodeid;
+            head->flag = RTTP_EXP_MESG;
+            head->checksum = RTTP_CHECK_SUM;
+            head->length = frwd->length;
+
+            memcpy(addr+sizeof(rttp_header_t), data[idx]+sizeof(rttp_frwd_t), head->length);
+
+            queue_dealloc(sendq, data[idx]);
+
+            /* > 放入发送链表 */
+            if (list_rpush(sck->mesg_list, addr))
+            {
+                slab_dealloc(rsvr->pool, addr);
+                log_error(rsvr->log, "Push input list failed!");
+            }
+
             list_destroy(conn.list, NULL, mem_dummy_dealloc);
-            log_error(rsvr->log, "Didn't find connection by nodeid [%d]!", conn.nodeid);
-            continue;
         }
-
-        sck = (rtrd_sck_t *)conn.list->head->data; /* TODO: 暂时选择第一个 */
-        
-        /* > 设置发送数据 */
-        len = sizeof(rttp_header_t) + frwd->length;
-
-        addr = slab_alloc(rsvr->pool, len);
-        if (NULL == addr)
-        {
-            queue_dealloc(sendq, data);
-            list_destroy(conn.list, NULL, mem_dummy_dealloc);
-            log_error(rsvr->log, "Alloc memory from slab failed!");
-            continue;
-        }
-
-        head = (rttp_header_t *)addr;
-
-        head->type = frwd->type;
-        head->nodeid = frwd->dest_nodeid;
-        head->flag = RTTP_EXP_MESG;
-        head->checksum = RTTP_CHECK_SUM;
-        head->length = frwd->length;
-
-        memcpy(addr+sizeof(rttp_header_t), data+sizeof(rttp_frwd_t), head->length);
-
-        queue_dealloc(sendq, data);
-
-        /* > 放入发送链表 */
-        if (list_rpush(sck->mesg_list, addr))
-        {
-            slab_dealloc(rsvr->pool, addr);
-            log_error(rsvr->log, "Push input list failed!");
-        }
-
-        list_destroy(conn.list, NULL, mem_dummy_dealloc);
     }
 
     return RTTP_OK;
