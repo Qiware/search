@@ -837,6 +837,7 @@ static int rtsd_ssvr_fill_send_buff(rtsd_ssvr_t *ssvr, rtsd_sck_t *sck)
         left = send->end - send->iptr;
 
         num = MIN(left / shm_queue_size(ssvr->sendq), RTSD_POP_NUM);
+        num = MIN((unsigned int)num, shm_queue_used(ssvr->sendq));
         if (0 == num)
         {
             break; /* 空间不足 */

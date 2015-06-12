@@ -42,11 +42,15 @@ void *rtrd_dist_routine(void *_ctx)
     {
         /* > 弹出发送数据 */
         num = MIN(shm_queue_used(ctx->shm_sendq), RTRD_DISP_POP_NUM);
+        if (0 == num)
+        {
+            usleep(500); /* TODO: 可使用事件通知机制减少CPU的消耗 */
+            continue;
+        }
 
         num = shm_queue_mpop(ctx->shm_sendq, data, num);
         if (0 == num)
         {
-            usleep(500); /* TODO: 可使用事件通知机制减少CPU的消耗 */
             continue;
         }
 

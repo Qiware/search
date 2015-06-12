@@ -238,11 +238,15 @@ static int rtrd_worker_cmd_proc_req_hdl(rtrd_cntx_t *ctx, rttp_worker_t *worker,
     {
         /* > 从接收队列获取数据 */
         num = MIN(queue_used(rq), RTRD_WORK_POP_NUM);
+        if (0 == num)
+        {
+            return RTTP_OK;
+        }
 
         num = queue_mpop(rq, addr, num);
         if (0 == num)
         {
-            return RTTP_OK;
+            continue;
         }
 
         /* > 依次处理各条数据 */

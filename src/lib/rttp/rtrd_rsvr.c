@@ -1438,17 +1438,22 @@ static int rtrd_rsvr_dist_send_data(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
     rttp_header_t *head;
     conn_list_with_same_nodeid_t conn;
 
+    log_trace(rsvr->log, "Call %s()", __func__);
+
     sendq = ctx->sendq[rsvr->tidx];
 
     while (1)
     {
         /* > 弹出队列数据 */
         num = MIN(queue_used(sendq), RTRD_POP_MAX_NUM);
+        if (0 == num)
+        {
+            break;
+        }
 
         num = queue_mpop(sendq, data, num);
         if (0 == num)
         {
-            usleep(500);
             continue;
         }
 
