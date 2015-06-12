@@ -86,7 +86,7 @@ void *ring_pop(ring_t *rq)
 {
     void *addr[1];
     
-    if (ring_mpop(rq, addr, 1))
+    if (0 == ring_mpop(rq, addr, 1))
     {
         return NULL;
     }
@@ -148,7 +148,7 @@ int ring_mpush(ring_t *rq, void **addr, unsigned int num)
  **     num: 弹出n个地址
  **输出参数:
  **     addr: 指针数组
- **返    回: 0:成功 !0:失败
+ **返    回: 数据实际条数
  **实现描述: 无锁编程 
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.05 #
@@ -166,7 +166,7 @@ int ring_mpop(ring_t *rq, void **addr, unsigned int num)
 
         if (num > prod_tail - cons_head)
         {
-            return -1; /* 无数据 */
+            return 0; /* 无数据 */
         }
 
         cons_next = cons_head + num;
@@ -187,7 +187,7 @@ int ring_mpop(ring_t *rq, void **addr, unsigned int num)
 
     atomic32_sub(&rq->num, num); /* 计数 */
 
-    return 0;
+    return num;
 }
 
 /******************************************************************************

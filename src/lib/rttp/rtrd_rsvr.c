@@ -1445,7 +1445,8 @@ static int rtrd_rsvr_dist_send_data(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
         /* > 弹出队列数据 */
         num = MIN(queue_used(sendq), RTRD_POP_MAX_NUM);
 
-        if (queue_mpop(sendq, data, num))
+        num = queue_mpop(sendq, data, num);
+        if (0 == num)
         {
             usleep(500);
             continue;
