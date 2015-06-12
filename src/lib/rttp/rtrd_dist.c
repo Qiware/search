@@ -24,10 +24,11 @@ static int rtrd_dist_cmd_send_req(rtrd_cntx_t *ctx, rtrd_dist_t *dist, int idx);
  ******************************************************************************/
 void *rtrd_dist_routine(void *_ctx)
 {
-    int idx;
-    void *data, *addr;
+#define RTRD_DISP_POP_NUM   (32)
+    int idx, j, num;
     rttp_frwd_t *frwd;
     rtrd_dist_t *dist;
+    void *data[RTRD_DISP_POP_NUM], *addr;
     rtrd_cntx_t *ctx = (rtrd_cntx_t *)_ctx;
 
     /* > 初始化分发线程 */
@@ -40,40 +41,45 @@ void *rtrd_dist_routine(void *_ctx)
     while (1)
     {
         /* > 弹出发送数据 */
-        data = shm_queue_pop(ctx->shm_sendq);
-        if (NULL == data)
+        num = MIN(shm_queue_used(ctx->shm_sendq), RTRD_DISP_POP_NUM);
+
+        if (shm_queue_mpop(ctx->shm_sendq, data, num))
         {
             usleep(500); /* TODO: 可使用事件通知机制减少CPU的消耗 */
             continue;
         }
 
-        /* > 获取发送队列 */
-        frwd = (rttp_frwd_t *)data;
-
-        idx = rtrd_node_to_svr_map_rand(ctx, frwd->dest_nodeid);
-        if (idx < 0)
+        for (j=0; j<num; ++j)
         {
-            log_error(ctx->log, "Didn't find dev to svr map! nodeid:%d", frwd->dest_nodeid);
-            continue;
+            /* > 获取发送队列 */
+            frwd = (rttp_frwd_t *)data[j];
+
+            idx = rtrd_node_to_svr_map_rand(ctx, frwd->dest_nodeid);
+            if (idx < 0)
+            {
+                log_error(ctx->log, "Didn't find dev to svr map! nodeid:%d", frwd->dest_nodeid);
+                shm_queue_dealloc(ctx->shm_sendq, data[j]);
+                continue;
+            }
+
+            /* > 获取发送队列 */
+            addr = queue_malloc(ctx->sendq[idx]);
+            if (NULL == addr)
+            {
+                shm_queue_dealloc(ctx->shm_sendq, data[j]);
+                log_error(ctx->log, "Alloc memory from queue failed!");
+                continue;
+            }
+
+            memcpy(addr, data[j], frwd->length);
+
+            queue_push(ctx->sendq[idx], addr);
+
+            shm_queue_dealloc(ctx->shm_sendq, data[j]);
+
+            /* > 发送发送请求 */
+            rtrd_dist_cmd_send_req(ctx, dist, idx);
         }
-
-        /* > 获取发送队列 */
-        addr = queue_malloc(ctx->sendq[idx]);
-        if (NULL == addr)
-        {
-            shm_queue_dealloc(ctx->shm_sendq, data);
-            log_error(ctx->log, "Alloc memory from queue failed!");
-            continue;
-        }
-
-        memcpy(addr, data, frwd->length);
-
-        queue_push(ctx->sendq[idx], addr);
-
-        shm_queue_dealloc(ctx->shm_sendq, data);
-
-        /* > 发送发送请求 */
-        rtrd_dist_cmd_send_req(ctx, dist, idx);
     }
 
     return (void *)-1;

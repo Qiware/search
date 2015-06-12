@@ -44,13 +44,13 @@ rtrd_cli_t *rtrd_cli_init(const rtrd_conf_t *conf)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.06.01 #
  ******************************************************************************/
-int rtrd_cli_send(rtrd_cli_t *cli, int type, int dest, void *data, int len)
+int rtrd_cli_send(rtrd_cli_t *cli, int type, int dest, void *data, size_t len)
 {
     void *addr;
     rttp_frwd_t *frwd;
 
     /* > 合法性检测 */
-    if (len > (int)sizeof(rttp_frwd_t) + shm_queue_size(cli->sendq))
+    if (len > sizeof(rttp_frwd_t) + shm_queue_size(cli->sendq))
     {
         return -1;
     }

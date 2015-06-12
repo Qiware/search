@@ -153,7 +153,7 @@ int rtrd_register(rtrd_cntx_t *ctx, int type, rttp_reg_cb_t proc, void *args);
 int rtrd_startup(rtrd_cntx_t *ctx);
 
 rtrd_cli_t *rtrd_cli_init(const rtrd_conf_t *conf);
-int rtrd_cli_send(rtrd_cli_t *cli, int type, int dest, void *data, int len);
+int rtrd_cli_send(rtrd_cli_t *cli, int type, int dest, void *data, size_t len);
 
 /* 内部接口 */
 void *rtrd_lsn_routine(void *_ctx);

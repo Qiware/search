@@ -1443,7 +1443,8 @@ static int rtrd_rsvr_dist_send_data(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
     while (1)
     {
         /* > 弹出队列数据 */
-        num = MAX(queue_used(sendq), RTRD_POP_MAX_NUM);
+        num = MIN(queue_used(sendq), RTRD_POP_MAX_NUM);
+
         if (queue_mpop(sendq, data, num))
         {
             usleep(500);
