@@ -784,6 +784,9 @@ static int rtsd_ssvr_proc_cmd(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, const rttp_cm
  ******************************************************************************/
 static int rtsd_ssvr_fill_send_buff(rtsd_ssvr_t *ssvr, rtsd_sck_t *sck)
 {
+#define RTSD_POP_NUM    (32)
+    int num, idx;
+    void *data[RTSD_POP_NUM];
     uint32_t left, mesg_len;
     rttp_header_t *head;
     rttp_snap_t *send = &sck->send;
@@ -831,39 +834,44 @@ static int rtsd_ssvr_fill_send_buff(rtsd_ssvr_t *ssvr, rtsd_sck_t *sck)
     for (;;)
     {
         /* > 判断剩余空间 */
-        left = (uint32_t)(send->end - send->iptr);
-        if (left < (uint32_t)shm_queue_size(ssvr->sendq))
+        left = send->end - send->iptr;
+
+        num = MIN(left / shm_queue_size(ssvr->sendq), RTSD_POP_NUM);
+        if (0 == num)
         {
             break; /* 空间不足 */
         }
-
-        /* > 是否有数据 */
-        head = (rttp_header_t *)shm_queue_pop(ssvr->sendq);
-        if (NULL == head)
+        else if (shm_queue_mpop(ssvr->sendq, data, num))
         {
-            break;
-        }
-        else if (RTTP_CHECK_SUM != head->checksum)
-        {
-            assert(0);
+            continue;
         }
 
-        mesg_len = sizeof(rttp_header_t) + head->length;
+        for (idx=0; idx<num; ++idx)
+        {
+            /* > 是否有数据 */
+            head = (rttp_header_t *)data[idx];
+            if (RTTP_CHECK_SUM != head->checksum)
+            {
+                assert(0);
+            }
 
-        /* > 设置发送数据 */
-        head->type = htons(head->type);
-        head->flag = head->flag;
-        head->nodeid = htonl(head->nodeid);
-        head->length = htonl(head->length);
-        head->checksum = htonl(head->checksum);
+            mesg_len = sizeof(rttp_header_t) + head->length;
 
-        /* > 拷贝至发送缓存 */
-        memcpy(send->iptr, (void *)head, mesg_len);
+            /* > 设置发送数据 */
+            head->type = htons(head->type);
+            head->flag = head->flag;
+            head->nodeid = htonl(head->nodeid);
+            head->length = htonl(head->length);
+            head->checksum = htonl(head->checksum);
 
-        send->iptr += mesg_len;
+            /* > 拷贝至发送缓存 */
+            memcpy(send->iptr, (void *)head, mesg_len);
 
-        /* > 释放空间 */
-        shm_queue_dealloc(ssvr->sendq, (void *)head);
+            send->iptr += mesg_len;
+
+            /* > 释放空间 */
+            shm_queue_dealloc(ssvr->sendq, (void *)head);
+        }
     }
 
     return (send->iptr - send->optr);
