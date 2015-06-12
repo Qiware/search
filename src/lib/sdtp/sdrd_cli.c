@@ -44,13 +44,13 @@ sdrd_cli_t *sdrd_cli_init(const sdrd_conf_t *conf)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.06.01 #
  ******************************************************************************/
-int sdrd_cli_send(sdrd_cli_t *cli, int type, int dest, void *data, int len)
+int sdrd_cli_send(sdrd_cli_t *cli, int type, int dest, void *data, size_t len)
 {
     void *addr;
     sdtp_frwd_t *frwd;
 
     /* > 合法性检测 */
-    if (len > (int)sizeof(sdtp_frwd_t) + shm_queue_size(cli->sendq))
+    if (len > sizeof(sdtp_frwd_t) + shm_queue_size(cli->sendq))
     {
         return -1;
     }

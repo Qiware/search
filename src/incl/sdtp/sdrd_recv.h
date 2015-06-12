@@ -156,7 +156,7 @@ int sdrd_register(sdrd_cntx_t *ctx, int type, sdtp_reg_cb_t proc, void *args);
 int sdrd_startup(sdrd_cntx_t *ctx);
 
 sdrd_cli_t *sdrd_cli_init(const sdrd_conf_t *conf);
-int sdrd_cli_send(sdrd_cli_t *cli, int type, int dest, void *data, int len);
+int sdrd_cli_send(sdrd_cli_t *cli, int type, int dest, void *data, size_t len);
 
 /* 内部接口 */
 void *sdrd_lsn_routine(void *_ctx);
