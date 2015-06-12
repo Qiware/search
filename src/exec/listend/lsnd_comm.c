@@ -106,6 +106,10 @@ void *lsnd_dist_routine(void *_ctx)
 
         /* > 获取发送队列 */
         head = (rttp_header_t *)addr;
+        if (RTTP_CHECK_SUM != head->checksum)
+        {
+            assert(0);
+        }
         rep = (mesg_search_rep_t *)(head + 1);
 
         log_debug(ctx->log, "Call %s()! type:%d len:%d", __func__, head->type, head->length);

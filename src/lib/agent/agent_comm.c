@@ -107,6 +107,40 @@ int agent_serial_to_sck_map_insert(agent_cntx_t *ctx, agent_flow_t *_flow)
 }
 
 /******************************************************************************
+ **函数名称: _agent_serial_to_sck_map_delete
+ **功    能: 删除流水->SCK的映射
+ **输入参数:
+ **     ctx: 全局对象
+ **     serial: 流水号
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 在多线程操作的情况下，请在外部加锁
+ **作    者: # Qifeng.zou # 2015.06.04 #
+ ******************************************************************************/
+int _agent_serial_to_sck_map_delete(agent_cntx_t *ctx, uint64_t serial)
+{
+    int idx;
+    agent_flow_t *flow;
+
+    idx = serial % ctx->serial_to_sck_map_len;
+
+    avl_delete(ctx->serial_to_sck_map[idx], &serial, sizeof(serial), (void **)&flow); 
+    if (NULL == flow)
+    {
+        log_error(ctx->log, "Delete serial to sck map failed! idx:%d serial:%lu", idx, serial);
+        return AGENT_ERR;
+    }
+
+    log_trace(ctx->log, "idx:%d serial:%lu sck_serial:%lu", idx, serial, flow->serial);
+
+    free(flow);
+    return AGENT_OK;
+}
+
+
+
+/******************************************************************************
  **函数名称: agent_serial_to_sck_map_delete
  **功    能: 删除流水->SCK的映射
  **输入参数:
@@ -238,7 +272,7 @@ int agent_serial_to_sck_map_timeout(agent_cntx_t *ctx)
 
             log_trace(ctx->log, "Delete timeout serial:%lu!", flow->serial);
 
-            agent_serial_to_sck_map_delete(ctx, flow->serial);
+            _agent_serial_to_sck_map_delete(ctx, flow->serial);
         }
 
         spin_unlock(&ctx->serial_to_sck_map_lock[idx]);

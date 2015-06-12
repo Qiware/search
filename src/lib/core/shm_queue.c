@@ -240,14 +240,10 @@ int shm_queue_mpop(shm_queue_t *shmq, void **p, int _num)
     int num, idx;
     off_t off[SHMQ_MPUSH_MAX_NUM];
 
-    num = (_num > SHMQ_MPUSH_MAX_NUM)? SHMQ_MPUSH_MAX_NUM : _num;
+    num = MIN(_num, SHMQ_MPUSH_MAX_NUM);
 
-    if (shm_ring_mpop(shmq->ring, off, num))
-    {
-        return 0;
-    }
-
-    for (idx=0; idx<num; ++num)
+    num = shm_ring_mpop(shmq->ring, off, num);
+    for (idx=0; idx<num; ++idx)
     {
         p[idx] = (void *)((void *)shmq->ring + off[idx]);
     }

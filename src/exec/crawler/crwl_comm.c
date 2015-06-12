@@ -515,7 +515,7 @@ log_cycle_t *crwl_init_log(char *fname)
 
     log_get_path(path, sizeof(path), basename(fname));
 
-    return log_init(LOG_LEVEL_ERROR, path);
+    return log_init(LOG_LEVEL_TRACE, path);
 }
 
 /******************************************************************************

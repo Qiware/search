@@ -78,6 +78,7 @@ int agent_serial_to_sck_map_init(agent_cntx_t *ctx);
 int agent_serial_to_sck_map_insert(agent_cntx_t *ctx, agent_flow_t *_flow);
 int agent_serial_to_sck_map_query(agent_cntx_t *ctx, uint64_t serial, agent_flow_t *flow);
 int agent_serial_to_sck_map_delete(agent_cntx_t *ctx, uint64_t serial);
+int _agent_serial_to_sck_map_delete(agent_cntx_t *ctx, uint64_t serial);
 int agent_serial_to_sck_map_timeout(agent_cntx_t *ctx);
 
 #endif /*__AGENT_H__*/

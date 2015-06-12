@@ -107,7 +107,7 @@ invtd_cntx_t *invtd_init(const char *conf_path)
     invtd_cntx_t *ctx;
 
     /* > 初始化日志 */
-    log = log_init(LOG_LEVEL_ERROR, INVTD_LOG_PATH);
+    log = log_init(LOG_LEVEL_TRACE, INVTD_LOG_PATH);
     if (NULL == log)
     {
         fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
