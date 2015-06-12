@@ -841,7 +841,10 @@ static int rtsd_ssvr_fill_send_buff(rtsd_ssvr_t *ssvr, rtsd_sck_t *sck)
         {
             break; /* 空间不足 */
         }
-        else if (shm_queue_mpop(ssvr->sendq, data, num))
+
+        /* > 弹出发送数据 */
+        num = shm_queue_mpop(ssvr->sendq, data, num);
+        if (0 == num)
         {
             continue;
         }
