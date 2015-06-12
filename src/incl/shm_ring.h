@@ -33,6 +33,8 @@ int shm_ring_mpush(shm_ring_t *rq, off_t *off, unsigned int num);
 off_t shm_ring_pop(shm_ring_t *rq);
 int shm_ring_mpop(shm_ring_t *rq, off_t *off, unsigned int num);
 void shm_ring_print(shm_ring_t *rq);
-#define shm_ring_isempty(slot) (0 == (slot)->num)
+#define shm_ring_isempty(ring) (0 == (ring)->num)
+#define shm_ring_size(ring) ((ring)->max)
+#define shm_ring_used(ring) ((ring)->num)
 
 #endif /*__SHM_RING_H__*/
