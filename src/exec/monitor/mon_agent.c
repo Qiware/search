@@ -224,6 +224,7 @@ static int mon_agent_multi_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu,
     fprintf(stderr, "    Connections: ");
     scanf(" %s", digit);
 
+    num = atoi(digit);
     fd = (int *)calloc(num, sizeof(int));
     if (NULL == fd)
     {
