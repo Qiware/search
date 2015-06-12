@@ -224,7 +224,6 @@ static int mon_agent_multi_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu,
     fprintf(stderr, "    Connections: ");
     scanf(" %s", digit);
 
-    num = atoi(digit);
     fd = (int *)calloc(num, sizeof(int));
     if (NULL == fd)
     {
@@ -240,6 +239,8 @@ static int mon_agent_multi_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu,
     }
 
 SRCH_AGAIN:
+    num = atoi(digit);
+
     /* > 连接代理服务 */
     for (idx=0; idx<num; ++idx)
     {
