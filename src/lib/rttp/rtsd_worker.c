@@ -240,7 +240,9 @@ static int rtsd_worker_event_core_hdl(rtsd_cntx_t *ctx, rttp_worker_t *worker)
  ******************************************************************************/
 static int rtsd_worker_cmd_proc_req_hdl(rtsd_cntx_t *ctx, rttp_worker_t *worker, const rttp_cmd_t *cmd)
 {
-    void *addr;
+#define RTSD_WORK_POP_NUM   (32)
+    int idx, num;
+    void *addr[RTSD_WORK_POP_NUM];
     queue_t *rq;
     rttp_reg_t *reg;
     rttp_header_t *head;
@@ -251,35 +253,39 @@ static int rtsd_worker_cmd_proc_req_hdl(rtsd_cntx_t *ctx, rttp_worker_t *worker,
 
     while (1)
     {
-        /* 2. 从接收队列获取数据 */
-        addr = queue_pop(rq);
-        if (NULL == addr)
+        /* > 从接收队列获取数据 */
+        num = MIN(queue_used(rq), RTSD_WORK_POP_NUM);
+        if (queue_mpop(rq, addr, num))
         {
             return RTTP_OK;
         }
 
-        /* 3. 执行回调函数 */
-        head = (rttp_header_t *)addr;
-
-        reg = &ctx->reg[head->type];
-        if (NULL == reg->proc)
+        for (idx=0; idx<num; ++idx)
         {
-            ++worker->drop_total;   /* 丢弃计数 */
-            continue;
-        }
+            /* > 执行回调函数 */
+            head = (rttp_header_t *)addr[idx];
 
-        if (reg->proc(head->type, head->nodeid,
-                    addr+sizeof(rttp_header_t), head->length, reg->args))
-        {
-            ++worker->err_total;    /* 错误计数 */
-        }
-        else
-        {
-            ++worker->proc_total;   /* 处理计数 */
-        }
+            reg = &ctx->reg[head->type];
+            if (NULL == reg->proc)
+            {
+                ++worker->drop_total;   /* 丢弃计数 */
+                queue_dealloc(rq, addr[idx]);
+                continue;
+            }
 
-        /* 4. 释放内存空间 */
-        queue_dealloc(rq, addr);
+            if (reg->proc(head->type, head->nodeid,
+                addr[idx] + sizeof(rttp_header_t), head->length, reg->args))
+            {
+                ++worker->err_total;    /* 错误计数 */
+            }
+            else
+            {
+                ++worker->proc_total;   /* 处理计数 */
+            }
+
+            /* > 释放内存空间 */
+            queue_dealloc(rq, addr[idx]);
+        }
     }
 
     return RTTP_OK;
