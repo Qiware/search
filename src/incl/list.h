@@ -47,4 +47,6 @@ int list_rpush(list_t *list, void *data);
 void *list_lpop(list_t *list);
 void *list_rpop(list_t *list);
 
+void *list_fetch(list_t *list, int idx);
+
 #endif /*__LIST_H__*/

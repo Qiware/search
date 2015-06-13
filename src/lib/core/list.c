@@ -99,7 +99,7 @@ void list_destroy(list_t *list, void *pool, mem_dealloc_cb_t dealloc)
 }
 
 /******************************************************************************
- **函数名称: list_push
+ **函数名称: list_lpush
  **功    能: 链头插入
  **输入参数:
  **     list: 单向链表
@@ -398,4 +398,37 @@ int list_remove(list_t *list, void *data)
     }
 
     return -1;
+}
+
+/******************************************************************************
+ **函数名称: list_fetch
+ **功    能: 返回链表第X个结点的数据
+ **输入参数:
+ **     list: 单向链表
+ **     idx: 结点序列号
+ **输出参数: NONE
+ **返    回: 第X个结点的数据
+ **实现描述:
+ **注意事项:
+ **     1. 从0开始计数, 如果idx > list->num,则返回NULL!
+ **     2. 结点的空间此时并没有被释放!
+ **作    者: # Qifeng.zou # 2015.06.13 17:29:31 #
+ ******************************************************************************/
+void *list_fetch(list_t *list, int idx)
+{
+    int i = 0;
+    list_node_t *node;
+
+    if (idx >= list->num)
+    {
+        return NULL;
+    }
+
+    node  = list->head;
+    for (i=0; i<idx; ++i)
+    {
+        node = node->next;
+    }
+
+    return node->data;
 }
