@@ -522,44 +522,27 @@ static int agent_rsvr_add_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
  **     sck: SCK对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述: 依次释放套接字对象各成员的空间
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.06 #
  ******************************************************************************/
 static int agent_rsvr_del_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
 {
-    void *addr, *p;
+    void *addr;
     agent_socket_extra_t *extra = sck->extra;
 
-    log_debug(rsvr->log, "Call %s()! fd:%d serial:%ld", __func__, sck->fd, extra->serial);
+    log_trace(rsvr->log, "Call %s()! fd:%d serial:%ld", __func__, sck->fd, extra->serial);
 
-    /* 1. 将套接字从红黑树中剔除 */
+    /* > 将套接字从红黑树中剔除 */
     rbt_delete(rsvr->connections, extra->serial, &addr);
-    if (addr != sck)
-    {
-        log_fatal(rsvr->log, "Serior error! serial:%lu fd:%d addr:%p sck:%p",
-                extra->serial, sck->fd, addr, sck);
-        abort();
-    }
 
-    /* 2. 释放套接字空间 */
+    /* > 释放套接字空间 */
     CLOSE(sck->fd);
-    for (;;)    /* 释放发送链表 */
-    {
-        p = list_lpop(extra->send_list);
-        if (NULL == p)
-        {
-            break;
-        }
-
-        slab_dealloc(rsvr->slab, p);
-    }
-
-    if (NULL != sck->recv.addr)
+    list_destroy(extra->send_list, rsvr->slab, (mem_dealloc_cb_t)slab_dealloc);
+    if (sck->recv.addr)
     {
         queue_dealloc(ctx->recvq[rsvr->tidx], sck->recv.addr);
     }
-
     slab_dealloc(rsvr->slab, sck->extra);
     slab_dealloc(rsvr->slab, sck);
 
