@@ -1428,7 +1428,7 @@ static int rtrd_rsvr_conn_list_with_same_nodeid(rtrd_sck_t *sck, conn_list_with_
 static int rtrd_rsvr_dist_send_data(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
 {
 #define RTRD_POP_MAX_NUM (32)
-    int len, idx, num, j;
+    int len, idx, num;
     queue_t *sendq;
     void *addr;
     void *data[RTRD_POP_MAX_NUM];
