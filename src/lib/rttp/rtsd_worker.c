@@ -266,6 +266,8 @@ static int rtsd_worker_cmd_proc_req_hdl(rtsd_cntx_t *ctx, rttp_worker_t *worker,
             continue;
         }
 
+        log_trace(worker->log, "Multi-pop num:%d!", num);
+
         for (idx=0; idx<num; ++idx)
         {
             /* > 执行回调函数 */

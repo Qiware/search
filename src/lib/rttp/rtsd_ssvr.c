@@ -850,6 +850,8 @@ static int rtsd_ssvr_fill_send_buff(rtsd_ssvr_t *ssvr, rtsd_sck_t *sck)
             continue;
         }
 
+        log_trace(ssvr->log, "Multi-pop num:%d!", num);
+
         for (idx=0; idx<num; ++idx)
         {
             /* > 是否有数据 */

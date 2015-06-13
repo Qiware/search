@@ -31,8 +31,11 @@
 #define rtrd_shm_sendq_path(conf, _path) \
     snprintf(_path, sizeof(_path), "%s/%d_shm.sq", (conf)->path, (conf)->nodeid)
 /* 分发线程的UNIX-UDP路径 */
-#define rtrd_dist_unix_path(conf, _path) \
-    snprintf(_path, sizeof(_path), "%s/%d_disp.usck", (conf)->path, (conf)->nodeid)
+#define rtrd_dsvr_usck_path(conf, _path) \
+    snprintf(_path, sizeof(_path), "%s/%d_dsvr.usck", (conf)->path, (conf)->nodeid)
+/* 客户端的通信路径 */
+#define rtrd_cli_unix_path(conf, _path, idx) \
+    snprintf(_path, sizeof(_path), "%s/%d_cli_%d.usck", (conf)->path, (conf)->nodeid, idx)
 
 /* 配置信息 */
 typedef struct
@@ -121,6 +124,7 @@ typedef struct
 typedef struct
 {
     int cmd_sck_id;                     /* 命令套接字 */
+    rtrd_conf_t conf;                   /* 配置信息 */
     shm_queue_t *sendq;                 /* 发送队列 */
 } rtrd_cli_t;
 
@@ -152,14 +156,14 @@ rtrd_cntx_t *rtrd_init(const rtrd_conf_t *conf, log_cycle_t *log);
 int rtrd_register(rtrd_cntx_t *ctx, int type, rttp_reg_cb_t proc, void *args);
 int rtrd_startup(rtrd_cntx_t *ctx);
 
-rtrd_cli_t *rtrd_cli_init(const rtrd_conf_t *conf);
+rtrd_cli_t *rtrd_cli_init(const rtrd_conf_t *conf, int idx);
 int rtrd_cli_send(rtrd_cli_t *cli, int type, int dest, void *data, size_t len);
 
 /* 内部接口 */
 void *rtrd_lsn_routine(void *_ctx);
 int rtrd_lsn_destroy(rtrd_lsn_t *lsn);
 
-void *rtrd_dist_routine(void *_ctx);
+void *rtrd_dsvr_routine(void *_ctx);
 
 void *rtrd_rsvr_routine(void *_ctx);
 int rtrd_rsvr_init(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, int tidx);

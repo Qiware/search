@@ -249,6 +249,8 @@ static int rtrd_worker_cmd_proc_req_hdl(rtrd_cntx_t *ctx, rttp_worker_t *worker,
             continue;
         }
 
+        log_trace(ctx->log, "Multi-pop num:%d!", num);
+
         /* > 依次处理各条数据 */
         for (idx=0; idx<num; ++idx)
         {

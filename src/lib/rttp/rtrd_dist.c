@@ -1,3 +1,4 @@
+#include "comm.h"
 #include "rttp_cmd.h"
 #include "rttp_comm.h"
 #include "rtrd_recv.h"
@@ -5,14 +6,17 @@
 /* 分发对象 */
 typedef struct
 {
-    int cmd_sck_id;         /* 命令套接字 */
-} rtrd_dist_t;
+    int cmd_sck_id;                     /* 命令套接字 */
+    log_cycle_t *log;                   /* 日志对象 */
+} rtrd_dsvr_t;
 
-static rtrd_dist_t *rtrd_dist_init(rtrd_cntx_t *ctx);
-static int rtrd_dist_cmd_send_req(rtrd_cntx_t *ctx, rtrd_dist_t *dist, int idx);
+static rtrd_dsvr_t *rtrd_dsvr_init(rtrd_cntx_t *ctx);
+static int rtrd_dsvr_dist_data_hdl(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr);
+static int rtrd_dsvr_cmd_recv_and_proc(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr);
+static int rtrd_dsvr_cmd_dist_req(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr, int idx);
 
 /******************************************************************************
- **函数名称: rtrd_dist_routine
+ **函数名称: rtrd_dsvr_routine
  **功    能: 运行分发线程
  **输入参数:
  **     ctx: 全局信息
@@ -22,68 +26,49 @@ static int rtrd_dist_cmd_send_req(rtrd_cntx_t *ctx, rtrd_dist_t *dist, int idx);
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.15 #
  ******************************************************************************/
-void *rtrd_dist_routine(void *_ctx)
+void *rtrd_dsvr_routine(void *_ctx)
 {
-#define RTRD_DISP_POP_NUM   (32)
-    int idx, j, num;
-    rttp_frwd_t *frwd;
-    rtrd_dist_t *dist;
-    void *data[RTRD_DISP_POP_NUM], *addr;
+    int ret;
+    fd_set rdset;
+    rtrd_dsvr_t *dsvr;
+    struct timeval timeout;
     rtrd_cntx_t *ctx = (rtrd_cntx_t *)_ctx;
 
     /* > 初始化分发线程 */
-    dist = rtrd_dist_init(ctx);
-    if (NULL == dist)
+    dsvr = rtrd_dsvr_init(ctx);
+    if (NULL == dsvr)
     {
         abort();
     }
 
     while (1)
     {
-        /* > 弹出发送数据 */
-        num = MIN(shm_queue_used(ctx->shm_sendq), RTRD_DISP_POP_NUM);
-        if (0 == num)
-        {
-            usleep(500); /* TODO: 可使用事件通知机制减少CPU的消耗 */
-            continue;
-        }
+        FD_ZERO(&rdset);
 
-        num = shm_queue_mpop(ctx->shm_sendq, data, num);
-        if (0 == num)
-        {
-            continue;
-        }
+        FD_SET(dsvr->cmd_sck_id, &rdset);
 
-        for (j=0; j<num; ++j)
+        timeout.tv_sec = 1;
+        timeout.tv_usec = 0;
+        ret = select(dsvr->cmd_sck_id+1, &rdset, NULL, NULL, &timeout);
+        if (ret < 0)
         {
-            /* > 获取发送队列 */
-            frwd = (rttp_frwd_t *)data[j];
-
-            idx = rtrd_node_to_svr_map_rand(ctx, frwd->dest_nodeid);
-            if (idx < 0)
+            if (EINTR == errno)
             {
-                log_error(ctx->log, "Didn't find dev to svr map! nodeid:%d", frwd->dest_nodeid);
-                shm_queue_dealloc(ctx->shm_sendq, data[j]);
                 continue;
             }
 
-            /* > 获取发送队列 */
-            addr = queue_malloc(ctx->sendq[idx]);
-            if (NULL == addr)
-            {
-                shm_queue_dealloc(ctx->shm_sendq, data[j]);
-                log_error(ctx->log, "Alloc memory from queue failed!");
-                continue;
-            }
+            log_error(dsvr->log, "errno:[%d] %s!", errno, strerror(errno));
+            continue;
+        }
+        else if (0 == ret)
+        {
+            rtrd_dsvr_dist_data_hdl(ctx, dsvr);
+            continue;
+        }
 
-            memcpy(addr, data[j], frwd->length);
-
-            queue_push(ctx->sendq[idx], addr);
-
-            shm_queue_dealloc(ctx->shm_sendq, data[j]);
-
-            /* > 发送发送请求 */
-            rtrd_dist_cmd_send_req(ctx, dist, idx);
+        if (FD_ISSET(dsvr->cmd_sck_id, &rdset))
+        {
+            rtrd_dsvr_cmd_recv_and_proc(ctx, dsvr);
         }
     }
 
@@ -91,7 +76,7 @@ void *rtrd_dist_routine(void *_ctx)
 }
 
 /******************************************************************************
- **函数名称: rtrd_dist_init
+ **函数名称: rtrd_dsvr_init
  **功    能: 初始化分发线程
  **输入参数:
  **     ctx: 全局信息
@@ -101,58 +86,169 @@ void *rtrd_dist_routine(void *_ctx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.06.09 15:53:03 #
  ******************************************************************************/
-static rtrd_dist_t *rtrd_dist_init(rtrd_cntx_t *ctx)
+static rtrd_dsvr_t *rtrd_dsvr_init(rtrd_cntx_t *ctx)
 {
-    rtrd_dist_t *dist;
+    rtrd_dsvr_t *dsvr;
     char path[FILE_NAME_MAX_LEN];
     rtrd_conf_t *conf = &ctx->conf;
 
     /* > 创建对象 */
-    dist = (rtrd_dist_t *)calloc(1, sizeof(rtrd_dist_t));
-    if (NULL == dist)
+    dsvr = (rtrd_dsvr_t *)calloc(1, sizeof(rtrd_dsvr_t));
+    if (NULL == dsvr)
     {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return NULL;
     }
 
-    /* > 创建通信套接字 */
-    rtrd_dist_unix_path(conf, path);
+    dsvr->log = ctx->log;
 
-    dist->cmd_sck_id = unix_udp_creat(path);
-    if (dist->cmd_sck_id < 0)
+    /* > 创建通信套接字 */
+    rtrd_dsvr_usck_path(conf, path);
+
+    dsvr->cmd_sck_id = unix_udp_creat(path);
+    if (dsvr->cmd_sck_id < 0)
     {
-        log_error(ctx->log, "errmsg:[%d] %s! path:%s", errno, strerror(errno), path);
-        free(dist);
+        log_error(dsvr->log, "errmsg:[%d] %s! path:%s", errno, strerror(errno), path);
+        free(dsvr);
         return NULL;
     }
 
-    return dist;
+    return dsvr;
 }
 
 /******************************************************************************
- **函数名称: rtrd_dist_cmd_send_req
- **功    能: 发送发送请求
+ **函数名称: rtrd_dsvr_cmd_dist_req
+ **功    能: 发送分发请求
  **输入参数:
  **     ctx: 全局信息
- **     dist: 分发信息
+ **     dsvr: 分发信息
  **     idx: 发送服务ID
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 将分发请求发送至接收线程
+ **注意事项:
+ **作    者: # Qifeng.zou # 2015.06.09 15:53:03 #
+ ******************************************************************************/
+static int rtrd_dsvr_cmd_dist_req(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr, int idx)
+{
+    rttp_cmd_t cmd;
+    char path[FILE_NAME_MAX_LEN];
+
+    cmd.type = RTTP_CMD_DIST_REQ;
+
+    rtrd_rsvr_usck_path(&ctx->conf, path, idx);
+
+    return unix_udp_send(dsvr->cmd_sck_id, path, &cmd, sizeof(cmd));
+}
+
+/******************************************************************************
+ **函数名称: rtrd_dsvr_dist_data_hdl
+ **功    能: 数据分发处理
+ **输入参数:
+ **     ctx: 全局信息
+ **     dsvr: 分发信息
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述:
  **注意事项:
- **作    者: # Qifeng.zou # 2015.06.09 15:53:03 #
+ **作    者: # Qifeng.zou # 2015.06.13 #
  ******************************************************************************/
-static int rtrd_dist_cmd_send_req(rtrd_cntx_t *ctx, rtrd_dist_t *dist, int idx)
+static int rtrd_dsvr_dist_data_hdl(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr)
+{
+#define RTRD_DISP_POP_NUM   (32)
+    int i, j, num;
+    rttp_frwd_t *frwd;
+    void *data[RTRD_DISP_POP_NUM], *addr;
+
+    while (1)
+    {
+        /* > 弹出发送数据 */
+        num = MIN(shm_queue_used(ctx->shm_sendq), RTRD_DISP_POP_NUM);
+        if (0 == num)
+        {
+            break;
+        }
+
+        num = shm_queue_mpop(ctx->shm_sendq, data, num);
+        if (0 == num)
+        {
+            continue;
+        }
+
+        log_trace(ctx->log, "Multi-pop num:%d!", num);
+
+        /* > 放入发送队列 */
+        for (j=0; j<num; ++j)
+        {
+            /* > 获取发送队列 */
+            frwd = (rttp_frwd_t *)data[j];
+
+            i = rtrd_node_to_svr_map_rand(ctx, frwd->dest_nodeid);
+            if (i < 0)
+            {
+                log_error(ctx->log, "Didn't find dev to svr map! nodeid:%d", frwd->dest_nodeid);
+                shm_queue_dealloc(ctx->shm_sendq, data[j]);
+                continue;
+            }
+
+            /* > 申请内存空间 */
+            addr = queue_malloc(ctx->sendq[i]);
+            if (NULL == addr)
+            {
+                shm_queue_dealloc(ctx->shm_sendq, data[j]);
+                log_error(ctx->log, "Alloc memory from queue failed!");
+                continue;
+            }
+
+            memcpy(addr, data[j], frwd->length);
+
+            queue_push(ctx->sendq[i], addr);
+
+            shm_queue_dealloc(ctx->shm_sendq, data[j]);
+
+            /* > 发送分发请求 */
+            rtrd_dsvr_cmd_dist_req(ctx, dsvr, i);
+        }
+    }
+    return RTTP_OK;
+}
+
+/******************************************************************************
+ **函数名称: rtrd_dsvr_cmd_recv_and_proc
+ **功    能: 接收命令并进行处理
+ **输入参数:
+ **     ctx: 全局信息
+ **     dsvr: 分发信息
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 接收命令并进行处理
+ **注意事项:
+ **作    者: # Qifeng.zou # 2015.06.13 #
+ ******************************************************************************/
+static int rtrd_dsvr_cmd_recv_and_proc(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr)
 {
     rttp_cmd_t cmd;
-    char path[FILE_NAME_MAX_LEN];
-    rtrd_conf_t *conf = &ctx->conf;
 
-    memset(&cmd, 0, sizeof(cmd));
+    /* > 接收命令 */
+    if (unix_udp_recv(dsvr->cmd_sck_id, &cmd, sizeof(cmd)) < 0)
+    {
+        log_error(dsvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        return RTTP_ERR;
+    }
 
-    cmd.type = RTTP_CMD_DIST_REQ;
+    log_trace(dsvr->log, "Recv command! type:%d", cmd.type);
 
-    rtrd_rsvr_usck_path(conf, path, idx);
-
-    return unix_udp_send(dist->cmd_sck_id, path, &cmd, sizeof(cmd));
+    /* > 处理命令 */
+    switch (cmd.type)
+    {
+        case RTTP_CMD_DIST_REQ:
+        {
+            return rtrd_dsvr_dist_data_hdl(ctx, dsvr);
+        }
+        default:
+        {
+            log_error(dsvr->log, "Unknown command! type:%d", cmd.type);
+            return RTTP_ERR;
+        }
+    }
 }

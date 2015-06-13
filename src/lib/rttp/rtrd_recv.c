@@ -117,7 +117,7 @@ int rtrd_startup(rtrd_cntx_t *ctx)
     }
 
     /* > 创建分发线程 */
-    if (thread_creat(&tid, rtrd_dist_routine, ctx))
+    if (thread_creat(&tid, rtrd_dsvr_routine, ctx))
     {
         log_error(ctx->log, "Start distribute thread failed");
         return RTTP_ERR;

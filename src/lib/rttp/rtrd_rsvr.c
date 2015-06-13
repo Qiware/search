@@ -1428,7 +1428,7 @@ static int rtrd_rsvr_conn_list_with_same_nodeid(rtrd_sck_t *sck, conn_list_with_
 static int rtrd_rsvr_dist_send_data(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
 {
 #define RTRD_POP_MAX_NUM (32)
-    int len, idx, num;
+    int len, idx, num, j;
     queue_t *sendq;
     void *addr;
     void *data[RTRD_POP_MAX_NUM];
@@ -1456,6 +1456,8 @@ static int rtrd_rsvr_dist_send_data(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
         {
             continue;
         }
+
+        log_trace(ctx->log, "Multi-pop num:%d!", num);
 
         /* > 逐条处理数据 */
         for (idx=0; idx<num; ++idx)
@@ -1487,7 +1489,8 @@ static int rtrd_rsvr_dist_send_data(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
                 continue;
             }
 
-            sck = (rtrd_sck_t *)conn.list->head->data; /* TODO: 暂时选择第一个 */
+            sck = (rtrd_sck_t *)list_fetch(conn.list, rand()%conn.list->num);
+            //sck = (rtrd_sck_t *)conn.list->head->data; /* TODO: 暂时选择第一个 */
             
             /* > 设置发送数据 */
             len = sizeof(rttp_header_t) + frwd->length;
