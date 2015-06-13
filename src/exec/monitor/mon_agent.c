@@ -206,9 +206,10 @@ static int mon_agent_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void 
  ******************************************************************************/
 static int mon_agent_multi_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args)
 {
-    int *fd, sec, msec;
-    struct timeb *crtm, ctm;
-    fd_set rdset;
+    int sec, msec;
+    int *fd, *wflg;
+    struct timeb *wrtm, ctm;
+    fd_set rdset, wrset;
     agent_header_t head;
     srch_mesg_body_t body;
     int ret, idx, max, num, left;
@@ -226,18 +227,8 @@ static int mon_agent_multi_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu,
 
     num = atoi(digit);
     fd = (int *)calloc(num, sizeof(int));
-    if (NULL == fd)
-    {
-        fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
-        return -1;
-    }
-    crtm = (struct timeb *)calloc(num, sizeof(struct timeb));
-    if (NULL == crtm)
-    {
-        fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
-        free(crtm);
-        return -1;
-    }
+    wflg = (int *)calloc(num, sizeof(int));
+    wrtm = (struct timeb *)calloc(num, sizeof(struct timeb));
 
 SRCH_AGAIN:
     num = atoi(digit);
@@ -245,6 +236,7 @@ SRCH_AGAIN:
     /* > 连接代理服务 */
     for (idx=0; idx<num; ++idx)
     {
+        wflg[idx] = 0;
         fd[idx] = tcp_connect(AF_INET, ctx->conf->search.ip, ctx->conf->search.port);
         if (fd[idx] < 0)
         {
@@ -254,76 +246,75 @@ SRCH_AGAIN:
 
         fprintf(stdout, "    idx:%d fd:%d!\n", idx, fd[idx]);
 
-        head.type = htonl(MSG_SEARCH_WORD_REQ);
-        head.flag = htonl(AGENT_MSG_FLAG_USR);
-        head.mark = htonl(AGENT_MSG_MARK_KEY);
-        head.length = htonl(sizeof(body));
-
-        snprintf(body.words, sizeof(body.words), "%s", word);
-
-        Writen(fd[idx], (void *)&head, sizeof(head));
-        Writen(fd[idx], (void *)&body, sizeof(body));
-
-        ftime(&crtm[idx]);
     }
 
     num = idx;
     left = num;
 
     /* 等待应答数据 */
-    while (1)
-    {
+    while (1) {
         FD_ZERO(&rdset);
+        FD_ZERO(&wrset);
+        if (0 == left) { break; }
 
+        /* 加入读写集合 */
         max = -1;
-        if (0 == left)
-        {
-            break;
-        }
-
-        for (idx=0; idx<num; ++idx)
-        {
-            if (fd[idx] > 0)
-            {
+        for (idx=0; idx<num; ++idx) {
+            if (fd[idx] > 0) {
                 FD_SET(fd[idx], &rdset);
+                if (0 == wflg[idx]) {
+                    FD_SET(fd[idx], &wrset);
+                }
                 max = (fd[idx] > max)? fd[idx] : max; 
             }
         }
 
-        timeout.tv_sec = 10;
+        /* 等待事件通知 */
+        timeout.tv_sec = 5;
         timeout.tv_usec = 0;
-        ret = select(max+1, &rdset, NULL, NULL, &timeout);
-        if (ret < 0)
-        {
+        ret = select(max+1, &rdset, &wrset, NULL, &timeout);
+        if (ret < 0) {
             fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
             break;
         }
-        else if (0 == ret)
-        {
+        else if (0 == ret) {
             fprintf(stderr, "    Timeout!\n");
             break;
         }
 
-        for (idx=0; idx<num; ++idx)
-        {
-            if (fd[idx] <= 0)
-            {
+        /* 进行读写处理 */
+        for (idx=0; idx<num; ++idx) {
+            if (fd[idx] <= 0) {
                 continue;
             }
-            else if (FD_ISSET(fd[idx], &rdset))
-            {
+
+            if (FD_ISSET(fd[idx], &rdset)) {
                 mon_agent_search_rep_hdl(fd[idx]);
                 ftime(&ctm);
-                sec = ctm.time - crtm[idx].time;
-                msec = ctm.millitm - crtm[idx].millitm;
-                if (msec < 0)
-                {
+                sec = ctm.time - wrtm[idx].time;
+                msec = ctm.millitm - wrtm[idx].millitm;
+                if (msec < 0) {
                     msec += 1000;
                     sec -= 1;
                 }
                 fprintf(stderr, "    fd:%d Spend: %d.%03d(s)\n", fd[idx], sec, msec);
                 CLOSE(fd[idx]);
                 --left;
+            }
+
+            if (fd[idx] > 0 && FD_ISSET(fd[idx], &wrset)) {
+                head.type = htonl(MSG_SEARCH_WORD_REQ);
+                head.flag = htonl(AGENT_MSG_FLAG_USR);
+                head.mark = htonl(AGENT_MSG_MARK_KEY);
+                head.length = htonl(sizeof(body));
+
+                snprintf(body.words, sizeof(body.words), "%s", word);
+
+                Writen(fd[idx], (void *)&head, sizeof(head));
+                Writen(fd[idx], (void *)&body, sizeof(body));
+
+                ftime(&wrtm[idx]);
+                wflg[idx] = 1;
             }
         }
     }
