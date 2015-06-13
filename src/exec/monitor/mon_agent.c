@@ -330,7 +330,7 @@ SRCH_AGAIN:
     goto SRCH_AGAIN;
 
     free(fd);
-    free(crtm);
+    free(wrtm);
 
     return 0;
 }
