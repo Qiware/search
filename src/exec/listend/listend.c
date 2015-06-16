@@ -130,7 +130,7 @@ static rtsd_cli_t *lsnd_to_invtd_init(rtsd_conf_t *conf, log_cycle_t *log)
 }
 
 /******************************************************************************
- **函数名称: lsnd_search_req_hdl
+ **函数名称: lsnd_search_word_req_hdl
  **功    能: 搜索请求的处理函数
  **输入参数:
  **     type: 全局对象
@@ -143,25 +143,31 @@ static rtsd_cli_t *lsnd_to_invtd_init(rtsd_conf_t *conf, log_cycle_t *log)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.05.28 23:11:54 #
  ******************************************************************************/
-static int lsnd_search_req_hdl(unsigned int type, void *data, int length, void *args)
+static int lsnd_search_word_req_hdl(unsigned int type, void *data, int length, void *args)
 {
     agent_flow_t *flow;
     agent_header_t *head;
-    srch_mesg_body_t *body;
-    mesg_search_req_t req;
+    mesg_search_word_body_t *body;
+    mesg_search_word_req_t req;
     lsnd_cntx_t *ctx = (lsnd_cntx_t *)args;
 
     log_debug(ctx->log, "Call %s()!", __func__);
 
     flow = (agent_flow_t *)data;
     head = (agent_header_t *)(flow + 1);
-    body = (srch_mesg_body_t *)(head + 1);
+    body = (mesg_search_word_body_t *)(head + 1);
 
     /* > 转发搜索请求 */
     req.serial = flow->serial;
-    memcpy(&req.body, body, sizeof(srch_mesg_body_t));
+    memcpy(&req.body, body, sizeof(mesg_search_word_body_t));
 
     return rtsd_cli_send(ctx->send_to_invtd, type, &req, sizeof(req));
+}
+
+/* 插入关键字的处理函数 */
+static int lsnd_insert_word_req_hdl(unsigned int type, void *data, int length, void *args)
+{
+    return 0;
 }
 
 /******************************************************************************
@@ -183,7 +189,8 @@ static int lsnd_set_reg(lsnd_cntx_t *ctx)
         return LSND_ERR; \
     }
 
-    LSND_REG_CB(ctx, MSG_SEARCH_WORD_REQ, lsnd_search_req_hdl, ctx);
+    LSND_REG_CB(ctx, MSG_SEARCH_WORD_REQ, lsnd_search_word_req_hdl, ctx);
+    LSND_REG_CB(ctx, MSG_INSERT_WORD_REQ, lsnd_insert_word_req_hdl, ctx);
     return LSND_OK;
 }
 

@@ -18,6 +18,7 @@
 
 static int mon_agent_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args);
 static int mon_agent_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args);
+static int mon_agent_insert_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args);
 static int mon_agent_multi_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args);
 
 /******************************************************************************
@@ -52,6 +53,7 @@ menu_item_t *mon_agent_menu(menu_cntx_t *ctx, void *args)
     /* 添加子菜单 */
     ADD_CHILD(ctx, menu, "Search word", NULL, mon_agent_search_word, NULL, args);
     ADD_CHILD(ctx, menu, "Multi search word", NULL, mon_agent_multi_search_word, NULL, args);
+    ADD_CHILD(ctx, menu, "Insert word", NULL, mon_agent_insert_word, NULL, args);
     ADD_CHILD(ctx, menu, "Test connect", NULL, mon_agent_connect, NULL, args);
     return menu;
 }
@@ -73,9 +75,9 @@ static int mon_agent_search_rep_hdl(int fd)
     char *buff;
     ssize_t size;
     agent_header_t *head;
-    mesg_search_rep_t *resp;
+    mesg_search_word_rep_t *resp;
 
-    size = sizeof(agent_header_t) + sizeof(mesg_search_rep_t);
+    size = sizeof(agent_header_t) + sizeof(mesg_search_word_rep_t);
 
     buff = (char *)calloc(1, size);
     if (NULL == buff)
@@ -92,7 +94,7 @@ static int mon_agent_search_rep_hdl(int fd)
     }
 
     head = (agent_header_t *)buff;
-    resp = (mesg_search_rep_t *)(head + 1);
+    resp = (mesg_search_word_rep_t *)(head + 1);
 
     fprintf(stderr, "    url num: %d\n", resp->url_num);
     for (i=0; i<resp->url_num; ++i)
@@ -123,7 +125,7 @@ static int mon_agent_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void 
     struct timeb ctm, old_tm;
     char word[1024];
     agent_header_t head;
-    srch_mesg_body_t body;
+    mesg_search_word_body_t body;
     struct timeval timeout;
     mon_cntx_t *ctx = (mon_cntx_t *)args;
 
@@ -211,7 +213,7 @@ static int mon_agent_multi_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu,
     struct timeb *wrtm, ctm;
     fd_set rdset, wrset;
     agent_header_t head;
-    srch_mesg_body_t body;
+    mesg_search_word_body_t body;
     int ret, idx, max, num, left;
     struct timeval timeout;
     char digit[256], word[1024];
@@ -335,6 +337,12 @@ SRCH_AGAIN:
     return 0;
 }
 
+/* 插入关键字 */
+static int mon_agent_insert_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args)
+{
+    return 0;
+}
+
 /******************************************************************************
  **函数名称: mon_agent_connect
  **功    能: 测试代理服务处理大并发连接的能力
@@ -376,8 +384,8 @@ static int mon_agent_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *arg
 
 #if 1
     int n;
-    srch_mesg_body_t body;
     agent_header_t header;
+    mesg_search_word_body_t body;
 
     /* 发送搜索数据 */
     for (idx=0; idx<num; ++idx)

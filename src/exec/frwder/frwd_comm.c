@@ -252,8 +252,8 @@ static int frwd_shmq_push(shm_queue_t *shmq, int type, int orig, char *data, siz
 }
 
 /******************************************************************************
- **函数名称: frwd_search_rep_hdl
- **功    能: 搜索应答处理
+ **函数名称: frwd_search_word_rep_hdl
+ **功    能: 搜索关键字应答处理
  **输入参数:
  **     type: 数据类型
  **     orig: 源结点ID
@@ -266,7 +266,17 @@ static int frwd_shmq_push(shm_queue_t *shmq, int type, int orig, char *data, siz
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.06.10 #
  ******************************************************************************/
-static int frwd_search_rep_hdl(int type, int orig, char *data, size_t len, void *args)
+static int frwd_search_word_rep_hdl(int type, int orig, char *data, size_t len, void *args)
+{
+    frwd_cntx_t *ctx = (frwd_cntx_t *)args;
+
+    log_trace(ctx->log, "Call %s()", __func__);
+
+    return frwd_shmq_push(ctx->send_to_listend, type, orig, data, len);
+}
+
+/* 插入关键字的应答 */
+static int frwd_insert_word_rep_hdl(int type, int orig, char *data, size_t len, void *args)
 {
     frwd_cntx_t *ctx = (frwd_cntx_t *)args;
 
@@ -295,6 +305,7 @@ int frwd_set_reg(frwd_cntx_t *frwd)
         return FRWD_ERR; \
     }
 
-    FRWD_REG_CB(frwd, MSG_SEARCH_WORD_REP, frwd_search_rep_hdl, frwd);
+    FRWD_REG_CB(frwd, MSG_SEARCH_WORD_REP, frwd_search_word_rep_hdl, frwd);
+    FRWD_REG_CB(frwd, MSG_INSERT_WORD_REP, frwd_insert_word_rep_hdl, frwd);
     return FRWD_OK;
 }

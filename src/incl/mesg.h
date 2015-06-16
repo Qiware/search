@@ -16,39 +16,43 @@ typedef enum
 {
     MSG_TYPE_UNKNOWN                        /* 未知消息 */
 
-    , MSG_SEARCH_WORD_REQ                   /* 搜索关键字请求 */
-    , MSG_SEARCH_WORD_REP                   /* 搜索关键字应答 */
+    , MSG_SEARCH_WORD_REQ                   /* 搜索关键字-请求 */
+    , MSG_SEARCH_WORD_REP                   /* 搜索关键字-应答 */
 
-    , MSG_PRINT_INVT_TAB_REQ                /* 打印倒排表的请求 */
+    , MSG_INSERT_WORD_REQ                   /* 插入关键字-请求 */
+    , MSG_INSERT_WORD_REP                   /* 插入关键字-应答 */
 
-    , MSG_QUERY_CONF_REQ                    /* 查询配置信息 */
-    , MSG_QUERY_CONF_RESP                   /* 反馈配置信息 */
+    , MSG_PRINT_INVT_TAB_REQ                /* 打印倒排表-请求 */
+    , MSG_PRINT_INVT_TAB_REP                /* 打印倒排表-应答 */
 
-    , MSG_QUERY_WORKER_STAT_REQ             /* 查询工作信息 */
-    , MSG_QUERY_WORKER_STAT_RESP            /* 反馈工作信息 */
+    , MSG_QUERY_CONF_REQ                    /* 查询配置信息-请求 */
+    , MSG_QUERY_CONF_RESP                   /* 反馈配置信息-应答 */
 
-    , MSG_QUERY_WORKQ_STAT_REQ              /* 查询工作队列信息 */
-    , MSG_QUERY_WORKQ_STAT_RESP             /* 反馈工作队列信息 */
+    , MSG_QUERY_WORKER_STAT_REQ             /* 查询工作信息-请求 */
+    , MSG_QUERY_WORKER_STAT_RESP            /* 反馈工作信息-应答 */
 
-    , MSG_SWITCH_SCHED_REQ                  /* 切换调度 */
-    , MSG_SWITCH_SCHED_RESP                 /* 反馈切换调度信息 */
+    , MSG_QUERY_WORKQ_STAT_REQ              /* 查询工作队列信息-请求 */
+    , MSG_QUERY_WORKQ_STAT_RESP             /* 反馈工作队列信息-应答 */
+
+    , MSG_SWITCH_SCHED_REQ                  /* 切换调度-请求 */
+    , MSG_SWITCH_SCHED_RESP                 /* 反馈切换调度信息-应答 */
 
     , MSG_TYPE_TOTAL                        /* 消息类型总数 */
 } mesg_type_e;
 
 /* 搜索关键字(外部使用) */
+#define SRCH_WORD_LEN       (128)
 typedef struct
 {
-#define SRCH_WORDS_LEN      (128)
-    char words[SRCH_WORDS_LEN];             /* 搜索关键字 */
-} srch_mesg_body_t;
+    char words[SRCH_WORD_LEN];              /* 搜索关键字 */
+} mesg_search_word_body_t;
 
 /* 搜索消息结构(内部使用) */
 typedef struct
 {
     uint64_t serial;                        /* 流水号(全局唯一编号) */ 
-    srch_mesg_body_t body;                  /* 报体信息 */
-} mesg_search_req_t;
+    mesg_search_word_body_t body;           /* 报体信息 */
+} mesg_search_word_req_t;
 
 /* 搜索应答信息(内部使用) */
 typedef struct
@@ -57,6 +61,25 @@ typedef struct
     int url_num;                            /* 网址个数 */
 #define MSG_SRCH_REP_URL_NUM    (5)
     char url[MSG_SRCH_REP_URL_NUM][128];    /* 网址: 查找结果 */
-} mesg_search_rep_t;
+} mesg_search_word_rep_t;
+
+/* 插入关键字-请求 */
+typedef struct
+{
+    uint64_t serial;                        /* 流水号(全局唯一编号) */
+
+    char word[SRCH_WORD_LEN];               /* 关键字 */
+    char url[URL_MAX_LEN];                  /* 关键字对应的URL */
+    int freq;                               /* 频率 */
+} mesg_insert_word_req_t;
+
+/* 插入关键字-应答 */
+typedef struct
+{
+    uint64_t serial;                        /* 流水号(全局唯一编号) */
+
+    int code;                               /* 应答码 */
+    char word[SRCH_WORD_LEN];               /* 关键字 */
+} mesg_insert_word_rep_t;
 
 #endif /*__MESG_H__*/

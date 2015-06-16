@@ -91,7 +91,7 @@ void *lsnd_dist_routine(void *_ctx)
 {
     void *addr;
     rttp_header_t *head;
-    mesg_search_rep_t *rep;
+    mesg_search_word_rep_t *rep;
     lsnd_cntx_t *ctx = (lsnd_cntx_t *)_ctx;
 
     while (1)
@@ -110,7 +110,7 @@ void *lsnd_dist_routine(void *_ctx)
         {
             assert(0);
         }
-        rep = (mesg_search_rep_t *)(head + 1);
+        rep = (mesg_search_word_rep_t *)(head + 1);
 
         log_debug(ctx->log, "Call %s()! type:%d len:%d", __func__, head->type, head->length);
 
