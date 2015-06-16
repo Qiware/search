@@ -192,7 +192,7 @@ static flt_man_t *flt_man_init(flt_cntx_t *ctx)
     /* > 释放空间 */
     if (NULL != man->reg)
     {
-        avl_destroy(man->reg);
+        avl_destroy(man->reg, NULL, NULL);
     }
     if (NULL != man->mesg_list)
     {

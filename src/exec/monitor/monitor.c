@@ -107,6 +107,7 @@ int main(int argc, char *argv[])
     memset(&opt, 0, sizeof(opt));
 
     set_fd_limit(65535);
+    signal(SIGPIPE, SIG_IGN);
 
     /* > 解析输入参数 */
     if (mon_getopt(argc, argv, &opt))

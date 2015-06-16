@@ -35,7 +35,7 @@ hash_tab_t *hash_tab_creat(int mod, key_cb_t key_cb, avl_cmp_cb_t cmp_cb, hash_t
 int hash_tab_insert(hash_tab_t *hash, void *pkey, int pkey_len, void *addr);
 int hash_tab_query(hash_tab_t *hash, void *pkey, int pkey_len, hash_tab_query_cb_t query_cb, void *data);
 void *hash_tab_remove(hash_tab_t *hash, void *pkey, int pkey_len);
-int hash_tab_destroy(hash_tab_t *hash);
+int hash_tab_destroy(hash_tab_t *hash, mem_dealloc_cb_t dealloc, void *args);
 int hash_tab_trav(hash_tab_t *hash, avl_trav_cb_t proc, void *args);
 
 #define hash_tab_total(hash) ((hash)->total)

@@ -88,7 +88,7 @@ invt_tab_t *invtab_creat(int max, log_cycle_t *log)
         if (NULL == tab->dic[idx])
         {
             log_error(log, "Create avl-tree failed! idx:%d", idx);
-            invtab_destroy(tab);
+            invtab_destroy(tab, NULL, NULL);
             return NULL;
         }
     }
@@ -365,13 +365,13 @@ int invtab_remove(invt_tab_t *tab, char *word)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.04.28 #
  ******************************************************************************/
-int invtab_destroy(invt_tab_t *tab)
+int invtab_destroy(invt_tab_t *tab, mem_dealloc_cb_t dealloc, void *args)
 {
     int idx;
 
     for (idx=0; idx<tab->mod; ++idx)
     {
-        avl_destroy(tab->dic[idx]);
+        avl_destroy(tab->dic[idx], dealloc, args);
     }
 
     tab->dealloc(tab->pool, tab->dic);

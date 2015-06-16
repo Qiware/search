@@ -52,6 +52,6 @@ invt_tab_t *invtab_creat(int max, log_cycle_t *log);
 int invtab_insert(invt_tab_t *ctx, char *word, const char *url, int freq);
 invt_dic_word_t *invtab_query(invt_tab_t *ctx, char *word);
 int invtab_remove(invt_tab_t *ctx, char *word);
-int invtab_destroy(invt_tab_t *ctx);
+int invtab_destroy(invt_tab_t *tab, mem_dealloc_cb_t dealloc, void *args);
 
 #endif /*__INVTAB_H__*/

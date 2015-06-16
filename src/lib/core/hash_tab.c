@@ -73,7 +73,7 @@ hash_tab_t *hash_tab_creat(int mod, key_cb_t key_cb, avl_cmp_cb_t cmp_cb, hash_t
         hash->tree[idx] = avl_creat(&avl_opt, key_cb, cmp_cb);
         if (NULL == hash->tree[idx])
         {
-            hash_tab_destroy(hash);
+            hash_tab_destroy(hash, NULL, NULL);
             return NULL;
         }
 
@@ -201,7 +201,7 @@ void *hash_tab_remove(hash_tab_t *hash, void *pkey, int pkey_len)
  **注意事项: TODO: 未释放DATA空间
  **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
-int hash_tab_destroy(hash_tab_t *hash)
+int hash_tab_destroy(hash_tab_t *hash, mem_dealloc_cb_t dealloc, void *args)
 {
     int idx;
 
@@ -210,7 +210,7 @@ int hash_tab_destroy(hash_tab_t *hash)
         pthread_rwlock_wrlock(&hash->lock[idx]);
         if (NULL != hash->tree[idx])
         {
-            avl_destroy(hash->tree[idx]);
+            avl_destroy(hash->tree[idx], dealloc, args);
         }
         pthread_rwlock_unlock(&hash->lock[idx]);
 

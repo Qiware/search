@@ -57,7 +57,7 @@
 
 static int _avl_insert(avl_tree_t *tree, avl_node_t *node,
         int64_t idx, const avl_key_t *key, bool *taller, void *data);
-static void _avl_destroy(avl_tree_t *tree, avl_node_t *node);
+static void _avl_destroy(avl_tree_t *tree, avl_node_t *node, mem_dealloc_cb_t dealloc, void *args);
 
 static int avl_right_balance(avl_tree_t *tree, avl_node_t *node);
 static int avl_left_balance(avl_tree_t *tree, avl_node_t *node);
@@ -765,17 +765,19 @@ avl_node_t *avl_query(avl_tree_t *tree, void *key, int key_len)
  **功    能: 销毁AVL树(对外接口)
  **输入参数:
  **     tree: 平衡二叉树
+ **     dealloc_cb: 节点数据空间释放函数
+ **     args: 附加参数(用于释放节点数据空间)
  **输出参数: NONE
  **返    回: VOID
  **实现描述:
  **注意事项:
  **作    者: # Qifeng.zou # 2013.12.15 #
  ******************************************************************************/
-void avl_destroy(avl_tree_t *tree)
+void avl_destroy(avl_tree_t *tree, mem_dealloc_cb_t dealloc_cb, void *args)
 {
     if (NULL != tree->root)
     {
-        _avl_destroy(tree, tree->root);
+        _avl_destroy(tree, tree->root, dealloc_cb, args);
         tree->root = NULL;
     }
 
@@ -1243,25 +1245,31 @@ int avl_delete_right_balance(avl_tree_t *tree, avl_node_t *node, bool *lower)
  **函数名称: _avl_destroy
  **功    能: 销毁AVL树(内部接口)
  **输入参数:
+ **     tree: AVL树对象
  **     node: 需要被销毁的结点
- **输出参数: NONE
+ **     dealloc_cb: 节点数据空间释放函数
+ **     args: 附加参数(用于释放节点数据空间)
+ **输出参数:
  **返    回: VOID
  **实现描述:
  **注意事项:
  **作    者: # Qifeng.zou # 2013.12.15 #
  ******************************************************************************/
-static void _avl_destroy(avl_tree_t *tree, avl_node_t *node)
+static void _avl_destroy(avl_tree_t *tree, avl_node_t *node, mem_dealloc_cb_t dealloc, void *args)
 {
     if (NULL != node->lchild)
     {
-        _avl_destroy(tree, node->lchild);
+        if (dealloc) { dealloc(args, node->lchild->data); }
+        _avl_destroy(tree, node->lchild, dealloc, args);
     }
 
     if (NULL != node->rchild)
     {
-        _avl_destroy(tree, node->rchild);
+        if (dealloc) { dealloc(args, node->rchild->data); }
+        _avl_destroy(tree, node->rchild, dealloc, args);
     }
 
+    if (dealloc) { dealloc(args, node->data); }
     tree->dealloc(tree->pool, node);
 }
 
