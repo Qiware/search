@@ -30,7 +30,7 @@ int rttp_send_debug(rtsd_cli_t *cli, int secs)
     struct timeval stime, etime;
     int total = 0, fails = 0;
     char data[SIZE];
-    mesg_search_word_body_t *body;
+    mesg_search_word_req_t *req;
 
     for (;;)
     {
@@ -40,11 +40,11 @@ int rttp_send_debug(rtsd_cli_t *cli, int secs)
         total = 0;
         for (idx=0; idx<LOOP; idx++)
         {
-            body = (mesg_search_word_body_t *)data;
+            req = (mesg_search_word_req_t *)data;
 
-            snprintf(body->words, sizeof(body->words), "%s", "BAIDU");
+            snprintf(req->words, sizeof(req->words), "%s", "BAIDU");
 
-            if (rtsd_cli_send(cli, MSG_SEARCH_WORD_REQ, body, sizeof(mesg_search_word_body_t)))
+            if (rtsd_cli_send(cli, MSG_SEARCH_WORD_REQ, req, sizeof(mesg_search_word_req_t)))
             {
                 idx--;
                 usleep(2);

@@ -16,7 +16,7 @@ static int agent_rsvr_del_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *
 static int agent_rsvr_recv(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck);
 static int agent_rsvr_send(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck);
 
-static int agent_rsvr_disp_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr);
+static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr);
 
 static int agent_rsvr_event_hdl(agent_cntx_t *ctx, agent_rsvr_t *rsvr);
 static int agent_rsvr_event_timeout_hdl(agent_cntx_t *ctx, agent_rsvr_t *rsvr);
@@ -58,7 +58,7 @@ void *agent_rsvr_routine(void *_ctx)
             }
         }
 
-        agent_rsvr_disp_send_data(ctx, rsvr);
+        agent_rsvr_dist_send_data(ctx, rsvr);
 
         /* 3. 等待事件通知 */
         rsvr->fds = epoll_wait(rsvr->epid, rsvr->events,
@@ -984,7 +984,7 @@ static int agent_rsvr_send(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
 }
 
 /******************************************************************************
- **函数名称: agent_rsvr_disp_send_data
+ **函数名称: agent_rsvr_dist_send_data
  **功    能: 分发发送的数据
  **输入参数:
  **     ctx: 全局对象
@@ -995,7 +995,7 @@ static int agent_rsvr_send(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015-06-05 17:35:02 #
  ******************************************************************************/
-static int agent_rsvr_disp_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
+static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
 {
     int total;
     void *addr, *data;
@@ -1040,7 +1040,7 @@ static int agent_rsvr_disp_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
             continue;
         }
 
-        agent_serial_to_sck_map_delete(ctx, flow->serial); /* 查询完成删除 */
+        //agent_serial_to_sck_map_delete(ctx, flow->serial); /* 查询完成删除 */
 
         /* 校验映射项合法性 */
         if (flow->agt_idx != newest.agt_idx

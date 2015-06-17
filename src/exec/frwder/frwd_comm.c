@@ -248,7 +248,7 @@ static int frwd_shmq_push(shm_queue_t *shmq, int type, int orig, char *data, siz
         return FRWD_ERR;
     }
 
-    return 0;
+    return FRWD_OK;
 }
 
 /******************************************************************************

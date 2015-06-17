@@ -40,18 +40,12 @@ typedef enum
     , MSG_TYPE_TOTAL                        /* 消息类型总数 */
 } mesg_type_e;
 
-/* 搜索关键字(外部使用) */
+/* 搜索消息结构 */
 #define SRCH_WORD_LEN       (128)
 typedef struct
 {
-    char words[SRCH_WORD_LEN];              /* 搜索关键字 */
-} mesg_search_word_body_t;
-
-/* 搜索消息结构(内部使用) */
-typedef struct
-{
     uint64_t serial;                        /* 流水号(全局唯一编号) */ 
-    mesg_search_word_body_t body;           /* 报体信息 */
+    char words[SRCH_WORD_LEN];              /* 搜索关键字 */
 } mesg_search_word_req_t;
 
 /* 搜索应答信息(内部使用) */

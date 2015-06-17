@@ -139,7 +139,7 @@ static rtsd_cli_t *lsnd_to_invtd_init(rtsd_conf_t *conf, log_cycle_t *log)
  **     args: 附加参数
  **输出参数:
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述: 请求数据的内存结构: 流水信息 + 消息头 + 消息体
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.05.28 23:11:54 #
  ******************************************************************************/
@@ -147,27 +147,52 @@ static int lsnd_search_word_req_hdl(unsigned int type, void *data, int length, v
 {
     agent_flow_t *flow;
     agent_header_t *head;
-    mesg_search_word_body_t *body;
-    mesg_search_word_req_t req;
+    mesg_search_word_req_t *req;
     lsnd_cntx_t *ctx = (lsnd_cntx_t *)args;
 
     log_debug(ctx->log, "Call %s()!", __func__);
 
-    flow = (agent_flow_t *)data;
-    head = (agent_header_t *)(flow + 1);
-    body = (mesg_search_word_body_t *)(head + 1);
+    flow = (agent_flow_t *)data; // 流水信息
+    head = (agent_header_t *)(flow + 1);    // 消息头
+    req = (mesg_search_word_req_t *)(head + 1); // 消息体
 
     /* > 转发搜索请求 */
-    req.serial = flow->serial;
-    memcpy(&req.body, body, sizeof(mesg_search_word_body_t));
+    req->serial = flow->serial;
 
-    return rtsd_cli_send(ctx->send_to_invtd, type, &req, sizeof(req));
+    return rtsd_cli_send(ctx->send_to_invtd, type, req, sizeof(mesg_search_word_req_t));
 }
 
-/* 插入关键字的处理函数 */
+/******************************************************************************
+ **函数名称: lsnd_insert_word_req_hdl
+ **功    能: 插入关键字的处理函数
+ **输入参数:
+ **     type: 全局对象
+ **     data: 数据内容
+ **     length: 数据长度
+ **     args: 附加参数
+ **输出参数:
+ **返    回: 0:成功 !0:失败
+ **实现描述: 请求数据的内存结构: 流水信息 + 消息头 + 消息体
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.06.17 21:34:49 #
+ ******************************************************************************/
 static int lsnd_insert_word_req_hdl(unsigned int type, void *data, int length, void *args)
 {
-    return 0;
+    agent_flow_t *flow;
+    agent_header_t *head;
+    mesg_insert_word_req_t *req;
+    lsnd_cntx_t *ctx = (lsnd_cntx_t *)args;
+
+    log_debug(ctx->log, "Call %s()!", __func__);
+
+    flow = (agent_flow_t *)data;    // 流水信息
+    head = (agent_header_t *)(flow + 1); // 消息头
+    req = (mesg_insert_word_req_t *)(head + 1); // 消息体
+
+    /* > 转发搜索请求 */
+    req->serial = flow->serial;
+
+    return rtsd_cli_send(ctx->send_to_invtd, type, req, sizeof(mesg_insert_word_req_t));
 }
 
 /******************************************************************************

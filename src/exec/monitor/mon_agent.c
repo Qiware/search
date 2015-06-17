@@ -75,7 +75,7 @@ static int mon_agent_search_rep_hdl(int fd)
     char *buff;
     ssize_t size;
     agent_header_t *head;
-    mesg_search_word_rep_t *resp;
+    mesg_search_word_rep_t *rep;
 
     size = sizeof(agent_header_t) + sizeof(mesg_search_word_rep_t);
 
@@ -94,12 +94,12 @@ static int mon_agent_search_rep_hdl(int fd)
     }
 
     head = (agent_header_t *)buff;
-    resp = (mesg_search_word_rep_t *)(head + 1);
+    rep = (mesg_search_word_rep_t *)(head + 1);
 
-    fprintf(stderr, "    url num: %d\n", resp->url_num);
-    for (i=0; i<resp->url_num; ++i)
+    fprintf(stderr, "    url num: %d\n", rep->url_num);
+    for (i=0; i<rep->url_num; ++i)
     {
-        fprintf(stderr, "        [%02d] url: %s\n", i+1, resp->url[i]);
+        fprintf(stderr, "        [%02d] url: %s\n", i+1, rep->url[i]);
     }
 
     free(buff);
@@ -125,8 +125,8 @@ static int mon_agent_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void 
     struct timeb ctm, old_tm;
     char word[1024];
     agent_header_t head;
-    mesg_search_word_body_t body;
     struct timeval timeout;
+    mesg_search_word_req_t req;
     mon_cntx_t *ctx = (mon_cntx_t *)args;
 
     /* > 连接代理服务 */
@@ -144,12 +144,12 @@ static int mon_agent_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void 
     head.type = htonl(MSG_SEARCH_WORD_REQ);
     head.flag = htonl(AGENT_MSG_FLAG_USR);
     head.mark = htonl(AGENT_MSG_MARK_KEY);
-    head.length = htonl(sizeof(body));
+    head.length = htonl(sizeof(req));
 
-    snprintf(body.words, sizeof(body.words), "%s", word);
+    snprintf(req.words, sizeof(req.words), "%s", word);
 
     Writen(fd, (void *)&head, sizeof(head));
-    Writen(fd, (void *)&body, sizeof(body));
+    Writen(fd, (void *)&req, sizeof(req));
 
     ftime(&old_tm);
 
@@ -213,9 +213,9 @@ static int mon_agent_multi_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu,
     struct timeb *wrtm, ctm;
     fd_set rdset, wrset;
     agent_header_t head;
-    mesg_search_word_body_t body;
-    int ret, idx, max, num, left;
     struct timeval timeout;
+    mesg_search_word_req_t req;
+    int ret, idx, max, num, left;
     char digit[256], word[1024];
     mon_cntx_t *ctx = (mon_cntx_t *)args;
 
@@ -308,12 +308,12 @@ SRCH_AGAIN:
                 head.type = htonl(MSG_SEARCH_WORD_REQ);
                 head.flag = htonl(AGENT_MSG_FLAG_USR);
                 head.mark = htonl(AGENT_MSG_MARK_KEY);
-                head.length = htonl(sizeof(body));
+                head.length = htonl(sizeof(req));
 
-                snprintf(body.words, sizeof(body.words), "%s", word);
+                snprintf(req.words, sizeof(req.words), "%s", word);
 
                 Writen(fd[idx], (void *)&head, sizeof(head));
-                Writen(fd[idx], (void *)&body, sizeof(body));
+                Writen(fd[idx], (void *)&req, sizeof(req));
 
                 ftime(&wrtm[idx]);
                 wflg[idx] = 1;
@@ -337,9 +337,123 @@ SRCH_AGAIN:
     return 0;
 }
 
+/* 接收插入关键字的应答 */
+static int mon_agent_insert_word_rep_hdl(int fd)
+{
+    int n;
+    char *buff;
+    ssize_t size;
+    agent_header_t *head;
+    mesg_insert_word_rep_t *rep;
+
+    size = sizeof(agent_header_t) + sizeof(mesg_search_word_rep_t);
+
+    buff = (char *)calloc(1, size);
+    if (NULL == buff)
+    {
+        fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
+        return -1;
+    }
+
+    n = read(fd, buff, size);
+    if (n < 0)
+    {
+        fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
+        return -1;
+    }
+
+    head = (agent_header_t *)buff;
+    rep = (mesg_insert_word_rep_t *)(head + 1);
+
+    fprintf(stderr, "    Serial: %ld\n", rep->serial);
+    fprintf(stderr, "    Code: %d\n", rep->code);
+    fprintf(stderr, "    Word: %s\n", rep->word);
+    free(buff);
+
+    return 0;
+}
+
 /* 插入关键字 */
 static int mon_agent_insert_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args)
 {
+    fd_set rdset;
+    char _freq[32];
+    int fd, ret, sec, msec;
+    struct timeb ctm, old_tm;
+    agent_header_t head;
+    mesg_insert_word_req_t req;
+    struct timeval timeout;
+    mon_cntx_t *ctx = (mon_cntx_t *)args;
+
+    /* > 输入发送数据 */
+    fprintf(stderr, "    Word: ");
+    scanf(" %s", req.word);
+
+    fprintf(stderr, "    Url: ");
+    scanf(" %s", req.url);
+
+    fprintf(stderr, "    Freq: ");
+    scanf(" %s", _freq);
+    req.freq = atoi(_freq);
+
+    /* > 设置发送数据 */
+    head.type = htonl(MSG_INSERT_WORD_REQ);
+    head.flag = htonl(AGENT_MSG_FLAG_USR);
+    head.mark = htonl(AGENT_MSG_MARK_KEY);
+    head.length = htonl(sizeof(req));
+
+    /* > 连接代理服务 */
+    fd = tcp_connect(AF_INET, ctx->conf->search.ip, ctx->conf->search.port);
+    if (fd < 0)
+    {
+        fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
+        return -1;
+    }
+
+    Writen(fd, (void *)&head, sizeof(head));
+    Writen(fd, (void *)&req, sizeof(req));
+
+    ftime(&old_tm);
+
+    /* 等待应答数据 */
+    while (1)
+    {
+        FD_ZERO(&rdset);
+
+        FD_SET(fd, &rdset);
+
+        timeout.tv_sec = 10;
+        timeout.tv_usec = 0;
+        ret = select(fd+1, &rdset, NULL, NULL, &timeout);
+        if (ret < 0)
+        {
+            fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
+            break;
+        }
+        else if (0 == ret)
+        {
+            fprintf(stderr, "    Timeout!\n");
+            break;
+        }
+
+        if (FD_ISSET(fd, &rdset))
+        {
+            mon_agent_insert_word_rep_hdl(fd);
+            ftime(&ctm);
+            sec = ctm.time - old_tm.time;
+            msec = ctm.millitm - old_tm.millitm;
+            if (msec < 0)
+            {
+                msec += 1000;
+                sec -= 1;
+            }
+            fprintf(stderr, "    Spend: %d.%03d(s)\n", sec, msec);
+            break;
+        }
+    }
+
+    close(fd);
+
     return 0;
 }
 
@@ -385,7 +499,7 @@ static int mon_agent_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *arg
 #if 1
     int n;
     agent_header_t header;
-    mesg_search_word_body_t body;
+    mesg_search_word_req_t req;
 
     /* 发送搜索数据 */
     for (idx=0; idx<num; ++idx)
@@ -393,9 +507,9 @@ static int mon_agent_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *arg
         header.type = htonl(MSG_SEARCH_WORD_REQ);
         header.flag = htonl(AGENT_MSG_FLAG_USR);
         header.mark = htonl(AGENT_MSG_MARK_KEY);
-        header.length = htonl(sizeof(body));
+        header.length = htonl(sizeof(req));
 
-        snprintf(body.words, sizeof(body.words), "爱我中华");
+        snprintf(req.words, sizeof(req.words), "爱我中华");
 
         n = Writen(fd[idx], (void *)&header, sizeof(header));
         if (n < 0)
@@ -403,7 +517,7 @@ static int mon_agent_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *arg
             break;
         }
 
-        n = Writen(fd[idx], (void *)&body, sizeof(body));
+        n = Writen(fd[idx], (void *)&req, sizeof(req));
     }
 #endif
 

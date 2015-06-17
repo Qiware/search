@@ -162,13 +162,14 @@ static int rtrd_dsvr_dist_data_hdl(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr)
 
     while (1)
     {
-        /* > 弹出发送数据 */
+        /* > 计算弹出个数 */
         num = MIN(shm_queue_used(ctx->shm_sendq), RTRD_DISP_POP_NUM);
         if (0 == num)
         {
             break;
         }
 
+        /* > 弹出发送数据 */
         num = shm_queue_mpop(ctx->shm_sendq, data, num);
         if (0 == num)
         {
