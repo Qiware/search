@@ -997,8 +997,9 @@ static int agent_rsvr_send(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
  ******************************************************************************/
 static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
 {
-    int total;
-    void *addr, *data;
+#define AGT_RSVR_DIST_POP_NUM   (128)
+    int total, num, idx;
+    void *addr[AGT_RSVR_DIST_POP_NUM], *data;
     queue_t *sendq;
     socket_t *sck;
     rbt_node_t *node;
@@ -1011,89 +1012,98 @@ static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
     sendq = ctx->sendq[rsvr->tidx];
     while (1)
     {
-        /* > 弹出应答数据 */
-        addr = queue_pop(sendq);
-        if (NULL == addr)
+        num = MIN(queue_used(sendq), AGT_RSVR_DIST_POP_NUM);
+        if (0 == num)
         {
             break;
         }
 
-        log_debug(rsvr->log, "Pop data succ!");
-
-        flow = (agent_flow_t *)addr;
-        head = (agent_header_t *)(flow + 1);
-        if (AGENT_MSG_MARK_KEY != head->mark)
+        /* > 弹出应答数据 */
+        num = queue_mpop(sendq, addr, num);
+        if (0 == num)
         {
-            log_error(ctx->log, "Check mark [0X%x/0X%x] failed! serial:%lu",
-                    head->mark, AGENT_MSG_MARK_KEY, flow->serial);
-            queue_dealloc(sendq, addr);
-            continue;
+            break;
         }
 
-        total = head->length + sizeof(agent_header_t);
+        log_debug(rsvr->log, "Pop data succ! num:%d", num);
 
-        /* > 查找最新SERIAL->SCK映射 */
-        if (agent_serial_to_sck_map_query(ctx, flow->serial, &newest))
+        for (idx=0; idx<num; ++idx)
         {
-            log_error(ctx->log, "Query serial->sck map failed! serial:%lu", flow->serial);
-            queue_dealloc(sendq, addr);
-            continue;
+            flow = (agent_flow_t *)addr[idx]; // 流水信息
+            head = (agent_header_t *)(flow + 1); // 消息头
+            if (AGENT_MSG_MARK_KEY != head->mark)
+            {
+                log_error(ctx->log, "Check mark [0X%x/0X%x] failed! serial:%lu",
+                        head->mark, AGENT_MSG_MARK_KEY, flow->serial);
+                queue_dealloc(sendq, addr[idx]);
+                continue;
+            }
+
+            total = head->length + sizeof(agent_header_t);
+
+            /* > 查找最新SERIAL->SCK映射 */
+            if (agent_serial_to_sck_map_query(ctx, flow->serial, &newest))
+            {
+                log_error(ctx->log, "Query serial->sck map failed! serial:%lu", flow->serial);
+                queue_dealloc(sendq, addr[idx]);
+                continue;
+            }
+
+            //agent_serial_to_sck_map_delete(ctx, flow->serial); /* 查询完成删除 */
+
+            /* 校验映射项合法性 */
+            if (flow->agt_idx != newest.agt_idx
+                || flow->sck_serial != newest.sck_serial)
+            {
+                log_error(ctx->log, "Old socket was closed! serial:%lu", flow->sck_serial);
+                queue_dealloc(sendq, addr[idx]);
+                continue;
+            }
+
+            /* 放入发送链表 */
+            node = rbt_search(rsvr->connections, (int64_t)flow->sck_serial);
+            if (NULL == node
+                || NULL == node->data)
+            {
+                log_error(ctx->log, "Query socket failed! serial:%lu", flow->sck_serial);
+                queue_dealloc(sendq, addr[idx]);
+                continue;
+            }
+
+            sck = (socket_t *)node->data;
+            sck_extra = (agent_socket_extra_t *)sck->extra;
+
+            data = slab_alloc(rsvr->slab, total);
+            if (NULL == data)
+            {
+                log_error(ctx->log, "Alloc from slab failed! serial:%lu total:%d",
+                        flow->sck_serial, total);
+                queue_dealloc(sendq, addr[idx]);
+                continue;
+            }
+
+            log_debug(rsvr->log, "Call %s()! type:%d len:%d!", __func__, head->type, head->length);
+
+            memcpy(data, (void *)head, total);
+
+            if (list_rpush(sck_extra->send_list, data))
+            {
+                log_error(ctx->log, "Insert list failed! serial:%lu", flow->sck_serial);
+                queue_dealloc(sendq, addr[idx]);
+                slab_dealloc(rsvr->slab, data);
+                continue;
+            }
+
+            queue_dealloc(sendq, addr[idx]);
+
+            /* > 设置epoll监听(添加EPOLLOUT) */
+            memset(&ev, 0, sizeof(ev));
+
+            ev.data.ptr = sck;
+            ev.events = EPOLLOUT | EPOLLET; /* 边缘触发 */
+
+            epoll_ctl(rsvr->epid, EPOLL_CTL_MOD, sck->fd, &ev);
         }
-
-        //agent_serial_to_sck_map_delete(ctx, flow->serial); /* 查询完成删除 */
-
-        /* 校验映射项合法性 */
-        if (flow->agt_idx != newest.agt_idx
-            || flow->sck_serial != newest.sck_serial)
-        {
-            log_error(ctx->log, "Old socket was closed! serial:%lu", flow->sck_serial);
-            queue_dealloc(sendq, addr);
-            continue;
-        }
-
-        /* 放入发送链表 */
-        node = rbt_search(rsvr->connections, (int64_t)flow->sck_serial);
-        if (NULL == node
-            || NULL == node->data)
-        {
-            log_error(ctx->log, "Query socket failed! serial:%lu", flow->sck_serial);
-            queue_dealloc(sendq, addr);
-            continue;
-        }
-
-        sck = (socket_t *)node->data;
-        sck_extra = (agent_socket_extra_t *)sck->extra;
-
-        data = slab_alloc(rsvr->slab, total);
-        if (NULL == data)
-        {
-            log_error(ctx->log, "Alloc from slab failed! serial:%lu total:%d",
-                    flow->sck_serial, total);
-            queue_dealloc(sendq, addr);
-            continue;
-        }
-
-        log_debug(rsvr->log, "Call %s()! type:%d len:%d!", __func__, head->type, head->length);
-
-        memcpy(data, (void *)head, total);
-
-        if (list_rpush(sck_extra->send_list, data))
-        {
-            log_error(ctx->log, "Insert list failed! serial:%lu", flow->sck_serial);
-            queue_dealloc(sendq, addr);
-            slab_dealloc(rsvr->slab, data);
-            continue;
-        }
-
-        queue_dealloc(sendq, addr);
-
-        /* > 设置epoll监听(添加EPOLLOUT) */
-        memset(&ev, 0, sizeof(ev));
-
-        ev.data.ptr = sck;
-        ev.events = EPOLLOUT | EPOLLET; /* 边缘触发 */
-
-        epoll_ctl(rsvr->epid, EPOLL_CTL_MOD, sck->fd, &ev);
     }
 
     return AGENT_OK;
