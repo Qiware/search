@@ -190,7 +190,7 @@ static int lsnd_insert_word_req_hdl(unsigned int type, void *data, int length, v
     req = (mesg_insert_word_req_t *)(head + 1); // 消息体
 
     /* > 转发搜索请求 */
-    req->serial = flow->serial;
+    req->serial = hton64(flow->serial);
 
     return rtsd_cli_send(ctx->send_to_invtd, type, req, sizeof(mesg_insert_word_req_t));
 }

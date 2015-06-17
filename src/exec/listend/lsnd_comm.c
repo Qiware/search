@@ -84,39 +84,51 @@ log_cycle_t *lsnd_init_log(char *fname)
  **输出参数: NONE
  **返    回: 分发对象
  **实现描述:
- **注意事项:
+ **注意事项: 消息结构: 流水信息 + 消息头 + 消息体
  **作    者: # Qifeng.zou # 2015.05.15 #
  ******************************************************************************/
 void *lsnd_dist_routine(void *_ctx)
 {
-    void *addr;
+#define LSND_DIST_POP_NUM   (128)
+    int num, idx;
+    agent_flow_t *flow;
     rttp_header_t *head;
-    mesg_search_word_rep_t *rep;
+    void *addr[LSND_DIST_POP_NUM];
     lsnd_cntx_t *ctx = (lsnd_cntx_t *)_ctx;
 
     while (1)
     {
-        /* > 弹出发送数据 */
-        addr = shm_queue_pop(ctx->sendq);
-        if (NULL == addr)
+        /* > 获取弹出个数 */
+        num = MIN(shm_queue_used(ctx->sendq), LSND_DIST_POP_NUM);
+        if (0 == num)
         {
             usleep(500); /* TODO: 可使用事件通知机制减少CPU的消耗 */
             continue;
         }
 
-        /* > 获取发送队列 */
-        head = (rttp_header_t *)addr;
-        if (RTTP_CHECK_SUM != head->checksum)
+        /* > 弹出发送数据 */
+        num = shm_queue_mpop(ctx->sendq, addr, num);
+        if (0== num)
         {
-            assert(0);
+            continue;
         }
-        rep = (mesg_search_word_rep_t *)(head + 1);
 
-        log_debug(ctx->log, "Call %s()! type:%d len:%d", __func__, head->type, head->length);
+        for (idx=0; idx<num; ++idx)
+        {
+            /* > 获取发送队列 */
+            flow = (agent_flow_t *)addr[idx]; // 流水信息
+            head = (rttp_header_t *)(flow + 1); // 消息头
+            if (RTTP_CHECK_SUM != head->checksum)
+            {
+                assert(0);
+            }
 
-        agent_send(ctx->agent, head->type, rep->serial, head+1, head->length);
+            log_debug(ctx->log, "Call %s()! type:%d len:%d", __func__, head->type, head->length);
 
-        shm_queue_dealloc(ctx->sendq, addr);
+            agent_send(ctx->agent, head->type, flow->serial, head+1, head->length);
+
+            shm_queue_dealloc(ctx->sendq, addr[idx]);
+        }
     }
 
     return (void *)-1;

@@ -72,7 +72,7 @@ INVTD_SRCH_REP:
                 req->serial, req->words);
     }
 
-    return 0;
+    return INVT_OK;
 }
 
 /******************************************************************************
@@ -101,8 +101,8 @@ static int invtd_insert_word_req_hdl(int type, int orig, char *buff, size_t len,
 
     memset(&rep, 0, sizeof(rep));
 
-    req->serial = req->serial;
-    req->freq = req->freq;
+    req->serial = ntoh64(req->serial);
+    req->freq = ntohl(req->freq);
 
     /* > 插入倒排表 */
     if (invtab_insert(ctx->tab, req->word, req->url, req->freq))
@@ -110,25 +110,25 @@ static int invtd_insert_word_req_hdl(int type, int orig, char *buff, size_t len,
         log_error(ctx->log, "Insert invert table failed! serial:%s word:%s url:%s freq:%d",
                 req->serial, req->word, req->url, req->freq);
         /* > 设置应答信息 */
-        rep.code = 0; // 失败
+        rep.code = htonl(0); // 失败
         snprintf(rep.word, sizeof(rep.word), "%s", req->word);
         goto INVTD_INSERT_WORD_REP;
     }
 
     /* > 设置应答信息 */
-    rep.code = 1; // 成功
+    rep.code = htonl(1); // 成功
     snprintf(rep.word, sizeof(rep.word), "%s", req->word);
 
 INVTD_INSERT_WORD_REP:
     /* > 发送应答信息 */
-    rep.serial = req->serial;
+    rep.serial = hton64(req->serial);
     if (rtrd_cli_send(ctx->rtrd_cli, MSG_INSERT_WORD_REP, orig, (void *)&rep, sizeof(rep)))
     {
         log_error(ctx->log, "Send response failed! serial:%s word:%s url:%s freq:%d",
                 req->serial, req->word, req->url, req->freq);
     }
 
-    return 0;
+    return INVT_OK;
 }
 
 /******************************************************************************
@@ -148,7 +148,7 @@ INVTD_INSERT_WORD_REP:
  ******************************************************************************/
 static int invtd_print_invt_tab_req_hdl(int type, int orig, char *buff, size_t len, void *args)
 {
-    return 0;
+    return INVT_OK;
 }
 
 /******************************************************************************

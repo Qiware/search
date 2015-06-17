@@ -9,6 +9,7 @@
 
 #include "frwd.h"
 #include "mesg.h"
+#include "agent.h"
 
 #define FRWD_DEF_CONF_PATH  "../conf/frwder.xml"
 
@@ -201,6 +202,7 @@ static int frwd_init_log(frwd_cntx_t *frwd, const char *pname)
  **功    能: 将数据转发到指定SHMQ队列
  **输入参数: 
  **     shmq: SHM队列
+ **     serial: 流水号
  **     type: 数据类型
  **     orig: 源结点ID
  **     data: 需要转发的数据
@@ -208,17 +210,19 @@ static int frwd_init_log(frwd_cntx_t *frwd, const char *pname)
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
- **注意事项: 
+ **注意事项: 内存结构: 流水信息 + 消息头 + 消息体 
  **作    者: # Qifeng.zou # 2015.06.10 #
  ******************************************************************************/
-static int frwd_shmq_push(shm_queue_t *shmq, int type, int orig, char *data, size_t len)
+static int frwd_shmq_push(shm_queue_t *shmq,
+        uint64_t serial, int type, int orig, char *data, size_t len)
 {
     void *addr;
     size_t size;
+    agent_flow_t *flow;
     rttp_header_t *head;
 
     /* > 判断合法性 */
-    size = sizeof(rttp_header_t) + shm_queue_size(shmq);
+    size = sizeof(agent_flow_t) + sizeof(rttp_header_t) + shm_queue_size(shmq);
     if (size < len)
     {
         return FRWD_ERR;
@@ -232,8 +236,10 @@ static int frwd_shmq_push(shm_queue_t *shmq, int type, int orig, char *data, siz
     }
 
     /* > 设置应答数据 */
-    head = (rttp_header_t *)addr;
+    flow = (agent_flow_t *)addr;
+    head = (rttp_header_t *)(flow + 1);
 
+    flow->serial = serial;
     head->type = type;
     head->nodeid = orig;
     head->length = len;
@@ -269,20 +275,22 @@ static int frwd_shmq_push(shm_queue_t *shmq, int type, int orig, char *data, siz
 static int frwd_search_word_rep_hdl(int type, int orig, char *data, size_t len, void *args)
 {
     frwd_cntx_t *ctx = (frwd_cntx_t *)args;
+    mesg_search_word_rep_t *rep = (mesg_search_word_rep_t *)data;
 
     log_trace(ctx->log, "Call %s()", __func__);
 
-    return frwd_shmq_push(ctx->send_to_listend, type, orig, data, len);
+    return frwd_shmq_push(ctx->send_to_listend, rep->serial, type, orig, data, len);
 }
 
 /* 插入关键字的应答 */
 static int frwd_insert_word_rep_hdl(int type, int orig, char *data, size_t len, void *args)
 {
     frwd_cntx_t *ctx = (frwd_cntx_t *)args;
+    mesg_insert_word_rep_t *rep = (mesg_insert_word_rep_t *)data;
 
     log_trace(ctx->log, "Call %s()", __func__);
 
-    return frwd_shmq_push(ctx->send_to_listend, type, orig, data, len);
+    return frwd_shmq_push(ctx->send_to_listend, ntoh64(rep->serial), type, orig, data, len);
 }
 
 /******************************************************************************

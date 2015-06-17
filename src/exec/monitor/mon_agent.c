@@ -365,6 +365,9 @@ static int mon_agent_insert_word_rep_hdl(int fd)
     head = (agent_header_t *)buff;
     rep = (mesg_insert_word_rep_t *)(head + 1);
 
+    rep->serial = ntoh64(rep->serial);
+    rep->code = ntoh64(rep->code);
+
     fprintf(stderr, "    Serial: %ld\n", rep->serial);
     fprintf(stderr, "    Code: %d\n", rep->code);
     fprintf(stderr, "    Word: %s\n", rep->word);
@@ -394,7 +397,7 @@ static int mon_agent_insert_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void 
 
     fprintf(stderr, "    Freq: ");
     scanf(" %s", _freq);
-    req.freq = atoi(_freq);
+    req.freq = htonl(atoi(_freq));
 
     /* > 设置发送数据 */
     head.type = htonl(MSG_INSERT_WORD_REQ);
