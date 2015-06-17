@@ -96,6 +96,10 @@ static int mon_agent_search_rep_hdl(int fd)
     head = (agent_header_t *)buff;
     rep = (mesg_search_word_rep_t *)(head + 1);
 
+    rep->serial = ntoh64(rep->serial);
+    rep->url_num = ntohl(rep->url_num);
+
+    fprintf(stderr, "    Serial: %ld\n", rep->serial);
     fprintf(stderr, "    url num: %d\n", rep->url_num);
     for (i=0; i<rep->url_num; ++i)
     {

@@ -279,7 +279,7 @@ static int frwd_search_word_rep_hdl(int type, int orig, char *data, size_t len, 
 
     log_trace(ctx->log, "Call %s()", __func__);
 
-    return frwd_shmq_push(ctx->send_to_listend, rep->serial, type, orig, data, len);
+    return frwd_shmq_push(ctx->send_to_listend, ntoh64(rep->serial), type, orig, data, len);
 }
 
 /* 插入关键字的应答 */

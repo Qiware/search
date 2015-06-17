@@ -23,7 +23,7 @@
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 从倒排表中查询结果，并将结果返回给客户端
- **注意事项: 
+ **注意事项:  TODO: 后续添加读锁
  **作    者: # Qifeng.zou # 2015.05.08 #
  ******************************************************************************/
 static int invtd_search_word_req_hdl(int type, int orig, char *buff, size_t len, void *args)
@@ -40,6 +40,8 @@ static int invtd_search_word_req_hdl(int type, int orig, char *buff, size_t len,
             __func__, req->serial, req->words);
 
     memset(&rep, 0, sizeof(rep));
+
+    req->serial = ntoh64(req->serial);
 
     /* > 搜索倒排表 */
     word = invtab_query(ctx->tab, req->words);
@@ -65,7 +67,8 @@ static int invtd_search_word_req_hdl(int type, int orig, char *buff, size_t len,
 
 INVTD_SRCH_REP:
     /* > 应答搜索结果 */
-    rep.serial = req->serial;
+    rep.serial = hton64(req->serial);
+    rep.url_num = htonl(rep.url_num);
     if (rtrd_cli_send(ctx->rtrd_cli, MSG_SEARCH_WORD_REP, orig, (void *)&rep, sizeof(rep)))
     {
         log_error(ctx->log, "Send response failed! serial:%ld words:%s",
@@ -76,7 +79,7 @@ INVTD_SRCH_REP:
 }
 
 /******************************************************************************
- **函数名称: invtd_search_word_req_hdl
+ **函数名称: invtd_insert_word_req_hdl
  **功    能: 插入关键字的处理
  **输入参数:
  **     type: 消息类型
@@ -86,7 +89,7 @@ INVTD_SRCH_REP:
  **     args: 附加参数
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述:
+ **实现描述: TODO: 后续添加写锁
  **注意事项: 源节点ID(orig)将成为应答消息的目的节点ID(dest)
     **作    者: # Qifeng.zou # 2015-06-17 21:37:55 #
  ******************************************************************************/
