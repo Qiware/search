@@ -99,6 +99,8 @@ static void *_shm_creat(const char *path, size_t size)
     void *addr;
     shm_data_t shm;
 
+    memset(&shm, 0, sizeof(shm));
+
     /* > 创建共享内存 */
     shm.shmid = shmget(IPC_PRIVATE, size, IPC_CREAT|0666);
     if (shm.shmid < 0)

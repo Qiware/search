@@ -11,10 +11,10 @@ typedef enum
     RTTP_UNKNOWN_MESG                   /* 未知数据类型 */
 
     , RTTP_LINK_AUTH_REQ                /* 链路鉴权请求 */
-    , RTTP_LINK_AUTH_REP                /* 链路鉴权应答 */
+    , RTTP_LINK_AUTH_RSP                /* 链路鉴权应答 */
 
     , RTTP_KPALIVE_REQ                  /* 链路保活请求 */
-    , RTTP_KPALIVE_REP                  /* 链路保活应答 */
+    , RTTP_KPALIVE_RSP                  /* 链路保活应答 */
 
     /*******************在此线以上添加系统数据类型****************************/
     , RTTP_DATA_TYPE_TOTAL
@@ -65,6 +65,6 @@ typedef struct
 #define RTTP_LINK_AUTH_FAIL     (0)
 #define RTTP_LINK_AUTH_SUCC     (1)
     int is_succ;                        /* 应答码(0:失败 1:成功) */
-} rttp_link_auth_rep_t;
+} rttp_link_auth_rsp_t;
 
 #endif /*__RTTP_MESG_H__*/

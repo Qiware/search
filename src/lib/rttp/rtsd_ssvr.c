@@ -27,7 +27,7 @@ static int rtsd_ssvr_clear_mesg(rtsd_ssvr_t *ssvr);
 static int rtsd_ssvr_kpalive_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr);
 
 static int rttp_link_auth_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr);
-static int rttp_link_auth_rep_hdl(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, rtsd_sck_t *sck, rttp_link_auth_rep_t *rep);
+static int rttp_link_auth_rsp_hdl(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, rtsd_sck_t *sck, rttp_link_auth_rsp_t *rsp);
 
 static int rtsd_ssvr_cmd_proc_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, int rqid);
 static int rtsd_ssvr_cmd_proc_all_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr);
@@ -997,16 +997,16 @@ static int rtsd_ssvr_sys_mesg_proc(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, rtsd_sck
 
     switch (head->type)
     {
-        case RTTP_KPALIVE_REP:      /* 保活应答 */
+        case RTTP_KPALIVE_RSP:      /* 保活应答 */
         {
             log_debug(ssvr->log, "Received keepalive respond!");
 
             rttp_set_kpalive_stat(sck, RTTP_KPALIVE_STAT_SUCC);
             return RTTP_OK;
         }
-        case RTTP_LINK_AUTH_REP:    /* 链路鉴权应答 */
+        case RTTP_LINK_AUTH_RSP:    /* 链路鉴权应答 */
         {
-            return rttp_link_auth_rep_hdl(ctx, ssvr, sck, addr + sizeof(rttp_header_t));
+            return rttp_link_auth_rsp_hdl(ctx, ssvr, sck, addr + sizeof(rttp_header_t));
         }
     }
 
@@ -1134,7 +1134,7 @@ static int rttp_link_auth_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
     return RTTP_OK;
 }
 /******************************************************************************
- **函数名称: rttp_link_auth_rep_hdl
+ **函数名称: rttp_link_auth_rsp_hdl
  **功    能: 链路鉴权请求应答的处理
  **输入参数:
  **     ctx: 全局信息
@@ -1147,10 +1147,10 @@ static int rttp_link_auth_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.22 #
  ******************************************************************************/
-static int rttp_link_auth_rep_hdl(rtsd_cntx_t *ctx,
-        rtsd_ssvr_t *ssvr, rtsd_sck_t *sck, rttp_link_auth_rep_t *rep)
+static int rttp_link_auth_rsp_hdl(rtsd_cntx_t *ctx,
+        rtsd_ssvr_t *ssvr, rtsd_sck_t *sck, rttp_link_auth_rsp_t *rsp)
 {
-    return ntohl(rep->is_succ)? RTTP_OK : RTTP_ERR;
+    return ntohl(rsp->is_succ)? RTTP_OK : RTTP_ERR;
 }
 
 /******************************************************************************

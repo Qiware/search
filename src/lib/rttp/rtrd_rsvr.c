@@ -915,7 +915,7 @@ static int rtrd_rsvr_keepalive_req_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd
     /* > 回复消息内容 */
     head = (rttp_header_t *)addr;
 
-    head->type = RTTP_KPALIVE_REP;
+    head->type = RTTP_KPALIVE_RSP;
     head->nodeid = ctx->conf.nodeid;
     head->length = 0;
     head->flag = RTTP_SYS_MESG;
@@ -935,7 +935,7 @@ static int rtrd_rsvr_keepalive_req_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd
 }
 
 /******************************************************************************
- **函数名称: rtrd_rsvr_link_auth_rep
+ **函数名称: rtrd_rsvr_link_auth_rsp
  **功    能: 链路鉴权应答
  **输入参数:
  **     ctx: 全局对象
@@ -947,14 +947,14 @@ static int rtrd_rsvr_keepalive_req_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.05.22 #
  ******************************************************************************/
-static int rtrd_rsvr_link_auth_rep(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd_sck_t *sck)
+static int rtrd_rsvr_link_auth_rsp(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd_sck_t *sck)
 {
     void *addr;
     rttp_header_t *head;
-    rttp_link_auth_rep_t *link_auth_rep;
+    rttp_link_auth_rsp_t *link_auth_rsp;
 
     /* > 分配消息空间 */
-    addr = slab_alloc(rsvr->pool, sizeof(rttp_header_t));
+    addr = slab_alloc(rsvr->pool, sizeof(rttp_header_t) + sizeof(rttp_link_auth_rsp_t));
     if (NULL == addr)
     {
         log_error(rsvr->log, "Alloc memory from slab failed!");
@@ -963,15 +963,15 @@ static int rtrd_rsvr_link_auth_rep(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd_sck
 
     /* > 回复消息内容 */
     head = (rttp_header_t *)addr;
-    link_auth_rep = (rttp_link_auth_rep_t *)(addr + sizeof(rttp_header_t));
+    link_auth_rsp = (rttp_link_auth_rsp_t *)(head + 1);
 
-    head->type = RTTP_LINK_AUTH_REP;
+    head->type = RTTP_LINK_AUTH_RSP;
     head->nodeid = ctx->conf.nodeid;
-    head->length = sizeof(rttp_link_auth_rep_t);
+    head->length = sizeof(rttp_link_auth_rsp_t);
     head->flag = RTTP_SYS_MESG;
     head->checksum = RTTP_CHECK_SUM;
 
-    link_auth_rep->is_succ = htonl(sck->auth_succ);
+    link_auth_rsp->is_succ = htonl(sck->auth_succ);
 
     /* > 加入发送列表 */
     if (list_rpush(sck->mesg_list, addr))
@@ -1025,7 +1025,7 @@ static int rtrd_rsvr_link_auth_req_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd
     }
 
     /* > 应答鉴权请求 */
-    return rtrd_rsvr_link_auth_rep(ctx, rsvr, sck);
+    return rtrd_rsvr_link_auth_rsp(ctx, rsvr, sck);
 }
 
 /******************************************************************************
@@ -1345,41 +1345,38 @@ static int rtrd_rsvr_fill_send_buff(rtrd_rsvr_t *rsvr, rtrd_sck_t *sck)
     {
         /* 1 是否有数据 */
         head = (rttp_header_t *)list_lpop(sck->mesg_list);;
-        if (NULL == head)
-        {
+        if (NULL == head) {
             break; /* 无数据 */
         }
-
-        /* 2 判断剩余空间 */
-        if (RTTP_CHECK_SUM != head->checksum)
+        else if (RTTP_CHECK_SUM != head->checksum) /* 合法性校验 */
         {
             assert(0);
         }
 
-        left = (int)(send->end - send->iptr);
-
-        mesg_len = sizeof(rttp_header_t) + head->length;
+        left = (int)(send->end - send->iptr); /* 发送缓存剩余长度 */
+        mesg_len = sizeof(rttp_header_t) + head->length; /* 当前消息实际占用长度 */
         if (left < mesg_len)
         {
-            list_lpush(sck->mesg_list, head);
+            if (list_lpush(sck->mesg_list, head))
+            {
+                slab_dealloc(rsvr->pool, head);
+            }
             break; /* 空间不足 */
         }
 
-        /* 3 取发送的数据 */
+        /* 3 设置头部数据 */
         head->type = htons(head->type);
         head->nodeid = htonl(head->nodeid);
         head->flag = head->flag;
         head->length = htonl(head->length);
         head->checksum = htonl(head->checksum);
 
-        /* 1.4 拷贝至发送缓存 */
+        /* 4 拷贝至发送缓存 */
         memcpy(send->iptr, (void *)head, mesg_len);
-
-        /* 1.5 释放数据空间 */
-        slab_dealloc(rsvr->pool, head);
-
         send->iptr += mesg_len;
-        continue;
+
+        /* 5 释放数据空间 */
+        slab_dealloc(rsvr->pool, head);
     }
 
     return RTTP_OK;
