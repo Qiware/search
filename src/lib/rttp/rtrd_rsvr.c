@@ -773,8 +773,8 @@ static int rtrd_rsvr_exp_mesg_proc(rtrd_cntx_t *ctx,
         ++rsvr->drop_total; /* 丢弃计数 */
         rtrd_rsvr_cmd_proc_all_req(ctx, rsvr);
 
-        log_error(rsvr->log, "Alloc from queue failed! recv:%llu drop:%llu error:%llu",
-                rsvr->recv_total, rsvr->drop_total, rsvr->err_total);
+        log_error(rsvr->log, "Alloc from queue failed! recv:%llu drop:%llu error:%llu len:%d/%d",
+                rsvr->recv_total, rsvr->drop_total, rsvr->err_total, len, queue_size(ctx->recvq[rqid]));
         return RTTP_ERR;
     }
 

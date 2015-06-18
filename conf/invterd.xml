@@ -14,6 +14,6 @@
         <PATH>../temp/invertd/</PATH>                 <!-- 工作路径 -->
         <AUTH USR="qifeng" PASSWD="111111" />         <!-- 鉴权配置 -->
         <THDNUM RECV_THD_NUM="2" WORK_THD_NUM="4" />  <!-- 线程数据 -->
-        <RECVQ NUM="4" MAX="8192" SIZE="1024" />      <!-- 接收队列(MAX:单元总数 SIZE:单元大小) -->
+        <RECVQ NUM="4" MAX="8192" SIZE="4096" />      <!-- 接收队列(MAX:单元总数 SIZE:单元大小) -->
     </SDTP>
 </INVTERD>
