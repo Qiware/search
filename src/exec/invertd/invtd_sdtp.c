@@ -32,14 +32,14 @@ static int invtd_search_word_req_hdl(int type, int orig, char *buff, size_t len,
     list_node_t *node;
     invt_word_doc_t *doc;
     invt_dic_word_t *word;
-    mesg_search_word_rep_t rep; /* 应答 */
+    mesg_search_word_rsp_t rsp; /* 应答 */
     invtd_cntx_t *ctx = (invtd_cntx_t *)args;
     mesg_search_word_req_t *req = (mesg_search_word_req_t *)buff; /* 请求 */
 
     log_trace(ctx->log, "Call %s()! serial:%ld words:%s",
             __func__, req->serial, req->words);
 
-    memset(&rep, 0, sizeof(rep));
+    memset(&rsp, 0, sizeof(rsp));
 
     req->serial = ntoh64(req->serial);
 
@@ -52,28 +52,28 @@ static int invtd_search_word_req_hdl(int type, int orig, char *buff, size_t len,
     {
         pthread_rwlock_unlock(&ctx->invtab_lock);
         log_error(ctx->log, "Didn't search anything! words:%s", req->words);
-        goto INVTD_SRCH_REP;
+        goto INVTD_SRCH_RSP;
     }
 
     /* > 打印搜索结果 */
     idx = 0;
     node = word->doc_list->head;
-    for (; NULL!=node && idx < MSG_SRCH_REP_URL_NUM; node=node->next, ++idx)
+    for (; NULL!=node && idx < MSG_SRCH_RSP_URL_NUM; node=node->next, ++idx)
     {
         doc = (invt_word_doc_t *)node->data;
 
         log_trace(ctx->log, "[%d]: url:%s freq:%d", idx+1, doc->url.str, doc->freq);
 
-        ++rep.url_num;
-        snprintf(rep.url[idx], sizeof(rep.url[idx]), "%s:%d", doc->url.str, doc->freq);
+        ++rsp.url_num;
+        snprintf(rsp.url[idx], sizeof(rsp.url[idx]), "%s:%d", doc->url.str, doc->freq);
     }
     pthread_rwlock_unlock(&ctx->invtab_lock);
 
-INVTD_SRCH_REP:
+INVTD_SRCH_RSP:
     /* > 应答搜索结果 */
-    rep.serial = hton64(req->serial);
-    rep.url_num = htonl(rep.url_num);
-    if (rtrd_cli_send(ctx->rtrd_cli, MSG_SEARCH_WORD_REP, orig, (void *)&rep, sizeof(rep)))
+    rsp.serial = hton64(req->serial);
+    rsp.url_num = htonl(rsp.url_num);
+    if (rtrd_cli_send(ctx->rtrd_cli, MSG_SEARCH_WORD_RSP, orig, (void *)&rsp, sizeof(rsp)))
     {
         log_error(ctx->log, "Send response failed! serial:%ld words:%s",
                 req->serial, req->words);
@@ -99,14 +99,14 @@ INVTD_SRCH_REP:
  ******************************************************************************/
 static int invtd_insert_word_req_hdl(int type, int orig, char *buff, size_t len, void *args)
 {
-    mesg_insert_word_rep_t rep; /* 应答 */
+    mesg_insert_word_rsp_t rsp; /* 应答 */
     invtd_cntx_t *ctx = (invtd_cntx_t *)args;
     mesg_insert_word_req_t *req = (mesg_insert_word_req_t *)buff; /* 请求 */
 
     log_trace(ctx->log, "Call %s()! serial:%ld word:%s url:%s",
             __func__, req->serial, req->word, req->url);
 
-    memset(&rep, 0, sizeof(rep));
+    memset(&rsp, 0, sizeof(rsp));
 
     req->serial = ntoh64(req->serial);
     req->freq = ntohl(req->freq);
@@ -119,20 +119,20 @@ static int invtd_insert_word_req_hdl(int type, int orig, char *buff, size_t len,
         log_error(ctx->log, "Insert invert table failed! serial:%s word:%s url:%s freq:%d",
                 req->serial, req->word, req->url, req->freq);
         /* > 设置应答信息 */
-        rep.code = htonl(0); // 失败
-        snprintf(rep.word, sizeof(rep.word), "%s", req->word);
-        goto INVTD_INSERT_WORD_REP;
+        rsp.code = htonl(0); // 失败
+        snprintf(rsp.word, sizeof(rsp.word), "%s", req->word);
+        goto INVTD_INSERT_WORD_RSP;
     }
     pthread_rwlock_unlock(&ctx->invtab_lock);
 
     /* > 设置应答信息 */
-    rep.code = htonl(1); // 成功
-    snprintf(rep.word, sizeof(rep.word), "%s", req->word);
+    rsp.code = htonl(1); // 成功
+    snprintf(rsp.word, sizeof(rsp.word), "%s", req->word);
 
-INVTD_INSERT_WORD_REP:
+INVTD_INSERT_WORD_RSP:
     /* > 发送应答信息 */
-    rep.serial = hton64(req->serial);
-    if (rtrd_cli_send(ctx->rtrd_cli, MSG_INSERT_WORD_REP, orig, (void *)&rep, sizeof(rep)))
+    rsp.serial = hton64(req->serial);
+    if (rtrd_cli_send(ctx->rtrd_cli, MSG_INSERT_WORD_RSP, orig, (void *)&rsp, sizeof(rsp)))
     {
         log_error(ctx->log, "Send response failed! serial:%s word:%s url:%s freq:%d",
                 req->serial, req->word, req->url, req->freq);

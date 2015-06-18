@@ -59,7 +59,7 @@ menu_item_t *mon_agent_menu(menu_cntx_t *ctx, void *args)
 }
 
 /******************************************************************************
- **函数名称: mon_agent_search_rep_hdl
+ **函数名称: mon_agent_search_rsp_hdl
  **功    能: 接收搜索应答信息
  **输入参数:
  **     fd: 文件描述符
@@ -69,15 +69,15 @@ menu_item_t *mon_agent_menu(menu_cntx_t *ctx, void *args)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.06.05 17:01:04 #
  ******************************************************************************/
-static int mon_agent_search_rep_hdl(int fd)
+static int mon_agent_search_rsp_hdl(int fd)
 {
     int n, i;
     char *buff;
     ssize_t size;
     agent_header_t *head;
-    mesg_search_word_rep_t *rep;
+    mesg_search_word_rsp_t *rsp;
 
-    size = sizeof(agent_header_t) + sizeof(mesg_search_word_rep_t);
+    size = sizeof(agent_header_t) + sizeof(mesg_search_word_rsp_t);
 
     buff = (char *)calloc(1, size);
     if (NULL == buff)
@@ -94,16 +94,16 @@ static int mon_agent_search_rep_hdl(int fd)
     }
 
     head = (agent_header_t *)buff;
-    rep = (mesg_search_word_rep_t *)(head + 1);
+    rsp = (mesg_search_word_rsp_t *)(head + 1);
 
-    rep->serial = ntoh64(rep->serial);
-    rep->url_num = ntohl(rep->url_num);
+    rsp->serial = ntoh64(rsp->serial);
+    rsp->url_num = ntohl(rsp->url_num);
 
-    fprintf(stderr, "    Serial: %ld\n", rep->serial);
-    fprintf(stderr, "    url num: %d\n", rep->url_num);
-    for (i=0; i<rep->url_num; ++i)
+    fprintf(stderr, "    Serial: %ld\n", rsp->serial);
+    fprintf(stderr, "    url num: %d\n", rsp->url_num);
+    for (i=0; i<rsp->url_num; ++i)
     {
-        fprintf(stderr, "        [%02d] url: %s\n", i+1, rep->url[i]);
+        fprintf(stderr, "        [%02d] url: %s\n", i+1, rsp->url[i]);
     }
 
     free(buff);
@@ -180,7 +180,7 @@ static int mon_agent_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void 
 
         if (FD_ISSET(fd, &rdset))
         {
-            mon_agent_search_rep_hdl(fd);
+            mon_agent_search_rsp_hdl(fd);
             ftime(&ctm);
             sec = ctm.time - old_tm.time;
             msec = ctm.millitm - old_tm.millitm;
@@ -295,7 +295,7 @@ SRCH_AGAIN:
             }
 
             if (FD_ISSET(fd[idx], &rdset)) {
-                mon_agent_search_rep_hdl(fd[idx]);
+                mon_agent_search_rsp_hdl(fd[idx]);
                 ftime(&ctm);
                 sec = ctm.time - wrtm[idx].time;
                 msec = ctm.millitm - wrtm[idx].millitm;
@@ -342,15 +342,15 @@ SRCH_AGAIN:
 }
 
 /* 接收插入关键字的应答 */
-static int mon_agent_insert_word_rep_hdl(int fd)
+static int mon_agent_insert_word_rsp_hdl(int fd)
 {
     int n;
     char *buff;
     ssize_t size;
     agent_header_t *head;
-    mesg_insert_word_rep_t *rep;
+    mesg_insert_word_rsp_t *rsp;
 
-    size = sizeof(agent_header_t) + sizeof(mesg_search_word_rep_t);
+    size = sizeof(agent_header_t) + sizeof(mesg_search_word_rsp_t);
 
     buff = (char *)calloc(1, size);
     if (NULL == buff)
@@ -367,14 +367,14 @@ static int mon_agent_insert_word_rep_hdl(int fd)
     }
 
     head = (agent_header_t *)buff;
-    rep = (mesg_insert_word_rep_t *)(head + 1);
+    rsp = (mesg_insert_word_rsp_t *)(head + 1);
 
-    rep->serial = ntoh64(rep->serial);
-    rep->code = ntoh64(rep->code);
+    rsp->serial = ntoh64(rsp->serial);
+    rsp->code = ntoh64(rsp->code);
 
-    fprintf(stderr, "    Serial: %ld\n", rep->serial);
-    fprintf(stderr, "    Code: %d\n", rep->code);
-    fprintf(stderr, "    Word: %s\n", rep->word);
+    fprintf(stderr, "    Serial: %ld\n", rsp->serial);
+    fprintf(stderr, "    Code: %d\n", rsp->code);
+    fprintf(stderr, "    Word: %s\n", rsp->word);
     free(buff);
 
     return 0;
@@ -445,7 +445,7 @@ static int mon_agent_insert_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void 
 
         if (FD_ISSET(fd, &rdset))
         {
-            mon_agent_insert_word_rep_hdl(fd);
+            mon_agent_insert_word_rsp_hdl(fd);
             ftime(&ctm);
             sec = ctm.time - old_tm.time;
             msec = ctm.millitm - old_tm.millitm;

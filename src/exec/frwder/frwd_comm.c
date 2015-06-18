@@ -258,7 +258,7 @@ static int frwd_shmq_push(shm_queue_t *shmq,
 }
 
 /******************************************************************************
- **函数名称: frwd_search_word_rep_hdl
+ **函数名称: frwd_search_word_rsp_hdl
  **功    能: 搜索关键字应答处理
  **输入参数:
  **     type: 数据类型
@@ -272,25 +272,25 @@ static int frwd_shmq_push(shm_queue_t *shmq,
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.06.10 #
  ******************************************************************************/
-static int frwd_search_word_rep_hdl(int type, int orig, char *data, size_t len, void *args)
+static int frwd_search_word_rsp_hdl(int type, int orig, char *data, size_t len, void *args)
 {
     frwd_cntx_t *ctx = (frwd_cntx_t *)args;
-    mesg_search_word_rep_t *rep = (mesg_search_word_rep_t *)data;
+    mesg_search_word_rsp_t *rsp = (mesg_search_word_rsp_t *)data;
 
     log_trace(ctx->log, "Call %s()", __func__);
 
-    return frwd_shmq_push(ctx->send_to_listend, ntoh64(rep->serial), type, orig, data, len);
+    return frwd_shmq_push(ctx->send_to_listend, ntoh64(rsp->serial), type, orig, data, len);
 }
 
 /* 插入关键字的应答 */
-static int frwd_insert_word_rep_hdl(int type, int orig, char *data, size_t len, void *args)
+static int frwd_insert_word_rsp_hdl(int type, int orig, char *data, size_t len, void *args)
 {
     frwd_cntx_t *ctx = (frwd_cntx_t *)args;
-    mesg_insert_word_rep_t *rep = (mesg_insert_word_rep_t *)data;
+    mesg_insert_word_rsp_t *rsp = (mesg_insert_word_rsp_t *)data;
 
     log_trace(ctx->log, "Call %s()", __func__);
 
-    return frwd_shmq_push(ctx->send_to_listend, ntoh64(rep->serial), type, orig, data, len);
+    return frwd_shmq_push(ctx->send_to_listend, ntoh64(rsp->serial), type, orig, data, len);
 }
 
 /******************************************************************************
@@ -313,7 +313,7 @@ int frwd_set_reg(frwd_cntx_t *frwd)
         return FRWD_ERR; \
     }
 
-    FRWD_REG_CB(frwd, MSG_SEARCH_WORD_REP, frwd_search_word_rep_hdl, frwd);
-    FRWD_REG_CB(frwd, MSG_INSERT_WORD_REP, frwd_insert_word_rep_hdl, frwd);
+    FRWD_REG_CB(frwd, MSG_SEARCH_WORD_RSP, frwd_search_word_rsp_hdl, frwd);
+    FRWD_REG_CB(frwd, MSG_INSERT_WORD_RSP, frwd_insert_word_rsp_hdl, frwd);
     return FRWD_OK;
 }
