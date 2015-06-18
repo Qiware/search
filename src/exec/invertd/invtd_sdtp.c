@@ -44,10 +44,13 @@ static int invtd_search_word_req_hdl(int type, int orig, char *buff, size_t len,
     req->serial = ntoh64(req->serial);
 
     /* > 搜索倒排表 */
-    word = invtab_query(ctx->tab, req->words);
+    pthread_rwlock_rdlock(&ctx->invtab_lock);
+
+    word = invtab_query(ctx->invtab, req->words);
     if (NULL == word
         || NULL == word->doc_list)
     {
+        pthread_rwlock_unlock(&ctx->invtab_lock);
         log_error(ctx->log, "Didn't search anything! words:%s", req->words);
         goto INVTD_SRCH_REP;
     }
@@ -64,6 +67,7 @@ static int invtd_search_word_req_hdl(int type, int orig, char *buff, size_t len,
         ++rep.url_num;
         snprintf(rep.url[idx], sizeof(rep.url[idx]), "%s:%d", doc->url.str, doc->freq);
     }
+    pthread_rwlock_unlock(&ctx->invtab_lock);
 
 INVTD_SRCH_REP:
     /* > 应答搜索结果 */
@@ -108,8 +112,10 @@ static int invtd_insert_word_req_hdl(int type, int orig, char *buff, size_t len,
     req->freq = ntohl(req->freq);
 
     /* > 插入倒排表 */
-    if (invtab_insert(ctx->tab, req->word, req->url, req->freq))
+    pthread_rwlock_wrlock(&ctx->invtab_lock);
+    if (invtab_insert(ctx->invtab, req->word, req->url, req->freq))
     {
+        pthread_rwlock_unlock(&ctx->invtab_lock);
         log_error(ctx->log, "Insert invert table failed! serial:%s word:%s url:%s freq:%d",
                 req->serial, req->word, req->url, req->freq);
         /* > 设置应答信息 */
@@ -117,6 +123,7 @@ static int invtd_insert_word_req_hdl(int type, int orig, char *buff, size_t len,
         snprintf(rep.word, sizeof(rep.word), "%s", req->word);
         goto INVTD_INSERT_WORD_REP;
     }
+    pthread_rwlock_unlock(&ctx->invtab_lock);
 
     /* > 设置应答信息 */
     rep.code = htonl(1); // 成功

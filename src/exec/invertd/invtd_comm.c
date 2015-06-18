@@ -134,12 +134,14 @@ invtd_cntx_t *invtd_init(const char *conf_path)
         }
 
         /* > 创建倒排表 */
-        ctx->tab = invtab_creat(ctx->conf.invt_tab_max, log);
-        if (NULL == ctx->tab)
+        ctx->invtab = invtab_creat(ctx->conf.invt_tab_max, log);
+        if (NULL == ctx->invtab)
         {
             log_error(log, "Create invert table failed!");
             break;
         }
+
+        pthread_rwlock_init(&ctx->invtab_lock, NULL);
 
         /* > 初始化SDTP服务 */
         ctx->rtrd = rtrd_init(&ctx->conf.rtrd, log);
@@ -178,10 +180,14 @@ invtd_cntx_t *invtd_init(const char *conf_path)
 static int invtd_insert_word(invtd_cntx_t *ctx)
 {
 #define INVERT_INSERT(ctx, word, url, freq) \
-    if (invtab_insert(ctx->tab, word, url, freq)) \
+    pthread_rwlock_wrlock(&ctx->invtab_lock); \
+    if (invtab_insert(ctx->invtab, word, url, freq)) \
     { \
+        pthread_rwlock_unlock(&ctx->invtab_lock); \
         return INVT_ERR; \
-    }
+    } \
+    pthread_rwlock_unlock(&ctx->invtab_lock); \
+
 
     INVERT_INSERT(ctx, "CSDN", "www.csdn.net", 5);
     INVERT_INSERT(ctx, "BAIDU", "www.baidu.com", 5);

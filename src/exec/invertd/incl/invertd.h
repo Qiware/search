@@ -9,10 +9,12 @@
 /* 全局信息 */
 typedef struct
 {
+    log_cycle_t *log;                       /* 日志对象 */
     invtd_conf_t conf;                      /* 配置信息 */
 
-    log_cycle_t *log;                       /* 日志对象 */
-    invt_tab_t *tab;                        /* 倒排表 */
+    invt_tab_t *invtab;                     /* 倒排表 */
+    pthread_rwlock_t invtab_lock;           /* 倒排表锁 */
+
     rtrd_cntx_t *rtrd;                      /* RTRD服务 */
     rtrd_cli_t *rtrd_cli;                   /* RTRD客户端 */
 } invtd_cntx_t;
