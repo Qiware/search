@@ -400,6 +400,8 @@ void *sdrd_dist_routine(void *_ctx)
         if (NULL == addr)
         {
             shm_queue_dealloc(ctx->shm_sendq, data);
+            log_error(ctx->log, "Alloc from queue failed! size:%d/%d",
+                    frwd->length, queue_size(ctx->sendq[idx]));
             continue;
         }
 

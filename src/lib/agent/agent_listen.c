@@ -153,7 +153,7 @@ agent_listen_t *agent_listen_init(agent_cntx_t *ctx)
  ******************************************************************************/
 static int agent_listen_accept(agent_cntx_t *ctx, agent_listen_t *lsn)
 {
-    int fd, tidx;
+    int fd, idx;
     agent_add_sck_t *add;
     struct sockaddr_in cliaddr;
 
@@ -168,12 +168,13 @@ static int agent_listen_accept(agent_cntx_t *ctx, agent_listen_t *lsn)
     ++lsn->serial; /* 计数 */
 
     /* 2. 将通信套接字放入队列 */
-    tidx = lsn->serial % ctx->conf->agent_num;
+    idx = lsn->serial % ctx->conf->agent_num;
 
-    add = queue_malloc(ctx->connq[tidx], sizeof(agent_add_sck_t));
+    add = queue_malloc(ctx->connq[idx], sizeof(agent_add_sck_t));
     if (NULL == add)
     {
-        log_error(lsn->log, "Alloc memory from queue failed! fd:%d", fd);
+        log_error(lsn->log, "Alloc from queue failed! fd:%d size:%d/%d",
+                fd, sizeof(agent_add_sck_t), queue_size(ctx->connq[idx]));
         CLOSE(fd);
         return AGENT_ERR;
     }
@@ -183,7 +184,7 @@ static int agent_listen_accept(agent_cntx_t *ctx, agent_listen_t *lsn)
 
     log_debug(lsn->log, "Push data! fd:%d addr:%p serial:%ld", fd, add, lsn->serial);
 
-    queue_push(ctx->connq[tidx], add);
+    queue_push(ctx->connq[idx], add);
 
     return AGENT_OK;
 }

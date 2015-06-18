@@ -1054,8 +1054,8 @@ static int rtsd_ssvr_exp_mesg_proc(
     if (NULL == data)
     {
         ++ssvr->drop_total;
-        log_error(ctx->log, "errmsg:[%d] %s! drop:%lu recv:%lu",
-                errno, strerror(errno), ssvr->recv_total, ssvr->drop_total);
+        log_error(ctx->log, "Alloc from queue failed! drop:%lu recv:%lu size:%d/%d",
+                ssvr->recv_total, ssvr->drop_total, len, queue_size(ctx->recvq[idx]));
         return RTTP_ERR;
     }
 

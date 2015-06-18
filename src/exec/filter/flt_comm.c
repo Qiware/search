@@ -765,9 +765,9 @@ int flt_push_url_to_crwlq(flt_cntx_t *ctx,
         crwl = queue_malloc(ctx->crwlq, sizeof(flt_crwl_t));
         if (NULL == crwl)
         {
-            Sleep(1);
-            log_error(ctx->log, "Not enough memory or Size too large! len:%d/%d",
+            log_error(ctx->log, "Alloc from queue failed! len:%d/%d",
                     sizeof(flt_crwl_t), queue_size(ctx->crwlq));
+            Sleep(1);
             continue;
         }
 

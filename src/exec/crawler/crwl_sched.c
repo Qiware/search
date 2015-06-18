@@ -269,7 +269,7 @@ static int crwl_sched_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
         addr = queue_malloc(workq, size);
         if (NULL == addr)
         {
-            log_error(ctx->log, "Alloc memory from queue again! num:%d size:%d/%d",
+            log_error(ctx->log, "Alloc from queue failed! num:%d size:%d/%d",
                     queue_space(workq), size, queue_size(workq));
             usleep(500);
             goto QUEUE_MALLOC;

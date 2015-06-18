@@ -770,7 +770,7 @@ static int agent_rsvr_recv(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
                 recv->addr = queue_malloc(ctx->recvq[rsvr->tidx], queue_size(ctx->recvq[0]));
                 if (NULL == recv->addr)
                 {
-                    log_error(rsvr->log, "Alloc memory from queue failed!");
+                    log_error(rsvr->log, "Alloc from queue failed!");
                     return AGENT_ERR;
                 }
 

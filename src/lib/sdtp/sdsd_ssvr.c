@@ -1168,8 +1168,8 @@ static int sdsd_ssvr_exp_mesg_proc(
     if (NULL == data)
     {
         ++ssvr->drop_total;
-        log_error(ctx->log, "Data is too long or Not enough memory! drop:%lu recv:%lu len:%d/%d",
-                ssvr->recv_total, ssvr->drop_total, len+sizeof(sdtp_group_t), queue_size(ctx->recvq[0]));
+        log_error(ctx->log, "Alloc from queue failed! drop:%lu recv:%lu len:%d/%d",
+                ssvr->recv_total, ssvr->drop_total, len+sizeof(sdtp_group_t), queue_size(ctx->recvq[idx]));
         return SDTP_ERR;
     }
 

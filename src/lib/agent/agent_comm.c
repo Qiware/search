@@ -359,8 +359,7 @@ int agent_send(agent_cntx_t *ctx, int type, uint64_t serial, void *data, int len
     addr = queue_malloc(sendq, size);
     if (NULL == addr)
     {
-        log_error(ctx->log, "Queue size too small or Not enough memory! size:%d/%d",
-                size, queue_size(sendq));
+        log_error(ctx->log, "Alloc from queue failed! size:%d/%d", size, queue_size(sendq));
         return AGENT_ERR;
     }
 

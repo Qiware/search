@@ -752,8 +752,7 @@ static int sdrd_rsvr_queue_alloc(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr)
         rsvr->queue.rqid = -1;
         sdrd_rsvr_cmd_proc_all_req(ctx, rsvr);
 
-        log_error(rsvr->log, "Recv queue was full or Memory unit size too small!"
-                "recv:%llu drop:%llu error:%llu",
+        log_error(rsvr->log, "Alloc from queue failed! recv:%llu drop:%llu error:%llu",
                 rsvr->recv_total, rsvr->drop_total, rsvr->err_total);
         return SDTP_ERR;
     }

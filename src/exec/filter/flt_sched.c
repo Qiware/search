@@ -54,6 +54,8 @@ void *flt_sched_routine(void *_ctx)
         dir = opendir(path);
         if (NULL == dir)
         {
+            log_error(ctx->log, "errmsg:[%d] %s! path:%s",
+                errno, strerror(errno), path);
             Sleep(1);
             continue;
         }
@@ -74,6 +76,8 @@ void *flt_sched_routine(void *_ctx)
             task = queue_malloc(ctx->taskq, sizeof(flt_task_t));
             if (NULL == task)
             {
+                log_error(ctx->log, "Alloc from queue failed! len:%d/%d",
+                    sizeof(flt_crwl_t), queue_size(ctx->crwlq));
                 Sleep(1);
                 continue;
             }
