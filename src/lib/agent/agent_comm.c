@@ -351,18 +351,16 @@ int agent_send(agent_cntx_t *ctx, int type, uint64_t serial, void *data, int len
         return AGENT_ERR;
     }
 
-    sendq = ctx->sendq[flow.agt_idx];
     size = sizeof(flow) + sizeof(agent_header_t) + len;
-    if (size > queue_size(sendq))
-    {
-        log_error(ctx->log, "Queue size is too small! size:%d/%d", size, queue_size(sendq));
-        return AGENT_ERR;
-    }
 
     /* > 放入指定发送队列 */
-    addr = queue_malloc(sendq);
+    sendq = ctx->sendq[flow.agt_idx];
+
+    addr = queue_malloc(sendq, size);
     if (NULL == addr)
     {
+        log_error(ctx->log, "Queue size too small or Not enough memory! size:%d/%d",
+                size, queue_size(sendq));
         return AGENT_ERR;
     }
 

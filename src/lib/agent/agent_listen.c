@@ -170,7 +170,7 @@ static int agent_listen_accept(agent_cntx_t *ctx, agent_listen_t *lsn)
     /* 2. 将通信套接字放入队列 */
     tidx = lsn->serial % ctx->conf->agent_num;
 
-    add = queue_malloc(ctx->connq[tidx]);
+    add = queue_malloc(ctx->connq[tidx], sizeof(agent_add_sck_t));
     if (NULL == add)
     {
         log_error(lsn->log, "Alloc memory from queue failed! fd:%d", fd);

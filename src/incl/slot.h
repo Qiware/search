@@ -14,7 +14,7 @@ typedef struct
 } slot_t;
 
 slot_t *slot_creat(int num, size_t size);
-#define slot_alloc(slot) ring_pop((slot)->ring)         /* 申请内存 */
+void *slot_alloc(slot_t *slot, int size);
 #define slot_dealloc(slot, p) ring_push(slot->ring, p); /* 释放内存 */
 void slot_destroy(slot_t *slot);
 

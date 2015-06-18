@@ -71,7 +71,7 @@ void *flt_sched_routine(void *_ctx)
             }
 
             /* 3. 放入TASK队列 */
-            task = queue_malloc(ctx->taskq);
+            task = queue_malloc(ctx->taskq, sizeof(flt_task_t));
             if (NULL == task)
             {
                 Sleep(1);

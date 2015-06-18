@@ -741,15 +741,18 @@ static int sdrd_rsvr_sys_mesg_proc(sdrd_cntx_t *ctx,
  ******************************************************************************/
 static int sdrd_rsvr_queue_alloc(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr)
 {
-    rsvr->queue.rqid = rand() % ctx->conf.rqnum;
+    queue_t *recvq;
 
-    rsvr->queue.start = queue_malloc(ctx->recvq[rsvr->queue.rqid]);
+    rsvr->queue.rqid = rand() % ctx->conf.rqnum;
+    recvq = ctx->recvq[rsvr->queue.rqid];
+
+    rsvr->queue.start = queue_malloc(recvq, queue_size(recvq));
     if (NULL == rsvr->queue.start)
     {
         rsvr->queue.rqid = -1;
         sdrd_rsvr_cmd_proc_all_req(ctx, rsvr);
 
-        log_warn(rsvr->log, "Recv queue was full! Perhaps lock conflicts too much!"
+        log_error(rsvr->log, "Recv queue was full or Memory unit size too small!"
                 "recv:%llu drop:%llu error:%llu",
                 rsvr->recv_total, rsvr->drop_total, rsvr->err_total);
         return SDTP_ERR;

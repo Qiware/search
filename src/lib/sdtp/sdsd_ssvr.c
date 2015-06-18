@@ -1161,24 +1161,15 @@ static int sdsd_ssvr_exp_mesg_proc(
     ++ssvr->recv_total;
 
     idx = rand() % ctx->conf.work_thd_num;
-
-    /* > 验证长度 */
     len = SDTP_DATA_TOTAL_LEN(head);
-    if ((int)(len + sizeof(int)) > queue_size(ctx->recvq[0]))
-    {
-        ++ssvr->drop_total;
-        log_error(ctx->log, "Data is too long! len:%d drop:%lu total:%lu",
-                len, ssvr->drop_total, ssvr->recv_total);
-        return SDTP_ERR_TOO_LONG;
-    }
 
     /* > 申请空间 */
-    data = queue_malloc(ctx->recvq[idx]);
+    data = queue_malloc(ctx->recvq[idx], len+sizeof(sdtp_group_t));
     if (NULL == data)
     {
         ++ssvr->drop_total;
-        log_error(ctx->log, "errmsg:[%d] %s! drop:%lu recv:%lu",
-                errno, strerror(errno), ssvr->recv_total, ssvr->drop_total);
+        log_error(ctx->log, "Data is too long or Not enough memory! drop:%lu recv:%lu len:%d/%d",
+                ssvr->recv_total, ssvr->drop_total, len+sizeof(sdtp_group_t), queue_size(ctx->recvq[0]));
         return SDTP_ERR;
     }
 

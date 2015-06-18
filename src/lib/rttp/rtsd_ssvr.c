@@ -1050,7 +1050,7 @@ static int rtsd_ssvr_exp_mesg_proc(
    /* > 申请空间 */
     idx = rand() % ctx->conf.work_thd_num;
 
-    data = queue_malloc(ctx->recvq[idx]);
+    data = queue_malloc(ctx->recvq[idx], len);
     if (NULL == data)
     {
         ++ssvr->drop_total;

@@ -371,22 +371,22 @@ shm_queue_t *sdrd_shm_sendq_attach(const sdrd_conf_t *conf)
 void *sdrd_dist_routine(void *_ctx)
 {
     int idx;
-    void *addr, *addr2;
+    void *data, *addr;
     sdtp_frwd_t *frwd;
     sdrd_cntx_t *ctx = (sdrd_cntx_t *)_ctx;
 
     while (1)
     {
         /* > 弹出发送数据 */
-        addr = shm_queue_pop(ctx->shm_sendq);
-        if (NULL == addr)
+        data = shm_queue_pop(ctx->shm_sendq);
+        if (NULL == data)
         {
             usleep(500); /* TODO: 可使用事件通知机制减少CPU的消耗 */
             continue;
         }
 
         /* > 获取发送队列 */
-        frwd = (sdtp_frwd_t *)addr;
+        frwd = (sdtp_frwd_t *)data;
 
         idx = sdrd_node_to_svr_map_rand(ctx, frwd->dest_nodeid);
         if (idx < 0)
@@ -396,18 +396,18 @@ void *sdrd_dist_routine(void *_ctx)
         }
 
         /* > 获取发送队列 */
-        addr2 = queue_malloc(ctx->sendq[idx]);
-        if (NULL == addr2)
+        addr = queue_malloc(ctx->sendq[idx], frwd->length);
+        if (NULL == addr)
         {
-            shm_queue_dealloc(ctx->shm_sendq, addr);
+            shm_queue_dealloc(ctx->shm_sendq, data);
             continue;
         }
 
-        memcpy(addr2, addr, frwd->length);
+        memcpy(addr, data, frwd->length);
 
-        queue_push(ctx->sendq[idx], addr2);
+        queue_push(ctx->sendq[idx], addr);
 
-        shm_queue_dealloc(ctx->shm_sendq, addr);
+        shm_queue_dealloc(ctx->shm_sendq, data);
     }
 
     return (void *)-1;

@@ -195,7 +195,7 @@ static int rtrd_dsvr_dist_data_hdl(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr)
             }
 
             /* > 申请内存空间 */
-            addr = queue_malloc(ctx->sendq[i]);
+            addr = queue_malloc(ctx->sendq[i], frwd->length);
             if (NULL == addr)
             {
                 shm_queue_dealloc(ctx->shm_sendq, data[j]);

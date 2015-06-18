@@ -767,7 +767,7 @@ static int agent_rsvr_recv(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
             /* 1. 分配空间 */
             case SOCK_PHASE_RECV_INIT:
             {
-                recv->addr = queue_malloc(ctx->recvq[rsvr->tidx]);
+                recv->addr = queue_malloc(ctx->recvq[rsvr->tidx], queue_size(ctx->recvq[0]));
                 if (NULL == recv->addr)
                 {
                     log_error(rsvr->log, "Alloc memory from queue failed!");

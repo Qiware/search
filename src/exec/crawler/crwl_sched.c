@@ -240,12 +240,14 @@ static int crwl_sched_event_hdl(crwl_cntx_t *ctx, crwl_sched_t *sched)
  ******************************************************************************/
 static int crwl_sched_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
 {
-    int idx;
+    int idx, size;
     void *addr;
     redisReply *r;
     queue_t *workq;
     crwl_task_t *task;
     crwl_conf_t *conf = ctx->conf;
+
+    size = sizeof(crwl_task_t) + sizeof(crwl_task_space_u);
 
     while (conf->sched_stat)
     {
@@ -263,11 +265,12 @@ static int crwl_sched_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
 
         workq = ctx->workq[idx];
 
-        /* > 申请队列空间 */
-        addr = queue_malloc(workq);
+        /* > 申请队列空间(head + body) */
+        addr = queue_malloc(workq, size);
         if (NULL == addr)
         {
-            log_warn(ctx->log, "Alloc memory from queue again! num:%d", queue_space(workq));
+            log_error(ctx->log, "Alloc memory from queue again! num:%d size:%d/%d",
+                    queue_space(workq), size, queue_size(workq));
             usleep(500);
             goto QUEUE_MALLOC;
         }
@@ -358,7 +361,7 @@ static int crwl_task_parse(const char *str, crwl_task_t *task, log_cycle_t *log)
             task->length = sizeof(crwl_task_t) + sizeof(crwl_task_down_webpage_t);
 
             ret = crwl_task_parse_download_webpage(xml, (crwl_task_down_webpage_t *)(task + 1));
-           break;
+            break;
         }
         default:
         {
@@ -445,8 +448,8 @@ static int crwl_task_parse_download_webpage(xml_tree_t *xml, crwl_task_down_webp
  **     task: 任务信息
  **输出参数:
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项: 内存结构: crwl_task_t + crwl_task_down_webpage_t 
  **作    者: # Qifeng.zou # 2014.12.12 #
  ******************************************************************************/
 static int crwl_sched_download_webpage_task_hdl(

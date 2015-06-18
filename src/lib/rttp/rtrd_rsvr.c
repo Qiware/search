@@ -749,11 +749,12 @@ static int rtrd_rsvr_sys_mesg_proc(rtrd_cntx_t *ctx,
 static int rtrd_rsvr_exp_mesg_proc(rtrd_cntx_t *ctx,
         rtrd_rsvr_t *rsvr, rtrd_sck_t *sck, void *data)
 {
-    int rqid;
+    int rqid, len;
     void *addr;
     rttp_header_t *head = (rttp_header_t *)data;
 
     ++rsvr->recv_total; /* 总数 */
+    len = sizeof(rttp_header_t) + head->length;
 
     /* > 合法性验证 */
     if (head->nodeid != sck->nodeid)
@@ -766,20 +767,20 @@ static int rtrd_rsvr_exp_mesg_proc(rtrd_cntx_t *ctx,
     /* > 从队列申请空间 */
     rqid = rand() % ctx->conf.rqnum;
 
-    addr = queue_malloc(ctx->recvq[rqid]);
+    addr = queue_malloc(ctx->recvq[rqid], len);
     if (NULL == addr)
     {
         ++rsvr->drop_total; /* 丢弃计数 */
         rtrd_rsvr_cmd_proc_all_req(ctx, rsvr);
 
-        log_warn(rsvr->log, "Recv queue was full! Perhaps lock conflicts too much!"
+        log_error(rsvr->log, "Recv queue was full! Perhaps lock conflicts too much!"
                 "recv:%llu drop:%llu error:%llu",
                 rsvr->recv_total, rsvr->drop_total, rsvr->err_total);
         return RTTP_ERR;
     }
 
     /* > 进行数据拷贝 */
-    memcpy(addr, data, head->length + sizeof(rttp_header_t));
+    memcpy(addr, data, len);
 
     queue_push(ctx->recvq[rqid], addr);         /* 放入处理队列 */
 
