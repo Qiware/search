@@ -1170,7 +1170,7 @@ static int rtsd_ssvr_cmd_proc_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, int rqid)
 {
     rttp_cmd_t cmd;
     char path[FILE_PATH_MAX_LEN];
-    rttp_cmd_proc_req_t *req = (rttp_cmd_proc_req_t *)&cmd.args;
+    rttp_cmd_proc_req_t *req = (rttp_cmd_proc_req_t *)&cmd.param;
 
     memset(&cmd, 0, sizeof(cmd));
 

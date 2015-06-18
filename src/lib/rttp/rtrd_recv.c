@@ -22,12 +22,12 @@ static int rtrd_creat_recvq(rtrd_cntx_t *ctx);
 static int rtrd_creat_sendq(rtrd_cntx_t *ctx);
 
 static int rtrd_creat_recvtp(rtrd_cntx_t *ctx);
-void rtrd_recvtp_destroy(void *_ctx, void *args);
+void rtrd_recvtp_destroy(void *_ctx, void *param);
 
 static int rtrd_creat_worktp(rtrd_cntx_t *ctx);
-void rtrd_worktp_destroy(void *_ctx, void *args);
+void rtrd_worktp_destroy(void *_ctx, void *param);
 
-static int rtrd_proc_def_hdl(int type, int orig, char *buff, size_t len, void *args);
+static int rtrd_proc_def_hdl(int type, int orig, char *buff, size_t len, void *param);
 
 /******************************************************************************
  **函数名称: rtrd_init
@@ -133,7 +133,7 @@ int rtrd_startup(rtrd_cntx_t *ctx)
  **     ctx: 全局对象
  **     type: 扩展消息类型 Range:(0 ~ RTTP_TYPE_MAX)
  **     proc: 回调函数
- **     args: 附加参数
+ **     param: 附加参数
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述:
@@ -142,7 +142,7 @@ int rtrd_startup(rtrd_cntx_t *ctx)
  **     2. 不允许重复注册
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-int rtrd_register(rtrd_cntx_t *ctx, int type, rttp_reg_cb_t proc, void *args)
+int rtrd_register(rtrd_cntx_t *ctx, int type, rttp_reg_cb_t proc, void *param)
 {
     rttp_reg_t *reg;
 
@@ -161,7 +161,7 @@ int rtrd_register(rtrd_cntx_t *ctx, int type, rttp_reg_cb_t proc, void *args)
     reg = &ctx->reg[type];
     reg->type = type;
     reg->proc = proc;
-    reg->args = args;
+    reg->param = param;
     reg->flag = 1;
 
     return RTTP_OK;
@@ -188,7 +188,7 @@ static int rtrd_reg_init(rtrd_cntx_t *ctx)
         reg->type = idx;
         reg->proc = rtrd_proc_def_hdl;
         reg->flag = 0;
-        reg->args = NULL;
+        reg->param = NULL;
     }
 
     return RTTP_OK;
@@ -438,14 +438,14 @@ static int rtrd_creat_recvtp(rtrd_cntx_t *ctx)
  **功    能: 销毁接收线程池
  **输入参数:
  **     ctx: 全局对象
- **     args: 附加参数
+ **     param: 附加参数
  **输出参数: NONE
  **返    回: VOID
  **实现描述:
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-void rtrd_recvtp_destroy(void *_ctx, void *args)
+void rtrd_recvtp_destroy(void *_ctx, void *param)
 {
     int idx;
     rtrd_cntx_t *ctx = (rtrd_cntx_t *)_ctx;
@@ -533,14 +533,14 @@ static int rtrd_creat_worktp(rtrd_cntx_t *ctx)
  **功    能: 销毁工作线程池
  **输入参数:
  **     ctx: 全局对象
- **     args: 附加参数
+ **     param: 附加参数
  **输出参数: NONE
  **返    回: VOID
  **实现描述:
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.06 #
  ******************************************************************************/
-void rtrd_worktp_destroy(void *_ctx, void *args)
+void rtrd_worktp_destroy(void *_ctx, void *param)
 {
     int idx;
     rtrd_cntx_t *ctx = (rtrd_cntx_t *)_ctx;
@@ -566,14 +566,14 @@ void rtrd_worktp_destroy(void *_ctx, void *args)
  **     orig: 源设备ID
  **     buff: 消息内容
  **     len: 内容长度
- **     args: 附加参数
+ **     param: 附加参数
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述:
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.06 #
  ******************************************************************************/
-static int rtrd_proc_def_hdl(int type, int orig, char *buff, size_t len, void *args)
+static int rtrd_proc_def_hdl(int type, int orig, char *buff, size_t len, void *param)
 {
     return RTTP_OK;
 }

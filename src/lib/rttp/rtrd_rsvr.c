@@ -345,7 +345,7 @@ static int rtrd_rsvr_recv_cmd(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
     {
         case RTTP_CMD_ADD_SCK:      /* 添加套接字 */
         {
-            return rtrd_rsvr_add_conn_hdl(rsvr, (rttp_cmd_add_sck_t *)&cmd.args);
+            return rtrd_rsvr_add_conn_hdl(rsvr, (rttp_cmd_add_sck_t *)&cmd.param);
         }
         case RTTP_CMD_DIST_REQ:     /* 分发发送数据 */
         {
@@ -1259,7 +1259,7 @@ static int rtrd_rsvr_cmd_proc_req(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, int rqid)
     rttp_cmd_t cmd;
     char path[FILE_PATH_MAX_LEN];
     rtrd_conf_t *conf = &ctx->conf;
-    rttp_cmd_proc_req_t *req = (rttp_cmd_proc_req_t *)&cmd.args;
+    rttp_cmd_proc_req_t *req = (rttp_cmd_proc_req_t *)&cmd.param;
 
     memset(&cmd, 0, sizeof(cmd));
 

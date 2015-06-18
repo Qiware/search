@@ -105,7 +105,7 @@ AGAIN:
  ******************************************************************************/
 int unix_udp_recv(int fd, void *buff, int len)
 {
-    socklen_t addrlen;
+    socklen_t addrlen = 0;
     struct sockaddr_un from;
 
     memset(&from, 0, sizeof(struct sockaddr_un));

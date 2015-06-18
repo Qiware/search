@@ -134,6 +134,8 @@ static int rtrd_dsvr_cmd_dist_req(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr, int idx)
     rttp_cmd_t cmd;
     char path[FILE_NAME_MAX_LEN];
 
+    memset(&cmd, 0, sizeof(cmd));
+
     cmd.type = RTTP_CMD_DIST_REQ;
 
     rtrd_rsvr_usck_path(&ctx->conf, path, idx);

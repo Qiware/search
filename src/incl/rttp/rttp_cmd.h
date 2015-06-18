@@ -86,14 +86,14 @@ typedef union
     rttp_cmd_proc_stat_t proc_stat;
     rttp_cmd_recv_stat_t recv_stat;
     rttp_cmd_conf_t conf;
-} rttp_cmd_args_t;
+} rttp_cmd_param_t;
 
 /* 命令信息结构体 */
 typedef struct
 {
     uint32_t type;                      /* 命令类型 Range: rttp_cmd_e */
     char src_path[FILE_NAME_MAX_LEN];   /* 命令源路径 */
-    rttp_cmd_args_t args;               /* 其他数据信息 */
+    rttp_cmd_param_t param;             /* 其他数据信息 */
 } rttp_cmd_t;
 
 #endif /*__RTTP_CMD_H__*/

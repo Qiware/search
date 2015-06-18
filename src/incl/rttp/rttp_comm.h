@@ -114,11 +114,11 @@ typedef struct
  **     orig: 源结点ID
  **     data: 数据
  **     len: 数据长度
- **     args: 附加参数
+ **     param: 附加参数
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  ******************************************************************************/
-typedef int (*rttp_reg_cb_t)(int type, int orig, char *data, size_t len, void *args);
+typedef int (*rttp_reg_cb_t)(int type, int orig, char *data, size_t len, void *param);
 typedef struct
 {
     int type;                           /* 消息类型. Range: 0~RTTP_TYPE_MAX */
@@ -128,7 +128,7 @@ typedef struct
                                             - 0: 未注册
                                             - 1: 已注册 */
     rttp_reg_cb_t proc;                 /* 回调函数指针 */
-    void *args;                         /* 附加参数 */
+    void *param;                        /* 附加参数 */
 } rttp_reg_t;
 
 #endif /*__RTTP_COMM_H__*/

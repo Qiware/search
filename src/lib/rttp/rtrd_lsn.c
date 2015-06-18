@@ -41,7 +41,7 @@ static int rtrd_lsn_cmd_query_proc_stat_hdl(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn, r
  **注意事项:
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-void *rtrd_lsn_routine(void *args)
+void *rtrd_lsn_routine(void *param)
 {
 #define RTTP_LSN_TMOUT_SEC 30
 #define RTTP_LSN_TMOUT_USEC 0
@@ -49,7 +49,7 @@ void *rtrd_lsn_routine(void *args)
     int ret, max;
     rtrd_lsn_t *lsn;
     struct timeval timeout;
-    rtrd_cntx_t *ctx = (rtrd_cntx_t *)args;
+    rtrd_cntx_t *ctx = (rtrd_cntx_t *)param;
 
     /* 1. 初始化侦听 */
     lsn = rtrd_lsn_init(ctx);
@@ -189,7 +189,7 @@ static int rtrd_lsn_accept(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn)
     socklen_t len;
     rttp_cmd_t cmd;
     struct sockaddr_in cliaddr;
-    rttp_cmd_add_sck_t *args = (rttp_cmd_add_sck_t *)&cmd.args;
+    rttp_cmd_add_sck_t *param = (rttp_cmd_add_sck_t *)&cmd.param;
 
     /* 1. 接收连接请求 */
     for (;;)
@@ -218,9 +218,9 @@ static int rtrd_lsn_accept(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn)
     memset(&cmd, 0, sizeof(cmd));
 
     cmd.type = RTTP_CMD_ADD_SCK;
-    args->sckid = sckid;
-    args->sck_serial = ++lsn->serial; /* 设置套接字序列号 */
-    snprintf(args->ipaddr, sizeof(args->ipaddr), "%s", inet_ntoa(cliaddr.sin_addr));
+    param->sckid = sckid;
+    param->sck_serial = ++lsn->serial; /* 设置套接字序列号 */
+    snprintf(param->ipaddr, sizeof(param->ipaddr), "%s", inet_ntoa(cliaddr.sin_addr));
 
     log_trace(lsn->log, "New connection! serial:%lu sckid:%d ip:%s",
             lsn->serial, sckid, inet_ntoa(cliaddr.sin_addr));
@@ -306,21 +306,21 @@ static int rtrd_lsn_cmd_query_conf_hdl(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn, rttp_c
 {
     rttp_cmd_t rep;
     rtrd_conf_t *cf = &ctx->conf;
-    rttp_cmd_conf_t *args = (rttp_cmd_conf_t *)&rep.args;
+    rttp_cmd_conf_t *param = (rttp_cmd_conf_t *)&rep.param;
 
     memset(&rep, 0, sizeof(rep));
 
     /* 1. 设置应答信息 */
     rep.type = RTTP_CMD_QUERY_CONF_REP;
 
-    snprintf(args->path, sizeof(args->path), "%s", cf->path);
-    args->port = cf->port;
-    args->recv_thd_num = cf->recv_thd_num;
-    args->work_thd_num = cf->work_thd_num;
-    args->rqnum = cf->rqnum;
+    snprintf(param->path, sizeof(param->path), "%s", cf->path);
+    param->port = cf->port;
+    param->recv_thd_num = cf->recv_thd_num;
+    param->work_thd_num = cf->work_thd_num;
+    param->rqnum = cf->rqnum;
 
-    args->qmax = cf->recvq.max;
-    args->qsize = cf->recvq.size;
+    param->qmax = cf->recvq.max;
+    param->qsize = cf->recvq.size;
 
     /* 2. 发送应答信息 */
     if (unix_udp_send(lsn->cmd_sck_id, cmd->src_path, &rep, sizeof(rep)) < 0)
@@ -351,7 +351,7 @@ static int rtrd_lsn_cmd_query_recv_stat_hdl(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn, r
 {
     int idx;
     rttp_cmd_t rep;
-    rttp_cmd_recv_stat_t *stat = (rttp_cmd_recv_stat_t *)&rep.args;
+    rttp_cmd_recv_stat_t *stat = (rttp_cmd_recv_stat_t *)&rep.param;
     const rtrd_rsvr_t *rsvr = (const rtrd_rsvr_t *)ctx->recvtp->data;
 
     for (idx=0; idx<ctx->conf.recv_thd_num; ++idx, ++rsvr)
@@ -394,7 +394,7 @@ static int rtrd_lsn_cmd_query_proc_stat_hdl(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn, r
     int idx;
     rttp_cmd_t rep;
     const rttp_worker_t *wrk = (rttp_worker_t *)ctx->worktp->data;
-    rttp_cmd_proc_stat_t *stat = (rttp_cmd_proc_stat_t *)&rep.args;
+    rttp_cmd_proc_stat_t *stat = (rttp_cmd_proc_stat_t *)&rep.param;
 
     for (idx=0; idx<ctx->conf.work_thd_num; ++idx, ++wrk)
     {

@@ -77,7 +77,7 @@ void *rtsd_worker_routine(void *_ctx)
         {
             /* 超时: 模拟处理命令 */
             rttp_cmd_t cmd;
-            req = (rttp_cmd_proc_req_t *)&cmd.args;
+            req = (rttp_cmd_proc_req_t *)&cmd.param;
 
             for (idx=0; idx<conf->send_thd_num; ++idx)
             {
@@ -246,7 +246,7 @@ static int rtsd_worker_cmd_proc_req_hdl(rtsd_cntx_t *ctx, rttp_worker_t *worker,
     queue_t *rq;
     rttp_reg_t *reg;
     rttp_header_t *head;
-    const rttp_cmd_proc_req_t *work_cmd = (const rttp_cmd_proc_req_t *)&cmd->args;
+    const rttp_cmd_proc_req_t *work_cmd = (const rttp_cmd_proc_req_t *)&cmd->param;
 
     /* 1. 获取接收队列 */
     rq = ctx->recvq[work_cmd->rqidx];
@@ -282,7 +282,7 @@ static int rtsd_worker_cmd_proc_req_hdl(rtsd_cntx_t *ctx, rttp_worker_t *worker,
             }
 
             if (reg->proc(head->type, head->nodeid,
-                addr[idx] + sizeof(rttp_header_t), head->length, reg->args))
+                addr[idx] + sizeof(rttp_header_t), head->length, reg->param))
             {
                 ++worker->err_total;    /* 错误计数 */
             }

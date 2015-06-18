@@ -254,7 +254,7 @@ int rtsd_start(rtsd_cntx_t *ctx)
  **     ctx: 全局对象
  **     type: 扩展消息类型 Range:(0 ~ RTTP_TYPE_MAX)
  **     proc: 回调函数
- **     args: 附加参数
+ **     param: 附加参数
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述:
@@ -263,7 +263,7 @@ int rtsd_start(rtsd_cntx_t *ctx)
  **     2. 不允许重复注册
  **作    者: # Qifeng.zou # 2015.05.19 #
  ******************************************************************************/
-int rtsd_register(rtsd_cntx_t *ctx, int type, rttp_reg_cb_t proc, void *args)
+int rtsd_register(rtsd_cntx_t *ctx, int type, rttp_reg_cb_t proc, void *param)
 {
     rttp_reg_t *reg;
 
@@ -282,7 +282,7 @@ int rtsd_register(rtsd_cntx_t *ctx, int type, rttp_reg_cb_t proc, void *args)
     reg = &ctx->reg[type];
     reg->type = type;
     reg->proc = proc;
-    reg->args = args;
+    reg->param = param;
     reg->flag = 1;
 
     return RTTP_OK;
