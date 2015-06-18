@@ -221,15 +221,10 @@ static int frwd_shmq_push(shm_queue_t *shmq,
     agent_flow_t *flow;
     rttp_header_t *head;
 
-    /* > 判断合法性 */
-    size = sizeof(agent_flow_t) + sizeof(rttp_header_t) + shm_queue_size(shmq);
-    if (size < len)
-    {
-        return FRWD_ERR;
-    }
+    size = sizeof(agent_flow_t) + sizeof(rttp_header_t) + len;
 
     /* > 申请队列空间 */
-    addr = shm_queue_malloc(shmq);
+    addr = shm_queue_malloc(shmq, size);
     if (NULL == addr)
     {
         return FRWD_ERR;

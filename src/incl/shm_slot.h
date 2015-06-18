@@ -12,7 +12,7 @@ typedef struct
 
 size_t shm_slot_total(int num, size_t size);
 shm_slot_t *shm_slot_init(void *addr, int num, size_t size);
-void *shm_slot_alloc(shm_slot_t *slot);
+void *shm_slot_alloc(shm_slot_t *slot, int size);
 void shm_slot_dealloc(shm_slot_t *slot, void *p);
 void shm_slot_print(shm_slot_t *slot);
 

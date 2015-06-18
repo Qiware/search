@@ -49,14 +49,8 @@ int sdrd_cli_send(sdrd_cli_t *cli, int type, int dest, void *data, size_t len)
     void *addr;
     sdtp_frwd_t *frwd;
 
-    /* > 合法性检测 */
-    if (len > sizeof(sdtp_frwd_t) + shm_queue_size(cli->sendq))
-    {
-        return -1;
-    }
-
     /* > 申请队列空间 */
-    addr = shm_queue_malloc(cli->sendq);
+    addr = shm_queue_malloc(cli->sendq, sizeof(sdtp_frwd_t)+len);
     if (NULL == addr)
     {
         return SDTP_ERR;

@@ -61,7 +61,7 @@ void *queue_push_routine(void *str)
 
     while (1)
     {
-        addr = shm_queue_malloc(queue);
+        addr = shm_queue_malloc(queue, sizeof(queue_header_t));
         if (NULL == addr)
         {
             usleep(5000);

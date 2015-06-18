@@ -204,10 +204,11 @@ int rtsd_cli_send(rtsd_cli_t *cli, int type, const void *data, size_t size)
     /* > 选择发送队列 */
     idx = (num++) % conf->send_thd_num;
 
-    addr = shm_queue_malloc(cli->sendq[idx]);
+    addr = shm_queue_malloc(cli->sendq[idx], sizeof(rttp_header_t)+size);
     if (NULL == addr)
     {
-        log_error(cli->log, "Alloc from shmq failed!");
+        log_error(cli->log, "Alloc from SHMQ failed! size:%d/%d",
+                size+sizeof(rttp_header_t), shm_queue_size(cli->sendq[idx]));
         return RTTP_ERR;
     }
 

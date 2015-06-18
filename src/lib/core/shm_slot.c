@@ -101,10 +101,15 @@ shm_slot_t *shm_slot_init(void *addr, int num, size_t size)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.05.06 #
  ******************************************************************************/
-void *shm_slot_alloc(shm_slot_t *slot)
+void *shm_slot_alloc(shm_slot_t *slot, int size)
 {
     off_t off;
     shm_ring_t *ring = (shm_ring_t *)(slot + 1);
+
+    if (size > slot->size)
+    {
+        return NULL;
+    }
 
     off = shm_ring_pop(ring);
     if ((off_t)-1 == off)
