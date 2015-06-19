@@ -90,6 +90,7 @@ static int mon_agent_search_rsp_hdl(int fd)
     if (n < 0)
     {
         fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
+        free(buff);
         return -1;
     }
 
@@ -207,11 +208,13 @@ static int mon_agent_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void 
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
- **注意事项: 
+ **注意事项: 此处使用的是select(), 因此最大文件描述符的"值"(而不是个数)不能超过FD_SETSIZE(1024)!
+ **          否则，在设置rdset, wrset时，将会出现栈溢出, 导致不可预测的错误出现!
  **作    者: # Qifeng.zou # 2015.06.05 #
  ******************************************************************************/
 static int mon_agent_multi_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args)
 {
+#define MON_FD_MAX  (512)
     int sec, msec;
     int *fd, *wflg;
     struct timeb *wrtm, ctm;
@@ -231,13 +234,13 @@ static int mon_agent_multi_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu,
     fprintf(stderr, "    Connections: ");
     scanf(" %s", digit);
 
-    num = atoi(digit);
+    num = MIN(atoi(digit), MON_FD_MAX);
     fd = (int *)calloc(num, sizeof(int));
     wflg = (int *)calloc(num, sizeof(int));
     wrtm = (struct timeb *)calloc(num, sizeof(struct timeb));
 
 SRCH_AGAIN:
-    num = atoi(digit);
+    num = MIN(atoi(digit), MON_FD_MAX);
 
     /* > 连接代理服务 */
     for (idx=0; idx<num; ++idx)
@@ -251,7 +254,6 @@ SRCH_AGAIN:
         }
 
         fprintf(stdout, "    idx:%d fd:%d!\n", idx, fd[idx]);
-
     }
 
     num = idx;
@@ -327,10 +329,7 @@ SRCH_AGAIN:
 
     for (idx=0; idx<num; ++idx)
     {
-        if (fd[idx] > 0)
-        {
-            CLOSE(fd[idx]);
-        }
+        CLOSE(fd[idx]);
     }
 
     goto SRCH_AGAIN;
