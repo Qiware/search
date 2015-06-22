@@ -7,7 +7,7 @@
 #include "rb_tree.h"
 #include "agent_mesg.h"
 
-#define AGENT_TMOUT_MSEC       (500)   /* 超时(豪秒) */
+#define AGENT_TMOUT_MSEC       (200)   /* 超时(豪秒) */
 
 #define AGENT_EVENT_MAX_NUM    (4096)  /* 事件最大数 */
 #define AGENT_SCK_HASH_MOD     (7)     /* 套接字哈希长度 */
@@ -24,6 +24,7 @@ typedef struct
     struct epoll_event *events;     /* Event最大数 */
 
     int cmd_sck_id;                 /* 命令套接字 */
+    socket_t cmd_sck;               /* 命令套接字 */
     rbt_tree_t *connections;        /* 套接字表(挂载数据socket_t) */
     unsigned int conn_total;        /* 当前连接数 */
 
@@ -35,6 +36,7 @@ typedef struct
 typedef struct
 {
     uint64_t serial;                /* 序列号(主键) */
+    bool is_cmd_sck;                /* 是否是命令套接字(false:否 true:是) */
 
     agent_flow_t *flow;             /* 流水信息 */
     agent_header_t *head;           /* 报头起始地址 */

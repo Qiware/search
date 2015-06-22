@@ -1,5 +1,6 @@
 #include "sck.h"
 #include "comm.h"
+#include "mesg.h"
 #include "search.h"
 #include "syscall.h"
 #include "agent_rsvr.h"
@@ -7,6 +8,7 @@
 
 agent_listen_t *agent_listen_init(agent_cntx_t *ctx);
 static int agent_listen_accept(agent_cntx_t *ctx, agent_listen_t *lsn);
+static int agent_listen_send_add_sck_req(agent_cntx_t *ctx, agent_listen_t *lsn, int idx);
 
 /******************************************************************************
  **函数名称: agent_listen_routine
@@ -29,7 +31,7 @@ void *agent_listen_routine(void *_ctx)
     agent_listen_t *lsn;
     agent_cntx_t *ctx = (agent_cntx_t *)_ctx;
 
-    /* 1. 初始化侦听线程 */
+    /* > 初始化侦听线程 */
     lsn = agent_listen_init(ctx);
     if (NULL == lsn)
     {
@@ -37,7 +39,7 @@ void *agent_listen_routine(void *_ctx)
         return (void *)-1;
     }
 
-    /* 2. 接收网络连接  */
+    /* > 接收网络连接  */
     while (1)
     {
         FD_ZERO(&rdset);
@@ -47,7 +49,7 @@ void *agent_listen_routine(void *_ctx)
 
         max = MAX(lsn->lsn_sck_id, lsn->cmd_sck_id);
 
-        /* 2.1 等待事件通知 */
+        /* > 等待事件通知 */
         tv.tv_sec = 30;
         tv.tv_usec = 0;
         ret = select(max+1, &rdset, NULL, NULL, &tv);
@@ -66,16 +68,10 @@ void *agent_listen_routine(void *_ctx)
             continue;
         }
 
-        /* 2.2 接收网络连接 */
+        /* > 接收网络连接 */
         if (FD_ISSET(lsn->lsn_sck_id, &rdset))
         {
             agent_listen_accept(ctx, lsn);
-        }
-
-        /* 2.3 接收操作命令 */
-        if (FD_ISSET(lsn->cmd_sck_id, &rdset))
-        {
-            /* TODO: 待完善 */
         }
     }
     return (void *)0;
@@ -157,7 +153,7 @@ static int agent_listen_accept(agent_cntx_t *ctx, agent_listen_t *lsn)
     agent_add_sck_t *add;
     struct sockaddr_in cliaddr;
 
-    /* 1. 接收连接请求 */
+    /* > 接收连接请求 */
     fd = tcp_accept(lsn->lsn_sck_id, (struct sockaddr *)&cliaddr);
     if (fd < 0)
     {
@@ -167,7 +163,7 @@ static int agent_listen_accept(agent_cntx_t *ctx, agent_listen_t *lsn)
 
     ++lsn->serial; /* 计数 */
 
-    /* 2. 将通信套接字放入队列 */
+    /* > 将通信套接字放入队列 */
     idx = lsn->serial % ctx->conf->agent_num;
 
     add = queue_malloc(ctx->connq[idx], sizeof(agent_add_sck_t));
@@ -185,6 +181,35 @@ static int agent_listen_accept(agent_cntx_t *ctx, agent_listen_t *lsn)
     log_debug(lsn->log, "Push data! fd:%d addr:%p serial:%ld", fd, add, lsn->serial);
 
     queue_push(ctx->connq[idx], add);
+
+    /* > 发送ADD-SCK请求 */
+    agent_listen_send_add_sck_req(ctx, lsn, idx);
+
+    return AGENT_OK;
+}
+
+/******************************************************************************
+ **函数名称: agent_listen_send_add_sck_req
+ **功    能: 发送ADD-SCK请求
+ **输入参数:
+ **     ctx: 全局信息
+ **     lsn: 侦听对象
+ **     idx: 接收服务的索引号
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015-06-22 21:47:52 #
+ ******************************************************************************/
+static int agent_listen_send_add_sck_req(agent_cntx_t *ctx, agent_listen_t *lsn, int idx)
+{
+    cmd_data_t cmd;
+    char path[FILE_NAME_MAX_LEN];
+
+    cmd.type = CMD_ADD_SCK;
+    snprintf(path, sizeof(path), AGENT_RCV_CMD_PATH, idx);
+
+    unix_udp_send(lsn->cmd_sck_id, path, &cmd, sizeof(cmd));
 
     return AGENT_OK;
 }

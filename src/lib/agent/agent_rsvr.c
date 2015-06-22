@@ -29,8 +29,7 @@ static int agent_rsvr_event_timeout_hdl(agent_cntx_t *ctx, agent_rsvr_t *rsvr);
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
- **注意事项: 
- **     TODO: 可使用事件触发添加套接字
+ **注意事项: TODO: 可使用事件触发分发数据
  **作    者: # Qifeng.zou # 2014.11.18 #
  ******************************************************************************/
 void *agent_rsvr_routine(void *_ctx)
@@ -49,15 +48,6 @@ void *agent_rsvr_routine(void *_ctx)
 
     while (1)
     {
-        /* 2. 从连接队列取数据 */
-        if (agent_connq_used(ctx, rsvr->tidx))
-        {
-            if (agent_rsvr_add_conn(ctx, rsvr))
-            {
-                log_error(rsvr->log, "Add connection failed!");
-            }
-        }
-
         agent_rsvr_dist_send_data(ctx, rsvr);
 
         /* 3. 等待事件通知 */
@@ -67,7 +57,6 @@ void *agent_rsvr_routine(void *_ctx)
         {
             if (EINTR == errno)
             {
-                usleep(500);
                 continue;
             }
 
@@ -95,6 +84,49 @@ void *agent_rsvr_routine(void *_ctx)
     return NULL;
 }
 
+/* 命令接收处理 */
+static int agt_rsvr_recv_cmd_hdl(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
+{
+    cmd_data_t cmd;
+
+    while (1)
+    {
+        /* > 接收命令 */
+        if (unix_udp_recv(sck->fd, &cmd, sizeof(cmd)) < 0)
+        {
+            log_error(rsvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
+            return AGENT_SCK_AGAIN;
+        }
+
+        /* > 处理命令 */
+        switch (cmd.type)
+        {
+            case CMD_ADD_SCK:
+            {
+                if (agent_rsvr_add_conn(ctx, rsvr))
+                {
+                    log_error(rsvr->log, "Add connection failed！");
+                }
+                break;
+            }
+            case CMD_DIST_DATA:
+            {
+                if (agent_rsvr_dist_send_data(ctx, rsvr))
+                {
+                    log_error(rsvr->log, "Disturibute data failed！");
+                }
+                break;
+            }
+            default:
+            {
+                log_error(rsvr->log, "Unknown command type [%d]！", cmd.type);
+                break;
+            }
+        }
+    }
+    return AGENT_OK;
+}
+
 /******************************************************************************
  **函数名称: agent_rsvr_init
  **功    能: 初始化Agent线程
@@ -105,21 +137,20 @@ void *agent_rsvr_routine(void *_ctx)
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
- **     1. 创建epoll对象
- **     2. 创建命令套接字
- **     3. 创建套接字队列
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.28 #
  ******************************************************************************/
 int agent_rsvr_init(agent_cntx_t *ctx, agent_rsvr_t *rsvr, int idx)
 {
     rbt_opt_t opt;
+    struct epoll_event ev;
     char path[FILE_NAME_MAX_LEN];
+    socket_t *cmd_sck = &rsvr->cmd_sck;
 
     rsvr->tidx = idx;
     rsvr->log = ctx->log;
 
-    /* 1. 创建SLAB内存池 */
+    /* > 创建SLAB内存池 */
     rsvr->slab = slab_creat_by_calloc(AGENT_SLAB_SIZE, rsvr->log);
     if (NULL == rsvr->slab)
     {
@@ -127,7 +158,7 @@ int agent_rsvr_init(agent_cntx_t *ctx, agent_rsvr_t *rsvr, int idx)
         return AGENT_ERR;
     }
 
-    /* 2. 创建连接红黑树 */
+    /* > 创建连接红黑树 */
     memset(&opt, 0, sizeof(opt));
 
     opt.pool = rsvr->slab;
@@ -143,7 +174,7 @@ int agent_rsvr_init(agent_cntx_t *ctx, agent_rsvr_t *rsvr, int idx)
 
     do
     {
-        /* 3. 创建epoll对象 */
+        /* > 创建epoll对象 */
         rsvr->epid = epoll_create(AGENT_EVENT_MAX_NUM);
         if (rsvr->epid < 0)
         {
@@ -159,15 +190,36 @@ int agent_rsvr_init(agent_cntx_t *ctx, agent_rsvr_t *rsvr, int idx)
             break;
         }
 
-        /* 4. 创建命令套接字 */
+        /* > 创建附加信息 */
+        cmd_sck->extra = slab_alloc(rsvr->slab, sizeof(agent_socket_extra_t));
+        if (NULL == cmd_sck->extra)
+        {
+            log_error(rsvr->log, "Alloc from slab failed!");
+            break;
+        }
+
+        /* > 创建命令套接字 */
         snprintf(path, sizeof(path), AGENT_RCV_CMD_PATH, rsvr->tidx);
 
-        rsvr->cmd_sck_id = unix_udp_creat(path);
-        if (rsvr->cmd_sck_id < 0)
+        cmd_sck->fd = unix_udp_creat(path);
+        if (cmd_sck->fd < 0)
         {
             log_error(rsvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
             break;
         }
+
+        ftime(&cmd_sck->crtm);
+        cmd_sck->wrtm = cmd_sck->rdtm = cmd_sck->crtm.time;
+        cmd_sck->recv_cb = (socket_recv_cb_t)agt_rsvr_recv_cmd_hdl;
+        cmd_sck->send_cb = NULL;
+
+        /* > 加入事件侦听 */
+        memset(&ev, 0, sizeof(ev));
+
+        ev.data.ptr = cmd_sck;
+        ev.events = EPOLLIN | EPOLLET; /* 边缘触发 */
+
+        epoll_ctl(rsvr->epid, EPOLL_CTL_ADD, cmd_sck->fd, &ev);
 
         return AGENT_OK;
     } while(0);
@@ -410,7 +462,7 @@ static int agent_rsvr_event_timeout_hdl(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
  **     ctx: 全局信息
  **     rsvr: 接收服务
  **输出参数: NONE
- **返    回: 代理对象
+ **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.29 #
