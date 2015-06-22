@@ -2,9 +2,8 @@
 <FILTER>
     <!-- 日志配置
         1) LEVLE: 日志级别
-        2) PATH: 输出路径
-        3) 取值范围: trace|debug|info|warn|error|fatal -->
-    <LOG LEVEL="warn" PATH="../log/" />
+        2) 取值范围: trace|debug|info|warn|error|fatal -->
+    <LOG LEVEL="warn" />
 
     <!-- 工作进程: 负责网页分析
          1) NUM: 线程数

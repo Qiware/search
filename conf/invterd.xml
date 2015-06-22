@@ -2,9 +2,8 @@
 <INVTERD>
     <!-- 日志配置
         1) LEVLE: 日志级别
-        2) PATH: 输出路径
-        3) 取值范围: trace|debug|info|warn|error|fatal -->
-    <LOG LEVEL="error" PATH="../log" />
+        2) 取值范围: trace|debug|info|warn|error|fatal -->
+    <LOG LEVEL="error" />
 
     <!-- 倒排表配置 -->
     <INVT_TAB MAX="1024" />

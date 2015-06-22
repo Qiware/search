@@ -2,15 +2,14 @@
 <FRWDER>
     <!-- 日志配置
         1) LEVLE: 日志级别
-        2) PATH: 输出路径
-        3) 取值范围: trace|debug|info|warn|error|fatal -->
-    <LOG LEVEL="error" PATH="../log/" />
+        2) 取值范围: trace|debug|info|warn|error|fatal -->
+    <LOG LEVEL="error" />
 
     <!-- 至侦听服务的队列 -->
     <TO_LSND PATH="../temp/listend/send.shmq" />
 
     <!-- 连接倒排服务的配置 -->
-    <CONN-INVTD NODE="10001">                   <!-- NODE: 结点ID(必须唯一) -->
+    <CONN-INVTD NODE="20001">                   <!-- NODE: 结点ID(必须唯一) -->
         <PATH>../temp/frwd/</PATH>              <!-- PATH: 工作路径 -->
         <SERVER IP="127.0.0.1" PORT="28888" />  <!-- 服务端地址(IP:IP地址 PORT:服务端口) -->
         <AUTH   USR="qifeng" PASSWD="111111" /> <!-- 鉴权配置(USR:用户名 PASSWD:登录密码) -->
