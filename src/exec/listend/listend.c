@@ -1,7 +1,7 @@
 /******************************************************************************
  ** Coypright(C) 2014-2024 Xundao technology Co., Ltd
  **
- ** 文件名: lsnd.c
+ ** 文件名: listend.c
  ** 版本号: 1.0
  ** 描  述: 代理服务
  **         负责接受外界请求，并将处理结果返回给外界
@@ -19,8 +19,10 @@
 
 #define LSND_PROC_LOCK_PATH "../temp/lsnd/lsnd.lck"
 
-static lsnd_cntx_t *lsnd_init(char *pname, const char *path);
+static lsnd_cntx_t *lsnd_init(lsnd_conf_t *conf, log_cycle_t *log);
+static int lsnd_startup(lsnd_cntx_t *ctx);
 static int lsnd_set_reg(lsnd_cntx_t *ctx);
+static void lsnd_destroy(lsnd_cntx_t *ctx);
 
 /******************************************************************************
  **函数名称: main 
@@ -38,6 +40,9 @@ int main(int argc, char *argv[])
 {
     lsnd_opt_t opt;
     lsnd_cntx_t *ctx;
+    lsnd_conf_t conf;
+    log_cycle_t *log;
+    char path[FILE_PATH_MAX_LEN];
 
     memset(&opt, 0, sizeof(opt));
 
@@ -55,33 +60,49 @@ int main(int argc, char *argv[])
         daemon(1, 1);
     }
 
-    /* > 进程初始化 */
-    ctx = lsnd_init(argv[0], opt.conf_path);
-    if (NULL == ctx)
+    /* > 初始化日志 */
+    log_get_path(path, sizeof(path), basename(argv[0]));
+
+    log = log_init(LOG_LEVEL_TRACE, path);
+    if (NULL == log)
     {
-        fprintf(stderr, "Initialize lsnd failed!");
-        return -1;
-    }
- 
-    /* 注册回调函数 */
-    if (lsnd_set_reg(ctx))
-    {
-        fprintf(stderr, "Set register callback failed!");
-        return -1;
+        fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
+        goto LSND_INIT_ERR;
     }
 
-    /* 3. 启动爬虫服务 */
-    if (agent_startup(ctx->agent))
+    /* > 加载配置信息 */
+    if (lsnd_load_conf(opt.conf_path, &conf, log))
     {
-        fprintf(stderr, "Startup search-engine failed!");
-        goto ERROR;
+        fprintf(stderr, "Load configuration failed!\n");
+        goto LSND_INIT_ERR;
+    }
+
+    /* > 初始化侦听 */
+    ctx = lsnd_init(&conf, log);
+    if (NULL == ctx)
+    {
+        fprintf(stderr, "Initialize lsnd failed!\n");
+        goto LSND_INIT_ERR;
+    }
+ 
+    /* > 注册回调函数 */
+    if (lsnd_set_reg(ctx))
+    {
+        fprintf(stderr, "Set register callback failed!\n");
+        goto LSND_INIT_ERR;
+    }
+
+    /* > 启动侦听服务 */
+    if (lsnd_startup(ctx))
+    {
+        fprintf(stderr, "Startup search-engine failed!\n");
+        goto LSND_INIT_ERR;
     }
 
     while (1) { pause(); }
 
-ERROR:
-    /* 4. 销毁全局信息 */
-    agent_destroy(ctx->agent);
+LSND_INIT_ERR:
+    lsnd_destroy(ctx);
 
     return -1;
 }
@@ -121,12 +142,6 @@ static int lsnd_proc_lock(void)
     }
 
     return 0;
-}
-
-/* 初始化SDTP对象 */
-static rtsd_cli_t *lsnd_to_invtd_init(rtsd_conf_t *conf, log_cycle_t *log)
-{
-    return rtsd_cli_init(conf, 0, log);
 }
 
 /******************************************************************************
@@ -223,28 +238,22 @@ static int lsnd_set_reg(lsnd_cntx_t *ctx)
  **函数名称: lsnd_init
  **功    能: 初始化进程
  **输入参数:
- **     pname: 进程名
- **     path: 配置路径
+ **     conf: 配置信息
+ **     log: 日志对象
  **输出参数: NONE
  **返    回: 全局对象
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.05.28 23:11:54 #
  ******************************************************************************/
-static lsnd_cntx_t *lsnd_init(char *pname, const char *path)
+static lsnd_cntx_t *lsnd_init(lsnd_conf_t *conf, log_cycle_t *log)
 {
-    pthread_t tid;
-    log_cycle_t *log;
     lsnd_cntx_t *ctx;
-    lsnd_conf_t *conf;
-    agent_cntx_t *agent;
-    rtsd_cli_t *send_to_invtd;
-    char log_path[FILE_NAME_MAX_LEN];
 
     /* > 加进程锁 */
     if (lsnd_proc_lock())
     {
-        fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
+        log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
         return NULL;
     }
 
@@ -252,61 +261,82 @@ static lsnd_cntx_t *lsnd_init(char *pname, const char *path)
     ctx = (lsnd_cntx_t *)calloc(1, sizeof(lsnd_cntx_t));
     if (NULL == ctx)
     {
-        fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
-        return NULL;
-    }
-
-    /* > 初始化日志 */
-    log_get_path(log_path, sizeof(log_path), basename(pname));
-
-    log = log_init(LOG_LEVEL_ERROR, log_path);
-    if (NULL == log)
-    {
-        fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
-        return NULL;
-    }
-
-    /* > 加载配置信息 */
-    conf = lsnd_load_conf(path, log);
-    if (NULL == conf)
-    {
-        FREE(ctx);
-        fprintf(stderr, "Load configuration failed!\n");
+        log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
         return NULL;
     }
 
     ctx->log = log;
-    ctx->conf = conf;
+    log_set_level(log, conf->log_level);
+    memcpy(&ctx->conf, conf, sizeof(lsnd_conf_t));
 
     /* > 创建Agentd发送队列 */
     ctx->sendq = shm_queue_attach(LSND_SHM_SENDQ_PATH);
     if (NULL == ctx->sendq)
     {
-        fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
+        log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
+        FREE(ctx);
         return NULL;
     }
 
     /* > 初始化全局信息 */
-    agent = agent_init(&conf->agent, log);
-    if (NULL == agent)
+    ctx->agent = agent_init(&conf->agent, log);
+    if (NULL == ctx->agent)
     {
-        fprintf(stderr, "Initialize search-engine failed!");
+        log_error(log, "Initialize agent failed!");
+        FREE(ctx);
         return NULL;
     }
 
-    /* > 初始化SDTP信息 */
-    send_to_invtd = lsnd_to_invtd_init(&conf->to_frwd, log);
-    if (NULL == send_to_invtd)
+    /* > 初始化RTTP信息 */
+    ctx->send_to_invtd = rtsd_cli_init(&conf->to_frwd, 0, log);
+    if (NULL == ctx->send_to_invtd)
     {
-        fprintf(stderr, "Initialize sdtp failed!");
+        log_error(log, "Initialize real-time-transport-protocol failed!");
+        FREE(ctx);
         return NULL;
     }
 
-    /* 启动分发线程 */
-    thread_creat(&tid, lsnd_dist_routine, ctx);
-
-    ctx->send_to_invtd = send_to_invtd;
-    ctx->agent = agent;
+    /* > 初始化DSVR服务 */
+    if (lsnd_dsvr_init(ctx))
+    {
+        log_error(log, "Initialize dist-server failed!");
+        FREE(ctx);
+        return NULL;
+    }
 
     return ctx;
+}
+
+/******************************************************************************
+ **函数名称: lsnd_startup
+ **功    能: 启动侦听服务
+ **输入参数:
+ **     ctx: 侦听对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.06.20 22:58:16 #
+ ******************************************************************************/
+static int lsnd_startup(lsnd_cntx_t *ctx)
+{
+    pthread_t tid;
+
+    /* > 启动代理服务 */
+    if (agent_startup(ctx->agent))
+    {
+        log_error(ctx->log, "Startup agent failed!");
+        return LSND_ERR;
+    }
+
+    /* > 启动DSVR线程 */
+    thread_creat(&tid, lsnd_dsvr_routine, ctx);
+
+    return LSND_OK;
+}
+
+/* 销毁侦听服务 */
+static void lsnd_destroy(lsnd_cntx_t *ctx)
+{
+    agent_destroy(ctx->agent);
 }

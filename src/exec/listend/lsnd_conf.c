@@ -10,48 +10,31 @@
 #include "listend.h"
 #include "syscall.h"
 #include "xml_tree.h" 
-#include "mem_pool.h"
 #include "lsnd_conf.h"
 
 static int lsnd_conf_parse(xml_tree_t *xml, agent_conf_t *conf, log_cycle_t *log);
 
 static int lsnd_conf_load_comm(xml_tree_t *xml, lsnd_conf_t *conf, log_cycle_t *log);
 static int lsnd_conf_load_agent(xml_tree_t *xml, agent_conf_t *conf, log_cycle_t *log);
-static int lsnd_conf_load_frwd(xml_tree_t *xml, rtsd_conf_t *conf, log_cycle_t *log);
+static int lsnd_conf_load_frwder(xml_tree_t *xml, rtsd_conf_t *conf, log_cycle_t *log);
 
 /* 加载配置信息 */
-lsnd_conf_t *lsnd_load_conf(const char *path, log_cycle_t *log)
+int lsnd_load_conf(const char *path, lsnd_conf_t *conf, log_cycle_t *log)
 {
     xml_opt_t opt;
-    lsnd_conf_t *conf;
-    mem_pool_t *mem_pool;
     xml_tree_t *xml = NULL;
 
-    /* > 创建配置内存池 */
-    mem_pool = mem_pool_creat(4 * KB);
-    if (NULL == mem_pool)
-    {
-        log_error(log, "Create memory pool failed!");
-        return NULL;
-    }
+    memset(conf, 0, sizeof(lsnd_conf_t));
 
     do
     {
-        /* > 创建配置对象 */
-        conf = (lsnd_conf_t *)calloc(1, sizeof(lsnd_conf_t));
-        if (NULL == conf)
-        {
-            log_error(log, "Alloc memory from pool failed!");
-            break;
-        }
-
         /* > 构建XML树 */
         memset(&opt, 0, sizeof(opt));
 
         opt.log = log;
-        opt.pool = mem_pool;
-        opt.alloc = (mem_alloc_cb_t)mem_pool_alloc;
-        opt.dealloc = (mem_dealloc_cb_t)mem_pool_dealloc;
+        opt.pool = (void *)NULL;
+        opt.alloc = (mem_alloc_cb_t)mem_alloc;
+        opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
         xml = xml_creat(path, &opt);
         if (NULL == xml)
@@ -75,7 +58,7 @@ lsnd_conf_t *lsnd_load_conf(const char *path, log_cycle_t *log)
         }
 
         /* > 加载转发配置 */
-        if (lsnd_conf_load_frwd(xml, &conf->to_frwd, log))
+        if (lsnd_conf_load_frwder(xml, &conf->to_frwd, log))
         {
             log_error(log, "Load rttp conf failed! path:%s", path);
             break;
@@ -83,22 +66,29 @@ lsnd_conf_t *lsnd_load_conf(const char *path, log_cycle_t *log)
 
         /* > 释放XML树 */
         xml_destroy(xml);
-        return conf;
+        return LSND_OK;
     } while(0);
 
     /* 异常处理 */
-    if (NULL != xml)
-    {
-        xml_destroy(xml);
-    }
-    mem_pool_destroy(mem_pool);
-    return NULL;
+    if (NULL != xml) { xml_destroy(xml); }
+    return LSND_ERR;
 }
 
 /* 加载公共配置 */
 static int lsnd_conf_load_comm(xml_tree_t *xml, lsnd_conf_t *conf, log_cycle_t *log)
 {
     xml_node_t *node;
+
+    /* > 加载结点ID */
+    node = xml_query(xml, ".LISTEND.NODE");
+    if (NULL == node
+        || 0 == node->value.len)
+    {
+        log_error(log, "Get node id failed!");
+        return LSND_ERR;
+    }
+
+    conf->nodeid = atoi(node->value.str);
 
     /* > 加载日志配置 */
     node = xml_query(xml, ".LISTEND.LOG.LEVEL");
@@ -471,7 +461,7 @@ static int _lsnd_conf_load_frwder(const char *path,
 }
 
 /* 加载RTTP配置 */
-static int lsnd_conf_load_frwd(xml_tree_t *xml, rtsd_conf_t *conf, log_cycle_t *log)
+static int lsnd_conf_load_frwder(xml_tree_t *xml, rtsd_conf_t *conf, log_cycle_t *log)
 {
     xml_node_t *node, *fix;
     char path[FILE_PATH_MAX_LEN], mark[FILE_PATH_MAX_LEN];

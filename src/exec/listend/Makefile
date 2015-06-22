@@ -18,6 +18,7 @@ LIBS = -lxd_agent -lxd_core -lsdtp -lrttp
 
 SRC_LIST = listend.c \
 			lsnd_comm.c \
+			lsnd_dist.c \
 			lsnd_conf.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST))
