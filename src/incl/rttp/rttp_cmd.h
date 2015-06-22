@@ -88,7 +88,7 @@ typedef union
     rttp_cmd_conf_t conf;
 } rttp_cmd_param_t;
 
-/* 命令信息结构体 */
+/* 命令数据信息 */
 typedef struct
 {
     uint32_t type;                      /* 命令类型 Range: rttp_cmd_e */

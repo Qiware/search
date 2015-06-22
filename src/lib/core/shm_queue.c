@@ -235,17 +235,14 @@ void *shm_queue_pop(shm_queue_t *shmq)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.06.08 11:07:45 #
  ******************************************************************************/
-int shm_queue_mpop(shm_queue_t *shmq, void **p, int _num)
+int shm_queue_mpop(shm_queue_t *shmq, void **p, int num)
 {
-    int num, idx;
-    off_t off[SHMQ_MPUSH_MAX_NUM];
+    int idx;
 
-    num = MIN(_num, SHMQ_MPUSH_MAX_NUM);
-
-    num = shm_ring_mpop(shmq->ring, off, num);
+    num = shm_ring_mpop(shmq->ring, (off_t *)*p, num);
     for (idx=0; idx<num; ++idx)
     {
-        p[idx] = (void *)((void *)shmq->ring + off[idx]);
+        p[idx] = (void *)((void *)shmq->ring + (off_t)p[idx]);
     }
 
     return num;
