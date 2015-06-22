@@ -29,6 +29,7 @@ static int frwd_init_log(frwd_cntx_t *frwd, const char *pname);
 frwd_cntx_t *frwd_init(const frwd_conf_t *conf)
 {
     frwd_cntx_t *frwd;
+    char path[FILE_PATH_MAX_LEN];
 
     frwd = (frwd_cntx_t *)calloc(1, sizeof(frwd_cntx_t));
     if (NULL == frwd)
@@ -39,11 +40,22 @@ frwd_cntx_t *frwd_init(const frwd_conf_t *conf)
 
     memcpy(&frwd->conf, conf, sizeof(frwd_conf_t));
 
-    do {
+    do
+    {
         /* > 初始化日志 */
         if (frwd_init_log(frwd, "frwder"))
         {
             fprintf(stderr, "Initialize log failed!\n");
+            break;
+        }
+
+        /* > 创建命令套接字 */
+        snprintf(path, sizeof(path), "../temp/frwder/cmd.usck");
+
+        frwd->cmd_sck_id = unix_udp_creat(path);
+        if (frwd->cmd_sck_id < 0)
+        {
+            fprintf(stderr, "Create unix udp failed! path:%s\n", path);
             break;
         }
 
@@ -253,6 +265,43 @@ static int frwd_shmq_push(shm_queue_t *shmq,
 }
 
 /******************************************************************************
+ **函数名称: frwd_send_to_lsnd 
+ **功    能: 将数据发送至侦听服务
+ **输入参数: 
+ **     ctx: 全局对象
+ **     serial: 流水号
+ **     type: 数据类型
+ **     orig: 源结点ID
+ **     data: 需要转发的数据
+ **     len: 数据长度
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 内存结构: 流水信息 + 消息头 + 消息体 
+ **作    者: # Qifeng.zou # 2015-06-22 09:07:01 #
+ ******************************************************************************/
+static int frwd_send_to_lsnd(frwd_cntx_t *ctx,
+     uint64_t serial, int type, int orig, char *data, size_t len)
+{
+    cmd_data_t cmd;
+    char path[FILE_PATH_MAX_LEN];
+
+    if (frwd_shmq_push(ctx->send_to_listend, serial, type, orig, data, len))
+    {
+        log_error(ctx->log, "Push into SHMQ failed!");
+        return FRWD_ERR;
+    }
+
+    cmd.type = CMD_DIST_DATA;
+
+    snprintf(path, sizeof(path), "../temp/listend/dsvr.usck");
+
+    unix_udp_send(ctx->cmd_sck_id, path, &cmd, sizeof(cmd));
+
+    return FRWD_OK;
+}
+
+/******************************************************************************
  **函数名称: frwd_search_word_rsp_hdl
  **功    能: 搜索关键字应答处理
  **输入参数:
@@ -274,7 +323,7 @@ static int frwd_search_word_rsp_hdl(int type, int orig, char *data, size_t len, 
 
     log_trace(ctx->log, "Call %s()", __func__);
 
-    return frwd_shmq_push(ctx->send_to_listend, ntoh64(rsp->serial), type, orig, data, len);
+    return frwd_send_to_lsnd(ctx, ntoh64(rsp->serial), type, orig, data, len);
 }
 
 /* 插入关键字的应答 */
@@ -285,7 +334,7 @@ static int frwd_insert_word_rsp_hdl(int type, int orig, char *data, size_t len, 
 
     log_trace(ctx->log, "Call %s()", __func__);
 
-    return frwd_shmq_push(ctx->send_to_listend, ntoh64(rsp->serial), type, orig, data, len);
+    return frwd_send_to_lsnd(ctx, ntoh64(rsp->serial), type, orig, data, len);
 }
 
 /******************************************************************************

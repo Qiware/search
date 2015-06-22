@@ -23,6 +23,7 @@ typedef struct
 /* 全局对象 */
 typedef struct
 {
+    int cmd_sck_id;                         /* 命令套接字 */
     frwd_conf_t conf;                       /* 配置信息 */
     log_cycle_t *log;                       /* 日志对象 */
     shm_queue_t *send_to_listend;           /* 发送至Listend */
