@@ -76,7 +76,6 @@ typedef struct
 } log_shm_t;
 
 /* 内部接口 */
-int log_set_path(const char *path);
 void log_sync(log_file_info_t *file);
 void log_set_max_size(size_t size);
 
