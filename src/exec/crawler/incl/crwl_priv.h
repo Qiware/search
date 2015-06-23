@@ -9,18 +9,9 @@
 #define CRWL_SCAN_TMOUT_SEC         (05)    /* 超时扫描间隔 */
 #define CRWL_CONNECT_TMOUT_SEC      (00)    /* 连接超时时间 */
 
-#define CRWL_THD_MAX_NUM            (64)    /* 最大线程数 */
-#define CRWL_THD_DEF_NUM            (05)    /* 默认线程数 */
-#define CRWL_THD_MIN_NUM            (01)    /* 最小线程数 */
-
 #define CRWL_SLAB_SIZE              (30 * MB)   /* SLAB内存池大小 */
 #define CRWL_RECV_SIZE              (8 * KB)    /* 缓存SIZE(接收缓存) */
 #define CRWL_SYNC_SIZE  (CRWL_RECV_SIZE >> 1)   /* 缓存同步SIZE */
-
-#define CRWL_CONN_MAX_NUM           (1024)  /* 最大网络连接数 */
-#define CRWL_CONN_DEF_NUM           (128)   /* 默认网络连接数 */
-#define CRWL_CONN_MIN_NUM           (1)     /* 最小网络连接数 */
-#define CRWL_CONN_TMOUT_SEC         (15)    /* 连接超时时间(秒) */
 
 #define CRWL_DOMAIN_IP_MAP_HASH_MOD (1777)  /* 域名IP映射表模 */
 #define CRWL_DOMAIN_BLACKLIST_HASH_MOD (10) /* 域名黑名单表长度 */
@@ -28,7 +19,6 @@
 #define CRWL_WEB_SVR_PORT           (80)    /* WEB服务器侦听端口 */
 
 
-#define CRWL_WORKQ_MAX_NUM          (2000)  /* 工作队列单元数 */
 #define CRWL_DEF_CONF_PATH  "../conf/crawler.xml"   /* 默认配置路径 */
 
 #define CRWL_EVENT_MAX_NUM          (2048)  /* 事件最大数 */

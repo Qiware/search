@@ -8,17 +8,18 @@
 ###############################################################################
 include $(PROJ)/make/build.mak
 
-INCLUDE = -I. -I$(PROJ)/src/incl \
+INCLUDE = -I./incl \
+		  -I$(PROJ)/src/incl \
+		  -I$(PROJ)/src/incl/conf \
 		  -I$(PROJ)/src/incl/agent \
 		  -I$(PROJ)/src/exec/filter/incl \
 		  -I$(PROJ)/src/exec/crawler/incl \
 		  -I$(PROJ)/src/exec/monitor/incl
 
 LIBS_PATH = -L$(PROJ)/lib
-LIBS = -lpthread -lxd_core
+LIBS = -lpthread -lxd_core -lxd_conf
 
 SRC_LIST = monitor.c \
-			mon_conf.c \
 			mon_agent.c \
 			mon_crwl.c \
 			mon_filter.c

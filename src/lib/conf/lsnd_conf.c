@@ -7,7 +7,6 @@
  **         负责从代理服务配置文件(lsnd.xml)中提取有效信息
  ** 作  者: # Qifeng.zou # 2014.10.28 #
  ******************************************************************************/
-#include "listend.h"
 #include "syscall.h"
 #include "xml_tree.h" 
 #include "lsnd_conf.h"
@@ -66,12 +65,12 @@ int lsnd_load_conf(const char *path, lsnd_conf_t *conf, log_cycle_t *log)
 
         /* > 释放XML树 */
         xml_destroy(xml);
-        return LSND_OK;
+        return 0;
     } while(0);
 
     /* 异常处理 */
     if (NULL != xml) { xml_destroy(xml); }
-    return LSND_ERR;
+    return -1;
 }
 
 /* 加载公共配置 */
@@ -85,7 +84,7 @@ static int lsnd_conf_load_comm(xml_tree_t *xml, lsnd_conf_t *conf, log_cycle_t *
         || 0 == node->value.len)
     {
         log_error(log, "Get node id failed!");
-        return LSND_ERR;
+        return -1;
     }
 
     conf->nodeid = atoi(node->value.str);
@@ -102,14 +101,14 @@ static int lsnd_conf_load_comm(xml_tree_t *xml, lsnd_conf_t *conf, log_cycle_t *
         conf->log_level = log_get_level(node->value.str);
     }
 
-    return LSND_OK;
+    return 0;
 }
 
 /* 解析并发配置 */
 static int lsnd_conf_parse_agent_connections(
         xml_tree_t *xml, agent_conf_t *conf, log_cycle_t *log)
 {
-    return LSND_OK;
+    return 0;
 }
 
 /* 解析队列配置 */
@@ -127,7 +126,7 @@ static int lsnd_conf_parse_agent_queue(xml_tree_t *xml, agent_conf_t *conf, log_
         node = xml_search(xml, fix, node_path); \
         if (NULL == node) \
         { \
-            return LSND_ERR; \
+            return -1; \
         } \
         \
         (conf)->max = atoi(node->value.str); \
@@ -137,7 +136,7 @@ static int lsnd_conf_parse_agent_queue(xml_tree_t *xml, agent_conf_t *conf, log_
         node = xml_search(xml, fix, node_path); \
         if (NULL == node) \
         { \
-            return LSND_ERR; \
+            return -1; \
         } \
         \
         (conf)->size = atoi(node->value.str); \
@@ -148,7 +147,7 @@ static int lsnd_conf_parse_agent_queue(xml_tree_t *xml, agent_conf_t *conf, log_
     if (NULL == fix)
     {
         log_error(log, "Get queue configuration failed!");
-        return LSND_ERR;
+        return -1;
     }
 
     /* > 获取队列配置 */
@@ -156,7 +155,7 @@ static int lsnd_conf_parse_agent_queue(xml_tree_t *xml, agent_conf_t *conf, log_
     LSND_LOAD_QUEUE(xml, fix, ".RECVQ", &conf->recvq);
     LSND_LOAD_QUEUE(xml, fix, ".SENDQ", &conf->sendq);
 
-    return LSND_OK;
+    return 0;
 }
 
 /* 加载AGENT配置 */
@@ -169,14 +168,14 @@ static int lsnd_conf_load_agent(xml_tree_t *xml, agent_conf_t *conf, log_cycle_t
     if (NULL == fix)
     {
         log_error(log, "Didn't configure connections!");
-        return LSND_ERR;
+        return -1;
     }
 
     node = xml_search(xml, fix, "MAX");         /* > 获取最大并发数 */
     if (NULL == node)
     {
         log_error(log, "Get max number of connections failed!");
-        return LSND_ERR;
+        return -1;
     }
 
     conf->connections.max = atoi(node->value.str);
@@ -185,7 +184,7 @@ static int lsnd_conf_load_agent(xml_tree_t *xml, agent_conf_t *conf, log_cycle_t
     if (NULL == node)
     {
         log_error(log, "Get timeout of connection failed!");
-        return LSND_ERR;
+        return -1;
     }
 
     conf->connections.timeout = atoi(node->value.str);
@@ -195,7 +194,7 @@ static int lsnd_conf_load_agent(xml_tree_t *xml, agent_conf_t *conf, log_cycle_t
     if (NULL == node)
     {
         log_error(log, "Get port of connection failed!");
-        return LSND_ERR;
+        return -1;
     }
 
     conf->connections.port = atoi(node->value.str);
@@ -204,14 +203,14 @@ static int lsnd_conf_load_agent(xml_tree_t *xml, agent_conf_t *conf, log_cycle_t
     if (lsnd_conf_parse_agent_connections(xml, conf, log))
     {
         log_error(log, "Parse connections of AGENTe configuration failed!");
-        return LSND_ERR;
+        return -1;
     }
 
     /* > 加载连接配置 */
     if (lsnd_conf_parse_agent_queue(xml, conf, log))
     {
         log_error(log, "Parse queue of AGENTe configuration failed!");
-        return LSND_ERR;
+        return -1;
     }
 
     /* > 获取WORKER.NUM标签 */
@@ -219,7 +218,7 @@ static int lsnd_conf_load_agent(xml_tree_t *xml, agent_conf_t *conf, log_cycle_t
     if (NULL == node)
     {
         log_error(log, "Didn't configure number of worker!");
-        return LSND_ERR;
+        return -1;
     }
 
     conf->worker_num = atoi(node->value.str);
@@ -229,12 +228,12 @@ static int lsnd_conf_load_agent(xml_tree_t *xml, agent_conf_t *conf, log_cycle_t
     if (NULL == node)
     {
         log_error(log, "Didn't configure number of agent!");
-        return LSND_ERR;
+        return -1;
     }
 
     conf->agent_num = atoi(node->value.str);
 
-    return LSND_OK;
+    return 0;
 }
 
 static int _lsnd_conf_load_frwder(const char *path,
@@ -256,7 +255,7 @@ static int _lsnd_conf_load_frwder(const char *path,
     if (NULL == xml)
     {
         log_error(log, "Create XML failed! path:%s", path);
-        return LSND_ERR;
+        return -1;
     }
 
     do
@@ -453,11 +452,11 @@ static int _lsnd_conf_load_frwder(const char *path,
         }
 
         xml_destroy(xml);
-        return LSND_OK;
+        return 0;
     } while(0);
 
     xml_destroy(xml);
-    return LSND_ERR;
+    return -1;
 }
 
 /* 加载RTTP配置 */
@@ -471,7 +470,7 @@ static int lsnd_conf_load_frwder(xml_tree_t *xml, rtsd_conf_t *conf, log_cycle_t
     if (NULL == fix)
     {
         log_error(xml->log, "Didn't find frwd node!");
-        return LSND_ERR;
+        return -1;
     }
 
     node = xml_search(xml, fix, "PATH");
@@ -479,7 +478,7 @@ static int lsnd_conf_load_frwder(xml_tree_t *xml, rtsd_conf_t *conf, log_cycle_t
         || 0 == node->value.len)
     {
         log_error(xml->log, "Didn't find frwd path!");
-        return LSND_ERR;
+        return -1;
     }
 
     snprintf(path, sizeof(path), "%s", node->value.str);
@@ -489,7 +488,7 @@ static int lsnd_conf_load_frwder(xml_tree_t *xml, rtsd_conf_t *conf, log_cycle_t
         || 0 == node->value.len)
     {
         log_error(xml->log, "Didn't find frwd mark!");
-        return LSND_ERR;
+        return -1;
     }
 
     snprintf(mark, sizeof(mark), "%s", node->value.str);

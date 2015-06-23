@@ -10,6 +10,7 @@
 #include "frwd.h"
 #include "mesg.h"
 #include "agent.h"
+#include "command.h"
 
 #define FRWD_DEF_CONF_PATH  "../conf/frwder.xml"
 

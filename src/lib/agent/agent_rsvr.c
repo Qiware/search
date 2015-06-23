@@ -4,6 +4,7 @@
 #include "list.h"
 #include "mesg.h"
 #include "agent.h"
+#include "command.h"
 #include "syscall.h"
 #include "xml_tree.h"
 #include "agent_rsvr.h"

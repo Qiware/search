@@ -12,19 +12,18 @@ INCLUDE = -I. \
 			-I./incl \
 			-I../crawler/incl \
 			-I$(PROJ)/src/incl \
-			-I$(PROJ)/src/redis \
-			-I$(PROJ)/src/gumbo
+			-I$(PROJ)/src/incl/conf
 LIBS_PATH = -L$(PROJ)/lib -L/usr/lib/hiredis
 LIBS = -lpthread \
+			-lxd_core \
+			-lxd_conf \
 	   		-lhiredis \
 			-lxd_redis \
-			-lxd_core \
 			-lxd_gumbo_ex 
 SRC_LIST = filter.c \
 			flt_man.c \
 			flt_comm.c \
 			flt_push.c \
-			flt_conf.c \
 			flt_sched.c \
 			flt_worker.c
 

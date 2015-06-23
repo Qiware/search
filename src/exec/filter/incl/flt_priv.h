@@ -7,12 +7,10 @@
 #include "crawler.h"
 
 /* 宏定义 */
-#define FLT_THD_DEF_NUM             (05)    /* 默认线程数 */
 #define FLT_THD_MIN_NUM             (01)    /* 最小线程数 */
 #define FLT_SLAB_SIZE               (50 * MB)   /* SLAB内存池大小 */
 #define FLT_DOMAIN_IP_MAP_HASH_MOD  (1777)  /* 域名IP映射表模 */
 #define FLT_DOMAIN_BLACKLIST_HASH_MOD (10)  /* 域名黑名单表长度 */
-#define FLT_WORKQ_MAX_NUM           (2000)  /* 工作队列单元数 */
 #define FLT_TASK_STR_LEN            (8192)  /* TASK字串最大长度 */
 
 #define FLT_DEF_CONF_PATH           "../conf/filter.xml"   /* 默认配置路径 */

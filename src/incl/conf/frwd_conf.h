@@ -14,4 +14,5 @@ typedef struct
 } frwd_conf_t;
 
 int frwd_load_conf(const char *path, frwd_conf_t *conf);
+
 #endif /*__FRWD_CONF_H__*/

@@ -10,15 +10,15 @@ include $(PROJ)/make/build.mak
 
 INCLUDE = -I./incl \
 			-I$(PROJ)/src/incl \
+			-I$(PROJ)/src/incl/conf \
 			-I$(PROJ)/src/incl/rttp \
 			-I$(PROJ)/src/incl/sdtp
 
 LIBS_PATH = -L$(PROJ)/lib
-LIBS = -lpthread -lxd_core -lxd_invtab -lsdtp -lrttp
+LIBS = -lpthread -lxd_core -lxd_invtab -lsdtp -lrttp -lxd_conf
 
 SRC_LIST = invertd.c \
             invtd_comm.c \
-            invtd_conf.c \
             invtd_sdtp.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 

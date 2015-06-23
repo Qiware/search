@@ -8,8 +8,13 @@
  ** 作  者: # Qifeng.zou # 2014.10.28 #
  ******************************************************************************/
 #include "syscall.h"
-#include "crawler.h"
 #include "crwl_conf.h"
+
+#define CRWL_CONN_MAX_NUM           (1024)  /* 最大网络连接数 */
+#define CRWL_CONN_DEF_NUM           (128)   /* 默认网络连接数 */
+#define CRWL_CONN_MIN_NUM           (1)     /* 最小网络连接数 */
+#define CRWL_CONN_TMOUT_SEC         (15)    /* 连接超时时间(秒) */
+#define CRWL_WORKQ_MAX_NUM          (2048)  /* 工作队列单元数 */
 
 static int _crwl_conf_load(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log);
 static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log);
@@ -99,6 +104,9 @@ crwl_conf_t *crwl_conf_load(const char *path, log_cycle_t *log)
  ******************************************************************************/
 static int _crwl_conf_load(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
 {
+#define CRWL_THD_DEF_NUM            (05)    /* 默认线程数 */
+#define CRWL_THD_MIN_NUM            (01)    /* 最小线程数 */
+
     xml_node_t *node, *nail;
     crwl_worker_conf_t *worker = &conf->worker;
 
@@ -141,7 +149,7 @@ static int _crwl_conf_load(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
     if (NULL == nail)
     {
         log_error(log, "Didn't configure worker process!");
-        return CRWL_ERR;
+        return -1;
     }
 
     /* 1. 爬虫线程数(相对查找) */
@@ -167,7 +175,7 @@ static int _crwl_conf_load(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
     if (NULL == node)
     {
         log_error(log, "Didn't configure download webpage number!");
-        return CRWL_ERR;
+        return -1;
     }
 
     worker->conn_max_num = atoi(node->value.str);
@@ -185,7 +193,7 @@ static int _crwl_conf_load(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
     if (NULL == node)
     {
         log_error(log, "Didn't configure download webpage number!");
-        return CRWL_ERR;
+        return -1;
     }
 
     worker->conn_tmout_sec = atoi(node->value.str);
@@ -201,7 +209,7 @@ static int _crwl_conf_load(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
     if (NULL == nail)
     {
         log_error(log, "Didn't configure download!");
-        return CRWL_ERR;
+        return -1;
     }
 
     /* 1 获取抓取深度 */
@@ -209,7 +217,7 @@ static int _crwl_conf_load(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
     if (NULL == node)
     {
         log_error(log, "Get download depth failed!");
-        return CRWL_ERR;
+        return -1;
     }
 
     conf->download.depth = atoi(node->value.str);
@@ -219,7 +227,7 @@ static int _crwl_conf_load(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
     if (NULL == node)
     {
         log_error(log, "Get download path failed!");
-        return CRWL_ERR;
+        return -1;
     }
 
     snprintf(conf->download.path, sizeof(conf->download.path), "%s", node->value.str);
@@ -229,7 +237,7 @@ static int _crwl_conf_load(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
     if (NULL == node)
     {
         log_error(log, "Didn't configure count of work task queue unit!");
-        return CRWL_ERR;
+        return -1;
     }
 
     conf->workq_count = atoi(node->value.str);
@@ -243,7 +251,7 @@ static int _crwl_conf_load(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
     if (NULL == node)
     {
         log_error(log, "Get manager port failed!");
-        return CRWL_ERR;
+        return -1;
     }
 
     conf->man_port = atoi(node->value.str);
@@ -252,10 +260,10 @@ static int _crwl_conf_load(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
     if (crwl_conf_load_redis(xml, conf, log))
     {
         log_error(log, "Get redis configuration failed!");
-        return CRWL_ERR;
+        return -1;
     }
 
-    return CRWL_OK;
+    return 0;
 }
 
 /******************************************************************************
@@ -286,7 +294,7 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
     if (NULL == nail)
     {
         log_error(log, "Didn't configure redis!");
-        return CRWL_ERR;
+        return -1;
     }
 
     /* > 计算REDIS网络配置项总数 */
@@ -294,7 +302,7 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
     if (NULL == start)
     {
         log_error(log, "Query item of network failed!");
-        return CRWL_ERR;
+        return -1;
     }
     
     redis->num = 0;
@@ -304,7 +312,7 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
         if (strcmp(item->name.str, "ITEM"))
         {
             log_error(log, "Mark name isn't right! mark:%s", item->name.str);
-            return CRWL_ERR;
+            return -1;
         }
         ++redis->num;
         item = item->next;
@@ -314,7 +322,7 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
     if (NULL == redis->conf)
     {
         log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return CRWL_ERR;
+        return -1;
     }
 
     /* 注: 出现异常情况时 内存在此不必释放 */
@@ -327,7 +335,7 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
         if (NULL == node)
         {
             log_error(log, "Mark name isn't right! mark:%s", item->name);
-            return CRWL_ERR;
+            return -1;
         }
 
         snprintf(redis->conf[idx].ip, sizeof(redis->conf[idx].ip), "%s", node->value.str);
@@ -337,7 +345,7 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
         if (NULL == node)
         {
             log_error(log, "Mark name isn't right! mark:%s", item->name);
-            return CRWL_ERR;
+            return -1;
         }
 
         redis->conf[idx].port = atoi(node->value.str);
@@ -352,7 +360,7 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
     if (NULL == node)
     {
         log_error(log, "Get undo task queue failed!");
-        return CRWL_ERR;
+        return -1;
     }
 
     snprintf(redis->taskq, sizeof(redis->taskq), "%s", node->value.str);
@@ -362,7 +370,7 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
     if (NULL == node)
     {
         log_error(log, "Get done hash table failed!");
-        return CRWL_ERR;
+        return -1;
     }
 
     snprintf(redis->done_tab, sizeof(redis->done_tab), "%s", node->value.str);
@@ -371,10 +379,10 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
     if (NULL == node)
     {
         log_error(log, "Get pushed hash table failed!");
-        return CRWL_ERR;
+        return -1;
     }
 
     snprintf(redis->push_tab, sizeof(redis->push_tab), "%s", node->value.str);
 
-    return CRWL_OK;
+    return 0;
 }

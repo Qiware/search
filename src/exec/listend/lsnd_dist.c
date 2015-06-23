@@ -8,6 +8,7 @@
  ******************************************************************************/
 
 #include "mesg.h"
+#include "command.h"
 #include "listend.h"
 
 static int lsnd_dsvr_event_hdl(lsnd_cntx_t *ctx, lsnd_dsvr_t *dsvr);
@@ -162,7 +163,7 @@ static int lsnd_dsvr_cmd_data_hdl(lsnd_cntx_t *ctx, lsnd_dsvr_t *dsvr, const cmd
 {
     switch (cmd->type)
     {
-        case CMD_DIST_DATA:
+        case CMD_DIST_DATA: /* 分发数据 */
         {
             return lsnd_dsvr_cmd_dist_hdl(ctx, dsvr);
         }

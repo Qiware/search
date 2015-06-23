@@ -3,6 +3,7 @@
 #include "mesg.h"
 #include "search.h"
 #include "syscall.h"
+#include "command.h"
 #include "agent_rsvr.h"
 #include "agent_listen.h"
 

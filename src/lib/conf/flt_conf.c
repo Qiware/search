@@ -8,7 +8,6 @@
  ** 作  者: # Qifeng.zou # 2014.10.28 #
  ******************************************************************************/
 
-#include "filter.h"
 #include "syscall.h"
 #include "flt_conf.h"
 
@@ -100,6 +99,8 @@ flt_conf_t *flt_conf_load(const char *path, log_cycle_t *log)
  ******************************************************************************/
 static int _flt_conf_load(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *log)
 {
+#define FLT_THD_DEF_NUM             (5)     /* 默认线程数 */
+#define FLT_WORKQ_MAX_NUM           (2048)  /* 工作队列单元数 */
     xml_node_t *node, *nail;
     flt_work_conf_t *work = &conf->work;
 
@@ -140,7 +141,7 @@ static int _flt_conf_load(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *log)
     if (NULL == nail)
     {
         log_error(log, "Didn't configure worker process!");
-        return FLT_ERR;
+        return -1;
     }
 
     /* 1. 爬虫线程数(相对查找) */
@@ -160,7 +161,7 @@ static int _flt_conf_load(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *log)
     if (NULL == node)
     {
         log_error(log, "Didn't configure workspace path!");
-        return FLT_ERR;
+        return -1;
     }
 
     snprintf(work->path, sizeof(work->path), "%s", node->value.str);
@@ -181,7 +182,7 @@ static int _flt_conf_load(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *log)
     if (NULL == nail)
     {
         log_error(log, "Didn't configure download!");
-        return FLT_ERR;
+        return -1;
     }
 
     /* 1 获取抓取深度 */
@@ -189,7 +190,7 @@ static int _flt_conf_load(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *log)
     if (NULL == node)
     {
         log_error(log, "Get download depth failed!");
-        return FLT_ERR;
+        return -1;
     }
 
     conf->download.depth = atoi(node->value.str);
@@ -199,7 +200,7 @@ static int _flt_conf_load(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *log)
     if (NULL == node)
     {
         log_error(log, "Get download path failed!");
-        return FLT_ERR;
+        return -1;
     }
 
     snprintf(conf->download.path, sizeof(conf->download.path), "%s", node->value.str);
@@ -209,7 +210,7 @@ static int _flt_conf_load(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *log)
     if (NULL == node)
     {
         log_error(log, "Didn't configure count of work task queue unit!");
-        return FLT_ERR;
+        return -1;
     }
 
     conf->workq_count = atoi(node->value.str);
@@ -223,7 +224,7 @@ static int _flt_conf_load(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *log)
     if (NULL == node)
     {
         log_error(log, "Get manager port failed!");
-        return FLT_ERR;
+        return -1;
     }
 
     conf->man_port = atoi(node->value.str);
@@ -232,17 +233,17 @@ static int _flt_conf_load(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *log)
     if (flt_conf_load_redis(xml, conf, log))
     {
         log_error(log, "Get redis configuration failed!");
-        return FLT_ERR;
+        return -1;
     }
 
     /* > 加载种子配置 */
     if (flt_conf_load_seed(xml, conf, log))
     {
         log_error(log, "Load seed conf failed!");
-        return FLT_ERR;
+        return -1;
     }
 
-    return FLT_OK;
+    return 0;
 }
 
 /******************************************************************************
@@ -273,7 +274,7 @@ static int flt_conf_load_redis(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *l
     if (NULL == nail)
     {
         log_error(log, "Didn't configure redis!");
-        return FLT_ERR;
+        return -1;
     }
 
     /* > 计算REDIS网络配置项总数 */
@@ -281,7 +282,7 @@ static int flt_conf_load_redis(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *l
     if (NULL == start)
     {
         log_error(log, "Query item of network failed!");
-        return FLT_ERR;
+        return -1;
     }
 
     redis->num = 0;
@@ -291,7 +292,7 @@ static int flt_conf_load_redis(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *l
         if (strcmp(item->name.str, "ITEM"))
         {
             log_error(log, "Mark name isn't right! mark:%s", item->name);
-            return FLT_ERR;
+            return -1;
         }
         ++redis->num;
         item = item->next;
@@ -301,7 +302,7 @@ static int flt_conf_load_redis(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *l
     if (NULL == redis->conf)
     {
         log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return FLT_ERR;
+        return -1;
     }
 
     do
@@ -365,12 +366,12 @@ static int flt_conf_load_redis(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *l
 
         snprintf(redis->push_tab, sizeof(redis->push_tab), "%s", node->value.str);
 
-        return FLT_OK;
+        return 0;
     } while(0);
 
     free(redis->conf);
 
-    return FLT_ERR;
+    return -1;
 }
 
 
@@ -398,7 +399,7 @@ static int flt_conf_load_seed(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *lo
     if (NULL == item)
     {
         log_error(log, "Didn't configure seed item!");
-        return FLT_ERR;
+        return -1;
     }
 
     /* 2. 提取种子信息 */
@@ -414,7 +415,7 @@ static int flt_conf_load_seed(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *lo
         if (conf->seed_num >= FLT_SEED_MAX_NUM)
         {
             log_error(log, "Seed number is too many!");
-            return FLT_ERR;
+            return -1;
         }
 
         seed = &conf->seed[conf->seed_num++];
@@ -424,7 +425,7 @@ static int flt_conf_load_seed(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *lo
         if (NULL == node)
         {
             log_error(log, "Get uri failed!");
-            return FLT_ERR;
+            return -1;
         }
 
         snprintf(seed->uri, sizeof(seed->uri), "%s", node->value.str);
@@ -444,5 +445,5 @@ static int flt_conf_load_seed(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *lo
         item = item->next;
     }
 
-    return FLT_OK;
+    return 0;
 }

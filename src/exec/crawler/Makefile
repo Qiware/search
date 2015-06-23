@@ -11,19 +11,20 @@ include $(PROJ)/make/build.mak
 INCLUDE = -I. \
 			-I./incl \
 			-I$(PROJ)/src/incl \
-			-I$(PROJ)/src/http \
-			-I$(PROJ)/src/redis \
-			-I$(PROJ)/src/gumbo
+			-I$(PROJ)/src/incl/conf \
+			-I$(PROJ)/src/incl/http \
+			-I$(PROJ)/src/incl/redis \
+			-I$(PROJ)/src/incl/gumbo
 LIBS_PATH = -L$(PROJ)/lib -L/usr/lib/hiredis
 LIBS = -lpthread \
+			-lxd_core \
+			-lxd_conf \
 	   		-lhiredis \
 			-lxd_redis \
-			-lxd_core \
 			-lxd_gumbo_ex 
 
 SRC_LIST = crwl_comm.c \
 			crwl_man.c \
-			crwl_conf.c \
 			crwl_sched.c \
 			crwl_worker.c \
 			crawler.c

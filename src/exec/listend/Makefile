@@ -10,16 +10,16 @@ include $(PROJ)/make/build.mak
 
 INCLUDE = -I./incl \
 			-I$(PROJ)/src/incl \
+			-I$(PROJ)/src/incl/conf \
 			-I$(PROJ)/src/incl/sdtp \
 			-I$(PROJ)/src/incl/rttp \
 			-I$(PROJ)/src/incl/agent
 LIBS_PATH = -L$(PROJ)/lib
-LIBS = -lxd_agent -lxd_core -lsdtp -lrttp
+LIBS = -lxd_agent -lxd_core -lsdtp -lrttp -lxd_conf
 
 SRC_LIST = listend.c \
 			lsnd_comm.c \
-			lsnd_dist.c \
-			lsnd_conf.c
+			lsnd_dist.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST))
 

@@ -333,7 +333,7 @@ int agent_serial_to_sck_map_query(agent_cntx_t *ctx, uint64_t serial, agent_flow
  **输出参数:
  **返    回: 0:成功 !0:失败
  **实现描述: 将数据放入发送队列
- **注意事项: 
+ **注意事项: 内存结构: 流水信息 + 消息头 + 消息体
  **作    者: # Qifeng.zou # 2015-06-04 #
  ******************************************************************************/
 int agent_send(agent_cntx_t *ctx, int type, uint64_t serial, void *data, int len)
@@ -374,6 +374,8 @@ int agent_send(agent_cntx_t *ctx, int type, uint64_t serial, void *data, int len
     memcpy(head+1, data, len);
 
     queue_push(sendq, addr);
+
+    /* > 发送分发请求 */
 
     return AGENT_OK;
 }
