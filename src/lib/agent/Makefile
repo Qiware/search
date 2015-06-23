@@ -12,7 +12,7 @@ INCLUDE = -I. \
 			-I$(PROJ)/src/incl \
 			-I$(PROJ)/src/incl/agent
 LIBS_PATH = -L$(PROJ)/lib
-LIBS = -lpthread -lxd_core
+LIBS = -lpthread -lcore
 
 SRC_LIST = agent.c \
 			agent_comm.c \
@@ -22,7 +22,7 @@ SRC_LIST = agent.c \
 
 OBJS = $(subst .c,.o, $(SRC_LIST))
 
-TARGET = libxd_agent.so
+TARGET = libagent.so
 
 .PHONY: all clean
 

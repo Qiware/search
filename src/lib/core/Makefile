@@ -49,7 +49,7 @@ SRC_LIST = hash.c \
 
 OBJS = $(subst .c,.o, $(SRC_LIST))
 
-TARGET = libxd_core.so
+TARGET = libcore.so
 
 .PHONY: all clean
 

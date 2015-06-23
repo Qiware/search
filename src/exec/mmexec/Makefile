@@ -14,7 +14,7 @@ INCLUDE = -I. \
 			-I$(PROJ)/src/incl/sdtp \
 			-I$(PROJ)/src/incl/agent
 LIBS_PATH = -L$(PROJ)/lib
-LIBS = -lpthread -lxd_core
+LIBS = -lpthread -lcore
 
 SRC_LIST = mmexec.c
 

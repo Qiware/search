@@ -16,7 +16,7 @@ INCLUDE = -I. \
 		  -I$(PROJ)/src/incl/rttp
 
 LIBS_PATH = -L$(PROJ)/lib
-LIBS = -lxd_core
+LIBS = -lcore
 
 SRC_LIST = rtrd_recv.c \
 			rtrd_comm.c \

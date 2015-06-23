@@ -10,7 +10,7 @@ include $(PROJ)/make/build.mak
 
 INCLUDE = -I. -I$(PROJ)/src/incl
 LIBS_PATH = -L$(PROJ)/lib
-LIBS = -lxd_core -lhiredis
+LIBS = -lcore -lhiredis
 
 SRC_LIST = redis.c \
 			redis_hash.c \
@@ -18,7 +18,7 @@ SRC_LIST = redis.c \
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
 
-TARGET = libxd_redis.so
+TARGET = libredis_ex.so
 
 .PHONY: all clean
 

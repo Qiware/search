@@ -23,7 +23,7 @@ SRC_LIST = mon_conf.c \
 
 OBJS = $(subst .c,.o, $(SRC_LIST))
 
-TARGET = libxd_conf.so
+TARGET = libconf.so
 
 .PHONY: all clean
 

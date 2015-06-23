@@ -16,7 +16,7 @@ INCLUDE = -I./incl \
 			-I$(PROJ)/src/incl/agent
 
 LIBS_PATH = -L$(PROJ)/lib
-LIBS = -lpthread -lxd_core -lsdtp -lrttp -lxd_conf
+LIBS = -lpthread -lcore -lsdtp -lrttp -lconf
 
 SRC_LIST = frwder.c \
 			frwd_comm.c

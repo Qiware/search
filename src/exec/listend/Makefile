@@ -15,7 +15,7 @@ INCLUDE = -I./incl \
 			-I$(PROJ)/src/incl/rttp \
 			-I$(PROJ)/src/incl/agent
 LIBS_PATH = -L$(PROJ)/lib
-LIBS = -lxd_agent -lxd_core -lsdtp -lrttp -lxd_conf
+LIBS = -lagent -lcore -lsdtp -lrttp -lconf
 
 SRC_LIST = listend.c \
 			lsnd_comm.c \

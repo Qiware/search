@@ -15,11 +15,11 @@ INCLUDE = -I. \
 			-I$(PROJ)/src/incl/conf
 LIBS_PATH = -L$(PROJ)/lib -L/usr/lib/hiredis
 LIBS = -lpthread \
-			-lxd_core \
-			-lxd_conf \
+			-lcore \
+			-lconf \
 	   		-lhiredis \
-			-lxd_redis \
-			-lxd_gumbo_ex 
+			-lredis_ex \
+			-lgumbo_ex 
 SRC_LIST = filter.c \
 			flt_man.c \
 			flt_comm.c \
