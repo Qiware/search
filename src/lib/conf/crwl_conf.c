@@ -20,72 +20,50 @@ static int _crwl_conf_load(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
 static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log);
 
 /******************************************************************************
- **函数名称: crwl_conf_load
+ **函数名称: crwl_load_conf
  **功    能: 加载配置信息
  **输入参数:
  **     path: 配置路径
  **     log: 日志对象
- **输出参数: NONE
- **返    回: 配置对象
+ **输出参数:
+ **     conf: 配置信息
+ **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.12 #
  ******************************************************************************/
-crwl_conf_t *crwl_conf_load(const char *path, log_cycle_t *log)
+int crwl_load_conf(const char *path, crwl_conf_t *conf, log_cycle_t *log)
 {
     xml_opt_t opt;
     xml_tree_t *xml;
-    crwl_conf_t *conf;
-    mem_pool_t *pool;
-
-    /* > 创建配置对象 */
-    conf = (crwl_conf_t *)calloc(1, sizeof(crwl_conf_t));
-    if (NULL == conf)
-    {
-        log_error(log, "Alloc memory from pool failed!");
-        return NULL;
-    }
 
     /* > 构建XML树 */
-    pool = mem_pool_creat(4 * KB);
-    if (NULL == pool)
-    {
-        log_error(log, "Create memory pool failed!");
-        free(conf);
-        return NULL;
-    }
-
     memset(&opt, 0, sizeof(opt));
 
     opt.log = log;
-    opt.pool = pool;
-    opt.alloc = (mem_alloc_cb_t)mem_pool_alloc;
-    opt.dealloc = (mem_dealloc_cb_t)mem_pool_dealloc;
+    opt.pool = NULL;
+    opt.alloc = (mem_alloc_cb_t)mem_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
     xml = xml_creat(path, &opt);
     if (NULL == xml)
     {
         log_error(log, "Create xml failed! path:%s", path);
-        free(conf);
-        mem_pool_destroy(pool);
-        return NULL;
+        return -1;
     }
 
     /* > 提取配置信息 */
     if (_crwl_conf_load(xml, conf, log))
     {
         log_error(log, "Load conf failed! path:%s", path);
-        free(conf);
         xml_destroy(xml);
-        mem_pool_destroy(pool);
-        return NULL;
+        return -1;
     }
 
     /* > 释放XML树 */
     xml_destroy(xml);
-    mem_pool_destroy(pool);
 
-    return conf;
+    return 0;
 }
 
 /******************************************************************************

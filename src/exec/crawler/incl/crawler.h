@@ -36,7 +36,7 @@ typedef struct
 {
     time_t run_tm;                          /* 运行时间 */
 
-    crwl_conf_t *conf;                      /* 配置信息 */
+    crwl_conf_t conf;                       /* 配置信息 */
     log_cycle_t *log;                       /* 日志对象 */
     slab_pool_t *slab;                      /* 内存池 */
 

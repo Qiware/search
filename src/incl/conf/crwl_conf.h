@@ -76,10 +76,6 @@ typedef struct
     bool sched_stat;                        /* 调度状态(false:暂停 true:运行) */
 } crwl_conf_t;
 
-crwl_conf_t *crwl_conf_load(const char *path, log_cycle_t *log);
-#define crwl_conf_destroy(conf)             /* 销毁配置对象 */\
-{ \
-    free(conf); \
-}
+int crwl_load_conf(const char *path, crwl_conf_t *conf, log_cycle_t *log);
 
 #endif /*__CRWL_CONF_H__*/

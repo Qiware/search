@@ -46,7 +46,7 @@ void *crwl_sched_routine(void *_ctx)
     struct timeval tv;
     crwl_sched_t *sched;
     crwl_cntx_t *ctx = (crwl_cntx_t *)_ctx;
-    crwl_conf_t *conf = ctx->conf;
+    crwl_conf_t *conf = &ctx->conf;
 
     /* 1. 初始化调度器 */
     sched = crwl_sched_init(ctx);
@@ -119,7 +119,7 @@ static crwl_sched_t *crwl_sched_init(crwl_cntx_t *ctx)
 {
     struct timeval tv;
     crwl_sched_t *sched;
-    crwl_conf_t *conf = ctx->conf;
+    crwl_conf_t *conf = &ctx->conf;
 
     /* 1. 创建调度器对象 */
     sched = (crwl_sched_t *)calloc(1, sizeof(crwl_sched_t));
@@ -245,7 +245,7 @@ static int crwl_sched_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
     redisReply *r;
     queue_t *workq;
     crwl_task_t *task;
-    crwl_conf_t *conf = ctx->conf;
+    crwl_conf_t *conf = &ctx->conf;
 
     size = sizeof(crwl_task_t) + sizeof(crwl_task_space_u);
 

@@ -97,7 +97,7 @@ static crwl_worker_t *crwl_worker_self(crwl_cntx_t *ctx)
 int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker, int tidx)
 {
     list_opt_t opt;
-    crwl_conf_t *conf = ctx->conf;
+    crwl_conf_t *conf = &ctx->conf;
 
     worker->tidx = tidx;
     worker->log = ctx->log;
@@ -192,7 +192,7 @@ static int crwl_worker_fetch_task(crwl_cntx_t *ctx, crwl_worker_t *worker)
     int idx, num;
     void *data;
     crwl_task_t *t;
-    crwl_conf_t *conf = ctx->conf;
+    crwl_conf_t *conf = &ctx->conf;
     queue_t *workq = ctx->workq[worker->tidx];
 
     /* 1. 判断是否应该取任务 */
@@ -410,8 +410,8 @@ static int crwl_worker_timeout_hdl(crwl_cntx_t *ctx, crwl_worker_t *worker)
     time_t ctm = time(NULL);
     list_node_t *node, *next;
     socket_t *sck;
+    crwl_conf_t *conf = &ctx->conf;
     crwl_worker_socket_extra_t *extra;
-    crwl_conf_t *conf = ctx->conf;
 
     /* 1. 依次遍历套接字, 判断是否超时 */
     node = worker->sock_list->head;
@@ -524,7 +524,7 @@ void *crwl_worker_routine(void *_ctx)
 {
     crwl_worker_t *worker;
     crwl_cntx_t *ctx = (crwl_cntx_t *)_ctx;
-    crwl_conf_t *conf = ctx->conf;
+    crwl_conf_t *conf = &ctx->conf;
 
     /* 1. 获取爬虫对象 */
     worker = crwl_worker_self(ctx);
@@ -783,8 +783,8 @@ int crwl_worker_webpage_creat(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t 
 {
     struct tm loctm;
     char path[FILE_NAME_MAX_LEN];
+    crwl_conf_t *conf = &ctx->conf;
     crwl_worker_socket_extra_t *extra = (crwl_worker_socket_extra_t *)sck->extra;
-    crwl_conf_t *conf = ctx->conf;
 
     local_time(&sck->crtm.time, &loctm);
 
@@ -832,7 +832,7 @@ int crwl_worker_webpage_finfo(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t 
     struct tm loctm;
     char path[FILE_NAME_MAX_LEN],
          temp[FILE_NAME_MAX_LEN];
-    crwl_conf_t *conf = ctx->conf;
+    crwl_conf_t *conf = &ctx->conf;
     crwl_worker_socket_extra_t *extra = (crwl_worker_socket_extra_t *)sck->extra;
 
     ++worker->down_webpage_total;

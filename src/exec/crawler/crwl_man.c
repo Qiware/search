@@ -180,10 +180,10 @@ static crwl_man_t *crwl_man_init(crwl_cntx_t *ctx)
         }
 
         /* > 新建套接字 */
-        man->fd = udp_listen(ctx->conf->man_port);
+        man->fd = udp_listen(ctx->conf.man_port);
         if (man->fd < 0)
         {
-            log_error(man->log, "Listen port [%d] failed!", ctx->conf->man_port);
+            log_error(man->log, "Listen port [%d] failed!", ctx->conf.man_port);
             break;
         }
         return man;
@@ -417,17 +417,17 @@ static int crwl_man_query_conf_req_hdl(crwl_cntx_t *ctx,
 
     cmd->type = htonl(MSG_QUERY_CONF_RSP);
 
-    conf->log.level = htonl(ctx->conf->log.level);      /* 日志级别 */
-    snprintf(conf->log.path, sizeof(conf->log.path), "%s", ctx->conf->log.path);
+    conf->log.level = htonl(ctx->conf.log.level);      /* 日志级别 */
+    snprintf(conf->log.path, sizeof(conf->log.path), "%s", ctx->conf.log.path);
 
-    conf->download.depth = htonl(ctx->conf->download.depth);/* 最大爬取深度 */
-    snprintf(conf->download.path, sizeof(conf->download.path), "%s", ctx->conf->download.path); /* 网页存储路径 */
+    conf->download.depth = htonl(ctx->conf.download.depth);/* 最大爬取深度 */
+    snprintf(conf->download.path, sizeof(conf->download.path), "%s", ctx->conf.download.path); /* 网页存储路径 */
 
-    conf->workq_count = htonl(ctx->conf->workq_count);  /* 工作队列容量 */
+    conf->workq_count = htonl(ctx->conf.workq_count);  /* 工作队列容量 */
 
-    conf->worker.num = htonl(ctx->conf->worker.num);    /* 爬虫总数 */
-    conf->worker.conn_max_num = htonl(ctx->conf->worker.conn_max_num); /* 最大并发量 */
-    conf->worker.conn_tmout_sec = htonl(ctx->conf->worker.conn_tmout_sec); /* 超时时间 */
+    conf->worker.num = htonl(ctx->conf.worker.num);    /* 爬虫总数 */
+    conf->worker.conn_max_num = htonl(ctx->conf.worker.conn_max_num); /* 最大并发量 */
+    conf->worker.conn_tmout_sec = htonl(ctx->conf.worker.conn_tmout_sec); /* 超时时间 */
 
     /* > 加入应答列表 */
     if (list_rpush(man->mesg_list, item))
@@ -464,7 +464,7 @@ static int crwl_man_query_worker_stat_req_hdl(crwl_cntx_t *ctx,
     crwl_worker_t *worker;
     crwl_cmd_item_t *item;
     crwl_cmd_worker_stat_t *stat;
-    crwl_conf_t *conf = ctx->conf;
+    crwl_conf_t *conf = &ctx->conf;
 
     /* > 新建应答 */
     item = slab_alloc(man->slab, sizeof(crwl_cmd_item_t));
@@ -534,6 +534,7 @@ static int crwl_man_query_workq_stat_req_hdl(crwl_cntx_t *ctx,
     crwl_cmd_t *cmd;
     crwl_cmd_item_t *item;
     crwl_cmd_workq_stat_t *stat;
+    crwl_conf_t *conf = &ctx->conf;
 
     /* > 新建应答 */
     item = slab_alloc(man->slab, sizeof(crwl_cmd_item_t));
@@ -551,7 +552,7 @@ static int crwl_man_query_workq_stat_req_hdl(crwl_cntx_t *ctx,
 
     cmd->type = htonl(MSG_QUERY_WORKQ_STAT_RSP);
 
-    for (idx=0; idx<ctx->conf->worker.num; ++idx)
+    for (idx=0; idx<conf->worker.num; ++idx)
     {
         workq = ctx->workq[idx];
 
@@ -597,7 +598,7 @@ static int crwl_man_switch_sched_req_hdl(crwl_cntx_t *ctx,
     crwl_cmd_t *cmd;
     crwl_cmd_item_t *item;
     crwl_cmd_sched_stat_t *stat;
-    crwl_conf_t *conf = ctx->conf;
+    crwl_conf_t *conf = &ctx->conf;
 
     /* > 新建应答 */
     item = slab_alloc(man->slab, sizeof(crwl_cmd_item_t));

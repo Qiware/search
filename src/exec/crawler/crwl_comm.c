@@ -144,15 +144,15 @@ crwl_cntx_t *crwl_cntx_init(char *pname, const char *path)
 
     do
     {
+        conf = &ctx->conf;
+
         /* 4. 加载配置文件 */
-        conf = crwl_conf_load(path, log);
-        if (NULL == conf)
+        if (crwl_load_conf(path, conf, log))
         {
             log_error(log, "Load configuration failed! path:%s", path);
             break;
         }
 
-        ctx->conf = conf;
         ctx->log = log;
         log_set_level(log, conf->log.level);
 
@@ -209,7 +209,6 @@ crwl_cntx_t *crwl_cntx_init(char *pname, const char *path)
 
 CRWL_INIT_ERR:
     /* 释放内存 */
-    if (ctx->conf) { crwl_conf_destroy(ctx->conf); }
     if (ctx->workq) { free(ctx->workq); }
     free(ctx);
 
@@ -231,7 +230,7 @@ CRWL_INIT_ERR:
 void crwl_cntx_destroy(crwl_cntx_t *ctx)
 {
     int idx;
-    crwl_conf_t *conf = ctx->conf;
+    crwl_conf_t *conf = &ctx->conf;
 
     for (idx=0; idx<conf->worker.num; ++idx)
     {
@@ -260,7 +259,7 @@ int crwl_startup(crwl_cntx_t *ctx)
 {
     int idx;
     pthread_t tid;
-    const crwl_conf_t *conf = ctx->conf;
+    const crwl_conf_t *conf = &ctx->conf;
 
     /* 1. 设置Worker线程回调 */
     for (idx=0; idx<conf->worker.num; ++idx)
@@ -303,7 +302,7 @@ static int crwl_worker_tpool_creat(crwl_cntx_t *ctx)
     int idx, num;
     crwl_worker_t *worker;
     thread_pool_opt_t opt;
-    const crwl_worker_conf_t *conf = &ctx->conf->worker;
+    const crwl_worker_conf_t *conf = &ctx->conf.worker;
 
     /* > 新建Worker对象 */
     worker = (crwl_worker_t *)calloc(conf->num, sizeof(crwl_worker_t));
@@ -371,7 +370,7 @@ int crwl_worker_tpool_destroy(crwl_cntx_t *ctx)
 {
     int idx;
     crwl_worker_t *worker;
-    const crwl_worker_conf_t *conf = &ctx->conf->worker;
+    const crwl_worker_conf_t *conf = &ctx->conf.worker;
 
     /* 1. 释放Worker对象 */
     for (idx=0; idx<conf->num; ++idx)
