@@ -10,7 +10,7 @@ include $(PROJ)/make/build.mak
 
 INCLUDE = -I. -I$(PROJ)/src/incl
 LIBS_PATH = -L$(PROJ)/lib
-LIBS = -lxd_core
+LIBS = -lcore
 
 SRC_LIST = queue_demo.c
 

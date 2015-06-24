@@ -239,7 +239,7 @@ int shm_queue_mpop(shm_queue_t *shmq, void **p, int num)
 {
     int idx;
 
-    num = shm_ring_mpop(shmq->ring, (off_t *)*p, num);
+    num = shm_ring_mpop(shmq->ring, (off_t *)p, num);
     for (idx=0; idx<num; ++idx)
     {
         p[idx] = (void *)((void *)shmq->ring + (off_t)p[idx]);
