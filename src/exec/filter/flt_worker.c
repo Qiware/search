@@ -36,7 +36,7 @@ static flt_worker_t *flt_worker_self(flt_cntx_t *ctx)
 {
     int tidx;
 
-    tidx = thread_pool_get_tidx(ctx->worker_pool);
+    tidx = thread_pool_get_tidx(ctx->workers);
     if (tidx < 0)
     {
         return NULL;

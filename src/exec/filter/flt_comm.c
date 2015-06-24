@@ -20,7 +20,7 @@
 
 #define FLT_PROC_LOCK_PATH "../temp/filter/filter.lck"
 
-static int flt_worker_pool_creat(flt_cntx_t *ctx);
+static int flt_workers_creat(flt_cntx_t *ctx);
 
 /******************************************************************************
  **函数名称: flt_getopt 
@@ -236,7 +236,7 @@ flt_cntx_t *flt_init(char *pname, const char *path)
         }
 
         /* > 创建工作线程池 */
-        if (flt_worker_pool_creat(ctx))
+        if (flt_workers_creat(ctx))
         {
             log_error(log, "Initialize thread pool failed!");
             break;
@@ -318,7 +318,7 @@ int flt_startup(flt_cntx_t *ctx)
     /* > 设置Worker线程回调 */
     for (idx=0; idx<conf->work.num; ++idx)
     {
-        thread_pool_add_worker(ctx->worker_pool, flt_worker_routine, ctx);
+        thread_pool_add_worker(ctx->workers, flt_worker_routine, ctx);
     }
     
     /* > 启动Sched线程 */
@@ -346,7 +346,7 @@ int flt_startup(flt_cntx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: flt_worker_pool_creat
+ **函数名称: flt_workers_creat
  **功    能: 初始化工作线程池
  **输入参数: 
  **     ctx: 全局信息
@@ -356,7 +356,7 @@ int flt_startup(flt_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.11 #
  ******************************************************************************/
-static int flt_worker_pool_creat(flt_cntx_t *ctx)
+static int flt_workers_creat(flt_cntx_t *ctx)
 {
     int idx, num;
     thread_pool_opt_t opt;
@@ -369,8 +369,8 @@ static int flt_worker_pool_creat(flt_cntx_t *ctx)
     opt.alloc = (mem_alloc_cb_t)slab_alloc;
     opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-    ctx->worker_pool = thread_pool_init(conf->num, &opt, NULL);
-    if (NULL == ctx->worker_pool)
+    ctx->workers = thread_pool_init(conf->num, &opt, NULL);
+    if (NULL == ctx->workers)
     {
         log_error(ctx->log, "Initialize thread pool failed!");
         return FLT_ERR;
@@ -380,7 +380,7 @@ static int flt_worker_pool_creat(flt_cntx_t *ctx)
     ctx->worker = (flt_worker_t *)calloc(conf->num, sizeof(flt_worker_t));
     if (NULL == ctx->worker)
     {
-        thread_pool_destroy(ctx->worker_pool);
+        thread_pool_destroy(ctx->workers);
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return FLT_ERR;
     }
@@ -406,7 +406,7 @@ FLT_PROC_ERR:
     }
 
     free(ctx->worker);
-    thread_pool_destroy(ctx->worker_pool);
+    thread_pool_destroy(ctx->workers);
 
     return FLT_ERR;
 }

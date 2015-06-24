@@ -47,7 +47,7 @@ typedef struct
     time_t run_tm;                          /* 运行时间 */
 
     pthread_t sched_tid;                    /* Sched线程ID */
-    thread_pool_t *worker_pool;             /* Worker线程池 */
+    thread_pool_t *workers;                 /* Worker线程池 */
     flt_worker_t *worker;                   /* 工作对象 */
 
     queue_t *taskq;                         /* 处理队列(存放的是将要被解析的网页索引文件) */
