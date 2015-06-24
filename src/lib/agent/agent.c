@@ -11,10 +11,10 @@
 
 static log_cycle_t *agent_init_log(char *fname);
 static int agent_init_reg(agent_cntx_t *ctx);
-static int agent_creat_agent_pool(agent_cntx_t *ctx);
+static int agent_creat_agents(agent_cntx_t *ctx);
 static int agent_rsvr_pool_destroy(agent_cntx_t *ctx);
-static int agent_creat_worker_pool(agent_cntx_t *ctx);
-static int agent_worker_pool_destroy(agent_cntx_t *ctx);
+static int agent_creat_workers(agent_cntx_t *ctx);
+static int agent_workers_destroy(agent_cntx_t *ctx);
 static int agent_creat_queue(agent_cntx_t *ctx);
 
 /******************************************************************************
@@ -84,14 +84,14 @@ agent_cntx_t *agent_init(agent_conf_t *conf, log_cycle_t *log)
         }
 
         /* > 创建Worker线程池 */
-        if (agent_creat_worker_pool(ctx))
+        if (agent_creat_workers(ctx))
         {
             log_error(log, "Initialize worker thread pool failed!");
             break;
         }
 
         /* > 创建Agent线程池 */
-        if (agent_creat_agent_pool(ctx))
+        if (agent_creat_agents(ctx))
         {
             log_error(log, "Initialize agent thread pool failed!");
             break;
@@ -118,7 +118,7 @@ agent_cntx_t *agent_init(agent_conf_t *conf, log_cycle_t *log)
 void agent_destroy(agent_cntx_t *ctx)
 {
     pthread_cancel(ctx->lsn_tid);
-    agent_worker_pool_destroy(ctx);
+    agent_workers_destroy(ctx);
     agent_rsvr_pool_destroy(ctx);
 
     log_destroy(&ctx->log);
@@ -145,13 +145,13 @@ int agent_startup(agent_cntx_t *ctx)
     /* 1. 设置Worker线程回调 */
     for (idx=0; idx<conf->worker_num; ++idx)
     {
-        thread_pool_add_worker(ctx->worker_pool, agent_worker_routine, ctx);
+        thread_pool_add_worker(ctx->workers, agent_worker_routine, ctx);
     }
 
     /* 2. 设置Agent线程回调 */
     for (idx=0; idx<conf->agent_num; ++idx)
     {
-        thread_pool_add_worker(ctx->agent_pool, agent_rsvr_routine, ctx);
+        thread_pool_add_worker(ctx->agents, agent_rsvr_routine, ctx);
     }
     
     /* 3. 设置Listen线程回调 */
@@ -165,7 +165,7 @@ int agent_startup(agent_cntx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: agent_creat_worker_pool
+ **函数名称: agent_creat_workers
  **功    能: 创建Worker线程池
  **输入参数: 
  **     ctx: 全局信息
@@ -175,7 +175,7 @@ int agent_startup(agent_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
-static int agent_creat_worker_pool(agent_cntx_t *ctx)
+static int agent_creat_workers(agent_cntx_t *ctx)
 {
     int idx, num;
     agent_worker_t *worker;
@@ -197,8 +197,8 @@ static int agent_creat_worker_pool(agent_cntx_t *ctx)
     opt.alloc = (mem_alloc_cb_t)slab_alloc;
     opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-    ctx->worker_pool = thread_pool_init(conf->worker_num, &opt, worker);
-    if (NULL == ctx->worker_pool)
+    ctx->workers = thread_pool_init(conf->worker_num, &opt, worker);
+    if (NULL == ctx->workers)
     {
         log_error(ctx->log, "Initialize thread pool failed!");
         return AGENT_ERR;
@@ -227,13 +227,13 @@ static int agent_creat_worker_pool(agent_cntx_t *ctx)
     }
 
     free(worker);
-    thread_pool_destroy(ctx->worker_pool);
+    thread_pool_destroy(ctx->workers);
 
     return AGENT_ERR;
 }
 
 /******************************************************************************
- **函数名称: agent_worker_pool_destroy
+ **函数名称: agent_workers_destroy
  **功    能: 销毁爬虫线程池
  **输入参数: 
  **     ctx: 全局信息
@@ -243,7 +243,7 @@ static int agent_creat_worker_pool(agent_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.14 #
  ******************************************************************************/
-static int agent_worker_pool_destroy(agent_cntx_t *ctx)
+static int agent_workers_destroy(agent_cntx_t *ctx)
 {
     int idx;
     void *data;
@@ -253,25 +253,25 @@ static int agent_worker_pool_destroy(agent_cntx_t *ctx)
     /* 1. 释放Worker对象 */
     for (idx=0; idx<conf->worker_num; ++idx)
     {
-        worker = (agent_worker_t *)ctx->worker_pool->data + idx;
+        worker = (agent_worker_t *)ctx->workers->data + idx;
 
         agent_worker_destroy(worker);
     }
 
     /* 2. 释放线程池对象 */
-    data = ctx->worker_pool->data;
+    data = ctx->workers->data;
 
-    thread_pool_destroy(ctx->worker_pool);
+    thread_pool_destroy(ctx->workers);
 
     free(data);
 
-    ctx->worker_pool = NULL;
+    ctx->workers = NULL;
 
     return AGENT_ERR;
 }
 
 /******************************************************************************
- **函数名称: agent_creat_agent_pool
+ **函数名称: agent_creat_agents
  **功    能: 创建Agent线程池
  **输入参数: 
  **     ctx: 全局信息
@@ -281,7 +281,7 @@ static int agent_worker_pool_destroy(agent_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
-static int agent_creat_agent_pool(agent_cntx_t *ctx)
+static int agent_creat_agents(agent_cntx_t *ctx)
 {
     int idx, num;
     agent_rsvr_t *agent;
@@ -303,8 +303,8 @@ static int agent_creat_agent_pool(agent_cntx_t *ctx)
     opt.alloc = (mem_alloc_cb_t)slab_alloc;
     opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-    ctx->agent_pool = thread_pool_init(conf->agent_num, &opt, agent);
-    if (NULL == ctx->agent_pool)
+    ctx->agents = thread_pool_init(conf->agent_num, &opt, agent);
+    if (NULL == ctx->agents)
     {
         log_error(ctx->log, "Initialize thread pool failed!");
         free(agent);
@@ -334,7 +334,7 @@ static int agent_creat_agent_pool(agent_cntx_t *ctx)
     }
 
     free(agent);
-    thread_pool_destroy(ctx->agent_pool);
+    thread_pool_destroy(ctx->agents);
 
     return AGENT_ERR;
 }
@@ -360,19 +360,19 @@ static int agent_rsvr_pool_destroy(agent_cntx_t *ctx)
     /* 1. 释放Agent对象 */
     for (idx=0; idx<conf->agent_num; ++idx)
     {
-        agent = (agent_rsvr_t *)ctx->agent_pool->data + idx;
+        agent = (agent_rsvr_t *)ctx->agents->data + idx;
 
         agent_rsvr_destroy(agent);
     }
 
     /* 2. 释放线程池对象 */
-    data = ctx->agent_pool->data;
+    data = ctx->agents->data;
 
-    thread_pool_destroy(ctx->agent_pool);
+    thread_pool_destroy(ctx->agents);
 
     free(data);
 
-    ctx->agent_pool = NULL;
+    ctx->agents = NULL;
 
     return AGENT_ERR;
 }
