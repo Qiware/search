@@ -22,6 +22,7 @@
 #define AGENT_LSN_CMD_PATH "../temp/agent/lsn_cmd.usck"       /* 侦听线程 */
 #define AGENT_RCV_CMD_PATH "../temp/agent/rcv_cmd_%02d.usck"  /* 接收线程 */
 #define AGENT_WRK_CMD_PATH "../temp/agent/wrk_cmd_%02d.usck"  /* 工作线程 */
+#define AGENT_CLI_CMD_PATH "../temp/agent/cli_cmd.usck"       /* 客户端路径 */
 
 /* 配置信息 */
 typedef struct
@@ -47,9 +48,13 @@ typedef struct
     agent_conf_t *conf;                     /* 配置信息 */
     log_cycle_t *log;                       /* 日志对象 */
     slab_pool_t *slab;                      /* 内存池 */
+    struct
+    {
+        int cmd_sck_id;                     /* 命令套接字 */
+    } cli;
 
     pthread_t lsn_tid;                      /* Listen线程 */
-    thread_pool_t *agents;              /* Agent线程池 */
+    thread_pool_t *agents;                  /* Agent线程池 */
     thread_pool_t *workers;                 /* Worker线程池 */
     agent_reg_t reg[AGENT_MSG_TYPE_MAX];    /* 消息注册 */
 

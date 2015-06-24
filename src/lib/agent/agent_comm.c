@@ -1,6 +1,10 @@
+#include "sck.h"
 #include "agent.h"
+#include "command.h"
 #include "syscall.h"
 #include "agent_mesg.h"
+
+static int agent_cmd_send_dist_req(agent_cntx_t *ctx, int idx);
 
 /******************************************************************************
  **函数名称: agent_serial_to_sck_map_init
@@ -331,7 +335,7 @@ int agent_serial_to_sck_map_query(agent_cntx_t *ctx, uint64_t serial, agent_flow
  **     data: 数据内容
  **     len: 数据长度
  **输出参数:
- **返    回: 0:成功 !0:失败
+ **返    回: 发送队列的索引
  **实现描述: 将数据放入发送队列
  **注意事项: 内存结构: 流水信息 + 消息头 + 消息体
  **作    者: # Qifeng.zou # 2015-06-04 #
@@ -373,9 +377,32 @@ int agent_send(agent_cntx_t *ctx, int type, uint64_t serial, void *data, int len
 
     memcpy(head+1, data, len);
 
-    queue_push(sendq, addr);
+    queue_push(sendq, addr); /* 放入队列 */
 
-    /* > 发送分发请求 */
+    agent_cmd_send_dist_req(ctx, flow.agt_idx); /* 发送分发命令 */
 
     return AGENT_OK;
+}
+
+/******************************************************************************
+ **函数名称: agent_cmd_send_dist_req
+ **功    能: 发送分发命令给指定的代理服务
+ **输入参数:
+ **     ctx: 全局对象
+ **     idx: 代理服务的索引
+ **输出参数:
+ **返    回: 
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015-06-24 23:55:45 #
+ ******************************************************************************/
+static int agent_cmd_send_dist_req(agent_cntx_t *ctx, int idx)
+{
+    cmd_data_t cmd;
+    char path[FILE_PATH_MAX_LEN];
+
+    cmd.type = CMD_DIST_DATA;
+    snprintf(path, sizeof(path), AGENT_RCV_CMD_PATH, idx);
+
+    return unix_udp_send(ctx->cli.cmd_sck_id, path, (void *)&cmd, sizeof(cmd));
 }

@@ -11,6 +11,8 @@
 #include "command.h"
 #include "listend.h"
 
+#define LSND_DIST_POP_NUM   (128)   /* 分发弹出个数 */
+
 static int lsnd_dsvr_event_hdl(lsnd_cntx_t *ctx, lsnd_dsvr_t *dsvr);
 static int lsnd_dsvr_timeout_hdl(lsnd_cntx_t *ctx, lsnd_dsvr_t *dsvr);
 
@@ -104,7 +106,6 @@ void *lsnd_dsvr_routine(void *_ctx)
  ******************************************************************************/
 static int lsnd_dsvr_cmd_dist_hdl(lsnd_cntx_t *ctx, lsnd_dsvr_t *dsvr)
 {
-#define LSND_DIST_POP_NUM   (128)
     int num, idx;
     agent_flow_t *flow;
     rttp_header_t *head;
