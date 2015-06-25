@@ -113,7 +113,7 @@ LSND_INIT_ERR:
  **输入参数: NONE
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述: 使用文件锁
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
@@ -266,45 +266,47 @@ static lsnd_cntx_t *lsnd_init(lsnd_conf_t *conf, log_cycle_t *log)
     }
 
     ctx->log = log;
-    log_set_level(log, conf->log_level);
-    memcpy(&ctx->conf, conf, sizeof(lsnd_conf_t));
+    log_set_level(log, conf->log_level); /* 设置日志级别 */
+    memcpy(&ctx->conf, conf, sizeof(lsnd_conf_t));  /* 拷贝配置信息 */
 
-    /* > 创建Agentd发送队列 */
-    ctx->sendq = shm_queue_attach(LSND_SHM_SENDQ_PATH);
-    if (NULL == ctx->sendq)
+    do
     {
-        log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
-        FREE(ctx);
-        return NULL;
-    }
+        /* > 附着Agentd发送队列 */
+        ctx->sendq = shm_queue_attach(LSND_SHM_SENDQ_PATH);
+        if (NULL == ctx->sendq)
+        {
+            log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
+            break;
+        }
 
-    /* > 初始化全局信息 */
-    ctx->agent = agent_init(&conf->agent, log);
-    if (NULL == ctx->agent)
-    {
-        log_error(log, "Initialize agent failed!");
-        FREE(ctx);
-        return NULL;
-    }
+        /* > 初始化全局信息 */
+        ctx->agent = agent_init(&conf->agent, log);
+        if (NULL == ctx->agent)
+        {
+            log_error(log, "Initialize agent failed!");
+            break;
+        }
 
-    /* > 初始化RTTP信息 */
-    ctx->send_to_invtd = rtsd_cli_init(&conf->to_frwd, 0, log);
-    if (NULL == ctx->send_to_invtd)
-    {
-        log_error(log, "Initialize real-time-transport-protocol failed!");
-        FREE(ctx);
-        return NULL;
-    }
+        /* > 初始化RTTP信息 */
+        ctx->send_to_invtd = rtsd_cli_init(&conf->to_frwd, 0, log);
+        if (NULL == ctx->send_to_invtd)
+        {
+            log_error(log, "Initialize real-time-transport-protocol failed!");
+            break;
+        }
 
-    /* > 初始化DSVR服务 */
-    if (lsnd_dsvr_init(ctx))
-    {
-        log_error(log, "Initialize dist-server failed!");
-        FREE(ctx);
-        return NULL;
-    }
+        /* > 初始化DSVR服务 */
+        if (lsnd_dsvr_init(ctx))
+        {
+            log_error(log, "Initialize dist-server failed!");
+            break;
+        }
 
-    return ctx;
+        return ctx;
+    } while (0);
+
+    FREE(ctx);
+    return NULL;
 }
 
 /******************************************************************************

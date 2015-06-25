@@ -37,6 +37,7 @@
 #define QUEUE_NAME_MAX_LEN  (64)            /* 队列名最大长度 */
 #define TABLE_NAME_MAX_LEN  (64)            /* 表名最大长度 */
 #define ERR_MSG_MAX_LEN     (1024)          /* 错误信息最大长度 */
+#define NODE_MAX_LEN        (64)            /* 节点名最大长度 */
 
 #define MD5_SUM_CHK_LEN     (32)            /* MD5校验值长度 */
 

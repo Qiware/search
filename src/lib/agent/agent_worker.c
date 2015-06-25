@@ -2,6 +2,8 @@
 #include "agent_mesg.h"
 #include "agent_worker.h"
 
+#define AGT_WSVR_POP_NUM    (128)
+
 /******************************************************************************
  **函数名称: agent_worker_self
  **功    能: 获取工作对象
@@ -42,12 +44,12 @@ static agent_worker_t *agent_worker_self(agent_cntx_t *ctx)
  ******************************************************************************/
 void *agent_worker_routine(void *_ctx)
 {
-    int rqid; /* 接收队列ID */
-    void *addr;
+    int num, idx, rqid; /* rqid: 接收队列ID */
     agent_reg_t *reg;
     agent_flow_t *flow;
     agent_worker_t *worker;
     agent_header_t *head;
+    void *addr[AGT_WSVR_POP_NUM];
     agent_cntx_t *ctx = (agent_cntx_t *)_ctx;
 
     worker = agent_worker_self(ctx);
@@ -55,37 +57,46 @@ void *agent_worker_routine(void *_ctx)
     while (1)
     {
         rqid = rand() % ctx->conf->agent_num;
+        num = MIN(AGT_WSVR_POP_NUM, queue_used(ctx->recvq[rqid]));
+        if (0 == num)
+        {
+            usleep(50);
+            continue;
+        }
 
         /* > 从队列中取数据 */
-        addr = queue_pop(ctx->recvq[rqid]);
-        if (NULL == addr)
+        num = queue_mpop(ctx->recvq[rqid], addr, num);
+        if (0 == num)
         {
-            usleep(500);
             continue;
         }
 
-        /* > 对数据进行处理 */
-        flow = (agent_flow_t *)addr;
-        head = (agent_header_t *)(flow + 1);
-
-        reg = &ctx->reg[head->type];
-
-        /* > 插入SERIAL->SCK映射 */
-        if (agent_serial_to_sck_map_insert(ctx, flow))
+        /* > 依次处理数据 */
+        for (idx=0; idx<num; ++idx)
         {
-            log_error(worker->log, "Insert serial to sck map failed! serial:%lu sck_serial:%lu",
-                    flow->serial, flow->sck_serial);
-            continue;
-        }
+            /* > 对数据进行处理 */
+            flow = (agent_flow_t *)addr[idx];
+            head = (agent_header_t *)(flow + 1);
 
-        /* > 调用处理回调 */
-        if (reg->proc(head->type, addr, head->length + sizeof(agent_flow_t), reg->args))
-        {
-            agent_serial_to_sck_map_delete(ctx, flow->serial);
-        }
+            reg = &ctx->reg[head->type];
 
-        /* 3. 释放内存空间 */
-        queue_dealloc(ctx->recvq[rqid], addr);
+            /* > 插入SERIAL->SCK映射 */
+            if (agent_serial_to_sck_map_insert(ctx, flow))
+            {
+                log_error(worker->log, "Insert serial to sck map failed! serial:%lu sck_serial:%lu",
+                        flow->serial, flow->sck_serial);
+                continue;
+            }
+
+            /* > 调用处理回调 */
+            if (reg->proc(head->type, addr[idx], head->length + sizeof(agent_flow_t), reg->args))
+            {
+                agent_serial_to_sck_map_delete(ctx, flow->serial);
+            }
+
+            /* 3. 释放内存空间 */
+            queue_dealloc(ctx->recvq[rqid], addr[idx]);
+        }
     }
     return NULL;
 }

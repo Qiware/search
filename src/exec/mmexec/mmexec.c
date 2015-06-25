@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
 {
     daemon(1, 1); /* 切后台运行 */
 
-    /* > 创建Agentd发送队列 */
+    /* > 创建Listend发送队列 */
     if (mm_lsnd_creat_sendq())
     {
         fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));

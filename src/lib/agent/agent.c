@@ -558,7 +558,7 @@ static int agent_cli_init(agent_cntx_t *ctx)
 {
     char path[FILE_PATH_MAX_LEN];
 
-    snprintf(path, sizeof(path), AGENT_CLI_CMD_PATH);
+    snprintf(path, sizeof(path), "%s/"AGENT_CLI_CMD_PATH, ctx->conf->path);
 
     ctx->cli.cmd_sck_id = unix_udp_creat(path);
     if (ctx->cli.cmd_sck_id < 0)

@@ -95,8 +95,10 @@ void *agent_listen_routine(void *_ctx)
 agent_listen_t *agent_listen_init(agent_cntx_t *ctx)
 {
     agent_listen_t *lsn;
+    char path[FILE_NAME_MAX_LEN];
+    agent_conf_t *conf = ctx->conf;
 
-    /* 1. 创建LSN对象 */
+    /* > 创建LSN对象 */
     lsn = (agent_listen_t *)calloc(1, sizeof(agent_listen_t));
     if (NULL == lsn)
     {
@@ -108,8 +110,8 @@ agent_listen_t *agent_listen_init(agent_cntx_t *ctx)
 
     do
     {
-        /* 2. 侦听指定端口 */
-        lsn->lsn_sck_id = tcp_listen(ctx->conf->connections.port);
+        /* > 侦听指定端口 */
+        lsn->lsn_sck_id = tcp_listen(conf->connections.port);
         if (lsn->lsn_sck_id < 0)
         {
             log_error(lsn->log, "errmsg:[%d] %s! port:%d",
@@ -117,8 +119,10 @@ agent_listen_t *agent_listen_init(agent_cntx_t *ctx)
             break;
         }
 
-        /* 3. 创建命令套接字 */
-        lsn->cmd_sck_id = unix_udp_creat(AGENT_LSN_CMD_PATH);
+        /* > 创建命令套接字 */
+        snprintf(path, sizeof(path), "%s/"AGENT_LSVR_CMD_PATH, conf->path);
+
+        lsn->cmd_sck_id = unix_udp_creat(path);
         if (lsn->cmd_sck_id < 0)
         {
             log_error(lsn->log, "errmsg:[%d] %s!", errno, strerror(errno));
@@ -206,9 +210,10 @@ static int agent_listen_send_add_sck_req(agent_cntx_t *ctx, agent_listen_t *lsn,
 {
     cmd_data_t cmd;
     char path[FILE_NAME_MAX_LEN];
+    agent_conf_t *conf = ctx->conf;
 
     cmd.type = CMD_ADD_SCK;
-    snprintf(path, sizeof(path), AGENT_RCV_CMD_PATH, idx);
+    snprintf(path, sizeof(path), "%s/"AGENT_RSVR_CMD_PATH, conf->path, idx);
 
     unix_udp_send(lsn->cmd_sck_id, path, &cmd, sizeof(cmd));
 

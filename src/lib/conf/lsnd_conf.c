@@ -14,10 +14,22 @@
 static int lsnd_conf_parse(xml_tree_t *xml, agent_conf_t *conf, log_cycle_t *log);
 
 static int lsnd_conf_load_comm(xml_tree_t *xml, lsnd_conf_t *conf, log_cycle_t *log);
-static int lsnd_conf_load_agent(xml_tree_t *xml, agent_conf_t *conf, log_cycle_t *log);
+static int lsnd_conf_load_agent(xml_tree_t *xml, lsnd_conf_t *conf, log_cycle_t *log);
 static int lsnd_conf_load_frwder(xml_tree_t *xml, rtsd_conf_t *conf, log_cycle_t *log);
 
-/* 加载配置信息 */
+/******************************************************************************
+ **函数名称: lsnd_load_conf
+ **功    能: 加载配置信息
+ **输入参数: 
+ **     path: 配置文件路径
+ **     log: 日志对象
+ **输出参数:
+ **     conf: 配置信息
+ **返    回: 0:成功 !0:失败
+ **实现描述: 载入配置文件, 并提取其中的数据
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015-06-25 22:43:12 #
+ ******************************************************************************/
 int lsnd_load_conf(const char *path, lsnd_conf_t *conf, log_cycle_t *log)
 {
     xml_opt_t opt;
@@ -50,7 +62,7 @@ int lsnd_load_conf(const char *path, lsnd_conf_t *conf, log_cycle_t *log)
         }
 
         /* > 加载AGENT配置 */
-        if (lsnd_conf_load_agent(xml, &conf->agent, log))
+        if (lsnd_conf_load_agent(xml, conf, log))
         {
             log_error(log, "Load AGENT conf failed! path:%s", path);
             break;
@@ -73,21 +85,34 @@ int lsnd_load_conf(const char *path, lsnd_conf_t *conf, log_cycle_t *log)
     return -1;
 }
 
-/* 加载公共配置 */
+/******************************************************************************
+ **函数名称: lsnd_conf_load_comm
+ **功    能: 加载公共配置
+ **输入参数: 
+ **     path: 配置文件路径
+ **     log: 日志对象
+ **输出参数:
+ **     conf: 配置信息
+ **返    回: 0:成功 !0:失败
+ **实现描述: 提取配置文件中的数据
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015-06-25 22:43:12 #
+ ******************************************************************************/
 static int lsnd_conf_load_comm(xml_tree_t *xml, lsnd_conf_t *conf, log_cycle_t *log)
 {
     xml_node_t *node;
 
-    /* > 加载结点ID */
-    node = xml_query(xml, ".LISTEND.NODE");
+    /* > 加载结点名称 */
+    node = xml_query(xml, ".LISTEND.NAME");
     if (NULL == node
         || 0 == node->value.len)
     {
-        log_error(log, "Get node id failed!");
+        log_error(log, "Get node name failed!");
         return -1;
     }
 
-    conf->nodeid = atoi(node->value.str);
+    snprintf(conf->name, sizeof(conf->name), "%s", node->value.str); /* 结点名 */
+    snprintf(conf->path, sizeof(conf->path), "%s/%s", LSND_WORK_DIR, conf->name); /* 工作路径 */
 
     /* > 加载日志配置 */
     node = xml_query(xml, ".LISTEND.LOG.LEVEL");
@@ -104,14 +129,76 @@ static int lsnd_conf_load_comm(xml_tree_t *xml, lsnd_conf_t *conf, log_cycle_t *
     return 0;
 }
 
-/* 解析并发配置 */
+/******************************************************************************
+ **函数名称: lsnd_conf_parse_agent_connections
+ **功    能: 解析代理并发配置
+ **输入参数: 
+ **     path: 配置文件路径
+ **     log: 日志对象
+ **输出参数:
+ **     conf: 配置信息
+ **返    回: 0:成功 !0:失败
+ **实现描述: 提取配置文件中的数据
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015-06-25 22:43:12 #
+ ******************************************************************************/
 static int lsnd_conf_parse_agent_connections(
         xml_tree_t *xml, agent_conf_t *conf, log_cycle_t *log)
 {
+    xml_node_t *fix, *node;
+
+    /* > 定位并发配置 */
+    fix = xml_query(xml, ".LISTEND.AGENT.CONNECTIONS");
+    if (NULL == fix)
+    {
+        log_error(log, "Didn't configure connections!");
+        return -1;
+    }
+
+    node = xml_search(xml, fix, "MAX");         /* > 获取最大并发数 */
+    if (NULL == node)
+    {
+        log_error(log, "Get max number of connections failed!");
+        return -1;
+    }
+
+    conf->connections.max = atoi(node->value.str);
+
+    node = xml_search(xml, fix, "TIMEOUT");     /* > 获取连接超时时间 */
+    if (NULL == node)
+    {
+        log_error(log, "Get timeout of connection failed!");
+        return -1;
+    }
+
+    conf->connections.timeout = atoi(node->value.str);
+
+    /* > 获取侦听端口 */
+    node = xml_search(xml, fix, "PORT");
+    if (NULL == node)
+    {
+        log_error(log, "Get port of connection failed!");
+        return -1;
+    }
+
+    conf->connections.port = atoi(node->value.str);
+
     return 0;
 }
 
-/* 解析队列配置 */
+/******************************************************************************
+ **函数名称: lsnd_conf_parse_agent_queue
+ **功    能: 解析代理各队列配置
+ **输入参数: 
+ **     path: 配置文件路径
+ **     log: 日志对象
+ **输出参数:
+ **     conf: 配置信息
+ **返    回: 0:成功 !0:失败
+ **实现描述: 提取配置文件中的数据
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015-06-25 22:43:12 #
+ ******************************************************************************/
 static int lsnd_conf_parse_agent_queue(xml_tree_t *xml, agent_conf_t *conf, log_cycle_t *log)
 {
     xml_node_t *node, *fix;
@@ -158,55 +245,34 @@ static int lsnd_conf_parse_agent_queue(xml_tree_t *xml, agent_conf_t *conf, log_
     return 0;
 }
 
-/* 加载AGENT配置 */
-static int lsnd_conf_load_agent(xml_tree_t *xml, agent_conf_t *conf, log_cycle_t *log)
+/******************************************************************************
+ **函数名称: lsnd_conf_load_agent
+ **功    能: 加载AGENT配置
+ **输入参数: 
+ **     path: 配置文件路径
+ **     log: 日志对象
+ **输出参数:
+ **     lcf: 配置信息
+ **返    回: 0:成功 !0:失败
+ **实现描述: 提取配置文件中的数据
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015-06-25 22:43:12 #
+ ******************************************************************************/
+static int lsnd_conf_load_agent(xml_tree_t *xml, lsnd_conf_t *lcf, log_cycle_t *log)
 {
-    xml_node_t *node, *fix;
+    xml_node_t *node;
+    agent_conf_t *conf = &lcf->agent;
 
-    /* > 定位并发配置 */
-    fix = xml_query(xml, ".LISTEND.AGENT.CONNECTIONS");
-    if (NULL == fix)
-    {
-        log_error(log, "Didn't configure connections!");
-        return -1;
-    }
+    snprintf(conf->path, sizeof(conf->path), "%s/agent/", lcf->path); /* 工作路径 */
 
-    node = xml_search(xml, fix, "MAX");         /* > 获取最大并发数 */
-    if (NULL == node)
-    {
-        log_error(log, "Get max number of connections failed!");
-        return -1;
-    }
-
-    conf->connections.max = atoi(node->value.str);
-
-    node = xml_search(xml, fix, "TIMEOUT");     /* > 获取连接超时时间 */
-    if (NULL == node)
-    {
-        log_error(log, "Get timeout of connection failed!");
-        return -1;
-    }
-
-    conf->connections.timeout = atoi(node->value.str);
-
-    /* > 获取侦听端口 */
-    node = xml_search(xml, fix, "PORT");
-    if (NULL == node)
-    {
-        log_error(log, "Get port of connection failed!");
-        return -1;
-    }
-
-    conf->connections.port = atoi(node->value.str);
-
-
+    /* > 加载连接配置 */
     if (lsnd_conf_parse_agent_connections(xml, conf, log))
     {
         log_error(log, "Parse connections of AGENTe configuration failed!");
         return -1;
     }
 
-    /* > 加载连接配置 */
+    /* > 加载队列配置 */
     if (lsnd_conf_parse_agent_queue(xml, conf, log))
     {
         log_error(log, "Parse queue of AGENTe configuration failed!");
@@ -236,6 +302,19 @@ static int lsnd_conf_load_agent(xml_tree_t *xml, agent_conf_t *conf, log_cycle_t
     return 0;
 }
 
+/******************************************************************************
+ **函数名称: _lsnd_conf_load_frwder
+ **功    能: 加载转发配置
+ **输入参数: 
+ **     path: 配置文件路径
+ **     log: 日志对象
+ **输出参数:
+ **     conf: 配置信息
+ **返    回: 0:成功 !0:失败
+ **实现描述: 提取配置文件中的数据
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015-06-25 22:43:12 #
+ ******************************************************************************/
 static int _lsnd_conf_load_frwder(const char *path,
         const char *mark, rtsd_conf_t *conf, log_cycle_t *log)
 {
@@ -459,7 +538,19 @@ static int _lsnd_conf_load_frwder(const char *path,
     return -1;
 }
 
-/* 加载RTTP配置 */
+/******************************************************************************
+ **函数名称: lsnd_conf_load_frwder
+ **功    能: 加载转发配置
+ **输入参数: 
+ **     path: 配置文件路径
+ **     log: 日志对象
+ **输出参数:
+ **     conf: 配置信息
+ **返    回: 0:成功 !0:失败
+ **实现描述: 提取配置文件中的数据
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015-06-25 22:43:12 #
+ ******************************************************************************/
 static int lsnd_conf_load_frwder(xml_tree_t *xml, rtsd_conf_t *conf, log_cycle_t *log)
 {
     xml_node_t *node, *fix;

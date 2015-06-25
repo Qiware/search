@@ -19,14 +19,15 @@
 #define AGENT_MSG_TYPE_MAX      (0xFF)      /* 消息最大类型 */
 
 /* 命令路径 */
-#define AGENT_LSN_CMD_PATH "../temp/agent/lsn_cmd.usck"       /* 侦听线程 */
-#define AGENT_RCV_CMD_PATH "../temp/agent/rcv_cmd_%02d.usck"  /* 接收线程 */
-#define AGENT_WRK_CMD_PATH "../temp/agent/wrk_cmd_%02d.usck"  /* 工作线程 */
-#define AGENT_CLI_CMD_PATH "../temp/agent/cli_cmd.usck"       /* 客户端路径 */
+#define AGENT_LSVR_CMD_PATH     "lsvr-cmd.usck"      /* 侦听服务 */
+#define AGENT_RSVR_CMD_PATH     "rsvr-cmd-%02d.usck" /* 接收服务 */
+#define AGENT_CLI_CMD_PATH      "cli_cmd.usck"       /* 客户端 */
 
 /* 配置信息 */
 typedef struct
 {
+    char path[FILE_NAME_MAX_LEN];           /* 工作路径 */
+
     struct
     {
         int max;                            /* 最大并发数 */

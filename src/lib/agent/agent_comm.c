@@ -400,9 +400,10 @@ static int agent_cmd_send_dist_req(agent_cntx_t *ctx, int idx)
 {
     cmd_data_t cmd;
     char path[FILE_PATH_MAX_LEN];
+    agent_conf_t *conf = ctx->conf;
 
     cmd.type = CMD_DIST_DATA;
-    snprintf(path, sizeof(path), AGENT_RCV_CMD_PATH, idx);
+    snprintf(path, sizeof(path), "%s/"AGENT_RSVR_CMD_PATH, conf->path, idx);
 
     return unix_udp_send(ctx->cli.cmd_sck_id, path, (void *)&cmd, sizeof(cmd));
 }

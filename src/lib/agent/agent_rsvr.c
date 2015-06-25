@@ -95,7 +95,6 @@ static int agt_rsvr_recv_cmd_hdl(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t
         /* > 接收命令 */
         if (unix_udp_recv(sck->fd, &cmd, sizeof(cmd)) < 0)
         {
-            log_error(rsvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
             return AGENT_SCK_AGAIN;
         }
 
@@ -146,6 +145,7 @@ int agent_rsvr_init(agent_cntx_t *ctx, agent_rsvr_t *rsvr, int idx)
     rbt_opt_t opt;
     struct epoll_event ev;
     char path[FILE_NAME_MAX_LEN];
+    agent_conf_t *conf = ctx->conf;
     socket_t *cmd_sck = &rsvr->cmd_sck;
 
     rsvr->tidx = idx;
@@ -200,7 +200,7 @@ int agent_rsvr_init(agent_cntx_t *ctx, agent_rsvr_t *rsvr, int idx)
         }
 
         /* > 创建命令套接字 */
-        snprintf(path, sizeof(path), AGENT_RCV_CMD_PATH, rsvr->tidx);
+        snprintf(path, sizeof(path), "%s/"AGENT_RSVR_CMD_PATH, conf->path, rsvr->tidx);
 
         cmd_sck->fd = unix_udp_creat(path);
         if (cmd_sck->fd < 0)
@@ -774,7 +774,7 @@ static int agent_sys_msg_hdl(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sc
  **     sck: SCK对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述: TODO: 可向工作线程发送处理请求
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.21 #
  ******************************************************************************/
@@ -786,7 +786,6 @@ static int agent_rsvr_recv_post(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t 
     if (AGENT_MSG_FLAG_USR == extra->head->flag)
     {
         log_info(rsvr->log, "Push into user data queue!");
-
         return queue_push(ctx->recvq[rsvr->tidx], sck->recv.addr);
     }
 
