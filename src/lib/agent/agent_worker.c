@@ -60,7 +60,7 @@ void *agent_worker_routine(void *_ctx)
         num = MIN(AGT_WSVR_POP_NUM, queue_used(ctx->recvq[rqid]));
         if (0 == num)
         {
-            usleep(50);
+            usleep(1);
             continue;
         }
 

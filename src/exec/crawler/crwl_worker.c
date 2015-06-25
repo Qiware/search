@@ -163,8 +163,7 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker, int tidx)
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
- **注意事项: 
- **     TODO: 未完成所有内存的释放!
+ **注意事项: TODO: 未完成所有内存的释放!
  **作    者: # Qifeng.zou # 2014.09.23 #
  ******************************************************************************/
 int crwl_worker_destroy(crwl_cntx_t *ctx, crwl_worker_t *worker)

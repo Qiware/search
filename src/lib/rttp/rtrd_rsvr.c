@@ -996,7 +996,7 @@ static int rtrd_rsvr_link_auth_rsp(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd_sck
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 校验鉴权是否通过, 并应答鉴权请求
- **注意事项: TODO: 待注册DEVID与RSVR的映射关系, 为自定义数据的应答做铺垫!
+ **注意事项: 
  **作    者: # Qifeng.zou # 2015.05.22 #
  ******************************************************************************/
 static int rtrd_rsvr_link_auth_req_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd_sck_t *sck)
@@ -1487,7 +1487,6 @@ static int rtrd_rsvr_dist_send_data(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
             }
 
             sck = (rtrd_sck_t *)list_fetch(conn.list, rand()%conn.list->num);
-            //sck = (rtrd_sck_t *)conn.list->head->data; /* TODO: 暂时选择第一个 */
             
             /* > 设置发送数据 */
             len = sizeof(rttp_header_t) + frwd->length;

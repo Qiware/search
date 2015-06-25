@@ -198,7 +198,7 @@ void *hash_tab_remove(hash_tab_t *hash, void *pkey, int pkey_len)
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述:
- **注意事项: TODO: 未释放DATA空间
+ **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
 int hash_tab_destroy(hash_tab_t *hash, mem_dealloc_cb_t dealloc, void *args)
