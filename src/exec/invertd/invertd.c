@@ -27,6 +27,9 @@ int main(int argc, char *argv[])
 {
     invtd_opt_t opt;
     invtd_cntx_t *ctx;
+    invtd_conf_t conf;
+
+    memset(&conf, 0, sizeof(conf));
 
     /* > 获取参数 */
     if (invtd_getopt(argc, argv, &opt))
@@ -42,8 +45,15 @@ int main(int argc, char *argv[])
         daemon(1, 1);
     }
 
+    /* > 加载配置信息 */
+    if (invtd_conf_load(opt.conf_path, &conf))
+    {
+        fprintf(stderr, "Load configuration failed! path:%s", opt.conf_path);
+        return -1;
+    }
+
     /* > 服务初始化 */
-    ctx = invtd_init(opt.conf_path);
+    ctx = invtd_init(&conf);
     if (NULL == ctx)
     {
         fprintf(stderr, "Init invertd failed!\n");

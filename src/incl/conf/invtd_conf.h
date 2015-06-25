@@ -6,6 +6,7 @@
 /* 配置信息 */
 typedef struct
 {
+    int log_level;                      /* 日志级别 */
     int invt_tab_max;                   /* 倒排表长度 */
     rtrd_conf_t rtrd;                   /* SDTP配置 */
 } invtd_conf_t;

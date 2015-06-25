@@ -196,6 +196,18 @@ static int invtd_conf_load_comm(xml_tree_t *xml, invtd_conf_t *conf)
 {
     xml_node_t *node;
 
+    /* > 加载日志配置 */
+    node = xml_query(xml, ".INVTERD.LOG.LEVEL");
+    if (NULL == node
+        || 0 == node->value.len)
+    {
+        conf->log_level = log_get_level(LOG_DEF_LEVEL_STR);
+    }
+    else
+    {
+        conf->log_level = log_get_level(node->value.str);
+    }
+
     /* > 倒排表长度 */
     node = xml_query(xml, ".INVTERD.INVT_TAB.MAX");
     if (NULL == node)

@@ -94,20 +94,20 @@ int invtd_usage(const char *exec)
  **函数名称: invtd_init 
  **功    能: 初始化倒排服务
  **输入参数:
- **     conf_path: 配置路径
+ **     conf: 配置信息
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 依次创建所需要的资源(日志 SDTP服务 倒排表等)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.05.07 #
  ******************************************************************************/
-invtd_cntx_t *invtd_init(const char *conf_path)
+invtd_cntx_t *invtd_init(const invtd_conf_t *conf)
 {
     log_cycle_t *log;
     invtd_cntx_t *ctx;
 
     /* > 初始化日志 */
-    log = log_init(LOG_LEVEL_ERROR, INVTD_LOG_PATH);
+    log = log_init(conf->log_level, INVTD_LOG_PATH);
     if (NULL == log)
     {
         fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
@@ -123,16 +123,10 @@ invtd_cntx_t *invtd_init(const char *conf_path)
     }
 
     ctx->log = log;
+    memcpy(&ctx->conf, conf, sizeof(ctx->conf));
 
     do
     {
-        /* > 加载配置信息 */
-        if (invtd_conf_load(conf_path, &ctx->conf))
-        {
-            log_error(log, "Load configuration failed! path:%s", conf_path);
-            break;
-        }
-
         /* > 创建倒排表 */
         ctx->invtab = invtab_creat(ctx->conf.invt_tab_max, log);
         if (NULL == ctx->invtab)
