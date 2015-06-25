@@ -10,6 +10,8 @@
 #include "agent_rsvr.h"
 #include "thread_pool.h"
 
+#define AGT_RSVR_DIST_POP_NUM   (128)
+
 static agent_rsvr_t *agent_rsvr_self(agent_cntx_t *ctx);
 static int agent_rsvr_add_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr);
 static int agent_rsvr_del_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck);
@@ -30,7 +32,7 @@ static int agent_rsvr_event_timeout_hdl(agent_cntx_t *ctx, agent_rsvr_t *rsvr);
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
- **注意事项: TODO: 可使用事件触发分发数据
+ **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.18 #
  ******************************************************************************/
 void *agent_rsvr_routine(void *_ctx)
@@ -49,8 +51,6 @@ void *agent_rsvr_routine(void *_ctx)
 
     while (1)
     {
-        agent_rsvr_dist_send_data(ctx, rsvr);
-
         /* 3. 等待事件通知 */
         rsvr->fds = epoll_wait(rsvr->epid, rsvr->events,
                 AGENT_EVENT_MAX_NUM, AGENT_TMOUT_MSEC);
@@ -267,13 +267,13 @@ static agent_rsvr_t *agent_rsvr_self(agent_cntx_t *ctx)
     int tidx;
     agent_rsvr_t *rsvr;
 
-    tidx = thread_pool_get_tidx(ctx->agent_pool);
+    tidx = thread_pool_get_tidx(ctx->agents);
     if (tidx < 0)
     {
         return NULL;
     }
 
-    rsvr = thread_pool_get_args(ctx->agent_pool);
+    rsvr = thread_pool_get_args(ctx->agents);
 
     return rsvr + tidx;
 }
@@ -1050,9 +1050,7 @@ static int agent_rsvr_send(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
  ******************************************************************************/
 static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
 {
-#define AGT_RSVR_DIST_POP_NUM   (128)
     int total, num, idx;
-    void *addr[AGT_RSVR_DIST_POP_NUM], *data;
     queue_t *sendq;
     socket_t *sck;
     rbt_node_t *node;
@@ -1061,6 +1059,7 @@ static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
     agent_header_t *head;
     struct epoll_event ev;
     agent_socket_extra_t *sck_extra;
+    void *addr[AGT_RSVR_DIST_POP_NUM], *data;
 
     sendq = ctx->sendq[rsvr->tidx];
     while (1)

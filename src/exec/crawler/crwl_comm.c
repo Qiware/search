@@ -264,7 +264,7 @@ int crwl_startup(crwl_cntx_t *ctx)
     /* 1. 设置Worker线程回调 */
     for (idx=0; idx<conf->worker.num; ++idx)
     {
-        thread_pool_add_worker(ctx->worker_pool, crwl_worker_routine, ctx);
+        thread_pool_add_worker(ctx->workers, crwl_worker_routine, ctx);
     }
     
     /* 2. 设置Sched线程回调 */
@@ -319,8 +319,8 @@ static int crwl_worker_tpool_creat(crwl_cntx_t *ctx)
     opt.alloc = (mem_alloc_cb_t)slab_alloc;
     opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-    ctx->worker_pool = thread_pool_init(conf->num, &opt, worker);
-    if (NULL == ctx->worker_pool)
+    ctx->workers = thread_pool_init(conf->num, &opt, worker);
+    if (NULL == ctx->workers)
     {
         log_error(ctx->log, "Initialize thread pool failed!");
         free(worker);
@@ -350,7 +350,7 @@ static int crwl_worker_tpool_creat(crwl_cntx_t *ctx)
     }
 
     free(worker);
-    thread_pool_destroy(ctx->worker_pool);
+    thread_pool_destroy(ctx->workers);
 
     return CRWL_ERR;
 }
@@ -375,17 +375,17 @@ int crwl_worker_tpool_destroy(crwl_cntx_t *ctx)
     /* 1. 释放Worker对象 */
     for (idx=0; idx<conf->num; ++idx)
     {
-        worker = (crwl_worker_t *)ctx->worker_pool->data + idx;
+        worker = (crwl_worker_t *)ctx->workers->data + idx;
 
         crwl_worker_destroy(ctx, worker);
     }
 
-    free(ctx->worker_pool->data);
+    free(ctx->workers->data);
 
     /* 2. 释放线程池对象 */
-    thread_pool_destroy(ctx->worker_pool);
+    thread_pool_destroy(ctx->workers);
 
-    ctx->worker_pool = NULL;
+    ctx->workers = NULL;
 
     return CRWL_ERR;
 }

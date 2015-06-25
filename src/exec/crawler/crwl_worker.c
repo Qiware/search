@@ -51,7 +51,7 @@ crwl_worker_t *crwl_worker_get_by_idx(crwl_cntx_t *ctx, int idx)
 {
     crwl_worker_t *worker;
 
-    worker = thread_pool_get_args(ctx->worker_pool);
+    worker = thread_pool_get_args(ctx->workers);
 
     return worker + idx;
 }
@@ -71,7 +71,7 @@ static crwl_worker_t *crwl_worker_self(crwl_cntx_t *ctx)
 {
     int tidx;
 
-    tidx = thread_pool_get_tidx(ctx->worker_pool);
+    tidx = thread_pool_get_tidx(ctx->workers);
     if (tidx < 0)
     {
         return NULL;
