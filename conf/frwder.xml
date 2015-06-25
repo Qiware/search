@@ -1,8 +1,7 @@
 <!-- 转发器配置 -->
 <FRWDER>
     <!-- 日志配置
-        1) LEVLE: 日志级别
-        2) 取值范围: trace|debug|info|warn|error|fatal -->
+        1) LEVLE: 日志级别(取值范围: trace|debug|info|warn|error|fatal) -->
     <LOG LEVEL="error" />
 
     <!-- 至侦听服务的队列 -->
@@ -10,7 +9,7 @@
 
     <!-- 连接倒排服务的配置 -->
     <CONN-INVTD NODE="20001">                   <!-- NODE: 结点ID(必须唯一) -->
-        <PATH>../temp/frwd/</PATH>              <!-- PATH: 工作路径 -->
+        <PATH>../temp/frwder/</PATH>            <!-- PATH: 工作路径 -->
         <SERVER IP="127.0.0.1" PORT="28888" />  <!-- 服务端地址(IP:IP地址 PORT:服务端口) -->
         <AUTH   USR="qifeng" PASSWD="111111" /> <!-- 鉴权配置(USR:用户名 PASSWD:登录密码) -->
         <THDNUM SEND="2" WORK="4" />            <!-- 线程数目(SEND:发送线程 WORK:工作线程) -->
