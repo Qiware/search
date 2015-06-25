@@ -23,7 +23,7 @@
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 从倒排表中查询结果，并将结果返回给客户端
- **注意事项:  TODO: 后续添加读锁
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.05.08 #
  ******************************************************************************/
 static int invtd_search_word_req_hdl(int type, int orig, char *buff, size_t len, void *args)

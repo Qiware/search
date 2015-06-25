@@ -137,7 +137,6 @@ static rttp_worker_t *rtrd_worker_get_curr(rtrd_cntx_t *ctx)
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述:
- **     1. 创建命令套接字
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.06 #
  ******************************************************************************/
@@ -149,7 +148,7 @@ int rtrd_worker_init(rtrd_cntx_t *ctx, rttp_worker_t *worker, int tidx)
     worker->tidx = tidx;
     worker->log = ctx->log;
 
-    /* 1. 创建命令套接字 */
+    /* > 创建命令套接字 */
     rtrd_worker_usck_path(conf, path, worker->tidx);
 
     worker->cmd_sck_id = unix_udp_creat(path);
@@ -170,8 +169,7 @@ int rtrd_worker_init(rtrd_cntx_t *ctx, rttp_worker_t *worker, int tidx)
  **     worker: 工作对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述:
- **     1. 创建命令套接字
+ **实现描述: 接收命令, 再根据命令类型调用相应的处理函数!
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.06 #
  ******************************************************************************/
