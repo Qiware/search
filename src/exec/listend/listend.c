@@ -39,9 +39,9 @@ static void lsnd_destroy(lsnd_cntx_t *ctx);
 int main(int argc, char *argv[])
 {
     lsnd_opt_t opt;
-    lsnd_cntx_t *ctx;
     lsnd_conf_t conf;
     log_cycle_t *log;
+    lsnd_cntx_t *ctx = NULL;
     char path[FILE_PATH_MAX_LEN];
 
     memset(&opt, 0, sizeof(opt));

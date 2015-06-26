@@ -14,8 +14,6 @@
 #include "monitor.h"
 #include "agent_mesg.h"
 
-#define AGENT_CLIENT_NUM     (50000)
-
 static int mon_agent_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args);
 static int mon_agent_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args);
 static int mon_agent_insert_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args);
@@ -28,9 +26,6 @@ static int mon_agent_multi_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu,
  **输出参数: NONE
  **返    回: 代理服务菜单
  **实现描述: 
- **     1. 初始化菜单环境
- **     2. 加载子菜单
- **     3. 启动菜单功能
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.27 #
  ******************************************************************************/
@@ -69,21 +64,34 @@ menu_item_t *mon_agent_menu(menu_cntx_t *ctx, void *args)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.06.05 17:01:04 #
  ******************************************************************************/
-static int mon_agent_search_rsp_hdl(int fd)
+static int mon_agent_search_rsp_hdl(mon_cntx_t *ctx, int fd)
 {
-    int n, i;
-    char buff[4096];
+    int n, i, size;
+    void *addr;
     agent_header_t *head;
     mesg_search_word_rsp_t *rsp;
 
-    n = read(fd, buff, sizeof(buff));
-    if (n < 0)
+    /* > 申请内存空间 */
+    size = sizeof(agent_header_t) + sizeof(mesg_search_word_rsp_t);
+
+    addr = (void *)slab_alloc(ctx->slab, size);
+    if (NULL == addr)
     {
-        fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
+        fprintf(stderr, "    Alloc from slab failed!\n");
         return -1;
     }
 
-    head = (agent_header_t *)buff;
+    /* > 接收应答数据 */
+    n = read(fd, addr, size);
+    if (n < 0)
+    {
+        fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
+        slab_dealloc(ctx->slab, addr);
+        return -1;
+    }
+
+    /* > 显示查询结果 */
+    head = (agent_header_t *)addr;
     rsp = (mesg_search_word_rsp_t *)(head + 1);
 
     rsp->serial = ntoh64(rsp->serial);
@@ -95,6 +103,8 @@ static int mon_agent_search_rsp_hdl(int fd)
     {
         fprintf(stderr, "        [%02d] url: %s\n", i+1, rsp->url[i]);
     }
+
+    slab_dealloc(ctx->slab, addr);
 
     return 0;
 }
@@ -168,7 +178,7 @@ static int mon_agent_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void 
 
         if (FD_ISSET(fd, &rdset))
         {
-            mon_agent_search_rsp_hdl(fd);
+            mon_agent_search_rsp_hdl(ctx, fd);
             ftime(&ctm);
             sec = ctm.time - old_tm.time;
             msec = ctm.millitm - old_tm.millitm;
@@ -222,9 +232,9 @@ static int mon_agent_multi_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu,
     scanf(" %s", digit);
 
     num = MIN(atoi(digit), MON_FD_MAX);
-    fd = (int *)calloc(num, sizeof(int));
-    wflg = (int *)calloc(num, sizeof(int));
-    wrtm = (struct timeb *)calloc(num, sizeof(struct timeb));
+    fd = (int *)slab_alloc(ctx->slab, num*sizeof(int));
+    wflg = (int *)slab_alloc(ctx->slab, num*sizeof(int));
+    wrtm = (struct timeb *)slab_alloc(ctx->slab, num*sizeof(struct timeb));
 
 SRCH_AGAIN:
     num = MIN(atoi(digit), MON_FD_MAX);
@@ -284,7 +294,7 @@ SRCH_AGAIN:
             }
 
             if (FD_ISSET(fd[idx], &rdset)) {
-                mon_agent_search_rsp_hdl(fd[idx]);
+                mon_agent_search_rsp_hdl(ctx, fd[idx]);
                 ftime(&ctm);
                 sec = ctm.time - wrtm[idx].time;
                 msec = ctm.millitm - wrtm[idx].millitm;
@@ -328,31 +338,35 @@ SRCH_AGAIN:
 }
 
 /* 接收插入关键字的应答 */
-static int mon_agent_insert_word_rsp_hdl(int fd)
+static int mon_agent_insert_word_rsp_hdl(mon_cntx_t *ctx, int fd)
 {
     int n;
-    char *buff;
+    char *addr;
     ssize_t size;
     agent_header_t *head;
     mesg_insert_word_rsp_t *rsp;
 
-    size = sizeof(agent_header_t) + sizeof(mesg_search_word_rsp_t);
+    /* > 申请内存空间 */
+    size = sizeof(agent_header_t) + sizeof(mesg_insert_word_rsp_t);
 
-    buff = (char *)calloc(1, size);
-    if (NULL == buff)
+    addr = (char *)slab_alloc(ctx->slab, size);
+    if (NULL == addr)
     {
         fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
         return -1;
     }
 
-    n = read(fd, buff, size);
+    /* > 接收应答数据 */
+    n = read(fd, addr, size);
     if (n < 0)
     {
         fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
+        slab_dealloc(ctx->slab, addr);
         return -1;
     }
 
-    head = (agent_header_t *)buff;
+    /* > 显示插入结果 */
+    head = (agent_header_t *)addr;
     rsp = (mesg_insert_word_rsp_t *)(head + 1);
 
     rsp->serial = ntoh64(rsp->serial);
@@ -361,7 +375,8 @@ static int mon_agent_insert_word_rsp_hdl(int fd)
     fprintf(stderr, "    Serial: %ld\n", rsp->serial);
     fprintf(stderr, "    Code: %d\n", rsp->code);
     fprintf(stderr, "    Word: %s\n", rsp->word);
-    free(buff);
+
+    slab_dealloc(ctx->slab, addr);
 
     return 0;
 }
@@ -431,7 +446,7 @@ static int mon_agent_insert_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void 
 
         if (FD_ISSET(fd, &rdset))
         {
-            mon_agent_insert_word_rsp_hdl(fd);
+            mon_agent_insert_word_rsp_hdl(ctx, fd);
             ftime(&ctm);
             sec = ctm.time - old_tm.time;
             msec = ctm.millitm - old_tm.millitm;
@@ -473,7 +488,7 @@ static int mon_agent_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *arg
     scanf(" %s", digit);
 
     max = atoi(digit);
-    fd = (int *)calloc(max, sizeof(int));
+    fd = (int *)slab_alloc(ctx->slab, max*sizeof(int));
 
     /* > 连接代理服务 */
     num = 0;
@@ -527,7 +542,7 @@ static int mon_agent_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *arg
         CLOSE(fd[idx]);
     }
 
-    free(fd);
+    slab_dealloc(ctx->slab, fd);
 
     return 0;
 }

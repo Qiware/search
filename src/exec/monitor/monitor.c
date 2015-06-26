@@ -147,20 +147,33 @@ int main(int argc, char *argv[])
 static mon_cntx_t *mon_cntx_init(const char *path)
 {
     mon_cntx_t *ctx;
+    slab_pool_t *slab;
 
-    /* > 创建全局对象 */
-    ctx = (mon_cntx_t *)calloc(1, sizeof(mon_cntx_t));
-    if (NULL == ctx)
+    /* > 创建内存池对象 */
+    slab = slab_creat_by_calloc(1 * MB, NULL);
+    if (NULL == slab)
     {
         fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
         return NULL;
     }
+
+    /* > 创建全局对象 */
+    ctx = (mon_cntx_t *)slab_alloc(slab, sizeof(mon_cntx_t));
+    if (NULL == ctx)
+    {
+        fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
+        free(slab);
+        return NULL;
+    }
+
+    ctx->slab = slab;
 
     /* > 加载配置信息 */
     ctx->conf = mon_conf_load(path);
     if (NULL == ctx->conf)
     {
         fprintf(stderr, "Load configuration failed!\n");
+        free(ctx->slab);
         free(ctx);
         return NULL;
     }
@@ -170,6 +183,8 @@ static mon_cntx_t *mon_cntx_init(const char *path)
     if (NULL == ctx->menu)
     {
         fprintf(stderr, "Load menu failed!\n");
+        free(ctx->slab);
+        free(ctx);
         return NULL;
     }
 
@@ -178,6 +193,7 @@ static mon_cntx_t *mon_cntx_init(const char *path)
     if (ctx->fd < 0)
     {
         fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
+        free(ctx->slab);
         free(ctx);
         return NULL;
     }
