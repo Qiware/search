@@ -1259,17 +1259,17 @@ static void _avl_destroy(avl_tree_t *tree, avl_node_t *node, mem_dealloc_cb_t de
 {
     if (NULL != node->lchild)
     {
-        if (dealloc) { dealloc(args, node->lchild->data); }
+        dealloc(args, node->lchild->data);
         _avl_destroy(tree, node->lchild, dealloc, args);
     }
 
     if (NULL != node->rchild)
     {
-        if (dealloc) { dealloc(args, node->rchild->data); }
+        dealloc(args, node->rchild->data);
         _avl_destroy(tree, node->rchild, dealloc, args);
     }
 
-    if (dealloc) { dealloc(args, node->data); }
+    dealloc(args, node->data);
     tree->dealloc(tree->pool, node);
 }
 

@@ -1383,8 +1383,8 @@ static int rtrd_rsvr_fill_send_buff(rtrd_rsvr_t *rsvr, rtrd_sck_t *sck)
 }
 
 /******************************************************************************
- **函数名称: rtrd_rsvr_conn_list_with_same_nodeid
- **功    能: 获取相同的DEVID的连接链表
+ **函数名称: rtrd_rsvr_get_conn_list_by_nodeid
+ **功    能: 通过结点ID获取连接链表
  **输入参数:
  **     sck: 套接字数据
  **     c: 连接链表
@@ -1397,17 +1397,17 @@ static int rtrd_rsvr_fill_send_buff(rtrd_rsvr_t *rsvr, rtrd_sck_t *sck)
 typedef struct
 {
     int nodeid;                 /* 结点ID */
-    list_t *list;               /* 拥有相同DEVID的套接字链表 */
-} conn_list_with_same_nodeid_t;
+    list_t *list;               /* 拥有相同结点ID的套接字链表 */
+} _conn_list_t;
 
-static int rtrd_rsvr_conn_list_with_same_nodeid(rtrd_sck_t *sck, conn_list_with_same_nodeid_t *c)
+static int rtrd_rsvr_get_conn_list_by_nodeid(rtrd_sck_t *sck, _conn_list_t *cl)
 {
-    if (sck->nodeid != c->nodeid)
+    if (sck->nodeid != cl->nodeid)
     {
         return -1;
     }
 
-    return list_rpush(c->list, sck); /* 注意: 销毁c->list时, 不必释放sck空间 */
+    return list_rpush(cl->list, sck); /* 注意: 销毁cl->list时, 不必释放sck空间 */
 }
 
 /******************************************************************************
@@ -1432,8 +1432,8 @@ static int rtrd_rsvr_dist_send_data(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
     rttp_frwd_t *frwd;
     list_opt_t opt;
     rtrd_sck_t *sck;
+    _conn_list_t cl;
     rttp_header_t *head;
-    conn_list_with_same_nodeid_t conn;
 
     log_trace(rsvr->log, "Call %s()", __func__);
 
@@ -1468,25 +1468,25 @@ static int rtrd_rsvr_dist_send_data(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
             opt.alloc = (mem_alloc_cb_t)slab_alloc;
             opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-            conn.nodeid = frwd->dest_nodeid;
-            conn.list = list_creat(&opt);
-            if (NULL == conn.list)
+            cl.nodeid = frwd->dest_nodeid;
+            cl.list = list_creat(&opt);
+            if (NULL == cl.list)
             {
                 queue_dealloc(sendq, data[idx]);
                 log_error(rsvr->log, "Create list failed!");
                 continue;
             }
 
-            list2_trav(rsvr->conn_list, (list2_trav_cb_t)rtrd_rsvr_conn_list_with_same_nodeid, &conn);
-            if (0 == conn.list->num)
+            list2_trav(rsvr->conn_list, (list2_trav_cb_t)rtrd_rsvr_get_conn_list_by_nodeid, &cl);
+            if (0 == cl.list->num)
             {
                 queue_dealloc(sendq, data[idx]);
-                list_destroy(conn.list, NULL, mem_dummy_dealloc);
-                log_error(rsvr->log, "Didn't find connection by nodeid [%d]!", conn.nodeid);
+                list_destroy(cl.list, NULL, mem_dummy_dealloc);
+                log_error(rsvr->log, "Didn't find connection by nodeid [%d]!", cl.nodeid);
                 continue;
             }
 
-            sck = (rtrd_sck_t *)list_fetch(conn.list, rand()%conn.list->num);
+            sck = (rtrd_sck_t *)list_fetch(cl.list, rand()%cl.list->num);
             
             /* > 设置发送数据 */
             len = sizeof(rttp_header_t) + frwd->length;
@@ -1495,7 +1495,7 @@ static int rtrd_rsvr_dist_send_data(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
             if (NULL == addr)
             {
                 queue_dealloc(sendq, data[idx]);
-                list_destroy(conn.list, NULL, mem_dummy_dealloc);
+                list_destroy(cl.list, NULL, mem_dummy_dealloc);
                 log_error(rsvr->log, "Alloc memory from slab failed!");
                 continue;
             }
@@ -1519,7 +1519,7 @@ static int rtrd_rsvr_dist_send_data(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
                 log_error(rsvr->log, "Push input list failed!");
             }
 
-            list_destroy(conn.list, NULL, mem_dummy_dealloc);
+            list_destroy(cl.list, NULL, mem_dummy_dealloc); /* 无需是否结点数据空间 */
         }
     }
 

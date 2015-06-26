@@ -190,7 +190,7 @@ static crwl_man_t *crwl_man_init(crwl_cntx_t *ctx)
     } while(0);
 
     /* > 释放空间 */
-    if (NULL != man->reg) { avl_destroy(man->reg, NULL, NULL); }
+    if (NULL != man->reg) { avl_destroy(man->reg, mem_dummy_dealloc, NULL); }
     if (NULL != man->mesg_list)
     {
         list_destroy(man->mesg_list, man->slab, (mem_dealloc_cb_t)slab_dealloc);

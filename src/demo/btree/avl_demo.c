@@ -94,6 +94,6 @@ int main(void)
         avl_print(avl);
     }
 
-    avl_destroy(avl, NULL, NULL);
+    avl_destroy(avl, mem_dummy_dealloc, NULL);
     return 0;
 }

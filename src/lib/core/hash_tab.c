@@ -73,7 +73,7 @@ hash_tab_t *hash_tab_creat(int mod, key_cb_t key_cb, avl_cmp_cb_t cmp_cb, hash_t
         hash->tree[idx] = avl_creat(&avl_opt, key_cb, cmp_cb);
         if (NULL == hash->tree[idx])
         {
-            hash_tab_destroy(hash, NULL, NULL);
+            hash_tab_destroy(hash, mem_dummy_dealloc, NULL);
             return NULL;
         }
 
