@@ -120,7 +120,7 @@ agent_listen_t *agent_listen_init(agent_cntx_t *ctx)
         }
 
         /* > 创建命令套接字 */
-        snprintf(path, sizeof(path), "%s/"AGENT_LSVR_CMD_PATH, conf->path);
+        agent_lsvr_cmd_usck_path(conf, path, sizeof(path));
 
         lsn->cmd_sck_id = unix_udp_creat(path);
         if (lsn->cmd_sck_id < 0)
@@ -213,7 +213,7 @@ static int agent_listen_send_add_sck_req(agent_cntx_t *ctx, agent_listen_t *lsn,
     agent_conf_t *conf = ctx->conf;
 
     cmd.type = CMD_ADD_SCK;
-    snprintf(path, sizeof(path), "%s/"AGENT_RSVR_CMD_PATH, conf->path, idx);
+    agent_rsvr_cmd_usck_path(conf, idx, path, sizeof(path));
 
     unix_udp_send(lsn->cmd_sck_id, path, &cmd, sizeof(cmd));
 

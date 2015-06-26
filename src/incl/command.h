@@ -7,6 +7,7 @@ typedef enum
     CMD_TYPE_UNKOWN                         /* 未知类型 */
     , CMD_ADD_SCK                           /* 添加套接字 */
     , CMD_DIST_DATA                         /* 分发数据 */
+    , CMD_PROC_DATA                         /* 处理数据 */
 
     , CMD_TYPE_TOTAL                        /* 命令总数 */
 } cmd_type_e;

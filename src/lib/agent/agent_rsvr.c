@@ -200,7 +200,7 @@ int agent_rsvr_init(agent_cntx_t *ctx, agent_rsvr_t *rsvr, int idx)
         }
 
         /* > 创建命令套接字 */
-        snprintf(path, sizeof(path), "%s/"AGENT_RSVR_CMD_PATH, conf->path, rsvr->tidx);
+        agent_rsvr_cmd_usck_path(conf, rsvr->tidx, path, sizeof(path));
 
         cmd_sck->fd = unix_udp_creat(path);
         if (cmd_sck->fd < 0)
@@ -246,7 +246,8 @@ int agent_rsvr_destroy(agent_rsvr_t *rsvr)
     rbt_destroy(rsvr->connections);
     free(rsvr->slab);
     CLOSE(rsvr->epid);
-    CLOSE(rsvr->cmd_sck_id);
+    CLOSE(rsvr->cmd_sck.fd);
+    slab_dealloc(rsvr->slab, rsvr->cmd_sck.extra);
     slab_destroy(rsvr->slab);
     return AGENT_OK;
 }
@@ -767,6 +768,34 @@ static int agent_sys_msg_hdl(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sc
 }
 
 /******************************************************************************
+ **函数名称: agent_rsvr_cmd_proc_req
+ **功    能: 发送处理请求
+ **输入参数:
+ **     ctx: 全局对象
+ **     rsvr: 接收服务
+ **     wid: 工作线程ID(与rqid一致)
+ **输出参数: NONE
+ **返    回: >0:成功 <=0:失败
+ **实现描述:
+ **注意事项:
+ **作    者: # Qifeng.zou # 2015.06.26 10:33:12 #
+ ******************************************************************************/
+static int agent_rsvr_cmd_proc_req(agent_cntx_t *ctx, agent_rsvr_t *rsvr, int widx)
+{
+    cmd_data_t cmd;
+    char path[FILE_PATH_MAX_LEN];
+
+    memset(&cmd, 0, sizeof(cmd));
+
+    cmd.type = CMD_PROC_DATA;
+
+    agent_wsvr_cmd_usck_path(ctx->conf, widx, path, sizeof(path));
+
+    /* > 发送处理命令 */
+    return unix_udp_send(rsvr->cmd_sck.fd, path, &cmd, sizeof(cmd_data_t));
+}
+
+/******************************************************************************
  **函数名称: agent_rsvr_recv_post
  **功    能: 数据接收完毕，进行数据处理
  **输入参数:
@@ -786,7 +815,10 @@ static int agent_rsvr_recv_post(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t 
     if (AGENT_MSG_FLAG_USR == extra->head->flag)
     {
         log_info(rsvr->log, "Push into user data queue!");
-        return queue_push(ctx->recvq[rsvr->tidx], sck->recv.addr);
+
+        queue_push(ctx->recvq[rsvr->tidx], sck->recv.addr);
+        agent_rsvr_cmd_proc_req(ctx, rsvr, rand()%ctx->conf->worker_num);
+        return AGENT_OK;
     }
 
     /* 2. 系统消息的处理 */

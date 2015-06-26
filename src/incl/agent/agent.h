@@ -21,7 +21,17 @@
 /* 命令路径 */
 #define AGENT_LSVR_CMD_PATH     "lsvr-cmd.usck"      /* 侦听服务 */
 #define AGENT_RSVR_CMD_PATH     "rsvr-cmd-%02d.usck" /* 接收服务 */
+#define AGENT_WSVR_CMD_PATH     "wsvr-cmd-%02d.usck" /* 工作服务 */
 #define AGENT_CLI_CMD_PATH      "cli_cmd.usck"       /* 客户端 */
+
+#define agent_cli_cmd_usck_path(conf, path, size)       /* 客户端命令路径 */\
+    snprintf(path, size, "%s"AGENT_CLI_CMD_PATH, (conf)->path)
+#define agent_lsvr_cmd_usck_path(conf, path, size)      /* 侦听服务命令路径 */\
+    snprintf(path, size, "%s"AGENT_LSVR_CMD_PATH, (conf)->path)
+#define agent_rsvr_cmd_usck_path(conf, rid, path, size) /* 接收服务命令路径 */\
+    snprintf(path, size, "%s"AGENT_RSVR_CMD_PATH, (conf)->path, rid)
+#define agent_wsvr_cmd_usck_path(conf, wid, path, size) /* 工作服务命令路径 */\
+    snprintf(path, size, "%s"AGENT_WSVR_CMD_PATH, (conf)->path, wid)
 
 /* 配置信息 */
 typedef struct

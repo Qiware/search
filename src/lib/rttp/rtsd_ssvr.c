@@ -1159,7 +1159,7 @@ static int rttp_link_auth_rsp_hdl(rtsd_cntx_t *ctx,
  **输入参数:
  **     ctx: 全局对象
  **     ssvr: 接收服务
- **     rqid: 队列ID
+ **     rqid: 队列ID(与工作队列ID一致)
  **输出参数: NONE
  **返    回: >0:成功 <=0:失败
  **实现描述:

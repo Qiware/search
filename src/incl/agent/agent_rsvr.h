@@ -23,7 +23,6 @@ typedef struct
     int fds;                        /* 处于激活状态的套接字数 */
     struct epoll_event *events;     /* Event最大数 */
 
-    int cmd_sck_id;                 /* 命令套接字 */
     socket_t cmd_sck;               /* 命令套接字 */
     rbt_tree_t *connections;        /* 套接字表(挂载数据socket_t) */
     unsigned int conn_total;        /* 当前连接数 */

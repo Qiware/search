@@ -8,6 +8,8 @@
 typedef struct
 {
     int tidx;                       /* 线程IDX */
+    int cmd_sck_id;                 /* 命令套接字 */
+    fd_set rdset;                   /* 可读集合 */
     log_cycle_t *log;               /* 日志对象 */
 } agent_worker_t;
 
