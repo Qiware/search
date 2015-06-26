@@ -171,7 +171,6 @@ static int agent_worker_proc_data_hdl(agent_cntx_t *ctx, agent_worker_t *worker)
         num = MIN(AGT_WSVR_POP_NUM, queue_used(ctx->recvq[rqid]));
         if (0 == num)
         {
-            usleep(1);
             continue;
         }
 
