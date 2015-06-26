@@ -72,25 +72,14 @@ menu_item_t *mon_agent_menu(menu_cntx_t *ctx, void *args)
 static int mon_agent_search_rsp_hdl(int fd)
 {
     int n, i;
-    char *buff;
-    ssize_t size;
+    char buff[4096];
     agent_header_t *head;
     mesg_search_word_rsp_t *rsp;
 
-    size = sizeof(agent_header_t) + sizeof(mesg_search_word_rsp_t);
-
-    buff = (char *)calloc(1, size);
-    if (NULL == buff)
-    {
-        fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
-        return -1;
-    }
-
-    n = read(fd, buff, size);
+    n = read(fd, buff, sizeof(buff));
     if (n < 0)
     {
         fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
-        free(buff);
         return -1;
     }
 
@@ -100,14 +89,12 @@ static int mon_agent_search_rsp_hdl(int fd)
     rsp->serial = ntoh64(rsp->serial);
     rsp->url_num = ntohl(rsp->url_num);
 
-    fprintf(stderr, "    Serial: %ld\n", rsp->serial);
-    fprintf(stderr, "    url num: %d\n", rsp->url_num);
+    fprintf(stderr, "    Serial: %09ld\n", rsp->serial);
+    fprintf(stderr, "    url num: %04d\n", rsp->url_num);
     for (i=0; i<rsp->url_num; ++i)
     {
         fprintf(stderr, "        [%02d] url: %s\n", i+1, rsp->url[i]);
     }
-
-    free(buff);
 
     return 0;
 }
@@ -305,7 +292,7 @@ SRCH_AGAIN:
                     msec += 1000;
                     sec -= 1;
                 }
-                fprintf(stderr, "    fd:%d Spend: %d.%03d(s)\n", fd[idx], sec, msec);
+                fprintf(stderr, "    fd:%04d Spend: %d.%03d(s)\n", fd[idx], sec, msec);
                 CLOSE(fd[idx]);
                 --left;
             }
