@@ -101,14 +101,14 @@ int rtrd_node_to_svr_map_init(rtrd_cntx_t *ctx)
  **输入参数:
  **     ctx: 全局对象
  **     nodeid: 结点ID(主键)
- **     rsvr_idx: 接收服务索引
+ **     rsvr_id: 接收服务索引
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述:
  **注意事项: 注册NODEID与RSVR的映射关系, 为自定义数据的应答做铺垫!
  **作    者: # Qifeng.zou # 2015.05.30 #
  ******************************************************************************/
-int rtrd_node_to_svr_map_add(rtrd_cntx_t *ctx, int nodeid, int rsvr_idx)
+int rtrd_node_to_svr_map_add(rtrd_cntx_t *ctx, int nodeid, int rsvr_id)
 {
     avl_node_t *node;
     rtrd_node_to_svr_map_t *map;
@@ -138,8 +138,8 @@ int rtrd_node_to_svr_map_add(rtrd_cntx_t *ctx, int nodeid, int rsvr_idx)
         {
             pthread_rwlock_unlock(&ctx->node_to_svr_map_lock); /* 解锁 */
             slab_dealloc(ctx->pool, map);
-            log_error(ctx->log, "Insert into dev2sck table failed! nodeid:%d rsvr_idx:%d",
-                      nodeid, rsvr_idx);
+            log_error(ctx->log, "Insert into dev2sck table failed! nodeid:%d rsvr_id:%d",
+                      nodeid, rsvr_id);
             return RTTP_ERR;
         }
     }
@@ -152,7 +152,7 @@ int rtrd_node_to_svr_map_add(rtrd_cntx_t *ctx, int nodeid, int rsvr_idx)
         return RTTP_ERR;
     }
 
-    map->rsvr_idx[++map->num] = rsvr_idx; /* 插入 */
+    map->rsvr_id[++map->num] = rsvr_id; /* 插入 */
 
     pthread_rwlock_unlock(&ctx->node_to_svr_map_lock); /* 解锁 */
 
@@ -165,14 +165,14 @@ int rtrd_node_to_svr_map_add(rtrd_cntx_t *ctx, int nodeid, int rsvr_idx)
  **输入参数:
  **     ctx: 全局对象
  **     nodeid: 结点ID
- **     rsvr_idx: 接收服务索引
+ **     rsvr_id: 接收服务索引
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 从链表中找出sck_serial结点, 并删除!
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.30 22:25:20 #
  ******************************************************************************/
-int rtrd_node_to_svr_map_del(rtrd_cntx_t *ctx, int nodeid, int rsvr_idx)
+int rtrd_node_to_svr_map_del(rtrd_cntx_t *ctx, int nodeid, int rsvr_id)
 {
     int idx;
     avl_node_t *node;
@@ -193,9 +193,9 @@ int rtrd_node_to_svr_map_del(rtrd_cntx_t *ctx, int nodeid, int rsvr_idx)
     map = (rtrd_node_to_svr_map_t *)node->data;
     for (idx=0; idx<map->num; ++idx)
     {
-        if (map->rsvr_idx[idx] == rsvr_idx)
+        if (map->rsvr_id[idx] == rsvr_id)
         {
-            map->rsvr_idx[idx] = map->rsvr_idx[--map->num]; /* 删除 */
+            map->rsvr_id[idx] = map->rsvr_id[--map->num]; /* 删除 */
             if (0 == map->num)
             {
                 avl_delete(ctx->node_to_svr_map, &nodeid, sizeof(nodeid), (void *)&map);
@@ -241,7 +241,7 @@ int rtrd_node_to_svr_map_rand(rtrd_cntx_t *ctx, int nodeid)
     /* > 选择服务ID */
     map = (rtrd_node_to_svr_map_t *)node->data;
 
-    idx = map->rsvr_idx[rand() % map->num]; /* 随机选择 */
+    idx = map->rsvr_id[rand() % map->num]; /* 随机选择 */
 
     pthread_rwlock_unlock(&ctx->node_to_svr_map_lock);
 

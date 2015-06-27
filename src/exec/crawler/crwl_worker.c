@@ -69,15 +69,15 @@ crwl_worker_t *crwl_worker_get_by_idx(crwl_cntx_t *ctx, int idx)
  ******************************************************************************/
 static crwl_worker_t *crwl_worker_self(crwl_cntx_t *ctx)
 {
-    int tidx;
+    int id;
 
-    tidx = thread_pool_get_tidx(ctx->workers);
-    if (tidx < 0)
+    id = thread_pool_get_tidx(ctx->workers);
+    if (id < 0)
     {
         return NULL;
     }
 
-    return crwl_worker_get_by_idx(ctx, tidx);
+    return crwl_worker_get_by_idx(ctx, id);
 }
 
 /******************************************************************************
@@ -86,7 +86,7 @@ static crwl_worker_t *crwl_worker_self(crwl_cntx_t *ctx)
  **输入参数: 
  **     ctx: 全局信息
  **     worker: Worker对象
- **     tidx: 线程索引
+ **     id: 线程索引
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
@@ -94,12 +94,12 @@ static crwl_worker_t *crwl_worker_self(crwl_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.23 #
  ******************************************************************************/
-int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker, int tidx)
+int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker, int id)
 {
     list_opt_t opt;
     crwl_conf_t *conf = &ctx->conf;
 
-    worker->tidx = tidx;
+    worker->id = id;
     worker->log = ctx->log;
     worker->scan_tm = time(NULL);
 
@@ -192,7 +192,7 @@ static int crwl_worker_fetch_task(crwl_cntx_t *ctx, crwl_worker_t *worker)
     void *data;
     crwl_task_t *t;
     crwl_conf_t *conf = &ctx->conf;
-    queue_t *workq = ctx->workq[worker->tidx];
+    queue_t *workq = ctx->workq[worker->id];
 
     /* 1. 判断是否应该取任务 */
     if (0 == queue_used(workq)
@@ -792,7 +792,7 @@ int crwl_worker_webpage_creat(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t 
 
     snprintf(extra->webpage.fname, sizeof(extra->webpage.fname),
             "%02d-%08llu-%04d%02d%02d%02d%02d%02d%03d",
-            worker->tidx, extra->webpage.idx,
+            worker->id, extra->webpage.idx,
             loctm.tm_year+1900, loctm.tm_mon+1, loctm.tm_mday,
             loctm.tm_hour, loctm.tm_min, loctm.tm_sec, sck->crtm.millitm);
 

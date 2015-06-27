@@ -252,18 +252,18 @@ void *sdrd_rsvr_routine(void *_ctx)
  ******************************************************************************/
 static sdrd_rsvr_t *sdrd_rsvr_get_curr(sdrd_cntx_t *ctx)
 {
-    int tidx;
+    int id;
 
     /* 1. 获取当前线程的索引 */
-    tidx = thread_pool_get_tidx(ctx->recvtp);
-    if (tidx < 0)
+    id = thread_pool_get_tidx(ctx->recvtp);
+    if (id < 0)
     {
         log_error(ctx->log, "Get index of current thread failed!");
         return NULL;
     }
 
     /* 2. 返回当前线程对应的接收服务 */
-    return (sdrd_rsvr_t *)(ctx->recvtp->data + tidx * sizeof(sdrd_rsvr_t));
+    return (sdrd_rsvr_t *)(ctx->recvtp->data + id * sizeof(sdrd_rsvr_t));
 }
 
 /******************************************************************************
@@ -271,7 +271,7 @@ static sdrd_rsvr_t *sdrd_rsvr_get_curr(sdrd_cntx_t *ctx)
  **功    能: 初始化接收服务
  **输入参数:
  **     ctx: 全局对象
- **     tidx: 接收服务编号
+ **     id: 接收服务编号
  **输出参数:
  **     rsvr: 接收服务
  **返    回: 0:成功 !0:失败
@@ -281,17 +281,17 @@ static sdrd_rsvr_t *sdrd_rsvr_get_curr(sdrd_cntx_t *ctx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-int sdrd_rsvr_init(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, int tidx)
+int sdrd_rsvr_init(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, int id)
 {
     char path[FILE_PATH_MAX_LEN];
     sdrd_conf_t *conf = &ctx->conf;
 
-    rsvr->tidx = tidx;
+    rsvr->id = id;
     rsvr->log = ctx->log;
     rsvr->ctm = time(NULL);
 
     /* > 创建CMD套接字 */
-    sdrd_rsvr_usck_path(conf, path, rsvr->tidx);
+    sdrd_rsvr_usck_path(conf, path, rsvr->id);
 
     rsvr->cmd_sck_id = unix_udp_creat(path);
     if (rsvr->cmd_sck_id < 0)
@@ -1082,7 +1082,7 @@ static int sdrd_rsvr_link_auth_req_hdl(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, sdrd
         sck->nodeid = link_auth_req->nodeid;
 
         /* > 插入NODE与SCK的映射 */
-        if (sdrd_node_to_svr_map_add(ctx, link_auth_req->nodeid, rsvr->tidx))
+        if (sdrd_node_to_svr_map_add(ctx, link_auth_req->nodeid, rsvr->id))
         {
             log_error(rsvr->log, "Insert into sck2dev table failed! fd:%d serial:%ld nodeid:%d",
                     sck->fd, sck->serial, link_auth_req->nodeid);
@@ -1228,7 +1228,7 @@ static int sdrd_rsvr_add_conn_hdl(sdrd_rsvr_t *rsvr, sdtp_cmd_add_sck_t *req)
     ++rsvr->connections; /* 统计TCP连接数 */
 
     log_trace(rsvr->log, "Tidx [%d] insert sckid [%d] success! ip:%s",
-            rsvr->tidx, req->sckid, req->ipaddr);
+            rsvr->id, req->sckid, req->ipaddr);
 
     return SDTP_OK;
 }
@@ -1253,7 +1253,7 @@ static int sdrd_rsvr_del_conn_hdl(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, list2_nod
     list2_delete(rsvr->conn_list, node);
 
     /* > 从SCK<->NODE映射表中剔除 */
-    sdrd_node_to_svr_map_del(ctx, curr->nodeid, rsvr->tidx);
+    sdrd_node_to_svr_map_del(ctx, curr->nodeid, rsvr->id);
 
     /* > 释放数据空间 */
     sdrd_rsvr_sck_free(rsvr, curr);
@@ -1323,7 +1323,7 @@ static int sdrd_rsvr_cmd_proc_req(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, int rqid)
     sdtp_cmd_proc_req_t *req = (sdtp_cmd_proc_req_t *)&cmd.args;
 
     cmd.type = SDTP_CMD_PROC_REQ;
-    req->ori_rsvr_tidx = rsvr->tidx;
+    req->ori_rsvr_tidx = rsvr->id;
     req->num = -1;
     req->rqidx = rqid;
 
@@ -1495,7 +1495,7 @@ static int sdrd_rsvr_dist_send_data(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr)
     sdtp_header_t *head;
     conn_list_with_same_nodeid_t conn;
 
-    sendq = ctx->sendq[rsvr->tidx];
+    sendq = ctx->sendq[rsvr->id];
 
     while (1)
     {

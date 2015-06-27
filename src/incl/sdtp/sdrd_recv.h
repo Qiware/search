@@ -19,11 +19,11 @@
 #define SDTP_CTX_POOL_SIZE      (5 * MB)/* 全局内存池空间 */
 
 /* Recv线程的UNIX-UDP路径 */
-#define sdrd_rsvr_usck_path(conf, path, tidx) \
-    snprintf(path, sizeof(path), "../temp/sdtp/recv/%s/usck/%s_rsvr_%d.usck", conf->name, conf->name, tidx+1)
+#define sdrd_rsvr_usck_path(conf, path, id) \
+    snprintf(path, sizeof(path), "../temp/sdtp/recv/%s/usck/%s_rsvr_%d.usck", conf->name, conf->name, id+1)
 /* Worker线程的UNIX-UDP路径 */
-#define sdrd_worker_usck_path(conf, path, tidx) \
-    snprintf(path, sizeof(path), "../temp/sdtp/recv/%s/usck/%s_wsvr_%d.usck", conf->name, conf->name, tidx+1)
+#define sdrd_worker_usck_path(conf, path, id) \
+    snprintf(path, sizeof(path), "../temp/sdtp/recv/%s/usck/%s_wsvr_%d.usck", conf->name, conf->name, id+1)
 /* Listen线程的UNIX-UDP路径 */
 #define sdrd_lsn_usck_path(conf, path) \
     snprintf(path, sizeof(path), "../temp/sdtp/recv/%s/usck/%s_listen.usck", conf->name, conf->name)
@@ -90,7 +90,7 @@ typedef struct
 /* 接收对象 */
 typedef struct
 {
-    int tidx;                           /* 线程索引 */
+    int id;                             /* 对象ID */
     slab_pool_t *pool;                  /* 内存池 */
     log_cycle_t *log;                   /* 日志对象 */
 
@@ -165,10 +165,10 @@ int sdrd_lsn_destroy(sdrd_lsn_t *lsn);
 void *sdrd_dist_routine(void *_ctx);
 
 void *sdrd_rsvr_routine(void *_ctx);
-int sdrd_rsvr_init(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, int tidx);
+int sdrd_rsvr_init(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, int id);
 
 void *sdrd_worker_routine(void *_ctx);
-int sdrd_worker_init(sdrd_cntx_t *ctx, sdtp_worker_t *worker, int tidx);
+int sdrd_worker_init(sdrd_cntx_t *ctx, sdtp_worker_t *worker, int idx);
 
 void sdrd_rsvr_del_all_conn_hdl(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr);
 

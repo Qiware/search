@@ -34,15 +34,15 @@ static int flt_worker_deep_hdl(flt_cntx_t *ctx, flt_worker_t *worker, gumbo_resu
  ******************************************************************************/
 static flt_worker_t *flt_worker_self(flt_cntx_t *ctx)
 {
-    int tidx;
+    int id;
 
-    tidx = thread_pool_get_tidx(ctx->workers);
-    if (tidx < 0)
+    id = thread_pool_get_tidx(ctx->workers);
+    if (id < 0)
     {
         return NULL;
     }
 
-    return flt_worker_get_by_idx(ctx, tidx);
+    return flt_worker_get_by_idx(ctx, id);
 }
 
 /******************************************************************************
@@ -238,7 +238,7 @@ void *flt_worker_routine(void *_ctx)
  ******************************************************************************/
 int flt_worker_init(flt_cntx_t *ctx, flt_worker_t *worker, int idx)
 {
-    worker->tidx = idx;
+    worker->id = idx;
     worker->log = ctx->log;
 
     /* > 连接Redis集群 */

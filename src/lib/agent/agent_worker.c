@@ -23,18 +23,18 @@ static int agent_worker_timeout_handler(agent_cntx_t *ctx, agent_worker_t *worke
  ******************************************************************************/
 static agent_worker_t *agent_worker_self(agent_cntx_t *ctx)
 {
-    int tidx;
+    int id;
     agent_worker_t *worker;
 
-    tidx = thread_pool_get_tidx(ctx->workers);
-    if (tidx < 0)
+    id = thread_pool_get_tidx(ctx->workers);
+    if (id < 0)
     {
         return NULL;
     }
 
     worker = thread_pool_get_args(ctx->workers);
 
-    return worker + tidx;
+    return worker + id;
 }
 
 /******************************************************************************
@@ -110,7 +110,7 @@ int agent_worker_init(agent_cntx_t *ctx, agent_worker_t *worker, int idx)
 {
     char path[FILE_PATH_MAX_LEN];
 
-    worker->tidx = idx;
+    worker->id = idx;
     worker->log = ctx->log;
 
     /* > 创建命令套接字*/

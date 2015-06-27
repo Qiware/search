@@ -83,7 +83,7 @@ void *rtrd_worker_routine(void *_ctx)
 
                 cmd.type = RTTP_CMD_PROC_REQ;
                 req->num = -1;
-                req->rqidx = RTTP_WORKER_HDL_QNUM * worker->tidx + idx;
+                req->rqidx = RTTP_WORKER_HDL_QNUM * worker->id + idx;
 
                 rtrd_worker_cmd_proc_req_hdl(ctx, worker, &cmd);
             }
@@ -113,18 +113,18 @@ void *rtrd_worker_routine(void *_ctx)
  ******************************************************************************/
 static rttp_worker_t *rtrd_worker_get_curr(rtrd_cntx_t *ctx)
 {
-    int tidx;
+    int id;
 
     /* 1. 获取线程编号 */
-    tidx = thread_pool_get_tidx(ctx->worktp);
-    if (tidx < 0)
+    id = thread_pool_get_tidx(ctx->worktp);
+    if (id < 0)
     {
         log_fatal(ctx->log, "Get thread index failed!");
         return NULL;
     }
 
     /* 2. 返回工作对象 */
-    return (rttp_worker_t *)(ctx->worktp->data + tidx * sizeof(rttp_worker_t));
+    return (rttp_worker_t *)(ctx->worktp->data + id * sizeof(rttp_worker_t));
 }
 
 /******************************************************************************
@@ -133,23 +133,23 @@ static rttp_worker_t *rtrd_worker_get_curr(rtrd_cntx_t *ctx)
  **输入参数:
  **     ctx: 全局对象
  **     worker: 工作对象
- **     tidx: 工作对象编号
+ **     id: 工作对象编号
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述:
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.06 #
  ******************************************************************************/
-int rtrd_worker_init(rtrd_cntx_t *ctx, rttp_worker_t *worker, int tidx)
+int rtrd_worker_init(rtrd_cntx_t *ctx, rttp_worker_t *worker, int id)
 {
     char path[FILE_PATH_MAX_LEN];
     rtrd_conf_t *conf = &ctx->conf;
 
-    worker->tidx = tidx;
+    worker->id = id;
     worker->log = ctx->log;
 
     /* > 创建命令套接字 */
-    rtrd_worker_usck_path(conf, path, worker->tidx);
+    rtrd_worker_usck_path(conf, path, worker->id);
 
     worker->cmd_sck_id = unix_udp_creat(path);
     if (worker->cmd_sck_id < 0)

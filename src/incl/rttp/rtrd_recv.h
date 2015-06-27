@@ -98,13 +98,13 @@ typedef struct
 
     int num;                            /* 当前实际长度 */
 #define RTRD_NODE_TO_SVR_MAX_LEN    (32)
-    int rsvr_idx[RTRD_NODE_TO_SVR_MAX_LEN];
+    int rsvr_id[RTRD_NODE_TO_SVR_MAX_LEN]; /* 结点ID对应的接收服务ID */
 } rtrd_node_to_svr_map_t;
 
 /* 接收对象 */
 typedef struct
 {
-    int tidx;                           /* 线程索引 */
+    int id;                             /* 对象ID */
     slab_pool_t *pool;                  /* 内存池 */
     log_cycle_t *log;                   /* 日志对象 */
 

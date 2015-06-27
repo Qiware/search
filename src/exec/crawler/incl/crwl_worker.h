@@ -35,7 +35,7 @@ typedef struct
 /* 爬虫对象信息 */
 typedef struct
 {
-    int tidx;                       /* 线程索引 */
+    int id;                         /* 线程索引 */
 
     int epid;                       /* epoll文件描述符 */
     int fds;                        /* 处于激活状态的套接字数 */
@@ -110,7 +110,7 @@ int crwl_worker_webpage_creat(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t 
 }
 int crwl_worker_webpage_finfo(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t *sck);
 
-int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker, int tidx);
+int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker, int id);
 int crwl_worker_destroy(crwl_cntx_t *ctx, crwl_worker_t *worker);
 void *crwl_worker_routine(void *_ctx);
 

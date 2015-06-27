@@ -83,7 +83,7 @@ void *sdrd_worker_routine(void *_ctx)
 
                 cmd.type = SDTP_CMD_PROC_REQ;
                 req->num = -1;
-                req->rqidx = SDTP_WORKER_HDL_QNUM * worker->tidx + idx;
+                req->rqidx = SDTP_WORKER_HDL_QNUM * worker->id + idx;
 
                 sdrd_worker_cmd_proc_req_hdl(ctx, worker, &cmd);
             }
@@ -113,18 +113,18 @@ void *sdrd_worker_routine(void *_ctx)
  ******************************************************************************/
 static sdtp_worker_t *sdrd_worker_get_curr(sdrd_cntx_t *ctx)
 {
-    int tidx;
+    int id;
 
     /* 1. 获取线程编号 */
-    tidx = thread_pool_get_tidx(ctx->worktp);
-    if (tidx < 0)
+    id = thread_pool_get_tidx(ctx->worktp);
+    if (id < 0)
     {
         log_fatal(ctx->log, "Get thread index failed!");
         return NULL;
     }
 
     /* 2. 返回工作对象 */
-    return (sdtp_worker_t *)(ctx->worktp->data + tidx * sizeof(sdtp_worker_t));
+    return (sdtp_worker_t *)(ctx->worktp->data + id * sizeof(sdtp_worker_t));
 }
 
 /******************************************************************************
@@ -133,7 +133,7 @@ static sdtp_worker_t *sdrd_worker_get_curr(sdrd_cntx_t *ctx)
  **输入参数:
  **     ctx: 全局对象
  **     worker: 工作对象
- **     tidx: 工作对象编号
+ **     id: 工作对象编号
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述:
@@ -141,16 +141,16 @@ static sdtp_worker_t *sdrd_worker_get_curr(sdrd_cntx_t *ctx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.06 #
  ******************************************************************************/
-int sdrd_worker_init(sdrd_cntx_t *ctx, sdtp_worker_t *worker, int tidx)
+int sdrd_worker_init(sdrd_cntx_t *ctx, sdtp_worker_t *worker, int id)
 {
     char path[FILE_PATH_MAX_LEN];
     sdrd_conf_t *conf = &ctx->conf;
 
-    worker->tidx = tidx;
+    worker->id = id;
     worker->log = ctx->log;
 
     /* 1. 创建命令套接字 */
-    sdrd_worker_usck_path(conf, path, worker->tidx);
+    sdrd_worker_usck_path(conf, path, worker->id);
 
     worker->cmd_sck_id = unix_udp_creat(path);
     if (worker->cmd_sck_id < 0)

@@ -44,7 +44,7 @@ static int rtsd_ssvr_cmd_proc_all_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr);
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-int rtsd_ssvr_init(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, int tidx)
+int rtsd_ssvr_init(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, int idx)
 {
     void *addr;
     list_opt_t opt;
@@ -52,7 +52,7 @@ int rtsd_ssvr_init(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, int tidx)
     rttp_snap_t *recv = &ssvr->sck.recv;
     rttp_snap_t *send = &ssvr->sck.send;
 
-    ssvr->tidx = tidx;
+    ssvr->id = idx;
     ssvr->log = ctx->log;
     ssvr->sck.fd = INVALID_FD;
 
@@ -171,7 +171,7 @@ static int rtsd_ssvr_creat_sendq(rtsd_ssvr_t *ssvr, const rtsd_conf_t *conf)
     char path[FILE_PATH_MAX_LEN];
 
     /* 1. 创建/连接发送队列 */
-    rtsd_get_sendq_path(conf, ssvr->tidx, path, sizeof(path));
+    rtsd_get_sendq_path(conf, ssvr->id, path, sizeof(path));
 
     ssvr->sendq = shm_queue_creat(path, conf->sendq.max, conf->sendq.size);
     if (NULL == ssvr->sendq)
@@ -199,7 +199,7 @@ static int rtsd_ssvr_creat_usck(rtsd_ssvr_t *ssvr, const rtsd_conf_t *conf)
 {
     char path[FILE_PATH_MAX_LEN];
 
-    rtsd_ssvr_usck_path(conf, path, ssvr->tidx);
+    rtsd_ssvr_usck_path(conf, path, ssvr->id);
 
     ssvr->cmd_sck_id = unix_udp_creat(path);
     if (ssvr->cmd_sck_id < 0)
@@ -224,7 +224,7 @@ static int rtsd_ssvr_creat_usck(rtsd_ssvr_t *ssvr, const rtsd_conf_t *conf)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.16 #
  ******************************************************************************/
-static void rtsd_ssvr_bind_cpu(rtsd_cntx_t *ctx, int tidx)
+static void rtsd_ssvr_bind_cpu(rtsd_cntx_t *ctx, int id)
 {
     int idx, mod;
     cpu_set_t cpuset;
@@ -233,11 +233,11 @@ static void rtsd_ssvr_bind_cpu(rtsd_cntx_t *ctx, int tidx)
     mod = sysconf(_SC_NPROCESSORS_CONF) - cpu->start;
     if (mod <= 0)
     {
-        idx = tidx % sysconf(_SC_NPROCESSORS_CONF);
+        idx = id % sysconf(_SC_NPROCESSORS_CONF);
     }
     else
     {
-        idx = cpu->start + (tidx % mod);
+        idx = cpu->start + (id % mod);
     }
 
     CPU_ZERO(&cpuset);
@@ -321,7 +321,7 @@ void *rtsd_ssvr_routine(void *_ctx)
     sck = &ssvr->sck;
 
     /* 2. 绑定指定CPU */
-    rtsd_ssvr_bind_cpu(ctx, ssvr->tidx);
+    rtsd_ssvr_bind_cpu(ctx, ssvr->id);
 
     /* 3. 进行事件处理 */
     for (;;)
@@ -466,18 +466,18 @@ static int rtsd_ssvr_kpalive_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
  ******************************************************************************/
 static rtsd_ssvr_t *rtsd_ssvr_get_curr(rtsd_cntx_t *ctx)
 {
-    int tidx;
+    int id;
 
     /* 1. 获取线程索引 */
-    tidx = thread_pool_get_tidx(ctx->sendtp);
-    if (tidx < 0)
+    id = thread_pool_get_tidx(ctx->sendtp);
+    if (id < 0)
     {
         log_error(ctx->log, "Get current thread index failed!");
         return NULL;
     }
 
     /* 2. 返回线程对象 */
-    return (rtsd_ssvr_t *)(ctx->sendtp->data + tidx * sizeof(rtsd_ssvr_t));
+    return (rtsd_ssvr_t *)(ctx->sendtp->data + id * sizeof(rtsd_ssvr_t));
 }
 
 /******************************************************************************
@@ -1175,7 +1175,7 @@ static int rtsd_ssvr_cmd_proc_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, int rqid)
     memset(&cmd, 0, sizeof(cmd));
 
     cmd.type = RTTP_CMD_PROC_REQ;
-    req->ori_svr_tidx = ssvr->tidx;
+    req->ori_svr_id = ssvr->id;
     req->num = -1;
     req->rqidx = rqid;
 

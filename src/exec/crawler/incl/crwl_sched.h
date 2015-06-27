@@ -9,7 +9,7 @@
 /* 调度器对象 */
 typedef struct
 {
-    int tidx;                               /* 线程索引 */
+    int id;                                 /* 线程索引 */
     redisContext *redis;                    /* Redis对象 */
 
     int cmd_sck_id;                         /* 命令套接字 */

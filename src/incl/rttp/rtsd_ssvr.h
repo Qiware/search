@@ -10,8 +10,8 @@
 #include "thread_pool.h"
 
 /* WORKER线程的UNIX-UDP路径 */
-#define rtsd_worker_usck_path(conf, path, tidx) \
-    snprintf(path, sizeof(path), "%s/%d_swrk_%d.usck", (conf)->path, (conf)->nodeid, tidx+1)
+#define rtsd_worker_usck_path(conf, path, id) \
+    snprintf(path, sizeof(path), "%s/%d_swrk_%d.usck", (conf)->path, (conf)->nodeid, id+1)
 
 /* 套接字信息 */
 typedef struct
@@ -38,7 +38,7 @@ typedef struct
 /* SND线程上下文 */
 typedef struct
 {
-    int tidx;                           /* 线程索引 */
+    int id;                             /* 对象ID */
     shm_queue_t *sendq;                 /* 发送缓存 */
     log_cycle_t *log;                   /* 日志对象 */
 

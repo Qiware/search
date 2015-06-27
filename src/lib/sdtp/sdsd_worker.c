@@ -132,18 +132,18 @@ sdtp_worker_t *sdsd_worker_get_by_idx(sdsd_cntx_t *ctx, int idx)
  ******************************************************************************/
 static sdtp_worker_t *sdsd_worker_get_curr(sdsd_cntx_t *ctx)
 {
-    int tidx;
+    int id;
 
     /* > 获取线程编号 */
-    tidx = thread_pool_get_tidx(ctx->worktp);
-    if (tidx < 0)
+    id = thread_pool_get_tidx(ctx->worktp);
+    if (id < 0)
     {
         log_fatal(ctx->log, "Get thread index failed!");
         return NULL;
     }
 
     /* > 返回工作对象 */
-    return sdsd_worker_get_by_idx(ctx, tidx);
+    return sdsd_worker_get_by_idx(ctx, id);
 }
 
 /******************************************************************************
@@ -152,7 +152,7 @@ static sdtp_worker_t *sdsd_worker_get_curr(sdsd_cntx_t *ctx)
  **输入参数:
  **     ctx: 全局对象
  **     worker: 工作对象
- **     tidx: 工作对象编号
+ **     id: 工作对象编号
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述:
@@ -160,16 +160,16 @@ static sdtp_worker_t *sdsd_worker_get_curr(sdsd_cntx_t *ctx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.18 #
  ******************************************************************************/
-int sdsd_worker_init(sdsd_cntx_t *ctx, sdtp_worker_t *worker, int tidx)
+int sdsd_worker_init(sdsd_cntx_t *ctx, sdtp_worker_t *worker, int id)
 {
     char path[FILE_PATH_MAX_LEN];
     sdsd_conf_t *conf = &ctx->conf;
 
-    worker->tidx = tidx;
+    worker->id = id;
     worker->log = ctx->log;
 
     /* 1. 创建命令套接字 */
-    sdsd_worker_usck_path(conf, path, worker->tidx);
+    sdsd_worker_usck_path(conf, path, worker->id);
 
     worker->cmd_sck_id = unix_udp_creat(path);
     if (worker->cmd_sck_id < 0)

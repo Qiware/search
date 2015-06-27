@@ -35,13 +35,14 @@ static int sdtp_link_auth_rep_hdl(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr, sdsd_sck_
  **输入参数:
  **     ctx: 全局信息
  **     ssvr: 发送服务对象
+ **     idx: 发送服务ID
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述:
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-int sdsd_ssvr_init(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr, int tidx)
+int sdsd_ssvr_init(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr, int idx)
 {
     void *addr;
     list_opt_t opt;
@@ -49,7 +50,7 @@ int sdsd_ssvr_init(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr, int tidx)
     sdtp_snap_t *recv = &ssvr->sck.recv;
     sdtp_snap_t *send = &ssvr->sck.send[SDTP_SNAP_SHOT_SYS_DATA];
 
-    ssvr->tidx = tidx;
+    ssvr->id = idx;
     ssvr->log = ctx->log;
     ssvr->sck.fd = INVALID_FD;
 
@@ -169,7 +170,7 @@ static int sdsd_ssvr_creat_sendq(sdsd_ssvr_t *ssvr, const sdsd_conf_t *conf)
     const sdtp_queue_conf_t *qcf = &conf->sendq;
 
     /* 1. 创建/连接发送队列 */
-    snprintf(path, sizeof(path), "%s-%d", qcf->name, ssvr->tidx);
+    snprintf(path, sizeof(path), "%s-%d", qcf->name, ssvr->id);
 
     ssvr->sendq = sdsd_pool_creat(path, qcf->count, qcf->size);
     if (NULL == ssvr->sendq)
@@ -197,7 +198,7 @@ static int sdsd_ssvr_creat_usck(sdsd_ssvr_t *ssvr, const sdsd_conf_t *conf)
 {
     char path[FILE_PATH_MAX_LEN];
 
-    sdsd_ssvr_usck_path(conf, path, ssvr->tidx);
+    sdsd_ssvr_usck_path(conf, path, ssvr->id);
 
     ssvr->cmd_sck_id = unix_udp_creat(path);
     if (ssvr->cmd_sck_id < 0)
@@ -222,7 +223,7 @@ static int sdsd_ssvr_creat_usck(sdsd_ssvr_t *ssvr, const sdsd_conf_t *conf)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.16 #
  ******************************************************************************/
-static void sdsd_ssvr_bind_cpu(sdsd_cntx_t *ctx, int tidx)
+static void sdsd_ssvr_bind_cpu(sdsd_cntx_t *ctx, int id)
 {
     int idx, mod;
     cpu_set_t cpuset;
@@ -231,11 +232,11 @@ static void sdsd_ssvr_bind_cpu(sdsd_cntx_t *ctx, int tidx)
     mod = sysconf(_SC_NPROCESSORS_CONF) - cpu->start;
     if (mod <= 0)
     {
-        idx = tidx % sysconf(_SC_NPROCESSORS_CONF);
+        idx = id % sysconf(_SC_NPROCESSORS_CONF);
     }
     else
     {
-        idx = cpu->start + (tidx % mod);
+        idx = cpu->start + (id % mod);
     }
 
     CPU_ZERO(&cpuset);
@@ -411,7 +412,7 @@ void *sdsd_ssvr_routine(void *_ctx)
     sck = &ssvr->sck;
 
     /* 2. 绑定指定CPU */
-    sdsd_ssvr_bind_cpu(ctx, ssvr->tidx);
+    sdsd_ssvr_bind_cpu(ctx, ssvr->id);
 
     /* 3. 进行事件处理 */
     for (;;)
@@ -557,18 +558,18 @@ static int sdsd_ssvr_kpalive_req(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr)
  ******************************************************************************/
 static sdsd_ssvr_t *sdsd_ssvr_get_curr(sdsd_cntx_t *ctx)
 {
-    int tidx;
+    int id;
 
     /* 1. 获取线程索引 */
-    tidx = thread_pool_get_tidx(ctx->sendtp);
-    if (tidx < 0)
+    id = thread_pool_get_tidx(ctx->sendtp);
+    if (id < 0)
     {
         log_error(ctx->log, "Get current thread index failed!");
         return NULL;
     }
 
     /* 2. 返回线程对象 */
-    return (sdsd_ssvr_t *)(ctx->sendtp->data + tidx * sizeof(sdsd_ssvr_t));
+    return (sdsd_ssvr_t *)(ctx->sendtp->data + id * sizeof(sdsd_ssvr_t));
 }
 
 /******************************************************************************

@@ -14,7 +14,7 @@
 
 typedef struct
 {
-    int tidx;                       /* 线程索引 */
+    int id;                         /* 对象ID */
 
     slab_pool_t *slab;              /* 内存池 */
     log_cycle_t *log;               /* 日志对象 */

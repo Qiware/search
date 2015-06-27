@@ -7,7 +7,7 @@
 /* 工作对象 */
 typedef struct
 {
-    int tidx;
+    int id;                                 /* 对象ID */
     log_cycle_t *log;                       /* 日志对象 */
     redis_clst_t *redis;                    /* Redis集群 */
 

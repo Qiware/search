@@ -101,7 +101,7 @@ typedef struct
 /* 工作对象 */
 typedef struct
 {
-    int tidx;                           /* 线程索引 */
+    int id;                             /* 对象索引 */
     log_cycle_t *log;                   /* 日志对象 */
 
     int cmd_sck_id;                     /* 命令套接字 */

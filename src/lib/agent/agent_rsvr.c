@@ -148,7 +148,7 @@ int agent_rsvr_init(agent_cntx_t *ctx, agent_rsvr_t *rsvr, int idx)
     agent_conf_t *conf = ctx->conf;
     socket_t *cmd_sck = &rsvr->cmd_sck;
 
-    rsvr->tidx = idx;
+    rsvr->id = idx;
     rsvr->log = ctx->log;
 
     /* > 创建SLAB内存池 */
@@ -200,7 +200,7 @@ int agent_rsvr_init(agent_cntx_t *ctx, agent_rsvr_t *rsvr, int idx)
         }
 
         /* > 创建命令套接字 */
-        agent_rsvr_cmd_usck_path(conf, rsvr->tidx, path, sizeof(path));
+        agent_rsvr_cmd_usck_path(conf, rsvr->id, path, sizeof(path));
 
         cmd_sck->fd = unix_udp_creat(path);
         if (cmd_sck->fd < 0)
@@ -265,18 +265,18 @@ int agent_rsvr_destroy(agent_rsvr_t *rsvr)
  ******************************************************************************/
 static agent_rsvr_t *agent_rsvr_self(agent_cntx_t *ctx)
 {
-    int tidx;
+    int id;
     agent_rsvr_t *rsvr;
 
-    tidx = thread_pool_get_tidx(ctx->agents);
-    if (tidx < 0)
+    id = thread_pool_get_tidx(ctx->agents);
+    if (id < 0)
     {
         return NULL;
     }
 
     rsvr = thread_pool_get_args(ctx->agents);
 
-    return rsvr + tidx;
+    return rsvr + id;
 }
 
 /******************************************************************************
@@ -481,7 +481,7 @@ static int agent_rsvr_add_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
     while (1)
     {
         /* > 取数据 */
-        add = queue_pop(ctx->connq[rsvr->tidx]);
+        add = queue_pop(ctx->connq[rsvr->id]);
         if (NULL == add)
         {
             return AGENT_OK;
@@ -491,7 +491,7 @@ static int agent_rsvr_add_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
         sck = slab_alloc(rsvr->slab, sizeof(socket_t));
         if (NULL == sck)
         {
-            queue_dealloc(ctx->connq[rsvr->tidx], add);
+            queue_dealloc(ctx->connq[rsvr->id], add);
             log_error(rsvr->log, "Alloc memory from slab failed!");
             return AGENT_ERR;
         }
@@ -505,7 +505,7 @@ static int agent_rsvr_add_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
         if (NULL == extra)
         {
             slab_dealloc(rsvr->slab, sck);
-            queue_dealloc(ctx->connq[rsvr->tidx], add);
+            queue_dealloc(ctx->connq[rsvr->id], add);
             log_error(rsvr->log, "Alloc memory from slab failed!");
             return AGENT_ERR;
         }
@@ -521,7 +521,7 @@ static int agent_rsvr_add_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
         {
             slab_dealloc(rsvr->slab, sck);
             slab_dealloc(rsvr->slab, extra);
-            queue_dealloc(ctx->connq[rsvr->tidx], add);
+            queue_dealloc(ctx->connq[rsvr->id], add);
             log_error(rsvr->log, "Alloc memory from slab failed!");
             return AGENT_ERR;
         }
@@ -539,7 +539,7 @@ static int agent_rsvr_add_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
 
         extra->serial = add->serial;
 
-        queue_dealloc(ctx->connq[rsvr->tidx], add);  /* 释放连接队列空间 */
+        queue_dealloc(ctx->connq[rsvr->id], add);  /* 释放连接队列空间 */
 
         /* > 插入红黑树中(以序列号为主键) */
         if (rbt_insert(rsvr->connections, extra->serial, sck))
@@ -595,7 +595,7 @@ static int agent_rsvr_del_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *
     list_destroy(extra->send_list, rsvr->slab, (mem_dealloc_cb_t)slab_dealloc);
     if (sck->recv.addr)
     {
-        queue_dealloc(ctx->recvq[rsvr->tidx], sck->recv.addr);
+        queue_dealloc(ctx->recvq[rsvr->id], sck->recv.addr);
     }
     slab_dealloc(rsvr->slab, sck->extra);
     slab_dealloc(rsvr->slab, sck);
@@ -816,7 +816,7 @@ static int agent_rsvr_recv_post(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t 
     {
         log_info(rsvr->log, "Push into user data queue!");
 
-        queue_push(ctx->recvq[rsvr->tidx], sck->recv.addr);
+        queue_push(ctx->recvq[rsvr->id], sck->recv.addr);
         agent_rsvr_cmd_proc_req(ctx, rsvr, rand()%ctx->conf->worker_num);
         return AGENT_OK;
     }
@@ -851,7 +851,7 @@ static int agent_rsvr_recv(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
             /* 1. 分配空间 */
             case SOCK_PHASE_RECV_INIT:
             {
-                recv->addr = queue_malloc(ctx->recvq[rsvr->tidx], queue_size(ctx->recvq[0]));
+                recv->addr = queue_malloc(ctx->recvq[rsvr->id], queue_size(ctx->recvq[0]));
                 if (NULL == recv->addr)
                 {
                     log_error(rsvr->log, "Alloc from queue failed!");
@@ -867,7 +867,7 @@ static int agent_rsvr_recv(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
                 recv->total = sizeof(agent_header_t);
 
                 extra->flow->sck_serial = extra->serial;
-                extra->flow->agt_idx = rsvr->tidx;
+                extra->flow->agt_idx = rsvr->id;
 
                 /* 设置下步 */
                 recv->phase = SOCK_PHASE_RECV_HEAD;
@@ -906,7 +906,7 @@ static int agent_rsvr_recv(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
                     }
                     default:
                     {
-                        queue_dealloc(ctx->recvq[rsvr->tidx], recv->addr);
+                        queue_dealloc(ctx->recvq[rsvr->id], recv->addr);
                         recv->addr = NULL;
                         return ret; /* 异常情况 */
                     }
@@ -943,7 +943,7 @@ static int agent_rsvr_recv(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
                     }
                     default:
                     {
-                        queue_dealloc(ctx->recvq[rsvr->tidx], recv->addr);
+                        queue_dealloc(ctx->recvq[rsvr->id], recv->addr);
                         recv->addr = NULL;
                         return ret; /* 异常情况 */
                     }
@@ -967,7 +967,7 @@ static int agent_rsvr_recv(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
                     }
                     default:
                     {
-                        queue_dealloc(ctx->recvq[rsvr->tidx], recv->addr);
+                        queue_dealloc(ctx->recvq[rsvr->id], recv->addr);
                         recv->addr = NULL;
                         return AGENT_ERR;
                     }
@@ -1092,7 +1092,7 @@ static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
     agent_socket_extra_t *sck_extra;
     void *addr[AGT_RSVR_DIST_POP_NUM], *data;
 
-    sendq = ctx->sendq[rsvr->tidx];
+    sendq = ctx->sendq[rsvr->id];
     while (1)
     {
         num = MIN(queue_used(sendq), AGT_RSVR_DIST_POP_NUM);
