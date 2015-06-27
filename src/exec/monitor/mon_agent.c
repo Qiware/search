@@ -209,15 +209,22 @@ static int mon_agent_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void 
  **          否则，在设置rdset, wrset时，将会出现栈溢出, 导致不可预测的错误出现!
  **作    者: # Qifeng.zou # 2015.06.05 #
  ******************************************************************************/
+typedef struct
+{
+    int fd;
+    int flag;
+    struct timeb wrtm;
+} mon_search_conn_t;
+
 static int mon_agent_multi_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args)
 {
 #define MON_FD_MAX  (512)
     int sec, msec;
-    int *fd, *wflg;
-    struct timeb *wrtm, ctm;
+    struct timeb ctm;
     fd_set rdset, wrset;
     agent_header_t head;
     struct timeval timeout;
+    mon_search_conn_t *conn;
     mesg_search_word_req_t req;
     int ret, idx, max, num, left;
     char digit[256], word[1024];
@@ -232,25 +239,31 @@ static int mon_agent_multi_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu,
     scanf(" %s", digit);
 
     num = MIN(atoi(digit), MON_FD_MAX);
-    fd = (int *)slab_alloc(ctx->slab, num*sizeof(int));
-    wflg = (int *)slab_alloc(ctx->slab, num*sizeof(int));
-    wrtm = (struct timeb *)slab_alloc(ctx->slab, num*sizeof(struct timeb));
+    conn = (mon_search_conn_t *)slab_alloc(ctx->slab, num*sizeof(mon_search_conn_t));
+    if (NULL == conn)
+    {
+        fprintf(stderr, "    Alloc memory failed!\n");
+        return -1;
+    }
 
 SRCH_AGAIN:
+    memset(conn, 0, num * sizeof(mon_search_conn_t));
+
     num = MIN(atoi(digit), MON_FD_MAX);
 
     /* > 连接代理服务 */
     for (idx=0; idx<num; ++idx)
     {
-        wflg[idx] = 0;
-        fd[idx] = tcp_connect(AF_INET, ctx->conf->search.ip, ctx->conf->search.port);
-        if (fd[idx] < 0)
+        conn[idx].flag = 0;
+        conn[idx].fd = tcp_connect(AF_INET, ctx->conf->search.ip, ctx->conf->search.port);
+        if (conn[idx].fd < 0)
         {
             fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
+            log_error(ctx->log, "errmsg:[%d] %s!\n", errno, strerror(errno));
             break;
         }
 
-        fprintf(stdout, "    idx:%d fd:%d!\n", idx, fd[idx]);
+        fprintf(stdout, "    idx:%d fd:%d!\n", idx, conn[idx].fd);
     }
 
     num = idx;
@@ -265,12 +278,12 @@ SRCH_AGAIN:
         /* 加入读写集合 */
         max = -1;
         for (idx=0; idx<num; ++idx) {
-            if (fd[idx] > 0) {
-                FD_SET(fd[idx], &rdset);
-                if (0 == wflg[idx]) {
-                    FD_SET(fd[idx], &wrset);
+            if (conn[idx].fd > 0) {
+                FD_SET(conn[idx].fd, &rdset);
+                if (0 == conn[idx].flag) {
+                    FD_SET(conn[idx].fd, &wrset);
                 }
-                max = (fd[idx] > max)? fd[idx] : max; 
+                max = (conn[idx].fd > max)? conn[idx].fd : max; 
             }
         }
 
@@ -280,6 +293,7 @@ SRCH_AGAIN:
         ret = select(max+1, &rdset, &wrset, NULL, &timeout);
         if (ret < 0) {
             fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
+            log_error(ctx->log, "errmsg:[%d] %s!\n", errno, strerror(errno));
             break;
         }
         else if (0 == ret) {
@@ -289,25 +303,30 @@ SRCH_AGAIN:
 
         /* 进行读写处理 */
         for (idx=0; idx<num; ++idx) {
-            if (fd[idx] <= 0) {
+            if (conn[idx].fd <= 0) {
                 continue;
             }
 
-            if (FD_ISSET(fd[idx], &rdset)) {
-                mon_agent_search_rsp_hdl(ctx, fd[idx]);
+            if (FD_ISSET(conn[idx].fd, &rdset)) {
+                mon_agent_search_rsp_hdl(ctx, conn[idx].fd);
                 ftime(&ctm);
-                sec = ctm.time - wrtm[idx].time;
-                msec = ctm.millitm - wrtm[idx].millitm;
+                if (0 == conn[idx].wrtm.time)
+                {
+                    log_error(ctx->log, "Didn't send req but recv data! idx:%d fd:%d",
+                              idx, conn[idx].fd);
+                }
+                sec = ctm.time - conn[idx].wrtm.time;
+                msec = ctm.millitm - conn[idx].wrtm.millitm;
                 if (msec < 0) {
                     msec += 1000;
                     sec -= 1;
                 }
-                fprintf(stderr, "    fd:%04d Spend: %d.%03d(s)\n", fd[idx], sec, msec);
-                CLOSE(fd[idx]);
+                fprintf(stderr, "    fd:%04d Spend: %d.%03d(s)\n", conn[idx].fd, sec, msec);
+                CLOSE(conn[idx].fd);
                 --left;
             }
 
-            if (fd[idx] > 0 && FD_ISSET(fd[idx], &wrset)) {
+            if (conn[idx].fd > 0 && FD_ISSET(conn[idx].fd, &wrset)) {
                 head.type = htonl(MSG_SEARCH_WORD_REQ);
                 head.flag = htonl(AGENT_MSG_FLAG_USR);
                 head.mark = htonl(AGENT_MSG_MARK_KEY);
@@ -315,24 +334,27 @@ SRCH_AGAIN:
 
                 snprintf(req.words, sizeof(req.words), "%s", word);
 
-                Writen(fd[idx], (void *)&head, sizeof(head));
-                Writen(fd[idx], (void *)&req, sizeof(req));
+                Writen(conn[idx].fd, (void *)&head, sizeof(head));
+                Writen(conn[idx].fd, (void *)&req, sizeof(req));
 
-                ftime(&wrtm[idx]);
-                wflg[idx] = 1;
+                ftime(&conn[idx].wrtm);
+                conn[idx].flag = 1;
             }
         }
     }
 
     for (idx=0; idx<num; ++idx)
     {
-        CLOSE(fd[idx]);
+        if (conn[idx].fd > 0)
+        {
+            log_error(ctx->log, "Didn't receive response! idx:%d fd:%d", idx, conn[idx].fd);
+            CLOSE(conn[idx].fd);
+        }
     }
 
     goto SRCH_AGAIN;
 
-    free(fd);
-    free(wrtm);
+    slab_dealloc(ctx->slab, conn); 
 
     return 0;
 }

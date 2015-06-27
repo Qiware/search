@@ -147,7 +147,19 @@ int main(int argc, char *argv[])
 static mon_cntx_t *mon_cntx_init(const char *path)
 {
     mon_cntx_t *ctx;
+    log_cycle_t *log;
     slab_pool_t *slab;
+    char log_path[FILE_NAME_MAX_LEN];
+
+    /* > 初始化日志 */
+    log_get_path(log_path, sizeof(log_path), "monitor");
+
+    log = log_init(LOG_LEVEL_ERROR, log_path);
+    if (NULL == log)
+    {
+        fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
+        return NULL;
+    }
 
     /* > 创建内存池对象 */
     slab = slab_creat_by_calloc(1 * MB, NULL);
@@ -166,6 +178,7 @@ static mon_cntx_t *mon_cntx_init(const char *path)
         return NULL;
     }
 
+    ctx->log = log;
     ctx->slab = slab;
 
     /* > 加载配置信息 */

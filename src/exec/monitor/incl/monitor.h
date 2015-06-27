@@ -17,6 +17,8 @@ typedef struct
 typedef struct
 {
     int fd;                                 /* 描述符 */
+    log_cycle_t *log;                       /* 日志对象 */
+
     mon_conf_t *conf;                       /* 配置信息 */
     menu_cntx_t *menu;                      /* 菜单对象 */
 
