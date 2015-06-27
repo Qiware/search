@@ -16,7 +16,7 @@
 #include "thread_pool.h"
 
 /* 宏定义 */
-#define RTTP_CTX_POOL_SIZE      (5 * MB)/* 全局内存池空间 */
+#define RTTP_CTX_POOL_SIZE          (5 * MB)/* 全局内存池空间 */
 
 /* Recv线程的UNIX-UDP路径 */
 #define rtrd_rsvr_usck_path(conf, _path, tidx) \
@@ -91,12 +91,15 @@ typedef struct _rtrd_sck_t
     uint64_t recv_total;                /* 接收的数据条数 */
 } rtrd_sck_t;
 
-/* DEV->SVR的映射 */
+/* DEV->SVR的映射表 */
 typedef struct
 {
-    int rsvr_idx;                       /* 接收服务的索引(链表主键) */
-    int count;                          /* 引用计数 */
-} rtrd_node_to_svr_item_t;
+    int nodeid;                         /* 结点ID */
+
+    int num;                            /* 当前实际长度 */
+#define RTRD_NODE_TO_SVR_MAX_LEN    (32)
+    int rsvr_idx[RTRD_NODE_TO_SVR_MAX_LEN];
+} rtrd_node_to_svr_map_t;
 
 /* 接收对象 */
 typedef struct
