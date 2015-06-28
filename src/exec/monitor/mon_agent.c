@@ -219,7 +219,7 @@ typedef struct
 static int mon_agent_multi_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args)
 {
 #define MON_FD_MAX  (512)
-    int sec, msec;
+    int sec, msec, is_unrecv, unrecv_num;
     struct timeb ctm;
     fd_set rdset, wrset;
     agent_header_t head;
@@ -247,6 +247,7 @@ static int mon_agent_multi_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu,
     }
 
 SRCH_AGAIN:
+    is_unrecv = false;
     memset(conn, 0, num * sizeof(mon_search_conn_t));
 
     num = MIN(atoi(digit), MON_FD_MAX);
@@ -259,7 +260,6 @@ SRCH_AGAIN:
         if (conn[idx].fd < 0)
         {
             fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
-            log_error(ctx->log, "errmsg:[%d] %s!\n", errno, strerror(errno));
             break;
         }
 
@@ -343,13 +343,20 @@ SRCH_AGAIN:
         }
     }
 
+    unrecv_num = 0;
     for (idx=0; idx<num; ++idx)
     {
         if (conn[idx].fd > 0)
         {
-            log_error(ctx->log, "Didn't receive response! idx:%d fd:%d", idx, conn[idx].fd);
+            ++unrecv_num;
+            is_unrecv = true;
             CLOSE(conn[idx].fd);
         }
+    }
+
+    if (is_unrecv)
+    {
+        log_error(ctx->log, "Didn't receive response! num:%d", unrecv_num);
     }
 
     goto SRCH_AGAIN;
