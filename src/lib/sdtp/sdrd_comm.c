@@ -388,10 +388,10 @@ void *sdrd_dist_routine(void *_ctx)
         /* > 获取发送队列 */
         frwd = (sdtp_frwd_t *)data;
 
-        idx = sdrd_node_to_svr_map_rand(ctx, frwd->dest_nodeid);
+        idx = sdrd_node_to_svr_map_rand(ctx, frwd->dest);
         if (idx < 0)
         {
-            log_error(ctx->log, "Didn't find dev to svr map! nodeid:%d", frwd->dest_nodeid);
+            log_error(ctx->log, "Didn't find dev to svr map! nodeid:%d", frwd->dest);
             continue;
         }
 

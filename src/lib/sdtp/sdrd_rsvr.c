@@ -1515,7 +1515,7 @@ static int sdrd_rsvr_dist_send_data(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr)
         opt.alloc = (mem_alloc_cb_t)slab_alloc;
         opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-        conn.nodeid = frwd->dest_nodeid;
+        conn.nodeid = frwd->dest;
         conn.list = list_creat(&opt);
         if (NULL == conn.list)
         {
@@ -1550,7 +1550,7 @@ static int sdrd_rsvr_dist_send_data(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr)
         head = (sdtp_header_t *)addr;
 
         head->type = frwd->type;
-        head->nodeid = frwd->dest_nodeid;
+        head->nodeid = frwd->dest;
         head->flag = SDTP_EXP_MESG;
         head->checksum = SDTP_CHECK_SUM;
         head->length = frwd->length;

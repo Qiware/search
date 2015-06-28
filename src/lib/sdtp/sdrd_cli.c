@@ -59,7 +59,7 @@ int sdrd_cli_send(sdrd_cli_t *cli, int type, int dest, void *data, size_t len)
     frwd = (sdtp_frwd_t *)addr;
 
     frwd->type = type; 
-    frwd->dest_nodeid = dest;
+    frwd->dest = dest;
     frwd->length = len;
 
     memcpy(addr+sizeof(sdtp_frwd_t), data, len);
@@ -68,6 +68,7 @@ int sdrd_cli_send(sdrd_cli_t *cli, int type, int dest, void *data, size_t len)
     if (shm_queue_push(cli->sendq, addr))
     {
         shm_queue_dealloc(cli->sendq, addr);
+        return SDTP_ERR;
     }
 
     return SDTP_OK;

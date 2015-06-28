@@ -52,7 +52,7 @@ typedef struct
 typedef struct
 {
     int type;                           /* 消息类型 */
-    int dest_nodeid;                    /* 目标结点ID */
+    int dest;                           /* 目标结点ID */
     int length;                         /* 报体长度 */
 } sdtp_frwd_t;
 
