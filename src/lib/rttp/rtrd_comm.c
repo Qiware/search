@@ -223,7 +223,7 @@ int rtrd_node_to_svr_map_del(rtrd_cntx_t *ctx, int nodeid, int rsvr_id)
  ******************************************************************************/
 int rtrd_node_to_svr_map_rand(rtrd_cntx_t *ctx, int nodeid)
 {
-    int idx;
+    int id;
     avl_node_t *node;
     rtrd_node_to_svr_map_t *map;
 
@@ -241,11 +241,11 @@ int rtrd_node_to_svr_map_rand(rtrd_cntx_t *ctx, int nodeid)
     /* > 选择服务ID */
     map = (rtrd_node_to_svr_map_t *)node->data;
 
-    idx = map->rsvr_id[rand() % map->num]; /* 随机选择 */
+    id = map->rsvr_id[rand() % map->num]; /* 随机选择 */
 
     pthread_rwlock_unlock(&ctx->node_to_svr_map_lock);
 
-    return idx;
+    return id;
 }
 
 /******************************************************************************

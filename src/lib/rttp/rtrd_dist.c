@@ -140,7 +140,7 @@ static int rtrd_dsvr_cmd_dist_req(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr, int idx)
 
     rtrd_rsvr_usck_path(&ctx->conf, path, idx);
 
-    return unix_udp_send(dsvr->cmd_sck_id, path, &cmd, sizeof(cmd));
+    return (unix_udp_send(dsvr->cmd_sck_id, path, &cmd, sizeof(cmd)) > 0)? 0 : -1;
 }
 
 /******************************************************************************
@@ -158,7 +158,7 @@ static int rtrd_dsvr_cmd_dist_req(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr, int idx)
 static int rtrd_dsvr_dist_data_hdl(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr)
 {
 #define RTRD_DISP_POP_NUM   (32)
-    int i, j, num;
+    int idx, k, num;
     rttp_frwd_t *frwd;
     void *data[RTRD_DISP_POP_NUM], *addr;
 
@@ -168,7 +168,7 @@ static int rtrd_dsvr_dist_data_hdl(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr)
         num = MIN(shm_queue_used(ctx->shm_sendq), RTRD_DISP_POP_NUM);
         if (0 == num)
         {
-            break;
+            return RTTP_OK;
         }
 
         /* > 弹出发送数据 */
@@ -181,37 +181,37 @@ static int rtrd_dsvr_dist_data_hdl(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr)
         log_trace(ctx->log, "Multi-pop num:%d!", num);
 
         /* > 放入发送队列 */
-        for (j=0; j<num; ++j)
+        for (k=0; k<num; ++k)
         {
             /* > 获取发送队列 */
-            frwd = (rttp_frwd_t *)data[j];
+            frwd = (rttp_frwd_t *)data[k];
 
-            i = rtrd_node_to_svr_map_rand(ctx, frwd->dest_nodeid);
-            if (i < 0)
+            idx = rtrd_node_to_svr_map_rand(ctx, frwd->dest);
+            if (idx < 0)
             {
-                log_error(ctx->log, "Didn't find dev to svr map! nodeid:%d", frwd->dest_nodeid);
-                shm_queue_dealloc(ctx->shm_sendq, data[j]);
+                shm_queue_dealloc(ctx->shm_sendq, data[k]);
+                log_error(ctx->log, "Didn't find dev to svr map! nodeid:%d", frwd->dest);
                 continue;
             }
 
             /* > 申请内存空间 */
-            addr = queue_malloc(ctx->sendq[i], frwd->length);
+            addr = queue_malloc(ctx->sendq[idx], frwd->length);
             if (NULL == addr)
             {
-                shm_queue_dealloc(ctx->shm_sendq, data[j]);
+                shm_queue_dealloc(ctx->shm_sendq, data[k]);
                 log_error(ctx->log, "Alloc from queue failed! size:%d/%d",
-                    frwd->length, queue_size(ctx->sendq[i]));
+                    frwd->length, queue_size(ctx->sendq[idx]));
                 continue;
             }
 
-            memcpy(addr, data[j], frwd->length);
+            memcpy(addr, data[k], frwd->length);
 
-            queue_push(ctx->sendq[i], addr);
+            queue_push(ctx->sendq[idx], addr);
 
-            shm_queue_dealloc(ctx->shm_sendq, data[j]);
+            shm_queue_dealloc(ctx->shm_sendq, data[k]);
 
             /* > 发送分发请求 */
-            rtrd_dsvr_cmd_dist_req(ctx, dsvr, i);
+            rtrd_dsvr_cmd_dist_req(ctx, dsvr, idx);
         }
     }
     return RTTP_OK;

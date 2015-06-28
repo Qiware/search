@@ -1468,7 +1468,7 @@ static int rtrd_rsvr_dist_send_data(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
             opt.alloc = (mem_alloc_cb_t)slab_alloc;
             opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-            cl.nodeid = frwd->dest_nodeid;
+            cl.nodeid = frwd->dest;
             cl.list = list_creat(&opt);
             if (NULL == cl.list)
             {
@@ -1503,7 +1503,7 @@ static int rtrd_rsvr_dist_send_data(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
             head = (rttp_header_t *)addr;
 
             head->type = frwd->type;
-            head->nodeid = frwd->dest_nodeid;
+            head->nodeid = frwd->dest;
             head->flag = RTTP_EXP_MESG;
             head->checksum = RTTP_CHECK_SUM;
             head->length = frwd->length;
