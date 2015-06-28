@@ -152,7 +152,7 @@ int rtrd_node_to_svr_map_add(rtrd_cntx_t *ctx, int nodeid, int rsvr_id)
         return RTTP_ERR;
     }
 
-    map->rsvr_id[++map->num] = rsvr_id; /* 插入 */
+    map->rsvr_id[map->num++] = rsvr_id; /* 插入 */
 
     pthread_rwlock_unlock(&ctx->node_to_svr_map_lock); /* 解锁 */
 
@@ -195,7 +195,7 @@ int rtrd_node_to_svr_map_del(rtrd_cntx_t *ctx, int nodeid, int rsvr_id)
     {
         if (map->rsvr_id[idx] == rsvr_id)
         {
-            map->rsvr_id[idx] = map->rsvr_id[--map->num]; /* 删除 */
+            map->rsvr_id[idx] = map->rsvr_id[--map->num]; /* 删除:使用最后一个值替代当前值 */
             if (0 == map->num)
             {
                 avl_delete(ctx->node_to_svr_map, &nodeid, sizeof(nodeid), (void *)&map);

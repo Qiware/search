@@ -255,4 +255,7 @@ static int rtrd_dsvr_cmd_recv_and_proc(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr)
             return RTTP_ERR;
         }
     }
+
+    log_error(dsvr->log, "Unknown command! type:%d", cmd.type);
+    return RTTP_ERR;
 }

@@ -56,7 +56,7 @@ rtrd_cli_t *rtrd_cli_init(const rtrd_conf_t *conf, int idx)
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 将数据放入应答队列
- **注意事项:
+ **注意事项: 内存结构: 转发信息(frwd) + 实际数据
  **作    者: # Qifeng.zou # 2015.06.01 #
  ******************************************************************************/
 int rtrd_cli_send(rtrd_cli_t *cli, int type, int dest, void *data, size_t len)
@@ -83,6 +83,7 @@ int rtrd_cli_send(rtrd_cli_t *cli, int type, int dest, void *data, size_t len)
     if (shm_queue_push(cli->sendq, addr))
     {
         shm_queue_dealloc(cli->sendq, addr);
+        return RTTP_ERR;
     }
 
     rtrd_cli_cmd_dist_req(cli);
