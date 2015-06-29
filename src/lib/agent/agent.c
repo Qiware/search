@@ -105,6 +105,13 @@ agent_cntx_t *agent_init(agent_conf_t *conf, log_cycle_t *log)
             break;
         }
 
+        /* > 初始化侦听服务 */
+        if (agent_listen_init(ctx))
+        {
+            log_error(log, "Initialize listen-server failed!");
+            break;
+        }
+
         return ctx;
     } while (0);
 
@@ -125,7 +132,6 @@ agent_cntx_t *agent_init(agent_conf_t *conf, log_cycle_t *log)
  ******************************************************************************/
 void agent_destroy(agent_cntx_t *ctx)
 {
-    pthread_cancel(ctx->lsn_tid);
     agent_workers_destroy(ctx);
     agent_rsvr_pool_destroy(ctx);
 
@@ -148,6 +154,7 @@ void agent_destroy(agent_cntx_t *ctx)
 int agent_startup(agent_cntx_t *ctx)
 {
     int idx;
+    pthread_t tid;
     agent_conf_t *conf = ctx->conf;
 
     /* 1. 设置Worker线程回调 */
@@ -163,7 +170,7 @@ int agent_startup(agent_cntx_t *ctx)
     }
     
     /* 3. 设置Listen线程回调 */
-    if (thread_creat(&ctx->lsn_tid, agent_listen_routine, ctx))
+    if (thread_creat(&tid, agent_listen_routine, ctx))
     {
         log_error(ctx->log, "Create listen thread failed!");
         return AGENT_ERR;

@@ -7,7 +7,6 @@
 #include "agent_rsvr.h"
 #include "agent_listen.h"
 
-agent_listen_t *agent_listen_init(agent_cntx_t *ctx);
 static int agent_listen_accept(agent_cntx_t *ctx, agent_listen_t *lsn);
 static int agent_listen_send_add_sck_req(agent_cntx_t *ctx, agent_listen_t *lsn, int idx);
 
@@ -19,9 +18,7 @@ static int agent_listen_send_add_sck_req(agent_cntx_t *ctx, agent_listen_t *lsn,
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
- **     1. 初始化侦听线程
- **     2. 接收网络连接
- **注意事项: 
+ **注意事项: 初始化过程在程序启动时已经完成 - 在子线程中初始化，一旦出现异常将不好处理!
  **作    者: # Qifeng.zou # 2014.11.18 #
  ******************************************************************************/
 void *agent_listen_routine(void *_ctx)
@@ -29,16 +26,8 @@ void *agent_listen_routine(void *_ctx)
     int ret, max;
     fd_set rdset;
     struct timeval tv;
-    agent_listen_t *lsn;
     agent_cntx_t *ctx = (agent_cntx_t *)_ctx;
-
-    /* > 初始化侦听线程 */
-    lsn = agent_listen_init(ctx);
-    if (NULL == lsn)
-    {
-        log_error(ctx->log, "Initialize listen thread failed!");
-        return (void *)-1;
-    }
+    agent_listen_t *lsn = ctx->lsn;
 
     /* > 接收网络连接  */
     while (1)
@@ -84,26 +73,23 @@ void *agent_listen_routine(void *_ctx)
  **输入参数:
  **     ctx: 全局信息
  **输出参数: NONE
- **返    回: LSN对象
+ **返    回: 0:成功 !0:失败
  **实现描述: 
- **     1. 创建LSN对象
- **     2. 侦听指定端口
- **     3. 创建命令套接字
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.19 #
  ******************************************************************************/
-agent_listen_t *agent_listen_init(agent_cntx_t *ctx)
+int agent_listen_init(agent_cntx_t *ctx)
 {
     agent_listen_t *lsn;
     char path[FILE_NAME_MAX_LEN];
     agent_conf_t *conf = ctx->conf;
 
     /* > 创建LSN对象 */
-    lsn = (agent_listen_t *)calloc(1, sizeof(agent_listen_t));
+    lsn = (agent_listen_t *)slab_alloc(ctx->slab, sizeof(agent_listen_t));
     if (NULL == lsn)
     {
         log_error(lsn->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return NULL;
+        return AGENT_ERR;
     }
 
     lsn->log = ctx->log;
@@ -128,14 +114,15 @@ agent_listen_t *agent_listen_init(agent_cntx_t *ctx)
             log_error(lsn->log, "errmsg:[%d] %s!", errno, strerror(errno));
             break;
         }
-        
-        return lsn;
+
+        ctx->lsn = lsn;
+        return AGENT_OK;
     } while(0);
 
     CLOSE(lsn->lsn_sck_id);
     CLOSE(lsn->cmd_sck_id);
-    free(lsn);
-    return NULL;
+    slab_dealloc(ctx->slab, lsn);
+    return AGENT_ERR;
 }
 
 /******************************************************************************

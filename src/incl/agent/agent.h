@@ -7,6 +7,7 @@
 #include "avl_tree.h"
 #include "shm_queue.h"
 #include "agent_comm.h"
+#include "agent_listen.h"
 #include "thread_pool.h"
 
 /* 宏定义 */
@@ -64,7 +65,7 @@ typedef struct
         int cmd_sck_id;                     /* 命令套接字 */
     } cli;
 
-    pthread_t lsn_tid;                      /* Listen线程 */
+    agent_listen_t *lsn;                    /* 侦听对象 */
     thread_pool_t *agents;                  /* Agent线程池 */
     thread_pool_t *workers;                 /* Worker线程池 */
     agent_reg_t reg[AGENT_MSG_TYPE_MAX];    /* 消息注册 */
@@ -82,6 +83,10 @@ typedef struct
 #define agent_recvq_used(ctx, idx) queue_used(ctx->recvq[idx]) /* 接收队列已用空间 */
 #define agent_sendq_used(ctx, idx) queue_used(ctx->sendq[idx]) /* 发送队列已用空间 */
 
+/* 内部接口 */
+int agent_listen_init(agent_cntx_t *ctx);
+
+/* 外部接口 */
 agent_cntx_t *agent_init(agent_conf_t *conf, log_cycle_t *log);
 void agent_destroy(agent_cntx_t *ctx);
 
