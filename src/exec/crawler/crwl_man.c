@@ -34,7 +34,7 @@ static int crwl_man_recv_cmd(crwl_cntx_t *ctx, crwl_man_t *man);
 static int crwl_man_send_cmd(crwl_cntx_t *ctx, crwl_man_t *man);
 
 /******************************************************************************
- **函数名称: crwl_man_rwset
+ **函数名称: crwl_man_set_rwset
  **功    能: 设置读写集合
  **输入参数: 
  **     man: 管理对象
@@ -46,7 +46,7 @@ static int crwl_man_send_cmd(crwl_cntx_t *ctx, crwl_man_t *man);
  **     当链表为空时, 则不用加入可写集合
  **作    者: # Qifeng.zou # 2015.02.16 #
  ******************************************************************************/
-#define crwl_man_rwset(man) \
+#define crwl_man_set_rwset(man) \
 { \
     FD_ZERO(&man->rdset); \
     FD_ZERO(&man->wrset); \
@@ -88,7 +88,7 @@ void *crwl_manager_routine(void *_ctx)
     while (1)
     {
         /* 2. 等待事件通知 */
-        crwl_man_rwset(man);
+        crwl_man_set_rwset(man);
 
         tmout.tv_sec = 30;
         tmout.tv_usec = 0;
