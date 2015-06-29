@@ -156,7 +156,7 @@ int shm_ring_mpush(shm_ring_t *rq, off_t *off, unsigned int num)
  **     rq: 队列
  **     num: 弹出n个地址
  **输出参数:
- **     addr: 指针数组
+ **     off: 偏移数组
  **返    回: 实际数据条数
  **实现描述: 无锁编程 
  **注意事项:
