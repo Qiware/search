@@ -66,23 +66,13 @@ menu_item_t *mon_agent_menu(menu_cntx_t *ctx, void *args)
  ******************************************************************************/
 static int mon_agent_search_rsp_hdl(mon_cntx_t *ctx, int fd)
 {
-    int n, i, size;
-    void *addr;
+    int n, i;
     agent_header_t *head;
     mesg_search_word_rsp_t *rsp;
-
-    /* > 申请内存空间 */
-    size = sizeof(agent_header_t) + sizeof(mesg_search_word_rsp_t);
-
-    addr = (void *)slab_alloc(ctx->slab, size);
-    if (NULL == addr)
-    {
-        fprintf(stderr, "    Alloc from slab failed!\n");
-        return -1;
-    }
+    char addr[sizeof(agent_header_t) + sizeof(mesg_search_word_rsp_t)];
 
     /* > 接收应答数据 */
-    n = read(fd, addr, size);
+    n = read(fd, addr, sizeof(addr));
     if (n < 0)
     {
         fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
@@ -103,8 +93,6 @@ static int mon_agent_search_rsp_hdl(mon_cntx_t *ctx, int fd)
     {
         fprintf(stderr, "        [%02d] url: %s\n", i+1, rsp->url[i]);
     }
-
-    slab_dealloc(ctx->slab, addr);
 
     return 0;
 }
@@ -218,7 +206,7 @@ typedef struct
 
 static int mon_agent_multi_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args)
 {
-#define MON_FD_MAX  (512)
+#define MON_FD_MAX  (900)
     int sec, msec, is_unrecv, unrecv_num;
     struct timeb ctm;
     fd_set rdset, wrset;
