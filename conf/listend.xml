@@ -26,11 +26,10 @@
             <SENDQ MAX="1024" SIZE="2048" />  <!-- 发送队列 -->
         </QUEUE>
 
-        <!-- Agent配置
-            1) NUM: 线程数 -->
-        <AGENT NUM="5" />
-        <!-- Worker配置
-            1) NUM: 线程数 -->
-        <WORKER NUM="3" />
+        <!-- 线程池配置
+            1) LSN: 侦听线程数
+            2) AGENT: 代理线程数
+            3) WORKER: 工作线程数 -->
+        <THREAD-POOL LSN="3" AGENT="5" WORKER="3" />
     </AGENT>
 </LISTEND>
