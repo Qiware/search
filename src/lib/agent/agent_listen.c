@@ -147,7 +147,7 @@ static int agent_listen_accept(agent_cntx_t *ctx, agent_listen_t *lsn)
     agent_add_sck_t *add;
     struct sockaddr_in cliaddr;
 
-    if (spin_trylock(&lsn->accept_lock))
+    if (spin_trylock(&lsn->accept_lock)) /* 加锁 */
     {
         return AGENT_ERR;
     }
@@ -163,7 +163,7 @@ static int agent_listen_accept(agent_cntx_t *ctx, agent_listen_t *lsn)
 
     seq = ++lsn->serial; /* 计数 */
 
-    spin_unlock(&lsn->accept_lock);
+    spin_unlock(&lsn->accept_lock); /* 解锁 */
 
     /* > 将通信套接字放入队列 */
     idx = seq % ctx->conf->agent_num;
