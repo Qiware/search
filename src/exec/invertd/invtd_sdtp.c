@@ -36,8 +36,7 @@ static int invtd_search_word_req_hdl(int type, int orig, char *buff, size_t len,
     invtd_cntx_t *ctx = (invtd_cntx_t *)args;
     mesg_search_word_req_t *req = (mesg_search_word_req_t *)buff; /* 请求 */
 
-    log_trace(ctx->log, "Call %s()! serial:%ld words:%s",
-            __func__, req->serial, req->words);
+    log_trace(ctx->log, "Call %s()! serial:%ld words:%s", __func__, req->serial, req->words);
 
     memset(&rsp, 0, sizeof(rsp));
 
