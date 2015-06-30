@@ -769,7 +769,10 @@ static int rtsd_ssvr_proc_cmd(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, const rttp_cm
  **实现描述:
  **     1. 从消息链表取数据
  **     2. 从发送队列取数据
- **注意事项:
+ **注意事项: 千万勿将共享变量参与MIN()三目运算, 否则可能出现严重错误!!!!且很难找出原因!
+ **          原因: MIN()不是原子运算, 使用共享变量可能导致判断成立后, 而返回时共
+ **                享变量的值可能被其他进程或线程修改, 导致出现严重错误!
+ **内存结构:
  **       ------------------------------------------------
  **      | 已处理 |     未处理     |       剩余空间       |
  **       ------------------------------------------------
@@ -785,7 +788,7 @@ static int rtsd_ssvr_proc_cmd(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, const rttp_cm
 static int rtsd_ssvr_fill_send_buff(rtsd_ssvr_t *ssvr, rtsd_sck_t *sck)
 {
 #define RTSD_POP_NUM    (32)
-    int num, idx;
+    int num, idx, used_num;
     void *data[RTSD_POP_NUM];
     uint32_t left, mesg_len;
     rttp_header_t *head;
@@ -831,13 +834,13 @@ static int rtsd_ssvr_fill_send_buff(rtsd_ssvr_t *ssvr, rtsd_sck_t *sck)
     }
 
     /* > 从发送队列取数据 */
-    for (;;)
-    {
-        /* > 判断剩余空间 */
+    for (;;) {
+        /* > 判断剩余空间(注意: 勿将共享变量参与MIN()三目运算, 否则可能出现严重错误!!!) */
         left = send->end - send->iptr;
-
-        num = MIN(left / shm_queue_size(ssvr->sendq), RTSD_POP_NUM);
-        num = MIN((unsigned int)num, shm_queue_used(ssvr->sendq));
+        used_num = shm_queue_used(ssvr->sendq);
+         
+        num = MIN(left/shm_queue_size(ssvr->sendq), RTSD_POP_NUM);
+        num = MIN(num, used_num);
         if (0 == num)
         {
             break; /* 空间不足 */

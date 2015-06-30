@@ -1442,7 +1442,8 @@ static int rtrd_rsvr_dist_send_data(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
     while (1)
     {
         /* > 弹出队列数据 */
-        num = MIN(queue_used(sendq), RTRD_POP_MAX_NUM);
+        num = queue_used(sendq); /* 千万勿将共享变量参与MIN()三目运算, 否则可能出现严重错误! */
+        num = MIN(num, RTRD_POP_MAX_NUM);
         if (0 == num)
         {
             break;

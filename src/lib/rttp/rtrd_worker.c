@@ -235,7 +235,8 @@ static int rtrd_worker_cmd_proc_req_hdl(rtrd_cntx_t *ctx, rttp_worker_t *worker,
     while (1)
     {
         /* > 从接收队列获取数据 */
-        num = MIN(queue_used(rq), RTRD_WORK_POP_NUM);
+        num = queue_used(rq); /* 千万勿将共享变量参与MIN()三目运算, 否则可能出现严重错误! */
+        num = MIN(num, RTRD_WORK_POP_NUM);
         if (0 == num)
         {
             return RTTP_OK;
