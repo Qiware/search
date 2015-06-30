@@ -1076,7 +1076,7 @@ static int agent_rsvr_send(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
- **注意事项: 
+ **注意事项: 千万勿将共享变量参与MIN()三目运算, 否则可能出现严重错误!!!!且很难找出原因!
  **作    者: # Qifeng.zou # 2015-06-05 17:35:02 #
  ******************************************************************************/
 static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
@@ -1095,7 +1095,9 @@ static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
     sendq = ctx->sendq[rsvr->id];
     while (1)
     {
-        num = MIN(queue_used(sendq), AGT_RSVR_DIST_POP_NUM);
+        /* 千万勿将共享变量参与MIN()三目运算, 否则可能出现严重错误!!!!且很难找出原因! */
+        num = queue_used(sendq);    /* 注意: 参加运算前将变量放在局部变量中 */
+        num = MIN(num, AGT_RSVR_DIST_POP_NUM);
         if (0 == num)
         {
             break;

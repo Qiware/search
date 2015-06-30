@@ -82,10 +82,6 @@ typedef struct
     avl_tree_t **serial_to_sck_map;         /* 流水号->SCK映射表 */
 } agent_cntx_t;
 
-#define agent_connq_used(ctx, idx) queue_used(ctx->connq[idx]) /* 连接队列已用空间 */
-#define agent_recvq_used(ctx, idx) queue_used(ctx->recvq[idx]) /* 接收队列已用空间 */
-#define agent_sendq_used(ctx, idx) queue_used(ctx->sendq[idx]) /* 发送队列已用空间 */
-
 /* 内部接口 */
 int agent_listen_init(agent_cntx_t *ctx);
 

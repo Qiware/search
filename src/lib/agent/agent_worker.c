@@ -168,7 +168,10 @@ static int agent_worker_proc_data_hdl(agent_cntx_t *ctx, agent_worker_t *worker)
     for (i=0; i<conf->agent_num; ++i, ++rqid)
     {
         rqid %= conf->agent_num;
-        num = MIN(AGT_WSVR_POP_NUM, queue_used(ctx->recvq[rqid]));
+
+        /* 千万勿将共享变量参与MIN()三目运算, 否则可能出现严重错误!!!!且很难找出原因! */
+        num = queue_used(ctx->recvq[rqid]);  /* 注意: 参加运算前将变量放在局部变量中 */
+        num = MIN(num, AGT_WSVR_POP_NUM);
         if (0 == num)
         {
             continue;
