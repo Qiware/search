@@ -73,7 +73,7 @@ static int mon_agent_search_rsp_hdl(mon_cntx_t *ctx, int fd)
 
     /* > 接收应答数据 */
     n = read(fd, addr, sizeof(addr));
-    if (n < 0)
+    if (n <= 0)
     {
         fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
         return -1;
@@ -374,7 +374,7 @@ static int mon_agent_insert_word_rsp_hdl(mon_cntx_t *ctx, int fd)
 
     /* > 接收应答数据 */
     n = read(fd, addr, size);
-    if (n < 0)
+    if (n <= 0)
     {
         fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
         slab_dealloc(ctx->slab, addr);
