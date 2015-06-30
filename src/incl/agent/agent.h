@@ -46,6 +46,7 @@ typedef struct
         int port;                           /* 侦听端口 */
     } connections;
 
+    int lsn_num;                            /* Listen线程数 */
     int agent_num;                          /* Agent线程数 */
     int worker_num;                         /* Worker线程数 */
 
@@ -66,7 +67,9 @@ typedef struct
     } cli;
 
     agent_listen_t *lsn;                    /* 侦听对象 */
+
     thread_pool_t *agents;                  /* Agent线程池 */
+    thread_pool_t *listens;                 /* Listen线程池 */
     thread_pool_t *workers;                 /* Worker线程池 */
     agent_reg_t reg[AGENT_MSG_TYPE_MAX];    /* 消息注册 */
 

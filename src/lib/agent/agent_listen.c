@@ -115,6 +115,8 @@ int agent_listen_init(agent_cntx_t *ctx)
             break;
         }
 
+        spin_lock_init(&lsn->accept_lock);
+
         ctx->lsn = lsn;
         return AGENT_OK;
     } while(0);
@@ -145,15 +147,23 @@ static int agent_listen_accept(agent_cntx_t *ctx, agent_listen_t *lsn)
     agent_add_sck_t *add;
     struct sockaddr_in cliaddr;
 
+    if (spin_trylock(&lsn->accept_lock))
+    {
+        return AGENT_ERR;
+    }
+
     /* > 接收连接请求 */
     fd = tcp_accept(lsn->lsn_sck_id, (struct sockaddr *)&cliaddr);
     if (fd < 0)
     {
+        spin_unlock(&lsn->accept_lock);
         log_error(lsn->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return AGENT_ERR;
     }
 
     ++lsn->serial; /* 计数 */
+
+    spin_unlock(&lsn->accept_lock);
 
     /* > 将通信套接字放入队列 */
     idx = lsn->serial % ctx->conf->agent_num;

@@ -16,6 +16,7 @@ static int agent_creat_agents(agent_cntx_t *ctx);
 static int agent_rsvr_pool_destroy(agent_cntx_t *ctx);
 static int agent_creat_workers(agent_cntx_t *ctx);
 static int agent_workers_destroy(agent_cntx_t *ctx);
+static int agent_creat_listens(agent_cntx_t *ctx);
 static int agent_creat_queue(agent_cntx_t *ctx);
 
 /******************************************************************************
@@ -98,6 +99,13 @@ agent_cntx_t *agent_init(agent_conf_t *conf, log_cycle_t *log)
             break;
         }
 
+        /* > 创建Listen线程池 */
+        if (agent_creat_listens(ctx))
+        {
+            log_error(log, "Initialize agent thread pool failed!");
+            break;
+        }
+
         /* > 初始化客户端信息 */
         if (agent_cli_init(ctx))
         {
@@ -154,7 +162,6 @@ void agent_destroy(agent_cntx_t *ctx)
 int agent_startup(agent_cntx_t *ctx)
 {
     int idx;
-    pthread_t tid;
     agent_conf_t *conf = ctx->conf;
 
     /* 1. 设置Worker线程回调 */
@@ -170,12 +177,11 @@ int agent_startup(agent_cntx_t *ctx)
     }
     
     /* 3. 设置Listen线程回调 */
-    if (thread_creat(&tid, agent_listen_routine, ctx))
+    for (idx=0; idx<conf->lsn_num; ++idx)
     {
-        log_error(ctx->log, "Create listen thread failed!");
-        return AGENT_ERR;
+        thread_pool_add_worker(ctx->listens, agent_listen_routine, ctx);
     }
-
+ 
     return AGENT_OK;
 }
 
@@ -352,6 +358,38 @@ static int agent_creat_agents(agent_cntx_t *ctx)
     thread_pool_destroy(ctx->agents);
 
     return AGENT_ERR;
+}
+
+/******************************************************************************
+ **函数名称: agent_creat_listens
+ **功    能: 创建Listen线程池
+ **输入参数: 
+ **     ctx: 全局信息
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015-06-30 15:06:58 #
+ ******************************************************************************/
+static int agent_creat_listens(agent_cntx_t *ctx)
+{
+    thread_pool_opt_t opt;
+    agent_conf_t *conf = ctx->conf;
+
+    memset(&opt, 0, sizeof(opt));
+
+    opt.pool = ctx->slab;
+    opt.alloc = (mem_alloc_cb_t)slab_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+
+    ctx->listens = thread_pool_init(conf->lsn_num, &opt, NULL);
+    if (NULL == ctx->listens)
+    {
+        log_error(ctx->log, "Initialize thread pool failed!");
+        return AGENT_ERR;
+    }
+
+    return AGENT_OK;
 }
 
 /******************************************************************************

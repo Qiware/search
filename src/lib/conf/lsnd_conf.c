@@ -279,8 +279,8 @@ static int lsnd_conf_load_agent(xml_tree_t *xml, lsnd_conf_t *lcf, log_cycle_t *
         return -1;
     }
 
-    /* > 获取WORKER.NUM标签 */
-    node = xml_query(xml, ".LISTEND.AGENT.WORKER.NUM");
+    /* > 获取WORKER线程数 */
+    node = xml_query(xml, ".LISTEND.AGENT.THREAD-POOL.WORKER");
     if (NULL == node)
     {
         log_error(log, "Didn't configure number of worker!");
@@ -289,8 +289,8 @@ static int lsnd_conf_load_agent(xml_tree_t *xml, lsnd_conf_t *lcf, log_cycle_t *
 
     conf->worker_num = atoi(node->value.str);
 
-    /* 4. 获取AGENT.NUM标签 */
-    node = xml_query(xml, ".LISTEND.AGENT.AGENT.NUM");
+    /* > 获取AGENT线程数 */
+    node = xml_query(xml, ".LISTEND.AGENT.THREAD-POOL.AGENT");
     if (NULL == node)
     {
         log_error(log, "Didn't configure number of agent!");
@@ -298,6 +298,17 @@ static int lsnd_conf_load_agent(xml_tree_t *xml, lsnd_conf_t *lcf, log_cycle_t *
     }
 
     conf->agent_num = atoi(node->value.str);
+
+    /* > 获取Listen线程数 */
+    node = xml_query(xml, ".LISTEND.AGENT.THREAD-POOL.LSN");
+    if (NULL == node)
+    {
+        log_error(log, "Didn't configure number of listen!");
+        return -1;
+    }
+
+    conf->lsn_num = atoi(node->value.str);
+
 
     return 0;
 }
