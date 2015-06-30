@@ -76,7 +76,6 @@ static int mon_agent_search_rsp_hdl(mon_cntx_t *ctx, int fd)
     if (n < 0)
     {
         fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
-        slab_dealloc(ctx->slab, addr);
         return -1;
     }
 
