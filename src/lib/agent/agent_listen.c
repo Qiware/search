@@ -143,7 +143,7 @@ int agent_listen_init(agent_cntx_t *ctx)
  ******************************************************************************/
 static int agent_listen_accept(agent_cntx_t *ctx, agent_listen_t *lsn)
 {
-    int fd, idx;
+    int fd, idx, seq;
     agent_add_sck_t *add;
     struct sockaddr_in cliaddr;
 
@@ -161,12 +161,12 @@ static int agent_listen_accept(agent_cntx_t *ctx, agent_listen_t *lsn)
         return AGENT_ERR;
     }
 
-    ++lsn->serial; /* 计数 */
+    seq = ++lsn->serial; /* 计数 */
 
     spin_unlock(&lsn->accept_lock);
 
     /* > 将通信套接字放入队列 */
-    idx = lsn->serial % ctx->conf->agent_num;
+    idx = seq % ctx->conf->agent_num;
 
     add = queue_malloc(ctx->connq[idx], sizeof(agent_add_sck_t));
     if (NULL == add)
@@ -178,7 +178,7 @@ static int agent_listen_accept(agent_cntx_t *ctx, agent_listen_t *lsn)
     }
 
     add->fd = fd;
-    add->serial = lsn->serial;
+    add->serial = seq;
 
     log_debug(lsn->log, "Push data! fd:%d addr:%p serial:%ld", fd, add, lsn->serial);
 
