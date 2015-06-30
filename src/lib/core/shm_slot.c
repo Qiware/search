@@ -60,11 +60,12 @@ shm_slot_t *shm_slot_init(void *addr, int num, size_t size)
     shm_slot_t *slot;
     shm_ring_t *ring;
 
-    /* > 初始化对象 */
+    /* > 初始化SHM-SLOT */
     slot = (shm_slot_t *)addr;
     slot->max = num;
     slot->size = size;
 
+    /* > 初始化SHM-RING */
     tsz = shm_ring_total(num);
     if ((off_t)-1 == tsz)
     {

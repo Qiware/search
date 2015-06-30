@@ -23,7 +23,7 @@ typedef struct
         volatile unsigned int tail;         /* 消费者: 尾索引(注: 其值一直往上递增) */
     } cons;
 
-    off_t off[0];                           /* 环形数组(对其构造环形队列) */
+    off_t off[0];                           /* 环形数组(对其构造环形队列: 其长度为max)) */
 } shm_ring_t;
 
 size_t shm_ring_total(int max);

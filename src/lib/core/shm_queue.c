@@ -12,18 +12,28 @@
 #include "shm_slot.h"
 #include "shm_queue.h"
 
-/* 计算队列总空间 */
+/******************************************************************************
+ **函数名称: shm_queue_total
+ **功    能: 计算队列总空间
+ **输入参数:
+ **     max: 队列单元数
+ **     size: 队列单元SIZE
+ **输出参数: NONE
+ **返    回: SHMQ队列需要的总空间大小
+ **实现描述: 接合共享内存环形队列和内存池实现
+ **      -------------- --------------
+ **     |              |              |
+ **     |     ring     |     slot     |
+ **     |  (环形队列)  |   (内存池)   |
+ **      -------------- --------------
+ **     环形队列: 负责数据的PUSH和POP等操作
+ **     内存池  : 负责内存空间的申请和回收等操作
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.05.06 #
+ ******************************************************************************/
 size_t shm_queue_total(int max, size_t size)
 {
-    size_t total, sz;
-
-    sz = shm_slot_total(max, size);
-    if ((size_t)-1 == sz)
-    {
-        return (size_t)-1;
-    }
-
-    total = sz;
+    size_t sum = 0, sz;
 
     sz = shm_ring_total(max);
     if ((size_t)-1 == sz)
@@ -31,9 +41,17 @@ size_t shm_queue_total(int max, size_t size)
         return (size_t)-1;
     }
 
-    total += sz;
+    sum += sz;
 
-    return total;
+    sz = shm_slot_total(max, size);
+    if ((size_t)-1 == sz)
+    {
+        return (size_t)-1;
+    }
+
+    sum += sz;
+
+    return sum;
 }
 
 /******************************************************************************

@@ -5,7 +5,7 @@
 #include "agent.h"
 #include "rtsd_send.h"
 
-#define LSND_WORK_DIR  "../temp/listend/" /* 工作路径 */
+#define LSND_WORK_DIR           "../temp/listend/" /* 工作路径 */
 
 /* 侦听配置 */
 typedef struct

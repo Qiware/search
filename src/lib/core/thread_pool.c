@@ -18,6 +18,7 @@ static void *thread_routine(void *_tpool);
  **输入参数:
  **     num: 线程数目
  **     opt: 选项信息
+ **     args: 附加参数信息
  **输出参数:
  **返    回: 线程池
  **实现描述: 
