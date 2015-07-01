@@ -168,8 +168,7 @@ static int rtrd_dsvr_dist_data_hdl(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr)
     while (1)
     {
         /* > 计算弹出个数(WARNNING: 勿将共享变量参与MIN()三目运算, 否则可能出现严重错误!!!) */
-        num = shm_queue_used(ctx->shm_sendq); /* 注意: 参加运算前将变量放在局部变量中 */
-        num = MIN(num, RTRD_DISP_POP_NUM);
+        num = MIN(shm_queue_used(ctx->shm_sendq), RTRD_DISP_POP_NUM);
         if (0 == num)
         {
             return RTTP_OK;

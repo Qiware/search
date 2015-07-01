@@ -787,8 +787,8 @@ static int rtsd_ssvr_proc_cmd(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, const rttp_cm
  ******************************************************************************/
 static int rtsd_ssvr_fill_send_buff(rtsd_ssvr_t *ssvr, rtsd_sck_t *sck)
 {
-#define RTSD_POP_NUM    (32)
-    int num, idx, used_num;
+#define RTSD_POP_NUM    (128)
+    int num, idx;
     void *data[RTSD_POP_NUM];
     uint32_t left, mesg_len;
     rttp_header_t *head;
@@ -835,12 +835,11 @@ static int rtsd_ssvr_fill_send_buff(rtsd_ssvr_t *ssvr, rtsd_sck_t *sck)
 
     /* > 从发送队列取数据 */
     for (;;) {
-        /* > 判断剩余空间(WARNNING: 勿将共享变量参与MIN()三目运算, 否则可能出现严重错误!!!) */
+        /* > 判断剩余空间(WARNNING: 勿将共享变量参与三目运算, 否则可能出现严重错误!!!) */
         left = send->end - send->iptr;
-        used_num = shm_queue_used(ssvr->sendq);
          
         num = MIN(left/shm_queue_size(ssvr->sendq), RTSD_POP_NUM);
-        num = MIN(num, used_num);
+        num = MIN(num, shm_queue_used(ssvr->sendq));
         if (0 == num)
         {
             break; /* 空间不足 */

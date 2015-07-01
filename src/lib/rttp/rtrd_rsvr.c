@@ -1277,8 +1277,11 @@ static int rtrd_rsvr_cmd_proc_req(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, int rqid)
     /* 2. 发送处理命令 */
     if (unix_udp_send(rsvr->cmd_sck_id, path, &cmd, sizeof(rttp_cmd_t)) < 0)
     {
-        log_debug(rsvr->log, "Send command failed! errmsg:[%d] %s! path:[%s]",
-                errno, strerror(errno), path);
+        if (EAGAIN != errno)
+        {
+            log_debug(rsvr->log, "Send command failed! errmsg:[%d] %s! path:[%s]",
+                      errno, strerror(errno), path);
+        }
         return RTTP_ERR;
     }
 
@@ -1435,15 +1438,12 @@ static int rtrd_rsvr_dist_send_data(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
     _conn_list_t cl;
     rttp_header_t *head;
 
-    log_trace(rsvr->log, "Call %s()", __func__);
-
     sendq = ctx->sendq[rsvr->id];
 
     while (1)
     {
         /* > 弹出队列数据 */
-        num = queue_used(sendq); /* 千万勿将共享变量参与MIN()三目运算, 否则可能出现严重错误! */
-        num = MIN(num, RTRD_POP_MAX_NUM);
+        num = MIN(queue_used(sendq), RTRD_POP_MAX_NUM);
         if (0 == num)
         {
             break;

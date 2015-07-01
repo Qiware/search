@@ -325,7 +325,10 @@ static int rtrd_lsn_cmd_query_conf_hdl(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn, rttp_c
     /* 2. 发送应答信息 */
     if (unix_udp_send(lsn->cmd_sck_id, cmd->src_path, &rep, sizeof(rep)) < 0)
     {
-        log_error(lsn->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        if (EAGAIN != errno)
+        {
+            log_error(lsn->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        }
         return RTTP_ERR;
     }
 
@@ -367,7 +370,10 @@ static int rtrd_lsn_cmd_query_recv_stat_hdl(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn, r
         /* 2. 发送命令信息 */
         if (unix_udp_send(rsvr->cmd_sck_id, cmd->src_path, &rep, sizeof(rep)) < 0)
         {
-            log_error(lsn->log, "errmsg:[%d] %s!", errno, strerror(errno));
+            if (EAGAIN != errno)
+            {
+                log_error(lsn->log, "errmsg:[%d] %s!", errno, strerror(errno));
+            }
             return RTTP_ERR;
         }
     }
@@ -408,7 +414,10 @@ static int rtrd_lsn_cmd_query_proc_stat_hdl(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn, r
         /* 2. 发送应答信息 */
         if (unix_udp_send(wrk->cmd_sck_id, cmd->src_path, &rep, sizeof(rep)) < 0)
         {
-            log_error(lsn->log, "errmsg:[%d] %s!", errno, strerror(errno));
+            if (EAGAIN != errno)
+            {
+                log_error(lsn->log, "errmsg:[%d] %s!", errno, strerror(errno));
+            }
             return RTTP_ERR;
         }
     }
