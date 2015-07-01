@@ -127,11 +127,7 @@ static int mon_crwl_frame(mon_crwl_setup_cb_t setup, mon_crwl_print_cb_t print, 
         ret = select(ctx->fd+1, &rdset, &wrset, NULL, &tmout);
         if (ret < 0)
         {
-            if (EINTR == errno)
-            {
-                continue;
-            }
-
+            if (EINTR == errno) { continue; }
             fprintf(stderr, "    errrmsg:[%d] %s!", errno, strerror(errno));
             break;
         }

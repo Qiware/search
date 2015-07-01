@@ -95,12 +95,7 @@ void *crwl_manager_routine(void *_ctx)
         ret = select(man->fd+1, &man->rdset, &man->wrset, NULL, &tmout);
         if (ret < 0)
         {
-            if (EINTR == errno)
-            {
-                log_warn(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
-                continue;
-            }
-
+            if (EINTR == errno) { continue; }
             log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
             return (void *)-1;
         }

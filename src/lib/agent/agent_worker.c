@@ -74,11 +74,7 @@ void *agent_worker_routine(void *_ctx)
         ret = select(max+1, &worker->rdset, NULL, NULL, &timeout);
         if (ret < 0)
         {
-            if (EINTR == errno)
-            {
-                continue;
-            }
-
+            if (EINTR == errno) { continue; } 
             log_fatal(worker->log, "errmsg:[%d] %s", errno, strerror(errno));
             abort();
             return (void *)-1;

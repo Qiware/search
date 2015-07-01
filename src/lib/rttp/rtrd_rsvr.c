@@ -197,11 +197,7 @@ void *rtrd_rsvr_routine(void *_ctx)
         ret = select(rsvr->max+1, &rsvr->rdset, &rsvr->wrset, NULL, &timeout);
         if (ret < 0)
         {
-            if (EINTR == errno)
-            {
-                continue;
-            }
-
+            if (EINTR == errno) { continue; }
             log_fatal(rsvr->log, "errmsg:[%d] %s", errno, strerror(errno));
             abort();
             return (void *)RTTP_ERR;

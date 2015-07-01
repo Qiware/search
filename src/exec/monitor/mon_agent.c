@@ -182,6 +182,7 @@ static int mon_agent_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void 
         ret = select(conn.fd+1, &rdset, NULL, NULL, &timeout);
         if (ret < 0)
         {
+            if (EINTR == errno) { continue; }
             fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
             break;
         }
@@ -290,6 +291,7 @@ SRCH_AGAIN:
         timeout.tv_usec = 0;
         ret = select(max+1, &rdset, &wrset, NULL, &timeout);
         if (ret < 0) {
+            if (EINTR == errno) { continue; }
             fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
             log_error(ctx->log, "errmsg:[%d] %s!\n", errno, strerror(errno));
             break;
@@ -450,6 +452,7 @@ static int mon_agent_insert_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void 
         ret = select(fd+1, &rdset, NULL, NULL, &timeout);
         if (ret < 0)
         {
+            if (EINTR == errno) { continue; }
             fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
             break;
         }

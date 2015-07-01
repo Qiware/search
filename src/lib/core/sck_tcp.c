@@ -228,11 +228,7 @@ AGAIN:
     ret = select(fd+1, &rdset, &wrset, NULL, &tv);
     if (ret < 0)
     {
-        if (EINTR == errno)
-        {
-            goto AGAIN;
-        }
-
+        if (EINTR == errno) { goto AGAIN; }
         close(fd);
         return -1;
     }
@@ -353,11 +349,7 @@ int tcp_block_send(int fd, const void *addr, int len, int timeout)
         ret = select(fd+1, NULL, &wrset, NULL, &tv);
         if (ret < 0)
         {
-            if (EINTR == errno)
-            {
-                continue;
-            }
-
+            if (EINTR == errno) { continue; }
             return -1;
         }
         else if (0 == ret)
@@ -411,10 +403,7 @@ int tcp_block_recv(int fd, void *addr, int len, int timeout)
         ret = select(fd+1, &rdset, NULL, NULL, &tv);
         if (ret < 0)
         {
-            if (EINTR == errno)
-            {
-                continue;
-            }
+            if (EINTR == errno) { continue; }
             return -1;
         }
         else if (0 == ret)

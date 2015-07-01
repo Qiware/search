@@ -53,11 +53,7 @@ void *rtrd_dsvr_routine(void *_ctx)
         ret = select(dsvr->cmd_sck_id+1, &rdset, NULL, NULL, &timeout);
         if (ret < 0)
         {
-            if (EINTR == errno)
-            {
-                continue;
-            }
-
+            if (EINTR == errno) { continue; }
             log_error(dsvr->log, "errno:[%d] %s!", errno, strerror(errno));
             continue;
         }

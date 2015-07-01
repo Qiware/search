@@ -129,11 +129,7 @@ static int mon_flt_frame(mon_flt_setup_cb_t setup, mon_flt_print_cb_t print, voi
         ret = select(ctx->fd+1, &rdset, &wrset, NULL, &tmout);
         if (ret < 0)
         {
-            if (EINTR == errno)
-            {
-                continue;
-            }
-
+            if (EINTR == errno) { continue; }
             fprintf(stderr, "    errrmsg:[%d] %s!", errno, strerror(errno));
             break;
         }

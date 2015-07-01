@@ -107,10 +107,7 @@ int main(int argc, char *argv[])
         ret = select(max+1, &rdset, NULL, NULL, &timeout);
         if (ret < 0)
         {
-            if (EINTR == errno)
-            {
-                continue;
-            }
+            if (EINTR == errno) { continue; }
             return -1;
         }
         else if (0 == ret)

@@ -77,11 +77,7 @@ void *crwl_sched_routine(void *_ctx)
         ret = select(max+1, &sched->rdset, &sched->wrset, NULL, &tv);
         if (ret < 0)
         {
-            if (EINTR == errno)
-            {
-                continue;
-            }
-
+            if (EINTR == errno) { continue; }
             log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
             abort();
             break;

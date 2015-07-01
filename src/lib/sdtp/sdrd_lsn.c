@@ -75,11 +75,7 @@ void *sdrd_lsn_routine(void *args)
         ret = select(max+1, &rdset, NULL, NULL, &timeout);
         if (ret < 0)
         {
-            if (EINTR == errno)
-            {
-                continue;
-            }
-
+            if (EINTR == errno) { continue; }
             log_error(lsn->log, "errmsg:[%d] %s", errno, strerror(errno));
             abort();
             return (void *)-1;

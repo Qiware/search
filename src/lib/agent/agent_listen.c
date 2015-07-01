@@ -45,11 +45,7 @@ void *agent_listen_routine(void *_ctx)
         ret = select(max+1, &rdset, NULL, NULL, &tv);
         if (ret < 0)
         {
-            if (EINTR == errno)
-            {
-                continue;
-            }
-
+            if (EINTR == errno) { continue; }
             log_error(lsn->log, "errmsg:[%d] %s!", errno, strerror(errno));
             continue;
         }
@@ -160,7 +156,10 @@ static int agent_listen_accept(agent_cntx_t *ctx, agent_listen_t *lsn)
     if (fd < 0)
     {
         spin_unlock(&lsn->accept_lock);
-        log_error(lsn->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        if (EAGAIN != errno)
+        {
+            log_error(lsn->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        }
         return AGENT_ERR;
     }
 
