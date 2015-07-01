@@ -169,6 +169,12 @@ static invt_dic_word_t *invt_word_add(invt_tab_t *tab, char *word, int len)
     return NULL;
 }
 
+/* 插入有序链表时, 进行比较的回调函数 */
+static int invt_doc_cmp_cb(invt_word_doc_t *data, invt_word_doc_t *orig)
+{
+    return (data->weight - orig->weight);
+}
+
 /******************************************************************************
  **函数名称: invt_word_add_doc
  **功    能: 添加文档列表
@@ -206,12 +212,13 @@ static int invt_word_add_doc(invt_tab_t *tab, invt_dic_word_t *dw, const char *u
         return INVT_ERR;
     }
 
+    doc->weight = freq; /* 设置权值 */
     snprintf(doc->url.str, len+1, "%s", url);
     doc->url.len = len;
     doc->freq = freq;
 
     /* > 插入文档列表 */
-    if (list_lpush(dw->doc_list, doc))
+    if (list_push_desc(dw->doc_list, doc, (cmp_cb_t)invt_doc_cmp_cb)) // if (list_lpush(dw->doc_list, doc))
     {
         log_error(tab->log, "Push into list failed! word:%s url:%s", dw->word.str, url);
         tab->dealloc(tab->pool, doc->url.str);

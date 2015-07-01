@@ -21,6 +21,8 @@ typedef enum
 /* 文档对象 */
 typedef struct
 {
+    int weight;                     /* 权值(权值越大 排在越前) */
+
     str_t url;                      /* 文档路径 */
     int freq;                       /* 单词次数 */
 } invt_word_doc_t;

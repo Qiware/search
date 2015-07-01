@@ -187,6 +187,7 @@ static int invtd_insert_word(invtd_cntx_t *ctx)
     INVERT_INSERT(ctx, "BAIDU", "www.baidu.com", 5);
     INVERT_INSERT(ctx, "BAIDU", "www.baidu2.com", 4);
     INVERT_INSERT(ctx, "BAIDU", "www.baidu3.com", 2);
+    INVERT_INSERT(ctx, "BAIDU", "www.baidu3.com", 1);
     INVERT_INSERT(ctx, "BAIDU", "www.baidu4.com", 3);
     INVERT_INSERT(ctx, "BAIDU", "www.baidu5.com", 10);
     INVERT_INSERT(ctx, "凤凰网", "www.ifeng.com", 10);

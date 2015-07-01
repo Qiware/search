@@ -101,6 +101,8 @@ static inline int MIN(int a, int b) { return ((a) < (b) ? (a) : (b)); }
  ******************************************************************************/
 typedef int64_t (*key_cb_t)(const void *pkey, size_t pkey_len);
 
+typedef int (*cmp_cb_t)(const void *data, const void *orig);
+
 /******************************************************************************
  **函数名称: mem_alloc_cb_t
  **功    能: 分配内存回调类型

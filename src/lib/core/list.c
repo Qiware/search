@@ -432,3 +432,50 @@ void *list_fetch(list_t *list, int idx)
 
     return node->data;
 }
+
+/******************************************************************************
+ **函数名称: list_push_desc
+ **功    能: 插入降序链表
+ **输入参数:
+ **     list: 单向链表
+ **     data: 需要插入的数据
+ **     cmp: 比较函数指针
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述:
+ **注意事项:
+ **作    者: # Qifeng.zou # 2015-07-01 23:52:35 #
+ ******************************************************************************/
+int list_push_desc(list_t *list, void *data, cmp_cb_t cmp)
+{
+    int ret;
+    list_node_t *curr, *node, *prev;
+
+    if (NULL == list->head)
+    {
+        return list_lpush(list, data);
+    }
+
+    /* > 新建结点 */
+    node = list->alloc(list->pool, sizeof(list_node_t));
+    if (NULL == node)
+    {
+        return -1;
+    }
+
+    node->data = data;
+
+    prev = NULL;
+    curr=list->head;
+    for (; NULL!=curr; curr=curr->next)
+    {
+        ret = cmp(data, curr->data);
+        if ((0 == ret) || (ret > 0))
+        {
+            return list_insert(list, prev, data); /* 插入PREV之后 */
+        }
+        prev = curr;
+    }
+
+    return list_insert(list, prev, data); /* 插入链尾 */
+}
