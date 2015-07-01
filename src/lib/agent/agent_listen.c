@@ -111,7 +111,10 @@ int agent_listen_init(agent_cntx_t *ctx)
         lsn->cmd_sck_id = unix_udp_creat(path);
         if (lsn->cmd_sck_id < 0)
         {
-            log_error(lsn->log, "errmsg:[%d] %s!", errno, strerror(errno));
+            if (EAGAIN != errno)
+            {
+                log_error(lsn->log, "errmsg:[%d] %s!", errno, strerror(errno));
+            }
             break;
         }
 

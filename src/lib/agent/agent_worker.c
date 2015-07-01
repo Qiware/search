@@ -169,9 +169,8 @@ static int agent_worker_proc_data_hdl(agent_cntx_t *ctx, agent_worker_t *worker)
     {
         rqid %= conf->agent_num;
 
-        /* 千万勿将共享变量参与MIN()三目运算, 否则可能出现严重错误!!!!且很难找出原因! */
-        num = queue_used(ctx->recvq[rqid]);  /* 注意: 参加运算前将变量放在局部变量中 */
-        num = MIN(num, AGT_WSVR_POP_NUM);
+        /* 计算弹出个数(WARN: 千万勿将共享变量参与"?:"三目运算, 否则可能出现严重错误!!!!且很难找出原因!) */
+        num = MIN(queue_used(ctx->recvq[rqid]), AGT_WSVR_POP_NUM);
         if (0 == num)
         {
             continue;

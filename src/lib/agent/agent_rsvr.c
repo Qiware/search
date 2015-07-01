@@ -1095,9 +1095,7 @@ static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
     sendq = ctx->sendq[rsvr->id];
     while (1)
     {
-        /* 千万勿将共享变量参与MIN()三目运算, 否则可能出现严重错误!!!!且很难找出原因! */
-        num = queue_used(sendq);    /* 注意: 参加运算前将变量放在局部变量中 */
-        num = MIN(num, AGT_RSVR_DIST_POP_NUM);
+        num = MIN(queue_used(sendq), AGT_RSVR_DIST_POP_NUM);
         if (0 == num)
         {
             break;
