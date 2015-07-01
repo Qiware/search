@@ -19,7 +19,7 @@ typedef struct
 {
     int fd;             /* 文件描述符 */
     int flag;           /* 是否完成处理 */
-    struct timeb wrtm;  /* 请求发送时间 */
+    struct timeval wrtm;/* 请求发送时间 */
 } mon_search_conn_t;
 
 static int mon_agent_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args);
@@ -74,20 +74,21 @@ menu_item_t *mon_agent_menu(menu_cntx_t *ctx, void *args)
  ******************************************************************************/
 static int mon_agent_search_rsp_hdl(mon_cntx_t *ctx, mon_search_conn_t *conn)
 {
-    struct timeb ctm;
-    int n, i, sec, msec;
+    struct timeval ctm;
+    int n, i, sec, msec, usec;
     agent_header_t *head;
     mesg_search_word_rsp_t *rsp;
     char addr[sizeof(agent_header_t) + sizeof(mesg_search_word_rsp_t)];
 
     /* > 接收应答数据 */
     n = read(conn->fd, addr, sizeof(addr));
+    gettimeofday(&ctm, NULL);
     if (n <= 0)
     {
         fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
         return -1;
     }
-    else if (0 == conn->wrtm.time)
+    else if (0 == conn->wrtm.tv_sec)
     {
         fprintf(stderr, "    Didn't send search request but received response!\n");
     }
@@ -107,15 +108,30 @@ static int mon_agent_search_rsp_hdl(mon_cntx_t *ctx, mon_search_conn_t *conn)
         fprintf(stderr, "        -[%02d] url: %s\n", i+1, rsp->url[i]);
     }
     /* > 打印统计信息 */
-    ftime(&ctm);
-    sec = ctm.time - conn->wrtm.time;
-    msec = ctm.millitm - conn->wrtm.millitm;
+    sec = ctm.tv_sec - conn->wrtm.tv_sec;
+    msec = (ctm.tv_usec - conn->wrtm.tv_usec)/1000;
+    if (msec < 0)
+    {
+        sec -= 1;
+        msec += 1000;
+    }
+    usec = (ctm.tv_usec - conn->wrtm.tv_usec)%1000;
+    if (usec < 0)
+    {
+        usec += 1000;
+        msec -= 1;
+        if (msec < 0)
+        {
+            sec -= 1;
+            msec += 1000;
+        }
+    }
     if (msec < 0)
     {
         msec += 1000;
         sec -= 1;
     }
-    fprintf(stderr, "    >Spend: %d.%03d(s)\n", sec, msec);
+    fprintf(stderr, "    >Spend: %d(s).%03d(ms).%03d(us)\n", sec, msec, usec);
     fprintf(stderr, "    ============================================\n");
 
     return 0;
@@ -168,7 +184,7 @@ static int mon_agent_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void 
     Writen(conn.fd, (void *)&head, sizeof(head));
     Writen(conn.fd, (void *)&req, sizeof(req));
 
-    ftime(&conn.wrtm);
+    gettimeofday(&conn.wrtm, NULL);
 
     /* 等待应答数据 */
     while (1)
@@ -325,7 +341,7 @@ SRCH_AGAIN:
                 Writen(conn[idx].fd, (void *)&head, sizeof(head));
                 Writen(conn[idx].fd, (void *)&req, sizeof(req));
 
-                ftime(&conn[idx].wrtm);
+                gettimeofday(&conn[idx].wrtm, NULL);
                 conn[idx].flag = 1;
             }
         }
