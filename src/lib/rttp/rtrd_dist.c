@@ -153,7 +153,7 @@ static int rtrd_dsvr_cmd_dist_req(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr, int idx)
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述:
- **注意事项: 千万勿将共享变量参与MIN()三目运算, 否则可能出现严重错误!!!!且很难找出原因!
+ **注意事项: WARNNING: 千万勿将共享变量参与MIN()三目运算, 否则可能出现严重错误!!!!且很难找出原因!
  **          原因: MIN()不是原子运算, 使用共享变量可能导致判断成立后, 而返回时共
  **                享变量的值可能被其他进程或线程修改, 导致出现严重错误!
  **作    者: # Qifeng.zou # 2015.06.13 #
@@ -167,7 +167,7 @@ static int rtrd_dsvr_dist_data_hdl(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr)
 
     while (1)
     {
-        /* > 计算弹出个数(注意: 勿将共享变量参与MIN()三目运算, 否则可能出现严重错误!!!) */
+        /* > 计算弹出个数(WARNNING: 勿将共享变量参与MIN()三目运算, 否则可能出现严重错误!!!) */
         num = shm_queue_used(ctx->shm_sendq); /* 注意: 参加运算前将变量放在局部变量中 */
         num = MIN(num, RTRD_DISP_POP_NUM);
         if (0 == num)

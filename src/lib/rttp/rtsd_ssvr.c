@@ -769,7 +769,7 @@ static int rtsd_ssvr_proc_cmd(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, const rttp_cm
  **实现描述:
  **     1. 从消息链表取数据
  **     2. 从发送队列取数据
- **注意事项: 千万勿将共享变量参与MIN()三目运算, 否则可能出现严重错误!!!!且很难找出原因!
+ **注意事项: WARNNING: 千万勿将共享变量参与MIN()三目运算, 否则可能出现严重错误!!!!且很难找出原因!
  **          原因: MIN()不是原子运算, 使用共享变量可能导致判断成立后, 而返回时共
  **                享变量的值可能被其他进程或线程修改, 导致出现严重错误!
  **内存结构:
@@ -835,7 +835,7 @@ static int rtsd_ssvr_fill_send_buff(rtsd_ssvr_t *ssvr, rtsd_sck_t *sck)
 
     /* > 从发送队列取数据 */
     for (;;) {
-        /* > 判断剩余空间(注意: 勿将共享变量参与MIN()三目运算, 否则可能出现严重错误!!!) */
+        /* > 判断剩余空间(WARNNING: 勿将共享变量参与MIN()三目运算, 否则可能出现严重错误!!!) */
         left = send->end - send->iptr;
         used_num = shm_queue_used(ssvr->sendq);
          

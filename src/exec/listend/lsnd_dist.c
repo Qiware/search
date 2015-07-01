@@ -101,7 +101,7 @@ void *lsnd_dsvr_routine(void *_ctx)
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 消息结构: 流水信息 + 消息头 + 消息体
- **注意事项: 千万勿将共享变量参与MIN()三目运算, 否则可能出现严重错误!!!!且很难找出原因!
+ **注意事项: WARNNING: 千万勿将共享变量参与MIN()三目运算, 否则可能出现严重错误!!!!且很难找出原因!
  **          原因: MIN()不是原子运算, 使用共享变量可能导致判断成立后, 而返回时共
  **                享变量的值可能被其他进程或线程修改, 导致出现严重错误!
  **作    者: # Qifeng.zou # 2015.06.20 #
@@ -114,7 +114,7 @@ static int lsnd_dsvr_cmd_dist_hdl(lsnd_cntx_t *ctx, lsnd_dsvr_t *dsvr)
     void *addr[LSND_DIST_POP_NUM];
 
 LSND_AGAIN_MPOP:
-    /* > 获取弹出个数(注意: 勿将共享变量参与MIN()三目运算, 否则可能出现严重错误!!!)  */
+    /* > 获取弹出个数(WARNNING: 勿将共享变量参与MIN()三目运算, 否则可能出现严重错误!!!)  */
     num = shm_queue_used(ctx->sendq); /* 注意: 参加运算前将变量放在局部变量中 */
     num = MIN(num, LSND_DIST_POP_NUM);
     if (0 == num)
