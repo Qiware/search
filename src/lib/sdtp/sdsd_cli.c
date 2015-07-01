@@ -189,7 +189,10 @@ static int sdsd_cli_cmd_send_req(sdsd_cli_t *cli, int idx)
 
     if (unix_udp_send(cli->cmd_sck_id, path, &cmd, sizeof(cmd)) < 0)
     {
-        log_debug(cli->log, "errmsg:[%d] %s! path:%s", errno, strerror(errno), path);
+        if (EAGAIN != errno)
+        {
+            log_debug(cli->log, "errmsg:[%d] %s! path:%s", errno, strerror(errno), path);
+        }
         return SDTP_ERR;
     }
 

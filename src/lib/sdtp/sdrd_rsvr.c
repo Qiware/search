@@ -1336,8 +1336,11 @@ static int sdrd_rsvr_cmd_proc_req(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, int rqid)
     /* 2. 发送处理命令 */
     if (unix_udp_send(rsvr->cmd_sck_id, path, &cmd, sizeof(sdtp_cmd_t)) < 0)
     {
-        log_debug(rsvr->log, "Send command failed! errmsg:[%d] %s! path:[%s]",
-                errno, strerror(errno), path);
+        if (EAGAIN != errno)
+        {
+            log_debug(rsvr->log, "Send command failed! errmsg:[%d] %s! path:[%s]",
+                      errno, strerror(errno), path);
+        }
         return SDTP_ERR;
     }
 
