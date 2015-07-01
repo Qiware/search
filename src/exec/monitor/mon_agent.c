@@ -14,6 +14,14 @@
 #include "monitor.h"
 #include "agent_mesg.h"
 
+/* 搜索连接 */
+typedef struct
+{
+    int fd;             /* 文件描述符 */
+    int flag;           /* 是否完成处理 */
+    struct timeb wrtm;  /* 请求发送时间 */
+} mon_search_conn_t;
+
 static int mon_agent_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args);
 static int mon_agent_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args);
 static int mon_agent_insert_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args);
@@ -64,34 +72,51 @@ menu_item_t *mon_agent_menu(menu_cntx_t *ctx, void *args)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.06.05 17:01:04 #
  ******************************************************************************/
-static int mon_agent_search_rsp_hdl(mon_cntx_t *ctx, int fd)
+static int mon_agent_search_rsp_hdl(mon_cntx_t *ctx, mon_search_conn_t *conn)
 {
-    int n, i;
+    struct timeb ctm;
+    int n, i, sec, msec;
     agent_header_t *head;
     mesg_search_word_rsp_t *rsp;
     char addr[sizeof(agent_header_t) + sizeof(mesg_search_word_rsp_t)];
 
     /* > 接收应答数据 */
-    n = read(fd, addr, sizeof(addr));
+    n = read(conn->fd, addr, sizeof(addr));
     if (n <= 0)
     {
         fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
         return -1;
     }
+    else if (0 == conn->wrtm.time)
+    {
+        fprintf(stderr, "    Didn't send search request but received response!\n");
+    }
 
     /* > 显示查询结果 */
+    fprintf(stderr, "    ============================================\n");
     head = (agent_header_t *)addr;
     rsp = (mesg_search_word_rsp_t *)(head + 1);
 
     rsp->serial = ntoh64(rsp->serial);
     rsp->url_num = ntohl(rsp->url_num);
 
-    fprintf(stderr, "    Serial: %09ld\n", rsp->serial);
-    fprintf(stderr, "    url num: %04d\n", rsp->url_num);
+    fprintf(stderr, "    >Serial: %09ld\n", rsp->serial);
+    fprintf(stderr, "    >UrlNum: %d\n", rsp->url_num);
     for (i=0; i<rsp->url_num; ++i)
     {
-        fprintf(stderr, "        [%02d] url: %s\n", i+1, rsp->url[i]);
+        fprintf(stderr, "        -[%02d] url: %s\n", i+1, rsp->url[i]);
     }
+    /* > 打印统计信息 */
+    ftime(&ctm);
+    sec = ctm.time - conn->wrtm.time;
+    msec = ctm.millitm - conn->wrtm.millitm;
+    if (msec < 0)
+    {
+        msec += 1000;
+        sec -= 1;
+    }
+    fprintf(stderr, "    >Spend: %d.%03d(s)\n", sec, msec);
+    fprintf(stderr, "    ============================================\n");
 
     return 0;
 }
@@ -109,18 +134,21 @@ static int mon_agent_search_rsp_hdl(mon_cntx_t *ctx, int fd)
  ******************************************************************************/
 static int mon_agent_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args)
 {
-    int fd, ret, sec, msec;
+    int ret;
     fd_set rdset;
-    struct timeb ctm, old_tm;
+    mon_search_conn_t conn;
     char word[1024];
     agent_header_t head;
     struct timeval timeout;
     mesg_search_word_req_t req;
     mon_cntx_t *ctx = (mon_cntx_t *)args;
+    ip_port_t *conf = &ctx->conf->search;
+
+    memset(&conn, 0, sizeof(conn));
 
     /* > 连接代理服务 */
-    fd = tcp_connect(AF_INET, ctx->conf->search.ip, ctx->conf->search.port);
-    if (fd < 0)
+    conn.fd = tcp_connect(AF_INET, conf->ip, conf->port);
+    if (conn.fd < 0)
     {
         fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
         return -1;
@@ -137,21 +165,21 @@ static int mon_agent_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void 
 
     snprintf(req.words, sizeof(req.words), "%s", word);
 
-    Writen(fd, (void *)&head, sizeof(head));
-    Writen(fd, (void *)&req, sizeof(req));
+    Writen(conn.fd, (void *)&head, sizeof(head));
+    Writen(conn.fd, (void *)&req, sizeof(req));
 
-    ftime(&old_tm);
+    ftime(&conn.wrtm);
 
     /* 等待应答数据 */
     while (1)
     {
         FD_ZERO(&rdset);
 
-        FD_SET(fd, &rdset);
+        FD_SET(conn.fd, &rdset);
 
         timeout.tv_sec = 10;
         timeout.tv_usec = 0;
-        ret = select(fd+1, &rdset, NULL, NULL, &timeout);
+        ret = select(conn.fd+1, &rdset, NULL, NULL, &timeout);
         if (ret < 0)
         {
             fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
@@ -163,23 +191,14 @@ static int mon_agent_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void 
             break;
         }
 
-        if (FD_ISSET(fd, &rdset))
+        if (FD_ISSET(conn.fd, &rdset))
         {
-            mon_agent_search_rsp_hdl(ctx, fd);
-            ftime(&ctm);
-            sec = ctm.time - old_tm.time;
-            msec = ctm.millitm - old_tm.millitm;
-            if (msec < 0)
-            {
-                msec += 1000;
-                sec -= 1;
-            }
-            fprintf(stderr, "    Spend: %d.%03d(s)\n", sec, msec);
+            mon_agent_search_rsp_hdl(ctx, &conn);
             break;
         }
     }
 
-    close(fd);
+    CLOSE(conn.fd);
 
     return 0;
 }
@@ -196,18 +215,10 @@ static int mon_agent_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void 
  **          否则，在设置rdset, wrset时，将会出现栈溢出, 导致不可预测的错误出现!
  **作    者: # Qifeng.zou # 2015.06.05 #
  ******************************************************************************/
-typedef struct
-{
-    int fd;
-    int flag;
-    struct timeb wrtm;
-} mon_search_conn_t;
-
 static int mon_agent_multi_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args)
 {
 #define MON_FD_MAX  (900)
-    int sec, msec, is_unrecv, unrecv_num;
-    struct timeb ctm;
+    int is_unrecv, unrecv_num;
     fd_set rdset, wrset;
     agent_header_t head;
     struct timeval timeout;
@@ -250,7 +261,7 @@ SRCH_AGAIN:
             break;
         }
 
-        fprintf(stdout, "    idx:%d fd:%d!\n", idx, conn[idx].fd);
+        fprintf(stdout, "    Connect success! idx:%d fd:%d\n", idx, conn[idx].fd);
     }
 
     num = idx;
@@ -294,21 +305,9 @@ SRCH_AGAIN:
                 continue;
             }
 
-            if (FD_ISSET(conn[idx].fd, &rdset)) {
-                mon_agent_search_rsp_hdl(ctx, conn[idx].fd);
-                ftime(&ctm);
-                if (0 == conn[idx].wrtm.time)
-                {
-                    log_error(ctx->log, "Didn't send req but recv data! idx:%d fd:%d",
-                              idx, conn[idx].fd);
-                }
-                sec = ctm.time - conn[idx].wrtm.time;
-                msec = ctm.millitm - conn[idx].wrtm.millitm;
-                if (msec < 0) {
-                    msec += 1000;
-                    sec -= 1;
-                }
-                fprintf(stderr, "    fd:%04d Spend: %d.%03d(s)\n", conn[idx].fd, sec, msec);
+            if (FD_ISSET(conn[idx].fd, &rdset))
+            {
+                mon_agent_search_rsp_hdl(ctx, &conn[idx]);
                 CLOSE(conn[idx].fd);
                 --left;
             }
@@ -516,7 +515,7 @@ static int mon_agent_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *arg
             fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
             break;
         }
-        fprintf(stdout, "    idx:%d fd:%d!\n", idx, fd[idx]);
+        fprintf(stdout, "    Connect success! idx:%d fd:%d\n", idx, fd[idx]);
         ++num;
     }
 
