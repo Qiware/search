@@ -237,12 +237,17 @@ static void *logd_timeout_routine(void *args)
 
     while (1)
     {
-        memset(&ctm, 0, sizeof(ctm));
-
         ftime(&ctm);
 
         for (idx=0; idx<LOG_FILE_MAX_NUM; idx++)
         {
+            /* 路径为空 */
+            file = (log_file_info_t *)(ctx->addr + idx*LOG_FILE_CACHE_SIZE);
+            if ('\0' == file->path[0])
+            {
+                continue;
+            }
+
             /* 1. 尝试加锁 */
             proc_spin_wrlock_b(ctx->fd, idx+1);
 
