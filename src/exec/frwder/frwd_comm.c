@@ -8,6 +8,7 @@
  ******************************************************************************/
 
 #include "frwd.h"
+#include "conf.h"
 #include "mesg.h"
 #include "agent.h"
 #include "command.h"
@@ -207,7 +208,7 @@ static int frwd_init_log(frwd_cntx_t *frwd, const char *pname)
         return FRWD_ERR;
     }
 
-    return 0;
+    return FRWD_OK;
 }
 
 /******************************************************************************
@@ -266,7 +267,7 @@ static int frwd_shmq_push(shm_queue_t *shmq,
 }
 
 /******************************************************************************
- **函数名称: frwd_send_to_lsnd 
+ **函数名称: frwd_cmd_send_to_lsnd 
  **功    能: 将数据发送至侦听服务
  **输入参数: 
  **     ctx: 全局对象
@@ -281,7 +282,7 @@ static int frwd_shmq_push(shm_queue_t *shmq,
  **注意事项: 内存结构: 流水信息 + 消息头 + 消息体 
  **作    者: # Qifeng.zou # 2015-06-22 09:07:01 #
  ******************************************************************************/
-static int frwd_send_to_lsnd(frwd_cntx_t *ctx,
+static int frwd_cmd_send_to_lsnd(frwd_cntx_t *ctx,
      uint64_t serial, int type, int orig, char *data, size_t len)
 {
     cmd_data_t cmd;
@@ -295,7 +296,7 @@ static int frwd_send_to_lsnd(frwd_cntx_t *ctx,
 
     cmd.type = CMD_DIST_DATA;
 
-    snprintf(path, sizeof(path), "../temp/listend/dsvr.usck");
+    snprintf(path, sizeof(path), LSND_DSVR_CMD_PATH);
 
     unix_udp_send(ctx->cmd_sck_id, path, &cmd, sizeof(cmd));
 
@@ -324,7 +325,7 @@ static int frwd_search_word_rsp_hdl(int type, int orig, char *data, size_t len, 
 
     log_trace(ctx->log, "Call %s()", __func__);
 
-    return frwd_send_to_lsnd(ctx, ntoh64(rsp->serial), type, orig, data, len);
+    return frwd_cmd_send_to_lsnd(ctx, ntoh64(rsp->serial), type, orig, data, len);
 }
 
 /* 插入关键字的应答 */
@@ -335,7 +336,7 @@ static int frwd_insert_word_rsp_hdl(int type, int orig, char *data, size_t len, 
 
     log_trace(ctx->log, "Call %s()", __func__);
 
-    return frwd_send_to_lsnd(ctx, ntoh64(rsp->serial), type, orig, data, len);
+    return frwd_cmd_send_to_lsnd(ctx, ntoh64(rsp->serial), type, orig, data, len);
 }
 
 /******************************************************************************

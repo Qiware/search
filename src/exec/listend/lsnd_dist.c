@@ -7,6 +7,7 @@
  ** 作  者: # Qifeng.zou # Fri 19 Jun 2015 11:20:49 PM CST #
  ******************************************************************************/
 
+#include "conf.h"
 #include "mesg.h"
 #include "command.h"
 #include "listend.h"
@@ -32,7 +33,7 @@ int lsnd_dsvr_init(lsnd_cntx_t *ctx)
     char path[FILE_PATH_MAX_LEN];
     lsnd_dsvr_t *dsvr = &ctx->dsvr;
 
-    snprintf(path, sizeof(path), "../temp/listend/dsvr.usck");
+    snprintf(path, sizeof(path), LSND_DSVR_CMD_PATH);
 
     dsvr->cmd_sck_id = unix_udp_creat(path);
     if (dsvr->cmd_sck_id < 0)
