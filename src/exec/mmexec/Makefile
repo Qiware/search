@@ -12,10 +12,11 @@ INCLUDE = -I. \
 			-I../agentd/incl \
 			-I$(PROJ)/src/incl \
 			-I$(PROJ)/src/incl/sdtp \
+			-I$(PROJ)/src/incl/rttp \
 			-I$(PROJ)/src/incl/agent \
 			-I$(PROJ)/src/incl/conf
 LIBS_PATH = -L$(PROJ)/lib
-LIBS = -lpthread -lcore
+LIBS = -lpthread -lcore -lconf
 
 SRC_LIST = mmexec.c
 

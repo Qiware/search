@@ -9,7 +9,7 @@
 typedef struct
 {
     int log_level;                          /* 日志级别 */
-    char to_listend[FILE_NAME_MAX_LEN];     /* 发送至Listend */
+    char lsnd_name[FILE_NAME_MAX_LEN];      /* 侦听服务名 */
     rtsd_conf_t conn_invtd;                 /* RTTP配置 */
 } frwd_conf_t;
 

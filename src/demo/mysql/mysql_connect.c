@@ -11,7 +11,7 @@ int main(void)
         return -1;
     }
 
-    if (!mysql_real_connect(mysql, "localhost", "qifeng", "1111111", "crwl", 8888, NULL, 0))
+    if (!mysql_real_connect(mysql, "localhost", "root", "Zqf198703", "crwl", 8888, NULL, 0))
     {
         fprintf(stderr, "Initialize mysql failed!");
         mysql_close(mysql);

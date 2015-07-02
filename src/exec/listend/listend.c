@@ -17,8 +17,6 @@
 #include "syscall.h"
 #include "agent_mesg.h"
 
-#define LSND_PROC_LOCK_PATH "../temp/lsnd/lsnd.lck"
-
 static lsnd_cntx_t *lsnd_init(lsnd_conf_t *conf, log_cycle_t *log);
 static int lsnd_startup(lsnd_cntx_t *ctx);
 static int lsnd_set_reg(lsnd_cntx_t *ctx);
@@ -117,13 +115,13 @@ LSND_INIT_ERR:
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
-static int lsnd_proc_lock(void)
+static int lsnd_proc_lock(lsnd_conf_t *conf)
 {
     int fd;
     char path[FILE_PATH_MAX_LEN];
 
     /* 1. 获取路径 */
-    snprintf(path, sizeof(path), "%s", LSND_PROC_LOCK_PATH);
+    snprintf(path, sizeof(path), "../temp/listend/%s/lsnd.lck", conf->name);
 
     Mkdir2(path, DIR_MODE);
 
@@ -249,9 +247,10 @@ static int lsnd_set_reg(lsnd_cntx_t *ctx)
 static lsnd_cntx_t *lsnd_init(lsnd_conf_t *conf, log_cycle_t *log)
 {
     lsnd_cntx_t *ctx;
+    char path[FILE_PATH_MAX_LEN];
 
     /* > 加进程锁 */
-    if (lsnd_proc_lock())
+    if (lsnd_proc_lock(conf))
     {
         log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
         return NULL;
@@ -271,9 +270,11 @@ static lsnd_cntx_t *lsnd_init(lsnd_conf_t *conf, log_cycle_t *log)
 
     do
     {
-        /* > 附着Agentd发送队列 */
-        ctx->sendq = shm_queue_attach(LSND_SHM_SENDQ_PATH);
-        if (NULL == ctx->sendq)
+        /* > 附着Listend共享分发队列 */
+        snprintf(path, sizeof(path), "%s/dist.shmq", conf->wdir);
+
+        ctx->distq = shm_queue_attach(path);
+        if (NULL == ctx->distq)
         {
             log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
             break;

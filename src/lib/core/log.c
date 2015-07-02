@@ -431,20 +431,18 @@ static int _log_init_global(void)
  **输出参数:
  **     newpath: 新日志名
  **返    回: 0:成功 !0:失败
- **实现描述:
+ **实现描述: 发生冲突时, 则日志名上追加序列号
  **注意事项:
  **作    者: # Qifeng.zou # 2013.12.05 #
  ******************************************************************************/
-static int log_name_conflict_handler(
-            const char *oripath,
-            char *newpath, int size, int idx)
+static int log_name_conflict_handler(const char *oripath, char *newpath, int size, int idx)
 {
     int len;
     char *ptr;
     char suffix[FILE_NAME_MAX_LEN];
 
     snprintf(newpath, size, "%s", oripath);
-    snprintf(suffix, sizeof(suffix), "-[%02d].log", idx);
+    snprintf(suffix, sizeof(suffix), "-%03d.log", idx);
 
     len = strlen(newpath) + strlen(suffix) - strlen(LOG_SUFFIX);
     if (len >= size)
@@ -455,20 +453,21 @@ static int log_name_conflict_handler(
     }
 
     ptr = strrchr(newpath, '.');
-    if (NULL != ptr)
+    if (NULL == ptr)
     {
-        if (0 == strcasecmp(ptr, LOG_SUFFIX))
-        {
-            sprintf(ptr, "%s", suffix);
-        }
-        else
-        {
-            strcat(ptr, suffix);
-        }
+        strcat(newpath, suffix);
         return 0;
     }
 
-    strcat(newpath, suffix);
+    if (!strcasecmp(ptr, LOG_SUFFIX))
+    {
+        sprintf(ptr, "%s", suffix);
+    }
+    else
+    {
+        strcat(ptr, suffix);
+    }
+
     return 0;
 }
 
@@ -485,7 +484,7 @@ static int log_name_conflict_handler(
  **     2. 选择合适的日志缓存，并返回
  **注意事项:
  **     1. 当存在日志名一致的日志时, 判断进程ID是否一样.
- **        如果不一样, 且对应进程, 依然正在运行, 则提示创建日志失败!
+ **        如果不一样, 且对应进程, 依然正在运行, 则进行日志命名冲突处理!
  **     2. 请勿在此函数中调用错误日志函数 - 小心死锁!
  **作    者: # Qifeng.zou # 2013.10.31 #
  ******************************************************************************/
@@ -493,9 +492,9 @@ static log_file_info_t *log_creat(void *addr, const char *path)
 {
     pid_t pid = getpid();
     log_file_info_t *file;
-    int idx, hash_idx = 0, repeat = 0, idle_idx = -1;
-    char newpath[FILE_NAME_MAX_LEN];
     const char *ptr = path;
+    char newpath[FILE_NAME_MAX_LEN];
+    int idx, hash_idx = 0, repeat = 0, idle_idx = -1;
 
     hash_idx = log_hash(path);
 
@@ -504,7 +503,6 @@ static log_file_info_t *log_creat(void *addr, const char *path)
     for (idx=0; idx<LOG_FILE_MAX_NUM; idx++, hash_idx++)
     {
         hash_idx %= LOG_FILE_MAX_NUM;
-
         file = (log_file_info_t *)(addr + hash_idx * LOG_FILE_CACHE_SIZE);
 
         /* 1. 判断文件名是否一致 */

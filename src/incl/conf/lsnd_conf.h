@@ -11,7 +11,7 @@
 typedef struct
 {
     char name[NODE_MAX_LEN];        /* 节点名 */
-    char path[FILE_PATH_MAX_LEN];   /* 工作路径 */
+    char wdir[FILE_PATH_MAX_LEN];   /* 工作路径 */
 
     int log_level;                  /* 日志级别 */
     agent_conf_t agent;             /* 代理配置 */

@@ -12,7 +12,9 @@
 #include "command.h"
 #include "listend.h"
 
-#define LSND_DIST_POP_NUM   (128)   /* 分发弹出个数 */
+#define LSND_DIST_POP_NUM   (1024)  /* 分发队列弹出数目 */
+#define LSND_DIST_TMO_SEC   (5)     /* 分发服务超时间隔(秒) */
+#define LSND_DIST_TMO_USEC  (0)     /* 分发服务超时间隔(微秒) */
 
 static int lsnd_dsvr_event_hdl(lsnd_cntx_t *ctx, lsnd_dsvr_t *dsvr);
 static int lsnd_dsvr_timeout_hdl(lsnd_cntx_t *ctx, lsnd_dsvr_t *dsvr);
@@ -31,9 +33,10 @@ static int lsnd_dsvr_timeout_hdl(lsnd_cntx_t *ctx, lsnd_dsvr_t *dsvr);
 int lsnd_dsvr_init(lsnd_cntx_t *ctx)
 {
     char path[FILE_PATH_MAX_LEN];
+    lsnd_conf_t *conf = &ctx->conf;
     lsnd_dsvr_t *dsvr = &ctx->dsvr;
 
-    snprintf(path, sizeof(path), LSND_DSVR_CMD_PATH);
+    snprintf(path, sizeof(path), "%s/dsvr.usck", conf->wdir);
 
     dsvr->cmd_sck_id = unix_udp_creat(path);
     if (dsvr->cmd_sck_id < 0)
@@ -69,8 +72,8 @@ void *lsnd_dsvr_routine(void *_ctx)
         FD_ZERO(&dsvr->rdset);
         FD_SET(dsvr->cmd_sck_id, &dsvr->rdset);
 
-        timeout.tv_sec = 1;
-        timeout.tv_usec = 0;
+        timeout.tv_sec = LSND_DIST_TMO_SEC;
+        timeout.tv_usec = LSND_DIST_TMO_USEC;
         ret = select(dsvr->cmd_sck_id+1, &dsvr->rdset, NULL, NULL, &timeout);
         if (ret < 0)
         {
@@ -113,14 +116,14 @@ static int lsnd_dsvr_cmd_dist_hdl(lsnd_cntx_t *ctx, lsnd_dsvr_t *dsvr)
 
 LSND_AGAIN_MPOP:
     /* > 获取弹出个数 */
-    num = MIN(shm_queue_used(ctx->sendq), LSND_DIST_POP_NUM);
+    num = MIN(shm_queue_used(ctx->distq), LSND_DIST_POP_NUM);
     if (0 == num)
     {
         return LSND_OK;
     }
 
     /* > 弹出发送数据 */
-    num = shm_queue_mpop(ctx->sendq, addr, num);
+    num = shm_queue_mpop(ctx->distq, addr, num);
     if (0 == num)
     {
         goto LSND_AGAIN_MPOP;
@@ -141,7 +144,7 @@ LSND_AGAIN_MPOP:
         /* 放入发送队列 */
         agent_send(ctx->agent, head->type, flow->serial, (void *)(head+1), head->length);
 
-        shm_queue_dealloc(ctx->sendq, addr[idx]); /* 释放队列内存 */
+        shm_queue_dealloc(ctx->distq, addr[idx]); /* 释放队列内存 */
     }
 
     return LSND_OK;

@@ -279,11 +279,11 @@ int Mkdir2(const char *fname, mode_t mode)
  **     pid: 进程ID
  **输出参数: NONE
  **返    回: 1:存在 0:不存在
- **实现描述: 
+ **实现描述: 通过判断目录/proc/pid是否存在, 从而判断进程是否存在.
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.01 #
  ******************************************************************************/
-int proc_is_exist(pid_t pid)
+bool proc_is_exist(pid_t pid)
 {
 	char fname[FILE_NAME_MAX_LEN];
 	

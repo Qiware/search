@@ -1145,8 +1145,7 @@ static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
 
             /* 放入发送链表 */
             node = rbt_search(rsvr->connections, (int64_t)flow->sck_serial);
-            if (NULL == node
-                || NULL == node->data)
+            if (NULL == node)
             {
                 log_error(ctx->log, "Query socket failed! serial:%lu", flow->sck_serial);
                 queue_dealloc(sendq, addr[idx]);

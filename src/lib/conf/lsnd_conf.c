@@ -112,7 +112,17 @@ static int lsnd_conf_load_comm(xml_tree_t *xml, lsnd_conf_t *conf, log_cycle_t *
     }
 
     snprintf(conf->name, sizeof(conf->name), "%s", node->value.str); /* 结点名 */
-    snprintf(conf->path, sizeof(conf->path), "%s/%s", LSND_WORK_DIR, conf->name); /* 工作路径 */
+
+    /* > 加载工作路径 */
+    node = xml_query(xml, ".LISTEND.WORKDIR");
+    if (NULL == node
+        || 0 == node->value.len)
+    {
+        log_error(log, "Get work directory failed!");
+        return -1;
+    }
+
+    snprintf(conf->wdir, sizeof(conf->wdir), "%s/%s", node->value.str, conf->name);  /* 工作路径 */
 
     /* > 加载日志配置 */
     node = xml_query(xml, ".LISTEND.LOG.LEVEL");
@@ -263,7 +273,7 @@ static int lsnd_conf_load_agent(xml_tree_t *xml, lsnd_conf_t *lcf, log_cycle_t *
     xml_node_t *node;
     agent_conf_t *conf = &lcf->agent;
 
-    snprintf(conf->path, sizeof(conf->path), "%s/agent/", lcf->path); /* 工作路径 */
+    snprintf(conf->path, sizeof(conf->path), "%s/agent/", lcf->wdir); /* 工作路径 */
 
     /* > 加载连接配置 */
     if (lsnd_conf_parse_agent_connections(xml, conf, log))
@@ -568,7 +578,7 @@ static int lsnd_conf_load_frwder(xml_tree_t *xml, rtsd_conf_t *conf, log_cycle_t
     char path[FILE_PATH_MAX_LEN], mark[FILE_PATH_MAX_LEN];
 
     /* > 获取配置路径和标签 */
-    fix = xml_query(xml, ".LISTEND.FRWD");
+    fix = xml_query(xml, ".LISTEND.FRWDER");
     if (NULL == fix)
     {
         log_error(xml->log, "Didn't find frwd node!");

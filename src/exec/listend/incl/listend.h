@@ -9,7 +9,6 @@
 #include "lsnd_conf.h"
 
 #define LSND_DEF_CONF_PATH      "../conf/listend.xml"     /* 默认配置路径 */
-#define LSND_SHM_SENDQ_PATH     "../temp/listend/send.shmq"  /* 发送队列路径 */
 
 /* 错误码 */
 typedef enum
@@ -44,7 +43,7 @@ typedef struct
 
     rtsd_cli_t *send_to_invtd;              /* SDTP服务(发送至倒排服务) */
     agent_cntx_t *agent;                    /* 代理服务 */
-    shm_queue_t *sendq;                     /* 发送队列 */
+    shm_queue_t *distq;                     /* 分发队列 */
 } lsnd_cntx_t;
 
 int lsnd_getopt(int argc, char **argv, lsnd_opt_t *opt);

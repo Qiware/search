@@ -23,7 +23,7 @@ int Mkdir2(const char *fname, mode_t mode);
 
 int Random(void);
 
-int proc_is_exist(pid_t pid);
+bool proc_is_exist(pid_t pid);
 
 #if defined(HAVE_POSIX_MEMALIGN)
 void *memalign_alloc(size_t alignment, size_t size);

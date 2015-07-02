@@ -4,7 +4,7 @@
 #include "agent_mesg.h"
 #include "agent_worker.h"
 
-#define AGT_WSVR_POP_NUM    (128) /* 一次最多弹出数据个数 */
+#define AGT_WSVR_POP_NUM    (1024) /* 一次最多弹出数据个数 */
 
 /* 静态函数 */
 static int agent_worker_event_handler(agent_cntx_t *ctx, agent_worker_t *worker);

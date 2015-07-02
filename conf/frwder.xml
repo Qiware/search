@@ -4,8 +4,8 @@
         1) LEVLE: 日志级别(取值范围: trace|debug|info|warn|error|fatal) -->
     <LOG LEVEL="error" />
 
-    <!-- 至侦听服务的队列 -->
-    <TO_LSND PATH="../temp/listend/send.shmq" />
+    <!-- 侦听服务的配置 -->
+    <LISTEND NAME="SearchEngineListend" />
 
     <!-- 连接倒排服务的配置 -->
     <CONN-INVTD NODE="20001">                   <!-- NODE: 结点ID(必须唯一) -->

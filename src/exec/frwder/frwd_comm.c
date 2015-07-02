@@ -12,10 +12,12 @@
 #include "mesg.h"
 #include "agent.h"
 #include "command.h"
+#include "lsnd_conf.h"
 
 #define FRWD_DEF_CONF_PATH  "../conf/frwder.xml"
 
 static int frwd_init_log(frwd_cntx_t *frwd, const char *pname);
+static int frwd_init_lsnd(frwd_cntx_t *frwd, const frwd_conf_t *conf);
 
 /******************************************************************************
  **函数名称: frwd_init 
@@ -61,11 +63,10 @@ frwd_cntx_t *frwd_init(const frwd_conf_t *conf)
             break;
         }
 
-        /* > 连接发送队列 */
-        frwd->send_to_listend = shm_queue_attach(conf->to_listend);
-        if (NULL == frwd->send_to_listend)
+        /* > 初始化侦听相关资源 */
+        if (frwd_init_lsnd(frwd, conf))
         {
-            log_fatal(frwd->log, "errmsg:[%d] %s!", errno, strerror(errno));
+            fprintf(stderr, "Initialize search engine failed!\n");
             break;
         }
 
@@ -286,19 +287,15 @@ static int frwd_cmd_send_to_lsnd(frwd_cntx_t *ctx,
      uint64_t serial, int type, int orig, char *data, size_t len)
 {
     cmd_data_t cmd;
-    char path[FILE_PATH_MAX_LEN];
 
-    if (frwd_shmq_push(ctx->send_to_listend, serial, type, orig, data, len))
+    if (frwd_shmq_push(ctx->lsnd.distq, serial, type, orig, data, len))
     {
         log_error(ctx->log, "Push into SHMQ failed!");
         return FRWD_ERR;
     }
 
     cmd.type = CMD_DIST_DATA;
-
-    snprintf(path, sizeof(path), LSND_DSVR_CMD_PATH);
-
-    unix_udp_send(ctx->cmd_sck_id, path, &cmd, sizeof(cmd));
+    unix_udp_send(ctx->cmd_sck_id, ctx->lsnd.dist_cmd_path, &cmd, sizeof(cmd));
 
     return FRWD_OK;
 }
@@ -362,4 +359,42 @@ int frwd_set_reg(frwd_cntx_t *frwd)
     FRWD_REG_CB(frwd, MSG_SEARCH_WORD_RSP, frwd_search_word_rsp_hdl, frwd);
     FRWD_REG_CB(frwd, MSG_INSERT_WORD_RSP, frwd_insert_word_rsp_hdl, frwd);
     return FRWD_OK;
+}
+
+/******************************************************************************
+ **函数名称: frwd_init_lsnd
+ **功    能: 初始化与转发相关联的侦听服务的信息
+ **输入参数:
+ **     frwd: 全局对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.07.02 19:14:59 #
+ ******************************************************************************/
+static int frwd_init_lsnd(frwd_cntx_t *frwd, const frwd_conf_t *conf)
+{
+    lsnd_conf_t lcf;
+    char path[FILE_PATH_MAX_LEN];
+    frwd_lsnd_t *lsnd = &frwd->lsnd;
+
+    if (lsnd_load_conf("../temp/listend.xml", &lcf, NULL))
+    {
+        log_error(frwd->log, "Load listend configuration failed!");
+        return FRWD_ERR;
+    }
+
+    snprintf(lsnd->name, sizeof(lsnd->name), "%s", conf->lsnd_name); /* 服务名 */
+    snprintf(lsnd->dist_cmd_path,                                    /* 分发服务命令 */
+         sizeof(lsnd->dist_cmd_path), "../temp/listend/%s/dsvr.usck", lsnd->name);
+
+    snprintf(path, sizeof(path), "../temp/listend/%s/dist.shmq", lsnd->name);
+    lsnd->distq = shm_queue_attach(path);
+    if (NULL == lsnd->distq)
+    {
+        log_fatal(frwd->log, "errmsg:[%d] %s! path:%s", errno, strerror(errno), path);
+        return FRWD_ERR;
+    }
+
+    return 0;
 }

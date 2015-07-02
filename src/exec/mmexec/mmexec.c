@@ -10,20 +10,17 @@
  ******************************************************************************/
 
 #include "shm_queue.h"
+#include "lsnd_conf.h"
 
-#define LSND_SHM_SENDQ_MAX      (1024)          /* 发送队列容量 */
-#define LSND_SHM_SENDQ_SIZE     (4096)          /* 发送队列尺寸 */
-#define LSND_SHM_SENDQ_PATH     "../temp/listend/send.shmq"  /* 发送队列路径 */
-
-static int mm_lsnd_creat_sendq(void);
+static int lsnd_mem_creat(void);
 
 /* 主函数 */
 int main(int argc, char *argv[])
 {
     daemon(1, 1); /* 切后台运行 */
 
-    /* > 创建Listend发送队列 */
-    if (mm_lsnd_creat_sendq())
+    /* > 创建侦听服务内存 */
+    if (lsnd_mem_creat())
     {
         fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
         return -1;
@@ -35,22 +32,37 @@ int main(int argc, char *argv[])
 }
 
 /******************************************************************************
- **函数名称: mm_lsnd_creat_sendq
- **功    能: 为侦听服务创建发送队列
+ **函数名称: lsnd_mem_creat
+ **功    能: 创建侦听服务内存
  **输入参数: NONE
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 通过路径创建共享内存队列
+ **实现描述: 通过配置文件创建内存资源
  **注意事项: 
  **作    者: # Qifeng.zou # 2015-06-05 10:09:34 #
  ******************************************************************************/
-static int mm_lsnd_creat_sendq(void)
+static int lsnd_mem_creat(void)
 {
+#define LSND_SHM_DISTQ_MAX      (1024)          /* 分发队列容量 */
+#define LSND_SHM_DISTQ_SIZE     (4096)          /* 分发队列尺寸 */
+    lsnd_conf_t conf;
     shm_queue_t *shmq;
+    char path[FILE_PATH_MAX_LEN];
 
-    shmq = shm_queue_creat(LSND_SHM_SENDQ_PATH, LSND_SHM_SENDQ_MAX, LSND_SHM_SENDQ_SIZE);
+    /* > 加载侦听配置 */
+    if (lsnd_load_conf("../conf/listend.xml", &conf, NULL))
+    {
+        fprintf(stderr, "Load listen configuration failed!\n");
+        return -1;
+    }
+
+    /* > 创建共享内存队列 */
+    snprintf(path, sizeof(path), "%s/dist.shmq", conf.wdir);
+
+    shmq = shm_queue_creat(path, LSND_SHM_DISTQ_MAX, LSND_SHM_DISTQ_SIZE);
     if (NULL == shmq)
     {
+        fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
         return -1;
     }
 

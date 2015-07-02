@@ -92,15 +92,15 @@ static int frwd_conf_load_comm(xml_tree_t *xml, frwd_conf_t *conf)
     }
 
     /* > 发送至Agentd */
-    node = xml_query(xml, ".FRWDER.TO_LSND.PATH");
+    node = xml_query(xml, ".FRWDER.LISTEND.NAME");
     if (NULL == node
         || 0 == node->value.len)
     {
-        fprintf(stderr, "Didn't find .FRWDER.TO_LSND.PATH!\n");
+        fprintf(stderr, "Didn't find .FRWDER.LISTEND.NAME!\n");
         return -1;
     }
 
-    snprintf(conf->to_listend, sizeof(conf->to_listend), "%s", node->value.str);
+    snprintf(conf->lsnd_name, sizeof(conf->lsnd_name), "%s", node->value.str);
 
     return 0;
 }
