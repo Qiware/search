@@ -378,7 +378,7 @@ static int frwd_init_lsnd(frwd_cntx_t *frwd, const frwd_conf_t *conf)
     char path[FILE_PATH_MAX_LEN];
     frwd_lsnd_t *lsnd = &frwd->lsnd;
 
-    if (lsnd_load_conf("../temp/listend.xml", &lcf, NULL))
+    if (lsnd_load_conf("../conf/listend.xml", &lcf, NULL))
     {
         log_error(frwd->log, "Load listend configuration failed!");
         return FRWD_ERR;
