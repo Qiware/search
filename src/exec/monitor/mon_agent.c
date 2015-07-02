@@ -303,7 +303,7 @@ SRCH_AGAIN:
         }
 
         /* 等待事件通知 */
-        timeout.tv_sec = 5;
+        timeout.tv_sec = 15;
         timeout.tv_usec = 0;
         ret = select(max+1, &rdset, &wrset, NULL, &timeout);
         if (ret < 0) {
@@ -319,18 +319,17 @@ SRCH_AGAIN:
 
         /* 进行读写处理 */
         for (idx=0; idx<num; ++idx) {
-            if (conn[idx].fd <= 0) {
-                continue;
-            }
+            if (conn[idx].fd <= 0) { continue; }
 
             if (FD_ISSET(conn[idx].fd, &rdset))
             {
                 mon_agent_search_rsp_hdl(ctx, &conn[idx]);
                 CLOSE(conn[idx].fd);
                 --left;
+                continue;
             }
 
-            if (conn[idx].fd > 0 && FD_ISSET(conn[idx].fd, &wrset)) {
+            if (FD_ISSET(conn[idx].fd, &wrset)) {
                 head.type = htonl(MSG_SEARCH_WORD_REQ);
                 head.flag = htonl(AGENT_MSG_FLAG_USR);
                 head.mark = htonl(AGENT_MSG_MARK_KEY);
