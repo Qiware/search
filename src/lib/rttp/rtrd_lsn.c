@@ -15,13 +15,12 @@
 #include "thread_pool.h"
 
 /* 静态函数 */
-static rtrd_lsn_t *rtrd_lsn_init(rtrd_cntx_t *ctx);
-static int rtrd_lsn_accept(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn);
+static int rtrd_lsn_accept(rtrd_cntx_t *ctx, rtrd_listen_t *lsn);
 
-static int rtrd_lsn_cmd_core_hdl(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn);
-static int rtrd_lsn_cmd_query_conf_hdl(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn, rttp_cmd_t *cmd);
-static int rtrd_lsn_cmd_query_recv_stat_hdl(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn, rttp_cmd_t *cmd);
-static int rtrd_lsn_cmd_query_proc_stat_hdl(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn, rttp_cmd_t *cmd);
+static int rtrd_lsn_cmd_core_hdl(rtrd_cntx_t *ctx, rtrd_listen_t *lsn);
+static int rtrd_lsn_cmd_query_conf_hdl(rtrd_cntx_t *ctx, rtrd_listen_t *lsn, rttp_cmd_t *cmd);
+static int rtrd_lsn_cmd_query_recv_stat_hdl(rtrd_cntx_t *ctx, rtrd_listen_t *lsn, rttp_cmd_t *cmd);
+static int rtrd_lsn_cmd_query_proc_stat_hdl(rtrd_cntx_t *ctx, rtrd_listen_t *lsn, rttp_cmd_t *cmd);
 
 /* 随机选择接收线程 */
 #define rtrd_rand_rsvr(ctx) ((ctx)->listen.serial % (ctx->recvtp->num))
@@ -47,18 +46,9 @@ void *rtrd_lsn_routine(void *param)
 #define RTTP_LSN_TMOUT_USEC 0
     fd_set rdset;
     int ret, max;
-    rtrd_lsn_t *lsn;
     struct timeval timeout;
     rtrd_cntx_t *ctx = (rtrd_cntx_t *)param;
-
-    /* 1. 初始化侦听 */
-    lsn = rtrd_lsn_init(ctx);
-    if (NULL == lsn)
-    {
-        log_error(ctx->log, "Initialize listen failed!");
-        abort();
-        return (void *)-1;
-    }
+    rtrd_listen_t *lsn = &ctx->listen;
 
     for (;;)
     {
@@ -115,10 +105,10 @@ void *rtrd_lsn_routine(void *param)
  **注意事项:
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-static rtrd_lsn_t *rtrd_lsn_init(rtrd_cntx_t *ctx)
+int rtrd_lsn_init(rtrd_cntx_t *ctx)
 {
     char path[FILE_NAME_MAX_LEN];
-    rtrd_lsn_t *lsn = &ctx->listen;
+    rtrd_listen_t *lsn = &ctx->listen;
     rtrd_conf_t *conf = &ctx->conf;
 
     lsn->log = ctx->log;
@@ -128,7 +118,7 @@ static rtrd_lsn_t *rtrd_lsn_init(rtrd_cntx_t *ctx)
     if (lsn->lsn_sck_id < 0)
     {
         log_error(lsn->log, "Listen special port failed!");
-        return NULL;
+        return RTTP_ERR;
     }
 
     /* 2. 创建CMD套接字 */
@@ -139,10 +129,10 @@ static rtrd_lsn_t *rtrd_lsn_init(rtrd_cntx_t *ctx)
     {
         CLOSE(lsn->lsn_sck_id);
         log_error(lsn->log, "Create unix udp socket failed!");
-        return NULL;
+        return RTTP_ERR;
     }
 
-    return lsn;
+    return RTTP_OK;
 }
 
 /******************************************************************************
@@ -156,7 +146,7 @@ static rtrd_lsn_t *rtrd_lsn_init(rtrd_cntx_t *ctx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.07 #
  ******************************************************************************/
-int rtrd_lsn_destroy(rtrd_lsn_t *lsn)
+int rtrd_lsn_destroy(rtrd_listen_t *lsn)
 {
     CLOSE(lsn->lsn_sck_id);
     CLOSE(lsn->cmd_sck_id);
@@ -179,7 +169,7 @@ int rtrd_lsn_destroy(rtrd_lsn_t *lsn)
  **注意事项:
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-static int rtrd_lsn_accept(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn)
+static int rtrd_lsn_accept(rtrd_cntx_t *ctx, rtrd_listen_t *lsn)
 {
     int sckid;
     socklen_t len;
@@ -245,7 +235,7 @@ static int rtrd_lsn_accept(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn)
  **注意事项:
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-static int rtrd_lsn_cmd_core_hdl(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn)
+static int rtrd_lsn_cmd_core_hdl(rtrd_cntx_t *ctx, rtrd_listen_t *lsn)
 {
     rttp_cmd_t cmd;
 
@@ -298,7 +288,7 @@ static int rtrd_lsn_cmd_core_hdl(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn)
  **注意事项:
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-static int rtrd_lsn_cmd_query_conf_hdl(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn, rttp_cmd_t *cmd)
+static int rtrd_lsn_cmd_query_conf_hdl(rtrd_cntx_t *ctx, rtrd_listen_t *lsn, rttp_cmd_t *cmd)
 {
     rttp_cmd_t rep;
     rtrd_conf_t *cf = &ctx->conf;
@@ -346,7 +336,7 @@ static int rtrd_lsn_cmd_query_conf_hdl(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn, rttp_c
  **注意事项:
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-static int rtrd_lsn_cmd_query_recv_stat_hdl(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn, rttp_cmd_t *cmd)
+static int rtrd_lsn_cmd_query_recv_stat_hdl(rtrd_cntx_t *ctx, rtrd_listen_t *lsn, rttp_cmd_t *cmd)
 {
     int idx;
     rttp_cmd_t rep;
@@ -391,7 +381,7 @@ static int rtrd_lsn_cmd_query_recv_stat_hdl(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn, r
  **注意事项:
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-static int rtrd_lsn_cmd_query_proc_stat_hdl(rtrd_cntx_t *ctx, rtrd_lsn_t *lsn, rttp_cmd_t *cmd)
+static int rtrd_lsn_cmd_query_proc_stat_hdl(rtrd_cntx_t *ctx, rtrd_listen_t *lsn, rttp_cmd_t *cmd)
 {
     int idx;
     rttp_cmd_t rep;

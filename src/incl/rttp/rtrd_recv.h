@@ -67,7 +67,7 @@ typedef struct
     int lsn_sck_id;                     /* 侦听套接字 */
 
     uint64_t serial;                     /* 连接请求序列 */
-} rtrd_lsn_t;
+} rtrd_listen_t;
 
 /* 套接字信息 */
 typedef struct _rtrd_sck_t
@@ -140,7 +140,7 @@ typedef struct
 
     rttp_reg_t reg[RTTP_TYPE_MAX];      /* 回调注册对象 */
 
-    rtrd_lsn_t listen;                  /* 侦听对象 */
+    rtrd_listen_t listen;                  /* 侦听对象 */
     thread_pool_t *recvtp;              /* 接收线程池 */
     thread_pool_t *worktp;              /* 工作线程池 */
 
@@ -163,8 +163,9 @@ rtrd_cli_t *rtrd_cli_init(const rtrd_conf_t *conf, int idx);
 int rtrd_cli_send(rtrd_cli_t *cli, int type, int dest, void *data, size_t len);
 
 /* 内部接口 */
+int rtrd_lsn_init(rtrd_cntx_t *ctx);
 void *rtrd_lsn_routine(void *_ctx);
-int rtrd_lsn_destroy(rtrd_lsn_t *lsn);
+int rtrd_lsn_destroy(rtrd_listen_t *lsn);
 
 void *rtrd_dsvr_routine(void *_ctx);
 

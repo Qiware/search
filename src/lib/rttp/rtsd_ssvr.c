@@ -783,7 +783,7 @@ static int rtsd_ssvr_proc_cmd(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, const rttp_cm
  ******************************************************************************/
 static int rtsd_ssvr_fill_send_buff(rtsd_ssvr_t *ssvr, rtsd_sck_t *sck)
 {
-#define RTSD_POP_NUM    (128)
+#define RTSD_POP_NUM    (1024)
     int num, idx;
     void *data[RTSD_POP_NUM];
     uint32_t left, mesg_len;

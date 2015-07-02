@@ -156,7 +156,7 @@ static int rtrd_dsvr_cmd_dist_req(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr, int idx)
  ******************************************************************************/
 static int rtrd_dsvr_dist_data_hdl(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr)
 {
-#define RTRD_DISP_POP_NUM   (32)
+#define RTRD_DISP_POP_NUM   (1024)
     int idx, k, num;
     rttp_frwd_t *frwd;
     void *data[RTRD_DISP_POP_NUM], *addr;

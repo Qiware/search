@@ -1423,7 +1423,7 @@ static int rtrd_rsvr_get_conn_list_by_nodeid(rtrd_sck_t *sck, _conn_list_t *cl)
  ******************************************************************************/
 static int rtrd_rsvr_dist_send_data(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
 {
-#define RTRD_POP_MAX_NUM (32)
+#define RTRD_POP_MAX_NUM (1024)
     int len, idx, num;
     queue_t *sendq;
     void *addr;

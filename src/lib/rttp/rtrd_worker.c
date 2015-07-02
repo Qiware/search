@@ -217,7 +217,7 @@ static int rtrd_worker_event_core_hdl(rtrd_cntx_t *ctx, rttp_worker_t *worker)
  ******************************************************************************/
 static int rtrd_worker_cmd_proc_req_hdl(rtrd_cntx_t *ctx, rttp_worker_t *worker, const rttp_cmd_t *cmd)
 {
-#define RTRD_WORK_POP_NUM     (32)
+#define RTRD_WORK_POP_NUM     (1024)
     int idx, num;
     void *addr[RTRD_WORK_POP_NUM];
     queue_t *rq;

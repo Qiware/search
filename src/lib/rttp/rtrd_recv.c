@@ -52,7 +52,7 @@ rtrd_cntx_t *rtrd_init(const rtrd_conf_t *conf, log_cycle_t *log)
     ctx = (rtrd_cntx_t *)calloc(1, sizeof(rtrd_cntx_t));
     if (NULL == ctx)
     {
-        fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
+        log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
         return NULL;
     }
 
@@ -78,13 +78,10 @@ rtrd_cntx_t *rtrd_init(const rtrd_conf_t *conf, log_cycle_t *log)
  **函数名称: rtrd_startup
  **功    能: 启动SDTP接收端
  **输入参数:
- **     conf: 配置信息
+ **     ctx: 全局对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述:
- **     1. 设置接收线程回调
- **     2. 设置工作线程回调
- **     3. 创建侦听线程
  **注意事项:
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
@@ -93,7 +90,7 @@ int rtrd_startup(rtrd_cntx_t *ctx)
     int idx;
     pthread_t tid;
     thread_pool_t *tp;
-    rtrd_lsn_t *lsn = &ctx->listen;
+    rtrd_listen_t *lsn = &ctx->listen;
 
     /* > 设置接收线程回调 */
     tp = ctx->recvtp;
@@ -252,6 +249,13 @@ static int _rtrd_init(rtrd_cntx_t *ctx)
 
     /* > 创建工作线程池 */
     if (rtrd_creat_worktp(ctx))
+    {
+        log_error(ctx->log, "Create worker thread pool failed!");
+        return RTTP_ERR;
+    }
+
+    /* > 初始化侦听服务 */
+    if (rtrd_lsn_init(ctx))
     {
         log_error(ctx->log, "Create worker thread pool failed!");
         return RTTP_ERR;
