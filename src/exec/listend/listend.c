@@ -341,5 +341,7 @@ static int lsnd_startup(lsnd_cntx_t *ctx)
 /* 销毁侦听服务 */
 static void lsnd_destroy(lsnd_cntx_t *ctx)
 {
-    agent_destroy(ctx->agent);
+    if (NULL == ctx) { return; }
+    if (ctx->agent) { agent_destroy(ctx->agent); }
+    free(ctx);
 }
