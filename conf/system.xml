@@ -1,0 +1,12 @@
+<!-- 系统配置 -->
+<SYSTEM>
+    <!-- 侦听服务名与配置映射 -->
+    <LISTEND>
+        <ITEM NAME="SearchEngineListend" PATH="../conf/listend.xml" />
+    </LISTEND>
+
+    <!-- 转发服务名与配置映射 -->
+    <FRWDER>
+        <ITEM NAME="frwder" PATH="../conf/frwder.xml" />
+    </FRWDER>
+</SYSTEM>
