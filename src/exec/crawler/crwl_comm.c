@@ -20,9 +20,10 @@
 
 #define CRWL_PROC_LOCK_PATH "../temp/crwl/crwl.lck"
 
-static int crwl_worker_tpool_creat(crwl_cntx_t *ctx);
-int crwl_worker_tpool_destroy(crwl_cntx_t *ctx);
-static int crwl_sched_tpool_creat(crwl_cntx_t *ctx);
+static int crwl_creat_workq(crwl_cntx_t *ctx);
+static int crwl_creat_workers(crwl_cntx_t *ctx);
+int crwl_workers_destroy(crwl_cntx_t *ctx);
+static int crwl_creat_scheds(crwl_cntx_t *ctx);
 static void crwl_signal_hdl(int signum);
 
 /******************************************************************************
@@ -114,12 +115,12 @@ int crwl_usage(const char *exec)
  ******************************************************************************/
 crwl_cntx_t *crwl_cntx_init(char *pname, const char *path)
 {
-    int idx;
     log_cycle_t *log;
     crwl_cntx_t *ctx;
     crwl_conf_t *conf;
+    slab_pool_t *slab;
 
-    /* 1. 初始化日志模块 */
+    /* > 初始化日志模块 */
     log = crwl_init_log(pname);
     if (NULL == log)
     {
@@ -127,78 +128,69 @@ crwl_cntx_t *crwl_cntx_init(char *pname, const char *path)
         return NULL;
     }
 
-    /* 2. 判断程序是否已运行 */
+    /* > 判断程序是否已运行 */
     if (0 != crwl_proc_lock())
     {
         log_error(log, "Crawler is running!");
         return NULL;
     }
 
-    /* 3. 创建全局对象 */
-    ctx = (crwl_cntx_t *)calloc(1, sizeof(crwl_cntx_t));
+    /* > 创建内存池 */
+    slab = slab_creat_by_calloc(30 * MB, log);
+    if (NULL == slab)
+    {
+        log_error(log, "Init slab failed!");
+        return NULL;
+    }
+
+    /* > 创建全局对象 */
+    ctx = (crwl_cntx_t *)slab_alloc(slab, sizeof(crwl_cntx_t));
     if (NULL == ctx)
     {
         log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
+        free(slab);
         return NULL;
     }
+
+    ctx->log = log;
+    ctx->slab = slab;
 
     do
     {
         conf = &ctx->conf;
 
-        /* 4. 加载配置文件 */
+        /* > 加载配置文件 */
         if (crwl_load_conf(path, conf, log))
         {
             log_error(log, "Load configuration failed! path:%s", path);
             break;
         }
 
-        ctx->log = log;
         log_set_level(log, conf->log.level);
 
-        /* 5. 创建内存池 */
-        ctx->slab = slab_creat_by_calloc(30 * MB, log);
-        if (NULL == ctx->slab)
+        /* > 创建任务队列 */
+        if (crwl_creat_workq(ctx))
         {
-            log_error(log, "Init slab failed!");
+            log_error(log, "Create workq failed!");
             break;
         }
 
-        /* 6. 创建任务队列 */
-        ctx->workq = (queue_t **)calloc(conf->worker.num, sizeof(queue_t *));
-        if (NULL == ctx->workq)
-        {
-            log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
-            break;
-        }
-
-        for (idx=0; idx<conf->worker.num; ++idx)
-        {
-            ctx->workq[idx] = queue_creat(
-                    conf->workq_count, sizeof(crwl_task_t) + sizeof(crwl_task_space_u));
-            if (NULL == ctx->workq[idx])
-            {
-                log_error(ctx->log, "Create queue failed! workq_count:%d", conf->workq_count);
-                goto CRWL_INIT_ERR;
-            }
-        }
-
-        /* 8. 修改进程打开文件描述符的最大限制 */
+        /* > 修改进程打开文件描述符的最大限制 */
         if (set_fd_limit(65535))
         {
             log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
             break;
         }
 
-        /* 9. 创建Worker线程池 */
-        if (crwl_worker_tpool_creat(ctx))
+        /* > 创建Worker线程池 */
+        if (crwl_creat_workers(ctx))
         {
             log_error(log, "Initialize thread pool failed!");
             break;
         }
 
-        /* 10. 创建Sched线程池 */
-        if (crwl_sched_tpool_creat(ctx))
+        /* > 创建Sched线程池 */
+        if (crwl_creat_scheds(ctx))
         {
             log_error(log, "Initialize thread pool failed!");
             break;
@@ -207,10 +199,8 @@ crwl_cntx_t *crwl_cntx_init(char *pname, const char *path)
         return ctx;
     } while (0);
 
-CRWL_INIT_ERR:
-    /* 释放内存 */
-    if (ctx->workq) { free(ctx->workq); }
-    free(ctx);
+    /* > 释放内存 */
+    free(ctx->slab);
 
     return NULL;
 }
@@ -238,7 +228,7 @@ void crwl_cntx_destroy(crwl_cntx_t *ctx)
     }
     FREE(ctx->workq);
 
-    crwl_worker_tpool_destroy(ctx);
+    crwl_workers_destroy(ctx);
     log_destroy(&ctx->log);
     plog_destroy();
 }
@@ -287,7 +277,7 @@ int crwl_startup(crwl_cntx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: crwl_worker_tpool_creat
+ **函数名称: crwl_creat_workers
  **功    能: 初始化爬虫线程池
  **输入参数: 
  **     ctx: 全局信息
@@ -297,7 +287,7 @@ int crwl_startup(crwl_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.11 #
  ******************************************************************************/
-static int crwl_worker_tpool_creat(crwl_cntx_t *ctx)
+static int crwl_creat_workers(crwl_cntx_t *ctx)
 {
     int idx, num;
     crwl_worker_t *worker;
@@ -305,7 +295,7 @@ static int crwl_worker_tpool_creat(crwl_cntx_t *ctx)
     const crwl_worker_conf_t *conf = &ctx->conf.worker;
 
     /* > 新建Worker对象 */
-    worker = (crwl_worker_t *)calloc(conf->num, sizeof(crwl_worker_t));
+    worker = (crwl_worker_t *)slab_alloc(ctx->slab, conf->num*sizeof(crwl_worker_t));
     if (NULL == worker)
     {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
@@ -323,7 +313,7 @@ static int crwl_worker_tpool_creat(crwl_cntx_t *ctx)
     if (NULL == ctx->workers)
     {
         log_error(ctx->log, "Initialize thread pool failed!");
-        free(worker);
+        slab_dealloc(ctx->slab, worker);
         return CRWL_ERR;
     }
 
@@ -349,14 +339,14 @@ static int crwl_worker_tpool_creat(crwl_cntx_t *ctx)
         crwl_worker_destroy(ctx, worker+idx);
     }
 
-    free(worker);
+    slab_dealloc(ctx->slab, worker);
     thread_pool_destroy(ctx->workers);
 
     return CRWL_ERR;
 }
 
 /******************************************************************************
- **函数名称: crwl_worker_tpool_destroy
+ **函数名称: crwl_workers_destroy
  **功    能: 销毁爬虫线程池
  **输入参数: 
  **     ctx: 全局信息
@@ -366,7 +356,7 @@ static int crwl_worker_tpool_creat(crwl_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.14 #
  ******************************************************************************/
-int crwl_worker_tpool_destroy(crwl_cntx_t *ctx)
+int crwl_workers_destroy(crwl_cntx_t *ctx)
 {
     int idx;
     crwl_worker_t *worker;
@@ -380,7 +370,7 @@ int crwl_worker_tpool_destroy(crwl_cntx_t *ctx)
         crwl_worker_destroy(ctx, worker);
     }
 
-    free(ctx->workers->data);
+    slab_dealloc(ctx->slab, ctx->workers->data);
 
     /* 2. 释放线程池对象 */
     thread_pool_destroy(ctx->workers);
@@ -391,7 +381,7 @@ int crwl_worker_tpool_destroy(crwl_cntx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: crwl_sched_tpool_creat
+ **函数名称: crwl_creat_scheds
  **功    能: 初始化Sched线程池
  **输入参数: 
  **     ctx: 全局信息
@@ -401,7 +391,7 @@ int crwl_worker_tpool_destroy(crwl_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.15 #
  ******************************************************************************/
-static int crwl_sched_tpool_creat(crwl_cntx_t *ctx)
+static int crwl_creat_scheds(crwl_cntx_t *ctx)
 {
     thread_pool_opt_t opt;
 
@@ -585,4 +575,51 @@ static void crwl_signal_hdl(int signum)
             return;
         }
     }
+}
+
+/******************************************************************************
+ **函数名称: crwl_creat_workq
+ **功    能: 创建工作队列
+ **输入参数:
+ **     ctx: 全局对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015-07-03 12:02:23 #
+ ******************************************************************************/
+static int crwl_creat_workq(crwl_cntx_t *ctx)
+{
+    int size, idx, num;
+    crwl_conf_t *conf = &ctx->conf;
+
+    /* > 申请内存空间 */
+    ctx->workq = (queue_t **)slab_alloc(ctx->slab, conf->worker.num*sizeof(queue_t *));
+    if (NULL == ctx->workq)
+    {
+        log_error(ctx->log, "Alloc memory from slab failed!");
+        return CRWL_ERR;
+    }
+
+    /* > 依次创建队列 */
+    size = sizeof(crwl_task_t) + sizeof(crwl_task_space_u);
+    for (idx=0, num=0; idx<conf->worker.num; ++idx)
+    {
+        ctx->workq[idx] = queue_creat(conf->workq_count, size);
+        if (NULL == ctx->workq[idx])
+        {
+            slab_dealloc(ctx->slab, ctx->workq), ctx->workq=NULL;
+            goto CREAT_QUEUE_ERR;
+        }
+    }
+
+    return CRWL_OK;
+
+CREAT_QUEUE_ERR:
+    num = idx;
+    for (idx=0; idx<num; ++idx)
+    {
+        queue_destroy(ctx->workq[idx]);
+    }
+    return CRWL_ERR;
 }
