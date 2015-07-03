@@ -136,6 +136,7 @@ flt_cntx_t *flt_init(char *pname, const char *path)
     flt_cntx_t *ctx;
     flt_conf_t *conf;
     log_cycle_t *log;
+    slab_pool_t *slab;
     hash_tab_opt_t opt;
 
     /* > 初始化日志模块 */
@@ -146,26 +147,28 @@ flt_cntx_t *flt_init(char *pname, const char *path)
         return NULL;
     }
 
+    /* > 创建内存池 */
+    slab = slab_creat_by_calloc(FLT_SLAB_SIZE, log);
+    if (NULL == slab)
+    {
+        log_error(log, "Init slab failed!");
+        return NULL;
+    }
+
     /* > 申请对象空间 */
-    ctx = (flt_cntx_t *)calloc(1, sizeof(flt_cntx_t));
+    ctx = (flt_cntx_t *)slab_alloc(slab, sizeof(flt_cntx_t));
     if (NULL == ctx)
     {
         log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
+        free(slab);
         return NULL;
     }
 
     ctx->log = log;
+    ctx->slab = slab;
 
     do
     {
-        /* > 创建内存池 */
-        ctx->slab = slab_creat_by_calloc(FLT_SLAB_SIZE, log);
-        if (NULL == ctx->slab)
-        {
-            log_error(log, "Init slab failed!");
-            break;
-        }
-
         /* > 加载配置信息 */
         conf = flt_conf_load(path, log);
         if (NULL == conf)
@@ -248,7 +251,7 @@ flt_cntx_t *flt_init(char *pname, const char *path)
     /* > 释放内存空间 */
     if (ctx->redis) { redis_clst_destroy(ctx->redis); }
     if (ctx->taskq) { queue_destroy(ctx->taskq); }    
-    free(ctx);
+    free(ctx->slab);
     return NULL;
 }
 
@@ -377,7 +380,7 @@ static int flt_workers_creat(flt_cntx_t *ctx)
     }
 
     /* 2. 新建Worker对象 */
-    ctx->worker = (flt_worker_t *)calloc(conf->num, sizeof(flt_worker_t));
+    ctx->worker = (flt_worker_t *)slab_alloc(ctx->slab, conf->num*sizeof(flt_worker_t));
     if (NULL == ctx->worker)
     {
         thread_pool_destroy(ctx->workers);
@@ -405,7 +408,7 @@ FLT_PROC_ERR:
         flt_worker_destroy(ctx, ctx->worker+idx);
     }
 
-    free(ctx->worker);
+    slab_dealloc(ctx->slab, ctx->worker);
     thread_pool_destroy(ctx->workers);
 
     return FLT_ERR;
