@@ -22,10 +22,10 @@ typedef struct
     struct timeval wrtm;/* 请求发送时间 */
 } mon_search_conn_t;
 
-static int mon_agent_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args);
+static int mon_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args);
 static int mon_agent_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args);
-static int mon_agent_insert_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args);
-static int mon_agent_multi_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args);
+static int mon_insert_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args);
+static int mon_search_word_loop(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args);
 
 /******************************************************************************
  **函数名称: mon_agent_menu
@@ -54,15 +54,34 @@ menu_item_t *mon_agent_menu(menu_cntx_t *ctx, void *args)
     }
 
     /* 添加子菜单 */
-    ADD_CHILD(ctx, menu, "Search word", NULL, mon_agent_search_word, NULL, args);
-    ADD_CHILD(ctx, menu, "Multi search word", NULL, mon_agent_multi_search_word, NULL, args);
-    ADD_CHILD(ctx, menu, "Insert word", NULL, mon_agent_insert_word, NULL, args);
+    ADD_CHILD(ctx, menu, "Search word", NULL, mon_search_word, NULL, args);
+    ADD_CHILD(ctx, menu, "Search word - loop", NULL, mon_search_word_loop, NULL, args);
+    ADD_CHILD(ctx, menu, "Insert word", NULL, mon_insert_word, NULL, args);
     ADD_CHILD(ctx, menu, "Test connect", NULL, mon_agent_connect, NULL, args);
     return menu;
 }
 
+/* 发送搜索请求 */
+static int mon_search_send_rep(int fd, const char *word)
+{
+    agent_header_t head;
+    mesg_search_word_req_t req;
+
+    head.type = htonl(MSG_SEARCH_WORD_REQ);
+    head.flag = htonl(AGENT_MSG_FLAG_USR);
+    head.mark = htonl(AGENT_MSG_MARK_KEY);
+    head.length = htonl(sizeof(req));
+
+    snprintf(req.words, sizeof(req.words), "%s", word);
+
+    Writen(fd, (void *)&head, sizeof(head));
+    Writen(fd, (void *)&req, sizeof(req));
+
+    return 0;
+}
+
 /******************************************************************************
- **函数名称: mon_agent_search_rsp_hdl
+ **函数名称: mon_search_recv_rsp
  **功    能: 接收搜索应答信息
  **输入参数:
  **     fd: 文件描述符
@@ -72,7 +91,7 @@ menu_item_t *mon_agent_menu(menu_cntx_t *ctx, void *args)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.06.05 17:01:04 #
  ******************************************************************************/
-static int mon_agent_search_rsp_hdl(mon_cntx_t *ctx, mon_search_conn_t *conn)
+static int mon_search_recv_rsp(mon_cntx_t *ctx, mon_search_conn_t *conn)
 {
     struct timeval ctm;
     int n, i, sec, msec, usec;
@@ -138,7 +157,7 @@ static int mon_agent_search_rsp_hdl(mon_cntx_t *ctx, mon_search_conn_t *conn)
 }
 
 /******************************************************************************
- **函数名称: mon_agent_search_word
+ **函数名称: mon_search_word
  **功    能: 搜索单词
  **输入参数:
  **     menu: 菜单
@@ -148,15 +167,13 @@ static int mon_agent_search_rsp_hdl(mon_cntx_t *ctx, mon_search_conn_t *conn)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.06.05 #
  ******************************************************************************/
-static int mon_agent_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args)
+static int mon_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args)
 {
     int ret;
     fd_set rdset;
     mon_search_conn_t conn;
     char word[1024];
-    agent_header_t head;
     struct timeval timeout;
-    mesg_search_word_req_t req;
     mon_cntx_t *ctx = (mon_cntx_t *)args;
     ip_port_t *conf = &ctx->conf->search;
 
@@ -170,19 +187,12 @@ static int mon_agent_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void 
         return -1;
     }
 
-    /* 发送搜索请求 */
+    /* 输入搜索内容 */
     fprintf(stderr, "    Word: ");
     scanf(" %s", word);
 
-    head.type = htonl(MSG_SEARCH_WORD_REQ);
-    head.flag = htonl(AGENT_MSG_FLAG_USR);
-    head.mark = htonl(AGENT_MSG_MARK_KEY);
-    head.length = htonl(sizeof(req));
-
-    snprintf(req.words, sizeof(req.words), "%s", word);
-
-    Writen(conn.fd, (void *)&head, sizeof(head));
-    Writen(conn.fd, (void *)&req, sizeof(req));
+    /* 发送搜索请求 */
+    mon_search_send_rep(conn.fd, word);
 
     gettimeofday(&conn.wrtm, NULL);
 
@@ -210,7 +220,7 @@ static int mon_agent_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void 
 
         if (FD_ISSET(conn.fd, &rdset))
         {
-            mon_agent_search_rsp_hdl(ctx, &conn);
+            mon_search_recv_rsp(ctx, &conn);
             break;
         }
     }
@@ -221,8 +231,8 @@ static int mon_agent_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void 
 }
 
 /******************************************************************************
- **函数名称: mon_agent_multi_search_word
- **功    能: 搜索单词
+ **函数名称: mon_search_word_loop
+ **功    能: 循环搜索单词
  **输入参数:
  **     menu: 菜单
  **输出参数: NONE
@@ -232,15 +242,13 @@ static int mon_agent_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void 
  **          否则，在设置rdset, wrset时，将会出现栈溢出, 导致不可预测的错误出现!
  **作    者: # Qifeng.zou # 2015.06.05 #
  ******************************************************************************/
-static int mon_agent_multi_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args)
+static int mon_search_word_loop(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args)
 {
 #define MON_FD_MAX  (900)
     int is_unrecv, unrecv_num;
     fd_set rdset, wrset;
-    agent_header_t head;
     struct timeval timeout;
     mon_search_conn_t *conn;
-    mesg_search_word_req_t req;
     int ret, idx, max, num, left;
     char digit[256], word[1024];
     mon_cntx_t *ctx = (mon_cntx_t *)args;
@@ -323,23 +331,14 @@ SRCH_AGAIN:
 
             if (FD_ISSET(conn[idx].fd, &rdset))
             {
-                mon_agent_search_rsp_hdl(ctx, &conn[idx]);
+                mon_search_recv_rsp(ctx, &conn[idx]);
                 CLOSE(conn[idx].fd);
                 --left;
                 continue;
             }
 
             if (FD_ISSET(conn[idx].fd, &wrset)) {
-                head.type = htonl(MSG_SEARCH_WORD_REQ);
-                head.flag = htonl(AGENT_MSG_FLAG_USR);
-                head.mark = htonl(AGENT_MSG_MARK_KEY);
-                head.length = htonl(sizeof(req));
-
-                snprintf(req.words, sizeof(req.words), "%s", word);
-
-                Writen(conn[idx].fd, (void *)&head, sizeof(head));
-                Writen(conn[idx].fd, (void *)&req, sizeof(req));
-
+                mon_search_send_rep(conn[idx].fd, word);
                 gettimeofday(&conn[idx].wrtm, NULL);
                 conn[idx].flag = 1;
             }
@@ -370,7 +369,7 @@ SRCH_AGAIN:
 }
 
 /* 接收插入关键字的应答 */
-static int mon_agent_insert_word_rsp_hdl(mon_cntx_t *ctx, int fd)
+static int mon_insert_word_rsp_hdl(mon_cntx_t *ctx, int fd)
 {
     int n;
     char *addr;
@@ -414,7 +413,7 @@ static int mon_agent_insert_word_rsp_hdl(mon_cntx_t *ctx, int fd)
 }
 
 /* 插入关键字 */
-static int mon_agent_insert_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args)
+static int mon_insert_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args)
 {
     fd_set rdset;
     char _freq[32];
@@ -479,7 +478,7 @@ static int mon_agent_insert_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void 
 
         if (FD_ISSET(fd, &rdset))
         {
-            mon_agent_insert_word_rsp_hdl(ctx, fd);
+            mon_insert_word_rsp_hdl(ctx, fd);
             ftime(&ctm);
             sec = ctm.time - old_tm.time;
             msec = ctm.millitm - old_tm.millitm;
