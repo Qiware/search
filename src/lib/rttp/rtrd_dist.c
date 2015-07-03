@@ -164,14 +164,14 @@ static int rtrd_dsvr_dist_data_hdl(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr)
     while (1)
     {
         /* > 计算弹出个数(WARNNING: 勿将共享变量参与MIN()三目运算, 否则可能出现严重错误!!!) */
-        num = MIN(shm_queue_used(ctx->shm_sendq), RTRD_DISP_POP_NUM);
+        num = MIN(shm_queue_used(ctx->distq), RTRD_DISP_POP_NUM);
         if (0 == num)
         {
             return RTTP_OK;
         }
 
         /* > 弹出发送数据 */
-        num = shm_queue_mpop(ctx->shm_sendq, data, num);
+        num = shm_queue_mpop(ctx->distq, data, num);
         if (0 == num)
         {
             continue;
@@ -188,7 +188,7 @@ static int rtrd_dsvr_dist_data_hdl(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr)
             idx = rtrd_node_to_svr_map_rand(ctx, frwd->dest);
             if (idx < 0)
             {
-                shm_queue_dealloc(ctx->shm_sendq, data[k]);
+                shm_queue_dealloc(ctx->distq, data[k]);
                 log_error(ctx->log, "Didn't find dev to svr map! nodeid:%d", frwd->dest);
                 continue;
             }
@@ -197,7 +197,7 @@ static int rtrd_dsvr_dist_data_hdl(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr)
             addr = queue_malloc(ctx->sendq[idx], frwd->length);
             if (NULL == addr)
             {
-                shm_queue_dealloc(ctx->shm_sendq, data[k]);
+                shm_queue_dealloc(ctx->distq, data[k]);
                 log_error(ctx->log, "Alloc from queue failed! size:%d/%d",
                     frwd->length, queue_size(ctx->sendq[idx]));
                 continue;
@@ -207,7 +207,7 @@ static int rtrd_dsvr_dist_data_hdl(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr)
 
             queue_push(ctx->sendq[idx], addr);
 
-            shm_queue_dealloc(ctx->shm_sendq, data[k]);
+            shm_queue_dealloc(ctx->distq, data[k]);
 
             /* > 发送分发请求 */
             rtrd_dsvr_cmd_dist_req(ctx, dsvr, idx);

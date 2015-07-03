@@ -359,8 +359,8 @@ static int _rtrd_creat_sendq(rtrd_cntx_t *ctx)
  ******************************************************************************/
 static int rtrd_creat_sendq(rtrd_cntx_t *ctx)
 {
-    ctx->shm_sendq = rtrd_shm_sendq_creat(&ctx->conf);
-    if (NULL == ctx->shm_sendq)
+    ctx->distq = rtrd_shm_distq_creat(&ctx->conf);
+    if (NULL == ctx->distq)
     {
         log_error(ctx->log, "Create shm-queue failed!");
         return RTTP_ERR;

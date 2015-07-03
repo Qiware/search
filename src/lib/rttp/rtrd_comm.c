@@ -252,8 +252,8 @@ int rtrd_node_to_svr_map_rand(rtrd_cntx_t *ctx, int nodeid)
 }
 
 /******************************************************************************
- **函数名称: rtrd_shm_sendq_creat
- **功    能: 创建SHM发送队列
+ **函数名称: rtrd_shm_distq_creat
+ **功    能: 创建SHM分发队列
  **输入参数:
  **     conf: 配置信息
  **输出参数: NONE
@@ -262,19 +262,19 @@ int rtrd_node_to_svr_map_rand(rtrd_cntx_t *ctx, int nodeid)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.20 #
  ******************************************************************************/
-shm_queue_t *rtrd_shm_sendq_creat(const rtrd_conf_t *conf)
+shm_queue_t *rtrd_shm_distq_creat(const rtrd_conf_t *conf)
 {
     char path[FILE_NAME_MAX_LEN];
 
     /* > 获取KEY路径 */
-    rtrd_shm_sendq_path(conf, path);
+    rtrd_shm_distq_path(conf, path);
 
     /* > 通过路径创建共享内存队列 */
     return shm_queue_creat(path, conf->sendq.max, conf->sendq.size);
 }
 
 /******************************************************************************
- **函数名称: rtrd_shm_sendq_attach
+ **函数名称: rtrd_shm_distq_attach
  **功    能: 附着SHM发送队列
  **输入参数:
  **     conf: 配置信息
@@ -284,12 +284,12 @@ shm_queue_t *rtrd_shm_sendq_creat(const rtrd_conf_t *conf)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.06.01 #
  ******************************************************************************/
-shm_queue_t *rtrd_shm_sendq_attach(const rtrd_conf_t *conf)
+shm_queue_t *rtrd_shm_distq_attach(const rtrd_conf_t *conf)
 {
     char path[FILE_NAME_MAX_LEN];
 
     /* > 通过路径生成KEY */
-    rtrd_shm_sendq_path(conf, path);
+    rtrd_shm_distq_path(conf, path);
 
     /* > 通过KEY创建共享内存队列 */
     return shm_queue_attach(path);
