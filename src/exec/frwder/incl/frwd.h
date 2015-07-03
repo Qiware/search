@@ -35,7 +35,7 @@ typedef struct
     frwd_conf_t conf;                       /* 配置信息 */
     log_cycle_t *log;                       /* 日志对象 */
     frwd_lsnd_t lsnd;                       /* 搜索引擎的侦听 */
-    rtsd_cntx_t *rttp;                      /* RTTP对象 */
+    rtsd_cntx_t *rtmq;                      /* RTMQ对象 */
 } frwd_cntx_t;
 
 int frwd_getopt(int argc, char **argv, frwd_opt_t *opt);

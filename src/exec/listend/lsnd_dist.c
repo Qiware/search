@@ -111,7 +111,7 @@ static int lsnd_dsvr_cmd_dist_hdl(lsnd_cntx_t *ctx, lsnd_dsvr_t *dsvr)
 {
     int num, idx;
     agent_flow_t *flow;
-    rttp_header_t *head;
+    rtmq_header_t *head;
     void *addr[LSND_DIST_POP_NUM];
 
 LSND_AGAIN_MPOP:
@@ -133,8 +133,8 @@ LSND_AGAIN_MPOP:
     for (idx=0; idx<num; ++idx)
     {
         flow = (agent_flow_t *)addr[idx];       /* 流水信息 */
-        head = (rttp_header_t *)(flow + 1);     /* 消息头 */
-        if (RTTP_CHECK_SUM != head->checksum)   /* 校验消息头 */
+        head = (rtmq_header_t *)(flow + 1);     /* 消息头 */
+        if (RTMQ_CHECK_SUM != head->checksum)   /* 校验消息头 */
         {
             assert(0);
         }

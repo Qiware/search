@@ -11,11 +11,11 @@ include $(PROJ)/make/build.mak
 INCLUDE = -I./incl \
 			-I$(PROJ)/src/incl \
 			-I$(PROJ)/src/incl/conf \
-			-I$(PROJ)/src/incl/rttp \
+			-I$(PROJ)/src/incl/rtmq \
 			-I$(PROJ)/src/incl/sdtp
 
 LIBS_PATH = -L$(PROJ)/lib
-LIBS = -lpthread -lcore -linvtab -lsdtp -lrttp -lconf
+LIBS = -lpthread -lcore -linvtab -lsdtp -lrtmq -lconf
 
 SRC_LIST = invertd.c \
             invtd_comm.c \

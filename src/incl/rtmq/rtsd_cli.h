@@ -3,7 +3,7 @@
 
 #include "mem_pool.h"
 #include "shm_queue.h"
-#include "rttp_comm.h"
+#include "rtmq_comm.h"
 #include "rtsd_send.h"
 
 /* 发送服务命令套接字 */

@@ -1,5 +1,5 @@
-#include "rttp_cmd.h"
-#include "rttp_comm.h"
+#include "rtmq_cmd.h"
+#include "rtmq_comm.h"
 #include "rtrd_recv.h"
 
 /******************************************************************************
@@ -17,24 +17,24 @@
  **注意事项: 如果发送失败，最多重复3次发送!
  **作    者: # Qifeng.zou # 2015.01.09 #
  ******************************************************************************/
-int rtrd_cmd_to_rsvr(rtrd_cntx_t *ctx, int cmd_sck_id, const rttp_cmd_t *cmd, int idx)
+int rtrd_cmd_to_rsvr(rtrd_cntx_t *ctx, int cmd_sck_id, const rtmq_cmd_t *cmd, int idx)
 {
     char path[FILE_PATH_MAX_LEN];
 
     rtrd_rsvr_usck_path(&ctx->conf, path, idx);
 
     /* 发送命令至接收线程 */
-    if (unix_udp_send(cmd_sck_id, path, cmd, sizeof(rttp_cmd_t)) < 0)
+    if (unix_udp_send(cmd_sck_id, path, cmd, sizeof(rtmq_cmd_t)) < 0)
     {
         if (EAGAIN != errno)
         {
             log_error(ctx->log, "errmsg:[%d] %s! path:%s type:%d",
                       errno, strerror(errno), path, cmd->type);
         }
-        return RTTP_ERR;
+        return RTMQ_ERR;
     }
 
-    return RTTP_OK;
+    return RTMQ_OK;
 }
 
 /******************************************************************************
@@ -49,17 +49,17 @@ int rtrd_cmd_to_rsvr(rtrd_cntx_t *ctx, int cmd_sck_id, const rttp_cmd_t *cmd, in
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.22 #
  ******************************************************************************/
-int rtrd_link_auth_check(rtrd_cntx_t *ctx, rttp_link_auth_req_t *link_auth_req)
+int rtrd_link_auth_check(rtrd_cntx_t *ctx, rtmq_link_auth_req_t *link_auth_req)
 {
     rtrd_conf_t *conf = &ctx->conf;
 
     if (0 != strcmp(link_auth_req->usr, conf->auth.usr)
         || 0 != strcmp(link_auth_req->passwd, conf->auth.passwd))
     {
-        return RTTP_LINK_AUTH_FAIL;
+        return RTMQ_LINK_AUTH_FAIL;
     }
 
-    return RTTP_LINK_AUTH_SUCC;
+    return RTMQ_LINK_AUTH_SUCC;
 }
 
 /******************************************************************************
@@ -89,13 +89,13 @@ int rtrd_node_to_svr_map_init(rtrd_cntx_t *ctx)
     if (NULL == ctx->node_to_svr_map)
     {
         log_error(ctx->log, "Initialize dev->svr map failed!");
-        return RTTP_ERR;
+        return RTMQ_ERR;
     }
 
     /* > 初始化读写锁 */
     pthread_rwlock_init(&ctx->node_to_svr_map_lock, NULL);
 
-    return RTTP_OK;
+    return RTMQ_OK;
 }
 
 /******************************************************************************
@@ -131,7 +131,7 @@ int rtrd_node_to_svr_map_add(rtrd_cntx_t *ctx, int nodeid, int rsvr_id)
         {
             pthread_rwlock_unlock(&ctx->node_to_svr_map_lock); /* 解锁 */
             log_error(ctx->log, "Alloc from slab failed!");
-            return RTTP_ERR;
+            return RTMQ_ERR;
         }
 
         map->num = 0;
@@ -143,7 +143,7 @@ int rtrd_node_to_svr_map_add(rtrd_cntx_t *ctx, int nodeid, int rsvr_id)
             slab_dealloc(ctx->pool, map);
             log_error(ctx->log, "Insert into dev2sck table failed! nodeid:%d rsvr_id:%d",
                       nodeid, rsvr_id);
-            return RTTP_ERR;
+            return RTMQ_ERR;
         }
     }
 
@@ -152,14 +152,14 @@ int rtrd_node_to_svr_map_add(rtrd_cntx_t *ctx, int nodeid, int rsvr_id)
     {
         pthread_rwlock_unlock(&ctx->node_to_svr_map_lock); /* 解锁 */
         log_error(ctx->log, "Node to svr map is full! nodeid:%d", nodeid);
-        return RTTP_ERR;
+        return RTMQ_ERR;
     }
 
     map->rsvr_id[map->num++] = rsvr_id; /* 插入 */
 
     pthread_rwlock_unlock(&ctx->node_to_svr_map_lock); /* 解锁 */
 
-    return RTTP_OK;
+    return RTMQ_OK;
 }
 
 /******************************************************************************
@@ -189,7 +189,7 @@ int rtrd_node_to_svr_map_del(rtrd_cntx_t *ctx, int nodeid, int rsvr_id)
     {
         pthread_rwlock_unlock(&ctx->node_to_svr_map_lock);
         log_error(ctx->log, "Query nodeid [%d] failed!", nodeid);
-        return RTTP_ERR;
+        return RTMQ_ERR;
     }
 
     /* > 删除处理 */
@@ -209,7 +209,7 @@ int rtrd_node_to_svr_map_del(rtrd_cntx_t *ctx, int nodeid, int rsvr_id)
     }
 
     pthread_rwlock_unlock(&ctx->node_to_svr_map_lock);
-    return RTTP_OK;
+    return RTMQ_OK;
 }
 
 /******************************************************************************

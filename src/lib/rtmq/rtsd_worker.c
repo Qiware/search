@@ -1,7 +1,7 @@
 /******************************************************************************
  ** Coypright(C) 2014-2024 Xundao technology Co., Ltd
  **
- ** 文件名: rttp_worker.c
+ ** 文件名: rtmq_worker.c
  ** 版本号: 1.0
  ** 描  述: 共享消息传输通道(Sharing Message Transaction Channel)
  **         1. 主要用于异步系统之间数据消息的传输
@@ -9,14 +9,14 @@
  ******************************************************************************/
 
 #include "xml_tree.h"
-#include "rttp_cmd.h"
+#include "rtmq_cmd.h"
 #include "rtsd_send.h"
 #include "thread_pool.h"
 
 /* 静态函数 */
-static rttp_worker_t *rtsd_worker_get_curr(rtsd_cntx_t *ctx);
-static int rtsd_worker_event_core_hdl(rtsd_cntx_t *ctx, rttp_worker_t *worker);
-static int rtsd_worker_cmd_proc_req_hdl(rtsd_cntx_t *ctx, rttp_worker_t *worker, const rttp_cmd_t *cmd);
+static rtmq_worker_t *rtsd_worker_get_curr(rtsd_cntx_t *ctx);
+static int rtsd_worker_event_core_hdl(rtsd_cntx_t *ctx, rtmq_worker_t *worker);
+static int rtsd_worker_cmd_proc_req_hdl(rtsd_cntx_t *ctx, rtmq_worker_t *worker, const rtmq_cmd_t *cmd);
 
 /******************************************************************************
  **函数名称: rtsd_worker_routine
@@ -35,8 +35,8 @@ static int rtsd_worker_cmd_proc_req_hdl(rtsd_cntx_t *ctx, rttp_worker_t *worker,
 void *rtsd_worker_routine(void *_ctx)
 {
     int ret, idx;
-    rttp_worker_t *worker;
-    rttp_cmd_proc_req_t *req;
+    rtmq_worker_t *worker;
+    rtmq_cmd_proc_req_t *req;
     struct timeval timeout;
     rtsd_cntx_t *ctx = (rtsd_cntx_t *)_ctx;
     rtsd_conf_t *conf = (rtsd_conf_t *)&ctx->conf;
@@ -72,14 +72,14 @@ void *rtsd_worker_routine(void *_ctx)
         else if (0 == ret)
         {
             /* 超时: 模拟处理命令 */
-            rttp_cmd_t cmd;
-            req = (rttp_cmd_proc_req_t *)&cmd.param;
+            rtmq_cmd_t cmd;
+            req = (rtmq_cmd_proc_req_t *)&cmd.param;
 
             for (idx=0; idx<conf->send_thd_num; ++idx)
             {
                 memset(&cmd, 0, sizeof(cmd));
 
-                cmd.type = RTTP_CMD_PROC_REQ;
+                cmd.type = RTMQ_CMD_PROC_REQ;
                 req->num = -1;
                 req->rqidx = idx;
 
@@ -108,9 +108,9 @@ void *rtsd_worker_routine(void *_ctx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.19 #
  ******************************************************************************/
-rttp_worker_t *rtsd_worker_get_by_idx(rtsd_cntx_t *ctx, int idx)
+rtmq_worker_t *rtsd_worker_get_by_idx(rtsd_cntx_t *ctx, int idx)
 {
-    return (rttp_worker_t *)(ctx->worktp->data + idx * sizeof(rttp_worker_t));
+    return (rtmq_worker_t *)(ctx->worktp->data + idx * sizeof(rtmq_worker_t));
 }
 
 /******************************************************************************
@@ -126,7 +126,7 @@ rttp_worker_t *rtsd_worker_get_by_idx(rtsd_cntx_t *ctx, int idx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.18 #
  ******************************************************************************/
-static rttp_worker_t *rtsd_worker_get_curr(rtsd_cntx_t *ctx)
+static rtmq_worker_t *rtsd_worker_get_curr(rtsd_cntx_t *ctx)
 {
     int id;
 
@@ -156,7 +156,7 @@ static rttp_worker_t *rtsd_worker_get_curr(rtsd_cntx_t *ctx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.18 #
  ******************************************************************************/
-int rtsd_worker_init(rtsd_cntx_t *ctx, rttp_worker_t *worker, int id)
+int rtsd_worker_init(rtsd_cntx_t *ctx, rtmq_worker_t *worker, int id)
 {
     char path[FILE_PATH_MAX_LEN];
     rtsd_conf_t *conf = &ctx->conf;
@@ -171,10 +171,10 @@ int rtsd_worker_init(rtsd_cntx_t *ctx, rttp_worker_t *worker, int id)
     if (worker->cmd_sck_id < 0)
     {
         log_error(worker->log, "Create unix-udp socket failed!");
-        return RTTP_ERR;
+        return RTMQ_ERR;
     }
 
-    return RTTP_OK;
+    return RTMQ_OK;
 }
 
 /******************************************************************************
@@ -190,35 +190,35 @@ int rtsd_worker_init(rtsd_cntx_t *ctx, rttp_worker_t *worker, int id)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.18 #
  ******************************************************************************/
-static int rtsd_worker_event_core_hdl(rtsd_cntx_t *ctx, rttp_worker_t *worker)
+static int rtsd_worker_event_core_hdl(rtsd_cntx_t *ctx, rtmq_worker_t *worker)
 {
-    rttp_cmd_t cmd;
+    rtmq_cmd_t cmd;
 
     if (!FD_ISSET(worker->cmd_sck_id, &worker->rdset))
     {
-        return RTTP_OK; /* 无数据 */
+        return RTMQ_OK; /* 无数据 */
     }
 
     if (unix_udp_recv(worker->cmd_sck_id, (void *)&cmd, sizeof(cmd)) < 0)
     {
         log_error(worker->log, "errmsg:[%d] %s", errno, strerror(errno));
-        return RTTP_ERR_RECV_CMD;
+        return RTMQ_ERR_RECV_CMD;
     }
 
     switch (cmd.type)
     {
-        case RTTP_CMD_PROC_REQ:
+        case RTMQ_CMD_PROC_REQ:
         {
             return rtsd_worker_cmd_proc_req_hdl(ctx, worker, &cmd);
         }
         default:
         {
             log_error(worker->log, "Received unknown type! %d", cmd.type);
-            return RTTP_ERR_UNKNOWN_CMD;
+            return RTMQ_ERR_UNKNOWN_CMD;
         }
     }
 
-    return RTTP_ERR_UNKNOWN_CMD;
+    return RTMQ_ERR_UNKNOWN_CMD;
 }
 
 /******************************************************************************
@@ -234,15 +234,15 @@ static int rtsd_worker_event_core_hdl(rtsd_cntx_t *ctx, rttp_worker_t *worker)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.18 #
  ******************************************************************************/
-static int rtsd_worker_cmd_proc_req_hdl(rtsd_cntx_t *ctx, rttp_worker_t *worker, const rttp_cmd_t *cmd)
+static int rtsd_worker_cmd_proc_req_hdl(rtsd_cntx_t *ctx, rtmq_worker_t *worker, const rtmq_cmd_t *cmd)
 {
 #define RTSD_WORK_POP_NUM   (1024)
     int idx, num;
     void *addr[RTSD_WORK_POP_NUM];
     queue_t *rq;
-    rttp_reg_t *reg;
-    rttp_header_t *head;
-    const rttp_cmd_proc_req_t *work_cmd = (const rttp_cmd_proc_req_t *)&cmd->param;
+    rtmq_reg_t *reg;
+    rtmq_header_t *head;
+    const rtmq_cmd_proc_req_t *work_cmd = (const rtmq_cmd_proc_req_t *)&cmd->param;
 
     /* 1. 获取接收队列 */
     rq = ctx->recvq[work_cmd->rqidx];
@@ -253,7 +253,7 @@ static int rtsd_worker_cmd_proc_req_hdl(rtsd_cntx_t *ctx, rttp_worker_t *worker,
         num = MIN(queue_used(rq), RTSD_WORK_POP_NUM);
         if (0 == num)
         {
-            return RTTP_OK;
+            return RTMQ_OK;
         }
 
         num = queue_mpop(rq, addr, num);
@@ -267,7 +267,7 @@ static int rtsd_worker_cmd_proc_req_hdl(rtsd_cntx_t *ctx, rttp_worker_t *worker,
         for (idx=0; idx<num; ++idx)
         {
             /* > 执行回调函数 */
-            head = (rttp_header_t *)addr[idx];
+            head = (rtmq_header_t *)addr[idx];
 
             reg = &ctx->reg[head->type];
             if (NULL == reg->proc)
@@ -278,7 +278,7 @@ static int rtsd_worker_cmd_proc_req_hdl(rtsd_cntx_t *ctx, rttp_worker_t *worker,
             }
 
             if (reg->proc(head->type, head->nodeid,
-                addr[idx] + sizeof(rttp_header_t), head->length, reg->param))
+                addr[idx] + sizeof(rtmq_header_t), head->length, reg->param))
             {
                 ++worker->err_total;    /* 错误计数 */
             }
@@ -292,5 +292,5 @@ static int rtsd_worker_cmd_proc_req_hdl(rtsd_cntx_t *ctx, rttp_worker_t *worker,
         }
     }
 
-    return RTTP_OK;
+    return RTMQ_OK;
 }

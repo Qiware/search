@@ -1,9 +1,9 @@
 #include "shm_opt.h"
 #include "syscall.h"
-#include "rttp_cmd.h"
+#include "rtmq_cmd.h"
 #include "rtsd_cli.h"
 #include "rtsd_ssvr.h"
-#include "rttp_comm.h"
+#include "rtmq_comm.h"
 
 static int _rtsd_cli_init(rtsd_cli_t *cli, int idx);
 static int rtsd_cli_shmat(rtsd_cli_t *cli);
@@ -45,7 +45,7 @@ rtsd_cli_t *rtsd_cli_init(const rtsd_conf_t *conf, int idx, log_cycle_t *log)
     /* > 根据配置进行初始化 */
     if (_rtsd_cli_init(cli, idx))
     {
-        log_error(log, "Initialize client of rttp failed!");
+        log_error(log, "Initialize client of rtmq failed!");
         free(cli);
         return NULL;
     }
@@ -72,12 +72,12 @@ static int _rtsd_cli_init(rtsd_cli_t *cli, int idx)
     if (rtsd_cli_shmat(cli)
         || rtsd_cli_cmd_usck(cli, idx))
     {
-        log_error(cli->log, "Initialize client of rttp failed!");
+        log_error(cli->log, "Initialize client of rtmq failed!");
         FREE(cli->sendq);
-        return RTTP_ERR;
+        return RTMQ_ERR;
     }
 
-    return RTTP_OK;
+    return RTMQ_OK;
 }
 
 /******************************************************************************
@@ -102,7 +102,7 @@ static int rtsd_cli_shmat(rtsd_cli_t *cli)
     if (NULL == cli->sendq)
     {
         log_error(cli->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return RTTP_ERR;
+        return RTMQ_ERR;
     }
 
     /* > 连接共享队列 */
@@ -115,11 +115,11 @@ static int rtsd_cli_shmat(rtsd_cli_t *cli)
         {
             log_error(cli->log, "errmsg:[%d] %s! path:[%s]", errno, strerror(errno), path);
             FREE(cli->sendq);
-            return RTTP_ERR;
+            return RTMQ_ERR;
         }
     }
 
-    return RTTP_OK;
+    return RTMQ_OK;
 }
 
 /******************************************************************************
@@ -143,10 +143,10 @@ static int rtsd_cli_cmd_usck(rtsd_cli_t *cli, int idx)
     if (cli->cmd_sck_id < 0)
     {
         log_error(cli->log, "errmsg:[%d] %s! path:%s", errno, strerror(errno), path);
-        return RTTP_ERR;
+        return RTMQ_ERR;
     }
 
-    return RTTP_OK;
+    return RTMQ_OK;
 }
 
 /******************************************************************************
@@ -163,13 +163,13 @@ static int rtsd_cli_cmd_usck(rtsd_cli_t *cli, int idx)
  ******************************************************************************/
 static int rtsd_cli_cmd_send_req(rtsd_cli_t *cli, int idx)
 {
-    rttp_cmd_t cmd;
+    rtmq_cmd_t cmd;
     char path[FILE_NAME_MAX_LEN];
     rtsd_conf_t *conf = &cli->conf;
 
     memset(&cmd, 0, sizeof(cmd));
 
-    cmd.type = RTTP_CMD_SEND_ALL;
+    cmd.type = RTMQ_CMD_SEND_ALL;
 
     rtsd_ssvr_usck_path(conf, path, idx);
 
@@ -197,29 +197,29 @@ int rtsd_cli_send(rtsd_cli_t *cli, int type, const void *data, size_t size)
 {
     int idx;
     void *addr;
-    rttp_header_t *head;
+    rtmq_header_t *head;
     static uint8_t num = 0;
     rtsd_conf_t *conf = &cli->conf;
 
     /* > 选择发送队列 */
     idx = (num++) % conf->send_thd_num;
 
-    addr = shm_queue_malloc(cli->sendq[idx], sizeof(rttp_header_t)+size);
+    addr = shm_queue_malloc(cli->sendq[idx], sizeof(rtmq_header_t)+size);
     if (NULL == addr)
     {
         log_error(cli->log, "Alloc from SHMQ failed! size:%d/%d",
-                size+sizeof(rttp_header_t), shm_queue_size(cli->sendq[idx]));
-        return RTTP_ERR;
+                size+sizeof(rtmq_header_t), shm_queue_size(cli->sendq[idx]));
+        return RTMQ_ERR;
     }
 
     /* > 设置发送数据 */
-    head = (rttp_header_t *)addr;
+    head = (rtmq_header_t *)addr;
 
     head->type = type;
     head->nodeid = conf->nodeid;
     head->length = size;
-    head->flag = RTTP_EXP_MESG;
-    head->checksum = RTTP_CHECK_SUM;
+    head->flag = RTMQ_EXP_MESG;
+    head->checksum = RTMQ_CHECK_SUM;
 
     memcpy(head+1, data, size);
 
@@ -231,11 +231,11 @@ int rtsd_cli_send(rtsd_cli_t *cli, int type, const void *data, size_t size)
     {
         log_error(cli->log, "Push into shmq failed!");
         shm_queue_dealloc(cli->sendq[idx], addr);
-        return RTTP_ERR;
+        return RTMQ_ERR;
     }
 
     /* > 通知发送线程 */
     rtsd_cli_cmd_send_req(cli, idx);
 
-    return RTTP_OK;
+    return RTMQ_OK;
 }

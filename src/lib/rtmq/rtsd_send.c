@@ -15,16 +15,16 @@
 static int rtsd_creat_workers(rtsd_cntx_t *ctx)
 {
     int idx;
-    rttp_worker_t *worker;
+    rtmq_worker_t *worker;
     thread_pool_opt_t opt;
     rtsd_conf_t *conf = &ctx->conf;
 
     /* > 创建对象 */
-    worker = (rttp_worker_t *)slab_alloc(ctx->slab, conf->work_thd_num * sizeof(rttp_worker_t));
+    worker = (rtmq_worker_t *)slab_alloc(ctx->slab, conf->work_thd_num * sizeof(rtmq_worker_t));
     if (NULL == worker)
     {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return RTTP_ERR;
+        return RTMQ_ERR;
     }
 
     /* > 创建线程池 */
@@ -39,7 +39,7 @@ static int rtsd_creat_workers(rtsd_cntx_t *ctx)
     {
         log_error(ctx->log, "Initialize thread pool failed!");
         slab_dealloc(ctx->slab, worker);
-        return RTTP_ERR;
+        return RTMQ_ERR;
     }
 
     /* > 初始化线程 */
@@ -50,11 +50,11 @@ static int rtsd_creat_workers(rtsd_cntx_t *ctx)
             log_fatal(ctx->log, "Initialize work thread failed!");
             slab_dealloc(ctx->slab, worker);
             thread_pool_destroy(ctx->worktp);
-            return RTTP_ERR;
+            return RTMQ_ERR;
         }
     }
 
-    return RTTP_OK;
+    return RTMQ_OK;
 }
 
 /******************************************************************************
@@ -80,7 +80,7 @@ static int rtsd_creat_sends(rtsd_cntx_t *ctx)
     if (NULL == ssvr)
     {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return RTTP_ERR;
+        return RTMQ_ERR;
     }
 
     /* > 创建线程池 */
@@ -95,7 +95,7 @@ static int rtsd_creat_sends(rtsd_cntx_t *ctx)
     {
         log_error(ctx->log, "Initialize thread pool failed!");
         slab_dealloc(ctx->slab, ssvr);
-        return RTTP_ERR;
+        return RTMQ_ERR;
     }
 
     /* > 初始化线程 */
@@ -106,11 +106,11 @@ static int rtsd_creat_sends(rtsd_cntx_t *ctx)
             log_fatal(ctx->log, "Initialize send thread failed!");
             slab_dealloc(ctx->slab, ssvr);
             thread_pool_destroy(ctx->sendtp);
-            return RTTP_ERR;
+            return RTMQ_ERR;
         }
     }
 
-    return RTTP_OK;
+    return RTMQ_OK;
 }
 
 
@@ -135,7 +135,7 @@ static int rtsd_creat_recvq(rtsd_cntx_t *ctx)
     if (NULL == ctx->recvq)
     {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return RTTP_ERR;
+        return RTMQ_ERR;
     }
 
     /* > 创建接收队列 */
@@ -145,11 +145,11 @@ static int rtsd_creat_recvq(rtsd_cntx_t *ctx)
         if (NULL == ctx->recvq[idx])
         {
             log_error(ctx->log, "Create recvq failed!");
-            return RTTP_ERR;
+            return RTMQ_ERR;
         }
     }
 
-    return RTTP_OK;
+    return RTMQ_OK;
 }
 
 /******************************************************************************
@@ -249,7 +249,7 @@ int rtsd_start(rtsd_cntx_t *ctx)
         thread_pool_add_worker(ctx->sendtp, rtsd_ssvr_routine, ctx);
     }
 
-    return RTTP_OK;
+    return RTMQ_OK;
 }
 
 /******************************************************************************
@@ -257,7 +257,7 @@ int rtsd_start(rtsd_cntx_t *ctx)
  **功    能: 消息处理的注册接口
  **输入参数:
  **     ctx: 全局对象
- **     type: 扩展消息类型 Range:(0 ~ RTTP_TYPE_MAX)
+ **     type: 扩展消息类型 Range:(0 ~ RTMQ_TYPE_MAX)
  **     proc: 回调函数
  **     param: 附加参数
  **输出参数: NONE
@@ -268,20 +268,20 @@ int rtsd_start(rtsd_cntx_t *ctx)
  **     2. 不允许重复注册
  **作    者: # Qifeng.zou # 2015.05.19 #
  ******************************************************************************/
-int rtsd_register(rtsd_cntx_t *ctx, int type, rttp_reg_cb_t proc, void *param)
+int rtsd_register(rtsd_cntx_t *ctx, int type, rtmq_reg_cb_t proc, void *param)
 {
-    rttp_reg_t *reg;
+    rtmq_reg_t *reg;
 
-    if (type >= RTTP_TYPE_MAX)
+    if (type >= RTMQ_TYPE_MAX)
     {
         log_error(ctx->log, "Data type [%d] is out of range!", type);
-        return RTTP_ERR;
+        return RTMQ_ERR;
     }
 
     if (0 != ctx->reg[type].flag)
     {
         log_error(ctx->log, "Repeat register type [%d]!", type);
-        return RTTP_ERR_REPEAT_REG;
+        return RTMQ_ERR_REPEAT_REG;
     }
 
     reg = &ctx->reg[type];
@@ -290,5 +290,5 @@ int rtsd_register(rtsd_cntx_t *ctx, int type, rttp_reg_cb_t proc, void *param)
     reg->param = param;
     reg->flag = 1;
 
-    return RTTP_OK;
+    return RTMQ_OK;
 }

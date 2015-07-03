@@ -62,33 +62,33 @@ rtrd_cli_t *rtrd_cli_init(const rtrd_conf_t *conf, int idx)
 int rtrd_cli_send(rtrd_cli_t *cli, int type, int dest, void *data, size_t len)
 {
     void *addr;
-    rttp_frwd_t *frwd;
+    rtmq_frwd_t *frwd;
 
     /* > 申请队列空间 */
-    addr = shm_queue_malloc(cli->distq, sizeof(rttp_frwd_t)+len);
+    addr = shm_queue_malloc(cli->distq, sizeof(rtmq_frwd_t)+len);
     if (NULL == addr)
     {
-        return RTTP_ERR;
+        return RTMQ_ERR;
     }
 
-    frwd = (rttp_frwd_t *)addr;
+    frwd = (rtmq_frwd_t *)addr;
 
     frwd->type = type; 
     frwd->dest = dest;
     frwd->length = len;
 
-    memcpy(addr+sizeof(rttp_frwd_t), data, len);
+    memcpy(addr+sizeof(rtmq_frwd_t), data, len);
 
     /* > 压入队列空间 */
     if (shm_queue_push(cli->distq, addr))
     {
         shm_queue_dealloc(cli->distq, addr);
-        return RTTP_ERR;
+        return RTMQ_ERR;
     }
 
     rtrd_cli_cmd_dist_req(cli);
 
-    return RTTP_OK;
+    return RTMQ_OK;
 }
 
 /******************************************************************************
@@ -105,13 +105,13 @@ int rtrd_cli_send(rtrd_cli_t *cli, int type, int dest, void *data, size_t len)
  ******************************************************************************/
 static int rtrd_cli_cmd_dist_req(rtrd_cli_t *cli)
 {
-    rttp_cmd_t cmd;
+    rtmq_cmd_t cmd;
     char path[FILE_NAME_MAX_LEN];
     rtrd_conf_t *conf = &cli->conf;
 
     memset(&cmd, 0, sizeof(cmd));
 
-    cmd.type = RTTP_CMD_DIST_REQ;
+    cmd.type = RTMQ_CMD_DIST_REQ;
 
     rtrd_dsvr_usck_path(conf, path);
 

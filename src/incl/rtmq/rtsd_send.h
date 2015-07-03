@@ -11,8 +11,8 @@ typedef struct
 
     struct
     {
-        char usr[RTTP_USR_MAX_LEN];     /* 用户名 */
-        char passwd[RTTP_PWD_MAX_LEN];  /* 登录密码 */
+        char usr[RTMQ_USR_MAX_LEN];     /* 用户名 */
+        char passwd[RTMQ_PWD_MAX_LEN];  /* 登录密码 */
     } auth;                             /* 鉴权信息 */
 
     char ipaddr[IP_ADDR_MAX_LEN];       /* 服务端IP地址 */
@@ -24,7 +24,7 @@ typedef struct
     size_t send_buff_size;              /* 发送缓存大小 */
     size_t recv_buff_size;              /* 接收缓存大小 */
 
-    rttp_cpu_conf_t cpu;                /* CPU亲和性配置 */
+    rtmq_cpu_conf_t cpu;                /* CPU亲和性配置 */
 
     queue_conf_t sendq;                 /* 发送队列配置 */
     queue_conf_t recvq;                 /* 接收队列配置 */
@@ -43,7 +43,7 @@ typedef struct
     thread_pool_t *sendtp;              /* 发送线程池 */
     thread_pool_t *worktp;              /* 工作线程池 */
 
-    rttp_reg_t reg[RTTP_TYPE_MAX];      /* 回调注册对象(TODO: 如果类型过多，可构造平衡二叉树) */
+    rtmq_reg_t reg[RTMQ_TYPE_MAX];      /* 回调注册对象(TODO: 如果类型过多，可构造平衡二叉树) */
     queue_t **recvq;                    /* 接收队列(数组长度与send_thd_num一致) */
 } rtsd_cntx_t;
 
@@ -51,14 +51,14 @@ typedef struct
 int rtsd_ssvr_init(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, int tidx);
 void *rtsd_ssvr_routine(void *_ctx);
 
-int rtsd_worker_init(rtsd_cntx_t *ctx, rttp_worker_t *wrk, int tidx);
+int rtsd_worker_init(rtsd_cntx_t *ctx, rtmq_worker_t *wrk, int tidx);
 void *rtsd_worker_routine(void *_ctx);
 
-rttp_worker_t *rtsd_worker_get_by_idx(rtsd_cntx_t *ctx, int idx);
+rtmq_worker_t *rtsd_worker_get_by_idx(rtsd_cntx_t *ctx, int idx);
 
 /* 对外接口 */
 rtsd_cntx_t *rtsd_init(const rtsd_conf_t *conf, log_cycle_t *log);
 int rtsd_start(rtsd_cntx_t *ctx);
-int rtsd_register(rtsd_cntx_t *ctx, int type, rttp_reg_cb_t proc, void *args);
+int rtsd_register(rtsd_cntx_t *ctx, int type, rtmq_reg_cb_t proc, void *args);
 
 #endif /*__RTSD_SEND_H__*/

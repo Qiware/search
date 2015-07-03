@@ -12,10 +12,10 @@ INCLUDE = -I./incl \
 			-I$(PROJ)/src/incl \
 			-I$(PROJ)/src/incl/conf \
 			-I$(PROJ)/src/incl/sdtp \
-			-I$(PROJ)/src/incl/rttp \
+			-I$(PROJ)/src/incl/rtmq \
 			-I$(PROJ)/src/incl/agent
 LIBS_PATH = -L$(PROJ)/lib
-LIBS = -lagent -lcore -lsdtp -lrttp -lconf
+LIBS = -lagent -lcore -lsdtp -lrtmq -lconf
 
 SRC_LIST = listend.c \
 			lsnd_comm.c \

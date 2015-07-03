@@ -3,8 +3,8 @@
 ##
 ## 文件名: Makefile
 ## 版本号: 1.0
-## 描  述: 实时传输协议(RTTP)模块的编译
-##         RTTP: 实时传输协议
+## 描  述: 实时消息队列(RTMQ)模块的编译
+##         RTMQ: 实时消息队列
 ##         RTSD: 实时发送精灵
 ##         RTRD: 实时接收精灵
 ## 作  者: # Qifeng.zou # 2015.06.05 23:14:02 #
@@ -13,7 +13,7 @@ include $(PROJ)/make/build.mak
 
 INCLUDE = -I. \
 		  -I$(PROJ)/src/incl \
-		  -I$(PROJ)/src/incl/rttp
+		  -I$(PROJ)/src/incl/rtmq
 
 LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lcore
@@ -32,7 +32,7 @@ SRC_LIST = rtrd_recv.c \
 
 OBJS = $(subst .c,.o, $(SRC_LIST))
 
-TARGET = librttp.so
+TARGET = librtmq.so
 
 .PHONY: all clean
 

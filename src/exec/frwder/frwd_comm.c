@@ -71,8 +71,8 @@ frwd_cntx_t *frwd_init(const frwd_conf_t *conf)
         }
 
         /* > 初始化发送服务 */
-        frwd->rttp = rtsd_init(&conf->conn_invtd, frwd->log);
-        if (NULL == frwd->rttp) 
+        frwd->rtmq = rtsd_init(&conf->conn_invtd, frwd->log);
+        if (NULL == frwd->rtmq) 
         {
             log_fatal(frwd->log, "Initialize send-server failed!");
             break;
@@ -98,7 +98,7 @@ frwd_cntx_t *frwd_init(const frwd_conf_t *conf)
  ******************************************************************************/
 int frwd_startup(frwd_cntx_t *frwd)
 {
-    if (rtsd_start(frwd->rttp))
+    if (rtsd_start(frwd->rtmq))
     {
         log_fatal(frwd->log, "Start up send-server failed!");
         return FRWD_ERR;
@@ -234,9 +234,9 @@ static int frwd_shmq_push(shm_queue_t *shmq,
     void *addr;
     size_t size;
     agent_flow_t *flow;
-    rttp_header_t *head;
+    rtmq_header_t *head;
 
-    size = sizeof(agent_flow_t) + sizeof(rttp_header_t) + len;
+    size = sizeof(agent_flow_t) + sizeof(rtmq_header_t) + len;
 
     /* > 申请队列空间 */
     addr = shm_queue_malloc(shmq, size);
@@ -247,14 +247,14 @@ static int frwd_shmq_push(shm_queue_t *shmq,
 
     /* > 设置应答数据 */
     flow = (agent_flow_t *)addr;
-    head = (rttp_header_t *)(flow + 1);
+    head = (rtmq_header_t *)(flow + 1);
 
     flow->serial = serial;
     head->type = type;
     head->nodeid = orig;
     head->length = len;
-    head->flag = RTTP_EXP_MESG;
-    head->checksum = RTTP_CHECK_SUM;
+    head->flag = RTMQ_EXP_MESG;
+    head->checksum = RTMQ_CHECK_SUM;
 
     memcpy(head+1, data, len);
 
@@ -350,7 +350,7 @@ static int frwd_insert_word_rsp_hdl(int type, int orig, char *data, size_t len, 
 int frwd_set_reg(frwd_cntx_t *frwd)
 {
 #define FRWD_REG_CB(frwd, type, proc, args) \
-    if (rtsd_register((frwd)->rttp, type, (rttp_reg_cb_t)proc, (void *)args)) \
+    if (rtsd_register((frwd)->rtmq, type, (rtmq_reg_cb_t)proc, (void *)args)) \
     { \
         log_error((frwd)->log, "Register type [%d] failed!", type); \
         return FRWD_ERR; \

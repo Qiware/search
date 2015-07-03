@@ -1,7 +1,7 @@
 #include "comm.h"
 #include "mesg.h"
-#include "rttp_cmd.h"
-#include "rttp_comm.h"
+#include "rtmq_cmd.h"
+#include "rtmq_comm.h"
 #include "rtrd_recv.h"
 
 /* 分发对象 */
@@ -128,12 +128,12 @@ static rtrd_dsvr_t *rtrd_dsvr_init(rtrd_cntx_t *ctx)
  ******************************************************************************/
 static int rtrd_dsvr_cmd_dist_req(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr, int idx)
 {
-    rttp_cmd_t cmd;
+    rtmq_cmd_t cmd;
     char path[FILE_NAME_MAX_LEN];
 
     memset(&cmd, 0, sizeof(cmd));
 
-    cmd.type = RTTP_CMD_DIST_REQ;
+    cmd.type = RTMQ_CMD_DIST_REQ;
 
     rtrd_rsvr_usck_path(&ctx->conf, path, idx);
 
@@ -158,7 +158,7 @@ static int rtrd_dsvr_dist_data_hdl(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr)
 {
 #define RTRD_DISP_POP_NUM   (1024)
     int idx, k, num;
-    rttp_frwd_t *frwd;
+    rtmq_frwd_t *frwd;
     void *data[RTRD_DISP_POP_NUM], *addr;
 
     while (1)
@@ -167,7 +167,7 @@ static int rtrd_dsvr_dist_data_hdl(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr)
         num = MIN(shm_queue_used(ctx->distq), RTRD_DISP_POP_NUM);
         if (0 == num)
         {
-            return RTTP_OK;
+            return RTMQ_OK;
         }
 
         /* > 弹出发送数据 */
@@ -183,7 +183,7 @@ static int rtrd_dsvr_dist_data_hdl(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr)
         for (k=0; k<num; ++k)
         {
             /* > 获取发送队列 */
-            frwd = (rttp_frwd_t *)data[k];
+            frwd = (rtmq_frwd_t *)data[k];
 
             idx = rtrd_node_to_svr_map_rand(ctx, frwd->dest);
             if (idx < 0)
@@ -214,7 +214,7 @@ static int rtrd_dsvr_dist_data_hdl(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr)
         }
     }
 
-    return RTTP_OK;
+    return RTMQ_OK;
 }
 
 /******************************************************************************
@@ -231,13 +231,13 @@ static int rtrd_dsvr_dist_data_hdl(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr)
  ******************************************************************************/
 static int rtrd_dsvr_cmd_recv_and_proc(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr)
 {
-    rttp_cmd_t cmd;
+    rtmq_cmd_t cmd;
 
     /* > 接收命令 */
     if (unix_udp_recv(dsvr->cmd_sck_id, &cmd, sizeof(cmd)) < 0)
     {
         log_error(dsvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return RTTP_ERR;
+        return RTMQ_ERR;
     }
 
     log_trace(dsvr->log, "Recv command! type:%d", cmd.type);
@@ -245,17 +245,17 @@ static int rtrd_dsvr_cmd_recv_and_proc(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr)
     /* > 处理命令 */
     switch (cmd.type)
     {
-        case RTTP_CMD_DIST_REQ:
+        case RTMQ_CMD_DIST_REQ:
         {
             return rtrd_dsvr_dist_data_hdl(ctx, dsvr);
         }
         default:
         {
             log_error(dsvr->log, "Unknown command! type:%d", cmd.type);
-            return RTTP_ERR;
+            return RTMQ_ERR;
         }
     }
 
     log_error(dsvr->log, "Unknown command! type:%d", cmd.type);
-    return RTTP_ERR;
+    return RTMQ_ERR;
 }

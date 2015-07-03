@@ -11,8 +11,8 @@
 #include "log.h"
 #include "shm_opt.h"
 #include "syscall.h"
-#include "rttp_cmd.h"
-#include "rttp_comm.h"
+#include "rtmq_cmd.h"
+#include "rtmq_comm.h"
 #include "rtrd_recv.h"
 #include "thread_pool.h"
 
@@ -61,12 +61,12 @@ rtrd_cntx_t *rtrd_init(const rtrd_conf_t *conf, log_cycle_t *log)
     /* > 备份配置信息 */
     memcpy(&ctx->conf, conf, sizeof(rtrd_conf_t));
 
-    ctx->conf.rqnum = RTTP_WORKER_HDL_QNUM * conf->work_thd_num;
+    ctx->conf.rqnum = RTMQ_WORKER_HDL_QNUM * conf->work_thd_num;
 
     /* > 初始化接收端 */
     if (_rtrd_init(ctx))
     {
-        log_error(ctx->log, "Initialize recv-daemon of rttp failed!");
+        log_error(ctx->log, "Initialize recv-daemon of rtmq failed!");
         FREE(ctx);
         return NULL;
     }
@@ -110,17 +110,17 @@ int rtrd_startup(rtrd_cntx_t *ctx)
     if (thread_creat(&lsn->tid, rtrd_lsn_routine, ctx))
     {
         log_error(ctx->log, "Start listen failed");
-        return RTTP_ERR;
+        return RTMQ_ERR;
     }
 
     /* > 创建分发线程 */
     if (thread_creat(&tid, rtrd_dsvr_routine, ctx))
     {
         log_error(ctx->log, "Start distribute thread failed");
-        return RTTP_ERR;
+        return RTMQ_ERR;
     }
 
-    return RTTP_OK;
+    return RTMQ_OK;
 }
 
 /******************************************************************************
@@ -128,7 +128,7 @@ int rtrd_startup(rtrd_cntx_t *ctx)
  **功    能: 消息处理的注册接口
  **输入参数:
  **     ctx: 全局对象
- **     type: 扩展消息类型 Range:(0 ~ RTTP_TYPE_MAX)
+ **     type: 扩展消息类型 Range:(0 ~ RTMQ_TYPE_MAX)
  **     proc: 回调函数
  **     param: 附加参数
  **输出参数: NONE
@@ -139,20 +139,20 @@ int rtrd_startup(rtrd_cntx_t *ctx)
  **     2. 不允许重复注册
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-int rtrd_register(rtrd_cntx_t *ctx, int type, rttp_reg_cb_t proc, void *param)
+int rtrd_register(rtrd_cntx_t *ctx, int type, rtmq_reg_cb_t proc, void *param)
 {
-    rttp_reg_t *reg;
+    rtmq_reg_t *reg;
 
-    if (type >= RTTP_TYPE_MAX)
+    if (type >= RTMQ_TYPE_MAX)
     {
         log_error(ctx->log, "Data type is out of range!");
-        return RTTP_ERR;
+        return RTMQ_ERR;
     }
 
     if (0 != ctx->reg[type].flag)
     {
         log_error(ctx->log, "Repeat register type [%d]!", type);
-        return RTTP_ERR_REPEAT_REG;
+        return RTMQ_ERR_REPEAT_REG;
     }
 
     reg = &ctx->reg[type];
@@ -161,7 +161,7 @@ int rtrd_register(rtrd_cntx_t *ctx, int type, rttp_reg_cb_t proc, void *param)
     reg->param = param;
     reg->flag = 1;
 
-    return RTTP_OK;
+    return RTMQ_OK;
 }
 
 /******************************************************************************
@@ -178,9 +178,9 @@ int rtrd_register(rtrd_cntx_t *ctx, int type, rttp_reg_cb_t proc, void *param)
 static int rtrd_reg_init(rtrd_cntx_t *ctx)
 {
     int idx;
-    rttp_reg_t *reg = &ctx->reg[0];
+    rtmq_reg_t *reg = &ctx->reg[0];
 
-    for (idx=0; idx<RTTP_TYPE_MAX; ++idx, ++reg)
+    for (idx=0; idx<RTMQ_TYPE_MAX; ++idx, ++reg)
     {
         reg->type = idx;
         reg->proc = rtrd_proc_def_hdl;
@@ -188,7 +188,7 @@ static int rtrd_reg_init(rtrd_cntx_t *ctx)
         reg->param = NULL;
     }
 
-    return RTTP_OK;
+    return RTMQ_OK;
 }
 
 /******************************************************************************
@@ -209,18 +209,18 @@ static int rtrd_reg_init(rtrd_cntx_t *ctx)
 static int _rtrd_init(rtrd_cntx_t *ctx)
 {
     /* > 创建SLAB内存池 */
-    ctx->pool = slab_creat_by_calloc(RTTP_CTX_POOL_SIZE, ctx->log);
+    ctx->pool = slab_creat_by_calloc(RTMQ_CTX_POOL_SIZE, ctx->log);
     if (NULL == ctx->pool)
     {
         log_error(ctx->log, "Initialize slab mem-pool failed!");
-        return RTTP_ERR;
+        return RTMQ_ERR;
     }
 
     /* > 构建NODE->SVR映射表 */
     if (rtrd_node_to_svr_map_init(ctx))
     {
         log_error(ctx->log, "Initialize sck-dev map table failed!");
-        return RTTP_ERR;
+        return RTMQ_ERR;
     }
 
     /* > 初始化注册信息 */
@@ -230,38 +230,38 @@ static int _rtrd_init(rtrd_cntx_t *ctx)
     if (rtrd_creat_recvq(ctx))
     {
         log_error(ctx->log, "Create recv queue failed!");
-        return RTTP_ERR;
+        return RTMQ_ERR;
     }
 
     /* > 创建发送队列 */
     if (rtrd_creat_sendq(ctx))
     {
         log_error(ctx->log, "Create send queue failed!");
-        return RTTP_ERR;
+        return RTMQ_ERR;
     }
 
     /* > 创建接收线程池 */
     if (rtrd_creat_recvtp(ctx))
     {
         log_error(ctx->log, "Create recv thread pool failed!");
-        return RTTP_ERR;
+        return RTMQ_ERR;
     }
 
     /* > 创建工作线程池 */
     if (rtrd_creat_worktp(ctx))
     {
         log_error(ctx->log, "Create worker thread pool failed!");
-        return RTTP_ERR;
+        return RTMQ_ERR;
     }
 
     /* > 初始化侦听服务 */
     if (rtrd_lsn_init(ctx))
     {
         log_error(ctx->log, "Create worker thread pool failed!");
-        return RTTP_ERR;
+        return RTMQ_ERR;
     }
 
-    return RTTP_OK;
+    return RTMQ_OK;
 }
 
 /******************************************************************************
@@ -287,7 +287,7 @@ static int rtrd_creat_recvq(rtrd_cntx_t *ctx)
     if (NULL == ctx->recvq)
     {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return RTTP_ERR;
+        return RTMQ_ERR;
     }
 
     /* > 依次创建接收队列 */
@@ -298,11 +298,11 @@ static int rtrd_creat_recvq(rtrd_cntx_t *ctx)
         {
             log_error(ctx->log, "Create queue failed! max:%d size:%d",
                     conf->recvq.max, conf->recvq.size);
-            return RTTP_ERR;
+            return RTMQ_ERR;
         }
     }
 
-    return RTTP_OK;
+    return RTMQ_OK;
 }
 
 /******************************************************************************
@@ -328,7 +328,7 @@ static int _rtrd_creat_sendq(rtrd_cntx_t *ctx)
     if (NULL == ctx->sendq)
     {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return RTTP_ERR;
+        return RTMQ_ERR;
     }
 
     /* > 依次创建发送队列 */
@@ -339,11 +339,11 @@ static int _rtrd_creat_sendq(rtrd_cntx_t *ctx)
         {
             log_error(ctx->log, "Create send-queue failed! max:%d size:%d",
                     conf->sendq.max, conf->sendq.size);
-            return RTTP_ERR;
+            return RTMQ_ERR;
         }
     }
 
-    return RTTP_OK;
+    return RTMQ_OK;
 }
 
 /******************************************************************************
@@ -363,16 +363,16 @@ static int rtrd_creat_sendq(rtrd_cntx_t *ctx)
     if (NULL == ctx->distq)
     {
         log_error(ctx->log, "Create shm-queue failed!");
-        return RTTP_ERR;
+        return RTMQ_ERR;
     }
 
     if (_rtrd_creat_sendq(ctx))
     {
         log_error(ctx->log, "Create queue failed!");
-        return RTTP_ERR;
+        return RTMQ_ERR;
     }
 
-    return RTTP_OK;
+    return RTMQ_OK;
 }
 
 /******************************************************************************
@@ -403,7 +403,7 @@ static int rtrd_creat_recvtp(rtrd_cntx_t *ctx)
     if (NULL == rsvr)
     {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return RTTP_ERR;
+        return RTMQ_ERR;
     }
 
     /* > 创建线程池 */
@@ -416,7 +416,7 @@ static int rtrd_creat_recvtp(rtrd_cntx_t *ctx)
     {
         log_error(ctx->log, "Initialize thread pool failed!");
         free(rsvr);
-        return RTTP_ERR;
+        return RTMQ_ERR;
     }
 
     /* > 初始化接收对象 */
@@ -430,11 +430,11 @@ static int rtrd_creat_recvtp(rtrd_cntx_t *ctx)
             thread_pool_destroy(ctx->recvtp);
             ctx->recvtp = NULL;
 
-            return RTTP_ERR;
+            return RTMQ_ERR;
         }
     }
 
-    return RTTP_OK;
+    return RTMQ_OK;
 }
 
 /******************************************************************************
@@ -489,16 +489,16 @@ void rtrd_recvtp_destroy(void *_ctx, void *param)
 static int rtrd_creat_worktp(rtrd_cntx_t *ctx)
 {
     int idx;
-    rttp_worker_t *wrk;
+    rtmq_worker_t *wrk;
     thread_pool_opt_t opt;
     rtrd_conf_t *conf = &ctx->conf;
 
     /* > 创建工作对象 */
-    wrk = (void *)calloc(conf->work_thd_num, sizeof(rttp_worker_t));
+    wrk = (void *)calloc(conf->work_thd_num, sizeof(rtmq_worker_t));
     if (NULL == wrk)
     {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return RTTP_ERR;
+        return RTMQ_ERR;
     }
 
     /* > 创建线程池 */
@@ -513,7 +513,7 @@ static int rtrd_creat_worktp(rtrd_cntx_t *ctx)
     {
         log_error(ctx->log, "Initialize thread pool failed!");
         free(wrk);
-        return RTTP_ERR;
+        return RTMQ_ERR;
     }
 
     /* > 初始化工作对象 */
@@ -525,11 +525,11 @@ static int rtrd_creat_worktp(rtrd_cntx_t *ctx)
             free(wrk);
             thread_pool_destroy(ctx->recvtp);
             ctx->recvtp = NULL;
-            return RTTP_ERR;
+            return RTMQ_ERR;
         }
     }
 
-    return RTTP_OK;
+    return RTMQ_OK;
 }
 
 /******************************************************************************
@@ -549,7 +549,7 @@ void rtrd_worktp_destroy(void *_ctx, void *param)
     int idx;
     rtrd_cntx_t *ctx = (rtrd_cntx_t *)_ctx;
     rtrd_conf_t *conf = &ctx->conf;
-    rttp_worker_t *wrk = (rttp_worker_t *)ctx->worktp->data;
+    rtmq_worker_t *wrk = (rtmq_worker_t *)ctx->worktp->data;
 
     for (idx=0; idx<conf->work_thd_num; ++idx, ++wrk)
     {
@@ -579,5 +579,5 @@ void rtrd_worktp_destroy(void *_ctx, void *param)
  ******************************************************************************/
 static int rtrd_proc_def_hdl(int type, int orig, char *buff, size_t len, void *param)
 {
-    return RTTP_OK;
+    return RTMQ_OK;
 }
