@@ -7,7 +7,6 @@
 #include "queue.h"
 #include "rtmq_mesg.h"
 
-#define RTMQ_NAME_MAX_LEN       (64)    /* 名称长度 */
 #define RTMQ_RECONN_INTV        (2)     /* 连接重连间隔 */
 #define RTMQ_KPALIVE_INTV       (30)    /* 保活间隔 */
 #define RTMQ_BUFF_SIZE          (5 * MB)/* 发送/接收缓存SIZE */
@@ -86,8 +85,9 @@ typedef struct
 /* 绑定CPU配置信息 */
 typedef struct
 {
-    short ison;                         /* 是否开启绑定CPU功能 */
-    short start;                        /* 绑定CPU的起始CPU编号 */
+    
+    int ison:1;                         /* 是否开启绑定CPU功能 */
+    int start:7;                        /* 绑定CPU的起始CPU编号 */
 } rtmq_cpu_conf_t;
 
 /* 工作对象 */

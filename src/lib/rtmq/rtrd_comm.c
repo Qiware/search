@@ -79,6 +79,7 @@ int rtrd_node_to_svr_map_init(rtrd_cntx_t *ctx)
 
     memset(&opt, 0, sizeof(opt));
 
+    /* > 创建映射表 */
     opt.pool = (void *)ctx->pool;
     opt.alloc = (mem_alloc_cb_t)slab_alloc;
     opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;

@@ -303,7 +303,7 @@ static int rtrd_lsn_cmd_query_conf_hdl(rtrd_cntx_t *ctx, rtrd_listen_t *lsn, rtm
     param->port = cf->port;
     param->recv_thd_num = cf->recv_thd_num;
     param->work_thd_num = cf->work_thd_num;
-    param->rqnum = cf->rqnum;
+    param->recvq_num = cf->recvq_num;
 
     param->qmax = cf->recvq.max;
     param->qsize = cf->recvq.size;

@@ -16,16 +16,16 @@
 #include "rtrd_recv.h"
 #include "thread_pool.h"
 
-static int _rtrd_init(rtrd_cntx_t *ctx);
+static int rtrd_reg_init(rtrd_cntx_t *ctx);
 
 static int rtrd_creat_recvq(rtrd_cntx_t *ctx);
 static int rtrd_creat_sendq(rtrd_cntx_t *ctx);
 
-static int rtrd_creat_recvtp(rtrd_cntx_t *ctx);
-void rtrd_recvtp_destroy(void *_ctx, void *param);
+static int rtrd_creat_recvs(rtrd_cntx_t *ctx);
+void rtrd_recvs_destroy(void *_ctx, void *param);
 
-static int rtrd_creat_worktp(rtrd_cntx_t *ctx);
-void rtrd_worktp_destroy(void *_ctx, void *param);
+static int rtrd_creat_workers(rtrd_cntx_t *ctx);
+void rtrd_workers_destroy(void *_ctx, void *param);
 
 static int rtrd_proc_def_hdl(int type, int orig, char *buff, size_t len, void *param);
 
@@ -44,34 +44,87 @@ static int rtrd_proc_def_hdl(int type, int orig, char *buff, size_t len, void *p
  **注意事项:
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-rtrd_cntx_t *rtrd_init(const rtrd_conf_t *conf, log_cycle_t *log)
+rtrd_cntx_t *rtrd_init(const rtrd_conf_t *cf, log_cycle_t *log)
 {
     rtrd_cntx_t *ctx;
+    slab_pool_t *slab;
+    rtrd_conf_t *conf;
+
+    /* > 创建SLAB内存池 */
+    slab = slab_creat_by_calloc(RTMQ_CTX_POOL_SIZE, log);
+    if (NULL == slab)
+    {
+        log_error(log, "Initialize slab mem-pool failed!");
+        return NULL;
+    }
 
     /* > 创建全局对象 */
-    ctx = (rtrd_cntx_t *)calloc(1, sizeof(rtrd_cntx_t));
+    ctx = (rtrd_cntx_t *)slab_alloc(slab, sizeof(rtrd_cntx_t));
     if (NULL == ctx)
     {
         log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
+        free(slab);
         return NULL;
     }
 
     ctx->log = log;
+    ctx->pool = slab;
+    conf = &ctx->conf;
+    memcpy(conf, cf, sizeof(rtrd_conf_t));  /* 配置信息 */
+    conf->recvq_num = RTMQ_WORKER_HDL_QNUM * cf->work_thd_num;
 
-    /* > 备份配置信息 */
-    memcpy(&ctx->conf, conf, sizeof(rtrd_conf_t));
-
-    ctx->conf.rqnum = RTMQ_WORKER_HDL_QNUM * conf->work_thd_num;
-
-    /* > 初始化接收端 */
-    if (_rtrd_init(ctx))
+    do
     {
-        log_error(ctx->log, "Initialize recv-daemon of rtmq failed!");
-        FREE(ctx);
-        return NULL;
-    }
+        /* > 构建NODE->SVR映射表 */
+        if (rtrd_node_to_svr_map_init(ctx))
+        {
+            log_error(ctx->log, "Initialize sck-dev map table failed!");
+            break;
+        }
 
-    return ctx;
+        /* > 初始化注册信息 */
+        rtrd_reg_init(ctx);
+
+        /* > 创建接收队列 */
+        if (rtrd_creat_recvq(ctx))
+        {
+            log_error(ctx->log, "Create recv queue failed!");
+            break;
+        }
+
+        /* > 创建发送队列 */
+        if (rtrd_creat_sendq(ctx))
+        {
+            log_error(ctx->log, "Create send queue failed!");
+            break;
+        }
+
+        /* > 创建接收线程池 */
+        if (rtrd_creat_recvs(ctx))
+        {
+            log_error(ctx->log, "Create recv thread pool failed!");
+            break;
+        }
+
+        /* > 创建工作线程池 */
+        if (rtrd_creat_workers(ctx))
+        {
+            log_error(ctx->log, "Create worker thread pool failed!");
+            break;
+        }
+
+        /* > 初始化侦听服务 */
+        if (rtrd_lsn_init(ctx))
+        {
+            log_error(ctx->log, "Create worker thread pool failed!");
+            break;
+        }
+
+        return ctx;
+    } while(0);
+
+    free(slab);
+    return NULL;
 }
 
 /******************************************************************************
@@ -192,79 +245,6 @@ static int rtrd_reg_init(rtrd_cntx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: _rtrd_init
- **功    能: 初始化接收对象
- **输入参数:
- **     ctx: 全局对象
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述:
- **     1. 初始化注册信息
- **     2. 创建接收队列
- **     3. 创建接收线程池
- **     4. 创建工作线程池
- **注意事项:
- **作    者: # Qifeng.zou # 2014.12.30 #
- ******************************************************************************/
-static int _rtrd_init(rtrd_cntx_t *ctx)
-{
-    /* > 创建SLAB内存池 */
-    ctx->pool = slab_creat_by_calloc(RTMQ_CTX_POOL_SIZE, ctx->log);
-    if (NULL == ctx->pool)
-    {
-        log_error(ctx->log, "Initialize slab mem-pool failed!");
-        return RTMQ_ERR;
-    }
-
-    /* > 构建NODE->SVR映射表 */
-    if (rtrd_node_to_svr_map_init(ctx))
-    {
-        log_error(ctx->log, "Initialize sck-dev map table failed!");
-        return RTMQ_ERR;
-    }
-
-    /* > 初始化注册信息 */
-    rtrd_reg_init(ctx);
-
-    /* > 创建接收队列 */
-    if (rtrd_creat_recvq(ctx))
-    {
-        log_error(ctx->log, "Create recv queue failed!");
-        return RTMQ_ERR;
-    }
-
-    /* > 创建发送队列 */
-    if (rtrd_creat_sendq(ctx))
-    {
-        log_error(ctx->log, "Create send queue failed!");
-        return RTMQ_ERR;
-    }
-
-    /* > 创建接收线程池 */
-    if (rtrd_creat_recvtp(ctx))
-    {
-        log_error(ctx->log, "Create recv thread pool failed!");
-        return RTMQ_ERR;
-    }
-
-    /* > 创建工作线程池 */
-    if (rtrd_creat_worktp(ctx))
-    {
-        log_error(ctx->log, "Create worker thread pool failed!");
-        return RTMQ_ERR;
-    }
-
-    /* > 初始化侦听服务 */
-    if (rtrd_lsn_init(ctx))
-    {
-        log_error(ctx->log, "Create worker thread pool failed!");
-        return RTMQ_ERR;
-    }
-
-    return RTMQ_OK;
-}
-
-/******************************************************************************
  **函数名称: rtrd_creat_recvq
  **功    能: 创建接收队列
  **输入参数:
@@ -283,7 +263,7 @@ static int rtrd_creat_recvq(rtrd_cntx_t *ctx)
     rtrd_conf_t *conf = &ctx->conf;
 
     /* > 创建队列数组 */
-    ctx->recvq = calloc(conf->rqnum, sizeof(queue_t *));
+    ctx->recvq = calloc(conf->recvq_num, sizeof(queue_t *));
     if (NULL == ctx->recvq)
     {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
@@ -291,7 +271,7 @@ static int rtrd_creat_recvq(rtrd_cntx_t *ctx)
     }
 
     /* > 依次创建接收队列 */
-    for(idx=0; idx<conf->rqnum; ++idx)
+    for(idx=0; idx<conf->recvq_num; ++idx)
     {
         ctx->recvq[idx] = queue_creat(conf->recvq.max, conf->recvq.size);
         if (NULL == ctx->recvq[idx])
@@ -376,7 +356,7 @@ static int rtrd_creat_sendq(rtrd_cntx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: rtrd_creat_recvtp
+ **函数名称: rtrd_creat_recvs
  **功    能: 创建接收线程池
  **输入参数:
  **     ctx: 全局对象
@@ -389,7 +369,7 @@ static int rtrd_creat_sendq(rtrd_cntx_t *ctx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int rtrd_creat_recvtp(rtrd_cntx_t *ctx)
+static int rtrd_creat_recvs(rtrd_cntx_t *ctx)
 {
     int idx;
     rtrd_rsvr_t *rsvr;
@@ -438,7 +418,7 @@ static int rtrd_creat_recvtp(rtrd_cntx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: rtrd_recvtp_destroy
+ **函数名称: rtrd_recvs_destroy
  **功    能: 销毁接收线程池
  **输入参数:
  **     ctx: 全局对象
@@ -449,7 +429,7 @@ static int rtrd_creat_recvtp(rtrd_cntx_t *ctx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-void rtrd_recvtp_destroy(void *_ctx, void *param)
+void rtrd_recvs_destroy(void *_ctx, void *param)
 {
     int idx;
     rtrd_cntx_t *ctx = (rtrd_cntx_t *)_ctx;
@@ -473,7 +453,7 @@ void rtrd_recvtp_destroy(void *_ctx, void *param)
 }
 
 /******************************************************************************
- **函数名称: rtrd_creat_worktp
+ **函数名称: rtrd_creat_workers
  **功    能: 创建工作线程池
  **输入参数:
  **     ctx: 全局对象
@@ -486,7 +466,7 @@ void rtrd_recvtp_destroy(void *_ctx, void *param)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.06 #
  ******************************************************************************/
-static int rtrd_creat_worktp(rtrd_cntx_t *ctx)
+static int rtrd_creat_workers(rtrd_cntx_t *ctx)
 {
     int idx;
     rtmq_worker_t *wrk;
@@ -533,7 +513,7 @@ static int rtrd_creat_worktp(rtrd_cntx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: rtrd_worktp_destroy
+ **函数名称: rtrd_workers_destroy
  **功    能: 销毁工作线程池
  **输入参数:
  **     ctx: 全局对象
@@ -544,7 +524,7 @@ static int rtrd_creat_worktp(rtrd_cntx_t *ctx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.06 #
  ******************************************************************************/
-void rtrd_worktp_destroy(void *_ctx, void *param)
+void rtrd_workers_destroy(void *_ctx, void *param)
 {
     int idx;
     rtrd_cntx_t *ctx = (rtrd_cntx_t *)_ctx;

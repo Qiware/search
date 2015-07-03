@@ -54,7 +54,7 @@ typedef struct
     int port;                       /* 侦听端口 */
     int recv_thd_num;               /* 接收线程数 */
     int work_thd_num;               /* 工作线程数 */
-    int rqnum;                      /* 接收队列数 */
+    int recvq_num;                  /* 接收队列数 */
 
     int qmax;                       /* 队列长度 */
     int qsize;                      /* 队列大小 */
