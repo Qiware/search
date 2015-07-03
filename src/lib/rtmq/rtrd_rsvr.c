@@ -761,7 +761,7 @@ static int rtrd_rsvr_exp_mesg_proc(rtrd_cntx_t *ctx,
     }
 
     /* > 从队列申请空间 */
-    rqid = rand() % ctx->conf.rqnum;
+    rqid = rand() % ctx->conf.recvq_num;
 
     addr = queue_malloc(ctx->recvq[rqid], len);
     if (NULL == addr)
@@ -1301,7 +1301,7 @@ static int rtrd_rsvr_cmd_proc_all_req(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
     int idx;
 
     /* 依次遍历滞留总数 */
-    for (idx=0; idx<ctx->conf.rqnum; ++idx)
+    for (idx=0; idx<ctx->conf.recvq_num; ++idx)
     {
         rtrd_rsvr_cmd_proc_req(ctx, rsvr, idx);
     }
