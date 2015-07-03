@@ -390,14 +390,14 @@ static int rtrd_lsn_cmd_query_proc_stat_hdl(rtrd_cntx_t *ctx, rtrd_listen_t *lsn
 
     for (idx=0; idx<ctx->conf.work_thd_num; ++idx, ++wrk)
     {
-        /* 1. 设置应答信息 */
+        /* > 设置应答信息 */
         rep.type = RTMQ_CMD_QUERY_PROC_STAT_REP;
 
         stat->proc_total = wrk->proc_total;
         stat->drop_total = wrk->drop_total;
         stat->err_total = wrk->err_total;
 
-        /* 2. 发送应答信息 */
+        /* > 发送应答信息 */
         if (unix_udp_send(wrk->cmd_sck_id, cmd->src_path, &rep, sizeof(rep)) < 0)
         {
             if (EAGAIN != errno)

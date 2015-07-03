@@ -117,5 +117,3 @@ static int rtrd_cli_cmd_dist_req(rtrd_cli_t *cli)
 
     return unix_udp_send(cli->cmd_sck_id, path, &cmd, sizeof(cmd));
 }
-
-
