@@ -26,7 +26,7 @@ typedef struct
     struct sockaddr_in to;                  /* 目标地址 */
 } mon_cntx_t;
 
-menu_item_t *mon_agent_menu(menu_cntx_t *ctx, void *args);
+menu_item_t *mon_search_menu(menu_cntx_t *ctx, void *args);
 menu_item_t *mon_crwl_menu(menu_cntx_t *ctx, void *args);
 menu_item_t *mon_flt_menu(menu_cntx_t *ctx, void *args);
 

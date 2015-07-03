@@ -23,12 +23,12 @@ typedef struct
 } mon_search_conn_t;
 
 static int mon_search_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args);
-static int mon_agent_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args);
+static int mon_search_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args);
 static int mon_insert_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args);
 static int mon_search_word_loop(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args);
 
 /******************************************************************************
- **函数名称: mon_agent_menu
+ **函数名称: mon_search_menu
  **功    能: 代理服务菜单
  **输入参数: NONE
  **输出参数: NONE
@@ -37,7 +37,7 @@ static int mon_search_word_loop(menu_cntx_t *menu_ctx, menu_item_t *menu, void *
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.27 #
  ******************************************************************************/
-menu_item_t *mon_agent_menu(menu_cntx_t *ctx, void *args)
+menu_item_t *mon_search_menu(menu_cntx_t *ctx, void *args)
 {
     menu_item_t *menu;
 
@@ -57,25 +57,26 @@ menu_item_t *mon_agent_menu(menu_cntx_t *ctx, void *args)
     ADD_CHILD(ctx, menu, "Search word", NULL, mon_search_word, NULL, args);
     ADD_CHILD(ctx, menu, "Search word - loop", NULL, mon_search_word_loop, NULL, args);
     ADD_CHILD(ctx, menu, "Insert word", NULL, mon_insert_word, NULL, args);
-    ADD_CHILD(ctx, menu, "Test connect", NULL, mon_agent_connect, NULL, args);
+    ADD_CHILD(ctx, menu, "Test connect", NULL, mon_search_connect, NULL, args);
     return menu;
 }
 
 /* 发送搜索请求 */
 static int mon_search_send_rep(int fd, const char *word)
 {
-    agent_header_t head;
-    mesg_search_word_req_t req;
+    agent_header_t *head;
+    mesg_search_word_req_t *req;
+    char addr[sizeof(agent_header_t) + sizeof(mesg_search_word_req_t)];
 
-    head.type = htonl(MSG_SEARCH_WORD_REQ);
-    head.flag = htonl(AGENT_MSG_FLAG_USR);
-    head.mark = htonl(AGENT_MSG_MARK_KEY);
-    head.length = htonl(sizeof(req));
+    head = (agent_header_t *)addr;
+    req = (mesg_search_word_req_t *)(head + 1);
+    head->type = htonl(MSG_SEARCH_WORD_REQ);
+    head->flag = htonl(AGENT_MSG_FLAG_USR);
+    head->mark = htonl(AGENT_MSG_MARK_KEY);
+    head->length = htonl(sizeof(mesg_search_word_req_t));
+    snprintf(req->words, sizeof(req->words), "%s", word);
 
-    snprintf(req.words, sizeof(req.words), "%s", word);
-
-    Writen(fd, (void *)&head, sizeof(head));
-    Writen(fd, (void *)&req, sizeof(req));
+    Writen(fd, (void *)addr, sizeof(addr));
 
     return 0;
 }
@@ -498,7 +499,7 @@ static int mon_insert_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args)
 }
 
 /******************************************************************************
- **函数名称: mon_agent_connect
+ **函数名称: mon_search_connect
  **功    能: 测试代理服务处理大并发连接的能力
  **输入参数:
  **     menu: 菜单
@@ -508,7 +509,7 @@ static int mon_insert_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.27 #
  ******************************************************************************/
-static int mon_agent_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args)
+static int mon_search_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args)
 {
     char digit[256];
     int idx, num, max;
