@@ -739,7 +739,7 @@ static int sdrd_rsvr_queue_alloc(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr)
 {
     queue_t *recvq;
 
-    rsvr->queue.rqid = rand() % ctx->conf.rqnum;
+    rsvr->queue.rqid = rand() % ctx->conf.recvq_num;
     recvq = ctx->recvq[rsvr->queue.rqid];
 
     rsvr->queue.start = queue_malloc(recvq, queue_size(recvq));
@@ -1360,7 +1360,7 @@ static int sdrd_rsvr_cmd_proc_all_req(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr)
     int idx;
 
     /* 依次遍历滞留总数 */
-    for (idx=0; idx<ctx->conf.rqnum; ++idx)
+    for (idx=0; idx<ctx->conf.recvq_num; ++idx)
     {
         sdrd_rsvr_cmd_proc_req(ctx, rsvr, idx);
     }

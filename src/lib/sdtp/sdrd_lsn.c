@@ -312,7 +312,7 @@ static int sdrd_lsn_cmd_query_conf_hdl(sdrd_cntx_t *ctx, sdrd_lsn_t *lsn, sdtp_c
     args->port = cf->port;
     args->recv_thd_num = cf->recv_thd_num;
     args->work_thd_num = cf->work_thd_num;
-    args->rqnum = cf->rqnum;
+    args->recvq_num = cf->recvq_num;
 
     args->qmax = cf->recvq.max;
     args->qsize = cf->recvq.size;

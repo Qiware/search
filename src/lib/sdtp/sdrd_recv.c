@@ -61,7 +61,7 @@ sdrd_cntx_t *sdrd_init(const sdrd_conf_t *conf, log_cycle_t *log)
     /* > 备份配置信息 */
     memcpy(&ctx->conf, conf, sizeof(sdrd_conf_t));
 
-    ctx->conf.rqnum = SDTP_WORKER_HDL_QNUM * conf->work_thd_num;
+    ctx->conf.recvq_num = SDTP_WORKER_HDL_QNUM * conf->work_thd_num;
 
     /* > 初始化接收端 */
     if (_sdrd_init(ctx))
@@ -279,7 +279,7 @@ static int sdrd_creat_recvq(sdrd_cntx_t *ctx)
     sdrd_conf_t *conf = &ctx->conf;
 
     /* > 创建队列数组 */
-    ctx->recvq = calloc(conf->rqnum, sizeof(queue_t *));
+    ctx->recvq = calloc(conf->recvq_num, sizeof(queue_t *));
     if (NULL == ctx->recvq)
     {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
@@ -287,7 +287,7 @@ static int sdrd_creat_recvq(sdrd_cntx_t *ctx)
     }
 
     /* > 依次创建接收队列 */
-    for(idx=0; idx<conf->rqnum; ++idx)
+    for(idx=0; idx<conf->recvq_num; ++idx)
     {
         ctx->recvq[idx] = queue_creat(conf->recvq.max, conf->recvq.size);
         if (NULL == ctx->recvq[idx])
