@@ -94,8 +94,8 @@ typedef struct
 /* 绑定CPU配置信息 */
 typedef struct
 {
-    short ison;                         /* 是否开启绑定CPU功能 */
-    short start;                        /* 绑定CPU的起始CPU编号 */
+    int ison:1;                         /* 是否开启绑定CPU功能 */
+    int start:7;                        /* 绑定CPU的起始CPU编号 */
 } sdtp_cpu_conf_t;
 
 /* 工作对象 */

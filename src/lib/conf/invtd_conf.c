@@ -155,7 +155,7 @@ static int invtd_conf_load_sdtp(xml_tree_t *xml, rtrd_conf_t *conf)
         return INVT_ERR_CONF;
     }
 
-    conf->rqnum = atoi(node->value.str);
+    conf->recvq_num = atoi(node->value.str);
 
     node = xml_search(xml, nail, "RECVQ.MAX");
     if (NULL == node)

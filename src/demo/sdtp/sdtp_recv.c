@@ -16,7 +16,7 @@ static void sdtp_setup_conf(sdrd_conf_t *conf, int port)
     conf->port = port;
     conf->recv_thd_num = 1;
     conf->work_thd_num = 1;
-    conf->rqnum = 3;
+    conf->recvq_num = 3;
     conf->recvq.max = 1024;
     conf->recvq.size = 40960;
 }
