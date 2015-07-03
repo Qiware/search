@@ -116,45 +116,6 @@ int rtsd_ssvr_init(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, int idx)
 }
 
 /******************************************************************************
- **函数名称: rtsd_ssvr_creat_recvq
- **功    能: 创建发送线程的接收队列
- **输入参数:
- **     ssvr: 发送服务对象
- **     conf: 配置信息
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述: 依次创建接收队列
- **注意事项:
- **作    者: # Qifeng.zou # 2015.05.19 #
- ******************************************************************************/
-static int rtsd_ssvr_creat_recvq(rtsd_cntx_t *ctx, const rtsd_conf_t *conf)
-{
-    int idx;
-    const queue_conf_t *qcf = &conf->recvq;
-
-    /* > 创建对象 */
-    ctx->recvq = (queue_t **)calloc(conf->work_thd_num, sizeof(queue_t *));
-    if (NULL == ctx->recvq)
-    {
-        log_fatal(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return RTTP_ERR;
-    }
-
-    /* > 创建队列 */
-    for (idx=0; idx<conf->send_thd_num; ++idx)
-    {
-        ctx->recvq[idx] = queue_creat(qcf->max, qcf->size);
-        if (NULL == ctx->recvq[idx])
-        {
-            log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
-            return RTTP_ERR;
-        }
-    }
-
-    return RTTP_OK;
-}
-
-/******************************************************************************
  **函数名称: rtsd_ssvr_creat_sendq
  **功    能: 创建发送线程的发送队列
  **输入参数:

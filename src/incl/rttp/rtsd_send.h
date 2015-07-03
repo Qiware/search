@@ -60,6 +60,5 @@ rttp_worker_t *rtsd_worker_get_by_idx(rtsd_cntx_t *ctx, int idx);
 rtsd_cntx_t *rtsd_init(const rtsd_conf_t *conf, log_cycle_t *log);
 int rtsd_start(rtsd_cntx_t *ctx);
 int rtsd_register(rtsd_cntx_t *ctx, int type, rttp_reg_cb_t proc, void *args);
-int rtsd_destroy(rtsd_cntx_t *ctx);
 
 #endif /*__RTSD_SEND_H__*/

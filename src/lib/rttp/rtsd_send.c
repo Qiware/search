@@ -2,7 +2,7 @@
 #include "rtsd_send.h"
 
 /******************************************************************************
- **函数名称: rtsd_creat_worktp
+ **函数名称: rtsd_creat_workers
  **功    能: 创建工作线程线程池
  **输入参数:
  **     ctx: 全局对象
@@ -12,7 +12,7 @@
  **注意事项:
  **作    者: # Qifeng.zou # 2015.08.19 #
  ******************************************************************************/
-static int rtsd_creat_worktp(rtsd_cntx_t *ctx)
+static int rtsd_creat_workers(rtsd_cntx_t *ctx)
 {
     int idx;
     rttp_worker_t *worker;
@@ -54,17 +54,11 @@ static int rtsd_creat_worktp(rtsd_cntx_t *ctx)
         }
     }
 
-    /* > 注册线程回调 */
-    for (idx=0; idx<conf->work_thd_num; idx++)
-    {
-        thread_pool_add_worker(ctx->worktp, rtsd_worker_routine, ctx);
-    }
-
     return RTTP_OK;
 }
 
 /******************************************************************************
- **函数名称: rtsd_creat_sendtp
+ **函数名称: rtsd_creat_sends
  **功    能: 创建发送线程线程池
  **输入参数:
  **     ctx: 全局对象
@@ -74,7 +68,7 @@ static int rtsd_creat_worktp(rtsd_cntx_t *ctx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.08.19 #
  ******************************************************************************/
-static int rtsd_creat_sendtp(rtsd_cntx_t *ctx)
+static int rtsd_creat_sends(rtsd_cntx_t *ctx)
 {
     int idx;
     rtsd_ssvr_t *ssvr;
@@ -114,12 +108,6 @@ static int rtsd_creat_sendtp(rtsd_cntx_t *ctx)
             thread_pool_destroy(ctx->sendtp);
             return RTTP_ERR;
         }
-    }
-
-    /* > 注册线程回调 */
-    for (idx=0; idx<conf->send_thd_num; idx++)
-    {
-        thread_pool_add_worker(ctx->sendtp, rtsd_ssvr_routine, ctx);
     }
 
     return RTTP_OK;
@@ -212,6 +200,22 @@ rtsd_cntx_t *rtsd_init(const rtsd_conf_t *conf, log_cycle_t *log)
         return NULL;
     }
 
+    /* > 创建工作线程池 */
+    if (rtsd_creat_workers(ctx))
+    {
+        log_fatal(ctx->log, "Create work thread pool failed!");
+        slab_destroy(slab);
+        return NULL;
+    }
+
+    /* > 创建发送线程池 */
+    if (rtsd_creat_sends(ctx))
+    {
+        log_fatal(ctx->log, "Create send thread pool failed!");
+        slab_destroy(slab);
+        return NULL;
+    }
+
     return ctx;
 }
 
@@ -230,18 +234,19 @@ rtsd_cntx_t *rtsd_init(const rtsd_conf_t *conf, log_cycle_t *log)
  ******************************************************************************/
 int rtsd_start(rtsd_cntx_t *ctx)
 {
-    /* > 创建工作线程池 */
-    if (rtsd_creat_worktp(ctx))
+    int idx;
+    rtsd_conf_t *conf = &ctx->conf;
+
+    /* > 注册Worker线程回调 */
+    for (idx=0; idx<conf->work_thd_num; ++idx)
     {
-        log_fatal(ctx->log, "Create work thread pool failed!");
-        return RTTP_ERR;
+        thread_pool_add_worker(ctx->worktp, rtsd_worker_routine, ctx);
     }
 
-    /* > 创建发送线程池 */
-    if (rtsd_creat_sendtp(ctx))
+    /* > 注册Send线程回调 */
+    for (idx=0; idx<conf->send_thd_num; ++idx)
     {
-        log_fatal(ctx->log, "Create send thread pool failed!");
-        return RTTP_ERR;
+        thread_pool_add_worker(ctx->sendtp, rtsd_ssvr_routine, ctx);
     }
 
     return RTTP_OK;
@@ -285,22 +290,5 @@ int rtsd_register(rtsd_cntx_t *ctx, int type, rttp_reg_cb_t proc, void *param)
     reg->param = param;
     reg->flag = 1;
 
-    return RTTP_OK;
-}
-
-/******************************************************************************
- **函数名称: rtsd_destroy
- **功    能: 销毁发送端
- **输入参数:
- **     ctx: 全局对象
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述:
- **注意事项:
- **作    者: # Qifeng.zou # 2015.05.19 #
- ******************************************************************************/
-int rtsd_destroy(rtsd_cntx_t *ctx)
-{
-    slab_destroy(ctx->slab);
     return RTTP_OK;
 }
