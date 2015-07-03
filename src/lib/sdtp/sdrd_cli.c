@@ -24,7 +24,7 @@ sdrd_cli_t *sdrd_cli_init(const sdrd_conf_t *conf)
     }
 
     /* > 附着共享内存队列 */
-    cli->sendq = sdrd_shm_sendq_attach(conf);
+    cli->sendq = sdrd_shm_distq_attach(conf);
     if (NULL == cli->sendq)
     {
         free(cli);

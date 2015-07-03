@@ -27,8 +27,8 @@
 /* Listen线程的UNIX-UDP路径 */
 #define sdrd_lsn_usck_path(conf, path) \
     snprintf(path, sizeof(path), "../temp/sdtp/recv/%s/usck/%s_listen.usck", conf->name, conf->name)
-/* 发送队列的共享内存KEY路径 */
-#define sdrd_shm_sendq_path(conf, path) \
+/* 分发队列的共享内存KEY路径 */
+#define sdrd_shm_distq_path(conf, path) \
     snprintf(path, sizeof(path), "../temp/sdtp/recv/%s/%s_shm_sendq", conf->name, conf->name)
 
 /* 配置信息 */
@@ -142,7 +142,7 @@ typedef struct
 
     queue_t **recvq;                    /* 接收队列(内部队列) */
     queue_t **sendq;                    /* 发送队列(内部队列) */
-    shm_queue_t *shm_sendq;             /* 发送队列(外部队列)
+    shm_queue_t *distq;                 /* 分发队列(外部队列)
                                            注: 外部接口首先将要发送的数据放入
                                            此队列, 再从此队列分发到不同的线程队列 */
 
@@ -175,8 +175,8 @@ void sdrd_rsvr_del_all_conn_hdl(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr);
 int sdrd_cmd_to_rsvr(sdrd_cntx_t *ctx, int cmd_sck_id, const sdtp_cmd_t *cmd, int idx);
 int sdrd_link_auth_check(sdrd_cntx_t *ctx, sdtp_link_auth_req_t *link_auth_req);
 
-shm_queue_t *sdrd_shm_sendq_creat(const sdrd_conf_t *conf );
-shm_queue_t *sdrd_shm_sendq_attach(const sdrd_conf_t *conf);
+shm_queue_t *sdrd_shm_distq_creat(const sdrd_conf_t *conf );
+shm_queue_t *sdrd_shm_distq_attach(const sdrd_conf_t *conf);
 
 int sdrd_node_to_svr_map_init(sdrd_cntx_t *ctx);
 int sdrd_node_to_svr_map_add(sdrd_cntx_t *ctx, int nodeid, int rsvr_idx);

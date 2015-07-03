@@ -317,7 +317,7 @@ int sdrd_node_to_svr_map_rand(sdrd_cntx_t *ctx, int nodeid)
 }
 
 /******************************************************************************
- **函数名称: sdrd_shm_sendq_creat
+ **函数名称: sdrd_shm_distq_creat
  **功    能: 创建SHM发送队列
  **输入参数:
  **     conf: 配置信息
@@ -327,19 +327,19 @@ int sdrd_node_to_svr_map_rand(sdrd_cntx_t *ctx, int nodeid)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.20 #
  ******************************************************************************/
-shm_queue_t *sdrd_shm_sendq_creat(const sdrd_conf_t *conf)
+shm_queue_t *sdrd_shm_distq_creat(const sdrd_conf_t *conf)
 {
     char path[FILE_NAME_MAX_LEN];
 
     /* > 获取KEY路径 */
-    sdrd_shm_sendq_path(conf, path);
+    sdrd_shm_distq_path(conf, path);
 
     /* > 通过路径创建共享内存队列 */
     return shm_queue_creat(path, conf->sendq.max, conf->sendq.size);
 }
 
 /******************************************************************************
- **函数名称: sdrd_shm_sendq_attach
+ **函数名称: sdrd_distq_attach
  **功    能: 附着SHM发送队列
  **输入参数:
  **     conf: 配置信息
@@ -349,12 +349,12 @@ shm_queue_t *sdrd_shm_sendq_creat(const sdrd_conf_t *conf)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.06.01 #
  ******************************************************************************/
-shm_queue_t *sdrd_shm_sendq_attach(const sdrd_conf_t *conf)
+shm_queue_t *sdrd_distq_attach(const sdrd_conf_t *conf)
 {
     char path[FILE_NAME_MAX_LEN];
 
     /* > 通过路径生成KEY */
-    sdrd_shm_sendq_path(conf, path);
+    sdrd_shm_distq_path(conf, path);
 
     /* > 通过KEY创建共享内存队列 */
     return shm_queue_attach(path);
@@ -381,7 +381,7 @@ void *sdrd_dist_routine(void *_ctx)
     while (1)
     {
         /* > 弹出发送数据 */
-        data = shm_queue_pop(ctx->shm_sendq);
+        data = shm_queue_pop(ctx->distq);
         if (NULL == data)
         {
             usleep(500); /* TODO: 可使用事件通知机制减少CPU的消耗 */
@@ -402,7 +402,7 @@ void *sdrd_dist_routine(void *_ctx)
         addr = queue_malloc(ctx->sendq[idx], frwd->length);
         if (NULL == addr)
         {
-            shm_queue_dealloc(ctx->shm_sendq, data);
+            shm_queue_dealloc(ctx->distq, data);
             log_error(ctx->log, "Alloc from queue failed! size:%d/%d",
                     frwd->length, queue_size(ctx->sendq[idx]));
             continue;
@@ -412,7 +412,7 @@ void *sdrd_dist_routine(void *_ctx)
 
         queue_push(ctx->sendq[idx], addr);
 
-        shm_queue_dealloc(ctx->shm_sendq, data);
+        shm_queue_dealloc(ctx->distq, data);
     }
 
     return (void *)-1;

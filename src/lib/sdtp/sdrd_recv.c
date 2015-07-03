@@ -355,8 +355,8 @@ static int _sdrd_creat_sendq(sdrd_cntx_t *ctx)
  ******************************************************************************/
 static int sdrd_creat_sendq(sdrd_cntx_t *ctx)
 {
-    ctx->shm_sendq = sdrd_shm_sendq_creat(&ctx->conf);
-    if (NULL == ctx->shm_sendq)
+    ctx->distq = sdrd_shm_distq_creat(&ctx->conf);
+    if (NULL == ctx->distq)
     {
         log_error(ctx->log, "Create shm-queue failed!");
         return SDTP_ERR;
