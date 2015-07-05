@@ -109,44 +109,46 @@ void *lsnd_dsvr_routine(void *_ctx)
  ******************************************************************************/
 static int lsnd_dsvr_cmd_dist_hdl(lsnd_cntx_t *ctx, lsnd_dsvr_t *dsvr)
 {
-    int num, idx;
+    int num, idx, k;
     agent_flow_t *flow;
     rtmq_header_t *head;
     void *addr[LSND_DIST_POP_NUM];
 
-LSND_AGAIN_MPOP:
-    /* > 获取弹出个数 */
-    num = MIN(shm_queue_used(ctx->distq), LSND_DIST_POP_NUM);
-    if (0 == num)
+    for (k=0; k<ctx->conf.distq.num; ++k)
     {
-        return LSND_OK;
-    }
-
-    /* > 弹出发送数据 */
-    num = shm_queue_mpop(ctx->distq, addr, num);
-    if (0 == num)
-    {
-        goto LSND_AGAIN_MPOP;
-    }
-
-    /* > 逐条数据处理 */
-    for (idx=0; idx<num; ++idx)
-    {
-        flow = (agent_flow_t *)addr[idx];       /* 流水信息 */
-        head = (rtmq_header_t *)(flow + 1);     /* 消息头 */
-        if (RTMQ_CHECK_SUM != head->checksum)   /* 校验消息头 */
+    LSND_AGAIN_MPOP:
+        /* > 获取弹出个数 */
+        num = MIN(shm_queue_used(ctx->distq[k]), LSND_DIST_POP_NUM);
+        if (0 == num)
         {
-            assert(0);
+            continue;
         }
 
-        log_debug(ctx->log, "Call %s()! type:%d len:%d", __func__, head->type, head->length);
+        /* > 弹出发送数据 */
+        num = shm_queue_mpop(ctx->distq[k], addr, num);
+        if (0 == num)
+        {
+            goto LSND_AGAIN_MPOP;
+        }
 
-        /* 放入发送队列 */
-        agent_send(ctx->agent, head->type, flow->serial, (void *)(head+1), head->length);
+        /* > 逐条数据处理 */
+        for (idx=0; idx<num; ++idx)
+        {
+            flow = (agent_flow_t *)addr[idx];       /* 流水信息 */
+            head = (rtmq_header_t *)(flow + 1);     /* 消息头 */
+            if (RTMQ_CHECK_SUM != head->checksum)   /* 校验消息头 */
+            {
+                assert(0);
+            }
 
-        shm_queue_dealloc(ctx->distq, addr[idx]); /* 释放队列内存 */
+            log_debug(ctx->log, "Call %s()! type:%d len:%d", __func__, head->type, head->length);
+
+            /* 放入发送队列 */
+            agent_send(ctx->agent, head->type, flow->serial, (void *)(head+1), head->length);
+
+            shm_queue_dealloc(ctx->distq[k], addr[idx]); /* 释放队列内存 */
+        }
     }
-
     return LSND_OK;
 }
 

@@ -76,4 +76,44 @@ log_cycle_t *lsnd_init_log(char *fname)
     return log_init(LOG_LEVEL_ERROR, path);
 }
 
+/******************************************************************************
+ **函数名称: lsnd_attach_distq
+ **功    能: 附着分发队列
+ **输入参数: 
+ **     ctx: 全局对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015-07-05 18:12:16 #
+ ******************************************************************************/
+int lsnd_attach_distq(lsnd_cntx_t *ctx)
+{
+    int idx;
+    char path[FILE_NAME_MAX_LEN];
+    lsnd_conf_t *conf = &ctx->conf;
 
+    /* > 申请对象空间 */
+    ctx->distq = (shm_queue_t **)calloc(1, conf->distq.num*sizeof(shm_queue_t *));
+    if (NULL == ctx->distq)
+    {
+        log_error(ctx->log, "Alloc memory from slab failed!");
+        return LSND_ERR;
+    }
+
+    /* > 依次附着队列 */
+    for (idx=0; idx<conf->distq.num; ++idx)
+    {
+        snprintf(path, sizeof(path), "%s/dist-%d.shmq", conf->wdir, idx);
+
+        ctx->distq[idx] = shm_queue_attach(path);
+        if (NULL == ctx->distq[idx])
+        {
+            free(ctx->distq);
+            log_error(ctx->log, "errmsg:[%d] %s! path:%s", errno, strerror(errno), path);
+            return LSND_ERR;
+        }
+    }
+
+    return LSND_OK;
+}

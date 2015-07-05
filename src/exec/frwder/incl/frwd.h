@@ -25,7 +25,8 @@ typedef struct
 {
     char name[NODE_MAX_LEN];                /* 服务名 */
     char dist_cmd_path[FILE_NAME_MAX_LEN];  /* 分发服务路径 */
-    shm_queue_t *distq;                     /* 分发队列 */
+    int distq_num;                          /* 分发队列数 */
+    shm_queue_t **distq;                    /* 分发队列 */
 } frwd_lsnd_t;
 
 /* 全局对象 */

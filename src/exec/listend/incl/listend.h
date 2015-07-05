@@ -43,11 +43,12 @@ typedef struct
 
     rtsd_cli_t *send_to_invtd;              /* SDTP服务(发送至倒排服务) */
     agent_cntx_t *agent;                    /* 代理服务 */
-    shm_queue_t *distq;                     /* 分发队列 */
+    shm_queue_t **distq;                    /* 分发队列 */
 } lsnd_cntx_t;
 
 int lsnd_getopt(int argc, char **argv, lsnd_opt_t *opt);
 int lsnd_usage(const char *exec);
+int lsnd_attach_distq(lsnd_cntx_t *ctx);
 
 int lsnd_dsvr_init(lsnd_cntx_t *ctx);
 void *lsnd_dsvr_routine(void *_ctx);

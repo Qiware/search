@@ -14,6 +14,12 @@ typedef struct
     char wdir[FILE_PATH_MAX_LEN];   /* 工作路径 */
 
     int log_level;                  /* 日志级别 */
+    struct
+    {
+        int num;                     /* 队列数 */
+        int max;                     /* 队列长度 */
+        int size;                    /* 单元大小 */
+    } distq;                        /* 分发队列 */
     agent_conf_t agent;             /* 代理配置 */
     rtsd_conf_t to_frwd;            /* 转发配置 */
 } lsnd_conf_t;

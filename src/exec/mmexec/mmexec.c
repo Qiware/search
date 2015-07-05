@@ -43,8 +43,7 @@ int main(int argc, char *argv[])
  ******************************************************************************/
 static int lsnd_mem_creat(void)
 {
-#define LSND_SHM_DISTQ_MAX      (1024)          /* 分发队列容量 */
-#define LSND_SHM_DISTQ_SIZE     (4096)          /* 分发队列尺寸 */
+    int idx;
     lsnd_conf_t conf;
     shm_queue_t *shmq;
     char path[FILE_PATH_MAX_LEN];
@@ -57,13 +56,16 @@ static int lsnd_mem_creat(void)
     }
 
     /* > 创建共享内存队列 */
-    snprintf(path, sizeof(path), "%s/dist.shmq", conf.wdir);
-
-    shmq = shm_queue_creat(path, LSND_SHM_DISTQ_MAX, LSND_SHM_DISTQ_SIZE);
-    if (NULL == shmq)
+    for (idx=0; idx<conf.distq.num; ++idx)
     {
-        fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
-        return -1;
+        snprintf(path, sizeof(path), "%s/dist-%d.shmq", conf.wdir, idx);
+
+        shmq = shm_queue_creat(path, conf.distq.max, conf.distq.size);
+        if (NULL == shmq)
+        {
+            fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
+            return -1;
+        }
     }
 
     return 0;

@@ -100,7 +100,7 @@ int lsnd_load_conf(const char *path, lsnd_conf_t *conf, log_cycle_t *log)
  ******************************************************************************/
 static int lsnd_conf_load_comm(xml_tree_t *xml, lsnd_conf_t *conf, log_cycle_t *log)
 {
-    xml_node_t *node;
+    xml_node_t *node, *fix;
 
     /* > 加载结点名称 */
     node = xml_query(xml, ".LISTEND.NAME");
@@ -135,6 +135,41 @@ static int lsnd_conf_load_comm(xml_tree_t *xml, lsnd_conf_t *conf, log_cycle_t *
     {
         conf->log_level = log_get_level(node->value.str);
     }
+
+    /* > 分发队列配置 */
+    fix = xml_query(xml, ".LISTEND.DISTQ");
+    if (NULL == fix)
+    {
+        log_error(log, "Get distribute queue failed!");
+        return -1;
+    }
+
+    node = xml_search(xml, fix, "NUM");
+    if (NULL == node)
+    {
+        log_error(log, "Get number of distribue queue failed!");
+        return -1;
+    }
+
+    conf->distq.num = atoi(node->value.str);
+
+    node = xml_search(xml, fix, "MAX");
+    if (NULL == node)
+    {
+        log_error(log, "Get the max container of distribue queue failed!");
+        return -1;
+    }
+
+    conf->distq.max = atoi(node->value.str);
+
+    node = xml_search(xml, fix, "SIZE");
+    if (NULL == node)
+    {
+        log_error(log, "Get the size of distribue queue failed!");
+        return -1;
+    }
+
+    conf->distq.size = atoi(node->value.str);
 
     return 0;
 }

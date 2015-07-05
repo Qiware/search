@@ -247,7 +247,6 @@ static int lsnd_set_reg(lsnd_cntx_t *ctx)
 static lsnd_cntx_t *lsnd_init(lsnd_conf_t *conf, log_cycle_t *log)
 {
     lsnd_cntx_t *ctx;
-    char path[FILE_PATH_MAX_LEN];
 
     /* > 加进程锁 */
     if (lsnd_proc_lock(conf))
@@ -270,13 +269,10 @@ static lsnd_cntx_t *lsnd_init(lsnd_conf_t *conf, log_cycle_t *log)
 
     do
     {
-        /* > 附着Listend共享分发队列 */
-        snprintf(path, sizeof(path), "%s/dist.shmq", conf->wdir);
-
-        ctx->distq = shm_queue_attach(path);
-        if (NULL == ctx->distq)
+        /* > 附着分发队列 */
+        if (lsnd_attach_distq(ctx))
         {
-            log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
+            log_error(log, "Attach distribute queue failed!");
             break;
         }
 

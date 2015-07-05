@@ -4,6 +4,9 @@
         1) LEVLE: 日志级别(取值范围: trace|debug|info|warn|error|fatal) -->
     <LOG LEVEL="error" />
 
+    <!-- 分发队列配置 -->
+    <DISTQ NUM="3" MAX="2048" SIZE="4096" />
+
     <!-- 指定转发配置
          PATH: 转发配置路径
          MARK: 指定转发配置的标签 -->
@@ -21,9 +24,9 @@
             1) MAX: 队列容量(必须为2的次方)
             2) SIZE: 队列单元大小(0:表示自定义) -->
         <QUEUE>
-            <CONNQ MAX="1024" SIZE="0" />     <!-- 连接队列 -->
-            <RECVQ MAX="1024" SIZE="2048" />  <!-- 接收队列 -->
-            <SENDQ MAX="1024" SIZE="2048" />  <!-- 发送队列 -->
+            <CONNQ MAX="8192" SIZE="0" />     <!-- 连接队列 -->
+            <RECVQ MAX="8192" SIZE="2048" />  <!-- 接收队列 -->
+            <SENDQ MAX="8192" SIZE="2048" />  <!-- 发送队列 -->
         </QUEUE>
 
         <!-- 线程池配置

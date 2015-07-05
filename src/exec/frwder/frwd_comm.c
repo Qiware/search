@@ -18,6 +18,7 @@
 
 static int frwd_init_log(frwd_cntx_t *frwd, const char *pname);
 static int frwd_init_lsnd(frwd_cntx_t *frwd, const frwd_conf_t *conf);
+static int frwd_attach_lsnd_distq(frwd_lsnd_t *lsnd, lsnd_conf_t *conf);
 
 /******************************************************************************
  **函数名称: frwd_init 
@@ -286,9 +287,12 @@ static int frwd_shmq_push(shm_queue_t *shmq,
 static int frwd_cmd_send_to_lsnd(frwd_cntx_t *ctx,
      uint64_t serial, int type, int orig, char *data, size_t len)
 {
+    int idx;
     cmd_data_t cmd;
 
-    if (frwd_shmq_push(ctx->lsnd.distq, serial, type, orig, data, len))
+    idx = rand()%ctx->lsnd.distq_num;
+
+    if (frwd_shmq_push(ctx->lsnd.distq[idx], serial, type, orig, data, len))
     {
         log_error(ctx->log, "Push into SHMQ failed!");
         return FRWD_ERR;
@@ -375,9 +379,9 @@ int frwd_set_reg(frwd_cntx_t *frwd)
 static int frwd_init_lsnd(frwd_cntx_t *frwd, const frwd_conf_t *conf)
 {
     lsnd_conf_t lcf;
-    char path[FILE_PATH_MAX_LEN];
     frwd_lsnd_t *lsnd = &frwd->lsnd;
 
+    /* > 加载配置信息 */
     if (lsnd_load_conf("../conf/listend.xml", &lcf, NULL))
     {
         log_error(frwd->log, "Load listend configuration failed!");
@@ -388,13 +392,51 @@ static int frwd_init_lsnd(frwd_cntx_t *frwd, const frwd_conf_t *conf)
     snprintf(lsnd->dist_cmd_path,                                    /* 分发服务命令 */
          sizeof(lsnd->dist_cmd_path), "../temp/listend/%s/dsvr.usck", lsnd->name);
 
-    snprintf(path, sizeof(path), "../temp/listend/%s/dist.shmq", lsnd->name);
-    lsnd->distq = shm_queue_attach(path);
-    if (NULL == lsnd->distq)
+    if (frwd_attach_lsnd_distq(lsnd, &lcf))
     {
-        log_fatal(frwd->log, "errmsg:[%d] %s! path:%s", errno, strerror(errno), path);
+        log_error(frwd->log, "Attach distq of listend failed!");
         return FRWD_ERR;
     }
 
     return 0;
+}
+
+/******************************************************************************
+ **函数名称: frwd_attach_lsnd_distq
+ **功    能: 附着分发队列
+ **输入参数: 
+ **     ctx: 全局对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015-07-05 18:12:16 #
+ ******************************************************************************/
+static int frwd_attach_lsnd_distq(frwd_lsnd_t *lsnd, lsnd_conf_t *conf)
+{
+    int idx;
+    char path[FILE_NAME_MAX_LEN];
+
+    lsnd->distq_num = conf->distq.num;
+
+    /* > 申请对象空间 */
+    lsnd->distq = (shm_queue_t **)calloc(1, lsnd->distq_num * sizeof(shm_queue_t *));
+    if (NULL == lsnd->distq)
+    {
+        return FRWD_ERR;
+    }
+
+    /* > 依次附着队列 */
+    for (idx=0; idx<conf->distq.num; ++idx)
+    {
+        snprintf(path, sizeof(path), "%s/dist-%d.shmq", conf->wdir, idx);
+
+        lsnd->distq[idx] = shm_queue_attach(path);
+        if (NULL == lsnd->distq[idx])
+        {
+            free(lsnd->distq);
+            return FRWD_ERR;
+        }
+    }
+    return FRWD_OK;
 }
