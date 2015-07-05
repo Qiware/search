@@ -13,7 +13,7 @@
 #include "monitor.h"
 #include "mon_conf.h"
 
-static mon_cntx_t *mon_cntx_init(const char *path);
+static mon_cntx_t *mon_init(const char *path);
 static menu_cntx_t *mon_menu_init(mon_cntx_t *ctx);
 
 /******************************************************************************
@@ -116,7 +116,7 @@ int main(int argc, char *argv[])
     }
 
     /* > 初始化全局信息 */
-    ctx = mon_cntx_init(opt.conf_path);
+    ctx = mon_init(opt.conf_path);
     if (NULL == ctx)
     {
         fprintf(stderr, "Initialize monitor failed!\n");
@@ -134,7 +134,7 @@ int main(int argc, char *argv[])
 }
 
 /******************************************************************************
- **函数名称: mon_cntx_init
+ **函数名称: mon_init
  **功    能: 初始化全局对象
  **输入参数:
  **     path: 配置路径
@@ -144,7 +144,7 @@ int main(int argc, char *argv[])
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.03.16 #
  ******************************************************************************/
-static mon_cntx_t *mon_cntx_init(const char *path)
+static mon_cntx_t *mon_init(const char *path)
 {
     mon_cntx_t *ctx;
     log_cycle_t *log;

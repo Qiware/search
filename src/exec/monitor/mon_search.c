@@ -30,7 +30,9 @@ static int mon_search_word_loop(menu_cntx_t *menu_ctx, menu_item_t *menu, void *
 /******************************************************************************
  **函数名称: mon_search_menu
  **功    能: 代理服务菜单
- **输入参数: NONE
+ **输入参数:
+ **     ctx: 菜单对象
+ **     args: 附加参数
  **输出参数: NONE
  **返    回: 代理服务菜单
  **实现描述: 
@@ -41,7 +43,7 @@ menu_item_t *mon_search_menu(menu_cntx_t *ctx, void *args)
 {
     menu_item_t *menu;
 
-    menu = menu_creat(ctx, "Monitor Search Engine", NULL, menu_display, NULL, args);
+    menu = menu_creat(ctx, "Search Engine", NULL, menu_display, NULL, args);
     if (NULL == menu)
     {
         return NULL;
