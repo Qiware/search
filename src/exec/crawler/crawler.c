@@ -54,6 +54,7 @@ int main(int argc, char *argv[])
         daemon(1, 1);
     }
 
+    umask(0);
     crwl_set_signal();
 
     /* 2. 初始化全局信息 */

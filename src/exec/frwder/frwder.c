@@ -33,6 +33,8 @@ int main(int argc, char *argv[])
         daemon(1, 1);   /* 后台运行 */
     }
 
+    umask(0);
+
     /* > 加载配置信息 */
     if (frwd_load_conf(opt.conf_path, &conf))
     {

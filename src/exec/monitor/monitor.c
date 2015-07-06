@@ -106,6 +106,7 @@ int main(int argc, char *argv[])
 
     memset(&opt, 0, sizeof(opt));
 
+    umask(0);
     set_fd_limit(65535);
     signal(SIGPIPE, SIG_IGN);
 

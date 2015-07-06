@@ -19,6 +19,8 @@ int main(int argc, char *argv[])
 {
     daemon(1, 1); /* 切后台运行 */
 
+    umask(0);
+
     /* > 创建侦听服务内存 */
     if (lsnd_mem_creat())
     {

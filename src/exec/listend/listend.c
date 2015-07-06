@@ -58,6 +58,8 @@ int main(int argc, char *argv[])
         daemon(1, 1);
     }
 
+    umask(0);
+
     /* > 初始化日志 */
     log_get_path(path, sizeof(path), basename(argv[0]));
 

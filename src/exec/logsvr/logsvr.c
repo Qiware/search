@@ -41,6 +41,8 @@ int main(void)
 
     daemon(1, 1);
 
+    umask(0);
+
     /* 2. 初始化日志服务 */
     ctx = logd_init();
     if (NULL == ctx)

@@ -50,6 +50,8 @@ int main(int argc, char *argv[])
         daemon(1, 1);
     }
 
+    umask(0);
+
     /* > 初始化过滤模块 */
     ctx = flt_init(argv[0], opt.conf_path);
     if (NULL == ctx)

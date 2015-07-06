@@ -45,6 +45,8 @@ int main(int argc, char *argv[])
         daemon(1, 1);
     }
 
+    umask(0);
+
     /* > 加载配置信息 */
     if (invtd_conf_load(opt.conf_path, &conf))
     {
