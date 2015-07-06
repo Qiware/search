@@ -44,7 +44,7 @@ static int shm_data_read(const char *path, shm_data_t *shm)
         return -1;
     }
 
-    shm->shmid = atoi(node->value.str);
+    shm->id = atoi(node->value.str);
 
     /* > 获取SIZE */
     node = xml_query(xml, ".SHM.SIZE");
@@ -115,7 +115,7 @@ static int shm_data_write(const char *path, shm_data_t *shm)
         }
 
         /* > 新建SHM-ID */
-        snprintf(value, sizeof(value), "%d", shm->shmid);
+        snprintf(value, sizeof(value), "%d", shm->id);
 
         if (!xml_add_child(xml, node, "ID", value))
         {
@@ -191,8 +191,8 @@ static void *_shm_creat(const char *path, size_t size)
     memset(&shm, 0, sizeof(shm));
 
     /* > 创建共享内存 */
-    shm.shmid = shmget(IPC_PRIVATE, size, IPC_CREAT|0666);
-    if (shm.shmid < 0)
+    shm.id = shmget(IPC_PRIVATE, size, IPC_CREAT|0666);
+    if (shm.id < 0)
     {
         return NULL;
     }
@@ -201,7 +201,7 @@ static void *_shm_creat(const char *path, size_t size)
     shm.checksum = SHM_CHECK_SUM;
 
     /* > ATTACH共享内存 */
-    addr = (void *)shmat(shm.shmid, NULL, 0);
+    addr = (void *)shmat(shm.id, NULL, 0);
     if ((void *)-1 == addr)
     {
         return NULL;
@@ -209,7 +209,7 @@ static void *_shm_creat(const char *path, size_t size)
 
     memset(addr, 0, size);
 
-    shmctl(shm.shmid, IPC_RMID, NULL);
+    shmctl(shm.id, IPC_RMID, NULL);
 
     /* 写入SHM数据 */
     shm_data_write(path, &shm);
@@ -268,12 +268,12 @@ void *shm_creat(const char *path, size_t size)
  ******************************************************************************/
 void *shm_creat_by_key(int key, size_t size)
 {
-    int shmid;
+    int id;
     void *addr;
 
     /* 1 判断是否已经创建 */
-    shmid = shmget(key, 0, 0);
-    if (shmid >= 0)
+    id = shmget(key, 0, 0);
+    if (id >= 0)
     {
         return NULL;  /* 已创建 */
     }
@@ -285,14 +285,14 @@ void *shm_creat_by_key(int key, size_t size)
     }
 
     /* 3 创建共享内存 */
-    shmid = shmget(key, size, IPC_CREAT|0666);
-    if (shmid < 0)
+    id = shmget(key, size, IPC_CREAT|0666);
+    if (id < 0)
     {
         return NULL;
     }
 
     /* 4. ATTACH共享内存 */
-    addr = (void *)shmat(shmid, NULL, 0);
+    addr = (void *)shmat(id, NULL, 0);
     if ((void *)-1 == addr)
     {
         return NULL;
@@ -334,13 +334,13 @@ void *shm_attach(const char *path, size_t size)
     }
  
     /* > 已创建: 直接附着 */
-    addr = shmat(shm.shmid, NULL, 0);
+    addr = shmat(shm.id, NULL, 0);
     if ((void *)-1 == addr)
     {
         return NULL;
     }
 
-    shmctl(shm.shmid, IPC_RMID, NULL);
+    shmctl(shm.id, IPC_RMID, NULL);
 
     return addr;
 }
@@ -358,18 +358,18 @@ void *shm_attach(const char *path, size_t size)
  ******************************************************************************/
 void *shm_attach_by_key(key_t key, size_t size)
 {
-    int shmid;
+    int id;
     void *addr;
 
     /* > 判断是否已经创建 */
-    shmid = shmget(key, 0, 0666);
-    if (shmid < 0)
+    id = shmget(key, 0, 0666);
+    if (id < 0)
     {
         return NULL;
     }
 
     /* > 已创建: 直接附着 */
-    addr = shmat(shmid, NULL, 0);
+    addr = shmat(id, NULL, 0);
     if ((void *)-1 == addr)
     {
         return NULL;
@@ -409,7 +409,7 @@ static void *shm_at_or_creat(const char *path, size_t size)
     }
  
     /* > 直接附着 */
-    addr = shmat(shm.shmid, NULL, 0);
+    addr = shmat(shm.id, NULL, 0);
     if ((void *)-1 == addr)
     {
         if ((EIDRM == errno)
@@ -420,7 +420,7 @@ static void *shm_at_or_creat(const char *path, size_t size)
         return NULL;
     }
 
-    shmctl(shm.shmid, IPC_RMID, NULL);
+    shmctl(shm.id, IPC_RMID, NULL);
 
     return addr;
 }
