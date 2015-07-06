@@ -11,10 +11,8 @@ typedef struct
     size_t size;                /* 空间 */
 } shm_data_t;
 
-#define SHM_DATA_INVALID(shm)     /* 验证合法性 */\
-    ((0 == (shm)->size) \
-        || (0 == (shm)->id) \
-        || (-1 == (shm)->id))
+#define SHM_DATA_INVALID(shm)   /* 验证合法性 */\
+    ((0 == (shm)->size) || (0 == (shm)->id) || (-1 == (shm)->id))
 
 key_t shm_ftok(const char *path, int id);
 void *shm_creat_by_key(int key, size_t size);
