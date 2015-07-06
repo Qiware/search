@@ -8,29 +8,18 @@ SRC="$SRC $DIR/incl"
 SRC="$SRC $DIR/lib/"
 
 # 总行数
-hl=`find $SRC -name "*.h" | xargs cat | wc -l`
-cl=`find $SRC -name "*.c" | xargs cat | wc -l`
-total=`expr $hl + $cl`
+total=`find $SRC -name "*.h" -o -name "*.c" | xargs cat | wc -l`
 
 # 空行数
-hl=`find $SRC -name "*.h" | xargs grep "^$" | wc -l`
-cl=`find $SRC -name "*.c" | xargs grep "^$" | wc -l`
-empty=`expr $hl + $cl`
+empty=`find $SRC -name "*.h" -o -name "*.c" | xargs grep "^$" | wc -l`
 
 # 注释数
-hl=`find $SRC -name "*.h" | xargs grep \
-   -e "^[[:space:]]\{0,\}/\*" \
-   -e "^[[:space:]]\{0,\}\*" \
-   -e "^[[:space:]]\{0,\}\*\*" \
-   -e "^[[:space:]]\{0,\}\*/" \
-   -e "^[[:space:]]\{0,\}//" | wc -l`
-cl=`find $SRC -name "*.c" | xargs grep \
-   -e "^[[:space:]]\{0,\}/\*" \
-   -e "^[[:space:]]\{0,\}\*" \
-   -e "^[[:space:]]\{0,\}\*\*" \
-   -e "^[[:space:]]\{0,\}\*/" \
-   -e "^[[:space:]]\{0,\}//" | wc -l`
-note=`expr $hl + $cl`
+note=`find $SRC -name "*.h" -o -name "*.c" | xargs grep \
+     -e "^[[:space:]]\{0,\}/\*" \
+     -e "^[[:space:]]\{0,\}\*" \
+     -e "^[[:space:]]\{0,\}\*\*" \
+     -e "^[[:space:]]\{0,\}\*/" \
+     -e "^[[:space:]]\{0,\}//" | wc -l`
 
 # 实行数
 real=`expr $total - $empty - $note`
