@@ -1,10 +1,11 @@
 #include "shm_opt.h"
 #include "syscall.h"
+#include "xml_tree.h"
 
 static void *shm_at_or_creat(const char *path, size_t size);
 
 /******************************************************************************
- **函数名称: shm_data_reat
+ **函数名称: shm_data_read
  **功    能: 读取SHM数据
  **输入参数: 
  **     path: 共享内存路径
@@ -17,17 +18,57 @@ static void *shm_at_or_creat(const char *path, size_t size);
  ******************************************************************************/
 static int shm_data_read(const char *path, shm_data_t *shm)
 {
-    FILE *fp;
+    xml_opt_t opt;
+    xml_tree_t *xml;
+    xml_node_t *node;
 
-    fp = fopen(path, "r");
-    if (NULL == fp)
+    memset(&opt, 0, sizeof(opt));
+
+    opt.log = NULL;
+    opt.pool = (void *)NULL;
+    opt.alloc = (mem_alloc_cb_t)mem_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
+
+    xml = xml_creat(path, &opt);
+    if (NULL == xml)
     {
         return -1;
     }
 
-    fread(shm, sizeof(shm_data_t), 1, fp);
+    /* > 获取SHM-ID */
+    node = xml_query(xml, ".SHM.ID");
+    if (NULL == node
+        || 0 == node->value.len)
+    {
+        xml_destroy(xml);
+        return -1;
+    }
 
-    fclose(fp);
+    shm->shmid = atoi(node->value.str);
+
+    /* > 获取SIZE */
+    node = xml_query(xml, ".SHM.SIZE");
+    if (NULL == node
+        || 0 == node->value.len)
+    {
+        xml_destroy(xml);
+        return -1;
+    }
+
+    shm->size = atoi(node->value.str);
+
+    /* > 获取校验值 */
+    node = xml_query(xml, ".SHM.CHECKSUM");
+    if (NULL == node
+        || 0 == node->value.len)
+    {
+        xml_destroy(xml);
+        return -1;
+    }
+
+    shm->checksum = atoi(node->value.str);
+
+    xml_destroy(xml);
 
     return 0;
 }
@@ -46,19 +87,67 @@ static int shm_data_read(const char *path, shm_data_t *shm)
  ******************************************************************************/
 static int shm_data_write(const char *path, shm_data_t *shm)
 {
-    FILE *fp;
+    xml_opt_t opt;
+    xml_tree_t *xml;
+    xml_node_t *node;
+    char value[INT_MAX_LEN];
 
-    fp = fopen(path, "w");
-    if (NULL == fp)
+    memset(&opt, 0, sizeof(opt));
+
+    opt.log = NULL;
+    opt.pool = (void *)NULL;
+    opt.alloc = (mem_alloc_cb_t)mem_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
+
+    xml = xml_screat("", &opt);
+    if (NULL == xml)
     {
         return -1;
     }
 
-    fwrite(shm, sizeof(shm_data_t), 1, fp);
+    do
+    {
+        /* > 根节点 */
+        node = xml_add_child(xml, xml->root, "SHM", NULL);
+        if (NULL == node)
+        {
+            break;
+        }
 
-    fclose(fp);
+        /* > 新建SHM-ID */
+        snprintf(value, sizeof(value), "%d", shm->shmid);
 
-    return 0;
+        if (!xml_add_child(xml, node, "ID", value))
+        {
+            break;
+        }
+
+        /* > 新建SHM-SIZE */
+        snprintf(value, sizeof(value), "%ld", shm->size);
+
+        if (!xml_add_child(xml, node, "SIZE", value))
+        {
+            break;
+        }
+
+        /* > 新建校验值 */
+        snprintf(value, sizeof(value), "%d", shm->checksum);
+
+        if (!xml_add_child(xml, node, "CHECKSUM", value))
+        {
+            break;
+        }
+
+        xml_fwrite(xml, path);
+
+        xml_destroy(xml);
+
+        return 0;
+    } while(0);
+
+    xml_destroy(xml);
+
+    return -1;
 }
 
 /******************************************************************************
@@ -158,10 +247,6 @@ void *shm_creat(const char *path, size_t size)
     else if (0 == st.st_size)
     {
         return _shm_creat(path, size);  /* 创建 */
-    }
-    else if (st.st_size != sizeof(shm_data_t))
-    {
-        return NULL;
     }
 
     return shm_at_or_creat(path, size);  /* 附着 */
