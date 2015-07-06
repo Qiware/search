@@ -26,7 +26,7 @@ int main(int argc, const char** argv)
         fprintf(stderr, "Initialize log failed!\n");
     }
 
-    html = gumbo_html_parse(fname);
+    html = gumbo_html_parse(fname, log);
     if (NULL == html)
     {
         fprintf(stderr, "Parse html failed! [%s]\n", fname);

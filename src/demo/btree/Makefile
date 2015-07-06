@@ -10,16 +10,16 @@ include $(PROJ)/make/build.mak
 
 INCLUDE = -I. -I$(PROJ)/src/incl
 LIBS_PATH = -L$(PROJ)/lib
-LIBS = -lxd_core
+LIBS = -lcore
 
 SRC_LIST = avl_demo.c
-SRC_LIST2 = btree.c
+SRC_LIST2 = btree_demo.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
 OBJS2 = $(subst .c,.o, $(SRC_LIST2)) 
 
 TARGET = avl_demo
-TARGET2 = btree
+TARGET2 = btree_demo
 
 .PHONY: all clean
 

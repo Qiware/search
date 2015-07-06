@@ -10,13 +10,13 @@ include $(PROJ)/make/build.mak
 
 INCLUDE = -I. -I$(PROJ)/src/incl
 LIBS_PATH = -L$(PROJ)/lib
-LIBS = -lxd_core
+LIBS = -lcore
 
-SRC_LIST = ring_test.c
+SRC_LIST = ring_demo.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
 
-TARGET = ring_test
+TARGET = ring_demo
 
 .PHONY: all clean
 

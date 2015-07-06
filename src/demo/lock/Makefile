@@ -10,13 +10,13 @@ include $(PROJ)/make/build.mak
 
 INCLUDE = -I. -I$(PROJ)/src/incl
 LIBS_PATH = -L$(PROJ)/lib
-LIBS = -lpthread -lxd_core
+LIBS = -lpthread -lcore
 
-SRC_LIST = main.c
+SRC_LIST = lock_demo.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
 
-TARGET = test
+TARGET = lock_demo
 
 .PHONY: all clean
 

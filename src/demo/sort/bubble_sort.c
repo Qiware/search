@@ -4,7 +4,7 @@
 
 int bubble_sort(int *array, int num)
 {
-	int i=0, j=0, idx=0, max=0;
+	int j=0, idx=0, max=0;
 
 	for(idx=1; idx<num; idx++)
 	{
@@ -30,7 +30,7 @@ int bubble_sort(int *array, int num)
 	return 0;
 }
 
-int main(int argc, void *argv[])
+int main(int argc, char *argv[])
 {
 	int num=10, idx=0;
 	int array[] = {0, 9, 8, 7, 6, 5, 4, 3, 2, 1};

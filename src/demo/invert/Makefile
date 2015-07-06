@@ -10,7 +10,7 @@ include $(PROJ)/make/build.mak
 
 INCLUDE = -I. -I$(PROJ)/src/incl
 LIBS_PATH = -L$(PROJ)/lib
-LIBS = -lxd_core -lxd_invert_tab
+LIBS = -lcore -linvtab
 
 SRC_LIST = invert_demo.c
 

@@ -3,16 +3,15 @@
 #include "rtrd_recv.h"
 
 /* 回调函数 */
-static int rttp_work_def_hdl(int type, int nodeid, char *buff, size_t len, void *args)
+static int rtmq_work_def_hdl(int type, int nodeid, char *buff, size_t len, void *args)
 {
     fprintf(stderr, "type:%d nodeid:%d buff:%p len:%ld args:%p\n", type, nodeid, buff, len, args);
     return 0;
 }
 
-/* 配置RTTP */
-static void rttp_setup_conf(rtrd_conf_t *conf, int port)
+/* 配置RTMQ */
+static void rtmq_setup_conf(rtrd_conf_t *conf, int port)
 {
-    snprintf(conf->name, sizeof(conf->name), "RTTP-RECV");
     conf->port = port;
     conf->recv_thd_num = 1;
     conf->work_thd_num = 1;
@@ -41,25 +40,25 @@ int main(int argc, const char *argv[])
 
     port = atoi(argv[1]);
 
-    rttp_setup_conf(&conf, port);
+    rtmq_setup_conf(&conf, port);
 
     signal(SIGPIPE, SIG_IGN);
                                        
-    log = log_init(LOG_LEVEL_ERROR, "./rttp.log");
+    log = log_init(LOG_LEVEL_ERROR, "./rtmq.log");
 
     /* 1. 接收端初始化 */
     ctx = rtrd_init(&conf, log);
     if (NULL == ctx)
     {
         fprintf(stderr, "Initialize rcvsvr failed!");
-        return RTTP_ERR;
+        return RTMQ_ERR;
     }
 
-    rtrd_register(ctx, MSG_SEARCH_WORD_REQ, rttp_work_def_hdl, NULL);
-    rtrd_register(ctx, MSG_PRINT_INVT_TAB_REQ, rttp_work_def_hdl, NULL);
-    rtrd_register(ctx, MSG_QUERY_CONF_REQ, rttp_work_def_hdl, NULL);
-    rtrd_register(ctx, MSG_QUERY_WORKER_STAT_REQ, rttp_work_def_hdl, NULL);
-    rtrd_register(ctx, MSG_QUERY_WORKQ_STAT_REQ, rttp_work_def_hdl, NULL);
+    rtrd_register(ctx, MSG_SEARCH_WORD_REQ, rtmq_work_def_hdl, NULL);
+    rtrd_register(ctx, MSG_PRINT_INVT_TAB_REQ, rtmq_work_def_hdl, NULL);
+    rtrd_register(ctx, MSG_QUERY_CONF_REQ, rtmq_work_def_hdl, NULL);
+    rtrd_register(ctx, MSG_QUERY_WORKER_STAT_REQ, rtmq_work_def_hdl, NULL);
+    rtrd_register(ctx, MSG_QUERY_WORKQ_STAT_REQ, rtmq_work_def_hdl, NULL);
 
     /* 2. 接收服务端工作 */
     ret = rtrd_startup(ctx);

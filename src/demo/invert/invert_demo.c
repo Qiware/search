@@ -7,7 +7,7 @@
  ** 作  者: # Qifeng.zou # Mon 11 May 2015 02:41:30 PM CST #
  ******************************************************************************/
 
-#include "invert_tab.h"
+#include "invtab.h"
 
 int main(void)
 {
@@ -22,14 +22,14 @@ int main(void)
     log = log_init(LOG_LEVEL_DEBUG, "invert.log");
 
     /* > 创建倒排表 */
-    tab = invert_tab_creat(1024, log);
+    tab = invtab_creat(1024, log);
     if (NULL == tab)
     {
         return -1;
     }
 
 #define INVERT_INSERT(tab, word, url, freq) \
-    if (invert_tab_insert(tab, word, url, freq)) \
+    if (invtab_insert(tab, word, url, freq)) \
     { \
         return -1; \
     }
@@ -46,7 +46,7 @@ int main(void)
     INVERT_INSERT(tab, "搜狐", "www.sohu.com", 7);
 
     /* > 搜索倒排表 */
-    word = invert_tab_query(tab, "BAIDU");
+    word = invtab_query(tab, "BAIDU");
     if (NULL == word
         || NULL == word->doc_list)
     {

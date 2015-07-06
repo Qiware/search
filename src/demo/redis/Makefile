@@ -10,13 +10,13 @@ include $(PROJ)/make/build.mak
 
 INCLUDE = -I. -I$(PROJ)/src/incl
 LIBS_PATH = -L$(PROJ)/lib -L/usr/local/lib
-LIBS = -lpthread -lhiredis -lxd_core
+LIBS = -lpthread -lhiredis -lcore
 
-SRC_LIST = redis.c
+SRC_LIST = redis_demo.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
 
-TARGET = redis_test
+TARGET = redis_demo
 
 .PHONY: all clean
 

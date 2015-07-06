@@ -60,12 +60,18 @@ int main(int argc, char *argv[])
     {
         for (i=0; i<QUEUE_LEN; ++i)
         {
-            addr = queue_malloc(queue);
+            addr = queue_malloc(queue, QUEUE_SIZE);
+            if (NULL == addr)
+            {
+                break;
+            }
+
             queue_push(queue, addr);
 
             log_error(log, "alloc1: %p", addr);
 
             addr = queue_pop(queue);
+
             queue_dealloc(queue, addr);
 
             log_error(log, "alloc1: %p", addr);

@@ -10,18 +10,18 @@ include $(PROJ)/make/build.mak
 
 INCLUDE = -I. \
 		  -I$(PROJ)/src/incl \
-		  -I$(PROJ)/src/incl/rttp
+		  -I$(PROJ)/src/incl/rtmq
 LIBS_PATH = -L$(PROJ)/lib
-LIBS = -lpthread -lxd_core -lrttp
+LIBS = -lpthread -lcore -lrtmq
 
-SRC_LIST = rttp_send.c
-SRC_LIST2 = rttp_recv.c
+SRC_LIST = rtmq_send.c
+SRC_LIST2 = rtmq_recv.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
 OBJS2 = $(subst .c,.o, $(SRC_LIST2)) 
 
-TARGET = rttp_send
-TARGET2 = rttp_recv
+TARGET = rtmq_send
+TARGET2 = rtmq_recv
 
 .PHONY: all clean
 

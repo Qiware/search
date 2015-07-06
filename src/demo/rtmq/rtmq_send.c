@@ -6,10 +6,10 @@
 #include "rtsd_cli.h"
 #include "rtsd_ssvr.h"
 
-#define __RTTP_DEBUG_SEND__
+#define __RTMQ_DEBUG_SEND__
 
 /******************************************************************************
- **函数名称: rttp_send_debug 
+ **函数名称: rtmq_send_debug 
  **功    能: 发送端调试
  **输入参数: 
  **     cli: 上下文信息
@@ -23,7 +23,7 @@
 #define USLEEP      (10)
 #define SIZE        (4096)
 
-int rttp_send_debug(rtsd_cli_t *cli, int secs)
+int rtmq_send_debug(rtsd_cli_t *cli, int secs)
 {
     size_t idx = 0;
     double sleep2 = 0;
@@ -80,10 +80,9 @@ int rttp_send_debug(rtsd_cli_t *cli, int secs)
     return 0;
 }
 
-static void rttp_setup_conf(rtsd_conf_t *conf, int port)
+static void rtmq_setup_conf(rtsd_conf_t *conf, int port)
 {
     conf->nodeid = 1;
-    snprintf(conf->name, sizeof(conf->name), "RTTP-SEND");
 
     snprintf(conf->auth.usr, sizeof(conf->auth.usr), "qifeng");
     snprintf(conf->auth.passwd, sizeof(conf->auth.passwd), "111111");
@@ -95,9 +94,8 @@ static void rttp_setup_conf(rtsd_conf_t *conf, int port)
     conf->send_buff_size = 5 * MB;
     conf->recv_buff_size = 2 * MB;
 
-    snprintf(conf->sendq.name, sizeof(conf->sendq.name), "../temp/rttp/rttp-ssvr.key");
+    conf->sendq.max = 2048;
     conf->sendq.size = 4096;
-    conf->sendq.count = 2048;
 }
 
 int main(int argc, const char *argv[])
@@ -120,9 +118,9 @@ int main(int argc, const char *argv[])
     nice(-20);
 
     port = atoi(argv[1]);
-    rttp_setup_conf(&conf, port);
+    rtmq_setup_conf(&conf, port);
 
-    log = log_init(LOG_LEVEL_DEBUG, "./rttp_ssvr.log");
+    log = log_init(LOG_LEVEL_DEBUG, "./rtmq_ssvr.log");
     if (NULL == log)
     {
         fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
@@ -142,7 +140,7 @@ int main(int argc, const char *argv[])
         return -1;
     }
 
-#if defined(__RTTP_DEBUG_SEND__)
+#if defined(__RTMQ_DEBUG_SEND__)
     rtsd_cli_t *cli;
     rtsd_cli_t *cli2;
  
@@ -163,8 +161,8 @@ int main(int argc, const char *argv[])
 
     Sleep(5);
 
-    rttp_send_debug(cli, 5);
-#endif /*__RTTP_DEBUG_SEND__*/
+    rtmq_send_debug(cli, 5);
+#endif /*__RTMQ_DEBUG_SEND__*/
 
     while (1) { pause(); }
 
