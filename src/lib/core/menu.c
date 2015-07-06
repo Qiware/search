@@ -277,13 +277,14 @@ static menu_item_t *menu_exec(menu_cntx_t *ctx, menu_item_t *menu, const char *o
     {
         if (!menu->parent)
         {
-            fprintf(stderr, "    Are you sure exit?[No/Yes] ");
+            fprintf(stderr, "    Are you sure exit?[N/y] ");
             if (scanf(" %s", input) < 0)
             {
                 return NULL;
             }
 
-            if (0 == strcasecmp(input, "yes"))
+            if (0 == strcasecmp(input, "y")
+                || 0 == strcasecmp(input, "yes"))
             {
                 if (menu->exit)
                 {
