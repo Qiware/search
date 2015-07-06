@@ -72,6 +72,8 @@ typedef struct
 {
     uint64_t serial;                        /* 流水号(全局唯一编号) */
 
+#define MESG_INSERT_WORD_FAIL   (0)
+#define MESG_INSERT_WORD_SUCC   (1)
     int code;                               /* 应答码 */
     char word[SRCH_WORD_LEN];               /* 关键字 */
 } mesg_insert_word_rsp_t;

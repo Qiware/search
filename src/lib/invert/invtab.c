@@ -309,7 +309,7 @@ invt_dic_word_t *invtab_query(invt_tab_t *tab, char *word)
     char_to_lower(word, lower_word, len);
 
     /* > 查找关键字 */
-    idx = hash_time33(lower_word) % tab->mod;
+    idx = hash_time33_ex(lower_word, len) % tab->mod;
 
     node = avl_query(tab->dic[idx], lower_word, len);
     if (NULL == node)
