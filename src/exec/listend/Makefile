@@ -15,7 +15,8 @@ INCLUDE = -I./incl \
 			-I$(PROJ)/src/incl/rtmq \
 			-I$(PROJ)/src/incl/agent
 LIBS_PATH = -L$(PROJ)/lib
-LIBS = -lagent -lcore -lsdtp -lrtmq -lconf
+LIBS = -lcore -lrtmq -lconf
+LIBS_A = $(PROJ_LIB)/libagent.a
 
 SRC_LIST = listend.c \
 			lsnd_comm.c \
@@ -29,7 +30,7 @@ TARGET = listend
 
 all: $(TARGET)
 $(TARGET): $(OBJS)
-	@$(CC) $(CFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS)
+	@$(CC) $(CFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS) $(LIBS_A)
 	@echo "CC $@"
 	@mv $@ $(PROJ_BIN)
 	@echo "$@ is OK!"

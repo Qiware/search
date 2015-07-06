@@ -19,25 +19,27 @@ static int agent_cmd_send_dist_req(agent_cntx_t *ctx, int idx);
  ******************************************************************************/
 int agent_serial_to_sck_map_init(agent_cntx_t *ctx)
 {
-#define SERIAL_TO_SCK_MAP_LEN  (10)
+#define SERIAL_TO_SCK_MAP_LEN  (33)
     int i;
     avl_opt_t opt;
 
     memset(&opt, 0, sizeof(opt));
 
     ctx->serial_to_sck_map_len = SERIAL_TO_SCK_MAP_LEN;
-    ctx->serial_to_sck_map = (avl_tree_t **)calloc(ctx->serial_to_sck_map_len, sizeof(avl_tree_t *));
+    ctx->serial_to_sck_map = (avl_tree_t **)slab_alloc(ctx->slab,
+                                ctx->serial_to_sck_map_len*sizeof(avl_tree_t *));
     if (NULL == ctx->serial_to_sck_map)
     {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return AGENT_ERR;
     }
 
-    ctx->serial_to_sck_map_lock = (spinlock_t *)calloc(ctx->serial_to_sck_map_len, sizeof(spinlock_t));
+    ctx->serial_to_sck_map_lock = (spinlock_t *)slab_alloc(ctx->slab,
+                                       ctx->serial_to_sck_map_len*sizeof(spinlock_t));
     if (NULL == ctx->serial_to_sck_map_lock)
     {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        FREE(ctx->serial_to_sck_map);
+        slab_dealloc(ctx->slab, ctx->serial_to_sck_map);
         return AGENT_ERR;
     }
 
@@ -51,8 +53,8 @@ int agent_serial_to_sck_map_init(agent_cntx_t *ctx)
         if (NULL == ctx->serial_to_sck_map[i])
         {
             log_error(ctx->log, "Create avl failed!");
-            FREE(ctx->serial_to_sck_map);
-            FREE(ctx->serial_to_sck_map_lock);
+            slab_dealloc(ctx->slab, ctx->serial_to_sck_map);
+            slab_dealloc(ctx->slab, ctx->serial_to_sck_map_lock);
             return AGENT_ERR;
         }
         spin_lock_init(&ctx->serial_to_sck_map_lock[i]);
@@ -141,8 +143,6 @@ int _agent_serial_to_sck_map_delete(agent_cntx_t *ctx, uint64_t serial)
     free(flow);
     return AGENT_OK;
 }
-
-
 
 /******************************************************************************
  **函数名称: agent_serial_to_sck_map_delete
@@ -391,7 +391,7 @@ int agent_send(agent_cntx_t *ctx, int type, uint64_t serial, void *data, int len
  **     ctx: 全局对象
  **     idx: 代理服务的索引
  **输出参数:
- **返    回: 
+ **返    回: >0:成功 <=0:失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2015-06-24 23:55:45 #

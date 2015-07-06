@@ -10,6 +10,7 @@ include $(PROJ)/make/switch.mak
 include $(PROJ)/make/options.mak
 
 CC = gcc
+AR = ar
 CFLAGS = -Wall -gdwarf-2 -g3 -fPIC -O0 -fstack-protector-all -fbounds-check -rdynamic \
 			-Wall \
 			-Werror \
@@ -26,4 +27,5 @@ CFLAGS = -Wall -gdwarf-2 -g3 -fPIC -O0 -fstack-protector-all -fbounds-check -rdy
 			-Wno-unused-function
 
 CFLAGS += $(patsubst %, -D%, $(OPTIONS))
-LFLAGS = -Wall -g -fPIC -shared -fstack-protector-all -fbounds-check -rdynamic
+LFLAGS = -shared -Wall -g -fPIC -fstack-protector-all -fbounds-check -rdynamic
+AFLAGS = -c -r
