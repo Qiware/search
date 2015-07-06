@@ -20,6 +20,7 @@ SRC_LIST = hash.c \
 			http.c \
 			list.c \
 			list2.c \
+			md5.c \
 			menu.c \
 			ring.c \
 			queue.c \
