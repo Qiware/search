@@ -5,7 +5,7 @@
     <LOG LEVEL="error" />
 
     <!-- 分发队列配置 -->
-    <DISTQ NUM="3" MAX="2048" SIZE="4096" />
+    <DISTQ NUM="3" MAX="4096" SIZE="2048" />
 
     <!-- 指定转发配置
          PATH: 转发配置路径
