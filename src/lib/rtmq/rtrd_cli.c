@@ -16,6 +16,7 @@ static int rtrd_cli_cmd_dist_req(rtrd_cli_t *cli);
  ******************************************************************************/
 rtrd_cli_t *rtrd_cli_init(const rtrd_conf_t *conf, int idx)
 {
+    int n;
     rtrd_cli_t *cli;
     char path[FILE_NAME_MAX_LEN];
 
@@ -29,11 +30,22 @@ rtrd_cli_t *rtrd_cli_init(const rtrd_conf_t *conf, int idx)
     memcpy(&cli->conf, conf, sizeof(rtrd_conf_t));
 
     /* > 附着共享内存队列 */
-    cli->distq = rtrd_shm_distq_attach(conf);
+    cli->distq = (shm_queue_t **)calloc(1, conf->distq_num*sizeof(shm_queue_t *));
     if (NULL == cli->distq)
     {
         free(cli);
         return NULL;
+    }
+
+    for (n=0; n<conf->distq_num; ++n)
+    {
+        cli->distq[n] = rtrd_shm_distq_attach(conf, n);
+        if (NULL == cli->distq[n])
+        {
+            free(cli->distq);
+            free(cli);
+            return NULL;
+        }
     }
 
     /* > 创建通信套接字 */
@@ -42,6 +54,7 @@ rtrd_cli_t *rtrd_cli_init(const rtrd_conf_t *conf, int idx)
     cli->cmd_sck_id = unix_udp_creat(path);
     if (cli->cmd_sck_id < 0)
     {
+        free(cli->distq);
         free(cli);
         return NULL;
     }
@@ -61,11 +74,14 @@ rtrd_cli_t *rtrd_cli_init(const rtrd_conf_t *conf, int idx)
  ******************************************************************************/
 int rtrd_cli_send(rtrd_cli_t *cli, int type, int dest, void *data, size_t len)
 {
+    int idx;
     void *addr;
     rtmq_frwd_t *frwd;
 
+    idx = rand() % cli->conf.distq_num;
+
     /* > 申请队列空间 */
-    addr = shm_queue_malloc(cli->distq, sizeof(rtmq_frwd_t)+len);
+    addr = shm_queue_malloc(cli->distq[idx], sizeof(rtmq_frwd_t)+len);
     if (NULL == addr)
     {
         return RTMQ_ERR;
@@ -80,9 +96,9 @@ int rtrd_cli_send(rtrd_cli_t *cli, int type, int dest, void *data, size_t len)
     memcpy(addr+sizeof(rtmq_frwd_t), data, len);
 
     /* > 压入队列空间 */
-    if (shm_queue_push(cli->distq, addr))
+    if (shm_queue_push(cli->distq[idx], addr))
     {
-        shm_queue_dealloc(cli->distq, addr);
+        shm_queue_dealloc(cli->distq[idx], addr);
         return RTMQ_ERR;
     }
 

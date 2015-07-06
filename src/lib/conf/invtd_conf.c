@@ -177,6 +177,31 @@ static int invtd_conf_load_sdtp(xml_tree_t *xml, rtrd_conf_t *conf)
     conf->sendq.max = conf->recvq.max;
     conf->sendq.size = conf->recvq.size;
 
+    /* > 分发队列配置 */
+    node = xml_search(xml, nail, "DISTQ.NUM");
+    if (NULL == node)
+    {
+        return INVT_ERR_CONF;
+    }
+
+    conf->distq_num = atoi(node->value.str);
+
+    node = xml_search(xml, nail, "DISTQ.MAX");
+    if (NULL == node)
+    {
+        return INVT_ERR_CONF;
+    }
+
+    conf->distq.max = atoi(node->value.str);
+
+    node = xml_search(xml, nail, "DISTQ.SIZE");
+    if (NULL == node)
+    {
+        return INVT_ERR_CONF;
+    }
+
+    conf->distq.size = atoi(node->value.str);
+
     return INVT_OK;
 }
 

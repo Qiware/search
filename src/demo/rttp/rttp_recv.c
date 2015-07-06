@@ -19,6 +19,9 @@ static void rttp_setup_conf(rtrd_conf_t *conf, int port)
     conf->recvq_num = 3;
     conf->recvq.max = 1024;
     conf->recvq.size = 40960;
+    conf->distq_num = 3;
+    conf->distq.max = 1024;
+    conf->distq.size = 40960;
 }
 
 int main(int argc, const char *argv[])

@@ -28,8 +28,8 @@
 #define rtrd_lsn_usck_path(conf, _path) \
     snprintf(_path, sizeof(_path), "%s/%d_lsn.usck", (conf)->path, (conf)->nodeid)
 /* 发送队列的共享内存KEY路径 */
-#define rtrd_shm_distq_path(conf, _path) \
-    snprintf(_path, sizeof(_path), "%s/%d_shm.sq", (conf)->path, (conf)->nodeid)
+#define rtrd_shm_distq_path(conf, _path, idx) \
+    snprintf(_path, sizeof(_path), "%s/%d_shm-%d.sq", (conf)->path, (conf)->nodeid, idx)
 /* 分发线程的UNIX-UDP路径 */
 #define rtrd_dsvr_usck_path(conf, _path) \
     snprintf(_path, sizeof(_path), "%s/%d_dsvr.usck", (conf)->path, (conf)->nodeid)
@@ -57,6 +57,7 @@ typedef struct
 
     queue_conf_t recvq;                 /* 接收队列配置 */
     queue_conf_t sendq;                 /* 发送队列配置 */
+    queue_conf_t distq;                 /* 分发队列配置 */
 } rtrd_conf_t;
 
 /* 侦听对象 */
@@ -129,7 +130,7 @@ typedef struct
 {
     int cmd_sck_id;                     /* 命令套接字 */
     rtrd_conf_t conf;                   /* 配置信息 */
-    shm_queue_t *distq;                 /* 分发队列 */
+    shm_queue_t **distq;                /* 分发队列 */
 } rtrd_cli_t;
 
 /* 全局对象 */
@@ -147,7 +148,7 @@ typedef struct
 
     queue_t **recvq;                    /* 接收队列(内部队列) */
     queue_t **sendq;                    /* 发送队列(内部队列) */
-    shm_queue_t *distq;                 /* 分发队列(外部队列)
+    shm_queue_t **distq;                /* 分发队列(外部队列)
                                            注: 外部接口首先将要发送的数据放入
                                            此队列, 再从此队列分发到不同的线程队列 */
 
@@ -181,8 +182,8 @@ void rtrd_rsvr_del_all_conn_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr);
 int rtrd_cmd_to_rsvr(rtrd_cntx_t *ctx, int cmd_sck_id, const rtmq_cmd_t *cmd, int idx);
 int rtrd_link_auth_check(rtrd_cntx_t *ctx, rtmq_link_auth_req_t *link_auth_req);
 
-shm_queue_t *rtrd_shm_distq_creat(const rtrd_conf_t *conf );
-shm_queue_t *rtrd_shm_distq_attach(const rtrd_conf_t *conf);
+shm_queue_t *rtrd_shm_distq_creat(const rtrd_conf_t *conf, int idx);
+shm_queue_t *rtrd_shm_distq_attach(const rtrd_conf_t *conf, int idx);
 
 int rtrd_node_to_svr_map_init(rtrd_cntx_t *ctx);
 int rtrd_node_to_svr_map_add(rtrd_cntx_t *ctx, int nodeid, int rsvr_idx);

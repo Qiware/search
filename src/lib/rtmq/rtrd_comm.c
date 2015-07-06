@@ -257,18 +257,19 @@ int rtrd_node_to_svr_map_rand(rtrd_cntx_t *ctx, int nodeid)
  **功    能: 创建SHM分发队列
  **输入参数:
  **     conf: 配置信息
+ **     idx: 索引
  **输出参数: NONE
  **返    回: 共享内存队列
  **实现描述: 通过路径生成KEY，再根据KEY创建共享内存队列
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.20 #
  ******************************************************************************/
-shm_queue_t *rtrd_shm_distq_creat(const rtrd_conf_t *conf)
+shm_queue_t *rtrd_shm_distq_creat(const rtrd_conf_t *conf, int idx)
 {
     char path[FILE_NAME_MAX_LEN];
 
     /* > 获取KEY路径 */
-    rtrd_shm_distq_path(conf, path);
+    rtrd_shm_distq_path(conf, path, idx);
 
     /* > 通过路径创建共享内存队列 */
     return shm_queue_creat(path, conf->sendq.max, conf->sendq.size);
@@ -285,12 +286,12 @@ shm_queue_t *rtrd_shm_distq_creat(const rtrd_conf_t *conf)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.06.01 #
  ******************************************************************************/
-shm_queue_t *rtrd_shm_distq_attach(const rtrd_conf_t *conf)
+shm_queue_t *rtrd_shm_distq_attach(const rtrd_conf_t *conf, int idx)
 {
     char path[FILE_NAME_MAX_LEN];
 
     /* > 通过路径生成KEY */
-    rtrd_shm_distq_path(conf, path);
+    rtrd_shm_distq_path(conf, path, idx);
 
     /* > 通过KEY创建共享内存队列 */
     return shm_queue_attach(path);

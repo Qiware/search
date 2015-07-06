@@ -20,6 +20,7 @@ static int rtrd_reg_init(rtrd_cntx_t *ctx);
 
 static int rtrd_creat_recvq(rtrd_cntx_t *ctx);
 static int rtrd_creat_sendq(rtrd_cntx_t *ctx);
+static int rtrd_creat_distq(rtrd_cntx_t *ctx);
 
 static int rtrd_creat_recvs(rtrd_cntx_t *ctx);
 void rtrd_recvs_destroy(void *_ctx, void *param);
@@ -94,6 +95,13 @@ rtrd_cntx_t *rtrd_init(const rtrd_conf_t *cf, log_cycle_t *log)
 
         /* > 创建发送队列 */
         if (rtrd_creat_sendq(ctx))
+        {
+            log_error(ctx->log, "Create send queue failed!");
+            break;
+        }
+
+        /* > 创建分发队列 */
+        if (rtrd_creat_distq(ctx))
         {
             log_error(ctx->log, "Create send queue failed!");
             break;
@@ -286,25 +294,23 @@ static int rtrd_creat_recvq(rtrd_cntx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: _rtrd_creat_sendq
+ **函数名称: rtrd_creat_sendq
  **功    能: 创建发送队列
  **输入参数:
  **     ctx: 全局对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述:
- **     1. 创建队列数组
- **     2. 依次创建接收队列
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.22 #
  ******************************************************************************/
-static int _rtrd_creat_sendq(rtrd_cntx_t *ctx)
+static int rtrd_creat_sendq(rtrd_cntx_t *ctx)
 {
     int idx;
     rtrd_conf_t *conf = &ctx->conf;
 
     /* > 创建队列数组 */
-    ctx->sendq = calloc(conf->recv_thd_num, sizeof(queue_t *));
+    ctx->sendq = slab_alloc(ctx->pool, conf->recv_thd_num*sizeof(queue_t *));
     if (NULL == ctx->sendq)
     {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
@@ -327,33 +333,44 @@ static int _rtrd_creat_sendq(rtrd_cntx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: rtrd_creat_sendq
- **功    能: 创建发送队列
+ **函数名称: rtrd_creat_distq
+ **功    能: 创建分发队列
  **输入参数:
  **     ctx: 全局对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 通过路径生成KEY，再根据KEY创建共享内存队列
+ **实现描述:
  **注意事项:
- **作    者: # Qifeng.zou # 2015.05.20 #
+ **作    者: # Qifeng.zou # 2015-07-06 11:21:28 #
  ******************************************************************************/
-static int rtrd_creat_sendq(rtrd_cntx_t *ctx)
+static int rtrd_creat_distq(rtrd_cntx_t *ctx)
 {
-    ctx->distq = rtrd_shm_distq_creat(&ctx->conf);
+    int idx;
+    rtrd_conf_t *conf = &ctx->conf;
+
+    /* > 申请对象空间 */
+    ctx->distq = (shm_queue_t **)slab_alloc(ctx->pool, conf->distq_num*sizeof(shm_queue_t *));
     if (NULL == ctx->distq)
     {
-        log_error(ctx->log, "Create shm-queue failed!");
+        log_error(ctx->log, "Alloc memory from slab failed!");
         return RTMQ_ERR;
     }
 
-    if (_rtrd_creat_sendq(ctx))
+    /* > 依次创建队列 */
+    for (idx=0; idx<conf->distq_num; ++idx)
     {
-        log_error(ctx->log, "Create queue failed!");
-        return RTMQ_ERR;
+        ctx->distq[idx] = rtrd_shm_distq_creat(conf, idx);
+        if (NULL == ctx->distq[idx])
+        {
+            log_error(ctx->log, "Create shm-queue failed!");
+            return RTMQ_ERR;
+        }
     }
 
     return RTMQ_OK;
 }
+
+
 
 /******************************************************************************
  **函数名称: rtrd_creat_recvs
