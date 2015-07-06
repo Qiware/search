@@ -1,6 +1,9 @@
+#include "comm.h"
 #include "shm_opt.h"
 #include "syscall.h"
 #include "xml_tree.h"
+
+#define shm_digest(id, size) ((id) * (size))
 
 static void *shm_at_or_creat(const char *path, size_t size);
 
@@ -18,6 +21,7 @@ static void *shm_at_or_creat(const char *path, size_t size);
  ******************************************************************************/
 static int shm_data_read(const char *path, shm_data_t *shm)
 {
+    uint64_t digest;
     xml_opt_t opt;
     xml_tree_t *xml;
     xml_node_t *node;
@@ -57,16 +61,18 @@ static int shm_data_read(const char *path, shm_data_t *shm)
 
     shm->size = atoi(node->value.str);
 
+    /* > 计算校验值 */
+    digest = shm_digest(shm->id, shm->size);
+
     /* > 获取校验值 */
-    node = xml_query(xml, ".SHM.CHECKSUM");
+    node = xml_query(xml, ".SHM.DIGEST");
     if (NULL == node
-        || 0 == node->value.len)
+        || 0 == node->value.len
+        || digest != (uint64_t)atoll(node->value.str))
     {
         xml_destroy(xml);
         return -1;
     }
-
-    shm->checksum = atoi(node->value.str);
 
     xml_destroy(xml);
 
@@ -87,6 +93,7 @@ static int shm_data_read(const char *path, shm_data_t *shm)
  ******************************************************************************/
 static int shm_data_write(const char *path, shm_data_t *shm)
 {
+    uint64_t digest;
     xml_opt_t opt;
     xml_tree_t *xml;
     xml_node_t *node;
@@ -131,9 +138,11 @@ static int shm_data_write(const char *path, shm_data_t *shm)
         }
 
         /* > 新建校验值 */
-        snprintf(value, sizeof(value), "%d", shm->checksum);
+        digest = shm_digest(shm->id, shm->size);
 
-        if (!xml_add_child(xml, node, "CHECKSUM", value))
+        snprintf(value, sizeof(value), "%lu", digest);
+
+        if (!xml_add_child(xml, node, "DIGEST", value))
         {
             break;
         }
@@ -198,7 +207,6 @@ static void *_shm_creat(const char *path, size_t size)
     }
 
     shm.size = size;
-    shm.checksum = SHM_CHECK_SUM;
 
     /* > ATTACH共享内存 */
     addr = (void *)shmat(shm.id, NULL, 0);
