@@ -803,7 +803,7 @@ static int agent_rsvr_cmd_proc_req(agent_cntx_t *ctx, agent_rsvr_t *rsvr, int wi
  **     sck: SCK对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: TODO: 可向工作线程发送处理请求
+ **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.21 #
  ******************************************************************************/
@@ -811,17 +811,17 @@ static int agent_rsvr_recv_post(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t 
 {
     agent_socket_extra_t *extra = (agent_socket_extra_t *)sck->extra;
 
-    /* 1. 自定义消息的处理 */
+    /* > 自定义消息的处理 */
     if (AGENT_MSG_FLAG_USR == extra->head->flag)
     {
         log_info(rsvr->log, "Push into user data queue!");
 
         queue_push(ctx->recvq[rsvr->id], sck->recv.addr);
-        agent_rsvr_cmd_proc_req(ctx, rsvr, rand()%ctx->conf->worker_num);
+        agent_rsvr_cmd_proc_req(ctx, rsvr, rand()%ctx->conf->worker_num); /* 发送处理命令 */
         return AGENT_OK;
     }
 
-    /* 2. 系统消息的处理 */
+    /* > 系统消息的处理 */
     return agent_sys_msg_hdl(ctx, rsvr, sck);
 }
 

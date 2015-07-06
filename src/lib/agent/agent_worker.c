@@ -44,8 +44,8 @@ static agent_worker_t *agent_worker_self(agent_cntx_t *ctx)
  **     _ctx: 全局信息
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述:
- **注意事项: TODO: 后续改成事件触发机制 
+ **实现描述: 使用事件触发机制驱动业务处理
+ **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.20 #
  ******************************************************************************/
 void *agent_worker_routine(void *_ctx)
@@ -69,7 +69,7 @@ void *agent_worker_routine(void *_ctx)
         max = worker->cmd_sck_id;
         FD_SET(worker->cmd_sck_id, &worker->rdset);
 
-        timeout.tv_sec = 30;
+        timeout.tv_sec = 1;
         timeout.tv_usec = 0;
         ret = select(max+1, &worker->rdset, NULL, NULL, &timeout);
         if (ret < 0)
@@ -129,12 +129,13 @@ int agent_worker_init(agent_cntx_t *ctx, agent_worker_t *worker, int idx)
  **     worker: 工作对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: TODO: 待完善
+ **实现描述: 依次释放Worker对象所创建的所有资源
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.18 #
  ******************************************************************************/
 int agent_worker_destroy(agent_worker_t *worker)
 {
+    CLOSE(worker->cmd_sck_id);
     return AGENT_OK;
 }
 
