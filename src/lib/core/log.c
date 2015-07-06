@@ -141,10 +141,7 @@ log_cycle_t *log_init(int level, const char *path)
     } while (0);
 
     /* 5. 异常处理 */
-    if (NULL != log->file)
-    {
-        log_release(log->file);
-    }
+    if (NULL != log->file) { log_release(log->file); }
     log_mutex_unlock();
     pthread_mutex_destroy(&log->lock);
     free(log);
