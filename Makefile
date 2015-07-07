@@ -41,8 +41,6 @@ SRC += "$(EXEC_DIR)/listend"
 SRC += "$(EXEC_DIR)/monitor"
 SRC += "$(EXEC_DIR)/invertd"
 
-export DIR
-
 # 创建目录结构
 define MkDir
 	mkdir -p ${PROJ_LIB};

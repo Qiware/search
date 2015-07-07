@@ -17,6 +17,7 @@ INCLUDE = -I./incl \
 
 LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lpthread -lcore -lsdtp -lrtmq -lconf
+LIBS_A = $(PROJ_LIB)/libcore.a $(PROJ_LIB)/librtmq.a
 
 SRC_LIST = frwder.c \
 			frwd_comm.c

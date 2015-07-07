@@ -15,7 +15,8 @@ INCLUDE = -I./incl \
 			-I$(PROJ)/src/incl/sdtp
 
 LIBS_PATH = -L$(PROJ)/lib
-LIBS = -lpthread -lcore -linvtab -lsdtp -lrtmq -lconf
+LIBS = -lpthread -lcore -lrtmq -linvtab -lsdtp -lconf
+LIBS_A = $(PROJ_LIB)/libcore.a $(PROJ_LIB)/librtmq.a $(PROJ_LIB)/libinvtab.a
 
 SRC_LIST = invertd.c \
             invtd_comm.c \
@@ -29,7 +30,7 @@ TARGET = invertd
 
 all: $(TARGET)
 $(TARGET): $(OBJS)
-	@$(CC) $(CFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS)
+	@$(CC) $(CFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS_A) $(LIBS)
 	@echo "CC $@"
 	@mv $@ $(PROJ_BIN)
 	@echo "$@ is OK!"
