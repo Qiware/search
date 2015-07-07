@@ -165,11 +165,11 @@ static int lsnd_search_word_req_hdl(unsigned int type, void *data, int length, v
     mesg_search_word_req_t *req;
     lsnd_cntx_t *ctx = (lsnd_cntx_t *)args;
 
-    log_debug(ctx->log, "Call %s()!", __func__);
-
     flow = (agent_flow_t *)data; // 流水信息
     head = (agent_header_t *)(flow + 1);    // 消息头
     req = (mesg_search_word_req_t *)(head + 1); // 消息体
+
+    log_debug(ctx->log, "Call %s() serial:%lu seq:%lu!", __func__, flow->serial, flow->sck_seq);
 
     /* > 转发搜索请求 */
     req->serial = hton64(flow->serial);
