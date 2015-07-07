@@ -9,7 +9,7 @@
 
 #define AGENT_TMOUT_MSEC       (200)   /* 超时(豪秒) */
 
-#define AGENT_EVENT_MAX_NUM    (4096)  /* 事件最大数 */
+#define AGENT_EVENT_MAX_NUM    (8192)  /* 事件最大数 */
 #define AGENT_SCK_HASH_MOD     (7)     /* 套接字哈希长度 */
 
 typedef struct
@@ -34,7 +34,7 @@ typedef struct
 /* 套接字信息 */
 typedef struct
 {
-    uint64_t serial;                /* 序列号(主键) */
+    uint64_t seq;                   /* SCK序列号(主键) */
     bool is_cmd_sck;                /* 是否是命令套接字(false:否 true:是) */
 
     agent_flow_t *flow;             /* 流水信息 */

@@ -74,7 +74,8 @@ agent_cntx_t *agent_init(agent_conf_t *conf, log_cycle_t *log)
         /* > 设置进程打开文件数 */
         if (set_fd_limit(conf->connections.max))
         {
-            log_error(log, "errmsg:[%d] %s! max:%d", errno, strerror(errno), conf->connections.max);
+            log_error(log, "errmsg:[%d] %s! max:%d",
+                      errno, strerror(errno), conf->connections.max);
             break;
         }
 
@@ -110,13 +111,6 @@ agent_cntx_t *agent_init(agent_conf_t *conf, log_cycle_t *log)
         if (agent_cli_init(ctx))
         {
             log_error(log, "Initialize client failed!");
-            break;
-        }
-
-        /* > 初始化侦听服务 */
-        if (agent_listen_init(ctx))
-        {
-            log_error(log, "Initialize listen-server failed!");
             break;
         }
 
@@ -204,7 +198,7 @@ static int agent_creat_workers(agent_cntx_t *ctx)
     const agent_conf_t *conf = ctx->conf;
 
     /* > 新建Worker对象 */
-    worker = (agent_worker_t *)calloc(conf->worker_num, sizeof(agent_worker_t));
+    worker = (agent_worker_t *)slab_alloc(ctx->slab, conf->worker_num*sizeof(agent_worker_t));
     if (NULL == worker)
     {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
@@ -247,7 +241,7 @@ static int agent_creat_workers(agent_cntx_t *ctx)
         agent_worker_destroy(worker+idx);
     }
 
-    free(worker);
+    slab_dealloc(ctx->slab, worker);
     thread_pool_destroy(ctx->workers);
 
     return AGENT_ERR;
@@ -267,11 +261,10 @@ static int agent_creat_workers(agent_cntx_t *ctx)
 static int agent_workers_destroy(agent_cntx_t *ctx)
 {
     int idx;
-    void *data;
     agent_worker_t *worker;
     const agent_conf_t *conf = ctx->conf;
 
-    /* 1. 释放Worker对象 */
+    /* > 释放Worker对象 */
     for (idx=0; idx<conf->worker_num; ++idx)
     {
         worker = (agent_worker_t *)ctx->workers->data + idx;
@@ -279,14 +272,9 @@ static int agent_workers_destroy(agent_cntx_t *ctx)
         agent_worker_destroy(worker);
     }
 
-    /* 2. 释放线程池对象 */
-    data = ctx->workers->data;
-
+    /* > 释放线程池对象 */
+    slab_dealloc(ctx->slab, ctx->workers->data);
     thread_pool_destroy(ctx->workers);
-
-    free(data);
-
-    ctx->workers = NULL;
 
     return AGENT_ERR;
 }
@@ -310,7 +298,7 @@ static int agent_creat_agents(agent_cntx_t *ctx)
     const agent_conf_t *conf = ctx->conf;
 
     /* > 新建Agent对象 */
-    agent = (agent_rsvr_t *)calloc(conf->agent_num, sizeof(agent_rsvr_t));
+    agent = (agent_rsvr_t *)slab_alloc(ctx->slab, conf->agent_num*sizeof(agent_rsvr_t));
     if (NULL == agent)
     {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
@@ -354,7 +342,7 @@ static int agent_creat_agents(agent_cntx_t *ctx)
         agent_rsvr_destroy(agent+idx);
     }
 
-    free(agent);
+    slab_dealloc(ctx->slab, agent);
     thread_pool_destroy(ctx->agents);
 
     return AGENT_ERR;
@@ -373,8 +361,45 @@ static int agent_creat_agents(agent_cntx_t *ctx)
  ******************************************************************************/
 static int agent_creat_listens(agent_cntx_t *ctx)
 {
+    int idx;
+    agent_lsvr_t *lsvr;
     thread_pool_opt_t opt;
     agent_conf_t *conf = ctx->conf;
+
+    /* > 侦听指定端口 */
+    ctx->listen.lsn_sck_id = tcp_listen(conf->connections.port);
+    if (ctx->listen.lsn_sck_id < 0)
+    {
+        log_error(ctx->log, "errmsg:[%d] %s! port:%d",
+                  errno, strerror(errno), conf->connections.port);
+        return AGENT_ERR;
+    }
+
+    spin_lock_init(&ctx->listen.accept_lock);
+
+    /* > 创建LSN对象 */
+    ctx->listen.lsvr = (agent_lsvr_t *)slab_alloc(
+        ctx->slab, conf->lsn_num*sizeof(agent_lsvr_t));
+    if (NULL == ctx->listen.lsvr)
+    {
+        CLOSE(ctx->listen.lsn_sck_id);
+        log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        return AGENT_ERR;
+    }
+
+    /* > 初始化侦听服务 */
+    for (idx=0; idx<conf->lsn_num; ++idx)
+    {
+        lsvr = ctx->listen.lsvr + 1;
+        lsvr->log = ctx->log;
+        if (agent_listen_init(ctx, lsvr, idx))
+        {
+            CLOSE(ctx->listen.lsn_sck_id);
+            slab_dealloc(ctx->slab, ctx->listen.lsvr);
+            log_error(ctx->log, "Initialize listen-server failed!");
+            return AGENT_ERR;
+        }
+    }
 
     memset(&opt, 0, sizeof(opt));
 
@@ -382,9 +407,11 @@ static int agent_creat_listens(agent_cntx_t *ctx)
     opt.alloc = (mem_alloc_cb_t)slab_alloc;
     opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-    ctx->listens = thread_pool_init(conf->lsn_num, &opt, NULL);
+    ctx->listens = thread_pool_init(conf->lsn_num, &opt, ctx->listen.lsvr);
     if (NULL == ctx->listens)
     {
+        CLOSE(ctx->listen.lsn_sck_id);
+        slab_dealloc(ctx->slab, ctx->listen.lsvr);
         log_error(ctx->log, "Initialize thread pool failed!");
         return AGENT_ERR;
     }

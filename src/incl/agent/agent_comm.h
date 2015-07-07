@@ -20,11 +20,11 @@ typedef enum
 /* 消息流水信息 */
 typedef struct
 {
-    uint64_t  serial;                       /* 流水号(全局唯一编号) */
+    uint64_t serial;                        /* 流水号(全局唯一编号) */
     time_t create_tm;                       /* 生成时间 */
 
     int agt_idx;                            /* 代理索引 */
-    uint64_t sck_serial;                    /* 套接字编号 */
+    uint64_t sck_seq;                       /* 套接字编号 */
 } agent_flow_t;
 
 /* 注册回调类型 */
@@ -45,7 +45,8 @@ typedef struct
 typedef struct
 {
     int fd;                                 /* 套接字 */
-    unsigned long long serial;              /* SCK流水号 */
+    struct timeb crtm;                      /* 创建时间 */
+    uint64_t seq;                           /* SCK流水号 */
 } agent_add_sck_t;
 
 /* 超时连接链表 */

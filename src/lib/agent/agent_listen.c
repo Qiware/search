@@ -7,8 +7,35 @@
 #include "agent_rsvr.h"
 #include "agent_listen.h"
 
-static int agent_listen_accept(agent_cntx_t *ctx, agent_listen_t *lsn);
-static int agent_listen_send_add_sck_req(agent_cntx_t *ctx, agent_listen_t *lsn, int idx);
+static int agent_listen_accept(agent_cntx_t *ctx, agent_lsvr_t *lsvr);
+static int agent_listen_send_add_sck_req(agent_cntx_t *ctx, agent_lsvr_t *lsvr, int idx);
+
+/******************************************************************************
+ **函数名称: agent_lsvr_self
+ **功    能: 获取代理对象
+ **输入参数: 
+ **     ctx: 全局信息
+ **输出参数: NONE
+ **返    回: 侦听对象
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015-07-07 21:53:08 #
+ ******************************************************************************/
+static agent_lsvr_t *agent_lsn_self(agent_cntx_t *ctx)
+{
+    int id;
+    agent_lsvr_t *lsvr;
+
+    id = thread_pool_get_tidx(ctx->listens);
+    if (id < 0)
+    {
+        return NULL;
+    }
+
+    lsvr = thread_pool_get_args(ctx->listens);
+
+    return lsvr + id;
+}
 
 /******************************************************************************
  **函数名称: agent_listen_routine
@@ -26,18 +53,26 @@ void *agent_listen_routine(void *_ctx)
     int ret, max;
     fd_set rdset;
     struct timeval tv;
+    agent_lsvr_t *lsvr;
     agent_cntx_t *ctx = (agent_cntx_t *)_ctx;
-    agent_listen_t *lsn = ctx->lsn;
 
-    /* > 接收网络连接  */
+    /* > 获取侦听对象 */
+    lsvr = agent_lsn_self(ctx);
+    if (NULL == lsvr)
+    {
+        log_error(ctx->log, "Search listen object failed!");
+        return (void *)-1;
+    }
+
+    /* > 接收网络连接 */
     while (1)
     {
         FD_ZERO(&rdset);
 
-        FD_SET(lsn->lsn_sck_id, &rdset);
-        FD_SET(lsn->cmd_sck_id, &rdset);
+        FD_SET(lsvr->cmd_sck_id, &rdset);
+        FD_SET(ctx->listen.lsn_sck_id, &rdset);
 
-        max = MAX(lsn->lsn_sck_id, lsn->cmd_sck_id);
+        max = MAX(ctx->listen.lsn_sck_id, lsvr->cmd_sck_id);
 
         /* > 等待事件通知 */
         tv.tv_sec = 30;
@@ -46,7 +81,7 @@ void *agent_listen_routine(void *_ctx)
         if (ret < 0)
         {
             if (EINTR == errno) { continue; }
-            log_error(lsn->log, "errmsg:[%d] %s!", errno, strerror(errno));
+            log_error(lsvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
             continue;
         }
         else if (0 == ret)
@@ -55,9 +90,9 @@ void *agent_listen_routine(void *_ctx)
         }
 
         /* > 接收网络连接 */
-        if (FD_ISSET(lsn->lsn_sck_id, &rdset))
+        if (FD_ISSET(ctx->listen.lsn_sck_id, &rdset))
         {
-            agent_listen_accept(ctx, lsn);
+            agent_listen_accept(ctx, lsvr);
         }
     }
     return (void *)0;
@@ -68,62 +103,30 @@ void *agent_listen_routine(void *_ctx)
  **功    能: 初始化侦听线程
  **输入参数:
  **     ctx: 全局信息
+ **     lsvr: 侦听对象
+ **     idx: 侦听对象索引
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.19 #
  ******************************************************************************/
-int agent_listen_init(agent_cntx_t *ctx)
+int agent_listen_init(agent_cntx_t *ctx, agent_lsvr_t *lsvr, int idx)
 {
-    agent_listen_t *lsn;
     char path[FILE_NAME_MAX_LEN];
     agent_conf_t *conf = ctx->conf;
 
-    /* > 创建LSN对象 */
-    lsn = (agent_listen_t *)slab_alloc(ctx->slab, sizeof(agent_listen_t));
-    if (NULL == lsn)
+    lsvr->id = idx;
+
+    agent_lsvr_cmd_usck_path(conf, idx, path, sizeof(path));
+
+    lsvr->cmd_sck_id = unix_udp_creat(path);
+    if (lsvr->cmd_sck_id < 0)
     {
-        log_error(lsn->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return AGENT_ERR;
     }
 
-    lsn->log = ctx->log;
-
-    do
-    {
-        /* > 侦听指定端口 */
-        lsn->lsn_sck_id = tcp_listen(conf->connections.port);
-        if (lsn->lsn_sck_id < 0)
-        {
-            log_error(lsn->log, "errmsg:[%d] %s! port:%d",
-                    errno, strerror(errno), ctx->conf->connections.port);
-            break;
-        }
-
-        /* > 创建命令套接字 */
-        agent_lsvr_cmd_usck_path(conf, path, sizeof(path));
-
-        lsn->cmd_sck_id = unix_udp_creat(path);
-        if (lsn->cmd_sck_id < 0)
-        {
-            if (EAGAIN != errno)
-            {
-                log_error(lsn->log, "errmsg:[%d] %s!", errno, strerror(errno));
-            }
-            break;
-        }
-
-        spin_lock_init(&lsn->accept_lock);
-
-        ctx->lsn = lsn;
-        return AGENT_OK;
-    } while(0);
-
-    CLOSE(lsn->lsn_sck_id);
-    CLOSE(lsn->cmd_sck_id);
-    slab_dealloc(ctx->slab, lsn);
-    return AGENT_ERR;
+    return AGENT_OK;
 }
 
 /******************************************************************************
@@ -131,7 +134,7 @@ int agent_listen_init(agent_cntx_t *ctx)
  **功    能: 接收连接请求
  **输入参数:
  **     ctx: 全局信息
- **     lsn: 侦听对象
+ **     lsvr: 侦听对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
@@ -140,32 +143,28 @@ int agent_listen_init(agent_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.20 #
  ******************************************************************************/
-static int agent_listen_accept(agent_cntx_t *ctx, agent_listen_t *lsn)
+static int agent_listen_accept(agent_cntx_t *ctx, agent_lsvr_t *lsvr)
 {
     int fd, idx, seq;
     agent_add_sck_t *add;
     struct sockaddr_in cliaddr;
 
-    if (spin_trylock(&lsn->accept_lock)) /* 加锁 */
+    if (spin_trylock(&ctx->listen.accept_lock)) /* 加锁 */
     {
         return AGENT_ERR;
     }
 
     /* > 接收连接请求 */
-    fd = tcp_accept(lsn->lsn_sck_id, (struct sockaddr *)&cliaddr);
+    fd = tcp_accept(ctx->listen.lsn_sck_id, (struct sockaddr *)&cliaddr);
     if (fd < 0)
     {
-        spin_unlock(&lsn->accept_lock);
-        if (EAGAIN != errno)
-        {
-            log_error(lsn->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        }
-        return AGENT_ERR;
+        spin_unlock(&ctx->listen.accept_lock);
+        return AGENT_OK;
     }
 
-    seq = ++lsn->serial; /* 计数 */
+    seq = ++ctx->listen.seq; /* 计数 */
 
-    spin_unlock(&lsn->accept_lock); /* 解锁 */
+    spin_unlock(&ctx->listen.accept_lock); /* 解锁 */
 
     /* > 将通信套接字放入队列 */
     idx = seq % ctx->conf->agent_num;
@@ -173,21 +172,22 @@ static int agent_listen_accept(agent_cntx_t *ctx, agent_listen_t *lsn)
     add = queue_malloc(ctx->connq[idx], sizeof(agent_add_sck_t));
     if (NULL == add)
     {
-        log_error(lsn->log, "Alloc from queue failed! fd:%d size:%d/%d",
+        log_error(lsvr->log, "Alloc from queue failed! fd:%d size:%d/%d",
                 fd, sizeof(agent_add_sck_t), queue_size(ctx->connq[idx]));
         CLOSE(fd);
         return AGENT_ERR;
     }
 
     add->fd = fd;
-    add->serial = seq;
+    add->seq = seq;
+    ftime(&add->crtm);
 
-    log_debug(lsn->log, "Push data! fd:%d addr:%p serial:%ld", fd, add, lsn->serial);
+    log_debug(lsvr->log, "Push data! fd:%d addr:%p seq:%ld", fd, add, seq);
 
     queue_push(ctx->connq[idx], add);
 
     /* > 发送ADD-SCK请求 */
-    agent_listen_send_add_sck_req(ctx, lsn, idx);
+    agent_listen_send_add_sck_req(ctx, lsvr, idx);
 
     return AGENT_OK;
 }
@@ -197,7 +197,7 @@ static int agent_listen_accept(agent_cntx_t *ctx, agent_listen_t *lsn)
  **功    能: 发送ADD-SCK请求
  **输入参数:
  **     ctx: 全局信息
- **     lsn: 侦听对象
+ **     lsvr: 侦听对象
  **     idx: 接收服务的索引号
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
@@ -205,7 +205,7 @@ static int agent_listen_accept(agent_cntx_t *ctx, agent_listen_t *lsn)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015-06-22 21:47:52 #
  ******************************************************************************/
-static int agent_listen_send_add_sck_req(agent_cntx_t *ctx, agent_listen_t *lsn, int idx)
+static int agent_listen_send_add_sck_req(agent_cntx_t *ctx, agent_lsvr_t *lsvr, int idx)
 {
     cmd_data_t cmd;
     char path[FILE_NAME_MAX_LEN];
@@ -214,7 +214,7 @@ static int agent_listen_send_add_sck_req(agent_cntx_t *ctx, agent_listen_t *lsn,
     cmd.type = CMD_ADD_SCK;
     agent_rsvr_cmd_usck_path(conf, idx, path, sizeof(path));
 
-    unix_udp_send(lsn->cmd_sck_id, path, &cmd, sizeof(cmd));
+    unix_udp_send(lsvr->cmd_sck_id, path, &cmd, sizeof(cmd));
 
     return AGENT_OK;
 }

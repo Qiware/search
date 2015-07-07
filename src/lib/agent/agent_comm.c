@@ -91,7 +91,7 @@ int agent_serial_to_sck_map_insert(agent_cntx_t *ctx, agent_flow_t *_flow)
     flow->serial = _flow->serial;
     flow->create_tm = _flow->create_tm;
     flow->agt_idx = _flow->agt_idx;
-    flow->sck_serial = _flow->sck_serial;
+    flow->sck_seq = _flow->sck_seq;
 
     idx = flow->serial % ctx->serial_to_sck_map_len;
 
@@ -102,8 +102,8 @@ int agent_serial_to_sck_map_insert(agent_cntx_t *ctx, agent_flow_t *_flow)
     {
         spin_unlock(&ctx->serial_to_sck_map_lock[idx]);
         free(flow);
-        log_error(ctx->log, "Insert into avl failed! idx:%d serial:%lu sck_serial:%lu agt_idx:%d",
-                idx, flow->serial, flow->sck_serial, flow->agt_idx);
+        log_error(ctx->log, "Insert into avl failed! idx:%d serial:%lu sck_seq:%lu agt_idx:%d",
+                idx, flow->serial, flow->sck_seq, flow->agt_idx);
         return AGENT_ERR;
     }
 
@@ -138,7 +138,7 @@ int _agent_serial_to_sck_map_delete(agent_cntx_t *ctx, uint64_t serial)
         return AGENT_ERR;
     }
 
-    log_trace(ctx->log, "idx:%d serial:%lu sck_serial:%lu", idx, serial, flow->serial);
+    log_trace(ctx->log, "idx:%d serial:%lu sck_seq:%lu", idx, serial, flow->serial);
 
     free(flow);
     return AGENT_OK;
@@ -175,7 +175,7 @@ int agent_serial_to_sck_map_delete(agent_cntx_t *ctx, uint64_t serial)
 
     spin_unlock(&ctx->serial_to_sck_map_lock[idx]);
 
-    log_trace(ctx->log, "idx:%d serial:%lu sck_serial:%lu", idx, serial, flow->serial);
+    log_trace(ctx->log, "idx:%d serial:%lu sck_seq:%lu", idx, serial, flow->sck_seq);
 
     free(flow);
     return AGENT_OK;

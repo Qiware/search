@@ -10,7 +10,7 @@
 #include "agent_rsvr.h"
 #include "thread_pool.h"
 
-#define AGT_RSVR_DIST_POP_NUM   (128)
+#define AGT_RSVR_DIST_POP_NUM   (1024)
 
 static agent_rsvr_t *agent_rsvr_self(agent_cntx_t *ctx);
 static int agent_rsvr_add_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr);
@@ -22,11 +22,11 @@ static int agent_rsvr_send(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
 static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr);
 
 static int agent_rsvr_event_hdl(agent_cntx_t *ctx, agent_rsvr_t *rsvr);
-static int agent_rsvr_event_timeout_hdl(agent_cntx_t *ctx, agent_rsvr_t *rsvr);
+static int agent_rsvr_timeout_hdl(agent_cntx_t *ctx, agent_rsvr_t *rsvr);
 
 /******************************************************************************
  **函数名称: agent_rsvr_routine
- **功    能: 运行Agent线程
+ **功    能: 运行接收线程
  **输入参数:
  **     _ctx: 全局对象
  **输出参数: NONE
@@ -40,7 +40,7 @@ void *agent_rsvr_routine(void *_ctx)
     agent_rsvr_t *rsvr;
     agent_cntx_t *ctx = (agent_cntx_t *)_ctx;
 
-    /* 1. 获取代理对象 */
+    /* > 获取代理对象 */
     rsvr = agent_rsvr_self(ctx);
     if (NULL == rsvr)
     {
@@ -51,7 +51,9 @@ void *agent_rsvr_routine(void *_ctx)
 
     while (1)
     {
-        /* 3. 等待事件通知 */
+        agent_rsvr_add_conn(ctx, rsvr);
+
+        /* > 等待事件通知 */
         rsvr->fds = epoll_wait(rsvr->epid, rsvr->events,
                 AGENT_EVENT_MAX_NUM, AGENT_TMOUT_MSEC);
         if (rsvr->fds < 0)
@@ -73,12 +75,12 @@ void *agent_rsvr_routine(void *_ctx)
             {
                 rsvr->scan_tm = rsvr->ctm;
 
-                agent_rsvr_event_timeout_hdl(ctx, rsvr);
+                agent_rsvr_timeout_hdl(ctx, rsvr);
             }
             continue;
         }
 
-        /* 4. 处理事件通知 */
+        /* > 进行事件处理 */
         agent_rsvr_event_hdl(ctx, rsvr);
     }
 
@@ -335,7 +337,7 @@ static int agent_rsvr_event_hdl(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
     {
         rsvr->scan_tm = rsvr->ctm;
 
-        agent_rsvr_event_timeout_hdl(ctx, rsvr);
+        agent_rsvr_timeout_hdl(ctx, rsvr);
     }
 
     return AGENT_OK;
@@ -439,7 +441,7 @@ static int agent_rsvr_conn_timeout(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
 }
 
 /******************************************************************************
- **函数名称: agent_rsvr_event_timeout_hdl
+ **函数名称: agent_rsvr_timeout_hdl
  **功    能: 事件超时处理
  **输入参数: 
  **     rsvr: 接收服务
@@ -450,7 +452,7 @@ static int agent_rsvr_conn_timeout(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
  **     不必依次释放超时链表各结点的空间，只需一次性释放内存池便可释放所有空间.
  **作    者: # Qifeng.zou # 2014.11.28 #
  ******************************************************************************/
-static int agent_rsvr_event_timeout_hdl(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
+static int agent_rsvr_timeout_hdl(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
 {
     agent_rsvr_conn_timeout(ctx, rsvr);
     agent_serial_to_sck_map_timeout(ctx);
@@ -471,98 +473,114 @@ static int agent_rsvr_event_timeout_hdl(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
  ******************************************************************************/
 static int agent_rsvr_add_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
 {
+#define AGT_RSVR_CONN_POP_NUM   (1024)
+    int num, idx;
     time_t ctm = time(NULL);
     socket_t *sck;
     list_opt_t opt;
-    agent_add_sck_t *add;
     struct epoll_event ev;
     agent_socket_extra_t *extra;
+    agent_add_sck_t *add[AGT_RSVR_CONN_POP_NUM];
 
     while (1)
     {
-        /* > 取数据 */
-        add = queue_pop(ctx->connq[rsvr->id]);
-        if (NULL == add)
+        num = MIN(queue_used(ctx->connq[rsvr->id]), AGT_RSVR_CONN_POP_NUM);
+        if (0 == num)
         {
             return AGENT_OK;
         }
 
-        /* > 申请SCK空间 */
-        sck = slab_alloc(rsvr->slab, sizeof(socket_t));
-        if (NULL == sck)
+        /* > 取数据 */
+        num = queue_mpop(ctx->connq[rsvr->id], (void **)add, num);
+        if (0 == num)
         {
-            queue_dealloc(ctx->connq[rsvr->id], add);
-            log_error(rsvr->log, "Alloc memory from slab failed!");
-            return AGENT_ERR;
+            continue;
         }
 
-        log_debug(rsvr->log, "Pop data! fd:%d addr:%p sck:%p", add->fd, add, sck);
-
-        memset(sck, 0, sizeof(socket_t));
-
-        /* > 创建SCK关联对象 */
-        extra = slab_alloc(rsvr->slab, sizeof(agent_socket_extra_t));
-        if (NULL == extra)
+        for (idx=0; idx<num; ++idx)
         {
-            slab_dealloc(rsvr->slab, sck);
-            queue_dealloc(ctx->connq[rsvr->id], add);
-            log_error(rsvr->log, "Alloc memory from slab failed!");
-            return AGENT_ERR;
+            /* > 申请SCK空间 */
+            sck = slab_alloc(rsvr->slab, sizeof(socket_t));
+            if (NULL == sck)
+            {
+                log_error(rsvr->log, "Alloc memory from slab failed! seq:%lu",
+                          add[idx]->seq);
+                CLOSE(add[idx]->fd);
+                queue_dealloc(ctx->connq[rsvr->id], add[idx]);
+                continue;
+            }
+
+            memset(sck, 0, sizeof(socket_t));
+
+            /* > 创建SCK关联对象 */
+            extra = slab_alloc(rsvr->slab, sizeof(agent_socket_extra_t));
+            if (NULL == extra)
+            {
+                log_error(rsvr->log, "Alloc memory from slab failed! seq:%lu",
+                          add[idx]->seq);
+                CLOSE(add[idx]->fd);
+                slab_dealloc(rsvr->slab, sck);
+                queue_dealloc(ctx->connq[rsvr->id], add[idx]);
+                continue;
+            }
+
+            memset(&opt, 0, sizeof(opt));
+
+            opt.pool = (void *)rsvr->slab;
+            opt.alloc = (mem_alloc_cb_t)slab_alloc;
+            opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+
+            extra->send_list = list_creat(&opt);
+            if (NULL == extra->send_list)
+            {
+                log_error(rsvr->log, "Alloc memory from slab failed! seq:%lu",
+                          add[idx]->seq);
+                CLOSE(add[idx]->fd);
+                slab_dealloc(rsvr->slab, sck);
+                slab_dealloc(rsvr->slab, extra);
+                queue_dealloc(ctx->connq[rsvr->id], add[idx]);
+                continue;
+            }
+
+            sck->extra = extra;
+
+            /* > 设置SCK信息 */
+            sck->fd = add[idx]->fd;
+            sck->wrtm = sck->rdtm = ctm;/* 记录当前时间 */
+            memcpy(&sck->crtm, &add[idx]->crtm, sizeof(add[idx]->crtm)); /* 创建时间 */
+
+            sck->recv.phase = SOCK_PHASE_RECV_INIT;
+            sck->recv_cb = (socket_recv_cb_t)agent_rsvr_recv;   /* Recv回调函数 */
+            sck->send_cb = (socket_send_cb_t)agent_rsvr_send;   /* Send回调函数*/
+
+            extra->seq = add[idx]->seq;
+
+            queue_dealloc(ctx->connq[rsvr->id], add[idx]);      /* 释放连接队列空间 */
+
+            /* > 插入红黑树中(以序列号为主键) */
+            if (rbt_insert(rsvr->connections, extra->seq, sck))
+            {
+                log_error(rsvr->log, "Insert into avl failed! fd:%d seq:%lu",
+                          sck->fd, extra->seq);
+                CLOSE(sck->fd);
+                list_destroy(extra->send_list, rsvr->slab, (mem_dealloc_cb_t)slab_dealloc);
+                slab_dealloc(rsvr->slab, sck->extra);
+                slab_dealloc(rsvr->slab, sck);
+                return AGENT_ERR;
+            }
+
+            log_debug(rsvr->log, "Insert into avl success! fd:%d seq:%lu",
+                      sck->fd, extra->seq);
+
+            /* > 加入epoll监听(首先是接收客户端搜索请求, 所以设置EPOLLIN) */
+            memset(&ev, 0, sizeof(ev));
+
+            ev.data.ptr = sck;
+            ev.events = EPOLLIN | EPOLLET; /* 边缘触发 */
+
+            epoll_ctl(rsvr->epid, EPOLL_CTL_ADD, sck->fd, &ev);
+            ++rsvr->conn_total;
         }
-
-        memset(&opt, 0, sizeof(opt));
-
-        opt.pool = (void *)rsvr->slab;
-        opt.alloc = (mem_alloc_cb_t)slab_alloc;
-        opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
-
-        extra->send_list = list_creat(&opt);
-        if (NULL == extra->send_list)
-        {
-            slab_dealloc(rsvr->slab, sck);
-            slab_dealloc(rsvr->slab, extra);
-            queue_dealloc(ctx->connq[rsvr->id], add);
-            log_error(rsvr->log, "Alloc memory from slab failed!");
-            return AGENT_ERR;
-        }
-
-        sck->extra = extra;
-
-        /* > 设置SCK信息 */
-        sck->fd = add->fd;
-        ftime(&sck->crtm);          /* 创建时间 */
-        sck->wrtm = sck->rdtm = ctm;/* 记录当前时间 */
-
-        sck->recv.phase = SOCK_PHASE_RECV_INIT;
-        sck->recv_cb = (socket_recv_cb_t)agent_rsvr_recv;  /* Recv回调函数 */
-        sck->send_cb = (socket_send_cb_t)agent_rsvr_send;  /* Send回调函数*/
-
-        extra->serial = add->serial;
-
-        queue_dealloc(ctx->connq[rsvr->id], add);  /* 释放连接队列空间 */
-
-        /* > 插入红黑树中(以序列号为主键) */
-        if (rbt_insert(rsvr->connections, extra->serial, sck))
-        {
-            log_error(rsvr->log, "Insert into avl failed! fd:%d seq:%lu", sck->fd, extra->serial);
-
-            CLOSE(sck->fd);
-            list_destroy(extra->send_list, rsvr->slab, (mem_dealloc_cb_t)slab_dealloc);
-            slab_dealloc(rsvr->slab, sck->extra);
-            slab_dealloc(rsvr->slab, sck);
-            return AGENT_ERR;
-        }
-
-        log_debug(rsvr->log, "Insert into avl success! fd:%d seq:%lu", sck->fd, extra->serial);
-
-        /* > 加入epoll监听(首先是接收客户端搜索请求, 所以设置EPOLLIN) */
-        memset(&ev, 0, sizeof(ev));
-
-        ev.data.ptr = sck;
-        ev.events = EPOLLIN | EPOLLET; /* 边缘触发 */
-
-        epoll_ctl(rsvr->epid, EPOLL_CTL_ADD, sck->fd, &ev);
-        ++rsvr->conn_total;
     }
 
     return AGENT_ERR;
@@ -585,10 +603,10 @@ static int agent_rsvr_del_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *
     void *addr;
     agent_socket_extra_t *extra = sck->extra;
 
-    log_trace(rsvr->log, "Call %s()! fd:%d serial:%ld", __func__, sck->fd, extra->serial);
+    log_trace(rsvr->log, "Call %s()! fd:%d seq:%ld", __func__, sck->fd, extra->seq);
 
     /* > 将套接字从红黑树中剔除 */
-    rbt_delete(rsvr->connections, extra->serial, &addr);
+    rbt_delete(rsvr->connections, extra->seq, &addr);
 
     /* > 释放套接字空间 */
     CLOSE(sck->fd);
@@ -866,7 +884,7 @@ static int agent_rsvr_recv(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
                 recv->off = 0;
                 recv->total = sizeof(agent_header_t);
 
-                extra->flow->sck_serial = extra->serial;
+                extra->flow->sck_seq = extra->seq;
                 extra->flow->agt_idx = rsvr->id;
 
                 /* 设置下步 */
@@ -1132,22 +1150,22 @@ static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
                 continue;
             }
 
-            //agent_serial_to_sck_map_delete(ctx, flow->serial); /* 查询完成删除 */
-
             /* 校验映射项合法性 */
             if (flow->agt_idx != newest.agt_idx
-                || flow->sck_serial != newest.sck_serial)
+                || flow->sck_seq != newest.sck_seq)
             {
-                log_error(ctx->log, "Old socket was closed! serial:%lu", flow->sck_serial);
+                log_error(ctx->log, "Old socket was closed! seq:%lu", flow->sck_seq);
                 queue_dealloc(sendq, addr[idx]);
                 continue;
             }
 
             /* 放入发送链表 */
-            node = rbt_search(rsvr->connections, (int64_t)flow->sck_serial);
+            node = rbt_search(rsvr->connections, (int64_t)flow->sck_seq);
             if (NULL == node)
             {
-                log_error(ctx->log, "Query socket failed! serial:%lu", flow->sck_serial);
+                log_error(ctx->log, "Query socket failed! serial:%lu seq:%lu diff:%lu idx:%d/%d",
+                          newest.serial, newest.sck_seq,
+                          newest.create_tm - time(NULL), newest.agt_idx, rsvr->id);
                 queue_dealloc(sendq, addr[idx]);
                 continue;
             }
@@ -1158,8 +1176,8 @@ static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
             data = slab_alloc(rsvr->slab, total);
             if (NULL == data)
             {
-                log_error(ctx->log, "Alloc from slab failed! serial:%lu total:%d",
-                        flow->sck_serial, total);
+                log_error(ctx->log, "Alloc from slab failed! serial:%lu seq:%lu total:%d",
+                        flow->serial, flow->sck_seq, total);
                 queue_dealloc(sendq, addr[idx]);
                 continue;
             }
@@ -1170,7 +1188,7 @@ static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
 
             if (list_rpush(sck_extra->send_list, data))
             {
-                log_error(ctx->log, "Insert list failed! serial:%lu", flow->sck_serial);
+                log_error(ctx->log, "Insert list failed! seq:%lu", flow->sck_seq);
                 queue_dealloc(sendq, addr[idx]);
                 slab_dealloc(rsvr->slab, data);
                 continue;

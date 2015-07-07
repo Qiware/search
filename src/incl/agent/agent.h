@@ -20,15 +20,15 @@
 #define AGENT_MSG_TYPE_MAX      (0xFF)      /* 消息最大类型 */
 
 /* 命令路径 */
-#define AGENT_LSVR_CMD_PATH     "lsvr-cmd.usck"      /* 侦听服务 */
+#define AGENT_LSVR_CMD_PATH     "lsvr-cmd-%02d.usck"      /* 侦听服务 */
 #define AGENT_RSVR_CMD_PATH     "rsvr-cmd-%02d.usck" /* 接收服务 */
 #define AGENT_WSVR_CMD_PATH     "wsvr-cmd-%02d.usck" /* 工作服务 */
 #define AGENT_CLI_CMD_PATH      "cli_cmd.usck"       /* 客户端 */
 
 #define agent_cli_cmd_usck_path(conf, path, size)       /* 客户端命令路径 */\
     snprintf(path, size, "%s"AGENT_CLI_CMD_PATH, (conf)->path)
-#define agent_lsvr_cmd_usck_path(conf, path, size)      /* 侦听服务命令路径 */\
-    snprintf(path, size, "%s"AGENT_LSVR_CMD_PATH, (conf)->path)
+#define agent_lsvr_cmd_usck_path(conf, idx, path, size)      /* 侦听服务命令路径 */\
+    snprintf(path, size, "%s"AGENT_LSVR_CMD_PATH, (conf)->path, idx)
 #define agent_rsvr_cmd_usck_path(conf, rid, path, size) /* 接收服务命令路径 */\
     snprintf(path, size, "%s"AGENT_RSVR_CMD_PATH, (conf)->path, rid)
 #define agent_wsvr_cmd_usck_path(conf, wid, path, size) /* 工作服务命令路径 */\
@@ -66,7 +66,15 @@ typedef struct
         int cmd_sck_id;                     /* 命令套接字 */
     } cli;
 
-    agent_listen_t *lsn;                    /* 侦听对象 */
+    /* 侦听信息 */
+    struct
+    {
+        int lsn_sck_id;                     /* 侦听套接字 */
+        spinlock_t accept_lock;             /* 侦听锁 */
+
+        uint64_t seq;                       /* SCK流水号 */
+        agent_lsvr_t *lsvr;                 /* 侦听对象 */
+    } listen;
 
     thread_pool_t *agents;                  /* Agent线程池 */
     thread_pool_t *listens;                 /* Listen线程池 */
@@ -83,7 +91,7 @@ typedef struct
 } agent_cntx_t;
 
 /* 内部接口 */
-int agent_listen_init(agent_cntx_t *ctx);
+int agent_listen_init(agent_cntx_t *ctx, agent_lsvr_t *lsn, int idx);
 
 /* 外部接口 */
 agent_cntx_t *agent_init(agent_conf_t *conf, log_cycle_t *log);
