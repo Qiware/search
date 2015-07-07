@@ -63,7 +63,7 @@ typedef struct _sdrd_sck_t
 {
     int fd;                             /* 套接字ID */
     int nodeid;                         /* 结点ID */
-    uint64_t serial;                    /* 套接字序列号 */
+    uint64_t seq;                       /* 套接字序列号 */
 
     time_t ctm;                         /* 创建时间 */
     time_t rdtm;                        /* 最近读取时间 */

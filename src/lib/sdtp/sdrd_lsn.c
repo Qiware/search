@@ -217,7 +217,7 @@ static int sdrd_lsn_accept(sdrd_cntx_t *ctx, sdrd_lsn_t *lsn)
 
     cmd.type = SDTP_CMD_ADD_SCK;
     args->sckid = sckid;
-    args->sck_serial = ++lsn->serial;
+    args->sck_seq = ++lsn->serial;
     snprintf(args->ipaddr, sizeof(args->ipaddr), "%s", inet_ntoa(cliaddr.sin_addr));
 
     if (sdrd_cmd_to_rsvr(ctx, lsn->cmd_sck_id, &cmd, sdrd_rand_rsvr(ctx)) < 0)
