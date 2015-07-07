@@ -205,7 +205,7 @@ static int rtrd_lsn_accept(rtrd_cntx_t *ctx, rtrd_listen_t *lsn)
 
     cmd.type = RTMQ_CMD_ADD_SCK;
     param->sckid = sckid;
-    param->sck_serial = ++lsn->serial; /* 设置套接字序列号 */
+    param->sck_seq = ++lsn->serial; /* 设置套接字序列号 */
     snprintf(param->ipaddr, sizeof(param->ipaddr), "%s", inet_ntoa(cliaddr.sin_addr));
 
     log_trace(lsn->log, "New connection! serial:%lu sckid:%d ip:%s",
