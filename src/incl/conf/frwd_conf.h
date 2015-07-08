@@ -3,6 +3,7 @@
 
 #include "sck.h"
 #include "comm.h"
+#include "xml_tree.h"
 #include "rtsd_send.h"
 
 /* 配置信息 */
@@ -14,5 +15,6 @@ typedef struct
 } frwd_conf_t;
 
 int frwd_load_conf(const char *path, frwd_conf_t *conf);
+int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t *conf);
 
 #endif /*__FRWD_CONF_H__*/

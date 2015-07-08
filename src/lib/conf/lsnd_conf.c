@@ -10,6 +10,7 @@
 #include "syscall.h"
 #include "xml_tree.h" 
 #include "lsnd_conf.h"
+#include "frwd_conf.h"
 
 static int lsnd_conf_parse(xml_tree_t *xml, agent_conf_t *conf, log_cycle_t *log);
 
@@ -376,7 +377,6 @@ static int _lsnd_conf_load_frwder(const char *path,
 {
     xml_opt_t opt;
     xml_tree_t *xml;
-    xml_node_t *fix, *node;
 
     memset(&opt, 0, sizeof(opt));
 
@@ -393,205 +393,15 @@ static int _lsnd_conf_load_frwder(const char *path,
         return -1;
     }
 
-    do
+    if (frwd_conf_load_frwder(xml, ".FRWDER.CONN-INVTD", conf))
     {
-        fix = xml_query(xml, mark);
-        if (NULL == fix)
-        {
-            log_error(log, "Didn't find mark [%d]! path:%s", mark, path);
-            break;
-        }
-
-        /* > 结点ID */
-        node = xml_search(xml, fix, "NODE");
-        if (NULL == node
-            || 0 == node->value.len)
-        {
-            log_error(log, "Didn't find nodeid!");
-            break;
-        }
-
-        conf->nodeid = atoi(node->value.str);
-
-        /* > 工作路径 */
-        node = xml_search(xml, fix, "PATH");
-        if (NULL == node
-            || 0 == node->value.len)
-        {
-            log_error(log, "Didn't find work path!");
-            break;
-        }
-
-        snprintf(conf->path, sizeof(conf->path), "%s", node->value.str);
-
-        /* > 服务端IP */
-        node = xml_search(xml, fix, "SERVER.IP");
-        if (NULL == node
-            || 0 == node->value.len)
-        {
-            log_error(log, "Didn't find server ip!");
-            break;
-        }
-
-        snprintf(conf->ipaddr, sizeof(conf->ipaddr), "%s", node->value.str);
-
-        node = xml_search(xml, fix, "SERVER.PORT");
-        if (NULL == node
-            || 0 == node->value.len)
-        {
-            log_error(log, "Didn't find server port!");
-            break;
-        }
-
-        conf->port = atoi(node->value.str);
-
-        /* > 鉴权信息 */
-        node = xml_search(xml, fix, "AUTH.USR");
-        if (NULL == node
-            || 0 == node->value.len)
-        {
-            log_error(log, "Didn't find auth user!");
-            break;
-        }
-
-        snprintf(conf->auth.usr, sizeof(conf->auth.usr), "%s", node->value.str);
-
-        node = xml_search(xml, fix, "AUTH.PASSWD");
-        if (NULL == node
-            || 0 == node->value.len)
-        {
-            log_error(log, "Didn't find auth passwd!");
-            break;
-        }
-
-        snprintf(conf->auth.passwd, sizeof(conf->auth.passwd), "%s", node->value.str);
-
-        /* > 线程数目 */
-        node = xml_search(xml, fix, "THDNUM.SEND");  /* 发送线程数 */
-        if (NULL == node
-            || 0 == node->value.len)
-        {
-            log_error(log, "Didn't find send thread num!");
-            break;
-        }
-
-        conf->send_thd_num = atoi(node->value.str);
-        if (0 == conf->send_thd_num)
-        {
-            log_error(log, "Didn't find send thread num is zero!");
-            break;
-        }
-
-        node = xml_search(xml, fix, "THDNUM.WORK");  /* 工作线程数 */
-        if (NULL == node
-            || 0 == node->value.len)
-        {
-            log_error(log, "Didn't find work thread num!");
-            break;
-        }
-
-        conf->work_thd_num = atoi(node->value.str);
-        if (0 == conf->work_thd_num)
-        {
-            log_error(log, "Didn't find work thread num is zero!");
-            break;
-        }
-
-        /* > 缓存大小配置 */
-        node = xml_search(xml, fix, "BUFF.SEND");    /* 发送缓存(MB) */
-        if (NULL == node
-            || 0 == node->value.len)
-        {
-            log_error(log, "Didn't find size of send buffer!");
-            break;
-        }
-
-        conf->send_buff_size = atoi(node->value.str) * MB;
-        if (0 == conf->send_buff_size)
-        {
-            log_error(log, "Didn't find size of send buffer is zero!");
-            break;
-        }
-
-        node = xml_search(xml, fix, "BUFF.RECV");  /* 接收缓存(MB) */
-        if (NULL == node
-            || 0 == node->value.len)
-        {
-            log_error(log, "Didn't find size of recv buffer!");
-            break;
-        }
-
-        conf->recv_buff_size = atoi(node->value.str) * MB;
-        if (0 == conf->recv_buff_size)
-        {
-            log_error(log, "Didn't find size of recv buffer is zero!");
-            break;
-        }
-
-        /* > 接收队列 */
-        node = xml_search(xml, fix, "RECVQ.MAX");
-        if (NULL == node
-            || 0 == node->value.len)
-        {
-            log_error(log, "Didn't find max of recvq!");
-            break;
-        }
-
-        conf->recvq.max = atoi(node->value.str);
-        if (0 == conf->recvq.max)
-        {
-            break;
-        }
-
-        node = xml_search(xml, fix, "RECVQ.SIZE");
-        if (NULL == node
-            || 0 == node->value.len)
-        {
-            log_error(log, "Didn't find size of recvq!");
-            break;
-        }
-
-        conf->recvq.size = atoi(node->value.str);
-        if (0 == conf->recvq.size)
-        {
-            break;
-        }
-
-        /* > 发送队列 */
-        node = xml_search(xml, fix, "SENDQ.MAX");
-        if (NULL == node
-            || 0 == node->value.len)
-        {
-            log_error(log, "Didn't find max of sendq!");
-            break;
-        }
-
-        conf->sendq.max = atoi(node->value.str);
-        if (0 == conf->sendq.max)
-        {
-            break;
-        }
-
-        node = xml_search(xml, fix, "SENDQ.SIZE");
-        if (NULL == node
-            || 0 == node->value.len)
-        {
-            log_error(log, "Didn't find size of sendq!");
-            break;
-        }
-
-        conf->sendq.size = atoi(node->value.str);
-        if (0 == conf->sendq.size)
-        {
-            break;
-        }
-
+        log_error(log, "Load frwder configuration failed! path:%s", path);
         xml_destroy(xml);
-        return 0;
-    } while(0);
+        return -1;
+    }
 
     xml_destroy(xml);
-    return -1;
+    return 0;
 }
 
 /******************************************************************************

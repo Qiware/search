@@ -12,7 +12,6 @@
 #include "frwd_conf.h"
 
 static int frwd_conf_load_comm(xml_tree_t *xml, frwd_conf_t *conf);
-static int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t *conf);
 
 /******************************************************************************
  **函数名称: frwd_load_conf
@@ -118,7 +117,7 @@ static int frwd_conf_load_comm(xml_tree_t *xml, frwd_conf_t *conf)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.06.09 #
  ******************************************************************************/
-static int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t *conf)
+int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t *conf)
 {
     xml_node_t *parent, *node;
 
@@ -194,42 +193,42 @@ static int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t 
     snprintf(conf->auth.passwd, sizeof(conf->auth.passwd), "%s", node->value.str);
 
     /* > 线程数目 */
-    node = xml_search(xml, parent, "THDNUM.SEND");  /* 发送线程数 */
+    node = xml_search(xml, parent, "THREAD-POOL.SEND_THD_NUM");  /* 发送线程数 */
     if (NULL == node
         || 0 == node->value.len)
     {
-        fprintf(stderr, "Didn't find %s.THDNUM.SEND!\n", path);
+        fprintf(stderr, "Didn't find %s.THREAD-POOL.SEND_THD_NUM!\n", path);
         return -1;
     }
 
     conf->send_thd_num = atoi(node->value.str);
     if (0 == conf->send_thd_num)
     {
-        fprintf(stderr, "%s.THDNUM.SEND is zero!\n", path);
+        fprintf(stderr, "%s.THREAD-POOL.SEND_THD_NUM is zero!\n", path);
         return -1;
     }
 
-    node = xml_search(xml, parent, "THDNUM.WORK");  /* 工作线程数 */
+    node = xml_search(xml, parent, "THREAD-POOL.WORK_THD_NUM");  /* 工作线程数 */
     if (NULL == node
         || 0 == node->value.len)
     {
-        fprintf(stderr, "Didn't find %s.THDNUM.WORK!\n", path);
+        fprintf(stderr, "Didn't find %s.THREAD-POOL.WORK_THD_NUM!\n", path);
         return -1;
     }
 
     conf->work_thd_num = atoi(node->value.str);
     if (0 == conf->work_thd_num)
     {
-        fprintf(stderr, "%s.THDNUM.WORK is zero!\n", path);
+        fprintf(stderr, "%s.THREAD-POOL.WORK_THD_NUM is zero!\n", path);
         return -1;
     }
 
     /* > 缓存大小配置 */
-    node = xml_search(xml, parent, "BUFF.SEND");    /* 发送缓存(MB) */
+    node = xml_search(xml, parent, "BUFFER-POOL-SIZE.SEND");    /* 发送缓存(MB) */
     if (NULL == node
         || 0 == node->value.len)
     {
-        fprintf(stderr, "Didn't find %s.BUFF.SEND!\n", path);
+        fprintf(stderr, "Didn't find %s.BUFFER-POOL-SIZE.SEND!\n", path);
         return -1;
     }
 
@@ -239,11 +238,11 @@ static int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t 
         return -1;
     }
 
-    node = xml_search(xml, parent, "BUFF.RECV");  /* 接收缓存(MB) */
+    node = xml_search(xml, parent, "BUFFER-POOL-SIZE.RECV");  /* 接收缓存(MB) */
     if (NULL == node
         || 0 == node->value.len)
     {
-        fprintf(stderr, "Didn't find %s.BUFF.RECV!\n", path);
+        fprintf(stderr, "Didn't find %s.BUFFER-POOL-SIZE.RECV!\n", path);
         return -1;
     }
 

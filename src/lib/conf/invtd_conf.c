@@ -132,7 +132,7 @@ static int invtd_conf_load_sdtp(xml_tree_t *xml, rtrd_conf_t *conf)
     snprintf(conf->auth.passwd, sizeof(conf->auth.passwd), "%s", node->value.str);
 
     /* > 线程数配置 */
-    node = xml_search(xml, nail, "THDNUM.RECV_THD_NUM");
+    node = xml_search(xml, nail, "THREAD-POOL.RECV_THD_NUM");
     if (NULL == node)
     {
         return INVT_ERR_CONF;
@@ -140,7 +140,7 @@ static int invtd_conf_load_sdtp(xml_tree_t *xml, rtrd_conf_t *conf)
 
     conf->recv_thd_num = atoi(node->value.str);
 
-    node = xml_search(xml, nail, "THDNUM.WORK_THD_NUM");
+    node = xml_search(xml, nail, "THREAD-POOL.WORK_THD_NUM");
     if (NULL == node)
     {
         return INVT_ERR_CONF;
