@@ -7,6 +7,7 @@
 #include "agent_rsvr.h"
 #include "agent_listen.h"
 
+static int agent_listen_timeout_hdl(agent_cntx_t *ctx, agent_lsvr_t *lsvr);
 static int agent_listen_accept(agent_cntx_t *ctx, agent_lsvr_t *lsvr);
 static int agent_listen_send_add_sck_req(agent_cntx_t *ctx, agent_lsvr_t *lsvr, int idx);
 
@@ -75,7 +76,7 @@ void *agent_listen_routine(void *_ctx)
         max = MAX(ctx->listen.lsn_sck_id, lsvr->cmd_sck_id);
 
         /* > 等待事件通知 */
-        tv.tv_sec = 30;
+        tv.tv_sec = 1;
         tv.tv_usec = 0;
         ret = select(max+1, &rdset, NULL, NULL, &tv);
         if (ret < 0)
@@ -86,6 +87,7 @@ void *agent_listen_routine(void *_ctx)
         }
         else if (0 == ret)
         {
+            agent_listen_timeout_hdl(ctx, lsvr);
             continue;
         }
 
@@ -124,6 +126,33 @@ int agent_listen_init(agent_cntx_t *ctx, agent_lsvr_t *lsvr, int idx)
     if (lsvr->cmd_sck_id < 0)
     {
         return AGENT_ERR;
+    }
+
+    return AGENT_OK;
+}
+
+/******************************************************************************
+ **函数名称: agent_listen_timeout_hdl
+ **功    能: 超时处理
+ **输入参数:
+ **     ctx: 全局信息
+ **     lsvr: 侦听对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015-07-08 07:46:32 #
+ ******************************************************************************/
+static int agent_listen_timeout_hdl(agent_cntx_t *ctx, agent_lsvr_t *lsvr)
+{
+    int idx;
+
+    for (idx=0; idx<ctx->conf->agent_num; ++idx)
+    {
+        if (queue_used(ctx->connq[idx]))
+        {
+            agent_listen_send_add_sck_req(ctx, lsvr, idx);
+        }
     }
 
     return AGENT_OK;
