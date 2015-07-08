@@ -17,5 +17,7 @@ slot_t *slot_creat(int num, size_t size);
 void *slot_alloc(slot_t *slot, int size);
 #define slot_dealloc(slot, p) ring_push(slot->ring, p); /* 释放内存 */
 void slot_destroy(slot_t *slot);
+#define slot_get_max(slot) ((slot)->max)
+#define slot_get_size(slot) ((slot)->size)
 
 #endif /*__SLOT_H__*/

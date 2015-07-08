@@ -29,9 +29,10 @@ queue_t *queue_creat(int max, int size);
 void queue_destroy(queue_t *q);
 
 /* 获取队列剩余空间 */
-#define queue_space(q) ((q)->ring->max - (q)->ring->num)
-#define queue_used(q) ((q)->ring->num)
-#define queue_isempty(q) (0 == (q)->ring->num)
-#define queue_size(q) ((q)->slot->size)
+#define queue_space(q) (ring_get_max((q)->ring) - ring_get_num((q)->ring))
+#define queue_used(q) ring_get_num((q)->ring)
+#define queue_isempty(q) !ring_get_num((q)->ring)
+#define queue_max(q) ring_get_max((q)->ring)
+#define queue_size(q) slot_get_size((q)->slot)
 
 #endif /*__QUEUE_H__*/

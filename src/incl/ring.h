@@ -33,5 +33,7 @@ void *ring_pop(ring_t *rq);
 int ring_mpop(ring_t *rq, void **addr, unsigned int num);
 void ring_print(ring_t *rq);
 void ring_destroy(ring_t *rq);
+#define ring_get_max(rq) ((rq)->max)
+#define ring_get_num(rq) ((rq)->num)
 
 #endif /*__RING_H__*/
