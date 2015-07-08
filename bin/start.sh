@@ -12,8 +12,9 @@ sudo redis-server /etc/redis/redis_slave_6380.conf
 ./mmexec        # 内存服务
 ./logsvr        # 日志服务
 ./invertd -d    # 倒排服务
+sleep 1
 ./frwder -d     # 转发服务
-sleep 5
+sleep 1
 ./listend -d    # 代理服务
 #./crawler -d   # 爬虫服务
 #./filter -d    # 爬虫过滤服务
