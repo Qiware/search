@@ -1165,7 +1165,7 @@ static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
             {
                 log_error(ctx->log, "Query socket failed! serial:%lu seq:%lu diff:%lu idx:%d/%d",
                           newest.serial, newest.sck_seq,
-                          newest.create_tm - time(NULL), newest.agt_idx, rsvr->id);
+                          time(NULL) - newest.create_tm, newest.agt_idx, rsvr->id);
                 queue_dealloc(sendq, addr[idx]);
                 continue;
             }
