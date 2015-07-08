@@ -25,7 +25,7 @@ int shm_queue_mpop(shm_queue_t *shmq, void **p, int _num);
 
 #define shm_queue_print(shmq) shm_ring_print((shmq)->ring)
 #define shm_queue_isempty(shmq) shm_ring_isempty((shmq)->ring)
-#define shm_queue_size(shmq) shm_ring_size((shmq)->ring)
+#define shm_queue_size(shmq) shm_slot_get_size((shmq)->slot)
 #define shm_queue_used(shmq) shm_ring_used((shmq)->ring)
 
 #endif /*__SHM_QUEUE_H__*/
