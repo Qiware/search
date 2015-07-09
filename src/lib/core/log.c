@@ -59,8 +59,8 @@ static const size_t g_log_data_size =  (LOG_FILE_CACHE_SIZE - sizeof(log_cache_t
 
 /* 函数声明 */
 static int _log_init_global(void);
-static log_cache_t *log_creat(void *addr, const char *path);
-static void log_release(log_cache_t *lc);
+static log_cache_t *log_alloc(void *addr, const char *path);
+static void log_dealloc(log_cache_t *lc);
 static int log_write(log_cycle_t *log, int level,
         const void *dump, int dumplen, const char *msg, const struct timeb *ctm);
 static int log_print_dump(char *addr, const void *dump, int dumplen);
@@ -121,7 +121,7 @@ log_cycle_t *log_init(int level, const char *path)
         /* 3. 完成日志对象的创建 */
         addr = log_get_shm_addr();
 
-        log->lc = log_creat(addr, path);
+        log->lc = log_alloc(addr, path);
         if (NULL == log->lc)
         {
             fprintf(stderr, "Create [%s] failed!", path);
@@ -141,7 +141,7 @@ log_cycle_t *log_init(int level, const char *path)
     } while (0);
 
     /* 5. 异常处理 */
-    if (NULL != log->lc) { log_release(log->lc); }
+    if (NULL != log->lc) { log_dealloc(log->lc); }
     log_mutex_unlock();
     pthread_mutex_destroy(&log->lock);
     free(log);
@@ -204,7 +204,7 @@ void log_destroy(log_cycle_t **log)
 {
     log_mutex_lock();
 
-    log_release((*log)->lc);
+    log_dealloc((*log)->lc);
     free(*log);
     *log = NULL;
 
@@ -469,7 +469,7 @@ static int log_name_conflict_handler(const char *oripath, char *newpath, int siz
 }
 
 /******************************************************************************
- **函数名称: log_creat
+ **函数名称: log_alloc
  **功    能: 创建日志信息
  **输入参数:
  **     addr: 共享内存首地址
@@ -485,22 +485,19 @@ static int log_name_conflict_handler(const char *oripath, char *newpath, int siz
  **     2. 请勿在此函数中调用错误日志函数 - 小心死锁!
  **作    者: # Qifeng.zou # 2013.10.31 #
  ******************************************************************************/
-static log_cache_t *log_creat(void *addr, const char *path)
+static log_cache_t *log_alloc(void *addr, const char *path)
 {
     pid_t pid = getpid();
     log_cache_t *lc;
     const char *ptr = path;
     char newpath[FILE_NAME_MAX_LEN];
-    int idx, hash_idx = 0, repeat = 0, idle_idx = -1;
-
-    hash_idx = log_hash(path);
+    int idx, repeat = 0, free_idx = -1;
 
     log_fcache_all_wrlock();
 
-    for (idx=0; idx<LOG_FILE_MAX_NUM; idx++, hash_idx++)
+    for (idx=0; idx<LOG_FILE_MAX_NUM; ++idx)
     {
-        hash_idx %= LOG_FILE_MAX_NUM;
-        lc = (log_cache_t *)(addr + hash_idx * LOG_FILE_CACHE_SIZE);
+        lc = (log_cache_t *)(addr + idx * LOG_FILE_CACHE_SIZE);
 
         /* 1. 判断文件名是否一致 */
         if (!strcmp(lc->path, ptr))   /* 文件名出现一致 */
@@ -529,44 +526,35 @@ static log_cache_t *log_creat(void *addr, const char *path)
             }
 
             ptr = newpath;
-            hash_idx = log_hash(ptr);
-            idle_idx = -1;
+            free_idx = -1;
             idx = -1;
             continue;
         }
-        else if (-1 == idle_idx)  /* 当为找到空闲时，则进行后续判断 */
+        else if (-1 == free_idx)  /* 当未找到空闲时，则进行后续判断 */
         {
-            /* 路径是否为空 */
-            if ('\0' == lc->path[0])
+            /* 判断该缓存是否真的被占用
+             * 1. 路径是否异常
+             * 2. 进程是否存在 */
+            if ('\0' == lc->path[0]
+                || !proc_is_exist(lc->pid))
             {
-                idle_idx = hash_idx;
+                free_idx = idx;
 
                 memset(lc, 0, sizeof(log_cache_t));
-                lc->idx = hash_idx;
-                lc->pid = INVALID_PID;
-                continue;
-            }
-
-            /* 进程是否存在 */
-            if (proc_is_exist(lc->pid))
-            {
-                idle_idx = hash_idx;
-
-                memset(lc, 0, sizeof(log_cache_t));
-                lc->idx = hash_idx;
+                lc->idx = idx;
                 lc->pid = INVALID_PID;
                 continue;
             }
         }
     }
 
-    if (-1 == idle_idx)
+    if (-1 == free_idx)
     {
         log_fcache_all_unlock();
         return NULL;
     }
 
-    lc = (log_cache_t *)(addr + idle_idx * LOG_FILE_CACHE_SIZE);
+    lc = (log_cache_t *)(addr + free_idx * LOG_FILE_CACHE_SIZE);
 
     lc->pid = pid;
     snprintf(lc->path, sizeof(lc->path), "%s", ptr);
@@ -577,7 +565,7 @@ static log_cache_t *log_creat(void *addr, const char *path)
 }
 
 /******************************************************************************
- **函数名称: log_release
+ **函数名称: log_dealloc
  **功    能: 释放申请的日志缓存
  **输入参数:
  **     lc: 日志对象
@@ -587,7 +575,7 @@ static log_cache_t *log_creat(void *addr, const char *path)
  **注意事项:
  **作    者: # Qifeng.zou # 2013.11.05 #
  ******************************************************************************/
-static void log_release(log_cache_t *lc)
+static void log_dealloc(log_cache_t *lc)
 {
     int idx;
 
