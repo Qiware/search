@@ -60,7 +60,7 @@ int lsnd_getopt(int argc, char **argv, lsnd_opt_t *opt)
 /* 显示启动参数帮助信息 */
 int lsnd_usage(const char *exec)
 {
-    printf("\nUsage: %s [-h] [-d] -c <config file> [-l log_level]\n", exec);
+    printf("\nUsage: %s [-h] [-d] -c <config file>\n", exec);
     printf("\t-h\tShow help\n"
            "\t-c\tConfiguration path\n\n");
     return 0;
