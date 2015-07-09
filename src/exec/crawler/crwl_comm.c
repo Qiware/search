@@ -102,8 +102,8 @@ int crwl_usage(const char *exec)
 }
 
 /******************************************************************************
- **函数名称: crwl_cntx_init
- **功    能: 初始化全局信息
+ **函数名称: crwl_init
+ **功    能: 爬虫初始化
  **输入参数: 
  **     pname: 进程名
  **     path: 配置文件路径
@@ -113,7 +113,7 @@ int crwl_usage(const char *exec)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.04 #
  ******************************************************************************/
-crwl_cntx_t *crwl_cntx_init(char *pname, const char *path)
+crwl_cntx_t *crwl_init(char *pname, const char *path)
 {
     log_cycle_t *log;
     crwl_cntx_t *ctx;
@@ -206,8 +206,8 @@ crwl_cntx_t *crwl_cntx_init(char *pname, const char *path)
 }
 
 /******************************************************************************
- **函数名称: crwl_cntx_destroy
- **功    能: 销毁爬虫上下文
+ **函数名称: crwl_destroy
+ **功    能: 销毁爬虫
  **输入参数: 
  **     ctx: 全局信息
  **输出参数: NONE
@@ -217,7 +217,7 @@ crwl_cntx_t *crwl_cntx_init(char *pname, const char *path)
  **注意事项: 按序销毁
  **作    者: # Qifeng.zou # 2014.11.17 #
  ******************************************************************************/
-void crwl_cntx_destroy(crwl_cntx_t *ctx)
+void crwl_destroy(crwl_cntx_t *ctx)
 {
     int idx;
     crwl_conf_t *conf = &ctx->conf;

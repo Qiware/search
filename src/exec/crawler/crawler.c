@@ -57,8 +57,8 @@ int main(int argc, char *argv[])
     umask(0);
     crwl_set_signal();
 
-    /* 2. 初始化全局信息 */
-    ctx = crwl_cntx_init(argv[0], opt.conf_path);
+    /* 2. 初始化处理 */
+    ctx = crwl_init(argv[0], opt.conf_path);
     if (NULL == ctx)
     {
         fprintf(stderr, "Initialize crawler failed!");
@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
     while (1) { pause(); }
 
 ERROR:
-    crwl_cntx_destroy(ctx);
+    crwl_destroy(ctx);
 
     return CRWL_ERR;
 }

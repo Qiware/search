@@ -47,8 +47,8 @@ typedef struct
 } crwl_cntx_t;
 
 log_cycle_t *crwl_init_log(char *fname);
-crwl_cntx_t *crwl_cntx_init(char *pname, const char *path);
-void crwl_cntx_destroy(crwl_cntx_t *ctx);
+crwl_cntx_t *crwl_init(char *pname, const char *path);
+void crwl_destroy(crwl_cntx_t *ctx);
 int crwl_startup(crwl_cntx_t *ctx);
 
 #endif /*__CRAWLER_H__*/
