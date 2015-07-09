@@ -18,7 +18,6 @@
 
 static logd_cntx_t *logd_init(void);
 static void *logd_timeout_routine(void *args);
-int logd_sync_work(int idx, logd_cntx_t *ctx);
 static int logd_proc_lock(void);
 
 static char *logd_creat_shm(int fd);
@@ -187,7 +186,7 @@ static char *logd_creat_shm(int fd)
 {
     int idx;
     void *addr, *p;
-    log_file_info_t *file;
+    log_cache_t *lc;
 
     /* > 创建共享内存 */
     addr = shm_creat(LOG_KEY_PATH, LOG_SHM_SIZE);
@@ -201,12 +200,12 @@ static char *logd_creat_shm(int fd)
     p = addr;
     for (idx=0; idx<LOG_FILE_MAX_NUM; idx++)
     {
-        file = (log_file_info_t *)(p + idx * LOG_FILE_CACHE_SIZE);
+        lc = (log_cache_t *)(p + idx * LOG_FILE_CACHE_SIZE);
 
         proc_spin_wrlock_b(fd, idx+1);
         
-        file->idx = idx;
-        file->pid = INVALID_PID;
+        lc->idx = idx;
+        lc->pid = INVALID_PID;
 
         proc_unlock_b(fd, idx+1);
     }
@@ -233,7 +232,7 @@ static void *logd_timeout_routine(void *args)
 {
     int idx;
     struct timeb ctm;
-    log_file_info_t *file = NULL;
+    log_cache_t *lc = NULL;
     logd_cntx_t *ctx = (logd_cntx_t *)args;
 
 
@@ -244,8 +243,8 @@ static void *logd_timeout_routine(void *args)
         for (idx=0; idx<LOG_FILE_MAX_NUM; idx++)
         {
             /* 路径为空 */
-            file = (log_file_info_t *)(ctx->addr + idx*LOG_FILE_CACHE_SIZE);
-            if ('\0' == file->path[0])
+            lc = (log_cache_t *)(ctx->addr + idx*LOG_FILE_CACHE_SIZE);
+            if ('\0' == lc->path[0])
             {
                 continue;
             }
@@ -254,23 +253,23 @@ static void *logd_timeout_routine(void *args)
             proc_spin_wrlock_b(ctx->fd, idx+1);
 
             /* 2. 路径为空，则不用同步 */
-            file = (log_file_info_t *)(ctx->addr + idx*LOG_FILE_CACHE_SIZE);
-            if ('\0' == file->path[0])
+            lc = (log_cache_t *)(ctx->addr + idx*LOG_FILE_CACHE_SIZE);
+            if ('\0' == lc->path[0])
             {
                 proc_unlock_b(ctx->fd, idx+1);
                 continue;
             }
 
-            log_sync(file);
+            log_sync(lc);
         
             /* 判断文件是否还有运行的进程正在使用文件缓存 */
-            if (!proc_is_exist(file->pid))
+            if (!proc_is_exist(lc->pid))
             {
-                memset(file, 0, sizeof(log_file_info_t));
+                memset(lc, 0, sizeof(log_cache_t));
 
-                file->pid = INVALID_PID;
+                lc->pid = INVALID_PID;
             }
-            file->idx = idx;
+            lc->idx = idx;
             
             proc_unlock_b(ctx->fd, idx+1);
         }
@@ -279,30 +278,4 @@ static void *logd_timeout_routine(void *args)
     }
 
     return (void *)-1;
-}
-
-/******************************************************************************
- **函数名称: logd_sync_work
- **功    能: 日志同步处理
- **输入参数: 
- **     idx: 缓存索引
- **     logd: 日志服务对象
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **     1. 缓存加锁
- **     2. 写入文件
- **     3. 缓存解锁
- **注意事项: 
- **作    者: # Qifeng.zou # 2013.10.28 #
- ******************************************************************************/
-int logd_sync_work(int idx, logd_cntx_t *ctx)
-{
-    log_file_info_t *file = NULL;
-
-    file = (log_file_info_t *)(ctx->addr + idx*LOG_FILE_CACHE_SIZE);
-    
-    log_sync(file);
-    
-    return 0;
 }

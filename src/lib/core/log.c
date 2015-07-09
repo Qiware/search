@@ -28,9 +28,9 @@ static int g_log_lock_fd = -1;             /* 文件锁FD */
 #define log_get_lock_fd() (g_log_lock_fd)             /* 获取文件锁FD */
 #define log_set_lock_fd(fd) (g_log_lock_fd = (fd))    /* 设置文件锁FD */
 #define log_is_lock_fd_valid() (g_log_lock_fd >= 0)   /* 判断文件锁FD是否合法 */
-#define log_fcache_wrlock(file) proc_spin_wrlock_b(g_log_lock_fd, (file)->idx+1)  /* 加缓存写锁 */
-#define log_fcache_rdlock(file) proc_spin_rdlock_b(g_log_lock_fd, (file)->idx+1)  /* 加缓存写锁 */
-#define log_fcache_unlock(file) proc_unlock_b(g_log_lock_fd, (file)->idx+1)  /* 解缓存锁 */
+#define log_fcache_wrlock(lc) proc_spin_wrlock_b(g_log_lock_fd, (lc)->idx+1)  /* 加缓存写锁 */
+#define log_fcache_rdlock(lc) proc_spin_rdlock_b(g_log_lock_fd, (lc)->idx+1)  /* 加缓存写锁 */
+#define log_fcache_unlock(lc) proc_unlock_b(g_log_lock_fd, (lc)->idx+1)  /* 解缓存锁 */
 #define log_fcache_all_wrlock() proc_wrlock(g_log_lock_fd)  /* 缓存加写锁(整个都加锁) */
 #define log_fcache_all_unlock() proc_unlock(g_log_lock_fd)  /* 缓存解锁锁(整个都解锁) */
 
@@ -50,7 +50,7 @@ static pthread_mutex_t g_log_mutex = PTHREAD_MUTEX_INITIALIZER;
 #define log_mutex_unlock() pthread_mutex_unlock(&g_log_mutex)
 
 /* 日志缓存数据空间大小 */
-static const size_t g_log_data_size =  (LOG_FILE_CACHE_SIZE - sizeof(log_file_info_t));
+static const size_t g_log_data_size =  (LOG_FILE_CACHE_SIZE - sizeof(log_cache_t));
 #define log_get_data_size() (g_log_data_size)
 
 #define log_hash(path) (hash_time33(path) % LOG_FILE_MAX_NUM)  /* 异步日志哈希 */
@@ -59,19 +59,19 @@ static const size_t g_log_data_size =  (LOG_FILE_CACHE_SIZE - sizeof(log_file_in
 
 /* 函数声明 */
 static int _log_init_global(void);
-static log_file_info_t *log_creat(void *addr, const char *path);
-static void log_release(log_file_info_t *file);
+static log_cache_t *log_creat(void *addr, const char *path);
+static void log_release(log_cache_t *lc);
 static int log_write(log_cycle_t *log, int level,
         const void *dump, int dumplen, const char *msg, const struct timeb *ctm);
 static int log_print_dump(char *addr, const void *dump, int dumplen);
 static int log_sync_ext(log_cycle_t *log);
 
-static int log_rename(const log_file_info_t *file, const struct timeb *time);
-static size_t _log_sync(log_file_info_t *file, int *fd);
+static int log_rename(const log_cache_t *lc, const struct timeb *time);
+static size_t _log_sync(log_cache_t *lc, int *fd);
 
 /* 是否强制写(注意: 系数必须小于或等于0.8，否则可能出现严重问题) */
 static const size_t g_log_sync_size = 0.8 * LOG_FILE_CACHE_SIZE;
-#define log_is_over_limit(file) (((file)->ioff - (file)->ooff) > g_log_sync_size)
+#define log_is_over_limit(lc) (((lc)->ioff - (lc)->ooff) > g_log_sync_size)
 
 /******************************************************************************
  **函数名称: log_init
@@ -121,8 +121,8 @@ log_cycle_t *log_init(int level, const char *path)
         /* 3. 完成日志对象的创建 */
         addr = log_get_shm_addr();
 
-        log->file = log_creat(addr, path);
-        if (NULL == log->file)
+        log->lc = log_creat(addr, path);
+        if (NULL == log->lc)
         {
             fprintf(stderr, "Create [%s] failed!", path);
             break;
@@ -141,7 +141,7 @@ log_cycle_t *log_init(int level, const char *path)
     } while (0);
 
     /* 5. 异常处理 */
-    if (NULL != log->file) { log_release(log->file); }
+    if (NULL != log->lc) { log_release(log->lc); }
     log_mutex_unlock();
     pthread_mutex_destroy(&log->lock);
     free(log);
@@ -204,7 +204,7 @@ void log_destroy(log_cycle_t **log)
 {
     log_mutex_lock();
 
-    log_release((*log)->file);
+    log_release((*log)->lc);
     free(*log);
     *log = NULL;
 
@@ -342,7 +342,7 @@ void log_set_max_size(size_t size)
  **函数名称: log_rename
  **功    能: 获取备份日志文件名
  **输入参数:
- **     file: 文件信息
+ **     lc: 文件信息
  **     time: 当前时间
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
@@ -350,7 +350,7 @@ void log_set_max_size(size_t size)
  **注意事项:
  **作    者: # Qifeng.zou # 2013.10.31 #
  ******************************************************************************/
-static int log_rename(const log_file_info_t *file, const struct timeb *time)
+static int log_rename(const log_cache_t *lc, const struct timeb *time)
 {
     struct tm loctm;
     char newpath[FILE_PATH_MAX_LEN];
@@ -360,10 +360,10 @@ static int log_rename(const log_file_info_t *file, const struct timeb *time)
     /* FORMAT: *.logYYYYMMDDHHMMSS.bak */
     snprintf(newpath, sizeof(newpath),
         "%s%04d%02d%02d%02d%02d%02d.bak",
-        file->path, loctm.tm_year+1900, loctm.tm_mon+1, loctm.tm_mday,
+        lc->path, loctm.tm_year+1900, loctm.tm_mon+1, loctm.tm_mday,
         loctm.tm_hour, loctm.tm_min, loctm.tm_sec);
 
-    return rename(file->path, newpath);
+    return rename(lc->path, newpath);
 }
 
 /******************************************************************************
@@ -485,10 +485,10 @@ static int log_name_conflict_handler(const char *oripath, char *newpath, int siz
  **     2. 请勿在此函数中调用错误日志函数 - 小心死锁!
  **作    者: # Qifeng.zou # 2013.10.31 #
  ******************************************************************************/
-static log_file_info_t *log_creat(void *addr, const char *path)
+static log_cache_t *log_creat(void *addr, const char *path)
 {
     pid_t pid = getpid();
-    log_file_info_t *file;
+    log_cache_t *lc;
     const char *ptr = path;
     char newpath[FILE_NAME_MAX_LEN];
     int idx, hash_idx = 0, repeat = 0, idle_idx = -1;
@@ -500,25 +500,25 @@ static log_file_info_t *log_creat(void *addr, const char *path)
     for (idx=0; idx<LOG_FILE_MAX_NUM; idx++, hash_idx++)
     {
         hash_idx %= LOG_FILE_MAX_NUM;
-        file = (log_file_info_t *)(addr + hash_idx * LOG_FILE_CACHE_SIZE);
+        lc = (log_cache_t *)(addr + hash_idx * LOG_FILE_CACHE_SIZE);
 
         /* 1. 判断文件名是否一致 */
-        if (!strcmp(file->path, ptr))   /* 文件名出现一致 */
+        if (!strcmp(lc->path, ptr))   /* 文件名出现一致 */
         {
             /* 判断进程是否存在，是否和当前进程ID一致 */
-            if (file->pid == pid)
+            if (lc->pid == pid)
             {
                 log_fcache_all_unlock();
-                return file;
+                return lc;
             }
 
-            if (!proc_is_exist(file->pid))
+            if (!proc_is_exist(lc->pid))
             {
-                file->pid = pid;
-                log_sync(file);
+                lc->pid = pid;
+                log_sync(lc);
 
                 log_fcache_all_unlock();
-                return file;
+                return lc;
             }
 
             /* 文件名重复，且其他进程正在运行... */
@@ -537,24 +537,24 @@ static log_file_info_t *log_creat(void *addr, const char *path)
         else if (-1 == idle_idx)  /* 当为找到空闲时，则进行后续判断 */
         {
             /* 路径是否为空 */
-            if ('\0' == file->path[0])
+            if ('\0' == lc->path[0])
             {
                 idle_idx = hash_idx;
 
-                memset(file, 0, sizeof(log_file_info_t));
-                file->idx = hash_idx;
-                file->pid = INVALID_PID;
+                memset(lc, 0, sizeof(log_cache_t));
+                lc->idx = hash_idx;
+                lc->pid = INVALID_PID;
                 continue;
             }
 
             /* 进程是否存在 */
-            if (proc_is_exist(file->pid))
+            if (proc_is_exist(lc->pid))
             {
                 idle_idx = hash_idx;
 
-                memset(file, 0, sizeof(log_file_info_t));
-                file->idx = hash_idx;
-                file->pid = INVALID_PID;
+                memset(lc, 0, sizeof(log_cache_t));
+                lc->idx = hash_idx;
+                lc->pid = INVALID_PID;
                 continue;
             }
         }
@@ -566,42 +566,42 @@ static log_file_info_t *log_creat(void *addr, const char *path)
         return NULL;
     }
 
-    file = (log_file_info_t *)(addr + idle_idx * LOG_FILE_CACHE_SIZE);
+    lc = (log_cache_t *)(addr + idle_idx * LOG_FILE_CACHE_SIZE);
 
-    file->pid = pid;
-    snprintf(file->path, sizeof(file->path), "%s", ptr);
+    lc->pid = pid;
+    snprintf(lc->path, sizeof(lc->path), "%s", ptr);
 
     log_fcache_all_unlock();
 
-    return file;
+    return lc;
 }
 
 /******************************************************************************
  **函数名称: log_release
  **功    能: 释放申请的日志缓存
  **输入参数:
- **     file: 日志对象
+ **     lc: 日志对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述:
  **注意事项:
  **作    者: # Qifeng.zou # 2013.11.05 #
  ******************************************************************************/
-static void log_release(log_file_info_t *file)
+static void log_release(log_cache_t *lc)
 {
     int idx;
 
-    idx = file->idx;
+    idx = lc->idx;
 
-    log_fcache_wrlock(file);
+    log_fcache_wrlock(lc);
 
-    log_sync(file);
+    log_sync(lc);
 
-    memset(file, 0, sizeof(log_file_info_t));
-    file->pid = INVALID_PID;
-    file->idx = idx;
+    memset(lc, 0, sizeof(log_cache_t));
+    lc->pid = INVALID_PID;
+    lc->idx = idx;
 
-    log_fcache_unlock(file);
+    log_fcache_unlock(lc);
 }
 
 /******************************************************************************
@@ -626,15 +626,15 @@ static int log_write(log_cycle_t *log, int level,
     char *addr;
     struct tm loctm;
     time_t difftm;
-    log_file_info_t *file = log->file;
+    log_cache_t *lc = log->lc;
 
     local_time(&ctm->time, &loctm);        /* 获取当前系统时间 */
 
-    log_fcache_wrlock(file);                /* 缓存加锁 */
+    log_fcache_wrlock(lc);                /* 缓存加锁 */
     pthread_mutex_lock(&log->lock);
 
-    addr = (char *)(file + 1) + file->ioff;
-    left = log_get_data_size() - file->ioff;
+    addr = (char *)(lc + 1) + lc->ioff;
+    left = log_get_data_size() - lc->ioff;
 
     switch (level)
     {
@@ -704,7 +704,7 @@ static int log_write(log_cycle_t *log, int level,
     }
 
     msglen = strlen(addr);
-    file->ioff += msglen;
+    lc->ioff += msglen;
     addr += msglen;
     left -= msglen;
 
@@ -713,21 +713,21 @@ static int log_write(log_cycle_t *log, int level,
     {
         msglen = log_print_dump(addr, dump, dumplen);
 
-        file->ioff += msglen;
+        lc->ioff += msglen;
     }
 
     /* 判断是否强制写或发送通知 */
-    difftm = ctm->time - file->sync_tm.time;
-    if (log_is_over_limit(file)
+    difftm = ctm->time - lc->sync_tm.time;
+    if (log_is_over_limit(lc)
         || log_is_timeout(difftm))
     {
-        memcpy(&file->sync_tm, ctm, sizeof(file->sync_tm));
+        memcpy(&lc->sync_tm, ctm, sizeof(lc->sync_tm));
 
         log_sync_ext(log);
     }
 
     pthread_mutex_unlock(&log->lock);
-    log_fcache_unlock(file);      /* 缓存解锁 */
+    log_fcache_unlock(lc);      /* 缓存解锁 */
 
     return 0;
 }
@@ -822,24 +822,24 @@ static int log_print_dump(char *addr, const void *dump, int dumplen)
  **函数名称: log_sync
  **功    能: 强制同步日志信息到日志文件
  **输入参数:
- **     file: 日志文件信息
+ **     lc: 日志文件信息
  **输出参数: NONE
  **返    回: VOID
  **实现描述:
  **注意事项:
  **作    者: # Qifeng.zou # 2013.10.30 #
  ******************************************************************************/
-void log_sync(log_file_info_t *file)
+void log_sync(log_cache_t *lc)
 {
     size_t fsize;
 
     /* 1. 执行同步操作 */
-    fsize = _log_sync(file, NULL);
+    fsize = _log_sync(lc, NULL);
 
     /* 2. 文件是否过大 */
     if (log_is_too_large(fsize))
     {
-        log_rename(file, &file->sync_tm);
+        log_rename(lc, &lc->sync_tm);
     }
 }
 
@@ -847,7 +847,7 @@ void log_sync(log_file_info_t *file)
  **函数名称: log_sync_ext
  **功    能: 强制同步日志信息到日志文件
  **输入参数:
- **     file: 日志文件信息
+ **     lc: 日志文件信息
  **输出参数: NONE
  **返    回: VOID
  **实现描述:
@@ -859,13 +859,13 @@ static int log_sync_ext(log_cycle_t *log)
     size_t fsize = 0;
 
     /* 1. 执行同步操作 */
-    fsize = _log_sync(log->file, &log->fd);
+    fsize = _log_sync(log->lc, &log->fd);
 
     /* 2. 文件是否过大 */
     if (log_is_too_large(fsize))
     {
         CLOSE(log->fd);
-        return log_rename(log->file, &log->file->sync_tm);
+        return log_rename(log->lc, &log->lc->sync_tm);
     }
 
     return 0;
@@ -875,7 +875,7 @@ static int log_sync_ext(log_cycle_t *log)
  **函数名称: _log_sync
  **功    能: 强制同步业务日志
  **输入参数:
- **     file: 文件缓存
+ **     lc: 文件缓存
  **输出参数:
  **     fd: 文件描述符
  **返    回: 如果进行同步操作，则返回文件的实际大小!
@@ -886,7 +886,7 @@ static int log_sync_ext(log_cycle_t *log)
  **     3) 在此函数中不允许调用错误级别的日志函数 可能死锁!
  **作    者: # Qifeng.zou # 2013.11.08 #
  ******************************************************************************/
-static size_t _log_sync(log_file_info_t *file, int *_fd)
+static size_t _log_sync(log_cache_t *lc, int *_fd)
 {
     void *addr;
     struct stat fstat;
@@ -895,39 +895,39 @@ static size_t _log_sync(log_file_info_t *file, int *_fd)
     memset(&fstat, 0, sizeof(fstat));
 
     /* 1. 判断是否需要同步 */
-    if (file->ioff == file->ooff)
+    if (lc->ioff == lc->ooff)
     {
         return 0;
     }
 
     /* 2. 计算同步地址和长度 */
-    addr = (void *)(file + 1);
-    n = file->ioff - file->ooff;
+    addr = (void *)(lc + 1);
+    n = lc->ioff - lc->ooff;
     fd = (NULL != _fd)? *_fd : INVALID_FD;
 
     /* 撰写日志文件 */
     do
     {
         /* 3. 文件是否存在 */
-        if (lstat(file->path, &fstat) < 0)
+        if (lstat(lc->path, &fstat) < 0)
         {
             if (ENOENT != errno)
             {
                 CLOSE(fd);
-                fprintf(stderr, "errmsg:[%d]%s path:[%s]\n", errno, strerror(errno), file->path);
+                fprintf(stderr, "errmsg:[%d]%s path:[%s]\n", errno, strerror(errno), lc->path);
                 break;
             }
             CLOSE(fd);
-            Mkdir2(file->path, DIR_MODE);
+            Mkdir2(lc->path, DIR_MODE);
         }
 
         /* 4. 是否重新创建文件 */
         if (fd < 0)
         {
-            fd = Open(file->path, OPEN_FLAGS, OPEN_MODE);
+            fd = Open(lc->path, OPEN_FLAGS, OPEN_MODE);
             if (fd < 0)
             {
-                fprintf(stderr, "errmsg:[%d] %s! path:[%s]\n", errno, strerror(errno), file->path);
+                fprintf(stderr, "errmsg:[%d] %s! path:[%s]\n", errno, strerror(errno), lc->path);
                 break;
             }
         }
@@ -937,7 +937,7 @@ static size_t _log_sync(log_file_info_t *file, int *_fd)
         if (-1 == fsize)
         {
             CLOSE(fd);
-            fprintf(stderr, "errmsg:[%d] %s! path:[%s]\n", errno, strerror(errno), file->path);
+            fprintf(stderr, "errmsg:[%d] %s! path:[%s]\n", errno, strerror(errno), lc->path);
             break;
         }
 
@@ -949,9 +949,9 @@ static size_t _log_sync(log_file_info_t *file, int *_fd)
 
     /* 7. 标志复位 */
     memset(addr, 0, n);
-    file->ioff = 0;
-    file->ooff = 0;
-    ftime(&file->sync_tm);
+    lc->ioff = 0;
+    lc->ooff = 0;
+    ftime(&lc->sync_tm);
 
     if (NULL != _fd)
     {

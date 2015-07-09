@@ -27,33 +27,31 @@ typedef enum
 #define LOG_DEF_LEVEL_STR       LOG_LEVEL_TRACE_STR /* 默认日志级别字串 */
 
 #define LOG_FILE_MAX_NUM        (32)        /* 日志文件最大个数 */
-#define LOG_FILE_CACHE_SIZE     (1 * MB)    /* 日志文件的缓存SIZE */
+#define LOG_FILE_CACHE_SIZE     (8 * MB)    /* 日志文件的缓存SIZE */
 #define LOG_SHM_SIZE            (LOG_FILE_MAX_NUM * LOG_FILE_CACHE_SIZE) /* 日志共享内存SIZE */
 #define LOG_SYNC_TIMEOUT        (1)         /* 日志超时同步时间 */
 #define LOG_LEVEL_MAX_LEN       (16)        /* 日志级别字串的长度 */
 
 #define LOG_MSG_MAX_LEN         (2048)      /* 日志行最大长度 */
-#define LOG_FILE_MAX_SIZE       (8 * MB)    /* 单个日志文件的最大SIZE */
+#define LOG_FILE_MAX_SIZE       (128 * MB)  /* 单个日志文件的最大SIZE */
 
 #define LOG_KEY_PATH            "../temp/log/log.key"  /* 键值路径 */
 #define LOG_SUFFIX              ".log"      /* 日志文件后缀 */
 #define LOG_DEFAULT_TRCLOG      "trc.log"   /* 默认日志名 */
 #define LOG_LOCK_FILE           "log.lck"   /* 日志锁 */
 #define log_get_lock_path(path, size)       /* 日志锁路径 */ \
-{ \
-    snprintf(path, size, "../temp/log/%s", LOG_LOCK_FILE); \
-}
+    snprintf(path, size, "../temp/log/%s", LOG_LOCK_FILE);
 
 /* DUMP设置 */
 #define LOG_DUMP_COL_NUM        (16)        /* DUMP列数 */
 #define LOG_DUMP_PAGE_MAX_ROWS  (20)        /* DUMP页最大行数 */
 #define LOG_DUMP_PAGE_MAX_SIZE  (2048)      /* DUMP页最大SIZE */
-#define LOG_DUMP_HEAD_STR     \
+#define LOG_DUMP_HEAD_STR                   /* 显示头 */\
     "\nDisplacement -1--2--3--4--5--6--7--8-Hex-0--1--2--3--4--5--6  --ASCII Value--\n"
 
 #define log_is_timeout(diff_time) (diff_time >= LOG_SYNC_TIMEOUT)
 
-/* 文件缓存信息 */
+/* 日志缓存 */
 typedef struct
 {
     int idx;                                /* 索引号 */
@@ -62,21 +60,10 @@ typedef struct
     size_t ooff;                            /* 同步偏移 */
     pid_t pid;                              /* 使用日志缓存的进程ID */
     struct timeb sync_tm;                   /* 上次同步的时间 */
-} log_file_info_t;
-
-/* 日志共享内存信息 */
-typedef struct
-{
-    int max_num;                            /* 日志缓存数 */
-    char path[FILE_NAME_MAX_LEN];           /* 日志文件绝对路径 */
-    size_t ioff;                            /* 写入偏移 */
-    size_t ooff;                            /* 同步偏移 */
-    pid_t pid;                              /* 使用日志缓存的进程ID */
-    struct timeb sync_tm;                   /* 上次同步的时间 */
-} log_shm_t;
+} log_cache_t;
 
 /* 内部接口 */
-void log_sync(log_file_info_t *file);
+void log_sync(log_cache_t *lc);
 void log_set_max_size(size_t size);
 
 /* 日志对象 */
@@ -86,7 +73,7 @@ typedef struct _log_cycle_t
 
     int fd;                                 /* 文件描述符 */
     pid_t pid;                              /* 进程PID */
-    log_file_info_t *file;                  /* 文件信息 */
+    log_cache_t *lc;                        /* 日志缓存 */
     pthread_mutex_t lock;                   /* 线程互斥锁 */
 } log_cycle_t;
 
