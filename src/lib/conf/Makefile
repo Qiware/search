@@ -14,7 +14,8 @@ INCLUDE = -I$(PROJ)/src/incl \
 		  -I$(PROJ)/src/incl/agent
 LIBS_PATH = -L$(PROJ)/lib
 
-SRC_LIST = mon_conf.c \
+SRC_LIST = sys_conf.c\
+			mon_conf.c \
 			flt_conf.c \
 			crwl_conf.c \
 			frwd_conf.c \

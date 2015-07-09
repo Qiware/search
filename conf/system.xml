@@ -1,5 +1,14 @@
 <!-- 系统配置 -->
 <SYSTEM>
+    <!-- 日志配置
+         SIZE: 日志文件的大小(MB) -->
+    <LOG SIZE="128">
+        <!-- 日志缓存
+             MAX: 缓存单元个数(每个日志文件对应一个日志缓存单元)
+             SIZE: 缓存单元大小(MB)
+             TIMEOUT: 缓存超时时间(s) -->
+        <CACHE MAX="32" SIZE="8" TIMEOUT="1" />
+    </LOG>
     <!-- 侦听服务名与配置映射 -->
     <LISTEND>
         <ITEM NAME="SearchEngineListend" PATH="../conf/listend.xml" />
