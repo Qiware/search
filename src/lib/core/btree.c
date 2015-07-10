@@ -392,7 +392,9 @@ static int btree_merge(btree_t *btree, btree_node_t *node)
             {
                 btree->root = NULL;
             }
-            free(node);
+            btree->dealloc(btree->pool, node->child);
+            btree->dealloc(btree->pool, node->key);
+            btree->dealloc(btree->pool, node);
         }
         return 0;
     }
@@ -517,7 +519,9 @@ static int _btree_merge(btree_t *btree, btree_node_t *left, btree_node_t *right,
     parent->key[m] = 0;
     parent->child[m+1] = NULL;
     parent->num--;
-    free(right);
+    btree->dealloc(btree->pool, right->child);
+    btree->dealloc(btree->pool, right->key);
+    btree->dealloc(btree->pool, right);
 
     /* Check */
     if (parent->num < btree->min)
@@ -696,7 +700,8 @@ static btree_node_t *btree_creat_node(btree_t *btree)
     }
 
     /* More than (max+1) is for move */
-    node->child = (btree_node_t **)btree->alloc(btree->pool, (btree->max+2) * sizeof(btree_node_t *));
+    node->child = (btree_node_t **)btree->alloc(
+        btree->pool, (btree->max+2) * sizeof(btree_node_t *));
     if (NULL == node->child)
     {
         btree->dealloc(btree->pool, node->key);
