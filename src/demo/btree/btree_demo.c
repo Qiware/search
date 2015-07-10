@@ -37,7 +37,7 @@ int main(void)
     /* > 插入关键字 */
     for(idx=0; idx<BTREE_NUM; idx++)
     {
-        btree_insert(btree, random());
+        btree_insert(btree, random()%20);
     }
 
 	btree_insert(btree, 14);
