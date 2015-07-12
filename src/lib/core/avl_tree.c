@@ -1,5 +1,5 @@
 /******************************************************************************
- ** Coypright(C) 2014-2024 Xundao technology Co., Ltd
+ ** Copyright(C) 2014-2024 Xundao technology Co., Ltd
  **
  ** 文件名: avl_tree.c
  ** 版本号: 1.0
