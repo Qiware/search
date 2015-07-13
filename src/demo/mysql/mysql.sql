@@ -74,7 +74,91 @@ SELECT * FROM emp; # 显示全部结果
 #SELECT * FROM emp ORDER BY sal DESC, deptno ASC;
 SELECT * FROM emp ORDER BY sal DESC, deptno ASC LIMIT 5;
 
-# 
 SELECT ename, deptname FROM emp, dept WHERE emp.deptno = dept.deptno;
 SELECT ename, deptname FROM emp LEFT JOIN dept ON emp.deptno = dept.deptno;
 SELECT ename, deptname FROM emp RIGHT JOIN dept ON emp.deptno = dept.deptno;
+
+# 创建视图VIEW
+DROP VIEW IF EXISTS vw_test;
+
+CREATE VIEW vw_test
+AS
+    SELECT id1 as id FROM t1;
+
+# 创建存储过程PROCEDURE
+DROP PROCEDURE IF EXISTS pr_add;
+DROP PROCEDURE IF EXISTS pr_sub;
+DROP PROCEDURE IF EXISTS pr_div;
+
+DELIMITER // # 修改结束符
+CREATE PROCEDURE pr_add(a int, b int)
+BEGIN
+    DECLARE c int;
+
+    IF a IS NULL THEN
+        SET a = 0;
+    END IF;
+    IF b IS NULL THEN
+        SET b = 0;
+    END IF;
+
+    SET c = a + b;
+
+    SELECT a, "+", b, "=", c as sum;
+END//
+
+CREATE PROCEDURE pr_sub(a int, b int)
+BEGIN
+    DECLARE c int;
+
+    IF a IS NULL THEN
+        SET a = 0;
+    END IF;
+    IF b IS NULL THEN
+        SET b = 0;
+    END IF;
+
+    SET c = a - b;
+
+    SELECT a, "-", b, "=", c as diff;
+END//
+
+CREATE PROCEDURE pr_div(a int, b int, OUT v int)
+BEGIN
+    IF a IS NULL THEN
+        SET a = 0;
+    END IF;
+    IF b IS NULL THEN
+        SET b = 1;
+    END IF;
+
+    SET v = a / b;
+
+    SELECT a, "/", b, "=", v;
+END//
+
+DELIMITER ;
+
+SET @a = 10;
+SET @b = 20;
+SET @c = 5;
+SET @v = 1;
+
+CALL pr_add(@a, @b);
+CALL pr_add(@c, @b);
+CALL pr_sub(@c, @b);
+SELECT "Before call div: ", @v;
+CALL pr_div(@b, @c, @v);
+SELECT "After call div: ", @v;
+
+# 创建触发器(TRIGGER)
+DROP TRIGGER IF EXISTS tg_test;
+
+DELIMITER //
+CREATE TRIGGER tg_test
+    AFTER INSERT ON emp
+    FOR EACH ROW
+    BEGIN
+        INSERT INTO t1 VALUES(new.sal, new.deptno);
+    END//
+DELIMITER ;
