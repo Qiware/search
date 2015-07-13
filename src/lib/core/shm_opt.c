@@ -1,11 +1,20 @@
 #include "comm.h"
+#include "hash.h"
 #include "shm_opt.h"
 #include "syscall.h"
 #include "xml_tree.h"
 
-#define shm_digest(id, size) ((id) * (size))
-
 static void *shm_at_or_creat(const char *path, size_t size);
+
+/* 计算摘要值 */
+uint64_t shm_digest(int id, size_t size)
+{
+    char addr[128];
+
+    snprintf(addr, sizeof(addr), "%d%lu", id, size);
+
+    return hash_time33(addr);
+}
 
 /******************************************************************************
  **函数名称: shm_data_read
