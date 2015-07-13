@@ -14,7 +14,7 @@
         <AUTH   USR="qifeng" PASSWD="111111" /> <!-- 鉴权配置(USR:用户名 PASSWD:登录密码) -->
         <THREAD-POOL SEND_THD_NUM="5" WORK_THD_NUM="5" />  <!-- 线程数目(SEND:发送线程 WORK:工作线程) -->
         <BUFFER-POOL-SIZE SEND="5" RECV="5" />  <!-- 缓存配置(SEND:发送缓存(MB) RECV:接收缓存(MB)) -->
-        <RECVQ  MAX="4096" SIZE="2048" />       <!-- 接收队列(MAX:总容量 SIZE:单元大小) -->
-        <SENDQ  MAX="4096" SIZE="2048" />       <!-- 发送队列(MAX:总容量 SIZE:单元大小) -->
+        <RECVQ  MAX="4096" SIZE="4096" />       <!-- 接收队列(MAX:总容量 SIZE:单元大小) -->
+        <SENDQ  MAX="4096" SIZE="4096" />       <!-- 发送队列(MAX:总容量 SIZE:单元大小) -->
     </CONN-INVTD>
 </FRWDER>
