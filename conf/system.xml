@@ -1,9 +1,9 @@
 <!-- 系统配置 -->
 <SYSTEM>
     <!-- 侦听服务名与配置映射 -->
-    <LISTEND>
+    <LISTEN>
         <ITEM NAME="SearchEngineListend" PATH="../conf/listend.xml" />
-    </LISTEND>
+    </LISTEN>
 
     <!-- 转发服务名与配置映射 -->
     <FRWDER>
