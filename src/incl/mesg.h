@@ -53,7 +53,7 @@ typedef struct
 {
     uint64_t serial;                        /* 流水号(全局唯一编号) */
     int url_num;                            /* 网址个数 */
-#define MSG_SRCH_RSP_URL_NUM    (5)
+#define MSG_SRCH_RSP_URL_NUM    (10)
     char url[MSG_SRCH_RSP_URL_NUM][128];    /* 网址: 查找结果 */
 } mesg_search_word_rsp_t;
 
