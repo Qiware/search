@@ -174,7 +174,7 @@ static int lsnd_search_word_req_hdl(unsigned int type, void *data, int length, v
     /* > 转发搜索请求 */
     req->serial = hton64(flow->serial);
 
-    return rtsd_cli_send(ctx->send_to_invtd, type, req, sizeof(mesg_search_word_req_t));
+    return rtsd_cli_send(ctx->rtmq_to_invtd, type, req, sizeof(mesg_search_word_req_t));
 }
 
 /******************************************************************************
@@ -207,7 +207,7 @@ static int lsnd_insert_word_req_hdl(unsigned int type, void *data, int length, v
     /* > 转发搜索请求 */
     req->serial = hton64(flow->serial);
 
-    return rtsd_cli_send(ctx->send_to_invtd, type, req, sizeof(mesg_insert_word_req_t));
+    return rtsd_cli_send(ctx->rtmq_to_invtd, type, req, sizeof(mesg_insert_word_req_t));
 }
 
 /******************************************************************************
@@ -286,9 +286,9 @@ static lsnd_cntx_t *lsnd_init(lsnd_conf_t *conf, log_cycle_t *log)
             break;
         }
 
-        /* > 初始化RTTP信息 */
-        ctx->send_to_invtd = rtsd_cli_init(&conf->to_frwd, 0, log);
-        if (NULL == ctx->send_to_invtd)
+        /* > 初始化RTMQ信息 */
+        ctx->rtmq_to_invtd = rtsd_cli_init(&conf->to_frwd, 0, log);
+        if (NULL == ctx->rtmq_to_invtd)
         {
             log_error(log, "Initialize real-time-transport-protocol failed!");
             break;

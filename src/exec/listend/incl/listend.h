@@ -41,7 +41,7 @@ typedef struct
 
     lsnd_dsvr_t dsvr;                       /* 分发服务 */
 
-    rtsd_cli_t *send_to_invtd;              /* SDTP服务(发送至倒排服务) */
+    rtsd_cli_t *rtmq_to_invtd;              /* RTMQ服务(发送至倒排服务) */
     agent_cntx_t *agent;                    /* 代理服务 */
     shm_queue_t **distq;                    /* 分发队列 */
 } lsnd_cntx_t;

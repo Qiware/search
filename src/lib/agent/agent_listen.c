@@ -125,6 +125,7 @@ int agent_listen_init(agent_cntx_t *ctx, agent_lsvr_t *lsvr, int idx)
     lsvr->cmd_sck_id = unix_udp_creat(path);
     if (lsvr->cmd_sck_id < 0)
     {
+        log_error(ctx->log, "errmsg:[%d] %s! idx:%d path:%s", errno, strerror(errno), idx, path);
         return AGENT_ERR;
     }
 
