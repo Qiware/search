@@ -4,7 +4,7 @@
 #include "comm.h"
 #include "list.h"
 
-#define SYS_CONF_DEF_PATH "../conf/sys_conf.xml"
+#define SYS_CONF_DEF_PATH "../conf/system.xml"
 
 /* 映射配置 */
 typedef struct
@@ -21,5 +21,8 @@ typedef struct
 } sys_conf_t;
 
 int conf_load_system(const char *fpath, sys_conf_t *conf);
+
+int conf_get_listen(const sys_conf_t *conf, const char *name, conf_map_t *map);
+int conf_get_frwder(const sys_conf_t *conf, const char *name, conf_map_t *map);
 
 #endif /*__CONF_H__*/

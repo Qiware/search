@@ -32,6 +32,7 @@ int conf_load_system(const char *fpath, sys_conf_t *conf)
     memset(&opt, 0, sizeof(opt));
 
     /* > 加载配置 */
+    opt.log = NULL;
     opt.pool = (void *)NULL;
     opt.alloc = (mem_alloc_cb_t)mem_alloc;
     opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
@@ -105,8 +106,14 @@ static int conf_load_listen(xml_tree_t *xml, sys_conf_t *conf)
     }
 
     /* > 加载侦听配置 */
-    while (NULL != (node = xml_search(xml, par, "ITEM")))
+    node = xml_search(xml, par, "ITEM");
+    for (; NULL != node; node = node->next)
     {
+        if (strcasecmp(node->name.str, "ITEM"))
+        {
+            continue;
+        }
+
         /* > 结点名 */
         attr = xml_search(xml, node, "NAME");
         if (NULL == attr
@@ -195,8 +202,14 @@ static int conf_load_frwder(xml_tree_t *xml, sys_conf_t *conf)
     }
 
     /* > 加载侦听配置 */
-    while (NULL != (node = xml_search(xml, par, "ITEM")))
+    node = xml_search(xml, par, "ITEM");
+    for (; NULL != node; node = node->next)
     {
+        if (strcasecmp(node->name.str, "ITEM"))
+        {
+            continue;
+        }
+
         /* > 结点名 */
         attr = xml_search(xml, node, "NAME");
         if (NULL == attr
@@ -241,4 +254,66 @@ static int conf_load_frwder(xml_tree_t *xml, sys_conf_t *conf)
     }
 
     return 0;
+}
+
+/******************************************************************************
+ **函数名称: conf_get_listen
+ **功    能: 获取侦听配置
+ **输入参数:
+ **     conf: 系统配置
+ **     name: 侦听名
+ **输出参数:
+ **     map: 配置映射
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015-07-15 00:07:42 #
+ ******************************************************************************/
+int conf_get_listen(const sys_conf_t *conf, const char *name, conf_map_t *map)
+{
+    const conf_map_t *item;
+    const list_node_t *node;
+
+    node = conf->listen->head;
+    while (NULL != node)
+    {
+        item = (const conf_map_t *)node->data;
+        if (!strcasecmp(item->name, name))
+        {
+            memcpy(map, item, sizeof(conf_map_t));
+            return 0;
+        }
+    }
+    return -1;
+}
+
+/******************************************************************************
+ **函数名称: conf_get_frwder
+ **功    能: 获取转发配置
+ **输入参数:
+ **     conf: 系统配置
+ **     name: 转发名
+ **输出参数:
+ **     map: 配置映射
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015-07-15 00:12:24 #
+ ******************************************************************************/
+int conf_get_frwder(const sys_conf_t *conf, const char *name, conf_map_t *map)
+{
+    const conf_map_t *item;
+    const list_node_t *node;
+
+    node = conf->frwder->head;
+    while (NULL != node)
+    {
+        item = (const conf_map_t *)node->data;
+        if (!strcasecmp(item->name, name))
+        {
+            memcpy(map, item, sizeof(conf_map_t));
+            return 0;
+        }
+    }
+    return -1;
 }
