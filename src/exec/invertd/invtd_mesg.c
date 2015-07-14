@@ -1,12 +1,11 @@
 /******************************************************************************
  ** Copyright(C) 2014-2024 Xundao technology Co., Ltd
  **
- ** 文件名: invtd_sdtp.c
+ ** 文件名: invtd_rtmq.c
  ** 版本号: 1.0
- ** 描  述: 倒排服务中与SDTP相关内容的处理
+ ** 描  述: 倒排服务中与RTMQ相关内容的处理
  ** 作  者: # Qifeng.zou # Fri 08 May 2015 10:37:21 PM CST #
  ******************************************************************************/
-
 #include "mesg.h"
 #include "invertd.h"
 #include "rtrd_recv.h"
@@ -154,8 +153,8 @@ static int invtd_print_invt_tab_req_hdl(int type, int orig, char *buff, size_t l
 }
 
 /******************************************************************************
- **函数名称: invtd_rttp_reg
- **功    能: 注册RTTP回调
+ **函数名称: invtd_rtmq_reg
+ **功    能: 注册RTMQ回调
  **输入参数:
  **     ctx: SDTP对象
  **输出参数: NONE
@@ -164,25 +163,25 @@ static int invtd_print_invt_tab_req_hdl(int type, int orig, char *buff, size_t l
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.05.08 #
  ******************************************************************************/
-static int invtd_rttp_reg(invtd_cntx_t *ctx)
+static int invtd_rtmq_reg(invtd_cntx_t *ctx)
 {
-#define INVTD_RTTP_REG(ctx, type, proc, args) \
+#define INVTD_RTMQ_REG(ctx, type, proc, args) \
     if (rtrd_register((ctx)->rtrd, type, proc, args)) \
     { \
         log_error(ctx->log, "Register callback failed!"); \
         return INVT_ERR; \
     }
 
-   INVTD_RTTP_REG(ctx, MSG_SEARCH_WORD_REQ, invtd_search_word_req_hdl, ctx);
-   INVTD_RTTP_REG(ctx, MSG_INSERT_WORD_REQ, invtd_insert_word_req_hdl, ctx);
-   INVTD_RTTP_REG(ctx, MSG_PRINT_INVT_TAB_REQ, invtd_print_invt_tab_req_hdl, ctx);
+   INVTD_RTMQ_REG(ctx, MSG_SEARCH_WORD_REQ, invtd_search_word_req_hdl, ctx);
+   INVTD_RTMQ_REG(ctx, MSG_INSERT_WORD_REQ, invtd_insert_word_req_hdl, ctx);
+   INVTD_RTMQ_REG(ctx, MSG_PRINT_INVT_TAB_REQ, invtd_print_invt_tab_req_hdl, ctx);
 
     return INVT_OK;
 }
 
 /******************************************************************************
- **函数名称: invtd_start_rttp
- **功    能: 启动RTTP服务
+ **函数名称: invtd_start_rtmq
+ **功    能: 启动RTMQ服务
  **输入参数:
  **     ctx: SDTP对象
  **输出参数: NONE
@@ -191,9 +190,9 @@ static int invtd_rttp_reg(invtd_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.05.08 #
  ******************************************************************************/
-int invtd_start_rttp(invtd_cntx_t *ctx)
+int invtd_start_rtmq(invtd_cntx_t *ctx)
 {
-    if (invtd_rttp_reg(ctx))
+    if (invtd_rtmq_reg(ctx))
     {
         return INVT_ERR;
     }

@@ -20,7 +20,7 @@ LIBS_A = $(PROJ_LIB)/libcore.a $(PROJ_LIB)/librtmq.a $(PROJ_LIB)/libinvtab.a
 
 SRC_LIST = invertd.c \
             invtd_comm.c \
-            invtd_sdtp.c
+            invtd_mesg.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
 

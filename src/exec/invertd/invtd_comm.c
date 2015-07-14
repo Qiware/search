@@ -1,18 +1,8 @@
-/******************************************************************************
- ** Copyright(C) 2014-2024 Xundao technology Co., Ltd
- **
- ** 文件名: invtd_comm.c
- ** 版本号: 1.0
- ** 描  述: 
- ** 作  者: # Qifeng.zou # Fri 08 May 2015 07:14:11 PM CST #
- ******************************************************************************/
-
 #include "invtab.h"
 #include "invertd.h"
 #include "invtd_priv.h"
 
 #define INVTD_LOG_PATH      "../log/invertd.log"
-#define INVTD_PLOG_PATH     "../log/invertd.plog"
 
 /******************************************************************************
  **函数名称: invtd_getopt 
@@ -190,11 +180,11 @@ static int invtd_insert_word(invtd_cntx_t *ctx)
     INVERT_INSERT(ctx, "BAIDU", "www.baidu3.com", 1);
     INVERT_INSERT(ctx, "BAIDU", "www.baidu4.com", 3);
     INVERT_INSERT(ctx, "BAIDU", "www.baidu5.com", 10);
-    INVERT_INSERT(ctx, "凤凰网", "www.ifeng.com", 10);
-    INVERT_INSERT(ctx, "爱我中华", "www.zhonghua.com", 10);
     INVERT_INSERT(ctx, "QQ", "www.qq.com", 10);
     INVERT_INSERT(ctx, "SINA", "www.sina.com", 6);
-    INVERT_INSERT(ctx, "搜狐", "www.sohu.com", 7);
+    INVERT_INSERT(ctx, "ifeng", "www.ifeng.com", 10);
+    INVERT_INSERT(ctx, "zhonghua", "www.zhonghua.com", 10);
+    INVERT_INSERT(ctx, "sohu", "www.sohu.com", 7);
 
     return INVT_OK;
 }
@@ -213,8 +203,8 @@ static int invtd_insert_word(invtd_cntx_t *ctx)
  ******************************************************************************/
 int invtd_startup(invtd_cntx_t *ctx)
 {
-    /* 启动SDTP */
-    if (invtd_start_rttp(ctx))
+    /* 启动RTMQ */
+    if (invtd_start_rtmq(ctx))
     {
         log_fatal(ctx->log, "Startup sdtp failed!");
         return INVT_ERR;
