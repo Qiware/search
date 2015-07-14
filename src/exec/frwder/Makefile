@@ -20,7 +20,8 @@ LIBS = -lpthread -lcore -lsdtp -lrtmq -lconf
 LIBS_A = $(PROJ_LIB)/libcore.a $(PROJ_LIB)/librtmq.a
 
 SRC_LIST = frwder.c \
-			frwd_comm.c
+			frwd_comm.c \
+			frwd_mesg.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
 
