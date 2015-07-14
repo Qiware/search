@@ -7,7 +7,7 @@
 #include "rb_tree.h"
 #include "agent_mesg.h"
 
-#define AGENT_TMOUT_MSEC       (200)   /* 超时(豪秒) */
+#define AGENT_TMOUT_MSEC       (1000)  /* 超时(豪秒) */
 
 #define AGENT_EVENT_MAX_NUM    (8192)  /* 事件最大数 */
 #define AGENT_SCK_HASH_MOD     (7)     /* 套接字哈希长度 */

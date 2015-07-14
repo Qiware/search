@@ -390,7 +390,7 @@ static int agent_creat_listens(agent_cntx_t *ctx)
     /* > 初始化侦听服务 */
     for (idx=0; idx<conf->lsn_num; ++idx)
     {
-        lsvr = ctx->listen.lsvr + 1;
+        lsvr = ctx->listen.lsvr + idx;
         lsvr->log = ctx->log;
         if (agent_listen_init(ctx, lsvr, idx))
         {

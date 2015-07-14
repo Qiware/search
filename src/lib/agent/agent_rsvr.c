@@ -51,8 +51,6 @@ void *agent_rsvr_routine(void *_ctx)
 
     while (1)
     {
-        //agent_rsvr_add_conn(ctx, rsvr);
-
         /* > 等待事件通知 */
         rsvr->fds = epoll_wait(rsvr->epid, rsvr->events,
                 AGENT_EVENT_MAX_NUM, AGENT_TMOUT_MSEC);
