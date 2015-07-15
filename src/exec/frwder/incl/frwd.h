@@ -1,6 +1,7 @@
 #if !defined(__FRWD_H__)
 #define __FRWD_H__
 
+#include "conf.h"
 #include "rtsd_cli.h"
 #include "rtsd_ssvr.h"
 #include "frwd_conf.h"
@@ -16,7 +17,7 @@ typedef enum
 /* 输入参数 */
 typedef struct
 {
-    char conf_path[FILE_NAME_MAX_LEN];      /* 配置文件路径 */
+    char name[FILE_NAME_MAX_LEN];           /* 结点名 */
     bool isdaemon;                          /* 是否后台运行 */
 } frwd_opt_t;
 

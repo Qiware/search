@@ -43,13 +43,13 @@ int frwd_getopt(int argc, char **argv, frwd_opt_t *opt)
     memset(opt, 0, sizeof(frwd_opt_t));
 
     /* 1. 解析输入参数 */
-    while (-1 != (ch = getopt(argc, argv, "c:hd")))
+    while (-1 != (ch = getopt(argc, argv, "n:hd")))
     {
         switch (ch)
         {
-            case 'c':   /* 指定配置文件 */
+            case 'n':   /* 指定配置文件 */
             {
-                snprintf(opt->conf_path, sizeof(opt->conf_path), "%s", optarg);
+                snprintf(opt->name, sizeof(opt->name), "%s", optarg);
                 break;
             }
             case 'd':
@@ -69,9 +69,9 @@ int frwd_getopt(int argc, char **argv, frwd_opt_t *opt)
     optind = 1;
 
     /* 2. 验证输入参数 */
-    if (!strlen(opt->conf_path))
+    if (!strlen(opt->name))
     {
-        snprintf(opt->conf_path, sizeof(opt->conf_path), "%s", FRWD_DEF_CONF_PATH);
+        return FRWD_SHOW_HELP;
     }
 
     return FRWD_OK;
@@ -90,9 +90,9 @@ int frwd_getopt(int argc, char **argv, frwd_opt_t *opt)
  ******************************************************************************/
 int frwd_usage(const char *exec)
 {
-    printf("\nUsage: %s [-h] [-d] -c <config file>\n", exec);
+    printf("\nUsage: %s [-h] [-d] -n <name>\n", exec);
     printf("\t-h\tShow help\n"
-           "\t-c\tConfiguration path\n\n");
+           "\t-n\tNode name\n\n");
     return FRWD_OK;
 }
 
@@ -237,6 +237,9 @@ static int frwd_init_lsnd(frwd_cntx_t *frwd, const frwd_conf_t *conf)
     }
 
     snprintf(lsnd->name, sizeof(lsnd->name), "%s", conf->lsnd_name); /* 服务名 */
+
+    //LSND_GET_DSVR_CMD_PATH(lsnd->dist_cmd_path, sizeof(lsnd->dist_cmd_path), dir);
+
     snprintf(lsnd->dist_cmd_path, sizeof(lsnd->dist_cmd_path),       /* 分发服务命令 */
              "../temp/listend/%s/dsvr.usck", lsnd->name);
 
@@ -277,7 +280,7 @@ static int frwd_attach_lsnd_distq(frwd_lsnd_t *lsnd, lsnd_conf_t *conf)
     /* > 依次附着队列 */
     for (idx=0; idx<conf->distq.num; ++idx)
     {
-        snprintf(path, sizeof(path), "%s/dist-%d.shmq", conf->wdir, idx);
+        LSND_GET_DISTQ_PATH(path, sizeof(path), conf->wdir, idx);
 
         lsnd->distq[idx] = shm_queue_attach(path);
         if (NULL == lsnd->distq[idx])

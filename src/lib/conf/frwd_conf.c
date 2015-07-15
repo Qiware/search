@@ -17,6 +17,7 @@ static int frwd_conf_load_comm(xml_tree_t *xml, frwd_conf_t *conf);
  **函数名称: frwd_load_conf
  **功    能: 加载配置信息
  **输入参数: 
+ **     name: 结点名
  **     path: 配置路径
  **输出参数:
  **     conf: 配置信息
@@ -25,7 +26,7 @@ static int frwd_conf_load_comm(xml_tree_t *xml, frwd_conf_t *conf);
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.06.10 #
  ******************************************************************************/
-int frwd_load_conf(const char *path, frwd_conf_t *conf)
+int frwd_load_conf(const char *name, const char *path, frwd_conf_t *conf)
 {
     xml_opt_t opt;
     xml_tree_t *xml;
@@ -50,6 +51,13 @@ int frwd_load_conf(const char *path, frwd_conf_t *conf)
         xml_destroy(xml);
         return -1;
     }
+
+    if (strcasecmp(name, conf->name)) /* 校验结点名 */
+    {
+        xml_destroy(xml);
+        return -1;
+    }
+
     /* > 提取发送配置 */
     if (frwd_conf_load_frwder(xml, ".FRWDER.CONN-INVTD", &conf->conn_invtd))
     {
@@ -77,6 +85,16 @@ int frwd_load_conf(const char *path, frwd_conf_t *conf)
 static int frwd_conf_load_comm(xml_tree_t *xml, frwd_conf_t *conf)
 {
     xml_node_t *node;
+
+    /* > 结点名 */
+    node = xml_query(xml, ".FRWDER.NAME");
+    if (NULL == node
+        || 0 == node->value.len)
+    {
+        return -1;
+    }
+
+    snprintf(conf->name, sizeof(conf->name), "%s", node->value.str);
 
     /* > 日志级别 */
     node = xml_query(xml, ".FRWDER.LOG.LEVEL");
