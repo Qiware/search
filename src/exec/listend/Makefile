@@ -20,7 +20,8 @@ LIBS_A = $(PROJ_LIB)/libcore.a $(PROJ_LIB)/libagent.a $(PROJ_LIB)/librtmq.a
 
 SRC_LIST = listend.c \
 			lsnd_comm.c \
-			lsnd_dist.c
+			lsnd_dist.c \
+			lsnd_mesg.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST))
 
