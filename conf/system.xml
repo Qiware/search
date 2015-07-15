@@ -7,6 +7,6 @@
 
     <!-- 转发服务名与配置映射 -->
     <FRWDER>
-        <ITEM NAME="frwder" PATH="../conf/frwder.xml" />
+        <ITEM NAME="SendToInvertd"       PATH="../conf/frwder.xml" />
     </FRWDER>
 </SYSTEM>
