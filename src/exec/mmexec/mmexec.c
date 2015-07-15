@@ -94,7 +94,7 @@ static int lsnd_mem_creat(sys_conf_t *cf, log_cycle_t *log)
     /* > 创建共享内存队列 */
     for (idx=0; idx<conf.distq.num; ++idx)
     {
-        snprintf(path, sizeof(path), "%s/dist-%d.shmq", conf.wdir, idx);
+        LSND_GET_DISTQ_PATH(path, sizeof(path), conf.wdir, idx);
 
         shmq = shm_queue_creat(path, conf.distq.max, conf.distq.size);
         if (NULL == shmq)

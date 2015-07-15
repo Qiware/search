@@ -104,7 +104,7 @@ int lsnd_attach_distq(lsnd_cntx_t *ctx)
     /* > 依次附着队列 */
     for (idx=0; idx<conf->distq.num; ++idx)
     {
-        snprintf(path, sizeof(path), "%s/dist-%d.shmq", conf->wdir, idx);
+        LSND_GET_DISTQ_PATH(path, sizeof(path), conf->wdir, idx);
 
         ctx->distq[idx] = shm_queue_attach(path);
         if (NULL == ctx->distq[idx])

@@ -36,7 +36,7 @@ int lsnd_dsvr_init(lsnd_cntx_t *ctx)
     lsnd_conf_t *conf = &ctx->conf;
     lsnd_dsvr_t *dsvr = &ctx->dsvr;
 
-    snprintf(path, sizeof(path), "%s/dsvr.usck", conf->wdir);
+    LSND_GET_DSVR_CMD_PATH(path, sizeof(path), conf->wdir);
 
     dsvr->cmd_sck_id = unix_udp_creat(path);
     if (dsvr->cmd_sck_id < 0)

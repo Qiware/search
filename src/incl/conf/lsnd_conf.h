@@ -24,6 +24,12 @@ typedef struct
     rtsd_conf_t to_frwd;            /* 转发配置 */
 } lsnd_conf_t;
 
+#define LSND_GET_DISTQ_PATH(path, size, dir, idx)   /* 分发队列路径 */\
+    snprintf(path, sizeof(path), "%s/dist-%d.shmq", dir, idx);
+
+#define LSND_GET_DSVR_CMD_PATH(path, size, dir)     /* 分发服务命令路径 */\
+    snprintf(path, sizeof(path), "%s/dsvr.usck", dir);
+
 int lsnd_load_conf(const char *path, lsnd_conf_t *conf, log_cycle_t *log);
 
 #endif /*__LSND_CONF_H__*/
