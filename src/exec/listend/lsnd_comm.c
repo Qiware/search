@@ -23,13 +23,13 @@ int lsnd_getopt(int argc, char **argv, lsnd_opt_t *opt)
     int ch;
 
     /* 1. 解析输入参数 */
-    while (-1 != (ch = getopt(argc, argv, "c:hd")))
+    while (-1 != (ch = getopt(argc, argv, "n:hd")))
     {
         switch (ch)
         {
-            case 'c':   /* 指定配置文件 */
+            case 'n':   /* 结点名 */
             {
-                snprintf(opt->conf_path, sizeof(opt->conf_path), "%s", optarg);
+                snprintf(opt->name, sizeof(opt->name), "%s", optarg);
                 break;
             }
             case 'd':
@@ -49,9 +49,9 @@ int lsnd_getopt(int argc, char **argv, lsnd_opt_t *opt)
     optind = 1;
 
     /* 2. 验证输入参数 */
-    if (!strlen(opt->conf_path))
+    if (!strlen(opt->name))
     {
-        snprintf(opt->conf_path, sizeof(opt->conf_path), "%s", LSND_DEF_CONF_PATH);
+        return LSND_SHOW_HELP;
     }
 
     return 0;

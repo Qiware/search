@@ -22,7 +22,7 @@ typedef enum
 /* 输入参数 */
 typedef struct
 {
-    char conf_path[FILE_NAME_MAX_LEN];      /* 配置文件路径 */
+    char name[NODE_MAX_LEN];                /* 结点名 */
     bool isdaemon;                          /* 是否后台运行 */
 } lsnd_opt_t;
 

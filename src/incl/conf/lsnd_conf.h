@@ -30,6 +30,6 @@ typedef struct
 #define LSND_GET_DSVR_CMD_PATH(path, size, dir)     /* 分发服务命令路径 */\
     snprintf(path, sizeof(path), "%s/dsvr.usck", dir);
 
-int lsnd_load_conf(const char *path, lsnd_conf_t *conf, log_cycle_t *log);
+int lsnd_load_conf(const char *name, const char *path, lsnd_conf_t *conf, log_cycle_t *log);
 
 #endif /*__LSND_CONF_H__*/
