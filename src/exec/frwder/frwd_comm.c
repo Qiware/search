@@ -14,8 +14,6 @@
 #include "command.h"
 #include "lsnd_conf.h"
 
-#define FRWD_DEF_CONF_PATH  "../conf/frwder.xml"
-
 static int frwd_init_log(frwd_cntx_t *frwd, const char *pname);
 static int frwd_init_lsnd(frwd_cntx_t *frwd, const frwd_conf_t *conf);
 static int frwd_attach_lsnd_distq(frwd_lsnd_t *lsnd, lsnd_conf_t *conf);
@@ -226,11 +224,18 @@ static int frwd_init_log(frwd_cntx_t *frwd, const char *pname)
  ******************************************************************************/
 static int frwd_init_lsnd(frwd_cntx_t *frwd, const frwd_conf_t *conf)
 {
+    conf_map_t map;
     lsnd_conf_t lcf;
     frwd_lsnd_t *lsnd = &frwd->lsnd;
 
+    if (conf_get_listen("SearchEngineListend", &map))
+    {
+        log_error(frwd->log, "Get listend configuration failed!");
+        return FRWD_ERR;
+    }
+
     /* > 加载配置信息 */
-    if (lsnd_load_conf("../conf/listend.xml", &lcf, NULL))
+    if (lsnd_load_conf(map.name, map.path, &lcf, NULL))
     {
         log_error(frwd->log, "Load listend configuration failed!");
         return FRWD_ERR;

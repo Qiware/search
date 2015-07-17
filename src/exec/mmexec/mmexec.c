@@ -15,18 +15,14 @@
 
 #define MEM_LOG_PATH "../log/mmexec.log"
 
-static int lsnd_mem_creat(sys_conf_t *conf, log_cycle_t *log);
+static int lsnd_mem_creat(log_cycle_t *log);
 
 /* 主函数 */
 int main(int argc, char *argv[])
 {
-    sys_conf_t conf;
     log_cycle_t *log;
 
-    memset(&conf, 0, sizeof(conf));
-
-    daemon(1, 1); /* 切后台运行 */
-
+    daemon(1, 1);
     umask(0);
 
     /* > 初始化日志模块 */
@@ -38,7 +34,7 @@ int main(int argc, char *argv[])
     }
 
     /* > 加载系统配置 */
-    if (conf_load_system(SYS_CONF_DEF_PATH, &conf))
+    if (conf_load_system(SYS_CONF_DEF_PATH))
     {
         fprintf(stderr, "Load system configuration failed!\n");
         log_error(log, "Load system configuration failed!");
@@ -46,7 +42,7 @@ int main(int argc, char *argv[])
     }
 
     /* > 创建侦听服务内存 */
-    if (lsnd_mem_creat(&conf, log))
+    if (lsnd_mem_creat(log))
     {
         fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
         log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
@@ -70,7 +66,7 @@ int main(int argc, char *argv[])
  **注意事项: 
  **作    者: # Qifeng.zou # 2015-06-05 10:09:34 #
  ******************************************************************************/
-static int lsnd_mem_creat(sys_conf_t *cf, log_cycle_t *log)
+static int lsnd_mem_creat(log_cycle_t *log)
 {
     int idx;
     conf_map_t map;
@@ -79,13 +75,13 @@ static int lsnd_mem_creat(sys_conf_t *cf, log_cycle_t *log)
     char path[FILE_PATH_MAX_LEN];
 
     /* > 加载侦听配置 */
-    if (conf_get_listen(cf, "SearchEngineListend", &map))
+    if (conf_get_listen("SearchEngineListend", &map))
     {
         log_error(log, "Get SearchEngineListed configuration failed!");
         return -1;
     }
 
-    if (lsnd_load_conf(map.path, &conf, log))
+    if (lsnd_load_conf(map.name, map.path, &conf, log))
     {
         log_error(log, "Load listen configuration failed!");
         return -1;

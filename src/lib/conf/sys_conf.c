@@ -9,6 +9,8 @@
 #include "conf.h"
 #include "xml_tree.h"
 
+static sys_conf_t g_sys_conf;
+
 static int conf_load_listen(xml_tree_t *xml, sys_conf_t *conf);
 static int conf_load_frwder(xml_tree_t *xml, sys_conf_t *conf);
 
@@ -17,17 +19,17 @@ static int conf_load_frwder(xml_tree_t *xml, sys_conf_t *conf);
  **功    能: 加载系统配置
  **输入参数:
  **     fpath: 配置路径
- **输出参数:
- **     conf: 配置信息
+ **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2015-07-09 12:29:04 #
  ******************************************************************************/
-int conf_load_system(const char *fpath, sys_conf_t *conf)
+int conf_load_system(const char *fpath)
 {
     xml_opt_t opt;
     xml_tree_t *xml;
+    sys_conf_t *conf = &g_sys_conf;
 
     memset(&opt, 0, sizeof(opt));
 
@@ -260,7 +262,6 @@ static int conf_load_frwder(xml_tree_t *xml, sys_conf_t *conf)
  **函数名称: conf_get_listen
  **功    能: 获取侦听配置
  **输入参数:
- **     conf: 系统配置
  **     name: 侦听名
  **输出参数:
  **     map: 配置映射
@@ -269,10 +270,11 @@ static int conf_load_frwder(xml_tree_t *xml, sys_conf_t *conf)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015-07-15 00:07:42 #
  ******************************************************************************/
-int conf_get_listen(const sys_conf_t *conf, const char *name, conf_map_t *map)
+int conf_get_listen(const char *name, conf_map_t *map)
 {
     const conf_map_t *item;
     const list_node_t *node;
+    const sys_conf_t *conf = &g_sys_conf;
 
     node = conf->listen->head;
     while (NULL != node)
@@ -291,7 +293,6 @@ int conf_get_listen(const sys_conf_t *conf, const char *name, conf_map_t *map)
  **函数名称: conf_get_frwder
  **功    能: 获取转发配置
  **输入参数:
- **     conf: 系统配置
  **     name: 转发名
  **输出参数:
  **     map: 配置映射
@@ -300,10 +301,11 @@ int conf_get_listen(const sys_conf_t *conf, const char *name, conf_map_t *map)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015-07-15 00:12:24 #
  ******************************************************************************/
-int conf_get_frwder(const sys_conf_t *conf, const char *name, conf_map_t *map)
+int conf_get_frwder(const char *name, conf_map_t *map)
 {
     const conf_map_t *item;
     const list_node_t *node;
+    const sys_conf_t *conf = &g_sys_conf;
 
     node = conf->frwder->head;
     while (NULL != node)

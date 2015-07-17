@@ -20,9 +20,9 @@ typedef struct
     list_t *frwder;                     /* 转发配置 */
 } sys_conf_t;
 
-int conf_load_system(const char *fpath, sys_conf_t *conf);
+int conf_load_system(const char *fpath);
 
-int conf_get_listen(const sys_conf_t *conf, const char *name, conf_map_t *map);
-int conf_get_frwder(const sys_conf_t *conf, const char *name, conf_map_t *map);
+int conf_get_listen(const char *name, conf_map_t *map);
+int conf_get_frwder(const char *name, conf_map_t *map);
 
 #endif /*__CONF_H__*/
