@@ -12,7 +12,6 @@ include $(PROJ)/make/options.mak
 CC = gcc
 AR = ar
 CFLAGS = -Wall -gdwarf-2 -g3 -fPIC -O0 -fstack-protector-all -fbounds-check -rdynamic \
-			-Wall \
 			-Werror \
 			-Wshadow \
 			-Wcast-qual \
