@@ -11,6 +11,9 @@ include $(PROJ)/make/options.mak
 
 CC = gcc
 AR = ar
+
+# -Wall: 显示所有警告信息
+# -Werror: 所有警告信息都按错误处理
 CFLAGS = -Wall -gdwarf-2 -g3 -fPIC -O0 -fstack-protector-all -fbounds-check -rdynamic \
 			-Werror \
 			-Wshadow \
