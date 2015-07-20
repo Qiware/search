@@ -16,8 +16,8 @@ LIBS = -lpthread -lcore
 
 SRC_LIST = agent.c \
 			agent_comm.c \
+			agent_lsn.c \
 			agent_rsvr.c \
-			agent_listen.c \
 			agent_worker.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST))
