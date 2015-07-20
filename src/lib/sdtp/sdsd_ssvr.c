@@ -1,5 +1,5 @@
+#include "redo.h"
 #include "shm_opt.h"
-#include "syscall.h"
 #include "sdtp_cmd.h"
 #include "sdsd_cli.h"
 #include "sdtp_comm.h"

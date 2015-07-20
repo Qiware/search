@@ -11,9 +11,9 @@
 #include "str.h"
 #include "sck.h"
 #include "comm.h"
+#include "redo.h"
 #include "redis.h"
 #include "crawler.h"
-#include "syscall.h"
 #include "crwl_task.h"
 #include "crwl_sched.h"
 

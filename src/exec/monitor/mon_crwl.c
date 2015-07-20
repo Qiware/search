@@ -9,7 +9,7 @@
  ** 作  者: # Qifeng.zou # 2014.12.27 #
  ******************************************************************************/
 #include "sck.h"
-#include "syscall.h"
+#include "redo.h"
 #include "monitor.h"
 #include "crwl_cmd.h"
 

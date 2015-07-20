@@ -1,7 +1,7 @@
 /******************************************************************************
  ** Copyright(C) 2014-2024 Xundao technology Co., Ltd
  **
- ** 文件名: logd.c
+ ** 文件名: logsvr.c
  ** 版本号: 1.0
  ** 描  述: 异步日志模块 - 服务端代码
  **         1. 负责共享内存的初始化
@@ -10,9 +10,9 @@
  ******************************************************************************/
 #include "log.h"
 #include "comm.h"
+#include "redo.h"
 #include "logsvr.h"
 #include "shm_opt.h"
-#include "syscall.h"
 
 #define LOGD_PLOG_PATH   "../log/logd.plog"
 

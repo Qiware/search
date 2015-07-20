@@ -13,9 +13,9 @@
 #include "lock.h"
 #include "hash.h"
 #include "mesg.h"
+#include "redo.h"
 #include "agent.h"
 #include "listend.h"
-#include "syscall.h"
 #include "lsnd_mesg.h"
 
 static lsnd_cntx_t *lsnd_init(lsnd_conf_t *conf, log_cycle_t *log);

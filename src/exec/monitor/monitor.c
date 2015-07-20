@@ -9,7 +9,7 @@
  ** 作  者: # Qifeng.zou # 2014.12.26 #
  ******************************************************************************/
 #include "comm.h"
-#include "syscall.h"
+#include "redo.h"
 #include "monitor.h"
 #include "mon_conf.h"
 

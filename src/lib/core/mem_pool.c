@@ -9,7 +9,7 @@
  ** 作  者: # Qifeng.zou # 2014.09.08 #
  ******************************************************************************/
 
-#include "syscall.h"
+#include "redo.h"
 #include "mem_pool.h"
 
 static void *mem_pool_alloc_block(mem_pool_t *pool, size_t size);

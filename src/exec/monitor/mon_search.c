@@ -10,7 +10,7 @@
  ******************************************************************************/
 #include "sck.h"
 #include "mesg.h"
-#include "syscall.h"
+#include "redo.h"
 #include "monitor.h"
 #include "agent_mesg.h"
 

@@ -9,8 +9,8 @@
  ******************************************************************************/
 
 #include "log.h"
+#include "redo.h"
 #include "shm_opt.h"
-#include "syscall.h"
 #include "sdtp_cmd.h"
 #include "sdtp_comm.h"
 #include "sdrd_recv.h"

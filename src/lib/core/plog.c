@@ -9,7 +9,7 @@
  ******************************************************************************/
 #include "log.h"
 #include "comm.h"
-#include "syscall.h"
+#include "redo.h"
 
 plog_cycle_t g_plog = {NULL, LOG_LEVEL_TRACE, -1};
 
