@@ -14,7 +14,7 @@
  **     1. 解析输入参数
  **     2. 验证输入参数
  **注意事项: 
- **     c: 配置文件路径
+ **     N: 服务名 - 根据服务名可找到配置路径
  **     h: 帮助手册
  **作    者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
@@ -23,11 +23,11 @@ int lsnd_getopt(int argc, char **argv, lsnd_opt_t *opt)
     int ch;
 
     /* 1. 解析输入参数 */
-    while (-1 != (ch = getopt(argc, argv, "n:hd")))
+    while (-1 != (ch = getopt(argc, argv, "N:hd")))
     {
         switch (ch)
         {
-            case 'n':   /* 结点名 */
+            case 'N':   /* 结点名 */
             {
                 snprintf(opt->name, sizeof(opt->name), "%s", optarg);
                 break;

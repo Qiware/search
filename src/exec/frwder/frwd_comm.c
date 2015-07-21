@@ -29,7 +29,7 @@ static int frwd_attach_lsnd_distq(frwd_lsnd_t *lsnd, lsnd_conf_t *conf);
  **返    回: 0:成功 !0:失败
  **实现描述: 解析和验证输入参数
  **注意事项: 
- **     c: 配置文件路径
+ **     N: 转发服务名 - 根据服务名, 便可找到对应的配置文件
  **     h: 帮助手册
  **     d: 以精灵进程运行
  **作    者: # Qifeng.zou # 2015.06.10 #
@@ -41,11 +41,11 @@ int frwd_getopt(int argc, char **argv, frwd_opt_t *opt)
     memset(opt, 0, sizeof(frwd_opt_t));
 
     /* 1. 解析输入参数 */
-    while (-1 != (ch = getopt(argc, argv, "n:hd")))
+    while (-1 != (ch = getopt(argc, argv, "N:hd")))
     {
         switch (ch)
         {
-            case 'n':   /* 指定配置文件 */
+            case 'N':   /* 指定服务名 */
             {
                 snprintf(opt->name, sizeof(opt->name), "%s", optarg);
                 break;
