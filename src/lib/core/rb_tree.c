@@ -154,9 +154,9 @@ static void rbt_left_rotate(rbt_tree_t *tree, rbt_node_t *node)
  **函数名称: rbt_creat
  **功    能: 创建红黑树对象(对外接口)
  **输入参数: 
- **     pool: 内存池
- **     alloc: 分配内存
- **     dealloc: 释放内存
+ **     opt: 参数选项
+ **     key_cb: 键值生成函数
+ **     cmp_cb: 键值比较函数
  **输出参数: NONE
  **返    回: RBT_OK:成功 RBT_ERR:失败
  **实现描述: 
@@ -169,7 +169,7 @@ static void rbt_left_rotate(rbt_tree_t *tree, rbt_node_t *node)
  **        的所有路径上包含相同数目的黑结点。
  **作    者: # Qifeng.zou # 2013.12.21 #
  ******************************************************************************/
-rbt_tree_t *rbt_creat(rbt_opt_t *opt)
+rbt_tree_t *rbt_creat(rbt_opt_t *opt, key_cb_t key_cb, rbt_cmp_cb_t cmp_cb)
 {
     rbt_tree_t *tree;
 
@@ -196,6 +196,9 @@ rbt_tree_t *rbt_creat(rbt_opt_t *opt)
     tree->sentinel->color = RBT_COLOR_BLACK;
     tree->root = tree->sentinel;
 
+    tree->key_cb = key_cb;
+    tree->cmp_cb = cmp_cb;
+
     tree->pool = opt->pool;
     tree->alloc = opt->alloc;
     tree->dealloc = opt->dealloc;
@@ -217,7 +220,7 @@ rbt_tree_t *rbt_creat(rbt_opt_t *opt)
  **注意事项: 新结点的左右孩子肯定为叶子结点
  **作    者: # Qifeng.zou # 2013.12.23 #
  ******************************************************************************/
-static rbt_node_t *rbt_creat_node(rbt_tree_t *tree, int64_t key, int color, int type, rbt_node_t *parent)
+static rbt_node_t *rbt_creat_node(rbt_tree_t *tree, int64_t idx, int color, int type, rbt_node_t *parent)
 {
     rbt_node_t *node;
 
@@ -228,7 +231,7 @@ static rbt_node_t *rbt_creat_node(rbt_tree_t *tree, int64_t key, int color, int 
     }
 
     node->color = color;
-    node->key = key;
+    node->idx = idx;
     node->lchild = tree->sentinel;
     node->rchild = tree->sentinel;
     if (NULL != parent)
@@ -249,6 +252,7 @@ static rbt_node_t *rbt_creat_node(rbt_tree_t *tree, int64_t key, int color, int 
  **输入参数: 
  **     tree: 红黑树
  **     key: 关键字
+ **     key_len: 关键字长度
  **     data: 关键字对应的数据块
  **输出参数: NONE
  **返    回: RBT_OK:成功 RBT_ERR:失败 RBT_NODE_EXIST:节点存在
@@ -264,17 +268,21 @@ static rbt_node_t *rbt_creat_node(rbt_tree_t *tree, int64_t key, int color, int 
  **     5、对任何一个结点，从该结点通过其子孙结点到达叶子结点(NIL)
  **         的所有路径上包含相同数目的黑结点。
  **注意事项: 插入节点操作只可能破坏性质(4)
- **作    者: # Qifeng.zou # 2013.12.23 #
+ **作    者: # Qifeng.zou # 2013.12.23 # 2015.07.21 21:29:07 #
  ******************************************************************************/
-int rbt_insert(rbt_tree_t *tree, int64_t key, void *data)
+int rbt_insert(rbt_tree_t *tree, void *key, int key_len, void *data)
 {
+    int ret;
+    int64_t idx;
     rbt_node_t *node = tree->root, *add;
+
+    idx = tree->key_cb(key, key_len);
 
     /* 1. 当根节点为空时，直接添加 */
     if (tree->sentinel == tree->root)
     {
         /* 性质2: 根结点是黑色的 */
-        tree->root = rbt_creat_node(tree, key, RBT_COLOR_BLACK, 0, NULL);
+        tree->root = rbt_creat_node(tree, idx, RBT_COLOR_BLACK, 0, NULL);
         if (NULL == tree->root)
         {
             tree->root = tree->sentinel;
@@ -285,19 +293,32 @@ int rbt_insert(rbt_tree_t *tree, int64_t key, void *data)
 
         return RBT_OK;
     }
-    
+
     /* 2. 将节点插入树中, 检查并修复新节点造成红黑树性质的破坏 */
     while (tree->sentinel != node)
     {
-        if (key == node->key)
+        if (idx == node->idx)
         {
-            return RBT_NODE_EXIST;
+            ret = tree->cmp_cb(key, node->data);
+            if (0 == ret)
+            {
+                return RBT_NODE_EXIST;
+            }
+            else if (ret < 0)
+            {
+                goto RBT_INSERT_LCHILD;
+            }
+            else
+            {
+                goto RBT_INSERT_RCHILD;
+            }
         }
-        else if (key < node->key)
+        else if (idx < node->idx)
         {
+        RBT_INSERT_LCHILD:
             if (tree->sentinel == node->lchild)
             {
-                add = rbt_creat_node(tree, key, RBT_COLOR_RED, RBT_LCHILD, node);
+                add = rbt_creat_node(tree, idx, RBT_COLOR_RED, RBT_LCHILD, node);
                 if (NULL == add)
                 {
                     return RBT_ERR;
@@ -311,9 +332,10 @@ int rbt_insert(rbt_tree_t *tree, int64_t key, void *data)
         }
         else
         {
+        RBT_INSERT_RCHILD:
             if (tree->sentinel == node->rchild)
             {
-                add = rbt_creat_node(tree, key, RBT_COLOR_RED, RBT_RCHILD, node);
+                add = rbt_creat_node(tree, idx, RBT_COLOR_RED, RBT_RCHILD, node);
                 if (NULL == add)
                 {
                     return RBT_ERR;
@@ -451,19 +473,35 @@ static int rbt_insert_fixup(rbt_tree_t *tree, rbt_node_t *node)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.27 #
  ******************************************************************************/
-int rbt_delete(rbt_tree_t *tree, int64_t key, void **data)
+int rbt_delete(rbt_tree_t *tree, void *key, int key_len, void **data)
 {
+    int ret;
+    int64_t idx;
     rbt_node_t *node = tree->root;
+
+    idx = tree->key_cb(key, key_len);
 
     while (tree->sentinel != node)
     {
-        if (key == node->key)
+        if (idx == node->idx)
         {
-            *data = node->data;
+            ret = tree->cmp_cb(key, node->data);
+            if (0 == ret)
+            {
+                *data = node->data;
 
-            return _rbt_delete(tree, node);
+                return _rbt_delete(tree, node);
+            }
+            else if (ret < 0)
+            {
+                node = node->lchild;
+            }
+            else
+            {
+                node = node->rchild;
+            }
         }
-        else if (key < node->key)
+        else if (idx < node->idx)
         {
             node = node->lchild;
         }
@@ -576,7 +614,7 @@ static int _rbt_delete(rbt_tree_t *tree, rbt_node_t *dnode)
         parent->rchild = refer;
     }
 
-    dnode->key = next->key;
+    dnode->idx = next->idx;
     dnode->data = next->data; /* Copy next's satellite data into dnode */
 
     if (rbt_is_red(next)) /* Not black */
@@ -775,16 +813,16 @@ static void rbt_print_head(const rbt_tree_t *tree, const rbt_node_t *node, int d
     if ((tree->sentinel == node->lchild)
         && (tree->sentinel == node->rchild))
     {
-        fprintf(stderr, "<%03ld:%c/>\n", node->key, node->color);
+        fprintf(stderr, "<%03ld:%c/>\n", node->idx, node->color);
     }
     else
     {
-        fprintf(stderr, "<%03ld:%c>\n", node->key, node->color);
+        fprintf(stderr, "<%03ld:%c>\n", node->idx, node->color);
     }
 }
 
 /******************************************************************************
- **函数名称: avl_tprint
+ **函数名称: rbt_print_tail
  **功    能: 打印结点尾(内部接口)
  **输入参数: 
  **     node: 被打印的结点
@@ -815,7 +853,7 @@ static void rbt_print_tail(const rbt_tree_t *tree, const rbt_node_t *node, int d
         depth--;
     }
 
-    fprintf(stderr, "</%03ld>\n", node->key);
+    fprintf(stderr, "</%03ld>\n", node->idx);
 }
 
 /******************************************************************************
@@ -912,24 +950,41 @@ int rbt_print(rbt_tree_t *tree)
  **功    能: 搜索指定关键字节点(外部接口)
  **输入参数: 
  **     tree: 红黑树
- **     key: 关键字
+ **     key: 关键字(唯一值)
+ **     key_len: 关键字长度
  **输出参数: NONE
  **返    回: 查找到的节点地址
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.23 #
  ******************************************************************************/
-rbt_node_t *rbt_search(rbt_tree_t *tree, int64_t key)
+rbt_node_t *rbt_search(rbt_tree_t *tree, void *key, int key_len)
 {
+    int ret;
+    int64_t idx;
     rbt_node_t *node = tree->root;
+
+    idx = tree->key_cb(key, key_len);
 
     while (NULL != node)
     {
-        if (key == node->key)
+        if (idx == node->idx)
         {
-            return node;
+            ret = tree->cmp_cb(key, node->data);
+            if (0 == ret)
+            {
+                return node;
+            }
+            else if (ret < 0)
+            {
+                node = node->lchild;
+            }
+            else
+            {
+                node = node->rchild;
+            }
         }
-        else if (key < node->key)
+        else if (idx < node->idx)
         {
             node = node->lchild;
         }
@@ -1117,3 +1172,33 @@ int rbt_trav(rbt_tree_t *tree, rbt_trav_cb_t proc, void *args)
 
     return stack_destroy(stack);
 }
+
+/******************************************************************************
+ **函数名称: rbt_key_cb_int32
+ **功    能: 当主键为int32类型时的主键生成函数(外部接口)
+ **输入参数:
+ **     key: 主键
+ **     len: 主键长度
+ **输出参数: NONE
+ **返    回: 主键
+ **实现描述:
+ **注意事项: 此时*key必须为int32类型
+ **作    者: # Qifeng.zou # 2015.07.21 #
+ ******************************************************************************/
+int rbt_key_cb_int32(const int *key, size_t len) { return *key; } 
+int64_t rbt_key_cb_int64(const int64_t *key, size_t len) { return *key; }
+
+/******************************************************************************
+ **函数名称: rbt_cmp_cb_int32
+ **功    能: 当主键为int类型时的主键比较函数(外部接口)
+ **输入参数:
+ **     key: 主键
+ **     data: 与key值相等的键值对应的数据块
+ **输出参数: NONE
+ **返    回: 主键
+ **实现描述:
+ **注意事项: 因主键为int32类型, 因此调此函数时, 肯定返回相等
+ **作    者: # Qifeng.zou # 2015.05.21 #
+ ******************************************************************************/
+int rbt_cmp_cb_int32(const int *key, const void *data) { return 0; }
+int rbt_cmp_cb_int64(const int64_t *key, const void *data) { return 0; }
