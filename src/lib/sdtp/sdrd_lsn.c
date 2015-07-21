@@ -8,7 +8,7 @@
  ** 作  者: # Qifeng.zou # 2014.12.29 #
  ******************************************************************************/
 
-#include "syscall.h"
+#include "redo.h"
 #include "sdtp_cmd.h"
 #include "sdtp_comm.h"
 #include "sdrd_recv.h"

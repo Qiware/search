@@ -54,12 +54,12 @@ typedef struct _menu_cntx_t
     mem_dealloc_cb_t dealloc;               /* 释放内存 */
 } menu_cntx_t;
 
-menu_cntx_t *menu_cntx_init(const char *title, menu_conf_t *conf);
+menu_cntx_t *menu_init(const char *title, menu_conf_t *conf);
 menu_item_t *menu_creat(menu_cntx_t *ctx, const char *name, menu_cb_t entry, menu_cb_t func, menu_cb_t exit, void *args);
 int menu_display(menu_cntx_t *ctx, menu_item_t *menu, void *args);
 int menu_add(menu_item_t *menu, menu_item_t *child);
 menu_item_t *menu_child(menu_cntx_t *ctx, menu_item_t *parent,
         const char *name, menu_cb_t entry, menu_cb_t func, menu_cb_t exit, void *args);
-int menu_startup(menu_cntx_t *ctx);
+int menu_run(menu_cntx_t *ctx);
 
 #endif /*__MENU_H__*/

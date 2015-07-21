@@ -12,7 +12,7 @@
 #include "comm.h"
 
 /******************************************************************************
- **函数名称: menu_cntx_init
+ **函数名称: menu_init
  **功    能: 初始化上下文
  **输入参数:
  **     title: 主标题
@@ -22,7 +22,7 @@
  **注意事项:
  **作    者: # Qifeng.zou # 2014.12.27 #
  ******************************************************************************/
-menu_cntx_t *menu_cntx_init(const char *title, menu_conf_t *conf)
+menu_cntx_t *menu_init(const char *title, menu_conf_t *conf)
 {
     menu_cntx_t *ctx;
 
@@ -347,7 +347,7 @@ static menu_item_t *menu_exec(menu_cntx_t *ctx, menu_item_t *menu, const char *o
 }
 
 /******************************************************************************
- **函数名称: menu_startup
+ **函数名称: menu_run
  **功    能: 启动菜单
  **输入参数:
  **     ctx: 全局信息
@@ -357,7 +357,7 @@ static menu_item_t *menu_exec(menu_cntx_t *ctx, menu_item_t *menu, const char *o
  **注意事项:
  **作    者: # Qifeng.zou # 2014.12.27 #
  ******************************************************************************/
-int menu_startup(menu_cntx_t *ctx)
+int menu_run(menu_cntx_t *ctx)
 {
     menu_item_t *curr = ctx->menu;
     char opt[MENU_INPUT_LEN];

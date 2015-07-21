@@ -10,7 +10,7 @@
 #include "comm.h"
 #include "list.h"
 #include "http.h"
-#include "syscall.h"
+#include "redo.h"
 #include "crawler.h"
 #include "xml_tree.h"
 #include "thread_pool.h"

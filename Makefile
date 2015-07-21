@@ -49,7 +49,7 @@ define MkDir
 	rm -fr ${GCC_LOG};
 endef
 
-.PHONY: all clean rebuild
+.PHONY: all clean rebuild help
 
 # 1. 编译操作
 all:
@@ -76,3 +76,7 @@ clean:
 
 # 3. 重新编译 
 rebuild: clean all
+
+# 4. 显示帮助
+help:
+	@cat make/help.mak

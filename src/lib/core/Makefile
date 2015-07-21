@@ -26,7 +26,7 @@ SRC_LIST = hash.c \
 			queue.c \
 			sha256.c \
 			slab.c \
-			syscall.c \
+			redo.c \
 			shm_slab.c \
 			shm_opt.c \
 			mem_pool.c \

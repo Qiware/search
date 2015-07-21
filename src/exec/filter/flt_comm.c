@@ -12,7 +12,7 @@
 #include "comm.h"
 #include "lock.h"
 #include "hash.h"
-#include "syscall.h"
+#include "redo.h"
 #include "filter.h"
 #include "flt_man.h"
 #include "flt_sched.h"

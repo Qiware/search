@@ -8,7 +8,7 @@
  ** 作  者: # Qifeng.zou # 2014.12.29 #
  ******************************************************************************/
 
-#include "syscall.h"
+#include "redo.h"
 #include "rtmq_cmd.h"
 #include "rtmq_comm.h"
 #include "rtrd_recv.h"

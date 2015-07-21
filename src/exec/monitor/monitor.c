@@ -9,7 +9,7 @@
  ** 作  者: # Qifeng.zou # 2014.12.26 #
  ******************************************************************************/
 #include "comm.h"
-#include "syscall.h"
+#include "redo.h"
 #include "monitor.h"
 #include "mon_conf.h"
 
@@ -125,7 +125,7 @@ int main(int argc, char *argv[])
     }
 
     /* > 启动菜单模块 */
-    if (menu_startup(ctx->menu))
+    if (menu_run(ctx->menu))
     {
         fprintf(stderr, "Startup menu failed!\n");
         return -1;
@@ -235,7 +235,7 @@ static menu_cntx_t *mon_menu_init(mon_cntx_t *ctx)
     menu_cntx_t *menu_ctx;
 
     /* > 初始化菜单 */
-    menu_ctx = menu_cntx_init("Monitor System", &ctx->conf->menu);
+    menu_ctx = menu_init("Monitor System", &ctx->conf->menu);
     if (NULL == menu_ctx)
     {
         fprintf(stderr, "Init menu context failed!\n");
@@ -243,7 +243,7 @@ static menu_cntx_t *mon_menu_init(mon_cntx_t *ctx)
     }
 
     /* > 加载搜索引擎菜单 */
-    child = mon_search_menu(menu_ctx, ctx);
+    child = mon_srch_menu(menu_ctx, ctx);
 
     menu_add(menu_ctx->menu, child);
 

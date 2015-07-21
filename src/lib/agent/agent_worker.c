@@ -1,6 +1,6 @@
 #include "sck.h"
+#include "redo.h"
 #include "command.h"
-#include "syscall.h"
 #include "agent_mesg.h"
 #include "agent_worker.h"
 

@@ -12,8 +12,8 @@
 #include "uri.h"
 #include "comm.h"
 #include "http.h"
+#include "redo.h"
 #include "filter.h"
-#include "syscall.h"
 #include "flt_conf.h"
 #include "flt_worker.h"
 

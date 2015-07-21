@@ -8,7 +8,7 @@
  ** 作  者: # Qifeng.zou # 2015.02.11 #
  ******************************************************************************/
 #include "comm.h"
-#include "syscall.h"
+#include "redo.h"
 #include "crawler.h"
 #include "crwl_cmd.h"
 #include "crwl_man.h"

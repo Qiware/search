@@ -12,8 +12,8 @@
 
 #include "log.h"
 #include "comm.h"
+#include "redo.h"
 #include "filter.h"
-#include "syscall.h"
 #include "flt_conf.h"
 
 /******************************************************************************

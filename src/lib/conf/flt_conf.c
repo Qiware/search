@@ -8,7 +8,7 @@
  ** 作  者: # Qifeng.zou # 2014.10.28 #
  ******************************************************************************/
 
-#include "syscall.h"
+#include "redo.h"
 #include "flt_conf.h"
 
 static int _flt_conf_load(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *log);

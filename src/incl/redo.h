@@ -1,5 +1,5 @@
-#if !defined(__XDO_UNISTD_H__)
-#define __XDO_UNISTD_H__
+#if !defined(__REDO_H__)
+#define __REDO_H__
 
 #include "comm.h"
 
@@ -38,4 +38,4 @@ int set_fd_limit(int max);
 
 struct tm *local_time(const time_t *timep, struct tm *result);
 
-#endif /*__XDO_UNISTD_H__*/
+#endif /*__REDO_H__*/

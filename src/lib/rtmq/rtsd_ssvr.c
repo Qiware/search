@@ -1,5 +1,5 @@
+#include "redo.h"
 #include "shm_opt.h"
-#include "syscall.h"
 #include "rtmq_cmd.h"
 #include "rtsd_cli.h"
 #include "rtmq_comm.h"

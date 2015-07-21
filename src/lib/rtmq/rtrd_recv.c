@@ -9,8 +9,8 @@
  ******************************************************************************/
 
 #include "log.h"
+#include "redo.h"
 #include "shm_opt.h"
-#include "syscall.h"
 #include "rtmq_cmd.h"
 #include "rtmq_comm.h"
 #include "rtrd_recv.h"
