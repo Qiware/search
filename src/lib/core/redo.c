@@ -58,7 +58,7 @@ AGAIN:
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.04.18 #
  ******************************************************************************/
-int Readn(int fd, void *buff, int n)
+ssize_t Readn(int fd, void *buff, size_t n)
 {
     int left = n, len = 0;
     char *ptr = (char *)buff;
@@ -103,9 +103,10 @@ int Readn(int fd, void *buff, int n)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.04.18 #
  ******************************************************************************/
-int Writen(int fd, const void *buff, int n)
+ssize_t Writen(int fd, const void *buff, size_t n)
 {
-    int left = n, len;
+    ssize_t len;
+    int left = n;
     const char *ptr = (const char *)buff;
 
     while (left > 0)

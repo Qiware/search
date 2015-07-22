@@ -24,6 +24,8 @@ static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr);
 static int agent_rsvr_event_hdl(agent_cntx_t *ctx, agent_rsvr_t *rsvr);
 static int agent_rsvr_timeout_hdl(agent_cntx_t *ctx, agent_rsvr_t *rsvr);
 
+static int agent_rsvr_connection_cmp(const int *seq, const socket_t *sck);
+
 /******************************************************************************
  **函数名称: agent_rsvr_routine
  **功    能: 运行接收线程
@@ -166,7 +168,8 @@ int agent_rsvr_init(agent_cntx_t *ctx, agent_rsvr_t *rsvr, int idx)
     opt.alloc = (mem_alloc_cb_t)slab_alloc;
     opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-    rsvr->connections = rbt_creat(&opt);
+    rsvr->connections = rbt_creat(&opt,
+            (key_cb_t)rbt_key_cb_int64, (rbt_cmp_cb_t)agent_rsvr_connection_cmp);
     if (NULL == rsvr->connections)
     {
         log_error(rsvr->log, "Create socket hash table failed!");
@@ -556,7 +559,7 @@ static int agent_rsvr_add_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
             queue_dealloc(ctx->connq[rsvr->id], add[idx]);      /* 释放连接队列空间 */
 
             /* > 插入红黑树中(以序列号为主键) */
-            if (rbt_insert(rsvr->connections, extra->seq, sck))
+            if (rbt_insert(rsvr->connections, &extra->seq, sizeof(extra->seq), sck))
             {
                 log_error(rsvr->log, "Insert into avl failed! fd:%d seq:%lu",
                           sck->fd, extra->seq);
@@ -604,7 +607,7 @@ static int agent_rsvr_del_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *
     log_trace(rsvr->log, "Call %s()! fd:%d seq:%ld", __func__, sck->fd, extra->seq);
 
     /* > 将套接字从红黑树中剔除 */
-    rbt_delete(rsvr->connections, extra->seq, &addr);
+    rbt_delete(rsvr->connections, &extra->seq, sizeof(extra->seq), &addr);
 
     /* > 释放套接字空间 */
     CLOSE(sck->fd);
@@ -1158,7 +1161,7 @@ static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
             }
 
             /* 放入发送链表 */
-            node = rbt_search(rsvr->connections, (int64_t)flow->sck_seq);
+            node = rbt_search(rsvr->connections, &flow->sck_seq, sizeof(flow->sck_seq));
             if (NULL == node)
             {
                 log_error(ctx->log, "Query socket failed! serial:%lu seq:%lu diff:%lu idx:%d/%d",
@@ -1205,4 +1208,25 @@ static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
     }
 
     return AGENT_OK;
+}
+
+/******************************************************************************
+ **函数名称: agent_rsvr_connection_cmp
+ **功    能: 进行连接比较
+ **输入参数:
+ **     seq: 套接字序列
+ **     sck: 参与比较的数据
+ **输出参数: NONE
+ **返    回: 0:相等 <0:小于 >0:大于
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015-07-21 22:54:30 #
+ ******************************************************************************/
+static int agent_rsvr_connection_cmp(const int *seq, const socket_t *sck)
+{
+    agent_socket_extra_t *extra;
+
+    extra = (agent_socket_extra_t *)sck->extra;
+
+    return (*seq - extra->seq);
 }
