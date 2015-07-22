@@ -246,7 +246,7 @@ int agent_rsvr_init(agent_cntx_t *ctx, agent_rsvr_t *rsvr, int idx)
 int agent_rsvr_destroy(agent_rsvr_t *rsvr)
 {
     slab_dealloc(rsvr->slab, rsvr->events);
-    rbt_destroy(rsvr->connections);
+    rbt_destroy(rsvr->connections, (mem_dealloc_cb_t)slab_dealloc, rsvr->slab);
     free(rsvr->slab);
     CLOSE(rsvr->epid);
     CLOSE(rsvr->cmd_sck.fd);
@@ -1103,7 +1103,6 @@ static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
     int total, num, idx;
     queue_t *sendq;
     socket_t *sck;
-    rbt_node_t *node;
     agent_flow_t *flow;
     agent_flow_t newest;
     agent_header_t *head;
@@ -1160,9 +1159,9 @@ static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
                 continue;
             }
 
-            /* 放入发送链表 */
-            node = rbt_search(rsvr->connections, &flow->sck_seq, sizeof(flow->sck_seq));
-            if (NULL == node)
+            /* 查询发送链表 */
+            sck = rbt_query(rsvr->connections, &flow->sck_seq, sizeof(flow->sck_seq));
+            if (NULL == sck)
             {
                 log_error(ctx->log, "Query socket failed! serial:%lu seq:%lu diff:%lu idx:%d/%d",
                           newest.serial, newest.sck_seq,
@@ -1171,7 +1170,6 @@ static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
                 continue;
             }
 
-            sck = (socket_t *)node->data;
             sck_extra = (agent_socket_extra_t *)sck->extra;
 
             data = slab_alloc(rsvr->slab, total);

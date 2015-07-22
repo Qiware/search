@@ -263,7 +263,7 @@ int agent_serial_to_sck_map_timeout(agent_cntx_t *ctx)
         spin_lock(&ctx->serial_to_sck_map_lock[idx]);
 
         avl_trav(ctx->serial_to_sck_map[idx],
-             (avl_trav_cb_t)agent_serial_get_timeout_list, &timeout);
+             (trav_cb_t)agent_serial_get_timeout_list, &timeout);
 
         /* > 删除超时连接 */
         for (;;)
@@ -304,21 +304,21 @@ int agent_serial_to_sck_map_timeout(agent_cntx_t *ctx)
 int agent_serial_to_sck_map_query(agent_cntx_t *ctx, uint64_t serial, agent_flow_t *flow)
 {
     int idx;
-    avl_node_t *node;
+    void *data;
 
     idx = serial % ctx->serial_to_sck_map_len;
 
     spin_lock(&ctx->serial_to_sck_map_lock[idx]);
 
-    node = avl_query(ctx->serial_to_sck_map[idx], &serial, sizeof(serial)); 
-    if (NULL == node)
+    data = avl_query(ctx->serial_to_sck_map[idx], &serial, sizeof(serial)); 
+    if (NULL == data)
     {
         spin_unlock(&ctx->serial_to_sck_map_lock[idx]);
         log_error(ctx->log, "Query serial to sck map failed! idx:%d serial:%lu", idx, serial);
         return AGENT_ERR;
     }
 
-    memcpy(flow, node->data, sizeof(agent_flow_t));
+    memcpy(flow, data, sizeof(agent_flow_t));
 
     spin_unlock(&ctx->serial_to_sck_map_lock[idx]);
 

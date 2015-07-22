@@ -246,7 +246,6 @@ static int invt_word_add_doc(invt_tab_t *tab, invt_dic_word_t *dw, const char *u
 int invtab_insert(invt_tab_t *tab, char *word, const char *url, int freq)
 {
     int idx, len;
-    avl_node_t *node;
     invt_dic_word_t *dw;
     char lower_word[INVT_WORD_MAX_LEN];
 
@@ -259,8 +258,8 @@ int invtab_insert(invt_tab_t *tab, char *word, const char *url, int freq)
     /* > 查找单词项 */
     idx = hash_time33(lower_word) % tab->mod;
 
-    node = avl_query(tab->dic[idx], lower_word, len);
-    if (NULL == node)
+    dw = (invt_dic_word_t *)avl_query(tab->dic[idx], lower_word, len);
+    if (NULL == dw)
     {
         dw = invt_word_add(tab, lower_word, len);
         if (NULL == dw)
@@ -268,10 +267,6 @@ int invtab_insert(invt_tab_t *tab, char *word, const char *url, int freq)
             log_error(tab->log, "Create word dw failed!");
             return INVT_ERR;
         }
-    }
-    else
-    {
-        dw = (invt_dic_word_t *)node->data;
     }
 
     /* > 插入文档列表 */
@@ -299,7 +294,6 @@ int invtab_insert(invt_tab_t *tab, char *word, const char *url, int freq)
 invt_dic_word_t *invtab_query(invt_tab_t *tab, char *word)
 {
     int idx, len;
-    avl_node_t *node;
     char lower_word[INVT_WORD_MAX_LEN];
 
     /* > 转化为小写字符 */
@@ -311,14 +305,7 @@ invt_dic_word_t *invtab_query(invt_tab_t *tab, char *word)
     /* > 查找关键字 */
     idx = hash_time33_ex(lower_word, len) % tab->mod;
 
-    node = avl_query(tab->dic[idx], lower_word, len);
-    if (NULL == node)
-    {
-        log_error(tab->log, "Query word [%s] failed! idx:%d", lower_word, idx);
-        return NULL;
-    }
-    
-    return (invt_dic_word_t *)node->data;
+    return (invt_dic_word_t *)avl_query(tab->dic[idx], lower_word, len);
 }
 
 /******************************************************************************

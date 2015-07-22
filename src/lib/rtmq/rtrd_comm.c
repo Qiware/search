@@ -114,18 +114,13 @@ int rtrd_node_to_svr_map_init(rtrd_cntx_t *ctx)
  ******************************************************************************/
 int rtrd_node_to_svr_map_add(rtrd_cntx_t *ctx, int nodeid, int rsvr_id)
 {
-    avl_node_t *node;
     rtrd_node_to_svr_map_t *map;
 
     pthread_rwlock_wrlock(&ctx->node_to_svr_map_lock); /* 加锁 */
 
     /* > 查找是否已经存在 */
-    node = avl_query(ctx->node_to_svr_map, &nodeid, sizeof(nodeid));
-    if (NULL != node)
-    {
-        map = (rtrd_node_to_svr_map_t *)node->data;
-    }
-    else
+    map = avl_query(ctx->node_to_svr_map, &nodeid, sizeof(nodeid));
+    if (NULL == map)
     {
         map = slab_alloc(ctx->pool, sizeof(rtrd_node_to_svr_map_t));
         if (NULL == map)
@@ -179,14 +174,13 @@ int rtrd_node_to_svr_map_add(rtrd_cntx_t *ctx, int nodeid, int rsvr_id)
 int rtrd_node_to_svr_map_del(rtrd_cntx_t *ctx, int nodeid, int rsvr_id)
 {
     int idx;
-    avl_node_t *node;
     rtrd_node_to_svr_map_t *map;
 
     pthread_rwlock_wrlock(&ctx->node_to_svr_map_lock);
 
     /* > 查找映射表 */
-    node = avl_query(ctx->node_to_svr_map, &nodeid, sizeof(nodeid));
-    if (NULL == node)
+    map = avl_query(ctx->node_to_svr_map, &nodeid, sizeof(nodeid));
+    if (NULL == map)
     {
         pthread_rwlock_unlock(&ctx->node_to_svr_map_lock);
         log_error(ctx->log, "Query nodeid [%d] failed!", nodeid);
@@ -194,7 +188,6 @@ int rtrd_node_to_svr_map_del(rtrd_cntx_t *ctx, int nodeid, int rsvr_id)
     }
 
     /* > 删除处理 */
-    map = (rtrd_node_to_svr_map_t *)node->data;
     for (idx=0; idx<map->num; ++idx)
     {
         if (map->rsvr_id[idx] == rsvr_id)
@@ -228,14 +221,13 @@ int rtrd_node_to_svr_map_del(rtrd_cntx_t *ctx, int nodeid, int rsvr_id)
 int rtrd_node_to_svr_map_rand(rtrd_cntx_t *ctx, int nodeid)
 {
     int id;
-    avl_node_t *node;
     rtrd_node_to_svr_map_t *map;
 
     pthread_rwlock_rdlock(&ctx->node_to_svr_map_lock);
 
     /* > 获取映射表 */
-    node = avl_query(ctx->node_to_svr_map, &nodeid, sizeof(nodeid));
-    if (NULL == node)
+    map = avl_query(ctx->node_to_svr_map, &nodeid, sizeof(nodeid));
+    if (NULL == map)
     {
         pthread_rwlock_unlock(&ctx->node_to_svr_map_lock);
         log_error(ctx->log, "Query nodeid [%d] failed!", nodeid);
@@ -243,8 +235,6 @@ int rtrd_node_to_svr_map_rand(rtrd_cntx_t *ctx, int nodeid)
     }
 
     /* > 选择服务ID */
-    map = (rtrd_node_to_svr_map_t *)node->data;
-
     id = map->rsvr_id[rand() % map->num]; /* 随机选择 */
 
     pthread_rwlock_unlock(&ctx->node_to_svr_map_lock);

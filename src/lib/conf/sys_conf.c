@@ -308,7 +308,7 @@ int conf_get_frwder(const char *name, conf_map_t *map)
     const sys_conf_t *conf = &g_sys_conf;
 
     node = conf->frwder->head;
-    while (NULL != node)
+    for (; NULL!=node; node=node->next)
     {
         item = (const conf_map_t *)node->data;
         if (!strcasecmp(item->name, name))

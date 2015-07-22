@@ -297,7 +297,6 @@ static int crwl_man_recv_cmd(crwl_cntx_t *ctx, crwl_man_t *man)
 {
     ssize_t n;
     crwl_cmd_t cmd;
-    avl_node_t *node;
     socklen_t addrlen;
     crwl_man_reg_t *reg;
     struct sockaddr_un from;
@@ -318,14 +317,12 @@ static int crwl_man_recv_cmd(crwl_cntx_t *ctx, crwl_man_t *man)
     cmd.type = ntohl(cmd.type);
 
     /* > 查找回调 */
-    node = avl_query(man->reg, (void *)&cmd.type, sizeof(cmd.type));
-    if (NULL == node)
+    reg = (crwl_man_reg_t *)avl_query(man->reg, (void *)&cmd.type, sizeof(cmd.type));
+    if (NULL == reg)
     {
         log_error(man->log, "Didn't register callback for type [%d]!", cmd.type);
         return CRWL_ERR;
     }
-
-    reg = (crwl_man_reg_t *)node->data;
 
     /* > 执行回调 */
     return reg->proc(ctx, man, cmd.type, (void *)&cmd.data, &from, reg->args);

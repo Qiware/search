@@ -338,7 +338,6 @@ static int flt_man_recv_cmd(flt_cntx_t *ctx, flt_man_t *man)
 {
     ssize_t n;
     flt_cmd_t cmd;
-    avl_node_t *node;
     socklen_t addrlen;
     flt_man_reg_t *reg;
     struct sockaddr_un from;
@@ -359,14 +358,12 @@ static int flt_man_recv_cmd(flt_cntx_t *ctx, flt_man_t *man)
     cmd.type = ntohl(cmd.type);
 
     /* > 查找回调 */
-    node = avl_query(man->reg, (void *)&cmd.type, sizeof(cmd.type));
-    if (NULL == node)
+    reg = (flt_man_reg_t *)avl_query(man->reg, (void *)&cmd.type, sizeof(cmd.type));
+    if (NULL == reg)
     {
         log_error(man->log, "Didn't register callback for type [%d]!", cmd.type);
         return FLT_ERR;
     }
-
-    reg = (flt_man_reg_t *)node->data;
 
     /* > 执行回调 */
     return reg->proc(ctx, man, cmd.type, (void *)&cmd.data, &from, reg->args);
@@ -692,7 +689,7 @@ static int flt_man_store_domain_ip_map_req_hdl(flt_cntx_t *ctx,
         return FLT_ERR;
     }
 
-    hash_tab_trav(ctx->domain_ip_map, (avl_trav_cb_t)flt_man_store_domain_ip_map_hdl, &trav);
+    hash_tab_trav(ctx->domain_ip_map, (trav_cb_t)flt_man_store_domain_ip_map_hdl, &trav);
 
     FCLOSE(trav.fp);
 
@@ -800,7 +797,7 @@ static int flt_man_store_domain_blacklist_req_hdl(flt_cntx_t *ctx,
         return FLT_ERR;
     }
 
-    hash_tab_trav(ctx->domain_blacklist, (avl_trav_cb_t)flt_man_store_domain_blacklist_hdl, &trav);
+    hash_tab_trav(ctx->domain_blacklist, (trav_cb_t)flt_man_store_domain_blacklist_hdl, &trav);
 
     FCLOSE(trav.fp);
 

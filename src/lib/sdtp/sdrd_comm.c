@@ -116,7 +116,6 @@ int sdrd_node_to_svr_map_add(sdrd_cntx_t *ctx, int nodeid, int rsvr_idx)
 {
     list_t *list;
     list_opt_t opt;
-    avl_node_t *avl_node;
     list_node_t *list_node;
     sdrd_node_to_svr_item_t *item;
 
@@ -125,8 +124,8 @@ int sdrd_node_to_svr_map_add(sdrd_cntx_t *ctx, int nodeid, int rsvr_idx)
     while (1)
     {
         /* > 查找是否已经存在 */
-        avl_node = avl_query(ctx->node_to_svr_map, &nodeid, sizeof(nodeid));
-        if (NULL == avl_node)
+        list = avl_query(ctx->node_to_svr_map, &nodeid, sizeof(nodeid));
+        if (NULL == list)
         {
             /* > 构建链表对象 */
             memset(&opt, 0, sizeof(opt));
@@ -149,12 +148,10 @@ int sdrd_node_to_svr_map_add(sdrd_cntx_t *ctx, int nodeid, int rsvr_idx)
                 list_destroy(list, NULL, NULL);
                 return SDTP_ERR;
             }
-
             continue;
         }
 
         /* > 插入NODE -> SVR列表 */
-        list = (list_t *)avl_node->data;
         list_node = list->head;
         for (; NULL != list_node; list_node = list_node->next)
         {
@@ -215,26 +212,17 @@ int sdrd_node_to_svr_map_del(sdrd_cntx_t *ctx, int nodeid, int rsvr_idx)
 {
     list_t *list;
     list_node_t *node;
-    avl_node_t *avl_node;
     sdrd_node_to_svr_item_t *item;
 
     pthread_rwlock_wrlock(&ctx->node_to_svr_map_lock);
 
     /* > 获取链表对象 */
-    avl_node = avl_query(ctx->node_to_svr_map, &nodeid, sizeof(nodeid));
-    if (NULL == avl_node)
+    list = avl_query(ctx->node_to_svr_map, &nodeid, sizeof(nodeid));
+    if (NULL == list)
     {
         pthread_rwlock_unlock(&ctx->node_to_svr_map_lock);
         log_error(ctx->log, "Query nodeid [%d] failed!", nodeid);
         return SDTP_ERR;
-    }
-
-    /* > 遍历链表查找sck_serial结点 */
-    list = (list_t *)avl_node->data;
-    if (NULL == list)
-    {
-        pthread_rwlock_unlock(&ctx->node_to_svr_map_lock);
-        return SDTP_OK;
     }
 
     node = list->head;
@@ -277,28 +265,25 @@ int sdrd_node_to_svr_map_rand(sdrd_cntx_t *ctx, int nodeid)
     int idx, n, rsvr_idx;
     list_t *list;
     list_node_t *node;
-    avl_node_t *avl_node;
     sdrd_node_to_svr_item_t *item;
 
     pthread_rwlock_rdlock(&ctx->node_to_svr_map_lock);
 
     /* > 获取链表对象 */
-    avl_node = avl_query(ctx->node_to_svr_map, &nodeid, sizeof(nodeid));
-    if (NULL == avl_node)
+    list = avl_query(ctx->node_to_svr_map, &nodeid, sizeof(nodeid));
+    if (NULL == list)
     {
         pthread_rwlock_unlock(&ctx->node_to_svr_map_lock);
         log_error(ctx->log, "Query nodeid [%d] failed!", nodeid);
         return -1;
     }
-
-    /* > 遍历链表查找sck_serial结点 */
-    list = (list_t *)avl_node->data;
-    if (NULL == list || 0 == list->num)
+    else if (0 == list->num)
     {
         pthread_rwlock_unlock(&ctx->node_to_svr_map_lock);
         return -1;
     }
 
+    /* > 遍历链表查找sck_serial结点 */
     idx = rand() % list->num; /* 随机选择 */
     node = list->head;
     for (n = 0; NULL != node; node = node->next, ++n)
