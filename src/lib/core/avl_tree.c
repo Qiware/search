@@ -716,12 +716,12 @@ int avl_left_balance(avl_tree_t *tree, avl_node_t *node)
  **     key: 主键(Primary idx)
  **     key_len: 主键长度
  **输出参数: NONE
- **返    回: 结点地址
+ **返    回: 数据地址
  **实现描述:
  **注意事项:
  **作    者: # Qifeng.zou # 2013.12.12 #
  ******************************************************************************/
-avl_node_t *avl_query(avl_tree_t *tree, void *key, int key_len)
+void *avl_query(avl_tree_t *tree, void *key, int key_len)
 {
     int ret;
     int64_t idx;
@@ -736,7 +736,7 @@ avl_node_t *avl_query(avl_tree_t *tree, void *key, int key_len)
             ret = tree->cmp_cb(key, node->data);
             if (0 == ret)
             {
-                return node;
+                return node->data;
             }
             else if (ret < 0)
             {
@@ -1474,7 +1474,7 @@ int _avl_print(avl_node_t *root, Stack_t *stack)
  **注意事项:
  **作    者: # Qifeng.zou # 2014.12.24 #
  ******************************************************************************/
-static int _avl_trav(avl_node_t *root, Stack_t *stack, avl_trav_cb_t proc, void *args)
+static int _avl_trav(avl_node_t *root, Stack_t *stack, trav_cb_t proc, void *args)
 {
     avl_node_t *node = root;
 
@@ -1514,7 +1514,7 @@ static int _avl_trav(avl_node_t *root, Stack_t *stack, avl_trav_cb_t proc, void 
  **注意事项:
  **作    者: # Qifeng.zou # 2014.12.23 #
  ******************************************************************************/
-int avl_trav(avl_tree_t *tree, avl_trav_cb_t proc, void *args)
+int avl_trav(avl_tree_t *tree, trav_cb_t proc, void *args)
 {
     Stack_t stack;
 
