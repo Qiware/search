@@ -28,7 +28,7 @@
  **注意事项:
  **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
-hash_tab_t *hash_tab_creat(int mod, key_cb_t key_cb, avl_cmp_cb_t cmp_cb, hash_tab_opt_t *opt)
+hash_tab_t *hash_tab_creat(int mod, key_cb_t key_cb, cmp_cb_t cmp_cb, hash_tab_opt_t *opt)
 {
     int idx;
     hash_tab_t *hash;

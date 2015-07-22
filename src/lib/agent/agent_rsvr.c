@@ -169,7 +169,7 @@ int agent_rsvr_init(agent_cntx_t *ctx, agent_rsvr_t *rsvr, int idx)
     opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
     rsvr->connections = rbt_creat(&opt,
-            (key_cb_t)rbt_key_cb_int64, (rbt_cmp_cb_t)agent_rsvr_connection_cmp);
+            (key_cb_t)key_cb_int64, (cmp_cb_t)agent_rsvr_connection_cmp);
     if (NULL == rsvr->connections)
     {
         log_error(rsvr->log, "Create socket hash table failed!");

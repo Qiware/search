@@ -146,7 +146,7 @@ static crwl_man_t *crwl_man_init(crwl_cntx_t *ctx)
         opt.alloc = (mem_alloc_cb_t)slab_alloc;
         opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-        man->reg = avl_creat(&opt, (key_cb_t)avl_key_cb_int32, (avl_cmp_cb_t)avl_cmp_cb_int32);
+        man->reg = avl_creat(&opt, (key_cb_t)key_cb_int32, (cmp_cb_t)cmp_cb_int32);
         if (NULL == man->reg)
         {
             log_error(man->log, "Create AVL failed!");

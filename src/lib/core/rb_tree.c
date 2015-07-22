@@ -169,7 +169,7 @@ static void rbt_left_rotate(rbt_tree_t *tree, rbt_node_t *node)
  **        的所有路径上包含相同数目的黑结点。
  **作    者: # Qifeng.zou # 2013.12.21 #
  ******************************************************************************/
-rbt_tree_t *rbt_creat(rbt_opt_t *opt, key_cb_t key_cb, rbt_cmp_cb_t cmp_cb)
+rbt_tree_t *rbt_creat(rbt_opt_t *opt, key_cb_t key_cb, cmp_cb_t cmp_cb)
 {
     rbt_tree_t *tree;
 
@@ -1172,33 +1172,3 @@ int rbt_trav(rbt_tree_t *tree, rbt_trav_cb_t proc, void *args)
 
     return stack_destroy(stack);
 }
-
-/******************************************************************************
- **函数名称: rbt_key_cb_int32
- **功    能: 当主键为int32类型时的主键生成函数(外部接口)
- **输入参数:
- **     key: 主键
- **     len: 主键长度
- **输出参数: NONE
- **返    回: 主键
- **实现描述:
- **注意事项: 此时*key必须为int32类型
- **作    者: # Qifeng.zou # 2015.07.21 #
- ******************************************************************************/
-int rbt_key_cb_int32(const int *key, size_t len) { return *key; } 
-int64_t rbt_key_cb_int64(const int64_t *key, size_t len) { return *key; }
-
-/******************************************************************************
- **函数名称: rbt_cmp_cb_int32
- **功    能: 当主键为int类型时的主键比较函数(外部接口)
- **输入参数:
- **     key: 主键
- **     data: 与key值相等的键值对应的数据块
- **输出参数: NONE
- **返    回: 主键
- **实现描述:
- **注意事项: 因主键为int32类型, 因此调此函数时, 肯定返回相等
- **作    者: # Qifeng.zou # 2015.05.21 #
- ******************************************************************************/
-int rbt_cmp_cb_int32(const int *key, const void *data) { return 0; }
-int rbt_cmp_cb_int64(const int64_t *key, const void *data) { return 0; }

@@ -21,7 +21,7 @@ typedef struct
     pthread_rwlock_t *lock;                         /* 平衡二叉树锁 */
 
     key_cb_t key_cb;                                /* 生成KEY的回调 */
-    avl_cmp_cb_t cmp_cb;                            /* 比较回调 */
+    cmp_cb_t cmp_cb;                                /* 比较回调 */
 
     uint64_t total;                                 /* 数据总数 */
 
@@ -31,7 +31,7 @@ typedef struct
     mem_dealloc_cb_t dealloc;                       /* 释放内存 */
 } hash_tab_t;
 
-hash_tab_t *hash_tab_creat(int mod, key_cb_t key_cb, avl_cmp_cb_t cmp_cb, hash_tab_opt_t *opt);
+hash_tab_t *hash_tab_creat(int mod, key_cb_t key_cb, cmp_cb_t cmp_cb, hash_tab_opt_t *opt);
 int hash_tab_insert(hash_tab_t *hash, void *pkey, int pkey_len, void *addr);
 int hash_tab_query(hash_tab_t *hash, void *pkey, int pkey_len, hash_tab_query_cb_t query_cb, void *data);
 void *hash_tab_remove(hash_tab_t *hash, void *pkey, int pkey_len);

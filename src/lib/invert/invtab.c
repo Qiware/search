@@ -84,7 +84,7 @@ invt_tab_t *invtab_creat(int max, log_cycle_t *log)
 
         tab->dic[idx] = avl_creat(&opt,
                             (key_cb_t)hash_time33_ex,
-                            (avl_cmp_cb_t)invtab_dic_word_cmp);
+                            (cmp_cb_t)invtab_dic_word_cmp);
         if (NULL == tab->dic[idx])
         {
             log_error(log, "Create avl-tree failed! idx:%d", idx);

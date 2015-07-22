@@ -137,4 +137,34 @@ typedef void (*mem_dealloc_cb_t)(void *pool, void *p);
 void mem_dealloc(void *pool, void *p);
 static inline void mem_dummy_dealloc(void *pool, void *p) {};
 
+/******************************************************************************
+ **函数名称: key_cb_int32
+ **功    能: 当主键为int32类型时的主键生成函数(外部接口)
+ **输入参数:
+ **     key: 主键
+ **     len: 主键长度
+ **输出参数: NONE
+ **返    回: 主键
+ **实现描述:
+ **注意事项: 此时*key必须为int32类型
+ **作    者: # Qifeng.zou # 2015.04.29 #
+ ******************************************************************************/
+static inline int key_cb_int32(const int *key, size_t len) { return *key; }
+static inline int64_t key_cb_int64(const int64_t *key, size_t len) { return *key; }
+
+/******************************************************************************
+ **函数名称: cmp_cb_int32
+ **功    能: 当主键为int类型时的主键比较函数(外部接口)
+ **输入参数:
+ **     key: 主键
+ **     data: 与key值相等的键值对应的数据块
+ **输出参数: NONE
+ **返    回: 主键
+ **实现描述:
+ **注意事项: 因主键为int32类型, 因此调此函数时, 肯定返回相等
+ **作    者: # Qifeng.zou # 2015.04.29 #
+ ******************************************************************************/
+static inline int cmp_cb_int32(const int *key, const void *data) { return 0; }
+static inline int cmp_cb_int64(const int64_t *key, const void *data) { return 0; } 
+
 #endif /*__COMM_H__*/

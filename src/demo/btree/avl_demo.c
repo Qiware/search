@@ -17,7 +17,7 @@ int main(void)
     opt.alloc = (mem_alloc_cb_t)mem_alloc;
     opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
-    avl = avl_creat(&opt, (key_cb_t)avl_key_cb_int64, (avl_cmp_cb_t)avl_cmp_cb_int64);
+    avl = avl_creat(&opt, (key_cb_t)key_cb_int64, (cmp_cb_t)cmp_cb_int64);
     if (NULL == avl)
     {
         fprintf(stderr, "[%s][%d] Create avl failed!\n", __FILE__, __LINE__);

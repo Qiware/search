@@ -146,7 +146,7 @@ static flt_man_t *flt_man_init(flt_cntx_t *ctx)
         opt.alloc = (mem_alloc_cb_t)slab_alloc;
         opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-        man->reg = avl_creat(&opt, (key_cb_t)flt_man_reg_key_cb, (avl_cmp_cb_t)flt_man_reg_cmp_cb);
+        man->reg = avl_creat(&opt, (key_cb_t)flt_man_reg_key_cb, (cmp_cb_t)flt_man_reg_cmp_cb);
         if (NULL == man->reg)
         {
             log_error(man->log, "Create AVL failed!");

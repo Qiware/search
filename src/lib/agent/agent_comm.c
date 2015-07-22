@@ -26,16 +26,16 @@ int agent_serial_to_sck_map_init(agent_cntx_t *ctx)
     memset(&opt, 0, sizeof(opt));
 
     ctx->serial_to_sck_map_len = SERIAL_TO_SCK_MAP_LEN;
-    ctx->serial_to_sck_map = (avl_tree_t **)slab_alloc(ctx->slab,
-                                ctx->serial_to_sck_map_len*sizeof(avl_tree_t *));
+    ctx->serial_to_sck_map = (avl_tree_t **)slab_alloc(
+        ctx->slab, ctx->serial_to_sck_map_len*sizeof(avl_tree_t *));
     if (NULL == ctx->serial_to_sck_map)
     {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return AGENT_ERR;
     }
 
-    ctx->serial_to_sck_map_lock = (spinlock_t *)slab_alloc(ctx->slab,
-                                       ctx->serial_to_sck_map_len*sizeof(spinlock_t));
+    ctx->serial_to_sck_map_lock = (spinlock_t *)slab_alloc(
+        ctx->slab, ctx->serial_to_sck_map_len*sizeof(spinlock_t));
     if (NULL == ctx->serial_to_sck_map_lock)
     {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
@@ -49,7 +49,7 @@ int agent_serial_to_sck_map_init(agent_cntx_t *ctx)
         opt.alloc = (mem_alloc_cb_t)mem_alloc;
         opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
-        ctx->serial_to_sck_map[i] = avl_creat(&opt, (key_cb_t)avl_key_cb_int64, (avl_cmp_cb_t)avl_cmp_cb_int64);
+        ctx->serial_to_sck_map[i] = avl_creat( &opt,(key_cb_t)key_cb_int64, (cmp_cb_t)cmp_cb_int64);
         if (NULL == ctx->serial_to_sck_map[i])
         {
             log_error(ctx->log, "Create avl failed!");
