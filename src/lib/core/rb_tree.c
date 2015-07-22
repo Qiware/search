@@ -946,19 +946,19 @@ int rbt_print(rbt_tree_t *tree)
 }
 
 /******************************************************************************
- **函数名称: rbt_search
+ **函数名称: rbt_query
  **功    能: 搜索指定关键字节点(外部接口)
  **输入参数: 
  **     tree: 红黑树
  **     key: 关键字(唯一值)
  **     key_len: 关键字长度
  **输出参数: NONE
- **返    回: 查找到的节点地址
+ **返    回: 数据地址
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.23 #
  ******************************************************************************/
-rbt_node_t *rbt_search(rbt_tree_t *tree, void *key, int key_len)
+void *rbt_query(rbt_tree_t *tree, void *key, int key_len)
 {
     int ret;
     int64_t idx;
@@ -973,7 +973,7 @@ rbt_node_t *rbt_search(rbt_tree_t *tree, void *key, int key_len)
             ret = tree->cmp_cb(key, node->data);
             if (0 == ret)
             {
-                return node;
+                return node->data;
             }
             else if (ret < 0)
             {
@@ -994,7 +994,7 @@ rbt_node_t *rbt_search(rbt_tree_t *tree, void *key, int key_len)
         }
     }
     
-    return node;
+    return NULL;
 }
 
 /******************************************************************************
@@ -1002,6 +1002,8 @@ rbt_node_t *rbt_search(rbt_tree_t *tree, void *key, int key_len)
  **功    能: 销毁红黑树(外部接口)
  **输入参数: 
  **     tree: 红黑树
+ **     dealloc: 释放的回调函数
+ **     args: 内存池对象
  **输出参数: NONE
  **返    回: VOID
  **实现描述: 
@@ -1011,7 +1013,7 @@ rbt_node_t *rbt_search(rbt_tree_t *tree, void *key, int key_len)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.12.27 #
  ******************************************************************************/
-int rbt_destroy(rbt_tree_t *tree)
+int rbt_destroy(rbt_tree_t *tree, mem_dealloc_cb_t dealloc, void *args)
 {
     Stack_t _stack, *stack = &_stack;
     rbt_node_t *node = tree->root, *parent;
@@ -1041,6 +1043,7 @@ int rbt_destroy(rbt_tree_t *tree)
         parent = stack_gettop(stack);
         if (NULL == parent)
         {
+            dealloc(args, node->data);
             tree->dealloc(tree->pool, node);
             tree->dealloc(tree->pool, tree->sentinel);
             tree->dealloc(tree->pool, tree);
@@ -1051,6 +1054,7 @@ int rbt_destroy(rbt_tree_t *tree)
         if ((parent->lchild == node) /* 右孩子是否已处理 */
             && (tree->sentinel != parent->rchild))
         {
+            dealloc(args, node->data);
             tree->dealloc(tree->pool, node);
             node = parent->rchild;
             continue;
@@ -1062,12 +1066,14 @@ int rbt_destroy(rbt_tree_t *tree)
         {
             stack_pop(stack);
 
+            dealloc(args, node->data);
             tree->dealloc(tree->pool, node);     /* 出栈结点下一次循环时释放 */
 
             node = parent;
             parent = stack_gettop(stack);
             if (NULL == parent)
             {
+                dealloc(args, node->data);
                 tree->dealloc(tree->pool, node);
                 tree->dealloc(tree->pool, tree->sentinel);
                 tree->dealloc(tree->pool, tree);
@@ -1078,6 +1084,7 @@ int rbt_destroy(rbt_tree_t *tree)
 
         if (NULL != node)    /* 释放上面出栈的结点 */
         {
+            dealloc(args, node->data);
             tree->dealloc(tree->pool, node);
         }
         node = parent->rchild;
