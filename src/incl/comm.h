@@ -101,8 +101,8 @@ static inline int MIN(int a, int b) { return ((a) < (b) ? (a) : (b)); }
  **作    者: # Qifeng.zou # 2014.11.09 #
  ******************************************************************************/
 typedef int64_t (*key_cb_t)(const void *pkey, size_t pkey_len);
-
 typedef int (*cmp_cb_t)(const void *data, const void *orig);
+typedef int (*trav_cb_t)(void *data, void *args);
 
 /******************************************************************************
  **函数名称: mem_alloc_cb_t
@@ -166,5 +166,12 @@ static inline int64_t key_cb_int64(const int64_t *key, size_t len) { return *key
  ******************************************************************************/
 static inline int cmp_cb_int32(const int *key, const void *data) { return 0; }
 static inline int cmp_cb_int64(const int64_t *key, const void *data) { return 0; } 
+
+/* 树操作接口 */
+typedef int (*tree_insert_cb_t)(void *tree, void *key, int key_len, void *data);
+typedef int (*tree_delete_cb_t)(void *tree, void *key, int key_len, void *data);
+typedef int (*tree_query_cb_t)(void *tree, void *key, int key_len, void *data);
+typedef void (*tree_trav_cb_t)(void *tree, trav_cb_t proc, void *args);
+typedef void (*tree_destroy_cb_t)(void *tree);
 
 #endif /*__COMM_H__*/
