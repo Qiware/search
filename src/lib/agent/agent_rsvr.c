@@ -233,6 +233,29 @@ int agent_rsvr_init(agent_cntx_t *ctx, agent_rsvr_t *rsvr, int idx)
 }
 
 /******************************************************************************
+ **函数名称: agent_rsvr_sck_dealloc
+ **功    能: 释放SCK对象的空间
+ **输入参数:
+ **     pool: 内存池
+ **     sck: 需要被释放的套接字对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 依次释放所有内存空间
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.07.22 21:39:05 #
+ ******************************************************************************/
+static int agent_rsvr_sck_dealloc(slab_pool_t *pool, socket_t *sck)
+{
+    agent_socket_extra_t *extra = sck->extra;
+
+    slab_dealloc(pool, sck);
+    list_destroy(extra->send_list, pool, (mem_dealloc_cb_t)slab_alloc);
+    slab_dealloc(pool, extra);
+
+    return 0;
+}
+
+/******************************************************************************
  **函数名称: agent_rsvr_destroy
  **功    能: 销毁Agent线程
  **输入参数:
@@ -246,7 +269,7 @@ int agent_rsvr_init(agent_cntx_t *ctx, agent_rsvr_t *rsvr, int idx)
 int agent_rsvr_destroy(agent_rsvr_t *rsvr)
 {
     slab_dealloc(rsvr->slab, rsvr->events);
-    rbt_destroy(rsvr->connections, (mem_dealloc_cb_t)slab_dealloc, rsvr->slab);
+    rbt_destroy(rsvr->connections, (mem_dealloc_cb_t)agent_rsvr_sck_dealloc, rsvr->slab);
     free(rsvr->slab);
     CLOSE(rsvr->epid);
     CLOSE(rsvr->cmd_sck.fd);
