@@ -10,13 +10,18 @@
  ** 作  者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
 #include "log.h"
+#include "rb_tree.h"
+#include "avl_tree.h"
 #include "hash_tab.h"
+
+static int hash_tab_set_cb(hash_tab_t *htab, hash_tab_opt_t *opt);
+static int hash_tab_init_elem(hash_tab_t *htab, int idx, key_cb_t key_cb, cmp_cb_t cmp_cb, hash_tab_opt_t *opt);
 
 /******************************************************************************
  **函数名称: hash_tab_creat
  **功    能: 创建哈希表
  **输入参数:
- **     mod: 哈希模(数组长度)
+ **     len: 哈希表长度
  **     key: 生成KEY的函数
  **     cmp: 数据比较函数
  **输出参数: NONE
@@ -28,71 +33,147 @@
  **注意事项:
  **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
-hash_tab_t *hash_tab_creat(int mod, key_cb_t key_cb, cmp_cb_t cmp_cb, hash_tab_opt_t *opt)
+hash_tab_t *hash_tab_creat(int len, key_cb_t key_cb, cmp_cb_t cmp_cb, hash_tab_opt_t *opt)
 {
     int idx;
-    hash_tab_t *hash;
-    avl_opt_t avl_opt;
+    hash_tab_t *htab;
 
-    /* 1. 创建哈希数组 */
-    hash = (hash_tab_t *)opt->alloc(opt->pool, sizeof(hash_tab_t));
-    if (NULL == hash)
+    /* > 创建哈希数组 */
+    htab = (hash_tab_t *)opt->alloc(opt->pool, sizeof(hash_tab_t));
+    if (NULL == htab)
     {
         return NULL;
     }
 
-    hash->total = 0;
+    htab->total = 0;
 
-    /* 2. 创建数组空间 */
-    hash->tree = (avl_tree_t **)opt->alloc(opt->pool, mod*sizeof(avl_tree_t *));
-    if (NULL == hash->tree)
+    htab->tree = (void **)opt->alloc(opt->pool, len*sizeof(void *));
+    if (NULL == htab->tree)
     {
-        opt->dealloc(opt->pool, hash);
+        opt->dealloc(opt->pool, htab);
         return NULL;
     }
 
-    hash->lock = (pthread_rwlock_t *)opt->alloc(opt->pool, mod * sizeof(pthread_rwlock_t));
-    if (NULL == hash->lock)
+    htab->lock = (pthread_rwlock_t *)opt->alloc(opt->pool, len*sizeof(pthread_rwlock_t));
+    if (NULL == htab->lock)
     {
-        opt->dealloc(opt->pool, hash->tree);
-        opt->dealloc(opt->pool, hash);
+        opt->dealloc(opt->pool, htab->tree);
+        opt->dealloc(opt->pool, htab);
         return NULL;
     }
 
-    /* 3. 创建平衡二叉树 */
-    for (idx=0; idx<mod; ++idx)
+    /* > 创建存储树 */
+    hash_tab_set_cb(htab, opt);
+
+    for (idx=0; idx<len; ++idx)
     {
-        memset(&avl_opt, 0, sizeof(avl_opt));
+        pthread_rwlock_init(&htab->lock[idx], NULL);
 
-        avl_opt.pool = (void *)opt->pool;
-        avl_opt.alloc = (mem_alloc_cb_t)opt->alloc;
-        avl_opt.dealloc = (mem_dealloc_cb_t)opt->dealloc;
-
-        pthread_rwlock_init(&hash->lock[idx], NULL);
-
-        hash->tree[idx] = avl_creat(&avl_opt, key_cb, cmp_cb);
-        if (NULL == hash->tree[idx])
+        if (hash_tab_init_elem(htab, idx, key_cb, cmp_cb, opt))
         {
-            hash_tab_destroy(hash, mem_dummy_dealloc, NULL);
+            hash_tab_destroy(htab, mem_dummy_dealloc, NULL);
             return NULL;
         }
-
-        hash->tree[idx]->key_cb = key_cb;
-        hash->tree[idx]->cmp_cb = cmp_cb;
     }
 
-    hash->mod = mod;
-    hash->key_cb = key_cb;
-    hash->cmp_cb = cmp_cb;
+    htab->len = len;
+    htab->key_cb = key_cb;
+    htab->cmp_cb = cmp_cb;
 
-    return hash;
+    return htab;
+}
+
+/* 设置回调函数 */
+static int hash_tab_set_cb(hash_tab_t *htab, hash_tab_opt_t *opt)
+{
+    switch (opt->tree_type)
+    {
+        case HASH_TAB_AVL:
+        default:
+        {
+            htab->tree_insert = (tree_insert_cb_t)avl_insert;
+            htab->tree_delete = (tree_delete_cb_t)avl_delete;
+            htab->tree_query = (tree_query_cb_t)avl_query;
+            htab->tree_trav = (tree_trav_cb_t)avl_trav;
+            htab->tree_destroy = (tree_destroy_cb_t)avl_trav;
+            break;
+        }
+        case HASH_TAB_RBT:
+        {
+            htab->tree_insert = (tree_insert_cb_t)rbt_insert;
+            htab->tree_delete = (tree_delete_cb_t)rbt_delete;
+            htab->tree_query = (tree_query_cb_t)rbt_query;
+            htab->tree_trav = (tree_trav_cb_t)rbt_trav;
+            htab->tree_destroy = (tree_destroy_cb_t)rbt_trav;
+            break;
+        }
+    }
+    return 0;
+}
+
+/******************************************************************************
+ **函数名称: hash_tab_init_elem
+ **功    能: 初始化哈希数组成员
+ **输入参数:
+ **     tab: 哈希表
+ **     key_cb: 键值回调
+ **     cmp_cb: 比较回调
+ **     opt: 其他选项
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述:
+ **注意事项:
+ **作    者: # Qifeng.zou # 2015-07-22 14:23:04 #
+ ******************************************************************************/
+static int hash_tab_init_elem(
+    hash_tab_t *htab, int idx, key_cb_t key_cb, cmp_cb_t cmp_cb, hash_tab_opt_t *opt)
+{
+    switch (opt->tree_type)
+    {
+        case HASH_TAB_AVL:
+        default:
+        {
+            avl_opt_t avl_opt;
+
+            memset(&avl_opt, 0, sizeof(avl_opt));
+
+            avl_opt.pool = (void *)opt->pool;
+            avl_opt.alloc = (mem_alloc_cb_t)opt->alloc;
+            avl_opt.dealloc = (mem_dealloc_cb_t)opt->dealloc;
+
+            htab->tree[idx] = avl_creat(&avl_opt, key_cb, cmp_cb);
+            if (NULL == htab->tree[idx])
+            {
+                return -1;
+            }
+            break;
+        }
+        case HASH_TAB_RBT:
+        {
+            rbt_opt_t rbt_opt;
+
+            memset(&rbt_opt, 0, sizeof(rbt_opt));
+
+            rbt_opt.pool = (void *)opt->pool;
+            rbt_opt.alloc = (mem_alloc_cb_t)opt->alloc;
+            rbt_opt.dealloc = (mem_dealloc_cb_t)opt->dealloc;
+
+            htab->tree[idx] = rbt_creat(&rbt_opt, key_cb, cmp_cb);
+            if (NULL == htab->tree[idx])
+            {
+                return -1;
+            }
+            break;
+        }
+    }
+    return 0;
 }
 
 /******************************************************************************
  **函数名称: hash_tab_insert
  **功    能: 插入哈希成员
  **输入参数:
- **     hash: 哈希数组
+ **     htab: 哈希数组
  **     pkey: 主键
  **     pkey_len: 主键长度
  **输出参数:
@@ -102,20 +183,20 @@ hash_tab_t *hash_tab_creat(int mod, key_cb_t key_cb, cmp_cb_t cmp_cb, hash_tab_o
  **注意事项:
  **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
-int hash_tab_insert(hash_tab_t *hash, void *pkey, int pkey_len, void *data)
+int hash_tab_insert(hash_tab_t *htab, void *pkey, int pkey_len, void *data)
 {
     int ret;
     unsigned int idx;
 
-    idx = hash->key_cb(pkey, pkey_len) % hash->mod;
+    idx = htab->key_cb(pkey, pkey_len) % htab->len;
 
-    pthread_rwlock_wrlock(&hash->lock[idx]);
-    ret = avl_insert(hash->tree[idx], pkey, pkey_len, data);
+    pthread_rwlock_wrlock(&htab->lock[idx]);
+    ret = htab->tree_insert(htab->tree[idx], pkey, pkey_len, data);
     if (AVL_OK == ret)
     {
-        ++hash->total;
+        ++htab->total;
     }
-    pthread_rwlock_unlock(&hash->lock[idx]);
+    pthread_rwlock_unlock(&htab->lock[idx]);
 
     return ret;
 }
@@ -124,10 +205,10 @@ int hash_tab_insert(hash_tab_t *hash, void *pkey, int pkey_len, void *data)
  **函数名称: hash_tab_query
  **功    能: 查找哈希成员
  **输入参数:
- **     hash: 哈希数组
+ **     htab: 哈希数组
  **     pkey: 主键
  **     pkey_len: 主键长度
- **     data_len: 结果取长度
+ **     query_cb: 查找函数
  **输出参数:
  **     data: 查找结果
  **返    回: 0:成功 !0:失败
@@ -135,26 +216,26 @@ int hash_tab_insert(hash_tab_t *hash, void *pkey, int pkey_len, void *data)
  **注意事项:
  **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
-int hash_tab_query(hash_tab_t *hash, void *pkey, int pkey_len,
-        hash_tab_query_cb_t query_cb, void *data)
+int hash_tab_query(hash_tab_t *htab,
+    void *pkey, int pkey_len, hash_tab_query_cb_t query_cb, void *data)
 {
     int ret;
+    void *orig;
     unsigned int idx;
-    avl_node_t *node;
 
-    idx = hash->key_cb(pkey, pkey_len) % hash->mod;
+    idx = htab->key_cb(pkey, pkey_len) % htab->len;
 
-    pthread_rwlock_rdlock(&hash->lock[idx]);
-    node = avl_query(hash->tree[idx], pkey, pkey_len);
-    if (NULL == node)
+    pthread_rwlock_rdlock(&htab->lock[idx]);
+    orig = avl_query(htab->tree[idx], pkey, pkey_len);
+    if (NULL == orig)
     {
-        pthread_rwlock_unlock(&hash->lock[idx]);
+        pthread_rwlock_unlock(&htab->lock[idx]);
         return -1; /* 未找到 */
     }
 
-    ret = query_cb(node->data, data);
+    ret = query_cb(orig, data);
 
-    pthread_rwlock_unlock(&hash->lock[idx]);
+    pthread_rwlock_unlock(&htab->lock[idx]);
 
     return ret;
 }
@@ -163,7 +244,7 @@ int hash_tab_query(hash_tab_t *hash, void *pkey, int pkey_len,
  **函数名称: hash_tab_remove
  **功    能: 删除哈希成员
  **输入参数:
- **     hash: 哈希数组
+ **     htab: 哈希数组
  **     pkey: 主键
  **     pkey_len: 主键长度
  **输出参数: NONE
@@ -172,20 +253,20 @@ int hash_tab_query(hash_tab_t *hash, void *pkey, int pkey_len,
  **注意事项: 返回地址的内存空间由外部释放
  **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
-void *hash_tab_remove(hash_tab_t *hash, void *pkey, int pkey_len)
+void *hash_tab_remove(hash_tab_t *htab, void *pkey, int pkey_len)
 {
     void *data;
     unsigned int idx;
 
-    idx = hash->key_cb(pkey, pkey_len) % hash->mod;
+    idx = htab->key_cb(pkey, pkey_len) % htab->len;
 
-    pthread_rwlock_wrlock(&hash->lock[idx]);
-    avl_delete(hash->tree[idx], pkey, pkey_len, &data);
+    pthread_rwlock_wrlock(&htab->lock[idx]);
+    htab->tree_delete(htab->tree[idx], pkey, pkey_len, &data);
     if (NULL != data)
     {
-        --hash->total;
+        --htab->total;
     }
-    pthread_rwlock_unlock(&hash->lock[idx]);
+    pthread_rwlock_unlock(&htab->lock[idx]);
 
     return data;
 }
@@ -194,32 +275,32 @@ void *hash_tab_remove(hash_tab_t *hash, void *pkey, int pkey_len)
  **函数名称: hash_tab_destroy
  **功    能: 销毁哈希数组
  **输入参数:
- **     hash: 哈希数组
+ **     htab: 哈希数组
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述:
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
-int hash_tab_destroy(hash_tab_t *hash, mem_dealloc_cb_t dealloc, void *args)
+int hash_tab_destroy(hash_tab_t *htab, mem_dealloc_cb_t dealloc, void *args)
 {
     int idx;
 
-    for (idx=0; idx<hash->mod; ++idx)
+    for (idx=0; idx<htab->len; ++idx)
     {
-        pthread_rwlock_wrlock(&hash->lock[idx]);
-        if (NULL != hash->tree[idx])
+        pthread_rwlock_wrlock(&htab->lock[idx]);
+        if (NULL != htab->tree[idx])
         {
-            avl_destroy(hash->tree[idx], dealloc, args);
+            avl_destroy(htab->tree[idx], dealloc, args);
         }
-        pthread_rwlock_unlock(&hash->lock[idx]);
+        pthread_rwlock_unlock(&htab->lock[idx]);
 
-        pthread_rwlock_destroy(&hash->lock[idx]);
+        pthread_rwlock_destroy(&htab->lock[idx]);
     }
 
-    hash->dealloc(hash->pool, hash->tree);
-    hash->dealloc(hash->pool, hash->lock);
-    hash->dealloc(hash->pool, hash);
+    htab->dealloc(htab->pool, htab->tree);
+    htab->dealloc(htab->pool, htab->lock);
+    htab->dealloc(htab->pool, htab);
 
     return 0;
 }
@@ -228,7 +309,7 @@ int hash_tab_destroy(hash_tab_t *hash, mem_dealloc_cb_t dealloc, void *args)
  **函数名称: hash_tab_trav
  **功    能: 遍历哈希数组
  **输入参数:
- **     hash: 哈希数组
+ **     htab: 哈希数组
  **     proc: 回调函数
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
@@ -236,15 +317,15 @@ int hash_tab_destroy(hash_tab_t *hash, mem_dealloc_cb_t dealloc, void *args)
  **注意事项:
  **作    者: # Qifeng.zou # 2014.12.24 #
  ******************************************************************************/
-int hash_tab_trav(hash_tab_t *hash, avl_trav_cb_t proc, void *args)
+int hash_tab_trav(hash_tab_t *htab, trav_cb_t proc, void *args)
 {
     int idx;
 
-    for (idx=0; idx<hash->mod; ++idx)
+    for (idx=0; idx<htab->len; ++idx)
     {
-        pthread_rwlock_rdlock(&hash->lock[idx]);
-        avl_trav(hash->tree[idx], proc, args);
-        pthread_rwlock_unlock(&hash->lock[idx]);
+        pthread_rwlock_rdlock(&htab->lock[idx]);
+        htab->tree_trav(htab->tree[idx], proc, args);
+        pthread_rwlock_unlock(&htab->lock[idx]);
     }
 
     return 0;
