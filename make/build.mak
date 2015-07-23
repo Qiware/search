@@ -53,3 +53,10 @@ CFLAGS = -Wall -gdwarf-2 -g3 -fPIC -O0 -fstack-check -fstack-protector-all -fbou
 CFLAGS += $(patsubst %, -D%, $(OPTIONS))
 LFLAGS = -shared -Wall -g -fPIC -fstack-protector-all -fbounds-check -rdynamic
 AFLAGS = -c -r
+
+# 获取源文件的所依赖的头文件列表
+# 参数1: 头文件路径
+# 参数2: 源文件名
+define GetDepHead
+	$(shell $(CC) -MM $(INCLUDE) $1 | sed 's,.*:,$1:,g' | tr -d '\\' | cut -d':' -f2 | awk '{for(idx=2; idx<=NF; ++idx) print $$idx}')
+endef
