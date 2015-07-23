@@ -11,6 +11,8 @@
 ## 				Make DIR=指定目录 如: Make DIR=src/lib/core
 ## 作    者: # Qifeng.zou # 2014.08.28 #
 ###############################################################################
+include ./make/func.mak
+
 # 根目录
 export PROJ = ${PWD}
 export PROJ_BIN = ${PROJ}/bin
@@ -44,14 +46,6 @@ DIR += "$(EXEC_DIR)/invertd"
 
 # 获取系统配置
 CPU_CORES = $(shell cat /proc/cpuinfo | grep "cpu cores" | awk -F: 'BEGIN {cpu_cores=0} {cpu_cores+=$$2} END{print cpu_cores}')
-
-# 创建目录结构
-define MkDir
-	mkdir -p ${PROJ_LIB};
-	mkdir -p ${PROJ_BIN};
-	mkdir -p ${PROJ_LOG};
-	rm -fr ${GCC_LOG};
-endef
 
 .PHONY: all clean rebuild help
 

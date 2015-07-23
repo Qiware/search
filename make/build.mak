@@ -5,6 +5,7 @@
 ## 注意事项: 请勿随意修改此文件
 ## 作    者: # Qifeng.zou # 2014.08.28 #
 ###############################################################################
+include $(PROJ)/make/func.mak
 include $(PROJ)/make/switch.mak
 include $(PROJ)/make/options.mak
 
@@ -53,16 +54,3 @@ CFLAGS = -Wall -gdwarf-2 -g3 -fPIC -O0 -fstack-check -fstack-protector-all -fbou
 CFLAGS += $(patsubst %, -D%, $(OPTIONS))
 LFLAGS = -shared -Wall -g -fPIC -fstack-protector-all -fbounds-check -rdynamic
 AFLAGS = -c -r
-
-# 获取源文件的所依赖的头文件列表
-# 参数1: 源文件(如: list.c)
-define func_get_dep_head
-	$(shell $(CC) -MM $(INCLUDE) $1 \
-			| sed 's,.*:,$1:,g' \
-			| tr -d '\\' \
-			| awk '{ for(idx=1; idx<=NF; ++idx) { if ($$idx ~ /\.h/) {print $$idx}} }')
-endef
-# 参数1: 源文件列表
-define func_get_dep_head_list
-	$(foreach item, $1, $(call func_get_dep_head, $(item)))
-endef
