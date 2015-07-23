@@ -47,9 +47,7 @@ SRC_LIST = hash.c \
 			uri.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST))
-#HEADS = $(foreach item,$(OBJS), $(shell echo "$(item)"))
-#HEADS = $(foreach item,$(SRC_LIST), $(shell $(CC) -MM $(INCLUDE) $(item) | sed 's,.*:,$(item):,g' | tr -d '\\'))
-HEADS = $(foreach item,$(SRC_LIST), $(call GetDepHead, $(item)))
+HEADS = $(call func_get_dep_head_list, $(SRC_LIST))
 
 TARGET = libcore.so
 TARGET_A = libcore.a
@@ -67,9 +65,8 @@ $(TARGET_A): $(OBJS)
 	@$(AR) $(AFLAGS) -s $@ $(OBJS)
 	@echo "AR $@"
 	@mv $@ $(PROJ_LIB)
-	@echo "$@ is OK! $(HEADS)"
 
-$(OBJS): %.o : %.c
+$(OBJS): %.o : %.c $(HEADS)
 	@$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
 	@echo "CC $(PWD)/$<"
 

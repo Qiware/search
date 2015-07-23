@@ -31,6 +31,7 @@ SRC_LIST = rtrd_recv.c \
 			rtsd_cli.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST))
+HEADS = $(call func_get_dep_head_list, $(SRC_LIST))
 
 TARGET = librtmq.so
 TARGET_A = librtmq.a
@@ -50,7 +51,7 @@ $(TARGET_A): $(OBJS)
 	@mv $@ $(PROJ_LIB)
 	@echo "$@ is OK!"
 
-$(OBJS): %.o : %.c
+$(OBJS): %.o : %.c $(HEADS)
 	@$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
 	@echo "CC $(PWD)/$<"
 

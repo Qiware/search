@@ -17,6 +17,7 @@ SRC_LIST = redis.c \
 			redis_list.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
+HEADS = $(call func_get_dep_head_list, $(SRC_LIST))
 
 TARGET = libredis_ex.so
 TARGET_A = libredis_ex.a
@@ -36,7 +37,7 @@ $(TARGET_A): $(OBJS)
 	@mv $@ $(PROJ_LIB)
 	@echo "$@ is OK!"
 
-$(OBJS): %.o : %.c
+$(OBJS): %.o : %.c $(HEADS)
 	@$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
 	@echo "CC $(PWD)/$<"
 

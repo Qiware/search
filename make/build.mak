@@ -55,8 +55,14 @@ LFLAGS = -shared -Wall -g -fPIC -fstack-protector-all -fbounds-check -rdynamic
 AFLAGS = -c -r
 
 # 获取源文件的所依赖的头文件列表
-# 参数1: 头文件路径
-# 参数2: 源文件名
-define GetDepHead
-	$(shell $(CC) -MM $(INCLUDE) $1 | sed 's,.*:,$1:,g' | tr -d '\\' | cut -d':' -f2 | awk '{for(idx=2; idx<=NF; ++idx) print $$idx}')
+# 参数1: 源文件(如: list.c)
+define func_get_dep_head
+	$(shell $(CC) -MM $(INCLUDE) $1 \
+			| sed 's,.*:,$1:,g' \
+			| tr -d '\\' \
+			| awk '{ for(idx=1; idx<=NF; ++idx) { if ($$idx ~ /\.h/) {print $$idx}} }')
+endef
+# 参数1: 源文件列表
+define func_get_dep_head_list
+	$(foreach item, $1, $(call func_get_dep_head, $(item)))
 endef

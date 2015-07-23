@@ -28,35 +28,35 @@
 #include <sys/resource.h>
 
 /* 宏定义 */
-#define FILE_NAME_MAX_LEN   (256)           /* 文件名最大长度 */
-#define FILE_PATH_MAX_LEN  FILE_NAME_MAX_LEN/* 文件路径最大长度 */
-#define FILE_LINE_MAX_LEN   (1024)          /* 文件行最大长度 */
-#define IP_ADDR_MAX_LEN     (32)            /* IP地址最大长度 */
-#define CMD_LINE_MAX_LEN    (1024)          /* 命令行最大长度 */
-#define UDP_MAX_LEN         (1472)          /* UDP最大承载长度 */
-#define QUEUE_NAME_MAX_LEN  (64)            /* 队列名最大长度 */
-#define TABLE_NAME_MAX_LEN  (64)            /* 表名最大长度 */
-#define ERR_MSG_MAX_LEN     (1024)          /* 错误信息最大长度 */
-#define NODE_MAX_LEN        (64)            /* 节点名最大长度 */
-#define INT_MAX_LEN         (128)           /* 整数字串的最大长度 */
+#define FILE_NAME_MAX_LEN   (256)               /* 文件名最大长度 */
+#define FILE_PATH_MAX_LEN   FILE_NAME_MAX_LEN   /* 文件路径最大长度 */
+#define FILE_LINE_MAX_LEN   (1024)              /* 文件行最大长度 */
+#define IP_ADDR_MAX_LEN     (32)                /* IP地址最大长度 */
+#define CMD_LINE_MAX_LEN    (1024)              /* 命令行最大长度 */
+#define UDP_MAX_LEN         (1472)              /* UDP最大承载长度 */
+#define QUEUE_NAME_MAX_LEN  (64)                /* 队列名最大长度 */
+#define TABLE_NAME_MAX_LEN  (64)                /* 表名最大长度 */
+#define ERR_MSG_MAX_LEN     (1024)              /* 错误信息最大长度 */
+#define NODE_MAX_LEN        (64)                /* 节点名最大长度 */
+#define INT_MAX_LEN         (128)               /* 整数字串的最大长度 */
 
-#define MD5_SUM_CHK_LEN     (32)            /* MD5校验值长度 */
+#define MD5_SUM_CHK_LEN     (32)                /* MD5校验值长度 */
 
-#define INVALID_FD          (-1)            /* 非法文件描述符 */
-#define INVALID_PID         (-1)            /* 非法进程ID */
+#define INVALID_FD          (-1)                /* 非法文件描述符 */
+#define INVALID_PID         (-1)                /* 非法进程ID */
 
 /* 进制 */
-#define BIN                 (2)             /* 二进制 */
-#define OCT                 (8)             /* 八进制 */
-#define DEC                 (10)            /* 十进制 */
-#define HEX                 (16)            /* 十六进制 */
+#define BIN                 (2)                 /* 二进制 */
+#define OCT                 (8)                 /* 八进制 */
+#define DEC                 (10)                /* 十进制 */
+#define HEX                 (16)                /* 十六进制 */
 
-#define ISPOWEROF2(x)    (0 == (((x)-1) & (x))) /* 判断x是否为2的n次方(2^n) */
+#define ISPOWEROF2(x)       (0 == (((x)-1) & (x))) /* 判断x是否为2的n次方(2^n) */
 
 /* 内存单位 */
-#define KB                  (1024)          /* KB */
-#define MB                  (1024 * KB)     /* MB */
-#define GB                  (1024 * MB)     /* GB */
+#define KB                  (1024)              /* KB */
+#define MB                  (1024 * KB)         /* MB */
+#define GB                  (1024 * MB)         /* GB */
 
 /* 获取较大值
  *  警告: 勿将MAX改为宏定义, 否则将会出现严重不可预测的问题
@@ -80,8 +80,8 @@ static inline int MIN(int a, int b) { return ((a) < (b) ? (a) : (b)); }
 #define TM_SEC(sec)  ((((sec) % (86400))%(3600))%60)        /* 秒 */
 
 /* 内存对齐 */
-#define mem_align(d, a)     (((d) + (a - 1)) & ~(a - 1))
-#define mem_align_ptr(p, a)                                                   \
+#define mem_align(d, a) (((d) + (a - 1)) & ~(a - 1))
+#define mem_align_ptr(p, a) \
     (u_char *) (((uintptr_t) (p) + ((uintptr_t) a - 1)) & ~((uintptr_t) a - 1))
 #define PTR_ALIGNMENT   sizeof(unsigned long)
 
@@ -135,7 +135,7 @@ void *mem_alloc(void *pool, size_t size);
 typedef void (*mem_dealloc_cb_t)(void *pool, void *p);
 
 void mem_dealloc(void *pool, void *p);
-static inline void mem_dummy_dealloc(void *pool, void *p) {};
+static inline void mem_dummy_dealloc(void *pool, void *p) { }
 
 /******************************************************************************
  **函数名称: key_cb_int32
