@@ -14,6 +14,11 @@ define func_mkdir
 	rm -fr ${GCC_LOG};
 endef
 
+# 获取CPU核数
+define func_cpu_cores
+	$(shell cat /proc/cpuinfo | grep "cpu cores" | awk -F: 'BEGIN {cpu_cores=0} {cpu_cores+=$$2} END{print cpu_cores}')
+endef
+
 # 获取源文件的所依赖的头文件列表
 # 参数1: 源文件(如: list.c)
 define func_get_dep_head

@@ -45,13 +45,13 @@ DIR += "$(EXEC_DIR)/monitor"
 DIR += "$(EXEC_DIR)/invertd"
 
 # 获取系统配置
-CPU_CORES = $(shell cat /proc/cpuinfo | grep "cpu cores" | awk -F: 'BEGIN {cpu_cores=0} {cpu_cores+=$$2} END{print cpu_cores}')
+CPU_CORES = $(call func_cpu_cores)
 
 .PHONY: all clean rebuild help
 
 # 1. 编译操作
 all:
-	${MkDir}
+	$(call func_mkdir)
 	@for ITEM in ${DIR}; \
 	do \
 		if [ -e $${ITEM}/Makefile ]; then \
