@@ -42,6 +42,9 @@ DIR += "$(EXEC_DIR)/listend"
 DIR += "$(EXEC_DIR)/monitor"
 DIR += "$(EXEC_DIR)/invertd"
 
+# 获取系统配置
+CPU_CORES = $(shell cat /proc/cpuinfo | grep "cpu cores" | awk -F: 'BEGIN {cpu_cores=0} {cpu_cores+=$$2} END{print cpu_cores}')
+
 # 创建目录结构
 define MkDir
 	mkdir -p ${PROJ_LIB};
@@ -59,7 +62,7 @@ all:
 	do \
 		if [ -e $${ITEM}/Makefile ]; then \
 			cd $${ITEM}; \
-			make 2>&1 | tee -a ${GCC_LOG}; \
+			make -j$(CPU_CORES) 2>&1 | tee -a ${GCC_LOG}; \
 			cd ${PROJ}; \
 		fi \
 	done
@@ -81,3 +84,4 @@ rebuild: clean all
 # 4. 显示帮助
 help:
 	@cat make/help.mak
+
