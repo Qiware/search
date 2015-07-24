@@ -20,10 +20,10 @@ define func_cpu_cores
 endef
 
 # 获取源文件的所依赖的头文件列表
-# 参数1: 源文件(如: list.c)
+# 参数1: 单个源文件(如: list.c)
 # 注意: tr -d [\\]含义是删除反斜杠字符'\' - 请参考tr用法
-define func_get_dep_head
-	$(shell $(CC) -MM $(INCLUDE) $1 \
+define _func_get_dep_head_list
+	$(shell $(CC) -MM $(INCLUDE) $(1) \
 			| tr -d [\\] \
 			| awk '{ for(idx=1; idx<=NF; ++idx) { if ($$idx ~ /\.h/) {print $$idx}} }')
 endef
@@ -31,5 +31,5 @@ endef
 # 获取源文件列表的所依赖的头文件列表
 # 参数1: 源文件列表(ex: avl_tree.c list.c queue.c, etc.)
 define func_get_dep_head_list
-	$(foreach item, $1, $(call func_get_dep_head, $(item)))
+	$(sort $(foreach item, $(1), $(call _func_get_dep_head_list, $(item))))
 endef
