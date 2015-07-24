@@ -18,7 +18,9 @@
 #include "log.h"
 #include "btree.h"
 
-static btree_node_t *btree_creat_node(btree_t *btree);
+static btree_node_t *btree_node_alloc(btree_t *btree);
+static int btree_node_dealloc(btree_t *btree, btree_node_t *node);
+
 static int _btree_insert(btree_t *btree, btree_node_t *node, int key, int idx);
 static int btree_split(btree_t *btree, btree_node_t *node);
 static int btree_merge(btree_t *btree, btree_node_t *node);
@@ -135,7 +137,7 @@ int btree_insert(btree_t *btree, int key)
     /* 1. 插入根结点 */
     if (NULL == node)
     {
-        node = btree_creat_node(btree);
+        node = btree_node_alloc(btree);
         if (NULL == node)
         {
             log_error(btree->log, "Create node failed!");
@@ -235,7 +237,7 @@ static int btree_split(btree_t *btree, btree_node_t *node)
         /* Split node */
         total = node->num;
 
-        node2 = btree_creat_node(btree);
+        node2 = btree_node_alloc(btree);
         if (NULL == node2)
         {
             log_error(btree->log, "Create node failed!");
@@ -256,7 +258,7 @@ static int btree_split(btree_t *btree, btree_node_t *node)
         if (NULL == parent)
         {
             /* Split root node */
-            parent = btree_creat_node(btree);
+            parent = btree_node_alloc(btree);
             if (NULL == parent)
             {
                 log_error(btree->log, "[%s][%d] Create root failed!", __FILE__, __LINE__);
@@ -533,37 +535,6 @@ static int _btree_merge(btree_t *btree, btree_node_t *left, btree_node_t *right,
 }
 
 /******************************************************************************
- **函数名称: btree_node_dealloc
- **功    能: 销毁B树
- **输入参数:
- **     btree: B树
- **     node: 将被销毁的结点
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述: 使用递归算法释放结点空间
- **注意事项:
- **作    者: # Qifeng.zou # 2015.04.25 #
- ******************************************************************************/
-static int btree_node_dealloc(btree_t *btree, btree_node_t *node)
-{
-    int idx;
-
-    for (idx=0; idx<=node->num; ++idx)
-    {
-        if (NULL != node->child[idx])
-        {
-            btree_node_dealloc(btree, node->child[idx]);
-            continue;
-        }
-    }
-
-    btree->dealloc(btree->pool, node->key);
-    btree->dealloc(btree->pool, node->child);
-    btree->dealloc(btree->pool, node);
-    return 0;
-}
-
-/******************************************************************************
  **函数名称: btree_destroy
  **功    能: 销毁B树
  **输入参数:
@@ -666,7 +637,7 @@ void _btree_print(const btree_node_t *node, int deep)
 }
 
 /******************************************************************************
- **函数名称: btree_creat_node
+ **函数名称: btree_node_alloc
  **功    能: 创建一个节点
  **输入参数:
  **     btree: B树
@@ -676,7 +647,7 @@ void _btree_print(const btree_node_t *node, int deep)
  **注意事项:
  **作    者: # Qifeng.zou # 2014.03.12 #
  ******************************************************************************/
-static btree_node_t *btree_creat_node(btree_t *btree)
+static btree_node_t *btree_node_alloc(btree_t *btree)
 {
     btree_node_t *node;
 
@@ -711,6 +682,37 @@ static btree_node_t *btree_creat_node(btree_t *btree)
     }
 
     return node;
+}
+
+/******************************************************************************
+ **函数名称: btree_node_dealloc
+ **功    能: 销毁指定结点
+ **输入参数:
+ **     btree: B树
+ **     node: 将被销毁的结点
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 使用递归算法释放结点空间
+ **注意事项:
+ **作    者: # Qifeng.zou # 2015.04.25 #
+ ******************************************************************************/
+static int btree_node_dealloc(btree_t *btree, btree_node_t *node)
+{
+    int idx;
+
+    for (idx=0; idx<=node->num; ++idx)
+    {
+        if (NULL != node->child[idx])
+        {
+            btree_node_dealloc(btree, node->child[idx]);
+            continue;
+        }
+    }
+
+    btree->dealloc(btree->pool, node->key);
+    btree->dealloc(btree->pool, node->child);
+    btree->dealloc(btree->pool, node);
+    return 0;
 }
 
 /******************************************************************************
