@@ -88,84 +88,12 @@ static inline int MIN(int a, int b) { return ((a) < (b) ? (a) : (b)); }
 /* 变量成员在结构体中的偏移量 */
 #define offsetof(type, field)   ((size_t)&(((type *)0)->field))
 
-/******************************************************************************
- **函数名称: key_cb_t
- **功    能: 为唯一键产生KEY值
- **输入参数: 
- **     pkey: 主键(任意数据类型, 但该值必须是唯一的)
- **     pkey_len: 主键长度
- **输出参数: NONE
- **返    回: KEY值
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.11.09 #
- ******************************************************************************/
 typedef int64_t (*key_cb_t)(const void *pkey, size_t pkey_len);
 typedef int (*cmp_cb_t)(const void *data, const void *orig);
 typedef int (*trav_cb_t)(void *data, void *args);
 
-/******************************************************************************
- **函数名称: mem_alloc_cb_t
- **功    能: 分配内存回调类型
- **输入参数: 
- **     pool: 内存池
- **     size: 分配空间
- **输出参数:
- **返    回: 内存地址
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.12.26 #
- ******************************************************************************/
 typedef void * (*mem_alloc_cb_t)(void *pool, size_t size);
-
-void *mem_alloc(void *pool, size_t size);
-
-/******************************************************************************
- **函数名称: mem_dealloc_cb_t
- **功    能: 回收内存回调类型
- **输入参数: 
- **     pool: 内存池
- **     p: 内存地址
- **输出参数:
- **返    回: VOID
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.12.26 #
- ******************************************************************************/
 typedef void (*mem_dealloc_cb_t)(void *pool, void *p);
-
-void mem_dealloc(void *pool, void *p);
-static inline void mem_dummy_dealloc(void *pool, void *p) { }
-
-/******************************************************************************
- **函数名称: key_cb_int32
- **功    能: 当主键为int32类型时的主键生成函数(外部接口)
- **输入参数:
- **     key: 主键
- **     len: 主键长度
- **输出参数: NONE
- **返    回: 主键
- **实现描述:
- **注意事项: 此时*key必须为int32类型
- **作    者: # Qifeng.zou # 2015.04.29 #
- ******************************************************************************/
-static inline int key_cb_int32(const int *key, size_t len) { return *key; }
-static inline int64_t key_cb_int64(const int64_t *key, size_t len) { return *key; }
-
-/******************************************************************************
- **函数名称: cmp_cb_int32
- **功    能: 当主键为int类型时的主键比较函数(外部接口)
- **输入参数:
- **     key: 主键
- **     data: 与key值相等的键值对应的数据块
- **输出参数: NONE
- **返    回: 主键
- **实现描述:
- **注意事项: 因主键为int32类型, 因此调此函数时, 肯定返回相等
- **作    者: # Qifeng.zou # 2015.04.29 #
- ******************************************************************************/
-static inline int cmp_cb_int32(const int *key, const void *data) { return 0; }
-static inline int cmp_cb_int64(const int64_t *key, const void *data) { return 0; } 
 
 /* 树操作接口 */
 typedef int (*tree_insert_cb_t)(void *tree, void *key, int key_len, void *data);
@@ -173,5 +101,16 @@ typedef int (*tree_delete_cb_t)(void *tree, void *key, int key_len, void *data);
 typedef int (*tree_query_cb_t)(void *tree, void *key, int key_len, void *data);
 typedef void (*tree_trav_cb_t)(void *tree, trav_cb_t proc, void *args);
 typedef void (*tree_destroy_cb_t)(void *tree);
+
+void *mem_alloc(void *pool, size_t size);
+void mem_dealloc(void *pool, void *p);
+static inline void mem_dummy_dealloc(void *pool, void *p) { }
+
+/* 整数生成键值回调 */
+static inline int key_cb_int32(const int *key, size_t len) { return *key; }
+static inline int64_t key_cb_int64(const int64_t *key, size_t len) { return *key; }
+/* 整数进行比较回调 */
+static inline int cmp_cb_int32(const int *key, const void *data) { return 0; }
+static inline int cmp_cb_int64(const int64_t *key, const void *data) { return 0; } 
 
 #endif /*__COMM_H__*/
