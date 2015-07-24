@@ -45,7 +45,7 @@ int tcp_listen(int port)
     }
 
     /* 3. 侦听指定端口 */
-    if (listen(fd, 20) < 0)
+    if (listen(fd, TCP_LISTEN_BACKLOG) < 0)
     {
         close(fd);
         return -1;

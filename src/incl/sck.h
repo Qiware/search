@@ -3,6 +3,8 @@
 
 #include "comm.h"
 
+#define TCP_LISTEN_BACKLOG  (511)
+
 #define ntoh64(v) ((uint64_t)( \
         (uint64_t)(v) & 0x00000000000000FF) << 56 \
         | ((uint64_t)(v) & 0x000000000000FF00) << 40 \
