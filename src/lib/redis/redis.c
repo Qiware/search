@@ -44,8 +44,8 @@ redis_clst_t *redis_clst_init(const redis_conf_t *conf, int num)
     clst->num = num;
     for (idx=0; idx<num; ++idx)
     {
-        tv.tv_sec = 30;
-        tv.tv_usec = 0;
+        tv.tv_sec = REDIS_CONN_TMOUT_SEC;
+        tv.tv_usec = REDIS_CONN_TMOUT_USEC;
 
         clst->redis[idx] = redisConnectWithTimeout(conf[idx].ip, conf[idx].port, tv);
         if (clst->redis[idx]->err)

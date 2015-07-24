@@ -5,6 +5,9 @@
 #include "list.h"
 #include <hiredis/hiredis.h>
 
+#define REDIS_CONN_TMOUT_SEC    (30)    /* 连接超时:秒 */
+#define REDIS_CONN_TMOUT_USEC   (0)     /* 连接超时:微妙 */
+
 /* Redis配置 */
 typedef struct
 {
