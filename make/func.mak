@@ -21,10 +21,10 @@ endef
 
 # 获取源文件的所依赖的头文件列表
 # 参数1: 源文件(如: list.c)
+# 注意: tr -d [\\]含义是删除反斜杠字符'\' - 请参考tr用法
 define func_get_dep_head
 	$(shell $(CC) -MM $(INCLUDE) $1 \
-			| sed 's,.*:,$1:,g' \
-			| tr -d '\\' \
+			| tr -d [\\] \
 			| awk '{ for(idx=1; idx<=NF; ++idx) { if ($$idx ~ /\.h/) {print $$idx}} }')
 endef
 
