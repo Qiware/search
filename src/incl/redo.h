@@ -5,7 +5,7 @@
 
 #define OPEN_MODE           (0666)  /* 文件权值 */
 #define OPEN_FLAGS          (O_CREAT|O_WRONLY|O_APPEND) /* 文件标志 */
-#define DIR_MODE            (0777)  /* 目录权值 */
+#define DIR_MODE            (0775)  /* 目录权值 */
 
 ssize_t Readn(int fd, void *buff, size_t n);
 ssize_t Writen(int fd, const void *buff, size_t n);
