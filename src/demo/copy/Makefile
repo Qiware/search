@@ -1,0 +1,39 @@
+###############################################################################
+## Coypright(C) 2014-2024 Xundao technology Co., Ltd
+##
+## 文件名: Makefile
+## 版本号: 1.0
+## 描  述: 拷贝的测试代码
+## 作  者: # Qifeng.zou # 2015.07.27 #
+###############################################################################
+include $(PROJ)/make/build.mak
+
+INCLUDE = -I. \
+			-I$(PROJ)/src/incl
+LIBS_PATH = -L$(PROJ)/lib
+LIBS = -lcore
+LIBS_A = $(PROJ)/lib/libcore.a
+
+SRC_LIST = copy.c
+
+OBJS = $(subst .c,.o, $(SRC_LIST)) 
+
+TARGET = copy
+
+.PHONY: all clean
+
+all: $(TARGET)
+$(TARGET): $(OBJS)
+	@$(CC) $(CFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS)
+	@echo "CC $@"
+	@mv $@ $(PROJ_BIN) 
+	@rm -fr $(OBJS)
+	@echo "$@ is OK!"
+
+$(OBJS): %.o : %.c
+	@$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
+	@echo "CC $(PWD)/$<"
+
+clean:
+	@rm -fr $(OBJS) $(TARGET)
+	@echo "rm -fr *.o $(PROJ_LIB)/$(TARGET)"
