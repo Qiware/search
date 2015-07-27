@@ -1,6 +1,10 @@
 #if !defined(__SHM_LIST_H__)
 #define __SHM_LIST_H__
 
+#include "comm.h"
+
+typedef int (*list_cmp_cb_t)(void *key, off_t data_off, void *param);
+
 /* 链表结点 */
 typedef struct
 {
@@ -17,5 +21,10 @@ typedef struct
 } shm_list_t;
 
 int shm_list_lpush(void *addr, shm_list_t *list, off_t node_off);
+off_t shm_list_lpop(void *addr, shm_list_t *list);
+int shm_list_rpush(void *addr, shm_list_t *list, off_t node_off);
+off_t shm_list_rpop(void *addr, shm_list_t *list);
+off_t shm_list_delete(void *addr, shm_list_t *list, off_t node_off);
+off_t shm_list_query(void *addr, shm_list_t *list, void *key, list_cmp_cb_t cmp_cb, void *param);
 
 #endif /*__SHM_LIST_H__*/

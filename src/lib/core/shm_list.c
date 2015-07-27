@@ -67,7 +67,7 @@ int shm_list_lpush(void *addr, shm_list_t *list, off_t node_off)
 off_t shm_list_lpop(void *addr, shm_list_t *list)
 {
     off_t head_off;
-    shm_list_node_t *head, *tail, *curr, *next;
+    shm_list_node_t *head, *tail, *next;
 
     /* > 链表为空 */
     if (0 == list->head)
@@ -89,7 +89,6 @@ off_t shm_list_lpop(void *addr, shm_list_t *list)
     }
 
     /* > 链表有多个结点 */
-    curr = head;
     next = (shm_list_node_t *)(addr + head->next);
 
     list->head = head->next;
@@ -182,4 +181,80 @@ off_t shm_list_rpop(void *addr, shm_list_t *list)
     head->prev = tail->prev;
     --list->num;
     return off;
+}
+
+/******************************************************************************
+ **函数名称: shm_list_delete
+ **功    能: 删除指定链表结点
+ **输入参数: 
+ **     addr: 起始地址
+ **     list: 双向链表
+ **     node_off: 将被删除的结点(偏移)
+ **输出参数: NONE
+ **返    回: 将被删除的结点(偏移)
+ **实现描述: 
+ **注意事项: 请调用者自己取回收链表结点和挂载的数据空间
+ **作    者: # Qifeng.zou # 2015-07-26 23:42:17 #
+ ******************************************************************************/
+off_t shm_list_delete(void *addr, shm_list_t *list, off_t node_off)
+{
+    shm_list_node_t *head, *node, *prev, *next;
+
+    if (node_off == list->head)
+    {
+        return shm_list_lpop(addr, list); /* 弹出链头 */
+    }
+
+    node = (shm_list_node_t *)(addr + node_off);
+    head = (shm_list_node_t *)(addr + list->head);
+    if (node_off == head->prev)
+    {
+        return shm_list_rpop(addr, list); /* 弹出链尾 */
+    }
+
+    prev = (shm_list_node_t *)(addr + node->prev);
+    next = (shm_list_node_t *)(addr + node->next);
+
+    prev->next = node->next;
+    next->prev = node->prev;
+
+    return node_off;
+}
+
+/******************************************************************************
+ **函数名称: shm_list_query
+ **功    能: 通过KEY查找链表结点
+ **输入参数: 
+ **     addr: 起始地址
+ **     list: 双向链表
+ **     key: 主键
+ **     cmp_cb: 比较回调函数
+ **     param: 比较回调的附加参数
+ **输出参数: NONE
+ **返    回: 结点偏移
+ **实现描述: 
+ **注意事项: 请调用者自己取回收链表结点和挂载的数据空间
+ **作    者: # Qifeng.zou # 2015-07-26 23:42:17 #
+ ******************************************************************************/
+off_t shm_list_query(void *addr, shm_list_t *list, void *key, list_cmp_cb_t cmp_cb, void *param)
+{
+    shm_list_node_t *head, *node;
+
+    if (0 == list->head)
+    {
+        return 0; /* 无数据 */
+    }
+
+    head = (shm_list_node_t *)(addr + list->head);
+    node = head;
+    do
+    {
+        if (0 == cmp_cb(key, node->data, param))
+        {
+            return (off_t)((void *)node - addr);
+        }
+        node = (shm_list_node_t *)(addr + node->next);
+    } while (node != head);
+
+    return 0; /* 未找到 */
 }
