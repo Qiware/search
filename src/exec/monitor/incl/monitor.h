@@ -1,8 +1,6 @@
 #if !defined(__MONITOR_H__)
 #define __MONITOR_H__
 
-#include <time.h>
-#include "sck.h"
 #include "menu.h"
 #include "slab.h"
 #include "mon_conf.h"

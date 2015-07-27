@@ -1,15 +1,12 @@
 #if !defined(__CRWL_WORKER_H__)
 #define __CRWL_WORKER_H__
 
-#include <sys/epoll.h>    
-
 #include "log.h"
 #include "comm.h"
 #include "slab.h"
 #include "list.h"
 #include "http.h"
 #include "queue.h"
-#include "xml_tree.h"
 #include "crwl_priv.h"
 #include "crwl_task.h"
 #include "thread_pool.h"

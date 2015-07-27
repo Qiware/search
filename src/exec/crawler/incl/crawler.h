@@ -10,8 +10,6 @@
 #if !defined(__CRAWLER_H__)
 #define __CRAWLER_H__
 
-#include <stdint.h>
-
 #include "log.h"
 #include "sck.h"
 #include "comm.h"

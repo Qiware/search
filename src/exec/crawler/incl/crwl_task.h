@@ -1,9 +1,7 @@
 #if !defined(__CRWL_TASK_H__)
 #define __CRWL_TASK_H__
 
-#include <stdint.h>
-#include <pthread.h>
-
+#include "comm.h"
 #include "queue.h"
 
 /* 任务类型 */
