@@ -82,7 +82,9 @@ static inline int MIN(int a, int b) { return ((a) < (b) ? (a) : (b)); }
 #define PTR_ALIGNMENT   sizeof(unsigned long)
 
 /* 变量成员在结构体中的偏移量 */
-#define offsetof(type, field)   ((size_t)&(((type *)0)->field))
+#if !defined(offsetof)
+    #define offsetof(type, field)   ((size_t)&(((type *)0)->field))
+#endif
 
 typedef int64_t (*key_cb_t)(const void *pkey, size_t pkey_len);
 typedef int (*cmp_cb_t)(const void *data, const void *orig);
