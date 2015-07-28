@@ -7,12 +7,13 @@
  ** 作  者: # Qifeng.zou # Mon 27 Jul 2015 07:08:59 PM CST #
  ******************************************************************************/
 
+#include <malloc.h>
 #include "comm.h"
 #include "redo.h"
 #include "thread_pool.h"
 
 #define CP_THD_NUM      (4)         /* 线程数 */
-#define CP_SLOT_SIZE    (4 * MB)    /* 每次拷贝大小 */
+#define CP_SLOT_SIZE    (32 * MB)    /* 每次拷贝大小 */
 
 typedef struct
 {
@@ -22,6 +23,7 @@ typedef struct
     char dst[FILE_PATH_MAX_LEN];    /* 目的路径 */
 
     struct stat fst;                /* 源文件大小 */
+    int complete;                   /* 完成计数(当complete==tpool->num时, 表示结束) */
 } cp_cntx_t;
 
 void *cp_copy_routine(void *_ctx)
@@ -29,31 +31,30 @@ void *cp_copy_routine(void *_ctx)
     int tid, fd, to;
     ssize_t n, size;
     off_t off;
-    char *buff;
+    void *buff;
     cp_cntx_t *ctx = (cp_cntx_t *)_ctx;
 
     tid = thread_pool_get_tidx(ctx->tpool);
 
-    buff = (char *)calloc(1, CP_SLOT_SIZE);
-    if (NULL == buff)
+    if (posix_memalign(&buff, 4*KB, CP_SLOT_SIZE))
     {
-        fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
+        fprintf(stderr, "%s:[%d] errmsg:[%d] %s!\n", __FILE__, __LINE__, errno, strerror(errno));
         pthread_exit((void *)-1);
         return (void *)-1;
     }
 
-    fd = Open(ctx->src, O_RDONLY, OPEN_MODE);
+    fd = Open(ctx->src, O_RDONLY|O_DIRECT, OPEN_MODE);
     if (fd < 0)
     {
-        fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
+        fprintf(stderr, "%s:[%d] errmsg:[%d] %s!\n", __FILE__, __LINE__, errno, strerror(errno));
         pthread_exit((void *)-1);
         return (void *)-1;
     }
 
-    to = Open(ctx->dst, O_CREAT|O_WRONLY, OPEN_MODE);
+    to = Open(ctx->dst, O_CREAT|O_RDWR|O_DIRECT, OPEN_MODE);
     if (to < 0)
     {
-        fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
+        fprintf(stderr, "%s:[%d] errmsg:[%d] %s!\n", __FILE__, __LINE__, errno, strerror(errno));
         pthread_exit((void *)-1);
         return (void *)-1;
     }
@@ -74,17 +75,21 @@ void *cp_copy_routine(void *_ctx)
             size = CP_SLOT_SIZE;
         }
 
+        lseek(fd, off, SEEK_SET);
+
         n = Readn(fd, buff, size);
         if (n != size)
         {
-            fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
+            fprintf(stderr, "%s:[%d] errmsg:[%d] %s!\n", __FILE__, __LINE__, errno, strerror(errno));
             break;
         }
+
+        lseek(to, off, SEEK_SET);
 
         n = Writen(to, buff, size);
         if (n != size)
         {
-            fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
+            fprintf(stderr, "%s:[%d] errmsg:[%d] %s!\n", __FILE__, __LINE__, errno, strerror(errno));
             break;
         }
 
@@ -93,28 +98,41 @@ void *cp_copy_routine(void *_ctx)
 
     CLOSE(fd);
     CLOSE(to);
-    pthread_exit((void *)-1);
+
+    ++ctx->complete;
+    if (ctx->complete == ctx->tpool->num)
+    {
+        exit(0);
+    }
 
     return (void *)0;
 }
 
 int main(int argc, char *argv[])
 {
-    int idx;
+    int idx, thd_num;
     cp_cntx_t *ctx;
     thread_pool_opt_t opt;
 
-    if (3 != argc)
+    if (4 != argc)
     {
         fprintf(stderr, "Paramter isn't right!\n");
         return -1;
+    }
+
+    //nice(-20);
+
+    thd_num = atoi(argv[3]);
+    if (thd_num <= 0)
+    {
+        thd_num = CP_THD_NUM;
     }
 
     /* > 初始化处理 */
     ctx = (cp_cntx_t *)calloc(1, sizeof(cp_cntx_t));
     if (NULL == ctx)
     {
-        fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
+        fprintf(stderr, "%s:[%d] errmsg:[%d] %s!\n", __FILE__, __LINE__, errno, strerror(errno));
         return -1;
     }
 
@@ -123,7 +141,7 @@ int main(int argc, char *argv[])
 
     if (stat(ctx->src, &ctx->fst))
     {
-        fprintf(stderr, "errmsg:[%d] %s! path:%s\n", errno, strerror(errno), ctx->src);
+        fprintf(stderr, "%s:[%d] errmsg:[%d] %s!\n", __FILE__, __LINE__, errno, strerror(errno));
         return -1;
     }
 
@@ -132,15 +150,15 @@ int main(int argc, char *argv[])
     opt.alloc = (mem_alloc_cb_t)mem_alloc;
     opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
-    ctx->tpool = thread_pool_init(CP_THD_NUM, &opt, NULL);
+    ctx->tpool = thread_pool_init(thd_num, &opt, NULL);
     if (NULL == ctx->tpool)
     {
-        fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
+        fprintf(stderr, "%s:[%d] errmsg:[%d] %s!\n", __FILE__, __LINE__, errno, strerror(errno));
         return -1;
     }
 
     /* > 执行拷贝处理 */
-    for (idx=0; idx<CP_THD_NUM; ++idx)
+    for (idx=0; idx<thd_num; ++idx)
     {
         thread_pool_add_worker(ctx->tpool, cp_copy_routine, ctx);
     }
