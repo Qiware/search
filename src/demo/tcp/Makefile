@@ -3,6 +3,7 @@ CFLAGS = -Wall -O2
 
 SRCS = recv.c
 OBJS = recv.o
+HEADS = $(call func_get_dep_head_list, $(SRCS))
 TARGET = recv
 
 SRCS2 = send.c
@@ -17,10 +18,10 @@ $(TARGET): $(OBJS)
 $(TARGET2): $(OBJS2)
 	$(CC) $(CFLAGS) -o $@ $(OBJS2)
 
-$(OBJS): %.o : %.c
+$(OBJS): %.o : %.c $(HEADS)
 	$(CC) $(CFLAGS) -o $@ -c $<
 
-$(OBJS2): %.o : %.c
+$(OBJS2): %.o : %.c $(HEADS)
 	$(CC) $(CFLAGS) -o $@ -c $<
 
 

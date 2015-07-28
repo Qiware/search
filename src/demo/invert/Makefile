@@ -15,6 +15,7 @@ LIBS = -lcore -linvtab
 SRC_LIST = invert_demo.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
+HEADS = $(call func_get_dep_head_list, $(SRC_LIST))
 
 TARGET = invert_demo
 
@@ -28,7 +29,7 @@ $(TARGET): $(OBJS)
 	@mv $@ $(PROJ_BIN)
 	@echo "$@ is OK!"
 
-$(OBJS): %.o : %.c
+$(OBJS): %.o : %.c $(HEADS)
 	@$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
 	@echo "CC $(PWD)/$<"
 

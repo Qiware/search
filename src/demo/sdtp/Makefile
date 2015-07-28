@@ -19,6 +19,7 @@ SRC_LIST2 = sdtp_recv.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
 OBJS2 = $(subst .c,.o, $(SRC_LIST2)) 
+HEADS = $(call func_get_dep_head_list, $(SRC_LIST))
 
 TARGET = sdtp_send
 TARGET2 = sdtp_recv

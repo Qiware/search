@@ -17,6 +17,7 @@ SRC_LIST2 = btree_demo.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
 OBJS2 = $(subst .c,.o, $(SRC_LIST2)) 
+HEADS = $(call func_get_dep_head_list, $(SRC_LIST))
 
 TARGET = avl_demo
 TARGET2 = btree_demo
@@ -37,10 +38,10 @@ $(TARGET2): $(OBJS2)
 	@rm -fr $(OBJS)
 	@echo "$@ is OK!"
 
-$(OBJS): %.o : %.c
+$(OBJS): %.o : %.c $(HEADS)
 	@$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
 	@echo "CC $(PWD)/$<"
-$(OBJS2): %.o : %.c
+$(OBJS2): %.o : %.c $(HEADS)
 	@$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
 	@echo "CC $(PWD)/$<"
 
