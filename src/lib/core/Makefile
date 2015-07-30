@@ -32,6 +32,7 @@ SRC_LIST = hash.c \
 			shm_slot.c \
 			shm_queue.c \
 			shm_list.c \
+			shm_hash.c \
 			btree.c \
 			rb_tree.c \
 			kw_tree.c \

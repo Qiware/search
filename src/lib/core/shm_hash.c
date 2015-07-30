@@ -7,22 +7,26 @@
  ** 作  者: # Qifeng.zou # Sat 25 Jul 2015 10:54:37 AM CST #
  ******************************************************************************/
 
+#include "hash.h"
+#include "shm_opt.h"
+#include "shm_hash.h"
 
-#define SHM_HASH_TOTAL_SIZE(max, size) /* 计算哈希空间 */\
+#define SHM_HASH_TOTAL_SIZE(len, max, size) /* 计算哈希空间 */\
     (sizeof(shm_hash_head_t) + 2 * shm_ring_total(max) \
-     + (max) * (sizeof(shm_hash_slot_t) + sizeof(shm_list_node_t) + (size)))
+     + (len) * sizeof(shm_hash_slot_t) \
+     + (max) * (sizeof(shm_list_node_t) + (size)))
 
 /* 获取各段偏移 */
 #define SHM_HASH_HEAD_OFFSET(len, max, size) (0)
 #define SHM_HASH_SLOT_OFFSET(len, max, size) (sizeof(shm_hash_head_t))
-#define SHM_HASH_NODEQ_OFFSET(len, max, size)  \
+#define SHM_HASH_NODEQ_OFFSET(len, max, size)   /* 链表结点队列 */\
     (SHM_HASH_SLOT_OFFSET(len, max, size) + (len) * sizeof(shm_hash_slot_t))
-#define SHM_HASH_DATAQ_OFFSET(len, max, size) \
+#define SHM_HASH_DATAQ_OFFSET(len, max, size)   /* 数据结点队列 */\
     (SHM_HASH_NODEQ_OFFSET(len, max, size) + shm_ring_total(max))
 #define SHM_HASH_NODE_OFFSET(len, max, size) \
     (SHM_HASH_DATAQ_OFFSET(len, max, size) + shm_ring_total(max))
 #define SHM_HASH_DATA_OFFSET(len, max, size) \
-    (SHM_HASH_NODE_OFFSET(len, max, size) + (max) * sizeof(shm_hash_node_t))
+    (SHM_HASH_NODE_OFFSET(len, max, size) + (max) * sizeof(shm_list_node_t))
 
 /* 静态函数 */
 static shm_hash_t *shm_hash_init(void *addr, int len, int max, size_t size);
@@ -45,7 +49,7 @@ static shm_hash_t *shm_hash_init(void *addr, int len, int max, size_t size);
  **   ---------- ------------ --------- ---------- ---------- -----------------
  **  ^          ^            ^         ^          ^          ^
  **  |          |            |         |          |          |
- ** addr       slot        nodeq     dataq       node       data
+ ** addr       slot        node_pool     data_pool       node       data
  **注意事项: 创建共享内存, 并进行相关资源进行初始化.
  **作    者: # Qifeng.zou # 2015.07.26 01:00:00 #
  ******************************************************************************/
@@ -67,7 +71,7 @@ shm_hash_t *shm_hash_creat(const char *path, int len, int max, size_t size)
     return shm_hash_init(addr, len, max, size);
 }
 
-/******************************************************************************
+/*****************************************************************************
  **函数名称: shm_hash_init
  **功    能: 初始化哈希表
  **输入参数: 
@@ -83,6 +87,7 @@ shm_hash_t *shm_hash_creat(const char *path, int len, int max, size_t size)
  ******************************************************************************/
 static shm_hash_t *shm_hash_init(void *addr, int len, int max, size_t size)
 {
+    int idx;
     off_t off;
     shm_hash_t *sh;
     shm_ring_t *ring;
@@ -99,8 +104,8 @@ static shm_hash_t *shm_hash_init(void *addr, int len, int max, size_t size)
     sh->addr = addr;
     sh->head = (shm_hash_head_t *)(addr + SHM_HASH_HEAD_OFFSET(len, max, size));
     sh->slot = (shm_hash_slot_t *)(addr + SHM_HASH_SLOT_OFFSET(len, max, size));
-    sh->nodeq = (shm_ring_t *)(addr + SHM_HASH_NODEQ_OFFSET(len, max, size));
-    sh->dataq = (shm_ring_t *)(addr + SHM_HASH_DATAQ_OFFSET(len, max, size));
+    sh->node_pool = (shm_ring_t *)(addr + SHM_HASH_NODEQ_OFFSET(len, max, size));
+    sh->data_pool = (shm_ring_t *)(addr + SHM_HASH_DATAQ_OFFSET(len, max, size));
 
     /* > 初始化头部信息 */
     head = sh->head;
@@ -112,34 +117,34 @@ static shm_hash_t *shm_hash_init(void *addr, int len, int max, size_t size)
     head->data_off = SHM_HASH_DATAQ_OFFSET(len, max, size);
 
     /* > 链表结点队列 */
-    ring = shm_ring_init((void *)sh->nodeq, max);
+    ring = shm_ring_init((void *)sh->node_pool, max);
     if (NULL == ring)
     {
-        return -1;
+        return NULL;
     }
 
     off = SHM_HASH_NODE_OFFSET(len, max, size);
     for (idx=0; idx<max; ++idx, off+=sizeof(shm_list_node_t))
     {
-        if (shm_ring_push(sh->nodeq, off))
+        if (shm_ring_push(sh->node_pool, off))
         {
-            return -1;
+            return NULL;
         }
     }
 
     /* > 数据结点队列 */
-    ring = shm_ring_init((void *)sh->dataq, max);
+    ring = shm_ring_init((void *)sh->data_pool, max);
     if (NULL == ring)
     {
-        return -1;
+        return NULL;
     }
 
     off = SHM_HASH_DATA_OFFSET(len, max, size);
     for (idx=0; idx<max; ++idx, off+=size)
     {
-        if (shm_ring_push(sh->dataq, off))
+        if (shm_ring_push(sh->data_pool, off))
         {
-            return -1;
+            return NULL;
         }
     }
 
@@ -150,7 +155,7 @@ static shm_hash_t *shm_hash_init(void *addr, int len, int max, size_t size)
         memset(slot, 0, sizeof(shm_hash_slot_t));
     }
 
-    return 0;
+    return sh;
 }
 
 /******************************************************************************
@@ -160,16 +165,15 @@ static shm_hash_t *shm_hash_init(void *addr, int len, int max, size_t size)
  **     sh: 哈希表对象
  **输出参数: NONE
  **返    回: 数据单元地址
- **实现描述: 
+ **实现描述: 从数据节点池中弹出数据结点, 并根据结点偏移计算内存地址
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.07.26 14:26:17 #
  ******************************************************************************/
 void *shm_hash_alloc(shm_hash_t *sh)
 {
     off_t off;
-    void *addr;
 
-    off = shm_ring_pop(sh->dataq);
+    off = shm_ring_pop(sh->data_pool);
     if (-1 == off)
     {
         return NULL;
@@ -196,7 +200,7 @@ void shm_hash_dealloc(shm_hash_t *sh, void *addr)
     
     off = (off_t)(sh->addr - addr);
 
-    shm_ring_push(sh->dataq, off);
+    shm_ring_push(sh->data_pool, off);
 
     return;
 }
@@ -218,24 +222,28 @@ void shm_hash_dealloc(shm_hash_t *sh, void *addr)
 int shm_hash_push(shm_hash_t *sh, void *key, int len, void *data)
 {
     uint64_t idx;
-    shm_list_node_t *node, *item;
-    off_t data_off, node_off, off, next;
+    shm_list_node_t *node;
+    off_t data_off, node_off;
 
-    idx = hash_time33_ex(key, len) % sh->len;
+    idx = hash_time33_ex(key, len) % sh->head->len;
     data_off = (off_t)(data - sh->addr);
 
     /* > 申请链表结点 */
-    node_off = shm_ring_pop(sh->nodeq);
+    node_off = shm_ring_pop(sh->node_pool);
     if (-1 == node_off)
     {
         return -1;
     }
 
-    /* > 插入链表头 */
     node = (shm_list_node_t *)(sh->addr + node_off);
     node->data = data_off;
-    node->next = sh->slot[idx].list.head;
-    sh->slot[idx].list.head = node_off;
+
+    /* > 插入链表头 */
+    if (shm_list_lpush(sh->addr, &sh->slot[idx].list, node_off))
+    {
+        shm_ring_push(sh->node_pool, node_off);
+        return -1;
+    }
 
     return 0;
 }
@@ -250,28 +258,28 @@ int shm_hash_push(shm_hash_t *sh, void *key, int len, void *data)
  **输出参数: NONE
  **返    回: 数据单元地址
  **实现描述: 
- **注意事项: 
+ **注意事项: 需要回收链表结点的空间
  **作    者: # Qifeng.zou # 2015.07.26 14:32:24 #
  ******************************************************************************/
-void *shm_hash_pop(shm_hash_t *sh, void *key, int len)
+void *shm_hash_pop(shm_hash_t *sh, void *key, int len, cmp_cb_t cmp_cb)
 {
-    off_t off, data;
+    void *data;
+    off_t off;
     uint64_t idx;
-    shm_list_node_t *node, *prev = NULL;
+    shm_list_node_t *node;
 
-    idx = hash_time33_ex(key, len) % sh->len;
-    off = sh->slot[idx].list.head;
-    while (0 != off)
+    idx = hash_time33_ex(key, len) % sh->head->len;
+
+    off = shm_list_query_and_delete(sh->addr, &sh->slot[idx].list, key, cmp_cb, sh->addr);
+    if (0 == off)
     {
-        node = (shm_list_node_t *)(sh->addr + off);
-        if (!cmp_cb(key, sh->addr + node->data_off))
-        {
-            data = node->data_off;
-            shm_ring_push(sh->nodeq, off);
-
-            return (void *)(sh->addr + data);
-        }
+        return NULL;
     }
 
-    return NULL;
+    node = (shm_list_node_t *)(sh->addr + off);
+    data = (void *)(sh->addr + node->data);
+
+    shm_ring_push(sh->node_pool, off);
+
+    return data;
 }

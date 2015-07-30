@@ -1,6 +1,7 @@
 #if !defined(__SHM_HASH_H__)
 #define __SHM_HASH_H__
 
+#include "spinlock.h"
 #include "shm_list.h"
 #include "shm_ring.h"
 
@@ -38,13 +39,18 @@ typedef struct
 {
     void *addr;                     /* 首地址 */
     shm_hash_head_t *head;          /* 头部信息 */
-    shm_ring_t *nodeq;              /* 链表结点队列(用于链表结点空间的申请和回收) */
-    shm_ring_t *dataq;              /* 数据结点队列(用于数据结点空间的申请和回收) */
     shm_hash_slot_t *slot;          /* 哈希槽数组(其长度为head->len) */
+    shm_ring_t *node_pool;          /* 链表结点内存池(用于链表结点空间的申请和回收)
+                                       未被使用的结点在此队列中 */
+    shm_ring_t *data_pool;          /* 数据结点内存池(用于数据结点空间的申请和回收)
+                                       未被使用的结点在此队列中 */
 } shm_hash_t;
 
 shm_hash_t *shm_hash_creat(const char *path, int len, int max, size_t size);
 void *shm_hash_alloc(shm_hash_t *sh);
 void shm_hash_dealloc(shm_hash_t *sh, void *addr);
+
+int shm_hash_push(shm_hash_t *sh, void *key, int len, void *data);
+void *shm_hash_pop(shm_hash_t *sh, void *key, int len, cmp_cb_t cmp_cb);
 
 #endif /*__SHM_HASH_H__*/
