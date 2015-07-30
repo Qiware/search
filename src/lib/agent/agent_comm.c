@@ -45,11 +45,11 @@ int agent_serial_to_sck_map_init(agent_cntx_t *ctx)
 
     for (i=0; i<ctx->serial_to_sck_map_len; ++i)
     {
-        opt.pool = (void *)NULL;
-        opt.alloc = (mem_alloc_cb_t)mem_alloc;
-        opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
+        opt.pool = (void *)ctx->slab;
+        opt.alloc = (mem_alloc_cb_t)slab_alloc;
+        opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-        ctx->serial_to_sck_map[i] = avl_creat( &opt,(key_cb_t)key_cb_int64, (cmp_cb_t)cmp_cb_int64);
+        ctx->serial_to_sck_map[i] = avl_creat(&opt,(key_cb_t)key_cb_int64, (cmp_cb_t)cmp_cb_int64);
         if (NULL == ctx->serial_to_sck_map[i])
         {
             log_error(ctx->log, "Create avl failed!");
@@ -81,7 +81,7 @@ int agent_serial_to_sck_map_insert(agent_cntx_t *ctx, agent_flow_t *_flow)
     agent_flow_t *flow;
 
     /* > 申请内存空间 */
-    flow = (agent_flow_t *)calloc(1, sizeof(agent_flow_t));
+    flow = (agent_flow_t *)slab_alloc(ctx->slab, sizeof(agent_flow_t));
     if (NULL == flow)
     {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
@@ -140,7 +140,7 @@ int _agent_serial_to_sck_map_delete(agent_cntx_t *ctx, uint64_t serial)
 
     log_trace(ctx->log, "idx:%d serial:%lu sck_seq:%lu", idx, serial, flow->serial);
 
-    free(flow);
+    slab_dealloc(ctx->slab, flow);
     return AGENT_OK;
 }
 
@@ -177,7 +177,7 @@ int agent_serial_to_sck_map_delete(agent_cntx_t *ctx, uint64_t serial)
 
     log_trace(ctx->log, "idx:%d serial:%lu sck_seq:%lu", idx, serial, flow->sck_seq);
 
-    free(flow);
+    slab_dealloc(ctx->slab, flow);
     return AGENT_OK;
 }
 
