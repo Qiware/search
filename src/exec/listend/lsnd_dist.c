@@ -67,6 +67,8 @@ void *lsnd_dsvr_routine(void *_ctx)
     lsnd_cntx_t *ctx = (lsnd_cntx_t *)_ctx;
     lsnd_dsvr_t *dsvr = &ctx->dsvr;
 
+    nice(-20);
+
     while (1)
     {
         FD_ZERO(&dsvr->rdset);
