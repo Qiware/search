@@ -42,6 +42,8 @@ void *agent_rsvr_routine(void *_ctx)
     agent_rsvr_t *rsvr;
     agent_cntx_t *ctx = (agent_cntx_t *)_ctx;
 
+    nice(-20);
+
     /* > 获取代理对象 */
     rsvr = agent_rsvr_self(ctx);
     if (NULL == rsvr)

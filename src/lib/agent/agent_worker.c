@@ -55,6 +55,8 @@ void *agent_worker_routine(void *_ctx)
     agent_worker_t *worker;
     agent_cntx_t *ctx = (agent_cntx_t *)_ctx;
 
+    nice(-20);
+
     worker = agent_worker_self(ctx);
     if (NULL == worker)
     {

@@ -57,6 +57,8 @@ void *agent_listen_routine(void *_ctx)
     agent_lsvr_t *lsvr;
     agent_cntx_t *ctx = (agent_cntx_t *)_ctx;
 
+    nice(-20);
+
     /* > 获取侦听对象 */
     lsvr = agent_lsn_self(ctx);
     if (NULL == lsvr)
