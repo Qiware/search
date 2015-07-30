@@ -1019,7 +1019,8 @@ static int crwl_worker_task_down_webpage(
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.12 #
  ******************************************************************************/
-static int crwl_worker_task_unknown_hdl(crwl_cntx_t *ctx, crwl_worker_t *worker, const void *args)
+static int crwl_worker_task_unknown_hdl(
+    crwl_cntx_t *ctx, crwl_worker_t *worker, const void *args)
 {
     log_error(worker->log, "Task type is unknown!");
     return CRWL_ERR;

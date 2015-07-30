@@ -128,7 +128,8 @@ static crwl_sched_t *crwl_sched_init(crwl_cntx_t *ctx)
     /* 2. 连接Redis服务 */
     tv.tv_sec = 30;
     tv.tv_usec = 0;
-    sched->redis = redisConnectWithTimeout(conf->redis.conf[0].ip, conf->redis.conf[0].port, tv);
+    sched->redis = redisConnectWithTimeout(
+        conf->redis.conf[0].ip, conf->redis.conf[0].port, tv);
     if (sched->redis->err)
     {
         redisFree(sched->redis);
