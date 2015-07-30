@@ -177,6 +177,8 @@ void *rtrd_rsvr_routine(void *_ctx)
     struct timeval timeout;
     rtrd_cntx_t *ctx = (rtrd_cntx_t *)_ctx;
 
+    nice(-20);
+
     /* 1. 获取接收服务 */
     rsvr = rtrd_rsvr_get_curr(ctx);
     if (NULL == rsvr)

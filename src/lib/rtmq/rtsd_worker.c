@@ -50,6 +50,8 @@ void *rtsd_worker_routine(void *_ctx)
         return (void *)-1;
     }
 
+    nice(-20);
+
     for (;;)
     {
         /* 2. 等待事件通知 */

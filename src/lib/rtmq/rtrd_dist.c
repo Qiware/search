@@ -42,6 +42,8 @@ void *rtrd_dsvr_routine(void *_ctx)
         abort();
     }
 
+    nice(-20);
+
     while (1)
     {
         FD_ZERO(&rdset);

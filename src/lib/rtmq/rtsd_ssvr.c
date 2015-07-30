@@ -270,6 +270,8 @@ void *rtsd_ssvr_routine(void *_ctx)
     rtsd_cntx_t *ctx = (rtsd_cntx_t *)_ctx;
     rtsd_conf_t *conf = &ctx->conf;
 
+    nice(-20);
+
     /* 1. 获取发送线程 */
     ssvr = rtsd_ssvr_get_curr(ctx);
     if (NULL == ssvr)
