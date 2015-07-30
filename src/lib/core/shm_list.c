@@ -236,7 +236,7 @@ off_t shm_list_delete(void *addr, shm_list_t *list, off_t node_off)
  **注意事项: 请调用者自己取回收链表结点和挂载的数据空间
  **作    者: # Qifeng.zou # 2015-07-26 23:42:17 #
  ******************************************************************************/
-off_t shm_list_query(void *addr, shm_list_t *list, void *key, list_cmp_cb_t cmp_cb, void *param)
+off_t shm_list_query(void *addr, shm_list_t *list, void *key, cmp_cb_t cmp_cb, void *param)
 {
     shm_list_node_t *head, *node;
 
@@ -249,8 +249,59 @@ off_t shm_list_query(void *addr, shm_list_t *list, void *key, list_cmp_cb_t cmp_
     node = head;
     do
     {
-        if (0 == cmp_cb(key, node->data, param))
+        if (0 == cmp_cb(key, param + node->data))
         {
+            return (off_t)((void *)node - addr);
+        }
+        node = (shm_list_node_t *)(addr + node->next);
+    } while (node != head);
+
+    return 0; /* 未找到 */
+}
+
+/******************************************************************************
+ **函数名称: shm_list_query_and_delete
+ **功    能: 查询并删除指定结点
+ **输入参数: 
+ **     addr: 起始地址
+ **     list: 链表对象
+ **     key: 主键
+ **     cmp_cb: 比较回调函数
+ **     param: 数据偏移的内存起始地址
+ **输出参数: NONE
+ **返    回: 结点的偏移
+ **实现描述: 
+ **注意事项: 结点空间的释放在外部进行!
+ **作    者: # Qifeng.zou # 2015-07-30 23:28:55 #
+ ******************************************************************************/
+off_t shm_list_query_and_delete(
+    void *addr, shm_list_t *list, void *key, cmp_cb_t cmp_cb, void *param)
+{
+    shm_list_node_t *head, *prev, *node, *next;
+
+    if (0 == list->head)
+    {
+        return 0; /* 无数据 */
+    }
+
+    head = (shm_list_node_t *)(addr + list->head);
+    node = head;
+    do
+    {
+        if (0 == cmp_cb(key, param + node->data))
+        {
+            if (node == head)
+            {
+                return shm_list_lpop(addr, list);
+            }
+
+            prev = (shm_list_node_t *)(addr + node->prev);
+            next = (shm_list_node_t *)(addr + node->next);
+
+            prev->next = node->next;
+            next->prev = node->prev;
+
+            --list->num;
             return (off_t)((void *)node - addr);
         }
         node = (shm_list_node_t *)(addr + node->next);
