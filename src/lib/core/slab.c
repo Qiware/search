@@ -177,22 +177,17 @@ slab_pool_t *slab_init(void *addr, size_t size, log_cycle_t *log)
  **输出参数:
  **返    回: VOID
  **实现描述: 
- **注意事项: 
- **     当申请的内存大于2KB时, 将直接从操作系统申请内存!
+ **注意事项: 此内存机制只适合"小内存块"的空间分配, 小内存指的是小于4K的内存块.
+ **          如果反复进行大量大小内存分配的混合空间申请和释放, "可能"出现分配空间
+ **          失败的情况.
  **作    者: # Nginx # YYYY.MM.DD #
  ******************************************************************************/
 void *slab_alloc(slab_pool_t *pool, size_t size)
 {
-    size_t s = 0;
-    uintptr_t p = 0, n = 0,
-        m = 0, mask = 0, *bitmap = NULL;
-    uint32_t i = 0, slot = 0, shift = 0, map = 0;
-    slab_page_t *page = NULL, *prev = NULL, *slots = NULL;
-
-    if (size >= slab_get_max_size())
-    {
-        return calloc(1, size);
-    }
+    size_t s;
+    uintptr_t p, n, m, mask, *bitmap;
+    uint32_t i, slot, shift, map;
+    slab_page_t *page, *prev, *slots;
 
     spin_lock(&pool->lock);    /* 加锁 */
 
