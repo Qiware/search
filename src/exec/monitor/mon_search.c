@@ -96,6 +96,7 @@ static int mon_srch_send_rep(int fd, const char *word)
  ******************************************************************************/
 static int mon_srch_recv_rsp(mon_cntx_t *ctx, mon_srch_conn_t *conn)
 {
+    serial_t serial;
     struct timeval ctm;
     int n, i, sec, msec, usec;
     agent_header_t *head;
@@ -123,7 +124,9 @@ static int mon_srch_recv_rsp(mon_cntx_t *ctx, mon_srch_conn_t *conn)
     rsp->serial = ntoh64(rsp->serial);
     rsp->url_num = ntohl(rsp->url_num);
 
-    fprintf(stderr, "    >Serial: %09ld\n", rsp->serial);
+    serial.serial = rsp->serial;
+    fprintf(stderr, "    >Serial: %lu - gid(%u) sid(%u) seq(%u)\n",
+            serial.serial, serial.nid, serial.sid, serial.seq);
     fprintf(stderr, "    >UrlNum: %d\n", rsp->url_num);
     for (i=0; i<rsp->url_num; ++i)
     {
