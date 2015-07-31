@@ -58,6 +58,21 @@
 #define MB                  (1024 * KB)         /* MB */
 #define GB                  (1024 * MB)         /* GB */
 
+/* 系统流水类型 */
+typedef struct
+{
+    union
+    {
+        struct
+        {
+            uint32_t nid:16;                    /* 结点ID */
+            uint32_t sid:16;                    /* 服务ID */
+            uint32_t seq;                       /* 顺序号 */
+        };
+        uint64_t serial;                        /* 序列号 */
+    };
+} serial_t;
+
 /* 获取较大值
  *  警告: 勿将MAX改为宏定义, 否则将会出现严重不可预测的问题
  *  原因: 如果出现多线程或多进程共享变量进行参与比较时, 可能出现比较时比较式成立,
