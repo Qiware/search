@@ -1,5 +1,5 @@
 <!-- 代理服务配置信息 -->
-<LISTEND ID="10001" NAME="SearchEngineListend" WORKDIR="../temp/listend/">
+<LISTEND NAME="SearchEngineListend" WORKDIR="../temp/listend/">
     <!-- 日志配置
         1) LEVLE: 日志级别(取值范围: trace|debug|info|warn|error|fatal) -->
     <LOG LEVEL="error" />
@@ -13,7 +13,7 @@
     <FRWDER PATH="../conf/frwder.xml" MARK=".FRWDER.CONN-INVTD" />
 
     <!-- 代理信息配置 -->
-    <AGENT>
+    <AGENT ID="1001">
         <!-- 并发(连接)配置
             1) MAX: 最大并发数
             2) TIMEOUT: 连接超时时间

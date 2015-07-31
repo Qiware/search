@@ -320,6 +320,17 @@ static int lsnd_conf_load_agent(xml_tree_t *xml, lsnd_conf_t *lcf, log_cycle_t *
 
     snprintf(conf->path, sizeof(conf->path), "%s/agent/", lcf->wdir); /* 工作路径 */
 
+    /* > 加载结点ID */
+    node = xml_query(xml, ".LISTEND.AGENT.ID");
+    if (NULL == node
+        || 0 == node->value.len)
+    {
+        log_error(log, "Get node id failed!");
+        return -1;
+    }
+
+    conf->nid = atoi(node->value.str);
+
     /* > 加载连接配置 */
     if (lsnd_conf_parse_agent_connections(xml, conf, log))
     {
