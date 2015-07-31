@@ -37,6 +37,7 @@
 /* 配置信息 */
 typedef struct
 {
+    int nid;                                /* 结点ID */
     char path[FILE_NAME_MAX_LEN];           /* 工作路径 */
 
     struct
@@ -101,6 +102,8 @@ int agent_startup(agent_cntx_t *ctx);
 int agent_register(agent_cntx_t *ctx, unsigned int type, agent_reg_cb_t proc, void *args);
 
 int agent_send(agent_cntx_t *ctx, int type, uint64_t serial, void *data, int len);
+
+uint64_t agent_gen_sys_serail(uint16_t nid, uint16_t sid, uint32_t seq);
 
 int agent_serial_to_sck_map_init(agent_cntx_t *ctx);
 int agent_serial_to_sck_map_insert(agent_cntx_t *ctx, agent_flow_t *_flow);

@@ -29,6 +29,7 @@ typedef struct
 
     time_t ctm;                     /* 当前时间 */
     time_t scan_tm;                 /* 前一次超时扫描的时间 */
+    uint32_t recv_seq;              /* 业务接收序列号(此值将用于生成系统流水号) */
 } agent_rsvr_t;
 
 /* 套接字信息 */

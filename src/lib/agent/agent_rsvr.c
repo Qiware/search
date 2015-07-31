@@ -154,6 +154,7 @@ int agent_rsvr_init(agent_cntx_t *ctx, agent_rsvr_t *rsvr, int idx)
 
     rsvr->id = idx;
     rsvr->log = ctx->log;
+    rsvr->recv_seq = 0;
 
     /* > 创建SLAB内存池 */
     rsvr->slab = slab_creat_by_calloc(AGENT_SLAB_SIZE, rsvr->log);
@@ -885,7 +886,6 @@ static int agent_rsvr_recv(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
 {
     int ret;
     socket_snap_t *recv = &sck->recv;
-    static volatile uint64_t serial = 0;
     agent_socket_extra_t *extra = (agent_socket_extra_t *)sck->extra;
 
     for (;;)
@@ -928,7 +928,8 @@ static int agent_rsvr_recv(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
                     case AGENT_OK:
                     {
                         extra->flow = (agent_flow_t *)recv->addr;
-                        extra->flow->serial = atomic64_inc(&serial); /* 获取流水号 */
+                        extra->flow->serial = agent_gen_sys_serail( /* 获取流水号 */
+                            ctx->conf->nid, rsvr->id, ++rsvr->recv_seq);
                         extra->flow->create_tm = rsvr->ctm;
 
                         log_info(rsvr->log, "Call %s()! serial:%lu", __func__, extra->flow->serial);

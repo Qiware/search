@@ -407,3 +407,27 @@ static int agent_cmd_send_dist_req(agent_cntx_t *ctx, int idx)
 
     return unix_udp_send(ctx->cli.cmd_sck_id, path, (void *)&cmd, sizeof(cmd));
 }
+
+/******************************************************************************
+ **函数名称: agent_gen_sys_serail
+ **功    能: 生成系统流水号
+ **输入参数:
+ **     nid: 结点ID
+ **     sid: 服务ID
+ **     seq: 序列号
+ **输出参数:
+ **返    回: 系统流水号
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015-07-31 23:55:45 #
+ ******************************************************************************/
+uint64_t agent_gen_sys_serail(uint16_t nid, uint16_t sid, uint32_t seq)
+{
+    serial_t s;
+
+    s.nid = nid;
+    s.sid = sid;
+    s.seq = seq;
+
+    return s.serial;
+}
