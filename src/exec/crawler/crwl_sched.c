@@ -36,7 +36,6 @@ static int crwl_sched_task_hdl(crwl_cntx_t *ctx, queue_t *workq, crwl_task_t *ta
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
- **     1. 初始化调度器
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.12 #
  ******************************************************************************/
@@ -107,7 +106,6 @@ void *crwl_sched_routine(void *_ctx)
  **输出参数: NONE
  **返    回: 调队对象
  **实现描述: 
- **     1. 初始化调度器
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.12 #
  ******************************************************************************/
@@ -231,8 +229,7 @@ static int crwl_sched_event_hdl(crwl_cntx_t *ctx, crwl_sched_t *sched)
  **     3. 新建crwl_task_t对象
  **     4. 解析Undo数据
  **     5. 处理Undo数据
- **注意事项: 
- **     从Undo Task队列中申请的内存将由Worker线程去释放
+ **注意事项: 从Undo Task队列中申请的内存将由Worker线程去释放
  **作    者: # Qifeng.zou # 2014.10.17 #
  ******************************************************************************/
 static int crwl_sched_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
@@ -307,9 +304,8 @@ static int crwl_sched_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
  **     task: TASK信息(注意: 此字段为消息头+消息体格式)
  **返    回: 0:成功 !0:失败
  **实现描述: 
- **注意事项: 
- **     字段task的地址指向"头+体"的内存首地址, 根据解析的数据类型，将报体放入仅
- **     接于该字段内存地址后面。
+ **注意事项: 字段task的地址指向"头+体"的内存首地址, 根据解析的数据类型，将报体
+ **          放入仅接于该字段内存地址后面。
  **作    者: # Qifeng.zou # 2014.10.28 #
  ******************************************************************************/
 static int crwl_task_parse(const char *str, crwl_task_t *task, log_cycle_t *log)

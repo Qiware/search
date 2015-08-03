@@ -89,8 +89,7 @@ static crwl_worker_t *crwl_worker_self(crwl_cntx_t *ctx)
  **     id: 线程索引
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **     依次创建Worker的成员和所依赖的资源.
+ **实现描述: 依次创建Worker的成员和所依赖的资源.
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.23 #
  ******************************************************************************/
@@ -231,8 +230,7 @@ static int crwl_worker_fetch_task(crwl_cntx_t *ctx, crwl_worker_t *worker)
  **     sck: 套接字对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **     接收数据直到出现EAGAIN -- 一次性接收最大量的数据
+ **实现描述: 接收数据直到出现EAGAIN -- 一次性接收最大量的数据
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.30 #
  ******************************************************************************/
@@ -316,8 +314,7 @@ int crwl_worker_recv_data(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t *sck
  **实现描述: 
  **     1. 如果发送指针为空, 则从发送队列取数据
  **     2. 发送数据
- **注意事项: 
- **     发送数据直到出现EAGAIN -- 一次性发送最大量的数据
+ **注意事项: 发送数据直到出现EAGAIN -- 一次性发送最大量的数据
  **作    者: # Qifeng.zou # 2014.09.24 #
  ******************************************************************************/
 int crwl_worker_send_data(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t *sck)
@@ -455,8 +452,6 @@ static int crwl_worker_timeout_hdl(crwl_cntx_t *ctx, crwl_worker_t *worker)
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
- **     1. 接收数据
- **     2. 发送数据
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.23 #
  ******************************************************************************/
@@ -515,8 +510,7 @@ static int crwl_worker_event_hdl(crwl_cntx_t *ctx, crwl_worker_t *worker)
  **     2. 设置读写集合
  **     3. 等待事件通知
  **     4. 进行事件处理
- **注意事项: 
- **     1. 当无套接字时, epoll_wait()将不断的返回-1.
+ **注意事项: 当无套接字时, epoll_wait()将不断的返回-1.
  **作    者: # Qifeng.zou # 2014.09.23 #
  ******************************************************************************/
 void *crwl_worker_routine(void *_ctx)
@@ -774,8 +768,7 @@ int crwl_worker_add_http_get_req(crwl_worker_t *worker, socket_t *sck, const cha
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
- **注意事项: 
- **     网页存储文件在此fopen(), 在crwl_worker_remove_sock()中fclose().
+ **注意事项: 网页存储文件在此fopen(), 在crwl_worker_remove_sock()中fclose().
  **作    者: # Qifeng.zou # 2014.10.15 #
  ******************************************************************************/
 int crwl_worker_webpage_creat(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t *sck)
