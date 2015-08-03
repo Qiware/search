@@ -126,8 +126,7 @@ static log_cycle_t *flt_init_log(char *fname)
  **     path: 配置路径
  **输出参数:
  **返    回: 全局对象
- **实现描述: 
- **     创建各对象(表,队列, 内存池, 线程池等)
+ **实现描述: 创建各对象(表,队列, 内存池, 线程池等)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.03.11 #
  ******************************************************************************/
@@ -298,8 +297,7 @@ void flt_destroy(flt_cntx_t *ctx)
  **     ctx: 全局信息
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **     设置线程回调
+ **实现描述: 设置线程回调
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.04 #
  ******************************************************************************/
@@ -503,8 +501,7 @@ static int flt_domain_blacklist_query(flt_domain_blacklist_t *bl, flt_domain_bla
  **实现描述: 
  **     1. 从域名IP映射表中查询
  **     2. 通过DNS服务器查询
- **注意事项: 
- **     如果域名不存在, getaddrinfo()将阻塞30s左右的时间!
+ **注意事项: 如果域名不存在, getaddrinfo()将阻塞30s左右的时间!
  **作    者: # Qifeng.zou # 2014.10.21 #
  ******************************************************************************/
 int flt_get_domain_ip_map(flt_cntx_t *ctx, char *host, ipaddr_t *ip)
@@ -656,8 +653,7 @@ int flt_get_domain_ip_map(flt_cntx_t *ctx, char *host, ipaddr_t *ip)
  **输出参数: NONE
  **返    回: 0:相等 <0:小于 >0:大于
  **实现描述: 
- **注意事项: 
- **     查找成功后，将会更新访问时间. 该时间将会是表数据更新的参考依据
+ **注意事项: 查找成功后，将会更新访问时间. 该时间将会是表数据更新的参考依据
  **作    者: # Qifeng.zou # 2014.11.14 #
  ******************************************************************************/
 int flt_domain_ip_map_cmp_cb(const char *domain, const flt_domain_ip_map_t *map)
@@ -674,8 +670,7 @@ int flt_domain_ip_map_cmp_cb(const char *domain, const flt_domain_ip_map_t *map)
  **输出参数: NONE
  **返    回: 0:相等 <0:小于 >0:大于
  **实现描述: 
- **注意事项: 
- **     查找成功后，将会更新访问时间. 该时间将会是表数据更新的参考依据
+ **注意事项: 查找成功后，将会更新访问时间. 该时间将会是表数据更新的参考依据
  **作    者: # Qifeng.zou # 2014.11.28 #
  ******************************************************************************/
 int flt_domain_blacklist_cmp_cb(const char *domain, const flt_domain_blacklist_t *blacklist)

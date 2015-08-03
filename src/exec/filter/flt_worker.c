@@ -356,8 +356,7 @@ static int flt_worker_workflow(flt_cntx_t *ctx, flt_worker_t *worker)
 
     /* > 判断网页(URI)是否已下载
      *  判断的同时设置网页的下载标志
-     *  如果已下载，则不做提取该网页中的超链接
-     * */
+     *  如果已下载，则不做提取该网页中的超链接 */
     if (flt_is_uri_down(worker->redis, conf->redis.done_tab, info->uri))
     {
         log_info(ctx->log, "Uri [%s] was downloaded!", info->uri);
@@ -388,8 +387,7 @@ static int flt_worker_workflow(flt_cntx_t *ctx, flt_worker_t *worker)
     /* > 深入处理超链接
      *  1. 判断超链接深度
      *  2. 判断超链接是否已被爬取
-     *  3. 将超链接插入任务队列
-     * */
+     *  3. 将超链接插入任务队列 */
     if (flt_worker_deep_hdl(ctx, worker, result))
     {
         log_error(ctx->log, "Deep handler failed! fpath:%s", fpath);
