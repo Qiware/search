@@ -11,7 +11,7 @@ SRC="$SRC $DIR/lib/"
 total=`find $SRC -name "*.h" -o -name "*.c" | xargs cat | wc -l`
 
 # 空行数
-empty=`find $SRC -name "*.h" -o -name "*.c" | xargs grep "^$" | wc -l`
+empty=`find $SRC -name "*.h" -o -name "*.c" | xargs grep "^\s*$" | wc -l`
 
 # 注释数
 note=`find $SRC -name "*.h" -o -name "*.c" | xargs grep \
