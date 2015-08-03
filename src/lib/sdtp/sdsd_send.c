@@ -216,7 +216,7 @@ sdsd_cntx_t *sdsd_init(const sdsd_conf_t *conf, log_cycle_t *log)
 }
 
 /******************************************************************************
- **函数名称: sdsd_start
+ **函数名称: sdsd_launch
  **功    能: 启动发送端
  **输入参数:
  **     ctx: 全局信息
@@ -228,7 +228,7 @@ sdsd_cntx_t *sdsd_init(const sdsd_conf_t *conf, log_cycle_t *log)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-int sdsd_start(sdsd_cntx_t *ctx)
+int sdsd_launch(sdsd_cntx_t *ctx)
 {
     /* > 创建工作线程池 */
     if (sdsd_creat_worktp(ctx))

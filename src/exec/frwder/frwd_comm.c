@@ -161,7 +161,7 @@ frwd_cntx_t *frwd_init(const frwd_conf_t *conf)
 }
 
 /******************************************************************************
- **函数名称: frwd_startup
+ **函数名称: frwd_launch
  **功    能: 初始化转发服务
  **输入参数: 
  **     frwd: 全局对象
@@ -171,9 +171,9 @@ frwd_cntx_t *frwd_init(const frwd_conf_t *conf)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.06.10 #
  ******************************************************************************/
-int frwd_startup(frwd_cntx_t *frwd)
+int frwd_launch(frwd_cntx_t *frwd)
 {
-    if (rtsd_start(frwd->rtmq))
+    if (rtsd_launch(frwd->rtmq))
     {
         log_fatal(frwd->log, "Start up send-server failed!");
         return FRWD_ERR;

@@ -27,6 +27,6 @@ typedef struct
 } invtd_opt_t;
 
 invtd_cntx_t *invtd_init(const invtd_conf_t *conf);
-int invtd_startup(invtd_cntx_t *ctx);
+int invtd_launch(invtd_cntx_t *ctx);
 
 #endif /*__INVERTD_H__*/

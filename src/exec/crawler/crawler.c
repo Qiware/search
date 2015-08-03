@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
     }
 
     /* 3. 启动爬虫服务 */
-    if (crwl_startup(ctx))
+    if (crwl_launch(ctx))
     {
         log_error(ctx->log, "Startup crawler failed!");
         goto ERROR;

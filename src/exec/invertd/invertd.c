@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
     }
 
     /* > 启动服务 */
-    if (invtd_startup(ctx))
+    if (invtd_launch(ctx))
     {
         log_fatal(ctx->log, "Startup invertd failed!");
         return -1;

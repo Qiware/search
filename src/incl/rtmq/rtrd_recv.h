@@ -159,7 +159,7 @@ typedef struct
 /* 外部接口 */
 rtrd_cntx_t *rtrd_init(const rtrd_conf_t *conf, log_cycle_t *log);
 int rtrd_register(rtrd_cntx_t *ctx, int type, rtmq_reg_cb_t proc, void *args);
-int rtrd_startup(rtrd_cntx_t *ctx);
+int rtrd_launch(rtrd_cntx_t *ctx);
 
 rtrd_cli_t *rtrd_cli_init(const rtrd_conf_t *conf, int idx);
 int rtrd_cli_send(rtrd_cli_t *cli, int type, int dest, void *data, size_t len);

@@ -153,7 +153,7 @@ typedef struct
 /* 外部接口 */
 sdrd_cntx_t *sdrd_init(const sdrd_conf_t *conf, log_cycle_t *log);
 int sdrd_register(sdrd_cntx_t *ctx, int type, sdtp_reg_cb_t proc, void *args);
-int sdrd_startup(sdrd_cntx_t *ctx);
+int sdrd_launch(sdrd_cntx_t *ctx);
 
 sdrd_cli_t *sdrd_cli_init(const sdrd_conf_t *conf);
 int sdrd_cli_send(sdrd_cli_t *cli, int type, int dest, void *data, size_t len);

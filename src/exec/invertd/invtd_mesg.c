@@ -197,5 +197,5 @@ int invtd_start_rtmq(invtd_cntx_t *ctx)
         return INVT_ERR;
     }
 
-    return rtrd_startup(ctx->rtrd);
+    return rtrd_launch(ctx->rtrd);
 }

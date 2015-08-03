@@ -136,7 +136,7 @@ rtrd_cntx_t *rtrd_init(const rtrd_conf_t *cf, log_cycle_t *log)
 }
 
 /******************************************************************************
- **函数名称: rtrd_startup
+ **函数名称: rtrd_launch
  **功    能: 启动SDTP接收端
  **输入参数:
  **     ctx: 全局对象
@@ -146,7 +146,7 @@ rtrd_cntx_t *rtrd_init(const rtrd_conf_t *cf, log_cycle_t *log)
  **注意事项:
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-int rtrd_startup(rtrd_cntx_t *ctx)
+int rtrd_launch(rtrd_cntx_t *ctx)
 {
     int idx;
     pthread_t tid;

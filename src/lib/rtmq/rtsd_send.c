@@ -220,7 +220,7 @@ rtsd_cntx_t *rtsd_init(const rtsd_conf_t *conf, log_cycle_t *log)
 }
 
 /******************************************************************************
- **函数名称: rtsd_start
+ **函数名称: rtsd_launch
  **功    能: 启动发送端
  **输入参数:
  **     ctx: 全局信息
@@ -232,7 +232,7 @@ rtsd_cntx_t *rtsd_init(const rtsd_conf_t *conf, log_cycle_t *log)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-int rtsd_start(rtsd_cntx_t *ctx)
+int rtsd_launch(rtsd_cntx_t *ctx)
 {
     int idx;
     rtsd_conf_t *conf = &ctx->conf;

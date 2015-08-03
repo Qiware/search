@@ -191,7 +191,7 @@ static int invtd_insert_word(invtd_cntx_t *ctx)
 #endif /*__INVTD_DEBUG__*/
 
 /******************************************************************************
- **函数名称: invtd_startup
+ **函数名称: invtd_launch
  **功    能: 启动服务
  **输入参数:
  **     ctx: 全局对象
@@ -201,7 +201,7 @@ static int invtd_insert_word(invtd_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.05.08 #
  ******************************************************************************/
-int invtd_startup(invtd_cntx_t *ctx)
+int invtd_launch(invtd_cntx_t *ctx)
 {
     /* 启动RTMQ */
     if (invtd_start_rtmq(ctx))

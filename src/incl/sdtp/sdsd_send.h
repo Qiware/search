@@ -51,7 +51,7 @@ sdtp_worker_t *sdsd_worker_get_by_idx(sdsd_cntx_t *ctx, int idx);
 
 /* 对外接口 */
 sdsd_cntx_t *sdsd_init(const sdsd_conf_t *conf, log_cycle_t *log);
-int sdsd_start(sdsd_cntx_t *ctx);
+int sdsd_launch(sdsd_cntx_t *ctx);
 int sdsd_register(sdsd_cntx_t *ctx, int type, sdtp_reg_cb_t proc, void *args);
 int sdsd_destroy(sdsd_cntx_t *ctx);
 

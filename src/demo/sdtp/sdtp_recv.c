@@ -59,7 +59,7 @@ int main(int argc, const char *argv[])
     sdrd_register(ctx, MSG_QUERY_WORKQ_STAT_REQ, sdtp_work_def_hdl, NULL);
 
     /* 2. 接收服务端工作 */
-    ret = sdrd_startup(ctx);
+    ret = sdrd_launch(ctx);
     if (0 != ret)
     {
         fprintf(stderr, "Work failed!");

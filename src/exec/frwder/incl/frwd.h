@@ -43,7 +43,7 @@ typedef struct
 int frwd_getopt(int argc, char **argv, frwd_opt_t *opt);
 int frwd_usage(const char *exec);
 frwd_cntx_t *frwd_init(const frwd_conf_t *conf);
-int frwd_startup(frwd_cntx_t *frwd);
+int frwd_launch(frwd_cntx_t *frwd);
 int frwd_set_reg(frwd_cntx_t *frwd);
 
 #endif /*__FRWD_H__*/

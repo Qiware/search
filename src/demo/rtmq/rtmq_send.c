@@ -134,7 +134,7 @@ int main(int argc, const char *argv[])
         return -1;
     }
 
-    if (rtsd_start(ctx))
+    if (rtsd_launch(ctx))
     {
         fprintf(stderr, "Start up send-server failed!");
         return -1;

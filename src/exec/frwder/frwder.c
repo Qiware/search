@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
     }
 
     /* > 启动转发服务 */
-    if (frwd_startup(frwd))
+    if (frwd_launch(frwd))
     {
         log_fatal(frwd->log, "Startup frwder failed!");
         return FRWD_ERR;

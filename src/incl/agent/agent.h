@@ -96,10 +96,9 @@ int agent_listen_init(agent_cntx_t *ctx, agent_lsvr_t *lsn, int idx);
 
 /* 外部接口 */
 agent_cntx_t *agent_init(agent_conf_t *conf, log_cycle_t *log);
-void agent_destroy(agent_cntx_t *ctx);
-
-int agent_startup(agent_cntx_t *ctx);
+int agent_launch(agent_cntx_t *ctx);
 int agent_register(agent_cntx_t *ctx, unsigned int type, agent_reg_cb_t proc, void *args);
+void agent_destroy(agent_cntx_t *ctx);
 
 int agent_send(agent_cntx_t *ctx, int type, uint64_t serial, void *data, int len);
 

@@ -61,7 +61,7 @@ int main(int argc, const char *argv[])
     rtrd_register(ctx, MSG_QUERY_WORKQ_STAT_REQ, rtmq_work_def_hdl, NULL);
 
     /* 2. 接收服务端工作 */
-    ret = rtrd_startup(ctx);
+    ret = rtrd_launch(ctx);
     if (0 != ret)
     {
         fprintf(stderr, "Work failed!");

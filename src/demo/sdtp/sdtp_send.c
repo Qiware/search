@@ -136,7 +136,7 @@ int main(int argc, const char *argv[])
         return -1;
     }
 
-    if (sdsd_start(ctx))
+    if (sdsd_launch(ctx))
     {
         fprintf(stderr, "Start up send-server failed!");
         return -1;

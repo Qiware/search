@@ -19,7 +19,7 @@
 #include "lsnd_mesg.h"
 
 static lsnd_cntx_t *lsnd_init(lsnd_conf_t *conf, log_cycle_t *log);
-static int lsnd_startup(lsnd_cntx_t *ctx);
+static int lsnd_launch(lsnd_cntx_t *ctx);
 static int lsnd_set_reg(lsnd_cntx_t *ctx);
 
 /******************************************************************************
@@ -106,7 +106,7 @@ int main(int argc, char *argv[])
     }
 
     /* > 启动侦听服务 */
-    if (lsnd_startup(ctx))
+    if (lsnd_launch(ctx))
     {
         fprintf(stderr, "Startup search-engine failed!\n");
         goto LSND_INIT_ERR;
@@ -255,7 +255,7 @@ static int lsnd_set_reg(lsnd_cntx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: lsnd_startup
+ **函数名称: lsnd_launch
  **功    能: 启动侦听服务
  **输入参数:
  **     ctx: 侦听对象
@@ -265,12 +265,12 @@ static int lsnd_set_reg(lsnd_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.06.20 22:58:16 #
  ******************************************************************************/
-static int lsnd_startup(lsnd_cntx_t *ctx)
+static int lsnd_launch(lsnd_cntx_t *ctx)
 {
     pthread_t tid;
 
     /* > 启动代理服务 */
-    if (agent_startup(ctx->agent))
+    if (agent_launch(ctx->agent))
     {
         log_error(ctx->log, "Startup agent failed!");
         return LSND_ERR;

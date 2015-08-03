@@ -233,7 +233,7 @@ void crwl_destroy(crwl_cntx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: crwl_startup
+ **函数名称: crwl_launch
  **功    能: 启动爬虫服务
  **输入参数: 
  **     ctx: 全局信息
@@ -243,7 +243,7 @@ void crwl_destroy(crwl_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.04 #
  ******************************************************************************/
-int crwl_startup(crwl_cntx_t *ctx)
+int crwl_launch(crwl_cntx_t *ctx)
 {
     int idx;
     pthread_t tid;

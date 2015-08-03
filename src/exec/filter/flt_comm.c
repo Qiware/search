@@ -291,7 +291,7 @@ void flt_destroy(flt_cntx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: flt_startup
+ **函数名称: flt_launch
  **功    能: 启动过滤服务
  **输入参数: 
  **     ctx: 全局信息
@@ -301,7 +301,7 @@ void flt_destroy(flt_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.09.04 #
  ******************************************************************************/
-int flt_startup(flt_cntx_t *ctx)
+int flt_launch(flt_cntx_t *ctx)
 {
     int idx;
     const flt_conf_t *conf = ctx->conf;

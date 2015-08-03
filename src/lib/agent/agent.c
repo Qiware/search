@@ -142,7 +142,7 @@ void agent_destroy(agent_cntx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: agent_startup
+ **函数名称: agent_launch
  **功    能: 启动代理服务
  **输入参数: 
  **     ctx: 全局信息
@@ -153,7 +153,7 @@ void agent_destroy(agent_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
-int agent_startup(agent_cntx_t *ctx)
+int agent_launch(agent_cntx_t *ctx)
 {
     int idx;
     agent_conf_t *conf = ctx->conf;

@@ -75,7 +75,7 @@ sdrd_cntx_t *sdrd_init(const sdrd_conf_t *conf, log_cycle_t *log)
 }
 
 /******************************************************************************
- **函数名称: sdrd_startup
+ **函数名称: sdrd_launch
  **功    能: 启动SDTP接收端
  **输入参数:
  **     conf: 配置信息
@@ -88,7 +88,7 @@ sdrd_cntx_t *sdrd_init(const sdrd_conf_t *conf, log_cycle_t *log)
  **注意事项:
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-int sdrd_startup(sdrd_cntx_t *ctx)
+int sdrd_launch(sdrd_cntx_t *ctx)
 {
     int idx;
     pthread_t tid;

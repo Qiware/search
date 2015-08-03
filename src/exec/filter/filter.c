@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
     }
 
     /* > 启动过滤模块 */
-    if (flt_startup(ctx))
+    if (flt_launch(ctx))
     {
         fprintf(stderr, "Startup filterfailed!\n");
         return FLT_ERR;

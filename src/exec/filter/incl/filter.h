@@ -59,7 +59,7 @@ typedef struct
 } flt_cntx_t;
 
 flt_cntx_t *flt_init(char *pname, const char *path);
-int flt_startup(flt_cntx_t *ctx);
+int flt_launch(flt_cntx_t *ctx);
 void flt_destroy(flt_cntx_t *ctx);
 
 void *flt_push_routine(void *_ctx);
