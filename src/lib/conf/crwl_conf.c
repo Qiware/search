@@ -75,8 +75,7 @@ int crwl_load_conf(const char *path, crwl_conf_t *conf, log_cycle_t *log)
  **输出参数:
  **     conf: 配置信息
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **     通过XML查询接口查找对应的配置信息
+ **实现描述: 通过XML查询接口查找对应的配置信息
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.16 #
  ******************************************************************************/
@@ -181,8 +180,7 @@ static int _crwl_conf_load(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
     }
 
     /* > 定位Download标签
-     *  获取网页抓取深度和存储路径
-     * */
+     *  获取网页抓取深度和存储路径 */
     nail = xml_query(xml, ".CRAWLER.DOWNLOAD");
     if (NULL == nail)
     {
@@ -255,9 +253,8 @@ static int _crwl_conf_load(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **     通过XML查询接口查找对应的配置信息
- **注意事项: 
- **     1. 因为链表中的结点的空间是从mem_pool_t内存池中分配的, 因此, 如果处理过
- **     程中出现失败的情况时, 申请的内存空间不必进行释放的操作!
+ **注意事项: 1. 因为链表中的结点的空间是从mem_pool_t内存池中分配的, 因此, 如果
+ **             处理过程中出现失败的情况时, 申请的内存空间不必进行释放的操作!
  **作    者: # Qifeng.zou # 2014.10.29 #
  ******************************************************************************/
 static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
