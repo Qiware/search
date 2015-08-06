@@ -11,7 +11,7 @@ typedef struct
     size_t size;                            /* 单元大小 */
 } queue_conf_t;
 
-/* 加锁队列 */
+/* 队列 */
 typedef struct
 {
     slot_t *slot;                           /* 内存池 */
