@@ -52,7 +52,7 @@ typedef struct
     flt_worker_t *worker;                   /* 工作对象 */
 
     sig_queue_t *taskq;                     /* 处理队列(存放的是将要被解析的网页索引文件) */
-    queue_t *crwlq;                         /* 爬取队列(存放的是将被推送至REDIS's TASKQ的URL) */
+    sig_queue_t *crwlq;                     /* 爬取队列(存放的是将被推送至REDIS's TASKQ的URL) */
     redis_clst_t *redis;                    /* Redis集群 */
 
     hash_tab_t *domain_ip_map;              /* 域名IP映射表: 通过域名找到IP地址 */

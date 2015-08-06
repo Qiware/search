@@ -77,7 +77,7 @@ void *flt_sched_routine(void *_ctx)
             if (NULL == task)
             {
                 log_error(ctx->log, "Alloc from queue failed! len:%d/%d",
-                    sizeof(flt_crwl_t), queue_size(ctx->crwlq));
+                    sizeof(flt_crwl_t), sig_queue_size(ctx->crwlq));
                 break;
             }
 

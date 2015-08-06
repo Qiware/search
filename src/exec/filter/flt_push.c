@@ -44,10 +44,9 @@ void *flt_push_routine(void *_ctx)
         }
 
         /* > 获取任务数据 */
-        crwl = queue_pop(ctx->crwlq);
+        crwl = sig_queue_pop(ctx->crwlq);
         if (NULL == crwl)
         {
-            Sleep(1);
             continue;
         }
 
@@ -63,7 +62,7 @@ void *flt_push_routine(void *_ctx)
         }
 
         /* > 释放空间 */
-        queue_dealloc(ctx->crwlq, crwl);
+        sig_queue_dealloc(ctx->crwlq, crwl);
         freeReplyObject(r);
     }
 

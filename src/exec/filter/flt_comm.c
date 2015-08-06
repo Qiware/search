@@ -196,7 +196,7 @@ flt_cntx_t *flt_init(char *pname, const char *path)
         }
 
         /* > 创建工作队列 */
-        ctx->crwlq = queue_creat(FLT_CRWLQ_LEN, sizeof(flt_crwl_t));
+        ctx->crwlq = sig_queue_creat(FLT_CRWLQ_LEN, sizeof(flt_crwl_t));
         if (NULL == ctx->crwlq)
         {
             log_error(ctx->log, "Create queue failed! max:%d", FLT_CRWLQ_LEN);
@@ -760,11 +760,11 @@ int flt_push_url_to_crwlq(flt_cntx_t *ctx,
     while (1)
     {
         /* > 申请队列空间 */
-        crwl = queue_malloc(ctx->crwlq, sizeof(flt_crwl_t));
+        crwl = sig_queue_malloc(ctx->crwlq, sizeof(flt_crwl_t));
         if (NULL == crwl)
         {
             log_error(ctx->log, "Alloc from queue failed! len:%d/%d",
-                    sizeof(flt_crwl_t), queue_size(ctx->crwlq));
+                    sizeof(flt_crwl_t), sig_queue_size(ctx->crwlq));
             Sleep(1);
             continue;
         }
@@ -775,12 +775,12 @@ int flt_push_url_to_crwlq(flt_cntx_t *ctx,
         if (len >= sizeof(crwl->task_str))
         {
             log_info(ctx->log, "Task string is too long! uri:[%s]", url);
-            queue_dealloc(ctx->crwlq, crwl);
+            sig_queue_dealloc(ctx->crwlq, crwl);
             return FLT_ERR;
         }
 
         /* > 推至CRWL队列 */
-        queue_push(ctx->crwlq, crwl);
+        sig_queue_push(ctx->crwlq, crwl);
         break;
     }
 
