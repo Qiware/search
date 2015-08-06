@@ -185,7 +185,7 @@ static int flt_worker_get_webpage_info(
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
- **注意事项: 
+ **注意事项: sig_queue_pop()是阻塞的函数
  **作    者: # Qifeng.zou # 2015.03.11 #
  ******************************************************************************/
 void *flt_worker_routine(void *_ctx)
@@ -199,17 +199,16 @@ void *flt_worker_routine(void *_ctx)
     while (1)
     {
         /* > 获取任务数据 */
-        task = queue_pop(ctx->taskq);
+        task = sig_queue_pop(ctx->taskq);
         if (NULL == task)
         {
-            Sleep(1);
             continue;
         }
 
         /* > 提取网页数据 */
         if (flt_worker_get_webpage_info(task->path, &worker->info, worker->log))
         {
-            queue_dealloc(ctx->taskq, task);
+            sig_queue_dealloc(ctx->taskq, task);
             continue;
         }
 
@@ -218,7 +217,7 @@ void *flt_worker_routine(void *_ctx)
 
         /* > 释放内存和磁盘 */
         remove(task->path);
-        queue_dealloc(ctx->taskq, task);
+        sig_queue_dealloc(ctx->taskq, task);
     }
     return (void *)-1;
 }

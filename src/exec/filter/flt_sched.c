@@ -44,7 +44,7 @@ void *flt_sched_routine(void *_ctx)
     {
         /* > 当队列中无数据时, 才往队列中放数据
          *  原因: 防止文件名被重复放入队列中, 造成异常情况 */
-        if (0 != queue_used(ctx->taskq))
+        if (0 != sig_queue_used(ctx->taskq))
         {
             Sleep(1);
             continue;
@@ -73,18 +73,17 @@ void *flt_sched_routine(void *_ctx)
             }
 
             /* 3. 放入TASK队列 */
-            task = queue_malloc(ctx->taskq, sizeof(flt_task_t));
+            task = sig_queue_malloc(ctx->taskq, sizeof(flt_task_t));
             if (NULL == task)
             {
                 log_error(ctx->log, "Alloc from queue failed! len:%d/%d",
                     sizeof(flt_crwl_t), queue_size(ctx->crwlq));
-                Sleep(1);
-                continue;
+                break;
             }
 
             snprintf(task->path, sizeof(task->path), "%s", fname); 
 
-            queue_push(ctx->taskq, task);
+            sig_queue_push(ctx->taskq, task);
         }
 
         /* > 关闭目录 */

@@ -16,6 +16,7 @@
 #include "gumbo_ex.h"
 #include "flt_priv.h"
 #include "flt_conf.h"
+#include "sig_queue.h"
 #include "flt_worker.h"
 #include "thread_pool.h"
 #include <hiredis/hiredis.h>
@@ -50,7 +51,7 @@ typedef struct
     thread_pool_t *workers;                 /* Worker线程池 */
     flt_worker_t *worker;                   /* 工作对象 */
 
-    queue_t *taskq;                         /* 处理队列(存放的是将要被解析的网页索引文件) */
+    sig_queue_t *taskq;                     /* 处理队列(存放的是将要被解析的网页索引文件) */
     queue_t *crwlq;                         /* 爬取队列(存放的是将被推送至REDIS's TASKQ的URL) */
     redis_clst_t *redis;                    /* Redis集群 */
 

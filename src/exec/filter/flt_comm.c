@@ -188,7 +188,7 @@ flt_cntx_t *flt_init(char *pname, const char *path)
         }
 
         /* > 创建工作队列 */
-        ctx->taskq = queue_creat(FLT_TASKQ_LEN, sizeof(flt_task_t));
+        ctx->taskq = sig_queue_creat(FLT_TASKQ_LEN, sizeof(flt_task_t));
         if (NULL == ctx->taskq)
         {
             log_error(ctx->log, "Create queue failed! max:%d", FLT_TASKQ_LEN);
@@ -249,7 +249,7 @@ flt_cntx_t *flt_init(char *pname, const char *path)
 
     /* > 释放内存空间 */
     if (ctx->redis) { redis_clst_destroy(ctx->redis); }
-    if (ctx->taskq) { queue_destroy(ctx->taskq); }    
+    if (ctx->taskq) { sig_queue_destroy(ctx->taskq); }    
     free(ctx->slab);
     return NULL;
 }
