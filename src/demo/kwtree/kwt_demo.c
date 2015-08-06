@@ -1,12 +1,9 @@
-#ifndef __KWT_DEMO_C__
-#define __KWT_DEMO_C__
-
 #include "kw_tree.h"
 #include "xml_tree.h"
 
 #define DATA_LEN (10)
 
-static int proto_load_conf(kwt_tree_t *kwt, const char *path);
+static int proto_load_conf(kwt_tree_t *kwt, const char *path, log_cycle_t *log);
 
 /* 初始化日志模块 */
 log_cycle_t *demo_init_log(const char *_path)
@@ -33,8 +30,14 @@ int main(int argc, char *argv[])
 {
     kwt_opt_t opt;
     kwt_tree_t *kwt;
+    log_cycle_t *log;
 
-    demo_init_log(argv[0]);
+    log = demo_init_log(argv[0]);
+    if (NULL == log)
+    {
+        fprintf(stderr, "Initialize log failed!\n");
+        return -1;
+    }
 
     opt.pool = (void *)NULL;
     opt.alloc = (mem_alloc_cb_t)mem_alloc;
@@ -47,10 +50,10 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    return proto_load_conf(kwt, argv[1]);
+    return proto_load_conf(kwt, argv[1], log);
 }
 
-static int proto_load_conf(kwt_tree_t *kwt, const char *path)
+static int proto_load_conf(kwt_tree_t *kwt, const char *path, log_cycle_t *log)
 {
     int count = 0, oct;
     xml_opt_t opt;
@@ -58,6 +61,7 @@ static int proto_load_conf(kwt_tree_t *kwt, const char *path)
     char hex[1024];
     xml_node_t *protocol, *words, *word, *key, *oct_node;
 
+    opt.log = log;
     opt.pool = (void *)NULL;
     opt.alloc = (mem_alloc_cb_t)mem_alloc;
     opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
@@ -168,4 +172,3 @@ int kwt_test(void)
 
     return 0;
 }
-#endif // __KWT_DEMO_C__
