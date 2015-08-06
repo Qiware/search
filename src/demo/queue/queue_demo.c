@@ -8,6 +8,7 @@
  ******************************************************************************/
 
 #include "shm_queue.h"
+#include "sig_queue.h"
 #include "thread_pool.h"
 
 #define QUEUE_LEN       (2048)
@@ -16,7 +17,8 @@
 
 typedef struct
 {
-    int check;         /* 校验值 */
+    int check;              /* 校验值 */
+    int seq;                /* 序列号 */
 } queue_header_t;
 
 
@@ -41,9 +43,10 @@ log_cycle_t *demo_init_log(const char *_path)
     return log;
 }
 
-void *queue_push_routine(void *str)
+void *shm_queue_push_routine(void *str)
 {
     void *addr;
+    static int seq = 0;
     shm_queue_t *queue;
     queue_header_t *head;
     char path[FILE_PATH_MAX_LEN];
@@ -71,6 +74,7 @@ void *queue_push_routine(void *str)
         head = (queue_header_t *)addr;
 
         head->check = QUEUE_CHECK_SUM;
+        head->seq = ++seq;
 
         shm_queue_push(queue, addr);
     }
@@ -78,7 +82,7 @@ void *queue_push_routine(void *str)
     return (void *)0;
 }
 
-void *queue_pop_routine(void *q)
+void *shm_queue_pop_routine(void *q)
 {
     void *addr;
     queue_header_t *head;
@@ -89,7 +93,6 @@ void *queue_pop_routine(void *q)
         addr = shm_queue_pop(queue);
         if (NULL == addr)
         {
-            usleep(5000);
             continue;
         }
 
@@ -98,6 +101,7 @@ void *queue_pop_routine(void *q)
         {
             abort();
         }
+        fprintf(stdout, "seq:%d\n", head->seq);
 
         shm_queue_dealloc(queue, addr);
     }
@@ -105,19 +109,11 @@ void *queue_pop_routine(void *q)
     return (void *)0;
 }
 
-int main(int argc, char *argv[])
+int shm_queue_test(int argc, char *argv[], log_cycle_t *log)
 {
     pthread_t tid;
-    log_cycle_t *log;
     shm_queue_t *queue;
     char path[FILE_PATH_MAX_LEN];
-
-    /* > 初始化日志模块 */
-    log = demo_init_log(basename(argv[0]));
-    if (NULL == log)
-    {
-        return -1;
-    }
 
     /* > 创建共享内存队列 */
     snprintf(path, sizeof(path), "%s.key", basename(argv[0]));
@@ -132,9 +128,105 @@ int main(int argc, char *argv[])
     shm_queue_print(queue);
 
     /* > 操作共享内存队列(申请 放入 弹出 回收等操作) */
-    thread_creat(&tid, queue_push_routine, (void *)basename(argv[0]));
-    thread_creat(&tid, queue_pop_routine, (void *)queue);
+    thread_creat(&tid, shm_queue_push_routine, (void *)basename(argv[0]));
+    thread_creat(&tid, shm_queue_pop_routine, (void *)queue);
 
+    return 0;
+}
+
+void *sig_queue_push_routine(void *_queue)
+{
+    void *addr;
+    static int seq = 0;
+    sig_queue_t *queue;
+    queue_header_t *head;
+
+    queue = (sig_queue_t *)_queue;
+
+    while (1)
+    {
+        addr = sig_queue_malloc(queue, sizeof(queue_header_t));
+        if (NULL == addr)
+        {
+            continue;
+        }
+
+        head = (queue_header_t *)addr;
+
+        head->check = QUEUE_CHECK_SUM;
+        head->seq = ++seq;
+
+        sig_queue_push(queue, addr);
+    }
+
+    return (void *)0;
+}
+
+void *sig_queue_pop_routine(void *q)
+{
+    void *addr;
+    queue_header_t *head;
+    sig_queue_t *queue = (sig_queue_t *)q;
+
+    while (1)
+    {
+        addr = sig_queue_pop(queue);
+        if (NULL == addr)
+        {
+            continue;
+        }
+
+        head = (queue_header_t *)addr;
+        if (QUEUE_CHECK_SUM != head->check)
+        {
+            abort();
+        }
+
+        fprintf(stdout, "seq:%d\n", head->seq);
+
+        sig_queue_dealloc(queue, addr);
+    }
+
+    return (void *)0;
+}
+
+int sig_queue_test(int argc, char *argv[], log_cycle_t *log)
+{
+    pthread_t tid;
+    sig_queue_t *queue;
+
+    queue = sig_queue_creat(QUEUE_LEN, QUEUE_SIZE);
+    if (NULL == queue)
+    {
+        fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
+        return -1;
+    }
+
+    sig_queue_print(queue);
+
+    /* > 操作共享内存队列(申请 放入 弹出 回收等操作) */
+    thread_creat(&tid, sig_queue_push_routine, (void *)queue);
+    thread_creat(&tid, sig_queue_pop_routine, (void *)queue);
+
+    return 0;
+}
+
+int main(int argc, char *argv[])
+{
+    log_cycle_t *log;
+
+    /* > 初始化日志模块 */
+    log = demo_init_log(basename(argv[0]));
+    if (NULL == log)
+    {
+        return -1;
+    }
+
+#if 1
+    shm_queue_test(argc, argv, log);
+#else
+    sig_queue_test(argc, argv, log);
+#endif
     while (1) { pause(); }
 
     return 0;
