@@ -11,8 +11,7 @@
 #include "sig_queue.h"
 #include "thread_pool.h"
 
-#define QUEUE_LEN       (2048)
-#define QUEUE_SIZE      (4096)
+#define QUEUE_LEN       (1024*1024*32)
 #define QUEUE_CHECK_SUM (0x12345678)
 
 typedef struct
@@ -45,6 +44,7 @@ log_cycle_t *demo_init_log(const char *_path)
 
 void *shm_queue_push_routine(void *str)
 {
+    int idx, max = QUEUE_LEN;
     void *addr;
     static int seq = 0;
     shm_queue_t *queue;
@@ -61,13 +61,12 @@ void *shm_queue_push_routine(void *str)
         return (void *)-1;
     }
 
-
-    while (1)
+    for (idx=0; idx<max; ++idx)
     {
         addr = shm_queue_malloc(queue, sizeof(queue_header_t));
         if (NULL == addr)
         {
-            usleep(5000);
+            usleep(0);
             continue;
         }
 
@@ -84,6 +83,7 @@ void *shm_queue_push_routine(void *str)
 
 void *shm_queue_pop_routine(void *q)
 {
+    int idx = 0, max = QUEUE_LEN;
     void *addr;
     queue_header_t *head;
     shm_queue_t *queue = (shm_queue_t *)q;
@@ -101,9 +101,13 @@ void *shm_queue_pop_routine(void *q)
         {
             abort();
         }
-        fprintf(stdout, "seq:%d\n", head->seq);
+        //fprintf(stdout, "seq:%d\n", head->seq);
 
         shm_queue_dealloc(queue, addr);
+        if (++idx == max)
+        {
+            exit(0);
+        }
     }
 
     return (void *)0;
@@ -118,7 +122,7 @@ int shm_queue_test(int argc, char *argv[], log_cycle_t *log)
     /* > 创建共享内存队列 */
     snprintf(path, sizeof(path), "%s.key", basename(argv[0]));
 
-    queue = shm_queue_creat(path, QUEUE_LEN, QUEUE_SIZE);
+    queue = shm_queue_creat(path, QUEUE_LEN, sizeof(queue_header_t));
     if (NULL == queue)
     {
         fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
@@ -136,6 +140,7 @@ int shm_queue_test(int argc, char *argv[], log_cycle_t *log)
 
 void *sig_queue_push_routine(void *_queue)
 {
+    int idx, max = QUEUE_LEN;
     void *addr;
     static int seq = 0;
     sig_queue_t *queue;
@@ -143,7 +148,7 @@ void *sig_queue_push_routine(void *_queue)
 
     queue = (sig_queue_t *)_queue;
 
-    while (1)
+    for (idx=0; idx<max; ++idx)
     {
         addr = sig_queue_malloc(queue, sizeof(queue_header_t));
         if (NULL == addr)
@@ -164,6 +169,7 @@ void *sig_queue_push_routine(void *_queue)
 
 void *sig_queue_pop_routine(void *q)
 {
+    int idx = 0, max = QUEUE_LEN;
     void *addr;
     queue_header_t *head;
     sig_queue_t *queue = (sig_queue_t *)q;
@@ -182,9 +188,13 @@ void *sig_queue_pop_routine(void *q)
             abort();
         }
 
-        fprintf(stdout, "seq:%d\n", head->seq);
+        //fprintf(stdout, "seq:%d\n", head->seq);
 
         sig_queue_dealloc(queue, addr);
+        if (++idx == max)
+        {
+            exit(0);
+        }
     }
 
     return (void *)0;
@@ -195,7 +205,7 @@ int sig_queue_test(int argc, char *argv[], log_cycle_t *log)
     pthread_t tid;
     sig_queue_t *queue;
 
-    queue = sig_queue_creat(QUEUE_LEN, QUEUE_SIZE);
+    queue = sig_queue_creat(QUEUE_LEN, sizeof(queue_header_t));
     if (NULL == queue)
     {
         fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
