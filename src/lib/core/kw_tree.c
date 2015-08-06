@@ -196,7 +196,7 @@ void kwt_print(kwt_tree_t *kwt)
     int i;
     kwt_node_t *node = kwt->root;
 
-    fprintf(stderr, "\n\n");
+    fprintf(stdout, "\n\n");
 
     for (i=0; i<kwt->max; ++i, ++node)
     {
@@ -205,7 +205,7 @@ void kwt_print(kwt_tree_t *kwt)
             continue;
         }
 
-        fprintf(stderr, " %02X\n", node->key);
+        fprintf(stdout, " %02X\n", node->key);
 
         if (NULL == node->child)
         {
