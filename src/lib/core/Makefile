@@ -23,6 +23,7 @@ SRC_LIST = hash.c \
 			menu.c \
 			ring.c \
 			queue.c \
+			sig_queue.c \
 			slab.c \
 			redo.c \
 			shm_slab.c \
