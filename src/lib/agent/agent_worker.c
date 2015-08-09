@@ -194,8 +194,8 @@ static int agent_worker_proc_data_hdl(agent_cntx_t *ctx, agent_worker_t *worker)
             /* > 插入SERIAL->SCK映射 */
             if (agent_serial_to_sck_map_insert(ctx, flow))
             {
-                log_error(worker->log, "Insert serial to sck map failed! serial:%lu sck_seq:%lu",
-                          flow->serial, flow->sck_seq);
+                log_error(worker->log, "Insert serial to sck map failed! serial:%lu sid:%lu",
+                          flow->serial, flow->sid);
                 continue;
             }
 

@@ -531,7 +531,7 @@ static int agent_rsvr_add_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
             if (NULL == sck)
             {
                 log_error(rsvr->log, "Alloc memory from slab failed! seq:%lu",
-                          add[idx]->seq);
+                        add[idx]->sid);
                 CLOSE(add[idx]->fd);
                 queue_dealloc(ctx->connq[rsvr->id], add[idx]);
                 continue;
@@ -544,7 +544,7 @@ static int agent_rsvr_add_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
             if (NULL == extra)
             {
                 log_error(rsvr->log, "Alloc memory from slab failed! seq:%lu",
-                          add[idx]->seq);
+                          add[idx]->sid);
                 CLOSE(add[idx]->fd);
                 slab_dealloc(rsvr->slab, sck);
                 queue_dealloc(ctx->connq[rsvr->id], add[idx]);
@@ -561,7 +561,7 @@ static int agent_rsvr_add_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
             if (NULL == extra->send_list)
             {
                 log_error(rsvr->log, "Alloc memory from slab failed! seq:%lu",
-                          add[idx]->seq);
+                          add[idx]->sid);
                 CLOSE(add[idx]->fd);
                 slab_dealloc(rsvr->slab, sck);
                 slab_dealloc(rsvr->slab, extra);
@@ -580,7 +580,7 @@ static int agent_rsvr_add_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
             sck->recv_cb = (socket_recv_cb_t)agent_rsvr_recv;   /* Recv回调函数 */
             sck->send_cb = (socket_send_cb_t)agent_rsvr_send;   /* Send回调函数*/
 
-            extra->seq = add[idx]->seq;
+            extra->seq = add[idx]->sid;
 
             queue_dealloc(ctx->connq[rsvr->id], add[idx]);      /* 释放连接队列空间 */
 
@@ -910,7 +910,7 @@ static int agent_rsvr_recv(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
                 recv->off = 0;
                 recv->total = sizeof(agent_header_t);
 
-                extra->flow->sck_seq = extra->seq;
+                extra->flow->sid = extra->seq;
                 extra->flow->agt_idx = rsvr->id;
 
                 /* 设置下步 */
@@ -1178,19 +1178,19 @@ static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
 
             /* 校验映射项合法性 */
             if (flow->agt_idx != newest.agt_idx
-                || flow->sck_seq != newest.sck_seq)
+                || flow->sid != newest.sid)
             {
-                log_error(ctx->log, "Old socket was closed! seq:%lu", flow->sck_seq);
+                log_error(ctx->log, "Old socket was closed! seq:%lu", flow->sid);
                 queue_dealloc(sendq, addr[idx]);
                 continue;
             }
 
             /* 查询发送链表 */
-            sck = rbt_query(rsvr->connections, &flow->sck_seq, sizeof(flow->sck_seq));
+            sck = rbt_query(rsvr->connections, &flow->sid, sizeof(flow->sid));
             if (NULL == sck)
             {
                 log_error(ctx->log, "Query socket failed! serial:%lu seq:%lu diff:%lu idx:%d/%d",
-                          newest.serial, newest.sck_seq,
+                          newest.serial, newest.sid,
                           time(NULL) - newest.create_tm, newest.agt_idx, rsvr->id);
                 queue_dealloc(sendq, addr[idx]);
                 continue;
@@ -1202,7 +1202,7 @@ static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
             if (NULL == data)
             {
                 log_error(ctx->log, "Alloc from slab failed! serial:%lu seq:%lu total:%d",
-                        flow->serial, flow->sck_seq, total);
+                        flow->serial, flow->sid, total);
                 queue_dealloc(sendq, addr[idx]);
                 continue;
             }
@@ -1213,7 +1213,7 @@ static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
 
             if (list_rpush(sck_extra->send_list, data))
             {
-                log_error(ctx->log, "Insert list failed! seq:%lu", flow->sck_seq);
+                log_error(ctx->log, "Insert list failed! seq:%lu", flow->sid);
                 queue_dealloc(sendq, addr[idx]);
                 slab_dealloc(rsvr->slab, data);
                 continue;

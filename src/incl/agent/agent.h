@@ -84,7 +84,7 @@ typedef struct
         int lsn_sck_id;                     /* 侦听套接字 */
         spinlock_t accept_lock;             /* 侦听锁 */
 
-        uint64_t seq;                       /* SCK流水号 */
+        uint64_t sid;                       /* Session ID */
         agent_lsvr_t *lsvr;                 /* 侦听对象 */
     } listen;
 

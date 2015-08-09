@@ -177,7 +177,7 @@ static int agent_listen_timeout_hdl(agent_cntx_t *ctx, agent_lsvr_t *lsvr)
  ******************************************************************************/
 static int agent_listen_accept(agent_cntx_t *ctx, agent_lsvr_t *lsvr)
 {
-    int fd, idx, seq;
+    int fd, idx, sid;
     agent_add_sck_t *add;
     struct sockaddr_in cliaddr;
 
@@ -194,12 +194,12 @@ static int agent_listen_accept(agent_cntx_t *ctx, agent_lsvr_t *lsvr)
         return AGENT_OK;
     }
 
-    seq = ++ctx->listen.seq; /* 计数 */
+    sid = ++ctx->listen.sid; /* 计数 */
 
     spin_unlock(&ctx->listen.accept_lock); /* 解锁 */
 
     /* > 将通信套接字放入队列 */
-    idx = seq % ctx->conf->agent_num;
+    idx = sid % ctx->conf->agent_num;
 
     add = queue_malloc(ctx->connq[idx], sizeof(agent_add_sck_t));
     if (NULL == add)
@@ -211,10 +211,10 @@ static int agent_listen_accept(agent_cntx_t *ctx, agent_lsvr_t *lsvr)
     }
 
     add->fd = fd;
-    add->seq = seq;
+    add->sid = sid;
     ftime(&add->crtm);
 
-    log_debug(lsvr->log, "Push data! fd:%d addr:%p seq:%ld", fd, add, seq);
+    log_debug(lsvr->log, "Push data! fd:%d addr:%p siq:%ld", fd, add, sid);
 
     queue_push(ctx->connq[idx], add);
 
