@@ -23,7 +23,7 @@ static int rtrd_lsn_cmd_query_recv_stat_hdl(rtrd_cntx_t *ctx, rtrd_listen_t *lsn
 static int rtrd_lsn_cmd_query_proc_stat_hdl(rtrd_cntx_t *ctx, rtrd_listen_t *lsn, rtmq_cmd_t *cmd);
 
 /* 随机选择接收线程 */
-#define rtrd_rand_rsvr(ctx) ((ctx)->listen.serial % (ctx->recvtp->num))
+#define rtrd_rand_rsvr(ctx) ((ctx)->listen.sid % (ctx->recvtp->num))
 
 /******************************************************************************
  **函数名称: rtrd_lsn_routine
@@ -205,16 +205,16 @@ static int rtrd_lsn_accept(rtrd_cntx_t *ctx, rtrd_listen_t *lsn)
 
     cmd.type = RTMQ_CMD_ADD_SCK;
     param->sckid = sckid;
-    param->sck_seq = ++lsn->serial; /* 设置套接字序列号 */
+    param->sid = ++lsn->sid; /* 设置套接字序列号 */
     snprintf(param->ipaddr, sizeof(param->ipaddr), "%s", inet_ntoa(cliaddr.sin_addr));
 
     log_trace(lsn->log, "New connection! serial:%lu sckid:%d ip:%s",
-            lsn->serial, sckid, inet_ntoa(cliaddr.sin_addr));
+            lsn->sid, sckid, inet_ntoa(cliaddr.sin_addr));
 
     if (rtrd_cmd_to_rsvr(ctx, lsn->cmd_sck_id, &cmd, rtrd_rand_rsvr(ctx)) < 0)
     {
         CLOSE(sckid);
-        log_error(lsn->log, "Send command failed! serial:%lu sckid:[%d]", lsn->serial, sckid);
+        log_error(lsn->log, "Send command failed! serial:%lu sckid:[%d]", lsn->sid, sckid);
         return RTMQ_ERR;
     }
 

@@ -1017,7 +1017,7 @@ static int rtrd_rsvr_link_auth_req_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd
         if (rtrd_node_to_svr_map_add(ctx, link_auth_req->nodeid, rsvr->id))
         {
             log_error(rsvr->log, "Insert into sck2dev table failed! fd:%d serial:%ld nodeid:%d",
-                    sck->fd, sck->seq, link_auth_req->nodeid);
+                    sck->fd, sck->sid, link_auth_req->nodeid);
             return RTMQ_ERR;
         }
     }
@@ -1057,7 +1057,7 @@ static rtrd_sck_t *rtrd_rsvr_sck_creat(rtrd_rsvr_t *rsvr, rtmq_cmd_add_sck_t *re
 
     sck->fd = req->sckid;
     sck->nodeid = -1;
-    sck->seq = req->sck_seq;
+    sck->sid = req->sid;
     sck->ctm = time(NULL);
     sck->rdtm = sck->ctm;
     sck->wrtm = sck->ctm;
