@@ -38,7 +38,7 @@ int lsnd_search_word_req_hdl(unsigned int type, void *data, int length, void *ar
     head = (agent_header_t *)(flow + 1);    // 消息头
     req = (mesg_search_word_req_t *)(head + 1); // 消息体
 
-    log_debug(ctx->log, "Call %s() serial:%lu seq:%lu!", __func__, flow->serial, flow->sck_seq);
+    log_debug(ctx->log, "Call %s() serial:%lu sid:%lu!", __func__, flow->serial, flow->sid);
 
     /* > 转发搜索请求 */
     req->serial = hton64(flow->serial);
