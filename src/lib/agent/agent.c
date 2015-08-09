@@ -65,7 +65,8 @@ agent_cntx_t *agent_init(agent_conf_t *conf, log_cycle_t *log)
         }
 
         /* > 创建流水->SCK映射表 */
-        if (agent_serial_to_sck_map_init(ctx))
+        ctx->serial_to_sck_map = agent_serial_to_sck_map_init(ctx);
+        if (NULL == ctx->serial_to_sck_map)
         {
             log_error(log, "Initialize serial to sck map failed!");
             break;

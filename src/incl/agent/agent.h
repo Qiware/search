@@ -1,6 +1,7 @@
 #if !defined(__AGENT_H__)
 #define __AGENT_H__
 
+#include "slot.h"
 #include "slab.h"
 #include "queue.h"
 #include "spinlock.h"
@@ -56,6 +57,16 @@ typedef struct
     queue_conf_t sendq;                     /* 发送队列 */
 } agent_conf_t;
 
+/* 流水号->套接字的映射表 */
+typedef struct
+{
+    int len;                                /* 流水号->SCK映射表数组长度 */
+    spinlock_t *lock;                       /* 流水号->SCK映射表锁 */
+    avl_tree_t **map;                       /* 流水号->SCK映射表 */
+
+    slot_t **slot;                          /* 内存池: 专门用于存储映射表 */
+} agent_serial_to_sck_map_t;
+
 /* 代理对象 */
 typedef struct
 {
@@ -86,9 +97,7 @@ typedef struct
     queue_t **recvq;                        /* 接收队列(注:数组长度与Agent相等) */
     queue_t **sendq;                        /* 发送队列(注:数组长度与Agent相等) */
 
-    int serial_to_sck_map_len;              /* 流水号->SCK映射表数组长度 */
-    spinlock_t *serial_to_sck_map_lock;     /* 流水号->SCK映射表锁 */
-    avl_tree_t **serial_to_sck_map;         /* 流水号->SCK映射表 */
+    agent_serial_to_sck_map_t *serial_to_sck_map; /* 流水号->套接字的映射表 */
 } agent_cntx_t;
 
 /* 内部接口 */
@@ -104,7 +113,7 @@ int agent_send(agent_cntx_t *ctx, int type, uint64_t serial, void *data, int len
 
 uint64_t agent_gen_sys_serail(uint16_t nid, uint16_t sid, uint32_t seq);
 
-int agent_serial_to_sck_map_init(agent_cntx_t *ctx);
+agent_serial_to_sck_map_t *agent_serial_to_sck_map_init(agent_cntx_t *ctx);
 int agent_serial_to_sck_map_insert(agent_cntx_t *ctx, agent_flow_t *_flow);
 int agent_serial_to_sck_map_query(agent_cntx_t *ctx, uint64_t serial, agent_flow_t *flow);
 int agent_serial_to_sck_map_delete(agent_cntx_t *ctx, uint64_t serial);
