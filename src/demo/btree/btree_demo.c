@@ -12,6 +12,7 @@ int main(void)
     btree_opt_t opt;
     log_cycle_t *log;
     char input[INPUT_LEN];
+    void *data;
 
     log = log_init(LOG_LEVEL_TRACE, "btree.log");
     if (NULL == log)
@@ -37,17 +38,17 @@ int main(void)
     /* > 插入关键字 */
     for(idx=0; idx<BTREE_NUM; idx++)
     {
-        btree_insert(btree, random()%20);
+        btree_insert(btree, random()%20, (void *)0+idx);
     }
 
-	btree_insert(btree, 14);
-	btree_insert(btree, 28);
-	btree_insert(btree, 34);
-	btree_insert(btree, 37);
-	btree_insert(btree, 48);
-	btree_insert(btree, 39);
-	btree_insert(btree, 38);
-	btree_insert(btree, 40);
+	btree_insert(btree, 14, (void *)0+idx);
+	btree_insert(btree, 28, (void *)0+idx);
+	btree_insert(btree, 34, (void *)0+idx);
+	btree_insert(btree, 37, (void *)0+idx);
+	btree_insert(btree, 48, (void *)0+idx);
+	btree_insert(btree, 39, (void *)0+idx);
+	btree_insert(btree, 38, (void *)0+idx);
+	btree_insert(btree, 40, (void *)0+idx);
 
     btree_print(btree);
 
@@ -76,12 +77,12 @@ int main(void)
             scanf(" %s", input);
             key = atoi(input);
 
-            btree_remove(btree, key);
+            btree_remove(btree, key, &data);
             btree_print(btree);
             continue;
         }
 
-        ret = btree_insert(btree, key);
+        ret = btree_insert(btree, key, (void *)0+key);
         if (0 != ret)
         {
             fprintf(stderr, "[%s][%d] Insert failed!\n", __FILE__, __LINE__);
