@@ -21,7 +21,7 @@
 static btree_node_t *btree_node_alloc(btree_t *btree);
 static int btree_node_dealloc(btree_t *btree, btree_node_t *node);
 
-static int _btree_insert(btree_t *btree, btree_node_t *node, int key, int idx);
+static int _btree_insert(btree_t *btree, btree_node_t *node, int key, int idx, void *data);
 static int btree_split(btree_t *btree, btree_node_t *node);
 static int btree_merge(btree_t *btree, btree_node_t *node);
 static int _btree_merge(btree_t *btree, btree_node_t *left, btree_node_t *right, int idx);
@@ -123,13 +123,14 @@ static int btree_key_bsearch(const int *keys, int num, int key)
  **输入参数:
  **     btree: B树
  **     key: 将被插入的关键字
+ **     data: 关键字对应数据
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述:
  **注意事项:
  **作    者: # Qifeng.zou # 2014.03.12 #
  ******************************************************************************/
-int btree_insert(btree_t *btree, int key)
+int btree_insert(btree_t *btree, int key, void *data)
 {
     int idx;
     btree_node_t *node = btree->root;
@@ -146,6 +147,7 @@ int btree_insert(btree_t *btree, int key)
 
         node->num = 1;
         node->key[0] = key;
+        node->data[0] = data;
         node->parent = NULL;
 
         btree->root = node;
@@ -176,7 +178,7 @@ int btree_insert(btree_t *btree, int key)
     }
 
     /* 3. 执行插入操作 */
-    return _btree_insert(btree, node, key, idx);
+    return _btree_insert(btree, node, key, idx, data);
 }
 
 /******************************************************************************
@@ -187,13 +189,14 @@ int btree_insert(btree_t *btree, int key)
  **     node: 指定节点
  **     key: 需被插入的关键字
  **     idx: 插入位置
+ **     data: 承载数据
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述:
  **注意事项:
  **作    者: # Qifeng.zou # 2014.03.12 #
  ******************************************************************************/
-static int _btree_insert(btree_t *btree, btree_node_t *node, int key, int idx)
+static int _btree_insert(btree_t *btree, btree_node_t *node, int key, int idx, void *data)
 {
     int i;
 
@@ -201,9 +204,11 @@ static int _btree_insert(btree_t *btree, btree_node_t *node, int key, int idx)
     for (i=node->num; i>idx; i--)
     {
         node->key[i] = node->key[i-1];
+        node->data[i] = node->data[i-1];
     }
 
     node->key[idx] = key;
+    node->data[idx] = data;
     node->num++;
 
     /* 2. 分化节点 */
@@ -246,6 +251,7 @@ static int btree_split(btree_t *btree, btree_node_t *node)
 
         /* Copy data */
         memcpy(node2->key, node->key+sep_idx+1, (total-sep_idx-1) * sizeof(int));
+        memcpy(node2->data, node->data+sep_idx+1, (total-sep_idx-1) * sizeof(void *));
         memcpy(node2->child, node->child+sep_idx+1, (total-sep_idx) * sizeof(btree_node_t *));
 
         node2->num = (total - sep_idx - 1);
@@ -271,6 +277,7 @@ static int btree_split(btree_t *btree, btree_node_t *node)
             node2->parent = parent;
 
             parent->key[0] = node->key[sep_idx];
+            parent->data[0] = node->data[sep_idx];
             parent->child[1] = node2;
             parent->num++;
         }
@@ -282,11 +289,13 @@ static int btree_split(btree_t *btree, btree_node_t *node)
                 if (node->key[sep_idx] < parent->key[idx-1])
                 {
                     parent->key[idx] = parent->key[idx-1];
+                    parent->data[idx] = parent->data[idx-1];
                     parent->child[idx+1] = parent->child[idx];
                 }
                 else
                 {
                     parent->key[idx] = node->key[sep_idx];
+                    parent->data[idx] = node->data[sep_idx];
                     parent->child[idx+1] = node2;
                     node2->parent = parent;
                     parent->num++;
@@ -297,6 +306,7 @@ static int btree_split(btree_t *btree, btree_node_t *node)
             if (0 == idx)
             {
                 parent->key[0] = node->key[sep_idx];
+                parent->data[0] = node->data[sep_idx];
                 parent->child[1] = node2;
                 node2->parent = parent;
                 parent->num++;
@@ -304,6 +314,7 @@ static int btree_split(btree_t *btree, btree_node_t *node)
         }
 
         memset(node->key+sep_idx, 0, (total - sep_idx) * sizeof(int));
+        memset(node->data+sep_idx, 0, (total - sep_idx) * sizeof(void *));
         memset(node->child+sep_idx+1, 0, (total - sep_idx) * sizeof(btree_node_t *));
 
         /* Change node2's child->parent */
@@ -348,9 +359,12 @@ static int _btree_remove(btree_t *btree, btree_node_t *node, int idx)
     }
 
     orig->key[idx] = node->key[node->num - 1];
+    orig->data[idx] = node->data[node->num - 1];
 
     /* 最终其处理过程相当于是删除最底层结点的关键字 */
-    node->key[--node->num] = 0;
+    --node->num;
+    node->key[node->num] = 0;
+    node->data[node->num] = NULL;
     if (node->num < btree->min)
     {
         return btree_merge(btree, node);
@@ -396,6 +410,7 @@ static int btree_merge(btree_t *btree, btree_node_t *node)
             }
             btree->dealloc(btree->pool, node->child);
             btree->dealloc(btree->pool, node->key);
+            btree->dealloc(btree->pool, node->data);
             btree->dealloc(btree->pool, node);
         }
         return 0;
@@ -432,11 +447,13 @@ static int btree_merge(btree_t *btree, btree_node_t *node)
         for (m=node->num; m>0; m--)
         {
             node->key[m] = node->key[m - 1];
+            node->data[m] = node->data[m - 1];
             node->child[m+1] = node->child[m];
         }
         node->child[1] = node->child[0];
 
         node->key[0] = parent->key[mid];
+        node->data[0] = parent->data[mid];
         node->num++;
         node->child[0] = left->child[left->num];
         if (NULL != left->child[left->num])
@@ -445,7 +462,9 @@ static int btree_merge(btree_t *btree, btree_node_t *node)
         }
 
         parent->key[mid] = left->key[left->num - 1];
+        parent->data[mid] = left->data[left->num - 1];
         left->key[left->num - 1] = 0;
+        left->data[left->num - 1] = NULL;
         left->child[left->num] = NULL;
         left->num--;
         return 0;
@@ -463,7 +482,9 @@ static int btree_merge(btree_t *btree, btree_node_t *node)
     }
 
     /* 2) 借用结点: right->key[0] */
-    node->key[node->num++] = parent->key[mid];
+    node->key[node->num] = parent->key[mid];
+    node->data[node->num] = parent->data[mid];
+    ++node->num;
     node->child[node->num] = right->child[0];
     if (NULL != right->child[0])
     {
@@ -471,9 +492,11 @@ static int btree_merge(btree_t *btree, btree_node_t *node)
     }
 
     parent->key[mid] = right->key[0];
+    parent->data[mid] = right->data[0];
     for (m=0; m<right->num; m++)
     {
         right->key[m] = right->key[m+1];
+        right->data[m] = right->data[m+1];
         right->child[m] = right->child[m+1];
     }
     right->child[m] = NULL;
@@ -499,9 +522,12 @@ static int _btree_merge(btree_t *btree, btree_node_t *left, btree_node_t *right,
     int m;
     btree_node_t *parent = left->parent;
 
-    left->key[left->num++] = parent->key[mid];
+    left->key[left->num] = parent->key[mid];
+    left->data[left->num] = parent->data[mid];
+    ++left->num;
 
     memcpy(left->key + left->num, right->key, right->num*sizeof(int));
+    memcpy(left->data + left->num, right->data, right->num*sizeof(void *));
     memcpy(left->child + left->num, right->child, (right->num+1)*sizeof(btree_node_t *));
     for (m=0; m<=right->num; m++)
     {
@@ -515,14 +541,17 @@ static int _btree_merge(btree_t *btree, btree_node_t *left, btree_node_t *right,
     for (m=mid; m<parent->num-1; m++)
     {
         parent->key[m] = parent->key[m+1];
+        parent->data[m] = parent->data[m+1];
         parent->child[m+1] = parent->child[m+2];
     }
 
     parent->key[m] = 0;
+    parent->data[m] = NULL;
     parent->child[m+1] = NULL;
     parent->num--;
     btree->dealloc(btree->pool, right->child);
     btree->dealloc(btree->pool, right->key);
+    btree->dealloc(btree->pool, right->data);
     btree->dealloc(btree->pool, right);
 
     /* Check */
@@ -566,6 +595,7 @@ int btree_destroy(btree_t *btree)
     }
 
     btree->dealloc(btree->pool, node->key);
+    btree->dealloc(btree->pool, node->data);
     btree->dealloc(btree->pool, node->child);
     btree->dealloc(btree->pool, node);
     btree->dealloc(btree->pool, btree);
@@ -670,12 +700,22 @@ static btree_node_t *btree_node_alloc(btree_t *btree)
         return NULL;
     }
 
+    node->data = (void **)btree->alloc(btree->pool, (btree->max + 1) * sizeof(void *));
+    if (NULL == node->data)
+    {
+        btree->dealloc(btree->pool, node->key);
+        btree->dealloc(btree->pool, node);
+        log_error(btree->log, "Alloc memory failed!");
+        return NULL;
+    }
+
     /* More than (max+1) is for move */
     node->child = (btree_node_t **)btree->alloc(
         btree->pool, (btree->max+2) * sizeof(btree_node_t *));
     if (NULL == node->child)
     {
         btree->dealloc(btree->pool, node->key);
+        btree->dealloc(btree->pool, node->data);
         btree->dealloc(btree->pool, node);
         log_error(btree->log, "Alloc memory failed!");
         return NULL;
@@ -710,6 +750,7 @@ static int btree_node_dealloc(btree_t *btree, btree_node_t *node)
     }
 
     btree->dealloc(btree->pool, node->key);
+    btree->dealloc(btree->pool, node->data);
     btree->dealloc(btree->pool, node->child);
     btree->dealloc(btree->pool, node);
     return 0;
@@ -727,7 +768,7 @@ static int btree_node_dealloc(btree_t *btree, btree_node_t *node)
  **注意事项:
  **作    者: # Qifeng.zou # 2014.03.12 #
  ******************************************************************************/
-int btree_remove(btree_t *btree, int key)
+int btree_remove(btree_t *btree, int key, void **data)
 {
     int idx;
     btree_node_t *node = btree->root;
@@ -737,6 +778,7 @@ int btree_remove(btree_t *btree, int key)
         idx = btree_key_bsearch(node->key, node->num, key);
         if (key == node->key[idx])
         {
+            *data = node->data[idx];
             return _btree_remove(btree, node, idx);
         }
         else if (key < node->key[idx])
@@ -748,6 +790,7 @@ int btree_remove(btree_t *btree, int key)
         node = node->child[idx+1];
     }
 
+    *data = NULL;
     return 0;
 }
 
@@ -774,7 +817,7 @@ void *btree_query(btree_t *btree, int key)
         if (key == node->key[idx])
         {
             log_debug(btree->log, "Found! key:%d idx:%d", key, idx);
-            return (void *)0; /* 找到 */
+            return node->data[idx]; /* 找到 */
         }
         else if (key < node->key[idx])
         {
@@ -785,5 +828,5 @@ void *btree_query(btree_t *btree, int key)
         node = node->child[idx+1];
     }
 
-    return (void *)-1; /* 未找到 */
+    return NULL; /* 未找到 */
 }

@@ -18,6 +18,7 @@ typedef struct _btree_node_t
 {
     int num;                                        /* 关键字数 */
     int *key;                                       /* 关键字指针 */
+    void **data;                                    /* 结点承载 */
     struct _btree_node_t **child;                   /* 孩子结点 */
     struct _btree_node_t *parent;                   /* 父亲结点 */
 } btree_node_t;
@@ -41,8 +42,8 @@ typedef struct
 } btree_t;
 
 extern btree_t *btree_creat(int m, btree_opt_t *opt);
-extern int btree_insert(btree_t *btree, int key);
-extern int btree_remove(btree_t *btree, int key);
+int btree_insert(btree_t *btree, int key, void *data);
+extern int btree_remove(btree_t *btree, int key, void **data);
 void *btree_query(btree_t *btree, int key);
 extern int btree_destroy(btree_t *btree);
 void _btree_print(const btree_node_t *node, int deep);
