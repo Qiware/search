@@ -24,7 +24,7 @@ static int sdrd_lsn_cmd_query_recv_stat_hdl(sdrd_cntx_t *ctx, sdrd_lsn_t *lsn, s
 static int sdrd_lsn_cmd_query_proc_stat_hdl(sdrd_cntx_t *ctx, sdrd_lsn_t *lsn, sdtp_cmd_t *cmd);
 
 /* 随机选择接收线程 */
-#define sdrd_rand_rsvr(ctx) ((ctx)->listen.serial % (ctx->recvtp->num))
+#define sdrd_rand_rsvr(ctx) ((ctx)->listen.sid % (ctx->recvtp->num))
 
 /******************************************************************************
  **函数名称: sdrd_lsn_routine
@@ -217,7 +217,7 @@ static int sdrd_lsn_accept(sdrd_cntx_t *ctx, sdrd_lsn_t *lsn)
 
     cmd.type = SDTP_CMD_ADD_SCK;
     args->sckid = sckid;
-    args->sck_seq = ++lsn->serial;
+    args->sid = ++lsn->sid;
     snprintf(args->ipaddr, sizeof(args->ipaddr), "%s", inet_ntoa(cliaddr.sin_addr));
 
     if (sdrd_cmd_to_rsvr(ctx, lsn->cmd_sck_id, &cmd, sdrd_rand_rsvr(ctx)) < 0)

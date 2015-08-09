@@ -27,7 +27,7 @@ typedef enum
 typedef struct
 {
     int sckid;                      /* 套接字 */
-    uint64_t sck_seq;               /* 套接字序列号 */
+    uint64_t sid;                   /* Session ID */
     char ipaddr[IP_ADDR_MAX_LEN];   /* IP地址 */
 } sdtp_cmd_add_sck_t;
 

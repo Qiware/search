@@ -55,7 +55,7 @@ typedef struct
     int cmd_sck_id;                     /* 命令套接字 */
     int lsn_sck_id;                     /* 侦听套接字 */
 
-    uint64_t serial;                     /* 连接请求序列 */
+    uint64_t sid;                       /* Session ID */
 } sdrd_lsn_t;
 
 /* 套接字信息 */
@@ -63,7 +63,7 @@ typedef struct _sdrd_sck_t
 {
     int fd;                             /* 套接字ID */
     int nodeid;                         /* 结点ID */
-    uint64_t seq;                       /* 套接字序列号 */
+    uint64_t sid;                       /* Session ID */
 
     time_t ctm;                         /* 创建时间 */
     time_t rdtm;                        /* 最近读取时间 */
