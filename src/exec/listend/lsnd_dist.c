@@ -109,29 +109,31 @@ void *lsnd_dsvr_routine(void *_ctx)
  **                享变量的值可能被其他进程或线程修改, 导致出现严重错误!
  **作    者: # Qifeng.zou # 2015.06.20 #
  ******************************************************************************/
-static int lsnd_dsvr_cmd_dist_hdl(lsnd_cntx_t *ctx, lsnd_dsvr_t *dsvr)
+static int lsnd_dsvr_cmd_dist_hdl(lsnd_cntx_t *ctx,
+        lsnd_dsvr_t *dsvr, const cmd_dist_data_t *dist)
 {
-    int num, idx, k;
+    int num, idx;
     agent_flow_t *flow;
     rtmq_header_t *head;
     void *addr[LSND_DIST_POP_NUM];
 
-    for (k=0; k<ctx->conf.distq.num; ++k)
+    while (1)
     {
-    LSND_AGAIN_MPOP:
         /* > 获取弹出个数 */
-        num = MIN(shm_queue_used(ctx->distq[k]), LSND_DIST_POP_NUM);
+        num = MIN(shm_queue_used(ctx->distq[dist->qid]), LSND_DIST_POP_NUM);
+        if (0 == num)
+        {
+            break;
+        }
+
+        /* > 弹出发送数据 */
+        num = shm_queue_mpop(ctx->distq[dist->qid], addr, num);
         if (0 == num)
         {
             continue;
         }
 
-        /* > 弹出发送数据 */
-        num = shm_queue_mpop(ctx->distq[k], addr, num);
-        if (0 == num)
-        {
-            goto LSND_AGAIN_MPOP;
-        }
+        log_trace(ctx->log, "Pop data! qid:%d num:%d", dist->qid, num);
 
         /* > 逐条数据处理 */
         for (idx=0; idx<num; ++idx)
@@ -148,7 +150,7 @@ static int lsnd_dsvr_cmd_dist_hdl(lsnd_cntx_t *ctx, lsnd_dsvr_t *dsvr)
             /* 放入发送队列 */
             agent_send(ctx->agent, head->type, flow->serial, (void *)(head+1), head->length);
 
-            shm_queue_dealloc(ctx->distq[k], addr[idx]); /* 释放队列内存 */
+            shm_queue_dealloc(ctx->distq[dist->qid], addr[idx]); /* 释放队列内存 */
         }
     }
     return LSND_OK;
@@ -173,7 +175,9 @@ static int lsnd_dsvr_cmd_data_hdl(lsnd_cntx_t *ctx, lsnd_dsvr_t *dsvr, const cmd
     {
         case CMD_DIST_DATA: /* 分发数据 */
         {
-            return lsnd_dsvr_cmd_dist_hdl(ctx, dsvr);
+            const cmd_dist_data_t *dist = (const cmd_dist_data_t *)&cmd->param;
+
+            return lsnd_dsvr_cmd_dist_hdl(ctx, dsvr, dist);
         }
         default:
         {
@@ -228,5 +232,15 @@ static int lsnd_dsvr_event_hdl(lsnd_cntx_t *ctx, lsnd_dsvr_t *dsvr)
  ******************************************************************************/
 static int lsnd_dsvr_timeout_hdl(lsnd_cntx_t *ctx, lsnd_dsvr_t *dsvr)
 {
-    return lsnd_dsvr_cmd_dist_hdl(ctx, dsvr);
+    int idx;
+    cmd_dist_data_t dist;
+
+    for (idx=0; idx<ctx->conf.distq.num; ++idx)
+    {
+        dist.qid = idx;
+
+        lsnd_dsvr_cmd_dist_hdl(ctx, dsvr, &dist);
+    }
+
+    return 0;
 }

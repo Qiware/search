@@ -12,9 +12,16 @@ typedef enum
     , CMD_TYPE_TOTAL                        /* 命令总数 */
 } cmd_type_e;
 
+/* 分发数据参数 */
+typedef struct
+{
+    int qid;                                /* 队列ID */
+} cmd_dist_data_t;
+
 /* 命令附加信息 */
 typedef union
 {
+    cmd_dist_data_t dist_data;              /* 分发数据 */
 } cmd_param_u;
 
 /* 命令数据信息 */

@@ -114,12 +114,12 @@ static int frwd_shmq_push(shm_queue_t *shmq,
 static int frwd_cmd_send_to_lsnd(frwd_cntx_t *ctx,
      uint64_t serial, int type, int orig, char *data, size_t len)
 {
-    int idx;
     cmd_data_t cmd;
+    cmd_dist_data_t *dist = (cmd_dist_data_t *)&cmd.param;
 
-    idx = rand()%ctx->lsnd.distq_num;
+    dist->qid = rand()%ctx->lsnd.distq_num;
 
-    if (frwd_shmq_push(ctx->lsnd.distq[idx], serial, type, orig, data, len))
+    if (frwd_shmq_push(ctx->lsnd.distq[dist->qid], serial, type, orig, data, len))
     {
         log_error(ctx->log, "Push into SHMQ failed!");
         return FRWD_ERR;
