@@ -57,10 +57,7 @@ btree_t *btree_creat(int m, btree_opt_t *opt)
 
     btree->max = m - 1;
     btree->min = m / 2;
-    if (0 != m%2)
-    {
-        btree->min++;
-    }
+    if (0 != m%2) { btree->min++; }
     btree->min--;
     btree->sep_idx = m/2;
     btree->root = NULL;
