@@ -17,6 +17,7 @@
 #include <sys/shm.h>
 #include <pthread.h>
 #include <stdbool.h>
+#include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/timeb.h>
@@ -73,6 +74,13 @@ typedef struct
     };
 } serial_t;
 
+/* KV类型 */
+typedef struct
+{
+    int key;                                    /* 键值 */
+    void *data;                                 /* 承载数据 */
+} kv_t;
+
 /* 获取较大值
  *  警告: 勿将MAX改为宏定义, 否则将会出现严重不可预测的问题
  *  原因: 如果出现多线程或多进程共享变量进行参与比较时, 可能出现比较时比较式成立,
@@ -83,6 +91,19 @@ static inline int MAX(int a, int b) { return ((a) > (b) ? (a) : (b)); }
  *  原因: 如果出现多线程或多进程共享变量进行参与比较时, 可能出现比较时比较式成立,
  *        但返回时共享变量的值发生变化，导致返回结果不满足比较式. 这可能导致程序COREDUMP */
 static inline int MIN(int a, int b) { return ((a) < (b) ? (a) : (b)); }
+
+/* 获取CPU时钟 */
+static inline unsigned long cpu_ticket_get(void)
+{
+    union {
+        unsigned long tickets;
+        struct {
+            unsigned int low, high;
+        };
+    } ticket;
+    asm volatile("rdtsc" : "=a" (ticket.low), "=d" (ticket.high));
+    return ticket.tickets;
+}
 
 /* 将秒折算成: D天H时M分S秒 */
 #define TM_DAY(sec)         ((sec) / (86400))               /* 天 */
