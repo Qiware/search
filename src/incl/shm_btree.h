@@ -29,7 +29,6 @@ typedef struct
 
 typedef struct
 {
-    int fd;                                         /* 描述符 */
     void *addr;                                     /* 首地址 */
     log_cycle_t *log;                               /* 日志对象 */
 
@@ -39,9 +38,13 @@ typedef struct
 
 extern shm_btree_cntx_t *shm_btree_creat(const char *path, int m, size_t total, log_cycle_t *log);
 int shm_btree_insert(shm_btree_cntx_t *ctx, int key, void *data);
-extern int shm_btree_remove(shm_btree_cntx_t *ctx, int key, void **data);
+int shm_btree_remove(shm_btree_cntx_t *ctx, int key);
 void *shm_btree_query(shm_btree_cntx_t *ctx, int key);
 extern int shm_btree_destroy(shm_btree_cntx_t *ctx);
 void shm_btree_print(shm_btree_cntx_t *ctx);
+
+void *shm_btree_alloc(shm_btree_cntx_t *ctx, size_t size);
+#define shm_btree_alloc(ctx, size) shm_slab_alloc((ctx)->pool, (size))
+#define shm_btree_dealloc(ctx, ptr) shm_slab_dealloc((ctx)->pool, (ptr))
 
 #endif /*__SHM_BTREE_H__*/
