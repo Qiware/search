@@ -82,6 +82,7 @@ static int shm_slab_slot_remove_page(
  **    addr       slot           page         data                           end
  **Note  : 
  **     addr: 为偏移量的基址
+ **注意事项：调用shm_slab_init()前, 需要设置好pool_size值.
  **Author: # Qifeng.zou # 2013.07.12 #
  ******************************************************************************/
 int shm_slab_init(shm_slab_pool_t *pool)
