@@ -12,15 +12,15 @@ INCLUDE = -I. -I$(PROJ)/src/incl
 LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lcore
 
-SRC_LIST = avl_demo.c
-SRC_LIST2 = btree_demo.c
+SRC_LIST = btree_demo.c
+SRC_LIST2 = shm_btree_demo.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
 OBJS2 = $(subst .c,.o, $(SRC_LIST2)) 
 HEADS = $(call func_get_dep_head_list, $(SRC_LIST))
 
-TARGET = avl_demo
-TARGET2 = btree_demo
+TARGET = btree_demo 
+TARGET2 = shm_btree_demo
 
 .PHONY: all clean
 
@@ -35,7 +35,7 @@ $(TARGET2): $(OBJS2)
 	@$(CC) $(CFLAGS) -o $@ $(OBJS2) $(INCLUDE) $(LIBS_PATH) $(LIBS)
 	@echo "CC $@"
 	@mv $@ $(PROJ_BIN) 
-	@rm -fr $(OBJS)
+	@rm -fr $(OBJS2)
 	@echo "$@ is OK!"
 
 $(OBJS): %.o : %.c $(HEADS)
