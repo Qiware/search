@@ -18,6 +18,9 @@
 #include "log.h"
 #include "shm_btree.h"
 
+#define shm_btree_ptr_to_off(ctx, ptr) (off_t)((void *)(ptr) - (ctx)->addr)
+#define shm_btree_off_to_ptr(ctx, off) (void *)((ctx)->addr + (off))
+
 static shm_btree_node_t *shm_btree_node_alloc(shm_btree_cntx_t *ctx);
 static int shm_btree_node_dealloc(shm_btree_cntx_t *ctx, shm_btree_node_t *node);
 
@@ -181,23 +184,23 @@ int shm_btree_insert(shm_btree_cntx_t *ctx, int key, void *data)
             return -1;
         }
         
-        node_key = (int *)(ctx->addr + node->key);
-        node_data = (off_t *)(ctx->addr + node->data);
+        node_key = (int *)shm_btree_off_to_ptr(ctx, node->key);
+        node_data = (off_t *)shm_btree_off_to_ptr(ctx, node->data);
 
         node->num = 1;
         node_key[0] = key;
         node->parent = 0; /* 空 */
-        node_data[0] = (off_t)(data - ctx->addr);
-        btree->root = (off_t)((void *)node - ctx->addr);
+        node_data[0] = (off_t)shm_btree_ptr_to_off(ctx, data);
+        btree->root = (off_t)shm_btree_ptr_to_off(ctx, node);
         return 0;
     }
 
     /* 2. 查找关键字的插入位置 */
-    node = (shm_btree_node_t *)(ctx->addr + btree->root);
+    node = (shm_btree_node_t *)shm_btree_off_to_ptr(ctx, btree->root);
     while (1)
     {
-        node_key = (int *)(ctx->addr + node->key);
-        node_data = (off_t *)(ctx->addr + node->data);
+        node_key = (int *)shm_btree_off_to_ptr(ctx, node->key);
+        node_data = (off_t *)shm_btree_off_to_ptr(ctx, node->data);
 
         /* 二分查找算法实现 */
         idx = shm_btree_key_bsearch(node_key, node->num, key);
@@ -211,13 +214,13 @@ int shm_btree_insert(shm_btree_cntx_t *ctx, int key, void *data)
             idx += 1;
         }
 
-        node_child = (off_t *)(ctx->addr + node->child);
+        node_child = (off_t *)shm_btree_off_to_ptr(ctx, node->child);
         if (0 == node_child[idx])
         {
             break;
         }
 
-        node = (shm_btree_node_t *)(ctx->addr + node_child[idx]);
+        node = (shm_btree_node_t *)shm_btree_off_to_ptr(ctx, node_child[idx]);
     }
 
     /* 3. 执行插入操作 */
@@ -247,8 +250,8 @@ static int _shm_btree_insert(shm_btree_cntx_t *ctx,
     off_t *node_data;
     shm_btree_t *btree = ctx->btree;
 
-    node_key = (int *)(ctx->addr + node->key);
-    node_data = (off_t *)(ctx->addr + node->data);
+    node_key = (int *)shm_btree_off_to_ptr(ctx, node->key);
+    node_data = (off_t *)shm_btree_off_to_ptr(ctx, node->data);
 
     /* 1. 插入最底层的节点: 孩子节点都是空指针 */
     for (i=node->num; i>idx; i--)
@@ -258,7 +261,7 @@ static int _shm_btree_insert(shm_btree_cntx_t *ctx,
     }
 
     node_key[idx] = key;
-    node_data[idx] = (off_t)(data - ctx->addr);
+    node_data[idx] = (off_t)shm_btree_ptr_to_off(ctx, data);
     node->num++;
 
     /* 2. 分化节点 */
@@ -305,13 +308,13 @@ static int shm_btree_split(shm_btree_cntx_t *ctx, shm_btree_node_t *node)
             return -1;
         }
 
-        node_key = (int *)(ctx->addr + node->key);
-        node_data = (off_t *)(ctx->addr + node->data);
-        node_child = (off_t *)(ctx->addr + node->child);
+        node_key = (int *)shm_btree_off_to_ptr(ctx, node->key);
+        node_data = (off_t *)shm_btree_off_to_ptr(ctx, node->data);
+        node_child = (off_t *)shm_btree_off_to_ptr(ctx, node->child);
 
-        node2_key = (int *)(ctx->addr + node2->key);
-        node2_data = (off_t *)(ctx->addr + node2->data);
-        node2_child = (off_t *)(ctx->addr + node2->child);
+        node2_key = (int *)shm_btree_off_to_ptr(ctx, node2->key);
+        node2_data = (off_t *)shm_btree_off_to_ptr(ctx, node2->data);
+        node2_child = (off_t *)shm_btree_off_to_ptr(ctx, node2->child);
 
         /* Copy data */
         memcpy(node2_key, node_key+sep_idx+1, (total-sep_idx-1) * sizeof(int));
@@ -334,28 +337,28 @@ static int shm_btree_split(shm_btree_cntx_t *ctx, shm_btree_node_t *node)
                 return -1;
             }
 
-            parent_key = (int *)(ctx->addr + parent->key);
-            parent_data = (off_t *)(ctx->addr + parent->data);
-            parent_child = (off_t *)(ctx->addr + parent->child);
+            parent_key = (int *)shm_btree_off_to_ptr(ctx, parent->key);
+            parent_data = (off_t *)shm_btree_off_to_ptr(ctx, parent->data);
+            parent_child = (off_t *)shm_btree_off_to_ptr(ctx, parent->child);
 
-            btree->root = (off_t)((void *)parent - ctx->addr);
-            parent_child[0] = (off_t)((void *)node - ctx->addr);
+            btree->root = (off_t)shm_btree_ptr_to_off(ctx, parent);
+            parent_child[0] = (off_t)shm_btree_ptr_to_off(ctx, node);
             node->parent = btree->root;
             node2->parent = node->parent;
 
             parent_key[0] = node_key[sep_idx];
             parent_data[0] = node_data[sep_idx];
-            parent_child[1] = (off_t)((void *)node2 - ctx->addr);
+            parent_child[1] = (off_t)shm_btree_ptr_to_off(ctx, node2);
             parent->num++;
         }
         else
         {
             /* Insert into parent node */
-            parent = (shm_btree_node_t *)(ctx->addr + node->parent);
+            parent = (shm_btree_node_t *)shm_btree_off_to_ptr(ctx, node->parent);
 
-            parent_key = (int *)(ctx->addr + parent->key);
-            parent_data = (off_t *)(ctx->addr + parent->data);
-            parent_child = (off_t *)(ctx->addr + parent->child);
+            parent_key = (int *)shm_btree_off_to_ptr(ctx, parent->key);
+            parent_data = (off_t *)shm_btree_off_to_ptr(ctx, parent->data);
+            parent_child = (off_t *)shm_btree_off_to_ptr(ctx, parent->child);
 
             for (idx=parent->num; idx>0; idx--)
             {
@@ -369,8 +372,8 @@ static int shm_btree_split(shm_btree_cntx_t *ctx, shm_btree_node_t *node)
                 {
                     parent_key[idx] = node_key[sep_idx];
                     parent_data[idx] = node_data[sep_idx];
-                    parent_child[idx+1] = (off_t)((void *)node2 - ctx->addr);
-                    node2->parent = (off_t)((void *)parent - ctx->addr);
+                    parent_child[idx+1] = (off_t)shm_btree_ptr_to_off(ctx, node2);
+                    node2->parent = (off_t)shm_btree_ptr_to_off(ctx, parent);
                     parent->num++;
                     break;
                 }
@@ -380,8 +383,8 @@ static int shm_btree_split(shm_btree_cntx_t *ctx, shm_btree_node_t *node)
             {
                 parent_key[0] = node_key[sep_idx];
                 parent_data[0] = node_data[sep_idx];
-                parent_child[1] = (off_t)((void *)node2 - ctx->addr);
-                node2->parent = (off_t)((void *)parent - ctx->addr);
+                parent_child[1] = (off_t)shm_btree_ptr_to_off(ctx, node2);
+                node2->parent = (off_t)shm_btree_ptr_to_off(ctx, parent);
                 parent->num++;
             }
         }
@@ -395,8 +398,8 @@ static int shm_btree_split(shm_btree_cntx_t *ctx, shm_btree_node_t *node)
         {
             if (0 != node2_child[idx])
             {
-                child = (shm_btree_node_t *)(ctx->addr + node2_child[idx]);
-                child->parent = (off_t)((void *)node2 - ctx->addr);
+                child = (shm_btree_node_t *)shm_btree_off_to_ptr(ctx, node2_child[idx]);
+                child->parent = (off_t)shm_btree_ptr_to_off(ctx, node2);
             }
         }
         node = parent;
@@ -431,20 +434,20 @@ static int _shm_btree_remove(shm_btree_cntx_t *ctx, shm_btree_node_t *node, int 
     /* 使用node->child[idx]中的最大值替代被删除的关键字 */
     do
     {
-        node_child = (off_t *)(ctx->addr + node->child);
+        node_child = (off_t *)shm_btree_off_to_ptr(ctx, node->child);
         if (0 == node_child[idx])
         {
             break;
         }
-        child = (shm_btree_node_t *)(ctx->addr + node_child[idx]);
+        child = (shm_btree_node_t *)shm_btree_off_to_ptr(ctx, node_child[idx]);
         node = child;
     } while(1);
 
-    node_key = (int *)(ctx->addr + node->key);
-    node_data = (off_t *)(ctx->addr + node->data);
+    node_key = (int *)shm_btree_off_to_ptr(ctx, node->key);
+    node_data = (off_t *)shm_btree_off_to_ptr(ctx, node->data);
 
-    orig_key = (int *)(ctx->addr + orig->key);
-    orig_data = (off_t *)(ctx->addr + orig->data);
+    orig_key = (int *)shm_btree_off_to_ptr(ctx, orig->key);
+    orig_data = (off_t *)shm_btree_off_to_ptr(ctx, orig->data);
 
     orig_key[idx] = node_key[node->num - 1];
     orig_data[idx] = node_data[node->num - 1];
@@ -488,9 +491,9 @@ static int shm_btree_merge(shm_btree_cntx_t *ctx, shm_btree_node_t *node)
     off_t *node_child, *parent_child, *left_child, *right_child;
 
 
-    node_key = (int *)(ctx->addr + node->key);
-    node_data = (off_t *)(ctx->addr + node->data);
-    node_child = (off_t *)(ctx->addr + node->child);
+    node_key = (int *)shm_btree_off_to_ptr(ctx, node->key);
+    node_data = (off_t *)shm_btree_off_to_ptr(ctx, node->data);
+    node_child = (off_t *)shm_btree_off_to_ptr(ctx, node->child);
 
     /* 1. node是根结点, 不必进行合并处理 */
     if (0 == node->parent)
@@ -500,7 +503,7 @@ static int shm_btree_merge(shm_btree_cntx_t *ctx, shm_btree_node_t *node)
             if (0 != node_child[0])
             {
                 btree->root = node_child[0];
-                child = (shm_btree_node_t *)(ctx->addr + node_child[0]);
+                child = (shm_btree_node_t *)shm_btree_off_to_ptr(ctx, node_child[0]);
                 child->parent = 0; /* 空 */
             }
             else
@@ -518,11 +521,11 @@ static int shm_btree_merge(shm_btree_cntx_t *ctx, shm_btree_node_t *node)
     /* 2. 查找node是其父结点的第几个孩子结点 */
     parent = (shm_btree_node_t *)((void *)ctx->addr + node->parent);
 
-    parent_key = (int *)(ctx->addr + parent->key);
-    parent_data = (off_t *)(ctx->addr + parent->data);
-    parent_child = (off_t *)(ctx->addr + parent->child);
+    parent_key = (int *)shm_btree_off_to_ptr(ctx, parent->key);
+    parent_data = (off_t *)shm_btree_off_to_ptr(ctx, parent->data);
+    parent_child = (off_t *)shm_btree_off_to_ptr(ctx, parent->child);
 
-    off = (off_t)((void *)node - ctx->addr);
+    off = (off_t)shm_btree_ptr_to_off(ctx, node);
     for (idx=0; idx<=parent->num; idx++)
     {
         if (parent_child[idx] == off)
@@ -541,7 +544,7 @@ static int shm_btree_merge(shm_btree_cntx_t *ctx, shm_btree_node_t *node)
     else if (idx == parent->num)
     {
         mid = idx - 1;
-        left = (shm_btree_node_t *)(ctx->addr + parent_child[mid]);
+        left = (shm_btree_node_t *)shm_btree_off_to_ptr(ctx, parent_child[mid]);
 
         /* 1) 合并结点 */
         if ((node->num + left->num + 1) <= btree->max)
@@ -549,9 +552,9 @@ static int shm_btree_merge(shm_btree_cntx_t *ctx, shm_btree_node_t *node)
             return _shm_btree_merge(ctx, left, node, mid);
         }
 
-        left_key = (int *)(ctx->addr + left->key);
-        left_data = (off_t *)(ctx->addr + left->data);
-        left_child = (off_t *)(ctx->addr + left->child);
+        left_key = (int *)shm_btree_off_to_ptr(ctx, left->key);
+        left_data = (off_t *)shm_btree_off_to_ptr(ctx, left->data);
+        left_child = (off_t *)shm_btree_off_to_ptr(ctx, left->child);
 
         /* 2) 借用结点:brother->key[num-1] */
         for (m=node->num; m>0; m--)
@@ -568,8 +571,8 @@ static int shm_btree_merge(shm_btree_cntx_t *ctx, shm_btree_node_t *node)
         node_child[0] = left_child[left->num];
         if (0 != left_child[left->num])
         {
-            child = (shm_btree_node_t *)(ctx->addr + left_child[left->num]);
-            child->parent = (off_t)((void *)node - ctx->addr);
+            child = (shm_btree_node_t *)shm_btree_off_to_ptr(ctx, left_child[left->num]);
+            child->parent = (off_t)shm_btree_ptr_to_off(ctx, node);
         }
 
         parent_key[mid] = left_key[left->num - 1];
@@ -584,11 +587,11 @@ static int shm_btree_merge(shm_btree_cntx_t *ctx, shm_btree_node_t *node)
     /* 4. node: 非最后一个孩子结点(node < right)
      * node as left child */
     mid = idx;
-    right = (shm_btree_node_t *)(ctx->addr + parent_child[mid + 1]);
+    right = (shm_btree_node_t *)shm_btree_off_to_ptr(ctx, parent_child[mid + 1]);
 
-    right_key = (int *)(ctx->addr + right->key);
-    right_data = (off_t *)(ctx->addr + right->data);
-    right_child = (off_t *)(ctx->addr + right->child);
+    right_key = (int *)shm_btree_off_to_ptr(ctx, right->key);
+    right_data = (off_t *)shm_btree_off_to_ptr(ctx, right->data);
+    right_child = (off_t *)shm_btree_off_to_ptr(ctx, right->child);
 
     /* 1) 合并结点 */
     if ((node->num + right->num + 1) <= btree->max)
@@ -603,8 +606,8 @@ static int shm_btree_merge(shm_btree_cntx_t *ctx, shm_btree_node_t *node)
     node_child[node->num] = right_child[0];
     if (0 != right_child[0])
     {
-        child = (shm_btree_node_t *)(ctx->addr + right_child[0]);
-        child->parent = (off_t)((void *)node - ctx->addr);
+        child = (shm_btree_node_t *)shm_btree_off_to_ptr(ctx, right_child[0]);
+        child->parent = (off_t)shm_btree_ptr_to_off(ctx, node);
     }
 
     parent_key[mid] = right_key[0];
@@ -643,19 +646,19 @@ static int _shm_btree_merge(shm_btree_cntx_t *ctx,
     off_t *parent_data, *left_data, *right_data;
     off_t *parent_child, *left_child, *right_child;
 
-    parent = (shm_btree_node_t *)(ctx->addr + left->parent);
+    parent = (shm_btree_node_t *)shm_btree_off_to_ptr(ctx, left->parent);
 
-    parent_key = (int *)(ctx->addr + parent->key);
-    parent_data = (off_t *)(ctx->addr + parent->data);
-    parent_child = (off_t *)(ctx->addr + parent->child);
+    parent_key = (int *)shm_btree_off_to_ptr(ctx, parent->key);
+    parent_data = (off_t *)shm_btree_off_to_ptr(ctx, parent->data);
+    parent_child = (off_t *)shm_btree_off_to_ptr(ctx, parent->child);
 
-    left_key = (int *)(ctx->addr + left->key);
-    left_data = (off_t *)(ctx->addr + left->data);
-    left_child = (off_t *)(ctx->addr + left->child);
+    left_key = (int *)shm_btree_off_to_ptr(ctx, left->key);
+    left_data = (off_t *)shm_btree_off_to_ptr(ctx, left->data);
+    left_child = (off_t *)shm_btree_off_to_ptr(ctx, left->child);
 
-    right_key = (int *)(ctx->addr + right->key);
-    right_data = (off_t *)(ctx->addr + right->data);
-    right_child = (off_t *)(ctx->addr + right->child);
+    right_key = (int *)shm_btree_off_to_ptr(ctx, right->key);
+    right_data = (off_t *)shm_btree_off_to_ptr(ctx, right->data);
+    right_child = (off_t *)shm_btree_off_to_ptr(ctx, right->child);
 
     left_key[left->num] = parent_key[mid];
     left_data[left->num] = parent_data[mid];
@@ -669,8 +672,8 @@ static int _shm_btree_merge(shm_btree_cntx_t *ctx,
     {
         if (0 != right_child[m]) /* 不空 */
         {
-            child = (shm_btree_node_t *)(ctx->addr + right_child[m]);
-            child->parent = (off_t)((void *)left - ctx->addr);
+            child = (shm_btree_node_t *)shm_btree_off_to_ptr(ctx, right_child[m]);
+            child->parent = (off_t)shm_btree_ptr_to_off(ctx, left);
         }
     }
     left->num += right->num;
@@ -728,17 +731,17 @@ int shm_btree_destroy(shm_btree_cntx_t *ctx)
         return 0;
     }
 
-    node = (shm_btree_node_t *)(ctx->addr + btree->root);
+    node = (shm_btree_node_t *)shm_btree_off_to_ptr(ctx, btree->root);
 
-    node_key = (int *)(ctx->addr + node->key);
-    node_data = (off_t *)(ctx->addr + node->data);
-    node_child = (off_t *)(ctx->addr + node->child);
+    node_key = (int *)shm_btree_off_to_ptr(ctx, node->key);
+    node_data = (off_t *)shm_btree_off_to_ptr(ctx, node->data);
+    node_child = (off_t *)shm_btree_off_to_ptr(ctx, node->child);
 
     for (idx=0; idx<=node->num; ++idx)
     {
         if (0 != node_child[idx])
         {
-            child = (shm_btree_node_t *)(ctx->addr + node_child[idx]);
+            child = (shm_btree_node_t *)shm_btree_off_to_ptr(ctx, node_child[idx]);
             shm_btree_node_dealloc(ctx, child);
         }
     }
@@ -774,8 +777,8 @@ static void _shm_btree_print(shm_btree_cntx_t *ctx, shm_btree_node_t *node, int 
     off_t *node_child;
     shm_btree_node_t *child;
 
-    node_key = (int *)(ctx->addr + node->key);
-    node_child = (off_t *)(ctx->addr + node->child);
+    node_key = (int *)shm_btree_off_to_ptr(ctx, node->key);
+    node_child = (off_t *)shm_btree_off_to_ptr(ctx, node->child);
 
     /* 1. Print Start */
     for (d=0; d<deep; d++)
@@ -803,7 +806,7 @@ static void _shm_btree_print(shm_btree_cntx_t *ctx, shm_btree_node_t *node, int 
     {
         if (0 != node_child[idx]) /* 不空 */
         {
-            child = (shm_btree_node_t *)(ctx->addr + node_child[idx]);
+            child = (shm_btree_node_t *)shm_btree_off_to_ptr(ctx, node_child[idx]);
             _shm_btree_print(ctx, child, deep+1);
             flag = 1;
         }
@@ -844,7 +847,7 @@ void shm_btree_print(shm_btree_cntx_t *ctx)
 
     if (0 != btree->root) /* 不空 */
     {
-        node = (shm_btree_node_t *)(ctx->addr + btree->root);
+        node = (shm_btree_node_t *)shm_btree_off_to_ptr(ctx, btree->root);
 
         _shm_btree_print(ctx, node, 0);
     }
@@ -887,7 +890,7 @@ static shm_btree_node_t *shm_btree_node_alloc(shm_btree_cntx_t *ctx)
         return NULL;
     }
 
-    node->key = (off_t)((void *)node_key - ctx->addr);
+    node->key = (off_t)shm_btree_ptr_to_off(ctx, node_key);
 
     node_data = (off_t *)shm_slab_alloc(ctx->pool, (btree->max + 1) * sizeof(off_t));
     if (NULL == node_data)
@@ -898,7 +901,7 @@ static shm_btree_node_t *shm_btree_node_alloc(shm_btree_cntx_t *ctx)
         return NULL;
     }
 
-    node->data = (off_t)((void *)node_data - ctx->addr);
+    node->data = (off_t)shm_btree_ptr_to_off(ctx, node_data);
 
     /* More than (max+1) is for move */
     node_child = (off_t *)shm_slab_alloc(ctx->pool, (btree->max+2) * sizeof(off_t));
@@ -911,7 +914,7 @@ static shm_btree_node_t *shm_btree_node_alloc(shm_btree_cntx_t *ctx)
         return NULL;
     }
 
-    node->child = (off_t)((void *)node_child - ctx->addr);
+    node->child = (off_t)shm_btree_ptr_to_off(ctx, node_child);
                                           
     return node;
 }
@@ -935,15 +938,15 @@ static int shm_btree_node_dealloc(shm_btree_cntx_t *ctx, shm_btree_node_t *node)
     off_t *node_data, *node_child;
     shm_btree_node_t *child;
 
-    node_key = (int *)(ctx->addr + node->key);
-    node_data = (off_t *)(ctx->addr + node->data);
-    node_child = (off_t *)(ctx->addr + node->child);
+    node_key = (int *)shm_btree_off_to_ptr(ctx, node->key);
+    node_data = (off_t *)shm_btree_off_to_ptr(ctx, node->data);
+    node_child = (off_t *)shm_btree_off_to_ptr(ctx, node->child);
 
     for (idx=0; idx<=node->num; ++idx)
     {
         if (0 != node_child[idx])
         {
-            child = (shm_btree_node_t *)(ctx->addr + node_child[idx]);
+            child = (shm_btree_node_t *)shm_btree_off_to_ptr(ctx, node_child[idx]);
             shm_btree_node_dealloc(ctx, child);
             continue;
         }
@@ -980,16 +983,16 @@ int shm_btree_remove(shm_btree_cntx_t *ctx, int key, void **data)
     off = btree->root;
     while (0 != off)
     {
-        node = (shm_btree_node_t *)(ctx->addr + off);
+        node = (shm_btree_node_t *)shm_btree_off_to_ptr(ctx, off);
 
-        node_key = (int *)(ctx->addr + node->key);
-        node_data = (off_t *)(ctx->addr + node->data);
-        node_child = (off_t *)(ctx->addr + node->child);
+        node_key = (int *)shm_btree_off_to_ptr(ctx, node->key);
+        node_data = (off_t *)shm_btree_off_to_ptr(ctx, node->data);
+        node_child = (off_t *)shm_btree_off_to_ptr(ctx, node->child);
 
         idx = shm_btree_key_bsearch(node_key, node->num, key);
         if (key == node_key[idx])
         {
-            *data = (void *)(ctx->addr + node_data[idx]);
+            *data = (void *)shm_btree_off_to_ptr(ctx, node_data[idx]);
             return _shm_btree_remove(ctx, node, idx);
         }
         else if (key < node_key[idx])
@@ -1029,17 +1032,17 @@ void *shm_btree_query(shm_btree_cntx_t *ctx, int key)
     off = btree->root;
     while (0 != off)
     {
-        node = (shm_btree_node_t *)(ctx->addr + off);
+        node = (shm_btree_node_t *)shm_btree_off_to_ptr(ctx, off);
 
-        node_key = (int *)(ctx->addr + node->key);
-        node_data = (off_t *)(ctx->addr + node->data);
-        node_child = (off_t *)(ctx->addr + node->child);
+        node_key = (int *)shm_btree_off_to_ptr(ctx, node->key);
+        node_data = (off_t *)shm_btree_off_to_ptr(ctx, node->data);
+        node_child = (off_t *)shm_btree_off_to_ptr(ctx, node->child);
 
         idx = shm_btree_key_bsearch(node_key, node->num, key);
         if (key == node_key[idx])
         {
             log_debug(ctx->log, "Found! key:%d idx:%d", key, idx);
-            return (void *)(ctx->addr + node_data[idx]); /* 找到 */
+            return (void *)shm_btree_off_to_ptr(ctx, node_data[idx]); /* 找到 */
         }
         else if (key < node_key[idx])
         {
@@ -1047,7 +1050,7 @@ void *shm_btree_query(shm_btree_cntx_t *ctx, int key)
             continue;
         }
 
-        node = (shm_btree_node_t *)(ctx->addr + node_child[idx+1]);
+        node = (shm_btree_node_t *)shm_btree_off_to_ptr(ctx, node_child[idx+1]);
     }
 
     return NULL; /* 未找到 */
