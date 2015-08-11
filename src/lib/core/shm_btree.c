@@ -57,6 +57,7 @@ shm_btree_cntx_t *shm_btree_creat(const char *path, int m, size_t total, log_cyc
     int fd;
     void *addr;
     shm_btree_t *btree;
+    shm_slab_pool_t *pool;
     shm_btree_cntx_t *ctx;
 
     if (m < 3)
@@ -73,7 +74,11 @@ shm_btree_cntx_t *shm_btree_creat(const char *path, int m, size_t total, log_cyc
         return NULL;
     }
 
-    addr = mmap(NULL, total, PROT_READ, MAP_PRIVATE, fd, 0);
+    lseek(fd, total, SEEK_SET);
+
+    write(fd, "", 1);
+
+    addr = mmap(NULL, total, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
     if (NULL == addr)
     {
         log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
@@ -81,16 +86,16 @@ shm_btree_cntx_t *shm_btree_creat(const char *path, int m, size_t total, log_cyc
         return NULL;
     }
 
+    close(fd);
+
     /* > 创建对象 */
     ctx = (shm_btree_cntx_t *)calloc(1, sizeof(shm_btree_cntx_t));
     if (NULL == ctx)
     {
         log_error(log, "Alloc memory failed!");
-        close(fd);
         return NULL;
     }
 
-    ctx->fd = fd;
     ctx->log = log;
     ctx->addr = addr;
     ctx->btree = (shm_btree_t *)addr;
@@ -105,6 +110,16 @@ shm_btree_cntx_t *shm_btree_creat(const char *path, int m, size_t total, log_cyc
     btree->sep_idx = m/2;
     btree->root = 0; /* 空 */
     btree->total = total;
+
+    pool = ctx->pool;
+    pool->pool_size = total - sizeof(shm_btree_t);
+
+    if (shm_slab_init(ctx->pool))
+    {
+        munmap(ctx->addr, btree->total);
+        free(ctx);
+        return NULL;
+    }
 
     return ctx;
 }
@@ -726,7 +741,6 @@ int shm_btree_destroy(shm_btree_cntx_t *ctx)
     if (0 == btree->root)
     {
         munmap(ctx->addr, btree->total);
-        close(ctx->fd);
         free(ctx);
         return 0;
     }
@@ -753,7 +767,6 @@ int shm_btree_destroy(shm_btree_cntx_t *ctx)
     btree->root = 0;
 
     munmap(ctx->addr, btree->total);
-    close(ctx->fd);
     free(ctx);
     return 0;
 }
@@ -971,10 +984,11 @@ static int shm_btree_node_dealloc(shm_btree_cntx_t *ctx, shm_btree_node_t *node)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.08.10 #
  ******************************************************************************/
-int shm_btree_remove(shm_btree_cntx_t *ctx, int key, void **data)
+int shm_btree_remove(shm_btree_cntx_t *ctx, int key)
 {
     int idx;
     off_t off;
+    void *data;
     int *node_key;
     shm_btree_node_t *node;
     off_t *node_data, *node_child;
@@ -992,7 +1006,8 @@ int shm_btree_remove(shm_btree_cntx_t *ctx, int key, void **data)
         idx = shm_btree_key_bsearch(node_key, node->num, key);
         if (key == node_key[idx])
         {
-            *data = (void *)shm_btree_off_to_ptr(ctx, node_data[idx]);
+            data = (void *)shm_btree_off_to_ptr(ctx, node_data[idx]);
+            shm_slab_dealloc(ctx->pool, data);
             return _shm_btree_remove(ctx, node, idx);
         }
         else if (key < node_key[idx])
@@ -1004,8 +1019,7 @@ int shm_btree_remove(shm_btree_cntx_t *ctx, int key, void **data)
         off = node_child[idx+1];
     }
 
-    *data = NULL; /* 空 */
-    return 0;
+    return -1; /* Not found */
 }
 
 /******************************************************************************
