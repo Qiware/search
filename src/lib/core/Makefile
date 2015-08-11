@@ -35,6 +35,7 @@ SRC_LIST = hash.c \
 			shm_list.c \
 			shm_hash.c \
 			btree.c \
+			shm_btree.c \
 			rb_tree.c \
 			kw_tree.c \
 			avl_tree.c \
