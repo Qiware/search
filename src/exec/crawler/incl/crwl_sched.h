@@ -11,11 +11,6 @@ typedef struct
 {
     int id;                                 /* 线程索引 */
     redisContext *redis;                    /* Redis对象 */
-
-    int cmd_sck_id;                         /* 命令套接字 */
-
-    fd_set rdset;                           /* 可读集合 */
-    fd_set wrset;                           /* 可写集合 */
 } crwl_sched_t;
 
 void *crwl_sched_routine(void *_ctx);

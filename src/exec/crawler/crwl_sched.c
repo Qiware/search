@@ -41,8 +41,6 @@ static int crwl_sched_task_hdl(crwl_cntx_t *ctx, queue_t *workq, crwl_task_t *ta
  ******************************************************************************/
 void *crwl_sched_routine(void *_ctx)
 {
-    int ret, max;
-    struct timeval tv;
     crwl_sched_t *sched;
     crwl_cntx_t *ctx = (crwl_cntx_t *)_ctx;
     crwl_conf_t *conf = &ctx->conf;
@@ -58,38 +56,14 @@ void *crwl_sched_routine(void *_ctx)
 
     while (1)
     {
+        Sleep(1);
+
         if (!conf->sched_stat)
         {
-            Sleep(1);
             continue;
         }
 
-        /* 2. 等待事件通知 */
-        FD_ZERO(&sched->rdset);
-        FD_ZERO(&sched->wrset);
-
-        max = sched->cmd_sck_id;
-
-        tv.tv_sec = 1;
-        tv.tv_usec = 0;
-
-        ret = select(max+1, &sched->rdset, &sched->wrset, NULL, &tv);
-        if (ret < 0)
-        {
-            if (EINTR == errno) { continue; }
-            log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
-            abort();
-            break;
-        }
-        else if (0 == ret)
-        {
-            /* 超时处理 */
-            crwl_sched_timeout_hdl(ctx, sched);
-            continue;
-        }
-
-        /* 3. 进行事件处理 */
-        crwl_sched_event_hdl(ctx, sched);
+        crwl_sched_timeout_hdl(ctx, sched);
     }
 
     crwl_sched_destroy(sched);
@@ -137,9 +111,6 @@ static crwl_sched_t *crwl_sched_init(crwl_cntx_t *ctx)
         return NULL;
     }
 
-    /* 3. 创建命令套接字 */
-    sched->cmd_sck_id = -1;
-
     return sched;
 }
 
@@ -158,7 +129,6 @@ static void crwl_sched_destroy(crwl_sched_t *sched)
 {
     redisFree(sched->redis);
     sched->redis = NULL;
-    CLOSE(sched->cmd_sck_id);
     free(sched);
 }
 
@@ -179,32 +149,6 @@ static int crwl_sched_timeout_hdl(crwl_cntx_t *ctx, crwl_sched_t *sched)
     int ret;
 
     /* 1. 取Undo任务, 并放入Worker队列 */
-    ret = crwl_sched_task(ctx, sched);
-    if (CRWL_OK != ret)
-    {
-        log_error(ctx->log, "Fetch task failed!");
-        return CRWL_ERR;
-    }
-
-    return CRWL_OK;
-}
-
-/******************************************************************************
- **函数名称: crwl_sched_event_hdl
- **功    能: 时间处理
- **输入参数: 
- **     ctx: 全局信息
- **     sched: 调度对象
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.10.17 #
- ******************************************************************************/
-static int crwl_sched_event_hdl(crwl_cntx_t *ctx, crwl_sched_t *sched)
-{
-    int ret;    
-
     ret = crwl_sched_task(ctx, sched);
     if (CRWL_OK != ret)
     {
