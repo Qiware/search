@@ -63,7 +63,7 @@ void *crwl_sched_routine(void *_ctx)
             continue;
         }
 
-        crwl_sched_timeout_hdl(ctx, sched);
+        crwl_sched_task(ctx, sched);
     }
 
     crwl_sched_destroy(sched);
@@ -133,33 +133,6 @@ static void crwl_sched_destroy(crwl_sched_t *sched)
 }
 
 /******************************************************************************
- **函数名称: crwl_sched_timeout_hdl
- **功    能: 超时处理
- **输入参数: 
- **     ctx: 全局信息
- **     sched: 调度对象
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.10.17 #
- ******************************************************************************/
-static int crwl_sched_timeout_hdl(crwl_cntx_t *ctx, crwl_sched_t *sched)
-{
-    int ret;
-
-    /* 1. 取Undo任务, 并放入Worker队列 */
-    ret = crwl_sched_task(ctx, sched);
-    if (CRWL_OK != ret)
-    {
-        log_error(ctx->log, "Fetch task failed!");
-        return CRWL_ERR;
-    }
-
-    return CRWL_OK;
-}
-
-/******************************************************************************
  **函数名称: crwl_sched_task
  **功    能: 从UNDO队列中取数据，并放入到Worker队列中
  **输入参数: 
@@ -189,16 +162,7 @@ static int crwl_sched_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
 
     while (conf->sched_stat)
     {
-        /* > 取Undo任务数据 */
-        r = redis_lpop(sched->redis, conf->redis.taskq);
-        if (REDIS_REPLY_NIL == r->type)
-        {
-            freeReplyObject(r);
-            return CRWL_OK;
-        }
-
         /* > 随机选择任务队列 */
-    QUEUE_MALLOC:
         idx = rand() % conf->worker.num;
 
         workq = ctx->workq[idx];
@@ -207,13 +171,21 @@ static int crwl_sched_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
         addr = queue_malloc(workq, size);
         if (NULL == addr)
         {
-            log_error(ctx->log, "Alloc from queue failed! num:%d size:%d/%d",
+            log_warn(ctx->log, "Alloc from queue failed! num:%d size:%d/%d",
                     queue_space(workq), size, queue_size(workq));
-            usleep(500);
-            goto QUEUE_MALLOC;
+            return CRWL_OK;
         }
 
         task = (crwl_task_t *)addr;
+
+        /* > 取Undo任务数据 */
+        r = redis_lpop(sched->redis, conf->redis.taskq);
+        if (REDIS_REPLY_NIL == r->type)
+        {
+            freeReplyObject(r);
+            queue_dealloc(workq, addr);
+            return CRWL_OK;
+        }
 
         /* > 解析Undo数据信息 */
         if (crwl_task_parse(r->str, task, ctx->log))
