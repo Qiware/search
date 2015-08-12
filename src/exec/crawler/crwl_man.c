@@ -42,8 +42,7 @@ static int crwl_man_send_cmd(crwl_cntx_t *ctx, crwl_man_t *man);
  **返    回: VOID
  **实现描述: 
  **     使用FD_ZERO() FD_SET()等接口
- **注意事项: 
- **     当链表为空时, 则不用加入可写集合
+ **注意事项: 当链表为空时, 则不用加入可写集合
  **作    者: # Qifeng.zou # 2015.02.16 #
  ******************************************************************************/
 #define crwl_man_set_rwset(man) \
@@ -98,6 +97,10 @@ void *crwl_manager_routine(void *_ctx)
             if (EINTR == errno) { continue; }
             log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
             return (void *)-1;
+        }
+        else if (0 == ret)
+        {
+            continue;
         }
 
         /* 3. 进行事件处理 */
@@ -288,8 +291,7 @@ static int crwl_man_event_hdl(crwl_cntx_t *ctx, crwl_man_t *man)
  **     buff: 缓存空间
  **输出参数:
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **     接收命令，并对命令类型和数据做相应的处理.
+ **实现描述: 接收命令，并对命令类型和数据做相应的处理.
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.02.13 #
  ******************************************************************************/
@@ -336,8 +338,7 @@ static int crwl_man_recv_cmd(crwl_cntx_t *ctx, crwl_man_t *man)
  **输出参数:
  **返    回: 0:成功 !0:失败
  **实现描述: 
- **注意事项: 
- **     记得释放链表数据的空间，否则存在内存泄露的问题
+ **注意事项: 记得释放链表数据的空间，否则存在内存泄露的问题
  **作    者: # Qifeng.zou # 2015.02.28 #
  ******************************************************************************/
 static int crwl_man_send_cmd(crwl_cntx_t *ctx, crwl_man_t *man)
@@ -345,25 +346,31 @@ static int crwl_man_send_cmd(crwl_cntx_t *ctx, crwl_man_t *man)
     int n;
     crwl_cmd_item_t *item;
 
-    /* > 弹出数据 */
-    item = list_lpop(man->mesg_list);
-    if (NULL == item)
+    while (1)
     {
-        log_error(man->log, "Didn't pop data from list!");
-        return CRWL_ERR;
-    }
+        /* > 弹出数据 */
+        item = list_lpop(man->mesg_list);
+        if (NULL == item)
+        {
+            log_warn(man->log, "Didn't pop data from list!");
+            break;
+        }
 
-    /* > 发送命令 */
-    n = sendto(man->fd, &item->cmd, sizeof(crwl_cmd_t), 0, (struct sockaddr *)&item->to, sizeof(item->to));
-    if (n < 0)
-    {
-        log_error(man->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        /* > 发送命令 */
+        n = sendto(man->fd, &item->cmd, sizeof(crwl_cmd_t), 0, (struct sockaddr *)&item->to, sizeof(item->to));
+        if (n < 0)
+        {
+            log_error(man->log, "errmsg:[%d] %s!", errno, strerror(errno));
+            if (list_lpush(man->mesg_list, item)) /* 放回发送队列 */
+            {
+                slab_dealloc(man->slab, item);
+            }
+            return CRWL_OK;
+        }
+
+        /* > 释放空间 */
         slab_dealloc(man->slab, item);
-        return CRWL_OK;
     }
-
-    /* > 释放空间 */
-    slab_dealloc(man->slab, item);
 
     return CRWL_OK;
 }
@@ -380,8 +387,7 @@ static int crwl_man_send_cmd(crwl_cntx_t *ctx, crwl_man_t *man)
  **输出参数:
  **返    回: 0:成功 !0:失败
  **实现描述: 
- **注意事项: 
- **     申请的应答数据空间, 需要在应答之后, 进行释放!
+ **注意事项: 申请的应答数据空间, 需要在应答之后, 进行释放!
  **作    者: # Qifeng.zou # 2015.03.02 #
  ******************************************************************************/
 static int crwl_man_query_conf_req_hdl(crwl_cntx_t *ctx,
@@ -444,8 +450,7 @@ static int crwl_man_query_conf_req_hdl(crwl_cntx_t *ctx,
  **输出参数:
  **返    回: 0:成功 !0:失败
  **实现描述: 
- **注意事项: 
- **     申请的应答数据空间, 需要在应答之后, 进行释放!
+ **注意事项: 申请的应答数据空间, 需要在应答之后, 进行释放!
  **作    者: # Qifeng.zou # 2015.02.13 #
  ******************************************************************************/
 static int crwl_man_query_worker_stat_req_hdl(crwl_cntx_t *ctx,
@@ -514,8 +519,7 @@ static int crwl_man_query_worker_stat_req_hdl(crwl_cntx_t *ctx,
  **输出参数:
  **返    回: 0:成功 !0:失败
  **实现描述: 
- **注意事项: 
- **     申请的应答数据空间, 需要在应答之后, 进行释放!
+ **注意事项: 申请的应答数据空间, 需要在应答之后, 进行释放!
  **作    者: # Qifeng.zou # 2015.03.01 #
  ******************************************************************************/
 static int crwl_man_query_workq_stat_req_hdl(crwl_cntx_t *ctx,
@@ -580,8 +584,7 @@ static int crwl_man_query_workq_stat_req_hdl(crwl_cntx_t *ctx,
  **输出参数:
  **返    回: 0:成功 !0:失败
  **实现描述: 
- **注意事项: 
- **     申请的应答数据空间, 需要在应答之后, 进行释放!
+ **注意事项: 申请的应答数据空间, 需要在应答之后, 进行释放!
  **作    者: # Qifeng.zou # 2015.03.25 #
  ******************************************************************************/
 static int crwl_man_switch_sched_req_hdl(crwl_cntx_t *ctx,
