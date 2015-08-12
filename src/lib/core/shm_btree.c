@@ -124,6 +124,96 @@ shm_btree_cntx_t *shm_btree_creat(const char *path, int m, size_t total, log_cyc
     return ctx;
 }
 
+
+/******************************************************************************
+ **函数名称: shm_btree_attach
+ **功    能: 附着B树
+ **输入参数:
+ **     path: B树路径
+ **     m: 阶(m >= 3)
+ **     total: B树空间总大小
+ **     log: 日志对象
+ **输出参数: NONE
+ **返    回: B树
+ **实现描述:
+ **      -----------------------------------------------------------------
+ **     |       |      |                                                  |
+ **     | btree | pool |           可  分  配  空  间                     |
+ **     |       |      |                                                  |
+ **      -----------------------------------------------------------------
+ **     ^       ^
+ **     |       |
+ **   btree    pool 
+ **     btree: B树对象
+ **     pool: 内存池对象
+ **注意事项:
+ **作    者: # Qifeng.zou # 2015.08.11 #
+ ******************************************************************************/
+shm_btree_cntx_t *shm_btree_attach(const char *path, int m, size_t total, log_cycle_t *log)
+{
+    int fd;
+    void *addr;
+    struct stat st;
+    shm_btree_t *btree;
+    shm_btree_cntx_t *ctx;
+
+    if (m < 3)
+    {
+        log_error(log, "Parameter 'm' must geater than 2!");
+        return NULL;
+    }
+
+    if (stat(path, &st)
+        || total != (size_t)st.st_size)
+    {
+        log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
+        return NULL;
+    }
+
+    /* > 载入内存 */
+    fd = open(path, OPEN_FLAGS, OPEN_MODE);
+    if (fd < 0)
+    {
+        log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
+        return NULL;
+    }
+
+    addr = mmap(NULL, total, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
+    if (NULL == addr)
+    {
+        log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
+        close(fd);
+        return NULL;
+    }
+
+    close(fd);
+
+    /* > 创建对象 */
+    ctx = (shm_btree_cntx_t *)calloc(1, sizeof(shm_btree_cntx_t));
+    if (NULL == ctx)
+    {
+        log_error(log, "Alloc memory failed!");
+        return NULL;
+    }
+
+    ctx->log = log;
+    ctx->addr = addr;
+    ctx->btree = (shm_btree_t *)addr;
+    ctx->pool = (shm_slab_pool_t *)(addr + sizeof(shm_btree_t));
+
+    /* > 校验合法性 */
+    btree = ctx->btree;
+    if ((btree->max != m-1)
+        || (btree->total != total))
+    {
+        munmap(ctx->addr, total);
+        free(ctx);
+        return NULL;
+    }
+
+    return ctx;
+}
+
 /******************************************************************************
  **函数名称: shm_btree_key_bsearch
  **功    能: B树键的二分查找
@@ -1068,4 +1158,24 @@ void *shm_btree_query(shm_btree_cntx_t *ctx, int key)
     }
 
     return NULL; /* 未找到 */
+}
+
+/******************************************************************************
+ **函数名称: shm_btree_dump
+ **功    能: 固化B树数据
+ **输入参数:
+ **     btree: B树
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述:
+ **注意事项:
+ **作    者: # Qifeng.zou # 2015.08.11 #
+ ******************************************************************************/
+int shm_btree_dump(shm_btree_cntx_t *ctx)
+{
+    shm_btree_t *btree = ctx->btree;
+
+    msync(ctx->addr, btree->total, MS_ASYNC);
+
+    return 0;
 }
