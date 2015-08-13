@@ -19,12 +19,12 @@
 /******************************************************************************
  **函数名称: flwtr_sched_routine
  **功    能: 将网页索引文件放入任务队列
- **输入参数: 
+ **输入参数:
  **     _ctx: 全局对象
  **输出参数:
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.03.11 #
  ******************************************************************************/
 void *flt_sched_routine(void *_ctx)
@@ -63,7 +63,7 @@ void *flt_sched_routine(void *_ctx)
         /* > 遍历文件 */
         while (NULL != (item = readdir(dir)))
         {
-            snprintf(fname, sizeof(fname), "%s/%s", path, item->d_name); 
+            snprintf(fname, sizeof(fname), "%s/%s", path, item->d_name);
 
             /* 2. 判断文件类型 */
             stat(fname, &st);
@@ -81,7 +81,7 @@ void *flt_sched_routine(void *_ctx)
                 break;
             }
 
-            snprintf(task->path, sizeof(task->path), "%s", fname); 
+            snprintf(task->path, sizeof(task->path), "%s", fname);
 
             sig_queue_push(ctx->taskq, task);
         }

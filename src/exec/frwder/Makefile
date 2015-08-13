@@ -23,7 +23,7 @@ SRC_LIST = frwder.c \
 			frwd_comm.c \
 			frwd_mesg.c
 
-OBJS = $(subst .c,.o, $(SRC_LIST)) 
+OBJS = $(subst .c,.o, $(SRC_LIST))
 HEADS = $(call func_get_dep_head_list, $(SRC_LIST))
 
 TARGET = frwder

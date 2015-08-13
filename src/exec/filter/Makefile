@@ -19,7 +19,7 @@ LIBS = -lpthread \
 			-lconf \
 	   		-lhiredis \
 			-lredis_ex \
-			-lgumbo_ex 
+			-lgumbo_ex
 SRC_LIST = filter.c \
 			flt_man.c \
 			flt_comm.c \

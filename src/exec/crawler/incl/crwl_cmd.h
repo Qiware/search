@@ -34,7 +34,7 @@ typedef struct
     int num;                                    /* 队列数 */
     struct
     {
-    #define CRWL_QUEUE_NAME_LEN (32)            
+    #define CRWL_QUEUE_NAME_LEN (32)
         char name[CRWL_QUEUE_NAME_LEN];         /* 队列名 */
         int num;                                /* 被占用空间 */
         int max;                                /* 最大容量 */

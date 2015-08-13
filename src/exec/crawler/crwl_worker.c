@@ -24,7 +24,7 @@ typedef int (*crwl_worker_task_hdl_t)(crwl_cntx_t *ctx, crwl_worker_t *worker, c
 
 /* 任务处理回调函数
  *  注意：必须与crwl_task_type_e个数、顺序保持一致, 否则将会出严重问题 */
-static crwl_worker_task_hdl_t g_crwl_worker_task_hdl[CRWL_TASK_TYPE_TOTAL] = 
+static crwl_worker_task_hdl_t g_crwl_worker_task_hdl[CRWL_TASK_TYPE_TOTAL] =
 {
     (crwl_worker_task_hdl_t)crwl_worker_task_unknown_hdl    /* CRWL_TASK_TYPE_UNKNOWN */
     , (crwl_worker_task_hdl_t)crwl_worker_task_down_webpage /* CRWL_TASK_DOWN_WEBPAGE */
@@ -43,8 +43,8 @@ static crwl_worker_task_hdl_t g_crwl_worker_task_hdl[CRWL_TASK_TYPE_TOTAL] =
  **     idx: 索引号
  **输出参数: NONE
  **返    回: 爬虫对象
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.11.22 #
  ******************************************************************************/
 crwl_worker_t *crwl_worker_get_by_idx(crwl_cntx_t *ctx, int idx)
@@ -59,12 +59,12 @@ crwl_worker_t *crwl_worker_get_by_idx(crwl_cntx_t *ctx, int idx)
 /******************************************************************************
  **函数名称: crwl_worker_get
  **功    能: 获取爬虫对象
- **输入参数: 
+ **输入参数:
  **     ctx: 全局信息
  **输出参数: NONE
  **返    回: 爬虫对象
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.10.09 #
  ******************************************************************************/
 static crwl_worker_t *crwl_worker_self(crwl_cntx_t *ctx)
@@ -83,14 +83,14 @@ static crwl_worker_t *crwl_worker_self(crwl_cntx_t *ctx)
 /******************************************************************************
  **函数名称: crwl_worker_init
  **功    能: 创建爬虫对象
- **输入参数: 
+ **输入参数:
  **     ctx: 全局信息
  **     worker: Worker对象
  **     id: 线程索引
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 依次创建Worker的成员和所依赖的资源.
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.09.23 #
  ******************************************************************************/
 int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker, int id)
@@ -156,12 +156,12 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker, int id)
 /******************************************************************************
  **函数名称: crwl_worker_destroy
  **功    能: 销毁爬虫对象
- **输入参数: 
+ **输入参数:
  **     ctx: 全局对象
  **     worker: 爬虫对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述:
  **注意事项: TODO: 未完成所有内存的释放!
  **作    者: # Qifeng.zou # 2014.09.23 #
  ******************************************************************************/
@@ -177,12 +177,12 @@ int crwl_worker_destroy(crwl_cntx_t *ctx, crwl_worker_t *worker)
 /******************************************************************************
  **函数名称: crwl_worker_fetch_task
  **功    能: 获取工作任务
- **输入参数: 
+ **输入参数:
  **     worker: 爬虫对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.09.25 #
  ******************************************************************************/
 static int crwl_worker_fetch_task(crwl_cntx_t *ctx, crwl_worker_t *worker)
@@ -225,13 +225,13 @@ static int crwl_worker_fetch_task(crwl_cntx_t *ctx, crwl_worker_t *worker)
 /******************************************************************************
  **函数名称: crwl_worker_recv_data
  **功    能: 接收数据
- **输入参数: 
+ **输入参数:
  **     worker: 爬虫对象
  **     sck: 套接字对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 接收数据直到出现EAGAIN -- 一次性接收最大量的数据
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.10.30 #
  ******************************************************************************/
 int crwl_worker_recv_data(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t *sck)
@@ -306,12 +306,12 @@ int crwl_worker_recv_data(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t *sck
 /******************************************************************************
  **函数名称: crwl_worker_send_data
  **功    能: 发送数据
- **输入参数: 
+ **输入参数:
  **     worker: 爬虫对象
  **     sck: 套接字对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述:
  **     1. 如果发送指针为空, 则从发送队列取数据
  **     2. 发送数据
  **注意事项: 发送数据直到出现EAGAIN -- 一次性发送最大量的数据
@@ -339,7 +339,7 @@ int crwl_worker_send_data(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t *sck
                 ev.data.ptr = sck;
                 ev.events = EPOLLIN | EPOLLET;  /* 边缘触发 */
 
-                epoll_ctl(worker->epid, EPOLL_CTL_MOD, sck->fd, &ev);    
+                epoll_ctl(worker->epid, EPOLL_CTL_MOD, sck->fd, &ev);
 
                 return CRWL_OK;
             }
@@ -390,12 +390,12 @@ int crwl_worker_send_data(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t *sck
 /******************************************************************************
  **函数名称: crwl_worker_timeout_hdl
  **功    能: 爬虫的超时处理
- **输入参数: 
+ **输入参数:
  **     ctx: 全局对象
  **     worker: 爬虫对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述:
  **     1. 依次遍历套接字, 判断是否超时
  **     2. 超时关闭套接字、释放内存等
  **注意事项: TODO: 可通过封装链表操作+回调函数增强代码复用性
@@ -446,13 +446,13 @@ static int crwl_worker_timeout_hdl(crwl_cntx_t *ctx, crwl_worker_t *worker)
 /******************************************************************************
  **函数名称: crwl_worker_event_hdl
  **功    能: 爬虫的事件处理
- **输入参数: 
+ **输入参数:
  **     ctx: 全局对象
  **     worker: 爬虫对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.09.23 #
  ******************************************************************************/
 static int crwl_worker_event_hdl(crwl_cntx_t *ctx, crwl_worker_t *worker)
@@ -501,11 +501,11 @@ static int crwl_worker_event_hdl(crwl_cntx_t *ctx, crwl_worker_t *worker)
 /******************************************************************************
  **函数名称: crwl_worker_routine
  **功    能: 运行爬虫线程
- **输入参数: 
+ **输入参数:
  **     _ctx: 全局信息
  **输出参数: NONE
  **返    回: VOID *
- **实现描述: 
+ **实现描述:
  **     1. 创建爬虫对象
  **     2. 设置读写集合
  **     3. 等待事件通知
@@ -569,13 +569,13 @@ void *crwl_worker_routine(void *_ctx)
 /******************************************************************************
  **函数名称: crwl_worker_add_sock
  **功    能: 添加套接字
- **输入参数: 
- **     worker: 爬虫对象 
+ **输入参数:
+ **     worker: 爬虫对象
  **     sck: 套接字
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.09.24 #
  ******************************************************************************/
 int crwl_worker_add_sock(crwl_worker_t *worker, socket_t *sck)
@@ -610,12 +610,12 @@ int crwl_worker_add_sock(crwl_worker_t *worker, socket_t *sck)
 /******************************************************************************
  **函数名称: crwl_worker_query_sock
  **功    能: 通过fd查找socket对象
- **输入参数: 
- **     worker: 爬虫对象 
+ **输入参数:
+ **     worker: 爬虫对象
  **     fd: 套接字ID
  **输出参数: NONE
  **返    回: Socket对象
- **实现描述: 
+ **实现描述:
  **注意事项: TODO: 可通过封装链表操作+回调函数增强代码复用性
  **作    者: # Qifeng.zou # 2014.10.30 #
  ******************************************************************************/
@@ -640,8 +640,8 @@ socket_t *crwl_worker_query_sock(crwl_worker_t *worker, int fd)
 /******************************************************************************
  **函数名称: crwl_worker_remove_sock
  **功    能: 删除套接字
- **输入参数: 
- **     worker: 爬虫对象 
+ **输入参数:
+ **     worker: 爬虫对象
  **     sck: 套接字
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
@@ -696,17 +696,17 @@ int crwl_worker_remove_sock(crwl_worker_t *worker, socket_t *sck)
 /******************************************************************************
  **函数名称: crwl_worker_add_http_get_req
  **功    能: 添加HTTP GET请求
- **输入参数: 
- **     worker: 爬虫对象 
+ **输入参数:
+ **     worker: 爬虫对象
  **     sck: 指定套接字
  **     uri: 源URI
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述:
  **     1. 创建链表结点
  **     2. 新建HTTP GET请求
  **     3. 将结点插入链表
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.10.12 #
  ******************************************************************************/
 int crwl_worker_add_http_get_req(crwl_worker_t *worker, socket_t *sck, const char *uri)
@@ -763,11 +763,11 @@ int crwl_worker_add_http_get_req(crwl_worker_t *worker, socket_t *sck, const cha
 /******************************************************************************
  **函数名称: crwl_worker_webpage_creat
  **功    能: 打开网页存储文件
- **输入参数: 
+ **输入参数:
  **     sck: 套接字对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述:
  **注意事项: 网页存储文件在此fopen(), 在crwl_worker_remove_sock()中fclose().
  **作    者: # Qifeng.zou # 2014.10.15 #
  ******************************************************************************/
@@ -807,15 +807,15 @@ int crwl_worker_webpage_creat(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t 
 /******************************************************************************
  **函数名称: crwl_worker_webpage_finfo
  **功    能: 创建网页的信息文件
- **输入参数: 
+ **输入参数:
  **     worker: 爬虫对象
  **     sck: 套接字对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述:
  **     1. 首先将数据写入临时目录
  **     2. 再将临时文件移入指定目录
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.10.17 #
  ******************************************************************************/
 int crwl_worker_webpage_finfo(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t *sck)
@@ -860,12 +860,12 @@ int crwl_worker_webpage_finfo(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t 
 /******************************************************************************
  **函数名称: crwl_worker_socket_alloc
  **功    能: 为Socket对象申请空间
- **输入参数: 
+ **输入参数:
  **     worker: 爬虫对象
  **输出参数: NONE
  **返    回: Socket对象
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.11.27 #
  ******************************************************************************/
 socket_t *crwl_worker_socket_alloc(crwl_worker_t *worker)
@@ -908,7 +908,7 @@ socket_t *crwl_worker_socket_alloc(crwl_worker_t *worker)
         slab_dealloc(worker->slab, sck);
         return NULL;
     }
-    
+
     sck->extra = extra;
 
     return sck;
@@ -917,17 +917,17 @@ socket_t *crwl_worker_socket_alloc(crwl_worker_t *worker)
 /******************************************************************************
  **函数名称: crwl_worker_task_down_webpage
  **功    能: 加载网页的任务处理
- **输入参数: 
- **     worker: 爬虫对象 
+ **输入参数:
+ **     worker: 爬虫对象
  **     args: 通过URL加载网页的任务的参数
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述:
  **     1. 通过URL获取WEB服务器信息(域名, 端口号)
  **     2. 连接远程WEB服务器
  **     3. 将FD等信息加入套接字链表
  **     4. 添加HTTP GET请求
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.09.25 #
  ******************************************************************************/
 static int crwl_worker_task_down_webpage(
@@ -1003,13 +1003,13 @@ static int crwl_worker_task_down_webpage(
 /******************************************************************************
  **函数名称: crwl_worker_task_unknown_hdl
  **功    能: 未知类型的任务处理
- **输入参数: 
- **     worker: 爬虫对象 
+ **输入参数:
+ **     worker: 爬虫对象
  **     args: 附加参数
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.12.12 #
  ******************************************************************************/
 static int crwl_worker_task_unknown_hdl(

@@ -31,12 +31,12 @@ static int crwl_sched_task_hdl(crwl_cntx_t *ctx, queue_t *workq, crwl_task_t *ta
 /******************************************************************************
  **函数名称: crwl_sched_routine
  **功    能: 运行任务调度线程
- **输入参数: 
+ **输入参数:
  **     _ctx: 全局信息
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.10.12 #
  ******************************************************************************/
 void *crwl_sched_routine(void *_ctx)
@@ -75,12 +75,12 @@ void *crwl_sched_routine(void *_ctx)
 /******************************************************************************
  **函数名称: crwl_sched_init
  **功    能: 初始化调度对象
- **输入参数: 
+ **输入参数:
  **     ctx: 全局信息
  **输出参数: NONE
  **返    回: 调队对象
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.10.12 #
  ******************************************************************************/
 static crwl_sched_t *crwl_sched_init(crwl_cntx_t *ctx)
@@ -117,12 +117,12 @@ static crwl_sched_t *crwl_sched_init(crwl_cntx_t *ctx)
 /******************************************************************************
  **函数名称: crwl_sched_destroy
  **功    能: 销毁调度对象
- **输入参数: 
+ **输入参数:
  **     ctx: 全局信息
  **输出参数: NONE
  **返    回: VOID
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.10.12 #
  ******************************************************************************/
 static void crwl_sched_destroy(crwl_sched_t *sched)
@@ -135,12 +135,12 @@ static void crwl_sched_destroy(crwl_sched_t *sched)
 /******************************************************************************
  **函数名称: crwl_sched_task
  **功    能: 从UNDO队列中取数据，并放入到Worker队列中
- **输入参数: 
+ **输入参数:
  **     ctx: 全局信息
  **     sched: 调度对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述:
  **     1. 选空闲Worker队列
  **     2. 取Undo任务数据
  **     3. 新建crwl_task_t对象
@@ -214,12 +214,12 @@ static int crwl_sched_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
 /******************************************************************************
  **函数名称: crwl_task_parse
  **功    能: 解析TASK字串
- **输入参数: 
+ **输入参数:
  **     str: TASK格式字串
  **输出参数:
  **     task: TASK信息(注意: 此字段为消息头+消息体格式)
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述:
  **注意事项: 字段task的地址指向"头+体"的内存首地址, 根据解析的数据类型，将报体
  **          放入仅接于该字段内存地址后面。
  **作    者: # Qifeng.zou # 2014.10.28 #
@@ -288,13 +288,13 @@ static int crwl_task_parse(const char *str, crwl_task_t *task, log_cycle_t *log)
 /******************************************************************************
  **函数名称: crwl_task_parse_download_webpage
  **功    能: 解析TASK字串中DOWNLOAD WEBPAGE的配置
- **输入参数: 
+ **输入参数:
  **     xml: XML树
  **输出参数:
  **     dw: Download webpage的配置
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.10.28 #
  ******************************************************************************/
 static int crwl_task_parse_download_webpage(xml_tree_t *xml, crwl_task_down_webpage_t *dw)
@@ -351,14 +351,14 @@ static int crwl_task_parse_download_webpage(xml_tree_t *xml, crwl_task_down_webp
 /******************************************************************************
  **函数名称: crwl_sched_download_webpage_task_hdl
  **功    能: 任务TASK_DOWN_WEBPAGE的处理
- **输入参数: 
+ **输入参数:
  **     ctx: 全局信息
  **     workq: 任务队列
  **     task: 任务信息
  **输出参数:
  **返    回: 0:成功 !0:失败
  **实现描述:
- **注意事项: 内存结构: crwl_task_t + crwl_task_down_webpage_t 
+ **注意事项: 内存结构: crwl_task_t + crwl_task_down_webpage_t
  **作    者: # Qifeng.zou # 2014.12.12 #
  ******************************************************************************/
 static int crwl_sched_download_webpage_task_hdl(
@@ -370,14 +370,14 @@ static int crwl_sched_download_webpage_task_hdl(
 /******************************************************************************
  **函数名称: crwl_sched_task_hdl
  **功    能: 处理Undo任务
- **输入参数: 
+ **输入参数:
  **     ctx: 全局信息
  **     workq: 任务队列
  **     task: 任务信息
  **输出参数:
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.12.12 #
  ******************************************************************************/
 static int crwl_sched_task_hdl(crwl_cntx_t *ctx, queue_t *workq, crwl_task_t *task)

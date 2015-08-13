@@ -19,16 +19,16 @@ static int frwd_init_lsnd(frwd_cntx_t *frwd, const frwd_conf_t *conf);
 static int frwd_attach_lsnd_distq(frwd_lsnd_t *lsnd, lsnd_conf_t *conf);
 
 /******************************************************************************
- **函数名称: frwd_getopt 
+ **函数名称: frwd_getopt
  **功    能: 解析输入参数
- **输入参数: 
+ **输入参数:
  **     argc: 参数个数
  **     argv: 参数列表
  **输出参数:
  **     opt: 参数选项
  **返    回: 0:成功 !0:失败
  **实现描述: 解析和验证输入参数
- **注意事项: 
+ **注意事项:
  **     N: 转发服务名 - 根据服务名, 便可找到对应的配置文件
  **     h: 帮助手册
  **     d: 以精灵进程运行
@@ -82,8 +82,8 @@ int frwd_getopt(int argc, char **argv, frwd_opt_t *opt)
  **     exec: 程序名
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.06.10 #
  ******************************************************************************/
 int frwd_usage(const char *exec)
@@ -95,14 +95,14 @@ int frwd_usage(const char *exec)
 }
 
 /******************************************************************************
- **函数名称: frwd_init 
+ **函数名称: frwd_init
  **功    能: 初始化转发服务
- **输入参数: 
+ **输入参数:
  **     conf: 配置信息
  **输出参数:
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.06.10 #
  ******************************************************************************/
 frwd_cntx_t *frwd_init(const frwd_conf_t *conf)
@@ -147,7 +147,7 @@ frwd_cntx_t *frwd_init(const frwd_conf_t *conf)
 
         /* > 初始化发送服务 */
         frwd->rtmq = rtsd_init(&conf->conn_invtd, frwd->log);
-        if (NULL == frwd->rtmq) 
+        if (NULL == frwd->rtmq)
         {
             log_fatal(frwd->log, "Initialize send-server failed!");
             break;
@@ -163,12 +163,12 @@ frwd_cntx_t *frwd_init(const frwd_conf_t *conf)
 /******************************************************************************
  **函数名称: frwd_launch
  **功    能: 初始化转发服务
- **输入参数: 
+ **输入参数:
  **     frwd: 全局对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.06.10 #
  ******************************************************************************/
 int frwd_launch(frwd_cntx_t *frwd)
@@ -190,8 +190,8 @@ int frwd_launch(frwd_cntx_t *frwd)
  **     pname: 进程名
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015-06-10 #
  ******************************************************************************/
 static int frwd_init_log(frwd_cntx_t *frwd, const char *pname)
@@ -218,8 +218,8 @@ static int frwd_init_log(frwd_cntx_t *frwd, const char *pname)
  **     frwd: 全局对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.07.02 19:14:59 #
  ******************************************************************************/
 static int frwd_init_lsnd(frwd_cntx_t *frwd, const frwd_conf_t *conf)
@@ -260,12 +260,12 @@ static int frwd_init_lsnd(frwd_cntx_t *frwd, const frwd_conf_t *conf)
 /******************************************************************************
  **函数名称: frwd_attach_lsnd_distq
  **功    能: 附着分发队列
- **输入参数: 
+ **输入参数:
  **     ctx: 全局对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015-07-05 18:12:16 #
  ******************************************************************************/
 static int frwd_attach_lsnd_distq(frwd_lsnd_t *lsnd, lsnd_conf_t *conf)
