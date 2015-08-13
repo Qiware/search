@@ -86,6 +86,6 @@ int main(void)
         shm_btree_print(ctx);
     }
 
-    shm_btree_destroy(ctx);
+    shm_btree_dump(ctx);
     return 0;
 }
