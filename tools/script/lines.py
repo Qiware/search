@@ -43,7 +43,7 @@ def get_total_line(path):
                 line = line.strip()
                 g_total_lines += 1
                 # 查找注释
-                m = re.match("\s{0,}/\*|\s{0,}\*|\s{0,}\*\*|\s{0,}\*/|\s{0,}//", line)
+                m = re.match("(\s{0,}/\*)|(\s{0,}\*)|(\s{0,}\*\*)|(\s{0,}\*/)|(\s{0,}//)", line)
                 if m is not None:
                     g_note_lines += 1
                     continue;
