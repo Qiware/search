@@ -34,12 +34,12 @@ class CStatistics(object):
                 self.note_lines, self.real_lines)
 
     # 统计单个文件中的行数
-    def _get_lines(self, path):
+    def _get_lines(self, fdir):
 
-        flist = os.listdir(path)
+        flist = os.listdir(fdir)
 
         for fname in flist:
-            fpath = path+"/"+fname
+            fpath = fdir+"/"+fname
             if os.path.isdir(fpath):
                 self._get_lines(fpath)
                 continue
