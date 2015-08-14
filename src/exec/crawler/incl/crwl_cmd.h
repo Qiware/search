@@ -15,6 +15,7 @@ typedef struct
     time_t stm;                                 /* 开始时间 */
     time_t ctm;                                 /* 当前时间 */
     int num;                                    /* WORKER数 */
+    bool sched_stat;                            /* 调度状态(true:运行 false:暂停) */
     struct
     {
         unsigned int connections;               /* 连接数 */

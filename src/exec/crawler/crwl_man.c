@@ -482,6 +482,7 @@ static int crwl_man_query_worker_stat_req_hdl(crwl_cntx_t *ctx,
     /* 1. 获取启动时间 */
     stat->stm = htonl(ctx->run_tm);
     stat->ctm = htonl(time(NULL));
+    stat->sched_stat = htonl(conf->sched_stat);
 
     /* 2. 获取工作状态 */
     for (idx=0; idx<conf->worker.num && idx<CRWL_CMD_WORKER_MAX_NUM; ++idx)

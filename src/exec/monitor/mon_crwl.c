@@ -31,10 +31,10 @@ static int mon_crwl_switch_sched_req(menu_cntx_t *ctx, menu_item_t *menu, void *
  **     menu: 菜单对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述:
  **     1. 输入目的IP和端口
  **     2. 创建套接口
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.03.02 #
  ******************************************************************************/
 static int mon_crwl_entry(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args)
@@ -55,11 +55,11 @@ static int mon_crwl_entry(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args)
  **     args: 附加参数
  **输出参数: NONE
  **返    回: 爬虫引擎菜单
- **实现描述: 
+ **实现描述:
  **     1. 初始化菜单环境
  **     2. 加载子菜单
  **     3. 启动菜单功能
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.12.28 #
  ******************************************************************************/
 menu_item_t *mon_crwl_menu(menu_cntx_t *ctx, void *args)
@@ -94,8 +94,8 @@ menu_item_t *mon_crwl_menu(menu_cntx_t *ctx, void *args)
  **     print: 打印结果
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.03.02 #
  ******************************************************************************/
 static int mon_crwl_frame(mon_crwl_setup_cb_t setup, mon_crwl_print_cb_t print, void *args)
@@ -185,8 +185,8 @@ static int mon_crwl_frame(mon_crwl_setup_cb_t setup, mon_crwl_print_cb_t print, 
  **     menu: 菜单对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.03.02 #
  ******************************************************************************/
 static int mon_crwl_query_worker_stat_setup(crwl_cmd_t *cmd)
@@ -202,8 +202,8 @@ static int mon_crwl_query_worker_stat_setup(crwl_cmd_t *cmd)
  **     menu: 菜单对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.03.02 #
  ******************************************************************************/
 static int mon_crwl_query_worker_stat_print(crwl_cmd_t *cmd)
@@ -229,6 +229,7 @@ static int mon_crwl_query_worker_stat_print(crwl_cmd_t *cmd)
     fprintf(stderr, "    ----------------------------------------------\n");
 
     stat->num = ntohl(stat->num);
+    stat->sched_stat = ntohl(stat->sched_stat);
     for (idx=0; idx<stat->num && idx<CRWL_CMD_WORKER_MAX_NUM; ++idx)
     {
         /* 字节序转换 */
@@ -273,6 +274,7 @@ static int mon_crwl_query_worker_stat_print(crwl_cmd_t *cmd)
 
     fprintf(stderr, "    当前时间: %04d-%02d-%02d %02d:%02d:%02d\n"
             "    运行时长: %lud:%luh:%lum:%lus\n"
+            "    运行状态: %s\n"
             "    平均速率: %lf\n"
             "    当前速率: %lf\n"
             "    异常比率: %lf%%\n",
@@ -280,6 +282,7 @@ static int mon_crwl_query_worker_stat_print(crwl_cmd_t *cmd)
             loctm.tm_hour, loctm.tm_min, loctm.tm_sec,
             TM_DAY(stat->ctm - stat->stm), TM_HOUR(stat->ctm - stat->stm),
             TM_MIN(stat->ctm - stat->stm), TM_SEC(stat->ctm - stat->stm),
+            stat->sched_stat? "Running":"Pause",
             (double)down_webpage_total / (stat->ctm - stat->stm),
             (double)(down_webpage_total - last_down_webpage_total) / diff_tm,
             (double)err_webpage_total / (down_webpage_total+1) * 100);
@@ -297,8 +300,8 @@ static int mon_crwl_query_worker_stat_print(crwl_cmd_t *cmd)
  **     menu: 菜单对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.02.27 #
  ******************************************************************************/
 static int mon_crwl_query_worker_stat_req(menu_cntx_t *ctx, menu_item_t *menu, void *args)
@@ -315,8 +318,8 @@ static int mon_crwl_query_worker_stat_req(menu_cntx_t *ctx, menu_item_t *menu, v
  **     menu: 菜单对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.03.02 #
  ******************************************************************************/
 static int mon_crwl_query_workq_stat_setup(crwl_cmd_t *cmd)
@@ -332,8 +335,8 @@ static int mon_crwl_query_workq_stat_setup(crwl_cmd_t *cmd)
  **     menu: 菜单对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.03.02 #
  ******************************************************************************/
 static int mon_crwl_query_workq_stat_print(crwl_cmd_t *cmd)
@@ -371,8 +374,8 @@ static int mon_crwl_query_workq_stat_print(crwl_cmd_t *cmd)
  **     menu: 菜单对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.03.02 #
  ******************************************************************************/
 static int mon_crwl_query_workq_stat_req(menu_cntx_t *ctx, menu_item_t *menu, void *args)
@@ -389,8 +392,8 @@ static int mon_crwl_query_workq_stat_req(menu_cntx_t *ctx, menu_item_t *menu, vo
  **     menu: 菜单对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.03.02 #
  ******************************************************************************/
 static int mon_crwl_query_conf_setup(crwl_cmd_t *cmd)
@@ -406,8 +409,8 @@ static int mon_crwl_query_conf_setup(crwl_cmd_t *cmd)
  **     menu: 菜单对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.03.02 #
  ******************************************************************************/
 static int mon_crwl_query_conf_print(crwl_cmd_t *cmd)
@@ -445,8 +448,8 @@ static int mon_crwl_query_conf_print(crwl_cmd_t *cmd)
  **     menu: 菜单对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.03.02 #
  ******************************************************************************/
 static int mon_crwl_query_conf_req(menu_cntx_t *ctx, menu_item_t *menu, void *args)
@@ -463,8 +466,8 @@ static int mon_crwl_query_conf_req(menu_cntx_t *ctx, menu_item_t *menu, void *ar
  **     menu: 菜单对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.03.26 #
  ******************************************************************************/
 static int mon_crwl_switch_sched_setup(crwl_cmd_t *cmd)
@@ -480,8 +483,8 @@ static int mon_crwl_switch_sched_setup(crwl_cmd_t *cmd)
  **     menu: 菜单对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.03.26 #
  ******************************************************************************/
 static int mon_crwl_switch_sched_print(crwl_cmd_t *cmd)
@@ -495,14 +498,7 @@ static int mon_crwl_switch_sched_print(crwl_cmd_t *cmd)
     stat->sched_stat = ntohl(stat->sched_stat);
 
     /* 显示结果 */
-    if (stat->sched_stat)
-    {
-        fprintf(stderr, "    调度状态: SCHED\n");
-    }
-    else
-    {
-        fprintf(stderr, "    调度状态: PAUSE\n");
-    }
+    fprintf(stderr, "    调度状态: %s\n", stat->sched_stat? "Running":"Pause");
     return 0;
 }
 
@@ -513,8 +509,8 @@ static int mon_crwl_switch_sched_print(crwl_cmd_t *cmd)
  **     menu: 菜单对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.03.26 #
  ******************************************************************************/
 static int mon_crwl_switch_sched_req(menu_cntx_t *ctx, menu_item_t *menu, void *args)
