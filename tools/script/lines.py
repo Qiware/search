@@ -5,13 +5,7 @@ import os
 import re
 import sys
 
-# 全局变量
-g_note_lines = 0    # 注释行数
-g_real_lines = 0    # 实行行数
-g_empty_lines = 0   # 空行行数
-g_total_lines = 0   # 所有行数
-
-# 设置统计目录
+# 设置统计路径
 def set_dir_list():
     dir_list = []
     path = "../../src"
@@ -23,45 +17,61 @@ def set_dir_list():
 
     return dir_list
 
-# 总行数
-def get_total_line(path):
-    global g_note_lines     # 注释行数
-    global g_real_lines     # 实行行数
-    global g_empty_lines    # 空行行数
-    global g_total_lines    # 所有行数
+# 统计信息
+class CStatistics(object):
+    # 初始化设置
+    def __init__(self):
+        self.note_lines = 0    # 注释行数
+        self.real_lines = 0    # 实行行数
+        self.empty_lines = 0   # 空行行数
+        self.total_lines = 0   # 所有行数
 
-    ldir = os.listdir(path)
-
-    for item in ldir:
-        abs_path = path+"/"+item
-        if os.path.isdir(abs_path):
-            get_total_line(abs_path)
-            continue
-        ext = os.path.splitext(item)[1] # splitext()返回元组(filename, extension)
-        if (".c" == ext) or (".h" == ext):
-            for line in open(abs_path):
-                line = line.strip()
-                g_total_lines += 1
-                # 查找注释
-                m = re.match("(\s{0,}/\*)|(\s{0,}\*)|(\s{0,}\*\*)|(\s{0,}\*/)|(\s{0,}//)", line)
-                if m is not None:
-                    g_note_lines += 1
-                    continue;
-                # 查找空行
-                m = re.match("\s{0,}$", line)
-                if m is not None:
-                    g_empty_lines += 1
-                    continue
-                # 其他属实行
-                g_real_lines += 1
-
-if __name__ == "__main__":
-    try:
-        dir_list = set_dir_list()
-        for path in dir_list:
-            get_total_line(path)
-
+    # 打印行数统计结果
+    def print_lines(self):
         print "总行数   空行数   注释数   实行数"
-        print "%-8d %-8d %-8d %-8d" % (g_total_lines, g_empty_lines, g_note_lines, g_real_lines)
+        print "%-8d %-8d %-8d %-8d" % \
+                (self.total_lines, self.empty_lines,\
+                self.note_lines, self.real_lines)
+
+    # 统计单个文件中的行数
+    def _get_lines(self, path):
+
+        flist = os.listdir(path)
+
+        for fname in flist:
+            fpath = path+"/"+fname
+            if os.path.isdir(fpath):
+                self._get_lines(fpath)
+                continue
+            ext = os.path.splitext(fname)[1] # splitext()返回元组(filename, extension)
+            if (".c" == ext) or (".h" == ext):
+                for line in open(fpath):
+                    line = line.strip()
+                    self.total_lines += 1
+                    # 查找注释
+                    m = re.match("(^\s{0,}/\*)|(^\s{0,}\*)|(^\s{0,}\*\*)|(^\s{0,}\*/)|(^\s{0,}//)", line)
+                    if m is not None:
+                        self.note_lines += 1
+                        continue;
+                    # 查找空行
+                    m = re.match("^\s{0,}$", line)
+                    if m is not None:
+                        self.empty_lines += 1
+                        continue
+                    # 其他属实行
+                    self.real_lines += 1
+    # 统计目录列表所有文件行数
+    def get_lines(self, dir_list):
+        for path in dir_list:
+            self._get_lines(path)
+
+# 主函数
+if __name__ == "__main__":
+    stat = CStatistics()
+    dir_list = set_dir_list()
+
+    try:
+        stat.get_lines(dir_list)
+        stat.print_lines()
     except BaseException, e:
         print e
