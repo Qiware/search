@@ -703,9 +703,6 @@ int crwl_worker_remove_sock(crwl_worker_t *worker, socket_t *sck)
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述:
- **     1. 创建链表结点
- **     2. 新建HTTP GET请求
- **     3. 将结点插入链表
  **注意事项:
  **作    者: # Qifeng.zou # 2014.10.12 #
  ******************************************************************************/
@@ -714,8 +711,6 @@ int crwl_worker_add_http_get_req(crwl_worker_t *worker, socket_t *sck, const cha
     void *addr, *p;
     crwl_data_info_t *info;
     crwl_worker_socket_extra_t *extra = (crwl_worker_socket_extra_t *)sck->extra;
-
-    log_debug(worker->log, "Call %s()", __func__);
 
     do
     {
@@ -752,10 +747,7 @@ int crwl_worker_add_http_get_req(crwl_worker_t *worker, socket_t *sck, const cha
     } while(0);
 
     /* 释放空间 */
-    if (p)
-    {
-        slab_dealloc(worker->slab, p);
-    }
+    if (p) { slab_dealloc(worker->slab, p); }
 
     return CRWL_ERR;
 }
@@ -812,9 +804,7 @@ int crwl_worker_webpage_creat(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t 
  **     sck: 套接字对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述:
- **     1. 首先将数据写入临时目录
- **     2. 再将临时文件移入指定目录
+ **实现描述: 首先将数据写入临时目录, 再将临时文件移入指定目录
  **注意事项:
  **作    者: # Qifeng.zou # 2014.10.17 #
  ******************************************************************************/
@@ -918,15 +908,12 @@ socket_t *crwl_worker_socket_alloc(crwl_worker_t *worker)
  **函数名称: crwl_worker_task_down_webpage
  **功    能: 加载网页的任务处理
  **输入参数:
+ **     ctx: 全局对象
  **     worker: 爬虫对象
  **     args: 通过URL加载网页的任务的参数
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述:
- **     1. 通过URL获取WEB服务器信息(域名, 端口号)
- **     2. 连接远程WEB服务器
- **     3. 将FD等信息加入套接字链表
- **     4. 添加HTTP GET请求
  **注意事项:
  **作    者: # Qifeng.zou # 2014.09.25 #
  ******************************************************************************/
@@ -937,7 +924,7 @@ static int crwl_worker_task_down_webpage(
     socket_t *sck;
     crwl_worker_socket_extra_t *extra;
 
-    /* 1. 连接远程WEB服务器 */
+    /* > 连接远程WEB服务器 */
     fd = tcp_connect_ex2(args->family, args->ip, args->port);
     if (fd < 0)
     {
@@ -946,7 +933,7 @@ static int crwl_worker_task_down_webpage(
         return CRWL_OK;
     }
 
-    /* 2. 将FD等信息加入套接字链表 */
+    /* > 将FD等信息加入套接字链表 */
     sck = crwl_worker_socket_alloc(worker);
     if (NULL == sck)
     {
@@ -979,7 +966,7 @@ static int crwl_worker_task_down_webpage(
         return CRWL_ERR;
     }
 
-    /* 4. 添加HTTP GET请求 */
+    /* > 添加HTTP GET请求 */
     if (crwl_worker_add_http_get_req(worker, sck, args->uri))
     {
         log_error(worker->log, "Add http get request failed!");
@@ -988,7 +975,7 @@ static int crwl_worker_task_down_webpage(
         return CRWL_ERR;
     }
 
-    /* 5. 新建存储文件 */
+    /* > 新建存储文件 */
     if (crwl_worker_webpage_creat(ctx, worker, sck))
     {
         log_error(worker->log, "Save webpage failed!");
