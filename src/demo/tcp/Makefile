@@ -1,5 +1,11 @@
+include $(PROJ)/make/build.mak
+
 CC = gcc
 CFLAGS = -Wall -O2
+
+INCLUDE = -I. -I$(PROJ)/src/incl
+LIBS_PATH = -L$(PROJ)/lib -L/usr/local/lib
+LIBS = -lcore
 
 SRCS = recv.c
 OBJS = recv.o
@@ -14,15 +20,17 @@ TARGET2 = send
 
 all: $(TARGET) $(TARGET2)
 $(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) -o $@ $(OBJS)
+	$(CC) $(CFLAGS) -o $@ $(OBJS) $(LIBS) $(LIBS_PATH)
+	mv $@ $(PROJ_BIN)
 $(TARGET2): $(OBJS2)
-	$(CC) $(CFLAGS) -o $@ $(OBJS2)
+	$(CC) $(CFLAGS) -o $@ $(OBJS2) $(LIBS) $(LIBS_PATH)
+	mv $@ $(PROJ_BIN)
 
 $(OBJS): %.o : %.c $(HEADS)
-	$(CC) $(CFLAGS) -o $@ -c $<
+	$(CC) $(CFLAGS) -o $@ -c $< $(INCLUDE)
 
 $(OBJS2): %.o : %.c $(HEADS)
-	$(CC) $(CFLAGS) -o $@ -c $<
+	$(CC) $(CFLAGS) -o $@ -c $< $(INCLUDE)
 
 
 clean:
