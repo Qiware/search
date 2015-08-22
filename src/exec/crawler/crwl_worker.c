@@ -298,6 +298,11 @@ int crwl_worker_recv_data(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t *sck
             continue;
         }
 
+        /* > 异常情况处理: 释放内存空间 */
+        crwl_worker_webpage_fsync(worker, sck);
+        crwl_worker_webpage_finfo(ctx, worker, sck);
+        crwl_worker_remove_sock(worker, sck);
+
         log_error(worker->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return CRWL_ERR;
     }
