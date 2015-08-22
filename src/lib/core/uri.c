@@ -98,53 +98,53 @@ int uri_trim(const char *ori_uri, char *out_uri, size_t size)
  ******************************************************************************/
 int uri_get_protocol(const char *uri)
 {
-	const char *p= uri;
+    const char *p= uri;
 
-	if (!strncmp(uri, URI_WWW_STR, URI_WWW_STR_LEN))
-	{
-		return  URI_HTTP_PROTOCOL;
-	}
-	else if (!strncmp(uri, URI_HTTP_STR, URI_HTTP_STR_LEN))
-	{
-		return URI_HTTP_PROTOCOL;
-	}
-	else if (!strncmp(uri, URI_HTTPS_STR, URI_HTTPS_STR_LEN))
-	{
-		return URI_HTTPS_PROTOCOL;
-	}
-	else if (!strncmp(uri, URI_FTP_STR, URI_FTP_STR_LEN))
-	{
-		return URI_FTP_PROTOCOL;
-	}
-	else if (!strncmp(uri, URI_THUNDER_STR, URI_THUNDER_STR_LEN))
-	{
-		return URI_THUNDER_PROTOCOL;
-	}
-	else if (!strncmp(uri, URI_ITEM_STR, URI_ITEM_STR_LEN))
-	{
-		return URI_ITEM_PROTOCOL;
-	}
-	else if (!strncmp(uri, URI_ED2K_STR, URI_ED2K_STR_LEN))
-	{
-		return URI_ED2K_PROTOCOL;
-	}
+    if (!strncmp(uri, URI_WWW_STR, URI_WWW_STR_LEN))
+    {
+        return  URI_HTTP_PROTOCOL;
+    }
+    else if (!strncmp(uri, URI_HTTP_STR, URI_HTTP_STR_LEN))
+    {
+        return URI_HTTP_PROTOCOL;
+    }
+    else if (!strncmp(uri, URI_HTTPS_STR, URI_HTTPS_STR_LEN))
+    {
+        return URI_HTTPS_PROTOCOL;
+    }
+    else if (!strncmp(uri, URI_FTP_STR, URI_FTP_STR_LEN))
+    {
+        return URI_FTP_PROTOCOL;
+    }
+    else if (!strncmp(uri, URI_THUNDER_STR, URI_THUNDER_STR_LEN))
+    {
+        return URI_THUNDER_PROTOCOL;
+    }
+    else if (!strncmp(uri, URI_ITEM_STR, URI_ITEM_STR_LEN))
+    {
+        return URI_ITEM_PROTOCOL;
+    }
+    else if (!strncmp(uri, URI_ED2K_STR, URI_ED2K_STR_LEN))
+    {
+        return URI_ED2K_PROTOCOL;
+    }
 
-	while ('\0' != *p)
-	{
-		if (isalpha(*p))
-		{
-			++p;
-			continue;
-		}
-		else if ('.' == *p)
-		{
-			return URI_HTTP_PROTOCOL; /* 如：baidu.com */
-		}
+    while ('\0' != *p)
+    {
+        if (isalpha(*p))
+        {
+            ++p;
+            continue;
+        }
+        else if ('.' == *p)
+        {
+            return URI_HTTP_PROTOCOL; /* 如：baidu.com */
+        }
 
-		return URI_UNKNOWN_PROTOCOL;
-	}
+        return URI_UNKNOWN_PROTOCOL;
+    }
 
-	return URI_UNKNOWN_PROTOCOL;
+    return URI_UNKNOWN_PROTOCOL;
 }
 
 /******************************************************************************
@@ -152,9 +152,9 @@ int uri_get_protocol(const char *uri)
  **功    能: 获取HOST(IP或域名)
  **输入参数:
  **     uri: URI
- **		size: host空间大小
+ **        size: host空间大小
  **输出参数:
- **		host: 主机IP或域名
+ **        host: 主机IP或域名
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项:
@@ -162,15 +162,15 @@ int uri_get_protocol(const char *uri)
  ******************************************************************************/
 int uri_get_host(const char *uri, char *host, int size)
 {
-	int len;
-	const char *p, *s;
+    int len;
+    const char *p, *s;
 
-	p = s = uri;
+    p = s = uri;
 
-	while (isalpha(*p) || isdigit(*p))
-	{
-		++p;
-	}
+    while (isalpha(*p) || isdigit(*p))
+    {
+        ++p;
+    }
 
     switch (*p)
     {
@@ -197,7 +197,7 @@ int uri_get_host(const char *uri, char *host, int size)
         {
             goto GET_HOST;
         }
-	    case '.':
+        case '.':
         {
             ++p;
             break; /* 继续处理 */
@@ -208,23 +208,23 @@ int uri_get_host(const char *uri, char *host, int size)
         }
     }
 
-	while (isalpha(*p) || isdigit(*p)
+    while (isalpha(*p) || isdigit(*p)
         || '.' == *p || '-' == *p || '_' == *p)
-	{
-		++p;
-	}
+    {
+        ++p;
+    }
 
 GET_HOST:
-	len = p - s;
-	if (len >= size)
-	{
-		return -1;
-	}
+    len = p - s;
+    if (len >= size)
+    {
+        return -1;
+    }
 
-	memcpy(host, s, len);
-	host[len] = '\0';
+    memcpy(host, s, len);
+    host[len] = '\0';
 
-	return 0;
+    return 0;
 }
 
 /******************************************************************************
@@ -240,16 +240,13 @@ GET_HOST:
  ******************************************************************************/
 int uri_get_port(const char *uri)
 {
-	int len;
-	const char *p, *s;
+    int len;
+    const char *p, *s;
     char port[PORT_MAX_LEN];
 
-	p = s = uri;
+    p = s = uri;
 
-	while (isalpha(*p) || isdigit(*p) || '.' == *p)
-	{
-		++p;
-	}
+    while (isalpha(*p) || isdigit(*p) || '.' == *p) { ++p; }
 
     switch (*p)
     {
@@ -277,10 +274,7 @@ int uri_get_port(const char *uri)
         }
     }
 
-	while (isalpha(*p) || isdigit(*p) || '.' == (*p))
-    {
-        ++p;
-    }
+    while (isalpha(*p) || isdigit(*p) || '.' == (*p)) { ++p; }
 
     if ('\0' == *p || ':' != *p)
     {
@@ -288,22 +282,20 @@ int uri_get_port(const char *uri)
     }
 
 GET_PORT:
-	++p;
+    ++p;
     s = p;
-	while (isdigit(*p))
-	{
-		++p;
-	}
+    while (isdigit(*p)) { ++p; }
 
-	len = p - s;
+    len = p - s;
     if ((0 == len) || (len > (int)sizeof(port)))
     {
         return -1;
     }
 
     memcpy(port, s, len);
+    port[len] = '\0';
 
-	return atoi(port);
+    return atoi(port);
 }
 
 /******************************************************************************
@@ -311,9 +303,9 @@ GET_PORT:
  **功    能: 获取URI路径
  **输入参数:
  **     uri: URI
- **		size: path空间大小
+ **        size: path空间大小
  **输出参数:
- **		path: 网页路径
+ **        path: 网页路径
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项:
@@ -324,11 +316,11 @@ int uri_get_path(const char *uri, char *path, int size)
     const char *p;
 
     p = strstr(uri, "/");
-	if (NULL == p)
-	{
+    if (NULL == p)
+    {
         snprintf(path, size, "/");
         return 0;
-	}
+    }
 
     if ('/' != *(p+1))
     {
@@ -345,7 +337,7 @@ int uri_get_path(const char *uri, char *path, int size)
 
     snprintf(path, size, "%s", p);
 
-	return 0;
+    return 0;
 }
 
 /******************************************************************************
@@ -373,29 +365,29 @@ int uri_reslove(const char *uri, uri_field_t *field)
         return URI_ERR_LEN;  /* 长度非法 */
     }
     
-	/* 2. 获取协议类型 */
-	field->protocol = uri_get_protocol(uri);
+    /* 2. 获取协议类型 */
+    field->protocol = uri_get_protocol(uri);
     if (URI_UNKNOWN_PROTOCOL == field->protocol)
     {
-		return URI_ERR_PROTO;
+        return URI_ERR_PROTO;
     }
 
-	/* 3. 获取HOST 端口 路径等 */
+    /* 3. 获取HOST 端口 路径等 */
     if (uri_get_host(uri, field->host, sizeof(field->host)))
     {
         return URI_ERR_HOST;
     }
 
     field->port = uri_get_port(uri);
-	if (field->port < 0)
+    if (field->port < 0)
     {
         return URI_ERR_PORT;
     }
 
-	if (uri_get_path(uri, field->path, sizeof(field->path)))
-	{
-		return URI_ERR_PATH;
-	}
+    if (uri_get_path(uri, field->path, sizeof(field->path)))
+    {
+        return URI_ERR_PATH;
+    }
 
     return URI_OK;
 }
