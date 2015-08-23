@@ -39,6 +39,7 @@ typedef struct
     struct epoll_event *events;     /* EVENT数组 */
 
     slab_pool_t *slab;              /* 内存池 */
+    slot_t *slot_for_sck_extra;     /* 内存池(固定大小)(for crwl_worker_socket_extra_t) */
     log_cycle_t *log;               /* 日志对象 */
 
     time_t scan_tm;                 /* 超时扫描时间 */
@@ -71,16 +72,6 @@ int crwl_worker_send_data(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t *sck
 
 int crwl_worker_add_http_get_req(
         crwl_worker_t *worker, socket_t *sck, const char *uri);
-
-socket_t *crwl_worker_socket_alloc(crwl_worker_t *worker);
-#define crwl_worker_socket_dealloc(worker, sck) /* 释放Socket空间 */\
-{ \
-    if (NULL != sck->extra) \
-    { \
-        slab_dealloc(worker->slab, sck->extra); \
-    } \
-    slab_dealloc(worker->slab, sck); \
-}
 
 int crwl_worker_webpage_creat(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t *sck);
 /* 将接收的数据同步到文件

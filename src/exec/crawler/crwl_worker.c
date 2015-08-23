@@ -20,10 +20,20 @@ static int crwl_worker_task_down_webpage(
         crwl_cntx_t *ctx, crwl_worker_t *worker, const crwl_task_down_webpage_t *args);
 static int crwl_worker_task_unknown_hdl(crwl_cntx_t *ctx, crwl_worker_t *worker, const void *args);
 
-typedef int (*crwl_worker_task_hdl_t)(crwl_cntx_t *ctx, crwl_worker_t *worker, const void *args);
+static socket_t *crwl_worker_socket_alloc(crwl_worker_t *worker);
+#define crwl_worker_socket_dealloc(worker, sck) /* 释放Socket空间 */\
+{ \
+    if (NULL != sck->extra) \
+    { \
+        slot_dealloc(worker->slot_for_sck_extra, sck->extra); \
+    } \
+    slab_dealloc(worker->slab, sck); \
+}
 
 /* 任务处理回调函数
  *  注意：必须与crwl_task_type_e个数、顺序保持一致, 否则将会出严重问题 */
+typedef int (*crwl_worker_task_hdl_t)(crwl_cntx_t *ctx, crwl_worker_t *worker, const void *args);
+
 static crwl_worker_task_hdl_t g_crwl_worker_task_hdl[CRWL_TASK_TYPE_TOTAL] =
 {
     (crwl_worker_task_hdl_t)crwl_worker_task_unknown_hdl    /* CRWL_TASK_TYPE_UNKNOWN */
@@ -98,6 +108,8 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker, int id)
     list_opt_t opt;
     crwl_conf_t *conf = &ctx->conf;
 
+    memset(worker, 0, sizeof(crwl_worker_t));
+
     worker->id = id;
     worker->log = ctx->log;
     worker->scan_tm = time(NULL);
@@ -107,6 +119,16 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker, int id)
     if (NULL == worker->slab)
     {
         log_error(worker->log, "Initialize slab pool failed!");
+        return CRWL_ERR;
+    }
+
+    worker->slot_for_sck_extra = slot_creat(
+            conf->worker.conn_max_num,
+            sizeof(crwl_worker_socket_extra_t));
+    if (NULL == worker->slot_for_sck_extra)
+    {
+        log_error(worker->log, "Initialize slab pool failed!");
+        slab_destroy(worker->slab);
         return CRWL_ERR;
     }
 
@@ -139,7 +161,6 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker, int id)
                 sizeof(struct epoll_event));
         if (NULL == worker->events)
         {
-            CLOSE(worker->epid);
             log_error(worker->log, "Alloc memory from slab failed!");
             break;
         }
@@ -148,7 +169,9 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker, int id)
     } while(0);
 
     /* > 释放空间 */
-    CLOSE(worker->epid);
+    if (worker->epid) { CLOSE(worker->epid); }
+    if (worker->slab) { slab_destroy(worker->slab); }
+    if (worker->slot_for_sck_extra) { slot_destroy(worker->slot_for_sck_extra); }
 
     return CRWL_ERR;
 }
@@ -167,10 +190,10 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker, int id)
  ******************************************************************************/
 int crwl_worker_destroy(crwl_cntx_t *ctx, crwl_worker_t *worker)
 {
+    CLOSE(worker->epid);
+    FREE(worker->events);
     slab_destroy(worker->slab);
-    close(worker->epid);
-    free(worker->events);
-    free(worker);
+    slot_destroy(worker->slot_for_sck_extra);
     return CRWL_OK;
 }
 
@@ -690,7 +713,6 @@ int crwl_worker_remove_sock(crwl_worker_t *worker, socket_t *sck)
     if (list_remove(worker->sock_list, sck))
     {
         log_fatal(worker->log, "Didn't find special socket!");
-        return CRWL_OK; /* 未找到 */
     }
 
     crwl_worker_socket_dealloc(worker, sck);
@@ -863,7 +885,7 @@ int crwl_worker_webpage_finfo(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t 
  **注意事项:
  **作    者: # Qifeng.zou # 2014.11.27 #
  ******************************************************************************/
-socket_t *crwl_worker_socket_alloc(crwl_worker_t *worker)
+static socket_t *crwl_worker_socket_alloc(crwl_worker_t *worker)
 {
     socket_t *sck;
     list_opt_t opt;
@@ -878,7 +900,7 @@ socket_t *crwl_worker_socket_alloc(crwl_worker_t *worker)
     }
 
     /* > 分配SCK数据 */
-    extra = slab_alloc(worker->slab, sizeof(crwl_worker_socket_extra_t));
+    extra = slot_alloc(worker->slot_for_sck_extra, sizeof(crwl_worker_socket_extra_t));
     if (NULL == extra)
     {
         log_error(worker->log, "Alloc memory from slab failed!");
@@ -899,8 +921,8 @@ socket_t *crwl_worker_socket_alloc(crwl_worker_t *worker)
     if (NULL == extra->send_list)
     {
         log_error(worker->log, "Create list failed!");
-        slab_dealloc(worker->slab, extra);
         slab_dealloc(worker->slab, sck);
+        slot_dealloc(worker->slot_for_sck_extra, extra);
         return NULL;
     }
 
