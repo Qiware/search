@@ -22,7 +22,7 @@ typedef struct
 
     /* 网页存储信息 */
     char fname[FILE_NAME_MAX_LEN];  /* 文件名 - 无后缀 */
-    unsigned long long idx;                   /* 网页编号 */
+    unsigned long long idx;         /* 网页编号 */
     FILE *fp;                       /* 文件指针 */
     size_t size;                    /* 网页总字节数 */
 
