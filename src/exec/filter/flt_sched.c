@@ -65,14 +65,14 @@ void *flt_sched_routine(void *_ctx)
         {
             snprintf(fname, sizeof(fname), "%s/%s", path, item->d_name);
 
-            /* 2. 判断文件类型 */
+            /* > 判断文件类型 */
             stat(fname, &st);
             if (!S_ISREG(st.st_mode))
             {
                 continue;
             }
 
-            /* 3. 放入TASK队列 */
+            /* > 放入TASK队列 */
             task = sig_queue_malloc(ctx->taskq, sizeof(flt_task_t));
             if (NULL == task)
             {

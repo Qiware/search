@@ -208,6 +208,7 @@ void *flt_worker_routine(void *_ctx)
         /* > 提取网页数据 */
         if (flt_worker_get_webpage_info(task->path, &worker->info, worker->log))
         {
+            remove(task->path);
             sig_queue_dealloc(ctx->taskq, task);
             continue;
         }
