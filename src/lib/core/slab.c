@@ -175,7 +175,7 @@ slab_pool_t *slab_init(void *addr, size_t size, log_cycle_t *log)
  **     pool: Slab对象
  **     size: 申请的空间大小
  **输出参数:
- **返    回: VOID
+ **返    回: 内存地址
  **实现描述: 
  **注意事项: 此内存机制只适合"小内存块"的空间分配, 小内存指的是小于4K的内存块.
  **          如果反复进行大量大小内存分配的混合空间申请和释放, "可能"出现分配空间
@@ -469,12 +469,6 @@ void slab_dealloc(slab_pool_t *pool, void *p)
     uintptr_t slab, m, *bitmap;
     uint32_t n, type, slot, shift, map;
     slab_page_t *slots, *page;
-
-    if ((u_char *) p < pool->start || (u_char *) p > pool->end)
-    {
-        free(p); /* 不在内存池的空间 */
-        return;
-    }
 
     spin_lock(&pool->lock);    /* 加锁 */
 
@@ -827,3 +821,50 @@ void *slab_alloc(slab_pool_t *pool, size_t size) { return calloc(1, size); }
 void slab_dealloc(slab_pool_t *pool, void *p) { free(p); }
 slab_pool_t *slab_creat_by_calloc(size_t size, log_cycle_t *log) { return calloc(1, size); }
 #endif /*__MEM_LEAK_CHECK__*/
+
+/******************************************************************************
+ **函数名称: slab_alloc_ex
+ **功    能: 从Slab中申请内存空间
+ **输入参数:
+ **     pool: Slab对象
+ **     size: 申请的空间大小
+ **输出参数:
+ **返    回: 内存地址
+ **实现描述: 当申请的内存空间超过4KB时, 直接从操作系统中申请.
+ **注意事项: 此内存机制只适合"小内存块"的空间分配, 小内存指的是小于4K的内存块.
+ **          如果反复进行大量大小内存分配的混合空间申请和释放, "可能"出现分配空间
+ **          失败的情况.
+ **作    者: # Qifeng.zou # 2015.08.22 23:59:41 #
+ ******************************************************************************/
+void *slab_alloc_ex(slab_pool_t *pool, size_t size)
+{
+    if (size > SLAB_PAGE_SIZE)
+    {
+        return malloc(size);
+    }
+
+    return slab_alloc(pool, size);
+}
+
+/******************************************************************************
+ **函数名称: slab_dealloc_ex
+ **功    能: 释放从Slab申请的内存空间
+ **输入参数:
+ **     pool: Slab对象
+ **     p: 内存起始地址
+ **输出参数:
+ **返    回: VOID
+ **实现描述: 当指针p不在slab范围时, 直接让操作系统回收内存.
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.08.23 00:03:26 #
+ ******************************************************************************/
+void slab_dealloc_ex(slab_pool_t *pool, void *p)
+{
+    if ((u_char *)p < pool->start || (u_char *)p > pool->end)
+    {
+        free(p); /* 不在内存池的空间 */
+        return;
+    }
+
+    slab_dealloc(pool, p);
+}
