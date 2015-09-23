@@ -30,30 +30,8 @@ bool redis_hsetnx(redisContext *ctx, const char *hname, const char *key, const c
 int redis_hlen(redisContext *redis, const char *hname);
 
 /******************************************************************************
- **函数名称: redis_rpush
- **功    能: 在链表尾插入值
- **输入参数: 
- **     ctx: Redis信息
- **     key: 链表名
- **     value: 设置值
- **输出参数:
- **返    回: 操作完成后,链表中元素总数 
- **实现描述: 
- **     RPUSH:
- **     1) 时间复杂度：O(1)
- **     2) 当 key 不存在时,该命令首先会新建一个空链表,再将数据插入到链表的头部;
- **     3) 当 key 关联的不是List类型,将返回错误信息;
- **     4) 当有多个 value 值, 那么各个 value 值按从左到右的顺序依次插入到表尾：
- **     比如对一个空列表 mylist 执行 RPUSH mylist a b c, 得出的结果列表为 a b c,
- **     等同于执行命令 RPUSH mylist a, RPUSH mylist b, RPUSH mylist c.
- **注意事项: 
- **作    者: # Qifeng.zou # 2014.10.28 #
- ******************************************************************************/
-#define redis_rpush(ctx, key, value) redisCommand(ctx, "RPUSH %s %s", key, value)
-
-/******************************************************************************
  **函数名称: redis_lpop
- **功    能: 移除并返回链表头元素
+ **功    能: 移除并返回链表头元素(最左边)
  **输入参数: 
  **     ctx: Redis信息
  **     key: 链表名
@@ -69,6 +47,54 @@ int redis_hlen(redisContext *redis, const char *hname);
  ******************************************************************************/
 #define redis_lpop(ctx, key) redisCommand(ctx, "LPOP %s", key)
 
-int redis_llen(redisContext *ctx, const char *lname);
+/******************************************************************************
+ **函数名称: redis_rpop
+ **功    能: 移除并返回链表尾元素(最右边)
+ **输入参数: 
+ **     ctx: Redis信息
+ **     key: 链表名
+ **输出参数:
+ **返    回: 链表尾元素
+ **实现描述: 
+ **     LPOP:
+ **     1) 时间复杂度: O(1)
+ **     2) 当链表key不存在时, 将返回NIL;
+ **     3) 当key不是List类型时, 将返回错误信息.
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.09.23 #
+ ******************************************************************************/
+#define redis_rpop(ctx, key) redisCommand(ctx, "RPOP %s", key)
 
-#endif /*__HTTP_H__*/
+int redis_llen(redisContext *ctx, const char *lname);
+int redis_lpush(redisContext *redis, const char *list, const char *values);
+int redis_rpush(redisContext *redis, const char *list, const char *values);
+int redis_lpushx(redisContext *redis, const char *list, const char *value);
+int redis_rpushx(redisContext *redis, const char *list, const char *value);
+
+/******************************************************************************
+ **函数名称: redis_rpop_lpush
+ **功    能: 该命令将原子性的执行以下两条命令:
+ **         1. 将列表source中的最后一个元素(尾元素)弹出,并返回给客户端.
+ **         2. 将source弹出的元素插入到列表destination,作为destination列表的的头元素.
+ **输入参数: 
+ **     redis: Redis信息
+ **     src: 原列表名
+ **     dst: 目的列表名
+ **输出参数:
+ **返    回: 原链表尾元素
+ **实现描述: 
+ **     RPOPLPUSH:
+ **     1) 时间复杂度: O(1)
+ **     2) 如果source不存在,值NULL被返回,并且不执行其他动作;
+ **     3) 如果source和destination相同,则列表中的表尾元素被移动到表头，并返回该
+ **        元素,可以把这种特殊情况视作列表的旋转(rotation)操作.
+ **     4) 举个例子,你有两个列表source和destination, source列表有元素 a, b, c,
+ **        destination列表有元素 x, y, z, 执行RPOPLPUSH source destination之后,
+ **        source列表包含元素 a, b, destination列表包含元素 c, x, y, z, 并且元
+ **        素c会被返回给客户端.
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.09.23 #
+ ******************************************************************************/
+#define redis_rpop_lpush(ctx, src, dst) redisCommand(ctx, "RPOPLPUSH %s %s", src, dst)
+
+#endif /*__REDIS_H__*/

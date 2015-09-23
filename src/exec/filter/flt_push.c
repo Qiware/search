@@ -28,7 +28,6 @@
  ******************************************************************************/
 void *flt_push_routine(void *_ctx)
 {
-    redisReply *r;
     flt_crwl_t *crwl;
     flt_cntx_t *ctx = (flt_cntx_t *)_ctx;
     flt_conf_t *conf = ctx->conf;
@@ -51,19 +50,15 @@ void *flt_push_routine(void *_ctx)
         }
 
         /* > 进行网页处理 */
-        r = redis_rpush(ctx->redis->redis[REDIS_MASTER_IDX],
-                ctx->conf->redis.taskq, crwl->task_str);
-        if (NULL == r
-            || REDIS_REPLY_NIL == r->type)
+        if (!redis_rpush(ctx->redis->redis[REDIS_MASTER_IDX],
+                ctx->conf->redis.taskq, crwl->task_str))
         {
-            if (r) { freeReplyObject(r); }
             log_error(ctx->log, "Push into undo task queue failed!");
             return (void *)-1;
         }
 
         /* > 释放空间 */
         sig_queue_dealloc(ctx->crwlq, crwl);
-        freeReplyObject(r);
     }
 
     return (void *)-1;
