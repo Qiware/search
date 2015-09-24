@@ -27,49 +27,49 @@ redis_clst_t *redis_clst_init(const redis_conf_t *conf, int num);
 void redis_clst_destroy(redis_clst_t *clst);
 
 bool redis_hsetnx(redisContext *ctx, const char *hname, const char *key, const char *value);
-int redis_hlen(redisContext *redis, const char *hname);
+int redis_hlen(redisContext *ctx, const char *hname);
 
 /******************************************************************************
  **函数名称: redis_lpop
  **功    能: 移除并返回链表头元素(最左边)
  **输入参数: 
  **     ctx: Redis信息
- **     key: 链表名
+ **     ln: 链表名
  **输出参数:
  **返    回: 链表头元素
  **实现描述: 
  **     LPOP:
  **     1) 时间复杂度: O(1)
- **     2) 当链表key不存在时, 将返回NIL;
- **     3) 当key不是List类型时, 将返回错误信息.
+ **     2) 当链表ln不存在时, 将返回NIL;
+ **     3) 当ln不是List类型时, 将返回错误信息.
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.28 #
  ******************************************************************************/
-#define redis_lpop(ctx, key) redisCommand(ctx, "LPOP %s", key)
+#define redis_lpop(ctx, ln) redisCommand(ctx, "LPOP %s", ln)
 
 /******************************************************************************
  **函数名称: redis_rpop
  **功    能: 移除并返回链表尾元素(最右边)
  **输入参数: 
  **     ctx: Redis信息
- **     key: 链表名
+ **     ln: 链表名
  **输出参数:
  **返    回: 链表尾元素
  **实现描述: 
  **     LPOP:
  **     1) 时间复杂度: O(1)
- **     2) 当链表key不存在时, 将返回NIL;
- **     3) 当key不是List类型时, 将返回错误信息.
+ **     2) 当链表ln不存在时, 将返回NIL;
+ **     3) 当ln不是List类型时, 将返回错误信息.
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.09.23 #
  ******************************************************************************/
-#define redis_rpop(ctx, key) redisCommand(ctx, "RPOP %s", key)
+#define redis_rpop(ctx, ln) redisCommand(ctx, "RPOP %s", ln)
 
-int redis_llen(redisContext *ctx, const char *lname);
-int redis_lpush(redisContext *redis, const char *list, const char *values);
-int redis_rpush(redisContext *redis, const char *list, const char *values);
-int redis_lpushx(redisContext *redis, const char *list, const char *value);
-int redis_rpushx(redisContext *redis, const char *list, const char *value);
+int redis_llen(redisContext *ctx, const char *ln);
+int redis_lpush(redisContext *ctx, const char *ln, const char *values);
+int redis_rpush(redisContext *ctx, const char *ln, const char *values);
+int redis_lpushx(redisContext *ctx, const char *ln, const char *value);
+int redis_rpushx(redisContext *ctx, const char *ln, const char *value);
 
 /******************************************************************************
  **函数名称: redis_rpop_lpush
@@ -77,9 +77,9 @@ int redis_rpushx(redisContext *redis, const char *list, const char *value);
  **         1. 将列表source中的最后一个元素(尾元素)弹出,并返回给客户端.
  **         2. 将source弹出的元素插入到列表destination,作为destination列表的的头元素.
  **输入参数: 
- **     redis: Redis信息
- **     src: 原列表名
- **     dst: 目的列表名
+ **     ctx: Redis信息
+ **     sln: 原列表名
+ **     dln: 目的列表名
  **输出参数:
  **返    回: 原链表尾元素
  **实现描述: 
@@ -95,6 +95,6 @@ int redis_rpushx(redisContext *redis, const char *list, const char *value);
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.09.23 #
  ******************************************************************************/
-#define redis_rpop_lpush(ctx, src, dst) redisCommand(ctx, "RPOPLPUSH %s %s", src, dst)
+#define redis_rpop_lpush(ctx, sln, dln) redisCommand(ctx, "RPOPLPUSH %s %s", sln, dln)
 
 #endif /*__REDIS_H__*/
