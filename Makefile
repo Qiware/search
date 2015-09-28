@@ -15,6 +15,7 @@ include ./make/func.mak
 
 # 根目录
 export PROJ = ${PWD}
+export PROJ_3RD = ${PROJ}/3rd
 export PROJ_BIN = ${PROJ}/bin
 export PROJ_LIB = ${PROJ}/lib
 export PROJ_LOG = ${PROJ}/log
@@ -23,8 +24,8 @@ export GCC_LOG = ${PROJ_LOG}/gcc.log
 
 # 编译目录(注：编译按顺序执行　注意库之间的依赖关系)
 LIB_DIR = "src/lib"
-DIR = "$(LIB_DIR)/core"
-DIR += "$(LIB_DIR)/crypt"
+DIR = "$(PROJ_3RD)/crypt"
+DIR += "$(LIB_DIR)/core"
 DIR += "$(LIB_DIR)/conf"
 DIR += "$(LIB_DIR)/rtmq"
 DIR += "$(LIB_DIR)/sdtp"
