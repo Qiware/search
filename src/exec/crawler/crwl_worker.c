@@ -36,8 +36,8 @@ typedef int (*crwl_worker_task_hdl_t)(crwl_cntx_t *ctx, crwl_worker_t *worker, c
 
 static crwl_worker_task_hdl_t g_crwl_worker_task_hdl[CRWL_TASK_TYPE_TOTAL] =
 {
-    (crwl_worker_task_hdl_t)crwl_worker_task_unknown_hdl    /* CRWL_TASK_TYPE_UNKNOWN */
-    , (crwl_worker_task_hdl_t)crwl_worker_task_down_webpage /* CRWL_TASK_DOWN_WEBPAGE */
+    [CRWL_TASK_TYPE_UNKNOWN] = (crwl_worker_task_hdl_t)crwl_worker_task_unknown_hdl    /* CRWL_TASK_TYPE_UNKNOWN */
+    , [CRWL_TASK_DOWN_WEBPAGE] = (crwl_worker_task_hdl_t)crwl_worker_task_down_webpage /* CRWL_TASK_DOWN_WEBPAGE */
 };
 
 #define crwl_worker_task_handler(ctx, worker, task)         /* 任务处理回调 */\
