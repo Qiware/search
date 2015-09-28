@@ -11,7 +11,8 @@ include $(PROJ)/make/build.mak
 INCLUDE = -I$(PROJ)/src/incl \
 		  -I$(PROJ)/src/incl/conf \
 		  -I$(PROJ)/src/incl/rtmq \
-		  -I$(PROJ)/src/incl/agent
+		  -I$(PROJ)/src/incl/agent \
+		  -I$(PROJ)/src/incl/redis
 LIBS_PATH = -L$(PROJ)/lib
 
 SRC_LIST = sys_conf.c\

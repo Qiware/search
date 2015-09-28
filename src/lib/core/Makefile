@@ -8,7 +8,8 @@
 ###############################################################################
 include $(PROJ)/make/build.mak
 
-INCLUDE = -I. -I$(PROJ)/src/incl
+INCLUDE = -I. \
+		  -I$(PROJ)/src/incl
 LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lpthread
 
