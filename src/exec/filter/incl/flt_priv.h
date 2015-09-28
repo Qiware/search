@@ -23,7 +23,7 @@
                 "<IP FAMILY='%d'>%s</IP>"  /* IP地址和协议 */\
                 "<URI DEPTH='%d'>%s</URI>" /* 网页深度&URI */\
             "</BODY>" \
-        "</TASK>", CRWL_HTTP_GET_REQ, family, ip, deep, uri);
+        "</TASK>", CRWL_TASK_DOWN_WEBPAGE, family, ip, deep, uri);
 
 /* 错误码 */
 typedef enum
