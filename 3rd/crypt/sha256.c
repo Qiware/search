@@ -1,5 +1,5 @@
 /******************************************************************************
- ** Copyright(C) 2014-2024 Xundao technology Co., Ltd
+ ** Copyright(C) 2014-2024 Toushi technology Co., Ltd
  **
  ** 文件名: sha256.c
  ** 版本号: 1.0
