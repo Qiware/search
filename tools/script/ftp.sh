@@ -1,7 +1,7 @@
 #!/bin/sh
 
 ###############################################################################
-## Copyright(C) 2014-2024 Xundao technology Co., Ltd
+## Copyright(C) 2014-2024 Toushi technology Co., Ltd
 ##
 ## 功    能: 用于从指定FTP服务器取指定的文件
 ## 注意事项: 

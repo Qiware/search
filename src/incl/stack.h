@@ -1,5 +1,5 @@
 /******************************************************************************
- ** Copyright(C) 2013-2014 Xundao technology Co., Ltd
+ ** Copyright(C) 2013-2014 Toushi technology Co., Ltd
  **
  ** 文件名: stack.h
  ** 版本号: 1.0

@@ -1,5 +1,5 @@
 /******************************************************************************
- ** Coypright(C) 2014-2024 Xundao technology Co., Ltd
+ ** Coypright(C) 2014-2024 Toushi technology Co., Ltd
  **
  ** 文件名: shm_queue_demo.c
  ** 版本号: 1.0

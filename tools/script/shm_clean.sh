@@ -1,7 +1,7 @@
 #!/bin/sh
 
 ###############################################################################
-## Copyright(C) 2014-2024 Xundao technology Co., Ltd
+## Copyright(C) 2014-2024 Toushi technology Co., Ltd
 ##
 ## 功    能: 清理未使用的共享内存
 ## 注意事项: 
