@@ -5,3 +5,4 @@
 sudo apt-get install libtool
 sudo apt-get install automake
 sudo apt-get install g++
+sudo apt-get install redis-server
