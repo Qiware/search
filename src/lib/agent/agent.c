@@ -139,7 +139,6 @@ void agent_destroy(agent_cntx_t *ctx)
     agent_rsvr_pool_destroy(ctx);
 
     log_destroy(&ctx->log);
-    plog_destroy();
 }
 
 /******************************************************************************
