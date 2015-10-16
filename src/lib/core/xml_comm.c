@@ -1,5 +1,5 @@
 /******************************************************************************
- ** Copyright(C) 2014-2024 Toushi technology Co., Ltd
+ ** Copyright(C) 2014-2024 Qiware technology Co., Ltd
  **
  ** 文件名: xml_comm.c
  ** 版本号: 1.0

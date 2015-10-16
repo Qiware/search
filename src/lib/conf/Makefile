@@ -1,5 +1,5 @@
 ###############################################################################
-## Coypright(C) 2013-2014 Toushi technology Co., Ltd
+## Coypright(C) 2013-2014 Qiware technology Co., Ltd
 ##
 ## 文件名: Makefile
 ## 版本号: 1.0

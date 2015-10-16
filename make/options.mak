@@ -1,5 +1,5 @@
 ###############################################################################
-## Copyright(C) 2014-2024 Toushi technology Co., Ltd
+## Copyright(C) 2014-2024 Qiware technology Co., Ltd
 ##
 ## 功    能: 此模块用于添加功能宏
 ##         	 通过switch.mak中开关的设置，在此处增加需要加载的宏
