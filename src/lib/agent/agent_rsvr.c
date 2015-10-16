@@ -1103,7 +1103,7 @@ static int agent_rsvr_send(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
             memset(&ev, 0, sizeof(ev));
 
             ev.data.ptr = sck;
-            ev.events = EPOLLOUT | EPOLLET; /* 边缘触发 */
+            ev.events = EPOLLIN | EPOLLOUT | EPOLLET; /* 边缘触发 */
 
             epoll_ctl(rsvr->epid, EPOLL_CTL_MOD, sck->fd, &ev);
         }
