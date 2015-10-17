@@ -72,7 +72,7 @@ int sig_queue_push(sig_queue_t *sq, void *addr)
 void *sig_queue_pop(sig_queue_t *sq)
 {
     pthread_mutex_lock(&sq->lock);
-    while (queue_isempty(sq->queue))
+    while (queue_empty(sq->queue))
     {
         pthread_cond_wait(&sq->ready, &sq->lock);
     }

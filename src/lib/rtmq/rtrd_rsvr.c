@@ -135,7 +135,7 @@ static void rtrd_rsvr_set_wrset(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
     {
         curr = (rtrd_sck_t *)node->data;
 
-        if (list_isempty(curr->mesg_list)
+        if (list_empty(curr->mesg_list)
             && (curr->send.optr == curr->send.iptr))
         {
             if (node == tail)

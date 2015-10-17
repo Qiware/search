@@ -52,7 +52,7 @@ static int crwl_man_send_cmd(crwl_cntx_t *ctx, crwl_man_t *man);
  \
     FD_SET(man->fd, &man->rdset); \
  \
-    if (!list_isempty(man->mesg_list)) \
+    if (!list_empty(man->mesg_list)) \
     { \
         FD_SET(man->fd, &man->wrset); \
     } \

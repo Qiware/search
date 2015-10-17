@@ -315,7 +315,7 @@ int xml_parse(xml_tree_t *xml, Stack_t *stack, const char *str)
             }
             case STR_END_FLAG:  /* 字串结束'\0' */
             {
-                if (stack_isempty(stack))
+                if (stack_empty(stack))
                 {
                     log_trace(xml->log, "Parse xml success!");
                     return XML_OK;
@@ -331,7 +331,7 @@ int xml_parse(xml_tree_t *xml, Stack_t *stack, const char *str)
         }
     }
 
-    if (!stack_isempty(stack))
+    if (!stack_empty(stack))
     {
         log_error(xml->log, "Invalid format! [%-.32s]", parse.ptr);
         return XML_ERR_FORMAT;
@@ -641,7 +641,7 @@ static int xml_mark_get_name(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse
     }
 
     /* 2. 将节点加入XML树中 */
-    if (stack_isempty(stack))
+    if (stack_empty(stack))
     {
         if (NULL == xml->root->tail)
         {
@@ -1212,7 +1212,7 @@ xml_node_t *xml_free_next(xml_tree_t *xml, Stack_t *stack, xml_node_t *curr)
             return NULL;
         }
         
-        if (stack_isempty(stack))
+        if (stack_empty(stack))
         {
             xml_node_free_one(xml, top);
             return NULL;
@@ -1231,7 +1231,7 @@ xml_node_t *xml_free_next(xml_tree_t *xml, Stack_t *stack, xml_node_t *curr)
                 return NULL;
             }
             
-            if (stack_isempty(stack))
+            if (stack_empty(stack))
             {
                 xml_node_free_one(xml, top);
                 return NULL;
@@ -1429,7 +1429,7 @@ static xml_node_t *xml_node_next_length(
         return NULL;
     }
 
-    if (stack_isempty(stack))
+    if (stack_empty(stack))
     {
         *length += length2;
         log_error(xml->log, "Compelte fprint!");
@@ -1464,7 +1464,7 @@ static xml_node_t *xml_node_next_length(
             length2 += (top->name.len + 4);
         }
 
-        if (stack_isempty(stack))
+        if (stack_empty(stack))
         {
             *length += length2;
             return NULL;    /* 处理完成 */
@@ -1533,7 +1533,7 @@ int _xml_node_length(xml_tree_t *xml, xml_node_t *root, Stack_t *stack)
         
     }while (NULL != node);
 
-    if (!stack_isempty(stack))
+    if (!stack_empty(stack))
     {
         return XML_ERR_STACK;
     }

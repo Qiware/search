@@ -52,7 +52,7 @@ static int flt_man_send_cmd(flt_cntx_t *ctx, flt_man_t *man);
  \
     FD_SET(man->fd, &man->rdset); \
  \
-    if (!list_isempty(man->mesg_list)) \
+    if (!list_empty(man->mesg_list)) \
     { \
         FD_SET(man->fd, &man->wrset); \
     } \
