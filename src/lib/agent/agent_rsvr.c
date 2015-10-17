@@ -1088,25 +1088,14 @@ static int agent_rsvr_send(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
         slab_dealloc(rsvr->slab, send->addr);
         send->addr = NULL;
 
-        /* > 设置epoll监听(将EPOLLOUT剔除) */
-        if (list_isempty(extra->send_list))
-        {
-            memset(&ev, 0, sizeof(ev));
+        /* > 设置epoll监听 */
+        memset(&ev, 0, sizeof(ev));
 
-            ev.data.ptr = sck;
-            ev.events = EPOLLIN | EPOLLET; /* 边缘触发 */
+        ev.data.ptr = sck;
+        ev.events = list_empty(extra->send_list)?
+            (EPOLLIN|EPOLLET) : (EPOLLIN|EPOLLOUT|EPOLLET); /* 边缘触发 */
 
-            epoll_ctl(rsvr->epid, EPOLL_CTL_MOD, sck->fd, &ev);
-        }
-        else
-        {
-            memset(&ev, 0, sizeof(ev));
-
-            ev.data.ptr = sck;
-            ev.events = EPOLLIN | EPOLLOUT | EPOLLET; /* 边缘触发 */
-
-            epoll_ctl(rsvr->epid, EPOLL_CTL_MOD, sck->fd, &ev);
-        }
+        epoll_ctl(rsvr->epid, EPOLL_CTL_MOD, sck->fd, &ev);
     }
 
     return AGENT_ERR;
