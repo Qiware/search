@@ -1,5 +1,5 @@
 /******************************************************************************
- ** Copyright(C) 2014-2024 Toushi technology Co., Ltd
+ ** Copyright(C) 2014-2024 Qiware technology Co., Ltd
  **
  ** 文件名: xml_tree.c
  ** 版本号: 1.0
@@ -285,7 +285,7 @@ int xml_node_free(xml_tree_t *xml, xml_node_t *node)
         curr = xml_free_next(xml, stack, curr); 
     } while(NULL != curr);
 
-    if (!stack_isempty(stack))
+    if (!stack_empty(stack))
     {
         stack_destroy(stack);
         log_error(xml->log, "Stack is not empty!");

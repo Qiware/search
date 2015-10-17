@@ -1,5 +1,5 @@
 /******************************************************************************
- ** Copyright(C) 2014-2024 Toushi technology Co., Ltd
+ ** Copyright(C) 2014-2024 Qiware technology Co., Ltd
  **
  ** 文件名: sdrd_rsvr.c
  ** 版本号: 1.0
@@ -148,7 +148,7 @@ static void sdrd_rsvr_set_wrset(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr)
     {
         curr = (sdrd_sck_t *)node->data;
 
-        if (list_isempty(curr->mesg_list)
+        if (list_empty(curr->mesg_list)
             && (curr->send.optr == curr->send.iptr))
         {
             if (node == tail)

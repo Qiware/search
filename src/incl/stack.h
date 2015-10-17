@@ -1,5 +1,5 @@
 /******************************************************************************
- ** Copyright(C) 2013-2014 Toushi technology Co., Ltd
+ ** Copyright(C) 2013-2014 Qiware technology Co., Ltd
  **
  ** 文件名: stack.h
  ** 版本号: 1.0
@@ -119,7 +119,7 @@ static inline void *stack_pop(Stack_t *stack)
     return *(stack->top);
 }
 
-#define stack_isempty(stack) (((stack)->base == (stack)->top)? true : false) /* 栈是否为空 */
+#define stack_empty(stack) (((stack)->base == (stack)->top)? true : false) /* 栈是否为空 */
 #define stack_gettop(stack) (((stack)->base == (stack)->top)? NULL: *((stack)->top-1)) /* 取栈顶元素 */
 #define stack_depth(stack) ((stack)->top - (stack)->base)  /* 栈当前深度 */
 #define stack_maxdepth(stack) ((stack)->max)   /* 栈最大深度 */

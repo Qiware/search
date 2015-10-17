@@ -1,5 +1,5 @@
 /******************************************************************************
- ** Copyright(C) 2014-2024 Toushi technology Co., Ltd
+ ** Copyright(C) 2014-2024 Qiware technology Co., Ltd
  **
  ** 文件名: crwl_man.c
  ** 版本号: 1.0
@@ -52,7 +52,7 @@ static int crwl_man_send_cmd(crwl_cntx_t *ctx, crwl_man_t *man);
  \
     FD_SET(man->fd, &man->rdset); \
  \
-    if (!list_isempty(man->mesg_list)) \
+    if (!list_empty(man->mesg_list)) \
     { \
         FD_SET(man->fd, &man->wrset); \
     } \

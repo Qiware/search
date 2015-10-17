@@ -233,7 +233,7 @@ void rtsd_ssvr_set_rwset(rtsd_ssvr_t *ssvr)
     FD_SET(ssvr->sck.fd, &ssvr->rset);
 
     /* 2 设置写集合: 发送至接收端 */
-    if (!list_isempty(ssvr->sck.mesg_list)
+    if (!list_empty(ssvr->sck.mesg_list)
         || !shm_queue_isempty(ssvr->sendq))
     {
         FD_SET(ssvr->sck.fd, &ssvr->wset);

@@ -269,7 +269,7 @@ void sdsd_ssvr_switch_send_buff(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr)
         case SDTP_SNAP_SHOT_SYS_DATA:
         {
             send = &sck->send[SDTP_SNAP_SHOT_SYS_DATA];
-            if (!list_isempty(sck->mesg_list)
+            if (!list_empty(sck->mesg_list)
                 || (send->iptr != send->optr))
             {
                 return; /* 系统消息还未发送完成: 不用切换 */
@@ -286,7 +286,7 @@ void sdsd_ssvr_switch_send_buff(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr)
                 return; /* 缓存数据仍然未发送完全 */
             }
 
-            if (!list_isempty(sck->mesg_list))
+            if (!list_empty(sck->mesg_list))
             {
                 sck->send_type = SDTP_SNAP_SHOT_SYS_DATA;
                 return; /* 有消息可发送 */
@@ -361,7 +361,7 @@ void sdsd_ssvr_set_rwset(sdsd_ssvr_t *ssvr)
     FD_SET(ssvr->sck.fd, &ssvr->rset);
 
     /* 2 设置写集合: 发送至接收端 */
-    if (!list_isempty(ssvr->sck.mesg_list))
+    if (!list_empty(ssvr->sck.mesg_list))
     {
         FD_SET(ssvr->sck.fd, &ssvr->wset);
         return;
