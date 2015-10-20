@@ -7,9 +7,9 @@
  ** 作  者: # Qifeng.zou # Sat 25 Jul 2015 10:54:37 AM CST #
  ******************************************************************************/
 
-#include "hash.h"
 #include "shm_opt.h"
 #include "shm_hash.h"
+#include "hash_alg.h"
 
 #define SHM_HASH_TOTAL_SIZE(len, max, size) /* 计算哈希空间 */\
     (sizeof(shm_hash_head_t) + 2 * shm_ring_total(max) \

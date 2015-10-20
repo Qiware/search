@@ -1,8 +1,8 @@
 #include "comm.h"
-#include "hash.h"
 #include "redo.h"
 #include "shm_opt.h"
 #include "xml_tree.h"
+#include "hash_alg.h"
 
 static void *shm_at_or_creat(const char *path, size_t size);
 

@@ -11,10 +11,10 @@
 #include "uri.h"
 #include "comm.h"
 #include "lock.h"
-#include "hash.h"
 #include "redo.h"
 #include "filter.h"
 #include "flt_man.h"
+#include "hash_alg.h"
 #include "flt_sched.h"
 #include "flt_worker.h"
 

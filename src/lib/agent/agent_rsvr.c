@@ -1,12 +1,12 @@
 #include "sck.h"
 #include "comm.h"
-#include "hash.h"
 #include "list.h"
 #include "mesg.h"
 #include "redo.h"
 #include "agent.h"
 #include "command.h"
 #include "xml_tree.h"
+#include "hash_alg.h"
 #include "agent_rsvr.h"
 #include "thread_pool.h"
 

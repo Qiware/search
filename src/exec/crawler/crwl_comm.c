@@ -10,11 +10,11 @@
 #include "log.h"
 #include "sck.h"
 #include "lock.h"
-#include "hash.h"
 #include "comm.h"
 #include "redo.h"
 #include "crawler.h"
 #include "crwl_man.h"
+#include "hash_alg.h"
 #include "crwl_sched.h"
 #include "crwl_worker.h"
 
