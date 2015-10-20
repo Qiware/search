@@ -10,7 +10,7 @@ typedef struct
 {
 #define HASH_MAP_AVL    (0)                         /* 平衡二叉树 */
 #define HASH_MAP_RBT    (1)                         /* 红黑树 */
-    int tree_type;                                  /* 树类型 */
+    int type;                                       /* 树类型 */
 
     void *pool;                                     /* 内存池 */
     mem_alloc_cb_t alloc;                           /* 申请内存 */

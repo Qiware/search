@@ -206,6 +206,7 @@ flt_cntx_t *flt_init(char *pname, const char *path)
         /* > 新建域名IP映射表 */
         memset(&opt, 0, sizeof(opt));
 
+        opt.type = HASH_MAP_AVL;
         opt.pool = (void *)ctx->slab;
         opt.alloc = (mem_alloc_cb_t)slab_alloc;
         opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
@@ -223,6 +224,7 @@ flt_cntx_t *flt_init(char *pname, const char *path)
         /* > 新建域名黑名单表 */
         memset(&opt, 0, sizeof(opt));
 
+        opt.type = HASH_MAP_AVL;
         opt.pool = (void *)ctx->slab;
         opt.alloc = (mem_alloc_cb_t)slab_alloc;
         opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
