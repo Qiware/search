@@ -47,7 +47,7 @@ SRC_LIST = hash.c \
 			sck_tcp.c \
 			sck_udp.c \
 			sck_unix.c \
-			hash_tab.c \
+			hash_map.c \
 			str.c \
 			uri.c
 

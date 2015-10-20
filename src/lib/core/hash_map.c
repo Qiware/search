@@ -1,7 +1,7 @@
 /******************************************************************************
  ** Copyright(C) 2014-2024 Qiware technology Co., Ltd
  **
- ** 文件名: hash_tab.c
+ ** 文件名: hash_map.c
  ** 版本号: 1.0
  ** 描  述: 哈希表模块
  **         1. 使用哈希数组分解锁的压力
@@ -9,16 +9,15 @@
  **         3. TODO: 可使用红黑树、链表等操作回调复用该框架!
  ** 作  者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
-#include "log.h"
 #include "rb_tree.h"
 #include "avl_tree.h"
-#include "hash_tab.h"
+#include "hash_map.h"
 
-static int hash_tab_set_cb(hash_tab_t *htab, hash_tab_opt_t *opt);
-static int hash_tab_init_elem(hash_tab_t *htab, int idx, key_cb_t key_cb, cmp_cb_t cmp_cb, hash_tab_opt_t *opt);
+static int hash_map_set_cb(hash_map_t *htab, hash_map_opt_t *opt);
+static int hash_map_init_elem(hash_map_t *htab, int idx, key_cb_t key_cb, cmp_cb_t cmp_cb, hash_map_opt_t *opt);
 
 /******************************************************************************
- **函数名称: hash_tab_creat
+ **函数名称: hash_map_creat
  **功    能: 创建哈希表
  **输入参数:
  **     len: 哈希表长度
@@ -33,13 +32,13 @@ static int hash_tab_init_elem(hash_tab_t *htab, int idx, key_cb_t key_cb, cmp_cb
  **注意事项:
  **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
-hash_tab_t *hash_tab_creat(int len, key_cb_t key_cb, cmp_cb_t cmp_cb, hash_tab_opt_t *opt)
+hash_map_t *hash_map_creat(int len, key_cb_t key_cb, cmp_cb_t cmp_cb, hash_map_opt_t *opt)
 {
     int idx;
-    hash_tab_t *htab;
+    hash_map_t *htab;
 
     /* > 创建哈希数组 */
-    htab = (hash_tab_t *)opt->alloc(opt->pool, sizeof(hash_tab_t));
+    htab = (hash_map_t *)opt->alloc(opt->pool, sizeof(hash_map_t));
     if (NULL == htab)
     {
         return NULL;
@@ -63,15 +62,15 @@ hash_tab_t *hash_tab_creat(int len, key_cb_t key_cb, cmp_cb_t cmp_cb, hash_tab_o
     }
 
     /* > 创建存储树 */
-    hash_tab_set_cb(htab, opt);
+    hash_map_set_cb(htab, opt);
 
     for (idx=0; idx<len; ++idx)
     {
         pthread_rwlock_init(&htab->lock[idx], NULL);
 
-        if (hash_tab_init_elem(htab, idx, key_cb, cmp_cb, opt))
+        if (hash_map_init_elem(htab, idx, key_cb, cmp_cb, opt))
         {
-            hash_tab_destroy(htab, mem_dummy_dealloc, NULL);
+            hash_map_destroy(htab, mem_dummy_dealloc, NULL);
             return NULL;
         }
     }
@@ -84,11 +83,11 @@ hash_tab_t *hash_tab_creat(int len, key_cb_t key_cb, cmp_cb_t cmp_cb, hash_tab_o
 }
 
 /* 设置回调函数 */
-static int hash_tab_set_cb(hash_tab_t *htab, hash_tab_opt_t *opt)
+static int hash_map_set_cb(hash_map_t *htab, hash_map_opt_t *opt)
 {
     switch (opt->tree_type)
     {
-        case HASH_TAB_AVL:
+        case HASH_MAP_AVL:
         default:
         {
             htab->tree_insert = (tree_insert_cb_t)avl_insert;
@@ -98,7 +97,7 @@ static int hash_tab_set_cb(hash_tab_t *htab, hash_tab_opt_t *opt)
             htab->tree_destroy = (tree_destroy_cb_t)avl_trav;
             break;
         }
-        case HASH_TAB_RBT:
+        case HASH_MAP_RBT:
         {
             htab->tree_insert = (tree_insert_cb_t)rbt_insert;
             htab->tree_delete = (tree_delete_cb_t)rbt_delete;
@@ -112,7 +111,7 @@ static int hash_tab_set_cb(hash_tab_t *htab, hash_tab_opt_t *opt)
 }
 
 /******************************************************************************
- **函数名称: hash_tab_init_elem
+ **函数名称: hash_map_init_elem
  **功    能: 初始化哈希数组成员
  **输入参数:
  **     tab: 哈希表
@@ -125,12 +124,12 @@ static int hash_tab_set_cb(hash_tab_t *htab, hash_tab_opt_t *opt)
  **注意事项:
  **作    者: # Qifeng.zou # 2015-07-22 14:23:04 #
  ******************************************************************************/
-static int hash_tab_init_elem(
-    hash_tab_t *htab, int idx, key_cb_t key_cb, cmp_cb_t cmp_cb, hash_tab_opt_t *opt)
+static int hash_map_init_elem(
+    hash_map_t *htab, int idx, key_cb_t key_cb, cmp_cb_t cmp_cb, hash_map_opt_t *opt)
 {
     switch (opt->tree_type)
     {
-        case HASH_TAB_AVL:
+        case HASH_MAP_AVL:
         default:
         {
             avl_opt_t avl_opt;
@@ -148,7 +147,7 @@ static int hash_tab_init_elem(
             }
             break;
         }
-        case HASH_TAB_RBT:
+        case HASH_MAP_RBT:
         {
             rbt_opt_t rbt_opt;
 
@@ -170,7 +169,7 @@ static int hash_tab_init_elem(
 }
 
 /******************************************************************************
- **函数名称: hash_tab_insert
+ **函数名称: hash_map_insert
  **功    能: 插入哈希成员
  **输入参数:
  **     htab: 哈希数组
@@ -183,7 +182,7 @@ static int hash_tab_init_elem(
  **注意事项:
  **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
-int hash_tab_insert(hash_tab_t *htab, void *pkey, int pkey_len, void *data)
+int hash_map_insert(hash_map_t *htab, void *pkey, int pkey_len, void *data)
 {
     int ret;
     unsigned int idx;
@@ -202,7 +201,7 @@ int hash_tab_insert(hash_tab_t *htab, void *pkey, int pkey_len, void *data)
 }
 
 /******************************************************************************
- **函数名称: hash_tab_query
+ **函数名称: hash_map_query
  **功    能: 查找哈希成员
  **输入参数:
  **     htab: 哈希数组
@@ -216,8 +215,8 @@ int hash_tab_insert(hash_tab_t *htab, void *pkey, int pkey_len, void *data)
  **注意事项:
  **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
-int hash_tab_query(hash_tab_t *htab,
-    void *pkey, int pkey_len, hash_tab_query_cb_t query_cb, void *data)
+int hash_map_query(hash_map_t *htab,
+    void *pkey, int pkey_len, hash_map_query_cb_t query_cb, void *data)
 {
     int ret;
     void *orig;
@@ -241,7 +240,7 @@ int hash_tab_query(hash_tab_t *htab,
 }
 
 /******************************************************************************
- **函数名称: hash_tab_remove
+ **函数名称: hash_map_remove
  **功    能: 删除哈希成员
  **输入参数:
  **     htab: 哈希数组
@@ -253,7 +252,7 @@ int hash_tab_query(hash_tab_t *htab,
  **注意事项: 返回地址的内存空间由外部释放
  **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
-void *hash_tab_remove(hash_tab_t *htab, void *pkey, int pkey_len)
+void *hash_map_remove(hash_map_t *htab, void *pkey, int pkey_len)
 {
     void *data;
     unsigned int idx;
@@ -272,7 +271,7 @@ void *hash_tab_remove(hash_tab_t *htab, void *pkey, int pkey_len)
 }
 
 /******************************************************************************
- **函数名称: hash_tab_destroy
+ **函数名称: hash_map_destroy
  **功    能: 销毁哈希数组
  **输入参数:
  **     htab: 哈希数组
@@ -282,7 +281,7 @@ void *hash_tab_remove(hash_tab_t *htab, void *pkey, int pkey_len)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
-int hash_tab_destroy(hash_tab_t *htab, mem_dealloc_cb_t dealloc, void *args)
+int hash_map_destroy(hash_map_t *htab, mem_dealloc_cb_t dealloc, void *args)
 {
     int idx;
 
@@ -306,7 +305,7 @@ int hash_tab_destroy(hash_tab_t *htab, mem_dealloc_cb_t dealloc, void *args)
 }
 
 /******************************************************************************
- **函数名称: hash_tab_trav
+ **函数名称: hash_map_trav
  **功    能: 遍历哈希数组
  **输入参数:
  **     htab: 哈希数组
@@ -317,7 +316,7 @@ int hash_tab_destroy(hash_tab_t *htab, mem_dealloc_cb_t dealloc, void *args)
  **注意事项:
  **作    者: # Qifeng.zou # 2014.12.24 #
  ******************************************************************************/
-int hash_tab_trav(hash_tab_t *htab, trav_cb_t proc, void *args)
+int hash_map_trav(hash_map_t *htab, trav_cb_t proc, void *args)
 {
     int idx;
 

@@ -567,13 +567,13 @@ static int flt_man_query_table_stat_req_hdl(flt_cntx_t *ctx,
 
     /* 1. 域名IP映射表 */
     snprintf(stat->table[stat->num].name, sizeof(stat->table[stat->num].name), "DOMAIN IP MAP");
-    stat->table[stat->num].num = htonl(hash_tab_total(ctx->domain_ip_map));
+    stat->table[stat->num].num = htonl(hash_map_total(ctx->domain_ip_map));
     stat->table[stat->num].max = -1;
     ++stat->num;
 
     /* 2. 域名黑名单表 */
     snprintf(stat->table[stat->num].name, sizeof(stat->table[stat->num].name), "DOMAIN BLACKLIST");
-    stat->table[stat->num].num = htonl(hash_tab_total(ctx->domain_blacklist));
+    stat->table[stat->num].num = htonl(hash_map_total(ctx->domain_blacklist));
     stat->table[stat->num].max = -1;
     ++stat->num;
 
@@ -682,7 +682,7 @@ static int flt_man_store_domain_ip_map_req_hdl(flt_cntx_t *ctx,
         return FLT_ERR;
     }
 
-    hash_tab_trav(ctx->domain_ip_map, (trav_cb_t)flt_man_store_domain_ip_map_hdl, &trav);
+    hash_map_trav(ctx->domain_ip_map, (trav_cb_t)flt_man_store_domain_ip_map_hdl, &trav);
 
     FCLOSE(trav.fp);
 
@@ -789,7 +789,7 @@ static int flt_man_store_domain_blacklist_req_hdl(flt_cntx_t *ctx,
         return FLT_ERR;
     }
 
-    hash_tab_trav(ctx->domain_blacklist, (trav_cb_t)flt_man_store_domain_blacklist_hdl, &trav);
+    hash_map_trav(ctx->domain_blacklist, (trav_cb_t)flt_man_store_domain_blacklist_hdl, &trav);
 
     FCLOSE(trav.fp);
 
