@@ -1,5 +1,5 @@
 ###############################################################################
-## Copyright(C) 2014-2024 Toushi technology Co., Ltd
+## Copyright(C) 2014-2024 Qiware technology Co., Ltd
 ##
 ## 功    能: 遍历编译目录，并执行指定的操作
 ##			1. 编译操作
@@ -57,7 +57,8 @@ all:
 	do \
 		if [ -e $${ITEM}/Makefile ]; then \
 			cd $${ITEM}; \
-			make -j$(CPU_CORES) 2>&1 | tee -a ${GCC_LOG}; \
+			#make -j$(CPU_CORES) 2>&1 | tee -a ${GCC_LOG}; \
+			make -j$(CPU_CORES) 2>&1 || exit; \
 			cd ${PROJ}; \
 		fi \
 	done
