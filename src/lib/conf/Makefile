@@ -16,12 +16,10 @@ INCLUDE = -I$(PROJ)/src/incl \
 LIBS_PATH = -L$(PROJ)/lib
 
 SRC_LIST = sys_conf.c\
-			mon_conf.c \
 			flt_conf.c \
 			crwl_conf.c \
 			frwd_conf.c \
-			lsnd_conf.c \
-			invtd_conf.c
+			lsnd_conf.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST))
 HEADS = $(call func_get_dep_head_list, $(SRC_LIST))

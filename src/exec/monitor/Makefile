@@ -20,6 +20,7 @@ LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lpthread -lcore -lconf
 
 SRC_LIST = monitor.c \
+			mon_conf.c \
 			mon_crwl.c \
 			mon_filter.c \
 			mon_search.c
