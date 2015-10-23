@@ -25,6 +25,7 @@ LIBS = -lpthread \
 
 SRC_LIST = crwl_comm.c \
 			crwl_man.c \
+			crwl_conf.c \
 			crwl_sched.c \
 			crwl_worker.c \
 			crawler.c

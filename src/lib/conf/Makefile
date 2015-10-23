@@ -16,8 +16,6 @@ INCLUDE = -I$(PROJ)/src/incl \
 LIBS_PATH = -L$(PROJ)/lib
 
 SRC_LIST = sys_conf.c\
-			flt_conf.c \
-			crwl_conf.c \
 			frwd_conf.c \
 			lsnd_conf.c
 
