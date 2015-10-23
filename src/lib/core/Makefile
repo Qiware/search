@@ -13,8 +13,7 @@ INCLUDE = -I. \
 LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lpthread
 
-SRC_LIST = hash.c \
-			log.c \
+SRC_LIST = log.c \
 			plog.c \
 			slot.c \
 			lock.c \
@@ -47,7 +46,8 @@ SRC_LIST = hash.c \
 			sck_tcp.c \
 			sck_udp.c \
 			sck_unix.c \
-			hash_tab.c \
+			hash_map.c \
+			hash_alg.c \
 			str.c \
 			uri.c
 

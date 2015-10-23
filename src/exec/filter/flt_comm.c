@@ -11,10 +11,10 @@
 #include "uri.h"
 #include "comm.h"
 #include "lock.h"
-#include "hash.h"
 #include "redo.h"
 #include "filter.h"
 #include "flt_man.h"
+#include "hash_alg.h"
 #include "flt_sched.h"
 #include "flt_worker.h"
 
@@ -136,7 +136,7 @@ flt_cntx_t *flt_init(char *pname, const char *path)
     flt_conf_t *conf;
     log_cycle_t *log;
     slab_pool_t *slab;
-    hash_tab_opt_t opt;
+    hash_map_opt_t opt;
 
     /* > 初始化日志模块 */
     log = flt_init_log(pname);
@@ -206,11 +206,12 @@ flt_cntx_t *flt_init(char *pname, const char *path)
         /* > 新建域名IP映射表 */
         memset(&opt, 0, sizeof(opt));
 
+        opt.type = HASH_MAP_AVL;
         opt.pool = (void *)ctx->slab;
         opt.alloc = (mem_alloc_cb_t)slab_alloc;
         opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-        ctx->domain_ip_map = hash_tab_creat(
+        ctx->domain_ip_map = hash_map_creat(
                 FLT_DOMAIN_IP_MAP_HASH_MOD,
                 (key_cb_t)hash_time33_ex,
                 (cmp_cb_t)flt_domain_ip_map_cmp_cb, &opt);
@@ -223,11 +224,12 @@ flt_cntx_t *flt_init(char *pname, const char *path)
         /* > 新建域名黑名单表 */
         memset(&opt, 0, sizeof(opt));
 
+        opt.type = HASH_MAP_AVL;
         opt.pool = (void *)ctx->slab;
         opt.alloc = (mem_alloc_cb_t)slab_alloc;
         opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-        ctx->domain_blacklist = hash_tab_creat(
+        ctx->domain_blacklist = hash_map_creat(
                 FLT_DOMAIN_BLACKLIST_HASH_MOD,
                 (key_cb_t)hash_time33_ex,
                 (cmp_cb_t)flt_domain_blacklist_cmp_cb, &opt);
@@ -514,16 +516,16 @@ int flt_get_domain_ip_map(flt_cntx_t *ctx, char *host, ipaddr_t *ip)
     flt_domain_blacklist_t blacklist, *new_blacklist;
 
     /* > 从域名IP映射表中查找 */
-    if (!hash_tab_query(ctx->domain_ip_map, host, strlen(host),
-            (hash_tab_query_cb_t)flt_domain_ip_map_query, ip))
+    if (!hash_map_query(ctx->domain_ip_map, host, strlen(host),
+            (hash_map_query_cb_t)flt_domain_ip_map_query, ip))
     {
         log_trace(ctx->log, "Found domain ip map in talbe! %s", host);
         return FLT_OK; /* 成功 */
     }
 
     /* > 从域名黑名单中查找 */
-    if (!hash_tab_query(ctx->domain_blacklist, host, strlen(host),
-            (hash_tab_query_cb_t)flt_domain_blacklist_query, &blacklist))
+    if (!hash_map_query(ctx->domain_blacklist, host, strlen(host),
+            (hash_map_query_cb_t)flt_domain_blacklist_query, &blacklist))
     {
         log_info(ctx->log, "Host [%s] in blacklist!", host);
         return FLT_ERR; /* 在黑名单中 */
@@ -549,7 +551,7 @@ int flt_get_domain_ip_map(flt_cntx_t *ctx, char *host, ipaddr_t *ip)
         new_blacklist->create_tm = time(NULL);
         new_blacklist->access_tm = new_blacklist->create_tm;
 
-        if (hash_tab_insert(ctx->domain_blacklist, host, strlen(host), new_blacklist))
+        if (hash_map_insert(ctx->domain_blacklist, host, strlen(host), new_blacklist))
         {
             slab_dealloc(ctx->slab, new_blacklist);
         }
@@ -610,7 +612,7 @@ int flt_get_domain_ip_map(flt_cntx_t *ctx, char *host, ipaddr_t *ip)
     freeaddrinfo(addrinfo);
 
     /* 4. 插入域名IP映射表 */
-    ret = hash_tab_insert(ctx->domain_ip_map, host, strlen(host), new_map);
+    ret = hash_map_insert(ctx->domain_ip_map, host, strlen(host), new_map);
     if (0 != ret)
     {
         if (AVL_NODE_EXIST == ret)

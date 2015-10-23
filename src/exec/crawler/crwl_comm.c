@@ -10,11 +10,11 @@
 #include "log.h"
 #include "sck.h"
 #include "lock.h"
-#include "hash.h"
 #include "comm.h"
 #include "redo.h"
 #include "crawler.h"
 #include "crwl_man.h"
+#include "hash_alg.h"
 #include "crwl_sched.h"
 #include "crwl_worker.h"
 
@@ -87,7 +87,7 @@ int crwl_getopt(int argc, char **argv, crwl_opt_t *opt)
  **函数名称: crwl_usage
  **功    能: 显示启动参数帮助信息
  **输入参数:
- **     name: 程序名
+ **     exec: 程序名
  **输出参数: NULL
  **返    回: 0:成功 !0:失败
  **实现描述:

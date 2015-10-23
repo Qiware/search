@@ -10,9 +10,9 @@
 #include "log.h"
 #include "comm.h"
 #include "lock.h"
-#include "hash.h"
 #include "redo.h"
 #include "shm_opt.h"
+#include "hash_alg.h"
 
 /* 共享内存 */
 static void *g_log_shm_addr = (void *)-1;  /* 共享内存地址 */

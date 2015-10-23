@@ -12,7 +12,7 @@
 
 #include "log.h"
 #include "queue.h"
-#include "hash_tab.h"
+#include "hash_map.h"
 #include "gumbo_ex.h"
 #include "flt_priv.h"
 #include "flt_conf.h"
@@ -55,8 +55,8 @@ typedef struct
     sig_queue_t *crwlq;                     /* 爬取队列(存放的是将被推送至REDIS's TASKQ的URL) */
     redis_clst_t *redis;                    /* Redis集群 */
 
-    hash_tab_t *domain_ip_map;              /* 域名IP映射表: 通过域名找到IP地址 */
-    hash_tab_t *domain_blacklist;           /* 域名黑名单 */
+    hash_map_t *domain_ip_map;              /* 域名IP映射表: 通过域名找到IP地址 */
+    hash_map_t *domain_blacklist;           /* 域名黑名单 */
 } flt_cntx_t;
 
 flt_cntx_t *flt_init(char *pname, const char *path);

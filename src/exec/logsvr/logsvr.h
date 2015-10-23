@@ -8,8 +8,8 @@
  **         2. 负责把共享内存中的日志同步到指定文件。
  ** 作  者: # Qifeng.zou # 2013.11.07 #
  ******************************************************************************/
-#if !defined(__LOGD_H__)
-#define __LOGD_H__
+#if !defined(__LOG_SVR_H__)
+#define __LOG_SVR_H__
 
 #include "lock.h"
 #include "slab.h"
@@ -36,4 +36,4 @@ typedef struct
     thread_pool_t *pool;            /* 内存池对象 */
 } logd_cntx_t;
 
-#endif /*__LOGD_H__*/
+#endif /*__LOG_SVR_H__*/
