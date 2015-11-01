@@ -997,7 +997,7 @@ static int sdrd_rsvr_keepalive_req_hdl(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, sdrd
 }
 
 /******************************************************************************
- **函数名称: sdrd_rsvr_link_auth_rep
+ **函数名称: sdrd_rsvr_link_auth_rsp
  **功    能: 链路鉴权应答
  **输入参数:
  **     ctx: 全局对象
@@ -1009,11 +1009,11 @@ static int sdrd_rsvr_keepalive_req_hdl(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, sdrd
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.05.22 #
  ******************************************************************************/
-static int sdrd_rsvr_link_auth_rep(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, sdrd_sck_t *sck)
+static int sdrd_rsvr_link_auth_rsp(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, sdrd_sck_t *sck)
 {
     void *addr;
     sdtp_header_t *head;
-    sdtp_link_auth_rep_t *link_auth_rep;
+    sdtp_link_auth_rsp_t *link_auth_rsp;
 
     /* > 分配消息空间 */
     addr = slab_alloc(rsvr->pool, sizeof(sdtp_header_t));
@@ -1025,15 +1025,15 @@ static int sdrd_rsvr_link_auth_rep(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, sdrd_sck
 
     /* > 回复消息内容 */
     head = (sdtp_header_t *)addr;
-    link_auth_rep = (sdtp_link_auth_rep_t *)(addr + sizeof(sdtp_header_t));
+    link_auth_rsp = (sdtp_link_auth_rsp_t *)(addr + sizeof(sdtp_header_t));
 
     head->type = SDTP_LINK_AUTH_REP;
     head->nodeid = ctx->conf.auth.nodeid;
-    head->length = sizeof(sdtp_link_auth_rep_t);
+    head->length = sizeof(sdtp_link_auth_rsp_t);
     head->flag = SDTP_SYS_MESG;
     head->checksum = SDTP_CHECK_SUM;
 
-    link_auth_rep->is_succ = htonl(sck->auth_succ);
+    link_auth_rsp->is_succ = htonl(sck->auth_succ);
 
     /* > 加入发送列表 */
     if (list_rpush(sck->mesg_list, addr))
@@ -1087,7 +1087,7 @@ static int sdrd_rsvr_link_auth_req_hdl(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, sdrd
     }
 
     /* > 应答鉴权请求 */
-    return sdrd_rsvr_link_auth_rep(ctx, rsvr, sck);
+    return sdrd_rsvr_link_auth_rsp(ctx, rsvr, sck);
 }
 
 /******************************************************************************
