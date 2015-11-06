@@ -9,8 +9,7 @@
 include $(PROJ)/make/build.mak
 
 INCLUDE = -I. \
-		  -I$(PROJ)/src/incl \
-		  -I$(PROJ)/src/incl/crypt
+		  -I$(PROJ)/src/incl
 LIBS_PATH = -L$(PROJ)/lib
 LIBS = 
 

@@ -27,7 +27,7 @@ static int sdsd_ssvr_clear_mesg(sdsd_ssvr_t *ssvr);
 static int sdsd_ssvr_kpalive_req(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr);
 
 static int sdtp_link_auth_req(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr);
-static int sdtp_link_auth_rep_hdl(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr, sdsd_sck_t *sck, sdtp_link_auth_rep_t *rep);
+static int sdtp_link_auth_rsp_hdl(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr, sdsd_sck_t *sck, sdtp_link_auth_rsp_t *rsp);
 
 /******************************************************************************
  **函数名称: sdsd_ssvr_init
@@ -1125,7 +1125,7 @@ static int sdsd_ssvr_sys_mesg_proc(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr, sdsd_sck
         }
         case SDTP_LINK_AUTH_REP:    /* 链路鉴权应答 */
         {
-            return sdtp_link_auth_rep_hdl(ctx, ssvr, sck, addr + sizeof(sdtp_header_t));
+            return sdtp_link_auth_rsp_hdl(ctx, ssvr, sck, addr + sizeof(sdtp_header_t));
         }
     }
 
@@ -1238,7 +1238,7 @@ static int sdtp_link_auth_req(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr)
     return SDTP_OK;
 }
 /******************************************************************************
- **函数名称: sdtp_link_auth_rep_hdl
+ **函数名称: sdtp_link_auth_rsp_hdl
  **功    能: 链路鉴权请求应答的处理
  **输入参数:
  **     ctx: 全局信息
@@ -1251,8 +1251,8 @@ static int sdtp_link_auth_req(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.22 #
  ******************************************************************************/
-static int sdtp_link_auth_rep_hdl(
-        sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr, sdsd_sck_t *sck, sdtp_link_auth_rep_t *rep)
+static int sdtp_link_auth_rsp_hdl(
+        sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr, sdsd_sck_t *sck, sdtp_link_auth_rsp_t *rsp)
 {
-    return ntohl(rep->is_succ)? SDTP_OK : SDTP_ERR;
+    return ntohl(rsp->is_succ)? SDTP_OK : SDTP_ERR;
 }

@@ -220,14 +220,14 @@ static int mon_flt_add_seed_setup(flt_cmd_t *cmd)
  ******************************************************************************/
 static int mon_flt_add_seed_print(flt_cmd_t *cmd)
 {
-    flt_cmd_add_seed_rep_t *rep;
+    flt_cmd_add_seed_rsp_t *rsp;
 
     cmd->type = ntohl(cmd->type);
-    rep = (flt_cmd_add_seed_rep_t *)&cmd->data;
+    rsp = (flt_cmd_add_seed_rsp_t *)&cmd->data;
 
     /* 显示结果 */
-    rep->stat = ntohl(rep->stat);
-    switch (rep->stat)
+    rsp->stat = ntohl(rsp->stat);
+    switch (rsp->stat)
     {
         case FLT_CMD_ADD_SEED_STAT_SUCC:
         {
@@ -241,7 +241,7 @@ static int mon_flt_add_seed_print(flt_cmd_t *cmd)
         }
         case FLT_CMD_ADD_SEED_STAT_EXIST:
         {
-            fprintf(stderr, "    Seed [%s] is exist!\n", rep->url);
+            fprintf(stderr, "    Seed [%s] is exist!\n", rsp->url);
             break;
         }
         case FLT_CMD_ADD_SEED_STAT_UNKNOWN:
@@ -433,14 +433,14 @@ static int mon_flt_store_domain_ip_map_setup(flt_cmd_t *cmd)
  ******************************************************************************/
 static int mon_flt_store_domain_ip_map_print(flt_cmd_t *cmd)
 {
-    flt_cmd_store_domain_ip_map_rep_t *rep;
+    flt_cmd_store_domain_ip_map_rsp_t *rsp;
 
     /* 字节序转换 */
     cmd->type = ntohl(cmd->type);
-    rep = (flt_cmd_store_domain_ip_map_rep_t *)&cmd->data;
+    rsp = (flt_cmd_store_domain_ip_map_rsp_t *)&cmd->data;
 
     /* 显示结果 */
-    fprintf(stderr, "        PATH: %s\n", rep->path);
+    fprintf(stderr, "        PATH: %s\n", rsp->path);
     return 0;
 }
 
@@ -490,14 +490,14 @@ static int mon_flt_store_domain_blacklist_setup(flt_cmd_t *cmd)
  ******************************************************************************/
 static int mon_flt_store_domain_blacklist_print(flt_cmd_t *cmd)
 {
-    flt_cmd_store_domain_ip_map_rep_t *rep;
+    flt_cmd_store_domain_ip_map_rsp_t *rsp;
 
     /* 字节序转换 */
     cmd->type = ntohl(cmd->type);
-    rep = (flt_cmd_store_domain_ip_map_rep_t *)&cmd->data;
+    rsp = (flt_cmd_store_domain_ip_map_rsp_t *)&cmd->data;
 
     /* 显示结果 */
-    fprintf(stderr, "        PATH: %s\n", rep->path);
+    fprintf(stderr, "        PATH: %s\n", rsp->path);
     return 0;
 }
 

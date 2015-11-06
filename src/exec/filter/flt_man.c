@@ -428,7 +428,7 @@ static int flt_man_add_seed_req_hdl(flt_cntx_t *ctx,
 {
     flt_cmd_t *cmd;
     flt_cmd_item_t *item;
-    flt_cmd_add_seed_rep_t *rep;
+    flt_cmd_add_seed_rsp_t *rsp;
     flt_cmd_add_seed_req_t *req = (flt_cmd_add_seed_req_t *)buff;
 
     log_debug(man->log, "Call %s(). Url:%s", __func__, req->url);
@@ -445,12 +445,12 @@ static int flt_man_add_seed_req_hdl(flt_cntx_t *ctx,
 
     /* > 设置应答信息 */
     cmd = &item->cmd;
-    rep = (flt_cmd_add_seed_rep_t *)&cmd->data;
+    rsp = (flt_cmd_add_seed_rsp_t *)&cmd->data;
 
-    cmd->type = htonl(FLT_CMD_ADD_SEED_RESP);
+    cmd->type = htonl(FLT_CMD_ADD_SEED_RSP);
 
-    rep->stat = htonl(FLT_CMD_ADD_SEED_STAT_SUCC);
-    snprintf(rep->url, sizeof(rep->url), "%s", req->url);
+    rsp->stat = htonl(FLT_CMD_ADD_SEED_STAT_SUCC);
+    snprintf(rsp->url, sizeof(rsp->url), "%s", req->url);
 
     /* > 加入应答列表 */
     if (list_rpush(man->mesg_list, item))
@@ -501,7 +501,7 @@ static int flt_man_query_conf_req_hdl(flt_cntx_t *ctx,
     cmd = &item->cmd;
     conf = (flt_cmd_conf_t *)&cmd->data;
 
-    cmd->type = htonl(FLT_CMD_QUERY_CONF_RESP);
+    cmd->type = htonl(FLT_CMD_QUERY_CONF_RSP);
 
     conf->log.level = htonl(ctx->conf->log.level);      /* 日志级别 */
 
@@ -552,7 +552,7 @@ static int flt_man_query_table_stat_req_hdl(flt_cntx_t *ctx,
     cmd = &item->cmd;
     stat = (flt_cmd_table_stat_t *)&cmd->data;
 
-    cmd->type = htonl(FLT_CMD_QUERY_TABLE_STAT_RESP);
+    cmd->type = htonl(FLT_CMD_QUERY_TABLE_STAT_RSP);
 
     /* 1. 域名IP映射表 */
     snprintf(stat->table[stat->num].name, sizeof(stat->table[stat->num].name), "DOMAIN IP MAP");
@@ -563,7 +563,7 @@ static int flt_man_query_table_stat_req_hdl(flt_cntx_t *ctx,
     cmd = &item->cmd;
     stat = (flt_cmd_table_stat_t *)&cmd->data;
 
-    cmd->type = htonl(FLT_CMD_QUERY_TABLE_STAT_RESP);
+    cmd->type = htonl(FLT_CMD_QUERY_TABLE_STAT_RSP);
 
     /* 1. 域名IP映射表 */
     snprintf(stat->table[stat->num].name, sizeof(stat->table[stat->num].name), "DOMAIN IP MAP");
@@ -647,7 +647,7 @@ static int flt_man_store_domain_ip_map_req_hdl(flt_cntx_t *ctx,
     flt_cmd_t *cmd;
     flt_cmd_item_t *item;
     char fname[FILE_PATH_MAX_LEN];
-    flt_cmd_store_domain_ip_map_rep_t *rep;
+    flt_cmd_store_domain_ip_map_rsp_t *rsp;
     flt_man_domain_ip_map_trav_t trav;
 
     memset(&trav, 0, sizeof(trav));
@@ -688,11 +688,11 @@ static int flt_man_store_domain_ip_map_req_hdl(flt_cntx_t *ctx,
 
     /* > 设置信息 */
     cmd = &item->cmd;
-    rep = (flt_cmd_store_domain_ip_map_rep_t *)&cmd->data;
+    rsp = (flt_cmd_store_domain_ip_map_rsp_t *)&cmd->data;
 
-    cmd->type = htonl(FLT_CMD_STORE_DOMAIN_IP_MAP_RESP);
+    cmd->type = htonl(FLT_CMD_STORE_DOMAIN_IP_MAP_RSP);
 
-    snprintf(rep->path, sizeof(rep->path), "%s", fname);
+    snprintf(rsp->path, sizeof(rsp->path), "%s", fname);
 
     /* > 放入队尾 */
     if (list_rpush(man->mesg_list, item))
@@ -755,7 +755,7 @@ static int flt_man_store_domain_blacklist_req_hdl(flt_cntx_t *ctx,
     flt_cmd_item_t *item;
     char fname[FILE_PATH_MAX_LEN];
     flt_man_domain_blacklist_trav_t trav;
-    flt_cmd_store_domain_blacklist_rep_t *rep;
+    flt_cmd_store_domain_blacklist_rsp_t *rsp;
 
     memset(&trav, 0, sizeof(trav));
 
@@ -795,11 +795,11 @@ static int flt_man_store_domain_blacklist_req_hdl(flt_cntx_t *ctx,
 
     /* > 设置信息 */
     cmd = &item->cmd;
-    rep = (flt_cmd_store_domain_blacklist_rep_t *)&cmd->data;
+    rsp = (flt_cmd_store_domain_blacklist_rsp_t *)&cmd->data;
 
-    cmd->type = htonl(FLT_CMD_STORE_DOMAIN_BLACKLIST_RESP);
+    cmd->type = htonl(FLT_CMD_STORE_DOMAIN_BLACKLIST_RSP);
 
-    snprintf(rep->path, sizeof(rep->path), "%s", fname);
+    snprintf(rsp->path, sizeof(rsp->path), "%s", fname);
 
     /* > 放入队尾 */
     if (list_rpush(man->mesg_list, item))

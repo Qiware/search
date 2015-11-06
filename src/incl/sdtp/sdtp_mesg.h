@@ -71,6 +71,6 @@ typedef struct
 #define SDTP_LINK_AUTH_FAIL     (0)
 #define SDTP_LINK_AUTH_SUCC     (1)
     int is_succ;                        /* 应答码(0:失败 1:成功) */
-} sdtp_link_auth_rep_t;
+} sdtp_link_auth_rsp_t;
 
 #endif /*__SDTP_MESG_H__*/
