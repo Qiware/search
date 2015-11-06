@@ -13,6 +13,8 @@
 ###############################################################################
 include ./make/func.mak
 
+export VERSION=v0.1 # 版本号
+
 # 根目录
 export PROJ = ${PWD}
 export PROJ_3RD = ${PROJ}/3rd

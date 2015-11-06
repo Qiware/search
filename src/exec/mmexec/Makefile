@@ -31,7 +31,7 @@ all: $(TARGET)
 $(TARGET): $(OBJS)
 	@$(CC) $(CFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS)
 	@echo "CC $@"
-	@mv $@ $(PROJ_BIN)
+	@mv $@ $(PROJ_BIN)/$@-$(VERSION)
 	@echo "$@ is OK!"
 
 $(OBJS): %.o : %.c $(HEADS)
