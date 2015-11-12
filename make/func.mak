@@ -33,3 +33,29 @@ endef
 define func_get_dep_head_list
 	$(sort $(foreach item, $(1), $(call _func_get_dep_head_list, $(item))))
 endef
+
+# 查找存在制定静态链接库的路径
+# 参数1: 路径列表
+# 参数2: 单个链接库
+# 注 意: 找到第一个找到的路径后, 结束本轮的查找出路.
+define _func_find_static_link_lib
+	$(shell \
+		for path in $(1); \
+		do \
+			if [ -f $$path/$(2) ]; then \
+				echo $$path/$(2); \
+				break; \
+			fi \
+		done \
+	)
+endef
+
+# 查找静态链接库的路径
+# 参数1: 路径列表
+# 参数2: 链接库列表
+# 注意: 
+# 	1. 本函数自动对路径列表和链接库进行去重处理
+#   2. 给函数_func_find_static_link_lib()传参时, 不要在逗号后面有"空格"!!! 负责参数中带空格.
+define func_find_static_link_lib
+	$(foreach lib, $(sort $(2)), $(call _func_find_lib,$(sort $(1)),$(lib)))
+endef
