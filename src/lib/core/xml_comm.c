@@ -571,7 +571,7 @@ static int xml_parse_mark(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse)
  ******************************************************************************/
 static int xml_parse_end(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse)
 {
-    int len;
+    size_t len;
     xml_node_t *top;
     const char *ptr;
 

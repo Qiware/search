@@ -502,7 +502,7 @@ extern int xml_spack(xml_tree_t *xml, char *str)
  ******************************************************************************/
 xml_node_t *xml_search(xml_tree_t *xml, xml_node_t *curr, const char *path)
 {
-    int len;
+    size_t len;
     xml_node_t *node = curr;
     const char *str = path, *ptr;
 

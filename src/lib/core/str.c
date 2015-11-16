@@ -14,7 +14,7 @@
  ******************************************************************************/
 str_t *str_to_lower(str_t *s)
 {
-    int idx;
+    size_t idx;
 
     for (idx=0; idx<s->len; ++idx)
     {
@@ -139,7 +139,7 @@ char *char_to_lower(const char *str, char *dstr, int len)
  ******************************************************************************/
 str_t *str_to_upper(str_t *s)
 {
-    int idx;
+    size_t idx;
 
     for (idx=0; idx<s->len; ++idx)
     {

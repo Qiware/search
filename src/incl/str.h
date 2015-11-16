@@ -1,13 +1,14 @@
 #if !defined(__STR_H__)
 #define __STR_H__
 
+#include "comm.h"
 #include <stdbool.h>
 
 /* 字串 */
 typedef struct
 {
     char *str;      /* 字串值 */
-    int len;        /* 字串长 */
+    size_t len;     /* 字串长 */
 } str_t;
  
 str_t *str_to_lower(str_t *s);
