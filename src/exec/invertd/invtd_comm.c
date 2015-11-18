@@ -2,8 +2,6 @@
 #include "invertd.h"
 #include "invtd_priv.h"
 
-#define INVTD_LOG_PATH      "../log/invertd.log"
-
 /******************************************************************************
  **函数名称: invtd_getopt 
  **功    能: 解析输入参数
@@ -26,14 +24,22 @@ int invtd_getopt(int argc, char **argv, invtd_opt_t *opt)
 
     memset(opt, 0, sizeof(invtd_opt_t));
 
+    opt->isdaemon = false;
+    opt->log_level = LOG_LEVEL_TRACE;
+
     /* 1. 解析输入参数 */
-    while (-1 != (ch = getopt(argc, argv, "c:hd")))
+    while (-1 != (ch = getopt(argc, argv, "cl:hd")))
     {
         switch (ch)
         {
             case 'c':   /* 指定配置文件 */
             {
                 snprintf(opt->conf_path, sizeof(opt->conf_path), "%s", optarg);
+                break;
+            }
+            case 'l':   /* 日志级别 */
+            {
+                opt->log_level = log_get_level(optarg);
                 break;
             }
             case 'd':
@@ -85,24 +91,16 @@ int invtd_usage(const char *exec)
  **功    能: 初始化倒排服务
  **输入参数:
  **     conf: 配置信息
+ **     log: 日志对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 依次创建所需要的资源(日志 SDTP服务 倒排表等)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.05.07 #
  ******************************************************************************/
-invtd_cntx_t *invtd_init(const invtd_conf_t *conf)
+invtd_cntx_t *invtd_init(const invtd_conf_t *conf, log_cycle_t *log)
 {
-    log_cycle_t *log;
     invtd_cntx_t *ctx;
-
-    /* > 初始化日志 */
-    log = log_init(conf->log_level, INVTD_LOG_PATH);
-    if (NULL == log)
-    {
-        fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
-        return NULL;
-    }
 
     /* > 创建倒排对象 */
     ctx = (invtd_cntx_t *)calloc(1, sizeof(invtd_cntx_t));

@@ -1,9 +1,5 @@
 <!-- 代理服务配置信息 -->
 <LISTEND NAME="SearchEngineListend" WORKDIR="../temp/listend/">
-    <!-- 日志配置
-        1) LEVLE: 日志级别(取值范围: trace|debug|info|warn|error|fatal) -->
-    <LOG LEVEL="error" />
-
     <!-- 分发队列配置 -->
     <DISTQ NUM="8" MAX="4096" SIZE="4096" />
 

@@ -39,7 +39,8 @@ static void crwl_signal_hdl(int signum);
  **     1. 解析输入参数
  **     2. 验证输入参数
  **注意事项:
- **     c: 配置文件路径
+ **     c: 配置路径
+ **     l: 日志级别(取值范围: trace|debug|info|warn|error|fatal)
  **     d: 后台运行
  **     h: 帮助手册
  **作    者: # Qifeng.zou # 2014.09.05 #
@@ -48,14 +49,24 @@ int crwl_getopt(int argc, char **argv, crwl_opt_t *opt)
 {
     int ch;
 
+    memset(opt, 0, sizeof(crwl_opt_t));
+
+    opt->isdaemon = false;
+    opt->log_level = LOG_LEVEL_TRACE;
+
     /* 1. 解析输入参数 */
-    while (-1 != (ch = getopt(argc, argv, "c:hd")))
+    while (-1 != (ch = getopt(argc, argv, "cl:dh")))
     {
         switch (ch)
         {
             case 'c':   /* 指定配置文件 */
             {
                 snprintf(opt->conf_path, sizeof(opt->conf_path), "%s", optarg);
+                break;
+            }
+            case 'l':
+            {
+                opt->log_level = log_get_level(optarg);
                 break;
             }
             case 'd':
@@ -108,13 +119,14 @@ int crwl_usage(const char *exec)
  **输入参数:
  **     pname: 进程名
  **     path: 配置文件路径
+ **     log_level: 日志级别
  **输出参数: NONE
  **返    回: 全局对象
  **实现描述:
  **注意事项:
  **作    者: # Qifeng.zou # 2014.09.04 #
  ******************************************************************************/
-crwl_cntx_t *crwl_init(char *pname, const char *path)
+crwl_cntx_t *crwl_init(char *pname, const char *path, int log_level)
 {
     log_cycle_t *log;
     crwl_cntx_t *ctx;
@@ -122,7 +134,7 @@ crwl_cntx_t *crwl_init(char *pname, const char *path)
     slab_pool_t *slab;
 
     /* > 初始化日志模块 */
-    log = crwl_init_log(pname);
+    log = crwl_init_log(pname, log_level);
     if (NULL == log)
     {
         fprintf(stderr, "Initialize log failed!");
@@ -166,8 +178,6 @@ crwl_cntx_t *crwl_init(char *pname, const char *path)
             log_error(log, "Load configuration failed! path:%s", path);
             break;
         }
-
-        log_set_level(log, conf->log.level);
 
         /* > 创建任务队列 */
         if (crwl_creat_workq(ctx))
@@ -490,19 +500,20 @@ int crwl_domain_blacklist_cmp_cb(
  **功    能: 初始化日志模块
  **输入参数:
  **     fname: 日志文件名
+ **     log_level: 日志级别
  **输出参数: NONE
  **返    回: 日志对象
  **实现描述:
  **注意事项:
  **作    者: # Qifeng.zou # 2014.10.21 #
  ******************************************************************************/
-log_cycle_t *crwl_init_log(char *fname)
+log_cycle_t *crwl_init_log(char *fname, int log_level)
 {
     char path[FILE_NAME_MAX_LEN];
 
     log_get_path(path, sizeof(path), basename(fname));
 
-    return log_init(LOG_LEVEL_TRACE, path);
+    return log_init(log_level, path);
 }
 
 /******************************************************************************

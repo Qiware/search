@@ -1,6 +1,7 @@
 #if !defined(__CONF_H__)
 #define __CONF_H__
 
+#include "log.h"
 #include "comm.h"
 #include "list.h"
 
@@ -20,7 +21,7 @@ typedef struct
     list_t *frwder;                     /* 转发配置 */
 } sys_conf_t;
 
-int conf_load_system(const char *fpath);
+int conf_load_system(const char *fpath, log_cycle_t *log);
 
 int conf_get_listen(const char *name, conf_map_t *map);
 int conf_get_frwder(const char *name, conf_map_t *map);

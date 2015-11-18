@@ -43,14 +43,24 @@ int flt_getopt(int argc, char **argv, flt_opt_t *opt)
 {
     int ch;
 
+    memset(opt, 0, sizeof(flt_opt_t));
+
+    opt->isdaemon = false;
+    opt->log_level = LOG_LEVEL_TRACE;
+
     /* 1. 解析输入参数 */
-    while (-1 != (ch = getopt(argc, argv, "c:hd")))
+    while (-1 != (ch = getopt(argc, argv, "cl:hd")))
     {
         switch (ch)
         {
             case 'c':   /* 指定配置文件 */
             {
                 snprintf(opt->conf_path, sizeof(opt->conf_path), "%s", optarg);
+                break;
+            }
+            case 'l':
+            {
+                opt->log_level = log_get_level(optarg);
                 break;
             }
             case 'd':
@@ -102,20 +112,21 @@ int flt_usage(const char *exec)
  **功    能: 初始化日志模块
  **输入参数:
  **     fname: 日志文件名
+ **     log_level: 日志级别
  **输出参数: NONE
  **返    回: 日志对象
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.21 #
  ******************************************************************************/
-static log_cycle_t *flt_init_log(char *fname)
+static log_cycle_t *flt_init_log(char *fname, int log_level)
 {
     char path[FILE_NAME_MAX_LEN];
 
     /* > 初始化业务日志 */
     log_get_path(path, sizeof(path), basename(fname));
 
-    return log_init(LOG_LEVEL_ERROR, path);
+    return log_init(log_level, path);
 }
 
 /******************************************************************************
@@ -124,13 +135,14 @@ static log_cycle_t *flt_init_log(char *fname)
  **输入参数: 
  **     pname: 进程名
  **     path: 配置路径
+ **     log_level: 日志级别
  **输出参数:
  **返    回: 全局对象
  **实现描述: 创建各对象(表,队列, 内存池, 线程池等)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.03.11 #
  ******************************************************************************/
-flt_cntx_t *flt_init(char *pname, const char *path)
+flt_cntx_t *flt_init(char *pname, const char *path, int log_level)
 {
     flt_cntx_t *ctx;
     flt_conf_t *conf;
@@ -139,7 +151,7 @@ flt_cntx_t *flt_init(char *pname, const char *path)
     hash_map_opt_t opt;
 
     /* > 初始化日志模块 */
-    log = flt_init_log(pname);
+    log = flt_init_log(pname, log_level);
     if (NULL == log)
     {
         fprintf(stderr, "Initialize log failed!\n");
@@ -177,7 +189,6 @@ flt_cntx_t *flt_init(char *pname, const char *path)
         }
 
         ctx->conf = conf;
-        log_set_level(log, conf->log.level);
 
         /* > 连接Redis集群 */
         ctx->redis = redis_clst_init(conf->redis.conf, conf->redis.num);

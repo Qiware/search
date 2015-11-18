@@ -22,8 +22,9 @@ typedef enum
 /* 输入参数 */
 typedef struct
 {
-    char name[NODE_MAX_LEN];                /* 结点名 */
+    int log_level;                          /* 日志级别 */
     bool isdaemon;                          /* 是否后台运行 */
+    char name[NODE_MAX_LEN];                /* 结点名 */
 } lsnd_opt_t;
 
 /* 分发对象 */

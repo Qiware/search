@@ -415,8 +415,7 @@ static int crwl_man_query_conf_req_hdl(crwl_cntx_t *ctx,
 
     cmd->type = htonl(MSG_QUERY_CONF_RSP);
 
-    conf->log.level = htonl(ctx->conf.log.level);      /* 日志级别 */
-    snprintf(conf->log.path, sizeof(conf->log.path), "%s", ctx->conf.log.path);
+    conf->log_level = htonl(ctx->log->level);      /* 日志级别 */
 
     conf->download.depth = htonl(ctx->conf.download.depth);/* 最大爬取深度 */
     snprintf(conf->download.path, sizeof(conf->download.path), "%s", ctx->conf.download.path); /* 网页存储路径 */

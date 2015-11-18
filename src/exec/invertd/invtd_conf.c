@@ -26,7 +26,7 @@ static int invtd_conf_load_comm(xml_tree_t *xml, invtd_conf_t *conf);
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.05.08 #
  ******************************************************************************/
-int invtd_conf_load(const char *path, invtd_conf_t *conf)
+int invtd_conf_load(const char *path, invtd_conf_t *conf, log_cycle_t *log)
 {
     xml_opt_t opt;
     xml_tree_t *xml;
@@ -34,7 +34,7 @@ int invtd_conf_load(const char *path, invtd_conf_t *conf)
     /* > 创建XML树 */
     memset(&opt, 0, sizeof(opt));
 
-    opt.log = NULL;
+    opt.log = log;
     opt.pool = (void *)NULL;
     opt.alloc = (mem_alloc_cb_t)mem_alloc;
     opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
@@ -220,18 +220,6 @@ static int invtd_conf_load_sdtp(xml_tree_t *xml, rtrd_conf_t *conf)
 static int invtd_conf_load_comm(xml_tree_t *xml, invtd_conf_t *conf)
 {
     xml_node_t *node;
-
-    /* > 加载日志配置 */
-    node = xml_query(xml, ".INVTERD.LOG.LEVEL");
-    if (NULL == node
-        || 0 == node->value.len)
-    {
-        conf->log_level = log_get_level(LOG_DEF_LEVEL_STR);
-    }
-    else
-    {
-        conf->log_level = log_get_level(node->value.str);
-    }
 
     /* > 倒排表长度 */
     node = xml_query(xml, ".INVTERD.INVT_TAB.MAX");

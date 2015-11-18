@@ -22,11 +22,21 @@ int lsnd_getopt(int argc, char **argv, lsnd_opt_t *opt)
 {
     int ch;
 
+    memset(opt, 0, sizeof(lsnd_opt_t));
+
+    opt->isdaemon = false;
+    opt->log_level = LOG_LEVEL_TRACE;
+
     /* 1. 解析输入参数 */
-    while (-1 != (ch = getopt(argc, argv, "N:hd")))
+    while (-1 != (ch = getopt(argc, argv, "lN:hd")))
     {
         switch (ch)
         {
+            case 'l':   /* 日志级别 */
+            {
+                opt->log_level = log_get_level(optarg);
+                break;
+            }
             case 'N':   /* 结点名 */
             {
                 snprintf(opt->name, sizeof(opt->name), "%s", optarg);

@@ -22,11 +22,12 @@ typedef struct
 /* 输入参数 */
 typedef struct
 {
-    char conf_path[FILE_NAME_MAX_LEN];      /* 配置文件路径 */
+    int log_level;                          /* 日志级别 */
     bool isdaemon;                          /* 是否后台运行 */
+    char conf_path[FILE_NAME_MAX_LEN];      /* 配置文件路径 */
 } invtd_opt_t;
 
-invtd_cntx_t *invtd_init(const invtd_conf_t *conf);
+invtd_cntx_t *invtd_init(const invtd_conf_t *conf, log_cycle_t *log);
 int invtd_launch(invtd_cntx_t *ctx);
 
 #endif /*__INVERTD_H__*/

@@ -11,7 +11,6 @@ typedef struct
     char name[NODE_MAX_LEN];        /* 节点名 */
     char wdir[FILE_PATH_MAX_LEN];   /* 工作路径 */
 
-    int log_level;                  /* 日志级别 */
     struct
     {
         int num;                     /* 队列数 */

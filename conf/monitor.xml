@@ -1,9 +1,5 @@
 <!-- 监控模块配置 -->
 <MONITOR>
-    <!-- 日志配置
-        1) LEVLE: 日志级别(取值范围: trace|debug|info|warn|error|fatal) -->
-    <LOG LEVEL="error" />
-
     <MENU     WIDTH="70" />                   <!-- 菜单宽度 -->
     <CRAWLER  IP="127.0.0.1" PORT="9000" />   <!-- 爬虫系统 -->
     <FILTER   IP="127.0.0.1" PORT="9001" />   <!-- 过滤系统 -->

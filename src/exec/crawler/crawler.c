@@ -38,8 +38,6 @@ int main(int argc, char *argv[])
     crwl_opt_t opt;
     crwl_cntx_t *ctx;
 
-    memset(&opt, 0, sizeof(opt));
-
     /* 1. 解析输入参数 */
     if (crwl_getopt(argc, argv, &opt))
     {
@@ -58,7 +56,7 @@ int main(int argc, char *argv[])
     crwl_set_signal();
 
     /* 2. 初始化处理 */
-    ctx = crwl_init(argv[0], opt.conf_path);
+    ctx = crwl_init(argv[0], opt.conf_path, opt.log_level);
     if (NULL == ctx)
     {
         fprintf(stderr, "Initialize crawler failed!");

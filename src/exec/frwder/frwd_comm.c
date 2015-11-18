@@ -14,7 +14,6 @@
 #include "command.h"
 #include "lsnd_conf.h"
 
-static int frwd_init_log(frwd_cntx_t *frwd, const char *pname);
 static int frwd_init_lsnd(frwd_cntx_t *frwd, const frwd_conf_t *conf);
 static int frwd_attach_lsnd_distq(frwd_lsnd_t *lsnd, lsnd_conf_t *conf);
 
@@ -40,8 +39,11 @@ int frwd_getopt(int argc, char **argv, frwd_opt_t *opt)
 
     memset(opt, 0, sizeof(frwd_opt_t));
 
+    opt->isdaemon = false;
+    opt->log_level = LOG_LEVEL_TRACE;
+
     /* 1. 解析输入参数 */
-    while (-1 != (ch = getopt(argc, argv, "N:hd")))
+    while (-1 != (ch = getopt(argc, argv, "lN:hd")))
     {
         switch (ch)
         {
@@ -50,7 +52,12 @@ int frwd_getopt(int argc, char **argv, frwd_opt_t *opt)
                 snprintf(opt->name, sizeof(opt->name), "%s", optarg);
                 break;
             }
-            case 'd':
+            case 'l':   /* 日志级别 */
+            {
+                opt->log_level = log_get_level(optarg);
+                break;
+            }
+            case 'd':   /* 是否后台运行 */
             {
                 opt->isdaemon = true;
                 break;
@@ -99,13 +106,14 @@ int frwd_usage(const char *exec)
  **功    能: 初始化转发服务
  **输入参数:
  **     conf: 配置信息
+ **     log: 日志对象
  **输出参数:
  **返    回: 0:成功 !0:失败
  **实现描述:
  **注意事项:
  **作    者: # Qifeng.zou # 2015.06.10 #
  ******************************************************************************/
-frwd_cntx_t *frwd_init(const frwd_conf_t *conf)
+frwd_cntx_t *frwd_init(const frwd_conf_t *conf, log_cycle_t *log)
 {
     frwd_cntx_t *frwd;
     char path[FILE_PATH_MAX_LEN];
@@ -117,17 +125,11 @@ frwd_cntx_t *frwd_init(const frwd_conf_t *conf)
         return NULL;
     }
 
+    frwd->log = log;
     memcpy(&frwd->conf, conf, sizeof(frwd_conf_t));
 
     do
     {
-        /* > 初始化日志 */
-        if (frwd_init_log(frwd, "frwder"))
-        {
-            fprintf(stderr, "Initialize log failed!\n");
-            break;
-        }
-
         /* > 创建命令套接字 */
         snprintf(path, sizeof(path), "../temp/frwder/cmd.usck");
 
@@ -186,29 +188,21 @@ int frwd_launch(frwd_cntx_t *frwd)
  **函数名称: frwd_init_log
  **功    能: 初始化日志模块
  **输入参数:
- **     frwd: 全局对象
  **     pname: 进程名
+ **     log_level: 日志级别
  **输出参数: NONE
- **返    回: 0:成功 !0:失败
+ **返    回: 日志对象
  **实现描述:
  **注意事项:
  **作    者: # Qifeng.zou # 2015-06-10 #
  ******************************************************************************/
-static int frwd_init_log(frwd_cntx_t *frwd, const char *pname)
+log_cycle_t *frwd_init_log(const char *pname, int log_level)
 {
     char path[FILE_PATH_MAX_LEN];
-    frwd_conf_t *conf = &frwd->conf;
 
     snprintf(path, sizeof(path), "../log/%s.log", pname);
 
-    frwd->log = log_init(conf->log_level, path);
-    if (NULL == frwd->log)
-    {
-        fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
-        return FRWD_ERR;
-    }
-
-    return FRWD_OK;
+    return log_init(log_level, path);
 }
 
 /******************************************************************************

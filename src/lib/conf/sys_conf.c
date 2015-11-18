@@ -25,7 +25,7 @@ static int conf_load_frwder(xml_tree_t *xml, sys_conf_t *conf);
  **注意事项: 
  **作    者: # Qifeng.zou # 2015-07-09 12:29:04 #
  ******************************************************************************/
-int conf_load_system(const char *fpath)
+int conf_load_system(const char *fpath, log_cycle_t *log)
 {
     xml_opt_t opt;
     xml_tree_t *xml;
@@ -34,7 +34,7 @@ int conf_load_system(const char *fpath)
     memset(&opt, 0, sizeof(opt));
 
     /* > 加载配置 */
-    opt.log = NULL;
+    opt.log = log;
     opt.pool = (void *)NULL;
     opt.alloc = (mem_alloc_cb_t)mem_alloc;
     opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;

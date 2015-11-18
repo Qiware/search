@@ -503,7 +503,7 @@ static int flt_man_query_conf_req_hdl(flt_cntx_t *ctx,
 
     cmd->type = htonl(FLT_CMD_QUERY_CONF_RSP);
 
-    conf->log.level = htonl(ctx->conf->log.level);      /* 日志级别 */
+    conf->log_level = htonl(ctx->log->level);      /* 日志级别 */
 
     /* > 加入应答列表 */
     if (list_rpush(man->mesg_list, item))

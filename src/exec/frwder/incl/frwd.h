@@ -17,8 +17,9 @@ typedef enum
 /* 输入参数 */
 typedef struct
 {
-    char name[FILE_NAME_MAX_LEN];           /* 结点名 */
+    int log_level;                          /* 日志级别 */
     bool isdaemon;                          /* 是否后台运行 */
+    char name[FILE_NAME_MAX_LEN];           /* 结点名 */
 } frwd_opt_t;
 
 /* 侦听服务信息 */
@@ -42,7 +43,8 @@ typedef struct
 
 int frwd_getopt(int argc, char **argv, frwd_opt_t *opt);
 int frwd_usage(const char *exec);
-frwd_cntx_t *frwd_init(const frwd_conf_t *conf);
+log_cycle_t *frwd_init_log(const char *pname, int log_level);
+frwd_cntx_t *frwd_init(const frwd_conf_t *conf, log_cycle_t *log);
 int frwd_launch(frwd_cntx_t *frwd);
 int frwd_set_reg(frwd_cntx_t *frwd);
 

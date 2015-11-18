@@ -20,6 +20,7 @@ int main(int argc, char *argv[])
     conf_map_t map;
     frwd_opt_t opt;
     frwd_conf_t conf;
+    log_cycle_t *log;
     frwd_cntx_t *frwd;
 
     memset(&map, 0, sizeof(map));
@@ -37,8 +38,16 @@ int main(int argc, char *argv[])
 
     umask(0);
 
+    /* > 初始化日志 */
+    log = frwd_init_log(argv[0], opt.log_level);
+    if (NULL == log)
+    {
+        fprintf(stderr, "Initialize log failed!\n");
+        return -1;
+    }
+
     /* > 加载配置信息 */
-    if (conf_load_system(SYS_CONF_DEF_PATH))
+    if (conf_load_system(SYS_CONF_DEF_PATH, log))
     {
         fprintf(stderr, "Load system configuration failed!\n");
         return FRWD_ERR;
@@ -50,14 +59,14 @@ int main(int argc, char *argv[])
         return FRWD_ERR;
     }
 
-    if (frwd_load_conf(map.name, map.path, &conf))
+    if (frwd_load_conf(map.name, map.path, &conf, log))
     {
         fprintf(stderr, "Load configuration failed!\n");
         return FRWD_ERR;
     }
 
     /* > 初始化服务 */
-    frwd = frwd_init(&conf);
+    frwd = frwd_init(&conf, log);
     if (NULL == frwd)
     {
         fprintf(stderr, "Initialize frwder failed!\n");

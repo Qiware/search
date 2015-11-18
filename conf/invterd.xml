@@ -1,9 +1,5 @@
 <!-- 倒排服务配置信息 -->
 <INVTERD>
-    <!-- 日志配置
-        1) LEVLE: 日志级别(取值范围: trace|debug|info|warn|error|fatal) -->
-    <LOG LEVEL="error" />
-
     <!-- 倒排表配置 -->
     <INVT_TAB MAX="1024" />
 

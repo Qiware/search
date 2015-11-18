@@ -43,8 +43,6 @@ int main(int argc, char *argv[])
     lsnd_cntx_t *ctx = NULL;
     char path[FILE_PATH_MAX_LEN];
 
-    memset(&opt, 0, sizeof(opt));
-
     /* > 解析输入参数 */
     if (lsnd_getopt(argc, argv, &opt))
     {
@@ -72,7 +70,7 @@ int main(int argc, char *argv[])
     }
 
     /* > 加载配置信息 */
-    if (conf_load_system(SYS_CONF_DEF_PATH))
+    if (conf_load_system(SYS_CONF_DEF_PATH, log))
     {
         fprintf(stderr, "Load system configuration failed!\n");
         goto LSND_INIT_ERR;
@@ -188,7 +186,6 @@ static lsnd_cntx_t *lsnd_init(lsnd_conf_t *conf, log_cycle_t *log)
     }
 
     ctx->log = log;
-    log_set_level(log, conf->log_level); /* 设置日志级别 */
     memcpy(&ctx->conf, conf, sizeof(lsnd_conf_t));  /* 拷贝配置信息 */
 
     do

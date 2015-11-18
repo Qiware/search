@@ -103,38 +103,6 @@ static int _flt_conf_load(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *log)
     xml_node_t *node, *nail;
     flt_work_conf_t *work = &conf->work;
 
-    /* > 定位LOG标签
-     *  获取日志级别信息 */
-    nail = xml_query(xml, ".FILTER.LOG");
-    if (NULL != nail)
-    {
-        /* 1. 日志级别 */
-        node = xml_search(xml, nail, "LEVEL");
-        if (NULL != node)
-        {
-            conf->log.level = log_get_level(node->value.str);
-        }
-        else
-        {
-            conf->log.level = log_get_level(LOG_DEF_LEVEL_STR);
-        }
-
-        /* 2. 系统日志级别 */
-        node = xml_search(xml, nail, "PATH");
-        if (NULL == node)
-        {
-            snprintf(conf->log.path, sizeof(conf->log.path), "../log/");
-        }
-        else
-        {
-            snprintf(conf->log.path, sizeof(conf->log.path), "%s", node->value.str);
-        }
-    }
-    else
-    {
-        log_warn(log, "Didn't configure log!");
-    }
-
     /* > 定位工作进程配置 */
     nail = xml_query(xml, ".FILTER.WORKER");
     if (NULL == nail)

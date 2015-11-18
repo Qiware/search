@@ -59,7 +59,7 @@ typedef struct
     hash_map_t *domain_blacklist;           /* 域名黑名单 */
 } flt_cntx_t;
 
-flt_cntx_t *flt_init(char *pname, const char *path);
+flt_cntx_t *flt_init(char *pname, const char *path, int log_level);
 int flt_launch(flt_cntx_t *ctx);
 void flt_destroy(flt_cntx_t *ctx);
 

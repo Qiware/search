@@ -11,6 +11,8 @@
 #include "invtd_priv.h"
 #include "invtd_conf.h"
 
+#define INVTD_LOG_PATH      "../log/invertd.log"
+
 /******************************************************************************
  **函数名称: main 
  **功    能: 倒排服务主程序
@@ -26,6 +28,7 @@
 int main(int argc, char *argv[])
 {
     invtd_opt_t opt;
+    log_cycle_t *log;
     invtd_cntx_t *ctx;
     invtd_conf_t conf;
 
@@ -47,15 +50,23 @@ int main(int argc, char *argv[])
 
     umask(0);
 
+    /* > 初始化日志 */
+    log = log_init(opt.log_level, INVTD_LOG_PATH);
+    if (NULL == log)
+    {
+        fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
+        return -1;
+    }
+
     /* > 加载配置信息 */
-    if (invtd_conf_load(opt.conf_path, &conf))
+    if (invtd_conf_load(opt.conf_path, &conf, log))
     {
         fprintf(stderr, "Load configuration failed! path:%s", opt.conf_path);
         return -1;
     }
 
     /* > 服务初始化 */
-    ctx = invtd_init(&conf);
+    ctx = invtd_init(&conf, log);
     if (NULL == ctx)
     {
         fprintf(stderr, "Init invertd failed!\n");

@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
     }
 
     /* > 加载系统配置 */
-    if (conf_load_system(SYS_CONF_DEF_PATH))
+    if (conf_load_system(SYS_CONF_DEF_PATH, log))
     {
         fprintf(stderr, "Load system configuration failed!\n");
         log_error(log, "Load system configuration failed!");

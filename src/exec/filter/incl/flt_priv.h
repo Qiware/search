@@ -44,8 +44,9 @@ typedef enum
 /* 输入参数信息 */
 typedef struct
 {
-    char conf_path[FILE_NAME_MAX_LEN];      /* 配置文件路径 */
+    int log_level;                          /* 日志级别 */
     bool isdaemon;                          /* 是否后台运行 */
+    char conf_path[FILE_NAME_MAX_LEN];      /* 配置文件路径 */
 } flt_opt_t;
 
 /* 网页基本信息 */

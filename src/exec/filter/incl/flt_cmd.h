@@ -84,11 +84,7 @@ typedef struct
 /* 反馈配置信息 */
 typedef struct
 {
-    struct
-    {
-        int level;                          /* 日志级别 */
-        char path[FILE_PATH_MAX_LEN];       /* 日志路径 */
-    } log;                                  /* 日志配置 */
+    int log_level;                          /* 日志级别 */
 } flt_cmd_conf_t;
 
 /* 存储DOMAIN IP映射表 */

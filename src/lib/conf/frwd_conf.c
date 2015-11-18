@@ -26,7 +26,7 @@ static int frwd_conf_load_comm(xml_tree_t *xml, frwd_conf_t *conf);
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.06.10 #
  ******************************************************************************/
-int frwd_load_conf(const char *name, const char *path, frwd_conf_t *conf)
+int frwd_load_conf(const char *name, const char *path, frwd_conf_t *conf, log_cycle_t *log)
 {
     xml_opt_t opt;
     xml_tree_t *xml;
@@ -35,6 +35,7 @@ int frwd_load_conf(const char *name, const char *path, frwd_conf_t *conf)
     memset(conf, 0, sizeof(frwd_conf_t));
 
     /* > 加载配置 */
+    opt.log = log;
     opt.pool = (void *)NULL;
     opt.alloc = (mem_alloc_cb_t)mem_alloc;
     opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
@@ -95,18 +96,6 @@ static int frwd_conf_load_comm(xml_tree_t *xml, frwd_conf_t *conf)
     }
 
     snprintf(conf->name, sizeof(conf->name), "%s", node->value.str);
-
-    /* > 日志级别 */
-    node = xml_query(xml, ".FRWDER.LOG.LEVEL");
-    if (NULL == node
-        || 0 == node->value.len)
-    {
-        conf->log_level = LOG_LEVEL_TRACE;
-    }
-    else
-    {
-        conf->log_level = log_get_level(node->value.str);
-    }
 
     /* > 发送至Agentd */
     node = xml_query(xml, ".FRWDER.LISTEND.NAME");

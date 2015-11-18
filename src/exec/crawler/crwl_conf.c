@@ -89,38 +89,6 @@ static int _crwl_conf_load(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
 
     conf->sched_stat = true;
 
-    /* > 定位LOG标签: 获取日志级别信息 */
-    nail = xml_query(xml, ".CRAWLER.LOG");
-    if (NULL != nail)
-    {
-        /* 1. 日志级别 */
-        node = xml_search(xml, nail, "LEVEL");
-        if (NULL != node)
-        {
-            conf->log.level = log_get_level(node->value.str);
-        }
-        else
-        {
-            conf->log.level = log_get_level(LOG_DEF_LEVEL_STR);
-        }
-
-        /* 2. 日志路径 */
-        node = xml_search(xml, nail, "PATH");
-        if (NULL == node
-            || 0 == node->value.len)
-        {
-            snprintf(conf->log.path, sizeof(conf->log.path), "../log/");
-        }
-        else
-        {
-            snprintf(conf->log.path, sizeof(conf->log.path), "%s", node->value.str);
-        }
-    }
-    else
-    {
-        log_warn(log, "Didn't configure log!");
-    }
-
     /* > 定位WORKER配置 */
     nail = xml_query(xml, ".CRAWLER.WORKER");
     if (NULL == nail)

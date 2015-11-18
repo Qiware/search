@@ -50,12 +50,6 @@ typedef struct
 {
     struct
     {
-        int level;                          /* 日志级别 */
-        char path[FILE_PATH_MAX_LEN];       /* 日志路径 */
-    } log;                                  /* 日志配置 */
-
-    struct
-    {
         uint32_t depth;                     /* 最大爬取深度 */
         char path[FILE_PATH_MAX_LEN];       /* 网页存储路径 */
     } download;                             /* 下载配置 */

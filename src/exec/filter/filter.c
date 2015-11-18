@@ -34,9 +34,7 @@ int main(int argc, char *argv[])
     flt_opt_t opt;
     flt_cntx_t *ctx;
 
-    memset(&opt, 0, sizeof(opt));
-
-    /* > 解析输入参数 */
+     /* > 解析输入参数 */
     if (flt_getopt(argc, argv, &opt))
     {
         return flt_usage(argv[0]);
@@ -53,7 +51,7 @@ int main(int argc, char *argv[])
     umask(0);
 
     /* > 初始化过滤模块 */
-    ctx = flt_init(argv[0], opt.conf_path);
+    ctx = flt_init(argv[0], opt.conf_path, opt.log_level);
     if (NULL == ctx)
     {
         fprintf(stderr, "Initialize filter failed!\n");

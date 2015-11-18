@@ -134,18 +134,6 @@ static int lsnd_conf_load_comm(xml_tree_t *xml, lsnd_conf_t *conf, log_cycle_t *
 
     snprintf(conf->wdir, sizeof(conf->wdir), "%s/%s", node->value.str, conf->name);  /* 工作路径 */
 
-    /* > 加载日志配置 */
-    node = xml_query(xml, ".LISTEND.LOG.LEVEL");
-    if (NULL == node
-        || 0 == node->value.len)
-    {
-        conf->log_level = log_get_level(LOG_DEF_LEVEL_STR);
-    }
-    else
-    {
-        conf->log_level = log_get_level(node->value.str);
-    }
-
     /* > 分发队列配置 */
     fix = xml_query(xml, ".LISTEND.DISTQ");
     if (NULL == fix)
