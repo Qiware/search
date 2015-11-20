@@ -7,6 +7,7 @@
  ** 作  者: # Qifeng.zou # Wed 10 Jun 2015 12:14:26 PM CST #
  ******************************************************************************/
 
+#include "comm.h"
 #include "frwd.h"
 #include "conf.h"
 #include "mesg.h"
@@ -16,6 +17,14 @@
 
 static int frwd_init_lsnd(frwd_cntx_t *frwd, const frwd_conf_t *conf);
 static int frwd_attach_lsnd_distq(frwd_lsnd_t *lsnd, lsnd_conf_t *conf);
+
+static struct option g_frwd_opts[] = {
+    {"name",        required_argument,  NULL, 'n'}
+    , {"log-level", required_argument,  NULL, 'l'}
+    , {"daemon",    no_argument,        NULL, 'd'}
+    , {"help",      no_argument,        NULL, 'h'}
+    , {NULL,        0,                  NULL, 0}
+};
 
 /******************************************************************************
  **函数名称: frwd_getopt
@@ -43,11 +52,11 @@ int frwd_getopt(int argc, char **argv, frwd_opt_t *opt)
     opt->log_level = LOG_LEVEL_TRACE;
 
     /* 1. 解析输入参数 */
-    while (-1 != (ch = getopt(argc, argv, "lN:hd")))
+    while (-1 != (ch = getopt_long(argc, argv, "n:l:hd", g_frwd_opts, NULL)))
     {
         switch (ch)
         {
-            case 'N':   /* 指定服务名 */
+            case 'n':   /* 指定服务名 */
             {
                 snprintf(opt->name, sizeof(opt->name), "%s", optarg);
                 break;

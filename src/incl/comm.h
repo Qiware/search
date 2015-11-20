@@ -14,6 +14,7 @@
 #include <stdarg.h>
 #include <sys/un.h>
 #include <signal.h>
+#include <getopt.h>
 #include <sys/shm.h>
 #include <pthread.h>
 #include <stdbool.h>

@@ -1,6 +1,14 @@
 #include "mesg.h"
 #include "listend.h"
 
+static struct option g_lsnd_opts[] = {
+    {"name",        required_argument,  NULL, 'n'}
+    , {"log-level", required_argument,  NULL, 'l'}
+    , {"daemon",    no_argument,        NULL, 'd'}
+    , {"help",      no_argument,        NULL, 'h'}
+    , {NULL,        0,                  NULL, 0}
+};
+
 /******************************************************************************
  **函数名称: lsnd_getopt 
  **功    能: 解析输入参数
@@ -28,7 +36,7 @@ int lsnd_getopt(int argc, char **argv, lsnd_opt_t *opt)
     opt->log_level = LOG_LEVEL_TRACE;
 
     /* 1. 解析输入参数 */
-    while (-1 != (ch = getopt(argc, argv, "lN:hd")))
+    while (-1 != (ch = getopt_long(argc, argv, "l:n:hd", g_lsnd_opts, NULL)))
     {
         switch (ch)
         {
