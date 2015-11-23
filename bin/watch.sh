@@ -90,11 +90,11 @@ print_netstat()
         # 打印统计信息
         len=`expr length "$item"`
         if [ $len -lt 8 ]; then
-            echo "$item\t\t$listen_num\t$active_num\t$close_num\t$total" >> .netstat.ls
+            echo -e "$item\t\t$listen_num\t$active_num\t$close_num\t$total" >> .netstat.ls
         elif [ $len -lt 16 ]; then
-            echo "$item\t$listen_num\t$active_num\t$close_num\t$total" >> .netstat.ls
+            echo -e "$item\t$listen_num\t$active_num\t$close_num\t$total" >> .netstat.ls
         else
-            echo "$item\t$listen_num\t$active_num\t$close_num\t$total" >> .netstat.ls
+            echo -e "$item\t$listen_num\t$active_num\t$close_num\t$total" >> .netstat.ls
         fi
     done
 }
@@ -113,7 +113,7 @@ main()
     while true
     do
         clear
-        echo "Copyright(C) 2014-2024 XunDao Technology Co.,Ltd"
+        echo "Copyright(C) 2014-2024 Qiware Technology Co.,Ltd"
 
         echo ""
         echo "Process stat:"
@@ -138,12 +138,11 @@ main()
         echo ""
         echo "Network stat:"
         echo "---------------------------------------------------------------------"
-        #echo "PROC\t\tLISTEN\tESTAB\tCLOSE\tTOTAL"
-        netstat -natp | grep -e "Active" -e "Proto" -e "28888"
+        echo -e "PROC\t\tLISTEN\tESTAB\tCLOSE\tTOTAL"
 
-        #cat .netstat.ls
+        cat .netstat.ls
         echo "---------------------------------------------------------------------"
-        #print_netstat "crawler" "filter" "redis-server" "search" "invertd" "frwder"
+        print_netstat "crawler" "filter" "redis-server" "search" "invertd" "frwder"
 
         sleep 2
     done;
