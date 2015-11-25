@@ -18,14 +18,6 @@
 static int frwd_init_lsnd(frwd_cntx_t *frwd, const frwd_conf_t *conf);
 static int frwd_attach_lsnd_distq(frwd_lsnd_t *lsnd, lsnd_conf_t *conf);
 
-static struct option g_frwd_opts[] = {
-    {"name",        required_argument,  NULL, 'n'}
-    , {"log-level", required_argument,  NULL, 'l'}
-    , {"daemon",    no_argument,        NULL, 'd'}
-    , {"help",      no_argument,        NULL, 'h'}
-    , {NULL,        0,                  NULL, 0}
-};
-
 /******************************************************************************
  **函数名称: frwd_getopt
  **功    能: 解析输入参数
@@ -45,6 +37,13 @@ static struct option g_frwd_opts[] = {
 int frwd_getopt(int argc, char **argv, frwd_opt_t *opt)
 {
     int ch;
+    const struct option opts[] = {
+        {"name",        required_argument,  NULL, 'n'}
+        , {"log-level", required_argument,  NULL, 'l'}
+        , {"daemon",    no_argument,        NULL, 'd'}
+        , {"help",      no_argument,        NULL, 'h'}
+        , {NULL,        0,                  NULL, 0}
+    };
 
     memset(opt, 0, sizeof(frwd_opt_t));
 
@@ -52,7 +51,7 @@ int frwd_getopt(int argc, char **argv, frwd_opt_t *opt)
     opt->log_level = LOG_LEVEL_TRACE;
 
     /* 1. 解析输入参数 */
-    while (-1 != (ch = getopt_long(argc, argv, "n:l:hd", g_frwd_opts, NULL)))
+    while (-1 != (ch = getopt_long(argc, argv, "n:l:hd", opts, NULL)))
     {
         switch (ch)
         {

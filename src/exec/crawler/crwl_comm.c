@@ -26,14 +26,6 @@ int crwl_workers_destroy(crwl_cntx_t *ctx);
 static int crwl_creat_scheds(crwl_cntx_t *ctx);
 static void crwl_signal_hdl(int signum);
 
-static struct option g_crwl_opts[] = {
-    {"conf",        required_argument,  NULL, 'c'}
-    , {"log-level", required_argument,  NULL, 'l'}
-    , {"daemon",    no_argument,        NULL, 'd'}
-    , {"help",      no_argument,        NULL, 'h'}
-    , {NULL,        0,                  NULL, 0}
-};
-
 /******************************************************************************
  **函数名称: crwl_getopt
  **功    能: 解析输入参数
@@ -56,6 +48,13 @@ static struct option g_crwl_opts[] = {
 int crwl_getopt(int argc, char **argv, crwl_opt_t *opt)
 {
     int ch;
+    const struct option opts[] = {
+        {"conf",        required_argument,  NULL, 'c'}
+        , {"log-level", required_argument,  NULL, 'l'}
+        , {"daemon",    no_argument,        NULL, 'd'}
+        , {"help",      no_argument,        NULL, 'h'}
+        , {NULL,        0,                  NULL, 0}
+    };
 
     memset(opt, 0, sizeof(crwl_opt_t));
 
@@ -63,7 +62,7 @@ int crwl_getopt(int argc, char **argv, crwl_opt_t *opt)
     opt->log_level = LOG_LEVEL_TRACE;
 
     /* 1. 解析输入参数 */
-    while (-1 != (ch = getopt_long(argc, argv, "c:l:dh", g_crwl_opts, NULL)))
+    while (-1 != (ch = getopt_long(argc, argv, "c:l:dh", opts, NULL)))
     {
         switch (ch)
         {

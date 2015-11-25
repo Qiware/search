@@ -22,14 +22,6 @@
 
 static int flt_workers_creat(flt_cntx_t *ctx);
 
-static struct option g_flt_opts[] = {
-    {"conf",        required_argument,  NULL, 'c'}
-    , {"log-level", required_argument,  NULL, 'l'}
-    , {"daemon",    no_argument,        NULL, 'd'}
-    , {"help",      no_argument,        NULL, 'h'}
-    , {NULL,        0,                  NULL, 0}
-};
-
 /******************************************************************************
  **函数名称: flt_getopt 
  **功    能: 解析输入参数
@@ -50,6 +42,13 @@ static struct option g_flt_opts[] = {
 int flt_getopt(int argc, char **argv, flt_opt_t *opt)
 {
     int ch;
+    const struct option opts[] = {
+        {"conf",        required_argument,  NULL, 'c'}
+        , {"log-level", required_argument,  NULL, 'l'}
+        , {"daemon",    no_argument,        NULL, 'd'}
+        , {"help",      no_argument,        NULL, 'h'}
+        , {NULL,        0,                  NULL, 0}
+    };
 
     memset(opt, 0, sizeof(flt_opt_t));
 
@@ -57,7 +56,7 @@ int flt_getopt(int argc, char **argv, flt_opt_t *opt)
     opt->log_level = LOG_LEVEL_TRACE;
 
     /* 1. 解析输入参数 */
-    while (-1 != (ch = getopt_long(argc, argv, "cl:hd", g_flt_opts, NULL)))
+    while (-1 != (ch = getopt_long(argc, argv, "cl:hd", opts, NULL)))
     {
         switch (ch)
         {

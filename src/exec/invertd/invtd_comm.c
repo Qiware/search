@@ -2,14 +2,6 @@
 #include "invertd.h"
 #include "invtd_priv.h"
 
-static struct option g_invtd_opts[] = {
-    {"conf",        required_argument,  NULL, 'c'}
-    , {"log-level", required_argument,  NULL, 'l'}
-    , {"daemon",    no_argument,        NULL, 'd'}
-    , {"help",      no_argument,        NULL, 'h'}
-    , {NULL,        0,                  NULL, 0}
-};
-
 /******************************************************************************
  **函数名称: invtd_getopt 
  **功    能: 解析输入参数
@@ -29,6 +21,13 @@ static struct option g_invtd_opts[] = {
 int invtd_getopt(int argc, char **argv, invtd_opt_t *opt)
 {
     int ch;
+    const struct option opts[] = {
+        {"conf",        required_argument,  NULL, 'c'}
+        , {"log-level", required_argument,  NULL, 'l'}
+        , {"daemon",    no_argument,        NULL, 'd'}
+        , {"help",      no_argument,        NULL, 'h'}
+        , {NULL,        0,                  NULL, 0}
+    };
 
     memset(opt, 0, sizeof(invtd_opt_t));
 
@@ -36,7 +35,7 @@ int invtd_getopt(int argc, char **argv, invtd_opt_t *opt)
     opt->log_level = LOG_LEVEL_TRACE;
 
     /* 1. 解析输入参数 */
-    while (-1 != (ch = getopt_long(argc, argv, "c:l:hd", g_invtd_opts, NULL)))
+    while (-1 != (ch = getopt_long(argc, argv, "c:l:hd", opts, NULL)))
     {
         switch (ch)
         {
