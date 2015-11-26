@@ -10,7 +10,7 @@ sudo redis-server /etc/redis/redis_slave_6380.conf
 
 # 启动服务
 
-./mmexec        # 内存服务
-./logsvr        # 日志服务
+./logsvr -k ../temp/log.key         # 日志服务
+./mmexec -k ../temp/log.key  -d     # 内存服务
 
 ./watch.sh      # 监控进程状态

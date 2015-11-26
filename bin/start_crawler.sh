@@ -10,7 +10,7 @@ sudo redis-server /etc/redis/redis_slave_6380.conf
 
 # 启动服务
 
-./crawler -d   # 爬虫服务
-./filter -d    # 爬虫过滤服务
+./crawler -k ../temp/log/log.key -d -l error    # 爬虫服务
+./filter -k ../temp/log/log.key -d -l error     # 爬虫过滤服务
 
 ./watch.sh     # 监控进程状态
