@@ -42,6 +42,8 @@ $(TARGET): $(OBJS)
 	@$(CC) $(CFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS)
 	@echo "CC $@"
 	@mv $@ $(PROJ_BIN)/$@-$(VERSION)
+	@rm -f $(PROJ_BIN)/$@
+	@ln -s $(PROJ_BIN)/$@-$(VERSION) $(PROJ_BIN)/$@
 	@echo "$@ is OK!"
 
 $(OBJS): %.o : %.c $(HEADS)
