@@ -44,6 +44,7 @@ int flt_getopt(int argc, char **argv, flt_opt_t *opt)
     int ch;
     const struct option opts[] = {
         {"conf",        required_argument,  NULL, 'c'}
+        , {"log-key",   required_argument,  NULL, 'k'}
         , {"log-level", required_argument,  NULL, 'l'}
         , {"daemon",    no_argument,        NULL, 'd'}
         , {"help",      no_argument,        NULL, 'h'}
@@ -56,18 +57,23 @@ int flt_getopt(int argc, char **argv, flt_opt_t *opt)
     opt->log_level = LOG_LEVEL_TRACE;
 
     /* 1. 解析输入参数 */
-    while (-1 != (ch = getopt_long(argc, argv, "cl:hd", opts, NULL)))
+    while (-1 != (ch = getopt_long(argc, argv, "c:k:l:hd", opts, NULL)))
     {
         switch (ch)
         {
             case 'c':   /* 指定配置文件 */
             {
-                snprintf(opt->conf_path, sizeof(opt->conf_path), "%s", optarg);
+                opt->conf_path = optarg;
                 break;
             }
             case 'l':
             {
                 opt->log_level = log_get_level(optarg);
+                break;
+            }
+            case 'k':   /* 日志键值路径 */
+            {
+                opt->log_key_path = optarg;
                 break;
             }
             case 'd':
@@ -89,7 +95,7 @@ int flt_getopt(int argc, char **argv, flt_opt_t *opt)
     /* 2. 验证输入参数 */
     if (!strlen(opt->conf_path))
     {
-        snprintf(opt->conf_path, sizeof(opt->conf_path), "%s", FLT_DEF_CONF_PATH);
+        opt->conf_path = FLT_DEF_CONF_PATH;
     }
 
     return FLT_OK;
@@ -126,14 +132,14 @@ int flt_usage(const char *exec)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.21 #
  ******************************************************************************/
-static log_cycle_t *flt_init_log(char *fname, int log_level)
+static log_cycle_t *flt_init_log(char *fname, int log_level, const char *log_key_path)
 {
     char path[FILE_NAME_MAX_LEN];
 
     /* > 初始化业务日志 */
     log_get_path(path, sizeof(path), basename(fname));
 
-    return log_init(log_level, path);
+    return log_init(log_level, path, log_key_path);
 }
 
 /******************************************************************************
@@ -149,7 +155,7 @@ static log_cycle_t *flt_init_log(char *fname, int log_level)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.03.11 #
  ******************************************************************************/
-flt_cntx_t *flt_init(char *pname, const char *path, int log_level)
+flt_cntx_t *flt_init(char *pname, flt_opt_t *flt_opt)
 {
     flt_cntx_t *ctx;
     flt_conf_t *conf;
@@ -158,7 +164,7 @@ flt_cntx_t *flt_init(char *pname, const char *path, int log_level)
     hash_map_opt_t opt;
 
     /* > 初始化日志模块 */
-    log = flt_init_log(pname, log_level);
+    log = flt_init_log(pname, flt_opt->log_level, flt_opt->log_key_path);
     if (NULL == log)
     {
         fprintf(stderr, "Initialize log failed!\n");
@@ -188,7 +194,7 @@ flt_cntx_t *flt_init(char *pname, const char *path, int log_level)
     do
     {
         /* > 加载配置信息 */
-        conf = flt_conf_load(path, log);
+        conf = flt_conf_load(flt_opt->conf_path, log);
         if (NULL == conf)
         {
             log_error(log, "Initialize log failed!");

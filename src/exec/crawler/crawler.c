@@ -56,7 +56,7 @@ int main(int argc, char *argv[])
     crwl_set_signal();
 
     /* 2. 初始化处理 */
-    ctx = crwl_init(argv[0], opt.conf_path, opt.log_level);
+    ctx = crwl_init(argv[0], &opt);
     if (NULL == ctx)
     {
         fprintf(stderr, "Initialize crawler failed!");

@@ -18,13 +18,17 @@
 #define LOGD_THREAD_NUM     (1)     /* 服务线程数 */
 
 /* 服务进程互斥锁路径 */
-#define LOGD_PROC_LOCK  "log_svr.lck"
-#define logd_proc_lock_path(path, size) snprintf(path, size, "../temp/log/%s",  LOGD_PROC_LOCK)
 #define logd_proc_trylock(fd) proc_try_wrlock(fd)
 
 /* 服务进程日志文件路径 */
 #define LOGD_LOG_NAME   "log_svr.log"
 #define logd_log_path(path, size) snprintf(path, size, "../log/%s", LOGD_LOG_NAME)
+
+/* 输入选项 */
+typedef struct
+{
+    char *key_path;                 /* KEY路径 */
+} logd_opt_t;
 
 /* 日志服务 */
 typedef struct

@@ -29,8 +29,10 @@ static int frwd_attach_lsnd_distq(frwd_lsnd_t *lsnd, lsnd_conf_t *conf);
  **返    回: 0:成功 !0:失败
  **实现描述: 解析和验证输入参数
  **注意事项:
- **     N: 转发服务名 - 根据服务名, 便可找到对应的配置文件
+ **     n: 转发服务名 - 根据服务名, 便可找到对应的配置文件
  **     h: 帮助手册
+ **     l: 日志级别
+ **     k: 日志键值路径
  **     d: 以精灵进程运行
  **作    者: # Qifeng.zou # 2015.06.10 #
  ******************************************************************************/
@@ -39,6 +41,7 @@ int frwd_getopt(int argc, char **argv, frwd_opt_t *opt)
     int ch;
     const struct option opts[] = {
         {"name",        required_argument,  NULL, 'n'}
+        , {"log-key",   required_argument,  NULL, 'k'}
         , {"log-level", required_argument,  NULL, 'l'}
         , {"daemon",    no_argument,        NULL, 'd'}
         , {"help",      no_argument,        NULL, 'h'}
@@ -51,7 +54,7 @@ int frwd_getopt(int argc, char **argv, frwd_opt_t *opt)
     opt->log_level = LOG_LEVEL_TRACE;
 
     /* 1. 解析输入参数 */
-    while (-1 != (ch = getopt_long(argc, argv, "n:l:hd", opts, NULL)))
+    while (-1 != (ch = getopt_long(argc, argv, "n:l:k:hd", opts, NULL)))
     {
         switch (ch)
         {
@@ -63,6 +66,11 @@ int frwd_getopt(int argc, char **argv, frwd_opt_t *opt)
             case 'l':   /* 日志级别 */
             {
                 opt->log_level = log_get_level(optarg);
+                break;
+            }
+            case 'k':   /* 日志键值路径 */
+            {
+                snprintf(opt->log_key_path, sizeof(opt->log_key_path), "%s", optarg);
                 break;
             }
             case 'd':   /* 是否后台运行 */
@@ -204,13 +212,13 @@ int frwd_launch(frwd_cntx_t *frwd)
  **注意事项:
  **作    者: # Qifeng.zou # 2015-06-10 #
  ******************************************************************************/
-log_cycle_t *frwd_init_log(const char *pname, int log_level)
+log_cycle_t *frwd_init_log(const char *pname, int log_level, const char *log_key_path)
 {
     char path[FILE_PATH_MAX_LEN];
 
     snprintf(path, sizeof(path), "../log/%s.log", pname);
 
-    return log_init(log_level, path);
+    return log_init(log_level, path, log_key_path);
 }
 
 /******************************************************************************

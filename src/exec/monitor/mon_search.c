@@ -323,7 +323,6 @@ SRCH_AGAIN:
         if (ret < 0) {
             if (EINTR == errno) { continue; }
             fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
-            log_error(ctx->log, "errmsg:[%d] %s!\n", errno, strerror(errno));
             break;
         }
         else if (0 == ret) {
@@ -364,7 +363,7 @@ SRCH_AGAIN:
 
     if (is_unrecv)
     {
-        log_error(ctx->log, "Didn't receive response! num:%d", unrecv_num);
+        fprintf(stderr, "Didn't receive response! num:%d", unrecv_num);
     }
 
     goto SRCH_AGAIN;

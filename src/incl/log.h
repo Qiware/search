@@ -38,9 +38,8 @@ typedef enum
 #define LOG_KEY_PATH            "../temp/log/log.key"  /* 键值路径 */
 #define LOG_SUFFIX              ".log"      /* 日志文件后缀 */
 #define LOG_DEFAULT_TRCLOG      "trc.log"   /* 默认日志名 */
-#define LOG_LOCK_FILE           "log.lck"   /* 日志锁 */
-#define log_get_lock_path(path, size)       /* 日志锁路径 */ \
-    snprintf(path, size, "../temp/log/%s", LOG_LOCK_FILE);
+#define log_get_lock_path(path, size, key_path)  /* 日志锁路径 */ \
+    snprintf(path, size, "../temp/log/%s.lck", key_path);
 
 /* DUMP设置 */
 #define LOG_DUMP_COL_NUM        (16)        /* DUMP列数 */
@@ -80,7 +79,7 @@ typedef struct _log_cycle_t
 /* 外部接口 */
 int log_get_level(const char *level_str);
 const char *log_get_str(int level);
-log_cycle_t *log_init(int level, const char *path);
+log_cycle_t *log_init(int level, const char *path, const char *key_path);
 #define log_set_level(log, _level) { (log)->level = (_level); }
 void log_core(log_cycle_t *log, int level,
                 const char *fname, int lineno,

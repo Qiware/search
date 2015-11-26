@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
     umask(0);
 
     /* > 初始化日志 */
-    log = log_init(opt.log_level, INVTD_LOG_PATH);
+    log = log_init(opt.log_level, INVTD_LOG_PATH, opt.log_key_path);
     if (NULL == log)
     {
         fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));

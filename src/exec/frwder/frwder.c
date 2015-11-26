@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
     umask(0);
 
     /* > 初始化日志 */
-    log = frwd_init_log(argv[0], opt.log_level);
+    log = frwd_init_log(argv[0], opt.log_level, opt.log_key_path);
     if (NULL == log)
     {
         fprintf(stderr, "Initialize log failed!\n");

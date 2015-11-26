@@ -14,12 +14,12 @@
 #include "logsvr.h"
 #include "shm_opt.h"
 
-#define LOGD_PLOG_PATH   "../log/logd.plog"
-
-static logd_cntx_t *logd_init(void);
+static logd_cntx_t *logd_init(logd_opt_t *opt);
 static void *logd_timeout_routine(void *args);
-static int logd_proc_lock(void);
+static int logd_proc_lock(const char *key_path);
 
+static int logd_getopt(int argc, char *argv[], logd_opt_t *opt);
+static int logd_help(void);
 static char *logd_creat_shm(int fd);
 
 /******************************************************************************
@@ -34,16 +34,23 @@ static char *logd_creat_shm(int fd);
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.10.28 #
  ******************************************************************************/
-int main(void)
+int main(int argc, char *argv[])
 {
+    logd_opt_t opt;
     logd_cntx_t *ctx;
 
     daemon(1, 1);
 
     umask(0);
 
+    /* 1. 获取输入信息 */
+    if (logd_getopt(argc, argv, &opt))
+    {
+        return logd_help(); /* 显示帮助 */
+    }
+
     /* 2. 初始化日志服务 */
-    ctx = logd_init();
+    ctx = logd_init(&opt);
     if (NULL == ctx)
     {
         fprintf(stderr, "Init log failed!");
@@ -61,19 +68,20 @@ int main(void)
 /******************************************************************************
  **函数名称: logd_proc_lock
  **功    能: 日志服务进程锁，防止同时启动两个服务进程
- **输入参数: NONE
+ **输入参数:
+ **     key_path: 存储键值的路径
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.11.06 #
  ******************************************************************************/
-int logd_proc_lock(void)
+int logd_proc_lock(const char *key_path)
 {
     int fd;
     char path[FILE_PATH_MAX_LEN];
 
-    logd_proc_lock_path(path, sizeof(path));
+    snprintf(path, sizeof(path), "%s.logd-lck", key_path);
 
     Mkdir2(path, DIR_MODE);
 
@@ -104,14 +112,14 @@ int logd_proc_lock(void)
  **注意事项: 加文件锁防止同时启动多个日志服务进程
  **作    者: # Qifeng.zou # 2013.10.28 #
  ******************************************************************************/
-static logd_cntx_t *logd_init(void)
+static logd_cntx_t *logd_init(logd_opt_t *opt)
 {
     logd_cntx_t *ctx;
-    thread_pool_opt_t opt;
+    thread_pool_opt_t tp_opt;
     char path[FILE_PATH_MAX_LEN];
 
     /* > 服务进程锁 */
-    if (logd_proc_lock())
+    if (logd_proc_lock(opt->key_path))
     {
         fprintf(stderr, "Log server is already running...");
         return NULL;    /* 日志服务进程正在运行... */
@@ -125,7 +133,7 @@ static logd_cntx_t *logd_init(void)
     }
 
     /* > 文件缓存锁 */
-    log_get_lock_path(path, sizeof(path));
+    log_get_lock_path(path, sizeof(path), opt->key_path);
 
     Mkdir2(path, DIR_MODE);
 
@@ -153,13 +161,13 @@ static logd_cntx_t *logd_init(void)
     }
 
     /* > 启动多个线程 */
-    memset(&opt, 0, sizeof(opt));
+    memset(&tp_opt, 0, sizeof(tp_opt));
 
-    opt.pool = (void *)ctx->slab;
-    opt.alloc = (mem_alloc_cb_t)slab_alloc;
-    opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+    tp_opt.pool = (void *)ctx->slab;
+    tp_opt.alloc = (mem_alloc_cb_t)slab_alloc;
+    tp_opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-    ctx->pool = thread_pool_init(LOGD_THREAD_NUM, &opt, NULL);
+    ctx->pool = thread_pool_init(LOGD_THREAD_NUM, &tp_opt, NULL);
     if (NULL == ctx->pool)
     {
         thread_pool_destroy(ctx->pool);
@@ -278,4 +286,65 @@ static void *logd_timeout_routine(void *args)
     }
 
     return (void *)-1;
+}
+
+/******************************************************************************
+ **函数名称: logd_getopt
+ **功    能: 解析日志程序参数
+ **输入参数: 
+ **     argc: 参数个数
+ **     argv: 参数列表
+ **输出参数: 
+ **     opt: 输入参数
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.11.23 21:45:58 #
+ ******************************************************************************/
+static int logd_getopt(int argc, char *argv[], logd_opt_t *opt)
+{
+    char ch;
+    const struct option opts[] = {
+        {"help",        no_argument,        NULL, 'h'}
+        , {"key path",  required_argument,  NULL, 'k'}
+        , {NULL,        0,                  NULL, 0}
+    };
+
+    memset(opt, 0, sizeof(logd_opt_t));
+
+    while (-1 == (ch = getopt_long(argc, argv, "k:h", opts, NULL)))
+    {
+        switch (ch)
+        {
+            case 'k':   // 键值路径
+            {
+                opt->key_path = optarg;
+                Mkdir2(optarg, DIR_MODE);
+                break;
+            }
+            case 'h':   // 帮助信息
+            {
+                return -1;
+            }
+        }
+    }
+    return 0;
+}
+
+/******************************************************************************
+ **函数名称: logd_help
+ **功    能: 显示帮助信息
+ **输入参数: NONE
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.11.23 21:45:58 #
+ ******************************************************************************/
+static int logd_help(void)
+{
+    fprintf(stderr, "Usage:\n"
+            "\t-k: Log key path\n"
+            "\t-h: Print help information\n");
+    return 0;
 }

@@ -23,6 +23,7 @@ int lsnd_getopt(int argc, char **argv, lsnd_opt_t *opt)
     int ch;
     const struct option opts[] = {
         {"name",        required_argument,  NULL, 'n'}
+        , {"log-key",   required_argument,  NULL, 'k'}
         , {"log-level", required_argument,  NULL, 'l'}
         , {"daemon",    no_argument,        NULL, 'd'}
         , {"help",      no_argument,        NULL, 'h'}
@@ -35,7 +36,7 @@ int lsnd_getopt(int argc, char **argv, lsnd_opt_t *opt)
     opt->log_level = LOG_LEVEL_TRACE;
 
     /* 1. 解析输入参数 */
-    while (-1 != (ch = getopt_long(argc, argv, "l:n:hd", opts, NULL)))
+    while (-1 != (ch = getopt_long(argc, argv, "l:n:k:hd", opts, NULL)))
     {
         switch (ch)
         {
@@ -44,9 +45,14 @@ int lsnd_getopt(int argc, char **argv, lsnd_opt_t *opt)
                 opt->log_level = log_get_level(optarg);
                 break;
             }
-            case 'N':   /* 结点名 */
+            case 'k':   /* 日志键值路径 */
             {
-                snprintf(opt->name, sizeof(opt->name), "%s", optarg);
+                opt->log_key_path = optarg;
+                break;
+            }
+            case 'n':   /* 结点名 */
+            {
+                opt->name = optarg;
                 break;
             }
             case 'd':
@@ -84,13 +90,13 @@ int lsnd_usage(const char *exec)
 }
 
 /* 初始化日志模块 */
-log_cycle_t *lsnd_init_log(char *fname)
+log_cycle_t *lsnd_init_log(char *fname, const char *log_key_path)
 {
     char path[FILE_NAME_MAX_LEN];
 
     log_get_path(path, sizeof(path), basename(fname));
 
-    return log_init(LOG_LEVEL_ERROR, path);
+    return log_init(LOG_LEVEL_ERROR, path, log_key_path);
 }
 
 /******************************************************************************

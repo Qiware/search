@@ -44,7 +44,7 @@ static int mon_getopt(int argc, char **argv, mon_opt_t *opt)
         {
             case 'c':   /* 指定配置文件 */
             {
-                snprintf(opt->conf_path, sizeof(opt->conf_path), "%s", optarg);
+                opt->conf_path = optarg;
                 break;
             }
             case 'h':   /* 显示帮助信息 */
@@ -61,7 +61,7 @@ static int mon_getopt(int argc, char **argv, mon_opt_t *opt)
     /* 2. 验证输入参数 */
     if (!strlen(opt->conf_path))
     {
-        snprintf(opt->conf_path, sizeof(opt->conf_path), "%s", MON_DEF_CONF_PATH);
+        opt->conf_path = MON_DEF_CONF_PATH;
     }
 
     return 0;
@@ -80,7 +80,7 @@ static int mon_getopt(int argc, char **argv, mon_opt_t *opt)
  ******************************************************************************/
 int mon_usage(const char *exec)
 {
-    printf("\nUsage: %s [-h] -c <config file> [-l log_level]\n", exec);
+    printf("\nUsage: %s [-h] -c <config file>\n", exec);
     printf("\t-h\tShow help\n"
            "\t-c\tConfiguration path\n\n");
     return 0;
@@ -148,19 +148,7 @@ int main(int argc, char *argv[])
 static mon_cntx_t *mon_init(const char *path)
 {
     mon_cntx_t *ctx;
-    log_cycle_t *log;
     slab_pool_t *slab;
-    char log_path[FILE_NAME_MAX_LEN];
-
-    /* > 初始化日志 */
-    log_get_path(log_path, sizeof(log_path), "monitor");
-
-    log = log_init(LOG_LEVEL_ERROR, log_path);
-    if (NULL == log)
-    {
-        fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
-        return NULL;
-    }
 
     /* > 创建内存池对象 */
     slab = slab_creat_by_calloc(1 * MB, NULL);
@@ -179,7 +167,6 @@ static mon_cntx_t *mon_init(const char *path)
         return NULL;
     }
 
-    ctx->log = log;
     ctx->slab = slab;
 
     /* > 加载配置信息 */

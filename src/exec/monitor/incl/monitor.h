@@ -8,14 +8,13 @@
 /* 输入参数 */
 typedef struct
 {
-    char conf_path[FILE_NAME_MAX_LEN];      /* 配置路径 */
+    char *conf_path;                        /* 配置路径 */
 } mon_opt_t;
 
 /* 全局信息 */
 typedef struct
 {
     int fd;                                 /* 描述符 */
-    log_cycle_t *log;                       /* 日志对象 */
 
     mon_conf_t *conf;                       /* 配置信息 */
     menu_cntx_t *menu;                      /* 菜单对象 */

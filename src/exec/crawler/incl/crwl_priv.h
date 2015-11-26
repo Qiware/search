@@ -70,7 +70,8 @@ typedef struct
 {
     int log_level;                          /* 日志级别 */
     bool isdaemon;                          /* 是否后台运行 */
-    char conf_path[FILE_NAME_MAX_LEN];      /* 配置文件路径 */
+    char *conf_path;                        /* 配置文件路径 */
+    char *log_key_path;                     /* 日志键值路径 */
 } crwl_opt_t;
 
 /* 域名IP映射信息 */

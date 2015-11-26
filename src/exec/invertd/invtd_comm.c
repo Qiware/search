@@ -23,6 +23,7 @@ int invtd_getopt(int argc, char **argv, invtd_opt_t *opt)
     int ch;
     const struct option opts[] = {
         {"conf",        required_argument,  NULL, 'c'}
+        , {"log-key",   required_argument,  NULL, 'k'}
         , {"log-level", required_argument,  NULL, 'l'}
         , {"daemon",    no_argument,        NULL, 'd'}
         , {"help",      no_argument,        NULL, 'h'}
@@ -35,18 +36,23 @@ int invtd_getopt(int argc, char **argv, invtd_opt_t *opt)
     opt->log_level = LOG_LEVEL_TRACE;
 
     /* 1. 解析输入参数 */
-    while (-1 != (ch = getopt_long(argc, argv, "c:l:hd", opts, NULL)))
+    while (-1 != (ch = getopt_long(argc, argv, "c:l:k:hd", opts, NULL)))
     {
         switch (ch)
         {
             case 'c':   /* 指定配置文件 */
             {
-                snprintf(opt->conf_path, sizeof(opt->conf_path), "%s", optarg);
+                opt->conf_path = optarg;
                 break;
             }
             case 'l':   /* 日志级别 */
             {
                 opt->log_level = log_get_level(optarg);
+                break;
+            }
+            case 'k':   /* 日志键值路径 */
+            {
+                opt->log_key_path = optarg;
                 break;
             }
             case 'd':
@@ -68,7 +74,7 @@ int invtd_getopt(int argc, char **argv, invtd_opt_t *opt)
     /* 2. 验证输入参数 */
     if (!strlen(opt->conf_path))
     {
-        snprintf(opt->conf_path, sizeof(opt->conf_path), "%s", INVTD_DEF_CONF_PATH);
+        opt->conf_path = INVTD_DEF_CONF_PATH;
     }
 
     return INVT_OK;

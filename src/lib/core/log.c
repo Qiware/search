@@ -58,7 +58,7 @@ static const size_t g_log_data_size =  (LOG_FILE_CACHE_SIZE - sizeof(log_cache_t
     (LOG_LEVEL_ERROR & (level) || LOG_LEVEL_FATAL & (level))
 
 /* 函数声明 */
-static int _log_init_global(void);
+static int _log_init_global(const char *key_path);
 static log_cache_t *log_alloc(void *addr, const char *path);
 static void log_dealloc(log_cache_t *lc);
 static int log_write(log_cycle_t *log, int level,
@@ -79,6 +79,7 @@ static const size_t g_log_sync_size = 0.8 * LOG_FILE_CACHE_SIZE;
  **输入参数:
  **     level: 日志级别(其值：LOG_LEVEL_TRACE~LOG_LEVEL_FATAL的"或"值)
  **     path: 日志路径
+ **     key_path: 键值路径
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述:
@@ -87,7 +88,7 @@ static const size_t g_log_sync_size = 0.8 * LOG_FILE_CACHE_SIZE;
  **注意事项: 此函数中不能调用错误日志函数 - 可能死锁!
  **作    者: # Qifeng.zou # 2013.10.31 #
  ******************************************************************************/
-log_cycle_t *log_init(int level, const char *path)
+log_cycle_t *log_init(int level, const char *path, const char *key_path)
 {
     int ret;
     void *addr;
@@ -111,7 +112,7 @@ log_cycle_t *log_init(int level, const char *path)
     do
     {
         /* 2. 初始化全局数据 */
-        ret = _log_init_global();
+        ret = _log_init_global(key_path);
         if (ret < 0)
         {
             fprintf(stderr, "Initialize trace log failed!");
@@ -370,6 +371,7 @@ static int log_rename(const log_cache_t *lc, const struct timeb *time)
  **函数名称: _log_init_global
  **功    能: 初始化全局数据
  **输入参数:
+ **     key_path: 键值路径
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述:
@@ -378,7 +380,7 @@ static int log_rename(const log_cache_t *lc, const struct timeb *time)
  **注意事项: 此函数中不能调用错误日志函数 - 可能死锁!
  **作    者: # Qifeng.zou # 2013.10.31 #
  ******************************************************************************/
-static int _log_init_global(void)
+static int _log_init_global(const char *key_path)
 {
     int fd = 0;
     void *addr = log_get_shm_addr();
@@ -387,7 +389,7 @@ static int _log_init_global(void)
     /* 1. 连接共享内存 */
     if (!log_is_shm_addr_valid())
     {
-        addr = shm_creat(LOG_KEY_PATH, LOG_SHM_SIZE);
+        addr = shm_creat(key_path, LOG_SHM_SIZE);
         if (NULL == addr)
         {
             fprintf(stderr, "[%s][%d] errmsg:[%d] %s!\n",
@@ -400,7 +402,7 @@ static int _log_init_global(void)
 
     if (!log_is_lock_fd_valid())
     {
-        log_get_lock_path(path, sizeof(path));
+        log_get_lock_path(path, sizeof(path), key_path);
 
         Mkdir2(path, DIR_MODE);
 

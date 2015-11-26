@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
     umask(0);
 
     /* > 初始化过滤模块 */
-    ctx = flt_init(argv[0], opt.conf_path, opt.log_level);
+    ctx = flt_init(argv[0], &opt);
     if (NULL == ctx)
     {
         fprintf(stderr, "Initialize filter failed!\n");

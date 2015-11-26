@@ -50,6 +50,7 @@ int crwl_getopt(int argc, char **argv, crwl_opt_t *opt)
     int ch;
     const struct option opts[] = {
         {"conf",        required_argument,  NULL, 'c'}
+        , {"log-key",   required_argument,  NULL, 'k'}
         , {"log-level", required_argument,  NULL, 'l'}
         , {"daemon",    no_argument,        NULL, 'd'}
         , {"help",      no_argument,        NULL, 'h'}
@@ -62,18 +63,23 @@ int crwl_getopt(int argc, char **argv, crwl_opt_t *opt)
     opt->log_level = LOG_LEVEL_TRACE;
 
     /* 1. 解析输入参数 */
-    while (-1 != (ch = getopt_long(argc, argv, "c:l:dh", opts, NULL)))
+    while (-1 != (ch = getopt_long(argc, argv, "c:l:k:dh", opts, NULL)))
     {
         switch (ch)
         {
             case 'c':   /* 指定配置文件 */
             {
-                snprintf(opt->conf_path, sizeof(opt->conf_path), "%s", optarg);
+                opt->conf_path = optarg;
                 break;
             }
             case 'l':
             {
                 opt->log_level = log_get_level(optarg);
+                break;
+            }
+            case 'k':   /* 日志键值路径 */
+            {
+                opt->log_key_path = optarg;
                 break;
             }
             case 'd':
@@ -95,7 +101,7 @@ int crwl_getopt(int argc, char **argv, crwl_opt_t *opt)
     /* 2. 验证输入参数 */
     if (!strlen(opt->conf_path))
     {
-        snprintf(opt->conf_path, sizeof(opt->conf_path), "%s", CRWL_DEF_CONF_PATH);
+        opt->conf_path = CRWL_DEF_CONF_PATH;
     }
 
     return CRWL_OK;
@@ -133,7 +139,7 @@ int crwl_usage(const char *exec)
  **注意事项:
  **作    者: # Qifeng.zou # 2014.09.04 #
  ******************************************************************************/
-crwl_cntx_t *crwl_init(char *pname, const char *path, int log_level)
+crwl_cntx_t *crwl_init(char *pname, crwl_opt_t *opt)
 {
     log_cycle_t *log;
     crwl_cntx_t *ctx;
@@ -141,7 +147,7 @@ crwl_cntx_t *crwl_init(char *pname, const char *path, int log_level)
     slab_pool_t *slab;
 
     /* > 初始化日志模块 */
-    log = crwl_init_log(pname, log_level);
+    log = crwl_init_log(pname, opt->log_level, opt->log_key_path);
     if (NULL == log)
     {
         fprintf(stderr, "Initialize log failed!");
@@ -180,9 +186,9 @@ crwl_cntx_t *crwl_init(char *pname, const char *path, int log_level)
         conf = &ctx->conf;
 
         /* > 加载配置文件 */
-        if (crwl_load_conf(path, conf, log))
+        if (crwl_load_conf(opt->conf_path, conf, log))
         {
-            log_error(log, "Load configuration failed! path:%s", path);
+            log_error(log, "Load configuration failed! path:%s", opt->conf_path);
             break;
         }
 
@@ -508,19 +514,20 @@ int crwl_domain_blacklist_cmp_cb(
  **输入参数:
  **     fname: 日志文件名
  **     log_level: 日志级别
+ **     log_key_path: 日志键值路径
  **输出参数: NONE
  **返    回: 日志对象
  **实现描述:
  **注意事项:
  **作    者: # Qifeng.zou # 2014.10.21 #
  ******************************************************************************/
-log_cycle_t *crwl_init_log(char *fname, int log_level)
+log_cycle_t *crwl_init_log(char *fname, int log_level, const char *log_key_path)
 {
     char path[FILE_NAME_MAX_LEN];
 
     log_get_path(path, sizeof(path), basename(fname));
 
-    return log_init(log_level, path);
+    return log_init(log_level, path, log_key_path);
 }
 
 /******************************************************************************

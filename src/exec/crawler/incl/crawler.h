@@ -44,8 +44,8 @@ typedef struct
     queue_t **workq;                        /* 工作队列(注: 与WORKER线程一一对象) */
 } crwl_cntx_t;
 
-log_cycle_t *crwl_init_log(char *fname, int log_level);
-crwl_cntx_t *crwl_init(char *pname, const char *path, int log_level);
+crwl_cntx_t *crwl_init(char *pname, crwl_opt_t *opt);
+log_cycle_t *crwl_init_log(char *fname, int log_level, const char *log_key_path);
 int crwl_launch(crwl_cntx_t *ctx);
 void crwl_destroy(crwl_cntx_t *ctx);
 
