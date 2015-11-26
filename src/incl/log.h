@@ -35,11 +35,9 @@ typedef enum
 #define LOG_MSG_MAX_LEN         (2048)      /* 日志行最大长度 */
 #define LOG_FILE_MAX_SIZE       (128 * MB)  /* 单个日志文件的最大SIZE */
 
-#define LOG_KEY_PATH            "../temp/log/log.key"  /* 键值路径 */
 #define LOG_SUFFIX              ".log"      /* 日志文件后缀 */
-#define LOG_DEFAULT_TRCLOG      "trc.log"   /* 默认日志名 */
 #define log_get_lock_path(path, size, key_path)  /* 日志锁路径 */ \
-    snprintf(path, size, "../temp/log/%s.lck", key_path);
+    snprintf(path, size, "%s.lck", key_path);
 
 /* DUMP设置 */
 #define LOG_DUMP_COL_NUM        (16)        /* DUMP列数 */

@@ -19,8 +19,8 @@ static void *logd_timeout_routine(void *args);
 static int logd_proc_lock(const char *key_path);
 
 static int logd_getopt(int argc, char *argv[], logd_opt_t *opt);
-static int logd_help(void);
-static char *logd_creat_shm(int fd);
+static int logd_usage(const char *exec);
+static char *logd_creat_shm(int fd, const char *key_path);
 
 /******************************************************************************
  **函数名称: main 
@@ -39,15 +39,18 @@ int main(int argc, char *argv[])
     logd_opt_t opt;
     logd_cntx_t *ctx;
 
-    daemon(1, 1);
-
-    umask(0);
-
     /* 1. 获取输入信息 */
     if (logd_getopt(argc, argv, &opt))
     {
-        return logd_help(); /* 显示帮助 */
+        return logd_usage(argv[0]); /* 显示帮助 */
     }
+
+    if (opt.isdaemon)
+    {
+        daemon(1, 1);
+    }
+
+    umask(0);
 
     /* 2. 初始化日志服务 */
     ctx = logd_init(&opt);
@@ -145,7 +148,7 @@ static logd_cntx_t *logd_init(logd_opt_t *opt)
     }
 
     /* > 创建/连接共享内存 */
-    ctx->addr = logd_creat_shm(ctx->fd);
+    ctx->addr = logd_creat_shm(ctx->fd, opt->key_path);
     if (NULL == ctx->addr)
     {
         fprintf(stderr, "Create SHM failed!");
@@ -184,20 +187,21 @@ static logd_cntx_t *logd_init(logd_opt_t *opt)
  **功    能: 创建或连接共享内存
  **输入参数: 
  **输出参数: 
- **     cfg: 日志配置信息
- **返    回: Address of SHM
+ **     fd: 文件锁FD
+ **     key_path: 键值路径
+ **返    回: 内存地址
  **实现描述: 创建并初始化共享内存
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.10.28 #
  ******************************************************************************/
-static char *logd_creat_shm(int fd)
+static char *logd_creat_shm(int fd, const char *key_path)
 {
     int idx;
     void *addr, *p;
     log_cache_t *lc;
 
     /* > 创建共享内存 */
-    addr = shm_creat(LOG_KEY_PATH, LOG_SHM_SIZE);
+    addr = shm_creat(key_path, LOG_SHM_SIZE);
     if (NULL == addr)
     {
         fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
@@ -306,16 +310,25 @@ static int logd_getopt(int argc, char *argv[], logd_opt_t *opt)
     char ch;
     const struct option opts[] = {
         {"help",        no_argument,        NULL, 'h'}
+        , {"daemon",    required_argument,  NULL, 'd'}
         , {"key path",  required_argument,  NULL, 'k'}
         , {NULL,        0,                  NULL, 0}
     };
 
     memset(opt, 0, sizeof(logd_opt_t));
 
-    while (-1 == (ch = getopt_long(argc, argv, "k:h", opts, NULL)))
+    opt->isdaemon = false;
+
+    /* > 获取输入选项 */
+    while (-1 != (ch = getopt_long(argc, argv, "k:dh", opts, NULL)))
     {
         switch (ch)
         {
+            case 'd':
+            {
+                opt->isdaemon = true;
+                break;
+            }
             case 'k':   // 键值路径
             {
                 opt->key_path = optarg;
@@ -328,23 +341,32 @@ static int logd_getopt(int argc, char *argv[], logd_opt_t *opt)
             }
         }
     }
+
+    /* > 验证合法性 */
+    if (NULL == opt->key_path
+        || 0 == strlen(opt->key_path))
+    {
+        return -1;
+    }
+
     return 0;
 }
 
 /******************************************************************************
- **函数名称: logd_help
+ **函数名称: logd_usage
  **功    能: 显示帮助信息
- **输入参数: NONE
+ **输入参数:
+ **     exec: 程序名
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.11.23 21:45:58 #
  ******************************************************************************/
-static int logd_help(void)
+static int logd_usage(const char *exec)
 {
-    fprintf(stderr, "Usage:\n"
+    fprintf(stderr, "Usage: %s -k <Log key path> [-h] [-d]\n"
             "\t-k: Log key path\n"
-            "\t-h: Print help information\n");
+            "\t-h: Print help information\n", exec);
     return 0;
 }

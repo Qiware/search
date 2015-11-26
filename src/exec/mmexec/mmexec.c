@@ -17,6 +17,7 @@
 
 typedef struct
 {
+    bool isdaemon;      /* 后台运行 */
     int log_level;      /* 日志级别 */
     char *log_key_path; /* 日志键值路径 */
 } mem_opt_t;
@@ -37,7 +38,11 @@ int main(int argc, char *argv[])
         return mem_usage(argv[0]);
     }
 
-    daemon(1, 1);
+    if (opt.isdaemon)
+    {
+        daemon(1, 1);
+    }
+
     umask(0);
 
     /* > 初始化日志模块 */
@@ -82,7 +87,9 @@ int main(int argc, char *argv[])
  **     1. 解析输入参数
  **     2. 验证输入参数
  **注意事项: 
- **     N: 服务名 - 根据服务名可找到配置路径
+ **     d: 后台运行
+ **     l: 日志级别
+ **     k: 日志键值路径
  **     h: 帮助手册
  **作    者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
@@ -90,14 +97,16 @@ static int mem_getopt(int argc, char **argv, mem_opt_t *opt)
 {
     int ch;
     const struct option opts[] = {
-        {"log-key",   required_argument,  NULL, 'k'}
+        {"log-key",     required_argument,  NULL, 'k'}
         , {"log-level", required_argument,  NULL, 'l'}
+        , {"isdaemon",  required_argument,  NULL, 'd'}
         , {"help",      no_argument,        NULL, 'h'}
         , {NULL,        0,                  NULL, 0}
     };
 
     memset(opt, 0, sizeof(mem_opt_t));
 
+    opt->isdaemon = false;
     opt->log_level = LOG_LEVEL_TRACE;
 
     /* 1. 解析输入参数 */
@@ -105,6 +114,11 @@ static int mem_getopt(int argc, char **argv, mem_opt_t *opt)
     {
         switch (ch)
         {
+            case 'd':   /* 后台运行 */
+            {
+                opt->isdaemon = true;
+                break;
+            }
             case 'l':   /* 日志级别 */
             {
                 opt->log_level = log_get_level(optarg);

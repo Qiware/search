@@ -27,7 +27,8 @@
 /* 输入选项 */
 typedef struct
 {
-    char *key_path;                 /* KEY路径 */
+    bool isdaemon;                  /* 后台运行 */
+    char *key_path;                 /* 键值路径 */
 } logd_opt_t;
 
 /* 日志服务 */
