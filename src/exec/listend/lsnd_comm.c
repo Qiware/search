@@ -22,12 +22,12 @@ int lsnd_getopt(int argc, char **argv, lsnd_opt_t *opt)
 {
     int ch;
     const struct option opts[] = {
-        {"name",        required_argument,  NULL, 'n'}
-        , {"log-key",   required_argument,  NULL, 'k'}
-        , {"log-level", required_argument,  NULL, 'l'}
-        , {"daemon",    no_argument,        NULL, 'd'}
-        , {"help",      no_argument,        NULL, 'h'}
-        , {NULL,        0,                  NULL, 0}
+        {"name",            required_argument,  NULL, 'n'}
+        , {"help",          no_argument,        NULL, 'h'}
+        , {"daemon",        no_argument,        NULL, 'd'}
+        , {"log-level",     required_argument,  NULL, 'l'}
+        , {"log key path",  required_argument,  NULL, 'L'}
+        , {NULL,            0,                  NULL, 0}
     };
 
     memset(opt, 0, sizeof(lsnd_opt_t));
@@ -36,7 +36,7 @@ int lsnd_getopt(int argc, char **argv, lsnd_opt_t *opt)
     opt->log_level = LOG_LEVEL_TRACE;
 
     /* 1. 解析输入参数 */
-    while (-1 != (ch = getopt_long(argc, argv, "l:n:k:hd", opts, NULL)))
+    while (-1 != (ch = getopt_long(argc, argv, "l:n:L:hd", opts, NULL)))
     {
         switch (ch)
         {
@@ -45,7 +45,7 @@ int lsnd_getopt(int argc, char **argv, lsnd_opt_t *opt)
                 opt->log_level = log_get_level(optarg);
                 break;
             }
-            case 'k':   /* 日志键值路径 */
+            case 'L':   /* 日志键值路径 */
             {
                 opt->log_key_path = optarg;
                 break;
@@ -83,9 +83,12 @@ int lsnd_getopt(int argc, char **argv, lsnd_opt_t *opt)
 /* 显示启动参数帮助信息 */
 int lsnd_usage(const char *exec)
 {
-    printf("\nUsage: %s [-h] [-d] -c <config file>\n", exec);
-    printf("\t-h\tShow help\n"
-           "\t-c\tConfiguration path\n\n");
+    printf("\nUsage: %s -l <log level> -L <log key path> -n <node name> [-h] [-d]\n", exec);
+    printf("\t-l: Log level\n"
+            "\t-L: Log key path\n"
+            "\t-n: Node name\n"
+            "\t-d: Run as daemon\n"
+            "\t-h: Show help\n\n");
     return 0;
 }
 

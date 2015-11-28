@@ -17,10 +17,10 @@ typedef enum
 /* 输入参数 */
 typedef struct
 {
+    char *name;                             /* 结点名 */
     int log_level;                          /* 日志级别 */
     bool isdaemon;                          /* 是否后台运行 */
-    char name[FILE_NAME_MAX_LEN];           /* 结点名 */
-    char log_key_path[FILE_NAME_MAX_LEN];   /* 日志键值路径 */
+    char *log_key_path;                     /* 日志键值路径 */
 } frwd_opt_t;
 
 /* 侦听服务信息 */

@@ -90,11 +90,11 @@ print_netstat()
         # 打印统计信息
         len=`expr length "$item"`
         if [ $len -lt 8 ]; then
-            echo -e "$item\t\t$listen_num\t$active_num\t$close_num\t$total" >> .netstat.ls
+            echo "$item\t\t$listen_num\t$active_num\t$close_num\t$total" >> .netstat.ls
         elif [ $len -lt 16 ]; then
-            echo -e "$item\t$listen_num\t$active_num\t$close_num\t$total" >> .netstat.ls
+            echo "$item\t$listen_num\t$active_num\t$close_num\t$total" >> .netstat.ls
         else
-            echo -e "$item\t$listen_num\t$active_num\t$close_num\t$total" >> .netstat.ls
+            echo "$item\t$listen_num\t$active_num\t$close_num\t$total" >> .netstat.ls
         fi
     done
 }
@@ -138,7 +138,7 @@ main()
         echo ""
         echo "Network stat:"
         echo "---------------------------------------------------------------------"
-        echo -e "PROC\t\tLISTEN\tESTAB\tCLOSE\tTOTAL"
+        echo "PROC\t\tLISTEN\tESTAB\tCLOSE\tTOTAL"
 
         cat .netstat.ls
         echo "---------------------------------------------------------------------"

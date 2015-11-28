@@ -97,11 +97,11 @@ static int mem_getopt(int argc, char **argv, mem_opt_t *opt)
 {
     int ch;
     const struct option opts[] = {
-        {"log-key",     required_argument,  NULL, 'k'}
-        , {"log-level", required_argument,  NULL, 'l'}
-        , {"isdaemon",  required_argument,  NULL, 'd'}
-        , {"help",      no_argument,        NULL, 'h'}
-        , {NULL,        0,                  NULL, 0}
+        {"help",            no_argument,        NULL, 'h'}
+        , {"isdaemon",      required_argument,  NULL, 'd'}
+        , {"log level",     required_argument,  NULL, 'l'}
+        , {"log key path",  required_argument,  NULL, 'L'}
+        , {NULL,            0,                  NULL, 0}
     };
 
     memset(opt, 0, sizeof(mem_opt_t));
@@ -110,7 +110,7 @@ static int mem_getopt(int argc, char **argv, mem_opt_t *opt)
     opt->log_level = LOG_LEVEL_TRACE;
 
     /* 1. 解析输入参数 */
-    while (-1 != (ch = getopt_long(argc, argv, "l:n:k:hd", opts, NULL)))
+    while (-1 != (ch = getopt_long(argc, argv, "l:n:L:hd", opts, NULL)))
     {
         switch (ch)
         {
@@ -124,7 +124,7 @@ static int mem_getopt(int argc, char **argv, mem_opt_t *opt)
                 opt->log_level = log_get_level(optarg);
                 break;
             }
-            case 'k':   /* 日志键值路径 */
+            case 'L':   /* 日志键值路径 */
             {
                 opt->log_key_path = optarg;
                 break;

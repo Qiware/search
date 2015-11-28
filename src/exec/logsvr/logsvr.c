@@ -309,10 +309,10 @@ static int logd_getopt(int argc, char *argv[], logd_opt_t *opt)
 {
     char ch;
     const struct option opts[] = {
-        {"help",        no_argument,        NULL, 'h'}
-        , {"daemon",    required_argument,  NULL, 'd'}
-        , {"key path",  required_argument,  NULL, 'k'}
-        , {NULL,        0,                  NULL, 0}
+        {"help",            no_argument,        NULL, 'h'}
+        , {"daemon",        required_argument,  NULL, 'd'}
+        , {"log key path",  required_argument,  NULL, 'L'}
+        , {NULL,            0,                  NULL, 0}
     };
 
     memset(opt, 0, sizeof(logd_opt_t));
@@ -320,7 +320,7 @@ static int logd_getopt(int argc, char *argv[], logd_opt_t *opt)
     opt->isdaemon = false;
 
     /* > 获取输入选项 */
-    while (-1 != (ch = getopt_long(argc, argv, "k:dh", opts, NULL)))
+    while (-1 != (ch = getopt_long(argc, argv, "L:dh", opts, NULL)))
     {
         switch (ch)
         {
@@ -329,7 +329,7 @@ static int logd_getopt(int argc, char *argv[], logd_opt_t *opt)
                 opt->isdaemon = true;
                 break;
             }
-            case 'k':   // 键值路径
+            case 'L':   // 日志键值路径
             {
                 opt->key_path = optarg;
                 Mkdir2(optarg, DIR_MODE);
@@ -365,8 +365,8 @@ static int logd_getopt(int argc, char *argv[], logd_opt_t *opt)
  ******************************************************************************/
 static int logd_usage(const char *exec)
 {
-    fprintf(stderr, "Usage: %s -k <Log key path> [-h] [-d]\n"
-            "\t-k: Log key path\n"
+    fprintf(stderr, "Usage: %s -L <Log key path> [-h] [-d]\n"
+            "\t-L: Log key path\n"
             "\t-h: Print help information\n", exec);
     return 0;
 }

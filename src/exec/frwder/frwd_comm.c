@@ -40,12 +40,12 @@ int frwd_getopt(int argc, char **argv, frwd_opt_t *opt)
 {
     int ch;
     const struct option opts[] = {
-        {"name",        required_argument,  NULL, 'n'}
-        , {"log-key",   required_argument,  NULL, 'k'}
-        , {"log-level", required_argument,  NULL, 'l'}
-        , {"daemon",    no_argument,        NULL, 'd'}
-        , {"help",      no_argument,        NULL, 'h'}
-        , {NULL,        0,                  NULL, 0}
+        {"name",            required_argument,  NULL, 'n'}
+        , {"help",          no_argument,        NULL, 'h'}
+        , {"daemon",        no_argument,        NULL, 'd'}
+        , {"log-level",     required_argument,  NULL, 'l'}
+        , {"log key path",  required_argument,  NULL, 'L'}
+        , {NULL,            0,                  NULL, 0}
     };
 
     memset(opt, 0, sizeof(frwd_opt_t));
@@ -54,13 +54,13 @@ int frwd_getopt(int argc, char **argv, frwd_opt_t *opt)
     opt->log_level = LOG_LEVEL_TRACE;
 
     /* 1. 解析输入参数 */
-    while (-1 != (ch = getopt_long(argc, argv, "n:l:k:hd", opts, NULL)))
+    while (-1 != (ch = getopt_long(argc, argv, "n:l:L:hd", opts, NULL)))
     {
         switch (ch)
         {
             case 'n':   /* 指定服务名 */
             {
-                snprintf(opt->name, sizeof(opt->name), "%s", optarg);
+                opt->name = optarg;
                 break;
             }
             case 'l':   /* 日志级别 */
@@ -68,9 +68,9 @@ int frwd_getopt(int argc, char **argv, frwd_opt_t *opt)
                 opt->log_level = log_get_level(optarg);
                 break;
             }
-            case 'k':   /* 日志键值路径 */
+            case 'L':   /* 日志键值路径 */
             {
-                snprintf(opt->log_key_path, sizeof(opt->log_key_path), "%s", optarg);
+                opt->log_key_path = optarg;
                 break;
             }
             case 'd':   /* 是否后台运行 */
@@ -90,7 +90,7 @@ int frwd_getopt(int argc, char **argv, frwd_opt_t *opt)
     optind = 1;
 
     /* 2. 验证输入参数 */
-    if (!strlen(opt->name))
+    if (NULL == opt->name || !strlen(opt->name))
     {
         return FRWD_SHOW_HELP;
     }
