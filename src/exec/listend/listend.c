@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
     /* > 初始化日志 */
     log_get_path(path, sizeof(path), basename(argv[0]));
 
-    log = log_init(LOG_LEVEL_TRACE, path, opt.log_key_path);
+    log = log_init(opt.log_level, path, opt.log_key_path);
     if (NULL == log)
     {
         fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));

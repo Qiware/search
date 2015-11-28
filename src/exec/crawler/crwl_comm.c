@@ -61,6 +61,7 @@ int crwl_getopt(int argc, char **argv, crwl_opt_t *opt)
 
     opt->isdaemon = false;
     opt->log_level = LOG_LEVEL_TRACE;
+    opt->conf_path = CRWL_DEF_CONF_PATH;
 
     /* 1. 解析输入参数 */
     while (-1 != (ch = getopt_long(argc, argv, "c:l:k:dh", opts, NULL)))
@@ -97,12 +98,6 @@ int crwl_getopt(int argc, char **argv, crwl_opt_t *opt)
 
     optarg = NULL;
     optind = 1;
-
-    /* 2. 验证输入参数 */
-    if (!strlen(opt->conf_path))
-    {
-        opt->conf_path = CRWL_DEF_CONF_PATH;
-    }
 
     return CRWL_OK;
 }

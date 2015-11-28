@@ -37,6 +37,10 @@ static int mon_getopt(int argc, char **argv, mon_opt_t *opt)
 {
     int ch;
 
+    memset(opt, 0, sizeof(mon_opt_t));
+
+    opt->conf_path = MON_DEF_CONF_PATH;
+
     /* 1. 解析输入参数 */
     while (-1 != (ch = getopt(argc, argv, "c:hd")))
     {
@@ -57,12 +61,6 @@ static int mon_getopt(int argc, char **argv, mon_opt_t *opt)
 
     optarg = NULL;
     optind = 1;
-
-    /* 2. 验证输入参数 */
-    if (!strlen(opt->conf_path))
-    {
-        opt->conf_path = MON_DEF_CONF_PATH;
-    }
 
     return 0;
 }
