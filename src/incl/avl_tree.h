@@ -2,7 +2,6 @@
 #define __AVL_TREE_H__
 
 #include "comm.h"
-#include "slab.h"
 #include "stack.h"
 
 #define AVL_RH    (-1)          /* 右子树增高 */
