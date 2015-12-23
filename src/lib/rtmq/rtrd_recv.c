@@ -22,7 +22,7 @@ static int rtrd_creat_recvq(rtrd_cntx_t *ctx);
 static int rtrd_creat_sendq(rtrd_cntx_t *ctx);
 static int rtrd_creat_distq(rtrd_cntx_t *ctx);
 
-static int rtrd_cmd_dist_req(rtrd_cntx_t *ctx);
+static int rtrd_cmd_send_dist_req(rtrd_cntx_t *ctx);
 
 static int rtrd_creat_recvs(rtrd_cntx_t *ctx);
 void rtrd_recvs_destroy(void *_ctx, void *param);
@@ -88,6 +88,8 @@ rtrd_cntx_t *rtrd_init(const rtrd_conf_t *cf, log_cycle_t *log)
             log_error(ctx->log, "Create command socket failed! path:%s", path);
             break;
         }
+
+        spin_lock_init(&ctx->cmd_sck_lock);
 
         /* > 构建NODE->SVR映射表 */
         if (rtrd_node_to_svr_map_init(ctx))
@@ -279,7 +281,7 @@ int rtrd_send(rtrd_cntx_t *ctx, int type, int dest, void *data, size_t len)
         return RTMQ_ERR;
     }
 
-    rtrd_cmd_dist_req(ctx);
+    rtrd_cmd_send_dist_req(ctx);
 
     return RTMQ_OK;
 }
@@ -641,7 +643,7 @@ static int rtrd_proc_def_hdl(int type, int orig, char *buff, size_t len, void *p
 }
 
 /******************************************************************************
- **函数名称: rtrd_cmd_dist_req
+ **函数名称: rtrd_cmd_send_dist_req
  **功    能: 通知分发服务
  **输入参数:
  **     cli: 上下文信息
@@ -652,17 +654,27 @@ static int rtrd_proc_def_hdl(int type, int orig, char *buff, size_t len, void *p
  **注意事项:
  **作    者: # Qifeng.zou # 2015.03.20 #
  ******************************************************************************/
-static int rtrd_cmd_dist_req(rtrd_cntx_t *ctx)
+static int rtrd_cmd_send_dist_req(rtrd_cntx_t *ctx)
 {
+    int ret;
     rtmq_cmd_t cmd;
     char path[FILE_NAME_MAX_LEN];
     rtrd_conf_t *conf = &ctx->conf;
 
-    memset(&cmd, 0, sizeof(cmd));
+    if (spin_trylock(&ctx->cmd_sck_lock))
+    {
+        memset(&cmd, 0, sizeof(cmd));
 
-    cmd.type = RTMQ_CMD_DIST_REQ;
+        cmd.type = RTMQ_CMD_DIST_REQ;
 
-    rtrd_dsvr_usck_path(conf, path);
+        rtrd_dsvr_usck_path(conf, path);
 
-    return unix_udp_send(ctx->cmd_sck_id, path, &cmd, sizeof(cmd));
+        ret = unix_udp_send(ctx->cmd_sck_id, path, &cmd, sizeof(cmd));
+
+        spin_unlock(&ctx->cmd_sck_lock);
+
+        return ret;
+    }
+
+    return 0;
 }
