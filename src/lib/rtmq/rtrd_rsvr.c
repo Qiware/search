@@ -42,7 +42,7 @@ static int rtrd_rsvr_del_conn_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, list2_nod
 
 static int rtrd_rsvr_fill_send_buff(rtrd_rsvr_t *rsvr, rtrd_sck_t *sck);
 
-static int rtrd_rsvr_dist_send_data(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr);
+static int rtrd_rsvr_dist_data(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr);
 
 /* 随机选择接收线程 */
 #define rtmq_rand_recv(ctx) ((ctx)->listen.total++ % (ctx->recvtp->num))
@@ -347,7 +347,7 @@ static int rtrd_rsvr_recv_cmd(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
         }
         case RTMQ_CMD_DIST_REQ:     /* 分发发送数据 */
         {
-            return rtrd_rsvr_dist_send_data(ctx, rsvr);
+            return rtrd_rsvr_dist_data(ctx, rsvr);
         }
         default:
         {
@@ -1412,7 +1412,7 @@ static int rtrd_rsvr_get_conn_list_by_nodeid(rtrd_sck_t *sck, _conn_list_t *cl)
 }
 
 /******************************************************************************
- **函数名称: rtrd_rsvr_dist_send_data
+ **函数名称: rtrd_rsvr_dist_data
  **功    能: 分发连接队列中的数据
  **输入参数:
  **     ctx: 全局对象
@@ -1423,7 +1423,7 @@ static int rtrd_rsvr_get_conn_list_by_nodeid(rtrd_sck_t *sck, _conn_list_t *cl)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.06.02 #
  ******************************************************************************/
-static int rtrd_rsvr_dist_send_data(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
+static int rtrd_rsvr_dist_data(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
 {
 #define RTRD_POP_MAX_NUM (1024)
     int len, idx, num;
