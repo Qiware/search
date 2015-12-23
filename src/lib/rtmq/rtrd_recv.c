@@ -22,6 +22,8 @@ static int rtrd_creat_recvq(rtrd_cntx_t *ctx);
 static int rtrd_creat_sendq(rtrd_cntx_t *ctx);
 static int rtrd_creat_distq(rtrd_cntx_t *ctx);
 
+static int rtrd_cmd_dist_req(rtrd_cntx_t *ctx);
+
 static int rtrd_creat_recvs(rtrd_cntx_t *ctx);
 void rtrd_recvs_destroy(void *_ctx, void *param);
 
@@ -50,6 +52,7 @@ rtrd_cntx_t *rtrd_init(const rtrd_conf_t *cf, log_cycle_t *log)
     rtrd_cntx_t *ctx;
     slab_pool_t *slab;
     rtrd_conf_t *conf;
+    char path[FILE_NAME_MAX_LEN];
 
     /* > 创建SLAB内存池 */
     slab = slab_creat_by_calloc(RTMQ_CTX_POOL_SIZE, log);
@@ -76,6 +79,16 @@ rtrd_cntx_t *rtrd_init(const rtrd_conf_t *cf, log_cycle_t *log)
 
     do
     {
+        /* > 创建通信套接字 */
+        rtrd_cli_unix_path(conf, path);
+
+        ctx->cmd_sck_id = unix_udp_creat(path);
+        if (ctx->cmd_sck_id < 0)
+        {
+            log_error(ctx->log, "Create command socket failed! path:%s", path);
+            break;
+        }
+
         /* > 构建NODE->SVR映射表 */
         if (rtrd_node_to_svr_map_init(ctx))
         {
@@ -103,7 +116,7 @@ rtrd_cntx_t *rtrd_init(const rtrd_conf_t *cf, log_cycle_t *log)
         /* > 创建分发队列 */
         if (rtrd_creat_distq(ctx))
         {
-            log_error(ctx->log, "Create send queue failed!");
+            log_error(ctx->log, "Create distribute queue failed!");
             break;
         }
 
@@ -131,6 +144,7 @@ rtrd_cntx_t *rtrd_init(const rtrd_conf_t *cf, log_cycle_t *log)
         return ctx;
     } while(0);
 
+    close(ctx->cmd_sck_id);
     free(slab);
     return NULL;
 }
@@ -224,6 +238,53 @@ int rtrd_register(rtrd_cntx_t *ctx, int type, rtmq_reg_cb_t proc, void *param)
 
     return RTMQ_OK;
 }
+
+/******************************************************************************
+ **函数名称: rtrd_send
+ **功    能: 接收客户端发送数据
+ **输入参数:
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 将数据放入应答队列
+ **注意事项: 内存结构: 转发信息(frwd) + 实际数据
+ **作    者: # Qifeng.zou # 2015.06.01 #
+ ******************************************************************************/
+int rtrd_send(rtrd_cntx_t *ctx, int type, int dest, void *data, size_t len)
+{
+    int idx;
+    void *addr;
+    rtmq_frwd_t *frwd;
+
+    idx = rand() % ctx->conf.distq_num;
+
+    /* > 申请队列空间 */
+    addr = queue_malloc(ctx->distq[idx], sizeof(rtmq_frwd_t)+len);
+    if (NULL == addr)
+    {
+        return RTMQ_ERR;
+    }
+
+    frwd = (rtmq_frwd_t *)addr;
+
+    frwd->type = type; 
+    frwd->dest = dest;
+    frwd->length = len;
+
+    memcpy(addr+sizeof(rtmq_frwd_t), data, len);
+
+    /* > 压入队列空间 */
+    if (queue_push(ctx->distq[idx], addr))
+    {
+        queue_dealloc(ctx->distq[idx], addr);
+        return RTMQ_ERR;
+    }
+
+    rtrd_cmd_dist_req(ctx);
+
+    return RTMQ_OK;
+}
+
+
 
 /******************************************************************************
  **函数名称: rtrd_reg_init
@@ -349,7 +410,7 @@ static int rtrd_creat_distq(rtrd_cntx_t *ctx)
     rtrd_conf_t *conf = &ctx->conf;
 
     /* > 申请对象空间 */
-    ctx->distq = (shm_queue_t **)slab_alloc(ctx->pool, conf->distq_num*sizeof(shm_queue_t *));
+    ctx->distq = (queue_t **)slab_alloc(ctx->pool, conf->distq_num*sizeof(queue_t *));
     if (NULL == ctx->distq)
     {
         log_error(ctx->log, "Alloc memory from slab failed!");
@@ -359,10 +420,10 @@ static int rtrd_creat_distq(rtrd_cntx_t *ctx)
     /* > 依次创建队列 */
     for (idx=0; idx<conf->distq_num; ++idx)
     {
-        ctx->distq[idx] = rtrd_shm_distq_creat(conf, idx);
+        ctx->distq[idx] = queue_creat(conf->sendq.max, conf->sendq.size);
         if (NULL == ctx->distq[idx])
         {
-            log_error(ctx->log, "Create shm-queue failed!");
+            log_error(ctx->log, "Create queue failed!");
             return RTMQ_ERR;
         }
     }
@@ -577,4 +638,31 @@ void rtrd_workers_destroy(void *_ctx, void *param)
 static int rtrd_proc_def_hdl(int type, int orig, char *buff, size_t len, void *param)
 {
     return RTMQ_OK;
+}
+
+/******************************************************************************
+ **函数名称: rtrd_cmd_dist_req
+ **功    能: 通知分发服务
+ **输入参数:
+ **     cli: 上下文信息
+ **     idx: 发送服务ID
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述:
+ **注意事项:
+ **作    者: # Qifeng.zou # 2015.03.20 #
+ ******************************************************************************/
+static int rtrd_cmd_dist_req(rtrd_cntx_t *ctx)
+{
+    rtmq_cmd_t cmd;
+    char path[FILE_NAME_MAX_LEN];
+    rtrd_conf_t *conf = &ctx->conf;
+
+    memset(&cmd, 0, sizeof(cmd));
+
+    cmd.type = RTMQ_CMD_DIST_REQ;
+
+    rtrd_dsvr_usck_path(conf, path);
+
+    return unix_udp_send(ctx->cmd_sck_id, path, &cmd, sizeof(cmd));
 }

@@ -23,7 +23,6 @@ SRC_LIST = rtrd_recv.c \
 			rtrd_lsn.c \
 			rtrd_rsvr.c \
 			rtrd_worker.c \
-			rtrd_cli.c \
 			rtrd_dist.c \
 			rtsd_send.c \
 			rtsd_ssvr.c \

@@ -34,8 +34,8 @@
 #define rtrd_dsvr_usck_path(conf, _path) \
     snprintf(_path, sizeof(_path), "%s/%d_dsvr.usck", (conf)->path, (conf)->nodeid)
 /* 客户端的通信路径 */
-#define rtrd_cli_unix_path(conf, _path, idx) \
-    snprintf(_path, sizeof(_path), "%s/%d_cli_%d.usck", (conf)->path, (conf)->nodeid, idx)
+#define rtrd_cli_unix_path(conf, _path) \
+    snprintf(_path, sizeof(_path), "%s/%d_cli.usck", (conf)->path, (conf)->nodeid)
 
 /* 配置信息 */
 typedef struct
@@ -125,14 +125,6 @@ typedef struct
     uint64_t drop_total;                /* 丢弃的数据条数 */
 } rtrd_rsvr_t;
 
-/* 服务端外部对象 */
-typedef struct
-{
-    int cmd_sck_id;                     /* 命令套接字 */
-    rtrd_conf_t conf;                   /* 配置信息 */
-    shm_queue_t **distq;                /* 分发队列 */
-} rtrd_cli_t;
-
 /* 全局对象 */
 typedef struct
 {
@@ -142,13 +134,15 @@ typedef struct
 
     rtmq_reg_t reg[RTMQ_TYPE_MAX];      /* 回调注册对象 */
 
-    rtrd_listen_t listen;                  /* 侦听对象 */
+    rtrd_listen_t listen;               /* 侦听对象 */
     thread_pool_t *recvtp;              /* 接收线程池 */
     thread_pool_t *worktp;              /* 工作线程池 */
 
+    int cmd_sck_id;                     /* 命令套接字(注: 用于给各线程发送命令) */
+
     queue_t **recvq;                    /* 接收队列(内部队列) */
     queue_t **sendq;                    /* 发送队列(内部队列) */
-    shm_queue_t **distq;                /* 分发队列(外部队列)
+    queue_t **distq;                    /* 分发队列(外部队列)
                                            注: 外部接口首先将要发送的数据放入
                                            此队列, 再从此队列分发到不同的线程队列 */
 
@@ -161,8 +155,7 @@ rtrd_cntx_t *rtrd_init(const rtrd_conf_t *conf, log_cycle_t *log);
 int rtrd_register(rtrd_cntx_t *ctx, int type, rtmq_reg_cb_t proc, void *args);
 int rtrd_launch(rtrd_cntx_t *ctx);
 
-rtrd_cli_t *rtrd_cli_init(const rtrd_conf_t *conf, int idx);
-int rtrd_cli_send(rtrd_cli_t *cli, int type, int dest, void *data, size_t len);
+int rtrd_send(rtrd_cntx_t *ctx, int type, int dest, void *data, size_t len);
 
 /* 内部接口 */
 int rtrd_lsn_init(rtrd_cntx_t *ctx);
