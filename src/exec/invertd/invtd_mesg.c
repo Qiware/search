@@ -67,7 +67,7 @@ INVTD_SRCH_RSP:
     /* > 应答搜索结果 */
     rsp.serial = hton64(req->serial);
     rsp.url_num = htonl(rsp.url_num);
-    if (rtrd_cli_send(ctx->rtrd_cli, MSG_SEARCH_WORD_RSP, orig, (void *)&rsp, sizeof(rsp)))
+    if (rtrd_send(ctx->rtrd, MSG_SEARCH_WORD_RSP, orig, (void *)&rsp, sizeof(rsp)))
     {
         log_error(ctx->log, "Send response failed! serial:%ld words:%s",
                 req->serial, req->words);
@@ -123,7 +123,7 @@ static int invtd_insert_word_req_hdl(int type, int orig, char *buff, size_t len,
 INVTD_INSERT_WORD_RSP:
     /* > 发送应答信息 */
     rsp.serial = hton64(req->serial);
-    if (rtrd_cli_send(ctx->rtrd_cli, MSG_INSERT_WORD_RSP, orig, (void *)&rsp, sizeof(rsp)))
+    if (rtrd_send(ctx->rtrd, MSG_INSERT_WORD_RSP, orig, (void *)&rsp, sizeof(rsp)))
     {
         log_error(ctx->log, "Send response failed! serial:%s word:%s url:%s freq:%d",
                 req->serial, req->word, req->url, req->freq);

@@ -144,13 +144,6 @@ invtd_cntx_t *invtd_init(const invtd_conf_t *conf, log_cycle_t *log)
             break;
         }
 
-        ctx->rtrd_cli = rtrd_cli_init(&ctx->conf.rtrd, 0);
-        if (NULL == ctx->rtrd_cli)
-        {
-            log_error(log, "Init sdtp-rcli failed!");
-            break;
-        }
-
         return ctx;
     } while(0);
 

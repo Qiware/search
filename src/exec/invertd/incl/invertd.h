@@ -16,7 +16,6 @@ typedef struct
     pthread_rwlock_t invtab_lock;           /* 倒排表锁 */
 
     rtrd_cntx_t *rtrd;                      /* RTRD服务 */
-    rtrd_cli_t *rtrd_cli;                   /* RTRD客户端 */
 } invtd_cntx_t;
 
 /* 输入参数 */
