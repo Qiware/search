@@ -414,7 +414,7 @@ static int rtrd_rsvr_wiov_add(rtrd_rsvr_t *rsvr, rtrd_sck_t *sck)
     rtmq_wiov_t *send = &sck->send;
 
     /* > 从消息链表取数据 */
-    for (; send->iov_cnt < RTRD_IOV_MAX_NUM; ++send->iov_cnt) {
+    for (; send->iov_cnt < RTMQ_WIOV_MAX_NUM; ++send->iov_cnt) {
         /* 1 是否有数据 */
         head = (rtmq_header_t *)list_lpop(sck->mesg_list);;
         if (NULL == head) {
@@ -541,16 +541,16 @@ static int rtrd_rsvr_trav_send(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
 
             for (;;) {
                 /* 1. 追加发送内容 */
-                if (send->iov_cnt < RTRD_IOV_MAX_NUM) {
+                if (!rtmq_wiov_is_full(send)) {
                     rtrd_rsvr_wiov_add(rsvr, curr);
                 } 
 
-                if (0 == send->iov_cnt) {
+                if (rtmq_wiov_is_empty(send)) {
                     break;
                 }
 
                 /* 2. 发送缓存数据 */
-                n = writev(curr->fd, send->iov, send->iov_cnt);
+                n = writev(curr->fd, &send->iov[send->iov_idx], send->iov_cnt-iov_idx);
                 if (n > 0) {
                     /* 删除已发送内容 */
                     rtrd_rsvr_wiov_del(rsvr, curr, n);
