@@ -294,12 +294,13 @@ void *rtsd_ssvr_routine(void *_ctx)
         {
             rtsd_ssvr_clear_mesg(ssvr);
 
+            Sleep(RTMQ_RECONN_INTV);
+
             /* 重连Recv端 */
             if ((sck->fd = tcp_connect(AF_INET, conf->ipaddr, conf->port)) < 0)
             {
                 log_error(ssvr->log, "Conncet receive-server failed!");
 
-                Sleep(RTMQ_RECONN_INTV);
                 continue;
             }
 
