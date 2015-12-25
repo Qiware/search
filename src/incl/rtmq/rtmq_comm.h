@@ -106,6 +106,26 @@ typedef struct
     uint64_t err_total;                 /* 错误条数 */
 } rtmq_worker_t;
 
+/* IOV原始数据信息 */
+typedef struct
+{
+    void *addr;                         /* 起始地址 */
+    size_t len;                         /* 原始长度 */
+
+    size_t off;                         /* 发送偏移 */
+} rtmq_iov_orig_t;
+
+#define RTRD_IOV_NUM        (1024)      /* 最大发送个数 */
+
+/* IOV对象(写) */
+typedef struct
+{
+    int iov_cnt;                        /* 发送缓存个数 */
+    int iov_idx;                        /* 当前正在发送的缓存索引 */
+    rtmq_iov_orig_t orig[RTRD_IOV_NUM]; /* 原始信息(注: 与wr_iov[]一一对应) */
+    struct iovec iov[RTRD_IOV_NUM];     /* 发送缓存 */
+} rtmq_wiov_t;
+
 /******************************************************************************
  **函数名称: rtmq_reg_cb_t
  **功    能: 回调注册类型

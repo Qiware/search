@@ -136,7 +136,7 @@ static void rtrd_rsvr_set_wrset(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
         curr = (rtrd_sck_t *)node->data;
 
         if (list_empty(curr->mesg_list)
-            && (curr->send.optr == curr->send.iptr))
+            && (0 == curr->send_iov.iov_cnt))
         {
             if (node == tail)
             {
@@ -420,6 +420,58 @@ static int rtrd_rsvr_trav_recv(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
 }
 
 /******************************************************************************
+ **函数名称: rtrd_rsvr_set_wiov
+ **功    能: 设置发送数据(无数据拷贝)
+ **输入参数:
+ **     ctx: 全局对象
+ **     rsvr: 接收服务
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 将发送链表中的数据指针放到iov中.
+ **注意事项: 数据发送完毕之后, 必须释放内存空间!
+ **作    者: # Qifeng.zou # 2015.12.26 #
+ ******************************************************************************/
+static int rtrd_rsvr_set_wiov(rtrd_rsvr_t *rsvr, rtrd_sck_t *sck)
+{
+    int len;
+    rtmq_header_t *head;
+    rtmq_wiov_t *send_iov = &sck->send_iov;
+
+    /* > 从消息链表取数据 */
+    for (; send_iov->iov_cnt < RTRD_IOV_NUM; ++send_iov->iov_cnt)
+    {
+        /* 1 是否有数据 */
+        head = (rtmq_header_t *)list_lpop(sck->mesg_list);;
+        if (NULL == head) {
+            break; /* 无数据 */
+        }
+        else if (RTMQ_CHECK_SUM != head->checksum) /* 合法性校验 */
+        {
+            assert(0);
+        }
+
+        len = sizeof(rtmq_header_t) + head->length; /* 当前消息总长度 */
+
+        /* 3 设置头部数据 */
+        head->type = htons(head->type);
+        head->nodeid = htonl(head->nodeid);
+        head->flag = head->flag;
+        head->length = htonl(head->length);
+        head->checksum = htonl(head->checksum);
+
+        /* 4 设置发送信息 */
+        send_iov->iov[send_iov->iov_cnt].iov_len = len;
+        send_iov->iov[send_iov->iov_cnt].iov_base = (char *)head;
+
+        send_iov->orig[send_iov->iov_cnt].off = 0;
+        send_iov->orig[send_iov->iov_cnt].len = len;
+        send_iov->orig[send_iov->iov_cnt].addr = (char *)head;
+    }
+
+    return RTMQ_OK;
+}
+
+/******************************************************************************
  **函数名称: rtrd_rsvr_trav_send
  **功    能: 遍历发送数据
  **输入参数:
@@ -443,60 +495,64 @@ static int rtrd_rsvr_trav_recv(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
  ******************************************************************************/
 static int rtrd_rsvr_trav_send(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
 {
-    int n, len;
+    int len, idx;
+    ssize_t n;
     rtrd_sck_t *curr;
-    rtmq_snap_t *send;
+    rtmq_wiov_t *send_iov;
     list2_node_t *node, *tail;
 
     rsvr->ctm = time(NULL);
 
     node = rsvr->conn_list->head;
-    if (NULL != node)
-    {
+    if (NULL != node) {
         tail = node->prev;
     }
 
-    while (NULL != node)
-    {
+    while (NULL != node) {
         curr = (rtrd_sck_t *)node->data;
 
-        if (FD_ISSET(curr->fd, &rsvr->wrset))
-        {
+        if (FD_ISSET(curr->fd, &rsvr->wrset)) {
             curr->wrtm = rsvr->ctm;
-            send = &curr->send;
+            send_iov = &curr->send_iov;
 
-            for (;;)
-            {
+            for (;;) {
                 /* 1. 填充发送缓存 */
-                if (send->iptr == send->optr)
-                {
-                    rtrd_rsvr_fill_send_buff(rsvr, curr);
+                if (send_iov->iov_cnt < RTRD_IOV_NUM) {
+                    rtrd_rsvr_set_wiov(rsvr, curr);
                 }
 
-                /* 2. 发送缓存数据 */
-                len = send->iptr - send->optr;
-                if (0 == len)
-                {
+                if (0 == send_iov->iov_cnt) {
                     break;
                 }
 
-                n = Writen(curr->fd, send->optr, len);
-                if (n != len)
-                {
-                    if (n > 0)
-                    {
-                        send->optr += n;
-                        break;
+                /* 2. 发送缓存数据 */
+                n = writev(curr->fd, send_iov->iov, send_iov->iov_cnt);
+                if (n > 0) {
+                    len = 0;
+                    for (idx=send_iov->iov_idx; idx<send_iov->iov_cnt; ++idx, ++send_iov->iov_idx) {
+                        if (len + send_iov->iov[idx].iov_len <= (size_t)n) {
+                            len += send_iov->iov[idx].iov_len;
+                            slab_dealloc(rsvr->pool, send_iov->orig[idx].addr); /* 释放内存 */
+                        }
+                        else {
+                            send_iov->iov[idx].iov_base += (n - len);
+                            send_iov->iov[idx].iov_len = (len + send_iov->iov[idx].iov_len - n);
+                            send_iov->orig[idx].off = (n - len);
+                            break;
+                        }
                     }
 
+                    if (idx == send_iov->iov_cnt)
+                    {
+                        memset(send_iov, 0, sizeof(rtmq_wiov_t));
+                    }
+                }
+                else {
                     log_error(rsvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
 
                     rtrd_rsvr_del_conn_hdl(ctx, rsvr, node);
                     return RTMQ_ERR;
                 }
-
-                /* 3. 重置标识量 */
-                rtmq_snap_reset(send);
             }
         }
 
@@ -1089,16 +1145,6 @@ static rtrd_sck_t *rtrd_rsvr_sck_creat(rtrd_rsvr_t *rsvr, rtmq_cmd_add_sck_t *re
 
         rtmq_snap_setup(&sck->recv, addr, RTMQ_BUFF_SIZE);
 
-        /* > 申请发送缓存 */
-        addr = (void *)calloc(1, RTMQ_BUFF_SIZE);
-        if (NULL == addr)
-        {
-            log_error(rsvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
-            break;
-        }
-
-        rtmq_snap_setup(&sck->send, addr, RTMQ_BUFF_SIZE);
-
         return sck;
     } while (0);
 
@@ -1121,11 +1167,18 @@ static rtrd_sck_t *rtrd_rsvr_sck_creat(rtrd_rsvr_t *rsvr, rtmq_cmd_add_sck_t *re
  ******************************************************************************/
 static void rtrd_rsvr_sck_free(rtrd_rsvr_t *rsvr, rtrd_sck_t *sck)
 {
+    int idx;
+    rtmq_wiov_t *send_iov = &sck->send_iov;
+
     if (NULL == sck) { return; }
-    FREE(sck->send.addr);
     FREE(sck->recv.addr);
+    /* 释放链表空间 */
     if (sck->mesg_list) {
         list_destroy(sck->mesg_list, rsvr->pool, (mem_dealloc_cb_t)slab_dealloc);
+    }
+    /* 释放iov的空间 */
+    for (idx=send_iov->iov_idx; idx<send_iov->iov_cnt; ++idx) {
+        slab_dealloc(rsvr->pool, send_iov->orig[idx].addr);
     }
     CLOSE(sck->fd);
     slab_dealloc(rsvr->pool, sck);
@@ -1306,78 +1359,6 @@ static int rtrd_rsvr_cmd_proc_all_req(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
     for (idx=0; idx<ctx->conf.recvq_num; ++idx)
     {
         rtrd_rsvr_cmd_proc_req(ctx, rsvr, idx);
-    }
-
-    return RTMQ_OK;
-}
-
-/******************************************************************************
- **函数名称: rtrd_rsvr_fill_send_buff
- **功    能: 填充发送缓冲区
- **输入参数:
- **     rsvr: 接收线程
- **     sck: 连接对象
- **输出参数:
- **返    回: 0:成功 !0:失败
- **实现描述:
- **     1. 从消息链表取数据
- **     2. 从发送队列取数据
- **注意事项:
- **       ------------------------------------------------
- **      | 已发送 |     待发送     |       剩余空间       |
- **       ------------------------------------------------
- **      |XXXXXXXX|////////////////|                      |
- **      |XXXXXXXX|////////////////|         left         |
- **      |XXXXXXXX|////////////////|                      |
- **       ------------------------------------------------
- **      ^        ^                ^                      ^
- **      |        |                |                      |
- **     addr     optr             iptr                   end
- **作    者: # Qifeng.zou # 2015.01.14 #
- ******************************************************************************/
-static int rtrd_rsvr_fill_send_buff(rtrd_rsvr_t *rsvr, rtrd_sck_t *sck)
-{
-    int left, mesg_len;
-    rtmq_header_t *head;
-    rtmq_snap_t *send = &sck->send;
-
-    /* > 从消息链表取数据 */
-    for (;;)
-    {
-        /* 1 是否有数据 */
-        head = (rtmq_header_t *)list_lpop(sck->mesg_list);;
-        if (NULL == head) {
-            break; /* 无数据 */
-        }
-        else if (RTMQ_CHECK_SUM != head->checksum) /* 合法性校验 */
-        {
-            assert(0);
-        }
-
-        left = (int)(send->end - send->iptr); /* 发送缓存剩余长度 */
-        mesg_len = sizeof(rtmq_header_t) + head->length; /* 当前消息实际占用长度 */
-        if (left < mesg_len)
-        {
-            if (list_lpush(sck->mesg_list, head))
-            {
-                slab_dealloc(rsvr->pool, head);
-            }
-            break; /* 空间不足 */
-        }
-
-        /* 3 设置头部数据 */
-        head->type = htons(head->type);
-        head->nodeid = htonl(head->nodeid);
-        head->flag = head->flag;
-        head->length = htonl(head->length);
-        head->checksum = htonl(head->checksum);
-
-        /* 4 拷贝至发送缓存 */
-        memcpy(send->iptr, (void *)head, mesg_len);
-        send->iptr += mesg_len;
-
-        /* 5 释放数据空间 */
-        slab_dealloc(rsvr->pool, head);
     }
 
     return RTMQ_OK;
