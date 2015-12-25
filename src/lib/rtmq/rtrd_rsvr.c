@@ -72,12 +72,10 @@ static void rtrd_rsvr_set_rdset(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
     rsvr->max = rsvr->cmd_sck_id;
 
     node = rsvr->conn_list->head;
-    if (NULL != node)
-    {
+    if (NULL != node) {
         tail = node->prev;
     }
-    while (NULL != node)
-    {
+    while (NULL != node) {
         curr = (rtrd_sck_t *)node->data;
         if ((rsvr->ctm - curr->rdtm > 30)
             && (rsvr->ctm - curr->wrtm > 30))
@@ -85,8 +83,7 @@ static void rtrd_rsvr_set_rdset(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
             log_error(rsvr->log, "Didn't active for along time! fd:%d ip:%s",
                     curr->fd, curr->ipaddr);
 
-            if (node == tail)
-            {
+            if (node == tail) {
                 rtrd_rsvr_del_conn_hdl(ctx, rsvr, node);
                 break;
             }
@@ -99,8 +96,7 @@ static void rtrd_rsvr_set_rdset(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
         FD_SET(curr->fd, &rsvr->rdset);
         rsvr->max = MAX(rsvr->max, curr->fd);
 
-        if (node == tail)
-        {
+        if (node == tail) {
             break;
         }
         node = node->next;
@@ -126,20 +122,17 @@ static void rtrd_rsvr_set_wrset(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
     FD_ZERO(&rsvr->wrset);
 
     node = rsvr->conn_list->head;
-    if (NULL != node)
-    {
+    if (NULL != node) {
         tail = node->prev;
     }
 
-    while (NULL != node)
-    {
+    while (NULL != node) {
         curr = (rtrd_sck_t *)node->data;
 
         if (list_empty(curr->mesg_list)
-            && (0 == curr->send_iov.iov_cnt))
+            && (0 == curr->send.iov_cnt))
         {
-            if (node == tail)
-            {
+            if (node == tail) {
                 break;
             }
             node = node->next;
@@ -148,8 +141,7 @@ static void rtrd_rsvr_set_wrset(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
 
         FD_SET(curr->fd, &rsvr->wrset);
 
-        if (node == tail)
-        {
+        if (node == tail) {
             break;
         }
         node = node->next;
@@ -181,15 +173,13 @@ void *rtrd_rsvr_routine(void *_ctx)
 
     /* 1. 获取接收服务 */
     rsvr = rtrd_rsvr_get_curr(ctx);
-    if (NULL == rsvr)
-    {
+    if (NULL == rsvr) {
         log_fatal(rsvr->log, "Get recv server failed!");
         abort();
         return (void *)RTMQ_ERR;
     }
 
-    for (;;)
-    {
+    for (;;) {
         /* 2. 等待事件通知 */
         rtrd_rsvr_set_rdset(ctx, rsvr);
         rtrd_rsvr_set_wrset(ctx, rsvr);
@@ -197,15 +187,13 @@ void *rtrd_rsvr_routine(void *_ctx)
         timeout.tv_sec = 1;
         timeout.tv_usec = 0;
         ret = select(rsvr->max+1, &rsvr->rdset, &rsvr->wrset, NULL, &timeout);
-        if (ret < 0)
-        {
+        if (ret < 0) {
             if (EINTR == errno) { continue; }
             log_fatal(rsvr->log, "errmsg:[%d] %s", errno, strerror(errno));
             abort();
             return (void *)RTMQ_ERR;
         }
-        else if (0 == ret)
-        {
+        else if (0 == ret) {
             rtrd_rsvr_event_timeout_hdl(ctx, rsvr);
             continue;
         }
@@ -238,8 +226,7 @@ static rtrd_rsvr_t *rtrd_rsvr_get_curr(rtrd_cntx_t *ctx)
 
     /* 1. 获取当前线程的索引 */
     id = thread_pool_get_tidx(ctx->recvtp);
-    if (id < 0)
-    {
+    if (id < 0) {
         log_error(ctx->log, "Get index of current thread failed!");
         return NULL;
     }
@@ -277,16 +264,14 @@ int rtrd_rsvr_init(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, int id)
     rtrd_rsvr_usck_path(conf, path, rsvr->id);
 
     rsvr->cmd_sck_id = unix_udp_creat(path);
-    if (rsvr->cmd_sck_id < 0)
-    {
+    if (rsvr->cmd_sck_id < 0) {
         log_error(rsvr->log, "Create unix-udp socket failed!");
         return RTMQ_ERR;
     }
 
     /* > 创建SLAB内存池 */
     rsvr->pool = slab_creat_by_calloc(RTMQ_MEM_POOL_SIZE, rsvr->log);
-    if (NULL == rsvr->pool)
-    {
+    if (NULL == rsvr->pool) {
         log_error(rsvr->log, "Initialize slab mem-pool failed!");
         CLOSE(rsvr->cmd_sck_id);
         return RTMQ_ERR;
@@ -300,8 +285,7 @@ int rtrd_rsvr_init(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, int id)
     opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
     rsvr->conn_list = list2_creat(&opt);
-    if (NULL == rsvr->conn_list)
-    {
+    if (NULL == rsvr->conn_list) {
         log_error(rsvr->log, "Create list2 failed!");
         FREE(rsvr->pool);
         CLOSE(rsvr->cmd_sck_id);
@@ -332,15 +316,13 @@ static int rtrd_rsvr_recv_cmd(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
     memset(&cmd, 0, sizeof(cmd));
 
     /* 1. 接收命令数据 */
-    if (unix_udp_recv(rsvr->cmd_sck_id, (void *)&cmd, sizeof(cmd)) < 0)
-    {
+    if (unix_udp_recv(rsvr->cmd_sck_id, (void *)&cmd, sizeof(cmd)) < 0) {
         log_error(rsvr->log, "Recv command failed!");
         return RTMQ_ERR_RECV_CMD;
     }
 
     /* 2. 进行命令处理 */
-    switch (cmd.type)
-    {
+    switch (cmd.type) {
         case RTMQ_CMD_ADD_SCK:      /* 添加套接字 */
         {
             return rtrd_rsvr_add_conn_hdl(rsvr, (rtmq_cmd_add_sck_t *)&cmd.param);
@@ -379,25 +361,20 @@ static int rtrd_rsvr_trav_recv(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
     rsvr->ctm = time(NULL);
 
     node = rsvr->conn_list->head;
-    if (NULL != node)
-    {
+    if (NULL != node) {
         tail = node->prev;
     }
 
-    while (NULL != node)
-    {
+    while (NULL != node) {
         curr = (rtrd_sck_t *)node->data;
 
-        if (FD_ISSET(curr->fd, &rsvr->rdset))
-        {
+        if (FD_ISSET(curr->fd, &rsvr->rdset)) {
             curr->rdtm = rsvr->ctm;
 
             /* 进行接收处理 */
-            if (rtrd_rsvr_recv_proc(ctx, rsvr, curr))
-            {
+            if (rtrd_rsvr_recv_proc(ctx, rsvr, curr)) {
                 log_error(rsvr->log, "Recv proc failed! fd:%d ip:%s", curr->fd, curr->ipaddr);
-                if (node == tail)
-                {
+                if (node == tail) {
                     rtrd_rsvr_del_conn_hdl(ctx, rsvr, node);
                     break;
                 }
@@ -408,8 +385,7 @@ static int rtrd_rsvr_trav_recv(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
             }
         }
 
-        if (node == tail)
-        {
+        if (node == tail) {
             break;
         }
 
@@ -420,8 +396,8 @@ static int rtrd_rsvr_trav_recv(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
 }
 
 /******************************************************************************
- **函数名称: rtrd_rsvr_set_wiov
- **功    能: 设置发送数据(无数据拷贝)
+ **函数名称: rtrd_rsvr_wiov_add
+ **功    能: 追加发送数据(无数据拷贝)
  **输入参数:
  **     ctx: 全局对象
  **     rsvr: 接收服务
@@ -431,22 +407,20 @@ static int rtrd_rsvr_trav_recv(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
  **注意事项: 数据发送完毕之后, 必须释放内存空间!
  **作    者: # Qifeng.zou # 2015.12.26 #
  ******************************************************************************/
-static int rtrd_rsvr_set_wiov(rtrd_rsvr_t *rsvr, rtrd_sck_t *sck)
+static int rtrd_rsvr_wiov_add(rtrd_rsvr_t *rsvr, rtrd_sck_t *sck)
 {
     int len;
     rtmq_header_t *head;
-    rtmq_wiov_t *send_iov = &sck->send_iov;
+    rtmq_wiov_t *send = &sck->send;
 
     /* > 从消息链表取数据 */
-    for (; send_iov->iov_cnt < RTRD_IOV_NUM; ++send_iov->iov_cnt)
-    {
+    for (; send->iov_cnt < RTRD_IOV_MAX_NUM; ++send->iov_cnt) {
         /* 1 是否有数据 */
         head = (rtmq_header_t *)list_lpop(sck->mesg_list);;
         if (NULL == head) {
             break; /* 无数据 */
         }
-        else if (RTMQ_CHECK_SUM != head->checksum) /* 合法性校验 */
-        {
+        else if (RTMQ_CHECK_SUM != head->checksum) { /* 合法性校验 */
             assert(0);
         }
 
@@ -460,16 +434,67 @@ static int rtrd_rsvr_set_wiov(rtrd_rsvr_t *rsvr, rtrd_sck_t *sck)
         head->checksum = htonl(head->checksum);
 
         /* 4 设置发送信息 */
-        send_iov->iov[send_iov->iov_cnt].iov_len = len;
-        send_iov->iov[send_iov->iov_cnt].iov_base = (char *)head;
+        send->iov[send->iov_cnt].iov_len = len;
+        send->iov[send->iov_cnt].iov_base = (char *)head;
 
-        send_iov->orig[send_iov->iov_cnt].off = 0;
-        send_iov->orig[send_iov->iov_cnt].len = len;
-        send_iov->orig[send_iov->iov_cnt].addr = (char *)head;
+        send->orig[send->iov_cnt].off = 0;
+        send->orig[send->iov_cnt].len = len;
+        send->orig[send->iov_cnt].addr = (char *)head;
     }
 
     return RTMQ_OK;
 }
+
+/******************************************************************************
+ **函数名称: rtrd_rsvr_wiov_del
+ **功    能: 删除已发送数据
+ **输入参数:
+ **     ctx: 全局对象
+ **     rsvr: 接收服务
+ **     n: 发送长度
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 释放数据发送完毕后的内存!
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.12.26 06:18:03 #
+ ******************************************************************************/
+static int rtrd_rsvr_wiov_del(rtrd_rsvr_t *rsvr, rtrd_sck_t *sck, size_t n)
+{
+    int idx;
+    size_t len;
+    rtmq_wiov_t *send = &sck->send;
+
+    len = 0;
+    for (idx=send->iov_idx; idx<send->iov_cnt; ++idx, ++send->iov_idx) {
+        if (len + send->iov[idx].iov_len <= n) {
+            len += send->iov[idx].iov_len;
+
+            slab_dealloc(rsvr->pool, send->orig[idx].addr); /* 释放内存 */
+
+            send->iov[idx].iov_base = NULL;
+            send->iov[idx].iov_len = 0;
+            send->orig[idx].addr = NULL;
+            send->orig[idx].len = 0;
+            send->orig[idx].off = 0;
+        }
+        else {
+            send->iov[idx].iov_base += (n - len);
+            send->iov[idx].iov_len = (len + send->iov[idx].iov_len - n);
+            send->orig[idx].off = (n - len);
+            break;
+        }
+    }
+
+    if (idx == send->iov_cnt) {
+        send->iov_idx = 0;
+        send->iov_cnt = 0;
+    }
+
+
+    return RTMQ_OK;
+}
+
+
 
 /******************************************************************************
  **函数名称: rtrd_rsvr_trav_send
@@ -495,10 +520,9 @@ static int rtrd_rsvr_set_wiov(rtrd_rsvr_t *rsvr, rtrd_sck_t *sck)
  ******************************************************************************/
 static int rtrd_rsvr_trav_send(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
 {
-    int len, idx;
     ssize_t n;
     rtrd_sck_t *curr;
-    rtmq_wiov_t *send_iov;
+    rtmq_wiov_t *send;
     list2_node_t *node, *tail;
 
     rsvr->ctm = time(NULL);
@@ -513,39 +537,23 @@ static int rtrd_rsvr_trav_send(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
 
         if (FD_ISSET(curr->fd, &rsvr->wrset)) {
             curr->wrtm = rsvr->ctm;
-            send_iov = &curr->send_iov;
+            send = &curr->send;
 
             for (;;) {
-                /* 1. 填充发送缓存 */
-                if (send_iov->iov_cnt < RTRD_IOV_NUM) {
-                    rtrd_rsvr_set_wiov(rsvr, curr);
-                }
+                /* 1. 追加发送内容 */
+                if (send->iov_cnt < RTRD_IOV_MAX_NUM) {
+                    rtrd_rsvr_wiov_add(rsvr, curr);
+                } 
 
-                if (0 == send_iov->iov_cnt) {
+                if (0 == send->iov_cnt) {
                     break;
                 }
 
                 /* 2. 发送缓存数据 */
-                n = writev(curr->fd, send_iov->iov, send_iov->iov_cnt);
+                n = writev(curr->fd, send->iov, send->iov_cnt);
                 if (n > 0) {
-                    len = 0;
-                    for (idx=send_iov->iov_idx; idx<send_iov->iov_cnt; ++idx, ++send_iov->iov_idx) {
-                        if (len + send_iov->iov[idx].iov_len <= (size_t)n) {
-                            len += send_iov->iov[idx].iov_len;
-                            slab_dealloc(rsvr->pool, send_iov->orig[idx].addr); /* 释放内存 */
-                        }
-                        else {
-                            send_iov->iov[idx].iov_base += (n - len);
-                            send_iov->iov[idx].iov_len = (len + send_iov->iov[idx].iov_len - n);
-                            send_iov->orig[idx].off = (n - len);
-                            break;
-                        }
-                    }
-
-                    if (idx == send_iov->iov_cnt)
-                    {
-                        memset(send_iov, 0, sizeof(rtmq_wiov_t));
-                    }
+                    /* 删除已发送内容 */
+                    rtrd_rsvr_wiov_del(rsvr, curr, n);
                 }
                 else {
                     log_error(rsvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
@@ -556,8 +564,7 @@ static int rtrd_rsvr_trav_send(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
             }
         }
 
-        if (node == tail)
-        {
+        if (node == tail) {
             break;
         }
 
@@ -598,36 +605,29 @@ static int rtrd_rsvr_recv_proc(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd_sck_t *
     int n, left;
     rtmq_snap_t *recv = &sck->recv;
 
-    while (1)
-    {
+    while (1) {
         /* 1. 接收网络数据 */
         left = (int)(recv->end - recv->iptr);
 
         n = read(sck->fd, recv->iptr, left);
-        if (n > 0)
-        {
+        if (n > 0) {
             recv->iptr += n;
 
             /* 2. 进行数据处理 */
-            if (rtrd_rsvr_data_proc(ctx, rsvr, sck))
-            {
+            if (rtrd_rsvr_data_proc(ctx, rsvr, sck)) {
                 log_error(rsvr->log, "Proc data failed! fd:%d", sck->fd);
                 return RTMQ_ERR;
             }
             continue;
         }
-        else if (0 == n)
-        {
+        else if (0 == n) {
             log_info(rsvr->log, "Client disconnected. fd:%d n:%d/%d", sck->fd, n, left);
             return RTMQ_SCK_DISCONN;
         }
-        else if ((n < 0) && (EAGAIN == errno))
-        {
+        else if ((n < 0) && (EAGAIN == errno)) {
             return RTMQ_OK; /* Again */
         }
-
-        if (EINTR == errno)
-        {
+        else if (EINTR == errno) {
             continue;
         }
 
@@ -669,16 +669,13 @@ static int rtrd_rsvr_data_proc(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd_sck_t *
     uint32_t len, one_mesg_len;
     rtmq_snap_t *recv = &sck->recv;
 
-    while (1)
-    {
+    while (1) {
         flag = false;
         head = (rtmq_header_t *)recv->optr;
 
         len = (uint32_t)(recv->iptr - recv->optr);
-        if (len >= sizeof(rtmq_header_t))
-        {
-            if (RTMQ_CHECK_SUM != ntohl(head->checksum))
-            {
+        if (len >= sizeof(rtmq_header_t)) {
+            if (RTMQ_CHECK_SUM != ntohl(head->checksum)) {
                 log_error(rsvr->log, "Header is invalid! nodeid:%d Mark:%X/%X type:%d len:%d flag:%d",
                         ntohl(head->nodeid), ntohl(head->checksum), RTMQ_CHECK_SUM,
                         ntohs(head->type), ntohl(head->length), head->flag);
@@ -686,20 +683,16 @@ static int rtrd_rsvr_data_proc(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd_sck_t *
             }
 
             one_mesg_len = sizeof(rtmq_header_t) + ntohl(head->length);
-            if (len >= one_mesg_len)
-            {
+            if (len >= one_mesg_len) {
                 flag = true;
             }
         }
 
         /* 1. 不足一条数据时 */
-        if (!flag)
-        {
-            if (recv->iptr == recv->end)
-            {
+        if (!flag) {
+            if (recv->iptr == recv->end) {
                 /* 防止OverWrite的情况发生 */
-                if ((recv->optr - recv->addr) < (recv->end - recv->iptr))
-                {
+                if ((recv->optr - recv->addr) < (recv->end - recv->iptr)) {
                     log_error(rsvr->log, "Data length is invalid!");
                     return RTMQ_ERR;
                 }
@@ -722,8 +715,7 @@ static int rtrd_rsvr_data_proc(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd_sck_t *
         head->checksum = ntohl(head->checksum);
 
         /* 2.2 校验合法性 */
-        if (!RTMQ_HEAD_ISVALID(head))
-        {
+        if (!RTMQ_HEAD_ISVALID(head)) {
             ++rsvr->err_total;
             log_error(rsvr->log, "Header is invalid! Mark:%u/%u type:%d len:%d flag:%d",
                     head->checksum, RTMQ_CHECK_SUM, head->type, head->length, head->flag);
@@ -731,15 +723,12 @@ static int rtrd_rsvr_data_proc(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd_sck_t *
         }
 
         /* 2.3 进行数据处理 */
-        if (RTMQ_SYS_MESG == head->flag)
-        {
+        if (RTMQ_SYS_MESG == head->flag) {
             rtrd_rsvr_sys_mesg_proc(ctx, rsvr, sck, recv->optr);
         }
-        else
-        {
+        else {
             rtrd_rsvr_exp_mesg_proc(ctx, rsvr, sck, recv->optr);
         }
-
         recv->optr += one_mesg_len;
     }
 
@@ -764,8 +753,7 @@ static int rtrd_rsvr_sys_mesg_proc(rtrd_cntx_t *ctx,
 {
     rtmq_header_t *head = (rtmq_header_t *)addr;
 
-    switch (head->type)
-    {
+    switch (head->type) {
         case RTMQ_KPALIVE_REQ:
         {
             return rtrd_rsvr_keepalive_req_hdl(ctx, rsvr, sck);
@@ -811,8 +799,7 @@ static int rtrd_rsvr_exp_mesg_proc(rtrd_cntx_t *ctx,
     len = sizeof(rtmq_header_t) + head->length;
 
     /* > 合法性验证 */
-    if (head->nodeid != sck->nodeid)
-    {
+    if (head->nodeid != sck->nodeid) {
         ++rsvr->drop_total;
         log_error(rsvr->log, "Devid isn't right! nodeid:%d/%d", head->nodeid, sck->nodeid);
         return RTMQ_ERR;
@@ -822,8 +809,7 @@ static int rtrd_rsvr_exp_mesg_proc(rtrd_cntx_t *ctx,
     rqid = rand() % ctx->conf.recvq_num;
 
     addr = queue_malloc(ctx->recvq[rqid], len);
-    if (NULL == addr)
-    {
+    if (NULL == addr) {
         ++rsvr->drop_total; /* 丢弃计数 */
         rtrd_rsvr_cmd_proc_all_req(ctx, rsvr);
 
@@ -860,8 +846,7 @@ static int rtrd_rsvr_exp_mesg_proc(rtrd_cntx_t *ctx,
 static int rtrd_rsvr_event_core_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
 {
     /* 1. 接收命令数据 */
-    if (FD_ISSET(rsvr->cmd_sck_id, &rsvr->rdset))
-    {
+    if (FD_ISSET(rsvr->cmd_sck_id, &rsvr->rdset)) {
         rtrd_rsvr_recv_cmd(ctx, rsvr);
     }
 
@@ -897,32 +882,25 @@ static int rtrd_rsvr_event_timeout_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
 
     /* > 检测超时连接 */
     node = rsvr->conn_list->head;
-    if (NULL == node)
-    {
+    if (NULL == node) {
         return RTMQ_OK;
     }
 
     tail = node->prev;
-    while ((NULL != node) && (false == is_end))
-    {
-        if (tail == node)
-        {
+    while ((NULL != node) && (false == is_end)) {
+        if (tail == node) {
             is_end = true;
         }
 
         curr = (rtrd_sck_t *)node->data;
 
-        if (rsvr->ctm - curr->rdtm >= 60)
-        {
+        if (rsvr->ctm - curr->rdtm >= 60) {
             log_trace(rsvr->log, "Didn't active for along time! fd:%d ip:%s",
                     curr->fd, curr->ipaddr);
-
             /* 释放数据 */
             FREE(curr->recv.addr);
-
             /* 删除连接 */
-            if (node == tail)
-            {
+            if (node == tail) {
                 rtrd_rsvr_del_conn_hdl(ctx, rsvr, node);
                 break;
             }
@@ -932,7 +910,6 @@ static int rtrd_rsvr_event_timeout_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
             node = next;
             continue;
         }
-
         node = node->next;
     }
 
@@ -960,8 +937,7 @@ static int rtrd_rsvr_keepalive_req_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd
 
     /* > 分配消息空间 */
     addr = slab_alloc(rsvr->pool, sizeof(rtmq_header_t));
-    if (NULL == addr)
-    {
+    if (NULL == addr) {
         log_error(rsvr->log, "Alloc memory from slab failed!");
         return RTMQ_ERR;
     }
@@ -976,8 +952,7 @@ static int rtrd_rsvr_keepalive_req_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd
     head->checksum = RTMQ_CHECK_SUM;
 
     /* > 加入发送列表 */
-    if (list_rpush(sck->mesg_list, addr))
-    {
+    if (list_rpush(sck->mesg_list, addr)) {
         slab_dealloc(rsvr->pool, addr);
         log_error(rsvr->log, "Insert into list failed!");
         return RTMQ_ERR;
@@ -1009,8 +984,7 @@ static int rtrd_rsvr_link_auth_rsp(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd_sck
 
     /* > 分配消息空间 */
     addr = slab_alloc(rsvr->pool, sizeof(rtmq_header_t) + sizeof(rtmq_link_auth_rsp_t));
-    if (NULL == addr)
-    {
+    if (NULL == addr) {
         log_error(rsvr->log, "Alloc memory from slab failed!");
         return RTMQ_ERR;
     }
@@ -1028,8 +1002,7 @@ static int rtrd_rsvr_link_auth_rsp(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd_sck
     link_auth_rsp->is_succ = htonl(sck->auth_succ);
 
     /* > 加入发送列表 */
-    if (list_rpush(sck->mesg_list, addr))
-    {
+    if (list_rpush(sck->mesg_list, addr)) {
         slab_dealloc(rsvr->pool, addr);
         log_error(rsvr->log, "Insert into list failed!");
         return RTMQ_ERR;
@@ -1065,13 +1038,10 @@ static int rtrd_rsvr_link_auth_req_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd
 
     /* > 验证鉴权合法性 */
     sck->auth_succ = rtrd_link_auth_check(ctx, link_auth_req);
-    if (sck->auth_succ)
-    {
+    if (sck->auth_succ) {
         sck->nodeid = link_auth_req->nodeid;
-
         /* > 插入DEV与SCK的映射 */
-        if (rtrd_node_to_svr_map_add(ctx, link_auth_req->nodeid, rsvr->id))
-        {
+        if (rtrd_node_to_svr_map_add(ctx, link_auth_req->nodeid, rsvr->id)) {
             log_error(rsvr->log, "Insert into sck2dev table failed! fd:%d serial:%ld nodeid:%d",
                     sck->fd, sck->sid, link_auth_req->nodeid);
             return RTMQ_ERR;
@@ -1102,8 +1072,7 @@ static rtrd_sck_t *rtrd_rsvr_sck_creat(rtrd_rsvr_t *rsvr, rtmq_cmd_add_sck_t *re
 
     /* > 分配连接空间 */
     sck = slab_alloc(rsvr->pool, sizeof(rtrd_sck_t));
-    if (NULL == sck)
-    {
+    if (NULL == sck) {
         log_error(rsvr->log, "Alloc memory failed!");
         CLOSE(req->sckid);
         return NULL;
@@ -1119,8 +1088,7 @@ static rtrd_sck_t *rtrd_rsvr_sck_creat(rtrd_rsvr_t *rsvr, rtmq_cmd_add_sck_t *re
     sck->wrtm = sck->ctm;
     snprintf(sck->ipaddr, sizeof(sck->ipaddr), "%s", req->ipaddr);
 
-    do
-    {
+    do {
         /* > 创建发送链表 */
         memset(&opt, 0, sizeof(opt));
 
@@ -1129,16 +1097,14 @@ static rtrd_sck_t *rtrd_rsvr_sck_creat(rtrd_rsvr_t *rsvr, rtmq_cmd_add_sck_t *re
         opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
         sck->mesg_list = list_creat(&opt);
-        if (NULL == sck->mesg_list)
-        {
+        if (NULL == sck->mesg_list) {
             log_error(rsvr->log, "Create list failed!");
             break;
         }
 
         /* > 申请接收缓存 */
         addr = (void *)calloc(1, RTMQ_BUFF_SIZE);
-        if (NULL == addr)
-        {
+        if (NULL == addr) {
             log_error(rsvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
             break;
         }
@@ -1168,7 +1134,7 @@ static rtrd_sck_t *rtrd_rsvr_sck_creat(rtrd_rsvr_t *rsvr, rtmq_cmd_add_sck_t *re
 static void rtrd_rsvr_sck_free(rtrd_rsvr_t *rsvr, rtrd_sck_t *sck)
 {
     int idx;
-    rtmq_wiov_t *send_iov = &sck->send_iov;
+    rtmq_wiov_t *send = &sck->send;
 
     if (NULL == sck) { return; }
     FREE(sck->recv.addr);
@@ -1177,8 +1143,8 @@ static void rtrd_rsvr_sck_free(rtrd_rsvr_t *rsvr, rtrd_sck_t *sck)
         list_destroy(sck->mesg_list, rsvr->pool, (mem_dealloc_cb_t)slab_dealloc);
     }
     /* 释放iov的空间 */
-    for (idx=send_iov->iov_idx; idx<send_iov->iov_cnt; ++idx) {
-        slab_dealloc(rsvr->pool, send_iov->orig[idx].addr);
+    for (idx=send->iov_idx; idx<send->iov_cnt; ++idx) {
+        slab_dealloc(rsvr->pool, send->orig[idx].addr);
     }
     CLOSE(sck->fd);
     slab_dealloc(rsvr->pool, sck);
@@ -1201,15 +1167,13 @@ static int rtrd_rsvr_add_conn_hdl(rtrd_rsvr_t *rsvr, rtmq_cmd_add_sck_t *req)
 
     /* > 创建套接字对象 */
     sck = rtrd_rsvr_sck_creat(rsvr, req);
-    if (NULL == sck)
-    {
+    if (NULL == sck) {
         log_error(rsvr->log, "Create socket object failed!");
         return RTMQ_ERR;
     }
 
     /* > 加入套接字链尾 */
-    if (list2_rpush(rsvr->conn_list, (void *)sck))
-    {
+    if (list2_rpush(rsvr->conn_list, (void *)sck)) {
         log_error(rsvr->log, "Insert into list failed!");
         rtrd_rsvr_sck_free(rsvr, sck);
         return RTMQ_ERR;
@@ -1269,15 +1233,12 @@ void rtrd_rsvr_del_all_conn_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
     list2_node_t *node, *next, *tail;
 
     node = rsvr->conn_list->head;
-    if (NULL != node)
-    {
+    if (NULL != node) {
         tail = node->prev;
     }
 
-    while (NULL != node)
-    {
-        if (node == tail)
-        {
+    while (NULL != node) {
+        if (node == tail) {
             rtrd_rsvr_del_conn_hdl(ctx, rsvr, node);
             break;
         }
@@ -1326,10 +1287,8 @@ static int rtrd_rsvr_cmd_proc_req(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, int rqid)
     rtrd_worker_usck_path(conf, path, widx);
 
     /* 2. 发送处理命令 */
-    if (unix_udp_send(rsvr->cmd_sck_id, path, &cmd, sizeof(rtmq_cmd_t)) < 0)
-    {
-        if (EAGAIN != errno)
-        {
+    if (unix_udp_send(rsvr->cmd_sck_id, path, &cmd, sizeof(rtmq_cmd_t)) < 0) {
+        if (EAGAIN != errno) {
             log_debug(rsvr->log, "Send command failed! errmsg:[%d] %s! path:[%s]",
                       errno, strerror(errno), path);
         }
@@ -1356,8 +1315,7 @@ static int rtrd_rsvr_cmd_proc_all_req(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
     int idx;
 
     /* 依次遍历滞留总数 */
-    for (idx=0; idx<ctx->conf.recvq_num; ++idx)
-    {
+    for (idx=0; idx<ctx->conf.recvq_num; ++idx) {
         rtrd_rsvr_cmd_proc_req(ctx, rsvr, idx);
     }
 
@@ -1384,8 +1342,7 @@ typedef struct
 
 static int rtrd_rsvr_get_conn_list_by_nodeid(rtrd_sck_t *sck, _conn_list_t *cl)
 {
-    if (sck->nodeid != cl->nodeid)
-    {
+    if (sck->nodeid != cl->nodeid) {
         return -1;
     }
 
@@ -1419,26 +1376,22 @@ static int rtrd_rsvr_dist_data(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
 
     sendq = ctx->sendq[rsvr->id];
 
-    while (1)
-    {
+    while (1) {
         /* > 弹出队列数据 */
         num = MIN(queue_used(sendq), RTRD_POP_MAX_NUM);
-        if (0 == num)
-        {
+        if (0 == num) {
             break;
         }
 
         num = queue_mpop(sendq, data, num);
-        if (0 == num)
-        {
+        if (0 == num) {
             continue;
         }
 
         log_trace(ctx->log, "Multi-pop num:%d!", num);
 
         /* > 逐条处理数据 */
-        for (idx=0; idx<num; ++idx)
-        {
+        for (idx=0; idx<num; ++idx) {
             frwd = (rtmq_frwd_t *)data[idx];
 
             /* > 查找发送连接 */
@@ -1450,16 +1403,14 @@ static int rtrd_rsvr_dist_data(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
 
             cl.nodeid = frwd->dest;
             cl.list = list_creat(&opt);
-            if (NULL == cl.list)
-            {
+            if (NULL == cl.list) {
                 queue_dealloc(sendq, data[idx]);
                 log_error(rsvr->log, "Create list failed!");
                 continue;
             }
 
             list2_trav(rsvr->conn_list, (list2_trav_cb_t)rtrd_rsvr_get_conn_list_by_nodeid, &cl);
-            if (0 == cl.list->num)
-            {
+            if (0 == cl.list->num) {
                 queue_dealloc(sendq, data[idx]);
                 list_destroy(cl.list, NULL, mem_dummy_dealloc);
                 log_error(rsvr->log, "Didn't find connection by nodeid [%d]!", cl.nodeid);
@@ -1472,8 +1423,7 @@ static int rtrd_rsvr_dist_data(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
             len = sizeof(rtmq_header_t) + frwd->length;
 
             addr = slab_alloc(rsvr->pool, len);
-            if (NULL == addr)
-            {
+            if (NULL == addr) {
                 queue_dealloc(sendq, data[idx]);
                 list_destroy(cl.list, NULL, mem_dummy_dealloc);
                 log_error(rsvr->log, "Alloc memory from slab failed!");
@@ -1493,8 +1443,7 @@ static int rtrd_rsvr_dist_data(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
             queue_dealloc(sendq, data[idx]);
 
             /* > 放入发送链表 */
-            if (list_rpush(sck->mesg_list, addr))
-            {
+            if (list_rpush(sck->mesg_list, addr)) {
                 slab_dealloc(rsvr->pool, addr);
                 log_error(rsvr->log, "Push input list failed!");
             }

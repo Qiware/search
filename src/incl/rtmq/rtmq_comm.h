@@ -115,15 +115,15 @@ typedef struct
     size_t off;                         /* 发送偏移 */
 } rtmq_iov_orig_t;
 
-#define RTRD_IOV_NUM        (1024)      /* 最大发送个数 */
+#define RTRD_IOV_MAX_NUM        (1024)      /* 最大发送个数 */
 
 /* IOV对象(写) */
 typedef struct
 {
-    int iov_cnt;                        /* 发送缓存个数 */
-    int iov_idx;                        /* 当前正在发送的缓存索引 */
-    rtmq_iov_orig_t orig[RTRD_IOV_NUM]; /* 原始信息(注: 与wr_iov[]一一对应) */
-    struct iovec iov[RTRD_IOV_NUM];     /* 发送缓存 */
+    int iov_cnt;                            /* 发送缓存个数 */
+    int iov_idx;                            /* 当前正在发送的缓存索引 */
+    rtmq_iov_orig_t orig[RTRD_IOV_MAX_NUM]; /* 原始信息(注: 与iov[]一一对应) */
+    struct iovec iov[RTRD_IOV_MAX_NUM];     /* 发送缓存 */
 } rtmq_wiov_t;
 
 /******************************************************************************
