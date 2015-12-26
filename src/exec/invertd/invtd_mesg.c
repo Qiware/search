@@ -8,7 +8,61 @@
  ******************************************************************************/
 #include "mesg.h"
 #include "invertd.h"
+#include "xml_tree.h"
 #include "rtrd_recv.h"
+#include "agent_mesg.h"
+
+/******************************************************************************
+ **函数名称: invtd_search_word_parse
+ **功    能: 解析搜索请求
+ **输入参数:
+ **     ctx: 全局对象
+ **     buff: 搜索请求(报头+报体)
+ **     len: 数据长度
+ **输出参数:
+ **     req: 搜索请求
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项:
+ **作    者: # Qifeng.zou # 2015.12.27 03:39:00 #
+ ******************************************************************************/
+static int invtd_search_word_parse(invtd_cntx_t *ctx, const char *buf, mesg_search_word_req_t *req)
+{
+    xml_opt_t opt;
+    xml_tree_t *xml;
+    xml_node_t *node;
+    const agent_header_t *head = (const agent_header_t *)buf;
+    const char *str = (const char *)(head + 1);
+
+    memset(&opt, 0, sizeof(opt));
+
+    /* > 字节序转换 */
+    req->serial = ntoh64(head->serial);
+
+    log_trace(ctx->log, "len:%d body:%s", head->length, str);
+
+    /* > 构建XML树 */
+    opt.pool = NULL;
+    opt.alloc = mem_alloc;
+    opt.dealloc = mem_dealloc;
+
+    xml = xml_screat(str, &opt);
+    if (NULL == xml)
+    {
+        return -1;
+    }
+
+    /* > 解析XML树 */
+    node = xml_query(xml, ".search.words");
+    if (NULL != node)
+    {
+        snprintf(req->words, sizeof(req->words), "%s", node->value.str);
+    }
+
+    xml_destroy(xml);
+
+    return 0;
+}
 
 /******************************************************************************
  **函数名称: invtd_search_word_req_hdl
@@ -31,23 +85,28 @@ static int invtd_search_word_req_hdl(int type, int orig, char *buff, size_t len,
     list_node_t *node;
     invt_word_doc_t *doc;
     invt_dic_word_t *word;
+    mesg_search_word_req_t req; /* 请求 */
     mesg_search_word_rsp_t rsp; /* 应答 */
     invtd_cntx_t *ctx = (invtd_cntx_t *)args;
-    mesg_search_word_req_t *req = (mesg_search_word_req_t *)buff; /* 请求 */
 
+    memset(&req, 0, sizeof(req));
     memset(&rsp, 0, sizeof(rsp));
 
-    req->serial = ntoh64(req->serial);
+    /* > 解析搜索信息 */
+    if (invtd_search_word_parse(ctx, buff, &req)) {
+        log_error(ctx->log, "Parse search request failed! words:%s", req.words);
+        goto INVTD_SRCH_RSP;
+    }
 
     /* > 搜索倒排表 */
     pthread_rwlock_rdlock(&ctx->invtab_lock);
 
-    word = invtab_query(ctx->invtab, req->words);
+    word = invtab_query(ctx->invtab, req.words);
     if (NULL == word
         || NULL == word->doc_list)
     {
         pthread_rwlock_unlock(&ctx->invtab_lock);
-        log_error(ctx->log, "Didn't search anything! words:%s", req->words);
+        log_error(ctx->log, "Didn't search anything! words:%s", req.words);
         goto INVTD_SRCH_RSP;
     }
 
@@ -65,12 +124,12 @@ static int invtd_search_word_req_hdl(int type, int orig, char *buff, size_t len,
 
 INVTD_SRCH_RSP:
     /* > 应答搜索结果 */
-    rsp.serial = hton64(req->serial);
+    rsp.serial = hton64(req.serial);
     rsp.url_num = htonl(rsp.url_num);
     if (rtrd_send(ctx->rtrd, MSG_SEARCH_WORD_RSP, orig, (void *)&rsp, sizeof(rsp)))
     {
         log_error(ctx->log, "Send response failed! serial:%ld words:%s",
-                req->serial, req->words);
+                req.serial, req.words);
     }
 
     return INVT_OK;

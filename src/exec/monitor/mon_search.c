@@ -12,7 +12,10 @@
 #include "mesg.h"
 #include "redo.h"
 #include "monitor.h"
+#include "xml_tree.h"
 #include "agent_mesg.h"
+
+#define MON_SRCH_BODY_LEN   (1024)
 
 /* 搜索连接 */
 typedef struct
@@ -26,6 +29,7 @@ static int mon_srch_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args);
 static int mon_srch_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args);
 static int mon_insert_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args);
 static int mon_srch_word_loop(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args);
+static int mon_srch_get_body(const char *word, char *body, int size);
 
 /******************************************************************************
  **函数名称: mon_srch_menu
@@ -66,19 +70,28 @@ menu_item_t *mon_srch_menu(menu_cntx_t *ctx, void *args)
 /* 发送搜索请求 */
 static int mon_srch_send_rep(int fd, const char *word)
 {
+    int len;
+    char *body;
     agent_header_t *head;
-    mesg_search_word_req_t *req;
-    char addr[sizeof(agent_header_t) + sizeof(mesg_search_word_req_t)];
+    char addr[sizeof(agent_header_t) + MON_SRCH_BODY_LEN];
 
     head = (agent_header_t *)addr;
-    req = (mesg_search_word_req_t *)(head + 1);
+    body = (char *)(head + 1);
+
+    len = mon_srch_get_body(word, body, MON_SRCH_BODY_LEN);
+    if (len < 0) {
+        fprintf(stderr, "Get search body failed! word:%s\n", word);
+        return -1;
+    }
+
+    fprintf(stdout, "body:%s len:%d\n", body, len);
+
     head->type = htonl(MSG_SEARCH_WORD_REQ);
     head->flag = htonl(AGENT_MSG_FLAG_USR);
     head->mark = htonl(AGENT_MSG_MARK_KEY);
-    head->length = htonl(sizeof(mesg_search_word_req_t));
-    snprintf(req->words, sizeof(req->words), "%s", word);
+    head->length = htonl(len);
 
-    Writen(fd, (void *)addr, sizeof(addr));
+    Writen(fd, (void *)addr, sizeof(agent_header_t)+len);
 
     return 0;
 }
@@ -582,4 +595,58 @@ static int mon_srch_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args
     slab_dealloc(ctx->slab, fd);
 
     return 0;
+}
+
+/******************************************************************************
+ **函数名称: mon_srch_get_body
+ **功    能: 获取搜索报体
+ **输入参数:
+ **     word: 搜索信息
+ **     size: 搜索请求的最大报体
+ **输出参数: NONE
+ **     body: 搜索请求的报体
+ **返    回: 报体实际长度
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015.12.27 03:01:48 #
+ ******************************************************************************/
+static int mon_srch_get_body(const char *words, char *body, int size)
+{
+    int len;
+    xml_opt_t opt;
+    xml_tree_t *xml;
+    xml_node_t *node;
+
+    memset(&opt, 0, sizeof(opt));
+
+    /* > 创建XML树 */
+    opt.log = NULL;
+    opt.pool = NULL;
+    opt.alloc = mem_alloc;
+    opt.dealloc = mem_dealloc;
+
+    xml = xml_screat_ext("", 0, &opt);
+    if (NULL == xml)
+    {
+        fprintf(stderr, "Create xml failed!");
+        return -1;
+    }
+
+    node = xml_add_child(xml, xml->root, "search", NULL);
+    xml_add_attr(xml, node, "words", words);
+
+    /* > 计算XML长度 */
+    len = xml_pack_length(xml);
+    if (len >= size)
+    {
+        xml_destroy(xml);
+        return -1;
+    }
+
+    /* > 输出XML至缓存 */
+    len = xml_spack(xml, body);
+
+    xml_destroy(xml);
+
+    return len+1;
 }
