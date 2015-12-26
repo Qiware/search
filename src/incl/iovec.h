@@ -12,8 +12,6 @@
 
 #include "comm.h"
 
-#define WIOV_MAX_NUM        (1024)      /* 最大发送个数 */
-
 /* IOV原始数据信息 */
 typedef struct
 {
@@ -28,20 +26,25 @@ typedef struct
 /* IOV对象(写) */
 typedef struct
 {
+    int iov_max;                        /* 最大空间限制 */
     int iov_cnt;                        /* 发送缓存个数 */
     int iov_idx;                        /* 当前正在发送的缓存索引 */
-    wiov_orig_t orig[WIOV_MAX_NUM];     /* 原始信息(注: 与iov[]一一对应) */
-    struct iovec iov[WIOV_MAX_NUM];     /* 发送缓存 */
+    wiov_orig_t *orig;                  /* 原始信息(注: 与iov[]一一对应) */
+    struct iovec *iov;                  /* 发送缓存 */
 } wiov_t;
 
+int wiov_init(wiov_t *wiov, int max);
+void wiov_destroy(wiov_t *wiov);
+
 #define wiov_isempty(wiov) (0 == (wiov)->iov_cnt) // 缓存已空
-#define wiov_is_full(wiov) (WIOV_MAX_NUM == (wiov)->iov_cnt) // 缓存已满
-#define wiov_left_space(wiov) (WIOV_MAX_NUM - (wiov)->iov_cnt)
+#define wiov_is_full(wiov) ((wiov)->iov_max == (wiov)->iov_cnt) // 缓存已满
+#define wiov_left_space(wiov) ((wiov)->iov_max - (wiov)->iov_cnt) // 剩余空间
 
 #define wiov_item_begin(wiov) ((wiov)->iov + (wiov)->iov_idx)
 #define wiov_item_num(wiov) ((wiov)->iov_cnt - (wiov)->iov_idx)
 
-#define wiov_item_add(wiov, _addr, _len, _pool, _dealloc) /* 添加发送内容 */\
+/* 添加发送内容 */
+#define wiov_item_add(wiov, _addr, _len, _pool, _dealloc) \
 { \
     (wiov)->iov[(wiov)->iov_cnt].iov_len = (_len); \
     (wiov)->iov[(wiov)->iov_cnt].iov_base = (char *)(_addr); \
@@ -56,7 +59,8 @@ typedef struct
     ++(wiov)->iov_cnt; \
 }
 
-#define wiov_item_reset(wiov, idx) /* 重置item项 */\
+/* 重置item项 */
+#define wiov_item_reset(wiov, idx) \
 { \
     (wiov)->iov[idx].iov_len = 0; \
     (wiov)->iov[idx].iov_base = NULL; \

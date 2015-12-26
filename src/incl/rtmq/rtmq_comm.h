@@ -18,6 +18,7 @@
 #define RTMQ_WORKER_HDL_QNUM    (2)     /* 各Worker线程负责的队列数 */
 #define RTMQ_TYPE_MAX           (0xFF)  /* 自定义数据类型的最大值 */
 #define RTMQ_MEM_POOL_SIZE      (30 * MB) /* 内存池大小 */
+#define RTMQ_WIOV_MAX_NUM       (4096)  /* WIOV最大长度 */
 
 /* 返回码 */
 typedef enum

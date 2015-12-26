@@ -10,6 +10,61 @@
 #include "iovec.h"
 
 /******************************************************************************
+ **函数名称: wiov_init
+ **功    能: 初始化wiov对象
+ **输入参数:
+ **     max: 最大写入长度
+ **输出参数:
+ **     wiov: IOV对象
+ **返    回: 0:成功 !0:失败
+ **实现描述:
+ **注意事项: orig和iov成员的长度一致, 且一一对应.
+ **作    者: # Qifeng.zou # 2015.12.26 23:42:54 #
+ ******************************************************************************/
+int wiov_init(wiov_t *wiov, int max)
+{
+    wiov->iov_cnt = 0;
+    wiov->iov_idx = 0;
+    wiov->iov_max = max;
+
+    wiov->orig = (wiov_orig_t *)calloc(max, sizeof(wiov_orig_t));
+    if (NULL == wiov->orig) {
+        return -1;
+    }
+
+    wiov->iov = (struct iovec *)calloc(max, sizeof(struct iovec));
+    if (NULL == wiov->iov) {
+        free(wiov->orig);
+        return -1;
+    }
+
+    return 0;
+}
+
+/******************************************************************************
+ **函数名称: wiov_destroy
+ **功    能: 销毁wiov对象
+ **输入参数: NONE
+ **输出参数:
+ **     wiov: IOV对象
+ **返    回: 0:成功 !0:失败
+ **实现描述: 释放wiov对象成员的内存空间
+ **注意事项: 释放已加入iov对象的各项空间
+ **作    者: # Qifeng.zou # 2015.12.26 23:42:54 #
+ ******************************************************************************/
+void wiov_destroy(wiov_t *wiov)
+{
+    wiov_item_clear(wiov);
+
+    free(wiov->iov);
+    free(wiov->orig);
+
+    wiov->iov_cnt = 0;
+    wiov->iov_idx = 0;
+    wiov->iov_max = 0;
+}
+
+/******************************************************************************
  **函数名称: wiov_item_clear
  **功    能: 清理wiov对象中的空间
  **输入参数:
@@ -26,6 +81,7 @@ void wiov_item_clear(wiov_t *wiov)
 
     for (idx=wiov->iov_idx; idx<wiov->iov_cnt; ++idx) {
         wiov->orig[idx].dealloc(wiov->orig[idx].pool, wiov->orig[idx].addr);
+        wiov_item_reset(wiov, idx);
     }
 
     wiov->iov_idx = 0;
@@ -53,9 +109,7 @@ int wiov_item_adjust(wiov_t *wiov, size_t n)
     for (idx=wiov->iov_idx; idx<wiov->iov_cnt; ++idx, ++wiov->iov_idx) {
         if (len + wiov->iov[idx].iov_len <= n) {
             len += wiov->iov[idx].iov_len;
-
             wiov->orig[idx].dealloc(wiov->orig[idx].pool, wiov->orig[idx].addr);
-
             wiov_item_reset(wiov, idx);
         }
         else {

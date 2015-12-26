@@ -51,7 +51,8 @@ int rtsd_ssvr_init(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, int idx)
     void *addr;
     list_opt_t opt;
     rtsd_conf_t *conf = &ctx->conf;
-    rtmq_snap_t *recv = &ssvr->sck.recv;
+    rtsd_sck_t *sck = &ssvr->sck;
+    rtmq_snap_t *recv = &sck->recv;
 
     ssvr->id = idx;
     ssvr->log = ctx->log;
@@ -86,10 +87,17 @@ int rtsd_ssvr_init(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, int idx)
     opt.alloc = (mem_alloc_cb_t)slab_alloc;
     opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
-    ssvr->sck.mesg_list = list_creat(&opt);
-    if (NULL == ssvr->sck.mesg_list)
+    sck->mesg_list = list_creat(&opt);
+    if (NULL == sck->mesg_list)
     {
         log_error(ssvr->log, "Create list failed!");
+        return RTMQ_ERR;
+    }
+
+    /* > 初始化发送缓存(注: 程序退出时才可释放此空间，其他任何情况下均不释放) */
+    if (wiov_init(&sck->send, RTMQ_WIOV_MAX_NUM))
+    {
+        log_error(ssvr->log, "Initialize send iov failed!");
         return RTMQ_ERR;
     }
 

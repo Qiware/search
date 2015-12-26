@@ -1087,7 +1087,7 @@ static void rtrd_rsvr_sck_free(rtrd_rsvr_t *rsvr, rtrd_sck_t *sck)
     }
 
     /* 释放iov的空间 */
-    wiov_item_clear(&sck->send);
+    wiov_destroy(&sck->send);
 
     CLOSE(sck->fd);
     slab_dealloc(rsvr->pool, sck);
@@ -1118,6 +1118,14 @@ static int rtrd_rsvr_add_conn_hdl(rtrd_rsvr_t *rsvr, rtmq_cmd_add_sck_t *req)
     /* > 加入套接字链尾 */
     if (list2_rpush(rsvr->conn_list, (void *)sck)) {
         log_error(rsvr->log, "Insert into list failed!");
+        rtrd_rsvr_sck_free(rsvr, sck);
+        return RTMQ_ERR;
+    }
+
+    /* > 初始化发送IOV */
+    if (wiov_init(&sck->send, RTMQ_WIOV_MAX_NUM))
+    {
+        log_error(rsvr->log, "Init wiov failed!");
         rtrd_rsvr_sck_free(rsvr, sck);
         return RTMQ_ERR;
     }
