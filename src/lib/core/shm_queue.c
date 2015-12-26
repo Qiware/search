@@ -265,20 +265,3 @@ int shm_queue_mpop(shm_queue_t *shmq, void **p, int num)
 
     return num;
 }
-
-/******************************************************************************
- **函数名称: shm_queue_dealloc
- **功    能: 回收队列空间
- **输入参数:
- **     shmq: 共享内存队列
- **     p: 内存地址(需要被回收的内存)
- **输出参数: NONE
- **返    回: VOID
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2015.12.26 11:17:30 #
- ******************************************************************************/
-void shm_queue_dealloc(shm_queue_t *shmq, void *p)
-{
-    return shm_slot_dealloc(shmq->slot, p);
-}
