@@ -697,6 +697,7 @@ static int rtsd_ssvr_proc_cmd(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, const rtmq_cm
         case RTMQ_CMD_SEND:
         case RTMQ_CMD_SEND_ALL:
         {
+            log_debug(ssvr->log, "Recv command! type:[%d]", cmd->type);
             if (fd_is_writable(sck->fd))
             {
                 return rtsd_ssvr_send_data(ctx, ssvr);

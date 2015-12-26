@@ -661,20 +661,19 @@ static int rtrd_cmd_send_dist_req(rtrd_cntx_t *ctx)
     char path[FILE_NAME_MAX_LEN];
     rtrd_conf_t *conf = &ctx->conf;
 
-    if (spin_trylock(&ctx->cmd_sck_lock))
-    {
-        memset(&cmd, 0, sizeof(cmd));
-
-        cmd.type = RTMQ_CMD_DIST_REQ;
-
-        rtrd_dsvr_usck_path(conf, path);
-
-        ret = unix_udp_send(ctx->cmd_sck_id, path, &cmd, sizeof(cmd));
-
-        spin_unlock(&ctx->cmd_sck_lock);
-
-        return ret;
+    if (spin_trylock(&ctx->cmd_sck_lock)) {
+        return 0;
     }
 
-    return 0;
+    memset(&cmd, 0, sizeof(cmd));
+
+    cmd.type = RTMQ_CMD_DIST_REQ;
+    rtrd_dsvr_usck_path(conf, path);
+    ret = unix_udp_send(ctx->cmd_sck_id, path, &cmd, sizeof(cmd));
+
+    spin_unlock(&ctx->cmd_sck_lock);
+
+    log_trace(ctx->log, "Send command %d! ret:%d", RTMQ_CMD_DIST_REQ, ret);
+
+    return ret;
 }
