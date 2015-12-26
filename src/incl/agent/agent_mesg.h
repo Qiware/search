@@ -13,6 +13,8 @@ typedef struct
     unsigned int length;                    /* 报体长度 */
 #define AGENT_MSG_MARK_KEY   (0x1ED23CB4)
     unsigned int mark;                      /* 校验值 */
+
+    uint64_t serial;                        /* 流水号 */
 } agent_header_t;
 
 #endif /*__AGENT_MESG_H__*/

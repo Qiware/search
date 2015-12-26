@@ -200,7 +200,9 @@ static int agent_worker_proc_data_hdl(agent_cntx_t *ctx, agent_worker_t *worker)
             }
 
             /* > 调用处理回调 */
-            if (reg->proc(head->type, addr[idx], head->length + sizeof(agent_flow_t), reg->args))
+            if (reg->proc(head->type,
+                    addr[idx] + sizeof(agent_flow_t),
+                    head->length + sizeof(agent_header_t), reg->args))
             {
                 agent_serial_to_sck_map_delete(ctx, flow->serial);
             }

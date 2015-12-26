@@ -934,6 +934,7 @@ static int agent_rsvr_recv(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
 
                         log_info(rsvr->log, "Call %s()! serial:%lu", __func__, extra->flow->serial);
 
+                        extra->head->serial = hton64(extra->flow->serial);
                         if (extra->head->length)
                         {
                             recv->phase = SOCK_PHASE_READY_BODY; /* 设置下步 */
