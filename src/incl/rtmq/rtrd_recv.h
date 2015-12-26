@@ -6,6 +6,7 @@
 #include "slab.h"
 #include "list.h"
 #include "comm.h"
+#include "iovec.h"
 #include "list2.h"
 #include "queue.h"
 #include "shm_opt.h"
@@ -86,7 +87,7 @@ typedef struct _rtrd_sck_t
     int auth_succ;                      /* 鉴权成功(1:成功 0:失败)  */
 
     rtmq_snap_t recv;                   /* 接收快照 */
-    rtmq_wiov_t send;                   /* 发送缓存 */
+    wiov_t send;                        /* 发送缓存 */
 
     list_t *mesg_list;                  /* 发送消息链表 */
 

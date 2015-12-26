@@ -1,9 +1,11 @@
 #include "redo.h"
 #include "shm_opt.h"
+#include "shm_slab.h"
 #include "rtmq_cmd.h"
 #include "rtsd_cli.h"
 #include "rtmq_comm.h"
 #include "rtsd_send.h"
+#include "shm_queue.h"
 
 /* 静态函数 */
 static rtsd_ssvr_t *rtsd_ssvr_get_curr(rtsd_cntx_t *ctx);
@@ -50,7 +52,6 @@ int rtsd_ssvr_init(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, int idx)
     list_opt_t opt;
     rtsd_conf_t *conf = &ctx->conf;
     rtmq_snap_t *recv = &ssvr->sck.recv;
-    rtmq_snap_t *send = &ssvr->sck.send;
 
     ssvr->id = idx;
     ssvr->log = ctx->log;
@@ -91,16 +92,6 @@ int rtsd_ssvr_init(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, int idx)
         log_error(ssvr->log, "Create list failed!");
         return RTMQ_ERR;
     }
-
-    /* > 初始化发送缓存(注: 程序退出时才可释放此空间，其他任何情况下均不释放) */
-    addr = calloc(1, conf->send_buff_size);
-    if (NULL == addr)
-    {
-        log_error(ssvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return RTMQ_ERR;
-    }
-
-    rtmq_snap_setup(send, addr, conf->send_buff_size);
 
     /* 5. 初始化接收缓存(注: 程序退出时才可释放此空间，其他任何情况下均不释放) */
     addr = calloc(1, conf->recv_buff_size);
@@ -220,8 +211,6 @@ static void rtsd_ssvr_bind_cpu(rtsd_cntx_t *ctx, int id)
  ******************************************************************************/
 void rtsd_ssvr_set_rwset(rtsd_ssvr_t *ssvr)
 {
-    rtmq_snap_t *snap;
-
     FD_ZERO(&ssvr->rset);
     FD_ZERO(&ssvr->wset);
 
@@ -239,10 +228,7 @@ void rtsd_ssvr_set_rwset(rtsd_ssvr_t *ssvr)
         FD_SET(ssvr->sck.fd, &ssvr->wset);
         return;
     }
-
-    snap = &ssvr->sck.send;
-    if (snap->iptr != snap->optr)
-    {
+    else if (!wiov_isempty(&ssvr->sck.send)) {
         FD_SET(ssvr->sck.fd, &ssvr->wset);
         return;
     }
@@ -370,14 +356,14 @@ static int rtsd_ssvr_kpalive_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
     rtmq_header_t *head;
     int size = sizeof(rtmq_header_t);
     rtsd_sck_t *sck = &ssvr->sck;
-    rtmq_snap_t *send = &ssvr->sck.send;
+    wiov_t *send = &ssvr->sck.send;
 
     /* 1. 上次发送保活请求之后 仍未收到应答 */
     if ((sck->fd < 0)
         || (RTMQ_KPALIVE_STAT_SENT == sck->kpalive))
     {
         CLOSE(sck->fd);
-        rtmq_snap_reset(send);
+        wiov_item_clear(send);
         log_error(ssvr->log, "Didn't get keepalive respond for a long time!");
         return RTMQ_OK;
     }
@@ -719,8 +705,8 @@ static int rtsd_ssvr_proc_cmd(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, const rtmq_cm
 }
 
 /******************************************************************************
- **函数名称: rtsd_ssvr_fill_send_buff
- **功    能: 填充发送缓冲区
+ **函数名称: rtsd_ssvr_wiov_add
+ **功    能: 添加发送数据(零拷贝)
  **输入参数:
  **     ssvr: 发送服务
  **     sck: 连接对象
@@ -732,50 +718,29 @@ static int rtsd_ssvr_proc_cmd(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, const rtmq_cm
  **注意事项: WARNNING: 千万勿将共享变量参与MIN()三目运算, 否则可能出现严重错误!!!!且很难找出原因!
  **          原因: MIN()不是原子运算, 使用共享变量可能导致判断成立后, 而返回时共
  **                享变量的值可能被其他进程或线程修改, 导致出现严重错误!
- **内存结构:
- **       ------------------------------------------------
- **      | 已处理 |     未处理     |       剩余空间       |
- **       ------------------------------------------------
- **      |XXXXXXXX|////////////////|                      |
- **      |XXXXXXXX|////////////////|         left         |
- **      |XXXXXXXX|////////////////|                      |
- **       ------------------------------------------------
- **      ^        ^                ^                      ^
- **      |        |                |                      |
- **     addr     optr             iptr                   end
- **作    者: # Qifeng.zou # 2015.01.14 #
+ **作    者: # Qifeng.zou # 2015.12.26 08:23:22 #
  ******************************************************************************/
-static int rtsd_ssvr_fill_send_buff(rtsd_ssvr_t *ssvr, rtsd_sck_t *sck)
+static int rtsd_ssvr_wiov_add(rtsd_ssvr_t *ssvr, rtsd_sck_t *sck)
 {
 #define RTSD_POP_NUM    (1024)
+    size_t len;
     int num, idx;
-    void *data[RTSD_POP_NUM];
-    uint32_t left, mesg_len;
     rtmq_header_t *head;
-    rtmq_snap_t *send = &sck->send;
+    void *data[RTSD_POP_NUM];
+    wiov_t *send = &sck->send;
 
     /* > 从消息链表取数据 */
-    for (;;)
-    {
+    while(!wiov_is_full(send)) {
         /* > 是否有数据 */
         head = (rtmq_header_t *)list_lpop(sck->mesg_list);
-        if (NULL == head)
-        {
+        if (NULL == head) {
             break; /* 无数据 */
         }
-        else if (RTMQ_CHECK_SUM != head->checksum)
-        {
+        else if (RTMQ_CHECK_SUM != head->checksum) {
             assert(0);
         }
 
-        /* > 判断剩余空间 */
-        left = (uint32_t)(send->end - send->iptr);
-        mesg_len = sizeof(rtmq_header_t) + head->length;
-        if (left < mesg_len)
-        {
-            list_lpush(sck->mesg_list, head);
-            break; /* 空间不足 */
-        }
+        len = sizeof(rtmq_header_t) + head->length;
 
         /* > 取发送的数据 */
         head->type = htons(head->type);
@@ -784,46 +749,35 @@ static int rtsd_ssvr_fill_send_buff(rtsd_ssvr_t *ssvr, rtsd_sck_t *sck)
         head->length = htonl(head->length);
         head->checksum = htonl(head->checksum);
 
-        /* > 拷贝至发送缓存 */
-        memcpy(send->iptr, (void *)head, mesg_len);
-
-        send->iptr += mesg_len;
-
-        /* > 释放空间 */
-        slab_dealloc(ssvr->pool, (void *)head);
+        /* > 设置发送数据 */
+        wiov_item_add(send, head, len, ssvr->pool, slab_dealloc);
     }
 
     /* > 从发送队列取数据 */
     for (;;) {
         /* > 判断剩余空间(WARNNING: 勿将共享变量参与三目运算, 否则可能出现严重错误!!!) */
-        left = send->end - send->iptr;
-         
-        num = MIN(left/shm_queue_size(ssvr->sendq), RTSD_POP_NUM);
+        num = MIN(wiov_left_space(send), RTSD_POP_NUM);
         num = MIN(num, shm_queue_used(ssvr->sendq));
-        if (0 == num)
-        {
+        if (0 == num) {
             break; /* 空间不足 */
         }
 
         /* > 弹出发送数据 */
         num = shm_queue_mpop(ssvr->sendq, data, num);
-        if (0 == num)
-        {
+        if (0 == num) {
             continue;
         }
 
         log_trace(ssvr->log, "Multi-pop num:%d!", num);
 
-        for (idx=0; idx<num; ++idx)
-        {
+        for (idx=0; idx<num; ++idx) {
             /* > 是否有数据 */
             head = (rtmq_header_t *)data[idx];
-            if (RTMQ_CHECK_SUM != head->checksum)
-            {
+            if (RTMQ_CHECK_SUM != head->checksum) {
                 assert(0);
             }
 
-            mesg_len = sizeof(rtmq_header_t) + head->length;
+            len = sizeof(rtmq_header_t) + head->length;
 
             /* > 设置发送数据 */
             head->type = htons(head->type);
@@ -832,17 +786,12 @@ static int rtsd_ssvr_fill_send_buff(rtsd_ssvr_t *ssvr, rtsd_sck_t *sck)
             head->length = htonl(head->length);
             head->checksum = htonl(head->checksum);
 
-            /* > 拷贝至发送缓存 */
-            memcpy(send->iptr, (void *)head, mesg_len);
-
-            send->iptr += mesg_len;
-
-            /* > 释放空间 */
-            shm_queue_dealloc(ssvr->sendq, (void *)head);
+            /* > 设置发送数据 */
+            wiov_item_add(send, head, len, ssvr->sendq, shm_queue_dealloc);
         }
     }
 
-    return (send->iptr - send->optr);
+    return 0;
 }
 
 /******************************************************************************
@@ -872,43 +821,36 @@ static int rtsd_ssvr_fill_send_buff(rtsd_ssvr_t *ssvr, rtsd_sck_t *sck)
  ******************************************************************************/
 static int rtsd_ssvr_send_data(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
 {
-    int n, len;
+    ssize_t n;
     rtsd_sck_t *sck = &ssvr->sck;
-    rtmq_snap_t *send = &sck->send;
+    wiov_t *send = &sck->send;
 
     sck->wrtm = time(NULL);
 
-    for (;;)
-    {
+    for (;;) {
         /* 1. 填充发送缓存 */
-        len = send->iptr - send->optr;
-        if (0 == len)
-        {
-            if ((len = rtsd_ssvr_fill_send_buff(ssvr, sck)) <= 0)
-            {
-                break;
-            }
+        if (!wiov_is_full(send)) {
+            rtsd_ssvr_wiov_add(ssvr, sck);
+        }
+
+        if (wiov_isempty(send)) {
+            break;
         }
 
         /* 2. 发送缓存数据 */
-        n = Writen(sck->fd, send->optr, len);
-        if (n < 0)
-        {
-            log_error(ssvr->log, "errmsg:[%d] %s! fd:%d len:[%d]",
-                    errno, strerror(errno), sck->fd, len);
+        n = writev(sck->fd, wiov_item_begin(send), wiov_item_num(send));
+        if (n < 0) {
+            log_error(ssvr->log, "errmsg:[%d] %s! fd:%d",
+                    errno, strerror(errno), sck->fd);
             CLOSE(sck->fd);
-            rtmq_snap_reset(send);
+            wiov_item_clear(send);
             return RTMQ_ERR;
         }
         /* 只发送了部分数据 */
-        else if (n != len)
-        {
-            send->optr += n;
+        else {
+            wiov_item_adjust(send, n);
             return RTMQ_OK;
         }
-
-        /* 3. 重置标识量 */
-        rtmq_snap_reset(send);
     }
 
     return RTMQ_OK;

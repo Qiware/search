@@ -30,7 +30,7 @@ typedef struct
     list_t *mesg_list;                  /* 发送链表 */
 
     rtmq_snap_t recv;                   /* 接收快照 */
-    rtmq_snap_t send;                   /* 发送快照 */
+    wiov_t send;                        /* 发送信息 */
 } rtsd_sck_t;
 
 #define rtmq_set_kpalive_stat(sck, _stat) (sck)->kpalive = (_stat)

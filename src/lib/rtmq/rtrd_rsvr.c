@@ -130,7 +130,7 @@ static void rtrd_rsvr_set_wrset(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
         curr = (rtrd_sck_t *)node->data;
 
         if (list_empty(curr->mesg_list)
-            && (0 == curr->send.iov_cnt))
+            && wiov_isempty(&curr->send))
         {
             if (node == tail) {
                 break;
@@ -411,10 +411,10 @@ static int rtrd_rsvr_wiov_add(rtrd_rsvr_t *rsvr, rtrd_sck_t *sck)
 {
     int len;
     rtmq_header_t *head;
-    rtmq_wiov_t *send = &sck->send;
+    wiov_t *send = &sck->send;
 
     /* > 从消息链表取数据 */
-    for (; send->iov_cnt < RTMQ_WIOV_MAX_NUM; ++send->iov_cnt) {
+    while (!wiov_is_full(send)) {
         /* 1 是否有数据 */
         head = (rtmq_header_t *)list_lpop(sck->mesg_list);;
         if (NULL == head) {
@@ -434,67 +434,11 @@ static int rtrd_rsvr_wiov_add(rtrd_rsvr_t *rsvr, rtrd_sck_t *sck)
         head->checksum = htonl(head->checksum);
 
         /* 4 设置发送信息 */
-        send->iov[send->iov_cnt].iov_len = len;
-        send->iov[send->iov_cnt].iov_base = (char *)head;
-
-        send->orig[send->iov_cnt].off = 0;
-        send->orig[send->iov_cnt].len = len;
-        send->orig[send->iov_cnt].addr = (char *)head;
+        wiov_item_add(send, (char *)head, len, rsvr->pool, slab_dealloc);
     }
 
     return RTMQ_OK;
 }
-
-/******************************************************************************
- **函数名称: rtrd_rsvr_wiov_del
- **功    能: 删除已发送数据
- **输入参数:
- **     ctx: 全局对象
- **     rsvr: 接收服务
- **     n: 发送长度
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述: 释放数据发送完毕后的内存!
- **注意事项: 
- **作    者: # Qifeng.zou # 2015.12.26 06:18:03 #
- ******************************************************************************/
-static int rtrd_rsvr_wiov_del(rtrd_rsvr_t *rsvr, rtrd_sck_t *sck, size_t n)
-{
-    int idx;
-    size_t len;
-    rtmq_wiov_t *send = &sck->send;
-
-    len = 0;
-    for (idx=send->iov_idx; idx<send->iov_cnt; ++idx, ++send->iov_idx) {
-        if (len + send->iov[idx].iov_len <= n) {
-            len += send->iov[idx].iov_len;
-
-            slab_dealloc(rsvr->pool, send->orig[idx].addr); /* 释放内存 */
-
-            send->iov[idx].iov_base = NULL;
-            send->iov[idx].iov_len = 0;
-            send->orig[idx].addr = NULL;
-            send->orig[idx].len = 0;
-            send->orig[idx].off = 0;
-        }
-        else {
-            send->iov[idx].iov_base += (n - len);
-            send->iov[idx].iov_len = (len + send->iov[idx].iov_len - n);
-            send->orig[idx].off = (n - len);
-            break;
-        }
-    }
-
-    if (idx == send->iov_cnt) {
-        send->iov_idx = 0;
-        send->iov_cnt = 0;
-    }
-
-
-    return RTMQ_OK;
-}
-
-
 
 /******************************************************************************
  **函数名称: rtrd_rsvr_trav_send
@@ -521,8 +465,8 @@ static int rtrd_rsvr_wiov_del(rtrd_rsvr_t *rsvr, rtrd_sck_t *sck, size_t n)
 static int rtrd_rsvr_trav_send(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
 {
     ssize_t n;
+    wiov_t *send;
     rtrd_sck_t *curr;
-    rtmq_wiov_t *send;
     list2_node_t *node, *tail;
 
     rsvr->ctm = time(NULL);
@@ -541,25 +485,27 @@ static int rtrd_rsvr_trav_send(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
 
             for (;;) {
                 /* 1. 追加发送内容 */
-                if (!rtmq_wiov_is_full(send)) {
+                if (!wiov_is_full(send)) {
                     rtrd_rsvr_wiov_add(rsvr, curr);
                 } 
 
-                if (rtmq_wiov_is_empty(send)) {
+                if (wiov_isempty(send)) {
                     break;
                 }
 
                 /* 2. 发送缓存数据 */
-                n = writev(curr->fd, &send->iov[send->iov_idx], send->iov_cnt-iov_idx);
-                if (n > 0) {
-                    /* 删除已发送内容 */
-                    rtrd_rsvr_wiov_del(rsvr, curr, n);
-                }
-                else {
+                n = writev(curr->fd, wiov_item_begin(send), wiov_item_num(send));
+                if (n < 0)
+                {
                     log_error(rsvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
 
                     rtrd_rsvr_del_conn_hdl(ctx, rsvr, node);
                     return RTMQ_ERR;
+                }
+                else {
+                    /* 删除已发送内容 */
+                    wiov_item_adjust(send, n);
+                    break;
                 }
             }
         }
@@ -1133,19 +1079,16 @@ static rtrd_sck_t *rtrd_rsvr_sck_creat(rtrd_rsvr_t *rsvr, rtmq_cmd_add_sck_t *re
  ******************************************************************************/
 static void rtrd_rsvr_sck_free(rtrd_rsvr_t *rsvr, rtrd_sck_t *sck)
 {
-    int idx;
-    rtmq_wiov_t *send = &sck->send;
-
     if (NULL == sck) { return; }
     FREE(sck->recv.addr);
     /* 释放链表空间 */
     if (sck->mesg_list) {
         list_destroy(sck->mesg_list, rsvr->pool, (mem_dealloc_cb_t)slab_dealloc);
     }
+
     /* 释放iov的空间 */
-    for (idx=send->iov_idx; idx<send->iov_cnt; ++idx) {
-        slab_dealloc(rsvr->pool, send->orig[idx].addr);
-    }
+    wiov_item_clear(&sck->send);
+
     CLOSE(sck->fd);
     slab_dealloc(rsvr->pool, sck);
 }
