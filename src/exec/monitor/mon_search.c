@@ -555,27 +555,10 @@ static int mon_srch_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args
     }
 
 #if 1
-    int n;
-    agent_header_t header;
-    mesg_search_word_req_t req;
-
     /* 发送搜索数据 */
     for (idx=0; idx<num; ++idx)
     {
-        header.type = htonl(MSG_SEARCH_WORD_REQ);
-        header.flag = htonl(AGENT_MSG_FLAG_USR);
-        header.mark = htonl(AGENT_MSG_MARK_KEY);
-        header.length = htonl(sizeof(req));
-
-        snprintf(req.words, sizeof(req.words), "爱我中华");
-
-        n = Writen(fd[idx], (void *)&header, sizeof(header));
-        if (n < 0)
-        {
-            break;
-        }
-
-        n = Writen(fd[idx], (void *)&req, sizeof(req));
+        mon_srch_send_rep(fd[idx], "爱我中华");
     }
 #endif
 
