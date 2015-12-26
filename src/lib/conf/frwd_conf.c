@@ -231,20 +231,6 @@ int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t *conf)
     }
 
     /* > 缓存大小配置 */
-    node = xml_search(xml, parent, "BUFFER-POOL-SIZE.SEND");    /* 发送缓存(MB) */
-    if (NULL == node
-        || 0 == node->value.len)
-    {
-        fprintf(stderr, "Didn't find %s.BUFFER-POOL-SIZE.SEND!\n", path);
-        return -1;
-    }
-
-    conf->send_buff_size = atoi(node->value.str) * MB;
-    if (0 == conf->send_buff_size)
-    {
-        return -1;
-    }
-
     node = xml_search(xml, parent, "BUFFER-POOL-SIZE.RECV");  /* 接收缓存(MB) */
     if (NULL == node
         || 0 == node->value.len)

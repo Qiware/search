@@ -21,7 +21,6 @@ typedef struct
     int send_thd_num;                   /* 发送线程数 */
     int work_thd_num;                   /* 工作线程数 */
 
-    size_t send_buff_size;              /* 发送缓存大小 */
     size_t recv_buff_size;              /* 接收缓存大小 */
 
     rtmq_cpu_conf_t cpu;                /* CPU亲和性配置 */
