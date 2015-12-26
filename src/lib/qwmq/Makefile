@@ -18,9 +18,9 @@ INCLUDE = -I. \
 LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lcore
 
-SRC_LIST = qwsd_send.c \
-			qwsd_ssvr.c \
-			qwsd_worker.c
+SRC_LIST = qwmq_sd_send.c \
+			qwmq_sd_ssvr.c \
+			qwmq_sd_worker.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST))
 HEADS = $(call func_get_dep_head_list, $(SRC_LIST))
