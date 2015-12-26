@@ -196,7 +196,7 @@ static int rtrd_dsvr_dist_data_hdl(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr)
             }
 
             /* > 申请内存空间 */
-            addr = queue_malloc(ctx->sendq[idx], frwd->length);
+            addr = queue_malloc(ctx->sendq[idx], frwd->length+sizeof(rtmq_frwd_t));
             if (NULL == addr)
             {
                 queue_dealloc(ctx->distq[d], data[k]);
@@ -205,7 +205,7 @@ static int rtrd_dsvr_dist_data_hdl(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr)
                 continue;
             }
 
-            memcpy(addr, data[k], frwd->length);
+            memcpy(addr, data[k], frwd->length+sizeof(rtmq_frwd_t));
 
             queue_push(ctx->sendq[idx], addr);
 
