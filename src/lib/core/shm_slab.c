@@ -785,7 +785,7 @@ void shm_slab_dealloc(shm_slab_pool_t *pool, void *p)
     
     if ((offset < pool->data_offset) || (offset > pool->end_offset))
     {
-        fprintf(stderr, "Pointer address is incorrect!");
+        fprintf(stderr, "Pointer address is incorrect! offset:%lu", offset);
         return;
     }
 

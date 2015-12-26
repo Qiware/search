@@ -18,6 +18,7 @@
 #include <sys/shm.h>
 #include <pthread.h>
 #include <stdbool.h>
+#include <sys/uio.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/time.h>

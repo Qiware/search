@@ -49,7 +49,8 @@ SRC_LIST = log.c \
 			hash_map.c \
 			hash_alg.c \
 			str.c \
-			uri.c
+			uri.c \
+			iovec.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST))
 HEADS = $(call func_get_dep_head_list, $(SRC_LIST))
