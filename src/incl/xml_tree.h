@@ -138,6 +138,7 @@ xml_node_t *xml_add_attr(
 xml_node_t *xml_add_child(
         xml_tree_t *xml, xml_node_t *node,
         const char *name, const char *value);
+#define xml_set_root(xml, name) xml_add_child((xml), (xml)->root, (name), NULL)
 #define xml_add_brother(xml, node, name, value) \
     xml_add_node(xml, (node)->parent, name, value, node->type)
 int xml_delete_child(xml_tree_t *xml, xml_node_t *node, xml_node_t *child);
