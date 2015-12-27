@@ -117,9 +117,9 @@ xml_node_t *xml_node_creat_ext(xml_tree_t *xml,
         xml_node_type_e type, const char *name, const char *value);
 int xml_node_free(xml_tree_t *xml, xml_node_t *node);
 
+xml_tree_t *xml_creat_empty(xml_opt_t *opt);
 xml_tree_t *xml_creat(const char *fname, xml_opt_t *opt);
-xml_tree_t *xml_screat(const char *str, xml_opt_t *opt);
-xml_tree_t *xml_screat_ext(const char *str, int length, xml_opt_t *opt);
+xml_tree_t *xml_screat(const char *str, size_t len, xml_opt_t *opt);
 
 int xml_fwrite(xml_tree_t *xml, const char *fname);
 int xml_fprint(xml_tree_t *xml, FILE *fp);
@@ -147,11 +147,11 @@ int xml_delete_child(xml_tree_t *xml, xml_node_t *node, xml_node_t *child);
 int xml_delete_empty(xml_tree_t *xml);
 
 int xml_set_value(xml_tree_t *xml, xml_node_t *node, const char *value);
-int xml_node_length(xml_tree_t *xml, xml_node_t *node);
-#define xml_tree_length(xml) xml_node_length(xml, xml->root->child)
+int xml_node_len(xml_tree_t *xml, xml_node_t *node);
+#define xml_tree_len(xml) xml_node_len(xml, xml->root->child)
 
-extern int _xml_pack_length(xml_tree_t *xml, xml_node_t *node);
-#define xml_pack_length(xml) _xml_pack_length(xml, xml->root)
+extern int _xml_pack_len(xml_tree_t *xml, xml_node_t *node);
+#define xml_pack_len(xml) _xml_pack_len(xml, xml->root)
 
 #define xml_destroy(xml) \
 { \

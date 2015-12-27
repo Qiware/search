@@ -228,14 +228,14 @@ int xml_fprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, FILE *fp)
  **                                 (内存中)                                 **
  ******************************************************************************/
 /* 组包节点名的长度(注: XML无层次格式) */
-#define xml_pack_name_length(node, length) \
+#define xml_pack_name_len(node, len) \
 { \
     /*fprintf(fp, "<%s", node->name);*/ \
-    length += (1 + node->name.len); \
+    len += (1 + node->name.len); \
 }
 
 /* 组包属性节点的长度(注: XML无层次格式) */
-#define xml_pack_attr_length(node, length) \
+#define xml_pack_attr_len(node, len) \
 { \
     while (NULL != node->temp) \
     { \
@@ -243,7 +243,7 @@ int xml_fprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, FILE *fp)
         { \
             /* sprintf(sp->ptr, " %s=\"%s\"", node->temp->name, node->temp->value); */ \
             /* sp->ptr += strlen(sp->ptr); */ \
-            length += node->temp->name.len + node->temp->value.len + 4; \
+            len += node->temp->name.len + node->temp->value.len + 4; \
             node->temp = node->temp->next; \
             continue; \
         } \
@@ -253,19 +253,19 @@ int xml_fprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, FILE *fp)
 
 #if defined(__XML_PACK_CMARK__)
 /* 组包节点值的长度(注: XML无层次格式) */
-#define xml_pack_value_length(node, length) \
+#define xml_pack_value_len(node, len) \
 { \
     if (xml_has_value(node)) \
     { \
         if (xml_has_child(node))  /* 此时temp指向node的孩子节点 或 NULL */ \
         { \
             /* sprintf(sp->ptr, ">%s", node->value); */ \
-            length += node->value.len+1; \
+            len += node->value.len+1; \
         } \
         else \
         { \
             /* sprintf(sp->ptr, ">%s</%s>", node->value, node->name); */ \
-            length += node->value.len + node->name.len + 4; \
+            len += node->value.len + node->name.len + 4; \
         } \
     } \
     else \
@@ -273,30 +273,30 @@ int xml_fprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, FILE *fp)
         if (NULL != node->temp)   /* 此时temp指向node的孩子节点 或 NULL */ \
         { \
             /* sprintf(sp->ptr, ">"); */ \
-            length++; \
+            len++; \
         } \
         else \
         { \
             /* sprintf(sp->ptr, "></%s>", node->name); */ \
-            length += node->name.len + 4; \
+            len += node->name.len + 4; \
         } \
     } \
 }
 #else /*__XML_PACK_CMARK__*/
 /* 组包节点值的长度(注: XML无层次格式) */
-#define xml_pack_value_length(node, length) \
+#define xml_pack_value_len(node, len) \
 { \
     if (xml_has_value(node)) \
     { \
         if (xml_has_child(node))  /* 此时temp指向node的孩子节点 或 NULL */ \
         { \
             /* sprintf(sp->ptr, ">%s", node->value); */ \
-            length += node->value.len+1; \
+            len += node->value.len+1; \
         } \
         else \
         { \
             /* sprintf(sp->ptr, ">%s</%s>", node->value, node->name); */ \
-            length += node->value.len + node->name.len + 4; \
+            len += node->value.len + node->name.len + 4; \
         } \
     } \
     else \
@@ -304,24 +304,24 @@ int xml_fprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, FILE *fp)
         if (NULL != node->temp)   /* 此时temp指向node的孩子节点 或 NULL */ \
         { \
             /* sprintf(sp->ptr, ">"); */ \
-            length++; \
+            len++; \
         } \
         else \
         { \
             /* sprintf(sp->ptr, "/>"); */ \
-            length += 2; \
+            len += 2; \
         } \
     } \
 }
 #endif /*__XML_PACK_CMARK__*/
 
 /******************************************************************************
- **函数名称: xml_pack_next_length
+ **函数名称: xml_pack_next_len
  **功    能: 选择下一个处理的节点, 并计算组包结束节点报文的长度(注: XML无层次格式)
  **输入参数:
  **     root: 根节点
  **     stack: 栈
- **     length: 长度统计
+ **     len: 长度统计
  **输出参数:
  **返    回: 0: 成功  !0: 失败
  **实现描述: 
@@ -331,10 +331,10 @@ int xml_fprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, FILE *fp)
  **     3. 不打印root的兄弟节点
  **作    者: # Qifeng.zou # 2013.06.11 #
  ******************************************************************************/
-static xml_node_t *xml_pack_next_length(
-        xml_tree_t *xml, Stack_t *stack, xml_node_t *node, int *length)
+static xml_node_t *xml_pack_next_len(
+        xml_tree_t *xml, Stack_t *stack, xml_node_t *node, int *len)
 {
-    int length2;
+    int len2;
     xml_node_t *top, *child;
 
     /* 首先: 处理孩子节点: 选出下一个孩子节点 */
@@ -349,26 +349,26 @@ static xml_node_t *xml_pack_next_length(
 
     /* 再次: 处理其兄弟节点: 选出下一个兄弟节点 */
 
-    length2 = 0;
+    len2 = 0;
 
     /* 1. 弹出已经处理完成的节点 */
     top = stack_gettop(stack);
     if (xml_has_child(top))
     {
         /* sprintf(sp->ptr, "</%s>", top->name); */
-        length2 += top->name.len + 3;
+        len2 += top->name.len + 3;
     }
 
     if (NULL == stack_pop(stack))
     {
-        *length += length2;
+        *len += len2;
         log_error(xml->log, "Stack pop failed!");
         return NULL;
     }
 
     if (stack_empty(stack))
     {
-        *length += length2;
+        *len += len2;
         log_error(xml->log, "Compelte fprint!");
         return NULL;
     }
@@ -381,7 +381,7 @@ static xml_node_t *xml_pack_next_length(
         top = stack_pop(stack);
         if (NULL == top)
         {
-            *length += length2;
+            *len += len2;
             log_error(xml->log, "Stack pop failed!");
             return NULL;
         }
@@ -390,12 +390,12 @@ static xml_node_t *xml_pack_next_length(
         if (xml_has_child(top))
         {
             /* sprintf(sp->ptr, "</%s>", top->name); */
-            length2 += top->name.len+3;
+            len2 += top->name.len+3;
         }
 
         if (stack_empty(stack))
         {
-            *length += length2;
+            *len += len2;
             return NULL;    /* 处理完成 */
         }
 
@@ -403,12 +403,12 @@ static xml_node_t *xml_pack_next_length(
         node = top->next;
     }
 
-    *length += length2;
+    *len += len2;
     return node;
 }
 
 /******************************************************************************
- **函数名称: xml_pack_node_length
+ **函数名称: xml_pack_node_len
  **功    能: 计算节点打印成XML报文字串时的长度(注: XML无层次结构)
  **输入参数:
  **     root: XML树根节点
@@ -419,9 +419,9 @@ static xml_node_t *xml_pack_next_length(
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.06.11 #
  ******************************************************************************/
-int xml_pack_node_length(xml_tree_t *xml, xml_node_t *root, Stack_t *stack)
+int xml_pack_node_len(xml_tree_t *xml, xml_node_t *root, Stack_t *stack)
 {
-    int depth, length;
+    int depth, len;
     xml_node_t *node = root;
 
     depth = stack_depth(stack);
@@ -431,7 +431,7 @@ int xml_pack_node_length(xml_tree_t *xml, xml_node_t *root, Stack_t *stack)
         return XML_ERR_STACK;
     }
 
-    length = 0;
+    len = 0;
 
     do
     {
@@ -447,19 +447,19 @@ int xml_pack_node_length(xml_tree_t *xml, xml_node_t *root, Stack_t *stack)
         /* 2. 打印节点名 */
         depth = stack_depth(stack);
         
-        xml_pack_name_length(node, length);
+        xml_pack_name_len(node, len);
         
         /* 3. 打印属性节点 */
         if (xml_has_attr(node))
         {
-            xml_pack_attr_length(node, length);
+            xml_pack_attr_len(node, len);
         }
         
         /* 4. 打印节点值 */
-        xml_pack_value_length(node, length);
+        xml_pack_value_len(node, len);
         
         /* 5. 选择下一个处理的节点: 从父亲节点、兄弟节点、孩子节点中 */
-        node = xml_pack_next_length(xml, stack, node, &length);
+        node = xml_pack_next_len(xml, stack, node, &len);
         
     } while (NULL != node);
 
@@ -468,7 +468,7 @@ int xml_pack_node_length(xml_tree_t *xml, xml_node_t *root, Stack_t *stack)
         return XML_ERR_STACK;
     }
 
-    return length;
+    return len;
 }
 
 /* 打印节点名(注: XML无层次格式) */

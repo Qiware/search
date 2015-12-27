@@ -251,15 +251,16 @@ char *xml_fload(const char *fname, xml_opt_t *opt)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
-int xml_parse(xml_tree_t *xml, Stack_t *stack, const char *str)
+int xml_parse(xml_tree_t *xml, Stack_t *stack, const char *str, size_t len)
 {
     xml_parse_t parse;
 
     parse.str = str;
     parse.ptr = str;
-    parse.length = -1; /* 未知 */
+    parse.len = len; /* 未知 */
 
-    while (!XmlIsStrEndChar(*(parse.ptr)))
+    while (!XmlIsStrEndChar(*(parse.ptr))
+            && ((size_t)(parse.ptr - parse.str) < parse.len))
     {
         while (XmlIsIgnoreChar(*(parse.ptr))) parse.ptr++;    /* 跳过无意义的字符 */
 
@@ -852,7 +853,7 @@ static int xml_mark_get_attr(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse
                     break;
                 }
 
-                ptr += esc->length;
+                ptr += esc->len;
                 parse->ptr = ptr;
             }
             else
@@ -1060,7 +1061,7 @@ static int xml_mark_get_value(xml_tree_t *xml, Stack_t *stack, xml_parse_t *pars
                 return XML_ERR;
             }
 
-            p1 += esc->length;
+            p1 += esc->len;
             parse->ptr = p1;
         }
         else
@@ -1316,27 +1317,27 @@ int xml_delete_child(xml_tree_t *xml, xml_node_t *node, xml_node_t *child)
 }
 
 /* 打印节点名长度(注: XML有层次格式) */
-#define xml_node_name_length(node, depth, length) \
+#define xml_node_name_len(node, depth, len) \
 { \
     while (depth > 1) \
     { \
         /*fprintf(fp, "\t");*/ \
-        length++; \
+        len++; \
         depth--; \
     } \
     /*fprintf(fp, "<%s", node->name);*/ \
-    length += (node->name.len + 1); \
+    len += (node->name.len + 1); \
 }
 
 /* 打印属性节点长度(注: XML有层次格式) */
-#define xml_node_attr_length(node, length) \
+#define xml_node_attr_len(node, len) \
 { \
     while (NULL != node->temp) \
     { \
         if (xml_is_attr(node->temp)) \
         { \
             /*fprintf(fp, " %s=\"%s\"", node->temp->name, node->temp->value);*/ \
-            length += (node->temp->name.len + node->temp->value.len + 4); \
+            len += (node->temp->name.len + node->temp->value.len + 4); \
             node->temp = node->temp->next; \
             continue; \
         } \
@@ -1345,19 +1346,19 @@ int xml_delete_child(xml_tree_t *xml, xml_node_t *node, xml_node_t *child)
 }
 
 /* 打印节点值长度(注: XML有层次格式) */
-#define xml_node_value_length(node, length) \
+#define xml_node_value_len(node, len) \
 { \
     if (xml_has_value(node)) \
     { \
         if (xml_has_child(node))  /* 此时temp指向node的孩子节点 或 NULL */ \
         { \
             /* fprintf(fp, ">%s\n", node->value); */ \
-            length += (node->value.len + 2); \
+            len += (node->value.len + 2); \
         } \
         else \
         { \
             /* fprintf(fp, ">%s</%s>\n", node->value, node->name); */ \
-            length += (node->value.len + node->name.len + 5); \
+            len += (node->value.len + node->name.len + 5); \
         } \
     } \
     else \
@@ -1365,18 +1366,18 @@ int xml_delete_child(xml_tree_t *xml, xml_node_t *node, xml_node_t *child)
         if (NULL != node->temp)   /* 此时temp指向node的孩子节点 或 NULL */ \
         { \
             /* fprintf(fp, ">\n"); */ \
-            length += 2; \
+            len += 2; \
         } \
         else \
         { \
             /* fprintf(fp, "/>\n"); */ \
-            length += 3; \
+            len += 3; \
         } \
     } \
 }
 
 /******************************************************************************
- **函数名称: xml_node_next_length
+ **函数名称: xml_node_next_len
  **功    能: 获取下一个要处理的节点，并计算当前结束节点的长度(注: XML有层次结构)
  **输入参数:
  **     root: XML树根节点
@@ -1387,11 +1388,11 @@ int xml_delete_child(xml_tree_t *xml, xml_node_t *node, xml_node_t *child)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.06.10 #
  ******************************************************************************/
-static xml_node_t *xml_node_next_length(
-    xml_tree_t *xml, Stack_t *stack, xml_node_t *node, int *length)
+static xml_node_t *xml_node_next_len(
+    xml_tree_t *xml, Stack_t *stack, xml_node_t *node, int *len)
 {
     xml_node_t *top, *child;
-    int depth, level, length2;
+    int depth, level, len2;
 
     /* 首先: 处理孩子节点: 选出下一个孩子节点 */
     if (NULL != node->temp)
@@ -1404,7 +1405,7 @@ static xml_node_t *xml_node_next_length(
 
     /* 再次: 处理其兄弟节点: 选出下一个兄弟节点 */
 
-    length2 = 0;
+    len2 = 0;
 
     /* 1. 弹出已经处理完成的节点 */
     top = stack_gettop(stack);
@@ -1415,23 +1416,23 @@ static xml_node_t *xml_node_next_length(
         while (level > 1)
         {
             /* fprintf(fp, "\t"); */
-            length2++;
+            len2++;
             level--;
         }
         /* fprintf(fp, "</%s>\n", top->name); */
-        length2 += (top->name.len + 4);
+        len2 += (top->name.len + 4);
     }
 
     if (NULL == stack_pop(stack))
     {
-        *length += length2;
+        *len += len2;
         log_error(xml->log, "Stack pop failed!");
         return NULL;
     }
 
     if (stack_empty(stack))
     {
-        *length += length2;
+        *len += len2;
         log_error(xml->log, "Compelte fprint!");
         return NULL;
     }
@@ -1444,7 +1445,7 @@ static xml_node_t *xml_node_next_length(
         top = stack_pop(stack);
         if (NULL == top)
         {
-            *length += length2;
+            *len += len2;
             log_error(xml->log, "Stack pop failed!");
             return NULL;
         }
@@ -1457,16 +1458,16 @@ static xml_node_t *xml_node_next_length(
             while (level > 1)
             {
                 /* fprintf(fp, "\t"); */
-                length2++;
+                len2++;
                 level--;
             }
             /* fprintf(fp, "</%s>\n", top->name); */
-            length2 += (top->name.len + 4);
+            len2 += (top->name.len + 4);
         }
 
         if (stack_empty(stack))
         {
-            *length += length2;
+            *len += len2;
             return NULL;    /* 处理完成 */
         }
 
@@ -1474,12 +1475,12 @@ static xml_node_t *xml_node_next_length(
         node = top->next;
     }
 
-    *length += length2;
+    *len += len2;
     return node;
 }
 
 /******************************************************************************
- **函数名称: _xml_node_length
+ **函数名称: _xml_node_len
  **功    能: 计算节点打印成XML格式字串时的长度(注: XML有层次结构)
  **输入参数:
  **     root: XML树根节点
@@ -1490,9 +1491,9 @@ static xml_node_t *xml_node_next_length(
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.06.10 #
  ******************************************************************************/
-int _xml_node_length(xml_tree_t *xml, xml_node_t *root, Stack_t *stack)
+int _xml_node_len(xml_tree_t *xml, xml_node_t *root, Stack_t *stack)
 {
-    int depth, length;
+    int depth, len;
     xml_node_t *node = root;
 
     depth = stack_depth(stack);
@@ -1502,7 +1503,7 @@ int _xml_node_length(xml_tree_t *xml, xml_node_t *root, Stack_t *stack)
         return XML_ERR_STACK;
     }
 
-    length = 0;
+    len = 0;
 
     do
     {
@@ -1517,19 +1518,19 @@ int _xml_node_length(xml_tree_t *xml, xml_node_t *root, Stack_t *stack)
         /* 2. 打印节点名 */
         depth = stack_depth(stack);
         
-        xml_node_name_length(node, depth, length);
+        xml_node_name_len(node, depth, len);
         
         /* 3. 打印属性节点 */
         if (xml_has_attr(node))
         {
-            xml_node_attr_length(node, length);
+            xml_node_attr_len(node, len);
         }
         
         /* 4. 打印节点值 */
-        xml_node_value_length(node, length);
+        xml_node_value_len(node, len);
         
         /* 5. 选择下一个处理的节点: 从父亲节点、兄弟节点、孩子节点中 */
-        node = xml_node_next_length(xml, stack, node, &length);
+        node = xml_node_next_len(xml, stack, node, &len);
         
     }while (NULL != node);
 
@@ -1537,7 +1538,7 @@ int _xml_node_length(xml_tree_t *xml, xml_node_t *root, Stack_t *stack)
     {
         return XML_ERR_STACK;
     }
-    return length;
+    return len;
 }
 
 #if defined(__XML_ESC_PARSE__)
@@ -1602,7 +1603,7 @@ static int xml_esc_size(const xml_esc_split_t *sp)
     
     while (NULL != node)
     {
-        size = node->length;
+        size = node->len;
         node = node->next;
     }
 
@@ -1628,7 +1629,7 @@ static int xml_esc_merge(const xml_esc_split_t *sp, char *dst)
     while (NULL != fnode)
     {
         sprintf(ptr, "%s", fnode->str);
-        ptr += fnode->length;
+        ptr += fnode->len;
         fnode = fnode->next;
     }
 
@@ -1708,7 +1709,7 @@ static int xml_esc_split(xml_tree_t *xml, const xml_esc_t *esc,
 
     strncpy(node->str, str, len-1);
     node->str[len-1] = esc->ch;
-    node->length = len;
+    node->len = len;
     node->str[len] = '\0';
     
     if (NULL == split->head)

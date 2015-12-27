@@ -123,7 +123,7 @@ typedef struct
     xml_esc_e type;
     char *str;
     char ch;
-    int length;
+    int len;
 } xml_esc_t;
 #endif /*__XML_ESC_PARSE__*/
 
@@ -132,14 +132,14 @@ typedef struct
 {
     const char *str;            /* XML字串 */
     const char *ptr;            /* 当前处理到的位置 */
-    int length;
+    size_t len;                 /* 需处理的长度 */
 } xml_parse_t;
 
 #if defined(__XML_ESC_PARSE__)
 /* 转义字串分割链表: 用于有转义字串的结点值或属性值的处理 */
 typedef struct _xml_esc_node_t
 {
-    int length;
+    int len;
     char *str;
     struct _xml_esc_node_t *next;
 } xml_esc_node_t;
@@ -164,13 +164,13 @@ typedef struct
 char *xml_fload(const char *fname, xml_opt_t *opt);
 
 xml_tree_t *xml_init(xml_opt_t *opt);
-int xml_parse(xml_tree_t *xml, Stack_t *stack, const char *str);
+int xml_parse(xml_tree_t *xml, Stack_t *stack, const char *str, size_t len);
 int xml_fprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, FILE *fp);
 int xml_sprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, sprint_t *sp);
 int xml_pack_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, sprint_t *sp);
 
-int _xml_node_length(xml_tree_t *xml, xml_node_t *root, Stack_t *stack);
-int xml_pack_node_length(xml_tree_t *xml, xml_node_t *root, Stack_t *stack);
+int _xml_node_len(xml_tree_t *xml, xml_node_t *root, Stack_t *stack);
+int xml_pack_node_len(xml_tree_t *xml, xml_node_t *root, Stack_t *stack);
 
 int xml_node_free_one(xml_tree_t *xml, xml_node_t *node);
 xml_node_t *xml_free_next(xml_tree_t *xml, Stack_t *stack, xml_node_t *curr);

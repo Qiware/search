@@ -99,53 +99,7 @@ xml_tree_t *xml_creat(const char *fname, xml_opt_t *opt)
     }
 
     /* 2. 在内存中将XML文件转为XML树 */
-    xml = xml_screat(buff, opt);
-
-    opt->dealloc(opt->pool, buff);
-
-    return xml;
-}
-
-/******************************************************************************
- **函数名称: xml_screat_ext
- **功    能: 将XML字串转为XML树
- **输入参数:
- **     str: XML字串
- **     length: 字串长度
- **输出参数:
- **返    回: XML树
- **实现描述: 
- **     1. 分配缓存空间
- **     2. 截取XML字串
- **     3. 解析为XML字串
- **注意事项: 
- **作    者: # Qifeng.zou # 2013.09.25 #
- ******************************************************************************/
-xml_tree_t *xml_screat_ext(const char *str, int length, xml_opt_t *opt)
-{
-    char *buff;
-    xml_tree_t *xml;
-
-    if (0 == length)     /* 创建空树 */
-    {
-        return xml_creat_empty(opt); 
-    }
-    else if (length < 0) /* 长度无限制 */
-    {
-        return xml_screat(str, opt);
-    }
-
-    /* length > 0 */
-    buff = (char *)opt->alloc(opt->pool, length + 1);
-    if (NULL == buff)
-    {
-        log_error(opt->log, "Alloc memory failed!");
-        return NULL;
-    }
-
-    memcpy(buff, str, length);
-
-    xml = xml_screat(buff, opt);
+    xml = xml_screat(buff, -1, opt);
 
     opt->dealloc(opt->pool, buff);
 
@@ -157,6 +111,7 @@ xml_tree_t *xml_screat_ext(const char *str, int length, xml_opt_t *opt)
  **功    能: 将XML字串转为XML树
  **输入参数:
  **     str: XML字串
+ **     len: 字串长度限制(-1:表示遇到\0结束)
  **     opt: 选项信息
  **输出参数:
  **返    回: XML树
@@ -167,7 +122,7 @@ xml_tree_t *xml_screat_ext(const char *str, int length, xml_opt_t *opt)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
-xml_tree_t *xml_screat(const char *str, xml_opt_t *opt)
+xml_tree_t *xml_screat(const char *str, size_t len, xml_opt_t *opt)
 {
     Stack_t stack;
     xml_tree_t *xml;
@@ -196,7 +151,7 @@ xml_tree_t *xml_screat(const char *str, xml_opt_t *opt)
         }
 
         /* 3. 解析XML文件缓存 */
-        if (xml_parse(xml, &stack, str))
+        if (xml_parse(xml, &stack, str, len))
         {
             log_error(xml->log, "Parse xml failed!");
             xml_destroy(xml);
@@ -746,7 +701,7 @@ xml_node_t *xml_add_node(xml_tree_t *xml,
 }
 
 /******************************************************************************
- **函数名称: xml_node_length
+ **函数名称: xml_node_len
  **功    能: 计算XML树打印成XML格式字串时的长度(注: 有层次结构)
  **输入参数:
  **     xml: XML树
@@ -757,9 +712,9 @@ xml_node_t *xml_add_node(xml_tree_t *xml,
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.06.10 #
  ******************************************************************************/
-int xml_node_length(xml_tree_t *xml, xml_node_t *node)
+int xml_node_len(xml_tree_t *xml, xml_node_t *node)
 {
-    int length;
+    int len;
     Stack_t stack;
     
     if (NULL == node)
@@ -774,16 +729,16 @@ int xml_node_length(xml_tree_t *xml, xml_node_t *node)
         return -1;
     }
 
-    length = _xml_node_length(xml, node, &stack);
-    if (length < 0)
+    len = _xml_node_len(xml, node, &stack);
+    if (len < 0)
     {
-        log_error(xml->log, "Get the length of node failed!");
+        log_error(xml->log, "Get the len of node failed!");
         stack_destroy(&stack);
         return -1;
     }
 
     stack_destroy(&stack);
-    return length;
+    return len;
 }
 
 /******************************************************************************
@@ -848,7 +803,7 @@ int xml_set_value(xml_tree_t *xml, xml_node_t *node, const char *value)
 }
 
 /******************************************************************************
- **函数名称: _xml_pack_length
+ **函数名称: _xml_pack_len
  **功    能: 计算XML树打印成XML报文字串时的长度(注: XML无层次结构)
  **输入参数:
  **     node: XML节点
@@ -858,9 +813,9 @@ int xml_set_value(xml_tree_t *xml, xml_node_t *node, const char *value)
  **注意事项: 
  **作    者: # Qifeng.zou # 2013.06.11 #
  ******************************************************************************/
-int _xml_pack_length(xml_tree_t *xml, xml_node_t *node)
+int _xml_pack_len(xml_tree_t *xml, xml_node_t *node)
 {
-    int length, length2;
+    int len, len2;
     Stack_t stack;
     xml_node_t *child;
     
@@ -876,16 +831,16 @@ int _xml_pack_length(xml_tree_t *xml, xml_node_t *node)
         return -1;
     }
 
-    length = 0;
+    len = 0;
 
     switch(node->type)
     {
         case XML_NODE_CHILD: /* 处理孩子节点 */
         {
-            length = xml_pack_node_length(xml, node, &stack);
-            if (length < 0)
+            len = xml_pack_node_len(xml, node, &stack);
+            if (len < 0)
             {
-                log_error(xml->log, "Get length of the node failed!");
+                log_error(xml->log, "Get len of the node failed!");
                 stack_destroy(&stack);
                 return -1;
             }
@@ -896,15 +851,15 @@ int _xml_pack_length(xml_tree_t *xml, xml_node_t *node)
             child = node->child;
             while (NULL != child)
             {
-                length2 = xml_pack_node_length(xml, child, &stack);
-                if (length2 < 0)
+                len2 = xml_pack_node_len(xml, child, &stack);
+                if (len2 < 0)
                 {
-                    log_error(xml->log, "Get length of the node failed!");
+                    log_error(xml->log, "Get len of the node failed!");
                     stack_destroy(&stack);
                     return -1;
                 }
 
-                length += length2;
+                len += len2;
                 child = child->next;
             }
             break;
@@ -913,13 +868,13 @@ int _xml_pack_length(xml_tree_t *xml, xml_node_t *node)
         case XML_NODE_UNKNOWN:
         {
             /* Do nothing */
-            length = 0;
+            len = 0;
             break;
         }
     }
 
     stack_destroy(&stack);
-    return length;
+    return len;
 }
 
 /******************************************************************************
