@@ -84,7 +84,7 @@ static int invtd_search_word_req_hdl(int type, int dev_orig, char *buff, size_t 
 {
     void *addr = NULL;
     char freq[32];
-    int idx, body_len;
+    int idx, body_len, total_len;
     xml_opt_t opt;
     xml_tree_t *xml = NULL;
     xml_node_t *root, *item;
@@ -92,7 +92,7 @@ static int invtd_search_word_req_hdl(int type, int dev_orig, char *buff, size_t 
     invt_word_doc_t *doc;
     invt_dic_word_t *word;
     mesg_search_word_req_t req;     /* 请求 */
-    mesg_search_word_rsp_t *rsp;    /* 应答 */
+    mesg_data_t *rsp;    /* 应答 */
     invtd_cntx_t *ctx = (invtd_cntx_t *)args;
 
     memset(&req, 0, sizeof(req));
@@ -151,20 +151,20 @@ static int invtd_search_word_req_hdl(int type, int dev_orig, char *buff, size_t 
 
 INVTD_SRCH_RSP:
     /* > 应答搜索结果 */
-    body_len = sizeof(uint64_t);
-    body_len += xml_pack_len(xml);
+    body_len = xml_pack_len(xml);
+    total_len = mesg_data_total(body_len);
 
-    addr = (char *)calloc(1, body_len);
+    addr = (char *)calloc(1, total_len);
     if (NULL == addr) {
         goto GOTO_FREE;
     }
 
-    rsp = (mesg_search_word_rsp_t *)addr;
+    rsp = (mesg_data_t *)addr;
 
     xml_spack(xml, rsp->body);
     rsp->serial = hton64(req.serial);
 
-    if (rtrd_send(ctx->rtrd, MSG_SEARCH_WORD_RSP, dev_orig, addr, body_len)) {
+    if (rtrd_send(ctx->rtrd, MSG_SEARCH_WORD_RSP, dev_orig, addr, total_len)) {
         log_error(ctx->log, "Send response failed! serial:%ld words:%s",
                 req.serial, req.words);
     }

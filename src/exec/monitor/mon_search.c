@@ -109,7 +109,7 @@ static int mon_srch_recv_rsp(mon_cntx_t *ctx, mon_srch_conn_t *conn)
 {
     int idx;
     ssize_t n;
-    char *addr;
+    char addr[8192];
     serial_t serial;
     xml_opt_t opt;
     xml_tree_t *xml;
@@ -117,7 +117,9 @@ static int mon_srch_recv_rsp(mon_cntx_t *ctx, mon_srch_conn_t *conn)
     struct timeval ctm;
     int sec, msec, usec;
     agent_header_t head;
-    mesg_search_word_rsp_t *rsp;
+    mesg_data_t *rsp;
+
+    memset(addr, 0, sizeof(addr));
 
     /* > 接收应答数据 */
     n = read(conn->fd, (void *)&head, sizeof(head));
@@ -130,20 +132,26 @@ static int mon_srch_recv_rsp(mon_cntx_t *ctx, mon_srch_conn_t *conn)
         fprintf(stderr, "    Didn't send search request but received response!\n");
     }
 
+    /* > 字节序转换 */
+    head.type = ntohl(head.type);
+    head.flag = ntohl(head.flag);
+    head.length = ntohl(head.length);
+    head.mark = ntohl(head.mark);
     head.serial = ntoh64(head.serial);
-    //head.length = ntohl(head.length);
-
-    addr = (char *)calloc(1, head.length);
 
     n = read(conn->fd, addr, head.length);
 
     /* > 显示查询结果 */
     fprintf(stderr, "    ============================================\n");
-    rsp = (mesg_search_word_rsp_t *)addr;
+    rsp = (mesg_data_t *)addr;
 
-    serial.serial = rsp->serial;
-    fprintf(stderr, "    >Serial: %lu - gid(%u) sid(%u) seq(%u)\n",
-            serial.serial, serial.nid, serial.sid, serial.seq);
+    rsp->serial = ntoh64(rsp->serial);
+
+    serial.serial = head.serial;
+    fprintf(stderr, "    >Serial: %lu [nid(%u) sid(%u) seq(%u)]\n",
+            head.serial, serial.nid, serial.sid, serial.seq);
+    fprintf(stderr, "    >Serial: %lu:%lu\n",
+            rsp->serial, head.serial);
 
     memset(&opt, 0, sizeof(opt));
 

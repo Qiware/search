@@ -36,8 +36,14 @@ int lsnd_search_word_req_hdl(unsigned int type, void *data, int length, void *ar
     head = (agent_header_t *)data;      // 消息头
     str = (const char *)(head + 1);     // 消息体
 
-    log_debug(ctx->log, "Call %s() serial:%lu sid:%lu length:%d body:%s!",
-            __func__, head->serial, length, str);
+    head->type = htonl(head->type);
+    head->flag = htonl(head->flag);
+    head->length = htonl(head->length);
+    head->mark = htonl(head->mark);
+    head->serial = hton64(head->serial);
+
+    log_debug(ctx->log, "Call %s() serial:%lu length:%d body:%s!",
+            __func__, ntoh64(head->serial), length, str);
 
     /* > 转发搜索请求 */
     return rtsd_cli_send(ctx->rtmq_to_invtd, type, data, length);

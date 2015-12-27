@@ -149,7 +149,7 @@ static int frwd_cmd_send_to_lsnd(frwd_cntx_t *ctx,
 static int frwd_search_word_rsp_hdl(int type, int orig, char *data, size_t len, void *args)
 {
     frwd_cntx_t *ctx = (frwd_cntx_t *)args;
-    mesg_search_word_rsp_t *rsp = (mesg_search_word_rsp_t *)data;
+    mesg_data_t *rsp = (mesg_data_t *)data;
 
     log_trace(ctx->log, "Call %s() body:%s", __func__, rsp->body);
 
