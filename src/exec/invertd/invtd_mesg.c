@@ -26,7 +26,8 @@
  **注意事项:
  **作    者: # Qifeng.zou # 2015.12.27 03:39:00 #
  ******************************************************************************/
-static int invtd_search_word_parse(invtd_cntx_t *ctx, const char *buf, mesg_search_word_req_t *req)
+static int invtd_search_word_parse(invtd_cntx_t *ctx,
+        const char *buf, size_t len, mesg_search_word_req_t *req)
 {
     xml_opt_t opt;
     xml_tree_t *xml;
@@ -46,14 +47,14 @@ static int invtd_search_word_parse(invtd_cntx_t *ctx, const char *buf, mesg_sear
     opt.alloc = mem_alloc;
     opt.dealloc = mem_dealloc;
 
-    xml = xml_screat(str, &opt);
+    xml = xml_screat(str, head->length, &opt);
     if (NULL == xml)
     {
         return -1;
     }
 
     /* > 解析XML树 */
-    node = xml_query(xml, ".search.words");
+    node = xml_query(xml, ".SEARCH.WORDS");
     if (NULL != node)
     {
         snprintf(req->words, sizeof(req->words), "%s", node->value.str);
@@ -79,24 +80,48 @@ static int invtd_search_word_parse(invtd_cntx_t *ctx, const char *buf, mesg_sear
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.08 #
  ******************************************************************************/
-static int invtd_search_word_req_hdl(int type, int orig, char *buff, size_t len, void *args)
+static int invtd_search_word_req_hdl(int type, int dev_orig, char *buff, size_t len, void *args)
 {
-    int idx;
+    void *addr = NULL;
+    char freq[32];
+    int idx, body_len;
+    xml_opt_t opt;
+    xml_tree_t *xml = NULL;
+    xml_node_t *root, *item;
     list_node_t *node;
     invt_word_doc_t *doc;
     invt_dic_word_t *word;
-    mesg_search_word_req_t req; /* 请求 */
-    mesg_search_word_rsp_t rsp; /* 应答 */
+    mesg_search_word_req_t req;     /* 请求 */
+    mesg_search_word_rsp_t *rsp;    /* 应答 */
     invtd_cntx_t *ctx = (invtd_cntx_t *)args;
 
     memset(&req, 0, sizeof(req));
-    memset(&rsp, 0, sizeof(rsp));
+    memset(&opt, 0, sizeof(opt));
 
     /* > 解析搜索信息 */
-    if (invtd_search_word_parse(ctx, buff, &req)) {
+    if (invtd_search_word_parse(ctx, buff, len, &req)) {
         log_error(ctx->log, "Parse search request failed! words:%s", req.words);
         goto INVTD_SRCH_RSP;
     }
+
+    /* > 构建XML树 */
+    opt.pool = NULL;
+    opt.alloc = mem_alloc;
+    opt.dealloc = mem_dealloc;
+
+    xml = xml_creat_empty(&opt);
+    if (NULL == xml) {
+        log_error(ctx->log, "Create xml failed!");
+        return -1;
+    }
+
+    root = xml_set_root(xml, "SEARCH");
+    if (NULL == root) {
+        log_error(ctx->log, "Set xml root failed!");
+        goto GOTO_FREE;
+    }
+
+    xml_add_attr(xml, root, "CMD", "rsp");
 
     /* > 搜索倒排表 */
     pthread_rwlock_rdlock(&ctx->invtab_lock);
@@ -113,24 +138,40 @@ static int invtd_search_word_req_hdl(int type, int orig, char *buff, size_t len,
     /* > 打印搜索结果 */
     idx = 0;
     node = word->doc_list->head;
-    for (; NULL!=node && idx < MSG_SRCH_RSP_URL_NUM; node=node->next, ++idx)
-    {
+    for (; NULL!=node; node=node->next, ++idx) {
         doc = (invt_word_doc_t *)node->data;
 
-        ++rsp.url_num;
-        snprintf(rsp.url[idx], sizeof(rsp.url[idx]), "%s:%d", doc->url.str, doc->freq);
+        snprintf(freq, sizeof(freq), "%d", doc->freq);
+
+        item = xml_add_child(xml, root, "ITEM", NULL); 
+        xml_add_attr(xml, item, "URL", doc->url.str);
+        xml_add_attr(xml, item, "FREQ", freq);
     }
     pthread_rwlock_unlock(&ctx->invtab_lock);
 
 INVTD_SRCH_RSP:
     /* > 应答搜索结果 */
-    rsp.serial = hton64(req.serial);
-    rsp.url_num = htonl(rsp.url_num);
-    if (rtrd_send(ctx->rtrd, MSG_SEARCH_WORD_RSP, orig, (void *)&rsp, sizeof(rsp)))
-    {
+    body_len = sizeof(uint64_t);
+    body_len += xml_pack_len(xml);
+
+    addr = (char *)calloc(1, body_len);
+    if (NULL == addr) {
+        goto GOTO_FREE;
+    }
+
+    rsp = (mesg_search_word_rsp_t *)addr;
+
+    xml_spack(xml, rsp->body);
+    rsp->serial = hton64(req.serial);
+
+    if (rtrd_send(ctx->rtrd, MSG_SEARCH_WORD_RSP, dev_orig, addr, body_len)) {
         log_error(ctx->log, "Send response failed! serial:%ld words:%s",
                 req.serial, req.words);
     }
+
+GOTO_FREE:
+    if (NULL != addr) { free(addr); }
+    if (NULL != xml) { xml_destroy(xml) };
 
     return INVT_OK;
 }

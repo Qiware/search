@@ -29,7 +29,7 @@ static int mon_srch_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args);
 static int mon_srch_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args);
 static int mon_insert_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args);
 static int mon_srch_word_loop(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args);
-static int mon_srch_get_body(const char *word, char *body, int size);
+static int mon_srch_set_body(const char *word, char *body, int size);
 
 /******************************************************************************
  **函数名称: mon_srch_menu
@@ -78,13 +78,11 @@ static int mon_srch_send_rep(int fd, const char *word)
     head = (agent_header_t *)addr;
     body = (char *)(head + 1);
 
-    len = mon_srch_get_body(word, body, MON_SRCH_BODY_LEN);
+    len = mon_srch_set_body(word, body, MON_SRCH_BODY_LEN);
     if (len < 0) {
-        fprintf(stderr, "Get search body failed! word:%s\n", word);
+        fprintf(stderr, "    Get search body failed! word:%s\n", word);
         return -1;
     }
-
-    fprintf(stdout, "body:%s len:%d\n", body, len);
 
     head->type = htonl(MSG_SEARCH_WORD_REQ);
     head->flag = htonl(AGENT_MSG_FLAG_USR);
@@ -109,66 +107,88 @@ static int mon_srch_send_rep(int fd, const char *word)
  ******************************************************************************/
 static int mon_srch_recv_rsp(mon_cntx_t *ctx, mon_srch_conn_t *conn)
 {
+    int idx;
+    ssize_t n;
+    char *addr;
     serial_t serial;
+    xml_opt_t opt;
+    xml_tree_t *xml;
+    xml_node_t *node, *attr;
     struct timeval ctm;
-    int n, i, sec, msec, usec;
-    agent_header_t *head;
+    int sec, msec, usec;
+    agent_header_t head;
     mesg_search_word_rsp_t *rsp;
-    char addr[sizeof(agent_header_t) + sizeof(mesg_search_word_rsp_t)];
 
     /* > 接收应答数据 */
-    n = read(conn->fd, addr, sizeof(addr));
+    n = read(conn->fd, (void *)&head, sizeof(head));
     gettimeofday(&ctm, NULL);
-    if (n <= 0)
-    {
+    if (n <= 0) {
         fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
         return -1;
     }
-    else if (0 == conn->wrtm.tv_sec)
-    {
+    else if (0 == conn->wrtm.tv_sec) {
         fprintf(stderr, "    Didn't send search request but received response!\n");
     }
 
+    head.serial = ntoh64(head.serial);
+    //head.length = ntohl(head.length);
+
+    addr = (char *)calloc(1, head.length);
+
+    n = read(conn->fd, addr, head.length);
+
     /* > 显示查询结果 */
     fprintf(stderr, "    ============================================\n");
-    head = (agent_header_t *)addr;
-    rsp = (mesg_search_word_rsp_t *)(head + 1);
-
-    rsp->serial = ntoh64(rsp->serial);
-    rsp->url_num = ntohl(rsp->url_num);
+    rsp = (mesg_search_word_rsp_t *)addr;
 
     serial.serial = rsp->serial;
     fprintf(stderr, "    >Serial: %lu - gid(%u) sid(%u) seq(%u)\n",
             serial.serial, serial.nid, serial.sid, serial.seq);
-    fprintf(stderr, "    >UrlNum: %d\n", rsp->url_num);
-    for (i=0; i<rsp->url_num; ++i)
-    {
-        fprintf(stderr, "        -[%02d] url: %s\n", i+1, rsp->url[i]);
+
+    memset(&opt, 0, sizeof(opt));
+
+    opt.pool = NULL;
+    opt.alloc = mem_alloc;
+    opt.dealloc = mem_dealloc;
+
+    xml = xml_screat(rsp->body, head.length, &opt);
+    if (NULL == xml) { 
+        fprintf(stderr, "    Format isn't right! body:%s\n", rsp->body);
+        return -1;
     }
+    
+    node = xml_query(xml, ".SEARCH.ITEM");
+    for (idx=1; NULL != node; node = xml_brother(node), ++idx) {
+        attr = xml_search(xml, node, "URL");
+        fprintf(stderr, "        [%02d] URL:%s", idx, attr->value.str);
+
+        attr = xml_search(xml, node, "FREQ");
+        fprintf(stderr, "    FREQ:%s\n", attr->value.str);
+    }
+
+    xml_destroy(xml);
+
     /* > 打印统计信息 */
     sec = ctm.tv_sec - conn->wrtm.tv_sec;
     msec = (ctm.tv_usec - conn->wrtm.tv_usec)/1000;
-    if (msec < 0)
-    {
+    if (msec < 0) {
         sec -= 1;
         msec += 1000;
     }
     usec = (ctm.tv_usec - conn->wrtm.tv_usec)%1000;
-    if (usec < 0)
-    {
+    if (usec < 0) {
         usec += 1000;
         msec -= 1;
-        if (msec < 0)
-        {
+        if (msec < 0) {
             sec -= 1;
             msec += 1000;
         }
     }
-    if (msec < 0)
-    {
+    if (msec < 0) {
         msec += 1000;
         sec -= 1;
     }
+
     fprintf(stderr, "    >Spend: %d(s).%03d(ms).%03d(us)\n", sec, msec, usec);
     fprintf(stderr, "    ============================================\n");
 
@@ -581,8 +601,8 @@ static int mon_srch_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args
 }
 
 /******************************************************************************
- **函数名称: mon_srch_get_body
- **功    能: 获取搜索报体
+ **函数名称: mon_srch_set_body
+ **功    能: 设置搜索报体
  **输入参数:
  **     word: 搜索信息
  **     size: 搜索请求的最大报体
@@ -593,7 +613,7 @@ static int mon_srch_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.12.27 03:01:48 #
  ******************************************************************************/
-static int mon_srch_get_body(const char *words, char *body, int size)
+static int mon_srch_set_body(const char *words, char *body, int size)
 {
     int len;
     xml_opt_t opt;
@@ -608,18 +628,18 @@ static int mon_srch_get_body(const char *words, char *body, int size)
     opt.alloc = mem_alloc;
     opt.dealloc = mem_dealloc;
 
-    xml = xml_screat_ext("", 0, &opt);
+    xml = xml_creat_empty(&opt);
     if (NULL == xml)
     {
         fprintf(stderr, "Create xml failed!");
         return -1;
     }
 
-    node = xml_add_child(xml, xml->root, "search", NULL);
-    xml_add_attr(xml, node, "words", words);
+    node = xml_add_child(xml, xml->root, "SEARCH", NULL);
+    xml_add_attr(xml, node, "WORDS", words);
 
     /* > 计算XML长度 */
-    len = xml_pack_length(xml);
+    len = xml_pack_len(xml);
     if (len >= size)
     {
         xml_destroy(xml);
@@ -631,5 +651,5 @@ static int mon_srch_get_body(const char *words, char *body, int size)
 
     xml_destroy(xml);
 
-    return len+1;
+    return len;
 }
