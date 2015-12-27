@@ -246,7 +246,7 @@ static int crwl_task_parse(const char *str, crwl_task_t *task, log_cycle_t *log)
     opt.alloc = (mem_alloc_cb_t)mem_pool_alloc;
     opt.dealloc = (mem_dealloc_cb_t)mem_pool_dealloc;
 
-    xml = xml_screat(str, &opt);
+    xml = xml_screat(str, -1, &opt);
     if (NULL == xml)
     {
         mem_pool_destroy(pool);
