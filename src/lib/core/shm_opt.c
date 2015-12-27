@@ -115,7 +115,7 @@ static int shm_data_write(const char *path, shm_data_t *shm)
     opt.alloc = (mem_alloc_cb_t)mem_alloc;
     opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
-    xml = xml_screat("", &opt);
+    xml = xml_creat_empty(&opt);
     if (NULL == xml)
     {
         return -1;
@@ -124,7 +124,7 @@ static int shm_data_write(const char *path, shm_data_t *shm)
     do
     {
         /* > 根节点 */
-        node = xml_add_child(xml, xml->root, "SHM", NULL);
+        node = xml_set_root(xml, "SHM");
         if (NULL == node)
         {
             break;
