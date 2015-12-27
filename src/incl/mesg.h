@@ -48,12 +48,15 @@ typedef struct
     char words[SRCH_WORD_LEN];              /* 搜索关键字 */
 } mesg_search_word_req_t;
 
-/* 搜索应答信息(内部使用) */
+/* 传输信息 */
 typedef struct
 {
     uint64_t serial;                        /* 流水号(全局唯一编号) */
-    char body[0];                           /* 应答数据 */
-} mesg_search_word_rsp_t;
+
+    char body[0];                           /* 传输数据 */
+} mesg_data_t;
+
+#define mesg_data_total(body_len) (sizeof(uint64_t) + body_len);
 
 /* 插入关键字-请求 */
 typedef struct

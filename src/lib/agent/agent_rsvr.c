@@ -934,7 +934,7 @@ static int agent_rsvr_recv(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
 
                         log_info(rsvr->log, "Call %s()! serial:%lu", __func__, extra->flow->serial);
 
-                        extra->head->serial = hton64(extra->flow->serial);
+                        extra->head->serial = extra->flow->serial;
                         if (extra->head->length)
                         {
                             recv->phase = SOCK_PHASE_READY_BODY; /* 设置下步 */
@@ -1063,6 +1063,14 @@ static int agent_rsvr_send(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
 
             send->off = 0;
             send->total = head->length + sizeof(agent_header_t);
+
+            log_trace(rsvr->log, "Call %s(): serial:%lu!", __func__, head->serial);
+
+            head->type = htonl(head->type);
+            head->flag = htonl(head->flag);
+            head->length = htonl(head->length);
+            head->mark = htonl(head->mark);
+            head->serial = hton64(head->serial);
         }
 
         /* 2. 发送数据 */

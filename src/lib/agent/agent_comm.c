@@ -404,6 +404,7 @@ int agent_send(agent_cntx_t *ctx, int type, uint64_t serial, void *data, int len
     head->flag = AGENT_MSG_FLAG_USR;
     head->length = len;
     head->mark = AGENT_MSG_MARK_KEY;
+    head->serial = serial;
 
     memcpy(head+1, data, len);
 

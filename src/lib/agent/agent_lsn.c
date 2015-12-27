@@ -214,7 +214,7 @@ static int agent_listen_accept(agent_cntx_t *ctx, agent_lsvr_t *lsvr)
     add->sid = sid;
     ftime(&add->crtm);
 
-    log_debug(lsvr->log, "Push data! fd:%d addr:%p siq:%ld", fd, add, sid);
+    log_debug(lsvr->log, "Push data! fd:%d addr:%p sid:%u", fd, add, sid);
 
     queue_push(ctx->connq[idx], add);
 
