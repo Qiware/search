@@ -177,7 +177,7 @@ static int qwsd_creat_sendq(qwsd_cntx_t *ctx)
     }
 
     /* > 创建发送队列 */
-    for (idx=0; idx<conf->work_thd_num; ++idx)
+    for (idx=0; idx<conf->send_thd_num; ++idx)
     {
         ctx->sendq[idx] = queue_creat(conf->sendq.max, conf->sendq.size);
         if (NULL == ctx->sendq[idx])
