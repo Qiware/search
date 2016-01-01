@@ -87,6 +87,7 @@ static void qwmq_setup_conf(qwsd_conf_t *conf, int port)
     snprintf(conf->auth.usr, sizeof(conf->auth.usr), "qifeng");
     snprintf(conf->auth.passwd, sizeof(conf->auth.passwd), "111111");
 
+    snprintf(conf->path, sizeof(conf->path), "./");
     snprintf(conf->ipaddr, sizeof(conf->ipaddr), "127.0.0.1");
 
     conf->port = port;

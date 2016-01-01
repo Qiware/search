@@ -12,6 +12,11 @@ static int rtmq_work_def_hdl(int type, int nodeid, char *buff, size_t len, void 
 /* 配置RTMQ */
 static void rtmq_setup_conf(rtrd_conf_t *conf, int port)
 {
+    snprintf(conf->auth.usr, sizeof(conf->auth.usr), "qifeng");
+    snprintf(conf->auth.passwd, sizeof(conf->auth.passwd), "111111");
+
+    snprintf(conf->path, sizeof(conf->path), "./");
+
     conf->port = port;
     conf->recv_thd_num = 1;
     conf->work_thd_num = 1;
