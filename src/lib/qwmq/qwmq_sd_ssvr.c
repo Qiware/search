@@ -1,7 +1,7 @@
 #include "redo.h"
 #include "qwmq_cmd.h"
 #include "qwmq_comm.h"
-#include "qwsd_send.h"
+#include "qwmq_sd_send.h"
 
 #define qwsd_ssvr_usck_path(conf, path, id) \
     snprintf(path, sizeof(path), "%s/%d/qwsd-ssvr.%d", conf->path, conf->nodeid, id)
@@ -9,7 +9,6 @@
 /* 静态函数 */
 static qwsd_ssvr_t *qwsd_ssvr_get_curr(qwsd_cntx_t *ctx);
 
-static int qwsd_ssvr_creat_sendq(qwsd_ssvr_t *ssvr, const qwsd_conf_t *conf);
 static int qwsd_ssvr_creat_usck(qwsd_ssvr_t *ssvr, const qwsd_conf_t *conf);
 
 static int qwsd_ssvr_recv_cmd(qwsd_cntx_t *ctx, qwsd_ssvr_t *ssvr);
@@ -58,11 +57,7 @@ int qwsd_ssvr_init(qwsd_cntx_t *ctx, qwsd_ssvr_t *ssvr, int idx)
     ssvr->sck.fd = INVALID_FD;
 
     /* > 创建发送队列 */
-    if (qwsd_ssvr_creat_sendq(ssvr, conf))
-    {
-        log_error(ssvr->log, "Initialize send queue failed!");
-        return QWMQ_ERR;
-    }
+    ssvr->sendq = ctx->sendq[idx];
 
     /* > 创建unix套接字 */
     if (qwsd_ssvr_creat_usck(ssvr, conf))
@@ -112,31 +107,6 @@ int qwsd_ssvr_init(qwsd_cntx_t *ctx, qwsd_ssvr_t *ssvr, int idx)
     }
 
     qwmq_snap_setup(recv, addr, conf->recv_buff_size);
-
-    return QWMQ_OK;
-}
-
-/******************************************************************************
- **函数名称: qwsd_ssvr_creat_sendq
- **功    能: 创建发送线程的发送队列
- **输入参数:
- **     ssvr: 发送服务对象
- **     conf: 配置信息
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述:
- **注意事项:
- **作    者: # Qifeng.zou # 2015.01.14 #
- ******************************************************************************/
-static int qwsd_ssvr_creat_sendq(qwsd_ssvr_t *ssvr, const qwsd_conf_t *conf)
-{
-    /* 1. 创建发送队列 */
-    ssvr->sendq = queue_creat(conf->sendq.max, conf->sendq.size);
-    if (NULL == ssvr->sendq)
-    {
-        log_error(ssvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return QWMQ_ERR;
-    }
 
     return QWMQ_OK;
 }

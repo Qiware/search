@@ -24,7 +24,7 @@ typedef enum
 typedef struct
 {
     unsigned short type;                /* 数据类型 */
-    int nodeid;                          /* 源结点ID */
+    int nodeid;                         /* 源结点ID */
 #define QWMQ_SYS_MESG   (0)             /* 系统类型 */
 #define QWMQ_EXP_MESG   (1)             /* 自定义类型 */
     uint8_t flag;                       /* 消息标志

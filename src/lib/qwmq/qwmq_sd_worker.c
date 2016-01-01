@@ -10,8 +10,8 @@
 
 #include "xml_tree.h"
 #include "qwmq_cmd.h"
-#include "qwsd_send.h"
 #include "thread_pool.h"
+#include "qwmq_sd_send.h"
 
 /* 静态函数 */
 static qwmq_worker_t *qwsd_worker_get_curr(qwsd_cntx_t *ctx);

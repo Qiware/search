@@ -1,7 +1,7 @@
 #if !defined(__QWSD_SEND_H__)
 #define __QWSD_SEND_H__
 
-#include "qwsd_ssvr.h"
+#include "qwmq_sd_ssvr.h"
 
 /* 配置信息 */
 typedef struct
@@ -42,6 +42,7 @@ typedef struct
 
     qwmq_reg_t reg[QWMQ_TYPE_MAX];      /* 回调注册对象(TODO: 如果类型过多，可构造平衡二叉树) */
     queue_t **recvq;                    /* 接收队列(数组长度与send_thd_num一致) */
+    queue_t **sendq;                    /* 发送缓存(数组长度与send_thd_num一致) */
 } qwsd_cntx_t;
 
 /* 内部接口 */
@@ -57,5 +58,6 @@ qwmq_worker_t *qwsd_worker_get_by_idx(qwsd_cntx_t *ctx, int idx);
 qwsd_cntx_t *qwsd_init(const qwsd_conf_t *conf, log_cycle_t *log);
 int qwsd_launch(qwsd_cntx_t *ctx);
 int qwsd_register(qwsd_cntx_t *ctx, int type, qwmq_reg_cb_t proc, void *args);
+int qwsd_cli_send(qwsd_cntx_t *ctx, int type, const void *data, size_t size);
 
 #endif /*__QWSD_SEND_H__*/

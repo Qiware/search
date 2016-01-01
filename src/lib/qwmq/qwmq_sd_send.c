@@ -1,5 +1,5 @@
 #include "syscall.h"
-#include "qwsd_send.h"
+#include "qwmq_sd_send.h"
 
 /******************************************************************************
  **函数名称: qwsd_creat_workers
@@ -153,6 +153,44 @@ static int qwsd_creat_recvq(qwsd_cntx_t *ctx)
 }
 
 /******************************************************************************
+ **函数名称: qwsd_ssvr_creat_sendq
+ **功    能: 创建发送线程的发送队列
+ **输入参数:
+ **     ctx: 发送对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述:
+ **注意事项:
+ **作    者: # Qifeng.zou # 2016.01.01 22:32:21 #
+ ******************************************************************************/
+static int qwsd_creat_sendq(qwsd_cntx_t *ctx)
+{
+    int idx;
+    qwsd_conf_t *conf = &ctx->conf;
+
+    /* > 创建队列对象 */
+    ctx->sendq = (queue_t **)calloc(conf->send_thd_num, sizeof(queue_t *));
+    if (NULL == ctx->sendq)
+    {
+        log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        return QWMQ_ERR;
+    }
+
+    /* > 创建发送队列 */
+    for (idx=0; idx<conf->work_thd_num; ++idx)
+    {
+        ctx->sendq[idx] = queue_creat(conf->sendq.max, conf->sendq.size);
+        if (NULL == ctx->sendq[idx])
+        {
+            log_error(ctx->log, "Create send queue failed!");
+            return QWMQ_ERR;
+        }
+    }
+
+    return QWMQ_OK;
+}
+
+/******************************************************************************
  **函数名称: qwsd_init
  **功    能: 初始化发送端
  **输入参数:
@@ -195,7 +233,15 @@ qwsd_cntx_t *qwsd_init(const qwsd_conf_t *conf, log_cycle_t *log)
     /* > 创建接收队列 */
     if (qwsd_creat_recvq(ctx))
     {
-        log_fatal(log, "Create recv-queue failed!");
+        log_fatal(log, "Create recv queue failed!");
+        slab_destroy(slab);
+        return NULL;
+    }
+
+    /* > 创建发送队列 */
+    if (qwsd_creat_sendq(ctx))
+    {
+        log_fatal(log, "Create send queue failed!");
         slab_destroy(slab);
         return NULL;
     }
@@ -289,6 +335,70 @@ int qwsd_register(qwsd_cntx_t *ctx, int type, qwmq_reg_cb_t proc, void *param)
     reg->proc = proc;
     reg->param = param;
     reg->flag = 1;
+
+    return QWMQ_OK;
+}
+
+/******************************************************************************
+ **函数名称: qwsd_cli_send
+ **功    能: 发送指定数据(对外接口)
+ **输入参数:
+ **     ctx: 上下文信息
+ **     type: 数据类型
+ **     nodeid: 源结点ID
+ **     data: 数据地址
+ **     size: 数据长度
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 将数据按照约定格式放入队列中
+ **注意事项:
+ **     1. 只能用于发送自定义数据类型, 而不能用于系统数据类型
+ **     2. 不用关注变量num在多线程中的值, 因其不影响安全性
+ **作    者: # Qifeng.zou # 2015.01.14 #
+ ******************************************************************************/
+int qwsd_cli_send(qwsd_cntx_t *ctx, int type, const void *data, size_t size)
+{
+    int idx;
+    void *addr;
+    qwmq_header_t *head;
+    static uint8_t num = 0;
+    qwsd_conf_t *conf = &ctx->conf;
+
+    /* > 选择发送队列 */
+    idx = (num++) % conf->send_thd_num;
+
+    addr = queue_malloc(ctx->sendq[idx], sizeof(qwmq_header_t)+size);
+    if (NULL == addr)
+    {
+        log_error(ctx->log, "Alloc from SHMQ failed! size:%d/%d",
+                size+sizeof(qwmq_header_t), queue_size(ctx->sendq[idx]));
+        return QWMQ_ERR;
+    }
+
+    /* > 设置发送数据 */
+    head = (qwmq_header_t *)addr;
+
+    head->type = type;
+    head->nodeid = conf->nodeid;
+    head->length = size;
+    head->flag = QWMQ_EXP_MESG;
+    head->checksum = QWMQ_CHECK_SUM;
+
+    memcpy(head+1, data, size);
+
+    log_debug(ctx->log, "rq:%p Head type:%d nodeid:%d length:%d flag:%d checksum:%d!",
+            ctx->sendq[idx]->ring, head->type, head->nodeid, head->length, head->flag, head->checksum);
+
+    /* > 放入发送队列 */
+    if (queue_push(ctx->sendq[idx], addr))
+    {
+        log_error(ctx->log, "Push into shmq failed!");
+        queue_dealloc(ctx->sendq[idx], addr);
+        return QWMQ_ERR;
+    }
+
+    /* > 通知发送线程 */
+    //qwsd_cli_cmd_send_req(ctx, idx);
 
     return QWMQ_OK;
 }
