@@ -23,7 +23,7 @@
 #define USLEEP      (10)
 #define SIZE        (4096)
 
-int qwmq_send_debug(qwsd_cntx_t *ctx, int secs)
+int qwmq_send_debug(qwmq_sd_cntx_t *ctx, int secs)
 {
     size_t idx = 0;
     double sleep2 = 0;
@@ -103,7 +103,7 @@ int main(int argc, const char *argv[])
 {
     int port;
     log_cycle_t *log;
-    qwsd_cntx_t *ctx;
+    qwmq_sd_cntx_t *ctx;
     qwsd_conf_t conf;
 
     if (2 != argc)

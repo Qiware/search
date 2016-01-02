@@ -49,7 +49,7 @@ int main(int argc, const char *argv[])
 
     signal(SIGPIPE, SIG_IGN);
                                        
-    log = log_init(LOG_LEVEL_ERROR, "./rtmq.log", "../temp/log.key");
+    log = log_init(LOG_LEVEL_TRACE, "./rtmq.log", "../temp/log.key");
 
     /* 1. 接收端初始化 */
     ctx = rtrd_init(&conf, log);
