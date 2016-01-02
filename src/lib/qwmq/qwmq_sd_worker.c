@@ -14,9 +14,9 @@
 #include "qwmq_sd_send.h"
 
 /* 静态函数 */
-static qwmq_worker_t *qwsd_worker_get_curr(qwsd_cntx_t *ctx);
-static int qwsd_worker_event_core_hdl(qwsd_cntx_t *ctx, qwmq_worker_t *worker);
-static int qwsd_worker_cmd_proc_req_hdl(qwsd_cntx_t *ctx, qwmq_worker_t *worker, const qwmq_cmd_t *cmd);
+static qwmq_worker_t *qwsd_worker_get_curr(qwmq_sd_cntx_t *ctx);
+static int qwsd_worker_event_core_hdl(qwmq_sd_cntx_t *ctx, qwmq_worker_t *worker);
+static int qwsd_worker_cmd_proc_req_hdl(qwmq_sd_cntx_t *ctx, qwmq_worker_t *worker, const qwmq_cmd_t *cmd);
 
 /******************************************************************************
  **函数名称: qwsd_worker_routine
@@ -38,7 +38,7 @@ void *qwsd_worker_routine(void *_ctx)
     qwmq_worker_t *worker;
     qwmq_cmd_proc_req_t *req;
     struct timeval timeout;
-    qwsd_cntx_t *ctx = (qwsd_cntx_t *)_ctx;
+    qwmq_sd_cntx_t *ctx = (qwmq_sd_cntx_t *)_ctx;
     qwsd_conf_t *conf = (qwsd_conf_t *)&ctx->conf;
 
     /* 1. 获取工作对象 */
@@ -110,7 +110,7 @@ void *qwsd_worker_routine(void *_ctx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.19 #
  ******************************************************************************/
-qwmq_worker_t *qwsd_worker_get_by_idx(qwsd_cntx_t *ctx, int idx)
+qwmq_worker_t *qwsd_worker_get_by_idx(qwmq_sd_cntx_t *ctx, int idx)
 {
     return (qwmq_worker_t *)(ctx->worktp->data + idx * sizeof(qwmq_worker_t));
 }
@@ -128,7 +128,7 @@ qwmq_worker_t *qwsd_worker_get_by_idx(qwsd_cntx_t *ctx, int idx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.18 #
  ******************************************************************************/
-static qwmq_worker_t *qwsd_worker_get_curr(qwsd_cntx_t *ctx)
+static qwmq_worker_t *qwsd_worker_get_curr(qwmq_sd_cntx_t *ctx)
 {
     int id;
 
@@ -158,7 +158,7 @@ static qwmq_worker_t *qwsd_worker_get_curr(qwsd_cntx_t *ctx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.18 #
  ******************************************************************************/
-int qwsd_worker_init(qwsd_cntx_t *ctx, qwmq_worker_t *worker, int id)
+int qwsd_worker_init(qwmq_sd_cntx_t *ctx, qwmq_worker_t *worker, int id)
 {
     char path[FILE_PATH_MAX_LEN];
     qwsd_conf_t *conf = &ctx->conf;
@@ -192,7 +192,7 @@ int qwsd_worker_init(qwsd_cntx_t *ctx, qwmq_worker_t *worker, int id)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.18 #
  ******************************************************************************/
-static int qwsd_worker_event_core_hdl(qwsd_cntx_t *ctx, qwmq_worker_t *worker)
+static int qwsd_worker_event_core_hdl(qwmq_sd_cntx_t *ctx, qwmq_worker_t *worker)
 {
     qwmq_cmd_t cmd;
 
@@ -236,7 +236,7 @@ static int qwsd_worker_event_core_hdl(qwsd_cntx_t *ctx, qwmq_worker_t *worker)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.18 #
  ******************************************************************************/
-static int qwsd_worker_cmd_proc_req_hdl(qwsd_cntx_t *ctx, qwmq_worker_t *worker, const qwmq_cmd_t *cmd)
+static int qwsd_worker_cmd_proc_req_hdl(qwmq_sd_cntx_t *ctx, qwmq_worker_t *worker, const qwmq_cmd_t *cmd)
 {
 #define RTSD_WORK_POP_NUM   (1024)
     int idx, num;

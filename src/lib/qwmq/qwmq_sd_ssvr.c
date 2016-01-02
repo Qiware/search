@@ -3,34 +3,31 @@
 #include "qwmq_comm.h"
 #include "qwmq_sd_send.h"
 
-#define qwsd_ssvr_usck_path(conf, path, id) \
-    snprintf(path, sizeof(path), "%s/%d/qwsd-ssvr.%d", conf->path, conf->nodeid, id)
-
 /* 静态函数 */
-static qwsd_ssvr_t *qwsd_ssvr_get_curr(qwsd_cntx_t *ctx);
+static qwsd_ssvr_t *qwsd_ssvr_get_curr(qwmq_sd_cntx_t *ctx);
 
 static int qwsd_ssvr_creat_usck(qwsd_ssvr_t *ssvr, const qwsd_conf_t *conf);
 
-static int qwsd_ssvr_recv_cmd(qwsd_cntx_t *ctx, qwsd_ssvr_t *ssvr);
-static int qwsd_ssvr_recv_proc(qwsd_cntx_t *ctx, qwsd_ssvr_t *ssvr);
+static int qwsd_ssvr_recv_cmd(qwmq_sd_cntx_t *ctx, qwsd_ssvr_t *ssvr);
+static int qwsd_ssvr_recv_proc(qwmq_sd_cntx_t *ctx, qwsd_ssvr_t *ssvr);
 
-static int qwsd_ssvr_data_proc(qwsd_cntx_t *ctx, qwsd_ssvr_t *ssvr, qwsd_sck_t *sck);
-static int qwsd_ssvr_sys_mesg_proc(qwsd_cntx_t *ctx, qwsd_ssvr_t *ssvr, qwsd_sck_t *sck, void *addr);
-static int qwsd_ssvr_exp_mesg_proc(qwsd_cntx_t *ctx, qwsd_ssvr_t *ssvr, qwsd_sck_t *sck, void *addr);
+static int qwsd_ssvr_data_proc(qwmq_sd_cntx_t *ctx, qwsd_ssvr_t *ssvr, qwsd_sck_t *sck);
+static int qwsd_ssvr_sys_mesg_proc(qwmq_sd_cntx_t *ctx, qwsd_ssvr_t *ssvr, qwsd_sck_t *sck, void *addr);
+static int qwsd_ssvr_exp_mesg_proc(qwmq_sd_cntx_t *ctx, qwsd_ssvr_t *ssvr, qwsd_sck_t *sck, void *addr);
 
-static int qwsd_ssvr_timeout_hdl(qwsd_cntx_t *ctx, qwsd_ssvr_t *ssvr);
-static int qwsd_ssvr_proc_cmd(qwsd_cntx_t *ctx, qwsd_ssvr_t *ssvr, const qwmq_cmd_t *cmd);
-static int qwsd_ssvr_send_data(qwsd_cntx_t *ctx, qwsd_ssvr_t *ssvr);
+static int qwsd_ssvr_timeout_hdl(qwmq_sd_cntx_t *ctx, qwsd_ssvr_t *ssvr);
+static int qwsd_ssvr_proc_cmd(qwmq_sd_cntx_t *ctx, qwsd_ssvr_t *ssvr, const qwmq_cmd_t *cmd);
+static int qwsd_ssvr_send_data(qwmq_sd_cntx_t *ctx, qwsd_ssvr_t *ssvr);
 
 static int qwsd_ssvr_clear_mesg(qwsd_ssvr_t *ssvr);
 
-static int qwsd_ssvr_kpalive_req(qwsd_cntx_t *ctx, qwsd_ssvr_t *ssvr);
+static int qwsd_ssvr_kpalive_req(qwmq_sd_cntx_t *ctx, qwsd_ssvr_t *ssvr);
 
-static int qwmq_link_auth_req(qwsd_cntx_t *ctx, qwsd_ssvr_t *ssvr);
-static int qwmq_link_auth_rsp_hdl(qwsd_cntx_t *ctx, qwsd_ssvr_t *ssvr, qwsd_sck_t *sck, qwmq_link_auth_rsp_t *rsp);
+static int qwmq_link_auth_req(qwmq_sd_cntx_t *ctx, qwsd_ssvr_t *ssvr);
+static int qwmq_link_auth_rsp_hdl(qwmq_sd_cntx_t *ctx, qwsd_ssvr_t *ssvr, qwsd_sck_t *sck, qwmq_link_auth_rsp_t *rsp);
 
-static int qwsd_ssvr_cmd_proc_req(qwsd_cntx_t *ctx, qwsd_ssvr_t *ssvr, int rqid);
-static int qwsd_ssvr_cmd_proc_all_req(qwsd_cntx_t *ctx, qwsd_ssvr_t *ssvr);
+static int qwsd_ssvr_cmd_proc_req(qwmq_sd_cntx_t *ctx, qwsd_ssvr_t *ssvr, int rqid);
+static int qwsd_ssvr_cmd_proc_all_req(qwmq_sd_cntx_t *ctx, qwsd_ssvr_t *ssvr);
 
 /******************************************************************************
  **函数名称: qwsd_ssvr_init
@@ -44,7 +41,7 @@ static int qwsd_ssvr_cmd_proc_all_req(qwsd_cntx_t *ctx, qwsd_ssvr_t *ssvr);
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-int qwsd_ssvr_init(qwsd_cntx_t *ctx, qwsd_ssvr_t *ssvr, int idx)
+int qwsd_ssvr_init(qwmq_sd_cntx_t *ctx, qwsd_ssvr_t *ssvr, int idx)
 {
     void *addr;
     list_opt_t opt;
@@ -152,7 +149,7 @@ static int qwsd_ssvr_creat_usck(qwsd_ssvr_t *ssvr, const qwsd_conf_t *conf)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.16 #
  ******************************************************************************/
-static void qwsd_ssvr_bind_cpu(qwsd_cntx_t *ctx, int id)
+static void qwsd_ssvr_bind_cpu(qwmq_sd_cntx_t *ctx, int id)
 {
     int idx, mod;
     cpu_set_t cpuset;
@@ -234,7 +231,7 @@ void *qwsd_ssvr_routine(void *_ctx)
     qwsd_sck_t *sck;
     qwsd_ssvr_t *ssvr;
     struct timeval timeout;
-    qwsd_cntx_t *ctx = (qwsd_cntx_t *)_ctx;
+    qwmq_sd_cntx_t *ctx = (qwmq_sd_cntx_t *)_ctx;
     qwsd_conf_t *conf = &ctx->conf;
 
     nice(-20);
@@ -330,7 +327,7 @@ void *qwsd_ssvr_routine(void *_ctx)
  **     因此发送数据时，不用判断EAGAIN的情况是否存在。
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static int qwsd_ssvr_kpalive_req(qwsd_cntx_t *ctx, qwsd_ssvr_t *ssvr)
+static int qwsd_ssvr_kpalive_req(qwmq_sd_cntx_t *ctx, qwsd_ssvr_t *ssvr)
 {
     void *addr;
     qwmq_header_t *head;
@@ -390,7 +387,7 @@ static int qwsd_ssvr_kpalive_req(qwsd_cntx_t *ctx, qwsd_ssvr_t *ssvr)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static qwsd_ssvr_t *qwsd_ssvr_get_curr(qwsd_cntx_t *ctx)
+static qwsd_ssvr_t *qwsd_ssvr_get_curr(qwmq_sd_cntx_t *ctx)
 {
     int id;
 
@@ -420,7 +417,7 @@ static qwsd_ssvr_t *qwsd_ssvr_get_curr(qwsd_cntx_t *ctx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static int qwsd_ssvr_timeout_hdl(qwsd_cntx_t *ctx, qwsd_ssvr_t *ssvr)
+static int qwsd_ssvr_timeout_hdl(qwmq_sd_cntx_t *ctx, qwsd_ssvr_t *ssvr)
 {
     time_t curr_tm = time(NULL);
     qwsd_sck_t *sck = &ssvr->sck;
@@ -467,7 +464,7 @@ static int qwsd_ssvr_timeout_hdl(qwsd_cntx_t *ctx, qwsd_ssvr_t *ssvr)
  **     addr     optr             iptr                   end
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static int qwsd_ssvr_recv_proc(qwsd_cntx_t *ctx, qwsd_ssvr_t *ssvr)
+static int qwsd_ssvr_recv_proc(qwmq_sd_cntx_t *ctx, qwsd_ssvr_t *ssvr)
 {
     int n, left;
     qwsd_sck_t *sck = &ssvr->sck;
@@ -548,7 +545,7 @@ static int qwsd_ssvr_recv_proc(qwsd_cntx_t *ctx, qwsd_ssvr_t *ssvr)
  **     addr     optr             iptr                   end
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static int qwsd_ssvr_data_proc(qwsd_cntx_t *ctx, qwsd_ssvr_t *ssvr, qwsd_sck_t *sck)
+static int qwsd_ssvr_data_proc(qwmq_sd_cntx_t *ctx, qwsd_ssvr_t *ssvr, qwsd_sck_t *sck)
 {
     qwmq_header_t *head;
     uint32_t len, mesg_len;
@@ -631,7 +628,7 @@ static int qwsd_ssvr_data_proc(qwsd_cntx_t *ctx, qwsd_ssvr_t *ssvr, qwsd_sck_t *
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static int qwsd_ssvr_recv_cmd(qwsd_cntx_t *ctx, qwsd_ssvr_t *ssvr)
+static int qwsd_ssvr_recv_cmd(qwmq_sd_cntx_t *ctx, qwsd_ssvr_t *ssvr)
 {
     qwmq_cmd_t cmd;
 
@@ -660,7 +657,7 @@ static int qwsd_ssvr_recv_cmd(qwsd_cntx_t *ctx, qwsd_ssvr_t *ssvr)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static int qwsd_ssvr_proc_cmd(qwsd_cntx_t *ctx, qwsd_ssvr_t *ssvr, const qwmq_cmd_t *cmd)
+static int qwsd_ssvr_proc_cmd(qwmq_sd_cntx_t *ctx, qwsd_ssvr_t *ssvr, const qwmq_cmd_t *cmd)
 {
     qwsd_sck_t *sck = &ssvr->sck;
 
@@ -836,7 +833,7 @@ static int qwsd_ssvr_fill_send_buff(qwsd_ssvr_t *ssvr, qwsd_sck_t *sck)
  **     addr     optr             iptr                   end
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static int qwsd_ssvr_send_data(qwsd_cntx_t *ctx, qwsd_ssvr_t *ssvr)
+static int qwsd_ssvr_send_data(qwmq_sd_cntx_t *ctx, qwsd_ssvr_t *ssvr)
 {
     int n, len;
     qwsd_sck_t *sck = &ssvr->sck;
@@ -919,7 +916,7 @@ static int qwsd_ssvr_clear_mesg(qwsd_ssvr_t *ssvr)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.16 #
  ******************************************************************************/
-static int qwsd_ssvr_sys_mesg_proc(qwsd_cntx_t *ctx, qwsd_ssvr_t *ssvr, qwsd_sck_t *sck, void *addr)
+static int qwsd_ssvr_sys_mesg_proc(qwmq_sd_cntx_t *ctx, qwsd_ssvr_t *ssvr, qwsd_sck_t *sck, void *addr)
 {
     qwmq_header_t *head = (qwmq_header_t *)addr;
 
@@ -957,7 +954,7 @@ static int qwsd_ssvr_sys_mesg_proc(qwsd_cntx_t *ctx, qwsd_ssvr_t *ssvr, qwsd_sck
  **作    者: # Qifeng.zou # 2015.05.19 #
  ******************************************************************************/
 static int qwsd_ssvr_exp_mesg_proc(
-        qwsd_cntx_t *ctx, qwsd_ssvr_t *ssvr, qwsd_sck_t *sck, void *addr)
+        qwmq_sd_cntx_t *ctx, qwsd_ssvr_t *ssvr, qwsd_sck_t *sck, void *addr)
 {
     void *data;
     int idx, len;
@@ -1016,7 +1013,7 @@ static int qwsd_ssvr_exp_mesg_proc(
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.22 #
  ******************************************************************************/
-static int qwmq_link_auth_req(qwsd_cntx_t *ctx, qwsd_ssvr_t *ssvr)
+static int qwmq_link_auth_req(qwmq_sd_cntx_t *ctx, qwsd_ssvr_t *ssvr)
 {
     int size;
     void *addr;
@@ -1075,7 +1072,7 @@ static int qwmq_link_auth_req(qwsd_cntx_t *ctx, qwsd_ssvr_t *ssvr)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.22 #
  ******************************************************************************/
-static int qwmq_link_auth_rsp_hdl(qwsd_cntx_t *ctx,
+static int qwmq_link_auth_rsp_hdl(qwmq_sd_cntx_t *ctx,
         qwsd_ssvr_t *ssvr, qwsd_sck_t *sck, qwmq_link_auth_rsp_t *rsp)
 {
     return ntohl(rsp->is_succ)? QWMQ_OK : QWMQ_ERR;
@@ -1094,7 +1091,7 @@ static int qwmq_link_auth_rsp_hdl(qwsd_cntx_t *ctx,
  **注意事项:
  **作    者: # Qifeng.zou # 2015.06.08 #
  ******************************************************************************/
-static int qwsd_ssvr_cmd_proc_req(qwsd_cntx_t *ctx, qwsd_ssvr_t *ssvr, int rqid)
+static int qwsd_ssvr_cmd_proc_req(qwmq_sd_cntx_t *ctx, qwsd_ssvr_t *ssvr, int rqid)
 {
     qwmq_cmd_t cmd;
     char path[FILE_PATH_MAX_LEN];
@@ -1126,7 +1123,7 @@ static int qwsd_ssvr_cmd_proc_req(qwsd_cntx_t *ctx, qwsd_ssvr_t *ssvr, int rqid)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.06.08 #
  ******************************************************************************/
-static int qwsd_ssvr_cmd_proc_all_req(qwsd_cntx_t *ctx, qwsd_ssvr_t *ssvr)
+static int qwsd_ssvr_cmd_proc_all_req(qwmq_sd_cntx_t *ctx, qwsd_ssvr_t *ssvr)
 {
     int idx;
 

@@ -3,6 +3,11 @@
 
 #include "qwmq_sd_ssvr.h"
 
+#define qwsd_cli_usck_path(conf, path) \
+    snprintf(path, sizeof(path), "%s/%d/qwsd-cli.usck", (conf)->path, (conf)->nodeid)
+#define qwsd_ssvr_usck_path(conf, path, id) \
+    snprintf(path, sizeof(path), "%s/%d/qwsd-ssvr.%d", (conf)->path, (conf)->nodeid, id)
+
 /* 配置信息 */
 typedef struct
 {
@@ -37,27 +42,30 @@ typedef struct
     log_cycle_t *log;                   /* 日志对象 */
     slab_pool_t *slab;                  /* 内存池对象 */
 
+    int cmd_sck_id;                     /* 命令套接字 */
+    spinlock_t cmd_sck_lck;             /* 命令套接字锁 */
+
     thread_pool_t *sendtp;              /* 发送线程池 */
     thread_pool_t *worktp;              /* 工作线程池 */
 
     qwmq_reg_t reg[QWMQ_TYPE_MAX];      /* 回调注册对象(TODO: 如果类型过多，可构造平衡二叉树) */
     queue_t **recvq;                    /* 接收队列(数组长度与send_thd_num一致) */
     queue_t **sendq;                    /* 发送缓存(数组长度与send_thd_num一致) */
-} qwsd_cntx_t;
+} qwmq_sd_cntx_t;
 
 /* 内部接口 */
-int qwsd_ssvr_init(qwsd_cntx_t *ctx, qwsd_ssvr_t *ssvr, int tidx);
+int qwsd_ssvr_init(qwmq_sd_cntx_t *ctx, qwsd_ssvr_t *ssvr, int tidx);
 void *qwsd_ssvr_routine(void *_ctx);
 
-int qwsd_worker_init(qwsd_cntx_t *ctx, qwmq_worker_t *wrk, int tidx);
+int qwsd_worker_init(qwmq_sd_cntx_t *ctx, qwmq_worker_t *wrk, int tidx);
 void *qwsd_worker_routine(void *_ctx);
 
-qwmq_worker_t *qwsd_worker_get_by_idx(qwsd_cntx_t *ctx, int idx);
+qwmq_worker_t *qwsd_worker_get_by_idx(qwmq_sd_cntx_t *ctx, int idx);
 
 /* 对外接口 */
-qwsd_cntx_t *qwsd_init(const qwsd_conf_t *conf, log_cycle_t *log);
-int qwsd_launch(qwsd_cntx_t *ctx);
-int qwsd_register(qwsd_cntx_t *ctx, int type, qwmq_reg_cb_t proc, void *args);
-int qwsd_cli_send(qwsd_cntx_t *ctx, int type, const void *data, size_t size);
+qwmq_sd_cntx_t *qwsd_init(const qwsd_conf_t *conf, log_cycle_t *log);
+int qwsd_launch(qwmq_sd_cntx_t *ctx);
+int qwsd_register(qwmq_sd_cntx_t *ctx, int type, qwmq_reg_cb_t proc, void *args);
+int qwsd_cli_send(qwmq_sd_cntx_t *ctx, int type, const void *data, size_t size);
 
 #endif /*__QWSD_SEND_H__*/

@@ -1,4 +1,5 @@
 #include "syscall.h"
+#include "qwmq_cmd.h"
 #include "qwmq_sd_send.h"
 
 /******************************************************************************
@@ -12,7 +13,7 @@
  **注意事项:
  **作    者: # Qifeng.zou # 2015.08.19 #
  ******************************************************************************/
-static int qwsd_creat_workers(qwsd_cntx_t *ctx)
+static int qwsd_creat_workers(qwmq_sd_cntx_t *ctx)
 {
     int idx;
     qwmq_worker_t *worker;
@@ -68,7 +69,7 @@ static int qwsd_creat_workers(qwsd_cntx_t *ctx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.08.19 #
  ******************************************************************************/
-static int qwsd_creat_sends(qwsd_cntx_t *ctx)
+static int qwsd_creat_sends(qwmq_sd_cntx_t *ctx)
 {
     int idx;
     qwsd_ssvr_t *ssvr;
@@ -125,7 +126,7 @@ static int qwsd_creat_sends(qwsd_cntx_t *ctx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.06.04 #
  ******************************************************************************/
-static int qwsd_creat_recvq(qwsd_cntx_t *ctx)
+static int qwsd_creat_recvq(qwmq_sd_cntx_t *ctx)
 {
     int idx;
     qwsd_conf_t *conf = &ctx->conf;
@@ -163,7 +164,7 @@ static int qwsd_creat_recvq(qwsd_cntx_t *ctx)
  **注意事项:
  **作    者: # Qifeng.zou # 2016.01.01 22:32:21 #
  ******************************************************************************/
-static int qwsd_creat_sendq(qwsd_cntx_t *ctx)
+static int qwsd_creat_sendq(qwmq_sd_cntx_t *ctx)
 {
     int idx;
     qwsd_conf_t *conf = &ctx->conf;
@@ -202,9 +203,9 @@ static int qwsd_creat_sendq(qwsd_cntx_t *ctx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.19 #
  ******************************************************************************/
-qwsd_cntx_t *qwsd_init(const qwsd_conf_t *conf, log_cycle_t *log)
+qwmq_sd_cntx_t *qwsd_init(const qwsd_conf_t *conf, log_cycle_t *log)
 {
-    qwsd_cntx_t *ctx;
+    qwmq_sd_cntx_t *ctx;
     slab_pool_t *slab;
 
     /* > 创建内存池 */
@@ -216,7 +217,7 @@ qwsd_cntx_t *qwsd_init(const qwsd_conf_t *conf, log_cycle_t *log)
     }
 
     /* > 创建对象 */
-    ctx = (qwsd_cntx_t *)slab_alloc(slab, sizeof(qwsd_cntx_t));
+    ctx = (qwmq_sd_cntx_t *)slab_alloc(slab, sizeof(qwmq_sd_cntx_t));
     if (NULL == ctx)
     {
         log_fatal(log, "errmsg:[%d] %s!", errno, strerror(errno));
@@ -278,7 +279,7 @@ qwsd_cntx_t *qwsd_init(const qwsd_conf_t *conf, log_cycle_t *log)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-int qwsd_launch(qwsd_cntx_t *ctx)
+int qwsd_launch(qwmq_sd_cntx_t *ctx)
 {
     int idx;
     qwsd_conf_t *conf = &ctx->conf;
@@ -314,7 +315,7 @@ int qwsd_launch(qwsd_cntx_t *ctx)
  **     2. 不允许重复注册
  **作    者: # Qifeng.zou # 2015.05.19 #
  ******************************************************************************/
-int qwsd_register(qwsd_cntx_t *ctx, int type, qwmq_reg_cb_t proc, void *param)
+int qwsd_register(qwmq_sd_cntx_t *ctx, int type, qwmq_reg_cb_t proc, void *param)
 {
     qwmq_reg_t *reg;
 
@@ -340,6 +341,80 @@ int qwsd_register(qwsd_cntx_t *ctx, int type, qwmq_reg_cb_t proc, void *param)
 }
 
 /******************************************************************************
+ **函数名称: qwsd_cli_cmd_usck
+ **功    能: 创建命令套接字
+ **输入参数:
+ **     ctx: 上下文信息
+ **     idx: 目标队列序号
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述:
+ **注意事项:
+ **作    者: # Qifeng.zou # 2015.01.14 #
+ ******************************************************************************/
+static int qwsd_cli_cmd_usck(qwmq_sd_cntx_t *ctx)
+{
+    char path[FILE_NAME_MAX_LEN];
+
+    qwsd_cli_usck_path(&ctx->conf, path);
+
+    spin_lock_init(&ctx->cmd_sck_lck);
+    ctx->cmd_sck_id = unix_udp_creat(path);
+    if (ctx->cmd_sck_id < 0)
+    {
+        log_error(ctx->log, "errmsg:[%d] %s! path:%s", errno, strerror(errno), path);
+        return QWMQ_ERR;
+    }
+
+    return QWMQ_OK;
+}
+
+/******************************************************************************
+ **函数名称: qwsd_cli_cmd_send_req
+ **功    能: 通知Send服务线程
+ **输入参数:
+ **     ctx: 上下文信息
+ **     idx: 发送服务ID
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述:
+ **注意事项:
+ **作    者: # Qifeng.zou # 2015.01.14 #
+ ******************************************************************************/
+static int qwsd_cli_cmd_send_req(qwmq_sd_cntx_t *ctx, int idx)
+{
+    qwmq_cmd_t cmd;
+    char path[FILE_NAME_MAX_LEN];
+    qwsd_conf_t *conf = &ctx->conf;
+
+    memset(&cmd, 0, sizeof(cmd));
+
+    cmd.type = QWMQ_CMD_SEND_ALL;
+    qwsd_ssvr_usck_path(conf, path, idx);
+
+    if (spin_trylock(&ctx->cmd_sck_lck))
+    {
+        return QWMQ_OK;
+    }
+
+    if (unix_udp_send(ctx->cmd_sck_id, path, &cmd, sizeof(cmd)) < 0)
+    {
+        spin_unlock(&ctx->cmd_sck_lck);
+        if (EAGAIN != errno)
+        {
+            log_debug(ctx->log, "errmsg:[%d] %s! path:%s", errno, strerror(errno), path);
+        }
+        return QWMQ_ERR;
+    }
+
+    spin_unlock(&ctx->cmd_sck_lck);
+
+    return QWMQ_OK;
+}
+
+
+
+/******************************************************************************
  **函数名称: qwsd_cli_send
  **功    能: 发送指定数据(对外接口)
  **输入参数:
@@ -356,7 +431,7 @@ int qwsd_register(qwsd_cntx_t *ctx, int type, qwmq_reg_cb_t proc, void *param)
  **     2. 不用关注变量num在多线程中的值, 因其不影响安全性
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-int qwsd_cli_send(qwsd_cntx_t *ctx, int type, const void *data, size_t size)
+int qwsd_cli_send(qwmq_sd_cntx_t *ctx, int type, const void *data, size_t size)
 {
     int idx;
     void *addr;
@@ -398,7 +473,7 @@ int qwsd_cli_send(qwsd_cntx_t *ctx, int type, const void *data, size_t size)
     }
 
     /* > 通知发送线程 */
-    //qwsd_cli_cmd_send_req(ctx, idx);
+    qwsd_cli_cmd_send_req(ctx, idx);
 
     return QWMQ_OK;
 }
