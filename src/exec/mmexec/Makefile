@@ -13,6 +13,7 @@ INCLUDE = -I. \
 			-I$(PROJ)/src/incl \
 			-I$(PROJ)/src/incl/sdtp \
 			-I$(PROJ)/src/incl/rtmq \
+			-I$(PROJ)/src/incl/qwmq \
 			-I$(PROJ)/src/incl/agent \
 			-I$(PROJ)/src/incl/conf
 LIBS_PATH = -L$(PROJ)/lib
