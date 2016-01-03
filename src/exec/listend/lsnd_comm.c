@@ -72,7 +72,7 @@ int lsnd_getopt(int argc, char **argv, lsnd_opt_t *opt)
     optind = 1;
 
     /* 2. 验证输入参数 */
-    if (!strlen(opt->name))
+    if ((NULL == opt->name) || !strlen(opt->name))
     {
         return LSND_SHOW_HELP;
     }
