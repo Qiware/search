@@ -1,4 +1,5 @@
 #include "syscall.h"
+#include "rtmq_cmd.h"
 #include "rtsd_send.h"
 
 /******************************************************************************
@@ -153,6 +154,44 @@ static int rtsd_creat_recvq(rtsd_cntx_t *ctx)
 }
 
 /******************************************************************************
+ **函数名称: rtsd_ssvr_creat_sendq
+ **功    能: 创建发送线程的发送队列
+ **输入参数:
+ **     ctx: 发送对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述:
+ **注意事项:
+ **作    者: # Qifeng.zou # 2016.01.01 22:32:21 #
+ ******************************************************************************/
+static int rtsd_creat_sendq(rtsd_cntx_t *ctx)
+{
+    int idx;
+    rtsd_conf_t *conf = &ctx->conf;
+
+    /* > 创建队列对象 */
+    ctx->sendq = (queue_t **)calloc(conf->send_thd_num, sizeof(queue_t *));
+    if (NULL == ctx->sendq)
+    {
+        log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        return RTMQ_ERR;
+    }
+
+    /* > 创建发送队列 */
+    for (idx=0; idx<conf->send_thd_num; ++idx)
+    {
+        ctx->sendq[idx] = queue_creat(conf->sendq.max, conf->sendq.size);
+        if (NULL == ctx->sendq[idx])
+        {
+            log_error(ctx->log, "Create send queue failed!");
+            return RTMQ_ERR;
+        }
+    }
+
+    return RTMQ_OK;
+}
+
+/******************************************************************************
  **函数名称: rtsd_init
  **功    能: 初始化发送端
  **输入参数:
@@ -196,6 +235,14 @@ rtsd_cntx_t *rtsd_init(const rtsd_conf_t *conf, log_cycle_t *log)
     if (rtsd_creat_recvq(ctx))
     {
         log_fatal(log, "Create recv-queue failed!");
+        slab_destroy(slab);
+        return NULL;
+    }
+
+    /* > 创建发送队列 */
+    if (rtsd_creat_sendq(ctx))
+    {
+        log_fatal(log, "Create send queue failed!");
         slab_destroy(slab);
         return NULL;
     }
@@ -289,6 +336,144 @@ int rtsd_register(rtsd_cntx_t *ctx, int type, rtmq_reg_cb_t proc, void *param)
     reg->proc = proc;
     reg->param = param;
     reg->flag = 1;
+
+    return RTMQ_OK;
+}
+
+/******************************************************************************
+ **函数名称: rtsd_cli_cmd_usck
+ **功    能: 创建命令套接字
+ **输入参数:
+ **     ctx: 上下文信息
+ **     idx: 目标队列序号
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述:
+ **注意事项:
+ **作    者: # Qifeng.zou # 2015.01.14 #
+ ******************************************************************************/
+static int rtsd_cli_cmd_usck(rtsd_cntx_t *ctx)
+{
+    char path[FILE_NAME_MAX_LEN];
+
+    rtsd_cli_usck_path(&ctx->conf, path);
+
+    spin_lock_init(&ctx->cmd_sck_lck);
+    ctx->cmd_sck_id = unix_udp_creat(path);
+    if (ctx->cmd_sck_id < 0)
+    {
+        log_error(ctx->log, "errmsg:[%d] %s! path:%s", errno, strerror(errno), path);
+        return RTMQ_ERR;
+    }
+
+    return RTMQ_OK;
+}
+
+/******************************************************************************
+ **函数名称: rtsd_cli_cmd_send_req
+ **功    能: 通知Send服务线程
+ **输入参数:
+ **     ctx: 上下文信息
+ **     idx: 发送服务ID
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述:
+ **注意事项:
+ **作    者: # Qifeng.zou # 2015.01.14 #
+ ******************************************************************************/
+static int rtsd_cli_cmd_send_req(rtsd_cntx_t *ctx, int idx)
+{
+    rtmq_cmd_t cmd;
+    char path[FILE_NAME_MAX_LEN];
+    rtsd_conf_t *conf = &ctx->conf;
+
+    memset(&cmd, 0, sizeof(cmd));
+
+    cmd.type = RTMQ_CMD_SEND_ALL;
+    rtsd_ssvr_usck_path(conf, path, idx);
+
+    if (spin_trylock(&ctx->cmd_sck_lck))
+    {
+        return RTMQ_OK;
+    }
+
+    if (unix_udp_send(ctx->cmd_sck_id, path, &cmd, sizeof(cmd)) < 0)
+    {
+        spin_unlock(&ctx->cmd_sck_lck);
+        if (EAGAIN != errno)
+        {
+            log_debug(ctx->log, "errmsg:[%d] %s! path:%s", errno, strerror(errno), path);
+        }
+        return RTMQ_ERR;
+    }
+
+    spin_unlock(&ctx->cmd_sck_lck);
+
+    return RTMQ_OK;
+}
+
+
+
+/******************************************************************************
+ **函数名称: rtsd_cli_send
+ **功    能: 发送指定数据(对外接口)
+ **输入参数:
+ **     ctx: 上下文信息
+ **     type: 数据类型
+ **     nodeid: 源结点ID
+ **     data: 数据地址
+ **     size: 数据长度
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 将数据按照约定格式放入队列中
+ **注意事项:
+ **     1. 只能用于发送自定义数据类型, 而不能用于系统数据类型
+ **     2. 不用关注变量num在多线程中的值, 因其不影响安全性
+ **作    者: # Qifeng.zou # 2015.01.14 #
+ ******************************************************************************/
+int rtsd_cli_send(rtsd_cntx_t *ctx, int type, const void *data, size_t size)
+{
+    int idx;
+    void *addr;
+    rtmq_header_t *head;
+    static uint8_t num = 0;
+    rtsd_conf_t *conf = &ctx->conf;
+
+    /* > 选择发送队列 */
+    idx = (num++) % conf->send_thd_num;
+
+    addr = queue_malloc(ctx->sendq[idx], sizeof(rtmq_header_t)+size);
+    if (NULL == addr)
+    {
+        log_error(ctx->log, "Alloc from SHMQ failed! size:%d/%d",
+                size+sizeof(rtmq_header_t), queue_size(ctx->sendq[idx]));
+        return RTMQ_ERR;
+    }
+
+    /* > 设置发送数据 */
+    head = (rtmq_header_t *)addr;
+
+    head->type = type;
+    head->nodeid = conf->nodeid;
+    head->length = size;
+    head->flag = RTMQ_EXP_MESG;
+    head->checksum = RTMQ_CHECK_SUM;
+
+    memcpy(head+1, data, size);
+
+    log_debug(ctx->log, "rq:%p Head type:%d nodeid:%d length:%d flag:%d checksum:%d!",
+            ctx->sendq[idx]->ring, head->type, head->nodeid, head->length, head->flag, head->checksum);
+
+    /* > 放入发送队列 */
+    if (queue_push(ctx->sendq[idx], addr))
+    {
+        log_error(ctx->log, "Push into shmq failed!");
+        queue_dealloc(ctx->sendq[idx], addr);
+        return RTMQ_ERR;
+    }
+
+    /* > 通知发送线程 */
+    rtsd_cli_cmd_send_req(ctx, idx);
 
     return RTMQ_OK;
 }

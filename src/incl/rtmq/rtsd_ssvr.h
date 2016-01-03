@@ -5,10 +5,15 @@
 #include "slab.h"
 #include "list.h"
 #include "avl_tree.h"
-#include "shm_queue.h"
 #include "rtmq_comm.h"
 #include "thread_pool.h"
 
+/* CLI的UNIX-UDP路径 */
+#define rtsd_cli_usck_path(conf, path) \
+    snprintf(path, sizeof(path), "%s/%d_cli.usck", (conf)->path, (conf)->nodeid)
+/* SSVR线程的UNIX-UDP路径 */
+#define rtsd_ssvr_usck_path(conf, path, id) \
+    snprintf(path, sizeof(path), "%s/%d_ssvr_%d.usck", (conf)->path, (conf)->nodeid, id+1)
 /* WORKER线程的UNIX-UDP路径 */
 #define rtsd_worker_usck_path(conf, path, id) \
     snprintf(path, sizeof(path), "%s/%d_swrk_%d.usck", (conf)->path, (conf)->nodeid, id+1)
@@ -39,11 +44,11 @@ typedef struct
 typedef struct
 {
     int id;                             /* 对象ID */
-    shm_queue_t *sendq;                 /* 发送缓存 */
+    queue_t *sendq;                     /* 发送缓存 */
     log_cycle_t *log;                   /* 日志对象 */
 
     int cmd_sck_id;                     /* 命令通信套接字ID */
-    rtsd_sck_t sck;                    /* 发送套接字 */
+    rtsd_sck_t sck;                     /* 发送套接字 */
 
     int max;                            /* 套接字最大值 */
     fd_set rset;                        /* 读集合 */

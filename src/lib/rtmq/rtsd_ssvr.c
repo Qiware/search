@@ -1,11 +1,8 @@
 #include "redo.h"
-#include "shm_opt.h"
-#include "shm_slab.h"
+#include "queue.h"
 #include "rtmq_cmd.h"
-#include "rtsd_cli.h"
 #include "rtmq_comm.h"
 #include "rtsd_send.h"
-#include "shm_queue.h"
 
 /* 静态函数 */
 static rtsd_ssvr_t *rtsd_ssvr_get_curr(rtsd_cntx_t *ctx);
@@ -59,11 +56,7 @@ int rtsd_ssvr_init(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, int idx)
     ssvr->sck.fd = INVALID_FD;
 
     /* > 创建发送队列 */
-    if (rtsd_ssvr_creat_sendq(ssvr, conf))
-    {
-        log_error(ssvr->log, "Initialize send queue failed!");
-        return RTMQ_ERR;
-    }
+    ssvr->sendq = ctx->sendq[idx];
 
     /* > 创建unix套接字 */
     if (rtsd_ssvr_creat_usck(ssvr, conf))
@@ -110,35 +103,6 @@ int rtsd_ssvr_init(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, int idx)
     }
 
     rtmq_snap_setup(recv, addr, conf->recv_buff_size);
-
-    return RTMQ_OK;
-}
-
-/******************************************************************************
- **函数名称: rtsd_ssvr_creat_sendq
- **功    能: 创建发送线程的发送队列
- **输入参数:
- **     ssvr: 发送服务对象
- **     conf: 配置信息
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述:
- **注意事项:
- **作    者: # Qifeng.zou # 2015.01.14 #
- ******************************************************************************/
-static int rtsd_ssvr_creat_sendq(rtsd_ssvr_t *ssvr, const rtsd_conf_t *conf)
-{
-    char path[FILE_PATH_MAX_LEN];
-
-    /* 1. 创建/连接发送队列 */
-    rtsd_get_sendq_path(conf, ssvr->id, path, sizeof(path));
-
-    ssvr->sendq = shm_queue_creat(path, conf->sendq.max, conf->sendq.size);
-    if (NULL == ssvr->sendq)
-    {
-        log_error(ssvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return RTMQ_ERR;
-    }
 
     return RTMQ_OK;
 }
@@ -231,7 +195,7 @@ void rtsd_ssvr_set_rwset(rtsd_ssvr_t *ssvr)
 
     /* 2 设置写集合: 发送至接收端 */
     if (!list_empty(ssvr->sck.mesg_list)
-        || !shm_queue_isempty(ssvr->sendq))
+        || !queue_empty(ssvr->sendq))
     {
         FD_SET(ssvr->sck.fd, &ssvr->wset);
         return;
@@ -766,13 +730,13 @@ static int rtsd_ssvr_wiov_add(rtsd_ssvr_t *ssvr, rtsd_sck_t *sck)
     for (;;) {
         /* > 判断剩余空间(WARNNING: 勿将共享变量参与三目运算, 否则可能出现严重错误!!!) */
         num = MIN(wiov_left_space(send), RTSD_POP_NUM);
-        num = MIN(num, shm_queue_used(ssvr->sendq));
+        num = MIN(num, queue_used(ssvr->sendq));
         if (0 == num) {
             break; /* 空间不足 */
         }
 
         /* > 弹出发送数据 */
-        num = shm_queue_mpop(ssvr->sendq, data, num);
+        num = queue_mpop(ssvr->sendq, data, num);
         if (0 == num) {
             continue;
         }
@@ -796,7 +760,7 @@ static int rtsd_ssvr_wiov_add(rtsd_ssvr_t *ssvr, rtsd_sck_t *sck)
             head->checksum = htonl(head->checksum);
 
             /* > 设置发送数据 */
-            wiov_item_add(send, head, len, ssvr->sendq, shm_queue_dealloc);
+            wiov_item_add(send, head, len, ssvr->sendq, queue_dealloc);
         }
     }
 
