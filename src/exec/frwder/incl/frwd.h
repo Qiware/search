@@ -2,7 +2,8 @@
 #define __FRWD_H__
 
 #include "conf.h"
-#include "rtsd_cli.h"
+#include "shm_queue.h"
+#include "rtsd_send.h"
 #include "rtsd_ssvr.h"
 #include "frwd_conf.h"
 

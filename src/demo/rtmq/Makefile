@@ -13,18 +13,16 @@ INCLUDE = -I. \
 		  -I$(PROJ)/src/incl/rtmq \
 		  -I$(PROJ)/src/incl/qwmq
 LIBS_PATH = -L$(PROJ)/lib
-LIBS = -lpthread -lcore -lrtmq -lqwmq
+LIBS = -lpthread -lcore -lrtmq
 
-#SRC_LIST = rtmq_send.c
-SRC_LIST = qwmq_send.c
+SRC_LIST = rtmq_send.c
 SRC_LIST2 = rtmq_recv.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
 OBJS2 = $(subst .c,.o, $(SRC_LIST2)) 
 HEADS = $(call func_get_dep_head_list, $(SRC_LIST))
 
-#TARGET = rtmq_send
-TARGET = qwmq_send
+TARGET = rtmq_send
 TARGET2 = rtmq_recv
 
 .PHONY: all clean

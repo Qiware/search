@@ -3,7 +3,7 @@
 
 #include "mesg.h"
 #include "syscall.h"
-#include "rtsd_cli.h"
+#include "rtsd_send.h"
 #include "rtsd_ssvr.h"
 
 #define __RTMQ_DEBUG_SEND__
@@ -23,7 +23,7 @@
 #define USLEEP      (10)
 #define SIZE        (4096)
 
-int rtmq_send_debug(rtsd_cli_t *cli, int secs)
+int rtmq_send_debug(rtsd_cntx_t *ctx, int secs)
 {
     size_t idx = 0;
     double sleep2 = 0;
@@ -44,7 +44,7 @@ int rtmq_send_debug(rtsd_cli_t *cli, int secs)
 
             snprintf(req->words, sizeof(req->words), "%s", "BAIDU");
 
-            if (rtsd_cli_send(cli, MSG_SEARCH_WORD_REQ, req, sizeof(mesg_search_word_req_t)))
+            if (rtsd_cli_send(ctx, MSG_SEARCH_WORD_REQ, req, sizeof(mesg_search_word_req_t)))
             {
                 idx--;
                 usleep(2);
@@ -91,7 +91,6 @@ static void rtmq_setup_conf(rtsd_conf_t *conf, int port)
 
     conf->port = port;
     conf->send_thd_num = 1;
-    conf->send_buff_size = 5 * MB;
     conf->recv_buff_size = 2 * MB;
 
     conf->sendq.max = 2048;
@@ -120,7 +119,7 @@ int main(int argc, const char *argv[])
     port = atoi(argv[1]);
     rtmq_setup_conf(&conf, port);
 
-    log = log_init(LOG_LEVEL_DEBUG, "./rtmq_ssvr.log");
+    log = log_init(LOG_LEVEL_DEBUG, "./rtmq_ssvr.log", "../temp/log.key");
     if (NULL == log)
     {
         fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
@@ -141,27 +140,7 @@ int main(int argc, const char *argv[])
     }
 
 #if defined(__RTMQ_DEBUG_SEND__)
-    rtsd_cli_t *cli;
-    rtsd_cli_t *cli2;
- 
-    Sleep(5);
-    cli = rtsd_cli_init(&conf, 0, log);
-    if (NULL == cli)
-    {
-        fprintf(stderr, "Initialize send module failed!");
-        return -1;
-    }
-
-    cli2 = rtsd_cli_init(&conf, 1, log);
-    if (NULL == cli2)
-    {
-        fprintf(stderr, "Initialize send module failed!");
-        return -1;
-    }
-
-    Sleep(5);
-
-    rtmq_send_debug(cli, 5);
+    rtmq_send_debug(ctx, 5);
 #endif /*__RTMQ_DEBUG_SEND__*/
 
     while (1) { pause(); }
