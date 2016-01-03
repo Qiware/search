@@ -4,8 +4,6 @@
 #include "log.h"
 #include "comm.h"
 #include "listend.h"
-#include "rtsd_cli.h"
-#include "shm_queue.h"
 #include "lsnd_conf.h"
 
 #define LSND_DEF_CONF_PATH      "../conf/listend.xml"     /* 默认配置路径 */
@@ -43,14 +41,12 @@ typedef struct
 
     lsnd_dsvr_t dsvr;                       /* 分发服务 */
 
-    rtsd_cli_t *rtmq_to_invtd;              /* RTMQ服务(发送至倒排服务) */
     agent_cntx_t *agent;                    /* 代理服务 */
-    shm_queue_t **distq;                    /* 分发队列 */
+    rtsd_cntx_t *invtd_upstrm;              /* INVERTD连接服务 */
 } lsnd_cntx_t;
 
 int lsnd_getopt(int argc, char **argv, lsnd_opt_t *opt);
 int lsnd_usage(const char *exec);
-int lsnd_attach_distq(lsnd_cntx_t *ctx);
 
 int lsnd_dsvr_init(lsnd_cntx_t *ctx);
 void *lsnd_dsvr_routine(void *_ctx);

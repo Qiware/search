@@ -190,14 +190,7 @@ static lsnd_cntx_t *lsnd_init(lsnd_conf_t *conf, log_cycle_t *log)
 
     do
     {
-        /* > 附着分发队列 */
-        if (lsnd_attach_distq(ctx))
-        {
-            log_error(log, "Attach distribute queue failed!");
-            break;
-        }
-
-        /* > 初始化全局信息 */
+        /* > 初始化代理信息 */
         ctx->agent = agent_init(&conf->agent, log);
         if (NULL == ctx->agent)
         {
@@ -206,17 +199,10 @@ static lsnd_cntx_t *lsnd_init(lsnd_conf_t *conf, log_cycle_t *log)
         }
 
         /* > 初始化RTMQ信息 */
-        ctx->rtmq_to_invtd = rtsd_cli_init(&conf->to_frwd, 0, log);
-        if (NULL == ctx->rtmq_to_invtd)
+        ctx->invtd_upstrm = rtsd_init(&conf->invtd_conf, log);
+        if (NULL == ctx->invtd_upstrm)
         {
             log_error(log, "Initialize real-time-transport-protocol failed!");
-            break;
-        }
-
-        /* > 初始化DSVR服务 */
-        if (lsnd_dsvr_init(ctx))
-        {
-            log_error(log, "Initialize dist-server failed!");
             break;
         }
 
@@ -240,14 +226,25 @@ static lsnd_cntx_t *lsnd_init(lsnd_conf_t *conf, log_cycle_t *log)
  ******************************************************************************/
 static int lsnd_set_reg(lsnd_cntx_t *ctx)
 {
-#define LSND_REG_CB(ctx, type, proc, args) /* 注册回调 */\
+#define LSND_AGT_REG_CB(ctx, type, proc, args) /* 注册回调 */\
     if (agent_register((ctx)->agent, type, (agent_reg_cb_t)proc, (void *)args)) \
     { \
         return LSND_ERR; \
     }
 
-    LSND_REG_CB(ctx, MSG_SEARCH_WORD_REQ, lsnd_search_word_req_hdl, ctx);
-    LSND_REG_CB(ctx, MSG_INSERT_WORD_REQ, lsnd_insert_word_req_hdl, ctx);
+    LSND_AGT_REG_CB(ctx, MSG_SEARCH_WORD_REQ, lsnd_search_word_req_hdl, ctx);
+    LSND_AGT_REG_CB(ctx, MSG_INSERT_WORD_REQ, lsnd_insert_word_req_hdl, ctx);
+
+#define LSND_RTQ_REG_CB(lsnd, type, proc, args) \
+    if (rtsd_register((lsnd)->invtd_upstrm, type, (rtmq_reg_cb_t)proc, (void *)args)) \
+    { \
+        log_error((lsnd)->log, "Register type [%d] failed!", type); \
+        return LSND_ERR; \
+    }
+
+    LSND_RTQ_REG_CB(ctx, MSG_SEARCH_WORD_RSP, lsnd_search_word_rsp_hdl, ctx);
+    LSND_RTQ_REG_CB(ctx, MSG_INSERT_WORD_RSP, lsnd_insert_word_rsp_hdl, ctx);
+
     return LSND_OK;
 }
 
@@ -264,17 +261,12 @@ static int lsnd_set_reg(lsnd_cntx_t *ctx)
  ******************************************************************************/
 static int lsnd_launch(lsnd_cntx_t *ctx)
 {
-    pthread_t tid;
-
     /* > 启动代理服务 */
     if (agent_launch(ctx->agent))
     {
         log_error(ctx->log, "Startup agent failed!");
         return LSND_ERR;
     }
-
-    /* > 启动DSVR线程 */
-    thread_creat(&tid, lsnd_dsvr_routine, ctx);
 
     return LSND_OK;
 }

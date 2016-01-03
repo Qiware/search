@@ -46,7 +46,32 @@ int lsnd_search_word_req_hdl(unsigned int type, void *data, int length, void *ar
             __func__, ntoh64(head->serial), length, str);
 
     /* > 转发搜索请求 */
-    return rtsd_cli_send(ctx->rtmq_to_invtd, type, data, length);
+    return rtsd_cli_send(ctx->invtd_upstrm, type, data, length);
+}
+
+/******************************************************************************
+ **函数名称: lsnd_search_word_rsp_hdl
+ **功    能: 搜索关键字应答处理
+ **输入参数:
+ **     type: 数据类型
+ **     orig: 源结点ID
+ **     data: 需要转发的数据
+ **     len: 数据长度
+ **     args: 附加参数
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述:
+ **注意事项:
+ **作    者: # Qifeng.zou # 2015.06.10 #
+ ******************************************************************************/
+int lsnd_search_word_rsp_hdl(int type, int orig, char *data, size_t len, void *args)
+{
+    lsnd_cntx_t *ctx = (lsnd_cntx_t *)args;
+    mesg_data_t *rsp = (mesg_data_t *)data;
+
+    log_trace(ctx->log, "Call %s()! body:%s", __func__, rsp->body);
+
+    return agent_send(ctx->agent, type, ntoh64(rsp->serial), (void *)data, len);
 }
 
 /******************************************************************************
@@ -77,5 +102,31 @@ int lsnd_insert_word_req_hdl(unsigned int type, void *data, int length, void *ar
     /* > 转发搜索请求 */
     req->serial = head->serial;
 
-    return rtsd_cli_send(ctx->rtmq_to_invtd, type, req, sizeof(mesg_insert_word_req_t));
+    return rtsd_cli_send(ctx->invtd_upstrm, type, req, sizeof(mesg_insert_word_req_t));
+}
+
+/******************************************************************************
+ **函数名称: lsnd_search_word_rsp_hdl
+ **功    能: 插入关键字的应答
+ **输入参数:
+ **     type: 数据类型
+ **     orig: 源结点ID
+ **     data: 需要转发的数据
+ **     len: 数据长度
+ **     args: 附加参数
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述:
+ **注意事项:
+ **作    者: # Qifeng.zou # 2015.06.10 #
+ ******************************************************************************/
+int lsnd_insert_word_rsp_hdl(int type, int orig, char *data, size_t len, void *args)
+{
+    lsnd_cntx_t *ctx = (lsnd_cntx_t *)args;
+    mesg_insert_word_rsp_t *rsp = (mesg_insert_word_rsp_t *)data;
+
+    log_debug(ctx->log, "Call %s()! type:%d len:%d word:%s", __func__, type, len, rsp->word);
+
+    /* 放入发送队列 */
+    return agent_send(ctx->agent, type, ntoh64(rsp->serial), (void *)data, len);
 }
