@@ -16,7 +16,7 @@ static int lsnd_conf_parse(xml_tree_t *xml, agent_conf_t *conf, log_cycle_t *log
 
 static int lsnd_conf_load_comm(xml_tree_t *xml, lsnd_conf_t *conf, log_cycle_t *log);
 static int lsnd_conf_load_agent(xml_tree_t *xml, lsnd_conf_t *conf, log_cycle_t *log);
-static int lsnd_conf_load_frwder(xml_tree_t *xml, rtsd_conf_t *conf, log_cycle_t *log);
+static int lsnd_conf_load_invtd(xml_tree_t *xml, rtsd_conf_t *conf, log_cycle_t *log);
 
 /******************************************************************************
  **函数名称: lsnd_load_conf
@@ -79,7 +79,7 @@ int lsnd_load_conf(const char *name,
         }
 
         /* > 加载转发配置 */
-        if (lsnd_conf_load_frwder(xml, &conf->to_frwd, log))
+        if (lsnd_conf_load_invtd(xml, &conf->invtd_conf, log))
         {
             log_error(log, "Load rttp conf failed! path:%s", path);
             break;
@@ -413,7 +413,7 @@ static int _lsnd_conf_load_frwder(const char *path,
 }
 
 /******************************************************************************
- **函数名称: lsnd_conf_load_frwder
+ **函数名称: lsnd_conf_load_invtd
  **功    能: 加载转发配置
  **输入参数: 
  **     path: 配置文件路径
@@ -425,39 +425,166 @@ static int _lsnd_conf_load_frwder(const char *path,
  **注意事项: 
  **作    者: # Qifeng.zou # 2015-06-25 22:43:12 #
  ******************************************************************************/
-static int lsnd_conf_load_frwder(xml_tree_t *xml, rtsd_conf_t *conf, log_cycle_t *log)
+static int lsnd_conf_load_invtd(xml_tree_t *xml, rtsd_conf_t *conf, log_cycle_t *log)
 {
-    xml_node_t *node, *fix;
-    char path[FILE_PATH_MAX_LEN], mark[FILE_PATH_MAX_LEN];
+    xml_node_t *parent, *node;
 
-    /* > 获取配置路径和标签 */
-    fix = xml_query(xml, ".LISTEND.FRWDER");
-    if (NULL == fix)
+    parent = xml_query(xml, ".LISTEND.INVERTD");
+    if (NULL == parent)
     {
-        log_error(xml->log, "Didn't find frwd node!");
+        log_error(log, "Didn't find invertd configuation!");
         return -1;
     }
 
-    node = xml_search(xml, fix, "PATH");
+    /* > 服务端IP */
+    node = xml_search(xml, parent, "SERVER.IP");
     if (NULL == node
         || 0 == node->value.len)
     {
-        log_error(xml->log, "Didn't find frwd path!");
+        log_error(log, "Didn't find SERVER.IP!");
         return -1;
     }
 
-    snprintf(path, sizeof(path), "%s", node->value.str);
-    
-    node = xml_search(xml, fix, "MARK");
+    snprintf(conf->ipaddr, sizeof(conf->ipaddr), "%s", node->value.str);
+
+    node = xml_search(xml, parent, "SERVER.PORT");
     if (NULL == node
         || 0 == node->value.len)
     {
-        log_error(xml->log, "Didn't find frwd mark!");
+        log_error(log, "Didn't find SERVER.PORT!");
         return -1;
     }
 
-    snprintf(mark, sizeof(mark), "%s", node->value.str);
+    conf->port = atoi(node->value.str);
 
-    /* > 加载FRWD配置 */
-    return _lsnd_conf_load_frwder(path, mark, conf, log);
+    /* > 鉴权信息 */
+    node = xml_search(xml, parent, "AUTH.USR");
+    if (NULL == node
+        || 0 == node->value.len)
+    {
+        log_error(log, "Didn't find AUTH.USR!");
+        return -1;
+    }
+
+    snprintf(conf->auth.usr, sizeof(conf->auth.usr), "%s", node->value.str);
+
+    node = xml_search(xml, parent, "AUTH.PASSWD");
+    if (NULL == node
+        || 0 == node->value.len)
+    {
+        log_error(log, "Didn't find AUTH.PASSWD!");
+        return -1;
+    }
+
+    snprintf(conf->auth.passwd, sizeof(conf->auth.passwd), "%s", node->value.str);
+
+    /* > 线程数目 */
+    node = xml_search(xml, parent, "THREAD-POOL.SEND_THD_NUM");  /* 发送线程数 */
+    if (NULL == node
+        || 0 == node->value.len)
+    {
+        log_error(log, "Didn't find THREAD-POOL.SEND_THD_NUM!");
+        return -1;
+    }
+
+    conf->send_thd_num = atoi(node->value.str);
+    if (0 == conf->send_thd_num)
+    {
+        log_error(log, "THREAD-POOL.SEND_THD_NUM is zero!");
+        return -1;
+    }
+
+    node = xml_search(xml, parent, "THREAD-POOL.WORK_THD_NUM");  /* 工作线程数 */
+    if (NULL == node
+        || 0 == node->value.len)
+    {
+        log_error(log, "Didn't find THREAD-POOL.WORK_THD_NUM!");
+        return -1;
+    }
+
+    conf->work_thd_num = atoi(node->value.str);
+    if (0 == conf->work_thd_num)
+    {
+        log_error(log, "THREAD-POOL.WORK_THD_NUM is zero!");
+        return -1;
+    }
+
+    /* > 缓存大小配置 */
+    node = xml_search(xml, parent, "BUFFER-POOL-SIZE.RECV");  /* 接收缓存(MB) */
+    if (NULL == node
+        || 0 == node->value.len)
+    {
+        log_error(log, "Didn't find BUFFER-POOL-SIZE.RECV!");
+        return -1;
+    }
+
+    conf->recv_buff_size = atoi(node->value.str) * MB;
+    if (0 == conf->recv_buff_size)
+    {
+        return -1;
+    }
+
+    /* > 接收队列 */
+    node = xml_search(xml, parent, "RECVQ.MAX");
+    if (NULL == node
+        || 0 == node->value.len)
+    {
+        log_error(log, "Didn't find RECVQ.MAX!");
+        return -1;
+    }
+
+    conf->recvq.max = atoi(node->value.str);
+    if (0 == conf->recvq.max)
+    {
+        log_error(log, "RECVQ.MAX is zero!");
+        return -1;
+    }
+
+    node = xml_search(xml, parent, "RECVQ.SIZE");
+    if (NULL == node
+        || 0 == node->value.len)
+    {
+        log_error(log, "Didn't find RECVQ.SIZE!");
+        return -1;
+    }
+
+    conf->recvq.size = atoi(node->value.str);
+    if (0 == conf->recvq.size)
+    {
+        log_error(log, "RECVQ.SIZE is zero!");
+        return -1;
+    }
+
+    /* > 发送队列 */
+    node = xml_search(xml, parent, "SENDQ.MAX");
+    if (NULL == node
+        || 0 == node->value.len)
+    {
+        log_error(log, "Didn't find SENDQ.MAX!");
+        return -1;
+    }
+
+    conf->sendq.max = atoi(node->value.str);
+    if (0 == conf->sendq.max)
+    {
+        log_error(log, "SENDQ.MAX is zero!");
+        return -1;
+    }
+
+    node = xml_search(xml, parent, "SENDQ.SIZE");
+    if (NULL == node
+        || 0 == node->value.len)
+    {
+        log_error(log, "Didn't find SENDQ.SIZE!");
+        return -1;
+    }
+
+    conf->sendq.size = atoi(node->value.str);
+    if (0 == conf->sendq.size)
+    {
+        log_error(log, "SENDQ.SIZE is zero!");
+        return -1;
+    }
+
+    return 0;
 }

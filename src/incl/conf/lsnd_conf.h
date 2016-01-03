@@ -13,12 +13,12 @@ typedef struct
 
     struct
     {
-        int num;                     /* 队列数 */
-        int max;                     /* 队列长度 */
-        int size;                    /* 单元大小 */
+        int num;                    /* 队列数 */
+        int max;                    /* 队列长度 */
+        int size;                   /* 单元大小 */
     } distq;                        /* 分发队列 */
     agent_conf_t agent;             /* 代理配置 */
-    rtsd_conf_t to_frwd;            /* 转发配置 */
+    rtsd_conf_t invtd_conf;         /* INVERTD连接配置 */
 } lsnd_conf_t;
 
 #define LSND_GET_DISTQ_PATH(path, size, dir, idx)   /* 分发队列路径 */\

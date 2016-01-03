@@ -20,7 +20,7 @@ typedef struct
 
 queue_t *queue_creat(int max, int size);
 #define queue_malloc(q, size) slot_alloc((q)->slot, size)
-#define queue_dealloc(q, p) slot_dealloc((q)->slot, p)
+static inline void queue_dealloc(queue_t *q, void *p) { slot_dealloc((q)->slot, p); }
 #define queue_push(q, addr) ring_push((q)->ring, addr)
 #define queue_mpush(q, addr, num) ring_mpush((q)->ring, addr, num)
 #define queue_pop(q) ring_pop((q)->ring)
