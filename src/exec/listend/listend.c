@@ -226,7 +226,7 @@ static lsnd_cntx_t *lsnd_init(lsnd_conf_t *conf, log_cycle_t *log)
  ******************************************************************************/
 static int lsnd_set_reg(lsnd_cntx_t *ctx)
 {
-#define LSND_AGT_REG_CB(ctx, type, proc, args) /* 注册回调 */\
+#define LSND_AGT_REG_CB(ctx, type, proc, args) /* 注册代理数据回调 */\
     if (agent_register((ctx)->agent, type, (agent_reg_cb_t)proc, (void *)args)) \
     { \
         return LSND_ERR; \
@@ -235,7 +235,7 @@ static int lsnd_set_reg(lsnd_cntx_t *ctx)
     LSND_AGT_REG_CB(ctx, MSG_SEARCH_WORD_REQ, lsnd_search_word_req_hdl, ctx);
     LSND_AGT_REG_CB(ctx, MSG_INSERT_WORD_REQ, lsnd_insert_word_req_hdl, ctx);
 
-#define LSND_RTQ_REG_CB(lsnd, type, proc, args) \
+#define LSND_RTQ_REG_CB(lsnd, type, proc, args) /* 注册队列数据回调 */\
     if (rtsd_register((lsnd)->invtd_upstrm, type, (rtmq_reg_cb_t)proc, (void *)args)) \
     { \
         log_error((lsnd)->log, "Register type [%d] failed!", type); \
@@ -265,6 +265,13 @@ static int lsnd_launch(lsnd_cntx_t *ctx)
     if (agent_launch(ctx->agent))
     {
         log_error(ctx->log, "Startup agent failed!");
+        return LSND_ERR;
+    }
+
+    /* > 启动代理服务 */
+    if (rtsd_launch(ctx->invtd_upstrm))
+    {
+        log_error(ctx->log, "Startup invertd upstream failed!");
         return LSND_ERR;
     }
 
