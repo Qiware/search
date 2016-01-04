@@ -9,7 +9,6 @@
  ******************************************************************************/
 
 #include "sck.h"
-#include "conf.h"
 #include "lock.h"
 #include "mesg.h"
 #include "redo.h"

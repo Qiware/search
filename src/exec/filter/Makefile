@@ -12,12 +12,10 @@ INCLUDE = -I. \
 			-I./incl \
 			-I../crawler/incl \
 			-I$(PROJ)/src/incl \
-			-I$(PROJ)/src/incl/conf \
 			-I$(PROJ)/src/incl/redis
 LIBS_PATH = -L$(PROJ)/lib -L/usr/lib/hiredis
 LIBS = -lpthread \
 			-lcore \
-			-lconf \
 	   		-lhiredis \
 			-lredis_ex \
 			-lgumbo_ex

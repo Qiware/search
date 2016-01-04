@@ -9,14 +9,9 @@
 
 #include "comm.h"
 #include "frwd.h"
-#include "conf.h"
 #include "mesg.h"
 #include "agent.h"
 #include "command.h"
-#include "lsnd_conf.h"
-
-static int frwd_init_lsnd(frwd_cntx_t *frwd, const frwd_conf_t *conf);
-static int frwd_attach_lsnd_distq(frwd_lsnd_t *lsnd, lsnd_conf_t *conf);
 
 /******************************************************************************
  **函数名称: frwd_getopt
@@ -40,12 +35,12 @@ int frwd_getopt(int argc, char **argv, frwd_opt_t *opt)
 {
     int ch;
     const struct option opts[] = {
-        {"name",            required_argument,  NULL, 'n'}
-        , {"help",          no_argument,        NULL, 'h'}
-        , {"daemon",        no_argument,        NULL, 'd'}
-        , {"log-level",     required_argument,  NULL, 'l'}
-        , {"log key path",  required_argument,  NULL, 'L'}
-        , {NULL,            0,                  NULL, 0}
+        {"help",                    no_argument,        NULL, 'h'}
+        , {"daemon",                no_argument,        NULL, 'd'}
+        , {"log-level",             required_argument,  NULL, 'l'}
+        , {"log key path",          required_argument,  NULL, 'L'}
+        , {"configuartion path",    required_argument,  NULL, 'c'}
+        , {NULL,                    0,                  NULL, 0}
     };
 
     memset(opt, 0, sizeof(frwd_opt_t));
@@ -58,9 +53,9 @@ int frwd_getopt(int argc, char **argv, frwd_opt_t *opt)
     {
         switch (ch)
         {
-            case 'n':   /* 指定服务名 */
+            case 'c':   /* 配置路径 */
             {
-                opt->name = optarg;
+                opt->conf_path = optarg;
                 break;
             }
             case 'l':   /* 日志级别 */
@@ -90,8 +85,7 @@ int frwd_getopt(int argc, char **argv, frwd_opt_t *opt)
     optind = 1;
 
     /* 2. 验证输入参数 */
-    if (NULL == opt->name || !strlen(opt->name))
-    {
+    if (NULL == opt->conf_path) {
         return FRWD_SHOW_HELP;
     }
 
@@ -156,13 +150,6 @@ frwd_cntx_t *frwd_init(const frwd_conf_t *conf, log_cycle_t *log)
             break;
         }
 
-        /* > 初始化侦听相关资源 */
-        if (frwd_init_lsnd(frwd, conf))
-        {
-            fprintf(stderr, "Initialize search engine failed!\n");
-            break;
-        }
-
         /* > 初始化发送服务 */
         frwd->rtmq = rtsd_init(&conf->conn_invtd, frwd->log);
         if (NULL == frwd->rtmq)
@@ -219,78 +206,4 @@ log_cycle_t *frwd_init_log(const char *pname, int log_level, const char *log_key
     snprintf(path, sizeof(path), "../log/%s.log", pname);
 
     return log_init(log_level, path, log_key_path);
-}
-
-/******************************************************************************
- **函数名称: frwd_init_lsnd
- **功    能: 初始化与转发相关联的侦听服务的信息
- **输入参数:
- **     frwd: 全局对象
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述:
- **注意事项:
- **作    者: # Qifeng.zou # 2015.07.02 19:14:59 #
- ******************************************************************************/
-static int frwd_init_lsnd(frwd_cntx_t *frwd, const frwd_conf_t *conf)
-{
-    conf_map_t map;
-    lsnd_conf_t lcf;
-    frwd_lsnd_t *lsnd = &frwd->lsnd;
-
-    if (conf_get_listen("SearchEngineListend", &map))
-    {
-        log_error(frwd->log, "Get listend configuration failed!");
-        return FRWD_ERR;
-    }
-
-    /* > 加载配置信息 */
-    if (lsnd_load_conf(map.name, map.path, &lcf, NULL))
-    {
-        log_error(frwd->log, "Load listend configuration failed!");
-        return FRWD_ERR;
-    }
-
-    snprintf(lsnd->name, sizeof(lsnd->name), "%s", conf->lsnd_name); /* 服务名 */
-
-    //LSND_GET_DSVR_CMD_PATH(lsnd->dist_cmd_path, sizeof(lsnd->dist_cmd_path), dir);
-
-    snprintf(lsnd->dist_cmd_path, sizeof(lsnd->dist_cmd_path),       /* 分发服务命令 */
-             "../temp/listend/%s/dsvr.usck", lsnd->name);
-
-    if (frwd_attach_lsnd_distq(lsnd, &lcf))
-    {
-        log_error(frwd->log, "Attach distq of listend failed!");
-        return FRWD_ERR;
-    }
-
-    return 0;
-}
-
-/******************************************************************************
- **函数名称: frwd_attach_lsnd_distq
- **功    能: 附着分发队列
- **输入参数:
- **     ctx: 全局对象
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述:
- **注意事项:
- **作    者: # Qifeng.zou # 2015-07-05 18:12:16 #
- ******************************************************************************/
-static int frwd_attach_lsnd_distq(frwd_lsnd_t *lsnd, lsnd_conf_t *conf)
-{
-    int idx;
-    char path[FILE_NAME_MAX_LEN];
-
-    lsnd->distq_num = conf->distq.num;
-
-    /* > 申请对象空间 */
-    lsnd->distq = (shm_queue_t **)calloc(1, lsnd->distq_num * sizeof(shm_queue_t *));
-    if (NULL == lsnd->distq)
-    {
-        return FRWD_ERR;
-    }
-
-    return FRWD_OK;
 }

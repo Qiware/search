@@ -10,12 +10,11 @@ include $(PROJ)/make/build.mak
 
 INCLUDE = -I./incl \
 			-I$(PROJ)/src/incl \
-			-I$(PROJ)/src/incl/conf \
 			-I$(PROJ)/src/incl/sdtp \
 			-I$(PROJ)/src/incl/rtmq \
 			-I$(PROJ)/src/incl/agent
 LIBS_PATH = -L$(PROJ)/lib
-LIBS = -lpthread -lcore -lagent -lrtmq -lconf
+LIBS = -lpthread -lcore -lagent -lrtmq
 LIBS_A = $(PROJ_LIB)/libcore.a $(PROJ_LIB)/libagent.a $(PROJ_LIB)/librtmq.a
 
 SRC_LIST = listend.c \

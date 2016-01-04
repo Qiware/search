@@ -96,42 +96,6 @@ static int frwd_shmq_push(shm_queue_t *shmq,
 }
 
 /******************************************************************************
- **函数名称: frwd_cmd_send_to_lsnd
- **功    能: 将数据发送至侦听服务
- **输入参数:
- **     ctx: 全局对象
- **     serial: 流水号
- **     type: 数据类型
- **     orig: 源结点ID
- **     data: 需要转发的数据
- **     len: 数据长度
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述:
- **注意事项: 内存结构: 流水信息 + 消息头 + 消息体
- **作    者: # Qifeng.zou # 2015-06-22 09:07:01 #
- ******************************************************************************/
-static int frwd_cmd_send_to_lsnd(frwd_cntx_t *ctx,
-     uint64_t serial, int type, int orig, char *data, size_t len)
-{
-    cmd_data_t cmd;
-    cmd_dist_data_t *dist = (cmd_dist_data_t *)&cmd.param;
-
-    dist->qid = rand()%ctx->lsnd.distq_num;
-
-    if (frwd_shmq_push(ctx->lsnd.distq[dist->qid], serial, type, orig, data, len))
-    {
-        log_error(ctx->log, "Push into SHMQ failed!");
-        return FRWD_ERR;
-    }
-
-    cmd.type = CMD_DIST_DATA;
-    unix_udp_send(ctx->cmd_sck_id, ctx->lsnd.dist_cmd_path, &cmd, sizeof(cmd));
-
-    return FRWD_OK;
-}
-
-/******************************************************************************
  **函数名称: frwd_search_word_rsp_hdl
  **功    能: 搜索关键字应答处理
  **输入参数:
@@ -149,11 +113,10 @@ static int frwd_cmd_send_to_lsnd(frwd_cntx_t *ctx,
 static int frwd_search_word_rsp_hdl(int type, int orig, char *data, size_t len, void *args)
 {
     frwd_cntx_t *ctx = (frwd_cntx_t *)args;
-    mesg_data_t *rsp = (mesg_data_t *)data;
 
-    log_trace(ctx->log, "Call %s() body:%s", __func__, rsp->body);
+    log_trace(ctx->log, "Call %s()", __func__);
 
-    return frwd_cmd_send_to_lsnd(ctx, ntoh64(rsp->serial), type, orig, data, len);
+    return 0;
 }
 
 /******************************************************************************
@@ -174,9 +137,8 @@ static int frwd_search_word_rsp_hdl(int type, int orig, char *data, size_t len, 
 static int frwd_insert_word_rsp_hdl(int type, int orig, char *data, size_t len, void *args)
 {
     frwd_cntx_t *ctx = (frwd_cntx_t *)args;
-    mesg_insert_word_rsp_t *rsp = (mesg_insert_word_rsp_t *)data;
 
     log_trace(ctx->log, "Call %s()", __func__);
 
-    return frwd_cmd_send_to_lsnd(ctx, ntoh64(rsp->serial), type, orig, data, len);
+    return 0;
 }

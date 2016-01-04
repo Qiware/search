@@ -12,13 +12,14 @@
 #include "frwd_conf.h"
 
 static int frwd_conf_load_comm(xml_tree_t *xml, frwd_conf_t *conf);
+static int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t *conf);
 
 /******************************************************************************
  **函数名称: frwd_load_conf
  **功    能: 加载配置信息
  **输入参数: 
- **     name: 结点名
  **     path: 配置路径
+ **     log: 日志对象
  **输出参数:
  **     conf: 配置信息
  **返    回: 0:成功 !0:失败
@@ -26,7 +27,7 @@ static int frwd_conf_load_comm(xml_tree_t *xml, frwd_conf_t *conf);
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.06.10 #
  ******************************************************************************/
-int frwd_load_conf(const char *name, const char *path, frwd_conf_t *conf, log_cycle_t *log)
+int frwd_load_conf(const char *path, frwd_conf_t *conf, log_cycle_t *log)
 {
     xml_opt_t opt;
     xml_tree_t *xml;
@@ -48,12 +49,6 @@ int frwd_load_conf(const char *name, const char *path, frwd_conf_t *conf, log_cy
 
     /* > 提取通用配置 */
     if (frwd_conf_load_comm(xml, conf))
-    {
-        xml_destroy(xml);
-        return -1;
-    }
-
-    if (strcasecmp(name, conf->name)) /* 校验结点名 */
     {
         xml_destroy(xml);
         return -1;
@@ -124,7 +119,7 @@ static int frwd_conf_load_comm(xml_tree_t *xml, frwd_conf_t *conf)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.06.09 #
  ******************************************************************************/
-int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t *conf)
+static int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t *conf)
 {
     xml_node_t *parent, *node;
 

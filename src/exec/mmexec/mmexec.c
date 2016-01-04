@@ -24,7 +24,6 @@ typedef struct
 
 static int mem_getopt(int argc, char **argv, mem_opt_t *opt);
 static int mem_usage(const char *exec);
-static int lsnd_mem_creat(log_cycle_t *log);
 
 /* 主函数 */
 int main(int argc, char *argv[])
@@ -58,14 +57,6 @@ int main(int argc, char *argv[])
     {
         fprintf(stderr, "Load system configuration failed!\n");
         log_error(log, "Load system configuration failed!");
-        return -1;
-    }
-
-    /* > 创建侦听服务内存 */
-    if (lsnd_mem_creat(log))
-    {
-        fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
-        log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
         return -1;
     }
 

@@ -17,13 +17,11 @@
 /* 主函数 */
 int main(int argc, char *argv[])
 {
-    conf_map_t map;
     frwd_opt_t opt;
     frwd_conf_t conf;
     log_cycle_t *log;
     frwd_cntx_t *frwd;
 
-    memset(&map, 0, sizeof(map));
     memset(&conf, 0, sizeof(conf));
 
     /* > 获取输入参数 */
@@ -47,19 +45,7 @@ int main(int argc, char *argv[])
     }
 
     /* > 加载配置信息 */
-    if (conf_load_system(SYS_CONF_DEF_PATH, log))
-    {
-        fprintf(stderr, "Load system configuration failed!\n");
-        return FRWD_ERR;
-    }
-
-    if (conf_get_frwder(opt.name, &map))
-    {
-        fprintf(stderr, "Load configuration failed!\n");
-        return FRWD_ERR;
-    }
-
-    if (frwd_load_conf(map.name, map.path, &conf, log))
+    if (frwd_load_conf(opt.conf_path, &conf, log))
     {
         fprintf(stderr, "Load configuration failed!\n");
         return FRWD_ERR;

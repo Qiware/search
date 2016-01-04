@@ -1,7 +1,6 @@
 #if !defined(__FRWD_H__)
 #define __FRWD_H__
 
-#include "conf.h"
 #include "shm_queue.h"
 #include "rtsd_send.h"
 #include "rtsd_ssvr.h"
@@ -18,20 +17,11 @@ typedef enum
 /* 输入参数 */
 typedef struct
 {
-    char *name;                             /* 结点名 */
     int log_level;                          /* 日志级别 */
     bool isdaemon;                          /* 是否后台运行 */
+    char *conf_path;                        /* 配置路径 */
     char *log_key_path;                     /* 日志键值路径 */
 } frwd_opt_t;
-
-/* 侦听服务信息 */
-typedef struct
-{
-    char name[NODE_MAX_LEN];                /* 服务名 */
-    char dist_cmd_path[FILE_NAME_MAX_LEN];  /* 分发服务路径 */
-    int distq_num;                          /* 分发队列数 */
-    shm_queue_t **distq;                    /* 分发队列 */
-} frwd_lsnd_t;
 
 /* 全局对象 */
 typedef struct
@@ -39,7 +29,6 @@ typedef struct
     int cmd_sck_id;                         /* 命令套接字 */
     frwd_conf_t conf;                       /* 配置信息 */
     log_cycle_t *log;                       /* 日志对象 */
-    frwd_lsnd_t lsnd;                       /* 搜索引擎的侦听 */
     rtsd_cntx_t *rtmq;                      /* RTMQ对象 */
 } frwd_cntx_t;
 

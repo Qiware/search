@@ -11,14 +11,12 @@ include $(PROJ)/make/build.mak
 INCLUDE = -I. \
 			-I./incl \
 			-I$(PROJ)/src/incl \
-			-I$(PROJ)/src/incl/conf \
 			-I$(PROJ)/src/incl/http \
 			-I$(PROJ)/src/incl/redis \
 			-I$(PROJ)/src/incl/gumbo
 LIBS_PATH = -L$(PROJ)/lib -L/usr/lib/hiredis
 LIBS = -lpthread \
 			-lcore \
-			-lconf \
 	   		-lhiredis \
 			-lredis_ex \
 			-lgumbo_ex
