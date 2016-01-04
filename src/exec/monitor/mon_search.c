@@ -165,7 +165,7 @@ static int mon_srch_recv_rsp(mon_cntx_t *ctx, mon_srch_conn_t *conn)
         return -1;
     }
     
-    node = xml_query(xml, ".SEARCH.ITEM");
+    node = xml_query(xml, ".SEARCH-RSP.ITEM");
     for (idx=1; NULL != node; node = xml_brother(node), ++idx) {
         attr = xml_search(xml, node, "URL");
         fprintf(stderr, "        [%02d] URL:%s", idx, attr->value.str);

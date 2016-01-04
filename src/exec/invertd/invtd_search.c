@@ -12,6 +12,12 @@
 #include "rtrd_recv.h"
 #include "agent_mesg.h"
 
+#define SRCH_SEG_FREQ_LEN           (32)    /* 字段FREQ长度 */
+
+#define SRCH_CODE_OK                "0000"  /* 返回OK */
+#define SRCH_CODE_ERR               "0001"  /* 异常错误 */
+#define SRCH_CODE_NO_DATA           "0002"  /* 无数据 */
+
 /******************************************************************************
  **函数名称: invtd_search_word_parse
  **功    能: 解析搜索请求
@@ -33,7 +39,7 @@ static int invtd_search_word_parse(invtd_cntx_t *ctx,
     xml_tree_t *xml;
     xml_node_t *node;
     agent_header_t *head = (agent_header_t *)buf;
-    const char *str = (const char *)(head + 1);
+    const char *xml_str = (const char *)(head + 1);
 
     memset(&opt, 0, sizeof(opt));
 
@@ -47,14 +53,14 @@ static int invtd_search_word_parse(invtd_cntx_t *ctx,
     req->serial = head->serial;
 
     log_trace(ctx->log, "serial:%lu type:%u flag:%u mark:0X%x len:%d body:%s",
-            head->serial, head->type, head->flag, head->mark, head->length, str);
+            head->serial, head->type, head->flag, head->mark, head->length, xml_str);
 
     /* > 构建XML树 */
     opt.pool = NULL;
     opt.alloc = mem_alloc;
     opt.dealloc = mem_dealloc;
 
-    xml = xml_screat(str, head->length, &opt);
+    xml = xml_screat(xml_str, head->length, &opt);
     if (NULL == xml) {
         log_error(ctx->log, "Parse xml failed!");
         return -1;
@@ -77,7 +83,7 @@ static int invtd_search_word_parse(invtd_cntx_t *ctx,
 }
 
 /******************************************************************************
- **函数名称: intvd_search_word_from_tab
+ **函数名称: invtd_search_word_query
  **功    能: 从倒排表中搜索关键字
  **输入参数:
  **     ctx: 上下文
@@ -88,16 +94,16 @@ static int invtd_search_word_parse(invtd_cntx_t *ctx,
  **注意事项: 完成发送后, 必须记得释放XML树的所有内存
  **作    者: # Qifeng.zou # 2016.01.04 17:35:35 #
  ******************************************************************************/
-static xml_tree_t *intvd_search_word_from_tab(invtd_cntx_t *ctx, mesg_search_word_req_t *req)
+static xml_tree_t *invtd_search_word_query(invtd_cntx_t *ctx, mesg_search_word_req_t *req)
 {
     int idx;
-    char freq[32];
     xml_opt_t opt;
     xml_tree_t *xml;
     xml_node_t *root, *item;
     list_node_t *node;
     invt_word_doc_t *doc;
     invt_dic_word_t *word;
+    char freq[SRCH_SEG_FREQ_LEN];
 
     memset(&opt, 0, sizeof(opt));
 
@@ -105,6 +111,7 @@ static xml_tree_t *intvd_search_word_from_tab(invtd_cntx_t *ctx, mesg_search_wor
     opt.pool = NULL;
     opt.alloc = mem_alloc;
     opt.dealloc = mem_dealloc;
+    opt.log = ctx->log;
 
     xml = xml_creat_empty(&opt);
     if (NULL == xml) {
@@ -112,13 +119,11 @@ static xml_tree_t *intvd_search_word_from_tab(invtd_cntx_t *ctx, mesg_search_wor
         return NULL;
     }
 
-    root = xml_set_root(xml, "SEARCH");
+    root = xml_set_root(xml, "SEARCH-RSP");
     if (NULL == root) {
         log_error(ctx->log, "Set xml root failed!");
         goto GOTO_SEARCH_ERR;
     }
-
-    xml_add_attr(xml, root, "CMD", "rsp");
 
     /* > 搜索倒排表 */
     pthread_rwlock_rdlock(&ctx->invtab_lock);
@@ -149,13 +154,17 @@ static xml_tree_t *intvd_search_word_from_tab(invtd_cntx_t *ctx, mesg_search_wor
     }
     pthread_rwlock_unlock(&ctx->invtab_lock);
 
+    xml_add_attr(xml, root, "CODE", SRCH_CODE_OK); /* 设置返回码 */
+
     return xml;
 
-GOTO_SEARCH_ERR:
+GOTO_SEARCH_ERR:        /* 异常错误处理 */
     xml_destroy(xml);
     return NULL;
 
-GOTO_SEARCH_NO_DATA:
+GOTO_SEARCH_NO_DATA:    /* 搜索结果为空的处理 */
+    xml_add_attr(xml, root, "CODE", SRCH_CODE_NO_DATA); /* 无数据 */
+
     snprintf(freq, sizeof(freq), "%d", 0);
 
     item = xml_add_child(xml, root, "ITEM", NULL); 
@@ -245,7 +254,7 @@ int invtd_search_word_req_hdl(int type, int dev_orig, char *buff, size_t len, vo
     }
 
     /* > 从倒排表中搜索关键字 */
-    xml = intvd_search_word_from_tab(ctx, &req); 
+    xml = invtd_search_word_query(ctx, &req); 
     if (NULL == xml) {
         log_error(ctx->log, "Search word form table failed! words:%s", req.words);
         return INVT_ERR;
