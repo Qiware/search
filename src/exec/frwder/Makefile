@@ -21,7 +21,8 @@ LIBS_A = $(PROJ_LIB)/libcore.a $(PROJ_LIB)/librtmq.a
 
 SRC_LIST = frwder.c \
 			frwd_comm.c \
-			frwd_mesg.c
+			frwd_mesg.c \
+			frwd_conf.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST))
 HEADS = $(call func_get_dep_head_list, $(SRC_LIST))

@@ -292,17 +292,5 @@ static int frwd_attach_lsnd_distq(frwd_lsnd_t *lsnd, lsnd_conf_t *conf)
         return FRWD_ERR;
     }
 
-    /* > 依次附着队列 */
-    for (idx=0; idx<conf->distq.num; ++idx)
-    {
-        LSND_GET_DISTQ_PATH(path, sizeof(path), conf->wdir, idx);
-
-        lsnd->distq[idx] = shm_queue_attach(path);
-        if (NULL == lsnd->distq[idx])
-        {
-            free(lsnd->distq);
-            return FRWD_ERR;
-        }
-    }
     return FRWD_OK;
 }
