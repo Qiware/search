@@ -37,7 +37,7 @@ static int rtrd_rsvr_cmd_proc_all_req(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr);
 static rtrd_sck_t *rtrd_rsvr_sck_creat(rtrd_rsvr_t *rsvr, rtmq_cmd_add_sck_t *req);
 static void rtrd_rsvr_sck_free(rtrd_rsvr_t *rsvr, rtrd_sck_t *sck);
 
-static int rtrd_rsvr_add_conn_hdl(rtrd_rsvr_t *rsvr, rtmq_cmd_add_sck_t *req);
+static int rtrd_rsvr_add_conn_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtmq_cmd_add_sck_t *req);
 static int rtrd_rsvr_del_conn_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, list2_node_t *node);
 
 static int rtrd_rsvr_fill_send_buff(rtrd_rsvr_t *rsvr, rtrd_sck_t *sck);
@@ -325,7 +325,7 @@ static int rtrd_rsvr_recv_cmd(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
     switch (cmd.type) {
         case RTMQ_CMD_ADD_SCK:      /* 添加套接字 */
         {
-            return rtrd_rsvr_add_conn_hdl(rsvr, (rtmq_cmd_add_sck_t *)&cmd.param);
+            return rtrd_rsvr_add_conn_hdl(ctx, rsvr, (rtmq_cmd_add_sck_t *)&cmd.param);
         }
         case RTMQ_CMD_DIST_REQ:     /* 分发发送数据 */
         {
@@ -1104,9 +1104,10 @@ static void rtrd_rsvr_sck_free(rtrd_rsvr_t *rsvr, rtrd_sck_t *sck)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int rtrd_rsvr_add_conn_hdl(rtrd_rsvr_t *rsvr, rtmq_cmd_add_sck_t *req)
+static int rtrd_rsvr_add_conn_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtmq_cmd_add_sck_t *req)
 {
     rtrd_sck_t *sck;
+    rtrd_conf_t *conf = &ctx->conf;
 
     /* > 创建套接字对象 */
     sck = rtrd_rsvr_sck_creat(rsvr, req);
@@ -1123,7 +1124,7 @@ static int rtrd_rsvr_add_conn_hdl(rtrd_rsvr_t *rsvr, rtmq_cmd_add_sck_t *req)
     }
 
     /* > 初始化发送IOV */
-    if (wiov_init(&sck->send, RTMQ_WIOV_MAX_NUM))
+    if (wiov_init(&sck->send, 2 * conf->sendq.max))
     {
         log_error(rsvr->log, "Init wiov failed!");
         rtrd_rsvr_sck_free(rsvr, sck);

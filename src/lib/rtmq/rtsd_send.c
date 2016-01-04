@@ -2,6 +2,8 @@
 #include "rtmq_cmd.h"
 #include "rtsd_send.h"
 
+static int rtsd_creat_cmd_usck(rtsd_cntx_t *ctx);
+
 /******************************************************************************
  **函数名称: rtsd_creat_workers
  **功    能: 创建工作线程线程池
@@ -113,7 +115,6 @@ static int rtsd_creat_sends(rtsd_cntx_t *ctx)
 
     return RTMQ_OK;
 }
-
 
 /******************************************************************************
  **函数名称: rtsd_creat_recvq
@@ -231,6 +232,14 @@ rtsd_cntx_t *rtsd_init(const rtsd_conf_t *conf, log_cycle_t *log)
     /* > 加载配置信息 */
     memcpy(&ctx->conf, conf, sizeof(rtsd_conf_t));
 
+    /* > 创建通信套接字 */
+    if (rtsd_creat_cmd_usck(ctx))
+    {
+        log_fatal(log, "Create recv-queue failed!");
+        slab_destroy(slab);
+        return NULL;
+    }
+
     /* > 创建接收队列 */
     if (rtsd_creat_recvq(ctx))
     {
@@ -341,7 +350,7 @@ int rtsd_register(rtsd_cntx_t *ctx, int type, rtmq_reg_cb_t proc, void *param)
 }
 
 /******************************************************************************
- **函数名称: rtsd_cli_cmd_usck
+ **函数名称: rtsd_creat_cmd_usck
  **功    能: 创建命令套接字
  **输入参数:
  **     ctx: 上下文信息
@@ -352,11 +361,11 @@ int rtsd_register(rtsd_cntx_t *ctx, int type, rtmq_reg_cb_t proc, void *param)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static int rtsd_cli_cmd_usck(rtsd_cntx_t *ctx)
+static int rtsd_creat_cmd_usck(rtsd_cntx_t *ctx)
 {
     char path[FILE_NAME_MAX_LEN];
 
-    rtsd_cli_usck_path(&ctx->conf, path);
+    rtsd_comm_usck_path(&ctx->conf, path);
 
     spin_lock_init(&ctx->cmd_sck_lck);
     ctx->cmd_sck_id = unix_udp_creat(path);
@@ -411,8 +420,6 @@ static int rtsd_cli_cmd_send_req(rtsd_cntx_t *ctx, int idx)
 
     return RTMQ_OK;
 }
-
-
 
 /******************************************************************************
  **函数名称: rtsd_cli_send

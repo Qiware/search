@@ -8,9 +8,9 @@
 #include "rtmq_comm.h"
 #include "thread_pool.h"
 
-/* CLI的UNIX-UDP路径 */
-#define rtsd_cli_usck_path(conf, path) \
-    snprintf(path, sizeof(path), "%s/%d_cli.usck", (conf)->path, (conf)->nodeid)
+/* COMM的UNIX-UDP路径 */
+#define rtsd_comm_usck_path(conf, path) \
+    snprintf(path, sizeof(path), "%s/%d_comm.usck", (conf)->path, (conf)->nodeid)
 /* SSVR线程的UNIX-UDP路径 */
 #define rtsd_ssvr_usck_path(conf, path, id) \
     snprintf(path, sizeof(path), "%s/%d_ssvr_%d.usck", (conf)->path, (conf)->nodeid, id+1)

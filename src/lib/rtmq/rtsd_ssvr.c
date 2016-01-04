@@ -88,7 +88,7 @@ int rtsd_ssvr_init(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, int idx)
     }
 
     /* > 初始化发送缓存(注: 程序退出时才可释放此空间，其他任何情况下均不释放) */
-    if (wiov_init(&sck->send, RTMQ_WIOV_MAX_NUM))
+    if (wiov_init(&sck->send, 2 * conf->sendq.max))
     {
         log_error(ssvr->log, "Initialize send iov failed!");
         return RTMQ_ERR;
