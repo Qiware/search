@@ -12,17 +12,17 @@ INCLUDE = -I./incl \
 			-I$(PROJ)/src/incl \
 			-I$(PROJ)/src/incl/conf \
 			-I$(PROJ)/src/incl/rtmq \
-			-I$(PROJ)/src/incl/sdtp \
 			-I$(PROJ)/src/incl/agent
 
 LIBS_PATH = -L$(PROJ)/lib
-LIBS = -lpthread -lcore -lrtmq -linvtab -lsdtp -lconf -lagent
+LIBS = -lpthread -lcore -lrtmq -linvtab -lconf
 LIBS_A = $(PROJ_LIB)/libcore.a $(PROJ_LIB)/librtmq.a $(PROJ_LIB)/libinvtab.a
 
 SRC_LIST = invertd.c \
             invtd_comm.c \
             invtd_conf.c \
-            invtd_mesg.c
+            invtd_mesg.c \
+            invtd_search.c 
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
 HEADS = $(call func_get_dep_head_list, $(SRC_LIST))
