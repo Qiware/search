@@ -167,11 +167,8 @@ static int mem_usage(const char *exec)
  ******************************************************************************/
 static int lsnd_mem_creat(log_cycle_t *log)
 {
-    int idx;
     conf_map_t map;
     lsnd_conf_t conf;
-    shm_queue_t *shmq;
-    char path[FILE_PATH_MAX_LEN];
 
     /* > 加载侦听配置 */
     if (conf_get_listen("SearchEngineListend", &map))
@@ -184,19 +181,6 @@ static int lsnd_mem_creat(log_cycle_t *log)
     {
         log_error(log, "Load listen configuration failed!");
         return -1;
-    }
-
-    /* > 创建共享内存队列 */
-    for (idx=0; idx<conf.distq.num; ++idx)
-    {
-        LSND_GET_DISTQ_PATH(path, sizeof(path), conf.wdir, idx);
-
-        shmq = shm_queue_creat(path, conf.distq.max, conf.distq.size);
-        if (NULL == shmq)
-        {
-            log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
-            return -1;
-        }
     }
 
     return 0;
