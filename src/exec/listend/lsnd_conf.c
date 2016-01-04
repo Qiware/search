@@ -7,10 +7,8 @@
  **         负责从代理服务配置文件(lsnd.xml)中提取有效信息
  ** 作  者: # Qifeng.zou # 2014.10.28 #
  ******************************************************************************/
-#include "syscall.h"
 #include "xml_tree.h" 
 #include "lsnd_conf.h"
-#include "frwd_conf.h"
 
 static int lsnd_conf_parse(xml_tree_t *xml, agent_conf_t *conf, log_cycle_t *log);
 
@@ -22,7 +20,6 @@ static int lsnd_conf_load_invtd(xml_tree_t *xml, rtsd_conf_t *conf, log_cycle_t 
  **函数名称: lsnd_load_conf
  **功    能: 加载配置信息
  **输入参数: 
- **     name: 结点名
  **     path: 配置文件路径
  **     log: 日志对象
  **输出参数:
@@ -32,8 +29,7 @@ static int lsnd_conf_load_invtd(xml_tree_t *xml, rtsd_conf_t *conf, log_cycle_t 
  **注意事项: 
  **作    者: # Qifeng.zou # 2015-06-25 22:43:12 #
  ******************************************************************************/
-int lsnd_load_conf(const char *name,
-    const char *path, lsnd_conf_t *conf, log_cycle_t *log)
+int lsnd_load_conf(const char *path, lsnd_conf_t *conf, log_cycle_t *log)
 {
     xml_opt_t opt;
     xml_tree_t *xml = NULL;
@@ -61,13 +57,6 @@ int lsnd_load_conf(const char *name,
         if (lsnd_conf_load_comm(xml, conf, log))
         {
             log_error(log, "Load common configuration failed!");
-            break;
-        }
-
-        if (strcasecmp(name, conf->name))
-        {
-            log_error(log, "Node name isn't right! path:%s name:[%s/%s]",
-                      path, name, conf->name);
             break;
         }
 
@@ -364,51 +353,6 @@ static int lsnd_conf_load_agent(xml_tree_t *xml, lsnd_conf_t *lcf, log_cycle_t *
     conf->lsn_num = atoi(node->value.str);
 
 
-    return 0;
-}
-
-/******************************************************************************
- **函数名称: _lsnd_conf_load_frwder
- **功    能: 加载转发配置
- **输入参数: 
- **     path: 配置文件路径
- **     log: 日志对象
- **输出参数:
- **     conf: 配置信息
- **返    回: 0:成功 !0:失败
- **实现描述: 提取配置文件中的数据
- **注意事项: 
- **作    者: # Qifeng.zou # 2015-06-25 22:43:12 #
- ******************************************************************************/
-static int _lsnd_conf_load_frwder(const char *path,
-        const char *mark, rtsd_conf_t *conf, log_cycle_t *log)
-{
-    xml_opt_t opt;
-    xml_tree_t *xml;
-
-    memset(&opt, 0, sizeof(opt));
-
-    opt.log = log;
-    opt.pool = (void *)NULL;
-    opt.alloc = (mem_alloc_cb_t)mem_alloc;
-    opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
-
-    /* > 创建XML树 */
-    xml = xml_creat(path, &opt);
-    if (NULL == xml)
-    {
-        log_error(log, "Create XML failed! path:%s", path);
-        return -1;
-    }
-
-    if (frwd_conf_load_frwder(xml, ".FRWDER.CONN-INVTD", conf))
-    {
-        log_error(log, "Load frwder configuration failed! path:%s", path);
-        xml_destroy(xml);
-        return -1;
-    }
-
-    xml_destroy(xml);
     return 0;
 }
 

@@ -37,7 +37,6 @@ static int lsnd_set_reg(lsnd_cntx_t *ctx);
 int main(int argc, char *argv[])
 {
     lsnd_opt_t opt;
-    conf_map_t map;
     lsnd_conf_t conf;
     log_cycle_t *log;
     lsnd_cntx_t *ctx = NULL;
@@ -70,19 +69,7 @@ int main(int argc, char *argv[])
     }
 
     /* > 加载配置信息 */
-    if (conf_load_system(SYS_CONF_DEF_PATH, log))
-    {
-        fprintf(stderr, "Load system configuration failed!\n");
-        goto LSND_INIT_ERR;
-    }
-
-    if (conf_get_listen(opt.name, &map))
-    {
-        fprintf(stderr, "Load configuration failed!\n");
-        goto LSND_INIT_ERR;
-    }
-
-    if (lsnd_load_conf(opt.name, map.path, &conf, log))
+    if (lsnd_load_conf(opt.conf_path, &conf, log))
     {
         fprintf(stderr, "Load configuration failed!\n");
         goto LSND_INIT_ERR;

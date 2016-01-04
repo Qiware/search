@@ -22,7 +22,7 @@ typedef struct
 {
     int log_level;                          /* 日志级别 */
     bool isdaemon;                          /* 是否后台运行 */
-    char *name;                             /* 结点名 */
+    char *conf_path;                        /* 配置路径 */
     char *log_key_path;                     /* 日志键值路径 */
 } lsnd_opt_t;
 

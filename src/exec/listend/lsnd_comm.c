@@ -22,12 +22,12 @@ int lsnd_getopt(int argc, char **argv, lsnd_opt_t *opt)
 {
     int ch;
     const struct option opts[] = {
-        {"name",            required_argument,  NULL, 'n'}
-        , {"help",          no_argument,        NULL, 'h'}
-        , {"daemon",        no_argument,        NULL, 'd'}
-        , {"log-level",     required_argument,  NULL, 'l'}
-        , {"log key path",  required_argument,  NULL, 'L'}
-        , {NULL,            0,                  NULL, 0}
+        {"help",                    no_argument,        NULL, 'h'}
+        , {"daemon",                no_argument,        NULL, 'd'}
+        , {"log-level",             required_argument,  NULL, 'l'}
+        , {"log key path",          required_argument,  NULL, 'L'}
+        , {"configuration path",    required_argument,  NULL, 'c'}
+        , {NULL,                    0,                  NULL, 0}
     };
 
     memset(opt, 0, sizeof(lsnd_opt_t));
@@ -36,10 +36,15 @@ int lsnd_getopt(int argc, char **argv, lsnd_opt_t *opt)
     opt->log_level = LOG_LEVEL_TRACE;
 
     /* 1. 解析输入参数 */
-    while (-1 != (ch = getopt_long(argc, argv, "l:n:L:hd", opts, NULL)))
-    {
+    while (-1 != (ch = getopt_long(argc, argv, "l:c:L:hd", opts, NULL))) {
         switch (ch)
         {
+            case 'c':   /* 配置路径 */
+            {
+                opt->conf_path = optarg;
+                break;
+            }
+
             case 'l':   /* 日志级别 */
             {
                 opt->log_level = log_get_level(optarg);
@@ -48,11 +53,6 @@ int lsnd_getopt(int argc, char **argv, lsnd_opt_t *opt)
             case 'L':   /* 日志键值路径 */
             {
                 opt->log_key_path = optarg;
-                break;
-            }
-            case 'n':   /* 结点名 */
-            {
-                opt->name = optarg;
                 break;
             }
             case 'd':
@@ -72,8 +72,7 @@ int lsnd_getopt(int argc, char **argv, lsnd_opt_t *opt)
     optind = 1;
 
     /* 2. 验证输入参数 */
-    if ((NULL == opt->name) || !strlen(opt->name))
-    {
+    if (NULL == opt->conf_path) {
         return LSND_SHOW_HELP;
     }
 

@@ -20,7 +20,8 @@ LIBS_A = $(PROJ_LIB)/libcore.a $(PROJ_LIB)/libagent.a $(PROJ_LIB)/librtmq.a
 
 SRC_LIST = listend.c \
 			lsnd_comm.c \
-			lsnd_mesg.c
+			lsnd_mesg.c \
+			lsnd_conf.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST))
 HEADS = $(call func_get_dep_head_list, $(SRC_LIST))
