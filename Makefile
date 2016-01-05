@@ -28,9 +28,7 @@ export GCC_LOG = ${PROJ_LOG}/gcc.log
 LIB_DIR = "src/lib"
 DIR = "$(PROJ_3RD)/crypt"
 DIR += "$(LIB_DIR)/core"
-DIR += "$(LIB_DIR)/conf"
 DIR += "$(LIB_DIR)/rtmq"
-DIR += "$(LIB_DIR)/qwmq"
 DIR += "$(LIB_DIR)/sdtp"
 DIR += "$(LIB_DIR)/gumbo"
 DIR += "$(LIB_DIR)/redis"
@@ -49,7 +47,7 @@ DIR += "$(EXEC_DIR)/monitor"
 DIR += "$(EXEC_DIR)/invertd"
 
 DEMO_DIR = "src/demo"
-DIR += "$(DEMO_DIR)/rtmq"
+#DIR += "$(DEMO_DIR)/rtmq"
 
 # 获取系统配置
 CPU_CORES = $(call func_cpu_cores)
