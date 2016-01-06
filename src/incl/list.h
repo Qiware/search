@@ -35,6 +35,7 @@ typedef struct
 
 void list_assert(list_t *list);
 #define list_empty(list) (NULL == (list)->head)
+#define list_length(list) ((list)->num)
 
 list_t *list_creat(list_opt_t *opt);
 void list_destroy(list_t *list, void *pool, mem_dealloc_cb_t dealloc);
@@ -47,6 +48,7 @@ int list_push_desc(list_t *list, void *data, cmp_cb_t cmp);
 
 void *list_lpop(list_t *list);
 void *list_rpop(list_t *list);
+int list_trav(list_t *list, int (*proc)(void *data, void *args), void *args);
 
 void *list_fetch(list_t *list, int idx);
 

@@ -479,3 +479,27 @@ int list_push_desc(list_t *list, void *data, cmp_cb_t cmp)
 
     return list_insert(list, prev, data); /* 插入链尾 */
 }
+
+/******************************************************************************
+ **函数名称: list_trav
+ **功    能: 遍历链表
+ **输入参数:
+ **     list: 单向链表
+ **     proc: 对每个链表结点的处理回调
+ **     args: 附加参数
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述:
+ **注意事项:
+ **作    者: # Qifeng.zou # 2016-01-06 22:47:55 #
+ ******************************************************************************/
+int list_trav(list_t *list, int (*proc)(void *data, void *args), void *args)
+{
+    list_node_t *node;
+
+    node = list->head;
+    for (; NULL != node; node=node->next) {
+        proc(node->data, args);
+    }
+    return 0;
+}
