@@ -493,7 +493,7 @@ int list_push_desc(list_t *list, void *data, cmp_cb_t cmp)
  **注意事项:
  **作    者: # Qifeng.zou # 2016-01-06 22:47:55 #
  ******************************************************************************/
-int list_trav(list_t *list, int (*proc)(void *data, void *args), void *args)
+int list_trav(list_t *list, trav_cb_t proc, void *args)
 {
     list_node_t *node;
 

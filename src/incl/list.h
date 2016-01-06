@@ -48,7 +48,7 @@ int list_push_desc(list_t *list, void *data, cmp_cb_t cmp);
 
 void *list_lpop(list_t *list);
 void *list_rpop(list_t *list);
-int list_trav(list_t *list, int (*proc)(void *data, void *args), void *args);
+int list_trav(list_t *list, trav_cb_t proc, void *args);
 
 void *list_fetch(list_t *list, int idx);
 
