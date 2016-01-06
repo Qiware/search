@@ -1110,7 +1110,7 @@ int rbt_destroy(rbt_tree_t *tree, mem_dealloc_cb_t dealloc, void *args)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.26 #
  ******************************************************************************/
-int rbt_trav(rbt_tree_t *tree, rbt_trav_cb_t proc, void *args)
+int rbt_trav(rbt_tree_t *tree, trav_cb_t proc, void *args)
 {
     Stack_t _stack, *stack = &_stack;
     rbt_node_t *node = tree->root, *parent;

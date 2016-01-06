@@ -12,9 +12,6 @@
 
 #define RBT_MAX_DEPTH    (512)
 
-/* 遍历回调类型 */
-typedef int (*rbt_trav_cb_t)(void *data, void *args);
-
 /* 错误码定义 */
 typedef enum
 {
@@ -121,7 +118,7 @@ int rbt_insert(rbt_tree_t *tree, void *key, int key_len, void *data);
 int rbt_delete(rbt_tree_t *tree, void *key, int key_len, void **data);
 void *rbt_query(rbt_tree_t *tree, void *key, int key_len);
 int rbt_print(rbt_tree_t *tree);
-int rbt_trav(rbt_tree_t *tree, rbt_trav_cb_t proc, void *args);
+int rbt_trav(rbt_tree_t *tree, trav_cb_t proc, void *args);
 int rbt_destroy(rbt_tree_t *tree, mem_dealloc_cb_t dealloc, void *args);
 
 #endif /*__RB_TREE_H__*/
