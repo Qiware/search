@@ -444,7 +444,7 @@ static int agent_rsvr_conn_timeout(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
 
         /* > 获取超时连接 */
         rbt_trav(rsvr->connections,
-             (rbt_trav_cb_t)agent_rsvr_get_timeout_conn_list, (void *)&timeout);
+             (trav_cb_t)agent_rsvr_get_timeout_conn_list, (void *)&timeout);
 
         log_debug(rsvr->log, "Timeout connections: %d!", timeout.list->num);
 
