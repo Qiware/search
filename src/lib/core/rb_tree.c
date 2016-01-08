@@ -1018,7 +1018,11 @@ int rbt_destroy(rbt_tree_t *tree, mem_dealloc_cb_t dealloc, void *args)
     Stack_t _stack, *stack = &_stack;
     rbt_node_t *node = tree->root, *parent;
 
-    if (tree->sentinel == node) return 0;
+    if (tree->sentinel == node) {
+        tree->dealloc(tree->pool, tree->sentinel);
+        tree->dealloc(tree->pool, tree);
+        return RBT_OK;
+    }
 
     stack_init(stack, RBT_MAX_DEPTH);
 
