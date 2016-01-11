@@ -62,8 +62,7 @@ shm_hash_t *shm_hash_creat(const char *path, int len, int max, size_t size)
 
     /* > 创建共享内存 */
     addr = shm_creat(path, total);
-    if (NULL == addr)
-    {
+    if (NULL == addr) {
         return NULL;
     }
 
@@ -96,8 +95,7 @@ static shm_hash_t *shm_hash_init(void *addr, int len, int max, size_t size)
 
     /* > 创建对象 */
     sh = (shm_hash_t *)calloc(1, sizeof(shm_hash_t));
-    if (NULL == sh)
-    {
+    if (NULL == sh) {
         return NULL;
     }
 
@@ -118,40 +116,33 @@ static shm_hash_t *shm_hash_init(void *addr, int len, int max, size_t size)
 
     /* > 链表结点队列 */
     ring = shm_ring_init((void *)sh->node_pool, max);
-    if (NULL == ring)
-    {
+    if (NULL == ring) {
         return NULL;
     }
 
     off = SHM_HASH_NODE_OFFSET(len, max, size);
-    for (idx=0; idx<max; ++idx, off+=sizeof(shm_list_node_t))
-    {
-        if (shm_ring_push(sh->node_pool, off))
-        {
+    for (idx=0; idx<max; ++idx, off+=sizeof(shm_list_node_t)) {
+        if (shm_ring_push(sh->node_pool, off)) {
             return NULL;
         }
     }
 
     /* > 数据结点队列 */
     ring = shm_ring_init((void *)sh->data_pool, max);
-    if (NULL == ring)
-    {
+    if (NULL == ring) {
         return NULL;
     }
 
     off = SHM_HASH_DATA_OFFSET(len, max, size);
-    for (idx=0; idx<max; ++idx, off+=size)
-    {
-        if (shm_ring_push(sh->data_pool, off))
-        {
+    for (idx=0; idx<max; ++idx, off+=size) {
+        if (shm_ring_push(sh->data_pool, off)) {
             return NULL;
         }
     }
 
     /* > 哈希槽数组 */
     slot = sh->slot;
-    for (idx=0; idx<len; ++idx, ++slot)
-    {
+    for (idx=0; idx<len; ++idx, ++slot) {
         memset(slot, 0, sizeof(shm_hash_slot_t));
     }
 
@@ -174,8 +165,7 @@ void *shm_hash_alloc(shm_hash_t *sh)
     off_t off;
 
     off = shm_ring_pop(sh->data_pool);
-    if (-1 == off)
-    {
+    if (-1 == off) {
         return NULL;
     }
 
@@ -230,8 +220,7 @@ int shm_hash_push(shm_hash_t *sh, void *key, int len, void *data)
 
     /* > 申请链表结点 */
     node_off = shm_ring_pop(sh->node_pool);
-    if (-1 == node_off)
-    {
+    if (-1 == node_off) {
         return -1;
     }
 
@@ -239,8 +228,7 @@ int shm_hash_push(shm_hash_t *sh, void *key, int len, void *data)
     node->data = data_off;
 
     /* > 插入链表头 */
-    if (shm_list_lpush(sh->addr, &sh->slot[idx].list, node_off))
-    {
+    if (shm_list_lpush(sh->addr, &sh->slot[idx].list, node_off)) {
         shm_ring_push(sh->node_pool, node_off);
         return -1;
     }
@@ -271,8 +259,7 @@ void *shm_hash_pop(shm_hash_t *sh, void *key, int len, cmp_cb_t cmp_cb)
     idx = hash_time33_ex(key, len) % sh->head->len;
 
     off = shm_list_query_and_delete(sh->addr, &sh->slot[idx].list, key, cmp_cb, sh->addr);
-    if (0 == off)
-    {
+    if (0 == off) {
         return NULL;
     }
 

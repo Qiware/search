@@ -23,8 +23,7 @@ int tcp_listen(int port)
 
     /* 1. 创建套接字 */
     fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (fd < 0)
-    {
+    if (fd < 0) {
         return -1;
     }
 
@@ -38,15 +37,13 @@ int tcp_listen(int port)
     svraddr.sin_addr.s_addr = htonl(INADDR_ANY);
     svraddr.sin_port = htons(port);
 
-    if (bind(fd, (struct sockaddr *)&svraddr, sizeof(svraddr)) < 0)
-    {
+    if (bind(fd, (struct sockaddr *)&svraddr, sizeof(svraddr)) < 0) {
         close(fd);
         return -1;
     }
 
     /* 3. 侦听指定端口 */
-    if (listen(fd, TCP_LISTEN_BACKLOG) < 0)
-    {
+    if (listen(fd, TCP_LISTEN_BACKLOG) < 0) {
         close(fd);
         return -1;
     }
@@ -81,8 +78,7 @@ int tcp_accept(int lsnfd, struct sockaddr *cliaddr)
 
     /* > 接收连接请求 */
     fd = accept(lsnfd, (struct sockaddr *)cliaddr, &len);
-    if (fd < 0)
-    {
+    if (fd < 0) {
         return -1;
     }
 
@@ -134,8 +130,7 @@ int tcp_connect(int family, const char *ipaddr, int port)
 
     /* 1. 创建套接字 */
     fd = socket(family, SOCK_STREAM, 0);
-    if (fd < 0)
-    {
+    if (fd < 0) {
         return -1;
     }
 
@@ -149,8 +144,7 @@ int tcp_connect(int family, const char *ipaddr, int port)
     inet_pton(AF_INET, ipaddr, &svraddr.sin_addr);
     svraddr.sin_port = htons(port);
 
-    if (0 != connect(fd, (struct sockaddr *)&svraddr, sizeof(svraddr)))
-    {
+    if (0 != connect(fd, (struct sockaddr *)&svraddr, sizeof(svraddr))) {
         close(fd);
         return -1;
     }
@@ -187,8 +181,7 @@ int tcp_connect_ex(int family, const char *ipaddr, int port, int sec)
 
     /* 1. 创建套接字 */
     fd = socket(family, SOCK_STREAM, 0);
-    if (fd < 0)
-    {
+    if (fd < 0) {
         return -1;
     }
 
@@ -204,13 +197,11 @@ int tcp_connect_ex(int family, const char *ipaddr, int port, int sec)
     inet_pton(AF_INET, ipaddr, &svraddr.sin_addr);
     svraddr.sin_port = htons(port);
 
-    if (!connect(fd, (struct sockaddr *)&svraddr, sizeof(svraddr)))
-    {
+    if (!connect(fd, (struct sockaddr *)&svraddr, sizeof(svraddr))) {
         return fd;
     }
 
-    if (EINPROGRESS != errno)
-    {
+    if (EINPROGRESS != errno) {
         close(fd);
         return -1;
     }
@@ -226,14 +217,12 @@ AGAIN:
     tv.tv_sec = sec;
     tv.tv_usec = 0;
     ret = select(fd+1, &rdset, &wrset, NULL, &tv);
-    if (ret < 0)
-    {
+    if (ret < 0) {
         if (EINTR == errno) { goto AGAIN; }
         close(fd);
         return -1;
     }
-    else if (0 == ret)
-    {
+    else if (0 == ret) {
         close(fd);
         return -1;
     }
@@ -264,8 +253,7 @@ int tcp_connect_ex2(int family, const char *ipaddr, int port)
 
     /* 1. 创建套接字 */
     fd = socket(family, SOCK_STREAM, 0);
-    if (fd < 0)
-    {
+    if (fd < 0) {
         return -1;
     }
 
@@ -281,13 +269,11 @@ int tcp_connect_ex2(int family, const char *ipaddr, int port)
     inet_pton(AF_INET, ipaddr, &svraddr.sin_addr);
     svraddr.sin_port = htons(port);
 
-    if (!connect(fd, (struct sockaddr *)&svraddr, sizeof(svraddr)))
-    {
+    if (!connect(fd, (struct sockaddr *)&svraddr, sizeof(svraddr))) {
         return fd;
     }
 
-    if (EINPROGRESS != errno)
-    {
+    if (EINPROGRESS != errno) {
         close(fd);
         return -1;
     }
@@ -339,31 +325,26 @@ int tcp_block_send(int fd, const void *addr, int len, int timeout)
     fd_set wrset;
     struct timeval tv;
 
-    for (;;)
-    {
+    for (;;) {
         FD_ZERO(&wrset);
         FD_SET(fd, &wrset);
 
         tv.tv_sec = timeout;
         tv.tv_usec = 0;
         ret = select(fd+1, NULL, &wrset, NULL, &tv);
-        if (ret < 0)
-        {
+        if (ret < 0) {
             if (EINTR == errno) { continue; }
             return -1;
         }
-        else if (0 == ret)
-        {
+        else if (0 == ret) {
             return -1;
         }
 
         n = Writen(fd, (const char *)addr + off, left);
-        if (n < 0)
-        {
+        if (n < 0) {
             return -1;
         }
-        else if (left != n)
-        {
+        else if (left != n) {
             left -= n;
             off += n;
             continue;
@@ -393,31 +374,26 @@ int tcp_block_recv(int fd, void *addr, int len, int timeout)
     fd_set rdset;
     struct timeval tv;
 
-    for (;;)
-    {
+    for (;;) {
         FD_ZERO(&rdset);
         FD_SET(fd, &rdset);
         
         tv.tv_sec = timeout;
         tv.tv_usec = 0;
         ret = select(fd+1, &rdset, NULL, NULL, &tv);
-        if (ret < 0)
-        {
+        if (ret < 0) {
             if (EINTR == errno) { continue; }
             return -1;
         }
-        else if (0 == ret)
-        {
+        else if (0 == ret) {
             return -1;
         }
 
         n = Readn(fd, (char *)addr + off, left);
-        if (n < 0)
-        {
+        if (n < 0) {
             return -1;
         }
-        else if (left != n)
-        {
+        else if (left != n) {
             left -= n;
             off += n;
             continue;
@@ -446,43 +422,34 @@ bool ip_isvalid(const char *ip)
     while (' ' == *p) { ++p; }
 
     digits = 0;
-    while ('\0' != *p)
-    {
-        while(isdigit(*p))
-        {
+    while ('\0' != *p) {
+        while(isdigit(*p)) {
             ++p;
             ++digits;
         }
 
-        if ((digits < 1) || (digits > 3))
-        {
+        if ((digits < 1) || (digits > 3)) {
             return false;
         }
 
-        if ('.' == *p)
-        {
+        if ('.' == *p) {
             ++dots;
-            if (dots > 3)
-            {
+            if (dots > 3) {
                 return false;
             }
             ++p;
             digits = 0;
             continue;
         }
-        else if ('\0' == *p)
-        {
-            if (3 != dots)
-            {
+        else if ('\0' == *p) {
+            if (3 != dots) {
                 return false;
             }
             return true;
         }
-        else if (' ' == *p)
-        {
+        else if (' ' == *p) {
             while (' ' == *p) { ++p; };
-            if ('\0' != *p)
-            {
+            if ('\0' != *p) {
                 return false;
             }
             return true;

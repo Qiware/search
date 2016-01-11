@@ -23,8 +23,7 @@ static int crwl_worker_task_unknown_hdl(crwl_cntx_t *ctx, crwl_worker_t *worker,
 static socket_t *crwl_worker_socket_alloc(crwl_worker_t *worker);
 #define crwl_worker_socket_dealloc(worker, sck) /* 释放Socket空间 */\
 { \
-    if (NULL != sck->extra) \
-    { \
+    if (NULL != sck->extra) { \
         slot_dealloc(worker->slot_for_sck_extra, sck->extra); \
     } \
     slab_dealloc(worker->slab, sck); \
@@ -82,8 +81,7 @@ static crwl_worker_t *crwl_worker_self(crwl_cntx_t *ctx)
     int id;
 
     id = thread_pool_get_tidx(ctx->workers);
-    if (id < 0)
-    {
+    if (id < 0) {
         return NULL;
     }
 
@@ -116,8 +114,7 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker, int id)
 
     /* > 创建SLAB内存池 */
     worker->slab = slab_creat_by_calloc(CRWL_SLAB_SIZE, worker->log);
-    if (NULL == worker->slab)
-    {
+    if (NULL == worker->slab) {
         log_error(worker->log, "Initialize slab pool failed!");
         return CRWL_ERR;
     }
@@ -125,8 +122,7 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker, int id)
     worker->slot_for_sck_extra = slot_creat(
             conf->worker.conn_max_num,
             sizeof(crwl_worker_socket_extra_t));
-    if (NULL == worker->slot_for_sck_extra)
-    {
+    if (NULL == worker->slot_for_sck_extra) {
         log_error(worker->log, "Initialize slab pool failed!");
         slab_destroy(worker->slab);
         return CRWL_ERR;
@@ -142,16 +138,14 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker, int id)
         opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
         worker->sock_list = list_creat(&opt);
-        if (NULL == worker->sock_list)
-        {
+        if (NULL == worker->sock_list) {
             log_error(worker->log, "Create list failed!");
             break;
         }
 
         /* > 创建epoll对象 */
         worker->epid = epoll_create(CRWL_EVENT_MAX_NUM);
-        if (worker->epid < 0)
-        {
+        if (worker->epid < 0) {
             log_error(worker->log, "Create epoll failed! errmsg:[%d] %s!");
             break;
         }
@@ -159,8 +153,7 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker, int id)
         worker->events = (struct epoll_event *)calloc(
                 conf->worker.conn_max_num,
                 sizeof(struct epoll_event));
-        if (NULL == worker->events)
-        {
+        if (NULL == worker->events) {
             log_error(worker->log, "Alloc memory from slab failed!");
             break;
         }
@@ -226,11 +219,9 @@ static int crwl_worker_fetch_task(crwl_cntx_t *ctx, crwl_worker_t *worker)
     /* 2. 从任务队列取数据 */
     num = conf->worker.conn_max_num - worker->sock_list->num;
 
-    for (idx=0; idx<num; ++idx)
-    {
+    for (idx=0; idx<num; ++idx) {
         data = queue_pop(workq);
-        if (NULL == data)
-        {
+        if (NULL == data) {
             log_trace(worker->log, "Didn't pop data from queue!");
             return CRWL_OK;
         }
@@ -270,13 +261,11 @@ int crwl_worker_recv_data(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t *sck
         left = sck->recv.total - sck->recv.off;
 
         n = read(sck->fd, sck->recv.addr + sck->recv.off, left);
-        if (n > 0)
-        {
+        if (n > 0) {
             log_debug(worker->log, "Recv! uri:%s n:%d", extra->webpage.uri, n);
 
             /* 提取应答信息 */
-            if (!response->status)
-            {
+            if (!response->status) {
                 http_parse_response(sck->recv.addr, response);
             }
 
@@ -284,8 +273,7 @@ int crwl_worker_recv_data(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t *sck
             extra->webpage.size += n;
             sck->recv.off += n;
             sck->recv.addr[sck->recv.off] = '\0';
-            if (sck->recv.off >= CRWL_SYNC_SIZE)
-            {
+            if (sck->recv.off >= CRWL_SYNC_SIZE) {
                 crwl_worker_webpage_fsync(worker, sck);
             }
 
@@ -300,8 +288,7 @@ int crwl_worker_recv_data(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t *sck
             }
             continue;
         }
-        else if (0 == n)
-        {
+        else if (0 == n) {
         RECV_DATA_END:
             log_info(worker->log, "End of recv! uri:%s size:%d",
                     extra->webpage.uri, extra->webpage.size);
@@ -311,13 +298,11 @@ int crwl_worker_recv_data(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t *sck
             crwl_worker_remove_sock(worker, sck);
             return CRWL_SCK_CLOSE;
         }
-        else if (n < 0 && EAGAIN == errno)
-        {
+        else if (n < 0 && EAGAIN == errno) {
             log_debug(worker->log, "Again! uri:%s", extra->webpage.uri);
             return CRWL_OK;
         }
-        else if (EINTR == errno)
-        {
+        else if (EINTR == errno) {
             continue;
         }
 
@@ -358,11 +343,9 @@ int crwl_worker_send_data(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t *sck
     while (1)
     {
         /* 1. 从发送列表取数据 */
-        if (!sck->send.addr)
-        {
+        if (!sck->send.addr) {
             info = (crwl_data_info_t *)list_lpop(extra->send_list);
-            if (NULL == info)
-            {
+            if (NULL == info) {
                 memset(&ev, 0, sizeof(ev));
 
                 ev.data.ptr = sck;
@@ -384,8 +367,7 @@ int crwl_worker_send_data(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t *sck
         log_debug(worker->log, "[HTTP] %s", sck->send.addr + sck->send.off);
 
         n = Writen(sck->fd, sck->send.addr + sck->send.off, left);
-        if (n < 0)
-        {
+        if (n < 0) {
             log_error(worker->log, "errmsg:[%d] %s! total:%d off:%d",
                     errno, strerror(errno), sck->send.total, sck->send.off);
 
@@ -394,8 +376,7 @@ int crwl_worker_send_data(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t *sck
             crwl_worker_remove_sock(worker, sck);
             return CRWL_ERR;
         }
-        else if (n != left)
-        {
+        else if (n != left) {
             sck->send.off += n;
             left = sck->send.total - sck->send.off;
             /* 等待下次继续发送, 空间暂不释放 */
@@ -440,13 +421,11 @@ static int crwl_worker_timeout_hdl(crwl_cntx_t *ctx, crwl_worker_t *worker)
 
     /* 1. 依次遍历套接字, 判断是否超时 */
     node = worker->sock_list->head;
-    for (; NULL != node; node = next)
-    {
+    for (; NULL != node; node = next) {
         next = node->next;
 
         sck = (socket_t *)node->data;
-        if (NULL == sck)
-        {
+        if (NULL == sck) {
             continue;
         }
 
@@ -491,34 +470,27 @@ static int crwl_worker_event_hdl(crwl_cntx_t *ctx, crwl_worker_t *worker)
     time_t ctm = time(NULL);
 
     /* 1. 依次遍历套接字, 判断是否可读可写 */
-    for (idx=0; idx<worker->fds; ++idx)
-    {
+    for (idx=0; idx<worker->fds; ++idx) {
         sck = (socket_t *)worker->events[idx].data.ptr;
-
         /* 1.1 判断是否可读 */
-        if (worker->events[idx].events & EPOLLIN)
-        {
+        if (worker->events[idx].events & EPOLLIN) {
             /* 接收网络数据 */
-            if (sck->recv_cb(ctx, worker, sck))
-            {
+            if (sck->recv_cb(ctx, worker, sck)) {
                 continue; /* 异常: 不必判断是否可写(套接字已关闭) */
             }
         }
 
         /* 1.2 判断是否可写 */
-        if (worker->events[idx].events & EPOLLOUT)
-        {
+        if (worker->events[idx].events & EPOLLOUT) {
             /* 发送网络数据 */
-            if (sck->send_cb(ctx, worker, sck))
-            {
+            if (sck->send_cb(ctx, worker, sck)) {
                 continue; /* 异常: 套接字已关闭 */
             }
         }
     }
 
     /* 2. 超时扫描 */
-    if (ctm - worker->scan_tm > CRWL_SCAN_TMOUT_SEC)
-    {
+    if (ctm - worker->scan_tm > CRWL_SCAN_TMOUT_SEC) {
         worker->scan_tm = ctm;
 
         crwl_worker_timeout_hdl(ctx, worker);
@@ -550,8 +522,7 @@ void *crwl_worker_routine(void *_ctx)
 
     /* 1. 获取爬虫对象 */
     worker = crwl_worker_self(ctx);
-    if (NULL == worker)
-    {
+    if (NULL == worker) {
         log_error(ctx->log, "Initialize worker failed!");
         pthread_exit((void *)-1);
         return (void *)-1;
@@ -566,10 +537,8 @@ void *crwl_worker_routine(void *_ctx)
         worker->fds = epoll_wait(
                 worker->epid, worker->events,
                 conf->worker.conn_max_num, CRWL_EVENT_TMOUT_MSEC);
-        if (worker->fds < 0)
-        {
-            if (EINTR == errno)
-            {
+        if (worker->fds < 0) {
+            if (EINTR == errno) {
                 usleep(500);
                 continue;
             }
@@ -580,8 +549,7 @@ void *crwl_worker_routine(void *_ctx)
             abort();
             return (void *)-1;
         }
-        else if (0 == worker->fds) /* Timeout */
-        {
+        else if (0 == worker->fds) { /* Timeout */
             crwl_worker_timeout_hdl(ctx, worker);
             continue;
         }
@@ -618,8 +586,7 @@ int crwl_worker_add_sock(crwl_worker_t *worker, socket_t *sck)
     sck->recv.total = CRWL_RECV_SIZE;
 
     /* > 插入链表尾 */
-    if (list_rpush(worker->sock_list, sck))
-    {
+    if (list_rpush(worker->sock_list, sck)) {
         log_error(worker->log, "Insert socket node failed!");
         return CRWL_ERR;
     }
@@ -654,11 +621,9 @@ socket_t *crwl_worker_query_sock(crwl_worker_t *worker, int fd)
     socket_t *sck;
 
     node = (list_node_t *)worker->sock_list->head;
-    for (; NULL != node; node = node->next)
-    {
+    for (; NULL != node; node = node->next) {
         sck = (socket_t *)node->data;
-        if (fd == sck->fd)
-        {
+        if (fd == sck->fd) {
             return sck;
         }
     }
@@ -690,8 +655,7 @@ int crwl_worker_remove_sock(crwl_worker_t *worker, socket_t *sck)
     /* >> 移除epoll监听 */
     epoll_ctl(worker->epid, EPOLL_CTL_DEL, sck->fd, &ev);
 
-    if (extra->webpage.fp)
-    {
+    if (extra->webpage.fp) {
         FCLOSE(extra->webpage.fp);
     }
     CLOSE(sck->fd);
@@ -700,8 +664,7 @@ int crwl_worker_remove_sock(crwl_worker_t *worker, socket_t *sck)
     while (1)
     {
         p = list_lpop(extra->send_list);
-        if (NULL == p)
-        {
+        if (NULL == p) {
             break;
         }
 
@@ -711,8 +674,7 @@ int crwl_worker_remove_sock(crwl_worker_t *worker, socket_t *sck)
     list_destroy(extra->send_list, worker->slab, (mem_dealloc_cb_t)slab_dealloc);
 
     /* >> 从套接字链表剔除SCK */
-    if (list_remove(worker->sock_list, sck))
-    {
+    if (list_remove(worker->sock_list, sck)) {
         log_fatal(worker->log, "Didn't find special socket!");
     }
 
@@ -744,8 +706,7 @@ int crwl_worker_add_http_get_req(crwl_worker_t *worker, socket_t *sck, const cha
     {
         /* > 新建HTTP GET请求 */
         p = slab_alloc(worker->slab, sizeof(crwl_data_info_t) + HTTP_GET_REQ_STR_LEN);
-        if (NULL == p)
-        {
+        if (NULL == p) {
             log_error(worker->log, "Alloc memory from slab failed!");
             break;
         }
@@ -753,8 +714,7 @@ int crwl_worker_add_http_get_req(crwl_worker_t *worker, socket_t *sck, const cha
         info = p;
         addr = p + sizeof(crwl_data_info_t);
 
-        if (http_get_request(uri, addr, HTTP_GET_REQ_STR_LEN))
-        {
+        if (http_get_request(uri, addr, HTTP_GET_REQ_STR_LEN)) {
             log_error(worker->log, "HTTP GET request string failed");
             break;
         }
@@ -765,8 +725,7 @@ int crwl_worker_add_http_get_req(crwl_worker_t *worker, socket_t *sck, const cha
         info->length = sizeof(crwl_data_info_t) + strlen((const char *)addr);
 
         /* > 将结点插入链表 */
-        if (list_rpush(extra->send_list, p))
-        {
+        if (list_rpush(extra->send_list, p)) {
             log_error(worker->log, "Insert list tail failed");
             break;
         }
@@ -815,8 +774,7 @@ int crwl_worker_webpage_creat(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t 
     Mkdir2(path, 0777);
 
     extra->webpage.fp = fopen(path, "w");
-    if (NULL == extra->webpage.fp)
-    {
+    if (NULL == extra->webpage.fp) {
         log_error(worker->log, "errmsg:[%d] %s! path:%s", errno, strerror(errno), path);
         return CRWL_ERR;
     }
@@ -846,8 +804,7 @@ int crwl_worker_webpage_finfo(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t 
     crwl_worker_socket_extra_t *extra = (crwl_worker_socket_extra_t *)sck->extra;
 
     ++worker->down_webpage_total;
-    if (HTTP_REP_STATUS_OK != extra->response.status)
-    {
+    if (HTTP_REP_STATUS_OK != extra->response.status) {
         ++worker->err_webpage_total;
     }
 
@@ -859,8 +816,7 @@ int crwl_worker_webpage_finfo(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t 
 
     /* 1. 新建文件 */
     fp = fopen(temp, "w");
-    if (NULL == fp)
-    {
+    if (NULL == fp) {
         log_error(worker->log, "errmsg:[%d] %s! path:%s", errno, strerror(errno), path);
         return CRWL_ERR;
     }
@@ -894,16 +850,14 @@ static socket_t *crwl_worker_socket_alloc(crwl_worker_t *worker)
 
     /* > 创建SCK对象 */
     sck = slab_alloc(worker->slab, sizeof(socket_t));
-    if (NULL == sck)
-    {
+    if (NULL == sck) {
         log_error(worker->log, "Alloc memory from slab failed!");
         return NULL;
     }
 
     /* > 分配SCK数据 */
     extra = slot_alloc(worker->slot_for_sck_extra, sizeof(crwl_worker_socket_extra_t));
-    if (NULL == extra)
-    {
+    if (NULL == extra) {
         log_error(worker->log, "Alloc memory from slab failed!");
         slab_dealloc(worker->slab, sck);
         return NULL;
@@ -919,8 +873,7 @@ static socket_t *crwl_worker_socket_alloc(crwl_worker_t *worker)
     opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
     extra->send_list = list_creat(&opt);
-    if (NULL == extra->send_list)
-    {
+    if (NULL == extra->send_list) {
         log_error(worker->log, "Create list failed!");
         slab_dealloc(worker->slab, sck);
         slot_dealloc(worker->slot_for_sck_extra, extra);
@@ -954,8 +907,7 @@ static int crwl_worker_task_down_webpage(
 
     /* > 连接远程WEB服务器 */
     fd = tcp_connect_ex2(args->family, args->ip, args->port);
-    if (fd < 0)
-    {
+    if (fd < 0) {
         log_error(worker->log, "errmsg:[%d] %s! family:%d ip:%s uri:%s",
             errno, strerror(errno), args->family, args->ip, args->uri);
         return CRWL_OK;
@@ -963,8 +915,7 @@ static int crwl_worker_task_down_webpage(
 
     /* > 将FD等信息加入套接字链表 */
     sck = crwl_worker_socket_alloc(worker);
-    if (NULL == sck)
-    {
+    if (NULL == sck) {
         CLOSE(fd);
         log_error(worker->log, "Alloc memory from slab failed!");
         return CRWL_ERR;
@@ -986,8 +937,7 @@ static int crwl_worker_task_down_webpage(
     sck->recv_cb = (socket_recv_cb_t)crwl_worker_recv_data;
     sck->send_cb = (socket_send_cb_t)crwl_worker_send_data;
 
-    if (crwl_worker_add_sock(worker, sck))
-    {
+    if (crwl_worker_add_sock(worker, sck)) {
         CLOSE(fd);
         log_error(worker->log, "Add socket into list failed!");
         crwl_worker_socket_dealloc(worker, sck);
@@ -995,8 +945,7 @@ static int crwl_worker_task_down_webpage(
     }
 
     /* > 添加HTTP GET请求 */
-    if (crwl_worker_add_http_get_req(worker, sck, args->uri))
-    {
+    if (crwl_worker_add_http_get_req(worker, sck, args->uri)) {
         log_error(worker->log, "Add http get request failed!");
 
         crwl_worker_remove_sock(worker, sck);
@@ -1004,8 +953,7 @@ static int crwl_worker_task_down_webpage(
     }
 
     /* > 新建存储文件 */
-    if (crwl_worker_webpage_creat(ctx, worker, sck))
-    {
+    if (crwl_worker_webpage_creat(ctx, worker, sck)) {
         log_error(worker->log, "Save webpage failed!");
 
         crwl_worker_remove_sock(worker, sck);

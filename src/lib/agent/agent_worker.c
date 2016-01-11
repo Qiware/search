@@ -27,8 +27,7 @@ static agent_worker_t *agent_worker_self(agent_cntx_t *ctx)
     agent_worker_t *worker;
 
     id = thread_pool_get_tidx(ctx->workers);
-    if (id < 0)
-    {
+    if (id < 0) {
         return NULL;
     }
 
@@ -58,14 +57,12 @@ void *agent_worker_routine(void *_ctx)
     nice(-20);
 
     worker = agent_worker_self(ctx);
-    if (NULL == worker)
-    {
+    if (NULL == worker) {
         log_error(ctx->log, "Get worker failed!");
         return (void *)-1;
     }
 
-    while (1)
-    {
+    while (1) {
         FD_ZERO(&worker->rdset);
 
         max = worker->cmd_sck_id;
@@ -74,15 +71,13 @@ void *agent_worker_routine(void *_ctx)
         timeout.tv_sec = 1;
         timeout.tv_usec = 0;
         ret = select(max+1, &worker->rdset, NULL, NULL, &timeout);
-        if (ret < 0)
-        {
+        if (ret < 0) {
             if (EINTR == errno) { continue; } 
             log_fatal(worker->log, "errmsg:[%d] %s", errno, strerror(errno));
             abort();
             return (void *)-1;
         }
-        else if (0 == ret)
-        {
+        else if (0 == ret) {
             agent_worker_timeout_handler(ctx, worker);
             continue;
         }
@@ -115,8 +110,7 @@ int agent_worker_init(agent_cntx_t *ctx, agent_worker_t *worker, int idx)
     agent_wsvr_cmd_usck_path(ctx->conf, idx, path, sizeof(path));
 
     worker->cmd_sck_id = unix_udp_creat(path);
-    if (worker->cmd_sck_id < 0)
-    {
+    if (worker->cmd_sck_id < 0) {
         log_error(worker->log, "errmsg:[%d] %s! path:%s", errno, strerror(errno), path);
         return AGENT_ERR;
     }
@@ -164,27 +158,23 @@ static int agent_worker_proc_data_hdl(agent_cntx_t *ctx, agent_worker_t *worker)
 
     /* 遍历接收队列 */
     rqid = rand(); /* 随机选择开始队列 */
-    for (i=0; i<conf->agent_num; ++i, ++rqid)
-    {
+    for (i=0; i<conf->agent_num; ++i, ++rqid) {
         rqid %= conf->agent_num;
 
         /* 计算弹出个数(WARN: 千万勿将共享变量参与"?:"三目运算, 否则可能出现严重错误!!!!且很难找出原因!) */
         num = MIN(queue_used(ctx->recvq[rqid]), AGT_WSVR_POP_NUM);
-        if (0 == num)
-        {
+        if (0 == num) {
             continue;
         }
 
         /* > 从队列中取数据 */
         num = queue_mpop(ctx->recvq[rqid], addr, num);
-        if (0 == num)
-        {
+        if (0 == num) {
             continue;
         }
 
         /* > 依次处理数据 */
-        for (idx=0; idx<num; ++idx)
-        {
+        for (idx=0; idx<num; ++idx) {
             /* > 对数据进行处理 */
             flow = (agent_flow_t *)addr[idx];
             head = (agent_header_t *)(flow + 1);
@@ -192,8 +182,7 @@ static int agent_worker_proc_data_hdl(agent_cntx_t *ctx, agent_worker_t *worker)
             reg = &ctx->reg[head->type];
 
             /* > 插入SERIAL->SCK映射 */
-            if (agent_serial_to_sck_map_insert(ctx, flow))
-            {
+            if (agent_serial_to_sck_map_insert(ctx, flow)) {
                 log_error(worker->log, "Insert serial to sck map failed! serial:%lu sid:%lu",
                           flow->serial, flow->sid);
                 continue;
@@ -231,14 +220,12 @@ static int agent_worker_event_handler(agent_cntx_t *ctx, agent_worker_t *worker)
 {
     cmd_data_t cmd;
 
-    if (!FD_ISSET(worker->cmd_sck_id, &worker->rdset))
-    {
+    if (!FD_ISSET(worker->cmd_sck_id, &worker->rdset)) {
         return AGENT_ERR;
     }
 
     /* > 接收命令信息 */
-    if (unix_udp_recv(worker->cmd_sck_id, &cmd, sizeof(cmd)) < 0)
-    {
+    if (unix_udp_recv(worker->cmd_sck_id, &cmd, sizeof(cmd)) < 0) {
         log_error(worker->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return AGENT_ERR;
     }

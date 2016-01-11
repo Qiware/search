@@ -28,15 +28,13 @@ sdsd_pool_t *sdsd_pool_creat(const char *fpath, int max, int size)
 
     /* > 创建共享内存 */
     addr = shm_creat(fpath, total);
-    if (NULL == addr)
-    {
+    if (NULL == addr) {
         return NULL;
     }
 
     /* > 创建全局对象 */
     pool = (sdsd_pool_t *)calloc(1, sizeof(sdsd_pool_t));
-    if (NULL == pool)
-    {
+    if (NULL == pool) {
         return NULL;
     }
 
@@ -48,8 +46,7 @@ sdsd_pool_t *sdsd_pool_creat(const char *fpath, int max, int size)
     head->size = size;
     pool->head = head;
 
-    for (idx=0; idx<SDSD_POOL_PAGE_NUM; ++idx)
-    {
+    for (idx=0; idx<SDSD_POOL_PAGE_NUM; ++idx) {
         ticket_lock_init(&head->page[idx].lock);
         head->page[idx].idx = idx;
         head->page[idx].size = size * max;
@@ -84,21 +81,18 @@ sdsd_pool_t *sdsd_pool_attach(const char *fpath)
 
     /* > 附着共享内存 */
     addr = shm_attach(fpath, 0);
-    if (NULL == addr)
-    {
+    if (NULL == addr) {
         return NULL;
     }
 
     /* > 创建全局对象 */
     pool = (sdsd_pool_t *)calloc(1, sizeof(sdsd_pool_t));
-    if (NULL == pool)
-    {
+    if (NULL == pool) {
         return NULL;
     }
 
     pool->head = (sdsd_pool_head_t *)addr;
-    for (idx=0; idx<SDSD_POOL_PAGE_NUM; ++idx)
-    {
+    for (idx=0; idx<SDSD_POOL_PAGE_NUM; ++idx) {
         pool->addr[idx] = addr + pool->head->page[idx].begin;
     }
 
@@ -127,27 +121,23 @@ int sdsd_pool_push(sdsd_pool_t *pool, int type, int nodeid, const void *data, si
 
     idx = rand() % SDSD_POOL_PAGE_NUM;
 
-    for (num=0; num<SDSD_POOL_PAGE_NUM; ++num, ++idx)
-    {
+    for (num=0; num<SDSD_POOL_PAGE_NUM; ++num, ++idx) {
         idx = idx % SDSD_POOL_PAGE_NUM;
 
         page  = &pool->head->page[idx];
 
-        if (page->off > 1 * GB)
-        {
+        if (page->off > 1 * GB) {
             assert(0);
         }
 
         ticket_lock(&page->lock);     /* 加锁 */
 
-        if (SDSD_MOD_WR != page->mode)
-        {
+        if (SDSD_MOD_WR != page->mode) {
             ticket_unlock(&page->lock);
             continue; /* 无写入权限 */
         }
 
-        if ((page->size - page->off) < (sizeof(sdtp_header_t) + len))
-        {
+        if ((page->size - page->off) < (sizeof(sdtp_header_t) + len)) {
             ticket_unlock(&page->lock);
             continue; /* 空间不足 */
         }
@@ -167,8 +157,7 @@ int sdsd_pool_push(sdsd_pool_t *pool, int type, int nodeid, const void *data, si
         page->off += len;
         ++page->num;
 
-        if (page->off > 1 * GB)
-        {
+        if (page->off > 1 * GB) {
             assert(0);
         }
 
@@ -197,17 +186,14 @@ sdsd_pool_page_t *sdsd_pool_switch(sdsd_pool_t *pool)
     sdsd_pool_page_t *page;
 
     /* > 改变状态 */
-    for (idx=0; idx<SDSD_POOL_PAGE_NUM; ++idx)
-    {
+    for (idx=0; idx<SDSD_POOL_PAGE_NUM; ++idx) {
         page = &pool->head->page[idx];
 
-        if (page->off > page->size)
-        {
+        if (page->off > page->size) {
             assert(0);
         }
 
-        if (SDSD_MOD_RD == page->mode)
-        {
+        if (SDSD_MOD_RD == page->mode) {
             page->off = 0;
             page->num = 0;
             page->send_tm = ctm;
@@ -217,12 +203,10 @@ sdsd_pool_page_t *sdsd_pool_switch(sdsd_pool_t *pool)
     }
 
     /* > 选择发送缓存 */
-    for (idx=0; idx<SDSD_POOL_PAGE_NUM; ++idx)
-    {
+    for (idx=0; idx<SDSD_POOL_PAGE_NUM; ++idx) {
         page = &pool->head->page[idx];
 
-        if (page->off > 1 * GB)
-        {
+        if (page->off > 1 * GB) {
             assert(0);
         }
 

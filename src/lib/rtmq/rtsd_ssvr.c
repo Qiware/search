@@ -59,16 +59,14 @@ int rtsd_ssvr_init(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, int idx)
     ssvr->sendq = ctx->sendq[idx];
 
     /* > 创建unix套接字 */
-    if (rtsd_ssvr_creat_usck(ssvr, conf))
-    {
+    if (rtsd_ssvr_creat_usck(ssvr, conf)) {
         log_error(ssvr->log, "Initialize send queue failed!");
         return RTMQ_ERR;
     }
 
     /* > 创建SLAB内存池 */
     ssvr->pool = slab_creat_by_calloc(RTMQ_MEM_POOL_SIZE, ssvr->log);
-    if (NULL == ssvr->pool)
-    {
+    if (NULL == ssvr->pool) {
         log_error(ssvr->log, "Initialize slab mem-pool failed!");
         return RTMQ_ERR;
     }
@@ -81,23 +79,20 @@ int rtsd_ssvr_init(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, int idx)
     opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
     sck->mesg_list = list_creat(&opt);
-    if (NULL == sck->mesg_list)
-    {
+    if (NULL == sck->mesg_list) {
         log_error(ssvr->log, "Create list failed!");
         return RTMQ_ERR;
     }
 
     /* > 初始化发送缓存(注: 程序退出时才可释放此空间，其他任何情况下均不释放) */
-    if (wiov_init(&sck->send, 2 * conf->sendq.max))
-    {
+    if (wiov_init(&sck->send, 2 * conf->sendq.max)) {
         log_error(ssvr->log, "Initialize send iov failed!");
         return RTMQ_ERR;
     }
 
     /* 5. 初始化接收缓存(注: 程序退出时才可释放此空间，其他任何情况下均不释放) */
     addr = calloc(1, conf->recv_buff_size);
-    if (NULL == addr)
-    {
+    if (NULL == addr) {
         log_error(ssvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return RTMQ_ERR;
     }
@@ -126,8 +121,7 @@ static int rtsd_ssvr_creat_usck(rtsd_ssvr_t *ssvr, const rtsd_conf_t *conf)
     rtsd_ssvr_usck_path(conf, path, ssvr->id);
 
     ssvr->cmd_sck_id = unix_udp_creat(path);
-    if (ssvr->cmd_sck_id < 0)
-    {
+    if (ssvr->cmd_sck_id < 0) {
         log_error(ssvr->log, "errmsg:[%d] %s! path:%s", errno, strerror(errno), path);
         return RTMQ_ERR;
     }
@@ -155,8 +149,7 @@ static void rtsd_ssvr_bind_cpu(rtsd_cntx_t *ctx, int id)
     rtmq_cpu_conf_t *cpu = &ctx->conf.cpu;
 
     mod = sysconf(_SC_NPROCESSORS_CONF) - cpu->start;
-    if (mod <= 0)
-    {
+    if (mod <= 0) {
         idx = id % sysconf(_SC_NPROCESSORS_CONF);
     }
     else
@@ -232,8 +225,7 @@ void *rtsd_ssvr_routine(void *_ctx)
 
     /* 1. 获取发送线程 */
     ssvr = rtsd_ssvr_get_curr(ctx);
-    if (NULL == ssvr)
-    {
+    if (NULL == ssvr) {
         log_fatal(ssvr->log, "Get current thread failed!");
         abort();
         return (void *)-1;
@@ -245,18 +237,15 @@ void *rtsd_ssvr_routine(void *_ctx)
     rtsd_ssvr_bind_cpu(ctx, ssvr->id);
 
     /* 3. 进行事件处理 */
-    for (;;)
-    {
+    for (;;) {
         /* 3.1 连接合法性判断 */
-        if (sck->fd < 0)
-        {
+        if (sck->fd < 0) {
             rtsd_ssvr_clear_mesg(ssvr);
 
             Sleep(RTMQ_RECONN_INTV);
 
             /* 重连Recv端 */
-            if ((sck->fd = tcp_connect(AF_INET, conf->ipaddr, conf->port)) < 0)
-            {
+            if ((sck->fd = tcp_connect(AF_INET, conf->ipaddr, conf->port)) < 0) {
                 log_error(ssvr->log, "Conncet receive-server failed!");
 
                 continue;
@@ -272,34 +261,29 @@ void *rtsd_ssvr_routine(void *_ctx)
         timeout.tv_sec = RTMQ_SSVR_TMOUT_SEC;
         timeout.tv_usec = RTMQ_SSVR_TMOUT_USEC;
         ret = select(ssvr->max+1, &ssvr->rset, &ssvr->wset, NULL, &timeout);
-        if (ret < 0)
-        {
+        if (ret < 0) {
             if (EINTR == errno) { continue; }
             log_fatal(ssvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
             abort();
             return (void *)-1;
         }
-        else if (0 == ret)
-        {
+        else if (0 == ret) {
             rtsd_ssvr_timeout_hdl(ctx, ssvr);
             continue;
         }
 
         /* 发送数据: 发送优先 */
-        if (FD_ISSET(sck->fd, &ssvr->wset))
-        {
+        if (FD_ISSET(sck->fd, &ssvr->wset)) {
             rtsd_ssvr_send_data(ctx, ssvr);
         }
 
         /* 接收命令 */
-        if (FD_ISSET(ssvr->cmd_sck_id, &ssvr->rset))
-        {
+        if (FD_ISSET(ssvr->cmd_sck_id, &ssvr->rset)) {
             rtsd_ssvr_recv_cmd(ctx, ssvr);
         }
 
         /* 接收Recv服务的数据 */
-        if (FD_ISSET(sck->fd, &ssvr->rset))
-        {
+        if (FD_ISSET(sck->fd, &ssvr->rset)) {
             rtsd_ssvr_recv_proc(ctx, ssvr);
         }
     }
@@ -341,8 +325,7 @@ static int rtsd_ssvr_kpalive_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
     }
 
     addr = slab_alloc(ssvr->pool, size);
-    if (NULL == addr)
-    {
+    if (NULL == addr) {
         log_error(ssvr->log, "Alloc memory from slab failed!");
         return RTMQ_ERR;
     }
@@ -357,8 +340,7 @@ static int rtsd_ssvr_kpalive_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
     head->checksum = RTMQ_CHECK_SUM;
 
     /* 3. 加入发送列表 */
-    if (list_rpush(sck->mesg_list, addr))
-    {
+    if (list_rpush(sck->mesg_list, addr)) {
         slab_dealloc(ssvr->pool, addr);
         log_error(ssvr->log, "Alloc memory from slab failed!");
         return RTMQ_ERR;
@@ -388,8 +370,7 @@ static rtsd_ssvr_t *rtsd_ssvr_get_curr(rtsd_cntx_t *ctx)
 
     /* 1. 获取线程索引 */
     id = thread_pool_get_tidx(ctx->sendtp);
-    if (id < 0)
-    {
+    if (id < 0) {
         log_error(ctx->log, "Get current thread index failed!");
         return NULL;
     }
@@ -418,14 +399,12 @@ static int rtsd_ssvr_timeout_hdl(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
     rtsd_sck_t *sck = &ssvr->sck;
 
     /* 1. 判断是否长时无数据 */
-    if ((curr_tm - sck->wrtm) < RTMQ_KPALIVE_INTV)
-    {
+    if ((curr_tm - sck->wrtm) < RTMQ_KPALIVE_INTV) {
         return RTMQ_OK;
     }
 
     /* 2. 发送保活请求 */
-    if (rtsd_ssvr_kpalive_req(ctx, ssvr))
-    {
+    if (rtsd_ssvr_kpalive_req(ctx, ssvr)) {
         log_error(ssvr->log, "Connection keepalive failed!");
         return RTMQ_ERR;
     }
@@ -467,19 +446,16 @@ static int rtsd_ssvr_recv_proc(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
 
     sck->rdtm = time(NULL);
 
-    while (1)
-    {
+    while (1) {
         /* 1. 接收网络数据 */
         left = (int)(recv->end - recv->iptr);
 
         n = read(sck->fd, recv->iptr, left);
-        if (n > 0)
-        {
+        if (n > 0) {
             recv->iptr += n;
 
             /* 2. 进行数据处理 */
-            if (rtsd_ssvr_data_proc(ctx, ssvr, sck))
-            {
+            if (rtsd_ssvr_data_proc(ctx, ssvr, sck)) {
                 log_error(ssvr->log, "Proc data failed! fd:%d", sck->fd);
 
                 CLOSE(sck->fd);
@@ -488,19 +464,16 @@ static int rtsd_ssvr_recv_proc(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
             }
             continue;
         }
-        else if (0 == n)
-        {
+        else if (0 == n) {
             log_info(ssvr->log, "Client disconnected. fd:%d n:%d/%d", sck->fd, n, left);
             CLOSE(sck->fd);
             rtmq_snap_reset(recv);
             return RTMQ_SCK_DISCONN;
         }
-        else if ((n < 0) && (EAGAIN == errno))
-        {
+        else if ((n < 0) && (EAGAIN == errno)) {
             return RTMQ_OK; /* Again */
         }
-        else if (EINTR == errno)
-        {
+        else if (EINTR == errno) {
             continue;
         }
 
@@ -546,25 +519,20 @@ static int rtsd_ssvr_data_proc(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, rtsd_sck_t *
     uint32_t len, mesg_len;
     rtmq_snap_t *recv = &sck->recv;
 
-    while (1)
-    {
+    while (1) {
         head = (rtmq_header_t *)recv->optr;
         len = (int)(recv->iptr - recv->optr);
-        if (len < sizeof(rtmq_header_t))
-        {
+        if (len < sizeof(rtmq_header_t)) {
             goto LEN_NOT_ENOUGH; /* 不足一条数据时 */
         }
 
         /* 1. 是否不足一条数据 */
         mesg_len = sizeof(rtmq_header_t) + ntohl(head->length);
-        if (len < mesg_len)
-        {
+        if (len < mesg_len) {
         LEN_NOT_ENOUGH:
-            if (recv->iptr == recv->end)
-            {
+            if (recv->iptr == recv->end) {
                 /* 防止OverWrite的情况发生 */
-                if ((recv->optr - recv->addr) < (recv->end - recv->iptr))
-                {
+                if ((recv->optr - recv->addr) < (recv->end - recv->iptr)) {
                     log_fatal(ssvr->log, "Data length is invalid!");
                     return RTMQ_ERR;
                 }
@@ -585,8 +553,7 @@ static int rtsd_ssvr_data_proc(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, rtsd_sck_t *
         head->checksum = ntohl(head->checksum);
 
         /* 2.2 校验合法性 */
-        if (!RTMQ_HEAD_ISVALID(head))
-        {
+        if (!RTMQ_HEAD_ISVALID(head)) {
             ++ssvr->err_total;
             log_error(ssvr->log, "Header is invalid! CheckSum:%u/%u type:%d len:%d flag:%d",
                     head->checksum, RTMQ_CHECK_SUM, head->type, head->length, head->flag);
@@ -594,8 +561,7 @@ static int rtsd_ssvr_data_proc(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, rtsd_sck_t *
         }
 
         /* 2.3 进行数据处理 */
-        if (RTMQ_SYS_MESG == head->flag)
-        {
+        if (RTMQ_SYS_MESG == head->flag) {
             rtsd_ssvr_sys_mesg_proc(ctx, ssvr, sck, recv->optr);
         }
         else
@@ -630,8 +596,7 @@ static int rtsd_ssvr_recv_cmd(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
     memset(&cmd, 0, sizeof(cmd));
 
     /* 1. 接收命令 */
-    if (unix_udp_recv(ssvr->cmd_sck_id, &cmd, sizeof(cmd)) < 0)
-    {
+    if (unix_udp_recv(ssvr->cmd_sck_id, &cmd, sizeof(cmd)) < 0) {
         log_error(ssvr->log, "Recv command failed! errmsg:[%d] %s!", errno, strerror(errno));
         return RTMQ_ERR;
     }
@@ -662,8 +627,7 @@ static int rtsd_ssvr_proc_cmd(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, const rtmq_cm
         case RTMQ_CMD_SEND_ALL:
         {
             log_debug(ssvr->log, "Recv command! type:[%d]", cmd->type);
-            if (fd_is_writable(sck->fd))
-            {
+            if (fd_is_writable(sck->fd)) {
                 return rtsd_ssvr_send_data(ctx, ssvr);
             }
             return RTMQ_OK;

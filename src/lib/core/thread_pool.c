@@ -34,8 +34,7 @@ thread_pool_t *thread_pool_init(int num, const thread_pool_opt_t *opt, void *arg
 
     /* 1. 分配线程池空间, 并初始化 */
     tpool = (thread_pool_t *)opt->alloc(opt->pool, sizeof(thread_pool_t));
-    if (NULL == tpool)
-    {
+    if (NULL == tpool) {
         return NULL;
     }
 
@@ -51,17 +50,14 @@ thread_pool_t *thread_pool_init(int num, const thread_pool_opt_t *opt, void *arg
     tpool->dealloc = opt->dealloc;
 
     tpool->tid = (pthread_t *)tpool->alloc(tpool->mem_pool, num*sizeof(pthread_t));
-    if (NULL == tpool->tid)
-    {
+    if (NULL == tpool->tid) {
         opt->dealloc(opt->pool, tpool);
         return NULL;
     }
 
     /* 2. 创建指定数目的线程 */
-    for (idx=0; idx<num; ++idx)
-    {
-        if (thread_creat(&tpool->tid[idx], thread_routine, tpool))
-        {
+    for (idx=0; idx<num; ++idx) {
+        if (thread_creat(&tpool->tid[idx], thread_routine, tpool)) {
             thread_pool_destroy(tpool);
             return NULL;
         }
@@ -93,8 +89,7 @@ int thread_pool_add_worker(thread_pool_t *tpool, void *(*process)(void *arg), vo
 
     /* 1. 新建任务节点 */
     worker = (thread_worker_t*)tpool->alloc(tpool->mem_pool, sizeof(thread_worker_t));
-    if (NULL == worker)
-    {
+    if (NULL == worker) {
         return -1;
     }
 
@@ -106,16 +101,13 @@ int thread_pool_add_worker(thread_pool_t *tpool, void *(*process)(void *arg), vo
     pthread_mutex_lock(&(tpool->queue_lock));
 
     member = tpool->head;
-    if (NULL != member)
-    {
-        while (NULL != member->next)
-        {
+    if (NULL != member) {
+        while (NULL != member->next) {
             member = member->next;
         }
         member->next = worker;
     }
-    else
-    {
+    else {
         tpool->head = worker;
     }
 
@@ -148,12 +140,9 @@ int thread_pool_keepalive(thread_pool_t *tpool)
 {
     int idx;
 
-     for (idx=0; idx<tpool->num; idx++)
-    {
-        if (ESRCH == pthread_kill(tpool->tid[idx], 0))
-        {
-            if (thread_creat(&tpool->tid[idx], thread_routine, tpool) < 0)
-            {
+    for (idx=0; idx<tpool->num; idx++) {
+        if (ESRCH == pthread_kill(tpool->tid[idx], 0)) {
+            if (thread_creat(&tpool->tid[idx], thread_routine, tpool) < 0) {
                 return -1;
             }
         }
@@ -178,10 +167,8 @@ int thread_pool_get_tidx(thread_pool_t *tpool)
     int idx;
     pthread_t tid = pthread_self();
 
-    for (idx=0; idx<tpool->num; ++idx)
-    {
-        if (tpool->tid[idx] == tid)
-        {
+    for (idx=0; idx<tpool->num; ++idx) {
+        if (tpool->tid[idx] == tid) {
             return idx;
         }
     }
@@ -207,8 +194,7 @@ int thread_pool_destroy(thread_pool_t *tpool)
 {
     int idx;
 
-    if (0 != tpool->shutdown)
-    {
+    if (0 != tpool->shutdown) {
         return -1;
     }
 
@@ -219,10 +205,8 @@ int thread_pool_destroy(thread_pool_t *tpool)
     pthread_cond_broadcast(&(tpool->queue_ready));
 
     /* 3. 等待线程结束 */
-    for (idx=0; idx<tpool->num; ++idx)
-    {
-        if (ESRCH == pthread_kill(tpool->tid[idx], 0))
-        {
+    for (idx=0; idx<tpool->num; ++idx) {
+        if (ESRCH == pthread_kill(tpool->tid[idx], 0)) {
             continue;
         }
         pthread_cancel(tpool->tid[idx]);
@@ -252,8 +236,7 @@ static void *thread_routine(void *_tpool)
     thread_worker_t *worker;
     thread_pool_t *tpool = (thread_pool_t*)_tpool;
 
-    while (1)
-    {
+    while (1) {
         pthread_mutex_lock(&(tpool->queue_lock));
         while ((0 == tpool->shutdown)
             && (0 == tpool->queue_size))
@@ -261,8 +244,7 @@ static void *thread_routine(void *_tpool)
             pthread_cond_wait(&(tpool->queue_ready), &(tpool->queue_lock));
         }
 
-        if (0 != tpool->shutdown)
-        {
+        if (0 != tpool->shutdown) {
             pthread_mutex_unlock(&(tpool->queue_lock));
             pthread_exit(NULL);
         }
@@ -299,31 +281,25 @@ int thread_creat(pthread_t *tid, void *(*process)(void *args), void *args)
 {
     pthread_attr_t attr;
 
-    for (;;)
-    {
+    for (;;) {
         /* 属性初始化 */
-        if (pthread_attr_init(&attr))
-        {
+        if (pthread_attr_init(&attr)) {
             break;
         }
 
         /* 设置为分离线程 */
-        if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
-        {
+        if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED)) {
             break;
         }
 
         /* 设置线程栈大小 */
-        if (pthread_attr_setstacksize(&attr, THREAD_ATTR_STACK_SIZE))
-        {
+        if (pthread_attr_setstacksize(&attr, THREAD_ATTR_STACK_SIZE)) {
             break;
         }
 
         /* 创建线程 */
-        if (pthread_create(tid, &attr, process, args))
-        {
-            if (EINTR == errno)
-            {
+        if (pthread_create(tid, &attr, process, args)) {
+            if (EINTR == errno) {
                 pthread_attr_destroy(&attr);
                 continue;
             }

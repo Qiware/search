@@ -47,19 +47,16 @@ void *crwl_sched_routine(void *_ctx)
 
     /* 1. 初始化调度器 */
     sched = crwl_sched_init(ctx);
-    if (NULL == sched)
-    {
+    if (NULL == sched) {
         log_error(ctx->log, "Create schedule failed!");
         abort();
         return (void *)CRWL_ERR;
     }
 
-    while (1)
-    {
+    while (1) {
         Sleep(1);
 
-        if (!conf->sched_stat)
-        {
+        if (!conf->sched_stat) {
             continue;
         }
 
@@ -91,8 +88,7 @@ static crwl_sched_t *crwl_sched_init(crwl_cntx_t *ctx)
 
     /* 1. 创建调度器对象 */
     sched = (crwl_sched_t *)calloc(1, sizeof(crwl_sched_t));
-    if (NULL == sched)
-    {
+    if (NULL == sched) {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return NULL;
     }
@@ -102,8 +98,7 @@ static crwl_sched_t *crwl_sched_init(crwl_cntx_t *ctx)
     tv.tv_usec = 0;
     sched->redis = redisConnectWithTimeout(
         conf->redis.conf[0].ip, conf->redis.conf[0].port, tv);
-    if (sched->redis->err)
-    {
+    if (sched->redis->err) {
         redisFree(sched->redis);
         free(sched);
         log_error(ctx->log, "Connect redis failed! IP:[%s:%d]",
@@ -160,8 +155,7 @@ static int crwl_sched_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
 
     size = sizeof(crwl_task_t) + sizeof(crwl_task_space_u);
 
-    while (conf->sched_stat)
-    {
+    while (conf->sched_stat) {
         /* > 随机选择任务队列 */
         idx = rand() % conf->worker.num;
 
@@ -169,8 +163,7 @@ static int crwl_sched_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
 
         /* > 申请队列空间(head + body) */
         addr = queue_malloc(workq, size);
-        if (NULL == addr)
-        {
+        if (NULL == addr) {
             log_warn(ctx->log, "Alloc from queue failed! num:%d size:%d/%d",
                     queue_space(workq), size, queue_size(workq));
             return CRWL_OK;
@@ -180,16 +173,14 @@ static int crwl_sched_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
 
         /* > 取Undo任务数据 */
         r = redis_lpop(sched->redis, conf->redis.taskq);
-        if (REDIS_REPLY_NIL == r->type)
-        {
+        if (REDIS_REPLY_NIL == r->type) {
             freeReplyObject(r);
             queue_dealloc(workq, addr);
             return CRWL_OK;
         }
 
         /* > 解析Undo数据信息 */
-        if (crwl_task_parse(r->str, task, ctx->log))
-        {
+        if (crwl_task_parse(r->str, task, ctx->log)) {
             log_error(ctx->log, "Parse task string failed! %s", r->str);
             freeReplyObject(r);
             queue_dealloc(workq, addr);
@@ -197,8 +188,7 @@ static int crwl_sched_task(crwl_cntx_t *ctx, crwl_sched_t *sched)
         }
 
         /* > 处理Undo任务 */
-        if (crwl_sched_task_hdl(ctx, workq, task))
-        {
+        if (crwl_sched_task_hdl(ctx, workq, task)) {
             log_error(ctx->log, "Handle undo task failed! %s", r->str);
             freeReplyObject(r);
             queue_dealloc(workq, addr);
@@ -234,8 +224,7 @@ static int crwl_task_parse(const char *str, crwl_task_t *task, log_cycle_t *log)
 
     /* 1. 解析XML字串 */
     pool = mem_pool_creat(4 * KB);
-    if (NULL == pool)
-    {
+    if (NULL == pool) {
         return CRWL_ERR;
     }
 
@@ -247,16 +236,14 @@ static int crwl_task_parse(const char *str, crwl_task_t *task, log_cycle_t *log)
     opt.dealloc = (mem_dealloc_cb_t)mem_pool_dealloc;
 
     xml = xml_screat(str, -1, &opt);
-    if (NULL == xml)
-    {
+    if (NULL == xml) {
         mem_pool_destroy(pool);
         return CRWL_ERR;
     }
 
     /* 2. 获取任务类型 */
     node = xml_query(xml, "TASK.TYPE");
-    if (NULL == node)
-    {
+    if (NULL == node) {
         xml_destroy(xml);
         mem_pool_destroy(pool);
         return CRWL_ERR;
@@ -303,15 +290,13 @@ static int crwl_task_parse_download_webpage(xml_tree_t *xml, crwl_task_down_webp
 
     /* 定位BODY结点 */
     body = xml_query(xml, "TASK.BODY");
-    if (NULL == body)
-    {
+    if (NULL == body) {
         return CRWL_ERR;
     }
 
     /* 获取IP */
     node = xml_search(xml, body, "IP");
-    if (NULL == node)
-    {
+    if (NULL == node) {
         return CRWL_ERR;
     }
 
@@ -319,8 +304,7 @@ static int crwl_task_parse_download_webpage(xml_tree_t *xml, crwl_task_down_webp
 
     /* 获取IP.FAMILY */
     node = xml_search(xml, body, "IP.FAMILY");
-    if (NULL == node)
-    {
+    if (NULL == node) {
         return CRWL_ERR;
     }
 
@@ -328,8 +312,7 @@ static int crwl_task_parse_download_webpage(xml_tree_t *xml, crwl_task_down_webp
 
     /* 获取URI */
     node = xml_search(xml, body, "URI");
-    if (NULL == node)
-    {
+    if (NULL == node) {
         return CRWL_ERR;
     }
 
@@ -337,8 +320,7 @@ static int crwl_task_parse_download_webpage(xml_tree_t *xml, crwl_task_down_webp
 
     /* 获取URI.DEPTH */
     node = xml_search(xml, body, "URI.DEPTH");
-    if (NULL == node)
-    {
+    if (NULL == node) {
         return CRWL_ERR;
     }
 

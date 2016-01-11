@@ -16,10 +16,8 @@ str_t *str_to_lower(str_t *s)
 {
     size_t idx;
 
-    for (idx=0; idx<s->len; ++idx)
-    {
-        switch (s->str[idx])
-        {
+    for (idx=0; idx<s->len; ++idx) {
+        switch (s->str[idx]) {
             case 'A':
             case 'B':
             case 'C':
@@ -77,10 +75,8 @@ char *char_to_lower(const char *str, char *dstr, int len)
 {
     int idx;
 
-    for (idx=0; idx<len && '\0'!=str[idx]; ++idx)
-    {
-        switch (str[idx])
-        {
+    for (idx=0; idx<len && '\0'!=str[idx]; ++idx) {
+        switch (str[idx]) {
             case 'A':
             case 'B':
             case 'C':
@@ -141,10 +137,8 @@ str_t *str_to_upper(str_t *s)
 {
     size_t idx;
 
-    for (idx=0; idx<s->len; ++idx)
-    {
-        switch (s->str[idx])
-        {
+    for (idx=0; idx<s->len; ++idx) {
+        switch (s->str[idx]) {
             case 'a':
             case 'b':
             case 'c':
@@ -200,10 +194,8 @@ bool str_isdigit(const char *str)
 {
     const char *p = str;
 
-    for (;'\0' != *p; ++p)
-    {
-        if (!isdigit(*p))
-        {
+    for (;'\0' != *p; ++p) {
+        if (!isdigit(*p)) {
             return false;
         }
     }

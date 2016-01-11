@@ -30,8 +30,7 @@ int shm_list_lpush(void *addr, shm_list_t *list, off_t node_off)
     node = (shm_list_node_t *)(addr + node_off);
 
     /* > 链表为空时 */
-    if (0 == list->head)
-    {
+    if (0 == list->head) {
         list->head = node_off;
         node->prev = node_off;
         node->next = node_off;
@@ -70,8 +69,7 @@ off_t shm_list_lpop(void *addr, shm_list_t *list)
     shm_list_node_t *head, *tail, *next;
 
     /* > 链表为空 */
-    if (0 == list->head)
-    {
+    if (0 == list->head) {
         return 0;
     }
 
@@ -81,8 +79,7 @@ off_t shm_list_lpop(void *addr, shm_list_t *list)
     head_off = list->head;
 
     /* > 链表只有１个结点 */
-    if (head == tail)
-    {
+    if (head == tail) {
         list->head = 0;
         list->num = 0;
         return head_off;
@@ -118,8 +115,7 @@ int shm_list_rpush(void *addr, shm_list_t *list, off_t node_off)
     node = (shm_list_node_t *)(addr + node_off);
 
     /* > 链表为空 */
-    if (0 == list->head)
-    {
+    if (0 == list->head) {
         list->head = node_off;
         node->prev = node_off;
         node->next = node_off;
@@ -157,15 +153,13 @@ off_t shm_list_rpop(void *addr, shm_list_t *list)
     shm_list_node_t *head, *prev, *tail;
 
     /* > 无数据 */
-    if (0 == list->head)
-    {
+    if (0 == list->head) {
         return 0; /* 无数据 */
     }
 
     /* > 只有１个结点 */
     head = (shm_list_node_t *)(addr + list->head);
-    if (list->head == head->prev)
-    {
+    if (list->head == head->prev) {
         off = list->head;
         list->head = 0;
         list->num = 0;
@@ -200,15 +194,13 @@ off_t shm_list_delete(void *addr, shm_list_t *list, off_t node_off)
 {
     shm_list_node_t *head, *node, *prev, *next;
 
-    if (node_off == list->head)
-    {
+    if (node_off == list->head) {
         return shm_list_lpop(addr, list); /* 弹出链头 */
     }
 
     node = (shm_list_node_t *)(addr + node_off);
     head = (shm_list_node_t *)(addr + list->head);
-    if (node_off == head->prev)
-    {
+    if (node_off == head->prev) {
         return shm_list_rpop(addr, list); /* 弹出链尾 */
     }
 
@@ -240,17 +232,14 @@ off_t shm_list_query(void *addr, shm_list_t *list, void *key, cmp_cb_t cmp_cb, v
 {
     shm_list_node_t *head, *node;
 
-    if (0 == list->head)
-    {
+    if (0 == list->head) {
         return 0; /* 无数据 */
     }
 
     head = (shm_list_node_t *)(addr + list->head);
     node = head;
-    do
-    {
-        if (0 == cmp_cb(key, param + node->data))
-        {
+    do {
+        if (0 == cmp_cb(key, param + node->data)) {
             return (off_t)((void *)node - addr);
         }
         node = (shm_list_node_t *)(addr + node->next);
@@ -279,19 +268,15 @@ off_t shm_list_query_and_delete(
 {
     shm_list_node_t *head, *prev, *node, *next;
 
-    if (0 == list->head)
-    {
+    if (0 == list->head) {
         return 0; /* 无数据 */
     }
 
     head = (shm_list_node_t *)(addr + list->head);
     node = head;
-    do
-    {
-        if (0 == cmp_cb(key, param + node->data))
-        {
-            if (node == head)
-            {
+    do {
+        if (0 == cmp_cb(key, param + node->data)) {
+            if (node == head) {
                 return shm_list_lpop(addr, list);
             }
 

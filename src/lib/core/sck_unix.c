@@ -24,8 +24,7 @@ int unix_udp_creat(const char *path)
 
     /* 1. 创建套接字 */
     fd = socket(AF_UNIX, SOCK_DGRAM, 0);
-    if (fd <0)
-    {
+    if (fd <0) {
         return -1;
     }
 
@@ -39,8 +38,7 @@ int unix_udp_creat(const char *path)
     
     len = strlen(svraddr.sun_path) + sizeof(svraddr.sun_family);
 
-    if (bind(fd, (struct sockaddr *)&svraddr, len) < 0)
-    {
+    if (bind(fd, (struct sockaddr *)&svraddr, len) < 0) {
         return -1;
     }
 
@@ -77,13 +75,10 @@ AGAIN:
     addrlen = strlen(toaddr.sun_path) + sizeof(toaddr.sun_family);
 
     n = sendto(fd, buff, len, 0, (struct sockaddr*)&toaddr, addrlen);
-    if (n < 0)
-    {
-        if (EINTR == errno)
-        {
+    if (n < 0) {
+        if (EINTR == errno) {
             goto AGAIN;
         }
-
         return -1;
     }
 

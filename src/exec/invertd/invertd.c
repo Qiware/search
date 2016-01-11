@@ -35,12 +35,10 @@ int main(int argc, char *argv[])
     memset(&conf, 0, sizeof(conf));
 
     /* > 获取参数 */
-    if (invtd_getopt(argc, argv, &opt))
-    {
+    if (invtd_getopt(argc, argv, &opt)) {
         return invtd_usage(basename(argv[0])); /* 显示帮助 */
     }
-    else if (opt.isdaemon)
-    {
+    else if (opt.isdaemon) {
         /* int daemon(int nochdir, int noclose);
          *  1. daemon()函数主要用于希望脱离控制台, 以守护进程形式在后台运行的程序.
          *  2. 当nochdir为0时, daemon将更改进城的根目录为root(“/”).
@@ -52,30 +50,26 @@ int main(int argc, char *argv[])
 
     /* > 初始化日志 */
     log = log_init(opt.log_level, INVTD_LOG_PATH, opt.log_key_path);
-    if (NULL == log)
-    {
+    if (NULL == log) {
         fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
         return -1;
     }
 
     /* > 加载配置信息 */
-    if (invtd_conf_load(opt.conf_path, &conf, log))
-    {
+    if (invtd_conf_load(opt.conf_path, &conf, log)) {
         fprintf(stderr, "Load configuration failed! path:%s", opt.conf_path);
         return -1;
     }
 
     /* > 服务初始化 */
     ctx = invtd_init(&conf, log);
-    if (NULL == ctx)
-    {
+    if (NULL == ctx) {
         fprintf(stderr, "Init invertd failed!\n");
         return -1;
     }
 
     /* > 启动服务 */
-    if (invtd_launch(ctx))
-    {
+    if (invtd_launch(ctx)) {
         log_fatal(ctx->log, "Startup invertd failed!");
         return -1;
     }

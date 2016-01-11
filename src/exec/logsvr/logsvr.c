@@ -40,13 +40,10 @@ int main(int argc, char *argv[])
     logd_cntx_t *ctx;
 
     /* 1. 获取输入信息 */
-    if (logd_getopt(argc, argv, &opt))
-    {
+    if (logd_getopt(argc, argv, &opt)) {
         return logd_usage(argv[0]); /* 显示帮助 */
     }
-
-    if (opt.isdaemon)
-    {
+    else if (opt.isdaemon) {
         daemon(1, 1);
     }
 
@@ -54,8 +51,7 @@ int main(int argc, char *argv[])
 
     /* 2. 初始化日志服务 */
     ctx = logd_init(&opt);
-    if (NULL == ctx)
-    {
+    if (NULL == ctx) {
         fprintf(stderr, "Init log failed!");
         return -1;
     }
@@ -89,14 +85,12 @@ int logd_proc_lock(const char *key_path)
     Mkdir2(path, DIR_MODE);
 
     fd = Open(path, OPEN_FLAGS, OPEN_MODE);
-    if (fd < 0)
-    {
+    if (fd < 0) {
         fprintf(stderr, "errmsg:[%d]%s! path:[%s]", errno, strerror(errno), path);
         return -1;
     }
 
-    if (logd_proc_trylock(fd))
-    {
+    if (logd_proc_trylock(fd)) {
         fprintf(stderr, "errmsg:[%d]%s! path:[%s]", errno, strerror(errno), path);
         CLOSE(fd);
         return -1;
@@ -122,15 +116,13 @@ static logd_cntx_t *logd_init(logd_opt_t *opt)
     char path[FILE_PATH_MAX_LEN];
 
     /* > 服务进程锁 */
-    if (logd_proc_lock(opt->key_path))
-    {
+    if (logd_proc_lock(opt->key_path)) {
         fprintf(stderr, "Log server is already running...");
         return NULL;    /* 日志服务进程正在运行... */
     }
 
     ctx = (logd_cntx_t *)calloc(1, sizeof(logd_cntx_t));
-    if (NULL == ctx)
-    {
+    if (NULL == ctx) {
         fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
         return NULL;
     }
@@ -141,24 +133,21 @@ static logd_cntx_t *logd_init(logd_opt_t *opt)
     Mkdir2(path, DIR_MODE);
 
     ctx->fd = Open(path, OPEN_FLAGS, OPEN_MODE);
-    if (ctx->fd < 0)
-    {
+    if (ctx->fd < 0) {
         fprintf(stderr, "errmsg:[%d] %s! path:[%s]", errno, strerror(errno), path);
         return NULL;
     }
 
     /* > 创建/连接共享内存 */
     ctx->addr = logd_creat_shm(ctx->fd, opt->key_path);
-    if (NULL == ctx->addr)
-    {
+    if (NULL == ctx->addr) {
         fprintf(stderr, "Create SHM failed!");
         return NULL;
     }
 
     /* > 创建内存池 */
     ctx->slab = slab_creat_by_calloc(LOGD_SLAB_SIZE, NULL);
-    if (NULL == ctx->slab)
-    {
+    if (NULL == ctx->slab) {
         fprintf(stderr, "Inititalize slab failed!");
         return NULL;
     }
@@ -171,8 +160,7 @@ static logd_cntx_t *logd_init(logd_opt_t *opt)
     tp_opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
     ctx->pool = thread_pool_init(LOGD_THREAD_NUM, &tp_opt, NULL);
-    if (NULL == ctx->pool)
-    {
+    if (NULL == ctx->pool) {
         thread_pool_destroy(ctx->pool);
         ctx->pool = NULL;
         fprintf(stderr, "errmsg:[%d]%s!", errno, strerror(errno));
@@ -202,16 +190,14 @@ static char *logd_creat_shm(int fd, const char *key_path)
 
     /* > 创建共享内存 */
     addr = shm_creat(key_path, LOG_SHM_SIZE);
-    if (NULL == addr)
-    {
+    if (NULL == addr) {
         fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
         return NULL;
     }
 
     /* > 初始化共享内存 */
     p = addr;
-    for (idx=0; idx<LOG_FILE_MAX_NUM; idx++)
-    {
+    for (idx=0; idx<LOG_FILE_MAX_NUM; idx++) {
         lc = (log_cache_t *)(p + idx * LOG_FILE_CACHE_SIZE);
 
         proc_spin_wrlock_b(fd, idx+1);
@@ -248,16 +234,13 @@ static void *logd_timeout_routine(void *args)
     logd_cntx_t *ctx = (logd_cntx_t *)args;
 
 
-    while (1)
-    {
+    while (1) {
         ftime(&ctm);
 
-        for (idx=0; idx<LOG_FILE_MAX_NUM; idx++)
-        {
+        for (idx=0; idx<LOG_FILE_MAX_NUM; idx++) {
             /* 路径为空 */
             lc = (log_cache_t *)(ctx->addr + idx*LOG_FILE_CACHE_SIZE);
-            if ('\0' == lc->path[0])
-            {
+            if ('\0' == lc->path[0]) {
                 continue;
             }
 
@@ -266,8 +249,7 @@ static void *logd_timeout_routine(void *args)
 
             /* 2. 路径为空，则不用同步 */
             lc = (log_cache_t *)(ctx->addr + idx*LOG_FILE_CACHE_SIZE);
-            if ('\0' == lc->path[0])
-            {
+            if ('\0' == lc->path[0]) {
                 proc_unlock_b(ctx->fd, idx+1);
                 continue;
             }
@@ -275,8 +257,7 @@ static void *logd_timeout_routine(void *args)
             log_sync(lc);
         
             /* 判断文件是否还有运行的进程正在使用文件缓存 */
-            if (!proc_is_exist(lc->pid))
-            {
+            if (!proc_is_exist(lc->pid)) {
                 memset(lc, 0, sizeof(log_cache_t));
 
                 lc->pid = INVALID_PID;
@@ -320,10 +301,8 @@ static int logd_getopt(int argc, char *argv[], logd_opt_t *opt)
     opt->isdaemon = false;
 
     /* > 获取输入选项 */
-    while (-1 != (ch = getopt_long(argc, argv, "L:dh", opts, NULL)))
-    {
-        switch (ch)
-        {
+    while (-1 != (ch = getopt_long(argc, argv, "L:dh", opts, NULL))) {
+        switch (ch) {
             case 'd':
             {
                 opt->isdaemon = true;

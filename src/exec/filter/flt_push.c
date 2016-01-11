@@ -32,8 +32,7 @@ void *flt_push_routine(void *_ctx)
     flt_cntx_t *ctx = (flt_cntx_t *)_ctx;
     flt_conf_t *conf = ctx->conf;
 
-    while (1)
-    {
+    while (1) {
         /* > 是否超过阈值 */
         if (redis_llen(ctx->redis->redis[REDIS_MASTER_IDX],
                     conf->redis.taskq) > FLT_REDIS_UNDO_LIMIT_NUM)
@@ -44,8 +43,7 @@ void *flt_push_routine(void *_ctx)
 
         /* > 获取任务数据 */
         crwl = sig_queue_pop(ctx->crwlq);
-        if (NULL == crwl)
-        {
+        if (NULL == crwl) {
             continue;
         }
 

@@ -40,20 +40,17 @@ void *flt_sched_routine(void *_ctx)
 
     snprintf(path, sizeof(path), "%s/wpi", conf->download.path);
 
-    while (1)
-    {
+    while (1) {
         /* > 当队列中无数据时, 才往队列中放数据
          *  原因: 防止文件名被重复放入队列中, 造成异常情况 */
-        if (0 != sig_queue_used(ctx->taskq))
-        {
+        if (0 != sig_queue_used(ctx->taskq)) {
             Sleep(1);
             continue;
         }
 
         /* > 打开目录 */
         dir = opendir(path);
-        if (NULL == dir)
-        {
+        if (NULL == dir) {
             log_error(ctx->log, "errmsg:[%d] %s! path:%s",
                 errno, strerror(errno), path);
             Sleep(1);
@@ -67,15 +64,13 @@ void *flt_sched_routine(void *_ctx)
 
             /* > 判断文件类型 */
             stat(fname, &st);
-            if (!S_ISREG(st.st_mode))
-            {
+            if (!S_ISREG(st.st_mode)) {
                 continue;
             }
 
             /* > 放入TASK队列 */
             task = sig_queue_malloc(ctx->taskq, sizeof(flt_task_t));
-            if (NULL == task)
-            {
+            if (NULL == task) {
                 log_error(ctx->log, "Alloc from queue failed! len:%d/%d",
                     sizeof(flt_crwl_t), sig_queue_size(ctx->crwlq));
                 break;

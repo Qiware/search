@@ -36,16 +36,14 @@ sdsd_cli_t *sdsd_cli_init(const sdsd_conf_t *conf, int idx, log_cycle_t *log)
 
     /* 1. 创建内存池 */
     pool = mem_pool_creat(1 * KB);
-    if (NULL == pool)
-    {
+    if (NULL == pool) {
         log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
         return NULL;
     }
 
     /* 2. 创建CLI对象 */
     cli = (sdsd_cli_t *)mem_pool_alloc(pool, sizeof(sdsd_cli_t));
-    if (NULL == cli)
-    {
+    if (NULL == cli) {
         log_error(log, "Alloc memory from pool failed!");
         mem_pool_destroy(pool);
         return NULL;
@@ -58,8 +56,7 @@ sdsd_cli_t *sdsd_cli_init(const sdsd_conf_t *conf, int idx, log_cycle_t *log)
     memcpy(&cli->conf, conf, sizeof(sdsd_conf_t));
 
     /* 3. 根据配置进行初始化 */
-    if (_sdsd_cli_init(cli, idx))
-    {
+    if (_sdsd_cli_init(cli, idx)) {
         log_error(log, "Initialize client of sdtp failed!");
         mem_pool_destroy(pool);
         return NULL;
@@ -114,21 +111,18 @@ static int sdsd_cli_shmat(sdsd_cli_t *cli)
 
     /* 1. 新建队列对象 */
     cli->sendq = (sdsd_pool_t **)mem_pool_alloc(cli->pool, conf->send_thd_num * sizeof(shm_queue_t *));
-    if (NULL == cli->sendq)
-    {
+    if (NULL == cli->sendq) {
         log_error(cli->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return SDTP_ERR;
     }
 
     /* 2. 连接共享队列 */
     qcf = &conf->sendq;
-    for (idx=0; idx<conf->send_thd_num; ++idx)
-    {
+    for (idx=0; idx<conf->send_thd_num; ++idx) {
         snprintf(path, sizeof(path), "%s-%d", qcf->name, idx);
 
         cli->sendq[idx] = sdsd_pool_attach(path);
-        if (NULL == cli->sendq[idx])
-        {
+        if (NULL == cli->sendq[idx]) {
             log_error(cli->log, "errmsg:[%d] %s! path:[%s]", errno, strerror(errno), qcf->name);
             return SDTP_ERR;
         }
@@ -155,8 +149,7 @@ static int sdsd_cli_cmd_usck(sdsd_cli_t *cli, int idx)
     sdsd_cli_unix_path(cli, path, idx);
 
     cli->cmd_sck_id = unix_udp_creat(path);
-    if (cli->cmd_sck_id < 0)
-    {
+    if (cli->cmd_sck_id < 0) {
         log_error(cli->log, "errmsg:[%d] %s! path:%s", errno, strerror(errno), path);
         return SDTP_ERR;
     }
@@ -187,10 +180,8 @@ static int sdsd_cli_cmd_send_req(sdsd_cli_t *cli, int idx)
     cmd.type = SDTP_CMD_SEND_ALL;
     sdsd_ssvr_usck_path(conf, path, idx);
 
-    if (unix_udp_send(cli->cmd_sck_id, path, &cmd, sizeof(cmd)) < 0)
-    {
-        if (EAGAIN != errno)
-        {
+    if (unix_udp_send(cli->cmd_sck_id, path, &cmd, sizeof(cmd)) < 0) {
+        if (EAGAIN != errno) {
             log_debug(cli->log, "errmsg:[%d] %s! path:%s", errno, strerror(errno), path);
         }
         return SDTP_ERR;
@@ -223,18 +214,15 @@ int sdsd_cli_send(sdsd_cli_t *cli, int type, const void *data, size_t size)
     sdsd_conf_t *conf = &cli->conf;
 
     /* > 随机放入发送池 */
-    for (i=0; i<conf->send_thd_num; ++i)
-    {
+    for (i=0; i<conf->send_thd_num; ++i) {
         idx = (num++)%conf->send_thd_num;
 
-        if (sdsd_pool_push(cli->sendq[idx], type, conf->auth.nodeid, data, size))
-        {
+        if (sdsd_pool_push(cli->sendq[idx], type, conf->auth.nodeid, data, size)) {
             continue;
         }
 
         /* > 通知Send线程 */
-        if(0 == num%1000)
-        {
+        if (0 == num%1000) {
             sdsd_cli_cmd_send_req(cli, idx);
         }
         return SDTP_OK;

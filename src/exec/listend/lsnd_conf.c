@@ -47,29 +47,25 @@ int lsnd_load_conf(const char *path, lsnd_conf_t *conf, log_cycle_t *log)
         opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
         xml = xml_creat(path, &opt);
-        if (NULL == xml)
-        {
+        if (NULL == xml) {
             log_error(log, "Create xml failed! path:%s", path);
             break;
         }
 
         /* > 加载通用配置 */
-        if (lsnd_conf_load_comm(xml, conf, log))
-        {
+        if (lsnd_conf_load_comm(xml, conf, log)) {
             log_error(log, "Load common configuration failed!");
             break;
         }
 
         /* > 加载AGENT配置 */
-        if (lsnd_conf_load_agent(xml, conf, log))
-        {
+        if (lsnd_conf_load_agent(xml, conf, log)) {
             log_error(log, "Load AGENT conf failed! path:%s", path);
             break;
         }
 
         /* > 加载转发配置 */
-        if (lsnd_conf_load_invtd(xml, &conf->invtd_conf, log))
-        {
+        if (lsnd_conf_load_invtd(xml, &conf->invtd_conf, log)) {
             log_error(log, "Load rttp conf failed! path:%s", path);
             break;
         }
@@ -125,15 +121,13 @@ static int lsnd_conf_load_comm(xml_tree_t *xml, lsnd_conf_t *conf, log_cycle_t *
 
     /* > 分发队列配置 */
     fix = xml_query(xml, ".LISTEND.DISTQ");
-    if (NULL == fix)
-    {
+    if (NULL == fix) {
         log_error(log, "Get distribute queue failed!");
         return -1;
     }
 
     node = xml_search(xml, fix, "NUM");
-    if (NULL == node)
-    {
+    if (NULL == node) {
         log_error(log, "Get number of distribue queue failed!");
         return -1;
     }
@@ -141,8 +135,7 @@ static int lsnd_conf_load_comm(xml_tree_t *xml, lsnd_conf_t *conf, log_cycle_t *
     conf->distq.num = atoi(node->value.str);
 
     node = xml_search(xml, fix, "MAX");
-    if (NULL == node)
-    {
+    if (NULL == node) {
         log_error(log, "Get the max container of distribue queue failed!");
         return -1;
     }
@@ -150,8 +143,7 @@ static int lsnd_conf_load_comm(xml_tree_t *xml, lsnd_conf_t *conf, log_cycle_t *
     conf->distq.max = atoi(node->value.str);
 
     node = xml_search(xml, fix, "SIZE");
-    if (NULL == node)
-    {
+    if (NULL == node) {
         log_error(log, "Get the size of distribue queue failed!");
         return -1;
     }
@@ -181,15 +173,13 @@ static int lsnd_conf_parse_agent_connections(
 
     /* > 定位并发配置 */
     fix = xml_query(xml, ".LISTEND.AGENT.CONNECTIONS");
-    if (NULL == fix)
-    {
+    if (NULL == fix) {
         log_error(log, "Didn't configure connections!");
         return -1;
     }
 
     node = xml_search(xml, fix, "MAX");         /* > 获取最大并发数 */
-    if (NULL == node)
-    {
+    if (NULL == node) {
         log_error(log, "Get max number of connections failed!");
         return -1;
     }
@@ -197,8 +187,7 @@ static int lsnd_conf_parse_agent_connections(
     conf->connections.max = atoi(node->value.str);
 
     node = xml_search(xml, fix, "TIMEOUT");     /* > 获取连接超时时间 */
-    if (NULL == node)
-    {
+    if (NULL == node) {
         log_error(log, "Get timeout of connection failed!");
         return -1;
     }
@@ -207,8 +196,7 @@ static int lsnd_conf_parse_agent_connections(
 
     /* > 获取侦听端口 */
     node = xml_search(xml, fix, "PORT");
-    if (NULL == node)
-    {
+    if (NULL == node) {
         log_error(log, "Get port of connection failed!");
         return -1;
     }
@@ -243,8 +231,7 @@ static int lsnd_conf_parse_agent_queue(xml_tree_t *xml, agent_conf_t *conf, log_
         snprintf(node_path, sizeof(node_path), "%s.MAX", _path); \
         \
         node = xml_search(xml, fix, node_path); \
-        if (NULL == node) \
-        { \
+        if (NULL == node) { \
             return -1; \
         } \
         \
@@ -253,8 +240,7 @@ static int lsnd_conf_parse_agent_queue(xml_tree_t *xml, agent_conf_t *conf, log_
         snprintf(node_path, sizeof(node_path), "%s.SIZE", _path); \
         \
         node = xml_search(xml, fix, node_path); \
-        if (NULL == node) \
-        { \
+        if (NULL == node) { \
             return -1; \
         } \
         \
@@ -263,8 +249,7 @@ static int lsnd_conf_parse_agent_queue(xml_tree_t *xml, agent_conf_t *conf, log_
 
     /* > 定位队列标签 */
     fix = xml_query(xml, ".LISTEND.AGENT.QUEUE");
-    if (NULL == fix)
-    {
+    if (NULL == fix) {
         log_error(log, "Get queue configuration failed!");
         return -1;
     }
@@ -309,23 +294,20 @@ static int lsnd_conf_load_agent(xml_tree_t *xml, lsnd_conf_t *lcf, log_cycle_t *
     conf->nid = atoi(node->value.str);
 
     /* > 加载连接配置 */
-    if (lsnd_conf_parse_agent_connections(xml, conf, log))
-    {
+    if (lsnd_conf_parse_agent_connections(xml, conf, log)) {
         log_error(log, "Parse connections of AGENTe configuration failed!");
         return -1;
     }
 
     /* > 加载队列配置 */
-    if (lsnd_conf_parse_agent_queue(xml, conf, log))
-    {
+    if (lsnd_conf_parse_agent_queue(xml, conf, log)) {
         log_error(log, "Parse queue of AGENTe configuration failed!");
         return -1;
     }
 
     /* > 获取WORKER线程数 */
     node = xml_query(xml, ".LISTEND.AGENT.THREAD-POOL.WORKER");
-    if (NULL == node)
-    {
+    if (NULL == node) {
         log_error(log, "Didn't configure number of worker!");
         return -1;
     }
@@ -334,8 +316,7 @@ static int lsnd_conf_load_agent(xml_tree_t *xml, lsnd_conf_t *lcf, log_cycle_t *
 
     /* > 获取AGENT线程数 */
     node = xml_query(xml, ".LISTEND.AGENT.THREAD-POOL.AGENT");
-    if (NULL == node)
-    {
+    if (NULL == node) {
         log_error(log, "Didn't configure number of agent!");
         return -1;
     }
@@ -344,8 +325,7 @@ static int lsnd_conf_load_agent(xml_tree_t *xml, lsnd_conf_t *lcf, log_cycle_t *
 
     /* > 获取Listen线程数 */
     node = xml_query(xml, ".LISTEND.AGENT.THREAD-POOL.LSN");
-    if (NULL == node)
-    {
+    if (NULL == node) {
         log_error(log, "Didn't configure number of listen!");
         return -1;
     }
@@ -374,8 +354,7 @@ static int lsnd_conf_load_invtd(xml_tree_t *xml, rtsd_conf_t *conf, log_cycle_t 
     xml_node_t *parent, *node;
 
     parent = xml_query(xml, ".LISTEND.INVERTD");
-    if (NULL == parent)
-    {
+    if (NULL == parent) {
         log_error(log, "Didn't find invertd configuation!");
         return -1;
     }
@@ -432,8 +411,7 @@ static int lsnd_conf_load_invtd(xml_tree_t *xml, rtsd_conf_t *conf, log_cycle_t 
     }
 
     conf->send_thd_num = atoi(node->value.str);
-    if (0 == conf->send_thd_num)
-    {
+    if (0 == conf->send_thd_num) {
         log_error(log, "THREAD-POOL.SEND_THD_NUM is zero!");
         return -1;
     }
@@ -447,8 +425,7 @@ static int lsnd_conf_load_invtd(xml_tree_t *xml, rtsd_conf_t *conf, log_cycle_t 
     }
 
     conf->work_thd_num = atoi(node->value.str);
-    if (0 == conf->work_thd_num)
-    {
+    if (0 == conf->work_thd_num) {
         log_error(log, "THREAD-POOL.WORK_THD_NUM is zero!");
         return -1;
     }
@@ -463,8 +440,7 @@ static int lsnd_conf_load_invtd(xml_tree_t *xml, rtsd_conf_t *conf, log_cycle_t 
     }
 
     conf->recv_buff_size = atoi(node->value.str) * MB;
-    if (0 == conf->recv_buff_size)
-    {
+    if (0 == conf->recv_buff_size) {
         return -1;
     }
 
@@ -478,8 +454,7 @@ static int lsnd_conf_load_invtd(xml_tree_t *xml, rtsd_conf_t *conf, log_cycle_t 
     }
 
     conf->recvq.max = atoi(node->value.str);
-    if (0 == conf->recvq.max)
-    {
+    if (0 == conf->recvq.max) {
         log_error(log, "RECVQ.MAX is zero!");
         return -1;
     }
@@ -493,8 +468,7 @@ static int lsnd_conf_load_invtd(xml_tree_t *xml, rtsd_conf_t *conf, log_cycle_t 
     }
 
     conf->recvq.size = atoi(node->value.str);
-    if (0 == conf->recvq.size)
-    {
+    if (0 == conf->recvq.size) {
         log_error(log, "RECVQ.SIZE is zero!");
         return -1;
     }
@@ -509,8 +483,7 @@ static int lsnd_conf_load_invtd(xml_tree_t *xml, rtsd_conf_t *conf, log_cycle_t 
     }
 
     conf->sendq.max = atoi(node->value.str);
-    if (0 == conf->sendq.max)
-    {
+    if (0 == conf->sendq.max) {
         log_error(log, "SENDQ.MAX is zero!");
         return -1;
     }
@@ -524,8 +497,7 @@ static int lsnd_conf_load_invtd(xml_tree_t *xml, rtsd_conf_t *conf, log_cycle_t 
     }
 
     conf->sendq.size = atoi(node->value.str);
-    if (0 == conf->sendq.size)
-    {
+    if (0 == conf->sendq.size) {
         log_error(log, "SENDQ.SIZE is zero!");
         return -1;
     }

@@ -28,28 +28,24 @@ redis_clst_t *redis_clst_init(const redis_conf_t *conf, int num)
 
     /* 1. 申请内存空间 */
     clst = (redis_clst_t *)calloc(1, sizeof(redis_clst_t));
-    if (NULL == clst)
-    {
+    if (NULL == clst) {
         return NULL;
     }
 
     clst->redis = (redisContext **)calloc(num, sizeof(redisContext *));
-    if (NULL == clst->redis)
-    {
+    if (NULL == clst->redis) {
         free(clst);
         return NULL;
     }
 
     /* 2. 依次连接REDIS */
     clst->num = num;
-    for (idx=0; idx<num; ++idx)
-    {
+    for (idx=0; idx<num; ++idx) {
         tv.tv_sec = REDIS_CONN_TMOUT_SEC;
         tv.tv_usec = REDIS_CONN_TMOUT_USEC;
 
         clst->redis[idx] = redisConnectWithTimeout(conf[idx].ip, conf[idx].port, tv);
-        if (clst->redis[idx]->err)
-        {
+        if (clst->redis[idx]->err) {
             redis_clst_destroy(clst);
             return NULL;
         }
@@ -73,10 +69,8 @@ void redis_clst_destroy(redis_clst_t *clst)
 {
     int idx;
 
-    for (idx=0; idx<clst->num; ++idx)
-    {
-        if (NULL != clst->redis[idx])
-        {
+    for (idx=0; idx<clst->num; ++idx) {
+        if (NULL != clst->redis[idx]) {
             redisFree(clst->redis[idx]);
             clst->redis[idx] = NULL;
         }

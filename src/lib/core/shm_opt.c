@@ -43,16 +43,13 @@ static int shm_data_read(const char *path, shm_data_t *shm)
     opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
     xml = xml_creat(path, &opt);
-    if (NULL == xml)
-    {
+    if (NULL == xml) {
         return -1;
     }
 
     /* > 获取SHM-ID */
     node = xml_query(xml, ".SHM.ID");
-    if (NULL == node
-        || 0 == node->value.len)
-    {
+    if (NULL == node || 0 == node->value.len) {
         xml_destroy(xml);
         return -1;
     }
@@ -61,9 +58,7 @@ static int shm_data_read(const char *path, shm_data_t *shm)
 
     /* > 获取SIZE */
     node = xml_query(xml, ".SHM.SIZE");
-    if (NULL == node
-        || 0 == node->value.len)
-    {
+    if (NULL == node || 0 == node->value.len) {
         xml_destroy(xml);
         return -1;
     }
@@ -116,33 +111,28 @@ static int shm_data_write(const char *path, shm_data_t *shm)
     opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
     xml = xml_creat_empty(&opt);
-    if (NULL == xml)
-    {
+    if (NULL == xml) {
         return -1;
     }
 
-    do
-    {
+    do {
         /* > 根节点 */
         node = xml_set_root(xml, "SHM");
-        if (NULL == node)
-        {
+        if (NULL == node) {
             break;
         }
 
         /* > 新建SHM-ID */
         snprintf(value, sizeof(value), "%d", shm->id);
 
-        if (!xml_add_child(xml, node, "ID", value))
-        {
+        if (!xml_add_child(xml, node, "ID", value)) {
             break;
         }
 
         /* > 新建SHM-SIZE */
         snprintf(value, sizeof(value), "%ld", shm->size);
 
-        if (!xml_add_child(xml, node, "SIZE", value))
-        {
+        if (!xml_add_child(xml, node, "SIZE", value)) {
             break;
         }
 
@@ -151,8 +141,7 @@ static int shm_data_write(const char *path, shm_data_t *shm)
 
         snprintf(value, sizeof(value), "%lu", digest);
 
-        if (!xml_add_child(xml, node, "DIGEST", value))
-        {
+        if (!xml_add_child(xml, node, "DIGEST", value)) {
             break;
         }
 
@@ -184,13 +173,11 @@ key_t shm_ftok(const char *path, int id)
 {
     FILE *fp;
 
-    if (access(path, F_OK))
-    {
+    if (access(path, F_OK)) {
         Mkdir2(path, 0777);
 
         fp = fopen(path, "w");
-        if (NULL == fp)
-        {
+        if (NULL == fp) {
             return -1;
         }
 
@@ -210,8 +197,7 @@ static void *_shm_creat(const char *path, size_t size)
 
     /* > 创建共享内存 */
     shm.id = shmget(IPC_PRIVATE, size, IPC_CREAT|0666);
-    if (shm.id < 0)
-    {
+    if (shm.id < 0) {
         return NULL;
     }
 
@@ -219,8 +205,7 @@ static void *_shm_creat(const char *path, size_t size)
 
     /* > ATTACH共享内存 */
     addr = (void *)shmat(shm.id, NULL, 0);
-    if ((void *)-1 == addr)
-    {
+    if ((void *)-1 == addr) {
         return NULL;
     }
 
@@ -253,16 +238,13 @@ void *shm_creat(const char *path, size_t size)
     Mkdir2(path, DIR_MODE);
 
     /* > 判断文件大小, 及是否存在 */
-    if (lstat(path, &st) < 0)
-    {
-        if (ENOENT != errno)
-        {
+    if (lstat(path, &st) < 0) {
+        if (ENOENT != errno) {
             return NULL;
         }
         return _shm_creat(path, size);  /* 创建 */
     }
-    else if (0 == st.st_size)
-    {
+    else if (0 == st.st_size) {
         return _shm_creat(path, size);  /* 创建 */
     }
 
@@ -290,28 +272,24 @@ void *shm_creat_by_key(int key, size_t size)
 
     /* 1 判断是否已经创建 */
     id = shmget(key, 0, 0);
-    if (id >= 0)
-    {
+    if (id >= 0) {
         return NULL;  /* 已创建 */
     }
 
     /* 2 异常，则退出处理 */
-    if (ENOENT != errno)
-    {
+    if (ENOENT != errno) {
         return NULL;
     }
 
     /* 3 创建共享内存 */
     id = shmget(key, size, IPC_CREAT|0666);
-    if (id < 0)
-    {
+    if (id < 0) {
         return NULL;
     }
 
     /* 4. ATTACH共享内存 */
     addr = (void *)shmat(id, NULL, 0);
-    if ((void *)-1 == addr)
-    {
+    if ((void *)-1 == addr) {
         return NULL;
     }
 
@@ -338,8 +316,7 @@ void *shm_attach(const char *path, size_t size)
     shm_data_t shm;
 
     /* 加载SHM数据 */
-    if (shm_data_read(path, &shm))
-    {
+    if (shm_data_read(path, &shm)) {
         return NULL;
     }
 
@@ -352,8 +329,7 @@ void *shm_attach(const char *path, size_t size)
  
     /* > 已创建: 直接附着 */
     addr = shmat(shm.id, NULL, 0);
-    if ((void *)-1 == addr)
-    {
+    if ((void *)-1 == addr) {
         return NULL;
     }
 
@@ -380,15 +356,13 @@ void *shm_attach_by_key(key_t key, size_t size)
 
     /* > 判断是否已经创建 */
     id = shmget(key, 0, 0666);
-    if (id < 0)
-    {
+    if (id < 0) {
         return NULL;
     }
 
     /* > 已创建: 直接附着 */
     addr = shmat(id, NULL, 0);
-    if ((void *)-1 == addr)
-    {
+    if ((void *)-1 == addr) {
         return NULL;
     }
 
@@ -413,8 +387,7 @@ static void *shm_at_or_creat(const char *path, size_t size)
     shm_data_t shm;
 
     /* 加载SHM数据 */
-    if (shm_data_read(path, &shm))
-    {
+    if (shm_data_read(path, &shm)) {
         return NULL;
     }
 
@@ -427,8 +400,7 @@ static void *shm_at_or_creat(const char *path, size_t size)
  
     /* > 直接附着 */
     addr = shmat(shm.id, NULL, 0);
-    if ((void *)-1 == addr)
-    {
+    if ((void *)-1 == addr) {
         if ((EIDRM == errno)
             || (EINVAL == errno))
         {

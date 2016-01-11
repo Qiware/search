@@ -40,22 +40,19 @@ int invtd_conf_load(const char *path, invtd_conf_t *conf, log_cycle_t *log)
     opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
     xml = xml_creat(path, &opt);
-    if (NULL == xml)
-    {
+    if (NULL == xml) {
         xml_destroy(xml);
         return INVT_ERR_CONF;
     }
 
     /* > 加载SDTP配置 */
-    if (invtd_conf_load_sdtp(xml, &conf->rtrd))
-    {
+    if (invtd_conf_load_sdtp(xml, &conf->rtrd)) {
         xml_destroy(xml);
         return INVT_ERR_CONF;
     }
 
     /* > 加载其他配置 */
-    if (invtd_conf_load_comm(xml, conf))
-    {
+    if (invtd_conf_load_comm(xml, conf)) {
         xml_destroy(xml);
         return INVT_ERR_CONF;
     }
@@ -82,15 +79,13 @@ static int invtd_conf_load_sdtp(xml_tree_t *xml, rtrd_conf_t *conf)
     xml_node_t *nail, *node;
 
     nail = xml_query(xml, ".INVTERD.SDTP"); 
-    if (NULL == nail)
-    {
+    if (NULL == nail) {
         return INVT_ERR_CONF;
     }
 
     /* > 节点ID */
     node = xml_search(xml, nail, "NODE");
-    if (NULL == node)
-    {
+    if (NULL == node) {
         return INVT_ERR_CONF;
     }
 
@@ -98,8 +93,7 @@ static int invtd_conf_load_sdtp(xml_tree_t *xml, rtrd_conf_t *conf)
 
     /* > 工作路径 */
     node = xml_search(xml, nail, "PATH");
-    if (NULL == node)
-    {
+    if (NULL == node) {
         return INVT_ERR_CONF;
     }
 
@@ -107,8 +101,7 @@ static int invtd_conf_load_sdtp(xml_tree_t *xml, rtrd_conf_t *conf)
 
     /* > 端口号 */
     node = xml_search(xml, nail, "PORT");
-    if (NULL == node)
-    {
+    if (NULL == node) {
         return INVT_ERR_CONF;
     }
 
@@ -116,16 +109,14 @@ static int invtd_conf_load_sdtp(xml_tree_t *xml, rtrd_conf_t *conf)
 
     /* > 鉴权配置信息 */
     node = xml_search(xml, nail, "AUTH.USR");
-    if (NULL == node)
-    {
+    if (NULL == node) {
         return INVT_ERR_CONF;
     }
 
     snprintf(conf->auth.usr, sizeof(conf->auth.usr), "%s", node->value.str);
 
     node = xml_search(xml, nail, "AUTH.PASSWD");
-    if (NULL == node)
-    {
+    if (NULL == node) {
         return INVT_ERR_CONF;
     }
 
@@ -133,16 +124,14 @@ static int invtd_conf_load_sdtp(xml_tree_t *xml, rtrd_conf_t *conf)
 
     /* > 线程数配置 */
     node = xml_search(xml, nail, "THREAD-POOL.RECV_THD_NUM");
-    if (NULL == node)
-    {
+    if (NULL == node) {
         return INVT_ERR_CONF;
     }
 
     conf->recv_thd_num = atoi(node->value.str);
 
     node = xml_search(xml, nail, "THREAD-POOL.WORK_THD_NUM");
-    if (NULL == node)
-    {
+    if (NULL == node) {
         return INVT_ERR_CONF;
     }
 
@@ -150,24 +139,21 @@ static int invtd_conf_load_sdtp(xml_tree_t *xml, rtrd_conf_t *conf)
 
     /* > 接收队列配置 */
     node = xml_search(xml, nail, "RECVQ.NUM");
-    if (NULL == node)
-    {
+    if (NULL == node) {
         return INVT_ERR_CONF;
     }
 
     conf->recvq_num = atoi(node->value.str);
 
     node = xml_search(xml, nail, "RECVQ.MAX");
-    if (NULL == node)
-    {
+    if (NULL == node) {
         return INVT_ERR_CONF;
     }
 
     conf->recvq.max = atoi(node->value.str);
 
     node = xml_search(xml, nail, "RECVQ.SIZE");
-    if (NULL == node)
-    {
+    if (NULL == node) {
         return INVT_ERR_CONF;
     }
 
@@ -179,24 +165,21 @@ static int invtd_conf_load_sdtp(xml_tree_t *xml, rtrd_conf_t *conf)
 
     /* > 分发队列配置 */
     node = xml_search(xml, nail, "DISTQ.NUM");
-    if (NULL == node)
-    {
+    if (NULL == node) {
         return INVT_ERR_CONF;
     }
 
     conf->distq_num = atoi(node->value.str);
 
     node = xml_search(xml, nail, "DISTQ.MAX");
-    if (NULL == node)
-    {
+    if (NULL == node) {
         return INVT_ERR_CONF;
     }
 
     conf->distq.max = atoi(node->value.str);
 
     node = xml_search(xml, nail, "DISTQ.SIZE");
-    if (NULL == node)
-    {
+    if (NULL == node) {
         return INVT_ERR_CONF;
     }
 
@@ -223,8 +206,7 @@ static int invtd_conf_load_comm(xml_tree_t *xml, invtd_conf_t *conf)
 
     /* > 倒排表长度 */
     node = xml_query(xml, ".INVTERD.INVT_TAB.MAX");
-    if (NULL == node)
-    {
+    if (NULL == node) {
         return INVT_ERR_CONF;
     }
 

@@ -37,8 +37,7 @@ int invtd_getopt(int argc, char **argv, invtd_opt_t *opt)
     opt->conf_path = INVTD_DEF_CONF_PATH;
 
     /* 1. 解析输入参数 */
-    while (-1 != (ch = getopt_long(argc, argv, "c:l:L:hd", opts, NULL)))
-    {
+    while (-1 != (ch = getopt_long(argc, argv, "c:l:L:hd", opts, NULL))) {
         switch (ch)
         {
             case 'c':   /* 指定配置文件 */
@@ -115,8 +114,7 @@ invtd_cntx_t *invtd_init(const invtd_conf_t *conf, log_cycle_t *log)
 
     /* > 创建倒排对象 */
     ctx = (invtd_cntx_t *)calloc(1, sizeof(invtd_cntx_t));
-    if (NULL == ctx)
-    {
+    if (NULL == ctx) {
         log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
         return NULL;
     }
@@ -124,12 +122,10 @@ invtd_cntx_t *invtd_init(const invtd_conf_t *conf, log_cycle_t *log)
     ctx->log = log;
     memcpy(&ctx->conf, conf, sizeof(ctx->conf));
 
-    do
-    {
+    do {
         /* > 创建倒排表 */
         ctx->invtab = invtab_creat(ctx->conf.invt_tab_max, log);
-        if (NULL == ctx->invtab)
-        {
+        if (NULL == ctx->invtab) {
             log_error(log, "Create invert table failed!");
             break;
         }
@@ -138,8 +134,7 @@ invtd_cntx_t *invtd_init(const invtd_conf_t *conf, log_cycle_t *log)
 
         /* > 初始化SDTP服务 */
         ctx->rtrd = rtrd_init(&ctx->conf.rtrd, log);
-        if (NULL == ctx->rtrd)
-        {
+        if (NULL == ctx->rtrd) {
             log_error(log, "Init sdtp failed!");
             break;
         }
@@ -167,8 +162,7 @@ static int invtd_insert_word(invtd_cntx_t *ctx)
 {
 #define INVERT_INSERT(ctx, word, url, freq) \
     pthread_rwlock_wrlock(&ctx->invtab_lock); \
-    if (invtab_insert(ctx->invtab, word, url, freq)) \
-    { \
+    if (invtab_insert(ctx->invtab, word, url, freq)) { \
         pthread_rwlock_unlock(&ctx->invtab_lock); \
         return INVT_ERR; \
     } \
@@ -206,16 +200,14 @@ static int invtd_insert_word(invtd_cntx_t *ctx)
 int invtd_launch(invtd_cntx_t *ctx)
 {
     /* 启动RTMQ */
-    if (invtd_start_rtmq(ctx))
-    {
+    if (invtd_start_rtmq(ctx)) {
         log_fatal(ctx->log, "Startup sdtp failed!");
         return INVT_ERR;
     }
 
 #if defined(__INVTD_DEBUG__)
     /* 插入关键字 */
-    if (invtd_insert_word(ctx))
-    {
+    if (invtd_insert_word(ctx)) {
         log_fatal(ctx->log, "Insert key-word failed!");
         return INVT_ERR;
     }

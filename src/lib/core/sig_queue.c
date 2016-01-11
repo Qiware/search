@@ -17,14 +17,12 @@ sig_queue_t *sig_queue_creat(int max, int size)
     sig_queue_t *sq;
 
     sq = (sig_queue_t *)calloc(1, sizeof(sig_queue_t));
-    if (NULL == sq)
-    {
+    if (NULL == sq) {
         return NULL;
     }
 
     sq->queue = queue_creat(max, size);
-    if (NULL == sq->queue)
-    {
+    if (NULL == sq->queue) {
         free(sq);
         return NULL;
     }
@@ -72,8 +70,7 @@ int sig_queue_push(sig_queue_t *sq, void *addr)
 void *sig_queue_pop(sig_queue_t *sq)
 {
     pthread_mutex_lock(&sq->lock);
-    while (queue_empty(sq->queue))
-    {
+    while (queue_empty(sq->queue)) {
         pthread_cond_wait(&sq->ready, &sq->lock);
     }
     pthread_mutex_unlock(&sq->lock);

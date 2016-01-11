@@ -21,8 +21,7 @@ static int sdsd_creat_worktp(sdsd_cntx_t *ctx)
 
     /* > 创建对象 */
     worker = (sdtp_worker_t *)slab_alloc(ctx->slab, conf->work_thd_num * sizeof(sdtp_worker_t));
-    if (NULL == worker)
-    {
+    if (NULL == worker) {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return SDTP_ERR;
     }
@@ -35,18 +34,15 @@ static int sdsd_creat_worktp(sdsd_cntx_t *ctx)
     opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
     ctx->worktp = thread_pool_init(conf->work_thd_num, &opt, (void *)worker);
-    if (NULL == ctx->worktp)
-    {
+    if (NULL == ctx->worktp) {
         log_error(ctx->log, "Initialize thread pool failed!");
         slab_dealloc(ctx->slab, worker);
         return SDTP_ERR;
     }
 
     /* > 初始化线程 */
-    for (idx=0; idx<conf->work_thd_num; ++idx)
-    {
-        if (sdsd_worker_init(ctx, worker+idx, idx))
-        {
+    for (idx=0; idx<conf->work_thd_num; ++idx) {
+        if (sdsd_worker_init(ctx, worker+idx, idx)) {
             log_fatal(ctx->log, "Initialize work thread failed!");
             slab_dealloc(ctx->slab, worker);
             thread_pool_destroy(ctx->worktp);
@@ -83,8 +79,7 @@ static int sdsd_creat_sendtp(sdsd_cntx_t *ctx)
 
     /* > 创建对象 */
     ssvr = (sdsd_ssvr_t *)slab_alloc(ctx->slab, conf->send_thd_num * sizeof(sdsd_ssvr_t));
-    if (NULL == ssvr)
-    {
+    if (NULL == ssvr) {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return SDTP_ERR;
     }
@@ -97,18 +92,15 @@ static int sdsd_creat_sendtp(sdsd_cntx_t *ctx)
     opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
     ctx->sendtp = thread_pool_init(conf->send_thd_num, &opt, (void *)ssvr);
-    if (NULL == ctx->sendtp)
-    {
+    if (NULL == ctx->sendtp) {
         log_error(ctx->log, "Initialize thread pool failed!");
         slab_dealloc(ctx->slab, ssvr);
         return SDTP_ERR;
     }
 
     /* > 初始化线程 */
-    for (idx=0; idx<conf->send_thd_num; ++idx)
-    {
-        if (sdsd_ssvr_init(ctx, ssvr+idx, idx))
-        {
+    for (idx=0; idx<conf->send_thd_num; ++idx) {
+        if (sdsd_ssvr_init(ctx, ssvr+idx, idx)) {
             log_fatal(ctx->log, "Initialize send thread failed!");
             slab_dealloc(ctx->slab, ssvr);
             thread_pool_destroy(ctx->sendtp);
@@ -144,18 +136,15 @@ static int sdsd_creat_recvq(sdsd_cntx_t *ctx)
 
     /* > 创建队列对象 */
     ctx->recvq = (queue_t **)calloc(conf->send_thd_num, sizeof(queue_t *));
-    if (NULL == ctx->recvq)
-    {
+    if (NULL == ctx->recvq) {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return SDTP_ERR;
     }
 
     /* > 创建接收队列 */
-    for (idx=0; idx<conf->send_thd_num; ++idx)
-    {
+    for (idx=0; idx<conf->send_thd_num; ++idx) {
         ctx->recvq[idx] = queue_creat(conf->recvq.max, conf->recvq.size);
-        if (NULL == ctx->recvq[idx])
-        {
+        if (NULL == ctx->recvq[idx]) {
             log_error(ctx->log, "Create recvq failed!");
             return SDTP_ERR;
         }
@@ -183,16 +172,14 @@ sdsd_cntx_t *sdsd_init(const sdsd_conf_t *conf, log_cycle_t *log)
 
     /* > 创建内存池 */
     slab = slab_creat_by_calloc(30 * MB, log);
-    if (NULL == slab)
-    {
+    if (NULL == slab) {
         log_error(log, "Initialize slab failed!");
         return NULL;
     }
 
     /* > 创建对象 */
     ctx = (sdsd_cntx_t *)slab_alloc(slab, sizeof(sdsd_cntx_t));
-    if (NULL == ctx)
-    {
+    if (NULL == ctx) {
         log_fatal(log, "errmsg:[%d] %s!", errno, strerror(errno));
         slab_destroy(slab);
         return NULL;
@@ -205,8 +192,7 @@ sdsd_cntx_t *sdsd_init(const sdsd_conf_t *conf, log_cycle_t *log)
     memcpy(&ctx->conf, conf, sizeof(sdsd_conf_t));
 
     /* > 创建接收队列 */
-    if (sdsd_creat_recvq(ctx))
-    {
+    if (sdsd_creat_recvq(ctx)) {
         log_fatal(log, "Create recv-queue failed!");
         slab_destroy(slab);
         return NULL;
@@ -231,15 +217,13 @@ sdsd_cntx_t *sdsd_init(const sdsd_conf_t *conf, log_cycle_t *log)
 int sdsd_launch(sdsd_cntx_t *ctx)
 {
     /* > 创建工作线程池 */
-    if (sdsd_creat_worktp(ctx))
-    {
+    if (sdsd_creat_worktp(ctx)) {
         log_fatal(ctx->log, "Create work thread pool failed!");
         return SDTP_ERR;
     }
 
     /* > 创建发送线程池 */
-    if (sdsd_creat_sendtp(ctx))
-    {
+    if (sdsd_creat_sendtp(ctx)) {
         log_fatal(ctx->log, "Create send thread pool failed!");
         return SDTP_ERR;
     }
@@ -267,14 +251,12 @@ int sdsd_register(sdsd_cntx_t *ctx, int type, sdtp_reg_cb_t proc, void *args)
 {
     sdtp_reg_t *reg;
 
-    if (type >= SDTP_TYPE_MAX)
-    {
+    if (type >= SDTP_TYPE_MAX) {
         log_error(ctx->log, "Data type [%d] is out of range!", type);
         return SDTP_ERR;
     }
 
-    if (0 != ctx->reg[type].flag)
-    {
+    if (0 != ctx->reg[type].flag) {
         log_error(ctx->log, "Repeat register type [%d]!", type);
         return SDTP_ERR_REPEAT_REG;
     }

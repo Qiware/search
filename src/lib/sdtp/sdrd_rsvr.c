@@ -85,12 +85,11 @@ static void sdrd_rsvr_set_rdset(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr)
     rsvr->max = rsvr->cmd_sck_id;
 
     node = rsvr->conn_list->head;
-    if (NULL != node)
-    {
+    if (NULL != node) {
         tail = node->prev;
     }
-    while (NULL != node)
-    {
+
+    while (NULL != node) {
         curr = (sdrd_sck_t *)node->data;
         if ((rsvr->ctm - curr->rdtm > 30)
             && (rsvr->ctm - curr->wrtm > 30))
@@ -98,8 +97,7 @@ static void sdrd_rsvr_set_rdset(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr)
             log_error(rsvr->log, "Didn't active for along time! fd:%d ip:%s",
                     curr->fd, curr->ipaddr);
 
-            if (node == tail)
-            {
+            if (node == tail) {
                 sdrd_rsvr_del_conn_hdl(ctx, rsvr, node);
                 break;
             }
@@ -112,8 +110,7 @@ static void sdrd_rsvr_set_rdset(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr)
         FD_SET(curr->fd, &rsvr->rdset);
         rsvr->max = MAX(rsvr->max, curr->fd);
 
-        if (node == tail)
-        {
+        if (node == tail) {
             break;
         }
         node = node->next;
@@ -139,20 +136,17 @@ static void sdrd_rsvr_set_wrset(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr)
     FD_ZERO(&rsvr->wrset);
 
     node = rsvr->conn_list->head;
-    if (NULL != node)
-    {
+    if (NULL != node) {
         tail = node->prev;
     }
 
-    while (NULL != node)
-    {
+    while (NULL != node) {
         curr = (sdrd_sck_t *)node->data;
 
         if (list_empty(curr->mesg_list)
             && (curr->send.optr == curr->send.iptr))
         {
-            if (node == tail)
-            {
+            if (node == tail) {
                 break;
             }
             node = node->next;
@@ -161,8 +155,7 @@ static void sdrd_rsvr_set_wrset(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr)
 
         FD_SET(curr->fd, &rsvr->wrset);
 
-        if (node == tail)
-        {
+        if (node == tail) {
             break;
         }
         node = node->next;
@@ -192,8 +185,7 @@ void *sdrd_rsvr_routine(void *_ctx)
 
     /* 1. 获取接收服务 */
     rsvr = sdrd_rsvr_get_curr(ctx);
-    if (NULL == rsvr)
-    {
+    if (NULL == rsvr) {
         log_fatal(rsvr->log, "Get recv server failed!");
         abort();
         return (void *)SDTP_ERR;
@@ -211,15 +203,13 @@ void *sdrd_rsvr_routine(void *_ctx)
         timeout.tv_sec = 1;
         timeout.tv_usec = 0;
         ret = select(rsvr->max+1, &rsvr->rdset, &rsvr->wrset, NULL, &timeout);
-        if (ret < 0)
-        {
+        if (ret < 0) {
             if (EINTR == errno) { continue; }
             log_fatal(rsvr->log, "errmsg:[%d] %s", errno, strerror(errno));
             abort();
             return (void *)SDTP_ERR;
         }
-        else if (0 == ret)
-        {
+        else if (0 == ret) {
             sdrd_rsvr_event_timeout_hdl(ctx, rsvr);
             continue;
         }
@@ -252,8 +242,7 @@ static sdrd_rsvr_t *sdrd_rsvr_get_curr(sdrd_cntx_t *ctx)
 
     /* 1. 获取当前线程的索引 */
     id = thread_pool_get_tidx(ctx->recvtp);
-    if (id < 0)
-    {
+    if (id < 0) {
         log_error(ctx->log, "Get index of current thread failed!");
         return NULL;
     }
@@ -290,16 +279,14 @@ int sdrd_rsvr_init(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, int id)
     sdrd_rsvr_usck_path(conf, path, rsvr->id);
 
     rsvr->cmd_sck_id = unix_udp_creat(path);
-    if (rsvr->cmd_sck_id < 0)
-    {
+    if (rsvr->cmd_sck_id < 0) {
         log_error(rsvr->log, "Create unix-udp socket failed!");
         return SDTP_ERR;
     }
 
     /* > 创建SLAB内存池 */
     rsvr->pool = slab_creat_by_calloc(SDTP_MEM_POOL_SIZE, rsvr->log);
-    if (NULL == rsvr->pool)
-    {
+    if (NULL == rsvr->pool) {
         log_error(rsvr->log, "Initialize slab mem-pool failed!");
         return SDTP_ERR;
     }
@@ -331,8 +318,7 @@ static int sdrd_rsvr_recv_cmd(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr)
     memset(&cmd, 0, sizeof(cmd));
 
     /* 1. 接收命令数据 */
-    if (unix_udp_recv(rsvr->cmd_sck_id, (void *)&cmd, sizeof(cmd)) < 0)
-    {
+    if (unix_udp_recv(rsvr->cmd_sck_id, (void *)&cmd, sizeof(cmd)) < 0) {
         log_error(rsvr->log, "Recv command failed!");
         return SDTP_ERR_RECV_CMD;
     }
@@ -374,25 +360,20 @@ static int sdrd_rsvr_trav_recv(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr)
     rsvr->ctm = time(NULL);
 
     node = rsvr->conn_list->head;
-    if (NULL != node)
-    {
+    if (NULL != node) {
         tail = node->prev;
     }
 
-    while (NULL != node)
-    {
+    while (NULL != node) {
         curr = (sdrd_sck_t *)node->data;
 
-        if (FD_ISSET(curr->fd, &rsvr->rdset))
-        {
+        if (FD_ISSET(curr->fd, &rsvr->rdset)) {
             curr->rdtm = rsvr->ctm;
 
             /* 进行接收处理 */
-            if (sdrd_rsvr_recv_proc(ctx, rsvr, curr))
-            {
+            if (sdrd_rsvr_recv_proc(ctx, rsvr, curr)) {
                 log_error(rsvr->log, "Recv proc failed! fd:%d ip:%s", curr->fd, curr->ipaddr);
-                if (node == tail)
-                {
+                if (node == tail) {
                     sdrd_rsvr_del_conn_hdl(ctx, rsvr, node);
                     break;
                 }
@@ -403,8 +384,7 @@ static int sdrd_rsvr_trav_recv(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr)
             }
         }
 
-        if (node == tail)
-        {
+        if (node == tail) {
             break;
         }
 
@@ -446,40 +426,33 @@ static int sdrd_rsvr_trav_send(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr)
     rsvr->ctm = time(NULL);
 
     node = rsvr->conn_list->head;
-    if (NULL != node)
-    {
+    if (NULL != node) {
         tail = node->prev;
     }
 
-    while (NULL != node)
-    {
+    while (NULL != node) {
         curr = (sdrd_sck_t *)node->data;
 
-        if (FD_ISSET(curr->fd, &rsvr->wrset))
-        {
+        if (FD_ISSET(curr->fd, &rsvr->wrset)) {
             curr->wrtm = rsvr->ctm;
             send = &curr->send;
 
             for (;;)
             {
                 /* 1. 填充发送缓存 */
-                if (send->iptr == send->optr)
-                {
+                if (send->iptr == send->optr) {
                     sdrd_rsvr_fill_send_buff(rsvr, curr);
                 }
 
                 /* 2. 发送缓存数据 */
                 len = send->iptr - send->optr;
-                if (0 == len)
-                {
+                if (0 == len) {
                     break;
                 }
 
                 n = Writen(curr->fd, send->optr, len);
-                if (n != len)
-                {
-                    if (n > 0)
-                    {
+                if (n != len) {
+                    if (n > 0) {
                         send->optr += n;
                         break;
                     }
@@ -495,8 +468,7 @@ static int sdrd_rsvr_trav_send(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr)
             }
         }
 
-        if (node == tail)
-        {
+        if (node == tail) {
             break;
         }
 
@@ -537,36 +509,30 @@ static int sdrd_rsvr_recv_proc(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, sdrd_sck_t *
     int n, left;
     sdtp_snap_t *recv = &sck->recv;
 
-    while (1)
-    {
+    while (1) {
         /* 1. 接收网络数据 */
         left = (int)(recv->end - recv->iptr);
 
         n = read(sck->fd, recv->iptr, left);
-        if (n > 0)
-        {
+        if (n > 0) {
             recv->iptr += n;
 
             /* 2. 进行数据处理 */
-            if (sdrd_rsvr_data_proc(ctx, rsvr, sck))
-            {
+            if (sdrd_rsvr_data_proc(ctx, rsvr, sck)) {
                 log_error(rsvr->log, "Proc data failed! fd:%d", sck->fd);
                 return SDTP_ERR;
             }
             continue;
         }
-        else if (0 == n)
-        {
+        else if (0 == n) {
             log_info(rsvr->log, "Client disconnected. fd:%d n:%d/%d", sck->fd, n, left);
             return SDTP_SCK_DISCONN;
         }
-        else if ((n < 0) && (EAGAIN == errno))
-        {
+        else if ((n < 0) && (EAGAIN == errno)) {
             return SDTP_OK; /* Again */
         }
 
-        if (EINTR == errno)
-        {
+        if (EINTR == errno) {
             continue;
         }
 
@@ -608,16 +574,13 @@ static int sdrd_rsvr_data_proc(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, sdrd_sck_t *
     uint32_t len, one_mesg_len;
     sdtp_snap_t *recv = &sck->recv;
 
-    while (1)
-    {
+    while (1) {
         flag = false;
         head = (sdtp_header_t *)recv->optr;
 
         len = (uint32_t)(recv->iptr - recv->optr);
-        if (len >= sizeof(sdtp_header_t))
-        {
-            if (SDTP_CHECK_SUM != ntohl(head->checksum))
-            {
+        if (len >= sizeof(sdtp_header_t)) {
+            if (SDTP_CHECK_SUM != ntohl(head->checksum)) {
                 log_error(rsvr->log, "Header is invalid! nodeid:%d Mark:%X/%X type:%d len:%d flag:%d",
                         ntohl(head->nodeid), ntohl(head->checksum), SDTP_CHECK_SUM,
                         ntohs(head->type), ntohl(head->length), head->flag);
@@ -625,20 +588,16 @@ static int sdrd_rsvr_data_proc(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, sdrd_sck_t *
             }
 
             one_mesg_len = sizeof(sdtp_header_t) + ntohl(head->length);
-            if (len >= one_mesg_len)
-            {
+            if (len >= one_mesg_len) {
                 flag = true;
             }
         }
 
         /* 1. 不足一条数据时 */
-        if (!flag)
-        {
-            if (recv->iptr == recv->end)
-            {
+        if (!flag) {
+            if (recv->iptr == recv->end) {
                 /* 防止OverWrite的情况发生 */
-                if ((recv->optr - recv->addr) < (recv->end - recv->iptr))
-                {
+                if ((recv->optr - recv->addr) < (recv->end - recv->iptr)) {
                     log_error(rsvr->log, "Data length is invalid!");
                     return SDTP_ERR;
                 }
@@ -661,8 +620,7 @@ static int sdrd_rsvr_data_proc(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, sdrd_sck_t *
         head->checksum = ntohl(head->checksum);
 
         /* 2.2 校验合法性 */
-        if (!SDTP_HEAD_ISVALID(head))
-        {
+        if (!SDTP_HEAD_ISVALID(head)) {
             ++rsvr->err_total;
             log_error(rsvr->log, "Header is invalid! Mark:%u/%u type:%d len:%d flag:%d",
                     head->checksum, SDTP_CHECK_SUM, head->type, head->length, head->flag);
@@ -670,8 +628,7 @@ static int sdrd_rsvr_data_proc(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, sdrd_sck_t *
         }
 
         /* 2.3 进行数据处理 */
-        if (SDTP_SYS_MESG == head->flag)
-        {
+        if (SDTP_SYS_MESG == head->flag) {
             sdrd_rsvr_sys_mesg_proc(ctx, rsvr, sck, recv->optr);
         }
         else
@@ -743,8 +700,7 @@ static int sdrd_rsvr_queue_alloc(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr)
     recvq = ctx->recvq[rsvr->queue.rqid];
 
     rsvr->queue.start = queue_malloc(recvq, queue_size(recvq));
-    if (NULL == rsvr->queue.start)
-    {
+    if (NULL == rsvr->queue.start) {
         rsvr->queue.rqid = -1;
         sdrd_rsvr_cmd_proc_all_req(ctx, rsvr);
 
@@ -787,28 +743,23 @@ static int sdrd_rsvr_exp_mesg_proc(sdrd_cntx_t *ctx,
 
     ++rsvr->recv_total; /* 总数 */
 
-    if (head->nodeid != sck->nodeid)
-    {
+    if (head->nodeid != sck->nodeid) {
         ++rsvr->drop_total;
         log_error(rsvr->log, "Devid isn't right! nodeid:%d/%d", head->nodeid, sck->nodeid);
         return SDTP_ERR;
     };
 
-    while (1)
-    {
+    while (1) {
         /* > 从队列申请空间 */
-        if (-1 == rsvr->queue.rqid)
-        {
-            if (sdrd_rsvr_queue_alloc(ctx, rsvr))
-            {
+        if (-1 == rsvr->queue.rqid) {
+            if (sdrd_rsvr_queue_alloc(ctx, rsvr)) {
                 ++rsvr->drop_total; /* 丢弃计数 */
                 log_error(rsvr->log, "Alloc from queue failed!");
                 return SDTP_ERR;
             }
 
             len = head->length + sizeof(sdtp_header_t);
-            if (rsvr->queue.end - rsvr->queue.addr < len)
-            {
+            if (rsvr->queue.end - rsvr->queue.addr < len) {
                 ++rsvr->drop_total; /* 丢弃计数 */
                 log_error(rsvr->log, "Queue size is too small!");
                 return SDTP_ERR;
@@ -822,8 +773,7 @@ static int sdrd_rsvr_exp_mesg_proc(sdrd_cntx_t *ctx,
 
         /* > 进行数据拷贝 */
         len = head->length + sizeof(sdtp_header_t);
-        if (rsvr->queue.end - rsvr->queue.addr >= len)
-        {
+        if (rsvr->queue.end - rsvr->queue.addr >= len) {
             memcpy(rsvr->queue.addr, addr, len);
             rsvr->queue.addr += len;
             ++(rsvr->queue.group->num);
@@ -860,8 +810,7 @@ static int sdrd_rsvr_exp_mesg_proc(sdrd_cntx_t *ctx,
 static int sdrd_rsvr_event_core_hdl(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr)
 {
     /* 1. 接收命令数据 */
-    if (FD_ISSET(rsvr->cmd_sck_id, &rsvr->rdset))
-    {
+    if (FD_ISSET(rsvr->cmd_sck_id, &rsvr->rdset)) {
         sdrd_rsvr_recv_cmd(ctx, rsvr);
     }
 
@@ -905,23 +854,19 @@ static int sdrd_rsvr_event_timeout_hdl(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr)
 
     /* > 检测超时连接 */
     node = rsvr->conn_list->head;
-    if (NULL == node)
-    {
+    if (NULL == node) {
         return SDTP_OK;
     }
 
     tail = node->prev;
-    while ((NULL != node) && (false == is_end))
-    {
-        if (tail == node)
-        {
+    while ((NULL != node) && (false == is_end)) {
+        if (tail == node) {
             is_end = true;
         }
 
         curr = (sdrd_sck_t *)node->data;
 
-        if (rsvr->ctm - curr->rdtm >= 60)
-        {
+        if (rsvr->ctm - curr->rdtm >= 60) {
             log_trace(rsvr->log, "Didn't active for along time! fd:%d ip:%s",
                     curr->fd, curr->ipaddr);
 
@@ -929,8 +874,7 @@ static int sdrd_rsvr_event_timeout_hdl(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr)
             FREE(curr->recv.addr);
 
             /* 删除连接 */
-            if (node == tail)
-            {
+            if (node == tail) {
                 sdrd_rsvr_del_conn_hdl(ctx, rsvr, node);
                 break;
             }
@@ -968,8 +912,7 @@ static int sdrd_rsvr_keepalive_req_hdl(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, sdrd
 
     /* > 分配消息空间 */
     addr = slab_alloc(rsvr->pool, sizeof(sdtp_header_t));
-    if (NULL == addr)
-    {
+    if (NULL == addr) {
         log_error(rsvr->log, "Alloc memory from slab failed!");
         return SDTP_ERR;
     }
@@ -984,8 +927,7 @@ static int sdrd_rsvr_keepalive_req_hdl(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, sdrd
     head->checksum = SDTP_CHECK_SUM;
 
     /* > 加入发送列表 */
-    if (list_rpush(sck->mesg_list, addr))
-    {
+    if (list_rpush(sck->mesg_list, addr)) {
         slab_dealloc(rsvr->pool, addr);
         log_error(rsvr->log, "Insert into list failed!");
         return SDTP_ERR;
@@ -1017,8 +959,7 @@ static int sdrd_rsvr_link_auth_rsp(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, sdrd_sck
 
     /* > 分配消息空间 */
     addr = slab_alloc(rsvr->pool, sizeof(sdtp_header_t));
-    if (NULL == addr)
-    {
+    if (NULL == addr) {
         log_error(rsvr->log, "Alloc memory from slab failed!");
         return SDTP_ERR;
     }
@@ -1036,8 +977,7 @@ static int sdrd_rsvr_link_auth_rsp(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, sdrd_sck
     link_auth_rsp->is_succ = htonl(sck->auth_succ);
 
     /* > 加入发送列表 */
-    if (list_rpush(sck->mesg_list, addr))
-    {
+    if (list_rpush(sck->mesg_list, addr)) {
         slab_dealloc(rsvr->pool, addr);
         log_error(rsvr->log, "Insert into list failed!");
         return SDTP_ERR;
@@ -1073,13 +1013,11 @@ static int sdrd_rsvr_link_auth_req_hdl(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, sdrd
 
     /* > 验证鉴权合法性 */
     sck->auth_succ = sdrd_link_auth_check(ctx, link_auth_req);
-    if (sck->auth_succ)
-    {
+    if (sck->auth_succ) {
         sck->nodeid = link_auth_req->nodeid;
 
         /* > 插入NODE与SCK的映射 */
-        if (sdrd_node_to_svr_map_add(ctx, link_auth_req->nodeid, rsvr->id))
-        {
+        if (sdrd_node_to_svr_map_add(ctx, link_auth_req->nodeid, rsvr->id)) {
             log_error(rsvr->log, "Insert into sck2dev table failed! fd:%d serial:%ld nodeid:%d",
                     sck->fd, sck->sid, link_auth_req->nodeid);
             return SDTP_ERR;
@@ -1110,8 +1048,7 @@ static sdrd_sck_t *sdrd_rsvr_sck_creat(sdrd_rsvr_t *rsvr, sdtp_cmd_add_sck_t *re
 
     /* > 分配连接空间 */
     sck = slab_alloc(rsvr->pool, sizeof(sdrd_sck_t));
-    if (NULL == sck)
-    {
+    if (NULL == sck) {
         log_error(rsvr->log, "Alloc memory failed!");
         CLOSE(req->sckid);
         return NULL;
@@ -1127,8 +1064,7 @@ static sdrd_sck_t *sdrd_rsvr_sck_creat(sdrd_rsvr_t *rsvr, sdtp_cmd_add_sck_t *re
     sck->wrtm = sck->ctm;
     snprintf(sck->ipaddr, sizeof(sck->ipaddr), "%s", req->ipaddr);
 
-    do
-    {
+    do {
         /* > 创建发送链表 */
         memset(&opt, 0, sizeof(opt));
 
@@ -1137,16 +1073,14 @@ static sdrd_sck_t *sdrd_rsvr_sck_creat(sdrd_rsvr_t *rsvr, sdtp_cmd_add_sck_t *re
         opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
         sck->mesg_list = list_creat(&opt);
-        if (NULL == sck->mesg_list)
-        {
+        if (NULL == sck->mesg_list) {
             log_error(rsvr->log, "Create list failed!");
             break;
         }
 
         /* > 申请接收缓存 */
         addr = (void *)calloc(1, SDTP_BUFF_SIZE);
-        if (NULL == addr)
-        {
+        if (NULL == addr) {
             log_error(rsvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
             break;
         }
@@ -1155,8 +1089,7 @@ static sdrd_sck_t *sdrd_rsvr_sck_creat(sdrd_rsvr_t *rsvr, sdtp_cmd_add_sck_t *re
 
         /* > 申请发送缓存 */
         addr = (void *)calloc(1, SDTP_BUFF_SIZE);
-        if (NULL == addr)
-        {
+        if (NULL == addr) {
             log_error(rsvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
             break;
         }
@@ -1212,8 +1145,7 @@ static int sdrd_rsvr_add_conn_hdl(sdrd_rsvr_t *rsvr, sdtp_cmd_add_sck_t *req)
 
     /* > 分配连接空间 */
     sck = sdrd_rsvr_sck_creat(rsvr, req);
-    if (NULL == sck)
-    {
+    if (NULL == sck) {
         log_error(rsvr->log, "Alloc memory failed!");
         return SDTP_ERR;
     }
@@ -1275,15 +1207,12 @@ void sdrd_rsvr_del_all_conn_hdl(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr)
     list2_node_t *node, *next, *tail;
 
     node = rsvr->conn_list->head;
-    if (NULL != node)
-    {
+    if (NULL != node) {
         tail = node->prev;
     }
 
-    while (NULL != node)
-    {
-        if (node == tail)
-        {
+    while (NULL != node) {
+        if (node == tail) {
             sdrd_rsvr_del_conn_hdl(ctx, rsvr, node);
             break;
         }
@@ -1330,10 +1259,8 @@ static int sdrd_rsvr_cmd_proc_req(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, int rqid)
     sdrd_worker_usck_path(conf, path, widx);
 
     /* 2. 发送处理命令 */
-    if (unix_udp_send(rsvr->cmd_sck_id, path, &cmd, sizeof(sdtp_cmd_t)) < 0)
-    {
-        if (EAGAIN != errno)
-        {
+    if (unix_udp_send(rsvr->cmd_sck_id, path, &cmd, sizeof(sdtp_cmd_t)) < 0) {
+        if (EAGAIN != errno) {
             log_debug(rsvr->log, "Send command failed! errmsg:[%d] %s! path:[%s]",
                       errno, strerror(errno), path);
         }
@@ -1403,22 +1330,19 @@ static int sdrd_rsvr_fill_send_buff(sdrd_rsvr_t *rsvr, sdrd_sck_t *sck)
     {
         /* 1 是否有数据 */
         head = (sdtp_header_t *)list_lpop(sck->mesg_list);;
-        if (NULL == head)
-        {
+        if (NULL == head) {
             break; /* 无数据 */
         }
 
         /* 2 判断剩余空间 */
-        if (SDTP_CHECK_SUM != head->checksum)
-        {
+        if (SDTP_CHECK_SUM != head->checksum) {
             assert(0);
         }
 
         left = (int)(send->end - send->iptr);
 
         mesg_len = sizeof(sdtp_header_t) + head->length;
-        if (left < mesg_len)
-        {
+        if (left < mesg_len) {
             list_lpush(sck->mesg_list, head);
             break; /* 空间不足 */
         }
@@ -1463,8 +1387,7 @@ typedef struct
 
 static int sdrd_rsvr_conn_list_with_same_nodeid(sdrd_sck_t *sck, conn_list_with_same_nodeid_t *c)
 {
-    if (sck->nodeid != c->nodeid)
-    {
+    if (sck->nodeid != c->nodeid) {
         return -1;
     }
 
@@ -1496,12 +1419,10 @@ static int sdrd_rsvr_dist_send_data(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr)
 
     sendq = ctx->sendq[rsvr->id];
 
-    while (1)
-    {
+    while (1) {
         /* > 弹出队列数据 */
         data = queue_pop(sendq);
-        if (NULL == data)
-        {
+        if (NULL == data) {
             break; /* 无数据 */
         }
 
@@ -1516,16 +1437,14 @@ static int sdrd_rsvr_dist_send_data(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr)
 
         conn.nodeid = frwd->dest;
         conn.list = list_creat(&opt);
-        if (NULL == conn.list)
-        {
+        if (NULL == conn.list) {
             queue_dealloc(sendq, data);
             log_error(rsvr->log, "Create list failed!");
             continue;
         }
 
         list2_trav(rsvr->conn_list, (list2_trav_cb_t)sdrd_rsvr_conn_list_with_same_nodeid, &conn);
-        if (0 == conn.list->num)
-        {
+        if (0 == conn.list->num) {
             queue_dealloc(sendq, data);
             list_destroy(conn.list, NULL, mem_dummy_dealloc);
             log_error(rsvr->log, "Didn't find connection by nodeid [%d]!", conn.nodeid);
@@ -1538,8 +1457,7 @@ static int sdrd_rsvr_dist_send_data(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr)
         len = sizeof(sdtp_header_t) + frwd->length;
 
         addr = slab_alloc(rsvr->pool, len);
-        if (NULL == addr)
-        {
+        if (NULL == addr) {
             queue_dealloc(sendq, data);
             list_destroy(conn.list, NULL, mem_dummy_dealloc);
             log_error(rsvr->log, "Alloc memory from slab failed!");
@@ -1557,8 +1475,7 @@ static int sdrd_rsvr_dist_send_data(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr)
         memcpy(addr+sizeof(sdtp_header_t), data+sizeof(sdtp_frwd_t), head->length);
 
         /* > 放入发送链表 */
-        if (list_rpush(sck->mesg_list, addr))
-        {
+        if (list_rpush(sck->mesg_list, addr)) {
             queue_dealloc(sendq, data);
             log_error(rsvr->log, "Push input list failed!");
         }

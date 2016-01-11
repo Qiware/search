@@ -48,14 +48,12 @@ menu_item_t *mon_srch_menu(menu_cntx_t *ctx, void *args)
     menu_item_t *menu;
 
     menu = menu_creat(ctx, "Search Engine", NULL, menu_display, NULL, args);
-    if (NULL == menu)
-    {
+    if (NULL == menu) {
         return NULL;
     }
 
 #define ADD_CHILD(ctx, menu, title, entry, func, exit, args) \
-    if (!menu_child(ctx, menu, title, entry, func, exit, args)) \
-    { \
+    if (!menu_child(ctx, menu, title, entry, func, exit, args)) { \
         return menu; \
     }
 
@@ -228,8 +226,7 @@ static int mon_srch_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args)
 
     /* > 连接代理服务 */
     conn.fd = tcp_connect(AF_INET, conf->ip, conf->port);
-    if (conn.fd < 0)
-    {
+    if (conn.fd < 0) {
         fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
         return -1;
     }
@@ -253,20 +250,17 @@ static int mon_srch_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args)
         timeout.tv_sec = 10;
         timeout.tv_usec = 0;
         ret = select(conn.fd+1, &rdset, NULL, NULL, &timeout);
-        if (ret < 0)
-        {
+        if (ret < 0) {
             if (EINTR == errno) { continue; }
             fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
             break;
         }
-        else if (0 == ret)
-        {
+        else if (0 == ret) {
             fprintf(stderr, "    Timeout!\n");
             break;
         }
 
-        if (FD_ISSET(conn.fd, &rdset))
-        {
+        if (FD_ISSET(conn.fd, &rdset)) {
             mon_srch_recv_rsp(ctx, &conn);
             break;
         }
@@ -310,8 +304,7 @@ static int mon_srch_word_loop(menu_cntx_t *menu_ctx, menu_item_t *menu, void *ar
 
     num = MIN(atoi(digit), MON_FD_MAX);
     conn = (mon_srch_conn_t *)slab_alloc(ctx->slab, num*sizeof(mon_srch_conn_t));
-    if (NULL == conn)
-    {
+    if (NULL == conn) {
         fprintf(stderr, "    Alloc memory failed!\n");
         return -1;
     }
@@ -323,12 +316,10 @@ SRCH_AGAIN:
     num = MIN(atoi(digit), MON_FD_MAX);
 
     /* > 连接代理服务 */
-    for (idx=0; idx<num; ++idx)
-    {
+    for (idx=0; idx<num; ++idx) {
         conn[idx].flag = 0;
         conn[idx].fd = tcp_connect(AF_INET, ctx->conf->search.ip, ctx->conf->search.port);
-        if (conn[idx].fd < 0)
-        {
+        if (conn[idx].fd < 0) {
             fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
             break;
         }
@@ -375,8 +366,7 @@ SRCH_AGAIN:
         for (idx=0; idx<num; ++idx) {
             if (conn[idx].fd <= 0) { continue; }
 
-            if (FD_ISSET(conn[idx].fd, &rdset))
-            {
+            if (FD_ISSET(conn[idx].fd, &rdset)) {
                 mon_srch_recv_rsp(ctx, &conn[idx]);
                 CLOSE(conn[idx].fd);
                 --left;
@@ -392,18 +382,15 @@ SRCH_AGAIN:
     }
 
     unrecv_num = 0;
-    for (idx=0; idx<num; ++idx)
-    {
-        if (conn[idx].fd > 0)
-        {
+    for (idx=0; idx<num; ++idx) {
+        if (conn[idx].fd > 0) {
             ++unrecv_num;
             is_unrecv = true;
             CLOSE(conn[idx].fd);
         }
     }
 
-    if (is_unrecv)
-    {
+    if (is_unrecv) {
         fprintf(stderr, "Didn't receive response! num:%d", unrecv_num);
     }
 
@@ -427,16 +414,14 @@ static int mon_insert_word_rsp_hdl(mon_cntx_t *ctx, int fd)
     size = sizeof(agent_header_t) + sizeof(mesg_insert_word_rsp_t);
 
     addr = (char *)slab_alloc(ctx->slab, size);
-    if (NULL == addr)
-    {
+    if (NULL == addr) {
         fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
         return -1;
     }
 
     /* > 接收应答数据 */
     n = read(fd, addr, size);
-    if (n <= 0)
-    {
+    if (n <= 0) {
         fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
         slab_dealloc(ctx->slab, addr);
         return -1;
@@ -489,8 +474,7 @@ static int mon_insert_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args)
 
     /* > 连接代理服务 */
     fd = tcp_connect(AF_INET, ctx->conf->search.ip, ctx->conf->search.port);
-    if (fd < 0)
-    {
+    if (fd < 0) {
         fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
         return -1;
     }
@@ -510,26 +494,22 @@ static int mon_insert_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args)
         timeout.tv_sec = 10;
         timeout.tv_usec = 0;
         ret = select(fd+1, &rdset, NULL, NULL, &timeout);
-        if (ret < 0)
-        {
+        if (ret < 0) {
             if (EINTR == errno) { continue; }
             fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
             break;
         }
-        else if (0 == ret)
-        {
+        else if (0 == ret) {
             fprintf(stderr, "    Timeout!\n");
             break;
         }
 
-        if (FD_ISSET(fd, &rdset))
-        {
+        if (FD_ISSET(fd, &rdset)) {
             mon_insert_word_rsp_hdl(ctx, fd);
             ftime(&ctm);
             sec = ctm.time - old_tm.time;
             msec = ctm.millitm - old_tm.millitm;
-            if (msec < 0)
-            {
+            if (msec < 0) {
                 msec += 1000;
                 sec -= 1;
             }
@@ -570,11 +550,9 @@ static int mon_srch_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args
 
     /* > 连接代理服务 */
     num = 0;
-    for (idx=0; idx<max; ++idx)
-    {
+    for (idx=0; idx<max; ++idx) {
         fd[idx] = tcp_connect(AF_INET, ctx->conf->search.ip, ctx->conf->search.port);
-        if (fd[idx] < 0)
-        {
+        if (fd[idx] < 0) {
             fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
             break;
         }
@@ -584,22 +562,19 @@ static int mon_srch_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args
 
 #if 1
     /* 发送搜索数据 */
-    for (idx=0; idx<num; ++idx)
-    {
+    for (idx=0; idx<num; ++idx) {
         mon_srch_send_rep(fd[idx], "爱我中华");
     }
 #endif
 
-    if (num <= 0)
-    {
+    if (num <= 0) {
         return 0;
     }
 
     Sleep(5);
 
     /* 关闭网络连接 */
-    for (idx=0; idx<num; ++idx)
-    {
+    for (idx=0; idx<num; ++idx) {
         CLOSE(fd[idx]);
     }
 
@@ -637,8 +612,7 @@ static int mon_srch_set_body(const char *words, char *body, int size)
     opt.dealloc = mem_dealloc;
 
     xml = xml_creat_empty(&opt);
-    if (NULL == xml)
-    {
+    if (NULL == xml) {
         fprintf(stderr, "Create xml failed!");
         return -1;
     }
@@ -648,8 +622,7 @@ static int mon_srch_set_body(const char *words, char *body, int size)
 
     /* > 计算XML长度 */
     len = xml_pack_len(xml);
-    if (len >= size)
-    {
+    if (len >= size) {
         xml_destroy(xml);
         return -1;
     }

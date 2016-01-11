@@ -50,8 +50,7 @@ void *rtrd_lsn_routine(void *param)
     rtrd_cntx_t *ctx = (rtrd_cntx_t *)param;
     rtrd_listen_t *lsn = &ctx->listen;
 
-    for (;;)
-    {
+    for (;;) {
         /* 2. 等待请求和命令 */
         FD_ZERO(&rdset);
 
@@ -63,27 +62,23 @@ void *rtrd_lsn_routine(void *param)
         timeout.tv_sec = RTMQ_LSN_TMOUT_SEC;
         timeout.tv_usec = RTMQ_LSN_TMOUT_USEC;
         ret = select(max+1, &rdset, NULL, NULL, &timeout);
-        if (ret < 0)
-        {
+        if (ret < 0) {
             if (EINTR == errno) { continue; }
             log_error(lsn->log, "errmsg:[%d] %s", errno, strerror(errno));
             abort();
             return (void *)-1;
         }
-        else if (0 == ret)
-        {
+        else if (0 == ret) {
             continue;
         }
 
         /* 3. 接收连接请求 */
-        if (FD_ISSET(lsn->lsn_sck_id, &rdset))
-        {
+        if (FD_ISSET(lsn->lsn_sck_id, &rdset)) {
             rtrd_lsn_accept(ctx, lsn);
         }
 
         /* 4. 接收处理命令 */
-        if (FD_ISSET(lsn->cmd_sck_id, &rdset))
-        {
+        if (FD_ISSET(lsn->cmd_sck_id, &rdset)) {
             rtrd_lsn_cmd_core_hdl(ctx, lsn);
         }
     }
@@ -115,8 +110,7 @@ int rtrd_lsn_init(rtrd_cntx_t *ctx)
 
     /* 1. 侦听指定端口 */
     lsn->lsn_sck_id = tcp_listen(ctx->conf.port);
-    if (lsn->lsn_sck_id < 0)
-    {
+    if (lsn->lsn_sck_id < 0) {
         log_error(lsn->log, "Listen special port failed!");
         return RTMQ_ERR;
     }
@@ -125,8 +119,7 @@ int rtrd_lsn_init(rtrd_cntx_t *ctx)
     rtrd_lsn_usck_path(conf, path);
 
     lsn->cmd_sck_id = unix_udp_creat(path);
-    if (lsn->cmd_sck_id < 0)
-    {
+    if (lsn->cmd_sck_id < 0) {
         CLOSE(lsn->lsn_sck_id);
         log_error(lsn->log, "Create unix udp socket failed!");
         return RTMQ_ERR;
@@ -178,19 +171,16 @@ static int rtrd_lsn_accept(rtrd_cntx_t *ctx, rtrd_listen_t *lsn)
     rtmq_cmd_add_sck_t *param = (rtmq_cmd_add_sck_t *)&cmd.param;
 
     /* 1. 接收连接请求 */
-    for (;;)
-    {
+    for (;;) {
         memset(&cliaddr, 0, sizeof(cliaddr));
 
         len = sizeof(struct sockaddr_in);
 
         sckid = accept(lsn->lsn_sck_id, (struct sockaddr *)&cliaddr, &len);
-        if (sckid >= 0)
-        {
+        if (sckid >= 0) {
             break;
         }
-        else if (EINTR == errno)
-        {
+        else if (EINTR == errno) {
             continue;
         }
 
@@ -211,8 +201,7 @@ static int rtrd_lsn_accept(rtrd_cntx_t *ctx, rtrd_listen_t *lsn)
     log_trace(lsn->log, "New connection! serial:%lu sckid:%d ip:%s",
             lsn->sid, sckid, inet_ntoa(cliaddr.sin_addr));
 
-    if (rtrd_cmd_to_rsvr(ctx, lsn->cmd_sck_id, &cmd, rtrd_rand_rsvr(ctx)) < 0)
-    {
+    if (rtrd_cmd_to_rsvr(ctx, lsn->cmd_sck_id, &cmd, rtrd_rand_rsvr(ctx)) < 0) {
         CLOSE(sckid);
         log_error(lsn->log, "Send command failed! serial:%lu sckid:[%d]", lsn->sid, sckid);
         return RTMQ_ERR;
@@ -242,8 +231,7 @@ static int rtrd_lsn_cmd_core_hdl(rtrd_cntx_t *ctx, rtrd_listen_t *lsn)
     memset(&cmd, 0, sizeof(cmd));
 
     /* 1. 接收命令 */
-    if (unix_udp_recv(lsn->cmd_sck_id, (void *)&cmd, sizeof(cmd)) < 0)
-    {
+    if (unix_udp_recv(lsn->cmd_sck_id, (void *)&cmd, sizeof(cmd)) < 0) {
         log_error(lsn->log, "Recv command failed! errmsg:[%d] %s", errno, strerror(errno));
         return RTMQ_ERR_RECV_CMD;
     }
@@ -309,10 +297,8 @@ static int rtrd_lsn_cmd_query_conf_hdl(rtrd_cntx_t *ctx, rtrd_listen_t *lsn, rtm
     param->qsize = cf->recvq.size;
 
     /* 2. 发送应答信息 */
-    if (unix_udp_send(lsn->cmd_sck_id, cmd->src_path, &rep, sizeof(rep)) < 0)
-    {
-        if (EAGAIN != errno)
-        {
+    if (unix_udp_send(lsn->cmd_sck_id, cmd->src_path, &rep, sizeof(rep)) < 0) {
+        if (EAGAIN != errno) {
             log_error(lsn->log, "errmsg:[%d] %s!", errno, strerror(errno));
         }
         return RTMQ_ERR;
@@ -343,8 +329,7 @@ static int rtrd_lsn_cmd_query_recv_stat_hdl(rtrd_cntx_t *ctx, rtrd_listen_t *lsn
     rtmq_cmd_recv_stat_t *stat = (rtmq_cmd_recv_stat_t *)&rep.param;
     const rtrd_rsvr_t *rsvr = (const rtrd_rsvr_t *)ctx->recvtp->data;
 
-    for (idx=0; idx<ctx->conf.recv_thd_num; ++idx, ++rsvr)
-    {
+    for (idx=0; idx<ctx->conf.recv_thd_num; ++idx, ++rsvr) {
         /* 1. 设置应答信息 */
         rep.type = RTMQ_CMD_QUERY_RECV_STAT_REP;
 
@@ -354,10 +339,8 @@ static int rtrd_lsn_cmd_query_recv_stat_hdl(rtrd_cntx_t *ctx, rtrd_listen_t *lsn
         stat->err_total = rsvr->err_total;
 
         /* 2. 发送命令信息 */
-        if (unix_udp_send(rsvr->cmd_sck_id, cmd->src_path, &rep, sizeof(rep)) < 0)
-        {
-            if (EAGAIN != errno)
-            {
+        if (unix_udp_send(rsvr->cmd_sck_id, cmd->src_path, &rep, sizeof(rep)) < 0) {
+            if (EAGAIN != errno) {
                 log_error(lsn->log, "errmsg:[%d] %s!", errno, strerror(errno));
             }
             return RTMQ_ERR;
@@ -388,8 +371,7 @@ static int rtrd_lsn_cmd_query_proc_stat_hdl(rtrd_cntx_t *ctx, rtrd_listen_t *lsn
     const rtmq_worker_t *wrk = (rtmq_worker_t *)ctx->worktp->data;
     rtmq_cmd_proc_stat_t *stat = (rtmq_cmd_proc_stat_t *)&rep.param;
 
-    for (idx=0; idx<ctx->conf.work_thd_num; ++idx, ++wrk)
-    {
+    for (idx=0; idx<ctx->conf.work_thd_num; ++idx, ++wrk) {
         /* > 设置应答信息 */
         rep.type = RTMQ_CMD_QUERY_PROC_STAT_REP;
 
@@ -398,10 +380,8 @@ static int rtrd_lsn_cmd_query_proc_stat_hdl(rtrd_cntx_t *ctx, rtrd_listen_t *lsn
         stat->err_total = wrk->err_total;
 
         /* > 发送应答信息 */
-        if (unix_udp_send(wrk->cmd_sck_id, cmd->src_path, &rep, sizeof(rep)) < 0)
-        {
-            if (EAGAIN != errno)
-            {
+        if (unix_udp_send(wrk->cmd_sck_id, cmd->src_path, &rep, sizeof(rep)) < 0) {
+            if (EAGAIN != errno) {
                 log_error(lsn->log, "errmsg:[%d] %s!", errno, strerror(errno));
             }
             return RTMQ_ERR;

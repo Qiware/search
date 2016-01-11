@@ -24,10 +24,8 @@ int rtrd_cmd_to_rsvr(rtrd_cntx_t *ctx, int cmd_sck_id, const rtmq_cmd_t *cmd, in
     rtrd_rsvr_usck_path(&ctx->conf, path, idx);
 
     /* 发送命令至接收线程 */
-    if (unix_udp_send(cmd_sck_id, path, cmd, sizeof(rtmq_cmd_t)) < 0)
-    {
-        if (EAGAIN != errno)
-        {
+    if (unix_udp_send(cmd_sck_id, path, cmd, sizeof(rtmq_cmd_t)) < 0) {
+        if (EAGAIN != errno) {
             log_error(ctx->log, "errmsg:[%d] %s! path:%s type:%d",
                       errno, strerror(errno), path, cmd->type);
         }
@@ -87,8 +85,7 @@ int rtrd_node_to_svr_map_init(rtrd_cntx_t *ctx)
     ctx->node_to_svr_map = avl_creat(&opt,
                 (key_cb_t)key_cb_int32,
                 (cmp_cb_t)cmp_cb_int32);
-    if (NULL == ctx->node_to_svr_map)
-    {
+    if (NULL == ctx->node_to_svr_map) {
         log_error(ctx->log, "Initialize dev->svr map failed!");
         return RTMQ_ERR;
     }
@@ -120,11 +117,9 @@ int rtrd_node_to_svr_map_add(rtrd_cntx_t *ctx, int nodeid, int rsvr_id)
 
     /* > 查找是否已经存在 */
     map = avl_query(ctx->node_to_svr_map, &nodeid, sizeof(nodeid));
-    if (NULL == map)
-    {
+    if (NULL == map) {
         map = slab_alloc(ctx->pool, sizeof(rtrd_node_to_svr_map_t));
-        if (NULL == map)
-        {
+        if (NULL == map) {
             pthread_rwlock_unlock(&ctx->node_to_svr_map_lock); /* 解锁 */
             log_error(ctx->log, "Alloc from slab failed!");
             return RTMQ_ERR;
@@ -133,8 +128,7 @@ int rtrd_node_to_svr_map_add(rtrd_cntx_t *ctx, int nodeid, int rsvr_id)
         map->num = 0;
         map->nodeid = nodeid;
 
-        if (avl_insert(ctx->node_to_svr_map, &nodeid, sizeof(nodeid), (void *)map))
-        {
+        if (avl_insert(ctx->node_to_svr_map, &nodeid, sizeof(nodeid), (void *)map)) {
             pthread_rwlock_unlock(&ctx->node_to_svr_map_lock); /* 解锁 */
             slab_dealloc(ctx->pool, map);
             log_error(ctx->log, "Insert into dev2sck table failed! nodeid:%d rsvr_id:%d",
@@ -144,8 +138,7 @@ int rtrd_node_to_svr_map_add(rtrd_cntx_t *ctx, int nodeid, int rsvr_id)
     }
 
     /* > 插入NODE -> SVR列表 */
-    if (map->num >= RTRD_NODE_TO_SVR_MAX_LEN)
-    {
+    if (map->num >= RTRD_NODE_TO_SVR_MAX_LEN) {
         pthread_rwlock_unlock(&ctx->node_to_svr_map_lock); /* 解锁 */
         log_error(ctx->log, "Node to svr map is full! nodeid:%d", nodeid);
         return RTMQ_ERR;
@@ -180,21 +173,17 @@ int rtrd_node_to_svr_map_del(rtrd_cntx_t *ctx, int nodeid, int rsvr_id)
 
     /* > 查找映射表 */
     map = avl_query(ctx->node_to_svr_map, &nodeid, sizeof(nodeid));
-    if (NULL == map)
-    {
+    if (NULL == map) {
         pthread_rwlock_unlock(&ctx->node_to_svr_map_lock);
         log_error(ctx->log, "Query nodeid [%d] failed!", nodeid);
         return RTMQ_ERR;
     }
 
     /* > 删除处理 */
-    for (idx=0; idx<map->num; ++idx)
-    {
-        if (map->rsvr_id[idx] == rsvr_id)
-        {
+    for (idx=0; idx<map->num; ++idx) {
+        if (map->rsvr_id[idx] == rsvr_id) {
             map->rsvr_id[idx] = map->rsvr_id[--map->num]; /* 删除:使用最后一个值替代当前值 */
-            if (0 == map->num)
-            {
+            if (0 == map->num) {
                 avl_delete(ctx->node_to_svr_map, &nodeid, sizeof(nodeid), (void *)&map);
                 slab_dealloc(ctx->pool, map);
             }
@@ -227,8 +216,7 @@ int rtrd_node_to_svr_map_rand(rtrd_cntx_t *ctx, int nodeid)
 
     /* > 获取映射表 */
     map = avl_query(ctx->node_to_svr_map, &nodeid, sizeof(nodeid));
-    if (NULL == map)
-    {
+    if (NULL == map) {
         pthread_rwlock_unlock(&ctx->node_to_svr_map_lock);
         log_error(ctx->log, "Query nodeid [%d] failed!", nodeid);
         return -1;

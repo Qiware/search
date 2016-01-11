@@ -39,23 +39,20 @@ hash_map_t *hash_map_creat(int len, key_cb_t key_cb, cmp_cb_t cmp_cb, hash_map_o
 
     /* > 创建哈希数组 */
     htab = (hash_map_t *)opt->alloc(opt->pool, sizeof(hash_map_t));
-    if (NULL == htab)
-    {
+    if (NULL == htab) {
         return NULL;
     }
 
     htab->total = 0;
 
     htab->tree = (void **)opt->alloc(opt->pool, len*sizeof(void *));
-    if (NULL == htab->tree)
-    {
+    if (NULL == htab->tree) {
         opt->dealloc(opt->pool, htab);
         return NULL;
     }
 
     htab->lock = (pthread_rwlock_t *)opt->alloc(opt->pool, len*sizeof(pthread_rwlock_t));
-    if (NULL == htab->lock)
-    {
+    if (NULL == htab->lock) {
         opt->dealloc(opt->pool, htab->tree);
         opt->dealloc(opt->pool, htab);
         return NULL;
@@ -64,12 +61,10 @@ hash_map_t *hash_map_creat(int len, key_cb_t key_cb, cmp_cb_t cmp_cb, hash_map_o
     /* > 创建存储树 */
     hash_map_set_cb(htab, opt);
 
-    for (idx=0; idx<len; ++idx)
-    {
+    for (idx=0; idx<len; ++idx) {
         pthread_rwlock_init(&htab->lock[idx], NULL);
 
-        if (hash_map_init_elem(htab, idx, key_cb, cmp_cb, opt))
-        {
+        if (hash_map_init_elem(htab, idx, key_cb, cmp_cb, opt)) {
             hash_map_destroy(htab, mem_dummy_dealloc, NULL);
             return NULL;
         }
@@ -141,8 +136,7 @@ static int hash_map_init_elem(
             avl_opt.dealloc = (mem_dealloc_cb_t)opt->dealloc;
 
             htab->tree[idx] = avl_creat(&avl_opt, key_cb, cmp_cb);
-            if (NULL == htab->tree[idx])
-            {
+            if (NULL == htab->tree[idx]) {
                 return -1;
             }
             break;
@@ -158,8 +152,7 @@ static int hash_map_init_elem(
             rbt_opt.dealloc = (mem_dealloc_cb_t)opt->dealloc;
 
             htab->tree[idx] = rbt_creat(&rbt_opt, key_cb, cmp_cb);
-            if (NULL == htab->tree[idx])
-            {
+            if (NULL == htab->tree[idx]) {
                 return -1;
             }
             break;
@@ -191,8 +184,7 @@ int hash_map_insert(hash_map_t *htab, void *pkey, int pkey_len, void *data)
 
     pthread_rwlock_wrlock(&htab->lock[idx]);
     ret = htab->tree_insert(htab->tree[idx], pkey, pkey_len, data);
-    if (AVL_OK == ret)
-    {
+    if (AVL_OK == ret) {
         ++htab->total;
     }
     pthread_rwlock_unlock(&htab->lock[idx]);
@@ -226,8 +218,7 @@ int hash_map_query(hash_map_t *htab,
 
     pthread_rwlock_rdlock(&htab->lock[idx]);
     orig = avl_query(htab->tree[idx], pkey, pkey_len);
-    if (NULL == orig)
-    {
+    if (NULL == orig) {
         pthread_rwlock_unlock(&htab->lock[idx]);
         return -1; /* 未找到 */
     }
@@ -261,8 +252,7 @@ void *hash_map_remove(hash_map_t *htab, void *pkey, int pkey_len)
 
     pthread_rwlock_wrlock(&htab->lock[idx]);
     htab->tree_delete(htab->tree[idx], pkey, pkey_len, &data);
-    if (NULL != data)
-    {
+    if (NULL != data) {
         --htab->total;
     }
     pthread_rwlock_unlock(&htab->lock[idx]);
@@ -285,11 +275,9 @@ int hash_map_destroy(hash_map_t *htab, mem_dealloc_cb_t dealloc, void *args)
 {
     int idx;
 
-    for (idx=0; idx<htab->len; ++idx)
-    {
+    for (idx=0; idx<htab->len; ++idx) {
         pthread_rwlock_wrlock(&htab->lock[idx]);
-        if (NULL != htab->tree[idx])
-        {
+        if (NULL != htab->tree[idx]) {
             avl_destroy(htab->tree[idx], dealloc, args);
         }
         pthread_rwlock_unlock(&htab->lock[idx]);
@@ -320,8 +308,7 @@ int hash_map_trav(hash_map_t *htab, trav_cb_t proc, void *args)
 {
     int idx;
 
-    for (idx=0; idx<htab->len; ++idx)
-    {
+    for (idx=0; idx<htab->len; ++idx) {
         pthread_rwlock_rdlock(&htab->lock[idx]);
         htab->tree_trav(htab->tree[idx], proc, args);
         pthread_rwlock_unlock(&htab->lock[idx]);

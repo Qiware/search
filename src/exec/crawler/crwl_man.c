@@ -52,8 +52,7 @@ static int crwl_man_send_cmd(crwl_cntx_t *ctx, crwl_man_t *man);
  \
     FD_SET(man->fd, &man->rdset); \
  \
-    if (!list_empty(man->mesg_list)) \
-    { \
+    if (!list_empty(man->mesg_list)) { \
         FD_SET(man->fd, &man->wrset); \
     } \
 }
@@ -78,28 +77,24 @@ void *crwl_manager_routine(void *_ctx)
 
     /* 1. 初始化代理 */
     man = crwl_man_init(ctx);
-    if (NULL == man)
-    {
+    if (NULL == man) {
         log_error(ctx->log, "Initialize agent failed!");
         return (void *)-1;
     }
 
-    while (1)
-    {
+    while (1) {
         /* 2. 等待事件通知 */
         crwl_man_set_rwset(man);
 
         tmout.tv_sec = 30;
         tmout.tv_usec = 0;
         ret = select(man->fd+1, &man->rdset, &man->wrset, NULL, &tmout);
-        if (ret < 0)
-        {
+        if (ret < 0) {
             if (EINTR == errno) { continue; }
             log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
             return (void *)-1;
         }
-        else if (0 == ret)
-        {
+        else if (0 == ret) {
             continue;
         }
 
@@ -129,8 +124,7 @@ static crwl_man_t *crwl_man_init(crwl_cntx_t *ctx)
 
     /* > 创建对象 */
     man = (crwl_man_t *)slab_alloc(ctx->slab, sizeof(crwl_man_t));
-    if (NULL == man)
-    {
+    if (NULL == man) {
         return NULL;
     }
 
@@ -140,8 +134,7 @@ static crwl_man_t *crwl_man_init(crwl_cntx_t *ctx)
     man->fd = INVALID_FD;
     man->slab = ctx->slab;
 
-    do
-    {
+    do {
         /* > 创建AVL树 */
         memset(&opt, 0, sizeof(opt));
 
@@ -150,8 +143,7 @@ static crwl_man_t *crwl_man_init(crwl_cntx_t *ctx)
         opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
         man->reg = avl_creat(&opt, (key_cb_t)key_cb_int32, (cmp_cb_t)cmp_cb_int32);
-        if (NULL == man->reg)
-        {
+        if (NULL == man->reg) {
             log_error(man->log, "Create AVL failed!");
             return NULL;
         }
@@ -164,23 +156,20 @@ static crwl_man_t *crwl_man_init(crwl_cntx_t *ctx)
         list_opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
         man->mesg_list = list_creat(&list_opt);
-        if (NULL == man->mesg_list)
-        {
+        if (NULL == man->mesg_list) {
             log_error(man->log, "Create list failed!");
             break;
         }
 
         /* > 注册回调函数 */
-        if (crwl_man_reg_cb(man))
-        {
+        if (crwl_man_reg_cb(man)) {
             log_error(man->log, "Register callback failed!");
             break;
         }
 
         /* > 新建套接字 */
         man->fd = udp_listen(ctx->conf.man_port);
-        if (man->fd < 0)
-        {
+        if (man->fd < 0) {
             log_error(man->log, "Listen port [%d] failed!", ctx->conf.man_port);
             break;
         }
@@ -189,8 +178,7 @@ static crwl_man_t *crwl_man_init(crwl_cntx_t *ctx)
 
     /* > 释放空间 */
     if (NULL != man->reg) { avl_destroy(man->reg, mem_dummy_dealloc, NULL); }
-    if (NULL != man->mesg_list)
-    {
+    if (NULL != man->mesg_list) {
         list_destroy(man->mesg_list, man->slab, (mem_dealloc_cb_t)slab_dealloc);
     }
     CLOSE(man->fd);
@@ -220,8 +208,7 @@ static int crwl_man_register(crwl_man_t *man, int type, crwl_man_reg_cb_t proc, 
 
     /* > 申请空间 */
     reg = slab_alloc(man->slab, sizeof(crwl_man_reg_t));
-    if (NULL == reg)
-    {
+    if (NULL == reg) {
         log_error(man->log, "Alloc memory from slab failed!");
         return CRWL_ERR;
     }
@@ -235,8 +222,7 @@ static int crwl_man_register(crwl_man_t *man, int type, crwl_man_reg_cb_t proc, 
     reg->type = type;
 
     ret = avl_insert(man->reg, &type, sizeof(type), reg);
-    if (0 != ret)
-    {
+    if (0 != ret) {
         log_error(man->log, "Register failed! ret:%d", ret);
         return CRWL_ERR;
     }
@@ -261,20 +247,16 @@ static int crwl_man_register(crwl_man_t *man, int type, crwl_man_reg_cb_t proc, 
 static int crwl_man_event_hdl(crwl_cntx_t *ctx, crwl_man_t *man)
 {
     /* > 接收命令 */
-    if (FD_ISSET(man->fd, &man->rdset))
-    {
-        if (crwl_man_recv_cmd(ctx, man))
-        {
+    if (FD_ISSET(man->fd, &man->rdset)) {
+        if (crwl_man_recv_cmd(ctx, man)) {
             log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
             return CRWL_ERR;
         }
     }
 
     /* > 发送数据 */
-    if (FD_ISSET(man->fd, &man->wrset))
-    {
-        if (crwl_man_send_cmd(ctx, man))
-        {
+    if (FD_ISSET(man->fd, &man->wrset)) {
+        if (crwl_man_send_cmd(ctx, man)) {
             log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
             return CRWL_ERR;
         }
@@ -310,8 +292,7 @@ static int crwl_man_recv_cmd(crwl_cntx_t *ctx, crwl_man_t *man)
     addrlen = sizeof(from);
 
     n = recvfrom(man->fd, &cmd, sizeof(cmd), 0, (struct sockaddr *)&from, (socklen_t *)&addrlen);
-    if (n < 0)
-    {
+    if (n < 0) {
         log_error(man->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return CRWL_ERR;
     }
@@ -320,8 +301,7 @@ static int crwl_man_recv_cmd(crwl_cntx_t *ctx, crwl_man_t *man)
 
     /* > 查找回调 */
     reg = (crwl_man_reg_t *)avl_query(man->reg, (void *)&cmd.type, sizeof(cmd.type));
-    if (NULL == reg)
-    {
+    if (NULL == reg) {
         log_error(man->log, "Didn't register callback for type [%d]!", cmd.type);
         return CRWL_ERR;
     }
@@ -346,23 +326,19 @@ static int crwl_man_send_cmd(crwl_cntx_t *ctx, crwl_man_t *man)
     int n;
     crwl_cmd_item_t *item;
 
-    while (1)
-    {
+    while (1) {
         /* > 弹出数据 */
         item = list_lpop(man->mesg_list);
-        if (NULL == item)
-        {
+        if (NULL == item) {
             log_warn(man->log, "Didn't pop data from list!");
             break;
         }
 
         /* > 发送命令 */
         n = sendto(man->fd, &item->cmd, sizeof(crwl_cmd_t), 0, (struct sockaddr *)&item->to, sizeof(item->to));
-        if (n < 0)
-        {
+        if (n < 0) {
             log_error(man->log, "errmsg:[%d] %s!", errno, strerror(errno));
-            if (list_lpush(man->mesg_list, item)) /* 放回发送队列 */
-            {
+            if (list_lpush(man->mesg_list, item)) { /* 放回发送队列 */
                 slab_dealloc(man->slab, item);
             }
             return CRWL_OK;
@@ -401,8 +377,7 @@ static int crwl_man_query_conf_req_hdl(crwl_cntx_t *ctx,
 
     /* > 申请应答空间 */
     item = slab_alloc(man->slab, sizeof(crwl_cmd_item_t));
-    if (NULL == item)
-    {
+    if (NULL == item) {
         log_error(man->log, "Alloc memory from slab failed!");
         return CRWL_ERR;
     }
@@ -427,8 +402,7 @@ static int crwl_man_query_conf_req_hdl(crwl_cntx_t *ctx,
     conf->worker.conn_tmout_sec = htonl(ctx->conf.worker.conn_tmout_sec); /* 超时时间 */
 
     /* > 加入应答列表 */
-    if (list_rpush(man->mesg_list, item))
-    {
+    if (list_rpush(man->mesg_list, item)) {
         log_error(man->log, "Insert list failed!");
         slab_dealloc(man->slab, conf);
         return CRWL_ERR;
@@ -464,8 +438,7 @@ static int crwl_man_query_worker_stat_req_hdl(crwl_cntx_t *ctx,
 
     /* > 新建应答 */
     item = slab_alloc(man->slab, sizeof(crwl_cmd_item_t));
-    if (NULL == item)
-    {
+    if (NULL == item) {
         log_error(man->log, "Alloc from slab failed!");
         return CRWL_ERR;
     }
@@ -484,10 +457,8 @@ static int crwl_man_query_worker_stat_req_hdl(crwl_cntx_t *ctx,
     stat->sched_stat = htonl(conf->sched_stat);
 
     /* 2. 获取工作状态 */
-    for (idx=0; idx<conf->worker.num && idx<CRWL_CMD_WORKER_MAX_NUM; ++idx)
-    {
+    for (idx=0; idx<conf->worker.num && idx<CRWL_CMD_WORKER_MAX_NUM; ++idx) {
         worker = crwl_worker_get_by_idx(ctx, idx);
-
         stat->worker[idx].connections = htonl(worker->sock_list->num);
         stat->worker[idx].down_webpage_total = hton64(worker->down_webpage_total);
         stat->worker[idx].err_webpage_total = hton64(worker->err_webpage_total);
@@ -497,8 +468,7 @@ static int crwl_man_query_worker_stat_req_hdl(crwl_cntx_t *ctx,
     stat->num = htonl(stat->num);
 
     /* > 放入队尾 */
-    if (list_rpush(man->mesg_list, item))
-    {
+    if (list_rpush(man->mesg_list, item)) {
         log_error(man->log, "Push into list failed!");
         slab_dealloc(man->slab, item);
         return CRWL_ERR;
@@ -534,8 +504,7 @@ static int crwl_man_query_workq_stat_req_hdl(crwl_cntx_t *ctx,
 
     /* > 新建应答 */
     item = slab_alloc(man->slab, sizeof(crwl_cmd_item_t));
-    if (NULL == item)
-    {
+    if (NULL == item) {
         log_error(man->log, "Alloc from slab failed!");
         return CRWL_ERR;
     }
@@ -548,10 +517,8 @@ static int crwl_man_query_workq_stat_req_hdl(crwl_cntx_t *ctx,
 
     cmd->type = htonl(MSG_QUERY_WORKQ_STAT_RSP);
 
-    for (idx=0; idx<conf->worker.num; ++idx)
-    {
+    for (idx=0; idx<conf->worker.num; ++idx) {
         workq = ctx->workq[idx];
-
         snprintf(stat->queue[idx].name, sizeof(stat->queue[idx].name), "WORKQ-%02d", idx+1);
         stat->queue[idx].num = htonl(workq->ring->num);
         stat->queue[idx].max = htonl(workq->ring->max);
@@ -562,8 +529,7 @@ static int crwl_man_query_workq_stat_req_hdl(crwl_cntx_t *ctx,
     stat->num = htonl(stat->num);
 
     /* > 放入队尾 */
-    if (list_rpush(man->mesg_list, item))
-    {
+    if (list_rpush(man->mesg_list, item)) {
         log_error(man->log, "Push into list failed!");
         slab_dealloc(man->slab, item);
         return CRWL_ERR;
@@ -597,8 +563,7 @@ static int crwl_man_switch_sched_req_hdl(crwl_cntx_t *ctx,
 
     /* > 新建应答 */
     item = slab_alloc(man->slab, sizeof(crwl_cmd_item_t));
-    if (NULL == item)
-    {
+    if (NULL == item) {
         log_error(man->log, "Alloc from slab failed!");
         return CRWL_ERR;
     }
@@ -615,8 +580,7 @@ static int crwl_man_switch_sched_req_hdl(crwl_cntx_t *ctx,
     stat->sched_stat = htonl(conf->sched_stat);
 
     /* > 放入队尾 */
-    if (list_rpush(man->mesg_list, item))
-    {
+    if (list_rpush(man->mesg_list, item)) {
         log_error(man->log, "Push into list failed!");
         slab_dealloc(man->slab, item);
         return CRWL_ERR;
@@ -639,8 +603,7 @@ static int crwl_man_switch_sched_req_hdl(crwl_cntx_t *ctx,
 static int crwl_man_reg_cb(crwl_man_t *man)
 {
 #define CRWL_REG(man, type, proc, args) \
-    if (crwl_man_register(man, type, proc, args)) \
-    { \
+    if (crwl_man_register(man, type, proc, args)) { \
         return CRWL_ERR; \
     }
 

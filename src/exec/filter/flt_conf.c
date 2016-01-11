@@ -36,16 +36,14 @@ flt_conf_t *flt_conf_load(const char *path, log_cycle_t *log)
 
     /* > 创建配置对象 */
     conf = (flt_conf_t *)calloc(1, sizeof(flt_conf_t));
-    if (NULL == conf)
-    {
+    if (NULL == conf) {
         log_error(log, "Alloc memory from pool failed!");
         return NULL;
     }
 
     /* > 构建XML树 */
     pool = mem_pool_creat(4 * KB);
-    if (NULL == pool)
-    {
+    if (NULL == pool) {
         log_error(log, "Create memory pool failed!");
         free(conf);
         return NULL;
@@ -59,8 +57,7 @@ flt_conf_t *flt_conf_load(const char *path, log_cycle_t *log)
     opt.dealloc = (mem_dealloc_cb_t)mem_pool_dealloc;
 
     xml = xml_creat(path, &opt);
-    if (NULL == xml)
-    {
+    if (NULL == xml) {
         log_error(log, "Create xml failed! path:%s", path);
         free(conf);
         mem_pool_destroy(pool);
@@ -68,8 +65,7 @@ flt_conf_t *flt_conf_load(const char *path, log_cycle_t *log)
     }
 
     /* > 加载通用配置 */
-    if (_flt_conf_load(xml, conf, log))
-    {
+    if (_flt_conf_load(xml, conf, log)) {
         log_error(log, "Load common conf failed! path:%s", path);
         free(conf);
         mem_pool_destroy(pool);
@@ -105,16 +101,14 @@ static int _flt_conf_load(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *log)
 
     /* > 定位工作进程配置 */
     nail = xml_query(xml, ".FILTER.WORKER");
-    if (NULL == nail)
-    {
+    if (NULL == nail) {
         log_error(log, "Didn't configure worker process!");
         return -1;
     }
 
     /* 1. 爬虫线程数(相对查找) */
     node = xml_search(xml, nail, "NUM");
-    if (NULL == node)
-    {
+    if (NULL == node) {
         work->num = FLT_THD_DEF_NUM;
         log_warn(log, "Set thread number: %d!", work->num);
     }
@@ -125,8 +119,7 @@ static int _flt_conf_load(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *log)
 
     /* 2. 工作路径(相对查找) */
     node = xml_search(xml, nail, "PATH");
-    if (NULL == node)
-    {
+    if (NULL == node) {
         log_error(log, "Didn't configure workspace path!");
         return -1;
     }
@@ -146,16 +139,14 @@ static int _flt_conf_load(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *log)
      *  获取网页抓取深度和存储路径
      * */
     nail = xml_query(xml, ".FILTER.DOWNLOAD");
-    if (NULL == nail)
-    {
+    if (NULL == nail) {
         log_error(log, "Didn't configure download!");
         return -1;
     }
 
     /* 1 获取抓取深度 */
     node = xml_search(xml, nail, "DEPTH");
-    if (NULL == node)
-    {
+    if (NULL == node) {
         log_error(log, "Get download depth failed!");
         return -1;
     }
@@ -164,8 +155,7 @@ static int _flt_conf_load(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *log)
 
     /* 2 获取存储路径 */
     node = xml_search(xml, nail, "PATH");
-    if (NULL == node)
-    {
+    if (NULL == node) {
         log_error(log, "Get download path failed!");
         return -1;
     }
@@ -174,22 +164,19 @@ static int _flt_conf_load(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *log)
 
     /* 3 任务队列配置(相对查找) */
     node = xml_query(xml, "FILTER.WORKQ.COUNT");
-    if (NULL == node)
-    {
+    if (NULL == node) {
         log_error(log, "Didn't configure count of work task queue unit!");
         return -1;
     }
 
     conf->workq_count = atoi(node->value.str);
-    if (conf->workq_count <= 0)
-    {
+    if (conf->workq_count <= 0) {
         conf->workq_count = FLT_WORKQ_MAX_NUM;
     }
 
     /* > 获取管理配置 */
     node = xml_query(xml, "FILTER.MANAGER.PORT");
-    if (NULL == node)
-    {
+    if (NULL == node) {
         log_error(log, "Get manager port failed!");
         return -1;
     }
@@ -197,15 +184,13 @@ static int _flt_conf_load(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *log)
     conf->man_port = atoi(node->value.str);
 
     /* > 获取Redis配置 */
-    if (flt_conf_load_redis(xml, conf, log))
-    {
+    if (flt_conf_load_redis(xml, conf, log)) {
         log_error(log, "Get redis configuration failed!");
         return -1;
     }
 
     /* > 加载种子配置 */
-    if (flt_conf_load_seed(xml, conf, log))
-    {
+    if (flt_conf_load_seed(xml, conf, log)) {
         log_error(log, "Load seed conf failed!");
         return -1;
     }
@@ -238,26 +223,22 @@ static int flt_conf_load_redis(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *l
     /* > 定位REDIS标签
      *  获取Redis的IP地址、端口号、队列、副本等信息 */
     nail = xml_query(xml, ".FILTER.REDIS");
-    if (NULL == nail)
-    {
+    if (NULL == nail) {
         log_error(log, "Didn't configure redis!");
         return -1;
     }
 
     /* > 计算REDIS网络配置项总数 */
     start = xml_search(xml, nail, "NETWORK.ITEM");
-    if (NULL == start)
-    {
+    if (NULL == start) {
         log_error(log, "Query item of network failed!");
         return -1;
     }
 
     redis->num = 0;
     item = start;
-    while (NULL != item)
-    {
-        if (strcmp(item->name.str, "ITEM"))
-        {
+    while (NULL != item) {
+        if (strcmp(item->name.str, "ITEM")) {
             log_error(log, "Mark name isn't right! mark:%s", item->name);
             return -1;
         }
@@ -266,23 +247,19 @@ static int flt_conf_load_redis(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *l
     }
 
     redis->conf = (redis_conf_t *)calloc(redis->num, sizeof(redis_conf_t));
-    if (NULL == redis->conf)
-    {
+    if (NULL == redis->conf) {
         log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
         return -1;
     }
 
-    do
-    {
+    do {
         /* 注: 出现异常情况时 内存在此不必释放 */
         idx = 0;
         item = start;
-        while (NULL != item)
-        {
+        while (NULL != item) {
             /* 获取IP地址 */
             node = xml_search(xml, item, "IP");
-            if (NULL == node)
-            {
+            if (NULL == node) {
                 log_error(log, "Mark name isn't right! mark:%s", item->name);
                 break;
             }
@@ -291,8 +268,7 @@ static int flt_conf_load_redis(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *l
 
             /* 获取PORT地址 */
             node = xml_search(xml, item, "PORT");
-            if (NULL == node)
-            {
+            if (NULL == node) {
                 log_error(log, "Mark name isn't right! mark:%s", item->name);
                 break;
             }
@@ -306,8 +282,7 @@ static int flt_conf_load_redis(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *l
 
         /* > 获取队列名 */
         node = xml_search(xml, nail, "TASKQ.NAME");
-        if (NULL == node)
-        {
+        if (NULL == node) {
             log_error(log, "Get undo task queue failed!");
             break;
         }
@@ -316,8 +291,7 @@ static int flt_conf_load_redis(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *l
 
         /* > 获取哈希表名 */
         node = xml_search(xml, nail, "DONE_TAB.NAME");  /* DONE哈希表 */
-        if (NULL == node)
-        {
+        if (NULL == node) {
             log_error(log, "Get done hash table failed!");
             break;
         }
@@ -325,8 +299,7 @@ static int flt_conf_load_redis(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *l
         snprintf(redis->done_tab, sizeof(redis->done_tab), "%s", node->value.str);
 
         node = xml_search(xml, nail, "PUSH_TAB.NAME");  /* PUSH哈希表 */
-        if (NULL == node)
-        {
+        if (NULL == node) {
             log_error(log, "Get pushed hash table failed!");
             break;
         }
@@ -363,24 +336,20 @@ static int flt_conf_load_seed(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *lo
 
     /* 1. 定位SEED->ITEM标签 */
     item = xml_query(xml, ".FILTER.SEED.ITEM");
-    if (NULL == item)
-    {
+    if (NULL == item) {
         log_error(log, "Didn't configure seed item!");
         return -1;
     }
 
     /* 2. 提取种子信息 */
     conf->seed_num = 0;
-    while (NULL != item)
-    {
-        if (0 != strcasecmp(item->name.str, "ITEM"))
-        {
+    while (NULL != item) {
+        if (0 != strcasecmp(item->name.str, "ITEM")) {
             item = item->next;
             continue;
         }
 
-        if (conf->seed_num >= FLT_SEED_MAX_NUM)
-        {
+        if (conf->seed_num >= FLT_SEED_MAX_NUM) {
             log_error(log, "Seed number is too many!");
             return -1;
         }
@@ -389,8 +358,7 @@ static int flt_conf_load_seed(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *lo
 
         /* 提取URI */
         node = xml_search(xml, item, "URI");
-        if (NULL == node)
-        {
+        if (NULL == node) {
             log_error(log, "Get uri failed!");
             return -1;
         }
@@ -399,8 +367,7 @@ static int flt_conf_load_seed(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *lo
 
         /* 获取DEPTH */
         node = xml_search(xml, item, "DEPTH");
-        if (NULL == node)
-        {
+        if (NULL == node) {
             seed->depth = 0;
             log_info(log, "Didn't set depth of uri!");
         }

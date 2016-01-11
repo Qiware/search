@@ -32,14 +32,12 @@ ring_t *ring_creat(int max)
 
     /* > 申请内存空间 */
     rq = (ring_t *)calloc(1, sizeof(ring_t));
-    if (NULL == rq)
-    {
+    if (NULL == rq) {
         return NULL;
     }
 
     rq->data = (void **)calloc(max, sizeof(void *));
-    if (NULL == rq->data)
-    {
+    if (NULL == rq->data) {
         free(rq);
         return NULL;
     }
@@ -86,8 +84,7 @@ void *ring_pop(ring_t *rq)
 {
     void *addr[1];
     
-    if (0 == ring_mpop(rq, addr, 1))
-    {
+    if (0 == ring_mpop(rq, addr, 1)) {
         return NULL;
     }
 
@@ -113,12 +110,10 @@ int ring_mpush(ring_t *rq, void **addr, unsigned int num)
     unsigned int prod_head, prod_next, cons_tail, i;
 
     /* > 申请队列空间 */
-    do
-    {
+    do {
         prod_head = rq->prod.head;
         cons_tail = rq->cons.tail;
-        if (num > (rq->max + cons_tail - prod_head))
-        {
+        if (num > (rq->max + cons_tail - prod_head)) {
             return -1; /* 空间不足 */
         }
 
@@ -128,8 +123,7 @@ int ring_mpush(ring_t *rq, void **addr, unsigned int num)
     } while (0 == succ);
 
     /* > 放入队列空间 */
-    for (i=0; i<num; ++i)
-    {
+    for (i=0; i<num; ++i) {
         rq->data[(prod_head+i) & rq->mask] = addr[i];
     }
     while (rq->prod.tail != prod_head) { NULL; }
@@ -164,8 +158,7 @@ int ring_mpop(ring_t *rq, void **addr, unsigned int num)
         cons_head = rq->cons.head;
         prod_tail = rq->prod.tail;
 
-        if (num > prod_tail - cons_head)
-        {
+        if (num > prod_tail - cons_head) {
             return 0; /* 无数据 */
         }
 
@@ -175,8 +168,7 @@ int ring_mpop(ring_t *rq, void **addr, unsigned int num)
     } while(0 == succ);
 
     /* > 地址弹出队列 */
-    for (i=0; i<num; ++i)
-    {
+    for (i=0; i<num; ++i) {
         addr[i] = (void *)rq->data[(cons_head+i) & rq->mask];
     }
 
@@ -223,8 +215,7 @@ void ring_print(ring_t *rq)
 {
     unsigned int i;
 
-    for (i=0; i<rq->num; ++i)
-    {
+    for (i=0; i<rq->num; ++i) {
         fprintf(stderr, "ptr[%d]: %p", rq->prod.head+i, rq->data[(rq->prod.head+i)&rq->mask]);
     }
 }

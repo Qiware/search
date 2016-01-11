@@ -11,6 +11,6 @@ export LD_LIBRARY_PATH='/usr/lib/x86_64-linux-gnu:../lib'
 # 启动服务
 
 ./logsvr -L ../temp/log.key  -d     # 日志服务
-./mmexec -l trace -L ../temp/log.key  -d     # 内存服务
+#./mmexec -l trace -L ../temp/log.key  -d     # 内存服务
 
 ./watch.sh      # 监控进程状态

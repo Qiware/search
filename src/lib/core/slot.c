@@ -32,8 +32,7 @@ slot_t *slot_creat(int num, size_t size)
 
     /* > 创建对象 */
     slot = (slot_t *)calloc(1, sizeof(slot_t));
-    if (NULL == slot)
-    {
+    if (NULL == slot) {
         return NULL;
     }
 
@@ -41,16 +40,14 @@ slot_t *slot_creat(int num, size_t size)
     slot->size = size;
 
     slot->ring = ring_creat(num);
-    if (NULL == slot->ring)
-    {
+    if (NULL == slot->ring) {
         free(slot);
         return NULL;
     }
 
     /* > 申请内存池空间 */
     addr = (void *)calloc(num, size);
-    if (NULL == addr)
-    {
+    if (NULL == addr) {
         ring_destroy(slot->ring);
         free(slot);
         return NULL;
@@ -58,10 +55,8 @@ slot_t *slot_creat(int num, size_t size)
 
     /* > 插入管理队列 */
     ptr = addr;
-    for (i=0; i<num; ++i, ptr += size)
-    {
-        if (ring_push(slot->ring, ptr))
-        {
+    for (i=0; i<num; ++i, ptr += size) {
+        if (ring_push(slot->ring, ptr)) {
             ring_destroy(slot->ring);
             free(slot);
             free(addr);
@@ -87,8 +82,7 @@ slot_t *slot_creat(int num, size_t size)
  ******************************************************************************/
 void *slot_alloc(slot_t *slot, int size)
 {
-    if (size > slot->size)
-    {
+    if (size > slot->size) {
         return NULL;
     }
 

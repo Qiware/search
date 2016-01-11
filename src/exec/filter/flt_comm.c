@@ -58,8 +58,7 @@ int flt_getopt(int argc, char **argv, flt_opt_t *opt)
     opt->conf_path = FLT_DEF_CONF_PATH;
 
     /* 1. 解析输入参数 */
-    while (-1 != (ch = getopt_long(argc, argv, "c:L:l:hd", opts, NULL)))
-    {
+    while (-1 != (ch = getopt_long(argc, argv, "c:L:l:hd", opts, NULL))) {
         switch (ch)
         {
             case 'c':   /* 指定配置文件 */
@@ -163,24 +162,21 @@ flt_cntx_t *flt_init(char *pname, flt_opt_t *flt_opt)
 
     /* > 初始化日志模块 */
     log = flt_init_log(pname, flt_opt->log_level, flt_opt->log_key_path);
-    if (NULL == log)
-    {
+    if (NULL == log) {
         fprintf(stderr, "Initialize log failed!\n");
         return NULL;
     }
 
     /* > 创建内存池 */
     slab = slab_creat_by_calloc(FLT_SLAB_SIZE, log);
-    if (NULL == slab)
-    {
+    if (NULL == slab) {
         log_error(log, "Init slab failed!");
         return NULL;
     }
 
     /* > 申请对象空间 */
     ctx = (flt_cntx_t *)slab_alloc(slab, sizeof(flt_cntx_t));
-    if (NULL == ctx)
-    {
+    if (NULL == ctx) {
         log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
         free(slab);
         return NULL;
@@ -189,12 +185,10 @@ flt_cntx_t *flt_init(char *pname, flt_opt_t *flt_opt)
     ctx->log = log;
     ctx->slab = slab;
 
-    do
-    {
+    do {
         /* > 加载配置信息 */
         conf = flt_conf_load(flt_opt->conf_path, log);
-        if (NULL == conf)
-        {
+        if (NULL == conf) {
             log_error(log, "Initialize log failed!");
             break;
         }
@@ -203,24 +197,21 @@ flt_cntx_t *flt_init(char *pname, flt_opt_t *flt_opt)
 
         /* > 连接Redis集群 */
         ctx->redis = redis_clst_init(conf->redis.conf, conf->redis.num);
-        if (NULL == ctx->redis)
-        {
+        if (NULL == ctx->redis) {
             log_error(ctx->log, "Initialize redis context failed!");
             break;
         }
 
         /* > 创建工作队列 */
         ctx->taskq = sig_queue_creat(FLT_TASKQ_LEN, sizeof(flt_task_t));
-        if (NULL == ctx->taskq)
-        {
+        if (NULL == ctx->taskq) {
             log_error(ctx->log, "Create queue failed! max:%d", FLT_TASKQ_LEN);
             break;
         }
 
         /* > 创建工作队列 */
         ctx->crwlq = sig_queue_creat(FLT_CRWLQ_LEN, sizeof(flt_crwl_t));
-        if (NULL == ctx->crwlq)
-        {
+        if (NULL == ctx->crwlq) {
             log_error(ctx->log, "Create queue failed! max:%d", FLT_CRWLQ_LEN);
             break;
         }
@@ -237,8 +228,7 @@ flt_cntx_t *flt_init(char *pname, flt_opt_t *flt_opt)
                 FLT_DOMAIN_IP_MAP_HASH_MOD,
                 (key_cb_t)hash_time33_ex,
                 (cmp_cb_t)flt_domain_ip_map_cmp_cb, &opt);
-        if (NULL == ctx->domain_ip_map)
-        {
+        if (NULL == ctx->domain_ip_map) {
             log_error(log, "Initialize hash table failed!");
             break;
         }
@@ -255,15 +245,13 @@ flt_cntx_t *flt_init(char *pname, flt_opt_t *flt_opt)
                 FLT_DOMAIN_BLACKLIST_HASH_MOD,
                 (key_cb_t)hash_time33_ex,
                 (cmp_cb_t)flt_domain_blacklist_cmp_cb, &opt);
-        if (NULL == ctx->domain_blacklist)
-        {
+        if (NULL == ctx->domain_blacklist) {
             log_error(log, "Initialize hash table failed!");
             break;
         }
 
         /* > 创建工作线程池 */
-        if (flt_workers_creat(ctx))
-        {
+        if (flt_workers_creat(ctx)) {
             log_error(log, "Initialize thread pool failed!");
             break;
         }
@@ -291,22 +279,19 @@ flt_cntx_t *flt_init(char *pname, flt_opt_t *flt_opt)
  ******************************************************************************/
 void flt_destroy(flt_cntx_t *ctx)
 {
-    if (ctx->log)
-    {
+    if (ctx->log) {
         log_destroy(&ctx->log);
         ctx->log = NULL;
     }
 
     plog_destroy();
 
-    if (ctx->redis)
-    {
+    if (ctx->redis) {
         redis_clst_destroy(ctx->redis);
         ctx->redis = NULL;
     }
 
-    if (ctx->conf)
-    {
+    if (ctx->conf) {
         flt_conf_destroy(ctx->conf);
         ctx->conf = NULL;
     }
@@ -334,35 +319,30 @@ int flt_launch(flt_cntx_t *ctx)
     ctx->run_tm = time(NULL);
 
     /* > 启动Push线程 */
-    if (thread_creat(&ctx->sched_tid, flt_push_routine, ctx))
-    {
+    if (thread_creat(&ctx->sched_tid, flt_push_routine, ctx)) {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return FLT_ERR;
     }
 
     /* > 设置Worker线程回调 */
-    for (idx=0; idx<conf->work.num; ++idx)
-    {
+    for (idx=0; idx<conf->work.num; ++idx) {
         thread_pool_add_worker(ctx->workers, flt_worker_routine, ctx);
     }
     
     /* > 启动Sched线程 */
-    if (thread_creat(&ctx->sched_tid, flt_sched_routine, ctx))
-    {
+    if (thread_creat(&ctx->sched_tid, flt_sched_routine, ctx)) {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return FLT_ERR;
     }
 
     /* > 启动Manager线程 */
-    if (thread_creat(&ctx->sched_tid, flt_manager_routine, ctx))
-    {
+    if (thread_creat(&ctx->sched_tid, flt_manager_routine, ctx)) {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return FLT_ERR;
     }
 
     /* > 推送SEED至CRWL队列 */
-    if (flt_push_seed_to_crwlq(ctx))
-    {
+    if (flt_push_seed_to_crwlq(ctx)) {
         log_error(ctx->log, "Push seed to redis taskq failed!");
         return FLT_ERR;
     }
@@ -395,16 +375,14 @@ static int flt_workers_creat(flt_cntx_t *ctx)
     opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
     ctx->workers = thread_pool_init(conf->num, &opt, NULL);
-    if (NULL == ctx->workers)
-    {
+    if (NULL == ctx->workers) {
         log_error(ctx->log, "Initialize thread pool failed!");
         return FLT_ERR;
     }
 
     /* 2. 新建Worker对象 */
     ctx->worker = (flt_worker_t *)slab_alloc(ctx->slab, conf->num*sizeof(flt_worker_t));
-    if (NULL == ctx->worker)
-    {
+    if (NULL == ctx->worker) {
         thread_pool_destroy(ctx->workers);
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return FLT_ERR;
@@ -412,10 +390,8 @@ static int flt_workers_creat(flt_cntx_t *ctx)
 
     /* 3. 依次初始化Worker对象 */
     num = 0;
-    for (idx=0; idx<conf->num; ++idx, ++num)
-    {
-        if (flt_worker_init(ctx, ctx->worker+idx, idx))
-        {
+    for (idx=0; idx<conf->num; ++idx, ++num) {
+        if (flt_worker_init(ctx, ctx->worker+idx, idx)) {
             log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
             goto FLT_PROC_ERR;
         }
@@ -425,8 +401,7 @@ static int flt_workers_creat(flt_cntx_t *ctx)
 
 FLT_PROC_ERR:
     /* 4. 释放Worker对象 */
-    for (idx=0; idx<num; ++idx)
-    {
+    for (idx=0; idx<num; ++idx) {
         flt_worker_destroy(ctx, ctx->worker+idx);
     }
 
@@ -458,14 +433,12 @@ int flt_proc_lock(void)
 
     /* 2. 打开文件 */
     fd = Open(path, OPEN_FLAGS, OPEN_MODE);
-    if (fd < 0)
-    {
+    if (fd < 0) {
         return FLT_ERR;
     }
 
     /* 3. 尝试加锁 */
-    if (proc_try_wrlock(fd) < 0)
-    {
+    if (proc_try_wrlock(fd) < 0) {
         CLOSE(fd);
         return FLT_ERR;
     }
@@ -558,14 +531,12 @@ int flt_get_domain_ip_map(flt_cntx_t *ctx, char *host, ipaddr_t *ip)
 
     hints.ai_socktype = SOCK_STREAM;
 
-    if (0 != getaddrinfo(host, NULL, &hints, &addrinfo))
-    {
+    if (0 != getaddrinfo(host, NULL, &hints, &addrinfo)) {
         log_error(ctx->log, "Get address info failed! host:%s", host);
 
         /* 插入域名黑名单中 */
         new_blacklist = slab_alloc(ctx->slab, sizeof(flt_domain_blacklist_t));
-        if (NULL == new_blacklist)
-        {
+        if (NULL == new_blacklist) {
             return FLT_ERR;
         }
 
@@ -573,8 +544,7 @@ int flt_get_domain_ip_map(flt_cntx_t *ctx, char *host, ipaddr_t *ip)
         new_blacklist->create_tm = time(NULL);
         new_blacklist->access_tm = new_blacklist->create_tm;
 
-        if (hash_map_insert(ctx->domain_blacklist, host, strlen(host), new_blacklist))
-        {
+        if (hash_map_insert(ctx->domain_blacklist, host, strlen(host), new_blacklist)) {
             slab_dealloc(ctx->slab, new_blacklist);
         }
 
@@ -583,23 +553,20 @@ int flt_get_domain_ip_map(flt_cntx_t *ctx, char *host, ipaddr_t *ip)
 
     /* 计算IP地址个数 */
     ip_num = 0;
-    for (curr = addrinfo; NULL != curr; ++ip_num, curr = curr->ai_next)
-    {
+    for (curr = addrinfo; NULL != curr; ++ip_num, curr = curr->ai_next) {
         NULL;
     }
 
     /* > 申请新的内存空间(此处不释放空间) */
     new_map = (flt_domain_ip_map_t *)slab_alloc(ctx->slab, sizeof(flt_domain_ip_map_t));
-    if (NULL == new_map)
-    {
+    if (NULL == new_map) {
         freeaddrinfo(addrinfo);
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return FLT_ERR;
     }
 
     new_map->ip = (ipaddr_t *)slab_alloc(ctx->slab, ip_num * sizeof(ipaddr_t));
-    if (NULL == new_map->ip)
-    {
+    if (NULL == new_map->ip) {
         freeaddrinfo(addrinfo);
         slab_dealloc(ctx->slab, new_map);
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
@@ -612,11 +579,9 @@ int flt_get_domain_ip_map(flt_cntx_t *ctx, char *host, ipaddr_t *ip)
     new_map->access_tm = new_map->create_tm;
 
     curr = addrinfo;
-    while (NULL != curr)
-    {
+    while (NULL != curr) {
         sockaddr = (struct sockaddr_in *)curr->ai_addr;
-        if (0 == sockaddr->sin_addr.s_addr)
-        {
+        if (0 == sockaddr->sin_addr.s_addr) {
             curr = curr->ai_next;
             continue;
         }
@@ -635,12 +600,9 @@ int flt_get_domain_ip_map(flt_cntx_t *ctx, char *host, ipaddr_t *ip)
 
     /* 4. 插入域名IP映射表 */
     ret = hash_map_insert(ctx->domain_ip_map, host, strlen(host), new_map);
-    if (0 != ret)
-    {
-        if (AVL_NODE_EXIST == ret)
-        {
-            if (!new_map->ip_num)
-            {
+    if (0 != ret) {
+        if (AVL_NODE_EXIST == ret) {
+            if (!new_map->ip_num) {
                 log_error(ctx->log, "IP num [%d] isn't right!", new_map->ip_num);
                 return FLT_ERR;
             }
@@ -657,8 +619,7 @@ int flt_get_domain_ip_map(flt_cntx_t *ctx, char *host, ipaddr_t *ip)
         return FLT_ERR;
     }
 
-    if (!new_map->ip_num)
-    {
+    if (!new_map->ip_num) {
         log_error(ctx->log, "IP num [%d] isn't right!", new_map->ip_num);
         return FLT_ERR;
     }
@@ -721,21 +682,17 @@ bool flt_set_uri_exists(redis_clst_t *ctx, const char *hash, const char *uri)
 {
     redisReply *r;
 
-    if (0 == ctx->num)
-    {
+    if (0 == ctx->num) {
         return !redis_hsetnx(ctx->redis[REDIS_MASTER_IDX], hash, uri, "1");
     }
 
-    do
-    {
+    do {
         r = redisCommand(ctx->redis[random() % ctx->num], "HEXISTS %s %s", hash, uri);
-        if (REDIS_REPLY_INTEGER != r->type)
-        {
+        if (REDIS_REPLY_INTEGER != r->type) {
             break;
         }
 
-        if (0 == r->integer)
-        {
+        if (0 == r->integer) {
             break;
         }
 
@@ -768,25 +725,21 @@ int flt_push_url_to_crwlq(flt_cntx_t *ctx,
     flt_crwl_t *crwl;
     unsigned int len;
 
-    if ('\0' == host[0])
-    {
+    if ('\0' == host[0]) {
         log_error(ctx->log, "Host is invalid! url:%s", url);
         return FLT_ERR;
     }
 
     /* > 查询域名IP映射 */
-    if (flt_get_domain_ip_map(ctx, host, &ip))
-    {
+    if (flt_get_domain_ip_map(ctx, host, &ip)) {
         log_error(ctx->log, "Get ip failed! uri:%s host:%s", url, host);
         return FLT_ERR;
     }
 
-    while (1)
-    {
+    while (1) {
         /* > 申请队列空间 */
         crwl = sig_queue_malloc(ctx->crwlq, sizeof(flt_crwl_t));
-        if (NULL == crwl)
-        {
+        if (NULL == crwl) {
             log_error(ctx->log, "Alloc from queue failed! len:%d/%d",
                     sizeof(flt_crwl_t), sig_queue_size(ctx->crwlq));
             Sleep(1);
@@ -796,8 +749,7 @@ int flt_push_url_to_crwlq(flt_cntx_t *ctx,
         /* > 组装任务格式 */
         len = flt_get_task_str(crwl->task_str, sizeof(crwl->task_str),
                 url, depth, ip.addr, ip.family);
-        if (len >= sizeof(crwl->task_str))
-        {
+        if (len >= sizeof(crwl->task_str)) {
             log_info(ctx->log, "Task string is too long! uri:[%s]", url);
             sig_queue_dealloc(ctx->crwlq, crwl);
             return FLT_ERR;
@@ -829,24 +781,20 @@ int flt_push_seed_to_crwlq(flt_cntx_t *ctx)
     flt_seed_conf_t *seed;
     flt_conf_t *conf = ctx->conf;
 
-    for (idx=0; idx<conf->seed_num; ++idx)
-    {
+    for (idx=0; idx<conf->seed_num; ++idx) {
         seed = &conf->seed[idx];
-        if (seed->depth > conf->download.depth) /* 判断网页深度 */
-        {
+        if (seed->depth > conf->download.depth) { /* 判断网页深度 */
             continue;
         }
 
         /* > 解析URI字串 */
-        if (0 != uri_reslove(seed->uri, &field))
-        {
+        if (0 != uri_reslove(seed->uri, &field)) {
             log_error(ctx->log, "Reslove url [%s] failed!", seed->uri);
             return FLT_ERR;
         }
 
         /* > 推送至CRWL队列 */
-        if (flt_push_url_to_crwlq(ctx, seed->uri, field.host, field.port, seed->depth))
-        {
+        if (flt_push_url_to_crwlq(ctx, seed->uri, field.host, field.port, seed->depth)) {
             log_info(ctx->log, "Uri [%s] is invalid!", (char *)seed->uri);
             continue;
         }

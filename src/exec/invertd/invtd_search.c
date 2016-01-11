@@ -316,8 +316,7 @@ int invtd_insert_word_req_hdl(int type, int dev_orig, char *buff, size_t len, vo
 INVTD_INSERT_WORD_RSP:
     /* > 发送应答信息 */
     rsp.serial = hton64(req->serial);
-    if (rtrd_send(ctx->rtrd, MSG_INSERT_WORD_RSP, dev_orig, (void *)&rsp, sizeof(rsp)))
-    {
+    if (rtrd_send(ctx->rtrd, MSG_INSERT_WORD_RSP, dev_orig, (void *)&rsp, sizeof(rsp))) {
         log_error(ctx->log, "Send response failed! serial:%s word:%s url:%s freq:%d",
                 req->serial, req->word, req->url, req->freq);
     }

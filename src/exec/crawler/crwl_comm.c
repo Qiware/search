@@ -64,10 +64,8 @@ int crwl_getopt(int argc, char **argv, crwl_opt_t *opt)
     opt->conf_path = CRWL_DEF_CONF_PATH;
 
     /* 1. 解析输入参数 */
-    while (-1 != (ch = getopt_long(argc, argv, "c:l:L:dh", opts, NULL)))
-    {
-        switch (ch)
-        {
+    while (-1 != (ch = getopt_long(argc, argv, "c:l:L:dh", opts, NULL))) {
+        switch (ch) {
             case 'c':   /* 指定配置文件 */
             {
                 opt->conf_path = optarg;
@@ -146,31 +144,27 @@ crwl_cntx_t *crwl_init(char *pname, crwl_opt_t *opt)
 
     /* > 初始化日志模块 */
     log = crwl_init_log(pname, opt->log_level, opt->log_key_path);
-    if (NULL == log)
-    {
+    if (NULL == log) {
         fprintf(stderr, "Initialize log failed!");
         return NULL;
     }
 
     /* > 判断程序是否已运行 */
-    if (0 != crwl_proc_lock())
-    {
+    if (0 != crwl_proc_lock()) {
         log_error(log, "Crawler is running!");
         return NULL;
     }
 
     /* > 创建内存池 */
     slab = slab_creat_by_calloc(30 * MB, log);
-    if (NULL == slab)
-    {
+    if (NULL == slab) {
         log_error(log, "Init slab failed!");
         return NULL;
     }
 
     /* > 创建全局对象 */
     ctx = (crwl_cntx_t *)slab_alloc(slab, sizeof(crwl_cntx_t));
-    if (NULL == ctx)
-    {
+    if (NULL == ctx) {
         log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
         free(slab);
         return NULL;
@@ -179,41 +173,35 @@ crwl_cntx_t *crwl_init(char *pname, crwl_opt_t *opt)
     ctx->log = log;
     ctx->slab = slab;
 
-    do
-    {
+    do {
         conf = &ctx->conf;
 
         /* > 加载配置文件 */
-        if (crwl_load_conf(opt->conf_path, conf, log))
-        {
+        if (crwl_load_conf(opt->conf_path, conf, log)) {
             log_error(log, "Load configuration failed! path:%s", opt->conf_path);
             break;
         }
 
         /* > 创建任务队列 */
-        if (crwl_creat_workq(ctx))
-        {
+        if (crwl_creat_workq(ctx)) {
             log_error(log, "Create workq failed!");
             break;
         }
 
         /* > 修改进程打开文件描述符的最大限制 */
-        if (set_fd_limit(65535))
-        {
+        if (set_fd_limit(65535)) {
             log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
             break;
         }
 
         /* > 创建Worker线程池 */
-        if (crwl_creat_workers(ctx))
-        {
+        if (crwl_creat_workers(ctx)) {
             log_error(log, "Initialize thread pool failed!");
             break;
         }
 
         /* > 创建Sched线程池 */
-        if (crwl_creat_scheds(ctx))
-        {
+        if (crwl_creat_scheds(ctx)) {
             log_error(log, "Initialize thread pool failed!");
             break;
         }
@@ -243,8 +231,7 @@ void crwl_destroy(crwl_cntx_t *ctx)
     int idx;
     crwl_conf_t *conf = &ctx->conf;
 
-    for (idx=0; idx<conf->worker.num; ++idx)
-    {
+    for (idx=0; idx<conf->worker.num; ++idx) {
         queue_destroy(ctx->workq[idx]);
     }
     FREE(ctx->workq);
@@ -272,20 +259,17 @@ int crwl_launch(crwl_cntx_t *ctx)
     const crwl_conf_t *conf = &ctx->conf;
 
     /* 1. 设置Worker线程回调 */
-    for (idx=0; idx<conf->worker.num; ++idx)
-    {
+    for (idx=0; idx<conf->worker.num; ++idx) {
         thread_pool_add_worker(ctx->workers, crwl_worker_routine, ctx);
     }
 
     /* 2. 设置Sched线程回调 */
-    for (idx=0; idx<CRWL_SCHED_THD_NUM; ++idx)
-    {
+    for (idx=0; idx<CRWL_SCHED_THD_NUM; ++idx) {
         thread_pool_add_worker(ctx->scheds, crwl_sched_routine, ctx);
     }
 
     /* 3. 启动代理服务 */
-    if (thread_creat(&tid, crwl_manager_routine, ctx))
-    {
+    if (thread_creat(&tid, crwl_manager_routine, ctx)) {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return CRWL_ERR;
     }
@@ -316,8 +300,7 @@ static int crwl_creat_workers(crwl_cntx_t *ctx)
 
     /* > 新建Worker对象 */
     worker = (crwl_worker_t *)slab_alloc(ctx->slab, conf->num*sizeof(crwl_worker_t));
-    if (NULL == worker)
-    {
+    if (NULL == worker) {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return CRWL_ERR;
     }
@@ -330,32 +313,27 @@ static int crwl_creat_workers(crwl_cntx_t *ctx)
     opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
     ctx->workers = thread_pool_init(conf->num, &opt, worker);
-    if (NULL == ctx->workers)
-    {
+    if (NULL == ctx->workers) {
         log_error(ctx->log, "Initialize thread pool failed!");
         slab_dealloc(ctx->slab, worker);
         return CRWL_ERR;
     }
 
     /* 3. 依次初始化Worker对象 */
-    for (idx=0; idx<conf->num; ++idx)
-    {
-        if (crwl_worker_init(ctx, worker+idx, idx))
-        {
+    for (idx=0; idx<conf->num; ++idx) {
+        if (crwl_worker_init(ctx, worker+idx, idx)) {
             log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
             break;
         }
     }
 
-    if (idx == conf->num)
-    {
+    if (idx == conf->num) {
         return CRWL_OK; /* 成功 */
     }
 
     /* 4. 释放Worker对象 */
     num = idx;
-    for (idx=0; idx<num; ++idx)
-    {
+    for (idx=0; idx<num; ++idx) {
         crwl_worker_destroy(ctx, worker+idx);
     }
 
@@ -383,10 +361,8 @@ int crwl_workers_destroy(crwl_cntx_t *ctx)
     const crwl_worker_conf_t *conf = &ctx->conf.worker;
 
     /* 1. 释放Worker对象 */
-    for (idx=0; idx<conf->num; ++idx)
-    {
+    for (idx=0; idx<conf->num; ++idx) {
         worker = (crwl_worker_t *)ctx->workers->data + idx;
-
         crwl_worker_destroy(ctx, worker);
     }
 
@@ -424,8 +400,7 @@ static int crwl_creat_scheds(crwl_cntx_t *ctx)
 
     /* 2. 创建Sched线程池 */
     ctx->scheds = thread_pool_init(CRWL_SCHED_THD_NUM, &opt, NULL);
-    if (NULL == ctx->scheds)
-    {
+    if (NULL == ctx->scheds) {
         log_error(ctx->log, "Initialize thread pool failed!");
         return CRWL_ERR;
     }
@@ -455,14 +430,12 @@ int crwl_proc_lock(void)
 
     /* 2. 打开文件 */
     fd = Open(path, OPEN_FLAGS, OPEN_MODE);
-    if (fd < 0)
-    {
+    if (fd < 0) {
         return CRWL_ERR;
     }
 
     /* 3. 尝试加锁 */
-    if (proc_try_wrlock(fd) < 0)
-    {
+    if (proc_try_wrlock(fd) < 0) {
         CLOSE(fd);
         return CRWL_ERR;
     }
@@ -578,8 +551,7 @@ void crwl_set_signal(void)
  ******************************************************************************/
 static void crwl_signal_hdl(int signum)
 {
-    switch (signum)
-    {
+    switch (signum) {
         case SIGINT:
         {
             fprintf(stderr, "Catch SIGINT [%d] signal!", signum);
@@ -616,19 +588,16 @@ static int crwl_creat_workq(crwl_cntx_t *ctx)
 
     /* > 申请内存空间 */
     ctx->workq = (queue_t **)slab_alloc(ctx->slab, conf->worker.num*sizeof(queue_t *));
-    if (NULL == ctx->workq)
-    {
+    if (NULL == ctx->workq) {
         log_error(ctx->log, "Alloc memory from slab failed!");
         return CRWL_ERR;
     }
 
     /* > 依次创建队列 */
     size = sizeof(crwl_task_t) + sizeof(crwl_task_space_u);
-    for (idx=0, num=0; idx<conf->worker.num; ++idx)
-    {
+    for (idx=0, num=0; idx<conf->worker.num; ++idx) {
         ctx->workq[idx] = queue_creat(conf->workq_count, size);
-        if (NULL == ctx->workq[idx])
-        {
+        if (NULL == ctx->workq[idx]) {
             slab_dealloc(ctx->slab, ctx->workq), ctx->workq=NULL;
             goto CREAT_QUEUE_ERR;
         }
@@ -638,8 +607,7 @@ static int crwl_creat_workq(crwl_cntx_t *ctx)
 
 CREAT_QUEUE_ERR:
     num = idx;
-    for (idx=0; idx<num; ++idx)
-    {
+    for (idx=0; idx<num; ++idx) {
         queue_destroy(ctx->workq[idx]);
     }
     return CRWL_ERR;

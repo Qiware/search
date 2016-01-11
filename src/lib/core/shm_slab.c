@@ -98,8 +98,7 @@ int shm_slab_init(shm_slab_pool_t *pool)
     slot_num = shm_slab_max_shift() - SHM_SLAB_MIN_SHIFT + 1;
     min_size = sizeof(shm_slab_pool_t) + slot_num * sizeof(shm_slab_page_t);
     
-    if (pool->pool_size < min_size)
-    {
+    if (pool->pool_size < min_size) {
         return -1;  /* Not enough memory */
     }
 
@@ -113,29 +112,25 @@ int shm_slab_init(shm_slab_pool_t *pool)
     pool->end_offset = pool->pool_size;
 
     slot = (shm_slab_slot_t *)(addr + pool->slot_offset);
-    for (idx=0; idx<slot_num; idx++)
-    {
+    for (idx=0; idx<slot_num; idx++) {
         slot[idx].index = idx;
         slot[idx].page_idx = SHM_SLAB_NULL_PAGE;
     }
 
-    if (pool->end_offset < pool->page_offset)
-    {
+    if (pool->end_offset < pool->page_offset) {
         fprintf(stderr, "Not enough memory!");
         return -1;  /* Not enough memory */
     }
 
     left_size = pool->end_offset - pool->page_offset;
     page_num = left_size / (shm_slab_page_size() + sizeof(shm_slab_page_t));
-    if (page_num <= 0)
-    {
+    if (page_num <= 0) {
         fprintf(stderr, "Not enough memory!");
         return -1;  /* Not enough memory */
     }
 
     page = (shm_slab_page_t *)(addr + pool->page_offset);
-    for (idx=0; idx<page_num; idx++)
-    {
+    for (idx=0; idx<page_num; idx++) {
         page[idx].index = idx;
         page[idx].shift = shm_slab_page_shift();
         page[idx].type = SHM_SLAB_ALLOC_UNKNOWN;
@@ -172,28 +167,24 @@ static void shm_slab_init_param(void)
     size_t size;
     
     
-    if (0 == shm_slab_page_size())
-    {
+    if (0 == shm_slab_page_size()) {
         /* Set page size */
         shm_slab_set_page_size(SHM_SLAB_PAGE_SIZE);
-        for (size=shm_slab_page_size(), shift=0; size>>=1; shift++)
-        {
+        for (size=shm_slab_page_size(), shift=0; size>>=1; shift++) {
             /* Do nothing */
         }
         shm_slab_set_page_shift(shift);
 
         /* Set max size */
         shm_slab_set_max_size(shm_slab_page_size() >> 1);
-        for (size=shm_slab_max_size(), shift=0; size>>=1; shift++)
-        {
+        for (size=shm_slab_max_size(), shift=0; size>>=1; shift++) {
             /* Do nothing */
         }
         shm_slab_set_max_shift(shift);
 
         /* Set exact size */
         shm_slab_set_exact_size(shm_slab_page_size()/(8 * sizeof(int)));
-        for (size=shm_slab_exact_size(), shift=0; size>>=1; shift++)
-        {
+        for (size=shm_slab_exact_size(), shift=0; size>>=1; shift++) {
             /* Do nothing */
         }
         shm_slab_set_exact_shift(shift);
@@ -215,16 +206,13 @@ static void shm_slab_init_param(void)
  ******************************************************************************/
 static int shm_slab_get_alloc_type(size_t size)
 {
-    if (size < shm_slab_exact_size())
-    {
+    if (size < shm_slab_exact_size()) {
         return SHM_SLAB_ALLOC_SMALL;
     }
-    else if (size == shm_slab_exact_size())
-    {
+    else if (size == shm_slab_exact_size()) {
         return SHM_SLAB_ALLOC_EXACT;
     }
-    else if (size > shm_slab_exact_size() && size < shm_slab_max_size())
-    {
+    else if (size > shm_slab_exact_size() && size < shm_slab_max_size()) {
         return SHM_SLAB_ALLOC_LARGE;
     }
 
@@ -251,8 +239,7 @@ void *shm_slab_alloc(shm_slab_pool_t *pool, size_t size)
     void *addr, *p;
     shm_slab_page_t *page;
 
-    if (0 == size)
-    {
+    if (0 == size) {
         fprintf(stderr, "Size is incorrect!");
         return NULL;
     }
@@ -260,14 +247,12 @@ void *shm_slab_alloc(shm_slab_pool_t *pool, size_t size)
     spin_lock(&pool->lock);
 
     /* 1. Alloc large memory */
-    if (size >= shm_slab_max_size())
-    {
+    if (size >= shm_slab_max_size()) {
         addr = (void *)pool;
         pages = (size + shm_slab_page_size() - 1) >> shm_slab_page_shift();
         
         page = shm_slab_alloc_pages(pool, pages);
-        if (NULL == page)
-        {
+        if (NULL == page) {
             fprintf(stderr, "Alloc pages failed!");
             spin_unlock(&pool->lock);
             return NULL;
@@ -310,22 +295,17 @@ static shm_slab_page_t *shm_slab_alloc_pages(shm_slab_pool_t *pool, size_t pages
     page = &pool->free;
     start_page = (shm_slab_page_t *)(addr + pool->page_offset);
 
-
-    while (!shm_slab_is_null_page(page->next_idx))
-    {
+    while (!shm_slab_is_null_page(page->next_idx)) {
         page = &start_page[page->next_idx];        
-        if (page->pages > pages)
-        {
+        if (page->pages > pages) {
             next = page + pages;
             
             next->pages = page->pages - pages;
 
-            if (shm_slab_is_free_page(page->prev_idx))
-            {
+            if (shm_slab_is_free_page(page->prev_idx)) {
                 prev = &pool->free;
             }
-            else
-            {
+            else {
                 prev = &start_page[page->prev_idx];
             }
             
@@ -342,28 +322,21 @@ static shm_slab_page_t *shm_slab_alloc_pages(shm_slab_pool_t *pool, size_t pages
 
             return page;
         }
-        else if (pages == page->pages)
-        {
-            if (shm_slab_is_null_page(page->next_idx))
-            {
-                if (shm_slab_is_free_page(page->prev_idx))
-                {
+        else if (pages == page->pages) {
+            if (shm_slab_is_null_page(page->next_idx)) {
+                if (shm_slab_is_free_page(page->prev_idx)) {
                     prev = &pool->free;
                 }
-                else
-                {
+                else {
                     prev = &start_page[page->prev_idx];
                 }
                 prev->next_idx = SHM_SLAB_NULL_PAGE;
             }
-            else
-            {
-                if (shm_slab_is_free_page(page->prev_idx))
-                {
+            else {
+                if (shm_slab_is_free_page(page->prev_idx)) {
                     prev = &pool->free;
                 }
-                else
-                {
+                else {
                     prev = &start_page[page->prev_idx];
                 }
                 next = &start_page[page->next_idx];
@@ -404,17 +377,14 @@ static void *shm_slab_alloc_slot(shm_slab_pool_t *pool, size_t size)
     SHM_SLAB_ALLOC_TYPE type = SHM_SLAB_ALLOC_UNKNOWN;
     
     /* 1. Make sure use which slot */
-    if (size > pool->min_size)
-    {
+    if (size > pool->min_size) {
         shift = 1;
-        for (s = size-1; s >>= 1; shift++)
-        {
+        for (s = size-1; s >>= 1; shift++) {
             /* Do nothing */
         }
         idx = shift - pool->min_shift;
     }
-    else
-    {
+    else {
         size = pool->min_size;
         shift = pool->min_shift;
         idx = 0;
@@ -423,8 +393,7 @@ static void *shm_slab_alloc_slot(shm_slab_pool_t *pool, size_t size)
     type = shm_slab_get_alloc_type(size);
 
     p = _shm_slab_alloc_slot(pool, idx, type);
-    if (NULL == p)
-    {
+    if (NULL == p) {
         return NULL;
     }
 
@@ -476,11 +445,9 @@ static void *_shm_slab_alloc_slot(
 
     /* 1. Get address of page */
     slot = (shm_slab_slot_t *)(addr + pool->slot_offset);
-    if (shm_slab_is_null_page(slot[slot_idx].page_idx))
-    {
+    if (shm_slab_is_null_page(slot[slot_idx].page_idx)) {
         page = shm_slab_alloc_pages(pool, 1);
-        if (NULL == page)
-        {
+        if (NULL == page) {
             fprintf(stderr, "Alloc pages failed!");
             return NULL;
         }
@@ -490,40 +457,31 @@ static void *_shm_slab_alloc_slot(
         slot[slot_idx].page_idx = page - start_page;
 
         /* Set bitmap */
-        if (exp_bitmaps > 0)
-        {
+        if (exp_bitmaps > 0) {
             /* 1. 需要扩展位图: 将被用为扩展位图的SLOT的对应bit置1 */
-            for (i=0; i<exp_bitmaps; i++)
-            {
+            for (i=0; i<exp_bitmaps; i++) {
                 page->bitmap |= (1 << i);
             }
         }
-        else
-        {
+        else {
             /* 2. 不需要扩展位图: 将不存在的SLOT对应的bit置1 */
-            for (i=bits; i<SHM_SLAB_BITMAP_BITS; i++)
-            {
+            for (i=bits; i<SHM_SLAB_BITMAP_BITS; i++) {
                  page->bitmap |= (1 << i);
             }
         }
         page->rbitmap = ~(page->bitmap);
     }
-    else
-    {
+    else {
         page = &start_page[slot[slot_idx].page_idx];
     }
 
     /* 2. Alloc small slot of memory from slab pool. */
-    do
-    {
-        if (!shm_slab_is_busy_bitmap(page->bitmap))
-        {
+    do {
+        if (!shm_slab_is_busy_bitmap(page->bitmap)) {
             i = (exp_bitmaps > 0)?exp_bitmaps:0;
 
-            for (/* nothing */; i<SHM_SLAB_BITMAP_BITS; i++)
-            {
-                if ((page->bitmap >> i) & 1)
-                {
+            for (/* nothing */; i<SHM_SLAB_BITMAP_BITS; i++) {
+                if ((page->bitmap >> i) & 1) {
                     continue;   /* Used */
                 }
 
@@ -533,21 +491,16 @@ static void *_shm_slab_alloc_slot(
                 return ptr;
             }
         }
-        else if (exp_bitmaps > 0)
-        {
+        else if (exp_bitmaps > 0) {
             /* 可分配空间的前几个int用作位图: 扩展位图 */
             bitmap = (uint32_t *)(data + (page->index << shm_slab_page_shift()));
-            for (idx=0; idx<exp_bitmaps; idx++)
-            {
-                if (shm_slab_is_busy_bitmap(bitmap[idx]))
-                {
+            for (idx=0; idx<exp_bitmaps; idx++) {
+                if (shm_slab_is_busy_bitmap(bitmap[idx])) {
                     continue;
                 }
                 
-                for (i=0; i<SHM_SLAB_BITMAP_BITS; i++)
-                {
-                    if ((bitmap[idx] >> i) & 1)
-                    {
+                for (i=0; i<SHM_SLAB_BITMAP_BITS; i++) {
+                    if ((bitmap[idx] >> i) & 1) {
                         continue;   /* Used */
                     }
 
@@ -559,11 +512,9 @@ static void *_shm_slab_alloc_slot(
             }
         }
 
-        if (shm_slab_is_null_page(page->next_idx))
-        {
+        if (shm_slab_is_null_page(page->next_idx)) {
             new_page = shm_slab_alloc_pages(pool, 1);
-            if (NULL == new_page)
-            {
+            if (NULL == new_page) {
                 fprintf(stderr, "Alloc pages failed!");
                 return NULL;
             }
@@ -577,17 +528,13 @@ static void *_shm_slab_alloc_slot(
             page = new_page;
 
             /* Set bitmap */
-            if (exp_bitmaps > 0)
-            {
-                for (i=0; i<exp_bitmaps; i++)
-                {
+            if (exp_bitmaps > 0) {
+                for (i=0; i<exp_bitmaps; i++) {
                     page->bitmap |= (1 << i);   /* 低位置1 */
                 }
             }
-            else
-            {
-                for (i=bits; i<SHM_SLAB_BITMAP_BITS; i++)
-                {
+            else {
+                for (i=bits; i<SHM_SLAB_BITMAP_BITS; i++) {
                     page->bitmap |= (1 << i);   /* 高位置1 */
                 }
             }
@@ -630,8 +577,7 @@ static int shm_slab_free_pages(shm_slab_pool_t *pool, shm_slab_page_t *page)
 
     memset(data, 0, shm_slab_page_size());
 
-    if (shm_slab_is_null_page(free->next_idx))
-    {
+    if (shm_slab_is_null_page(free->next_idx)) {
         free->next_idx = page_idx;
         page->prev_idx = SHM_SLAB_FREE_PAGE;
         return 0;
@@ -673,8 +619,7 @@ int shm_slab_slot_add_page(
     start_page = (shm_slab_page_t *)(addr + pool->page_offset);
     page_idx = page - start_page;
     
-    if (shm_slab_is_null_page(slot->page_idx))
-    {
+    if (shm_slab_is_null_page(slot->page_idx)) {
         slot->page_idx = page_idx;
         return 0;
     }
@@ -706,8 +651,7 @@ static int shm_slab_slot_remove_page(
     void *addr = NULL;
     shm_slab_page_t *start_page = NULL, *next = NULL, *prev = NULL;
 
-    if (shm_slab_is_null_page(slot->page_idx))
-    {
+    if (shm_slab_is_null_page(slot->page_idx)) {
         fprintf(stderr, "Remove page failed!");
         return -1;
     }
@@ -716,11 +660,9 @@ static int shm_slab_slot_remove_page(
     start_page = (shm_slab_page_t *)(addr + pool->page_offset);
     
     prev = &start_page[slot->page_idx];
-    if (prev == page)
-    {
+    if (prev == page) {
         slot->page_idx = page->next_idx;
-        if (!shm_slab_is_null_page(page->next_idx))
-        {
+        if (!shm_slab_is_null_page(page->next_idx)) {
             next = &start_page[page->next_idx];
             next->prev_idx = page->prev_idx;
         }
@@ -731,17 +673,14 @@ static int shm_slab_slot_remove_page(
         return 0;
     }
 
-    while (!shm_slab_is_null_page(prev->next_idx))
-    {
+    while (!shm_slab_is_null_page(prev->next_idx)) {
         next = &start_page[prev->next_idx];
-        if (next != page)
-        {
+        if (next != page) {
             prev = next;
             continue;
         }
 
-        if (!shm_slab_is_null_page(page->next_idx))
-        {
+        if (!shm_slab_is_null_page(page->next_idx)) {
             next = &start_page[page->next_idx];
             next->prev_idx = page->prev_idx;
         }
@@ -783,8 +722,7 @@ void shm_slab_dealloc(shm_slab_pool_t *pool, void *p)
     addr = (void *)pool;
     offset = (void *)p - addr;
     
-    if ((offset < pool->data_offset) || (offset > pool->end_offset))
-    {
+    if ((offset < pool->data_offset) || (offset > pool->end_offset)) {
         fprintf(stderr, "Pointer address is incorrect! offset:%lu", offset);
         return;
     }
@@ -809,32 +747,26 @@ void shm_slab_dealloc(shm_slab_pool_t *pool, void *p)
 
             memset(p, 0, 1 << page->shift);
 
-            if (0 == bitmap_idx)
-            {
+            if (0 == bitmap_idx) {
                 page->bitmap &= ~(1 << bit_idx);
             }
-            else
-            {
+            else {
                 bitmap[bitmap_idx-1] &= ~(1 << bit_idx);
             }
 
-            for (idx=0; idx<exp_bitmaps; idx++)
-            {
-                if (0 != bitmap[idx])
-                {
+            for (idx=0; idx<exp_bitmaps; idx++) {
+                if (0 != bitmap[idx]) {
                     is_free = 0;
                     break;
                 }
             }
             
-            if ((1 == is_free) && !(page->bitmap & page->rbitmap))
-            {
+            if ((1 == is_free) && !(page->bitmap & page->rbitmap)) {
                 slot_idx = page->shift - pool->min_shift;
                 
                 /* Remove from slot[idx] link */
                 ret = shm_slab_slot_remove_page(pool, slot+slot_idx, page);
-                if (ret < 0)
-                {
+                if (ret < 0) {
                     fprintf(stderr, "Remove page failed!");
                     break;
                 }
@@ -855,14 +787,12 @@ void shm_slab_dealloc(shm_slab_pool_t *pool, void *p)
             
             page->bitmap &= ~(1 << bit_idx);
             
-            if (!(page->bitmap & page->rbitmap))
-            {
+            if (!(page->bitmap & page->rbitmap)) {
                 slot_idx = page->shift - pool->min_shift;
                 
                 /* Remove from slot[idx] link */
                 ret = shm_slab_slot_remove_page(pool, slot+slot_idx, page);
-                if (ret < 0)
-                {
+                if (ret < 0) {
                     fprintf(stderr, "Remove page failed!");
                     break;
                 }

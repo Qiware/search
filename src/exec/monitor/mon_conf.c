@@ -20,14 +20,12 @@ static int mon_conf_load_menu(xml_tree_t *xml, mon_conf_t *conf)
     xml_node_t *node, *nail;
 
     nail = xml_query(xml, ".MONITOR.MENU");
-    if (NULL == nail)
-    {
+    if (NULL == nail) {
         return -1;
     }
 
     node = xml_search(xml, nail, ".WIDTH");
-    if (NULL == node)
-    {
+    if (NULL == node) {
         conf->menu.width = MON_MENU_WIDTH;
     }
     else
@@ -47,8 +45,7 @@ static int mon_conf_load_menu(xml_tree_t *xml, mon_conf_t *conf)
     snprintf(node_path, sizeof(node_path), "%s.IP", _path); \
     \
     node = xml_query(xml, node_path); \
-    if (NULL == node) \
-    { \
+    if (NULL == node) { \
         break; \
     } \
     \
@@ -57,8 +54,7 @@ static int mon_conf_load_menu(xml_tree_t *xml, mon_conf_t *conf)
     snprintf(node_path, sizeof(node_path), "%s.PORT", _path); \
     \
     node = xml_query(xml, node_path); \
-    if (NULL == node) \
-    { \
+    if (NULL == node) { \
         break; \
     } \
     \
@@ -85,15 +81,13 @@ mon_conf_t *mon_conf_load(const char *path)
 
     /* > 创建配置对象 */
     conf = (mon_conf_t *)calloc(1, sizeof(mon_conf_t));
-    if (NULL == conf)
-    {
+    if (NULL == conf) {
         return NULL;
     }
 
     /* > 构建XML树 */
     pool = mem_pool_creat(4 * KB);
-    if (NULL == pool)
-    {
+    if (NULL == pool) {
         free(conf);
         return NULL;
     }
@@ -108,14 +102,12 @@ mon_conf_t *mon_conf_load(const char *path)
         opt.dealloc = (mem_dealloc_cb_t)mem_pool_dealloc;
 
         xml = xml_creat(path, &opt);
-        if (NULL == xml)
-        {
+        if (NULL == xml) {
             break;
         }
 
         /* > 提取配置信息 */
-        if (mon_conf_load_menu(xml, conf))
-        {
+        if (mon_conf_load_menu(xml, conf)) {
             break;
         }
 

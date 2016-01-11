@@ -23,8 +23,7 @@ int udp_listen(int port)
 
     /* 1. 创建套接字 */
     fd = socket(AF_INET, SOCK_DGRAM, 0);
-    if (fd < 0)
-    {
+    if (fd < 0) {
         return -1;
     }
 
@@ -38,8 +37,7 @@ int udp_listen(int port)
     svraddr.sin_addr.s_addr = htonl(INADDR_ANY);
     svraddr.sin_port = htons(port);
 
-    if (bind(fd, (struct sockaddr *)&svraddr, sizeof(svraddr)) < 0)
-    {
+    if (bind(fd, (struct sockaddr *)&svraddr, sizeof(svraddr)) < 0) {
         close(fd);
         return -1;
     }

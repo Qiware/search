@@ -26,10 +26,8 @@ void list2_assert(list2_t *list)
     int num = 0;
     list2_node_t *curr = list->head, *tail;
 
-    if (NULL == curr)
-    {
-        if (list->num)
-        {
+    if (NULL == curr) {
+        if (list->num) {
             abort();
         }
         return;
@@ -65,8 +63,7 @@ list2_t *list2_creat(list2_opt_t *opt)
     list2_t *list;
 
     list = opt->alloc(opt->pool, sizeof(list2_t));
-    if (NULL == list)
-    {
+    if (NULL == list) {
         return NULL;
     }
 
@@ -97,16 +94,14 @@ int list2_lpush(list2_t *list, void *data)
     list2_node_t *node, *tail;
 
     node = list->alloc(list->pool, sizeof(list2_node_t));
-    if (NULL == node)
-    {
+    if (NULL == node) {
         return -1;
     }
 
     node->data = data;
 
     /* 1. 链表为空时 */
-    if (NULL == list->head)
-    {
+    if (NULL == list->head) {
         list->head = node;
         node->prev = node;
         node->next = node;
@@ -143,16 +138,14 @@ void *list2_lpop(list2_t *list)
     list2_node_t *tail, *curr;
 
     /* 1. 链表为空 */
-    if (NULL == list->head)
-    {
+    if (NULL == list->head) {
         return NULL;
     }
 
     tail = list->head->prev;
 
     /* 2. 链表只有１个结点 */
-    if (list->head == tail)
-    {
+    if (list->head == tail) {
         list->head = NULL;
         list->num = 0;
 
@@ -192,8 +185,7 @@ void *list2_delete(list2_t *list, list2_node_t *node)
     void *data = node->data;
 
     /* 1. 只有一个结点时 */
-    if (node == node->prev)
-    {
+    if (node == node->prev) {
         list->num = 0;
         list->head = NULL;
 
@@ -202,8 +194,7 @@ void *list2_delete(list2_t *list, list2_node_t *node)
     }
 
     /* 2. 含有多个结点时 */
-    if (node == list->head)
-    {
+    if (node == list->head) {
         list->head = node->next;
     }
 
@@ -233,16 +224,14 @@ int list2_rpush(list2_t *list, void *data)
     list2_node_t *node, *tail;
 
     node = list->alloc(list->pool, sizeof(list2_node_t));
-    if (NULL == node)
-    {
+    if (NULL == node) {
         return -1;
     }
 
     node->data = data;
 
     /* 1. 链表为空 */
-    if (NULL == list->head)
-    {
+    if (NULL == list->head) {
         list->head = node;
         list->head->prev = node;
         node->prev = node;
@@ -280,13 +269,11 @@ void *list2_rpop(list2_t *list)
     list2_node_t *prev, *tail;
 
     /* 1. 无数据 */
-    if (NULL == list->head)
-    {
+    if (NULL == list->head) {
         return NULL;
     }
     /* 2. 只有１个结点 */
-    else if (list->head == list->head->prev)
-    {
+    else if (list->head == list->head->prev) {
         tail = list->head;
 
         list->head = NULL;
@@ -330,10 +317,8 @@ int list2_trav(list2_t *list, list2_trav_cb_t cb, void *args)
         tail = node->prev;
     }
 
-    for (; NULL != node; node = node->next)
-    {
+    for (; NULL != node; node = node->next) {
         cb(node->data, args);
-
         if (node == tail) { break; }
     }
 

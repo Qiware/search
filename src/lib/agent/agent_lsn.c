@@ -28,8 +28,7 @@ static agent_lsvr_t *agent_lsn_self(agent_cntx_t *ctx)
     agent_lsvr_t *lsvr;
 
     id = thread_pool_get_tidx(ctx->listens);
-    if (id < 0)
-    {
+    if (id < 0) {
         return NULL;
     }
 
@@ -61,15 +60,13 @@ void *agent_listen_routine(void *_ctx)
 
     /* > 获取侦听对象 */
     lsvr = agent_lsn_self(ctx);
-    if (NULL == lsvr)
-    {
+    if (NULL == lsvr) {
         log_error(ctx->log, "Search listen object failed!");
         return (void *)-1;
     }
 
     /* > 接收网络连接 */
-    while (1)
-    {
+    while (1) {
         FD_ZERO(&rdset);
 
         FD_SET(lsvr->cmd_sck_id, &rdset);
@@ -81,21 +78,18 @@ void *agent_listen_routine(void *_ctx)
         tv.tv_sec = 1;
         tv.tv_usec = 0;
         ret = select(max+1, &rdset, NULL, NULL, &tv);
-        if (ret < 0)
-        {
+        if (ret < 0) {
             if (EINTR == errno) { continue; }
             log_error(lsvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
             continue;
         }
-        else if (0 == ret)
-        {
+        else if (0 == ret) {
             agent_listen_timeout_hdl(ctx, lsvr);
             continue;
         }
 
         /* > 接收网络连接 */
-        if (FD_ISSET(ctx->listen.lsn_sck_id, &rdset))
-        {
+        if (FD_ISSET(ctx->listen.lsn_sck_id, &rdset)) {
             agent_listen_accept(ctx, lsvr);
         }
     }
@@ -125,8 +119,7 @@ int agent_listen_init(agent_cntx_t *ctx, agent_lsvr_t *lsvr, int idx)
     agent_lsvr_cmd_usck_path(conf, idx, path, sizeof(path));
 
     lsvr->cmd_sck_id = unix_udp_creat(path);
-    if (lsvr->cmd_sck_id < 0)
-    {
+    if (lsvr->cmd_sck_id < 0) {
         log_error(ctx->log, "errmsg:[%d] %s! idx:%d path:%s", errno, strerror(errno), idx, path);
         return AGENT_ERR;
     }
@@ -150,10 +143,8 @@ static int agent_listen_timeout_hdl(agent_cntx_t *ctx, agent_lsvr_t *lsvr)
 {
     int idx;
 
-    for (idx=0; idx<ctx->conf->agent_num; ++idx)
-    {
-        if (queue_used(ctx->connq[idx]))
-        {
+    for (idx=0; idx<ctx->conf->agent_num; ++idx) {
+        if (queue_used(ctx->connq[idx])) {
             agent_listen_send_add_sck_req(ctx, lsvr, idx);
         }
     }
@@ -181,15 +172,13 @@ static int agent_listen_accept(agent_cntx_t *ctx, agent_lsvr_t *lsvr)
     agent_add_sck_t *add;
     struct sockaddr_in cliaddr;
 
-    if (spin_trylock(&ctx->listen.accept_lock)) /* 加锁 */
-    {
+    if (spin_trylock(&ctx->listen.accept_lock)) { /* 加锁 */
         return AGENT_ERR;
     }
 
     /* > 接收连接请求 */
     fd = tcp_accept(ctx->listen.lsn_sck_id, (struct sockaddr *)&cliaddr);
-    if (fd < 0)
-    {
+    if (fd < 0) {
         spin_unlock(&ctx->listen.accept_lock);
         return AGENT_OK;
     }
@@ -202,8 +191,7 @@ static int agent_listen_accept(agent_cntx_t *ctx, agent_lsvr_t *lsvr)
     idx = sid % ctx->conf->agent_num;
 
     add = queue_malloc(ctx->connq[idx], sizeof(agent_add_sck_t));
-    if (NULL == add)
-    {
+    if (NULL == add) {
         log_error(lsvr->log, "Alloc from queue failed! fd:%d size:%d/%d",
                 fd, sizeof(agent_add_sck_t), queue_size(ctx->connq[idx]));
         CLOSE(fd);

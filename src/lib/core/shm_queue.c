@@ -36,16 +36,14 @@ size_t shm_queue_total(int max, size_t size)
     size_t sum = 0, sz;
 
     sz = shm_ring_total(max);
-    if ((size_t)-1 == sz)
-    {
+    if ((size_t)-1 == sz) {
         return (size_t)-1;
     }
 
     sum += sz;
 
     sz = shm_slot_total(max, size);
-    if ((size_t)-1 == sz)
-    {
+    if ((size_t)-1 == sz) {
         return (size_t)-1;
     }
 
@@ -82,38 +80,33 @@ shm_queue_t *shm_queue_creat(const char *path, int max, int size)
 
     /* > 计算内存空间 */
     total = shm_queue_total(max, size);
-    if ((size_t)-1 == total)
-    {
+    if ((size_t)-1 == total) {
         return NULL;
     }
 
     /* > 新建队列对象 */
     shmq = (shm_queue_t *)calloc(1, sizeof(shm_queue_t));
-    if (NULL == shmq)
-    {
+    if (NULL == shmq) {
         return NULL;
     }
 
     /* > 创建共享内存 */
     addr = shm_creat(path, total);
-    if (NULL == addr)
-    {
+    if (NULL == addr) {
         free(shmq);
         return NULL;
     }
 
     /* > 初始化环形队列 */
     shmq->ring = shm_ring_init(addr, max);
-    if (NULL == shmq->ring)
-    {
+    if (NULL == shmq->ring) {
         free(shmq);
         return NULL;
     }
 
     /* > 初始化内存池 */
     shmq->slot = shm_slot_init(addr + shm_ring_total(max), max, size);
-    if (NULL == shmq->slot)
-    {
+    if (NULL == shmq->slot) {
         free(shmq);
         return NULL;
     }
@@ -144,15 +137,13 @@ shm_queue_t *shm_queue_attach(const char *path)
 
     /* > 新建队列对象 */
     shmq = (shm_queue_t *)calloc(1, sizeof(shm_queue_t));
-    if (NULL == shmq)
-    {
+    if (NULL == shmq) {
         return NULL;
     }
 
     /* > 附着共享内存 */
     addr = (void *)shm_attach(path, 0);
-    if (NULL == addr)
-    {
+    if (NULL == addr) {
         free(shmq);
         return NULL;
     }
@@ -178,8 +169,7 @@ shm_queue_t *shm_queue_attach(const char *path)
  ******************************************************************************/
 int shm_queue_push(shm_queue_t *shmq, void *p)
 {
-    if (NULL == p) { return -1; }
-
+    if (NULL == p) { return -1; } 
     return shm_ring_push(shmq->ring, p - (void *)shmq->ring);
 }
 
@@ -205,13 +195,11 @@ int shm_queue_mpush(shm_queue_t *shmq, void **p, int num)
     memset(off, 0, sizeof(off));
 
     if (NULL == p) { return -1; }
-    if (num > SHMQ_MPUSH_MAX_NUM)
-    {
+    if (num > SHMQ_MPUSH_MAX_NUM) {
         return -1;
     }
 
-    for (idx=0; idx<num; ++idx)
-    {
+    for (idx=0; idx<num; ++idx) {
         off[idx] = (off_t)(p[idx] - (void *)shmq->ring);
     }
 
@@ -234,8 +222,7 @@ void *shm_queue_pop(shm_queue_t *shmq)
     off_t off;
 
     off = shm_ring_pop(shmq->ring);
-    if ((off_t)-1 == off)
-    {
+    if ((off_t)-1 == off) {
         return NULL;
     }
 
@@ -258,8 +245,7 @@ int shm_queue_mpop(shm_queue_t *shmq, void **p, int num)
     int idx;
 
     num = shm_ring_mpop(shmq->ring, (off_t *)p, num);
-    for (idx=0; idx<num; ++idx)
-    {
+    for (idx=0; idx<num; ++idx) {
         p[idx] = (void *)((void *)shmq->ring + (off_t)p[idx]);
     }
 

@@ -42,21 +42,18 @@ int frwd_load_conf(const char *path, frwd_conf_t *conf, log_cycle_t *log)
     opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
     xml = xml_creat(path, &opt);
-    if (NULL == xml)
-    {
+    if (NULL == xml) {
         return -1;
     }
 
     /* > 提取通用配置 */
-    if (frwd_conf_load_comm(xml, conf))
-    {
+    if (frwd_conf_load_comm(xml, conf)) {
         xml_destroy(xml);
         return -1;
     }
 
     /* > 提取发送配置 */
-    if (frwd_conf_load_frwder(xml, ".FRWDER.CONN-INVTD", &conf->conn_invtd))
-    {
+    if (frwd_conf_load_frwder(xml, ".FRWDER.CONN-INVTD", &conf->conn_invtd)) {
         xml_destroy(xml);
         return -1;
     }
@@ -124,8 +121,7 @@ static int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t 
     xml_node_t *parent, *node;
 
     parent = xml_query(xml, path);
-    if (NULL == parent)
-    {
+    if (NULL == parent) {
         fprintf(stderr, "Didn't find %s!\n", path);
         return -1;
     }
@@ -204,8 +200,7 @@ static int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t 
     }
 
     conf->send_thd_num = atoi(node->value.str);
-    if (0 == conf->send_thd_num)
-    {
+    if (0 == conf->send_thd_num) {
         fprintf(stderr, "%s.THREAD-POOL.SEND_THD_NUM is zero!\n", path);
         return -1;
     }
@@ -219,8 +214,7 @@ static int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t 
     }
 
     conf->work_thd_num = atoi(node->value.str);
-    if (0 == conf->work_thd_num)
-    {
+    if (0 == conf->work_thd_num) {
         fprintf(stderr, "%s.THREAD-POOL.WORK_THD_NUM is zero!\n", path);
         return -1;
     }
@@ -235,8 +229,7 @@ static int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t 
     }
 
     conf->recv_buff_size = atoi(node->value.str) * MB;
-    if (0 == conf->recv_buff_size)
-    {
+    if (0 == conf->recv_buff_size) {
         return -1;
     }
 
@@ -250,8 +243,7 @@ static int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t 
     }
 
     conf->recvq.max = atoi(node->value.str);
-    if (0 == conf->recvq.max)
-    {
+    if (0 == conf->recvq.max) {
         fprintf(stderr, "%s.RECVQ.MAX is zero!\n", path);
         return -1;
     }
@@ -265,8 +257,7 @@ static int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t 
     }
 
     conf->recvq.size = atoi(node->value.str);
-    if (0 == conf->recvq.size)
-    {
+    if (0 == conf->recvq.size) {
         fprintf(stderr, "%s.RECVQ.SIZE is zero!\n", path);
         return -1;
     }
@@ -281,8 +272,7 @@ static int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t 
     }
 
     conf->sendq.max = atoi(node->value.str);
-    if (0 == conf->sendq.max)
-    {
+    if (0 == conf->sendq.max) {
         fprintf(stderr, "%s.SENDQ.MAX is zero!\n", path);
         return -1;
     }
@@ -296,8 +286,7 @@ static int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t 
     }
 
     conf->sendq.size = atoi(node->value.str);
-    if (0 == conf->sendq.size)
-    {
+    if (0 == conf->sendq.size) {
         fprintf(stderr, "%s.SENDQ.SIZE is zero!\n", path);
         return -1;
     }

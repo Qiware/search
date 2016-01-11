@@ -46,22 +46,18 @@ void *agent_rsvr_routine(void *_ctx)
 
     /* > 获取代理对象 */
     rsvr = agent_rsvr_self(ctx);
-    if (NULL == rsvr)
-    {
+    if (NULL == rsvr) {
         log_error(rsvr->log, "Get agent failed!");
         pthread_exit((void *)-1);
         return (void *)-1;
     }
 
-    while (1)
-    {
+    while (1) {
         /* > 等待事件通知 */
         rsvr->fds = epoll_wait(rsvr->epid, rsvr->events,
                 AGENT_EVENT_MAX_NUM, AGENT_TMOUT_MSEC);
-        if (rsvr->fds < 0)
-        {
-            if (EINTR == errno)
-            {
+        if (rsvr->fds < 0) {
+            if (EINTR == errno) {
                 continue;
             }
 
@@ -70,11 +66,9 @@ void *agent_rsvr_routine(void *_ctx)
             abort();
             return (void *)-1;
         }
-        else if (0 == rsvr->fds)
-        {
+        else if (0 == rsvr->fds) {
             rsvr->ctm = time(NULL);
-            if (rsvr->ctm - rsvr->scan_tm > AGENT_TMOUT_SCAN_SEC)
-            {
+            if (rsvr->ctm - rsvr->scan_tm > AGENT_TMOUT_SCAN_SEC) {
                 rsvr->scan_tm = rsvr->ctm;
 
                 agent_rsvr_timeout_hdl(ctx, rsvr);
@@ -94,11 +88,9 @@ static int agt_rsvr_recv_cmd_hdl(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t
 {
     cmd_data_t cmd;
 
-    while (1)
-    {
+    while (1) {
         /* > 接收命令 */
-        if (unix_udp_recv(sck->fd, &cmd, sizeof(cmd)) < 0)
-        {
+        if (unix_udp_recv(sck->fd, &cmd, sizeof(cmd)) < 0) {
             return AGENT_SCK_AGAIN;
         }
 
@@ -107,16 +99,14 @@ static int agt_rsvr_recv_cmd_hdl(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t
         {
             case CMD_ADD_SCK:
             {
-                if (agent_rsvr_add_conn(ctx, rsvr))
-                {
+                if (agent_rsvr_add_conn(ctx, rsvr)) {
                     log_error(rsvr->log, "Add connection failed！");
                 }
                 break;
             }
             case CMD_DIST_DATA:
             {
-                if (agent_rsvr_dist_send_data(ctx, rsvr))
-                {
+                if (agent_rsvr_dist_send_data(ctx, rsvr)) {
                     log_error(rsvr->log, "Disturibute data failed！");
                 }
                 break;
@@ -158,8 +148,7 @@ int agent_rsvr_init(agent_cntx_t *ctx, agent_rsvr_t *rsvr, int idx)
 
     /* > 创建SLAB内存池 */
     rsvr->slab = slab_creat_by_calloc(AGENT_SLAB_SIZE, rsvr->log);
-    if (NULL == rsvr->slab)
-    {
+    if (NULL == rsvr->slab) {
         log_error(rsvr->log, "Initialize slab pool failed!");
         return AGENT_ERR;
     }
@@ -173,34 +162,29 @@ int agent_rsvr_init(agent_cntx_t *ctx, agent_rsvr_t *rsvr, int idx)
 
     rsvr->connections = rbt_creat(&opt,
             (key_cb_t)key_cb_int64, (cmp_cb_t)agent_rsvr_connection_cmp);
-    if (NULL == rsvr->connections)
-    {
+    if (NULL == rsvr->connections) {
         log_error(rsvr->log, "Create socket hash table failed!");
         return AGENT_ERR;
     }
 
-    do
-    {
+    do {
         /* > 创建epoll对象 */
         rsvr->epid = epoll_create(AGENT_EVENT_MAX_NUM);
-        if (rsvr->epid < 0)
-        {
+        if (rsvr->epid < 0) {
             log_error(rsvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
             break;
         }
 
         rsvr->events = slab_alloc(rsvr->slab,
                 AGENT_EVENT_MAX_NUM * sizeof(struct epoll_event));
-        if (NULL == rsvr->events)
-        {
+        if (NULL == rsvr->events) {
             log_error(rsvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
             break;
         }
 
         /* > 创建附加信息 */
         cmd_sck->extra = slab_alloc(rsvr->slab, sizeof(agent_socket_extra_t));
-        if (NULL == cmd_sck->extra)
-        {
+        if (NULL == cmd_sck->extra) {
             log_error(rsvr->log, "Alloc from slab failed!");
             break;
         }
@@ -209,8 +193,7 @@ int agent_rsvr_init(agent_cntx_t *ctx, agent_rsvr_t *rsvr, int idx)
         agent_rsvr_cmd_usck_path(conf, rsvr->id, path, sizeof(path));
 
         cmd_sck->fd = unix_udp_creat(path);
-        if (cmd_sck->fd < 0)
-        {
+        if (cmd_sck->fd < 0) {
             log_error(rsvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
             break;
         }
@@ -298,8 +281,7 @@ static agent_rsvr_t *agent_rsvr_self(agent_cntx_t *ctx)
     agent_rsvr_t *rsvr;
 
     id = thread_pool_get_tidx(ctx->agents);
-    if (id < 0)
-    {
+    if (id < 0) {
         return NULL;
     }
 
@@ -328,17 +310,14 @@ static int agent_rsvr_event_hdl(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
     rsvr->ctm = time(NULL);
 
     /* 1. 依次遍历套接字, 判断是否可读可写 */
-    for (idx=0; idx<rsvr->fds; ++idx)
-    {
+    for (idx=0; idx<rsvr->fds; ++idx) {
         sck = (socket_t *)rsvr->events[idx].data.ptr;
 
         /* 1.1 判断是否可读 */
-        if (rsvr->events[idx].events & EPOLLIN)
-        {
+        if (rsvr->events[idx].events & EPOLLIN) {
             /* 接收网络数据 */
             ret = sck->recv_cb(ctx, rsvr, sck);
-            if (AGENT_SCK_AGAIN != ret)
-            {
+            if (AGENT_SCK_AGAIN != ret) {
                 log_info(rsvr->log, "Delete connection! fd:%d", sck->fd);
                 agent_rsvr_del_conn(ctx, rsvr, sck);
                 continue; /* 异常-关闭SCK: 不必判断是否可写 */
@@ -346,12 +325,10 @@ static int agent_rsvr_event_hdl(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
         }
 
         /* 1.2 判断是否可写 */
-        if (rsvr->events[idx].events & EPOLLOUT)
-        {
+        if (rsvr->events[idx].events & EPOLLOUT) {
             /* 发送网络数据 */
             ret = sck->send_cb(ctx, rsvr, sck);
-            if (AGENT_ERR == ret)
-            {
+            if (AGENT_ERR == ret) {
                 log_info(rsvr->log, "Delete connection! fd:%d", sck->fd);
                 agent_rsvr_del_conn(ctx, rsvr, sck);
                 continue; /* 异常: 套接字已关闭 */
@@ -360,8 +337,7 @@ static int agent_rsvr_event_hdl(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
     }
 
     /* 2. 超时扫描 */
-    if (rsvr->ctm - rsvr->scan_tm > AGENT_TMOUT_SCAN_SEC)
-    {
+    if (rsvr->ctm - rsvr->scan_tm > AGENT_TMOUT_SCAN_SEC) {
         rsvr->scan_tm = rsvr->ctm;
 
         agent_rsvr_timeout_hdl(ctx, rsvr);
@@ -418,8 +394,7 @@ static int agent_rsvr_conn_timeout(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
 
     /* > 创建内存池 */
     timeout.pool = mem_pool_creat(1 * KB);
-    if (NULL == timeout.pool)
-    {
+    if (NULL == timeout.pool) {
         log_error(rsvr->log, "Create memory pool failed!");
         return AGENT_ERR;
     }
@@ -436,8 +411,7 @@ static int agent_rsvr_conn_timeout(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
         opt.dealloc = (mem_dealloc_cb_t)mem_pool_dealloc;
 
         timeout.list = list_creat(&opt);
-        if (NULL == timeout.list)
-        {
+        if (NULL == timeout.list) {
             log_error(rsvr->log, "Create list failed!");
             break;
         }
@@ -449,11 +423,9 @@ static int agent_rsvr_conn_timeout(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
         log_debug(rsvr->log, "Timeout connections: %d!", timeout.list->num);
 
         /* > 删除超时连接 */
-        for (;;)
-        {
+        for (;;) {
             sck = (socket_t *)list_lpop(timeout.list);
-            if (NULL == sck)
-            {
+            if (NULL == sck) {
                 break;
             }
 
@@ -509,27 +481,22 @@ static int agent_rsvr_add_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
     agent_socket_extra_t *extra;
     agent_add_sck_t *add[AGT_RSVR_CONN_POP_NUM];
 
-    while (1)
-    {
+    while (1) {
         num = MIN(queue_used(ctx->connq[rsvr->id]), AGT_RSVR_CONN_POP_NUM);
-        if (0 == num)
-        {
+        if (0 == num) {
             return AGENT_OK;
         }
 
         /* > 取数据 */
         num = queue_mpop(ctx->connq[rsvr->id], (void **)add, num);
-        if (0 == num)
-        {
+        if (0 == num) {
             continue;
         }
 
-        for (idx=0; idx<num; ++idx)
-        {
+        for (idx=0; idx<num; ++idx) {
             /* > 申请SCK空间 */
             sck = slab_alloc(rsvr->slab, sizeof(socket_t));
-            if (NULL == sck)
-            {
+            if (NULL == sck) {
                 log_error(rsvr->log, "Alloc memory from slab failed! seq:%lu",
                         add[idx]->sid);
                 CLOSE(add[idx]->fd);
@@ -541,8 +508,7 @@ static int agent_rsvr_add_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
 
             /* > 创建SCK关联对象 */
             extra = slab_alloc(rsvr->slab, sizeof(agent_socket_extra_t));
-            if (NULL == extra)
-            {
+            if (NULL == extra) {
                 log_error(rsvr->log, "Alloc memory from slab failed! seq:%lu",
                           add[idx]->sid);
                 CLOSE(add[idx]->fd);
@@ -558,8 +524,7 @@ static int agent_rsvr_add_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
             opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
             extra->send_list = list_creat(&opt);
-            if (NULL == extra->send_list)
-            {
+            if (NULL == extra->send_list) {
                 log_error(rsvr->log, "Alloc memory from slab failed! seq:%lu",
                           add[idx]->sid);
                 CLOSE(add[idx]->fd);
@@ -585,8 +550,7 @@ static int agent_rsvr_add_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
             queue_dealloc(ctx->connq[rsvr->id], add[idx]);      /* 释放连接队列空间 */
 
             /* > 插入红黑树中(以序列号为主键) */
-            if (rbt_insert(rsvr->connections, &extra->seq, sizeof(extra->seq), sck))
-            {
+            if (rbt_insert(rsvr->connections, &extra->seq, sizeof(extra->seq), sck)) {
                 log_error(rsvr->log, "Insert into avl failed! fd:%d seq:%lu",
                           sck->fd, extra->seq);
                 CLOSE(sck->fd);
@@ -638,8 +602,7 @@ static int agent_rsvr_del_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *
     /* > 释放套接字空间 */
     CLOSE(sck->fd);
     list_destroy(extra->send_list, rsvr->slab, (mem_dealloc_cb_t)slab_dealloc);
-    if (sck->recv.addr)
-    {
+    if (sck->recv.addr) {
         queue_dealloc(ctx->recvq[rsvr->id], sck->recv.addr);
     }
     slab_dealloc(rsvr->slab, sck->extra);
@@ -674,32 +637,26 @@ static int agent_rsvr_recv_head(agent_rsvr_t *rsvr, socket_t *sck)
     addr = recv->addr + sizeof(agent_flow_t);
 
     /* 2. 接收报头数据 */
-    while (1)
-    {
+    while (1) {
         n = read(sck->fd, addr + recv->off, left);
-        if (n == left)
-        {
+        if (n == left) {
             recv->off += n;
             break; /* 接收完毕 */
         }
-        else if (n > 0)
-        {
+        else if (n > 0) {
             recv->off += n;
             continue;
         }
-        else if (0 == n)
-        {
+        else if (0 == n) {
             log_info(rsvr->log, "Client disconnected. errmsg:[%d] %s! fd:[%d] n:[%d/%d]",
                     errno, strerror(errno), sck->fd, n, left);
             return AGENT_SCK_CLOSE;
         }
-        else if ((n < 0) && (EAGAIN == errno))
-        {
+        else if ((n < 0) && (EAGAIN == errno)) {
             return AGENT_SCK_AGAIN; /* 等待下次事件通知 */
         }
 
-        if (EINTR == errno)
-        {
+        if (EINTR == errno) {
             continue; 
         }
 
@@ -715,8 +672,7 @@ static int agent_rsvr_recv_head(agent_rsvr_t *rsvr, socket_t *sck)
     head->length = ntohl(head->length);
     head->mark = ntohl(head->mark);
 
-    if (AGENT_MSG_MARK_KEY != head->mark)
-    {
+    if (AGENT_MSG_MARK_KEY != head->mark) {
         log_error(rsvr->log, "Check head failed! type:%d len:%d flag:%d mark:[0x%X/0x%X]",
             head->type, head->length, head->flag, head->mark, AGENT_MSG_MARK_KEY);
         return AGENT_ERR;
@@ -751,34 +707,28 @@ static int agent_rsvr_recv_body(agent_rsvr_t *rsvr, socket_t *sck)
     head  = (agent_header_t *)addr;
 
     /* 1. 接收报体 */
-    while (1)
-    {
+    while (1) {
         left = recv->total - recv->off;
 
         n = read(sck->fd, addr + recv->off, left);
-        if (n == left)
-        {
+        if (n == left) {
             recv->off += n;
             break; /* 接收完毕 */
         }
-        else if (n > 0)
-        {
+        else if (n > 0) {
             recv->off += n;
             continue;
         }
-        else if (0 == n)
-        {
+        else if (0 == n) {
             log_info(rsvr->log, "Client disconnected. errmsg:[%d] %s! fd:[%d] n:[%d/%d]",
                     errno, strerror(errno), sck->fd, n, left);
             return AGENT_SCK_CLOSE;
         }
-        else if ((n < 0) && (EAGAIN == errno))
-        {
+        else if ((n < 0) && (EAGAIN == errno)) {
             return AGENT_SCK_AGAIN;
         }
 
-        if (EINTR == errno)
-        {
+        if (EINTR == errno) {
             continue;
         }
 
@@ -857,8 +807,7 @@ static int agent_rsvr_recv_post(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t 
     agent_socket_extra_t *extra = (agent_socket_extra_t *)sck->extra;
 
     /* > 自定义消息的处理 */
-    if (AGENT_MSG_FLAG_USR == extra->head->flag)
-    {
+    if (AGENT_MSG_FLAG_USR == extra->head->flag) {
         log_info(rsvr->log, "Push into user data queue!");
 
         queue_push(ctx->recvq[rsvr->id], sck->recv.addr);
@@ -888,16 +837,14 @@ static int agent_rsvr_recv(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
     socket_snap_t *recv = &sck->recv;
     agent_socket_extra_t *extra = (agent_socket_extra_t *)sck->extra;
 
-    for (;;)
-    {
+    for (;;) {
         switch (recv->phase)
         {
             /* 1. 分配空间 */
             case SOCK_PHASE_RECV_INIT:
             {
                 recv->addr = queue_malloc(ctx->recvq[rsvr->id], queue_size(ctx->recvq[0]));
-                if (NULL == recv->addr)
-                {
+                if (NULL == recv->addr) {
                     log_error(rsvr->log, "Alloc from queue failed!");
                     return AGENT_ERR;
                 }
@@ -935,8 +882,7 @@ static int agent_rsvr_recv(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
                         log_info(rsvr->log, "Call %s()! serial:%lu", __func__, extra->flow->serial);
 
                         extra->head->serial = extra->flow->serial;
-                        if (extra->head->length)
-                        {
+                        if (extra->head->length) {
                             recv->phase = SOCK_PHASE_READY_BODY; /* 设置下步 */
                         }
                         else
@@ -1048,14 +994,11 @@ static int agent_rsvr_send(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
 
     sck->wrtm = time(NULL);
 
-    for (;;)
-    {
+    for (;;) {
         /* 1. 取发送的数据 */
-        if (NULL == send->addr)
-        {
+        if (NULL == send->addr) {
             send->addr = list_lpop(extra->send_list);
-            if (NULL == send->addr)
-            {
+            if (NULL == send->addr) {
                 return AGENT_OK; /* 无数据 */
             }
 
@@ -1077,10 +1020,8 @@ static int agent_rsvr_send(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
         left = send->total - send->off;
 
         n = Writen(sck->fd, send->addr+send->off, left);
-        if (n != left)
-        {
-            if (n > 0)
-            {
+        if (n != left) {
+            if (n > 0) {
                 send->off += n;
                 return AGENT_SCK_AGAIN;
             }
@@ -1135,29 +1076,24 @@ static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
     void *addr[AGT_RSVR_DIST_POP_NUM], *data;
 
     sendq = ctx->sendq[rsvr->id];
-    while (1)
-    {
+    while (1) {
         num = MIN(queue_used(sendq), AGT_RSVR_DIST_POP_NUM);
-        if (0 == num)
-        {
+        if (0 == num) {
             break;
         }
 
         /* > 弹出应答数据 */
         num = queue_mpop(sendq, addr, num);
-        if (0 == num)
-        {
+        if (0 == num) {
             break;
         }
 
         log_debug(rsvr->log, "Pop data succ! num:%d", num);
 
-        for (idx=0; idx<num; ++idx)
-        {
+        for (idx=0; idx<num; ++idx) {
             flow = (agent_flow_t *)addr[idx]; // 流水信息
             head = (agent_header_t *)(flow + 1); // 消息头
-            if (AGENT_MSG_MARK_KEY != head->mark)
-            {
+            if (AGENT_MSG_MARK_KEY != head->mark) {
                 log_error(ctx->log, "Check mark [0X%x/0X%x] failed! serial:%lu",
                         head->mark, AGENT_MSG_MARK_KEY, flow->serial);
                 queue_dealloc(sendq, addr[idx]);
@@ -1167,8 +1103,7 @@ static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
             total = head->length + sizeof(agent_header_t);
 
             /* > 查找最新SERIAL->SCK映射 */
-            if (agent_serial_to_sck_map_query(ctx, flow->serial, &newest))
-            {
+            if (agent_serial_to_sck_map_query(ctx, flow->serial, &newest)) {
                 log_error(ctx->log, "Query serial->sck map failed! serial:%lu", flow->serial);
                 queue_dealloc(sendq, addr[idx]);
                 continue;
@@ -1185,8 +1120,7 @@ static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
 
             /* 查询发送链表 */
             sck = rbt_query(rsvr->connections, &flow->sid, sizeof(flow->sid));
-            if (NULL == sck)
-            {
+            if (NULL == sck) {
                 log_error(ctx->log, "Query socket failed! serial:%lu seq:%lu diff:%lu idx:%d/%d",
                           newest.serial, newest.sid,
                           time(NULL) - newest.create_tm, newest.agt_idx, rsvr->id);
@@ -1197,8 +1131,7 @@ static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
             sck_extra = (agent_socket_extra_t *)sck->extra;
 
             data = slab_alloc(rsvr->slab, total);
-            if (NULL == data)
-            {
+            if (NULL == data) {
                 log_error(ctx->log, "Alloc from slab failed! serial:%lu seq:%lu total:%d",
                         flow->serial, flow->sid, total);
                 queue_dealloc(sendq, addr[idx]);
@@ -1209,8 +1142,7 @@ static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
 
             memcpy(data, (void *)head, total);
 
-            if (list_rpush(sck_extra->send_list, data))
-            {
+            if (list_rpush(sck_extra->send_list, data)) {
                 log_error(ctx->log, "Insert list failed! seq:%lu", flow->sid);
                 queue_dealloc(sendq, addr[idx]);
                 slab_dealloc(rsvr->slab, data);

@@ -53,8 +53,7 @@ invt_tab_t *invtab_creat(int max, log_cycle_t *log)
 
     /* > 创建对象 */
     tab = (invt_tab_t *)calloc(1, sizeof(invt_tab_t));
-    if (NULL == tab)
-    {
+    if (NULL == tab) {
         log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
         return NULL;
     }
@@ -67,15 +66,13 @@ invt_tab_t *invtab_creat(int max, log_cycle_t *log)
 
     /* > 创建单词词典 */
     tab->dic = (avl_tree_t **)tab->alloc(tab->pool, max * sizeof(avl_tree_t *));
-    if (NULL == tab->dic)
-    {
+    if (NULL == tab->dic) {
         log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
         FREE(tab);
         return NULL;
     }
 
-    for (idx=0; idx<max; ++idx)
-    {
+    for (idx=0; idx<max; ++idx) {
         memset(&opt, 0, sizeof(opt));
 
         opt.pool = (void *)NULL;
@@ -85,8 +82,7 @@ invt_tab_t *invtab_creat(int max, log_cycle_t *log)
         tab->dic[idx] = avl_creat(&opt,
                             (key_cb_t)hash_time33_ex,
                             (cmp_cb_t)invtab_dic_word_cmp);
-        if (NULL == tab->dic[idx])
-        {
+        if (NULL == tab->dic[idx]) {
             log_error(log, "Create avl-tree failed! idx:%d", idx);
             invtab_destroy(tab, NULL, NULL);
             return NULL;
@@ -119,20 +115,17 @@ static invt_dic_word_t *invt_word_add(invt_tab_t *tab, char *word, int len)
 
     /* > 创建数据对象 */
     dw = tab->alloc(tab->pool, sizeof(invt_dic_word_t));
-    if (NULL == dw)
-    {
+    if (NULL == dw) {
         log_error(tab->log, "Alloc memory failed!");
         return NULL;
     }
 
     memset(dw, 0, sizeof(invt_dic_word_t));
 
-    do
-    {
+    do {
         /* > 设置word标签 */
         dw->word.str = tab->alloc(tab->pool, len + 1);
-        if (NULL == dw->word.str)
-        {
+        if (NULL == dw->word.str) {
             log_error(tab->log, "Alloc memory failed!");
             break;
         }
@@ -146,15 +139,13 @@ static invt_dic_word_t *invt_word_add(invt_tab_t *tab, char *word, int len)
         opt.dealloc = mem_dealloc;
 
         dw->doc_list = (list_t *)list_creat(&opt);
-        if (NULL == dw->doc_list)
-        {
+        if (NULL == dw->doc_list) {
             log_error(tab->log, "Create btree failed! word:%s", word);
             break;
         }
 
         /* > 插入单词词典 */
-        if (avl_insert(tab->dic[idx], word, len, (void *)dw))
-        {
+        if (avl_insert(tab->dic[idx], word, len, (void *)dw)) {
             log_error(tab->log, "Insert avl failed! word:%s idx:%d", word, idx);
             break;
         }
@@ -197,16 +188,14 @@ static int invt_word_add_doc(invt_tab_t *tab, invt_dic_word_t *dw, const char *u
 
     /* > 创建文档项 */
     doc = tab->alloc(tab->pool, sizeof(invt_word_doc_t));
-    if (NULL == doc)
-    {
+    if (NULL == doc) {
         log_error(tab->log, "Alloc memory failed!");
         return INVT_ERR;
     }
 
     len = strlen(url);
     doc->url.str = tab->alloc(tab->pool, len + 1);
-    if (NULL == doc->url.str)
-    {
+    if (NULL == doc->url.str) {
         log_error(tab->log, "Alloc memory failed!");
         tab->dealloc(tab->pool, doc);
         return INVT_ERR;
@@ -218,8 +207,7 @@ static int invt_word_add_doc(invt_tab_t *tab, invt_dic_word_t *dw, const char *u
     doc->freq = freq;
 
     /* > 插入文档列表 */
-    if (list_push_desc(dw->doc_list, doc, (cmp_cb_t)invt_doc_cmp_cb)) // if (list_lpush(dw->doc_list, doc))
-    {
+    if (list_push_desc(dw->doc_list, doc, (cmp_cb_t)invt_doc_cmp_cb)) {
         log_error(tab->log, "Push into list failed! word:%s url:%s", dw->word.str, url);
         tab->dealloc(tab->pool, doc->url.str);
         tab->dealloc(tab->pool, doc);
@@ -259,19 +247,16 @@ int invtab_insert(invt_tab_t *tab, char *word, const char *url, int freq)
     idx = hash_time33(lower_word) % tab->mod;
 
     dw = (invt_dic_word_t *)avl_query(tab->dic[idx], lower_word, len);
-    if (NULL == dw)
-    {
+    if (NULL == dw) {
         dw = invt_word_add(tab, lower_word, len);
-        if (NULL == dw)
-        {
+        if (NULL == dw) {
             log_error(tab->log, "Create word dw failed!");
             return INVT_ERR;
         }
     }
 
     /* > 插入文档列表 */
-    if (invt_word_add_doc(tab, dw, url, freq))
-    {
+    if (invt_word_add_doc(tab, dw, url, freq)) {
         log_error(tab->log, "Add document dw failed!");
         return INVT_ERR;
     }
@@ -336,8 +321,7 @@ int invtab_remove(invt_tab_t *tab, char *word)
     /* > 删除关键字 */
     idx = hash_time33(lower_word) % tab->mod;
 
-    if (avl_delete(tab->dic[idx], lower_word, len, (void **)&dw))
-    {
+    if (avl_delete(tab->dic[idx], lower_word, len, (void **)&dw)) {
         log_error(tab->log, "Query word [%s] failed! idx:%d", word, idx);
         return INVT_ERR;
     }
@@ -363,8 +347,7 @@ int invtab_destroy(invt_tab_t *tab, mem_dealloc_cb_t dealloc, void *args)
 {
     int idx;
 
-    for (idx=0; idx<tab->mod; ++idx)
-    {
+    for (idx=0; idx<tab->mod; ++idx) {
         avl_destroy(tab->dic[idx], dealloc, args);
     }
 

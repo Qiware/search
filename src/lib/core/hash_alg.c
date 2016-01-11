@@ -16,8 +16,7 @@ uint64_t hash_time33(const char *str)
     const char *p = str;
     uint64_t hash = 5381;
 
-    while (*p)
-    {
+    while (*p) {
         hash += (hash << 5) + (*p++);
     }
 
@@ -41,8 +40,7 @@ uint64_t hash_time33_ex(const void *addr, size_t len)
     const char *p = addr;
     uint64_t hash = 5381;
 
-    while (len-- > 0)
-    {
+    while (len-- > 0) {
         hash += (hash << 5) + (*p++);
     }
 

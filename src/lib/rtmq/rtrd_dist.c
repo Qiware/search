@@ -37,15 +37,13 @@ void *rtrd_dsvr_routine(void *_ctx)
 
     /* > 初始化分发线程 */
     dsvr = rtrd_dsvr_init(ctx);
-    if (NULL == dsvr)
-    {
+    if (NULL == dsvr) {
         abort();
     }
 
     nice(-20);
 
-    while (1)
-    {
+    while (1) {
         FD_ZERO(&rdset);
 
         FD_SET(dsvr->cmd_sck_id, &rdset);
@@ -53,20 +51,17 @@ void *rtrd_dsvr_routine(void *_ctx)
         timeout.tv_sec = 1;
         timeout.tv_usec = 0;
         ret = select(dsvr->cmd_sck_id+1, &rdset, NULL, NULL, &timeout);
-        if (ret < 0)
-        {
+        if (ret < 0) {
             if (EINTR == errno) { continue; }
             log_error(dsvr->log, "errno:[%d] %s!", errno, strerror(errno));
             continue;
         }
-        else if (0 == ret)
-        {
+        else if (0 == ret) {
             rtrd_dsvr_dist_data_hdl(ctx, dsvr);
             continue;
         }
 
-        if (FD_ISSET(dsvr->cmd_sck_id, &rdset))
-        {
+        if (FD_ISSET(dsvr->cmd_sck_id, &rdset)) {
             rtrd_dsvr_cmd_recv_and_proc(ctx, dsvr);
         }
     }
@@ -93,8 +88,7 @@ static rtrd_dsvr_t *rtrd_dsvr_init(rtrd_cntx_t *ctx)
 
     /* > 创建对象 */
     dsvr = (rtrd_dsvr_t *)calloc(1, sizeof(rtrd_dsvr_t));
-    if (NULL == dsvr)
-    {
+    if (NULL == dsvr) {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return NULL;
     }
@@ -105,8 +99,7 @@ static rtrd_dsvr_t *rtrd_dsvr_init(rtrd_cntx_t *ctx)
     rtrd_dsvr_usck_path(conf, path);
 
     dsvr->cmd_sck_id = unix_udp_creat(path);
-    if (dsvr->cmd_sck_id < 0)
-    {
+    if (dsvr->cmd_sck_id < 0) {
         log_error(dsvr->log, "errmsg:[%d] %s! path:%s", errno, strerror(errno), path);
         free(dsvr);
         return NULL;
@@ -163,33 +156,28 @@ static int rtrd_dsvr_dist_data_hdl(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr)
     rtmq_frwd_t *frwd;
     void *data[RTRD_DISP_POP_NUM], *addr;
 
-    for (d=0; d<ctx->conf.distq_num; ++d)
-    {
+    for (d=0; d<ctx->conf.distq_num; ++d) {
         /* > 计算弹出个数(WARNNING: 勿将共享变量参与MIN()三目运算, 否则可能出现严重错误!!!) */
         num = MIN(queue_used(ctx->distq[d]), RTRD_DISP_POP_NUM);
-        if (0 == num)
-        {
+        if (0 == num) {
             continue;
         }
 
         /* > 弹出发送数据 */
         num = queue_mpop(ctx->distq[d], data, num);
-        if (0 == num)
-        {
+        if (0 == num) {
             continue;
         }
 
         log_trace(ctx->log, "Multi-pop num:%d!", num);
 
         /* > 放入发送队列 */
-        for (k=0; k<num; ++k)
-        {
+        for (k=0; k<num; ++k) {
             /* > 获取发送队列 */
             frwd = (rtmq_frwd_t *)data[k];
 
             idx = rtrd_node_to_svr_map_rand(ctx, frwd->dest);
-            if (idx < 0)
-            {
+            if (idx < 0) {
                 queue_dealloc(ctx->distq[d], data[k]);
                 log_error(ctx->log, "Didn't find dev to svr map! nodeid:%d", frwd->dest);
                 continue;
@@ -197,8 +185,7 @@ static int rtrd_dsvr_dist_data_hdl(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr)
 
             /* > 申请内存空间 */
             addr = queue_malloc(ctx->sendq[idx], frwd->length+sizeof(rtmq_frwd_t));
-            if (NULL == addr)
-            {
+            if (NULL == addr) {
                 queue_dealloc(ctx->distq[d], data[k]);
                 log_error(ctx->log, "Alloc from queue failed! size:%d/%d",
                     frwd->length, queue_size(ctx->sendq[idx]));
@@ -236,8 +223,7 @@ static int rtrd_dsvr_cmd_recv_and_proc(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr)
     rtmq_cmd_t cmd;
 
     /* > 接收命令 */
-    if (unix_udp_recv(dsvr->cmd_sck_id, &cmd, sizeof(cmd)) < 0)
-    {
+    if (unix_udp_recv(dsvr->cmd_sck_id, &cmd, sizeof(cmd)) < 0) {
         log_error(dsvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return RTMQ_ERR;
     }

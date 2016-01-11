@@ -18,15 +18,13 @@ sdrd_cli_t *sdrd_cli_init(const sdrd_conf_t *conf)
 
     /* > 创建对象 */
     cli = (sdrd_cli_t *)calloc(1, sizeof(sdrd_cli_t));
-    if (NULL == cli)
-    {
+    if (NULL == cli) {
         return NULL;
     }
 
     /* > 附着共享内存队列 */
     cli->sendq = sdrd_shm_distq_attach(conf);
-    if (NULL == cli->sendq)
-    {
+    if (NULL == cli->sendq) {
         free(cli);
         return NULL;
     }
@@ -51,8 +49,7 @@ int sdrd_cli_send(sdrd_cli_t *cli, int type, int dest, void *data, size_t len)
 
     /* > 申请队列空间 */
     addr = shm_queue_malloc(cli->sendq, sizeof(sdtp_frwd_t)+len);
-    if (NULL == addr)
-    {
+    if (NULL == addr) {
         return SDTP_ERR;
     }
 
@@ -65,8 +62,7 @@ int sdrd_cli_send(sdrd_cli_t *cli, int type, int dest, void *data, size_t len)
     memcpy(addr+sizeof(sdtp_frwd_t), data, len);
 
     /* > 压入队列空间 */
-    if (shm_queue_push(cli->sendq, addr))
-    {
+    if (shm_queue_push(cli->sendq, addr)) {
         shm_queue_dealloc(cli->sendq, addr);
         return SDTP_ERR;
     }

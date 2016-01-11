@@ -31,8 +31,7 @@ kwt_tree_t *kwt_creat(kwt_opt_t *opt)
 
     /* 1. 创建对象 */
     kwt = (kwt_tree_t *)opt->alloc(opt->pool, sizeof(kwt_tree_t));
-    if (NULL == kwt)
-    {
+    if (NULL == kwt) {
         return NULL;
     }
 
@@ -43,8 +42,7 @@ kwt_tree_t *kwt_creat(kwt_opt_t *opt)
     /* 2. 创建结点 */
     kwt->max = max;
     kwt->root = (kwt_node_t *)kwt->alloc(kwt->pool, max * sizeof(kwt_node_t));
-    if (NULL == kwt->root)
-    {
+    if (NULL == kwt->root) {
         kwt->dealloc(kwt->pool, kwt);
         return NULL;
     }
@@ -75,22 +73,18 @@ int kwt_insert(kwt_tree_t *kwt, const u_char *str, int len, void *data)
 
     if (len <= 0) { return -1; }
 
-    for (i=0; i<len; ++i)
-    {
+    for (i=0; i<len; ++i) {
         node += str[i];
         node->key = str[i];
-        if ((i < max) && (NULL == node->child))
-        {
+        if ((i < max) && (NULL == node->child)) {
             node->child = (kwt_node_t *)kwt->alloc(kwt->pool, kwt->max * sizeof(kwt_node_t));
-            if (NULL == node->child)
-            {
+            if (NULL == node->child) {
                 return -1;
             }
 
             memset(node->child, 0, sizeof(kwt_node_t));
         }
-        else if (i == max)
-        {
+        else if (i == max) {
             node->data = data;
             return 0;
         }
@@ -120,16 +114,13 @@ int kwt_query(kwt_tree_t *kwt, const u_char *str, int len, void **data)
     kwt_node_t *node = kwt->root;
 
     /* 1. 搜索键树 */
-    for (i=0; i<len; ++i)
-    {
+    for (i=0; i<len; ++i) {
         node += str[i];
-        if (node->key != str[i])
-        {
+        if (node->key != str[i]) {
             *data = NULL;
             return -1;
         }
-        else if (i == max)
-        {
+        else if (i == max) {
             *data = node->data;
             return 0;
         }
@@ -157,22 +148,18 @@ void _kwt_print(kwt_tree_t *kwt, kwt_node_t *node, int depth)
     int i, n;
     kwt_node_t *item = node;
 
-    for (i=0; i<kwt->max; ++i, ++item)
-    {
-        if (0 == item->key)
-        {
+    for (i=0; i<kwt->max; ++i, ++item) {
+        if (0 == item->key) {
             continue;
         }
 
-        for (n=0; n<depth; ++n)
-        {
+        for (n=0; n<depth; ++n) {
             fprintf(stderr, "| ");
         }
 
         fprintf(stderr, "|%02X\n", item->key);
 
-        if (NULL == item->child)
-        {
+        if (NULL == item->child) {
             continue;
         }
 
@@ -198,17 +185,14 @@ void kwt_print(kwt_tree_t *kwt)
 
     fprintf(stdout, "\n\n");
 
-    for (i=0; i<kwt->max; ++i, ++node)
-    {
-        if (0 == node->key)
-        {
+    for (i=0; i<kwt->max; ++i, ++node) {
+        if (0 == node->key) {
             continue;
         }
 
         fprintf(stdout, " %02X\n", node->key);
 
-        if (NULL == node->child)
-        {
+        if (NULL == node->child) {
             continue;
         }
 
@@ -231,8 +215,7 @@ void kwt_print(kwt_tree_t *kwt)
  ******************************************************************************/
 void kwt_destroy(kwt_tree_t *kwt, void *mempool, mem_dealloc_cb_t dealloc)
 {
-    if (NULL != kwt->root)
-    {
+    if (NULL != kwt->root) {
         kwt_node_free(kwt, kwt->root, mempool, dealloc);
     }
 
@@ -257,10 +240,8 @@ static void kwt_node_free(kwt_tree_t *kwt, kwt_node_t *node, void *mempool, mem_
 {
     int i;
 
-    for (i=0;i<kwt->max; ++i)
-    {   
-        if (NULL == node[i].child)
-        {
+    for (i=0;i<kwt->max; ++i) {   
+        if (NULL == node[i].child) {
             continue;
         }
         dealloc(mempool, node[i].data);

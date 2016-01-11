@@ -47,8 +47,7 @@ static int invtd_print_invt_tab_req_hdl(int type, int orig, char *buff, size_t l
 static int invtd_rtmq_reg(invtd_cntx_t *ctx)
 {
 #define INVTD_RTMQ_REG(ctx, type, proc, args) \
-    if (rtrd_register((ctx)->rtrd, type, proc, args)) \
-    { \
+    if (rtrd_register((ctx)->rtrd, type, proc, args)) { \
         log_error(ctx->log, "Register callback failed!"); \
         return INVT_ERR; \
     }
@@ -73,8 +72,7 @@ static int invtd_rtmq_reg(invtd_cntx_t *ctx)
  ******************************************************************************/
 int invtd_start_rtmq(invtd_cntx_t *ctx)
 {
-    if (invtd_rtmq_reg(ctx))
-    {
+    if (invtd_rtmq_reg(ctx)) {
         return INVT_ERR;
     }
 

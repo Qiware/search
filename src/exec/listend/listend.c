@@ -42,12 +42,10 @@ int main(int argc, char *argv[])
     char path[FILE_PATH_MAX_LEN];
 
     /* > 解析输入参数 */
-    if (lsnd_getopt(argc, argv, &opt))
-    {
+    if (lsnd_getopt(argc, argv, &opt)) {
         return lsnd_usage(argv[0]);
     }
-    else if (opt.isdaemon)
-    {
+    else if (opt.isdaemon) {
         /* int daemon(int nochdir, int noclose);
          *  1． daemon()函数主要用于希望脱离控制台,以守护进程形式在后台运行的程序.
          *  2． 当nochdir为0时,daemon将更改进城的根目录为root(“/”).
@@ -61,37 +59,32 @@ int main(int argc, char *argv[])
     log_get_path(path, sizeof(path), basename(argv[0]));
 
     log = log_init(opt.log_level, path, opt.log_key_path);
-    if (NULL == log)
-    {
+    if (NULL == log) {
         fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
         goto LSND_INIT_ERR;
     }
 
     /* > 加载配置信息 */
-    if (lsnd_load_conf(opt.conf_path, &conf, log))
-    {
+    if (lsnd_load_conf(opt.conf_path, &conf, log)) {
         fprintf(stderr, "Load configuration failed!\n");
         goto LSND_INIT_ERR;
     }
 
     /* > 初始化侦听 */
     ctx = lsnd_init(&conf, log);
-    if (NULL == ctx)
-    {
+    if (NULL == ctx) {
         fprintf(stderr, "Initialize lsnd failed!\n");
         goto LSND_INIT_ERR;
     }
  
     /* > 注册回调函数 */
-    if (lsnd_set_reg(ctx))
-    {
+    if (lsnd_set_reg(ctx)) {
         fprintf(stderr, "Set register callback failed!\n");
         goto LSND_INIT_ERR;
     }
 
     /* > 启动侦听服务 */
-    if (lsnd_launch(ctx))
-    {
+    if (lsnd_launch(ctx)) {
         fprintf(stderr, "Startup search-engine failed!\n");
         goto LSND_INIT_ERR;
     }
@@ -125,14 +118,12 @@ static int lsnd_proc_lock(lsnd_conf_t *conf)
 
     /* 2. 打开文件 */
     fd = Open(path, OPEN_FLAGS, OPEN_MODE);
-    if (fd < 0)
-    {
+    if (fd < 0) {
         return -1;
     }
 
     /* 3. 尝试加锁 */
-    if (proc_try_wrlock(fd) < 0)
-    {
+    if (proc_try_wrlock(fd) < 0) {
         CLOSE(fd);
         return -1;
     }
@@ -157,16 +148,14 @@ static lsnd_cntx_t *lsnd_init(lsnd_conf_t *conf, log_cycle_t *log)
     lsnd_cntx_t *ctx;
 
     /* > 加进程锁 */
-    if (lsnd_proc_lock(conf))
-    {
+    if (lsnd_proc_lock(conf)) {
         log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
         return NULL;
     }
 
     /* > 创建全局对象 */
     ctx = (lsnd_cntx_t *)calloc(1, sizeof(lsnd_cntx_t));
-    if (NULL == ctx)
-    {
+    if (NULL == ctx) {
         log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
         return NULL;
     }
@@ -174,20 +163,17 @@ static lsnd_cntx_t *lsnd_init(lsnd_conf_t *conf, log_cycle_t *log)
     ctx->log = log;
     memcpy(&ctx->conf, conf, sizeof(lsnd_conf_t));  /* 拷贝配置信息 */
 
-    do
-    {
+    do {
         /* > 初始化代理信息 */
         ctx->agent = agent_init(&conf->agent, log);
-        if (NULL == ctx->agent)
-        {
+        if (NULL == ctx->agent) {
             log_error(log, "Initialize agent failed!");
             break;
         }
 
         /* > 初始化RTMQ信息 */
         ctx->invtd_upstrm = rtsd_init(&conf->invtd_conf, log);
-        if (NULL == ctx->invtd_upstrm)
-        {
+        if (NULL == ctx->invtd_upstrm) {
             log_error(log, "Initialize real-time-transport-protocol failed!");
             break;
         }
@@ -213,8 +199,7 @@ static lsnd_cntx_t *lsnd_init(lsnd_conf_t *conf, log_cycle_t *log)
 static int lsnd_set_reg(lsnd_cntx_t *ctx)
 {
 #define LSND_AGT_REG_CB(ctx, type, proc, args) /* 注册代理数据回调 */\
-    if (agent_register((ctx)->agent, type, (agent_reg_cb_t)proc, (void *)args)) \
-    { \
+    if (agent_register((ctx)->agent, type, (agent_reg_cb_t)proc, (void *)args)) { \
         return LSND_ERR; \
     }
 
@@ -222,8 +207,7 @@ static int lsnd_set_reg(lsnd_cntx_t *ctx)
     LSND_AGT_REG_CB(ctx, MSG_INSERT_WORD_REQ, lsnd_insert_word_req_hdl, ctx);
 
 #define LSND_RTQ_REG_CB(lsnd, type, proc, args) /* 注册队列数据回调 */\
-    if (rtsd_register((lsnd)->invtd_upstrm, type, (rtmq_reg_cb_t)proc, (void *)args)) \
-    { \
+    if (rtsd_register((lsnd)->invtd_upstrm, type, (rtmq_reg_cb_t)proc, (void *)args)) { \
         log_error((lsnd)->log, "Register type [%d] failed!", type); \
         return LSND_ERR; \
     }
@@ -248,15 +232,13 @@ static int lsnd_set_reg(lsnd_cntx_t *ctx)
 static int lsnd_launch(lsnd_cntx_t *ctx)
 {
     /* > 启动代理服务 */
-    if (agent_launch(ctx->agent))
-    {
+    if (agent_launch(ctx->agent)) {
         log_error(ctx->log, "Startup agent failed!");
         return LSND_ERR;
     }
 
     /* > 启动代理服务 */
-    if (rtsd_launch(ctx->invtd_upstrm))
-    {
+    if (rtsd_launch(ctx->invtd_upstrm)) {
         log_error(ctx->log, "Startup invertd upstream failed!");
         return LSND_ERR;
     }

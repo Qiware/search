@@ -24,8 +24,7 @@ static int rtsd_creat_workers(rtsd_cntx_t *ctx)
 
     /* > 创建对象 */
     worker = (rtmq_worker_t *)slab_alloc(ctx->slab, conf->work_thd_num * sizeof(rtmq_worker_t));
-    if (NULL == worker)
-    {
+    if (NULL == worker) {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return RTMQ_ERR;
     }
@@ -38,18 +37,15 @@ static int rtsd_creat_workers(rtsd_cntx_t *ctx)
     opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
     ctx->worktp = thread_pool_init(conf->work_thd_num, &opt, (void *)worker);
-    if (NULL == ctx->worktp)
-    {
+    if (NULL == ctx->worktp) {
         log_error(ctx->log, "Initialize thread pool failed!");
         slab_dealloc(ctx->slab, worker);
         return RTMQ_ERR;
     }
 
     /* > 初始化线程 */
-    for (idx=0; idx<conf->work_thd_num; ++idx)
-    {
-        if (rtsd_worker_init(ctx, worker+idx, idx))
-        {
+    for (idx=0; idx<conf->work_thd_num; ++idx) {
+        if (rtsd_worker_init(ctx, worker+idx, idx)) {
             log_fatal(ctx->log, "Initialize work thread failed!");
             slab_dealloc(ctx->slab, worker);
             thread_pool_destroy(ctx->worktp);
@@ -80,8 +76,7 @@ static int rtsd_creat_sends(rtsd_cntx_t *ctx)
 
     /* > 创建对象 */
     ssvr = (rtsd_ssvr_t *)slab_alloc(ctx->slab, conf->send_thd_num * sizeof(rtsd_ssvr_t));
-    if (NULL == ssvr)
-    {
+    if (NULL == ssvr) {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return RTMQ_ERR;
     }
@@ -94,18 +89,15 @@ static int rtsd_creat_sends(rtsd_cntx_t *ctx)
     opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
     ctx->sendtp = thread_pool_init(conf->send_thd_num, &opt, (void *)ssvr);
-    if (NULL == ctx->sendtp)
-    {
+    if (NULL == ctx->sendtp) {
         log_error(ctx->log, "Initialize thread pool failed!");
         slab_dealloc(ctx->slab, ssvr);
         return RTMQ_ERR;
     }
 
     /* > 初始化线程 */
-    for (idx=0; idx<conf->send_thd_num; ++idx)
-    {
-        if (rtsd_ssvr_init(ctx, ssvr+idx, idx))
-        {
+    for (idx=0; idx<conf->send_thd_num; ++idx) {
+        if (rtsd_ssvr_init(ctx, ssvr+idx, idx)) {
             log_fatal(ctx->log, "Initialize send thread failed!");
             slab_dealloc(ctx->slab, ssvr);
             thread_pool_destroy(ctx->sendtp);
@@ -134,18 +126,15 @@ static int rtsd_creat_recvq(rtsd_cntx_t *ctx)
 
     /* > 创建队列对象 */
     ctx->recvq = (queue_t **)calloc(conf->send_thd_num, sizeof(queue_t *));
-    if (NULL == ctx->recvq)
-    {
+    if (NULL == ctx->recvq) {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return RTMQ_ERR;
     }
 
     /* > 创建接收队列 */
-    for (idx=0; idx<conf->work_thd_num; ++idx)
-    {
+    for (idx=0; idx<conf->work_thd_num; ++idx) {
         ctx->recvq[idx] = queue_creat(conf->recvq.max, conf->recvq.size);
-        if (NULL == ctx->recvq[idx])
-        {
+        if (NULL == ctx->recvq[idx]) {
             log_error(ctx->log, "Create recvq failed!");
             return RTMQ_ERR;
         }
@@ -172,18 +161,15 @@ static int rtsd_creat_sendq(rtsd_cntx_t *ctx)
 
     /* > 创建队列对象 */
     ctx->sendq = (queue_t **)calloc(conf->send_thd_num, sizeof(queue_t *));
-    if (NULL == ctx->sendq)
-    {
+    if (NULL == ctx->sendq) {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return RTMQ_ERR;
     }
 
     /* > 创建发送队列 */
-    for (idx=0; idx<conf->send_thd_num; ++idx)
-    {
+    for (idx=0; idx<conf->send_thd_num; ++idx) {
         ctx->sendq[idx] = queue_creat(conf->sendq.max, conf->sendq.size);
-        if (NULL == ctx->sendq[idx])
-        {
+        if (NULL == ctx->sendq[idx]) {
             log_error(ctx->log, "Create send queue failed!");
             return RTMQ_ERR;
         }
@@ -211,16 +197,14 @@ rtsd_cntx_t *rtsd_init(const rtsd_conf_t *conf, log_cycle_t *log)
 
     /* > 创建内存池 */
     slab = slab_creat_by_calloc(30 * MB, log);
-    if (NULL == slab)
-    {
+    if (NULL == slab) {
         log_error(log, "Initialize slab failed!");
         return NULL;
     }
 
     /* > 创建对象 */
     ctx = (rtsd_cntx_t *)slab_alloc(slab, sizeof(rtsd_cntx_t));
-    if (NULL == ctx)
-    {
+    if (NULL == ctx) {
         log_fatal(log, "errmsg:[%d] %s!", errno, strerror(errno));
         slab_destroy(slab);
         return NULL;
@@ -233,40 +217,35 @@ rtsd_cntx_t *rtsd_init(const rtsd_conf_t *conf, log_cycle_t *log)
     memcpy(&ctx->conf, conf, sizeof(rtsd_conf_t));
 
     /* > 创建通信套接字 */
-    if (rtsd_creat_cmd_usck(ctx))
-    {
+    if (rtsd_creat_cmd_usck(ctx)) {
         log_fatal(log, "Create recv-queue failed!");
         slab_destroy(slab);
         return NULL;
     }
 
     /* > 创建接收队列 */
-    if (rtsd_creat_recvq(ctx))
-    {
+    if (rtsd_creat_recvq(ctx)) {
         log_fatal(log, "Create recv-queue failed!");
         slab_destroy(slab);
         return NULL;
     }
 
     /* > 创建发送队列 */
-    if (rtsd_creat_sendq(ctx))
-    {
+    if (rtsd_creat_sendq(ctx)) {
         log_fatal(log, "Create send queue failed!");
         slab_destroy(slab);
         return NULL;
     }
 
     /* > 创建工作线程池 */
-    if (rtsd_creat_workers(ctx))
-    {
+    if (rtsd_creat_workers(ctx)) {
         log_fatal(ctx->log, "Create work thread pool failed!");
         slab_destroy(slab);
         return NULL;
     }
 
     /* > 创建发送线程池 */
-    if (rtsd_creat_sends(ctx))
-    {
+    if (rtsd_creat_sends(ctx)) {
         log_fatal(ctx->log, "Create send thread pool failed!");
         slab_destroy(slab);
         return NULL;
@@ -294,14 +273,12 @@ int rtsd_launch(rtsd_cntx_t *ctx)
     rtsd_conf_t *conf = &ctx->conf;
 
     /* > 注册Worker线程回调 */
-    for (idx=0; idx<conf->work_thd_num; ++idx)
-    {
+    for (idx=0; idx<conf->work_thd_num; ++idx) {
         thread_pool_add_worker(ctx->worktp, rtsd_worker_routine, ctx);
     }
 
     /* > 注册Send线程回调 */
-    for (idx=0; idx<conf->send_thd_num; ++idx)
-    {
+    for (idx=0; idx<conf->send_thd_num; ++idx) {
         thread_pool_add_worker(ctx->sendtp, rtsd_ssvr_routine, ctx);
     }
 
@@ -328,14 +305,12 @@ int rtsd_register(rtsd_cntx_t *ctx, int type, rtmq_reg_cb_t proc, void *param)
 {
     rtmq_reg_t *reg;
 
-    if (type >= RTMQ_TYPE_MAX)
-    {
+    if (type >= RTMQ_TYPE_MAX) {
         log_error(ctx->log, "Data type [%d] is out of range!", type);
         return RTMQ_ERR;
     }
 
-    if (0 != ctx->reg[type].flag)
-    {
+    if (0 != ctx->reg[type].flag) {
         log_error(ctx->log, "Repeat register type [%d]!", type);
         return RTMQ_ERR_REPEAT_REG;
     }
@@ -369,8 +344,7 @@ static int rtsd_creat_cmd_usck(rtsd_cntx_t *ctx)
 
     spin_lock_init(&ctx->cmd_sck_lck);
     ctx->cmd_sck_id = unix_udp_creat(path);
-    if (ctx->cmd_sck_id < 0)
-    {
+    if (ctx->cmd_sck_id < 0) {
         log_error(ctx->log, "errmsg:[%d] %s! path:%s", errno, strerror(errno), path);
         return RTMQ_ERR;
     }
@@ -401,16 +375,13 @@ static int rtsd_cli_cmd_send_req(rtsd_cntx_t *ctx, int idx)
     cmd.type = RTMQ_CMD_SEND_ALL;
     rtsd_ssvr_usck_path(conf, path, idx);
 
-    if (spin_trylock(&ctx->cmd_sck_lck))
-    {
+    if (spin_trylock(&ctx->cmd_sck_lck)) {
         return RTMQ_OK;
     }
 
-    if (unix_udp_send(ctx->cmd_sck_id, path, &cmd, sizeof(cmd)) < 0)
-    {
+    if (unix_udp_send(ctx->cmd_sck_id, path, &cmd, sizeof(cmd)) < 0) {
         spin_unlock(&ctx->cmd_sck_lck);
-        if (EAGAIN != errno)
-        {
+        if (EAGAIN != errno) {
             log_debug(ctx->log, "errmsg:[%d] %s! path:%s", errno, strerror(errno), path);
         }
         return RTMQ_ERR;
@@ -450,8 +421,7 @@ int rtsd_cli_send(rtsd_cntx_t *ctx, int type, const void *data, size_t size)
     idx = (num++) % conf->send_thd_num;
 
     addr = queue_malloc(ctx->sendq[idx], sizeof(rtmq_header_t)+size);
-    if (NULL == addr)
-    {
+    if (NULL == addr) {
         log_error(ctx->log, "Alloc from SHMQ failed! size:%d/%d",
                 size+sizeof(rtmq_header_t), queue_size(ctx->sendq[idx]));
         return RTMQ_ERR;
@@ -472,8 +442,7 @@ int rtsd_cli_send(rtsd_cntx_t *ctx, int type, const void *data, size_t size)
             ctx->sendq[idx]->ring, head->type, head->nodeid, head->length, head->flag, head->checksum);
 
     /* > 放入发送队列 */
-    if (queue_push(ctx->sendq[idx], addr))
-    {
+    if (queue_push(ctx->sendq[idx], addr)) {
         log_error(ctx->log, "Push into shmq failed!");
         queue_dealloc(ctx->sendq[idx], addr);
         return RTMQ_ERR;

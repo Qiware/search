@@ -33,8 +33,7 @@ bool redis_hsetnx(redisContext *redis,
         return false;
     }
 
-    if (1 == r->integer)
-    {
+    if (1 == r->integer) {
         freeReplyObject(r);
         return true;
     }

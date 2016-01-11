@@ -37,8 +37,7 @@ static flt_worker_t *flt_worker_self(flt_cntx_t *ctx)
     int id;
 
     id = thread_pool_get_tidx(ctx->workers);
-    if (id < 0)
-    {
+    if (id < 0) {
         return NULL;
     }
 
@@ -69,8 +68,7 @@ static int flt_worker_get_webpage_info(
 
     /* 1. 新建内存池 */
     pool = mem_pool_creat(4 * KB);
-    if (NULL == pool)
-    {
+    if (NULL == pool) {
         log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
         return FLT_ERR;
     }
@@ -82,27 +80,23 @@ static int flt_worker_get_webpage_info(
     opt.dealloc = (mem_dealloc_cb_t)mem_pool_dealloc;
 
     xml = xml_creat(path, &opt);
-    if (NULL == xml)
-    {
+    if (NULL == xml) {
         mem_pool_destroy(pool);
         log_error(log, "Create XML failed! path:%s", path);
         return FLT_ERR;
     }
 
     /* 2. 提取网页信息 */
-    do
-    {
+    do {
         fix = xml_query(xml, ".WPI");
-        if (NULL == fix)
-        {
+        if (NULL == fix) {
             log_error(log, "Get WPI mark failed!");
             break;
         }
 
         /* 获取URI字段 */
         node = xml_search(xml, fix, "URI");
-        if (NULL == node)
-        {
+        if (NULL == node) {
             log_error(log, "Get URI mark failed!");
             break;
         }
@@ -111,8 +105,7 @@ static int flt_worker_get_webpage_info(
 
         /* 获取DEPTH字段 */
         node = xml_search(xml, fix, "URI.DEPTH");
-        if (NULL == node)
-        {
+        if (NULL == node) {
             log_error(log, "Get DEPTH mark failed!");
             break;
         }
@@ -121,8 +114,7 @@ static int flt_worker_get_webpage_info(
 
         /* 获取IP字段 */
         node = xml_search(xml, fix, "URI.IP");
-        if (NULL == node)
-        {
+        if (NULL == node) {
             log_error(log, "Get IP mark failed!");
             break;
         }
@@ -131,8 +123,7 @@ static int flt_worker_get_webpage_info(
 
         /* 获取PORT字段 */
         node = xml_search(xml, fix, "URI.PORT");
-        if (NULL == node)
-        {
+        if (NULL == node) {
             log_error(log, "Get PORT mark failed!");
             break;
         }
@@ -141,8 +132,7 @@ static int flt_worker_get_webpage_info(
 
         /* 获取HTML字段 */
         node = xml_search(xml, fix, "HTML");
-        if (NULL == node)
-        {
+        if (NULL == node) {
             log_error(log, "Get HTML mark failed!");
             break;
         }
@@ -151,15 +141,13 @@ static int flt_worker_get_webpage_info(
 
         /* 获取HTML.SIZE字段 */
         node = xml_search(xml, fix, "HTML.SIZE");
-        if (NULL == node)
-        {
+        if (NULL == node) {
             log_error(log, "Get HTML.SIZE mark failed!");
             break;
         }
 
         info->size = atoi(node->value.str);
-        if (info->size <= 0)
-        {
+        if (info->size <= 0) {
             log_info(log, "Html size is zero!");
             break;
         }
@@ -196,18 +184,15 @@ void *flt_worker_routine(void *_ctx)
 
     worker = flt_worker_self(ctx);
 
-    while (1)
-    {
+    while (1) {
         /* > 获取任务数据 */
         task = sig_queue_pop(ctx->taskq);
-        if (NULL == task)
-        {
+        if (NULL == task) {
             continue;
         }
 
         /* > 提取网页数据 */
-        if (flt_worker_get_webpage_info(task->path, &worker->info, worker->log))
-        {
+        if (flt_worker_get_webpage_info(task->path, &worker->info, worker->log)) {
             remove(task->path);
             sig_queue_dealloc(ctx->taskq, task);
             continue;
@@ -243,8 +228,7 @@ int flt_worker_init(flt_cntx_t *ctx, flt_worker_t *worker, int idx)
 
     /* > 连接Redis集群 */
     worker->redis = redis_clst_init(ctx->conf->redis.conf, ctx->conf->redis.num);
-    if (NULL == worker->redis)
-    {
+    if (NULL == worker->redis) {
         log_error(worker->log, "Initialize redis context failed!");
         return FLT_ERR;
     }
@@ -293,33 +277,28 @@ static int flt_worker_deep_hdl(flt_cntx_t *ctx, flt_worker_t *worker, gumbo_resu
     flt_webpage_info_t *info = &worker->info;
 
     /* 遍历URL集合 */
-    for (; NULL != node; node = node->next)
-    {
+    for (; NULL != node; node = node->next) {
         /* > 将href转至uri */
         ret = href_to_uri((const char *)node->data, info->uri, &field);
-        if (0 != ret)
-        {
+        if (0 != ret) {
             log_warn(ctx->log, "Href [%s] of uri [%s] is invalid! ret:%d",
                     (char *)node->data, info->uri, ret);
             continue;
         }
 
-        if (URI_HTTP_PROTOCOL != field.protocol)
-        {
+        if (URI_HTTP_PROTOCOL != field.protocol) {
             log_warn(ctx->log, "Uri [%s] isn't base http protocol!", field.uri);
             continue;
         }
 
         /* > 判断URI是否已经被推送到队列中 */
-        if (flt_is_uri_push(worker->redis, conf->redis.push_tab, field.uri))
-        {
+        if (flt_is_uri_push(worker->redis, conf->redis.push_tab, field.uri)) {
             log_warn(ctx->log, "Uri [%s] was pushed!", field.uri);
             continue;
         }
 
         /* > 推送到CRWL队列 */
-        if (flt_push_url_to_crwlq(ctx, field.uri, field.host, field.port, info->depth+1))
-        {
+        if (flt_push_url_to_crwlq(ctx, field.uri, field.host, field.port, info->depth+1)) {
             log_error(ctx->log, "Push url [%s] redis taskq failed!", (char *)node->data);
             continue;
         }
@@ -348,8 +327,7 @@ static int flt_worker_workflow(flt_cntx_t *ctx, flt_worker_t *worker)
     flt_webpage_info_t *info = &worker->info;
 
     /* > 判断网页深度 */
-    if (info->depth > conf->download.depth)
-    {
+    if (info->depth > conf->download.depth) {
         log_info(ctx->log, "Drop handle webpage! uri:%s depth:%d", info->uri, info->depth);
         return FLT_OK;
     }
@@ -357,8 +335,7 @@ static int flt_worker_workflow(flt_cntx_t *ctx, flt_worker_t *worker)
     /* > 判断网页(URI)是否已下载
      *  判断的同时设置网页的下载标志
      *  如果已下载，则不做提取该网页中的超链接 */
-    if (flt_is_uri_down(worker->redis, conf->redis.done_tab, info->uri))
-    {
+    if (flt_is_uri_down(worker->redis, conf->redis.done_tab, info->uri)) {
         log_info(ctx->log, "Uri [%s] was downloaded!", info->uri);
         return FLT_OK;
     }
@@ -367,16 +344,14 @@ static int flt_worker_workflow(flt_cntx_t *ctx, flt_worker_t *worker)
 
     /* > 解析HTML文件 */
     html = gumbo_html_parse(fpath, ctx->log);
-    if (NULL == html)
-    {
+    if (NULL == html) {
         log_error(ctx->log, "Parse html failed! fpath:%s", fpath);
         return FLT_ERR;
     }
 
     /* > 提取超链接 */
     result = gumbo_parse_href(html, ctx->log);
-    if (NULL == result)
-    {
+    if (NULL == result) {
         log_error(ctx->log, "Parse href failed! fpath:%s", fpath);
 
         gumbo_result_destroy(result);
@@ -388,8 +363,7 @@ static int flt_worker_workflow(flt_cntx_t *ctx, flt_worker_t *worker)
      *  1. 判断超链接深度
      *  2. 判断超链接是否已被爬取
      *  3. 将超链接插入任务队列 */
-    if (flt_worker_deep_hdl(ctx, worker, result))
-    {
+    if (flt_worker_deep_hdl(ctx, worker, result)) {
         log_error(ctx->log, "Deep handler failed! fpath:%s", fpath);
 
         gumbo_result_destroy(result);

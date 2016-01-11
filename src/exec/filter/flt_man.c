@@ -52,8 +52,7 @@ static int flt_man_send_cmd(flt_cntx_t *ctx, flt_man_t *man);
  \
     FD_SET(man->fd, &man->rdset); \
  \
-    if (!list_empty(man->mesg_list)) \
-    { \
+    if (!list_empty(man->mesg_list)) { \
         FD_SET(man->fd, &man->wrset); \
     } \
 }
@@ -78,22 +77,19 @@ void *flt_manager_routine(void *_ctx)
 
     /* 1. 初始化代理 */
     man = flt_man_init(ctx);
-    if (NULL == man)
-    {
+    if (NULL == man) {
         log_error(ctx->log, "Initialize agent failed!");
         return (void *)-1;
     }
 
-    while (1)
-    {
+    while (1) {
         /* 2. 等待事件通知 */
         flt_man_rwset(man);
 
         tmout.tv_sec = 30;
         tmout.tv_usec = 0;
         ret = select(man->fd+1, &man->rdset, &man->wrset, NULL, &tmout);
-        if (ret < 0)
-        {
+        if (ret < 0) {
             if (EINTR == errno) { continue; }
             log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
             return (void *)-1;
@@ -125,8 +121,7 @@ static flt_man_t *flt_man_init(flt_cntx_t *ctx)
 
     /* > 创建对象 */
     man = (flt_man_t *)slab_alloc(ctx->slab, sizeof(flt_man_t));
-    if (NULL == man)
-    {
+    if (NULL == man) {
         return NULL;
     }
 
@@ -136,8 +131,7 @@ static flt_man_t *flt_man_init(flt_cntx_t *ctx)
     man->fd = INVALID_FD;
     man->slab = ctx->slab;
 
-    do
-    {
+    do {
         /* > 创建AVL树 */
         memset(&opt, 0, sizeof(opt));
 
@@ -146,8 +140,7 @@ static flt_man_t *flt_man_init(flt_cntx_t *ctx)
         opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
         man->reg = avl_creat(&opt, (key_cb_t)flt_man_reg_key_cb, (cmp_cb_t)flt_man_reg_cmp_cb);
-        if (NULL == man->reg)
-        {
+        if (NULL == man->reg) {
             log_error(man->log, "Create AVL failed!");
             return NULL;
         }
@@ -160,23 +153,20 @@ static flt_man_t *flt_man_init(flt_cntx_t *ctx)
         list_opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
         man->mesg_list = list_creat(&list_opt);
-        if (NULL == man->mesg_list)
-        {
+        if (NULL == man->mesg_list) {
             log_error(man->log, "Create list failed!");
             break;
         }
 
         /* > 注册回调函数 */
-        if (flt_man_reg_cb(man))
-        {
+        if (flt_man_reg_cb(man)) {
             log_error(man->log, "Register callback failed!");
             break;
         }
 
         /* > 新建套接字 */
         man->fd = udp_listen(ctx->conf->man_port);
-        if (man->fd < 0)
-        {
+        if (man->fd < 0) {
             log_error(man->log, "Listen port [%d] failed!", ctx->conf->man_port);
             break;
         }
@@ -184,12 +174,10 @@ static flt_man_t *flt_man_init(flt_cntx_t *ctx)
     } while(0);
 
     /* > 释放空间 */
-    if (NULL != man->reg)
-    {
+    if (NULL != man->reg) {
         avl_destroy(man->reg, mem_dummy_dealloc, NULL);
     }
-    if (NULL != man->mesg_list)
-    {
+    if (NULL != man->mesg_list) {
         list_destroy(man->mesg_list, man->slab, (mem_dealloc_cb_t)slab_dealloc);
     }
     CLOSE(man->fd);
@@ -219,8 +207,7 @@ static int flt_man_register(flt_man_t *man, int type, flt_man_reg_cb_t proc, voi
 
     /* > 申请空间 */
     reg = slab_alloc(man->slab, sizeof(flt_man_reg_t));
-    if (NULL == reg)
-    {
+    if (NULL == reg) {
         log_error(man->log, "Alloc memory from slab failed!");
         return FLT_ERR;
     }
@@ -234,8 +221,7 @@ static int flt_man_register(flt_man_t *man, int type, flt_man_reg_cb_t proc, voi
     reg->type = type;
 
     ret = avl_insert(man->reg, &type, sizeof(type), reg);
-    if (0 != ret)
-    {
+    if (0 != ret) {
         log_error(man->log, "Register failed! ret:%d", ret);
         return FLT_ERR;
     }
@@ -298,20 +284,16 @@ static int flt_man_reg_cmp_cb(void *type, const void *_reg)
 static int flt_man_event_hdl(flt_cntx_t *ctx, flt_man_t *man)
 {
     /* > 接收命令 */
-    if (FD_ISSET(man->fd, &man->rdset))
-    {
-        if (flt_man_recv_cmd(ctx, man))
-        {
+    if (FD_ISSET(man->fd, &man->rdset)) {
+        if (flt_man_recv_cmd(ctx, man)) {
             log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
             return FLT_ERR;
         }
     }
 
     /* > 发送数据 */
-    if (FD_ISSET(man->fd, &man->wrset))
-    {
-        if (flt_man_send_cmd(ctx, man))
-        {
+    if (FD_ISSET(man->fd, &man->wrset)) {
+        if (flt_man_send_cmd(ctx, man)) {
             log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
             return FLT_ERR;
         }
@@ -347,8 +329,7 @@ static int flt_man_recv_cmd(flt_cntx_t *ctx, flt_man_t *man)
     addrlen = sizeof(from);
 
     n = recvfrom(man->fd, &cmd, sizeof(cmd), 0, (struct sockaddr *)&from, (socklen_t *)&addrlen);
-    if (n < 0)
-    {
+    if (n < 0) {
         log_error(man->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return FLT_ERR;
     }
@@ -357,8 +338,7 @@ static int flt_man_recv_cmd(flt_cntx_t *ctx, flt_man_t *man)
 
     /* > 查找回调 */
     reg = (flt_man_reg_t *)avl_query(man->reg, (void *)&cmd.type, sizeof(cmd.type));
-    if (NULL == reg)
-    {
+    if (NULL == reg) {
         log_error(man->log, "Didn't register callback for type [%d]!", cmd.type);
         return FLT_ERR;
     }
@@ -385,16 +365,14 @@ static int flt_man_send_cmd(flt_cntx_t *ctx, flt_man_t *man)
 
     /* > 弹出数据 */
     item = list_lpop(man->mesg_list);
-    if (NULL == item)
-    {
+    if (NULL == item) {
         log_error(man->log, "Didn't pop data from list!");
         return FLT_ERR;
     }
 
     /* > 发送命令 */
     n = sendto(man->fd, &item->cmd, sizeof(flt_cmd_t), 0, (struct sockaddr *)&item->to, sizeof(item->to));
-    if (n < 0)
-    {
+    if (n < 0) {
         log_error(man->log, "errmsg:[%d] %s!", errno, strerror(errno));
         slab_dealloc(man->slab, item);
         return FLT_OK;
@@ -435,8 +413,7 @@ static int flt_man_add_seed_req_hdl(flt_cntx_t *ctx,
 
     /* > 申请应答空间 */
     item = slab_alloc(man->slab, sizeof(flt_cmd_item_t));
-    if (NULL == item)
-    {
+    if (NULL == item) {
         log_error(man->log, "Alloc memory from slab failed!");
         return FLT_ERR;
     }
@@ -453,8 +430,7 @@ static int flt_man_add_seed_req_hdl(flt_cntx_t *ctx,
     snprintf(rsp->url, sizeof(rsp->url), "%s", req->url);
 
     /* > 加入应答列表 */
-    if (list_rpush(man->mesg_list, item))
-    {
+    if (list_rpush(man->mesg_list, item)) {
         log_error(man->log, "Insert list failed!");
         slab_dealloc(man->slab, item);
         return FLT_ERR;
@@ -489,8 +465,7 @@ static int flt_man_query_conf_req_hdl(flt_cntx_t *ctx,
 
     /* > 申请应答空间 */
     item = slab_alloc(man->slab, sizeof(flt_cmd_item_t));
-    if (NULL == item)
-    {
+    if (NULL == item) {
         log_error(man->log, "Alloc memory from slab failed!");
         return FLT_ERR;
     }
@@ -506,8 +481,7 @@ static int flt_man_query_conf_req_hdl(flt_cntx_t *ctx,
     conf->log_level = htonl(ctx->log->level);      /* 日志级别 */
 
     /* > 加入应答列表 */
-    if (list_rpush(man->mesg_list, item))
-    {
+    if (list_rpush(man->mesg_list, item)) {
         log_error(man->log, "Insert list failed!");
         slab_dealloc(man->slab, conf);
         return FLT_ERR;
@@ -540,8 +514,7 @@ static int flt_man_query_table_stat_req_hdl(flt_cntx_t *ctx,
 
     /* > 新建应答 */
     item = slab_alloc(man->slab, sizeof(flt_cmd_item_t));
-    if (NULL == item)
-    {
+    if (NULL == item) {
         log_error(man->log, "Alloc from slab failed!");
         return FLT_ERR;
     }
@@ -580,8 +553,7 @@ static int flt_man_query_table_stat_req_hdl(flt_cntx_t *ctx,
     stat->num = htonl(stat->num);
 
     /* > 放入队尾 */
-    if (list_rpush(man->mesg_list, item))
-    {
+    if (list_rpush(man->mesg_list, item)) {
         log_error(man->log, "Push into list failed!");
         slab_dealloc(man->slab, item);
         return FLT_ERR;
@@ -613,8 +585,7 @@ static int flt_man_store_domain_ip_map_hdl(flt_domain_ip_map_t *map, void *args)
 
     fprintf(trav->fp, "%05d|%s|%d", ++trav->idx, map->host, map->ip_num);
 
-    for (idx=0; idx<map->ip_num; ++idx)
-    {
+    for (idx=0; idx<map->ip_num; ++idx) {
         fprintf(trav->fp, "|%s", map->ip[idx].addr);
     }
 
@@ -656,8 +627,7 @@ static int flt_man_store_domain_ip_map_req_hdl(flt_cntx_t *ctx,
 
     /* > 新建应答 */
     item = slab_alloc(man->slab, sizeof(flt_cmd_item_t));
-    if (NULL == item)
-    {
+    if (NULL == item) {
         log_error(man->log, "Alloc from slab failed!");
         return FLT_ERR;
     }
@@ -675,8 +645,7 @@ static int flt_man_store_domain_ip_map_req_hdl(flt_cntx_t *ctx,
             loctm.tm_hour, loctm.tm_min, loctm.tm_sec, ctm.millitm, ++idx);
 
     trav.fp = fopen(fname, "w");
-    if (NULL == trav.fp)
-    {
+    if (NULL == trav.fp) {
         log_error(man->log, "errmsg:[%d] %s!", errno, strerror(errno));
         slab_dealloc(man->slab, item);
         return FLT_ERR;
@@ -695,8 +664,7 @@ static int flt_man_store_domain_ip_map_req_hdl(flt_cntx_t *ctx,
     snprintf(rsp->path, sizeof(rsp->path), "%s", fname);
 
     /* > 放入队尾 */
-    if (list_rpush(man->mesg_list, item))
-    {
+    if (list_rpush(man->mesg_list, item)) {
         log_error(man->log, "Push into list failed!");
         slab_dealloc(man->slab, item);
         return FLT_ERR;
@@ -763,8 +731,7 @@ static int flt_man_store_domain_blacklist_req_hdl(flt_cntx_t *ctx,
 
     /* > 新建应答 */
     item = slab_alloc(man->slab, sizeof(flt_cmd_item_t));
-    if (NULL == item)
-    {
+    if (NULL == item) {
         log_error(man->log, "Alloc from slab failed!");
         return FLT_ERR;
     }
@@ -782,8 +749,7 @@ static int flt_man_store_domain_blacklist_req_hdl(flt_cntx_t *ctx,
             loctm.tm_hour, loctm.tm_min, loctm.tm_sec, ctm.millitm, ++idx);
 
     trav.fp = fopen(fname, "w");
-    if (NULL == trav.fp)
-    {
+    if (NULL == trav.fp) {
         log_error(man->log, "errmsg:[%d] %s!", errno, strerror(errno));
         slab_dealloc(man->slab, item);
         return FLT_ERR;
@@ -802,8 +768,7 @@ static int flt_man_store_domain_blacklist_req_hdl(flt_cntx_t *ctx,
     snprintf(rsp->path, sizeof(rsp->path), "%s", fname);
 
     /* > 放入队尾 */
-    if (list_rpush(man->mesg_list, item))
-    {
+    if (list_rpush(man->mesg_list, item)) {
         log_error(man->log, "Push into list failed!");
         slab_dealloc(man->slab, item);
         return FLT_ERR;
@@ -826,8 +791,7 @@ static int flt_man_store_domain_blacklist_req_hdl(flt_cntx_t *ctx,
 static int flt_man_reg_cb(flt_man_t *man)
 {
 #define FLT_REG(man, type, proc, args) \
-    if (flt_man_register(man, type, proc, args)) \
-    { \
+    if (flt_man_register(man, type, proc, args)) { \
         return FLT_ERR; \
     }
 

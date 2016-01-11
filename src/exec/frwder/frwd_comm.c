@@ -129,8 +129,7 @@ frwd_cntx_t *frwd_init(const frwd_conf_t *conf, log_cycle_t *log)
     char path[FILE_PATH_MAX_LEN];
 
     frwd = (frwd_cntx_t *)calloc(1, sizeof(frwd_cntx_t));
-    if (NULL == frwd)
-    {
+    if (NULL == frwd) {
         fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
         return NULL;
     }
@@ -138,22 +137,19 @@ frwd_cntx_t *frwd_init(const frwd_conf_t *conf, log_cycle_t *log)
     frwd->log = log;
     memcpy(&frwd->conf, conf, sizeof(frwd_conf_t));
 
-    do
-    {
+    do {
         /* > 创建命令套接字 */
         snprintf(path, sizeof(path), "../temp/frwder/cmd.usck");
 
         frwd->cmd_sck_id = unix_udp_creat(path);
-        if (frwd->cmd_sck_id < 0)
-        {
+        if (frwd->cmd_sck_id < 0) {
             fprintf(stderr, "Create unix udp failed! path:%s\n", path);
             break;
         }
 
         /* > 初始化发送服务 */
         frwd->rtmq = rtsd_init(&conf->conn_invtd, frwd->log);
-        if (NULL == frwd->rtmq)
-        {
+        if (NULL == frwd->rtmq) {
             log_fatal(frwd->log, "Initialize send-server failed!");
             break;
         }
@@ -178,8 +174,7 @@ frwd_cntx_t *frwd_init(const frwd_conf_t *conf, log_cycle_t *log)
  ******************************************************************************/
 int frwd_launch(frwd_cntx_t *frwd)
 {
-    if (rtsd_launch(frwd->rtmq))
-    {
+    if (rtsd_launch(frwd->rtmq)) {
         log_fatal(frwd->log, "Start up send-server failed!");
         return FRWD_ERR;
     }

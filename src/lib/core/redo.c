@@ -32,10 +32,8 @@ int Open(const char *fname, int flags, mode_t mode)
     
 AGAIN:
     fd = open(fname, flags, mode);
-    if (fd < 0)
-    {
-        if (EINTR == errno)
-        {
+    if (fd < 0) {
+        if (EINTR == errno) {
             goto AGAIN;
         }
 
@@ -66,20 +64,16 @@ ssize_t Readn(int fd, void *buff, size_t n)
     while (left > 0)
     {
         len = read(fd, ptr, left);
-        if (len < 0)
-        {
-            if (EAGAIN == errno)
-            {
+        if (len < 0) {
+            if (EAGAIN == errno) {
                 return (n - left);
             }
-            else if (EINTR == errno)
-            {
+            else if (EINTR == errno) {
                 continue;
             }
             return -1;
         }
-        else if (0 == len)
-        {
+        else if (0 == len) {
             break;
         }
 
@@ -112,14 +106,11 @@ ssize_t Writen(int fd, const void *buff, size_t n)
     while (left > 0)
     {
         len = write(fd, ptr, left);
-        if (len < 0)
-        {
-            if (EAGAIN == errno)
-            {
+        if (len < 0) {
+            if (EAGAIN == errno) {
                 return (n - left);
             }
-            else if (EINTR == errno)
-            {
+            else if (EINTR == errno) {
                 continue;
             }
             return -1;
@@ -202,8 +193,7 @@ int Mkdir(const char *dir, mode_t mode)
     char part[FILE_PATH_MAX_LEN];
 
     /* 1. 判断目录是否存在 */
-    if (0 == stat(dir, &st))
-    {
+    if (0 == stat(dir, &st)) {
         return !S_ISDIR(st.st_mode); /* 为目录, 则成功, 否则失败 */
     }
 
@@ -216,10 +206,8 @@ int Mkdir(const char *dir, mode_t mode)
         len = p - dir + 1;
         memcpy(part, dir, len);
 
-        if (0 == stat(part, &st))
-        {
-            if (S_ISDIR(st.st_mode))
-            {
+        if (0 == stat(part, &st)) {
+            if (S_ISDIR(st.st_mode)) {
                 p++;
                 p = strchr(p, '/');
                 continue;
@@ -227,10 +215,8 @@ int Mkdir(const char *dir, mode_t mode)
             return -1;  /* Exist, but not directory */
         }
         
-        if (0 != mkdir(part, mode))
-        {
-            if (EEXIST != errno)
-            {
+        if (0 != mkdir(part, mode)) {
+            if (EEXIST != errno) {
                 return -1;
             }
             /* Exist, then continue */
@@ -263,8 +249,7 @@ int Mkdir2(const char *fname, mode_t mode)
     memset(dir, 0, sizeof(dir));
 
     p = strrchr(fname, '/');
-    if (NULL == p)
-    {
+    if (NULL == p) {
         return 0;
     }
 
@@ -310,8 +295,7 @@ void *memalign_alloc(size_t alignment, size_t size)
 {
 	void *p;
 
-	if (posix_memalign(&p, alignment, size))
-    {
+	if (posix_memalign(&p, alignment, size)) {
         return NULL;
     }
 
@@ -335,19 +319,15 @@ int System(const char *cmd)
     int status;
     
     status = system(cmd);
-    if (-1 == status)
-    {
+    if (-1 == status) {
         return -1;
     }
 
-    if (WIFEXITED(status))
-    {
-        if (0 == WEXITSTATUS(status))
-        {
+    if (WIFEXITED(status)) {
+        if (0 == WEXITSTATUS(status)) {
             return WEXITSTATUS(status);
         }
-        else
-        {
+        else {
             return WEXITSTATUS(status);
         }
     }
@@ -370,8 +350,7 @@ int bind_cpu(uint16_t id)
 {
     cpu_set_t cpuset;
 
-    if ((sysconf(_SC_NPROCESSORS_CONF) - id) <= 0)
-    {
+    if ((sysconf(_SC_NPROCESSORS_CONF) - id) <= 0) {
         id %= sysconf(_SC_NPROCESSORS_CONF);
     }
 
@@ -532,20 +511,17 @@ struct tm *local_time(const time_t *timep, struct tm *result)
     result->tm_yday = (time / 24) % 365;
 
     /* 校正闰年影响的年份，计算一年中剩下的小时数 */
-    for (;;)
-    {
+    for (;;) {
         /* 一年的小时数 */
         n32_hpery = ONE_YEAR_HOURS;
 
         /* 判断闰年 */
-        if (0 == (result->tm_year & 3))
-        {
+        if (0 == (result->tm_year & 3)) {
             /* 是闰年, 一年则多24小时, 即一天 */
             n32_hpery += 24;
         }
 
-        if (time < n32_hpery)
-        {
+        if (time < n32_hpery) {
             break;
         }
 
@@ -563,16 +539,12 @@ struct tm *local_time(const time_t *timep, struct tm *result)
     time++;
 
     //校正润年的误差 计算月份 日期
-    if (0 == (result->tm_year & 3))
-    {
-        if (time > 60)
-        {
+    if (0 == (result->tm_year & 3)) {
+        if (time > 60) {
             time--;
         }
-        else
-        {
-            if (60 == time)
-            {
+        else {
+            if (60 == time) {
                 result->tm_mon = 1;
                 result->tm_mday = 29;
                 return result;
@@ -581,8 +553,7 @@ struct tm *local_time(const time_t *timep, struct tm *result)
     }
 
     //计算月日
-    for (result->tm_mon = 0; mon_days[result->tm_mon] < time; ++result->tm_mon)
-    {
+    for (result->tm_mon = 0; mon_days[result->tm_mon] < time; ++result->tm_mon) {
         time -= mon_days[result->tm_mon];
     }
 

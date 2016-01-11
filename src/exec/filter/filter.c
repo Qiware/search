@@ -35,12 +35,10 @@ int main(int argc, char *argv[])
     flt_cntx_t *ctx;
 
      /* > 解析输入参数 */
-    if (flt_getopt(argc, argv, &opt))
-    {
+    if (flt_getopt(argc, argv, &opt)) {
         return flt_usage(argv[0]);
     }
-    else if (opt.isdaemon)
-    {
+    else if (opt.isdaemon) {
         /* int daemon(int nochdir, int noclose);
          *  1. daemon()函数主要用于希望脱离控制台, 以守护进程形式在后台运行的程序.
          *  2. 当nochdir为0时, daemon将更改进城的根目录为root(“/”).
@@ -52,15 +50,13 @@ int main(int argc, char *argv[])
 
     /* > 初始化过滤模块 */
     ctx = flt_init(argv[0], &opt);
-    if (NULL == ctx)
-    {
+    if (NULL == ctx) {
         fprintf(stderr, "Initialize filter failed!\n");
         return FLT_ERR;
     }
 
     /* > 启动过滤模块 */
-    if (flt_launch(ctx))
-    {
+    if (flt_launch(ctx)) {
         fprintf(stderr, "Startup filterfailed!\n");
         return FLT_ERR;
     }

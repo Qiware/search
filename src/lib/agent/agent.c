@@ -37,8 +37,7 @@ agent_cntx_t *agent_init(agent_conf_t *conf, log_cycle_t *log)
 
     /* > 创建全局对象 */
     ctx = (agent_cntx_t *)calloc(1, sizeof(agent_cntx_t));
-    if (NULL == ctx)
-    {
+    if (NULL == ctx) {
         log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
         return NULL;
     }
@@ -48,69 +47,59 @@ agent_cntx_t *agent_init(agent_conf_t *conf, log_cycle_t *log)
 
     /* > 创建内存池 */
     ctx->slab = slab_creat_by_calloc(30 * MB, log);
-    if (NULL == ctx->slab)
-    {
+    if (NULL == ctx->slab) {
         free(ctx);
         log_error(log, "Init slab failed!");
         return NULL;
     }
 
-    do
-    {
+    do {
         /* > 注册消息处理 */
-        if (agent_init_reg(ctx))
-        {
+        if (agent_init_reg(ctx)) {
             log_error(log, "Initialize register failed!");
             break;
         }
 
         /* > 创建流水->SCK映射表 */
         ctx->serial_to_sck_map = agent_serial_to_sck_map_init(ctx);
-        if (NULL == ctx->serial_to_sck_map)
-        {
+        if (NULL == ctx->serial_to_sck_map) {
             log_error(log, "Initialize serial to sck map failed!");
             break;
         }
 
         /* > 设置进程打开文件数 */
-        if (set_fd_limit(conf->connections.max))
-        {
+        if (set_fd_limit(conf->connections.max)) {
             log_error(log, "errmsg:[%d] %s! max:%d",
                       errno, strerror(errno), conf->connections.max);
             break;
         }
 
         /* > 创建队列 */
-        if (agent_creat_queue(ctx))
-        {
+        if (agent_creat_queue(ctx)) {
             log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
             break;
         }
 
         /* > 创建Worker线程池 */
-        if (agent_creat_workers(ctx))
-        {
+        if (agent_creat_workers(ctx)) {
             log_error(log, "Initialize worker thread pool failed!");
             break;
         }
 
         /* > 创建Agent线程池 */
-        if (agent_creat_agents(ctx))
-        {
+        if (agent_creat_agents(ctx)) {
             log_error(log, "Initialize agent thread pool failed!");
             break;
         }
 
         /* > 创建Listen线程池 */
-        if (agent_creat_listens(ctx))
-        {
+        if (agent_creat_listens(ctx)) {
             log_error(log, "Initialize agent thread pool failed!");
             break;
         }
 
         /* > 初始化客户端信息 */
-        if (agent_cli_init(ctx))
-        {
+        if (agent_cli_init(ctx)) {
             log_error(log, "Initialize client failed!");
             break;
         }
@@ -159,20 +148,17 @@ int agent_launch(agent_cntx_t *ctx)
     agent_conf_t *conf = ctx->conf;
 
     /* 1. 设置Worker线程回调 */
-    for (idx=0; idx<conf->worker_num; ++idx)
-    {
+    for (idx=0; idx<conf->worker_num; ++idx) {
         thread_pool_add_worker(ctx->workers, agent_worker_routine, ctx);
     }
 
     /* 2. 设置Agent线程回调 */
-    for (idx=0; idx<conf->agent_num; ++idx)
-    {
+    for (idx=0; idx<conf->agent_num; ++idx) {
         thread_pool_add_worker(ctx->agents, agent_rsvr_routine, ctx);
     }
     
     /* 3. 设置Listen线程回调 */
-    for (idx=0; idx<conf->lsn_num; ++idx)
-    {
+    for (idx=0; idx<conf->lsn_num; ++idx) {
         thread_pool_add_worker(ctx->listens, agent_listen_routine, ctx);
     }
  
@@ -199,8 +185,7 @@ static int agent_creat_workers(agent_cntx_t *ctx)
 
     /* > 新建Worker对象 */
     worker = (agent_worker_t *)slab_alloc(ctx->slab, conf->worker_num*sizeof(agent_worker_t));
-    if (NULL == worker)
-    {
+    if (NULL == worker) {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return AGENT_ERR;
     }
@@ -213,31 +198,26 @@ static int agent_creat_workers(agent_cntx_t *ctx)
     opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
     ctx->workers = thread_pool_init(conf->worker_num, &opt, worker);
-    if (NULL == ctx->workers)
-    {
+    if (NULL == ctx->workers) {
         log_error(ctx->log, "Initialize thread pool failed!");
         return AGENT_ERR;
     }
 
     /* 3. 依次初始化Worker对象 */
-    for (idx=0; idx<conf->worker_num; ++idx)
-    {
-        if (agent_worker_init(ctx, worker+idx, idx))
-        {
+    for (idx=0; idx<conf->worker_num; ++idx) {
+        if (agent_worker_init(ctx, worker+idx, idx)) {
             log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
             break;
         }
     }
 
-    if (idx == conf->worker_num)
-    {
+    if (idx == conf->worker_num) {
         return AGENT_OK; /* 成功 */
     }
 
     /* 4. 释放Worker对象 */
     num = idx;
-    for (idx=0; idx<num; ++idx)
-    {
+    for (idx=0; idx<num; ++idx) {
         agent_worker_destroy(worker+idx);
     }
 
@@ -265,8 +245,7 @@ static int agent_workers_destroy(agent_cntx_t *ctx)
     const agent_conf_t *conf = ctx->conf;
 
     /* > 释放Worker对象 */
-    for (idx=0; idx<conf->worker_num; ++idx)
-    {
+    for (idx=0; idx<conf->worker_num; ++idx) {
         worker = (agent_worker_t *)ctx->workers->data + idx;
 
         agent_worker_destroy(worker);
@@ -299,8 +278,7 @@ static int agent_creat_agents(agent_cntx_t *ctx)
 
     /* > 新建Agent对象 */
     agent = (agent_rsvr_t *)slab_alloc(ctx->slab, conf->agent_num*sizeof(agent_rsvr_t));
-    if (NULL == agent)
-    {
+    if (NULL == agent) {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return AGENT_ERR;
     }
@@ -313,32 +291,27 @@ static int agent_creat_agents(agent_cntx_t *ctx)
     opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
     ctx->agents = thread_pool_init(conf->agent_num, &opt, agent);
-    if (NULL == ctx->agents)
-    {
+    if (NULL == ctx->agents) {
         log_error(ctx->log, "Initialize thread pool failed!");
         free(agent);
         return AGENT_ERR;
     }
 
     /* 3. 依次初始化Agent对象 */
-    for (idx=0; idx<conf->agent_num; ++idx)
-    {
-        if (agent_rsvr_init(ctx, agent+idx, idx))
-        {
+    for (idx=0; idx<conf->agent_num; ++idx) {
+        if (agent_rsvr_init(ctx, agent+idx, idx)) {
             log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
             break;
         }
     }
 
-    if (idx == conf->agent_num)
-    {
+    if (idx == conf->agent_num) {
         return AGENT_OK; /* 成功 */
     }
 
     /* 4. 释放Agent对象 */
     num = idx;
-    for (idx=0; idx<num; ++idx)
-    {
+    for (idx=0; idx<num; ++idx) {
         agent_rsvr_destroy(agent+idx);
     }
 
@@ -368,8 +341,7 @@ static int agent_creat_listens(agent_cntx_t *ctx)
 
     /* > 侦听指定端口 */
     ctx->listen.lsn_sck_id = tcp_listen(conf->connections.port);
-    if (ctx->listen.lsn_sck_id < 0)
-    {
+    if (ctx->listen.lsn_sck_id < 0) {
         log_error(ctx->log, "errmsg:[%d] %s! port:%d",
                   errno, strerror(errno), conf->connections.port);
         return AGENT_ERR;
@@ -380,20 +352,17 @@ static int agent_creat_listens(agent_cntx_t *ctx)
     /* > 创建LSN对象 */
     ctx->listen.lsvr = (agent_lsvr_t *)slab_alloc(
         ctx->slab, conf->lsn_num*sizeof(agent_lsvr_t));
-    if (NULL == ctx->listen.lsvr)
-    {
+    if (NULL == ctx->listen.lsvr) {
         CLOSE(ctx->listen.lsn_sck_id);
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return AGENT_ERR;
     }
 
     /* > 初始化侦听服务 */
-    for (idx=0; idx<conf->lsn_num; ++idx)
-    {
+    for (idx=0; idx<conf->lsn_num; ++idx) {
         lsvr = ctx->listen.lsvr + idx;
         lsvr->log = ctx->log;
-        if (agent_listen_init(ctx, lsvr, idx))
-        {
+        if (agent_listen_init(ctx, lsvr, idx)) {
             CLOSE(ctx->listen.lsn_sck_id);
             slab_dealloc(ctx->slab, ctx->listen.lsvr);
             log_error(ctx->log, "Initialize listen-server failed!");
@@ -408,8 +377,7 @@ static int agent_creat_listens(agent_cntx_t *ctx)
     opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
     ctx->listens = thread_pool_init(conf->lsn_num, &opt, ctx->listen.lsvr);
-    if (NULL == ctx->listens)
-    {
+    if (NULL == ctx->listens) {
         CLOSE(ctx->listen.lsn_sck_id);
         slab_dealloc(ctx->slab, ctx->listen.lsvr);
         log_error(ctx->log, "Initialize thread pool failed!");
@@ -438,8 +406,7 @@ static int agent_rsvr_pool_destroy(agent_cntx_t *ctx)
     const agent_conf_t *conf = ctx->conf;
 
     /* 1. 释放Agent对象 */
-    for (idx=0; idx<conf->agent_num; ++idx)
-    {
+    for (idx=0; idx<conf->agent_num; ++idx) {
         agent = (agent_rsvr_t *)ctx->agents->data + idx;
 
         agent_rsvr_destroy(agent);
@@ -493,8 +460,7 @@ static int agent_init_reg(agent_cntx_t *ctx)
     unsigned int idx;
     agent_reg_t *reg;
 
-    for (idx=0; idx<=AGENT_MSG_TYPE_MAX; ++idx)
-    {
+    for (idx=0; idx<=AGENT_MSG_TYPE_MAX; ++idx) {
         reg = &ctx->reg[idx];
 
         reg->type = idx;
@@ -560,17 +526,14 @@ static int agent_creat_queue(agent_cntx_t *ctx)
 
     /* > 创建CONN队列(与Agent数一致) */
     ctx->connq = (queue_t **)calloc(conf->agent_num, sizeof(queue_t*));
-    if (NULL == ctx->connq)
-    {
+    if (NULL == ctx->connq) {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return AGENT_ERR;
     }
 
-    for (idx=0; idx<conf->agent_num; ++idx)
-    {
+    for (idx=0; idx<conf->agent_num; ++idx) {
         ctx->connq[idx] = queue_creat(conf->connq.max, sizeof(agent_add_sck_t));
-        if (NULL == ctx->connq)
-        {
+        if (NULL == ctx->connq) {
             log_error(ctx->log, "Create conn queue failed!");
             return AGENT_ERR;
         }
@@ -578,17 +541,14 @@ static int agent_creat_queue(agent_cntx_t *ctx)
 
     /* > 创建RECV队列(与Agent数一致) */
     ctx->recvq = (queue_t **)calloc(conf->agent_num, sizeof(queue_t*));
-    if (NULL == ctx->recvq)
-    {
+    if (NULL == ctx->recvq) {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return AGENT_ERR;
     }
 
-    for (idx=0; idx<conf->agent_num; ++idx)
-    {
+    for (idx=0; idx<conf->agent_num; ++idx) {
         ctx->recvq[idx] = queue_creat(conf->recvq.max, conf->recvq.size);
-        if (NULL == ctx->recvq)
-        {
+        if (NULL == ctx->recvq) {
             log_error(ctx->log, "Create recv queue failed!");
             return AGENT_ERR;
         }
@@ -596,17 +556,14 @@ static int agent_creat_queue(agent_cntx_t *ctx)
 
     /* > 创建SEND队列(与Agent数一致) */
     ctx->sendq = (queue_t **)calloc(conf->agent_num, sizeof(queue_t*));
-    if (NULL == ctx->sendq)
-    {
+    if (NULL == ctx->sendq) {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return AGENT_ERR;
     }
 
-    for (idx=0; idx<conf->agent_num; ++idx)
-    {
+    for (idx=0; idx<conf->agent_num; ++idx) {
         ctx->sendq[idx] = queue_creat(conf->sendq.max, conf->sendq.size);
-        if (NULL == ctx->sendq)
-        {
+        if (NULL == ctx->sendq) {
             log_error(ctx->log, "Create send queue failed!");
             return AGENT_ERR;
         }
@@ -633,8 +590,7 @@ static int agent_cli_init(agent_cntx_t *ctx)
     snprintf(path, sizeof(path), "%s/"AGENT_CLI_CMD_PATH, ctx->conf->path);
 
     ctx->cli.cmd_sck_id = unix_udp_creat(path);
-    if (ctx->cli.cmd_sck_id < 0)
-    {
+    if (ctx->cli.cmd_sck_id < 0) {
         return AGENT_ERR;
     }
 

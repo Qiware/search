@@ -30,13 +30,10 @@ int main(int argc, char *argv[])
     log_cycle_t *log;
 
     /* > 获取输入参数 */
-    if (mem_getopt(argc, argv, &opt))
-    {
+    if (mem_getopt(argc, argv, &opt)) {
         return mem_usage(argv[0]);
     }
-
-    if (opt.isdaemon)
-    {
+    else if (opt.isdaemon) {
         daemon(1, 1);
     }
 
@@ -44,8 +41,7 @@ int main(int argc, char *argv[])
 
     /* > 初始化日志模块 */
     log = log_init(opt.log_level, MEM_LOG_PATH, opt.log_key_path);
-    if (NULL == log)
-    {
+    if (NULL == log) {
         fprintf(stderr, "Initialize log cycle failed!\n");
         return -1;
     }

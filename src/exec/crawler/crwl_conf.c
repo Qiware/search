@@ -46,15 +46,13 @@ int crwl_load_conf(const char *path, crwl_conf_t *conf, log_cycle_t *log)
     opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
     xml = xml_creat(path, &opt);
-    if (NULL == xml)
-    {
+    if (NULL == xml) {
         log_error(log, "Create xml failed! path:%s", path);
         return -1;
     }
 
     /* > 提取配置信息 */
-    if (_crwl_conf_load(xml, conf, log))
-    {
+    if (_crwl_conf_load(xml, conf, log)) {
         log_error(log, "Load conf failed! path:%s", path);
         xml_destroy(xml);
         return -1;
@@ -91,16 +89,14 @@ static int _crwl_conf_load(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
 
     /* > 定位WORKER配置 */
     nail = xml_query(xml, ".CRAWLER.WORKER");
-    if (NULL == nail)
-    {
+    if (NULL == nail) {
         log_error(log, "Didn't configure worker process!");
         return -1;
     }
 
     /* 1. 爬虫线程数(相对查找) */
     node = xml_search(xml, nail, "NUM");
-    if (NULL == node)
-    {
+    if (NULL == node) {
         worker->num = CRWL_THD_DEF_NUM;
         log_warn(log, "Set thread number: %d!", worker->num);
     }
@@ -109,57 +105,49 @@ static int _crwl_conf_load(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
         worker->num = atoi(node->value.str);
     }
 
-    if (worker->num <= 0)
-    {
+    if (worker->num <= 0) {
         worker->num = CRWL_THD_MIN_NUM;
         log_warn(log, "Set thread number: %d!", worker->num);
     }
 
     /* 2. 并发网页连接数(相对查找) */
     node = xml_search(xml, nail, "CONNECTIONS.MAX");
-    if (NULL == node)
-    {
+    if (NULL == node) {
         log_error(log, "Didn't configure download webpage number!");
         return -1;
     }
 
     worker->conn_max_num = atoi(node->value.str);
-    if (worker->conn_max_num <= 0)
-    {
+    if (worker->conn_max_num <= 0) {
         worker->conn_max_num = CRWL_CONN_MIN_NUM;
     }
-    else if (worker->conn_max_num >= CRWL_CONN_MAX_NUM)
-    {
+    else if (worker->conn_max_num >= CRWL_CONN_MAX_NUM) {
         worker->conn_max_num = CRWL_CONN_MAX_NUM;
     }
 
     /* 3. 连接超时时间 */
     node = xml_search(xml, nail, "CONNECTIONS.TIMEOUT");
-    if (NULL == node)
-    {
+    if (NULL == node) {
         log_error(log, "Didn't configure download webpage number!");
         return -1;
     }
 
     worker->conn_tmout_sec = atoi(node->value.str);
-    if (worker->conn_tmout_sec <= 0)
-    {
+    if (worker->conn_tmout_sec <= 0) {
         worker->conn_tmout_sec = CRWL_CONN_TMOUT_SEC;
     }
 
     /* > 定位Download标签
      *  获取网页抓取深度和存储路径 */
     nail = xml_query(xml, ".CRAWLER.DOWNLOAD");
-    if (NULL == nail)
-    {
+    if (NULL == nail) {
         log_error(log, "Didn't configure download!");
         return -1;
     }
 
     /* 1 获取抓取深度 */
     node = xml_search(xml, nail, "DEPTH");
-    if (NULL == node)
-    {
+    if (NULL == node) {
         log_error(log, "Get download depth failed!");
         return -1;
     }
@@ -168,8 +156,7 @@ static int _crwl_conf_load(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
 
     /* 2 获取存储路径 */
     node = xml_search(xml, nail, "PATH");
-    if (NULL == node)
-    {
+    if (NULL == node) {
         log_error(log, "Get download path failed!");
         return -1;
     }
@@ -178,22 +165,19 @@ static int _crwl_conf_load(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
 
     /* 3 任务队列配置(相对查找) */
     node = xml_query(xml, "CRAWLER.WORKQ.COUNT");
-    if (NULL == node)
-    {
+    if (NULL == node) {
         log_error(log, "Didn't configure count of work task queue unit!");
         return -1;
     }
 
     conf->workq_count = atoi(node->value.str);
-    if (conf->workq_count <= 0)
-    {
+    if (conf->workq_count <= 0) {
         conf->workq_count = CRWL_WORKQ_MAX_NUM;
     }
 
     /* > 获取管理配置 */
     node = xml_query(xml, "CRAWLER.MANAGER.PORT");
-    if (NULL == node)
-    {
+    if (NULL == node) {
         log_error(log, "Get manager port failed!");
         return -1;
     }
@@ -201,8 +185,7 @@ static int _crwl_conf_load(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
     conf->man_port = atoi(node->value.str);
 
     /* > 获取Redis配置 */
-    if (crwl_conf_load_redis(xml, conf, log))
-    {
+    if (crwl_conf_load_redis(xml, conf, log)) {
         log_error(log, "Get redis configuration failed!");
         return -1;
     }
@@ -234,26 +217,22 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
     /* > 定位REDIS标签
      *  获取Redis的IP地址、端口号、队列、副本等信息 */
     nail = xml_query(xml, ".CRAWLER.REDIS");
-    if (NULL == nail)
-    {
+    if (NULL == nail) {
         log_error(log, "Didn't configure redis!");
         return -1;
     }
 
     /* > 计算REDIS网络配置项总数 */
     start = xml_search(xml, nail, "NETWORK.ITEM");
-    if (NULL == start)
-    {
+    if (NULL == start) {
         log_error(log, "Query item of network failed!");
         return -1;
     }
     
     redis->num = 0;
     item = start;
-    while (NULL != item)
-    {
-        if (strcmp(item->name.str, "ITEM"))
-        {
+    while (NULL != item) {
+        if (strcmp(item->name.str, "ITEM")) {
             log_error(log, "Mark name isn't right! mark:%s", item->name.str);
             return -1;
         }
@@ -262,8 +241,7 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
     }
 
     redis->conf = (redis_conf_t *)calloc(redis->num, sizeof(redis_conf_t));
-    if (NULL == redis->conf)
-    {
+    if (NULL == redis->conf) {
         log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
         return -1;
     }
@@ -271,12 +249,10 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
     /* 注: 出现异常情况时 内存在此不必释放 */
     idx = 0;
     item = start;
-    while (NULL != item)
-    {
+    while (NULL != item) {
         /* 获取IP地址 */
         node = xml_search(xml, item, "IP");
-        if (NULL == node)
-        {
+        if (NULL == node) {
             log_error(log, "Mark name isn't right! mark:%s", item->name);
             return -1;
         }
@@ -285,8 +261,7 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
 
         /* 获取PORT地址 */
         node = xml_search(xml, item, "PORT");
-        if (NULL == node)
-        {
+        if (NULL == node) {
             log_error(log, "Mark name isn't right! mark:%s", item->name);
             return -1;
         }
@@ -300,8 +275,7 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
 
     /* > 获取队列名 */
     node = xml_search(xml, nail, "TASKQ.NAME");
-    if (NULL == node)
-    {
+    if (NULL == node) {
         log_error(log, "Get undo task queue failed!");
         return -1;
     }
@@ -310,8 +284,7 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
 
     /* > 获取哈希表名 */
     node = xml_search(xml, nail, "DONE_TAB.NAME");  /* DONE哈希表 */
-    if (NULL == node)
-    {
+    if (NULL == node) {
         log_error(log, "Get done hash table failed!");
         return -1;
     }
@@ -319,8 +292,7 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
     snprintf(redis->done_tab, sizeof(redis->done_tab), "%s", node->value.str);
 
     node = xml_search(xml, nail, "PUSH_TAB.NAME");  /* PUSH哈希表 */
-    if (NULL == node)
-    {
+    if (NULL == node) {
         log_error(log, "Get pushed hash table failed!");
         return -1;
     }

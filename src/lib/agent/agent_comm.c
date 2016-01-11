@@ -25,8 +25,7 @@ agent_serial_to_sck_map_t *agent_serial_to_sck_map_init(agent_cntx_t *ctx)
     agent_serial_to_sck_map_t *s2s;
 
     s2s = (agent_serial_to_sck_map_t *)slab_alloc(ctx->slab, sizeof(agent_serial_to_sck_map_t));
-    if (NULL == s2s)
-    {
+    if (NULL == s2s) {
         return NULL;
     }
 
@@ -38,31 +37,26 @@ agent_serial_to_sck_map_t *agent_serial_to_sck_map_init(agent_cntx_t *ctx)
     do
     {
         s2s->map = (avl_tree_t **)slab_alloc(ctx->slab, s2s->len*sizeof(avl_tree_t *));
-        if (NULL == s2s->map)
-        {
+        if (NULL == s2s->map) {
             log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
             break;
         }
 
         s2s->lock = (spinlock_t *)slab_alloc(ctx->slab, s2s->len*sizeof(spinlock_t));
-        if (NULL == s2s->lock)
-        {
+        if (NULL == s2s->lock) {
             log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
             break;
         }
 
         s2s->slot = (slot_t **)slab_alloc(ctx->slab, s2s->len*sizeof(slot_t *));
-        if (NULL == s2s->slot)
-        {
+        if (NULL == s2s->slot) {
             log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
             break;
         }
 
-        for (i=0; i<s2s->len; ++i)
-        {
+        for (i=0; i<s2s->len; ++i) {
             s2s->slot[i] = slot_creat(1024*1024, sizeof(agent_flow_t));
-            if (NULL == s2s->slot[i])
-            {
+            if (NULL == s2s->slot[i]) {
                 break;
             }
 
@@ -71,8 +65,7 @@ agent_serial_to_sck_map_t *agent_serial_to_sck_map_init(agent_cntx_t *ctx)
             opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
             s2s->map[i] = avl_creat(&opt, (key_cb_t)key_cb_int64, (cmp_cb_t)cmp_cb_int64);
-            if (NULL == s2s->map[i])
-            {
+            if (NULL == s2s->map[i]) {
                 log_error(ctx->log, "Create avl failed!");
                 break;
             }
@@ -111,8 +104,7 @@ int agent_serial_to_sck_map_insert(agent_cntx_t *ctx, agent_flow_t *_flow)
 
     /* > 申请内存空间 */
     flow = (agent_flow_t *)slot_alloc(s2s->slot[idx], sizeof(agent_flow_t));
-    if (NULL == flow)
-    {
+    if (NULL == flow) {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return AGENT_ERR;
     }
@@ -125,8 +117,7 @@ int agent_serial_to_sck_map_insert(agent_cntx_t *ctx, agent_flow_t *_flow)
     /* > 插入流水->SCK映射 */
     spin_lock(&s2s->lock[idx]);
 
-    if (avl_insert(s2s->map[idx], &flow->serial, sizeof(flow->serial), flow))
-    {
+    if (avl_insert(s2s->map[idx], &flow->serial, sizeof(flow->serial), flow)) {
         spin_unlock(&s2s->lock[idx]);
         slot_dealloc(s2s->slot[idx], flow);
         log_error(ctx->log, "Insert into avl failed! idx:%d serial:%lu sid:%lu agt_idx:%d",
@@ -160,8 +151,7 @@ int _agent_serial_to_sck_map_delete(agent_cntx_t *ctx, uint64_t serial)
     idx = serial % s2s->len;
 
     avl_delete(s2s->map[idx], &serial, sizeof(serial), (void **)&flow); 
-    if (NULL == flow)
-    {
+    if (NULL == flow) {
         log_error(ctx->log, "Delete serial to sck map failed! idx:%d serial:%lu", idx, serial);
         return AGENT_ERR;
     }
@@ -195,8 +185,7 @@ int agent_serial_to_sck_map_delete(agent_cntx_t *ctx, uint64_t serial)
     spin_lock(&s2s->lock[idx]);
 
     avl_delete(s2s->map[idx], &serial, sizeof(serial), (void **)&flow); 
-    if (NULL == flow)
-    {
+    if (NULL == flow) {
         spin_unlock(&s2s->lock[idx]);
         log_error(ctx->log, "Delete serial to sck map failed! idx:%d serial:%lu", idx, serial);
         return AGENT_ERR;
@@ -227,8 +216,7 @@ static int agent_serial_get_timeout_list(agent_flow_t *flow, agent_conn_timeout_
 #define AGENT_SERIAL_TIMEOUT_SEC (30)
 
     /* 判断是否超时，则加入到timeout链表中 */
-    if (timeout->ctm - flow->create_tm <= AGENT_SERIAL_TIMEOUT_SEC)
-    {
+    if (timeout->ctm - flow->create_tm <= AGENT_SERIAL_TIMEOUT_SEC) {
         return AGENT_OK; /* 未超时 */
     }
 
@@ -255,10 +243,8 @@ int agent_serial_to_sck_map_timeout(agent_cntx_t *ctx)
     agent_conn_timeout_list_t timeout;
     agent_serial_to_sck_map_t *s2s = ctx->serial_to_sck_map;
 
-    for (idx=0; idx<s2s->len; ++idx)
-    {
-        if (avl_isempty(s2s->map[idx]))
-        {
+    for (idx=0; idx<s2s->len; ++idx) {
+        if (avl_isempty(s2s->map[idx])) {
             continue;
         }
 
@@ -266,8 +252,7 @@ int agent_serial_to_sck_map_timeout(agent_cntx_t *ctx)
 
         /* > 创建内存池 */
         timeout.pool = mem_pool_creat(1 * KB);
-        if (NULL == timeout.pool)
-        {
+        if (NULL == timeout.pool) {
             log_error(ctx->log, "Create memory pool failed!");
             return AGENT_ERR;
         }
@@ -282,8 +267,7 @@ int agent_serial_to_sck_map_timeout(agent_cntx_t *ctx)
         opt.dealloc = (mem_dealloc_cb_t)mem_pool_dealloc;
 
         timeout.list = list_creat(&opt);
-        if (NULL == timeout.list)
-        {
+        if (NULL == timeout.list) {
             log_error(ctx->log, "Create list failed!");
             mem_pool_destroy(timeout.pool);
             break;
@@ -295,11 +279,9 @@ int agent_serial_to_sck_map_timeout(agent_cntx_t *ctx)
         avl_trav(s2s->map[idx], (trav_cb_t)agent_serial_get_timeout_list, &timeout);
 
         /* > 删除超时连接 */
-        for (;;)
-        {
+        for (;;) {
             flow = (agent_flow_t *)list_lpop(timeout.list);
-            if (NULL == flow)
-            {
+            if (NULL == flow) {
                 break;
             }
 
@@ -341,8 +323,7 @@ int agent_serial_to_sck_map_query(agent_cntx_t *ctx, uint64_t serial, agent_flow
     spin_lock(&s2s->lock[idx]);
 
     data = avl_query(s2s->map[idx], &serial, sizeof(serial)); 
-    if (NULL == data)
-    {
+    if (NULL == data) {
         spin_unlock(&s2s->lock[idx]);
         log_error(ctx->log, "Query serial to sck map failed! idx:%d serial:%lu", idx, serial);
         return AGENT_ERR;
@@ -379,8 +360,7 @@ int agent_send(agent_cntx_t *ctx, int type, uint64_t serial, void *data, int len
     agent_header_t *head;
 
     /* > 查找SERIAL->SCK映射 */
-    if (agent_serial_to_sck_map_query(ctx, serial, &flow))
-    {
+    if (agent_serial_to_sck_map_query(ctx, serial, &flow)) {
         log_error(ctx->log, "Query serial->sck map failed! serial:%lu", serial);
         return AGENT_ERR;
     }
@@ -391,8 +371,7 @@ int agent_send(agent_cntx_t *ctx, int type, uint64_t serial, void *data, int len
     sendq = ctx->sendq[flow.agt_idx];
 
     addr = queue_malloc(sendq, size);
-    if (NULL == addr)
-    {
+    if (NULL == addr) {
         log_error(ctx->log, "Alloc from queue failed! size:%d/%d", size, queue_size(sendq));
         return AGENT_ERR;
     }

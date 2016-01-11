@@ -41,16 +41,14 @@ gumbo_html_t *gumbo_html_parse(const char *path, log_cycle_t *log)
 
     /* 1. 创建内存池 */
     mem_pool = mem_pool_creat(1 * MB);
-    if (NULL == mem_pool)
-    {
+    if (NULL == mem_pool) {
         log_error(log, "Create memory pool failed!");
         return NULL;
     }
 
     /* 2. 创建HTML对象 */
     html = mem_pool_alloc(mem_pool, sizeof(gumbo_html_t));
-    if (NULL == html)
-    {
+    if (NULL == html) {
         mem_pool_destroy(mem_pool);
         log_error(log, "Alloc memory from slab failed!");
         return NULL;
@@ -62,8 +60,7 @@ gumbo_html_t *gumbo_html_parse(const char *path, log_cycle_t *log)
     snprintf(html->path, sizeof(html->path), "%s", path);
 
     ret = gumbo_load_html(html, log);
-    if (0 != ret)
-    {
+    if (0 != ret) {
         mem_pool_destroy(mem_pool);
         log_error(log, "Load html failed! path:%s", path);
         return NULL;
@@ -78,8 +75,7 @@ gumbo_html_t *gumbo_html_parse(const char *path, log_cycle_t *log)
     html->opt.max_errors = -1;
 
     html->output = gumbo_parse_with_options(&html->opt, html->input, html->input_length);
-    if (NULL == html->output)
-    {
+    if (NULL == html->output) {
         mem_pool_destroy(mem_pool);
         return NULL;
     }
@@ -123,8 +119,7 @@ static int gumbo_load_html(gumbo_html_t *html, log_cycle_t *log)
     
     /* 1. 打开文件 */
     fp = fopen(html->path, "r");
-    if (NULL == fp)
-    {
+    if (NULL == fp) {
         log_error(log, "errmsg:[%d] %s! path:%s", errno, strerror(errno), html->path);
         return -1;
     }
@@ -135,16 +130,14 @@ static int gumbo_load_html(gumbo_html_t *html, log_cycle_t *log)
 
     html->input_length = st.st_size;
     html->input = mem_pool_alloc(html->mem_pool, html->input_length + 1);
-    if (NULL == html->input)
-    {
+    if (NULL == html->input) {
         log_error(log, "Alloc memory from slab failed!");
         return -1;
     }
 
     /* 3. 载入内存 */
     off = 0;
-    while ((n = fread(html->input + off, 1, html->input_length - off, fp)))
-    {
+    while ((n = fread(html->input + off, 1, html->input_length - off, fp))) {
         off += n;
     }
 
@@ -176,8 +169,7 @@ const char *gumbo_get_title(const gumbo_html_t *html)
     /* 1. 查找HEAD结点 */
     children = &root->v.element.children;
     head = NULL;
-    for (idx=0; idx<children->length; ++idx)
-    {
+    for (idx=0; idx<children->length; ++idx) {
         child = children->data[idx];
         if (GUMBO_NODE_ELEMENT == child->type
             && GUMBO_TAG_HEAD == child->v.element.tag)
@@ -189,14 +181,12 @@ const char *gumbo_get_title(const gumbo_html_t *html)
 
     /* 2. 查找HTML结点 */
     children = &head->v.element.children;
-    for (idx=0; idx<children->length; ++idx)
-    {
+    for (idx=0; idx<children->length; ++idx) {
         child = children->data[idx];
         if (GUMBO_NODE_ELEMENT == child->type
             && GUMBO_TAG_TITLE == child->v.element.tag)
         {
-            if (1 != child->v.element.children.length)
-            {
+            if (1 != child->v.element.children.length) {
                 return NULL;
             }
 
@@ -227,8 +217,7 @@ static void _gumbo_parse_href(GumboNode *node, gumbo_result_t *r)
     GumboAttribute *href;
     GumboVector *children;
 
-    if (GUMBO_NODE_ELEMENT != node->type)
-    {
+    if (GUMBO_NODE_ELEMENT != node->type) {
         return;
     }
 
@@ -239,8 +228,7 @@ static void _gumbo_parse_href(GumboNode *node, gumbo_result_t *r)
         len = strlen(href->value);
 
         data = mem_pool_alloc(r->mem_pool, len + 1);
-        if (NULL == data)
-        {
+        if (NULL == data) {
             log_error(r->log, "Alloc memory from slab failed!");
             return;
         }
@@ -252,8 +240,7 @@ static void _gumbo_parse_href(GumboNode *node, gumbo_result_t *r)
     }
 
     children = &node->v.element.children;
-    for (idx = 0; idx < children->length; ++idx)
-    {
+    for (idx = 0; idx < children->length; ++idx) {
         _gumbo_parse_href((GumboNode *)children->data[idx], r);
     }
 }
@@ -277,16 +264,14 @@ gumbo_result_t *gumbo_parse_href(const gumbo_html_t *html, log_cycle_t *log)
 
     /* > 创建内存池 */
     mem_pool = mem_pool_creat(1 * MB);
-    if (NULL == mem_pool)
-    {
+    if (NULL == mem_pool) {
         log_error(log, "Create memory pool failed!");
         return NULL;
     }
 
     /* > 创建结果集对象 */
     r = mem_pool_alloc(mem_pool, sizeof(gumbo_result_t));
-    if (NULL == r)
-    {
+    if (NULL == r) {
         mem_pool_destroy(mem_pool);
         log_error(log, "Alloc memory from slab failed!");
         return NULL;
@@ -303,8 +288,7 @@ gumbo_result_t *gumbo_parse_href(const gumbo_html_t *html, log_cycle_t *log)
     opt.dealloc = (mem_dealloc_cb_t)mem_pool_dealloc;
 
     r->list = list_creat(&opt);
-    if (NULL == r->list)
-    {
+    if (NULL == r->list) {
         mem_pool_destroy(mem_pool);
         log_error(log, "Alloc memory from slab failed!");
         return NULL;
@@ -331,8 +315,7 @@ void gumbo_print_result(gumbo_result_t *r)
 {
     list_node_t *node = r->list->head;
 
-    while (NULL != node)
-    {
+    while (NULL != node) {
         fprintf(stdout, "%s\n", (char *)node->data);
         node = node->next;
     }

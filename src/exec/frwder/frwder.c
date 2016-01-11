@@ -25,12 +25,10 @@ int main(int argc, char *argv[])
     memset(&conf, 0, sizeof(conf));
 
     /* > 获取输入参数 */
-    if (frwd_getopt(argc, argv, &opt))
-    {
+    if (frwd_getopt(argc, argv, &opt)) {
         return frwd_usage(basename(argv[0]));
     }
-    else if (opt.isdaemon)
-    {
+    else if (opt.isdaemon) {
         daemon(1, 1);   /* 后台运行 */
     }
 
@@ -38,37 +36,32 @@ int main(int argc, char *argv[])
 
     /* > 初始化日志 */
     log = frwd_init_log(argv[0], opt.log_level, opt.log_key_path);
-    if (NULL == log)
-    {
+    if (NULL == log) {
         fprintf(stderr, "Initialize log failed!\n");
         return -1;
     }
 
     /* > 加载配置信息 */
-    if (frwd_load_conf(opt.conf_path, &conf, log))
-    {
+    if (frwd_load_conf(opt.conf_path, &conf, log)) {
         fprintf(stderr, "Load configuration failed!\n");
         return FRWD_ERR;
     }
 
     /* > 初始化服务 */
     frwd = frwd_init(&conf, log);
-    if (NULL == frwd)
-    {
+    if (NULL == frwd) {
         fprintf(stderr, "Initialize frwder failed!\n");
         return FRWD_ERR;
     }
 
     /* > 注册处理回调 */
-    if (frwd_set_reg(frwd))
-    {
+    if (frwd_set_reg(frwd)) {
         log_fatal(frwd->log, "Register callback failed!");
         return FRWD_ERR;
     }
 
     /* > 启动转发服务 */
-    if (frwd_launch(frwd))
-    {
+    if (frwd_launch(frwd)) {
         log_fatal(frwd->log, "Startup frwder failed!");
         return FRWD_ERR;
     }

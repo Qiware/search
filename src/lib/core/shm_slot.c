@@ -26,8 +26,7 @@
 size_t shm_slot_total(int num, size_t size)
 {
     /* > max必须为2的n次方 */
-    if (!ISPOWEROF2(num))
-    {
+    if (!ISPOWEROF2(num)) {
         return (size_t)-1;
     }
 
@@ -67,23 +66,19 @@ shm_slot_t *shm_slot_init(void *addr, int num, size_t size)
 
     /* > 初始化SHM-RING */
     tsz = shm_ring_total(num);
-    if ((off_t)-1 == tsz)
-    {
+    if ((off_t)-1 == tsz) {
         return NULL;
     }
 
     ring = shm_ring_init(addr + sizeof(shm_slot_t), num);
-    if (NULL == ring)
-    {
+    if (NULL == ring) {
         return NULL;
     }
 
     /* > 插入管理队列 */
     off = sizeof(shm_slot_t) + tsz;
-    for (i=0; i<num; ++i, off+=size)
-    {
-        if (shm_ring_push(ring, off))
-        {
+    for (i=0; i<num; ++i, off+=size) {
+        if (shm_ring_push(ring, off)) {
             return NULL;
         }
     }
@@ -107,14 +102,12 @@ void *shm_slot_alloc(shm_slot_t *slot, int size)
     off_t off;
     shm_ring_t *ring = (shm_ring_t *)(slot + 1);
 
-    if (size > slot->size)
-    {
+    if (size > slot->size) {
         return NULL;
     }
 
     off = shm_ring_pop(ring);
-    if ((off_t)-1 == off)
-    {
+    if ((off_t)-1 == off) {
         return NULL;
     }
 
@@ -139,8 +132,7 @@ void shm_slot_dealloc(shm_slot_t *slot, void *p)
 
     if (NULL == p) return;
 
-    if (shm_ring_push(ring, p - (void *)slot))
-    {
+    if (shm_ring_push(ring, p - (void *)slot)) {
         assert(0);
     }
 }

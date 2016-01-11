@@ -39,12 +39,10 @@ int main(int argc, char *argv[])
     crwl_cntx_t *ctx;
 
     /* 1. 解析输入参数 */
-    if (crwl_getopt(argc, argv, &opt))
-    {
+    if (crwl_getopt(argc, argv, &opt)) {
         return crwl_usage(argv[0]);
     }
-    else if (opt.isdaemon)
-    {
+    else if (opt.isdaemon) {
         /* int daemon(int nochdir, int noclose);
          *  1. daemon()函数主要用于希望脱离控制台, 以守护进程形式在后台运行的程序.
          *  2. 当nochdir为0时, daemon将更改进城的根目录为root(“/”).
@@ -57,15 +55,13 @@ int main(int argc, char *argv[])
 
     /* 2. 初始化处理 */
     ctx = crwl_init(argv[0], &opt);
-    if (NULL == ctx)
-    {
+    if (NULL == ctx) {
         fprintf(stderr, "Initialize crawler failed!");
         return CRWL_ERR;
     }
 
     /* 3. 启动爬虫服务 */
-    if (crwl_launch(ctx))
-    {
+    if (crwl_launch(ctx)) {
         log_error(ctx->log, "Startup crawler failed!");
         goto ERROR;
     }

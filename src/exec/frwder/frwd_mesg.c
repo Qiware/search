@@ -28,8 +28,7 @@ static int frwd_insert_word_rsp_hdl(int type, int orig, char *data, size_t len, 
 int frwd_set_reg(frwd_cntx_t *frwd)
 {
 #define FRWD_REG_CB(frwd, type, proc, args) \
-    if (rtsd_register((frwd)->rtmq, type, (rtmq_reg_cb_t)proc, (void *)args)) \
-    { \
+    if (rtsd_register((frwd)->rtmq, type, (rtmq_reg_cb_t)proc, (void *)args)) { \
         log_error((frwd)->log, "Register type [%d] failed!", type); \
         return FRWD_ERR; \
     }
@@ -68,8 +67,7 @@ static int frwd_shmq_push(shm_queue_t *shmq,
 
     /* > 申请队列空间 */
     addr = shm_queue_malloc(shmq, size);
-    if (NULL == addr)
-    {
+    if (NULL == addr) {
         return FRWD_ERR;
     }
 
@@ -86,8 +84,7 @@ static int frwd_shmq_push(shm_queue_t *shmq,
 
     memcpy(head+1, data, len);
 
-    if (shm_queue_push(shmq, addr))
-    {
+    if (shm_queue_push(shmq, addr)) {
         shm_queue_dealloc(shmq, addr);
         return FRWD_ERR;
     }

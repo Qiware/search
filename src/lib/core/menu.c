@@ -28,8 +28,7 @@ menu_cntx_t *menu_init(const char *title, menu_conf_t *conf)
 
     /* > 创建全局对象 */
     ctx = (menu_cntx_t *)calloc(1, sizeof(menu_cntx_t));
-    if (NULL == ctx)
-    {
+    if (NULL == ctx) {
         free(ctx);
         return NULL;
     }
@@ -38,8 +37,7 @@ menu_cntx_t *menu_init(const char *title, menu_conf_t *conf)
 
     /* > 创建内存池 */
     ctx->pool = mem_pool_creat(1 * KB);
-    if (NULL == ctx->pool)
-    {
+    if (NULL == ctx->pool) {
         free(ctx);
         return NULL;
     }
@@ -49,8 +47,7 @@ menu_cntx_t *menu_init(const char *title, menu_conf_t *conf)
 
     /* > 创建主菜单 */
     ctx->menu = menu_creat(ctx, title, NULL, menu_display, NULL, NULL);
-    if (NULL == ctx->menu)
-    {
+    if (NULL == ctx->menu) {
         mem_pool_destroy(ctx->pool);
         free(ctx);
         return NULL;
@@ -81,8 +78,7 @@ menu_item_t *menu_creat(menu_cntx_t *ctx, const char *name,
     menu_item_t *menu;
 
     menu = (menu_item_t *)ctx->alloc(ctx->pool, sizeof(menu_item_t));
-    if (NULL == menu)
-    {
+    if (NULL == menu) {
         return NULL;
     }
 
@@ -114,8 +110,7 @@ int menu_add(menu_item_t *menu, menu_item_t *child)
 {
     menu_item_t *item = menu->child;
 
-    if (NULL == item)
-    {
+    if (NULL == item) {
         menu->child = child;
         child->parent = menu;
         child->next = NULL;
@@ -160,8 +155,7 @@ menu_item_t *menu_child(menu_cntx_t *ctx, menu_item_t *parent,
 
     /* > 创建子菜单 */
     child = menu_creat(ctx, name, entry, func, exit, args);
-    if (NULL == child)
-    {
+    if (NULL == child) {
         return NULL;
     }
 
@@ -191,8 +185,7 @@ int menu_display(menu_cntx_t *ctx, menu_item_t *menu, void *args)
 
     /* 1. Display top line */
     fprintf(stderr, "\n╔");
-    for (i=0; i<conf->width; ++i)
-    {
+    for (i=0; i<conf->width; ++i) {
         fprintf(stderr, "═");
     }
     fprintf(stderr, "╗\n");
@@ -201,32 +194,27 @@ int menu_display(menu_cntx_t *ctx, menu_item_t *menu, void *args)
     len = strlen(menu->name);
     off = (conf->width - len)/2;
     fprintf(stderr, "║");
-    for (i=0; i<off; ++i)
-    {
+    for (i=0; i<off; ++i) {
         fprintf(stderr, " ");
     }
     fprintf(stderr, "%s", menu->name);
-    for (i=off+len; i<conf->width; ++i)
-    {
+    for (i=off+len; i<conf->width; ++i) {
         fprintf(stderr, " ");
     }
     fprintf(stderr, "║\n");
 
     /* 3. Display sep line */
     fprintf(stderr, "║");
-    for (i=0; i<conf->width; ++i)
-    {
+    for (i=0; i<conf->width; ++i) {
         fprintf(stderr, "═");
     }
     fprintf(stderr, "║\n");
 
     /* 4. Display child menu */
-    for (n=0; NULL != child; child = child->next, ++n)
-    {
+    for (n=0; NULL != child; child = child->next, ++n) {
         fprintf(stderr, "║");
 
-        for (i=0; i<MENU_TAB_LEN; ++i)
-        {
+        for (i=0; i<MENU_TAB_LEN; ++i) {
             fprintf(stderr, " ");
         }
 
@@ -234,8 +222,7 @@ int menu_display(menu_cntx_t *ctx, menu_item_t *menu, void *args)
 
         len = strlen(child->name)+4;
 
-        for (i=len+MENU_TAB_LEN; i<conf->width; ++i)
-        {
+        for (i=len+MENU_TAB_LEN; i<conf->width; ++i) {
             fprintf(stderr, " ");
         }
         fprintf(stderr, "║\n");
@@ -243,8 +230,7 @@ int menu_display(menu_cntx_t *ctx, menu_item_t *menu, void *args)
 
     /* 5. Display low line */
     fprintf(stderr, "╚");
-    for (i=0; i<conf->width; ++i)
-    {
+    for (i=0; i<conf->width; ++i) {
         fprintf(stderr, "═");
     }
     fprintf(stderr, "╝\n");
@@ -275,19 +261,16 @@ static menu_item_t *menu_exec(menu_cntx_t *ctx, menu_item_t *menu, const char *o
         || !strcasecmp(opt, "quit")
         || !strcasecmp(opt, "exit") )
     {
-        if (!menu->parent)
-        {
+        if (!menu->parent) {
             fprintf(stderr, "    Are you sure exit?[N/y] ");
-            if (scanf(" %s", input) < 0)
-            {
+            if (scanf(" %s", input) < 0) {
                 return NULL;
             }
 
             if (0 == strcasecmp(input, "y")
                 || 0 == strcasecmp(input, "yes"))
             {
-                if (menu->exit)
-                {
+                if (menu->exit) {
                     menu->exit(ctx, menu, menu->args);
                 }
                 exit(0);
@@ -299,8 +282,7 @@ static menu_item_t *menu_exec(menu_cntx_t *ctx, menu_item_t *menu, const char *o
             return menu;
         }
 
-        if (menu->exit)
-        {
+        if (menu->exit) {
             menu->exit(ctx, menu, menu->args);
         }
 
@@ -310,24 +292,19 @@ static menu_item_t *menu_exec(menu_cntx_t *ctx, menu_item_t *menu, const char *o
     }
 
     num = atoi(opt);
-    if ((num <= 0) || (num > menu->num))
-    {
+    if ((num <= 0) || (num > menu->num)) {
         fprintf(stderr, "\n    Not right!\n");
         menu->func(ctx, menu, menu->args);
         return menu;
     }
 
-    for (i=1; NULL != child; child = child->next, ++i)
-    {
-        if (i == num)
-        {
-            if (child->entry)
-            {
+    for (i=1; NULL != child; child = child->next, ++i) {
+        if (i == num) {
+            if (child->entry) {
                 child->entry(ctx, child, child->args);
             }
 
-            if (child->func)
-            {
+            if (child->func) {
                 ret = child->func(ctx, child, child->args);
                 if (0 != ret                /* 失败或无子菜单时，均返回到上级菜单 */
                     || NULL == child->child)
@@ -362,8 +339,7 @@ int menu_run(menu_cntx_t *ctx)
     menu_item_t *curr = ctx->menu;
     char opt[MENU_INPUT_LEN];
 
-    if (curr->entry)
-    {
+    if (curr->entry) {
         curr->entry(ctx, curr, curr->args);
     }
 
@@ -373,13 +349,11 @@ int menu_run(menu_cntx_t *ctx)
     {
     BEGIN:
         fprintf(stderr, "Option: ");
-        if (scanf(" %s", opt) < 0)
-        {
+        if (scanf(" %s", opt) < 0) {
             return 0;
         }
 
-        if (!str_isdigit(opt))
-        {
+        if (!str_isdigit(opt)) {
             if (0 != strcasecmp(opt, "q")
                 && 0 != strcasecmp(opt, "quit")
                 && 0 != strcasecmp(opt, "exit"))

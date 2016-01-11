@@ -33,8 +33,7 @@ void list_assert(list_t *list)
         curr = curr->next;
     }
 
-    if (num != list->num)
-    {
+    if (num != list->num) {
         abort();
     }
 }
@@ -55,8 +54,7 @@ list_t *list_creat(list_opt_t *opt)
     list_t *list;
 
     list = opt->alloc(opt->pool, sizeof(list_t));
-    if (NULL == list)
-    {
+    if (NULL == list) {
         return NULL;
     }
 
@@ -88,8 +86,7 @@ void list_destroy(list_t *list, void *pool, mem_dealloc_cb_t dealloc)
 {
     list_node_t *curr, *next;
 
-    for (curr = list->head; NULL != curr; curr = next)
-    {
+    for (curr = list->head; NULL != curr; curr = next) {
        next = curr->next;
        dealloc(pool, curr->data);
        list->dealloc(list->pool, curr);
@@ -116,8 +113,7 @@ int list_lpush(list_t *list, void *data)
 
     /* > 新建结点 */
     node = list->alloc(list->pool, sizeof(list_node_t));
-    if (NULL == node)
-    {
+    if (NULL == node) {
         return -1;
     }
 
@@ -125,8 +121,7 @@ int list_lpush(list_t *list, void *data)
 
     /* > 插入链表
      * 1. 链表为空时 */
-    if (NULL == list->head)
-    {
+    if (NULL == list->head) {
         list->head = node;
         list->tail = node;
         node->next = NULL;
@@ -161,8 +156,7 @@ int list_rpush(list_t *list, void *data)
 
     /* > 新建结点 */
     node = list->alloc(list->pool, sizeof(list_node_t));
-    if (NULL == node)
-    {
+    if (NULL == node) {
         return -1;
     }
 
@@ -170,8 +164,7 @@ int list_rpush(list_t *list, void *data)
 
     /* > 插入链尾
      * 1. 链表为空时 */
-    if (!list->tail)
-    {
+    if (!list->tail) {
         list->head = node;
         list->tail = node;
         node->next = NULL;
@@ -209,19 +202,16 @@ int list_insert(list_t *list, list_node_t *prev, void *data)
     list_node_t *node;
 
     /* > 插入链头或链尾 */
-    if (NULL == prev)
-    {
+    if (NULL == prev) {
         return list_lpush(list, data);
     }
-    else if (list->tail == prev)
-    {
+    else if (list->tail == prev) {
         return list_rpush(list, data);
     }
 
     /* > 新建结点 */
     node = list->alloc(list->pool, sizeof(list_node_t));
-    if (NULL == node)
-    {
+    if (NULL == node) {
         return -1;
     }
 
@@ -251,13 +241,11 @@ void *list_lpop(list_t *list)
     list_node_t *head;
 
     /* 1. 无数据 */
-    if (NULL == list->head)
-    {
+    if (NULL == list->head) {
         return NULL;
     }
     /* 2. 只有１个结点 */
-    else if (list->head == list->tail)
-    {
+    else if (list->head == list->tail) {
         head = list->head;
 
         list->tail = NULL;
@@ -303,8 +291,7 @@ void *list_rpop(list_t *list)
         return NULL;
     }
     /* 2. 只有１个结点 */
-    else if (list->head == list->tail)
-    {
+    else if (list->head == list->tail) {
         tail = list->tail;
 
         list->tail = NULL;
@@ -354,13 +341,10 @@ int list_remove(list_t *list, void *data)
     curr = list->head;
     while (NULL != curr)
     {
-        if (curr->data == data)
-        {
+        if (curr->data == data) {
             /* 删除头结点 */
-            if (list->head == curr)
-            {
-                if (list->head == list->tail)
-                {
+            if (list->head == curr) {
+                if (list->head == list->tail) {
                     list->head = NULL;
                     list->tail = NULL;
                     list->num = 0;
@@ -376,8 +360,7 @@ int list_remove(list_t *list, void *data)
                 return 0;
             }
             /* 删除尾结点 */
-            else if (curr == list->tail)
-            {
+            else if (curr == list->tail) {
                 prev->next = curr->next;
                 list->tail = prev;
                 --list->num;
@@ -419,14 +402,12 @@ void *list_fetch(list_t *list, int idx)
     int i = 0;
     list_node_t *node;
 
-    if (idx >= list->num)
-    {
+    if (idx >= list->num) {
         return NULL;
     }
 
     node  = list->head;
-    for (i=0; i<idx; ++i)
-    {
+    for (i=0; i<idx; ++i) {
         node = node->next;
     }
 
@@ -451,15 +432,13 @@ int list_push_desc(list_t *list, void *data, cmp_cb_t cmp)
     int ret;
     list_node_t *curr, *node, *prev;
 
-    if (NULL == list->head)
-    {
+    if (NULL == list->head) {
         return list_lpush(list, data);
     }
 
     /* > 新建结点 */
     node = list->alloc(list->pool, sizeof(list_node_t));
-    if (NULL == node)
-    {
+    if (NULL == node) {
         return -1;
     }
 
@@ -467,11 +446,9 @@ int list_push_desc(list_t *list, void *data, cmp_cb_t cmp)
 
     prev = NULL;
     curr=list->head;
-    for (; NULL!=curr; curr=curr->next)
-    {
+    for (; NULL!=curr; curr=curr->next) {
         ret = cmp(data, curr->data);
-        if ((0 == ret) || (ret > 0))
-        {
+        if ((0 == ret) || (ret > 0)) {
             return list_insert(list, prev, data); /* 插入PREV之后 */
         }
         prev = curr;

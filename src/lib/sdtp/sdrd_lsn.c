@@ -53,15 +53,13 @@ void *sdrd_lsn_routine(void *args)
 
     /* 1. 初始化侦听 */
     lsn = sdrd_lsn_init(ctx);
-    if (NULL == lsn)
-    {
+    if (NULL == lsn) {
         log_error(ctx->log, "Initialize listen failed!");
         abort();
         return (void *)-1;
     }
 
-    for (;;)
-    {
+    for (;;) {
         /* 2. 等待请求和命令 */
         FD_ZERO(&rdset);
 
@@ -73,27 +71,23 @@ void *sdrd_lsn_routine(void *args)
         timeout.tv_sec = SDTP_LSN_TMOUT_SEC;
         timeout.tv_usec = SDTP_LSN_TMOUT_USEC;
         ret = select(max+1, &rdset, NULL, NULL, &timeout);
-        if (ret < 0)
-        {
+        if (ret < 0) {
             if (EINTR == errno) { continue; }
             log_error(lsn->log, "errmsg:[%d] %s", errno, strerror(errno));
             abort();
             return (void *)-1;
         }
-        else if (0 == ret)
-        {
+        else if (0 == ret) {
             continue;
         }
 
         /* 3. 接收连接请求 */
-        if (FD_ISSET(lsn->lsn_sck_id, &rdset))
-        {
+        if (FD_ISSET(lsn->lsn_sck_id, &rdset)) {
             sdrd_lsn_accept(ctx, lsn);
         }
 
         /* 4. 接收处理命令 */
-        if (FD_ISSET(lsn->cmd_sck_id, &rdset))
-        {
+        if (FD_ISSET(lsn->cmd_sck_id, &rdset)) {
             sdrd_lsn_cmd_core_hdl(ctx, lsn);
         }
     }
@@ -125,8 +119,7 @@ static sdrd_lsn_t *sdrd_lsn_init(sdrd_cntx_t *ctx)
 
     /* 1. 侦听指定端口 */
     lsn->lsn_sck_id = tcp_listen(ctx->conf.port);
-    if (lsn->lsn_sck_id < 0)
-    {
+    if (lsn->lsn_sck_id < 0) {
         log_error(lsn->log, "Listen special port failed!");
         return NULL;
     }
@@ -135,8 +128,7 @@ static sdrd_lsn_t *sdrd_lsn_init(sdrd_cntx_t *ctx)
     sdrd_lsn_usck_path(conf, path);
 
     lsn->cmd_sck_id = unix_udp_creat(path);
-    if (lsn->cmd_sck_id < 0)
-    {
+    if (lsn->cmd_sck_id < 0) {
         CLOSE(lsn->lsn_sck_id);
         log_error(lsn->log, "Create unix udp socket failed!");
         return NULL;
@@ -188,21 +180,18 @@ static int sdrd_lsn_accept(sdrd_cntx_t *ctx, sdrd_lsn_t *lsn)
     sdtp_cmd_add_sck_t *args = (sdtp_cmd_add_sck_t *)&cmd.args;
 
     /* 1. 接收连接请求 */
-    for (;;)
-    {
+    for (;;) {
         memset(&cliaddr, 0, sizeof(cliaddr));
 
         len = sizeof(struct sockaddr_in);
 
         sckid = accept(lsn->lsn_sck_id, (struct sockaddr *)&cliaddr, &len);
-        if (sckid >= 0)
-        {
+        if (sckid >= 0) {
             log_debug(lsn->log, "New connection! sckid:%d ip:%s",
                     sckid, inet_ntoa(cliaddr.sin_addr));
             break;
         }
-        else if (EINTR == errno)
-        {
+        else if (EINTR == errno) {
             continue;
         }
 
@@ -220,8 +209,7 @@ static int sdrd_lsn_accept(sdrd_cntx_t *ctx, sdrd_lsn_t *lsn)
     args->sid = ++lsn->sid;
     snprintf(args->ipaddr, sizeof(args->ipaddr), "%s", inet_ntoa(cliaddr.sin_addr));
 
-    if (sdrd_cmd_to_rsvr(ctx, lsn->cmd_sck_id, &cmd, sdrd_rand_rsvr(ctx)) < 0)
-    {
+    if (sdrd_cmd_to_rsvr(ctx, lsn->cmd_sck_id, &cmd, sdrd_rand_rsvr(ctx)) < 0) {
         CLOSE(sckid);
         log_error(lsn->log, "Send command failed! sckid:[%d]", sckid);
         return SDTP_ERR;
@@ -251,15 +239,13 @@ static int sdrd_lsn_cmd_core_hdl(sdrd_cntx_t *ctx, sdrd_lsn_t *lsn)
     memset(&cmd, 0, sizeof(cmd));
 
     /* 1. 接收命令 */
-    if (unix_udp_recv(lsn->cmd_sck_id, (void *)&cmd, sizeof(cmd)) < 0)
-    {
+    if (unix_udp_recv(lsn->cmd_sck_id, (void *)&cmd, sizeof(cmd)) < 0) {
         log_error(lsn->log, "Recv command failed! errmsg:[%d] %s", errno, strerror(errno));
         return SDTP_ERR_RECV_CMD;
     }
 
     /* 2. 处理命令 */
-    switch (cmd.type)
-    {
+    switch (cmd.type) {
         case SDTP_CMD_QUERY_CONF_REQ:
         {
             return sdrd_lsn_cmd_query_conf_hdl(ctx, lsn, &cmd);
@@ -318,10 +304,8 @@ static int sdrd_lsn_cmd_query_conf_hdl(sdrd_cntx_t *ctx, sdrd_lsn_t *lsn, sdtp_c
     args->qsize = cf->recvq.size;
 
     /* 2. 发送应答信息 */
-    if (unix_udp_send(lsn->cmd_sck_id, cmd->src_path, &rep, sizeof(rep)) < 0)
-    {
-        if (EAGAIN != errno)
-        {
+    if (unix_udp_send(lsn->cmd_sck_id, cmd->src_path, &rep, sizeof(rep)) < 0) {
+        if (EAGAIN != errno) {
             log_error(lsn->log, "errmsg:[%d] %s!", errno, strerror(errno));
         }
         return SDTP_ERR;
@@ -352,8 +336,7 @@ static int sdrd_lsn_cmd_query_recv_stat_hdl(sdrd_cntx_t *ctx, sdrd_lsn_t *lsn, s
     sdtp_cmd_recv_stat_t *stat = (sdtp_cmd_recv_stat_t *)&rep.args;
     const sdrd_rsvr_t *rsvr = (const sdrd_rsvr_t *)ctx->recvtp->data;
 
-    for (idx=0; idx<ctx->conf.recv_thd_num; ++idx, ++rsvr)
-    {
+    for (idx=0; idx<ctx->conf.recv_thd_num; ++idx, ++rsvr) {
         /* 1. 设置应答信息 */
         rep.type = SDTP_CMD_QUERY_RECV_STAT_REP;
 
@@ -363,10 +346,8 @@ static int sdrd_lsn_cmd_query_recv_stat_hdl(sdrd_cntx_t *ctx, sdrd_lsn_t *lsn, s
         stat->err_total = rsvr->err_total;
 
         /* 2. 发送命令信息 */
-        if (unix_udp_send(rsvr->cmd_sck_id, cmd->src_path, &rep, sizeof(rep)) < 0)
-        {
-            if (EAGAIN != errno)
-            {
+        if (unix_udp_send(rsvr->cmd_sck_id, cmd->src_path, &rep, sizeof(rep)) < 0) {
+            if (EAGAIN != errno) {
                 log_error(lsn->log, "errmsg:[%d] %s!", errno, strerror(errno));
             }
             return SDTP_ERR;
@@ -397,8 +378,7 @@ static int sdrd_lsn_cmd_query_proc_stat_hdl(sdrd_cntx_t *ctx, sdrd_lsn_t *lsn, s
     const sdtp_worker_t *wrk = (sdtp_worker_t *)ctx->worktp->data;
     sdtp_cmd_proc_stat_t *stat = (sdtp_cmd_proc_stat_t *)&rep.args;
 
-    for (idx=0; idx<ctx->conf.work_thd_num; ++idx, ++wrk)
-    {
+    for (idx=0; idx<ctx->conf.work_thd_num; ++idx, ++wrk) {
         /* 1. 设置应答信息 */
         rep.type = SDTP_CMD_QUERY_PROC_STAT_REP;
 
@@ -407,10 +387,8 @@ static int sdrd_lsn_cmd_query_proc_stat_hdl(sdrd_cntx_t *ctx, sdrd_lsn_t *lsn, s
         stat->err_total = wrk->err_total;
 
         /* 2. 发送应答信息 */
-        if (unix_udp_send(wrk->cmd_sck_id, cmd->src_path, &rep, sizeof(rep)) < 0)
-        {
-            if (EAGAIN != errno)
-            {
+        if (unix_udp_send(wrk->cmd_sck_id, cmd->src_path, &rep, sizeof(rep)) < 0) {
+            if (EAGAIN != errno) {
                 log_error(lsn->log, "errmsg:[%d] %s!", errno, strerror(errno));
             }
             return SDTP_ERR;

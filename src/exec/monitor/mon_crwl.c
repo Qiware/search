@@ -67,14 +67,12 @@ menu_item_t *mon_crwl_menu(menu_cntx_t *ctx, void *args)
     menu_item_t *menu;
 
     menu = menu_creat(ctx, "Monitor Crawler", mon_crwl_entry, menu_display, NULL, args);
-    if (NULL == menu)
-    {
+    if (NULL == menu) {
         return NULL;
     }
 
 #define ADD_CHILD(ctx, menu, title, entry, func, exit, args) \
-    if (!menu_child(ctx, menu, title, entry, func, exit, args)) \
-    { \
+    if (!menu_child(ctx, menu, title, entry, func, exit, args)) { \
         return menu; \
     }
 
@@ -109,14 +107,12 @@ static int mon_crwl_frame(mon_crwl_setup_cb_t setup, mon_crwl_print_cb_t print, 
     struct sockaddr_in from;
     mon_cntx_t *ctx = (mon_cntx_t *)args;
 
-    while (1)
-    {
+    while (1) {
         FD_ZERO(&rdset);
         FD_ZERO(&wrset);
 
         FD_SET(ctx->fd, &rdset);
-        if (!flag)
-        {
+        if (!flag) {
             FD_SET(ctx->fd, &wrset);
         }
 
@@ -125,28 +121,24 @@ static int mon_crwl_frame(mon_crwl_setup_cb_t setup, mon_crwl_print_cb_t print, 
         tmout.tv_usec = 0;
 
         ret = select(ctx->fd+1, &rdset, &wrset, NULL, &tmout);
-        if (ret < 0)
-        {
+        if (ret < 0) {
             if (EINTR == errno) { continue; }
             fprintf(stderr, "    errrmsg:[%d] %s!", errno, strerror(errno));
             break;
         }
-        else if (0 == ret)
-        {
+        else if (0 == ret) {
             fprintf(stderr, "    Timeout!");
             break;
         }
 
         /* > 发送命令 */
-        if (FD_ISSET(ctx->fd, &wrset))
-        {
+        if (FD_ISSET(ctx->fd, &wrset)) {
             memset(&cmd, 0, sizeof(cmd));
 
             setup(&cmd); /* 设置参数 */
 
             n = sendto(ctx->fd, &cmd, sizeof(cmd), 0, (const struct sockaddr *)&ctx->to, sizeof(ctx->to));
-            if (n < 0)
-            {
+            if (n < 0) {
                 fprintf(stderr, "    errrmsg:[%d] %s!", errno, strerror(errno));
                 break;
             }
@@ -154,8 +146,7 @@ static int mon_crwl_frame(mon_crwl_setup_cb_t setup, mon_crwl_print_cb_t print, 
         }
 
         /* > 接收应答 */
-        if (FD_ISSET(ctx->fd, &rdset))
-        {
+        if (FD_ISSET(ctx->fd, &rdset)) {
             memset(&from, 0, sizeof(from));
 
             from.sin_family = AF_INET;
@@ -163,8 +154,7 @@ static int mon_crwl_frame(mon_crwl_setup_cb_t setup, mon_crwl_print_cb_t print, 
             addrlen = sizeof(from);
 
             n = recvfrom(ctx->fd, &cmd, sizeof(cmd), 0, (struct sockaddr *)&from, (socklen_t *)&addrlen);
-            if (n < 0)
-            {
+            if (n < 0) {
                 fprintf(stderr, "    errrmsg:[%d] %s!", errno, strerror(errno));
                 break;
             }
@@ -230,8 +220,7 @@ static int mon_crwl_query_worker_stat_print(crwl_cmd_t *cmd)
 
     stat->num = ntohl(stat->num);
     stat->sched_stat = ntohl(stat->sched_stat);
-    for (idx=0; idx<stat->num && idx<CRWL_CMD_WORKER_MAX_NUM; ++idx)
-    {
+    for (idx=0; idx<stat->num && idx<CRWL_CMD_WORKER_MAX_NUM; ++idx) {
         /* 字节序转换 */
         stat->worker[idx].connections = ntohl(stat->worker[idx].connections);
         stat->worker[idx].down_webpage_total = ntoh64(stat->worker[idx].down_webpage_total);
@@ -267,8 +256,7 @@ static int mon_crwl_query_worker_stat_print(crwl_cmd_t *cmd)
     local_time(&stat->ctm, &loctm);
 
     diff_tm = stat->ctm - last_query_tm;
-    if (0 == diff_tm)
-    {
+    if (0 == diff_tm) {
         diff_tm = 1;
     }
 
@@ -352,8 +340,7 @@ static int mon_crwl_query_workq_stat_print(crwl_cmd_t *cmd)
     fprintf(stderr, "    ----------------------------------------------\n");
 
     num = ntohl(stat->num);
-    for (idx=0; idx<num; ++idx)
-    {
+    for (idx=0; idx<num; ++idx) {
         stat->queue[idx].num = ntohl(stat->queue[idx].num);
         stat->queue[idx].max = ntohl(stat->queue[idx].max);
 

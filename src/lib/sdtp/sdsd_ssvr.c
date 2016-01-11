@@ -55,23 +55,20 @@ int sdsd_ssvr_init(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr, int idx)
     ssvr->sck.fd = INVALID_FD;
 
     /* > 创建发送队列 */
-    if (sdsd_ssvr_creat_sendq(ssvr, conf))
-    {
+    if (sdsd_ssvr_creat_sendq(ssvr, conf)) {
         log_error(ssvr->log, "Initialize send queue failed!");
         return SDTP_ERR;
     }
 
     /* > 创建unix套接字 */
-    if (sdsd_ssvr_creat_usck(ssvr, conf))
-    {
+    if (sdsd_ssvr_creat_usck(ssvr, conf)) {
         log_error(ssvr->log, "Initialize send queue failed!");
         return SDTP_ERR;
     }
 
     /* > 创建SLAB内存池 */
     ssvr->pool = slab_creat_by_calloc(SDTP_MEM_POOL_SIZE, ssvr->log);
-    if (NULL == ssvr->pool)
-    {
+    if (NULL == ssvr->pool) {
         log_error(ssvr->log, "Initialize slab mem-pool failed!");
         return SDTP_ERR;
     }
@@ -84,16 +81,14 @@ int sdsd_ssvr_init(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr, int idx)
     opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
 
     ssvr->sck.mesg_list = list_creat(&opt);
-    if (NULL == ssvr->sck.mesg_list)
-    {
+    if (NULL == ssvr->sck.mesg_list) {
         log_error(ssvr->log, "Create list failed!");
         return SDTP_ERR;
     }
 
     /* > 初始化发送缓存(注: 程序退出时才可释放此空间，其他任何情况下均不释放) */
     addr = calloc(1, conf->send_buff_size);
-    if (NULL == addr)
-    {
+    if (NULL == addr) {
         log_error(ssvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return SDTP_ERR;
     }
@@ -102,8 +97,7 @@ int sdsd_ssvr_init(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr, int idx)
 
     /* 5. 初始化接收缓存(注: 程序退出时才可释放此空间，其他任何情况下均不释放) */
     addr = calloc(1, conf->recv_buff_size);
-    if (NULL == addr)
-    {
+    if (NULL == addr) {
         log_error(ssvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return SDTP_ERR;
     }
@@ -132,18 +126,15 @@ static int sdsd_ssvr_creat_recvq(sdsd_cntx_t *ctx, const sdsd_conf_t *conf)
 
     /* > 创建对象 */
     ctx->recvq = (queue_t **)calloc(conf->work_thd_num, sizeof(queue_t *));
-    if (NULL == ctx->recvq)
-    {
+    if (NULL == ctx->recvq) {
         log_fatal(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return SDTP_ERR;
     }
 
     /* > 创建队列 */
-    for (idx=0; idx<conf->work_thd_num; ++idx)
-    {
+    for (idx=0; idx<conf->work_thd_num; ++idx) {
         ctx->recvq[idx] = queue_creat(qcf->max, qcf->size);
-        if (NULL == ctx->recvq[idx])
-        {
+        if (NULL == ctx->recvq[idx]) {
             log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
             return SDTP_ERR;
         }
@@ -173,8 +164,7 @@ static int sdsd_ssvr_creat_sendq(sdsd_ssvr_t *ssvr, const sdsd_conf_t *conf)
     snprintf(path, sizeof(path), "%s-%d", qcf->name, ssvr->id);
 
     ssvr->sendq = sdsd_pool_creat(path, qcf->count, qcf->size);
-    if (NULL == ssvr->sendq)
-    {
+    if (NULL == ssvr->sendq) {
         log_error(ssvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return SDTP_ERR;
     }
@@ -201,8 +191,7 @@ static int sdsd_ssvr_creat_usck(sdsd_ssvr_t *ssvr, const sdsd_conf_t *conf)
     sdsd_ssvr_usck_path(conf, path, ssvr->id);
 
     ssvr->cmd_sck_id = unix_udp_creat(path);
-    if (ssvr->cmd_sck_id < 0)
-    {
+    if (ssvr->cmd_sck_id < 0) {
         log_error(ssvr->log, "errmsg:[%d] %s! path:%s", errno, strerror(errno), path);
         return SDTP_ERR;
     }
@@ -230,8 +219,7 @@ static void sdsd_ssvr_bind_cpu(sdsd_cntx_t *ctx, int id)
     sdtp_cpu_conf_t *cpu = &ctx->conf.cpu;
 
     mod = sysconf(_SC_NPROCESSORS_CONF) - cpu->start;
-    if (mod <= 0)
-    {
+    if (mod <= 0) {
         idx = id % sysconf(_SC_NPROCESSORS_CONF);
     }
     else
@@ -281,13 +269,11 @@ void sdsd_ssvr_switch_send_buff(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr)
         {
             /* > 检查是否发送完外部数据 */
             send = &sck->send[SDTP_SNAP_SHOT_EXP_DATA];
-            if (send->iptr != send->optr)
-            {
+            if (send->iptr != send->optr) {
                 return; /* 缓存数据仍然未发送完全 */
             }
 
-            if (!list_empty(sck->mesg_list))
-            {
+            if (!list_empty(sck->mesg_list)) {
                 sck->send_type = SDTP_SNAP_SHOT_SYS_DATA;
                 return; /* 有消息可发送 */
             }
@@ -296,8 +282,7 @@ void sdsd_ssvr_switch_send_buff(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr)
     }
 
     page = sdsd_pool_switch(ssvr->sendq);
-    if (NULL == page)
-    {
+    if (NULL == page) {
         return; /* 无可发送的数据 */
     }
 
@@ -310,8 +295,7 @@ void sdsd_ssvr_switch_send_buff(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr)
     send->optr = send->addr;
     send->iptr = send->addr + page->off;
 
-    if (page->off > 1 * GB)
-    {
+    if (page->off > 1 * GB) {
         assert(0);
     }
 
@@ -321,10 +305,8 @@ void sdsd_ssvr_switch_send_buff(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr)
 
     /* > 校验数据合法性(测试数据时使用) */
     head = (sdtp_header_t *)send->addr;
-    for (idx=0; idx<page->num; ++idx)
-    {
-        if (!SDTP_HEAD_ISVALID(head))
-        {
+    for (idx=0; idx<page->num; ++idx) {
+        if (!SDTP_HEAD_ISVALID(head)) {
             assert(0);
         }
         head = (void *)head + sizeof(sdtp_header_t) + head->length;
@@ -361,17 +343,14 @@ void sdsd_ssvr_set_rwset(sdsd_ssvr_t *ssvr)
     FD_SET(ssvr->sck.fd, &ssvr->rset);
 
     /* 2 设置写集合: 发送至接收端 */
-    if (!list_empty(ssvr->sck.mesg_list))
-    {
+    if (!list_empty(ssvr->sck.mesg_list)) {
         FD_SET(ssvr->sck.fd, &ssvr->wset);
         return;
     }
 
     snap = &ssvr->sck.send[SDTP_SNAP_SHOT_SYS_DATA];
-    for (idx=0; idx<SDTP_SNAP_SHOT_TOTAL; ++idx, ++snap)
-    {
-        if (snap->iptr != snap->optr)
-        {
+    for (idx=0; idx<SDTP_SNAP_SHOT_TOTAL; ++idx, ++snap) {
+        if (snap->iptr != snap->optr) {
             FD_SET(ssvr->sck.fd, &ssvr->wset);
             return;
         }
@@ -402,8 +381,7 @@ void *sdsd_ssvr_routine(void *_ctx)
 
     /* 1. 获取发送线程 */
     ssvr = sdsd_ssvr_get_curr(ctx);
-    if (NULL == ssvr)
-    {
+    if (NULL == ssvr) {
         log_fatal(ssvr->log, "Get current thread failed!");
         abort();
         return (void *)-1;
@@ -415,16 +393,13 @@ void *sdsd_ssvr_routine(void *_ctx)
     sdsd_ssvr_bind_cpu(ctx, ssvr->id);
 
     /* 3. 进行事件处理 */
-    for (;;)
-    {
+    for (;;) {
         /* 3.1 连接合法性判断 */
-        if (sck->fd < 0)
-        {
+        if (sck->fd < 0) {
             sdsd_ssvr_clear_mesg(ssvr);
 
             /* 重连Recv端 */
-            if ((sck->fd = tcp_connect(AF_INET, conf->ipaddr, conf->port)) < 0)
-            {
+            if ((sck->fd = tcp_connect(AF_INET, conf->ipaddr, conf->port)) < 0) {
                 log_error(ssvr->log, "Conncet receive-server failed!");
 
                 Sleep(SDTP_RECONN_INTV);
@@ -443,34 +418,29 @@ void *sdsd_ssvr_routine(void *_ctx)
         timeout.tv_sec = SDTP_SSVR_TMOUT_SEC;
         timeout.tv_usec = SDTP_SSVR_TMOUT_USEC;
         ret = select(ssvr->max+1, &ssvr->rset, &ssvr->wset, NULL, &timeout);
-        if (ret < 0)
-        {
+        if (ret < 0) {
             if (EINTR == errno) { continue; }
             log_fatal(ssvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
             abort();
             return (void *)-1;
         }
-        else if (0 == ret)
-        {
+        else if (0 == ret) {
             sdsd_ssvr_timeout_hdl(ctx, ssvr);
             continue;
         }
 
         /* 发送数据: 发送优先 */
-        if (FD_ISSET(sck->fd, &ssvr->wset))
-        {
+        if (FD_ISSET(sck->fd, &ssvr->wset)) {
             sdsd_ssvr_send_data(ctx, ssvr);
         }
 
         /* 接收命令 */
-        if (FD_ISSET(ssvr->cmd_sck_id, &ssvr->rset))
-        {
+        if (FD_ISSET(ssvr->cmd_sck_id, &ssvr->rset)) {
             sdsd_ssvr_recv_cmd(ctx, ssvr);
         }
 
         /* 接收Recv服务的数据 */
-        if (FD_ISSET(sck->fd, &ssvr->rset))
-        {
+        if (FD_ISSET(sck->fd, &ssvr->rset)) {
             sdsd_ssvr_recv_proc(ctx, ssvr);
         }
     }
@@ -512,8 +482,7 @@ static int sdsd_ssvr_kpalive_req(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr)
     }
 
     addr = slab_alloc(ssvr->pool, size);
-    if (NULL == addr)
-    {
+    if (NULL == addr) {
         log_error(ssvr->log, "Alloc memory from slab failed!");
         return SDTP_ERR;
     }
@@ -527,8 +496,7 @@ static int sdsd_ssvr_kpalive_req(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr)
     head->checksum = SDTP_CHECK_SUM;
 
     /* 3. 加入发送列表 */
-    if (list_rpush(sck->mesg_list, addr))
-    {
+    if (list_rpush(sck->mesg_list, addr)) {
         slab_dealloc(ssvr->pool, addr);
         log_error(ssvr->log, "Alloc memory from slab failed!");
         return SDTP_ERR;
@@ -558,8 +526,7 @@ static sdsd_ssvr_t *sdsd_ssvr_get_curr(sdsd_cntx_t *ctx)
 
     /* 1. 获取线程索引 */
     id = thread_pool_get_tidx(ctx->sendtp);
-    if (id < 0)
-    {
+    if (id < 0) {
         log_error(ctx->log, "Get current thread index failed!");
         return NULL;
     }
@@ -588,14 +555,12 @@ static int sdsd_ssvr_timeout_hdl(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr)
     sdsd_sck_t *sck = &ssvr->sck;
 
     /* 1. 判断是否长时无数据 */
-    if ((curr_tm - sck->wrtm) < SDTP_KPALIVE_INTV)
-    {
+    if ((curr_tm - sck->wrtm) < SDTP_KPALIVE_INTV) {
         return SDTP_OK;
     }
 
     /* 2. 发送保活请求 */
-    if (sdsd_ssvr_kpalive_req(ctx, ssvr))
-    {
+    if (sdsd_ssvr_kpalive_req(ctx, ssvr)) {
         log_error(ssvr->log, "Connection keepalive failed!");
         return SDTP_ERR;
     }
@@ -637,19 +602,16 @@ static int sdsd_ssvr_recv_proc(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr)
 
     sck->rdtm = time(NULL);
 
-    while (1)
-    {
+    while (1) {
         /* 1. 接收网络数据 */
         left = (int)(recv->end - recv->iptr);
 
         n = read(sck->fd, recv->iptr, left);
-        if (n > 0)
-        {
+        if (n > 0) {
             recv->iptr += n;
 
             /* 2. 进行数据处理 */
-            if (sdsd_ssvr_data_proc(ctx, ssvr, sck))
-            {
+            if (sdsd_ssvr_data_proc(ctx, ssvr, sck)) {
                 log_error(ssvr->log, "Proc data failed! fd:%d", sck->fd);
 
                 CLOSE(sck->fd);
@@ -658,20 +620,17 @@ static int sdsd_ssvr_recv_proc(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr)
             }
             continue;
         }
-        else if (0 == n)
-        {
+        else if (0 == n) {
             log_info(ssvr->log, "Client disconnected. fd:%d n:%d/%d", sck->fd, n, left);
             CLOSE(sck->fd);
             sdtp_snap_reset(recv);
             return SDTP_SCK_DISCONN;
         }
-        else if ((n < 0) && (EAGAIN == errno))
-        {
+        else if ((n < 0) && (EAGAIN == errno)) {
             return SDTP_OK; /* Again */
         }
 
-        if (EINTR == errno)
-        {
+        if (EINTR == errno) {
             continue;
         }
 
@@ -717,25 +676,20 @@ static int sdsd_ssvr_data_proc(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr, sdsd_sck_t *
     uint32_t len, mesg_len;
     sdtp_snap_t *recv = &sck->recv;
 
-    while (1)
-    {
+    while (1) {
         head = (sdtp_header_t *)recv->optr;
         len = (int)(recv->iptr - recv->optr);
-        if (len < sizeof(sdtp_header_t))
-        {
+        if (len < sizeof(sdtp_header_t)) {
             goto LEN_NOT_ENOUGH; /* 不足一条数据时 */
         }
 
         /* 1. 是否不足一条数据 */
         mesg_len = sizeof(sdtp_header_t) + ntohl(head->length);
-        if (len < mesg_len)
-        {
+        if (len < mesg_len) {
         LEN_NOT_ENOUGH:
-            if (recv->iptr == recv->end)
-            {
+            if (recv->iptr == recv->end) {
                 /* 防止OverWrite的情况发生 */
-                if ((recv->optr - recv->addr) < (recv->end - recv->iptr))
-                {
+                if ((recv->optr - recv->addr) < (recv->end - recv->iptr)) {
                     log_error(ssvr->log, "Data length is invalid!");
                     return SDTP_ERR;
                 }
@@ -756,8 +710,7 @@ static int sdsd_ssvr_data_proc(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr, sdsd_sck_t *
         head->checksum = ntohl(head->checksum);
 
         /* 2.2 校验合法性 */
-        if (!SDTP_HEAD_ISVALID(head))
-        {
+        if (!SDTP_HEAD_ISVALID(head)) {
             ++ssvr->err_total;
             log_error(ssvr->log, "Header is invalid! CheckSum:%u/%u type:%d len:%d flag:%d",
                     head->checksum, SDTP_CHECK_SUM, head->type, head->length, head->flag);
@@ -765,8 +718,7 @@ static int sdsd_ssvr_data_proc(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr, sdsd_sck_t *
         }
 
         /* 2.3 进行数据处理 */
-        if (SDTP_SYS_MESG == head->flag)
-        {
+        if (SDTP_SYS_MESG == head->flag) {
             sdsd_ssvr_sys_mesg_proc(ctx, ssvr, sck, recv->optr);
         }
         else
@@ -801,8 +753,7 @@ static int sdsd_ssvr_recv_cmd(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr)
     memset(&cmd, 0, sizeof(cmd));
 
     /* 1. 接收命令 */
-    if (unix_udp_recv(ssvr->cmd_sck_id, &cmd, sizeof(cmd)) < 0)
-    {
+    if (unix_udp_recv(ssvr->cmd_sck_id, &cmd, sizeof(cmd)) < 0) {
         log_error(ssvr->log, "Recv command failed! errmsg:[%d] %s!", errno, strerror(errno));
         return SDTP_ERR;
     }
@@ -832,8 +783,7 @@ static int sdsd_ssvr_proc_cmd(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr, const sdtp_cm
         case SDTP_CMD_SEND:
         case SDTP_CMD_SEND_ALL:
         {
-            if (fd_is_writable(sck->fd))
-            {
+            if (fd_is_writable(sck->fd)) {
                 return sdsd_ssvr_send_data(ctx, ssvr);
             }
             return SDTP_OK;
@@ -878,25 +828,21 @@ static int sdsd_ssvr_fill_send_buff(sdsd_ssvr_t *ssvr, sdsd_sck_t *sck)
     sdtp_snap_t *send = &sck->send[SDTP_SNAP_SHOT_SYS_DATA];
 
     /* > 从消息链表取数据 */
-    for (;;)
-    {
+    for (;;) {
         /* 1. 是否有数据 */
         head = (sdtp_header_t *)list_lpop(ssvr->sck.mesg_list);
-        if (NULL == head)
-        {
+        if (NULL == head) {
             return (send->iptr - send->optr);
         }
 
         /* 2. 判断剩余空间 */
-        if (SDTP_CHECK_SUM != head->checksum)
-        {
+        if (SDTP_CHECK_SUM != head->checksum) {
             assert(0);
         }
 
         left = (uint32_t)(send->end - send->iptr);
         mesg_len = sizeof(sdtp_header_t) + head->length;
-        if (left < mesg_len)
-        {
+        if (left < mesg_len) {
             list_lpush(ssvr->sck.mesg_list, head);
             break; /* 空间不足 */
         }
@@ -949,13 +895,10 @@ static int sdsd_ssvr_send_sys_data(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr)
 
     sck->wrtm = time(NULL);
 
-    for (;;)
-    {
+    for (;;) {
         /* 1. 填充发送缓存 */
-        if (send->iptr == send->optr)
-        {
-            if ((len = sdsd_ssvr_fill_send_buff(ssvr, sck)) <= 0)
-            {
+        if (send->iptr == send->optr) {
+            if ((len = sdsd_ssvr_fill_send_buff(ssvr, sck)) <= 0) {
                 break;
             }
         }
@@ -966,8 +909,7 @@ static int sdsd_ssvr_send_sys_data(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr)
 
         /* 2. 发送缓存数据 */
         n = Writen(sck->fd, send->optr, len);
-        if (n < 0)
-        {
+        if (n < 0) {
             log_error(ssvr->log, "errmsg:[%d] %s! fd:%d len:[%d]",
                     errno, strerror(errno), sck->fd, len);
             CLOSE(sck->fd);
@@ -975,8 +917,7 @@ static int sdsd_ssvr_send_sys_data(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr)
             return SDTP_ERR;
         }
         /* 只发送了部分数据 */
-        else if (n != len)
-        {
+        else if (n != len) {
             send->optr += n;
             return SDTP_OK;
         }
@@ -1024,8 +965,7 @@ static int sdsd_ssvr_send_exp_data(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr)
     len = send->iptr - send->optr;
 
     n = Writen(sck->fd, send->optr, len);
-    if (n < 0)
-    {
+    if (n < 0) {
         log_error(ssvr->log, "errmsg:[%d] %s! fd:%d len:[%d]",
                 errno, strerror(errno), sck->fd, len);
         CLOSE(sck->fd);
@@ -1033,8 +973,7 @@ static int sdsd_ssvr_send_exp_data(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr)
         return SDTP_ERR;
     }
     /* 只发送了部分数据 */
-    else if (n != len)
-    {
+    else if (n != len) {
         send->optr += n;
         return SDTP_OK;
     }
@@ -1059,8 +998,7 @@ static int sdsd_ssvr_send_data(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr)
 {
     sdsd_sck_t *sck = &ssvr->sck;
 
-    if (SDTP_SNAP_SHOT_SYS_DATA == sck->send_type)
-    {
+    if (SDTP_SNAP_SHOT_SYS_DATA == sck->send_type) {
         return sdsd_ssvr_send_sys_data(ctx, ssvr);
     }
 
@@ -1083,11 +1021,9 @@ static int sdsd_ssvr_clear_mesg(sdsd_ssvr_t *ssvr)
 {
     void *data;
 
-    while (1)
-    {
+    while (1) {
         data = list_lpop(ssvr->sck.mesg_list);
-        if (NULL == data)
-        {
+        if (NULL == data) {
             return SDTP_OK;
         }
 
@@ -1162,8 +1098,7 @@ static int sdsd_ssvr_exp_mesg_proc(
 
     /* > 申请空间 */
     data = queue_malloc(ctx->recvq[idx], len+sizeof(sdtp_group_t));
-    if (NULL == data)
-    {
+    if (NULL == data) {
         ++ssvr->drop_total;
         log_error(ctx->log, "Alloc from queue failed! drop:%lu recv:%lu len:%d/%d",
                 ssvr->recv_total, ssvr->drop_total, len+sizeof(sdtp_group_t), queue_size(ctx->recvq[idx]));
@@ -1204,8 +1139,7 @@ static int sdtp_link_auth_req(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr)
     size = sizeof(sdtp_header_t) + sizeof(sdtp_link_auth_req_t);
 
     addr = slab_alloc(ssvr->pool, size);
-    if (NULL == addr)
-    {
+    if (NULL == addr) {
         log_error(ssvr->log, "Alloc memory from slab failed!");
         return SDTP_ERR;
     }
@@ -1226,8 +1160,7 @@ static int sdtp_link_auth_req(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr)
     snprintf(link_auth_req->passwd, sizeof(link_auth_req->passwd), "%s", ctx->conf.auth.passwd);
 
     /* > 加入发送列表 */
-    if (list_rpush(sck->mesg_list, addr))
-    {
+    if (list_rpush(sck->mesg_list, addr)) {
         slab_dealloc(ssvr->pool, addr);
         log_error(ssvr->log, "Alloc memory from slab failed!");
         return SDTP_ERR;

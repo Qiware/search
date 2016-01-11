@@ -37,8 +37,7 @@ xml_tree_t *xml_creat_empty(xml_opt_t *opt)
 
     /* 1. 新建对象 */
     xml = (xml_tree_t*)opt->alloc(opt->pool, sizeof(xml_tree_t));
-    if (NULL == xml)
-    {
+    if (NULL == xml) {
         log_error(opt->log, "Calloc failed!");
         return NULL;
     }
@@ -50,8 +49,7 @@ xml_tree_t *xml_creat_empty(xml_opt_t *opt)
 
     /* 2. 添加根节点 */
     xml->root = xml_node_creat(xml, XML_NODE_ROOT);
-    if (NULL == xml->root)
-    {
+    if (NULL == xml->root) {
         log_error(xml->log, "Create node failed!");
         xml_destroy(xml);
         return NULL;
@@ -59,8 +57,7 @@ xml_tree_t *xml_creat_empty(xml_opt_t *opt)
 
     /* 3. 设置根节点名 */
     xml->root->name.str = (char *)xml->alloc(xml->pool, XML_ROOT_NAME_SIZE);
-    if (NULL == xml->root->name.str)
-    {
+    if (NULL == xml->root->name.str) {
         log_error(xml->log, "Calloc failed!");
         xml_destroy(xml);
         return NULL;
@@ -92,8 +89,7 @@ xml_tree_t *xml_creat(const char *fname, xml_opt_t *opt)
 
     /* 1. 将XML文件读入内存 */
     buff = xml_fload(fname, opt);
-    if (NULL == buff)
-    {
+    if (NULL == buff) {
         log_error(opt->log, "Load xml file into memory failed![%s]", fname);
         return NULL;
     }
@@ -127,32 +123,26 @@ xml_tree_t *xml_screat(const char *str, size_t len, xml_opt_t *opt)
     Stack_t stack;
     xml_tree_t *xml;
 
-    if ((NULL == str)
-        || ('\0' == str[0]))
-    {
+    if ((NULL == str) || ('\0' == str[0])) {
         return xml_creat_empty(opt);
     }
     
-    do
-    {
+    do {
         /* 1. 初始化栈 */
-        if (stack_init(&stack, XML_MAX_DEPTH))
-        {
+        if (stack_init(&stack, XML_MAX_DEPTH)) {
             log_error(opt->log, "Init xml stack failed!");
             break;
         }
 
         /* 2. 初始化XML树 */
         xml = xml_init(opt); 
-        if (NULL == xml)
-        {   
+        if (NULL == xml) {   
             log_error(opt->log, "Init xml tree failed!");
             break;
         }
 
         /* 3. 解析XML文件缓存 */
-        if (xml_parse(xml, &stack, str, len))
-        {
+        if (xml_parse(xml, &stack, str, len)) {
             log_error(xml->log, "Parse xml failed!");
             xml_destroy(xml);
             break;
@@ -171,13 +161,10 @@ xml_tree_t *xml_screat(const char *str, size_t len, xml_opt_t *opt)
 /* 释放属性节点 */
 #define xml_attr_free(xml, node, child) \
 {   \
-    if (xml_has_attr(node))    \
-    {   \
-        while (NULL != node->temp)   \
-        {   \
+    if (xml_has_attr(node)) {   \
+        while (NULL != node->temp) {   \
             child = node->temp; \
-            if (xml_is_attr(child))    \
-            {   \
+            if (xml_is_attr(child)) {   \
                 node->temp = child->next;   \
                 xml_node_free_one(xml, child);    \
                 continue;   \
@@ -208,26 +195,21 @@ int xml_node_free(xml_tree_t *xml, xml_node_t *node)
     xml_node_t *curr = node, *parent = node->parent, *child;
 
     /* 1. 将此节点从孩子链表剔除 */
-    if ((NULL != parent) && (NULL != curr))
-    {
-        if (xml_delete_child(xml, parent, node))
-        {
+    if ((NULL != parent) && (NULL != curr)) {
+        if (xml_delete_child(xml, parent, node)) {
             return XML_ERR;
         }
     }
 
-    if (stack_init(stack, XML_MAX_DEPTH))
-    {
+    if (stack_init(stack, XML_MAX_DEPTH)) {
         log_error(xml->log, "Init stack failed!");
         return XML_ERR_STACK;
     }
 
-    do
-    {
+    do {
         /* 1. 节点入栈 */
         curr->temp = curr->child;
-        if (stack_push(stack, curr))
-        {
+        if (stack_push(stack, curr)) {
             stack_destroy(stack);
             log_error(xml->log, "Push stack failed!");
             return XML_ERR_STACK;
@@ -240,8 +222,7 @@ int xml_node_free(xml_tree_t *xml, xml_node_t *node)
         curr = xml_free_next(xml, stack, curr); 
     } while(NULL != curr);
 
-    if (!stack_empty(stack))
-    {
+    if (!stack_empty(stack)) {
         stack_destroy(stack);
         log_error(xml->log, "Stack is not empty!");
         return XML_ERR_STACK;
@@ -268,22 +249,18 @@ int xml_fprint(xml_tree_t *xml, FILE *fp)
     Stack_t stack;
     xml_node_t *child = xml->root->child;
 
-    if (NULL == child) 
-    {
+    if (NULL == child) {
         log_error(xml->log, "The tree is empty!");
         return XML_ERR_EMPTY_TREE;
     }
     
-    if (stack_init(&stack, XML_MAX_DEPTH))
-    {
+    if (stack_init(&stack, XML_MAX_DEPTH)) {
         log_error(xml->log, "Stack init failed!");
         return XML_ERR_STACK;
     }
 
-    while (NULL != child)
-    {
-        if (xml_fprint_tree(xml, child, &stack, fp))
-        {
+    while (NULL != child) {
+        if (xml_fprint_tree(xml, child, &stack, fp)) {
             log_error(xml->log, "fPrint tree failed!");
             stack_destroy(&stack);
             return XML_ERR;
@@ -313,30 +290,25 @@ int xml_fwrite(xml_tree_t *xml, const char *fname)
     Stack_t stack;
     xml_node_t *child = xml->root->child;
 
-    if (NULL == child) 
-    {
+    if (NULL == child) {
         log_error(xml->log, "The tree is empty!");
         return XML_ERR_EMPTY_TREE;
     }
 
     fp = fopen(fname, "wb");
-    if (NULL == fp)
-    {
+    if (NULL == fp) {
         log_error(xml->log, "Call fopen() failed![%s]", fname);
         return XML_ERR_FOPEN;
     }
     
-    if (stack_init(&stack, XML_MAX_DEPTH))
-    {
+    if (stack_init(&stack, XML_MAX_DEPTH)) {
         fclose(fp), fp = NULL;
         log_error(xml->log, "Stack init failed!");
         return XML_ERR_STACK;
     }
 
-    while (NULL != child)
-    {
-        if (xml_fprint_tree(xml, child, &stack, fp))
-        {
+    while (NULL != child) {
+        if (xml_fprint_tree(xml, child, &stack, fp)) {
             log_error(xml->log, "fPrint tree failed!");
             fclose(fp), fp = NULL;
             stack_destroy(&stack);
@@ -368,23 +340,19 @@ int xml_sprint(xml_tree_t *xml, char *str)
     Stack_t stack;
     xml_node_t *child = xml->root->child;
 
-    if (NULL == child) 
-    {
+    if (NULL == child) {
         return XML_OK;
     }
 
     sprint_init(&sp, str);
     
-    if (stack_init(&stack, XML_MAX_DEPTH))
-    {
+    if (stack_init(&stack, XML_MAX_DEPTH)) {
         log_error(xml->log, "Stack init failed!");
         return XML_ERR_STACK;
     }
 
-    while (NULL != child)
-    {
-        if (xml_sprint_tree(xml, child, &stack, &sp))
-        {
+    while (NULL != child) {
+        if (xml_sprint_tree(xml, child, &stack, &sp)) {
             log_error(xml->log, "Sprint tree failed!");
             stack_destroy(&stack);
             return XML_ERR;
@@ -414,23 +382,19 @@ extern int xml_spack(xml_tree_t *xml, char *str)
     Stack_t stack;
     xml_node_t *child = xml->root->child;
 
-    if (NULL == child) 
-    {
+    if (NULL == child) {
         return XML_OK;
     }
 
     sprint_init(&sp, str);
     
-    if (stack_init(&stack, XML_MAX_DEPTH))
-    {
+    if (stack_init(&stack, XML_MAX_DEPTH)) {
         log_error(xml->log, "Stack init failed!");
         return XML_ERR_STACK;
     }
 
-    while (NULL != child)
-    {
-        if (xml_pack_tree(xml, child, &stack, &sp))
-        {
+    while (NULL != child) {
+        if (xml_pack_tree(xml, child, &stack, &sp)) {
             log_error(xml->log, "Sprint tree failed!");
             stack_destroy(&stack);
             return XML_ERR;
@@ -462,38 +426,31 @@ xml_node_t *xml_search(xml_tree_t *xml, xml_node_t *curr, const char *path)
     const char *str = path, *ptr;
 
     /* 1. 路径判断 */
-    if (XML_IS_ROOT_PATH(path))
-    {
+    if (XML_IS_ROOT_PATH(path)) {
         return curr;
     }
-    else if (XML_IS_ABS_PATH(path))
-    {
+    else if (XML_IS_ABS_PATH(path)) {
         str++;
     }
 
     node = curr->child;
-    if (NULL == node)
-    {
+    if (NULL == node) {
         return NULL;
     }
 
     /* 2. 路径解析处理 */
-    do
-    {
+    do {
         /* 2.1 获取节点名长度 */
         ptr = strstr(str, ".");
-        if (NULL == ptr)
-        {
+        if (NULL == ptr) {
             len = strlen(str);
         }
-        else
-        {
+        else {
             len = ptr - str;
         }
         
         /* 2.2 兄弟节点中查找 */
-        while (NULL != node)
-        {
+        while (NULL != node) {
             if ((len == node->name.len)
                 && (0 == strncmp(node->name.str, str, len)))
             {
@@ -502,12 +459,10 @@ xml_node_t *xml_search(xml_tree_t *xml, xml_node_t *curr, const char *path)
             node = node->next;
         }
 
-        if (NULL == node)
-        {
+        if (NULL == node) {
             return NULL;
         }
-        else if (NULL == ptr)
-        {
+        else if (NULL == ptr) {
             return node;
         }
 
@@ -536,29 +491,25 @@ xml_node_t *xml_add_attr(
 {
     xml_node_t *attr, *parent = node->parent, *link = node->child;
 
-    if (NULL == parent)
-    {
+    if (NULL == parent) {
         log_error(xml->log, "Please create root node at first!");
         return NULL;
     }
 
-    if (xml_is_attr(node))
-    {
+    if (xml_is_attr(node)) {
         log_error(xml->log, "Can't add attr for attribute node!");
         return NULL;
     }
 
     /* 1. 创建节点 */
     attr = xml_node_creat_ext(xml, XML_NODE_ATTR, name, value);
-    if (NULL == attr)
-    {
+    if (NULL == attr) {
         log_error(xml->log, "Create node failed!");
         return NULL;
     }
     
     /* 2. 将节点放入XML树 */
-    if (NULL == link)                    /* 没有孩子节点，也没有属性节点 */
-    {
+    if (NULL == link) {                  /* 没有孩子节点，也没有属性节点 */
         node->child = attr;
         node->tail = attr;
         attr->parent = node;
@@ -567,10 +518,8 @@ xml_node_t *xml_add_attr(
         return attr;
     }
 
-    if (xml_has_attr(node))                  /* 有属性节点 */
-    {
-        if (xml_is_attr(node->tail))         /* 所有子节点也为属性节点时，attr直接链入链表尾 */
-        {
+    if (xml_has_attr(node)) {                /* 有属性节点 */
+        if (xml_is_attr(node->tail)) {       /* 所有子节点也为属性节点时，attr直接链入链表尾 */
             attr->parent = node;
             node->tail->next = attr;
             node->tail = attr;
@@ -592,8 +541,7 @@ xml_node_t *xml_add_attr(
         xml_set_attr_flag(node);
         return attr;
     }
-    else if (xml_has_child(node) && !xml_has_attr(node)) /* 有孩子但无属性 */
-    {    
+    else if (xml_has_child(node) && !xml_has_attr(node)) { /* 有孩子但无属性 */
         attr->parent = node;
         attr->next = node->child;
         node->child = attr;
@@ -627,14 +575,12 @@ xml_node_t *xml_add_child(xml_tree_t *xml, xml_node_t *node, const char *name, c
 {
     xml_node_t *child = NULL;
 
-    if (xml_is_attr(node))
-    {
+    if (xml_is_attr(node)) {
         log_error(xml->log, "Can't add child for attribute node![%s]", node->name.str);
         return NULL;
     }
 #if defined(__XML_EITHER_CHILD_OR_VALUE__)
-    else if (xml_has_value(node))
-    {
+    else if (xml_has_value(node)) {
         log_error(xml->log, "Can't add child for the node which has value![%s]", node->name.str);
         return NULL;
     }
@@ -642,8 +588,7 @@ xml_node_t *xml_add_child(xml_tree_t *xml, xml_node_t *node, const char *name, c
 
     /* 1. 新建孩子节点 */
     child = xml_node_creat_ext(xml, XML_NODE_CHILD, name, value);
-    if (NULL == child)
-    {
+    if (NULL == child) {
         log_error(xml->log, "Create node failed![%s]", name);
         return NULL;
     }
@@ -651,12 +596,10 @@ xml_node_t *xml_add_child(xml_tree_t *xml, xml_node_t *node, const char *name, c
     child->parent = node;
 
     /* 2. 将孩子加入子节点链表尾 */    
-    if (NULL == node->tail)              /* 没有孩子&属性节点 */
-    {
+    if (NULL == node->tail) {            /* 没有孩子&属性节点 */
         node->child = child;
     }
-    else
-    {
+    else {
         node->tail->next = child;
     }
 
@@ -717,21 +660,18 @@ int xml_node_len(xml_tree_t *xml, xml_node_t *node)
     int len;
     Stack_t stack;
     
-    if (NULL == node)
-    {
+    if (NULL == node) {
         log_error(xml->log, "The node is empty!");
         return 0;
     }
     
-    if (stack_init(&stack, XML_MAX_DEPTH))
-    {
+    if (stack_init(&stack, XML_MAX_DEPTH)) {
         log_error(xml->log, "Stack init failed!");
         return -1;
     }
 
     len = _xml_node_len(xml, node, &stack);
-    if (len < 0)
-    {
+    if (len < 0) {
         log_error(xml->log, "Get the len of node failed!");
         stack_destroy(&stack);
         return -1;
@@ -758,22 +698,18 @@ int xml_set_value(xml_tree_t *xml, xml_node_t *node, const char *value)
 {
     int size;
     
-    if (NULL != node->value.str)
-    {
+    if (NULL != node->value.str) {
         xml->dealloc(xml->pool, node->value.str);
         node->value.str = NULL;
         node->value.len = 0;
         xml_unset_value_flag(node);
     }
 
-    if ((NULL == value) || ('\0' == value[0]))
-    {
-        if (xml_is_attr(node))
-        {
+    if ((NULL == value) || ('\0' == value[0])) {
+        if (xml_is_attr(node)) {
             /* 注意: 属性节点的值不能为NULL，应为“” - 防止计算XML树长度时，出现计算错误 */
             node->value.str = (char *)xml->alloc(xml->pool, sizeof(char));
-            if (NULL == node->value.str)
-            {
+            if (NULL == node->value.str) {
                 return XML_ERR;
             }
             node->value.len = 0;
@@ -789,8 +725,7 @@ int xml_set_value(xml_tree_t *xml, xml_node_t *node, const char *value)
     size = strlen(value) + 1;
     
     node->value.str = (char *)xml->alloc(xml->pool, size);
-    if (NULL == node->value.str)
-    {
+    if (NULL == node->value.str) {
         xml_unset_value_flag(node);
         return XML_ERR;
     }
@@ -819,14 +754,12 @@ int _xml_pack_len(xml_tree_t *xml, xml_node_t *node)
     Stack_t stack;
     xml_node_t *child;
     
-    if (NULL == node)
-    {
+    if (NULL == node) {
         log_error(xml->log, "The node is empty!");
         return 0;
     }
     
-    if (stack_init(&stack, XML_MAX_DEPTH))
-    {
+    if (stack_init(&stack, XML_MAX_DEPTH)) {
         log_error(xml->log, "Stack init failed!");
         return -1;
     }
@@ -838,8 +771,7 @@ int _xml_pack_len(xml_tree_t *xml, xml_node_t *node)
         case XML_NODE_CHILD: /* 处理孩子节点 */
         {
             len = xml_pack_node_len(xml, node, &stack);
-            if (len < 0)
-            {
+            if (len < 0) {
                 log_error(xml->log, "Get len of the node failed!");
                 stack_destroy(&stack);
                 return -1;
@@ -849,11 +781,9 @@ int _xml_pack_len(xml_tree_t *xml, xml_node_t *node)
         case XML_NODE_ROOT:  /* 处理父亲节点 */
         {
             child = node->child;
-            while (NULL != child)
-            {
+            while (NULL != child) {
                 len2 = xml_pack_node_len(xml, child, &stack);
-                if (len2 < 0)
-                {
+                if (len2 < 0) {
                     log_error(xml->log, "Get len of the node failed!");
                     stack_destroy(&stack);
                     return -1;
@@ -899,20 +829,16 @@ int xml_delete_empty(xml_tree_t *xml)
     Stack_t _stack, *stack = &_stack;
 
 
-    if (stack_init(stack, XML_MAX_DEPTH))
-    {
+    if (stack_init(stack, XML_MAX_DEPTH)) {
         log_error(xml->log, "Init stack failed!");
         return XML_ERR_STACK;
     }
 
     node = xml->root->child;
-    while (NULL != node)
-    {
+    while (NULL != node) {
         /* 1. 此节点为属性节点: 不用入栈, 继续查找其兄弟节点 */
-        if (xml_is_attr(node))
-        {
-            if (NULL != node->next)
-            {
+        if (xml_is_attr(node)) {
+            if (NULL != node->next) {
                 node = node->next;
                 continue;
             }
@@ -922,10 +848,8 @@ int xml_delete_empty(xml_tree_t *xml)
             return XML_ERR_STACK;
         }
         /* 2. 此节点有孩子节点: 入栈, 并处理其孩子节点 */
-        else if (xml_has_child(node))
-        {
-            if (stack_push(stack, node))
-            {
+        else if (xml_has_child(node)) {
+            if (stack_push(stack, node)) {
                 log_error(xml->log, "Push failed!");
                 return XML_ERR_STACK;
             }
@@ -934,13 +858,10 @@ int xml_delete_empty(xml_tree_t *xml)
             continue;
         }
         /* 3. 此节点为拥有节点值或属性节点, 而无孩子节点: 此节点不入栈, 并继续查找其兄弟节点 */
-        else if (xml_has_value(node) || xml_has_attr(node))
-        {
-            do
-            {
+        else if (xml_has_value(node) || xml_has_attr(node)) {
+            do {
                 /* 3.1 查找兄弟节点: 处理自己的兄弟节点 */
-                if (NULL != node->next)
-                {
+                if (NULL != node->next) {
                     node = node->next;
                     break;
                 }
@@ -951,8 +872,7 @@ int xml_delete_empty(xml_tree_t *xml)
             continue;
         }
         /* 4. 删除无属性、无孩子、无节点值的节点 */
-        else /* if (!xml_has_attr(node) && !xml_has_child(node) && !xml_has_value(node) && !xml_is_attr(node)) */
-        {
+        else { /* if (!xml_has_attr(node) && !xml_has_child(node) && !xml_has_value(node) && !xml_is_attr(node)) */
             node = _xml_delete_empty(xml, stack, node);
         }
     }
@@ -977,19 +897,16 @@ static xml_node_t *_xml_delete_empty(xml_tree_t *xml, Stack_t *stack, xml_node_t
 {
     xml_node_t *parent, *prev;
 
-    do
-    {
+    do {
         parent = node->parent;
         prev = parent->child;
 
-        if (prev == node)
-        {
+        if (prev == node) {
             parent->child = node->next;
             
             xml_node_free_one(xml, node);   /* 释放空节点 */
             
-            if (NULL != parent->child)
-            {
+            if (NULL != parent->child) {
                 return parent->child;  /* 处理子节点的兄弟节点 */
             }
             
@@ -997,25 +914,20 @@ static xml_node_t *_xml_delete_empty(xml_tree_t *xml, Stack_t *stack, xml_node_t
             xml_unset_child_flag(parent);
             /* 继续后续处理 */
         }
-        else
-        {
-            while (prev->next != node)
-            {
+        else {
+            while (prev->next != node) {
                 prev = prev->next;
             }
             prev->next = node->next;
             
             xml_node_free_one(xml, node);   /* 释放空节点 */
             
-            if (NULL != prev->next)
-            {
+            if (NULL != prev->next) {
                 return prev->next;  /* 还有兄弟: 则处理后续节点 */
             }
-            else
-            {
+            else {
                 /* 已无兄弟: 则处理父节点 */
-                if (xml_is_attr(prev))
-                {
+                if (xml_is_attr(prev)) {
                     xml_unset_child_flag(parent);
                 }
                 /* 继续后续处理 */
@@ -1028,13 +940,11 @@ static xml_node_t *_xml_delete_empty(xml_tree_t *xml, Stack_t *stack, xml_node_t
         stack_pop(stack);
 
         /* 删除无属性、无孩子、无节点值的节点 */
-        if (!xml_has_attr(node) && !xml_has_value(node) && !xml_has_child(node))
-        {
+        if (!xml_has_attr(node) && !xml_has_value(node) && !xml_has_child(node)) {
             continue;
         }
 
-        if (NULL != node->next)
-        {
+        if (NULL != node->next) {
             return node->next; /* 处理父节点的兄弟节点 */
         }
 

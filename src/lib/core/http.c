@@ -21,8 +21,7 @@ int http_get_request(const char *uri, char *req, int size)
     uri_field_t field;
 
     /* 1. 获取GET相关字段 */
-    if (0 != uri_reslove(uri, &field))
-    {
+    if (0 != uri_reslove(uri, &field)) {
         return HTTP_ERR;
     }
 
@@ -57,8 +56,7 @@ int http_parse_response(const char *str, http_response_t *rep)
     const char *p, *end, *tmp;
 
     end = strstr(str, "\r\n\r\n");
-    if (NULL == end)
-    {
+    if (NULL == end) {
         return 0; /* 不完整 */
     }
 
@@ -69,24 +67,19 @@ int http_parse_response(const char *str, http_response_t *rep)
     while (' ' == *p) { ++p; }
 
     /* > 获取版本, 状态 */
-    if (!strncasecmp(p, HTTP_KEY_VERS_09, HTTP_KEY_VERS_LEN))
-    {
+    if (!strncasecmp(p, HTTP_KEY_VERS_09, HTTP_KEY_VERS_LEN)) {
         rep->version = HTTP_VERSION_09;
     }
-    else if (!strncasecmp(p, HTTP_KEY_VERS_10, HTTP_KEY_VERS_LEN))
-    {
+    else if (!strncasecmp(p, HTTP_KEY_VERS_10, HTTP_KEY_VERS_LEN)) {
         rep->version = HTTP_VERSION_10;
     }
-    else if (!strncasecmp(p, HTTP_KEY_VERS_11, HTTP_KEY_VERS_LEN))
-    {
+    else if (!strncasecmp(p, HTTP_KEY_VERS_11, HTTP_KEY_VERS_LEN)) {
         rep->version = HTTP_VERSION_11;
     }
-    else if (!strncasecmp(p, HTTP_KEY_VERS_20, HTTP_KEY_VERS_LEN))
-    {
+    else if (!strncasecmp(p, HTTP_KEY_VERS_20, HTTP_KEY_VERS_LEN)) {
         rep->version = HTTP_VERSION_20;
     }
-    else
-    {
+    else {
         rep->status = -1;
         rep->total_len = rep->header_len + rep->content_len;
         return -1;
@@ -94,27 +87,23 @@ int http_parse_response(const char *str, http_response_t *rep)
 
     p += HTTP_KEY_VERS_LEN;
     tmp = p;
-    while (isdigit(*tmp))
-    {
+    while (isdigit(*tmp)) {
         rep->status *= 10;
         rep->status += (*tmp - '0');
         ++tmp;
     }
 
-    if (rep->status < 100 || rep->status > 999)
-    {
+    if (rep->status < 100 || rep->status > 999) {
         rep->total_len = rep->header_len + rep->content_len;
         return rep->header_len;
     }
-    else if (200 != rep->status)
-    {
+    else if (200 != rep->status) {
         rep->total_len = rep->header_len + rep->content_len;
         return rep->header_len;
     }
 
     p = strstr(p, "\r\n");
-    if (p == end)
-    {
+    if (p == end) {
         rep->total_len = rep->header_len + rep->content_len;
         return -1;
     }
@@ -122,42 +111,34 @@ int http_parse_response(const char *str, http_response_t *rep)
     p += 2;
 
     /* > 获取其他信息 */
-    while (p != end)
-    {
+    while (p != end) {
         while (' ' == *p) { ++p; }
-        if (p == end)
-        {
+        if (p == end) {
             break;
         }
 
         /* 连接方式 */
-        if (!strncasecmp(p, HTTP_KEY_CONNECTION, HTTP_KEY_CONNECTION_LEN))
-        {
+        if (!strncasecmp(p, HTTP_KEY_CONNECTION, HTTP_KEY_CONNECTION_LEN)) {
             p += HTTP_KEY_CONNECTION_LEN;
             while (' ' == *p) { ++p; }
-            if (!strncasecmp(p, HTTP_KEY_CONNECTION_CLOSE, HTTP_KEY_CONNECTION_CLOSE_LEN))
-            {
+            if (!strncasecmp(p, HTTP_KEY_CONNECTION_CLOSE, HTTP_KEY_CONNECTION_CLOSE_LEN)) {
                 rep->connection = HTTP_CONNECTION_CLOSE;
             }
-            else if (!strncasecmp(p, HTTP_KEY_CONNECTION_KEEPALIVE, HTTP_KEY_CONNECTION_KEEPALIVE_LEN))
-            {
+            else if (!strncasecmp(p, HTTP_KEY_CONNECTION_KEEPALIVE, HTTP_KEY_CONNECTION_KEEPALIVE_LEN)) {
                 rep->connection = HTTP_CONNECTION_KEEPALIVE;
             }
-            else
-            {
+            else {
                 rep->total_len = rep->header_len + rep->content_len;
                 return -1;
             }
         }
         /* 内容长度 */
-        else if (!strncasecmp(p, HTTP_KEY_CONTENT_LEN, HTTP_KEY_CONTENT_LEN_LEN))
-        {
+        else if (!strncasecmp(p, HTTP_KEY_CONTENT_LEN, HTTP_KEY_CONTENT_LEN_LEN)) {
             p += HTTP_KEY_CONTENT_LEN_LEN;
             while (' ' == *p) { ++p; }
 
             rep->content_len = 0;
-            while (isdigit(*p))
-            {
+            while (isdigit(*p)) {
                 rep->content_len *= 10;
                 rep->content_len += (*p - '0');
                 ++p;
@@ -165,8 +146,7 @@ int http_parse_response(const char *str, http_response_t *rep)
         }
 
         p = strstr(p, "\r\n");
-        if (p == end)
-        {
+        if (p == end) {
             break;
         }
         p += 2;
