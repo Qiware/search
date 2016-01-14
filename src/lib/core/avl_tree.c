@@ -18,8 +18,7 @@
 #define avl_set_lchild(node, _lchild) \
 { \
     (node)->lchild = (_lchild); \
-    if(NULL != (_lchild)) \
-    { \
+    if(NULL != (_lchild)) { \
         (_lchild)->parent = (node); \
     } \
 }
@@ -28,8 +27,7 @@
 #define avl_set_rchild(node, _rchild) \
 { \
     (node)->rchild = (_rchild); \
-    if(NULL != (_rchild)) \
-    { \
+    if(NULL != (_rchild)) { \
         (_rchild)->parent = (node); \
     } \
 }
@@ -37,11 +35,9 @@
 /* 替换父节点的孩子节点 */
 #define avl_replace_child(tree, _parent, old, _new) \
 { \
-    if(NULL == _parent) \
-    { \
+    if(NULL == _parent) { \
         (tree)->root = (_new); \
-        if(NULL != (_new)) \
-        { \
+        if(NULL != (_new)) { \
             (_new)->parent = NULL; \
         } \
     } \
@@ -1329,11 +1325,9 @@ void avl_print_tail(avl_node_t *node, int depth)
         return;
     }
 
-    while (depth > 1)
-    {
+    while (depth > 1) {
         fprintf(stderr, "|");
-		for (idx=0; idx<8; idx++)
-		{
+		for (idx=0; idx<8; idx++) {
 			fprintf(stderr, " ");
 		}
         depth--;
@@ -1363,7 +1357,6 @@ int _avl_print(avl_node_t *root, Stack_t *stack)
 {
     int depth;
     avl_node_t *node = root;
-
 
     /* 1. 将要处理的结点压栈 */
     stack_push(stack, node);
@@ -1397,15 +1390,12 @@ int _avl_print(avl_node_t *root, Stack_t *stack)
  **函数名称: _avl_trav
  **功    能: 遍历平衡二叉树(内部接口)
  **输入参数:
- **     tree: 平衡二叉树
+ **     node: 结点
+ **     proc: 各结点的处理回调
+ **     args: 附加参数
  **输出参数: NONE
  **返    回: VOID
- **实现描述:
- **     1. 结点入栈
- **     2. 处理该结点
- **     3. 处理该结点的右子树
- **     4. 处理该结点的左子树
- **     5. 结点出栈
+ **实现描述: 使用递归算法实现遍历(简单)
  **注意事项:
  **作    者: # Qifeng.zou # 2014.12.24 #
  ******************************************************************************/
