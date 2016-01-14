@@ -1432,10 +1432,12 @@ static int _avl_trav(avl_node_t *node, trav_cb_t proc, void *args)
  **功    能: 遍历平衡二叉树(外部接口)
  **输入参数:
  **     tree: 平衡二叉树
+ **     proc: 各结点的处理回调
+ **     args: 附加参数
  **输出参数: NONE
  **返    回: VOID
  **实现描述:
- **注意事项:
+ **注意事项: 按照从小到大的顺序进行遍历
  **作    者: # Qifeng.zou # 2014.12.23 #
  ******************************************************************************/
 int avl_trav(avl_tree_t *tree, trav_cb_t proc, void *args)
@@ -1444,7 +1446,5 @@ int avl_trav(avl_tree_t *tree, trav_cb_t proc, void *args)
         return AVL_OK;
     }
 
-    _avl_trav(tree->root, proc, args);
-
-    return AVL_OK;
+    return _avl_trav(tree->root, proc, args);
 }
