@@ -3,13 +3,26 @@
 #define INPUT_LEN   (128)
 #define __AUTO_INPUT__
 
+typedef struct
+{
+    uint64_t id;
+} avl_data_t;
+
+void avl_trav_print(avl_data_t *data, void *args)
+{
+    static uint32_t idx = 0;
+
+    fprintf(stderr, "idx:%u id:%lu\n", ++idx, data->id);
+}
+
 int main(void)
 {
-    void *data;
-    uint64_t key;
-    int ret, idx;
+    uint32_t key;
+    int ret, idx, n;
     avl_opt_t opt;
     avl_tree_t *avl;
+    rbt_tree_t *rbt;
+    avl_data_t *data;
     char input[INPUT_LEN];
 
     /* > 创建B树 */
@@ -17,7 +30,7 @@ int main(void)
     opt.alloc = (mem_alloc_cb_t)mem_alloc;
     opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
-    avl = avl_creat(&opt, (key_cb_t)key_cb_int64, (cmp_cb_t)cmp_cb_int64);
+    avl = avl_creat(&opt, (key_cb_t)key_cb_int32, (cmp_cb_t)cmp_cb_int32);
     if (NULL == avl)
     {
         fprintf(stderr, "[%s][%d] Create avl failed!\n", __FILE__, __LINE__);
@@ -27,30 +40,67 @@ int main(void)
     fprintf(stderr, "[%s][%d] Create avl success!\n", __FILE__, __LINE__);
 
     /* > 插入关键字 */
-    for(idx=0; idx<100; idx++)
-    {
-        key = random();
-        avl_insert(avl, &key, sizeof(key), NULL);
+    for (n=0; n<5; n++) {
+        for(idx=0; idx<1000; idx++) {
+            key = idx;//random();
+            data = (avl_data_t *)calloc(1, sizeof(avl_data_t));
+            data->id = key;
+            avl_insert(avl, &key, sizeof(key), data);
+        }
+        for(idx=0; idx<1000-5; idx++) {
+            key = idx;//random();
+            data = (avl_data_t *)calloc(1, sizeof(avl_data_t));
+            data->id = key;
+            avl_delete(avl, &key, sizeof(key), (void **)data);
+            free(data);
+        }
     }
 
+    avl_trav(avl, (trav_cb_t)avl_trav_print, NULL);
+    return 0;
+
     key = 14;
-	avl_insert(avl, &key, sizeof(key), NULL);
+    data = (avl_data_t *)calloc(1, sizeof(avl_data_t));
+    data->id = key;
+	avl_insert(avl, &key, sizeof(key), (void *)data);
+
     key = 28;
-	avl_insert(avl, &key, sizeof(key), NULL);
+    data = (avl_data_t *)calloc(1, sizeof(avl_data_t));
+    data->id = key;
+	avl_insert(avl, &key, sizeof(key), (void *)data);
+
     key = 34;
-	avl_insert(avl, &key, sizeof(key), NULL);
+    data = (avl_data_t *)calloc(1, sizeof(avl_data_t));
+    data->id = key;
+	avl_insert(avl, &key, sizeof(key), (void *)data);
+
     key = 37;
-	avl_insert(avl, &key, sizeof(key), NULL);
+    data = (avl_data_t *)calloc(1, sizeof(avl_data_t));
+    data->id = key;
+	avl_insert(avl, &key, sizeof(key), (void *)data);
+
     key = 48;
-	avl_insert(avl, &key, sizeof(key), NULL);
+    data = (avl_data_t *)calloc(1, sizeof(avl_data_t));
+    data->id = key;
+	avl_insert(avl, &key, sizeof(key), (void *)data);
+
     key = 39;
-	avl_insert(avl, &key, sizeof(key), NULL);
+    data = (avl_data_t *)calloc(1, sizeof(avl_data_t));
+    data->id = key;
+	avl_insert(avl, &key, sizeof(key), (void *)data);
+
     key = 38;
-	avl_insert(avl, &key, sizeof(key), NULL);
+    data = (avl_data_t *)calloc(1, sizeof(avl_data_t));
+    data->id = key;
+	avl_insert(avl, &key, sizeof(key), (void *)data);
+
     key = 40;
-	avl_insert(avl, &key, sizeof(key), NULL);
+    data = (avl_data_t *)calloc(1, sizeof(avl_data_t));
+    data->id = key;
+	avl_insert(avl, &key, sizeof(key), (void *)data);
 
     avl_print(avl);
+    avl_trav(avl, (trav_cb_t)avl_trav_print, NULL);
 
     /* > 操作B树 */
     while(1)
@@ -77,21 +127,25 @@ int main(void)
             scanf(" %s", input);
             key = atoi(input);
 
-            avl_delete(avl, &key, sizeof(key), &data);
+            avl_delete(avl, &key, sizeof(key), (void *)&data);
             avl_print(avl);
             continue;
         }
 
-        ret = avl_insert(avl, &key, sizeof(key), NULL);
+        data = (avl_data_t *)calloc(1, sizeof(avl_data_t));
+        data->id = key;
+
+        ret = avl_insert(avl, &key, sizeof(key), (void *)data);
         if (0 != ret)
         {
             fprintf(stderr, "[%s][%d] Insert failed!\n", __FILE__, __LINE__);
             break;
         }
 
-        fprintf(stderr, "[%lu] Insert avl success!\n", key);
+        fprintf(stderr, "[%u] Insert avl success!\n", key);
 
-        avl_print(avl);
+        //avl_print(avl);
+        avl_trav(avl, (trav_cb_t)avl_trav_print, NULL);
     }
 
     avl_destroy(avl, mem_dummy_dealloc, NULL);
