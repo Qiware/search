@@ -1409,29 +1409,20 @@ int _avl_print(avl_node_t *root, Stack_t *stack)
  **注意事项:
  **作    者: # Qifeng.zou # 2014.12.24 #
  ******************************************************************************/
-static int _avl_trav(avl_node_t *root, Stack_t *stack, trav_cb_t proc, void *args)
+static int _avl_trav(avl_node_t *node, trav_cb_t proc, void *args)
 {
-    avl_node_t *node = root;
-
-
-    /* 1. 将要处理的结点压栈 */
-    stack_push(stack, node);
+    /* 1. 遍历左子树 */
+    if (NULL != node->lchild) {
+        _avl_trav(node->lchild, proc, args);
+    }
 
     /* 2. 处理当前结点 */
     proc(node->data, args);
 
-    /* 3. 打印右子树 */
+    /* 3. 遍历右子树 */
     if (NULL != node->rchild) {
-        _avl_trav(node->rchild, stack, proc, args);
+        _avl_trav(node->rchild, proc, args);
     }
-
-    /* 4. 打印左子树 */
-    if (NULL != node->lchild) {
-        _avl_trav(node->lchild, stack, proc, args);
-    }
-
-    /* 5. 出栈 */
-    stack_pop(stack);
 
     return AVL_OK;
 }
@@ -1449,20 +1440,11 @@ static int _avl_trav(avl_node_t *root, Stack_t *stack, trav_cb_t proc, void *arg
  ******************************************************************************/
 int avl_trav(avl_tree_t *tree, trav_cb_t proc, void *args)
 {
-    Stack_t stack;
-
-    memset(&stack, 0, sizeof(stack));
-
     if (NULL == tree->root) {
         return AVL_OK;
     }
 
-    if (stack_init(&stack, AVL_MAX_DEPTH)) {
-        return AVL_ERR_STACK;
-    }
+    _avl_trav(tree->root, proc, args);
 
-    _avl_trav(tree->root, &stack, proc, args);
-
-    stack_destroy(&stack);
     return AVL_OK;
 }
