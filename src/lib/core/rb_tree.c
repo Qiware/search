@@ -808,13 +808,9 @@ int rbt_print(rbt_tree_t *tree)
         /* 压左孩子入栈 */
         while (tree->sentinel != node->lchild) {
             rbt_assert(tree, node);
-            
             depth = stack_depth(stack);
-
             stack_push(stack, node);
-                        
             rbt_print_head(tree, node, depth);   /* 打印头：入栈时打印头 出栈时打印尾 */
-
             node = node->lchild;
         }
 
@@ -838,11 +834,11 @@ int rbt_print(rbt_tree_t *tree)
         }
 
         /* 判断最左结点的父结点未处理完成 */
-        if ((parent->lchild == node)
-            && (tree->sentinel != parent->rchild))
-        {
-            node = parent->rchild;
-            continue;
+        if (parent->lchild == node) {
+            if (tree->sentinel != parent->rchild) {
+                node = parent->rchild;
+                continue;
+            }
         }
 
         /* 判断最左结点的父结点已处理完成 */
@@ -860,7 +856,7 @@ int rbt_print(rbt_tree_t *tree)
                 return stack_destroy(stack);
             }
         }
-        
+
         node = parent->rchild;
     }
 
@@ -1020,8 +1016,7 @@ int rbt_destroy(rbt_tree_t *tree, mem_dealloc_cb_t dealloc, void *args)
  **     args: 附加参数
  **输出参数: NONE
  **返    回: VOID
- **实现描述: 
- **     处理思路可以参考rbt_print()
+ **实现描述: 处理思路可以参考rbt_print()
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.26 #
  ******************************************************************************/
@@ -1030,45 +1025,47 @@ int rbt_trav(rbt_tree_t *tree, trav_cb_t proc, void *args)
     Stack_t _stack, *stack = &_stack;
     rbt_node_t *node = tree->root, *parent;
 
-    if (tree->sentinel == node) return 0;
+    if (tree->sentinel == node) { return 0; }
 
     stack_init(stack, RBT_MAX_DEPTH);
 
     while (tree->sentinel != node) {
-        /* 压左孩子入栈 */
+        /* 压左孩子入栈, 直到最左端 */
         while (tree->sentinel != node->lchild) {
             rbt_assert(tree, node);
-
             stack_push(stack, node);
-                        
-            proc(node->data, args);
-
             node = node->lchild;
         }
 
-        /* 打印最左端的子孙结点 */
-        proc(node->data, args);
+        proc(node->data, args); /* 处理最左端结点 */
 
-        /* 最左端的孩子有右孩子 */
+        /* 最左端结点有右孩子 */
         if (tree->sentinel != node->rchild) {
-            stack_push(stack, node);
+            stack_push(stack, node); /* 最左端结点入栈 */
             node = node->rchild;
             continue;
         }
         
-        /* 最左端的孩子无右孩子 */
-
+        /* 最左端结点无右孩子 */
         parent = stack_gettop(stack);
         if (NULL == parent) {
             return stack_destroy(stack);
         }
 
-        /* 判断最左结点的父结点未处理完成 */
-        if ((parent->lchild == node)
-            && (tree->sentinel != parent->rchild))
-        {
-            node = parent->rchild;
-            continue;
+        if (parent->lchild == node) {
+            proc(parent->data, args);   /* 处理最左结点的父结点 */
+            if (tree->sentinel != parent->rchild) { /* 有右子树 */
+                node = parent->rchild;  /* 处理右子树 */
+                continue;
+            }
+            else {
+                stack_pop(stack);
+                node = parent;
+                parent = stack_gettop(stack);
+                if (NULL == parent) {
+                    return stack_destroy(stack);
+                }
+            }
         }
 
         /* 判断最左结点的父结点已处理完成 */
@@ -1083,7 +1080,9 @@ int rbt_trav(rbt_tree_t *tree, trav_cb_t proc, void *args)
                 return stack_destroy(stack);
             }
         }
-        
+
+        proc(parent->data, args); /* 处理有左子树而无右子树的结点 */
+
         node = parent->rchild;
     }
 
