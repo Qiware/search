@@ -1016,7 +1016,7 @@ int rbt_destroy(rbt_tree_t *tree, mem_dealloc_cb_t dealloc, void *args)
  **     args: 附加参数
  **输出参数: NONE
  **返    回: VOID
- **实现描述: 处理思路可以参考rbt_print()
+ **实现描述: 处理思路可以参考rbt_print(), 但是稍微有些不同之处.
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.26 #
  ******************************************************************************/
