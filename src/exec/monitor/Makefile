@@ -16,7 +16,7 @@ INCLUDE = -I./incl \
 		  -I$(PROJ)/src/exec/monitor/incl
 
 LIBS_PATH = -L$(PROJ)/lib
-LIBS = -lpthread -lcore
+LIBS = -lpthread -lcore -ljemalloc
 
 SRC_LIST = monitor.c \
 			mon_conf.c \

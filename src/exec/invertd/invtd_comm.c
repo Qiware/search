@@ -68,6 +68,10 @@ int invtd_getopt(int argc, char **argv, invtd_opt_t *opt)
         }
     }
 
+    if (NULL == opt->log_key_path) {
+        return INVT_SHOW_HELP;
+    }
+
     optarg = NULL;
     optind = 1;
 

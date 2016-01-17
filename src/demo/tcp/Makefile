@@ -7,10 +7,10 @@ INCLUDE = -I. -I$(PROJ)/src/incl
 LIBS_PATH = -L$(PROJ)/lib -L/usr/local/lib
 LIBS = -lcore
 
-SRCS = recv.c
-OBJS = recv.o
+SRCS = connect.c #recv.c
+OBJS = connect.o #recv.o
 HEADS = $(call func_get_dep_head_list, $(SRCS))
-TARGET = recv
+TARGET = connect #recv
 
 SRCS2 = send.c
 OBJS2 = send.o

@@ -16,7 +16,7 @@ INCLUDE = -I. \
 			-I$(PROJ)/src/incl/qwmq \
 			-I$(PROJ)/src/incl/agent
 LIBS_PATH = -L$(PROJ)/lib
-LIBS = -lpthread -lcore
+LIBS = -lpthread -lcore -ljemalloc
 
 SRC_LIST = mmexec.c
 

@@ -18,7 +18,8 @@ LIBS = -lpthread \
 			-lcore \
 	   		-lhiredis \
 			-lredis_ex \
-			-lgumbo_ex
+			-lgumbo_ex \
+			-ljemalloc
 SRC_LIST = filter.c \
 			flt_man.c \
 			flt_comm.c \

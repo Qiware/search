@@ -57,5 +57,5 @@ endef
 # 	1. 本函数自动对路径列表和链接库进行去重处理
 #   2. 给函数_func_find_static_link_lib()传参时, 不要在逗号后面有"空格"!!! 负责参数中带空格.
 define func_find_static_link_lib
-	$(foreach lib, $(sort $(2)), $(call _func_find_lib,$(sort $(1)),$(lib)))
+	$(foreach lib, $(2), $(call _func_find_lib,$(sort $(1)),$(lib)))
 endef

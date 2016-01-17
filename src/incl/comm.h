@@ -29,6 +29,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <sys/resource.h>
+#include <jemalloc/jemalloc.h>
 
 /* 宏定义 */
 #define FILE_NAME_MAX_LEN   (256)               /* 文件名最大长度 */

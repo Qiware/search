@@ -19,7 +19,8 @@ LIBS = -lpthread \
 			-lcore \
 	   		-lhiredis \
 			-lredis_ex \
-			-lgumbo_ex
+			-lgumbo_ex \
+			-ljemalloc
 
 SRC_LIST = crwl_comm.c \
 			crwl_man.c \

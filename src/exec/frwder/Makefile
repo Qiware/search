@@ -15,7 +15,7 @@ INCLUDE = -I./incl \
 			-I$(PROJ)/src/incl/agent
 
 LIBS_PATH = -L$(PROJ)/lib
-LIBS = -lpthread -lcore -lsdtp -lrtmq
+LIBS = -lpthread -lcore -lsdtp -lrtmq -ljemalloc
 LIBS_A = $(PROJ_LIB)/libcore.a $(PROJ_LIB)/librtmq.a
 
 SRC_LIST = frwder.c \
