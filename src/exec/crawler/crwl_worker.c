@@ -146,7 +146,7 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker, int id)
                 conf->worker.conn_max_num,
                 sizeof(struct epoll_event));
         if (NULL == worker->events) {
-            log_error(worker->log, "Alloc memory from slab failed!");
+            log_error(worker->log, "Alloc memory failed! errmsg:[%d] %s", errno, strerror(errno));
             break;
         }
 

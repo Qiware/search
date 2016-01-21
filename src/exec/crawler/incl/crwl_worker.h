@@ -3,7 +3,6 @@
 
 #include "log.h"
 #include "comm.h"
-#include "slab.h"
 #include "list.h"
 #include "http.h"
 #include "queue.h"

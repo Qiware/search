@@ -13,7 +13,6 @@
 #include "log.h"
 #include "sck.h"
 #include "comm.h"
-#include "slab.h"
 #include "list.h"
 #include "queue.h"
 #include "hash_map.h"
@@ -36,7 +35,6 @@ typedef struct
 
     crwl_conf_t conf;                       /* 配置信息 */
     log_cycle_t *log;                       /* 日志对象 */
-    slab_pool_t *slab;                      /* 内存池 */
 
     thread_pool_t *scheds;                  /* Sched线程池 */
     thread_pool_t *workers;                 /* Worker线程池 */

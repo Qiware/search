@@ -3,7 +3,6 @@
 
 #include "log.h"
 #include "comm.h"
-#include "slab.h"
 #include "crawler.h"
 #include "avl_tree.h"
 
@@ -20,7 +19,6 @@ typedef struct
 
     avl_tree_t *reg;                    /* 回调注册 */
     log_cycle_t *log;                   /* 日志对象 */
-    slab_pool_t *slab;                  /* 内存池对象 */
 } crwl_man_t;
 
 /* 回调函数类型 */

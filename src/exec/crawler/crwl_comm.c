@@ -140,7 +140,6 @@ crwl_cntx_t *crwl_init(char *pname, crwl_opt_t *opt)
     log_cycle_t *log;
     crwl_cntx_t *ctx;
     crwl_conf_t *conf;
-    slab_pool_t *slab;
 
     /* > 初始化日志模块 */
     log = crwl_init_log(pname, opt->log_level, opt->log_key_path);
@@ -155,23 +154,14 @@ crwl_cntx_t *crwl_init(char *pname, crwl_opt_t *opt)
         return NULL;
     }
 
-    /* > 创建内存池 */
-    slab = slab_creat_by_calloc(30 * MB, log);
-    if (NULL == slab) {
-        log_error(log, "Init slab failed!");
-        return NULL;
-    }
-
     /* > 创建全局对象 */
-    ctx = (crwl_cntx_t *)slab_alloc(slab, sizeof(crwl_cntx_t));
+    ctx = (crwl_cntx_t *)calloc(1, sizeof(crwl_cntx_t));
     if (NULL == ctx) {
         log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
-        free(slab);
         return NULL;
     }
 
     ctx->log = log;
-    ctx->slab = slab;
 
     do {
         conf = &ctx->conf;
@@ -208,9 +198,6 @@ crwl_cntx_t *crwl_init(char *pname, crwl_opt_t *opt)
 
         return ctx;
     } while (0);
-
-    /* > 释放内存 */
-    free(ctx->slab);
 
     return NULL;
 }
@@ -299,7 +286,7 @@ static int crwl_creat_workers(crwl_cntx_t *ctx)
     const crwl_worker_conf_t *conf = &ctx->conf.worker;
 
     /* > 新建Worker对象 */
-    worker = (crwl_worker_t *)slab_alloc(ctx->slab, conf->num*sizeof(crwl_worker_t));
+    worker = (crwl_worker_t *)calloc(1, conf->num*sizeof(crwl_worker_t));
     if (NULL == worker) {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return CRWL_ERR;
@@ -308,14 +295,14 @@ static int crwl_creat_workers(crwl_cntx_t *ctx)
     /* > 创建Worker线程池 */
     memset(&opt, 0, sizeof(opt));
 
-    opt.pool = (void *)ctx->slab;
-    opt.alloc = (mem_alloc_cb_t)slab_alloc;
-    opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+    opt.pool = (void *)NULL;
+    opt.alloc = (mem_alloc_cb_t)mem_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
     ctx->workers = thread_pool_init(conf->num, &opt, worker);
     if (NULL == ctx->workers) {
         log_error(ctx->log, "Initialize thread pool failed!");
-        slab_dealloc(ctx->slab, worker);
+        FREE(worker);
         return CRWL_ERR;
     }
 
@@ -337,7 +324,7 @@ static int crwl_creat_workers(crwl_cntx_t *ctx)
         crwl_worker_destroy(ctx, worker+idx);
     }
 
-    slab_dealloc(ctx->slab, worker);
+    FREE(worker);
     thread_pool_destroy(ctx->workers);
 
     return CRWL_ERR;
@@ -366,7 +353,7 @@ int crwl_workers_destroy(crwl_cntx_t *ctx)
         crwl_worker_destroy(ctx, worker);
     }
 
-    slab_dealloc(ctx->slab, ctx->workers->data);
+    FREE(ctx->workers->data);
 
     /* 2. 释放线程池对象 */
     thread_pool_destroy(ctx->workers);
@@ -394,9 +381,9 @@ static int crwl_creat_scheds(crwl_cntx_t *ctx)
     memset(&opt, 0, sizeof(opt));
 
     /* 1. 设置内存池信息 */
-    opt.pool = (void *)ctx->slab;
-    opt.alloc = (mem_alloc_cb_t)slab_alloc;
-    opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+    opt.pool = (void *)NULL;
+    opt.alloc = (mem_alloc_cb_t)mem_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
     /* 2. 创建Sched线程池 */
     ctx->scheds = thread_pool_init(CRWL_SCHED_THD_NUM, &opt, NULL);
@@ -587,9 +574,9 @@ static int crwl_creat_workq(crwl_cntx_t *ctx)
     crwl_conf_t *conf = &ctx->conf;
 
     /* > 申请内存空间 */
-    ctx->workq = (queue_t **)slab_alloc(ctx->slab, conf->worker.num*sizeof(queue_t *));
+    ctx->workq = (queue_t **)calloc(1, conf->worker.num*sizeof(queue_t *));
     if (NULL == ctx->workq) {
-        log_error(ctx->log, "Alloc memory from slab failed!");
+        log_error(ctx->log, "Alloc memory failed!");
         return CRWL_ERR;
     }
 
@@ -598,7 +585,7 @@ static int crwl_creat_workq(crwl_cntx_t *ctx)
     for (idx=0, num=0; idx<conf->worker.num; ++idx) {
         ctx->workq[idx] = queue_creat(conf->workq_count, size);
         if (NULL == ctx->workq[idx]) {
-            slab_dealloc(ctx->slab, ctx->workq), ctx->workq=NULL;
+            FREE(ctx->workq);
             goto CREAT_QUEUE_ERR;
         }
     }

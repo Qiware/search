@@ -123,7 +123,7 @@ static crwl_man_t *crwl_man_init(crwl_cntx_t *ctx)
     list_opt_t list_opt;
 
     /* > 创建对象 */
-    man = (crwl_man_t *)slab_alloc(ctx->slab, sizeof(crwl_man_t));
+    man = (crwl_man_t *)calloc(1, sizeof(crwl_man_t));
     if (NULL == man) {
         return NULL;
     }
@@ -132,15 +132,14 @@ static crwl_man_t *crwl_man_init(crwl_cntx_t *ctx)
 
     man->log = ctx->log;
     man->fd = INVALID_FD;
-    man->slab = ctx->slab;
 
     do {
         /* > 创建AVL树 */
         memset(&opt, 0, sizeof(opt));
 
-        opt.pool = man->slab;
-        opt.alloc = (mem_alloc_cb_t)slab_alloc;
-        opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+        opt.pool = NULL;
+        opt.alloc = (mem_alloc_cb_t)mem_alloc;
+        opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
         man->reg = avl_creat(&opt, (key_cb_t)key_cb_int32, (cmp_cb_t)cmp_cb_int32);
         if (NULL == man->reg) {
@@ -151,9 +150,9 @@ static crwl_man_t *crwl_man_init(crwl_cntx_t *ctx)
         /* > 创建链表 */
         memset(&list_opt, 0, sizeof(list_opt));
 
-        list_opt.pool = man->slab;
-        list_opt.alloc = (mem_alloc_cb_t)slab_alloc;
-        list_opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+        list_opt.pool = NULL;
+        list_opt.alloc = (mem_alloc_cb_t)mem_alloc;
+        list_opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
         man->mesg_list = list_creat(&list_opt);
         if (NULL == man->mesg_list) {
@@ -179,10 +178,10 @@ static crwl_man_t *crwl_man_init(crwl_cntx_t *ctx)
     /* > 释放空间 */
     if (NULL != man->reg) { avl_destroy(man->reg, mem_dummy_dealloc, NULL); }
     if (NULL != man->mesg_list) {
-        list_destroy(man->mesg_list, man->slab, (mem_dealloc_cb_t)slab_dealloc);
+        list_destroy(man->mesg_list, NULL, (mem_dealloc_cb_t)mem_dealloc);
     }
     CLOSE(man->fd);
-    slab_dealloc(ctx->slab, man);
+    FREE(man);
 
     return NULL;
 }
@@ -207,9 +206,9 @@ static int crwl_man_register(crwl_man_t *man, int type, crwl_man_reg_cb_t proc, 
     crwl_man_reg_t *reg;
 
     /* > 申请空间 */
-    reg = slab_alloc(man->slab, sizeof(crwl_man_reg_t));
+    reg = calloc(1, sizeof(crwl_man_reg_t));
     if (NULL == reg) {
-        log_error(man->log, "Alloc memory from slab failed!");
+        log_error(man->log, "Alloc memory failed!");
         return CRWL_ERR;
     }
 
@@ -339,13 +338,13 @@ static int crwl_man_send_cmd(crwl_cntx_t *ctx, crwl_man_t *man)
         if (n < 0) {
             log_error(man->log, "errmsg:[%d] %s!", errno, strerror(errno));
             if (list_lpush(man->mesg_list, item)) { /* 放回发送队列 */
-                slab_dealloc(man->slab, item);
+                FREE(item);
             }
             return CRWL_OK;
         }
 
         /* > 释放空间 */
-        slab_dealloc(man->slab, item);
+        FREE(item);
     }
 
     return CRWL_OK;
@@ -376,9 +375,9 @@ static int crwl_man_query_conf_req_hdl(crwl_cntx_t *ctx,
     log_debug(man->log, "Call %s()!", __func__);
 
     /* > 申请应答空间 */
-    item = slab_alloc(man->slab, sizeof(crwl_cmd_item_t));
+    item = calloc(1, sizeof(crwl_cmd_item_t));
     if (NULL == item) {
-        log_error(man->log, "Alloc memory from slab failed!");
+        log_error(man->log, "Alloc memory failed!");
         return CRWL_ERR;
     }
 
@@ -404,7 +403,7 @@ static int crwl_man_query_conf_req_hdl(crwl_cntx_t *ctx,
     /* > 加入应答列表 */
     if (list_rpush(man->mesg_list, item)) {
         log_error(man->log, "Insert list failed!");
-        slab_dealloc(man->slab, conf);
+        FREE(conf);
         return CRWL_ERR;
     }
 
@@ -437,9 +436,9 @@ static int crwl_man_query_worker_stat_req_hdl(crwl_cntx_t *ctx,
     crwl_conf_t *conf = &ctx->conf;
 
     /* > 新建应答 */
-    item = slab_alloc(man->slab, sizeof(crwl_cmd_item_t));
+    item = calloc(1, sizeof(crwl_cmd_item_t));
     if (NULL == item) {
-        log_error(man->log, "Alloc from slab failed!");
+        log_error(man->log, "Alloc memory failed!");
         return CRWL_ERR;
     }
 
@@ -470,7 +469,7 @@ static int crwl_man_query_worker_stat_req_hdl(crwl_cntx_t *ctx,
     /* > 放入队尾 */
     if (list_rpush(man->mesg_list, item)) {
         log_error(man->log, "Push into list failed!");
-        slab_dealloc(man->slab, item);
+        FREE(item);
         return CRWL_ERR;
     }
 
@@ -503,9 +502,9 @@ static int crwl_man_query_workq_stat_req_hdl(crwl_cntx_t *ctx,
     crwl_conf_t *conf = &ctx->conf;
 
     /* > 新建应答 */
-    item = slab_alloc(man->slab, sizeof(crwl_cmd_item_t));
+    item = calloc(1, sizeof(crwl_cmd_item_t));
     if (NULL == item) {
-        log_error(man->log, "Alloc from slab failed!");
+        log_error(man->log, "Alloc memory failed!");
         return CRWL_ERR;
     }
 
@@ -531,7 +530,7 @@ static int crwl_man_query_workq_stat_req_hdl(crwl_cntx_t *ctx,
     /* > 放入队尾 */
     if (list_rpush(man->mesg_list, item)) {
         log_error(man->log, "Push into list failed!");
-        slab_dealloc(man->slab, item);
+        FREE(item);
         return CRWL_ERR;
     }
 
@@ -562,9 +561,9 @@ static int crwl_man_switch_sched_req_hdl(crwl_cntx_t *ctx,
     crwl_conf_t *conf = &ctx->conf;
 
     /* > 新建应答 */
-    item = slab_alloc(man->slab, sizeof(crwl_cmd_item_t));
+    item = calloc(1, sizeof(crwl_cmd_item_t));
     if (NULL == item) {
-        log_error(man->log, "Alloc from slab failed!");
+        log_error(man->log, "Alloc memory failed!");
         return CRWL_ERR;
     }
 
@@ -582,7 +581,7 @@ static int crwl_man_switch_sched_req_hdl(crwl_cntx_t *ctx,
     /* > 放入队尾 */
     if (list_rpush(man->mesg_list, item)) {
         log_error(man->log, "Push into list failed!");
-        slab_dealloc(man->slab, item);
+        FREE(item);
         return CRWL_ERR;
     }
 
