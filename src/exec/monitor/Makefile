@@ -14,9 +14,10 @@ INCLUDE = -I./incl \
 		  -I$(PROJ)/src/exec/filter/incl \
 		  -I$(PROJ)/src/exec/crawler/incl \
 		  -I$(PROJ)/src/exec/monitor/incl
-
+INCLUDE += $(GLOBAL_INCLUDE)
 LIBS_PATH = -L$(PROJ)/lib
-LIBS = -lpthread -lcore -ljemalloc
+LIBS = -lpthread -lcore
+LIBS += $(SHARED_LIB)
 
 SRC_LIST = monitor.c \
 			mon_conf.c \

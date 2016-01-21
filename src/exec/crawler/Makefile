@@ -14,13 +14,14 @@ INCLUDE = -I. \
 			-I$(PROJ)/src/incl/http \
 			-I$(PROJ)/src/incl/redis \
 			-I$(PROJ)/src/incl/gumbo
+INCLUDE += $(GLOBAL_INCLUDE)
 LIBS_PATH = -L$(PROJ)/lib -L/usr/lib/hiredis
 LIBS = -lpthread \
 			-lcore \
 	   		-lhiredis \
 			-lredis_ex \
-			-lgumbo_ex \
-			-ljemalloc
+			-lgumbo_ex
+LIBS += $(SHARED_LIB)
 
 SRC_LIST = crwl_comm.c \
 			crwl_man.c \

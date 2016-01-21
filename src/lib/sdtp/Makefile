@@ -11,9 +11,10 @@ include $(PROJ)/make/build.mak
 INCLUDE = -I. \
 		  -I$(PROJ)/src/incl \
 		  -I$(PROJ)/src/incl/sdtp
-
+INCLUDE += $(GLOBAL_INCLUDE)
 LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lcore
+LIBS += $(SHARED_LIB)
 
 SRC_LIST = sdrd_recv.c \
 			sdrd_comm.c \

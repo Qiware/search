@@ -13,13 +13,14 @@ INCLUDE = -I. \
 			-I../crawler/incl \
 			-I$(PROJ)/src/incl \
 			-I$(PROJ)/src/incl/redis
+INCLUDE += $(GLOBAL_INCLUDE)
 LIBS_PATH = -L$(PROJ)/lib -L/usr/lib/hiredis
 LIBS = -lpthread \
 			-lcore \
 	   		-lhiredis \
 			-lredis_ex \
-			-lgumbo_ex \
-			-ljemalloc
+			-lgumbo_ex
+LIBS += $(SHARED_LIB)
 SRC_LIST = filter.c \
 			flt_man.c \
 			flt_comm.c \

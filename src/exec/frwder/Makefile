@@ -13,9 +13,10 @@ INCLUDE = -I./incl \
 			-I$(PROJ)/src/incl/sdtp \
 			-I$(PROJ)/src/incl/rtmq \
 			-I$(PROJ)/src/incl/agent
-
+INCLUDE += $(GLOBAL_INCLUDE)
 LIBS_PATH = -L$(PROJ)/lib
-LIBS = -lpthread -lcore -lsdtp -lrtmq -ljemalloc
+LIBS = -lpthread -lcore -lsdtp -lrtmq
+LIBS += $(SHARED_LIB)
 LIBS_A = $(PROJ_LIB)/libcore.a $(PROJ_LIB)/librtmq.a
 
 SRC_LIST = frwder.c \

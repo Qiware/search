@@ -11,8 +11,10 @@ include $(PROJ)/make/build.mak
 INCLUDE = -I. \
 			-I$(PROJ)/src/incl \
 			-I$(PROJ)/src/incl/agent
+INCLUDE += $(GLOBAL_INCLUDE)
 LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lpthread -lcore
+LIBS += $(SHARED_LIB)
 
 SRC_LIST = agent.c \
 			agent_comm.c \

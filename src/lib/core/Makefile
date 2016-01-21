@@ -10,8 +10,10 @@ include $(PROJ)/make/build.mak
 
 INCLUDE = -I. \
 		  -I$(PROJ)/src/incl
+INCLUDE += $(GLOBAL_INCLUDE)
 LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lpthread
+LIBS += $(SHARED_LIB)
 
 SRC_LIST = log.c \
 			plog.c \

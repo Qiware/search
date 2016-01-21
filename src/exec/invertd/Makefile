@@ -12,9 +12,10 @@ INCLUDE = -I./incl \
 			-I$(PROJ)/src/incl \
 			-I$(PROJ)/src/incl/rtmq \
 			-I$(PROJ)/src/incl/agent
-
+INCLUDE += $(GLOBAL_INCLUDE)
 LIBS_PATH = -L$(PROJ)/lib
-LIBS = -lpthread -lcore -lrtmq -linvtab -ljemalloc
+LIBS = -lpthread -lcore -lrtmq -linvtab
+LIBS += $(SHARED_LIB)
 LIBS_A = $(PROJ_LIB)/libcore.a $(PROJ_LIB)/librtmq.a $(PROJ_LIB)/libinvtab.a
 
 SRC_LIST = invertd.c \

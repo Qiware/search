@@ -14,9 +14,10 @@ include $(PROJ)/make/build.mak
 INCLUDE = -I. \
 		  -I$(PROJ)/src/incl \
 		  -I$(PROJ)/src/incl/rtmq
-
+INCLUDE += $(GLOBAL_INCLUDE)
 LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lcore
+LIBS += $(SHARED_LIB)
 
 SRC_LIST = rtrd_recv.c \
 			rtrd_comm.c \
