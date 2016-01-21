@@ -303,7 +303,7 @@ static int mon_srch_word_loop(menu_cntx_t *menu_ctx, menu_item_t *menu, void *ar
     scanf(" %s", digit);
 
     num = MIN(atoi(digit), MON_FD_MAX);
-    conn = (mon_srch_conn_t *)slab_alloc(ctx->slab, num*sizeof(mon_srch_conn_t));
+    conn = (mon_srch_conn_t *)calloc(1, num*sizeof(mon_srch_conn_t));
     if (NULL == conn) {
         fprintf(stderr, "    Alloc memory failed!\n");
         return -1;
@@ -396,7 +396,7 @@ SRCH_AGAIN:
 
     goto SRCH_AGAIN;
 
-    slab_dealloc(ctx->slab, conn); 
+    FREE(conn); 
 
     return 0;
 }
@@ -413,7 +413,7 @@ static int mon_insert_word_rsp_hdl(mon_cntx_t *ctx, int fd)
     /* > 申请内存空间 */
     size = sizeof(agent_header_t) + sizeof(mesg_insert_word_rsp_t);
 
-    addr = (char *)slab_alloc(ctx->slab, size);
+    addr = (char *)calloc(1, size);
     if (NULL == addr) {
         fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
         return -1;
@@ -423,7 +423,7 @@ static int mon_insert_word_rsp_hdl(mon_cntx_t *ctx, int fd)
     n = read(fd, addr, size);
     if (n <= 0) {
         fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
-        slab_dealloc(ctx->slab, addr);
+        FREE(addr);
         return -1;
     }
 
@@ -438,7 +438,7 @@ static int mon_insert_word_rsp_hdl(mon_cntx_t *ctx, int fd)
     fprintf(stderr, "    Code: %d\n", rsp->code);
     fprintf(stderr, "    Word: %s\n", rsp->word);
 
-    slab_dealloc(ctx->slab, addr);
+    FREE(addr);
 
     return 0;
 }
@@ -546,7 +546,7 @@ static int mon_srch_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args
     scanf(" %s", digit);
 
     max = atoi(digit);
-    fd = (int *)slab_alloc(ctx->slab, max*sizeof(int));
+    fd = (int *)calloc(1, max*sizeof(int));
 
     /* > 连接代理服务 */
     num = 0;
@@ -578,7 +578,7 @@ static int mon_srch_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args
         CLOSE(fd[idx]);
     }
 
-    slab_dealloc(ctx->slab, fd);
+    FREE(fd);
 
     return 0;
 }

@@ -120,7 +120,7 @@ static flt_man_t *flt_man_init(flt_cntx_t *ctx)
     list_opt_t list_opt;
 
     /* > 创建对象 */
-    man = (flt_man_t *)slab_alloc(ctx->slab, sizeof(flt_man_t));
+    man = (flt_man_t *)calloc(1, sizeof(flt_man_t));
     if (NULL == man) {
         return NULL;
     }
@@ -129,15 +129,14 @@ static flt_man_t *flt_man_init(flt_cntx_t *ctx)
 
     man->log = ctx->log;
     man->fd = INVALID_FD;
-    man->slab = ctx->slab;
 
     do {
         /* > 创建AVL树 */
         memset(&opt, 0, sizeof(opt));
 
-        opt.pool = man->slab;
-        opt.alloc = (mem_alloc_cb_t)slab_alloc;
-        opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+        opt.pool = NULL;
+        opt.alloc = (mem_alloc_cb_t)mem_alloc;
+        opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
         man->reg = avl_creat(&opt, (key_cb_t)flt_man_reg_key_cb, (cmp_cb_t)flt_man_reg_cmp_cb);
         if (NULL == man->reg) {
@@ -148,9 +147,9 @@ static flt_man_t *flt_man_init(flt_cntx_t *ctx)
         /* > 创建链表 */
         memset(&list_opt, 0, sizeof(list_opt));
 
-        list_opt.pool = man->slab;
-        list_opt.alloc = (mem_alloc_cb_t)slab_alloc;
-        list_opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+        list_opt.pool = NULL;
+        list_opt.alloc = (mem_alloc_cb_t)mem_alloc;
+        list_opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
         man->mesg_list = list_creat(&list_opt);
         if (NULL == man->mesg_list) {
@@ -178,10 +177,10 @@ static flt_man_t *flt_man_init(flt_cntx_t *ctx)
         avl_destroy(man->reg, mem_dummy_dealloc, NULL);
     }
     if (NULL != man->mesg_list) {
-        list_destroy(man->mesg_list, man->slab, (mem_dealloc_cb_t)slab_dealloc);
+        list_destroy(man->mesg_list, NULL, (mem_dealloc_cb_t)mem_dealloc);
     }
     CLOSE(man->fd);
-    slab_dealloc(ctx->slab, man);
+    FREE(man);
 
     return NULL;
 }
@@ -206,9 +205,9 @@ static int flt_man_register(flt_man_t *man, int type, flt_man_reg_cb_t proc, voi
     flt_man_reg_t *reg;
 
     /* > 申请空间 */
-    reg = slab_alloc(man->slab, sizeof(flt_man_reg_t));
+    reg = calloc(1, sizeof(flt_man_reg_t));
     if (NULL == reg) {
-        log_error(man->log, "Alloc memory from slab failed!");
+        log_error(man->log, "Alloc memory failed!");
         return FLT_ERR;
     }
 
@@ -374,12 +373,12 @@ static int flt_man_send_cmd(flt_cntx_t *ctx, flt_man_t *man)
     n = sendto(man->fd, &item->cmd, sizeof(flt_cmd_t), 0, (struct sockaddr *)&item->to, sizeof(item->to));
     if (n < 0) {
         log_error(man->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        slab_dealloc(man->slab, item);
+        FREE(item);
         return FLT_OK;
     }
 
     /* > 释放空间 */
-    slab_dealloc(man->slab, item);
+    FREE(item);
 
     return FLT_OK;
 }
@@ -412,9 +411,9 @@ static int flt_man_add_seed_req_hdl(flt_cntx_t *ctx,
     log_debug(man->log, "Call %s(). Url:%s", __func__, req->url);
 
     /* > 申请应答空间 */
-    item = slab_alloc(man->slab, sizeof(flt_cmd_item_t));
+    item = calloc(1, sizeof(flt_cmd_item_t));
     if (NULL == item) {
-        log_error(man->log, "Alloc memory from slab failed!");
+        log_error(man->log, "Alloc memory failed!");
         return FLT_ERR;
     }
 
@@ -432,7 +431,7 @@ static int flt_man_add_seed_req_hdl(flt_cntx_t *ctx,
     /* > 加入应答列表 */
     if (list_rpush(man->mesg_list, item)) {
         log_error(man->log, "Insert list failed!");
-        slab_dealloc(man->slab, item);
+        FREE(item);
         return FLT_ERR;
     }
 
@@ -464,9 +463,9 @@ static int flt_man_query_conf_req_hdl(flt_cntx_t *ctx,
     log_debug(man->log, "Call %s()!", __func__);
 
     /* > 申请应答空间 */
-    item = slab_alloc(man->slab, sizeof(flt_cmd_item_t));
+    item = calloc(1, sizeof(flt_cmd_item_t));
     if (NULL == item) {
-        log_error(man->log, "Alloc memory from slab failed!");
+        log_error(man->log, "Alloc memory failed!");
         return FLT_ERR;
     }
 
@@ -483,7 +482,7 @@ static int flt_man_query_conf_req_hdl(flt_cntx_t *ctx,
     /* > 加入应答列表 */
     if (list_rpush(man->mesg_list, item)) {
         log_error(man->log, "Insert list failed!");
-        slab_dealloc(man->slab, conf);
+        FREE(conf);
         return FLT_ERR;
     }
 
@@ -513,9 +512,9 @@ static int flt_man_query_table_stat_req_hdl(flt_cntx_t *ctx,
     flt_cmd_table_stat_t *stat;
 
     /* > 新建应答 */
-    item = slab_alloc(man->slab, sizeof(flt_cmd_item_t));
+    item = calloc(1, sizeof(flt_cmd_item_t));
     if (NULL == item) {
-        log_error(man->log, "Alloc from slab failed!");
+        log_error(man->log, "Alloc memory failed!");
         return FLT_ERR;
     }
 
@@ -555,7 +554,7 @@ static int flt_man_query_table_stat_req_hdl(flt_cntx_t *ctx,
     /* > 放入队尾 */
     if (list_rpush(man->mesg_list, item)) {
         log_error(man->log, "Push into list failed!");
-        slab_dealloc(man->slab, item);
+        FREE(item);
         return FLT_ERR;
     }
 
@@ -626,9 +625,9 @@ static int flt_man_store_domain_ip_map_req_hdl(flt_cntx_t *ctx,
     Mkdir(ctx->conf->work.man_path, 0777);
 
     /* > 新建应答 */
-    item = slab_alloc(man->slab, sizeof(flt_cmd_item_t));
+    item = calloc(1, sizeof(flt_cmd_item_t));
     if (NULL == item) {
-        log_error(man->log, "Alloc from slab failed!");
+        log_error(man->log, "Alloc memory failed!");
         return FLT_ERR;
     }
 
@@ -647,7 +646,7 @@ static int flt_man_store_domain_ip_map_req_hdl(flt_cntx_t *ctx,
     trav.fp = fopen(fname, "w");
     if (NULL == trav.fp) {
         log_error(man->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        slab_dealloc(man->slab, item);
+        FREE(item);
         return FLT_ERR;
     }
 
@@ -666,7 +665,7 @@ static int flt_man_store_domain_ip_map_req_hdl(flt_cntx_t *ctx,
     /* > 放入队尾 */
     if (list_rpush(man->mesg_list, item)) {
         log_error(man->log, "Push into list failed!");
-        slab_dealloc(man->slab, item);
+        FREE(item);
         return FLT_ERR;
     }
 
@@ -730,9 +729,9 @@ static int flt_man_store_domain_blacklist_req_hdl(flt_cntx_t *ctx,
     Mkdir(ctx->conf->work.man_path, 0777);
 
     /* > 新建应答 */
-    item = slab_alloc(man->slab, sizeof(flt_cmd_item_t));
+    item = calloc(1, sizeof(flt_cmd_item_t));
     if (NULL == item) {
-        log_error(man->log, "Alloc from slab failed!");
+        log_error(man->log, "Alloc memory failed!");
         return FLT_ERR;
     }
 
@@ -751,7 +750,7 @@ static int flt_man_store_domain_blacklist_req_hdl(flt_cntx_t *ctx,
     trav.fp = fopen(fname, "w");
     if (NULL == trav.fp) {
         log_error(man->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        slab_dealloc(man->slab, item);
+        FREE(item);
         return FLT_ERR;
     }
 
@@ -770,7 +769,7 @@ static int flt_man_store_domain_blacklist_req_hdl(flt_cntx_t *ctx,
     /* > 放入队尾 */
     if (list_rpush(man->mesg_list, item)) {
         log_error(man->log, "Push into list failed!");
-        slab_dealloc(man->slab, item);
+        FREE(item);
         return FLT_ERR;
     }
 

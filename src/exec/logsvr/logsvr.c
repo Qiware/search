@@ -145,19 +145,12 @@ static logd_cntx_t *logd_init(logd_opt_t *opt)
         return NULL;
     }
 
-    /* > 创建内存池 */
-    ctx->slab = slab_creat_by_calloc(LOGD_SLAB_SIZE, NULL);
-    if (NULL == ctx->slab) {
-        fprintf(stderr, "Inititalize slab failed!");
-        return NULL;
-    }
-
     /* > 启动多个线程 */
     memset(&tp_opt, 0, sizeof(tp_opt));
 
-    tp_opt.pool = (void *)ctx->slab;
-    tp_opt.alloc = (mem_alloc_cb_t)slab_alloc;
-    tp_opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+    tp_opt.pool = (void *)NULL;
+    tp_opt.alloc = (mem_alloc_cb_t)mem_alloc;
+    tp_opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
     ctx->pool = thread_pool_init(LOGD_THREAD_NUM, &tp_opt, NULL);
     if (NULL == ctx->pool) {

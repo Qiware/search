@@ -43,7 +43,6 @@ typedef struct
 {
     log_cycle_t *log;                       /* 日志对象 */
     flt_conf_t *conf;                       /* 配置信息 */
-    slab_pool_t *slab;                      /* 内存池 */
 
     time_t run_tm;                          /* 运行时间 */
 

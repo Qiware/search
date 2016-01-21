@@ -157,7 +157,6 @@ flt_cntx_t *flt_init(char *pname, flt_opt_t *flt_opt)
     flt_cntx_t *ctx;
     flt_conf_t *conf;
     log_cycle_t *log;
-    slab_pool_t *slab;
     hash_map_opt_t opt;
 
     /* > 初始化日志模块 */
@@ -167,23 +166,14 @@ flt_cntx_t *flt_init(char *pname, flt_opt_t *flt_opt)
         return NULL;
     }
 
-    /* > 创建内存池 */
-    slab = slab_creat_by_calloc(FLT_SLAB_SIZE, log);
-    if (NULL == slab) {
-        log_error(log, "Init slab failed!");
-        return NULL;
-    }
-
     /* > 申请对象空间 */
-    ctx = (flt_cntx_t *)slab_alloc(slab, sizeof(flt_cntx_t));
+    ctx = (flt_cntx_t *)calloc(1, sizeof(flt_cntx_t));
     if (NULL == ctx) {
         log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
-        free(slab);
         return NULL;
     }
 
     ctx->log = log;
-    ctx->slab = slab;
 
     do {
         /* > 加载配置信息 */
@@ -220,9 +210,9 @@ flt_cntx_t *flt_init(char *pname, flt_opt_t *flt_opt)
         memset(&opt, 0, sizeof(opt));
 
         opt.type = HASH_MAP_AVL;
-        opt.pool = (void *)ctx->slab;
-        opt.alloc = (mem_alloc_cb_t)slab_alloc;
-        opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+        opt.pool = (void *)NULL;
+        opt.alloc = (mem_alloc_cb_t)mem_alloc;
+        opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
         ctx->domain_ip_map = hash_map_creat(
                 FLT_DOMAIN_IP_MAP_HASH_MOD,
@@ -237,9 +227,9 @@ flt_cntx_t *flt_init(char *pname, flt_opt_t *flt_opt)
         memset(&opt, 0, sizeof(opt));
 
         opt.type = HASH_MAP_AVL;
-        opt.pool = (void *)ctx->slab;
-        opt.alloc = (mem_alloc_cb_t)slab_alloc;
-        opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+        opt.pool = (void *)NULL;
+        opt.alloc = (mem_alloc_cb_t)mem_alloc;
+        opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
         ctx->domain_blacklist = hash_map_creat(
                 FLT_DOMAIN_BLACKLIST_HASH_MOD,
@@ -262,7 +252,6 @@ flt_cntx_t *flt_init(char *pname, flt_opt_t *flt_opt)
     /* > 释放内存空间 */
     if (ctx->redis) { redis_clst_destroy(ctx->redis); }
     if (ctx->taskq) { sig_queue_destroy(ctx->taskq); }    
-    free(ctx->slab);
     return NULL;
 }
 
@@ -370,9 +359,9 @@ static int flt_workers_creat(flt_cntx_t *ctx)
     memset(&opt, 0, sizeof(opt));
 
     /* 1. 创建Worker线程池 */
-    opt.pool = (void *)ctx->slab;
-    opt.alloc = (mem_alloc_cb_t)slab_alloc;
-    opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+    opt.pool = (void *)NULL;
+    opt.alloc = (mem_alloc_cb_t)mem_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
     ctx->workers = thread_pool_init(conf->num, &opt, NULL);
     if (NULL == ctx->workers) {
@@ -381,7 +370,7 @@ static int flt_workers_creat(flt_cntx_t *ctx)
     }
 
     /* 2. 新建Worker对象 */
-    ctx->worker = (flt_worker_t *)slab_alloc(ctx->slab, conf->num*sizeof(flt_worker_t));
+    ctx->worker = (flt_worker_t *)calloc(1, conf->num*sizeof(flt_worker_t));
     if (NULL == ctx->worker) {
         thread_pool_destroy(ctx->workers);
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
@@ -405,7 +394,7 @@ FLT_PROC_ERR:
         flt_worker_destroy(ctx, ctx->worker+idx);
     }
 
-    slab_dealloc(ctx->slab, ctx->worker);
+    FREE(ctx->worker);
     thread_pool_destroy(ctx->workers);
 
     return FLT_ERR;
@@ -535,7 +524,7 @@ int flt_get_domain_ip_map(flt_cntx_t *ctx, char *host, ipaddr_t *ip)
         log_error(ctx->log, "Get address info failed! host:%s", host);
 
         /* 插入域名黑名单中 */
-        new_blacklist = slab_alloc(ctx->slab, sizeof(flt_domain_blacklist_t));
+        new_blacklist = calloc(1, sizeof(flt_domain_blacklist_t));
         if (NULL == new_blacklist) {
             return FLT_ERR;
         }
@@ -545,7 +534,7 @@ int flt_get_domain_ip_map(flt_cntx_t *ctx, char *host, ipaddr_t *ip)
         new_blacklist->access_tm = new_blacklist->create_tm;
 
         if (hash_map_insert(ctx->domain_blacklist, host, strlen(host), new_blacklist)) {
-            slab_dealloc(ctx->slab, new_blacklist);
+            FREE(new_blacklist);
         }
 
         return FLT_ERR;
@@ -558,17 +547,17 @@ int flt_get_domain_ip_map(flt_cntx_t *ctx, char *host, ipaddr_t *ip)
     }
 
     /* > 申请新的内存空间(此处不释放空间) */
-    new_map = (flt_domain_ip_map_t *)slab_alloc(ctx->slab, sizeof(flt_domain_ip_map_t));
+    new_map = (flt_domain_ip_map_t *)calloc(1, sizeof(flt_domain_ip_map_t));
     if (NULL == new_map) {
         freeaddrinfo(addrinfo);
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return FLT_ERR;
     }
 
-    new_map->ip = (ipaddr_t *)slab_alloc(ctx->slab, ip_num * sizeof(ipaddr_t));
+    new_map->ip = (ipaddr_t *)calloc(1, ip_num * sizeof(ipaddr_t));
     if (NULL == new_map->ip) {
         freeaddrinfo(addrinfo);
-        slab_dealloc(ctx->slab, new_map);
+        FREE(new_map);
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return FLT_ERR;
     }
@@ -607,13 +596,13 @@ int flt_get_domain_ip_map(flt_cntx_t *ctx, char *host, ipaddr_t *ip)
                 return FLT_ERR;
             }
             memcpy(ip, &new_map->ip[rand()%new_map->ip_num], sizeof(ipaddr_t));
-            slab_dealloc(ctx->slab, new_map->ip);
-            slab_dealloc(ctx->slab, new_map);
+            FREE(new_map->ip);
+            FREE(new_map);
             log_debug(ctx->log, "Domain is exist! host:[%s]", host);
             return FLT_OK;
         }
 
-        slab_dealloc(ctx->slab, new_map);
+        FREE(new_map);
         log_error(ctx->log, "Insert into hash table failed! ret:[%x/%x] host:[%s]",
                 ret, AVL_NODE_EXIST, host);
         return FLT_ERR;

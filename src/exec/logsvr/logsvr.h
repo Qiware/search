@@ -36,8 +36,6 @@ typedef struct
 {
     int fd;                         /* 文件描述符 */
     void *addr;                     /* 共享内存首地址 */
-#define LOGD_SLAB_SIZE   (1 * MB)
-    slab_pool_t *slab;              /* 内存池 */
     thread_pool_t *pool;            /* 内存池对象 */
 } logd_cntx_t;
 
