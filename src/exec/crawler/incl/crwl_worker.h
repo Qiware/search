@@ -38,7 +38,6 @@ typedef struct
     int fds;                        /* 处于激活状态的套接字数 */
     struct epoll_event *events;     /* EVENT数组 */
 
-    slab_pool_t *slab;              /* 内存池 */
     slot_t *slot_for_sck_extra;     /* 内存池(固定大小)(for crwl_worker_socket_extra_t) */
     log_cycle_t *log;               /* 日志对象 */
 
