@@ -16,7 +16,6 @@ typedef struct
 {
     int id;                         /* 对象ID */
 
-    slab_pool_t *slab;              /* 内存池 */
     log_cycle_t *log;               /* 日志对象 */
 
     int epid;                       /* epoll描述符 */

@@ -146,19 +146,12 @@ int agent_rsvr_init(agent_cntx_t *ctx, agent_rsvr_t *rsvr, int idx)
     rsvr->log = ctx->log;
     rsvr->recv_seq = 0;
 
-    /* > 创建SLAB内存池 */
-    rsvr->slab = slab_creat_by_calloc(AGENT_SLAB_SIZE, rsvr->log);
-    if (NULL == rsvr->slab) {
-        log_error(rsvr->log, "Initialize slab pool failed!");
-        return AGENT_ERR;
-    }
-
     /* > 创建连接红黑树 */
     memset(&opt, 0, sizeof(opt));
 
-    opt.pool = rsvr->slab;
-    opt.alloc = (mem_alloc_cb_t)slab_alloc;
-    opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+    opt.pool = NULL;
+    opt.alloc = (mem_alloc_cb_t)mem_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
     rsvr->connections = rbt_creat(&opt,
             (key_cb_t)key_cb_int64, (cmp_cb_t)agent_rsvr_connection_cmp);
@@ -175,15 +168,14 @@ int agent_rsvr_init(agent_cntx_t *ctx, agent_rsvr_t *rsvr, int idx)
             break;
         }
 
-        rsvr->events = slab_alloc(rsvr->slab,
-                AGENT_EVENT_MAX_NUM * sizeof(struct epoll_event));
+        rsvr->events = calloc(1, AGENT_EVENT_MAX_NUM * sizeof(struct epoll_event));
         if (NULL == rsvr->events) {
             log_error(rsvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
             break;
         }
 
         /* > 创建附加信息 */
-        cmd_sck->extra = slab_alloc(rsvr->slab, sizeof(agent_socket_extra_t));
+        cmd_sck->extra = calloc(1, sizeof(agent_socket_extra_t));
         if (NULL == cmd_sck->extra) {
             log_error(rsvr->log, "Alloc from slab failed!");
             break;
@@ -230,13 +222,13 @@ int agent_rsvr_init(agent_cntx_t *ctx, agent_rsvr_t *rsvr, int idx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.07.22 21:39:05 #
  ******************************************************************************/
-static int agent_rsvr_sck_dealloc(slab_pool_t *pool, socket_t *sck)
+static int agent_rsvr_sck_dealloc(void *pool, socket_t *sck)
 {
     agent_socket_extra_t *extra = sck->extra;
 
-    slab_dealloc(pool, sck);
-    list_destroy(extra->send_list, pool, (mem_dealloc_cb_t)slab_alloc);
-    slab_dealloc(pool, extra);
+    FREE(sck);
+    list_destroy(extra->send_list, NULL, (mem_dealloc_cb_t)mem_dealloc);
+    FREE(extra);
 
     return 0;
 }
@@ -254,13 +246,11 @@ static int agent_rsvr_sck_dealloc(slab_pool_t *pool, socket_t *sck)
  ******************************************************************************/
 int agent_rsvr_destroy(agent_rsvr_t *rsvr)
 {
-    slab_dealloc(rsvr->slab, rsvr->events);
-    rbt_destroy(rsvr->connections, (mem_dealloc_cb_t)agent_rsvr_sck_dealloc, rsvr->slab);
-    free(rsvr->slab);
+    FREE(rsvr->events);
+    rbt_destroy(rsvr->connections, (mem_dealloc_cb_t)agent_rsvr_sck_dealloc, NULL);
     CLOSE(rsvr->epid);
     CLOSE(rsvr->cmd_sck.fd);
-    slab_dealloc(rsvr->slab, rsvr->cmd_sck.extra);
-    slab_destroy(rsvr->slab);
+    FREE(rsvr->cmd_sck.extra);
     return AGENT_OK;
 }
 
@@ -495,7 +485,7 @@ static int agent_rsvr_add_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
 
         for (idx=0; idx<num; ++idx) {
             /* > 申请SCK空间 */
-            sck = slab_alloc(rsvr->slab, sizeof(socket_t));
+            sck = calloc(1, sizeof(socket_t));
             if (NULL == sck) {
                 log_error(rsvr->log, "Alloc memory from slab failed! seq:%lu",
                         add[idx]->sid);
@@ -507,29 +497,29 @@ static int agent_rsvr_add_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
             memset(sck, 0, sizeof(socket_t));
 
             /* > 创建SCK关联对象 */
-            extra = slab_alloc(rsvr->slab, sizeof(agent_socket_extra_t));
+            extra = calloc(1, sizeof(agent_socket_extra_t));
             if (NULL == extra) {
                 log_error(rsvr->log, "Alloc memory from slab failed! seq:%lu",
                           add[idx]->sid);
                 CLOSE(add[idx]->fd);
-                slab_dealloc(rsvr->slab, sck);
+                FREE(sck);
                 queue_dealloc(ctx->connq[rsvr->id], add[idx]);
                 continue;
             }
 
             memset(&opt, 0, sizeof(opt));
 
-            opt.pool = (void *)rsvr->slab;
-            opt.alloc = (mem_alloc_cb_t)slab_alloc;
-            opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+            opt.pool = (void *)NULL;
+            opt.alloc = (mem_alloc_cb_t)mem_alloc;
+            opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
             extra->send_list = list_creat(&opt);
             if (NULL == extra->send_list) {
                 log_error(rsvr->log, "Alloc memory from slab failed! seq:%lu",
                           add[idx]->sid);
                 CLOSE(add[idx]->fd);
-                slab_dealloc(rsvr->slab, sck);
-                slab_dealloc(rsvr->slab, extra);
+                FREE(sck);
+                FREE(extra);
                 queue_dealloc(ctx->connq[rsvr->id], add[idx]);
                 continue;
             }
@@ -554,9 +544,9 @@ static int agent_rsvr_add_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
                 log_error(rsvr->log, "Insert into avl failed! fd:%d seq:%lu",
                           sck->fd, extra->seq);
                 CLOSE(sck->fd);
-                list_destroy(extra->send_list, rsvr->slab, (mem_dealloc_cb_t)slab_dealloc);
-                slab_dealloc(rsvr->slab, sck->extra);
-                slab_dealloc(rsvr->slab, sck);
+                list_destroy(extra->send_list, NULL, (mem_dealloc_cb_t)mem_dealloc);
+                FREE(sck->extra);
+                FREE(sck);
                 return AGENT_ERR;
             }
 
@@ -601,12 +591,12 @@ static int agent_rsvr_del_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *
 
     /* > 释放套接字空间 */
     CLOSE(sck->fd);
-    list_destroy(extra->send_list, rsvr->slab, (mem_dealloc_cb_t)slab_dealloc);
+    list_destroy(extra->send_list, NULL, (mem_dealloc_cb_t)mem_dealloc);
     if (sck->recv.addr) {
         queue_dealloc(ctx->recvq[rsvr->id], sck->recv.addr);
     }
-    slab_dealloc(rsvr->slab, sck->extra);
-    slab_dealloc(rsvr->slab, sck);
+    FREE(sck->extra);
+    FREE(sck);
 
     --rsvr->conn_total;
     return AGENT_OK;
@@ -1029,13 +1019,13 @@ static int agent_rsvr_send(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
             log_error(rsvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
 
             /* 释放空间 */
-            slab_dealloc(rsvr->slab, send->addr);
+            FREE(send->addr);
             send->addr = NULL;
             return AGENT_ERR;
         }
 
         /* 3. 释放空间 */
-        slab_dealloc(rsvr->slab, send->addr);
+        FREE(send->addr);
         send->addr = NULL;
 
         /* > 设置epoll监听 */
@@ -1130,7 +1120,7 @@ static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
 
             sck_extra = (agent_socket_extra_t *)sck->extra;
 
-            data = slab_alloc(rsvr->slab, total);
+            data = calloc(1, total);
             if (NULL == data) {
                 log_error(ctx->log, "Alloc from slab failed! serial:%lu seq:%lu total:%d",
                         flow->serial, flow->sid, total);
@@ -1145,7 +1135,7 @@ static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
             if (list_rpush(sck_extra->send_list, data)) {
                 log_error(ctx->log, "Insert list failed! seq:%lu", flow->sid);
                 queue_dealloc(sendq, addr[idx]);
-                slab_dealloc(rsvr->slab, data);
+                FREE(data);
                 continue;
             }
 

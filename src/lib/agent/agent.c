@@ -45,14 +45,6 @@ agent_cntx_t *agent_init(agent_conf_t *conf, log_cycle_t *log)
     ctx->log = log;
     ctx->conf = conf;
 
-    /* > 创建内存池 */
-    ctx->slab = slab_creat_by_calloc(30 * MB, log);
-    if (NULL == ctx->slab) {
-        free(ctx);
-        log_error(log, "Init slab failed!");
-        return NULL;
-    }
-
     do {
         /* > 注册消息处理 */
         if (agent_init_reg(ctx)) {
@@ -184,7 +176,7 @@ static int agent_creat_workers(agent_cntx_t *ctx)
     const agent_conf_t *conf = ctx->conf;
 
     /* > 新建Worker对象 */
-    worker = (agent_worker_t *)slab_alloc(ctx->slab, conf->worker_num*sizeof(agent_worker_t));
+    worker = (agent_worker_t *)calloc(1, conf->worker_num*sizeof(agent_worker_t));
     if (NULL == worker) {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return AGENT_ERR;
@@ -193,9 +185,9 @@ static int agent_creat_workers(agent_cntx_t *ctx)
     /* > 创建Worker线程池 */
     memset(&opt, 0, sizeof(opt));
 
-    opt.pool = ctx->slab;
-    opt.alloc = (mem_alloc_cb_t)slab_alloc;
-    opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+    opt.pool = NULL;
+    opt.alloc = (mem_alloc_cb_t)mem_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
     ctx->workers = thread_pool_init(conf->worker_num, &opt, worker);
     if (NULL == ctx->workers) {
@@ -221,7 +213,7 @@ static int agent_creat_workers(agent_cntx_t *ctx)
         agent_worker_destroy(worker+idx);
     }
 
-    slab_dealloc(ctx->slab, worker);
+    FREE(worker);
     thread_pool_destroy(ctx->workers);
 
     return AGENT_ERR;
@@ -252,7 +244,7 @@ static int agent_workers_destroy(agent_cntx_t *ctx)
     }
 
     /* > 释放线程池对象 */
-    slab_dealloc(ctx->slab, ctx->workers->data);
+    FREE(ctx->workers->data);
     thread_pool_destroy(ctx->workers);
 
     return AGENT_ERR;
@@ -277,7 +269,7 @@ static int agent_creat_agents(agent_cntx_t *ctx)
     const agent_conf_t *conf = ctx->conf;
 
     /* > 新建Agent对象 */
-    agent = (agent_rsvr_t *)slab_alloc(ctx->slab, conf->agent_num*sizeof(agent_rsvr_t));
+    agent = (agent_rsvr_t *)calloc(1, conf->agent_num*sizeof(agent_rsvr_t));
     if (NULL == agent) {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return AGENT_ERR;
@@ -286,9 +278,9 @@ static int agent_creat_agents(agent_cntx_t *ctx)
     /* > 创建Worker线程池 */
     memset(&opt, 0, sizeof(opt));
 
-    opt.pool = ctx->slab;
-    opt.alloc = (mem_alloc_cb_t)slab_alloc;
-    opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+    opt.pool = NULL;
+    opt.alloc = (mem_alloc_cb_t)mem_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
     ctx->agents = thread_pool_init(conf->agent_num, &opt, agent);
     if (NULL == ctx->agents) {
@@ -315,7 +307,7 @@ static int agent_creat_agents(agent_cntx_t *ctx)
         agent_rsvr_destroy(agent+idx);
     }
 
-    slab_dealloc(ctx->slab, agent);
+    FREE(agent);
     thread_pool_destroy(ctx->agents);
 
     return AGENT_ERR;
@@ -350,8 +342,7 @@ static int agent_creat_listens(agent_cntx_t *ctx)
     spin_lock_init(&ctx->listen.accept_lock);
 
     /* > 创建LSN对象 */
-    ctx->listen.lsvr = (agent_lsvr_t *)slab_alloc(
-        ctx->slab, conf->lsn_num*sizeof(agent_lsvr_t));
+    ctx->listen.lsvr = (agent_lsvr_t *)calloc(1, conf->lsn_num*sizeof(agent_lsvr_t));
     if (NULL == ctx->listen.lsvr) {
         CLOSE(ctx->listen.lsn_sck_id);
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
@@ -364,7 +355,7 @@ static int agent_creat_listens(agent_cntx_t *ctx)
         lsvr->log = ctx->log;
         if (agent_listen_init(ctx, lsvr, idx)) {
             CLOSE(ctx->listen.lsn_sck_id);
-            slab_dealloc(ctx->slab, ctx->listen.lsvr);
+            FREE(ctx->listen.lsvr);
             log_error(ctx->log, "Initialize listen-server failed!");
             return AGENT_ERR;
         }
@@ -372,14 +363,14 @@ static int agent_creat_listens(agent_cntx_t *ctx)
 
     memset(&opt, 0, sizeof(opt));
 
-    opt.pool = ctx->slab;
-    opt.alloc = (mem_alloc_cb_t)slab_alloc;
-    opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+    opt.pool = NULL;
+    opt.alloc = (mem_alloc_cb_t)mem_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
     ctx->listens = thread_pool_init(conf->lsn_num, &opt, ctx->listen.lsvr);
     if (NULL == ctx->listens) {
         CLOSE(ctx->listen.lsn_sck_id);
-        slab_dealloc(ctx->slab, ctx->listen.lsvr);
+        FREE(ctx->listen.lsvr);
         log_error(ctx->log, "Initialize thread pool failed!");
         return AGENT_ERR;
     }

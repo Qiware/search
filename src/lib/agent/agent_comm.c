@@ -1,4 +1,5 @@
 #include "sck.h"
+#include "redo.h"
 #include "agent.h"
 #include "command.h"
 #include "syscall.h"
@@ -24,31 +25,29 @@ agent_serial_to_sck_map_t *agent_serial_to_sck_map_init(agent_cntx_t *ctx)
     avl_opt_t opt;
     agent_serial_to_sck_map_t *s2s;
 
-    s2s = (agent_serial_to_sck_map_t *)slab_alloc(ctx->slab, sizeof(agent_serial_to_sck_map_t));
+    memset(&opt, 0, sizeof(opt));
+
+    s2s = (agent_serial_to_sck_map_t *)calloc(1, sizeof(agent_serial_to_sck_map_t));
     if (NULL == s2s) {
         return NULL;
     }
 
-    memset(&opt, 0, sizeof(opt));
-    memset(s2s, 0, sizeof(agent_serial_to_sck_map_t));
-
     s2s->len = SERIAL_TO_SCK_MAP_LEN;
 
-    do
-    {
-        s2s->map = (avl_tree_t **)slab_alloc(ctx->slab, s2s->len*sizeof(avl_tree_t *));
+    do {
+        s2s->map = (avl_tree_t **)calloc(1, s2s->len*sizeof(avl_tree_t *));
         if (NULL == s2s->map) {
             log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
             break;
         }
 
-        s2s->lock = (spinlock_t *)slab_alloc(ctx->slab, s2s->len*sizeof(spinlock_t));
+        s2s->lock = (spinlock_t *)calloc(1, s2s->len*sizeof(spinlock_t));
         if (NULL == s2s->lock) {
             log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
             break;
         }
 
-        s2s->slot = (slot_t **)slab_alloc(ctx->slab, s2s->len*sizeof(slot_t *));
+        s2s->slot = (slot_t **)calloc(1, s2s->len*sizeof(slot_t *));
         if (NULL == s2s->slot) {
             log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
             break;
@@ -60,9 +59,9 @@ agent_serial_to_sck_map_t *agent_serial_to_sck_map_init(agent_cntx_t *ctx)
                 break;
             }
 
-            opt.pool = (void *)ctx->slab;
-            opt.alloc = (mem_alloc_cb_t)slab_alloc;
-            opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+            opt.pool = (void *)NULL;
+            opt.alloc = (mem_alloc_cb_t)mem_alloc;
+            opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
             s2s->map[i] = avl_creat(&opt, (key_cb_t)key_cb_int64, (cmp_cb_t)cmp_cb_int64);
             if (NULL == s2s->map[i]) {
@@ -71,14 +70,13 @@ agent_serial_to_sck_map_t *agent_serial_to_sck_map_init(agent_cntx_t *ctx)
             }
             spin_lock_init(&s2s->lock[i]);
         }
-
         return s2s;
     } while(0);
 
-    if (s2s->map) { slab_dealloc(ctx->slab, s2s->map); }
-    if (s2s->lock) { slab_dealloc(ctx->slab, s2s->lock); }
-    if (s2s->slot) { slab_dealloc(ctx->slab, s2s->slot); }
-    if (s2s) { slab_dealloc(ctx->slab, s2s); }
+    FREE(s2s->map);
+    FREE(s2s->lock);
+    FREE(s2s->slot);
+    FREE(s2s);
     return NULL;
 }
 

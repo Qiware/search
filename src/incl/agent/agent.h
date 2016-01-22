@@ -2,7 +2,6 @@
 #define __AGENT_H__
 
 #include "slot.h"
-#include "slab.h"
 #include "queue.h"
 #include "spinlock.h"
 #include "avl_tree.h"
@@ -72,9 +71,7 @@ typedef struct
 {
     agent_conf_t *conf;                     /* 配置信息 */
     log_cycle_t *log;                       /* 日志对象 */
-    slab_pool_t *slab;                      /* 内存池 */
-    struct
-    {
+    struct {
         int cmd_sck_id;                     /* 命令套接字 */
     } cli;
 
