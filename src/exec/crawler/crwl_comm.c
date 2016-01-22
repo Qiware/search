@@ -94,6 +94,10 @@ int crwl_getopt(int argc, char **argv, crwl_opt_t *opt)
         }
     }
 
+    if (NULL == opt->log_key_path) {
+        return CRWL_SHOW_HELP;
+    }
+
     optarg = NULL;
     optind = 1;
 

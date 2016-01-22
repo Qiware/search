@@ -72,7 +72,9 @@ int lsnd_getopt(int argc, char **argv, lsnd_opt_t *opt)
     optind = 1;
 
     /* 2. 验证输入参数 */
-    if (NULL == opt->conf_path) {
+    if (NULL == opt->conf_path
+        || NULL == opt->log_key_path)
+    {
         return LSND_SHOW_HELP;
     }
 

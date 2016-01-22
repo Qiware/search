@@ -85,7 +85,9 @@ int frwd_getopt(int argc, char **argv, frwd_opt_t *opt)
     optind = 1;
 
     /* 2. 验证输入参数 */
-    if (NULL == opt->conf_path) {
+    if (NULL == opt->conf_path
+        || NULL == opt->log_key_path)
+    {
         return FRWD_SHOW_HELP;
     }
 
