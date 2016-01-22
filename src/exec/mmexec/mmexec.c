@@ -114,6 +114,10 @@ static int mem_getopt(int argc, char **argv, mem_opt_t *opt)
         }
     }
 
+    if (NULL == opt->log_key_path) {
+        return -1;
+    }
+
     optarg = NULL;
     optind = 1;
 
