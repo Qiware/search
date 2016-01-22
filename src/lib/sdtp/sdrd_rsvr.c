@@ -284,13 +284,6 @@ int sdrd_rsvr_init(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, int id)
         return SDTP_ERR;
     }
 
-    /* > 创建SLAB内存池 */
-    rsvr->pool = slab_creat_by_calloc(SDTP_MEM_POOL_SIZE, rsvr->log);
-    if (NULL == rsvr->pool) {
-        log_error(rsvr->log, "Initialize slab mem-pool failed!");
-        return SDTP_ERR;
-    }
-
     /* > 初始化队列设置 */
     sdrd_rsvr_queue_reset(rsvr);
 
@@ -911,9 +904,9 @@ static int sdrd_rsvr_keepalive_req_hdl(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, sdrd
     sdtp_header_t *head;
 
     /* > 分配消息空间 */
-    addr = slab_alloc(rsvr->pool, sizeof(sdtp_header_t));
+    addr = calloc(1, sizeof(sdtp_header_t));
     if (NULL == addr) {
-        log_error(rsvr->log, "Alloc memory from slab failed!");
+        log_error(rsvr->log, "Alloc memory failed! errmsg:[%d] %s!", errno, strerror(errno));
         return SDTP_ERR;
     }
 
@@ -928,7 +921,7 @@ static int sdrd_rsvr_keepalive_req_hdl(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, sdrd
 
     /* > 加入发送列表 */
     if (list_rpush(sck->mesg_list, addr)) {
-        slab_dealloc(rsvr->pool, addr);
+        FREE(addr);
         log_error(rsvr->log, "Insert into list failed!");
         return SDTP_ERR;
     }
@@ -958,9 +951,9 @@ static int sdrd_rsvr_link_auth_rsp(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, sdrd_sck
     sdtp_link_auth_rsp_t *link_auth_rsp;
 
     /* > 分配消息空间 */
-    addr = slab_alloc(rsvr->pool, sizeof(sdtp_header_t));
+    addr = calloc(1, sizeof(sdtp_header_t));
     if (NULL == addr) {
-        log_error(rsvr->log, "Alloc memory from slab failed!");
+        log_error(rsvr->log, "Alloc memory failed! errmsg:[%d] %s!", errno, strerror(errno));
         return SDTP_ERR;
     }
 
@@ -978,7 +971,7 @@ static int sdrd_rsvr_link_auth_rsp(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, sdrd_sck
 
     /* > 加入发送列表 */
     if (list_rpush(sck->mesg_list, addr)) {
-        slab_dealloc(rsvr->pool, addr);
+        FREE(addr);
         log_error(rsvr->log, "Insert into list failed!");
         return SDTP_ERR;
     }
@@ -1047,7 +1040,7 @@ static sdrd_sck_t *sdrd_rsvr_sck_creat(sdrd_rsvr_t *rsvr, sdtp_cmd_add_sck_t *re
     sdrd_sck_t *sck;
 
     /* > 分配连接空间 */
-    sck = slab_alloc(rsvr->pool, sizeof(sdrd_sck_t));
+    sck = calloc(1, sizeof(sdrd_sck_t));
     if (NULL == sck) {
         log_error(rsvr->log, "Alloc memory failed!");
         CLOSE(req->sckid);
@@ -1068,9 +1061,9 @@ static sdrd_sck_t *sdrd_rsvr_sck_creat(sdrd_rsvr_t *rsvr, sdtp_cmd_add_sck_t *re
         /* > 创建发送链表 */
         memset(&opt, 0, sizeof(opt));
 
-        opt.pool = (void *)rsvr->pool;
-        opt.alloc = (mem_alloc_cb_t)slab_alloc;
-        opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+        opt.pool = (void *)NULL;
+        opt.alloc = (mem_alloc_cb_t)mem_alloc;
+        opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
         sck->mesg_list = list_creat(&opt);
         if (NULL == sck->mesg_list) {
@@ -1122,10 +1115,10 @@ static void sdrd_rsvr_sck_free(sdrd_rsvr_t *rsvr, sdrd_sck_t *sck)
     FREE(sck->send.addr);
     FREE(sck->recv.addr);
     if (sck->mesg_list) {
-        list_destroy(sck->mesg_list, rsvr->pool, (mem_dealloc_cb_t)slab_dealloc);
+        list_destroy(sck->mesg_list, NULL, (mem_dealloc_cb_t)mem_dealloc);
     }
     CLOSE(sck->fd);
-    slab_dealloc(rsvr->pool, sck);
+    FREE(sck);
 }
 
 /******************************************************************************
@@ -1358,7 +1351,7 @@ static int sdrd_rsvr_fill_send_buff(sdrd_rsvr_t *rsvr, sdrd_sck_t *sck)
         memcpy(send->iptr, (void *)head, mesg_len);
 
         /* 1.5 释放数据空间 */
-        slab_dealloc(rsvr->pool, head);
+        FREE(head);
 
         send->iptr += mesg_len;
         continue;
@@ -1431,9 +1424,9 @@ static int sdrd_rsvr_dist_send_data(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr)
         /* > 查找发送连接 */
         memset(&opt, 0, sizeof(opt));
 
-        opt.pool = (void *)rsvr->pool;
-        opt.alloc = (mem_alloc_cb_t)slab_alloc;
-        opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+        opt.pool = (void *)NULL;
+        opt.alloc = (mem_alloc_cb_t)mem_alloc;
+        opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
         conn.nodeid = frwd->dest;
         conn.list = list_creat(&opt);
@@ -1456,11 +1449,11 @@ static int sdrd_rsvr_dist_send_data(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr)
         /* > 设置发送数据 */
         len = sizeof(sdtp_header_t) + frwd->length;
 
-        addr = slab_alloc(rsvr->pool, len);
+        addr = (void *)calloc(1, len);
         if (NULL == addr) {
             queue_dealloc(sendq, data);
             list_destroy(conn.list, NULL, mem_dummy_dealloc);
-            log_error(rsvr->log, "Alloc memory from slab failed!");
+            log_error(rsvr->log, "Alloc memory failed! errmsg:[%d]", errno, strerror(errno));
             continue;
         }
 

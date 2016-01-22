@@ -202,13 +202,6 @@ static int sdrd_reg_init(sdrd_cntx_t *ctx)
  ******************************************************************************/
 static int _sdrd_init(sdrd_cntx_t *ctx)
 {
-    /* > 创建SLAB内存池 */
-    ctx->pool = slab_creat_by_calloc(SDTP_CTX_POOL_SIZE, ctx->log);
-    if (NULL == ctx->pool) {
-        log_error(ctx->log, "Initialize slab mem-pool failed!");
-        return SDTP_ERR;
-    }
-
     /* > 构建NODE->SVR映射表 */
     if (sdrd_node_to_svr_map_init(ctx)) {
         log_error(ctx->log, "Initialize sck-dev map table failed!");
@@ -380,9 +373,9 @@ static int sdrd_creat_recvtp(sdrd_cntx_t *ctx)
     }
 
     /* > 创建线程池 */
-    opt.pool = (void *)ctx->pool;
-    opt.alloc = (mem_alloc_cb_t)slab_alloc;
-    opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+    opt.pool = (void *)NULL;
+    opt.alloc = (mem_alloc_cb_t)mem_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
     ctx->recvtp = thread_pool_init(conf->recv_thd_num, &opt, (void *)rsvr);
     if (NULL == ctx->recvtp) {
@@ -431,8 +424,6 @@ void sdrd_recvtp_destroy(void *_ctx, void *args)
 
         /* > 关闭通信套接字 */
         sdrd_rsvr_del_all_conn_hdl(ctx, rsvr);
-
-        slab_destroy(rsvr->pool);
     }
 
     FREE(ctx->recvtp->data);
@@ -472,9 +463,9 @@ static int sdrd_creat_worktp(sdrd_cntx_t *ctx)
     /* > 创建线程池 */
     memset(&opt, 0, sizeof(opt));
 
-    opt.pool = (void *)ctx->pool;
-    opt.alloc = (mem_alloc_cb_t)slab_alloc;
-    opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+    opt.pool = (void *)NULL;
+    opt.alloc = (mem_alloc_cb_t)mem_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
     ctx->worktp = thread_pool_init(conf->work_thd_num, &opt, (void *)wrk);
     if (NULL == ctx->worktp) {

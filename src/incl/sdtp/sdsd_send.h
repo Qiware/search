@@ -31,7 +31,6 @@ typedef struct
 {
     sdsd_conf_t conf;                   /* 配置信息 */
     log_cycle_t *log;                   /* 日志对象 */
-    slab_pool_t *slab;                  /* 内存池对象 */
 
     thread_pool_t *sendtp;              /* 发送线程池 */
     thread_pool_t *worktp;              /* 工作线程池 */
@@ -53,6 +52,5 @@ sdtp_worker_t *sdsd_worker_get_by_idx(sdsd_cntx_t *ctx, int idx);
 sdsd_cntx_t *sdsd_init(const sdsd_conf_t *conf, log_cycle_t *log);
 int sdsd_launch(sdsd_cntx_t *ctx);
 int sdsd_register(sdsd_cntx_t *ctx, int type, sdtp_reg_cb_t proc, void *args);
-int sdsd_destroy(sdsd_cntx_t *ctx);
 
 #endif /*__SDTP_SEND_H__*/

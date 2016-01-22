@@ -3,7 +3,6 @@
 
 #include "log.h"
 #include "sck.h"
-#include "slab.h"
 #include "list.h"
 #include "comm.h"
 #include "list2.h"
@@ -91,7 +90,6 @@ typedef struct
 typedef struct
 {
     int id;                             /* 对象ID */
-    slab_pool_t *pool;                  /* 内存池 */
     log_cycle_t *log;                   /* 日志对象 */
 
     int cmd_sck_id;                     /* 命令套接字 */
@@ -132,7 +130,6 @@ typedef struct
 {
     sdrd_conf_t conf;                   /* 配置信息 */
     log_cycle_t *log;                   /* 日志对象 */
-    slab_pool_t *pool;                  /* 内存池对象 */
 
     sdtp_reg_t reg[SDTP_TYPE_MAX];      /* 回调注册对象 */
 

@@ -66,19 +66,12 @@ int sdsd_ssvr_init(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr, int idx)
         return SDTP_ERR;
     }
 
-    /* > 创建SLAB内存池 */
-    ssvr->pool = slab_creat_by_calloc(SDTP_MEM_POOL_SIZE, ssvr->log);
-    if (NULL == ssvr->pool) {
-        log_error(ssvr->log, "Initialize slab mem-pool failed!");
-        return SDTP_ERR;
-    }
-
     /* > 创建发送链表 */
     memset(&opt, 0, sizeof(opt));
 
-    opt.pool = (void *)ssvr->pool;
-    opt.alloc = (mem_alloc_cb_t)slab_alloc;
-    opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+    opt.pool = (void *)NULL;
+    opt.alloc = (mem_alloc_cb_t)mem_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
     ssvr->sck.mesg_list = list_creat(&opt);
     if (NULL == ssvr->sck.mesg_list) {
@@ -481,9 +474,9 @@ static int sdsd_ssvr_kpalive_req(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr)
         return SDTP_OK;
     }
 
-    addr = slab_alloc(ssvr->pool, size);
+    addr = (void *)calloc(1, size);
     if (NULL == addr) {
-        log_error(ssvr->log, "Alloc memory from slab failed!");
+        log_error(ssvr->log, "Alloc memory failed! errmsg:[%d] %s!", errno, strerror(errno));
         return SDTP_ERR;
     }
 
@@ -497,8 +490,8 @@ static int sdsd_ssvr_kpalive_req(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr)
 
     /* 3. 加入发送列表 */
     if (list_rpush(sck->mesg_list, addr)) {
-        slab_dealloc(ssvr->pool, addr);
-        log_error(ssvr->log, "Alloc memory from slab failed!");
+        FREE(addr);
+        log_error(ssvr->log, "List rpush failed!");
         return SDTP_ERR;
     }
 
@@ -1027,7 +1020,7 @@ static int sdsd_ssvr_clear_mesg(sdsd_ssvr_t *ssvr)
             return SDTP_OK;
         }
 
-        slab_dealloc(ssvr->pool, data);
+        FREE(data);
     }
 
     return SDTP_OK;
@@ -1138,9 +1131,9 @@ static int sdtp_link_auth_req(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr)
     /* > 申请内存空间 */
     size = sizeof(sdtp_header_t) + sizeof(sdtp_link_auth_req_t);
 
-    addr = slab_alloc(ssvr->pool, size);
+    addr = (void *)calloc(1, size);
     if (NULL == addr) {
-        log_error(ssvr->log, "Alloc memory from slab failed!");
+        log_error(ssvr->log, "Alloc memory failed! errmsg:[%d] %s!", errno, strerror(errno));
         return SDTP_ERR;
     }
 
@@ -1161,8 +1154,8 @@ static int sdtp_link_auth_req(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr)
 
     /* > 加入发送列表 */
     if (list_rpush(sck->mesg_list, addr)) {
-        slab_dealloc(ssvr->pool, addr);
-        log_error(ssvr->log, "Alloc memory from slab failed!");
+        FREE(addr);
+        log_error(ssvr->log, "Alloc memory failed! errmsg:[%d] %s!", errno, strerror(errno));
         return SDTP_ERR;
     }
 

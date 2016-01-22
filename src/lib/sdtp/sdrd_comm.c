@@ -1,3 +1,4 @@
+#include "redo.h"
 #include "sdtp_cmd.h"
 #include "sdtp_comm.h"
 #include "sdrd_recv.h"
@@ -78,9 +79,9 @@ int sdrd_node_to_svr_map_init(sdrd_cntx_t *ctx)
 
     memset(&opt, 0, sizeof(opt));
 
-    opt.pool = (void *)ctx->pool;
-    opt.alloc = (mem_alloc_cb_t)slab_alloc;
-    opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+    opt.pool = (void *)NULL;
+    opt.alloc = (mem_alloc_cb_t)mem_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
     ctx->node_to_svr_map = avl_creat(&opt,
                 (key_cb_t)key_cb_int32,
@@ -125,9 +126,9 @@ int sdrd_node_to_svr_map_add(sdrd_cntx_t *ctx, int nodeid, int rsvr_idx)
             /* > 构建链表对象 */
             memset(&opt, 0, sizeof(opt));
 
-            opt.pool = (void *)ctx->pool;
-            opt.alloc = (mem_alloc_cb_t)slab_alloc;
-            opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+            opt.pool = (void *)NULL;
+            opt.alloc = (mem_alloc_cb_t)mem_alloc;
+            opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
             list = list_creat(&opt);
             if (NULL == list) {
@@ -155,7 +156,7 @@ int sdrd_node_to_svr_map_add(sdrd_cntx_t *ctx, int nodeid, int rsvr_idx)
             }
         }
 
-        item = slab_alloc(ctx->pool, sizeof(sdrd_node_to_svr_item_t));
+        item = calloc(1, sizeof(sdrd_node_to_svr_item_t));
         if (NULL == item) {
             pthread_rwlock_unlock(&ctx->node_to_svr_map_lock); /* 解锁 */
             log_error(ctx->log, "Alloc memory failed! nodeid:%d rsvr_idx:%d",
@@ -170,7 +171,7 @@ int sdrd_node_to_svr_map_add(sdrd_cntx_t *ctx, int nodeid, int rsvr_idx)
             pthread_rwlock_unlock(&ctx->node_to_svr_map_lock); /* 解锁 */
             log_error(ctx->log, "Alloc memory failed! nodeid:%d rsvr_idx:%d",
                     nodeid, rsvr_idx);
-            slab_dealloc(ctx->pool, item);
+            FREE(item);
             return SDTP_ERR;
         }
 
@@ -222,7 +223,7 @@ int sdrd_node_to_svr_map_del(sdrd_cntx_t *ctx, int nodeid, int rsvr_idx)
                 list_remove(list, item);
             }
             pthread_rwlock_unlock(&ctx->node_to_svr_map_lock);
-            slab_dealloc(ctx->pool, item);
+            FREE(item);
             log_debug(ctx->log, "Delete dev svr map success! nodeid:%d rsvr_idx:%d",
                     nodeid, rsvr_idx);
             return SDTP_OK;
