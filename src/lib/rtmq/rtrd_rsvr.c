@@ -269,25 +269,16 @@ int rtrd_rsvr_init(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, int id)
         return RTMQ_ERR;
     }
 
-    /* > 创建SLAB内存池 */
-    rsvr->pool = slab_creat_by_calloc(RTMQ_MEM_POOL_SIZE, rsvr->log);
-    if (NULL == rsvr->pool) {
-        log_error(rsvr->log, "Initialize slab mem-pool failed!");
-        CLOSE(rsvr->cmd_sck_id);
-        return RTMQ_ERR;
-    }
-
     /* > 创建套接字链表 */
     memset(&opt, 0, sizeof(opt));
 
-    opt.pool = (void *)rsvr->pool;
-    opt.alloc = (mem_alloc_cb_t)slab_alloc;
-    opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+    opt.pool = (void *)NULL;
+    opt.alloc = (mem_alloc_cb_t)mem_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
     rsvr->conn_list = list2_creat(&opt);
     if (NULL == rsvr->conn_list) {
         log_error(rsvr->log, "Create list2 failed!");
-        FREE(rsvr->pool);
         CLOSE(rsvr->cmd_sck_id);
         return RTMQ_ERR;
     }
@@ -434,7 +425,7 @@ static int rtrd_rsvr_wiov_add(rtrd_rsvr_t *rsvr, rtrd_sck_t *sck)
         head->checksum = htonl(head->checksum);
 
         /* 4 设置发送信息 */
-        wiov_item_add(send, (char *)head, len, rsvr->pool, slab_dealloc);
+        wiov_item_add(send, (char *)head, len, NULL, mem_dealloc);
     }
 
     return RTMQ_OK;
@@ -882,7 +873,7 @@ static int rtrd_rsvr_keepalive_req_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd
     rtmq_header_t *head;
 
     /* > 分配消息空间 */
-    addr = slab_alloc(rsvr->pool, sizeof(rtmq_header_t));
+    addr = calloc(1, sizeof(rtmq_header_t));
     if (NULL == addr) {
         log_error(rsvr->log, "Alloc memory from slab failed!");
         return RTMQ_ERR;
@@ -899,7 +890,7 @@ static int rtrd_rsvr_keepalive_req_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd
 
     /* > 加入发送列表 */
     if (list_rpush(sck->mesg_list, addr)) {
-        slab_dealloc(rsvr->pool, addr);
+        FREE(addr);
         log_error(rsvr->log, "Insert into list failed!");
         return RTMQ_ERR;
     }
@@ -929,7 +920,7 @@ static int rtrd_rsvr_link_auth_rsp(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd_sck
     rtmq_link_auth_rsp_t *link_auth_rsp;
 
     /* > 分配消息空间 */
-    addr = slab_alloc(rsvr->pool, sizeof(rtmq_header_t) + sizeof(rtmq_link_auth_rsp_t));
+    addr = calloc(1, sizeof(rtmq_header_t) + sizeof(rtmq_link_auth_rsp_t));
     if (NULL == addr) {
         log_error(rsvr->log, "Alloc memory from slab failed!");
         return RTMQ_ERR;
@@ -949,7 +940,7 @@ static int rtrd_rsvr_link_auth_rsp(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd_sck
 
     /* > 加入发送列表 */
     if (list_rpush(sck->mesg_list, addr)) {
-        slab_dealloc(rsvr->pool, addr);
+        FREE(addr);
         log_error(rsvr->log, "Insert into list failed!");
         return RTMQ_ERR;
     }
@@ -1017,7 +1008,7 @@ static rtrd_sck_t *rtrd_rsvr_sck_creat(rtrd_rsvr_t *rsvr, rtmq_cmd_add_sck_t *re
     rtrd_sck_t *sck;
 
     /* > 分配连接空间 */
-    sck = slab_alloc(rsvr->pool, sizeof(rtrd_sck_t));
+    sck = calloc(1, sizeof(rtrd_sck_t));
     if (NULL == sck) {
         log_error(rsvr->log, "Alloc memory failed!");
         CLOSE(req->sckid);
@@ -1038,9 +1029,9 @@ static rtrd_sck_t *rtrd_rsvr_sck_creat(rtrd_rsvr_t *rsvr, rtmq_cmd_add_sck_t *re
         /* > 创建发送链表 */
         memset(&opt, 0, sizeof(opt));
 
-        opt.pool = (void *)rsvr->pool;
-        opt.alloc = (mem_alloc_cb_t)slab_alloc;
-        opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+        opt.pool = (void *)NULL;
+        opt.alloc = (mem_alloc_cb_t)mem_alloc;
+        opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
         sck->mesg_list = list_creat(&opt);
         if (NULL == sck->mesg_list) {
@@ -1083,14 +1074,14 @@ static void rtrd_rsvr_sck_free(rtrd_rsvr_t *rsvr, rtrd_sck_t *sck)
     FREE(sck->recv.addr);
     /* 释放链表空间 */
     if (sck->mesg_list) {
-        list_destroy(sck->mesg_list, rsvr->pool, (mem_dealloc_cb_t)slab_dealloc);
+        list_destroy(sck->mesg_list, NULL, (mem_dealloc_cb_t)mem_dealloc);
     }
 
     /* 释放iov的空间 */
     wiov_destroy(&sck->send);
 
     CLOSE(sck->fd);
-    slab_dealloc(rsvr->pool, sck);
+    FREE(sck);
 }
 
 /******************************************************************************
@@ -1349,9 +1340,9 @@ static int rtrd_rsvr_dist_data(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
             /* > 查找发送连接 */
             memset(&opt, 0, sizeof(opt));
 
-            opt.pool = (void *)rsvr->pool;
-            opt.alloc = (mem_alloc_cb_t)slab_alloc;
-            opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+            opt.pool = (void *)NULL;
+            opt.alloc = (mem_alloc_cb_t)mem_alloc;
+            opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
             cl.nodeid = frwd->dest;
             cl.list = list_creat(&opt);
@@ -1374,7 +1365,7 @@ static int rtrd_rsvr_dist_data(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
             /* > 设置发送数据 */
             len = sizeof(rtmq_header_t) + frwd->length;
 
-            addr = slab_alloc(rsvr->pool, len);
+            addr = calloc(1, len);
             if (NULL == addr) {
                 queue_dealloc(sendq, data[idx]);
                 list_destroy(cl.list, NULL, mem_dummy_dealloc);
@@ -1396,7 +1387,7 @@ static int rtrd_rsvr_dist_data(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
 
             /* > 放入发送链表 */
             if (list_rpush(sck->mesg_list, addr)) {
-                slab_dealloc(rsvr->pool, addr);
+                FREE(addr);
                 log_error(rsvr->log, "Push input list failed!");
             }
 

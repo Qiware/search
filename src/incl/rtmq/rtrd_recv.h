@@ -3,13 +3,13 @@
 
 #include "log.h"
 #include "sck.h"
-#include "slab.h"
 #include "list.h"
 #include "comm.h"
 #include "iovec.h"
 #include "list2.h"
 #include "queue.h"
 #include "shm_opt.h"
+#include "spinlock.h"
 #include "avl_tree.h"
 #include "rtmq_cmd.h"
 #include "rtmq_comm.h"
@@ -108,7 +108,6 @@ typedef struct
 typedef struct
 {
     int id;                             /* 对象ID */
-    slab_pool_t *pool;                  /* 内存池 */
     log_cycle_t *log;                   /* 日志对象 */
 
     int cmd_sck_id;                     /* 命令套接字 */
@@ -131,7 +130,6 @@ typedef struct
 {
     rtrd_conf_t conf;                   /* 配置信息 */
     log_cycle_t *log;                   /* 日志对象 */
-    slab_pool_t *pool;                  /* 内存池对象 */
 
     rtmq_reg_t reg[RTMQ_TYPE_MAX];      /* 回调注册对象 */
 

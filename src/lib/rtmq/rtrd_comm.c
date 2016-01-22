@@ -1,3 +1,4 @@
+#include "redo.h"
 #include "rtmq_cmd.h"
 #include "rtmq_comm.h"
 #include "rtrd_recv.h"
@@ -78,9 +79,9 @@ int rtrd_node_to_svr_map_init(rtrd_cntx_t *ctx)
     memset(&opt, 0, sizeof(opt));
 
     /* > 创建映射表 */
-    opt.pool = (void *)ctx->pool;
-    opt.alloc = (mem_alloc_cb_t)slab_alloc;
-    opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+    opt.pool = (void *)NULL;
+    opt.alloc = (mem_alloc_cb_t)mem_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
     ctx->node_to_svr_map = avl_creat(&opt,
                 (key_cb_t)key_cb_int32,
@@ -118,10 +119,10 @@ int rtrd_node_to_svr_map_add(rtrd_cntx_t *ctx, int nodeid, int rsvr_id)
     /* > 查找是否已经存在 */
     map = avl_query(ctx->node_to_svr_map, &nodeid, sizeof(nodeid));
     if (NULL == map) {
-        map = slab_alloc(ctx->pool, sizeof(rtrd_node_to_svr_map_t));
+        map = calloc(1, sizeof(rtrd_node_to_svr_map_t));
         if (NULL == map) {
             pthread_rwlock_unlock(&ctx->node_to_svr_map_lock); /* 解锁 */
-            log_error(ctx->log, "Alloc from slab failed!");
+            log_error(ctx->log, "Alloc memory failed!");
             return RTMQ_ERR;
         }
 
@@ -130,7 +131,7 @@ int rtrd_node_to_svr_map_add(rtrd_cntx_t *ctx, int nodeid, int rsvr_id)
 
         if (avl_insert(ctx->node_to_svr_map, &nodeid, sizeof(nodeid), (void *)map)) {
             pthread_rwlock_unlock(&ctx->node_to_svr_map_lock); /* 解锁 */
-            slab_dealloc(ctx->pool, map);
+            FREE(map);
             log_error(ctx->log, "Insert into dev2sck table failed! nodeid:%d rsvr_id:%d",
                       nodeid, rsvr_id);
             return RTMQ_ERR;
@@ -185,7 +186,7 @@ int rtrd_node_to_svr_map_del(rtrd_cntx_t *ctx, int nodeid, int rsvr_id)
             map->rsvr_id[idx] = map->rsvr_id[--map->num]; /* 删除:使用最后一个值替代当前值 */
             if (0 == map->num) {
                 avl_delete(ctx->node_to_svr_map, &nodeid, sizeof(nodeid), (void *)&map);
-                slab_dealloc(ctx->pool, map);
+                FREE(map);
             }
             break;
         }

@@ -50,27 +50,17 @@ static int rtrd_proc_def_hdl(int type, int orig, char *buff, size_t len, void *p
 rtrd_cntx_t *rtrd_init(const rtrd_conf_t *cf, log_cycle_t *log)
 {
     rtrd_cntx_t *ctx;
-    slab_pool_t *slab;
     rtrd_conf_t *conf;
     char path[FILE_NAME_MAX_LEN];
 
-    /* > 创建SLAB内存池 */
-    slab = slab_creat_by_calloc(RTMQ_CTX_POOL_SIZE, log);
-    if (NULL == slab) {
-        log_error(log, "Initialize slab mem-pool failed!");
-        return NULL;
-    }
-
     /* > 创建全局对象 */
-    ctx = (rtrd_cntx_t *)slab_alloc(slab, sizeof(rtrd_cntx_t));
+    ctx = (rtrd_cntx_t *)calloc(1, sizeof(rtrd_cntx_t));
     if (NULL == ctx) {
         log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
-        free(slab);
         return NULL;
     }
 
     ctx->log = log;
-    ctx->pool = slab;
     conf = &ctx->conf;
     memcpy(conf, cf, sizeof(rtrd_conf_t));  /* 配置信息 */
     conf->recvq_num = RTMQ_WORKER_HDL_QNUM * cf->work_thd_num;
@@ -136,7 +126,6 @@ rtrd_cntx_t *rtrd_init(const rtrd_conf_t *cf, log_cycle_t *log)
     } while(0);
 
     close(ctx->cmd_sck_id);
-    free(slab);
     return NULL;
 }
 
@@ -351,7 +340,7 @@ static int rtrd_creat_sendq(rtrd_cntx_t *ctx)
     rtrd_conf_t *conf = &ctx->conf;
 
     /* > 创建队列数组 */
-    ctx->sendq = slab_alloc(ctx->pool, conf->recv_thd_num*sizeof(queue_t *));
+    ctx->sendq = calloc(1, conf->recv_thd_num*sizeof(queue_t *));
     if (NULL == ctx->sendq) {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return RTMQ_ERR;
@@ -388,7 +377,7 @@ static int rtrd_creat_distq(rtrd_cntx_t *ctx)
     rtrd_conf_t *conf = &ctx->conf;
 
     /* > 申请对象空间 */
-    ctx->distq = (queue_t **)slab_alloc(ctx->pool, conf->distq_num*sizeof(queue_t *));
+    ctx->distq = (queue_t **)calloc(1, conf->distq_num*sizeof(queue_t *));
     if (NULL == ctx->distq) {
         log_error(ctx->log, "Alloc memory from slab failed!");
         return RTMQ_ERR;
@@ -439,9 +428,9 @@ static int rtrd_creat_recvs(rtrd_cntx_t *ctx)
     }
 
     /* > 创建线程池 */
-    opt.pool = (void *)ctx->pool;
-    opt.alloc = (mem_alloc_cb_t)slab_alloc;
-    opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+    opt.pool = (void *)NULL;
+    opt.alloc = (mem_alloc_cb_t)mem_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
     ctx->recvtp = thread_pool_init(conf->recv_thd_num, &opt, (void *)rsvr);
     if (NULL == ctx->recvtp) {
@@ -490,8 +479,6 @@ void rtrd_recvs_destroy(void *_ctx, void *param)
 
         /* > 关闭通信套接字 */
         rtrd_rsvr_del_all_conn_hdl(ctx, rsvr);
-
-        slab_destroy(rsvr->pool);
     }
 
     FREE(ctx->recvtp->data);
@@ -531,9 +518,9 @@ static int rtrd_creat_workers(rtrd_cntx_t *ctx)
     /* > 创建线程池 */
     memset(&opt, 0, sizeof(opt));
 
-    opt.pool = (void *)ctx->pool;
-    opt.alloc = (mem_alloc_cb_t)slab_alloc;
-    opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
+    opt.pool = (void *)NULL;
+    opt.alloc = (mem_alloc_cb_t)mem_alloc;
+    opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
     ctx->worktp = thread_pool_init(conf->work_thd_num, &opt, (void *)wrk);
     if (NULL == ctx->worktp) {
