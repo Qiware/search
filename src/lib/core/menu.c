@@ -118,8 +118,7 @@ int menu_add(menu_item_t *menu, menu_item_t *child)
         return 0;
     }
 
-    while (NULL != item->next)
-    {
+    while (NULL != item->next) {
         item = item->next;
     }
 
@@ -345,8 +344,7 @@ int menu_run(menu_cntx_t *ctx)
 
     curr->func(ctx, curr, curr->args);
 
-    while (1)
-    {
+    while (1) {
     BEGIN:
         fprintf(stderr, "Option: ");
         if (scanf(" %s", opt) < 0) {

@@ -505,8 +505,7 @@ int href_to_uri(const char *ori_href, const char *site, uri_field_t *field)
             --p2;
         }
 
-        while (p2 != site && '/' != *p2)
-        {
+        while (p2 != site && '/' != *p2) {
             --p2;
         }
 

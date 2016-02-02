@@ -131,20 +131,16 @@ void *mem_pool_alloc(mem_pool_t *pool, size_t size)
 
     if (size <= pool->max) {
         p = pool->current;
-
         do {
             m = mem_align_ptr(p->d.last, PTR_ALIGNMENT);
             if ((size_t)(p->d.end - m) >= size) {
                 p->d.last = m + size;
                 return m;
             }
-
             p = p->d.next;
         } while (p);
-
         return mem_pool_alloc_block(pool, size);
     }
-
     return mem_pool_alloc_large(pool, size);
 }
 
@@ -167,23 +163,16 @@ void *mem_pool_nalloc(mem_pool_t *pool, size_t size)
 
     if (size <= pool->max) {
         p = pool->current;
-
         do {
             m = p->d.last;
-
             if ((size_t)(p->d.end - m) >= size) {
                 p->d.last = m + size;
-
                 return m;
             }
-
             p = p->d.next;
-
         } while (p);
-
         return mem_pool_alloc_block(pool, size);
     }
-
     return mem_pool_alloc_large(pool, size);
 }
 
@@ -340,11 +329,8 @@ int mem_pool_dealloc(mem_pool_t *pool, void *p)
 
     for (l = pool->large; l; l = l->next) {
         if (p == l->alloc) {
-            //ngx_log_debug1(NGX_LOG_DEBUG_ALLOC, pool->log, 0,
-            //               "free: %p", l->alloc);
             free(l->alloc);
             l->alloc = NULL;
-
             return 0;
         }
     }

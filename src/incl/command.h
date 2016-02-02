@@ -4,12 +4,10 @@
 /* 命令类型 */
 typedef enum
 {
-    CMD_TYPE_UNKOWN                         /* 未知类型 */
-    , CMD_ADD_SCK                           /* 添加套接字 */
-    , CMD_DIST_DATA                         /* 分发数据 */
-    , CMD_PROC_DATA                         /* 处理数据 */
-
-    , CMD_TYPE_TOTAL                        /* 命令总数 */
+    CMD_TYPE_UNKOWN = 0x0000                /* 未知类型 */
+    , CMD_ADD_SCK   = 0x0001                /* 添加套接字 */
+    , CMD_DIST_DATA = 0x0002                /* 分发数据 */
+    , CMD_PROC_DATA = 0x0003                /* 处理数据 */
 } cmd_type_e;
 
 /* 分发数据参数 */

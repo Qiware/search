@@ -828,7 +828,6 @@ int xml_delete_empty(xml_tree_t *xml)
     xml_node_t *node;
     Stack_t _stack, *stack = &_stack;
 
-
     if (stack_init(stack, XML_MAX_DEPTH)) {
         log_error(xml->log, "Init stack failed!");
         return XML_ERR_STACK;

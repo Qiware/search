@@ -27,8 +27,7 @@ void list_assert(list_t *list)
     list_node_t *curr;
 
     curr = list->head;
-    while (NULL != curr)
-    {
+    while (NULL != curr) {
         ++num;
         curr = curr->next;
     }
@@ -286,8 +285,7 @@ void *list_rpop(list_t *list)
     list_node_t *prev, *tail;
 
     /* 1. 无数据 */
-    if (NULL == list->head)
-    {
+    if (NULL == list->head) {
         return NULL;
     }
     /* 2. 只有１个结点 */
@@ -306,8 +304,7 @@ void *list_rpop(list_t *list)
     /* 3. 有多个结点 */
     prev = list->head;
     tail = list->tail;
-    while (prev->next != list->tail)
-    {
+    while (prev->next != list->tail) {
         prev = prev->next;
     }
 
@@ -339,8 +336,7 @@ int list_remove(list_t *list, void *data)
 
     prev = list->head;
     curr = list->head;
-    while (NULL != curr)
-    {
+    while (NULL != curr) {
         if (curr->data == data) {
             /* 删除头结点 */
             if (list->head == curr) {

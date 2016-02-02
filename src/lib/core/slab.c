@@ -260,15 +260,11 @@ void *slab_alloc(slab_pool_t *pool, size_t size)
                         }
                     }
                 }
-
                 page = page->next;
-
             } while (page);
-
         }
         else if (shift == slab_get_exact_shift()) {
-            do
-            {
+            do {
                 if (SLAB_BUSY != page->slab) {
                     for (m = 1, i = 0; m; m <<= 1, i++) {
                         if ((page->slab & m)) {
@@ -294,21 +290,17 @@ void *slab_alloc(slab_pool_t *pool, size_t size)
                         goto done;
                     }
                 }
-
                 page = page->next;
-
             } while (page);
 
         }
-        else     /* shift > slab_exact_shift */
-        {
+        else {   /* shift > slab_exact_shift */
             n = slab_get_page_shift() - (page->slab & SLAB_SHIFT_MASK);
             n = 1 << n;
             n = ((uintptr_t) 1 << n) - 1;
             mask = n << SLAB_MAP_SHIFT;
 
-            do
-            {
+            do {
                 if ((page->slab & SLAB_MAP_MASK) != mask) {
                     for (m = (uintptr_t) 1 << SLAB_MAP_SHIFT, i = 0;
                          m & mask;
@@ -337,9 +329,7 @@ void *slab_alloc(slab_pool_t *pool, size_t size)
                         goto done;
                     }
                 }
-
                 page = page->next;
-
             } while (page);
         }
     }
@@ -374,9 +364,7 @@ void *slab_alloc(slab_pool_t *pool, size_t size)
 
             p = ((page - pool->pages) << slab_get_page_shift()) + s * n;
             p += (uintptr_t) pool->start;
-
             goto done;
-
         }
         else if (shift == slab_get_exact_shift()) {
             page->slab = 1;
@@ -387,12 +375,9 @@ void *slab_alloc(slab_pool_t *pool, size_t size)
 
             p = (page - pool->pages) << slab_get_page_shift();
             p += (uintptr_t) pool->start;
-
             goto done;
-
         }
-        else     /* shift > slab_exact_shift */
-        {
+        else {   /* shift > slab_exact_shift */
             page->slab = ((uintptr_t) 1 << SLAB_MAP_SHIFT) | shift;
             page->next = &slots[slot];
             page->prev = (uintptr_t) &slots[slot] | SLAB_BIG;
@@ -497,9 +482,7 @@ void slab_dealloc(slab_pool_t *pool, void *p)
 
                 goto done;
             }
-
             goto chunk_already_free;
-
         }
         case SLAB_EXACT:
         {
@@ -530,12 +513,9 @@ void slab_dealloc(slab_pool_t *pool, void *p)
                 }
 
                 slab_dealloc_pages(pool, page, 1);
-
                 goto done;
             }
-
             goto chunk_already_free;
-
         }
         case SLAB_BIG:
         {
@@ -571,9 +551,7 @@ void slab_dealloc(slab_pool_t *pool, void *p)
 
                 goto done;
             }
-
             goto chunk_already_free;
-
         }
         case SLAB_PAGE:
         {
@@ -605,28 +583,18 @@ void slab_dealloc(slab_pool_t *pool, void *p)
 
     /* not reached */
     spin_unlock(&pool->lock); /* 解锁 */
-
     return;
-
 done:
-
     slab_junk(p, size);
 
     spin_unlock(&pool->lock);
     return;
-
 wrong_chunk:
-
     log_error(pool->log, "Pointer to wrong chunk");
-
     goto fail;
-
 chunk_already_free:
-
     log_error(pool->log, "Chunk is already free");
-
 fail:
-
     spin_unlock(&pool->lock); /* 解锁 */
     return;
 }
@@ -660,8 +628,7 @@ static slab_page_t *slab_alloc_pages(slab_pool_t *pool, uint32_t pages)
                 page->next->prev = (uintptr_t) &page[pages];
 
             }
-            else
-            {
+            else {
                 p = (slab_page_t *) page->prev;
                 p->next = page->next;
                 page->next->prev = page->prev;
@@ -780,8 +747,7 @@ slab_pool_t *slab_creat_by_calloc(size_t size, log_cycle_t *log) { return calloc
  ******************************************************************************/
 void *slab_alloc_ex(slab_pool_t *pool, size_t size)
 {
-    if (size > SLAB_PAGE_SIZE)
-    {
+    if (size > SLAB_PAGE_SIZE) {
         return malloc(size);
     }
 
@@ -802,8 +768,7 @@ void *slab_alloc_ex(slab_pool_t *pool, size_t size)
  ******************************************************************************/
 void slab_dealloc_ex(slab_pool_t *pool, void *p)
 {
-    if ((u_char *)p < pool->start || (u_char *)p > pool->end)
-    {
+    if ((u_char *)p < pool->start || (u_char *)p > pool->end) {
         free(p); /* 不在内存池的空间 */
         return;
     }

@@ -254,7 +254,7 @@ int log_get_level(const char *level_str)
         return LOG_LEVEL_TRACE;
     }
 
-    return LOG_LEVEL_TOTAL;
+    return LOG_LEVEL_TRACE;
 }
 
 /******************************************************************************

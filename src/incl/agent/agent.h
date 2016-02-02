@@ -12,15 +12,10 @@
 
 /* 宏定义 */
 #define AGENT_TMOUT_SCAN_SEC    (15)        /* 超时扫描间隔 */
-
-#define AGENT_SLAB_SIZE         (30 * MB)   /* SLAB内存池大小 */
-#define AGENT_RECV_SIZE         (8 * KB)    /* 缓存SIZE(接收缓存) */
-#define AGENT_SYNC_SIZE         (AGENT_RECV_SIZE >> 1)  /* 缓存同步SIZE */
-
 #define AGENT_MSG_TYPE_MAX      (0xFF)      /* 消息最大类型 */
 
 /* 命令路径 */
-#define AGENT_LSVR_CMD_PATH     "lsvr-cmd-%02d.usck"      /* 侦听服务 */
+#define AGENT_LSVR_CMD_PATH     "lsvr-cmd-%02d.usck" /* 侦听服务 */
 #define AGENT_RSVR_CMD_PATH     "rsvr-cmd-%02d.usck" /* 接收服务 */
 #define AGENT_WSVR_CMD_PATH     "wsvr-cmd-%02d.usck" /* 工作服务 */
 #define AGENT_CLI_CMD_PATH      "cli_cmd.usck"       /* 客户端 */
@@ -40,8 +35,7 @@ typedef struct
     int nid;                                /* 结点ID */
     char path[FILE_NAME_MAX_LEN];           /* 工作路径 */
 
-    struct
-    {
+    struct {
         int max;                            /* 最大并发数 */
         int timeout;                        /* 连接超时时间 */
         int port;                           /* 侦听端口 */
@@ -76,11 +70,9 @@ typedef struct
     } cli;
 
     /* 侦听信息 */
-    struct
-    {
+    struct {
         int lsn_sck_id;                     /* 侦听套接字 */
         spinlock_t accept_lock;             /* 侦听锁 */
-
         uint64_t sid;                       /* Session ID */
         agent_lsvr_t *lsvr;                 /* 侦听对象 */
     } listen;

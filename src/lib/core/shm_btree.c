@@ -287,8 +287,7 @@ int shm_btree_insert(shm_btree_cntx_t *ctx, int key, void *data)
 
     /* 2. 查找关键字的插入位置 */
     node = (shm_btree_node_t *)shm_btree_off_to_ptr(ctx, btree->root);
-    while (1)
-    {
+    while (1) {
         node_key = (int *)shm_btree_off_to_ptr(ctx, node->key);
         node_data = (off_t *)shm_btree_off_to_ptr(ctx, node->data);
 
@@ -381,8 +380,7 @@ static int shm_btree_split(shm_btree_cntx_t *ctx, shm_btree_node_t *node)
 
     sep_idx = btree->sep_idx;
 
-    while (node->num > btree->max)
-    {
+    while (node->num > btree->max) {
         /* Split node */
         total = node->num;
 
@@ -1017,8 +1015,7 @@ int shm_btree_remove(shm_btree_cntx_t *ctx, int key)
     shm_btree_t *btree = ctx->btree;
 
     off = btree->root;
-    while (0 != off)
-    {
+    while (0 != off) {
         node = (shm_btree_node_t *)shm_btree_off_to_ptr(ctx, off);
 
         node_key = (int *)shm_btree_off_to_ptr(ctx, node->key);
@@ -1064,8 +1061,7 @@ void *shm_btree_query(shm_btree_cntx_t *ctx, int key)
     shm_btree_t *btree = ctx->btree;
 
     off = btree->root;
-    while (0 != off)
-    {
+    while (0 != off) {
         node = (shm_btree_node_t *)shm_btree_off_to_ptr(ctx, off);
 
         node_key = (int *)shm_btree_off_to_ptr(ctx, node->key);

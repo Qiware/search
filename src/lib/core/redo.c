@@ -61,8 +61,7 @@ ssize_t Readn(int fd, void *buff, size_t n)
     int left = n, len = 0;
     char *ptr = (char *)buff;
 
-    while (left > 0)
-    {
+    while (left > 0) {
         len = read(fd, ptr, left);
         if (len < 0) {
             if (EAGAIN == errno) {
@@ -103,8 +102,7 @@ ssize_t Writen(int fd, const void *buff, size_t n)
     int left = n;
     const char *ptr = (const char *)buff;
 
-    while (left > 0)
-    {
+    while (left > 0) {
         len = write(fd, ptr, left);
         if (len < 0) {
             if (EAGAIN == errno) {
@@ -199,8 +197,7 @@ int Mkdir(const char *dir, mode_t mode)
 
     /* 2. 递归创建目录结构 */
     p = strchr(p, '/');
-    while (NULL != p)
-    {
+    while (NULL != p) {
         memset(part, 0, sizeof(part));
 
         len = p - dir + 1;

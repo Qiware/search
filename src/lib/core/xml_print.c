@@ -410,7 +410,6 @@ int xml_pack_node_len(xml_tree_t *xml, xml_node_t *root, Stack_t *stack)
         
         /* 5. 选择下一个处理的节点: 从父亲节点、兄弟节点、孩子节点中 */
         node = xml_pack_next_len(xml, stack, node, &len);
-        
     } while (NULL != node);
 
     if (!stack_empty(stack)) {
@@ -617,7 +616,6 @@ int xml_pack_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, sprint_t *s
         
         /* 5. 选择下一个处理的节点: 从父亲节点、兄弟节点、孩子节点中 */
         node = xml_pack_next(xml, stack, node, sp);
-
     } while (NULL != node);
 
     if (!stack_empty(stack)) {
@@ -815,7 +813,6 @@ int xml_sprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, sprint_t 
         
         /* 5. 选择下一个处理的节点: 从父亲节点、兄弟节点、孩子节点中 */
         node = xml_sprint_next(xml, stack, node, sp);
-
     } while(NULL != node);
 
     if (!stack_empty(stack)) {
