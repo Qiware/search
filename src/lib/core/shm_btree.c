@@ -431,8 +431,7 @@ static int shm_btree_split(shm_btree_cntx_t *ctx, shm_btree_node_t *node)
             parent_child[1] = (off_t)shm_btree_ptr_to_off(ctx, node2);
             parent->num++;
         }
-        else
-        {
+        else {
             /* Insert into parent node */
             parent = (shm_btree_node_t *)shm_btree_off_to_ptr(ctx, node->parent);
 

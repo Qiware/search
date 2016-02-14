@@ -193,8 +193,7 @@ void *slab_alloc(slab_pool_t *pool, size_t size)
             p = (page - pool->pages) << slab_get_page_shift();
             p += (uintptr_t) pool->start;
         }
-        else
-        {
+        else {
             p = 0;
         }
 
@@ -208,8 +207,7 @@ void *slab_alloc(slab_pool_t *pool, size_t size)
         }
         slot = shift - pool->min_shift;
     }
-    else
-    {
+    else {
         size = pool->min_size;
         shift = pool->min_shift;
         slot = 0;
