@@ -119,6 +119,7 @@ int rbt_delete(rbt_tree_t *tree, void *key, int key_len, void **data);
 void *rbt_query(rbt_tree_t *tree, void *key, int key_len);
 int rbt_print(rbt_tree_t *tree);
 int rbt_trav(rbt_tree_t *tree, trav_cb_t proc, void *args);
+void *rbt_find(rbt_tree_t *tree, find_cb_t find, void *args);
 int rbt_destroy(rbt_tree_t *tree, mem_dealloc_cb_t dealloc, void *args);
 
 #endif /*__RB_TREE_H__*/

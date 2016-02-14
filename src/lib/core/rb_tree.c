@@ -309,8 +309,7 @@ int rbt_insert(rbt_tree_t *tree, void *key, int key_len, void *data)
             }
             node = node->lchild;
         }
-        else
-        {
+        else {
         RBT_INSERT_RCHILD:
             if (tree->sentinel == node->rchild) {
                 add = rbt_creat_node(tree, idx, RBT_COLOR_RED, RBT_RCHILD, node);
@@ -378,8 +377,7 @@ static int rbt_insert_fixup(rbt_tree_t *tree, rbt_node_t *node)
                 continue;
             }
             /* case 3: 叔结点为黑色，结点为右孩子 */
-            else
-            {
+            else {
                 /* 左旋转: 以parent为支点 */
                 rbt_left_rotate(tree, parent);
                 
@@ -387,8 +385,7 @@ static int rbt_insert_fixup(rbt_tree_t *tree, rbt_node_t *node)
                 continue;
             }
         }
-        else                        /* 父节点为右孩子 */
-        {
+        else {                      /* 父节点为右孩子 */
             uncle = grandpa->lchild;
             
             /* case 1: 父节点和叔节点为红色 */
@@ -527,8 +524,7 @@ static int _rbt_delete(rbt_tree_t *tree, rbt_node_t *dnode)
         else if (dnode == parent->lchild) {
             parent->lchild = refer;
         }
-        else /* dnode == parent->rchild */
-        {
+        else { /* dnode == parent->rchild */
             parent->rchild = refer;
         }
 
@@ -637,8 +633,7 @@ static int rbt_delete_fixup(rbt_tree_t *tree, rbt_node_t *node)
                 node = tree->root;
             }
         }
-        else
-        {
+        else {
             brother = parent->lchild;
 
             /* Case 5: 兄弟结点为红色:  以parent为支点, 右旋处理 */
@@ -718,19 +713,16 @@ static void rbt_print_head(const rbt_tree_t *tree, const rbt_node_t *node, int d
                     if (parent->lchild == node) {
                         fprintf(stderr, "l");
                     }
-                    else
-                    {
+                    else {
                         fprintf(stderr, "r");
                     }
                 }
-                else
-                {
+                else {
                     fprintf(stderr, "-");
                 }
             }
         }
-        else
-        {
+        else {
             fprintf(stderr, "|");
             for (idx=0; idx<8; idx++) {
                 fprintf(stderr, " ");
@@ -744,8 +736,7 @@ static void rbt_print_head(const rbt_tree_t *tree, const rbt_node_t *node, int d
     {
         fprintf(stderr, "<%03ld:%c/>\n", node->idx, node->color);
     }
-    else
-    {
+    else {
         fprintf(stderr, "<%03ld:%c>\n", node->idx, node->color);
     }
 }
@@ -893,16 +884,14 @@ void *rbt_query(rbt_tree_t *tree, void *key, int key_len)
             else if (ret < 0) {
                 node = node->lchild;
             }
-            else
-            {
+            else {
                 node = node->rchild;
             }
         }
         else if (idx < node->idx) {
             node = node->lchild;
         }
-        else
-        {
+        else {
             node = node->rchild;
         }
     }
@@ -1087,4 +1076,100 @@ int rbt_trav(rbt_tree_t *tree, trav_cb_t proc, void *args)
     }
 
     return stack_destroy(stack);
+}
+
+/******************************************************************************
+ **函数名称: rbt_find
+ **功    能: 通过自定义函数筛选结点(外部接口)
+ **输入参数: 
+ **     tree: 红黑树
+ **     find: 回调函数
+ **     args: 附加参数
+ **输出参数: NONE
+ **返    回: 数据地址
+ **实现描述: 处理思路可以参考rbt_print(), 但是稍微有些不同之处.
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2016.02.14 16:21:43 #
+ ******************************************************************************/
+void *rbt_find(rbt_tree_t *tree, find_cb_t find, void *args)
+{
+    Stack_t _stack, *stack = &_stack;
+    rbt_node_t *node = tree->root, *parent;
+
+    if (tree->sentinel == node) { return NULL; }
+
+    stack_init(stack, RBT_MAX_DEPTH);
+
+    while (tree->sentinel != node) {
+        /* 压左孩子入栈, 直到最左端 */
+        while (tree->sentinel != node->lchild) {
+            rbt_assert(tree, node);
+            stack_push(stack, node);
+            node = node->lchild;
+        }
+
+        if (find(node->data, args)) { /* 处理最左端结点 */
+            stack_destroy(stack);
+            return node->data;
+        }
+
+        /* 最左端结点有右孩子 */
+        if (tree->sentinel != node->rchild) {
+            stack_push(stack, node); /* 最左端结点入栈 */
+            node = node->rchild;
+            continue;
+        }
+        
+        /* 最左端结点无右孩子 */
+        parent = stack_gettop(stack);
+        if (NULL == parent) {
+            stack_destroy(stack);
+            return NULL;
+        }
+
+        if (parent->lchild == node) {
+            if (find(parent->data, args)) { /* 处理最左结点的父结点 */
+                stack_destroy(stack);
+                return parent->data;
+            }
+
+            if (tree->sentinel != parent->rchild) { /* 有右子树 */
+                node = parent->rchild;  /* 处理右子树 */
+                continue;
+            }
+            else {
+                stack_pop(stack);
+                node = parent;
+                parent = stack_gettop(stack);
+                if (NULL == parent) {
+                    stack_destroy(stack);
+                    return NULL;
+                }
+            }
+        }
+
+        /* 判断最左结点的父结点已处理完成 */
+        while ((node == parent->rchild)
+            || (tree->sentinel == parent->rchild))
+        {
+            stack_pop(stack);
+
+            node = parent;
+            parent = stack_gettop(stack);
+            if (NULL == parent) {
+                stack_destroy(stack);
+                return NULL;
+            }
+        }
+
+        if (find(parent->data, args)) { /* 处理有左子树而无右子树的结点 */
+            stack_destroy(stack);
+            return parent->data;
+        }
+
+        node = parent->rchild;
+    }
+
+    stack_destroy(stack);
+    return NULL;
 }
