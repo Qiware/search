@@ -130,6 +130,7 @@ static inline unsigned long cpu_ticket_get(void)
 typedef int64_t (*key_cb_t)(const void *pkey, size_t pkey_len);
 typedef int (*cmp_cb_t)(const void *data, const void *orig);
 typedef int (*trav_cb_t)(void *data, void *args);
+typedef int (*find_cb_t)(void *data, void *args);
 
 typedef void * (*mem_alloc_cb_t)(void *pool, size_t size);
 typedef void (*mem_dealloc_cb_t)(void *pool, void *p);
@@ -146,10 +147,12 @@ void mem_dealloc(void *pool, void *p);
 static inline void mem_dummy_dealloc(void *pool, void *p) { }
 
 /* 整数生成键值回调 */
-static inline int key_cb_int32(const int *key, size_t len) { return *key; }
-static inline int64_t key_cb_int64(const int64_t *key, size_t len) { return *key; }
+static inline uint16_t key_cb_int16(const uint16_t *key, size_t len) { return *key; }
+static inline uint32_t key_cb_int32(const uint32_t *key, size_t len) { return *key; }
+static inline uint64_t key_cb_int64(const uint64_t *key, size_t len) { return *key; }
 /* 整数进行比较回调 */
-static inline int cmp_cb_int32(const int *key, const void *data) { return 0; }
-static inline int cmp_cb_int64(const int64_t *key, const void *data) { return 0; } 
+static inline int cmp_cb_int16(const uint16_t *key, const void *data) { return 0; }
+static inline int cmp_cb_int32(const uint32_t *key, const void *data) { return 0; }
+static inline int cmp_cb_int64(const uint64_t *key, const void *data) { return 0; } 
 
 #endif /*__COMM_H__*/
