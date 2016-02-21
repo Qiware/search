@@ -130,7 +130,7 @@ static inline unsigned long cpu_ticket_get(void)
 typedef int64_t (*key_cb_t)(const void *pkey, size_t pkey_len);
 typedef int (*cmp_cb_t)(const void *data, const void *orig);
 typedef int (*trav_cb_t)(void *data, void *args);
-typedef int (*find_cb_t)(void *data, void *args);
+typedef bool (*find_cb_t)(void *data, void *args);
 
 typedef void * (*mem_alloc_cb_t)(void *pool, size_t size);
 typedef void (*mem_dealloc_cb_t)(void *pool, void *p);
