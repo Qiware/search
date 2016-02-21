@@ -1218,7 +1218,7 @@ static void _avl_destroy(avl_tree_t *tree, avl_node_t *node, mem_dealloc_cb_t de
     tree->dealloc(tree->pool, node);
 }
 
-int _avl_print(avl_node_t *node, Stack_t *stack);
+static int _avl_print(avl_node_t *node, Stack_t *stack);
 /******************************************************************************
  **函数名称: avl_print
  **功    能: 打印平衡二叉树(外部接口)
@@ -1262,7 +1262,7 @@ int avl_print(avl_tree_t *tree)
  **注意事项:
  **作    者: # Qifeng.zou # 2013.12.17 #
  ******************************************************************************/
-void avl_print_head(avl_node_t *node, int depth)
+static void avl_print_head(avl_node_t *node, int depth)
 {
     int idx;
     avl_node_t *parent = node->parent;
@@ -1315,7 +1315,7 @@ void avl_print_head(avl_node_t *node, int depth)
  **注意事项:
  **作    者: # Qifeng.zou # 2013.12.17 #
  ******************************************************************************/
-void avl_print_tail(avl_node_t *node, int depth)
+static void avl_print_tail(avl_node_t *node, int depth)
 {
     int idx;
 
@@ -1437,4 +1437,67 @@ int avl_trav(avl_tree_t *tree, trav_cb_t proc, void *args)
     }
 
     return _avl_trav(tree->root, proc, args);
+}
+
+/******************************************************************************
+ **函数名称: _avl_find
+ **功    能: 查找平衡二叉树(内部接口)
+ **输入参数:
+ **     node: 结点
+ **     find: 查找回调
+ **     args: 附加参数
+ **输出参数: NONE
+ **返    回: 数据地址
+ **实现描述: 使用递归算法实现遍历(简单)
+ **注意事项:
+ **作    者: # Qifeng.zou # 2016.02.21 21:43:58 #
+ ******************************************************************************/
+static void *_avl_find(avl_node_t *node, find_cb_t find, void *args)
+{
+    void *data;
+
+    /* 1. 遍历左子树 */
+    if (NULL != node->lchild) {
+        data = _avl_find(node->lchild, find, args);
+        if (NULL != data) {
+            return data;
+        }
+    }
+
+    /* 2. 处理当前结点 */
+    if (find(node->data, args)) {
+        return node->data;
+    }
+
+    /* 3. 遍历右子树 */
+    if (NULL != node->rchild) {
+        data = _avl_find(node->rchild, find, args);
+        if (NULL != data) {
+            return data;
+        }
+    }
+
+    return NULL;
+}
+
+/******************************************************************************
+ **函数名称: avl_find
+ **功    能: 通过自定义函数筛选结点(外部接口)
+ **输入参数: 
+ **     tree: 平衡二叉树
+ **     find: 回调函数
+ **     args: 附加参数
+ **输出参数: NONE
+ **返    回: 数据地址
+ **实现描述: 处理思路可以参考avl_print(), 但是稍微有些不同之处.
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2016.02.21 21:38:29 #
+ ******************************************************************************/
+void *avl_find(avl_tree_t *tree, find_cb_t find, void *args)
+{
+    if (NULL == tree->root) {
+        return NULL;
+    }
+
+    return _avl_find(tree->root, find, args);
 }

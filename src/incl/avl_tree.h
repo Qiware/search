@@ -68,6 +68,7 @@ void *avl_query(avl_tree_t *tree, void *key, int key_len);
 int avl_delete(avl_tree_t *tree, void *key, int key_len, void **data);
 int avl_print(avl_tree_t *tree);
 int avl_trav(avl_tree_t *tree, trav_cb_t proc, void *args);
+void *avl_find(avl_tree_t *tree, find_cb_t find, void *args);
 void avl_destroy(avl_tree_t *tree, mem_dealloc_cb_t dealloc_cb, void *args);
 #define avl_isempty(tree) (NULL == (tree)->root)
 
