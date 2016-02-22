@@ -15,8 +15,7 @@ int main(int argc, char *argv[])
     int port, fd;
     char ipaddr[IP_ADDR_MAX_LEN];
 
-    if (3 != argc)
-    {
+    if (3 != argc) {
         return -1;
     }
 

@@ -15,8 +15,7 @@ int main(void)
     void *data;
 
     log = log_init(LOG_LEVEL_TRACE, "btree.log");
-    if (NULL == log)
-    {
+    if (NULL == log) {
         return -1;
     }
 
@@ -27,8 +26,7 @@ int main(void)
     opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
     btree = btree_creat(BTREE_M, &opt);
-    if (NULL == btree)
-    {
+    if (NULL == btree) {
         fprintf(stderr, "[%s][%d] Create btree failed!\n", __FILE__, __LINE__);
         return -1;
     }
@@ -36,8 +34,7 @@ int main(void)
     fprintf(stderr, "[%s][%d] Create btree success!\n", __FILE__, __LINE__);
 
     /* > 插入关键字 */
-    for(idx=0; idx<BTREE_NUM; idx++)
-    {
+    for (idx=0; idx<BTREE_NUM; idx++) {
         btree_insert(btree, random()%20, (void *)0+idx);
     }
 
@@ -53,8 +50,7 @@ int main(void)
     btree_print(btree);
 
     /* > 操作B树 */
-    while(1)
-    {
+    while(1) {
         memset(input, 0, sizeof(input));
     
     #if defined(__AUTO_INPUT__)
@@ -83,8 +79,7 @@ int main(void)
         }
 
         ret = btree_insert(btree, key, (void *)0+key);
-        if (0 != ret)
-        {
+        if (0 != ret) {
             fprintf(stderr, "[%s][%d] Insert failed!\n", __FILE__, __LINE__);
             break;
         }

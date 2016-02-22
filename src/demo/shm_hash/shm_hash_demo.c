@@ -36,35 +36,29 @@ int shm_list_test(void)
     list_data_t *data;
 
     sh = shm_hash_creat(SHM_HASH_PATH, SHM_HASH_LEN, SHM_HASH_MAX, sizeof(list_data_t));
-    if (NULL == sh)
-    {
+    if (NULL == sh) {
         fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
         return -1;
     }
 
-    for (idx=0; idx<SHM_HASH_MAX; ++idx)
-    {
+    for (idx=0; idx<SHM_HASH_MAX; ++idx) {
         data = (list_data_t *)shm_hash_alloc(sh);
-        if (NULL == data)
-        {
+        if (NULL == data) {
             fprintf(stderr, "Alloc from shm-hash failed! idx:%d\n", idx);
             break;
         }
 
         data->idx = idx;
 
-        if (shm_hash_push(sh, &idx, sizeof(idx), (void *)data))
-        {
+        if (shm_hash_push(sh, &idx, sizeof(idx), (void *)data)) {
             fprintf(stderr, "Dealloc from shm-hash failed! idx:%d\n", idx);
             shm_hash_dealloc(sh, data);
         }
     }
 
-    for (idx=0; idx<SHM_HASH_MAX; ++idx)
-    {
+    for (idx=0; idx<SHM_HASH_MAX; ++idx) {
         data = (list_data_t *)shm_hash_pop(sh, &idx, sizeof(idx), (cmp_cb_t)shm_list_cmp);
-        if (NULL == data)
-        {
+        if (NULL == data) {
             abort();
         }
     }

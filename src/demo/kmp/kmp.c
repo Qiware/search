@@ -18,8 +18,7 @@ static int *kmp_gen_next(char *p, int len)
     int k = -1, j = 0, max = len - 1;
 
     next = (int *)calloc(1, len);
-    if (NULL == next)
-    {
+    if (NULL == next) {
         return NULL;
     }
 
@@ -62,14 +61,12 @@ kmp_t *kmp_creat(char *p, int len)
     kmp_t *kmp;
 
     kmp = (kmp_t *)calloc(1, sizeof(kmp_t));
-    if (NULL == kmp)
-    {
+    if (NULL == kmp) {
         return NULL;
     }
 
     kmp->next = kmp_gen_next(p, len);
-    if (NULL == kmp->next)
-    {
+    if (NULL == kmp->next) {
         free(kmp);
         return NULL;
     }
@@ -100,20 +97,17 @@ int kmp_match(kmp_t *kmp, const char *s, int len)
     while (i < len && j < kmp->len)
     {
         /* ① 如果j == -1, 或者当前字符匹配成功(即s[i] == p[j]), 都令i++，j++ */
-        if ((-1 == j) || (s[i] == kmp->p[j]))
-        {
+        if ((-1 == j) || (s[i] == kmp->p[j])) {
             ++i, ++j;
         }
-        else
-        {
+        else {
             /* ② 如果j != -1, 且当前字符匹配失败(即s[i] != p[j]),
              * 则令i不变, j = next[j] (注: next[j]即为j所对应的next值) */
             j = kmp->next[j];
         }
     }
 
-    if (j == kmp->len)
-    {
+    if (j == kmp->len) {
         return i - j;
     }
 
@@ -136,8 +130,7 @@ void kmp_print(kmp_t *kmp)
     int i;
     
     fprintf(stdout, "Pattern: %s Len:%d\n", kmp->p, kmp->len);
-    for (i=0; i<kmp->len; ++i)
-    {
+    for (i=0; i<kmp->len; ++i) {
         fprintf(stdout, "next[%c-%02d]: %d\n", kmp->p[i], i, kmp->next[i]);
     }
 }

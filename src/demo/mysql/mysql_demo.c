@@ -18,8 +18,7 @@ int main(void)
 
     /* > 初始化MYSQL对象 */
     conn = mysql_init(NULL);
-    if (NULL == conn)
-    {
+    if (NULL == conn) {
         fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
         return -1;
     }
@@ -51,8 +50,7 @@ static int sql_exec_and_print(MYSQL *conn, const char *sql)
     unsigned int cols, col, idx;
 
     /* > 执行SQL语句 */
-    if (mysql_query(conn, sql))
-    {
+    if (mysql_query(conn, sql)) {
         fprintf(stderr, "%s\n", mysql_error(conn));
         return -1;
     }
@@ -63,11 +61,9 @@ static int sql_exec_and_print(MYSQL *conn, const char *sql)
 
     printf("Query result: [%s]\n", sql);
     idx = 0;
-    while (NULL != (row = mysql_fetch_row(res)))
-    {
+    while (NULL != (row = mysql_fetch_row(res))) {
         printf("[%03d] ", ++idx);
-        for (col=0; col<cols; ++col)
-        {
+        for (col=0; col<cols; ++col) {
             printf("[%s] ", row[col]);
         }
         printf("\n");

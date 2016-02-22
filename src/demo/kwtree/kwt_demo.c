@@ -17,8 +17,7 @@ log_cycle_t *demo_init_log(const char *_path)
     snprintf(path, sizeof(path), "%s.log", _path);
 
     log = log_init(level, path);
-    if (NULL == log)
-    {
+    if (NULL == log) {
         fprintf(stderr, "Init log failed! level:%d", level);
         return NULL;
     }
@@ -33,8 +32,7 @@ int main(int argc, char *argv[])
     log_cycle_t *log;
 
     log = demo_init_log(argv[0]);
-    if (NULL == log)
-    {
+    if (NULL == log) {
         fprintf(stderr, "Initialize log failed!\n");
         return -1;
     }
@@ -44,8 +42,7 @@ int main(int argc, char *argv[])
     opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
     kwt = kwt_creat(&opt);
-    if (NULL == kwt)
-    {
+    if (NULL == kwt) {
         fprintf(stderr, "Create keyword-tree failed!");
         return -1;
     }
@@ -67,8 +64,7 @@ static int proto_load_conf(kwt_tree_t *kwt, const char *path, log_cycle_t *log)
     opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
     xml = xml_creat(path, &opt);
-    if (NULL == xml)
-    {
+    if (NULL == xml) {
         return -1;
     }
 
@@ -84,28 +80,22 @@ static int proto_load_conf(kwt_tree_t *kwt, const char *path, log_cycle_t *log)
                 }
 
                 oct_node = xml_search(xml, word, "octet");
-                if (NULL == oct_node)
-                {
+                if (NULL == oct_node) {
                     oct = 0;
                 }
-                else
-                {
+                else {
                     oct = atoi(oct_node->value.str);
                 }
                 
                 ++count;
-                if (0 == oct)
-                {
-                    if (kwt_insert(kwt, (u_char *)key->value.str, key->value.len, (void *)1))
-                    {
+                if (0 == oct) {
+                    if (kwt_insert(kwt, (u_char *)key->value.str, key->value.len, (void *)1)) {
                         assert(0);
                     }
                 }
-                else
-                {
+                else {
                     str_to_hex(key->value.str, key->value.len, hex);
-                    if (kwt_insert(kwt, (u_char *)hex, key->value.len/2, (void *)1))
-                    {
+                    if (kwt_insert(kwt, (u_char *)hex, key->value.len/2, (void *)1)) {
                         assert(0);
                     }
                 }
@@ -136,17 +126,14 @@ int kwt_test(void)
 
  
     kwt = kwt_creat(&opt);
-    if (NULL == kwt)
-    {
+    if (NULL == kwt) {
         fprintf(stderr, "Create keyword-tree failed!");
         return -1;
     }
 
-    for (i=0; i<DATA_LEN; ++i)
-    {
+    for (i=0; i<DATA_LEN; ++i) {
         str[i] = (char *)calloc(1, 128);
-        if (NULL == str[i])
-        {
+        if (NULL == str[i]) {
             return -1;
         }
     }
@@ -160,8 +147,7 @@ int kwt_test(void)
     kwt_insert(kwt, (unsigned char *)"ABDEFGHI", strlen("ABDEFGHI"), str[3]);
     fprintf(stderr, "ABDEFGHI: %p\n", str[3]);
 
-    while (1)
-    {
+    while (1) {
         scanf(" %s", input);
 
         ret = kwt_query(kwt,(unsigned char *)input, strlen(input), (void **)&str2);

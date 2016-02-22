@@ -24,8 +24,7 @@ log_cycle_t *demo_init_log(const char *_path)
     snprintf(path, sizeof(path), "%s.log", _path);
 
     log = log_init(level, path);
-    if (NULL == log)
-    {
+    if (NULL == log) {
         fprintf(stderr, "Init log failed! level:%d", level);
         return NULL;
     }
@@ -41,28 +40,23 @@ int main(int argc, char *argv[])
     log_cycle_t *log;
 
     log = demo_init_log(basename(argv[0]));
-    if (NULL == log)
-    {
+    if (NULL == log) {
         fprintf(stderr, "Init log failed!");
         return -1;
     }
 
     queue = queue_creat(QUEUE_LEN, QUEUE_SIZE);
-    if (NULL == queue)
-    {
+    if (NULL == queue) {
         fprintf(stderr, "Create queue failed!");
         return -1;
     }
 
     queue_print(queue);
 
-    for (n=0; n<5; ++n)
-    {
-        for (i=0; i<QUEUE_LEN; ++i)
-        {
+    for (n=0; n<5; ++n) {
+        for (i=0; i<QUEUE_LEN; ++i) {
             addr = queue_malloc(queue, QUEUE_SIZE);
-            if (NULL == addr)
-            {
+            if (NULL == addr) {
                 break;
             }
 

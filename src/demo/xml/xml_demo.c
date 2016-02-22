@@ -13,14 +13,12 @@ int main(int argc, char *argv[])
     memset(&opt, 0, sizeof(opt));
 
     log = log_init(LOG_LEVEL_DEBUG, "test.log");
-    if (NULL == log)
-    {
+    if (NULL == log) {
         return -1;
     }
 
     pool = mem_pool_creat(MEM_SIZE);
-    if (NULL == pool)
-    {
+    if (NULL == pool) {
         return -1;
     }
 
@@ -30,8 +28,7 @@ int main(int argc, char *argv[])
     opt.dealloc = (mem_dealloc_cb_t)mem_pool_dealloc;
 
     xml = xml_creat(argv[1], &opt);
-    if (NULL == xml)
-    {
+    if (NULL == xml) {
         fprintf(stdout, "Create XML failed!");
         return -1;
     }

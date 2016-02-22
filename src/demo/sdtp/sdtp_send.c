@@ -32,20 +32,17 @@ int sdtp_send_debug(sdsd_cli_t *cli, int secs)
     char data[SIZE];
     mesg_search_word_req_t *req;
 
-    for (;;)
-    {
+    for (;;) {
         gettimeofday(&stime, NULL);
         sleep2 = 0;
         fails = 0;
         total = 0;
-        for (idx=0; idx<LOOP; idx++)
-        {
+        for (idx=0; idx<LOOP; idx++) {
             req = (mesg_search_word_req_t *)data;
 
             snprintf(req->words, sizeof(req->words), "%s", "BAIDU");
 
-            if (sdsd_cli_send(cli, MSG_SEARCH_WORD_REQ, req, sizeof(mesg_search_word_req_t)))
-            {
+            if (sdsd_cli_send(cli, MSG_SEARCH_WORD_REQ, req, sizeof(mesg_search_word_req_t))) {
                 idx--;
                 usleep(2);
                 sleep2 += USLEEP*1000000;
@@ -57,8 +54,7 @@ int sdtp_send_debug(sdsd_cli_t *cli, int secs)
         }
 
         gettimeofday(&etime, NULL);
-        if (etime.tv_usec < stime.tv_usec)
-        {
+        if (etime.tv_usec < stime.tv_usec) {
             etime.tv_sec--;
             etime.tv_usec += 1000000;
         }
@@ -72,7 +68,6 @@ int sdtp_send_debug(sdsd_cli_t *cli, int secs)
                 etime.tv_sec - stime.tv_sec,
                 etime.tv_usec - stime.tv_usec,
                 total, fails);
-
     }
 
     pause();
@@ -107,8 +102,7 @@ int main(int argc, const char *argv[])
     sdsd_cntx_t *ctx;
     sdsd_conf_t conf;
 
-    if (2 != argc)
-    {
+    if (2 != argc) {
         fprintf(stderr, "Didn't special port!");
         return -1;
     }
@@ -123,21 +117,18 @@ int main(int argc, const char *argv[])
     sdtp_setup_conf(&conf, port);
 
     log = log_init(LOG_LEVEL_DEBUG, "./sdtp_ssvr.log");
-    if (NULL == log)
-    {
+    if (NULL == log) {
         fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
         return -1;
     }
 
     ctx = sdsd_init(&conf, log);
-    if (NULL == ctx) 
-    {
+    if (NULL == ctx) {
         fprintf(stderr, "Initialize send-server failed!");
         return -1;
     }
 
-    if (sdsd_launch(ctx))
-    {
+    if (sdsd_launch(ctx)) {
         fprintf(stderr, "Start up send-server failed!");
         return -1;
     }
@@ -148,15 +139,13 @@ int main(int argc, const char *argv[])
  
     Sleep(5);
     cli = sdsd_cli_init(&conf, 0, log);
-    if (NULL == cli)
-    {
+    if (NULL == cli) {
         fprintf(stderr, "Initialize send module failed!");
         return -1;
     }
 
     cli2 = sdsd_cli_init(&conf, 1, log);
-    if (NULL == cli2)
-    {
+    if (NULL == cli2) {
         fprintf(stderr, "Initialize send module failed!");
         return -1;
     }

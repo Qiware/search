@@ -6,25 +6,20 @@ int bubble_sort(int *array, int num)
 {
 	int j=0, idx=0, max=0;
 
-	for(idx=1; idx<num; idx++)
-	{
+	for (idx=1; idx<num; idx++) {
 		array[0] = array[1];
 
 		max = num-idx+1;
-		for(j=2; j<max; j++)
-		{
-			if(array[j] > array[0])
-			{
+		for (j=2; j<max; j++) {
+			if(array[j] > array[0]) {
 				array[j-1] = array[0];
 				array[0] = array[j];
 			}
-			else
-			{
+			else {
 				array[j-1] = array[j];
 				array[j] = array[0];
 			}
 		}
-
 		array[j-1] = array[0];
 	}
 	return 0;
@@ -37,8 +32,7 @@ int main(int argc, char *argv[])
 
 	bubble_sort(array, num);
 
-	for(idx=1; idx<num; idx++)
-	{
+	for (idx=1; idx<num; idx++) {
 		fprintf(stdout, "array[%d] = %d\n", idx, array[idx]);
 	}
 

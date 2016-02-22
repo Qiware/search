@@ -36,50 +36,42 @@ void *cp_copy_routine(void *_ctx)
 
     tid = thread_pool_get_tidx(ctx->tpool);
 
-    if (posix_memalign(&buff, 4*KB, CP_SLOT_SIZE))
-    {
+    if (posix_memalign(&buff, 4*KB, CP_SLOT_SIZE)) {
         fprintf(stderr, "%s:[%d] errmsg:[%d] %s!\n", __FILE__, __LINE__, errno, strerror(errno));
         pthread_exit((void *)-1);
         return (void *)-1;
     }
 
     fd = Open(ctx->src, O_RDONLY|O_DIRECT, OPEN_MODE);
-    if (fd < 0)
-    {
+    if (fd < 0) {
         fprintf(stderr, "%s:[%d] errmsg:[%d] %s!\n", __FILE__, __LINE__, errno, strerror(errno));
         pthread_exit((void *)-1);
         return (void *)-1;
     }
 
     to = Open(ctx->dst, O_CREAT|O_RDWR|O_DIRECT, OPEN_MODE);
-    if (to < 0)
-    {
+    if (to < 0) {
         fprintf(stderr, "%s:[%d] errmsg:[%d] %s!\n", __FILE__, __LINE__, errno, strerror(errno));
         pthread_exit((void *)-1);
         return (void *)-1;
     }
 
     off = tid * CP_SLOT_SIZE;
-    while (1)
-    {
-        if (off > ctx->fst.st_size)
-        {
+    while (1) {
+        if (off > ctx->fst.st_size) {
             break;
         }
-        else if (off + CP_SLOT_SIZE > ctx->fst.st_size)
-        {
+        else if (off + CP_SLOT_SIZE > ctx->fst.st_size) {
             size = ctx->fst.st_size - off;
         }
-        else
-        {
+        else {
             size = CP_SLOT_SIZE;
         }
 
         lseek(fd, off, SEEK_SET);
 
         n = Readn(fd, buff, size);
-        if (n != size)
-        {
+        if (n != size) {
             fprintf(stderr, "%s:[%d] errmsg:[%d] %s!\n", __FILE__, __LINE__, errno, strerror(errno));
             break;
         }
@@ -87,8 +79,7 @@ void *cp_copy_routine(void *_ctx)
         lseek(to, off, SEEK_SET);
 
         n = Writen(to, buff, size);
-        if (n != size)
-        {
+        if (n != size) {
             fprintf(stderr, "%s:[%d] errmsg:[%d] %s!\n", __FILE__, __LINE__, errno, strerror(errno));
             break;
         }
@@ -100,8 +91,7 @@ void *cp_copy_routine(void *_ctx)
     CLOSE(to);
 
     ++ctx->complete;
-    if (ctx->complete == ctx->tpool->num)
-    {
+    if (ctx->complete == ctx->tpool->num) {
         exit(0);
     }
 
@@ -114,8 +104,7 @@ int main(int argc, char *argv[])
     cp_cntx_t *ctx;
     thread_pool_opt_t opt;
 
-    if (4 != argc)
-    {
+    if (4 != argc) {
         fprintf(stderr, "Paramter isn't right!\n");
         return -1;
     }
@@ -123,15 +112,13 @@ int main(int argc, char *argv[])
     //nice(-20);
 
     thd_num = atoi(argv[3]);
-    if (thd_num <= 0)
-    {
+    if (thd_num <= 0) {
         thd_num = CP_THD_NUM;
     }
 
     /* > 初始化处理 */
     ctx = (cp_cntx_t *)calloc(1, sizeof(cp_cntx_t));
-    if (NULL == ctx)
-    {
+    if (NULL == ctx) {
         fprintf(stderr, "%s:[%d] errmsg:[%d] %s!\n", __FILE__, __LINE__, errno, strerror(errno));
         return -1;
     }
@@ -139,8 +126,7 @@ int main(int argc, char *argv[])
     snprintf(ctx->src, sizeof(ctx->src), "%s", argv[1]);
     snprintf(ctx->dst, sizeof(ctx->dst), "%s", argv[2]);
 
-    if (stat(ctx->src, &ctx->fst))
-    {
+    if (stat(ctx->src, &ctx->fst)) {
         fprintf(stderr, "%s:[%d] errmsg:[%d] %s!\n", __FILE__, __LINE__, errno, strerror(errno));
         return -1;
     }
@@ -151,15 +137,13 @@ int main(int argc, char *argv[])
     opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
     ctx->tpool = thread_pool_init(thd_num, &opt, NULL);
-    if (NULL == ctx->tpool)
-    {
+    if (NULL == ctx->tpool) {
         fprintf(stderr, "%s:[%d] errmsg:[%d] %s!\n", __FILE__, __LINE__, errno, strerror(errno));
         return -1;
     }
 
     /* > 执行拷贝处理 */
-    for (idx=0; idx<thd_num; ++idx)
-    {
+    for (idx=0; idx<thd_num; ++idx) {
         thread_pool_add_worker(ctx->tpool, cp_copy_routine, ctx);
     }
 

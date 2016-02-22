@@ -38,6 +38,7 @@ int main(void)
 
     rbt = rbt_creat(&opt, (key_cb_t)key_cb_int32, (cmp_cb_t)cmp_cb_int32);
     if (NULL == rbt) {
+        return -1;
     }
 
     for (n=0; n<2; n++) {

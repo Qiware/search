@@ -15,15 +15,13 @@ int main(void)
     shm_btree_cntx_t *ctx;
 
     log = log_init(LOG_LEVEL_TRACE, "btree.log");
-    if (NULL == log)
-    {
+    if (NULL == log) {
         return -1;
     }
 
     /* > 创建B树 */
     ctx = shm_btree_creat("test.bt", BTREE_M, 32 * MB, log);
-    if (NULL == ctx)
-    {
+    if (NULL == ctx) {
         fprintf(stderr, "[%s][%d] Create btree failed!\n", __FILE__, __LINE__);
         return -1;
     }
@@ -31,8 +29,7 @@ int main(void)
     fprintf(stderr, "[%s][%d] Create btree success!\n", __FILE__, __LINE__);
 
     /* > 插入关键字 */
-    for(idx=0; idx<BTREE_NUM; idx++)
-    {
+    for(idx=0; idx<BTREE_NUM; idx++) {
         data = (int *)shm_btree_alloc(ctx, sizeof(int));
         *data = idx;
 
@@ -75,8 +72,7 @@ int main(void)
         *data = key;
 
         ret = shm_btree_insert(ctx, key, (void *)data);
-        if (0 != ret)
-        {
+        if (0 != ret) {
             fprintf(stderr, "[%s][%d] Insert failed!\n", __FILE__, __LINE__);
             break;
         }

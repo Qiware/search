@@ -23,8 +23,7 @@ void redis_test(void)
      * 带有超时的方式链接Redis服务器, 同时获取与Redis连接的上下文对象.
      * 该对象将用于其后所有与Redis操作的函数. */
     ctx = redisConnectWithTimeout(REDIS_SERVER_IP_ADDR, REDIS_SERVER_PORT, tv);
-    if (ctx->err)
-    {
+    if (ctx->err) {
         fprintf(stderr, "Connect redis server failed! ip:%s port:%d",
                 REDIS_SERVER_IP_ADDR, REDIS_SERVER_PORT);
         goto ERROR;
@@ -36,8 +35,7 @@ void redis_test(void)
     const char *command1 = "set stest2 value2";
 
     r = (redisReply *)redisCommand(ctx, command1);
-    if (NULL == r)
-    {
+    if (NULL == r) {
         fprintf(stderr, "Execute [%s] failed!", command1);
         goto ERROR;
     }
@@ -64,8 +62,7 @@ void redis_test(void)
     const char *command2 = "strlen stest1";
 
     r = (redisReply *)redisCommand(ctx, command2);
-    if (REDIS_REPLY_INTEGER != r->type)
-    {
+    if (REDIS_REPLY_INTEGER != r->type) {
         fprintf(stderr, "Execute [%s] failed!\n", command2);
         freeReplyObject(r);
         goto ERROR;
@@ -79,8 +76,7 @@ void redis_test(void)
     const char *command3 = "get stest1";
 
     r = (redisReply *)redisCommand(ctx, command3);
-    if (REDIS_REPLY_STRING != r->type)
-    {
+    if (REDIS_REPLY_STRING != r->type) {
         fprintf(stderr, "Execute [%s] failed!\n", command3);
         freeReplyObject(r);
         goto ERROR;
@@ -96,18 +92,15 @@ void redis_test(void)
     r = (redisReply *)redisCommand(ctx, command4);
     /* 这里需要先说明一下, 由于stest2键并不存在, 因此Redis会返回空结果, 
      * 这里只是为了演示. */
-    if (REDIS_REPLY_NIL == r->type)
-    {
+    if (REDIS_REPLY_NIL == r->type) {
         printf("Execute [%s] is NIL!\n", command4);
     }
-    else if (REDIS_REPLY_STRING != r->type)
-    {
+    else if (REDIS_REPLY_STRING != r->type) {
         fprintf(stderr, "Execute [%s] failed!\n", command4);
         freeReplyObject(r);
         goto ERROR;
     }
-    else
-    {
+    else {
         printf("Execute [%s] Success! Value:%s\n", command4, r->str);
     }
 
@@ -119,8 +112,7 @@ void redis_test(void)
     r = (redisReply *)redisCommand(ctx, command5);
     /* 不论stest2存在与否, Redis都会给出结果, 只是第二个值为nil.
      * 由于有多个值返回, 因为返回应答的类型是数组类型. */
-    if (REDIS_REPLY_ARRAY != r->type)
-    {
+    if (REDIS_REPLY_ARRAY != r->type) {
         fprintf(stderr, "Execute [%s] failed!\n", command5);
         freeReplyObject(r);
         /* r->elements表示子元素的数量, 不管请求的key是否存在, 
@@ -129,13 +121,11 @@ void redis_test(void)
         goto ERROR;
     }
 
-    for (i = 0; i < r->elements; ++i)
-    {
+    for (i = 0; i < r->elements; ++i) {
         redisReply* childReply = r->element[i];
         /* 之前已经介绍过, get命令返回的数据类型是string.
          * 对于不存在key的返回值, 其类型为REDIS_REPLY_NIL. */
-        if (REDIS_REPLY_STRING == childReply->type)
-        {
+        if (REDIS_REPLY_STRING == childReply->type) {
             printf("Value[%d]: %s\n", i, childReply->str);
         }
     }
@@ -153,10 +143,10 @@ void redis_test(void)
      * 有效的减少客户端与服务器之间的同步等候时间, 以及网络IO引起的延迟.
      * 至于管线的具体性能优势, 可以考虑该系列博客中的管线主题. */
     if (REDIS_OK != redisAppendCommand(ctx, command1)
-            || REDIS_OK != redisAppendCommand(ctx, command2)
-            || REDIS_OK != redisAppendCommand(ctx, command3)
-            || REDIS_OK != redisAppendCommand(ctx, command4)
-            || REDIS_OK != redisAppendCommand(ctx, command5))
+        || REDIS_OK != redisAppendCommand(ctx, command2)
+        || REDIS_OK != redisAppendCommand(ctx, command3)
+        || REDIS_OK != redisAppendCommand(ctx, command4)
+        || REDIS_OK != redisAppendCommand(ctx, command5))
     {
         fprintf(stderr, "Execute append command failed!\n");
         goto ERROR;
@@ -164,8 +154,7 @@ void redis_test(void)
 
     /* 对pipeline返回结果的处理方式, 和前面代码的处理方式完全一样, 
      * 这里就不再重复给出了. */
-    if (REDIS_OK != redisGetReply(ctx, (void **)&r))
-    {
+    if (REDIS_OK != redisGetReply(ctx, (void **)&r)) {
         fprintf(stderr, "Execute [%s] with pipeline failed!\n", command1);
         freeReplyObject(r);
         goto ERROR;
@@ -175,8 +164,7 @@ void redis_test(void)
 
     freeReplyObject(r);
 
-    if (REDIS_OK != redisGetReply(ctx, (void **)&r))
-    {
+    if (REDIS_OK != redisGetReply(ctx, (void **)&r)) {
         fprintf(stderr, "Execute [%s] with pipeline failed!\n", command2);
         freeReplyObject(r);
         goto ERROR;
@@ -186,8 +174,7 @@ void redis_test(void)
 
     freeReplyObject(r);
 
-    if (REDIS_OK != redisGetReply(ctx, (void **)&r))
-    {
+    if (REDIS_OK != redisGetReply(ctx, (void **)&r)) {
         fprintf(stderr, "Execute [%s] with pipeline failed!.\n", command3);
         freeReplyObject(r);
         goto ERROR;
@@ -196,8 +183,7 @@ void redis_test(void)
     freeReplyObject(r);
     printf("Execute [%s] with pipeline success!\n", command3);
 
-    if (REDIS_OK != redisGetReply(ctx, (void **)&r))
-    {
+    if (REDIS_OK != redisGetReply(ctx, (void **)&r)) {
         fprintf(stderr, "Execute [%s] with pipeline failed!\n", command4);
         freeReplyObject(r);
         goto ERROR;
@@ -207,8 +193,7 @@ void redis_test(void)
 
     printf("Execute [%s] with pipeline success!\n", command4);
 
-    if (REDIS_OK != redisGetReply(ctx, (void **)&r))
-    {
+    if (REDIS_OK != redisGetReply(ctx, (void **)&r)) {
         fprintf(stderr, "Execute [%s] with pipeline failed!\n", command5);
         freeReplyObject(r);
         goto ERROR;

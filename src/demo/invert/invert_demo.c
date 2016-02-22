@@ -23,14 +23,12 @@ int main(void)
 
     /* > 创建倒排表 */
     tab = invtab_creat(1024, log);
-    if (NULL == tab)
-    {
+    if (NULL == tab) {
         return -1;
     }
 
 #define INVERT_INSERT(tab, word, url, freq) \
-    if (invtab_insert(tab, word, url, freq)) \
-    { \
+    if (invtab_insert(tab, word, url, freq)) { \
         return -1; \
     }
 
@@ -59,10 +57,8 @@ int main(void)
     /* > 打印搜索结果 */
     idx = 0;
     node = word->doc_list->head;
-    for (;NULL!=node; node=node->next)
-    {
+    for (;NULL!=node; node=node->next) {
         doc = (invt_word_doc_t *)node->data;
-
         log_debug(log, "\t%d| url:%s freq:%d", ++idx, doc->url.str, doc->freq);
     }
 

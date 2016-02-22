@@ -30,8 +30,7 @@ int main(int argc, const char *argv[])
 
     memset(&conf, 0, sizeof(conf));
 
-    if (2 != argc)
-    {
+    if (2 != argc) {
         fprintf(stderr, "Didn't special port!");
         return -1;
     }
@@ -46,8 +45,7 @@ int main(int argc, const char *argv[])
 
     /* 1. 接收端初始化 */
     ctx = sdrd_init(&conf, log);
-    if (NULL == ctx)
-    {
+    if (NULL == ctx) {
         fprintf(stderr, "Initialize rcvsvr failed!");
         return SDTP_ERR;
     }
@@ -60,8 +58,7 @@ int main(int argc, const char *argv[])
 
     /* 2. 接收服务端工作 */
     ret = sdrd_launch(ctx);
-    if (0 != ret)
-    {
+    if (0 != ret) {
         fprintf(stderr, "Work failed!");
     }
 

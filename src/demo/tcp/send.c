@@ -8,13 +8,11 @@ int main(int argc, char *argv[])
     struct timeval timeout;
 
     sckid = tcp_connect(AF_INET, "127.0.0.1", atoi(argv[1]));
-    if (sckid < 0)
-    {
+    if (sckid < 0) {
         return -1;
     }
 
-    while(1)
-    {
+    while(1) {
         FD_ZERO(&wrset);
 
         FD_SET(sckid, &wrset);
@@ -25,23 +23,18 @@ int main(int argc, char *argv[])
         timeout.tv_usec = 0;
 
         ret = select(max+1, NULL, &wrset, NULL, &timeout);
-        if (ret < 0)
-        {
+        if (ret < 0) {
             if (EINTR == errno) { continue; }
             return -1;
         }
-        else if (0 == ret)
-        {
+        else if (0 == ret) {
             continue;
         }
 
-        if (FD_ISSET(sckid, &wrset))
-        {
-            while (1)
-            {
+        if (FD_ISSET(sckid, &wrset)) {
+            while (1) {
                 n = write(sckid, buff, sizeof(buff));
-                if (n < 0)
-                {
+                if (n < 0) {
                     break;
                 }
             }

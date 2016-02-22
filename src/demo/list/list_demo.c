@@ -23,11 +23,9 @@ int main(void)
 
     memset(&list, 0, sizeof(list));
 
-    for (idx=0, prev=NULL; idx<LIST_NUM; ++idx)
-    {
+    for (idx=0, prev=NULL; idx<LIST_NUM; ++idx) {
         data = (list_data_t *)calloc(1, sizeof(list_data_t));
-        if (NULL == data)
-        {
+        if (NULL == data) {
             fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
             return -1;
         }

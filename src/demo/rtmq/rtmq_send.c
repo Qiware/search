@@ -32,20 +32,17 @@ int rtmq_send_debug(rtsd_cntx_t *ctx, int secs)
     char data[SIZE];
     mesg_search_word_req_t *req;
 
-    for (;;)
-    {
+    for (;;) {
         gettimeofday(&stime, NULL);
         sleep2 = 0;
         fails = 0;
         total = 0;
-        for (idx=0; idx<LOOP; idx++)
-        {
+        for (idx=0; idx<LOOP; idx++) {
             req = (mesg_search_word_req_t *)data;
 
             snprintf(req->words, sizeof(req->words), "%s", "BAIDU");
 
-            if (rtsd_cli_send(ctx, MSG_SEARCH_WORD_REQ, req, sizeof(mesg_search_word_req_t)))
-            {
+            if (rtsd_cli_send(ctx, MSG_SEARCH_WORD_REQ, req, sizeof(mesg_search_word_req_t))) {
                 idx--;
                 usleep(2);
                 sleep2 += USLEEP*1000000;
@@ -57,8 +54,7 @@ int rtmq_send_debug(rtsd_cntx_t *ctx, int secs)
         }
 
         gettimeofday(&etime, NULL);
-        if (etime.tv_usec < stime.tv_usec)
-        {
+        if (etime.tv_usec < stime.tv_usec) {
             etime.tv_sec--;
             etime.tv_usec += 1000000;
         }
@@ -105,8 +101,7 @@ int main(int argc, const char *argv[])
     rtsd_cntx_t *ctx;
     rtsd_conf_t conf;
 
-    if (2 != argc)
-    {
+    if (2 != argc) {
         fprintf(stderr, "Didn't special port!");
         return -1;
     }
@@ -121,21 +116,18 @@ int main(int argc, const char *argv[])
     rtmq_setup_conf(&conf, port);
 
     log = log_init(LOG_LEVEL_DEBUG, "./rtmq_ssvr.log", "../temp/log.key");
-    if (NULL == log)
-    {
+    if (NULL == log) {
         fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
         return -1;
     }
 
     ctx = rtsd_init(&conf, log);
-    if (NULL == ctx) 
-    {
+    if (NULL == ctx) {
         fprintf(stderr, "Initialize send-server failed!");
         return -1;
     }
 
-    if (rtsd_launch(ctx))
-    {
+    if (rtsd_launch(ctx)) {
         fprintf(stderr, "Start up send-server failed!");
         return -1;
     }

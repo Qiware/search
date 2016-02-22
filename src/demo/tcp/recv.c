@@ -11,19 +11,15 @@ int main(int argc, char *argv[])
 
 
     lsnid = tcp_listen(atoi(argv[1]));
-    if (lsnid < 0)
-    {
+    if (lsnid < 0) {
         return -1;
     }
 
-    while(1)
-    {
+    while(1) {
         FD_ZERO(&rdset);
-
         FD_SET(lsnid, &rdset);
 
-        if (sckid > 0)
-        {
+        if (sckid > 0) {
             FD_SET(sckid, &rdset);
         }
 
@@ -33,34 +29,29 @@ int main(int argc, char *argv[])
         timeout.tv_usec = 0;
 
         ret = select(max+1, &rdset, NULL, NULL, &timeout);
-        if (ret < 0)
-        {
+        if (ret < 0) {
             if (EINTR == errno) { continue; }
             return -1;
         }
-        else if (0 == ret)
-        {
+        else if (0 == ret) {
             continue;
         }
         
 
-        if (FD_ISSET(lsnid, &rdset))
-        {
+        if (FD_ISSET(lsnid, &rdset)) {
             len = sizeof(cliaddr);
 
             sckid = accept(lsnid, (struct sockaddr *)&cliaddr, &len);
-            if (sckid < 0)
-            {
+            if (sckid < 0) {
+                frpintf(stderr, "errmsg:[%d] %s\n", errno, strerror(errno));
+                return -1;
             }
         }
 
-        if (sckid > 0 && FD_ISSET(sckid, &rdset))
-        {
-            while (1)
-            {
+        if (sckid > 0 && FD_ISSET(sckid, &rdset)) {
+            while (1) {
                 n = read(sckid, buff, sizeof(buff));
-                if (n < 0)
-                {
+                if (n < 0) {
                     break;
                 }
             }

@@ -7,17 +7,14 @@ static int _quick_sort(int *array, int low, int high)
     int v = array[high];
     int i = low, j = high;
 
-    while (i < j)
-    {
+    while (i < j) {
         while ((i < j) && (array[i] < v)) { ++i; }
-        if (i < j)
-        {
+        if (i < j) {
             array[j] = array[i];
         }
 
         while ((i < j) && (array[j] > v)) { --j; }
-        if (i < j)
-        {
+        if (i < j) {
             array[i] = array[j];
         }
     }
@@ -31,8 +28,7 @@ int quick_sort(int *array, int low, int high)
 {
     int p;
 
-    if (low < high)
-    {
+    if (low < high) {
         p = _quick_sort(array, low, high);
 
         quick_sort(array, low, p-1);
@@ -51,8 +47,7 @@ int main(int argc, void *argv[])
 
 	quick_sort(array, low, high);
 
-	for(idx=low; idx<=high; idx++)
-	{
+	for(idx=low; idx<=high; idx++) {
 		fprintf(stdout, "array[%d] = %d\n", idx, array[idx]);
 	}
 

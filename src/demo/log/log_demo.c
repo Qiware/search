@@ -19,8 +19,7 @@ log_cycle_t *demo_init_log(const char *_path)
     snprintf(path, sizeof(path), "%s.log", _path);
 
     log = log_init(level, path);
-    if (NULL == log)
-    {
+    if (NULL == log) {
         fprintf(stderr, "Init log failed! level:%d", level);
         return NULL;
     }
@@ -39,8 +38,7 @@ int main(int argc, char *argv[])
 
     log = demo_init_log(basename(argv[0]));
 
-    for (idx=0; idx<1000000; ++idx)
-    {
+    for (idx=0; idx<1000000; ++idx) {
     #if 0
         log2_error("This is just a test! [%d]", idx);
     #else

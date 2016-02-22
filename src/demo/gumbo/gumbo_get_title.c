@@ -13,8 +13,7 @@ int main(int argc, const char** argv)
     gumbo_html_t *html;
     const char *fname = argv[1], *title;
 
-    if (2 != argc)
-    {
+    if (2 != argc) {
         printf("Usage: get_title <html fname>.\n");
         exit(EXIT_FAILURE);
     }
@@ -22,15 +21,13 @@ int main(int argc, const char** argv)
     log2_init("trace", "./gettile.log");
 
     ret = gumbo_init(&ctx);
-    if (0 != ret)
-    {
+    if (0 != ret) {
         fprintf(stderr, "Init gumbo failed!");
         return -1;
     }
 
     html = gumbo_html_parse(&ctx, fname);
-    if (NULL == html)
-    {
+    if (NULL == html) {
         gumbo_destroy(&ctx);
         fprintf(stderr, "Parse html failed! [%s]", fname);
         return -1;

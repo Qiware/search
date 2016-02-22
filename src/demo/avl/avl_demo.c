@@ -103,8 +103,7 @@ int main(void)
     avl_trav(avl, (trav_cb_t)avl_trav_print, NULL);
 
     /* > 操作B树 */
-    while(1)
-    {
+    while(1) {
         memset(input, 0, sizeof(input));
     
     #if defined(__AUTO_INPUT__)
@@ -136,8 +135,7 @@ int main(void)
         data->id = key;
 
         ret = avl_insert(avl, &key, sizeof(key), (void *)data);
-        if (0 != ret)
-        {
+        if (0 != ret) {
             fprintf(stderr, "[%s][%d] Insert failed!\n", __FILE__, __LINE__);
             break;
         }

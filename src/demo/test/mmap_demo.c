@@ -27,14 +27,12 @@ int main(int argc, char *argv[])
 {
     int opt;
 
-    if (2 != argc)
-    {
+    if (2 != argc) {
         return -1;
     }
 
     opt = atoi(argv[1]);
-    switch (opt)
-    {
+    switch (opt) {
         case 1:
         default:
         {
@@ -68,18 +66,15 @@ int _fwrite(const char *fname, size_t num)
     slot_data_t data;
 
     fd = open(fname, O_CREAT|O_RDWR, 0666);
-    if (fd < 0)
-    {
+    if (fd < 0) {
         fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
         return -1;
     }
 
-    for (idx=0; idx<num; ++idx)
-    {
+    for (idx=0; idx<num; ++idx) {
         data.id = idx;
         n = write(fd, &data, sizeof(data));
-        if (n != sizeof(data))
-        {
+        if (n != sizeof(data)) {
             fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
             break;
         }
@@ -98,8 +93,7 @@ int  _fread(const char *fname, size_t num)
     slot_data_t data;
 
     fd = open(fname, O_RDONLY);
-    if (fd < 0)
-    {
+    if (fd < 0) {
         fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
         return -1;
     }
@@ -109,13 +103,11 @@ int  _fread(const char *fname, size_t num)
     total = st.st_size / sizeof(data);
     off = total/num * sizeof(data);
 
-    for (idx=0; idx<num; ++idx)
-    {
+    for (idx=0; idx<num; ++idx) {
         lseek(fd, st.st_size - off * (idx + 1), SEEK_SET);
 
         n = read(fd, &data, sizeof(data));
-        if (n != sizeof(data))
-        {
+        if (n != sizeof(data)) {
             fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
             break;
         }
@@ -136,21 +128,18 @@ int  _fread2(const char *fname, size_t num)
     slot_data_t data;
 
     fd = open(fname, O_RDONLY);
-    if (fd < 0)
-    {
+    if (fd < 0) {
         fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
         return -1;
     }
 
     fstat(fd, &st);
 
-    for (idx=0; idx<num; ++idx)
-    {
+    for (idx=0; idx<num; ++idx) {
         lseek(fd, st.st_size - sizeof(data) * (idx + 1), SEEK_SET);
 
         n = read(fd, &data, sizeof(data));
-        if (n != sizeof(data))
-        {
+        if (n != sizeof(data)) {
             fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
             break;
         }
@@ -172,8 +161,7 @@ int  _mmap(const char *fname, size_t num)
     slot_data_t data;
 
     fd = open(fname, O_RDONLY);
-    if (fd < 0)
-    {
+    if (fd < 0) {
         fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
         return -1;
     }
@@ -185,8 +173,7 @@ int  _mmap(const char *fname, size_t num)
     total = st.st_size / sizeof(data);
     off = total/num * sizeof(data);
 
-    for (idx=0; idx<num; ++idx)
-    {
+    for (idx=0; idx<num; ++idx) {
         memcpy(&data, addr + st.st_size - off * (idx + 1), sizeof(data));
     }
 
@@ -205,8 +192,7 @@ int  _mmap2(const char *fname, size_t num)
     slot_data_t data;
 
     fd = open(fname, O_RDONLY);
-    if (fd < 0)
-    {
+    if (fd < 0) {
         fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
         return -1;
     }
@@ -215,8 +201,7 @@ int  _mmap2(const char *fname, size_t num)
 
     addr = mmap(NULL, st.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
 
-    for (idx=0; idx<num; ++idx)
-    {
+    for (idx=0; idx<num; ++idx) {
         memcpy(&data, addr + st.st_size - sizeof(data) * (idx + 1), sizeof(data));
     }
 

@@ -14,23 +14,20 @@ int main(int argc, char *argv[])
     char *pat;
     char input[256];
 
-    if (2 != argc)
-    {
+    if (2 != argc) {
         fprintf(stderr, "Arugment number isn't right!");
         return -1;
     }
 
     pat = argv[1];
     kmp = kmp_creat(pat, strlen(pat));
-    if (NULL == kmp)
-    {
+    if (NULL == kmp) {
         return -1;
     }
 
     kmp_print(kmp);
 
-    while (1)
-    {
+    while (1) {
         fprintf(stdout, "Pattern: %s\n", kmp->p);
         fprintf(stdout, "Input string:");
         scanf(" %s", input);

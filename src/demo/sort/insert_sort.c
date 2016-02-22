@@ -2,13 +2,11 @@ int insert_sort(int *array, int num)
 {
 	int i=0, j=0;
 
-	for(j=2; j<num-1; j++)
-	{
+	for (j=2; j<num-1; j++) {
 		i = j-1;
 		array[0] = array[j];
 
-		while(array[i] < array[0])
-		{
+		while (array[i] < array[0]) {
 			array[i+1] = array[i];
 			i--;
 		}
@@ -27,8 +25,7 @@ int main(int argc, void *argc)
 
 	insert_sort(array, ARRAY_NUM);
 
-	for(idx=1; idx<ARRAY_NUM; idx++)
-	{
+	for (idx=1; idx<ARRAY_NUM; idx++) {
 		fprintf(stdout, "array[%d] = %d\n", idx, array[idx]);
 	}
 

@@ -33,8 +33,7 @@ log_cycle_t *demo_init_log(const char *_path)
     snprintf(path, sizeof(path), "%s.log", _path);
 
     log = log_init(level, path);
-    if (NULL == log)
-    {
+    if (NULL == log) {
         fprintf(stderr, "Init log failed! level:%d", level);
         return NULL;
     }
@@ -55,17 +54,14 @@ void *shm_queue_push_routine(void *str)
     snprintf(path, sizeof(path), "%s.key", (const char *)str);
 
     queue = shm_queue_attach(path);
-    if (NULL == queue)
-    {
+    if (NULL == queue) {
         fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
         return (void *)-1;
     }
 
-    for (idx=0; idx<max; ++idx)
-    {
+    for (idx=0; idx<max; ++idx) {
         addr = shm_queue_malloc(queue, sizeof(queue_header_t));
-        if (NULL == addr)
-        {
+        if (NULL == addr) {
             usleep(0);
             continue;
         }
@@ -88,24 +84,20 @@ void *shm_queue_pop_routine(void *q)
     queue_header_t *head;
     shm_queue_t *queue = (shm_queue_t *)q;
 
-    while (1)
-    {
+    while (1) {
         addr = shm_queue_pop(queue);
-        if (NULL == addr)
-        {
+        if (NULL == addr) {
             continue;
         }
 
         head = (queue_header_t *)addr;
-        if (QUEUE_CHECK_SUM != head->check)
-        {
+        if (QUEUE_CHECK_SUM != head->check) {
             abort();
         }
         //fprintf(stdout, "seq:%d\n", head->seq);
 
         shm_queue_dealloc(queue, addr);
-        if (++idx == max)
-        {
+        if (++idx == max) {
             exit(0);
         }
     }
@@ -123,8 +115,7 @@ int shm_queue_test(int argc, char *argv[], log_cycle_t *log)
     snprintf(path, sizeof(path), "%s.key", basename(argv[0]));
 
     queue = shm_queue_creat(path, QUEUE_LEN, sizeof(queue_header_t));
-    if (NULL == queue)
-    {
+    if (NULL == queue) {
         fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
         return -1;
     }
@@ -148,11 +139,9 @@ void *sig_queue_push_routine(void *_queue)
 
     queue = (sig_queue_t *)_queue;
 
-    for (idx=0; idx<max; ++idx)
-    {
+    for (idx=0; idx<max; ++idx) {
         addr = sig_queue_malloc(queue, sizeof(queue_header_t));
-        if (NULL == addr)
-        {
+        if (NULL == addr) {
             continue;
         }
 
@@ -174,25 +163,21 @@ void *sig_queue_pop_routine(void *q)
     queue_header_t *head;
     sig_queue_t *queue = (sig_queue_t *)q;
 
-    while (1)
-    {
+    while (1) {
         addr = sig_queue_pop(queue);
-        if (NULL == addr)
-        {
+        if (NULL == addr) {
             continue;
         }
 
         head = (queue_header_t *)addr;
-        if (QUEUE_CHECK_SUM != head->check)
-        {
+        if (QUEUE_CHECK_SUM != head->check) {
             abort();
         }
 
         //fprintf(stdout, "seq:%d\n", head->seq);
 
         sig_queue_dealloc(queue, addr);
-        if (++idx == max)
-        {
+        if (++idx == max) {
             exit(0);
         }
     }
@@ -206,8 +191,7 @@ int sig_queue_test(int argc, char *argv[], log_cycle_t *log)
     sig_queue_t *queue;
 
     queue = sig_queue_creat(QUEUE_LEN, sizeof(queue_header_t));
-    if (NULL == queue)
-    {
+    if (NULL == queue) {
         fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
         return -1;
     }
@@ -227,8 +211,7 @@ int main(int argc, char *argv[])
 
     /* > 初始化日志模块 */
     log = demo_init_log(basename(argv[0]));
-    if (NULL == log)
-    {
+    if (NULL == log) {
         return -1;
     }
 
