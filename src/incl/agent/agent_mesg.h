@@ -17,4 +17,21 @@ typedef struct
     uint64_t serial;                        /* 流水号 */
 } agent_header_t;
 
+/* 字节序转换 */
+#define agent_head_hton(h, n) do { /* 主机->网络 */\
+    (n)->type = htonl((h)->type); \
+    (n)->flag = htonl((h)->flag); \
+    (n)->length = htonl((h)->length); \
+    (n)->mark = htonl((h)->mark); \
+    (n)->serial = hton64((h)->serial); \
+} while(0)
+
+#define agent_head_ntoh(n, h) do { /* 网络->主机*/\
+    (h)->type = ntohl((n)->type); \
+    (h)->flag = ntohl((n)->flag); \
+    (h)->length = ntohl((n)->length); \
+    (h)->mark = ntohl((n)->mark); \
+    (h)->serial = ntoh64((n)->serial); \
+} while(0)
+
 #endif /*__AGENT_MESG_H__*/
