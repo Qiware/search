@@ -44,11 +44,7 @@ static int invtd_search_word_parse(invtd_cntx_t *ctx,
     memset(&opt, 0, sizeof(opt));
 
     /* > 字节序转换 */
-    head->type = ntohl(head->type);
-    head->flag = ntohl(head->flag);
-    head->length = ntohl(head->length);
-    head->mark = ntohl(head->mark);
-    head->serial = ntoh64(head->serial);
+    agent_head_ntoh(head, head);
 
     req->serial = head->serial;
 
