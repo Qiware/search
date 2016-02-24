@@ -37,8 +37,7 @@ int lsnd_getopt(int argc, char **argv, lsnd_opt_t *opt)
 
     /* 1. 解析输入参数 */
     while (-1 != (ch = getopt_long(argc, argv, "l:c:L:hd", opts, NULL))) {
-        switch (ch)
-        {
+        switch (ch) {
             case 'c':   /* 配置路径 */
             {
                 opt->conf_path = optarg;

@@ -38,8 +38,7 @@ int invtd_getopt(int argc, char **argv, invtd_opt_t *opt)
 
     /* 1. 解析输入参数 */
     while (-1 != (ch = getopt_long(argc, argv, "c:l:L:hd", opts, NULL))) {
-        switch (ch)
-        {
+        switch (ch) {
             case 'c':   /* 指定配置文件 */
             {
                 opt->conf_path = optarg;

@@ -253,8 +253,7 @@ int xml_parse(xml_tree_t *xml, Stack_t *stack, const char *str, size_t len)
     {
         while (XmlIsIgnoreChar(*(parse.ptr))) parse.ptr++;    /* 跳过无意义的字符 */
 
-        switch(*(parse.ptr))
-        {
+        switch(*(parse.ptr)) {
             case XML_BEGIN_FLAG:
             {
                 switch(*(parse.ptr+1))
@@ -506,8 +505,7 @@ static int xml_parse_mark(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse)
 
     /* 4. 提取标签值 */
     ret = xml_mark_has_value(parse);
-    switch(ret)
-    {
+    switch(ret) {
         case XML_HAS_VALUE:
         {
             return xml_mark_get_value(xml, stack, parse);
@@ -1141,8 +1139,7 @@ xml_node_t *xml_free_next(xml_tree_t *xml, Stack_t *stack, xml_node_t *curr)
         /* 2. 处理其下一个兄弟节点 */
         curr = top->next;
         xml_node_free_one(xml, top);
-        while (NULL == curr)     /* 所有兄弟节点已经处理完成，说明父亲节点也处理完成 */
-        {
+        while (NULL == curr) {   /* 所有兄弟节点已经处理完成，说明父亲节点也处理完成 */
             /* 3. 父亲节点出栈 */
             top = stack_pop(stack);
             if (NULL == top) {
@@ -1226,8 +1223,7 @@ int xml_delete_child(xml_tree_t *xml, xml_node_t *node, xml_node_t *child)
 /* 打印节点名长度(注: XML有层次格式) */
 #define xml_node_name_len(node, depth, len) \
 { \
-    while (depth > 1) \
-    { \
+    while (depth > 1) { \
         /*fprintf(fp, "\t");*/ \
         len++; \
         depth--; \
@@ -1239,8 +1235,7 @@ int xml_delete_child(xml_tree_t *xml, xml_node_t *node, xml_node_t *child)
 /* 打印属性节点长度(注: XML有层次格式) */
 #define xml_node_attr_len(node, len) \
 { \
-    while (NULL != node->temp) \
-    { \
+    while (NULL != node->temp) { \
         if (xml_is_attr(node->temp)) { \
             /*fprintf(fp, " %s=\"%s\"", node->temp->name, node->temp->value);*/ \
             len += (node->temp->name.len + node->temp->value.len + 4); \
@@ -1311,8 +1306,7 @@ static xml_node_t *xml_node_next_len(
     if (xml_has_child(top)) {
         depth = stack_depth(stack);
         level = depth - 1;
-        while (level > 1)
-        {
+        while (level > 1) {
             /* fprintf(fp, "\t"); */
             len2++;
             level--;
@@ -1335,8 +1329,7 @@ static xml_node_t *xml_node_next_len(
 
     /* 2. 处理其下一个兄弟节点 */
     node = top->next;
-    while (NULL == node)     /* 所有兄弟节点已经处理完成，说明父亲节点也处理完成 */
-    {
+    while (NULL == node) {   /* 所有兄弟节点已经处理完成，说明父亲节点也处理完成 */
         /* 3. 父亲节点出栈 */
         top = stack_pop(stack);
         if (NULL == top) {
@@ -1349,8 +1342,7 @@ static xml_node_t *xml_node_next_len(
         if (xml_has_child(top)) {
             depth = stack_depth(stack);
             level = depth + 1;
-            while (level > 1)
-            {
+            while (level > 1) {
                 /* fprintf(fp, "\t"); */
                 len2++;
                 level--;
@@ -1484,8 +1476,7 @@ static int xml_esc_size(const xml_esc_split_t *sp)
     int size = 0;
     xml_esc_node_t *node = sp->head;
     
-    while (NULL != node)
-    {
+    while (NULL != node) {
         size = node->len;
         node = node->next;
     }
@@ -1509,8 +1500,7 @@ static int xml_esc_merge(const xml_esc_split_t *sp, char *dst)
     char *ptr = dst;
     xml_esc_node_t *fnode = sp->head;
 
-    while (NULL != fnode)
-    {
+    while (NULL != fnode) {
         sprintf(ptr, "%s", fnode->str);
         ptr += fnode->len;
         fnode = fnode->next;
@@ -1535,8 +1525,7 @@ static int xml_esc_free(xml_tree_t *xml, xml_esc_split_t *split)
     xml_esc_node_t *node, *next;
 
     node = split->head;
-    while (NULL != node)
-    {
+    while (NULL != node) {
         next = node->next;
         xml->dealloc(xml->pool, node->str);
         xml->dealloc(xml->pool, node);

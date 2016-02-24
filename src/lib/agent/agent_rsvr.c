@@ -95,8 +95,7 @@ static int agt_rsvr_recv_cmd_hdl(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t
         }
 
         /* > 处理命令 */
-        switch (cmd.type)
-        {
+        switch (cmd.type) {
             case CMD_ADD_SCK:
             {
                 if (agent_rsvr_add_conn(ctx, rsvr)) {
@@ -829,8 +828,7 @@ static int agent_recv_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
     agent_socket_extra_t *extra = (agent_socket_extra_t *)sck->extra;
 
     for (;;) {
-        switch (recv->phase)
-        {
+        switch (recv->phase) {
             /* 1. 分配空间 */
             case SOCK_PHASE_RECV_INIT:
             {
@@ -861,8 +859,7 @@ static int agent_recv_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
             {
             RECV_HEAD:
                 ret = agent_recv_head(ctx, rsvr, sck);
-                switch (ret)
-                {
+                switch (ret) {
                     case AGENT_OK:
                     {
                         extra->flow = (agent_flow_t *)recv->addr;
@@ -876,8 +873,7 @@ static int agent_recv_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
                         if (extra->head->length) {
                             recv->phase = SOCK_PHASE_READY_BODY; /* 设置下步 */
                         }
-                        else
-                        {
+                        else {
                             recv->phase = SOCK_PHASE_RECV_POST; /* 设置下步 */
                             goto RECV_POST;
                         }
@@ -913,8 +909,7 @@ static int agent_recv_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
             {
             RECV_BODY:
                 ret = agent_recv_body(rsvr, sck);
-                switch (ret)
-                {
+                switch (ret) {
                     case AGENT_OK:
                     {
                         recv->phase = SOCK_PHASE_RECV_POST; /* 设置下步 */
@@ -940,8 +935,7 @@ static int agent_recv_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
             RECV_POST:
                 /* 将数据放入接收队列 */
                 ret = agent_recv_post_hdl(ctx, rsvr, sck);
-                switch (ret)
-                {
+                switch (ret) {
                     case AGENT_OK:
                     {
                         recv->phase = SOCK_PHASE_RECV_INIT;

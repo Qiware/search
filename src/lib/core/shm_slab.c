@@ -735,8 +735,7 @@ void shm_slab_dealloc(shm_slab_pool_t *pool, void *p)
     start = (addr + pool->data_offset) + (page_idx << shm_slab_page_shift());
     page = (shm_slab_page_t *)(addr + pool->page_offset
                                     + page_idx * sizeof(shm_slab_page_t));
-    switch(page->type)
-    {
+    switch(page->type) {
         case SHM_SLAB_ALLOC_SMALL:
         {
             bit_idx = (p - start) >> page->shift;

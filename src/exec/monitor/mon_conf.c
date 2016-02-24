@@ -28,8 +28,7 @@ static int mon_conf_load_menu(xml_tree_t *xml, mon_conf_t *conf)
     if (NULL == node) {
         conf->menu.width = MON_MENU_WIDTH;
     }
-    else
-    {
+    else {
         conf->menu.width = atoi(node->value.str);
     }
 
@@ -92,8 +91,7 @@ mon_conf_t *mon_conf_load(const char *path)
         return NULL;
     }
 
-    do
-    {
+    do {
         /* > 加载XML树 */
         memset(&opt, 0, sizeof(opt));
 

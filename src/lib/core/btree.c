@@ -269,8 +269,7 @@ static int btree_split(btree_t *btree, btree_node_t *node)
                     parent->data[idx] = parent->data[idx-1];
                     parent->child[idx+1] = parent->child[idx];
                 }
-                else
-                {
+                else {
                     parent->key[idx] = node->key[sep_idx];
                     parent->data[idx] = node->data[sep_idx];
                     parent->child[idx+1] = node2;
@@ -600,8 +599,7 @@ void _btree_print(const btree_node_t *node, int deep)
         }
 
         fprintf(stderr, "</%d| ", node->num);
-        for (idx=0; idx<node->num; idx++)
-        {
+        for (idx=0; idx<node->num; idx++) {
             fprintf(stderr, "%d ", node->key[idx]);
         }
 

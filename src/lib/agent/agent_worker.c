@@ -231,8 +231,7 @@ static int agent_worker_event_handler(agent_cntx_t *ctx, agent_worker_t *worker)
     }
 
     /* > 进行命令处理 */
-    switch (cmd.type)
-    {
+    switch (cmd.type) {
         case CMD_PROC_DATA:
         {
             return agent_worker_proc_data_hdl(ctx, worker);

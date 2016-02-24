@@ -58,10 +58,8 @@ void *flt_sched_routine(void *_ctx)
         }
 
         /* > 遍历文件 */
-        while (NULL != (item = readdir(dir)))
-        {
+        while (NULL != (item = readdir(dir))) {
             snprintf(fname, sizeof(fname), "%s/%s", path, item->d_name);
-
             /* > 判断文件类型 */
             stat(fname, &st);
             if (!S_ISREG(st.st_mode)) {

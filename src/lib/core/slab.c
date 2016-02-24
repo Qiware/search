@@ -218,8 +218,7 @@ void *slab_alloc(slab_pool_t *pool, size_t size)
 
     if (page->next != page) {
         if (shift < slab_get_exact_shift()) {
-            do
-            {
+            do {
                 p = (page - pool->pages) << slab_get_page_shift();
                 bitmap = (uintptr_t *) (pool->start + p);
 
@@ -428,8 +427,7 @@ void slab_dealloc(slab_pool_t *pool, void *p)
     slab = page->slab;
     type = page->prev & SLAB_PAGE_MASK;
 
-    switch (type)
-    {
+    switch (type) {
         case SLAB_SMALL:
         {
             shift = slab & SLAB_SHIFT_MASK;

@@ -250,8 +250,7 @@ static int crwl_task_parse(const char *str, crwl_task_t *task, log_cycle_t *log)
     }
 
     task->type = atoi(node->value.str);
-    switch(task->type)
-    {
+    switch(task->type) {
         case CRWL_TASK_DOWN_WEBPAGE:
         {
             task->length = sizeof(crwl_task_t) + sizeof(crwl_task_down_webpage_t);
@@ -364,8 +363,7 @@ static int crwl_sched_download_webpage_task_hdl(
  ******************************************************************************/
 static int crwl_sched_task_hdl(crwl_cntx_t *ctx, queue_t *workq, crwl_task_t *task)
 {
-    switch (task->type)
-    {
+    switch (task->type) {
         case CRWL_TASK_DOWN_WEBPAGE:
         {
             return crwl_sched_download_webpage_task_hdl(ctx, workq, task);

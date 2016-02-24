@@ -42,10 +42,8 @@ static int mon_getopt(int argc, char **argv, mon_opt_t *opt)
     opt->conf_path = MON_DEF_CONF_PATH;
 
     /* 1. 解析输入参数 */
-    while (-1 != (ch = getopt(argc, argv, "c:hd")))
-    {
-        switch (ch)
-        {
+    while (-1 != (ch = getopt(argc, argv, "c:hd"))) {
+        switch (ch) {
             case 'c':   /* 指定配置文件 */
             {
                 opt->conf_path = optarg;
@@ -109,22 +107,19 @@ int main(int argc, char *argv[])
     signal(SIGPIPE, SIG_IGN);
 
     /* > 解析输入参数 */
-    if (mon_getopt(argc, argv, &opt))
-    {
+    if (mon_getopt(argc, argv, &opt)) {
         return mon_usage(argv[0]);
     }
 
     /* > 初始化全局信息 */
     ctx = mon_init(opt.conf_path);
-    if (NULL == ctx)
-    {
+    if (NULL == ctx) {
         fprintf(stderr, "Initialize monitor failed!\n");
         return -1;
     }
 
     /* > 启动菜单模块 */
-    if (menu_run(ctx->menu))
-    {
+    if (menu_run(ctx->menu)) {
         fprintf(stderr, "Startup menu failed!\n");
         return -1;
     }
@@ -149,16 +144,14 @@ static mon_cntx_t *mon_init(const char *path)
 
     /* > 创建全局对象 */
     ctx = (mon_cntx_t *)calloc(1, sizeof(mon_cntx_t));
-    if (NULL == ctx)
-    {
+    if (NULL == ctx) {
         fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
         return NULL;
     }
 
     /* > 加载配置信息 */
     ctx->conf = mon_conf_load(path);
-    if (NULL == ctx->conf)
-    {
+    if (NULL == ctx->conf) {
         fprintf(stderr, "Load configuration failed!\n");
         free(ctx);
         return NULL;
@@ -166,8 +159,7 @@ static mon_cntx_t *mon_init(const char *path)
 
     /* > 加载子菜单 */
     ctx->menu = mon_menu_init(ctx);
-    if (NULL == ctx->menu)
-    {
+    if (NULL == ctx->menu) {
         fprintf(stderr, "Load menu failed!\n");
         free(ctx);
         return NULL;
@@ -175,8 +167,7 @@ static mon_cntx_t *mon_init(const char *path)
 
     /* > 创建通信套接字 */
     ctx->fd = socket(AF_INET, SOCK_DGRAM, 0);
-    if (ctx->fd < 0)
-    {
+    if (ctx->fd < 0) {
         fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
         free(ctx);
         return NULL;
@@ -206,8 +197,7 @@ static menu_cntx_t *mon_menu_init(mon_cntx_t *ctx)
 
     /* > 初始化菜单 */
     menu_ctx = menu_init("Monitor System", &ctx->conf->menu);
-    if (NULL == menu_ctx)
-    {
+    if (NULL == menu_ctx) {
         fprintf(stderr, "Init menu context failed!\n");
         return NULL;
     }

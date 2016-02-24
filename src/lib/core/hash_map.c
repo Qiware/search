@@ -80,8 +80,7 @@ hash_map_t *hash_map_creat(int len, key_cb_t key_cb, cmp_cb_t cmp_cb, hash_map_o
 /* 设置回调函数 */
 static int hash_map_set_cb(hash_map_t *htab, hash_map_opt_t *opt)
 {
-    switch (opt->type)
-    {
+    switch (opt->type) {
         case HASH_MAP_AVL:
         default:
         {
@@ -122,8 +121,7 @@ static int hash_map_set_cb(hash_map_t *htab, hash_map_opt_t *opt)
 static int hash_map_init_elem(
     hash_map_t *htab, int idx, key_cb_t key_cb, cmp_cb_t cmp_cb, hash_map_opt_t *opt)
 {
-    switch (opt->type)
-    {
+    switch (opt->type) {
         case HASH_MAP_AVL:
         default:
         {

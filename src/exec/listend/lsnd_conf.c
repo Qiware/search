@@ -36,8 +36,7 @@ int lsnd_load_conf(const char *path, lsnd_conf_t *conf, log_cycle_t *log)
 
     memset(conf, 0, sizeof(lsnd_conf_t));
 
-    do
-    {
+    do {
         /* > 构建XML树 */
         memset(&opt, 0, sizeof(opt));
 
@@ -224,8 +223,7 @@ static int lsnd_conf_parse_agent_queue(xml_tree_t *xml, agent_conf_t *conf, log_
     xml_node_t *node, *fix;
 
     /* 加载队列信息 */
-#define LSND_LOAD_QUEUE(xml, fix,  _path, conf) \
-    {\
+#define LSND_LOAD_QUEUE(xml, fix,  _path, conf) {\
         char node_path[FILE_PATH_MAX_LEN]; \
         \
         snprintf(node_path, sizeof(node_path), "%s.MAX", _path); \

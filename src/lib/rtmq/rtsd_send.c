@@ -414,7 +414,7 @@ int rtsd_cli_send(rtsd_cntx_t *ctx, int type, const void *data, size_t size)
     int idx;
     void *addr;
     rtmq_header_t *head;
-    static uint8_t num = 0;
+    static uint8_t num = 0; // 无需加锁
     rtsd_conf_t *conf = &ctx->conf;
 
     /* > 选择发送队列 */

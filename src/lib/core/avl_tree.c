@@ -258,8 +258,7 @@ static int avl_insert_right(avl_tree_t *tree, avl_node_t *node,
     }
 
     /* 右增高: 进行平衡化处理 */
-    switch(node->bf)
-    {
+    switch(node->bf) {
         case AVL_LH:    /* 左高: 右子树增高 不会导致失衡 */
         {
             node->bf = AVL_EH;
@@ -334,8 +333,7 @@ static int avl_insert_left(avl_tree_t *tree, avl_node_t *node,
     }
 
     /* 左增高: 进行平衡化处理 */
-    switch(node->bf)
-    {
+    switch(node->bf) {
         case AVL_RH:    /* 右高: 左子树增高 不会导致失衡 */
         {
             node->bf = AVL_EH;
@@ -427,8 +425,7 @@ int avl_rl_balance(avl_tree_t *tree, avl_node_t *node)
         *parent = node->parent, *rlchild = NULL;
 
     rlchild = rchild->lchild;
-    switch(rlchild->bf)
-    {
+    switch(rlchild->bf) {
         case AVL_LH:
         {
             node->bf = AVL_EH;
@@ -501,8 +498,7 @@ static int avl_right_balance(avl_tree_t *tree, avl_node_t *node)
 {
     avl_node_t *rchild = node->rchild;
 
-    switch(rchild->bf)
-    {
+    switch(rchild->bf) {
         case AVL_RH:    /* 场景1: RR型 - 向左旋转 */
         {
             return avl_rr_balance(tree, node);
@@ -596,8 +592,7 @@ int avl_lr_balance(avl_tree_t *tree, avl_node_t *node)
 
 
     lrchild = lchild->rchild;
-    switch(lrchild->bf)
-    {
+    switch(lrchild->bf) {
         case AVL_LH:
         {
             node->bf = AVL_RH;
@@ -670,8 +665,7 @@ int avl_left_balance(avl_tree_t *tree, avl_node_t *node)
 {
     avl_node_t *lchild = node->lchild;
 
-    switch(lchild->bf)
-    {
+    switch(lchild->bf) {
         case AVL_LH:    /* 场景1: LL型 */
         {
             return avl_ll_balance(tree, node);
@@ -989,8 +983,7 @@ int avl_delete_left_balance(avl_tree_t *tree, avl_node_t *node, bool *lower)
 {
     avl_node_t *rchild = NULL, *rlchild = NULL, *parent = node->parent;
 
-    switch(node->bf)
-    {
+    switch(node->bf) {
         case AVL_LH:    /* 左高: 左子树高度减1 树变矮 */
         {
             node->bf = AVL_EH;
@@ -1006,8 +999,7 @@ int avl_delete_left_balance(avl_tree_t *tree, avl_node_t *node, bool *lower)
         case AVL_RH:    /* 右高: 左子树高度减1 树失去平衡 */
         {
             rchild = node->rchild;
-            switch(rchild->bf)
-            {
+            switch(rchild->bf) {
                 case AVL_EH:    /* RR型: 向左旋转 */
                 case AVL_RH:    /* RR型: 向左旋转 */
                 {
@@ -1034,8 +1026,7 @@ int avl_delete_left_balance(avl_tree_t *tree, avl_node_t *node, bool *lower)
                 {
                     *lower = true;
                     rlchild = rchild->lchild;
-                    switch(rlchild->bf)
-                    {
+                    switch(rlchild->bf) {
                         case AVL_LH:
                         {
                             node->bf = AVL_EH;
@@ -1097,8 +1088,7 @@ int avl_delete_right_balance(avl_tree_t *tree, avl_node_t *node, bool *lower)
 {
     avl_node_t *lchild = NULL, *lrchild = NULL, *parent = node->parent;
 
-    switch(node->bf)
-    {
+    switch(node->bf) {
         case AVL_LH:    /* 左高: 右子树高度减1 树失去平衡 */
         {
             lchild = node->lchild;
@@ -1131,8 +1121,7 @@ int avl_delete_right_balance(avl_tree_t *tree, avl_node_t *node, bool *lower)
                 {
                     *lower = true;
                     lrchild = lchild->rchild;
-                    switch(lrchild->bf)
-                    {
+                    switch(lrchild->bf) {
                         case AVL_LH:
                         {
                             node->bf = AVL_RH;

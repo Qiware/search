@@ -153,8 +153,7 @@ int ring_mpop(ring_t *rq, void **addr, unsigned int num)
     unsigned int cons_head, cons_next, prod_tail, i;
 
     /* > 申请队列空间 */
-    do
-    {
+    do {
         cons_head = rq->cons.head;
         prod_tail = rq->prod.tail;
 

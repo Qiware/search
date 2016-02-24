@@ -270,8 +270,7 @@ int log_get_level(const char *level_str)
  ******************************************************************************/
 const char *log_get_str(int level)
 {
-    switch (level)
-    {
+    switch (level) {
         case LOG_LEVEL_FATAL:
         {
             return LOG_LEVEL_FATAL_STR;
@@ -594,8 +593,7 @@ static int log_write(log_cycle_t *log, int level,
     addr = (char *)(lc + 1) + lc->ioff;
     left = log_get_data_size() - lc->ioff;
 
-    switch (level)
-    {
+    switch (level) {
         case LOG_LEVEL_FATAL:
         {
             /* @进程号|YYYYMMDD|HH:MM:SS.MM|级别提示 日志内容 */
@@ -853,8 +851,7 @@ static size_t _log_sync(log_cache_t *lc, int *_fd)
     fd = (NULL != _fd)? *_fd : INVALID_FD;
 
     /* 撰写日志文件 */
-    do
-    {
+    do {
         /* 3. 文件是否存在 */
         if (lstat(lc->path, &fstat) < 0) {
             if (ENOENT != errno) {

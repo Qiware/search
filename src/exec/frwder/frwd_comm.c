@@ -49,10 +49,8 @@ int frwd_getopt(int argc, char **argv, frwd_opt_t *opt)
     opt->log_level = LOG_LEVEL_TRACE;
 
     /* 1. 解析输入参数 */
-    while (-1 != (ch = getopt_long(argc, argv, "n:l:L:hd", opts, NULL)))
-    {
-        switch (ch)
-        {
+    while (-1 != (ch = getopt_long(argc, argv, "n:l:L:hd", opts, NULL))) {
+        switch (ch) {
             case 'c':   /* 配置路径 */
             {
                 opt->conf_path = optarg;
@@ -141,17 +139,24 @@ frwd_cntx_t *frwd_init(const frwd_conf_t *conf, log_cycle_t *log)
 
     do {
         /* > 创建命令套接字 */
-        snprintf(path, sizeof(path), "../temp/frwder/cmd.usck");
+        snprintf(path, sizeof(path), FRWD_CMD_PATH);
 
         frwd->cmd_sck_id = unix_udp_creat(path);
         if (frwd->cmd_sck_id < 0) {
-            fprintf(stderr, "Create unix udp failed! path:%s\n", path);
+            fprintf(stderr, "errmsg:[%d] %s! path:%s\n", errno, strerror(errno), path);
             break;
         }
 
         /* > 初始化发送服务 */
         frwd->rtmq = rtsd_init(&conf->conn_invtd, frwd->log);
         if (NULL == frwd->rtmq) {
+            log_fatal(frwd->log, "Initialize send-server failed!");
+            break;
+        }
+
+        /* > 初始化接收服务 */
+        frwd->recv_lsnd = rtrd_init(&conf->recv_lsnd, frwd->log);
+        if (NULL == frwd->recv_lsnd) {
             log_fatal(frwd->log, "Initialize send-server failed!");
             break;
         }

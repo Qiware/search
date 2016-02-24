@@ -120,8 +120,7 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker, int id)
         return CRWL_ERR;
     }
 
-    do
-    {
+    do {
         /* > 创建SCK链表 */
         memset(&opt, 0, sizeof(opt));
 
@@ -246,8 +245,7 @@ int crwl_worker_recv_data(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t *sck
 
     sck->rdtm = time(NULL);
 
-    while (1)
-    {
+    while (1) {
         left = sck->recv.total - sck->recv.off;
 
         n = read(sck->fd, sck->recv.addr + sck->recv.off, left);
@@ -330,8 +328,7 @@ int crwl_worker_send_data(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t *sck
 
     sck->wrtm = time(NULL);
 
-    while (1)
-    {
+    while (1) {
         /* 1. 从发送列表取数据 */
         if (!sck->send.addr) {
             info = (crwl_data_info_t *)list_lpop(extra->send_list);
@@ -518,8 +515,7 @@ void *crwl_worker_routine(void *_ctx)
         return (void *)-1;
     }
 
-    while (1)
-    {
+    while (1) {
         /* 2. 获取爬虫任务 */
         crwl_worker_fetch_task(ctx, worker);
 
@@ -651,8 +647,7 @@ int crwl_worker_remove_sock(crwl_worker_t *worker, socket_t *sck)
     CLOSE(sck->fd);
 
     /* >> 释放发送链表 */
-    while (1)
-    {
+    while (1) {
         p = list_lpop(extra->send_list);
         if (NULL == p) {
             break;
@@ -692,8 +687,7 @@ int crwl_worker_add_http_get_req(crwl_worker_t *worker, socket_t *sck, const cha
     crwl_data_info_t *info;
     crwl_worker_socket_extra_t *extra = (crwl_worker_socket_extra_t *)sck->extra;
 
-    do
-    {
+    do {
         /* > 新建HTTP GET请求 */
         p = (void *)calloc(1, sizeof(crwl_data_info_t) + HTTP_GET_REQ_STR_LEN);
         if (NULL == p) {

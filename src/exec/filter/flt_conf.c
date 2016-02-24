@@ -112,8 +112,7 @@ static int _flt_conf_load(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *log)
         work->num = FLT_THD_DEF_NUM;
         log_warn(log, "Set thread number: %d!", work->num);
     }
-    else
-    {
+    else {
         work->num = atoi(node->value.str);
     }
 
@@ -371,8 +370,7 @@ static int flt_conf_load_seed(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *lo
             seed->depth = 0;
             log_info(log, "Didn't set depth of uri!");
         }
-        else
-        {
+        else {
             seed->depth = atoi(node->value.str);
         }
 

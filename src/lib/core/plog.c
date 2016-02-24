@@ -163,8 +163,7 @@ static int plog_write(plog_cycle_t *log, int level,
 
     local_time(&ctm->time, &loctm);      /* 获取当前系统时间 */
 
-    switch (level)
-    {
+    switch (level) {
         case LOG_LEVEL_FATAL:
         {
             /* @进程号|YYYYMMDD|HH:MM:SS.MM|级别提示 日志内容 */

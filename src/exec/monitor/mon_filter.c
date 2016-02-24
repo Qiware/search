@@ -217,8 +217,7 @@ static int mon_flt_add_seed_print(flt_cmd_t *cmd)
 
     /* 显示结果 */
     rsp->stat = ntohl(rsp->stat);
-    switch (rsp->stat)
-    {
+    switch (rsp->stat) {
         case FLT_CMD_ADD_SEED_STAT_SUCC:
         {
             fprintf(stderr, "    Add seed success!\n");
@@ -362,8 +361,7 @@ static int mon_flt_query_table_stat_print(flt_cmd_t *cmd)
     fprintf(stderr, "    ----------------------------------------------\n");
 
     num = ntohl(stat->num);
-    for (idx=0; idx<num; ++idx)
-    {
+    for (idx=0; idx<num; ++idx) {
         fprintf(stderr, "    %8d | %-16s| %-8d | %-8u\n",
                 idx+1,
                 stat->table[idx].name,

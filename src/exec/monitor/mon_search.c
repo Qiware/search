@@ -241,8 +241,7 @@ static int mon_srch_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args)
     gettimeofday(&conn.wrtm, NULL);
 
     /* 等待应答数据 */
-    while (1)
-    {
+    while (1) {
         FD_ZERO(&rdset);
 
         FD_SET(conn.fd, &rdset);
@@ -485,8 +484,7 @@ static int mon_insert_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args)
     ftime(&old_tm);
 
     /* 等待应答数据 */
-    while (1)
-    {
+    while (1) {
         FD_ZERO(&rdset);
 
         FD_SET(fd, &rdset);

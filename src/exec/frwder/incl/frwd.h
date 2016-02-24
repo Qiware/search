@@ -6,6 +6,8 @@
 #include "rtsd_ssvr.h"
 #include "frwd_conf.h"
 
+#define FRWD_CMD_PATH "../temp/frwder/cmd.usck"
+
 typedef enum
 {
     FRWD_OK                                 /* 正常 */
@@ -30,6 +32,7 @@ typedef struct
     frwd_conf_t conf;                       /* 配置信息 */
     log_cycle_t *log;                       /* 日志对象 */
     rtsd_cntx_t *rtmq;                      /* RTMQ对象 */
+    rtrd_cntx_t *recv_lsnd;                 /* 用于接收来自LSND的数据 */
 } frwd_cntx_t;
 
 int frwd_getopt(int argc, char **argv, frwd_opt_t *opt);

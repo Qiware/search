@@ -100,8 +100,7 @@ static int _crwl_conf_load(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
         worker->num = CRWL_THD_DEF_NUM;
         log_warn(log, "Set thread number: %d!", worker->num);
     }
-    else
-    {
+    else {
         worker->num = atoi(node->value.str);
     }
 

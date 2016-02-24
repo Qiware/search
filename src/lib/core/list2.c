@@ -34,8 +34,7 @@ void list2_assert(list2_t *list)
     }
 
     tail = list->head->prev;
-    while (tail != curr)
-    {
+    while (tail != curr) {
         ++num;
         curr = curr->next;
     }

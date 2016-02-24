@@ -87,10 +87,8 @@ static int mem_getopt(int argc, char **argv, mem_opt_t *opt)
     opt->log_level = LOG_LEVEL_TRACE;
 
     /* 1. 解析输入参数 */
-    while (-1 != (ch = getopt_long(argc, argv, "l:n:L:hd", opts, NULL)))
-    {
-        switch (ch)
-        {
+    while (-1 != (ch = getopt_long(argc, argv, "l:n:L:hd", opts, NULL))) {
+        switch (ch) {
             case 'd':   /* 后台运行 */
             {
                 opt->isdaemon = true;

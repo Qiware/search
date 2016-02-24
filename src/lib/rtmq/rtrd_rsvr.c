@@ -486,10 +486,8 @@ static int rtrd_rsvr_trav_send(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
 
                 /* 2. 发送缓存数据 */
                 n = writev(curr->fd, wiov_item_begin(send), wiov_item_num(send));
-                if (n < 0)
-                {
+                if (n < 0) {
                     log_error(rsvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
-
                     rtrd_rsvr_del_conn_hdl(ctx, rsvr, node);
                     return RTMQ_ERR;
                 }
@@ -1115,8 +1113,7 @@ static int rtrd_rsvr_add_conn_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtmq_cmd_
     }
 
     /* > 初始化发送IOV */
-    if (wiov_init(&sck->send, 2 * conf->sendq.max))
-    {
+    if (wiov_init(&sck->send, 2 * conf->sendq.max)) {
         log_error(rsvr->log, "Init wiov failed!");
         rtrd_rsvr_sck_free(rsvr, sck);
         return RTMQ_ERR;

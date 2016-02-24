@@ -732,8 +732,7 @@ static int _shm_btree_merge(shm_btree_cntx_t *ctx,
     }
     left->num += right->num;
 
-    for (m=mid; m<parent->num-1; m++)
-    {
+    for (m=mid; m<parent->num-1; m++) {
         parent_key[m] = parent_key[m+1];
         parent_data[m] = parent_data[m+1];
         parent_child[m+1] = parent_child[m+2];

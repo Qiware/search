@@ -186,7 +186,7 @@ GOTO_SEARCH_NO_DATA:    /* 搜索结果为空的处理 */
  **作    者: # Qifeng.zou # 2016.01.04 17:35:35 #
  ******************************************************************************/
 static int intvd_search_send_and_free(invtd_cntx_t *ctx,
-        xml_tree_t *xml, mesg_search_word_req_t *req, int dev_orig)
+        xml_tree_t *xml, mesg_search_word_req_t *req, int orig)
 {
     void *addr = NULL;
     mesg_data_t *rsp; /* 应答 */
@@ -198,8 +198,7 @@ static int intvd_search_send_and_free(invtd_cntx_t *ctx,
     body_len = xml_pack_len(xml);
     total_len = mesg_data_total(body_len);
 
-    do
-    {
+    do {
         addr = (char *)calloc(1, total_len);
         if (NULL == addr) {
             break;
@@ -210,7 +209,7 @@ static int intvd_search_send_and_free(invtd_cntx_t *ctx,
         xml_spack(xml, rsp->body);
         rsp->serial = hton64(req->serial);
 
-        if (rtrd_send(ctx->rtrd, MSG_SEARCH_WORD_RSP, dev_orig, addr, total_len)) {
+        if (rtrd_send(ctx->rtrd, MSG_SEARCH_WORD_RSP, orig, addr, total_len)) {
             log_error(ctx->log, "Send response failed! serial:%ld words:%s",
                     req->serial, req->words);
         }
@@ -227,7 +226,7 @@ static int intvd_search_send_and_free(invtd_cntx_t *ctx,
  **功    能: 处理搜索请求
  **输入参数:
  **     type: 消息类型
- **     dev_orig: 源设备ID
+ **     orig: 源设备ID
  **     buff: 搜索关键字-请求数据
  **     len: 数据长度
  **     args: 附加参数
@@ -237,7 +236,7 @@ static int intvd_search_send_and_free(invtd_cntx_t *ctx,
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.08 #
  ******************************************************************************/
-int invtd_search_word_req_hdl(int type, int dev_orig, char *buff, size_t len, void *args)
+int invtd_search_word_req_hdl(int type, int orig, char *buff, size_t len, void *args)
 {
     xml_tree_t *xml;
     mesg_search_word_req_t req; /* 请求 */
@@ -257,7 +256,7 @@ int invtd_search_word_req_hdl(int type, int dev_orig, char *buff, size_t len, vo
     }
 
     /* > 发送搜索结果&释放内存 */
-    if (intvd_search_send_and_free(ctx, xml, &req, dev_orig)) {
+    if (intvd_search_send_and_free(ctx, xml, &req, orig)) {
         log_error(ctx->log, "Search word form table failed! words:%s", req.words);
         return INVT_ERR;
     }
@@ -270,17 +269,17 @@ int invtd_search_word_req_hdl(int type, int dev_orig, char *buff, size_t len, vo
  **功    能: 插入关键字的处理
  **输入参数:
  **     type: 消息类型
- **     dev_orig: 源节点ID
+ **     orig: 源节点ID
  **     buff: 插入关键字-请求数据
  **     len: 数据长度
  **     args: 附加参数
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述:
- **注意事项: 源节点ID(dev_orig)将成为应答消息的目的节点ID(dest)
+ **注意事项: 源节点ID(orig)将成为应答消息的目的节点ID(dest)
     **作    者: # Qifeng.zou # 2015-06-17 21:37:55 #
  ******************************************************************************/
-int invtd_insert_word_req_hdl(int type, int dev_orig, char *buff, size_t len, void *args)
+int invtd_insert_word_req_hdl(int type, int orig, char *buff, size_t len, void *args)
 {
     mesg_insert_word_rsp_t rsp; /* 应答 */
     invtd_cntx_t *ctx = (invtd_cntx_t *)args;
@@ -293,8 +292,7 @@ int invtd_insert_word_req_hdl(int type, int dev_orig, char *buff, size_t len, vo
 
     /* > 插入倒排表 */
     pthread_rwlock_wrlock(&ctx->invtab_lock);
-    if (invtab_insert(ctx->invtab, req->word, req->url, req->freq))
-    {
+    if (invtab_insert(ctx->invtab, req->word, req->url, req->freq)) {
         pthread_rwlock_unlock(&ctx->invtab_lock);
         log_error(ctx->log, "Insert invert table failed! serial:%s word:%s url:%s freq:%d",
                 req->serial, req->word, req->url, req->freq);
@@ -312,7 +310,7 @@ int invtd_insert_word_req_hdl(int type, int dev_orig, char *buff, size_t len, vo
 INVTD_INSERT_WORD_RSP:
     /* > 发送应答信息 */
     rsp.serial = hton64(req->serial);
-    if (rtrd_send(ctx->rtrd, MSG_INSERT_WORD_RSP, dev_orig, (void *)&rsp, sizeof(rsp))) {
+    if (rtrd_send(ctx->rtrd, MSG_INSERT_WORD_RSP, orig, (void *)&rsp, sizeof(rsp))) {
         log_error(ctx->log, "Send response failed! serial:%s word:%s url:%s freq:%d",
                 req->serial, req->word, req->url, req->freq);
     }
