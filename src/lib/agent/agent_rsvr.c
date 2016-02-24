@@ -391,8 +391,7 @@ static int agent_rsvr_conn_timeout(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
 
     timeout.ctm = rsvr->ctm;
 
-    do
-    {
+    do {
         /* > 创建链表 */
         memset(&opt, 0, sizeof(opt));
 
