@@ -16,8 +16,8 @@ static agent_rsvr_t *agent_rsvr_self(agent_cntx_t *ctx);
 static int agent_rsvr_add_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr);
 static int agent_rsvr_del_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck);
 
-static int agent_rsvr_recv(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck);
-static int agent_rsvr_send(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck);
+static int agent_recv_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck);
+static int agent_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck);
 
 static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr);
 
@@ -532,8 +532,8 @@ static int agent_rsvr_add_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
             memcpy(&sck->crtm, &add[idx]->crtm, sizeof(add[idx]->crtm)); /* 创建时间 */
 
             sck->recv.phase = SOCK_PHASE_RECV_INIT;
-            sck->recv_cb = (socket_recv_cb_t)agent_rsvr_recv;   /* Recv回调函数 */
-            sck->send_cb = (socket_send_cb_t)agent_rsvr_send;   /* Send回调函数*/
+            sck->recv_cb = (socket_recv_cb_t)agent_recv_data;   /* Recv回调函数 */
+            sck->send_cb = (socket_send_cb_t)agent_send_data;   /* Send回调函数*/
 
             extra->seq = add[idx]->sid;
 
@@ -603,9 +603,10 @@ static int agent_rsvr_del_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *
 }
 
 /******************************************************************************
- **函数名称: agent_rsvr_recv_head
+ **函数名称: agent_recv_head
  **功    能: 接收报头
  **输入参数:
+ **     ctx: 全局对象
  **     rsvr: 接收服务
  **     sck: SCK对象
  **输出参数: NONE
@@ -614,7 +615,7 @@ static int agent_rsvr_del_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.01 #
  ******************************************************************************/
-static int agent_rsvr_recv_head(agent_rsvr_t *rsvr, socket_t *sck)
+static int agent_recv_head(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
 {
     void *addr;
     int n, left;
@@ -661,6 +662,7 @@ static int agent_rsvr_recv_head(agent_rsvr_t *rsvr, socket_t *sck)
     head->flag = ntohl(head->flag);
     head->length = ntohl(head->length);
     head->mark = ntohl(head->mark);
+    head->from = AGENT_GET_NODE_ID(ctx);
 
     if (AGENT_MSG_MARK_KEY != head->mark) {
         log_error(rsvr->log, "Check head failed! type:%d len:%d flag:%d mark:[0x%X/0x%X]",
@@ -675,7 +677,7 @@ static int agent_rsvr_recv_head(agent_rsvr_t *rsvr, socket_t *sck)
 }
 
 /******************************************************************************
- **函数名称: agent_rsvr_recv_body
+ **函数名称: agent_recv_body
  **功    能: 接收报体
  **输入参数:
  **     rsvr: 接收服务
@@ -686,7 +688,7 @@ static int agent_rsvr_recv_head(agent_rsvr_t *rsvr, socket_t *sck)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.02 #
  ******************************************************************************/
-static int agent_rsvr_recv_body(agent_rsvr_t *rsvr, socket_t *sck)
+static int agent_recv_body(agent_rsvr_t *rsvr, socket_t *sck)
 {
     void *addr;
     int n, left;
@@ -781,7 +783,7 @@ static int agent_rsvr_cmd_proc_req(agent_cntx_t *ctx, agent_rsvr_t *rsvr, int wi
 }
 
 /******************************************************************************
- **函数名称: agent_rsvr_recv_post
+ **函数名称: agent_recv_post_hdl
  **功    能: 数据接收完毕，进行数据处理
  **输入参数:
  **     rsvr: 接收服务
@@ -792,7 +794,7 @@ static int agent_rsvr_cmd_proc_req(agent_cntx_t *ctx, agent_rsvr_t *rsvr, int wi
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.12.21 #
  ******************************************************************************/
-static int agent_rsvr_recv_post(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
+static int agent_recv_post_hdl(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
 {
     agent_socket_extra_t *extra = (agent_socket_extra_t *)sck->extra;
 
@@ -810,7 +812,7 @@ static int agent_rsvr_recv_post(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t 
 }
 
 /******************************************************************************
- **函数名称: agent_rsvr_recv
+ **函数名称: agent_recv_data
  **功    能: 接收数据
  **输入参数:
  **     rsvr: 接收服务
@@ -821,7 +823,7 @@ static int agent_rsvr_recv_post(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t 
  **注意事项: TODO: 此处理流程可进一步进行优化
  **作    者: # Qifeng.zou # 2014.11.29 #
  ******************************************************************************/
-static int agent_rsvr_recv(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
+static int agent_recv_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
 {
     int ret;
     socket_snap_t *recv = &sck->recv;
@@ -859,7 +861,7 @@ static int agent_rsvr_recv(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
             case SOCK_PHASE_RECV_HEAD:
             {
             RECV_HEAD:
-                ret = agent_rsvr_recv_head(rsvr, sck);
+                ret = agent_recv_head(ctx, rsvr, sck);
                 switch (ret)
                 {
                     case AGENT_OK:
@@ -911,7 +913,7 @@ static int agent_rsvr_recv(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
             case SOCK_PHASE_RECV_BODY:
             {
             RECV_BODY:
-                ret = agent_rsvr_recv_body(rsvr, sck);
+                ret = agent_recv_body(rsvr, sck);
                 switch (ret)
                 {
                     case AGENT_OK:
@@ -938,7 +940,7 @@ static int agent_rsvr_recv(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
             {
             RECV_POST:
                 /* 将数据放入接收队列 */
-                ret = agent_rsvr_recv_post(ctx, rsvr, sck);
+                ret = agent_recv_post_hdl(ctx, rsvr, sck);
                 switch (ret)
                 {
                     case AGENT_OK:
@@ -963,7 +965,7 @@ static int agent_rsvr_recv(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
 }
 
 /******************************************************************************
- **函数名称: agent_rsvr_send
+ **函数名称: agent_send_data
  **功    能: 发送数据
  **输入参数:
  **     rsvr: 接收服务
@@ -974,7 +976,7 @@ static int agent_rsvr_recv(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.29 #
  ******************************************************************************/
-static int agent_rsvr_send(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
+static int agent_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
 {
     int n, left;
     agent_header_t *head;

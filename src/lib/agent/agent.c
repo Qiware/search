@@ -10,7 +10,7 @@
 #include "agent_listen.h"
 
 static log_cycle_t *agent_init_log(char *fname);
-static int agent_cli_init(agent_cntx_t *ctx);
+static int agent_comm_init(agent_cntx_t *ctx);
 static int agent_init_reg(agent_cntx_t *ctx);
 static int agent_creat_agents(agent_cntx_t *ctx);
 static int agent_rsvr_pool_destroy(agent_cntx_t *ctx);
@@ -90,8 +90,8 @@ agent_cntx_t *agent_init(agent_conf_t *conf, log_cycle_t *log)
             break;
         }
 
-        /* > 初始化客户端信息 */
-        if (agent_cli_init(ctx)) {
+        /* > 初始化其他信息 */
+        if (agent_comm_init(ctx)) {
             log_error(log, "Initialize client failed!");
             break;
         }
@@ -564,24 +564,24 @@ static int agent_creat_queue(agent_cntx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: agent_cli_init
- **功    能: 初始化客户端信息
+ **函数名称: agent_comm_init
+ **功    能: 初始化通用信息
  **输入参数: 
  **     ctx: 全局信息
  **输出参数: NONE
  **返    回: VOID
- **实现描述: 创建客户端所依赖的资源
+ **实现描述:
  **注意事项: 
  **作    者: # Qifeng.zou # 2015-06-24 23:58:46 #
  ******************************************************************************/
-static int agent_cli_init(agent_cntx_t *ctx)
+static int agent_comm_init(agent_cntx_t *ctx)
 {
     char path[FILE_PATH_MAX_LEN];
 
     snprintf(path, sizeof(path), "%s/"AGENT_CLI_CMD_PATH, ctx->conf->path);
 
-    ctx->cli.cmd_sck_id = unix_udp_creat(path);
-    if (ctx->cli.cmd_sck_id < 0) {
+    ctx->cmd_sck_id = unix_udp_creat(path);
+    if (ctx->cmd_sck_id < 0) {
         return AGENT_ERR;
     }
 

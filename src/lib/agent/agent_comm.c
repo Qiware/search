@@ -413,7 +413,7 @@ static int agent_cmd_send_dist_req(agent_cntx_t *ctx, int idx)
     cmd.type = CMD_DIST_DATA;
     agent_rsvr_cmd_usck_path(conf, idx, path, sizeof(path));
 
-    return unix_udp_send(ctx->cli.cmd_sck_id, path, (void *)&cmd, sizeof(cmd));
+    return unix_udp_send(ctx->cmd_sck_id, path, (void *)&cmd, sizeof(cmd));
 }
 
 /******************************************************************************

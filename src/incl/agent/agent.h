@@ -65,9 +65,7 @@ typedef struct
 {
     agent_conf_t *conf;                     /* 配置信息 */
     log_cycle_t *log;                       /* 日志对象 */
-    struct {
-        int cmd_sck_id;                     /* 命令套接字 */
-    } cli;
+    int cmd_sck_id;                         /* 命令套接字 */
 
     /* 侦听信息 */
     struct {
@@ -88,6 +86,8 @@ typedef struct
 
     agent_serial_to_sck_map_t *serial_to_sck_map; /* 流水号->套接字的映射表 */
 } agent_cntx_t;
+
+#define AGENT_GET_NODE_ID(ctx) ((ctx)->conf->nid)
 
 /* 内部接口 */
 int agent_listen_init(agent_cntx_t *ctx, agent_lsvr_t *lsn, int idx);
