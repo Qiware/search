@@ -381,8 +381,7 @@ bool uri_is_valid(const char *uri)
         return false;
     }
 
-    for (; '\0' != *uri; ++uri)
-    {
+    for (; '\0' != *uri; ++uri) {
         switch (*uri)
         {
             case ' ':
@@ -474,10 +473,8 @@ int href_to_uri(const char *ori_href, const char *site, uri_field_t *field)
             --p2;
         }
 
-        for (; up > 0; --up)
-        {
-            while (('/' != *p2) && (p2 != site))
-            {
+        for (; up > 0; --up) {
+            while (('/' != *p2) && (p2 != site)) {
                 --p2;
             }
 
