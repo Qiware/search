@@ -229,7 +229,7 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
     if (NULL == node
         || 0 == node->value.len)
     {
-        log_error(log, "Didn't configure the ip of master redis!");
+        log_error(log, "Get master ip addr failed!");
         return -1;
     }
 
@@ -239,7 +239,7 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
     if (NULL == node
         || 0 == node->value.len)
     {
-        log_error(log, "Didn't configure port of master redis!");
+        log_error(log, "Get master port failed!");
         return -1;
     }
 
@@ -247,13 +247,13 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
 
     node = xml_search(xml, nail, "PASSWD");
     if (NULL == node) {
-        log_error(log, "Didn't configure passwd of master redis!");
+        log_error(log, "Get passwd failed!");
         return -1;
     }
 
     snprintf(master.passwd, sizeof(master.passwd), "%s", node->value.str);
 
-    /* > 计算REDIS网络配置项总数 */
+    /* > 计算REDIS副本个数 */
     start = xml_search(xml, nail, "SLAVE.ITEM");
     if (NULL == start) {
         log_error(log, "Query item of network failed!");
