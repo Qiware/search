@@ -45,6 +45,7 @@
 #define ERR_MSG_MAX_LEN     (1024)              /* 错误信息最大长度 */
 #define NODE_MAX_LEN        (64)                /* 节点名最大长度 */
 #define INT_MAX_LEN         (128)               /* 整数字串的最大长度 */
+#define PASSWD_MAX_LEN      (64)                /* 密码最大长度 */
 
 #define MD5_SUM_CHK_LEN     (32)                /* MD5校验值长度 */
 

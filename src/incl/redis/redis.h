@@ -16,6 +16,7 @@ typedef struct
 {
     char ip[IP_ADDR_MAX_LEN];           /* IP */
     int port;                           /* 端口号 */
+    char passwd[PASSWD_MAX_LEN];        /* 密码 */
 } redis_conf_t;
 
 /* Redis集群对象 */

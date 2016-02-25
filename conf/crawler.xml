@@ -20,8 +20,11 @@
       1) PORT: 侦听端口 -->
     <MANAGER PORT="9000" />
 
-    <!-- REDIS服务配置 -->
-    <REDIS>
+    <!-- REDIS服务配置
+         IP: 主Redis地址
+         PORT: 主REDIS端口
+         PASSWD: 主REDIS密码 -->
+    <REDIS IP="127.0.0.1" PORT="6379" PASSWD="">
         <!-- 队列配置
              TASKQ: UNDO队列 -->
         <TASKQ NAME="CRWL_UNDO_TASKQ" />
@@ -34,9 +37,8 @@
 
         <!-- REDIS网络配置
              ITEM: 第1项为MASTER, 其他项为副本 -->
-        <NETWORK>
-            <ITEM IP="127.0.0.1" PORT="6379" /> <!-- MASTER配置 -->
-            <ITEM IP="127.0.0.1" PORT="6380" />
-        </NETWORK>
+        <SLAVE>
+            <ITEM IP="127.0.0.1" PORT="6380" PASSWD="" />
+        </SLAVE>
     </REDIS>
 </CRAWLER>
