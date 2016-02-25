@@ -19,7 +19,7 @@
     <MANAGER PORT="9001" />
 
     <!-- REDIS服务配置 -->
-    <REDIS>
+    <REDIS IP="127.0.0.1" PORT="6379" PASSWD="">
         <!-- 队列配置
              TASKQ: UNDO队列 -->
         <TASKQ NAME="CRWL_UNDO_TASKQ" />
@@ -30,11 +30,10 @@
         <DONE_TAB NAME="CRWL_DONE_TAB" />
         <PUSH_TAB NAME="CRWL_PUSH_TAB" />
 
-        <!-- REDIS网络配置
-             ITEM: 第1项为MASTER, 其他项为副本 -->
-        <NETWORK>
-            <ITEM IP="127.0.0.1" PORT="6379" /> <!-- MASTER配置 -->
-        </NETWORK>
+        <!-- REDIS副本配置 -->
+        <SLAVE>
+            <ITEM IP="127.0.0.1" PORT="6379" PASSWD="" />
+        </SLAVE>
     </REDIS>
 
     <!-- 种子配置(DEPTH: 表示种子的当前深度) -->
