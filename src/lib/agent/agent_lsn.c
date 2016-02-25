@@ -29,6 +29,7 @@ static agent_lsvr_t *agent_lsn_self(agent_cntx_t *ctx)
 
     id = thread_pool_get_tidx(ctx->listens);
     if (id < 0) {
+        log_error(ctx->log, "Get self-thread failed!");
         return NULL;
     }
 

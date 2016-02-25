@@ -498,7 +498,7 @@ static int agent_rsvr_add_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
             extra = calloc(1, sizeof(agent_socket_extra_t));
             if (NULL == extra) {
                 log_error(rsvr->log, "Alloc memory from slab failed! seq:%lu",
-                          add[idx]->sid);
+                        add[idx]->sid);
                 CLOSE(add[idx]->fd);
                 FREE(sck);
                 queue_dealloc(ctx->connq[rsvr->id], add[idx]);
@@ -620,13 +620,13 @@ static int agent_recv_head(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
     agent_header_t *head;
     socket_snap_t *recv = &sck->recv;
 
-    /* 1. 计算剩余字节 */
-    left = sizeof(agent_header_t) - recv->off;
-
     addr = recv->addr + sizeof(agent_flow_t);
 
-    /* 2. 接收报头数据 */
     while (1) {
+        /* 1. 计算剩余字节 */
+        left = sizeof(agent_header_t) - recv->off;
+
+        /* 2. 接收报头数据 */
         n = read(sck->fd, addr + recv->off, left);
         if (n == left) {
             recv->off += n;

@@ -29,6 +29,7 @@ agent_serial_to_sck_map_t *agent_serial_to_sck_map_init(agent_cntx_t *ctx)
 
     s2s = (agent_serial_to_sck_map_t *)calloc(1, sizeof(agent_serial_to_sck_map_t));
     if (NULL == s2s) {
+        log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return NULL;
     }
 
@@ -56,6 +57,7 @@ agent_serial_to_sck_map_t *agent_serial_to_sck_map_init(agent_cntx_t *ctx)
         for (i=0; i<s2s->len; ++i) {
             s2s->slot[i] = slot_creat(1024*1024, sizeof(agent_flow_t));
             if (NULL == s2s->slot[i]) {
+                log_error(ctx->log, "Create slot failed! errmsg:[%d] %s!", errno, strerror(errno));
                 break;
             }
 
@@ -65,7 +67,7 @@ agent_serial_to_sck_map_t *agent_serial_to_sck_map_init(agent_cntx_t *ctx)
 
             s2s->map[i] = avl_creat(&opt, (key_cb_t)key_cb_int64, (cmp_cb_t)cmp_cb_int64);
             if (NULL == s2s->map[i]) {
-                log_error(ctx->log, "Create avl failed!");
+                log_error(ctx->log, "Create avl failed! errmsg:[%d] %s!", errno, strerror(errno));
                 break;
             }
             spin_lock_init(&s2s->lock[i]);
