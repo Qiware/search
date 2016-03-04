@@ -139,7 +139,7 @@ typedef void (*mem_dealloc_cb_t)(void *pool, void *p);
 /* 树操作接口 */
 typedef int (*tree_insert_cb_t)(void *tree, void *key, int key_len, void *data);
 typedef int (*tree_delete_cb_t)(void *tree, void *key, int key_len, void *data);
-typedef int (*tree_query_cb_t)(void *tree, void *key, int key_len, void *data);
+typedef void *(*tree_query_cb_t)(void *tree, void *key, int key_len);
 typedef void (*tree_trav_cb_t)(void *tree, trav_cb_t proc, void *args);
 typedef void (*tree_destroy_cb_t)(void *tree);
 

@@ -215,7 +215,7 @@ int hash_map_query(hash_map_t *htab,
     idx = htab->key_cb(pkey, pkey_len) % htab->len;
 
     pthread_rwlock_rdlock(&htab->lock[idx]);
-    orig = avl_query(htab->tree[idx], pkey, pkey_len);
+    orig = htab->tree_query((void *)htab->tree[idx], pkey, pkey_len);
     if (NULL == orig) {
         pthread_rwlock_unlock(&htab->lock[idx]);
         return -1; /* 未找到 */
