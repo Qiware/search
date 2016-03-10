@@ -147,7 +147,7 @@ int tcp_connect(int family, const char *ipaddr, int port)
 }
 
 /******************************************************************************
- **函数名称: tcp_connect_ex
+ **函数名称: tcp_connect_timeout
  **功    能: 连接指定服务器(超时返回)
  **输入参数: 
  **     family: 协议(AF_INET/AF_INET6)
@@ -164,7 +164,7 @@ int tcp_connect(int family, const char *ipaddr, int port)
  **     1) SO_REUSEADDR: 
  **作    者: # Qifeng.zou & Menglai.Wang # 2014.09.25 #
  ******************************************************************************/
-int tcp_connect_ex(int family, const char *ipaddr, int port, int sec)
+int tcp_connect_timeout(int family, const char *ipaddr, int port, int sec)
 {
     int ret, fd, opt = 1;
     fd_set rdset, wrset;
@@ -223,7 +223,7 @@ AGAIN:
 }
 
 /******************************************************************************
- **函数名称: tcp_connect_ex2
+ **函数名称: tcp_connect_async
  **功    能: 连接指定服务器
  **输入参数: 
  **     family: 协议(AF_INET/AF_INET6)
@@ -238,7 +238,7 @@ AGAIN:
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.09 #
  ******************************************************************************/
-int tcp_connect_ex2(int family, const char *ipaddr, int port)
+int tcp_connect_async(int family, const char *ipaddr, int port)
 {
     int fd, opt = 1;
     struct sockaddr_in svraddr;
