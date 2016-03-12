@@ -165,13 +165,14 @@ static void rbt_left_rotate(rbt_tree_t *tree, rbt_node_t *node)
  ******************************************************************************/
 rbt_tree_t *rbt_creat(rbt_opt_t *opt, key_cb_t key_cb, cmp_cb_t cmp_cb)
 {
+    rbt_opt_t _opt;
     rbt_tree_t *tree;
 
-    if (NULL == opt
-        || NULL == opt->alloc
-        || NULL == opt->dealloc)
-    {
-        return NULL;
+    if (NULL == opt) {
+        opt = &_opt;
+        opt->pool = (void *)NULL;
+        opt->alloc = (mem_alloc_cb_t)mem_alloc;
+        opt->dealloc = (mem_dealloc_cb_t)mem_dealloc;
     }
 
     tree = (rbt_tree_t *)opt->alloc(opt->pool, sizeof(rbt_tree_t));

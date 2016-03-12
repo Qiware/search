@@ -25,9 +25,18 @@ static void kwt_node_free(kwt_tree_t *kwt, kwt_node_t *node, void *mempool, mem_
 kwt_tree_t *kwt_creat(kwt_opt_t *opt)
 {
     int max = 256;
+    kwt_opt_t _opt;
     kwt_tree_t *kwt;
 
-    if (!ISPOWEROF2(max)) { return NULL; }
+    if (!ISPOWEROF2(max)) {
+        return NULL;
+    }
+    else if (NULL == opt) {
+        opt = &_opt;
+        opt->pool = (void *)NULL;
+        opt->alloc = (mem_alloc_cb_t)mem_alloc;
+        opt->dealloc = (mem_dealloc_cb_t)mem_dealloc;
+    }
 
     /* 1. 创建对象 */
     kwt = (kwt_tree_t *)opt->alloc(opt->pool, sizeof(kwt_tree_t));

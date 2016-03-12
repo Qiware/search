@@ -15,7 +15,6 @@
  **            关键字均小于Ki[i=0,1,...,n-1], 但都大于Ki-1[i=1,...,n-1];
  ** 作  者: # Qifeng.zou # 2014.03.12 #
  ******************************************************************************/
-#include "log.h"
 #include "btree.h"
 
 static btree_node_t *btree_node_alloc(btree_t *btree);
@@ -41,15 +40,20 @@ static int _btree_merge(btree_t *btree, btree_node_t *left, btree_node_t *right,
 btree_t *btree_creat(int m, btree_opt_t *opt)
 {
     btree_t *btree;
+    btree_opt_t _opt;
 
     if (m < 3) {
-        log_error(opt->log, "Parameter 'm' must geater than 2!");
         return NULL;
+    }
+    else if (NULL == opt) {
+        opt = &_opt;
+        opt->pool = (void *)NULL;
+        opt->alloc = (mem_alloc_cb_t)mem_alloc;
+        opt->dealloc = (mem_dealloc_cb_t)mem_dealloc;
     }
 
     btree = (btree_t *)opt->alloc(opt->pool, sizeof(btree_t));
     if (NULL == btree) {
-        log_error(opt->log, "Alloc memory failed!");
         return NULL;
     }
 
@@ -60,7 +64,6 @@ btree_t *btree_creat(int m, btree_opt_t *opt)
     btree->sep_idx = m/2;
     btree->root = NULL;
 
-    btree->log = opt->log;
     btree->pool = opt->pool;
     btree->alloc = opt->alloc;
     btree->dealloc = opt->dealloc;
@@ -131,7 +134,6 @@ int btree_insert(btree_t *btree, int key, void *data)
     if (NULL == node) {
         node = btree_node_alloc(btree);
         if (NULL == node) {
-            log_error(btree->log, "Create node failed!");
             return -1;
         }
 
@@ -149,7 +151,6 @@ int btree_insert(btree_t *btree, int key, void *data)
         /* 二分查找算法实现 */
         idx = btree_key_bsearch(node->key, node->num, key);
         if (key == node->key[idx]) {
-            log_warn(btree->log, "Key [%d] exist!", key);
             return 0;
         }
         else if (key > node->key[idx]) {
@@ -227,7 +228,6 @@ static int btree_split(btree_t *btree, btree_node_t *node)
 
         node2 = btree_node_alloc(btree);
         if (NULL == node2) {
-            log_error(btree->log, "Create node failed!");
             return -1;
         }
 
@@ -247,7 +247,6 @@ static int btree_split(btree_t *btree, btree_node_t *node)
             /* Split root node */
             parent = btree_node_alloc(btree);
             if (NULL == parent) {
-                log_error(btree->log, "[%s][%d] Create root failed!", __FILE__, __LINE__);
                 return -1;
             }
 
@@ -391,7 +390,6 @@ static int btree_merge(btree_t *btree, btree_node_t *node)
     }
 
     if (idx > parent->num) {
-        log_error(btree->log, "Didn't find node from parent's children set!");
         return -1;
     }
     /* 3. node: 最后一个孩子结点(left < node)
@@ -624,7 +622,6 @@ static btree_node_t *btree_node_alloc(btree_t *btree)
 
     node = (btree_node_t *)btree->alloc(btree->pool, sizeof(btree_node_t));
     if (NULL == node) {
-        log_error(btree->log, "Alloc memory failed!");
         return NULL;
     }
 
@@ -635,7 +632,6 @@ static btree_node_t *btree_node_alloc(btree_t *btree)
     node->key = (int *)btree->alloc(btree->pool, (btree->max + 1) * sizeof(int));
     if (NULL == node->key) {
         btree->dealloc(btree->pool, node);
-        log_error(btree->log, "Alloc memory failed!");
         return NULL;
     }
 
@@ -643,7 +639,6 @@ static btree_node_t *btree_node_alloc(btree_t *btree)
     if (NULL == node->data) {
         btree->dealloc(btree->pool, node->key);
         btree->dealloc(btree->pool, node);
-        log_error(btree->log, "Alloc memory failed!");
         return NULL;
     }
 
@@ -654,7 +649,6 @@ static btree_node_t *btree_node_alloc(btree_t *btree)
         btree->dealloc(btree->pool, node->key);
         btree->dealloc(btree->pool, node->data);
         btree->dealloc(btree->pool, node);
-        log_error(btree->log, "Alloc memory failed!");
         return NULL;
     }
 
@@ -746,7 +740,6 @@ void *btree_query(btree_t *btree, int key)
     while (NULL != node) {
         idx = btree_key_bsearch(node->key, node->num, key);
         if (key == node->key[idx]) {
-            log_debug(btree->log, "Found! key:%d idx:%d", key, idx);
             return node->data[idx]; /* 找到 */
         }
         else if (key < node->key[idx]) {

@@ -27,7 +27,6 @@ log_cycle_t *demo_init_log(const char *_path)
 
 int main(int argc, char *argv[])
 {
-    kwt_opt_t opt;
     kwt_tree_t *kwt;
     log_cycle_t *log;
 
@@ -37,11 +36,7 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    opt.pool = (void *)NULL;
-    opt.alloc = (mem_alloc_cb_t)mem_alloc;
-    opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
-
-    kwt = kwt_creat(&opt);
+    kwt = kwt_creat(NULL);
     if (NULL == kwt) {
         fprintf(stderr, "Create keyword-tree failed!");
         return -1;
@@ -115,17 +110,12 @@ static int proto_load_conf(kwt_tree_t *kwt, const char *path, log_cycle_t *log)
 int kwt_test(void)
 {
     int i, ret;
-    kwt_opt_t opt;
     kwt_tree_t *kwt;
     char *str[DATA_LEN], *str2;
     char input[1024];
 
-    opt.pool = (void *)NULL;
-    opt.alloc = (mem_alloc_cb_t)mem_alloc;
-    opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
-
  
-    kwt = kwt_creat(&opt);
+    kwt = kwt_creat(NULL);
     if (NULL == kwt) {
         fprintf(stderr, "Create keyword-tree failed!");
         return -1;

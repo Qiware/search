@@ -103,7 +103,6 @@ static crwl_worker_t *crwl_worker_self(crwl_cntx_t *ctx)
  ******************************************************************************/
 int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker, int id)
 {
-    list_opt_t opt;
     crwl_conf_t *conf = &ctx->conf;
 
     memset(worker, 0, sizeof(crwl_worker_t));
@@ -122,13 +121,7 @@ int crwl_worker_init(crwl_cntx_t *ctx, crwl_worker_t *worker, int id)
 
     do {
         /* > 创建SCK链表 */
-        memset(&opt, 0, sizeof(opt));
-
-        opt.pool = (void *)NULL;
-        opt.alloc = (mem_alloc_cb_t)mem_alloc;
-        opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
-
-        worker->sock_list = list_creat(&opt);
+        worker->sock_list = list_creat(NULL);
         if (NULL == worker->sock_list) {
             log_error(worker->log, "Create list failed!");
             break;
@@ -829,7 +822,6 @@ int crwl_worker_webpage_finfo(crwl_cntx_t *ctx, crwl_worker_t *worker, socket_t 
 static socket_t *crwl_worker_socket_alloc(crwl_worker_t *worker)
 {
     socket_t *sck;
-    list_opt_t opt;
     crwl_worker_socket_extra_t *extra;
 
     /* > 创建SCK对象 */
@@ -850,13 +842,7 @@ static socket_t *crwl_worker_socket_alloc(crwl_worker_t *worker)
     memset(extra, 0, sizeof(crwl_worker_socket_extra_t));
 
     /* > 创建发送链表 */
-    memset(&opt, 0, sizeof(opt));
-
-    opt.pool = (void *)NULL;
-    opt.alloc = (mem_alloc_cb_t)mem_alloc;
-    opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
-
-    extra->send_list = list_creat(&opt);
+    extra->send_list = list_creat(NULL);
     if (NULL == extra->send_list) {
         log_error(worker->log, "Create list failed!");
         FREE(sck);
@@ -890,7 +876,7 @@ static int crwl_worker_task_down_webpage(
     crwl_worker_socket_extra_t *extra;
 
     /* > 连接远程WEB服务器 */
-    fd = tcp_connect_ex2(args->family, args->ip, args->port);
+    fd = tcp_connect_async(args->family, args->ip, args->port);
     if (fd < 0) {
         log_error(worker->log, "errmsg:[%d] %s! family:%d ip:%s uri:%s",
             errno, strerror(errno), args->family, args->ip, args->uri);

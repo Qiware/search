@@ -51,6 +51,14 @@ void list_assert(list_t *list)
 list_t *list_creat(list_opt_t *opt)
 {
     list_t *list;
+    list_opt_t _opt;
+
+    if (NULL == opt) {
+        opt = &_opt;
+        opt->pool = (void *)NULL;
+        opt->alloc = (mem_alloc_cb_t)mem_alloc;
+        opt->dealloc = (mem_dealloc_cb_t)mem_dealloc;
+    }
 
     list = opt->alloc(opt->pool, sizeof(list_t));
     if (NULL == list) {

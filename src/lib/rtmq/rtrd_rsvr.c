@@ -252,7 +252,6 @@ static rtrd_rsvr_t *rtrd_rsvr_get_curr(rtrd_cntx_t *ctx)
  ******************************************************************************/
 int rtrd_rsvr_init(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, int id)
 {
-    list2_opt_t opt;
     char path[FILE_PATH_MAX_LEN];
     rtrd_conf_t *conf = &ctx->conf;
 
@@ -270,13 +269,7 @@ int rtrd_rsvr_init(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, int id)
     }
 
     /* > 创建套接字链表 */
-    memset(&opt, 0, sizeof(opt));
-
-    opt.pool = (void *)NULL;
-    opt.alloc = (mem_alloc_cb_t)mem_alloc;
-    opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
-
-    rsvr->conn_list = list2_creat(&opt);
+    rsvr->conn_list = list2_creat(NULL);
     if (NULL == rsvr->conn_list) {
         log_error(rsvr->log, "Create list2 failed!");
         CLOSE(rsvr->cmd_sck_id);

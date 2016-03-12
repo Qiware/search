@@ -19,18 +19,13 @@ int main(void)
 {
     uint32_t key;
     int ret, idx, n;
-    avl_opt_t opt;
     avl_tree_t *avl;
     rbt_tree_t *rbt;
     avl_data_t *data;
     char input[INPUT_LEN];
 
     /* > 创建B树 */
-    opt.pool = (void *)NULL;
-    opt.alloc = (mem_alloc_cb_t)mem_alloc;
-    opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
-
-    avl = avl_creat(&opt, (key_cb_t)key_cb_int32, (cmp_cb_t)cmp_cb_int32);
+    avl = avl_creat(NULL, (key_cb_t)key_cb_int32, (cmp_cb_t)cmp_cb_int32);
     if (NULL == avl)
     {
         fprintf(stderr, "[%s][%d] Create avl failed!\n", __FILE__, __LINE__);

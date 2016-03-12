@@ -49,7 +49,6 @@ invt_tab_t *invtab_creat(int max, log_cycle_t *log)
 {
     int idx;
     invt_tab_t *tab;
-    avl_opt_t opt;
 
     /* > 创建对象 */
     tab = (invt_tab_t *)calloc(1, sizeof(invt_tab_t));
@@ -73,15 +72,7 @@ invt_tab_t *invtab_creat(int max, log_cycle_t *log)
     }
 
     for (idx=0; idx<max; ++idx) {
-        memset(&opt, 0, sizeof(opt));
-
-        opt.pool = (void *)NULL;
-        opt.alloc = mem_alloc;
-        opt.dealloc = mem_dealloc;
-
-        tab->dic[idx] = avl_creat(&opt,
-                            (key_cb_t)hash_time33_ex,
-                            (cmp_cb_t)invtab_dic_word_cmp);
+        tab->dic[idx] = avl_creat(NULL, (key_cb_t)hash_time33_ex, (cmp_cb_t)invtab_dic_word_cmp);
         if (NULL == tab->dic[idx]) {
             log_error(log, "Create avl-tree failed! idx:%d", idx);
             invtab_destroy(tab, NULL, NULL);

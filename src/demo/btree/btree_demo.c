@@ -9,7 +9,6 @@ int main(void)
 {
     int ret, key, idx;
     btree_t *btree;
-    btree_opt_t opt;
     log_cycle_t *log;
     char input[INPUT_LEN];
     void *data;
@@ -20,12 +19,7 @@ int main(void)
     }
 
     /* > 创建B树 */
-    opt.log = log;
-    opt.pool = (void *)NULL;
-    opt.alloc = (mem_alloc_cb_t)mem_alloc;
-    opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
-
-    btree = btree_creat(BTREE_M, &opt);
+    btree = btree_creat(BTREE_M, NULL);
     if (NULL == btree) {
         fprintf(stderr, "[%s][%d] Create btree failed!\n", __FILE__, __LINE__);
         return -1;

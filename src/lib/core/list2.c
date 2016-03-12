@@ -60,6 +60,14 @@ void list2_assert(list2_t *list)
 list2_t *list2_creat(list2_opt_t *opt)
 {
     list2_t *list;
+    list2_opt_t _opt;
+
+    if (NULL == opt) {
+        opt = &_opt;
+        opt->pool = (void *)NULL;
+        opt->alloc = (mem_alloc_cb_t)mem_alloc;
+        opt->dealloc = (mem_dealloc_cb_t)mem_dealloc;
+    }
 
     list = opt->alloc(opt->pool, sizeof(list2_t));
     if (NULL == list) {
