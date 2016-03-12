@@ -22,10 +22,7 @@ agent_serial_to_sck_map_t *agent_serial_to_sck_map_init(agent_cntx_t *ctx)
 {
 #define SERIAL_TO_SCK_MAP_LEN  (33)
     int i;
-    avl_opt_t opt;
     agent_serial_to_sck_map_t *s2s;
-
-    memset(&opt, 0, sizeof(opt));
 
     s2s = (agent_serial_to_sck_map_t *)calloc(1, sizeof(agent_serial_to_sck_map_t));
     if (NULL == s2s) {
@@ -61,11 +58,7 @@ agent_serial_to_sck_map_t *agent_serial_to_sck_map_init(agent_cntx_t *ctx)
                 break;
             }
 
-            opt.pool = (void *)NULL;
-            opt.alloc = (mem_alloc_cb_t)mem_alloc;
-            opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
-
-            s2s->map[i] = avl_creat(&opt, (key_cb_t)key_cb_int64, (cmp_cb_t)cmp_cb_int64);
+            s2s->map[i] = avl_creat(NULL, (key_cb_t)key_cb_int64, (cmp_cb_t)cmp_cb_int64);
             if (NULL == s2s->map[i]) {
                 log_error(ctx->log, "Create avl failed! errmsg:[%d] %s!", errno, strerror(errno));
                 break;
@@ -237,7 +230,6 @@ static int agent_serial_get_timeout_list(agent_flow_t *flow, agent_conn_timeout_
 int agent_serial_to_sck_map_timeout(agent_cntx_t *ctx)
 {
     int idx;
-    list_opt_t opt;
     agent_flow_t *flow;
     time_t ctm = time(NULL);
     agent_conn_timeout_list_t timeout;
@@ -260,13 +252,7 @@ int agent_serial_to_sck_map_timeout(agent_cntx_t *ctx)
         timeout.ctm = ctm;
 
         /* > 创建链表 */
-        memset(&opt, 0, sizeof(opt));
-
-        opt.pool = (void *)timeout.pool;
-        opt.alloc = (mem_alloc_cb_t)mem_pool_alloc;
-        opt.dealloc = (mem_dealloc_cb_t)mem_pool_dealloc;
-
-        timeout.list = list_creat(&opt);
+        timeout.list = list_creat(NULL);
         if (NULL == timeout.list) {
             log_error(ctx->log, "Create list failed!");
             mem_pool_destroy(timeout.pool);

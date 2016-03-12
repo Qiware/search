@@ -135,7 +135,6 @@ static int agt_rsvr_recv_cmd_hdl(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t
  ******************************************************************************/
 int agent_rsvr_init(agent_cntx_t *ctx, agent_rsvr_t *rsvr, int idx)
 {
-    rbt_opt_t opt;
     struct epoll_event ev;
     char path[FILE_NAME_MAX_LEN];
     agent_conf_t *conf = ctx->conf;
@@ -146,14 +145,8 @@ int agent_rsvr_init(agent_cntx_t *ctx, agent_rsvr_t *rsvr, int idx)
     rsvr->recv_seq = 0;
 
     /* > 创建连接红黑树 */
-    memset(&opt, 0, sizeof(opt));
 
-    opt.pool = NULL;
-    opt.alloc = (mem_alloc_cb_t)mem_alloc;
-    opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
-
-    rsvr->connections = rbt_creat(&opt,
-            (key_cb_t)key_cb_int64, (cmp_cb_t)agent_rsvr_connection_cmp);
+    rsvr->connections = rbt_creat(NULL, (key_cb_t)key_cb_int64, (cmp_cb_t)agent_rsvr_connection_cmp);
     if (NULL == rsvr->connections) {
         log_error(rsvr->log, "Create socket hash table failed!");
         return AGENT_ERR;
@@ -376,7 +369,6 @@ static int agent_rsvr_get_timeout_conn_list(socket_t *sck, agent_conn_timeout_li
 static int agent_rsvr_conn_timeout(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
 {
     socket_t *sck;
-    list_opt_t opt;
     agent_conn_timeout_list_t timeout;
 
     memset(&timeout, 0, sizeof(timeout));
@@ -392,13 +384,7 @@ static int agent_rsvr_conn_timeout(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
 
     do {
         /* > 创建链表 */
-        memset(&opt, 0, sizeof(opt));
-
-        opt.pool = (void *)timeout.pool;
-        opt.alloc = (mem_alloc_cb_t)mem_pool_alloc;
-        opt.dealloc = (mem_dealloc_cb_t)mem_pool_dealloc;
-
-        timeout.list = list_creat(&opt);
+        timeout.list = list_creat(NULL);
         if (NULL == timeout.list) {
             log_error(rsvr->log, "Create list failed!");
             break;
@@ -464,7 +450,6 @@ static int agent_rsvr_add_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
     int num, idx;
     time_t ctm = time(NULL);
     socket_t *sck;
-    list_opt_t opt;
     struct epoll_event ev;
     agent_socket_extra_t *extra;
     agent_add_sck_t *add[AGT_RSVR_CONN_POP_NUM];
@@ -505,13 +490,7 @@ static int agent_rsvr_add_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
                 continue;
             }
 
-            memset(&opt, 0, sizeof(opt));
-
-            opt.pool = (void *)NULL;
-            opt.alloc = (mem_alloc_cb_t)mem_alloc;
-            opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
-
-            extra->send_list = list_creat(&opt);
+            extra->send_list = list_creat(NULL);
             if (NULL == extra->send_list) {
                 log_error(rsvr->log, "Alloc memory from slab failed! seq:%lu",
                           add[idx]->sid);

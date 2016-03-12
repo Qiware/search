@@ -26,17 +26,10 @@ void rbt_trav_print_hdl(rbt_data_t *data, void *args)
 int main(void)
 {
     int idx, n;
-    rbt_opt_t opt;
     rbt_tree_t *rbt;
     rbt_data_t *data;
 
-    memset(&opt, 0, sizeof(opt));
-
-    opt.pool = NULL;
-    opt.alloc = mem_alloc;
-    opt.dealloc = mem_dealloc;
-
-    rbt = rbt_creat(&opt, (key_cb_t)key_cb_int32, (cmp_cb_t)cmp_cb_int32);
+    rbt = rbt_creat(NULL, (key_cb_t)key_cb_int32, (cmp_cb_t)cmp_cb_int32);
     if (NULL == rbt) {
         return -1;
     }

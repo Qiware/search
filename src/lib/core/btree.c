@@ -40,9 +40,16 @@ static int _btree_merge(btree_t *btree, btree_node_t *left, btree_node_t *right,
 btree_t *btree_creat(int m, btree_opt_t *opt)
 {
     btree_t *btree;
+    btree_opt_t _opt;
 
     if (m < 3) {
         return NULL;
+    }
+    else if (NULL == opt) {
+        opt = &_opt;
+        opt->pool = (void *)NULL;
+        opt->alloc = (mem_alloc_cb_t)mem_alloc;
+        opt->dealloc = (mem_dealloc_cb_t)mem_dealloc;
     }
 
     btree = (btree_t *)opt->alloc(opt->pool, sizeof(btree_t));

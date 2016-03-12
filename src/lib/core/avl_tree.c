@@ -81,16 +81,20 @@ static int avl_delete_right_balance(avl_tree_t *tree, avl_node_t *node, bool *lo
  ******************************************************************************/
 avl_tree_t *avl_creat(avl_opt_t *opt, key_cb_t key_cb, cmp_cb_t cmp_cb)
 {
+    avl_opt_t _opt;
     avl_tree_t *tree;
 
     /* 合法性验证 */
-    if (NULL == opt
-        || NULL == key_cb
-        || NULL == cmp_cb
-        || NULL == opt->alloc
-        || NULL == opt->dealloc)
+    if (NULL == key_cb
+        || NULL == cmp_cb)
     {
         return NULL;
+    }
+    else if (NULL == opt) {
+        opt = &_opt;
+        opt->pool = NULL;
+        opt->alloc = (mem_alloc_cb_t)mem_alloc;
+        opt->dealloc = (mem_dealloc_cb_t)mem_dealloc;
     }
 
     /* 创建对象 */

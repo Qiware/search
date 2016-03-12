@@ -116,8 +116,6 @@ void *flt_manager_routine(void *_ctx)
 static flt_man_t *flt_man_init(flt_cntx_t *ctx)
 {
     flt_man_t *man;
-    avl_opt_t opt;
-    list_opt_t list_opt;
 
     /* > 创建对象 */
     man = (flt_man_t *)calloc(1, sizeof(flt_man_t));
@@ -132,26 +130,14 @@ static flt_man_t *flt_man_init(flt_cntx_t *ctx)
 
     do {
         /* > 创建AVL树 */
-        memset(&opt, 0, sizeof(opt));
-
-        opt.pool = NULL;
-        opt.alloc = (mem_alloc_cb_t)mem_alloc;
-        opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
-
-        man->reg = avl_creat(&opt, (key_cb_t)flt_man_reg_key_cb, (cmp_cb_t)flt_man_reg_cmp_cb);
+        man->reg = avl_creat(NULL, (key_cb_t)flt_man_reg_key_cb, (cmp_cb_t)flt_man_reg_cmp_cb);
         if (NULL == man->reg) {
             log_error(man->log, "Create AVL failed!");
             return NULL;
         }
 
         /* > 创建链表 */
-        memset(&list_opt, 0, sizeof(list_opt));
-
-        list_opt.pool = NULL;
-        list_opt.alloc = (mem_alloc_cb_t)mem_alloc;
-        list_opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
-
-        man->mesg_list = list_creat(&list_opt);
+        man->mesg_list = list_creat(NULL);
         if (NULL == man->mesg_list) {
             log_error(man->log, "Create list failed!");
             break;

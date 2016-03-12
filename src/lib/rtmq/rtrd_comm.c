@@ -74,18 +74,8 @@ int rtrd_link_auth_check(rtrd_cntx_t *ctx, rtmq_link_auth_req_t *link_auth_req)
  ******************************************************************************/
 int rtrd_node_to_svr_map_init(rtrd_cntx_t *ctx)
 {
-    avl_opt_t opt;
-
-    memset(&opt, 0, sizeof(opt));
-
     /* > 创建映射表 */
-    opt.pool = (void *)NULL;
-    opt.alloc = (mem_alloc_cb_t)mem_alloc;
-    opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
-
-    ctx->node_to_svr_map = avl_creat(&opt,
-                (key_cb_t)key_cb_int32,
-                (cmp_cb_t)cmp_cb_int32);
+    ctx->node_to_svr_map = avl_creat(NULL, (key_cb_t)key_cb_int32, (cmp_cb_t)cmp_cb_int32);
     if (NULL == ctx->node_to_svr_map) {
         log_error(ctx->log, "Initialize dev->svr map failed!");
         return RTMQ_ERR;
