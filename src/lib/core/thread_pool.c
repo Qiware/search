@@ -31,6 +31,15 @@ thread_pool_t *thread_pool_init(int num, const thread_pool_opt_t *opt, void *arg
 {
     int idx;
     thread_pool_t *tpool;
+    thread_pool_opt_t _opt;
+
+    if (NULL == opt) {
+        memset(&_opt, 0, sizeof(_opt));
+        _opt.pool = (void *)NULL;
+        _opt.alloc = (mem_alloc_cb_t)mem_alloc;
+        _opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
+        opt = &_opt;
+    }
 
     /* 1. 分配线程池空间, 并初始化 */
     tpool = (thread_pool_t *)opt->alloc(opt->pool, sizeof(thread_pool_t));

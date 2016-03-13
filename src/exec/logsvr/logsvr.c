@@ -112,7 +112,6 @@ int logd_proc_lock(const char *key_path)
 static logd_cntx_t *logd_init(logd_opt_t *opt)
 {
     logd_cntx_t *ctx;
-    thread_pool_opt_t tp_opt;
     char path[FILE_PATH_MAX_LEN];
 
     /* > 服务进程锁 */
@@ -146,13 +145,7 @@ static logd_cntx_t *logd_init(logd_opt_t *opt)
     }
 
     /* > 启动多个线程 */
-    memset(&tp_opt, 0, sizeof(tp_opt));
-
-    tp_opt.pool = (void *)NULL;
-    tp_opt.alloc = (mem_alloc_cb_t)mem_alloc;
-    tp_opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
-
-    ctx->pool = thread_pool_init(LOGD_THREAD_NUM, &tp_opt, NULL);
+    ctx->pool = thread_pool_init(LOGD_THREAD_NUM, NULL, NULL);
     if (NULL == ctx->pool) {
         thread_pool_destroy(ctx->pool);
         ctx->pool = NULL;

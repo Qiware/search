@@ -17,7 +17,6 @@ static int sdsd_creat_worktp(sdsd_cntx_t *ctx)
 {
     int idx;
     sdtp_worker_t *worker;
-    thread_pool_opt_t opt;
     sdsd_conf_t *conf = &ctx->conf;
 
     /* > 创建对象 */
@@ -28,13 +27,7 @@ static int sdsd_creat_worktp(sdsd_cntx_t *ctx)
     }
 
     /* > 创建线程池 */
-    memset(&opt, 0, sizeof(opt));
-
-    opt.pool = (void *)NULL;
-    opt.alloc = (mem_alloc_cb_t)mem_alloc;
-    opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
-
-    ctx->worktp = thread_pool_init(conf->work_thd_num, &opt, (void *)worker);
+    ctx->worktp = thread_pool_init(conf->work_thd_num, NULL, (void *)worker);
     if (NULL == ctx->worktp) {
         log_error(ctx->log, "Initialize thread pool failed!");
         FREE(worker);
@@ -75,7 +68,6 @@ static int sdsd_creat_sendtp(sdsd_cntx_t *ctx)
 {
     int idx;
     sdsd_ssvr_t *ssvr;
-    thread_pool_opt_t opt;
     sdsd_conf_t *conf = &ctx->conf;
 
     /* > 创建对象 */
@@ -86,13 +78,7 @@ static int sdsd_creat_sendtp(sdsd_cntx_t *ctx)
     }
 
     /* > 创建线程池 */
-    memset(&opt, 0, sizeof(opt));
-
-    opt.pool = (void *)NULL;
-    opt.alloc = (mem_alloc_cb_t)mem_alloc;
-    opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
-
-    ctx->sendtp = thread_pool_init(conf->send_thd_num, &opt, (void *)ssvr);
+    ctx->sendtp = thread_pool_init(conf->send_thd_num, NULL, (void *)ssvr);
     if (NULL == ctx->sendtp) {
         log_error(ctx->log, "Initialize thread pool failed!");
         FREE(ssvr);

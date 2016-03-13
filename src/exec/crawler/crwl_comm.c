@@ -286,7 +286,6 @@ static int crwl_creat_workers(crwl_cntx_t *ctx)
 {
     int idx, num;
     crwl_worker_t *worker;
-    thread_pool_opt_t opt;
     const crwl_worker_conf_t *conf = &ctx->conf.worker;
 
     /* > 新建Worker对象 */
@@ -297,13 +296,7 @@ static int crwl_creat_workers(crwl_cntx_t *ctx)
     }
 
     /* > 创建Worker线程池 */
-    memset(&opt, 0, sizeof(opt));
-
-    opt.pool = (void *)NULL;
-    opt.alloc = (mem_alloc_cb_t)mem_alloc;
-    opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
-
-    ctx->workers = thread_pool_init(conf->num, &opt, worker);
+    ctx->workers = thread_pool_init(conf->num, NULL, worker);
     if (NULL == ctx->workers) {
         log_error(ctx->log, "Initialize thread pool failed!");
         FREE(worker);
@@ -380,17 +373,8 @@ int crwl_workers_destroy(crwl_cntx_t *ctx)
  ******************************************************************************/
 static int crwl_creat_scheds(crwl_cntx_t *ctx)
 {
-    thread_pool_opt_t opt;
-
-    memset(&opt, 0, sizeof(opt));
-
-    /* 1. 设置内存池信息 */
-    opt.pool = (void *)NULL;
-    opt.alloc = (mem_alloc_cb_t)mem_alloc;
-    opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
-
-    /* 2. 创建Sched线程池 */
-    ctx->scheds = thread_pool_init(CRWL_SCHED_THD_NUM, &opt, NULL);
+    /* 创建Sched线程池 */
+    ctx->scheds = thread_pool_init(CRWL_SCHED_THD_NUM, NULL, NULL);
     if (NULL == ctx->scheds) {
         log_error(ctx->log, "Initialize thread pool failed!");
         return CRWL_ERR;

@@ -356,17 +356,10 @@ int flt_launch(flt_cntx_t *ctx)
 static int flt_workers_creat(flt_cntx_t *ctx)
 {
     int idx, num;
-    thread_pool_opt_t opt;
     flt_work_conf_t *conf = &ctx->conf->work;
 
-    memset(&opt, 0, sizeof(opt));
-
     /* 1. 创建Worker线程池 */
-    opt.pool = (void *)NULL;
-    opt.alloc = (mem_alloc_cb_t)mem_alloc;
-    opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
-
-    ctx->workers = thread_pool_init(conf->num, &opt, NULL);
+    ctx->workers = thread_pool_init(conf->num, NULL, NULL);
     if (NULL == ctx->workers) {
         log_error(ctx->log, "Initialize thread pool failed!");
         return FLT_ERR;

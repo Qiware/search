@@ -172,7 +172,6 @@ static int agent_creat_workers(agent_cntx_t *ctx)
 {
     int idx, num;
     agent_worker_t *worker;
-    thread_pool_opt_t opt;
     const agent_conf_t *conf = ctx->conf;
 
     /* > 新建Worker对象 */
@@ -183,13 +182,7 @@ static int agent_creat_workers(agent_cntx_t *ctx)
     }
 
     /* > 创建Worker线程池 */
-    memset(&opt, 0, sizeof(opt));
-
-    opt.pool = NULL;
-    opt.alloc = (mem_alloc_cb_t)mem_alloc;
-    opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
-
-    ctx->workers = thread_pool_init(conf->worker_num, &opt, worker);
+    ctx->workers = thread_pool_init(conf->worker_num, NULL, worker);
     if (NULL == ctx->workers) {
         log_error(ctx->log, "Initialize thread pool failed!");
         return AGENT_ERR;
@@ -265,7 +258,6 @@ static int agent_creat_agents(agent_cntx_t *ctx)
 {
     int idx, num;
     agent_rsvr_t *agent;
-    thread_pool_opt_t opt;
     const agent_conf_t *conf = ctx->conf;
 
     /* > 新建Agent对象 */
@@ -276,13 +268,7 @@ static int agent_creat_agents(agent_cntx_t *ctx)
     }
 
     /* > 创建Worker线程池 */
-    memset(&opt, 0, sizeof(opt));
-
-    opt.pool = NULL;
-    opt.alloc = (mem_alloc_cb_t)mem_alloc;
-    opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
-
-    ctx->agents = thread_pool_init(conf->agent_num, &opt, agent);
+    ctx->agents = thread_pool_init(conf->agent_num, NULL, agent);
     if (NULL == ctx->agents) {
         log_error(ctx->log, "Initialize thread pool failed!");
         free(agent);
@@ -328,7 +314,6 @@ static int agent_creat_listens(agent_cntx_t *ctx)
 {
     int idx;
     agent_lsvr_t *lsvr;
-    thread_pool_opt_t opt;
     agent_conf_t *conf = ctx->conf;
 
     /* > 侦听指定端口 */
@@ -361,13 +346,7 @@ static int agent_creat_listens(agent_cntx_t *ctx)
         }
     }
 
-    memset(&opt, 0, sizeof(opt));
-
-    opt.pool = NULL;
-    opt.alloc = (mem_alloc_cb_t)mem_alloc;
-    opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
-
-    ctx->listens = thread_pool_init(conf->lsn_num, &opt, ctx->listen.lsvr);
+    ctx->listens = thread_pool_init(conf->lsn_num, NULL, ctx->listen.lsvr);
     if (NULL == ctx->listens) {
         CLOSE(ctx->listen.lsn_sck_id);
         FREE(ctx->listen.lsvr);

@@ -100,9 +100,8 @@ void *cp_copy_routine(void *_ctx)
 
 int main(int argc, char *argv[])
 {
-    int idx, thd_num;
     cp_cntx_t *ctx;
-    thread_pool_opt_t opt;
+    int idx, thd_num;
 
     if (4 != argc) {
         fprintf(stderr, "Paramter isn't right!\n");
@@ -131,12 +130,8 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    /* > 创建内存池 */
-    opt.pool = (void *)NULL;
-    opt.alloc = (mem_alloc_cb_t)mem_alloc;
-    opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
-
-    ctx->tpool = thread_pool_init(thd_num, &opt, NULL);
+    /* > 创建线程池 */
+    ctx->tpool = thread_pool_init(thd_num, NULL, NULL);
     if (NULL == ctx->tpool) {
         fprintf(stderr, "%s:[%d] errmsg:[%d] %s!\n", __FILE__, __LINE__, errno, strerror(errno));
         return -1;
