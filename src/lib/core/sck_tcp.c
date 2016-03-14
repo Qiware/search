@@ -132,6 +132,7 @@ int tcp_accept(int lsnfd, struct sockaddr *cliaddr)
 int tcp_connect(int family, const char *ipaddr, int port)
 {
     int fd, opt = 1;
+    struct linger lg;
     struct sockaddr_in svraddr;
 
     /* 1. 创建套接字 */
@@ -142,6 +143,13 @@ int tcp_connect(int family, const char *ipaddr, int port)
 
     opt = 1;
     setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(int));
+
+    /* 有效避免TIME_WAIT过多造成的问题 */
+    memset(&lg, 0, sizeof(lg));
+
+    lg.l_onoff = 1;
+    lg.l_linger = 0;
+    setsockopt(fd, SOL_SOCKET, SO_LINGER, &lg, sizeof(lg));
 
     /* 2. 连接远程服务器 */
     bzero(&svraddr, sizeof(svraddr));
@@ -180,6 +188,7 @@ int tcp_connect(int family, const char *ipaddr, int port)
  ******************************************************************************/
 int tcp_connect_timeout(int family, const char *ipaddr, int port, int sec)
 {
+    struct linger lg;
     int ret, fd, opt = 1;
     fd_set rdset, wrset;
     struct timeval tv;
@@ -193,6 +202,13 @@ int tcp_connect_timeout(int family, const char *ipaddr, int port, int sec)
 
     opt = 1;
     setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(int));
+
+    /* 有效避免TIME_WAIT过多造成的问题 */
+    memset(&lg, 0, sizeof(lg));
+
+    lg.l_onoff = 1;
+    lg.l_linger = 0;
+    setsockopt(fd, SOL_SOCKET, SO_LINGER, &lg, sizeof(lg));
 
     fd_set_nonblocking(fd);
 
@@ -255,6 +271,7 @@ AGAIN:
 int tcp_connect_async(int family, const char *ipaddr, int port)
 {
     int fd, opt = 1;
+    struct linger lg;
     struct sockaddr_in svraddr;
 
     /* 1. 创建套接字 */
@@ -265,6 +282,13 @@ int tcp_connect_async(int family, const char *ipaddr, int port)
 
     opt = 1;
     setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(int));
+
+    /* 有效避免TIME_WAIT过多造成的问题 */
+    memset(&lg, 0, sizeof(lg));
+
+    lg.l_onoff = 1;
+    lg.l_linger = 0;
+    setsockopt(fd, SOL_SOCKET, SO_LINGER, &lg, sizeof(lg));
 
     fd_set_nonblocking(fd);
 
