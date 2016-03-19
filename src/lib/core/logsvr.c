@@ -13,7 +13,7 @@ static log_svr_t *g_log_svr = NULL;
 static pthread_mutex_t g_log_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static size_t log_sync_to_disk(log_cycle_t *log);
-static int log_rename(const log_cache_t *lc, const struct timeb *time);
+static int log_rename(const log_cycle_t *log, const struct timeb *time);
 static void *log_sync_proc(void *_lsvr);
 static int _log_sync_proc(log_cycle_t *log, void *args);
 
@@ -121,7 +121,7 @@ static int _log_sync_proc(log_cycle_t *log, void *args)
  **函数名称: log_sync
  **功    能: 强制同步日志信息到日志文件
  **输入参数:
- **     lc: 日志文件信息
+ **     log: 日志对象
  **输出参数: NONE
  **返    回: VOID
  **实现描述:
@@ -138,7 +138,7 @@ int log_sync(log_cycle_t *log)
     /* 2. 文件是否过大 */
     if (log_is_too_large(sz)) {
         CLOSE(log->fd);
-        return log_rename(log->lc, &log->lc->sync_tm);
+        return log_rename(log, &log->sync_tm);
     }
 
     return 0;
@@ -163,35 +163,34 @@ static size_t log_sync_to_disk(log_cycle_t *log)
     void *addr;
     struct stat st;
     int n, sz = 0;
-    log_cache_t *lc = log->lc;
 
     /* 1. 判断是否需要同步 */
-    if (lc->ioff == lc->ooff) {
+    if (log->inoff == log->outoff) {
         return 0;
     }
 
     /* 2. 计算同步地址和长度 */
-    addr = (void *)(lc + 1);
-    n = lc->ioff - lc->ooff;
+    addr = log->text;
+    n = log->inoff - log->outoff;
 
     /* 撰写日志文件 */
     do {
         /* 3. 文件是否存在 */
-        if (lstat(lc->path, &st) < 0) {
+        if (lstat(log->path, &st) < 0) {
             if (ENOENT != errno) {
-                fprintf(stderr, "errmsg:[%d] %s! path:[%s]\n", errno, strerror(errno), lc->path);
+                fprintf(stderr, "errmsg:[%d] %s! path:[%s]\n", errno, strerror(errno), log->path);
                 CLOSE(log->fd);
                 break;
             }
             CLOSE(log->fd);
-            Mkdir2(lc->path, DIR_MODE);
+            Mkdir2(log->path, DIR_MODE);
         }
 
         /* 4. 是否重新创建文件 */
         if (log->fd < 0) {
-            log->fd = Open(lc->path, OPEN_FLAGS, OPEN_MODE);
+            log->fd = Open(log->path, OPEN_FLAGS, OPEN_MODE);
             if (log->fd < 0) {
-                fprintf(stderr, "errmsg:[%d] %s! path:[%s]\n", errno, strerror(errno), lc->path);
+                fprintf(stderr, "errmsg:[%d] %s! path:[%s]\n", errno, strerror(errno), log->path);
                 break;
             }
         }
@@ -200,7 +199,7 @@ static size_t log_sync_to_disk(log_cycle_t *log)
         sz = lseek(log->fd, 0, SEEK_END);
         if (-1 == sz) {
             CLOSE(log->fd);
-            fprintf(stderr, "errmsg:[%d] %s! path:[%s]\n", errno, strerror(errno), lc->path);
+            fprintf(stderr, "errmsg:[%d] %s! path:[%s]\n", errno, strerror(errno), log->path);
             break;
         }
 
@@ -212,9 +211,9 @@ static size_t log_sync_to_disk(log_cycle_t *log)
 
     /* 7. 标志复位 */
     memset(addr, 0, n);
-    lc->ioff = 0;
-    lc->ooff = 0;
-    ftime(&lc->sync_tm);
+    log->inoff = 0;
+    log->outoff = 0;
+    ftime(&log->sync_tm);
 
     return sz;
 }
@@ -223,7 +222,7 @@ static size_t log_sync_to_disk(log_cycle_t *log)
  **函数名称: log_rename
  **功    能: 获取备份日志文件名
  **输入参数:
- **     lc: 文件信息
+ **     log: 日志对象
  **     time: 当前时间
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
@@ -231,7 +230,7 @@ static size_t log_sync_to_disk(log_cycle_t *log)
  **注意事项:
  **作    者: # Qifeng.zou # 2013.10.31 #
  ******************************************************************************/
-static int log_rename(const log_cache_t *lc, const struct timeb *time)
+static int log_rename(const log_cycle_t *log, const struct timeb *time)
 {
     struct tm loctm;
     char newpath[FILE_PATH_MAX_LEN];
@@ -241,10 +240,10 @@ static int log_rename(const log_cache_t *lc, const struct timeb *time)
     /* FORMAT: *.logYYYYMMDDHHMMSS.bak */
     snprintf(newpath, sizeof(newpath),
         "%s%04d%02d%02d%02d%02d%02d.bak",
-        lc->path, loctm.tm_year+1900, loctm.tm_mon+1, loctm.tm_mday,
+        log->path, loctm.tm_year+1900, loctm.tm_mon+1, loctm.tm_mday,
         loctm.tm_hour, loctm.tm_min, loctm.tm_sec);
 
-    return rename(lc->path, newpath);
+    return rename(log->path, newpath);
 }
 
 /******************************************************************************

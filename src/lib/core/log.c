@@ -11,14 +11,9 @@
 #include "comm.h"
 #include "redo.h"
 
-size_t g_log_max_size = LOG_FILE_MAX_SIZE;
-
-/* 日志缓存数据空间大小 */
-static const size_t g_log_data_size = (LOG_FILE_CACHE_SIZE - sizeof(log_cache_t));
-#define log_get_data_size() (g_log_data_size)
+size_t g_log_max_size = LOG_MAX_SIZE;
 
 /* 函数声明 */
-static log_cache_t *log_alloc(const char *path);
 static int log_write(log_cycle_t *log, int level,
         const void *dump, int dumplen, const char *msg, const struct timeb *ctm);
 static int log_print_dump(char *addr, const void *dump, int dumplen);
@@ -38,7 +33,6 @@ static int log_print_dump(char *addr, const void *dump, int dumplen);
 log_cycle_t *log_init(int level, const char *path)
 {
     log_svr_t *lsvr;
-    log_cache_t *lc;
     log_cycle_t *log;
 
     Mkdir2(path, DIR_MODE);
@@ -62,15 +56,15 @@ log_cycle_t *log_init(int level, const char *path)
 
     do {
         /* > 创建日志缓存 */
-        lc = (log_cache_t *)calloc(1, LOG_FILE_CACHE_SIZE);
-        if (NULL == lc) {
+        log->text = (char *)calloc(1, LOG_MEM_SIZE);
+        if (NULL == log->text) {
             fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
             break;
         }
 
-        lc->pid = getpid();
-        snprintf(lc->path, sizeof(lc->path), "%s", path);
-        log->lc = lc;
+        log->pid = getpid();
+        log->size = LOG_MEM_SIZE;
+        snprintf(log->path, sizeof(log->path), "%s", path);
 
         /* > 打开日志文件 */
         log->fd = Open(path, OPEN_FLAGS, OPEN_MODE);
@@ -85,7 +79,7 @@ log_cycle_t *log_init(int level, const char *path)
     } while (0);
 
     /* 5. 异常处理 */
-    if (NULL != log->lc) { free(log->lc); }
+    FREE(log->text);
     pthread_mutex_destroy(&log->lock);
     free(log);
     return NULL;
@@ -229,35 +223,6 @@ void log_set_max_size(size_t size)
 }
 
 /******************************************************************************
- **函数名称: log_alloc
- **功    能: 创建日志信息
- **输入参数:
- **     addr: 共享内存首地址
- **     path: 日志绝对路径
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述:
- **     1. 判断当前功能内存中是否有文件名一致的日志
- **     2. 选择合适的日志缓存，并返回
- **注意事项:
- **作    者: # Qifeng.zou # 2013.10.31 #
- ******************************************************************************/
-static log_cache_t *log_alloc(const char *path)
-{
-    log_cache_t *lc;
-
-    lc = (log_cache_t *)calloc(1, LOG_FILE_CACHE_SIZE);
-    if (NULL == lc) {
-        return NULL;
-    }
-
-    lc->pid = getpid();
-    snprintf(lc->path, sizeof(lc->path), "%s", path);
-
-    return lc;
-}
-
-/******************************************************************************
  **函数名称: log_write
  **功    能: 将日志信息写入缓存
  **输入参数:
@@ -278,14 +243,13 @@ static int log_write(log_cycle_t *log, int level,
     int msglen, left;
     char *addr;
     struct tm loctm;
-    log_cache_t *lc = log->lc;
 
     local_time(&ctm->time, &loctm);        /* 获取当前系统时间 */
 
     pthread_mutex_lock(&log->lock);
 
-    addr = (char *)(lc + 1) + lc->ioff;
-    left = log_get_data_size() - lc->ioff;
+    addr = log->text + log->inoff;
+    left = log->size - log->inoff;
 
     switch (level) {
         case LOG_LEVEL_FATAL:
@@ -354,19 +318,19 @@ static int log_write(log_cycle_t *log, int level,
     }
 
     msglen = strlen(addr);
-    lc->ioff += msglen;
+    log->inoff += msglen;
     addr += msglen;
     left -= msglen;
 
     /* 打印DUMP数据 */
     if ((NULL != dump) && (dumplen > 0) && (left > dumplen)) {
         msglen = log_print_dump(addr, dump, dumplen);
-        lc->ioff += msglen;
+        log->inoff += msglen;
     }
 
     /* 判断是否强制同步 */
-    if (left <= 0.8*g_log_data_size) {
-        memcpy(&lc->sync_tm, ctm, sizeof(lc->sync_tm));
+    if (left <= 0.8 * log->size) {
+        memcpy(&log->sync_tm, ctm, sizeof(log->sync_tm));
         log_sync(log);
     }
 
