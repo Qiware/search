@@ -11,9 +11,7 @@
 #include "comm.h"
 #include "redo.h"
 
-static size_t g_log_max_size = LOG_FILE_MAX_SIZE;
-#define _log_set_max_size(size) (g_log_max_size = (size))
-#define log_is_too_large(size) ((size) >= g_log_max_size)
+size_t g_log_max_size = LOG_FILE_MAX_SIZE;
 
 /* 日志缓存数据空间大小 */
 static const size_t g_log_data_size = (LOG_FILE_CACHE_SIZE - sizeof(log_cache_t));
@@ -25,41 +23,29 @@ static int log_write(log_cycle_t *log, int level,
         const void *dump, int dumplen, const char *msg, const struct timeb *ctm);
 static int log_print_dump(char *addr, const void *dump, int dumplen);
 
-static int log_rename(const log_cache_t *lc, const struct timeb *time);
-static size_t _log_sync(log_cache_t *lc, int *fd);
-
-static int log_insert_cycle(log_svr_t *ctx, log_cycle_t *log);
-
-/* 是否强制写(注意: 系数必须小于或等于0.8，否则可能出现严重问题) */
-static const size_t g_log_sync_size = 0.8 * LOG_FILE_CACHE_SIZE;
-#define log_is_over_limit(lc) (((lc)->ioff - (lc)->ooff) > g_log_sync_size)
-
 /******************************************************************************
  **函数名称: log_init
  **功    能: 初始化日志信息
  **输入参数:
- **     ctx: 日志服务
  **     level: 日志级别(其值：LOG_LEVEL_TRACE~LOG_LEVEL_FATAL的"或"值)
  **     path: 日志路径
  **输出参数: NONE
- **返    回: 0:成功 !0:失败
+ **返    回: 日志对象
  **实现描述:
- **     1. 日志模块初始化
- **     2. 将日志信息写入共享内存
  **注意事项: 此函数中不能调用错误日志函数 - 可能死锁!
  **作    者: # Qifeng.zou # 2013.10.31 #
  ******************************************************************************/
 log_cycle_t *log_init(int level, const char *path)
 {
-    log_svr_t *ctx;
+    log_svr_t *lsvr;
     log_cache_t *lc;
     log_cycle_t *log;
 
     Mkdir2(path, DIR_MODE);
 
     /* > 新建日志服务 */
-    ctx = log_svr_init();
-    if (NULL == ctx) {
+    lsvr = log_svr_init();
+    if (NULL == lsvr) {
         return NULL;
     }
 
@@ -69,7 +55,7 @@ log_cycle_t *log_init(int level, const char *path)
         return NULL;
     }
 
-    log->owner = ctx;
+    log->owner = lsvr;
     log->level = level;
     log->pid = getpid();
     pthread_mutex_init(&log->lock, NULL);
@@ -93,7 +79,7 @@ log_cycle_t *log_init(int level, const char *path)
             break;
         }
 
-        log_insert_cycle(ctx, log);
+        log_insert(lsvr, log);
 
 	    return log;
     } while (0);
@@ -243,34 +229,6 @@ void log_set_max_size(size_t size)
 }
 
 /******************************************************************************
- **函数名称: log_rename
- **功    能: 获取备份日志文件名
- **输入参数:
- **     lc: 文件信息
- **     time: 当前时间
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述:
- **注意事项:
- **作    者: # Qifeng.zou # 2013.10.31 #
- ******************************************************************************/
-static int log_rename(const log_cache_t *lc, const struct timeb *time)
-{
-    struct tm loctm;
-    char newpath[FILE_PATH_MAX_LEN];
-
-    local_time(&time->time, &loctm);
-
-    /* FORMAT: *.logYYYYMMDDHHMMSS.bak */
-    snprintf(newpath, sizeof(newpath),
-        "%s%04d%02d%02d%02d%02d%02d.bak",
-        lc->path, loctm.tm_year+1900, loctm.tm_mon+1, loctm.tm_mday,
-        loctm.tm_hour, loctm.tm_min, loctm.tm_sec);
-
-    return rename(lc->path, newpath);
-}
-
-/******************************************************************************
  **函数名称: log_alloc
  **功    能: 创建日志信息
  **输入参数:
@@ -320,7 +278,6 @@ static int log_write(log_cycle_t *log, int level,
     int msglen, left;
     char *addr;
     struct tm loctm;
-    time_t difftm;
     log_cache_t *lc = log->lc;
 
     local_time(&ctm->time, &loctm);        /* 获取当前系统时间 */
@@ -404,18 +361,7 @@ static int log_write(log_cycle_t *log, int level,
     /* 打印DUMP数据 */
     if ((NULL != dump) && (dumplen > 0) && (left > dumplen)) {
         msglen = log_print_dump(addr, dump, dumplen);
-
         lc->ioff += msglen;
-    }
-
-    /* 判断是否强制写或发送通知 */
-    difftm = ctm->time - lc->sync_tm.time;
-    if (log_is_over_limit(lc)
-        || log_is_timeout(difftm))
-    {
-        memcpy(&lc->sync_tm, ctm, sizeof(lc->sync_tm));
-
-        log_sync(log);
     }
 
     pthread_mutex_unlock(&log->lock);
@@ -500,133 +446,4 @@ static int log_print_dump(char *addr, const void *dump, int dumplen)
     } /* dump_end of while    */
 
     return (in - addr);
-}
-
-/******************************************************************************
- **函数名称: log_sync
- **功    能: 强制同步日志信息到日志文件
- **输入参数:
- **     lc: 日志文件信息
- **输出参数: NONE
- **返    回: VOID
- **实现描述:
- **注意事项: 请在函数外部加锁
- **作    者: # Qifeng.zou # 2013.10.30 #
- ******************************************************************************/
-int log_sync(log_cycle_t *log)
-{
-    size_t fsize;
-
-    /* 1. 执行同步操作 */
-    fsize = _log_sync(log->lc, &log->fd);
-
-    /* 2. 文件是否过大 */
-    if (log_is_too_large(fsize)) {
-        CLOSE(log->fd);
-        return log_rename(log->lc, &log->lc->sync_tm);
-    }
-
-    return 0;
-}
-
-/******************************************************************************
- **函数名称: _log_sync
- **功    能: 强制同步业务日志
- **输入参数:
- **     lc: 文件缓存
- **输出参数:
- **     fd: 文件描述符
- **返    回: 如果进行同步操作，则返回文件的实际大小!
- **实现描述:
- **注意事项:
- **     1) 一旦撰写日志失败，需要清除缓存中的日志，防止内存溢出，导致严重后果!
- **     2) 当fd为空指针时，打开的文件需要关闭.
- **     3) 在此函数中不允许调用错误级别的日志函数 可能死锁!
- **作    者: # Qifeng.zou # 2013.11.08 #
- ******************************************************************************/
-static size_t _log_sync(log_cache_t *lc, int *_fd)
-{
-    void *addr;
-    struct stat st;
-    int n, fd = -1, fsize = 0;
-
-    /* 1. 判断是否需要同步 */
-    if (lc->ioff == lc->ooff) {
-        return 0;
-    }
-
-    /* 2. 计算同步地址和长度 */
-    addr = (void *)(lc + 1);
-    n = lc->ioff - lc->ooff;
-    fd = (NULL != _fd)? *_fd : INVALID_FD;
-
-    /* 撰写日志文件 */
-    do {
-        /* 3. 文件是否存在 */
-        if (lstat(lc->path, &st) < 0) {
-            if (ENOENT != errno) {
-                CLOSE(fd);
-                fprintf(stderr, "errmsg:[%d]%s path:[%s]\n", errno, strerror(errno), lc->path);
-                break;
-            }
-            CLOSE(fd);
-            Mkdir2(lc->path, DIR_MODE);
-        }
-
-        /* 4. 是否重新创建文件 */
-        if (fd < 0) {
-            fd = Open(lc->path, OPEN_FLAGS, OPEN_MODE);
-            if (fd < 0) {
-                fprintf(stderr, "errmsg:[%d] %s! path:[%s]\n", errno, strerror(errno), lc->path);
-                break;
-            }
-        }
-
-        /* 5. 定位到文件末尾 */
-        fsize = lseek(fd, 0, SEEK_END);
-        if (-1 == fsize) {
-            CLOSE(fd);
-            fprintf(stderr, "errmsg:[%d] %s! path:[%s]\n", errno, strerror(errno), lc->path);
-            break;
-        }
-
-        /* 6. 写入指定日志文件 */
-        Writen(fd, addr, n);
-
-        fsize += n;
-    } while(0);
-
-    /* 7. 标志复位 */
-    memset(addr, 0, n);
-    lc->ioff = 0;
-    lc->ooff = 0;
-    ftime(&lc->sync_tm);
-
-    if (NULL != _fd) {
-        *_fd = fd;
-    }
-    else {
-        CLOSE(fd);
-    }
-    return fsize;
-}
-
-/******************************************************************************
- **函数名称: log_insert_cycle
- **功    能: 添加日志对象
- **输入参数:
- **     ctx: 日志服务
- **     log: 日志对象
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述:
- **注意事项:
- **作    者: # Qifeng.zou # 2016.03.19 #
- ******************************************************************************/
-static int log_insert_cycle(log_svr_t *ctx, log_cycle_t *log)
-{
-    pthread_mutex_lock(&ctx->lock);
-    avl_insert(ctx->logs, (void *)log, sizeof(log), (void *)log);
-    pthread_mutex_unlock(&ctx->lock);
-    return 0;
 }
