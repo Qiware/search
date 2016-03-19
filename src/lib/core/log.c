@@ -364,6 +364,12 @@ static int log_write(log_cycle_t *log, int level,
         lc->ioff += msglen;
     }
 
+    /* 判断是否强制同步 */
+    if (left <= 0.8*g_log_data_size) {
+        memcpy(&lc->sync_tm, ctm, sizeof(lc->sync_tm));
+        log_sync(log);
+    }
+
     pthread_mutex_unlock(&log->lock);
 
     return 0;

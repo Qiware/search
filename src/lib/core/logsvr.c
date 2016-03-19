@@ -12,8 +12,7 @@
 static log_svr_t *g_log_svr = NULL;
 static pthread_mutex_t g_log_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static int log_sync(log_cycle_t *log);
-static size_t _log_sync(log_cache_t *lc, int *_fd);
+static size_t log_sync_to_disk(log_cycle_t *log);
 static int log_rename(const log_cache_t *lc, const struct timeb *time);
 static void *log_sync_proc(void *_lsvr);
 static int _log_sync_proc(log_cycle_t *log, void *args);
@@ -129,15 +128,15 @@ static int _log_sync_proc(log_cycle_t *log, void *args)
  **注意事项: 请在函数外部加锁
  **作    者: # Qifeng.zou # 2013.10.30 #
  ******************************************************************************/
-static int log_sync(log_cycle_t *log)
+int log_sync(log_cycle_t *log)
 {
-    size_t fsize;
+    size_t sz;
 
     /* 1. 执行同步操作 */
-    fsize = _log_sync(log->lc, &log->fd);
+    sz = log_sync_to_disk(log);
 
     /* 2. 文件是否过大 */
-    if (log_is_too_large(fsize)) {
+    if (log_is_too_large(sz)) {
         CLOSE(log->fd);
         return log_rename(log->lc, &log->lc->sync_tm);
     }
@@ -146,12 +145,11 @@ static int log_sync(log_cycle_t *log)
 }
 
 /******************************************************************************
- **函数名称: _log_sync
- **功    能: 强制同步业务日志
+ **函数名称: log_sync_to_disk
+ **功    能: 强制日志到磁盘
  **输入参数:
- **     lc: 文件缓存
- **输出参数:
- **     fd: 文件描述符
+ **     log: 日志对象
+ **输出参数: NONE
  **返    回: 如果进行同步操作，则返回文件的实际大小!
  **实现描述:
  **注意事项:
@@ -160,11 +158,12 @@ static int log_sync(log_cycle_t *log)
  **     3) 在此函数中不允许调用错误级别的日志函数 可能死锁!
  **作    者: # Qifeng.zou # 2013.11.08 #
  ******************************************************************************/
-static size_t _log_sync(log_cache_t *lc, int *_fd)
+static size_t log_sync_to_disk(log_cycle_t *log)
 {
     void *addr;
     struct stat st;
-    int n, fd = -1, fsize = 0;
+    int n, sz = 0;
+    log_cache_t *lc = log->lc;
 
     /* 1. 判断是否需要同步 */
     if (lc->ioff == lc->ooff) {
@@ -174,42 +173,41 @@ static size_t _log_sync(log_cache_t *lc, int *_fd)
     /* 2. 计算同步地址和长度 */
     addr = (void *)(lc + 1);
     n = lc->ioff - lc->ooff;
-    fd = (NULL != _fd)? *_fd : INVALID_FD;
 
     /* 撰写日志文件 */
     do {
         /* 3. 文件是否存在 */
         if (lstat(lc->path, &st) < 0) {
             if (ENOENT != errno) {
-                CLOSE(fd);
-                fprintf(stderr, "errmsg:[%d]%s path:[%s]\n", errno, strerror(errno), lc->path);
+                fprintf(stderr, "errmsg:[%d] %s! path:[%s]\n", errno, strerror(errno), lc->path);
+                CLOSE(log->fd);
                 break;
             }
-            CLOSE(fd);
+            CLOSE(log->fd);
             Mkdir2(lc->path, DIR_MODE);
         }
 
         /* 4. 是否重新创建文件 */
-        if (fd < 0) {
-            fd = Open(lc->path, OPEN_FLAGS, OPEN_MODE);
-            if (fd < 0) {
+        if (log->fd < 0) {
+            log->fd = Open(lc->path, OPEN_FLAGS, OPEN_MODE);
+            if (log->fd < 0) {
                 fprintf(stderr, "errmsg:[%d] %s! path:[%s]\n", errno, strerror(errno), lc->path);
                 break;
             }
         }
 
         /* 5. 定位到文件末尾 */
-        fsize = lseek(fd, 0, SEEK_END);
-        if (-1 == fsize) {
-            CLOSE(fd);
+        sz = lseek(log->fd, 0, SEEK_END);
+        if (-1 == sz) {
+            CLOSE(log->fd);
             fprintf(stderr, "errmsg:[%d] %s! path:[%s]\n", errno, strerror(errno), lc->path);
             break;
         }
 
         /* 6. 写入指定日志文件 */
-        Writen(fd, addr, n);
+        Writen(log->fd, addr, n);
 
-        fsize += n;
+        sz += n;
     } while(0);
 
     /* 7. 标志复位 */
@@ -218,13 +216,7 @@ static size_t _log_sync(log_cache_t *lc, int *_fd)
     lc->ooff = 0;
     ftime(&lc->sync_tm);
 
-    if (NULL != _fd) {
-        *_fd = fd;
-    }
-    else {
-        CLOSE(fd);
-    }
-    return fsize;
+    return sz;
 }
 
 /******************************************************************************

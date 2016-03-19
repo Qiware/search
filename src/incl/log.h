@@ -160,6 +160,7 @@ void plog_destroy(void);
 
 /* 内部接口 */
 int log_insert(log_svr_t *lsvr, log_cycle_t *log);
+int log_sync(log_cycle_t *log);
 extern size_t g_log_max_size;
 #define _log_set_max_size(size) (g_log_max_size = (size))
 #define log_is_too_large(size) ((size) >= g_log_max_size)
