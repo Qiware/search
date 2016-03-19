@@ -123,14 +123,14 @@ int flt_usage(const char *exec)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.21 #
  ******************************************************************************/
-static log_cycle_t *flt_init_log(log_cntx_t *lsvr, char *fname, int log_level)
+static log_cycle_t *flt_init_log(char *fname, int log_level)
 {
     char path[FILE_NAME_MAX_LEN];
 
     /* > 初始化业务日志 */
     log_get_path(path, sizeof(path), basename(fname));
 
-    return log_creat(lsvr, log_level, path);
+    return log_init(log_level, path);
 }
 
 /******************************************************************************
@@ -150,18 +150,11 @@ flt_cntx_t *flt_init(char *pname, flt_opt_t *flt_opt)
 {
     flt_cntx_t *ctx;
     flt_conf_t *conf;
-    log_cntx_t *lsvr;
     log_cycle_t *log;
     hash_map_opt_t opt;
 
     /* > 初始化日志模块 */
-    lsvr = log_init();
-    if (NULL == lsvr) {
-        fprintf(stderr, "Initialize log server failed!\n");
-        return NULL;
-    }
-
-    log = flt_init_log(lsvr, pname, flt_opt->log_level);
+    log = flt_init_log(pname, flt_opt->log_level);
     if (NULL == log) {
         fprintf(stderr, "Initialize log failed!\n");
         return NULL;

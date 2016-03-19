@@ -115,7 +115,7 @@ int main(int argc, const char *argv[])
     port = atoi(argv[1]);
     rtmq_setup_conf(&conf, port);
 
-    log = log_init(LOG_LEVEL_DEBUG, "./rtmq_ssvr.log", "../temp/log.key");
+    log = log_init(LOG_LEVEL_DEBUG, "./rtmq_ssvr.log");
     if (NULL == log) {
         fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
         return -1;

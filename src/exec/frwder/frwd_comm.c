@@ -194,11 +194,11 @@ int frwd_launch(frwd_cntx_t *frwd)
  **注意事项:
  **作    者: # Qifeng.zou # 2015-06-10 #
  ******************************************************************************/
-log_cycle_t *frwd_init_log(log_cntx_t *lsvr, const char *pname, int log_level)
+log_cycle_t *frwd_init_log(const char *pname, int log_level)
 {
     char path[FILE_PATH_MAX_LEN];
 
     snprintf(path, sizeof(path), "../log/%s.log", pname);
 
-    return log_creat(lsvr, log_level, path);
+    return log_init(log_level, path);
 }

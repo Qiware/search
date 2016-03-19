@@ -25,7 +25,6 @@ int lsnd_getopt(int argc, char **argv, lsnd_opt_t *opt)
         {"help",                    no_argument,        NULL, 'h'}
         , {"daemon",                no_argument,        NULL, 'd'}
         , {"log-level",             required_argument,  NULL, 'l'}
-        , {"log key path",          required_argument,  NULL, 'L'}
         , {"configuration path",    required_argument,  NULL, 'c'}
         , {NULL,                    0,                  NULL, 0}
     };
@@ -36,14 +35,13 @@ int lsnd_getopt(int argc, char **argv, lsnd_opt_t *opt)
     opt->log_level = LOG_LEVEL_TRACE;
 
     /* 1. 解析输入参数 */
-    while (-1 != (ch = getopt_long(argc, argv, "l:c:L:hd", opts, NULL))) {
+    while (-1 != (ch = getopt_long(argc, argv, "l:c:hd", opts, NULL))) {
         switch (ch) {
             case 'c':   /* 配置路径 */
             {
                 opt->conf_path = optarg;
                 break;
             }
-
             case 'l':   /* 日志级别 */
             {
                 opt->log_level = log_get_level(optarg);
@@ -86,11 +84,11 @@ int lsnd_usage(const char *exec)
 }
 
 /* 初始化日志模块 */
-log_cycle_t *lsnd_init_log(log_cntx_t *lsvr, char *fname)
+log_cycle_t *lsnd_init_log(char *fname)
 {
     char path[FILE_NAME_MAX_LEN];
 
     log_get_path(path, sizeof(path), basename(fname));
 
-    return log_creat(lsvr, LOG_LEVEL_ERROR, path);
+    return log_init(LOG_LEVEL_ERROR, path);
 }

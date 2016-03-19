@@ -67,12 +67,12 @@ typedef struct
 
     avl_tree_t *logs;                       /* 日志列表(管理log_cycle_t对象) */
     pthread_mutex_t lock;                   /* 锁 */
-} log_cntx_t;
+} log_svr_t;
 
 /* 日志对象 */
 typedef struct _log_cycle_t
 {
-    log_cntx_t *owner;                      /* 所属服务 */
+    log_svr_t *owner;                      /* 所属服务 */
 
     int level;                              /* 日志级别 */
     int fd;                                 /* 文件描述符 */
@@ -82,10 +82,10 @@ typedef struct _log_cycle_t
 } log_cycle_t;
 
 /* 外部接口 */
-log_cntx_t *log_init(void);
+log_svr_t *log_svr_init(void);
 int log_get_level(const char *level_str);
 const char *log_get_str(int level);
-log_cycle_t *log_creat(log_cntx_t *ctx, int level, const char *path);
+log_cycle_t *log_init(int level, const char *path);
 #define log_set_level(log, _level) { (log)->level = (_level); }
 void log_core(log_cycle_t *log, int level,
                 const char *fname, int lineno,

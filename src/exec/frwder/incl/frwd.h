@@ -29,7 +29,6 @@ typedef struct
 {
     int cmd_sck_id;                         /* 命令套接字 */
     frwd_conf_t conf;                       /* 配置信息 */
-    log_cntx_t *lsvr;                       /* 日志服务 */
     log_cycle_t *log;                       /* 日志对象 */
     rtsd_cntx_t *rtmq;                      /* RTMQ对象 */
     rtrd_cntx_t *recv_lsnd;                 /* 用于接收来自LSND的数据 */
@@ -37,7 +36,7 @@ typedef struct
 
 int frwd_getopt(int argc, char **argv, frwd_opt_t *opt);
 int frwd_usage(const char *exec);
-log_cycle_t *frwd_init_log(log_cntx_t *ctx, const char *pname, int log_level);
+log_cycle_t *frwd_init_log(const char *pname, int log_level);
 frwd_cntx_t *frwd_init(const frwd_conf_t *conf, log_cycle_t *log);
 int frwd_launch(frwd_cntx_t *frwd);
 int frwd_set_reg(frwd_cntx_t *frwd);

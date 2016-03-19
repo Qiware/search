@@ -26,7 +26,6 @@ static int mem_usage(const char *exec);
 int main(int argc, char *argv[])
 {
     mem_opt_t opt;
-    log_cntx_t *lsvr;
     log_cycle_t *log;
 
     /* > 获取输入参数 */
@@ -40,13 +39,7 @@ int main(int argc, char *argv[])
     umask(0);
 
     /* > 初始化日志模块 */
-    lsvr = log_init();
-    if (NULL == lsvr) {
-        fprintf(stderr, "Initialize log server failed!\n");
-        return -1;
-    }
-
-    log = log_creat(lsvr, opt.log_level, MEM_LOG_PATH);
+    log = log_init(opt.log_level, MEM_LOG_PATH);
     if (NULL == log) {
         fprintf(stderr, "Initialize log cycle failed!\n");
         return -1;

@@ -9,13 +9,11 @@ int main(void)
 {
     int ret, key, idx;
     btree_t *btree;
-    log_cntx_t *lsvr;
     log_cycle_t *log;
     char input[INPUT_LEN];
     void *data;
 
-    lsvr = log_init();
-    log = log_creat(lsvr, LOG_LEVEL_TRACE, "btree.log");
+    log = log_init(LOG_LEVEL_TRACE, "btree.log");
     if (NULL == log) {
         return -1;
     }

@@ -16,29 +16,26 @@ static size_t g_log_max_size = LOG_FILE_MAX_SIZE;
 #define log_is_too_large(size) ((size) >= g_log_max_size)
 
 /* 日志缓存数据空间大小 */
-static const size_t g_log_data_size =  (LOG_FILE_CACHE_SIZE - sizeof(log_cache_t));
+static const size_t g_log_data_size = (LOG_FILE_CACHE_SIZE - sizeof(log_cache_t));
 #define log_get_data_size() (g_log_data_size)
 
 /* 函数声明 */
-static void *log_sync_proc(void *_ctx);
 static log_cache_t *log_alloc(const char *path);
-static void log_dealloc(log_cache_t *lc);
 static int log_write(log_cycle_t *log, int level,
         const void *dump, int dumplen, const char *msg, const struct timeb *ctm);
 static int log_print_dump(char *addr, const void *dump, int dumplen);
 
 static int log_rename(const log_cache_t *lc, const struct timeb *time);
 static size_t _log_sync(log_cache_t *lc, int *fd);
-static int _log_sync_proc(log_cycle_t *log, void *args);
 
-static int log_insert_cycle(log_cntx_t *ctx, log_cycle_t *log);
+static int log_insert_cycle(log_svr_t *ctx, log_cycle_t *log);
 
 /* 是否强制写(注意: 系数必须小于或等于0.8，否则可能出现严重问题) */
 static const size_t g_log_sync_size = 0.8 * LOG_FILE_CACHE_SIZE;
 #define log_is_over_limit(lc) (((lc)->ioff - (lc)->ooff) > g_log_sync_size)
 
 /******************************************************************************
- **函数名称: log_creat
+ **函数名称: log_init
  **功    能: 初始化日志信息
  **输入参数:
  **     ctx: 日志服务
@@ -52,12 +49,19 @@ static const size_t g_log_sync_size = 0.8 * LOG_FILE_CACHE_SIZE;
  **注意事项: 此函数中不能调用错误日志函数 - 可能死锁!
  **作    者: # Qifeng.zou # 2013.10.31 #
  ******************************************************************************/
-log_cycle_t *log_creat(log_cntx_t *ctx, int level, const char *path)
+log_cycle_t *log_init(int level, const char *path)
 {
+    log_svr_t *ctx;
     log_cache_t *lc;
     log_cycle_t *log;
 
     Mkdir2(path, DIR_MODE);
+
+    /* > 新建日志服务 */
+    ctx = log_svr_init();
+    if (NULL == ctx) {
+        return NULL;
+    }
 
     /* > 新建日志对象 */
     log = (log_cycle_t *)calloc(1, sizeof(log_cycle_t));
@@ -264,52 +268,6 @@ static int log_rename(const log_cache_t *lc, const struct timeb *time)
         loctm.tm_hour, loctm.tm_min, loctm.tm_sec);
 
     return rename(lc->path, newpath);
-}
-
-/******************************************************************************
- **函数名称: log_name_conflict_handler
- **功    能: 日志名冲突时，产生新的日志名
- **输入参数:
- **     oripath: 原始日志名
- **     size: newpath的空间大小
- **     idx: 索引
- **输出参数:
- **     newpath: 新日志名
- **返    回: 0:成功 !0:失败
- **实现描述: 发生冲突时, 则日志名上追加序列号
- **注意事项:
- **作    者: # Qifeng.zou # 2013.12.05 #
- ******************************************************************************/
-static int log_name_conflict_handler(const char *oripath, char *newpath, int size, int idx)
-{
-    int len;
-    char *ptr;
-    char suffix[FILE_NAME_MAX_LEN];
-
-    snprintf(newpath, size, "%s", oripath);
-    snprintf(suffix, sizeof(suffix), "-%03d.log", idx);
-
-    len = strlen(newpath) + strlen(suffix) - strlen(LOG_SUFFIX);
-    if (len >= size) {
-        fprintf(stderr, "Not enough memory! newpath:[%s] suffix:[%s] len:[%d]/[%d]",
-            newpath, suffix, len, size);
-        return -1;  /* Not enough memory */
-    }
-
-    ptr = strrchr(newpath, '.');
-    if (NULL == ptr) {
-        strcat(newpath, suffix);
-        return 0;
-    }
-
-    if (!strcasecmp(ptr, LOG_SUFFIX)) {
-        sprintf(ptr, "%s", suffix);
-    }
-    else {
-        strcat(ptr, suffix);
-    }
-
-    return 0;
 }
 
 /******************************************************************************
@@ -552,14 +510,12 @@ static int log_print_dump(char *addr, const void *dump, int dumplen)
  **输出参数: NONE
  **返    回: VOID
  **实现描述:
- **注意事项:
+ **注意事项: 请在函数外部加锁
  **作    者: # Qifeng.zou # 2013.10.30 #
  ******************************************************************************/
 int log_sync(log_cycle_t *log)
 {
     size_t fsize;
-
-    pthread_mutex_lock(&log->lock);
 
     /* 1. 执行同步操作 */
     fsize = _log_sync(log->lc, &log->fd);
@@ -567,11 +523,8 @@ int log_sync(log_cycle_t *log)
     /* 2. 文件是否过大 */
     if (log_is_too_large(fsize)) {
         CLOSE(log->fd);
-        pthread_mutex_unlock(&log->lock);
         return log_rename(log->lc, &log->lc->sync_tm);
     }
-
-    pthread_mutex_unlock(&log->lock);
 
     return 0;
 }
@@ -670,7 +623,7 @@ static size_t _log_sync(log_cache_t *lc, int *_fd)
  **注意事项:
  **作    者: # Qifeng.zou # 2016.03.19 #
  ******************************************************************************/
-static int log_insert_cycle(log_cntx_t *ctx, log_cycle_t *log)
+static int log_insert_cycle(log_svr_t *ctx, log_cycle_t *log)
 {
     pthread_mutex_lock(&ctx->lock);
     avl_insert(ctx->logs, (void *)log, sizeof(log), (void *)log);

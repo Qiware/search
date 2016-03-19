@@ -37,7 +37,6 @@ int main(int argc, char *argv[])
 {
     lsnd_opt_t opt;
     lsnd_conf_t conf;
-    log_cntx_t *lsvr;
     log_cycle_t *log;
     lsnd_cntx_t *ctx = NULL;
     char path[FILE_PATH_MAX_LEN];
@@ -59,13 +58,7 @@ int main(int argc, char *argv[])
     /* > 初始化日志 */
     log_get_path(path, sizeof(path), basename(argv[0]));
 
-    lsvr = log_init();
-    if (NULL == lsvr) {
-        fprintf(stderr, "Initialize log server failed!\n");
-        goto LSND_INIT_ERR;
-    }
-
-    log = log_creat(lsvr, opt.log_level, path);
+    log = log_init(opt.log_level, path);
     if (NULL == log) {
         fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
         goto LSND_INIT_ERR;

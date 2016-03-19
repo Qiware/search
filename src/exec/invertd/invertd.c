@@ -28,7 +28,6 @@
 int main(int argc, char *argv[])
 {
     invtd_opt_t opt;
-    log_cntx_t *lsvr;
     log_cycle_t *log;
     invtd_cntx_t *ctx;
     invtd_conf_t conf;
@@ -50,13 +49,7 @@ int main(int argc, char *argv[])
     umask(0);
 
     /* > 初始化日志 */
-    lsvr = log_init();
-    if (NULL == lsvr) {
-        fprintf(stderr, "Initialize log server failed!\n");
-        return -1;
-    }
-
-    log = log_creat(lsvr, opt.log_level, INVTD_LOG_PATH);
+    log = log_init(opt.log_level, INVTD_LOG_PATH);
     if (NULL == log) {
         fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
         return -1;

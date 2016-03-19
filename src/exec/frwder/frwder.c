@@ -19,7 +19,6 @@ int main(int argc, char *argv[])
 {
     frwd_opt_t opt;
     frwd_conf_t conf;
-    log_cntx_t *lsvr;
     log_cycle_t *log;
     frwd_cntx_t *frwd;
 
@@ -36,12 +35,7 @@ int main(int argc, char *argv[])
     umask(0);
 
     /* > 初始化日志 */
-    lsvr = log_init();
-    if (NULL == lsvr) {
-        fprintf(stderr, "Initialize log server failed!\n");
-        return -1;
-    }
-    log = frwd_init_log(lsvr, argv[0], opt.log_level);
+    log = frwd_init_log(argv[0], opt.log_level);
     if (NULL == log) {
         fprintf(stderr, "Initialize log failed!\n");
         return -1;
