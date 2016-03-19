@@ -49,11 +49,6 @@ int lsnd_getopt(int argc, char **argv, lsnd_opt_t *opt)
                 opt->log_level = log_get_level(optarg);
                 break;
             }
-            case 'L':   /* 日志键值路径 */
-            {
-                opt->log_key_path = optarg;
-                break;
-            }
             case 'd':
             {
                 opt->isdaemon = true;
@@ -71,9 +66,7 @@ int lsnd_getopt(int argc, char **argv, lsnd_opt_t *opt)
     optind = 1;
 
     /* 2. 验证输入参数 */
-    if (NULL == opt->conf_path
-        || NULL == opt->log_key_path)
-    {
+    if (NULL == opt->conf_path) {
         return LSND_SHOW_HELP;
     }
 
@@ -93,11 +86,11 @@ int lsnd_usage(const char *exec)
 }
 
 /* 初始化日志模块 */
-log_cycle_t *lsnd_init_log(char *fname, const char *log_key_path)
+log_cycle_t *lsnd_init_log(log_cntx_t *lsvr, char *fname)
 {
     char path[FILE_NAME_MAX_LEN];
 
     log_get_path(path, sizeof(path), basename(fname));
 
-    return log_init(LOG_LEVEL_ERROR, path, log_key_path);
+    return log_creat(lsvr, LOG_LEVEL_ERROR, path);
 }

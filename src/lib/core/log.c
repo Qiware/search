@@ -9,77 +9,41 @@
  ******************************************************************************/
 #include "log.h"
 #include "comm.h"
-#include "lock.h"
 #include "redo.h"
-#include "shm_opt.h"
-#include "hash_alg.h"
-
-/* 共享内存 */
-static void *g_log_shm_addr = (void *)-1;  /* 共享内存地址 */
-
-#define log_get_shm_addr() (g_log_shm_addr)              /* 获取共享内存地址 */
-#define log_set_shm_addr(addr) (g_log_shm_addr = (addr)) /* 设置共享内存地址 */
-#define log_is_shm_addr_valid()    /* 判断共享内存地址是否合法 */ \
-            (NULL != g_log_shm_addr && (void *)-1 != g_log_shm_addr)
-
-/* 文件锁 */
-static int g_log_lock_fd = -1;             /* 文件锁FD */
-
-#define log_get_lock_fd() (g_log_lock_fd)             /* 获取文件锁FD */
-#define log_set_lock_fd(fd) (g_log_lock_fd = (fd))    /* 设置文件锁FD */
-#define log_is_lock_fd_valid() (g_log_lock_fd >= 0)   /* 判断文件锁FD是否合法 */
-#define log_fcache_wrlock(lc) proc_spin_wrlock_b(g_log_lock_fd, (lc)->idx+1)  /* 加缓存写锁 */
-#define log_fcache_rdlock(lc) proc_spin_rdlock_b(g_log_lock_fd, (lc)->idx+1)  /* 加缓存写锁 */
-#define log_fcache_unlock(lc) proc_unlock_b(g_log_lock_fd, (lc)->idx+1)  /* 解缓存锁 */
-#define log_fcache_all_wrlock() proc_wrlock(g_log_lock_fd)  /* 缓存加写锁(整个都加锁) */
-#define log_fcache_all_unlock() proc_unlock(g_log_lock_fd)  /* 缓存解锁锁(整个都解锁) */
 
 static size_t g_log_max_size = LOG_FILE_MAX_SIZE;
-#define log_get_max_size() (g_log_max_size)     /* 获取日志大小 */
 #define _log_set_max_size(size) (g_log_max_size = (size))
 #define log_is_too_large(size) ((size) >= g_log_max_size)
-
-/* 线程同步数据 */
-static pthread_key_t g_log_specific_key;        /* 线程私有数据KEY */
-
-/* 日志线程互斥锁: 日志对象和配置信息锁 */
-static pthread_mutex_t g_log_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-#define log_mutex_lock() pthread_mutex_lock(&g_log_mutex)
-#define log_mutex_trylock() pthread_mutex_trylock(&g_log_mutex)
-#define log_mutex_unlock() pthread_mutex_unlock(&g_log_mutex)
 
 /* 日志缓存数据空间大小 */
 static const size_t g_log_data_size =  (LOG_FILE_CACHE_SIZE - sizeof(log_cache_t));
 #define log_get_data_size() (g_log_data_size)
 
-#define log_hash(path) (hash_time33(path) % LOG_FILE_MAX_NUM)  /* 异步日志哈希 */
-#define log_is_err_level(level) \
-    (LOG_LEVEL_ERROR & (level) || LOG_LEVEL_FATAL & (level))
-
 /* 函数声明 */
-static int _log_init_global(const char *key_path);
-static log_cache_t *log_alloc(void *addr, const char *path);
+static void *log_sync_proc(void *_ctx);
+static log_cache_t *log_alloc(const char *path);
 static void log_dealloc(log_cache_t *lc);
 static int log_write(log_cycle_t *log, int level,
         const void *dump, int dumplen, const char *msg, const struct timeb *ctm);
 static int log_print_dump(char *addr, const void *dump, int dumplen);
-static int log_sync_ext(log_cycle_t *log);
 
 static int log_rename(const log_cache_t *lc, const struct timeb *time);
 static size_t _log_sync(log_cache_t *lc, int *fd);
+static int _log_sync_proc(log_cycle_t *log, void *args);
+
+static int log_insert_cycle(log_cntx_t *ctx, log_cycle_t *log);
 
 /* 是否强制写(注意: 系数必须小于或等于0.8，否则可能出现严重问题) */
 static const size_t g_log_sync_size = 0.8 * LOG_FILE_CACHE_SIZE;
 #define log_is_over_limit(lc) (((lc)->ioff - (lc)->ooff) > g_log_sync_size)
 
 /******************************************************************************
- **函数名称: log_init
+ **函数名称: log_creat
  **功    能: 初始化日志信息
  **输入参数:
+ **     ctx: 日志服务
  **     level: 日志级别(其值：LOG_LEVEL_TRACE~LOG_LEVEL_FATAL的"或"值)
  **     path: 日志路径
- **     key_path: 键值路径
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述:
@@ -88,57 +52,50 @@ static const size_t g_log_sync_size = 0.8 * LOG_FILE_CACHE_SIZE;
  **注意事项: 此函数中不能调用错误日志函数 - 可能死锁!
  **作    者: # Qifeng.zou # 2013.10.31 #
  ******************************************************************************/
-log_cycle_t *log_init(int level, const char *path, const char *key_path)
+log_cycle_t *log_creat(log_cntx_t *ctx, int level, const char *path)
 {
-    int ret;
-    void *addr;
+    log_cache_t *lc;
     log_cycle_t *log;
 
     Mkdir2(path, DIR_MODE);
 
-    /* 1. 新建日志对象 */
+    /* > 新建日志对象 */
     log = (log_cycle_t *)calloc(1, sizeof(log_cycle_t));
     if (NULL == log) {
         return NULL;
     }
 
+    log->owner = ctx;
     log->level = level;
     log->pid = getpid();
     pthread_mutex_init(&log->lock, NULL);
 
-    log_mutex_lock();
-
     do {
-        /* 2. 初始化全局数据 */
-        ret = _log_init_global(key_path);
-        if (ret < 0) {
-            fprintf(stderr, "Initialize trace log failed!");
+        /* > 创建日志缓存 */
+        lc = (log_cache_t *)calloc(1, LOG_FILE_CACHE_SIZE);
+        if (NULL == lc) {
+            fprintf(stderr, "errmsg:[%d] %s!", errno, strerror(errno));
             break;
         }
 
-        /* 3. 完成日志对象的创建 */
-        addr = log_get_shm_addr();
+        lc->pid = getpid();
+        snprintf(lc->path, sizeof(lc->path), "%s", path);
+        log->lc = lc;
 
-        log->lc = log_alloc(addr, path);
-        if (NULL == log->lc) {
-            fprintf(stderr, "Create [%s] failed!", path);
-            break;
-        }
-
-        /* 4. 新建日志文件 */
+        /* > 打开日志文件 */
         log->fd = Open(path, OPEN_FLAGS, OPEN_MODE);
         if (log->fd < 0) {
             fprintf(stderr, "errmsg:[%d] %s! path:[%s]", errno, strerror(errno), path);
             break;
         }
 
-        log_mutex_unlock();
+        log_insert_cycle(ctx, log);
+
 	    return log;
     } while (0);
 
     /* 5. 异常处理 */
-    if (NULL != log->lc) { log_dealloc(log->lc); }
-    log_mutex_unlock();
+    if (NULL != log->lc) { free(log->lc); }
     pthread_mutex_destroy(&log->lock);
     free(log);
     return NULL;
@@ -183,43 +140,6 @@ void log_core(log_cycle_t *log, int level,
     ftime(&ctm);
 
     log_write(log, level, dump, dumplen, errmsg, &ctm);
-}
-
-/******************************************************************************
- **函数名称: log_destroy
- **功    能: 销毁日志模块
- **输入参数:
- **     log: 日志对象
- **输出参数: NONE
- **返    回: VOID
- **实现描述:
- **注意事项:
- **作    者: # Qifeng.zou # 2014.09.02 #
- ******************************************************************************/
-void log_destroy(log_cycle_t **log)
-{
-    log_mutex_lock();
-
-    log_dealloc((*log)->lc);
-    free(*log);
-    *log = NULL;
-
-    log_mutex_unlock();
-}
-
-/******************************************************************************
- **函数名称: log_get_cycle
- **功    能: 获取日志对象
- **输入参数: NONE
- **输出参数: NONE
- **返    回: 日志对象
- **实现描述:
- **注意事项:
- **作    者: # Qifeng.zou # 2013.11.04 #
- ******************************************************************************/
-log_cycle_t *log_get_cycle(void)
-{
-    return (log_cycle_t *)pthread_getspecific(g_log_specific_key);
 }
 
 /******************************************************************************
@@ -315,11 +235,7 @@ const char *log_get_str(int level)
  ******************************************************************************/
 void log_set_max_size(size_t size)
 {
-    log_mutex_lock();
-
     _log_set_max_size(size);
-
-    log_mutex_unlock();
 }
 
 /******************************************************************************
@@ -348,55 +264,6 @@ static int log_rename(const log_cache_t *lc, const struct timeb *time)
         loctm.tm_hour, loctm.tm_min, loctm.tm_sec);
 
     return rename(lc->path, newpath);
-}
-
-/******************************************************************************
- **函数名称: _log_init_global
- **功    能: 初始化全局数据
- **输入参数:
- **     key_path: 键值路径
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述:
- **     1. 连接共享内存
- **     2. 打开消息队列
- **注意事项: 此函数中不能调用错误日志函数 - 可能死锁!
- **作    者: # Qifeng.zou # 2013.10.31 #
- ******************************************************************************/
-static int _log_init_global(const char *key_path)
-{
-    int fd = 0;
-    void *addr = log_get_shm_addr();
-    char path[FILE_PATH_MAX_LEN];
-
-    /* 1. 连接共享内存 */
-    if (!log_is_shm_addr_valid()) {
-        addr = shm_creat(key_path, LOG_SHM_SIZE);
-        if (NULL == addr) {
-            fprintf(stderr, "[%s][%d] errmsg:[%d] %s!\n",
-                    __FILE__, __LINE__, errno, strerror(errno));
-            return -1;
-        }
-
-        log_set_shm_addr(addr);
-    }
-
-    if (!log_is_lock_fd_valid()) {
-        log_get_lock_path(path, sizeof(path), key_path);
-
-        Mkdir2(path, DIR_MODE);
-
-        fd = Open(path, OPEN_FLAGS, OPEN_MODE);
-        if (fd < 0) {
-            fprintf(stderr, "[%s][%d] errmsg:[%d] %s! [%s]\n",
-                    __FILE__, __LINE__, errno, strerror(errno), path);
-            return -1;
-        }
-
-        log_set_lock_fd(fd);
-    }
-
-    return 0;
 }
 
 /******************************************************************************
@@ -457,108 +324,21 @@ static int log_name_conflict_handler(const char *oripath, char *newpath, int siz
  **     1. 判断当前功能内存中是否有文件名一致的日志
  **     2. 选择合适的日志缓存，并返回
  **注意事项:
- **     1. 当存在日志名一致的日志时, 判断进程ID是否一样.
- **        如果不一样, 且对应进程, 依然正在运行, 则进行日志命名冲突处理!
- **     2. 请勿在此函数中调用错误日志函数 - 小心死锁!
  **作    者: # Qifeng.zou # 2013.10.31 #
  ******************************************************************************/
-static log_cache_t *log_alloc(void *addr, const char *path)
+static log_cache_t *log_alloc(const char *path)
 {
-    pid_t pid = getpid();
     log_cache_t *lc;
-    const char *ptr = path;
-    char newpath[FILE_NAME_MAX_LEN];
-    int idx, repeat = 0, free_idx = -1;
 
-    log_fcache_all_wrlock();
-
-    for (idx=0; idx<LOG_FILE_MAX_NUM; ++idx) {
-        lc = (log_cache_t *)(addr + idx * LOG_FILE_CACHE_SIZE);
-
-        /* 1. 判断文件名是否一致 */
-        if (!strcmp(lc->path, ptr)) { /* 文件名出现一致 */
-            /* 判断进程是否存在，是否和当前进程ID一致 */
-            if (lc->pid == pid) {
-                log_fcache_all_unlock();
-                return lc;
-            }
-            else if (!proc_is_exist(lc->pid)) {
-                lc->pid = pid;
-                log_sync(lc);
-
-                log_fcache_all_unlock();
-                return lc;
-            }
-
-            /* 文件名重复，且其他进程正在运行... */
-            if (log_name_conflict_handler(path, newpath, sizeof(newpath), ++repeat)) {
-                log_fcache_all_unlock();
-                return NULL;
-            }
-
-            ptr = newpath;
-            free_idx = -1;
-            idx = -1;
-            continue;
-        }
-        else if (-1 == free_idx) {/* 当未找到空闲时，则进行后续判断 */
-            /* 判断该缓存是否真的被占用
-             * 1. 路径是否异常
-             * 2. 进程是否存在 */
-            if ('\0' == lc->path[0]
-                || !proc_is_exist(lc->pid))
-            {
-                free_idx = idx;
-
-                memset(lc, 0, sizeof(log_cache_t));
-                lc->idx = idx;
-                lc->pid = INVALID_PID;
-                continue;
-            }
-        }
-    }
-
-    if (-1 == free_idx) {
-        log_fcache_all_unlock();
+    lc = (log_cache_t *)calloc(1, LOG_FILE_CACHE_SIZE);
+    if (NULL == lc) {
         return NULL;
     }
 
-    lc = (log_cache_t *)(addr + free_idx * LOG_FILE_CACHE_SIZE);
-
-    lc->pid = pid;
-    snprintf(lc->path, sizeof(lc->path), "%s", ptr);
-
-    log_fcache_all_unlock();
+    lc->pid = getpid();
+    snprintf(lc->path, sizeof(lc->path), "%s", path);
 
     return lc;
-}
-
-/******************************************************************************
- **函数名称: log_dealloc
- **功    能: 释放申请的日志缓存
- **输入参数:
- **     lc: 日志对象
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述:
- **注意事项:
- **作    者: # Qifeng.zou # 2013.11.05 #
- ******************************************************************************/
-static void log_dealloc(log_cache_t *lc)
-{
-    int idx;
-
-    idx = lc->idx;
-
-    log_fcache_wrlock(lc);
-
-    log_sync(lc);
-
-    memset(lc, 0, sizeof(log_cache_t));
-    lc->pid = INVALID_PID;
-    lc->idx = idx;
-
-    log_fcache_unlock(lc);
 }
 
 /******************************************************************************
@@ -587,7 +367,6 @@ static int log_write(log_cycle_t *log, int level,
 
     local_time(&ctm->time, &loctm);        /* 获取当前系统时间 */
 
-    log_fcache_wrlock(lc);                /* 缓存加锁 */
     pthread_mutex_lock(&log->lock);
 
     addr = (char *)(lc + 1) + lc->ioff;
@@ -678,11 +457,10 @@ static int log_write(log_cycle_t *log, int level,
     {
         memcpy(&lc->sync_tm, ctm, sizeof(lc->sync_tm));
 
-        log_sync_ext(log);
+        log_sync(log);
     }
 
     pthread_mutex_unlock(&log->lock);
-    log_fcache_unlock(lc);      /* 缓存解锁 */
 
     return 0;
 }
@@ -777,33 +555,11 @@ static int log_print_dump(char *addr, const void *dump, int dumplen)
  **注意事项:
  **作    者: # Qifeng.zou # 2013.10.30 #
  ******************************************************************************/
-void log_sync(log_cache_t *lc)
+int log_sync(log_cycle_t *log)
 {
     size_t fsize;
 
-    /* 1. 执行同步操作 */
-    fsize = _log_sync(lc, NULL);
-
-    /* 2. 文件是否过大 */
-    if (log_is_too_large(fsize)) {
-        log_rename(lc, &lc->sync_tm);
-    }
-}
-
-/******************************************************************************
- **函数名称: log_sync_ext
- **功    能: 强制同步日志信息到日志文件
- **输入参数:
- **     lc: 日志文件信息
- **输出参数: NONE
- **返    回: VOID
- **实现描述:
- **注意事项:
- **作    者: # Qifeng.zou # 2013.10.30 #
- ******************************************************************************/
-static int log_sync_ext(log_cycle_t *log)
-{
-    size_t fsize = 0;
+    pthread_mutex_lock(&log->lock);
 
     /* 1. 执行同步操作 */
     fsize = _log_sync(log->lc, &log->fd);
@@ -811,8 +567,11 @@ static int log_sync_ext(log_cycle_t *log)
     /* 2. 文件是否过大 */
     if (log_is_too_large(fsize)) {
         CLOSE(log->fd);
+        pthread_mutex_unlock(&log->lock);
         return log_rename(log->lc, &log->lc->sync_tm);
     }
+
+    pthread_mutex_unlock(&log->lock);
 
     return 0;
 }
@@ -835,10 +594,8 @@ static int log_sync_ext(log_cycle_t *log)
 static size_t _log_sync(log_cache_t *lc, int *_fd)
 {
     void *addr;
-    struct stat fstat;
+    struct stat st;
     int n, fd = -1, fsize = 0;
-
-    memset(&fstat, 0, sizeof(fstat));
 
     /* 1. 判断是否需要同步 */
     if (lc->ioff == lc->ooff) {
@@ -853,7 +610,7 @@ static size_t _log_sync(log_cache_t *lc, int *_fd)
     /* 撰写日志文件 */
     do {
         /* 3. 文件是否存在 */
-        if (lstat(lc->path, &fstat) < 0) {
+        if (lstat(lc->path, &st) < 0) {
             if (ENOENT != errno) {
                 CLOSE(fd);
                 fprintf(stderr, "errmsg:[%d]%s path:[%s]\n", errno, strerror(errno), lc->path);
@@ -899,4 +656,24 @@ static size_t _log_sync(log_cache_t *lc, int *_fd)
         CLOSE(fd);
     }
     return fsize;
+}
+
+/******************************************************************************
+ **函数名称: log_insert_cycle
+ **功    能: 添加日志对象
+ **输入参数:
+ **     ctx: 日志服务
+ **     log: 日志对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述:
+ **注意事项:
+ **作    者: # Qifeng.zou # 2016.03.19 #
+ ******************************************************************************/
+static int log_insert_cycle(log_cntx_t *ctx, log_cycle_t *log)
+{
+    pthread_mutex_lock(&ctx->lock);
+    avl_insert(ctx->logs, (void *)log, sizeof(log), (void *)log);
+    pthread_mutex_unlock(&ctx->lock);
+    return 0;
 }

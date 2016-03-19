@@ -51,7 +51,5 @@ int main(int argc, char *argv[])
     #endif
     }
 
-    log_destroy(&log);
-
     return 0;
 }

@@ -24,7 +24,6 @@ typedef struct
     int log_level;                          /* 日志级别 */
     bool isdaemon;                          /* 是否后台运行 */
     char *conf_path;                        /* 配置文件路径 */
-    char *log_key_path;                     /* 日志键值路径 */
 } invtd_opt_t;
 
 invtd_cntx_t *invtd_init(const invtd_conf_t *conf, log_cycle_t *log);

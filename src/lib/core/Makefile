@@ -16,7 +16,6 @@ LIBS = -lpthread
 LIBS += $(SHARED_LIB)
 
 SRC_LIST = log.c \
-			plog.c \
 			slot.c \
 			lock.c \
 			http.c \
@@ -25,6 +24,7 @@ SRC_LIST = log.c \
 			menu.c \
 			ring.c \
 			queue.c \
+		    logsvr.c \
 			sig_queue.c \
 			slab.c \
 			redo.c \

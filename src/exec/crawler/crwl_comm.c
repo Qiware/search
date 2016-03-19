@@ -76,11 +76,6 @@ int crwl_getopt(int argc, char **argv, crwl_opt_t *opt)
                 opt->log_level = log_get_level(optarg);
                 break;
             }
-            case 'L':   /* 日志键值路径 */
-            {
-                opt->log_key_path = optarg;
-                break;
-            }
             case 'd':
             {
                 opt->isdaemon = true;
@@ -92,10 +87,6 @@ int crwl_getopt(int argc, char **argv, crwl_opt_t *opt)
                 return CRWL_SHOW_HELP;
             }
         }
-    }
-
-    if (NULL == opt->log_key_path) {
-        return CRWL_SHOW_HELP;
     }
 
     optarg = NULL;
@@ -141,12 +132,19 @@ int crwl_usage(const char *exec)
  ******************************************************************************/
 crwl_cntx_t *crwl_init(char *pname, crwl_opt_t *opt)
 {
+    log_cntx_t *lsvr;
     log_cycle_t *log;
     crwl_cntx_t *ctx;
     crwl_conf_t *conf;
 
     /* > 初始化日志模块 */
-    log = crwl_init_log(pname, opt->log_level, opt->log_key_path);
+    lsvr = log_init();
+    if (NULL == lsvr) {
+        fprintf(stderr, "Initialize log server failed!\n");
+        return NULL;
+    }
+
+    log = crwl_init_log(lsvr, pname, opt->log_level);
     if (NULL == log) {
         fprintf(stderr, "Initialize log failed!");
         return NULL;
@@ -228,8 +226,6 @@ void crwl_destroy(crwl_cntx_t *ctx)
     FREE(ctx->workq);
 
     crwl_workers_destroy(ctx);
-    log_destroy(&ctx->log);
-    plog_destroy();
 }
 
 /******************************************************************************
@@ -467,13 +463,13 @@ int crwl_domain_blacklist_cmp_cb(
  **注意事项:
  **作    者: # Qifeng.zou # 2014.10.21 #
  ******************************************************************************/
-log_cycle_t *crwl_init_log(char *fname, int log_level, const char *log_key_path)
+log_cycle_t *crwl_init_log(log_cntx_t *lsvr, char *fname, int log_level)
 {
     char path[FILE_NAME_MAX_LEN];
 
     log_get_path(path, sizeof(path), basename(fname));
 
-    return log_init(log_level, path, log_key_path);
+    return log_creat(lsvr, log_level, path);
 }
 
 /******************************************************************************

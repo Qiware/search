@@ -49,11 +49,6 @@ int invtd_getopt(int argc, char **argv, invtd_opt_t *opt)
                 opt->log_level = log_get_level(optarg);
                 break;
             }
-            case 'L':   /* 日志键值路径 */
-            {
-                opt->log_key_path = optarg;
-                break;
-            }
             case 'd':
             {
                 opt->isdaemon = true;
@@ -65,10 +60,6 @@ int invtd_getopt(int argc, char **argv, invtd_opt_t *opt)
                 return INVT_SHOW_HELP;
             }
         }
-    }
-
-    if (NULL == opt->log_key_path) {
-        return INVT_SHOW_HELP;
     }
 
     optarg = NULL;

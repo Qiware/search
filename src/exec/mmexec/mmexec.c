@@ -17,7 +17,6 @@ typedef struct
 {
     bool isdaemon;      /* 后台运行 */
     int log_level;      /* 日志级别 */
-    char *log_key_path; /* 日志键值路径 */
 } mem_opt_t;
 
 static int mem_getopt(int argc, char **argv, mem_opt_t *opt);
@@ -27,6 +26,7 @@ static int mem_usage(const char *exec);
 int main(int argc, char *argv[])
 {
     mem_opt_t opt;
+    log_cntx_t *lsvr;
     log_cycle_t *log;
 
     /* > 获取输入参数 */
@@ -40,7 +40,13 @@ int main(int argc, char *argv[])
     umask(0);
 
     /* > 初始化日志模块 */
-    log = log_init(opt.log_level, MEM_LOG_PATH, opt.log_key_path);
+    lsvr = log_init();
+    if (NULL == lsvr) {
+        fprintf(stderr, "Initialize log server failed!\n");
+        return -1;
+    }
+
+    log = log_creat(lsvr, opt.log_level, MEM_LOG_PATH);
     if (NULL == log) {
         fprintf(stderr, "Initialize log cycle failed!\n");
         return -1;
@@ -99,21 +105,12 @@ static int mem_getopt(int argc, char **argv, mem_opt_t *opt)
                 opt->log_level = log_get_level(optarg);
                 break;
             }
-            case 'L':   /* 日志键值路径 */
-            {
-                opt->log_key_path = optarg;
-                break;
-            }
             case 'h':   /* 显示帮助信息 */
             default:
             {
                 return -1;
             }
         }
-    }
-
-    if (NULL == opt->log_key_path) {
-        return -1;
     }
 
     optarg = NULL;

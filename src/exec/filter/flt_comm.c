@@ -70,11 +70,6 @@ int flt_getopt(int argc, char **argv, flt_opt_t *opt)
                 opt->log_level = log_get_level(optarg);
                 break;
             }
-            case 'L':   /* 日志键值路径 */
-            {
-                opt->log_key_path = optarg;
-                break;
-            }
             case 'd':
             {
                 opt->isdaemon = true;
@@ -86,10 +81,6 @@ int flt_getopt(int argc, char **argv, flt_opt_t *opt)
                 return FLT_SHOW_HELP;
             }
         }
-    }
-
-    if (NULL == opt->log_key_path) {
-        return FLT_SHOW_HELP;
     }
 
     optarg = NULL;
@@ -132,14 +123,14 @@ int flt_usage(const char *exec)
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.10.21 #
  ******************************************************************************/
-static log_cycle_t *flt_init_log(char *fname, int log_level, const char *log_key_path)
+static log_cycle_t *flt_init_log(log_cntx_t *lsvr, char *fname, int log_level)
 {
     char path[FILE_NAME_MAX_LEN];
 
     /* > 初始化业务日志 */
     log_get_path(path, sizeof(path), basename(fname));
 
-    return log_init(log_level, path, log_key_path);
+    return log_creat(lsvr, log_level, path);
 }
 
 /******************************************************************************
@@ -159,11 +150,18 @@ flt_cntx_t *flt_init(char *pname, flt_opt_t *flt_opt)
 {
     flt_cntx_t *ctx;
     flt_conf_t *conf;
+    log_cntx_t *lsvr;
     log_cycle_t *log;
     hash_map_opt_t opt;
 
     /* > 初始化日志模块 */
-    log = flt_init_log(pname, flt_opt->log_level, flt_opt->log_key_path);
+    lsvr = log_init();
+    if (NULL == lsvr) {
+        fprintf(stderr, "Initialize log server failed!\n");
+        return NULL;
+    }
+
+    log = flt_init_log(lsvr, pname, flt_opt->log_level);
     if (NULL == log) {
         fprintf(stderr, "Initialize log failed!\n");
         return NULL;
@@ -272,11 +270,8 @@ flt_cntx_t *flt_init(char *pname, flt_opt_t *flt_opt)
 void flt_destroy(flt_cntx_t *ctx)
 {
     if (ctx->log) {
-        log_destroy(&ctx->log);
         ctx->log = NULL;
     }
-
-    plog_destroy();
 
     if (ctx->redis) {
         redis_clst_destroy(ctx->redis);

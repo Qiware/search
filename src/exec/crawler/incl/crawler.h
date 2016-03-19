@@ -43,7 +43,7 @@ typedef struct
 } crwl_cntx_t;
 
 crwl_cntx_t *crwl_init(char *pname, crwl_opt_t *opt);
-log_cycle_t *crwl_init_log(char *fname, int log_level, const char *log_key_path);
+log_cycle_t *crwl_init_log(log_cntx_t *ctx, char *fname, int log_level);
 int crwl_launch(crwl_cntx_t *ctx);
 void crwl_destroy(crwl_cntx_t *ctx);
 

@@ -2,6 +2,8 @@
 #define __LOG_H__
 
 #include "comm.h"
+#include "avl_tree.h"
+#include "thread_pool.h"
 
 /* 日志级别 */
 typedef enum
@@ -36,8 +38,6 @@ typedef enum
 #define LOG_FILE_MAX_SIZE       (128 * MB)  /* 单个日志文件的最大SIZE */
 
 #define LOG_SUFFIX              ".log"      /* 日志文件后缀 */
-#define log_get_lock_path(path, size, key_path)  /* 日志锁路径 */ \
-    snprintf(path, size, "%s.lck", key_path);
 
 /* DUMP设置 */
 #define LOG_DUMP_COL_NUM        (16)        /* DUMP列数 */
@@ -59,15 +59,22 @@ typedef struct
     struct timeb sync_tm;                   /* 上次同步的时间 */
 } log_cache_t;
 
-/* 内部接口 */
-void log_sync(log_cache_t *lc);
-void log_set_max_size(size_t size);
+/* 日志服务 */
+typedef struct
+{
+    thread_pool_t *tp;                      /* 线程池 */
+    int timeout;                            /* 同步超时 */
+
+    avl_tree_t *logs;                       /* 日志列表(管理log_cycle_t对象) */
+    pthread_mutex_t lock;                   /* 锁 */
+} log_cntx_t;
 
 /* 日志对象 */
 typedef struct _log_cycle_t
 {
-    int level;                              /* 日志级别 */
+    log_cntx_t *owner;                      /* 所属服务 */
 
+    int level;                              /* 日志级别 */
     int fd;                                 /* 文件描述符 */
     pid_t pid;                              /* 进程PID */
     log_cache_t *lc;                        /* 日志缓存 */
@@ -75,9 +82,10 @@ typedef struct _log_cycle_t
 } log_cycle_t;
 
 /* 外部接口 */
+log_cntx_t *log_init(void);
 int log_get_level(const char *level_str);
 const char *log_get_str(int level);
-log_cycle_t *log_init(int level, const char *path, const char *key_path);
+log_cycle_t *log_creat(log_cntx_t *ctx, int level, const char *path);
 #define log_set_level(log, _level) { (log)->level = (_level); }
 void log_core(log_cycle_t *log, int level,
                 const char *fname, int lineno,
@@ -85,8 +93,6 @@ void log_core(log_cycle_t *log, int level,
                 const char *fmt, ...);
 #define log_get_path(path, size, name) \
             snprintf(path, size, "../log/%s.log", name)
-log_cycle_t *log_get_cycle(void);
-void log_destroy(log_cycle_t **log);
 
 /* 日志模块接口 */
 #define log_fatal(log, ...) /* 撰写FATAL级别日志 */\
@@ -151,5 +157,9 @@ void plog_destroy(void);
 #define plog_bin(addr, len, ...)   /* 撰写MEM-DUMP日志 */\
     if (LOG_LEVEL_TRACE >= g_plog.level) \
         plog_core(LOG_LEVEL_TRACE, __FILE__, __LINE__, addr, len, __VA_ARGS__)
+
+/* 内部接口 */
+void log_set_max_size(size_t size);
+int log_sync(log_cycle_t *log);
 
 #endif /*__LOG_H__*/

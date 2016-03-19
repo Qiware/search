@@ -151,9 +151,11 @@ static inline void mem_dummy_dealloc(void *pool, void *p) { }
 static inline uint16_t key_cb_int16(const uint16_t *key, size_t len) { return *key; }
 static inline uint32_t key_cb_int32(const uint32_t *key, size_t len) { return *key; }
 static inline uint64_t key_cb_int64(const uint64_t *key, size_t len) { return *key; }
+static inline uint64_t key_cb_ptr(const uint64_t *key, size_t len) { return (uint64_t)key; }
 /* 整数进行比较回调 */
 static inline int cmp_cb_int16(const uint16_t *key, const void *data) { return 0; }
 static inline int cmp_cb_int32(const uint32_t *key, const void *data) { return 0; }
 static inline int cmp_cb_int64(const uint64_t *key, const void *data) { return 0; } 
+static inline int cmp_cb_ptr(const uint64_t *key, const void *data) { return 0; } 
 
 #endif /*__COMM_H__*/
