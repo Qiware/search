@@ -53,7 +53,6 @@ typedef struct
     int max;                            /* 套接字最大值 */
     fd_set rset;                        /* 读集合 */
     fd_set wset;                        /* 写集合 */
-    slab_pool_t *pool;                  /* 内存池 */
 
     /* 统计信息 */
     uint64_t recv_total;                /* 获取的数据总条数 */

@@ -237,8 +237,7 @@ static int rtrd_lsn_cmd_core_hdl(rtrd_cntx_t *ctx, rtrd_listen_t *lsn)
     }
 
     /* 2. 处理命令 */
-    switch (cmd.type)
-    {
+    switch (cmd.type) {
         case RTMQ_CMD_QUERY_CONF_REQ:
         {
             return rtrd_lsn_cmd_query_conf_hdl(ctx, lsn, &cmd);

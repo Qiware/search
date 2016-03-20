@@ -34,7 +34,6 @@ typedef struct
 {
     rtsd_conf_t conf;                   /* 配置信息 */
     log_cycle_t *log;                   /* 日志对象 */
-    slab_pool_t *slab;                  /* 内存池对象 */
 
     int cmd_sck_id;                     /* 命令套接字 */
     spinlock_t cmd_sck_lck;             /* 命令套接字锁 */

@@ -231,8 +231,7 @@ static int rtrd_dsvr_cmd_recv_and_proc(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr)
     log_trace(dsvr->log, "Recv command! type:%d", cmd.type);
 
     /* > 处理命令 */
-    switch (cmd.type)
-    {
+    switch (cmd.type) {
         case RTMQ_CMD_DIST_REQ:
         {
             return rtrd_dsvr_dist_data_hdl(ctx, dsvr);

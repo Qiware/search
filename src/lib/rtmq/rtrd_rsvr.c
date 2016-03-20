@@ -866,7 +866,7 @@ static int rtrd_rsvr_keepalive_req_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd
     /* > 分配消息空间 */
     addr = calloc(1, sizeof(rtmq_header_t));
     if (NULL == addr) {
-        log_error(rsvr->log, "Alloc memory from slab failed!");
+        log_error(rsvr->log, "Alloc memory failed!");
         return RTMQ_ERR;
     }
 
@@ -913,7 +913,7 @@ static int rtrd_rsvr_link_auth_rsp(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd_sck
     /* > 分配消息空间 */
     addr = calloc(1, sizeof(rtmq_header_t) + sizeof(rtmq_link_auth_rsp_t));
     if (NULL == addr) {
-        log_error(rsvr->log, "Alloc memory from slab failed!");
+        log_error(rsvr->log, "Alloc memory failed!");
         return RTMQ_ERR;
     }
 
@@ -1359,7 +1359,7 @@ static int rtrd_rsvr_dist_data(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
             if (NULL == addr) {
                 queue_dealloc(sendq, data[idx]);
                 list_destroy(cl.list, NULL, mem_dummy_dealloc);
-                log_error(rsvr->log, "Alloc memory from slab failed!");
+                log_error(rsvr->log, "Alloc memory failed!");
                 continue;
             }
 

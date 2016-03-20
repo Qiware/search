@@ -310,8 +310,7 @@ static int rtrd_creat_recvq(rtrd_cntx_t *ctx)
     }
 
     /* > 依次创建接收队列 */
-    for(idx=0; idx<conf->recvq_num; ++idx)
-    {
+    for(idx=0; idx<conf->recvq_num; ++idx) {
         ctx->recvq[idx] = queue_creat(conf->recvq.max, conf->recvq.size);
         if (NULL == ctx->recvq[idx]) {
             log_error(ctx->log, "Create queue failed! max:%d size:%d",
@@ -347,8 +346,7 @@ static int rtrd_creat_sendq(rtrd_cntx_t *ctx)
     }
 
     /* > 依次创建发送队列 */
-    for(idx=0; idx<conf->recv_thd_num; ++idx)
-    {
+    for(idx=0; idx<conf->recv_thd_num; ++idx) {
         ctx->sendq[idx] = queue_creat(conf->sendq.max, conf->sendq.size);
         if (NULL == ctx->sendq[idx]) {
             log_error(ctx->log, "Create send-queue failed! max:%d size:%d",
@@ -379,7 +377,7 @@ static int rtrd_creat_distq(rtrd_cntx_t *ctx)
     /* > 申请对象空间 */
     ctx->distq = (queue_t **)calloc(1, conf->distq_num*sizeof(queue_t *));
     if (NULL == ctx->distq) {
-        log_error(ctx->log, "Alloc memory from slab failed!");
+        log_error(ctx->log, "Alloc memory failed!");
         return RTMQ_ERR;
     }
 

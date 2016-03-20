@@ -177,8 +177,7 @@ static int rtrd_worker_event_core_hdl(rtrd_cntx_t *ctx, rtmq_worker_t *worker)
         return RTMQ_ERR_RECV_CMD;
     }
 
-    switch (cmd.type)
-    {
+    switch (cmd.type) {
         case RTMQ_CMD_PROC_REQ:
         {
             return rtrd_worker_cmd_proc_req_hdl(ctx, worker, &cmd);
@@ -242,10 +241,8 @@ static int rtrd_worker_cmd_proc_req_hdl(rtrd_cntx_t *ctx, rtmq_worker_t *worker,
                 continue;
             }
 
-            if (reg->proc(
-                    head->type, head->nodeid,
-                    addr[idx] + sizeof(rtmq_header_t),
-                    head->length, reg->param))
+            if (reg->proc(head->type, head->nodeid,
+                    addr[idx] + sizeof(rtmq_header_t), head->length, reg->param))
             {
                 ++worker->err_total;    /* 错误计数 */
             }

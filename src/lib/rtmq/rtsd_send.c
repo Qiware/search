@@ -19,27 +19,20 @@ static int rtsd_creat_workers(rtsd_cntx_t *ctx)
 {
     int idx;
     rtmq_worker_t *worker;
-    thread_pool_opt_t opt;
     rtsd_conf_t *conf = &ctx->conf;
 
     /* > 创建对象 */
-    worker = (rtmq_worker_t *)slab_alloc(ctx->slab, conf->work_thd_num * sizeof(rtmq_worker_t));
+    worker = (rtmq_worker_t *)calloc(1, conf->work_thd_num * sizeof(rtmq_worker_t));
     if (NULL == worker) {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return RTMQ_ERR;
     }
 
     /* > 创建线程池 */
-    memset(&opt, 0, sizeof(opt));
-
-    opt.pool = (void *)ctx->slab;
-    opt.alloc = (mem_alloc_cb_t)slab_alloc;
-    opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
-
-    ctx->worktp = thread_pool_init(conf->work_thd_num, &opt, (void *)worker);
+    ctx->worktp = thread_pool_init(conf->work_thd_num, NULL, (void *)worker);
     if (NULL == ctx->worktp) {
         log_error(ctx->log, "Initialize thread pool failed!");
-        slab_dealloc(ctx->slab, worker);
+        free(worker);
         return RTMQ_ERR;
     }
 
@@ -47,7 +40,7 @@ static int rtsd_creat_workers(rtsd_cntx_t *ctx)
     for (idx=0; idx<conf->work_thd_num; ++idx) {
         if (rtsd_worker_init(ctx, worker+idx, idx)) {
             log_fatal(ctx->log, "Initialize work thread failed!");
-            slab_dealloc(ctx->slab, worker);
+            free(worker);
             thread_pool_destroy(ctx->worktp);
             return RTMQ_ERR;
         }
@@ -71,27 +64,20 @@ static int rtsd_creat_sends(rtsd_cntx_t *ctx)
 {
     int idx;
     rtsd_ssvr_t *ssvr;
-    thread_pool_opt_t opt;
     rtsd_conf_t *conf = &ctx->conf;
 
     /* > 创建对象 */
-    ssvr = (rtsd_ssvr_t *)slab_alloc(ctx->slab, conf->send_thd_num * sizeof(rtsd_ssvr_t));
+    ssvr = (rtsd_ssvr_t *)calloc(1, conf->send_thd_num * sizeof(rtsd_ssvr_t));
     if (NULL == ssvr) {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return RTMQ_ERR;
     }
 
     /* > 创建线程池 */
-    memset(&opt, 0, sizeof(opt));
-
-    opt.pool = (void *)ctx->slab;
-    opt.alloc = (mem_alloc_cb_t)slab_alloc;
-    opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
-
-    ctx->sendtp = thread_pool_init(conf->send_thd_num, &opt, (void *)ssvr);
+    ctx->sendtp = thread_pool_init(conf->send_thd_num, NULL, (void *)ssvr);
     if (NULL == ctx->sendtp) {
         log_error(ctx->log, "Initialize thread pool failed!");
-        slab_dealloc(ctx->slab, ssvr);
+        free(ssvr);
         return RTMQ_ERR;
     }
 
@@ -99,7 +85,7 @@ static int rtsd_creat_sends(rtsd_cntx_t *ctx)
     for (idx=0; idx<conf->send_thd_num; ++idx) {
         if (rtsd_ssvr_init(ctx, ssvr+idx, idx)) {
             log_fatal(ctx->log, "Initialize send thread failed!");
-            slab_dealloc(ctx->slab, ssvr);
+            free(ssvr);
             thread_pool_destroy(ctx->sendtp);
             return RTMQ_ERR;
         }
@@ -193,25 +179,15 @@ static int rtsd_creat_sendq(rtsd_cntx_t *ctx)
 rtsd_cntx_t *rtsd_init(const rtsd_conf_t *conf, log_cycle_t *log)
 {
     rtsd_cntx_t *ctx;
-    slab_pool_t *slab;
-
-    /* > 创建内存池 */
-    slab = slab_creat_by_calloc(30 * MB, log);
-    if (NULL == slab) {
-        log_error(log, "Initialize slab failed!");
-        return NULL;
-    }
 
     /* > 创建对象 */
-    ctx = (rtsd_cntx_t *)slab_alloc(slab, sizeof(rtsd_cntx_t));
+    ctx = (rtsd_cntx_t *)calloc(1, sizeof(rtsd_cntx_t));
     if (NULL == ctx) {
         log_fatal(log, "errmsg:[%d] %s!", errno, strerror(errno));
-        slab_destroy(slab);
         return NULL;
     }
 
     ctx->log = log;
-    ctx->slab = slab;
 
     /* > 加载配置信息 */
     memcpy(&ctx->conf, conf, sizeof(rtsd_conf_t));
@@ -219,35 +195,35 @@ rtsd_cntx_t *rtsd_init(const rtsd_conf_t *conf, log_cycle_t *log)
     /* > 创建通信套接字 */
     if (rtsd_creat_cmd_usck(ctx)) {
         log_fatal(log, "Create recv-queue failed!");
-        slab_destroy(slab);
+        free(ctx);
         return NULL;
     }
 
     /* > 创建接收队列 */
     if (rtsd_creat_recvq(ctx)) {
         log_fatal(log, "Create recv-queue failed!");
-        slab_destroy(slab);
+        free(ctx);
         return NULL;
     }
 
     /* > 创建发送队列 */
     if (rtsd_creat_sendq(ctx)) {
         log_fatal(log, "Create send queue failed!");
-        slab_destroy(slab);
+        free(ctx);
         return NULL;
     }
 
     /* > 创建工作线程池 */
     if (rtsd_creat_workers(ctx)) {
         log_fatal(ctx->log, "Create work thread pool failed!");
-        slab_destroy(slab);
+        free(ctx);
         return NULL;
     }
 
     /* > 创建发送线程池 */
     if (rtsd_creat_sends(ctx)) {
         log_fatal(ctx->log, "Create send thread pool failed!");
-        slab_destroy(slab);
+        free(ctx);
         return NULL;
     }
 

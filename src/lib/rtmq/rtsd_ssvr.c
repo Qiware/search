@@ -46,7 +46,6 @@ static int rtsd_ssvr_cmd_proc_all_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr);
 int rtsd_ssvr_init(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, int idx)
 {
     void *addr;
-    list_opt_t opt;
     rtsd_conf_t *conf = &ctx->conf;
     rtsd_sck_t *sck = &ssvr->sck;
     rtmq_snap_t *recv = &sck->recv;
@@ -64,21 +63,8 @@ int rtsd_ssvr_init(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, int idx)
         return RTMQ_ERR;
     }
 
-    /* > 创建SLAB内存池 */
-    ssvr->pool = slab_creat_by_calloc(RTMQ_MEM_POOL_SIZE, ssvr->log);
-    if (NULL == ssvr->pool) {
-        log_error(ssvr->log, "Initialize slab mem-pool failed!");
-        return RTMQ_ERR;
-    }
-
     /* > 创建发送链表 */
-    memset(&opt, 0, sizeof(opt));
-
-    opt.pool = (void *)ssvr->pool;
-    opt.alloc = (mem_alloc_cb_t)slab_alloc;
-    opt.dealloc = (mem_dealloc_cb_t)slab_dealloc;
-
-    sck->mesg_list = list_creat(&opt);
+    sck->mesg_list = list_creat(NULL);
     if (NULL == sck->mesg_list) {
         log_error(ssvr->log, "Create list failed!");
         return RTMQ_ERR;
@@ -152,8 +138,7 @@ static void rtsd_ssvr_bind_cpu(rtsd_cntx_t *ctx, int id)
     if (mod <= 0) {
         idx = id % sysconf(_SC_NPROCESSORS_CONF);
     }
-    else
-    {
+    else {
         idx = cpu->start + (id % mod);
     }
 
@@ -247,7 +232,6 @@ void *rtsd_ssvr_routine(void *_ctx)
             /* 重连Recv端 */
             if ((sck->fd = tcp_connect(AF_INET, conf->ipaddr, conf->port)) < 0) {
                 log_error(ssvr->log, "Conncet receive-server failed!");
-
                 continue;
             }
 
@@ -264,8 +248,9 @@ void *rtsd_ssvr_routine(void *_ctx)
         if (ret < 0) {
             if (EINTR == errno) { continue; }
             log_fatal(ssvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
-            abort();
-            return (void *)-1;
+            //abort();
+            //return (void *)-1;
+            continue;
         }
         else if (0 == ret) {
             rtsd_ssvr_timeout_hdl(ctx, ssvr);
@@ -324,9 +309,9 @@ static int rtsd_ssvr_kpalive_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
         return RTMQ_OK;
     }
 
-    addr = slab_alloc(ssvr->pool, size);
+    addr = (void *)calloc(1, size);
     if (NULL == addr) {
-        log_error(ssvr->log, "Alloc memory from slab failed!");
+        log_error(ssvr->log, "Alloc memory failed!");
         return RTMQ_ERR;
     }
 
@@ -341,8 +326,8 @@ static int rtsd_ssvr_kpalive_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
 
     /* 3. 加入发送列表 */
     if (list_rpush(sck->mesg_list, addr)) {
-        slab_dealloc(ssvr->pool, addr);
-        log_error(ssvr->log, "Alloc memory from slab failed!");
+        free(addr);
+        log_error(ssvr->log, "Insert list failed!");
         return RTMQ_ERR;
     }
 
@@ -564,8 +549,7 @@ static int rtsd_ssvr_data_proc(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, rtsd_sck_t *
         if (RTMQ_SYS_MESG == head->flag) {
             rtsd_ssvr_sys_mesg_proc(ctx, ssvr, sck, recv->optr);
         }
-        else
-        {
+        else {
             rtsd_ssvr_exp_mesg_proc(ctx, ssvr, sck, recv->optr);
         }
 
@@ -621,8 +605,7 @@ static int rtsd_ssvr_proc_cmd(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, const rtmq_cm
 {
     rtsd_sck_t *sck = &ssvr->sck;
 
-    switch (cmd->type)
-    {
+    switch (cmd->type) {
         case RTMQ_CMD_SEND:
         case RTMQ_CMD_SEND_ALL:
         {
@@ -687,7 +670,7 @@ static int rtsd_ssvr_wiov_add(rtsd_ssvr_t *ssvr, rtsd_sck_t *sck)
         head->checksum = htonl(head->checksum);
 
         /* > 设置发送数据 */
-        wiov_item_add(send, head, len, ssvr->pool, slab_dealloc);
+        wiov_item_add(send, head, len, NULL, mem_dealloc);
     }
 
     /* > 从发送队列取数据 */
@@ -813,7 +796,7 @@ static int rtsd_ssvr_clear_mesg(rtsd_ssvr_t *ssvr)
         if (NULL == data) {
             return RTMQ_OK;
         }
-        slab_dealloc(ssvr->pool, data);
+        free(data);
     }
 
     return RTMQ_OK;
@@ -836,8 +819,7 @@ static int rtsd_ssvr_sys_mesg_proc(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, rtsd_sck
 {
     rtmq_header_t *head = (rtmq_header_t *)addr;
 
-    switch (head->type)
-    {
+    switch (head->type) {
         case RTMQ_KPALIVE_RSP:      /* 保活应答 */
         {
             log_debug(ssvr->log, "Received keepalive respond!");
@@ -880,8 +862,7 @@ static int rtsd_ssvr_exp_mesg_proc(
 
     /* > 验证长度 */
     len = RTMQ_DATA_TOTAL_LEN(head);
-    if ((int)len > queue_size(ctx->recvq[0]))
-    {
+    if ((int)len > queue_size(ctx->recvq[0])) {
         ++ssvr->drop_total;
         log_error(ctx->log, "Data is too long! len:%d drop:%lu total:%lu",
                 len, ssvr->drop_total, ssvr->recv_total);
@@ -892,8 +873,7 @@ static int rtsd_ssvr_exp_mesg_proc(
     idx = rand() % ctx->conf.work_thd_num;
 
     data = queue_malloc(ctx->recvq[idx], len);
-    if (NULL == data)
-    {
+    if (NULL == data) {
         ++ssvr->drop_total;
         log_error(ctx->log, "Alloc from queue failed! drop:%lu recv:%lu size:%d/%d",
                 ssvr->drop_total, ssvr->recv_total, len, queue_size(ctx->recvq[idx]));
@@ -903,8 +883,7 @@ static int rtsd_ssvr_exp_mesg_proc(
     /* > 放入队列 */
     memcpy(data, addr, len);
 
-    if (queue_push(ctx->recvq[idx], data))
-    {
+    if (queue_push(ctx->recvq[idx], data)) {
         ++ssvr->drop_total;
         log_error(ctx->log, "Push into queue failed! len:%d drop:%lu total:%lu",
                 len, ssvr->drop_total, ssvr->recv_total);
@@ -940,10 +919,9 @@ static int rtmq_link_auth_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
     /* > 申请内存空间 */
     size = sizeof(rtmq_header_t) + sizeof(rtmq_link_auth_req_t);
 
-    addr = slab_alloc(ssvr->pool, size);
-    if (NULL == addr)
-    {
-        log_error(ssvr->log, "Alloc memory from slab failed!");
+    addr = (void *)calloc(1, size);
+    if (NULL == addr) {
+        log_error(ssvr->log, "Alloc memory failed!");
         return RTMQ_ERR;
     }
 
@@ -963,9 +941,8 @@ static int rtmq_link_auth_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
     snprintf(link_auth_req->passwd, sizeof(link_auth_req->passwd), "%s", ctx->conf.auth.passwd);
 
     /* > 加入发送列表 */
-    if (list_rpush(sck->mesg_list, addr))
-    {
-        slab_dealloc(ssvr->pool, addr);
+    if (list_rpush(sck->mesg_list, addr)) {
+        free(addr);
         log_error(ssvr->log, "Insert mesg list failed!");
         return RTMQ_ERR;
     }
@@ -1043,8 +1020,7 @@ static int rtsd_ssvr_cmd_proc_all_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
 {
     int idx;
 
-    for (idx=0; idx<ctx->conf.send_thd_num; ++idx)
-    {
+    for (idx=0; idx<ctx->conf.send_thd_num; ++idx) {
         rtsd_ssvr_cmd_proc_req(ctx, ssvr, idx);
     }
 

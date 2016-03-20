@@ -198,8 +198,7 @@ static int rtsd_worker_event_core_hdl(rtsd_cntx_t *ctx, rtmq_worker_t *worker)
         return RTMQ_ERR_RECV_CMD;
     }
 
-    switch (cmd.type)
-    {
+    switch (cmd.type) {
         case RTMQ_CMD_PROC_REQ:
         {
             return rtsd_worker_cmd_proc_req_hdl(ctx, worker, &cmd);
