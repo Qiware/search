@@ -47,7 +47,6 @@ int flt_getopt(int argc, char **argv, flt_opt_t *opt)
         , {"help",          no_argument,        NULL, 'h'}
         , {"daemon",        no_argument,        NULL, 'd'}
         , {"log level",     required_argument,  NULL, 'l'}
-        , {"log key path",  required_argument,  NULL, 'L'}
         , {NULL,            0,                  NULL, 0}
     };
 
@@ -58,7 +57,7 @@ int flt_getopt(int argc, char **argv, flt_opt_t *opt)
     opt->conf_path = FLT_DEF_CONF_PATH;
 
     /* 1. 解析输入参数 */
-    while (-1 != (ch = getopt_long(argc, argv, "c:L:l:hd", opts, NULL))) {
+    while (-1 != (ch = getopt_long(argc, argv, "c:l:hd", opts, NULL))) {
         switch (ch) {
             case 'c':   /* 指定配置文件 */
             {
