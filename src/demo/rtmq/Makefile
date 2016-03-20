@@ -10,8 +10,7 @@ include $(PROJ)/make/build.mak
 
 INCLUDE = -I. \
 		  -I$(PROJ)/src/incl \
-		  -I$(PROJ)/src/incl/rtmq \
-		  -I$(PROJ)/src/incl/qwmq
+		  -I$(PROJ)/src/incl/rtmq
 LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lpthread -lcore -lrtmq
 

@@ -48,7 +48,11 @@ int main(int argc, const char *argv[])
 
     signal(SIGPIPE, SIG_IGN);
                                        
-    log = log_init(LOG_LEVEL_TRACE, "./rtmq.log");
+    log = log_init(LOG_LEVEL_DEBUG, "./rtmq.log");
+    if (NULL == log) {
+        fprintf(stderr, "Initialize log failed!");
+        return RTMQ_ERR;
+    }
 
     /* 1. 接收端初始化 */
     ctx = rtrd_init(&conf, log);
