@@ -248,9 +248,8 @@ void *rtsd_ssvr_routine(void *_ctx)
         if (ret < 0) {
             if (EINTR == errno) { continue; }
             log_fatal(ssvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
-            //abort();
-            //return (void *)-1;
-            continue;
+            abort();
+            return (void *)-1;
         }
         else if (0 == ret) {
             rtsd_ssvr_timeout_hdl(ctx, ssvr);

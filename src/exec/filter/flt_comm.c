@@ -103,7 +103,6 @@ int flt_usage(const char *exec)
 {
     printf("\nUsage: %s -l <log level> -L <log key path> -n <node name> [-h] [-d]\n", exec);
     printf("\t-l: Log level\n"
-            "\t-L: Log key path\n"
             "\t-n: Node name\n"
             "\t-d: Run as daemon\n"
             "\t-h: Show help\n\n");

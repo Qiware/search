@@ -116,7 +116,6 @@ static int mem_usage(const char *exec)
 {
     printf("\nUsage: %s [-h] -l <log level> -k <log key path>\n", exec);
     printf("\t-h: Show help\n"
-           "\t-l: Log level\n"
-           "\t-k: Log key path\n\n");
+           "\t-l: Log level\n\n");
     return 0;
 }
