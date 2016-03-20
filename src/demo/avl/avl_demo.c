@@ -26,8 +26,7 @@ int main(void)
 
     /* > 创建B树 */
     avl = avl_creat(NULL, (key_cb_t)key_cb_int32, (cmp_cb_t)cmp_cb_int32);
-    if (NULL == avl)
-    {
+    if (NULL == avl) {
         fprintf(stderr, "[%s][%d] Create avl failed!\n", __FILE__, __LINE__);
         return -1;
     }

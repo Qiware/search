@@ -39,8 +39,7 @@ int main(void)
     shm_btree_print(ctx);
 
     /* > 操作B树 */
-    while(1)
-    {
+    while(1) {
         memset(input, 0, sizeof(input));
     
     #if defined(__AUTO_INPUT__)

@@ -94,8 +94,7 @@ int kmp_match(kmp_t *kmp, const char *s, int len)
 {
     int i = 0, j = 0;
 
-    while (i < len && j < kmp->len)
-    {
+    while (i < len && j < kmp->len) {
         /* ① 如果j == -1, 或者当前字符匹配成功(即s[i] == p[j]), 都令i++，j++ */
         if ((-1 == j) || (s[i] == kmp->p[j])) {
             ++i, ++j;

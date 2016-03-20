@@ -6,8 +6,7 @@ int main(void)
     int idx = 0;
     struct timespec time_start={0, 0},time_end={0, 0};
 
-    for (idx=0; idx<1000000; ++idx)
-    {
+    for (idx=0; idx<1000000; ++idx) {
         ++idx;
     #if 0
         clock_gettime(CLOCK_REALTIME, &time_start);
