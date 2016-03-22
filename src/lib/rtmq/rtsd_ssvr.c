@@ -449,7 +449,7 @@ static int rtsd_ssvr_recv_proc(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
             continue;
         }
         else if (0 == n) {
-            log_info(ssvr->log, "Client disconnected. fd:%d n:%d/%d", sck->fd, n, left);
+            log_info(ssvr->log, "Server disconnected. fd:%d n:%d/%d", sck->fd, n, left);
             CLOSE(sck->fd);
             rtmq_snap_reset(recv);
             return RTMQ_SCK_DISCONN;
@@ -761,6 +761,7 @@ static int rtsd_ssvr_send_data(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
         if (n < 0) {
             log_error(ssvr->log, "errmsg:[%d] %s! fd:%d",
                     errno, strerror(errno), sck->fd);
+            assert(0);
             CLOSE(sck->fd);
             wiov_item_clear(send);
             return RTMQ_ERR;

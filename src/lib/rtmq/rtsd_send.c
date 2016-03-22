@@ -398,7 +398,7 @@ int rtsd_cli_send(rtsd_cntx_t *ctx, int type, const void *data, size_t size)
 
     addr = queue_malloc(ctx->sendq[idx], sizeof(rtmq_header_t)+size);
     if (NULL == addr) {
-        log_error(ctx->log, "Alloc from SHMQ failed! size:%d/%d",
+        log_error(ctx->log, "Alloc from queue failed! size:%d/%d",
                 size+sizeof(rtmq_header_t), queue_size(ctx->sendq[idx]));
         return RTMQ_ERR;
     }

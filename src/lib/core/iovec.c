@@ -18,21 +18,24 @@
  **     wiov: IOV对象
  **返    回: 0:成功 !0:失败
  **实现描述:
- **注意事项: orig和iov成员的长度一致, 且一一对应.
+ **注意事项:
+ **     1. orig和iov成员的长度一致, 且一一对应.
+ **     2. 当writev()中iov个数超过IOV_MAX时, 会出现"Invalid argument"的提示.
+ **        Linux系统中IOV_MAX的值为1024.
  **作    者: # Qifeng.zou # 2015.12.26 23:42:54 #
  ******************************************************************************/
 int wiov_init(wiov_t *wiov, int max)
 {
     wiov->iov_cnt = 0;
     wiov->iov_idx = 0;
-    wiov->iov_max = max;
+    wiov->iov_max = max>=IOV_MAX? IOV_MAX : max;
 
-    wiov->orig = (wiov_orig_t *)calloc(max, sizeof(wiov_orig_t));
+    wiov->orig = (wiov_orig_t *)calloc(wiov->iov_max, sizeof(wiov_orig_t));
     if (NULL == wiov->orig) {
         return -1;
     }
 
-    wiov->iov = (struct iovec *)calloc(max, sizeof(struct iovec));
+    wiov->iov = (struct iovec *)calloc(wiov->iov_max, sizeof(struct iovec));
     if (NULL == wiov->iov) {
         free(wiov->orig);
         return -1;

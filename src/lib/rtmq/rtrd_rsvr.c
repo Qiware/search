@@ -681,6 +681,9 @@ static int rtrd_rsvr_sys_mesg_proc(rtrd_cntx_t *ctx,
 {
     rtmq_header_t *head = (rtmq_header_t *)addr;
 
+    log_debug(rsvr->log, "type:%u nodeid:%u checksum:0x%X",
+            head->type, head->nodeid, head->checksum);
+
     switch (head->type) {
         case RTMQ_KPALIVE_REQ:
         {
@@ -1139,7 +1142,7 @@ static int rtrd_rsvr_del_conn_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, list2_nod
     /* > 从链表剔除结点 */
     list2_delete(rsvr->conn_list, node);
 
-    /* > 从SCK<->DEV映射表中剔除 */
+    /* > 从SCK <<=>> DEV映射表中剔除 */
     rtrd_node_to_svr_map_del(ctx, curr->nodeid, rsvr->id);
 
     /* > 释放数据空间 */
