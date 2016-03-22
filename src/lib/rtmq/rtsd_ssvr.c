@@ -761,7 +761,6 @@ static int rtsd_ssvr_send_data(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
         if (n < 0) {
             log_error(ssvr->log, "errmsg:[%d] %s! fd:%d",
                     errno, strerror(errno), sck->fd);
-            assert(0);
             CLOSE(sck->fd);
             wiov_item_clear(send);
             return RTMQ_ERR;
