@@ -28,7 +28,7 @@ int wiov_init(wiov_t *wiov, int max)
 {
     wiov->iov_cnt = 0;
     wiov->iov_idx = 0;
-    wiov->iov_max = max>=IOV_MAX? IOV_MAX : max;
+    wiov->iov_max = (max > IOV_MAX? IOV_MAX : max);
 
     wiov->orig = (wiov_orig_t *)calloc(wiov->iov_max, sizeof(wiov_orig_t));
     if (NULL == wiov->orig) {
