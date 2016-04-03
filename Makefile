@@ -38,7 +38,6 @@ DIR += "$(LIB_DIR)/invert"
 
 EXEC_DIR = "src/exec"
 DIR += "$(EXEC_DIR)/frwder"
-DIR += "$(EXEC_DIR)/mmexec"
 DIR += "$(EXEC_DIR)/crawler"
 DIR += "$(EXEC_DIR)/filter"
 DIR += "$(EXEC_DIR)/listend"
