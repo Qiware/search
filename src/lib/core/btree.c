@@ -464,8 +464,9 @@ static int btree_merge(btree_t *btree, btree_node_t *node)
  **功    能: 合并结点
  **输入参数:
  **     btree: B树
- **     node:
- **     brother:
+ **     left: 左结点
+ **     right: 右结点
+ **     mid: 中间结点索引
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述:

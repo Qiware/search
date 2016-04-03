@@ -217,6 +217,11 @@ int rtrd_register(rtrd_cntx_t *ctx, int type, rtmq_reg_cb_t proc, void *param)
  **函数名称: rtrd_send
  **功    能: 接收客户端发送数据
  **输入参数:
+ **     ctx: 全局对象
+ **     type: 消息类型
+ **     dest: 目标结点ID
+ **     data: 需要发送的数据
+ **     len: 发送数据的长度
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 将数据放入应答队列
