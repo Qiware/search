@@ -8,11 +8,11 @@
 /* 侦听配置 */
 typedef struct
 {
-    char name[NODE_MAX_LEN];        /* 节点名 */
+    int nid;                        /* 结点ID */
+    char name[NODE_MAX_LEN];        /* 结点名 */
     char wdir[FILE_PATH_MAX_LEN];   /* 工作路径 */
 
-    struct
-    {
+    struct {
         int num;                    /* 队列数 */
         int max;                    /* 队列长度 */
         int size;                   /* 单元大小 */
