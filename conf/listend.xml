@@ -3,11 +3,6 @@
     <!-- 分发队列配置 -->
     <DISTQ NUM="8" MAX="4096" SIZE="4096" />
 
-    <!-- 指定转发配置
-         PATH: 转发配置路径
-         MARK: 指定转发配置的标签 -->
-    <FRWDER PATH="../conf/frwder.xml" MARK=".FRWDER.CONN-INVTD" />
-
     <!-- 代理信息配置 -->
     <AGENT>
         <!-- 并发(连接)配置

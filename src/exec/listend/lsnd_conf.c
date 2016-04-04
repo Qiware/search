@@ -14,7 +14,7 @@ static int lsnd_conf_parse(xml_tree_t *xml, agent_conf_t *conf, log_cycle_t *log
 
 static int lsnd_conf_load_comm(xml_tree_t *xml, lsnd_conf_t *conf, log_cycle_t *log);
 static int lsnd_conf_load_agent(xml_tree_t *xml, lsnd_conf_t *conf, log_cycle_t *log);
-static int lsnd_conf_load_invtd(xml_tree_t *xml, lsnd_conf_t *lcf, log_cycle_t *log);
+static int lsnd_conf_load_frwder(xml_tree_t *xml, lsnd_conf_t *lcf, log_cycle_t *log);
 
 /******************************************************************************
  **函数名称: lsnd_load_conf
@@ -64,7 +64,7 @@ int lsnd_load_conf(const char *path, lsnd_conf_t *conf, log_cycle_t *log)
         }
 
         /* > 加载转发配置 */
-        if (lsnd_conf_load_invtd(xml, conf, log)) {
+        if (lsnd_conf_load_frwder(xml, conf, log)) {
             log_error(log, "Load rttp conf failed! path:%s", path);
             break;
         }
@@ -338,7 +338,7 @@ static int lsnd_conf_load_agent(xml_tree_t *xml, lsnd_conf_t *lcf, log_cycle_t *
 }
 
 /******************************************************************************
- **函数名称: lsnd_conf_load_invtd
+ **函数名称: lsnd_conf_load_frwder
  **功    能: 加载转发配置
  **输入参数: 
  **     path: 配置文件路径
@@ -350,7 +350,7 @@ static int lsnd_conf_load_agent(xml_tree_t *xml, lsnd_conf_t *lcf, log_cycle_t *
  **注意事项: 
  **作    者: # Qifeng.zou # 2015-06-25 22:43:12 #
  ******************************************************************************/
-static int lsnd_conf_load_invtd(xml_tree_t *xml, lsnd_conf_t *lcf, log_cycle_t *log)
+static int lsnd_conf_load_frwder(xml_tree_t *xml, lsnd_conf_t *lcf, log_cycle_t *log)
 {
     xml_node_t *parent, *node;
     rtsd_conf_t *conf = &lcf->frwder;
