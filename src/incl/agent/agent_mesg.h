@@ -20,7 +20,7 @@ typedef struct
 } mesg_header_t;
 
 /* 字节序转换 */
-#define agent_head_hton(h, n) do { /* 主机->网络 */\
+#define mesg_head_hton(h, n) do { /* 主机->网络 */\
     (n)->type = htonl((h)->type); \
     (n)->flag = htonl((h)->flag); \
     (n)->length = htonl((h)->length); \
@@ -28,7 +28,7 @@ typedef struct
     (n)->serial = hton64((h)->serial); \
 } while(0)
 
-#define agent_head_ntoh(n, h) do { /* 网络->主机*/\
+#define mesg_head_ntoh(n, h) do { /* 网络->主机*/\
     (h)->type = ntohl((n)->type); \
     (h)->flag = ntohl((n)->flag); \
     (h)->length = ntohl((n)->length); \

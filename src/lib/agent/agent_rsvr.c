@@ -634,11 +634,7 @@ static int agent_recv_head(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
 
     /* 3. 校验报头数据 */
     head = (mesg_header_t *)addr;
-
-    head->type = ntohl(head->type);
-    head->flag = ntohl(head->flag);
-    head->length = ntohl(head->length);
-    head->mark = ntohl(head->mark);
+    mesg_head_ntoh(head, head);
     head->from = AGENT_GET_NODE_ID(ctx);
 
     if (AGENT_MSG_MARK_KEY != head->mark) {

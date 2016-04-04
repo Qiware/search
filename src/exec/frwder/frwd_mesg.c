@@ -114,8 +114,13 @@ static int frwd_search_word_req_hdl(int type, int orig, char *data, size_t len, 
     log_trace(ctx->log, "Call %s()", __func__);
 
     /* > 字节序转换 */
-    agent_head_hton(head, head);
+    mesg_head_ntoh(head, head);
 
+    log_trace(ctx->log, "serial:%lu type:%d len:%d flag:%d mark:[0x%X/0x%X]",
+            head->serial, head->type, head->length, head->flag,
+            head->mark, AGENT_MSG_MARK_KEY);
+
+    mesg_head_hton(head, head);
     /* > 发送数据 */
     if (rtsd_cli_send(ctx->upload, type, data, len)) {
         log_error(ctx->log, "Push data into send queue failed! type:%u", type);

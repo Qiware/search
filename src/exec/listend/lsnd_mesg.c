@@ -99,6 +99,8 @@ int lsnd_insert_word_req_hdl(unsigned int type, void *data, int length, void *ar
     head = (mesg_header_t *)data; // 消息头
     req = (mesg_insert_word_req_t *)(head + 1); // 消息体
 
+    mesg_head_hton(head, head);
+
     /* > 转发搜索请求 */
     req->serial = head->serial;
 
