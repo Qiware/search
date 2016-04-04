@@ -108,17 +108,6 @@ static int frwd_conf_parse_comm(xml_tree_t *xml, frwd_conf_t *conf)
 
     snprintf(conf->name, sizeof(conf->name), "%s", node->value.str);
 
-    /* > 发送至Agentd */
-    node = xml_query(xml, ".FRWDER.LISTEND.NAME");
-    if (NULL == node
-        || 0 == node->value.len)
-    {
-        fprintf(stderr, "Didn't find .FRWDER.LISTEND.NAME!\n");
-        return -1;
-    }
-
-    snprintf(conf->lsnd_name, sizeof(conf->lsnd_name), "%s", node->value.str);
-
     return 0;
 }
 
@@ -434,8 +423,12 @@ static int frwd_conf_parse_download(xml_tree_t *xml, const char *path, frwd_conf
         return -1;
     }
 
-    /* > 发送队列 */
-    node = xml_search(xml, parent, "SENDQ.MAX");
+    /* > 发送队列配置 */
+    conf->sendq.max = conf->recvq.max;
+    conf->sendq.size = conf->recvq.size;
+
+    /* > 分发队列 */
+    node = xml_search(xml, parent, "DISTQ.MAX");
     if (NULL == node
         || 0 == node->value.len)
     {
@@ -443,13 +436,13 @@ static int frwd_conf_parse_download(xml_tree_t *xml, const char *path, frwd_conf
         return -1;
     }
 
-    conf->sendq.max = atoi(node->value.str);
-    if (0 == conf->sendq.max) {
+    conf->distq.max = atoi(node->value.str);
+    if (0 == conf->distq.max) {
         fprintf(stderr, "%s.SENDQ.MAX is zero!\n", path);
         return -1;
     }
 
-    node = xml_search(xml, parent, "SENDQ.SIZE");
+    node = xml_search(xml, parent, "DISTQ.SIZE");
     if (NULL == node
         || 0 == node->value.len)
     {
@@ -457,8 +450,8 @@ static int frwd_conf_parse_download(xml_tree_t *xml, const char *path, frwd_conf
         return -1;
     }
 
-    conf->sendq.size = atoi(node->value.str);
-    if (0 == conf->sendq.size) {
+    conf->distq.size = atoi(node->value.str);
+    if (0 == conf->distq.size) {
         fprintf(stderr, "%s.SENDQ.SIZE is zero!\n", path);
         return -1;
     }

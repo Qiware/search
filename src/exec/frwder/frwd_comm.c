@@ -48,7 +48,7 @@ int frwd_getopt(int argc, char **argv, frwd_opt_t *opt)
     opt->log_level = LOG_LEVEL_TRACE;
 
     /* 1. 解析输入参数 */
-    while (-1 != (ch = getopt_long(argc, argv, "n:l:hd", opts, NULL))) {
+    while (-1 != (ch = getopt_long(argc, argv, "c:l:hd", opts, NULL))) {
         switch (ch) {
             case 'c':   /* 配置路径 */
             {

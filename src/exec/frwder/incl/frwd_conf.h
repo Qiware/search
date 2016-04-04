@@ -12,7 +12,6 @@ typedef struct
 {
     int nid;                                /* 结点名ID */
     char name[NODE_MAX_LEN];                /* 结点名 */
-    char lsnd_name[FILE_NAME_MAX_LEN];      /* 侦听服务名 */
     rtsd_conf_t upload;                     /* upload配置 */
     rtrd_conf_t download;                   /* download配置 */
 } frwd_conf_t;
