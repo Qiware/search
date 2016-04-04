@@ -209,7 +209,7 @@ static int intvd_search_send_and_free(invtd_cntx_t *ctx,
         xml_spack(xml, rsp->body);
         rsp->serial = hton64(req->serial);
 
-        if (rtrd_send(ctx->rtrd, MSG_SEARCH_WORD_RSP, orig, addr, total_len)) {
+        if (rtsd_cli_send(ctx->frwder, MSG_SEARCH_WORD_RSP, addr, total_len)) {
             log_error(ctx->log, "Send response failed! serial:%ld words:%s",
                     req->serial, req->words);
         }
@@ -310,7 +310,7 @@ int invtd_insert_word_req_hdl(int type, int orig, char *buff, size_t len, void *
 INVTD_INSERT_WORD_RSP:
     /* > 发送应答信息 */
     rsp.serial = hton64(req->serial);
-    if (rtrd_send(ctx->rtrd, MSG_INSERT_WORD_RSP, orig, (void *)&rsp, sizeof(rsp))) {
+    if (rtsd_cli_send(ctx->frwder, MSG_INSERT_WORD_RSP, (void *)&rsp, sizeof(rsp))) {
         log_error(ctx->log, "Send response failed! serial:%s word:%s url:%s freq:%d",
                 req->serial, req->word, req->url, req->freq);
     }

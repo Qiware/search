@@ -140,7 +140,7 @@ frwd_cntx_t *frwd_init(const frwd_conf_t *conf, log_cycle_t *log)
         }
 
         /* > 初始化发送服务 */
-        frwd->upstrm = rtsd_init(&conf->upstrm, frwd->log);
+        frwd->upstrm = rtrd_init(&conf->upstrm, frwd->log);
         if (NULL == frwd->upstrm) {
             log_fatal(frwd->log, "Initialize send-server failed!");
             break;
@@ -178,7 +178,7 @@ int frwd_launch(frwd_cntx_t *frwd)
         return FRWD_ERR;
     }
 
-    if (rtsd_launch(frwd->upstrm)) {
+    if (rtrd_launch(frwd->upstrm)) {
         log_fatal(frwd->log, "Start up send-server failed!");
         return FRWD_ERR;
     }

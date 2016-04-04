@@ -30,7 +30,7 @@ typedef struct
     int cmd_sck_id;                         /* 命令套接字 */
     frwd_conf_t conf;                       /* 配置信息 */
     log_cycle_t *log;                       /* 日志对象 */
-    rtsd_cntx_t *upstrm;                    /* Upload对象 */
+    rtrd_cntx_t *upstrm;                    /* Upload对象 */
     rtrd_cntx_t *downstrm;                  /* Download(用于接收来自LSND的数据) */
 } frwd_cntx_t;
 

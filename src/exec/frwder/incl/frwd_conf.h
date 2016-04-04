@@ -12,7 +12,7 @@ typedef struct
 {
     int nid;                                /* 结点名ID */
     char name[NODE_MAX_LEN];                /* 结点名 */
-    rtsd_conf_t upstrm;                     /* upstrm配置 */
+    rtrd_conf_t upstrm;                     /* upstrm配置 */
     rtrd_conf_t downstrm;                   /* downstrm配置 */
 } frwd_conf_t;
 

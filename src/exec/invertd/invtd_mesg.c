@@ -47,7 +47,7 @@ static int invtd_print_invt_tab_req_hdl(int type, int orig, char *buff, size_t l
 static int invtd_rtmq_reg(invtd_cntx_t *ctx)
 {
 #define INVTD_RTMQ_REG(ctx, type, proc, args) \
-    if (rtrd_register((ctx)->rtrd, type, proc, args)) { \
+    if (rtsd_register((ctx)->frwder, type, proc, args)) { \
         log_error(ctx->log, "Register callback failed!"); \
         return INVT_ERR; \
     }
@@ -60,8 +60,8 @@ static int invtd_rtmq_reg(invtd_cntx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: invtd_start_rtmq
- **功    能: 启动RTMQ服务
+ **函数名称: invtd_start_frwder
+ **功    能: 启动DownStream服务
  **输入参数:
  **     ctx: SDTP对象
  **输出参数: NONE
@@ -70,11 +70,11 @@ static int invtd_rtmq_reg(invtd_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.05.08 #
  ******************************************************************************/
-int invtd_start_rtmq(invtd_cntx_t *ctx)
+int invtd_start_frwder(invtd_cntx_t *ctx)
 {
     if (invtd_rtmq_reg(ctx)) {
         return INVT_ERR;
     }
 
-    return rtrd_launch(ctx->rtrd);
+    return rtsd_launch(ctx->frwder);
 }
