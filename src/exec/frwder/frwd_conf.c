@@ -395,6 +395,19 @@ static int frwd_conf_parse_download(xml_tree_t *xml, const char *path, frwd_conf
     }
 
     /* > 接收队列 */
+    node = xml_search(xml, parent, "RECVQ.NUM");
+    if (NULL == node
+        || 0 == node->value.len)
+    {
+        fprintf(stderr, "Didn't find %s.RECVQ.NUM!\n", path);
+        return -1;
+    }
+
+    conf->recvq_num = atoi(node->value.str);
+    if (0 == conf->recvq_num) {
+        conf->recvq_num = 1;
+    }
+
     node = xml_search(xml, parent, "RECVQ.MAX");
     if (NULL == node
         || 0 == node->value.len)
@@ -428,6 +441,19 @@ static int frwd_conf_parse_download(xml_tree_t *xml, const char *path, frwd_conf
     conf->sendq.size = conf->recvq.size;
 
     /* > 分发队列 */
+    node = xml_search(xml, parent, "DISTQ.NUM");
+    if (NULL == node
+        || 0 == node->value.len)
+    {
+        fprintf(stderr, "Didn't find %s.DISTQ.NUM!\n", path);
+        return -1;
+    }
+
+    conf->distq_num = atoi(node->value.str);
+    if (0 == conf->distq_num) {
+        conf->distq_num = 1;
+    }
+
     node = xml_search(xml, parent, "DISTQ.MAX");
     if (NULL == node
         || 0 == node->value.len)

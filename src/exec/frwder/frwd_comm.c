@@ -140,15 +140,15 @@ frwd_cntx_t *frwd_init(const frwd_conf_t *conf, log_cycle_t *log)
         }
 
         /* > 初始化发送服务 */
-        frwd->rtmq = rtsd_init(&conf->upload, frwd->log);
-        if (NULL == frwd->rtmq) {
+        frwd->upload = rtsd_init(&conf->upload, frwd->log);
+        if (NULL == frwd->upload) {
             log_fatal(frwd->log, "Initialize send-server failed!");
             break;
         }
 
         /* > 初始化接收服务 */
-        frwd->recv_lsnd = rtrd_init(&conf->download, frwd->log);
-        if (NULL == frwd->recv_lsnd) {
+        frwd->download = rtrd_init(&conf->download, frwd->log);
+        if (NULL == frwd->download) {
             log_fatal(frwd->log, "Initialize send-server failed!");
             break;
         }
@@ -173,7 +173,12 @@ frwd_cntx_t *frwd_init(const frwd_conf_t *conf, log_cycle_t *log)
  ******************************************************************************/
 int frwd_launch(frwd_cntx_t *frwd)
 {
-    if (rtsd_launch(frwd->rtmq)) {
+    if (rtrd_launch(frwd->download)) {
+        log_fatal(frwd->log, "Start up recv-server failed!");
+        return FRWD_ERR;
+    }
+
+    if (rtsd_launch(frwd->upload)) {
         log_fatal(frwd->log, "Start up send-server failed!");
         return FRWD_ERR;
     }
