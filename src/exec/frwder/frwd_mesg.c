@@ -136,15 +136,25 @@ static int frwd_search_word_req_hdl(int type, int orig, char *data, size_t len, 
  **     args: 附加参数
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述:
+ **实现描述: 将收到的搜索应答转发至帧听层
  **注意事项:
  **作    者: # Qifeng.zou # 2015.06.10 #
  ******************************************************************************/
 static int frwd_search_word_rsp_hdl(int type, int orig, char *data, size_t len, void *args)
 {
+    serial_t serial;
     frwd_cntx_t *ctx = (frwd_cntx_t *)args;
+    mesg_data_t *info = (mesg_data_t *)data;
 
     log_trace(ctx->log, "Call %s()", __func__);
+
+    serial.serial = ntoh64(info->serial);
+
+    /* > 发送数据 */
+    if (rtrd_send(ctx->recv_lsnd, type, serial.nid, data, len)) {
+        log_error(ctx->log, "Push data into send queue failed! type:%u", type);
+        return -1;
+    }
 
     return 0;
 }
@@ -196,9 +206,19 @@ static int frwd_insert_word_req_hdl(int type, int orig, char *data, size_t len, 
  ******************************************************************************/
 static int frwd_insert_word_rsp_hdl(int type, int orig, char *data, size_t len, void *args)
 {
+    serial_t serial;
     frwd_cntx_t *ctx = (frwd_cntx_t *)args;
+    mesg_insert_word_rsp_t *rsp = (mesg_insert_word_rsp_t *)data;
 
     log_trace(ctx->log, "Call %s()", __func__);
+
+    serial.serial = ntoh64(rsp->serial);
+
+    /* > 发送数据 */
+    if (rtrd_send(ctx->recv_lsnd, type, serial.nid, data, len)) {
+        log_error(ctx->log, "Push data into send queue failed! type:%u", type);
+        return -1;
+    }
 
     return 0;
 }

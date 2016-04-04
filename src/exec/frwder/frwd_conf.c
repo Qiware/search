@@ -12,7 +12,7 @@
 #include "frwd_conf.h"
 
 static int frwd_conf_load_comm(xml_tree_t *xml, frwd_conf_t *conf);
-static int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t *conf);
+static int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, frwd_conf_t *fcf);
 
 /******************************************************************************
  **函数名称: frwd_load_conf
@@ -52,8 +52,8 @@ int frwd_load_conf(const char *path, frwd_conf_t *conf, log_cycle_t *log)
         return -1;
     }
 
-    /* > 提取发送配置 */
-    if (frwd_conf_load_frwder(xml, ".FRWDER.CONN-INVTD", &conf->conn_invtd)) {
+    /* > 提取上游配置 */
+    if (frwd_conf_load_frwder(xml, ".FRWDER.UPLOAD", conf)) {
         xml_destroy(xml);
         return -1;
     }
@@ -78,6 +78,16 @@ int frwd_load_conf(const char *path, frwd_conf_t *conf, log_cycle_t *log)
 static int frwd_conf_load_comm(xml_tree_t *xml, frwd_conf_t *conf)
 {
     xml_node_t *node;
+
+    /* > 结点名ID */
+    node = xml_query(xml, ".FRWDER.ID");
+    if (NULL == node
+        || 0 == node->value.len)
+    {
+        return -1;
+    }
+
+    conf->nid = atoi(node->value.str);
 
     /* > 结点名 */
     node = xml_query(xml, ".FRWDER.NAME");
@@ -110,15 +120,16 @@ static int frwd_conf_load_comm(xml_tree_t *xml, frwd_conf_t *conf)
  **     xml: XML树
  **     path: 结点路径
  **输出参数:
- **     conf: 发送配置
+ **     fcf: 转发配置
  **返    回: 0:成功 !0:失败
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.06.09 #
  ******************************************************************************/
-static int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t *conf)
+static int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, frwd_conf_t *fcf)
 {
     xml_node_t *parent, *node;
+    rtsd_conf_t *conf = &fcf->upload_conf;
 
     parent = xml_query(xml, path);
     if (NULL == parent) {
@@ -127,15 +138,7 @@ static int frwd_conf_load_frwder(xml_tree_t *xml, const char *path, rtsd_conf_t 
     }
 
     /* > 结点ID */
-    node = xml_search(xml, parent, "NODE");
-    if (NULL == node
-        || 0 == node->value.len)
-    {
-        fprintf(stderr, "Didn't find %s.NODE!\n", path);
-        return -1;
-    }
-
-    conf->nodeid = atoi(node->value.str);
+    conf->nodeid = fcf->nid;
 
     /* > 工作路径 */
     node = xml_search(xml, parent, "PATH");

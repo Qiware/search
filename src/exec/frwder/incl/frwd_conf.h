@@ -10,9 +10,10 @@
 /* 配置信息 */
 typedef struct
 {
+    int nid;                                /* 结点名ID */
     char name[NODE_MAX_LEN];                /* 结点名 */
     char lsnd_name[FILE_NAME_MAX_LEN];      /* 侦听服务名 */
-    rtsd_conf_t conn_invtd;                 /* RTTP配置 */
+    rtsd_conf_t upload_conf;                /* RTTP配置 */
     rtrd_conf_t recv_lsnd;                  /* 接收来自lsnd数据的配置 */
 } frwd_conf_t;
 
