@@ -44,8 +44,7 @@ typedef struct
     int nodeid;                         /* 节点ID(唯一值: 不允许重复) */
     char path[FILE_NAME_MAX_LEN];       /* 工作路径 */
 
-    struct
-    {
+    struct {
         char usr[RTMQ_USR_MAX_LEN];     /* 用户名 */
         char passwd[RTMQ_PWD_MAX_LEN];  /* 登录密码 */
     } auth;
