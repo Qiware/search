@@ -353,9 +353,9 @@ static int lsnd_conf_load_agent(xml_tree_t *xml, lsnd_conf_t *lcf, log_cycle_t *
 static int lsnd_conf_load_invtd(xml_tree_t *xml, lsnd_conf_t *lcf, log_cycle_t *log)
 {
     xml_node_t *parent, *node;
-    rtsd_conf_t *conf = &lcf->invtd_conf;
+    rtsd_conf_t *conf = &lcf->frwder;
 
-    parent = xml_query(xml, ".LISTEND.INVERTD");
+    parent = xml_query(xml, ".LISTEND.FRWDER");
     if (NULL == parent) {
         log_error(log, "Didn't find invertd configuation!");
         return -1;

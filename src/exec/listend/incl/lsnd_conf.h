@@ -18,7 +18,7 @@ typedef struct
         int size;                   /* 单元大小 */
     } distq;                        /* 分发队列 */
     agent_conf_t agent;             /* 代理配置 */
-    rtsd_conf_t invtd_conf;         /* INVERTD连接配置 */
+    rtsd_conf_t frwder;             /* FRWDER配置 */
 } lsnd_conf_t;
 
 int lsnd_load_conf(const char *path, lsnd_conf_t *conf, log_cycle_t *log);

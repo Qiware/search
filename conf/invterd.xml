@@ -4,7 +4,7 @@
     <INVT_TAB MAX="1024" />
 
     <!-- SDTP服务配置 -->
-    <SDTP NODE="30001" PORT="28888">
+    <SDTP NODE="30001" PORT="38888">
         <PATH>../temp/invertd/</PATH>                 <!-- 工作路径 -->
         <AUTH USR="qifeng" PASSWD="111111" />         <!-- 鉴权配置 -->
         <THREAD-POOL RECV_THD_NUM="2" WORK_THD_NUM="4" />  <!-- 线程数据 -->

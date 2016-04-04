@@ -46,7 +46,7 @@ int lsnd_search_word_req_hdl(unsigned int type, void *data, int length, void *ar
             __func__, ntoh64(head->serial), length, str);
 
     /* > 转发搜索请求 */
-    return rtsd_cli_send(ctx->invtd_upstrm, type, data, length);
+    return rtsd_cli_send(ctx->frwder, type, data, length);
 }
 
 /******************************************************************************
@@ -102,7 +102,7 @@ int lsnd_insert_word_req_hdl(unsigned int type, void *data, int length, void *ar
     /* > 转发搜索请求 */
     req->serial = head->serial;
 
-    return rtsd_cli_send(ctx->invtd_upstrm, type, req, sizeof(mesg_insert_word_req_t));
+    return rtsd_cli_send(ctx->frwder, type, req, sizeof(mesg_insert_word_req_t));
 }
 
 /******************************************************************************
