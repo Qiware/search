@@ -17,7 +17,7 @@ typedef struct
     uint32_t to;                        /* 目标设备ID */
 
     uint64_t serial;                    /* 流水号 */
-} agent_header_t;
+} mesg_header_t;
 
 /* 字节序转换 */
 #define agent_head_hton(h, n) do { /* 主机->网络 */\

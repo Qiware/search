@@ -30,10 +30,10 @@
 int lsnd_search_word_req_hdl(unsigned int type, void *data, int length, void *args)
 {
     const char *str;
-    agent_header_t *head;
+    mesg_header_t *head;
     lsnd_cntx_t *ctx = (lsnd_cntx_t *)args;
 
-    head = (agent_header_t *)data;      // 消息头
+    head = (mesg_header_t *)data;      // 消息头
     str = (const char *)(head + 1);     // 消息体
 
     head->type = htonl(head->type);
@@ -90,13 +90,13 @@ int lsnd_search_word_rsp_hdl(int type, int orig, char *data, size_t len, void *a
  ******************************************************************************/
 int lsnd_insert_word_req_hdl(unsigned int type, void *data, int length, void *args)
 {
-    agent_header_t *head;
+    mesg_header_t *head;
     mesg_insert_word_req_t *req;
     lsnd_cntx_t *ctx = (lsnd_cntx_t *)args;
 
     log_debug(ctx->log, "Call %s()!", __func__);
 
-    head = (agent_header_t *)data; // 消息头
+    head = (mesg_header_t *)data; // 消息头
     req = (mesg_insert_word_req_t *)(head + 1); // 消息体
 
     /* > 转发搜索请求 */

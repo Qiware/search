@@ -38,7 +38,7 @@ typedef struct
     bool is_cmd_sck;                /* 是否是命令套接字(false:否 true:是) */
 
     agent_flow_t *flow;             /* 流水信息 */
-    agent_header_t *head;           /* 报头起始地址 */
+    mesg_header_t *head;            /* 报头起始地址 */
     void *body;                     /* Body */
     list_t *send_list;              /* 发送链表 */
 } agent_socket_extra_t;

@@ -70,10 +70,10 @@ static int mon_srch_send_rep(int fd, const char *word)
 {
     int len;
     char *body;
-    agent_header_t *head;
-    char addr[sizeof(agent_header_t) + MON_SRCH_BODY_LEN];
+    mesg_header_t *head;
+    char addr[sizeof(mesg_header_t) + MON_SRCH_BODY_LEN];
 
-    head = (agent_header_t *)addr;
+    head = (mesg_header_t *)addr;
     body = (char *)(head + 1);
 
     len = mon_srch_set_body(word, body, MON_SRCH_BODY_LEN);
@@ -87,7 +87,7 @@ static int mon_srch_send_rep(int fd, const char *word)
     head->mark = htonl(AGENT_MSG_MARK_KEY);
     head->length = htonl(len);
 
-    Writen(fd, (void *)addr, sizeof(agent_header_t)+len);
+    Writen(fd, (void *)addr, sizeof(mesg_header_t)+len);
 
     return 0;
 }
@@ -114,7 +114,7 @@ static int mon_srch_recv_rsp(mon_cntx_t *ctx, mon_srch_conn_t *conn)
     xml_node_t *node, *attr;
     struct timeval ctm;
     int sec, msec, usec;
-    agent_header_t head;
+    mesg_header_t head;
     mesg_data_t *rsp;
 
     memset(addr, 0, sizeof(addr));
@@ -406,11 +406,11 @@ static int mon_insert_word_rsp_hdl(mon_cntx_t *ctx, int fd)
     int n;
     char *addr;
     ssize_t size;
-    agent_header_t *head;
+    mesg_header_t *head;
     mesg_insert_word_rsp_t *rsp;
 
     /* > 申请内存空间 */
-    size = sizeof(agent_header_t) + sizeof(mesg_insert_word_rsp_t);
+    size = sizeof(mesg_header_t) + sizeof(mesg_insert_word_rsp_t);
 
     addr = (char *)calloc(1, size);
     if (NULL == addr) {
@@ -427,7 +427,7 @@ static int mon_insert_word_rsp_hdl(mon_cntx_t *ctx, int fd)
     }
 
     /* > 显示插入结果 */
-    head = (agent_header_t *)addr;
+    head = (mesg_header_t *)addr;
     rsp = (mesg_insert_word_rsp_t *)(head + 1);
 
     rsp->serial = ntoh64(rsp->serial);
@@ -449,7 +449,7 @@ static int mon_insert_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args)
     char _freq[32];
     int fd, ret, sec, msec;
     struct timeb ctm, old_tm;
-    agent_header_t head;
+    mesg_header_t head;
     mesg_insert_word_req_t req;
     struct timeval timeout;
     mon_cntx_t *ctx = (mon_cntx_t *)args;

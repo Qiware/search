@@ -343,7 +343,7 @@ int agent_send(agent_cntx_t *ctx, int type, uint64_t serial, void *data, int len
     void *addr;
     queue_t *sendq;
     agent_flow_t flow;
-    agent_header_t *head;
+    mesg_header_t *head;
 
     /* > 查找SERIAL->SCK映射 */
     if (agent_serial_to_sck_map_query(ctx, serial, &flow)) {
@@ -351,7 +351,7 @@ int agent_send(agent_cntx_t *ctx, int type, uint64_t serial, void *data, int len
         return AGENT_ERR;
     }
 
-    size = sizeof(flow) + sizeof(agent_header_t) + len;
+    size = sizeof(flow) + sizeof(mesg_header_t) + len;
 
     /* > 放入指定发送队列 */
     sendq = ctx->sendq[flow.agt_idx];
@@ -363,7 +363,7 @@ int agent_send(agent_cntx_t *ctx, int type, uint64_t serial, void *data, int len
     }
 
     memcpy(addr, &flow, sizeof(flow));
-    head = (agent_header_t *)(addr + sizeof(flow));
+    head = (mesg_header_t *)(addr + sizeof(flow));
 
     head->type = type;
     head->flag = AGENT_MSG_FLAG_USR;
@@ -421,9 +421,9 @@ uint64_t agent_gen_sys_serail(uint16_t nid, uint16_t sid, uint32_t seq)
 {
     serial_t s;
 
-    s.nid = nid;
-    s.sid = sid;
-    s.seq = seq;
+    s.nid = nid; // 结点ID
+    s.sid = sid; // 服务索引(如: 第几个线程)
+    s.seq = seq; // 序列号
 
     return s.serial;
 }

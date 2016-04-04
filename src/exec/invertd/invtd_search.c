@@ -38,7 +38,7 @@ static int invtd_search_word_parse(invtd_cntx_t *ctx,
     xml_opt_t opt;
     xml_tree_t *xml;
     xml_node_t *node;
-    agent_header_t *head = (agent_header_t *)buf;
+    mesg_header_t *head = (mesg_header_t *)buf;
     const char *xml_str = (const char *)(head + 1);
 
     memset(&opt, 0, sizeof(opt));
