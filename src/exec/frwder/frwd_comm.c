@@ -140,14 +140,14 @@ frwd_cntx_t *frwd_init(const frwd_conf_t *conf, log_cycle_t *log)
         }
 
         /* > 初始化发送服务 */
-        frwd->rtmq = rtsd_init(&conf->upload_conf, frwd->log);
+        frwd->rtmq = rtsd_init(&conf->upload, frwd->log);
         if (NULL == frwd->rtmq) {
             log_fatal(frwd->log, "Initialize send-server failed!");
             break;
         }
 
         /* > 初始化接收服务 */
-        frwd->recv_lsnd = rtrd_init(&conf->recv_lsnd, frwd->log);
+        frwd->recv_lsnd = rtrd_init(&conf->download, frwd->log);
         if (NULL == frwd->recv_lsnd) {
             log_fatal(frwd->log, "Initialize send-server failed!");
             break;

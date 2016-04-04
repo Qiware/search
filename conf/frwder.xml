@@ -1,17 +1,17 @@
 <!-- 转发器配置 -->
 <FRWDER ID="20001" NAME="frwder">
-    <!-- 下行帧听配置 -->
+    <!-- 下行配置 -->
     <DOWNLOAD PORT="28888">
-        <PATH>../temp/frwder/</PATH>                        <!-- 工作路径 -->
+        <PATH>../temp/frwder/dl/</PATH>                     <!-- 工作路径 -->
         <AUTH USR="qifeng" PASSWD="111111" />               <!-- 鉴权配置 -->
         <THREAD-POOL RECV_THD_NUM="2" WORK_THD_NUM="4" />   <!-- 线程数据 -->
         <RECVQ NUM="4" MAX="8192" SIZE="4096" />            <!-- 接收队列(NUM:队列数 MAX:单元总数 SIZE:单元大小) -->
         <DISTQ NUM="4" MAX="8192" SIZE="4096" />            <!-- 分发队列(NUM:队列数 MAX:单元总数 SIZE:单元大小) -->
     </DOWNLOAD>
-    <!-- 上行帧听配置 -->
-    <UPLOAD>                                   <!-- NODE: 结点ID(必须唯一) -->
-        <PATH>../temp/frwder/</PATH>                        <!-- PATH: 工作路径 -->
-        <SERVER IP="127.0.0.1" PORT="28888" />              <!-- 服务端地址(IP:IP地址 PORT:服务端口) -->
+    <!-- 上行配置 -->
+    <UPLOAD>
+        <PATH>../temp/frwder/ul/</PATH>                     <!-- PATH: 工作路径 -->
+        <SERVER IP="127.0.0.1" PORT="38888" />              <!-- 服务端地址(IP:IP地址 PORT:服务端口) -->
         <AUTH   USR="qifeng" PASSWD="111111" />             <!-- 鉴权配置(USR:用户名 PASSWD:登录密码) -->
         <THREAD-POOL SEND_THD_NUM="5" WORK_THD_NUM="5" />   <!-- 线程数目(SEND:发送线程 WORK:工作线程) -->
         <BUFFER-POOL-SIZE SEND="5" RECV="5" />              <!-- 缓存配置(SEND:发送缓存(MB) RECV:接收缓存(MB)) -->
