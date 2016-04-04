@@ -37,6 +37,9 @@ typedef enum
     , MSG_SWITCH_SCHED_REQ                  /* 切换调度-请求 */
     , MSG_SWITCH_SCHED_RSP                  /* 反馈切换调度信息-应答 */
 
+    , MSG_SUB_REQ                           /* 订阅-请求 */
+    , MSG_SUB_ACK                           /* 订阅-应答 */
+
     , MSG_TYPE_TOTAL                        /* 消息类型总数 */
 } mesg_type_e;
 
