@@ -12,8 +12,8 @@
 #include "frwd_conf.h"
 
 static int frwd_conf_parse_comm(xml_tree_t *xml, frwd_conf_t *conf);
-static int frwd_conf_parse_upload(xml_tree_t *xml, const char *path, frwd_conf_t *fcf);
-static int frwd_conf_parse_download(xml_tree_t *xml, const char *path, frwd_conf_t *fcf);
+static int frwd_conf_parse_upstrm(xml_tree_t *xml, const char *path, frwd_conf_t *fcf);
+static int frwd_conf_parse_downstrm(xml_tree_t *xml, const char *path, frwd_conf_t *fcf);
 
 /******************************************************************************
  **函数名称: frwd_load_conf
@@ -55,12 +55,12 @@ int frwd_load_conf(const char *path, frwd_conf_t *conf, log_cycle_t *log)
         }
 
         /* > 提取上游配置 */
-        if (frwd_conf_parse_upload(xml, ".FRWDER.UPLOAD", conf)) {
+        if (frwd_conf_parse_upstrm(xml, ".FRWDER.UPSTRM", conf)) {
             break;
         }
 
         /* > 提取下游配置 */
-        if (frwd_conf_parse_download(xml, ".FRWDER.DOWNLOAD", conf)) {
+        if (frwd_conf_parse_downstrm(xml, ".FRWDER.DOWNSTRM", conf)) {
             break;
         }
 
@@ -112,7 +112,7 @@ static int frwd_conf_parse_comm(xml_tree_t *xml, frwd_conf_t *conf)
 }
 
 /******************************************************************************
- **函数名称: frwd_conf_parse_upload
+ **函数名称: frwd_conf_parse_upstrm
  **功    能: 加载转发配置
  **输入参数: 
  **     xml: XML树
@@ -124,10 +124,10 @@ static int frwd_conf_parse_comm(xml_tree_t *xml, frwd_conf_t *conf)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.06.09 #
  ******************************************************************************/
-static int frwd_conf_parse_upload(xml_tree_t *xml, const char *path, frwd_conf_t *fcf)
+static int frwd_conf_parse_upstrm(xml_tree_t *xml, const char *path, frwd_conf_t *fcf)
 {
     xml_node_t *parent, *node;
-    rtsd_conf_t *conf = &fcf->upload;
+    rtsd_conf_t *conf = &fcf->upstrm;
 
     parent = xml_query(xml, path);
     if (NULL == parent) {
@@ -296,7 +296,7 @@ static int frwd_conf_parse_upload(xml_tree_t *xml, const char *path, frwd_conf_t
 }
 
 /******************************************************************************
- **函数名称: frwd_conf_parse_download
+ **函数名称: frwd_conf_parse_downstrm
  **功    能: 加载Download配置
  **输入参数: 
  **     xml: XML树
@@ -308,10 +308,10 @@ static int frwd_conf_parse_upload(xml_tree_t *xml, const char *path, frwd_conf_t
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.06.09 #
  ******************************************************************************/
-static int frwd_conf_parse_download(xml_tree_t *xml, const char *path, frwd_conf_t *fcf)
+static int frwd_conf_parse_downstrm(xml_tree_t *xml, const char *path, frwd_conf_t *fcf)
 {
     xml_node_t *parent, *node;
-    rtrd_conf_t *conf = &fcf->download;
+    rtrd_conf_t *conf = &fcf->downstrm;
 
     parent = xml_query(xml, path);
     if (NULL == parent) {

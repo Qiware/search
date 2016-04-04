@@ -55,7 +55,7 @@ int frwd_set_reg(frwd_cntx_t *frwd)
 static int frwd_reg_req_cb(frwd_cntx_t *frwd)
 {
 #define FRWD_REG_REQ_CB(frwd, type, proc, args) \
-    if (rtrd_register((frwd)->download, type, (rtmq_reg_cb_t)proc, (void *)args)) { \
+    if (rtrd_register((frwd)->downstrm, type, (rtmq_reg_cb_t)proc, (void *)args)) { \
         log_error((frwd)->log, "Register type [%d] failed!", type); \
         return FRWD_ERR; \
     }
@@ -80,7 +80,7 @@ static int frwd_reg_req_cb(frwd_cntx_t *frwd)
 static int frwd_reg_rsp_cb(frwd_cntx_t *frwd)
 {
 #define FRWD_REG_RSP_CB(frwd, type, proc, args) \
-    if (rtsd_register((frwd)->upload, type, (rtmq_reg_cb_t)proc, (void *)args)) { \
+    if (rtsd_register((frwd)->upstrm, type, (rtmq_reg_cb_t)proc, (void *)args)) { \
         log_error((frwd)->log, "Register type [%d] failed!", type); \
         return FRWD_ERR; \
     }
@@ -122,7 +122,7 @@ static int frwd_search_word_req_hdl(int type, int orig, char *data, size_t len, 
 
     mesg_head_hton(head, head);
     /* > 发送数据 */
-    if (rtsd_cli_send(ctx->upload, type, data, len)) {
+    if (rtsd_cli_send(ctx->upstrm, type, data, len)) {
         log_error(ctx->log, "Push data into send queue failed! type:%u", type);
         return -1;
     }
@@ -156,7 +156,7 @@ static int frwd_search_word_rsp_hdl(int type, int orig, char *data, size_t len, 
     serial.serial = ntoh64(info->serial);
 
     /* > 发送数据 */
-    if (rtrd_send(ctx->download, type, serial.nid, data, len)) {
+    if (rtrd_send(ctx->downstrm, type, serial.nid, data, len)) {
         log_error(ctx->log, "Push data into send queue failed! type:%u", type);
         return -1;
     }
@@ -186,7 +186,7 @@ static int frwd_insert_word_req_hdl(int type, int orig, char *data, size_t len, 
     log_trace(ctx->log, "Call %s()", __func__);
 
     /* > 发送数据 */
-    if (rtsd_cli_send(ctx->upload, type, data, len)) {
+    if (rtsd_cli_send(ctx->upstrm, type, data, len)) {
         log_error(ctx->log, "Push data into send queue failed! type:%u", type);
         return -1;
     }
@@ -220,7 +220,7 @@ static int frwd_insert_word_rsp_hdl(int type, int orig, char *data, size_t len, 
     serial.serial = ntoh64(rsp->serial);
 
     /* > 发送数据 */
-    if (rtrd_send(ctx->download, type, serial.nid, data, len)) {
+    if (rtrd_send(ctx->downstrm, type, serial.nid, data, len)) {
         log_error(ctx->log, "Push data into send queue failed! type:%u", type);
         return -1;
     }
