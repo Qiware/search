@@ -10,7 +10,6 @@
 #include "mesg.h"
 #include "agent.h"
 #include "command.h"
-#include "agent_mesg.h"
 
 /* 静态函数 */
 static int frwd_reg_req_cb(frwd_cntx_t *frwd);

@@ -2,10 +2,10 @@
 #define __AGENT_RSVR_H__
 
 #include "list.h"
+#include "mesg.h"
 #include "agent.h"
 #include "queue.h"
 #include "rb_tree.h"
-#include "agent_mesg.h"
 
 #define AGENT_TMOUT_MSEC       (1000)  /* 超时(豪秒) */
 

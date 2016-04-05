@@ -1,7 +1,7 @@
 #include "sck.h"
 #include "redo.h"
+#include "mesg.h"
 #include "command.h"
-#include "agent_mesg.h"
 #include "agent_worker.h"
 
 #define AGT_WSVR_POP_NUM    (1024) /* 一次最多弹出数据个数 */

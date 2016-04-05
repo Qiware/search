@@ -11,7 +11,6 @@
 #include "agent.h"
 #include "listend.h"
 #include "lsnd_mesg.h"
-#include "agent_mesg.h"
 
 /******************************************************************************
  **函数名称: lsnd_search_word_req_hdl

@@ -10,7 +10,6 @@
 #include "invertd.h"
 #include "xml_tree.h"
 #include "rtrd_recv.h"
-#include "agent_mesg.h"
 
 #define SRCH_SEG_FREQ_LEN           (32)    /* 字段FREQ长度 */
 

@@ -11,7 +11,6 @@
 #include "xml_tree.h"
 #include "rtrd_recv.h"
 #include "invtd_mesg.h"
-#include "agent_mesg.h"
 
 /******************************************************************************
  **函数名称: invtd_print_invt_tab_req_hdl

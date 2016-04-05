@@ -1,9 +1,9 @@
 #include "sck.h"
 #include "redo.h"
+#include "mesg.h"
 #include "agent.h"
 #include "command.h"
 #include "syscall.h"
-#include "agent_mesg.h"
 
 static int agent_cmd_send_dist_req(agent_cntx_t *ctx, int idx);
 

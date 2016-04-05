@@ -13,7 +13,6 @@
 #include "redo.h"
 #include "monitor.h"
 #include "xml_tree.h"
-#include "agent_mesg.h"
 
 #define MON_SRCH_BODY_LEN   (1024)
 
