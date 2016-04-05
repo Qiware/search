@@ -59,11 +59,15 @@ int lsnd_search_word_req_hdl(unsigned int type, void *data, int length, void *ar
 int lsnd_search_word_rsp_hdl(int type, int orig, char *data, size_t len, void *args)
 {
     lsnd_cntx_t *ctx = (lsnd_cntx_t *)args;
-    mesg_header_t *rsp = (mesg_header_t *)data;
+    mesg_header_t *head = (mesg_header_t *)data;
 
-    log_trace(ctx->log, "Call %s()! body:%s", __func__, rsp->body);
+    /* > 转化字节序 */
+    mesg_head_ntoh(head, head);
 
-    return agent_send(ctx->agent, type, ntoh64(rsp->serial), (void *)data, len);
+    log_trace(ctx->log, "Call %s()! body:%s", __func__, head->body);
+
+    return agent_send(ctx->agent, type, head->serial,
+            (void *)data+sizeof(mesg_header_t), len-sizeof(mesg_header_t));
 }
 
 /******************************************************************************
