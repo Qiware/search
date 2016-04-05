@@ -111,14 +111,12 @@ static int frwd_search_word_req_hdl(int type, int orig, char *data, size_t len, 
     frwd_cntx_t *ctx = (frwd_cntx_t *)args;
     mesg_header_t *head = (mesg_header_t *)data;
 
-    log_trace(ctx->log, "Call %s()", __func__);
-
-    /* > 字节序转换 */
+    /* > 转换字节序 */
     mesg_head_ntoh(head, head);
 
-    log_trace(ctx->log, "serial:%lu type:%d len:%d flag:%d mark:[0x%X/0x%X]",
-            head->serial, head->type, head->length, head->flag,
-            head->mark, AGENT_MSG_MARK_KEY);
+    log_trace(ctx->log, "Call %s()! serial:%lu type:%d len:%d flag:%d mark:[0x%X/0x%X]",
+            __func__, head->serial, head->type,
+            head->length, head->flag, head->mark, AGENT_MSG_MARK_KEY);
 
     mesg_head_hton(head, head);
     /* > 发送数据 */
@@ -149,11 +147,11 @@ static int frwd_search_word_rsp_hdl(int type, int orig, char *data, size_t len, 
 {
     serial_t serial;
     frwd_cntx_t *ctx = (frwd_cntx_t *)args;
-    mesg_data_t *info = (mesg_data_t *)data;
+    mesg_header_t *head = (mesg_header_t *)data;
 
     log_trace(ctx->log, "Call %s()", __func__);
 
-    serial.serial = ntoh64(info->serial);
+    serial.serial = ntoh64(head->serial);
 
     /* > 发送数据 */
     if (rtrd_send(ctx->downstrm, type, serial.nid, data, len)) {

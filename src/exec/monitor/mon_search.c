@@ -115,7 +115,7 @@ static int mon_srch_recv_rsp(mon_cntx_t *ctx, mon_srch_conn_t *conn)
     struct timeval ctm;
     int sec, msec, usec;
     mesg_header_t head;
-    mesg_data_t *rsp;
+    mesg_header_t *rsp;
 
     memset(addr, 0, sizeof(addr));
 
@@ -141,7 +141,7 @@ static int mon_srch_recv_rsp(mon_cntx_t *ctx, mon_srch_conn_t *conn)
 
     /* > 显示查询结果 */
     fprintf(stderr, "    ============================================\n");
-    rsp = (mesg_data_t *)addr;
+    rsp = (mesg_header_t *)addr;
 
     rsp->serial = ntoh64(rsp->serial);
 

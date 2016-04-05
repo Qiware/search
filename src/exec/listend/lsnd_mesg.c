@@ -29,21 +29,14 @@
  ******************************************************************************/
 int lsnd_search_word_req_hdl(unsigned int type, void *data, int length, void *args)
 {
-    const char *str;
-    mesg_header_t *head;
     lsnd_cntx_t *ctx = (lsnd_cntx_t *)args;
+    mesg_header_t *head = (mesg_header_t *)data; /* 消息头 */
 
-    head = (mesg_header_t *)data;      // 消息头
-    str = (const char *)(head + 1);     // 消息体
+    log_debug(ctx->log, "Call %s()! serial:%lu length:%d body:%s!",
+            __func__, head->serial, length, head->body);
 
-    head->type = htonl(head->type);
-    head->flag = htonl(head->flag);
-    head->length = htonl(head->length);
-    head->mark = htonl(head->mark);
-    head->serial = hton64(head->serial);
-
-    log_debug(ctx->log, "Call %s() serial:%lu length:%d body:%s!",
-            __func__, ntoh64(head->serial), length, str);
+    /* > 转换字节序 */
+    mesg_head_hton(head, head);
 
     /* > 转发搜索请求 */
     return rtsd_cli_send(ctx->frwder, type, data, length);
@@ -67,7 +60,7 @@ int lsnd_search_word_req_hdl(unsigned int type, void *data, int length, void *ar
 int lsnd_search_word_rsp_hdl(int type, int orig, char *data, size_t len, void *args)
 {
     lsnd_cntx_t *ctx = (lsnd_cntx_t *)args;
-    mesg_data_t *rsp = (mesg_data_t *)data;
+    mesg_header_t *rsp = (mesg_header_t *)data;
 
     log_trace(ctx->log, "Call %s()! body:%s", __func__, rsp->body);
 

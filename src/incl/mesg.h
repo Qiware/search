@@ -43,6 +43,40 @@ typedef enum
     , MSG_TYPE_TOTAL                        /* 消息类型总数 */
 } mesg_type_e;
 
+/* 通用协议头 */
+typedef struct
+{
+    uint32_t type;                      /* 消息类型 Range: mesg_type_e */
+#define AGENT_MSG_FLAG_SYS   (0)        /* 0: 系统数据类型 */
+#define AGENT_MSG_FLAG_USR   (1)        /* 1: 自定义数据类型 */
+    uint32_t flag;                      /* 标识量(0:系统数据类型 1:自定义数据类型) */
+    uint32_t length;                    /* 报体长度 */
+#define AGENT_MSG_MARK_KEY   (0x1ED23CB4)
+    uint32_t mark;                      /* 校验值 */
+    uint32_t from;                      /* 源设备ID */
+    uint32_t to;                        /* 目标设备ID */
+
+    uint64_t serial;                    /* 流水号 */
+    char body[0];                       /* 消息体 */
+} mesg_header_t;
+
+/* 字节序转换 */
+#define mesg_head_hton(h, n) do { /* 主机->网络 */\
+    (n)->type = htonl((h)->type); \
+    (n)->flag = htonl((h)->flag); \
+    (n)->length = htonl((h)->length); \
+    (n)->mark = htonl((h)->mark); \
+    (n)->serial = hton64((h)->serial); \
+} while(0)
+
+#define mesg_head_ntoh(n, h) do { /* 网络->主机*/\
+    (h)->type = ntohl((n)->type); \
+    (h)->flag = ntohl((n)->flag); \
+    (h)->length = ntohl((n)->length); \
+    (h)->mark = ntohl((n)->mark); \
+    (h)->serial = ntoh64((n)->serial); \
+} while(0)
+
 /* 搜索消息结构 */
 #define SRCH_WORD_LEN       (128)
 typedef struct
@@ -51,15 +85,7 @@ typedef struct
     char words[SRCH_WORD_LEN];              /* 搜索关键字 */
 } mesg_search_word_req_t;
 
-/* 传输信息 */
-typedef struct
-{
-    uint64_t serial;                        /* 流水号(全局唯一编号) */
-
-    char body[0];                           /* 传输数据 */
-} mesg_data_t;
-
-#define mesg_data_total(body_len) (sizeof(uint64_t) + body_len);
+#define mesg_total_len(body_len) (sizeof(mesg_header_t) + body_len);
 
 /* 插入关键字-请求 */
 typedef struct

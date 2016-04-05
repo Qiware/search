@@ -189,14 +189,14 @@ static int intvd_search_send_and_free(invtd_cntx_t *ctx,
         xml_tree_t *xml, mesg_search_word_req_t *req, int orig)
 {
     void *addr = NULL;
-    mesg_data_t *rsp; /* 应答 */
+    mesg_header_t *rsp; /* 应答 */
     int body_len, total_len;
 
     if (NULL == xml) { return 0; }
 
     /* > 发送搜索应答 */
     body_len = xml_pack_len(xml);
-    total_len = mesg_data_total(body_len);
+    total_len = mesg_total_len(body_len);
 
     do {
         addr = (char *)calloc(1, total_len);
@@ -204,7 +204,7 @@ static int intvd_search_send_and_free(invtd_cntx_t *ctx,
             break;
         }
 
-        rsp = (mesg_data_t *)addr;
+        rsp = (mesg_header_t *)addr;
 
         xml_spack(xml, rsp->body);
         rsp->serial = hton64(req->serial);
