@@ -130,19 +130,15 @@ static int mon_srch_recv_rsp(mon_cntx_t *ctx, mon_srch_conn_t *conn)
     }
 
     /* > 字节序转换 */
-    head.type = ntohl(head.type);
-    head.flag = ntohl(head.flag);
-    head.length = ntohl(head.length);
-    head.mark = ntohl(head.mark);
-    head.serial = ntoh64(head.serial);
+    mesg_head_ntoh(&head, &head);
 
     n = read(conn->fd, addr, head.length);
-
     /* > 显示查询结果 */
     fprintf(stderr, "    ============================================\n");
     rsp = (mesg_header_t *)addr;
 
-    rsp->serial = ntoh64(rsp->serial);
+    /* > 字节序转换 */
+    mesg_head_ntoh(rsp, rsp);
 
     serial.serial = head.serial;
     fprintf(stderr, "    >Serial: %lu [nid(%u) sid(%u) seq(%u)]\n",
