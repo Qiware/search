@@ -262,5 +262,3 @@ static int agent_worker_timeout_handler(agent_cntx_t *ctx, agent_worker_t *worke
 {
     return agent_worker_proc_data_hdl(ctx, worker);
 }
-
-
