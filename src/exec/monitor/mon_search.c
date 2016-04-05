@@ -113,10 +113,10 @@ static int mon_srch_recv_rsp(mon_cntx_t *ctx, mon_srch_conn_t *conn)
     xml_node_t *node, *attr;
     struct timeval ctm;
     int sec, msec, usec;
-    mesg_header_t head;
+    mesg_header_t *head;
 
     /* > 接收应答数据 */
-    n = read(conn->fd, (void *)&head, sizeof(head));
+    n = read(conn->fd, (void *)addr, sizeof(head));
     gettimeofday(&ctm, NULL);
     if (n <= 0) {
         fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
@@ -127,20 +127,21 @@ static int mon_srch_recv_rsp(mon_cntx_t *ctx, mon_srch_conn_t *conn)
     }
 
     /* > 字节序转换 */
-    mesg_head_ntoh(&head, &head);
+    head = (mesg_header_t *)addr;
+    mesg_head_ntoh(head, head);
 
-    n = read(conn->fd, addr, head.length);
-    if (n != head.length) {
-        fprintf(stderr, "    Get data failed! n:%ld/%d\n", n, head.length);
+    n = read(conn->fd, addr+sizeof(mesg_header_t), head->length);
+    if (n != head->length) {
+        fprintf(stderr, "    Get data failed! n:%ld/%d\n", n, head->length);
         return -1;
     }
 
     /* > 显示查询结果 */
     fprintf(stderr, "    ============================================\n");
 
-    serial.serial = head.serial;
+    serial.serial = head->serial;
     fprintf(stderr, "    >Serial: %lu [nid(%u) sid(%u) seq(%u)]\n",
-            head.serial, serial.nid, serial.sid, serial.seq);
+            head->serial, serial.nid, serial.sid, serial.seq);
 
     memset(&opt, 0, sizeof(opt));
 
@@ -148,9 +149,9 @@ static int mon_srch_recv_rsp(mon_cntx_t *ctx, mon_srch_conn_t *conn)
     opt.alloc = mem_alloc;
     opt.dealloc = mem_dealloc;
 
-    xml = xml_screat(addr, head.length, &opt);
+    xml = xml_screat(head->body, head->length, &opt);
     if (NULL == xml) { 
-        fprintf(stderr, "    Format isn't right! body:%s\n", (char *)addr);
+        fprintf(stderr, "    Format isn't right! body:%s\n", head->body);
         return -1;
     }
     
