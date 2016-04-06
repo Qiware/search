@@ -93,14 +93,14 @@ int lsnd_insert_word_req_hdl(unsigned int type, void *data, int length, void *ar
     log_debug(ctx->log, "Call %s()!", __func__);
 
     head = (mesg_header_t *)data; // 消息头
-    req = (mesg_insert_word_req_t *)(head + 1); // 消息体
+    req = (mesg_insert_word_req_t *)(head + 1);
+
+    log_debug(ctx->log, "Call %s()! serial:%lu word:%s url:%s freq:%d",
+            __func__, head->serial, req->word, req->url, ntohl(req->freq));
 
     mesg_head_hton(head, head);
 
-    /* > 转发搜索请求 */
-    req->serial = head->serial;
-
-    return rtsd_cli_send(ctx->frwder, type, req, sizeof(mesg_insert_word_req_t));
+    return rtsd_cli_send(ctx->frwder, type, data, length);
 }
 
 /******************************************************************************
@@ -121,10 +121,12 @@ int lsnd_insert_word_req_hdl(unsigned int type, void *data, int length, void *ar
 int lsnd_insert_word_rsp_hdl(int type, int orig, char *data, size_t len, void *args)
 {
     lsnd_cntx_t *ctx = (lsnd_cntx_t *)args;
-    mesg_insert_word_rsp_t *rsp = (mesg_insert_word_rsp_t *)data;
+    mesg_header_t *head = (mesg_header_t *)data;
+    mesg_insert_word_rsp_t *rsp = (mesg_insert_word_rsp_t *)(head + 1);
 
     log_debug(ctx->log, "Call %s()! type:%d len:%d word:%s", __func__, type, len, rsp->word);
 
     /* 放入发送队列 */
-    return agent_send(ctx->agent, type, ntoh64(rsp->serial), (void *)data, len);
+    return agent_send(ctx->agent, type, ntoh64(head->serial),
+            (void *)rsp, len - sizeof(mesg_header_t));
 }

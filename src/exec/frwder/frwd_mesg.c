@@ -115,7 +115,7 @@ static int frwd_search_word_req_hdl(int type, int orig, char *data, size_t len, 
 
     log_trace(ctx->log, "Call %s()! serial:%lu type:%d len:%d flag:%d mark:[0x%X/0x%X]",
             __func__, head->serial, head->type,
-            head->length, head->flag, head->mark, AGENT_MSG_MARK_KEY);
+            head->length, head->flag, head->mark, MSG_MARK_KEY);
 
     mesg_head_hton(head, head);
     /* > 发送数据 */
@@ -210,11 +210,15 @@ static int frwd_insert_word_rsp_hdl(int type, int orig, char *data, size_t len, 
 {
     serial_t serial;
     frwd_cntx_t *ctx = (frwd_cntx_t *)args;
-    mesg_insert_word_rsp_t *rsp = (mesg_insert_word_rsp_t *)data;
+    mesg_header_t *head = (mesg_header_t *)data;
 
-    log_trace(ctx->log, "Call %s()", __func__);
+    mesg_head_ntoh(head, head);
 
-    serial.serial = ntoh64(rsp->serial);
+    serial.serial = head->serial;
+    log_trace(ctx->log, "Call %s()! serial:%lu", __func__, head->serial);
+
+    mesg_head_hton(head, head);
+
 
     /* > 发送数据 */
     if (rtrd_send(ctx->downstrm, type, serial.nid, data, len)) {

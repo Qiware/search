@@ -47,16 +47,16 @@ typedef enum
 typedef struct
 {
     uint32_t type;                      /* 消息类型 Range: mesg_type_e */
-#define AGENT_MSG_FLAG_SYS   (0)        /* 0: 系统数据类型 */
-#define AGENT_MSG_FLAG_USR   (1)        /* 1: 自定义数据类型 */
+#define MSG_FLAG_SYS   (0)              /* 0: 系统数据类型 */
+#define MSG_FLAG_USR   (1)              /* 1: 自定义数据类型 */
     uint32_t flag;                      /* 标识量(0:系统数据类型 1:自定义数据类型) */
     uint32_t length;                    /* 报体长度 */
-#define AGENT_MSG_MARK_KEY   (0x1ED23CB4)
+#define MSG_MARK_KEY   (0x1ED23CB4)
     uint32_t mark;                      /* 校验值 */
     uint32_t from;                      /* 源设备ID */
     uint32_t to;                        /* 目标设备ID */
 
-    uint64_t serial;                    /* 流水号 */
+    uint64_t serial;                    /* 流水号(注: 全局唯一流水号) */
     char body[0];                       /* 消息体 */
 } mesg_header_t;
 
@@ -77,21 +77,26 @@ typedef struct
     (h)->serial = ntoh64((n)->serial); \
 } while(0)
 
+#define mesg_head_set(head, _type, _serial, _len) do { /* 设置协议头 */\
+    (head)->type = (_type); \
+    (head)->flag = MSG_FLAG_USR; \
+    (head)->length = (_len); \
+    (head)->mark = MSG_MARK_KEY; \
+    (head)->serial = (_serial); \
+} while(0)
+
+#define mesg_total_len(body_len) (sizeof(mesg_header_t) + body_len);
+
 /* 搜索消息结构 */
 #define SRCH_WORD_LEN       (128)
 typedef struct
 {
-    uint64_t serial;                        /* 流水号(全局唯一编号) */ 
     char words[SRCH_WORD_LEN];              /* 搜索关键字 */
 } mesg_search_word_req_t;
-
-#define mesg_total_len(body_len) (sizeof(mesg_header_t) + body_len);
 
 /* 插入关键字-请求 */
 typedef struct
 {
-    uint64_t serial;                        /* 流水号(全局唯一编号) */
-
     char word[SRCH_WORD_LEN];               /* 关键字 */
     char url[URL_MAX_LEN];                  /* 关键字对应的URL */
     int freq;                               /* 频率 */
@@ -100,12 +105,18 @@ typedef struct
 /* 插入关键字-应答 */
 typedef struct
 {
-    uint64_t serial;                        /* 流水号(全局唯一编号) */
-
 #define MESG_INSERT_WORD_FAIL   (0)
 #define MESG_INSERT_WORD_SUCC   (1)
     int code;                               /* 应答码 */
     char word[SRCH_WORD_LEN];               /* 关键字 */
 } mesg_insert_word_rsp_t;
+
+#define mesg_insert_word_resp_hton(rsp) do { \
+    (rsp)->code = htonl((rsp)->code); \
+} while(0)
+
+#define mesg_insert_word_resp_ntoh(rsp) do { \
+    (rsp)->code = ntohl((rsp)->code); \
+} while(0)
 
 #endif /*__MESG_H__*/

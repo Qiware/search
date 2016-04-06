@@ -637,14 +637,14 @@ static int agent_recv_head(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
     mesg_head_ntoh(head, head);
     head->from = AGENT_GET_NODE_ID(ctx);
 
-    if (AGENT_MSG_MARK_KEY != head->mark) {
+    if (MSG_MARK_KEY != head->mark) {
         log_error(rsvr->log, "Check head failed! type:%d len:%d flag:%d mark:[0x%X/0x%X]",
-            head->type, head->length, head->flag, head->mark, AGENT_MSG_MARK_KEY);
+            head->type, head->length, head->flag, head->mark, MSG_MARK_KEY);
         return AGENT_ERR;
     }
 
     log_trace(rsvr->log, "Recv head success! type:%d len:%d flag:%d mark:[0x%X/0x%X]",
-            head->type, head->length, head->flag, head->mark, AGENT_MSG_MARK_KEY);
+            head->type, head->length, head->flag, head->mark, MSG_MARK_KEY);
 
     return AGENT_OK;
 }
@@ -772,7 +772,7 @@ static int agent_recv_post_hdl(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *
     agent_socket_extra_t *extra = (agent_socket_extra_t *)sck->extra;
 
     /* > 自定义消息的处理 */
-    if (AGENT_MSG_FLAG_USR == extra->head->flag) {
+    if (MSG_FLAG_USR == extra->head->flag) {
         log_info(rsvr->log, "Push into user data queue!");
 
         queue_push(ctx->recvq[rsvr->id], sck->recv.addr);
@@ -1057,14 +1057,14 @@ static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
         for (idx=0; idx<num; ++idx) {
             flow = (agent_flow_t *)addr[idx]; // 流水信息
             head = (mesg_header_t *)(flow + 1); // 消息头
-            if (AGENT_MSG_MARK_KEY != head->mark) {
+            if (MSG_MARK_KEY != head->mark) {
                 log_error(ctx->log, "Check mark [0X%x/0X%x] failed! serial:%lu",
-                        head->mark, AGENT_MSG_MARK_KEY, flow->serial);
+                        head->mark, MSG_MARK_KEY, flow->serial);
                 queue_dealloc(sendq, addr[idx]);
                 continue;
             }
 
-            total = head->length + sizeof(mesg_header_t);
+            total = mesg_total_len(head->length);
 
             /* > 查找最新SERIAL->SCK映射 */
             if (agent_serial_to_sck_map_query(ctx, flow->serial, &newest)) {
