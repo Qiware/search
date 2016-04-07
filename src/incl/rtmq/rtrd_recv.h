@@ -130,7 +130,7 @@ typedef struct
     rtrd_conf_t conf;                   /* 配置信息 */
     log_cycle_t *log;                   /* 日志对象 */
 
-    rtmq_reg_t reg[RTMQ_TYPE_MAX];      /* 回调注册对象 */
+    avl_tree_t *reg;                    /* 回调注册对象(注: 存储rtmq_reg_t数据) */
 
     rtrd_listen_t listen;               /* 侦听对象 */
     thread_pool_t *recvtp;              /* 接收线程池 */

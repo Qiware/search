@@ -16,8 +16,6 @@
 #include "rtrd_recv.h"
 #include "thread_pool.h"
 
-static int rtrd_reg_init(rtrd_cntx_t *ctx);
-
 static int rtrd_creat_recvq(rtrd_cntx_t *ctx);
 static int rtrd_creat_sendq(rtrd_cntx_t *ctx);
 static int rtrd_creat_distq(rtrd_cntx_t *ctx);
@@ -84,7 +82,11 @@ rtrd_cntx_t *rtrd_init(const rtrd_conf_t *cf, log_cycle_t *log)
         }
 
         /* > 初始化注册信息 */
-        rtrd_reg_init(ctx);
+        ctx->reg = avl_creat(NULL, (key_cb_t)key_cb_int32, (cmp_cb_t)cmp_cb_int32);
+        if (NULL == ctx->reg) {
+            log_error(ctx->log, "Create register map failed!");
+            break;
+        }
 
         /* > 创建接收队列 */
         if (rtrd_creat_recvq(ctx)) {
@@ -192,23 +194,23 @@ int rtrd_launch(rtrd_cntx_t *ctx)
  ******************************************************************************/
 int rtrd_register(rtrd_cntx_t *ctx, int type, rtmq_reg_cb_t proc, void *param)
 {
-    rtmq_reg_t *reg;
+    rtmq_reg_t *item;
 
-    if (type >= RTMQ_TYPE_MAX) {
-        log_error(ctx->log, "Data type is out of range!");
-        return RTMQ_ERR;
+    item = (rtmq_reg_t *)calloc(1, sizeof(rtmq_reg_t));
+    if (NULL == item) {
+        log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        return -1;
     }
 
-    if (0 != ctx->reg[type].flag) {
-        log_error(ctx->log, "Repeat register type [%d]!", type);
+    item->type = type;
+    item->proc = proc;
+    item->param = param;
+
+    if (avl_insert(ctx->reg, &type, sizeof(type), item)) {
+        log_error(ctx->log, "Register maybe repeat! type:%d!", type);
+        free(item);
         return RTMQ_ERR_REPEAT_REG;
     }
-
-    reg = &ctx->reg[type];
-    reg->type = type;
-    reg->proc = proc;
-    reg->param = param;
-    reg->flag = 1;
 
     return RTMQ_OK;
 }
@@ -257,34 +259,6 @@ int rtrd_send(rtrd_cntx_t *ctx, int type, int dest, void *data, size_t len)
     }
 
     rtrd_cmd_send_dist_req(ctx);
-
-    return RTMQ_OK;
-}
-
-
-
-/******************************************************************************
- **函数名称: rtrd_reg_init
- **功    能: 初始化注册对象
- **输入参数:
- **     ctx: 全局对象
- **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述:
- **注意事项:
- **作    者: # Qifeng.zou # 2014.12.30 #
- ******************************************************************************/
-static int rtrd_reg_init(rtrd_cntx_t *ctx)
-{
-    int idx;
-    rtmq_reg_t *reg = &ctx->reg[0];
-
-    for (idx=0; idx<RTMQ_TYPE_MAX; ++idx, ++reg) {
-        reg->type = idx;
-        reg->proc = rtrd_proc_def_hdl;
-        reg->flag = 0;
-        reg->param = NULL;
-    }
 
     return RTMQ_OK;
 }

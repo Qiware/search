@@ -16,7 +16,6 @@
 #define RTMQ_SSVR_TMOUT_USEC    (0)     /* SND超时: 微妙 */
 
 #define RTMQ_WORKER_HDL_QNUM    (2)     /* 各Worker线程负责的队列数 */
-#define RTMQ_TYPE_MAX           (0xFF)  /* 自定义数据类型的最大值 */
 #define RTMQ_MEM_POOL_SIZE      (30 * MB) /* 内存池大小 */
 
 /* 返回码 */
@@ -122,12 +121,7 @@ typedef struct
 typedef int (*rtmq_reg_cb_t)(int type, int orig, char *data, size_t len, void *param);
 typedef struct
 {
-    int type;                           /* 消息类型. Range: 0~RTMQ_TYPE_MAX */
-#define RTMQ_FLAG_UNREG     (0)         /* 0: 未注册 */
-#define RTMQ_FLAG_REGED     (1)         /* 1: 已注册 */
-    int flag;                           /* 注册标识 
-                                            - 0: 未注册
-                                            - 1: 已注册 */
+    int type;                           /* 消息类型 */
     rtmq_reg_cb_t proc;                 /* 回调函数指针 */
     void *param;                        /* 附加参数 */
 } rtmq_reg_t;
