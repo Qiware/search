@@ -23,7 +23,7 @@
  **输出参数:
  **返    回: 0:成功 !0:失败
  **实现描述: 请求数据的内存结构: 流水信息 + 消息头 + 消息体
- **注意事项: 
+ **注意事项: 需要将协议头转换为网络字节序
  **作    者: # Qifeng.zou # 2015.05.28 23:11:54 #
  ******************************************************************************/
 int lsnd_search_word_req_hdl(unsigned int type, void *data, int length, void *args)
@@ -58,16 +58,18 @@ int lsnd_search_word_req_hdl(unsigned int type, void *data, int length, void *ar
  ******************************************************************************/
 int lsnd_search_word_rsp_hdl(int type, int orig, char *data, size_t len, void *args)
 {
+    void *addr;
     lsnd_cntx_t *ctx = (lsnd_cntx_t *)args;
     mesg_header_t *head = (mesg_header_t *)data;
+
+    addr = (void *)(head + 1);
 
     /* > 转化字节序 */
     mesg_head_ntoh(head, head);
 
     log_trace(ctx->log, "Call %s()! body:%s", __func__, head->body);
 
-    return agent_send(ctx->agent, type, head->serial,
-            (void *)data+sizeof(mesg_header_t), len-sizeof(mesg_header_t));
+    return agent_send(ctx->agent, type, head->serial, addr, len-sizeof(mesg_header_t));
 }
 
 /******************************************************************************
@@ -81,7 +83,7 @@ int lsnd_search_word_rsp_hdl(int type, int orig, char *data, size_t len, void *a
  **输出参数:
  **返    回: 0:成功 !0:失败
  **实现描述: 请求数据的内存结构: 流水信息 + 消息头 + 消息体
- **注意事项: 
+ **注意事项: 需要将协议头转换为网络字节序
  **作    者: # Qifeng.zou # 2015.06.17 21:34:49 #
  ******************************************************************************/
 int lsnd_insert_word_req_hdl(unsigned int type, void *data, int length, void *args)
@@ -98,6 +100,7 @@ int lsnd_insert_word_req_hdl(unsigned int type, void *data, int length, void *ar
     log_debug(ctx->log, "Call %s()! serial:%lu word:%s url:%s freq:%d",
             __func__, head->serial, req->word, req->url, ntohl(req->freq));
 
+    /* > 转换字节序 */
     mesg_head_hton(head, head);
 
     return rtsd_cli_send(ctx->frwder, type, data, length);
@@ -126,7 +129,9 @@ int lsnd_insert_word_rsp_hdl(int type, int orig, char *data, size_t len, void *a
 
     log_debug(ctx->log, "Call %s()! type:%d len:%d word:%s", __func__, type, len, rsp->word);
 
-    /* 放入发送队列 */
-    return agent_send(ctx->agent, type, ntoh64(head->serial),
-            (void *)rsp, len - sizeof(mesg_header_t));
+    /* > 转换字节序 */
+    mesg_head_ntoh(head, head);
+
+    /* > 放入发送队列 */
+    return agent_send(ctx->agent, type, head->serial, (void *)rsp, len - sizeof(mesg_header_t));
 }
