@@ -257,8 +257,8 @@ static int rtsd_worker_cmd_proc_req_hdl(rtsd_cntx_t *ctx, rtmq_worker_t *worker,
             /* > 执行回调函数 */
             head = (rtmq_header_t *)addr[idx];
 
-            reg = &ctx->reg[head->type];
-            if (NULL == reg->proc) {
+            reg = avl_query(ctx->reg, &head->type, sizeof(head->type));
+            if (NULL == reg) {
                 ++worker->drop_total;   /* 丢弃计数 */
                 queue_dealloc(rq, addr[idx]);
                 continue;
