@@ -9,8 +9,8 @@
  ******************************************************************************/
 
 #include "xml_tree.h"
-#include "sdtp_cmd.h"
 #include "sdsd_send.h"
+#include "sdtp_mesg.h"
 #include "thread_pool.h"
 
 /* 静态函数 */

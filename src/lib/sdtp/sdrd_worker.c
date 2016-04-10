@@ -8,8 +8,8 @@
  ** 作  者: # Qifeng.zou # 2015.01.06 #
  ******************************************************************************/
 
-#include "sdtp_cmd.h"
 #include "sdtp_comm.h"
+#include "sdtp_mesg.h"
 #include "sdrd_recv.h"
 #include "thread_pool.h"
 

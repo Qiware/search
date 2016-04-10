@@ -1,6 +1,6 @@
 #include "shm_opt.h"
 #include "syscall.h"
-#include "sdtp_cmd.h"
+#include "sdtp_mesg.h"
 #include "sdsd_cli.h"
 #include "sdsd_ssvr.h"
 #include "sdtp_comm.h"

@@ -9,7 +9,6 @@
 #include "queue.h"
 #include "shm_opt.h"
 #include "avl_tree.h"
-#include "sdtp_cmd.h"
 #include "sdtp_comm.h"
 #include "shm_queue.h"
 #include "thread_pool.h"

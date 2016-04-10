@@ -9,7 +9,7 @@
  ******************************************************************************/
 
 #include "redo.h"
-#include "sdtp_cmd.h"
+#include "sdtp_mesg.h"
 #include "sdtp_comm.h"
 #include "sdrd_recv.h"
 #include "thread_pool.h"

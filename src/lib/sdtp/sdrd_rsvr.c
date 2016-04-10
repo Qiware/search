@@ -9,7 +9,7 @@
  ******************************************************************************/
 
 #include "redo.h"
-#include "sdtp_cmd.h"
+#include "sdtp_mesg.h"
 #include "sdtp_comm.h"
 #include "sdrd_recv.h"
 #include "thread_pool.h"
@@ -655,11 +655,11 @@ static int sdrd_rsvr_sys_mesg_proc(sdrd_cntx_t *ctx,
 
     switch (head->type)
     {
-        case SDTP_KPALIVE_REQ:
+        case SDTP_CMD_KPALIVE_REQ:
         {
             return sdrd_rsvr_keepalive_req_hdl(ctx, rsvr, sck);
         }
-        case SDTP_LINK_AUTH_REQ:
+        case SDTP_CMD_LINK_AUTH_REQ:
         {
             return sdrd_rsvr_link_auth_req_hdl(ctx, rsvr, sck);
         }
@@ -913,7 +913,7 @@ static int sdrd_rsvr_keepalive_req_hdl(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, sdrd
     /* > 回复消息内容 */
     head = (sdtp_header_t *)addr;
 
-    head->type = SDTP_KPALIVE_REP;
+    head->type = SDTP_CMD_KPALIVE_REP;
     head->nodeid = ctx->conf.auth.nodeid;
     head->length = 0;
     head->flag = SDTP_SYS_MESG;
@@ -961,7 +961,7 @@ static int sdrd_rsvr_link_auth_rsp(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, sdrd_sck
     head = (sdtp_header_t *)addr;
     link_auth_rsp = (sdtp_link_auth_rsp_t *)(addr + sizeof(sdtp_header_t));
 
-    head->type = SDTP_LINK_AUTH_REP;
+    head->type = SDTP_CMD_LINK_AUTH_REP;
     head->nodeid = ctx->conf.auth.nodeid;
     head->length = sizeof(sdtp_link_auth_rsp_t);
     head->flag = SDTP_SYS_MESG;

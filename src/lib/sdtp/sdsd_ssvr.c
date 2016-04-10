@@ -1,8 +1,8 @@
 #include "redo.h"
 #include "shm_opt.h"
-#include "sdtp_cmd.h"
 #include "sdsd_cli.h"
 #include "sdtp_comm.h"
+#include "sdtp_mesg.h"
 #include "sdsd_send.h"
 
 /* 静态函数 */
@@ -483,7 +483,7 @@ static int sdsd_ssvr_kpalive_req(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr)
     /* 2. 设置心跳数据 */
     head = (sdtp_header_t *)addr;
 
-    head->type = SDTP_KPALIVE_REQ;
+    head->type = SDTP_CMD_KPALIVE_REQ;
     head->length = 0;
     head->flag = SDTP_SYS_MESG;
     head->checksum = SDTP_CHECK_SUM;
@@ -1043,16 +1043,15 @@ static int sdsd_ssvr_sys_mesg_proc(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr, sdsd_sck
 {
     sdtp_header_t *head = (sdtp_header_t *)addr;
 
-    switch (head->type)
-    {
-        case SDTP_KPALIVE_REP:      /* 保活应答 */
+    switch (head->type) {
+        case SDTP_CMD_KPALIVE_REP:      /* 保活应答 */
         {
             log_debug(ssvr->log, "Received keepalive respond!");
 
             sdtp_set_kpalive_stat(sck, SDTP_KPALIVE_STAT_SUCC);
             return SDTP_OK;
         }
-        case SDTP_LINK_AUTH_REP:    /* 链路鉴权应答 */
+        case SDTP_CMD_LINK_AUTH_REP:    /* 链路鉴权应答 */
         {
             return sdtp_link_auth_rsp_hdl(ctx, ssvr, sck, addr + sizeof(sdtp_header_t));
         }
@@ -1140,7 +1139,7 @@ static int sdtp_link_auth_req(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr)
     /* > 设置头部数据 */
     head = (sdtp_header_t *)addr;
 
-    head->type = SDTP_LINK_AUTH_REQ;
+    head->type = SDTP_CMD_LINK_AUTH_REQ;
     head->length = sizeof(sdtp_link_auth_req_t);
     head->flag = SDTP_SYS_MESG;
     head->checksum = SDTP_CHECK_SUM;
