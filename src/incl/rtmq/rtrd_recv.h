@@ -11,7 +11,6 @@
 #include "shm_opt.h"
 #include "spinlock.h"
 #include "avl_tree.h"
-#include "rtmq_cmd.h"
 #include "rtmq_comm.h"
 #include "shm_queue.h"
 #include "thread_pool.h"

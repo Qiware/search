@@ -9,7 +9,7 @@
  ******************************************************************************/
 
 #include "xml_tree.h"
-#include "rtmq_cmd.h"
+#include "rtmq_mesg.h"
 #include "rtsd_send.h"
 #include "thread_pool.h"
 

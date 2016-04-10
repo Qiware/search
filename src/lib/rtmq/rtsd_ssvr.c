@@ -1,6 +1,6 @@
 #include "redo.h"
 #include "queue.h"
-#include "rtmq_cmd.h"
+#include "rtmq_mesg.h"
 #include "rtmq_comm.h"
 #include "rtsd_send.h"
 
@@ -317,7 +317,7 @@ static int rtsd_ssvr_kpalive_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
     /* 2. 设置心跳数据 */
     head = (rtmq_header_t *)addr;
 
-    head->type = RTMQ_KPALIVE_REQ;
+    head->type = RTMQ_CMD_KPALIVE_REQ;
     head->nodeid = ctx->conf.nodeid;
     head->length = 0;
     head->flag = RTMQ_SYS_MESG;
@@ -819,14 +819,14 @@ static int rtsd_ssvr_sys_mesg_proc(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, rtsd_sck
     rtmq_header_t *head = (rtmq_header_t *)addr;
 
     switch (head->type) {
-        case RTMQ_KPALIVE_RSP:      /* 保活应答 */
+        case RTMQ_CMD_KPALIVE_RSP:      /* 保活应答 */
         {
             log_debug(ssvr->log, "Received keepalive respond!");
 
             rtmq_set_kpalive_stat(sck, RTMQ_KPALIVE_STAT_SUCC);
             return RTMQ_OK;
         }
-        case RTMQ_LINK_AUTH_RSP:    /* 链路鉴权应答 */
+        case RTMQ_CMD_LINK_AUTH_RSP:    /* 链路鉴权应答 */
         {
             return rtmq_link_auth_rsp_hdl(ctx, ssvr, sck, addr + sizeof(rtmq_header_t));
         }
@@ -927,7 +927,7 @@ static int rtmq_link_auth_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
     /* > 设置头部数据 */
     head = (rtmq_header_t *)addr;
 
-    head->type = RTMQ_LINK_AUTH_REQ;
+    head->type = RTMQ_CMD_LINK_AUTH_REQ;
     head->length = sizeof(rtmq_link_auth_req_t);
     head->flag = RTMQ_SYS_MESG;
     head->checksum = RTMQ_CHECK_SUM;

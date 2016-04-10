@@ -9,7 +9,6 @@
  ******************************************************************************/
 
 #include "redo.h"
-#include "rtmq_cmd.h"
 #include "rtmq_comm.h"
 #include "rtrd_recv.h"
 #include "thread_pool.h"

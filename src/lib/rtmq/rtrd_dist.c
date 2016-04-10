@@ -1,6 +1,5 @@
 #include "comm.h"
 #include "mesg.h"
-#include "rtmq_cmd.h"
 #include "rtmq_comm.h"
 #include "rtrd_recv.h"
 

@@ -9,7 +9,7 @@
  ******************************************************************************/
 
 #include "redo.h"
-#include "rtmq_cmd.h"
+#include "rtmq_mesg.h"
 #include "rtmq_comm.h"
 #include "rtrd_recv.h"
 #include "thread_pool.h"
@@ -685,11 +685,11 @@ static int rtrd_rsvr_sys_mesg_proc(rtrd_cntx_t *ctx,
             head->type, head->nodeid, head->checksum);
 
     switch (head->type) {
-        case RTMQ_KPALIVE_REQ:
+        case RTMQ_CMD_KPALIVE_REQ:
         {
             return rtrd_rsvr_keepalive_req_hdl(ctx, rsvr, sck);
         }
-        case RTMQ_LINK_AUTH_REQ:
+        case RTMQ_CMD_LINK_AUTH_REQ:
         {
             return rtrd_rsvr_link_auth_req_hdl(ctx, rsvr, sck);
         }
@@ -876,7 +876,7 @@ static int rtrd_rsvr_keepalive_req_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd
     /* > 回复消息内容 */
     head = (rtmq_header_t *)addr;
 
-    head->type = RTMQ_KPALIVE_RSP;
+    head->type = RTMQ_CMD_KPALIVE_RSP;
     head->nodeid = ctx->conf.nodeid;
     head->length = 0;
     head->flag = RTMQ_SYS_MESG;
@@ -924,7 +924,7 @@ static int rtrd_rsvr_link_auth_rsp(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd_sck
     head = (rtmq_header_t *)addr;
     link_auth_rsp = (rtmq_link_auth_rsp_t *)(head + 1);
 
-    head->type = RTMQ_LINK_AUTH_RSP;
+    head->type = RTMQ_CMD_LINK_AUTH_RSP;
     head->nodeid = ctx->conf.nodeid;
     head->length = sizeof(rtmq_link_auth_rsp_t);
     head->flag = RTMQ_SYS_MESG;
@@ -1345,7 +1345,7 @@ static int rtrd_rsvr_dist_data(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
                 continue;
             }
 
-            list2_trav(rsvr->conn_list, (list2_trav_cb_t)rtrd_rsvr_get_conn_list_by_nodeid, &cl);
+            list2_trav(rsvr->conn_list, (trav_cb_t)rtrd_rsvr_get_conn_list_by_nodeid, &cl);
             if (0 == cl.list->num) {
                 queue_dealloc(sendq, data[idx]);
                 list_destroy(cl.list, NULL, mem_dummy_dealloc);

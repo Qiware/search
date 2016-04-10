@@ -8,7 +8,7 @@
  ** 作  者: # Qifeng.zou # 2015.01.06 #
  ******************************************************************************/
 
-#include "rtmq_cmd.h"
+#include "rtmq_mesg.h"
 #include "rtmq_comm.h"
 #include "rtrd_recv.h"
 #include "thread_pool.h"
