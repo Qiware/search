@@ -25,8 +25,7 @@ typedef struct
     int num;                        /* 成员个数 */
     list2_node_t *head;             /* 链表头 */
 
-    struct
-    {
+    struct {
         void *pool;                 /* 内存池 */
         mem_alloc_cb_t alloc;       /* 申请空间 */
         mem_dealloc_cb_t dealloc;   /* 释放空间 */
@@ -40,7 +39,7 @@ void *list2_lpop(list2_t *list);
 void *list2_rpop(list2_t *list);
 void *list2_delete(list2_t *list, list2_node_t *node);
 
-typedef int (*list2_trav_cb_t)(void *data, void *args);
-int list2_trav(list2_t *list, list2_trav_cb_t cb, void *args);
+int list2_trav(list2_t *list, trav_cb_t cb, void *args);
+void *list2_find(list2_t *list, find_cb_t cb, void *args);
 
 #endif /*__LIST2_H__*/

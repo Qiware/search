@@ -309,13 +309,16 @@ void *list2_rpop(list2_t *list)
  **函数名称: list2_trav
  **功    能: 遍历扫描链表
  **输入参数:
+ **     list: 链表对象
+ **     cb: 遍历回调
+ **     args: 附加参数
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述:
  **注意事项:
  **作    者: # Qifeng.zou # 2015.06.02 #
  ******************************************************************************/
-int list2_trav(list2_t *list, list2_trav_cb_t cb, void *args)
+int list2_trav(list2_t *list, trav_cb_t cb, void *args)
 {
     list2_node_t *node, *tail;
 
@@ -330,4 +333,36 @@ int list2_trav(list2_t *list, list2_trav_cb_t cb, void *args)
     }
 
     return 0;
+}
+
+/******************************************************************************
+ **函数名称: list2_find
+ **功    能: 查找链表
+ **输入参数:
+ **     list: 链表对象
+ **     cb: 查找回调
+ **     args: 附加参数
+ **输出参数: NONE
+ **返    回: 挂载数据
+ **实现描述:
+ **注意事项:
+ **作    者: # Qifeng.zou # 2016.04.09 07:32:57 #
+ ******************************************************************************/
+void *list2_find(list2_t *list, find_cb_t cb, void *args)
+{
+    list2_node_t *node, *tail;
+
+    node = list->head;
+    if (NULL != node) {
+        tail = node->prev;
+    }
+
+    for (; NULL != node; node = node->next) {
+        if (cb(node->data, args)) {
+            return node->data;
+        }
+        if (node == tail) { break; }
+    }
+
+    return NULL;
 }

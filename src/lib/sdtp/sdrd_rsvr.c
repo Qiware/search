@@ -1436,7 +1436,7 @@ static int sdrd_rsvr_dist_send_data(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr)
             continue;
         }
 
-        list2_trav(rsvr->conn_list, (list2_trav_cb_t)sdrd_rsvr_conn_list_with_same_nodeid, &conn);
+        list2_trav(rsvr->conn_list, (trav_cb_t)sdrd_rsvr_conn_list_with_same_nodeid, &conn);
         if (0 == conn.list->num) {
             queue_dealloc(sendq, data);
             list_destroy(conn.list, NULL, mem_dummy_dealloc);
