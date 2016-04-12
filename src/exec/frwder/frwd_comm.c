@@ -142,7 +142,7 @@ frwd_cntx_t *frwd_init(const frwd_conf_t *conf, log_cycle_t *log)
         }
 
         /* > 初始化UpStream服务 */
-        frwd->upstrm = rtrd_init(&conf->upstrm, frwd->log);
+        frwd->upstrm = rtmq_init(&conf->upstrm, frwd->log);
         if (NULL == frwd->upstrm) {
             log_fatal(frwd->log, "Initialize send-server failed!");
             break;
@@ -154,7 +154,7 @@ frwd_cntx_t *frwd_init(const frwd_conf_t *conf, log_cycle_t *log)
         }
 
         /* > 初始化DownStream服务 */
-        frwd->downstrm = rtrd_init(&conf->downstrm, frwd->log);
+        frwd->downstrm = rtmq_init(&conf->downstrm, frwd->log);
         if (NULL == frwd->downstrm) {
             log_fatal(frwd->log, "Initialize send-server failed!");
             break;
@@ -185,12 +185,12 @@ frwd_cntx_t *frwd_init(const frwd_conf_t *conf, log_cycle_t *log)
  ******************************************************************************/
 int frwd_launch(frwd_cntx_t *frwd)
 {
-    if (rtrd_launch(frwd->downstrm)) {
+    if (rtmq_launch(frwd->downstrm)) {
         log_fatal(frwd->log, "Start up recv-server failed!");
         return FRWD_ERR;
     }
 
-    if (rtrd_launch(frwd->upstrm)) {
+    if (rtmq_launch(frwd->upstrm)) {
         log_fatal(frwd->log, "Start up send-server failed!");
         return FRWD_ERR;
     }

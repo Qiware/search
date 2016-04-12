@@ -3,7 +3,7 @@
 
 #include "log.h"
 #include "invtab.h"
-#include "rtrd_recv.h"
+#include "rtmq_recv.h"
 #include "invtd_conf.h"
 
 /* 全局信息 */

@@ -10,22 +10,22 @@
 
 #include "redo.h"
 #include "rtmq_comm.h"
-#include "rtrd_recv.h"
+#include "rtmq_recv.h"
 #include "thread_pool.h"
 
 /* 静态函数 */
-static int rtrd_lsn_accept(rtrd_cntx_t *ctx, rtrd_listen_t *lsn);
+static int rtmq_lsn_accept(rtmq_cntx_t *ctx, rtmq_listen_t *lsn);
 
-static int rtrd_lsn_cmd_core_hdl(rtrd_cntx_t *ctx, rtrd_listen_t *lsn);
-static int rtrd_lsn_cmd_query_conf_hdl(rtrd_cntx_t *ctx, rtrd_listen_t *lsn, rtmq_cmd_t *cmd);
-static int rtrd_lsn_cmd_query_recv_stat_hdl(rtrd_cntx_t *ctx, rtrd_listen_t *lsn, rtmq_cmd_t *cmd);
-static int rtrd_lsn_cmd_query_proc_stat_hdl(rtrd_cntx_t *ctx, rtrd_listen_t *lsn, rtmq_cmd_t *cmd);
+static int rtmq_lsn_cmd_core_hdl(rtmq_cntx_t *ctx, rtmq_listen_t *lsn);
+static int rtmq_lsn_cmd_query_conf_hdl(rtmq_cntx_t *ctx, rtmq_listen_t *lsn, rtmq_cmd_t *cmd);
+static int rtmq_lsn_cmd_query_recv_stat_hdl(rtmq_cntx_t *ctx, rtmq_listen_t *lsn, rtmq_cmd_t *cmd);
+static int rtmq_lsn_cmd_query_proc_stat_hdl(rtmq_cntx_t *ctx, rtmq_listen_t *lsn, rtmq_cmd_t *cmd);
 
 /* 随机选择接收线程 */
-#define rtrd_rand_rsvr(ctx) ((ctx)->listen.sid % (ctx->recvtp->num))
+#define rtmq_rand_rsvr(ctx) ((ctx)->listen.sid % (ctx->recvtp->num))
 
 /******************************************************************************
- **函数名称: rtrd_lsn_routine
+ **函数名称: rtmq_lsn_routine
  **功    能: 启动SDTP侦听线程
  **输入参数:
  **     conf: 配置信息
@@ -39,15 +39,15 @@ static int rtrd_lsn_cmd_query_proc_stat_hdl(rtrd_cntx_t *ctx, rtrd_listen_t *lsn
  **注意事项:
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-void *rtrd_lsn_routine(void *param)
+void *rtmq_lsn_routine(void *param)
 {
 #define RTMQ_LSN_TMOUT_SEC 30
 #define RTMQ_LSN_TMOUT_USEC 0
     fd_set rdset;
     int ret, max;
     struct timeval timeout;
-    rtrd_cntx_t *ctx = (rtrd_cntx_t *)param;
-    rtrd_listen_t *lsn = &ctx->listen;
+    rtmq_cntx_t *ctx = (rtmq_cntx_t *)param;
+    rtmq_listen_t *lsn = &ctx->listen;
 
     for (;;) {
         /* 2. 等待请求和命令 */
@@ -73,12 +73,12 @@ void *rtrd_lsn_routine(void *param)
 
         /* 3. 接收连接请求 */
         if (FD_ISSET(lsn->lsn_sck_id, &rdset)) {
-            rtrd_lsn_accept(ctx, lsn);
+            rtmq_lsn_accept(ctx, lsn);
         }
 
         /* 4. 接收处理命令 */
         if (FD_ISSET(lsn->cmd_sck_id, &rdset)) {
-            rtrd_lsn_cmd_core_hdl(ctx, lsn);
+            rtmq_lsn_cmd_core_hdl(ctx, lsn);
         }
     }
 
@@ -87,7 +87,7 @@ void *rtrd_lsn_routine(void *param)
 }
 
 /******************************************************************************
- **函数名称: rtrd_lsn_init
+ **函数名称: rtmq_lsn_init
  **功    能: 启动SDTP侦听线程
  **输入参数:
  **     conf: 配置信息
@@ -99,11 +99,11 @@ void *rtrd_lsn_routine(void *param)
  **注意事项:
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-int rtrd_lsn_init(rtrd_cntx_t *ctx)
+int rtmq_lsn_init(rtmq_cntx_t *ctx)
 {
     char path[FILE_NAME_MAX_LEN];
-    rtrd_listen_t *lsn = &ctx->listen;
-    rtrd_conf_t *conf = &ctx->conf;
+    rtmq_listen_t *lsn = &ctx->listen;
+    rtmq_conf_t *conf = &ctx->conf;
 
     lsn->log = ctx->log;
 
@@ -115,7 +115,7 @@ int rtrd_lsn_init(rtrd_cntx_t *ctx)
     }
 
     /* 2. 创建CMD套接字 */
-    rtrd_lsn_usck_path(conf, path);
+    rtmq_lsn_usck_path(conf, path);
 
     lsn->cmd_sck_id = unix_udp_creat(path);
     if (lsn->cmd_sck_id < 0) {
@@ -128,7 +128,7 @@ int rtrd_lsn_init(rtrd_cntx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: rtrd_lsn_destroy
+ **函数名称: rtmq_lsn_destroy
  **功    能: 销毁侦听线程
  **输入参数:
  **     lsn: 侦听对象
@@ -138,7 +138,7 @@ int rtrd_lsn_init(rtrd_cntx_t *ctx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.07 #
  ******************************************************************************/
-int rtrd_lsn_destroy(rtrd_listen_t *lsn)
+int rtmq_lsn_destroy(rtmq_listen_t *lsn)
 {
     CLOSE(lsn->lsn_sck_id);
     CLOSE(lsn->cmd_sck_id);
@@ -161,7 +161,7 @@ int rtrd_lsn_destroy(rtrd_listen_t *lsn)
  **注意事项:
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-static int rtrd_lsn_accept(rtrd_cntx_t *ctx, rtrd_listen_t *lsn)
+static int rtmq_lsn_accept(rtmq_cntx_t *ctx, rtmq_listen_t *lsn)
 {
     int sckid;
     socklen_t len;
@@ -200,7 +200,7 @@ static int rtrd_lsn_accept(rtrd_cntx_t *ctx, rtrd_listen_t *lsn)
     log_trace(lsn->log, "New connection! serial:%lu sckid:%d ip:%s",
             lsn->sid, sckid, inet_ntoa(cliaddr.sin_addr));
 
-    if (rtrd_cmd_to_rsvr(ctx, lsn->cmd_sck_id, &cmd, rtrd_rand_rsvr(ctx)) < 0) {
+    if (rtmq_cmd_to_rsvr(ctx, lsn->cmd_sck_id, &cmd, rtmq_rand_rsvr(ctx)) < 0) {
         CLOSE(sckid);
         log_error(lsn->log, "Send command failed! serial:%lu sckid:[%d]", lsn->sid, sckid);
         return RTMQ_ERR;
@@ -210,7 +210,7 @@ static int rtrd_lsn_accept(rtrd_cntx_t *ctx, rtrd_listen_t *lsn)
 }
 
 /******************************************************************************
- **函数名称: rtrd_lsn_cmd_core_hdl
+ **函数名称: rtmq_lsn_cmd_core_hdl
  **功    能: 接收和处理命令
  **输入参数:
  **     ctx: 全局对象
@@ -223,7 +223,7 @@ static int rtrd_lsn_accept(rtrd_cntx_t *ctx, rtrd_listen_t *lsn)
  **注意事项:
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-static int rtrd_lsn_cmd_core_hdl(rtrd_cntx_t *ctx, rtrd_listen_t *lsn)
+static int rtmq_lsn_cmd_core_hdl(rtmq_cntx_t *ctx, rtmq_listen_t *lsn)
 {
     rtmq_cmd_t cmd;
 
@@ -239,15 +239,15 @@ static int rtrd_lsn_cmd_core_hdl(rtrd_cntx_t *ctx, rtrd_listen_t *lsn)
     switch (cmd.type) {
         case RTMQ_CMD_QUERY_CONF_REQ:
         {
-            return rtrd_lsn_cmd_query_conf_hdl(ctx, lsn, &cmd);
+            return rtmq_lsn_cmd_query_conf_hdl(ctx, lsn, &cmd);
         }
         case RTMQ_CMD_QUERY_RECV_STAT_REQ:
         {
-            return rtrd_lsn_cmd_query_recv_stat_hdl(ctx, lsn, &cmd);
+            return rtmq_lsn_cmd_query_recv_stat_hdl(ctx, lsn, &cmd);
         }
         case RTMQ_CMD_QUERY_PROC_STAT_REQ:
         {
-            return rtrd_lsn_cmd_query_proc_stat_hdl(ctx, lsn, &cmd);
+            return rtmq_lsn_cmd_query_proc_stat_hdl(ctx, lsn, &cmd);
         }
         default:
         {
@@ -260,7 +260,7 @@ static int rtrd_lsn_cmd_core_hdl(rtrd_cntx_t *ctx, rtrd_listen_t *lsn)
 }
 
 /******************************************************************************
- **函数名称: rtrd_lsn_cmd_query_conf_hdl
+ **函数名称: rtmq_lsn_cmd_query_conf_hdl
  **功    能: 查询配置信息
  **输入参数:
  **     ctx: 全局对象
@@ -274,10 +274,10 @@ static int rtrd_lsn_cmd_core_hdl(rtrd_cntx_t *ctx, rtrd_listen_t *lsn)
  **注意事项:
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-static int rtrd_lsn_cmd_query_conf_hdl(rtrd_cntx_t *ctx, rtrd_listen_t *lsn, rtmq_cmd_t *cmd)
+static int rtmq_lsn_cmd_query_conf_hdl(rtmq_cntx_t *ctx, rtmq_listen_t *lsn, rtmq_cmd_t *cmd)
 {
     rtmq_cmd_t rep;
-    rtrd_conf_t *cf = &ctx->conf;
+    rtmq_conf_t *cf = &ctx->conf;
     rtmq_cmd_conf_t *param = (rtmq_cmd_conf_t *)&rep.param;
 
     memset(&rep, 0, sizeof(rep));
@@ -306,7 +306,7 @@ static int rtrd_lsn_cmd_query_conf_hdl(rtrd_cntx_t *ctx, rtrd_listen_t *lsn, rtm
 }
 
 /******************************************************************************
- **函数名称: rtrd_lsn_cmd_query_recv_stat_hdl
+ **函数名称: rtmq_lsn_cmd_query_recv_stat_hdl
  **功    能: 查询接收线程状态
  **输入参数:
  **     ctx: 全局对象
@@ -320,12 +320,12 @@ static int rtrd_lsn_cmd_query_conf_hdl(rtrd_cntx_t *ctx, rtrd_listen_t *lsn, rtm
  **注意事项:
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-static int rtrd_lsn_cmd_query_recv_stat_hdl(rtrd_cntx_t *ctx, rtrd_listen_t *lsn, rtmq_cmd_t *cmd)
+static int rtmq_lsn_cmd_query_recv_stat_hdl(rtmq_cntx_t *ctx, rtmq_listen_t *lsn, rtmq_cmd_t *cmd)
 {
     int idx;
     rtmq_cmd_t rep;
     rtmq_cmd_recv_stat_t *stat = (rtmq_cmd_recv_stat_t *)&rep.param;
-    const rtrd_rsvr_t *rsvr = (const rtrd_rsvr_t *)ctx->recvtp->data;
+    const rtmq_rsvr_t *rsvr = (const rtmq_rsvr_t *)ctx->recvtp->data;
 
     for (idx=0; idx<ctx->conf.recv_thd_num; ++idx, ++rsvr) {
         /* 1. 设置应答信息 */
@@ -348,7 +348,7 @@ static int rtrd_lsn_cmd_query_recv_stat_hdl(rtrd_cntx_t *ctx, rtrd_listen_t *lsn
 }
 
 /******************************************************************************
- **函数名称: rtrd_lsn_cmd_query_proc_stat_hdl
+ **函数名称: rtmq_lsn_cmd_query_proc_stat_hdl
  **功    能: 查询工作线程状态
  **输入参数:
  **     ctx: 全局对象
@@ -362,7 +362,7 @@ static int rtrd_lsn_cmd_query_recv_stat_hdl(rtrd_cntx_t *ctx, rtrd_listen_t *lsn
  **注意事项:
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-static int rtrd_lsn_cmd_query_proc_stat_hdl(rtrd_cntx_t *ctx, rtrd_listen_t *lsn, rtmq_cmd_t *cmd)
+static int rtmq_lsn_cmd_query_proc_stat_hdl(rtmq_cntx_t *ctx, rtmq_listen_t *lsn, rtmq_cmd_t *cmd)
 {
     int idx;
     rtmq_cmd_t rep;

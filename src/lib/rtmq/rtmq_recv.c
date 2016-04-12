@@ -1,7 +1,7 @@
 /******************************************************************************
  ** Copyright(C) 2014-2024 Qiware technology Co., Ltd
  **
- ** 文件名: rtrd_recv.c
+ ** 文件名: rtmq_recv.c
  ** 版本号: 1.0
  ** 描  述: 实时消息队列(Real-Time Message Queue)
  **         1. 主要用于异步系统之间数据消息的传输
@@ -13,25 +13,25 @@
 #include "shm_opt.h"
 #include "rtmq_mesg.h"
 #include "rtmq_comm.h"
-#include "rtrd_recv.h"
+#include "rtmq_recv.h"
 #include "thread_pool.h"
 
-static int rtrd_creat_recvq(rtrd_cntx_t *ctx);
-static int rtrd_creat_sendq(rtrd_cntx_t *ctx);
-static int rtrd_creat_distq(rtrd_cntx_t *ctx);
+static int rtmq_creat_recvq(rtmq_cntx_t *ctx);
+static int rtmq_creat_sendq(rtmq_cntx_t *ctx);
+static int rtmq_creat_distq(rtmq_cntx_t *ctx);
 
-static int rtrd_cmd_send_dist_req(rtrd_cntx_t *ctx);
+static int rtmq_cmd_send_dist_req(rtmq_cntx_t *ctx);
 
-static int rtrd_creat_recvs(rtrd_cntx_t *ctx);
-void rtrd_recvs_destroy(void *_ctx, void *param);
+static int rtmq_creat_recvs(rtmq_cntx_t *ctx);
+void rtmq_recvs_destroy(void *_ctx, void *param);
 
-static int rtrd_creat_workers(rtrd_cntx_t *ctx);
-void rtrd_workers_destroy(void *_ctx, void *param);
+static int rtmq_creat_workers(rtmq_cntx_t *ctx);
+void rtmq_workers_destroy(void *_ctx, void *param);
 
-static int rtrd_proc_def_hdl(int type, int orig, char *buff, size_t len, void *param);
+static int rtmq_proc_def_hdl(int type, int orig, char *buff, size_t len, void *param);
 
 /******************************************************************************
- **函数名称: rtrd_init
+ **函数名称: rtmq_init
  **功    能: 初始化SDTP接收端
  **输入参数:
  **     conf: 配置信息
@@ -45,14 +45,14 @@ static int rtrd_proc_def_hdl(int type, int orig, char *buff, size_t len, void *p
  **注意事项:
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-rtrd_cntx_t *rtrd_init(const rtrd_conf_t *cf, log_cycle_t *log)
+rtmq_cntx_t *rtmq_init(const rtmq_conf_t *cf, log_cycle_t *log)
 {
-    rtrd_cntx_t *ctx;
-    rtrd_conf_t *conf;
+    rtmq_cntx_t *ctx;
+    rtmq_conf_t *conf;
     char path[FILE_NAME_MAX_LEN];
 
     /* > 创建全局对象 */
-    ctx = (rtrd_cntx_t *)calloc(1, sizeof(rtrd_cntx_t));
+    ctx = (rtmq_cntx_t *)calloc(1, sizeof(rtmq_cntx_t));
     if (NULL == ctx) {
         log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
         return NULL;
@@ -60,12 +60,12 @@ rtrd_cntx_t *rtrd_init(const rtrd_conf_t *cf, log_cycle_t *log)
 
     ctx->log = log;
     conf = &ctx->conf;
-    memcpy(conf, cf, sizeof(rtrd_conf_t));  /* 配置信息 */
+    memcpy(conf, cf, sizeof(rtmq_conf_t));  /* 配置信息 */
     conf->recvq_num = RTMQ_WORKER_HDL_QNUM * cf->work_thd_num;
 
     do {
         /* > 创建通信套接字 */
-        rtrd_cli_unix_path(conf, path);
+        rtmq_cli_unix_path(conf, path);
 
         ctx->cmd_sck_id = unix_udp_creat(path);
         if (ctx->cmd_sck_id < 0) {
@@ -76,13 +76,13 @@ rtrd_cntx_t *rtrd_init(const rtrd_conf_t *cf, log_cycle_t *log)
         spin_lock_init(&ctx->cmd_sck_lock);
 
         /* > 构建NODE->SVR映射表 */
-        if (rtrd_node_to_svr_map_init(ctx)) {
+        if (rtmq_node_to_svr_map_init(ctx)) {
             log_error(ctx->log, "Initialize sck-dev map table failed!");
             break;
         }
 
         /* > 初始化订阅列表 */
-        if (rtrd_sub_list_init(ctx)) {
+        if (rtmq_sub_list_init(ctx)) {
             log_error(ctx->log, "Initialize sub list failed!");
             break;
         }
@@ -95,37 +95,37 @@ rtrd_cntx_t *rtrd_init(const rtrd_conf_t *cf, log_cycle_t *log)
         }
 
         /* > 创建接收队列 */
-        if (rtrd_creat_recvq(ctx)) {
+        if (rtmq_creat_recvq(ctx)) {
             log_error(ctx->log, "Create recv queue failed!");
             break;
         }
 
         /* > 创建发送队列 */
-        if (rtrd_creat_sendq(ctx)) {
+        if (rtmq_creat_sendq(ctx)) {
             log_error(ctx->log, "Create send queue failed!");
             break;
         }
 
         /* > 创建分发队列 */
-        if (rtrd_creat_distq(ctx)) {
+        if (rtmq_creat_distq(ctx)) {
             log_error(ctx->log, "Create distribute queue failed!");
             break;
         }
 
         /* > 创建接收线程池 */
-        if (rtrd_creat_recvs(ctx)) {
+        if (rtmq_creat_recvs(ctx)) {
             log_error(ctx->log, "Create recv thread pool failed!");
             break;
         }
 
         /* > 创建工作线程池 */
-        if (rtrd_creat_workers(ctx)) {
+        if (rtmq_creat_workers(ctx)) {
             log_error(ctx->log, "Create worker thread pool failed!");
             break;
         }
 
         /* > 初始化侦听服务 */
-        if (rtrd_lsn_init(ctx)) {
+        if (rtmq_lsn_init(ctx)) {
             log_error(ctx->log, "Create worker thread pool failed!");
             break;
         }
@@ -138,7 +138,7 @@ rtrd_cntx_t *rtrd_init(const rtrd_conf_t *cf, log_cycle_t *log)
 }
 
 /******************************************************************************
- **函数名称: rtrd_launch
+ **函数名称: rtmq_launch
  **功    能: 启动SDTP接收端
  **输入参数:
  **     ctx: 全局对象
@@ -148,33 +148,33 @@ rtrd_cntx_t *rtrd_init(const rtrd_conf_t *cf, log_cycle_t *log)
  **注意事项:
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-int rtrd_launch(rtrd_cntx_t *ctx)
+int rtmq_launch(rtmq_cntx_t *ctx)
 {
     int idx;
     pthread_t tid;
     thread_pool_t *tp;
-    rtrd_listen_t *lsn = &ctx->listen;
+    rtmq_listen_t *lsn = &ctx->listen;
 
     /* > 设置接收线程回调 */
     tp = ctx->recvtp;
     for (idx=0; idx<tp->num; ++idx) {
-        thread_pool_add_worker(tp, rtrd_rsvr_routine, ctx);
+        thread_pool_add_worker(tp, rtmq_rsvr_routine, ctx);
     }
 
     /* > 设置工作线程回调 */
     tp = ctx->worktp;
     for (idx=0; idx<tp->num; ++idx) {
-        thread_pool_add_worker(tp, rtrd_worker_routine, ctx);
+        thread_pool_add_worker(tp, rtmq_worker_routine, ctx);
     }
 
     /* > 创建侦听线程 */
-    if (thread_creat(&lsn->tid, rtrd_lsn_routine, ctx)) {
+    if (thread_creat(&lsn->tid, rtmq_lsn_routine, ctx)) {
         log_error(ctx->log, "Start listen failed");
         return RTMQ_ERR;
     }
 
     /* > 创建分发线程 */
-    if (thread_creat(&tid, rtrd_dsvr_routine, ctx)) {
+    if (thread_creat(&tid, rtmq_dsvr_routine, ctx)) {
         log_error(ctx->log, "Start distribute thread failed");
         return RTMQ_ERR;
     }
@@ -183,7 +183,7 @@ int rtrd_launch(rtrd_cntx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: rtrd_register
+ **函数名称: rtmq_register
  **功    能: 消息处理的注册接口
  **输入参数:
  **     ctx: 全局对象
@@ -198,7 +198,7 @@ int rtrd_launch(rtrd_cntx_t *ctx)
  **     2. 不允许重复注册
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-int rtrd_register(rtrd_cntx_t *ctx, int type, rtmq_reg_cb_t proc, void *param)
+int rtmq_register(rtmq_cntx_t *ctx, int type, rtmq_reg_cb_t proc, void *param)
 {
     rtmq_reg_t *item;
 
@@ -222,7 +222,7 @@ int rtrd_register(rtrd_cntx_t *ctx, int type, rtmq_reg_cb_t proc, void *param)
 }
 
 /******************************************************************************
- **函数名称: rtrd_send
+ **函数名称: rtmq_send
  **功    能: 接收客户端发送数据
  **输入参数:
  **     ctx: 全局对象
@@ -236,7 +236,7 @@ int rtrd_register(rtrd_cntx_t *ctx, int type, rtmq_reg_cb_t proc, void *param)
  **注意事项: 内存结构: 转发信息(frwd) + 实际数据
  **作    者: # Qifeng.zou # 2015.06.01 #
  ******************************************************************************/
-int rtrd_send(rtrd_cntx_t *ctx, int type, int dest, void *data, size_t len)
+int rtmq_send(rtmq_cntx_t *ctx, int type, int dest, void *data, size_t len)
 {
     int idx;
     void *addr;
@@ -264,13 +264,13 @@ int rtrd_send(rtrd_cntx_t *ctx, int type, int dest, void *data, size_t len)
         return RTMQ_ERR;
     }
 
-    rtrd_cmd_send_dist_req(ctx);
+    rtmq_cmd_send_dist_req(ctx);
 
     return RTMQ_OK;
 }
 
 /******************************************************************************
- **函数名称: rtrd_creat_recvq
+ **函数名称: rtmq_creat_recvq
  **功    能: 创建接收队列
  **输入参数:
  **     ctx: 全局对象
@@ -282,10 +282,10 @@ int rtrd_send(rtrd_cntx_t *ctx, int type, int dest, void *data, size_t len)
  **注意事项:
  **作    者: # Qifeng.zou # 2014.12.30 #
  ******************************************************************************/
-static int rtrd_creat_recvq(rtrd_cntx_t *ctx)
+static int rtmq_creat_recvq(rtmq_cntx_t *ctx)
 {
     int idx;
-    rtrd_conf_t *conf = &ctx->conf;
+    rtmq_conf_t *conf = &ctx->conf;
 
     /* > 创建队列数组 */
     ctx->recvq = calloc(conf->recvq_num, sizeof(queue_t *));
@@ -308,7 +308,7 @@ static int rtrd_creat_recvq(rtrd_cntx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: rtrd_creat_sendq
+ **函数名称: rtmq_creat_sendq
  **功    能: 创建发送队列
  **输入参数:
  **     ctx: 全局对象
@@ -318,10 +318,10 @@ static int rtrd_creat_recvq(rtrd_cntx_t *ctx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.22 #
  ******************************************************************************/
-static int rtrd_creat_sendq(rtrd_cntx_t *ctx)
+static int rtmq_creat_sendq(rtmq_cntx_t *ctx)
 {
     int idx;
-    rtrd_conf_t *conf = &ctx->conf;
+    rtmq_conf_t *conf = &ctx->conf;
 
     /* > 创建队列数组 */
     ctx->sendq = calloc(1, conf->recv_thd_num*sizeof(queue_t *));
@@ -344,7 +344,7 @@ static int rtrd_creat_sendq(rtrd_cntx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: rtrd_creat_distq
+ **函数名称: rtmq_creat_distq
  **功    能: 创建分发队列
  **输入参数:
  **     ctx: 全局对象
@@ -354,10 +354,10 @@ static int rtrd_creat_sendq(rtrd_cntx_t *ctx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015-07-06 11:21:28 #
  ******************************************************************************/
-static int rtrd_creat_distq(rtrd_cntx_t *ctx)
+static int rtmq_creat_distq(rtmq_cntx_t *ctx)
 {
     int idx;
-    rtrd_conf_t *conf = &ctx->conf;
+    rtmq_conf_t *conf = &ctx->conf;
 
     /* > 申请对象空间 */
     ctx->distq = (queue_t **)calloc(1, conf->distq_num*sizeof(queue_t *));
@@ -381,7 +381,7 @@ static int rtrd_creat_distq(rtrd_cntx_t *ctx)
 
 
 /******************************************************************************
- **函数名称: rtrd_creat_recvs
+ **函数名称: rtmq_creat_recvs
  **功    能: 创建接收线程池
  **输入参数:
  **     ctx: 全局对象
@@ -394,14 +394,14 @@ static int rtrd_creat_distq(rtrd_cntx_t *ctx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int rtrd_creat_recvs(rtrd_cntx_t *ctx)
+static int rtmq_creat_recvs(rtmq_cntx_t *ctx)
 {
     int idx;
-    rtrd_rsvr_t *rsvr;
-    rtrd_conf_t *conf = &ctx->conf;
+    rtmq_rsvr_t *rsvr;
+    rtmq_conf_t *conf = &ctx->conf;
 
     /* > 创建接收对象 */
-    rsvr = (rtrd_rsvr_t *)calloc(conf->recv_thd_num, sizeof(rtrd_rsvr_t));
+    rsvr = (rtmq_rsvr_t *)calloc(conf->recv_thd_num, sizeof(rtmq_rsvr_t));
     if (NULL == rsvr) {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return RTMQ_ERR;
@@ -417,7 +417,7 @@ static int rtrd_creat_recvs(rtrd_cntx_t *ctx)
 
     /* > 初始化接收对象 */
     for (idx=0; idx<conf->recv_thd_num; ++idx) {
-        if (rtrd_rsvr_init(ctx, rsvr+idx, idx)) {
+        if (rtmq_rsvr_init(ctx, rsvr+idx, idx)) {
             log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
 
             free(rsvr);
@@ -432,7 +432,7 @@ static int rtrd_creat_recvs(rtrd_cntx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: rtrd_recvs_destroy
+ **函数名称: rtmq_recvs_destroy
  **功    能: 销毁接收线程池
  **输入参数:
  **     ctx: 全局对象
@@ -443,18 +443,18 @@ static int rtrd_creat_recvs(rtrd_cntx_t *ctx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-void rtrd_recvs_destroy(void *_ctx, void *param)
+void rtmq_recvs_destroy(void *_ctx, void *param)
 {
     int idx;
-    rtrd_cntx_t *ctx = (rtrd_cntx_t *)_ctx;
-    rtrd_rsvr_t *rsvr = (rtrd_rsvr_t *)ctx->recvtp->data;
+    rtmq_cntx_t *ctx = (rtmq_cntx_t *)_ctx;
+    rtmq_rsvr_t *rsvr = (rtmq_rsvr_t *)ctx->recvtp->data;
 
     for (idx=0; idx<ctx->conf.recv_thd_num; ++idx, ++rsvr) {
         /* > 关闭命令套接字 */
         CLOSE(rsvr->cmd_sck_id);
 
         /* > 关闭通信套接字 */
-        rtrd_rsvr_del_all_conn_hdl(ctx, rsvr);
+        rtmq_rsvr_del_all_conn_hdl(ctx, rsvr);
     }
 
     FREE(ctx->recvtp->data);
@@ -464,7 +464,7 @@ void rtrd_recvs_destroy(void *_ctx, void *param)
 }
 
 /******************************************************************************
- **函数名称: rtrd_creat_workers
+ **函数名称: rtmq_creat_workers
  **功    能: 创建工作线程池
  **输入参数:
  **     ctx: 全局对象
@@ -477,11 +477,11 @@ void rtrd_recvs_destroy(void *_ctx, void *param)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.06 #
  ******************************************************************************/
-static int rtrd_creat_workers(rtrd_cntx_t *ctx)
+static int rtmq_creat_workers(rtmq_cntx_t *ctx)
 {
     int idx;
     rtmq_worker_t *wrk;
-    rtrd_conf_t *conf = &ctx->conf;
+    rtmq_conf_t *conf = &ctx->conf;
 
     /* > 创建工作对象 */
     wrk = (void *)calloc(conf->work_thd_num, sizeof(rtmq_worker_t));
@@ -500,7 +500,7 @@ static int rtrd_creat_workers(rtrd_cntx_t *ctx)
 
     /* > 初始化工作对象 */
     for (idx=0; idx<conf->work_thd_num; ++idx) {
-        if (rtrd_worker_init(ctx, wrk+idx, idx)) {
+        if (rtmq_worker_init(ctx, wrk+idx, idx)) {
             log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
             free(wrk);
             thread_pool_destroy(ctx->recvtp);
@@ -513,7 +513,7 @@ static int rtrd_creat_workers(rtrd_cntx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: rtrd_workers_destroy
+ **函数名称: rtmq_workers_destroy
  **功    能: 销毁工作线程池
  **输入参数:
  **     ctx: 全局对象
@@ -524,11 +524,11 @@ static int rtrd_creat_workers(rtrd_cntx_t *ctx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.06 #
  ******************************************************************************/
-void rtrd_workers_destroy(void *_ctx, void *param)
+void rtmq_workers_destroy(void *_ctx, void *param)
 {
     int idx;
-    rtrd_cntx_t *ctx = (rtrd_cntx_t *)_ctx;
-    rtrd_conf_t *conf = &ctx->conf;
+    rtmq_cntx_t *ctx = (rtmq_cntx_t *)_ctx;
+    rtmq_conf_t *conf = &ctx->conf;
     rtmq_worker_t *wrk = (rtmq_worker_t *)ctx->worktp->data;
 
     for (idx=0; idx<conf->work_thd_num; ++idx, ++wrk) {
@@ -542,7 +542,7 @@ void rtrd_workers_destroy(void *_ctx, void *param)
 }
 
 /******************************************************************************
- **函数名称: rtrd_proc_def_hdl
+ **函数名称: rtmq_proc_def_hdl
  **功    能: 默认消息处理函数
  **输入参数:
  **     type: 消息类型
@@ -556,13 +556,13 @@ void rtrd_workers_destroy(void *_ctx, void *param)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.06 #
  ******************************************************************************/
-static int rtrd_proc_def_hdl(int type, int orig, char *buff, size_t len, void *param)
+static int rtmq_proc_def_hdl(int type, int orig, char *buff, size_t len, void *param)
 {
     return RTMQ_OK;
 }
 
 /******************************************************************************
- **函数名称: rtrd_cmd_send_dist_req
+ **函数名称: rtmq_cmd_send_dist_req
  **功    能: 通知分发服务
  **输入参数:
  **     cli: 上下文信息
@@ -573,12 +573,12 @@ static int rtrd_proc_def_hdl(int type, int orig, char *buff, size_t len, void *p
  **注意事项:
  **作    者: # Qifeng.zou # 2015.03.20 #
  ******************************************************************************/
-static int rtrd_cmd_send_dist_req(rtrd_cntx_t *ctx)
+static int rtmq_cmd_send_dist_req(rtmq_cntx_t *ctx)
 {
     int ret;
     rtmq_cmd_t cmd;
     char path[FILE_NAME_MAX_LEN];
-    rtrd_conf_t *conf = &ctx->conf;
+    rtmq_conf_t *conf = &ctx->conf;
 
     if (spin_trylock(&ctx->cmd_sck_lock)) {
         return 0;
@@ -587,7 +587,7 @@ static int rtrd_cmd_send_dist_req(rtrd_cntx_t *ctx)
     memset(&cmd, 0, sizeof(cmd));
 
     cmd.type = RTMQ_CMD_DIST_REQ;
-    rtrd_dsvr_usck_path(conf, path);
+    rtmq_dsvr_usck_path(conf, path);
     ret = unix_udp_send(ctx->cmd_sck_id, path, &cmd, sizeof(cmd));
 
     spin_unlock(&ctx->cmd_sck_lock);

@@ -1,22 +1,22 @@
 #include "comm.h"
 #include "mesg.h"
 #include "rtmq_comm.h"
-#include "rtrd_recv.h"
+#include "rtmq_recv.h"
 
 /* 分发对象 */
 typedef struct
 {
     int cmd_sck_id;                     /* 命令套接字 */
     log_cycle_t *log;                   /* 日志对象 */
-} rtrd_dsvr_t;
+} rtmq_dsvr_t;
 
-static rtrd_dsvr_t *rtrd_dsvr_init(rtrd_cntx_t *ctx);
-static int rtrd_dsvr_dist_data_hdl(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr);
-static int rtrd_dsvr_cmd_recv_and_proc(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr);
-static int rtrd_dsvr_cmd_dist_req(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr, int idx);
+static rtmq_dsvr_t *rtmq_dsvr_init(rtmq_cntx_t *ctx);
+static int rtmq_dsvr_dist_data_hdl(rtmq_cntx_t *ctx, rtmq_dsvr_t *dsvr);
+static int rtmq_dsvr_cmd_recv_and_proc(rtmq_cntx_t *ctx, rtmq_dsvr_t *dsvr);
+static int rtmq_dsvr_cmd_dist_req(rtmq_cntx_t *ctx, rtmq_dsvr_t *dsvr, int idx);
 
 /******************************************************************************
- **函数名称: rtrd_dsvr_routine
+ **函数名称: rtmq_dsvr_routine
  **功    能: 运行分发线程
  **输入参数:
  **     ctx: 全局信息
@@ -26,16 +26,16 @@ static int rtrd_dsvr_cmd_dist_req(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr, int idx);
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.15 #
  ******************************************************************************/
-void *rtrd_dsvr_routine(void *_ctx)
+void *rtmq_dsvr_routine(void *_ctx)
 {
     int ret;
     fd_set rdset;
-    rtrd_dsvr_t *dsvr;
+    rtmq_dsvr_t *dsvr;
     struct timeval timeout;
-    rtrd_cntx_t *ctx = (rtrd_cntx_t *)_ctx;
+    rtmq_cntx_t *ctx = (rtmq_cntx_t *)_ctx;
 
     /* > 初始化分发线程 */
-    dsvr = rtrd_dsvr_init(ctx);
+    dsvr = rtmq_dsvr_init(ctx);
     if (NULL == dsvr) {
         abort();
     }
@@ -56,12 +56,12 @@ void *rtrd_dsvr_routine(void *_ctx)
             continue;
         }
         else if (0 == ret) {
-            rtrd_dsvr_dist_data_hdl(ctx, dsvr);
+            rtmq_dsvr_dist_data_hdl(ctx, dsvr);
             continue;
         }
 
         if (FD_ISSET(dsvr->cmd_sck_id, &rdset)) {
-            rtrd_dsvr_cmd_recv_and_proc(ctx, dsvr);
+            rtmq_dsvr_cmd_recv_and_proc(ctx, dsvr);
         }
     }
 
@@ -69,7 +69,7 @@ void *rtrd_dsvr_routine(void *_ctx)
 }
 
 /******************************************************************************
- **函数名称: rtrd_dsvr_init
+ **函数名称: rtmq_dsvr_init
  **功    能: 初始化分发线程
  **输入参数:
  **     ctx: 全局信息
@@ -79,14 +79,14 @@ void *rtrd_dsvr_routine(void *_ctx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.06.09 15:53:03 #
  ******************************************************************************/
-static rtrd_dsvr_t *rtrd_dsvr_init(rtrd_cntx_t *ctx)
+static rtmq_dsvr_t *rtmq_dsvr_init(rtmq_cntx_t *ctx)
 {
-    rtrd_dsvr_t *dsvr;
+    rtmq_dsvr_t *dsvr;
     char path[FILE_NAME_MAX_LEN];
-    rtrd_conf_t *conf = &ctx->conf;
+    rtmq_conf_t *conf = &ctx->conf;
 
     /* > 创建对象 */
-    dsvr = (rtrd_dsvr_t *)calloc(1, sizeof(rtrd_dsvr_t));
+    dsvr = (rtmq_dsvr_t *)calloc(1, sizeof(rtmq_dsvr_t));
     if (NULL == dsvr) {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return NULL;
@@ -95,7 +95,7 @@ static rtrd_dsvr_t *rtrd_dsvr_init(rtrd_cntx_t *ctx)
     dsvr->log = ctx->log;
 
     /* > 创建通信套接字 */
-    rtrd_dsvr_usck_path(conf, path);
+    rtmq_dsvr_usck_path(conf, path);
 
     dsvr->cmd_sck_id = unix_udp_creat(path);
     if (dsvr->cmd_sck_id < 0) {
@@ -108,7 +108,7 @@ static rtrd_dsvr_t *rtrd_dsvr_init(rtrd_cntx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: rtrd_dsvr_cmd_dist_req
+ **函数名称: rtmq_dsvr_cmd_dist_req
  **功    能: 发送分发请求
  **输入参数:
  **     ctx: 全局信息
@@ -120,7 +120,7 @@ static rtrd_dsvr_t *rtrd_dsvr_init(rtrd_cntx_t *ctx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.06.09 15:53:03 #
  ******************************************************************************/
-static int rtrd_dsvr_cmd_dist_req(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr, int idx)
+static int rtmq_dsvr_cmd_dist_req(rtmq_cntx_t *ctx, rtmq_dsvr_t *dsvr, int idx)
 {
     rtmq_cmd_t cmd;
     char path[FILE_NAME_MAX_LEN];
@@ -129,13 +129,13 @@ static int rtrd_dsvr_cmd_dist_req(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr, int idx)
 
     cmd.type = RTMQ_CMD_DIST_REQ;
 
-    rtrd_rsvr_usck_path(&ctx->conf, path, idx);
+    rtmq_rsvr_usck_path(&ctx->conf, path, idx);
 
     return (unix_udp_send(dsvr->cmd_sck_id, path, &cmd, sizeof(cmd)) > 0)? 0 : -1;
 }
 
 /******************************************************************************
- **函数名称: rtrd_dsvr_dist_data_hdl
+ **函数名称: rtmq_dsvr_dist_data_hdl
  **功    能: 数据分发处理
  **输入参数:
  **     ctx: 全局信息
@@ -148,7 +148,7 @@ static int rtrd_dsvr_cmd_dist_req(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr, int idx)
  **                享变量的值可能被其他进程或线程修改, 导致出现严重错误!
  **作    者: # Qifeng.zou # 2015.06.13 #
  ******************************************************************************/
-static int rtrd_dsvr_dist_data_hdl(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr)
+static int rtmq_dsvr_dist_data_hdl(rtmq_cntx_t *ctx, rtmq_dsvr_t *dsvr)
 {
 #define RTRD_DISP_POP_NUM   (1024)
     int idx, k, num, d;
@@ -175,7 +175,7 @@ static int rtrd_dsvr_dist_data_hdl(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr)
             /* > 获取发送队列 */
             frwd = (rtmq_frwd_t *)data[k];
 
-            idx = rtrd_node_to_svr_map_rand(ctx, frwd->dest);
+            idx = rtmq_node_to_svr_map_rand(ctx, frwd->dest);
             if (idx < 0) {
                 queue_dealloc(ctx->distq[d], data[k]);
                 log_error(ctx->log, "Didn't find dev to svr map! nodeid:%d", frwd->dest);
@@ -198,7 +198,7 @@ static int rtrd_dsvr_dist_data_hdl(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr)
             queue_dealloc(ctx->distq[d], data[k]);
 
             /* > 发送分发请求 */
-            rtrd_dsvr_cmd_dist_req(ctx, dsvr, idx);
+            rtmq_dsvr_cmd_dist_req(ctx, dsvr, idx);
         }
     }
 
@@ -206,7 +206,7 @@ static int rtrd_dsvr_dist_data_hdl(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr)
 }
 
 /******************************************************************************
- **函数名称: rtrd_dsvr_cmd_recv_and_proc
+ **函数名称: rtmq_dsvr_cmd_recv_and_proc
  **功    能: 接收命令并进行处理
  **输入参数:
  **     ctx: 全局信息
@@ -217,7 +217,7 @@ static int rtrd_dsvr_dist_data_hdl(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.06.13 #
  ******************************************************************************/
-static int rtrd_dsvr_cmd_recv_and_proc(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr)
+static int rtmq_dsvr_cmd_recv_and_proc(rtmq_cntx_t *ctx, rtmq_dsvr_t *dsvr)
 {
     rtmq_cmd_t cmd;
 
@@ -233,7 +233,7 @@ static int rtrd_dsvr_cmd_recv_and_proc(rtrd_cntx_t *ctx, rtrd_dsvr_t *dsvr)
     switch (cmd.type) {
         case RTMQ_CMD_DIST_REQ:
         {
-            return rtrd_dsvr_dist_data_hdl(ctx, dsvr);
+            return rtmq_dsvr_dist_data_hdl(ctx, dsvr);
         }
         default:
         {

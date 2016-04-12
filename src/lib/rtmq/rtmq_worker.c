@@ -10,16 +10,16 @@
 
 #include "rtmq_mesg.h"
 #include "rtmq_comm.h"
-#include "rtrd_recv.h"
+#include "rtmq_recv.h"
 #include "thread_pool.h"
 
 /* 静态函数 */
-static rtmq_worker_t *rtrd_worker_get_curr(rtrd_cntx_t *ctx);
-static int rtrd_worker_event_core_hdl(rtrd_cntx_t *ctx, rtmq_worker_t *worker);
-static int rtrd_worker_cmd_proc_req_hdl(rtrd_cntx_t *ctx, rtmq_worker_t *worker, const rtmq_cmd_t *cmd);
+static rtmq_worker_t *rtmq_worker_get_curr(rtmq_cntx_t *ctx);
+static int rtmq_worker_event_core_hdl(rtmq_cntx_t *ctx, rtmq_worker_t *worker);
+static int rtmq_worker_cmd_proc_req_hdl(rtmq_cntx_t *ctx, rtmq_worker_t *worker, const rtmq_cmd_t *cmd);
 
 /******************************************************************************
- **函数名称: rtrd_worker_routine
+ **函数名称: rtmq_worker_routine
  **功    能: 运行工作线程
  **输入参数:
  **     _ctx: 全局对象
@@ -32,16 +32,16 @@ static int rtrd_worker_cmd_proc_req_hdl(rtrd_cntx_t *ctx, rtmq_worker_t *worker,
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.06 #
  ******************************************************************************/
-void *rtrd_worker_routine(void *_ctx)
+void *rtmq_worker_routine(void *_ctx)
 {
     int ret, idx;
     rtmq_worker_t *worker;
     rtmq_cmd_proc_req_t *req;
     struct timeval timeout;
-    rtrd_cntx_t *ctx = (rtrd_cntx_t *)_ctx;
+    rtmq_cntx_t *ctx = (rtmq_cntx_t *)_ctx;
 
     /* 1. 获取工作对象 */
-    worker = rtrd_worker_get_curr(ctx);
+    worker = rtmq_worker_get_curr(ctx);
     if (NULL == worker) {
         log_fatal(ctx->log, "Get current worker failed!");
         abort();
@@ -76,13 +76,13 @@ void *rtrd_worker_routine(void *_ctx)
                 req->num = -1;
                 req->rqidx = RTMQ_WORKER_HDL_QNUM * worker->id + idx;
 
-                rtrd_worker_cmd_proc_req_hdl(ctx, worker, &cmd);
+                rtmq_worker_cmd_proc_req_hdl(ctx, worker, &cmd);
             }
             continue;
         }
 
         /* 3. 进行事件处理 */
-        rtrd_worker_event_core_hdl(ctx, worker);
+        rtmq_worker_event_core_hdl(ctx, worker);
     }
 
     abort();
@@ -90,7 +90,7 @@ void *rtrd_worker_routine(void *_ctx)
 }
 
 /******************************************************************************
- **函数名称: rtrd_worker_get_curr
+ **函数名称: rtmq_worker_get_curr
  **功    能: 获取工作对象
  **输入参数:
  **     ctx: 全局对象
@@ -102,7 +102,7 @@ void *rtrd_worker_routine(void *_ctx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.06 #
  ******************************************************************************/
-static rtmq_worker_t *rtrd_worker_get_curr(rtrd_cntx_t *ctx)
+static rtmq_worker_t *rtmq_worker_get_curr(rtmq_cntx_t *ctx)
 {
     int id;
 
@@ -118,7 +118,7 @@ static rtmq_worker_t *rtrd_worker_get_curr(rtrd_cntx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: rtrd_worker_init
+ **函数名称: rtmq_worker_init
  **功    能: 初始化工作服务
  **输入参数:
  **     ctx: 全局对象
@@ -130,16 +130,16 @@ static rtmq_worker_t *rtrd_worker_get_curr(rtrd_cntx_t *ctx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.06 #
  ******************************************************************************/
-int rtrd_worker_init(rtrd_cntx_t *ctx, rtmq_worker_t *worker, int id)
+int rtmq_worker_init(rtmq_cntx_t *ctx, rtmq_worker_t *worker, int id)
 {
     char path[FILE_PATH_MAX_LEN];
-    rtrd_conf_t *conf = &ctx->conf;
+    rtmq_conf_t *conf = &ctx->conf;
 
     worker->id = id;
     worker->log = ctx->log;
 
     /* > 创建命令套接字 */
-    rtrd_worker_usck_path(conf, path, worker->id);
+    rtmq_worker_usck_path(conf, path, worker->id);
 
     worker->cmd_sck_id = unix_udp_creat(path);
     if (worker->cmd_sck_id < 0) {
@@ -151,7 +151,7 @@ int rtrd_worker_init(rtrd_cntx_t *ctx, rtmq_worker_t *worker, int id)
 }
 
 /******************************************************************************
- **函数名称: rtrd_worker_event_core_hdl
+ **函数名称: rtmq_worker_event_core_hdl
  **功    能: 核心事件处理
  **输入参数:
  **     ctx: 全局对象
@@ -162,7 +162,7 @@ int rtrd_worker_init(rtrd_cntx_t *ctx, rtmq_worker_t *worker, int id)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.06 #
  ******************************************************************************/
-static int rtrd_worker_event_core_hdl(rtrd_cntx_t *ctx, rtmq_worker_t *worker)
+static int rtmq_worker_event_core_hdl(rtmq_cntx_t *ctx, rtmq_worker_t *worker)
 {
     rtmq_cmd_t cmd;
 
@@ -180,7 +180,7 @@ static int rtrd_worker_event_core_hdl(rtrd_cntx_t *ctx, rtmq_worker_t *worker)
     switch (cmd.type) {
         case RTMQ_CMD_PROC_REQ:
         {
-            return rtrd_worker_cmd_proc_req_hdl(ctx, worker, &cmd);
+            return rtmq_worker_cmd_proc_req_hdl(ctx, worker, &cmd);
         }
         default:
         {
@@ -193,7 +193,7 @@ static int rtrd_worker_event_core_hdl(rtrd_cntx_t *ctx, rtmq_worker_t *worker)
 }
 
 /******************************************************************************
- **函数名称: rtrd_worker_cmd_proc_req_hdl
+ **函数名称: rtmq_worker_cmd_proc_req_hdl
  **功    能: 处理请求的处理
  **输入参数:
  **     ctx: 全局对象
@@ -205,7 +205,7 @@ static int rtrd_worker_event_core_hdl(rtrd_cntx_t *ctx, rtmq_worker_t *worker)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.06 #
  ******************************************************************************/
-static int rtrd_worker_cmd_proc_req_hdl(rtrd_cntx_t *ctx, rtmq_worker_t *worker, const rtmq_cmd_t *cmd)
+static int rtmq_worker_cmd_proc_req_hdl(rtmq_cntx_t *ctx, rtmq_worker_t *worker, const rtmq_cmd_t *cmd)
 {
 #define RTRD_WORK_POP_NUM     (1024)
     int idx, num;

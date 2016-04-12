@@ -1,5 +1,5 @@
-#if !defined(__RTRD_RECV_H__)
-#define __RTRD_RECV_H__
+#if !defined(__RTMQ_RECV_H__)
+#define __RTMQ_RECV_H__
 
 #include "log.h"
 #include "sck.h"
@@ -20,22 +20,22 @@
 #define RTMQ_CTX_POOL_SIZE          (5 * MB)/* 全局内存池空间 */
 
 /* Recv线程的UNIX-UDP路径 */
-#define rtrd_rsvr_usck_path(conf, _path, tidx) \
+#define rtmq_rsvr_usck_path(conf, _path, tidx) \
     snprintf(_path, sizeof(_path), "%s/%d_rsvr_%d.usck", (conf)->path, (conf)->nodeid, tidx+1)
 /* Worker线程的UNIX-UDP路径 */
-#define rtrd_worker_usck_path(conf, _path, tidx) \
+#define rtmq_worker_usck_path(conf, _path, tidx) \
     snprintf(_path, sizeof(_path), "%s/%d_wsvr_%d.usck", (conf)->path, (conf)->nodeid, tidx+1)
 /* Listen线程的UNIX-UDP路径 */
-#define rtrd_lsn_usck_path(conf, _path) \
+#define rtmq_lsn_usck_path(conf, _path) \
     snprintf(_path, sizeof(_path), "%s/%d_lsn.usck", (conf)->path, (conf)->nodeid)
 /* 发送队列的共享内存KEY路径 */
-#define rtrd_shm_distq_path(conf, _path, idx) \
+#define rtmq_shm_distq_path(conf, _path, idx) \
     snprintf(_path, sizeof(_path), "%s/%d_shm-%d.sq", (conf)->path, (conf)->nodeid, idx)
 /* 分发线程的UNIX-UDP路径 */
-#define rtrd_dsvr_usck_path(conf, _path) \
+#define rtmq_dsvr_usck_path(conf, _path) \
     snprintf(_path, sizeof(_path), "%s/%d_dsvr.usck", (conf)->path, (conf)->nodeid)
 /* 客户端的通信路径 */
-#define rtrd_cli_unix_path(conf, _path) \
+#define rtmq_cli_unix_path(conf, _path) \
     snprintf(_path, sizeof(_path), "%s/%d_cli.usck", (conf)->path, (conf)->nodeid)
 
 /* 配置信息 */
@@ -58,7 +58,7 @@ typedef struct
     queue_conf_t recvq;                 /* 接收队列配置 */
     queue_conf_t sendq;                 /* 发送队列配置 */
     queue_conf_t distq;                 /* 分发队列配置 */
-} rtrd_conf_t;
+} rtmq_conf_t;
 
 /* 侦听对象 */
 typedef struct
@@ -69,7 +69,7 @@ typedef struct
     int lsn_sck_id;                     /* 侦听套接字 */
 
     uint64_t sid;                       /* Session ID */
-} rtrd_listen_t;
+} rtmq_listen_t;
 
 /* 套接字信息 */
 typedef struct _rtrd_sck_t
@@ -91,7 +91,7 @@ typedef struct _rtrd_sck_t
     list_t *mesg_list;                  /* 发送消息链表 */
 
     uint64_t recv_total;                /* 接收的数据条数 */
-} rtrd_sck_t;
+} rtmq_sck_t;
 
 /* DEV->SVR的映射表 */
 typedef struct
@@ -101,7 +101,7 @@ typedef struct
     int num;                            /* 当前实际长度 */
 #define RTRD_NODE_TO_SVR_MAX_LEN    (32)
     int rsvr_id[RTRD_NODE_TO_SVR_MAX_LEN]; /* 结点ID对应的接收服务ID */
-} rtrd_node_to_svr_map_t;
+} rtmq_node_to_svr_map_t;
 
 /* 接收对象 */
 typedef struct
@@ -122,17 +122,17 @@ typedef struct
     uint64_t recv_total;                /* 获取的数据总条数 */
     uint64_t err_total;                 /* 错误的数据条数 */
     uint64_t drop_total;                /* 丢弃的数据条数 */
-} rtrd_rsvr_t;
+} rtmq_rsvr_t;
 
 /* 全局对象 */
 typedef struct
 {
-    rtrd_conf_t conf;                   /* 配置信息 */
+    rtmq_conf_t conf;                   /* 配置信息 */
     log_cycle_t *log;                   /* 日志对象 */
 
     avl_tree_t *reg;                    /* 回调注册对象(注: 存储rtmq_reg_t数据) */
 
-    rtrd_listen_t listen;               /* 侦听对象 */
+    rtmq_listen_t listen;               /* 侦听对象 */
     thread_pool_t *recvtp;              /* 接收线程池 */
     thread_pool_t *worktp;              /* 工作线程池 */
 
@@ -150,41 +150,41 @@ typedef struct
 
     pthread_rwlock_t sub_lock;          /* 读写锁: 订阅锁 */
     vector_t *sub_list;                 /* 订阅列表 */
-} rtrd_cntx_t;
+} rtmq_cntx_t;
 
 /* 外部接口 */
-rtrd_cntx_t *rtrd_init(const rtrd_conf_t *conf, log_cycle_t *log);
-int rtrd_register(rtrd_cntx_t *ctx, int type, rtmq_reg_cb_t proc, void *args);
-int rtrd_launch(rtrd_cntx_t *ctx);
+rtmq_cntx_t *rtmq_init(const rtmq_conf_t *conf, log_cycle_t *log);
+int rtmq_register(rtmq_cntx_t *ctx, int type, rtmq_reg_cb_t proc, void *args);
+int rtmq_launch(rtmq_cntx_t *ctx);
 
-int rtrd_send(rtrd_cntx_t *ctx, int type, int dest, void *data, size_t len);
+int rtmq_send(rtmq_cntx_t *ctx, int type, int dest, void *data, size_t len);
 
 /* 内部接口 */
-int rtrd_lsn_init(rtrd_cntx_t *ctx);
-void *rtrd_lsn_routine(void *_ctx);
-int rtrd_lsn_destroy(rtrd_listen_t *lsn);
+int rtmq_lsn_init(rtmq_cntx_t *ctx);
+void *rtmq_lsn_routine(void *_ctx);
+int rtmq_lsn_destroy(rtmq_listen_t *lsn);
 
-void *rtrd_dsvr_routine(void *_ctx);
+void *rtmq_dsvr_routine(void *_ctx);
 
-void *rtrd_rsvr_routine(void *_ctx);
-int rtrd_rsvr_init(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, int tidx);
+void *rtmq_rsvr_routine(void *_ctx);
+int rtmq_rsvr_init(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, int tidx);
 
-void *rtrd_worker_routine(void *_ctx);
-int rtrd_worker_init(rtrd_cntx_t *ctx, rtmq_worker_t *worker, int tidx);
+void *rtmq_worker_routine(void *_ctx);
+int rtmq_worker_init(rtmq_cntx_t *ctx, rtmq_worker_t *worker, int tidx);
 
-void rtrd_rsvr_del_all_conn_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr);
+void rtmq_rsvr_del_all_conn_hdl(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr);
 
-int rtrd_cmd_to_rsvr(rtrd_cntx_t *ctx, int cmd_sck_id, const rtmq_cmd_t *cmd, int idx);
-int rtrd_link_auth_check(rtrd_cntx_t *ctx, rtmq_link_auth_req_t *link_auth_req);
+int rtmq_cmd_to_rsvr(rtmq_cntx_t *ctx, int cmd_sck_id, const rtmq_cmd_t *cmd, int idx);
+int rtmq_link_auth_check(rtmq_cntx_t *ctx, rtmq_link_auth_req_t *link_auth_req);
 
-shm_queue_t *rtrd_shm_distq_creat(const rtrd_conf_t *conf, int idx);
-shm_queue_t *rtrd_shm_distq_attach(const rtrd_conf_t *conf, int idx);
+shm_queue_t *rtmq_shm_distq_creat(const rtmq_conf_t *conf, int idx);
+shm_queue_t *rtmq_shm_distq_attach(const rtmq_conf_t *conf, int idx);
 
-int rtrd_node_to_svr_map_init(rtrd_cntx_t *ctx);
-int rtrd_node_to_svr_map_add(rtrd_cntx_t *ctx, int nodeid, int rsvr_idx);
-int rtrd_node_to_svr_map_rand(rtrd_cntx_t *ctx, int nodeid);
-int rtrd_node_to_svr_map_del(rtrd_cntx_t *ctx, int nodeid, int rsvr_idx);
+int rtmq_node_to_svr_map_init(rtmq_cntx_t *ctx);
+int rtmq_node_to_svr_map_add(rtmq_cntx_t *ctx, int nodeid, int rsvr_idx);
+int rtmq_node_to_svr_map_rand(rtmq_cntx_t *ctx, int nodeid);
+int rtmq_node_to_svr_map_del(rtmq_cntx_t *ctx, int nodeid, int rsvr_idx);
 
-int rtrd_sub_list_init(rtrd_cntx_t *ctx);
+int rtmq_sub_list_init(rtmq_cntx_t *ctx);
 
-#endif /*__RTRD_RECV_H__*/
+#endif /*__RTMQ_RECV_H__*/

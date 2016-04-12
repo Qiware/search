@@ -1,7 +1,7 @@
 /******************************************************************************
  ** Copyright(C) 2014-2024 Qiware technology Co., Ltd
  **
- ** 文件名: rtrd_rsvr.c
+ ** 文件名: rtmq_rsvr.c
  ** 版本号: 1.0
  ** 描  述: 实时消息队列(REAL-TIME MESSAGE QUEUE)
  **         1. 主要用于异步系统之间数据消息的传输
@@ -11,39 +11,39 @@
 #include "redo.h"
 #include "rtmq_mesg.h"
 #include "rtmq_comm.h"
-#include "rtrd_recv.h"
+#include "rtmq_recv.h"
 #include "thread_pool.h"
 
 /* 静态函数 */
-static rtrd_rsvr_t *rtrd_rsvr_get_curr(rtrd_cntx_t *ctx);
-static int rtrd_rsvr_event_core_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr);
-static int rtrd_rsvr_event_timeout_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr);
+static rtmq_rsvr_t *rtmq_rsvr_get_curr(rtmq_cntx_t *ctx);
+static int rtmq_rsvr_event_core_hdl(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr);
+static int rtmq_rsvr_event_timeout_hdl(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr);
 
-static int rtrd_rsvr_trav_recv(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr);
-static int rtrd_rsvr_trav_send(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr);
+static int rtmq_rsvr_trav_recv(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr);
+static int rtmq_rsvr_trav_send(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr);
 
-static int rtrd_rsvr_recv_proc(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd_sck_t *sck);
-static int rtrd_rsvr_data_proc(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd_sck_t *sck);
+static int rtmq_rsvr_recv_proc(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t *sck);
+static int rtmq_rsvr_data_proc(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t *sck);
 
-static int rtrd_rsvr_sys_mesg_proc(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd_sck_t *sck, void *addr);
-static int rtrd_rsvr_exp_mesg_proc(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd_sck_t *sck, void *addr);
+static int rtmq_rsvr_sys_mesg_proc(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t *sck, void *addr);
+static int rtmq_rsvr_exp_mesg_proc(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t *sck, void *addr);
 
-static int rtrd_rsvr_keepalive_req_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd_sck_t *sck);
-static int rtrd_rsvr_link_auth_req_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd_sck_t *sck);
-static int rtrd_rsvr_sub_req_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd_sck_t *sck);
+static int rtmq_rsvr_keepalive_req_hdl(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t *sck);
+static int rtmq_rsvr_link_auth_req_hdl(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t *sck);
+static int rtmq_rsvr_sub_req_hdl(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t *sck);
 
-static int rtrd_rsvr_cmd_proc_req(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, int rqid);
-static int rtrd_rsvr_cmd_proc_all_req(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr);
+static int rtmq_rsvr_cmd_proc_req(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, int rqid);
+static int rtmq_rsvr_cmd_proc_all_req(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr);
 
-static rtrd_sck_t *rtrd_rsvr_sck_creat(rtrd_rsvr_t *rsvr, rtmq_cmd_add_sck_t *req);
-static void rtrd_rsvr_sck_free(rtrd_rsvr_t *rsvr, rtrd_sck_t *sck);
+static rtmq_sck_t *rtmq_rsvr_sck_creat(rtmq_rsvr_t *rsvr, rtmq_cmd_add_sck_t *req);
+static void rtmq_rsvr_sck_free(rtmq_rsvr_t *rsvr, rtmq_sck_t *sck);
 
-static int rtrd_rsvr_add_conn_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtmq_cmd_add_sck_t *req);
-static int rtrd_rsvr_del_conn_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, list2_node_t *node);
+static int rtmq_rsvr_add_conn_hdl(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_cmd_add_sck_t *req);
+static int rtmq_rsvr_del_conn_hdl(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, list2_node_t *node);
 
-static int rtrd_rsvr_fill_send_buff(rtrd_rsvr_t *rsvr, rtrd_sck_t *sck);
+static int rtmq_rsvr_fill_send_buff(rtmq_rsvr_t *rsvr, rtmq_sck_t *sck);
 
-static int rtrd_rsvr_dist_data(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr);
+static int rtmq_rsvr_dist_data(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr);
 
 /* 随机选择接收线程 */
 #define rtmq_rand_recv(ctx) ((ctx)->listen.total++ % (ctx->recvtp->num))
@@ -52,7 +52,7 @@ static int rtrd_rsvr_dist_data(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr);
 #define rtmq_rand_work(ctx) (rand() % (ctx->worktp->num))
 
 /******************************************************************************
- **函数名称: rtrd_rsvr_set_rdset
+ **函数名称: rtmq_rsvr_set_rdset
  **功    能: 设置可读集合
  **输入参数:
  **     rsvr: 接收服务
@@ -62,9 +62,9 @@ static int rtrd_rsvr_dist_data(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr);
  **注意事项: 如果超时未接收或发送数据，则关闭连接!
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static void rtrd_rsvr_set_rdset(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
+static void rtmq_rsvr_set_rdset(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr)
 {
-    rtrd_sck_t *curr;
+    rtmq_sck_t *curr;
     list2_node_t *node, *next, *tail;
 
     FD_ZERO(&rsvr->rdset);
@@ -77,7 +77,7 @@ static void rtrd_rsvr_set_rdset(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
         tail = node->prev;
     }
     while (NULL != node) {
-        curr = (rtrd_sck_t *)node->data;
+        curr = (rtmq_sck_t *)node->data;
         if ((rsvr->ctm - curr->rdtm > 30)
             && (rsvr->ctm - curr->wrtm > 30))
         {
@@ -85,11 +85,11 @@ static void rtrd_rsvr_set_rdset(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
                     curr->fd, curr->ipaddr);
 
             if (node == tail) {
-                rtrd_rsvr_del_conn_hdl(ctx, rsvr, node);
+                rtmq_rsvr_del_conn_hdl(ctx, rsvr, node);
                 break;
             }
             next = node->next;
-            rtrd_rsvr_del_conn_hdl(ctx, rsvr, node);
+            rtmq_rsvr_del_conn_hdl(ctx, rsvr, node);
             node = next;
             continue;
         }
@@ -105,7 +105,7 @@ static void rtrd_rsvr_set_rdset(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
 }
 
 /******************************************************************************
- **函数名称: rtrd_rsvr_set_wrset
+ **函数名称: rtmq_rsvr_set_wrset
  **功    能: 设置可写集合
  **输入参数:
  **     rsvr: 接收服务
@@ -115,9 +115,9 @@ static void rtrd_rsvr_set_rdset(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static void rtrd_rsvr_set_wrset(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
+static void rtmq_rsvr_set_wrset(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr)
 {
-    rtrd_sck_t *curr;
+    rtmq_sck_t *curr;
     list2_node_t *node, *tail;
 
     FD_ZERO(&rsvr->wrset);
@@ -128,7 +128,7 @@ static void rtrd_rsvr_set_wrset(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
     }
 
     while (NULL != node) {
-        curr = (rtrd_sck_t *)node->data;
+        curr = (rtmq_sck_t *)node->data;
 
         if (list_empty(curr->mesg_list)
             && wiov_isempty(&curr->send))
@@ -150,7 +150,7 @@ static void rtrd_rsvr_set_wrset(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
 }
 
 /******************************************************************************
- **函数名称: rtrd_rsvr_routine
+ **函数名称: rtmq_rsvr_routine
  **功    能: 运行接收服务线程
  **输入参数:
  **     _ctx: 全局对象
@@ -163,17 +163,17 @@ static void rtrd_rsvr_set_wrset(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-void *rtrd_rsvr_routine(void *_ctx)
+void *rtmq_rsvr_routine(void *_ctx)
 {
     int ret;
-    rtrd_rsvr_t *rsvr;
+    rtmq_rsvr_t *rsvr;
     struct timeval timeout;
-    rtrd_cntx_t *ctx = (rtrd_cntx_t *)_ctx;
+    rtmq_cntx_t *ctx = (rtmq_cntx_t *)_ctx;
 
     nice(-20);
 
     /* 1. 获取接收服务 */
-    rsvr = rtrd_rsvr_get_curr(ctx);
+    rsvr = rtmq_rsvr_get_curr(ctx);
     if (NULL == rsvr) {
         log_fatal(rsvr->log, "Get recv server failed!");
         abort();
@@ -182,8 +182,8 @@ void *rtrd_rsvr_routine(void *_ctx)
 
     for (;;) {
         /* 2. 等待事件通知 */
-        rtrd_rsvr_set_rdset(ctx, rsvr);
-        rtrd_rsvr_set_wrset(ctx, rsvr);
+        rtmq_rsvr_set_rdset(ctx, rsvr);
+        rtmq_rsvr_set_wrset(ctx, rsvr);
 
         timeout.tv_sec = 1;
         timeout.tv_usec = 0;
@@ -195,12 +195,12 @@ void *rtrd_rsvr_routine(void *_ctx)
             return (void *)RTMQ_ERR;
         }
         else if (0 == ret) {
-            rtrd_rsvr_event_timeout_hdl(ctx, rsvr);
+            rtmq_rsvr_event_timeout_hdl(ctx, rsvr);
             continue;
         }
 
         /* 3. 进行事件处理 */
-        rtrd_rsvr_event_core_hdl(ctx, rsvr);
+        rtmq_rsvr_event_core_hdl(ctx, rsvr);
     }
 
     log_fatal(rsvr->log, "errmsg:[%d] %s", errno, strerror(errno));
@@ -209,7 +209,7 @@ void *rtrd_rsvr_routine(void *_ctx)
 }
 
 /******************************************************************************
- **函数名称: rtrd_rsvr_get_curr
+ **函数名称: rtmq_rsvr_get_curr
  **功    能: 获取当前线程对应的接收服务
  **输入参数:
  **     ctx: 全局对象
@@ -221,7 +221,7 @@ void *rtrd_rsvr_routine(void *_ctx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static rtrd_rsvr_t *rtrd_rsvr_get_curr(rtrd_cntx_t *ctx)
+static rtmq_rsvr_t *rtmq_rsvr_get_curr(rtmq_cntx_t *ctx)
 {
     int id;
 
@@ -233,11 +233,11 @@ static rtrd_rsvr_t *rtrd_rsvr_get_curr(rtrd_cntx_t *ctx)
     }
 
     /* 2. 返回当前线程对应的接收服务 */
-    return (rtrd_rsvr_t *)(ctx->recvtp->data + id * sizeof(rtrd_rsvr_t));
+    return (rtmq_rsvr_t *)(ctx->recvtp->data + id * sizeof(rtmq_rsvr_t));
 }
 
 /******************************************************************************
- **函数名称: rtrd_rsvr_init
+ **函数名称: rtmq_rsvr_init
  **功    能: 初始化接收服务
  **输入参数:
  **     ctx: 全局对象
@@ -251,17 +251,17 @@ static rtrd_rsvr_t *rtrd_rsvr_get_curr(rtrd_cntx_t *ctx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-int rtrd_rsvr_init(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, int id)
+int rtmq_rsvr_init(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, int id)
 {
     char path[FILE_PATH_MAX_LEN];
-    rtrd_conf_t *conf = &ctx->conf;
+    rtmq_conf_t *conf = &ctx->conf;
 
     rsvr->id = id;
     rsvr->log = ctx->log;
     rsvr->ctm = time(NULL);
 
     /* > 创建CMD套接字 */
-    rtrd_rsvr_usck_path(conf, path, rsvr->id);
+    rtmq_rsvr_usck_path(conf, path, rsvr->id);
 
     rsvr->cmd_sck_id = unix_udp_creat(path);
     if (rsvr->cmd_sck_id < 0) {
@@ -281,7 +281,7 @@ int rtrd_rsvr_init(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, int id)
 }
 
 /******************************************************************************
- **函数名称: rtrd_rsvr_recv_cmd
+ **函数名称: rtmq_rsvr_recv_cmd
  **功    能: 接收命令数据
  **输入参数:
  **     ctx: 全局对象
@@ -294,7 +294,7 @@ int rtrd_rsvr_init(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, int id)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int rtrd_rsvr_recv_cmd(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
+static int rtmq_rsvr_recv_cmd(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr)
 {
     rtmq_cmd_t cmd;
 
@@ -310,11 +310,11 @@ static int rtrd_rsvr_recv_cmd(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
     switch (cmd.type) {
         case RTMQ_CMD_ADD_SCK:      /* 添加套接字 */
         {
-            return rtrd_rsvr_add_conn_hdl(ctx, rsvr, (rtmq_cmd_add_sck_t *)&cmd.param);
+            return rtmq_rsvr_add_conn_hdl(ctx, rsvr, (rtmq_cmd_add_sck_t *)&cmd.param);
         }
         case RTMQ_CMD_DIST_REQ:     /* 分发发送数据 */
         {
-            return rtrd_rsvr_dist_data(ctx, rsvr);
+            return rtmq_rsvr_dist_data(ctx, rsvr);
         }
         default:
         {
@@ -327,7 +327,7 @@ static int rtrd_rsvr_recv_cmd(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
 }
 
 /******************************************************************************
- **函数名称: rtrd_rsvr_trav_recv
+ **函数名称: rtmq_rsvr_trav_recv
  **功    能: 遍历接收数据
  **输入参数:
  **     ctx: 全局对象
@@ -338,9 +338,9 @@ static int rtrd_rsvr_recv_cmd(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int rtrd_rsvr_trav_recv(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
+static int rtmq_rsvr_trav_recv(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr)
 {
-    rtrd_sck_t *curr;
+    rtmq_sck_t *curr;
     list2_node_t *node, *next, *tail;
 
     rsvr->ctm = time(NULL);
@@ -351,20 +351,20 @@ static int rtrd_rsvr_trav_recv(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
     }
 
     while (NULL != node) {
-        curr = (rtrd_sck_t *)node->data;
+        curr = (rtmq_sck_t *)node->data;
 
         if (FD_ISSET(curr->fd, &rsvr->rdset)) {
             curr->rdtm = rsvr->ctm;
 
             /* 进行接收处理 */
-            if (rtrd_rsvr_recv_proc(ctx, rsvr, curr)) {
+            if (rtmq_rsvr_recv_proc(ctx, rsvr, curr)) {
                 log_error(rsvr->log, "Recv proc failed! fd:%d ip:%s", curr->fd, curr->ipaddr);
                 if (node == tail) {
-                    rtrd_rsvr_del_conn_hdl(ctx, rsvr, node);
+                    rtmq_rsvr_del_conn_hdl(ctx, rsvr, node);
                     break;
                 }
                 next = node->next;
-                rtrd_rsvr_del_conn_hdl(ctx, rsvr, node);
+                rtmq_rsvr_del_conn_hdl(ctx, rsvr, node);
                 node = next;
                 continue;
             }
@@ -381,7 +381,7 @@ static int rtrd_rsvr_trav_recv(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
 }
 
 /******************************************************************************
- **函数名称: rtrd_rsvr_wiov_add
+ **函数名称: rtmq_rsvr_wiov_add
  **功    能: 追加发送数据(无数据拷贝)
  **输入参数:
  **     ctx: 全局对象
@@ -392,7 +392,7 @@ static int rtrd_rsvr_trav_recv(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
  **注意事项: 数据发送完毕之后, 必须释放内存空间!
  **作    者: # Qifeng.zou # 2015.12.26 #
  ******************************************************************************/
-static int rtrd_rsvr_wiov_add(rtrd_rsvr_t *rsvr, rtrd_sck_t *sck)
+static int rtmq_rsvr_wiov_add(rtmq_rsvr_t *rsvr, rtmq_sck_t *sck)
 {
     int len;
     rtmq_header_t *head;
@@ -426,7 +426,7 @@ static int rtrd_rsvr_wiov_add(rtrd_rsvr_t *rsvr, rtrd_sck_t *sck)
 }
 
 /******************************************************************************
- **函数名称: rtrd_rsvr_trav_send
+ **函数名称: rtmq_rsvr_trav_send
  **功    能: 遍历发送数据
  **输入参数:
  **     ctx: 全局对象
@@ -447,11 +447,11 @@ static int rtrd_rsvr_wiov_add(rtrd_rsvr_t *rsvr, rtrd_sck_t *sck)
  **     addr     optr             iptr                   end
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int rtrd_rsvr_trav_send(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
+static int rtmq_rsvr_trav_send(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr)
 {
     ssize_t n;
     wiov_t *send;
-    rtrd_sck_t *curr;
+    rtmq_sck_t *curr;
     list2_node_t *node, *tail;
 
     rsvr->ctm = time(NULL);
@@ -462,7 +462,7 @@ static int rtrd_rsvr_trav_send(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
     }
 
     while (NULL != node) {
-        curr = (rtrd_sck_t *)node->data;
+        curr = (rtmq_sck_t *)node->data;
 
         if (FD_ISSET(curr->fd, &rsvr->wrset)) {
             curr->wrtm = rsvr->ctm;
@@ -471,7 +471,7 @@ static int rtrd_rsvr_trav_send(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
             for (;;) {
                 /* 1. 追加发送内容 */
                 if (!wiov_is_full(send)) {
-                    rtrd_rsvr_wiov_add(rsvr, curr);
+                    rtmq_rsvr_wiov_add(rsvr, curr);
                 } 
 
                 if (wiov_isempty(send)) {
@@ -482,7 +482,7 @@ static int rtrd_rsvr_trav_send(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
                 n = writev(curr->fd, wiov_item_begin(send), wiov_item_num(send));
                 if (n < 0) {
                     log_error(rsvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
-                    rtrd_rsvr_del_conn_hdl(ctx, rsvr, node);
+                    rtmq_rsvr_del_conn_hdl(ctx, rsvr, node);
                     return RTMQ_ERR;
                 }
                 else {
@@ -504,7 +504,7 @@ static int rtrd_rsvr_trav_send(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
 }
 
 /******************************************************************************
- **函数名称: rtrd_rsvr_recv_proc
+ **函数名称: rtmq_rsvr_recv_proc
  **功    能: 接收数据并做相应处理
  **输入参数:
  **     ctx: 全局对象
@@ -529,7 +529,7 @@ static int rtrd_rsvr_trav_send(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
  **     addr     optr             iptr                   end
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int rtrd_rsvr_recv_proc(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd_sck_t *sck)
+static int rtmq_rsvr_recv_proc(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t *sck)
 {
     int n, left;
     rtmq_snap_t *recv = &sck->recv;
@@ -543,7 +543,7 @@ static int rtrd_rsvr_recv_proc(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd_sck_t *
             recv->iptr += n;
 
             /* 2. 进行数据处理 */
-            if (rtrd_rsvr_data_proc(ctx, rsvr, sck)) {
+            if (rtmq_rsvr_data_proc(ctx, rsvr, sck)) {
                 log_error(rsvr->log, "Proc data failed! fd:%d", sck->fd);
                 return RTMQ_ERR;
             }
@@ -568,7 +568,7 @@ static int rtrd_rsvr_recv_proc(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd_sck_t *
 }
 
 /******************************************************************************
- **函数名称: rtrd_rsvr_recv_post
+ **函数名称: rtmq_rsvr_recv_post
  **功    能: 数据接收完成后的处理
  **输入参数:
  **     ctx: 全局对象
@@ -591,7 +591,7 @@ static int rtrd_rsvr_recv_proc(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd_sck_t *
  **     addr     optr             iptr                   end
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int rtrd_rsvr_data_proc(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd_sck_t *sck)
+static int rtmq_rsvr_data_proc(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t *sck)
 {
     bool flag = false;
     rtmq_header_t *head;
@@ -653,10 +653,10 @@ static int rtrd_rsvr_data_proc(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd_sck_t *
 
         /* 2.3 进行数据处理 */
         if (RTMQ_SYS_MESG == head->flag) {
-            rtrd_rsvr_sys_mesg_proc(ctx, rsvr, sck, recv->optr);
+            rtmq_rsvr_sys_mesg_proc(ctx, rsvr, sck, recv->optr);
         }
         else {
-            rtrd_rsvr_exp_mesg_proc(ctx, rsvr, sck, recv->optr);
+            rtmq_rsvr_exp_mesg_proc(ctx, rsvr, sck, recv->optr);
         }
         recv->optr += one_mesg_len;
     }
@@ -665,7 +665,7 @@ static int rtrd_rsvr_data_proc(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd_sck_t *
 }
 
 /******************************************************************************
- **函数名称: rtrd_rsvr_sys_mesg_proc
+ **函数名称: rtmq_rsvr_sys_mesg_proc
  **功    能: 系统消息处理
  **输入参数:
  **     ctx: 全局对象
@@ -677,8 +677,8 @@ static int rtrd_rsvr_data_proc(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd_sck_t *
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int rtrd_rsvr_sys_mesg_proc(rtrd_cntx_t *ctx,
-        rtrd_rsvr_t *rsvr, rtrd_sck_t *sck, void *addr)
+static int rtmq_rsvr_sys_mesg_proc(rtmq_cntx_t *ctx,
+        rtmq_rsvr_t *rsvr, rtmq_sck_t *sck, void *addr)
 {
     rtmq_header_t *head = (rtmq_header_t *)addr;
 
@@ -687,11 +687,11 @@ static int rtrd_rsvr_sys_mesg_proc(rtrd_cntx_t *ctx,
 
     switch (head->type) {
         case RTMQ_CMD_LINK_AUTH_REQ:
-            return rtrd_rsvr_link_auth_req_hdl(ctx, rsvr, sck);
+            return rtmq_rsvr_link_auth_req_hdl(ctx, rsvr, sck);
         case RTMQ_CMD_SUB_REQ:
-            return rtrd_rsvr_sub_req_hdl(ctx, rsvr, sck);
+            return rtmq_rsvr_sub_req_hdl(ctx, rsvr, sck);
         case RTMQ_CMD_KPALIVE_REQ:
-            return rtrd_rsvr_keepalive_req_hdl(ctx, rsvr, sck);
+            return rtmq_rsvr_keepalive_req_hdl(ctx, rsvr, sck);
         default:
             log_error(rsvr->log, "Unknown message type! [%d]", head->type);
             return RTMQ_ERR;
@@ -701,7 +701,7 @@ static int rtrd_rsvr_sys_mesg_proc(rtrd_cntx_t *ctx,
 }
 
 /******************************************************************************
- **函数名称: rtrd_rsvr_exp_mesg_proc
+ **函数名称: rtmq_rsvr_exp_mesg_proc
  **功    能: 自定义消息处理
  **输入参数:
  **     ctx: 全局对象
@@ -716,8 +716,8 @@ static int rtrd_rsvr_sys_mesg_proc(rtrd_cntx_t *ctx,
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int rtrd_rsvr_exp_mesg_proc(rtrd_cntx_t *ctx,
-        rtrd_rsvr_t *rsvr, rtrd_sck_t *sck, void *data)
+static int rtmq_rsvr_exp_mesg_proc(rtmq_cntx_t *ctx,
+        rtmq_rsvr_t *rsvr, rtmq_sck_t *sck, void *data)
 {
     int rqid, len;
     void *addr;
@@ -739,7 +739,7 @@ static int rtrd_rsvr_exp_mesg_proc(rtrd_cntx_t *ctx,
     addr = queue_malloc(ctx->recvq[rqid], len);
     if (NULL == addr) {
         ++rsvr->drop_total; /* 丢弃计数 */
-        rtrd_rsvr_cmd_proc_all_req(ctx, rsvr);
+        rtmq_rsvr_cmd_proc_all_req(ctx, rsvr);
 
         log_error(rsvr->log, "Alloc from queue failed! recv:%llu drop:%llu error:%llu len:%d/%d",
                 rsvr->recv_total, rsvr->drop_total, rsvr->err_total, len, queue_size(ctx->recvq[rqid]));
@@ -751,13 +751,13 @@ static int rtrd_rsvr_exp_mesg_proc(rtrd_cntx_t *ctx,
 
     queue_push(ctx->recvq[rqid], addr);         /* 放入处理队列 */
 
-    rtrd_rsvr_cmd_proc_req(ctx, rsvr, rqid);    /* 发送处理请求 */
+    rtmq_rsvr_cmd_proc_req(ctx, rsvr, rqid);    /* 发送处理请求 */
 
     return RTMQ_OK;
 }
 
 /******************************************************************************
- **函数名称: rtrd_rsvr_event_core_hdl
+ **函数名称: rtmq_rsvr_event_core_hdl
  **功    能: 事件核心处理
  **输入参数:
  **     ctx: 全局对象
@@ -771,24 +771,24 @@ static int rtrd_rsvr_exp_mesg_proc(rtrd_cntx_t *ctx,
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int rtrd_rsvr_event_core_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
+static int rtmq_rsvr_event_core_hdl(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr)
 {
     /* 1. 接收命令数据 */
     if (FD_ISSET(rsvr->cmd_sck_id, &rsvr->rdset)) {
-        rtrd_rsvr_recv_cmd(ctx, rsvr);
+        rtmq_rsvr_recv_cmd(ctx, rsvr);
     }
 
     /* 2. 遍历接收数据 */
-    rtrd_rsvr_trav_recv(ctx, rsvr);
+    rtmq_rsvr_trav_recv(ctx, rsvr);
 
     /* 3. 遍历发送数据 */
-    rtrd_rsvr_trav_send(ctx, rsvr);
+    rtmq_rsvr_trav_send(ctx, rsvr);
 
     return RTMQ_OK;
 }
 
 /******************************************************************************
- **函数名称: rtrd_rsvr_event_timeout_hdl
+ **函数名称: rtmq_rsvr_event_timeout_hdl
  **功    能: 事件超时处理
  **输入参数:
  **     ctx: 全局对象
@@ -800,10 +800,10 @@ static int rtrd_rsvr_event_core_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int rtrd_rsvr_event_timeout_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
+static int rtmq_rsvr_event_timeout_hdl(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr)
 {
     bool is_end = false;
-    rtrd_sck_t *curr;
+    rtmq_sck_t *curr;
     list2_node_t *node, *next, *tail;
 
     rsvr->ctm = time(NULL);
@@ -820,7 +820,7 @@ static int rtrd_rsvr_event_timeout_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
             is_end = true;
         }
 
-        curr = (rtrd_sck_t *)node->data;
+        curr = (rtmq_sck_t *)node->data;
 
         if (rsvr->ctm - curr->rdtm >= 60) {
             log_trace(rsvr->log, "Didn't active for along time! fd:%d ip:%s",
@@ -829,12 +829,12 @@ static int rtrd_rsvr_event_timeout_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
             FREE(curr->recv.addr);
             /* 删除连接 */
             if (node == tail) {
-                rtrd_rsvr_del_conn_hdl(ctx, rsvr, node);
+                rtmq_rsvr_del_conn_hdl(ctx, rsvr, node);
                 break;
             }
 
             next = node->next;
-            rtrd_rsvr_del_conn_hdl(ctx, rsvr, node);
+            rtmq_rsvr_del_conn_hdl(ctx, rsvr, node);
             node = next;
             continue;
         }
@@ -842,13 +842,13 @@ static int rtrd_rsvr_event_timeout_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
     }
 
     /* > 重复发送处理命令 */
-    rtrd_rsvr_cmd_proc_all_req(ctx, rsvr);
+    rtmq_rsvr_cmd_proc_all_req(ctx, rsvr);
 
     return RTMQ_OK;
 }
 
 /******************************************************************************
- **函数名称: rtrd_rsvr_keepalive_req_hdl
+ **函数名称: rtmq_rsvr_keepalive_req_hdl
  **功    能: 保活请求处理
  **输入参数:
  **     ctx: 全局对象
@@ -858,7 +858,7 @@ static int rtrd_rsvr_event_timeout_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int rtrd_rsvr_keepalive_req_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd_sck_t *sck)
+static int rtmq_rsvr_keepalive_req_hdl(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t *sck)
 {
     void *addr;
     rtmq_header_t *head;
@@ -892,7 +892,7 @@ static int rtrd_rsvr_keepalive_req_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd
 }
 
 /******************************************************************************
- **函数名称: rtrd_rsvr_link_auth_rsp
+ **函数名称: rtmq_rsvr_link_auth_rsp
  **功    能: 链路鉴权应答
  **输入参数:
  **     ctx: 全局对象
@@ -904,7 +904,7 @@ static int rtrd_rsvr_keepalive_req_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.05.22 #
  ******************************************************************************/
-static int rtrd_rsvr_link_auth_rsp(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd_sck_t *sck)
+static int rtmq_rsvr_link_auth_rsp(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t *sck)
 {
     void *addr;
     rtmq_header_t *head;
@@ -942,7 +942,7 @@ static int rtrd_rsvr_link_auth_rsp(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd_sck
 }
 
 /******************************************************************************
- **函数名称: rtrd_rsvr_link_auth_req_hdl
+ **函数名称: rtmq_rsvr_link_auth_req_hdl
  **功    能: 链路鉴权请求处理
  **输入参数:
  **     ctx: 全局对象
@@ -954,7 +954,7 @@ static int rtrd_rsvr_link_auth_rsp(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd_sck
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.05.22 #
  ******************************************************************************/
-static int rtrd_rsvr_link_auth_req_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd_sck_t *sck)
+static int rtmq_rsvr_link_auth_req_hdl(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t *sck)
 {
     rtmq_header_t *head;
     rtmq_snap_t *recv = &sck->recv;
@@ -964,11 +964,11 @@ static int rtrd_rsvr_link_auth_req_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd
     link_auth_req = (rtmq_link_auth_req_t *)(head + 1);
 
     /* > 验证鉴权合法性 */
-    sck->auth_succ = rtrd_link_auth_check(ctx, link_auth_req);
+    sck->auth_succ = rtmq_link_auth_check(ctx, link_auth_req);
     if (sck->auth_succ) {
         sck->nodeid = head->nodeid;
         /* > 插入DEV与SCK的映射 */
-        if (rtrd_node_to_svr_map_add(ctx, head->nodeid, rsvr->id)) {
+        if (rtmq_node_to_svr_map_add(ctx, head->nodeid, rsvr->id)) {
             log_error(rsvr->log, "Insert into sck2dev table failed! fd:%d serial:%ld nodeid:%d",
                     sck->fd, sck->sid, head->nodeid);
             return RTMQ_ERR;
@@ -976,11 +976,11 @@ static int rtrd_rsvr_link_auth_req_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd
     }
 
     /* > 应答鉴权请求 */
-    return rtrd_rsvr_link_auth_rsp(ctx, rsvr, sck);
+    return rtmq_rsvr_link_auth_rsp(ctx, rsvr, sck);
 }
 
 /******************************************************************************
- **函数名称: rtrd_rsvr_sub_req_hdl
+ **函数名称: rtmq_rsvr_sub_req_hdl
  **功    能: 订阅请求处理
  **输入参数:
  **     ctx: 全局对象
@@ -992,13 +992,13 @@ static int rtrd_rsvr_link_auth_req_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd
  **注意事项: 
  **作    者: # Qifeng.zou # 2016.04.13 00:35:15 #
  ******************************************************************************/
-static int rtrd_rsvr_sub_req_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd_sck_t *sck)
+static int rtmq_rsvr_sub_req_hdl(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t *sck)
 {
     return RTMQ_OK;
 }
 
 /******************************************************************************
- **函数名称: rtrd_rsvr_sck_creat
+ **函数名称: rtmq_rsvr_sck_creat
  **功    能: 创建套接字对象
  **输入参数:
  **     rsvr: 接收服务
@@ -1009,21 +1009,21 @@ static int rtrd_rsvr_sub_req_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd_sck_t
  **注意事项: 套接字关闭时, 记得释放空间, 防止内存泄露!
  **作    者: # Qifeng.zou # 2015.06.11 #
  ******************************************************************************/
-static rtrd_sck_t *rtrd_rsvr_sck_creat(rtrd_rsvr_t *rsvr, rtmq_cmd_add_sck_t *req)
+static rtmq_sck_t *rtmq_rsvr_sck_creat(rtmq_rsvr_t *rsvr, rtmq_cmd_add_sck_t *req)
 {
     void *addr;
     list_opt_t opt;
-    rtrd_sck_t *sck;
+    rtmq_sck_t *sck;
 
     /* > 分配连接空间 */
-    sck = calloc(1, sizeof(rtrd_sck_t));
+    sck = calloc(1, sizeof(rtmq_sck_t));
     if (NULL == sck) {
         log_error(rsvr->log, "Alloc memory failed!");
         CLOSE(req->sckid);
         return NULL;
     }
 
-    memset(sck, 0, sizeof(rtrd_sck_t));
+    memset(sck, 0, sizeof(rtmq_sck_t));
 
     sck->fd = req->sckid;
     sck->nodeid = -1;
@@ -1060,12 +1060,12 @@ static rtrd_sck_t *rtrd_rsvr_sck_creat(rtrd_rsvr_t *rsvr, rtmq_cmd_add_sck_t *re
     } while (0);
 
     /* > 释放套接字对象 */
-    rtrd_rsvr_sck_free(rsvr, sck);
+    rtmq_rsvr_sck_free(rsvr, sck);
     return NULL;
 }
 
 /******************************************************************************
- **函数名称: rtrd_rsvr_sck_free
+ **函数名称: rtmq_rsvr_sck_free
  **功    能: 释放指定套接字对象的空间
  **输入参数:
  **     rsvr: 接收服务
@@ -1076,7 +1076,7 @@ static rtrd_sck_t *rtrd_rsvr_sck_creat(rtrd_rsvr_t *rsvr, rtmq_cmd_add_sck_t *re
  **注意事项: 释放该套接字对象所有相关内存, 防止内存泄露!
  **作    者: # Qifeng.zou # 2015.06.11 23:31:48 #
  ******************************************************************************/
-static void rtrd_rsvr_sck_free(rtrd_rsvr_t *rsvr, rtrd_sck_t *sck)
+static void rtmq_rsvr_sck_free(rtmq_rsvr_t *rsvr, rtmq_sck_t *sck)
 {
     if (NULL == sck) { return; }
     FREE(sck->recv.addr);
@@ -1093,7 +1093,7 @@ static void rtrd_rsvr_sck_free(rtrd_rsvr_t *rsvr, rtrd_sck_t *sck)
 }
 
 /******************************************************************************
- **函数名称: rtrd_rsvr_add_conn_hdl
+ **函数名称: rtmq_rsvr_add_conn_hdl
  **功    能: 添加网络连接
  **输入参数:
  **     ctx: 全局对象
@@ -1103,13 +1103,13 @@ static void rtrd_rsvr_sck_free(rtrd_rsvr_t *rsvr, rtrd_sck_t *sck)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int rtrd_rsvr_add_conn_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtmq_cmd_add_sck_t *req)
+static int rtmq_rsvr_add_conn_hdl(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_cmd_add_sck_t *req)
 {
-    rtrd_sck_t *sck;
-    rtrd_conf_t *conf = &ctx->conf;
+    rtmq_sck_t *sck;
+    rtmq_conf_t *conf = &ctx->conf;
 
     /* > 创建套接字对象 */
-    sck = rtrd_rsvr_sck_creat(rsvr, req);
+    sck = rtmq_rsvr_sck_creat(rsvr, req);
     if (NULL == sck) {
         log_error(rsvr->log, "Create socket object failed!");
         return RTMQ_ERR;
@@ -1118,14 +1118,14 @@ static int rtrd_rsvr_add_conn_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtmq_cmd_
     /* > 加入套接字链尾 */
     if (list2_rpush(rsvr->conn_list, (void *)sck)) {
         log_error(rsvr->log, "Insert into list failed!");
-        rtrd_rsvr_sck_free(rsvr, sck);
+        rtmq_rsvr_sck_free(rsvr, sck);
         return RTMQ_ERR;
     }
 
     /* > 初始化发送IOV */
     if (wiov_init(&sck->send, 2 * conf->sendq.max)) {
         log_error(rsvr->log, "Init wiov failed!");
-        rtrd_rsvr_sck_free(rsvr, sck);
+        rtmq_rsvr_sck_free(rsvr, sck);
         return RTMQ_ERR;
     }
 
@@ -1138,7 +1138,7 @@ static int rtrd_rsvr_add_conn_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtmq_cmd_
 }
 
 /******************************************************************************
- **函数名称: rtrd_rsvr_del_conn_hdl
+ **函数名称: rtmq_rsvr_del_conn_hdl
  **功    能: 删除网络连接
  **输入参数:
  **     rsvr: 接收服务
@@ -1149,18 +1149,18 @@ static int rtrd_rsvr_add_conn_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtmq_cmd_
  **注意事项: 释放接收缓存和发送缓存空间!
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int rtrd_rsvr_del_conn_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, list2_node_t *node)
+static int rtmq_rsvr_del_conn_hdl(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, list2_node_t *node)
 {
-    rtrd_sck_t *curr = (rtrd_sck_t *)node->data;
+    rtmq_sck_t *curr = (rtmq_sck_t *)node->data;
 
     /* > 从链表剔除结点 */
     list2_delete(rsvr->conn_list, node);
 
     /* > 从SCK <<=>> DEV映射表中剔除 */
-    rtrd_node_to_svr_map_del(ctx, curr->nodeid, rsvr->id);
+    rtmq_node_to_svr_map_del(ctx, curr->nodeid, rsvr->id);
 
     /* > 释放数据空间 */
-    rtrd_rsvr_sck_free(rsvr, curr);
+    rtmq_rsvr_sck_free(rsvr, curr);
 
     --rsvr->connections; /* 统计TCP连接数 */
 
@@ -1168,7 +1168,7 @@ static int rtrd_rsvr_del_conn_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, list2_nod
 }
 
 /******************************************************************************
- **函数名称: rtrd_rsvr_del_all_conn_hdl
+ **函数名称: rtmq_rsvr_del_all_conn_hdl
  **功    能: 删除接收线程所有的套接字
  **输入参数:
  **     rsvr: 接收服务
@@ -1178,7 +1178,7 @@ static int rtrd_rsvr_del_conn_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, list2_nod
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-void rtrd_rsvr_del_all_conn_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
+void rtmq_rsvr_del_all_conn_hdl(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr)
 {
     list2_node_t *node, *next, *tail;
 
@@ -1189,12 +1189,12 @@ void rtrd_rsvr_del_all_conn_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
 
     while (NULL != node) {
         if (node == tail) {
-            rtrd_rsvr_del_conn_hdl(ctx, rsvr, node);
+            rtmq_rsvr_del_conn_hdl(ctx, rsvr, node);
             break;
         }
 
         next = node->next;
-        rtrd_rsvr_del_conn_hdl(ctx, rsvr, node);
+        rtmq_rsvr_del_conn_hdl(ctx, rsvr, node);
         node = next;
     }
 
@@ -1203,7 +1203,7 @@ void rtrd_rsvr_del_all_conn_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
 }
 
 /******************************************************************************
- **函数名称: rtrd_rsvr_cmd_proc_req
+ **函数名称: rtmq_rsvr_cmd_proc_req
  **功    能: 发送处理请求
  **输入参数:
  **     ctx: 全局对象
@@ -1215,12 +1215,12 @@ void rtrd_rsvr_del_all_conn_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int rtrd_rsvr_cmd_proc_req(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, int rqid)
+static int rtmq_rsvr_cmd_proc_req(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, int rqid)
 {
     int widx;
     rtmq_cmd_t cmd;
     char path[FILE_PATH_MAX_LEN];
-    rtrd_conf_t *conf = &ctx->conf;
+    rtmq_conf_t *conf = &ctx->conf;
     rtmq_cmd_proc_req_t *req = (rtmq_cmd_proc_req_t *)&cmd.param;
 
     memset(&cmd, 0, sizeof(cmd));
@@ -1234,7 +1234,7 @@ static int rtrd_rsvr_cmd_proc_req(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, int rqid)
     /* widx = rtmq_rand_work(ctx); */
     widx = rqid / RTMQ_WORKER_HDL_QNUM;
 
-    rtrd_worker_usck_path(conf, path, widx);
+    rtmq_worker_usck_path(conf, path, widx);
 
     /* 2. 发送处理命令 */
     if (unix_udp_send(rsvr->cmd_sck_id, path, &cmd, sizeof(rtmq_cmd_t)) < 0) {
@@ -1249,7 +1249,7 @@ static int rtrd_rsvr_cmd_proc_req(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, int rqid)
 }
 
 /******************************************************************************
- **函数名称: rtrd_rsvr_cmd_proc_all_req
+ **函数名称: rtmq_rsvr_cmd_proc_all_req
  **功    能: 重复发送处理请求
  **输入参数:
  **     ctx: 全局对象
@@ -1260,20 +1260,20 @@ static int rtrd_rsvr_cmd_proc_req(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, int rqid)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int rtrd_rsvr_cmd_proc_all_req(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
+static int rtmq_rsvr_cmd_proc_all_req(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr)
 {
     int idx;
 
     /* 依次遍历滞留总数 */
     for (idx=0; idx<ctx->conf.recvq_num; ++idx) {
-        rtrd_rsvr_cmd_proc_req(ctx, rsvr, idx);
+        rtmq_rsvr_cmd_proc_req(ctx, rsvr, idx);
     }
 
     return RTMQ_OK;
 }
 
 /******************************************************************************
- **函数名称: rtrd_rsvr_get_conn_list_by_nodeid
+ **函数名称: rtmq_rsvr_get_conn_list_by_nodeid
  **功    能: 通过结点ID获取连接链表
  **输入参数:
  **     sck: 套接字数据
@@ -1290,7 +1290,7 @@ typedef struct
     list_t *list;               /* 拥有相同结点ID的套接字链表 */
 } _conn_list_t;
 
-static int rtrd_rsvr_get_conn_list_by_nodeid(rtrd_sck_t *sck, _conn_list_t *cl)
+static int rtmq_rsvr_get_conn_list_by_nodeid(rtmq_sck_t *sck, _conn_list_t *cl)
 {
     if (sck->nodeid != cl->nodeid) {
         return -1;
@@ -1300,7 +1300,7 @@ static int rtrd_rsvr_get_conn_list_by_nodeid(rtrd_sck_t *sck, _conn_list_t *cl)
 }
 
 /******************************************************************************
- **函数名称: rtrd_rsvr_dist_data
+ **函数名称: rtmq_rsvr_dist_data
  **功    能: 分发连接队列中的数据
  **输入参数:
  **     ctx: 全局对象
@@ -1311,7 +1311,7 @@ static int rtrd_rsvr_get_conn_list_by_nodeid(rtrd_sck_t *sck, _conn_list_t *cl)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.06.02 #
  ******************************************************************************/
-static int rtrd_rsvr_dist_data(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
+static int rtmq_rsvr_dist_data(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr)
 {
 #define RTRD_POP_MAX_NUM (1024)
     int len, idx, num;
@@ -1320,7 +1320,7 @@ static int rtrd_rsvr_dist_data(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
     void *data[RTRD_POP_MAX_NUM];
     rtmq_frwd_t *frwd;
     list_opt_t opt;
-    rtrd_sck_t *sck;
+    rtmq_sck_t *sck;
     _conn_list_t cl;
     rtmq_header_t *head;
 
@@ -1359,7 +1359,7 @@ static int rtrd_rsvr_dist_data(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
                 continue;
             }
 
-            list2_trav(rsvr->conn_list, (trav_cb_t)rtrd_rsvr_get_conn_list_by_nodeid, &cl);
+            list2_trav(rsvr->conn_list, (trav_cb_t)rtmq_rsvr_get_conn_list_by_nodeid, &cl);
             if (0 == cl.list->num) {
                 queue_dealloc(sendq, data[idx]);
                 list_destroy(cl.list, NULL, mem_dummy_dealloc);
@@ -1367,7 +1367,7 @@ static int rtrd_rsvr_dist_data(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr)
                 continue;
             }
 
-            sck = (rtrd_sck_t *)list_fetch(cl.list, rand()%cl.list->num);
+            sck = (rtmq_sck_t *)list_fetch(cl.list, rand()%cl.list->num);
             
             /* > 设置发送数据 */
             len = sizeof(rtmq_header_t) + frwd->length;

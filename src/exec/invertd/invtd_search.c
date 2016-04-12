@@ -9,7 +9,7 @@
 #include "mesg.h"
 #include "invertd.h"
 #include "xml_tree.h"
-#include "rtrd_recv.h"
+#include "rtmq_recv.h"
 
 #define SRCH_SEG_FREQ_LEN           (32)    /* 字段FREQ长度 */
 

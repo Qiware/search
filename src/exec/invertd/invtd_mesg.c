@@ -9,7 +9,7 @@
 #include "mesg.h"
 #include "invertd.h"
 #include "xml_tree.h"
-#include "rtrd_recv.h"
+#include "rtmq_recv.h"
 #include "invtd_mesg.h"
 
 /******************************************************************************

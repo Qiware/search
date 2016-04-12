@@ -1,9 +1,9 @@
 #include "redo.h"
 #include "rtmq_comm.h"
-#include "rtrd_recv.h"
+#include "rtmq_recv.h"
 
 /******************************************************************************
- **函数名称: rtrd_cmd_to_rsvr
+ **函数名称: rtmq_cmd_to_rsvr
  **功    能: 发送命令到指定的接收线程
  **输入参数:
  **     ctx: 全局对象
@@ -17,11 +17,11 @@
  **注意事项: 如果发送失败，最多重复3次发送!
  **作    者: # Qifeng.zou # 2015.01.09 #
  ******************************************************************************/
-int rtrd_cmd_to_rsvr(rtrd_cntx_t *ctx, int cmd_sck_id, const rtmq_cmd_t *cmd, int idx)
+int rtmq_cmd_to_rsvr(rtmq_cntx_t *ctx, int cmd_sck_id, const rtmq_cmd_t *cmd, int idx)
 {
     char path[FILE_PATH_MAX_LEN];
 
-    rtrd_rsvr_usck_path(&ctx->conf, path, idx);
+    rtmq_rsvr_usck_path(&ctx->conf, path, idx);
 
     /* 发送命令至接收线程 */
     if (unix_udp_send(cmd_sck_id, path, cmd, sizeof(rtmq_cmd_t)) < 0) {
@@ -36,7 +36,7 @@ int rtrd_cmd_to_rsvr(rtrd_cntx_t *ctx, int cmd_sck_id, const rtmq_cmd_t *cmd, in
 }
 
 /******************************************************************************
- **函数名称: rtrd_link_auth_check
+ **函数名称: rtmq_link_auth_check
  **功    能: 链路鉴权检测
  **输入参数:
  **     ctx: 全局对象
@@ -47,9 +47,9 @@ int rtrd_cmd_to_rsvr(rtrd_cntx_t *ctx, int cmd_sck_id, const rtmq_cmd_t *cmd, in
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.22 #
  ******************************************************************************/
-int rtrd_link_auth_check(rtrd_cntx_t *ctx, rtmq_link_auth_req_t *link_auth_req)
+int rtmq_link_auth_check(rtmq_cntx_t *ctx, rtmq_link_auth_req_t *link_auth_req)
 {
-    rtrd_conf_t *conf = &ctx->conf;
+    rtmq_conf_t *conf = &ctx->conf;
 
     if (0 != strcmp(link_auth_req->usr, conf->auth.usr)
         || 0 != strcmp(link_auth_req->passwd, conf->auth.passwd))
@@ -61,7 +61,7 @@ int rtrd_link_auth_check(rtrd_cntx_t *ctx, rtmq_link_auth_req_t *link_auth_req)
 }
 
 /******************************************************************************
- **函数名称: rtrd_node_to_svr_map_init
+ **函数名称: rtmq_node_to_svr_map_init
  **功    能: 创建NODE与SVR的映射表
  **输入参数:
  **     ctx: 全局对象
@@ -71,7 +71,7 @@ int rtrd_link_auth_check(rtrd_cntx_t *ctx, rtmq_link_auth_req_t *link_auth_req)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.30 20:29:26 #
  ******************************************************************************/
-int rtrd_node_to_svr_map_init(rtrd_cntx_t *ctx)
+int rtmq_node_to_svr_map_init(rtmq_cntx_t *ctx)
 {
     /* > 创建映射表 */
     ctx->node_to_svr_map = avl_creat(NULL, (key_cb_t)key_cb_int32, (cmp_cb_t)cmp_cb_int32);
@@ -87,7 +87,7 @@ int rtrd_node_to_svr_map_init(rtrd_cntx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: rtrd_node_to_svr_map_add
+ **函数名称: rtmq_node_to_svr_map_add
  **功    能: 添加NODE->SVR映射
  **输入参数:
  **     ctx: 全局对象
@@ -99,16 +99,16 @@ int rtrd_node_to_svr_map_init(rtrd_cntx_t *ctx)
  **注意事项: 注册NODEID与RSVR的映射关系, 为自定义数据的应答做铺垫!
  **作    者: # Qifeng.zou # 2015.05.30 #
  ******************************************************************************/
-int rtrd_node_to_svr_map_add(rtrd_cntx_t *ctx, int nodeid, int rsvr_id)
+int rtmq_node_to_svr_map_add(rtmq_cntx_t *ctx, int nodeid, int rsvr_id)
 {
-    rtrd_node_to_svr_map_t *map;
+    rtmq_node_to_svr_map_t *map;
 
     pthread_rwlock_wrlock(&ctx->node_to_svr_map_lock); /* 加锁 */
 
     /* > 查找是否已经存在 */
     map = avl_query(ctx->node_to_svr_map, &nodeid, sizeof(nodeid));
     if (NULL == map) {
-        map = calloc(1, sizeof(rtrd_node_to_svr_map_t));
+        map = calloc(1, sizeof(rtmq_node_to_svr_map_t));
         if (NULL == map) {
             pthread_rwlock_unlock(&ctx->node_to_svr_map_lock); /* 解锁 */
             log_error(ctx->log, "Alloc memory failed!");
@@ -142,7 +142,7 @@ int rtrd_node_to_svr_map_add(rtrd_cntx_t *ctx, int nodeid, int rsvr_id)
 }
 
 /******************************************************************************
- **函数名称: rtrd_node_to_svr_map_del
+ **函数名称: rtmq_node_to_svr_map_del
  **功    能: 删除NODE -> SVR映射
  **输入参数:
  **     ctx: 全局对象
@@ -154,10 +154,10 @@ int rtrd_node_to_svr_map_add(rtrd_cntx_t *ctx, int nodeid, int rsvr_id)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.30 22:25:20 #
  ******************************************************************************/
-int rtrd_node_to_svr_map_del(rtrd_cntx_t *ctx, int nodeid, int rsvr_id)
+int rtmq_node_to_svr_map_del(rtmq_cntx_t *ctx, int nodeid, int rsvr_id)
 {
     int idx;
-    rtrd_node_to_svr_map_t *map;
+    rtmq_node_to_svr_map_t *map;
 
     pthread_rwlock_wrlock(&ctx->node_to_svr_map_lock);
 
@@ -186,7 +186,7 @@ int rtrd_node_to_svr_map_del(rtrd_cntx_t *ctx, int nodeid, int rsvr_id)
 }
 
 /******************************************************************************
- **函数名称: rtrd_node_to_svr_map_rand
+ **函数名称: rtmq_node_to_svr_map_rand
  **功    能: 随机选择NODE -> SVR映射
  **输入参数:
  **     ctx: 全局对象
@@ -197,10 +197,10 @@ int rtrd_node_to_svr_map_del(rtrd_cntx_t *ctx, int nodeid, int rsvr_id)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.30 22:25:20 #
  ******************************************************************************/
-int rtrd_node_to_svr_map_rand(rtrd_cntx_t *ctx, int nodeid)
+int rtmq_node_to_svr_map_rand(rtmq_cntx_t *ctx, int nodeid)
 {
     int id;
-    rtrd_node_to_svr_map_t *map;
+    rtmq_node_to_svr_map_t *map;
 
     pthread_rwlock_rdlock(&ctx->node_to_svr_map_lock);
 
@@ -221,7 +221,7 @@ int rtrd_node_to_svr_map_rand(rtrd_cntx_t *ctx, int nodeid)
 }
 
 /******************************************************************************
- **函数名称: rtrd_sub_list_init
+ **函数名称: rtmq_sub_list_init
  **功    能: 创建NODE与SVR的映射表
  **输入参数:
  **     ctx: 全局对象
@@ -231,7 +231,7 @@ int rtrd_node_to_svr_map_rand(rtrd_cntx_t *ctx, int nodeid)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.30 20:29:26 #
  ******************************************************************************/
-int rtrd_sub_list_init(rtrd_cntx_t *ctx)
+int rtmq_sub_list_init(rtmq_cntx_t *ctx)
 {
     /* > 创建订阅列表 */
     ctx->sub_list = vector_creat(64, 64);

@@ -127,7 +127,7 @@ static int frwd_conf_parse_comm(xml_tree_t *xml, frwd_conf_t *conf)
 static int frwd_conf_parse_upstrm(xml_tree_t *xml, const char *path, frwd_conf_t *fcf)
 {
     xml_node_t *parent, *node;
-    rtrd_conf_t *conf = &fcf->upstrm;
+    rtmq_conf_t *conf = &fcf->upstrm;
 
     parent = xml_query(xml, path);
     if (NULL == parent) {
@@ -317,7 +317,7 @@ static int frwd_conf_parse_upstrm(xml_tree_t *xml, const char *path, frwd_conf_t
 static int frwd_conf_parse_downstrm(xml_tree_t *xml, const char *path, frwd_conf_t *fcf)
 {
     xml_node_t *parent, *node;
-    rtrd_conf_t *conf = &fcf->downstrm;
+    rtmq_conf_t *conf = &fcf->downstrm;
 
     parent = xml_query(xml, path);
     if (NULL == parent) {

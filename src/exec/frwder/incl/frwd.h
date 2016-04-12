@@ -54,8 +54,8 @@ typedef struct
     int cmd_sck_id;                         /* 命令套接字 */
     frwd_conf_t conf;                       /* 配置信息 */
     log_cycle_t *log;                       /* 日志对象 */
-    rtrd_cntx_t *upstrm;                    /* UpStream对象 */
-    rtrd_cntx_t *downstrm;                  /* DownStream对象(用于接收来自下游的数据) */
+    rtmq_cntx_t *upstrm;                    /* UpStream对象 */
+    rtmq_cntx_t *downstrm;                  /* DownStream对象(用于接收来自下游的数据) */
     frwd_sub_mgr_t upstrm_sub_mgr;          /* 上游订阅管理 */
     frwd_sub_mgr_t downstrm_sub_mgr;        /* 下游订阅管理 */
 } frwd_cntx_t;
