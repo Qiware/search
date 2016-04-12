@@ -12,7 +12,7 @@
 #include "invtd_conf.h"
 
 static int invtd_conf_load_comm(xml_tree_t *xml, invtd_conf_t *conf);
-static int invtd_conf_load_frwder(xml_tree_t *xml, rtsd_conf_t *conf, int nodeid);
+static int invtd_conf_load_frwder(xml_tree_t *xml, rtmq_proxy_conf_t *conf, int nodeid);
 
 /******************************************************************************
  **函数名称: invtd_conf_load
@@ -74,7 +74,7 @@ int invtd_conf_load(const char *path, invtd_conf_t *conf, log_cycle_t *log)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.05.08 #
  ******************************************************************************/
-static int invtd_conf_load_frwder(xml_tree_t *xml, rtsd_conf_t *conf, int nodeid)
+static int invtd_conf_load_frwder(xml_tree_t *xml, rtmq_proxy_conf_t *conf, int nodeid)
 {
     xml_node_t *parent, *node;
 

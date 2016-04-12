@@ -8,6 +8,7 @@
 #include "iovec.h"
 #include "list2.h"
 #include "queue.h"
+#include "vector.h"
 #include "shm_opt.h"
 #include "spinlock.h"
 #include "avl_tree.h"
@@ -146,6 +147,9 @@ typedef struct
 
     pthread_rwlock_t node_to_svr_map_lock;  /* 读写锁: NODE->SVR映射表 */
     avl_tree_t *node_to_svr_map;         /* NODE->SVR的映射表(以nodeid为主键) */
+
+    pthread_rwlock_t sub_lock;          /* 读写锁: 订阅锁 */
+    vector_t *sub_list;                 /* 订阅列表 */
 } rtrd_cntx_t;
 
 /* 外部接口 */
@@ -180,5 +184,7 @@ int rtrd_node_to_svr_map_init(rtrd_cntx_t *ctx);
 int rtrd_node_to_svr_map_add(rtrd_cntx_t *ctx, int nodeid, int rsvr_idx);
 int rtrd_node_to_svr_map_rand(rtrd_cntx_t *ctx, int nodeid);
 int rtrd_node_to_svr_map_del(rtrd_cntx_t *ctx, int nodeid, int rsvr_idx);
+
+int rtrd_sub_list_init(rtrd_cntx_t *ctx);
 
 #endif /*__RTRD_RECV_H__*/

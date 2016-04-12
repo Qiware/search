@@ -4,9 +4,9 @@
 #include "mesg.h"
 #include "vector.h"
 #include "shm_queue.h"
-#include "rtsd_send.h"
-#include "rtsd_ssvr.h"
 #include "frwd_conf.h"
+#include "rtmq_proxy.h"
+#include "rtmq_proxy_ssvr.h"
 
 #define FRWD_CMD_PATH "../temp/frwder/cmd.usck"
 

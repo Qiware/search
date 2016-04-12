@@ -1,5 +1,5 @@
-#if !defined(__RTSD_SSVR_H__)
-#define __RTSD_SSVR_H__
+#if !defined(__RTMQ_PROXY_SSVR_H__)
+#define __RTMQ_PROXY_SSVR_H__
 
 #include "log.h"
 #include "slab.h"
@@ -36,7 +36,7 @@ typedef struct
 
     rtmq_snap_t recv;                   /* 接收快照 */
     wiov_t send;                        /* 发送信息 */
-} rtsd_sck_t;
+} rtmq_proxy_sct_t;
 
 #define rtmq_set_kpalive_stat(sck, _stat) (sck)->kpalive = (_stat)
 
@@ -48,7 +48,7 @@ typedef struct
     log_cycle_t *log;                   /* 日志对象 */
 
     int cmd_sck_id;                     /* 命令通信套接字ID */
-    rtsd_sck_t sck;                     /* 发送套接字 */
+    rtmq_proxy_sct_t sck;               /* 发送套接字 */
 
     int max;                            /* 套接字最大值 */
     fd_set rset;                        /* 读集合 */
@@ -58,6 +58,6 @@ typedef struct
     uint64_t recv_total;                /* 获取的数据总条数 */
     uint64_t err_total;                 /* 错误的数据条数 */
     uint64_t drop_total;                /* 丢弃的数据条数 */
-} rtsd_ssvr_t;
+} rtmq_proxy_ssvr_t;
 
-#endif /*__RTSD_SSVR_H__*/
+#endif /*__RTMQ_PROXY_SSVR_H__*/

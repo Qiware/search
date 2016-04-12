@@ -1,47 +1,47 @@
 #include "syscall.h"
 #include "rtmq_mesg.h"
-#include "rtsd_send.h"
+#include "rtmq_proxy.h"
 
-static int rtsd_creat_cmd_usck(rtsd_cntx_t *ctx);
+static int rtsd_creat_cmd_usck(rtmq_proxy_t *pxy);
 
 /******************************************************************************
  **函数名称: rtsd_creat_workers
  **功    能: 创建工作线程线程池
  **输入参数:
- **     ctx: 全局对象
+ **     pxy: 全局对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述:
  **注意事项:
  **作    者: # Qifeng.zou # 2015.08.19 #
  ******************************************************************************/
-static int rtsd_creat_workers(rtsd_cntx_t *ctx)
+static int rtsd_creat_workers(rtmq_proxy_t *pxy)
 {
     int idx;
     rtmq_worker_t *worker;
-    rtsd_conf_t *conf = &ctx->conf;
+    rtmq_proxy_conf_t *conf = &pxy->conf;
 
     /* > 创建对象 */
     worker = (rtmq_worker_t *)calloc(1, conf->work_thd_num * sizeof(rtmq_worker_t));
     if (NULL == worker) {
-        log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        log_error(pxy->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return RTMQ_ERR;
     }
 
     /* > 创建线程池 */
-    ctx->worktp = thread_pool_init(conf->work_thd_num, NULL, (void *)worker);
-    if (NULL == ctx->worktp) {
-        log_error(ctx->log, "Initialize thread pool failed!");
+    pxy->worktp = thread_pool_init(conf->work_thd_num, NULL, (void *)worker);
+    if (NULL == pxy->worktp) {
+        log_error(pxy->log, "Initialize thread pool failed!");
         free(worker);
         return RTMQ_ERR;
     }
 
     /* > 初始化线程 */
     for (idx=0; idx<conf->work_thd_num; ++idx) {
-        if (rtsd_worker_init(ctx, worker+idx, idx)) {
-            log_fatal(ctx->log, "Initialize work thread failed!");
+        if (rtsd_worker_init(pxy, worker+idx, idx)) {
+            log_fatal(pxy->log, "Initialize work thread failed!");
             free(worker);
-            thread_pool_destroy(ctx->worktp);
+            thread_pool_destroy(pxy->worktp);
             return RTMQ_ERR;
         }
     }
@@ -53,40 +53,40 @@ static int rtsd_creat_workers(rtsd_cntx_t *ctx)
  **函数名称: rtsd_creat_sends
  **功    能: 创建发送线程线程池
  **输入参数:
- **     ctx: 全局对象
+ **     pxy: 全局对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述:
  **注意事项:
  **作    者: # Qifeng.zou # 2015.08.19 #
  ******************************************************************************/
-static int rtsd_creat_sends(rtsd_cntx_t *ctx)
+static int rtsd_creat_sends(rtmq_proxy_t *pxy)
 {
     int idx;
-    rtsd_ssvr_t *ssvr;
-    rtsd_conf_t *conf = &ctx->conf;
+    rtmq_proxy_ssvr_t *ssvr;
+    rtmq_proxy_conf_t *conf = &pxy->conf;
 
     /* > 创建对象 */
-    ssvr = (rtsd_ssvr_t *)calloc(1, conf->send_thd_num * sizeof(rtsd_ssvr_t));
+    ssvr = (rtmq_proxy_ssvr_t *)calloc(1, conf->send_thd_num * sizeof(rtmq_proxy_ssvr_t));
     if (NULL == ssvr) {
-        log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        log_error(pxy->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return RTMQ_ERR;
     }
 
     /* > 创建线程池 */
-    ctx->sendtp = thread_pool_init(conf->send_thd_num, NULL, (void *)ssvr);
-    if (NULL == ctx->sendtp) {
-        log_error(ctx->log, "Initialize thread pool failed!");
+    pxy->sendtp = thread_pool_init(conf->send_thd_num, NULL, (void *)ssvr);
+    if (NULL == pxy->sendtp) {
+        log_error(pxy->log, "Initialize thread pool failed!");
         free(ssvr);
         return RTMQ_ERR;
     }
 
     /* > 初始化线程 */
     for (idx=0; idx<conf->send_thd_num; ++idx) {
-        if (rtsd_ssvr_init(ctx, ssvr+idx, idx)) {
-            log_fatal(ctx->log, "Initialize send thread failed!");
+        if (rtsd_ssvr_init(pxy, ssvr+idx, idx)) {
+            log_fatal(pxy->log, "Initialize send thread failed!");
             free(ssvr);
-            thread_pool_destroy(ctx->sendtp);
+            thread_pool_destroy(pxy->sendtp);
             return RTMQ_ERR;
         }
     }
@@ -98,30 +98,30 @@ static int rtsd_creat_sends(rtsd_cntx_t *ctx)
  **函数名称: rtsd_creat_recvq
  **功    能: 创建接收队列
  **输入参数:
- **     ctx: 全局对象
+ **     pxy: 全局对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述:
  **注意事项:
  **作    者: # Qifeng.zou # 2015.06.04 #
  ******************************************************************************/
-static int rtsd_creat_recvq(rtsd_cntx_t *ctx)
+static int rtsd_creat_recvq(rtmq_proxy_t *pxy)
 {
     int idx;
-    rtsd_conf_t *conf = &ctx->conf;
+    rtmq_proxy_conf_t *conf = &pxy->conf;
 
     /* > 创建队列对象 */
-    ctx->recvq = (queue_t **)calloc(conf->send_thd_num, sizeof(queue_t *));
-    if (NULL == ctx->recvq) {
-        log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
+    pxy->recvq = (queue_t **)calloc(conf->send_thd_num, sizeof(queue_t *));
+    if (NULL == pxy->recvq) {
+        log_error(pxy->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return RTMQ_ERR;
     }
 
     /* > 创建接收队列 */
     for (idx=0; idx<conf->work_thd_num; ++idx) {
-        ctx->recvq[idx] = queue_creat(conf->recvq.max, conf->recvq.size);
-        if (NULL == ctx->recvq[idx]) {
-            log_error(ctx->log, "Create recvq failed!");
+        pxy->recvq[idx] = queue_creat(conf->recvq.max, conf->recvq.size);
+        if (NULL == pxy->recvq[idx]) {
+            log_error(pxy->log, "Create recvq failed!");
             return RTMQ_ERR;
         }
     }
@@ -133,30 +133,30 @@ static int rtsd_creat_recvq(rtsd_cntx_t *ctx)
  **函数名称: rtsd_creat_sendq
  **功    能: 创建发送线程的发送队列
  **输入参数:
- **     ctx: 发送对象
+ **     pxy: 发送对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述:
  **注意事项:
  **作    者: # Qifeng.zou # 2016.01.01 22:32:21 #
  ******************************************************************************/
-static int rtsd_creat_sendq(rtsd_cntx_t *ctx)
+static int rtsd_creat_sendq(rtmq_proxy_t *pxy)
 {
     int idx;
-    rtsd_conf_t *conf = &ctx->conf;
+    rtmq_proxy_conf_t *conf = &pxy->conf;
 
     /* > 创建队列对象 */
-    ctx->sendq = (queue_t **)calloc(conf->send_thd_num, sizeof(queue_t *));
-    if (NULL == ctx->sendq) {
-        log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
+    pxy->sendq = (queue_t **)calloc(conf->send_thd_num, sizeof(queue_t *));
+    if (NULL == pxy->sendq) {
+        log_error(pxy->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return RTMQ_ERR;
     }
 
     /* > 创建发送队列 */
     for (idx=0; idx<conf->send_thd_num; ++idx) {
-        ctx->sendq[idx] = queue_creat(conf->sendq.max, conf->sendq.size);
-        if (NULL == ctx->sendq[idx]) {
-            log_error(ctx->log, "Create send queue failed!");
+        pxy->sendq[idx] = queue_creat(conf->sendq.max, conf->sendq.size);
+        if (NULL == pxy->sendq[idx]) {
+            log_error(pxy->log, "Create send queue failed!");
             return RTMQ_ERR;
         }
     }
@@ -176,63 +176,63 @@ static int rtsd_creat_sendq(rtsd_cntx_t *ctx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.19 #
  ******************************************************************************/
-rtsd_cntx_t *rtsd_init(const rtsd_conf_t *conf, log_cycle_t *log)
+rtmq_proxy_t *rtsd_init(const rtmq_proxy_conf_t *conf, log_cycle_t *log)
 {
-    rtsd_cntx_t *ctx;
+    rtmq_proxy_t *pxy;
 
     /* > 创建对象 */
-    ctx = (rtsd_cntx_t *)calloc(1, sizeof(rtsd_cntx_t));
-    if (NULL == ctx) {
+    pxy = (rtmq_proxy_t *)calloc(1, sizeof(rtmq_proxy_t));
+    if (NULL == pxy) {
         log_fatal(log, "errmsg:[%d] %s!", errno, strerror(errno));
         return NULL;
     }
 
-    ctx->log = log;
+    pxy->log = log;
 
     /* > 加载配置信息 */
-    memcpy(&ctx->conf, conf, sizeof(rtsd_conf_t));
+    memcpy(&pxy->conf, conf, sizeof(rtmq_proxy_conf_t));
 
     do {
         /* > 创建处理映射表 */
-        ctx->reg = avl_creat(NULL, (key_cb_t)key_cb_int32, (cmp_cb_t)cmp_cb_int32);
-        if (NULL == ctx->reg) {
+        pxy->reg = avl_creat(NULL, (key_cb_t)key_cb_int32, (cmp_cb_t)cmp_cb_int32);
+        if (NULL == pxy->reg) {
             log_fatal(log, "Create register map failed!");
             break;
         }
         /* > 创建通信套接字 */
-        if (rtsd_creat_cmd_usck(ctx)) {
+        if (rtsd_creat_cmd_usck(pxy)) {
             log_fatal(log, "Create cmd socket failed!");
             break;
         }
 
         /* > 创建接收队列 */
-        if (rtsd_creat_recvq(ctx)) {
+        if (rtsd_creat_recvq(pxy)) {
             log_fatal(log, "Create recv-queue failed!");
             break;
         }
 
         /* > 创建发送队列 */
-        if (rtsd_creat_sendq(ctx)) {
+        if (rtsd_creat_sendq(pxy)) {
             log_fatal(log, "Create send queue failed!");
             break;
         }
 
         /* > 创建工作线程池 */
-        if (rtsd_creat_workers(ctx)) {
-            log_fatal(ctx->log, "Create work thread pool failed!");
+        if (rtsd_creat_workers(pxy)) {
+            log_fatal(pxy->log, "Create work thread pool failed!");
             break;
         }
 
         /* > 创建发送线程池 */
-        if (rtsd_creat_sends(ctx)) {
-            log_fatal(ctx->log, "Create send thread pool failed!");
+        if (rtsd_creat_sends(pxy)) {
+            log_fatal(pxy->log, "Create send thread pool failed!");
             break;
         }
 
-        return ctx;
+        return pxy;
     } while(0);
 
-    free(ctx);
+    free(pxy);
     return NULL;
 }
 
@@ -240,7 +240,7 @@ rtsd_cntx_t *rtsd_init(const rtsd_conf_t *conf, log_cycle_t *log)
  **函数名称: rtsd_launch
  **功    能: 启动发送端
  **输入参数:
- **     ctx: 全局信息
+ **     pxy: 全局信息
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述:
@@ -249,19 +249,19 @@ rtsd_cntx_t *rtsd_init(const rtsd_conf_t *conf, log_cycle_t *log)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-int rtsd_launch(rtsd_cntx_t *ctx)
+int rtsd_launch(rtmq_proxy_t *pxy)
 {
     int idx;
-    rtsd_conf_t *conf = &ctx->conf;
+    rtmq_proxy_conf_t *conf = &pxy->conf;
 
     /* > 注册Worker线程回调 */
     for (idx=0; idx<conf->work_thd_num; ++idx) {
-        thread_pool_add_worker(ctx->worktp, rtsd_worker_routine, ctx);
+        thread_pool_add_worker(pxy->worktp, rtsd_worker_routine, pxy);
     }
 
     /* > 注册Send线程回调 */
     for (idx=0; idx<conf->send_thd_num; ++idx) {
-        thread_pool_add_worker(ctx->sendtp, rtsd_ssvr_routine, ctx);
+        thread_pool_add_worker(pxy->sendtp, rtsd_ssvr_routine, pxy);
     }
 
     return RTMQ_OK;
@@ -271,7 +271,7 @@ int rtsd_launch(rtsd_cntx_t *ctx)
  **函数名称: rtsd_register
  **功    能: 消息处理的注册接口
  **输入参数:
- **     ctx: 全局对象
+ **     pxy: 全局对象
  **     type: 扩展消息类型 Range:(0 ~ RTMQ_TYPE_MAX)
  **     proc: 回调函数
  **     param: 附加参数
@@ -283,13 +283,13 @@ int rtsd_launch(rtsd_cntx_t *ctx)
  **     2. 不允许重复注册
  **作    者: # Qifeng.zou # 2015.05.19 #
  ******************************************************************************/
-int rtsd_register(rtsd_cntx_t *ctx, int type, rtmq_reg_cb_t proc, void *param)
+int rtsd_register(rtmq_proxy_t *pxy, int type, rtmq_reg_cb_t proc, void *param)
 {
     rtmq_reg_t *item;
 
     item = (rtmq_reg_t *)calloc(1, sizeof(rtmq_reg_t));
     if (NULL == item) {
-        log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        log_error(pxy->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return -1;
     }
 
@@ -297,8 +297,8 @@ int rtsd_register(rtsd_cntx_t *ctx, int type, rtmq_reg_cb_t proc, void *param)
     item->proc = proc;
     item->param = param;
 
-    if (avl_insert(ctx->reg, &type, sizeof(type), item)) {
-        log_error(ctx->log, "Register maybe repeat! type:%d!", type);
+    if (avl_insert(pxy->reg, &type, sizeof(type), item)) {
+        log_error(pxy->log, "Register maybe repeat! type:%d!", type);
         free(item);
         return RTMQ_ERR_REPEAT_REG;
     }
@@ -310,7 +310,7 @@ int rtsd_register(rtsd_cntx_t *ctx, int type, rtmq_reg_cb_t proc, void *param)
  **函数名称: rtsd_creat_cmd_usck
  **功    能: 创建命令套接字
  **输入参数:
- **     ctx: 上下文信息
+ **     pxy: 上下文信息
  **     idx: 目标队列序号
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
@@ -318,16 +318,16 @@ int rtsd_register(rtsd_cntx_t *ctx, int type, rtmq_reg_cb_t proc, void *param)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static int rtsd_creat_cmd_usck(rtsd_cntx_t *ctx)
+static int rtsd_creat_cmd_usck(rtmq_proxy_t *pxy)
 {
     char path[FILE_NAME_MAX_LEN];
 
-    rtsd_comm_usck_path(&ctx->conf, path);
+    rtsd_comm_usck_path(&pxy->conf, path);
 
-    spin_lock_init(&ctx->cmd_sck_lck);
-    ctx->cmd_sck_id = unix_udp_creat(path);
-    if (ctx->cmd_sck_id < 0) {
-        log_error(ctx->log, "errmsg:[%d] %s! path:%s", errno, strerror(errno), path);
+    spin_lock_init(&pxy->cmd_sck_lck);
+    pxy->cmd_sck_id = unix_udp_creat(path);
+    if (pxy->cmd_sck_id < 0) {
+        log_error(pxy->log, "errmsg:[%d] %s! path:%s", errno, strerror(errno), path);
         return RTMQ_ERR;
     }
 
@@ -338,7 +338,7 @@ static int rtsd_creat_cmd_usck(rtsd_cntx_t *ctx)
  **函数名称: rtsd_cli_cmd_send_req
  **功    能: 通知Send服务线程
  **输入参数:
- **     ctx: 上下文信息
+ **     pxy: 上下文信息
  **     idx: 发送服务ID
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
@@ -346,30 +346,30 @@ static int rtsd_creat_cmd_usck(rtsd_cntx_t *ctx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static int rtsd_cli_cmd_send_req(rtsd_cntx_t *ctx, int idx)
+static int rtsd_cli_cmd_send_req(rtmq_proxy_t *pxy, int idx)
 {
     rtmq_cmd_t cmd;
     char path[FILE_NAME_MAX_LEN];
-    rtsd_conf_t *conf = &ctx->conf;
+    rtmq_proxy_conf_t *conf = &pxy->conf;
 
     memset(&cmd, 0, sizeof(cmd));
 
     cmd.type = RTMQ_CMD_SEND_ALL;
     rtsd_ssvr_usck_path(conf, path, idx);
 
-    if (spin_trylock(&ctx->cmd_sck_lck)) {
+    if (spin_trylock(&pxy->cmd_sck_lck)) {
         return RTMQ_OK;
     }
 
-    if (unix_udp_send(ctx->cmd_sck_id, path, &cmd, sizeof(cmd)) < 0) {
-        spin_unlock(&ctx->cmd_sck_lck);
+    if (unix_udp_send(pxy->cmd_sck_id, path, &cmd, sizeof(cmd)) < 0) {
+        spin_unlock(&pxy->cmd_sck_lck);
         if (EAGAIN != errno) {
-            log_debug(ctx->log, "errmsg:[%d] %s! path:%s", errno, strerror(errno), path);
+            log_debug(pxy->log, "errmsg:[%d] %s! path:%s", errno, strerror(errno), path);
         }
         return RTMQ_ERR;
     }
 
-    spin_unlock(&ctx->cmd_sck_lck);
+    spin_unlock(&pxy->cmd_sck_lck);
 
     return RTMQ_OK;
 }
@@ -378,7 +378,7 @@ static int rtsd_cli_cmd_send_req(rtsd_cntx_t *ctx, int idx)
  **函数名称: rtsd_cli_send
  **功    能: 发送指定数据(对外接口)
  **输入参数:
- **     ctx: 上下文信息
+ **     pxy: 上下文信息
  **     type: 数据类型
  **     nodeid: 源结点ID
  **     data: 数据地址
@@ -391,21 +391,21 @@ static int rtsd_cli_cmd_send_req(rtsd_cntx_t *ctx, int idx)
  **     2. 不用关注变量num在多线程中的值, 因其不影响安全性
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-int rtsd_cli_send(rtsd_cntx_t *ctx, int type, const void *data, size_t size)
+int rtsd_cli_send(rtmq_proxy_t *pxy, int type, const void *data, size_t size)
 {
     int idx;
     void *addr;
     rtmq_header_t *head;
     static uint8_t num = 0; // 无需加锁
-    rtsd_conf_t *conf = &ctx->conf;
+    rtmq_proxy_conf_t *conf = &pxy->conf;
 
     /* > 选择发送队列 */
     idx = (num++) % conf->send_thd_num;
 
-    addr = queue_malloc(ctx->sendq[idx], sizeof(rtmq_header_t)+size);
+    addr = queue_malloc(pxy->sendq[idx], sizeof(rtmq_header_t)+size);
     if (NULL == addr) {
-        log_error(ctx->log, "Alloc from queue failed! size:%d/%d",
-                size+sizeof(rtmq_header_t), queue_size(ctx->sendq[idx]));
+        log_error(pxy->log, "Alloc from queue failed! size:%d/%d",
+                size+sizeof(rtmq_header_t), queue_size(pxy->sendq[idx]));
         return RTMQ_ERR;
     }
 
@@ -420,18 +420,18 @@ int rtsd_cli_send(rtsd_cntx_t *ctx, int type, const void *data, size_t size)
 
     memcpy(head+1, data, size);
 
-    log_debug(ctx->log, "rq:%p Head type:%d nodeid:%d length:%d flag:%d checksum:%d!",
-            ctx->sendq[idx]->ring, head->type, head->nodeid, head->length, head->flag, head->checksum);
+    log_debug(pxy->log, "rq:%p Head type:%d nodeid:%d length:%d flag:%d checksum:%d!",
+            pxy->sendq[idx]->ring, head->type, head->nodeid, head->length, head->flag, head->checksum);
 
     /* > 放入发送队列 */
-    if (queue_push(ctx->sendq[idx], addr)) {
-        log_error(ctx->log, "Push into shmq failed!");
-        queue_dealloc(ctx->sendq[idx], addr);
+    if (queue_push(pxy->sendq[idx], addr)) {
+        log_error(pxy->log, "Push into shmq failed!");
+        queue_dealloc(pxy->sendq[idx], addr);
         return RTMQ_ERR;
     }
 
     /* > 通知发送线程 */
-    rtsd_cli_cmd_send_req(ctx, idx);
+    rtsd_cli_cmd_send_req(pxy, idx);
 
     return RTMQ_OK;
 }

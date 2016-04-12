@@ -353,7 +353,7 @@ static int lsnd_conf_load_agent(xml_tree_t *xml, lsnd_conf_t *lcf, log_cycle_t *
 static int lsnd_conf_load_frwder(xml_tree_t *xml, lsnd_conf_t *lcf, log_cycle_t *log)
 {
     xml_node_t *parent, *node;
-    rtsd_conf_t *conf = &lcf->frwder;
+    rtmq_proxy_conf_t *conf = &lcf->frwder;
 
     parent = xml_query(xml, ".LISTEND.FRWDER");
     if (NULL == parent) {

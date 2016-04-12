@@ -4,8 +4,8 @@
 #include "sck.h"
 #include "comm.h"
 #include "xml_tree.h"
-#include "rtsd_send.h"
 #include "rtrd_recv.h"
+#include "rtmq_proxy.h"
 
 /* 配置信息 */
 typedef struct

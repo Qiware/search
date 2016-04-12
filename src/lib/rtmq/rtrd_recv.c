@@ -81,6 +81,12 @@ rtrd_cntx_t *rtrd_init(const rtrd_conf_t *cf, log_cycle_t *log)
             break;
         }
 
+        /* > 初始化订阅列表 */
+        if (rtrd_sub_list_init(ctx)) {
+            log_error(ctx->log, "Initialize sub list failed!");
+            break;
+        }
+
         /* > 初始化注册信息 */
         ctx->reg = avl_creat(NULL, (key_cb_t)key_cb_int32, (cmp_cb_t)cmp_cb_int32);
         if (NULL == ctx->reg) {

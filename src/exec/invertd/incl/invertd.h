@@ -2,8 +2,8 @@
 #define __INVERTD_H__
 
 #include "log.h"
-#include "rtrd_recv.h"
 #include "invtab.h"
+#include "rtrd_recv.h"
 #include "invtd_conf.h"
 
 /* 全局信息 */
@@ -15,7 +15,7 @@ typedef struct
     invt_tab_t *invtab;                     /* 倒排表 */
     pthread_rwlock_t invtab_lock;           /* 倒排表锁 */
 
-    rtsd_cntx_t *frwder;                    /* 下行服务 */
+    rtmq_proxy_t *frwder;                   /* 下行服务 */
 } invtd_cntx_t;
 
 /* 输入参数 */

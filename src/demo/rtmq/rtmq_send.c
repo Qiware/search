@@ -23,7 +23,7 @@
 #define USLEEP      (10)
 #define SIZE        (4096)
 
-int rtmq_send_debug(rtsd_cntx_t *ctx, int secs)
+int rtmq_send_debug(rtmq_proxy_t *ctx, int secs)
 {
     size_t idx = 0;
     double sleep2 = 0;
@@ -76,7 +76,7 @@ int rtmq_send_debug(rtsd_cntx_t *ctx, int secs)
     return 0;
 }
 
-static void rtmq_setup_conf(rtsd_conf_t *conf, int port)
+static void rtmq_setup_conf(rtmq_proxy_conf_t *conf, int port)
 {
     conf->nodeid = 1;
 
@@ -98,8 +98,8 @@ int main(int argc, const char *argv[])
 {
     int port;
     log_cycle_t *log;
-    rtsd_cntx_t *ctx;
-    rtsd_conf_t conf;
+    rtmq_proxy_t *ctx;
+    rtmq_proxy_conf_t conf;
 
     if (2 != argc) {
         fprintf(stderr, "Didn't special port!");

@@ -219,3 +219,29 @@ int rtrd_node_to_svr_map_rand(rtrd_cntx_t *ctx, int nodeid)
 
     return id;
 }
+
+/******************************************************************************
+ **函数名称: rtrd_sub_list_init
+ **功    能: 创建NODE与SVR的映射表
+ **输入参数:
+ **     ctx: 全局对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 构建平衡二叉树
+ **注意事项:
+ **作    者: # Qifeng.zou # 2015.05.30 20:29:26 #
+ ******************************************************************************/
+int rtrd_sub_list_init(rtrd_cntx_t *ctx)
+{
+    /* > 创建订阅列表 */
+    ctx->sub_list = vector_creat(64, 64);
+    if (NULL == ctx->sub_list) {
+        log_error(ctx->log, "Initialize sub list failed!");
+        return RTMQ_ERR;
+    }
+
+    /* > 初始化读写锁 */
+    pthread_rwlock_init(&ctx->sub_lock, NULL);
+
+    return RTMQ_OK;
+}

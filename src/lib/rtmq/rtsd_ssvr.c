@@ -2,41 +2,41 @@
 #include "queue.h"
 #include "rtmq_mesg.h"
 #include "rtmq_comm.h"
-#include "rtsd_send.h"
+#include "rtmq_proxy.h"
 
 /* 静态函数 */
-static rtsd_ssvr_t *rtsd_ssvr_get_curr(rtsd_cntx_t *ctx);
+static rtmq_proxy_ssvr_t *rtsd_ssvr_get_curr(rtmq_proxy_t *pxy);
 
-static int rtsd_ssvr_creat_sendq(rtsd_ssvr_t *ssvr, const rtsd_conf_t *conf);
-static int rtsd_ssvr_creat_usck(rtsd_ssvr_t *ssvr, const rtsd_conf_t *conf);
+static int rtsd_ssvr_creat_sendq(rtmq_proxy_ssvr_t *ssvr, const rtmq_proxy_conf_t *conf);
+static int rtsd_ssvr_creat_usck(rtmq_proxy_ssvr_t *ssvr, const rtmq_proxy_conf_t *conf);
 
-static int rtsd_ssvr_recv_cmd(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr);
-static int rtsd_ssvr_recv_proc(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr);
+static int rtsd_ssvr_recv_cmd(rtmq_proxy_t *pxy, rtmq_proxy_ssvr_t *ssvr);
+static int rtsd_ssvr_recv_proc(rtmq_proxy_t *pxy, rtmq_proxy_ssvr_t *ssvr);
 
-static int rtsd_ssvr_data_proc(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, rtsd_sck_t *sck);
-static int rtsd_ssvr_sys_mesg_proc(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, rtsd_sck_t *sck, void *addr);
-static int rtsd_ssvr_exp_mesg_proc(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, rtsd_sck_t *sck, void *addr);
+static int rtsd_ssvr_data_proc(rtmq_proxy_t *pxy, rtmq_proxy_ssvr_t *ssvr, rtmq_proxy_sct_t *sck);
+static int rtsd_ssvr_sys_mesg_proc(rtmq_proxy_t *pxy, rtmq_proxy_ssvr_t *ssvr, rtmq_proxy_sct_t *sck, void *addr);
+static int rtsd_ssvr_exp_mesg_proc(rtmq_proxy_t *pxy, rtmq_proxy_ssvr_t *ssvr, rtmq_proxy_sct_t *sck, void *addr);
 
-static int rtsd_ssvr_timeout_hdl(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr);
-static int rtsd_ssvr_proc_cmd(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, const rtmq_cmd_t *cmd);
-static int rtsd_ssvr_send_data(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr);
+static int rtsd_ssvr_timeout_hdl(rtmq_proxy_t *pxy, rtmq_proxy_ssvr_t *ssvr);
+static int rtsd_ssvr_proc_cmd(rtmq_proxy_t *pxy, rtmq_proxy_ssvr_t *ssvr, const rtmq_cmd_t *cmd);
+static int rtsd_ssvr_send_data(rtmq_proxy_t *pxy, rtmq_proxy_ssvr_t *ssvr);
 
-static int rtsd_ssvr_clear_mesg(rtsd_ssvr_t *ssvr);
+static int rtsd_ssvr_clear_mesg(rtmq_proxy_ssvr_t *ssvr);
 
-static int rtsd_ssvr_kpalive_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr);
+static int rtsd_ssvr_kpalive_req(rtmq_proxy_t *pxy, rtmq_proxy_ssvr_t *ssvr);
 
-static int rtmq_link_auth_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr);
-static int rtmq_link_auth_rsp_hdl(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, rtsd_sck_t *sck, rtmq_link_auth_rsp_t *rsp);
-static int rtmq_sub_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr);
+static int rtmq_link_auth_req(rtmq_proxy_t *pxy, rtmq_proxy_ssvr_t *ssvr);
+static int rtmq_link_auth_rsp_hdl(rtmq_proxy_t *pxy, rtmq_proxy_ssvr_t *ssvr, rtmq_proxy_sct_t *sck, rtmq_link_auth_rsp_t *rsp);
+static int rtmq_sub_req(rtmq_proxy_t *pxy, rtmq_proxy_ssvr_t *ssvr);
 
-static int rtsd_ssvr_cmd_proc_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, int rqid);
-static int rtsd_ssvr_cmd_proc_all_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr);
+static int rtsd_ssvr_cmd_proc_req(rtmq_proxy_t *pxy, rtmq_proxy_ssvr_t *ssvr, int rqid);
+static int rtsd_ssvr_cmd_proc_all_req(rtmq_proxy_t *pxy, rtmq_proxy_ssvr_t *ssvr);
 
 /******************************************************************************
  **函数名称: rtsd_ssvr_init
  **功    能: 初始化发送线程
  **输入参数:
- **     ctx: 全局信息
+ **     pxy: 全局信息
  **     ssvr: 发送服务对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
@@ -44,19 +44,19 @@ static int rtsd_ssvr_cmd_proc_all_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr);
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-int rtsd_ssvr_init(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, int idx)
+int rtsd_ssvr_init(rtmq_proxy_t *pxy, rtmq_proxy_ssvr_t *ssvr, int idx)
 {
     void *addr;
-    rtsd_conf_t *conf = &ctx->conf;
-    rtsd_sck_t *sck = &ssvr->sck;
+    rtmq_proxy_conf_t *conf = &pxy->conf;
+    rtmq_proxy_sct_t *sck = &ssvr->sck;
     rtmq_snap_t *recv = &sck->recv;
 
     ssvr->id = idx;
-    ssvr->log = ctx->log;
+    ssvr->log = pxy->log;
     ssvr->sck.fd = INVALID_FD;
 
     /* > 创建发送队列 */
-    ssvr->sendq = ctx->sendq[idx];
+    ssvr->sendq = pxy->sendq[idx];
 
     /* > 创建unix套接字 */
     if (rtsd_ssvr_creat_usck(ssvr, conf)) {
@@ -101,7 +101,7 @@ int rtsd_ssvr_init(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, int idx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static int rtsd_ssvr_creat_usck(rtsd_ssvr_t *ssvr, const rtsd_conf_t *conf)
+static int rtsd_ssvr_creat_usck(rtmq_proxy_ssvr_t *ssvr, const rtmq_proxy_conf_t *conf)
 {
     char path[FILE_PATH_MAX_LEN];
 
@@ -121,7 +121,7 @@ static int rtsd_ssvr_creat_usck(rtsd_ssvr_t *ssvr, const rtsd_conf_t *conf)
  **函数名称: rtsd_ssvr_bind_cpu
  **功    能: 绑定CPU
  **输入参数:
- **     ctx: 全局信息
+ **     pxy: 全局信息
  **     ssvr: 线程对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
@@ -129,11 +129,11 @@ static int rtsd_ssvr_creat_usck(rtsd_ssvr_t *ssvr, const rtsd_conf_t *conf)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.16 #
  ******************************************************************************/
-static void rtsd_ssvr_bind_cpu(rtsd_cntx_t *ctx, int id)
+static void rtsd_ssvr_bind_cpu(rtmq_proxy_t *pxy, int id)
 {
     int idx, mod;
     cpu_set_t cpuset;
-    rtmq_cpu_conf_t *cpu = &ctx->conf.cpu;
+    rtmq_cpu_conf_t *cpu = &pxy->conf.cpu;
 
     mod = sysconf(_SC_NPROCESSORS_CONF) - cpu->start;
     if (mod <= 0) {
@@ -160,7 +160,7 @@ static void rtsd_ssvr_bind_cpu(rtsd_cntx_t *ctx, int id)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.16 #
  ******************************************************************************/
-void rtsd_ssvr_set_rwset(rtsd_ssvr_t *ssvr)
+void rtsd_ssvr_set_rwset(rtmq_proxy_ssvr_t *ssvr)
 {
     FD_ZERO(&ssvr->rset);
     FD_ZERO(&ssvr->wset);
@@ -201,16 +201,16 @@ void rtsd_ssvr_set_rwset(rtsd_ssvr_t *ssvr)
 void *rtsd_ssvr_routine(void *_ctx)
 {
     int ret;
-    rtsd_sck_t *sck;
-    rtsd_ssvr_t *ssvr;
+    rtmq_proxy_sct_t *sck;
+    rtmq_proxy_ssvr_t *ssvr;
     struct timeval timeout;
-    rtsd_cntx_t *ctx = (rtsd_cntx_t *)_ctx;
-    rtsd_conf_t *conf = &ctx->conf;
+    rtmq_proxy_t *pxy = (rtmq_proxy_t *)_ctx;
+    rtmq_proxy_conf_t *conf = &pxy->conf;
 
     nice(-20);
 
     /* 1. 获取发送线程 */
-    ssvr = rtsd_ssvr_get_curr(ctx);
+    ssvr = rtsd_ssvr_get_curr(pxy);
     if (NULL == ssvr) {
         log_fatal(ssvr->log, "Get current thread failed!");
         abort();
@@ -220,7 +220,7 @@ void *rtsd_ssvr_routine(void *_ctx)
     sck = &ssvr->sck;
 
     /* 2. 绑定指定CPU */
-    rtsd_ssvr_bind_cpu(ctx, ssvr->id);
+    rtsd_ssvr_bind_cpu(pxy, ssvr->id);
 
     /* 3. 进行事件处理 */
     for (;;) {
@@ -237,8 +237,8 @@ void *rtsd_ssvr_routine(void *_ctx)
             }
 
             rtmq_set_kpalive_stat(sck, RTMQ_KPALIVE_STAT_UNKNOWN);
-            rtmq_link_auth_req(ctx, ssvr); /* 发起鉴权请求 */
-            rtmq_sub_req(ctx, ssvr); /* 发起订阅请求 */
+            rtmq_link_auth_req(pxy, ssvr); /* 发起鉴权请求 */
+            rtmq_sub_req(pxy, ssvr); /* 发起订阅请求 */
         }
 
         /* 3.2 等待事件通知 */
@@ -254,23 +254,23 @@ void *rtsd_ssvr_routine(void *_ctx)
             return (void *)-1;
         }
         else if (0 == ret) {
-            rtsd_ssvr_timeout_hdl(ctx, ssvr);
+            rtsd_ssvr_timeout_hdl(pxy, ssvr);
             continue;
         }
 
         /* 发送数据: 发送优先 */
         if (FD_ISSET(sck->fd, &ssvr->wset)) {
-            rtsd_ssvr_send_data(ctx, ssvr);
+            rtsd_ssvr_send_data(pxy, ssvr);
         }
 
         /* 接收命令 */
         if (FD_ISSET(ssvr->cmd_sck_id, &ssvr->rset)) {
-            rtsd_ssvr_recv_cmd(ctx, ssvr);
+            rtsd_ssvr_recv_cmd(pxy, ssvr);
         }
 
         /* 接收Recv服务的数据 */
         if (FD_ISSET(sck->fd, &ssvr->rset)) {
-            rtsd_ssvr_recv_proc(ctx, ssvr);
+            rtsd_ssvr_recv_proc(pxy, ssvr);
         }
     }
 
@@ -282,7 +282,7 @@ void *rtsd_ssvr_routine(void *_ctx)
  **函数名称: rtsd_ssvr_kpalive_req
  **功    能: 发送保活命令
  **输入参数:
- **     ctx: 全局信息
+ **     pxy: 全局信息
  **     ssvr: Snd线程对象
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
@@ -292,12 +292,12 @@ void *rtsd_ssvr_routine(void *_ctx)
  **     因此发送数据时，不用判断EAGAIN的情况是否存在。
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static int rtsd_ssvr_kpalive_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
+static int rtsd_ssvr_kpalive_req(rtmq_proxy_t *pxy, rtmq_proxy_ssvr_t *ssvr)
 {
     void *addr;
     rtmq_header_t *head;
     int size = sizeof(rtmq_header_t);
-    rtsd_sck_t *sck = &ssvr->sck;
+    rtmq_proxy_sct_t *sck = &ssvr->sck;
     wiov_t *send = &ssvr->sck.send;
 
     /* 1. 上次发送保活请求之后 仍未收到应答 */
@@ -320,7 +320,7 @@ static int rtsd_ssvr_kpalive_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
     head = (rtmq_header_t *)addr;
 
     head->type = RTMQ_CMD_KPALIVE_REQ;
-    head->nodeid = ctx->conf.nodeid;
+    head->nodeid = pxy->conf.nodeid;
     head->length = 0;
     head->flag = RTMQ_SYS_MESG;
     head->checksum = RTMQ_CHECK_SUM;
@@ -350,26 +350,26 @@ static int rtsd_ssvr_kpalive_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static rtsd_ssvr_t *rtsd_ssvr_get_curr(rtsd_cntx_t *ctx)
+static rtmq_proxy_ssvr_t *rtsd_ssvr_get_curr(rtmq_proxy_t *pxy)
 {
     int id;
 
     /* 1. 获取线程索引 */
-    id = thread_pool_get_tidx(ctx->sendtp);
+    id = thread_pool_get_tidx(pxy->sendtp);
     if (id < 0) {
-        log_error(ctx->log, "Get current thread index failed!");
+        log_error(pxy->log, "Get current thread index failed!");
         return NULL;
     }
 
     /* 2. 返回线程对象 */
-    return (rtsd_ssvr_t *)(ctx->sendtp->data + id * sizeof(rtsd_ssvr_t));
+    return (rtmq_proxy_ssvr_t *)(pxy->sendtp->data + id * sizeof(rtmq_proxy_ssvr_t));
 }
 
 /******************************************************************************
  **函数名称: rtsd_ssvr_timeout_hdl
  **功    能: 超时处理
  **输入参数:
- **     ctx: 全局信息
+ **     pxy: 全局信息
  **     ssvr: 发送服务全局信息
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
@@ -379,10 +379,10 @@ static rtsd_ssvr_t *rtsd_ssvr_get_curr(rtsd_cntx_t *ctx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static int rtsd_ssvr_timeout_hdl(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
+static int rtsd_ssvr_timeout_hdl(rtmq_proxy_t *pxy, rtmq_proxy_ssvr_t *ssvr)
 {
     time_t curr_tm = time(NULL);
-    rtsd_sck_t *sck = &ssvr->sck;
+    rtmq_proxy_sct_t *sck = &ssvr->sck;
 
     /* 1. 判断是否长时无数据 */
     if ((curr_tm - sck->wrtm) < RTMQ_KPALIVE_INTV) {
@@ -390,7 +390,7 @@ static int rtsd_ssvr_timeout_hdl(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
     }
 
     /* 2. 发送保活请求 */
-    if (rtsd_ssvr_kpalive_req(ctx, ssvr)) {
+    if (rtsd_ssvr_kpalive_req(pxy, ssvr)) {
         log_error(ssvr->log, "Connection keepalive failed!");
         return RTMQ_ERR;
     }
@@ -404,7 +404,7 @@ static int rtsd_ssvr_timeout_hdl(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
  **函数名称: rtsd_ssvr_recv_proc
  **功    能: 接收网络数据
  **输入参数:
- **     ctx: 全局信息
+ **     pxy: 全局信息
  **     ssvr: 发送服务
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
@@ -424,10 +424,10 @@ static int rtsd_ssvr_timeout_hdl(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
  **     addr     optr             iptr                   end
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static int rtsd_ssvr_recv_proc(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
+static int rtsd_ssvr_recv_proc(rtmq_proxy_t *pxy, rtmq_proxy_ssvr_t *ssvr)
 {
     int n, left;
-    rtsd_sck_t *sck = &ssvr->sck;
+    rtmq_proxy_sct_t *sck = &ssvr->sck;
     rtmq_snap_t *recv = &sck->recv;
 
     sck->rdtm = time(NULL);
@@ -441,7 +441,7 @@ static int rtsd_ssvr_recv_proc(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
             recv->iptr += n;
 
             /* 2. 进行数据处理 */
-            if (rtsd_ssvr_data_proc(ctx, ssvr, sck)) {
+            if (rtsd_ssvr_data_proc(pxy, ssvr, sck)) {
                 log_error(ssvr->log, "Proc data failed! fd:%d", sck->fd);
 
                 CLOSE(sck->fd);
@@ -477,7 +477,7 @@ static int rtsd_ssvr_recv_proc(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
  **函数名称: rtsd_ssvr_data_proc
  **功    能: 进行数据处理
  **输入参数:
- **     ctx: 全局信息
+ **     pxy: 全局信息
  **     ssvr: 发送服务
  **     sck: 连接对象
  **输出参数: NONE
@@ -499,7 +499,7 @@ static int rtsd_ssvr_recv_proc(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
  **     addr     optr             iptr                   end
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static int rtsd_ssvr_data_proc(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, rtsd_sck_t *sck)
+static int rtsd_ssvr_data_proc(rtmq_proxy_t *pxy, rtmq_proxy_ssvr_t *ssvr, rtmq_proxy_sct_t *sck)
 {
     rtmq_header_t *head;
     uint32_t len, mesg_len;
@@ -548,10 +548,10 @@ static int rtsd_ssvr_data_proc(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, rtsd_sck_t *
 
         /* 2.3 进行数据处理 */
         if (RTMQ_SYS_MESG == head->flag) {
-            rtsd_ssvr_sys_mesg_proc(ctx, ssvr, sck, recv->optr);
+            rtsd_ssvr_sys_mesg_proc(pxy, ssvr, sck, recv->optr);
         }
         else {
-            rtsd_ssvr_exp_mesg_proc(ctx, ssvr, sck, recv->optr);
+            rtsd_ssvr_exp_mesg_proc(pxy, ssvr, sck, recv->optr);
         }
 
         recv->optr += mesg_len;
@@ -564,7 +564,7 @@ static int rtsd_ssvr_data_proc(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, rtsd_sck_t *
  **函数名称: rtsd_ssvr_recv_cmd
  **功    能: 接收命令数据
  **输入参数:
- **     ctx: 全局信息
+ **     pxy: 全局信息
  **     ssvr: 发送服务对象
  **输出参数:
  **返    回: 0:成功 !0:失败
@@ -574,7 +574,7 @@ static int rtsd_ssvr_data_proc(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, rtsd_sck_t *
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static int rtsd_ssvr_recv_cmd(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
+static int rtsd_ssvr_recv_cmd(rtmq_proxy_t *pxy, rtmq_proxy_ssvr_t *ssvr)
 {
     rtmq_cmd_t cmd;
 
@@ -587,7 +587,7 @@ static int rtsd_ssvr_recv_cmd(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
     }
 
     /* 2. 处理命令 */
-    return rtsd_ssvr_proc_cmd(ctx, ssvr, &cmd);
+    return rtsd_ssvr_proc_cmd(pxy, ssvr, &cmd);
 }
 
 /******************************************************************************
@@ -602,9 +602,9 @@ static int rtsd_ssvr_recv_cmd(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static int rtsd_ssvr_proc_cmd(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, const rtmq_cmd_t *cmd)
+static int rtsd_ssvr_proc_cmd(rtmq_proxy_t *pxy, rtmq_proxy_ssvr_t *ssvr, const rtmq_cmd_t *cmd)
 {
-    rtsd_sck_t *sck = &ssvr->sck;
+    rtmq_proxy_sct_t *sck = &ssvr->sck;
 
     switch (cmd->type) {
         case RTMQ_CMD_SEND:
@@ -612,7 +612,7 @@ static int rtsd_ssvr_proc_cmd(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, const rtmq_cm
         {
             log_debug(ssvr->log, "Recv command! type:[%d]", cmd->type);
             if (fd_is_writable(sck->fd)) {
-                return rtsd_ssvr_send_data(ctx, ssvr);
+                return rtsd_ssvr_send_data(pxy, ssvr);
             }
             return RTMQ_OK;
         }
@@ -641,7 +641,7 @@ static int rtsd_ssvr_proc_cmd(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, const rtmq_cm
  **                享变量的值可能被其他进程或线程修改, 导致出现严重错误!
  **作    者: # Qifeng.zou # 2015.12.26 08:23:22 #
  ******************************************************************************/
-static int rtsd_ssvr_wiov_add(rtsd_ssvr_t *ssvr, rtsd_sck_t *sck)
+static int rtsd_ssvr_wiov_add(rtmq_proxy_ssvr_t *ssvr, rtmq_proxy_sct_t *sck)
 {
 #define RTSD_POP_NUM    (1024)
     size_t len;
@@ -719,7 +719,7 @@ static int rtsd_ssvr_wiov_add(rtsd_ssvr_t *ssvr, rtsd_sck_t *sck)
  **函数名称: rtsd_ssvr_send_data
  **功    能: 发送系统消息
  **输入参数:
- **     ctx: 全局信息
+ **     pxy: 全局信息
  **     ssvr: 发送服务
  **输出参数:
  **返    回: 0:成功 !0:失败
@@ -740,10 +740,10 @@ static int rtsd_ssvr_wiov_add(rtsd_ssvr_t *ssvr, rtsd_sck_t *sck)
  **     addr     optr             iptr                   end
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static int rtsd_ssvr_send_data(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
+static int rtsd_ssvr_send_data(rtmq_proxy_t *pxy, rtmq_proxy_ssvr_t *ssvr)
 {
     ssize_t n;
-    rtsd_sck_t *sck = &ssvr->sck;
+    rtmq_proxy_sct_t *sck = &ssvr->sck;
     wiov_t *send = &sck->send;
 
     sck->wrtm = time(NULL);
@@ -788,7 +788,7 @@ static int rtsd_ssvr_send_data(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.16 #
  ******************************************************************************/
-static int rtsd_ssvr_clear_mesg(rtsd_ssvr_t *ssvr)
+static int rtsd_ssvr_clear_mesg(rtmq_proxy_ssvr_t *ssvr)
 {
     void *data;
 
@@ -807,7 +807,7 @@ static int rtsd_ssvr_clear_mesg(rtsd_ssvr_t *ssvr)
  **函数名称: rtsd_ssvr_sys_mesg_proc
  **功    能: 系统消息的处理
  **输入参数:
- **     ctx: 全局信息
+ **     pxy: 全局信息
  **     ssvr: 发送服务
  **     sck: 连接对象
  **输出参数: NONE
@@ -816,7 +816,7 @@ static int rtsd_ssvr_clear_mesg(rtsd_ssvr_t *ssvr)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.16 #
  ******************************************************************************/
-static int rtsd_ssvr_sys_mesg_proc(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, rtsd_sck_t *sck, void *addr)
+static int rtsd_ssvr_sys_mesg_proc(rtmq_proxy_t *pxy, rtmq_proxy_ssvr_t *ssvr, rtmq_proxy_sct_t *sck, void *addr)
 {
     rtmq_header_t *head = (rtmq_header_t *)addr;
 
@@ -830,7 +830,7 @@ static int rtsd_ssvr_sys_mesg_proc(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, rtsd_sck
         }
         case RTMQ_CMD_LINK_AUTH_RSP:    /* 链路鉴权应答 */
         {
-            return rtmq_link_auth_rsp_hdl(ctx, ssvr, sck, addr + sizeof(rtmq_header_t));
+            return rtmq_link_auth_rsp_hdl(pxy, ssvr, sck, addr + sizeof(rtmq_header_t));
         }
     }
 
@@ -842,7 +842,7 @@ static int rtsd_ssvr_sys_mesg_proc(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, rtsd_sck
  **函数名称: rtsd_ssvr_exp_mesg_proc
  **功    能: 自定义消息的处理
  **输入参数:
- **     ctx: 全局信息
+ **     pxy: 全局信息
  **     ssvr: 发送服务
  **     sck: 连接对象
  **     addr: 数据地址
@@ -853,7 +853,7 @@ static int rtsd_ssvr_sys_mesg_proc(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, rtsd_sck
  **作    者: # Qifeng.zou # 2015.05.19 #
  ******************************************************************************/
 static int rtsd_ssvr_exp_mesg_proc(
-        rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, rtsd_sck_t *sck, void *addr)
+        rtmq_proxy_t *pxy, rtmq_proxy_ssvr_t *ssvr, rtmq_proxy_sct_t *sck, void *addr)
 {
     void *data;
     int idx, len;
@@ -863,36 +863,36 @@ static int rtsd_ssvr_exp_mesg_proc(
 
     /* > 验证长度 */
     len = RTMQ_DATA_TOTAL_LEN(head);
-    if ((int)len > queue_size(ctx->recvq[0])) {
+    if ((int)len > queue_size(pxy->recvq[0])) {
         ++ssvr->drop_total;
-        log_error(ctx->log, "Data is too long! len:%d drop:%lu total:%lu",
+        log_error(pxy->log, "Data is too long! len:%d drop:%lu total:%lu",
                 len, ssvr->drop_total, ssvr->recv_total);
         return RTMQ_ERR_TOO_LONG;
     }
 
    /* > 申请空间 */
-    idx = rand() % ctx->conf.work_thd_num;
+    idx = rand() % pxy->conf.work_thd_num;
 
-    data = queue_malloc(ctx->recvq[idx], len);
+    data = queue_malloc(pxy->recvq[idx], len);
     if (NULL == data) {
         ++ssvr->drop_total;
-        log_error(ctx->log, "Alloc from queue failed! drop:%lu recv:%lu size:%d/%d",
-                ssvr->drop_total, ssvr->recv_total, len, queue_size(ctx->recvq[idx]));
+        log_error(pxy->log, "Alloc from queue failed! drop:%lu recv:%lu size:%d/%d",
+                ssvr->drop_total, ssvr->recv_total, len, queue_size(pxy->recvq[idx]));
         return RTMQ_ERR;
     }
 
     /* > 放入队列 */
     memcpy(data, addr, len);
 
-    if (queue_push(ctx->recvq[idx], data)) {
+    if (queue_push(pxy->recvq[idx], data)) {
         ++ssvr->drop_total;
-        log_error(ctx->log, "Push into queue failed! len:%d drop:%lu total:%lu",
+        log_error(pxy->log, "Push into queue failed! len:%d drop:%lu total:%lu",
                 len, ssvr->drop_total, ssvr->recv_total);
-        queue_dealloc(ctx->recvq[idx], data);
+        queue_dealloc(pxy->recvq[idx], data);
         return RTMQ_ERR;
     }
 
-    rtsd_ssvr_cmd_proc_req(ctx, ssvr, idx);    /* 发送处理请求 */
+    rtsd_ssvr_cmd_proc_req(pxy, ssvr, idx);    /* 发送处理请求 */
 
     return RTMQ_OK;
 }
@@ -901,7 +901,7 @@ static int rtsd_ssvr_exp_mesg_proc(
  **函数名称: rtmq_link_auth_req
  **功    能: 发起链路鉴权请求
  **输入参数:
- **     ctx: 全局信息
+ **     pxy: 全局信息
  **     ssvr: 发送服务
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
@@ -909,12 +909,12 @@ static int rtsd_ssvr_exp_mesg_proc(
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.22 #
  ******************************************************************************/
-static int rtmq_link_auth_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
+static int rtmq_link_auth_req(rtmq_proxy_t *pxy, rtmq_proxy_ssvr_t *ssvr)
 {
     int size;
     void *addr;
     rtmq_header_t *head;
-    rtsd_sck_t *sck = &ssvr->sck;
+    rtmq_proxy_sct_t *sck = &ssvr->sck;
     rtmq_link_auth_req_t *link_auth_req;
 
     /* > 申请内存空间 */
@@ -937,8 +937,8 @@ static int rtmq_link_auth_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
     /* > 设置鉴权信息 */
     link_auth_req = (rtmq_link_auth_req_t *)(head + 1);
 
-    snprintf(link_auth_req->usr, sizeof(link_auth_req->usr), "%s", ctx->conf.auth.usr);
-    snprintf(link_auth_req->passwd, sizeof(link_auth_req->passwd), "%s", ctx->conf.auth.passwd);
+    snprintf(link_auth_req->usr, sizeof(link_auth_req->usr), "%s", pxy->conf.auth.usr);
+    snprintf(link_auth_req->passwd, sizeof(link_auth_req->passwd), "%s", pxy->conf.auth.passwd);
 
     /* > 加入发送列表 */
     if (list_rpush(sck->mesg_list, addr)) {
@@ -956,7 +956,7 @@ static int rtmq_link_auth_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
  **函数名称: rtmq_link_auth_rsp_hdl
  **功    能: 链路鉴权请求应答的处理
  **输入参数:
- **     ctx: 全局信息
+ **     pxy: 全局信息
  **     ssvr: 发送服务
  **     sck: 连接对象
  **     addr: 数据地址
@@ -966,8 +966,8 @@ static int rtmq_link_auth_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.22 #
  ******************************************************************************/
-static int rtmq_link_auth_rsp_hdl(rtsd_cntx_t *ctx,
-        rtsd_ssvr_t *ssvr, rtsd_sck_t *sck, rtmq_link_auth_rsp_t *rsp)
+static int rtmq_link_auth_rsp_hdl(rtmq_proxy_t *pxy,
+        rtmq_proxy_ssvr_t *ssvr, rtmq_proxy_sct_t *sck, rtmq_link_auth_rsp_t *rsp)
 {
     return ntohl(rsp->is_succ)? RTMQ_OK : RTMQ_ERR;
 }
@@ -984,13 +984,13 @@ static int rtmq_link_auth_rsp_hdl(rtsd_cntx_t *ctx,
  **注意事项:
  **作    者: # Qifeng.zou # 2016.04.13 00:11:04 #
  ******************************************************************************/
-static int rtmq_add_sub_req(rtmq_reg_t *item, rtsd_ssvr_t *ssvr)
+static int rtmq_add_sub_req(rtmq_reg_t *item, rtmq_proxy_ssvr_t *ssvr)
 {
     int size;
     void *addr;
     rtmq_header_t *head;
     rtmq_sub_req_t *sub;
-    rtsd_sck_t *sck = &ssvr->sck;
+    rtmq_proxy_sct_t *sck = &ssvr->sck;
 
     /* > 申请内存空间 */
     size = sizeof(rtmq_header_t) + sizeof(rtmq_sub_req_t);
@@ -1031,7 +1031,7 @@ static int rtmq_add_sub_req(rtmq_reg_t *item, rtsd_ssvr_t *ssvr)
  **函数名称: rtmq_sub_req
  **功    能: 发起订阅请求
  **输入参数:
- **     ctx: 全局信息
+ **     pxy: 全局信息
  **     ssvr: 发送服务
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
@@ -1039,16 +1039,16 @@ static int rtmq_add_sub_req(rtmq_reg_t *item, rtsd_ssvr_t *ssvr)
  **注意事项:
  **作    者: # Qifeng.zou # 2016.04.13 00:11:04 #
  ******************************************************************************/
-static int rtmq_sub_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
+static int rtmq_sub_req(rtmq_proxy_t *pxy, rtmq_proxy_ssvr_t *ssvr)
 {
-    return avl_trav(ctx->reg, (trav_cb_t)rtmq_add_sub_req, (void *)ssvr);
+    return avl_trav(pxy->reg, (trav_cb_t)rtmq_add_sub_req, (void *)ssvr);
 }
 
 /******************************************************************************
  **函数名称: rtsd_ssvr_cmd_proc_req
  **功    能: 发送处理请求
  **输入参数:
- **     ctx: 全局对象
+ **     pxy: 全局对象
  **     ssvr: 接收服务
  **     rqid: 队列ID(与工作队列ID一致)
  **输出参数: NONE
@@ -1057,7 +1057,7 @@ static int rtmq_sub_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.06.08 #
  ******************************************************************************/
-static int rtsd_ssvr_cmd_proc_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, int rqid)
+static int rtsd_ssvr_cmd_proc_req(rtmq_proxy_t *pxy, rtmq_proxy_ssvr_t *ssvr, int rqid)
 {
     rtmq_cmd_t cmd;
     char path[FILE_PATH_MAX_LEN];
@@ -1071,7 +1071,7 @@ static int rtsd_ssvr_cmd_proc_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, int rqid)
     req->rqidx = rqid;
 
     /* > 获取Worker路径 */
-    rtsd_worker_usck_path(&ctx->conf, path, rqid);
+    rtsd_worker_usck_path(&pxy->conf, path, rqid);
 
     /* > 发送处理命令 */
     return unix_udp_send(ssvr->cmd_sck_id, path, &cmd, sizeof(rtmq_cmd_t));
@@ -1081,7 +1081,7 @@ static int rtsd_ssvr_cmd_proc_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, int rqid)
  **函数名称: rtsd_ssvr_cmd_proc_all_req
  **功    能: 发送处理请求
  **输入参数:
- **     ctx: 全局对象
+ **     pxy: 全局对象
  **     ssvr: 接收服务
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
@@ -1089,12 +1089,12 @@ static int rtsd_ssvr_cmd_proc_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, int rqid)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.06.08 #
  ******************************************************************************/
-static int rtsd_ssvr_cmd_proc_all_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
+static int rtsd_ssvr_cmd_proc_all_req(rtmq_proxy_t *pxy, rtmq_proxy_ssvr_t *ssvr)
 {
     int idx;
 
-    for (idx=0; idx<ctx->conf.send_thd_num; ++idx) {
-        rtsd_ssvr_cmd_proc_req(ctx, ssvr, idx);
+    for (idx=0; idx<pxy->conf.send_thd_num; ++idx) {
+        rtsd_ssvr_cmd_proc_req(pxy, ssvr, idx);
     }
 
     return RTMQ_OK;

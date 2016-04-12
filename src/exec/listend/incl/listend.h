@@ -41,7 +41,7 @@ typedef struct
     lsnd_dsvr_t dsvr;                       /* 分发服务 */
 
     agent_cntx_t *agent;                    /* 代理服务 */
-    rtsd_cntx_t *frwder;                    /* FRWDER服务 */
+    rtmq_proxy_t *frwder;                   /* FRWDER服务 */
 } lsnd_cntx_t;
 
 int lsnd_getopt(int argc, char **argv, lsnd_opt_t *opt);
