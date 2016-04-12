@@ -27,6 +27,7 @@ static int rtsd_ssvr_kpalive_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr);
 
 static int rtmq_link_auth_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr);
 static int rtmq_link_auth_rsp_hdl(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, rtsd_sck_t *sck, rtmq_link_auth_rsp_t *rsp);
+static int rtmq_sub_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr);
 
 static int rtsd_ssvr_cmd_proc_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr, int rqid);
 static int rtsd_ssvr_cmd_proc_all_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr);
@@ -237,6 +238,7 @@ void *rtsd_ssvr_routine(void *_ctx)
 
             rtmq_set_kpalive_stat(sck, RTMQ_KPALIVE_STAT_UNKNOWN);
             rtmq_link_auth_req(ctx, ssvr); /* 发起鉴权请求 */
+            rtmq_sub_req(ctx, ssvr); /* 发起订阅请求 */
         }
 
         /* 3.2 等待事件通知 */
@@ -933,9 +935,8 @@ static int rtmq_link_auth_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
     head->checksum = RTMQ_CHECK_SUM;
 
     /* > 设置鉴权信息 */
-    link_auth_req = addr + sizeof(rtmq_header_t);
+    link_auth_req = (rtmq_link_auth_req_t *)(head + 1);
 
-    link_auth_req->nodeid = htonl(ctx->conf.nodeid);
     snprintf(link_auth_req->usr, sizeof(link_auth_req->usr), "%s", ctx->conf.auth.usr);
     snprintf(link_auth_req->passwd, sizeof(link_auth_req->passwd), "%s", ctx->conf.auth.passwd);
 
@@ -950,6 +951,7 @@ static int rtmq_link_auth_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
 
     return RTMQ_OK;
 }
+
 /******************************************************************************
  **函数名称: rtmq_link_auth_rsp_hdl
  **功    能: 链路鉴权请求应答的处理
@@ -968,6 +970,78 @@ static int rtmq_link_auth_rsp_hdl(rtsd_cntx_t *ctx,
         rtsd_ssvr_t *ssvr, rtsd_sck_t *sck, rtmq_link_auth_rsp_t *rsp)
 {
     return ntohl(rsp->is_succ)? RTMQ_OK : RTMQ_ERR;
+}
+
+/******************************************************************************
+ **函数名称: rtmq_add_sub_req
+ **功    能: 添加订阅请求
+ **输入参数:
+ **     item: 消息类型
+ **     ssvr: 发送服务
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 将订阅请求放入发送队列中
+ **注意事项:
+ **作    者: # Qifeng.zou # 2016.04.13 00:11:04 #
+ ******************************************************************************/
+static int rtmq_add_sub_req(rtmq_reg_t *item, rtsd_ssvr_t *ssvr)
+{
+    int size;
+    void *addr;
+    rtmq_header_t *head;
+    rtmq_sub_req_t *sub;
+    rtsd_sck_t *sck = &ssvr->sck;
+
+    /* > 申请内存空间 */
+    size = sizeof(rtmq_header_t) + sizeof(rtmq_sub_req_t);
+
+    addr = (void *)calloc(1, size);
+    if (NULL == addr) {
+        log_error(ssvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        return RTMQ_ERR;
+    }
+
+    /* > 设置头部数据 */
+    head = (rtmq_header_t *)addr;
+
+    head->type = RTMQ_CMD_SUB_REQ;
+    head->length = 0;
+    head->flag = RTMQ_SYS_MESG;
+    head->checksum = RTMQ_CHECK_SUM;
+
+    /* > 设置报体数据 */
+    sub = (rtmq_sub_req_t *)(head + 1);
+
+    sub->type = htonl(item->type);
+    sub->weight = htonl(1);
+
+    /* > 加入发送列表 */
+    if (list_rpush(sck->mesg_list, addr)) {
+        free(addr);
+        log_error(ssvr->log, "Insert sub request failed!");
+        return RTMQ_ERR;
+    }
+
+    log_debug(ssvr->log, "Add sub request success! fd:[%d]", sck->fd);
+
+    return RTMQ_OK;
+}
+
+/******************************************************************************
+ **函数名称: rtmq_sub_req
+ **功    能: 发起订阅请求
+ **输入参数:
+ **     ctx: 全局信息
+ **     ssvr: 发送服务
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 将订阅请求放入发送队列中
+ **注意事项:
+ **作    者: # Qifeng.zou # 2016.04.13 00:11:04 #
+ ******************************************************************************/
+static int rtmq_sub_req(rtsd_cntx_t *ctx, rtsd_ssvr_t *ssvr)
+{
+    return avl_trav(ctx->reg, (trav_cb_t)rtmq_add_sub_req, (void *)ssvr);
 }
 
 /******************************************************************************

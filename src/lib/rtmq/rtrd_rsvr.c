@@ -30,6 +30,7 @@ static int rtrd_rsvr_exp_mesg_proc(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd_sck
 
 static int rtrd_rsvr_keepalive_req_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd_sck_t *sck);
 static int rtrd_rsvr_link_auth_req_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd_sck_t *sck);
+static int rtrd_rsvr_sub_req_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd_sck_t *sck);
 
 static int rtrd_rsvr_cmd_proc_req(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, int rqid);
 static int rtrd_rsvr_cmd_proc_all_req(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr);
@@ -685,19 +686,15 @@ static int rtrd_rsvr_sys_mesg_proc(rtrd_cntx_t *ctx,
             head->type, head->nodeid, head->checksum);
 
     switch (head->type) {
-        case RTMQ_CMD_KPALIVE_REQ:
-        {
-            return rtrd_rsvr_keepalive_req_hdl(ctx, rsvr, sck);
-        }
         case RTMQ_CMD_LINK_AUTH_REQ:
-        {
             return rtrd_rsvr_link_auth_req_hdl(ctx, rsvr, sck);
-        }
+        case RTMQ_CMD_SUB_REQ:
+            return rtrd_rsvr_sub_req_hdl(ctx, rsvr, sck);
+        case RTMQ_CMD_KPALIVE_REQ:
+            return rtrd_rsvr_keepalive_req_hdl(ctx, rsvr, sck);
         default:
-        {
             log_error(rsvr->log, "Unknown message type! [%d]", head->type);
             return RTMQ_ERR;
-        }
     }
 
     return RTMQ_OK;
@@ -959,28 +956,45 @@ static int rtrd_rsvr_link_auth_rsp(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd_sck
  ******************************************************************************/
 static int rtrd_rsvr_link_auth_req_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd_sck_t *sck)
 {
+    rtmq_header_t *head;
     rtmq_snap_t *recv = &sck->recv;
     rtmq_link_auth_req_t *link_auth_req;
 
-    /* > 字节序转换 */
-    link_auth_req = (rtmq_link_auth_req_t *)(recv->addr + sizeof(rtmq_header_t));
-
-    link_auth_req->nodeid = ntohl(link_auth_req->nodeid);
+    head = (rtmq_header_t *)recv->addr;
+    link_auth_req = (rtmq_link_auth_req_t *)(head + 1);
 
     /* > 验证鉴权合法性 */
     sck->auth_succ = rtrd_link_auth_check(ctx, link_auth_req);
     if (sck->auth_succ) {
-        sck->nodeid = link_auth_req->nodeid;
+        sck->nodeid = head->nodeid;
         /* > 插入DEV与SCK的映射 */
-        if (rtrd_node_to_svr_map_add(ctx, link_auth_req->nodeid, rsvr->id)) {
+        if (rtrd_node_to_svr_map_add(ctx, head->nodeid, rsvr->id)) {
             log_error(rsvr->log, "Insert into sck2dev table failed! fd:%d serial:%ld nodeid:%d",
-                    sck->fd, sck->sid, link_auth_req->nodeid);
+                    sck->fd, sck->sid, head->nodeid);
             return RTMQ_ERR;
         }
     }
 
     /* > 应答鉴权请求 */
     return rtrd_rsvr_link_auth_rsp(ctx, rsvr, sck);
+}
+
+/******************************************************************************
+ **函数名称: rtrd_rsvr_sub_req_hdl
+ **功    能: 订阅请求处理
+ **输入参数:
+ **     ctx: 全局对象
+ **     rsvr: 接收对象
+ **     sck: 套接字对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2016.04.13 00:35:15 #
+ ******************************************************************************/
+static int rtrd_rsvr_sub_req_hdl(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, rtrd_sck_t *sck)
+{
+    return RTMQ_OK;
 }
 
 /******************************************************************************

@@ -18,6 +18,9 @@ typedef enum
     , RTMQ_CMD_KPALIVE_REQ              /* 链路保活请求 */
     , RTMQ_CMD_KPALIVE_RSP              /* 链路保活应答 */
 
+    , RTMQ_CMD_SUB_REQ                  /* 订阅请求 */
+    , RTMQ_CMD_SUB_RSP                  /* 订阅应答 */
+
     , RTMQ_CMD_ADD_SCK                  /* 接收客户端数据-请求 */
     , RTMQ_CMD_DIST_REQ                 /* 分发任务请求 */
     , RTMQ_CMD_PROC_REQ                 /* 处理客户端数据-请求 */
@@ -65,7 +68,6 @@ typedef struct
 /* 链路鉴权请求 */
 typedef struct
 {
-    int nodeid;                         /* 结点ID */
     char usr[RTMQ_USR_MAX_LEN];         /* 用户名 */
     char passwd[RTMQ_PWD_MAX_LEN];      /* 登录密码 */
 } rtmq_link_auth_req_t;
@@ -73,11 +75,17 @@ typedef struct
 /* 链路鉴权应答 */
 typedef struct
 {
-    int nodeid;                         /* 结点ID */
 #define RTMQ_LINK_AUTH_FAIL     (0)
 #define RTMQ_LINK_AUTH_SUCC     (1)
     int is_succ;                        /* 应答码(0:失败 1:成功) */
 } rtmq_link_auth_rsp_t;
+
+/* 订阅请求 */
+typedef struct
+{
+    int type;                           /* 订阅内容: 订阅的消息类型 */
+    int weight;                         /* 订阅权值: 以1为基准 */
+} rtmq_sub_req_t;
 
 /* 添加套接字请求的相关参数 */
 typedef struct
