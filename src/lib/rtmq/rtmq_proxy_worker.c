@@ -14,12 +14,12 @@
 #include "thread_pool.h"
 
 /* 静态函数 */
-static rtmq_worker_t *rtsd_worker_get_curr(rtmq_proxy_t *pxy);
-static int rtsd_worker_event_core_hdl(rtmq_proxy_t *pxy, rtmq_worker_t *worker);
-static int rtsd_worker_cmd_proc_req_hdl(rtmq_proxy_t *pxy, rtmq_worker_t *worker, const rtmq_cmd_t *cmd);
+static rtmq_worker_t *rtmq_proxy_worker_get_curr(rtmq_proxy_t *pxy);
+static int rtmq_proxy_worker_event_core_hdl(rtmq_proxy_t *pxy, rtmq_worker_t *worker);
+static int rtmq_proxy_worker_cmd_proc_req_hdl(rtmq_proxy_t *pxy, rtmq_worker_t *worker, const rtmq_cmd_t *cmd);
 
 /******************************************************************************
- **函数名称: rtsd_worker_routine
+ **函数名称: rtmq_proxy_worker_routine
  **功    能: 运行工作线程
  **输入参数:
  **     _ctx: 全局对象
@@ -32,7 +32,7 @@ static int rtsd_worker_cmd_proc_req_hdl(rtmq_proxy_t *pxy, rtmq_worker_t *worker
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.18 #
  ******************************************************************************/
-void *rtsd_worker_routine(void *_ctx)
+void *rtmq_proxy_worker_routine(void *_ctx)
 {
     int ret, idx;
     rtmq_worker_t *worker;
@@ -42,7 +42,7 @@ void *rtsd_worker_routine(void *_ctx)
     rtmq_proxy_conf_t *conf = (rtmq_proxy_conf_t *)&pxy->conf;
 
     /* 1. 获取工作对象 */
-    worker = rtsd_worker_get_curr(pxy);
+    worker = rtmq_proxy_worker_get_curr(pxy);
     if (NULL == worker) {
         log_fatal(pxy->log, "Get current worker failed!");
         abort();
@@ -80,13 +80,13 @@ void *rtsd_worker_routine(void *_ctx)
                 req->num = -1;
                 req->rqidx = idx;
 
-                rtsd_worker_cmd_proc_req_hdl(pxy, worker, &cmd);
+                rtmq_proxy_worker_cmd_proc_req_hdl(pxy, worker, &cmd);
             }
             continue;
         }
 
         /* 3. 进行事件处理 */
-        rtsd_worker_event_core_hdl(pxy, worker);
+        rtmq_proxy_worker_event_core_hdl(pxy, worker);
     }
 
     abort();
@@ -94,7 +94,7 @@ void *rtsd_worker_routine(void *_ctx)
 }
 
 /******************************************************************************
- **函数名称: rtsd_worker_get_by_idx
+ **函数名称: rtmq_proxy_worker_get_by_idx
  **功    能: 通过索引查找对象
  **输入参数:
  **     pxy: 全局对象
@@ -105,13 +105,13 @@ void *rtsd_worker_routine(void *_ctx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.19 #
  ******************************************************************************/
-rtmq_worker_t *rtsd_worker_get_by_idx(rtmq_proxy_t *pxy, int idx)
+rtmq_worker_t *rtmq_proxy_worker_get_by_idx(rtmq_proxy_t *pxy, int idx)
 {
     return (rtmq_worker_t *)(pxy->worktp->data + idx * sizeof(rtmq_worker_t));
 }
 
 /******************************************************************************
- **函数名称: rtsd_worker_get_curr
+ **函数名称: rtmq_proxy_worker_get_curr
  **功    能: 获取工作对象
  **输入参数:
  **     pxy: 全局对象
@@ -123,7 +123,7 @@ rtmq_worker_t *rtsd_worker_get_by_idx(rtmq_proxy_t *pxy, int idx)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.18 #
  ******************************************************************************/
-static rtmq_worker_t *rtsd_worker_get_curr(rtmq_proxy_t *pxy)
+static rtmq_worker_t *rtmq_proxy_worker_get_curr(rtmq_proxy_t *pxy)
 {
     int id;
 
@@ -135,11 +135,11 @@ static rtmq_worker_t *rtsd_worker_get_curr(rtmq_proxy_t *pxy)
     }
 
     /* > 返回工作对象 */
-    return rtsd_worker_get_by_idx(pxy, id);
+    return rtmq_proxy_worker_get_by_idx(pxy, id);
 }
 
 /******************************************************************************
- **函数名称: rtsd_worker_init
+ **函数名称: rtmq_proxy_worker_init
  **功    能: 初始化工作服务
  **输入参数:
  **     pxy: 全局对象
@@ -152,7 +152,7 @@ static rtmq_worker_t *rtsd_worker_get_curr(rtmq_proxy_t *pxy)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.18 #
  ******************************************************************************/
-int rtsd_worker_init(rtmq_proxy_t *pxy, rtmq_worker_t *worker, int id)
+int rtmq_proxy_worker_init(rtmq_proxy_t *pxy, rtmq_worker_t *worker, int id)
 {
     char path[FILE_PATH_MAX_LEN];
     rtmq_proxy_conf_t *conf = &pxy->conf;
@@ -161,7 +161,7 @@ int rtsd_worker_init(rtmq_proxy_t *pxy, rtmq_worker_t *worker, int id)
     worker->log = pxy->log;
 
     /* 1. 创建命令套接字 */
-    rtsd_worker_usck_path(conf, path, worker->id);
+    rtmq_proxy_worker_usck_path(conf, path, worker->id);
 
     worker->cmd_sck_id = unix_udp_creat(path);
     if (worker->cmd_sck_id < 0) {
@@ -173,7 +173,7 @@ int rtsd_worker_init(rtmq_proxy_t *pxy, rtmq_worker_t *worker, int id)
 }
 
 /******************************************************************************
- **函数名称: rtsd_worker_event_core_hdl
+ **函数名称: rtmq_proxy_worker_event_core_hdl
  **功    能: 核心事件处理
  **输入参数:
  **     pxy: 全局对象
@@ -185,7 +185,7 @@ int rtsd_worker_init(rtmq_proxy_t *pxy, rtmq_worker_t *worker, int id)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.18 #
  ******************************************************************************/
-static int rtsd_worker_event_core_hdl(rtmq_proxy_t *pxy, rtmq_worker_t *worker)
+static int rtmq_proxy_worker_event_core_hdl(rtmq_proxy_t *pxy, rtmq_worker_t *worker)
 {
     rtmq_cmd_t cmd;
 
@@ -201,7 +201,7 @@ static int rtsd_worker_event_core_hdl(rtmq_proxy_t *pxy, rtmq_worker_t *worker)
     switch (cmd.type) {
         case RTMQ_CMD_PROC_REQ:
         {
-            return rtsd_worker_cmd_proc_req_hdl(pxy, worker, &cmd);
+            return rtmq_proxy_worker_cmd_proc_req_hdl(pxy, worker, &cmd);
         }
         default:
         {
@@ -214,7 +214,7 @@ static int rtsd_worker_event_core_hdl(rtmq_proxy_t *pxy, rtmq_worker_t *worker)
 }
 
 /******************************************************************************
- **函数名称: rtsd_worker_cmd_proc_req_hdl
+ **函数名称: rtmq_proxy_worker_cmd_proc_req_hdl
  **功    能: 处理请求的处理
  **输入参数:
  **     pxy: 全局对象
@@ -226,7 +226,7 @@ static int rtsd_worker_event_core_hdl(rtmq_proxy_t *pxy, rtmq_worker_t *worker)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.18 #
  ******************************************************************************/
-static int rtsd_worker_cmd_proc_req_hdl(rtmq_proxy_t *pxy, rtmq_worker_t *worker, const rtmq_cmd_t *cmd)
+static int rtmq_proxy_worker_cmd_proc_req_hdl(rtmq_proxy_t *pxy, rtmq_worker_t *worker, const rtmq_cmd_t *cmd)
 {
 #define RTSD_WORK_POP_NUM   (1024)
     int idx, num;

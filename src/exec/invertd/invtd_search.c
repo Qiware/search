@@ -208,7 +208,7 @@ static int intvd_search_send_and_free(invtd_cntx_t *ctx, xml_tree_t *xml,
 
         xml_spack(xml, rsp->body);
 
-        if (rtsd_cli_send(ctx->frwder, MSG_SEARCH_WORD_RSP, addr, total_len)) {
+        if (rtmq_proxy_async_send(ctx->frwder, MSG_SEARCH_WORD_RSP, addr, total_len)) {
             log_error(ctx->log, "Send response failed! serial:%ld words:%s",
                     head->serial, req->words);
         }
@@ -317,7 +317,7 @@ INVTD_INSERT_WORD_RSP:
     mesg_head_hton(rsp_head, rsp_head);
     mesg_insert_word_resp_hton(rsp);
 
-    if (rtsd_cli_send(ctx->frwder, MSG_INSERT_WORD_RSP, (void *)addr, sizeof(addr))) {
+    if (rtmq_proxy_async_send(ctx->frwder, MSG_INSERT_WORD_RSP, (void *)addr, sizeof(addr))) {
         log_error(ctx->log, "Send response failed! serial:%s word:%s url:%s freq:%d",
                 head->serial, req->word, req->url, req->freq);
     }

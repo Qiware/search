@@ -125,7 +125,7 @@ invtd_cntx_t *invtd_init(const invtd_conf_t *conf, log_cycle_t *log)
         pthread_rwlock_init(&ctx->invtab_lock, NULL);
 
         /* > 初始化下行服务 */
-        ctx->frwder = rtsd_init(&ctx->conf.frwder, log);
+        ctx->frwder = rtmq_proxy_init(&ctx->conf.frwder, log);
         if (NULL == ctx->frwder) {
             log_error(log, "Init sdtp failed!");
             break;

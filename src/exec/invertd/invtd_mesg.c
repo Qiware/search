@@ -46,7 +46,7 @@ static int invtd_print_invt_tab_req_hdl(int type, int orig, char *buff, size_t l
 static int invtd_rtmq_reg(invtd_cntx_t *ctx)
 {
 #define INVTD_RTMQ_REG(ctx, type, proc, args) \
-    if (rtsd_register((ctx)->frwder, type, proc, args)) { \
+    if (rtmq_proxy_register((ctx)->frwder, type, proc, args)) { \
         log_error(ctx->log, "Register callback failed!"); \
         return INVT_ERR; \
     }
@@ -75,5 +75,5 @@ int invtd_start_frwder(invtd_cntx_t *ctx)
         return INVT_ERR;
     }
 
-    return rtsd_launch(ctx->frwder);
+    return rtmq_proxy_launch(ctx->frwder);
 }

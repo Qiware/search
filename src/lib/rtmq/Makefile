@@ -25,9 +25,9 @@ SRC_LIST = rtrd_recv.c \
 			rtrd_rsvr.c \
 			rtrd_worker.c \
 			rtrd_dist.c \
-			rtsd_send.c \
-			rtsd_ssvr.c \
-			rtsd_worker.c
+			rtmq_proxy.c \
+			rtmq_proxy_ssvr.c \
+			rtmq_proxy_worker.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST))
 HEADS = $(call func_get_dep_head_list, $(SRC_LIST))

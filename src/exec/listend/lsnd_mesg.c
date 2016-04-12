@@ -38,7 +38,7 @@ int lsnd_search_word_req_hdl(unsigned int type, void *data, int length, void *ar
     mesg_head_hton(head, head);
 
     /* > 转发搜索请求 */
-    return rtsd_cli_send(ctx->frwder, type, data, length);
+    return rtmq_proxy_async_send(ctx->frwder, type, data, length);
 }
 
 /******************************************************************************
@@ -103,7 +103,7 @@ int lsnd_insert_word_req_hdl(unsigned int type, void *data, int length, void *ar
     /* > 转换字节序 */
     mesg_head_hton(head, head);
 
-    return rtsd_cli_send(ctx->frwder, type, data, length);
+    return rtmq_proxy_async_send(ctx->frwder, type, data, length);
 }
 
 /******************************************************************************

@@ -9,13 +9,13 @@
 #include "thread_pool.h"
 
 /* COMM的UNIX-UDP路径 */
-#define rtsd_comm_usck_path(conf, path) \
+#define rtmq_proxy_comm_usck_path(conf, path) \
     snprintf(path, sizeof(path), "%s/%d_comm.usck", (conf)->path, (conf)->nodeid)
 /* SSVR线程的UNIX-UDP路径 */
-#define rtsd_ssvr_usck_path(conf, path, id) \
+#define rtmq_proxy_ssvr_usck_path(conf, path, id) \
     snprintf(path, sizeof(path), "%s/%d_ssvr_%d.usck", (conf)->path, (conf)->nodeid, id+1)
 /* WORKER线程的UNIX-UDP路径 */
-#define rtsd_worker_usck_path(conf, path, id) \
+#define rtmq_proxy_worker_usck_path(conf, path, id) \
     snprintf(path, sizeof(path), "%s/%d_swrk_%d.usck", (conf)->path, (conf)->nodeid, id+1)
 
 /* 套接字信息 */

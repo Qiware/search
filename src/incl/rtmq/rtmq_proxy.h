@@ -46,18 +46,18 @@ typedef struct
 } rtmq_proxy_t;
 
 /* 内部接口 */
-int rtsd_ssvr_init(rtmq_proxy_t *pxy, rtmq_proxy_ssvr_t *ssvr, int tidx);
-void *rtsd_ssvr_routine(void *_ctx);
+int rtmq_proxy_ssvr_init(rtmq_proxy_t *pxy, rtmq_proxy_ssvr_t *ssvr, int tidx);
+void *rtmq_proxy_ssvr_routine(void *_ctx);
 
-int rtsd_worker_init(rtmq_proxy_t *pxy, rtmq_worker_t *wrk, int tidx);
-void *rtsd_worker_routine(void *_ctx);
+int rtmq_proxy_worker_init(rtmq_proxy_t *pxy, rtmq_worker_t *wrk, int tidx);
+void *rtmq_proxy_worker_routine(void *_ctx);
 
-rtmq_worker_t *rtsd_worker_get_by_idx(rtmq_proxy_t *pxy, int idx);
+rtmq_worker_t *rtmq_proxy_worker_get_by_idx(rtmq_proxy_t *pxy, int idx);
 
 /* 对外接口 */
-rtmq_proxy_t *rtsd_init(const rtmq_proxy_conf_t *conf, log_cycle_t *log);
-int rtsd_launch(rtmq_proxy_t *pxy);
-int rtsd_register(rtmq_proxy_t *pxy, int type, rtmq_reg_cb_t proc, void *args);
-int rtsd_cli_send(rtmq_proxy_t *pxy, int type, const void *data, size_t size);
+rtmq_proxy_t *rtmq_proxy_init(const rtmq_proxy_conf_t *conf, log_cycle_t *log);
+int rtmq_proxy_launch(rtmq_proxy_t *pxy);
+int rtmq_proxy_register(rtmq_proxy_t *pxy, int type, rtmq_reg_cb_t proc, void *args);
+int rtmq_proxy_async_send(rtmq_proxy_t *pxy, int type, const void *data, size_t size);
 
 #endif /*__RTMQ_PROXY_H__*/

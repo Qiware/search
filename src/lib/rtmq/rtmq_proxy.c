@@ -2,10 +2,10 @@
 #include "rtmq_mesg.h"
 #include "rtmq_proxy.h"
 
-static int rtsd_creat_cmd_usck(rtmq_proxy_t *pxy);
+static int rtmq_proxy_creat_cmd_usck(rtmq_proxy_t *pxy);
 
 /******************************************************************************
- **函数名称: rtsd_creat_workers
+ **函数名称: rtmq_proxy_creat_workers
  **功    能: 创建工作线程线程池
  **输入参数:
  **     pxy: 全局对象
@@ -15,7 +15,7 @@ static int rtsd_creat_cmd_usck(rtmq_proxy_t *pxy);
  **注意事项:
  **作    者: # Qifeng.zou # 2015.08.19 #
  ******************************************************************************/
-static int rtsd_creat_workers(rtmq_proxy_t *pxy)
+static int rtmq_proxy_creat_workers(rtmq_proxy_t *pxy)
 {
     int idx;
     rtmq_worker_t *worker;
@@ -38,7 +38,7 @@ static int rtsd_creat_workers(rtmq_proxy_t *pxy)
 
     /* > 初始化线程 */
     for (idx=0; idx<conf->work_thd_num; ++idx) {
-        if (rtsd_worker_init(pxy, worker+idx, idx)) {
+        if (rtmq_proxy_worker_init(pxy, worker+idx, idx)) {
             log_fatal(pxy->log, "Initialize work thread failed!");
             free(worker);
             thread_pool_destroy(pxy->worktp);
@@ -50,7 +50,7 @@ static int rtsd_creat_workers(rtmq_proxy_t *pxy)
 }
 
 /******************************************************************************
- **函数名称: rtsd_creat_sends
+ **函数名称: rtmq_proxy_creat_sends
  **功    能: 创建发送线程线程池
  **输入参数:
  **     pxy: 全局对象
@@ -60,7 +60,7 @@ static int rtsd_creat_workers(rtmq_proxy_t *pxy)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.08.19 #
  ******************************************************************************/
-static int rtsd_creat_sends(rtmq_proxy_t *pxy)
+static int rtmq_proxy_creat_sends(rtmq_proxy_t *pxy)
 {
     int idx;
     rtmq_proxy_ssvr_t *ssvr;
@@ -83,7 +83,7 @@ static int rtsd_creat_sends(rtmq_proxy_t *pxy)
 
     /* > 初始化线程 */
     for (idx=0; idx<conf->send_thd_num; ++idx) {
-        if (rtsd_ssvr_init(pxy, ssvr+idx, idx)) {
+        if (rtmq_proxy_ssvr_init(pxy, ssvr+idx, idx)) {
             log_fatal(pxy->log, "Initialize send thread failed!");
             free(ssvr);
             thread_pool_destroy(pxy->sendtp);
@@ -95,7 +95,7 @@ static int rtsd_creat_sends(rtmq_proxy_t *pxy)
 }
 
 /******************************************************************************
- **函数名称: rtsd_creat_recvq
+ **函数名称: rtmq_proxy_creat_recvq
  **功    能: 创建接收队列
  **输入参数:
  **     pxy: 全局对象
@@ -105,7 +105,7 @@ static int rtsd_creat_sends(rtmq_proxy_t *pxy)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.06.04 #
  ******************************************************************************/
-static int rtsd_creat_recvq(rtmq_proxy_t *pxy)
+static int rtmq_proxy_creat_recvq(rtmq_proxy_t *pxy)
 {
     int idx;
     rtmq_proxy_conf_t *conf = &pxy->conf;
@@ -130,7 +130,7 @@ static int rtsd_creat_recvq(rtmq_proxy_t *pxy)
 }
 
 /******************************************************************************
- **函数名称: rtsd_creat_sendq
+ **函数名称: rtmq_proxy_creat_sendq
  **功    能: 创建发送线程的发送队列
  **输入参数:
  **     pxy: 发送对象
@@ -140,7 +140,7 @@ static int rtsd_creat_recvq(rtmq_proxy_t *pxy)
  **注意事项:
  **作    者: # Qifeng.zou # 2016.01.01 22:32:21 #
  ******************************************************************************/
-static int rtsd_creat_sendq(rtmq_proxy_t *pxy)
+static int rtmq_proxy_creat_sendq(rtmq_proxy_t *pxy)
 {
     int idx;
     rtmq_proxy_conf_t *conf = &pxy->conf;
@@ -165,7 +165,7 @@ static int rtsd_creat_sendq(rtmq_proxy_t *pxy)
 }
 
 /******************************************************************************
- **函数名称: rtsd_init
+ **函数名称: rtmq_proxy_init
  **功    能: 初始化发送端
  **输入参数:
  **     conf: 配置信息
@@ -176,7 +176,7 @@ static int rtsd_creat_sendq(rtmq_proxy_t *pxy)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.19 #
  ******************************************************************************/
-rtmq_proxy_t *rtsd_init(const rtmq_proxy_conf_t *conf, log_cycle_t *log)
+rtmq_proxy_t *rtmq_proxy_init(const rtmq_proxy_conf_t *conf, log_cycle_t *log)
 {
     rtmq_proxy_t *pxy;
 
@@ -200,31 +200,31 @@ rtmq_proxy_t *rtsd_init(const rtmq_proxy_conf_t *conf, log_cycle_t *log)
             break;
         }
         /* > 创建通信套接字 */
-        if (rtsd_creat_cmd_usck(pxy)) {
+        if (rtmq_proxy_creat_cmd_usck(pxy)) {
             log_fatal(log, "Create cmd socket failed!");
             break;
         }
 
         /* > 创建接收队列 */
-        if (rtsd_creat_recvq(pxy)) {
+        if (rtmq_proxy_creat_recvq(pxy)) {
             log_fatal(log, "Create recv-queue failed!");
             break;
         }
 
         /* > 创建发送队列 */
-        if (rtsd_creat_sendq(pxy)) {
+        if (rtmq_proxy_creat_sendq(pxy)) {
             log_fatal(log, "Create send queue failed!");
             break;
         }
 
         /* > 创建工作线程池 */
-        if (rtsd_creat_workers(pxy)) {
+        if (rtmq_proxy_creat_workers(pxy)) {
             log_fatal(pxy->log, "Create work thread pool failed!");
             break;
         }
 
         /* > 创建发送线程池 */
-        if (rtsd_creat_sends(pxy)) {
+        if (rtmq_proxy_creat_sends(pxy)) {
             log_fatal(pxy->log, "Create send thread pool failed!");
             break;
         }
@@ -237,7 +237,7 @@ rtmq_proxy_t *rtsd_init(const rtmq_proxy_conf_t *conf, log_cycle_t *log)
 }
 
 /******************************************************************************
- **函数名称: rtsd_launch
+ **函数名称: rtmq_proxy_launch
  **功    能: 启动发送端
  **输入参数:
  **     pxy: 全局信息
@@ -249,26 +249,26 @@ rtmq_proxy_t *rtsd_init(const rtmq_proxy_conf_t *conf, log_cycle_t *log)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-int rtsd_launch(rtmq_proxy_t *pxy)
+int rtmq_proxy_launch(rtmq_proxy_t *pxy)
 {
     int idx;
     rtmq_proxy_conf_t *conf = &pxy->conf;
 
     /* > 注册Worker线程回调 */
     for (idx=0; idx<conf->work_thd_num; ++idx) {
-        thread_pool_add_worker(pxy->worktp, rtsd_worker_routine, pxy);
+        thread_pool_add_worker(pxy->worktp, rtmq_proxy_worker_routine, pxy);
     }
 
     /* > 注册Send线程回调 */
     for (idx=0; idx<conf->send_thd_num; ++idx) {
-        thread_pool_add_worker(pxy->sendtp, rtsd_ssvr_routine, pxy);
+        thread_pool_add_worker(pxy->sendtp, rtmq_proxy_ssvr_routine, pxy);
     }
 
     return RTMQ_OK;
 }
 
 /******************************************************************************
- **函数名称: rtsd_register
+ **函数名称: rtmq_proxy_register
  **功    能: 消息处理的注册接口
  **输入参数:
  **     pxy: 全局对象
@@ -283,7 +283,7 @@ int rtsd_launch(rtmq_proxy_t *pxy)
  **     2. 不允许重复注册
  **作    者: # Qifeng.zou # 2015.05.19 #
  ******************************************************************************/
-int rtsd_register(rtmq_proxy_t *pxy, int type, rtmq_reg_cb_t proc, void *param)
+int rtmq_proxy_register(rtmq_proxy_t *pxy, int type, rtmq_reg_cb_t proc, void *param)
 {
     rtmq_reg_t *item;
 
@@ -307,7 +307,7 @@ int rtsd_register(rtmq_proxy_t *pxy, int type, rtmq_reg_cb_t proc, void *param)
 }
 
 /******************************************************************************
- **函数名称: rtsd_creat_cmd_usck
+ **函数名称: rtmq_proxy_creat_cmd_usck
  **功    能: 创建命令套接字
  **输入参数:
  **     pxy: 上下文信息
@@ -318,11 +318,11 @@ int rtsd_register(rtmq_proxy_t *pxy, int type, rtmq_reg_cb_t proc, void *param)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static int rtsd_creat_cmd_usck(rtmq_proxy_t *pxy)
+static int rtmq_proxy_creat_cmd_usck(rtmq_proxy_t *pxy)
 {
     char path[FILE_NAME_MAX_LEN];
 
-    rtsd_comm_usck_path(&pxy->conf, path);
+    rtmq_proxy_comm_usck_path(&pxy->conf, path);
 
     spin_lock_init(&pxy->cmd_sck_lck);
     pxy->cmd_sck_id = unix_udp_creat(path);
@@ -335,7 +335,7 @@ static int rtsd_creat_cmd_usck(rtmq_proxy_t *pxy)
 }
 
 /******************************************************************************
- **函数名称: rtsd_cli_cmd_send_req
+ **函数名称: rtmq_proxy_cli_cmd_send_req
  **功    能: 通知Send服务线程
  **输入参数:
  **     pxy: 上下文信息
@@ -346,7 +346,7 @@ static int rtsd_creat_cmd_usck(rtmq_proxy_t *pxy)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-static int rtsd_cli_cmd_send_req(rtmq_proxy_t *pxy, int idx)
+static int rtmq_proxy_cli_cmd_send_req(rtmq_proxy_t *pxy, int idx)
 {
     rtmq_cmd_t cmd;
     char path[FILE_NAME_MAX_LEN];
@@ -355,7 +355,7 @@ static int rtsd_cli_cmd_send_req(rtmq_proxy_t *pxy, int idx)
     memset(&cmd, 0, sizeof(cmd));
 
     cmd.type = RTMQ_CMD_SEND_ALL;
-    rtsd_ssvr_usck_path(conf, path, idx);
+    rtmq_proxy_ssvr_usck_path(conf, path, idx);
 
     if (spin_trylock(&pxy->cmd_sck_lck)) {
         return RTMQ_OK;
@@ -375,7 +375,7 @@ static int rtsd_cli_cmd_send_req(rtmq_proxy_t *pxy, int idx)
 }
 
 /******************************************************************************
- **函数名称: rtsd_cli_send
+ **函数名称: rtmq_proxy_async_send
  **功    能: 发送指定数据(对外接口)
  **输入参数:
  **     pxy: 上下文信息
@@ -391,7 +391,7 @@ static int rtsd_cli_cmd_send_req(rtmq_proxy_t *pxy, int idx)
  **     2. 不用关注变量num在多线程中的值, 因其不影响安全性
  **作    者: # Qifeng.zou # 2015.01.14 #
  ******************************************************************************/
-int rtsd_cli_send(rtmq_proxy_t *pxy, int type, const void *data, size_t size)
+int rtmq_proxy_async_send(rtmq_proxy_t *pxy, int type, const void *data, size_t size)
 {
     int idx;
     void *addr;
@@ -431,7 +431,7 @@ int rtsd_cli_send(rtmq_proxy_t *pxy, int type, const void *data, size_t size)
     }
 
     /* > 通知发送线程 */
-    rtsd_cli_cmd_send_req(pxy, idx);
+    rtmq_proxy_cli_cmd_send_req(pxy, idx);
 
     return RTMQ_OK;
 }
