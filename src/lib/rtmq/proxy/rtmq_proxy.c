@@ -22,7 +22,7 @@ static int rtmq_proxy_creat_workers(rtmq_proxy_t *pxy)
     rtmq_proxy_conf_t *conf = &pxy->conf;
 
     /* > 创建对象 */
-    worker = (rtmq_worker_t *)calloc(1, conf->work_thd_num * sizeof(rtmq_worker_t));
+    worker = (rtmq_worker_t *)calloc(conf->work_thd_num, sizeof(rtmq_worker_t));
     if (NULL == worker) {
         log_error(pxy->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return RTMQ_ERR;
@@ -67,7 +67,7 @@ static int rtmq_proxy_creat_sends(rtmq_proxy_t *pxy)
     rtmq_proxy_conf_t *conf = &pxy->conf;
 
     /* > 创建对象 */
-    ssvr = (rtmq_proxy_ssvr_t *)calloc(1, conf->send_thd_num * sizeof(rtmq_proxy_ssvr_t));
+    ssvr = (rtmq_proxy_ssvr_t *)calloc(conf->send_thd_num, sizeof(rtmq_proxy_ssvr_t));
     if (NULL == ssvr) {
         log_error(pxy->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return RTMQ_ERR;
