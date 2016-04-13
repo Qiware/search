@@ -49,7 +49,7 @@ typedef struct
 int rtmq_proxy_ssvr_init(rtmq_proxy_t *pxy, rtmq_proxy_ssvr_t *ssvr, int tidx);
 void *rtmq_proxy_ssvr_routine(void *_ctx);
 
-int rtmq_proxy_worker_init(rtmq_proxy_t *pxy, rtmq_worker_t *wrk, int tidx);
+int rtmq_proxy_worker_init(rtmq_proxy_t *pxy, rtmq_worker_t *worker, int tidx);
 void *rtmq_proxy_worker_routine(void *_ctx);
 
 rtmq_worker_t *rtmq_proxy_worker_get_by_idx(rtmq_proxy_t *pxy, int idx);

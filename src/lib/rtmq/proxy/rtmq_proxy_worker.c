@@ -147,8 +147,7 @@ static rtmq_worker_t *rtmq_proxy_worker_get_curr(rtmq_proxy_t *pxy)
  **     id: 工作对象编号
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述:
- **     1. 创建命令套接字
+ **实现描述: 创建命令套接字
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.18 #
  ******************************************************************************/
@@ -160,7 +159,6 @@ int rtmq_proxy_worker_init(rtmq_proxy_t *pxy, rtmq_worker_t *worker, int id)
     worker->id = id;
     worker->log = pxy->log;
 
-    /* 1. 创建命令套接字 */
     rtmq_proxy_worker_usck_path(conf, path, worker->id);
 
     worker->cmd_sck_id = unix_udp_creat(path);
@@ -200,14 +198,10 @@ static int rtmq_proxy_worker_event_core_hdl(rtmq_proxy_t *pxy, rtmq_worker_t *wo
 
     switch (cmd.type) {
         case RTMQ_CMD_PROC_REQ:
-        {
             return rtmq_proxy_worker_cmd_proc_req_hdl(pxy, worker, &cmd);
-        }
         default:
-        {
             log_error(worker->log, "Received unknown type! %d", cmd.type);
             return RTMQ_ERR_UNKNOWN_CMD;
-        }
     }
 
     return RTMQ_ERR_UNKNOWN_CMD;

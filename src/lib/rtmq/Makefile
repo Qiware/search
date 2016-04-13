@@ -19,12 +19,12 @@ LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lcore
 LIBS += $(SHARED_LIB)
 
-SRC_LIST = rtmq_recv.c \
-			rtmq_comm.c \
-			rtmq_lsn.c \
-			rtmq_rsvr.c \
-			rtmq_worker.c \
-			rtmq_dist.c \
+SRC_LIST = ./server/rtmq_recv.c \
+			./server/rtmq_comm.c \
+			./server/rtmq_lsn.c \
+			./server/rtmq_rsvr.c \
+			./server/rtmq_worker.c \
+			./server/rtmq_dist.c \
 			./proxy/rtmq_proxy.c \
 			./proxy/rtmq_proxy_ssvr.c \
 			./proxy/rtmq_proxy_worker.c
