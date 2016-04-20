@@ -1225,7 +1225,7 @@ static int rtrd_rsvr_cmd_proc_req(rtrd_cntx_t *ctx, rtrd_rsvr_t *rsvr, int rqid)
     /* 2. 发送处理命令 */
     if (unix_udp_send(rsvr->cmd_sck_id, path, &cmd, sizeof(rtmq_cmd_t)) < 0) {
         if (EAGAIN != errno) {
-            log_debug(rsvr->log, "Send command failed! errmsg:[%d] %s! path:[%s]",
+            log_error(rsvr->log, "Send command failed! errmsg:[%d] %s! path:[%s]",
                       errno, strerror(errno), path);
         }
         return RTMQ_ERR;

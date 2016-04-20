@@ -14,7 +14,7 @@ static int lsnd_conf_parse(xml_tree_t *xml, agent_conf_t *conf, log_cycle_t *log
 
 static int lsnd_conf_load_comm(xml_tree_t *xml, lsnd_conf_t *conf, log_cycle_t *log);
 static int lsnd_conf_load_agent(xml_tree_t *xml, lsnd_conf_t *conf, log_cycle_t *log);
-static int lsnd_conf_load_invtd(xml_tree_t *xml, rtsd_conf_t *conf, log_cycle_t *log);
+static int lsnd_conf_load_frwder(xml_tree_t *xml, lsnd_conf_t *lcf, log_cycle_t *log);
 
 /******************************************************************************
  **函数名称: lsnd_load_conf
@@ -64,7 +64,7 @@ int lsnd_load_conf(const char *path, lsnd_conf_t *conf, log_cycle_t *log)
         }
 
         /* > 加载转发配置 */
-        if (lsnd_conf_load_invtd(xml, &conf->invtd_conf, log)) {
+        if (lsnd_conf_load_frwder(xml, conf, log)) {
             log_error(log, "Load rttp conf failed! path:%s", path);
             break;
         }
@@ -95,6 +95,17 @@ int lsnd_load_conf(const char *path, lsnd_conf_t *conf, log_cycle_t *log)
 static int lsnd_conf_load_comm(xml_tree_t *xml, lsnd_conf_t *conf, log_cycle_t *log)
 {
     xml_node_t *node, *fix;
+
+    /* > 加载结点ID */
+    node = xml_query(xml, ".LISTEND.ID");
+    if (NULL == node
+        || 0 == node->value.len)
+    {
+        log_error(log, "Get node id failed!");
+        return -1;
+    }
+
+    conf->nid = atoi(node->value.str);
 
     /* > 加载结点名称 */
     node = xml_query(xml, ".LISTEND.NAME");
@@ -281,15 +292,7 @@ static int lsnd_conf_load_agent(xml_tree_t *xml, lsnd_conf_t *lcf, log_cycle_t *
     snprintf(conf->path, sizeof(conf->path), "%s/agent/", lcf->wdir); /* 工作路径 */
 
     /* > 加载结点ID */
-    node = xml_query(xml, ".LISTEND.AGENT.ID");
-    if (NULL == node
-        || 0 == node->value.len)
-    {
-        log_error(log, "Get node id failed!");
-        return -1;
-    }
-
-    conf->nid = atoi(node->value.str);
+    conf->nid = lcf->nid;
 
     /* > 加载连接配置 */
     if (lsnd_conf_parse_agent_connections(xml, conf, log)) {
@@ -335,7 +338,7 @@ static int lsnd_conf_load_agent(xml_tree_t *xml, lsnd_conf_t *lcf, log_cycle_t *
 }
 
 /******************************************************************************
- **函数名称: lsnd_conf_load_invtd
+ **函数名称: lsnd_conf_load_frwder
  **功    能: 加载转发配置
  **输入参数: 
  **     path: 配置文件路径
@@ -347,15 +350,19 @@ static int lsnd_conf_load_agent(xml_tree_t *xml, lsnd_conf_t *lcf, log_cycle_t *
  **注意事项: 
  **作    者: # Qifeng.zou # 2015-06-25 22:43:12 #
  ******************************************************************************/
-static int lsnd_conf_load_invtd(xml_tree_t *xml, rtsd_conf_t *conf, log_cycle_t *log)
+static int lsnd_conf_load_frwder(xml_tree_t *xml, lsnd_conf_t *lcf, log_cycle_t *log)
 {
     xml_node_t *parent, *node;
+    rtsd_conf_t *conf = &lcf->frwder;
 
-    parent = xml_query(xml, ".LISTEND.INVERTD");
+    parent = xml_query(xml, ".LISTEND.FRWDER");
     if (NULL == parent) {
         log_error(log, "Didn't find invertd configuation!");
         return -1;
     }
+
+    /* > 设置结点ID */
+    conf->nodeid = lcf->nid;
 
     /* > 服务端IP */
     node = xml_search(xml, parent, "SERVER.IP");

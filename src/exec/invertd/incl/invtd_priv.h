@@ -5,6 +5,6 @@
 
 int invtd_getopt(int argc, char **argv, invtd_opt_t *opt);
 int invtd_usage(const char *exec);
-int invtd_start_rtmq(invtd_cntx_t *ctx);
+int invtd_start_frwder(invtd_cntx_t *ctx);
 
 #endif /*__INVTD_PRIV_H__*/

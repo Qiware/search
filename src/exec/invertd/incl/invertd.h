@@ -15,7 +15,7 @@ typedef struct
     invt_tab_t *invtab;                     /* 倒排表 */
     pthread_rwlock_t invtab_lock;           /* 倒排表锁 */
 
-    rtrd_cntx_t *rtrd;                      /* RTRD服务 */
+    rtsd_cntx_t *frwder;                    /* 下行服务 */
 } invtd_cntx_t;
 
 /* 输入参数 */

@@ -11,8 +11,8 @@
 #include "xml_tree.h"
 #include "invtd_conf.h"
 
-static int invtd_conf_load_sdtp(xml_tree_t *xml, rtrd_conf_t *conf);
 static int invtd_conf_load_comm(xml_tree_t *xml, invtd_conf_t *conf);
+static int invtd_conf_load_frwder(xml_tree_t *xml, rtsd_conf_t *conf, int nodeid);
 
 /******************************************************************************
  **函数名称: invtd_conf_load
@@ -45,14 +45,14 @@ int invtd_conf_load(const char *path, invtd_conf_t *conf, log_cycle_t *log)
         return INVT_ERR_CONF;
     }
 
-    /* > 加载SDTP配置 */
-    if (invtd_conf_load_sdtp(xml, &conf->rtrd)) {
+    /* > 加载其他配置 */
+    if (invtd_conf_load_comm(xml, conf)) {
         xml_destroy(xml);
         return INVT_ERR_CONF;
     }
 
-    /* > 加载其他配置 */
-    if (invtd_conf_load_comm(xml, conf)) {
+    /* > 加载DownStream配置 */
+    if (invtd_conf_load_frwder(xml, &conf->frwder, conf->nodeid)) {
         xml_destroy(xml);
         return INVT_ERR_CONF;
     }
@@ -63,8 +63,8 @@ int invtd_conf_load(const char *path, invtd_conf_t *conf, log_cycle_t *log)
 }
 
 /******************************************************************************
- **函数名称: invtd_conf_load_sdtp
- **功    能: 加载SDTP配置信息
+ **函数名称: invtd_conf_load_frwder
+ **功    能: 加载下行配置信息
  **输入参数:
  **     path: 配置文件路径
  **输出参数:
@@ -74,118 +74,163 @@ int invtd_conf_load(const char *path, invtd_conf_t *conf, log_cycle_t *log)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.05.08 #
  ******************************************************************************/
-static int invtd_conf_load_sdtp(xml_tree_t *xml, rtrd_conf_t *conf)
+static int invtd_conf_load_frwder(xml_tree_t *xml, rtsd_conf_t *conf, int nodeid)
 {
-    xml_node_t *nail, *node;
+    xml_node_t *parent, *node;
 
-    nail = xml_query(xml, ".INVTERD.SDTP"); 
-    if (NULL == nail) {
-        return INVT_ERR_CONF;
+    parent = xml_query(xml, ".INVTERD.FRWDER");
+    if (NULL == parent) {
+        log_error(xml->log, "Didn't find invertd configuation!");
+        return -1;
     }
 
-    /* > 节点ID */
-    node = xml_search(xml, nail, "NODE");
-    if (NULL == node) {
-        return INVT_ERR_CONF;
+    /* > 设置结点ID */
+    conf->nodeid = nodeid;
+
+    /* > 服务端IP */
+    node = xml_search(xml, parent, "SERVER.IP");
+    if (NULL == node
+        || 0 == node->value.len)
+    {
+        log_error(xml->log, "Didn't find SERVER.IP!");
+        return -1;
     }
 
-    conf->nodeid = atoi(node->value.str);
+    snprintf(conf->ipaddr, sizeof(conf->ipaddr), "%s", node->value.str);
 
-    /* > 工作路径 */
-    node = xml_search(xml, nail, "PATH");
-    if (NULL == node) {
-        return INVT_ERR_CONF;
-    }
-
-    snprintf(conf->path, sizeof(conf->path), "%s", node->value.str);
-
-    /* > 端口号 */
-    node = xml_search(xml, nail, "PORT");
-    if (NULL == node) {
-        return INVT_ERR_CONF;
+    node = xml_search(xml, parent, "SERVER.PORT");
+    if (NULL == node
+        || 0 == node->value.len)
+    {
+        log_error(xml->log, "Didn't find SERVER.PORT!");
+        return -1;
     }
 
     conf->port = atoi(node->value.str);
 
-    /* > 鉴权配置信息 */
-    node = xml_search(xml, nail, "AUTH.USR");
-    if (NULL == node) {
-        return INVT_ERR_CONF;
+    /* > 鉴权信息 */
+    node = xml_search(xml, parent, "AUTH.USR");
+    if (NULL == node
+        || 0 == node->value.len)
+    {
+        log_error(xml->log, "Didn't find AUTH.USR!");
+        return -1;
     }
 
     snprintf(conf->auth.usr, sizeof(conf->auth.usr), "%s", node->value.str);
 
-    node = xml_search(xml, nail, "AUTH.PASSWD");
-    if (NULL == node) {
-        return INVT_ERR_CONF;
+    node = xml_search(xml, parent, "AUTH.PASSWD");
+    if (NULL == node
+        || 0 == node->value.len)
+    {
+        log_error(xml->log, "Didn't find AUTH.PASSWD!");
+        return -1;
     }
 
     snprintf(conf->auth.passwd, sizeof(conf->auth.passwd), "%s", node->value.str);
 
-    /* > 线程数配置 */
-    node = xml_search(xml, nail, "THREAD-POOL.RECV_THD_NUM");
-    if (NULL == node) {
-        return INVT_ERR_CONF;
+    /* > 线程数目 */
+    node = xml_search(xml, parent, "THREAD-POOL.SEND_THD_NUM");  /* 发送线程数 */
+    if (NULL == node
+        || 0 == node->value.len)
+    {
+        log_error(xml->log, "Didn't find THREAD-POOL.SEND_THD_NUM!");
+        return -1;
     }
 
-    conf->recv_thd_num = atoi(node->value.str);
+    conf->send_thd_num = atoi(node->value.str);
+    if (0 == conf->send_thd_num) {
+        log_error(xml->log, "THREAD-POOL.SEND_THD_NUM is zero!");
+        return -1;
+    }
 
-    node = xml_search(xml, nail, "THREAD-POOL.WORK_THD_NUM");
-    if (NULL == node) {
-        return INVT_ERR_CONF;
+    node = xml_search(xml, parent, "THREAD-POOL.WORK_THD_NUM");  /* 工作线程数 */
+    if (NULL == node
+        || 0 == node->value.len)
+    {
+        log_error(xml->log, "Didn't find THREAD-POOL.WORK_THD_NUM!");
+        return -1;
     }
 
     conf->work_thd_num = atoi(node->value.str);
-
-    /* > 接收队列配置 */
-    node = xml_search(xml, nail, "RECVQ.NUM");
-    if (NULL == node) {
-        return INVT_ERR_CONF;
+    if (0 == conf->work_thd_num) {
+        log_error(xml->log, "THREAD-POOL.WORK_THD_NUM is zero!");
+        return -1;
     }
 
-    conf->recvq_num = atoi(node->value.str);
+    /* > 缓存大小配置 */
+    node = xml_search(xml, parent, "BUFFER-POOL-SIZE.RECV");  /* 接收缓存(MB) */
+    if (NULL == node
+        || 0 == node->value.len)
+    {
+        log_error(xml->log, "Didn't find BUFFER-POOL-SIZE.RECV!");
+        return -1;
+    }
 
-    node = xml_search(xml, nail, "RECVQ.MAX");
-    if (NULL == node) {
-        return INVT_ERR_CONF;
+    conf->recv_buff_size = atoi(node->value.str) * MB;
+    if (0 == conf->recv_buff_size) {
+        return -1;
+    }
+
+    /* > 接收队列 */
+    node = xml_search(xml, parent, "RECVQ.MAX");
+    if (NULL == node
+        || 0 == node->value.len)
+    {
+        log_error(xml->log, "Didn't find RECVQ.MAX!");
+        return -1;
     }
 
     conf->recvq.max = atoi(node->value.str);
+    if (0 == conf->recvq.max) {
+        log_error(xml->log, "RECVQ.MAX is zero!");
+        return -1;
+    }
 
-    node = xml_search(xml, nail, "RECVQ.SIZE");
-    if (NULL == node) {
-        return INVT_ERR_CONF;
+    node = xml_search(xml, parent, "RECVQ.SIZE");
+    if (NULL == node
+        || 0 == node->value.len)
+    {
+        log_error(xml->log, "Didn't find RECVQ.SIZE!");
+        return -1;
     }
 
     conf->recvq.size = atoi(node->value.str);
-
-    /* > 发送队列配置 */
-    conf->sendq.max = conf->recvq.max;
-    conf->sendq.size = conf->recvq.size;
-
-    /* > 分发队列配置 */
-    node = xml_search(xml, nail, "DISTQ.NUM");
-    if (NULL == node) {
-        return INVT_ERR_CONF;
+    if (0 == conf->recvq.size) {
+        log_error(xml->log, "RECVQ.SIZE is zero!");
+        return -1;
     }
 
-    conf->distq_num = atoi(node->value.str);
-
-    node = xml_search(xml, nail, "DISTQ.MAX");
-    if (NULL == node) {
-        return INVT_ERR_CONF;
+    /* > 发送队列 */
+    node = xml_search(xml, parent, "SENDQ.MAX");
+    if (NULL == node
+        || 0 == node->value.len)
+    {
+        log_error(xml->log, "Didn't find SENDQ.MAX!");
+        return -1;
     }
 
-    conf->distq.max = atoi(node->value.str);
-
-    node = xml_search(xml, nail, "DISTQ.SIZE");
-    if (NULL == node) {
-        return INVT_ERR_CONF;
+    conf->sendq.max = atoi(node->value.str);
+    if (0 == conf->sendq.max) {
+        log_error(xml->log, "SENDQ.MAX is zero!");
+        return -1;
     }
 
-    conf->distq.size = atoi(node->value.str);
+    node = xml_search(xml, parent, "SENDQ.SIZE");
+    if (NULL == node
+        || 0 == node->value.len)
+    {
+        log_error(xml->log, "Didn't find SENDQ.SIZE!");
+        return -1;
+    }
 
-    return INVT_OK;
+    conf->sendq.size = atoi(node->value.str);
+    if (0 == conf->sendq.size) {
+        log_error(xml->log, "SENDQ.SIZE is zero!");
+        return -1;
+    }
+
+    return 0;
 }
 
 /******************************************************************************
@@ -203,6 +248,14 @@ static int invtd_conf_load_sdtp(xml_tree_t *xml, rtrd_conf_t *conf)
 static int invtd_conf_load_comm(xml_tree_t *xml, invtd_conf_t *conf)
 {
     xml_node_t *node;
+
+    /* > 结点ID */
+    node = xml_query(xml, ".INVTERD.NODE");
+    if (NULL == node) {
+        return INVT_ERR_CONF;
+    }
+
+    conf->nodeid = atoi(node->value.str);
 
     /* > 倒排表长度 */
     node = xml_query(xml, ".INVTERD.INVT_TAB.MAX");

@@ -234,10 +234,11 @@ static int rtrd_worker_cmd_proc_req_hdl(rtrd_cntx_t *ctx, rtmq_worker_t *worker,
         for (idx=0; idx<num; ++idx) {
             head = (rtmq_header_t *)addr[idx];
 
-            reg = &ctx->reg[head->type];
-            if (NULL == reg->proc) {
+            reg = avl_query(ctx->reg, &head->type, sizeof(head->type));
+            if (NULL == reg) {
                 queue_dealloc(rq, addr[idx]);
                 ++worker->drop_total;   /* 丢弃计数 */
+                log_trace(ctx->log, "Drop data! type:%u", head->type);
                 continue;
             }
 

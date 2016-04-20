@@ -10,7 +10,6 @@
 #include "mesg.h"
 #include "agent.h"
 #include "command.h"
-#include "agent_mesg.h"
 
 /* 静态函数 */
 static int frwd_reg_req_cb(frwd_cntx_t *frwd);
@@ -55,7 +54,7 @@ int frwd_set_reg(frwd_cntx_t *frwd)
 static int frwd_reg_req_cb(frwd_cntx_t *frwd)
 {
 #define FRWD_REG_REQ_CB(frwd, type, proc, args) \
-    if (rtrd_register((frwd)->recv_lsnd, type, (rtmq_reg_cb_t)proc, (void *)args)) { \
+    if (rtrd_register((frwd)->downstrm, type, (rtmq_reg_cb_t)proc, (void *)args)) { \
         log_error((frwd)->log, "Register type [%d] failed!", type); \
         return FRWD_ERR; \
     }
@@ -80,7 +79,7 @@ static int frwd_reg_req_cb(frwd_cntx_t *frwd)
 static int frwd_reg_rsp_cb(frwd_cntx_t *frwd)
 {
 #define FRWD_REG_RSP_CB(frwd, type, proc, args) \
-    if (rtsd_register((frwd)->rtmq, type, (rtmq_reg_cb_t)proc, (void *)args)) { \
+    if (rtrd_register((frwd)->upstrm, type, (rtmq_reg_cb_t)proc, (void *)args)) { \
         log_error((frwd)->log, "Register type [%d] failed!", type); \
         return FRWD_ERR; \
     }
@@ -109,15 +108,18 @@ static int frwd_reg_rsp_cb(frwd_cntx_t *frwd)
 static int frwd_search_word_req_hdl(int type, int orig, char *data, size_t len, void *args)
 {
     frwd_cntx_t *ctx = (frwd_cntx_t *)args;
-    agent_header_t *head = (agent_header_t *)data;
+    mesg_header_t *head = (mesg_header_t *)data;
 
-    log_trace(ctx->log, "Call %s()", __func__);
+    /* > 转换字节序 */
+    mesg_head_ntoh(head, head);
 
-    /* > 字节序转换 */
-    agent_head_hton(head, head);
+    log_trace(ctx->log, "Call %s()! serial:%lu type:%d len:%d flag:%d mark:[0x%X/0x%X]",
+            __func__, head->serial, head->type,
+            head->length, head->flag, head->mark, MSG_MARK_KEY);
 
+    mesg_head_hton(head, head);
     /* > 发送数据 */
-    if (rtsd_cli_send(ctx->rtmq, type, data, len)) {
+    if (rtrd_send(ctx->upstrm, type, 30001, data, len)) {
         log_error(ctx->log, "Push data into send queue failed! type:%u", type);
         return -1;
     }
@@ -136,15 +138,25 @@ static int frwd_search_word_req_hdl(int type, int orig, char *data, size_t len, 
  **     args: 附加参数
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述:
+ **实现描述: 将收到的搜索应答转发至帧听层
  **注意事项:
  **作    者: # Qifeng.zou # 2015.06.10 #
  ******************************************************************************/
 static int frwd_search_word_rsp_hdl(int type, int orig, char *data, size_t len, void *args)
 {
+    serial_t serial;
     frwd_cntx_t *ctx = (frwd_cntx_t *)args;
+    mesg_header_t *head = (mesg_header_t *)data;
 
     log_trace(ctx->log, "Call %s()", __func__);
+
+    serial.serial = ntoh64(head->serial);
+
+    /* > 发送数据 */
+    if (rtrd_send(ctx->downstrm, type, serial.nid, data, len)) {
+        log_error(ctx->log, "Push data into send queue failed! type:%u", type);
+        return -1;
+    }
 
     return 0;
 }
@@ -171,7 +183,7 @@ static int frwd_insert_word_req_hdl(int type, int orig, char *data, size_t len, 
     log_trace(ctx->log, "Call %s()", __func__);
 
     /* > 发送数据 */
-    if (rtsd_cli_send(ctx->rtmq, type, data, len)) {
+    if (rtrd_send(ctx->upstrm, type, 30001, data, len)) {
         log_error(ctx->log, "Push data into send queue failed! type:%u", type);
         return -1;
     }
@@ -196,9 +208,23 @@ static int frwd_insert_word_req_hdl(int type, int orig, char *data, size_t len, 
  ******************************************************************************/
 static int frwd_insert_word_rsp_hdl(int type, int orig, char *data, size_t len, void *args)
 {
+    serial_t serial;
     frwd_cntx_t *ctx = (frwd_cntx_t *)args;
+    mesg_header_t *head = (mesg_header_t *)data;
 
-    log_trace(ctx->log, "Call %s()", __func__);
+    mesg_head_ntoh(head, head);
+
+    serial.serial = head->serial;
+    log_trace(ctx->log, "Call %s()! serial:%lu", __func__, head->serial);
+
+    mesg_head_hton(head, head);
+
+
+    /* > 发送数据 */
+    if (rtrd_send(ctx->downstrm, type, serial.nid, data, len)) {
+        log_error(ctx->log, "Push data into send queue failed! type:%u", type);
+        return -1;
+    }
 
     return 0;
 }

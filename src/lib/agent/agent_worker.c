@@ -1,7 +1,7 @@
 #include "sck.h"
 #include "redo.h"
+#include "mesg.h"
 #include "command.h"
-#include "agent_mesg.h"
 #include "agent_worker.h"
 
 #define AGT_WSVR_POP_NUM    (1024) /* 一次最多弹出数据个数 */
@@ -152,7 +152,7 @@ static int agent_worker_proc_data_hdl(agent_cntx_t *ctx, agent_worker_t *worker)
     int i, num, idx, rqid; /* rqid: 接收队列ID */
     agent_reg_t *reg;
     agent_flow_t *flow;
-    agent_header_t *head;
+    mesg_header_t *head;
     void *addr[AGT_WSVR_POP_NUM];
     agent_conf_t *conf = ctx->conf;
 
@@ -177,7 +177,7 @@ static int agent_worker_proc_data_hdl(agent_cntx_t *ctx, agent_worker_t *worker)
         for (idx=0; idx<num; ++idx) {
             /* > 对数据进行处理 */
             flow = (agent_flow_t *)addr[idx];
-            head = (agent_header_t *)(flow + 1);
+            head = (mesg_header_t *)(flow + 1);
 
             reg = &ctx->reg[head->type];
 
@@ -191,7 +191,7 @@ static int agent_worker_proc_data_hdl(agent_cntx_t *ctx, agent_worker_t *worker)
             /* > 调用处理回调 */
             if (reg->proc(head->type,
                     addr[idx] + sizeof(agent_flow_t),
-                    head->length + sizeof(agent_header_t), reg->args))
+                    head->length + sizeof(mesg_header_t), reg->args))
             {
                 agent_serial_to_sck_map_delete(ctx, flow->serial);
             }
@@ -262,5 +262,3 @@ static int agent_worker_timeout_handler(agent_cntx_t *ctx, agent_worker_t *worke
 {
     return agent_worker_proc_data_hdl(ctx, worker);
 }
-
-

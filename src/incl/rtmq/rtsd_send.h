@@ -41,7 +41,7 @@ typedef struct
     thread_pool_t *sendtp;              /* 发送线程池 */
     thread_pool_t *worktp;              /* 工作线程池 */
 
-    rtmq_reg_t reg[RTMQ_TYPE_MAX];      /* 回调注册对象(TODO: 如果类型过多，可构造平衡二叉树) */
+    avl_tree_t *reg;                    /* 回调注册对象(注: 存储rtmq_reg_t数据) */
     queue_t **recvq;                    /* 接收队列(数组长度与send_thd_num一致) */
     queue_t **sendq;                    /* 发送缓存(数组长度与send_thd_num一致) */
 } rtsd_cntx_t;

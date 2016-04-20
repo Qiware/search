@@ -37,32 +37,66 @@ typedef enum
     , MSG_SWITCH_SCHED_REQ                  /* 切换调度-请求 */
     , MSG_SWITCH_SCHED_RSP                  /* 反馈切换调度信息-应答 */
 
+    , MSG_SUB_REQ                           /* 订阅-请求 */
+    , MSG_SUB_ACK                           /* 订阅-应答 */
+
     , MSG_TYPE_TOTAL                        /* 消息类型总数 */
 } mesg_type_e;
+
+/* 通用协议头 */
+typedef struct
+{
+    uint32_t type;                      /* 消息类型 Range: mesg_type_e */
+#define MSG_FLAG_SYS   (0)              /* 0: 系统数据类型 */
+#define MSG_FLAG_USR   (1)              /* 1: 自定义数据类型 */
+    uint32_t flag;                      /* 标识量(0:系统数据类型 1:自定义数据类型) */
+    uint32_t length;                    /* 报体长度 */
+#define MSG_MARK_KEY   (0x1ED23CB4)
+    uint32_t mark;                      /* 校验值 */
+    uint32_t from;                      /* 源设备ID */
+    uint32_t to;                        /* 目标设备ID */
+
+    uint64_t serial;                    /* 流水号(注: 全局唯一流水号) */
+    char body[0];                       /* 消息体 */
+} mesg_header_t;
+
+/* 字节序转换 */
+#define mesg_head_hton(h, n) do { /* 主机->网络 */\
+    (n)->type = htonl((h)->type); \
+    (n)->flag = htonl((h)->flag); \
+    (n)->length = htonl((h)->length); \
+    (n)->mark = htonl((h)->mark); \
+    (n)->serial = hton64((h)->serial); \
+} while(0)
+
+#define mesg_head_ntoh(n, h) do { /* 网络->主机*/\
+    (h)->type = ntohl((n)->type); \
+    (h)->flag = ntohl((n)->flag); \
+    (h)->length = ntohl((n)->length); \
+    (h)->mark = ntohl((n)->mark); \
+    (h)->serial = ntoh64((n)->serial); \
+} while(0)
+
+#define mesg_head_set(head, _type, _serial, _len) do { /* 设置协议头 */\
+    (head)->type = (_type); \
+    (head)->flag = MSG_FLAG_USR; \
+    (head)->length = (_len); \
+    (head)->mark = MSG_MARK_KEY; \
+    (head)->serial = (_serial); \
+} while(0)
+
+#define mesg_total_len(body_len) (sizeof(mesg_header_t) + body_len);
 
 /* 搜索消息结构 */
 #define SRCH_WORD_LEN       (128)
 typedef struct
 {
-    uint64_t serial;                        /* 流水号(全局唯一编号) */ 
     char words[SRCH_WORD_LEN];              /* 搜索关键字 */
 } mesg_search_word_req_t;
-
-/* 传输信息 */
-typedef struct
-{
-    uint64_t serial;                        /* 流水号(全局唯一编号) */
-
-    char body[0];                           /* 传输数据 */
-} mesg_data_t;
-
-#define mesg_data_total(body_len) (sizeof(uint64_t) + body_len);
 
 /* 插入关键字-请求 */
 typedef struct
 {
-    uint64_t serial;                        /* 流水号(全局唯一编号) */
-
     char word[SRCH_WORD_LEN];               /* 关键字 */
     char url[URL_MAX_LEN];                  /* 关键字对应的URL */
     int freq;                               /* 频率 */
@@ -71,12 +105,18 @@ typedef struct
 /* 插入关键字-应答 */
 typedef struct
 {
-    uint64_t serial;                        /* 流水号(全局唯一编号) */
-
 #define MESG_INSERT_WORD_FAIL   (0)
 #define MESG_INSERT_WORD_SUCC   (1)
     int code;                               /* 应答码 */
     char word[SRCH_WORD_LEN];               /* 关键字 */
 } mesg_insert_word_rsp_t;
+
+#define mesg_insert_word_resp_hton(rsp) do { \
+    (rsp)->code = htonl((rsp)->code); \
+} while(0)
+
+#define mesg_insert_word_resp_ntoh(rsp) do { \
+    (rsp)->code = ntohl((rsp)->code); \
+} while(0)
 
 #endif /*__MESG_H__*/

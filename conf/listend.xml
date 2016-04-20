@@ -1,15 +1,10 @@
 <!-- 代理服务配置信息 -->
-<LISTEND ID="1001" NAME="SearchEngineListend" WORKDIR="../temp/listend/">
+<LISTEND ID="10001" NAME="listend" WORKDIR="../temp/listend/">
     <!-- 分发队列配置 -->
     <DISTQ NUM="8" MAX="4096" SIZE="4096" />
 
-    <!-- 指定转发配置
-         PATH: 转发配置路径
-         MARK: 指定转发配置的标签 -->
-    <FRWDER PATH="../conf/frwder.xml" MARK=".FRWDER.CONN-INVTD" />
-
     <!-- 代理信息配置 -->
-    <AGENT ID="1001">
+    <AGENT>
         <!-- 并发(连接)配置
             1) MAX: 最大并发数
             2) TIMEOUT: 连接超时时间
@@ -29,15 +24,15 @@
             1) LSN: 侦听线程数
             2) AGENT: 代理线程数
             3) WORKER: 工作线程数 -->
-        <THREAD-POOL LSN="1" AGENT="1" WORKER="1" />
+        <THREAD-POOL LSN="2" AGENT="2" WORKER="2" />
     </AGENT>
     <!-- 倒排连接配置 -->
-    <INVERTD NODE="1001">                   <!-- NODE: 结点ID(必须唯一) -->
+    <FRWDER>                                    <!-- NODE: 结点ID(必须唯一) -->
         <SERVER IP="127.0.0.1" PORT="28888" />  <!-- 服务端地址(IP:IP地址 PORT:服务端口) -->
         <AUTH   USR="qifeng" PASSWD="111111" /> <!-- 鉴权配置(USR:用户名 PASSWD:登录密码) -->
-        <THREAD-POOL SEND_THD_NUM="1" WORK_THD_NUM="1" />  <!-- 线程数目(SEND:发送线程 WORK:工作线程) -->
+        <THREAD-POOL SEND_THD_NUM="2" WORK_THD_NUM="2" />  <!-- 线程数目(SEND:发送线程 WORK:工作线程) -->
         <BUFFER-POOL-SIZE SEND="5" RECV="5" />  <!-- 缓存配置(SEND:发送缓存(MB) RECV:接收缓存(MB)) -->
         <RECVQ  MAX="4096" SIZE="4096" />       <!-- 接收队列(MAX:总容量 SIZE:单元大小) -->
         <SENDQ  MAX="4096" SIZE="4096" />       <!-- 发送队列(MAX:总容量 SIZE:单元大小) -->
-    </INVERTD>
+    </FRWDER>
 </LISTEND>

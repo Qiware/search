@@ -12,7 +12,6 @@
 #include "frwd.h"
 #include "agent.h"
 #include "frwd_conf.h"
-#include "agent_mesg.h"
 
 /* 主函数 */
 int main(int argc, char *argv[])

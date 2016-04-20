@@ -596,14 +596,14 @@ static int agent_recv_head(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
 {
     void *addr;
     int n, left;
-    agent_header_t *head;
+    mesg_header_t *head;
     socket_snap_t *recv = &sck->recv;
 
     addr = recv->addr + sizeof(agent_flow_t);
 
     while (1) {
         /* 1. 计算剩余字节 */
-        left = sizeof(agent_header_t) - recv->off;
+        left = sizeof(mesg_header_t) - recv->off;
 
         /* 2. 接收报头数据 */
         n = read(sck->fd, addr + recv->off, left);
@@ -633,22 +633,18 @@ static int agent_recv_head(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
     }
 
     /* 3. 校验报头数据 */
-    head = (agent_header_t *)addr;
-
-    head->type = ntohl(head->type);
-    head->flag = ntohl(head->flag);
-    head->length = ntohl(head->length);
-    head->mark = ntohl(head->mark);
+    head = (mesg_header_t *)addr;
+    mesg_head_ntoh(head, head);
     head->from = AGENT_GET_NODE_ID(ctx);
 
-    if (AGENT_MSG_MARK_KEY != head->mark) {
+    if (MSG_MARK_KEY != head->mark) {
         log_error(rsvr->log, "Check head failed! type:%d len:%d flag:%d mark:[0x%X/0x%X]",
-            head->type, head->length, head->flag, head->mark, AGENT_MSG_MARK_KEY);
+            head->type, head->length, head->flag, head->mark, MSG_MARK_KEY);
         return AGENT_ERR;
     }
 
     log_trace(rsvr->log, "Recv head success! type:%d len:%d flag:%d mark:[0x%X/0x%X]",
-            head->type, head->length, head->flag, head->mark, AGENT_MSG_MARK_KEY);
+            head->type, head->length, head->flag, head->mark, MSG_MARK_KEY);
 
     return AGENT_OK;
 }
@@ -669,11 +665,11 @@ static int agent_recv_body(agent_rsvr_t *rsvr, socket_t *sck)
 {
     void *addr;
     int n, left;
-    agent_header_t *head;
+    mesg_header_t *head;
     socket_snap_t *recv = &sck->recv;
 
     addr = recv->addr + sizeof(agent_flow_t);
-    head  = (agent_header_t *)addr;
+    head  = (mesg_header_t *)addr;
 
     /* 1. 接收报体 */
     while (1) {
@@ -776,7 +772,7 @@ static int agent_recv_post_hdl(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *
     agent_socket_extra_t *extra = (agent_socket_extra_t *)sck->extra;
 
     /* > 自定义消息的处理 */
-    if (AGENT_MSG_FLAG_USR == extra->head->flag) {
+    if (MSG_FLAG_USR == extra->head->flag) {
         log_info(rsvr->log, "Push into user data queue!");
 
         queue_push(ctx->recvq[rsvr->id], sck->recv.addr);
@@ -803,6 +799,7 @@ static int agent_recv_post_hdl(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *
 static int agent_recv_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
 {
     int ret;
+    agent_flow_t *flow;
     socket_snap_t *recv = &sck->recv;
     agent_socket_extra_t *extra = (agent_socket_extra_t *)sck->extra;
 
@@ -820,13 +817,14 @@ static int agent_recv_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
                 log_info(rsvr->log, "Alloc memory from queue success!");
 
                 extra->flow = (agent_flow_t *)recv->addr;
-                extra->head = (agent_header_t *)(extra->flow + 1);
+                extra->head = (mesg_header_t *)(extra->flow + 1);
                 extra->body = (void *)(extra->head + 1);
                 recv->off = 0;
-                recv->total = sizeof(agent_header_t);
+                recv->total = sizeof(mesg_header_t);
 
-                extra->flow->sid = extra->seq;
-                extra->flow->agt_idx = rsvr->id;
+                flow = extra->flow;
+                flow->sid = extra->seq;
+                flow->agt_idx = rsvr->id;
 
                 /* 设置下步 */
                 recv->phase = SOCK_PHASE_RECV_HEAD;
@@ -842,13 +840,15 @@ static int agent_recv_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
                     case AGENT_OK:
                     {
                         extra->flow = (agent_flow_t *)recv->addr;
-                        extra->flow->serial = agent_gen_sys_serail( /* 获取流水号 */
-                            ctx->conf->nid, rsvr->id, ++rsvr->recv_seq);
-                        extra->flow->create_tm = rsvr->ctm;
+
+                        flow = extra->flow;
+                        flow->serial = agent_gen_sys_serail( /* 获取流水号 */
+                                ctx->conf->nid, rsvr->id, ++rsvr->recv_seq);
+                        flow->create_tm = rsvr->ctm;
 
                         log_info(rsvr->log, "Call %s()! serial:%lu", __func__, extra->flow->serial);
 
-                        extra->head->serial = extra->flow->serial;
+                        extra->head->serial = flow->serial;
                         if (extra->head->length) {
                             recv->phase = SOCK_PHASE_READY_BODY; /* 设置下步 */
                         }
@@ -951,7 +951,7 @@ static int agent_recv_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
 static int agent_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
 {
     int n, left;
-    agent_header_t *head;
+    mesg_header_t *head;
     struct epoll_event ev;
     socket_snap_t *send = &sck->send;
     agent_socket_extra_t *extra = (agent_socket_extra_t *)sck->extra;
@@ -966,10 +966,10 @@ static int agent_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
                 return AGENT_OK; /* 无数据 */
             }
 
-            head = (agent_header_t *)send->addr;
+            head = (mesg_header_t *)send->addr;
 
             send->off = 0;
-            send->total = head->length + sizeof(agent_header_t);
+            send->total = head->length + sizeof(mesg_header_t);
 
             log_trace(rsvr->log, "Call %s(): serial:%lu!", __func__, head->serial);
 
@@ -1034,7 +1034,7 @@ static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
     socket_t *sck;
     agent_flow_t *flow;
     agent_flow_t newest;
-    agent_header_t *head;
+    mesg_header_t *head;
     struct epoll_event ev;
     agent_socket_extra_t *sck_extra;
     void *addr[AGT_RSVR_DIST_POP_NUM], *data;
@@ -1056,15 +1056,15 @@ static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
 
         for (idx=0; idx<num; ++idx) {
             flow = (agent_flow_t *)addr[idx]; // 流水信息
-            head = (agent_header_t *)(flow + 1); // 消息头
-            if (AGENT_MSG_MARK_KEY != head->mark) {
+            head = (mesg_header_t *)(flow + 1); // 消息头
+            if (MSG_MARK_KEY != head->mark) {
                 log_error(ctx->log, "Check mark [0X%x/0X%x] failed! serial:%lu",
-                        head->mark, AGENT_MSG_MARK_KEY, flow->serial);
+                        head->mark, MSG_MARK_KEY, flow->serial);
                 queue_dealloc(sendq, addr[idx]);
                 continue;
             }
 
-            total = head->length + sizeof(agent_header_t);
+            total = mesg_total_len(head->length);
 
             /* > 查找最新SERIAL->SCK映射 */
             if (agent_serial_to_sck_map_query(ctx, flow->serial, &newest)) {

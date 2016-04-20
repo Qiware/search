@@ -17,7 +17,6 @@ typedef struct
 {
     void *addr;                         /* 起始地址 */
     size_t len;                         /* 原始长度 */
-    size_t off;                         /* 发送偏移 */
 
     void *pool;                         /* 所属内存池 */
     mem_dealloc_cb_t dealloc;           /* 内存释放回调 */
@@ -49,7 +48,6 @@ void wiov_destroy(wiov_t *wiov);
     (wiov)->iov[(wiov)->iov_cnt].iov_len = (_len); \
     (wiov)->iov[(wiov)->iov_cnt].iov_base = (char *)(_addr); \
     \
-    (wiov)->orig[(wiov)->iov_cnt].off = 0; \
     (wiov)->orig[(wiov)->iov_cnt].len = (_len); \
     (wiov)->orig[(wiov)->iov_cnt].addr = (char *)(_addr); \
     \
@@ -65,7 +63,6 @@ void wiov_destroy(wiov_t *wiov);
     (wiov)->iov[idx].iov_len = 0; \
     (wiov)->iov[idx].iov_base = NULL; \
     \
-    (wiov)->orig[idx].off = 0; \
     (wiov)->orig[idx].len = 0; \
     (wiov)->orig[idx].addr = NULL; \
     \

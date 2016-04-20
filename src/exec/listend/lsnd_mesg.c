@@ -11,7 +11,6 @@
 #include "agent.h"
 #include "listend.h"
 #include "lsnd_mesg.h"
-#include "agent_mesg.h"
 
 /******************************************************************************
  **函数名称: lsnd_search_word_req_hdl
@@ -24,29 +23,22 @@
  **输出参数:
  **返    回: 0:成功 !0:失败
  **实现描述: 请求数据的内存结构: 流水信息 + 消息头 + 消息体
- **注意事项: 
+ **注意事项: 需要将协议头转换为网络字节序
  **作    者: # Qifeng.zou # 2015.05.28 23:11:54 #
  ******************************************************************************/
 int lsnd_search_word_req_hdl(unsigned int type, void *data, int length, void *args)
 {
-    const char *str;
-    agent_header_t *head;
     lsnd_cntx_t *ctx = (lsnd_cntx_t *)args;
+    mesg_header_t *head = (mesg_header_t *)data; /* 消息头 */
 
-    head = (agent_header_t *)data;      // 消息头
-    str = (const char *)(head + 1);     // 消息体
+    log_debug(ctx->log, "Call %s()! serial:%lu length:%d body:%s!",
+            __func__, head->serial, length, head->body);
 
-    head->type = htonl(head->type);
-    head->flag = htonl(head->flag);
-    head->length = htonl(head->length);
-    head->mark = htonl(head->mark);
-    head->serial = hton64(head->serial);
-
-    log_debug(ctx->log, "Call %s() serial:%lu length:%d body:%s!",
-            __func__, ntoh64(head->serial), length, str);
+    /* > 转换字节序 */
+    mesg_head_hton(head, head);
 
     /* > 转发搜索请求 */
-    return rtsd_cli_send(ctx->invtd_upstrm, type, data, length);
+    return rtsd_cli_send(ctx->frwder, type, data, length);
 }
 
 /******************************************************************************
@@ -66,12 +58,18 @@ int lsnd_search_word_req_hdl(unsigned int type, void *data, int length, void *ar
  ******************************************************************************/
 int lsnd_search_word_rsp_hdl(int type, int orig, char *data, size_t len, void *args)
 {
+    void *addr;
     lsnd_cntx_t *ctx = (lsnd_cntx_t *)args;
-    mesg_data_t *rsp = (mesg_data_t *)data;
+    mesg_header_t *head = (mesg_header_t *)data;
 
-    log_trace(ctx->log, "Call %s()! body:%s", __func__, rsp->body);
+    addr = (void *)(head + 1);
 
-    return agent_send(ctx->agent, type, ntoh64(rsp->serial), (void *)data, len);
+    /* > 转化字节序 */
+    mesg_head_ntoh(head, head);
+
+    log_trace(ctx->log, "Call %s()! body:%s", __func__, head->body);
+
+    return agent_send(ctx->agent, type, head->serial, addr, len-sizeof(mesg_header_t));
 }
 
 /******************************************************************************
@@ -85,24 +83,27 @@ int lsnd_search_word_rsp_hdl(int type, int orig, char *data, size_t len, void *a
  **输出参数:
  **返    回: 0:成功 !0:失败
  **实现描述: 请求数据的内存结构: 流水信息 + 消息头 + 消息体
- **注意事项: 
+ **注意事项: 需要将协议头转换为网络字节序
  **作    者: # Qifeng.zou # 2015.06.17 21:34:49 #
  ******************************************************************************/
 int lsnd_insert_word_req_hdl(unsigned int type, void *data, int length, void *args)
 {
-    agent_header_t *head;
+    mesg_header_t *head;
     mesg_insert_word_req_t *req;
     lsnd_cntx_t *ctx = (lsnd_cntx_t *)args;
 
     log_debug(ctx->log, "Call %s()!", __func__);
 
-    head = (agent_header_t *)data; // 消息头
-    req = (mesg_insert_word_req_t *)(head + 1); // 消息体
+    head = (mesg_header_t *)data; // 消息头
+    req = (mesg_insert_word_req_t *)(head + 1);
 
-    /* > 转发搜索请求 */
-    req->serial = head->serial;
+    log_debug(ctx->log, "Call %s()! serial:%lu word:%s url:%s freq:%d",
+            __func__, head->serial, req->word, req->url, ntohl(req->freq));
 
-    return rtsd_cli_send(ctx->invtd_upstrm, type, req, sizeof(mesg_insert_word_req_t));
+    /* > 转换字节序 */
+    mesg_head_hton(head, head);
+
+    return rtsd_cli_send(ctx->frwder, type, data, length);
 }
 
 /******************************************************************************
@@ -123,10 +124,14 @@ int lsnd_insert_word_req_hdl(unsigned int type, void *data, int length, void *ar
 int lsnd_insert_word_rsp_hdl(int type, int orig, char *data, size_t len, void *args)
 {
     lsnd_cntx_t *ctx = (lsnd_cntx_t *)args;
-    mesg_insert_word_rsp_t *rsp = (mesg_insert_word_rsp_t *)data;
+    mesg_header_t *head = (mesg_header_t *)data;
+    mesg_insert_word_rsp_t *rsp = (mesg_insert_word_rsp_t *)(head + 1);
 
     log_debug(ctx->log, "Call %s()! type:%d len:%d word:%s", __func__, type, len, rsp->word);
 
-    /* 放入发送队列 */
-    return agent_send(ctx->agent, type, ntoh64(rsp->serial), (void *)data, len);
+    /* > 转换字节序 */
+    mesg_head_ntoh(head, head);
+
+    /* > 放入发送队列 */
+    return agent_send(ctx->agent, type, head->serial, (void *)rsp, len - sizeof(mesg_header_t));
 }

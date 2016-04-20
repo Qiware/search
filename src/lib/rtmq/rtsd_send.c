@@ -192,42 +192,48 @@ rtsd_cntx_t *rtsd_init(const rtsd_conf_t *conf, log_cycle_t *log)
     /* > 加载配置信息 */
     memcpy(&ctx->conf, conf, sizeof(rtsd_conf_t));
 
-    /* > 创建通信套接字 */
-    if (rtsd_creat_cmd_usck(ctx)) {
-        log_fatal(log, "Create recv-queue failed!");
-        free(ctx);
-        return NULL;
-    }
+    do {
+        /* > 创建处理映射表 */
+        ctx->reg = avl_creat(NULL, (key_cb_t)key_cb_int32, (cmp_cb_t)cmp_cb_int32);
+        if (NULL == ctx->reg) {
+            log_fatal(log, "Create register map failed!");
+            break;
+        }
+        /* > 创建通信套接字 */
+        if (rtsd_creat_cmd_usck(ctx)) {
+            log_fatal(log, "Create cmd socket failed!");
+            break;
+        }
 
-    /* > 创建接收队列 */
-    if (rtsd_creat_recvq(ctx)) {
-        log_fatal(log, "Create recv-queue failed!");
-        free(ctx);
-        return NULL;
-    }
+        /* > 创建接收队列 */
+        if (rtsd_creat_recvq(ctx)) {
+            log_fatal(log, "Create recv-queue failed!");
+            break;
+        }
 
-    /* > 创建发送队列 */
-    if (rtsd_creat_sendq(ctx)) {
-        log_fatal(log, "Create send queue failed!");
-        free(ctx);
-        return NULL;
-    }
+        /* > 创建发送队列 */
+        if (rtsd_creat_sendq(ctx)) {
+            log_fatal(log, "Create send queue failed!");
+            break;
+        }
 
-    /* > 创建工作线程池 */
-    if (rtsd_creat_workers(ctx)) {
-        log_fatal(ctx->log, "Create work thread pool failed!");
-        free(ctx);
-        return NULL;
-    }
+        /* > 创建工作线程池 */
+        if (rtsd_creat_workers(ctx)) {
+            log_fatal(ctx->log, "Create work thread pool failed!");
+            break;
+        }
 
-    /* > 创建发送线程池 */
-    if (rtsd_creat_sends(ctx)) {
-        log_fatal(ctx->log, "Create send thread pool failed!");
-        free(ctx);
-        return NULL;
-    }
+        /* > 创建发送线程池 */
+        if (rtsd_creat_sends(ctx)) {
+            log_fatal(ctx->log, "Create send thread pool failed!");
+            break;
+        }
 
-    return ctx;
+        return ctx;
+    } while(0);
+
+    free(ctx);
+    return NULL;
 }
 
 /******************************************************************************
@@ -279,23 +285,23 @@ int rtsd_launch(rtsd_cntx_t *ctx)
  ******************************************************************************/
 int rtsd_register(rtsd_cntx_t *ctx, int type, rtmq_reg_cb_t proc, void *param)
 {
-    rtmq_reg_t *reg;
+    rtmq_reg_t *item;
 
-    if (type >= RTMQ_TYPE_MAX) {
-        log_error(ctx->log, "Data type [%d] is out of range!", type);
-        return RTMQ_ERR;
+    item = (rtmq_reg_t *)calloc(1, sizeof(rtmq_reg_t));
+    if (NULL == item) {
+        log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        return -1;
     }
 
-    if (0 != ctx->reg[type].flag) {
-        log_error(ctx->log, "Repeat register type [%d]!", type);
+    item->type = type;
+    item->proc = proc;
+    item->param = param;
+
+    if (avl_insert(ctx->reg, &type, sizeof(type), item)) {
+        log_error(ctx->log, "Register maybe repeat! type:%d!", type);
+        free(item);
         return RTMQ_ERR_REPEAT_REG;
     }
-
-    reg = &ctx->reg[type];
-    reg->type = type;
-    reg->proc = proc;
-    reg->param = param;
-    reg->flag = 1;
 
     return RTMQ_OK;
 }

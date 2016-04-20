@@ -44,8 +44,7 @@ typedef struct
     int nodeid;                         /* 节点ID(唯一值: 不允许重复) */
     char path[FILE_NAME_MAX_LEN];       /* 工作路径 */
 
-    struct
-    {
+    struct {
         char usr[RTMQ_USR_MAX_LEN];     /* 用户名 */
         char passwd[RTMQ_PWD_MAX_LEN];  /* 登录密码 */
     } auth;
@@ -131,7 +130,7 @@ typedef struct
     rtrd_conf_t conf;                   /* 配置信息 */
     log_cycle_t *log;                   /* 日志对象 */
 
-    rtmq_reg_t reg[RTMQ_TYPE_MAX];      /* 回调注册对象 */
+    avl_tree_t *reg;                    /* 回调注册对象(注: 存储rtmq_reg_t数据) */
 
     rtrd_listen_t listen;               /* 侦听对象 */
     thread_pool_t *recvtp;              /* 接收线程池 */

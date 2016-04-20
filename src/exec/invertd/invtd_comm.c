@@ -124,9 +124,9 @@ invtd_cntx_t *invtd_init(const invtd_conf_t *conf, log_cycle_t *log)
 
         pthread_rwlock_init(&ctx->invtab_lock, NULL);
 
-        /* > 初始化SDTP服务 */
-        ctx->rtrd = rtrd_init(&ctx->conf.rtrd, log);
-        if (NULL == ctx->rtrd) {
+        /* > 初始化下行服务 */
+        ctx->frwder = rtsd_init(&ctx->conf.frwder, log);
+        if (NULL == ctx->frwder) {
             log_error(log, "Init sdtp failed!");
             break;
         }
@@ -191,8 +191,8 @@ static int invtd_insert_word(invtd_cntx_t *ctx)
  ******************************************************************************/
 int invtd_launch(invtd_cntx_t *ctx)
 {
-    /* 启动RTMQ */
-    if (invtd_start_rtmq(ctx)) {
+    /* 启动DownStream */
+    if (invtd_start_frwder(ctx)) {
         log_fatal(ctx->log, "Startup sdtp failed!");
         return INVT_ERR;
     }

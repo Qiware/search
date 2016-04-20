@@ -68,12 +68,10 @@
 /* 系统流水类型 */
 typedef struct
 {
-    union
-    {
-        struct
-        {
+    union {
+        struct {
             uint32_t nid:16;                    /* 结点ID */
-            uint32_t sid:16;                    /* 服务ID */
+            uint32_t sid:16;                    /* 服务ID(如: 接入层中接收线程的索引号) */
             uint32_t seq;                       /* 顺序号 */
         };
         uint64_t serial;                        /* 序列号 */

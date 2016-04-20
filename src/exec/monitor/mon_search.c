@@ -13,7 +13,6 @@
 #include "redo.h"
 #include "monitor.h"
 #include "xml_tree.h"
-#include "agent_mesg.h"
 
 #define MON_SRCH_BODY_LEN   (1024)
 
@@ -66,14 +65,14 @@ menu_item_t *mon_srch_menu(menu_cntx_t *ctx, void *args)
 }
 
 /* 发送搜索请求 */
-static int mon_srch_send_rep(int fd, const char *word)
+static int mon_srch_send_req(int fd, const char *word)
 {
     int len;
     char *body;
-    agent_header_t *head;
-    char addr[sizeof(agent_header_t) + MON_SRCH_BODY_LEN];
+    mesg_header_t *head;
+    char addr[sizeof(mesg_header_t) + MON_SRCH_BODY_LEN];
 
-    head = (agent_header_t *)addr;
+    head = (mesg_header_t *)addr;
     body = (char *)(head + 1);
 
     len = mon_srch_set_body(word, body, MON_SRCH_BODY_LEN);
@@ -82,12 +81,10 @@ static int mon_srch_send_rep(int fd, const char *word)
         return -1;
     }
 
-    head->type = htonl(MSG_SEARCH_WORD_REQ);
-    head->flag = htonl(AGENT_MSG_FLAG_USR);
-    head->mark = htonl(AGENT_MSG_MARK_KEY);
-    head->length = htonl(len);
+    mesg_head_set(head, MSG_SEARCH_WORD_REQ, 0, len);
+    mesg_head_hton(head, head);
 
-    Writen(fd, (void *)addr, sizeof(agent_header_t)+len);
+    Writen(fd, (void *)addr, sizeof(mesg_header_t)+len);
 
     return 0;
 }
@@ -114,13 +111,10 @@ static int mon_srch_recv_rsp(mon_cntx_t *ctx, mon_srch_conn_t *conn)
     xml_node_t *node, *attr;
     struct timeval ctm;
     int sec, msec, usec;
-    agent_header_t head;
-    mesg_data_t *rsp;
-
-    memset(addr, 0, sizeof(addr));
+    mesg_header_t *head;
 
     /* > 接收应答数据 */
-    n = read(conn->fd, (void *)&head, sizeof(head));
+    n = read(conn->fd, (void *)addr, sizeof(mesg_header_t));
     gettimeofday(&ctm, NULL);
     if (n <= 0) {
         fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
@@ -131,25 +125,21 @@ static int mon_srch_recv_rsp(mon_cntx_t *ctx, mon_srch_conn_t *conn)
     }
 
     /* > 字节序转换 */
-    head.type = ntohl(head.type);
-    head.flag = ntohl(head.flag);
-    head.length = ntohl(head.length);
-    head.mark = ntohl(head.mark);
-    head.serial = ntoh64(head.serial);
+    head = (mesg_header_t *)addr;
+    mesg_head_ntoh(head, head);
 
-    n = read(conn->fd, addr, head.length);
+    n = read(conn->fd, addr+sizeof(mesg_header_t), head->length);
+    if (n != head->length) {
+        fprintf(stderr, "    Get data failed! n:%ld/%d\n", n, head->length);
+        return -1;
+    }
 
     /* > 显示查询结果 */
     fprintf(stderr, "    ============================================\n");
-    rsp = (mesg_data_t *)addr;
 
-    rsp->serial = ntoh64(rsp->serial);
-
-    serial.serial = head.serial;
+    serial.serial = head->serial;
     fprintf(stderr, "    >Serial: %lu [nid(%u) sid(%u) seq(%u)]\n",
-            head.serial, serial.nid, serial.sid, serial.seq);
-    fprintf(stderr, "    >Serial: %lu:%lu\n",
-            rsp->serial, head.serial);
+            head->serial, serial.nid, serial.sid, serial.seq);
 
     memset(&opt, 0, sizeof(opt));
 
@@ -157,9 +147,9 @@ static int mon_srch_recv_rsp(mon_cntx_t *ctx, mon_srch_conn_t *conn)
     opt.alloc = mem_alloc;
     opt.dealloc = mem_dealloc;
 
-    xml = xml_screat(rsp->body, head.length, &opt);
+    xml = xml_screat(head->body, head->length, &opt);
     if (NULL == xml) { 
-        fprintf(stderr, "    Format isn't right! body:%s\n", rsp->body);
+        fprintf(stderr, "    Format isn't right! body:%s\n", head->body);
         return -1;
     }
     
@@ -236,7 +226,7 @@ static int mon_srch_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args)
     scanf(" %s", word);
 
     /* 发送搜索请求 */
-    mon_srch_send_rep(conn.fd, word);
+    mon_srch_send_req(conn.fd, word);
 
     gettimeofday(&conn.wrtm, NULL);
 
@@ -373,7 +363,7 @@ SRCH_AGAIN:
             }
 
             if (FD_ISSET(conn[idx].fd, &wrset)) {
-                mon_srch_send_rep(conn[idx].fd, word);
+                mon_srch_send_req(conn[idx].fd, word);
                 gettimeofday(&conn[idx].wrtm, NULL);
                 conn[idx].flag = 1;
             }
@@ -404,40 +394,30 @@ SRCH_AGAIN:
 static int mon_insert_word_rsp_hdl(mon_cntx_t *ctx, int fd)
 {
     int n;
-    char *addr;
-    ssize_t size;
-    agent_header_t *head;
+    serial_t s;
+    mesg_header_t *head;
     mesg_insert_word_rsp_t *rsp;
-
-    /* > 申请内存空间 */
-    size = sizeof(agent_header_t) + sizeof(mesg_insert_word_rsp_t);
-
-    addr = (char *)calloc(1, size);
-    if (NULL == addr) {
-        fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
-        return -1;
-    }
+    char addr[sizeof(mesg_header_t) + sizeof(mesg_insert_word_rsp_t)];
 
     /* > 接收应答数据 */
-    n = read(fd, addr, size);
+    n = read(fd, addr, sizeof(addr));
     if (n <= 0) {
         fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
-        FREE(addr);
         return -1;
     }
 
     /* > 显示插入结果 */
-    head = (agent_header_t *)addr;
+    head = (mesg_header_t *)addr;
     rsp = (mesg_insert_word_rsp_t *)(head + 1);
 
-    rsp->serial = ntoh64(rsp->serial);
-    rsp->code = ntoh64(rsp->code);
+    mesg_head_ntoh(head, head);
+    mesg_insert_word_resp_ntoh(rsp);
 
-    fprintf(stderr, "    Serial: %ld\n", rsp->serial);
+    s.serial = head->serial;
+    fprintf(stderr, "    Serial: %ld(nid:%u sid:%u seq:%u)\n",
+            head->serial, s.nid, s.sid, s.seq);
     fprintf(stderr, "    Code: %d\n", rsp->code);
     fprintf(stderr, "    Word: %s\n", rsp->word);
-
-    FREE(addr);
 
     return 0;
 }
@@ -449,7 +429,7 @@ static int mon_insert_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args)
     char _freq[32];
     int fd, ret, sec, msec;
     struct timeb ctm, old_tm;
-    agent_header_t head;
+    mesg_header_t head;
     mesg_insert_word_req_t req;
     struct timeval timeout;
     mon_cntx_t *ctx = (mon_cntx_t *)args;
@@ -466,10 +446,8 @@ static int mon_insert_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args)
     req.freq = htonl(atoi(_freq));
 
     /* > 设置发送数据 */
-    head.type = htonl(MSG_INSERT_WORD_REQ);
-    head.flag = htonl(AGENT_MSG_FLAG_USR);
-    head.mark = htonl(AGENT_MSG_MARK_KEY);
-    head.length = htonl(sizeof(req));
+    mesg_head_set(&head, MSG_INSERT_WORD_REQ, 0, sizeof(req));
+    mesg_head_hton(&head, &head);
 
     /* > 连接代理服务 */
     fd = tcp_connect(AF_INET, ctx->conf->search.ip, ctx->conf->search.port);
@@ -561,7 +539,7 @@ static int mon_srch_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args
 #if 1
     /* 发送搜索数据 */
     for (idx=0; idx<num; ++idx) {
-        mon_srch_send_rep(fd[idx], "爱我中华");
+        mon_srch_send_req(fd[idx], "爱我中华");
     }
 #endif
 

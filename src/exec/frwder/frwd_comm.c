@@ -48,7 +48,7 @@ int frwd_getopt(int argc, char **argv, frwd_opt_t *opt)
     opt->log_level = LOG_LEVEL_TRACE;
 
     /* 1. 解析输入参数 */
-    while (-1 != (ch = getopt_long(argc, argv, "n:l:hd", opts, NULL))) {
+    while (-1 != (ch = getopt_long(argc, argv, "c:l:hd", opts, NULL))) {
         switch (ch) {
             case 'c':   /* 配置路径 */
             {
@@ -140,15 +140,15 @@ frwd_cntx_t *frwd_init(const frwd_conf_t *conf, log_cycle_t *log)
         }
 
         /* > 初始化发送服务 */
-        frwd->rtmq = rtsd_init(&conf->conn_invtd, frwd->log);
-        if (NULL == frwd->rtmq) {
+        frwd->upstrm = rtrd_init(&conf->upstrm, frwd->log);
+        if (NULL == frwd->upstrm) {
             log_fatal(frwd->log, "Initialize send-server failed!");
             break;
         }
 
         /* > 初始化接收服务 */
-        frwd->recv_lsnd = rtrd_init(&conf->recv_lsnd, frwd->log);
-        if (NULL == frwd->recv_lsnd) {
+        frwd->downstrm = rtrd_init(&conf->downstrm, frwd->log);
+        if (NULL == frwd->downstrm) {
             log_fatal(frwd->log, "Initialize send-server failed!");
             break;
         }
@@ -173,7 +173,12 @@ frwd_cntx_t *frwd_init(const frwd_conf_t *conf, log_cycle_t *log)
  ******************************************************************************/
 int frwd_launch(frwd_cntx_t *frwd)
 {
-    if (rtsd_launch(frwd->rtmq)) {
+    if (rtrd_launch(frwd->downstrm)) {
+        log_fatal(frwd->log, "Start up recv-server failed!");
+        return FRWD_ERR;
+    }
+
+    if (rtrd_launch(frwd->upstrm)) {
         log_fatal(frwd->log, "Start up send-server failed!");
         return FRWD_ERR;
     }
