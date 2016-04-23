@@ -12,6 +12,7 @@
 #include "shm_opt.h"
 #include "spinlock.h"
 #include "avl_tree.h"
+#include "rtmq_sub.h"
 #include "rtmq_comm.h"
 #include "shm_queue.h"
 #include "thread_pool.h"
@@ -148,8 +149,7 @@ typedef struct
     pthread_rwlock_t node_to_svr_map_lock;  /* 读写锁: NODE->SVR映射表 */
     avl_tree_t *node_to_svr_map;         /* NODE->SVR的映射表(以nodeid为主键) */
 
-    pthread_rwlock_t sub_lock;          /* 读写锁: 订阅锁 */
-    vector_t *sub_list;                 /* 订阅列表 */
+    rtmq_sub_mgr_t sub_mgr;             /* 订阅管理 */
 } rtmq_cntx_t;
 
 /* 外部接口 */
@@ -157,6 +157,7 @@ rtmq_cntx_t *rtmq_init(const rtmq_conf_t *conf, log_cycle_t *log);
 int rtmq_register(rtmq_cntx_t *ctx, int type, rtmq_reg_cb_t proc, void *args);
 int rtmq_launch(rtmq_cntx_t *ctx);
 
+int rtmq_sub_query(rtmq_cntx_t *ctx, mesg_type_e type);
 int rtmq_send(rtmq_cntx_t *ctx, int type, int dest, void *data, size_t len);
 
 /* 内部接口 */
@@ -185,6 +186,6 @@ int rtmq_node_to_svr_map_add(rtmq_cntx_t *ctx, int nodeid, int rsvr_idx);
 int rtmq_node_to_svr_map_rand(rtmq_cntx_t *ctx, int nodeid);
 int rtmq_node_to_svr_map_del(rtmq_cntx_t *ctx, int nodeid, int rsvr_idx);
 
-int rtmq_sub_list_init(rtmq_cntx_t *ctx);
+int rtmq_sub_mgr_init(rtmq_sub_mgr_t *sub);
 
 #endif /*__RTMQ_RECV_H__*/

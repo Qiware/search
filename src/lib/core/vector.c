@@ -75,6 +75,26 @@ int vector_insert(vector_t *vec, void *addr)
 }
 
 /******************************************************************************
+ **函数名称: vector_get
+ **功    能: 往VEC插入数据
+ **输入参数:
+ **     vec: VEC对象
+ **     addr: 插入数据
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **注意事项:
+ **作    者: # Qifeng.zou # 2016.04.09 #
+ ******************************************************************************/
+void *vector_get(vector_t *vec, int idx)
+{
+    if (idx >= vec->len) {
+        return NULL;
+    }
+    return vec->arr[idx];
+}
+
+/******************************************************************************
  **函数名称: vector_find
  **功    能: 查找数据
  **输入参数:
@@ -156,4 +176,27 @@ int vector_get_idx(vector_t *vec, void *addr)
     }
 
     return -1;
+}
+
+/******************************************************************************
+ **函数名称: vector_destroy
+ **功    能: 销毁Vector
+ **输入参数:
+ **     vec: VEC对象
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述:
+ **注意事项:
+ **作    者: # Qifeng.zou # 2016.04.23 13:54:27 #
+ ******************************************************************************/
+int vector_destroy(vector_t *vec, mem_dealloc_cb_t dealloc, void *pool)
+{
+    int idx;
+
+    for (idx=0; idx<vec->len; ++idx) {
+        dealloc(pool, vec->arr[idx]);
+    }
+
+    free(vec->arr);
+    return 0;
 }

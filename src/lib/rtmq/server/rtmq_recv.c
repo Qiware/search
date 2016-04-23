@@ -82,7 +82,7 @@ rtmq_cntx_t *rtmq_init(const rtmq_conf_t *cf, log_cycle_t *log)
         }
 
         /* > 初始化订阅列表 */
-        if (rtmq_sub_list_init(ctx)) {
+        if (rtmq_sub_mgr_init(&ctx->sub_mgr)) {
             log_error(ctx->log, "Initialize sub list failed!");
             break;
         }

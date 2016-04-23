@@ -980,6 +980,49 @@ static int rtmq_rsvr_link_auth_req_hdl(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq
 }
 
 /******************************************************************************
+ **函数名称: rtmq_sub_list_creat
+ **功    能: 创建订阅列表
+ **输入参数:
+ **     type: 消息类型
+ **输出参数: NONE
+ **返    回: 订阅列表
+ **实现描述: 
+ **注意事项:
+ **作    者: # Qifeng.zou # 2016.04.09 07:07:26 #
+ ******************************************************************************/
+static rtmq_sub_list_t *rtmq_sub_list_creat(mesg_type_e type)
+{
+    rtmq_sub_list_t *list;
+
+    list = (rtmq_sub_list_t *)calloc(1, sizeof(rtmq_sub_list_t));
+    if (NULL == list) {
+        return NULL;
+    }
+
+    list->nodes = (vector_t *)vector_creat(RTMQ_SUB_VEC_LEN, RTMQ_SUB_VEC_INCR);
+    if (NULL == list->nodes) {
+        free(list);
+        return NULL;
+    }
+
+    list->type = type;
+
+    return list;
+}
+
+/* Free sub list memory */
+static void rtmq_sub_list_free(rtmq_sub_list_t *list)
+{
+    vector_destroy(list->nodes, mem_dealloc, NULL);
+    free(list);
+}
+
+static bool rtmq_find_node_for_vec_cb(rtmq_sub_node_t *node, int *nodeid)
+{
+    return (node->nodeid == *nodeid)? true : false;
+}
+
+/******************************************************************************
  **函数名称: rtmq_rsvr_sub_req_hdl
  **功    能: 订阅请求处理
  **输入参数:
@@ -994,7 +1037,63 @@ static int rtmq_rsvr_link_auth_req_hdl(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq
  ******************************************************************************/
 static int rtmq_rsvr_sub_req_hdl(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t *sck)
 {
-    return RTMQ_OK;
+    int ret;
+    rtmq_sub_mgr_t *sub;
+    rtmq_sub_list_t *list;
+    rtmq_sub_node_t *node;
+    rtmq_snap_t *recv = &sck->recv;
+    rtmq_header_t *head = (rtmq_header_t *)recv->addr;
+    rtmq_sub_req_t *req = (rtmq_sub_req_t *)(head + 1);
+
+    /* > Net to host */
+    RTMQ_SUB_REQ_NTOH(req, req);
+
+    /* > Find or add sub node */
+    sub = &ctx->sub_mgr;
+    pthread_rwlock_wrlock(&sub->lock);
+    do {
+        list = (rtmq_sub_list_t *)avl_query(sub->tab, &req->type, sizeof(req->type));
+        if (NULL == list) {
+            list = (rtmq_sub_list_t *)rtmq_sub_list_creat(req->type);
+            if (NULL == list) {
+                log_error(ctx->log, "Create sub list failed!");
+                break;
+            }
+
+            if (avl_insert(sub->tab, &req->type, sizeof(req->type), (void *)list)) {
+                rtmq_sub_list_free(list);
+                log_error(ctx->log, "Insert sub table failed!");
+                break;
+            }
+        }
+
+        node = vector_find(list->nodes, (find_cb_t)rtmq_find_node_for_vec_cb, (void *)&head->nodeid);
+        if (NULL != node) {
+            ret = RTMQ_OK;
+            ++node->ref;
+            break;
+        }
+
+        /* > Add new node */
+        node = (rtmq_sub_node_t *)calloc(1, sizeof(rtmq_sub_node_t));
+        if (NULL == node) {
+            log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
+            break;
+        }
+
+        node->nodeid = head->nodeid;
+        ++node->ref;
+
+        if (vector_insert(list->nodes, (void *)node)) {
+            log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
+            free(node);
+            break;
+        }
+        ret = RTMQ_OK;
+    } while(0);
+    pthread_rwlock_unlock(&sub->lock);
+
+    return ret;
 }
 
 /******************************************************************************

@@ -221,27 +221,62 @@ int rtmq_node_to_svr_map_rand(rtmq_cntx_t *ctx, int nodeid)
 }
 
 /******************************************************************************
- **函数名称: rtmq_sub_list_init
+ **函数名称: rtmq_sub_mgr_init
  **功    能: 创建NODE与SVR的映射表
  **输入参数:
- **     ctx: 全局对象
+ **     sub: Sub manager table
  **输出参数: NONE
- **返    回: 0:成功 !0:失败
- **实现描述: 构建平衡二叉树
+ **返    回: 0:Succ !0:Fail
+ **实现描述: 
  **注意事项:
- **作    者: # Qifeng.zou # 2015.05.30 20:29:26 #
+ **作    者: # Qifeng.zou # 2016.04.23 01:42:02 #
  ******************************************************************************/
-int rtmq_sub_list_init(rtmq_cntx_t *ctx)
+int rtmq_sub_mgr_init(rtmq_sub_mgr_t *sub)
 {
-    /* > 创建订阅列表 */
-    ctx->sub_list = vector_creat(64, 64);
-    if (NULL == ctx->sub_list) {
-        log_error(ctx->log, "Initialize sub list failed!");
+    /* > 创建订阅表 */
+    sub->tab = avl_creat(NULL, (key_cb_t)key_cb_int32, (cmp_cb_t)cmp_cb_int32);
+    if (NULL == sub->tab) {
         return RTMQ_ERR;
     }
 
     /* > 初始化读写锁 */
-    pthread_rwlock_init(&ctx->sub_lock, NULL);
+    pthread_rwlock_init(&sub->lock, NULL);
 
     return RTMQ_OK;
+}
+
+/******************************************************************************
+ **函数名称: rtmq_sub_query
+ **功    能: 获取订阅type的结点ID
+ **输入参数:
+ **     type: Message type
+ **输出参数: NONE
+ **返    回: 结点ID(-1:无订阅结点)
+ **实现描述: 
+ **注意事项:
+ **作    者: # Qifeng.zou # 2016.04.23 13:29:24 #
+ ******************************************************************************/
+int rtmq_sub_query(rtmq_cntx_t *ctx, mesg_type_e type)
+{
+    int nid;
+    rtmq_sub_node_t *node;
+    rtmq_sub_list_t *list;
+    rtmq_sub_mgr_t *sub = &ctx->sub_mgr;
+
+    pthread_rwlock_rdlock(&sub->lock);
+    list = avl_query(sub->tab, &type, sizeof(type));
+    if (NULL == list
+        || 0 == vector_len(list->nodes))
+    {
+        pthread_rwlock_unlock(&sub->lock);
+        log_debug(ctx->log, "No module sub this type! type:%d", type);
+        return -1;
+    }
+
+    node = (rtmq_sub_node_t *)vector_get(list->nodes, Random()%vector_len(list->nodes));
+    nid = node->nodeid;
+
+    pthread_rwlock_unlock(&sub->lock);
+
+    return nid;
 }

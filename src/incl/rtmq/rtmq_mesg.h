@@ -2,6 +2,7 @@
 #define __RTMQ_MESG_H__
 
 #include "comm.h"
+#include "mesg.h"
 
 /* 宏定义 */
 #define RTMQ_USR_MAX_LEN    (32)        /* 用户名 */
@@ -83,9 +84,19 @@ typedef struct
 /* 订阅请求 */
 typedef struct
 {
-    int type;                           /* 订阅内容: 订阅的消息类型 */
+    mesg_type_e type;                   /* 订阅内容: 订阅的消息类型 */
     int weight;                         /* 订阅权值: 以1为基准 */
 } rtmq_sub_req_t;
+
+#define RTMQ_SUB_REQ_HTON(h, n) do {    /* 主机 -> 网络 */\
+    (n)->type = htonl((h)->type); \
+    (n)->weight = htonl((h)->weight); \
+} while(0)
+
+#define RTMQ_SUB_REQ_NTOH(n, h) do {    /* 网络 -> 主机 */\
+    (h)->type = ntohl((n)->type); \
+    (h)->weight = ntohl((n)->weight); \
+} while(0)
 
 /* 添加套接字请求的相关参数 */
 typedef struct

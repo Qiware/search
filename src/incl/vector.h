@@ -20,10 +20,11 @@ typedef struct
 vector_t *vector_creat(int cap, int incr);
 int vector_insert(vector_t *vec, void *addr);
 void *vector_find(vector_t *vec, find_cb_t find, void *args);
+void *vector_get(vector_t *vec, int idx);
 int vector_delete(vector_t *vec, int idx);
 #define vector_len(vec) ((vec)->len)
 #define vector_cap(vec) ((vec)->cap)
 #define vector_incr(vec) ((vec)->incr)
-int vector_destroy(vector_t *vec);
+int vector_destroy(vector_t *vec, mem_dealloc_cb_t dealloc, void *pool);
 
 #endif /*__VECTOR_H__*/
