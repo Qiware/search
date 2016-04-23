@@ -40,8 +40,8 @@ typedef enum
 /* 报头结构 */
 typedef struct
 {
-    int type;                           /* 命令类型 */
-    int nodeid;                         /* 源结点ID */
+    uint32_t type;                      /* 命令类型 */
+    uint32_t nodeid;                    /* 源结点ID */
 #define RTMQ_SYS_MESG   (0)             /* 系统类型 */
 #define RTMQ_EXP_MESG   (1)             /* 自定义类型 */
     uint8_t flag;                       /* 消息标志
@@ -54,6 +54,20 @@ typedef struct
 
 #define RTMQ_DATA_TOTAL_LEN(head) (head->length + sizeof(rtmq_header_t))
 #define RTMQ_CHECKSUM_ISVALID(head) (RTMQ_CHECK_SUM == (head)->checksum)
+
+#define RTMQ_HEAD_NTOH(s, d) do {\
+    (d)->type = ntohl((s)->type); \
+    (d)->nodeid = ntohl((s)->nodeid); \
+    (d)->length = ntohl((s)->length); \
+    (d)->checksum = ntohl((s)->checksum); \
+} while(0)
+
+#define RTMQ_HEAD_HTON(s, d) do {\
+    (d)->type = htonl((s)->type); \
+    (d)->nodeid = htonl((s)->nodeid); \
+    (d)->length = htonl((s)->length); \
+    (d)->checksum = htonl((s)->checksum); \
+} while(0)
 
 /* 校验数据头 */
 #define RTMQ_HEAD_ISVALID(head) (RTMQ_CHECKSUM_ISVALID(head))
@@ -85,17 +99,14 @@ typedef struct
 typedef struct
 {
     mesg_type_e type;                   /* 订阅内容: 订阅的消息类型 */
-    int weight;                         /* 订阅权值: 以1为基准 */
 } rtmq_sub_req_t;
 
-#define RTMQ_SUB_REQ_HTON(h, n) do {    /* 主机 -> 网络 */\
+#define RTMQ_SUB_REQ_HTON(n, h) do {    /* 主机 -> 网络 */\
     (n)->type = htonl((h)->type); \
-    (n)->weight = htonl((h)->weight); \
 } while(0)
 
-#define RTMQ_SUB_REQ_NTOH(n, h) do {    /* 网络 -> 主机 */\
+#define RTMQ_SUB_REQ_NTOH(h, n) do {    /* 网络 -> 主机 */\
     (h)->type = ntohl((n)->type); \
-    (h)->weight = ntohl((n)->weight); \
 } while(0)
 
 /* 添加套接字请求的相关参数 */

@@ -28,9 +28,9 @@ static int rtmq_rsvr_data_proc(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t *
 static int rtmq_rsvr_sys_mesg_proc(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t *sck, void *addr);
 static int rtmq_rsvr_exp_mesg_proc(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t *sck, void *addr);
 
-static int rtmq_rsvr_keepalive_req_hdl(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t *sck);
-static int rtmq_rsvr_link_auth_req_hdl(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t *sck);
-static int rtmq_rsvr_sub_req_hdl(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t *sck);
+static int rtmq_rsvr_keepalive_req_hdl(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t *sck, void *addr);
+static int rtmq_rsvr_link_auth_req_hdl(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t *sck, void *addr);
+static int rtmq_rsvr_sub_req_hdl(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t *sck, void *addr);
 
 static int rtmq_rsvr_cmd_proc_req(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, int rqid);
 static int rtmq_rsvr_cmd_proc_all_req(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr);
@@ -412,11 +412,7 @@ static int rtmq_rsvr_wiov_add(rtmq_rsvr_t *rsvr, rtmq_sck_t *sck)
         len = sizeof(rtmq_header_t) + head->length; /* 当前消息总长度 */
 
         /* 3 设置头部数据 */
-        head->type = htons(head->type);
-        head->nodeid = htonl(head->nodeid);
-        head->flag = head->flag;
-        head->length = htonl(head->length);
-        head->checksum = htonl(head->checksum);
+        RTMQ_HEAD_HTON(head, head);
 
         /* 4 设置发送信息 */
         wiov_item_add(send, (char *)head, len, NULL, mem_dealloc);
@@ -607,7 +603,7 @@ static int rtmq_rsvr_data_proc(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t *
             if (RTMQ_CHECK_SUM != ntohl(head->checksum)) {
                 log_error(rsvr->log, "Header is invalid! nodeid:%d Mark:%X/%X type:%d len:%d flag:%d",
                         ntohl(head->nodeid), ntohl(head->checksum), RTMQ_CHECK_SUM,
-                        ntohs(head->type), ntohl(head->length), head->flag);
+                        ntohl(head->type), ntohl(head->length), head->flag);
                 return RTMQ_ERR;
             }
 
@@ -637,11 +633,7 @@ static int rtmq_rsvr_data_proc(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t *
 
         /* 2. 至少一条数据时 */
         /* 2.1 转化字节序 */
-        head->type = ntohs(head->type);
-        head->nodeid = ntohl(head->nodeid);
-        head->flag = head->flag;
-        head->length = ntohl(head->length);
-        head->checksum = ntohl(head->checksum);
+        RTMQ_HEAD_NTOH(head, head);
 
         /* 2.2 校验合法性 */
         if (!RTMQ_HEAD_ISVALID(head)) {
@@ -687,11 +679,11 @@ static int rtmq_rsvr_sys_mesg_proc(rtmq_cntx_t *ctx,
 
     switch (head->type) {
         case RTMQ_CMD_LINK_AUTH_REQ:
-            return rtmq_rsvr_link_auth_req_hdl(ctx, rsvr, sck);
+            return rtmq_rsvr_link_auth_req_hdl(ctx, rsvr, sck, addr);
         case RTMQ_CMD_SUB_REQ:
-            return rtmq_rsvr_sub_req_hdl(ctx, rsvr, sck);
+            return rtmq_rsvr_sub_req_hdl(ctx, rsvr, sck, addr);
         case RTMQ_CMD_KPALIVE_REQ:
-            return rtmq_rsvr_keepalive_req_hdl(ctx, rsvr, sck);
+            return rtmq_rsvr_keepalive_req_hdl(ctx, rsvr, sck, addr);
         default:
             log_error(rsvr->log, "Unknown message type! [%d]", head->type);
             return RTMQ_ERR;
@@ -858,20 +850,21 @@ static int rtmq_rsvr_event_timeout_hdl(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
-static int rtmq_rsvr_keepalive_req_hdl(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t *sck)
+static int rtmq_rsvr_keepalive_req_hdl(rtmq_cntx_t *ctx,
+        rtmq_rsvr_t *rsvr, rtmq_sck_t *sck, void *addr)
 {
-    void *addr;
+    void *p;
     rtmq_header_t *head;
 
     /* > 分配消息空间 */
-    addr = calloc(1, sizeof(rtmq_header_t));
-    if (NULL == addr) {
+    p = calloc(1, sizeof(rtmq_header_t));
+    if (NULL == p) {
         log_error(rsvr->log, "Alloc memory failed!");
         return RTMQ_ERR;
     }
 
     /* > 回复消息内容 */
-    head = (rtmq_header_t *)addr;
+    head = (rtmq_header_t *)p;
 
     head->type = RTMQ_CMD_KPALIVE_RSP;
     head->nodeid = ctx->conf.nodeid;
@@ -954,13 +947,13 @@ static int rtmq_rsvr_link_auth_rsp(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.05.22 #
  ******************************************************************************/
-static int rtmq_rsvr_link_auth_req_hdl(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t *sck)
+static int rtmq_rsvr_link_auth_req_hdl(rtmq_cntx_t *ctx,
+        rtmq_rsvr_t *rsvr, rtmq_sck_t *sck, void *addr)
 {
     rtmq_header_t *head;
-    rtmq_snap_t *recv = &sck->recv;
     rtmq_link_auth_req_t *link_auth_req;
 
-    head = (rtmq_header_t *)recv->addr;
+    head = (rtmq_header_t *)addr;
     link_auth_req = (rtmq_link_auth_req_t *)(head + 1);
 
     /* > 验证鉴权合法性 */
@@ -1035,14 +1028,14 @@ static bool rtmq_find_node_for_vec_cb(rtmq_sub_node_t *node, int *nodeid)
  **注意事项: 
  **作    者: # Qifeng.zou # 2016.04.13 00:35:15 #
  ******************************************************************************/
-static int rtmq_rsvr_sub_req_hdl(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t *sck)
+static int rtmq_rsvr_sub_req_hdl(rtmq_cntx_t *ctx,
+        rtmq_rsvr_t *rsvr, rtmq_sck_t *sck, void *addr)
 {
     int ret;
     rtmq_sub_mgr_t *sub;
     rtmq_sub_list_t *list;
     rtmq_sub_node_t *node;
-    rtmq_snap_t *recv = &sck->recv;
-    rtmq_header_t *head = (rtmq_header_t *)recv->addr;
+    rtmq_header_t *head = (rtmq_header_t *)addr;
     rtmq_sub_req_t *req = (rtmq_sub_req_t *)(head + 1);
 
     /* > Net to host */
@@ -1092,6 +1085,8 @@ static int rtmq_rsvr_sub_req_hdl(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t
         ret = RTMQ_OK;
     } while(0);
     pthread_rwlock_unlock(&sub->lock);
+
+    log_debug(ctx->log, "Sub req handler! type:%u ret:%d", req->type, ret);
 
     return ret;
 }
@@ -1385,7 +1380,7 @@ static int rtmq_rsvr_cmd_proc_all_req(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr)
  ******************************************************************************/
 typedef struct
 {
-    int nodeid;                 /* 结点ID */
+    uint32_t nodeid;            /* 结点ID */
     list_t *list;               /* 拥有相同结点ID的套接字链表 */
 } _conn_list_t;
 

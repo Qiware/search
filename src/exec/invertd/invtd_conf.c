@@ -41,7 +41,6 @@ int invtd_conf_load(const char *path, invtd_conf_t *conf, log_cycle_t *log)
 
     xml = xml_creat(path, &opt);
     if (NULL == xml) {
-        xml_destroy(xml);
         return INVT_ERR_CONF;
     }
 

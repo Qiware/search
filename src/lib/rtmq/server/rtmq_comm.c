@@ -278,5 +278,7 @@ int rtmq_sub_query(rtmq_cntx_t *ctx, mesg_type_e type)
 
     pthread_rwlock_unlock(&sub->lock);
 
+    log_debug(ctx->log, "Node [%d] sub type [%d]!", nid, type);
+
     return nid;
 }

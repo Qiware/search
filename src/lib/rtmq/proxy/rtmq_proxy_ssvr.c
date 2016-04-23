@@ -53,6 +53,7 @@ int rtmq_proxy_ssvr_init(rtmq_proxy_t *pxy, rtmq_proxy_ssvr_t *ssvr, int idx)
 
     ssvr->id = idx;
     ssvr->log = pxy->log;
+    ssvr->ctx = (void *)pxy;
     ssvr->sck.fd = INVALID_FD;
 
     /* > 创建发送队列 */
@@ -533,10 +534,7 @@ static int rtmq_proxy_ssvr_data_proc(rtmq_proxy_t *pxy, rtmq_proxy_ssvr_t *ssvr,
 
         /* 2. 至少一条数据时 */
         /* 2.1 转化字节序 */
-        head->type = ntohs(head->type);
-        head->flag = head->flag;
-        head->length = ntohl(head->length);
-        head->checksum = ntohl(head->checksum);
+        RTMQ_HEAD_NTOH(head, head);
 
         /* 2.2 校验合法性 */
         if (!RTMQ_HEAD_ISVALID(head)) {
@@ -664,11 +662,7 @@ static int rtmq_proxy_ssvr_wiov_add(rtmq_proxy_ssvr_t *ssvr, rtmq_proxy_sct_t *s
         len = sizeof(rtmq_header_t) + head->length;
 
         /* > 取发送的数据 */
-        head->type = htons(head->type);
-        head->nodeid = htonl(head->nodeid);
-        head->flag = head->flag;
-        head->length = htonl(head->length);
-        head->checksum = htonl(head->checksum);
+        RTMQ_HEAD_HTON(head, head);
 
         /* > 设置发送数据 */
         wiov_item_add(send, head, len, NULL, mem_dealloc);
@@ -701,11 +695,7 @@ static int rtmq_proxy_ssvr_wiov_add(rtmq_proxy_ssvr_t *ssvr, rtmq_proxy_sct_t *s
             len = sizeof(rtmq_header_t) + head->length;
 
             /* > 设置发送数据 */
-            head->type = htons(head->type);
-            head->flag = head->flag;
-            head->nodeid = htonl(head->nodeid);
-            head->length = htonl(head->length);
-            head->checksum = htonl(head->checksum);
+            RTMQ_HEAD_HTON(head, head);
 
             /* > 设置发送数据 */
             wiov_item_add(send, head, len, ssvr->sendq, queue_dealloc);
@@ -916,6 +906,7 @@ static int rtmq_link_auth_req(rtmq_proxy_t *pxy, rtmq_proxy_ssvr_t *ssvr)
     rtmq_header_t *head;
     rtmq_proxy_sct_t *sck = &ssvr->sck;
     rtmq_link_auth_req_t *link_auth_req;
+    rtmq_proxy_conf_t *conf = &pxy->conf;
 
     /* > 申请内存空间 */
     size = sizeof(rtmq_header_t) + sizeof(rtmq_link_auth_req_t);
@@ -930,6 +921,7 @@ static int rtmq_link_auth_req(rtmq_proxy_t *pxy, rtmq_proxy_ssvr_t *ssvr)
     head = (rtmq_header_t *)addr;
 
     head->type = RTMQ_CMD_LINK_AUTH_REQ;
+    head->nodeid = conf->nodeid;
     head->length = sizeof(rtmq_link_auth_req_t);
     head->flag = RTMQ_SYS_MESG;
     head->checksum = RTMQ_CHECK_SUM;
@@ -991,6 +983,8 @@ static int rtmq_add_sub_req(rtmq_reg_t *item, rtmq_proxy_ssvr_t *ssvr)
     rtmq_header_t *head;
     rtmq_sub_req_t *sub;
     rtmq_proxy_sct_t *sck = &ssvr->sck;
+    rtmq_proxy_t *pxy = (rtmq_proxy_t *)ssvr->ctx;
+    rtmq_proxy_conf_t *conf = &pxy->conf;
 
     /* > 申请内存空间 */
     size = sizeof(rtmq_header_t) + sizeof(rtmq_sub_req_t);
@@ -1005,7 +999,8 @@ static int rtmq_add_sub_req(rtmq_reg_t *item, rtmq_proxy_ssvr_t *ssvr)
     head = (rtmq_header_t *)addr;
 
     head->type = RTMQ_CMD_SUB_REQ;
-    head->length = 0;
+    head->nodeid = conf->nodeid;
+    head->length = sizeof(rtmq_sub_req_t);
     head->flag = RTMQ_SYS_MESG;
     head->checksum = RTMQ_CHECK_SUM;
 
@@ -1013,7 +1008,6 @@ static int rtmq_add_sub_req(rtmq_reg_t *item, rtmq_proxy_ssvr_t *ssvr)
     sub = (rtmq_sub_req_t *)(head + 1);
 
     sub->type = htonl(item->type);
-    sub->weight = htonl(1);
 
     /* > 加入发送列表 */
     if (list_rpush(sck->mesg_list, addr)) {
@@ -1022,7 +1016,7 @@ static int rtmq_add_sub_req(rtmq_reg_t *item, rtmq_proxy_ssvr_t *ssvr)
         return RTMQ_ERR;
     }
 
-    log_debug(ssvr->log, "Add sub request success! fd:[%d]", sck->fd);
+    log_debug(ssvr->log, "Add sub request. type:%d", item->type);
 
     return RTMQ_OK;
 }

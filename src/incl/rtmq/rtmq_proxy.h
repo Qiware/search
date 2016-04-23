@@ -31,7 +31,7 @@ typedef struct
 /* 全局信息 */
 typedef struct
 {
-    rtmq_proxy_conf_t conf;                   /* 配置信息 */
+    rtmq_proxy_conf_t conf;             /* 配置信息 */
     log_cycle_t *log;                   /* 日志对象 */
 
     int cmd_sck_id;                     /* 命令套接字 */

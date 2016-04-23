@@ -76,7 +76,7 @@ typedef struct
 typedef struct _rtrd_sck_t
 {
     int fd;                             /* 套接字ID */
-    int nodeid;                         /* 结点ID */
+    uint32_t nodeid;                    /* 结点ID */
     uint64_t sid;                       /* Session ID */
 
     time_t ctm;                         /* 创建时间 */
