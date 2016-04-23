@@ -13,8 +13,6 @@
 #include "agent.h"
 #include "command.h"
 
-static int frwd_sub_mgr_init(frwd_sub_mgr_t *mgr);
-
 /******************************************************************************
  **函数名称: frwd_getopt
  **功    能: 解析输入参数
@@ -148,20 +146,10 @@ frwd_cntx_t *frwd_init(const frwd_conf_t *conf, log_cycle_t *log)
             break;
         }
 
-        if (frwd_sub_mgr_init(&frwd->upstrm_sub_mgr)) {
-            log_fatal(frwd->log, "Initialize upstream sub manager failed!");
-            break;
-        }
-
         /* > 初始化DownStream服务 */
         frwd->downstrm = rtmq_init(&conf->downstrm, frwd->log);
         if (NULL == frwd->downstrm) {
             log_fatal(frwd->log, "Initialize send-server failed!");
-            break;
-        }
-
-        if (frwd_sub_mgr_init(&frwd->downstrm_sub_mgr)) {
-            log_fatal(frwd->log, "Initialize downstream sub manager failed!");
             break;
         }
 
@@ -217,27 +205,4 @@ log_cycle_t *frwd_init_log(const char *pname, int log_level)
     snprintf(path, sizeof(path), "../log/%s.log", pname);
 
     return log_init(log_level, path);
-}
-
-/******************************************************************************
- **函数名称: frwd_sub_mgr_init
- **功    能: 初始化订阅管理
- **输入参数: NONE
- **输出参数:
- **     mgr: 订阅管理对象
- **返    回: 0:成功 !0:失败
- **实现描述:
- **注意事项:
- **作    者: # Qifeng.zou # 2016.04.09 #
- ******************************************************************************/
-static int frwd_sub_mgr_init(frwd_sub_mgr_t *mgr)
-{
-    mgr->list = avl_creat(NULL, (key_cb_t)key_cb_int32, (cmp_cb_t)cmp_cb_int32);
-    if (NULL == mgr->list) {
-        return FRWD_ERR;
-    }
-
-    pthread_rwlock_init(&mgr->lock, NULL);
-
-    return FRWD_OK;
 }
