@@ -21,8 +21,9 @@ vector_t *vector_creat(int cap, int incr);
 int vector_append(vector_t *vec, void *addr);
 void *vector_find(vector_t *vec, find_cb_t find, void *args);
 void *vector_get(vector_t *vec, int idx);
-int vector_get_idx(vector_t *vec, void *addr);
+int vector_index(vector_t *vec, void *addr);
 void *vector_del_by_idx(vector_t *vec, int idx);
+int vector_delete(vector_t *vec, void *addr);
 #define vector_len(vec) ((vec)->len)
 #define vector_cap(vec) ((vec)->cap)
 #define vector_incr(vec) ((vec)->incr)

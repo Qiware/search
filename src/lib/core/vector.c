@@ -107,7 +107,7 @@ void *vector_get(vector_t *vec, int idx)
  **注意事项:
  **作    者: # Qifeng.zou # 2016.04.09 #
  ******************************************************************************/
-    void *vector_find(vector_t *vec, find_cb_t find, void *args)
+void *vector_find(vector_t *vec, find_cb_t find, void *args)
 {
     int idx;
 
@@ -127,7 +127,7 @@ void *vector_get(vector_t *vec, int idx)
  **     idx: 数据索引
  **输出参数: NONE
  **返    回: 被删除的数据地址
- **实现描述:
+ **实现描述: 使用最后一个成员填补被删的成员 -- 提高效率
  **注意事项:
  **作    者: # Qifeng.zou # 2016.04.09 #
  ******************************************************************************/
@@ -140,21 +140,43 @@ void *vector_del_by_idx(vector_t *vec, int idx)
     }
 
     addr = vec->arr[idx];
-    if (idx == (vec->len-1)) {
-        vec->arr[idx] = NULL;
+    if (idx != (vec->len-1)) {
+        vec->arr[idx] = vec->arr[vec->len - 1];
     }
-    else {
-        for (; idx<vec->len; ++idx) {
-            vec->arr[idx] = vec->arr[idx+1];
-        }
-    }
+    vec->arr[vec->len - 1] = NULL;
     --vec->len;
 
     return addr;
 }
 
 /******************************************************************************
- **函数名称: vector_get_idx
+ **函数名称: vector_delete
+ **功    能: 删除指定数据
+ **输入参数:
+ **     vec: VEC对象
+ **     addr: 需要被删的数据
+ **输出参数: NONE
+ **返    回: 0:Succ !0:Fail
+ **实现描述: 
+ **注意事项:
+ **作    者: # Qifeng.zou # 2016.04.25 00:05:55 #
+ ******************************************************************************/
+int vector_delete(vector_t *vec, void *addr)
+{
+    int idx;
+
+    idx = vector_index(vec, addr);
+    if (-1 == idx) {
+        return -1; /* Not found */
+    }
+
+    vector_del_by_idx(vec, idx);
+
+    return 0;
+}
+
+/******************************************************************************
+ **函数名称: vector_index
  **功    能: 通过addr获取索引
  **输入参数:
  **     vec: VEC对象
@@ -165,7 +187,7 @@ void *vector_del_by_idx(vector_t *vec, int idx)
  **注意事项:
  **作    者: # Qifeng.zou # 2016.04.09 11:54:03 #
  ******************************************************************************/
-int vector_get_idx(vector_t *vec, void *addr)
+int vector_index(vector_t *vec, void *addr)
 {
     int idx;
 

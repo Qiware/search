@@ -1075,7 +1075,6 @@ static int rtmq_rsvr_sub_find_or_add(rtmq_cntx_t *ctx, rtmq_sck_t *sck, int type
 
 static int rtmq_sub_del(rtmq_cntx_t *ctx, rtmq_sck_t *sck, int type)
 {
-    int idx;
     void *addr;
     rtmq_sub_mgr_t *sub;
     rtmq_sub_list_t *list;
@@ -1095,8 +1094,7 @@ static int rtmq_sub_del(rtmq_cntx_t *ctx, rtmq_sck_t *sck, int type)
             break;
         }
 
-        idx = vector_get_idx(list->nodes, node);
-        vector_del_by_idx(list->nodes, idx);
+        vector_delete(list->nodes, node);
         free(node);
 
         if (0 == vector_len(list->nodes)) {
@@ -1248,7 +1246,6 @@ typedef struct {
 
 int rtmq_rsvr_sck_sub_item_free(rtmq_rsvr_sck_sub_trav_t *args, rtmq_sub_req_t *req)
 {
-    int idx;
     rtmq_sub_list_t *list;
     rtmq_sub_node_t *node;
     rtmq_sck_t *sck = args->sck;
@@ -1265,8 +1262,7 @@ int rtmq_rsvr_sck_sub_item_free(rtmq_rsvr_sck_sub_trav_t *args, rtmq_sub_req_t *
         return 0;
     }
 
-    idx = vector_get_idx(list->nodes, node);
-    vector_del_by_idx(list->nodes, idx);
+    vector_delete(list->nodes, node);
     free(node);
     free(req);
 
