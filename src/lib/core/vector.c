@@ -31,10 +31,10 @@ vector_t *vector_creat(int cap, int incr)
     }
 
     vec->len = 0;
-    vec->cap = incr;
+    vec->cap = cap;
     vec->incr = incr;
 
-    vec->arr = (void **)calloc(1, sizeof(void *));
+    vec->arr = (void **)calloc(cap, sizeof(void *));
     if (NULL == vec->arr) {
         free(vec);
         return NULL;

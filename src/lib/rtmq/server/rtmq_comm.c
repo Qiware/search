@@ -258,27 +258,34 @@ int rtmq_sub_mgr_init(rtmq_sub_mgr_t *sub)
  ******************************************************************************/
 int rtmq_sub_query(rtmq_cntx_t *ctx, mesg_type_e type)
 {
-    int nid;
+    int nodeid, idx;
     rtmq_sub_node_t *node;
     rtmq_sub_list_t *list;
     rtmq_sub_mgr_t *sub = &ctx->sub_mgr;
 
     pthread_rwlock_rdlock(&sub->lock);
     list = avl_query(sub->tab, &type, sizeof(type));
-    if (NULL == list
-        || 0 == vector_len(list->nodes))
+    if ((NULL == list)
+        || (0 == vector_len(list->nodes)))
     {
         pthread_rwlock_unlock(&sub->lock);
         log_debug(ctx->log, "No module sub this type! type:%d", type);
         return -1;
     }
 
-    node = (rtmq_sub_node_t *)vector_get(list->nodes, Random()%vector_len(list->nodes));
-    nid = node->nodeid;
+    idx = Random()%vector_len(list->nodes);
+    node = (rtmq_sub_node_t *)vector_get(list->nodes, idx);
+    if (NULL == node) {
+        pthread_rwlock_unlock(&sub->lock);
+        log_debug(ctx->log, "Get sub node failed! type:%d", type);
+        return -1;
+    }
+
+    nodeid = node->nodeid;
 
     pthread_rwlock_unlock(&sub->lock);
 
-    log_debug(ctx->log, "Node [%d] sub type [%d]!", nid, type);
+    log_debug(ctx->log, "Node [%d] has sub type [%d]!", nodeid, type);
 
-    return nid;
+    return nodeid;
 }

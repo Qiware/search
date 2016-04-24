@@ -540,13 +540,14 @@ static int rtmq_rsvr_recv_proc(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t *
 
             /* 2. 进行数据处理 */
             if (rtmq_rsvr_data_proc(ctx, rsvr, sck)) {
-                log_error(rsvr->log, "Proc data failed! fd:%d", sck->fd);
+                log_error(rsvr->log, "Proc data failed! nodeid:%u", sck->nodeid);
                 return RTMQ_ERR;
             }
             continue;
         }
         else if (0 == n) {
-            log_info(rsvr->log, "Client disconnected. fd:%d n:%d/%d", sck->fd, n, left);
+            log_info(rsvr->log, "Client disconnected. nodeid:%u n:%d/%d",
+                    sck->nodeid, n, left);
             return RTMQ_SCK_DISCONN;
         }
         else if ((n < 0) && (EAGAIN == errno)) {
@@ -556,7 +557,7 @@ static int rtmq_rsvr_recv_proc(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t *
             continue;
         }
 
-        log_error(rsvr->log, "errmsg:[%d] %s. fd:%d", errno, strerror(errno), sck->fd);
+        log_error(rsvr->log, "errmsg:[%d] %s. nodeid:%u", errno, strerror(errno), sck->nodeid);
         return RTMQ_ERR;
     }
 
