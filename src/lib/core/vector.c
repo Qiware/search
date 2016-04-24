@@ -198,5 +198,6 @@ int vector_destroy(vector_t *vec, mem_dealloc_cb_t dealloc, void *pool)
     }
 
     free(vec->arr);
+    free(vec);
     return 0;
 }
