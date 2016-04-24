@@ -77,7 +77,7 @@ typedef struct _rtrd_sck_t
 {
     int fd;                             /* 套接字ID */
     uint32_t nodeid;                    /* 结点ID */
-    uint64_t sid;                       /* Session ID */
+    uint64_t sid;                       /* 会话ID */
 
     time_t ctm;                         /* 创建时间 */
     time_t rdtm;                        /* 最近读取时间 */
@@ -85,6 +85,7 @@ typedef struct _rtrd_sck_t
     char ipaddr[IP_ADDR_MAX_LEN];       /* IP地址 */
 
     int auth_succ;                      /* 鉴权成功(1:成功 0:失败)  */
+    avl_tree_t *sub_list;               /* 订阅列表: 存储订阅了哪些消息(以type为主键) */
 
     rtmq_snap_t recv;                   /* 接收快照 */
     wiov_t send;                        /* 发送缓存 */
@@ -109,6 +110,7 @@ typedef struct
 {
     int id;                             /* 对象ID */
     log_cycle_t *log;                   /* 日志对象 */
+    void *ctx;                          /* 全局对象(rtmq_cntx_t) */
 
     int cmd_sck_id;                     /* 命令套接字 */
 

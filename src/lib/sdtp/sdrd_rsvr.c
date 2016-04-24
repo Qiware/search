@@ -1115,7 +1115,7 @@ static void sdrd_rsvr_sck_free(sdrd_rsvr_t *rsvr, sdrd_sck_t *sck)
     FREE(sck->send.addr);
     FREE(sck->recv.addr);
     if (sck->mesg_list) {
-        list_destroy(sck->mesg_list, NULL, (mem_dealloc_cb_t)mem_dealloc);
+        list_destroy(sck->mesg_list, (mem_dealloc_cb_t)mem_dealloc, NULL);
     }
     CLOSE(sck->fd);
     FREE(sck);
@@ -1439,7 +1439,7 @@ static int sdrd_rsvr_dist_send_data(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr)
         list2_trav(rsvr->conn_list, (trav_cb_t)sdrd_rsvr_conn_list_with_same_nodeid, &conn);
         if (0 == conn.list->num) {
             queue_dealloc(sendq, data);
-            list_destroy(conn.list, NULL, mem_dummy_dealloc);
+            list_destroy(conn.list, mem_dummy_dealloc, NULL);
             log_error(rsvr->log, "Didn't find connection by nodeid [%d]!", conn.nodeid);
             continue;
         }
@@ -1452,7 +1452,7 @@ static int sdrd_rsvr_dist_send_data(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr)
         addr = (void *)calloc(1, len);
         if (NULL == addr) {
             queue_dealloc(sendq, data);
-            list_destroy(conn.list, NULL, mem_dummy_dealloc);
+            list_destroy(conn.list, mem_dummy_dealloc, NULL);
             log_error(rsvr->log, "Alloc memory failed! errmsg:[%d]", errno, strerror(errno));
             continue;
         }
@@ -1473,7 +1473,7 @@ static int sdrd_rsvr_dist_send_data(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr)
             log_error(rsvr->log, "Push input list failed!");
         }
 
-        list_destroy(conn.list, NULL, mem_dummy_dealloc);
+        list_destroy(conn.list, mem_dummy_dealloc, NULL);
     }
 
     return SDTP_OK;

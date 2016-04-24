@@ -81,15 +81,15 @@ list_t *list_creat(list_opt_t *opt)
  **功    能: 销毁链表
  **输入参数:
  **     list: 链表对象
- **     pool: 内存池(正对链表结点所挂的数据块)
  **     dealloc: 释放回调(正对链表结点所挂的数据块)
+ **     pool: 内存池(正对链表结点所挂的数据块)
  **输出参数: NONE
  **返    回: VOID
  **实现描述: 遍历链表节点，依次释放节点和数据块内存
  **注意事项: 必须释放节点所挂数据块的空间, 否则将会出现严重的内存泄露!
  **作    者: # Qifeng.zou # 2015.02.17 #
  ******************************************************************************/
-void list_destroy(list_t *list, void *pool, mem_dealloc_cb_t dealloc)
+void list_destroy(list_t *list, mem_dealloc_cb_t dealloc, void *pool)
 {
     list_node_t *curr, *next;
 

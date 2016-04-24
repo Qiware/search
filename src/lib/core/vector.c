@@ -44,7 +44,7 @@ vector_t *vector_creat(int cap, int incr)
 }
 
 /******************************************************************************
- **函数名称: vector_insert
+ **函数名称: vector_append
  **功    能: 往VEC插入数据
  **输入参数:
  **     vec: VEC对象
@@ -55,7 +55,7 @@ vector_t *vector_creat(int cap, int incr)
  **注意事项:
  **作    者: # Qifeng.zou # 2016.04.09 #
  ******************************************************************************/
-int vector_insert(vector_t *vec, void *addr)
+int vector_append(vector_t *vec, void *addr)
 {
     void **ptr;
 

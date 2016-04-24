@@ -649,7 +649,7 @@ int crwl_worker_remove_sock(crwl_worker_t *worker, socket_t *sck)
         FREE(p);
     }
 
-    list_destroy(extra->send_list, NULL, (mem_dealloc_cb_t)mem_dealloc);
+    list_destroy(extra->send_list, (mem_dealloc_cb_t)mem_dealloc, NULL);
 
     /* >> 从套接字链表剔除SCK */
     if (list_remove(worker->sock_list, sck)) {

@@ -259,6 +259,7 @@ int rtmq_rsvr_init(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, int id)
     rsvr->id = id;
     rsvr->log = ctx->log;
     rsvr->ctm = time(NULL);
+    rsvr->ctx = (void *)ctx;
 
     /* > 创建CMD套接字 */
     rtmq_rsvr_usck_path(conf, path, rsvr->id);
@@ -1011,9 +1012,127 @@ static void rtmq_sub_list_free(rtmq_sub_list_t *list)
     free(list);
 }
 
-static bool rtmq_find_node_for_vec_cb(rtmq_sub_node_t *node, int *nodeid)
+static bool rtmq_find_node_for_vec_cb(rtmq_sub_node_t *node, uint64_t *sid)
 {
-    return (node->nodeid == *nodeid)? true : false;
+    return (node->sid == *sid)? true : false;
+}
+
+static int rtmq_rsvr_sub_find_or_add(rtmq_cntx_t *ctx, rtmq_sck_t *sck, int type)
+{
+    int ret;
+    rtmq_sub_mgr_t *sub;
+    rtmq_sub_list_t *list;
+    rtmq_sub_node_t *node;
+
+    /* > Find or add sub node */
+    sub = &ctx->sub_mgr;
+    pthread_rwlock_wrlock(&sub->lock);
+    do {
+        list = (rtmq_sub_list_t *)avl_query(sub->tab, &type, sizeof(type));
+        if (NULL == list) {
+            list = (rtmq_sub_list_t *)rtmq_sub_list_creat(type);
+            if (NULL == list) {
+                log_error(ctx->log, "Create sub list failed!");
+                break;
+            }
+
+            if (avl_insert(sub->tab, &type, sizeof(type), (void *)list)) {
+                rtmq_sub_list_free(list);
+                log_error(ctx->log, "Insert sub table failed!");
+                break;
+            }
+        }
+
+        node = vector_find(list->nodes, (find_cb_t)rtmq_find_node_for_vec_cb, (void *)&sck->sid);
+        if (NULL != node) {
+            ret = RTMQ_OK;
+            break;
+        }
+
+        /* > Add new node */
+        node = (rtmq_sub_node_t *)calloc(1, sizeof(rtmq_sub_node_t));
+        if (NULL == node) {
+            log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
+            break;
+        }
+
+        node->sid = sck->sid;
+        node->nodeid = sck->nodeid;
+
+        if (vector_append(list->nodes, (void *)node)) {
+            log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
+            free(node);
+            break;
+        }
+        ret = RTMQ_OK;
+    } while(0);
+    pthread_rwlock_unlock(&sub->lock);
+
+    log_debug(ctx->log, "Sub req handler! type:%u ret:%d", type, ret);
+
+    return ret;
+}
+
+static int rtmq_sub_del(rtmq_cntx_t *ctx, rtmq_sck_t *sck, int type)
+{
+    int idx;
+    void *addr;
+    rtmq_sub_mgr_t *sub;
+    rtmq_sub_list_t *list;
+    rtmq_sub_node_t *node;
+
+    sub = &ctx->sub_mgr;
+
+    pthread_rwlock_wrlock(&sub->lock);
+    do {
+        list = (rtmq_sub_list_t *)avl_query(sub->tab, &type, sizeof(type));
+        if (NULL == list) {
+            break;
+        }
+
+        node = vector_find(list->nodes, (find_cb_t)rtmq_find_node_for_vec_cb, (void *)&sck->sid);
+        if (NULL == node) {
+            break;
+        }
+
+        idx = vector_get_idx(list->nodes, node);
+        vector_del_by_idx(list->nodes, idx);
+        free(node);
+
+        if (0 == vector_len(list->nodes)) {
+            avl_delete(sub->tab, &type, sizeof(type), &addr);
+            free(list);
+        }
+    } while(0);
+    pthread_rwlock_unlock(&sub->lock);
+
+    return 0;
+}
+
+/* 添加订阅数据 */
+static int rtmq_rsvr_sck_add_sub(rtmq_cntx_t *ctx, rtmq_sck_t *sck, int type)
+{
+    rtmq_sub_req_t *item;
+
+    item = (rtmq_sub_req_t *)avl_query(sck->sub_list, &type, sizeof(type));
+    if (NULL != item) {
+        log_warn(ctx->log, "Socket sub [%u] repeat!", type);
+        return 0;
+    }
+
+    item = (rtmq_sub_req_t *)calloc(1, sizeof(rtmq_sub_req_t));
+    if (NULL == item) {
+        return -1;
+    }
+
+    item->type = type;
+
+    if (avl_insert(sck->sub_list, &type, sizeof(type), (void *)item)) {
+        free(item);
+        return -1;
+    }
+
+    return 0;
 }
 
 /******************************************************************************
@@ -1029,13 +1148,8 @@ static bool rtmq_find_node_for_vec_cb(rtmq_sub_node_t *node, int *nodeid)
  **注意事项: 
  **作    者: # Qifeng.zou # 2016.04.13 00:35:15 #
  ******************************************************************************/
-static int rtmq_rsvr_sub_req_hdl(rtmq_cntx_t *ctx,
-        rtmq_rsvr_t *rsvr, rtmq_sck_t *sck, void *addr)
+static int rtmq_rsvr_sub_req_hdl(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t *sck, void *addr)
 {
-    int ret;
-    rtmq_sub_mgr_t *sub;
-    rtmq_sub_list_t *list;
-    rtmq_sub_node_t *node;
     rtmq_header_t *head = (rtmq_header_t *)addr;
     rtmq_sub_req_t *req = (rtmq_sub_req_t *)(head + 1);
 
@@ -1043,53 +1157,21 @@ static int rtmq_rsvr_sub_req_hdl(rtmq_cntx_t *ctx,
     RTMQ_SUB_REQ_NTOH(req, req);
 
     /* > Find or add sub node */
-    sub = &ctx->sub_mgr;
-    pthread_rwlock_wrlock(&sub->lock);
-    do {
-        list = (rtmq_sub_list_t *)avl_query(sub->tab, &req->type, sizeof(req->type));
-        if (NULL == list) {
-            list = (rtmq_sub_list_t *)rtmq_sub_list_creat(req->type);
-            if (NULL == list) {
-                log_error(ctx->log, "Create sub list failed!");
-                break;
-            }
+    if (rtmq_rsvr_sub_find_or_add(ctx, sck, req->type)) {
+        log_debug(ctx->log, "Sub find or add failed! type:%u", req->type);
+        return -1;
+    }
 
-            if (avl_insert(sub->tab, &req->type, sizeof(req->type), (void *)list)) {
-                rtmq_sub_list_free(list);
-                log_error(ctx->log, "Insert sub table failed!");
-                break;
-            }
-        }
+    /* > Add item into socket sub list */
+    if (rtmq_rsvr_sck_add_sub(ctx, sck, req->type)) {
+        rtmq_sub_del(ctx, sck, req->type);
+        log_error(ctx->log, "Add item into sub list failed! type:%u", req->type);
+        return -1;
+    }
 
-        node = vector_find(list->nodes, (find_cb_t)rtmq_find_node_for_vec_cb, (void *)&head->nodeid);
-        if (NULL != node) {
-            ret = RTMQ_OK;
-            ++node->ref;
-            break;
-        }
+    log_debug(ctx->log, "Sub req handler success! type:%u", req->type);
 
-        /* > Add new node */
-        node = (rtmq_sub_node_t *)calloc(1, sizeof(rtmq_sub_node_t));
-        if (NULL == node) {
-            log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
-            break;
-        }
-
-        node->nodeid = head->nodeid;
-        ++node->ref;
-
-        if (vector_insert(list->nodes, (void *)node)) {
-            log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
-            free(node);
-            break;
-        }
-        ret = RTMQ_OK;
-    } while(0);
-    pthread_rwlock_unlock(&sub->lock);
-
-    log_debug(ctx->log, "Sub req handler! type:%u ret:%d", req->type, ret);
-
-    return ret;
+    return 0;
 }
 
 /******************************************************************************
@@ -1107,11 +1189,10 @@ static int rtmq_rsvr_sub_req_hdl(rtmq_cntx_t *ctx,
 static rtmq_sck_t *rtmq_rsvr_sck_creat(rtmq_rsvr_t *rsvr, rtmq_cmd_add_sck_t *req)
 {
     void *addr;
-    list_opt_t opt;
     rtmq_sck_t *sck;
 
     /* > 分配连接空间 */
-    sck = calloc(1, sizeof(rtmq_sck_t));
+    sck = (rtmq_sck_t *)calloc(1, sizeof(rtmq_sck_t));
     if (NULL == sck) {
         log_error(rsvr->log, "Alloc memory failed!");
         CLOSE(req->sckid);
@@ -1129,14 +1210,15 @@ static rtmq_sck_t *rtmq_rsvr_sck_creat(rtmq_rsvr_t *rsvr, rtmq_cmd_add_sck_t *re
     snprintf(sck->ipaddr, sizeof(sck->ipaddr), "%s", req->ipaddr);
 
     do {
+        /* > 创建订阅列表 */
+        sck->sub_list = avl_creat(NULL, (key_cb_t)key_cb_int32, (cmp_cb_t)cmp_cb_int32);
+        if (NULL == sck->sub_list) {
+            log_error(rsvr->log, "Create sub list failed!");
+            break;
+        }
+
         /* > 创建发送链表 */
-        memset(&opt, 0, sizeof(opt));
-
-        opt.pool = (void *)NULL;
-        opt.alloc = (mem_alloc_cb_t)mem_alloc;
-        opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
-
-        sck->mesg_list = list_creat(&opt);
+        sck->mesg_list = list_creat(NULL);
         if (NULL == sck->mesg_list) {
             log_error(rsvr->log, "Create list failed!");
             break;
@@ -1159,6 +1241,58 @@ static rtmq_sck_t *rtmq_rsvr_sck_creat(rtmq_rsvr_t *rsvr, rtmq_cmd_add_sck_t *re
     return NULL;
 }
 
+typedef struct {
+    rtmq_sck_t *sck;
+    rtmq_cntx_t *ctx;
+} rtmq_rsvr_sck_sub_trav_t;
+
+int rtmq_rsvr_sck_sub_item_free(rtmq_rsvr_sck_sub_trav_t *args, rtmq_sub_req_t *req)
+{
+    int idx;
+    rtmq_sub_list_t *list;
+    rtmq_sub_node_t *node;
+    rtmq_sck_t *sck = args->sck;
+    rtmq_cntx_t *ctx = args->ctx;
+    rtmq_sub_mgr_t *sub = &ctx->sub_mgr;
+
+    list = avl_query(sub->tab, &req->type, sizeof(req->type));
+    if (NULL == list) {
+        return 0;
+    }
+
+    node = vector_find(list->nodes, (find_cb_t)rtmq_find_node_for_vec_cb, &sck->sid);
+    if (NULL == node) {
+        return 0;
+    }
+
+    idx = vector_get_idx(list->nodes, node);
+    vector_del_by_idx(list->nodes, idx);
+    free(node);
+    free(req);
+
+    return 0;
+}
+
+static int rtmq_rsvr_sck_sub_free(rtmq_rsvr_t *rsvr, rtmq_sck_t *sck)
+{
+    rtmq_sub_mgr_t *sub;
+    rtmq_rsvr_sck_sub_trav_t args;
+    rtmq_cntx_t *ctx = (rtmq_cntx_t *)rsvr->ctx;
+
+    sub = &ctx->sub_mgr;
+
+    args.sck = sck;
+    args.ctx = ctx;
+
+    pthread_rwlock_wrlock(&sub->lock);
+    if (sck->sub_list) {
+        avl_destroy(sck->sub_list, (mem_dealloc_cb_t)rtmq_rsvr_sck_sub_item_free, &args);
+    }
+    pthread_rwlock_unlock(&sub->lock);
+
+    return 0;
+}
+
 /******************************************************************************
  **函数名称: rtmq_rsvr_sck_free
  **功    能: 释放指定套接字对象的空间
@@ -1175,9 +1309,13 @@ static void rtmq_rsvr_sck_free(rtmq_rsvr_t *rsvr, rtmq_sck_t *sck)
 {
     if (NULL == sck) { return; }
     FREE(sck->recv.addr);
-    /* 释放链表空间 */
+
+    /* 释放订阅列表空间 */
+    rtmq_rsvr_sck_sub_free(rsvr, sck);
+
+    /* 释放发送链表空间 */
     if (sck->mesg_list) {
-        list_destroy(sck->mesg_list, NULL, (mem_dealloc_cb_t)mem_dealloc);
+        list_destroy(sck->mesg_list, (mem_dealloc_cb_t)mem_dealloc, NULL);
     }
 
     /* 释放iov的空间 */
@@ -1250,6 +1388,9 @@ static int rtmq_rsvr_del_conn_hdl(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, list2_nod
 
     /* > 从链表剔除结点 */
     list2_delete(rsvr->conn_list, node);
+
+    /* > 删除SCK订阅信息 */
+    //rtmq_sub_mgr_del(ctx, curr->nodeid, curr->sid);
 
     /* > 从SCK <<=>> DEV映射表中剔除 */
     rtmq_node_to_svr_map_del(ctx, curr->nodeid, rsvr->id);
@@ -1414,7 +1555,6 @@ static int rtmq_rsvr_dist_data(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr)
     void *addr;
     void *data[RTRD_POP_MAX_NUM];
     rtmq_frwd_t *frwd;
-    list_opt_t opt;
     rtmq_sck_t *sck;
     _conn_list_t cl;
     rtmq_header_t *head;
@@ -1440,14 +1580,8 @@ static int rtmq_rsvr_dist_data(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr)
             frwd = (rtmq_frwd_t *)data[idx];
 
             /* > 查找发送连接 */
-            memset(&opt, 0, sizeof(opt));
-
-            opt.pool = (void *)NULL;
-            opt.alloc = (mem_alloc_cb_t)mem_alloc;
-            opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
-
             cl.nodeid = frwd->dest;
-            cl.list = list_creat(&opt);
+            cl.list = list_creat(NULL);
             if (NULL == cl.list) {
                 queue_dealloc(sendq, data[idx]);
                 log_error(rsvr->log, "Create list failed!");
@@ -1457,7 +1591,7 @@ static int rtmq_rsvr_dist_data(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr)
             list2_trav(rsvr->conn_list, (trav_cb_t)rtmq_rsvr_get_conn_list_by_nodeid, &cl);
             if (0 == cl.list->num) {
                 queue_dealloc(sendq, data[idx]);
-                list_destroy(cl.list, NULL, mem_dummy_dealloc);
+                list_destroy(cl.list, mem_dummy_dealloc, NULL);
                 log_error(rsvr->log, "Didn't find connection by nodeid [%d]!", cl.nodeid);
                 continue;
             }
@@ -1470,7 +1604,7 @@ static int rtmq_rsvr_dist_data(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr)
             addr = calloc(1, len);
             if (NULL == addr) {
                 queue_dealloc(sendq, data[idx]);
-                list_destroy(cl.list, NULL, mem_dummy_dealloc);
+                list_destroy(cl.list, mem_dummy_dealloc, NULL);
                 log_error(rsvr->log, "Alloc memory failed!");
                 continue;
             }
@@ -1493,7 +1627,7 @@ static int rtmq_rsvr_dist_data(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr)
                 log_error(rsvr->log, "Push input list failed!");
             }
 
-            list_destroy(cl.list, NULL, mem_dummy_dealloc); /* 无需是否结点数据空间 */
+            list_destroy(cl.list, mem_dummy_dealloc, NULL); /* 无需是否结点数据空间 */
         }
     }
 

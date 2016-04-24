@@ -317,7 +317,7 @@ int invtab_remove(invt_tab_t *tab, char *word)
         return INVT_ERR;
     }
     
-    list_destroy(dw->doc_list, tab->pool, (mem_dealloc_cb_t)mem_dealloc);
+    list_destroy(dw->doc_list, (mem_dealloc_cb_t)mem_dealloc, tab->pool);
     tab->dealloc(tab->pool, dw->word.str);
     tab->dealloc(tab->pool, dw);
     

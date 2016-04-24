@@ -219,7 +219,7 @@ static int agent_rsvr_sck_dealloc(void *pool, socket_t *sck)
     agent_socket_extra_t *extra = sck->extra;
 
     FREE(sck);
-    list_destroy(extra->send_list, NULL, (mem_dealloc_cb_t)mem_dealloc);
+    list_destroy(extra->send_list, (mem_dealloc_cb_t)mem_dealloc, NULL);
     FREE(extra);
 
     return 0;
@@ -521,7 +521,7 @@ static int agent_rsvr_add_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
                 log_error(rsvr->log, "Insert into avl failed! fd:%d seq:%lu",
                           sck->fd, extra->seq);
                 CLOSE(sck->fd);
-                list_destroy(extra->send_list, NULL, (mem_dealloc_cb_t)mem_dealloc);
+                list_destroy(extra->send_list, (mem_dealloc_cb_t)mem_dealloc, NULL);
                 FREE(sck->extra);
                 FREE(sck);
                 return AGENT_ERR;
@@ -568,7 +568,7 @@ static int agent_rsvr_del_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *
 
     /* > 释放套接字空间 */
     CLOSE(sck->fd);
-    list_destroy(extra->send_list, NULL, (mem_dealloc_cb_t)mem_dealloc);
+    list_destroy(extra->send_list, (mem_dealloc_cb_t)mem_dealloc, NULL);
     if (sck->recv.addr) {
         queue_dealloc(ctx->recvq[rsvr->id], sck->recv.addr);
     }

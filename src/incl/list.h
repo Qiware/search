@@ -38,7 +38,7 @@ void list_assert(list_t *list);
 #define list_length(list) ((list)->num)
 
 list_t *list_creat(list_opt_t *opt);
-void list_destroy(list_t *list, void *pool, mem_dealloc_cb_t dealloc);
+void list_destroy(list_t *list, mem_dealloc_cb_t dealloc, void *pool);
 int list_insert(list_t *list, list_node_t *prev, void *data);
 int list_remove(list_t *list, void *data);
 

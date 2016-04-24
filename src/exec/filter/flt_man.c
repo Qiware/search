@@ -163,7 +163,7 @@ static flt_man_t *flt_man_init(flt_cntx_t *ctx)
         avl_destroy(man->reg, mem_dummy_dealloc, NULL);
     }
     if (NULL != man->mesg_list) {
-        list_destroy(man->mesg_list, NULL, (mem_dealloc_cb_t)mem_dealloc);
+        list_destroy(man->mesg_list, (mem_dealloc_cb_t)mem_dealloc, NULL);
     }
     CLOSE(man->fd);
     FREE(man);
