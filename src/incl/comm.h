@@ -12,6 +12,7 @@
 #include <assert.h>
 #include <stdint.h>
 #include <stdarg.h>
+#include <limits.h>
 #include <sys/un.h>
 #include <signal.h>
 #include <getopt.h>
