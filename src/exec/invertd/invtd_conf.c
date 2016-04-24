@@ -249,7 +249,7 @@ static int invtd_conf_load_comm(xml_tree_t *xml, invtd_conf_t *conf)
     xml_node_t *node;
 
     /* > 结点ID */
-    node = xml_query(xml, ".INVTERD.NODE");
+    node = xml_query(xml, ".INVTERD.ID");
     if (NULL == node) {
         return INVT_ERR_CONF;
     }
