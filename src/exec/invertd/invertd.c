@@ -7,6 +7,7 @@
  ** 作  者: # Qifeng.zou # Wed 06 May 2015 10:22:56 PM CST #
  ******************************************************************************/
 
+#include "redo.h"
 #include "invertd.h"
 #include "invtd_priv.h"
 #include "invtd_conf.h"
@@ -48,33 +49,37 @@ int main(int argc, char *argv[])
 
     umask(0);
 
-    /* > 初始化日志 */
-    log = log_init(opt.log_level, INVTD_LOG_PATH);
-    if (NULL == log) {
-        fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
-        return -1;
-    }
+    do {
+        /* > 初始化日志 */
+        log = log_init(opt.log_level, INVTD_LOG_PATH);
+        if (NULL == log) {
+            fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
+            break;
+        }
 
-    /* > 加载配置信息 */
-    if (invtd_conf_load(opt.conf_path, &conf, log)) {
-        fprintf(stderr, "Load configuration failed! path:%s", opt.conf_path);
-        return -1;
-    }
+        /* > 加载配置信息 */
+        if (invtd_conf_load(opt.conf_path, &conf, log)) {
+            log_fatal(log, "Load configuration failed! path:%s", opt.conf_path);
+            break;
+        }
 
-    /* > 服务初始化 */
-    ctx = invtd_init(&conf, log);
-    if (NULL == ctx) {
-        fprintf(stderr, "Init invertd failed!\n");
-        return -1;
-    }
+        /* > 服务初始化 */
+        ctx = invtd_init(&conf, log);
+        if (NULL == ctx) {
+            log_fatal(log, "Init invertd failed!\n");
+            break;
+        }
 
-    /* > 启动服务 */
-    if (invtd_launch(ctx)) {
-        log_fatal(ctx->log, "Startup invertd failed!");
-        return -1;
-    }
+        /* > 启动服务 */
+        if (invtd_launch(ctx)) {
+            log_fatal(ctx->log, "Startup invertd failed!");
+            break;
+        }
 
-    while (1) { pause(); }
+        while (1) { pause(); }
+    } while(0);
+
+    Sleep(3);
 
     return 0;
 }
