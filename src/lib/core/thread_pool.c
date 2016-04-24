@@ -21,10 +21,10 @@ static void *thread_routine(void *_tpool);
  **     args: 附加参数信息
  **输出参数:
  **返    回: 线程池
- **实现描述: 
+ **实现描述:
  **     1. 分配线程池空间, 并初始化
  **     2. 创建指定数目的线程
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2012.12.26 #
  ******************************************************************************/
 thread_pool_t *thread_pool_init(int num, const thread_pool_opt_t *opt, void *args)
@@ -85,11 +85,11 @@ thread_pool_t *thread_pool_init(int num, const thread_pool_opt_t *opt, void *arg
  **     arg: 回调函数的参数
  **输出参数:
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述:
  **     1. 新建任务结点
  **     2. 将回调函数加入工作队列
  **     3. 唤醒正在等待的线程
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2012.12.26 #
  ******************************************************************************/
 int thread_pool_add_worker(thread_pool_t *tpool, void *(*process)(void *arg), void *arg)
@@ -139,10 +139,10 @@ int thread_pool_add_worker(thread_pool_t *tpool, void *(*process)(void *arg), vo
  **     arg: 回调函数的参数
  **输出参数:
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述:
  **     1. 判断线程是否正在运行
  **     2. 如果线程已退出, 则重新启动线程
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2012.12.26 #
  ******************************************************************************/
 int thread_pool_keepalive(thread_pool_t *tpool)
@@ -167,8 +167,8 @@ int thread_pool_keepalive(thread_pool_t *tpool)
  **     tpool: 线程池
  **输出参数:
  **返    回: 线程序列号
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2012.12.26 #
  ******************************************************************************/
 int thread_pool_get_tidx(thread_pool_t *tpool)
@@ -192,11 +192,11 @@ int thread_pool_get_tidx(thread_pool_t *tpool)
  **     tpool: 线程池
  **输出参数:
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述:
  **     1. 设置销毁标志
  **     2. 唤醒所有线程
  **     3. 等待所有线程结束
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2012.12.26 #
  ******************************************************************************/
 int thread_pool_destroy(thread_pool_t *tpool)
@@ -224,7 +224,7 @@ int thread_pool_destroy(thread_pool_t *tpool)
     pthread_mutex_destroy(&(tpool->queue_lock));
     pthread_cond_destroy(&(tpool->queue_ready));
     tpool->dealloc(tpool->mem_pool, tpool);
-    
+
     return 0;
 }
 
@@ -235,9 +235,9 @@ int thread_pool_destroy(thread_pool_t *tpool)
  **     _tpool: 线程池
  **输出参数:
  **返    回: VOID *
- **实现描述: 
+ **实现描述:
  **     判断是否有任务: 如无, 则等待; 如有, 则处理.
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.04.18 #
  ******************************************************************************/
 static void *thread_routine(void *_tpool)
@@ -282,8 +282,8 @@ static void *thread_routine(void *_tpool)
  **输出参数:
  **     tid: 线程ID
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.04.18 #
  ******************************************************************************/
 int thread_creat(pthread_t *tid, void *(*process)(void *args), void *args)

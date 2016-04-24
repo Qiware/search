@@ -58,13 +58,13 @@ static const xml_esc_t g_xml_esc_str[] =
 /******************************************************************************
  **函数名称: xml_node_creat
  **功    能: 创建XML节点
- **输入参数: 
+ **输入参数:
  **     xml: XML树
  **     type: 节点类型(xml_node_type_e)
  **输出参数: NONE
  **返    回: 节点地址
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2013.02.18 #
  ******************************************************************************/
 xml_node_t *xml_node_creat(xml_tree_t *xml, xml_node_type_e type)
@@ -84,15 +84,15 @@ xml_node_t *xml_node_creat(xml_tree_t *xml, xml_node_type_e type)
 /******************************************************************************
  **函数名称: xml_node_creat_ext
  **功    能: 创建XML节点
- **输入参数: 
+ **输入参数:
  **     xml: XML树
  **     type: 节点类型(xml_node_type_e)
  **     name: 节点名
  **     vlaue: 节点值
  **输出参数: NONE
  **返    回: 节点地址
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2013.06.11 #
  ******************************************************************************/
 xml_node_t *xml_node_creat_ext(xml_tree_t *xml,
@@ -124,7 +124,7 @@ xml_node_t *xml_node_creat_ext(xml_tree_t *xml,
         xml_node_free_one(xml, node);
         return NULL;
     }
-    
+
     return node;
 }
 
@@ -135,8 +135,8 @@ xml_node_t *xml_node_creat_ext(xml_tree_t *xml,
  **     opt: 选项信息
  **输出参数:
  **返    回: XML树
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
 xml_tree_t *xml_init(xml_opt_t *opt)
@@ -176,7 +176,7 @@ xml_tree_t *xml_init(xml_opt_t *opt)
  **     fname: 文件路径名
  **输出参数:
  **返    回: 文件缓存
- **实现描述: 
+ **实现描述:
  **注意事项: 内存分配的最小单位为1KB, 防止内存碎片.
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
@@ -214,7 +214,7 @@ char *xml_fload(const char *fname, xml_opt_t *opt)
             opt->dealloc(opt->pool, buff);
             return NULL;
         }
-        
+
         left -= n;
         off += n;
     }
@@ -234,10 +234,10 @@ char *xml_fload(const char *fname, xml_opt_t *opt)
  **     str: XML字串
  **输出参数:
  **返    回: 0: 成功  !0: 失败
- **实现描述: 
+ **实现描述:
  **     1. 解析版本信息
  **     2. 解析XML BODY
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
 int xml_parse(xml_tree_t *xml, Stack_t *stack, const char *str, size_t len)
@@ -258,7 +258,7 @@ int xml_parse(xml_tree_t *xml, Stack_t *stack, const char *str, size_t len)
             {
                 switch(*(parse.ptr+1))
                 {
-                    case XML_VERS_FLAG:  /* "<?" 版本开始 */ 
+                    case XML_VERS_FLAG:  /* "<?" 版本开始 */
                     {
                         /* 版本信息不用加载到XML树中 */
                         if (xml_parse_version(xml, &parse)) {
@@ -319,7 +319,7 @@ int xml_parse(xml_tree_t *xml, Stack_t *stack, const char *str, size_t len)
         log_error(xml->log, "Invalid format! [%-.32s]", parse.ptr);
         return XML_ERR_FORMAT;
     }
-    
+
     return XML_OK;
 }
 
@@ -330,7 +330,7 @@ int xml_parse(xml_tree_t *xml, Stack_t *stack, const char *str, size_t len)
  **     parse: 解析文件缓存信息
  **输出参数:
  **返    回: 0: 成功  !0: 失败
- **实现描述: 
+ **实现描述:
  **注意事项: XML大小写敏感
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
@@ -360,14 +360,14 @@ static int xml_parse_version(xml_tree_t *xml, xml_parse_t *parse)
             log_error(xml->log, "XML format is wrong![%-.32s]", parse->ptr);
             return XML_ERR_FORMAT;
         }
-        
+
         if (!XmlIsEqualChar(*ptr)) {
             log_error(xml->log, "XML format is wrong![%-.32s]", parse->ptr);
             return XML_ERR_FORMAT;
         }
         ptr++;
         parse->ptr = ptr;
-        
+
         /* 属性值是否正确 */
         while (XmlIsIgnoreChar(*ptr)) { ++ptr; } /* 跳过=之后的无意义字符 */
 
@@ -381,7 +381,7 @@ static int xml_parse_version(xml_tree_t *xml, xml_parse_t *parse)
         }
         ptr++;
         parse->ptr = ptr;
-        
+
         while ((*ptr != border) && !XmlIsStrEndChar(*ptr)) { ++ptr; }
 
         if (*ptr != border) {
@@ -389,7 +389,7 @@ static int xml_parse_version(xml_tree_t *xml, xml_parse_t *parse)
             return XML_ERR_FORMAT;
         }
         ptr++;  /* 跳过双/单引号 */
-        
+
 		/* 跳过无意义字符 */
         while (XmlIsIgnoreChar(*ptr)) { ++ptr; }
         parse->ptr = ptr;
@@ -401,12 +401,12 @@ static int xml_parse_version(xml_tree_t *xml, xml_parse_t *parse)
         return XML_ERR_FORMAT;
     }
     parse->ptr++;  /* 跳过? */
-    
+
     if (!XmlIsRPBrackChar(*parse->ptr)) {
         log_error(xml->log, "XML format is wrong![%-.32s]", parse->ptr);
         return XML_ERR_FORMAT;
     }
-    
+
     parse->ptr++;
     return XML_OK;
 }
@@ -418,7 +418,7 @@ static int xml_parse_version(xml_tree_t *xml, xml_parse_t *parse)
  **     parse: 解析文件缓存信息
  **输出参数:
  **返    回: 0: 成功  !0: 失败
- **实现描述: 
+ **实现描述:
  **注意事项: XML大小写敏感
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
@@ -433,7 +433,7 @@ static int xml_parse_note(xml_tree_t *xml, xml_parse_t *parse)
     }
 
     parse->ptr += XML_NOTE_BEGIN_LEN; /* 跳过注释开头"<!--" */
-    
+
     /* 因在注释信息的节点中不允许出现"-->"，所以可使用如下匹配查找结束 */
     ptr = strstr(parse->ptr, XML_NOTE_END1);
     if ((NULL == ptr) || (XML_NOTE_END2 != *(ptr + XML_NOTE_END1_LEN))) {
@@ -454,8 +454,8 @@ static int xml_parse_note(xml_tree_t *xml, xml_parse_t *parse)
  **     parse: 解析文件缓存信息
  **输出参数:
  **返    回: 0: 成功  !0: 失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2013.02.23 #
  ******************************************************************************/
 #define xml_mark_end(stack, parse) (parse->ptr+=XML_MARK_END2_LEN, stack_pop(stack), 0)
@@ -469,11 +469,11 @@ static int xml_parse_note(xml_tree_t *xml, xml_parse_t *parse)
  **     parse: 解析文件缓存信息
  **输出参数:
  **返    回: 0: 成功  !0: 失败
- **实现描述: 
+ **实现描述:
  **     1. 提取标签名
  **     2. 提取标签各属性
  **     3. 提取标签值
- **注意事项: 
+ **注意事项:
  **     注意: 以上3个步骤是固定的，否则将会出现混乱
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
@@ -487,7 +487,7 @@ static int xml_parse_mark(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse)
         log_error(xml->log, "Get mark name failed!");
         return XML_ERR;
     }
-    
+
     /* 2. 提取标签属性 */
     if (xml_mark_has_attr(parse)) {
         if (xml_mark_get_attr(xml, stack, parse)) {
@@ -520,10 +520,10 @@ static int xml_parse_mark(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse)
             return ret;
         }
     }
- 
+
     return XML_OK;
 }
-   
+
 /******************************************************************************
  **函数名称: xml_parse_end
  **功    能: 处理结束节点(处理</XXX>格式的结束)
@@ -532,7 +532,7 @@ static int xml_parse_mark(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse)
  **     parse: 解析文件缓存信息
  **输出参数:
  **返    回: 0: 成功  !0: 失败
- **实现描述: 
+ **实现描述:
  **注意事项: XML大小写敏感
  **作    者: # Qifeng.zou # 2013.02.05 #
  ******************************************************************************/
@@ -544,10 +544,10 @@ static int xml_parse_end(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse)
 
     parse->ptr += XML_MARK_END2_LEN; /* 跳过</ */
     ptr = parse->ptr;
-    
+
     /* 1. 确定结束节点名长度 */
     while (XmlIsMarkChar(*ptr)) { ++ptr; }
-    
+
     if (!XmlIsRPBrackChar(*ptr)) {
         log_error(xml->log, "XML format is wrong![%-.32s]", parse->ptr);
         return XML_ERR_FORMAT;
@@ -572,7 +572,7 @@ static int xml_parse_end(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse)
 
     ptr++;
     parse->ptr = ptr;
-        
+
     return XML_OK;
 }
 
@@ -585,8 +585,8 @@ static int xml_parse_end(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse)
  **     parse: 解析文件缓存信息
  **输出参数:
  **返    回: 0: 成功  !0: 失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **     1. 因新建节点已加入XML树中，因此在此不必去释放新节点的内存空间
  **     2. 此时tail用来记录孩子节点链表尾
  **作    者: # Qifeng.zou # 2013.02.23 #
@@ -671,8 +671,8 @@ static int xml_mark_get_name(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse
  **     parse: 解析文件缓存信息
  **输出参数:
  **返    回: 0: 成功  !0: 失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2013.02.23 #
  ******************************************************************************/
 static int xml_mark_has_attr(xml_parse_t *parse)
@@ -682,7 +682,7 @@ static int xml_mark_has_attr(xml_parse_t *parse)
     while (XmlIsIgnoreChar(*ptr)) { ++ptr; }    /* 跳过无意义的字符 */
 
     parse->ptr = ptr;
-    
+
     if (XmlIsMarkChar(*ptr)) {
         return true;
     }
@@ -694,13 +694,13 @@ static int xml_mark_has_attr(xml_parse_t *parse)
  **函数名称: xml_mark_get_attr
  **功    能: 解析有属性的标签
  **输入参数:
- **     
+ **
  **     stack: XML栈
  **     parse: 解析文件缓存信息
  **输出参数:
  **返    回: 0: 成功  !0: 失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **     1. 属性值可使用双引号或单引号确定属性值范围
  **     2. 转义符号的转换对应关系如下:
  **       &lt;    <    小于
@@ -758,7 +758,7 @@ static int xml_mark_get_attr(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse
         memcpy(node->name.str, parse->ptr, len);
         node->name.len = len;
         node->name.str[len] = '\0';
-        
+
         /* 3.3 获取属性值 */
         while (XmlIsIgnoreChar(*ptr)) { ++ptr; }        /* 跳过=之前的无意义字符 */
 
@@ -820,7 +820,7 @@ static int xml_mark_get_attr(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse
         if (NULL != split.head) {
             size = xml_esc_size(&split);
             size += len+1;
-    
+
             node->value = (char *)xml->alloc(xml->pool, size);
             if (NULL == node->value) {
                 errflg = 1;
@@ -829,7 +829,7 @@ static int xml_mark_get_attr(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse
             }
 
             xml_esc_merge(&split, node->value);
-            
+
             strncat(node->value, parse->ptr, len);
 
             xml_esc_free(&split);
@@ -858,7 +858,7 @@ static int xml_mark_get_attr(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse
         }
         node->parent = top;
         top->tail = node;
-        
+
         /* 3.5 指针向后移动 */
         while (XmlIsIgnoreChar(*ptr)) { ++ptr; }
 
@@ -887,14 +887,14 @@ static int xml_mark_get_attr(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse
  **     parse: 解析文件缓存信息
  **输出参数:
  **返    回: 0: 成功  !0: 失败
- **实现描述: 
+ **实现描述:
  **注意事项: XML大小写敏感
  **作    者: # Qifeng.zou # 2013.02.23 #
  ******************************************************************************/
 static int xml_mark_is_end(xml_parse_t *parse)
 {
     const char *ptr = parse->ptr;
-    
+
     while (XmlIsIgnoreChar(*ptr)) { ++ptr; }
 
     /* 1. 是否有节点值 */
@@ -911,8 +911,8 @@ static int xml_mark_is_end(xml_parse_t *parse)
  **     parse: 解析文件缓存信息
  **输出参数:
  **返    回: true:有 false:无 -1: 错误格式
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2013.02.23 #
  ******************************************************************************/
 static int xml_mark_has_value(xml_parse_t *parse)
@@ -920,7 +920,7 @@ static int xml_mark_has_value(xml_parse_t *parse)
     const char *ptr = parse->ptr;
 
     while (XmlIsIgnoreChar(*ptr)) { ++ptr; }
-    
+
     if (XmlIsRPBrackChar(*ptr)) {
         ptr++;
 
@@ -933,20 +933,20 @@ static int xml_mark_has_value(xml_parse_t *parse)
         }
         return XML_HAS_VALUE;
     }
-    
+
     return XML_ERR_FORMAT;
 }
 
 /******************************************************************************
  **函数名称: xml_mark_get_value
  **功    能: 获取节点值
- **输入参数: 
+ **输入参数:
  **     stack: XML栈
  **     parse: 解析文件缓存信息
  **输出参数:
  **返    回: 0: 成功  !0: 失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2013.02.23 #
  ******************************************************************************/
 static int xml_mark_get_value(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse)
@@ -977,8 +977,8 @@ static int xml_mark_get_value(xml_tree_t *xml, Stack_t *stack, xml_parse_t *pars
     }
 
     parse->ptr = p1;
-    
-    /* 提取节点值: 允许节点值中出现空格和换行符 */    
+
+    /* 提取节点值: 允许节点值中出现空格和换行符 */
     while (!XmlIsStrEndChar(*p1) && (border != *p1))
     {
     #if defined(__XML_ESC_PARSE__)
@@ -1082,8 +1082,8 @@ static int xml_mark_get_value(xml_tree_t *xml, Stack_t *stack, xml_parse_t *pars
  **     node: 需要被释放的节点
  **输出参数:
  **返    回: 0: 成功  !0: 失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2013.02.27 #
  ******************************************************************************/
 int xml_node_free_one(xml_tree_t *xml, xml_node_t *node)
@@ -1108,14 +1108,14 @@ int xml_node_free_one(xml_tree_t *xml, xml_node_t *node)
  **     curr: 当前正在处理的节点
  **输出参数:
  **返    回: 下一个需要处理的节点
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2013.02.27 #
  ******************************************************************************/
 xml_node_t *xml_free_next(xml_tree_t *xml, Stack_t *stack, xml_node_t *curr)
 {
     xml_node_t *child, *top;
-    
+
     /* 1. 释放孩子节点 */
     if (NULL != curr->temp) {     /* 首先: 处理孩子节点: 选出下一个孩子节点 */
         child = curr->temp;
@@ -1130,12 +1130,12 @@ xml_node_t *xml_free_next(xml_tree_t *xml, Stack_t *stack, xml_node_t *curr)
             log_error(xml->log, "Stack pop failed!");
             return NULL;
         }
-        
+
         if (stack_empty(stack)) {
             xml_node_free_one(xml, top);
             return NULL;
         }
-        
+
         /* 2. 处理其下一个兄弟节点 */
         curr = top->next;
         xml_node_free_one(xml, top);
@@ -1146,12 +1146,12 @@ xml_node_t *xml_free_next(xml_tree_t *xml, Stack_t *stack, xml_node_t *curr)
                 log_error(xml->log, "Stack pop failed!");
                 return NULL;
             }
-            
+
             if (stack_empty(stack)) {
                 xml_node_free_one(xml, top);
                 return NULL;
             }
-    
+
             /* 5. 选择父亲的兄弟节点 */
             curr = top->next;
             xml_node_free_one(xml, top);
@@ -1169,8 +1169,8 @@ xml_node_t *xml_free_next(xml_tree_t *xml, Stack_t *stack, xml_node_t *curr)
  **     child: 孩子节点
  **输出参数:
  **返    回: 0: 成功  !0: 失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **     从树中删除的节点，只是从树中被剥离出来，其相关内存并没有被释放.
  **     释放时需调用函数xml_node_free()
  **作    者: # Qifeng.zou # 2013.03.02 #
@@ -1183,7 +1183,7 @@ int xml_delete_child(xml_tree_t *xml, xml_node_t *node, xml_node_t *child)
         log_error(xml->log, "Parent node is not right!");
         return XML_ERR_PTR;
     }
-    
+
     if (node->child == child) {  /* 1. 要删的是子节点链表的开始节点 */
         node->child = child->next;  /* 剔除链表 */
         if (NULL == node->child) {
@@ -1279,8 +1279,8 @@ int xml_delete_child(xml_tree_t *xml, xml_node_t *node, xml_node_t *child)
  **     stack: 栈
  **输出参数:
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2013.06.10 #
  ******************************************************************************/
 static xml_node_t *xml_node_next_len(
@@ -1372,8 +1372,8 @@ static xml_node_t *xml_node_next_len(
  **     stack: 栈
  **输出参数:
  **返    回: 节点及其属性、孩子节点的总长度
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2013.06.10 #
  ******************************************************************************/
 int _xml_node_len(xml_tree_t *xml, xml_node_t *root, Stack_t *stack)
@@ -1396,23 +1396,23 @@ int _xml_node_len(xml_tree_t *xml, xml_node_t *root, Stack_t *stack)
             log_error(xml->log, "Stack push failed!");
             return XML_ERR_STACK;
         }
-        
+
         /* 2. 打印节点名 */
         depth = stack_depth(stack);
-        
+
         xml_node_name_len(node, depth, len);
-        
+
         /* 3. 打印属性节点 */
         if (xml_has_attr(node)) {
             xml_node_attr_len(node, len);
         }
-        
+
         /* 4. 打印节点值 */
         xml_node_value_len(node, len);
-        
+
         /* 5. 选择下一个处理的节点: 从父亲节点、兄弟节点、孩子节点中 */
         node = xml_node_next_len(xml, stack, node, &len);
-        
+
     }while (NULL != node);
 
     if (!stack_empty(stack)) {
@@ -1429,8 +1429,8 @@ int _xml_node_len(xml_tree_t *xml, xml_node_t *root, Stack_t *stack)
  **     str: 以&开头的字串
  **输出参数:
  **返    回: 0: 成功  !0: 失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **     转义字串的对应关系如下:
  **       &lt;    <    小于
  **       &gt;    >    大于
@@ -1467,15 +1467,15 @@ static const xml_esc_t *xml_esc_get(const char *str)
  **     s: 被切割后的字串链表
  **输出参数:
  **返    回: 0: 成功  !0: 失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.01.06 #
  ******************************************************************************/
 static int xml_esc_size(const xml_esc_split_t *sp)
 {
     int size = 0;
     xml_esc_node_t *node = sp->head;
-    
+
     while (NULL != node) {
         size = node->len;
         node = node->next;
@@ -1491,8 +1491,8 @@ static int xml_esc_size(const xml_esc_split_t *sp)
  **     s: 被切割后的字串链表
  **输出参数:
  **返    回: 0: 成功  !0: 失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.01.06 #
  ******************************************************************************/
 static int xml_esc_merge(const xml_esc_split_t *sp, char *dst)
@@ -1516,8 +1516,8 @@ static int xml_esc_merge(const xml_esc_split_t *sp, char *dst)
  **     split: 切割对象
  **输出参数:
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.01.06 #
  ******************************************************************************/
 static int xml_esc_free(xml_tree_t *xml, xml_esc_split_t *split)
@@ -1534,7 +1534,7 @@ static int xml_esc_free(xml_tree_t *xml, xml_esc_split_t *split)
 
     split->head = NULL;
     split->tail = NULL;
-    
+
     return XML_OK;
 }
 
@@ -1548,8 +1548,8 @@ static int xml_esc_free(xml_tree_t *xml, xml_esc_split_t *split)
  **输出参数:
  **     split: 分割后的结果
  **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **     转义字串的对应关系如下:
  **       &lt;    <    小于
  **       &gt;    >    大于
@@ -1581,7 +1581,7 @@ static int xml_esc_split(xml_tree_t *xml, const xml_esc_t *esc,
     node->str[len-1] = esc->ch;
     node->len = len;
     node->str[len] = '\0';
-    
+
     if (NULL == split->head) {
         split->head = node;
     }

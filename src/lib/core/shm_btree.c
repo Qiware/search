@@ -45,7 +45,7 @@ static int _shm_btree_merge(shm_btree_cntx_t *ctx, shm_btree_node_t *left, shm_b
  **      -----------------------------------------------------------------
  **     ^       ^
  **     |       |
- **   btree    pool 
+ **   btree    pool
  **     btree: B树对象
  **     pool: 内存池对象
  **注意事项:
@@ -131,7 +131,7 @@ shm_btree_cntx_t *shm_btree_creat(const char *path, int m, size_t total)
  **      -----------------------------------------------------------------
  **     ^       ^
  **     |       |
- **   btree    pool 
+ **   btree    pool
  **     btree: B树对象
  **     pool: 内存池对象
  **注意事项:
@@ -259,7 +259,7 @@ int shm_btree_insert(shm_btree_cntx_t *ctx, int key, void *data)
         if (NULL == node) {
             return -1;
         }
-        
+
         node_key = (int *)shm_btree_off_to_ptr(ctx, node->key);
         node_data = (off_t *)shm_btree_off_to_ptr(ctx, node->data);
 
@@ -926,7 +926,7 @@ static shm_btree_node_t *shm_btree_node_alloc(shm_btree_cntx_t *ctx)
     }
 
     node->child = (off_t)shm_btree_ptr_to_off(ctx, node_child);
-                                          
+
     return node;
 }
 

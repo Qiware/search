@@ -70,8 +70,8 @@
  **     fp: 文件指针
  **输出参数:
  **返    回: 0: 成功  !0: 失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **     1. 刚开始时，栈的深度必须为1.
  **     2. 此时temp用来记录正在处理孩子节点
  **     3. 不打印root的兄弟节点
@@ -106,7 +106,7 @@ static xml_node_t *xml_fprint_next(
             log_error(xml->log, "Compelte fprint!");
             return NULL;
         }
-        
+
         /* 2. 处理其下一个兄弟节点 */
         node = top->next;
         while (NULL == node) {   /* 所有兄弟节点已经处理完成，说明父亲节点也处理完成 */
@@ -116,7 +116,7 @@ static xml_node_t *xml_fprint_next(
                 log_error(xml->log, "Stack pop failed!");
                 return NULL;
             }
-        
+
             /* 4. 打印父亲节点结束标志 */
             if (xml_has_child(top)) {
                 depth = stack_depth(stack);
@@ -127,7 +127,7 @@ static xml_node_t *xml_fprint_next(
                 }
                 fprintf(fp, "</%s>\n", top->name.str);
             }
-            
+
             if (stack_empty(stack)) {
                 return NULL;    /* 处理完成 */
             }
@@ -135,8 +135,8 @@ static xml_node_t *xml_fprint_next(
             /* 5. 选择父亲的兄弟节点 */
             node = top->next;
         }
-    }    
-    
+    }
+
     return node;
 }
 
@@ -149,8 +149,8 @@ static xml_node_t *xml_fprint_next(
  **     fp: 文件指针
  **输出参数:
  **返    回: 0: 成功  !0: 失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **     1. 刚开始时，栈的深度必须为1.
  **     2. 此时temp用来记录正在处理孩子节点
  **     3. 不打印root的兄弟节点
@@ -174,20 +174,20 @@ int xml_fprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, FILE *fp)
             log_error(xml->log, "Stack push failed!");
             return XML_ERR_STACK;
         }
-        
+
         /* 2. 打印节点名 */
         depth = stack_depth(stack);
-        
+
         xml_fprint_name(fp, node, depth);
-        
+
         /* 3. 打印属性节点 */
         if (xml_has_attr(node)) {
             xml_fprint_attr(fp, node);
         }
-        
+
         /* 4. 打印节点值 */
         xml_fprint_value(fp, node);
-        
+
         /* 5. 选择下一个处理的节点: 从父亲节点、兄弟节点、孩子节点中 */
         node = xml_fprint_next(xml, stack, node, fp);
     } while (NULL != node);
@@ -286,8 +286,8 @@ int xml_fprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, FILE *fp)
  **     len: 长度统计
  **输出参数:
  **返    回: 0: 成功  !0: 失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **     1. 刚开始时，栈的深度必须为1.
  **     2. 此时temp用来记录正在处理孩子节点
  **     3. 不打印root的兄弟节点
@@ -369,8 +369,8 @@ static xml_node_t *xml_pack_next_len(
  **     stack: 栈
  **输出参数:
  **返    回: 节点及其属性、孩子节点的总长度
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2013.06.11 #
  ******************************************************************************/
 int xml_pack_node_len(xml_tree_t *xml, xml_node_t *root, Stack_t *stack)
@@ -389,25 +389,25 @@ int xml_pack_node_len(xml_tree_t *xml, xml_node_t *root, Stack_t *stack)
     do {
         /* 1. 将要处理的节点压栈 */
         node->temp = node->child;
-        
+
         if (stack_push(stack, node)) {
             log_error(xml->log, "Stack push failed!");
             return XML_ERR_STACK;
         }
-        
+
         /* 2. 打印节点名 */
         depth = stack_depth(stack);
-        
+
         xml_pack_name_len(node, len);
-        
+
         /* 3. 打印属性节点 */
         if (xml_has_attr(node)) {
             xml_pack_attr_len(node, len);
         }
-        
+
         /* 4. 打印节点值 */
         xml_pack_value_len(node, len);
-        
+
         /* 5. 选择下一个处理的节点: 从父亲节点、兄弟节点、孩子节点中 */
         node = xml_pack_next_len(xml, stack, node, &len);
     } while (NULL != node);
@@ -501,8 +501,8 @@ int xml_pack_node_len(xml_tree_t *xml, xml_node_t *root, Stack_t *stack)
  **     sp: 缓存指针
  **输出参数:
  **返    回: 0: 成功  !0: 失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **     1. 刚开始时，栈的深度必须为1.
  **     2. 此时temp用来记录正在处理孩子节点
  **     3. 不打印root的兄弟节点
@@ -575,8 +575,8 @@ static xml_node_t *xml_pack_next(
  **     sp: 缓存指针
  **输出参数:
  **返    回: 0: 成功  !0: 失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **     1. 刚开始时，栈的深度必须为1.
  **     2. 此时temp用来记录正在处理孩子节点
  **     3. 不打印root的兄弟节点
@@ -600,20 +600,20 @@ int xml_pack_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, sprint_t *s
             log_error(xml->log, "Stack push failed!");
             return XML_ERR_STACK;
         }
-        
+
         /* 2. 打印节点名 */
         depth = stack_depth(stack);
-        
+
         xml_pack_name(sp, node);
-        
+
         /* 3. 打印属性节点 */
         if (xml_has_attr(node)) {
             xml_pack_attr(sp, node);
         }
-        
+
         /* 4. 打印节点值 */
         xml_pack_value(sp, node);
-        
+
         /* 5. 选择下一个处理的节点: 从父亲节点、兄弟节点、孩子节点中 */
         node = xml_pack_next(xml, stack, node, sp);
     } while (NULL != node);
@@ -689,8 +689,8 @@ int xml_pack_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, sprint_t *s
  **     sp: 缓存指针
  **输出参数:
  **返    回: 0: 成功  !0: 失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **     1. 刚开始时，栈的深度必须为1.
  **     2. 此时temp用来记录正在处理孩子节点
  **     3. 不打印root的兄弟节点
@@ -722,12 +722,12 @@ static xml_node_t *xml_sprint_next(
             sprintf(sp->ptr, "</%s>\n", top->name.str);
             sp->ptr += (top->name.len + 4);
         }
-        
+
         if (stack_empty(stack)) {
             log_error(xml->log, "Compelte fprint!");
             return NULL;
         }
-        
+
         /* 2. 处理其下一个兄弟节点 */
         node = top->next;
         while (NULL == node) {   /* 所有兄弟节点已经处理完成，说明父亲节点也处理完成 */
@@ -737,7 +737,7 @@ static xml_node_t *xml_sprint_next(
                 log_error(xml->log, "Stack pop failed!");
                 return NULL;
             }
-        
+
             /* 4. 打印父亲节点结束标志 */
             if (xml_has_child(top)) {
                 depth = stack_depth(stack);
@@ -750,7 +750,7 @@ static xml_node_t *xml_sprint_next(
                 sprintf(sp->ptr, "</%s>\n", top->name.str);
                 sp->ptr += (top->name.len + 4);
             }
-            
+
             if (stack_empty(stack)) {
                 return NULL;    /* 处理完成 */
             }
@@ -758,8 +758,8 @@ static xml_node_t *xml_sprint_next(
             /* 5. 选择父亲的兄弟节点 */
             node = top->next;
         }
-    }    
-    
+    }
+
     return node;
 }
 
@@ -772,8 +772,8 @@ static xml_node_t *xml_sprint_next(
  **     sp: 缓存指针
  **输出参数:
  **返    回: 0: 成功  !0: 失败
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **     1. 刚开始时，栈的深度必须为1.
  **     2. 此时temp用来记录正在处理孩子节点
  **     3. 不打印root的兄弟节点
@@ -797,20 +797,20 @@ int xml_sprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, sprint_t 
             log_error(xml->log, "Stack push failed!");
             return XML_ERR_STACK;
         }
-        
+
         /* 2. 打印节点名 */
         depth = stack_depth(stack);
-        
+
         xml_sprint_name(sp, node, depth);
-        
+
         /* 3. 打印属性节点 */
         if (xml_has_attr(node)) {
             xml_sprint_attr(sp, node);
         }
-        
+
         /* 4. 打印节点值 */
         xml_sprint_value(sp, node);
-        
+
         /* 5. 选择下一个处理的节点: 从父亲节点、兄弟节点、孩子节点中 */
         node = xml_sprint_next(xml, stack, node, sp);
     } while(NULL != node);

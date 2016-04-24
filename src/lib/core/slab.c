@@ -82,8 +82,8 @@ static uint32_t slab_page_shift = SLAB_PAGE_SHIFT;
  **     size: 内存SIZE
  **输出参数:
  **返    回: Slab对象
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Nginx # YYYY.MM.DD #
  ******************************************************************************/
 slab_pool_t *slab_init(void *addr, size_t size, log_cycle_t *log)
@@ -171,7 +171,7 @@ slab_pool_t *slab_init(void *addr, size_t size, log_cycle_t *log)
  **     size: 申请的空间大小
  **输出参数:
  **返    回: 内存地址
- **实现描述: 
+ **实现描述:
  **注意事项: 此内存机制只适合"小内存块"的空间分配, 小内存指的是小于4K的内存块.
  **          如果反复进行大量大小内存分配的混合空间申请和释放, "可能"出现分配空间
  **          失败的情况.
@@ -409,8 +409,8 @@ done:
  **     p: 内存起始地址
  **输出参数:
  **返    回: VOID
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Nginx # YYYY.MM.DD #
  ******************************************************************************/
 void slab_dealloc(slab_pool_t *pool, void *p)
@@ -603,8 +603,8 @@ fail:
  **     pages: 申请的页数
  **输出参数:
  **返    回: 页对象地址
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Nginx # YYYY.MM.DD #
  ******************************************************************************/
 static slab_page_t *slab_alloc_pages(slab_pool_t *pool, uint32_t pages)
@@ -663,8 +663,8 @@ static slab_page_t *slab_alloc_pages(slab_pool_t *pool, uint32_t pages)
  **     pages: 页数
  **输出参数:
  **返    回: 页地址
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Nginx # YYYY.MM.DD #
  ******************************************************************************/
 static void slab_dealloc_pages(slab_pool_t *pool, slab_page_t *page, uint32_t pages)
@@ -698,8 +698,8 @@ static void slab_dealloc_pages(slab_pool_t *pool, slab_page_t *page, uint32_t pa
  **     size: 总空间
  **输出参数:
  **返    回: Slab对象
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.04.12 #
  ******************************************************************************/
 slab_pool_t *slab_creat_by_calloc(size_t size, log_cycle_t *log)
@@ -725,7 +725,7 @@ slab_pool_t *slab_init(void *addr, size_t size, log_cycle_t *log) { return callo
 void *slab_alloc(slab_pool_t *pool, size_t size) { return calloc(1, size); }
 void slab_dealloc(slab_pool_t *pool, void *p) { free(p); }
 slab_pool_t *slab_creat_by_calloc(size_t size, log_cycle_t *log) { return calloc(1, size); }
-#endif /*__MEM_LEAK_CHECK__*/ 
+#endif /*__MEM_LEAK_CHECK__*/
 
 /******************************************************************************
  **函数名称: slab_alloc_ex
@@ -759,7 +759,7 @@ void *slab_alloc_ex(slab_pool_t *pool, size_t size)
  **输出参数:
  **返    回: VOID
  **实现描述: 当指针p不在slab范围时, 直接让操作系统回收内存.
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.08.23 00:03:26 #
  ******************************************************************************/
 void slab_dealloc_ex(slab_pool_t *pool, void *p)

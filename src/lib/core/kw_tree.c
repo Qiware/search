@@ -249,7 +249,7 @@ static void kwt_node_free(kwt_tree_t *kwt, kwt_node_t *node, void *mempool, mem_
 {
     int i;
 
-    for (i=0;i<kwt->max; ++i) {   
+    for (i=0;i<kwt->max; ++i) {
         if (NULL == node[i].child) {
             continue;
         }

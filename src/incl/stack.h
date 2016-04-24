@@ -39,8 +39,7 @@ static inline int stack_init(Stack_t *stack, int max)
     memset(stack, 0, sizeof(Stack_t));
 
     stack->base = (void**)calloc(max, sizeof(void*));
-    if (NULL == stack->base)
-    {
+    if (NULL == stack->base) {
         return -1;
     }
     stack->top= stack->base;
@@ -85,8 +84,7 @@ static inline int stack_destroy(Stack_t *stack)
  ******************************************************************************/
 static inline int stack_push(Stack_t *stack, void *node)
 {
-    if ((stack->top - stack->base) >= stack->max)
-    {
+    if ((stack->top - stack->base) >= stack->max) {
         return -1;
     }
 
@@ -110,8 +108,7 @@ static inline int stack_push(Stack_t *stack, void *node)
  ******************************************************************************/
 static inline void *stack_pop(Stack_t *stack)
 {
-    if (stack->base == stack->top)
-    {
+    if (stack->base == stack->top) {
         return NULL;
     }
 

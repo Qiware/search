@@ -63,12 +63,12 @@ static int shm_slab_slot_remove_page(
 /******************************************************************************
  **Name  : shm_slab_init
  **Func  : Initialize share-memory slab pool
- **Input : 
+ **Input :
  **     pool: Object of slab pool.
  **     base_offset: Base offset.
  **Output: NONE
  **Return: 0:Success    !0:Failed
- **Desc  : 
+ **Desc  :
  **     |<-               HEAD               ->|
  **     |<- POOL ->|<-   SLOT   ->|<-  PAGE  ->|<-            DATA          ->|
  **     -----------------------------------------------------------------------
@@ -79,7 +79,7 @@ static int shm_slab_slot_remove_page(
  **     ^          ^              ^            ^                              ^
  **     |          |              |            |                              |
  **    addr       slot           page         data                           end
- **Note  : 
+ **Note  :
  **     addr: 为偏移量的基址
  **注意事项：调用shm_slab_init()前, 需要设置好pool_size值.
  **Author: # Qifeng.zou # 2013.07.12 #
@@ -96,7 +96,7 @@ int shm_slab_init(shm_slab_pool_t *pool)
 
     slot_num = shm_slab_max_shift() - SHM_SLAB_MIN_SHIFT + 1;
     min_size = sizeof(shm_slab_pool_t) + slot_num * sizeof(shm_slab_page_t);
-    
+
     if (pool->pool_size < min_size) {
         return -1;  /* Not enough memory */
     }
@@ -145,7 +145,7 @@ int shm_slab_init(shm_slab_pool_t *pool)
     page->prev_idx = SHM_SLAB_FREE_PAGE;
 
     pool->data_offset = pool->page_offset + page_num * sizeof(shm_slab_page_t);
-    
+
     spin_lock_init(&pool->lock);
     return 0;
 }
@@ -156,16 +156,16 @@ int shm_slab_init(shm_slab_pool_t *pool)
  **Input : NONE
  **Output: NONE
  **Return: 0:Success    !0:Failed
- **Desc  : 
- **Note  : 
+ **Desc  :
+ **Note  :
  **Author: # Qifeng.zou # 2013.07.15 #
  ******************************************************************************/
 static void shm_slab_init_param(void)
 {
     int shift;
     size_t size;
-    
-    
+
+
     if (0 == shm_slab_page_size()) {
         /* Set page size */
         shm_slab_set_page_size(SHM_SLAB_PAGE_SIZE);
@@ -188,19 +188,19 @@ static void shm_slab_init_param(void)
         }
         shm_slab_set_exact_shift(shift);
     }
-    
+
     return;
 }
 
 /******************************************************************************
  **Name  : shm_slab_get_alloc_type
- **Func  : Get alloc type. 
- **Input : 
+ **Func  : Get alloc type.
+ **Input :
  **     size: Alloc size of memory
  **Output: NONE
  **Return: Type of alloced. range: SHM_SLAB_ALLOC_TYPE
- **Desc  : 
- **Note  : 
+ **Desc  :
+ **Note  :
  **Author: # Qifeng.zou # 2013.07.16 #
  ******************************************************************************/
 static int shm_slab_get_alloc_type(size_t size)
@@ -221,15 +221,15 @@ static int shm_slab_get_alloc_type(size_t size)
 /******************************************************************************
  **Name  : shm_slab_alloc
  **Func  : Alloc special size of memory from slab pool.
- **Input : 
+ **Input :
  **     pool: Object of slab pool.
  **     size: Alloc special size of memory.
  **Output: NONE
  **Return: 0:Success    !0:Failed
- **Desc  : 
+ **Desc  :
  **     1. Alloc large memory from slab pool.
  **     2. Alloc small memory from slab pool.
- **Note  : 
+ **Note  :
  **Author: # Qifeng.zou # 2013.07.12 #
  ******************************************************************************/
 void *shm_slab_alloc(shm_slab_pool_t *pool, size_t size)
@@ -249,14 +249,14 @@ void *shm_slab_alloc(shm_slab_pool_t *pool, size_t size)
     if (size >= shm_slab_max_size()) {
         addr = (void *)pool;
         pages = (size + shm_slab_page_size() - 1) >> shm_slab_page_shift();
-        
+
         page = shm_slab_alloc_pages(pool, pages);
         if (NULL == page) {
             fprintf(stderr, "Alloc pages failed!");
             spin_unlock(&pool->lock);
             return NULL;
         }
-        
+
         p = (addr + pool->data_offset + (page->index << shm_slab_page_shift()));
 
         spin_unlock(&pool->lock);
@@ -276,13 +276,13 @@ void *shm_slab_alloc(shm_slab_pool_t *pool, size_t size)
 /******************************************************************************
  **Name  : shm_slab_alloc_pages
  **Func  : Alloc special pages of memory from slab pool.
- **Input : 
+ **Input :
  **     pool: Object of slab pool.
  **     pages: Alloc special pages of memory.
  **Output: NONE
  **Return: Start offset of alloced pages.
- **Desc  : 
- **Note  : 
+ **Desc  :
+ **Note  :
  **Author: # Qifeng.zou # 2013.07.12 #
  ******************************************************************************/
 static shm_slab_page_t *shm_slab_alloc_pages(shm_slab_pool_t *pool, size_t pages)
@@ -295,10 +295,10 @@ static shm_slab_page_t *shm_slab_alloc_pages(shm_slab_pool_t *pool, size_t pages
     start_page = (shm_slab_page_t *)(addr + pool->page_offset);
 
     while (!shm_slab_is_null_page(page->next_idx)) {
-        page = &start_page[page->next_idx];        
+        page = &start_page[page->next_idx];
         if (page->pages > pages) {
             next = page + pages;
-            
+
             next->pages = page->pages - pages;
 
             if (shm_slab_is_free_page(page->prev_idx)) {
@@ -307,7 +307,7 @@ static shm_slab_page_t *shm_slab_alloc_pages(shm_slab_pool_t *pool, size_t pages
             else {
                 prev = &start_page[page->prev_idx];
             }
-            
+
             next->prev_idx = page->prev_idx;
             next->next_idx = page->next_idx;
 
@@ -343,7 +343,7 @@ static shm_slab_page_t *shm_slab_alloc_pages(shm_slab_pool_t *pool, size_t pages
                 prev->next_idx = page->next_idx;
                 next->prev_idx = page->prev_idx;
             }
-            
+
             page->type = SHM_SLAB_ALLOC_PAGES;
             page->next_idx = SHM_SLAB_NULL_PAGE;
             page->prev_idx = SHM_SLAB_NULL_PAGE;
@@ -353,20 +353,20 @@ static shm_slab_page_t *shm_slab_alloc_pages(shm_slab_pool_t *pool, size_t pages
     }
 
     fprintf(stderr, "Alloc pages failed!");
-    
+
     return NULL;
 }
 
 /******************************************************************************
  **Name  : shm_slab_alloc_slot
  **Func  : Alloc special size of memory from slab pool.
- **Input : 
+ **Input :
  **     pool: Object of slab pool.
  **     size: Alloc special size of memory.
  **Output: NONE
  **Return: Start offset of alloced pages.
- **Desc  : 
- **Note  : 
+ **Desc  :
+ **Note  :
  **Author: # Qifeng.zou # 2013.07.12 #
  ******************************************************************************/
 static void *shm_slab_alloc_slot(shm_slab_pool_t *pool, size_t size)
@@ -374,7 +374,7 @@ static void *shm_slab_alloc_slot(shm_slab_pool_t *pool, size_t size)
     void *p = NULL;
     int shift = 0, idx = 0, s = 0;
     SHM_SLAB_ALLOC_TYPE type = SHM_SLAB_ALLOC_UNKNOWN;
-    
+
     /* 1. Make sure use which slot */
     if (size > pool->min_size) {
         shift = 1;
@@ -408,9 +408,9 @@ static void *shm_slab_alloc_slot(shm_slab_pool_t *pool, size_t size)
  **     pool: Object of slab pool.
  **     slot_idx: Index of slob array.
  **     type: Type of alloc. range: SHM_SLAB_ALLOC_TYPE
- **Output: NONE 
+ **Output: NONE
  **Return: 0:Success    !0:Failed
- **Desc  : 
+ **Desc  :
  **     |<-               HEAD               ->|
  **     |<- POOL ->|<-   SLOT   ->|<-  PAGE  ->|<-            DATA          ->|
  **     -----------------------------------------------------------------------
@@ -436,7 +436,7 @@ static void *_shm_slab_alloc_slot(
     addr = (void *)pool;
     data = addr + pool->data_offset;
     start_page = (shm_slab_page_t *)(addr + pool->page_offset);
-    
+
     shift = slot_idx + pool->min_shift;			/* SIZE的位移 */
     bits = (shm_slab_page_size() >> shift);		/* 计算需要多少bit能表示slot占用情况 */
     exp_bitmaps = (bits >> SHM_SLAB_BITMAP_SHIFT) - 1;	/* (1).当>0时，表示需要扩展位图
@@ -497,7 +497,7 @@ static void *_shm_slab_alloc_slot(
                 if (shm_slab_is_busy_bitmap(bitmap[idx])) {
                     continue;
                 }
-                
+
                 for (i=0; i<SHM_SLAB_BITMAP_BITS; i++) {
                     if ((bitmap[idx] >> i) & 1) {
                         continue;   /* Used */
@@ -551,13 +551,13 @@ static void *_shm_slab_alloc_slot(
 /******************************************************************************
  **Name  : shm_slab_free_pages
  **Func  : Free special pages of slab pool.
- **Input : 
+ **Input :
  **     pool: Object of slab pool.
  **     page: Specail pages of memory.
  **Output: NONE
  **Return: 0:Success    !0:Failed
- **Desc  : 
- **Note  : 
+ **Desc  :
+ **Note  :
  **Author: # Qifeng.zou # 2013.07.15 #
  ******************************************************************************/
 static int shm_slab_free_pages(shm_slab_pool_t *pool, shm_slab_page_t *page)
@@ -581,7 +581,7 @@ static int shm_slab_free_pages(shm_slab_pool_t *pool, shm_slab_page_t *page)
         page->prev_idx = SHM_SLAB_FREE_PAGE;
         return 0;
     }
-    
+
     next = &start_page[free->next_idx];
 
     page->shift = shm_slab_page_shift();
@@ -597,14 +597,14 @@ static int shm_slab_free_pages(shm_slab_pool_t *pool, shm_slab_page_t *page)
 /******************************************************************************
  **Name  : shm_slab_slot_add_page
  **Func  : Add page into slot link.
- **Input : 
+ **Input :
  **     pool: Object of slab pool.
  **     slot: Slot link.
  **     page: Object of added.
- **Output: 
+ **Output:
  **Return: 0:Success    !0:Failed
- **Desc  : 
- **Note  : 
+ **Desc  :
+ **Note  :
  **Author: # Qifeng.zou # 2013.07.17 #
  ******************************************************************************/
 int shm_slab_slot_add_page(
@@ -617,7 +617,7 @@ int shm_slab_slot_add_page(
     addr = (void *)pool;
     start_page = (shm_slab_page_t *)(addr + pool->page_offset);
     page_idx = page - start_page;
-    
+
     if (shm_slab_is_null_page(slot->page_idx)) {
         slot->page_idx = page_idx;
         return 0;
@@ -634,14 +634,14 @@ int shm_slab_slot_add_page(
 /******************************************************************************
  **Name  : shm_slab_slot_remove_page
  **Func  : Remove page from slot link.
- **Input : 
+ **Input :
  **     pool: Object of slab pool.
  **     slot: Slot link.
  **     page: Object of removed.
- **Output: 
+ **Output:
  **Return: 0:Success    !0:Failed
- **Desc  : 
- **Note  : 
+ **Desc  :
+ **Note  :
  **Author: # Qifeng.zou # 2013.07.17 #
  ******************************************************************************/
 static int shm_slab_slot_remove_page(
@@ -657,7 +657,7 @@ static int shm_slab_slot_remove_page(
 
     addr = (void *)pool;
     start_page = (shm_slab_page_t *)(addr + pool->page_offset);
-    
+
     prev = &start_page[slot->page_idx];
     if (prev == page) {
         slot->page_idx = page->next_idx;
@@ -697,13 +697,13 @@ static int shm_slab_slot_remove_page(
 /******************************************************************************
  **Name  : shm_slab_free
  **Func  : Free special memory.
- **Input : 
+ **Input :
  **     pool: Object of slab pool.
  **     p: Object which is will be freed.
- **Output: 
+ **Output:
  **Return: 0:Success    !0:Failed
- **Desc  : 
- **Note  : 
+ **Desc  :
+ **Note  :
  **Author: # Qifeng.zou # 2013.07.12 #
  ******************************************************************************/
 void shm_slab_dealloc(shm_slab_pool_t *pool, void *p)
@@ -720,7 +720,7 @@ void shm_slab_dealloc(shm_slab_pool_t *pool, void *p)
 
     addr = (void *)pool;
     offset = (void *)p - addr;
-    
+
     if ((offset < pool->data_offset) || (offset > pool->end_offset)) {
         fprintf(stderr, "Pointer address is incorrect! offset:%lu", offset);
         return;
@@ -758,10 +758,10 @@ void shm_slab_dealloc(shm_slab_pool_t *pool, void *p)
                     break;
                 }
             }
-            
+
             if ((1 == is_free) && !(page->bitmap & page->rbitmap)) {
                 slot_idx = page->shift - pool->min_shift;
-                
+
                 /* Remove from slot[idx] link */
                 ret = shm_slab_slot_remove_page(pool, slot+slot_idx, page);
                 if (ret < 0) {
@@ -782,12 +782,12 @@ void shm_slab_dealloc(shm_slab_pool_t *pool, void *p)
             bit_idx = (p - start) >> page->shift;
 
             memset(p, 0, 1 << page->shift);
-            
+
             page->bitmap &= ~(1 << bit_idx);
-            
+
             if (!(page->bitmap & page->rbitmap)) {
                 slot_idx = page->shift - pool->min_shift;
-                
+
                 /* Remove from slot[idx] link */
                 ret = shm_slab_slot_remove_page(pool, slot+slot_idx, page);
                 if (ret < 0) {
@@ -820,12 +820,12 @@ void shm_slab_dealloc(shm_slab_pool_t *pool, void *p)
 /******************************************************************************
  **Name  : shm_slab_head_size
  **Func  : Compute the head size of slab pool.
- **Input : 
+ **Input :
  **     size: Slab pool size.
- **Output: 
+ **Output:
  **Return: The head size of slab pool.
- **Desc  : 
- **Note  : 
+ **Desc  :
+ **Note  :
  **Author: # Qifeng.zou # 2013.07.18 #
  ******************************************************************************/
 size_t shm_slab_head_size(size_t size)

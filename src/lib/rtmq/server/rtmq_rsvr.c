@@ -1112,23 +1112,23 @@ static int rtmq_sub_del(rtmq_cntx_t *ctx, rtmq_sck_t *sck, int type)
 /* 添加订阅数据 */
 static int rtmq_rsvr_sck_add_sub(rtmq_cntx_t *ctx, rtmq_sck_t *sck, int type)
 {
-    rtmq_sub_req_t *item;
+    rtmq_sub_req_t *req;
 
-    item = (rtmq_sub_req_t *)avl_query(sck->sub_list, &type, sizeof(type));
-    if (NULL != item) {
+    req = (rtmq_sub_req_t *)avl_query(sck->sub_list, &type, sizeof(type));
+    if (NULL != req) {
         log_warn(ctx->log, "Socket sub [%u] repeat!", type);
         return 0;
     }
 
-    item = (rtmq_sub_req_t *)calloc(1, sizeof(rtmq_sub_req_t));
-    if (NULL == item) {
+    req = (rtmq_sub_req_t *)calloc(1, sizeof(rtmq_sub_req_t));
+    if (NULL == req) {
         return -1;
     }
 
-    item->type = type;
+    req->type = type;
 
-    if (avl_insert(sck->sub_list, &type, sizeof(type), (void *)item)) {
-        free(item);
+    if (avl_insert(sck->sub_list, &type, sizeof(type), (void *)req)) {
+        free(req);
         return -1;
     }
 
@@ -1308,6 +1308,7 @@ static int rtmq_rsvr_sck_sub_free(rtmq_rsvr_t *rsvr, rtmq_sck_t *sck)
 static void rtmq_rsvr_sck_free(rtmq_rsvr_t *rsvr, rtmq_sck_t *sck)
 {
     if (NULL == sck) { return; }
+
     FREE(sck->recv.addr);
 
     /* 释放订阅列表空间 */

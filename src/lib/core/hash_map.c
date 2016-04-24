@@ -266,7 +266,7 @@ void *hash_map_remove(hash_map_t *htab, void *pkey, int pkey_len)
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述:
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
 int hash_map_destroy(hash_map_t *htab, mem_dealloc_cb_t dealloc, void *args)

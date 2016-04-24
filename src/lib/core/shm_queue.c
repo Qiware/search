@@ -28,7 +28,7 @@
  **      -------------- --------------
  **     环形队列: 负责数据的PUSH和POP等操作
  **     内存池  : 负责内存空间的申请和回收等操作
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.05.06 #
  ******************************************************************************/
 size_t shm_queue_total(int max, size_t size)
@@ -69,7 +69,7 @@ size_t shm_queue_total(int max, size_t size)
  **      -------------- --------------
  **     环形队列: 负责数据的弹出和插入等操作
  **     内存池  : 负责内存空间的申请和回收等操作
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.05.06 #
  ******************************************************************************/
 shm_queue_t *shm_queue_creat(const char *path, int max, int size)
@@ -123,11 +123,11 @@ shm_queue_t *shm_queue_creat(const char *path, int max, int size)
  **     size: 队列单元SIZE
  **输出参数:
  **返    回: 共享内存队列
- **实现描述: 
+ **实现描述:
  **     1. 计算内存空间
  **     2. 创建共享内存
  **     3. 初始化标志量
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.01.25 #
  ******************************************************************************/
 shm_queue_t *shm_queue_attach(const char *path)
@@ -163,13 +163,13 @@ shm_queue_t *shm_queue_attach(const char *path)
  **     p: 内存地址
  **输出参数:
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述:
  **注意事项: 内存地址p必须是从shm_queue_malloc()分配的，否则会出严重错误！
  **作    者: # Qifeng.zou # 2014.05.06 #
  ******************************************************************************/
 int shm_queue_push(shm_queue_t *shmq, void *p)
 {
-    if (NULL == p) { return -1; } 
+    if (NULL == p) { return -1; }
     return shm_ring_push(shmq->ring, p - (void *)shmq->ring);
 }
 
@@ -182,7 +182,7 @@ int shm_queue_push(shm_queue_t *shmq, void *p)
  **     num: 数组长度
  **输出参数:
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述:
  **注意事项: 1. 内存地址p必须是从shm_queue_malloc()分配的，否则会出严重错误！
  **          2. 一次最大压入数据不能超过SHMQ_MPUSH_MAX_NUM个数
  **作    者: # Qifeng.zou # 2014.06.08 10:58:11 #
@@ -213,8 +213,8 @@ int shm_queue_mpush(shm_queue_t *shmq, void **p, int num)
  **     shmq: 共享内存队列
  **输出参数: NONE
  **返    回: 数据地址
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.05.06 #
  ******************************************************************************/
 void *shm_queue_pop(shm_queue_t *shmq)
@@ -236,8 +236,8 @@ void *shm_queue_pop(shm_queue_t *shmq)
  **     shmq: 共享内存队列
  **输出参数: NONE
  **返    回: 实际数据条数
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.06.08 11:07:45 #
  ******************************************************************************/
 int shm_queue_mpop(shm_queue_t *shmq, void **p, int num)
