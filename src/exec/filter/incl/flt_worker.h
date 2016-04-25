@@ -9,7 +9,7 @@ typedef struct
 {
     int id;                                 /* 对象ID */
     log_cycle_t *log;                       /* 日志对象 */
-    redis_clst_t *redis;                    /* Redis集群 */
+    redisContext *redis;                    /* Redis集群 */
 
     flt_webpage_info_t info;                /* 网页信息 */
 } flt_worker_t;

@@ -29,11 +29,6 @@
              2) PUSH_TAB: 已放入过队列的网页(防止重复放入UNDO队列) -->
         <DONE_TAB NAME="CRWL_DONE_TAB" />
         <PUSH_TAB NAME="CRWL_PUSH_TAB" />
-
-        <!-- REDIS副本配置 -->
-        <SLAVE>
-            <ITEM IP="127.0.0.1" PORT="6379" PASSWD="" />
-        </SLAVE>
     </REDIS>
 
     <!-- 种子配置(DEPTH: 表示种子的当前深度) -->

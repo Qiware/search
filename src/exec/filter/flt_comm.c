@@ -178,7 +178,7 @@ flt_cntx_t *flt_init(char *pname, flt_opt_t *flt_opt)
         ctx->conf = conf;
 
         /* > 连接Redis集群 */
-        ctx->redis = redis_clst_init(conf->redis.conf, conf->redis.num);
+        ctx->redis = redis_init(&conf->redis.conf, 30);
         if (NULL == ctx->redis) {
             log_error(ctx->log, "Initialize redis context failed!");
             break;
@@ -242,7 +242,7 @@ flt_cntx_t *flt_init(char *pname, flt_opt_t *flt_opt)
     } while (0);
 
     /* > 释放内存空间 */
-    if (ctx->redis) { redis_clst_destroy(ctx->redis); }
+    if (ctx->redis) { redis_destroy(ctx->redis); }
     if (ctx->taskq) { sig_queue_destroy(ctx->taskq); }    
     return NULL;
 }
@@ -265,7 +265,7 @@ void flt_destroy(flt_cntx_t *ctx)
     }
 
     if (ctx->redis) {
-        redis_clst_destroy(ctx->redis);
+        redis_destroy(ctx->redis);
         ctx->redis = NULL;
     }
 
@@ -638,7 +638,7 @@ int flt_domain_blacklist_cmp_cb(const char *domain, const flt_domain_blacklist_t
  **函数名称: flt_set_uri_exists
  **功    能: 设置uri是否已存在
  **输入参数: 
- **     ctx: Redis集群
+ **     ctx: Redis对象
  **     hash: 哈希表名
  **     uri: 判断对象-URI
  **输出参数:
@@ -649,31 +649,9 @@ int flt_domain_blacklist_cmp_cb(const char *domain, const flt_domain_blacklist_t
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.04 #
  ******************************************************************************/
-bool flt_set_uri_exists(redis_clst_t *ctx, const char *hash, const char *uri)
+bool flt_set_uri_exists(redisContext *redis, const char *hash, const char *uri)
 {
-    redisReply *r;
-
-    if (0 == ctx->num) {
-        return !redis_hsetnx(ctx->redis[REDIS_MASTER_IDX], hash, uri, "1");
-    }
-
-    do {
-        r = redisCommand(ctx->redis[random() % ctx->num], "HEXISTS %s %s", hash, uri);
-        if (REDIS_REPLY_INTEGER != r->type) {
-            break;
-        }
-
-        if (0 == r->integer) {
-            break;
-        }
-
-        freeReplyObject(r);
-        return true; /* 已存在 */
-    } while (0);
-
-    freeReplyObject(r);
-
-    return !redis_hsetnx(ctx->redis[REDIS_MASTER_IDX], hash, uri, "1");
+    return !redis_hsetnx(redis, hash, uri, "1");
 }
 
 /******************************************************************************

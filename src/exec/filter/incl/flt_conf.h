@@ -37,8 +37,7 @@ typedef struct
 /* Redis配置信息 */
 typedef struct
 {
-    int num;                                /* 配置数目 */
-    redis_conf_t *conf;                     /* 配置数组(注: [0]为MASTER配置 [1~N]为副本配置 */
+    redis_conf_t conf;                      /* Redis配置 */
 
     char taskq[QUEUE_NAME_MAX_LEN];         /* 任务队列名 */
     char done_tab[TABLE_NAME_MAX_LEN];      /* DONE哈希表名 */
@@ -48,8 +47,7 @@ typedef struct
 /* 配置信息 */
 typedef struct
 {
-    struct
-    {
+    struct {
         uint32_t depth;                     /* 最大爬取深度 */
         char path[FILE_PATH_MAX_LEN];       /* 网页存储路径 */
     } download;                             /* 下载配置 */

@@ -215,12 +215,8 @@ static int _flt_conf_load(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *log)
  ******************************************************************************/
 static int flt_conf_load_redis(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *log)
 {
-    int idx;
-    redis_conf_t master;
-    xml_node_t *nail, *node, *start, *item;
+    xml_node_t *nail, *node;
     flt_redis_conf_t *redis = &conf->redis;
-
-    memset(&master, 0, sizeof(master));
 
     /* > 定位REDIS标签
      *  获取Redis的IP地址、端口号、队列、副本等信息 */
@@ -235,21 +231,21 @@ static int flt_conf_load_redis(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *l
     if (NULL == node
         || 0 == node->value.len)
     {
-        log_error(log, "Get master ip addr failed!");
+        log_error(log, "Get redis ip addr failed!");
         return -1;
     }
 
-    snprintf(master.ip, sizeof(master.ip), "%s", node->value.str);
+    snprintf(redis->conf.ip, sizeof(redis->conf.ip), "%s", node->value.str);
 
     node = xml_search(xml, nail, "PORT");
     if (NULL == node
         || 0 == node->value.len)
     {
-        log_error(log, "Get master port failed!");
+        log_error(log, "Get redis port failed!");
         return -1;
     }
 
-    master.port = atoi(node->value.str);
+    redis->conf.port = atoi(node->value.str);
 
     node = xml_search(xml, nail, "PASSWD");
     if (NULL == node) {
@@ -257,72 +253,10 @@ static int flt_conf_load_redis(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *l
         return -1;
     }
 
-    snprintf(master.passwd, sizeof(master.passwd), "%s", node->value.str);
-
-
-
-    /* > 计算REDIS副本总数 */
-    start = xml_search(xml, nail, "SLAVE.ITEM");
-    if (NULL == start) {
-        log_error(log, "Query item of network failed!");
-        return -1;
-    }
-
-    redis->num = 1; // 至少存在主REDIS
-    item = start;
-    while (NULL != item) {
-        if (strcmp(item->name.str, "ITEM")) {
-            log_error(log, "Mark name isn't right! mark:%s", item->name);
-            return -1;
-        }
-        ++redis->num;
-        item = item->next;
-    }
-
-    /* > 加载REDIS各IP项 */
-    redis->conf = (redis_conf_t *)calloc(redis->num, sizeof(redis_conf_t));
-    if (NULL == redis->conf) {
-        log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return -1;
-    }
-
-    memcpy(&redis->conf[0], &master, sizeof(master));
+    snprintf(redis->conf.passwd, sizeof(redis->conf.passwd), "%s", node->value.str);
 
     do {
         /* 注: 出现异常情况时 内存在此不必释放 */
-        for (item=start, idx=1; NULL!=item; item=item->next, ++idx) {
-            /* 获取IP地址 */
-            node = xml_search(xml, item, "IP");
-            if (NULL == node
-                || 0 == node->value.len)
-            {
-                log_error(log, "[%d] Get ip addr failed!", idx);
-                break;
-            }
-
-            snprintf(redis->conf[idx].ip, sizeof(redis->conf[idx].ip), "%s", node->value.str);
-
-            /* 获取PORT地址 */
-            node = xml_search(xml, item, "PORT");
-            if (NULL == node
-                || 0 == node->value.len)
-            {
-                log_error(log, "[%d] Get port failed!", idx);
-                break;
-            }
-
-            redis->conf[idx].port = atoi(node->value.str);
-
-            /* 获取PASSWD */
-            node = xml_search(xml, item, "PASSWD");
-            if (NULL == node) {
-                log_error(log, "[%d] Get passwd failed!", idx);
-                break;
-            }
-
-            snprintf(redis->conf[idx].passwd, sizeof(redis->conf[idx].passwd), "%s", node->value.str);
-        }
-
         /* > 获取队列名 */
         node = xml_search(xml, nail, "TASKQ.NAME");
         if (NULL == node) {
@@ -351,8 +285,6 @@ static int flt_conf_load_redis(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *l
 
         return 0;
     } while(0);
-
-    free(redis->conf);
 
     return -1;
 }

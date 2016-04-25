@@ -227,7 +227,7 @@ int flt_worker_init(flt_cntx_t *ctx, flt_worker_t *worker, int idx)
     worker->log = ctx->log;
 
     /* > 连接Redis集群 */
-    worker->redis = redis_clst_init(ctx->conf->redis.conf, ctx->conf->redis.num);
+    worker->redis = redis_init(&ctx->conf->redis.conf, 30);
     if (NULL == worker->redis) {
         log_error(worker->log, "Initialize redis context failed!");
         return FLT_ERR;

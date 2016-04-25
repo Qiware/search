@@ -52,7 +52,7 @@ typedef struct
 
     sig_queue_t *taskq;                     /* 处理队列(存放的是将要被解析的网页索引文件) */
     sig_queue_t *crwlq;                     /* 爬取队列(存放的是将被推送至REDIS's TASKQ的URL) */
-    redis_clst_t *redis;                    /* Redis集群 */
+    redisContext *redis;                    /* Redis对象 */
 
     hash_map_t *domain_ip_map;              /* 域名IP映射表: 通过域名找到IP地址 */
     hash_map_t *domain_blacklist;           /* 域名黑名单 */
