@@ -58,7 +58,7 @@ int wiov_init(wiov_t *wiov, int max)
  ******************************************************************************/
 void wiov_destroy(wiov_t *wiov)
 {
-    wiov_item_clear(wiov);
+    wiov_clean(wiov);
 
     free(wiov->iov);
     free(wiov->orig);
@@ -69,7 +69,7 @@ void wiov_destroy(wiov_t *wiov)
 }
 
 /******************************************************************************
- **函数名称: wiov_item_clear
+ **函数名称: wiov_clean
  **功    能: 清理wiov对象中的空间
  **输入参数:
  **     wiov: IOV对象
@@ -79,7 +79,7 @@ void wiov_destroy(wiov_t *wiov)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.12.26 07:53:50 #
  ******************************************************************************/
-void wiov_item_clear(wiov_t *wiov)
+void wiov_clean(wiov_t *wiov)
 {
     int idx;
 
@@ -100,7 +100,7 @@ void wiov_item_clear(wiov_t *wiov)
  **     n: 发送长度
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述: 释放数据发送完毕后的内存!
+ **实现描述: 释放发送完毕数据的内存
  **注意事项:
  **作    者: # Qifeng.zou # 2015.12.26 06:18:03 #
  ******************************************************************************/
