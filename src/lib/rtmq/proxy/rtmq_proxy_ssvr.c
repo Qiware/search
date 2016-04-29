@@ -306,7 +306,7 @@ static int rtmq_proxy_ssvr_kpalive_req(rtmq_proxy_t *pxy, rtmq_proxy_ssvr_t *ssv
         || (RTMQ_KPALIVE_STAT_SENT == sck->kpalive))
     {
         CLOSE(sck->fd);
-        wiov_item_clear(send);
+        wiov_clean(send);
         log_error(ssvr->log, "Didn't get keepalive respond for a long time!");
         return RTMQ_OK;
     }
@@ -649,7 +649,7 @@ static int rtmq_proxy_ssvr_wiov_add(rtmq_proxy_ssvr_t *ssvr, rtmq_proxy_sct_t *s
     wiov_t *send = &sck->send;
 
     /* > 从消息链表取数据 */
-    while(!wiov_is_full(send)) {
+    while(!wiov_isfull(send)) {
         /* > 是否有数据 */
         head = (rtmq_header_t *)list_lpop(sck->mesg_list);
         if (NULL == head) {
@@ -740,7 +740,7 @@ static int rtmq_proxy_ssvr_send_data(rtmq_proxy_t *pxy, rtmq_proxy_ssvr_t *ssvr)
 
     for (;;) {
         /* 1. 填充发送缓存 */
-        if (!wiov_is_full(send)) {
+        if (!wiov_isfull(send)) {
             rtmq_proxy_ssvr_wiov_add(ssvr, sck);
         }
 
@@ -751,10 +751,10 @@ static int rtmq_proxy_ssvr_send_data(rtmq_proxy_t *pxy, rtmq_proxy_ssvr_t *ssvr)
         /* 2. 发送缓存数据 */
         n = writev(sck->fd, wiov_item_begin(send), wiov_item_num(send));
         if (n < 0) {
-            log_error(ssvr->log, "errmsg:[%d] %s! fd:%d",
+            log_error(ssvr->log, "errmsg:[%d] %s! fd:%u",
                     errno, strerror(errno), sck->fd);
             CLOSE(sck->fd);
-            wiov_item_clear(send);
+            wiov_clean(send);
             return RTMQ_ERR;
         }
         /* 只发送了部分数据 */
