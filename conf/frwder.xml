@@ -2,18 +2,18 @@
 <FRWDER ID="20001" NAME="frwder">
     <!-- 下行配置 -->
     <DOWNSTRM PORT="28888">
-        <PATH>../temp/frwder/dwn/</PATH>                     <!-- 工作路径 -->
+        <PATH>../temp/frwder/dwn/</PATH>                    <!-- 工作路径 -->
         <AUTH USR="qifeng" PASSWD="111111" />               <!-- 鉴权配置 -->
-        <THREAD-POOL RECV_THD_NUM="2" WORK_THD_NUM="4" />   <!-- 线程数据 -->
+        <THREAD-POOL RECV_THD_NUM="1" WORK_THD_NUM="4" />   <!-- 线程数据 -->
         <RECVQ NUM="4" MAX="8192" SIZE="4096" />            <!-- 接收队列(NUM:队列数 MAX:单元总数 SIZE:单元大小) -->
         <DISTQ NUM="4" MAX="8192" SIZE="4096" />            <!-- 分发队列(NUM:队列数 MAX:单元总数 SIZE:单元大小) -->
     </DOWNSTRM>
     <!-- 上行配置 -->
     <UPSTRM PORT="28889">
-        <PATH>../temp/frwder/up/</PATH>                 <!-- 工作路径 -->
-        <AUTH USR="qifeng" PASSWD="111111" />         <!-- 鉴权配置 -->
-        <THREAD-POOL RECV_THD_NUM="2" WORK_THD_NUM="2" />  <!-- 线程数据 -->
-        <RECVQ NUM="4" MAX="8192" SIZE="4096" />      <!-- 接收队列(NUM:队列数 MAX:单元总数 SIZE:单元大小) -->
-        <DISTQ NUM="4" MAX="8192" SIZE="4096" />      <!-- 分发队列(NUM:队列数 MAX:单元总数 SIZE:单元大小) -->
+        <PATH>../temp/frwder/up/</PATH>                     <!-- 工作路径 -->
+        <AUTH USR="qifeng" PASSWD="111111" />               <!-- 鉴权配置 -->
+        <THREAD-POOL RECV_THD_NUM="1" WORK_THD_NUM="2" />   <!-- 线程数据 -->
+        <RECVQ NUM="4" MAX="8192" SIZE="4096" />            <!-- 接收队列(NUM:队列数 MAX:单元总数 SIZE:单元大小) -->
+        <DISTQ NUM="4" MAX="8192" SIZE="4096" />            <!-- 分发队列(NUM:队列数 MAX:单元总数 SIZE:单元大小) -->
     </UPSTRM>
 </FRWDER>
