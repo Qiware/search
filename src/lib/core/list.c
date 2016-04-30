@@ -480,7 +480,9 @@ int list_trav(list_t *list, trav_cb_t proc, void *args)
 
     node = list->head;
     for (; NULL != node; node=node->next) {
-        proc(node->data, args);
+        if (proc(node->data, args)) {
+            return -1;
+        }
     }
     return 0;
 }

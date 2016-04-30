@@ -17,6 +17,9 @@
 #define SRCH_CODE_ERR               "0001"  /* 异常错误 */
 #define SRCH_CODE_NO_DATA           "0002"  /* 无数据 */
 
+/* 静态函数 */
+static int invtd_search_rsp_item_add(invt_word_doc_t *doc, xml_tree_t *xml);
+
 /******************************************************************************
  **函数名称: invtd_search_word_parse
  **功    能: 解析搜索请求
@@ -105,12 +108,9 @@ static int invtd_search_word_parse(invtd_cntx_t *ctx,
  ******************************************************************************/
 static xml_tree_t *invtd_search_word_query(invtd_cntx_t *ctx, mesg_search_word_req_t *req)
 {
-    int idx;
     xml_opt_t opt;
     xml_tree_t *xml;
     xml_node_t *root, *item;
-    list_node_t *node;
-    invt_word_doc_t *doc;
     invt_dic_word_t *word;
     char freq[SRCH_SEG_FREQ_LEN];
 
@@ -137,7 +137,7 @@ static xml_tree_t *invtd_search_word_query(invtd_cntx_t *ctx, mesg_search_word_r
     /* > 搜索倒排表 */
     pthread_rwlock_rdlock(&ctx->invtab_lock);
 
-    word = invtab_query(ctx->invtab, req->words);
+    word = (invt_dic_word_t *)invtab_query(ctx->invtab, req->words);
     if (NULL == word
         || NULL == word->doc_list)
     {
@@ -147,19 +147,10 @@ static xml_tree_t *invtd_search_word_query(invtd_cntx_t *ctx, mesg_search_word_r
     }
 
     /* > 构建搜索结果 */
-    idx = 0;
-    node = word->doc_list->head;
-    for (; NULL!=node; node=node->next, ++idx) {
-        doc = (invt_word_doc_t *)node->data;
-
-        snprintf(freq, sizeof(freq), "%d", doc->freq);
-
-        item = xml_add_child(xml, root, "ITEM", NULL); 
-        if (NULL == item) {
-            goto GOTO_SEARCH_ERR;
-        }
-        xml_add_attr(xml, item, "URL", doc->url.str);
-        xml_add_attr(xml, item, "FREQ", freq);
+    if (list_trav(word->doc_list, (trav_cb_t)invtd_search_rsp_item_add, (void *)xml)) {
+        pthread_rwlock_unlock(&ctx->invtab_lock);
+        log_error(ctx->log, "Contribute respone list failed! words:%s", req->words);
+        goto GOTO_SEARCH_ERR;
     }
     pthread_rwlock_unlock(&ctx->invtab_lock);
 
@@ -183,6 +174,35 @@ GOTO_SEARCH_NO_DATA:    /* 搜索结果为空的处理 */
     xml_add_attr(xml, item, "URL", "Sorry, Didn't search anything!");
     xml_add_attr(xml, item, "FREQ", freq);
     return xml;
+}
+
+/******************************************************************************
+ **函数名称: invtd_search_rsp_item_add
+ **功    能: 构建搜索应答项
+ **输入参数:
+ **     doc: 搜索列表
+ **     xml: 应答结果树
+ **输出参数: NONE
+ **返    回: 0:Succ !0:Fail
+ **实现描述:
+ **注意事项:
+ **作    者: # Qifeng.zou # 2016.05.04 01:33:38 #
+ ******************************************************************************/
+static int invtd_search_rsp_item_add(invt_word_doc_t *doc, xml_tree_t *xml)
+{
+    xml_node_t *item;
+    char freq[SRCH_SEG_FREQ_LEN];
+
+    snprintf(freq, sizeof(freq), "%d", doc->freq);
+
+    item = xml_add_child(xml, xml->root, "ITEM", NULL); 
+    if (NULL == item) {
+        log_error(xml->log, "Add child failed! url:%s freq:%d", doc->url.str, doc->freq);
+        return -1;
+    }
+    xml_add_attr(xml, item, "URL", doc->url.str);
+    xml_add_attr(xml, item, "FREQ", freq);
+    return 0;
 }
 
 /******************************************************************************

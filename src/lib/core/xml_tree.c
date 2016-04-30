@@ -485,9 +485,8 @@ xml_node_t *xml_search(xml_tree_t *xml, xml_node_t *curr, const char *path)
  **注意事项: 属性节点(attr)可以有兄弟节点
  **作    者: # Qifeng.zou # 2013.03.01 #
  ******************************************************************************/
-xml_node_t *xml_add_attr(
-        xml_tree_t *xml, xml_node_t *node,
-        const char *name, const char *value)
+xml_node_t *xml_add_attr(xml_tree_t *xml,
+        xml_node_t *node, const char *name, const char *value)
 {
     xml_node_t *attr, *parent = node->parent, *link = node->child;
 
