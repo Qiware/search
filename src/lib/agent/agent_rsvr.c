@@ -634,17 +634,17 @@ static int agent_recv_head(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
 
     /* 3. 校验报头数据 */
     head = (mesg_header_t *)addr;
-    mesg_head_ntoh(head, head);
+    MESG_HEAD_NTOH(head, head);
     head->from = AGENT_GET_NODE_ID(ctx);
 
-    if (MSG_MARK_KEY != head->mark) {
-        log_error(rsvr->log, "Check head failed! type:%d len:%d flag:%d mark:[0x%X/0x%X]",
-            head->type, head->length, head->flag, head->mark, MSG_MARK_KEY);
+    if (!MESG_CHKSUM_ISVALID(head)) {
+        log_error(rsvr->log, "Check head failed! type:%d len:%d flag:%d chksum:[0x%X/0x%X]",
+            head->type, head->length, head->flag, head->chksum, MSG_CHKSUM_VAL);
         return AGENT_ERR;
     }
 
-    log_trace(rsvr->log, "Recv head success! type:%d len:%d flag:%d mark:[0x%X/0x%X]",
-            head->type, head->length, head->flag, head->mark, MSG_MARK_KEY);
+    log_trace(rsvr->log, "Recv head success! type:%d len:%d flag:%d chksum:[0x%X/0x%X]",
+            head->type, head->length, head->flag, head->chksum, MSG_CHKSUM_VAL);
 
     return AGENT_OK;
 }
@@ -764,7 +764,7 @@ static int agent_rsvr_cmd_proc_req(agent_cntx_t *ctx, agent_rsvr_t *rsvr, int wi
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 
- **注意事项: 
+ **注意事项: TODO: 接收队列可能溢出
  **作    者: # Qifeng.zou # 2014.12.21 #
  ******************************************************************************/
 static int agent_recv_post_hdl(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
@@ -976,7 +976,7 @@ static int agent_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
             head->type = htonl(head->type);
             head->flag = htonl(head->flag);
             head->length = htonl(head->length);
-            head->mark = htonl(head->mark);
+            head->chksum = htonl(head->chksum);
             head->serial = hton64(head->serial);
         }
 
@@ -1057,14 +1057,14 @@ static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
         for (idx=0; idx<num; ++idx) {
             flow = (agent_flow_t *)addr[idx]; // 流水信息
             head = (mesg_header_t *)(flow + 1); // 消息头
-            if (MSG_MARK_KEY != head->mark) {
-                log_error(ctx->log, "Check mark [0X%x/0X%x] failed! serial:%lu",
-                        head->mark, MSG_MARK_KEY, flow->serial);
+            if (!MESG_CHKSUM_ISVALID(head)) {
+                log_error(ctx->log, "Check chksum [0X%x/0X%x] failed! serial:%lu",
+                        head->chksum, MSG_CHKSUM_VAL, flow->serial);
                 queue_dealloc(sendq, addr[idx]);
                 continue;
             }
 
-            total = mesg_total_len(head->length);
+            total = MESG_TOTAL_LEN(head->length);
 
             /* > 查找最新SERIAL->SCK映射 */
             if (agent_serial_to_sck_map_query(ctx, flow->serial, &newest)) {

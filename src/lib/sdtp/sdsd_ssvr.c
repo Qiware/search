@@ -486,7 +486,7 @@ static int sdsd_ssvr_kpalive_req(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr)
     head->type = SDTP_CMD_KPALIVE_REQ;
     head->length = 0;
     head->flag = SDTP_SYS_MESG;
-    head->checksum = SDTP_CHECK_SUM;
+    head->chksum = SDTP_CHKSUM_VAL;
 
     /* 3. 加入发送列表 */
     if (list_rpush(sck->mesg_list, addr)) {
@@ -700,13 +700,13 @@ static int sdsd_ssvr_data_proc(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr, sdsd_sck_t *
         head->type = ntohs(head->type);
         head->flag = head->flag;
         head->length = ntohl(head->length);
-        head->checksum = ntohl(head->checksum);
+        head->chksum = ntohl(head->chksum);
 
         /* 2.2 校验合法性 */
         if (!SDTP_HEAD_ISVALID(head)) {
             ++ssvr->err_total;
             log_error(ssvr->log, "Header is invalid! CheckSum:%u/%u type:%d len:%d flag:%d",
-                    head->checksum, SDTP_CHECK_SUM, head->type, head->length, head->flag);
+                    head->chksum, SDTP_CHKSUM_VAL, head->type, head->length, head->flag);
             return SDTP_ERR;
         }
 
@@ -829,7 +829,7 @@ static int sdsd_ssvr_fill_send_buff(sdsd_ssvr_t *ssvr, sdsd_sck_t *sck)
         }
 
         /* 2. 判断剩余空间 */
-        if (SDTP_CHECK_SUM != head->checksum) {
+        if (SDTP_CHKSUM_VAL != head->chksum) {
             assert(0);
         }
 
@@ -844,7 +844,7 @@ static int sdsd_ssvr_fill_send_buff(sdsd_ssvr_t *ssvr, sdsd_sck_t *sck)
         head->type = htons(head->type);
         head->flag = head->flag;
         head->length = htonl(head->length);
-        head->checksum = htonl(head->checksum);
+        head->chksum = htonl(head->chksum);
 
         /* 4. 拷贝至发送缓存 */
         memcpy(send->iptr, (void *)head, mesg_len);
@@ -1142,7 +1142,7 @@ static int sdtp_link_auth_req(sdsd_cntx_t *ctx, sdsd_ssvr_t *ssvr)
     head->type = SDTP_CMD_LINK_AUTH_REQ;
     head->length = sizeof(sdtp_link_auth_req_t);
     head->flag = SDTP_SYS_MESG;
-    head->checksum = SDTP_CHECK_SUM;
+    head->chksum = SDTP_CHKSUM_VAL;
 
     /* > 设置鉴权信息 */
     link_auth_req = addr + sizeof(sdtp_header_t);

@@ -416,12 +416,12 @@ int rtmq_proxy_async_send(rtmq_proxy_t *pxy, int type, const void *data, size_t 
     head->nodeid = conf->nodeid;
     head->length = size;
     head->flag = RTMQ_EXP_MESG;
-    head->checksum = RTMQ_CHECK_SUM;
+    head->chksum = RTMQ_CHKSUM_VAL;
 
     memcpy(head+1, data, size);
 
-    log_debug(pxy->log, "rq:%p Head type:%d nodeid:%d length:%d flag:%d checksum:%d!",
-            pxy->sendq[idx]->ring, head->type, head->nodeid, head->length, head->flag, head->checksum);
+    log_debug(pxy->log, "rq:%p Head type:%d nodeid:%d length:%d flag:%d chksum:%d!",
+            pxy->sendq[idx]->ring, head->type, head->nodeid, head->length, head->flag, head->chksum);
 
     /* > 放入发送队列 */
     if (queue_push(pxy->sendq[idx], addr)) {

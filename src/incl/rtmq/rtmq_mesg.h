@@ -48,29 +48,29 @@ typedef struct
                                             - 0: 系统消息(type: rtmq_mesg_e)
                                             - 1: 自定义消息(type: 0x0000~0xFFFF) */
     uint32_t length;                    /* 消息体长度 */
-#define RTMQ_CHECK_SUM  (0x1FE23DC4)    
-    uint32_t checksum;                  /* 校验值 */
+#define RTMQ_CHKSUM_VAL  (0x1FE23DC4)    
+    uint32_t chksum;                    /* 校验值 */
 } __attribute__((packed)) rtmq_header_t;
 
 #define RTMQ_DATA_TOTAL_LEN(head) (head->length + sizeof(rtmq_header_t))
-#define RTMQ_CHECKSUM_ISVALID(head) (RTMQ_CHECK_SUM == (head)->checksum)
+#define RTMQ_CHKSUM_ISVALID(head) (RTMQ_CHKSUM_VAL == (head)->chksum)
 
 #define RTMQ_HEAD_NTOH(s, d) do {\
     (d)->type = ntohl((s)->type); \
     (d)->nodeid = ntohl((s)->nodeid); \
     (d)->length = ntohl((s)->length); \
-    (d)->checksum = ntohl((s)->checksum); \
+    (d)->chksum = ntohl((s)->chksum); \
 } while(0)
 
 #define RTMQ_HEAD_HTON(s, d) do {\
     (d)->type = htonl((s)->type); \
     (d)->nodeid = htonl((s)->nodeid); \
     (d)->length = htonl((s)->length); \
-    (d)->checksum = htonl((s)->checksum); \
+    (d)->chksum = htonl((s)->chksum); \
 } while(0)
 
 /* 校验数据头 */
-#define RTMQ_HEAD_ISVALID(head) (RTMQ_CHECKSUM_ISVALID(head))
+#define RTMQ_HEAD_ISVALID(head) (RTMQ_CHKSUM_ISVALID(head))
 
 /* 转发信息 */
 typedef struct

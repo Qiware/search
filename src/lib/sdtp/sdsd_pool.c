@@ -149,7 +149,7 @@ int sdsd_pool_push(sdsd_pool_t *pool, int type, int nodeid, const void *data, si
         head->nodeid = htonl(nodeid);
         head->length = htonl(len);
         head->flag = SDTP_EXP_MESG;  /* 外部数据 */
-        head->checksum = htonl(SDTP_CHECK_SUM);
+        head->chksum = htonl(SDTP_CHKSUM_VAL);
 
         /* > 设置报体信息 */
         page->off += sizeof(sdtp_header_t);

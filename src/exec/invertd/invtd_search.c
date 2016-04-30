@@ -40,15 +40,26 @@ static int invtd_search_word_parse(invtd_cntx_t *ctx,
     mesg_header_t *head = (mesg_header_t *)buf;
     const char *xml_str = (const char *)(head + 1);
 
-    memset(&opt, 0, sizeof(opt));
 
     /* > 字节序转换 */
-    mesg_head_ntoh(head, head);
+    MESG_HEAD_NTOH(head, head);
 
-    log_trace(ctx->log, "serial:%lu type:%u flag:%u mark:0X%x len:%d body:%s",
-            head->serial, head->type, head->flag, head->mark, head->length, xml_str);
+    /* > 校验合法性 */
+    if (!MESG_CHKSUM_ISVALID(head)
+        ||  (len != MESG_TOTAL_LEN(head->length)))
+    {
+        log_error(ctx->log, "serial:%lu type:%u flag:%u chksum:0x%X len:%d body:%s",
+                head->serial, head->type, head->flag, head->chksum, head->length, xml_str);
+        return -1;
+    }
+
+    log_trace(ctx->log, "serial:%lu type:%u flag:%u chksum:0x%X len:%d body:%s",
+            head->serial, head->type, head->flag, head->chksum, head->length, xml_str);
 
     /* > 构建XML树 */
+    memset(&opt, 0, sizeof(opt));
+
+    opt.log = ctx->log;
     opt.pool = NULL;
     opt.alloc = mem_alloc;
     opt.dealloc = mem_dealloc;
@@ -59,20 +70,25 @@ static int invtd_search_word_parse(invtd_cntx_t *ctx,
         return -1;
     }
 
-    /* > 解析XML树 */
-    node = xml_query(xml, ".SEARCH.WORDS");
-    if (NULL == node) {
-        log_error(ctx->log, "Get search words failed!");
-    }
-    else {
+    do {
+        /* > 提取搜索关键字 */
+        node = xml_query(xml, ".SEARCH.WORDS");
+        if (NULL == node) {
+            log_error(ctx->log, "Get search words failed!");
+            break;
+        }
+
         snprintf(req->words, sizeof(req->words), "%s", node->value.str);
-    }
+
+        log_trace(ctx->log, "words:%s", req->words);
+
+        /* > 释放内存空间 */
+        xml_destroy(xml);
+        return 0;
+    } while (0);
 
     xml_destroy(xml);
-
-    log_trace(ctx->log, "words:%s", req->words);
-
-    return 0;
+    return -1;
 }
 
 /******************************************************************************
@@ -106,7 +122,7 @@ static xml_tree_t *invtd_search_word_query(invtd_cntx_t *ctx, mesg_search_word_r
     opt.dealloc = mem_dealloc;
     opt.log = ctx->log;
 
-    xml = xml_creat_empty(&opt);
+    xml = xml_empty(&opt);
     if (NULL == xml) {
         log_error(ctx->log, "Create xml failed!");
         return NULL;
@@ -170,7 +186,7 @@ GOTO_SEARCH_NO_DATA:    /* 搜索结果为空的处理 */
 }
 
 /******************************************************************************
- **函数名称: intvd_search_send_and_free
+ **函数名称: invtd_search_send_and_free
  **功    能: 从发送搜索结果并释放内存
  **输入参数:
  **     ctx: 上下文
@@ -182,7 +198,7 @@ GOTO_SEARCH_NO_DATA:    /* 搜索结果为空的处理 */
  **注意事项:
  **作    者: # Qifeng.zou # 2016.01.04 17:35:35 #
  ******************************************************************************/
-static int intvd_search_send_and_free(invtd_cntx_t *ctx, xml_tree_t *xml,
+static int invtd_search_send_and_free(invtd_cntx_t *ctx, xml_tree_t *xml,
         mesg_header_t *head, mesg_search_word_req_t *req, int orig)
 {
     void *addr = NULL;
@@ -193,21 +209,24 @@ static int intvd_search_send_and_free(invtd_cntx_t *ctx, xml_tree_t *xml,
 
     /* > 发送搜索应答 */
     body_len = xml_pack_len(xml);
-    total_len = mesg_total_len(body_len);
+    total_len = MESG_TOTAL_LEN(body_len);
 
     do {
+        /* 申请内存空间 */
         addr = (char *)calloc(1, total_len);
         if (NULL == addr) {
             break;
         }
 
+        /* 设置发送内容 */
         rsp = (mesg_header_t *)addr;
 
-        mesg_head_set(rsp, MSG_SEARCH_WORD_RSP, head->serial, sizeof(mesg_search_word_req_t));
-        mesg_head_hton(rsp, rsp);
+        MESG_HEAD_SET(rsp, MSG_SEARCH_WORD_RSP, head->serial, sizeof(mesg_search_word_req_t));
+        MESG_HEAD_HTON(rsp, rsp);
 
         xml_spack(xml, rsp->body);
 
+        /* 放入发送队列 */
         if (rtmq_proxy_async_send(ctx->frwder, MSG_SEARCH_WORD_RSP, addr, total_len)) {
             log_error(ctx->log, "Send response failed! serial:%ld words:%s",
                     head->serial, req->words);
@@ -256,7 +275,7 @@ int invtd_search_word_req_hdl(int type, int orig, char *buff, size_t len, void *
     }
 
     /* > 发送搜索结果&释放内存 */
-    if (intvd_search_send_and_free(ctx, xml, head, &req, orig)) {
+    if (invtd_search_send_and_free(ctx, xml, head, &req, orig)) {
         log_error(ctx->log, "Search word form table failed! words:%s", req.words);
         return INVT_ERR;
     }
@@ -288,7 +307,7 @@ int invtd_insert_word_req_hdl(int type, int orig, char *buff, size_t len, void *
     char addr[sizeof(mesg_header_t) + sizeof(mesg_insert_word_rsp_t)];
 
     /* > 转换字节序 */
-    mesg_head_ntoh(head, head);
+    MESG_HEAD_NTOH(head, head);
     req->freq = ntohl(req->freq);
 
     rsp_head = (mesg_header_t *)addr;
@@ -313,8 +332,8 @@ int invtd_insert_word_req_hdl(int type, int orig, char *buff, size_t len, void *
 
 INVTD_INSERT_WORD_RSP:
     /* > 发送应答信息 */
-    mesg_head_set(rsp_head, MSG_INSERT_WORD_RSP, head->serial, sizeof(mesg_insert_word_rsp_t));
-    mesg_head_hton(rsp_head, rsp_head);
+    MESG_HEAD_SET(rsp_head, MSG_INSERT_WORD_RSP, head->serial, sizeof(mesg_insert_word_rsp_t));
+    MESG_HEAD_HTON(rsp_head, rsp_head);
     mesg_insert_word_resp_hton(rsp);
 
     if (rtmq_proxy_async_send(ctx->frwder, MSG_INSERT_WORD_RSP, (void *)addr, sizeof(addr))) {

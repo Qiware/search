@@ -324,7 +324,7 @@ static int rtmq_proxy_ssvr_kpalive_req(rtmq_proxy_t *pxy, rtmq_proxy_ssvr_t *ssv
     head->nodeid = pxy->conf.nodeid;
     head->length = 0;
     head->flag = RTMQ_SYS_MESG;
-    head->checksum = RTMQ_CHECK_SUM;
+    head->chksum = RTMQ_CHKSUM_VAL;
 
     /* 3. 加入发送列表 */
     if (list_rpush(sck->mesg_list, addr)) {
@@ -540,7 +540,7 @@ static int rtmq_proxy_ssvr_data_proc(rtmq_proxy_t *pxy, rtmq_proxy_ssvr_t *ssvr,
         if (!RTMQ_HEAD_ISVALID(head)) {
             ++ssvr->err_total;
             log_error(ssvr->log, "Header is invalid! CheckSum:%u/%u type:%d len:%d flag:%d",
-                    head->checksum, RTMQ_CHECK_SUM, head->type, head->length, head->flag);
+                    head->chksum, RTMQ_CHKSUM_VAL, head->type, head->length, head->flag);
             return RTMQ_ERR;
         }
 
@@ -655,7 +655,7 @@ static int rtmq_proxy_ssvr_wiov_add(rtmq_proxy_ssvr_t *ssvr, rtmq_proxy_sct_t *s
         if (NULL == head) {
             break; /* 无数据 */
         }
-        else if (RTMQ_CHECK_SUM != head->checksum) {
+        else if (RTMQ_CHKSUM_VAL != head->chksum) {
             assert(0);
         }
 
@@ -688,7 +688,7 @@ static int rtmq_proxy_ssvr_wiov_add(rtmq_proxy_ssvr_t *ssvr, rtmq_proxy_sct_t *s
         for (idx=0; idx<num; ++idx) {
             /* > 是否有数据 */
             head = (rtmq_header_t *)data[idx];
-            if (RTMQ_CHECK_SUM != head->checksum) {
+            if (RTMQ_CHKSUM_VAL != head->chksum) {
                 assert(0);
             }
 
@@ -924,7 +924,7 @@ static int rtmq_link_auth_req(rtmq_proxy_t *pxy, rtmq_proxy_ssvr_t *ssvr)
     head->nodeid = conf->nodeid;
     head->length = sizeof(rtmq_link_auth_req_t);
     head->flag = RTMQ_SYS_MESG;
-    head->checksum = RTMQ_CHECK_SUM;
+    head->chksum = RTMQ_CHKSUM_VAL;
 
     /* > 设置鉴权信息 */
     link_auth_req = (rtmq_link_auth_req_t *)(head + 1);
@@ -1002,7 +1002,7 @@ static int rtmq_add_sub_req(rtmq_reg_t *item, rtmq_proxy_ssvr_t *ssvr)
     head->nodeid = conf->nodeid;
     head->length = sizeof(rtmq_sub_req_t);
     head->flag = RTMQ_SYS_MESG;
-    head->checksum = RTMQ_CHECK_SUM;
+    head->chksum = RTMQ_CHKSUM_VAL;
 
     /* > 设置报体数据 */
     sub = (rtmq_sub_req_t *)(head + 1);

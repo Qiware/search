@@ -573,9 +573,9 @@ static int sdrd_rsvr_data_proc(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, sdrd_sck_t *
 
         len = (uint32_t)(recv->iptr - recv->optr);
         if (len >= sizeof(sdtp_header_t)) {
-            if (SDTP_CHECK_SUM != ntohl(head->checksum)) {
+            if (SDTP_CHKSUM_VAL != ntohl(head->chksum)) {
                 log_error(rsvr->log, "Header is invalid! nodeid:%d Mark:%X/%X type:%d len:%d flag:%d",
-                        ntohl(head->nodeid), ntohl(head->checksum), SDTP_CHECK_SUM,
+                        ntohl(head->nodeid), ntohl(head->chksum), SDTP_CHKSUM_VAL,
                         ntohs(head->type), ntohl(head->length), head->flag);
                 return SDTP_ERR;
             }
@@ -610,13 +610,13 @@ static int sdrd_rsvr_data_proc(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, sdrd_sck_t *
         head->nodeid = ntohl(head->nodeid);
         head->flag = head->flag;
         head->length = ntohl(head->length);
-        head->checksum = ntohl(head->checksum);
+        head->chksum = ntohl(head->chksum);
 
         /* 2.2 校验合法性 */
         if (!SDTP_HEAD_ISVALID(head)) {
             ++rsvr->err_total;
             log_error(rsvr->log, "Header is invalid! Mark:%u/%u type:%d len:%d flag:%d",
-                    head->checksum, SDTP_CHECK_SUM, head->type, head->length, head->flag);
+                    head->chksum, SDTP_CHKSUM_VAL, head->type, head->length, head->flag);
             return SDTP_ERR;
         }
 
@@ -917,7 +917,7 @@ static int sdrd_rsvr_keepalive_req_hdl(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, sdrd
     head->nodeid = ctx->conf.auth.nodeid;
     head->length = 0;
     head->flag = SDTP_SYS_MESG;
-    head->checksum = SDTP_CHECK_SUM;
+    head->chksum = SDTP_CHKSUM_VAL;
 
     /* > 加入发送列表 */
     if (list_rpush(sck->mesg_list, addr)) {
@@ -965,7 +965,7 @@ static int sdrd_rsvr_link_auth_rsp(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, sdrd_sck
     head->nodeid = ctx->conf.auth.nodeid;
     head->length = sizeof(sdtp_link_auth_rsp_t);
     head->flag = SDTP_SYS_MESG;
-    head->checksum = SDTP_CHECK_SUM;
+    head->chksum = SDTP_CHKSUM_VAL;
 
     link_auth_rsp->is_succ = htonl(sck->auth_succ);
 
@@ -1328,7 +1328,7 @@ static int sdrd_rsvr_fill_send_buff(sdrd_rsvr_t *rsvr, sdrd_sck_t *sck)
         }
 
         /* 2 判断剩余空间 */
-        if (SDTP_CHECK_SUM != head->checksum) {
+        if (SDTP_CHKSUM_VAL != head->chksum) {
             assert(0);
         }
 
@@ -1345,7 +1345,7 @@ static int sdrd_rsvr_fill_send_buff(sdrd_rsvr_t *rsvr, sdrd_sck_t *sck)
         head->nodeid = htonl(head->nodeid);
         head->flag = head->flag;
         head->length = htonl(head->length);
-        head->checksum = htonl(head->checksum);
+        head->chksum = htonl(head->chksum);
 
         /* 1.4 拷贝至发送缓存 */
         memcpy(send->iptr, (void *)head, mesg_len);
@@ -1462,7 +1462,7 @@ static int sdrd_rsvr_dist_send_data(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr)
         head->type = frwd->type;
         head->nodeid = frwd->dest;
         head->flag = SDTP_EXP_MESG;
-        head->checksum = SDTP_CHECK_SUM;
+        head->chksum = SDTP_CHKSUM_VAL;
         head->length = frwd->length;
 
         memcpy(addr+sizeof(sdtp_header_t), data+sizeof(sdtp_frwd_t), head->length);

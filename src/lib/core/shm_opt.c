@@ -110,7 +110,7 @@ static int shm_data_write(const char *path, shm_data_t *shm)
     opt.alloc = (mem_alloc_cb_t)mem_alloc;
     opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
-    xml = xml_creat_empty(&opt);
+    xml = xml_empty(&opt);
     if (NULL == xml) {
         return -1;
     }

@@ -95,8 +95,7 @@ typedef struct
 {
     xml_node_t *root;               /* 根节点: 注意root的第一个子节点才是真正的根节点 */
 
-    struct
-    {
+    struct {
         void *pool;                 /* 内存池 */
         mem_alloc_cb_t alloc;       /* 申请内存 */
         mem_dealloc_cb_t dealloc;   /* 释放内存 */
@@ -117,7 +116,7 @@ xml_node_t *xml_node_creat_ext(xml_tree_t *xml,
         xml_node_type_e type, const char *name, const char *value);
 int xml_node_free(xml_tree_t *xml, xml_node_t *node);
 
-xml_tree_t *xml_creat_empty(xml_opt_t *opt);
+xml_tree_t *xml_empty(xml_opt_t *opt);
 xml_tree_t *xml_creat(const char *fname, xml_opt_t *opt);
 xml_tree_t *xml_screat(const char *str, size_t len, xml_opt_t *opt);
 

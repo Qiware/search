@@ -81,8 +81,8 @@ static int mon_srch_send_req(int fd, const char *word)
         return -1;
     }
 
-    mesg_head_set(head, MSG_SEARCH_WORD_REQ, 0, len);
-    mesg_head_hton(head, head);
+    MESG_HEAD_SET(head, MSG_SEARCH_WORD_REQ, 0, len);
+    MESG_HEAD_HTON(head, head);
 
     Writen(fd, (void *)addr, sizeof(mesg_header_t)+len);
 
@@ -126,7 +126,7 @@ static int mon_srch_recv_rsp(mon_cntx_t *ctx, mon_srch_conn_t *conn)
 
     /* > 字节序转换 */
     head = (mesg_header_t *)addr;
-    mesg_head_ntoh(head, head);
+    MESG_HEAD_NTOH(head, head);
 
     n = read(conn->fd, addr+sizeof(mesg_header_t), head->length);
     if (n != head->length) {
@@ -410,7 +410,7 @@ static int mon_insert_word_rsp_hdl(mon_cntx_t *ctx, int fd)
     head = (mesg_header_t *)addr;
     rsp = (mesg_insert_word_rsp_t *)(head + 1);
 
-    mesg_head_ntoh(head, head);
+    MESG_HEAD_NTOH(head, head);
     mesg_insert_word_resp_ntoh(rsp);
 
     s.serial = head->serial;
@@ -446,8 +446,8 @@ static int mon_insert_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args)
     req.freq = htonl(atoi(_freq));
 
     /* > 设置发送数据 */
-    mesg_head_set(&head, MSG_INSERT_WORD_REQ, 0, sizeof(req));
-    mesg_head_hton(&head, &head);
+    MESG_HEAD_SET(&head, MSG_INSERT_WORD_REQ, 0, sizeof(req));
+    MESG_HEAD_HTON(&head, &head);
 
     /* > 连接代理服务 */
     fd = tcp_connect(AF_INET, ctx->conf->search.ip, ctx->conf->search.port);
@@ -587,7 +587,7 @@ static int mon_srch_set_body(const char *words, char *body, int size)
     opt.alloc = mem_alloc;
     opt.dealloc = mem_dealloc;
 
-    xml = xml_creat_empty(&opt);
+    xml = xml_empty(&opt);
     if (NULL == xml) {
         fprintf(stderr, "Create xml failed!");
         return -1;

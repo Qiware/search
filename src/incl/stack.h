@@ -36,9 +36,7 @@ typedef struct
  ******************************************************************************/
 static inline int stack_init(Stack_t *stack, int max)
 {
-    memset(stack, 0, sizeof(Stack_t));
-
-    stack->base = (void**)calloc(max, sizeof(void*));
+    stack->base = (void **)calloc(max, sizeof(void *));
     if (NULL == stack->base) {
         return -1;
     }

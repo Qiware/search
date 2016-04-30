@@ -406,7 +406,7 @@ static int rtmq_rsvr_wiov_add(rtmq_rsvr_t *rsvr, rtmq_sck_t *sck)
         if (NULL == head) {
             break; /* 无数据 */
         }
-        else if (RTMQ_CHECK_SUM != head->checksum) { /* 合法性校验 */
+        else if (RTMQ_CHKSUM_VAL != head->chksum) { /* 合法性校验 */
             assert(0);
         }
 
@@ -602,9 +602,9 @@ static int rtmq_rsvr_data_proc(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t *
 
         len = (uint32_t)(recv->iptr - recv->optr);
         if (len >= sizeof(rtmq_header_t)) {
-            if (RTMQ_CHECK_SUM != ntohl(head->checksum)) {
+            if (RTMQ_CHKSUM_VAL != ntohl(head->chksum)) {
                 log_error(rsvr->log, "Header is invalid! nodeid:%d Mark:%X/%X type:%d len:%d flag:%d",
-                        ntohl(head->nodeid), ntohl(head->checksum), RTMQ_CHECK_SUM,
+                        ntohl(head->nodeid), ntohl(head->chksum), RTMQ_CHKSUM_VAL,
                         ntohl(head->type), ntohl(head->length), head->flag);
                 return RTMQ_ERR;
             }
@@ -641,7 +641,7 @@ static int rtmq_rsvr_data_proc(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t *
         if (!RTMQ_HEAD_ISVALID(head)) {
             ++rsvr->err_total;
             log_error(rsvr->log, "Header is invalid! Mark:%u/%u type:%d len:%d flag:%d",
-                    head->checksum, RTMQ_CHECK_SUM, head->type, head->length, head->flag);
+                    head->chksum, RTMQ_CHKSUM_VAL, head->type, head->length, head->flag);
             return RTMQ_ERR;
         }
 
@@ -676,8 +676,8 @@ static int rtmq_rsvr_sys_mesg_proc(rtmq_cntx_t *ctx,
 {
     rtmq_header_t *head = (rtmq_header_t *)addr;
 
-    log_debug(rsvr->log, "type:%u nodeid:%u checksum:0x%X",
-            head->type, head->nodeid, head->checksum);
+    log_debug(rsvr->log, "type:%u nodeid:%u chksum:0x%X",
+            head->type, head->nodeid, head->chksum);
 
     switch (head->type) {
         case RTMQ_CMD_LINK_AUTH_REQ:
@@ -875,7 +875,7 @@ static int rtmq_rsvr_keepalive_req_hdl(rtmq_cntx_t *ctx,
     head->nodeid = ctx->conf.nodeid;
     head->length = 0;
     head->flag = RTMQ_SYS_MESG;
-    head->checksum = RTMQ_CHECK_SUM;
+    head->chksum = RTMQ_CHKSUM_VAL;
 
     /* > 加入发送列表 */
     if (list_rpush(sck->mesg_list, rsp)) {
@@ -923,7 +923,7 @@ static int rtmq_rsvr_link_auth_rsp(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck
     head->nodeid = ctx->conf.nodeid;
     head->length = sizeof(rtmq_link_auth_rsp_t);
     head->flag = RTMQ_SYS_MESG;
-    head->checksum = RTMQ_CHECK_SUM;
+    head->chksum = RTMQ_CHKSUM_VAL;
 
     link_auth_rsp->is_succ = htonl(sck->auth_succ);
 
@@ -1613,7 +1613,7 @@ static int rtmq_rsvr_dist_data(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr)
             head->type = frwd->type;
             head->nodeid = frwd->dest;
             head->flag = RTMQ_EXP_MESG;
-            head->checksum = RTMQ_CHECK_SUM;
+            head->chksum = RTMQ_CHKSUM_VAL;
             head->length = frwd->length;
 
             memcpy(addr+sizeof(rtmq_header_t), data[idx]+sizeof(rtmq_frwd_t), head->length);

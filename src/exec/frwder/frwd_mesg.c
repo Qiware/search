@@ -112,13 +112,13 @@ static int frwd_search_word_req_hdl(int type, int orig, char *data, size_t len, 
     mesg_header_t *head = (mesg_header_t *)data;
 
     /* > 转换字节序 */
-    mesg_head_ntoh(head, head);
+    MESG_HEAD_NTOH(head, head);
 
-    log_trace(ctx->log, "Call %s()! serial:%lu type:%d len:%d flag:%d mark:[0x%X/0x%X]",
+    log_trace(ctx->log, "Call %s()! serial:%lu type:%d len:%d flag:%d chksum:[0x%X/0x%X]",
             __func__, head->serial, head->type,
-            head->length, head->flag, head->mark, MSG_MARK_KEY);
+            head->length, head->flag, head->chksum, MSG_CHKSUM_VAL);
 
-    mesg_head_hton(head, head);
+    MESG_HEAD_HTON(head, head);
 
     /* > 发送数据 */
     nodeid = rtmq_sub_query(ctx->upstrm, type);
@@ -220,12 +220,12 @@ static int frwd_insert_word_rsp_hdl(int type, int orig, char *data, size_t len, 
     frwd_cntx_t *ctx = (frwd_cntx_t *)args;
     mesg_header_t *head = (mesg_header_t *)data;
 
-    mesg_head_ntoh(head, head);
+    MESG_HEAD_NTOH(head, head);
 
     serial.serial = head->serial;
     log_trace(ctx->log, "Call %s()! serial:%lu", __func__, head->serial);
 
-    mesg_head_hton(head, head);
+    MESG_HEAD_HTON(head, head);
 
     /* > 发送数据 */
     if (rtmq_send(ctx->downstrm, type, serial.nid, data, len)) {
