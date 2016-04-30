@@ -17,8 +17,13 @@
 #define SRCH_CODE_ERR               "0001"  /* 异常错误 */
 #define SRCH_CODE_NO_DATA           "0002"  /* 无数据 */
 
+typedef struct {
+    xml_tree_t *xml;
+    xml_node_t *root;
+} invtd_search_trav_args_t;
+
 /* 静态函数 */
-static int invtd_search_rsp_item_add(invt_word_doc_t *doc, xml_tree_t *xml);
+static int invtd_search_list_trav(invt_word_doc_t *doc, invtd_search_trav_args_t *args);
 static int invtd_search_no_data_hdl(xml_tree_t *xml);
 
 /******************************************************************************
@@ -111,9 +116,12 @@ static xml_tree_t *invtd_search_query(invtd_cntx_t *ctx, mesg_search_req_t *req)
 {
     xml_opt_t opt;
     xml_tree_t *xml;
+    xml_node_t *root;
     invt_dic_word_t *word;
+    invtd_search_trav_args_t args;
 
     memset(&opt, 0, sizeof(opt));
+    memset(&args, 0, sizeof(args));
 
     /* > 构建XML树 */
     opt.pool = NULL;
@@ -127,7 +135,7 @@ static xml_tree_t *invtd_search_query(invtd_cntx_t *ctx, mesg_search_req_t *req)
         return NULL;
     }
 
-    xml_set_root(xml, "SEARCH-RSP");
+    root = xml_set_root(xml, "SEARCH-RSP");
 
     do {
         pthread_rwlock_rdlock(&ctx->invtab_lock);
@@ -146,14 +154,16 @@ static xml_tree_t *invtd_search_query(invtd_cntx_t *ctx, mesg_search_req_t *req)
         }
 
         /* > 构建搜索结果 */
-        if (list_trav(word->doc_list, (trav_cb_t)invtd_search_rsp_item_add, (void *)xml)) {
+        args.xml = xml;
+        args.root = root;
+        if (list_trav(word->doc_list, (trav_cb_t)invtd_search_list_trav, (void *)&args)) {
             pthread_rwlock_unlock(&ctx->invtab_lock);
             log_error(ctx->log, "Contribute respone list failed! words:%s", req->words);
             break;
         }
         pthread_rwlock_unlock(&ctx->invtab_lock);
 
-        xml_add_attr(xml, xml->root, "CODE", SRCH_CODE_OK); /* 设置返回码 */
+        xml_add_attr(xml, root, "CODE", SRCH_CODE_OK); /* 设置返回码 */
         return xml;
     } while(0);
 
@@ -192,7 +202,7 @@ static int invtd_search_no_data_hdl(xml_tree_t *xml)
 }
 
 /******************************************************************************
- **函数名称: invtd_search_rsp_item_add
+ **函数名称: invtd_search_list_trav
  **功    能: 构建搜索应答项
  **输入参数:
  **     doc: 搜索列表
@@ -203,14 +213,18 @@ static int invtd_search_no_data_hdl(xml_tree_t *xml)
  **注意事项:
  **作    者: # Qifeng.zou # 2016.05.04 01:33:38 #
  ******************************************************************************/
-static int invtd_search_rsp_item_add(invt_word_doc_t *doc, xml_tree_t *xml)
+static int invtd_search_list_trav(invt_word_doc_t *doc, invtd_search_trav_args_t *args)
 {
-    xml_node_t *item;
+    xml_tree_t *xml;
+    xml_node_t *root, *item;
     char freq[SRCH_SEG_FREQ_LEN];
+
+    xml = args->xml;
+    root = args->root;
 
     snprintf(freq, sizeof(freq), "%d", doc->freq);
 
-    item = xml_add_child(xml, xml->root, "ITEM", NULL); 
+    item = xml_add_child(xml, root, "ITEM", NULL); 
     if (NULL == item) {
         log_error(xml->log, "Add child failed! url:%s freq:%d", doc->url.str, doc->freq);
         return -1;
