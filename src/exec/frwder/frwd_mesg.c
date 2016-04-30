@@ -15,8 +15,8 @@
 static int frwd_reg_req_cb(frwd_cntx_t *frwd);
 static int frwd_reg_rsp_cb(frwd_cntx_t *frwd);
 
-static int frwd_search_word_req_hdl(int type, int orig, char *data, size_t len, void *args);
-static int frwd_search_word_rsp_hdl(int type, int orig, char *data, size_t len, void *args);
+static int frwd_search_req_hdl(int type, int orig, char *data, size_t len, void *args);
+static int frwd_search_rsp_hdl(int type, int orig, char *data, size_t len, void *args);
 
 static int frwd_insert_word_req_hdl(int type, int orig, char *data, size_t len, void *args);
 static int frwd_insert_word_rsp_hdl(int type, int orig, char *data, size_t len, void *args);
@@ -59,7 +59,7 @@ static int frwd_reg_req_cb(frwd_cntx_t *frwd)
         return FRWD_ERR; \
     }
 
-    FRWD_REG_REQ_CB(frwd, MSG_SEARCH_WORD_REQ, frwd_search_word_req_hdl, frwd);
+    FRWD_REG_REQ_CB(frwd, MSG_SEARCH_REQ, frwd_search_req_hdl, frwd);
     FRWD_REG_REQ_CB(frwd, MSG_INSERT_WORD_REQ, frwd_insert_word_req_hdl, frwd);
 
     return FRWD_OK;
@@ -84,14 +84,14 @@ static int frwd_reg_rsp_cb(frwd_cntx_t *frwd)
         return FRWD_ERR; \
     }
 
-    FRWD_REG_RSP_CB(frwd, MSG_SEARCH_WORD_RSP, frwd_search_word_rsp_hdl, frwd);
+    FRWD_REG_RSP_CB(frwd, MSG_SEARCH_RSP, frwd_search_rsp_hdl, frwd);
     FRWD_REG_RSP_CB(frwd, MSG_INSERT_WORD_RSP, frwd_insert_word_rsp_hdl, frwd);
 
     return FRWD_OK;
 }
 
 /******************************************************************************
- **函数名称: frwd_search_word_req_hdl
+ **函数名称: frwd_search_req_hdl
  **功    能: 搜索关键字请求处理
  **输入参数:
  **     type: 数据类型
@@ -105,7 +105,7 @@ static int frwd_reg_rsp_cb(frwd_cntx_t *frwd)
  **注意事项:
  **作    者: # Qifeng.zou # 2016.02.23 20:25:53 #
  ******************************************************************************/
-static int frwd_search_word_req_hdl(int type, int orig, char *data, size_t len, void *args)
+static int frwd_search_req_hdl(int type, int orig, char *data, size_t len, void *args)
 {
     int nodeid;
     frwd_cntx_t *ctx = (frwd_cntx_t *)args;
@@ -136,7 +136,7 @@ static int frwd_search_word_req_hdl(int type, int orig, char *data, size_t len, 
 }
 
 /******************************************************************************
- **函数名称: frwd_search_word_rsp_hdl
+ **函数名称: frwd_search_rsp_hdl
  **功    能: 搜索关键字应答处理
  **输入参数:
  **     type: 数据类型
@@ -150,7 +150,7 @@ static int frwd_search_word_req_hdl(int type, int orig, char *data, size_t len, 
  **注意事项:
  **作    者: # Qifeng.zou # 2015.06.10 #
  ******************************************************************************/
-static int frwd_search_word_rsp_hdl(int type, int orig, char *data, size_t len, void *args)
+static int frwd_search_rsp_hdl(int type, int orig, char *data, size_t len, void *args)
 {
     serial_t serial;
     frwd_cntx_t *ctx = (frwd_cntx_t *)args;

@@ -16,8 +16,8 @@ typedef enum
 {
     MSG_TYPE_UNKNOWN                    /* 未知消息 */
 
-    , MSG_SEARCH_WORD_REQ               /* 搜索关键字-请求 */
-    , MSG_SEARCH_WORD_RSP               /* 搜索关键字-应答 */
+    , MSG_SEARCH_REQ                    /* 搜索关键字-请求 */
+    , MSG_SEARCH_RSP                    /* 搜索关键字-应答 */
 
     , MSG_INSERT_WORD_REQ               /* 插入关键字-请求 */
     , MSG_INSERT_WORD_RSP               /* 插入关键字-应答 */
@@ -94,7 +94,7 @@ typedef struct
 typedef struct
 {
     char words[SRCH_WORD_LEN];          /* 搜索关键字 */
-} mesg_search_word_req_t;
+} mesg_search_req_t;
 
 ////////////////////////////////////////////////////////////////////////////////
 /* 插入关键字-请求 */

@@ -9,7 +9,7 @@
 #if !defined(__INVTD_MESG_H__)
 #define __INVTD_MESG_H__
 
-int invtd_search_word_req_hdl(int type, int dev_orig, char *buff, size_t len, void *args);
+int invtd_search_req_hdl(int type, int dev_orig, char *buff, size_t len, void *args);
 int invtd_insert_word_req_hdl(int type, int dev_orig, char *buff, size_t len, void *args);
 
 #endif /*__INVTD_MESG_H__*/

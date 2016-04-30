@@ -13,7 +13,7 @@
 #include "lsnd_mesg.h"
 
 /******************************************************************************
- **函数名称: lsnd_search_word_req_hdl
+ **函数名称: lsnd_search_req_hdl
  **功    能: 搜索请求的处理函数
  **输入参数:
  **     type: 全局对象
@@ -26,7 +26,7 @@
  **注意事项: 需要将协议头转换为网络字节序
  **作    者: # Qifeng.zou # 2015.05.28 23:11:54 #
  ******************************************************************************/
-int lsnd_search_word_req_hdl(unsigned int type, void *data, int length, void *args)
+int lsnd_search_req_hdl(unsigned int type, void *data, int length, void *args)
 {
     lsnd_cntx_t *ctx = (lsnd_cntx_t *)args;
     mesg_header_t *head = (mesg_header_t *)data; /* 消息头 */
@@ -42,7 +42,7 @@ int lsnd_search_word_req_hdl(unsigned int type, void *data, int length, void *ar
 }
 
 /******************************************************************************
- **函数名称: lsnd_search_word_rsp_hdl
+ **函数名称: lsnd_search_rsp_hdl
  **功    能: 搜索关键字应答处理
  **输入参数:
  **     type: 数据类型
@@ -56,7 +56,7 @@ int lsnd_search_word_req_hdl(unsigned int type, void *data, int length, void *ar
  **注意事项:
  **作    者: # Qifeng.zou # 2015.06.10 #
  ******************************************************************************/
-int lsnd_search_word_rsp_hdl(int type, int orig, char *data, size_t len, void *args)
+int lsnd_search_rsp_hdl(int type, int orig, char *data, size_t len, void *args)
 {
     void *addr;
     lsnd_cntx_t *ctx = (lsnd_cntx_t *)args;
@@ -107,7 +107,7 @@ int lsnd_insert_word_req_hdl(unsigned int type, void *data, int length, void *ar
 }
 
 /******************************************************************************
- **函数名称: lsnd_search_word_rsp_hdl
+ **函数名称: lsnd_search_rsp_hdl
  **功    能: 插入关键字的应答
  **输入参数:
  **     type: 数据类型

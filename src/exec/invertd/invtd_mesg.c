@@ -51,7 +51,7 @@ static int invtd_rtmq_reg(invtd_cntx_t *ctx)
         return INVT_ERR; \
     }
 
-   INVTD_RTMQ_REG(ctx, MSG_SEARCH_WORD_REQ, invtd_search_word_req_hdl, ctx);
+   INVTD_RTMQ_REG(ctx, MSG_SEARCH_REQ, invtd_search_req_hdl, ctx);
    INVTD_RTMQ_REG(ctx, MSG_INSERT_WORD_REQ, invtd_insert_word_req_hdl, ctx);
    INVTD_RTMQ_REG(ctx, MSG_PRINT_INVT_TAB_REQ, invtd_print_invt_tab_req_hdl, ctx);
 

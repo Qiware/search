@@ -42,7 +42,7 @@ int sdtp_send_debug(sdsd_cli_t *cli, int secs)
 
             snprintf(req->words, sizeof(req->words), "%s", "BAIDU");
 
-            if (sdsd_cli_send(cli, MSG_SEARCH_WORD_REQ, req, sizeof(mesg_search_word_req_t))) {
+            if (sdsd_cli_send(cli, MSG_SEARCH_REQ, req, sizeof(mesg_search_word_req_t))) {
                 idx--;
                 usleep(2);
                 sleep2 += USLEEP*1000000;

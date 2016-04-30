@@ -22,7 +22,7 @@ static int invtd_search_rsp_item_add(invt_word_doc_t *doc, xml_tree_t *xml);
 static int invtd_search_no_data_hdl(xml_tree_t *xml);
 
 /******************************************************************************
- **函数名称: invtd_search_word_parse
+ **函数名称: invtd_search_parse
  **功    能: 解析搜索请求
  **输入参数:
  **     ctx: 全局对象
@@ -35,8 +35,8 @@ static int invtd_search_no_data_hdl(xml_tree_t *xml);
  **注意事项:
  **作    者: # Qifeng.zou # 2015.12.27 03:39:00 #
  ******************************************************************************/
-static int invtd_search_word_parse(invtd_cntx_t *ctx,
-        char *buf, size_t len, mesg_search_word_req_t *req)
+static int invtd_search_parse(invtd_cntx_t *ctx,
+        char *buf, size_t len, mesg_search_req_t *req)
 {
     xml_opt_t opt;
     xml_tree_t *xml;
@@ -96,7 +96,7 @@ static int invtd_search_word_parse(invtd_cntx_t *ctx,
 }
 
 /******************************************************************************
- **函数名称: invtd_search_word_query
+ **函数名称: invtd_search_query
  **功    能: 从倒排表中搜索关键字
  **输入参数:
  **     ctx: 上下文
@@ -107,7 +107,7 @@ static int invtd_search_word_parse(invtd_cntx_t *ctx,
  **注意事项: 完成发送后, 必须记得释放XML树的所有内存
  **作    者: # Qifeng.zou # 2016.01.04 17:35:35 #
  ******************************************************************************/
-static xml_tree_t *invtd_search_word_query(invtd_cntx_t *ctx, mesg_search_word_req_t *req)
+static xml_tree_t *invtd_search_query(invtd_cntx_t *ctx, mesg_search_req_t *req)
 {
     xml_opt_t opt;
     xml_tree_t *xml;
@@ -234,7 +234,7 @@ static int invtd_search_rsp_item_add(invt_word_doc_t *doc, xml_tree_t *xml)
  **作    者: # Qifeng.zou # 2016.01.04 17:35:35 #
  ******************************************************************************/
 static int invtd_search_send_and_free(invtd_cntx_t *ctx, xml_tree_t *xml,
-        mesg_header_t *head, mesg_search_word_req_t *req, int orig)
+        mesg_header_t *head, mesg_search_req_t *req, int orig)
 {
     void *addr = NULL;
     mesg_header_t *rsp; /* 应答 */
@@ -256,13 +256,13 @@ static int invtd_search_send_and_free(invtd_cntx_t *ctx, xml_tree_t *xml,
         /* 设置发送内容 */
         rsp = (mesg_header_t *)addr;
 
-        MESG_HEAD_SET(rsp, MSG_SEARCH_WORD_RSP, head->serial, sizeof(mesg_search_word_req_t));
+        MESG_HEAD_SET(rsp, MSG_SEARCH_RSP, head->serial, sizeof(mesg_search_req_t));
         MESG_HEAD_HTON(rsp, rsp);
 
         xml_spack(xml, rsp->body);
 
         /* 放入发送队列 */
-        if (rtmq_proxy_async_send(ctx->frwder, MSG_SEARCH_WORD_RSP, addr, total_len)) {
+        if (rtmq_proxy_async_send(ctx->frwder, MSG_SEARCH_RSP, addr, total_len)) {
             log_error(ctx->log, "Send response failed! serial:%ld words:%s",
                     head->serial, req->words);
         }
@@ -275,7 +275,7 @@ static int invtd_search_send_and_free(invtd_cntx_t *ctx, xml_tree_t *xml,
 }
 
 /******************************************************************************
- **函数名称: invtd_search_word_req_hdl
+ **函数名称: invtd_search_req_hdl
  **功    能: 处理搜索请求
  **输入参数:
  **     type: 消息类型
@@ -289,21 +289,21 @@ static int invtd_search_send_and_free(invtd_cntx_t *ctx, xml_tree_t *xml,
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.08 #
  ******************************************************************************/
-int invtd_search_word_req_hdl(int type, int orig, char *buff, size_t len, void *args)
+int invtd_search_req_hdl(int type, int orig, char *buff, size_t len, void *args)
 {
     xml_tree_t *xml;
-    mesg_search_word_req_t req; /* 请求 */
+    mesg_search_req_t req; /* 请求 */
     invtd_cntx_t *ctx = (invtd_cntx_t *)args;
     mesg_header_t *head = (mesg_header_t *)buff;
 
     /* > 解析搜索信息 */
-    if (invtd_search_word_parse(ctx, buff, len, &req)) {
+    if (invtd_search_parse(ctx, buff, len, &req)) {
         log_error(ctx->log, "Parse search request failed! words:%s", req.words);
         return INVT_ERR;
     }
 
     /* > 从倒排表中搜索关键字 */
-    xml = invtd_search_word_query(ctx, &req); 
+    xml = invtd_search_query(ctx, &req); 
     if (NULL == xml) {
         log_error(ctx->log, "Search word form table failed! words:%s", req.words);
         return INVT_ERR;
