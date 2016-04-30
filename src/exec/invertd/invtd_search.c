@@ -19,6 +19,7 @@
 
 /* 静态函数 */
 static int invtd_search_rsp_item_add(invt_word_doc_t *doc, xml_tree_t *xml);
+static int invtd_search_no_data_hdl(xml_tree_t *xml);
 
 /******************************************************************************
  **函数名称: invtd_search_word_parse
@@ -110,9 +111,7 @@ static xml_tree_t *invtd_search_word_query(invtd_cntx_t *ctx, mesg_search_word_r
 {
     xml_opt_t opt;
     xml_tree_t *xml;
-    xml_node_t *root, *item;
     invt_dic_word_t *word;
-    char freq[SRCH_SEG_FREQ_LEN];
 
     memset(&opt, 0, sizeof(opt));
 
@@ -128,52 +127,68 @@ static xml_tree_t *invtd_search_word_query(invtd_cntx_t *ctx, mesg_search_word_r
         return NULL;
     }
 
-    root = xml_set_root(xml, "SEARCH-RSP");
-    if (NULL == root) {
-        log_error(ctx->log, "Set xml root failed!");
-        goto GOTO_SEARCH_ERR;
-    }
+    xml_set_root(xml, "SEARCH-RSP");
 
-    /* > 搜索倒排表 */
-    pthread_rwlock_rdlock(&ctx->invtab_lock);
+    do {
+        pthread_rwlock_rdlock(&ctx->invtab_lock);
 
-    word = (invt_dic_word_t *)invtab_query(ctx->invtab, req->words);
-    if (NULL == word
-        || NULL == word->doc_list)
-    {
+        /* > 搜索倒排表 */
+        word = (invt_dic_word_t *)invtab_query(ctx->invtab, req->words);
+        if (NULL == word
+            || NULL == word->doc_list)
+        {
+            pthread_rwlock_unlock(&ctx->invtab_lock);
+            log_warn(ctx->log, "Didn't search anything! words:%s", req->words);
+            if (invtd_search_no_data_hdl(xml)) {
+                break;
+            }
+            return xml;
+        }
+
+        /* > 构建搜索结果 */
+        if (list_trav(word->doc_list, (trav_cb_t)invtd_search_rsp_item_add, (void *)xml)) {
+            pthread_rwlock_unlock(&ctx->invtab_lock);
+            log_error(ctx->log, "Contribute respone list failed! words:%s", req->words);
+            break;
+        }
         pthread_rwlock_unlock(&ctx->invtab_lock);
-        log_warn(ctx->log, "Didn't search anything! words:%s", req->words);
-        goto GOTO_SEARCH_NO_DATA;
-    }
 
-    /* > 构建搜索结果 */
-    if (list_trav(word->doc_list, (trav_cb_t)invtd_search_rsp_item_add, (void *)xml)) {
-        pthread_rwlock_unlock(&ctx->invtab_lock);
-        log_error(ctx->log, "Contribute respone list failed! words:%s", req->words);
-        goto GOTO_SEARCH_ERR;
-    }
-    pthread_rwlock_unlock(&ctx->invtab_lock);
+        xml_add_attr(xml, xml->root, "CODE", SRCH_CODE_OK); /* 设置返回码 */
+        return xml;
+    } while(0);
 
-    xml_add_attr(xml, root, "CODE", SRCH_CODE_OK); /* 设置返回码 */
-
-    return xml;
-
-GOTO_SEARCH_ERR:        /* 异常错误处理 */
     xml_destroy(xml);
     return NULL;
+}
 
-GOTO_SEARCH_NO_DATA:    /* 搜索结果为空的处理 */
-    xml_add_attr(xml, root, "CODE", SRCH_CODE_NO_DATA); /* 无数据 */
+/******************************************************************************
+ **函数名称: invtd_search_no_data_hdl
+ **功    能: 无数据的应答处理
+ **输入参数:
+ **     xml: 应答结果树
+ **输出参数: NONE
+ **返    回: 0:Succ !0:Fail
+ **实现描述:
+ **注意事项:
+ **作    者: # Qifeng.zou # 2016.05.01 01:49:01 #
+ ******************************************************************************/
+static int invtd_search_no_data_hdl(xml_tree_t *xml)
+{
+    xml_node_t *item;
+    char freq[SRCH_SEG_FREQ_LEN];
+
+    xml_add_attr(xml, xml->root, "CODE", SRCH_CODE_NO_DATA); /* 无数据 */
 
     snprintf(freq, sizeof(freq), "%d", 0);
 
-    item = xml_add_child(xml, root, "ITEM", NULL); 
+    item = xml_add_child(xml, xml->root, "ITEM", NULL); 
     if (NULL == item) {
-        goto GOTO_SEARCH_ERR;
+        xml_destroy(xml);
+        return -1;
     }
     xml_add_attr(xml, item, "URL", "Sorry, Didn't search anything!");
     xml_add_attr(xml, item, "FREQ", freq);
-    return xml;
+    return 0;
 }
 
 /******************************************************************************
