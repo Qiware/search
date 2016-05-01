@@ -31,7 +31,7 @@ static int invtd_search_no_data_hdl(xml_tree_t *xml);
  **输出参数:
  **     req: 搜索请求
  **返    回: 0:成功 !0:失败
- **实现描述: 
+ **实现描述:
  **注意事项:
  **作    者: # Qifeng.zou # 2015.12.27 03:39:00 #
  ******************************************************************************/
@@ -175,14 +175,15 @@ static xml_tree_t *invtd_search_query(invtd_cntx_t *ctx, mesg_search_req_t *req)
  ******************************************************************************/
 static int invtd_search_no_data_hdl(xml_tree_t *xml)
 {
-    xml_node_t *item;
+    xml_node_t *root, *item;
     char freq[SRCH_SEG_FREQ_LEN];
 
     xml_add_attr(xml, xml->root, "CODE", SRCH_CODE_NO_DATA); /* 无数据 */
 
     snprintf(freq, sizeof(freq), "%d", 0);
 
-    item = xml_add_child(xml, xml->root, "ITEM", NULL); 
+    root = xml->root->child;
+    item = xml_add_child(xml, root, "ITEM", NULL);
     if (NULL == item) {
         xml_destroy(xml);
         return -1;
@@ -213,7 +214,7 @@ static int invtd_search_list_trav(invt_word_doc_t *doc, xml_tree_t *xml)
 
     snprintf(freq, sizeof(freq), "%d", doc->freq);
 
-    item = xml_add_child(xml, root, "ITEM", NULL); 
+    item = xml_add_child(xml, root, "ITEM", NULL);
     if (NULL == item) {
         log_error(xml->log, "Add child failed! url:%s freq:%d", doc->url.str, doc->freq);
         return -1;
@@ -306,7 +307,7 @@ int invtd_search_req_hdl(int type, int orig, char *buff, size_t len, void *args)
     }
 
     /* > 从倒排表中搜索关键字 */
-    xml = invtd_search_query(ctx, &req); 
+    xml = invtd_search_query(ctx, &req);
     if (NULL == xml) {
         log_error(ctx->log, "Search word form table failed! words:%s", req.words);
         return INVT_ERR;
