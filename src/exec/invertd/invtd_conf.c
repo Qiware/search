@@ -77,7 +77,7 @@ static int invtd_conf_load_frwder(xml_tree_t *xml, rtmq_proxy_conf_t *conf, int 
 {
     xml_node_t *parent, *node;
 
-    parent = xml_query(xml, ".INVTERD.FRWDER");
+    parent = xml_query(xml, ".INVERTD.FRWDER");
     if (NULL == parent) {
         log_error(xml->log, "Didn't find invertd configuation!");
         return -1;
@@ -249,7 +249,7 @@ static int invtd_conf_load_comm(xml_tree_t *xml, invtd_conf_t *conf)
     xml_node_t *node;
 
     /* > 结点ID */
-    node = xml_query(xml, ".INVTERD.ID");
+    node = xml_query(xml, ".INVERTD.ID");
     if (NULL == node) {
         return INVT_ERR_CONF;
     }
@@ -257,7 +257,7 @@ static int invtd_conf_load_comm(xml_tree_t *xml, invtd_conf_t *conf)
     conf->nodeid = atoi(node->value.str);
 
     /* > 倒排表长度 */
-    node = xml_query(xml, ".INVTERD.INVT_TAB.MAX");
+    node = xml_query(xml, ".INVERTD.INVT_TAB.MAX");
     if (NULL == node) {
         return INVT_ERR_CONF;
     }
