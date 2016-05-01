@@ -381,7 +381,7 @@ static int rtmq_proxy_cli_cmd_send_req(rtmq_proxy_t *pxy, int idx)
  **输入参数:
  **     pxy: 上下文信息
  **     type: 数据类型
- **     nodeid: 源结点ID
+ **     nid: 源结点ID
  **     data: 数据地址
  **     size: 数据长度
  **输出参数: NONE
@@ -414,15 +414,15 @@ int rtmq_proxy_async_send(rtmq_proxy_t *pxy, int type, const void *data, size_t 
     head = (rtmq_header_t *)addr;
 
     head->type = type;
-    head->nodeid = conf->nodeid;
+    head->nid = conf->nid;
     head->length = size;
     head->flag = RTMQ_EXP_MESG;
     head->chksum = RTMQ_CHKSUM_VAL;
 
     memcpy(head+1, data, size);
 
-    log_debug(pxy->log, "rq:%p Head type:%d nodeid:%d length:%d flag:%d chksum:%d!",
-            pxy->sendq[idx]->ring, head->type, head->nodeid, head->length, head->flag, head->chksum);
+    log_debug(pxy->log, "rq:%p Head type:%d nid:%d length:%d flag:%d chksum:%d!",
+            pxy->sendq[idx]->ring, head->type, head->nid, head->length, head->flag, head->chksum);
 
     /* > 放入发送队列 */
     if (queue_push(pxy->sendq[idx], addr)) {

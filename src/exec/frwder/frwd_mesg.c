@@ -107,7 +107,7 @@ static int frwd_reg_rsp_cb(frwd_cntx_t *frwd)
  ******************************************************************************/
 static int frwd_search_req_hdl(int type, int orig, char *data, size_t len, void *args)
 {
-    int nodeid;
+    int nid;
     frwd_cntx_t *ctx = (frwd_cntx_t *)args;
     mesg_header_t *head = (mesg_header_t *)data;
 
@@ -121,13 +121,13 @@ static int frwd_search_req_hdl(int type, int orig, char *data, size_t len, void 
     MESG_HEAD_HTON(head, head);
 
     /* > 发送数据 */
-    nodeid = rtmq_sub_query(ctx->upstrm, type);
-    if (-1 == nodeid) {
+    nid = rtmq_sub_query(ctx->upstrm, type);
+    if (-1 == nid) {
         log_error(ctx->log, "No module sub type! type:%u", type);
         return 0;
     }
 
-    if (rtmq_send(ctx->upstrm, type, nodeid, data, len)) {
+    if (rtmq_send(ctx->upstrm, type, nid, data, len)) {
         log_error(ctx->log, "Push data into send queue failed! type:%u", type);
         return -1;
     }

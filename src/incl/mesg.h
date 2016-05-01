@@ -127,17 +127,17 @@ typedef struct
 typedef struct
 {
     mesg_type_e type;                   /* 订阅类型(消息类型) */
-    int nodeid;                         /* 结点ID */
+    int nid;                            /* 结点ID */
 } mesg_sub_req_t;
 
 #define mesg_sub_req_hton(req) do { /* 主机 -> 网络 */\
     (req)->type = htonl((req)->type); \
-    (req)->nodeid = htonl((req)->nodeid); \
+    (req)->nid = htonl((req)->nid); \
 } while(0)
 
 #define mesg_sub_req_ntoh(req) do { /* 网络 -> 主机 */\
     (req)->type = ntohl((req)->type); \
-    (req)->nodeid = ntohl((req)->nodeid); \
+    (req)->nid = ntohl((req)->nid); \
 } while(0)
 
 /* 订阅-应答 */

@@ -463,7 +463,7 @@ static int rtmq_rsvr_trav_send(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr)
 
         if (FD_ISSET(curr->fd, &rsvr->wrset)) {
             log_trace(ctx->log, "Stream is writable! fd:%d nid:%d sid:%d",
-                    curr->fd, curr->nodeid, curr->sid);
+                    curr->fd, curr->nid, curr->sid);
             curr->wrtm = rsvr->ctm;
             send = &curr->send;
 
@@ -486,7 +486,7 @@ static int rtmq_rsvr_trav_send(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr)
                 }
                 else {
                     log_trace(ctx->log, "Stream is writable! fd:%d nid:%d sid:%d n:%d",
-                            curr->fd, curr->nodeid, curr->sid, n);
+                            curr->fd, curr->nid, curr->sid, n);
                     /* 删除已发送内容 */
                     wiov_item_adjust(send, n);
                     break;
@@ -545,14 +545,14 @@ static int rtmq_rsvr_recv_proc(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t *
 
             /* 2. 进行数据处理 */
             if (rtmq_rsvr_data_proc(ctx, rsvr, sck)) {
-                log_error(rsvr->log, "Proc data failed! nodeid:%u", sck->nodeid);
+                log_error(rsvr->log, "Proc data failed! nid:%u", sck->nid);
                 return RTMQ_ERR;
             }
             continue;
         }
         else if (0 == n) {
-            log_info(rsvr->log, "Client disconnected. nodeid:%u n:%d/%d",
-                    sck->nodeid, n, left);
+            log_info(rsvr->log, "Client disconnected. nid:%u n:%d/%d",
+                    sck->nid, n, left);
             return RTMQ_SCK_DISCONN;
         }
         else if ((n < 0) && (EAGAIN == errno)) {
@@ -562,7 +562,7 @@ static int rtmq_rsvr_recv_proc(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t *
             continue;
         }
 
-        log_error(rsvr->log, "errmsg:[%d] %s. nodeid:%u", errno, strerror(errno), sck->nodeid);
+        log_error(rsvr->log, "errmsg:[%d] %s. nid:%u", errno, strerror(errno), sck->nid);
         return RTMQ_ERR;
     }
 
@@ -607,8 +607,8 @@ static int rtmq_rsvr_data_proc(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t *
         len = (uint32_t)(recv->iptr - recv->optr);
         if (len >= sizeof(rtmq_header_t)) {
             if (RTMQ_CHKSUM_VAL != ntohl(head->chksum)) {
-                log_error(rsvr->log, "Header is invalid! nodeid:%d Mark:%X/%X type:%d len:%d flag:%d",
-                        ntohl(head->nodeid), ntohl(head->chksum), RTMQ_CHKSUM_VAL,
+                log_error(rsvr->log, "Header is invalid! nid:%d Mark:%X/%X type:%d len:%d flag:%d",
+                        ntohl(head->nid), ntohl(head->chksum), RTMQ_CHKSUM_VAL,
                         ntohl(head->type), ntohl(head->length), head->flag);
                 return RTMQ_ERR;
             }
@@ -680,8 +680,8 @@ static int rtmq_rsvr_sys_mesg_proc(rtmq_cntx_t *ctx,
 {
     rtmq_header_t *head = (rtmq_header_t *)addr;
 
-    log_debug(rsvr->log, "type:%u nodeid:%u chksum:0x%X",
-            head->type, head->nodeid, head->chksum);
+    log_debug(rsvr->log, "type:%u nid:%u chksum:0x%X",
+            head->type, head->nid, head->chksum);
 
     switch (head->type) {
         case RTMQ_CMD_LINK_AUTH_REQ:
@@ -725,9 +725,9 @@ static int rtmq_rsvr_exp_mesg_proc(rtmq_cntx_t *ctx,
     len = sizeof(rtmq_header_t) + head->length;
 
     /* > 合法性验证 */
-    if (head->nodeid != sck->nodeid) {
+    if (head->nid != sck->nid) {
         ++rsvr->drop_total;
-        log_error(rsvr->log, "Devid isn't right! nodeid:%d/%d", head->nodeid, sck->nodeid);
+        log_error(rsvr->log, "Devid isn't right! nid:%d/%d", head->nid, sck->nid);
         return RTMQ_ERR;
     }
 
@@ -876,7 +876,7 @@ static int rtmq_rsvr_keepalive_req_hdl(rtmq_cntx_t *ctx,
     head = (rtmq_header_t *)rsp;
 
     head->type = RTMQ_CMD_KPALIVE_RSP;
-    head->nodeid = ctx->conf.nodeid;
+    head->nid = ctx->conf.nid;
     head->length = 0;
     head->flag = RTMQ_SYS_MESG;
     head->chksum = RTMQ_CHKSUM_VAL;
@@ -927,7 +927,7 @@ static int rtmq_rsvr_link_auth_rsp(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck
     link_auth_rsp = (rtmq_link_auth_rsp_t *)(head + 1);
 
     head->type = RTMQ_CMD_LINK_AUTH_RSP;
-    head->nodeid = ctx->conf.nodeid;
+    head->nid = ctx->conf.nid;
     head->length = sizeof(rtmq_link_auth_rsp_t);
     head->flag = RTMQ_SYS_MESG;
     head->chksum = RTMQ_CHKSUM_VAL;
@@ -972,11 +972,11 @@ static int rtmq_rsvr_link_auth_req_hdl(rtmq_cntx_t *ctx,
     /* > 验证鉴权合法性 */
     sck->auth_succ = rtmq_link_auth_check(ctx, link_auth_req);
     if (sck->auth_succ) {
-        sck->nodeid = head->nodeid;
+        sck->nid = head->nid;
         /* > 插入DEV与SCK的映射 */
-        if (rtmq_node_to_svr_map_add(ctx, head->nodeid, rsvr->id)) {
-            log_error(rsvr->log, "Insert into sck2dev table failed! fd:%d serial:%ld nodeid:%d",
-                    sck->fd, sck->sid, head->nodeid);
+        if (rtmq_node_to_svr_map_add(ctx, head->nid, rsvr->id)) {
+            log_error(rsvr->log, "Insert into sck2dev table failed! fd:%d serial:%ld nid:%d",
+                    sck->fd, sck->sid, head->nid);
             return RTMQ_ERR;
         }
     }
@@ -1068,7 +1068,7 @@ static int rtmq_rsvr_sub_find_or_add(rtmq_cntx_t *ctx, rtmq_sck_t *sck, int type
         }
 
         node->sid = sck->sid;
-        node->nodeid = sck->nodeid;
+        node->nid = sck->nid;
 
         if (vector_append(list->nodes, (void *)node)) {
             log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
@@ -1213,7 +1213,7 @@ static rtmq_sck_t *rtmq_rsvr_sck_creat(rtmq_rsvr_t *rsvr, rtmq_cmd_add_sck_t *re
     memset(sck, 0, sizeof(rtmq_sck_t));
 
     sck->fd = req->sckid;
-    sck->nodeid = -1;
+    sck->nid = -1;
     sck->sid = req->sid;
     sck->ctm = time(NULL);
     sck->rdtm = sck->ctm;
@@ -1399,7 +1399,7 @@ static int rtmq_rsvr_del_conn_hdl(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, list2_nod
     list2_delete(rsvr->conn_list, node);
 
     /* > 从SCK <<=>> DEV映射表中剔除 */
-    rtmq_node_to_svr_map_del(ctx, curr->nodeid, rsvr->id);
+    rtmq_node_to_svr_map_del(ctx, curr->nid, rsvr->id);
 
     /* > 释放数据空间 */
     rtmq_rsvr_sck_free(rsvr, curr);
@@ -1528,13 +1528,13 @@ static int rtmq_rsvr_cmd_proc_all_req(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr)
  ******************************************************************************/
 typedef struct
 {
-    uint32_t nodeid;            /* 结点ID */
+    uint32_t nid;               /* 结点ID */
     list_t *list;               /* 拥有相同结点ID的套接字链表 */
 } _conn_list_t;
 
 static int rtmq_rsvr_get_conn_list_by_nodeid(rtmq_sck_t *sck, _conn_list_t *cl)
 {
-    if (sck->nodeid != cl->nodeid) {
+    if (sck->nid != cl->nid) {
         return -1;
     }
 
@@ -1586,7 +1586,7 @@ static int rtmq_rsvr_dist_data(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr)
             frwd = (rtmq_frwd_t *)data[idx];
 
             /* > 查找发送连接 */
-            cl.nodeid = frwd->dest;
+            cl.nid = frwd->dest;
             cl.list = list_creat(NULL);
             if (NULL == cl.list) {
                 queue_dealloc(sendq, data[idx]);
@@ -1598,14 +1598,14 @@ static int rtmq_rsvr_dist_data(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr)
             if (0 == cl.list->num) {
                 queue_dealloc(sendq, data[idx]);
                 list_destroy(cl.list, mem_dummy_dealloc, NULL);
-                log_error(rsvr->log, "Didn't find connection by nodeid [%d]!", cl.nodeid);
+                log_error(rsvr->log, "Didn't find connection by nid [%d]!", cl.nid);
                 continue;
             }
 
             sck = (rtmq_sck_t *)list_fetch(cl.list, rand()%cl.list->num);
             
             log_trace(ctx->log, "Select upstream! fd:%d nid:%d sid:%d",
-                    sck->fd, sck->nodeid, sck->sid);
+                    sck->fd, sck->nid, sck->sid);
 
             /* > 设置发送数据 */
             len = sizeof(rtmq_header_t) + frwd->length;
@@ -1621,7 +1621,7 @@ static int rtmq_rsvr_dist_data(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr)
             head = (rtmq_header_t *)addr;
 
             head->type = frwd->type;
-            head->nodeid = frwd->dest;
+            head->nid = frwd->dest;
             head->flag = RTMQ_EXP_MESG;
             head->chksum = RTMQ_CHKSUM_VAL;
             head->length = frwd->length;

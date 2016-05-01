@@ -41,7 +41,7 @@ typedef enum
 typedef struct
 {
     uint32_t type;                      /* 命令类型 */
-    uint32_t nodeid;                    /* 源结点ID */
+    uint32_t nid;                       /* 源结点ID */
 #define RTMQ_SYS_MESG   (0)             /* 系统类型 */
 #define RTMQ_EXP_MESG   (1)             /* 自定义类型 */
     uint8_t flag;                       /* 消息标志
@@ -57,14 +57,14 @@ typedef struct
 
 #define RTMQ_HEAD_NTOH(s, d) do {\
     (d)->type = ntohl((s)->type); \
-    (d)->nodeid = ntohl((s)->nodeid); \
+    (d)->nid = ntohl((s)->nid); \
     (d)->length = ntohl((s)->length); \
     (d)->chksum = ntohl((s)->chksum); \
 } while(0)
 
 #define RTMQ_HEAD_HTON(s, d) do {\
     (d)->type = htonl((s)->type); \
-    (d)->nodeid = htonl((s)->nodeid); \
+    (d)->nid = htonl((s)->nid); \
     (d)->length = htonl((s)->length); \
     (d)->chksum = htonl((s)->chksum); \
 } while(0)
@@ -134,7 +134,7 @@ typedef struct
 /* 配置信息 */
 typedef struct
 {
-    int nodeid;                         /* 节点ID: 不允许重复 */
+    int nid;                            /* 结点ID: 不允许重复 */
     char path[FILE_NAME_MAX_LEN];       /* 工作路径 */
     int port;                           /* 侦听端口 */
     int recv_thd_num;                   /* 接收线程数 */

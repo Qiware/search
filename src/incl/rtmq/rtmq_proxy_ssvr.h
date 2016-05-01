@@ -10,13 +10,13 @@
 
 /* COMM的UNIX-UDP路径 */
 #define rtmq_proxy_comm_usck_path(conf, path) \
-    snprintf(path, sizeof(path), "%s/%d_comm.usck", (conf)->path, (conf)->nodeid)
+    snprintf(path, sizeof(path), "%s/%d_comm.usck", (conf)->path, (conf)->nid)
 /* SSVR线程的UNIX-UDP路径 */
 #define rtmq_proxy_ssvr_usck_path(conf, path, id) \
-    snprintf(path, sizeof(path), "%s/%d_ssvr_%d.usck", (conf)->path, (conf)->nodeid, id+1)
+    snprintf(path, sizeof(path), "%s/%d_ssvr_%d.usck", (conf)->path, (conf)->nid, id+1)
 /* WORKER线程的UNIX-UDP路径 */
 #define rtmq_proxy_worker_usck_path(conf, path, id) \
-    snprintf(path, sizeof(path), "%s/%d_swrk_%d.usck", (conf)->path, (conf)->nodeid, id+1)
+    snprintf(path, sizeof(path), "%s/%d_swrk_%d.usck", (conf)->path, (conf)->nid, id+1)
 
 /* 套接字信息 */
 typedef struct

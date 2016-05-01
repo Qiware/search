@@ -321,7 +321,7 @@ static int rtmq_proxy_ssvr_kpalive_req(rtmq_proxy_t *pxy, rtmq_proxy_ssvr_t *ssv
     head = (rtmq_header_t *)addr;
 
     head->type = RTMQ_CMD_KPALIVE_REQ;
-    head->nodeid = pxy->conf.nodeid;
+    head->nid = pxy->conf.nid;
     head->length = 0;
     head->flag = RTMQ_SYS_MESG;
     head->chksum = RTMQ_CHKSUM_VAL;
@@ -535,6 +535,9 @@ static int rtmq_proxy_ssvr_data_proc(rtmq_proxy_t *pxy, rtmq_proxy_ssvr_t *ssvr,
         /* 2. 至少一条数据时 */
         /* 2.1 转化字节序 */
         RTMQ_HEAD_NTOH(head, head);
+
+        log_trace(ssvr->log, "CheckSum:%u/%u type:%d len:%d flag:%d",
+                head->chksum, RTMQ_CHKSUM_VAL, head->type, head->length, head->flag);
 
         /* 2.2 校验合法性 */
         if (!RTMQ_HEAD_ISVALID(head)) {
@@ -921,7 +924,7 @@ static int rtmq_link_auth_req(rtmq_proxy_t *pxy, rtmq_proxy_ssvr_t *ssvr)
     head = (rtmq_header_t *)addr;
 
     head->type = RTMQ_CMD_LINK_AUTH_REQ;
-    head->nodeid = conf->nodeid;
+    head->nid = conf->nid;
     head->length = sizeof(rtmq_link_auth_req_t);
     head->flag = RTMQ_SYS_MESG;
     head->chksum = RTMQ_CHKSUM_VAL;
@@ -999,7 +1002,7 @@ static int rtmq_add_sub_req(rtmq_reg_t *item, rtmq_proxy_ssvr_t *ssvr)
     head = (rtmq_header_t *)addr;
 
     head->type = RTMQ_CMD_SUB_REQ;
-    head->nodeid = conf->nodeid;
+    head->nid = conf->nid;
     head->length = sizeof(rtmq_sub_req_t);
     head->flag = RTMQ_SYS_MESG;
     head->chksum = RTMQ_CHKSUM_VAL;

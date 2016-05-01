@@ -39,7 +39,7 @@ typedef enum
 typedef struct
 {
     uint16_t type;                      /* 数据类型 */
-    int nodeid;                         /* 源结点ID */
+    int nid;                            /* 源结点ID */
 #define SDTP_SYS_MESG   (0)             /* 系统类型 */
 #define SDTP_EXP_MESG   (1)             /* 自定义类型 */
     uint8_t flag;                       /* 消息标志
@@ -74,7 +74,7 @@ typedef struct
 /* 链路鉴权请求 */
 typedef struct
 {
-    int nodeid;                         /* 结点ID */
+    int nid;                            /* 结点ID */
     char usr[SDTP_USR_MAX_LEN];         /* 用户名 */
     char passwd[SDTP_PWD_MAX_LEN];      /* 登录密码 */
 } sdtp_link_auth_req_t;
@@ -82,7 +82,7 @@ typedef struct
 /* 链路鉴权应答 */
 typedef struct
 {
-    int nodeid;                         /* 结点ID */
+    int nid;                            /* 结点ID */
 #define SDTP_LINK_AUTH_FAIL     (0)
 #define SDTP_LINK_AUTH_SUCC     (1)
     int is_succ;                        /* 应答码(0:失败 1:成功) */

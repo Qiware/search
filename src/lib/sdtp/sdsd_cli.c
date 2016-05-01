@@ -196,7 +196,7 @@ static int sdsd_cli_cmd_send_req(sdsd_cli_t *cli, int idx)
  **输入参数:
  **     cli: 上下文信息
  **     type: 数据类型
- **     nodeid: 源结点ID
+ **     nid: 源结点ID
  **     data: 数据地址
  **     size: 数据长度
  **输出参数: NONE
@@ -217,7 +217,7 @@ int sdsd_cli_send(sdsd_cli_t *cli, int type, const void *data, size_t size)
     for (i=0; i<conf->send_thd_num; ++i) {
         idx = (num++)%conf->send_thd_num;
 
-        if (sdsd_pool_push(cli->sendq[idx], type, conf->auth.nodeid, data, size)) {
+        if (sdsd_pool_push(cli->sendq[idx], type, conf->auth.nid, data, size)) {
             continue;
         }
 

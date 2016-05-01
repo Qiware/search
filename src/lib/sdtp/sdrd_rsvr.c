@@ -574,8 +574,8 @@ static int sdrd_rsvr_data_proc(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, sdrd_sck_t *
         len = (uint32_t)(recv->iptr - recv->optr);
         if (len >= sizeof(sdtp_header_t)) {
             if (SDTP_CHKSUM_VAL != ntohl(head->chksum)) {
-                log_error(rsvr->log, "Header is invalid! nodeid:%d Mark:%X/%X type:%d len:%d flag:%d",
-                        ntohl(head->nodeid), ntohl(head->chksum), SDTP_CHKSUM_VAL,
+                log_error(rsvr->log, "Header is invalid! nid:%d Mark:%X/%X type:%d len:%d flag:%d",
+                        ntohl(head->nid), ntohl(head->chksum), SDTP_CHKSUM_VAL,
                         ntohs(head->type), ntohl(head->length), head->flag);
                 return SDTP_ERR;
             }
@@ -607,7 +607,7 @@ static int sdrd_rsvr_data_proc(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, sdrd_sck_t *
         /* 2. 至少一条数据时 */
         /* 2.1 转化字节序 */
         head->type = ntohs(head->type);
-        head->nodeid = ntohl(head->nodeid);
+        head->nid = ntohl(head->nid);
         head->flag = head->flag;
         head->length = ntohl(head->length);
         head->chksum = ntohl(head->chksum);
@@ -736,9 +736,9 @@ static int sdrd_rsvr_exp_mesg_proc(sdrd_cntx_t *ctx,
 
     ++rsvr->recv_total; /* 总数 */
 
-    if (head->nodeid != sck->nodeid) {
+    if (head->nid != sck->nid) {
         ++rsvr->drop_total;
-        log_error(rsvr->log, "Devid isn't right! nodeid:%d/%d", head->nodeid, sck->nodeid);
+        log_error(rsvr->log, "Devid isn't right! nid:%d/%d", head->nid, sck->nid);
         return SDTP_ERR;
     };
 
@@ -914,7 +914,7 @@ static int sdrd_rsvr_keepalive_req_hdl(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, sdrd
     head = (sdtp_header_t *)addr;
 
     head->type = SDTP_CMD_KPALIVE_REP;
-    head->nodeid = ctx->conf.auth.nodeid;
+    head->nid = ctx->conf.auth.nid;
     head->length = 0;
     head->flag = SDTP_SYS_MESG;
     head->chksum = SDTP_CHKSUM_VAL;
@@ -962,7 +962,7 @@ static int sdrd_rsvr_link_auth_rsp(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, sdrd_sck
     link_auth_rsp = (sdtp_link_auth_rsp_t *)(addr + sizeof(sdtp_header_t));
 
     head->type = SDTP_CMD_LINK_AUTH_REP;
-    head->nodeid = ctx->conf.auth.nodeid;
+    head->nid = ctx->conf.auth.nid;
     head->length = sizeof(sdtp_link_auth_rsp_t);
     head->flag = SDTP_SYS_MESG;
     head->chksum = SDTP_CHKSUM_VAL;
@@ -1002,17 +1002,17 @@ static int sdrd_rsvr_link_auth_req_hdl(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, sdrd
     /* > 字节序转换 */
     link_auth_req = (sdtp_link_auth_req_t *)(recv->addr + sizeof(sdtp_header_t));
 
-    link_auth_req->nodeid = ntohl(link_auth_req->nodeid);
+    link_auth_req->nid = ntohl(link_auth_req->nid);
 
     /* > 验证鉴权合法性 */
     sck->auth_succ = sdrd_link_auth_check(ctx, link_auth_req);
     if (sck->auth_succ) {
-        sck->nodeid = link_auth_req->nodeid;
+        sck->nid = link_auth_req->nid;
 
         /* > 插入NODE与SCK的映射 */
-        if (sdrd_node_to_svr_map_add(ctx, link_auth_req->nodeid, rsvr->id)) {
-            log_error(rsvr->log, "Insert into sck2dev table failed! fd:%d serial:%ld nodeid:%d",
-                    sck->fd, sck->sid, link_auth_req->nodeid);
+        if (sdrd_node_to_svr_map_add(ctx, link_auth_req->nid, rsvr->id)) {
+            log_error(rsvr->log, "Insert into sck2dev table failed! fd:%d serial:%ld nid:%d",
+                    sck->fd, sck->sid, link_auth_req->nid);
             return SDTP_ERR;
         }
     }
@@ -1050,7 +1050,7 @@ static sdrd_sck_t *sdrd_rsvr_sck_creat(sdrd_rsvr_t *rsvr, sdtp_cmd_add_sck_t *re
     memset(sck, 0, sizeof(sdrd_sck_t));
 
     sck->fd = req->sckid;
-    sck->nodeid = -1;
+    sck->nid = -1;
     sck->sid = req->sid;
     sck->ctm = time(NULL);
     sck->rdtm = sck->ctm;
@@ -1174,7 +1174,7 @@ static int sdrd_rsvr_del_conn_hdl(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr, list2_nod
     list2_delete(rsvr->conn_list, node);
 
     /* > 从SCK<->NODE映射表中剔除 */
-    sdrd_node_to_svr_map_del(ctx, curr->nodeid, rsvr->id);
+    sdrd_node_to_svr_map_del(ctx, curr->nid, rsvr->id);
 
     /* > 释放数据空间 */
     sdrd_rsvr_sck_free(rsvr, curr);
@@ -1342,7 +1342,7 @@ static int sdrd_rsvr_fill_send_buff(sdrd_rsvr_t *rsvr, sdrd_sck_t *sck)
 
         /* 3 取发送的数据 */
         head->type = htons(head->type);
-        head->nodeid = htonl(head->nodeid);
+        head->nid = htonl(head->nid);
         head->flag = head->flag;
         head->length = htonl(head->length);
         head->chksum = htonl(head->chksum);
@@ -1374,13 +1374,13 @@ static int sdrd_rsvr_fill_send_buff(sdrd_rsvr_t *rsvr, sdrd_sck_t *sck)
  ******************************************************************************/
 typedef struct
 {
-    int nodeid;                  /* 结点ID */
+    int nid;                    /* 结点ID */
     list_t *list;               /* 拥有相同NODE的套接字链表 */
 } conn_list_with_same_nodeid_t;
 
 static int sdrd_rsvr_conn_list_with_same_nodeid(sdrd_sck_t *sck, conn_list_with_same_nodeid_t *c)
 {
-    if (sck->nodeid != c->nodeid) {
+    if (sck->nid != c->nid) {
         return -1;
     }
 
@@ -1428,7 +1428,7 @@ static int sdrd_rsvr_dist_send_data(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr)
         opt.alloc = (mem_alloc_cb_t)mem_alloc;
         opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
-        conn.nodeid = frwd->dest;
+        conn.nid = frwd->dest;
         conn.list = list_creat(&opt);
         if (NULL == conn.list) {
             queue_dealloc(sendq, data);
@@ -1440,7 +1440,7 @@ static int sdrd_rsvr_dist_send_data(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr)
         if (0 == conn.list->num) {
             queue_dealloc(sendq, data);
             list_destroy(conn.list, mem_dummy_dealloc, NULL);
-            log_error(rsvr->log, "Didn't find connection by nodeid [%d]!", conn.nodeid);
+            log_error(rsvr->log, "Didn't find connection by nid [%d]!", conn.nid);
             continue;
         }
 
@@ -1460,7 +1460,7 @@ static int sdrd_rsvr_dist_send_data(sdrd_cntx_t *ctx, sdrd_rsvr_t *rsvr)
         head = (sdtp_header_t *)addr;
 
         head->type = frwd->type;
-        head->nodeid = frwd->dest;
+        head->nid = frwd->dest;
         head->flag = SDTP_EXP_MESG;
         head->chksum = SDTP_CHKSUM_VAL;
         head->length = frwd->length;
