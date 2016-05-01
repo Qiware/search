@@ -1,5 +1,5 @@
 <!-- 倒排服务配置信息 -->
-<INVTERD ID="30001">
+<INVERTD ID="30001">
     <!-- 倒排表配置 -->
     <INVT_TAB MAX="1024" />
 
@@ -12,4 +12,4 @@
         <RECVQ  MAX="4096" SIZE="4096" />                   <!-- 接收队列(MAX:总容量 SIZE:单元大小) -->
         <SENDQ  MAX="4096" SIZE="4096" />                   <!-- 发送队列(MAX:总容量 SIZE:单元大小) -->
     </FRWDER>
-</INVTERD>
+</INVERTD>
