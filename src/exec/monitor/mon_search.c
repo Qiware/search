@@ -113,6 +113,8 @@ static int mon_srch_recv_rsp(mon_cntx_t *ctx, mon_srch_conn_t *conn)
     int sec, msec, usec;
     mesg_header_t *head;
 
+    memset(addr, 0, sizeof(addr));
+
     /* > 接收应答数据 */
     n = read(conn->fd, (void *)addr, sizeof(mesg_header_t));
     gettimeofday(&ctm, NULL);
@@ -597,7 +599,7 @@ static int mon_srch_set_body(const char *words, char *body, int size)
     xml_add_attr(xml, node, "WORDS", words);
 
     /* > 计算XML长度 */
-    len = xml_pack_len(xml);
+    len = XML_PACK_LEN(xml);
     if (len >= size) {
         xml_destroy(xml);
         return -1;

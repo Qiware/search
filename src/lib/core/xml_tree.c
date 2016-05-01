@@ -222,7 +222,7 @@ int xml_node_free(xml_tree_t *xml, xml_node_t *node)
         curr = xml_free_next(xml, stack, curr);
     } while(NULL != curr);
 
-    if (!stack_empty(stack)) {
+    if (!stack_isempty(stack)) {
         stack_destroy(stack);
         log_error(xml->log, "Stack is not empty!");
         return XML_ERR_STACK;

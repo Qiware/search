@@ -17,13 +17,8 @@
 #define SRCH_CODE_ERR               "0001"  /* 异常错误 */
 #define SRCH_CODE_NO_DATA           "0002"  /* 无数据 */
 
-typedef struct {
-    xml_tree_t *xml;
-    xml_node_t *root;
-} invtd_search_trav_args_t;
-
 /* 静态函数 */
-static int invtd_search_list_trav(invt_word_doc_t *doc, invtd_search_trav_args_t *args);
+static int invtd_search_list_trav(invt_word_doc_t *doc, xml_tree_t *xml);
 static int invtd_search_no_data_hdl(xml_tree_t *xml);
 
 /******************************************************************************
@@ -118,10 +113,8 @@ static xml_tree_t *invtd_search_query(invtd_cntx_t *ctx, mesg_search_req_t *req)
     xml_tree_t *xml;
     xml_node_t *root;
     invt_dic_word_t *word;
-    invtd_search_trav_args_t args;
 
     memset(&opt, 0, sizeof(opt));
-    memset(&args, 0, sizeof(args));
 
     /* > 构建XML树 */
     opt.pool = NULL;
@@ -154,9 +147,7 @@ static xml_tree_t *invtd_search_query(invtd_cntx_t *ctx, mesg_search_req_t *req)
         }
 
         /* > 构建搜索结果 */
-        args.xml = xml;
-        args.root = root;
-        if (list_trav(word->doc_list, (trav_cb_t)invtd_search_list_trav, (void *)&args)) {
+        if (list_trav(word->doc_list, (trav_cb_t)invtd_search_list_trav, (void *)xml)) {
             pthread_rwlock_unlock(&ctx->invtab_lock);
             log_error(ctx->log, "Contribute respone list failed! words:%s", req->words);
             break;
@@ -213,14 +204,12 @@ static int invtd_search_no_data_hdl(xml_tree_t *xml)
  **注意事项:
  **作    者: # Qifeng.zou # 2016.05.04 01:33:38 #
  ******************************************************************************/
-static int invtd_search_list_trav(invt_word_doc_t *doc, invtd_search_trav_args_t *args)
+static int invtd_search_list_trav(invt_word_doc_t *doc, xml_tree_t *xml)
 {
-    xml_tree_t *xml;
     xml_node_t *root, *item;
     char freq[SRCH_SEG_FREQ_LEN];
 
-    xml = args->xml;
-    root = args->root;
+    root = xml->root->child;
 
     snprintf(freq, sizeof(freq), "%d", doc->freq);
 
@@ -257,12 +246,12 @@ static int invtd_search_send_and_free(invtd_cntx_t *ctx, xml_tree_t *xml,
     if (NULL == xml) { return 0; }
 
     /* > 发送搜索应答 */
-    body_len = xml_pack_len(xml);
+    body_len = XML_PACK_LEN(xml);
     total_len = MESG_TOTAL_LEN(body_len);
 
     do {
-        /* 申请内存空间 */
-        addr = (char *)calloc(1, total_len);
+        /* 申请内存空间(注: 多1个字符是为字串结束符'\0'预留空间) */
+        addr = (char *)calloc(1, total_len+1);
         if (NULL == addr) {
             break;
         }

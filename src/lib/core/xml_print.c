@@ -102,7 +102,7 @@ static xml_node_t *xml_fprint_next(
             fprintf(fp, "</%s>\n", top->name.str);
         }
 
-        if (stack_empty(stack)) {
+        if (stack_isempty(stack)) {
             log_error(xml->log, "Compelte fprint!");
             return NULL;
         }
@@ -128,7 +128,7 @@ static xml_node_t *xml_fprint_next(
                 fprintf(fp, "</%s>\n", top->name.str);
             }
 
-            if (stack_empty(stack)) {
+            if (stack_isempty(stack)) {
                 return NULL;    /* 处理完成 */
             }
 
@@ -192,7 +192,7 @@ int xml_fprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, FILE *fp)
         node = xml_fprint_next(xml, stack, node, fp);
     } while (NULL != node);
 
-    if (!stack_empty(stack)) {
+    if (!stack_isempty(stack)) {
         return XML_ERR_STACK;
     }
     return XML_OK;
@@ -325,7 +325,7 @@ static xml_node_t *xml_pack_next_len(
         return NULL;
     }
 
-    if (stack_empty(stack)) {
+    if (stack_isempty(stack)) {
         *len += len2;
         log_error(xml->log, "Compelte fprint!");
         return NULL;
@@ -348,7 +348,7 @@ static xml_node_t *xml_pack_next_len(
             len2 += top->name.len+3;
         }
 
-        if (stack_empty(stack)) {
+        if (stack_isempty(stack)) {
             *len += len2;
             return NULL;    /* 处理完成 */
         }
@@ -412,7 +412,7 @@ int xml_pack_node_len(xml_tree_t *xml, xml_node_t *root, Stack_t *stack)
         node = xml_pack_next_len(xml, stack, node, &len);
     } while (NULL != node);
 
-    if (!stack_empty(stack)) {
+    if (!stack_isempty(stack)) {
         return XML_ERR_STACK;
     }
 
@@ -534,7 +534,7 @@ static xml_node_t *xml_pack_next(
         sp->ptr += (top->name.len + 3);
     }
 
-    if (stack_empty(stack)) {
+    if (stack_isempty(stack)) {
         log_error(xml->log, "Compelte fprint!");
         return NULL;
     }
@@ -555,7 +555,7 @@ static xml_node_t *xml_pack_next(
             sp->ptr += (top->name.len + 3);
         }
 
-        if (stack_empty(stack)) {
+        if (stack_isempty(stack)) {
             return NULL;    /* 处理完成 */
         }
 
@@ -618,7 +618,7 @@ int xml_pack_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, sprint_t *s
         node = xml_pack_next(xml, stack, node, sp);
     } while (NULL != node);
 
-    if (!stack_empty(stack)) {
+    if (!stack_isempty(stack)) {
         log_error(xml->log, "Stack is not empty!");
         return XML_ERR_STACK;
     }
@@ -723,7 +723,7 @@ static xml_node_t *xml_sprint_next(
             sp->ptr += (top->name.len + 4);
         }
 
-        if (stack_empty(stack)) {
+        if (stack_isempty(stack)) {
             log_error(xml->log, "Compelte fprint!");
             return NULL;
         }
@@ -751,7 +751,7 @@ static xml_node_t *xml_sprint_next(
                 sp->ptr += (top->name.len + 4);
             }
 
-            if (stack_empty(stack)) {
+            if (stack_isempty(stack)) {
                 return NULL;    /* 处理完成 */
             }
 
@@ -815,7 +815,7 @@ int xml_sprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, sprint_t 
         node = xml_sprint_next(xml, stack, node, sp);
     } while(NULL != node);
 
-    if (!stack_empty(stack)) {
+    if (!stack_isempty(stack)) {
         log_error(xml->log, "Stack is not empty!");
         return XML_ERR_STACK;
     }

@@ -146,17 +146,21 @@ int xml_delete_child(xml_tree_t *xml, xml_node_t *node, xml_node_t *child);
 int xml_delete_empty(xml_tree_t *xml);
 
 int xml_set_value(xml_tree_t *xml, xml_node_t *node, const char *value);
+
 int xml_node_len(xml_tree_t *xml, xml_node_t *node);
-#define xml_tree_len(xml) xml_node_len(xml, xml->root->child)
+/* 功能: 返回格式化XML字串的实际长度LEN
+ * 注意: 必须申请(LEN + 1)存储XML字串, 多1个字符是为字串结束符'\0'预留空间 */
+#define XML_TREE_LEN(xml) xml_node_len(xml, xml->root->child)
 
 extern int _xml_pack_len(xml_tree_t *xml, xml_node_t *node);
-#define xml_pack_len(xml) _xml_pack_len(xml, xml->root)
+/* 功能: 返回非格式化XML字串的实际长度LEN
+ * 注意: 必须申请(LEN + 1)存储XML字串, 多1个字符是为字串结束符'\0'预留空间 */
+#define XML_PACK_LEN(xml) _xml_pack_len(xml, xml->root)
 
-#define xml_destroy(xml) \
-{ \
+#define xml_destroy(xml) do {\
     xml_node_free(xml, xml->root); \
     xml->dealloc(xml->pool, xml); \
     xml=NULL; \
-}
+} while(0)
 
 #endif /*__XML_TREE_H__*/
