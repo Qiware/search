@@ -36,24 +36,24 @@
     (isspace(ch) || XmlIsTableChar(ch) || XmlIsNLineChar(ch))
 
 
-#define xml_set_type(node, t) ((node)->type = (t))          /* 设置节点类型 */
-#define xml_set_flag(node, f) ((node)->flag |= (f))     	/* 设置节点标志 */
-#define xml_unset_flag(node, f) ((node)->flag &= ~(f))  	/* 清除节点某个标志 */
-#define xml_reset_flag(node) ((node)->flag = XML_NODE_HAS_NONE)   /* 重置节点标志 */
+#define xml_set_type(node, t) ((node)->type = (t))          /* 设置结点类型 */
+#define xml_set_flag(node, f) ((node)->flag |= (f))     	/* 设置结点标志 */
+#define xml_unset_flag(node, f) ((node)->flag &= ~(f))  	/* 清除结点某个标志 */
+#define xml_reset_flag(node) ((node)->flag = XML_NODE_HAS_NONE)   /* 重置结点标志 */
 
 #define xml_set_attr_flag(node)  xml_set_flag(node, XML_NODE_HAS_ATTR)   /* 设置有属性 */
 #define xml_unset_attr_flag(node)    xml_unset_flag(node, XML_NODE_HAS_ATTR) /* 设置无属性 */
 #define xml_set_child_flag(node) xml_set_flag(node, XML_NODE_HAS_CHILD)  /* 设置有孩子 */
 #define xml_unset_child_flag(node) xml_unset_flag(node, XML_NODE_HAS_CHILD)  /* 设置无孩子 */
-#define xml_set_value_flag(node) xml_set_flag(node, XML_NODE_HAS_VALUE)  /* 设置有节点值 */
-#define xml_unset_value_flag(node) xml_unset_flag(node, XML_NODE_HAS_VALUE)  /* 设置无节点值 */
+#define xml_set_value_flag(node) xml_set_flag(node, XML_NODE_HAS_VALUE)  /* 设置有结点值 */
+#define xml_unset_value_flag(node) xml_unset_flag(node, XML_NODE_HAS_VALUE)  /* 设置无结点值 */
 
-#define xml_is_attr(node) (XML_NODE_ATTR == (node)->type)   /* 节点是否为属性节点 */
-#define xml_is_child(node) (XML_NODE_CHILD == (node)->type) /* 节点是否为孩子节点 */
-#define xml_is_root(node) (XML_NODE_ROOT == (node)->type)   /* 节点是否为父亲节点 */
-#define xml_has_value(node) (XML_NODE_HAS_VALUE&(node)->flag) /* 节点是否有值 */
-#define xml_has_attr(node)  (XML_NODE_HAS_ATTR&(node)->flag)    /* 是否有属性节点 */
-#define xml_has_child(node) (XML_NODE_HAS_CHILD&(node)->flag)   /* 是否有孩子节点 */
+#define xml_is_attr(node) (XML_NODE_ATTR == (node)->type)   /* 结点是否为属性结点 */
+#define xml_is_child(node) (XML_NODE_CHILD == (node)->type) /* 结点是否为孩子结点 */
+#define xml_is_root(node) (XML_NODE_ROOT == (node)->type)   /* 结点是否为父亲结点 */
+#define xml_has_value(node) (XML_NODE_HAS_VALUE&(node)->flag) /* 结点是否有值 */
+#define xml_has_attr(node)  (XML_NODE_HAS_ATTR&(node)->flag)    /* 是否有属性结点 */
+#define xml_has_child(node) (XML_NODE_HAS_CHILD&(node)->flag)   /* 是否有孩子结点 */
 
 #define XML_BEGIN_FLAG      '<'	    /* 标签开始标志"<" */
 #define XML_VERS_FLAG       '?'	    /* 版本信息标志"<?xml " */
@@ -93,11 +93,11 @@ typedef enum
     , XML_ERR_CALLOC            /* calloc失败 */
     , XML_ERR_FORMAT            /* XML格式错误 */
     , XML_ERR_STACK             /* 栈出错 */
-    , XML_ERR_NODE_TYPE         /* 节点类型错误 */
+    , XML_ERR_NODE_TYPE         /* 结点类型错误 */
     , XML_ERR_GET_ATTR          /* 属性获取失败 */
     , XML_ERR_GET_NAME          /* 标签名获取失败 */
     , XML_ERR_MARK_MISMATCH     /* 标签不匹配 */
-    , XML_ERR_CREAT_NODE        /* 新建节点失败 */
+    , XML_ERR_CREAT_NODE        /* 新建结点失败 */
     , XML_ERR_PTR_NULL          /* 空指针 */
     , XML_ERR_EMPTY_TREE        /* 空树 */
     , XML_ERR_FOPEN             /* fopen失败 */

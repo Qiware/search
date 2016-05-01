@@ -358,6 +358,7 @@ static int rtmq_proxy_cli_cmd_send_req(rtmq_proxy_t *pxy, int idx)
     rtmq_proxy_ssvr_usck_path(conf, path, idx);
 
     if (spin_trylock(&pxy->cmd_sck_lck)) {
+        log_debug(pxy->log, "Try lock failed!");
         return RTMQ_OK;
     }
 

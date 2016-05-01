@@ -462,6 +462,8 @@ static int rtmq_rsvr_trav_send(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr)
         curr = (rtmq_sck_t *)node->data;
 
         if (FD_ISSET(curr->fd, &rsvr->wrset)) {
+            log_trace(ctx->log, "Stream is writable! fd:%d nid:%d sid:%d",
+                    curr->fd, curr->nodeid, curr->sid);
             curr->wrtm = rsvr->ctm;
             send = &curr->send;
 
@@ -483,6 +485,8 @@ static int rtmq_rsvr_trav_send(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr)
                     return RTMQ_ERR;
                 }
                 else {
+                    log_trace(ctx->log, "Stream is writable! fd:%d nid:%d sid:%d n:%d",
+                            curr->fd, curr->nodeid, curr->sid, n);
                     /* 删除已发送内容 */
                     wiov_item_adjust(send, n);
                     break;
@@ -904,12 +908,15 @@ static int rtmq_rsvr_keepalive_req_hdl(rtmq_cntx_t *ctx,
  ******************************************************************************/
 static int rtmq_rsvr_link_auth_rsp(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t *sck)
 {
+    int len;
     void *addr;
     rtmq_header_t *head;
     rtmq_link_auth_rsp_t *link_auth_rsp;
 
     /* > 分配消息空间 */
-    addr = calloc(1, sizeof(rtmq_header_t) + sizeof(rtmq_link_auth_rsp_t));
+    len = sizeof(rtmq_header_t) + sizeof(rtmq_link_auth_rsp_t);
+
+    addr = (void *)calloc(1, len);
     if (NULL == addr) {
         log_error(rsvr->log, "Alloc memory failed!");
         return RTMQ_ERR;
@@ -1597,10 +1604,13 @@ static int rtmq_rsvr_dist_data(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr)
 
             sck = (rtmq_sck_t *)list_fetch(cl.list, rand()%cl.list->num);
             
+            log_trace(ctx->log, "Select upstream! fd:%d nid:%d sid:%d",
+                    sck->fd, sck->nodeid, sck->sid);
+
             /* > 设置发送数据 */
             len = sizeof(rtmq_header_t) + frwd->length;
 
-            addr = calloc(1, len);
+            addr = (void *)calloc(1, len);
             if (NULL == addr) {
                 queue_dealloc(sendq, data[idx]);
                 list_destroy(cl.list, mem_dummy_dealloc, NULL);
@@ -1626,7 +1636,8 @@ static int rtmq_rsvr_dist_data(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr)
                 log_error(rsvr->log, "Push input list failed!");
             }
 
-            list_destroy(cl.list, mem_dummy_dealloc, NULL); /* 无需是否结点数据空间 */
+            /* > 回收内存空间[注: 无需释放结点数据空间] */
+            list_destroy(cl.list, mem_dummy_dealloc, NULL);
         }
     }
 

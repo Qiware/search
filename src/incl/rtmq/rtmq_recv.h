@@ -149,7 +149,7 @@ typedef struct
                                            此队列, 再从此队列分发到不同的线程队列 */
 
     pthread_rwlock_t node_to_svr_map_lock;  /* 读写锁: NODE->SVR映射表 */
-    avl_tree_t *node_to_svr_map;         /* NODE->SVR的映射表(以nodeid为主键) */
+    avl_tree_t *node_to_svr_map;         /* NODE->SVR的映射表(以nodeid为主键 rtmq_node_to_svr_map_t) */
 
     rtmq_sub_mgr_t sub_mgr;             /* 订阅管理 */
 } rtmq_cntx_t;

@@ -57,12 +57,12 @@ static const xml_esc_t g_xml_esc_str[] =
 
 /******************************************************************************
  **函数名称: xml_node_creat
- **功    能: 创建XML节点
+ **功    能: 创建XML结点
  **输入参数:
  **     xml: XML树
- **     type: 节点类型(xml_node_type_e)
+ **     type: 结点类型(xml_node_type_e)
  **输出参数: NONE
- **返    回: 节点地址
+ **返    回: 结点地址
  **实现描述:
  **注意事项:
  **作    者: # Qifeng.zou # 2013.02.18 #
@@ -83,14 +83,14 @@ xml_node_t *xml_node_creat(xml_tree_t *xml, xml_node_type_e type)
 
 /******************************************************************************
  **函数名称: xml_node_creat_ext
- **功    能: 创建XML节点
+ **功    能: 创建XML结点
  **输入参数:
  **     xml: XML树
- **     type: 节点类型(xml_node_type_e)
- **     name: 节点名
- **     vlaue: 节点值
+ **     type: 结点类型(xml_node_type_e)
+ **     name: 结点名
+ **     vlaue: 结点值
  **输出参数: NONE
- **返    回: 节点地址
+ **返    回: 结点地址
  **实现描述:
  **注意事项:
  **作    者: # Qifeng.zou # 2013.06.11 #
@@ -101,7 +101,7 @@ xml_node_t *xml_node_creat_ext(xml_tree_t *xml,
     int size;
     xml_node_t *node;
 
-    /* 1. 创建节点 */
+    /* 1. 创建结点 */
     node = (xml_node_t*)xml->alloc(xml->pool, sizeof(xml_node_t));
     if (NULL == node) {
         return NULL;
@@ -109,7 +109,7 @@ xml_node_t *xml_node_creat_ext(xml_tree_t *xml,
 
     xml_node_init(node, type);
 
-    /* 2. 设置节点名 */
+    /* 2. 设置结点名 */
     size = strlen(name) + 1;
     node->name.str = (char *)xml->alloc(xml->pool, size);
     if (NULL == node->name.str) {
@@ -119,7 +119,7 @@ xml_node_t *xml_node_creat_ext(xml_tree_t *xml,
 
     node->name.len = snprintf(node->name.str, size, "%s", name);
 
-    /* 3. 设置节点值 */
+    /* 3. 设置结点值 */
     if (xml_set_value(xml, node, value)) {
         xml_node_free_one(xml, node);
         return NULL;
@@ -155,7 +155,7 @@ xml_tree_t *xml_init(xml_opt_t *opt)
     xml->alloc = opt->alloc;
     xml->dealloc = opt->dealloc;
 
-    /* 2. 创建根节点 */
+    /* 2. 创建根结点 */
     root = (xml_node_t *)opt->alloc(opt->pool, sizeof(xml_node_t));
     if (NULL == root) {
         opt->dealloc(opt->pool, xml);
@@ -277,7 +277,7 @@ int xml_parse(xml_tree_t *xml, Stack_t *stack, const char *str, size_t len)
                         }
                         break;
                     }
-                    case XML_END_FLAG:   /* "</" 节点结束 */
+                    case XML_END_FLAG:   /* "</" 结点结束 */
                     {
                         if (xml_parse_end(xml, stack, &parse)) {
                             log_error(xml->log, "XML format is wrong![%-.32s] [%ld]",
@@ -286,7 +286,7 @@ int xml_parse(xml_tree_t *xml, Stack_t *stack, const char *str, size_t len)
                         }
                         break;
                     }
-                    default:    /* "<XYZ" 节点开始 */
+                    default:    /* "<XYZ" 结点开始 */
                     {
                         if (xml_parse_mark(xml, stack, &parse)) {
                             log_error(xml->log, "Parse XML failed! [%-.32s] [%ld]",
@@ -434,7 +434,7 @@ static int xml_parse_note(xml_tree_t *xml, xml_parse_t *parse)
 
     parse->ptr += XML_NOTE_BEGIN_LEN; /* 跳过注释开头"<!--" */
 
-    /* 因在注释信息的节点中不允许出现"-->"，所以可使用如下匹配查找结束 */
+    /* 因在注释信息的结点中不允许出现"-->"，所以可使用如下匹配查找结束 */
     ptr = strstr(parse->ptr, XML_NOTE_END1);
     if ((NULL == ptr) || (XML_NOTE_END2 != *(ptr + XML_NOTE_END1_LEN))) {
         log_error(xml->log, "XML format is wrong![%-.32s]", parse->ptr);
@@ -462,7 +462,7 @@ static int xml_parse_note(xml_tree_t *xml, xml_parse_t *parse)
 
 /******************************************************************************
  **函数名称: xml_parse_mark
- **功    能: 处理标签节点
+ **功    能: 处理标签结点
  **输入参数:
  **     xml: XML树
  **     stack: XML栈
@@ -526,7 +526,7 @@ static int xml_parse_mark(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse)
 
 /******************************************************************************
  **函数名称: xml_parse_end
- **功    能: 处理结束节点(处理</XXX>格式的结束)
+ **功    能: 处理结束结点(处理</XXX>格式的结束)
  **输入参数:
  **     stack: XML栈
  **     parse: 解析文件缓存信息
@@ -545,7 +545,7 @@ static int xml_parse_end(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse)
     parse->ptr += XML_MARK_END2_LEN; /* 跳过</ */
     ptr = parse->ptr;
 
-    /* 1. 确定结束节点名长度 */
+    /* 1. 确定结束结点名长度 */
     while (XmlIsMarkChar(*ptr)) { ++ptr; }
 
     if (!XmlIsRPBrackChar(*ptr)) {
@@ -555,14 +555,14 @@ static int xml_parse_end(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse)
 
     len = ptr - parse->ptr;
 
-    /* 2. 获取栈中顶节点信息 */
+    /* 2. 获取栈中顶结点信息 */
     top = (xml_node_t*)stack_pop(stack);
     if (NULL == top) {
         log_error(xml->log, "Get stack top member failed!");
         return XML_ERR_STACK;
     }
 
-    /* 3. 节点名是否一致 */
+    /* 3. 结点名是否一致 */
     if (len != top->name.len
         || (0 != strncmp(top->name.str, parse->ptr, len)))
     {
@@ -587,8 +587,8 @@ static int xml_parse_end(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse)
  **返    回: 0: 成功  !0: 失败
  **实现描述:
  **注意事项:
- **     1. 因新建节点已加入XML树中，因此在此不必去释放新节点的内存空间
- **     2. 此时tail用来记录孩子节点链表尾
+ **     1. 因新建结点已加入XML树中，因此在此不必去释放新结点的内存空间
+ **     2. 此时tail用来记录孩子结点链表尾
  **作    者: # Qifeng.zou # 2013.02.23 #
  ******************************************************************************/
 static int xml_mark_get_name(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse)
@@ -597,14 +597,14 @@ static int xml_mark_get_name(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse
     xml_node_t *node, *top;
     const char *ptr = parse->ptr;
 
-    /* 1. 新建节点，并初始化 */
+    /* 1. 新建结点，并初始化 */
     node = xml_node_creat(xml, XML_NODE_UNKNOWN);
     if (NULL == node) {
         log_error(xml->log, "Create xml node failed!");
         return XML_ERR_CREAT_NODE;
     }
 
-    /* 2. 将节点加入XML树中 */
+    /* 2. 将结点加入XML树中 */
     if (stack_isempty(stack)) {
         if (NULL == xml->root->tail) {
             xml->root->child = node;
@@ -631,7 +631,7 @@ static int xml_mark_get_name(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse
         xml_set_child_flag(top);
     }
 
-    /* 3. 确定节点名长度 */
+    /* 3. 确定结点名长度 */
     while (XmlIsMarkChar(*ptr)) { ++ptr; }
 
     /* 4.判断标签名边界是否合法 */
@@ -642,7 +642,7 @@ static int xml_mark_get_name(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse
 
     len = ptr - parse->ptr;
 
-    /* 5. 提取出节点名 */
+    /* 5. 提取出结点名 */
     node->name.str = (char *)xml->alloc(xml->pool, len + 1);
     if (NULL == node->name.str) {
         log_error(xml->log, "Calloc failed!");
@@ -653,7 +653,7 @@ static int xml_mark_get_name(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse
     node->name.len = len;
     node->name.str[len] = '\0';
 
-    /* 6. 将节点入栈 */
+    /* 6. 将结点入栈 */
     if (stack_push(stack, (void*)node)) {
         log_error(xml->log, "Stack push failed!");
         return XML_ERR_STACK;
@@ -666,7 +666,7 @@ static int xml_mark_get_name(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse
 
 /******************************************************************************
  **函数名称: xml_mark_has_attr
- **功    能: 判断标签是否有属性节点
+ **功    能: 判断标签是否有属性结点
  **输入参数:
  **     parse: 解析文件缓存信息
  **输出参数:
@@ -732,9 +732,9 @@ static int xml_mark_get_attr(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse
         return XML_ERR_STACK;
     }
 
-    /* 3. 将属性节点依次加入标签子节点链表 */
+    /* 3. 将属性结点依次加入标签子结点链表 */
     do {
-        /* 3.1 新建节点，并初始化 */
+        /* 3.1 新建结点，并初始化 */
         node = xml_node_creat(xml, XML_NODE_ATTR);
         if (NULL == node) {
             log_error(xml->log, "Create xml node failed!");
@@ -849,8 +849,8 @@ static int xml_mark_get_attr(xml_tree_t *xml, Stack_t *stack, xml_parse_t *parse
             node->value.str[len] = '\0';
         }
 
-        /* 3.4 将节点加入属性链表 */
-        if (NULL == top->tail) { /* 还没有孩子节点 */
+        /* 3.4 将结点加入属性链表 */
+        if (NULL == top->tail) { /* 还没有孩子结点 */
             top->child = node;
         }
         else {
@@ -897,7 +897,7 @@ static int xml_mark_is_end(xml_parse_t *parse)
 
     while (XmlIsIgnoreChar(*ptr)) { ++ptr; }
 
-    /* 1. 是否有节点值 */
+    /* 1. 是否有结点值 */
     if (strncmp(ptr, XML_MARK_END1, XML_MARK_END1_LEN)) {
         return false;
     }
@@ -906,7 +906,7 @@ static int xml_mark_is_end(xml_parse_t *parse)
 
 /******************************************************************************
  **函数名称: xml_mark_has_value
- **功    能: 是否有节点值
+ **功    能: 是否有结点值
  **输入参数:
  **     parse: 解析文件缓存信息
  **输出参数:
@@ -928,7 +928,7 @@ static int xml_mark_has_value(xml_parse_t *parse)
         while (XmlIsIgnoreChar(*ptr)) { ++ptr; }
 
         parse->ptr = ptr;
-        if (XmlIsLPBrackChar(*ptr)) { /* 出现子节点 */
+        if (XmlIsLPBrackChar(*ptr)) { /* 出现子结点 */
             return XML_NO_VALUE;
         }
         return XML_HAS_VALUE;
@@ -939,7 +939,7 @@ static int xml_mark_has_value(xml_parse_t *parse)
 
 /******************************************************************************
  **函数名称: xml_mark_get_value
- **功    能: 获取节点值
+ **功    能: 获取结点值
  **输入参数:
  **     stack: XML栈
  **     parse: 解析文件缓存信息
@@ -978,7 +978,7 @@ static int xml_mark_get_value(xml_tree_t *xml, Stack_t *stack, xml_parse_t *pars
 
     parse->ptr = p1;
 
-    /* 提取节点值: 允许节点值中出现空格和换行符 */
+    /* 提取结点值: 允许结点值中出现空格和换行符 */
     while (!XmlIsStrEndChar(*p1) && (border != *p1))
     {
     #if defined(__XML_ESC_PARSE__)
@@ -1062,7 +1062,7 @@ static int xml_mark_get_value(xml_tree_t *xml, Stack_t *stack, xml_parse_t *pars
     xml_set_value_flag(curr);
 
 #if defined(__XML_EITHER_CHILD_OR_VALUE__)
-    /* 判断：有数值的情况下，是否还有孩子节点 */
+    /* 判断：有数值的情况下，是否还有孩子结点 */
     if ((XML_BEGIN_FLAG == *p2) && (XML_END_FLAG == *(p2+1))) {
         return XML_OK;
     }
@@ -1076,10 +1076,10 @@ static int xml_mark_get_value(xml_tree_t *xml, Stack_t *stack, xml_parse_t *pars
 
 /******************************************************************************
  **函数名称: xml_node_free_one
- **功    能: 释放单个节点
+ **功    能: 释放单个结点
  **输入参数:
  **     xml: XML树
- **     node: 需要被释放的节点
+ **     node: 需要被释放的结点
  **输出参数:
  **返    回: 0: 成功  !0: 失败
  **实现描述:
@@ -1102,12 +1102,12 @@ int xml_node_free_one(xml_tree_t *xml, xml_node_t *node)
 
 /******************************************************************************
  **函数名称: xml_free_next
- **功    能: 获取下一个需要被处理的节点
+ **功    能: 获取下一个需要被处理的结点
  **输入参数:
  **     stack: 栈
- **     curr: 当前正在处理的节点
+ **     curr: 当前正在处理的结点
  **输出参数:
- **返    回: 下一个需要处理的节点
+ **返    回: 下一个需要处理的结点
  **实现描述:
  **注意事项:
  **作    者: # Qifeng.zou # 2013.02.27 #
@@ -1116,15 +1116,15 @@ xml_node_t *xml_free_next(xml_tree_t *xml, Stack_t *stack, xml_node_t *curr)
 {
     xml_node_t *child, *top;
 
-    /* 1. 释放孩子节点 */
-    if (NULL != curr->temp) {     /* 首先: 处理孩子节点: 选出下一个孩子节点 */
+    /* 1. 释放孩子结点 */
+    if (NULL != curr->temp) {     /* 首先: 处理孩子结点: 选出下一个孩子结点 */
         child = curr->temp;
         curr->temp = child->next;
         curr = child;
         return curr;
     }
-    else {                          /* 再次: 处理其兄弟节点: 选出下一个兄弟节点 */
-        /* 1. 弹出已经处理完成的节点, 并释放 */
+    else {                          /* 再次: 处理其兄弟结点: 选出下一个兄弟结点 */
+        /* 1. 弹出已经处理完成的结点, 并释放 */
         top = stack_pop(stack);
         if (NULL == top) {
             log_error(xml->log, "Stack pop failed!");
@@ -1136,11 +1136,11 @@ xml_node_t *xml_free_next(xml_tree_t *xml, Stack_t *stack, xml_node_t *curr)
             return NULL;
         }
 
-        /* 2. 处理其下一个兄弟节点 */
+        /* 2. 处理其下一个兄弟结点 */
         curr = top->next;
         xml_node_free_one(xml, top);
-        while (NULL == curr) {   /* 所有兄弟节点已经处理完成，说明父亲节点也处理完成 */
-            /* 3. 父亲节点出栈 */
+        while (NULL == curr) {   /* 所有兄弟结点已经处理完成，说明父亲结点也处理完成 */
+            /* 3. 父亲结点出栈 */
             top = stack_pop(stack);
             if (NULL == top) {
                 log_error(xml->log, "Stack pop failed!");
@@ -1152,7 +1152,7 @@ xml_node_t *xml_free_next(xml_tree_t *xml, Stack_t *stack, xml_node_t *curr)
                 return NULL;
             }
 
-            /* 5. 选择父亲的兄弟节点 */
+            /* 5. 选择父亲的兄弟结点 */
             curr = top->next;
             xml_node_free_one(xml, top);
         }
@@ -1163,15 +1163,15 @@ xml_node_t *xml_free_next(xml_tree_t *xml, Stack_t *stack, xml_node_t *curr)
 
 /******************************************************************************
  **函数名称: xml_delete_child
- **功    能: 从孩子节点链表中删除指定的孩子节点
+ **功    能: 从孩子结点链表中删除指定的孩子结点
  **输入参数:
- **     node: 需要删除孩子节点的节点
- **     child: 孩子节点
+ **     node: 需要删除孩子结点的结点
+ **     child: 孩子结点
  **输出参数:
  **返    回: 0: 成功  !0: 失败
  **实现描述:
  **注意事项:
- **     从树中删除的节点，只是从树中被剥离出来，其相关内存并没有被释放.
+ **     从树中删除的结点，只是从树中被剥离出来，其相关内存并没有被释放.
  **     释放时需调用函数xml_node_free()
  **作    者: # Qifeng.zou # 2013.03.02 #
  ******************************************************************************/
@@ -1184,7 +1184,7 @@ int xml_delete_child(xml_tree_t *xml, xml_node_t *node, xml_node_t *child)
         return XML_ERR_PTR;
     }
 
-    if (node->child == child) {  /* 1. 要删的是子节点链表的开始节点 */
+    if (node->child == child) {  /* 1. 要删的是子结点链表的开始结点 */
         node->child = child->next;  /* 剔除链表 */
         if (NULL == node->child) {
             node->tail = NULL;
@@ -1220,7 +1220,7 @@ int xml_delete_child(xml_tree_t *xml, xml_node_t *node, xml_node_t *child)
 	return XML_OK;
 }
 
-/* 打印节点名长度(注: XML有层次格式) */
+/* 打印结点名长度(注: XML有层次格式) */
 #define xml_node_name_len(node, depth, len) \
 { \
     while (depth > 1) { \
@@ -1232,7 +1232,7 @@ int xml_delete_child(xml_tree_t *xml, xml_node_t *node, xml_node_t *child)
     len += (node->name.len + 1); \
 }
 
-/* 打印属性节点长度(注: XML有层次格式) */
+/* 打印属性结点长度(注: XML有层次格式) */
 #define xml_node_attr_len(node, len) \
 { \
     while (NULL != node->temp) { \
@@ -1246,11 +1246,11 @@ int xml_delete_child(xml_tree_t *xml, xml_node_t *node, xml_node_t *child)
     } \
 }
 
-/* 打印节点值长度(注: XML有层次格式) */
+/* 打印结点值长度(注: XML有层次格式) */
 #define xml_node_value_len(node, len) \
 { \
     if (xml_has_value(node)) { \
-        if (xml_has_child(node)) { /* 此时temp指向node的孩子节点 或 NULL */ \
+        if (xml_has_child(node)) { /* 此时temp指向node的孩子结点 或 NULL */ \
             /* fprintf(fp, ">%s\n", node->value); */ \
             len += (node->value.len + 2); \
         } \
@@ -1260,7 +1260,7 @@ int xml_delete_child(xml_tree_t *xml, xml_node_t *node, xml_node_t *child)
         } \
     } \
     else { \
-        if (NULL != node->temp) { /* 此时temp指向node的孩子节点 或 NULL */ \
+        if (NULL != node->temp) { /* 此时temp指向node的孩子结点 或 NULL */ \
             /* fprintf(fp, ">\n"); */ \
             len += 2; \
         } \
@@ -1273,9 +1273,9 @@ int xml_delete_child(xml_tree_t *xml, xml_node_t *node, xml_node_t *child)
 
 /******************************************************************************
  **函数名称: xml_node_next_len
- **功    能: 获取下一个要处理的节点，并计算当前结束节点的长度(注: XML有层次结构)
+ **功    能: 获取下一个要处理的结点，并计算当前结束结点的长度(注: XML有层次结构)
  **输入参数:
- **     root: XML树根节点
+ **     root: XML树根结点
  **     stack: 栈
  **输出参数:
  **返    回: 0:成功 !0:失败
@@ -1289,7 +1289,7 @@ static xml_node_t *xml_node_next_len(
     xml_node_t *top, *child;
     int depth, level, len2;
 
-    /* 首先: 处理孩子节点: 选出下一个孩子节点 */
+    /* 首先: 处理孩子结点: 选出下一个孩子结点 */
     if (NULL != node->temp) {
         child = node->temp;
         node->temp = child->next;
@@ -1297,11 +1297,11 @@ static xml_node_t *xml_node_next_len(
         return node;
     }
 
-    /* 再次: 处理其兄弟节点: 选出下一个兄弟节点 */
+    /* 再次: 处理其兄弟结点: 选出下一个兄弟结点 */
 
     len2 = 0;
 
-    /* 1. 弹出已经处理完成的节点 */
+    /* 1. 弹出已经处理完成的结点 */
     top = stack_gettop(stack);
     if (xml_has_child(top)) {
         depth = stack_depth(stack);
@@ -1327,10 +1327,10 @@ static xml_node_t *xml_node_next_len(
         return NULL;
     }
 
-    /* 2. 处理其下一个兄弟节点 */
+    /* 2. 处理其下一个兄弟结点 */
     node = top->next;
-    while (NULL == node) {   /* 所有兄弟节点已经处理完成，说明父亲节点也处理完成 */
-        /* 3. 父亲节点出栈 */
+    while (NULL == node) {   /* 所有兄弟结点已经处理完成，说明父亲结点也处理完成 */
+        /* 3. 父亲结点出栈 */
         top = stack_pop(stack);
         if (NULL == top) {
             *len += len2;
@@ -1338,7 +1338,7 @@ static xml_node_t *xml_node_next_len(
             return NULL;
         }
 
-        /* 4. 打印父亲节点结束标志 */
+        /* 4. 打印父亲结点结束标志 */
         if (xml_has_child(top)) {
             depth = stack_depth(stack);
             level = depth + 1;
@@ -1356,7 +1356,7 @@ static xml_node_t *xml_node_next_len(
             return NULL;    /* 处理完成 */
         }
 
-        /* 5. 选择父亲的兄弟节点 */
+        /* 5. 选择父亲的兄弟结点 */
         node = top->next;
     }
 
@@ -1366,12 +1366,12 @@ static xml_node_t *xml_node_next_len(
 
 /******************************************************************************
  **函数名称: _xml_node_len
- **功    能: 计算节点打印成XML格式字串时的长度(注: XML有层次结构)
+ **功    能: 计算结点打印成XML格式字串时的长度(注: XML有层次结构)
  **输入参数:
- **     root: XML树根节点
+ **     root: XML树根结点
  **     stack: 栈
  **输出参数:
- **返    回: 节点及其属性、孩子节点的总长度
+ **返    回: 结点及其属性、孩子结点的总长度
  **实现描述:
  **注意事项:
  **作    者: # Qifeng.zou # 2013.06.10 #
@@ -1390,29 +1390,28 @@ int _xml_node_len(xml_tree_t *xml, xml_node_t *root, Stack_t *stack)
     len = 0;
 
     do {
-        /* 1. 将要处理的节点压栈 */
+        /* 1. 将要处理的结点压栈 */
         node->temp = node->child;
         if (stack_push(stack, node)) {
             log_error(xml->log, "Stack push failed!");
             return XML_ERR_STACK;
         }
 
-        /* 2. 打印节点名 */
+        /* 2. 打印结点名 */
         depth = stack_depth(stack);
 
         xml_node_name_len(node, depth, len);
 
-        /* 3. 打印属性节点 */
+        /* 3. 打印属性结点 */
         if (xml_has_attr(node)) {
             xml_node_attr_len(node, len);
         }
 
-        /* 4. 打印节点值 */
+        /* 4. 打印结点值 */
         xml_node_value_len(node, len);
 
-        /* 5. 选择下一个处理的节点: 从父亲节点、兄弟节点、孩子节点中 */
+        /* 5. 选择下一个处理的结点: 从父亲结点、兄弟结点、孩子结点中 */
         node = xml_node_next_len(xml, stack, node, &len);
-
     }while (NULL != node);
 
     if (!stack_isempty(stack)) {

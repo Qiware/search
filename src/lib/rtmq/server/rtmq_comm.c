@@ -108,7 +108,7 @@ int rtmq_node_to_svr_map_add(rtmq_cntx_t *ctx, int nodeid, int rsvr_id)
     /* > 查找是否已经存在 */
     map = avl_query(ctx->node_to_svr_map, &nodeid, sizeof(nodeid));
     if (NULL == map) {
-        map = calloc(1, sizeof(rtmq_node_to_svr_map_t));
+        map = (rtmq_node_to_svr_map_t *)calloc(1, sizeof(rtmq_node_to_svr_map_t));
         if (NULL == map) {
             pthread_rwlock_unlock(&ctx->node_to_svr_map_lock); /* 解锁 */
             log_error(ctx->log, "Alloc memory failed!");
@@ -199,7 +199,7 @@ int rtmq_node_to_svr_map_del(rtmq_cntx_t *ctx, int nodeid, int rsvr_id)
  ******************************************************************************/
 int rtmq_node_to_svr_map_rand(rtmq_cntx_t *ctx, int nodeid)
 {
-    int id;
+    int rsvr_id;
     rtmq_node_to_svr_map_t *map;
 
     pthread_rwlock_rdlock(&ctx->node_to_svr_map_lock);
@@ -213,11 +213,11 @@ int rtmq_node_to_svr_map_rand(rtmq_cntx_t *ctx, int nodeid)
     }
 
     /* > 选择服务ID */
-    id = map->rsvr_id[rand() % map->num]; /* 随机选择 */
+    rsvr_id = map->rsvr_id[rand() % map->num]; /* 随机选择 */
 
     pthread_rwlock_unlock(&ctx->node_to_svr_map_lock);
 
-    return id;
+    return rsvr_id;
 }
 
 /******************************************************************************
