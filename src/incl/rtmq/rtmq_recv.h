@@ -160,7 +160,7 @@ int rtmq_register(rtmq_cntx_t *ctx, int type, rtmq_reg_cb_t proc, void *args);
 int rtmq_launch(rtmq_cntx_t *ctx);
 
 int rtmq_sub_query(rtmq_cntx_t *ctx, mesg_type_e type);
-int rtmq_send(rtmq_cntx_t *ctx, int type, int dest, void *data, size_t len);
+int rtmq_async_send(rtmq_cntx_t *ctx, int type, int dest, void *data, size_t len);
 
 /* 内部接口 */
 int rtmq_lsn_init(rtmq_cntx_t *ctx);

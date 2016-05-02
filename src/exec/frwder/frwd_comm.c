@@ -139,17 +139,17 @@ frwd_cntx_t *frwd_init(const frwd_conf_t *conf, log_cycle_t *log)
             break;
         }
 
-        /* > 初始化UpStream服务 */
+        /* > 初始化RTMQ服务 */
         frwd->upstrm = rtmq_init(&conf->upstrm, frwd->log);
         if (NULL == frwd->upstrm) {
-            log_fatal(frwd->log, "Initialize send-server failed!");
+            log_fatal(frwd->log, "Initialize upstream server failed!");
             break;
         }
 
         /* > 初始化DownStream服务 */
         frwd->downstrm = rtmq_init(&conf->downstrm, frwd->log);
         if (NULL == frwd->downstrm) {
-            log_fatal(frwd->log, "Initialize send-server failed!");
+            log_fatal(frwd->log, "Initialize downstream server failed!");
             break;
         }
 

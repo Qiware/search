@@ -10,6 +10,7 @@
 #include "comm.h"
 #include "mesg.h"
 #include "frwd.h"
+#include "redo.h"
 #include "agent.h"
 #include "frwd_conf.h"
 
@@ -40,34 +41,37 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    /* > 加载配置信息 */
-    if (frwd_load_conf(opt.conf_path, &conf, log)) {
-        fprintf(stderr, "Load configuration failed!\n");
-        return FRWD_ERR;
-    }
+    do {
+        /* > 加载配置信息 */
+        if (frwd_load_conf(opt.conf_path, &conf, log)) {
+            log_error(log, "Load configuration failed!");
+            break;
+        }
 
-    /* > 初始化服务 */
-    frwd = frwd_init(&conf, log);
-    if (NULL == frwd) {
-        fprintf(stderr, "Initialize frwder failed!\n");
-        return FRWD_ERR;
-    }
+        /* > 初始化服务 */
+        frwd = frwd_init(&conf, log);
+        if (NULL == frwd) {
+            log_error(log, "Initialize frwder failed!");
+            break;
+        }
 
-    /* > 注册处理回调 */
-    if (frwd_set_reg(frwd)) {
-        log_fatal(frwd->log, "Register callback failed!");
-        return FRWD_ERR;
-    }
+        /* > 注册处理回调 */
+        if (frwd_set_reg(frwd)) {
+            log_fatal(frwd->log, "Register callback failed!");
+            break;
+        }
 
-    /* > 启动转发服务 */
-    if (frwd_launch(frwd)) {
-        log_fatal(frwd->log, "Startup frwder failed!");
-        return FRWD_ERR;
-    }
+        /* > 启动转发服务 */
+        if (frwd_launch(frwd)) {
+            log_fatal(frwd->log, "Startup frwder failed!");
+            break;
+        }
 
-    while (1) { pause(); }
+        while (1) { pause(); }
+    } while (0);
 
-    log_fatal(frwd->log, "Exit frwder server!");
+    log_fatal(log, "Exit frwder server!");
+    Sleep(3);
 
     return 0;
 }

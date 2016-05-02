@@ -29,6 +29,7 @@ void rtmq_recvs_destroy(void *_ctx, void *param);
 static int rtmq_creat_workers(rtmq_cntx_t *ctx);
 void rtmq_workers_destroy(void *_ctx, void *param);
 
+static int rtmq_lock_server(const rtmq_conf_t *conf);
 static int rtmq_proc_def_hdl(int type, int orig, char *buff, size_t len, void *param);
 
 /******************************************************************************
@@ -48,7 +49,6 @@ static int rtmq_proc_def_hdl(int type, int orig, char *buff, size_t len, void *p
  ******************************************************************************/
 rtmq_cntx_t *rtmq_init(const rtmq_conf_t *cf, log_cycle_t *log)
 {
-    int fd;
     rtmq_cntx_t *ctx;
     rtmq_conf_t *conf;
     char path[FILE_NAME_MAX_LEN];
@@ -67,18 +67,9 @@ rtmq_cntx_t *rtmq_init(const rtmq_conf_t *cf, log_cycle_t *log)
 
     do {
         /* > 锁住指定文件(注: 防止路径和结点ID相同的配置) */
-        rtmq_lock_path(conf, path);
-
-        fd = Open(path, O_CREAT|O_RDWR|O_DIRECT, OPEN_MODE);
-        if (fd < 0) {
-            log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
+        if (rtmq_lock_server(conf)) {
+            log_error(ctx->log, "Lock path failed!");
             break;
-        }
-
-        if (proc_try_wrlock(fd)) {
-            CLOSE(fd);
-            log_error(log, "Lock failed! errmsg:[%d] %s!", errno, strerror(errno));
-            return NULL;
         }
 
         /* > 创建通信套接字 */
@@ -239,7 +230,7 @@ int rtmq_register(rtmq_cntx_t *ctx, int type, rtmq_reg_cb_t proc, void *param)
 }
 
 /******************************************************************************
- **函数名称: rtmq_send
+ **函数名称: rtmq_async_send
  **功    能: 接收客户端发送数据
  **输入参数:
  **     ctx: 全局对象
@@ -253,7 +244,7 @@ int rtmq_register(rtmq_cntx_t *ctx, int type, rtmq_reg_cb_t proc, void *param)
  **注意事项: 内存结构: 转发信息(frwd) + 实际数据
  **作    者: # Qifeng.zou # 2015.06.01 #
  ******************************************************************************/
-int rtmq_send(rtmq_cntx_t *ctx, int type, int dest, void *data, size_t len)
+int rtmq_async_send(rtmq_cntx_t *ctx, int type, int dest, void *data, size_t len)
 {
     int idx;
     void *addr;
@@ -612,4 +603,37 @@ static int rtmq_cmd_send_dist_req(rtmq_cntx_t *ctx)
     log_trace(ctx->log, "Send command %d! ret:%d", RTMQ_CMD_DIST_REQ, ret);
 
     return ret;
+}
+
+/******************************************************************************
+ **函数名称: rtmq_lock_server
+ **功    能: 锁定服务路径(注: 防止路径和结点ID相同的配置)
+ **输入参数:
+ **     conf: 配置信息
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述:
+ **注意事项: 文件描述符可不关闭
+ **作    者: # Qifeng.zou # 2016.05.02 21:22:21 #
+ ******************************************************************************/
+static int rtmq_lock_server(const rtmq_conf_t *conf)
+{
+    int fd;
+    char path[FILE_NAME_MAX_LEN];
+
+    rtmq_lock_path(conf, path);
+
+    Mkdir2(path, DIR_MODE);
+
+    fd = Open(path, O_CREAT|O_RDWR, OPEN_MODE);
+    if (fd < 0) {
+        return -1;
+    }
+
+    if (proc_try_wrlock(fd)) {
+        CLOSE(fd);
+        return -1;
+    }
+
+    return 0;
 }

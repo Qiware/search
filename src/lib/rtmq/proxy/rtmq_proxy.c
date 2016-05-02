@@ -5,6 +5,7 @@
 #include "rtmq_mesg.h"
 #include "rtmq_proxy.h"
 
+static int rtmq_proxy_lock_server(const rtmq_proxy_conf_t *conf);
 static int rtmq_proxy_creat_cmd_usck(rtmq_proxy_t *pxy);
 
 /******************************************************************************
@@ -181,9 +182,7 @@ static int rtmq_proxy_creat_sendq(rtmq_proxy_t *pxy)
  ******************************************************************************/
 rtmq_proxy_t *rtmq_proxy_init(const rtmq_proxy_conf_t *conf, log_cycle_t *log)
 {
-    int fd;
     rtmq_proxy_t *pxy;
-    char path[FILE_NAME_MAX_LEN];
 
     /* > 创建对象 */
     pxy = (rtmq_proxy_t *)calloc(1, sizeof(rtmq_proxy_t));
@@ -198,18 +197,9 @@ rtmq_proxy_t *rtmq_proxy_init(const rtmq_proxy_conf_t *conf, log_cycle_t *log)
     memcpy(&pxy->conf, conf, sizeof(rtmq_proxy_conf_t));
 
     do {
-        /* > 锁住指定文件(注: 防止路径和结点ID相同的配置) */
-        rtmq_proxy_lock_path(conf, path);
-
-        fd = Open(path, O_CREAT|O_RDWR|O_DIRECT, OPEN_MODE);
-        if (fd < 0) {
-            log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
-            break;
-        }
-
-        if (proc_try_wrlock(fd)) {
-            CLOSE(fd);
-            log_error(log, "Lock failed! errmsg:[%d] %s!", errno, strerror(errno));
+        /* > 锁住指定文件 */
+        if (rtmq_proxy_lock_server(conf)) {
+            log_fatal(log, "Create rmtq proxy failed!");
             break;
         }
 
@@ -352,6 +342,38 @@ static int rtmq_proxy_creat_cmd_usck(rtmq_proxy_t *pxy)
     }
 
     return RTMQ_OK;
+}
+
+/******************************************************************************
+ **函数名称: rtmq_proxy_lock_server
+ **功    能: 锁住指定路径(注: 防止路径和结点ID相同的配置)
+ **输入参数:
+ **     conf: 配置信息
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述:
+ **注意事项: 文件描述符可不用关闭
+ **作    者: # Qifeng.zou # 2016.05.02 21:14:39 #
+ ******************************************************************************/
+static int rtmq_proxy_lock_server(const rtmq_proxy_conf_t *conf)
+{
+    int fd;
+    char path[FILE_NAME_MAX_LEN];
+
+    rtmq_proxy_lock_path(conf, path);
+
+    Mkdir2(path, DIR_MODE);
+
+    fd = Open(path, O_CREAT|O_RDWR, OPEN_MODE);
+    if (fd < 0) {
+        return -1;
+    }
+
+    if (proc_try_wrlock(fd)) {
+        close(fd);
+        return -1;
+    }
+    return 0;
 }
 
 /******************************************************************************
