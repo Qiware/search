@@ -1,3 +1,6 @@
+#include "comm.h"
+#include "lock.h"
+#include "redo.h"
 #include "syscall.h"
 #include "rtmq_mesg.h"
 #include "rtmq_proxy.h"
@@ -178,7 +181,9 @@ static int rtmq_proxy_creat_sendq(rtmq_proxy_t *pxy)
  ******************************************************************************/
 rtmq_proxy_t *rtmq_proxy_init(const rtmq_proxy_conf_t *conf, log_cycle_t *log)
 {
+    int fd;
     rtmq_proxy_t *pxy;
+    char path[FILE_NAME_MAX_LEN];
 
     /* > 创建对象 */
     pxy = (rtmq_proxy_t *)calloc(1, sizeof(rtmq_proxy_t));
@@ -193,6 +198,21 @@ rtmq_proxy_t *rtmq_proxy_init(const rtmq_proxy_conf_t *conf, log_cycle_t *log)
     memcpy(&pxy->conf, conf, sizeof(rtmq_proxy_conf_t));
 
     do {
+        /* > 锁住指定文件(注: 防止路径和结点ID相同的配置) */
+        rtmq_proxy_lock_path(conf, path);
+
+        fd = Open(path, O_CREAT|O_RDWR|O_DIRECT, OPEN_MODE);
+        if (fd < 0) {
+            log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
+            break;
+        }
+
+        if (proc_try_wrlock(fd)) {
+            CLOSE(fd);
+            log_error(log, "Lock failed! errmsg:[%d] %s!", errno, strerror(errno));
+            break;
+        }
+
         /* > 创建处理映射表 */
         pxy->reg = avl_creat(NULL, (key_cb_t)key_cb_int32, (cmp_cb_t)cmp_cb_int32);
         if (NULL == pxy->reg) {

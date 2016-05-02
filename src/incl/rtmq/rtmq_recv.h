@@ -29,15 +29,15 @@
 /* Listen线程的UNIX-UDP路径 */
 #define rtmq_lsn_usck_path(conf, _path) \
     snprintf(_path, sizeof(_path), "%s/%d_lsn.usck", (conf)->path, (conf)->nid)
-/* 发送队列的共享内存KEY路径 */
-#define rtmq_shm_distq_path(conf, _path, idx) \
-    snprintf(_path, sizeof(_path), "%s/%d_shm-%d.sq", (conf)->path, (conf)->nid, idx)
 /* 分发线程的UNIX-UDP路径 */
 #define rtmq_dsvr_usck_path(conf, _path) \
     snprintf(_path, sizeof(_path), "%s/%d_dsvr.usck", (conf)->path, (conf)->nid)
 /* 客户端的通信路径 */
 #define rtmq_cli_unix_path(conf, _path) \
     snprintf(_path, sizeof(_path), "%s/%d_cli.usck", (conf)->path, (conf)->nid)
+/* RTMQ服务端文件锁路径 */
+#define rtmq_lock_path(conf, _path) \
+    snprintf(_path, sizeof(_path), "%s/%d.lck", (conf)->path, (conf)->nid)
 
 /* 配置信息 */
 typedef struct

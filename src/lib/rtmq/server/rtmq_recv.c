@@ -9,6 +9,7 @@
  ******************************************************************************/
 
 #include "log.h"
+#include "lock.h"
 #include "redo.h"
 #include "shm_opt.h"
 #include "rtmq_mesg.h"
@@ -47,6 +48,7 @@ static int rtmq_proc_def_hdl(int type, int orig, char *buff, size_t len, void *p
  ******************************************************************************/
 rtmq_cntx_t *rtmq_init(const rtmq_conf_t *cf, log_cycle_t *log)
 {
+    int fd;
     rtmq_cntx_t *ctx;
     rtmq_conf_t *conf;
     char path[FILE_NAME_MAX_LEN];
@@ -64,6 +66,21 @@ rtmq_cntx_t *rtmq_init(const rtmq_conf_t *cf, log_cycle_t *log)
     conf->recvq_num = RTMQ_WORKER_HDL_QNUM * cf->work_thd_num;
 
     do {
+        /* > 锁住指定文件(注: 防止路径和结点ID相同的配置) */
+        rtmq_lock_path(conf, path);
+
+        fd = Open(path, O_CREAT|O_RDWR|O_DIRECT, OPEN_MODE);
+        if (fd < 0) {
+            log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
+            break;
+        }
+
+        if (proc_try_wrlock(fd)) {
+            CLOSE(fd);
+            log_error(log, "Lock failed! errmsg:[%d] %s!", errno, strerror(errno));
+            return NULL;
+        }
+
         /* > 创建通信套接字 */
         rtmq_cli_unix_path(conf, path);
 

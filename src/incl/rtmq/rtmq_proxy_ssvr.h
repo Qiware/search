@@ -17,6 +17,9 @@
 /* WORKER线程的UNIX-UDP路径 */
 #define rtmq_proxy_worker_usck_path(conf, path, id) \
     snprintf(path, sizeof(path), "%s/%d_swrk_%d.usck", (conf)->path, (conf)->nid, id+1)
+/* 加锁路径 */
+#define rtmq_proxy_lock_path(conf, path) \
+    snprintf(path, sizeof(path), "%s/%d.lock", (conf)->path, (conf)->nid)
 
 /* 套接字信息 */
 typedef struct
