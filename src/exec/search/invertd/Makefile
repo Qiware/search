@@ -10,30 +10,30 @@ include $(PROJ)/make/build.mak
 
 INCLUDE = -I./incl \
 			-I$(PROJ)/src/incl \
-			-I$(PROJ)/src/incl/sdtp \
 			-I$(PROJ)/src/incl/rtmq \
 			-I$(PROJ)/src/incl/agent
 INCLUDE += $(GLOBAL_INCLUDE)
 LIBS_PATH = -L$(PROJ)/lib
-LIBS = -lpthread -lcore -lsdtp -lrtmq
+LIBS = -lpthread -lcore -lrtmq -linvtab
 LIBS += $(SHARED_LIB)
-LIBS_A = $(PROJ_LIB)/libcore.a $(PROJ_LIB)/librtmq.a
+LIBS_A = $(PROJ_LIB)/libcore.a $(PROJ_LIB)/librtmq.a $(PROJ_LIB)/libinvtab.a
 
-SRC_LIST = frwder.c \
-			frwd_comm.c \
-			frwd_mesg.c \
-			frwd_conf.c
+SRC_LIST = invertd.c \
+            invtd_comm.c \
+            invtd_conf.c \
+            invtd_mesg.c \
+            invtd_search.c 
 
-OBJS = $(subst .c,.o, $(SRC_LIST))
+OBJS = $(subst .c,.o, $(SRC_LIST)) 
 HEADS = $(call func_get_dep_head_list, $(SRC_LIST))
 
-TARGET = frwder
+TARGET = invertd
 
 .PHONY: all clean
 
 all: $(TARGET)
 $(TARGET): $(OBJS)
-	@$(CC) $(CFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS)
+	@$(CC) $(CFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS_A) $(LIBS)
 	@echo "CC $@"
 	@mv $@ $(PROJ_BIN)/$@-$(VERSION)
 	@rm -f $(PROJ_BIN)/$@
@@ -46,4 +46,5 @@ $(OBJS): %.o : %.c $(HEADS)
 
 clean:
 	@rm -fr *.o $(PROJ_BIN)/$(TARGET)
+	@rm -fr *.o $(PROJ_BIN)/$(TARGET)-$(VERSION)
 	@echo "rm -fr *.o $(PROJ_BIN)/$(TARGET)"
