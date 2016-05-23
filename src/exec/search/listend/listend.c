@@ -203,7 +203,7 @@ static int lsnd_set_reg(lsnd_cntx_t *ctx)
         return LSND_ERR; \
     }
 
-    LSND_AGT_REG_CB(ctx, MSG_SEARCH_WORD_REQ, lsnd_search_word_req_hdl, ctx);
+    LSND_AGT_REG_CB(ctx, MSG_SEARCH_REQ, lsnd_search_req_hdl, ctx);
     LSND_AGT_REG_CB(ctx, MSG_INSERT_WORD_REQ, lsnd_insert_word_req_hdl, ctx);
 
 #define LSND_RTQ_REG_CB(lsnd, type, proc, args) /* 注册队列数据回调 */\
@@ -212,7 +212,7 @@ static int lsnd_set_reg(lsnd_cntx_t *ctx)
         return LSND_ERR; \
     }
 
-    LSND_RTQ_REG_CB(ctx, MSG_SEARCH_WORD_RSP, lsnd_search_word_rsp_hdl, ctx);
+    LSND_RTQ_REG_CB(ctx, MSG_SEARCH_RSP, lsnd_search_rsp_hdl, ctx);
     LSND_RTQ_REG_CB(ctx, MSG_INSERT_WORD_RSP, lsnd_insert_word_rsp_hdl, ctx);
 
     return LSND_OK;

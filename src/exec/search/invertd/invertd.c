@@ -49,14 +49,14 @@ int main(int argc, char *argv[])
 
     umask(0);
 
-    do {
-        /* > 初始化日志 */
-        log = log_init(opt.log_level, INVTD_LOG_PATH);
-        if (NULL == log) {
-            fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
-            break;
-        }
+    /* > 初始化日志 */
+    log = log_init(opt.log_level, INVTD_LOG_PATH);
+    if (NULL == log) {
+        fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
+        return INVT_ERR;
+    }
 
+    do {
         /* > 加载配置信息 */
         if (invtd_conf_load(opt.conf_path, &conf, log)) {
             log_fatal(log, "Load configuration failed! path:%s", opt.conf_path);
@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
         /* > 服务初始化 */
         ctx = invtd_init(&conf, log);
         if (NULL == ctx) {
-            log_fatal(log, "Init invertd failed!\n");
+            log_fatal(log, "Init invertd failed!");
             break;
         }
 

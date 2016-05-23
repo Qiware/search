@@ -504,7 +504,7 @@ int flt_get_domain_ip_map(flt_cntx_t *ctx, char *host, ipaddr_t *ip)
 
     if (0 != getaddrinfo(host, NULL, &hints, &addrinfo)) {
         log_error(ctx->log, "Get address info failed! host:%s", host);
-
+    FLT_GOTO_ADD_INTO_BL:
         /* 插入域名黑名单中 */
         new_blacklist = calloc(1, sizeof(flt_domain_blacklist_t));
         if (NULL == new_blacklist) {
@@ -524,8 +524,16 @@ int flt_get_domain_ip_map(flt_cntx_t *ctx, char *host, ipaddr_t *ip)
 
     /* 计算IP地址个数 */
     ip_num = 0;
-    for (curr = addrinfo; NULL != curr; ++ip_num, curr = curr->ai_next) {
-        NULL;
+    for (curr = addrinfo; NULL != curr; curr = curr->ai_next) {
+        sockaddr = (struct sockaddr_in *)curr->ai_addr;
+        if (0 == sockaddr->sin_addr.s_addr) {
+            continue;
+        }
+        ++ip_num;
+    }
+
+    if (0 == ip_num) {
+        goto FLT_GOTO_ADD_INTO_BL;
     }
 
     /* > 申请新的内存空间(此处不释放空间) */
@@ -549,11 +557,9 @@ int flt_get_domain_ip_map(flt_cntx_t *ctx, char *host, ipaddr_t *ip)
     new_map->create_tm = time(NULL);
     new_map->access_tm = new_map->create_tm;
 
-    curr = addrinfo;
-    while (NULL != curr) {
+    for (curr = addrinfo; NULL != curr; curr = curr->ai_next) {
         sockaddr = (struct sockaddr_in *)curr->ai_addr;
         if (0 == sockaddr->sin_addr.s_addr) {
-            curr = curr->ai_next;
             continue;
         }
 
@@ -563,8 +569,6 @@ int flt_get_domain_ip_map(flt_cntx_t *ctx, char *host, ipaddr_t *ip)
                 new_map->ip[new_map->ip_num].addr,
                 sizeof(new_map->ip[new_map->ip_num].addr));
         ++new_map->ip_num;
-
-        curr = curr->ai_next;
     }
 
     freeaddrinfo(addrinfo);
@@ -592,6 +596,7 @@ int flt_get_domain_ip_map(flt_cntx_t *ctx, char *host, ipaddr_t *ip)
 
     if (!new_map->ip_num) {
         log_error(ctx->log, "IP num [%d] isn't right!", new_map->ip_num);
+        assert(0);
         return FLT_ERR;
     }
 

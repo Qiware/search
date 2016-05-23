@@ -91,7 +91,7 @@ int rtmq_node_to_svr_map_init(rtmq_cntx_t *ctx)
  **功    能: 添加NODE->SVR映射
  **输入参数:
  **     ctx: 全局对象
- **     nodeid: 结点ID(主键)
+ **     nid: 结点ID(主键)
  **     rsvr_id: 接收服务索引
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
@@ -99,16 +99,16 @@ int rtmq_node_to_svr_map_init(rtmq_cntx_t *ctx)
  **注意事项: 注册NODEID与RSVR的映射关系, 为自定义数据的应答做铺垫!
  **作    者: # Qifeng.zou # 2015.05.30 #
  ******************************************************************************/
-int rtmq_node_to_svr_map_add(rtmq_cntx_t *ctx, int nodeid, int rsvr_id)
+int rtmq_node_to_svr_map_add(rtmq_cntx_t *ctx, int nid, int rsvr_id)
 {
     rtmq_node_to_svr_map_t *map;
 
     pthread_rwlock_wrlock(&ctx->node_to_svr_map_lock); /* 加锁 */
 
     /* > 查找是否已经存在 */
-    map = avl_query(ctx->node_to_svr_map, &nodeid, sizeof(nodeid));
+    map = avl_query(ctx->node_to_svr_map, &nid, sizeof(nid));
     if (NULL == map) {
-        map = calloc(1, sizeof(rtmq_node_to_svr_map_t));
+        map = (rtmq_node_to_svr_map_t *)calloc(1, sizeof(rtmq_node_to_svr_map_t));
         if (NULL == map) {
             pthread_rwlock_unlock(&ctx->node_to_svr_map_lock); /* 解锁 */
             log_error(ctx->log, "Alloc memory failed!");
@@ -116,13 +116,13 @@ int rtmq_node_to_svr_map_add(rtmq_cntx_t *ctx, int nodeid, int rsvr_id)
         }
 
         map->num = 0;
-        map->nodeid = nodeid;
+        map->nid = nid;
 
-        if (avl_insert(ctx->node_to_svr_map, &nodeid, sizeof(nodeid), (void *)map)) {
+        if (avl_insert(ctx->node_to_svr_map, &nid, sizeof(nid), (void *)map)) {
             pthread_rwlock_unlock(&ctx->node_to_svr_map_lock); /* 解锁 */
             FREE(map);
-            log_error(ctx->log, "Insert into dev2sck table failed! nodeid:%d rsvr_id:%d",
-                      nodeid, rsvr_id);
+            log_error(ctx->log, "Insert into dev2sck table failed! nid:%d rsvr_id:%d",
+                      nid, rsvr_id);
             return RTMQ_ERR;
         }
     }
@@ -130,7 +130,7 @@ int rtmq_node_to_svr_map_add(rtmq_cntx_t *ctx, int nodeid, int rsvr_id)
     /* > 插入NODE -> SVR列表 */
     if (map->num >= RTRD_NODE_TO_SVR_MAX_LEN) {
         pthread_rwlock_unlock(&ctx->node_to_svr_map_lock); /* 解锁 */
-        log_error(ctx->log, "Node to svr map is full! nodeid:%d", nodeid);
+        log_error(ctx->log, "Node to svr map is full! nid:%d", nid);
         return RTMQ_ERR;
     }
 
@@ -146,7 +146,7 @@ int rtmq_node_to_svr_map_add(rtmq_cntx_t *ctx, int nodeid, int rsvr_id)
  **功    能: 删除NODE -> SVR映射
  **输入参数:
  **     ctx: 全局对象
- **     nodeid: 结点ID
+ **     nid: 结点ID
  **     rsvr_id: 接收服务索引
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
@@ -154,7 +154,7 @@ int rtmq_node_to_svr_map_add(rtmq_cntx_t *ctx, int nodeid, int rsvr_id)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.30 22:25:20 #
  ******************************************************************************/
-int rtmq_node_to_svr_map_del(rtmq_cntx_t *ctx, int nodeid, int rsvr_id)
+int rtmq_node_to_svr_map_del(rtmq_cntx_t *ctx, int nid, int rsvr_id)
 {
     int idx;
     rtmq_node_to_svr_map_t *map;
@@ -162,10 +162,10 @@ int rtmq_node_to_svr_map_del(rtmq_cntx_t *ctx, int nodeid, int rsvr_id)
     pthread_rwlock_wrlock(&ctx->node_to_svr_map_lock);
 
     /* > 查找映射表 */
-    map = avl_query(ctx->node_to_svr_map, &nodeid, sizeof(nodeid));
+    map = avl_query(ctx->node_to_svr_map, &nid, sizeof(nid));
     if (NULL == map) {
         pthread_rwlock_unlock(&ctx->node_to_svr_map_lock);
-        log_error(ctx->log, "Query nodeid [%d] failed!", nodeid);
+        log_error(ctx->log, "Query nid [%d] failed!", nid);
         return RTMQ_ERR;
     }
 
@@ -174,7 +174,7 @@ int rtmq_node_to_svr_map_del(rtmq_cntx_t *ctx, int nodeid, int rsvr_id)
         if (map->rsvr_id[idx] == rsvr_id) {
             map->rsvr_id[idx] = map->rsvr_id[--map->num]; /* 删除:使用最后一个值替代当前值 */
             if (0 == map->num) {
-                avl_delete(ctx->node_to_svr_map, &nodeid, sizeof(nodeid), (void *)&map);
+                avl_delete(ctx->node_to_svr_map, &nid, sizeof(nid), (void *)&map);
                 FREE(map);
             }
             break;
@@ -190,34 +190,34 @@ int rtmq_node_to_svr_map_del(rtmq_cntx_t *ctx, int nodeid, int rsvr_id)
  **功    能: 随机选择NODE -> SVR映射
  **输入参数:
  **     ctx: 全局对象
- **     nodeid: 结点ID
+ **     nid: 结点ID
  **输出参数: NONE
  **返    回: 接收线程索引
  **实现描述:
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.30 22:25:20 #
  ******************************************************************************/
-int rtmq_node_to_svr_map_rand(rtmq_cntx_t *ctx, int nodeid)
+int rtmq_node_to_svr_map_rand(rtmq_cntx_t *ctx, int nid)
 {
-    int id;
+    int rsvr_id;
     rtmq_node_to_svr_map_t *map;
 
     pthread_rwlock_rdlock(&ctx->node_to_svr_map_lock);
 
     /* > 获取映射表 */
-    map = avl_query(ctx->node_to_svr_map, &nodeid, sizeof(nodeid));
+    map = avl_query(ctx->node_to_svr_map, &nid, sizeof(nid));
     if (NULL == map) {
         pthread_rwlock_unlock(&ctx->node_to_svr_map_lock);
-        log_error(ctx->log, "Query nodeid [%d] failed!", nodeid);
+        log_error(ctx->log, "Query nid [%d] failed!", nid);
         return -1;
     }
 
     /* > 选择服务ID */
-    id = map->rsvr_id[rand() % map->num]; /* 随机选择 */
+    rsvr_id = map->rsvr_id[rand() % map->num]; /* 随机选择 */
 
     pthread_rwlock_unlock(&ctx->node_to_svr_map_lock);
 
-    return id;
+    return rsvr_id;
 }
 
 /******************************************************************************
@@ -258,7 +258,7 @@ int rtmq_sub_mgr_init(rtmq_sub_mgr_t *sub)
  ******************************************************************************/
 int rtmq_sub_query(rtmq_cntx_t *ctx, mesg_type_e type)
 {
-    int nodeid, idx;
+    int nid, idx;
     rtmq_sub_node_t *node;
     rtmq_sub_list_t *list;
     rtmq_sub_mgr_t *sub = &ctx->sub_mgr;
@@ -281,11 +281,11 @@ int rtmq_sub_query(rtmq_cntx_t *ctx, mesg_type_e type)
         return -1;
     }
 
-    nodeid = node->nodeid;
+    nid = node->nid;
 
     pthread_rwlock_unlock(&sub->lock);
 
-    log_debug(ctx->log, "Node [%d] has sub type [%d]!", nodeid, type);
+    log_debug(ctx->log, "Node [%d] has sub type [%d]!", nid, type);
 
-    return nodeid;
+    return nid;
 }

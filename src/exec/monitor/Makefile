@@ -11,9 +11,9 @@ include $(PROJ)/make/build.mak
 INCLUDE = -I./incl \
 		  -I$(PROJ)/src/incl \
 		  -I$(PROJ)/src/incl/agent \
-		  -I$(PROJ)/src/exec/filter/incl \
-		  -I$(PROJ)/src/exec/crawler/incl \
-		  -I$(PROJ)/src/exec/monitor/incl
+		  -I$(PROJ)/src/exec/monitor/incl \
+		  -I$(PROJ)/src/exec/spider/filter/incl \
+		  -I$(PROJ)/src/exec/spider/crawler/incl
 INCLUDE += $(GLOBAL_INCLUDE)
 LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lpthread -lcore
@@ -47,4 +47,5 @@ $(OBJS): %.o : %.c $(HEADS)
 
 clean:
 	@rm -fr *.o $(PROJ_BIN)/$(TARGET)
+	@rm -fr *.o $(PROJ_BIN)/$(TARGET)-$(VERSION)
 	@echo "rm -fr *.o $(PROJ_BIN)/$(TARGET)"

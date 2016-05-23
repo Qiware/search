@@ -1,7 +1,11 @@
+#include "comm.h"
+#include "lock.h"
+#include "redo.h"
 #include "syscall.h"
 #include "rtmq_mesg.h"
 #include "rtmq_proxy.h"
 
+static int rtmq_proxy_lock_server(const rtmq_proxy_conf_t *conf);
 static int rtmq_proxy_creat_cmd_usck(rtmq_proxy_t *pxy);
 
 /******************************************************************************
@@ -193,6 +197,12 @@ rtmq_proxy_t *rtmq_proxy_init(const rtmq_proxy_conf_t *conf, log_cycle_t *log)
     memcpy(&pxy->conf, conf, sizeof(rtmq_proxy_conf_t));
 
     do {
+        /* > 锁住指定文件 */
+        if (rtmq_proxy_lock_server(conf)) {
+            log_fatal(log, "Create rmtq proxy failed!");
+            break;
+        }
+
         /* > 创建处理映射表 */
         pxy->reg = avl_creat(NULL, (key_cb_t)key_cb_int32, (cmp_cb_t)cmp_cb_int32);
         if (NULL == pxy->reg) {
@@ -335,6 +345,38 @@ static int rtmq_proxy_creat_cmd_usck(rtmq_proxy_t *pxy)
 }
 
 /******************************************************************************
+ **函数名称: rtmq_proxy_lock_server
+ **功    能: 锁住指定路径(注: 防止路径和结点ID相同的配置)
+ **输入参数:
+ **     conf: 配置信息
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述:
+ **注意事项: 文件描述符可不用关闭
+ **作    者: # Qifeng.zou # 2016.05.02 21:14:39 #
+ ******************************************************************************/
+static int rtmq_proxy_lock_server(const rtmq_proxy_conf_t *conf)
+{
+    int fd;
+    char path[FILE_NAME_MAX_LEN];
+
+    rtmq_proxy_lock_path(conf, path);
+
+    Mkdir2(path, DIR_MODE);
+
+    fd = Open(path, O_CREAT|O_RDWR, OPEN_MODE);
+    if (fd < 0) {
+        return -1;
+    }
+
+    if (proc_try_wrlock(fd)) {
+        close(fd);
+        return -1;
+    }
+    return 0;
+}
+
+/******************************************************************************
  **函数名称: rtmq_proxy_cli_cmd_send_req
  **功    能: 通知Send服务线程
  **输入参数:
@@ -358,6 +400,7 @@ static int rtmq_proxy_cli_cmd_send_req(rtmq_proxy_t *pxy, int idx)
     rtmq_proxy_ssvr_usck_path(conf, path, idx);
 
     if (spin_trylock(&pxy->cmd_sck_lck)) {
+        log_debug(pxy->log, "Try lock failed!");
         return RTMQ_OK;
     }
 
@@ -380,7 +423,7 @@ static int rtmq_proxy_cli_cmd_send_req(rtmq_proxy_t *pxy, int idx)
  **输入参数:
  **     pxy: 上下文信息
  **     type: 数据类型
- **     nodeid: 源结点ID
+ **     nid: 源结点ID
  **     data: 数据地址
  **     size: 数据长度
  **输出参数: NONE
@@ -413,15 +456,15 @@ int rtmq_proxy_async_send(rtmq_proxy_t *pxy, int type, const void *data, size_t 
     head = (rtmq_header_t *)addr;
 
     head->type = type;
-    head->nodeid = conf->nodeid;
+    head->nid = conf->nid;
     head->length = size;
     head->flag = RTMQ_EXP_MESG;
-    head->checksum = RTMQ_CHECK_SUM;
+    head->chksum = RTMQ_CHKSUM_VAL;
 
     memcpy(head+1, data, size);
 
-    log_debug(pxy->log, "rq:%p Head type:%d nodeid:%d length:%d flag:%d checksum:%d!",
-            pxy->sendq[idx]->ring, head->type, head->nodeid, head->length, head->flag, head->checksum);
+    log_debug(pxy->log, "rq:%p Head type:%d nid:%d length:%d flag:%d chksum:%d!",
+            pxy->sendq[idx]->ring, head->type, head->nid, head->length, head->flag, head->chksum);
 
     /* > 放入发送队列 */
     if (queue_push(pxy->sendq[idx], addr)) {

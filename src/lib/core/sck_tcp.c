@@ -270,7 +270,7 @@ AGAIN:
  ******************************************************************************/
 int tcp_connect_async(int family, const char *ipaddr, int port)
 {
-    int fd, opt = 1;
+    int fd, opt = 1, ret;
     struct linger lg;
     struct sockaddr_in svraddr;
 
@@ -299,16 +299,13 @@ int tcp_connect_async(int family, const char *ipaddr, int port)
     inet_pton(AF_INET, ipaddr, &svraddr.sin_addr);
     svraddr.sin_port = htons(port);
 
-    if (!connect(fd, (struct sockaddr *)&svraddr, sizeof(svraddr))) {
+    ret = connect(fd, (struct sockaddr *)&svraddr, sizeof(svraddr));
+    if ((0 == ret) || (EINPROGRESS == errno)) {
         return fd;
     }
 
-    if (EINPROGRESS != errno) {
-        close(fd);
-        return -1;
-    }
-
-    return fd;
+    close(fd);
+    return -1;
 }
 
 /******************************************************************************

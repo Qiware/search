@@ -42,7 +42,7 @@ int rtmq_send_debug(rtmq_proxy_t *ctx, int secs)
 
             snprintf(req->words, sizeof(req->words), "%s", "BAIDU");
 
-            if (rtsd_cli_send(ctx, MSG_SEARCH_WORD_REQ, req, sizeof(mesg_search_word_req_t))) {
+            if (rtsd_cli_send(ctx, MSG_SEARCH_REQ, req, sizeof(mesg_search_word_req_t))) {
                 idx--;
                 usleep(2);
                 sleep2 += USLEEP*1000000;
@@ -78,7 +78,7 @@ int rtmq_send_debug(rtmq_proxy_t *ctx, int secs)
 
 static void rtmq_setup_conf(rtmq_proxy_conf_t *conf, int port)
 {
-    conf->nodeid = 1;
+    conf->nid = 1;
 
     snprintf(conf->auth.usr, sizeof(conf->auth.usr), "qifeng");
     snprintf(conf->auth.passwd, sizeof(conf->auth.passwd), "111111");

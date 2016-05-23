@@ -13,7 +13,7 @@
 #include "lsnd_mesg.h"
 
 /******************************************************************************
- **函数名称: lsnd_search_word_req_hdl
+ **函数名称: lsnd_search_req_hdl
  **功    能: 搜索请求的处理函数
  **输入参数:
  **     type: 全局对象
@@ -26,7 +26,7 @@
  **注意事项: 需要将协议头转换为网络字节序
  **作    者: # Qifeng.zou # 2015.05.28 23:11:54 #
  ******************************************************************************/
-int lsnd_search_word_req_hdl(unsigned int type, void *data, int length, void *args)
+int lsnd_search_req_hdl(unsigned int type, void *data, int length, void *args)
 {
     lsnd_cntx_t *ctx = (lsnd_cntx_t *)args;
     mesg_header_t *head = (mesg_header_t *)data; /* 消息头 */
@@ -35,14 +35,14 @@ int lsnd_search_word_req_hdl(unsigned int type, void *data, int length, void *ar
             __func__, head->serial, length, head->body);
 
     /* > 转换字节序 */
-    mesg_head_hton(head, head);
+    MESG_HEAD_HTON(head, head);
 
     /* > 转发搜索请求 */
     return rtmq_proxy_async_send(ctx->frwder, type, data, length);
 }
 
 /******************************************************************************
- **函数名称: lsnd_search_word_rsp_hdl
+ **函数名称: lsnd_search_rsp_hdl
  **功    能: 搜索关键字应答处理
  **输入参数:
  **     type: 数据类型
@@ -56,7 +56,7 @@ int lsnd_search_word_req_hdl(unsigned int type, void *data, int length, void *ar
  **注意事项:
  **作    者: # Qifeng.zou # 2015.06.10 #
  ******************************************************************************/
-int lsnd_search_word_rsp_hdl(int type, int orig, char *data, size_t len, void *args)
+int lsnd_search_rsp_hdl(int type, int orig, char *data, size_t len, void *args)
 {
     void *addr;
     lsnd_cntx_t *ctx = (lsnd_cntx_t *)args;
@@ -65,7 +65,7 @@ int lsnd_search_word_rsp_hdl(int type, int orig, char *data, size_t len, void *a
     addr = (void *)(head + 1);
 
     /* > 转化字节序 */
-    mesg_head_ntoh(head, head);
+    MESG_HEAD_NTOH(head, head);
 
     log_trace(ctx->log, "Call %s()! body:%s", __func__, head->body);
 
@@ -101,13 +101,13 @@ int lsnd_insert_word_req_hdl(unsigned int type, void *data, int length, void *ar
             __func__, head->serial, req->word, req->url, ntohl(req->freq));
 
     /* > 转换字节序 */
-    mesg_head_hton(head, head);
+    MESG_HEAD_HTON(head, head);
 
     return rtmq_proxy_async_send(ctx->frwder, type, data, length);
 }
 
 /******************************************************************************
- **函数名称: lsnd_search_word_rsp_hdl
+ **函数名称: lsnd_search_rsp_hdl
  **功    能: 插入关键字的应答
  **输入参数:
  **     type: 数据类型
@@ -130,7 +130,7 @@ int lsnd_insert_word_rsp_hdl(int type, int orig, char *data, size_t len, void *a
     log_debug(ctx->log, "Call %s()! type:%d len:%d word:%s", __func__, type, len, rsp->word);
 
     /* > 转换字节序 */
-    mesg_head_ntoh(head, head);
+    MESG_HEAD_NTOH(head, head);
 
     /* > 放入发送队列 */
     return agent_send(ctx->agent, type, head->serial, (void *)rsp, len - sizeof(mesg_header_t));

@@ -3,37 +3,42 @@
 ##
 ## 文件名: Makefile
 ## 版本号: 1.0
-## 描  述: 倒排服务模块
-## 作  者: # Qifeng.zou # 2015.03.06 #
+## 描  述: 网页分析模块
+## 作  者: # Qifeng.zou # 2015.03.10 #
 ###############################################################################
 include $(PROJ)/make/build.mak
 
-INCLUDE = -I./incl \
+INCLUDE = -I. \
+			-I./incl \
+			-I../crawler/incl \
 			-I$(PROJ)/src/incl \
-			-I$(PROJ)/src/incl/rtmq \
-			-I$(PROJ)/src/incl/agent
+			-I$(PROJ)/src/incl/redis
 INCLUDE += $(GLOBAL_INCLUDE)
-LIBS_PATH = -L$(PROJ)/lib
-LIBS = -lpthread -lcore -lrtmq -linvtab
+LIBS_PATH = -L$(PROJ)/lib -L/usr/lib/hiredis
+LIBS = -lpthread \
+			-lcore \
+	   		-lhiredis \
+			-lredis_ex \
+			-lgumbo_ex
 LIBS += $(SHARED_LIB)
-LIBS_A = $(PROJ_LIB)/libcore.a $(PROJ_LIB)/librtmq.a $(PROJ_LIB)/libinvtab.a
+SRC_LIST = filter.c \
+			flt_man.c \
+			flt_comm.c \
+			flt_conf.c \
+			flt_push.c \
+			flt_sched.c \
+			flt_worker.c
 
-SRC_LIST = invertd.c \
-            invtd_comm.c \
-            invtd_conf.c \
-            invtd_mesg.c \
-            invtd_search.c 
-
-OBJS = $(subst .c,.o, $(SRC_LIST)) 
+OBJS = $(subst .c,.o, $(SRC_LIST))
 HEADS = $(call func_get_dep_head_list, $(SRC_LIST))
 
-TARGET = invertd
+TARGET = filter
 
 .PHONY: all clean
 
 all: $(TARGET)
 $(TARGET): $(OBJS)
-	@$(CC) $(CFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS_A) $(LIBS)
+	@$(CC) $(CFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS)
 	@echo "CC $@"
 	@mv $@ $(PROJ_BIN)/$@-$(VERSION)
 	@rm -f $(PROJ_BIN)/$@
@@ -46,4 +51,5 @@ $(OBJS): %.o : %.c $(HEADS)
 
 clean:
 	@rm -fr *.o $(PROJ_BIN)/$(TARGET)
+	@rm -fr *.o $(PROJ_BIN)/$(TARGET)-$(VERSION)
 	@echo "rm -fr *.o $(PROJ_BIN)/$(TARGET)"

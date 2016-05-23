@@ -25,8 +25,7 @@ typedef struct
     list_node_t *head;              /* 链表头 */
     list_node_t *tail;              /* 链表尾 */
 
-    struct
-    {
+    struct {
         void *pool;                 /* 内存池 */
         mem_alloc_cb_t alloc;       /* 申请空间 */
         mem_dealloc_cb_t dealloc;   /* 释放空间 */

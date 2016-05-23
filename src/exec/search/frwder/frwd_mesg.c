@@ -15,8 +15,8 @@
 static int frwd_reg_req_cb(frwd_cntx_t *frwd);
 static int frwd_reg_rsp_cb(frwd_cntx_t *frwd);
 
-static int frwd_search_word_req_hdl(int type, int orig, char *data, size_t len, void *args);
-static int frwd_search_word_rsp_hdl(int type, int orig, char *data, size_t len, void *args);
+static int frwd_search_req_hdl(int type, int orig, char *data, size_t len, void *args);
+static int frwd_search_rsp_hdl(int type, int orig, char *data, size_t len, void *args);
 
 static int frwd_insert_word_req_hdl(int type, int orig, char *data, size_t len, void *args);
 static int frwd_insert_word_rsp_hdl(int type, int orig, char *data, size_t len, void *args);
@@ -59,7 +59,7 @@ static int frwd_reg_req_cb(frwd_cntx_t *frwd)
         return FRWD_ERR; \
     }
 
-    FRWD_REG_REQ_CB(frwd, MSG_SEARCH_WORD_REQ, frwd_search_word_req_hdl, frwd);
+    FRWD_REG_REQ_CB(frwd, MSG_SEARCH_REQ, frwd_search_req_hdl, frwd);
     FRWD_REG_REQ_CB(frwd, MSG_INSERT_WORD_REQ, frwd_insert_word_req_hdl, frwd);
 
     return FRWD_OK;
@@ -84,14 +84,14 @@ static int frwd_reg_rsp_cb(frwd_cntx_t *frwd)
         return FRWD_ERR; \
     }
 
-    FRWD_REG_RSP_CB(frwd, MSG_SEARCH_WORD_RSP, frwd_search_word_rsp_hdl, frwd);
+    FRWD_REG_RSP_CB(frwd, MSG_SEARCH_RSP, frwd_search_rsp_hdl, frwd);
     FRWD_REG_RSP_CB(frwd, MSG_INSERT_WORD_RSP, frwd_insert_word_rsp_hdl, frwd);
 
     return FRWD_OK;
 }
 
 /******************************************************************************
- **函数名称: frwd_search_word_req_hdl
+ **函数名称: frwd_search_req_hdl
  **功    能: 搜索关键字请求处理
  **输入参数:
  **     type: 数据类型
@@ -105,29 +105,29 @@ static int frwd_reg_rsp_cb(frwd_cntx_t *frwd)
  **注意事项:
  **作    者: # Qifeng.zou # 2016.02.23 20:25:53 #
  ******************************************************************************/
-static int frwd_search_word_req_hdl(int type, int orig, char *data, size_t len, void *args)
+static int frwd_search_req_hdl(int type, int orig, char *data, size_t len, void *args)
 {
-    int nodeid;
+    int nid;
     frwd_cntx_t *ctx = (frwd_cntx_t *)args;
     mesg_header_t *head = (mesg_header_t *)data;
 
     /* > 转换字节序 */
-    mesg_head_ntoh(head, head);
+    MESG_HEAD_NTOH(head, head);
 
-    log_trace(ctx->log, "Call %s()! serial:%lu type:%d len:%d flag:%d mark:[0x%X/0x%X]",
+    log_trace(ctx->log, "Call %s()! serial:%lu type:%d len:%d flag:%d chksum:[0x%X/0x%X]",
             __func__, head->serial, head->type,
-            head->length, head->flag, head->mark, MSG_MARK_KEY);
+            head->length, head->flag, head->chksum, MSG_CHKSUM_VAL);
 
-    mesg_head_hton(head, head);
+    MESG_HEAD_HTON(head, head);
 
     /* > 发送数据 */
-    nodeid = rtmq_sub_query(ctx->upstrm, type);
-    if (-1 == nodeid) {
+    nid = rtmq_sub_query(ctx->upstrm, type);
+    if (-1 == nid) {
         log_error(ctx->log, "No module sub type! type:%u", type);
         return 0;
     }
 
-    if (rtmq_send(ctx->upstrm, type, nodeid, data, len)) {
+    if (rtmq_async_send(ctx->upstrm, type, nid, data, len)) {
         log_error(ctx->log, "Push data into send queue failed! type:%u", type);
         return -1;
     }
@@ -136,7 +136,7 @@ static int frwd_search_word_req_hdl(int type, int orig, char *data, size_t len, 
 }
 
 /******************************************************************************
- **函数名称: frwd_search_word_rsp_hdl
+ **函数名称: frwd_search_rsp_hdl
  **功    能: 搜索关键字应答处理
  **输入参数:
  **     type: 数据类型
@@ -150,7 +150,7 @@ static int frwd_search_word_req_hdl(int type, int orig, char *data, size_t len, 
  **注意事项:
  **作    者: # Qifeng.zou # 2015.06.10 #
  ******************************************************************************/
-static int frwd_search_word_rsp_hdl(int type, int orig, char *data, size_t len, void *args)
+static int frwd_search_rsp_hdl(int type, int orig, char *data, size_t len, void *args)
 {
     serial_t serial;
     frwd_cntx_t *ctx = (frwd_cntx_t *)args;
@@ -161,7 +161,7 @@ static int frwd_search_word_rsp_hdl(int type, int orig, char *data, size_t len, 
     serial.serial = ntoh64(head->serial);
 
     /* > 发送数据 */
-    if (rtmq_send(ctx->downstrm, type, serial.nid, data, len)) {
+    if (rtmq_async_send(ctx->downstrm, type, serial.nid, data, len)) {
         log_error(ctx->log, "Push data into send queue failed! type:%u", type);
         return -1;
     }
@@ -191,7 +191,7 @@ static int frwd_insert_word_req_hdl(int type, int orig, char *data, size_t len, 
     log_trace(ctx->log, "Call %s()", __func__);
 
     /* > 发送数据 */
-    if (rtmq_send(ctx->upstrm, type, 30001, data, len)) {
+    if (rtmq_async_send(ctx->upstrm, type, 30001, data, len)) {
         log_error(ctx->log, "Push data into send queue failed! type:%u", type);
         return -1;
     }
@@ -220,15 +220,15 @@ static int frwd_insert_word_rsp_hdl(int type, int orig, char *data, size_t len, 
     frwd_cntx_t *ctx = (frwd_cntx_t *)args;
     mesg_header_t *head = (mesg_header_t *)data;
 
-    mesg_head_ntoh(head, head);
+    MESG_HEAD_NTOH(head, head);
 
     serial.serial = head->serial;
     log_trace(ctx->log, "Call %s()! serial:%lu", __func__, head->serial);
 
-    mesg_head_hton(head, head);
+    MESG_HEAD_HTON(head, head);
 
     /* > 发送数据 */
-    if (rtmq_send(ctx->downstrm, type, serial.nid, data, len)) {
+    if (rtmq_async_send(ctx->downstrm, type, serial.nid, data, len)) {
         log_error(ctx->log, "Push data into send queue failed! type:%u", type);
         return -1;
     }

@@ -258,7 +258,7 @@ static int rtmq_proxy_worker_cmd_proc_req_hdl(rtmq_proxy_t *pxy, rtmq_worker_t *
                 continue;
             }
 
-            if (reg->proc(head->type, head->nodeid,
+            if (reg->proc(head->type, head->nid,
                 addr[idx] + sizeof(rtmq_header_t), head->length, reg->param))
             {
                 ++worker->err_total;    /* 错误计数 */

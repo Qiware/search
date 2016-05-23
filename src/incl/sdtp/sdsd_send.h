@@ -6,7 +6,7 @@
 /* 配置信息 */
 typedef struct
 {
-    int nodeid;                         /* 结点ID: 唯一值 */
+    int nid;                            /* 结点ID: 唯一值 */
     char name[SDTP_NAME_MAX_LEN];       /* 发送端名称 */
 
     sdtp_auth_conf_t auth;              /* 鉴权信息 */

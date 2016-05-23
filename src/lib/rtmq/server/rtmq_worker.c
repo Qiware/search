@@ -242,7 +242,7 @@ static int rtmq_worker_cmd_proc_req_hdl(rtmq_cntx_t *ctx, rtmq_worker_t *worker,
                 continue;
             }
 
-            if (reg->proc(head->type, head->nodeid,
+            if (reg->proc(head->type, head->nid,
                     addr[idx] + sizeof(rtmq_header_t), head->length, reg->param))
             {
                 ++worker->err_total;    /* 错误计数 */

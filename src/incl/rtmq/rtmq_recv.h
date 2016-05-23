@@ -22,27 +22,27 @@
 
 /* Recv线程的UNIX-UDP路径 */
 #define rtmq_rsvr_usck_path(conf, _path, tidx) \
-    snprintf(_path, sizeof(_path), "%s/%d_rsvr_%d.usck", (conf)->path, (conf)->nodeid, tidx+1)
+    snprintf(_path, sizeof(_path), "%s/%d_rsvr_%d.usck", (conf)->path, (conf)->nid, tidx+1)
 /* Worker线程的UNIX-UDP路径 */
 #define rtmq_worker_usck_path(conf, _path, tidx) \
-    snprintf(_path, sizeof(_path), "%s/%d_wsvr_%d.usck", (conf)->path, (conf)->nodeid, tidx+1)
+    snprintf(_path, sizeof(_path), "%s/%d_wsvr_%d.usck", (conf)->path, (conf)->nid, tidx+1)
 /* Listen线程的UNIX-UDP路径 */
 #define rtmq_lsn_usck_path(conf, _path) \
-    snprintf(_path, sizeof(_path), "%s/%d_lsn.usck", (conf)->path, (conf)->nodeid)
-/* 发送队列的共享内存KEY路径 */
-#define rtmq_shm_distq_path(conf, _path, idx) \
-    snprintf(_path, sizeof(_path), "%s/%d_shm-%d.sq", (conf)->path, (conf)->nodeid, idx)
+    snprintf(_path, sizeof(_path), "%s/%d_lsn.usck", (conf)->path, (conf)->nid)
 /* 分发线程的UNIX-UDP路径 */
 #define rtmq_dsvr_usck_path(conf, _path) \
-    snprintf(_path, sizeof(_path), "%s/%d_dsvr.usck", (conf)->path, (conf)->nodeid)
+    snprintf(_path, sizeof(_path), "%s/%d_dsvr.usck", (conf)->path, (conf)->nid)
 /* 客户端的通信路径 */
 #define rtmq_cli_unix_path(conf, _path) \
-    snprintf(_path, sizeof(_path), "%s/%d_cli.usck", (conf)->path, (conf)->nodeid)
+    snprintf(_path, sizeof(_path), "%s/%d_cli.usck", (conf)->path, (conf)->nid)
+/* RTMQ服务端文件锁路径 */
+#define rtmq_lock_path(conf, _path) \
+    snprintf(_path, sizeof(_path), "%s/%d.lck", (conf)->path, (conf)->nid)
 
 /* 配置信息 */
 typedef struct
 {
-    int nodeid;                         /* 节点ID(唯一值: 不允许重复) */
+    int nid;                         /* 节点ID(唯一值: 不允许重复) */
     char path[FILE_NAME_MAX_LEN];       /* 工作路径 */
 
     struct {
@@ -76,7 +76,7 @@ typedef struct
 typedef struct _rtrd_sck_t
 {
     int fd;                             /* 套接字ID */
-    uint32_t nodeid;                    /* 结点ID */
+    uint32_t nid;                       /* 结点ID */
     uint64_t sid;                       /* 会话ID */
 
     time_t ctm;                         /* 创建时间 */
@@ -98,7 +98,7 @@ typedef struct _rtrd_sck_t
 /* DEV->SVR的映射表 */
 typedef struct
 {
-    int nodeid;                         /* 结点ID */
+    int nid;                            /* 结点ID */
 
     int num;                            /* 当前实际长度 */
 #define RTRD_NODE_TO_SVR_MAX_LEN    (32)
@@ -149,7 +149,7 @@ typedef struct
                                            此队列, 再从此队列分发到不同的线程队列 */
 
     pthread_rwlock_t node_to_svr_map_lock;  /* 读写锁: NODE->SVR映射表 */
-    avl_tree_t *node_to_svr_map;         /* NODE->SVR的映射表(以nodeid为主键) */
+    avl_tree_t *node_to_svr_map;         /* NODE->SVR的映射表(以nid为主键 rtmq_node_to_svr_map_t) */
 
     rtmq_sub_mgr_t sub_mgr;             /* 订阅管理 */
 } rtmq_cntx_t;
@@ -160,7 +160,7 @@ int rtmq_register(rtmq_cntx_t *ctx, int type, rtmq_reg_cb_t proc, void *args);
 int rtmq_launch(rtmq_cntx_t *ctx);
 
 int rtmq_sub_query(rtmq_cntx_t *ctx, mesg_type_e type);
-int rtmq_send(rtmq_cntx_t *ctx, int type, int dest, void *data, size_t len);
+int rtmq_async_send(rtmq_cntx_t *ctx, int type, int dest, void *data, size_t len);
 
 /* 内部接口 */
 int rtmq_lsn_init(rtmq_cntx_t *ctx);
@@ -184,9 +184,9 @@ shm_queue_t *rtmq_shm_distq_creat(const rtmq_conf_t *conf, int idx);
 shm_queue_t *rtmq_shm_distq_attach(const rtmq_conf_t *conf, int idx);
 
 int rtmq_node_to_svr_map_init(rtmq_cntx_t *ctx);
-int rtmq_node_to_svr_map_add(rtmq_cntx_t *ctx, int nodeid, int rsvr_idx);
-int rtmq_node_to_svr_map_rand(rtmq_cntx_t *ctx, int nodeid);
-int rtmq_node_to_svr_map_del(rtmq_cntx_t *ctx, int nodeid, int rsvr_idx);
+int rtmq_node_to_svr_map_add(rtmq_cntx_t *ctx, int nid, int rsvr_idx);
+int rtmq_node_to_svr_map_rand(rtmq_cntx_t *ctx, int nid);
+int rtmq_node_to_svr_map_del(rtmq_cntx_t *ctx, int nid, int rsvr_idx);
 
 int rtmq_sub_mgr_init(rtmq_sub_mgr_t *sub);
 

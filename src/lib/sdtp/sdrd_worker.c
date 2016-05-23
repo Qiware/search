@@ -253,7 +253,7 @@ static int sdrd_worker_cmd_proc_req_hdl(sdrd_cntx_t *ctx, sdtp_worker_t *worker,
                 continue;
             }
 
-            if (reg->proc(head->type, head->nodeid,
+            if (reg->proc(head->type, head->nid,
                         ptr+sizeof(sdtp_header_t), head->length, reg->args))
             {
                 ++worker->err_total;    /* 错误计数 */

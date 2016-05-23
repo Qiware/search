@@ -36,7 +36,7 @@ int wiov_init(wiov_t *wiov, int max);
 void wiov_destroy(wiov_t *wiov);
 
 #define wiov_isempty(wiov) (0 == (wiov)->iov_cnt) // 缓存已空
-#define wiov_is_full(wiov) ((wiov)->iov_max == (wiov)->iov_cnt) // 缓存已满
+#define wiov_isfull(wiov) ((wiov)->iov_max == (wiov)->iov_cnt) // 缓存已满
 #define wiov_left_space(wiov) ((wiov)->iov_max - (wiov)->iov_cnt) // 剩余空间
 
 #define wiov_item_begin(wiov) ((wiov)->iov + (wiov)->iov_idx)
@@ -65,13 +65,12 @@ void wiov_destroy(wiov_t *wiov);
     \
     (wiov)->orig[idx].len = 0; \
     (wiov)->orig[idx].addr = NULL; \
-    \
     (wiov)->orig[idx].pool = NULL; \
     (wiov)->orig[idx].dealloc = NULL; \
     \
 }
 
-void wiov_item_clear(wiov_t *wiov);
+void wiov_clean(wiov_t *wiov);
 int wiov_item_adjust(wiov_t *wiov, size_t n);
 
 #endif /*__IO_VEC_H__*/

@@ -95,8 +95,7 @@ typedef struct
 {
     xml_node_t *root;               /* 根节点: 注意root的第一个子节点才是真正的根节点 */
 
-    struct
-    {
+    struct {
         void *pool;                 /* 内存池 */
         mem_alloc_cb_t alloc;       /* 申请内存 */
         mem_dealloc_cb_t dealloc;   /* 释放内存 */
@@ -117,7 +116,7 @@ xml_node_t *xml_node_creat_ext(xml_tree_t *xml,
         xml_node_type_e type, const char *name, const char *value);
 int xml_node_free(xml_tree_t *xml, xml_node_t *node);
 
-xml_tree_t *xml_creat_empty(xml_opt_t *opt);
+xml_tree_t *xml_empty(xml_opt_t *opt);
 xml_tree_t *xml_creat(const char *fname, xml_opt_t *opt);
 xml_tree_t *xml_screat(const char *str, size_t len, xml_opt_t *opt);
 
@@ -147,17 +146,21 @@ int xml_delete_child(xml_tree_t *xml, xml_node_t *node, xml_node_t *child);
 int xml_delete_empty(xml_tree_t *xml);
 
 int xml_set_value(xml_tree_t *xml, xml_node_t *node, const char *value);
+
 int xml_node_len(xml_tree_t *xml, xml_node_t *node);
-#define xml_tree_len(xml) xml_node_len(xml, xml->root->child)
+/* 功能: 返回格式化XML字串的实际长度LEN
+ * 注意: 必须申请(LEN + 1)存储XML字串, 多1个字符是为字串结束符'\0'预留空间 */
+#define XML_TREE_LEN(xml) xml_node_len(xml, xml->root->child)
 
 extern int _xml_pack_len(xml_tree_t *xml, xml_node_t *node);
-#define xml_pack_len(xml) _xml_pack_len(xml, xml->root)
+/* 功能: 返回非格式化XML字串的实际长度LEN
+ * 注意: 必须申请(LEN + 1)存储XML字串, 多1个字符是为字串结束符'\0'预留空间 */
+#define XML_PACK_LEN(xml) _xml_pack_len(xml, xml->root)
 
-#define xml_destroy(xml) \
-{ \
+#define xml_destroy(xml) do {\
     xml_node_free(xml, xml->root); \
     xml->dealloc(xml->pool, xml); \
     xml=NULL; \
-}
+} while(0)
 
 #endif /*__XML_TREE_H__*/

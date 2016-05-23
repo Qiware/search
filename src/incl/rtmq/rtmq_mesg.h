@@ -41,36 +41,36 @@ typedef enum
 typedef struct
 {
     uint32_t type;                      /* 命令类型 */
-    uint32_t nodeid;                    /* 源结点ID */
+    uint32_t nid;                       /* 源结点ID */
 #define RTMQ_SYS_MESG   (0)             /* 系统类型 */
 #define RTMQ_EXP_MESG   (1)             /* 自定义类型 */
     uint8_t flag;                       /* 消息标志
                                             - 0: 系统消息(type: rtmq_mesg_e)
                                             - 1: 自定义消息(type: 0x0000~0xFFFF) */
     uint32_t length;                    /* 消息体长度 */
-#define RTMQ_CHECK_SUM  (0x1FE23DC4)    
-    uint32_t checksum;                  /* 校验值 */
+#define RTMQ_CHKSUM_VAL  (0x1FE23DC4)    
+    uint32_t chksum;                    /* 校验值 */
 } __attribute__((packed)) rtmq_header_t;
 
 #define RTMQ_DATA_TOTAL_LEN(head) (head->length + sizeof(rtmq_header_t))
-#define RTMQ_CHECKSUM_ISVALID(head) (RTMQ_CHECK_SUM == (head)->checksum)
+#define RTMQ_CHKSUM_ISVALID(head) (RTMQ_CHKSUM_VAL == (head)->chksum)
 
 #define RTMQ_HEAD_NTOH(s, d) do {\
     (d)->type = ntohl((s)->type); \
-    (d)->nodeid = ntohl((s)->nodeid); \
+    (d)->nid = ntohl((s)->nid); \
     (d)->length = ntohl((s)->length); \
-    (d)->checksum = ntohl((s)->checksum); \
+    (d)->chksum = ntohl((s)->chksum); \
 } while(0)
 
 #define RTMQ_HEAD_HTON(s, d) do {\
     (d)->type = htonl((s)->type); \
-    (d)->nodeid = htonl((s)->nodeid); \
+    (d)->nid = htonl((s)->nid); \
     (d)->length = htonl((s)->length); \
-    (d)->checksum = htonl((s)->checksum); \
+    (d)->chksum = htonl((s)->chksum); \
 } while(0)
 
 /* 校验数据头 */
-#define RTMQ_HEAD_ISVALID(head) (RTMQ_CHECKSUM_ISVALID(head))
+#define RTMQ_HEAD_ISVALID(head) (RTMQ_CHKSUM_ISVALID(head))
 
 /* 转发信息 */
 typedef struct
@@ -112,17 +112,17 @@ typedef struct
 /* 添加套接字请求的相关参数 */
 typedef struct
 {
-    int sckid;                      /* 套接字 */
-    uint64_t sid;                   /* Session ID */
-    char ipaddr[IP_ADDR_MAX_LEN];   /* IP地址 */
+    int sckid;                          /* 套接字 */
+    uint64_t sid;                       /* Session ID */
+    char ipaddr[IP_ADDR_MAX_LEN];       /* IP地址 */
 } rtmq_cmd_add_sck_t;
 
 /* 处理数据请求的相关参数 */
 typedef struct
 {
-    uint32_t ori_svr_id;            /* 接收线程ID */
-    uint32_t rqidx;                 /* 接收队列索引 */
-    uint32_t num;                   /* 需要处理的数据条数 */
+    uint32_t ori_svr_id;                /* 接收线程ID */
+    uint32_t rqidx;                     /* 接收队列索引 */
+    uint32_t num;                       /* 需要处理的数据条数 */
 } rtmq_cmd_proc_req_t;
 
 /* 发送数据请求的相关参数 */
@@ -134,38 +134,38 @@ typedef struct
 /* 配置信息 */
 typedef struct
 {
-    int nodeid;                     /* 节点ID: 不允许重复 */
-    char path[FILE_NAME_MAX_LEN];   /* 工作路径 */
-    int port;                       /* 侦听端口 */
-    int recv_thd_num;               /* 接收线程数 */
-    int work_thd_num;               /* 工作线程数 */
-    int recvq_num;                  /* 接收队列数 */
+    int nid;                            /* 结点ID: 不允许重复 */
+    char path[FILE_NAME_MAX_LEN];       /* 工作路径 */
+    int port;                           /* 侦听端口 */
+    int recv_thd_num;                   /* 接收线程数 */
+    int work_thd_num;                   /* 工作线程数 */
+    int recvq_num;                      /* 接收队列数 */
 
-    int qmax;                       /* 队列长度 */
-    int qsize;                      /* 队列大小 */
+    int qmax;                           /* 队列长度 */
+    int qsize;                          /* 队列大小 */
 } rtmq_cmd_conf_t;
 
 /* Recv状态信息 */
 typedef struct
 {
-    uint32_t connections;
-    uint64_t recv_total;
-    uint64_t drop_total;
-    uint64_t err_total;
+    uint32_t connections;               /* 总连接数 */
+    uint64_t recv_total;                /* 接收数据总数 */
+    uint64_t drop_total;                /* 丢弃数据总数 */
+    uint64_t err_total;                 /* 异常数据总数 */
 } rtmq_cmd_recv_stat_t;
 
 /* Work状态信息 */
 typedef struct
 {
-    uint64_t proc_total;
-    uint64_t drop_total;
-    uint64_t err_total;
+    uint64_t proc_total;                /* 已处理数据总数 */
+    uint64_t drop_total;                /* 放弃处理数据总数 */
+    uint64_t err_total;                 /* 处理数据异常总数 */
 } rtmq_cmd_proc_stat_t;
 
 /* 各命令所附带的数据 */
 typedef union
 {
-    rtmq_cmd_add_sck_t recv_req;
+    rtmq_cmd_add_sck_t add_sck_req;
     rtmq_cmd_proc_req_t proc_req;
     rtmq_cmd_send_req_t send_req;
     rtmq_cmd_proc_stat_t proc_stat;
@@ -180,7 +180,5 @@ typedef struct
     char src_path[FILE_NAME_MAX_LEN];   /* 命令源路径 */
     rtmq_cmd_param_t param;             /* 其他数据信息 */
 } rtmq_cmd_t;
-
-
 
 #endif /*__RTMQ_MESG_H__*/

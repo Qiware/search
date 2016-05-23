@@ -362,7 +362,7 @@ static int lsnd_conf_load_frwder(xml_tree_t *xml, lsnd_conf_t *lcf, log_cycle_t 
     }
 
     /* > 设置结点ID */
-    conf->nodeid = lcf->nid;
+    conf->nid = lcf->nid;
 
     /* > 服务端IP */
     node = xml_search(xml, parent, "SERVER.IP");

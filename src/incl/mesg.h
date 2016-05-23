@@ -16,8 +16,8 @@ typedef enum
 {
     MSG_TYPE_UNKNOWN                    /* 未知消息 */
 
-    , MSG_SEARCH_WORD_REQ               /* 搜索关键字-请求 */
-    , MSG_SEARCH_WORD_RSP               /* 搜索关键字-应答 */
+    , MSG_SEARCH_REQ                    /* 搜索关键字-请求 */
+    , MSG_SEARCH_RSP                    /* 搜索关键字-应答 */
 
     , MSG_INSERT_WORD_REQ               /* 插入关键字-请求 */
     , MSG_INSERT_WORD_RSP               /* 插入关键字-应答 */
@@ -46,13 +46,13 @@ typedef enum
 /* 通用协议头 */
 typedef struct
 {
-    mesg_type_e type;                   /* 消息类型 Range: mesg_type_e */
+    uint32_t type;                      /* 消息类型 Range: mesg_type_e */
 #define MSG_FLAG_SYS   (0)              /* 0: 系统数据类型 */
 #define MSG_FLAG_USR   (1)              /* 1: 自定义数据类型 */
     uint32_t flag;                      /* 标识量(0:系统数据类型 1:自定义数据类型) */
     uint32_t length;                    /* 报体长度 */
-#define MSG_MARK_KEY   (0x1ED23CB4)
-    uint32_t mark;                      /* 校验值 */
+#define MSG_CHKSUM_VAL   (0x1ED23CB4)
+    uint32_t chksum;                    /* 校验值 */
     uint32_t from;                      /* 源设备ID */
     uint32_t to;                        /* 目标设备ID */
 
@@ -61,31 +61,32 @@ typedef struct
 } mesg_header_t;
 
 /* 字节序转换 */
-#define mesg_head_hton(h, n) do { /* 主机->网络 */\
+#define MESG_HEAD_HTON(h, n) do { /* 主机->网络 */\
     (n)->type = htonl((h)->type); \
     (n)->flag = htonl((h)->flag); \
     (n)->length = htonl((h)->length); \
-    (n)->mark = htonl((h)->mark); \
+    (n)->chksum = htonl((h)->chksum); \
     (n)->serial = hton64((h)->serial); \
 } while(0)
 
-#define mesg_head_ntoh(n, h) do { /* 网络->主机*/\
+#define MESG_HEAD_NTOH(n, h) do { /* 网络->主机*/\
     (h)->type = ntohl((n)->type); \
     (h)->flag = ntohl((n)->flag); \
     (h)->length = ntohl((n)->length); \
-    (h)->mark = ntohl((n)->mark); \
+    (h)->chksum = ntohl((n)->chksum); \
     (h)->serial = ntoh64((n)->serial); \
 } while(0)
 
-#define mesg_head_set(head, _type, _serial, _len) do { /* 设置协议头 */\
+#define MESG_HEAD_SET(head, _type, _serial, _len) do { /* 设置协议头 */\
     (head)->type = (_type); \
     (head)->flag = MSG_FLAG_USR; \
     (head)->length = (_len); \
-    (head)->mark = MSG_MARK_KEY; \
+    (head)->chksum = MSG_CHKSUM_VAL; \
     (head)->serial = (_serial); \
 } while(0)
 
-#define mesg_total_len(body_len) (sizeof(mesg_header_t) + body_len);
+#define MESG_TOTAL_LEN(body_len) (sizeof(mesg_header_t) + body_len)
+#define MESG_CHKSUM_ISVALID(head) (MSG_CHKSUM_VAL == (head)->chksum)
 
 ////////////////////////////////////////////////////////////////////////////////
 /* 搜索消息结构 */
@@ -93,7 +94,7 @@ typedef struct
 typedef struct
 {
     char words[SRCH_WORD_LEN];          /* 搜索关键字 */
-} mesg_search_word_req_t;
+} mesg_search_req_t;
 
 ////////////////////////////////////////////////////////////////////////////////
 /* 插入关键字-请求 */
@@ -126,17 +127,17 @@ typedef struct
 typedef struct
 {
     mesg_type_e type;                   /* 订阅类型(消息类型) */
-    int nodeid;                         /* 结点ID */
+    int nid;                            /* 结点ID */
 } mesg_sub_req_t;
 
 #define mesg_sub_req_hton(req) do { /* 主机 -> 网络 */\
     (req)->type = htonl((req)->type); \
-    (req)->nodeid = htonl((req)->nodeid); \
+    (req)->nid = htonl((req)->nid); \
 } while(0)
 
 #define mesg_sub_req_ntoh(req) do { /* 网络 -> 主机 */\
     (req)->type = ntohl((req)->type); \
-    (req)->nodeid = ntohl((req)->nodeid); \
+    (req)->nid = ntohl((req)->nid); \
 } while(0)
 
 /* 订阅-应答 */

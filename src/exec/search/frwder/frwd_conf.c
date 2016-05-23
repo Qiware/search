@@ -136,7 +136,7 @@ static int frwd_conf_parse_upstrm(xml_tree_t *xml, const char *path, frwd_conf_t
     }
 
     /* > 结点ID */
-    conf->nodeid = fcf->nid;
+    conf->nid = fcf->nid;
 
     /* > 帧听端口 */
     node = xml_search(xml, parent, "PORT");
@@ -326,7 +326,7 @@ static int frwd_conf_parse_downstrm(xml_tree_t *xml, const char *path, frwd_conf
     }
 
     /* > 结点ID */
-    conf->nodeid = fcf->nid;
+    conf->nid = fcf->nid;
 
     /* > 帧听端口 */
     node = xml_search(xml, parent, "PORT");

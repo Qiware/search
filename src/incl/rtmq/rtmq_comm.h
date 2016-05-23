@@ -42,7 +42,7 @@ typedef enum
 /* 鉴权配置 */
 typedef struct
 {
-    int nodeid;                         /* 结点ID */
+    int nid;                            /* 结点ID */
     char usr[RTMQ_USR_MAX_LEN];         /* 用户名 */
     char passwd[RTMQ_PWD_MAX_LEN];      /* 登录密码 */
 } rtmq_auth_conf_t;

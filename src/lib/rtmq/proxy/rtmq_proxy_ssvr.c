@@ -233,7 +233,7 @@ void *rtmq_proxy_ssvr_routine(void *_ctx)
 
             /* 重连Recv端 */
             if ((sck->fd = tcp_connect(AF_INET, conf->ipaddr, conf->port)) < 0) {
-                log_error(ssvr->log, "Conncet receive-server failed!");
+                log_error(ssvr->log, "Conncet [%s:%d] failed!", conf->ipaddr, conf->port);
                 continue;
             }
 
@@ -306,7 +306,7 @@ static int rtmq_proxy_ssvr_kpalive_req(rtmq_proxy_t *pxy, rtmq_proxy_ssvr_t *ssv
         || (RTMQ_KPALIVE_STAT_SENT == sck->kpalive))
     {
         CLOSE(sck->fd);
-        wiov_item_clear(send);
+        wiov_clean(send);
         log_error(ssvr->log, "Didn't get keepalive respond for a long time!");
         return RTMQ_OK;
     }
@@ -321,10 +321,10 @@ static int rtmq_proxy_ssvr_kpalive_req(rtmq_proxy_t *pxy, rtmq_proxy_ssvr_t *ssv
     head = (rtmq_header_t *)addr;
 
     head->type = RTMQ_CMD_KPALIVE_REQ;
-    head->nodeid = pxy->conf.nodeid;
+    head->nid = pxy->conf.nid;
     head->length = 0;
     head->flag = RTMQ_SYS_MESG;
-    head->checksum = RTMQ_CHECK_SUM;
+    head->chksum = RTMQ_CHKSUM_VAL;
 
     /* 3. 加入发送列表 */
     if (list_rpush(sck->mesg_list, addr)) {
@@ -536,11 +536,14 @@ static int rtmq_proxy_ssvr_data_proc(rtmq_proxy_t *pxy, rtmq_proxy_ssvr_t *ssvr,
         /* 2.1 转化字节序 */
         RTMQ_HEAD_NTOH(head, head);
 
+        log_trace(ssvr->log, "CheckSum:%u/%u type:%d len:%d flag:%d",
+                head->chksum, RTMQ_CHKSUM_VAL, head->type, head->length, head->flag);
+
         /* 2.2 校验合法性 */
         if (!RTMQ_HEAD_ISVALID(head)) {
             ++ssvr->err_total;
             log_error(ssvr->log, "Header is invalid! CheckSum:%u/%u type:%d len:%d flag:%d",
-                    head->checksum, RTMQ_CHECK_SUM, head->type, head->length, head->flag);
+                    head->chksum, RTMQ_CHKSUM_VAL, head->type, head->length, head->flag);
             return RTMQ_ERR;
         }
 
@@ -649,13 +652,13 @@ static int rtmq_proxy_ssvr_wiov_add(rtmq_proxy_ssvr_t *ssvr, rtmq_proxy_sct_t *s
     wiov_t *send = &sck->send;
 
     /* > 从消息链表取数据 */
-    while(!wiov_is_full(send)) {
+    while(!wiov_isfull(send)) {
         /* > 是否有数据 */
         head = (rtmq_header_t *)list_lpop(sck->mesg_list);
         if (NULL == head) {
             break; /* 无数据 */
         }
-        else if (RTMQ_CHECK_SUM != head->checksum) {
+        else if (RTMQ_CHKSUM_VAL != head->chksum) {
             assert(0);
         }
 
@@ -688,7 +691,7 @@ static int rtmq_proxy_ssvr_wiov_add(rtmq_proxy_ssvr_t *ssvr, rtmq_proxy_sct_t *s
         for (idx=0; idx<num; ++idx) {
             /* > 是否有数据 */
             head = (rtmq_header_t *)data[idx];
-            if (RTMQ_CHECK_SUM != head->checksum) {
+            if (RTMQ_CHKSUM_VAL != head->chksum) {
                 assert(0);
             }
 
@@ -740,7 +743,7 @@ static int rtmq_proxy_ssvr_send_data(rtmq_proxy_t *pxy, rtmq_proxy_ssvr_t *ssvr)
 
     for (;;) {
         /* 1. 填充发送缓存 */
-        if (!wiov_is_full(send)) {
+        if (!wiov_isfull(send)) {
             rtmq_proxy_ssvr_wiov_add(ssvr, sck);
         }
 
@@ -751,10 +754,10 @@ static int rtmq_proxy_ssvr_send_data(rtmq_proxy_t *pxy, rtmq_proxy_ssvr_t *ssvr)
         /* 2. 发送缓存数据 */
         n = writev(sck->fd, wiov_item_begin(send), wiov_item_num(send));
         if (n < 0) {
-            log_error(ssvr->log, "errmsg:[%d] %s! fd:%d",
+            log_error(ssvr->log, "errmsg:[%d] %s! fd:%u",
                     errno, strerror(errno), sck->fd);
             CLOSE(sck->fd);
-            wiov_item_clear(send);
+            wiov_clean(send);
             return RTMQ_ERR;
         }
         /* 只发送了部分数据 */
@@ -921,10 +924,10 @@ static int rtmq_link_auth_req(rtmq_proxy_t *pxy, rtmq_proxy_ssvr_t *ssvr)
     head = (rtmq_header_t *)addr;
 
     head->type = RTMQ_CMD_LINK_AUTH_REQ;
-    head->nodeid = conf->nodeid;
+    head->nid = conf->nid;
     head->length = sizeof(rtmq_link_auth_req_t);
     head->flag = RTMQ_SYS_MESG;
-    head->checksum = RTMQ_CHECK_SUM;
+    head->chksum = RTMQ_CHKSUM_VAL;
 
     /* > 设置鉴权信息 */
     link_auth_req = (rtmq_link_auth_req_t *)(head + 1);
@@ -999,10 +1002,10 @@ static int rtmq_add_sub_req(rtmq_reg_t *item, rtmq_proxy_ssvr_t *ssvr)
     head = (rtmq_header_t *)addr;
 
     head->type = RTMQ_CMD_SUB_REQ;
-    head->nodeid = conf->nodeid;
+    head->nid = conf->nid;
     head->length = sizeof(rtmq_sub_req_t);
     head->flag = RTMQ_SYS_MESG;
-    head->checksum = RTMQ_CHECK_SUM;
+    head->chksum = RTMQ_CHKSUM_VAL;
 
     /* > 设置报体数据 */
     sub = (rtmq_sub_req_t *)(head + 1);

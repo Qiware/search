@@ -10,7 +10,7 @@
 typedef struct
 {
     uint64_t sid;               /* 会话ID */
-    int nodeid;                 /* 订阅结点ID */
+    int nid;                    /* 订阅结点ID */
 } rtmq_sub_node_t;
 
 /* 订阅列表 */

@@ -17,7 +17,7 @@
  **                             打印成有层次结构                            **
  **                                (文件中)                                 **
  ******************************************************************************/
-/* 打印节点名(注: XML有层次格式) */
+/* 打印结点名(注: XML有层次格式) */
 #define xml_fprint_name(fp, node, depth) \
 { \
     while (depth > 1) {   \
@@ -27,7 +27,7 @@
     fprintf(fp, "<%s", node->name.str); \
 }
 
-/* 打印属性节点(注: XML有层次格式) */
+/* 打印属性结点(注: XML有层次格式) */
 #define xml_fprint_attr(fp, node) \
 { \
     while (NULL != node->temp) { \
@@ -40,11 +40,11 @@
     } \
 }
 
-/* 打印节点值(注: XML有层次格式) */
+/* 打印结点值(注: XML有层次格式) */
 #define xml_fprint_value(fp, node) \
 { \
     if (xml_has_value(node)) { \
-        if (xml_has_child(node)) { /* 此时temp指向node的孩子节点 或 NULL */ \
+        if (xml_has_child(node)) { /* 此时temp指向node的孩子结点 或 NULL */ \
             fprintf(fp, ">%s\n", node->value.str); \
         } \
         else { \
@@ -52,7 +52,7 @@
         } \
     } \
     else { \
-        if (NULL != node->temp) { /* 此时temp指向node的孩子节点 或 NULL */ \
+        if (NULL != node->temp) { /* 此时temp指向node的孩子结点 或 NULL */ \
             fprintf(fp, ">\n"); \
         } \
         else { \
@@ -63,9 +63,9 @@
 
 /******************************************************************************
  **函数名称: xml_fprint_next
- **功    能: 选择下一个处理的节点(注: XML有层次格式)
+ **功    能: 选择下一个处理的结点(注: XML有层次格式)
  **输入参数:
- **     root: 根节点
+ **     root: 根结点
  **     stack: 栈
  **     fp: 文件指针
  **输出参数:
@@ -73,8 +73,8 @@
  **实现描述:
  **注意事项:
  **     1. 刚开始时，栈的深度必须为1.
- **     2. 此时temp用来记录正在处理孩子节点
- **     3. 不打印root的兄弟节点
+ **     2. 此时temp用来记录正在处理孩子结点
+ **     3. 不打印root的兄弟结点
  **作    者: # Qifeng.zou # 2013.02.27 #
  ******************************************************************************/
 static xml_node_t *xml_fprint_next(
@@ -83,14 +83,14 @@ static xml_node_t *xml_fprint_next(
     int depth, level;
     xml_node_t *top = NULL, *child = NULL;
 
-    if (NULL != node->temp) {    /* 首先: 处理孩子节点: 选出下一个孩子节点 */
+    if (NULL != node->temp) {    /* 首先: 处理孩子结点: 选出下一个孩子结点 */
         child = node->temp;
         node->temp = child->next;
         node = child;
         return node;
     }
-    else {                      /* 再次: 处理其兄弟节点: 选出下一个兄弟节点 */
-        /* 1. 弹出已经处理完成的节点 */
+    else {                      /* 再次: 处理其兄弟结点: 选出下一个兄弟结点 */
+        /* 1. 弹出已经处理完成的结点 */
         top = stack_pop(stack);
         if (xml_has_child(top)) {
             depth = stack_depth(stack);
@@ -102,22 +102,22 @@ static xml_node_t *xml_fprint_next(
             fprintf(fp, "</%s>\n", top->name.str);
         }
 
-        if (stack_empty(stack)) {
+        if (stack_isempty(stack)) {
             log_error(xml->log, "Compelte fprint!");
             return NULL;
         }
 
-        /* 2. 处理其下一个兄弟节点 */
+        /* 2. 处理其下一个兄弟结点 */
         node = top->next;
-        while (NULL == node) {   /* 所有兄弟节点已经处理完成，说明父亲节点也处理完成 */
-            /* 3. 父亲节点出栈 */
+        while (NULL == node) {   /* 所有兄弟结点已经处理完成，说明父亲结点也处理完成 */
+            /* 3. 父亲结点出栈 */
             top = stack_pop(stack);
             if (NULL == top) {
                 log_error(xml->log, "Stack pop failed!");
                 return NULL;
             }
 
-            /* 4. 打印父亲节点结束标志 */
+            /* 4. 打印父亲结点结束标志 */
             if (xml_has_child(top)) {
                 depth = stack_depth(stack);
                 level = depth + 1;
@@ -128,11 +128,11 @@ static xml_node_t *xml_fprint_next(
                 fprintf(fp, "</%s>\n", top->name.str);
             }
 
-            if (stack_empty(stack)) {
+            if (stack_isempty(stack)) {
                 return NULL;    /* 处理完成 */
             }
 
-            /* 5. 选择父亲的兄弟节点 */
+            /* 5. 选择父亲的兄弟结点 */
             node = top->next;
         }
     }
@@ -142,9 +142,9 @@ static xml_node_t *xml_fprint_next(
 
 /******************************************************************************
  **函数名称: xml_fprint_tree
- **功    能: 将栈中XML节点的相关信息打印至文件(注: XML有层次格式)
+ **功    能: 将栈中XML结点的相关信息打印至文件(注: XML有层次格式)
  **输入参数:
- **     root: 根节点
+ **     root: 根结点
  **     stack: 栈
  **     fp: 文件指针
  **输出参数:
@@ -152,8 +152,8 @@ static xml_node_t *xml_fprint_next(
  **实现描述:
  **注意事项:
  **     1. 刚开始时，栈的深度必须为1.
- **     2. 此时temp用来记录正在处理孩子节点
- **     3. 不打印root的兄弟节点
+ **     2. 此时temp用来记录正在处理孩子结点
+ **     3. 不打印root的兄弟结点
  **作    者: # Qifeng.zou # 2013.02.27 #
  ******************************************************************************/
 int xml_fprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, FILE *fp)
@@ -168,31 +168,31 @@ int xml_fprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, FILE *fp)
     }
 
     do {
-        /* 1. 将要处理的节点压栈 */
+        /* 1. 将要处理的结点压栈 */
         node->temp = node->child;
         if (stack_push(stack, node)) {
             log_error(xml->log, "Stack push failed!");
             return XML_ERR_STACK;
         }
 
-        /* 2. 打印节点名 */
+        /* 2. 打印结点名 */
         depth = stack_depth(stack);
 
         xml_fprint_name(fp, node, depth);
 
-        /* 3. 打印属性节点 */
+        /* 3. 打印属性结点 */
         if (xml_has_attr(node)) {
             xml_fprint_attr(fp, node);
         }
 
-        /* 4. 打印节点值 */
+        /* 4. 打印结点值 */
         xml_fprint_value(fp, node);
 
-        /* 5. 选择下一个处理的节点: 从父亲节点、兄弟节点、孩子节点中 */
+        /* 5. 选择下一个处理的结点: 从父亲结点、兄弟结点、孩子结点中 */
         node = xml_fprint_next(xml, stack, node, fp);
     } while (NULL != node);
 
-    if (!stack_empty(stack)) {
+    if (!stack_isempty(stack)) {
         return XML_ERR_STACK;
     }
     return XML_OK;
@@ -203,14 +203,14 @@ int xml_fprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, FILE *fp)
  **                              打印成无层次结构                            **
  **                                 (内存中)                                 **
  ******************************************************************************/
-/* 组包节点名的长度(注: XML无层次格式) */
+/* 组包结点名的长度(注: XML无层次格式) */
 #define xml_pack_name_len(node, len) \
 { \
     /*fprintf(fp, "<%s", node->name);*/ \
     len += (1 + node->name.len); \
 }
 
-/* 组包属性节点的长度(注: XML无层次格式) */
+/* 组包属性结点的长度(注: XML无层次格式) */
 #define xml_pack_attr_len(node, len) \
 { \
     while (NULL != node->temp) { \
@@ -226,11 +226,11 @@ int xml_fprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, FILE *fp)
 }
 
 #if defined(__XML_PACK_CMARK__)
-/* 组包节点值的长度(注: XML无层次格式) */
+/* 组包结点值的长度(注: XML无层次格式) */
 #define xml_pack_value_len(node, len) \
 { \
     if (xml_has_value(node)) { \
-        if (xml_has_child(node)) { /* 此时temp指向node的孩子节点 或 NULL */ \
+        if (xml_has_child(node)) { /* 此时temp指向node的孩子结点 或 NULL */ \
             /* sprintf(sp->ptr, ">%s", node->value); */ \
             len += node->value.len+1; \
         } \
@@ -240,7 +240,7 @@ int xml_fprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, FILE *fp)
         } \
     } \
     else { \
-        if (NULL != node->temp) { /* 此时temp指向node的孩子节点 或 NULL */ \
+        if (NULL != node->temp) { /* 此时temp指向node的孩子结点 或 NULL */ \
             /* sprintf(sp->ptr, ">"); */ \
             len++; \
         } \
@@ -251,11 +251,11 @@ int xml_fprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, FILE *fp)
     } \
 }
 #else /*__XML_PACK_CMARK__*/
-/* 组包节点值的长度(注: XML无层次格式) */
+/* 组包结点值的长度(注: XML无层次格式) */
 #define xml_pack_value_len(node, len) \
 { \
     if (xml_has_value(node)) { \
-        if (xml_has_child(node)) { /* 此时temp指向node的孩子节点 或 NULL */ \
+        if (xml_has_child(node)) { /* 此时temp指向node的孩子结点 或 NULL */ \
             /* sprintf(sp->ptr, ">%s", node->value); */ \
             len += node->value.len+1; \
         } \
@@ -265,7 +265,7 @@ int xml_fprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, FILE *fp)
         } \
     } \
     else { \
-        if (NULL != node->temp) { /* 此时temp指向node的孩子节点 或 NULL */ \
+        if (NULL != node->temp) { /* 此时temp指向node的孩子结点 或 NULL */ \
             /* sprintf(sp->ptr, ">"); */ \
             len++; \
         } \
@@ -279,9 +279,9 @@ int xml_fprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, FILE *fp)
 
 /******************************************************************************
  **函数名称: xml_pack_next_len
- **功    能: 选择下一个处理的节点, 并计算组包结束节点报文的长度(注: XML无层次格式)
+ **功    能: 选择下一个处理的结点, 并计算组包结束结点报文的长度(注: XML无层次格式)
  **输入参数:
- **     root: 根节点
+ **     root: 根结点
  **     stack: 栈
  **     len: 长度统计
  **输出参数:
@@ -289,8 +289,8 @@ int xml_fprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, FILE *fp)
  **实现描述:
  **注意事项:
  **     1. 刚开始时，栈的深度必须为1.
- **     2. 此时temp用来记录正在处理孩子节点
- **     3. 不打印root的兄弟节点
+ **     2. 此时temp用来记录正在处理孩子结点
+ **     3. 不打印root的兄弟结点
  **作    者: # Qifeng.zou # 2013.06.11 #
  ******************************************************************************/
 static xml_node_t *xml_pack_next_len(
@@ -299,7 +299,7 @@ static xml_node_t *xml_pack_next_len(
     int len2;
     xml_node_t *top, *child;
 
-    /* 首先: 处理孩子节点: 选出下一个孩子节点 */
+    /* 首先: 处理孩子结点: 选出下一个孩子结点 */
 
     if (NULL != node->temp) {
         child = node->temp;
@@ -308,11 +308,11 @@ static xml_node_t *xml_pack_next_len(
         return node;
     }
 
-    /* 再次: 处理其兄弟节点: 选出下一个兄弟节点 */
+    /* 再次: 处理其兄弟结点: 选出下一个兄弟结点 */
 
     len2 = 0;
 
-    /* 1. 弹出已经处理完成的节点 */
+    /* 1. 弹出已经处理完成的结点 */
     top = stack_gettop(stack);
     if (xml_has_child(top)) {
         /* sprintf(sp->ptr, "</%s>", top->name); */
@@ -325,16 +325,16 @@ static xml_node_t *xml_pack_next_len(
         return NULL;
     }
 
-    if (stack_empty(stack)) {
+    if (stack_isempty(stack)) {
         *len += len2;
-        log_error(xml->log, "Compelte fprint!");
+        log_debug(xml->log, "Compelte fprint!");
         return NULL;
     }
 
-    /* 2. 处理其下一个兄弟节点 */
+    /* 2. 处理其下一个兄弟结点 */
     node = top->next;
-    while (NULL == node) {    /* 所有兄弟节点已经处理完成，说明父亲节点也处理完成 */
-        /* 3. 父亲节点出栈 */
+    while (NULL == node) {    /* 所有兄弟结点已经处理完成，说明父亲结点也处理完成 */
+        /* 3. 父亲结点出栈 */
         top = stack_pop(stack);
         if (NULL == top) {
             *len += len2;
@@ -342,18 +342,18 @@ static xml_node_t *xml_pack_next_len(
             return NULL;
         }
 
-        /* 4. 打印父亲节点结束标志 */
+        /* 4. 打印父亲结点结束标志 */
         if (xml_has_child(top)) {
             /* sprintf(sp->ptr, "</%s>", top->name); */
             len2 += top->name.len+3;
         }
 
-        if (stack_empty(stack)) {
+        if (stack_isempty(stack)) {
             *len += len2;
             return NULL;    /* 处理完成 */
         }
 
-        /* 5. 选择父亲的兄弟节点 */
+        /* 5. 选择父亲的兄弟结点 */
         node = top->next;
     }
 
@@ -363,12 +363,12 @@ static xml_node_t *xml_pack_next_len(
 
 /******************************************************************************
  **函数名称: xml_pack_node_len
- **功    能: 计算节点打印成XML报文字串时的长度(注: XML无层次结构)
+ **功    能: 计算结点打印成XML报文字串时的长度(注: XML无层次结构)
  **输入参数:
- **     root: XML树根节点
+ **     root: XML树根结点
  **     stack: 栈
  **输出参数:
- **返    回: 节点及其属性、孩子节点的总长度
+ **返    回: 结点及其属性、孩子结点的总长度
  **实现描述:
  **注意事项:
  **作    者: # Qifeng.zou # 2013.06.11 #
@@ -387,7 +387,7 @@ int xml_pack_node_len(xml_tree_t *xml, xml_node_t *root, Stack_t *stack)
     len = 0;
 
     do {
-        /* 1. 将要处理的节点压栈 */
+        /* 1. 将要处理的结点压栈 */
         node->temp = node->child;
 
         if (stack_push(stack, node)) {
@@ -395,38 +395,38 @@ int xml_pack_node_len(xml_tree_t *xml, xml_node_t *root, Stack_t *stack)
             return XML_ERR_STACK;
         }
 
-        /* 2. 打印节点名 */
+        /* 2. 打印结点名 */
         depth = stack_depth(stack);
 
         xml_pack_name_len(node, len);
 
-        /* 3. 打印属性节点 */
+        /* 3. 打印属性结点 */
         if (xml_has_attr(node)) {
             xml_pack_attr_len(node, len);
         }
 
-        /* 4. 打印节点值 */
+        /* 4. 打印结点值 */
         xml_pack_value_len(node, len);
 
-        /* 5. 选择下一个处理的节点: 从父亲节点、兄弟节点、孩子节点中 */
+        /* 5. 选择下一个处理的结点: 从父亲结点、兄弟结点、孩子结点中 */
         node = xml_pack_next_len(xml, stack, node, &len);
     } while (NULL != node);
 
-    if (!stack_empty(stack)) {
+    if (!stack_isempty(stack)) {
         return XML_ERR_STACK;
     }
 
     return len;
 }
 
-/* 打印节点名(注: XML无层次格式) */
+/* 打印结点名(注: XML无层次格式) */
 #define xml_pack_name(sp, node) \
 { \
     sprintf(sp->ptr, "<%s", node->name.str);\
     sp->ptr += (1+node->name.len);\
 }
 
-/* 打印属性节点(注: XML无层次格式) */
+/* 打印属性结点(注: XML无层次格式) */
 #define xml_pack_attr(sp, node) \
 { \
     while (NULL != node->temp) { \
@@ -441,11 +441,11 @@ int xml_pack_node_len(xml_tree_t *xml, xml_node_t *root, Stack_t *stack)
 }
 
 #if defined(__XML_PACK_CMARK__)
-/* 打印节点值(注: XML无层次格式) */
+/* 打印结点值(注: XML无层次格式) */
 #define xml_pack_value(sp, node) \
 { \
     if (xml_has_value(node)) { \
-        if (xml_has_child(node)) { /* 此时temp指向node的孩子节点 或 NULL */ \
+        if (xml_has_child(node)) { /* 此时temp指向node的孩子结点 或 NULL */ \
             sprintf(sp->ptr, ">%s", node->value.str); \
             sp->ptr += (node->value.len + 1); \
         } \
@@ -455,7 +455,7 @@ int xml_pack_node_len(xml_tree_t *xml, xml_node_t *root, Stack_t *stack)
         } \
     } \
     else { \
-        if (NULL != node->temp) { /* 此时temp指向node的孩子节点 或 NULL */ \
+        if (NULL != node->temp) { /* 此时temp指向node的孩子结点 或 NULL */ \
             sprintf(sp->ptr, ">"); \
             sp->ptr += 1; \
         } \
@@ -466,11 +466,11 @@ int xml_pack_node_len(xml_tree_t *xml, xml_node_t *root, Stack_t *stack)
     } \
 }
 #else /*__XML_PACK_CMARK__*/
-/* 打印节点值(注: XML无层次格式) */
+/* 打印结点值(注: XML无层次格式) */
 #define xml_pack_value(sp, node) \
 { \
     if (xml_has_value(node)) { \
-        if (xml_has_child(node)) { /* 此时temp指向node的孩子节点 或 NULL */ \
+        if (xml_has_child(node)) { /* 此时temp指向node的孩子结点 或 NULL */ \
             sprintf(sp->ptr, ">%s", node->value.str); \
             sp->ptr += (node->value.len + 1); \
         } \
@@ -480,7 +480,7 @@ int xml_pack_node_len(xml_tree_t *xml, xml_node_t *root, Stack_t *stack)
         } \
     } \
     else { \
-        if (NULL != node->temp) { /* 此时temp指向node的孩子节点 或 NULL */ \
+        if (NULL != node->temp) { /* 此时temp指向node的孩子结点 或 NULL */ \
             sprintf(sp->ptr, ">"); \
             sp->ptr += 1; \
         } \
@@ -494,9 +494,9 @@ int xml_pack_node_len(xml_tree_t *xml, xml_node_t *root, Stack_t *stack)
 
 /******************************************************************************
  **函数名称: xml_pack_next
- **功    能: 选择下一个处理的节点(注: XML无层次格式)
+ **功    能: 选择下一个处理的结点(注: XML无层次格式)
  **输入参数:
- **     root: 根节点
+ **     root: 根结点
  **     stack: 栈
  **     sp: 缓存指针
  **输出参数:
@@ -504,8 +504,8 @@ int xml_pack_node_len(xml_tree_t *xml, xml_node_t *root, Stack_t *stack)
  **实现描述:
  **注意事项:
  **     1. 刚开始时，栈的深度必须为1.
- **     2. 此时temp用来记录正在处理孩子节点
- **     3. 不打印root的兄弟节点
+ **     2. 此时temp用来记录正在处理孩子结点
+ **     3. 不打印root的兄弟结点
  **作    者: # Qifeng.zou # 2013.03.01 #
  ******************************************************************************/
 static xml_node_t *xml_pack_next(
@@ -513,16 +513,16 @@ static xml_node_t *xml_pack_next(
 {
     xml_node_t *top, *child;
 
-    if (NULL != node->temp) {    /* 首先: 处理孩子节点: 选出下一个孩子节点 */
+    if (NULL != node->temp) {    /* 首先: 处理孩子结点: 选出下一个孩子结点 */
         child = node->temp;
         node->temp = child->next;
         node = child;
         return node;
     }
 
-    /* 再次: 处理其兄弟节点: 选出下一个兄弟节点 */
+    /* 再次: 处理其兄弟结点: 选出下一个兄弟结点 */
 
-    /* 1. 弹出已经处理完成的节点 */
+    /* 1. 弹出已经处理完成的结点 */
     top = stack_pop(stack);
     if (NULL == top) {
         log_error(xml->log, "Stack pop failed!");
@@ -534,32 +534,32 @@ static xml_node_t *xml_pack_next(
         sp->ptr += (top->name.len + 3);
     }
 
-    if (stack_empty(stack)) {
+    if (stack_isempty(stack)) {
         log_error(xml->log, "Compelte fprint!");
         return NULL;
     }
 
-    /* 2. 处理其下一个兄弟节点 */
+    /* 2. 处理其下一个兄弟结点 */
     node = top->next;
-    while (NULL == node) {   /* 所有兄弟节点已经处理完成，说明父亲节点也处理完成 */
-        /* 3. 父亲节点出栈 */
+    while (NULL == node) {   /* 所有兄弟结点已经处理完成，说明父亲结点也处理完成 */
+        /* 3. 父亲结点出栈 */
         top = stack_pop(stack);
         if (NULL == top) {
             log_error(xml->log, "Stack pop failed!");
             return NULL;
         }
 
-        /* 4. 打印父亲节点结束标志 */
+        /* 4. 打印父亲结点结束标志 */
         if (xml_has_child(top)) {
             sprintf(sp->ptr, "</%s>", top->name.str);
             sp->ptr += (top->name.len + 3);
         }
 
-        if (stack_empty(stack)) {
+        if (stack_isempty(stack)) {
             return NULL;    /* 处理完成 */
         }
 
-        /* 5. 选择父亲的兄弟节点 */
+        /* 5. 选择父亲的兄弟结点 */
         node = top->next;
     }
 
@@ -568,9 +568,9 @@ static xml_node_t *xml_pack_next(
 
 /******************************************************************************
  **函数名称: xml_pack_tree
- **功    能: 将栈中XML节点的相关信息打印至缓存(注: XML无层次格式)
+ **功    能: 将栈中XML结点的相关信息打印至缓存(注: XML无层次格式)
  **输入参数:
- **     root: 根节点
+ **     root: 根结点
  **     stack: 栈
  **     sp: 缓存指针
  **输出参数:
@@ -578,8 +578,8 @@ static xml_node_t *xml_pack_next(
  **实现描述:
  **注意事项:
  **     1. 刚开始时，栈的深度必须为1.
- **     2. 此时temp用来记录正在处理孩子节点
- **     3. 不打印root的兄弟节点
+ **     2. 此时temp用来记录正在处理孩子结点
+ **     3. 不打印root的兄弟结点
  **作    者: # Qifeng.zou # 2013.03.01 #
  ******************************************************************************/
 int xml_pack_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, sprint_t *sp)
@@ -594,31 +594,31 @@ int xml_pack_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, sprint_t *s
     }
 
     do {
-        /* 1. 将要处理的节点压栈 */
+        /* 1. 将要处理的结点压栈 */
         node->temp = node->child;
         if (stack_push(stack, node)) {
             log_error(xml->log, "Stack push failed!");
             return XML_ERR_STACK;
         }
 
-        /* 2. 打印节点名 */
+        /* 2. 打印结点名 */
         depth = stack_depth(stack);
 
         xml_pack_name(sp, node);
 
-        /* 3. 打印属性节点 */
+        /* 3. 打印属性结点 */
         if (xml_has_attr(node)) {
             xml_pack_attr(sp, node);
         }
 
-        /* 4. 打印节点值 */
+        /* 4. 打印结点值 */
         xml_pack_value(sp, node);
 
-        /* 5. 选择下一个处理的节点: 从父亲节点、兄弟节点、孩子节点中 */
+        /* 5. 选择下一个处理的结点: 从父亲结点、兄弟结点、孩子结点中 */
         node = xml_pack_next(xml, stack, node, sp);
     } while (NULL != node);
 
-    if (!stack_empty(stack)) {
+    if (!stack_isempty(stack)) {
         log_error(xml->log, "Stack is not empty!");
         return XML_ERR_STACK;
     }
@@ -630,7 +630,7 @@ int xml_pack_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, sprint_t *s
  **                              打印成有层次结构                            **
  **                                 (内存中)                                 **
  ******************************************************************************/
-/* 打印节点名(注: XML有层次格式) */
+/* 打印结点名(注: XML有层次格式) */
 #define xml_sprint_name(sp, node, depth) \
 { \
     while (depth > 1) {   \
@@ -641,7 +641,7 @@ int xml_pack_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, sprint_t *s
     sp->ptr += (node->name.len + 1);\
 }
 
-/* 打印属性节点(注: XML有层次格式) */
+/* 打印属性结点(注: XML有层次格式) */
 #define xml_sprint_attr(sp, node) \
 { \
     while (NULL != node->temp) { \
@@ -655,11 +655,11 @@ int xml_pack_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, sprint_t *s
     } \
 }
 
-/* 打印节点值(注: XML有层次格式) */
+/* 打印结点值(注: XML有层次格式) */
 #define xml_sprint_value(sp, node) \
 { \
     if (xml_has_value(node)) { \
-        if (xml_has_child(node)) {/* 此时temp指向node的孩子节点 或 NULL */ \
+        if (xml_has_child(node)) {/* 此时temp指向node的孩子结点 或 NULL */ \
             sprintf(sp->ptr, ">%s\n", node->value.str); \
             sp->ptr += (node->value.len + 2); \
         } \
@@ -669,7 +669,7 @@ int xml_pack_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, sprint_t *s
         } \
     } \
     else { \
-        if (NULL != node->temp) { /* 此时temp指向node的孩子节点 或 NULL */ \
+        if (NULL != node->temp) { /* 此时temp指向node的孩子结点 或 NULL */ \
             sprintf(sp->ptr, ">\n"); \
             sp->ptr += 2; \
         } \
@@ -682,9 +682,9 @@ int xml_pack_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, sprint_t *s
 
 /******************************************************************************
  **函数名称: xml_sprint_next
- **功    能: 选择下一个处理的节点(注: XML有层次格式)
+ **功    能: 选择下一个处理的结点(注: XML有层次格式)
  **输入参数:
- **     root: 根节点
+ **     root: 根结点
  **     stack: 栈
  **     sp: 缓存指针
  **输出参数:
@@ -692,8 +692,8 @@ int xml_pack_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, sprint_t *s
  **实现描述:
  **注意事项:
  **     1. 刚开始时，栈的深度必须为1.
- **     2. 此时temp用来记录正在处理孩子节点
- **     3. 不打印root的兄弟节点
+ **     2. 此时temp用来记录正在处理孩子结点
+ **     3. 不打印root的兄弟结点
  **作    者: # Qifeng.zou # 2013.02.27 #
  ******************************************************************************/
 static xml_node_t *xml_sprint_next(
@@ -702,14 +702,14 @@ static xml_node_t *xml_sprint_next(
     int depth, level;
     xml_node_t *top, *child;
 
-    if (NULL != node->temp) {    /* 首先: 处理孩子节点: 选出下一个孩子节点 */
+    if (NULL != node->temp) {    /* 首先: 处理孩子结点: 选出下一个孩子结点 */
         child = node->temp;
         node->temp = child->next;
         node = child;
         return node;
     }
-    else {                      /* 再次: 处理其兄弟节点: 选出下一个兄弟节点 */
-        /* 1. 弹出已经处理完成的节点 */
+    else {                      /* 再次: 处理其兄弟结点: 选出下一个兄弟结点 */
+        /* 1. 弹出已经处理完成的结点 */
         top = stack_pop(stack);
         if (xml_has_child(top)) {
             depth = stack_depth(stack);
@@ -723,22 +723,22 @@ static xml_node_t *xml_sprint_next(
             sp->ptr += (top->name.len + 4);
         }
 
-        if (stack_empty(stack)) {
+        if (stack_isempty(stack)) {
             log_error(xml->log, "Compelte fprint!");
             return NULL;
         }
 
-        /* 2. 处理其下一个兄弟节点 */
+        /* 2. 处理其下一个兄弟结点 */
         node = top->next;
-        while (NULL == node) {   /* 所有兄弟节点已经处理完成，说明父亲节点也处理完成 */
-            /* 3. 父亲节点出栈 */
+        while (NULL == node) {   /* 所有兄弟结点已经处理完成，说明父亲结点也处理完成 */
+            /* 3. 父亲结点出栈 */
             top = stack_pop(stack);
             if (NULL == top) {
                 log_error(xml->log, "Stack pop failed!");
                 return NULL;
             }
 
-            /* 4. 打印父亲节点结束标志 */
+            /* 4. 打印父亲结点结束标志 */
             if (xml_has_child(top)) {
                 depth = stack_depth(stack);
                 level = depth + 1;
@@ -751,11 +751,11 @@ static xml_node_t *xml_sprint_next(
                 sp->ptr += (top->name.len + 4);
             }
 
-            if (stack_empty(stack)) {
+            if (stack_isempty(stack)) {
                 return NULL;    /* 处理完成 */
             }
 
-            /* 5. 选择父亲的兄弟节点 */
+            /* 5. 选择父亲的兄弟结点 */
             node = top->next;
         }
     }
@@ -765,9 +765,9 @@ static xml_node_t *xml_sprint_next(
 
 /******************************************************************************
  **函数名称: xml_sprint_tree
- **功    能: 将栈中XML节点的相关信息打印至缓存(注: XML有层次格式)
+ **功    能: 将栈中XML结点的相关信息打印至缓存(注: XML有层次格式)
  **输入参数:
- **     root: 根节点
+ **     root: 根结点
  **     stack: 栈
  **     sp: 缓存指针
  **输出参数:
@@ -775,8 +775,8 @@ static xml_node_t *xml_sprint_next(
  **实现描述:
  **注意事项:
  **     1. 刚开始时，栈的深度必须为1.
- **     2. 此时temp用来记录正在处理孩子节点
- **     3. 不打印root的兄弟节点
+ **     2. 此时temp用来记录正在处理孩子结点
+ **     3. 不打印root的兄弟结点
  **作    者: # Qifeng.zou # 2013.02.27 #
  ******************************************************************************/
 int xml_sprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, sprint_t *sp)
@@ -791,31 +791,31 @@ int xml_sprint_tree(xml_tree_t *xml, xml_node_t *root, Stack_t *stack, sprint_t 
     }
 
     do {
-        /* 1. 将要处理的节点压栈 */
+        /* 1. 将要处理的结点压栈 */
         node->temp = node->child;
         if (stack_push(stack, node)) {
             log_error(xml->log, "Stack push failed!");
             return XML_ERR_STACK;
         }
 
-        /* 2. 打印节点名 */
+        /* 2. 打印结点名 */
         depth = stack_depth(stack);
 
         xml_sprint_name(sp, node, depth);
 
-        /* 3. 打印属性节点 */
+        /* 3. 打印属性结点 */
         if (xml_has_attr(node)) {
             xml_sprint_attr(sp, node);
         }
 
-        /* 4. 打印节点值 */
+        /* 4. 打印结点值 */
         xml_sprint_value(sp, node);
 
-        /* 5. 选择下一个处理的节点: 从父亲节点、兄弟节点、孩子节点中 */
+        /* 5. 选择下一个处理的结点: 从父亲结点、兄弟结点、孩子结点中 */
         node = xml_sprint_next(xml, stack, node, sp);
     } while(NULL != node);
 
-    if (!stack_empty(stack)) {
+    if (!stack_isempty(stack)) {
         log_error(xml->log, "Stack is not empty!");
         return XML_ERR_STACK;
     }

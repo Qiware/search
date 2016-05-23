@@ -7,7 +7,7 @@
 /* 配置信息 */
 typedef struct
 {
-    int nodeid;                         /* 结点ID */
+    int nid;                            /* 结点ID */
     int invt_tab_max;                   /* 倒排表长度 */
     rtmq_proxy_conf_t frwder;           /* FRWDER配置 */
 } invtd_conf_t;
