@@ -57,7 +57,7 @@ rtmq_worker_t *rtmq_proxy_worker_get_by_idx(rtmq_proxy_t *pxy, int idx);
 /* 对外接口 */
 rtmq_proxy_t *rtmq_proxy_init(const rtmq_proxy_conf_t *conf, log_cycle_t *log);
 int rtmq_proxy_launch(rtmq_proxy_t *pxy);
-int rtmq_proxy_register(rtmq_proxy_t *pxy, int type, rtmq_reg_cb_t proc, void *args);
+int rtmq_proxy_reg_add(rtmq_proxy_t *pxy, int type, rtmq_reg_cb_t proc, void *args);
 int rtmq_proxy_async_send(rtmq_proxy_t *pxy, int type, const void *data, size_t size);
 
 #endif /*__RTMQ_PROXY_H__*/

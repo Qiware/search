@@ -441,7 +441,7 @@ static int agent_init_reg(agent_cntx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: agent_register
+ **函数名称: agent_reg_add
  **功    能: 注册消息处理函数
  **输入参数:
  **     ctx: 全局信息
@@ -456,7 +456,7 @@ static int agent_init_reg(agent_cntx_t *ctx)
  **     2. 不允许重复注册 
  **作    者: # Qifeng.zou # 2014.12.20 #
  ******************************************************************************/
-int agent_register(agent_cntx_t *ctx, unsigned int type, agent_reg_cb_t proc, void *args)
+int agent_reg_add(agent_cntx_t *ctx, unsigned int type, agent_reg_cb_t proc, void *args)
 {
     agent_reg_t *reg;
 

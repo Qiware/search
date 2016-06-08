@@ -15,9 +15,12 @@ INCLUDE = -I./incl \
 			-I$(PROJ)/src/incl/agent
 INCLUDE += $(GLOBAL_INCLUDE)
 LIBS_PATH = -L$(PROJ)/lib
-LIBS = -lpthread -lcore -lagent -lrtmq
+
+# 静态链接库
+STATIC_LIB_LIST = libev.a librtmq.a libagent.a libcore.a
+LIBS = $(call func_find_static_link_lib,$(STATIC_LIB_PATH),$(STATIC_LIB_LIST))
+LIBS += -lpthread -lm -dl
 LIBS += $(SHARED_LIB)
-LIBS_A = $(PROJ_LIB)/libcore.a $(PROJ_LIB)/libagent.a $(PROJ_LIB)/librtmq.a
 
 SRC_LIST = listend.c \
 			lsnd_comm.c \
@@ -33,8 +36,8 @@ TARGET = listend
 
 all: $(TARGET)
 $(TARGET): $(OBJS)
-	@$(CC) $(CFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS_A) $(LIBS)
-	@echo "CC $@"
+	@$(CC) $(CFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS)
+	@echo "CC $@ $(STATIC_LIBS)"
 	@mv $@ $(PROJ_BIN)/$@-$(VERSION)
 	@rm -f $(PROJ_BIN)/$@
 	@ln -s $(PROJ_BIN)/$@-$(VERSION) $(PROJ_BIN)/$@
@@ -42,6 +45,7 @@ $(TARGET): $(OBJS)
 
 $(OBJS): %.o : %.c $(HEADS)
 	@$(CC) $(CFLAGS) -c $< -o $@ $(INCLUDE)
+	@echo "LIBS: $(LIBS)"
 	@echo "CC $(PWD)/$<"
 
 clean:

@@ -55,5 +55,5 @@ $(OBJS): %.o : %.c $(HEADS)
 	@echo "CC $(PWD)/$<"
 
 clean:
-	@rm -fr *.o $(PROJ_LIB)/$(TARGET) $(PROJ_LIB)/$(TARGET_A)
-	@echo "rm -fr *.o $(PROJ_LIB)/$(TARGET) $(PROJ_LIB)/$(TARGET_A)"
+	@rm -fr server/*.o proxy/*.o $(PROJ_LIB)/$(TARGET) $(PROJ_LIB)/$(TARGET_A)
+	@echo "rm -fr server/*.o proxy/*.o $(PROJ_LIB)/$(TARGET) $(PROJ_LIB)/$(TARGET_A)"
