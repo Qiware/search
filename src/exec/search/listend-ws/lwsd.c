@@ -7,20 +7,27 @@
  **         负责接受外界请求，并将处理结果返回给外界
  ** 作  者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
+#include <syslog.h>
 
+#include "ev.h"
 #include "sck.h"
 #include "lock.h"
 #include "mesg.h"
 #include "redo.h"
 #include "lwsd.h"
 #include "hash_alg.h"
-#include "lwsd_lws.h"
 #include "lwsd_mesg.h"
+#include "lwsd_search.h"
+#include "libwebsockets.h"
 
 static lwsd_cntx_t *lwsd_init(const lwsd_opt_t *opt, const lwsd_conf_t *conf, log_cycle_t *log);
 static int lwsd_launch(lwsd_cntx_t *ctx);
 
-static int lwsd_lws_get_attr(const lwsd_conf_t *conf, struct lws_context_creation_info *info);
+static struct libwebsocket_context *lwsd_lws_init(
+        const lwsd_opt_t *opt, const lwsd_conf_t *conf, log_cycle_t *log);
+
+static int lwsd_lws_get_attr(const lwsd_opt_t *opt,
+        const lwsd_conf_t *conf, struct lws_context_creation_info *info);
 static int lwsd_lws_launch(lwsd_cntx_t *ctx);
 static int lwsd_set_reg(lwsd_cntx_t *ctx);
 
@@ -133,7 +140,7 @@ LWSD_INIT_ERR:
  **注意事项: 
  **作    者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
-static int lwsd_proc_lock(lwsd_conf_t *conf)
+static int lwsd_proc_lock(const lwsd_conf_t *conf)
 {
     int fd;
     char path[FILE_PATH_MAX_LEN];
@@ -193,21 +200,21 @@ static lwsd_cntx_t *lwsd_init(const lwsd_opt_t *opt, const lwsd_conf_t *conf, lo
 
     do {
         /* > 创建LWS REG表 */
-        ctx->lws_reg = avl_creat(NULL, key_cb_int32, cmp_cb_int32)
+        ctx->lws_reg = avl_creat(NULL, (key_cb_t)key_cb_int32, (cmp_cb_t)cmp_cb_int32);
         if (NULL == ctx->lws_reg) {
             log_error(log, "Create avl failed!");
             break;
         }
 
         /* > 创建LWS WSI表 */
-        ctx->wsi_list = rbt_creat(NULL, key_cb_int32, cmp_cb_int32)
+        ctx->wsi_list = rbt_creat(NULL, (key_cb_t)key_cb_int32, (cmp_cb_t)cmp_cb_int32);
         if (NULL == ctx->wsi_list) {
             log_error(log, "Create rbt failed!");
             break;
         }
 
         /* > 初始化LWS对象 */
-        ctx->lws = lwsd_lws_init(opt, &conf, log);
+        ctx->lws = (struct libwebsocket_context *)lwsd_lws_init(opt, conf, log);
         if (NULL == ctx->lws) {
             log_error(log, "Init lws failed!");
             break;
@@ -241,7 +248,7 @@ static lwsd_cntx_t *lwsd_init(const lwsd_opt_t *opt, const lwsd_conf_t *conf, lo
 static int lwsd_set_reg(lwsd_cntx_t *ctx)
 {
 #define LWSD_LWS_REG_CB(lsnd, type, proc, args) /* 注册队列数据回调 */\
-    if (lwsd_lws_reg_add((lsnd)->lws_reg, type, (lws_reg_cb_t)proc, (void *)args)) { \
+    if (lwsd_lws_reg_add((lsnd), type, (lws_reg_cb_t)proc, (void *)args)) { \
         log_error((lsnd)->log, "Register type [%d] failed!", type); \
         return LWSD_ERR; \
     }
@@ -301,7 +308,7 @@ static int lwsd_lws_launch(lwsd_cntx_t *ctx)
     struct libwebsocket_context *lws = ctx->lws;
 
     n = 0;
-    while (n >= 0 && !lwsd_is_exit()) {
+    while (n >= 0) {
         /*
          * If libwebsockets sockets are all we care about,
          * you can use this api which takes care of the poll()
@@ -320,27 +327,6 @@ static int lwsd_lws_launch(lwsd_cntx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: lwsd_sig_hdl
- **功    能: 信号处理函数
- **输入参数:
- **     sig: 信号类型
- **输出参数: NONE
- **返    回: VOID
- **实现描述: 释放全局资源
- **注意事项:
- **作    者: # Qifeng.zou # 2015.11.17 #
- ******************************************************************************/
-static void lwsd_sig_hdl(int sig)
-{
-    lwsd_cntx_t *ctx = LWSD_GET_CTX();
-    struct libwebsocket_context *lws = ctx->lws;
-
-    lwsd_set_exit(1);
-    libwebsocket_cancel_service(lws);
-    exit(-1);
-}
-
-/******************************************************************************
  **函数名称: lwsd_lws_init
  **功    能: 初始化LWS环境
  **输入参数:
@@ -352,7 +338,7 @@ static void lwsd_sig_hdl(int sig)
  **注意事项:
  **作    者: # Qifeng.zou # 2016.06.06 20:07:45 #
  ******************************************************************************/
-struct libwebsocket_context *lwsd_lws_init(
+static struct libwebsocket_context *lwsd_lws_init(
         const lwsd_opt_t *opt, const lwsd_conf_t *conf, log_cycle_t *log)
 {
     struct ev_loop *loop;
@@ -362,7 +348,7 @@ struct libwebsocket_context *lwsd_lws_init(
     memset(&info, 0, sizeof info);
 
     /* 获取LWS属性 */
-    if (lwsd_lws_get_attr(opt, &conf, &info)) {
+    if (lwsd_lws_get_attr(opt, conf, &info)) {
         return NULL;
     }
 
@@ -396,8 +382,10 @@ struct libwebsocket_context *lwsd_lws_init(
  **作    者: # Qifeng.zou # 2016.06.06 20:14:52 #
  ******************************************************************************/
 static int lwsd_lws_get_attr(const lwsd_opt_t *opt,
-        const lwsd_conf_t *conf, struct lws_context_creation_info *info)
+        const lwsd_conf_t *lcf, struct lws_context_creation_info *info)
 {
+    const lws_conf_t *conf = &lcf->lws;
+
     /* 开启日志 */
     setlogmask(LOG_UPTO (LOG_DEBUG));
 
@@ -406,25 +394,25 @@ static int lwsd_lws_get_attr(const lwsd_opt_t *opt,
     lws_set_log_level(opt->log_level, lwsl_emit_syslog);
 
     /* 设置参数 */
-    info.port = conf->listenport;
-    info.iface = conf->iface;
-    info.protocols = g_lwsd_protocols; // 设置协议回调
+    info->port = conf->connections.port;
+    info->iface = conf->iface;
+    info->protocols = g_lwsd_protocols; // 设置协议回调
 #if !defined(LWS_NO_EXTENSIONS)
-    info.extensions = libwebsocket_get_internal_extensions();
+    info->extensions = libwebsocket_get_internal_extensions();
 #endif /*LWS_NO_EXTENSIONS*/
 
-    if (!conf->use_ssl) {
-        info.ssl_cert_filepath = NULL;
-        info.ssl_private_key_filepath = NULL;
+    if (!conf->is_use_ssl) {
+        info->ssl_cert_filepath = NULL;
+        info->ssl_private_key_filepath = NULL;
     }
     else {
-        info.ssl_cert_filepath = conf->cert_path;
-        info.ssl_private_key_filepath = conf->key_path;
+        info->ssl_cert_filepath = conf->cert_path;
+        info->ssl_private_key_filepath = conf->key_path;
     }
 
-    info.gid = -1;
-    info.uid = -1;
-    info.options = LWS_SERVER_OPTION_LIBEV;
+    info->gid = -1;
+    info->uid = -1;
+    info->options = LWS_SERVER_OPTION_LIBEV;
 
     return 0;
 }

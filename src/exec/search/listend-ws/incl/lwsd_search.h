@@ -1,9 +1,13 @@
-#if !defined(__LWSD_LWS_H__)
-#define __LWSD_LWS_H__
+#if !defined(__LWSD_SEARCH_H__)
+#define __LWSD_SEARCH_H__
+
+#include "list.h"
+#include "lwsd.h"
+#include "libwebsockets.h"
 
 #define LWSD_MARK_STR_LEN   (64)
 
-typedef int (*lws_reg_cb_t)(int type, int orig, char *data, size_t len, void *param);
+typedef int (*lws_reg_cb_t)(int type, char *data, size_t len, void *param);
 
 /* 注册对象 */
 typedef struct
@@ -38,13 +42,16 @@ typedef struct
     lwsd_mesg_payload_t *pl;                /* 当前正在发送的数据...(注意: 连接断开时, 记得释放该空间) */
 } lwsd_search_user_data_t;
 
+int lwsd_lws_reg_add(lwsd_cntx_t *ctx, int type, lws_reg_cb_t proc, void *args);
+int lwsd_wsi_async_send(lwsd_cntx_t *ctx, const void *addr, size_t len);
 int lwsd_callback_search_hdl(struct libwebsocket_context *lws,
         struct libwebsocket *wsi, enum libwebsocket_callback_reasons reason,
         void *user, void *in, size_t len);
 
 /* 全局对象 */
-extern lwsd_cntx_t *g_lwsd_ctx = NULL;
+extern lwsd_cntx_t *g_lwsd_ctx;
+
 #define LWSD_GET_CTX() (g_lwsd_ctx)
 #define LWSD_SET_CTX(ctx) (g_lwsd_ctx = (ctx))
 
-#endif /*__LWSD_LWS_H__*/
+#endif /*__LWSD_SEARCH_H__*/

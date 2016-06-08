@@ -378,7 +378,7 @@ static int lwsd_conf_load_lws(xml_tree_t *xml, lwsd_conf_t *lcf, log_cycle_t *lo
     if (NULL == node
         || 0 == node->value.len)
     {
-        snprintf(conf->iface, sizeof(conf->iface), "");
+        snprintf(conf->iface, sizeof(conf->iface), ".");
     }
     else {
         snprintf(conf->iface, sizeof(conf->iface), "%s", node->value.str);

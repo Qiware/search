@@ -4,7 +4,11 @@
 #include "log.h"
 #include "comm.h"
 #include "lwsd.h"
+#include "rb_tree.h"
+#include "avl_tree.h"
 #include "lwsd_conf.h"
+
+#include <libwebsockets.h>
 
 #define LWSD_DEF_CONF_PATH      "../conf/listend-ws.xml"     /* 默认配置路径 */
 
@@ -40,7 +44,7 @@ typedef struct
 
 #define LWSD_GEN_SEQ(ctx) (++(ctx)->wsi_seq)
 
-int lwsd_getopt(int argc, const char **argv, lwsd_opt_t *opt);
+int lwsd_getopt(int argc, char **argv, lwsd_opt_t *opt);
 int lwsd_usage(const char *exec);
 
 #endif /*__LWSD_H__*/

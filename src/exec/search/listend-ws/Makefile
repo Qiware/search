@@ -11,18 +11,21 @@ include $(PROJ)/make/build.mak
 INCLUDE = -I./incl \
 			-I$(PROJ)/src/incl \
 			-I$(PROJ)/src/incl/sdtp \
-			-I$(PROJ)/src/incl/rtmq
+			-I$(PROJ)/src/incl/rtmq \
+		  	-I/usr/local/include/
 INCLUDE += $(GLOBAL_INCLUDE)
 LIBS_PATH = -L$(PROJ)/lib
-LIBS = -lpthread -lcore -lwebsockets -lrtmq
+# 注: 静态库请放在动态库之前
+STATIC_LIB_LIST = librtmq.a libcore.a
+LIBS = $(call func_find_static_link_lib,$(STATIC_LIB_PATH),$(STATIC_LIB_LIST))
+LIBS += -lpthread -lwebsockets -lev
 LIBS += $(SHARED_LIB)
-LIBS_A = $(PROJ_LIB)/libcore.a $(PROJ_LIB)/libagent.a $(PROJ_LIB)/librtmq.a
 
 SRC_LIST = lwsd.c \
-			lwsd_lws.c \
 			lwsd_comm.c \
 			lwsd_mesg.c \
-			lwsd_conf.c
+			lwsd_conf.c \
+			lwsd_search.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST))
 HEADS = $(call func_get_dep_head_list, $(SRC_LIST))
@@ -33,7 +36,7 @@ TARGET = listend-ws
 
 all: $(TARGET)
 $(TARGET): $(OBJS)
-	@$(CC) $(CFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS_A) $(LIBS)
+	@$(CC) $(CFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS)
 	@echo "CC $@"
 	@mv $@ $(PROJ_BIN)/$@-$(VERSION)
 	@rm -f $(PROJ_BIN)/$@

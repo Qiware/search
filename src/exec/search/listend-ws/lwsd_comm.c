@@ -18,7 +18,7 @@
  **     h: 帮助手册
  **作    者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
-int lwsd_getopt(int argc, const char **argv, lwsd_opt_t *opt)
+int lwsd_getopt(int argc, char **argv, lwsd_opt_t *opt)
 {
     int ch;
     const struct option opts[] = {

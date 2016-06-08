@@ -10,6 +10,7 @@
 #include "mesg.h"
 #include "lwsd.h"
 #include "lwsd_mesg.h"
+#include "lwsd_search.h"
 
 /******************************************************************************
  **函数名称: lwsd_search_req_hdl
@@ -57,18 +58,15 @@ int lwsd_search_req_hdl(unsigned int type, void *data, int length, void *args)
  ******************************************************************************/
 int lwsd_search_rsp_hdl(int type, int orig, char *data, size_t len, void *args)
 {
-    void *addr;
     lwsd_cntx_t *ctx = (lwsd_cntx_t *)args;
     mesg_header_t *head = (mesg_header_t *)data;
-
-    addr = (void *)(head + 1);
 
     /* > 转化字节序 */
     MESG_HEAD_NTOH(head, head);
 
     log_trace(ctx->log, "Call %s()! body:%s", __func__, head->body);
 
-    return agent_send(ctx->agent, type, head->serial, addr, len-sizeof(mesg_header_t));
+    return lwsd_wsi_async_send(ctx, data, len);
 }
 
 /******************************************************************************
@@ -132,5 +130,5 @@ int lwsd_insert_word_rsp_hdl(int type, int orig, char *data, size_t len, void *a
     MESG_HEAD_NTOH(head, head);
 
     /* > 放入发送队列 */
-    return agent_send(ctx->agent, type, head->serial, (void *)rsp, len - sizeof(mesg_header_t));
+    return lwsd_wsi_async_send(ctx, data, len);
 }

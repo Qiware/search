@@ -1,11 +1,13 @@
-#include "lwsd_lws.h"
+#include "lwsd.h"
+#include "lwsd_search.h"
 
 /* Static function */
 static int lwsd_search_wsi_user_init(lwsd_cntx_t *ctx,
         struct libwebsocket *wsi, lwsd_search_user_data_t *user);
-static int lwsd_search_cmd_hdl(
-        lwsd_cntx_t *ctx, struct libwebsocket_context *lws,
-        struct libwebsocket *wsi, void *user, void *in, size_t len);
+static int lwsd_search_wsi_destroy(lwsd_cntx_t *ctx, lwsd_search_user_data_t *user);
+static int lwsd_search_cmd_hdl(lwsd_cntx_t *ctx,
+        struct libwebsocket_context *lws, struct libwebsocket *wsi,
+        lwsd_search_user_data_t *user, void *in, size_t len);
 static int lwsd_search_wsi_send_data(lwsd_cntx_t *ctx,
         struct libwebsocket_context *lws,
         struct libwebsocket *wsi, lwsd_search_user_data_t *user);
@@ -47,7 +49,7 @@ int lwsd_lws_reg_add(lwsd_cntx_t *ctx, int type, lws_reg_cb_t proc, void *args)
     item->args = (void *)ctx;
 
     /* > 插入注册表 */
-    if (avl_insert(ctx->lws_reg, &type, (void *)item)) {
+    if (avl_insert(ctx->lws_reg, &type, sizeof(type), (void *)item)) {
         log_error(ctx->log, "Insert lws reg table failed!");
         free(item);
         return -1;
@@ -141,7 +143,7 @@ static int lwsd_search_wsi_user_init(lwsd_cntx_t *ctx,
     /* > 创建发送队列 */
     user->send_list = list_creat(NULL);
     if (NULL == user->send_list) {
-        log_error("Create send list failed!");
+        log_error(ctx->log, "Create send list failed!");
         return -1;
     }
 
@@ -232,7 +234,7 @@ static int lwsd_search_cmd_hdl(lwsd_cntx_t *ctx,
     }
 
     /* > 进行消息处理 */
-    reg = (lws_reg_t *)avl_query(ctx->lws_reg, &head->type);
+    reg = (lws_reg_t *)avl_query(ctx->lws_reg, &head->type, sizeof(head->type));
     if (NULL == reg) {
         return -1;
     }
@@ -266,7 +268,7 @@ static int lwsd_search_wsi_send_data(lwsd_cntx_t *ctx,
 
     diff = tm - user->rtm;
     if (diff > conf->connections.timeout) {
-        log_error("Connection is timeout! sid:%u ctm:%lu diff:%lu mark:%s",
+        log_error(ctx->log, "Connection is timeout! sid:%u ctm:%lu diff:%lu mark:%s",
                 user->sid, user->ctm, diff, user->mark);
         return -1; /* 强制踢下线 */
     }
@@ -294,7 +296,7 @@ static int lwsd_search_wsi_send_data(lwsd_cntx_t *ctx,
         n = lws_write(wsi, (unsigned char *)user->pl->addr
                 + user->pl->offset + LWS_SEND_BUFFER_PRE_PADDING, left, protocol);
         if (n < 0) {
-            log_error("Send data failed! n:%d", n);
+            log_error(ctx->log, "Send data failed! n:%d", n);
             mem_dealloc(NULL, user->pl); /* 释放空间 */
             user->pl = NULL;
             return -1;
@@ -310,5 +312,10 @@ static int lwsd_search_wsi_send_data(lwsd_cntx_t *ctx,
 
     lws_callback_on_writable(lws, wsi); /* 等待下次事件通知 */
 
+    return 0;
+}
+
+int lwsd_wsi_async_send(lwsd_cntx_t *ctx, const void *addr, size_t len)
+{
     return 0;
 }
