@@ -18,7 +18,7 @@ LIBS_PATH = -L$(PROJ)/lib
 # 注: 静态库请放在动态库之前
 STATIC_LIB_LIST = librtmq.a libcore.a
 LIBS = $(call func_find_static_link_lib,$(STATIC_LIB_PATH),$(STATIC_LIB_LIST))
-LIBS += -lpthread -lwebsockets -lev
+LIBS += -lpthread -lev -lwebsockets
 LIBS += $(SHARED_LIB)
 
 SRC_LIST = lwsd.c \
