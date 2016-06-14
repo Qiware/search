@@ -1,32 +1,28 @@
 ###############################################################################
-## Coypright(C) 2014-2024 Qiware technology Co., Ltd
+## Copyright(C) 2013-2014 Qiware technology Co., Ltd
 ##
 ## 文件名: Makefile
 ## 版本号: 1.0
-## 描  述: 日志服务模块
-## 作  者: # Qifeng.zou # 2014.11.15 #
+## 描  述: 通用消息传输协议接收模块的编译
+## 作  者: # Qifeng.zou # 2014.12.29 #
 ###############################################################################
 include $(PROJ)/make/build.mak
 
 INCLUDE = -I. \
-			-I$(PROJ)/src/incl \
-			-I$(PROJ)/src/incl/agent
+		  -I$(PROJ)/src/incl \
+		  -I$(PROJ)/src/incl/sdtp
 INCLUDE += $(GLOBAL_INCLUDE)
 LIBS_PATH = -L$(PROJ)/lib
-LIBS = -lpthread -lcore -lutils
+LIBS = -lcore
 LIBS += $(SHARED_LIB)
 
-SRC_LIST = agent.c \
-			agent_comm.c \
-			agent_lsn.c \
-			agent_rsvr.c \
-			agent_worker.c
+SRC_LIST = utils.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST))
 HEADS = $(call func_get_dep_head_list, $(SRC_LIST))
 
-TARGET = libagent.so
-TARGET_A = libagent.a
+TARGET = libutils.so
+TARGET_A = libutils.a
 
 .PHONY: all clean
 

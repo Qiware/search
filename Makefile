@@ -28,6 +28,7 @@ export GCC_LOG = ${PROJ_LOG}/gcc.log
 LIB_DIR = "src/lib"
 DIR = "$(PROJ_3RD)/crypt"
 DIR += "$(LIB_DIR)/core"
+DIR += "$(LIB_DIR)/utils"
 DIR += "$(LIB_DIR)/rtmq"
 DIR += "$(LIB_DIR)/sdtp"
 DIR += "$(LIB_DIR)/gumbo"
