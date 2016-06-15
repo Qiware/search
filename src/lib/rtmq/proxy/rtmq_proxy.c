@@ -278,7 +278,7 @@ int rtmq_proxy_launch(rtmq_proxy_t *pxy)
 }
 
 /******************************************************************************
- **函数名称: rtmq_proxy_register
+ **函数名称: rtmq_proxy_reg_add
  **功    能: 消息处理的注册接口
  **输入参数:
  **     pxy: 全局对象
@@ -293,7 +293,7 @@ int rtmq_proxy_launch(rtmq_proxy_t *pxy)
  **     2. 不允许重复注册
  **作    者: # Qifeng.zou # 2015.05.19 #
  ******************************************************************************/
-int rtmq_proxy_register(rtmq_proxy_t *pxy, int type, rtmq_reg_cb_t proc, void *param)
+int rtmq_proxy_reg_add(rtmq_proxy_t *pxy, int type, rtmq_reg_cb_t proc, void *param)
 {
     rtmq_reg_t *item;
 

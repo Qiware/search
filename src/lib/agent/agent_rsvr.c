@@ -3,6 +3,7 @@
 #include "list.h"
 #include "mesg.h"
 #include "redo.h"
+#include "utils.h"
 #include "agent.h"
 #include "command.h"
 #include "xml_tree.h"
@@ -635,7 +636,7 @@ static int agent_recv_head(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
     /* 3. 校验报头数据 */
     head = (mesg_header_t *)addr;
     MESG_HEAD_NTOH(head, head);
-    head->from = AGENT_GET_NODE_ID(ctx);
+    head->src_nid = AGENT_GET_NODE_ID(ctx);
 
     if (!MESG_CHKSUM_ISVALID(head)) {
         log_error(rsvr->log, "Check head failed! type:%d len:%d flag:%d chksum:[0x%X/0x%X]",
@@ -842,7 +843,7 @@ static int agent_recv_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
                         extra->flow = (agent_flow_t *)recv->addr;
 
                         flow = extra->flow;
-                        flow->serial = agent_gen_sys_serail( /* 获取流水号 */
+                        flow->serial = sys_gen_serail( /* 获取流水号 */
                                 ctx->conf->nid, rsvr->id, ++rsvr->recv_seq);
                         flow->create_tm = rsvr->ctm;
 

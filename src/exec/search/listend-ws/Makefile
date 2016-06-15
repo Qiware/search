@@ -12,31 +12,32 @@ INCLUDE = -I./incl \
 			-I$(PROJ)/src/incl \
 			-I$(PROJ)/src/incl/sdtp \
 			-I$(PROJ)/src/incl/rtmq \
-			-I$(PROJ)/src/incl/agent
+		  	-I/usr/local/include/
 INCLUDE += $(GLOBAL_INCLUDE)
 LIBS_PATH = -L$(PROJ)/lib
-
-# 静态链接库
-STATIC_LIB_LIST = libev.a librtmq.a libagent.a libcore.a libutils.a
+# 注: 静态库请放在动态库之前
+STATIC_LIB_LIST = librtmq.a libcore.a
 LIBS = $(call func_find_static_link_lib,$(STATIC_LIB_PATH),$(STATIC_LIB_LIST))
-LIBS += -lpthread -lm -dl
+LIBS += -lpthread -lev -lwebsockets
 LIBS += $(SHARED_LIB)
 
-SRC_LIST = listend.c \
-			lsnd_comm.c \
-			lsnd_mesg.c \
-			lsnd_conf.c
+SRC_LIST = lwsd.c \
+			lwsd_comm.c \
+			lwsd_mesg.c \
+			lwsd_conf.c \
+			lwsd_search.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST))
 HEADS = $(call func_get_dep_head_list, $(SRC_LIST))
 
-TARGET = listend
+TARGET = listend-ws
 
 .PHONY: all clean
 
 all: $(TARGET)
 $(TARGET): $(OBJS)
 	@$(CC) $(CFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS)
+	@echo "CC $@"
 	@mv $@ $(PROJ_BIN)/$@-$(VERSION)
 	@rm -f $(PROJ_BIN)/$@
 	@ln -s $(PROJ_BIN)/$@-$(VERSION) $(PROJ_BIN)/$@

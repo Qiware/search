@@ -13,7 +13,7 @@ INCLUDE = -I. \
 			-I$(PROJ)/src/incl/agent
 INCLUDE += $(GLOBAL_INCLUDE)
 LIBS_PATH = -L$(PROJ)/lib
-LIBS = -lpthread -lcore
+LIBS = -lpthread -lcore -lutils
 LIBS += $(SHARED_LIB)
 
 SRC_LIST = agent.c \

@@ -13,7 +13,7 @@
 ###############################################################################
 include ./make/func.mak
 
-export VERSION=v0.1 # 版本号
+export VERSION=v.1.1 # 版本号
 
 # 根目录
 export PROJ = ${PWD}
@@ -28,6 +28,7 @@ export GCC_LOG = ${PROJ_LOG}/gcc.log
 LIB_DIR = "src/lib"
 DIR = "$(PROJ_3RD)/crypt"
 DIR += "$(LIB_DIR)/core"
+DIR += "$(LIB_DIR)/utils"
 DIR += "$(LIB_DIR)/rtmq"
 DIR += "$(LIB_DIR)/sdtp"
 DIR += "$(LIB_DIR)/gumbo"
@@ -41,8 +42,9 @@ DIR += "$(EXEC_DIR)/monitor"
 DIR += "$(EXEC_DIR)/spider/crawler"
 DIR += "$(EXEC_DIR)/spider/filter"
 DIR += "$(EXEC_DIR)/search/frwder"
-DIR += "$(EXEC_DIR)/search/listend"
 DIR += "$(EXEC_DIR)/search/invertd"
+DIR += "$(EXEC_DIR)/search/listend"
+DIR += "$(EXEC_DIR)/search/listend-ws"
 
 DEMO_DIR = "src/demo"
 #DIR += "$(DEMO_DIR)/rtmq"

@@ -53,8 +53,10 @@ typedef struct
     uint32_t length;                    /* 报体长度 */
 #define MSG_CHKSUM_VAL   (0x1ED23CB4)
     uint32_t chksum;                    /* 校验值 */
-    uint32_t from;                      /* 源设备ID */
-    uint32_t to;                        /* 目标设备ID */
+
+    uint64_t sid;                       /* 会话ID */
+    uint32_t src_nid;                   /* 源设备ID */
+    uint32_t dst_nid;                   /* 目标设备ID */
 
     uint64_t serial;                    /* 流水号(注: 全局唯一流水号) */
     char body[0];                       /* 消息体 */

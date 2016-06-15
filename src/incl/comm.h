@@ -47,6 +47,7 @@
 #define NODE_MAX_LEN        (64)                /* 节点名最大长度 */
 #define INT_MAX_LEN         (128)               /* 整数字串的最大长度 */
 #define PASSWD_MAX_LEN      (64)                /* 密码最大长度 */
+#define IFACE_MAX_LEN       (16)                /* 网卡名称最大长度 */
 
 #define MD5_SUM_CHK_LEN     (32)                /* MD5校验值长度 */
 
