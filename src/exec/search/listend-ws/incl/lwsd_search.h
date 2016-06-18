@@ -28,7 +28,7 @@ typedef struct
 /* 会话附加信息 */
 typedef struct
 {
-    uint64_t            sid;                /* 会话ID */
+    uint64_t            sid;                /* 会话ID(每个连接的会话ID都不一样) */
     time_t              ctm;                /* 上线时间 */
     time_t              rtm;                /* 最新接收数据的时间 */
     struct libwebsocket *wsi;               /* 所属WSI */
@@ -42,8 +42,8 @@ typedef struct
     lwsd_mesg_payload_t *pl;                /* 当前正在发送的数据...(注意: 连接断开时, 记得释放该空间) */
 } lwsd_search_user_data_t;
 
-int lwsd_lws_reg_add(lwsd_cntx_t *ctx, int type, lws_reg_cb_t proc, void *args);
-int lwsd_wsi_async_send(lwsd_cntx_t *ctx, const void *addr, size_t len);
+int lwsd_search_reg_add(lwsd_cntx_t *ctx, int type, lws_reg_cb_t proc, void *args);
+int lwsd_search_async_send(lwsd_cntx_t *ctx, const void *addr, size_t len);
 int lwsd_callback_search_hdl(struct libwebsocket_context *lws,
         struct libwebsocket *wsi, enum libwebsocket_callback_reasons reason,
         void *user, void *in, size_t len);

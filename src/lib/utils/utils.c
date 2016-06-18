@@ -9,7 +9,7 @@
 #include "comm.h"
 
 /******************************************************************************
- **函数名称: sys_gen_serail
+ **函数名称: tlz_gen_serail
  **功    能: 生成系统流水号
  **输入参数:
  **     nid: 结点ID
@@ -21,7 +21,7 @@
  **注意事项: 
  **作    者: # Qifeng.zou # 2016.06.15 00:14:20 #
  ******************************************************************************/
-uint64_t sys_gen_serail(uint16_t nid, uint16_t sid, uint32_t seq)
+uint64_t tlz_gen_serail(uint16_t nid, uint16_t sid, uint32_t seq)
 {
     serial_t s;
 

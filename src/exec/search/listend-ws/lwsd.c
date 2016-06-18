@@ -207,8 +207,8 @@ static lwsd_cntx_t *lwsd_init(const lwsd_opt_t *opt, const lwsd_conf_t *conf, lo
         }
 
         /* > 创建LWS WSI表 */
-        ctx->wsi_list = rbt_creat(NULL, (key_cb_t)key_cb_int32, (cmp_cb_t)cmp_cb_int32);
-        if (NULL == ctx->wsi_list) {
+        ctx->wsi_map = rbt_creat(NULL, (key_cb_t)key_cb_int32, (cmp_cb_t)cmp_cb_int32);
+        if (NULL == ctx->wsi_map) {
             log_error(log, "Create rbt failed!");
             break;
         }
@@ -248,7 +248,7 @@ static lwsd_cntx_t *lwsd_init(const lwsd_opt_t *opt, const lwsd_conf_t *conf, lo
 static int lwsd_set_reg(lwsd_cntx_t *ctx)
 {
 #define LWSD_LWS_REG_CB(lsnd, type, proc, args) /* 注册队列数据回调 */\
-    if (lwsd_lws_reg_add((lsnd), type, (lws_reg_cb_t)proc, (void *)args)) { \
+    if (lwsd_search_reg_add((lsnd), type, (lws_reg_cb_t)proc, (void *)args)) { \
         log_error((lsnd)->log, "Register type [%d] failed!", type); \
         return LWSD_ERR; \
     }

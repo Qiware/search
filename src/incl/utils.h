@@ -9,6 +9,6 @@
 #if !defined(__UTILS_H__)
 #define __UTILS_H__
 
-uint64_t sys_gen_serail(uint16_t nid, uint16_t sid, uint32_t seq);
+uint64_t tlz_gen_serail(uint16_t nid, uint16_t sid, uint32_t seq);
 
 #endif /*__UTILS_H__*/

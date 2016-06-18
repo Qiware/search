@@ -16,7 +16,7 @@ INCLUDE = -I./incl \
 INCLUDE += $(GLOBAL_INCLUDE)
 LIBS_PATH = -L$(PROJ)/lib
 # 注: 静态库请放在动态库之前
-STATIC_LIB_LIST = librtmq.a libcore.a
+STATIC_LIB_LIST = librtmq.a libcore.a libutils.a
 LIBS = $(call func_find_static_link_lib,$(STATIC_LIB_PATH),$(STATIC_LIB_LIST))
 LIBS += -lpthread -lev -lwebsockets
 LIBS += $(SHARED_LIB)

@@ -843,7 +843,7 @@ static int agent_recv_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
                         extra->flow = (agent_flow_t *)recv->addr;
 
                         flow = extra->flow;
-                        flow->serial = sys_gen_serail( /* 获取流水号 */
+                        flow->serial = tlz_gen_serail( /* 获取流水号 */
                                 ctx->conf->nid, rsvr->id, ++rsvr->recv_seq);
                         flow->create_tm = rsvr->ctm;
 
