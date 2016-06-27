@@ -333,15 +333,60 @@ static int lwsd_search_send_data(lwsd_cntx_t *ctx,
  **功    能: 将数据放入发送链表
  **输入参数:
  **     ctx: CTX对象
+ **     sid: 会话ID
  **     addr: 内存地址
  **     len: 数据长度
  **输出参数:
  **返    回: 0:成功 !0:失败
  **实现描述:
+ **     1. 通过sid找到对应的wsi对象
+ **     2. 将data放入wsi发送队列中
  **注意事项:
  **作    者: # Qifeng.zou # 2016.06.09 09:23:47 #
  ******************************************************************************/
-int lwsd_search_async_send(lwsd_cntx_t *ctx, const void *addr, size_t len)
+int lwsd_search_async_send(lwsd_cntx_t *ctx, uint64_t sid, const void *addr, size_t len)
 {
+    void *item;
+    lwsd_mesg_payload_t *pl;
+    struct libwebsocket *wsi;
+    lwsd_search_user_data_t *user;
+
+    /* > 通过sid找到对应的wsi对象 */
+    wsi = (struct libwebsocket *)rbt_query(ctx->wsi_map, &sid, sizeof(sid));
+    if (NULL == wsi) {
+        log_error(ctx->log, "Get wsi failed! sid:%lu", sid);
+        return -1;
+    }
+
+    user = lws_wsi_get_user_space(wsi);
+    if (NULL == user) {
+        log_error(ctx->log, "Get user of wsi failed! sid:%lu", sid);
+        return -1;
+    }
+
+    /* > 将data放入wsi发送队列中 */
+    item = (void *)mem_alloc(NULL, sizeof(lwsd_mesg_payload_t)
+            + LWS_SEND_BUFFER_PRE_PADDING
+            + len
+            + LWS_SEND_BUFFER_POST_PADDING);
+    if (NULL == item) {
+        log_error(ctx->log, "Alloc memory failed! sid:%lu", user->sid);
+        return -1;
+    }
+
+    pl = (lwsd_mesg_payload_t *)item;
+    pl->addr = (void *)(pl + 1);
+    memcpy(pl->addr + LWS_SEND_BUFFER_PRE_PADDING, addr, len);
+    pl->len = len;
+    pl->offset = 0;
+
+    if (list_rpush(user->send_list, item)) {
+        log_error(ctx->log, "Push data into send list failed! sid:%lu", user->sid);
+        mem_dealloc(NULL, item);
+        return -1;
+    }
+
+    lws_callback_on_writable(ctx->lws, wsi);
+
     return 0;
 }

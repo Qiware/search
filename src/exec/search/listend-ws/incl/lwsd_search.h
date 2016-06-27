@@ -43,7 +43,7 @@ typedef struct
 } lwsd_search_user_data_t;
 
 int lwsd_search_reg_add(lwsd_cntx_t *ctx, int type, lws_reg_cb_t proc, void *args);
-int lwsd_search_async_send(lwsd_cntx_t *ctx, const void *addr, size_t len);
+int lwsd_search_async_send(lwsd_cntx_t *ctx, uint64_t sid, const void *addr, size_t len);
 int lwsd_callback_search_hdl(struct libwebsocket_context *lws,
         struct libwebsocket *wsi, enum libwebsocket_callback_reasons reason,
         void *user, void *in, size_t len);
