@@ -87,46 +87,48 @@ int main(int argc, char *argv[])
     umask(0);
     signal(SIGPIPE, SIG_IGN);
 
-    /* > 初始化日志 */
-    log_get_path(path, sizeof(path), basename(argv[0]));
+    do {
+        /* > 初始化日志 */
+        log_get_path(path, sizeof(path), basename(argv[0]));
 
-    log = log_init(opt.log_level, path);
-    if (NULL == log) {
-        fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
-        goto LWSD_INIT_ERR;
-    }
+        log = log_init(opt.log_level, path);
+        if (NULL == log) {
+            fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
+            goto LWSD_INIT_ERR;
+        }
 
-    /* > 加载配置信息 */
-    if (lwsd_load_conf(opt.conf_path, &conf, log)) {
-        fprintf(stderr, "Load configuration failed!\n");
-        goto LWSD_INIT_ERR;
-    }
+        /* > 加载配置信息 */
+        if (lwsd_load_conf(opt.conf_path, &conf, log)) {
+            fprintf(stderr, "Load configuration failed!\n");
+            goto LWSD_INIT_ERR;
+        }
 
-    /* > 初始化侦听 */
-    ctx = lwsd_init(&opt, &conf, log);
-    if (NULL == ctx) {
-        fprintf(stderr, "Initialize lsnd failed!\n");
-        goto LWSD_INIT_ERR;
-    }
+        /* > 初始化侦听 */
+        ctx = lwsd_init(&opt, &conf, log);
+        if (NULL == ctx) {
+            fprintf(stderr, "Initialize lsnd failed!\n");
+            goto LWSD_INIT_ERR;
+        }
 
-    LWSD_SET_CTX(ctx);
- 
-    /* > 注册回调函数 */
-    if (lwsd_set_reg(ctx)) {
-        fprintf(stderr, "Register callback failed!\n");
-        goto LWSD_INIT_ERR;
-    }
+        LWSD_SET_CTX(ctx);
 
-    /* > 启动LWS服务 */
-    if (lwsd_launch(ctx)) {
-        fprintf(stderr, "Startup search-engine failed!\n");
-        goto LWSD_INIT_ERR;
-    }
+        /* > 注册回调函数 */
+        if (lwsd_set_reg(ctx)) {
+            fprintf(stderr, "Register callback failed!\n");
+            goto LWSD_INIT_ERR;
+        }
 
-    while (1) { pause(); }
+        /* > 启动LWS服务 */
+        if (lwsd_launch(ctx)) {
+            fprintf(stderr, "Startup search-engine failed!\n");
+            goto LWSD_INIT_ERR;
+        }
+
+        while (1) { pause(); }
+    } while(0);
 
 LWSD_INIT_ERR:
-
+    Sleep(2);
     return -1;
 }
 

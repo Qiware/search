@@ -79,7 +79,7 @@ int main(int argc, char *argv[])
         while (1) { pause(); }
     } while(0);
 
-    Sleep(3);
+    Sleep(2);
 
     return 0;
 }

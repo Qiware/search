@@ -100,8 +100,6 @@ void agent_destroy(agent_cntx_t *ctx);
 
 int agent_send(agent_cntx_t *ctx, int type, uint64_t serial, void *data, int len);
 
-uint64_t agent_gen_sys_serail(uint16_t nid, uint16_t sid, uint32_t seq);
-
 agent_serial_to_sck_map_t *agent_serial_to_sck_map_init(agent_cntx_t *ctx);
 int agent_serial_to_sck_map_insert(agent_cntx_t *ctx, agent_flow_t *_flow);
 int agent_serial_to_sck_map_query(agent_cntx_t *ctx, uint64_t serial, agent_flow_t *flow);

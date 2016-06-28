@@ -140,8 +140,8 @@ static int mon_srch_recv_rsp(mon_cntx_t *ctx, mon_srch_conn_t *conn)
     fprintf(stderr, "    ============================================\n");
 
     serial.serial = head->serial;
-    fprintf(stderr, "    >Serial: %lu [nid(%u) sid(%u) seq(%u)]\n",
-            head->serial, serial.nid, serial.sid, serial.seq);
+    fprintf(stderr, "    >Serial: %lu [nid(%u) svrid(%u) seq(%u)]\n",
+            head->serial, serial.nid, serial.svrid, serial.seq);
 
     memset(&opt, 0, sizeof(opt));
 
@@ -416,8 +416,8 @@ static int mon_insert_word_rsp_hdl(mon_cntx_t *ctx, int fd)
     mesg_insert_word_resp_ntoh(rsp);
 
     s.serial = head->serial;
-    fprintf(stderr, "    Serial: %ld(nid:%u sid:%u seq:%u)\n",
-            head->serial, s.nid, s.sid, s.seq);
+    fprintf(stderr, "    Serial: %ld(nid:%u svrid:%u seq:%u)\n",
+            head->serial, s.nid, s.svrid, s.seq);
     fprintf(stderr, "    Code: %d\n", rsp->code);
     fprintf(stderr, "    Word: %s\n", rsp->word);
 

@@ -181,7 +181,7 @@ static int lwsd_conf_parse_lws_connections(xml_tree_t *xml, lws_conf_t *conf, lo
     xml_node_t *fix, *node;
 
     /* > 定位并发配置 */
-    fix = xml_query(xml, ".LISTEND.AGENT.CONNECTIONS");
+    fix = xml_query(xml, ".LISTEND.LWS.CONNECTIONS");
     if (NULL == fix) {
         log_error(log, "Didn't configure connections!");
         return -1;

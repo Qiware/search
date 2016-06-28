@@ -33,10 +33,6 @@ typedef struct
     time_t              rtm;                /* 最新接收数据的时间 */
     struct libwebsocket *wsi;               /* 所属WSI */
 
-#define LWSD_EXTRA_FLAG_CREATED  (0xA1B2D3E4) /* 已创建 */
-#define LWSD_EXTRA_FLAG_DESTROY  (0x4E3D2B1A) /* 已销毁 */
-    uint32_t            flag;               /* 创建/销毁标志 */
-
     char mark[LWSD_MARK_STR_LEN];           /* 备注信息 */
     list_t *send_list;                      /* 发送链表 */
     lwsd_mesg_payload_t *pl;                /* 当前正在发送的数据...(注意: 连接断开时, 记得释放该空间) */

@@ -199,7 +199,7 @@ rtmq_proxy_t *rtmq_proxy_init(const rtmq_proxy_conf_t *conf, log_cycle_t *log)
     do {
         /* > 锁住指定文件 */
         if (rtmq_proxy_lock_server(conf)) {
-            log_fatal(log, "Create rmtq proxy failed!");
+            log_fatal(log, "Lock proxy server failed! errmsg:[%d] %s", errno, strerror(errno));
             break;
         }
 

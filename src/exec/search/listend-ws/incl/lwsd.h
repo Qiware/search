@@ -38,11 +38,13 @@ typedef struct
     avl_tree_t *lws_reg;                    /* LWS注册表 */
     rbt_tree_t *wsi_map;                    /* WSI管理表 */
     uint32_t wsi_seq;                       /* WSI序列号(递增) */
+    uint32_t req_seq;                       /* REQ序列号(递增) */
     struct libwebsocket_context *lws;       /* LWS上下文 */
     rtmq_proxy_t *frwder;                   /* FRWDER服务 */
 } lwsd_cntx_t;
 
-#define LWSD_GEN_SEQ(ctx) (atomic32_inc(&(ctx)->wsi_seq))
+#define LWSD_WSI_SEQ(ctx) (atomic32_inc(&(ctx)->wsi_seq))
+#define LWSD_REQ_SEQ(ctx) (atomic32_inc(&(ctx)->req_seq))
 
 int lwsd_getopt(int argc, char **argv, lwsd_opt_t *opt);
 int lwsd_usage(const char *exec);

@@ -55,44 +55,46 @@ int main(int argc, char *argv[])
 
     umask(0);
 
-    /* > 初始化日志 */
-    log_get_path(path, sizeof(path), basename(argv[0]));
+    do {
+        /* > 初始化日志 */
+        log_get_path(path, sizeof(path), basename(argv[0]));
 
-    log = log_init(opt.log_level, path);
-    if (NULL == log) {
-        fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
-        goto LSND_INIT_ERR;
-    }
+        log = log_init(opt.log_level, path);
+        if (NULL == log) {
+            fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
+            goto LSND_INIT_ERR;
+        }
 
-    /* > 加载配置信息 */
-    if (lsnd_load_conf(opt.conf_path, &conf, log)) {
-        fprintf(stderr, "Load configuration failed!\n");
-        goto LSND_INIT_ERR;
-    }
+        /* > 加载配置信息 */
+        if (lsnd_load_conf(opt.conf_path, &conf, log)) {
+            fprintf(stderr, "Load configuration failed!\n");
+            goto LSND_INIT_ERR;
+        }
 
-    /* > 初始化侦听 */
-    ctx = lsnd_init(&conf, log);
-    if (NULL == ctx) {
-        fprintf(stderr, "Initialize lsnd failed!\n");
-        goto LSND_INIT_ERR;
-    }
- 
-    /* > 注册回调函数 */
-    if (lsnd_set_reg(ctx)) {
-        fprintf(stderr, "Set register callback failed!\n");
-        goto LSND_INIT_ERR;
-    }
+        /* > 初始化侦听 */
+        ctx = lsnd_init(&conf, log);
+        if (NULL == ctx) {
+            fprintf(stderr, "Initialize lsnd failed!\n");
+            goto LSND_INIT_ERR;
+        }
 
-    /* > 启动侦听服务 */
-    if (lsnd_launch(ctx)) {
-        fprintf(stderr, "Startup search-engine failed!\n");
-        goto LSND_INIT_ERR;
-    }
+        /* > 注册回调函数 */
+        if (lsnd_set_reg(ctx)) {
+            fprintf(stderr, "Set register callback failed!\n");
+            goto LSND_INIT_ERR;
+        }
 
-    while (1) { pause(); }
+        /* > 启动侦听服务 */
+        if (lsnd_launch(ctx)) {
+            fprintf(stderr, "Startup search-engine failed!\n");
+            goto LSND_INIT_ERR;
+        }
+
+        while (1) { pause(); }
+    } while(0);
 
 LSND_INIT_ERR:
-
+    Sleep(2);
     return -1;
 }
 
@@ -103,7 +105,7 @@ LSND_INIT_ERR:
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述: 使用文件锁
- **注意事项: 
+ **注意事项:
  **作    者: # Qifeng.zou # 2014.11.15 #
  ******************************************************************************/
 static int lsnd_proc_lock(lsnd_conf_t *conf)
@@ -139,8 +141,8 @@ static int lsnd_proc_lock(lsnd_conf_t *conf)
  **     log: 日志对象
  **输出参数: NONE
  **返    回: 全局对象
- **实现描述: 
- **注意事项: 
+ **实现描述:
+ **注意事项:
  **作    者: # Qifeng.zou # 2015.05.28 23:11:54 #
  ******************************************************************************/
 static lsnd_cntx_t *lsnd_init(lsnd_conf_t *conf, log_cycle_t *log)

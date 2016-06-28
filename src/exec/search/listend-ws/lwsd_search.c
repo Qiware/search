@@ -140,7 +140,7 @@ static int lwsd_search_wsi_user_init(lwsd_cntx_t *ctx,
     /* > 初始化数据 */
     user->ctm = time(NULL);
     user->rtm = user->ctm;
-    user->sid = tlz_gen_serail(conf->nid, 0, LWSD_GEN_SEQ(ctx));
+    user->sid = tlz_gen_sid(conf->nid, 0, LWSD_WSI_SEQ(ctx));
     user->wsi = wsi;
     snprintf(user->mark, sizeof(user->mark), "SEARCH");
 
@@ -233,6 +233,7 @@ static int lwsd_search_cmd_hdl(lwsd_cntx_t *ctx,
         lwsd_search_user_data_t *user, void *in, size_t len)
 {
     lws_reg_t *reg;
+    lwsd_conf_t *conf = &ctx->conf;
     mesg_header_t *head = (mesg_header_t *)in;
 
     user->rtm = time(NULL);
@@ -245,6 +246,10 @@ static int lwsd_search_cmd_hdl(lwsd_cntx_t *ctx,
     {
         return -1; /* 长度异常 */
     }
+
+    /* > 设置基本信息 */
+    head->sid = user->sid;
+    head->serial = tlz_gen_serail(conf->nid, 0, LWSD_REQ_SEQ(ctx));
 
     /* > 进行消息处理 */
     reg = (lws_reg_t *)avl_query(ctx->lws_reg, &head->type, sizeof(head->type));
