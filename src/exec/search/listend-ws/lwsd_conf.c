@@ -59,13 +59,13 @@ int lwsd_load_conf(const char *path, lwsd_conf_t *conf, log_cycle_t *log)
 
         /* > 加载LWS配置 */
         if (lwsd_conf_load_lws(xml, conf, log)) {
-            log_error(log, "Load AGENT conf failed! path:%s", path);
+            log_error(log, "Load lws conf failed! path:%s", path);
             break;
         }
 
         /* > 加载转发配置 */
         if (lwsd_conf_load_frwder(xml, conf, log)) {
-            log_error(log, "Load rttp conf failed! path:%s", path);
+            log_error(log, "Load frwder conf failed! path:%s", path);
             break;
         }
 
