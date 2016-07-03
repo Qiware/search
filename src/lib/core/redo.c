@@ -411,16 +411,7 @@ int set_fd_limit(int max)
  ******************************************************************************/
 void *mem_alloc(void *pool, size_t size)
 {
-    void *addr;
-
-    addr = (void *)calloc(1, size);
-    if (NULL == addr) {
-        return NULL;
-    }
-
-    mem_ref_incr(addr);
-
-    return addr;
+    return (void *)calloc(1, size);
 }
 
 /******************************************************************************
@@ -437,7 +428,7 @@ void *mem_alloc(void *pool, size_t size)
  ******************************************************************************/
 void mem_dealloc(void *pool, void *p)
 {
-    mem_ref_sub(p);
+    free(p);
 }
 
 /******************************************************************************
