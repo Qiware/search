@@ -75,12 +75,12 @@ int mem_ref_init(void)
  **输出参数: NONE
  **返    回: 内存池对象
  **实现描述:
- **注意事项:
+ **注意事项: 内存addr是通过系统调用分配的方可使用内存引用
  **作    者: # Qifeng.zou # 2014.09.08 #
  ******************************************************************************/
 int mem_ref_incr(void *addr)
 {
-    int idx;
+    int idx, cnt;
     mem_ref_slot_t *slot;
     mem_ref_item_t *item;
     mem_ref_cntx_t *ctx = &g_mem_ref_ctx;
@@ -92,9 +92,9 @@ int mem_ref_incr(void *addr)
 
     item = (mem_ref_item_t *)rbt_query(slot->tab, addr, sizeof(addr));
     if (NULL != item) {
-        ++item->count;
+        cnt = ++item->count;
         spin_unlock(&slot->lock);
-        return 0;
+        return cnt;
     }
 
     item = (mem_ref_item_t *)calloc(1, sizeof(mem_ref_item_t));
@@ -104,7 +104,7 @@ int mem_ref_incr(void *addr)
     }
 
     item->addr = addr;
-    ++item->count;
+    cnt = ++item->count;
 
     if (rbt_insert(slot->tab, addr, sizeof(addr), item)) {
         spin_unlock(&slot->lock);
@@ -113,7 +113,7 @@ int mem_ref_incr(void *addr)
     }
 
     spin_unlock(&slot->lock);
-    return 0;
+    return cnt;
 }
 
 /******************************************************************************
@@ -122,14 +122,16 @@ int mem_ref_incr(void *addr)
  **输入参数:
  **     addr: 内存地址
  **输出参数: NONE
- **返    回: 0:成功 !0:失败
+ **返    回: 内存引用次数
  **实现描述:
  **注意事项:
+ **     1. 内存addr是通过系统调用分配的方可使用内存引用
+ **     2. 如果引用计数减为0, 则释放该内存空间.
  **作    者: # Qifeng.zou # 2016.06.29 14:53:09 #
  ******************************************************************************/
 int mem_ref_sub(void *addr)
 {
-    int idx;
+    int idx, cnt;
     mem_ref_slot_t *slot;
     mem_ref_item_t *item;
     mem_ref_cntx_t *ctx = &g_mem_ref_ctx;
@@ -145,14 +147,15 @@ int mem_ref_sub(void *addr)
         return 0; // Didn't find
     }
 
-    if (0 == --item->count) {
+    cnt = --item->count;
+    if (0 == cnt) {
         rbt_delete(slot->tab, addr, sizeof(addr), (void **)&item);
         spin_unlock(&slot->lock);
-        free(item->addr);
+        free(item->addr); // 释放被管理的内存
         free(item);
         return 0;
     }
 
     spin_unlock(&slot->lock);
-    return 0;
+    return cnt;
 }

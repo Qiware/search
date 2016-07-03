@@ -1,4 +1,5 @@
 #include "redo.h"
+#include "mem_ref.h"
 
 /******************************************************************************
  **函数名称: Open
@@ -410,7 +411,16 @@ int set_fd_limit(int max)
  ******************************************************************************/
 void *mem_alloc(void *pool, size_t size)
 {
-    return (void *)calloc(1, size);
+    void *addr;
+
+    addr = (void *)calloc(1, size);
+    if (NULL == addr) {
+        return NULL;
+    }
+
+    mem_ref_incr(addr);
+
+    return addr;
 }
 
 /******************************************************************************
@@ -427,7 +437,7 @@ void *mem_alloc(void *pool, size_t size)
  ******************************************************************************/
 void mem_dealloc(void *pool, void *p)
 {
-    free(p);
+    mem_ref_sub(p);
 }
 
 /******************************************************************************

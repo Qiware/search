@@ -10,6 +10,7 @@
  ******************************************************************************/
 #include "comm.h"
 #include "redo.h"
+#include "mem_ref.h"
 #include "monitor.h"
 #include "mon_conf.h"
 
@@ -103,6 +104,7 @@ int main(int argc, char *argv[])
     memset(&opt, 0, sizeof(opt));
 
     umask(0);
+    mem_ref_init();
     set_fd_limit(65535);
     signal(SIGPIPE, SIG_IGN);
 

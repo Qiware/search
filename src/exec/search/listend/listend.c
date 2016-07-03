@@ -14,6 +14,7 @@
 #include "redo.h"
 #include "agent.h"
 #include "listend.h"
+#include "mem_ref.h"
 #include "hash_alg.h"
 #include "lsnd_mesg.h"
 
@@ -54,6 +55,7 @@ int main(int argc, char *argv[])
     }
 
     umask(0);
+    mem_ref_init();
 
     do {
         /* > 初始化日志 */

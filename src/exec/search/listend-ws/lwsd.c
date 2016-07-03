@@ -15,6 +15,7 @@
 #include "mesg.h"
 #include "redo.h"
 #include "lwsd.h"
+#include "mem_ref.h"
 #include "hash_alg.h"
 #include "lwsd_mesg.h"
 #include "lwsd_search.h"
@@ -85,6 +86,7 @@ int main(int argc, char *argv[])
     }
 
     umask(0);
+    mem_ref_init();
     signal(SIGPIPE, SIG_IGN);
 
     do {

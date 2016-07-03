@@ -12,6 +12,7 @@
 #include "lock.h"
 #include "crawler.h"
 #include "syscall.h"
+#include "mem_ref.h"
 #include "crwl_man.h"
 #include "hash_alg.h"
 #include "crwl_priv.h"
@@ -51,6 +52,7 @@ int main(int argc, char *argv[])
     }
 
     umask(0);
+    mem_ref_init();
     crwl_set_signal();
 
     /* 2. 初始化处理 */
