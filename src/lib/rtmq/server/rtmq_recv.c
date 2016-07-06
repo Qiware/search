@@ -11,6 +11,7 @@
 #include "log.h"
 #include "lock.h"
 #include "redo.h"
+#include "mem_ref.h"
 #include "shm_opt.h"
 #include "rtmq_mesg.h"
 #include "rtmq_comm.h"
@@ -248,27 +249,30 @@ int rtmq_async_send(rtmq_cntx_t *ctx, int type, int dest, void *data, size_t len
 {
     int idx;
     void *addr;
-    rtmq_frwd_t *frwd;
+    rtmq_header_t *head;
 
     idx = rand() % ctx->conf.distq_num;
 
     /* > 申请队列空间 */
-    addr = queue_malloc(ctx->distq[idx], sizeof(rtmq_frwd_t)+len);
+    addr = mem_ref_alloc(sizeof(rtmq_header_t) + len,
+            NULL, (mem_alloc_cb_t)mem_alloc, (mem_dealloc_cb_t)mem_dealloc);
     if (NULL == addr) {
         return RTMQ_ERR;
     }
 
-    frwd = (rtmq_frwd_t *)addr;
+    head = (rtmq_header_t *)addr;
 
-    frwd->type = type; 
-    frwd->dest = dest;
-    frwd->length = len;
+    head->type = type;
+    head->nid = dest;
+    head->flag = RTMQ_EXP_MESG;
+    head->chksum = RTMQ_CHKSUM_VAL;
+    head->length = len;
 
-    memcpy(addr+sizeof(rtmq_frwd_t), data, len);
+    memcpy(addr+sizeof(rtmq_header_t), data, len);
 
     /* > 压入队列空间 */
-    if (queue_push(ctx->distq[idx], addr)) {
-        queue_dealloc(ctx->distq[idx], addr);
+    if (ring_push(ctx->distq[idx], addr)) {
+        mem_ref_sub(addr);
         return RTMQ_ERR;
     }
 
@@ -340,7 +344,7 @@ static int rtmq_creat_sendq(rtmq_cntx_t *ctx)
 
     /* > 依次创建发送队列 */
     for(idx=0; idx<conf->recv_thd_num; ++idx) {
-        ctx->sendq[idx] = queue_creat(conf->sendq.max, conf->sendq.size);
+        ctx->sendq[idx] = ring_creat(conf->sendq.max);
         if (NULL == ctx->sendq[idx]) {
             log_error(ctx->log, "Create send-queue failed! max:%d size:%d",
                     conf->sendq.max, conf->sendq.size);
@@ -368,7 +372,7 @@ static int rtmq_creat_distq(rtmq_cntx_t *ctx)
     rtmq_conf_t *conf = &ctx->conf;
 
     /* > 申请对象空间 */
-    ctx->distq = (queue_t **)calloc(1, conf->distq_num*sizeof(queue_t *));
+    ctx->distq = (ring_t **)calloc(1, conf->distq_num*sizeof(ring_t *));
     if (NULL == ctx->distq) {
         log_error(ctx->log, "Alloc memory failed!");
         return RTMQ_ERR;
@@ -376,7 +380,7 @@ static int rtmq_creat_distq(rtmq_cntx_t *ctx)
 
     /* > 依次创建队列 */
     for (idx=0; idx<conf->distq_num; ++idx) {
-        ctx->distq[idx] = queue_creat(conf->sendq.max, conf->sendq.size);
+        ctx->distq[idx] = ring_creat(conf->sendq.max);
         if (NULL == ctx->distq[idx]) {
             log_error(ctx->log, "Create queue failed!");
             return RTMQ_ERR;

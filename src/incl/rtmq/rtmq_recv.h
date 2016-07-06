@@ -143,8 +143,8 @@ typedef struct
     spinlock_t cmd_sck_lock;            /* 命令套接字锁 */
 
     queue_t **recvq;                    /* 接收队列(内部队列) */
-    queue_t **sendq;                    /* 发送队列(内部队列) */
-    queue_t **distq;                    /* 分发队列(外部队列)
+    ring_t **sendq;                     /* 发送队列(内部队列) */
+    ring_t **distq;                     /* 分发队列(外部队列)
                                            注: 外部接口首先将要发送的数据放入
                                            此队列, 再从此队列分发到不同的线程队列 */
 

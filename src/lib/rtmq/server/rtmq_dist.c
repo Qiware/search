@@ -1,5 +1,6 @@
 #include "comm.h"
 #include "mesg.h"
+#include "mem_ref.h"
 #include "rtmq_comm.h"
 #include "rtmq_recv.h"
 
@@ -152,18 +153,18 @@ static int rtmq_dsvr_dist_data_hdl(rtmq_cntx_t *ctx, rtmq_dsvr_t *dsvr)
 {
 #define RTRD_DISP_POP_NUM   (1024)
     int idx, k, num, d;
-    rtmq_frwd_t *frwd;
-    void *data[RTRD_DISP_POP_NUM], *addr;
+    rtmq_header_t *head;
+    void *data[RTRD_DISP_POP_NUM];
 
     for (d=0; d<ctx->conf.distq_num; ++d) {
         /* > 计算弹出个数(WARNNING: 勿将共享变量参与MIN()三目运算, 否则可能出现严重错误!!!) */
-        num = MIN(queue_used(ctx->distq[d]), RTRD_DISP_POP_NUM);
+        num = MIN(ring_get_num(ctx->distq[d]), RTRD_DISP_POP_NUM);
         if (0 == num) {
             continue;
         }
 
         /* > 弹出发送数据 */
-        num = queue_mpop(ctx->distq[d], data, num);
+        num = ring_mpop(ctx->distq[d], data, num);
         if (0 == num) {
             continue;
         }
@@ -173,29 +174,21 @@ static int rtmq_dsvr_dist_data_hdl(rtmq_cntx_t *ctx, rtmq_dsvr_t *dsvr)
         /* > 放入发送队列 */
         for (k=0; k<num; ++k) {
             /* > 获取发送队列 */
-            frwd = (rtmq_frwd_t *)data[k];
+            head = (rtmq_header_t *)data[k];
 
-            idx = rtmq_node_to_svr_map_rand(ctx, frwd->dest);
+            idx = rtmq_node_to_svr_map_rand(ctx, head->nid);
             if (idx < 0) {
-                queue_dealloc(ctx->distq[d], data[k]);
-                log_error(ctx->log, "Didn't find dev to svr map! nodeid:%d", frwd->dest);
+                mem_ref_sub(data[k]);
+                log_error(ctx->log, "Didn't find dev to svr map! nodeid:%d", head->nid);
                 continue;
             }
 
-            /* > 申请内存空间 */
-            addr = queue_malloc(ctx->sendq[idx], frwd->length+sizeof(rtmq_frwd_t));
-            if (NULL == addr) {
-                queue_dealloc(ctx->distq[d], data[k]);
-                log_error(ctx->log, "Alloc from queue failed! size:%d/%d",
-                    frwd->length, queue_size(ctx->sendq[idx]));
+            /* > 放入发送队列 */
+            if (ring_push(ctx->sendq[idx], data[k])) {
+                mem_ref_sub(data[k]);
+                log_error(ctx->log, "Didn't find dev to svr map! nodeid:%d", head->nid);
                 continue;
             }
-
-            memcpy(addr, data[k], frwd->length+sizeof(rtmq_frwd_t));
-
-            queue_push(ctx->sendq[idx], addr);
-
-            queue_dealloc(ctx->distq[d], data[k]);
 
             /* > 发送分发请求 */
             rtmq_dsvr_cmd_dist_req(ctx, dsvr, idx);
