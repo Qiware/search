@@ -885,7 +885,7 @@ static int rtmq_rsvr_keepalive_req_hdl(rtmq_cntx_t *ctx,
 
     /* > 加入发送列表 */
     if (list_rpush(sck->mesg_list, rsp)) {
-        mem_ref_sub(rsp);
+        mem_ref_decr(rsp);
         log_error(rsvr->log, "Insert into list failed!");
         return RTMQ_ERR;
     }
@@ -940,7 +940,7 @@ static int rtmq_rsvr_link_auth_rsp(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck
 
     /* > 加入发送列表 */
     if (list_rpush(sck->mesg_list, addr)) {
-        mem_ref_sub(addr);
+        mem_ref_decr(addr);
         log_error(rsvr->log, "Insert into list failed!");
         return RTMQ_ERR;
     }
@@ -1591,14 +1591,14 @@ static int rtmq_rsvr_dist_data(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr)
             cl.nid = frwd->dest;
             cl.list = list_creat(NULL);
             if (NULL == cl.list) {
-                mem_ref_sub(data[idx]);
+                mem_ref_decr(data[idx]);
                 log_error(rsvr->log, "Create list failed!");
                 continue;
             }
 
             list2_trav(rsvr->conn_list, (trav_cb_t)rtmq_rsvr_get_conn_list_by_nodeid, &cl);
             if (0 == cl.list->num) {
-                mem_ref_sub(data[idx]);
+                mem_ref_decr(data[idx]);
                 list_destroy(cl.list, mem_dummy_dealloc, NULL);
                 log_error(rsvr->log, "Didn't find connection by nid [%d]!", cl.nid);
                 continue;
@@ -1615,7 +1615,7 @@ static int rtmq_rsvr_dist_data(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr)
 
             /* > 放入发送链表 */
             if (list_rpush(sck->mesg_list, data[idx])) {
-                mem_ref_sub(data[idx]);
+                mem_ref_decr(data[idx]);
                 log_error(rsvr->log, "Push input list failed!");
                 continue;
             }

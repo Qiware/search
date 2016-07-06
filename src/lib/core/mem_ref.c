@@ -166,7 +166,7 @@ static int mem_ref_add(void *addr, void *pool,
  ******************************************************************************/
 void mem_ref_dealloc(void *pool, void *addr)
 {
-    mem_ref_sub(addr);
+    mem_ref_decr(addr);
 }
 
 /******************************************************************************
@@ -203,7 +203,7 @@ int mem_ref_incr(void *addr)
 }
 
 /******************************************************************************
- **函数名称: mem_ref_sub
+ **函数名称: mem_ref_decr
  **功    能: 减少1次引用
  **输入参数:
  **     addr: 内存地址
@@ -215,7 +215,7 @@ int mem_ref_incr(void *addr)
  **     2. 如果引用计数减为0, 则释放该内存空间.
  **作    者: # Qifeng.zou # 2016.06.29 14:53:09 #
  ******************************************************************************/
-int mem_ref_sub(void *addr)
+int mem_ref_decr(void *addr)
 {
     int idx, cnt;
     mem_ref_slot_t *slot;

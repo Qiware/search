@@ -178,14 +178,14 @@ static int rtmq_dsvr_dist_data_hdl(rtmq_cntx_t *ctx, rtmq_dsvr_t *dsvr)
 
             idx = rtmq_node_to_svr_map_rand(ctx, head->nid);
             if (idx < 0) {
-                mem_ref_sub(data[k]);
+                mem_ref_decr(data[k]);
                 log_error(ctx->log, "Didn't find dev to svr map! nodeid:%d", head->nid);
                 continue;
             }
 
             /* > 放入发送队列 */
             if (ring_push(ctx->sendq[idx], data[k])) {
-                mem_ref_sub(data[k]);
+                mem_ref_decr(data[k]);
                 log_error(ctx->log, "Didn't find dev to svr map! nodeid:%d", head->nid);
                 continue;
             }

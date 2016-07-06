@@ -272,7 +272,7 @@ int rtmq_async_send(rtmq_cntx_t *ctx, int type, int dest, void *data, size_t len
 
     /* > 压入队列空间 */
     if (ring_push(ctx->distq[idx], addr)) {
-        mem_ref_sub(addr);
+        mem_ref_decr(addr);
         return RTMQ_ERR;
     }
 
