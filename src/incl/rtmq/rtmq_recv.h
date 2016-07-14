@@ -127,6 +127,13 @@ typedef struct
     uint64_t drop_total;                /* 丢弃的数据条数 */
 } rtmq_rsvr_t;
 
+/* 接收数据项 */
+typedef struct
+{
+    void *base;                         /* 内存块首地址: 用于内存引用计数 */
+    void *data;                         /* 数据地址: 真实数据地址 */
+} rtmq_recv_item_t;
+
 /* 全局对象 */
 typedef struct
 {
@@ -149,7 +156,7 @@ typedef struct
                                            此队列, 再从此队列分发到不同的线程队列 */
 
     pthread_rwlock_t node_to_svr_map_lock;  /* 读写锁: NODE->SVR映射表 */
-    avl_tree_t *node_to_svr_map;         /* NODE->SVR的映射表(以nid为主键 rtmq_node_to_svr_map_t) */
+    avl_tree_t *node_to_svr_map;        /* NODE->SVR的映射表(以nid为主键 rtmq_node_to_svr_map_t) */
 
     rtmq_sub_mgr_t sub_mgr;             /* 订阅管理 */
 } rtmq_cntx_t;

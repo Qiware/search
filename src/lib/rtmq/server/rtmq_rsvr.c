@@ -46,6 +46,9 @@ static int rtmq_rsvr_fill_send_buff(rtmq_rsvr_t *rsvr, rtmq_sck_t *sck);
 
 static int rtmq_rsvr_dist_data(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr);
 
+static int rtmq_rsvr_alloc_recv_buff(rtmq_sck_t *sck);
+static int rtmq_rsvr_switch_recv_buff(rtmq_sck_t *sck);
+
 /* 随机选择接收线程 */
 #define rtmq_rand_recv(ctx) ((ctx)->listen.total++ % (ctx->recvtp->num))
 
@@ -599,18 +602,19 @@ static int rtmq_rsvr_data_proc(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t *
     bool flag = false;
     rtmq_header_t *head;
     uint32_t len, one_mesg_len;
-    rtmq_snap_t *recv = &sck->recv;
+    rtmq_snap_t *curr = &sck->recv;
 
     while (1) {
         flag = false;
-        head = (rtmq_header_t *)recv->optr;
+        head = (rtmq_header_t *)curr->optr;
 
-        len = (uint32_t)(recv->iptr - recv->optr);
+        len = (uint32_t)(curr->iptr - curr->optr);
         if (len >= sizeof(rtmq_header_t)) {
             if (RTMQ_CHKSUM_VAL != ntohl(head->chksum)) {
                 log_error(rsvr->log, "Header is invalid! nid:%d Mark:%X/%X type:%d len:%d flag:%d",
                         ntohl(head->nid), ntohl(head->chksum), RTMQ_CHKSUM_VAL,
                         ntohl(head->type), ntohl(head->length), head->flag);
+                assert(0);
                 return RTMQ_ERR;
             }
 
@@ -622,17 +626,14 @@ static int rtmq_rsvr_data_proc(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t *
 
         /* 1. 不足一条数据时 */
         if (!flag) {
-            if (recv->iptr == recv->end) {
+            if (curr->iptr == curr->end) { // 缓存空间已用完
                 /* 防止OverWrite的情况发生 */
-                if ((recv->optr - recv->addr) < (recv->end - recv->iptr)) {
+                if ((curr->optr - curr->base) < (curr->end - curr->iptr)) {
                     log_error(rsvr->log, "Data length is invalid!");
                     return RTMQ_ERR;
                 }
 
-                memcpy(recv->addr, recv->optr, len);
-                recv->optr = recv->addr;
-                recv->iptr = recv->optr + len;
-                return RTMQ_OK;
+                return rtmq_rsvr_switch_recv_buff(sck); // 切换接收缓存
             }
             return RTMQ_OK;
         }
@@ -652,12 +653,12 @@ static int rtmq_rsvr_data_proc(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t *
 
         /* 2.3 进行数据处理 */
         if (RTMQ_SYS_MESG == head->flag) {
-            rtmq_rsvr_sys_mesg_proc(ctx, rsvr, sck, recv->optr);
+            rtmq_rsvr_sys_mesg_proc(ctx, rsvr, sck, curr->optr);
         }
         else {
-            rtmq_rsvr_exp_mesg_proc(ctx, rsvr, sck, recv->optr);
+            rtmq_rsvr_exp_mesg_proc(ctx, rsvr, sck, curr->optr);
         }
-        recv->optr += one_mesg_len;
+        curr->optr += one_mesg_len;
     }
 
     return RTMQ_OK;
@@ -719,7 +720,9 @@ static int rtmq_rsvr_exp_mesg_proc(rtmq_cntx_t *ctx,
         rtmq_rsvr_t *rsvr, rtmq_sck_t *sck, void *data)
 {
     int rqid, len;
-    void *addr;
+    queue_t *rq;
+    rtmq_recv_item_t *item;
+    rtmq_snap_t *recv = &sck->recv;
     rtmq_header_t *head = (rtmq_header_t *)data;
 
     ++rsvr->recv_total; /* 总数 */
@@ -732,23 +735,32 @@ static int rtmq_rsvr_exp_mesg_proc(rtmq_cntx_t *ctx,
         return RTMQ_ERR;
     }
 
-    /* > 从队列申请空间 */
+    /* > 随机放入队列 */
     rqid = rand() % ctx->conf.recvq_num;
+    rq = ctx->recvq[rqid];
 
-    addr = queue_malloc(ctx->recvq[rqid], len);
-    if (NULL == addr) {
-        ++rsvr->drop_total; /* 丢弃计数 */
-        rtmq_rsvr_cmd_proc_all_req(ctx, rsvr);
-
-        log_error(rsvr->log, "Alloc from queue failed! recv:%llu drop:%llu error:%llu len:%d/%d",
-                rsvr->recv_total, rsvr->drop_total, rsvr->err_total, len, queue_size(ctx->recvq[rqid]));
+    item = (rtmq_recv_item_t *)queue_malloc(rq, sizeof(rtmq_recv_item_t));
+    if (NULL == item) {
+        ++rsvr->drop_total;
+        log_error(rsvr->log, "Devid isn't right! nid:%d/%d", head->nid, sck->nid);
         return RTMQ_ERR;
     }
 
-    /* > 进行数据拷贝 */
-    memcpy(addr, data, len);
+    item->base = recv->base;
+    item->data = data;
 
-    queue_push(ctx->recvq[rqid], addr);         /* 放入处理队列 */
+    mem_ref_incr(item->base); /* 引用技术+1 */
+
+    if (queue_push(rq, item)) {
+        mem_ref_decr(item->base); /* 引用技术-1 */
+        queue_dealloc(rq, item);
+        ++rsvr->drop_total; /* 丢弃计数 */
+        rtmq_rsvr_cmd_proc_all_req(ctx, rsvr);
+
+        log_error(rsvr->log, "Alloc from queue failed! recv:%llu drop:%llu error:%llu len:%d",
+                rsvr->recv_total, rsvr->drop_total, rsvr->err_total, len);
+        return RTMQ_ERR;
+    }
 
     rtmq_rsvr_cmd_proc_req(ctx, rsvr, rqid);    /* 发送处理请求 */
 
@@ -825,7 +837,7 @@ static int rtmq_rsvr_event_timeout_hdl(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr)
             log_trace(rsvr->log, "Didn't active for along time! fd:%d ip:%s",
                     curr->fd, curr->ipaddr);
             /* 释放数据 */
-            FREE(curr->recv.addr);
+            mem_ref_decr(curr->recv.base);
             /* 删除连接 */
             if (node == tail) {
                 rtmq_rsvr_del_conn_hdl(ctx, rsvr, node);
@@ -1203,7 +1215,6 @@ static int rtmq_rsvr_sub_req_hdl(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t
  ******************************************************************************/
 static rtmq_sck_t *rtmq_rsvr_sck_creat(rtmq_rsvr_t *rsvr, rtmq_cmd_add_sck_t *req)
 {
-    void *addr;
     rtmq_sck_t *sck;
 
     /* > 分配连接空间 */
@@ -1240,13 +1251,11 @@ static rtmq_sck_t *rtmq_rsvr_sck_creat(rtmq_rsvr_t *rsvr, rtmq_cmd_add_sck_t *re
         }
 
         /* > 申请接收缓存 */
-        addr = (void *)calloc(1, RTMQ_BUFF_SIZE);
-        if (NULL == addr) {
-            log_error(rsvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        if (rtmq_rsvr_alloc_recv_buff(sck)) {
+            log_error(rsvr->log, "Alloc recv buff failed! errmsg:[%d] %s!",
+                    errno, strerror(errno));
             break;
         }
-
-        rtmq_snap_setup(&sck->recv, addr, RTMQ_BUFF_SIZE);
 
         return sck;
     } while (0);
@@ -1321,7 +1330,7 @@ static void rtmq_rsvr_sck_free(rtmq_rsvr_t *rsvr, rtmq_sck_t *sck)
 {
     if (NULL == sck) { return; }
 
-    FREE(sck->recv.addr);
+    mem_ref_decr(sck->recv.base);
 
     /* 释放订阅列表空间 */
     rtmq_rsvr_sck_sub_free(rsvr, sck);
@@ -1621,6 +1630,69 @@ static int rtmq_rsvr_dist_data(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr)
             }
         }
     }
+
+    return RTMQ_OK;
+}
+
+/******************************************************************************
+ **函数名称: rtmq_rsvr_alloc_recv_buff
+ **功    能: 申请接收缓存
+ **输入参数:
+ **     sck: 通信套接字
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述:
+ **注意事项:
+ **作    者: # Qifeng.zou # 2016.07.14 14:19:21 #
+ ******************************************************************************/
+static int rtmq_rsvr_alloc_recv_buff(rtmq_sck_t *sck)
+{
+    void *addr;
+
+    addr = (void *)mem_ref_alloc(RTMQ_BUFF_SIZE, NULL,
+            (mem_alloc_cb_t)mem_alloc, (mem_dealloc_cb_t)mem_dealloc);
+    if (NULL == addr) {
+        return RTMQ_ERR;
+    }
+
+    rtmq_snap_setup(&sck->recv, addr, RTMQ_BUFF_SIZE);
+
+    return RTMQ_OK;
+}
+
+/******************************************************************************
+ **函数名称: rtmq_rsvr_switch_recv_buff
+ **功    能: 切换接收缓存
+ **输入参数:
+ **     sck: 通信套接字
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述:
+ **注意事项:
+ **作    者: # Qifeng.zou # 2016.07.14 14:04:44 #
+ ******************************************************************************/
+static int rtmq_rsvr_switch_recv_buff(rtmq_sck_t *sck)
+{
+    size_t len;
+    rtmq_snap_t *curr = &sck->recv, old;
+
+    /* > 记录原数据 */
+    len = curr->iptr - curr->optr;
+    memcpy(&old, curr, sizeof(old));
+
+    /* > 申请新接收缓存 */
+    if (rtmq_rsvr_alloc_recv_buff(sck)) {
+        return RTMQ_ERR;
+    }
+
+    /* > 复制残留数据 */
+    curr = &sck->recv;
+
+    memcpy(curr->optr, old.optr, len);
+    curr->iptr += len;
+
+    /* > 释放老数据(注: 引用计数减1) */
+    mem_ref_decr(old.base);
 
     return RTMQ_OK;
 }

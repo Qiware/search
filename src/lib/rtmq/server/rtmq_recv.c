@@ -308,7 +308,7 @@ static int rtmq_creat_recvq(rtmq_cntx_t *ctx)
 
     /* > 依次创建接收队列 */
     for(idx=0; idx<conf->recvq_num; ++idx) {
-        ctx->recvq[idx] = queue_creat(conf->recvq.max, conf->recvq.size);
+        ctx->recvq[idx] = queue_creat(conf->recvq.max, sizeof(rtmq_recv_item_t));
         if (NULL == ctx->recvq[idx]) {
             log_error(ctx->log, "Create queue failed! max:%d size:%d",
                     conf->recvq.max, conf->recvq.size);

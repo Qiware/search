@@ -60,9 +60,9 @@ typedef struct
      *   -----------------------------------------------
      *  ^        ^                           ^          ^
      *  |        |                           |          |
-     * addr     optr                        iptr       end
+     * base     optr                        iptr       end
      */
-    char *addr;                         /* 发送缓存 */
+    char *base;                         /* 起始地址 */
     char *end;                          /* 结束地址 */
 
     size_t size;                        /* 缓存大小 */
@@ -72,15 +72,15 @@ typedef struct
 } rtmq_snap_t;
 
 #define rtmq_snap_setup(snap, _addr, _size) \
-   (snap)->addr = (_addr);  \
+   (snap)->base = (_addr);  \
    (snap)->end = (_addr) + (_size); \
    (snap)->size = (_size); \
    (snap)->optr = (_addr);  \
    (snap)->iptr = (_addr); 
 
 #define rtmq_snap_reset(snap)           /* 重置标志 */\
-   (snap)->optr = (snap)->addr;  \
-   (snap)->iptr = (snap)->addr; 
+   (snap)->optr = (snap)->base;  \
+   (snap)->iptr = (snap)->base; 
 
 /* 绑定CPU配置信息 */
 typedef struct
