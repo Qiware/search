@@ -10,16 +10,16 @@
 
 /* COMM的UNIX-UDP路径 */
 #define rtmq_proxy_comm_usck_path(conf, _path) \
-    snprintf(_path, sizeof(_path), "%s/%d_comm.usck", (conf)->path, (conf)->nid)
+    snprintf(_path, sizeof(_path), "%s/rtmq/%d_comm.usck", (conf)->path, (conf)->nid)
 /* SSVR线程的UNIX-UDP路径 */
 #define rtmq_proxy_ssvr_usck_path(conf, _path, id) \
-    snprintf(_path, sizeof(_path), "%s/%d_ssvr_%d.usck", (conf)->path, (conf)->nid, id+1)
+    snprintf(_path, sizeof(_path), "%s/rtmq/%d_ssvr_%d.usck", (conf)->path, (conf)->nid, id+1)
 /* WORKER线程的UNIX-UDP路径 */
 #define rtmq_proxy_worker_usck_path(conf, _path, id) \
-    snprintf(_path, sizeof(_path), "%s/%d_swrk_%d.usck", (conf)->path, (conf)->nid, id+1)
+    snprintf(_path, sizeof(_path), "%s/rtmq/%d_swrk_%d.usck", (conf)->path, (conf)->nid, id+1)
 /* 加锁路径 */
 #define rtmq_proxy_lock_path(conf, _path) \
-    snprintf(_path, sizeof(_path), "%s/%d.lock", (conf)->path, (conf)->nid)
+    snprintf(_path, sizeof(_path), "%s/rtmq/%d.lock", (conf)->path, (conf)->nid)
 
 /* 套接字信息 */
 typedef struct
