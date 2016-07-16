@@ -33,6 +33,7 @@ int lsnd_getopt(int argc, char **argv, lsnd_opt_t *opt)
 
     opt->isdaemon = false;
     opt->log_level = LOG_LEVEL_TRACE;
+    opt->conf_path = "../conf/listend.xml";
 
     /* 1. 解析输入参数 */
     while (-1 != (ch = getopt_long(argc, argv, "l:c:hd", opts, NULL))) {

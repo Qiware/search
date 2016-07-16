@@ -116,7 +116,7 @@ static int lsnd_proc_lock(lsnd_conf_t *conf)
     char path[FILE_PATH_MAX_LEN];
 
     /* 1. 获取路径 */
-    snprintf(path, sizeof(path), "../temp/listend/%s/lsnd.lck", conf->name);
+    snprintf(path, sizeof(path), "%s/lsnd.lck", conf->wdir);
 
     Mkdir2(path, DIR_MODE);
 

@@ -1,5 +1,5 @@
 <!-- 代理服务配置信息 -->
-<LISTEND ID="10001" NAME="listend" WORKDIR="../temp/listend/">
+<LISTEND ID="10001" WORKDIR="../temp/listend/">
     <!-- 分发队列配置 -->
     <DISTQ NUM="8" MAX="4096" SIZE="4096" />
 
@@ -9,7 +9,7 @@
             1) MAX: 最大并发数
             2) TIMEOUT: 连接超时时间
             3) PORT: 侦听端口 -->
-        <CONNECTIONS MAX="999999" TIMEOUT="15" PORT="9002" />
+        <CONNECTIONS MAX="1024" TIMEOUT="15" PORT="9002" />
 
         <!-- 队列配置
             1) MAX: 队列容量(必须为2的次方)

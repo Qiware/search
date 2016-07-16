@@ -107,17 +107,6 @@ static int lwsd_conf_load_comm(xml_tree_t *xml, lwsd_conf_t *conf, log_cycle_t *
 
     conf->nid = atoi(node->value.str);
 
-    /* > 加载结点名称 */
-    node = xml_query(xml, ".LISTEND.NAME");
-    if (NULL == node
-        || 0 == node->value.len)
-    {
-        log_error(log, "Get node name failed!");
-        return -1;
-    }
-
-    snprintf(conf->name, sizeof(conf->name), "%s", node->value.str); /* 结点名 */
-
     /* > 加载工作路径 */
     node = xml_query(xml, ".LISTEND.WORKDIR");
     if (NULL == node
@@ -127,7 +116,7 @@ static int lwsd_conf_load_comm(xml_tree_t *xml, lwsd_conf_t *conf, log_cycle_t *
         return -1;
     }
 
-    snprintf(conf->wdir, sizeof(conf->wdir), "%s/%s", node->value.str, conf->name);  /* 工作路径 */
+    snprintf(conf->wdir, sizeof(conf->wdir), "%s/%d", node->value.str, conf->nid);  /* 工作路径 */
 
     /* > 分发队列配置 */
     fix = xml_query(xml, ".LISTEND.DISTQ");
