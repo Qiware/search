@@ -420,6 +420,7 @@ static int lwsd_conf_load_frwder(xml_tree_t *xml, lwsd_conf_t *lcf, log_cycle_t 
 
     /* > 设置结点ID */
     conf->nid = lcf->nid;
+    snprintf(conf->path, sizeof(conf->path), "%s", lcf->wdir);
 
     /* > 服务端IP */
     node = xml_search(xml, parent, "SERVER.IP");
