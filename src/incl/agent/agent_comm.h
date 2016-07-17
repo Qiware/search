@@ -54,7 +54,6 @@ typedef struct
 {
     time_t ctm;                             /* 当前时间 */
     list_t *list;                           /* 超时链表 */
-    mem_pool_t *pool;                       /* 内存池 */
 } agent_conn_timeout_list_t;
 
 #endif /*__AGENT_COMM_H__*/

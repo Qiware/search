@@ -33,26 +33,26 @@ agent_serial_to_sck_map_t *agent_serial_to_sck_map_init(agent_cntx_t *ctx)
     s2s->len = SERIAL_TO_SCK_MAP_LEN;
 
     do {
-        s2s->map = (avl_tree_t **)calloc(1, s2s->len*sizeof(avl_tree_t *));
+        s2s->map = (avl_tree_t **)calloc(s2s->len, sizeof(avl_tree_t *));
         if (NULL == s2s->map) {
             log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
             break;
         }
 
-        s2s->lock = (spinlock_t *)calloc(1, s2s->len*sizeof(spinlock_t));
+        s2s->lock = (spinlock_t *)calloc(s2s->len, sizeof(spinlock_t));
         if (NULL == s2s->lock) {
             log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
             break;
         }
 
-        s2s->slot = (slot_t **)calloc(1, s2s->len*sizeof(slot_t *));
+        s2s->slot = (slot_t **)calloc(s2s->len, sizeof(slot_t *));
         if (NULL == s2s->slot) {
             log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
             break;
         }
 
         for (i=0; i<s2s->len; ++i) {
-            s2s->slot[i] = slot_creat(1024*1024, sizeof(agent_flow_t));
+            s2s->slot[i] = slot_creat(2*1024, sizeof(agent_flow_t));
             if (NULL == s2s->slot[i]) {
                 log_error(ctx->log, "Create slot failed! errmsg:[%d] %s!", errno, strerror(errno));
                 break;
@@ -230,6 +230,8 @@ static int agent_serial_get_timeout_list(agent_flow_t *flow, agent_conn_timeout_
 int agent_serial_to_sck_map_timeout(agent_cntx_t *ctx)
 {
     int idx;
+    void *pool;
+    list_opt_t opt;
     agent_flow_t *flow;
     time_t ctm = time(NULL);
     agent_conn_timeout_list_t timeout;
@@ -240,11 +242,12 @@ int agent_serial_to_sck_map_timeout(agent_cntx_t *ctx)
             continue;
         }
 
+        memset(&opt, 0, sizeof(opt));
         memset(&timeout, 0, sizeof(timeout));
 
         /* > 创建内存池 */
-        timeout.pool = mem_pool_creat(1 * KB);
-        if (NULL == timeout.pool) {
+        pool = mem_pool_creat(1 * KB);
+        if (NULL == pool) {
             log_error(ctx->log, "Create memory pool failed!");
             return AGENT_ERR;
         }
@@ -252,10 +255,14 @@ int agent_serial_to_sck_map_timeout(agent_cntx_t *ctx)
         timeout.ctm = ctm;
 
         /* > 创建链表 */
-        timeout.list = list_creat(NULL);
+        opt.pool = pool;
+        opt.alloc = (mem_alloc_cb_t)mem_pool_alloc;
+        opt.dealloc = (mem_dealloc_cb_t)mem_pool_dealloc;
+
+        timeout.list = list_creat(&opt);
         if (NULL == timeout.list) {
             log_error(ctx->log, "Create list failed!");
-            mem_pool_destroy(timeout.pool);
+            mem_pool_destroy(pool);
             break;
         }
 
@@ -279,7 +286,7 @@ int agent_serial_to_sck_map_timeout(agent_cntx_t *ctx)
         spin_unlock(&s2s->lock[idx]);
 
         /* > 释放内存空间 */
-        mem_pool_destroy(timeout.pool);
+        mem_pool_destroy(pool);
     }
 
     return AGENT_OK;

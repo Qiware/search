@@ -369,14 +369,16 @@ static int agent_rsvr_get_timeout_conn_list(socket_t *sck, agent_conn_timeout_li
  ******************************************************************************/
 static int agent_rsvr_conn_timeout(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
 {
+    void *pool;
     socket_t *sck;
+    list_opt_t opt;
     agent_conn_timeout_list_t timeout;
 
     memset(&timeout, 0, sizeof(timeout));
 
     /* > 创建内存池 */
-    timeout.pool = mem_pool_creat(1 * KB);
-    if (NULL == timeout.pool) {
+    pool = mem_pool_creat(1 * KB);
+    if (NULL == pool) {
         log_error(rsvr->log, "Create memory pool failed!");
         return AGENT_ERR;
     }
@@ -385,7 +387,13 @@ static int agent_rsvr_conn_timeout(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
 
     do {
         /* > 创建链表 */
-        timeout.list = list_creat(NULL);
+        memset(&opt, 0, sizeof(opt));
+
+        opt.pool = pool;
+        opt.alloc = (mem_alloc_cb_t)mem_pool_alloc;
+        opt.dealloc = (mem_dealloc_cb_t)mem_pool_dealloc;
+
+        timeout.list = list_creat(&opt);
         if (NULL == timeout.list) {
             log_error(rsvr->log, "Create list failed!");
             break;
@@ -409,7 +417,7 @@ static int agent_rsvr_conn_timeout(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
     } while(0);
 
     /* > 释放内存空间 */
-    mem_pool_destroy(timeout.pool);
+    mem_pool_destroy(pool);
 
     return AGENT_OK;
 }
