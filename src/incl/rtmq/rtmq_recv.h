@@ -39,16 +39,20 @@
 #define rtmq_lock_path(conf, _path) \
     snprintf(_path, sizeof(_path), "%s/%d.lck", (conf)->path, (conf)->nid)
 
+/* 鉴权信息 */
+typedef struct
+{
+    char usr[RTMQ_USR_MAX_LEN];         /* 用户名 */
+    char passwd[RTMQ_PWD_MAX_LEN];      /* 登录密码 */
+} rtmq_auth_t;
+
 /* 配置信息 */
 typedef struct
 {
-    int nid;                         /* 节点ID(唯一值: 不允许重复) */
+    int nid;                            /* 节点ID(唯一值: 不允许重复) */
     char path[FILE_NAME_MAX_LEN];       /* 工作路径 */
 
-    struct {
-        char usr[RTMQ_USR_MAX_LEN];     /* 用户名 */
-        char passwd[RTMQ_PWD_MAX_LEN];  /* 登录密码 */
-    } auth;
+    list_t *auth;                       /* 鉴权列表 */
 
     int port;                           /* 侦听端口 */
     int recv_thd_num;                   /* 接收线程数 */
@@ -141,6 +145,7 @@ typedef struct
     log_cycle_t *log;                   /* 日志对象 */
 
     avl_tree_t *reg;                    /* 回调注册对象(注: 存储rtmq_reg_t数据) */
+    avl_tree_t *auth;                   /* 鉴权信息(注: 存储rtmq_auth_t数据) */
 
     rtmq_listen_t listen;               /* 侦听对象 */
     thread_pool_t *recvtp;              /* 接收线程池 */
@@ -196,5 +201,8 @@ int rtmq_node_to_svr_map_rand(rtmq_cntx_t *ctx, int nid);
 int rtmq_node_to_svr_map_del(rtmq_cntx_t *ctx, int nid, int rsvr_idx);
 
 int rtmq_sub_mgr_init(rtmq_sub_mgr_t *sub);
+
+int rtmq_auth_add(rtmq_cntx_t *ctx, char *usr, char *passwd);
+bool rtmq_auth_check(rtmq_cntx_t *ctx, char *usr, char *passwd);
 
 #endif /*__RTMQ_RECV_H__*/

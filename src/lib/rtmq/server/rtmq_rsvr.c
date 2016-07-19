@@ -653,7 +653,9 @@ static int rtmq_rsvr_data_proc(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t *
 
         /* 2.3 进行数据处理 */
         if (RTMQ_SYS_MESG == head->flag) {
-            rtmq_rsvr_sys_mesg_proc(ctx, rsvr, sck, curr->optr);
+            if (rtmq_rsvr_sys_mesg_proc(ctx, rsvr, sck, curr->optr)) {
+                return RTMQ_ERR;
+            }
         }
         else {
             rtmq_rsvr_exp_mesg_proc(ctx, rsvr, sck, curr->optr);
@@ -724,6 +726,10 @@ static int rtmq_rsvr_exp_mesg_proc(rtmq_cntx_t *ctx,
     rtmq_recv_item_t *item;
     rtmq_snap_t *recv = &sck->recv;
     rtmq_header_t *head = (rtmq_header_t *)data;
+
+    if (!sck->auth_succ) {
+        return RTMQ_ERR;
+    }
 
     ++rsvr->recv_total; /* 总数 */
     len = sizeof(rtmq_header_t) + head->length;
@@ -878,6 +884,10 @@ static int rtmq_rsvr_keepalive_req_hdl(rtmq_cntx_t *ctx,
     void *rsp;
     rtmq_header_t *head;
 
+    if (!sck->auth_succ) {
+        return RTMQ_ERR;
+    }
+
     /* > 分配消息空间 */
     rsp = (void *)mem_ref_alloc(sizeof(rtmq_header_t), NULL,
             (mem_alloc_cb_t)mem_alloc, (mem_dealloc_cb_t)mem_dealloc);
@@ -995,6 +1005,12 @@ static int rtmq_rsvr_link_auth_req_hdl(rtmq_cntx_t *ctx,
                     sck->fd, sck->sid, head->nid);
             return RTMQ_ERR;
         }
+        log_debug(rsvr->log, "Auth success! nid:%d usr:%s passwd:%s",
+                head->nid, link_auth_req->usr, link_auth_req->passwd);
+    }
+    else {
+        log_error(rsvr->log, "Auth failed! nid:%d usr:%s passwd:%s",
+                head->nid, link_auth_req->usr, link_auth_req->passwd);
     }
 
     /* > 应答鉴权请求 */
@@ -1179,6 +1195,10 @@ static int rtmq_rsvr_sub_req_hdl(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t
 {
     rtmq_header_t *head = (rtmq_header_t *)addr;
     rtmq_sub_req_t *req = (rtmq_sub_req_t *)(head + 1);
+
+    if (!sck->auth_succ) {
+        return RTMQ_ERR;
+    }
 
     /* > Net to host */
     RTMQ_SUB_REQ_NTOH(req, req);

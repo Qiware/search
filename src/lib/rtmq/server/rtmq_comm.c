@@ -49,15 +49,9 @@ int rtmq_cmd_to_rsvr(rtmq_cntx_t *ctx, int cmd_sck_id, const rtmq_cmd_t *cmd, in
  ******************************************************************************/
 int rtmq_link_auth_check(rtmq_cntx_t *ctx, rtmq_link_auth_req_t *link_auth_req)
 {
-    rtmq_conf_t *conf = &ctx->conf;
-
-    if (0 != strcmp(link_auth_req->usr, conf->auth.usr)
-        || 0 != strcmp(link_auth_req->passwd, conf->auth.passwd))
-    {
-        return RTMQ_LINK_AUTH_FAIL;
-    }
-
-    return RTMQ_LINK_AUTH_SUCC;
+    return rtmq_auth_check(ctx,
+            link_auth_req->usr,
+            link_auth_req->passwd)?  RTMQ_LINK_AUTH_SUCC : RTMQ_LINK_AUTH_FAIL;
 }
 
 /******************************************************************************
