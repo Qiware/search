@@ -7,12 +7,12 @@
  ** 作  者: # Qifeng.zou # 2015.05.12 #
  ******************************************************************************/
 #include "comm.h"
-#include "kw_tree.h"
+#include "trie.h"
 
-static void kwt_node_free(kwt_tree_t *kwt, kwt_node_t *node, void *mempool, mem_dealloc_cb_t dealloc);
+static void trie_node_free(trie_tree_t *kwt, trie_node_t *node, void *mempool, mem_dealloc_cb_t dealloc);
 
 /******************************************************************************
- **函数名称: kwt_creat
+ **函数名称: trie_creat
  **功    能: 创建键树
  **输入参数:
  **     opt: 选项
@@ -22,11 +22,11 @@ static void kwt_node_free(kwt_tree_t *kwt, kwt_node_t *node, void *mempool, mem_
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.12 #
  ******************************************************************************/
-kwt_tree_t *kwt_creat(kwt_opt_t *opt)
+trie_tree_t *trie_creat(trie_opt_t *opt)
 {
     int max = 256;
-    kwt_opt_t _opt;
-    kwt_tree_t *kwt;
+    trie_opt_t _opt;
+    trie_tree_t *kwt;
 
     if (!ISPOWEROF2(max)) {
         return NULL;
@@ -39,7 +39,7 @@ kwt_tree_t *kwt_creat(kwt_opt_t *opt)
     }
 
     /* 1. 创建对象 */
-    kwt = (kwt_tree_t *)opt->alloc(opt->pool, sizeof(kwt_tree_t));
+    kwt = (trie_tree_t *)opt->alloc(opt->pool, sizeof(trie_tree_t));
     if (NULL == kwt) {
         return NULL;
     }
@@ -50,19 +50,19 @@ kwt_tree_t *kwt_creat(kwt_opt_t *opt)
 
     /* 2. 创建结点 */
     kwt->max = max;
-    kwt->root = (kwt_node_t *)kwt->alloc(kwt->pool, max * sizeof(kwt_node_t));
+    kwt->root = (trie_node_t *)kwt->alloc(kwt->pool, max * sizeof(trie_node_t));
     if (NULL == kwt->root) {
         kwt->dealloc(kwt->pool, kwt);
         return NULL;
     }
 
-    memset(kwt->root, 0, sizeof(kwt_node_t));
+    memset(kwt->root, 0, sizeof(trie_node_t));
 
     return kwt;
 }
 
 /******************************************************************************
- **函数名称: kwt_insert
+ **函数名称: trie_insert
  **功    能: 插入字符串
  **输入参数:
  **     kwt: 键树
@@ -75,10 +75,10 @@ kwt_tree_t *kwt_creat(kwt_opt_t *opt)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.12 #
  ******************************************************************************/
-int kwt_insert(kwt_tree_t *kwt, const u_char *str, int len, void *data)
+int trie_insert(trie_tree_t *kwt, const u_char *str, int len, void *data)
 {
     int i, max = len - 1;
-    kwt_node_t *node = kwt->root;
+    trie_node_t *node = kwt->root;
 
     if (len <= 0) { return -1; }
 
@@ -86,12 +86,12 @@ int kwt_insert(kwt_tree_t *kwt, const u_char *str, int len, void *data)
         node += str[i];
         node->key = str[i];
         if ((i < max) && (NULL == node->child)) {
-            node->child = (kwt_node_t *)kwt->alloc(kwt->pool, kwt->max * sizeof(kwt_node_t));
+            node->child = (trie_node_t *)kwt->alloc(kwt->pool, kwt->max * sizeof(trie_node_t));
             if (NULL == node->child) {
                 return -1;
             }
 
-            memset(node->child, 0, sizeof(kwt_node_t));
+            memset(node->child, 0, sizeof(trie_node_t));
         }
         else if (i == max) {
             node->data = data;
@@ -104,7 +104,7 @@ int kwt_insert(kwt_tree_t *kwt, const u_char *str, int len, void *data)
 }
 
 /******************************************************************************
- **函数名称: kwt_query
+ **函数名称: trie_query
  **功    能: 搜索字符串
  **输入参数:
  **     kwt: 键树
@@ -117,10 +117,10 @@ int kwt_insert(kwt_tree_t *kwt, const u_char *str, int len, void *data)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.12 #
  ******************************************************************************/
-int kwt_query(kwt_tree_t *kwt, const u_char *str, int len, void **data)
+int trie_query(trie_tree_t *kwt, const u_char *str, int len, void **data)
 {
     int i, max = len - 1;
-    kwt_node_t *node = kwt->root;
+    trie_node_t *node = kwt->root;
 
     /* 1. 搜索键树 */
     for (i=0; i<len; ++i) {
@@ -152,10 +152,10 @@ int kwt_query(kwt_tree_t *kwt, const u_char *str, int len, void **data)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.06.01 17:00:37 #
  ******************************************************************************/
-void _kwt_print(kwt_tree_t *kwt, kwt_node_t *node, int depth)
+void _kwt_print(trie_tree_t *kwt, trie_node_t *node, int depth)
 {
     int i, n;
-    kwt_node_t *item = node;
+    trie_node_t *item = node;
 
     for (i=0; i<kwt->max; ++i, ++item) {
         if (0 == item->key) {
@@ -177,7 +177,7 @@ void _kwt_print(kwt_tree_t *kwt, kwt_node_t *node, int depth)
 }
 
 /******************************************************************************
- **函数名称: kwt_print
+ **函数名称: trie_print
  **功    能: 打印键树
  **输入参数:
  **     kwt: 键树
@@ -187,10 +187,10 @@ void _kwt_print(kwt_tree_t *kwt, kwt_node_t *node, int depth)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.06.01 17:00:37 #
  ******************************************************************************/
-void kwt_print(kwt_tree_t *kwt)
+void trie_print(trie_tree_t *kwt)
 {
     int i;
-    kwt_node_t *node = kwt->root;
+    trie_node_t *node = kwt->root;
 
     fprintf(stdout, "\n\n");
 
@@ -210,7 +210,7 @@ void kwt_print(kwt_tree_t *kwt)
 }
 
 /******************************************************************************
- **函数名称: kwt_destroy
+ **函数名称: trie_destroy
  **功    能: 销毁键树
  **输入参数:
  **     kwt: 键树
@@ -222,17 +222,17 @@ void kwt_print(kwt_tree_t *kwt)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.12 #
  ******************************************************************************/
-void kwt_destroy(kwt_tree_t *kwt, void *mempool, mem_dealloc_cb_t dealloc)
+void trie_destroy(trie_tree_t *kwt, void *mempool, mem_dealloc_cb_t dealloc)
 {
     if (NULL != kwt->root) {
-        kwt_node_free(kwt, kwt->root, mempool, dealloc);
+        trie_node_free(kwt, kwt->root, mempool, dealloc);
     }
 
     kwt->dealloc(kwt->pool, kwt);
 }
 
 /******************************************************************************
- **函数名称: kwt_node_free
+ **函数名称: trie_node_free
  **功    能: 销毁键树结点
  **输入参数:
  **     kwt: 键树
@@ -245,7 +245,7 @@ void kwt_destroy(kwt_tree_t *kwt, void *mempool, mem_dealloc_cb_t dealloc)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.12 #
  ******************************************************************************/
-static void kwt_node_free(kwt_tree_t *kwt, kwt_node_t *node, void *mempool, mem_dealloc_cb_t dealloc)
+static void trie_node_free(trie_tree_t *kwt, trie_node_t *node, void *mempool, mem_dealloc_cb_t dealloc)
 {
     int i;
 
@@ -254,7 +254,7 @@ static void kwt_node_free(kwt_tree_t *kwt, kwt_node_t *node, void *mempool, mem_
             continue;
         }
         dealloc(mempool, node[i].data);
-        kwt_node_free(kwt, node[i].child, mempool, dealloc);
+        trie_node_free(kwt, node[i].child, mempool, dealloc);
         node[i].child = NULL;
     }
 

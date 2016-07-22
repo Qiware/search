@@ -40,7 +40,7 @@ SRC_LIST = log.c \
 			btree.c \
 			shm_btree.c \
 			rb_tree.c \
-			kw_tree.c \
+			trie.c \
 			avl_tree.c \
 			xml_comm.c \
 			xml_print.c \
