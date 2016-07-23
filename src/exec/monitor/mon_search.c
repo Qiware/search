@@ -81,7 +81,7 @@ static int mon_srch_send_req(int fd, const char *word)
         return -1;
     }
 
-    MESG_HEAD_SET(head, MSG_SEARCH_REQ, 0, len);
+    MESG_HEAD_SET(head, MSG_SEARCH_REQ, 0, 0, 0, 0, len);
     MESG_HEAD_HTON(head, head);
 
     Writen(fd, (void *)addr, sizeof(mesg_header_t)+len);
@@ -448,7 +448,7 @@ static int mon_insert_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args)
     req.freq = htonl(atoi(_freq));
 
     /* > 设置发送数据 */
-    MESG_HEAD_SET(&head, MSG_INSERT_WORD_REQ, 0, sizeof(req));
+    MESG_HEAD_SET(&head, MSG_INSERT_WORD_REQ, 0, 0, 0, 0, sizeof(req));
     MESG_HEAD_HTON(&head, &head);
 
     /* > 连接代理服务 */

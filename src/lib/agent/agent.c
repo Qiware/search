@@ -52,13 +52,6 @@ agent_cntx_t *agent_init(agent_conf_t *conf, log_cycle_t *log)
             break;
         }
 
-        /* > 创建流水->SCK映射表 */
-        ctx->serial_to_sck_map = agent_serial_to_sck_map_init(ctx);
-        if (NULL == ctx->serial_to_sck_map) {
-            log_error(log, "Initialize serial to sck map failed!");
-            break;
-        }
-
         /* > 设置进程打开文件数 */
         if (set_fd_limit(conf->connections.max)) {
             log_error(log, "errmsg:[%d] %s! max:%d",
@@ -242,6 +235,27 @@ static int agent_workers_destroy(agent_cntx_t *ctx)
 }
 
 /******************************************************************************
+ **函数名称: agent_connection_cmp
+ **功    能: 进行连接比较
+ **输入参数:
+ **     sid: 套接字序列
+ **     sck: 参与比较的数据
+ **输出参数: NONE
+ **返    回: 0:相等 <0:小于 >0:大于
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015-07-21 22:54:30 #
+ ******************************************************************************/
+static int agent_connection_cmp(const uint64_t *sid, const socket_t *sck)
+{
+    agent_socket_extra_t *extra;
+
+    extra = (agent_socket_extra_t *)sck->extra;
+
+    return (*sid - extra->sid);
+}
+
+/******************************************************************************
  **函数名称: agent_creat_agents
  **功    能: 创建Agent线程池
  **输入参数: 
@@ -262,6 +276,16 @@ static int agent_creat_agents(agent_cntx_t *ctx)
     agent = (agent_rsvr_t *)calloc(1, conf->agent_num*sizeof(agent_rsvr_t));
     if (NULL == agent) {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        return AGENT_ERR;
+    }
+
+    /* > 创建连接红黑树 */
+    spin_lock_init(&ctx->connections.lock);
+
+    ctx->connections.list = rbt_creat(NULL, (key_cb_t)key_cb_int64, (cmp_cb_t)agent_connection_cmp);
+    if (NULL == ctx->connections.list) {
+        log_error(ctx->log, "Create socket connection list failed!");
+        free(agent);
         return AGENT_ERR;
     }
 

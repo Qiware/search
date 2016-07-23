@@ -151,7 +151,6 @@ static int agent_worker_proc_data_hdl(agent_cntx_t *ctx, agent_worker_t *worker)
 {
     int i, num, idx, rqid; /* rqid: 接收队列ID */
     agent_reg_t *reg;
-    agent_flow_t *flow;
     mesg_header_t *head;
     void *addr[AGT_WSVR_POP_NUM];
     agent_conf_t *conf = ctx->conf;
@@ -176,25 +175,13 @@ static int agent_worker_proc_data_hdl(agent_cntx_t *ctx, agent_worker_t *worker)
         /* > 依次处理数据 */
         for (idx=0; idx<num; ++idx) {
             /* > 对数据进行处理 */
-            flow = (agent_flow_t *)addr[idx];
-            head = (mesg_header_t *)(flow + 1);
+            head = (mesg_header_t *)addr[idx];
 
             reg = &ctx->reg[head->type];
 
-            /* > 插入SERIAL->SCK映射 */
-            if (agent_serial_to_sck_map_insert(ctx, flow)) {
-                log_error(worker->log, "Insert serial to sck map failed! serial:%lu sid:%lu",
-                          flow->serial, flow->sid);
-                continue;
-            }
-
             /* > 调用处理回调 */
-            if (reg->proc(head->type,
-                    addr[idx] + sizeof(agent_flow_t),
-                    head->length + sizeof(mesg_header_t), reg->args))
-            {
-                agent_serial_to_sck_map_delete(ctx, flow->serial);
-            }
+            reg->proc(head->type, addr[idx],
+                    head->length + sizeof(mesg_header_t), reg->args);
 
             /* 3. 释放内存空间 */
             queue_dealloc(ctx->recvq[rqid], addr[idx]);

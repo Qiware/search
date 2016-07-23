@@ -114,8 +114,8 @@ static int frwd_search_req_hdl(int type, int orig, char *data, size_t len, void 
     /* > 转换字节序 */
     MESG_HEAD_NTOH(head, head);
 
-    log_trace(ctx->log, "Call %s()! serial:%lu type:%d len:%d flag:%d chksum:[0x%X/0x%X]",
-            __func__, head->serial, head->type,
+    log_trace(ctx->log, "Call %s()! sid:%lu serial:%lu type:%d len:%d flag:%d chksum:[0x%X/0x%X]",
+            __func__, head->sid, head->serial, head->type,
             head->length, head->flag, head->chksum, MSG_CHKSUM_VAL);
 
     MESG_HEAD_HTON(head, head);
@@ -156,7 +156,8 @@ static int frwd_search_rsp_hdl(int type, int orig, char *data, size_t len, void 
     frwd_cntx_t *ctx = (frwd_cntx_t *)args;
     mesg_header_t *head = (mesg_header_t *)data;
 
-    log_trace(ctx->log, "Call %s()", __func__);
+    log_trace(ctx->log, "Call %s()! sid:%lu serial:%lu",
+            __func__, ntoh64(head->sid), ntoh64(head->serial));
 
     serial.serial = ntoh64(head->serial);
 

@@ -68,6 +68,9 @@ typedef struct
     (n)->flag = htonl((h)->flag); \
     (n)->length = htonl((h)->length); \
     (n)->chksum = htonl((h)->chksum); \
+    (n)->sid = hton64((h)->sid); \
+    (n)->src_nid = htonl((h)->src_nid); \
+    (n)->dst_nid = htonl((h)->dst_nid); \
     (n)->serial = hton64((h)->serial); \
 } while(0)
 
@@ -76,14 +79,20 @@ typedef struct
     (h)->flag = ntohl((n)->flag); \
     (h)->length = ntohl((n)->length); \
     (h)->chksum = ntohl((n)->chksum); \
+    (h)->sid = ntoh64((n)->sid); \
+    (h)->src_nid = ntohl((n)->src_nid); \
+    (h)->dst_nid = ntohl((n)->dst_nid); \
     (h)->serial = ntoh64((n)->serial); \
 } while(0)
 
-#define MESG_HEAD_SET(head, _type, _serial, _len) do { /* 设置协议头 */\
+#define MESG_HEAD_SET(head, _type, _sid, _src_nid, _dst_nid, _serial, _len) do { /* 设置协议头 */\
     (head)->type = (_type); \
     (head)->flag = MSG_FLAG_USR; \
     (head)->length = (_len); \
     (head)->chksum = MSG_CHKSUM_VAL; \
+    (head)->sid = (_sid); \
+    (head)->src_nid = (_src_nid); \
+    (head)->dst_nid = (_dst_nid); \
     (head)->serial = (_serial); \
 } while(0)
 

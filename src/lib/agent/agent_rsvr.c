@@ -25,7 +25,7 @@ static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr);
 static int agent_rsvr_event_hdl(agent_cntx_t *ctx, agent_rsvr_t *rsvr);
 static int agent_rsvr_timeout_hdl(agent_cntx_t *ctx, agent_rsvr_t *rsvr);
 
-static int agent_rsvr_connection_cmp(const int *seq, const socket_t *sck);
+static int agent_rsvr_connection_cmp(const int *sid, const socket_t *sck);
 
 /******************************************************************************
  **函数名称: agent_rsvr_routine
@@ -98,24 +98,18 @@ static int agt_rsvr_recv_cmd_hdl(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t
         /* > 处理命令 */
         switch (cmd.type) {
             case CMD_ADD_SCK:
-            {
                 if (agent_rsvr_add_conn(ctx, rsvr)) {
                     log_error(rsvr->log, "Add connection failed！");
                 }
                 break;
-            }
             case CMD_DIST_DATA:
-            {
                 if (agent_rsvr_dist_send_data(ctx, rsvr)) {
                     log_error(rsvr->log, "Disturibute data failed！");
                 }
                 break;
-            }
             default:
-            {
                 log_error(rsvr->log, "Unknown command type [%d]！", cmd.type);
                 break;
-            }
         }
     }
     return AGENT_OK;
@@ -144,14 +138,6 @@ int agent_rsvr_init(agent_cntx_t *ctx, agent_rsvr_t *rsvr, int idx)
     rsvr->id = idx;
     rsvr->log = ctx->log;
     rsvr->recv_seq = 0;
-
-    /* > 创建连接红黑树 */
-
-    rsvr->connections = rbt_creat(NULL, (key_cb_t)key_cb_int64, (cmp_cb_t)agent_rsvr_connection_cmp);
-    if (NULL == rsvr->connections) {
-        log_error(rsvr->log, "Create socket hash table failed!");
-        return AGENT_ERR;
-    }
 
     do {
         /* > 创建epoll对象 */
@@ -240,7 +226,6 @@ static int agent_rsvr_sck_dealloc(void *pool, socket_t *sck)
 int agent_rsvr_destroy(agent_rsvr_t *rsvr)
 {
     FREE(rsvr->events);
-    rbt_destroy(rsvr->connections, (mem_dealloc_cb_t)agent_rsvr_sck_dealloc, NULL);
     CLOSE(rsvr->epid);
     CLOSE(rsvr->cmd_sck.fd);
     FREE(rsvr->cmd_sck.extra);
@@ -400,8 +385,12 @@ static int agent_rsvr_conn_timeout(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
         }
 
         /* > 获取超时连接 */
-        rbt_trav(rsvr->connections,
+        spin_lock(&ctx->connections.lock);
+
+        rbt_trav(ctx->connections.list,
              (trav_cb_t)agent_rsvr_get_timeout_conn_list, (void *)&timeout);
+
+        spin_unlock(&ctx->connections.lock);
 
         log_debug(rsvr->log, "Timeout connections: %d!", timeout.list->num);
 
@@ -437,7 +426,6 @@ static int agent_rsvr_conn_timeout(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
 static int agent_rsvr_timeout_hdl(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
 {
     agent_rsvr_conn_timeout(ctx, rsvr);
-    agent_serial_to_sck_map_timeout(ctx);
     return AGENT_OK;
 }
 
@@ -479,7 +467,7 @@ static int agent_rsvr_add_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
             /* > 申请SCK空间 */
             sck = calloc(1, sizeof(socket_t));
             if (NULL == sck) {
-                log_error(rsvr->log, "Alloc memory from slab failed! seq:%lu",
+                log_error(rsvr->log, "Alloc memory from slab failed! sid:%lu",
                         add[idx]->sid);
                 CLOSE(add[idx]->fd);
                 queue_dealloc(ctx->connq[rsvr->id], add[idx]);
@@ -491,7 +479,7 @@ static int agent_rsvr_add_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
             /* > 创建SCK关联对象 */
             extra = calloc(1, sizeof(agent_socket_extra_t));
             if (NULL == extra) {
-                log_error(rsvr->log, "Alloc memory from slab failed! seq:%lu",
+                log_error(rsvr->log, "Alloc memory from slab failed! sid:%lu",
                         add[idx]->sid);
                 CLOSE(add[idx]->fd);
                 FREE(sck);
@@ -499,9 +487,11 @@ static int agent_rsvr_add_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
                 continue;
             }
 
+            extra->id = rsvr->id;
+            extra->sid = add[idx]->sid;
             extra->send_list = list_creat(NULL);
             if (NULL == extra->send_list) {
-                log_error(rsvr->log, "Alloc memory from slab failed! seq:%lu",
+                log_error(rsvr->log, "Alloc memory from slab failed! sid:%lu",
                           add[idx]->sid);
                 CLOSE(add[idx]->fd);
                 FREE(sck);
@@ -521,23 +511,24 @@ static int agent_rsvr_add_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
             sck->recv_cb = (socket_recv_cb_t)agent_recv_data;   /* Recv回调函数 */
             sck->send_cb = (socket_send_cb_t)agent_send_data;   /* Send回调函数*/
 
-            extra->seq = add[idx]->sid;
-
             queue_dealloc(ctx->connq[rsvr->id], add[idx]);      /* 释放连接队列空间 */
 
             /* > 插入红黑树中(以序列号为主键) */
-            if (rbt_insert(rsvr->connections, &extra->seq, sizeof(extra->seq), sck)) {
-                log_error(rsvr->log, "Insert into avl failed! fd:%d seq:%lu",
-                          sck->fd, extra->seq);
+            spin_lock(&ctx->connections.lock);
+            if (rbt_insert(ctx->connections.list, &extra->sid, sizeof(extra->sid), sck)) {
+                spin_unlock(&ctx->connections.lock);
+                log_error(rsvr->log, "Insert into avl failed! fd:%d sid:%lu",
+                          sck->fd, extra->sid);
                 CLOSE(sck->fd);
                 list_destroy(extra->send_list, (mem_dealloc_cb_t)mem_dealloc, NULL);
                 FREE(sck->extra);
                 FREE(sck);
                 return AGENT_ERR;
             }
+            spin_unlock(&ctx->connections.lock);
 
-            log_debug(rsvr->log, "Insert into avl success! fd:%d seq:%lu",
-                      sck->fd, extra->seq);
+            log_debug(rsvr->log, "Insert into avl success! fd:%d sid:%lu",
+                      sck->fd, extra->sid);
 
             /* > 加入epoll监听(首先是接收客户端搜索请求, 所以设置EPOLLIN) */
             memset(&ev, 0, sizeof(ev));
@@ -570,10 +561,14 @@ static int agent_rsvr_del_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *
     void *addr;
     agent_socket_extra_t *extra = sck->extra;
 
-    log_trace(rsvr->log, "Call %s()! fd:%d seq:%ld", __func__, sck->fd, extra->seq);
+    log_trace(rsvr->log, "Call %s()! fd:%d sid:%ld", __func__, sck->fd, extra->sid);
 
     /* > 将套接字从红黑树中剔除 */
-    rbt_delete(rsvr->connections, &extra->seq, sizeof(extra->seq), &addr);
+    spin_lock(&ctx->connections.lock);
+
+    rbt_delete(ctx->connections.list, &extra->sid, sizeof(extra->sid), &addr);
+
+    spin_unlock(&ctx->connections.lock);
 
     /* > 释放套接字空间 */
     CLOSE(sck->fd);
@@ -608,7 +603,7 @@ static int agent_recv_head(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
     mesg_header_t *head;
     socket_snap_t *recv = &sck->recv;
 
-    addr = recv->addr + sizeof(agent_flow_t);
+    addr = recv->addr;
 
     while (1) {
         /* 1. 计算剩余字节 */
@@ -672,19 +667,17 @@ static int agent_recv_head(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
  ******************************************************************************/
 static int agent_recv_body(agent_rsvr_t *rsvr, socket_t *sck)
 {
-    void *addr;
     int n, left;
     mesg_header_t *head;
     socket_snap_t *recv = &sck->recv;
 
-    addr = recv->addr + sizeof(agent_flow_t);
-    head  = (mesg_header_t *)addr;
+    head  = (mesg_header_t *)recv->addr;
 
     /* 1. 接收报体 */
     while (1) {
         left = recv->total - recv->off;
 
-        n = read(sck->fd, addr + recv->off, left);
+        n = read(sck->fd, recv->addr + recv->off, left);
         if (n == left) {
             recv->off += n;
             break; /* 接收完毕 */
@@ -808,15 +801,13 @@ static int agent_recv_post_hdl(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *
 static int agent_recv_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
 {
     int ret;
-    agent_flow_t *flow;
+    mesg_header_t *head;
     socket_snap_t *recv = &sck->recv;
     agent_socket_extra_t *extra = (agent_socket_extra_t *)sck->extra;
 
     for (;;) {
         switch (recv->phase) {
-            /* 1. 分配空间 */
-            case SOCK_PHASE_RECV_INIT:
-            {
+            case SOCK_PHASE_RECV_INIT: /* 1. 分配空间 */
                 recv->addr = queue_malloc(ctx->recvq[rsvr->id], queue_size(ctx->recvq[0]));
                 if (NULL == recv->addr) {
                     log_error(rsvr->log, "Alloc from queue failed!");
@@ -825,40 +816,28 @@ static int agent_recv_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
 
                 log_info(rsvr->log, "Alloc memory from queue success!");
 
-                extra->flow = (agent_flow_t *)recv->addr;
-                extra->head = (mesg_header_t *)(extra->flow + 1);
+                extra->head = (mesg_header_t *)recv->addr;
                 extra->body = (void *)(extra->head + 1);
                 recv->off = 0;
                 recv->total = sizeof(mesg_header_t);
-
-                flow = extra->flow;
-                flow->sid = extra->seq;
-                flow->agt_idx = rsvr->id;
 
                 /* 设置下步 */
                 recv->phase = SOCK_PHASE_RECV_HEAD;
 
                 goto RECV_HEAD;
-            }
-            /* 2. 接收报头 */
-            case SOCK_PHASE_RECV_HEAD:
-            {
+            case SOCK_PHASE_RECV_HEAD: /* 2. 接收报头 */
             RECV_HEAD:
                 ret = agent_recv_head(ctx, rsvr, sck);
                 switch (ret) {
                     case AGENT_OK:
-                    {
-                        extra->flow = (agent_flow_t *)recv->addr;
-
-                        flow = extra->flow;
-                        flow->serial = tlz_gen_serail( /* 获取流水号 */
+                        head = (mesg_header_t *)recv->addr;
+                        head->sid = extra->sid;
+                        head->serial = tlz_gen_serail( /* 获取流水号 */
                                 ctx->conf->nid, rsvr->id, ++rsvr->recv_seq);
-                        flow->create_tm = rsvr->ctm;
 
-                        log_info(rsvr->log, "Call %s()! serial:%lu", __func__, extra->flow->serial);
+                        log_info(rsvr->log, "Call %s()! serial:%lu", __func__, head->serial);
 
-                        extra->head->serial = flow->serial;
-                        if (extra->head->length) {
+                        if (head->length) {
                             recv->phase = SOCK_PHASE_READY_BODY; /* 设置下步 */
                         }
                         else {
@@ -866,24 +845,15 @@ static int agent_recv_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
                             goto RECV_POST;
                         }
                         break;      /* 继续后续处理 */
-                    }
                     case AGENT_SCK_AGAIN:
-                    {
                         return ret; /* 下次继续处理 */
-                    }
                     default:
-                    {
                         queue_dealloc(ctx->recvq[rsvr->id], recv->addr);
                         recv->addr = NULL;
                         return ret; /* 异常情况 */
-                    }
                 }
-
                 goto READY_BODY;
-            }
-            /* 3. 准备接收报体 */
-            case SOCK_PHASE_READY_BODY:
-            {
+            case SOCK_PHASE_READY_BODY: /* 3. 准备接收报体 */
             READY_BODY:
                 recv->total += extra->head->length;
 
@@ -891,54 +861,34 @@ static int agent_recv_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
                 recv->phase = SOCK_PHASE_RECV_BODY;
 
                 goto RECV_BODY;
-            }
-            /* 4. 接收报体 */
-            case SOCK_PHASE_RECV_BODY:
-            {
+            case SOCK_PHASE_RECV_BODY: /* 4. 接收报体 */
             RECV_BODY:
                 ret = agent_recv_body(rsvr, sck);
                 switch (ret) {
                     case AGENT_OK:
-                    {
                         recv->phase = SOCK_PHASE_RECV_POST; /* 设置下步 */
                         break;      /* 继续后续处理 */
-                    }
                     case AGENT_SCK_AGAIN:
-                    {
                         return ret; /* 下次继续处理 */
-                    }
                     default:
-                    {
                         queue_dealloc(ctx->recvq[rsvr->id], recv->addr);
                         recv->addr = NULL;
                         return ret; /* 异常情况 */
-                    }
                 }
 
                 goto RECV_POST;
-            }
-            /* 5. 接收完毕: 数据处理 */
-            case SOCK_PHASE_RECV_POST:
-            {
+            case SOCK_PHASE_RECV_POST: /* 5. 接收完毕: 数据处理 */
             RECV_POST:
                 /* 将数据放入接收队列 */
                 ret = agent_recv_post_hdl(ctx, rsvr, sck);
-                switch (ret) {
-                    case AGENT_OK:
-                    {
+                if (AGENT_OK == ret) {
                         recv->phase = SOCK_PHASE_RECV_INIT;
                         recv->addr = NULL;
                         continue; /* 接收下一条数据 */
-                    }
-                    default:
-                    {
-                        queue_dealloc(ctx->recvq[rsvr->id], recv->addr);
-                        recv->addr = NULL;
-                        return AGENT_ERR;
-                    }
                 }
+                queue_dealloc(ctx->recvq[rsvr->id], recv->addr);
+                recv->addr = NULL;
                 return AGENT_ERR;
-            }
         }
     }
 
@@ -1041,11 +991,9 @@ static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
     int total, num, idx;
     queue_t *sendq;
     socket_t *sck;
-    agent_flow_t *flow;
-    agent_flow_t newest;
     mesg_header_t *head;
     struct epoll_event ev;
-    agent_socket_extra_t *sck_extra;
+    agent_socket_extra_t *extra;
     void *addr[AGT_RSVR_DIST_POP_NUM], *data;
 
     sendq = ctx->sendq[rsvr->id];
@@ -1064,49 +1012,33 @@ static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
         log_debug(rsvr->log, "Pop data succ! num:%d", num);
 
         for (idx=0; idx<num; ++idx) {
-            flow = (agent_flow_t *)addr[idx]; // 流水信息
-            head = (mesg_header_t *)(flow + 1); // 消息头
+            head = (mesg_header_t *)addr[idx]; // 消息头
             if (!MESG_CHKSUM_ISVALID(head)) {
                 log_error(ctx->log, "Check chksum [0X%x/0X%x] failed! serial:%lu",
-                        head->chksum, MSG_CHKSUM_VAL, flow->serial);
+                        head->chksum, MSG_CHKSUM_VAL, head->serial);
                 queue_dealloc(sendq, addr[idx]);
                 continue;
             }
 
             total = MESG_TOTAL_LEN(head->length);
 
-            /* > 查找最新SERIAL->SCK映射 */
-            if (agent_serial_to_sck_map_query(ctx, flow->serial, &newest)) {
-                log_error(ctx->log, "Query serial->sck map failed! serial:%lu", flow->serial);
-                queue_dealloc(sendq, addr[idx]);
-                continue;
-            }
-
-            /* 校验映射项合法性 */
-            if (flow->agt_idx != newest.agt_idx
-                || flow->sid != newest.sid)
-            {
-                log_error(ctx->log, "Old socket was closed! seq:%lu", flow->sid);
-                queue_dealloc(sendq, addr[idx]);
-                continue;
-            }
-
             /* 查询发送链表 */
-            sck = rbt_query(rsvr->connections, &flow->sid, sizeof(flow->sid));
+            spin_lock(&ctx->connections.lock);
+            sck = rbt_query(ctx->connections.list, &head->sid, sizeof(head->sid));
             if (NULL == sck) {
-                log_error(ctx->log, "Query socket failed! serial:%lu seq:%lu diff:%lu idx:%d/%d",
-                          newest.serial, newest.sid,
-                          time(NULL) - newest.create_tm, newest.agt_idx, rsvr->id);
+                spin_unlock(&ctx->connections.lock);
+                log_error(ctx->log, "Query socket failed! serial:%lu sid:%lu",
+                          head->serial, head->sid);
                 queue_dealloc(sendq, addr[idx]);
                 continue;
             }
-
-            sck_extra = (agent_socket_extra_t *)sck->extra;
+            extra = (agent_socket_extra_t *)sck->extra;
+            spin_unlock(&ctx->connections.lock);
 
             data = calloc(1, total);
             if (NULL == data) {
-                log_error(ctx->log, "Alloc from slab failed! serial:%lu seq:%lu total:%d",
-                        flow->serial, flow->sid, total);
+                log_error(ctx->log, "Alloc from slab failed! serial:%lu sid:%lu total:%d",
+                        head->serial, head->sid, total);
                 queue_dealloc(sendq, addr[idx]);
                 continue;
             }
@@ -1115,8 +1047,8 @@ static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
 
             memcpy(data, (void *)head, total);
 
-            if (list_rpush(sck_extra->send_list, data)) {
-                log_error(ctx->log, "Insert list failed! seq:%lu", flow->sid);
+            if (list_rpush(extra->send_list, data)) {
+                log_error(ctx->log, "Insert list failed! sid:%lu", head->sid);
                 queue_dealloc(sendq, addr[idx]);
                 FREE(data);
                 continue;
@@ -1135,25 +1067,4 @@ static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
     }
 
     return AGENT_OK;
-}
-
-/******************************************************************************
- **函数名称: agent_rsvr_connection_cmp
- **功    能: 进行连接比较
- **输入参数:
- **     seq: 套接字序列
- **     sck: 参与比较的数据
- **输出参数: NONE
- **返    回: 0:相等 <0:小于 >0:大于
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2015-07-21 22:54:30 #
- ******************************************************************************/
-static int agent_rsvr_connection_cmp(const int *seq, const socket_t *sck)
-{
-    agent_socket_extra_t *extra;
-
-    extra = (agent_socket_extra_t *)sck->extra;
-
-    return (*seq - extra->seq);
 }

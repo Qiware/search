@@ -17,16 +17,6 @@ typedef enum
     , AGENT_ERR = ~0x7FFFFFFF                /* 失败、错误 */
 } agent_err_code_e;
 
-/* 消息流水信息 */
-typedef struct
-{
-    uint64_t serial;                        /* 流水号(全局唯一编号) */
-    time_t create_tm;                       /* 生成时间 */
-
-    int agt_idx;                            /* 代理索引 */
-    uint64_t sid;                           /* Session ID */
-} agent_flow_t;
-
 /* 注册回调类型 */
 typedef int (*agent_reg_cb_t)(unsigned int type, char *buff, size_t len, void *args);
 
