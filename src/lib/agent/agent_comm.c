@@ -31,6 +31,16 @@ int agent_async_send(agent_cntx_t *ctx, int type, uint64_t sid, void *data, int 
     socket_t *sck;
     ring_t *sendq;
     agent_socket_extra_t *extra;
+    mesg_header_t *head = (mesg_head_t *)data, hhead;
+
+    /* > 合法性校验 */
+    MESG_HEAD_NTOH(head, &hhead);
+    if (MESG_CHKSUM_ISVALID(&hhead)) {
+        log_error(ctx->log, "Data format is invalid! sid:%lu", sid);
+        return -1;
+    }
+
+    MESG_HEAD_PRINT(ctx->log, &hhead);
 
     /* > 通过sid获取服务ID */
     spin_lock(&ctx->connections.lock);

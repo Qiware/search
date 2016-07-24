@@ -926,6 +926,7 @@ static int agent_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
             }
 
             head = (mesg_header_t *)send->addr;
+
             MESG_HEAD_NTOH(head, &hhead);
             MESG_HEAD_PRINT(rsvr->log, &hhead);
 
@@ -1012,7 +1013,6 @@ static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
             head = (mesg_header_t *)addr[idx];  // 消息头
 
             MESG_HEAD_NTOH(head, &hhead);       // 字节序转换
-
             if (!MESG_CHKSUM_ISVALID(&hhead)) {
                 log_error(ctx->log, "Check chksum [0x%X/0x%X] failed! sid:%lu serial:%lu",
                         hhead.chksum, MSG_CHKSUM_VAL, hhead.sid, hhead.serial);
@@ -1026,7 +1026,7 @@ static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
             if (NULL == sck) {
                 spin_unlock(&ctx->connections.lock);
                 log_error(ctx->log, "Query socket failed! serial:%lu sid:%lu",
-                          hhead.serial, hhead.sid);
+                        hhead.serial, hhead.sid);
                 FREE(addr[idx]);
                 continue;
             }
