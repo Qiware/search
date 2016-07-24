@@ -55,8 +55,7 @@ typedef struct
     uint32_t chksum;                    /* 校验值 */
 
     uint64_t sid;                       /* 会话ID */
-    uint32_t src_nid;                   /* 源设备ID */
-    uint32_t dst_nid;                   /* 目标设备ID */
+    uint32_t nid;                       /* 结点ID */
 
     uint64_t serial;                    /* 流水号(注: 全局唯一流水号) */
     char body[0];                       /* 消息体 */
@@ -69,8 +68,7 @@ typedef struct
     (n)->length = htonl((h)->length); \
     (n)->chksum = htonl((h)->chksum); \
     (n)->sid = hton64((h)->sid); \
-    (n)->src_nid = htonl((h)->src_nid); \
-    (n)->dst_nid = htonl((h)->dst_nid); \
+    (n)->nid = htonl((h)->nid); \
     (n)->serial = hton64((h)->serial); \
 } while(0)
 
@@ -80,19 +78,17 @@ typedef struct
     (h)->length = ntohl((n)->length); \
     (h)->chksum = ntohl((n)->chksum); \
     (h)->sid = ntoh64((n)->sid); \
-    (h)->src_nid = ntohl((n)->src_nid); \
-    (h)->dst_nid = ntohl((n)->dst_nid); \
+    (h)->nid = ntohl((n)->nid); \
     (h)->serial = ntoh64((n)->serial); \
 } while(0)
 
-#define MESG_HEAD_SET(head, _type, _sid, _src_nid, _dst_nid, _serial, _len) do { /* 设置协议头 */\
+#define MESG_HEAD_SET(head, _type, _sid, _nid, _serial, _len) do { /* 设置协议头 */\
     (head)->type = (_type); \
     (head)->flag = MSG_FLAG_USR; \
     (head)->length = (_len); \
     (head)->chksum = MSG_CHKSUM_VAL; \
     (head)->sid = (_sid); \
-    (head)->src_nid = (_src_nid); \
-    (head)->dst_nid = (_dst_nid); \
+    (head)->nid = (_nid); \
     (head)->serial = (_serial); \
 } while(0)
 
@@ -100,9 +96,9 @@ typedef struct
 #define MESG_CHKSUM_ISVALID(head) (MSG_CHKSUM_VAL == (head)->chksum)
 
 #define MESG_HEAD_PRINT(log, head) \
-    log_debug((log), "Call %s()! type:%d len:%d chksum:0x%X/0x%X sid:%lu src:%u dst:%u serial:%lu", \
+    log_debug((log), "Call %s()! type:%d len:%d chksum:0x%X/0x%X sid:%lu nid:%u serial:%lu", \
             __func__, (head)->type, (head)->length, (head)->chksum, MSG_CHKSUM_VAL, \
-            (head)->sid, (head)->src_nid, (head)->dst_nid, (head)->serial);
+            (head)->sid, (head)->nid, (head)->serial);
 
 ////////////////////////////////////////////////////////////////////////////////
 /* 搜索消息结构 */

@@ -632,7 +632,7 @@ static int agent_recv_head(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
     /* 3. 校验报头数据 */
     head = (mesg_header_t *)addr;
     MESG_HEAD_NTOH(head, head);
-    head->src_nid = AGENT_GET_NODE_ID(ctx);
+    head->nid = AGENT_GET_NODE_ID(ctx);
 
     if (!MESG_CHKSUM_ISVALID(head)) {
         log_error(rsvr->log, "Check head failed! type:%d len:%d flag:%d chksum:[0x%X/0x%X]",
