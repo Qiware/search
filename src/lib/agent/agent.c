@@ -525,7 +525,7 @@ static int agent_creat_queue(agent_cntx_t *ctx)
 
     for (idx=0; idx<conf->agent_num; ++idx) {
         ctx->connq[idx] = queue_creat(conf->connq.max, sizeof(agent_add_sck_t));
-        if (NULL == ctx->connq) {
+        if (NULL == ctx->connq[idx]) {
             log_error(ctx->log, "Create conn queue failed!");
             return AGENT_ERR;
         }
@@ -540,22 +540,22 @@ static int agent_creat_queue(agent_cntx_t *ctx)
 
     for (idx=0; idx<conf->agent_num; ++idx) {
         ctx->recvq[idx] = queue_creat(conf->recvq.max, conf->recvq.size);
-        if (NULL == ctx->recvq) {
+        if (NULL == ctx->recvq[idx]) {
             log_error(ctx->log, "Create recv queue failed!");
             return AGENT_ERR;
         }
     }
 
     /* > 创建SEND队列(与Agent数一致) */
-    ctx->sendq = (queue_t **)calloc(conf->agent_num, sizeof(queue_t*));
+    ctx->sendq = (ring_t **)calloc(conf->agent_num, sizeof(ring_t *));
     if (NULL == ctx->sendq) {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return AGENT_ERR;
     }
 
     for (idx=0; idx<conf->agent_num; ++idx) {
-        ctx->sendq[idx] = queue_creat(conf->sendq.max, conf->sendq.size);
-        if (NULL == ctx->sendq) {
+        ctx->sendq[idx] = ring_creat(conf->sendq.max);
+        if (NULL == ctx->sendq[idx]) {
             log_error(ctx->log, "Create send queue failed!");
             return AGENT_ERR;
         }

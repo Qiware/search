@@ -78,7 +78,7 @@ typedef struct
 
     queue_t **connq;                        /* 连接队列(注:数组长度与Agent相等) */
     queue_t **recvq;                        /* 接收队列(注:数组长度与Agent相等) */
-    queue_t **sendq;                        /* 发送队列(注:数组长度与Agent相等) */
+    ring_t **sendq;                         /* 发送队列(注:数组长度与Agent相等) */
 } agent_cntx_t;
 
 #define AGENT_GET_NODE_ID(ctx) ((ctx)->conf->nid)

@@ -29,7 +29,7 @@ int agent_async_send(agent_cntx_t *ctx, int type, uint64_t sid, void *data, int 
     int aid; // aid: 代理服务ID
     void *addr;
     socket_t *sck;
-    queue_t *sendq;
+    ring_t *sendq;
     agent_socket_extra_t *extra;
 
     /* > 通过sid获取服务ID */
@@ -46,15 +46,19 @@ int agent_async_send(agent_cntx_t *ctx, int type, uint64_t sid, void *data, int 
     /* > 放入指定发送队列 */
     sendq = ctx->sendq[aid];
 
-    addr = queue_malloc(sendq, len);
+    addr = (void *)calloc(1, len);
     if (NULL == addr) {
-        log_error(ctx->log, "Alloc from queue failed! size:%d/%d", len, queue_size(sendq));
+        log_error(ctx->log, "Alloc memory failed! len:%d", len);
         return AGENT_ERR;
     }
 
     memcpy(addr, data, len);
 
-    queue_push(sendq, addr); /* 放入队列 */
+    if (ring_push(sendq, addr)) { /* 放入队列 */
+        FREE(addr);
+        log_error(ctx->log, "Push into ring failed!");
+        return AGENT_ERR;
+    }
 
     agent_cmd_send_dist_req(ctx, aid); /* 发送分发命令 */
 

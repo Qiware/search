@@ -985,23 +985,23 @@ static int agent_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
  ******************************************************************************/
 static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
 {
-    int total, num, idx;
-    queue_t *sendq;
+    int num, idx;
+    ring_t *sendq;
     socket_t *sck;
     mesg_header_t *head, hhead;
     struct epoll_event ev;
     agent_socket_extra_t *extra;
-    void *addr[AGT_RSVR_DIST_POP_NUM], *data;
+    void *addr[AGT_RSVR_DIST_POP_NUM];
 
     sendq = ctx->sendq[rsvr->id];
     while (1) {
-        num = MIN(queue_used(sendq), AGT_RSVR_DIST_POP_NUM);
+        num = MIN(ring_get_num(sendq), AGT_RSVR_DIST_POP_NUM);
         if (0 == num) {
             break;
         }
 
         /* > 弹出应答数据 */
-        num = queue_mpop(sendq, addr, num);
+        num = ring_mpop(sendq, addr, num);
         if (0 == num) {
             break;
         }
@@ -1016,11 +1016,9 @@ static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
             if (!MESG_CHKSUM_ISVALID(&hhead)) {
                 log_error(ctx->log, "Check chksum [0x%X/0x%X] failed! sid:%lu serial:%lu",
                         hhead.chksum, MSG_CHKSUM_VAL, hhead.sid, hhead.serial);
-                queue_dealloc(sendq, addr[idx]);
+                FREE(addr[idx]);
                 continue;
             }
-
-            total = MESG_TOTAL_LEN(hhead.length);
 
             /* 查询发送链表 */
             spin_lock(&ctx->connections.lock);
@@ -1029,33 +1027,17 @@ static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
                 spin_unlock(&ctx->connections.lock);
                 log_error(ctx->log, "Query socket failed! serial:%lu sid:%lu",
                           hhead.serial, hhead.sid);
-                queue_dealloc(sendq, addr[idx]);
+                FREE(addr[idx]);
                 continue;
             }
             extra = (agent_socket_extra_t *)sck->extra;
             spin_unlock(&ctx->connections.lock);
 
-            data = calloc(1, total);
-            if (NULL == data) {
-                log_error(ctx->log, "Alloc from slab failed! sid:%lu serial:%lu total:%d",
-                        hhead.sid, hhead.serial, total);
-                queue_dealloc(sendq, addr[idx]);
-                continue;
-            }
-
-            log_debug(rsvr->log, "Call %s()! type:%d len:%d!",
-                    __func__, hhead.type, hhead.length);
-
-            memcpy(data, (void *)head, total);
-
-            if (list_rpush(extra->send_list, data)) {
+            if (list_rpush(extra->send_list, addr[idx])) {
                 log_error(ctx->log, "Insert list failed! sid:%lu", hhead.sid);
-                queue_dealloc(sendq, addr[idx]);
-                FREE(data);
+                FREE(addr[idx]);
                 continue;
             }
-
-            queue_dealloc(sendq, addr[idx]);
 
             /* > 设置epoll监听(添加EPOLLOUT) */
             memset(&ev, 0, sizeof(ev));

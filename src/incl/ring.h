@@ -13,14 +13,13 @@ typedef struct
     void **data;                            /* 指针数组(对其构造循环队列) */
 
     /* 生产者 */
-    struct
-    {
+    struct {
         volatile unsigned int head;         /* 生产者: 头索引(注: 其值一直往上递增) */
         volatile unsigned int tail;         /* 生产者: 尾索引(注: 其值一直往上递增) */
     } prod;
+
     /* 消费者 */
-    struct
-    {
+    struct {
         volatile unsigned int head;         /* 消费者: 头索引(注: 其值一直往上递增) */
         volatile unsigned int tail;         /* 消费者: 尾索引(注: 其值一直往上递增) */
     } cons;
