@@ -910,7 +910,7 @@ static int agent_recv_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
 static int agent_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
 {
     int n, left;
-    mesg_header_t *head;
+    mesg_header_t *head, hhead;
     struct epoll_event ev;
     socket_snap_t *send = &sck->send;
     agent_socket_extra_t *extra = (agent_socket_extra_t *)sck->extra;
@@ -926,17 +926,14 @@ static int agent_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
             }
 
             head = (mesg_header_t *)send->addr;
+            MESG_HEAD_NTOH(head, &hhead);
+            MESG_HEAD_PRINT(rsvr->log, &hhead);
 
             send->off = 0;
-            send->total = head->length + sizeof(mesg_header_t);
+            send->total = hhead.length + sizeof(mesg_header_t);
 
-            log_trace(rsvr->log, "Call %s(): serial:%lu!", __func__, head->serial);
-
-            head->type = htonl(head->type);
-            head->flag = htonl(head->flag);
-            head->length = htonl(head->length);
-            head->chksum = htonl(head->chksum);
-            head->serial = hton64(head->serial);
+            log_trace(rsvr->log, "Call %s()! sid:%lu serial:%lu!",
+                    __func__, hhead.sid, hhead.serial);
         }
 
         /* 2. 发送数据 */
@@ -991,7 +988,7 @@ static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
     int total, num, idx;
     queue_t *sendq;
     socket_t *sck;
-    mesg_header_t *head;
+    mesg_header_t *head, hhead;
     struct epoll_event ev;
     agent_socket_extra_t *extra;
     void *addr[AGT_RSVR_DIST_POP_NUM], *data;
@@ -1012,23 +1009,26 @@ static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
         log_debug(rsvr->log, "Pop data succ! num:%d", num);
 
         for (idx=0; idx<num; ++idx) {
-            head = (mesg_header_t *)addr[idx]; // 消息头
-            if (!MESG_CHKSUM_ISVALID(head)) {
-                log_error(ctx->log, "Check chksum [0X%x/0X%x] failed! serial:%lu",
-                        head->chksum, MSG_CHKSUM_VAL, head->serial);
+            head = (mesg_header_t *)addr[idx];  // 消息头
+
+            MESG_HEAD_NTOH(head, &hhead);       // 字节序转换
+
+            if (!MESG_CHKSUM_ISVALID(&hhead)) {
+                log_error(ctx->log, "Check chksum [0x%X/0x%X] failed! sid:%lu serial:%lu",
+                        hhead.chksum, MSG_CHKSUM_VAL, hhead.sid, hhead.serial);
                 queue_dealloc(sendq, addr[idx]);
                 continue;
             }
 
-            total = MESG_TOTAL_LEN(head->length);
+            total = MESG_TOTAL_LEN(hhead.length);
 
             /* 查询发送链表 */
             spin_lock(&ctx->connections.lock);
-            sck = rbt_query(ctx->connections.list, &head->sid, sizeof(head->sid));
+            sck = rbt_query(ctx->connections.list, &hhead.sid, sizeof(hhead.sid));
             if (NULL == sck) {
                 spin_unlock(&ctx->connections.lock);
                 log_error(ctx->log, "Query socket failed! serial:%lu sid:%lu",
-                          head->serial, head->sid);
+                          hhead.serial, hhead.sid);
                 queue_dealloc(sendq, addr[idx]);
                 continue;
             }
@@ -1037,18 +1037,19 @@ static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
 
             data = calloc(1, total);
             if (NULL == data) {
-                log_error(ctx->log, "Alloc from slab failed! serial:%lu sid:%lu total:%d",
-                        head->serial, head->sid, total);
+                log_error(ctx->log, "Alloc from slab failed! sid:%lu serial:%lu total:%d",
+                        hhead.sid, hhead.serial, total);
                 queue_dealloc(sendq, addr[idx]);
                 continue;
             }
 
-            log_debug(rsvr->log, "Call %s()! type:%d len:%d!", __func__, head->type, head->length);
+            log_debug(rsvr->log, "Call %s()! type:%d len:%d!",
+                    __func__, hhead.type, hhead.length);
 
             memcpy(data, (void *)head, total);
 
             if (list_rpush(extra->send_list, data)) {
-                log_error(ctx->log, "Insert list failed! sid:%lu", head->sid);
+                log_error(ctx->log, "Insert list failed! sid:%lu", hhead.sid);
                 queue_dealloc(sendq, addr[idx]);
                 FREE(data);
                 continue;

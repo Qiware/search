@@ -58,19 +58,16 @@ int lsnd_search_req_hdl(unsigned int type, void *data, int length, void *args)
  ******************************************************************************/
 int lsnd_search_rsp_hdl(int type, int orig, char *data, size_t len, void *args)
 {
-    void *addr;
     lsnd_cntx_t *ctx = (lsnd_cntx_t *)args;
-    mesg_header_t *head = (mesg_header_t *)data;
-
-    addr = (void *)(head + 1);
+    mesg_header_t *head = (mesg_header_t *)data, hhead;
 
     /* > 转化字节序 */
-    MESG_HEAD_NTOH(head, head);
+    MESG_HEAD_NTOH(head, &hhead);
 
-    log_debug(ctx->log, "Call %s()! sid:%lu, serial:%lu body:%s",
-            __func__, head->sid, head->serial, head->body);
+    MESG_HEAD_PRINT(ctx->log, &hhead)
+    log_debug(ctx->log, "Call %s()! body:%s", __func__, head->body);
 
-    return agent_send(ctx->agent, type, head->sid, addr, len-sizeof(mesg_header_t));
+    return agent_async_send(ctx->agent, type, hhead.sid, data, len);
 }
 
 /******************************************************************************
@@ -123,14 +120,15 @@ int lsnd_insert_word_req_hdl(unsigned int type, void *data, int length, void *ar
 int lsnd_insert_word_rsp_hdl(int type, int orig, char *data, size_t len, void *args)
 {
     lsnd_cntx_t *ctx = (lsnd_cntx_t *)args;
-    mesg_header_t *head = (mesg_header_t *)data;
+    mesg_header_t *head = (mesg_header_t *)data, hhead;
     mesg_insert_word_rsp_t *rsp = (mesg_insert_word_rsp_t *)(head + 1);
 
+    /* > 转换字节序 */
+    MESG_HEAD_NTOH(head, &hhead);
+
+    MESG_HEAD_PRINT(ctx->log, &hhead)
     log_debug(ctx->log, "Call %s()! type:%d len:%d word:%s", __func__, type, len, rsp->word);
 
-    /* > 转换字节序 */
-    MESG_HEAD_NTOH(head, head);
-
     /* > 放入发送队列 */
-    return agent_send(ctx->agent, type, head->sid, (void *)rsp, len - sizeof(mesg_header_t));
+    return agent_async_send(ctx->agent, type, hhead.sid, data, len);
 }

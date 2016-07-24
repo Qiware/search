@@ -99,6 +99,11 @@ typedef struct
 #define MESG_TOTAL_LEN(body_len) (sizeof(mesg_header_t) + body_len)
 #define MESG_CHKSUM_ISVALID(head) (MSG_CHKSUM_VAL == (head)->chksum)
 
+#define MESG_HEAD_PRINT(log, head) \
+    log_debug((log), "Call %s()! type:%d len:%d chksum:0x%X/0x%X sid:%lu src:%u dst:%u serial:%lu", \
+            __func__, (head)->type, (head)->length, (head)->chksum, MSG_CHKSUM_VAL, \
+            (head)->sid, (head)->src_nid, (head)->dst_nid, (head)->serial);
+
 ////////////////////////////////////////////////////////////////////////////////
 /* 搜索消息结构 */
 #define SRCH_WORD_LEN       (128)

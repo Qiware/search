@@ -92,6 +92,6 @@ int agent_launch(agent_cntx_t *ctx);
 int agent_reg_add(agent_cntx_t *ctx, unsigned int type, agent_reg_cb_t proc, void *args);
 void agent_destroy(agent_cntx_t *ctx);
 
-int agent_send(agent_cntx_t *ctx, int type, uint64_t sid, void *data, int len);
+int agent_async_send(agent_cntx_t *ctx, int type, uint64_t sid, void *data, int len);
 
 #endif /*__AGENT_H__*/

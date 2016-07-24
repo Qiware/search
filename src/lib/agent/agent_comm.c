@@ -9,27 +9,27 @@
 static int agent_cmd_send_dist_req(agent_cntx_t *ctx, int idx);
 
 /******************************************************************************
- **函数名称: agent_send
+ **函数名称: agent_async_send
  **功    能: 发送数据(外部接口)
  **输入参数:
  **     ctx: 全局对象
  **     type: 数据类型
  **     sid: 会话ID
- **     data: 数据内容
+ **     data: 数据内容(必须包含消息头: mesg_header_t)
  **     len: 数据长度
  **输出参数:
  **返    回: 发送队列的索引
  **实现描述: 将数据放入发送队列
- **注意事项: 内存结构: 流水信息 + 消息头 + 消息体
+ **注意事项: 
+ **     > 发送内容data结构为: 消息头 + 消息体, 且消息头必须为"网络"字节序.
  **作    者: # Qifeng.zou # 2015-06-04 #
  ******************************************************************************/
-int agent_send(agent_cntx_t *ctx, int type, uint64_t sid, void *data, int len)
+int agent_async_send(agent_cntx_t *ctx, int type, uint64_t sid, void *data, int len)
 {
     int aid; // aid: 代理服务ID
     void *addr;
-    queue_t *sendq;
-    mesg_header_t *head;
     socket_t *sck;
+    queue_t *sendq;
     agent_socket_extra_t *extra;
 
     /* > 通过sid获取服务ID */
@@ -46,23 +46,13 @@ int agent_send(agent_cntx_t *ctx, int type, uint64_t sid, void *data, int len)
     /* > 放入指定发送队列 */
     sendq = ctx->sendq[aid];
 
-    addr = queue_malloc(sendq, sizeof(mesg_header_t) + len);
+    addr = queue_malloc(sendq, len);
     if (NULL == addr) {
-        log_error(ctx->log, "Alloc from queue failed! size:%d/%d",
-                sizeof(mesg_header_t) + len, queue_size(sendq));
+        log_error(ctx->log, "Alloc from queue failed! size:%d/%d", len, queue_size(sendq));
         return AGENT_ERR;
     }
 
-    head = (mesg_header_t *)addr;
-
-    head->type = type;
-    head->flag = MSG_FLAG_USR;
-    head->length = len;
-    head->chksum = MSG_CHKSUM_VAL;
-    head->sid = sid;
-    head->serial = 0;//serial;
-
-    memcpy(head+1, data, len);
+    memcpy(addr, data, len);
 
     queue_push(sendq, addr); /* 放入队列 */
 
