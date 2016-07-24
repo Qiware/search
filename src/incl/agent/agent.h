@@ -1,6 +1,7 @@
 #if !defined(__AGENT_H__)
 #define __AGENT_H__
 
+#include "sck.h"
 #include "slot.h"
 #include "queue.h"
 #include "rb_tree.h"
@@ -51,6 +52,13 @@ typedef struct
     queue_conf_t sendq;                     /* 发送队列 */
 } agent_conf_t;
 
+/* SID列表 */
+typedef struct
+{
+    spinlock_t lock;                        /* 锁 */
+    rbt_tree_t *sids;                       /* SID列表 */
+} agent_sid_list_t;
+
 /* 代理对象 */
 typedef struct
 {
@@ -71,10 +79,7 @@ typedef struct
     thread_pool_t *workers;                 /* Worker线程池 */
     agent_reg_t reg[AGENT_MSG_TYPE_MAX];    /* 消息注册 */
 
-    struct {
-        spinlock_t lock;                    /* 锁 */
-        rbt_tree_t *list;                   /* 连接链表 */
-    } connections;
+    agent_sid_list_t *connections;          /* SID集合(注:数组长度与Agent相等) */
 
     queue_t **connq;                        /* 连接队列(注:数组长度与Agent相等) */
     queue_t **recvq;                        /* 接收队列(注:数组长度与Agent相等) */
@@ -85,6 +90,10 @@ typedef struct
 
 /* 内部接口 */
 int agent_listen_init(agent_cntx_t *ctx, agent_lsvr_t *lsn, int idx);
+
+int agent_sid_item_add(agent_cntx_t *ctx, uint64_t sid, socket_t *sck);
+socket_t *agent_sid_item_del(agent_cntx_t *ctx, uint64_t sid);
+int agent_get_aid_by_sid(agent_cntx_t *ctx, uint64_t sid);
 
 /* 外部接口 */
 agent_cntx_t *agent_init(agent_conf_t *conf, log_cycle_t *log);

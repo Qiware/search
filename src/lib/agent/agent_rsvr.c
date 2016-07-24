@@ -21,6 +21,7 @@ static int agent_recv_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
 static int agent_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck);
 
 static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr);
+static socket_t *agent_push_into_send_list(agent_cntx_t *ctx, agent_rsvr_t *rsvr, uint64_t sid, void *addr);
 
 static int agent_rsvr_event_hdl(agent_cntx_t *ctx, agent_rsvr_t *rsvr);
 static int agent_rsvr_timeout_hdl(agent_cntx_t *ctx, agent_rsvr_t *rsvr);
@@ -385,12 +386,12 @@ static int agent_rsvr_conn_timeout(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
         }
 
         /* > 获取超时连接 */
-        spin_lock(&ctx->connections.lock);
+        spin_lock(&ctx->connections[rsvr->id].lock);
 
-        rbt_trav(ctx->connections.list,
+        rbt_trav(ctx->connections[rsvr->id].sids,
              (trav_cb_t)agent_rsvr_get_timeout_conn_list, (void *)&timeout);
 
-        spin_unlock(&ctx->connections.lock);
+        spin_unlock(&ctx->connections[rsvr->id].lock);
 
         log_debug(rsvr->log, "Timeout connections: %d!", timeout.list->num);
 
@@ -487,7 +488,7 @@ static int agent_rsvr_add_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
                 continue;
             }
 
-            extra->id = rsvr->id;
+            extra->aid = rsvr->id;
             extra->sid = add[idx]->sid;
             extra->send_list = list_creat(NULL);
             if (NULL == extra->send_list) {
@@ -514,9 +515,7 @@ static int agent_rsvr_add_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
             queue_dealloc(ctx->connq[rsvr->id], add[idx]);      /* 释放连接队列空间 */
 
             /* > 插入红黑树中(以序列号为主键) */
-            spin_lock(&ctx->connections.lock);
-            if (rbt_insert(ctx->connections.list, &extra->sid, sizeof(extra->sid), sck)) {
-                spin_unlock(&ctx->connections.lock);
+            if (agent_sid_item_add(ctx, extra->sid, sck)) {
                 log_error(rsvr->log, "Insert into avl failed! fd:%d sid:%lu",
                           sck->fd, extra->sid);
                 CLOSE(sck->fd);
@@ -525,7 +524,6 @@ static int agent_rsvr_add_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
                 FREE(sck);
                 return AGENT_ERR;
             }
-            spin_unlock(&ctx->connections.lock);
 
             log_debug(rsvr->log, "Insert into avl success! fd:%d sid:%lu",
                       sck->fd, extra->sid);
@@ -558,17 +556,12 @@ static int agent_rsvr_add_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
  ******************************************************************************/
 static int agent_rsvr_del_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
 {
-    void *addr;
     agent_socket_extra_t *extra = sck->extra;
 
     log_trace(rsvr->log, "Call %s()! fd:%d sid:%ld", __func__, sck->fd, extra->sid);
 
-    /* > 将套接字从红黑树中剔除 */
-    spin_lock(&ctx->connections.lock);
-
-    rbt_delete(ctx->connections.list, &extra->sid, sizeof(extra->sid), &addr);
-
-    spin_unlock(&ctx->connections.lock);
+    /* > 剔除SID对象 */
+    agent_sid_item_del(ctx, extra->sid);
 
     /* > 释放套接字空间 */
     CLOSE(sck->fd);
@@ -991,7 +984,6 @@ static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
     socket_t *sck;
     mesg_header_t *head, hhead;
     struct epoll_event ev;
-    agent_socket_extra_t *extra;
     void *addr[AGT_RSVR_DIST_POP_NUM];
 
     sendq = ctx->sendq[rsvr->id];
@@ -1020,21 +1012,11 @@ static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
                 continue;
             }
 
-            /* 查询发送链表 */
-            spin_lock(&ctx->connections.lock);
-            sck = rbt_query(ctx->connections.list, &hhead.sid, sizeof(hhead.sid));
+            /* > 发入发送列表 */
+            sck =agent_push_into_send_list(ctx, rsvr, hhead.sid, addr[idx]); 
             if (NULL == sck) {
-                spin_unlock(&ctx->connections.lock);
                 log_error(ctx->log, "Query socket failed! serial:%lu sid:%lu",
                         hhead.serial, hhead.sid);
-                FREE(addr[idx]);
-                continue;
-            }
-            extra = (agent_socket_extra_t *)sck->extra;
-            spin_unlock(&ctx->connections.lock);
-
-            if (list_rpush(extra->send_list, addr[idx])) {
-                log_error(ctx->log, "Insert list failed! sid:%lu", hhead.sid);
                 FREE(addr[idx]);
                 continue;
             }
@@ -1050,4 +1032,49 @@ static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
     }
 
     return AGENT_OK;
+}
+
+/******************************************************************************
+ **函数名称: agent_push_into_send_list
+ **功    能: 将数据放入发送列表
+ **输入参数:
+ **     ctx: 全局对象
+ **     rsvr: 接收服务
+ **     sid: 会话ID
+ **     addr: 需要发送的数据
+ **输出参数: NONE
+ **返    回: 连接对象
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2016-07-24 22:49:02 #
+ ******************************************************************************/
+static socket_t *agent_push_into_send_list(
+        agent_cntx_t *ctx, agent_rsvr_t *rsvr, uint64_t sid, void *addr)
+{
+    socket_t *sck;
+    agent_socket_extra_t *extra;
+    agent_sid_list_t *list;
+
+    list = &ctx->connections[rsvr->id];
+
+    /* > 查询会话对象 */
+    spin_lock(&list->lock);
+
+    sck = rbt_query(list->sids, &sid, sizeof(sid));
+    if (NULL == sck) {
+        spin_unlock(&list->lock);
+        return NULL;
+    }
+
+    extra = (agent_socket_extra_t *)sck->extra;
+
+    /* > 放入发送列表 */
+    if (list_rpush(extra->send_list, addr)) {
+        spin_unlock(&list->lock);
+        return NULL;
+    }
+
+    spin_unlock(&list->lock);
+
+    return sck;
 }

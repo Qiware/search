@@ -19,6 +19,8 @@ static int agent_workers_destroy(agent_cntx_t *ctx);
 static int agent_creat_listens(agent_cntx_t *ctx);
 static int agent_creat_queue(agent_cntx_t *ctx);
 
+static int agent_sid_list_init(agent_cntx_t *ctx, agent_conf_t *conf);
+
 /******************************************************************************
  **函数名称: agent_init
  **功    能: 初始化全局信息
@@ -80,6 +82,12 @@ agent_cntx_t *agent_init(agent_conf_t *conf, log_cycle_t *log)
         /* > 创建Listen线程池 */
         if (agent_creat_listens(ctx)) {
             log_error(log, "Initialize agent thread pool failed!");
+            break;
+        }
+
+        /* > 创建连接管理 */
+        if (agent_sid_list_init(ctx, conf)) {
+            log_error(ctx->log, "Init sid list failed!");
             break;
         }
 
@@ -276,16 +284,6 @@ static int agent_creat_agents(agent_cntx_t *ctx)
     agent = (agent_rsvr_t *)calloc(1, conf->agent_num*sizeof(agent_rsvr_t));
     if (NULL == agent) {
         log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return AGENT_ERR;
-    }
-
-    /* > 创建连接红黑树 */
-    spin_lock_init(&ctx->connections.lock);
-
-    ctx->connections.list = rbt_creat(NULL, (key_cb_t)key_cb_int64, (cmp_cb_t)agent_connection_cmp);
-    if (NULL == ctx->connections.list) {
-        log_error(ctx->log, "Create socket connection list failed!");
-        free(agent);
         return AGENT_ERR;
     }
 
@@ -570,7 +568,7 @@ static int agent_creat_queue(agent_cntx_t *ctx)
  **输入参数: 
  **     ctx: 全局信息
  **输出参数: NONE
- **返    回: VOID
+ **返    回: 0:成功 !0:失败
  **实现描述:
  **注意事项: 
  **作    者: # Qifeng.zou # 2015-06-24 23:58:46 #
@@ -587,4 +585,122 @@ static int agent_comm_init(agent_cntx_t *ctx)
     }
 
     return AGENT_OK;
+}
+
+/******************************************************************************
+ **函数名称: agent_sid_list_init
+ **功    能: 初始化连接池
+ **输入参数: 
+ **     ctx: 全局信息
+ **     conf: 配置信息
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述:
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015-06-24 23:58:46 #
+ ******************************************************************************/
+static int agent_sid_list_init(agent_cntx_t *ctx, agent_conf_t *conf)
+{
+    int idx;
+    agent_sid_list_t *list;
+
+    ctx->connections = (agent_sid_list_t *)calloc(conf->agent_num, sizeof(agent_sid_list_t));
+    if (NULL == ctx->connections) {
+        return -1;
+    }
+
+    for (idx=0; idx<conf->agent_num; idx++) {
+        list = &ctx->connections[idx];
+
+        spin_lock_init(&list->lock);
+
+        list->sids = rbt_creat(NULL, (key_cb_t)key_cb_int64, (cmp_cb_t)agent_connection_cmp);
+        if (NULL == list->sids) {
+            FREE(ctx->connections);
+            return AGENT_ERR;
+        }
+    }
+
+    return AGENT_OK;
+}
+
+/******************************************************************************
+ **函数名称: agent_sid_item_add
+ **功    能: 新增SID列表
+ **输入参数: 
+ **     ctx: 全局信息
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述:
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015-06-24 23:58:46 #
+ ******************************************************************************/
+int agent_sid_item_add(agent_cntx_t *ctx, uint64_t sid, socket_t *sck)
+{
+    agent_sid_list_t *list;
+
+    list = &ctx->connections[sid % ctx->conf->agent_num];
+
+    spin_lock(&list->lock);
+
+    if (rbt_insert(list->sids, &sid, sizeof(sid), sck)) {
+        spin_unlock(&list->lock);
+        return AGENT_ERR;
+    }
+
+    spin_unlock(&list->lock);
+
+    return AGENT_OK;
+}
+
+/******************************************************************************
+ **函数名称: agent_sid_item_del
+ **功    能: 删除SID列表
+ **输入参数: 
+ **     ctx: 全局信息
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述:
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2015-06-24 23:58:46 #
+ ******************************************************************************/
+socket_t *agent_sid_item_del(agent_cntx_t *ctx, uint64_t sid)
+{
+    socket_t *sck;
+    agent_sid_list_t *list;
+
+    list = &ctx->connections[sid % ctx->conf->agent_num];
+
+    spin_lock(&list->lock);
+
+    if (rbt_delete(list->sids, &sid, sizeof(sid), (void *)&sck)) {
+        spin_unlock(&list->lock);
+        return sck;
+    }
+
+    spin_unlock(&list->lock);
+
+    return sck;
+}
+
+int agent_get_aid_by_sid(agent_cntx_t *ctx, uint64_t sid)
+{
+    int aid;
+    socket_t *sck;
+    agent_socket_extra_t *extra;
+    agent_sid_list_t *list;
+
+    list = &ctx->connections[sid % ctx->conf->agent_num];
+
+    spin_lock(&list->lock);
+    sck = rbt_query(list->sids, &sid, sizeof(sid));
+    if (NULL == sck) {
+        spin_unlock(&list->lock);
+        return -1;
+    }
+    extra = (agent_socket_extra_t *)sck->extra;
+    aid = extra->aid;
+    spin_unlock(&list->lock);
+
+    return aid;
 }
