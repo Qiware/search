@@ -261,9 +261,8 @@ static int invtd_search_send_and_free(invtd_cntx_t *ctx, xml_tree_t *xml,
         /* 设置发送内容 */
         rsp = (mesg_header_t *)addr;
 
-        MESG_HEAD_SET(rsp, MSG_SEARCH_RSP,
-                head->sid, head->src_nid, head->dst_nid,
-                head->serial, sizeof(mesg_search_req_t));
+        MESG_HEAD_SET(rsp, MSG_SEARCH_RSP, head->sid,
+                head->src_nid, head->dst_nid, head->serial, body_len);
         MESG_HEAD_HTON(rsp, rsp);
 
         xml_spack(xml, rsp->body);
