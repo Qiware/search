@@ -12,6 +12,7 @@
 #include "frwd.h"
 #include "redo.h"
 #include "agent.h"
+#include "mem_ref.h"
 #include "frwd_conf.h"
 
 /* 主函数 */
@@ -33,6 +34,7 @@ int main(int argc, char *argv[])
     }
 
     umask(0);
+    mem_ref_init();
 
     /* > 初始化日志 */
     log = frwd_init_log(argv[0], opt.log_level);

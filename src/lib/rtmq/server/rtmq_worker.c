@@ -8,6 +8,7 @@
  ** 作  者: # Qifeng.zou # 2015.01.06 #
  ******************************************************************************/
 
+#include "mem_ref.h"
 #include "rtmq_mesg.h"
 #include "rtmq_comm.h"
 #include "rtmq_recv.h"
@@ -209,10 +210,11 @@ static int rtmq_worker_cmd_proc_req_hdl(rtmq_cntx_t *ctx, rtmq_worker_t *worker,
 {
 #define RTRD_WORK_POP_NUM     (1024)
     int idx, num;
-    void *addr[RTRD_WORK_POP_NUM];
     queue_t *rq;
     rtmq_reg_t *reg;
     rtmq_header_t *head;
+    rtmq_recv_item_t *item;
+    void *addr[RTRD_WORK_POP_NUM];
     const rtmq_cmd_proc_req_t *work_cmd = (const rtmq_cmd_proc_req_t *)&cmd->param;
 
     /* > 获取接收队列 */
@@ -232,28 +234,30 @@ static int rtmq_worker_cmd_proc_req_hdl(rtmq_cntx_t *ctx, rtmq_worker_t *worker,
 
         /* > 依次处理各条数据 */
         for (idx=0; idx<num; ++idx) {
-            head = (rtmq_header_t *)addr[idx];
+            item = (rtmq_recv_item_t *)addr[idx];
+            head = (rtmq_header_t *)item->data;
 
             reg = avl_query(ctx->reg, &head->type, sizeof(head->type));
             if (NULL == reg) {
-                queue_dealloc(rq, addr[idx]);
+                mem_ref_decr(item->base);
+                queue_dealloc(rq, item);
                 ++worker->drop_total;   /* 丢弃计数 */
                 log_trace(ctx->log, "Drop data! type:%u", head->type);
                 continue;
             }
 
             if (reg->proc(head->type, head->nid,
-                    addr[idx] + sizeof(rtmq_header_t), head->length, reg->param))
+                    item->data + sizeof(rtmq_header_t), head->length, reg->param))
             {
                 ++worker->err_total;    /* 错误计数 */
             }
-            else
-            {
+            else {
                 ++worker->proc_total;   /* 处理计数 */
             }
 
             /* > 释放内存空间 */
-            queue_dealloc(rq, addr[idx]);
+            mem_ref_decr(item->base);
+            queue_dealloc(rq, item);
         }
     }
 

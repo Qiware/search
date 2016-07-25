@@ -30,6 +30,7 @@ SRC_LIST = log.c \
 			redo.c \
 			shm_slab.c \
 			shm_opt.c \
+			mem_ref.c \
 			mem_pool.c \
 			shm_ring.c \
 			shm_slot.c \
@@ -39,7 +40,7 @@ SRC_LIST = log.c \
 			btree.c \
 			shm_btree.c \
 			rb_tree.c \
-			kw_tree.c \
+			trie.c \
 			avl_tree.c \
 			xml_comm.c \
 			xml_print.c \

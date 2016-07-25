@@ -66,7 +66,7 @@ int lwsd_search_rsp_hdl(int type, int orig, char *data, size_t len, void *args)
 
     log_trace(ctx->log, "Call %s()! body:%s", __func__, head->body);
 
-    return lwsd_wsi_async_send(ctx, data, len);
+    return lwsd_search_async_send(ctx, head->sid, data, len);
 }
 
 /******************************************************************************
@@ -130,5 +130,5 @@ int lwsd_insert_word_rsp_hdl(int type, int orig, char *data, size_t len, void *a
     MESG_HEAD_NTOH(head, head);
 
     /* > 放入发送队列 */
-    return lwsd_wsi_async_send(ctx, data, len);
+    return lwsd_search_async_send(ctx, head->sid, data, len);
 }

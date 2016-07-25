@@ -10,6 +10,7 @@
 
 #include "xml_tree.h"
 #include "frwd_conf.h"
+#include "rtmq_recv.h"
 
 static int frwd_conf_parse_comm(xml_tree_t *xml, frwd_conf_t *conf);
 static int frwd_conf_parse_upstrm(xml_tree_t *xml, const char *path, frwd_conf_t *fcf);
@@ -126,7 +127,8 @@ static int frwd_conf_parse_comm(xml_tree_t *xml, frwd_conf_t *conf)
  ******************************************************************************/
 static int frwd_conf_parse_upstrm(xml_tree_t *xml, const char *path, frwd_conf_t *fcf)
 {
-    xml_node_t *parent, *node;
+    rtmq_auth_t *auth;
+    xml_node_t *parent, *node, *usr, *passwd;
     rtmq_conf_t *conf = &fcf->upstrm;
 
     parent = xml_query(xml, path);
@@ -161,25 +163,44 @@ static int frwd_conf_parse_upstrm(xml_tree_t *xml, const char *path, frwd_conf_t
     snprintf(conf->path, sizeof(conf->path), "%s", node->value.str);
 
     /* > 鉴权信息 */
-    node = xml_search(xml, parent, "AUTH.USR");
-    if (NULL == node
-        || 0 == node->value.len)
-    {
-        fprintf(stderr, "Didn't find %s.AUTH.USR!\n", path);
+    node = xml_search(xml, parent, "AUTH.ITEM");
+    if (NULL == node) {
+        fprintf(stderr, "Didn't find %s.AUTH.ITEM!\n", path);
         return -1;
     }
 
-    snprintf(conf->auth.usr, sizeof(conf->auth.usr), "%s", node->value.str);
-
-    node = xml_search(xml, parent, "AUTH.PASSWD");
-    if (NULL == node
-        || 0 == node->value.len)
-    {
-        fprintf(stderr, "Didn't find %s.AUTH.PASSWD!\n", path);
+    conf->auth = list_creat(NULL);
+    if (NULL == conf) {
+        fprintf(stderr, "errmsg:[%d] %s\n", errno, strerror(errno));
         return -1;
     }
 
-    snprintf(conf->auth.passwd, sizeof(conf->auth.passwd), "%s", node->value.str);
+    for (; NULL != node; node = xml_brother(node)) {
+        if (strcmp(node->name.str, "ITEM")) {
+            continue;
+        }
+
+        usr = xml_search(xml, node, "USR");
+        if ((NULL == usr) || (0 == usr->value.len)) {
+            continue;
+        }
+
+        passwd = xml_search(xml, node, "PASSWD");
+        if ((NULL == passwd) || (0 == passwd->value.len)) {
+            continue;
+        }
+
+        auth = (rtmq_auth_t *)calloc(1, sizeof(rtmq_auth_t));
+        if (NULL == auth) {
+            fprintf(stderr, "errmsg:[%d] %s\n", errno, strerror(errno));
+            return -1;
+        }
+
+        snprintf(auth->usr, sizeof(auth->usr), "%s", usr->value.str);
+        snprintf(auth->passwd, sizeof(auth->passwd), "%s", passwd->value.str);
+
+        list_lpush(conf->auth, auth);
+    }
 
     /* > 线程数目 */
     node = xml_search(xml, parent, "THREAD-POOL.RECV_THD_NUM");  /* 发送线程数 */
@@ -316,8 +337,9 @@ static int frwd_conf_parse_upstrm(xml_tree_t *xml, const char *path, frwd_conf_t
  ******************************************************************************/
 static int frwd_conf_parse_downstrm(xml_tree_t *xml, const char *path, frwd_conf_t *fcf)
 {
-    xml_node_t *parent, *node;
+    rtmq_auth_t *auth;
     rtmq_conf_t *conf = &fcf->downstrm;
+    xml_node_t *parent, *node, *usr, *passwd;
 
     parent = xml_query(xml, path);
     if (NULL == parent) {
@@ -351,25 +373,44 @@ static int frwd_conf_parse_downstrm(xml_tree_t *xml, const char *path, frwd_conf
     snprintf(conf->path, sizeof(conf->path), "%s", node->value.str);
 
     /* > 鉴权信息 */
-    node = xml_search(xml, parent, "AUTH.USR");
-    if (NULL == node
-        || 0 == node->value.len)
-    {
-        fprintf(stderr, "Didn't find %s.AUTH.USR!\n", path);
+    node = xml_search(xml, parent, "AUTH.ITEM");
+    if (NULL == node) {
+        fprintf(stderr, "Didn't find %s.AUTH.ITEM!\n", path);
         return -1;
     }
 
-    snprintf(conf->auth.usr, sizeof(conf->auth.usr), "%s", node->value.str);
-
-    node = xml_search(xml, parent, "AUTH.PASSWD");
-    if (NULL == node
-        || 0 == node->value.len)
-    {
-        fprintf(stderr, "Didn't find %s.AUTH.PASSWD!\n", path);
+    conf->auth = list_creat(NULL);
+    if (NULL == conf) {
+        fprintf(stderr, "errmsg:[%d] %s\n", errno, strerror(errno));
         return -1;
     }
 
-    snprintf(conf->auth.passwd, sizeof(conf->auth.passwd), "%s", node->value.str);
+    for (; NULL != node; node = xml_brother(node)) {
+        if (strcmp(node->name.str, "ITEM")) {
+            continue;
+        }
+
+        usr = xml_search(xml, node, "USR");
+        if ((NULL == usr) || (0 == usr->value.len)) {
+            continue;
+        }
+
+        passwd = xml_search(xml, node, "PASSWD");
+        if ((NULL == passwd) || (0 == passwd->value.len)) {
+            continue;
+        }
+
+        auth = (rtmq_auth_t *)calloc(1, sizeof(rtmq_auth_t));
+        if (NULL == auth) {
+            fprintf(stderr, "errmsg:[%d] %s\n", errno, strerror(errno));
+            return -1;
+        }
+
+        snprintf(auth->usr, sizeof(auth->usr), "%s", usr->value.str);
+        snprintf(auth->passwd, sizeof(auth->passwd), "%s", passwd->value.str);
+
+        list_lpush(conf->auth, auth);
+    }
 
     /* > 线程数目 */
     node = xml_search(xml, parent, "THREAD-POOL.RECV_THD_NUM");  /* 发送线程数 */

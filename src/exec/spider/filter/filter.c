@@ -13,6 +13,7 @@
 #include "comm.h"
 #include "filter.h"
 #include "syscall.h"
+#include "mem_ref.h"
 
 /******************************************************************************
  **函数名称: main
@@ -47,6 +48,7 @@ int main(int argc, char *argv[])
     }
 
     umask(0);
+    mem_ref_init();
 
     /* > 初始化过滤模块 */
     ctx = flt_init(argv[0], &opt);

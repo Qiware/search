@@ -26,8 +26,7 @@ typedef struct
 /* LWSD配置 */
 typedef struct
 {
-    int nid;                                /* 结点ID */
-    char name[NODE_MAX_LEN];                /* 结点名 */
+    uint16_t nid;                           /* 结点ID */
     char wdir[FILE_PATH_MAX_LEN];           /* 工作路径 */
 
     struct {

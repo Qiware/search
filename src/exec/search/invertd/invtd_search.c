@@ -44,7 +44,6 @@ static int invtd_search_parse(invtd_cntx_t *ctx,
     mesg_header_t *head = (mesg_header_t *)buf;
     const char *xml_str = (const char *)(head + 1);
 
-
     /* > 字节序转换 */
     MESG_HEAD_NTOH(head, head);
 
@@ -52,13 +51,15 @@ static int invtd_search_parse(invtd_cntx_t *ctx,
     if (!MESG_CHKSUM_ISVALID(head)
         ||  (len != MESG_TOTAL_LEN(head->length)))
     {
-        log_error(ctx->log, "serial:%lu type:%u flag:%u chksum:0x%X len:%d body:%s",
-                head->serial, head->type, head->flag, head->chksum, head->length, xml_str);
+        log_error(ctx->log, "sid:%lu serial:%lu type:%u flag:%u chksum:0x%X len:%d body:%s",
+                head->sid, head->serial, head->type,
+                head->flag, head->chksum, head->length, xml_str);
         return -1;
     }
 
-    log_trace(ctx->log, "serial:%lu type:%u flag:%u chksum:0x%X len:%d body:%s",
-            head->serial, head->type, head->flag, head->chksum, head->length, xml_str);
+    log_trace(ctx->log, "sid:%lu serial:%lu type:%u flag:%u chksum:0x%X len:%d body:%s",
+            head->sid, head->serial, head->type,
+            head->flag, head->chksum, head->length, xml_str);
 
     /* > 构建XML树 */
     memset(&opt, 0, sizeof(opt));
@@ -260,7 +261,8 @@ static int invtd_search_send_and_free(invtd_cntx_t *ctx, xml_tree_t *xml,
         /* 设置发送内容 */
         rsp = (mesg_header_t *)addr;
 
-        MESG_HEAD_SET(rsp, MSG_SEARCH_RSP, head->serial, sizeof(mesg_search_req_t));
+        MESG_HEAD_SET(rsp, MSG_SEARCH_RSP,
+                head->sid, head->nid, head->serial, body_len);
         MESG_HEAD_HTON(rsp, rsp);
 
         xml_spack(xml, rsp->body);
@@ -371,7 +373,8 @@ int invtd_insert_word_req_hdl(int type, int orig, char *buff, size_t len, void *
 
 INVTD_INSERT_WORD_RSP:
     /* > 发送应答信息 */
-    MESG_HEAD_SET(rsp_head, MSG_INSERT_WORD_RSP, head->serial, sizeof(mesg_insert_word_rsp_t));
+    MESG_HEAD_SET(rsp_head, MSG_INSERT_WORD_RSP, head->sid,
+            head->nid, head->serial, sizeof(mesg_insert_word_rsp_t));
     MESG_HEAD_HTON(rsp_head, rsp_head);
     mesg_insert_word_resp_hton(rsp);
 

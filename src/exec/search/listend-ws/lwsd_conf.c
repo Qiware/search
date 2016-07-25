@@ -59,13 +59,13 @@ int lwsd_load_conf(const char *path, lwsd_conf_t *conf, log_cycle_t *log)
 
         /* > 加载LWS配置 */
         if (lwsd_conf_load_lws(xml, conf, log)) {
-            log_error(log, "Load AGENT conf failed! path:%s", path);
+            log_error(log, "Load lws conf failed! path:%s", path);
             break;
         }
 
         /* > 加载转发配置 */
         if (lwsd_conf_load_frwder(xml, conf, log)) {
-            log_error(log, "Load rttp conf failed! path:%s", path);
+            log_error(log, "Load frwder conf failed! path:%s", path);
             break;
         }
 
@@ -107,17 +107,6 @@ static int lwsd_conf_load_comm(xml_tree_t *xml, lwsd_conf_t *conf, log_cycle_t *
 
     conf->nid = atoi(node->value.str);
 
-    /* > 加载结点名称 */
-    node = xml_query(xml, ".LISTEND.NAME");
-    if (NULL == node
-        || 0 == node->value.len)
-    {
-        log_error(log, "Get node name failed!");
-        return -1;
-    }
-
-    snprintf(conf->name, sizeof(conf->name), "%s", node->value.str); /* 结点名 */
-
     /* > 加载工作路径 */
     node = xml_query(xml, ".LISTEND.WORKDIR");
     if (NULL == node
@@ -127,7 +116,7 @@ static int lwsd_conf_load_comm(xml_tree_t *xml, lwsd_conf_t *conf, log_cycle_t *
         return -1;
     }
 
-    snprintf(conf->wdir, sizeof(conf->wdir), "%s/%s", node->value.str, conf->name);  /* 工作路径 */
+    snprintf(conf->wdir, sizeof(conf->wdir), "%s/%d", node->value.str, conf->nid);  /* 工作路径 */
 
     /* > 分发队列配置 */
     fix = xml_query(xml, ".LISTEND.DISTQ");
@@ -181,7 +170,7 @@ static int lwsd_conf_parse_lws_connections(xml_tree_t *xml, lws_conf_t *conf, lo
     xml_node_t *fix, *node;
 
     /* > 定位并发配置 */
-    fix = xml_query(xml, ".LISTEND.AGENT.CONNECTIONS");
+    fix = xml_query(xml, ".LISTEND.LWS.CONNECTIONS");
     if (NULL == fix) {
         log_error(log, "Didn't configure connections!");
         return -1;
@@ -431,6 +420,7 @@ static int lwsd_conf_load_frwder(xml_tree_t *xml, lwsd_conf_t *lcf, log_cycle_t 
 
     /* > 设置结点ID */
     conf->nid = lcf->nid;
+    snprintf(conf->path, sizeof(conf->path), "%s", lcf->wdir);
 
     /* > 服务端IP */
     node = xml_search(xml, parent, "SERVER.IP");

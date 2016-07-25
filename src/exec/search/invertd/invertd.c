@@ -8,6 +8,7 @@
  ******************************************************************************/
 
 #include "redo.h"
+#include "mem_ref.h"
 #include "invertd.h"
 #include "invtd_priv.h"
 #include "invtd_conf.h"
@@ -48,6 +49,7 @@ int main(int argc, char *argv[])
     }
 
     umask(0);
+    mem_ref_init();
 
     /* > 初始化日志 */
     log = log_init(opt.log_level, INVTD_LOG_PATH);
@@ -79,7 +81,7 @@ int main(int argc, char *argv[])
         while (1) { pause(); }
     } while(0);
 
-    Sleep(3);
+    Sleep(2);
 
     return 0;
 }

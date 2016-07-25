@@ -11,11 +11,15 @@
 #include "log.h"
 #include "lock.h"
 #include "redo.h"
+#include "mem_ref.h"
 #include "shm_opt.h"
+#include "hash_alg.h"
 #include "rtmq_mesg.h"
 #include "rtmq_comm.h"
 #include "rtmq_recv.h"
 #include "thread_pool.h"
+
+static int rtmq_auth_init(rtmq_cntx_t *ctx);
 
 static int rtmq_creat_recvq(rtmq_cntx_t *ctx);
 static int rtmq_creat_sendq(rtmq_cntx_t *ctx);
@@ -82,6 +86,12 @@ rtmq_cntx_t *rtmq_init(const rtmq_conf_t *cf, log_cycle_t *log)
         }
 
         spin_lock_init(&ctx->cmd_sck_lock);
+
+        /* > 构建鉴权表 */
+        if (rtmq_auth_init(ctx)) {
+            log_error(ctx->log, "Initialize auth failed!");
+            break;
+        }
 
         /* > 构建NODE->SVR映射表 */
         if (rtmq_node_to_svr_map_init(ctx)) {
@@ -248,27 +258,30 @@ int rtmq_async_send(rtmq_cntx_t *ctx, int type, int dest, void *data, size_t len
 {
     int idx;
     void *addr;
-    rtmq_frwd_t *frwd;
+    rtmq_header_t *head;
 
     idx = rand() % ctx->conf.distq_num;
 
     /* > 申请队列空间 */
-    addr = queue_malloc(ctx->distq[idx], sizeof(rtmq_frwd_t)+len);
+    addr = mem_ref_alloc(sizeof(rtmq_header_t) + len,
+            NULL, (mem_alloc_cb_t)mem_alloc, (mem_dealloc_cb_t)mem_dealloc);
     if (NULL == addr) {
         return RTMQ_ERR;
     }
 
-    frwd = (rtmq_frwd_t *)addr;
+    head = (rtmq_header_t *)addr;
 
-    frwd->type = type; 
-    frwd->dest = dest;
-    frwd->length = len;
+    head->type = type;
+    head->nid = dest;
+    head->flag = RTMQ_EXP_MESG;
+    head->chksum = RTMQ_CHKSUM_VAL;
+    head->length = len;
 
-    memcpy(addr+sizeof(rtmq_frwd_t), data, len);
+    memcpy(addr+sizeof(rtmq_header_t), data, len);
 
     /* > 压入队列空间 */
-    if (queue_push(ctx->distq[idx], addr)) {
-        queue_dealloc(ctx->distq[idx], addr);
+    if (ring_push(ctx->distq[idx], addr)) {
+        mem_ref_decr(addr);
         return RTMQ_ERR;
     }
 
@@ -304,7 +317,7 @@ static int rtmq_creat_recvq(rtmq_cntx_t *ctx)
 
     /* > 依次创建接收队列 */
     for(idx=0; idx<conf->recvq_num; ++idx) {
-        ctx->recvq[idx] = queue_creat(conf->recvq.max, conf->recvq.size);
+        ctx->recvq[idx] = queue_creat(conf->recvq.max, sizeof(rtmq_recv_item_t));
         if (NULL == ctx->recvq[idx]) {
             log_error(ctx->log, "Create queue failed! max:%d size:%d",
                     conf->recvq.max, conf->recvq.size);
@@ -340,7 +353,7 @@ static int rtmq_creat_sendq(rtmq_cntx_t *ctx)
 
     /* > 依次创建发送队列 */
     for(idx=0; idx<conf->recv_thd_num; ++idx) {
-        ctx->sendq[idx] = queue_creat(conf->sendq.max, conf->sendq.size);
+        ctx->sendq[idx] = ring_creat(conf->sendq.max);
         if (NULL == ctx->sendq[idx]) {
             log_error(ctx->log, "Create send-queue failed! max:%d size:%d",
                     conf->sendq.max, conf->sendq.size);
@@ -368,7 +381,7 @@ static int rtmq_creat_distq(rtmq_cntx_t *ctx)
     rtmq_conf_t *conf = &ctx->conf;
 
     /* > 申请对象空间 */
-    ctx->distq = (queue_t **)calloc(1, conf->distq_num*sizeof(queue_t *));
+    ctx->distq = (ring_t **)calloc(1, conf->distq_num*sizeof(ring_t *));
     if (NULL == ctx->distq) {
         log_error(ctx->log, "Alloc memory failed!");
         return RTMQ_ERR;
@@ -376,7 +389,7 @@ static int rtmq_creat_distq(rtmq_cntx_t *ctx)
 
     /* > 依次创建队列 */
     for (idx=0; idx<conf->distq_num; ++idx) {
-        ctx->distq[idx] = queue_creat(conf->sendq.max, conf->sendq.size);
+        ctx->distq[idx] = ring_creat(conf->sendq.max);
         if (NULL == ctx->distq[idx]) {
             log_error(ctx->log, "Create queue failed!");
             return RTMQ_ERR;
@@ -636,4 +649,110 @@ static int rtmq_lock_server(const rtmq_conf_t *conf)
     }
 
     return 0;
+}
+
+/* 生成KEY */
+static uint64_t rtmq_auth_key_cb(const char *usr, size_t len)
+{
+    return hash_time33(usr);
+}
+
+/* KEY匹配成功的比较 */
+static int rtmq_auth_cmp_cb(const char *usr, const rtmq_auth_t *orig)
+{
+    return strcmp(usr, orig->usr);
+}
+
+/* 遍历鉴权连表 */
+static int rtmq_auth_trav_add(rtmq_auth_t *auth, rtmq_cntx_t *ctx)
+{
+    return rtmq_auth_add(ctx, auth->usr, auth->passwd);
+}
+
+/******************************************************************************
+ **函数名称: rtmq_auth_init
+ **功    能: 初始化鉴权表
+ **输入参数:
+ **     ctx: 全局信息
+ **     usr: 用户名
+ **     passwd: 密码
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述:
+ **注意事项: 文件描述符可不关闭
+ **作    者: # Qifeng.zou # 2016.07.19 22:03:43 #
+ ******************************************************************************/
+static int rtmq_auth_init(rtmq_cntx_t *ctx)
+{
+    list_t *auth = ctx->conf.auth;
+
+    ctx->auth = avl_creat(NULL, (key_cb_t)rtmq_auth_key_cb, (cmp_cb_t)rtmq_auth_cmp_cb);
+    if (NULL == ctx->auth) {
+        return -1;
+    }
+
+    return list_trav(auth, (trav_cb_t)rtmq_auth_trav_add, (void *)ctx);
+}
+
+/******************************************************************************
+ **函数名称: rtmq_auth_add
+ **功    能: 添加鉴权注册
+ **输入参数:
+ **     ctx: 全局信息
+ **     usr: 用户名
+ **     passwd: 密码
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述:
+ **注意事项: 文件描述符可不关闭
+ **作    者: # Qifeng.zou # 2016.07.19 22:03:43 #
+ ******************************************************************************/
+int rtmq_auth_add(rtmq_cntx_t *ctx, char *usr, char *passwd)
+{
+    rtmq_auth_t *auth;
+
+    auth = (rtmq_auth_t *)avl_query(ctx->auth, (void *)usr, strlen(usr));
+    if (NULL != auth) {
+        return (0 == strcmp(auth->passwd, passwd))? 0 : -1;
+    }
+
+    auth = (rtmq_auth_t *)calloc(1, sizeof(rtmq_auth_t));
+    if (NULL == auth) {
+        log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        return -1;
+    }
+
+    snprintf(auth->usr, sizeof(auth->usr), "%s", usr);
+    snprintf(auth->passwd, sizeof(auth->passwd), "%s", passwd);
+
+    if (avl_insert(ctx->auth, usr, strlen(usr), (void *)auth)) {
+        free(auth);
+        return -1;
+    }
+
+    return 0;
+}
+
+/******************************************************************************
+ **函数名称: rtmq_auth_check
+ **功    能: 鉴权检查
+ **输入参数:
+ **     ctx: 全局信息
+ **     usr: 用户名
+ **     passwd: 密码
+ **输出参数: NONE
+ **返    回: true:通过 false:失败
+ **实现描述:
+ **注意事项: 文件描述符可不关闭
+ **作    者: # Qifeng.zou # 2016.07.19 22:03:43 #
+ ******************************************************************************/
+bool rtmq_auth_check(rtmq_cntx_t *ctx, char *usr, char *passwd)
+{
+    rtmq_auth_t *auth;
+
+    auth = avl_query(ctx->auth, usr, strlen(usr));
+    if (NULL != auth) {
+        return (0 == strcmp(auth->passwd, passwd))? true : false;
+    }
+    return false;
 }

@@ -15,6 +15,7 @@
 #include "mesg.h"
 #include "redo.h"
 #include "lwsd.h"
+#include "mem_ref.h"
 #include "hash_alg.h"
 #include "lwsd_mesg.h"
 #include "lwsd_search.h"
@@ -85,48 +86,51 @@ int main(int argc, char *argv[])
     }
 
     umask(0);
+    mem_ref_init();
     signal(SIGPIPE, SIG_IGN);
 
-    /* > 初始化日志 */
-    log_get_path(path, sizeof(path), basename(argv[0]));
+    do {
+        /* > 初始化日志 */
+        log_get_path(path, sizeof(path), basename(argv[0]));
 
-    log = log_init(opt.log_level, path);
-    if (NULL == log) {
-        fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
-        goto LWSD_INIT_ERR;
-    }
+        log = log_init(opt.log_level, path);
+        if (NULL == log) {
+            fprintf(stderr, "errmsg:[%d] %s!\n", errno, strerror(errno));
+            goto LWSD_INIT_ERR;
+        }
 
-    /* > 加载配置信息 */
-    if (lwsd_load_conf(opt.conf_path, &conf, log)) {
-        fprintf(stderr, "Load configuration failed!\n");
-        goto LWSD_INIT_ERR;
-    }
+        /* > 加载配置信息 */
+        if (lwsd_load_conf(opt.conf_path, &conf, log)) {
+            fprintf(stderr, "Load configuration failed!\n");
+            goto LWSD_INIT_ERR;
+        }
 
-    /* > 初始化侦听 */
-    ctx = lwsd_init(&opt, &conf, log);
-    if (NULL == ctx) {
-        fprintf(stderr, "Initialize lsnd failed!\n");
-        goto LWSD_INIT_ERR;
-    }
+        /* > 初始化侦听 */
+        ctx = lwsd_init(&opt, &conf, log);
+        if (NULL == ctx) {
+            fprintf(stderr, "Initialize lsnd failed!\n");
+            goto LWSD_INIT_ERR;
+        }
 
-    LWSD_SET_CTX(ctx);
- 
-    /* > 注册回调函数 */
-    if (lwsd_set_reg(ctx)) {
-        fprintf(stderr, "Register callback failed!\n");
-        goto LWSD_INIT_ERR;
-    }
+        LWSD_SET_CTX(ctx);
 
-    /* > 启动LWS服务 */
-    if (lwsd_launch(ctx)) {
-        fprintf(stderr, "Startup search-engine failed!\n");
-        goto LWSD_INIT_ERR;
-    }
+        /* > 注册回调函数 */
+        if (lwsd_set_reg(ctx)) {
+            fprintf(stderr, "Register callback failed!\n");
+            goto LWSD_INIT_ERR;
+        }
 
-    while (1) { pause(); }
+        /* > 启动LWS服务 */
+        if (lwsd_launch(ctx)) {
+            fprintf(stderr, "Startup search-engine failed!\n");
+            goto LWSD_INIT_ERR;
+        }
+
+        while (1) { pause(); }
+    } while(0);
 
 LWSD_INIT_ERR:
-
+    Sleep(2);
     return -1;
 }
 
@@ -146,7 +150,7 @@ static int lwsd_proc_lock(const lwsd_conf_t *conf)
     char path[FILE_PATH_MAX_LEN];
 
     /* 1. 获取路径 */
-    snprintf(path, sizeof(path), "../temp/listend-ws/%s/lsnd.lck", conf->name);
+    snprintf(path, sizeof(path), "%s/lsnd.lck", conf->wdir);
 
     Mkdir2(path, DIR_MODE);
 
@@ -207,8 +211,8 @@ static lwsd_cntx_t *lwsd_init(const lwsd_opt_t *opt, const lwsd_conf_t *conf, lo
         }
 
         /* > 创建LWS WSI表 */
-        ctx->wsi_list = rbt_creat(NULL, (key_cb_t)key_cb_int32, (cmp_cb_t)cmp_cb_int32);
-        if (NULL == ctx->wsi_list) {
+        ctx->wsi_map = rbt_creat(NULL, (key_cb_t)key_cb_int32, (cmp_cb_t)cmp_cb_int32);
+        if (NULL == ctx->wsi_map) {
             log_error(log, "Create rbt failed!");
             break;
         }
@@ -248,7 +252,7 @@ static lwsd_cntx_t *lwsd_init(const lwsd_opt_t *opt, const lwsd_conf_t *conf, lo
 static int lwsd_set_reg(lwsd_cntx_t *ctx)
 {
 #define LWSD_LWS_REG_CB(lsnd, type, proc, args) /* 注册队列数据回调 */\
-    if (lwsd_lws_reg_add((lsnd), type, (lws_reg_cb_t)proc, (void *)args)) { \
+    if (lwsd_search_reg_add((lsnd), type, (lws_reg_cb_t)proc, (void *)args)) { \
         log_error((lsnd)->log, "Register type [%d] failed!", type); \
         return LWSD_ERR; \
     }

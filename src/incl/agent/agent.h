@@ -1,8 +1,10 @@
 #if !defined(__AGENT_H__)
 #define __AGENT_H__
 
+#include "sck.h"
 #include "slot.h"
 #include "queue.h"
+#include "rb_tree.h"
 #include "spinlock.h"
 #include "avl_tree.h"
 #include "shm_queue.h"
@@ -50,15 +52,12 @@ typedef struct
     queue_conf_t sendq;                     /* 发送队列 */
 } agent_conf_t;
 
-/* 流水号->套接字的映射表 */
+/* SID列表 */
 typedef struct
 {
-    int len;                                /* 流水号->SCK映射表数组长度 */
-    spinlock_t *lock;                       /* 流水号->SCK映射表锁 */
-    avl_tree_t **map;                       /* 流水号->SCK映射表 */
-
-    slot_t **slot;                          /* 内存池: 专门用于存储映射表 */
-} agent_serial_to_sck_map_t;
+    spinlock_t lock;                        /* 锁 */
+    rbt_tree_t *sids;                       /* SID列表 */
+} agent_sid_list_t;
 
 /* 代理对象 */
 typedef struct
@@ -80,11 +79,11 @@ typedef struct
     thread_pool_t *workers;                 /* Worker线程池 */
     agent_reg_t reg[AGENT_MSG_TYPE_MAX];    /* 消息注册 */
 
+    agent_sid_list_t *connections;          /* SID集合(注:数组长度与Agent相等) */
+
     queue_t **connq;                        /* 连接队列(注:数组长度与Agent相等) */
     queue_t **recvq;                        /* 接收队列(注:数组长度与Agent相等) */
-    queue_t **sendq;                        /* 发送队列(注:数组长度与Agent相等) */
-
-    agent_serial_to_sck_map_t *serial_to_sck_map; /* 流水号->套接字的映射表 */
+    ring_t **sendq;                         /* 发送队列(注:数组长度与Agent相等) */
 } agent_cntx_t;
 
 #define AGENT_GET_NODE_ID(ctx) ((ctx)->conf->nid)
@@ -92,21 +91,16 @@ typedef struct
 /* 内部接口 */
 int agent_listen_init(agent_cntx_t *ctx, agent_lsvr_t *lsn, int idx);
 
+int agent_sid_item_add(agent_cntx_t *ctx, uint64_t sid, socket_t *sck);
+socket_t *agent_sid_item_del(agent_cntx_t *ctx, uint64_t sid);
+int agent_get_aid_by_sid(agent_cntx_t *ctx, uint64_t sid);
+
 /* 外部接口 */
 agent_cntx_t *agent_init(agent_conf_t *conf, log_cycle_t *log);
 int agent_launch(agent_cntx_t *ctx);
 int agent_reg_add(agent_cntx_t *ctx, unsigned int type, agent_reg_cb_t proc, void *args);
 void agent_destroy(agent_cntx_t *ctx);
 
-int agent_send(agent_cntx_t *ctx, int type, uint64_t serial, void *data, int len);
-
-uint64_t agent_gen_sys_serail(uint16_t nid, uint16_t sid, uint32_t seq);
-
-agent_serial_to_sck_map_t *agent_serial_to_sck_map_init(agent_cntx_t *ctx);
-int agent_serial_to_sck_map_insert(agent_cntx_t *ctx, agent_flow_t *_flow);
-int agent_serial_to_sck_map_query(agent_cntx_t *ctx, uint64_t serial, agent_flow_t *flow);
-int agent_serial_to_sck_map_delete(agent_cntx_t *ctx, uint64_t serial);
-int _agent_serial_to_sck_map_delete(agent_cntx_t *ctx, uint64_t serial);
-int agent_serial_to_sck_map_timeout(agent_cntx_t *ctx);
+int agent_async_send(agent_cntx_t *ctx, int type, uint64_t sid, void *data, int len);
 
 #endif /*__AGENT_H__*/

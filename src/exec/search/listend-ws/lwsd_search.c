@@ -1,4 +1,6 @@
+#include "comm.h"
 #include "lwsd.h"
+#include "utils.h"
 #include "lwsd_search.h"
 
 /* Static function */
@@ -8,12 +10,12 @@ static int lwsd_search_wsi_destroy(lwsd_cntx_t *ctx, lwsd_search_user_data_t *us
 static int lwsd_search_cmd_hdl(lwsd_cntx_t *ctx,
         struct libwebsocket_context *lws, struct libwebsocket *wsi,
         lwsd_search_user_data_t *user, void *in, size_t len);
-static int lwsd_search_wsi_send_data(lwsd_cntx_t *ctx,
+static int lwsd_search_send_data(lwsd_cntx_t *ctx,
         struct libwebsocket_context *lws,
         struct libwebsocket *wsi, lwsd_search_user_data_t *user);
 
 /******************************************************************************
- **函数名称: lwsd_lws_reg_add
+ **函数名称: lwsd_search_reg_add
  **功    能: 添加注册处理
  **输入参数:
  **     ctx: 全局对象
@@ -26,7 +28,7 @@ static int lwsd_search_wsi_send_data(lwsd_cntx_t *ctx,
  **注意事项:
  **作    者: # Qifeng.zou # 2016.06.06 23:43:02 #
  ******************************************************************************/
-int lwsd_lws_reg_add(lwsd_cntx_t *ctx, int type, lws_reg_cb_t proc, void *args)
+int lwsd_search_reg_add(lwsd_cntx_t *ctx, int type, lws_reg_cb_t proc, void *args)
 {
     lws_reg_t *item;
 
@@ -89,14 +91,14 @@ int lwsd_callback_search_hdl(struct libwebsocket_context *lws,
             return 0;                                   /* 注意: 此时还未创建user对象 */
         case LWS_CALLBACK_WSI_DESTROY:                  /* 销毁WSI实例 */
             return lwsd_search_wsi_destroy(ctx, user);
-        case LWS_CALLBACK_FILTER_PROTOCOL_CONNECTION:    /* 满足协议的链接 */
+        case LWS_CALLBACK_FILTER_PROTOCOL_CONNECTION:   /* 满足协议的链接 */
             return lwsd_search_wsi_user_init(ctx, wsi, user);
         case LWS_CALLBACK_CLOSED:
             return 0;
-        case LWS_CALLBACK_RECEIVE:                       /* 接收数据 */
+        case LWS_CALLBACK_RECEIVE:                      /* 接收数据 */
             return lwsd_search_cmd_hdl(ctx, lws, wsi, user, in, len);
-        case LWS_CALLBACK_SERVER_WRITEABLE:              /* 可写事件 */
-            return lwsd_search_wsi_send_data(ctx, lws, wsi, user);
+        case LWS_CALLBACK_SERVER_WRITEABLE:             /* 可写事件 */
+            return lwsd_search_send_data(ctx, lws, wsi, user);
         case LWS_CALLBACK_CONFIRM_EXTENSION_OKAY:
         case LWS_CALLBACK_LOCK_POLL:
         case LWS_CALLBACK_ADD_POLL_FD:
@@ -133,10 +135,12 @@ int lwsd_callback_search_hdl(struct libwebsocket_context *lws,
 static int lwsd_search_wsi_user_init(lwsd_cntx_t *ctx,
         struct libwebsocket *wsi, lwsd_search_user_data_t *user)
 {
+    lwsd_conf_t *conf = &ctx->conf;
+
     /* > 初始化数据 */
     user->ctm = time(NULL);
     user->rtm = user->ctm;
-    user->sid = LWSD_GEN_SEQ(ctx);
+    user->sid = tlz_gen_sid(conf->nid, 0, LWSD_WSI_SEQ(ctx));
     user->wsi = wsi;
     snprintf(user->mark, sizeof(user->mark), "SEARCH");
 
@@ -146,6 +150,15 @@ static int lwsd_search_wsi_user_init(lwsd_cntx_t *ctx,
         log_error(ctx->log, "Create send list failed!");
         return -1;
     }
+
+    /* > 插入WSI管理表 */
+    if (rbt_insert(ctx->wsi_map, &user->sid, sizeof(user->sid), (void *)wsi)) {
+        list_destroy(user->send_list, mem_dealloc, NULL);
+        log_error(ctx->log, "Insert wsi map failed! sid:%lu", user->sid);
+        return -1;
+    }
+
+    log_debug(ctx->log, "Insert wsi map success! sid:%lu", user->sid);
 
     return 0;
 }
@@ -192,7 +205,7 @@ static int lwsd_search_wsi_destroy(lwsd_cntx_t *ctx, lwsd_search_user_data_t *us
         user->pl = NULL;
     }
 
-    rbt_delete(ctx->wsi_list, &user->sid, sizeof(user->sid), &item); 
+    rbt_delete(ctx->wsi_map, &user->sid, sizeof(user->sid), &item); 
     if (NULL != item) {
         mem_dealloc(NULL, item);
     }
@@ -220,6 +233,7 @@ static int lwsd_search_cmd_hdl(lwsd_cntx_t *ctx,
         lwsd_search_user_data_t *user, void *in, size_t len)
 {
     lws_reg_t *reg;
+    lwsd_conf_t *conf = &ctx->conf;
     mesg_header_t *head = (mesg_header_t *)in;
 
     user->rtm = time(NULL);
@@ -233,6 +247,10 @@ static int lwsd_search_cmd_hdl(lwsd_cntx_t *ctx,
         return -1; /* 长度异常 */
     }
 
+    /* > 设置基本信息 */
+    head->sid = user->sid;
+    head->serial = tlz_gen_serail(conf->nid, 0, LWSD_REQ_SEQ(ctx));
+
     /* > 进行消息处理 */
     reg = (lws_reg_t *)avl_query(ctx->lws_reg, &head->type, sizeof(head->type));
     if (NULL == reg) {
@@ -243,7 +261,7 @@ static int lwsd_search_cmd_hdl(lwsd_cntx_t *ctx,
 }
 
 /******************************************************************************
- **函数名称: lwsd_search_wsi_send_data
+ **函数名称: lwsd_search_send_data
  **功    能: 发送数据
  **输入参数:
  **     ctx: CTX对象
@@ -256,7 +274,7 @@ static int lwsd_search_cmd_hdl(lwsd_cntx_t *ctx,
  **注意事项:
  **作    者: # Qifeng.zou # 2016.06.08 07:46:45 #
  ******************************************************************************/
-static int lwsd_search_wsi_send_data(lwsd_cntx_t *ctx,
+static int lwsd_search_send_data(lwsd_cntx_t *ctx,
         struct libwebsocket_context *lws,
         struct libwebsocket *wsi, lwsd_search_user_data_t *user)
 {
@@ -315,7 +333,65 @@ static int lwsd_search_wsi_send_data(lwsd_cntx_t *ctx,
     return 0;
 }
 
-int lwsd_wsi_async_send(lwsd_cntx_t *ctx, const void *addr, size_t len)
+/******************************************************************************
+ **函数名称: lwsd_search_async_send
+ **功    能: 将数据放入发送链表
+ **输入参数:
+ **     ctx: CTX对象
+ **     sid: 会话ID
+ **     addr: 内存地址
+ **     len: 数据长度
+ **输出参数:
+ **返    回: 0:成功 !0:失败
+ **实现描述:
+ **     1. 通过sid找到对应的wsi对象
+ **     2. 将data放入wsi发送队列中
+ **注意事项:
+ **作    者: # Qifeng.zou # 2016.06.09 09:23:47 #
+ ******************************************************************************/
+int lwsd_search_async_send(lwsd_cntx_t *ctx, uint64_t sid, const void *addr, size_t len)
 {
+    void *item;
+    lwsd_mesg_payload_t *pl;
+    struct libwebsocket *wsi;
+    lwsd_search_user_data_t *user;
+
+    /* > 通过sid找到对应的wsi对象 */
+    wsi = (struct libwebsocket *)rbt_query(ctx->wsi_map, &sid, sizeof(sid));
+    if (NULL == wsi) {
+        log_error(ctx->log, "Get wsi failed! sid:%lu", sid);
+        return -1;
+    }
+
+    user = lws_wsi_get_user_space(wsi);
+    if (NULL == user) {
+        log_error(ctx->log, "Get user of wsi failed! sid:%lu", sid);
+        return -1;
+    }
+
+    /* > 将data放入wsi发送队列中 */
+    item = (void *)mem_alloc(NULL, sizeof(lwsd_mesg_payload_t)
+            + LWS_SEND_BUFFER_PRE_PADDING
+            + len
+            + LWS_SEND_BUFFER_POST_PADDING);
+    if (NULL == item) {
+        log_error(ctx->log, "Alloc memory failed! sid:%lu", user->sid);
+        return -1;
+    }
+
+    pl = (lwsd_mesg_payload_t *)item;
+    pl->addr = (void *)(pl + 1);
+    memcpy(pl->addr + LWS_SEND_BUFFER_PRE_PADDING, addr, len);
+    pl->len = len;
+    pl->offset = 0;
+
+    if (list_rpush(user->send_list, item)) {
+        log_error(ctx->log, "Push data into send list failed! sid:%lu", user->sid);
+        mem_dealloc(NULL, item);
+        return -1;
+    }
+
+    lws_callback_on_writable(ctx->lws, wsi);
+
     return 0;
 }

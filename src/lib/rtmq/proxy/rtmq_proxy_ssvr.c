@@ -519,13 +519,13 @@ static int rtmq_proxy_ssvr_data_proc(rtmq_proxy_t *pxy, rtmq_proxy_ssvr_t *ssvr,
         LEN_NOT_ENOUGH:
             if (recv->iptr == recv->end) {
                 /* 防止OverWrite的情况发生 */
-                if ((recv->optr - recv->addr) < (recv->end - recv->iptr)) {
+                if ((recv->optr - recv->base) < (recv->end - recv->iptr)) {
                     log_fatal(ssvr->log, "Data length is invalid!");
                     return RTMQ_ERR;
                 }
 
-                memcpy(recv->addr, recv->optr, len);
-                recv->optr = recv->addr;
+                memcpy(recv->base, recv->optr, len);
+                recv->optr = recv->base;
                 recv->iptr = recv->optr + len;
                 return RTMQ_OK;
             }

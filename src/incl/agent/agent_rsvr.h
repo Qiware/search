@@ -23,7 +23,6 @@ typedef struct
     struct epoll_event *events;     /* Event最大数 */
 
     socket_t cmd_sck;               /* 命令套接字 */
-    rbt_tree_t *connections;        /* 套接字表(挂载数据socket_t) */
     unsigned int conn_total;        /* 当前连接数 */
 
     time_t ctm;                     /* 当前时间 */
@@ -34,10 +33,10 @@ typedef struct
 /* 套接字信息 */
 typedef struct
 {
-    uint64_t seq;                   /* SCK序列号(主键) */
+    uint64_t sid;                   /* SCK序列号(主键) */
+    int aid;                        /* 接收服务ID */
     bool is_cmd_sck;                /* 是否是命令套接字(false:否 true:是) */
 
-    agent_flow_t *flow;             /* 流水信息 */
     mesg_header_t *head;            /* 报头起始地址 */
     void *body;                     /* Body */
     list_t *send_list;              /* 发送链表 */

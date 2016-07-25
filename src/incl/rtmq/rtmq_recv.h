@@ -39,16 +39,20 @@
 #define rtmq_lock_path(conf, _path) \
     snprintf(_path, sizeof(_path), "%s/%d.lck", (conf)->path, (conf)->nid)
 
+/* 鉴权信息 */
+typedef struct
+{
+    char usr[RTMQ_USR_MAX_LEN];         /* 用户名 */
+    char passwd[RTMQ_PWD_MAX_LEN];      /* 登录密码 */
+} rtmq_auth_t;
+
 /* 配置信息 */
 typedef struct
 {
-    int nid;                         /* 节点ID(唯一值: 不允许重复) */
+    int nid;                            /* 节点ID(唯一值: 不允许重复) */
     char path[FILE_NAME_MAX_LEN];       /* 工作路径 */
 
-    struct {
-        char usr[RTMQ_USR_MAX_LEN];     /* 用户名 */
-        char passwd[RTMQ_PWD_MAX_LEN];  /* 登录密码 */
-    } auth;
+    list_t *auth;                       /* 鉴权列表 */
 
     int port;                           /* 侦听端口 */
     int recv_thd_num;                   /* 接收线程数 */
@@ -127,6 +131,13 @@ typedef struct
     uint64_t drop_total;                /* 丢弃的数据条数 */
 } rtmq_rsvr_t;
 
+/* 接收数据项 */
+typedef struct
+{
+    void *base;                         /* 内存块首地址: 用于内存引用计数 */
+    void *data;                         /* 数据地址: 真实数据地址 */
+} rtmq_recv_item_t;
+
 /* 全局对象 */
 typedef struct
 {
@@ -134,6 +145,7 @@ typedef struct
     log_cycle_t *log;                   /* 日志对象 */
 
     avl_tree_t *reg;                    /* 回调注册对象(注: 存储rtmq_reg_t数据) */
+    avl_tree_t *auth;                   /* 鉴权信息(注: 存储rtmq_auth_t数据) */
 
     rtmq_listen_t listen;               /* 侦听对象 */
     thread_pool_t *recvtp;              /* 接收线程池 */
@@ -143,13 +155,13 @@ typedef struct
     spinlock_t cmd_sck_lock;            /* 命令套接字锁 */
 
     queue_t **recvq;                    /* 接收队列(内部队列) */
-    queue_t **sendq;                    /* 发送队列(内部队列) */
-    queue_t **distq;                    /* 分发队列(外部队列)
+    ring_t **sendq;                     /* 发送队列(内部队列) */
+    ring_t **distq;                     /* 分发队列(外部队列)
                                            注: 外部接口首先将要发送的数据放入
                                            此队列, 再从此队列分发到不同的线程队列 */
 
     pthread_rwlock_t node_to_svr_map_lock;  /* 读写锁: NODE->SVR映射表 */
-    avl_tree_t *node_to_svr_map;         /* NODE->SVR的映射表(以nid为主键 rtmq_node_to_svr_map_t) */
+    avl_tree_t *node_to_svr_map;        /* NODE->SVR的映射表(以nid为主键 rtmq_node_to_svr_map_t) */
 
     rtmq_sub_mgr_t sub_mgr;             /* 订阅管理 */
 } rtmq_cntx_t;
@@ -189,5 +201,8 @@ int rtmq_node_to_svr_map_rand(rtmq_cntx_t *ctx, int nid);
 int rtmq_node_to_svr_map_del(rtmq_cntx_t *ctx, int nid, int rsvr_idx);
 
 int rtmq_sub_mgr_init(rtmq_sub_mgr_t *sub);
+
+int rtmq_auth_add(rtmq_cntx_t *ctx, char *usr, char *passwd);
+bool rtmq_auth_check(rtmq_cntx_t *ctx, char *usr, char *passwd);
 
 #endif /*__RTMQ_RECV_H__*/
