@@ -876,7 +876,7 @@ void *rbt_query(rbt_tree_t *tree, void *key, int key_len)
 
     idx = tree->key_cb(key, key_len);
 
-    while ((NULL != node) && (tree->sentinel != node)) {
+    while (tree->sentinel != node) {
         if (idx == node->idx) {
             ret = tree->cmp_cb(key, node->data);
             if (0 == ret) {
