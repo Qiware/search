@@ -143,7 +143,7 @@ static int mem_ref_add(void *addr, void *pool,
     item->alloc = alloc;
     item->dealloc = dealloc;
 
-    if (rbt_insert(slot->tab, addr, sizeof(addr), item)) {
+    if (rbt_insert(slot->tab, (void *)&addr, sizeof(addr), item)) {
         spin_unlock(&slot->lock);
         free(item);
         return -1;
