@@ -198,6 +198,8 @@ int mem_ref_incr(void *addr)
         return cnt;
     }
 
+    spin_unlock(&slot->lock);
+
     return -1; // 未创建结点
 }
 
