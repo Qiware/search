@@ -24,8 +24,8 @@ int main(void)
     avl_data_t *data;
     char input[INPUT_LEN];
 
-    /* > 创建B树 */
-    avl = avl_creat(NULL, (key_cb_t)key_cb_int32, (cmp_cb_t)cmp_cb_int32);
+    /* > 创建AVL树 */
+    avl = avl_creat(NULL, (cmp_cb_t)cmp_cb_int32);
     if (NULL == avl) {
         fprintf(stderr, "[%s][%d] Create avl failed!\n", __FILE__, __LINE__);
         return -1;

@@ -1257,7 +1257,7 @@ static rtmq_sck_t *rtmq_rsvr_sck_creat(rtmq_rsvr_t *rsvr, rtmq_cmd_add_sck_t *re
 
     do {
         /* > 创建订阅列表 */
-        sck->sub_list = avl_creat(NULL, (key_cb_t)key_cb_int32, (cmp_cb_t)cmp_cb_int32);
+        sck->sub_list = avl_creat(NULL, (cmp_cb_t)cmp_cb_int32);
         if (NULL == sck->sub_list) {
             log_error(rsvr->log, "Create sub list failed!");
             break;

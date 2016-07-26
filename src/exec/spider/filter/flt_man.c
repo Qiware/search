@@ -27,8 +27,6 @@ static flt_man_t *flt_man_init(flt_cntx_t *ctx);
 static int flt_man_event_hdl(flt_cntx_t *ctx, flt_man_t *man);
 
 static int flt_man_reg_cb(flt_man_t *man);
-static uint32_t flt_man_reg_key_cb(void *_reg, size_t len);
-static int flt_man_reg_cmp_cb(void *type, const void *_reg);
 
 static int flt_man_recv_cmd(flt_cntx_t *ctx, flt_man_t *man);
 static int flt_man_send_cmd(flt_cntx_t *ctx, flt_man_t *man);
@@ -130,7 +128,7 @@ static flt_man_t *flt_man_init(flt_cntx_t *ctx)
 
     do {
         /* > 创建AVL树 */
-        man->reg = avl_creat(NULL, (key_cb_t)flt_man_reg_key_cb, (cmp_cb_t)flt_man_reg_cmp_cb);
+        man->reg = avl_creat(NULL, (cmp_cb_t)cmp_cb_int32);
         if (NULL == man->reg) {
             log_error(man->log, "Create AVL failed!");
             return NULL;
@@ -212,44 +210,6 @@ static int flt_man_register(flt_man_t *man, int type, flt_man_reg_cb_t proc, voi
     }
 
     return FLT_OK;
-}
-
-/******************************************************************************
- **函数名称: flt_man_reg_key_cb
- **功    能: 生成KEY的函数
- **输入参数:
- **     _reg: 注册数据
- **     len: 注册数据长度
- **输出参数:
- **返    回: KEY值
- **实现描述:
- **注意事项:
- **作    者: # Qifeng.zou # 2015.03.15 #
- ******************************************************************************/
-static uint32_t flt_man_reg_key_cb(void *_reg, size_t len)
-{
-    flt_man_reg_t *reg = (flt_man_reg_t *)_reg;
-
-    return reg->type;
-}
-
-/******************************************************************************
- **函数名称: flt_man_reg_cmp_cb
- **功    能: 比较KEY的函数
- **输入参数:
- **     type: 类型(唯一值)
- **     _reg: 注册的数据信息(类型: flt_man_reg_t)
- **输出参数:
- **返    回: =0:相等 <0:小于 >0:大于
- **实现描述:
- **注意事项:
- **作    者: # Qifeng.zou # 2015.03.15 #
- ******************************************************************************/
-static int flt_man_reg_cmp_cb(void *type, const void *_reg)
-{
-    const flt_man_reg_t *reg = (const flt_man_reg_t *)_reg;
-
-    return (*(uint32_t *)type - reg->type);
 }
 
 /******************************************************************************

@@ -204,14 +204,14 @@ static lwsd_cntx_t *lwsd_init(const lwsd_opt_t *opt, const lwsd_conf_t *conf, lo
 
     do {
         /* > 创建LWS REG表 */
-        ctx->lws_reg = avl_creat(NULL, (key_cb_t)key_cb_int32, (cmp_cb_t)cmp_cb_int32);
+        ctx->lws_reg = avl_creat(NULL, (cmp_cb_t)cmp_cb_int32);
         if (NULL == ctx->lws_reg) {
             log_error(log, "Create avl failed!");
             break;
         }
 
         /* > 创建LWS WSI表 */
-        ctx->wsi_map = rbt_creat(NULL, (key_cb_t)key_cb_int32, (cmp_cb_t)cmp_cb_int32);
+        ctx->wsi_map = rbt_creat(NULL, (cmp_cb_t)cmp_cb_int32);
         if (NULL == ctx->wsi_map) {
             log_error(log, "Create rbt failed!");
             break;

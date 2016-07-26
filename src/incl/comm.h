@@ -136,7 +136,7 @@ typedef struct
 #endif
 
 typedef int64_t (*key_cb_t)(const void *pkey, size_t pkey_len);
-typedef int (*cmp_cb_t)(const void *key1, const void *key2);
+typedef int (*cmp_cb_t)(const key_obj_t *key1, const key_obj_t *key2);
 typedef int (*trav_cb_t)(void *data, void *args);
 typedef bool (*find_cb_t)(void *data, void *args);
 
@@ -154,15 +154,12 @@ void *mem_alloc(void *pool, size_t size);
 void mem_dealloc(void *pool, void *p);
 static inline void mem_dummy_dealloc(void *pool, void *p) { }
 
-/* 整数生成键值回调 */
-static inline uint16_t key_cb_int16(const uint16_t *key, size_t len) { return *key; }
-static inline uint32_t key_cb_int32(const uint32_t *key, size_t len) { return *key; }
-static inline uint64_t key_cb_int64(const uint64_t *key, size_t len) { return *key; }
-static inline uint64_t key_cb_ptr(const uint64_t *key, size_t len) { return (uint64_t)key; }
 /* 整数进行比较回调 */
-static inline int cmp_cb_int16(const uint16_t *key, const void *data) { return 0; }
-static inline int cmp_cb_int32(const uint32_t *key, const void *data) { return 0; }
-static inline int cmp_cb_int64(const uint64_t *key, const void *data) { return 0; } 
-static inline int cmp_cb_ptr(const uint64_t *key, const void *data) { return 0; } 
+static inline int cmp_cb_int16(const key_obj_t *key1, const key_obj_t *key2) { return (*(int16_t *)key1->k - *(int16_t *)key2->k); }
+static inline int cmp_cb_int32(const key_obj_t *key1, const key_obj_t *key2) { return (*(int32_t *)key1->k - *(int32_t *)key2->k); }
+static inline int cmp_cb_int64(const key_obj_t *key1, const key_obj_t *key2) { return (*(int64_t *)key1->k - *(int64_t *)key2->k); }
+
+static inline int cmp_cb_str(const key_obj_t *key1, const key_obj_t *key2) { return strcmp((char *)key1->k, (char *)key2->k); }
+static inline int cmp_cb_ptr(const key_obj_t *key1, const key_obj_t *key2) { return (*(uint64_t *)key1->k - *(uint64_t *)key2->k); }
 
 #endif /*__COMM_H__*/

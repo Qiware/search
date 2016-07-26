@@ -15,25 +15,6 @@
 #include "hash_alg.h"
 
 /******************************************************************************
- **函数名称: invtab_dic_word_cmp
- **功    能: 比较单词的大小
- **输入参数: 
- **     word: 单词
- **     data: 与word进行比较的单词对应的数据
- **输出参数: NONE
- **返    回: KEY值
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2015.04.28 #
- ******************************************************************************/
-static int invtab_dic_word_cmp(char *word, void *data)
-{
-    invt_dic_word_t *dw = (invt_dic_word_t *)data;
-
-    return strcmp(word, dw->word.str);
-}
-
-/******************************************************************************
  **函数名称: invtab_creat
  **功    能: 创建倒排表
  **输入参数: 
@@ -72,7 +53,7 @@ invt_tab_t *invtab_creat(int max, log_cycle_t *log)
     }
 
     for (idx=0; idx<max; ++idx) {
-        tab->dic[idx] = avl_creat(NULL, (key_cb_t)hash_time33_ex, (cmp_cb_t)invtab_dic_word_cmp);
+        tab->dic[idx] = avl_creat(NULL, (cmp_cb_t)cmp_cb_str);
         if (NULL == tab->dic[idx]) {
             log_error(log, "Create avl-tree failed! idx:%d", idx);
             invtab_destroy(tab, NULL, NULL);
@@ -136,7 +117,7 @@ static invt_dic_word_t *invt_word_add(invt_tab_t *tab, char *word, int len)
         }
 
         /* > 插入单词词典 */
-        if (avl_insert(tab->dic[idx], word, len, (void *)dw)) {
+        if (avl_insert(tab->dic[idx], word, len+1, (void *)dw)) {
             log_error(tab->log, "Insert avl failed! word:%s idx:%d", word, idx);
             break;
         }

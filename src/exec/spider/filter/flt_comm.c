@@ -208,7 +208,6 @@ flt_cntx_t *flt_init(char *pname, flt_opt_t *flt_opt)
 
         ctx->domain_ip_map = hash_map_creat(
                 FLT_DOMAIN_IP_MAP_HASH_MOD,
-                (key_cb_t)hash_time33_ex,
                 (cmp_cb_t)flt_domain_ip_map_cmp_cb, &opt);
         if (NULL == ctx->domain_ip_map) {
             log_error(log, "Initialize hash table failed!");
@@ -225,7 +224,6 @@ flt_cntx_t *flt_init(char *pname, flt_opt_t *flt_opt)
 
         ctx->domain_blacklist = hash_map_creat(
                 FLT_DOMAIN_BLACKLIST_HASH_MOD,
-                (key_cb_t)hash_time33_ex,
                 (cmp_cb_t)flt_domain_blacklist_cmp_cb, &opt);
         if (NULL == ctx->domain_blacklist) {
             log_error(log, "Initialize hash table failed!");

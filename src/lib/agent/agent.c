@@ -243,27 +243,6 @@ static int agent_workers_destroy(agent_cntx_t *ctx)
 }
 
 /******************************************************************************
- **函数名称: agent_connection_cmp
- **功    能: 进行连接比较
- **输入参数:
- **     sid: 套接字序列
- **     sck: 参与比较的数据
- **输出参数: NONE
- **返    回: 0:相等 <0:小于 >0:大于
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2015-07-21 22:54:30 #
- ******************************************************************************/
-static int agent_connection_cmp(const uint64_t *sid, const socket_t *sck)
-{
-    agent_socket_extra_t *extra;
-
-    extra = (agent_socket_extra_t *)sck->extra;
-
-    return (*sid - extra->sid);
-}
-
-/******************************************************************************
  **函数名称: agent_creat_agents
  **功    能: 创建Agent线程池
  **输入参数: 
@@ -614,7 +593,7 @@ static int agent_sid_list_init(agent_cntx_t *ctx, agent_conf_t *conf)
 
         spin_lock_init(&list->lock);
 
-        list->sids = rbt_creat(NULL, (key_cb_t)key_cb_int64, (cmp_cb_t)agent_connection_cmp);
+        list->sids = rbt_creat(NULL, (cmp_cb_t)cmp_cb_int64);
         if (NULL == list->sids) {
             FREE(ctx->connections);
             return AGENT_ERR;

@@ -68,7 +68,7 @@ int rtmq_link_auth_check(rtmq_cntx_t *ctx, rtmq_link_auth_req_t *link_auth_req)
 int rtmq_node_to_svr_map_init(rtmq_cntx_t *ctx)
 {
     /* > 创建映射表 */
-    ctx->node_to_svr_map = avl_creat(NULL, (key_cb_t)key_cb_int32, (cmp_cb_t)cmp_cb_int32);
+    ctx->node_to_svr_map = avl_creat(NULL, (cmp_cb_t)cmp_cb_int32);
     if (NULL == ctx->node_to_svr_map) {
         log_error(ctx->log, "Initialize dev->svr map failed!");
         return RTMQ_ERR;
@@ -228,7 +228,7 @@ int rtmq_node_to_svr_map_rand(rtmq_cntx_t *ctx, int nid)
 int rtmq_sub_mgr_init(rtmq_sub_mgr_t *sub)
 {
     /* > 创建订阅表 */
-    sub->tab = avl_creat(NULL, (key_cb_t)key_cb_int32, (cmp_cb_t)cmp_cb_int32);
+    sub->tab = avl_creat(NULL, (cmp_cb_t)cmp_cb_int32);
     if (NULL == sub->tab) {
         return RTMQ_ERR;
     }

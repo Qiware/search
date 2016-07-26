@@ -29,7 +29,7 @@ int main(void)
     rbt_tree_t *rbt;
     rbt_data_t *data;
 
-    rbt = rbt_creat(NULL, (key_cb_t)key_cb_int32, (cmp_cb_t)cmp_cb_int32);
+    rbt = rbt_creat(NULL, (cmp_cb_t)cmp_cb_int32);
     if (NULL == rbt) {
         return -1;
     }

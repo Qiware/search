@@ -133,7 +133,7 @@ static crwl_man_t *crwl_man_init(crwl_cntx_t *ctx)
 
     do {
         /* > 创建AVL树 */
-        man->reg = avl_creat(NULL, (key_cb_t)key_cb_int32, (cmp_cb_t)cmp_cb_int32);
+        man->reg = avl_creat(NULL, (cmp_cb_t)cmp_cb_int32);
         if (NULL == man->reg) {
             log_error(man->log, "Create AVL failed!");
             return NULL;

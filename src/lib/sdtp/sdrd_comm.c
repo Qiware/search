@@ -75,7 +75,7 @@ int sdrd_link_auth_check(sdrd_cntx_t *ctx, sdtp_link_auth_req_t *link_auth_req)
  ******************************************************************************/
 int sdrd_node_to_svr_map_init(sdrd_cntx_t *ctx)
 {
-    ctx->node_to_svr_map = avl_creat(NULL, (key_cb_t)key_cb_int32, (cmp_cb_t)cmp_cb_int32);
+    ctx->node_to_svr_map = avl_creat(NULL, (cmp_cb_t)cmp_cb_int32);
     if (NULL == ctx->node_to_svr_map) {
         log_error(ctx->log, "Initialize dev->svr map failed!");
         return SDTP_ERR;

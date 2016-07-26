@@ -185,7 +185,7 @@ static int _avl_insert(avl_tree_t *tree,
 {
     int ret;
 
-    ret = tree->cmp_cb(&key, &node->key);
+    ret = tree->cmp_cb(key, &node->key);
     if (0 == ret) {
         *taller = false;
         return AVL_NODE_EXIST;

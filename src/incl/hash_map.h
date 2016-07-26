@@ -43,7 +43,7 @@ typedef struct
     tree_destroy_cb_t tree_destroy;
 } hash_map_t;
 
-hash_map_t *hash_map_creat(int mod, key_cb_t key_cb, cmp_cb_t cmp_cb, hash_map_opt_t *opt);
+hash_map_t *hash_map_creat(int mod, cmp_cb_t cmp_cb, hash_map_opt_t *opt);
 int hash_map_insert(hash_map_t *htab, void *pkey, int pkey_len, void *addr);
 int hash_map_query(hash_map_t *htab, void *pkey, int pkey_len, hash_map_query_cb_t query_cb, void *data);
 void *hash_map_remove(hash_map_t *htab, void *pkey, int pkey_len);

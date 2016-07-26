@@ -52,7 +52,7 @@ log_svr_t *log_svr_init(void)
         g_log_svr = lsvr;
         lsvr->timeout = 1;
 
-        lsvr->logs = avl_creat(NULL, (key_cb_t)key_cb_ptr, (cmp_cb_t)cmp_cb_ptr);
+        lsvr->logs = avl_creat(NULL, (cmp_cb_t)cmp_cb_ptr);
         if (NULL == lsvr->logs) {
             break;
         }
@@ -261,7 +261,7 @@ static int log_rename(const log_cycle_t *log, const struct timeb *time)
 int log_insert(log_svr_t *lsvr, log_cycle_t *log)
 {
     pthread_mutex_lock(&lsvr->lock);
-    avl_insert(lsvr->logs, (void *)log, sizeof(log), (void *)log);
+    avl_insert(lsvr->logs, (void *)&log, sizeof(log), (void *)log);
     pthread_mutex_unlock(&lsvr->lock);
     return 0;
 }

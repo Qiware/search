@@ -15,6 +15,7 @@
 typedef struct
 {
     void *addr;                     // 内存地址
+    size_t size;                    // 内存长度
     uint64_t count;                 // 引用次数
 
     struct {
@@ -43,7 +44,6 @@ static mem_ref_cntx_t g_mem_ref_ctx; // 全局对象
 static int mem_ref_add(void *addr, void *pool, mem_alloc_cb_t alloc, mem_dealloc_cb_t dealloc);
 
 static uint64_t mem_ref_key_cb(const void *key, size_t len) { return (uint64_t)key; }
-static inline int mem_ref_cmp_cb(const void *key, const void *data) { return 0; }
 
 /******************************************************************************
  **函数名称: mem_ref_init
@@ -66,8 +66,7 @@ int mem_ref_init(void)
     for (idx=0; idx<MEM_REF_SLOT_NUM; ++idx) {
         slot = &ctx->slot[idx];
         spin_lock_init(&slot->lock);
-        slot->tab = (rbt_tree_t *)rbt_creat(NULL,
-                (key_cb_t)mem_ref_key_cb, (cmp_cb_t)mem_ref_cmp_cb);
+        slot->tab = (rbt_tree_t *)rbt_creat(NULL, (cmp_cb_t)cmp_cb_ptr);
         if (NULL == slot->tab) {
             return -1;
         }
@@ -125,7 +124,7 @@ static int mem_ref_add(void *addr, void *pool,
 
     spin_lock(&slot->lock);
 
-    item = (mem_ref_item_t *)rbt_query(slot->tab, addr, sizeof(addr));
+    item = (mem_ref_item_t *)rbt_query(slot->tab, (void *)&addr, sizeof(addr));
     if (NULL != item) {
         cnt = ++item->count;
         spin_unlock(&slot->lock);
@@ -192,7 +191,7 @@ int mem_ref_incr(void *addr)
 
     spin_lock(&slot->lock);
 
-    item = (mem_ref_item_t *)rbt_query(slot->tab, addr, sizeof(addr));
+    item = (mem_ref_item_t *)rbt_query(slot->tab, (void *)&addr, sizeof(addr));
     if (NULL != item) {
         cnt = ++item->count;
         spin_unlock(&slot->lock);
@@ -227,7 +226,7 @@ int mem_ref_decr(void *addr)
 
     spin_lock(&slot->lock);
 
-    item = (mem_ref_item_t *)rbt_query(slot->tab, addr, sizeof(addr));
+    item = (mem_ref_item_t *)rbt_query(slot->tab, (void *)&addr, sizeof(addr));
     if (NULL == item) {
         spin_unlock(&slot->lock);
         return 0; // Didn't find

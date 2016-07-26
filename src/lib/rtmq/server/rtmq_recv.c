@@ -106,7 +106,7 @@ rtmq_cntx_t *rtmq_init(const rtmq_conf_t *cf, log_cycle_t *log)
         }
 
         /* > 初始化注册信息 */
-        ctx->reg = avl_creat(NULL, (key_cb_t)key_cb_int32, (cmp_cb_t)cmp_cb_int32);
+        ctx->reg = avl_creat(NULL, (cmp_cb_t)cmp_cb_int32);
         if (NULL == ctx->reg) {
             log_error(ctx->log, "Create register map failed!");
             break;
@@ -651,18 +651,6 @@ static int rtmq_lock_server(const rtmq_conf_t *conf)
     return 0;
 }
 
-/* 生成KEY */
-static uint64_t rtmq_auth_key_cb(const char *usr, size_t len)
-{
-    return hash_time33(usr);
-}
-
-/* KEY匹配成功的比较 */
-static int rtmq_auth_cmp_cb(const char *usr, const rtmq_auth_t *orig)
-{
-    return strcmp(usr, orig->usr);
-}
-
 /* 遍历鉴权连表 */
 static int rtmq_auth_trav_add(rtmq_auth_t *auth, rtmq_cntx_t *ctx)
 {
@@ -686,7 +674,7 @@ static int rtmq_auth_init(rtmq_cntx_t *ctx)
 {
     list_t *auth = ctx->conf.auth;
 
-    ctx->auth = avl_creat(NULL, (key_cb_t)rtmq_auth_key_cb, (cmp_cb_t)rtmq_auth_cmp_cb);
+    ctx->auth = avl_creat(NULL, (cmp_cb_t)cmp_cb_str);
     if (NULL == ctx->auth) {
         return -1;
     }
@@ -711,7 +699,7 @@ int rtmq_auth_add(rtmq_cntx_t *ctx, char *usr, char *passwd)
 {
     rtmq_auth_t *auth;
 
-    auth = (rtmq_auth_t *)avl_query(ctx->auth, (void *)usr, strlen(usr));
+    auth = (rtmq_auth_t *)avl_query(ctx->auth, (void *)usr, strlen(usr)+1);
     if (NULL != auth) {
         return (0 == strcmp(auth->passwd, passwd))? 0 : -1;
     }
@@ -725,7 +713,7 @@ int rtmq_auth_add(rtmq_cntx_t *ctx, char *usr, char *passwd)
     snprintf(auth->usr, sizeof(auth->usr), "%s", usr);
     snprintf(auth->passwd, sizeof(auth->passwd), "%s", passwd);
 
-    if (avl_insert(ctx->auth, usr, strlen(usr), (void *)auth)) {
+    if (avl_insert(ctx->auth, usr, strlen(usr)+1, (void *)auth)) {
         free(auth);
         return -1;
     }
@@ -750,7 +738,7 @@ bool rtmq_auth_check(rtmq_cntx_t *ctx, char *usr, char *passwd)
 {
     rtmq_auth_t *auth;
 
-    auth = avl_query(ctx->auth, usr, strlen(usr));
+    auth = avl_query(ctx->auth, usr, strlen(usr)+1);
     if (NULL != auth) {
         return (0 == strcmp(auth->passwd, passwd))? true : false;
     }

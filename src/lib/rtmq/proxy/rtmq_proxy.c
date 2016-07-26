@@ -204,7 +204,7 @@ rtmq_proxy_t *rtmq_proxy_init(const rtmq_proxy_conf_t *conf, log_cycle_t *log)
         }
 
         /* > 创建处理映射表 */
-        pxy->reg = avl_creat(NULL, (key_cb_t)key_cb_int32, (cmp_cb_t)cmp_cb_int32);
+        pxy->reg = avl_creat(NULL, (cmp_cb_t)cmp_cb_int32);
         if (NULL == pxy->reg) {
             log_fatal(log, "Create register map failed!");
             break;

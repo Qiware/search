@@ -14,7 +14,7 @@
 #include "hash_map.h"
 
 static int hash_map_set_cb(hash_map_t *htab, hash_map_opt_t *opt);
-static int hash_map_init_elem(hash_map_t *htab, int idx, key_cb_t key_cb, cmp_cb_t cmp_cb, hash_map_opt_t *opt);
+static int hash_map_init_elem(hash_map_t *htab, int idx, cmp_cb_t cmp_cb, hash_map_opt_t *opt);
 
 /******************************************************************************
  **函数名称: hash_map_creat
@@ -32,7 +32,7 @@ static int hash_map_init_elem(hash_map_t *htab, int idx, key_cb_t key_cb, cmp_cb
  **注意事项:
  **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
-hash_map_t *hash_map_creat(int len, key_cb_t key_cb, cmp_cb_t cmp_cb, hash_map_opt_t *opt)
+hash_map_t *hash_map_creat(int len, cmp_cb_t cmp_cb, hash_map_opt_t *opt)
 {
     int idx;
     hash_map_t *htab;
@@ -64,14 +64,13 @@ hash_map_t *hash_map_creat(int len, key_cb_t key_cb, cmp_cb_t cmp_cb, hash_map_o
     for (idx=0; idx<len; ++idx) {
         pthread_rwlock_init(&htab->lock[idx], NULL);
 
-        if (hash_map_init_elem(htab, idx, key_cb, cmp_cb, opt)) {
+        if (hash_map_init_elem(htab, idx, cmp_cb, opt)) {
             hash_map_destroy(htab, mem_dummy_dealloc, NULL);
             return NULL;
         }
     }
 
     htab->len = len;
-    htab->key_cb = key_cb;
     htab->cmp_cb = cmp_cb;
 
     return htab;
@@ -118,8 +117,7 @@ static int hash_map_set_cb(hash_map_t *htab, hash_map_opt_t *opt)
  **注意事项:
  **作    者: # Qifeng.zou # 2015-07-22 14:23:04 #
  ******************************************************************************/
-static int hash_map_init_elem(
-    hash_map_t *htab, int idx, key_cb_t key_cb, cmp_cb_t cmp_cb, hash_map_opt_t *opt)
+static int hash_map_init_elem(hash_map_t *htab, int idx, cmp_cb_t cmp_cb, hash_map_opt_t *opt)
 {
     switch (opt->type) {
         case HASH_MAP_AVL:
@@ -133,7 +131,7 @@ static int hash_map_init_elem(
             avl_opt.alloc = (mem_alloc_cb_t)opt->alloc;
             avl_opt.dealloc = (mem_dealloc_cb_t)opt->dealloc;
 
-            htab->tree[idx] = avl_creat(&avl_opt, key_cb, cmp_cb);
+            htab->tree[idx] = avl_creat(&avl_opt, cmp_cb);
             if (NULL == htab->tree[idx]) {
                 return -1;
             }
@@ -149,7 +147,7 @@ static int hash_map_init_elem(
             rbt_opt.alloc = (mem_alloc_cb_t)opt->alloc;
             rbt_opt.dealloc = (mem_dealloc_cb_t)opt->dealloc;
 
-            htab->tree[idx] = rbt_creat(&rbt_opt, key_cb, cmp_cb);
+            htab->tree[idx] = rbt_creat(&rbt_opt, cmp_cb);
             if (NULL == htab->tree[idx]) {
                 return -1;
             }
