@@ -149,7 +149,6 @@ static void rbt_left_rotate(rbt_tree_t *tree, rbt_node_t *node)
  **功    能: 创建红黑树对象(对外接口)
  **输入参数:
  **     opt: 参数选项
- **     key_cb: 键值生成函数
  **     cmp_cb: 键值比较函数
  **输出参数: NONE
  **返    回: RBT_OK:成功 RBT_ERR:失败
@@ -163,7 +162,7 @@ static void rbt_left_rotate(rbt_tree_t *tree, rbt_node_t *node)
  **        的所有路径上包含相同数目的黑结点。
  **作    者: # Qifeng.zou # 2013.12.21 #
  ******************************************************************************/
-rbt_tree_t *rbt_creat(rbt_opt_t *opt, key_cb_t key_cb, cmp_cb_t cmp_cb)
+rbt_tree_t *rbt_creat(rbt_opt_t *opt, cmp_cb_t cmp_cb)
 {
     rbt_opt_t _opt;
     rbt_tree_t *tree;
@@ -188,8 +187,6 @@ rbt_tree_t *rbt_creat(rbt_opt_t *opt, key_cb_t key_cb, cmp_cb_t cmp_cb)
 
     tree->sentinel->color = RBT_COLOR_BLACK;
     tree->root = tree->sentinel;
-
-    tree->key_cb = key_cb;
     tree->cmp_cb = cmp_cb;
 
     tree->pool = opt->pool;
@@ -203,7 +200,9 @@ rbt_tree_t *rbt_creat(rbt_opt_t *opt, key_cb_t key_cb, cmp_cb_t cmp_cb)
  **函数名称: rbt_creat_node
  **功    能: 创建关键字为key的节点(内部接口)
  **输入参数:
- **     key: 红黑树
+ **     tree: 红黑树
+ **     key: 主键
+ **     len: 主键长度
  **     color: 节点颜色
  **     type: 新增节点是父节点的左孩子还是右孩子
  **     parent: 父节点
@@ -213,7 +212,8 @@ rbt_tree_t *rbt_creat(rbt_opt_t *opt, key_cb_t key_cb, cmp_cb_t cmp_cb)
  **注意事项: 新结点的左右孩子肯定为叶子结点
  **作    者: # Qifeng.zou # 2013.12.23 #
  ******************************************************************************/
-static rbt_node_t *rbt_creat_node(rbt_tree_t *tree, int64_t idx, int color, int type, rbt_node_t *parent)
+static rbt_node_t *rbt_creat_node(rbt_tree_t *tree,
+        const key_obj_t *key, int color, int type, rbt_node_t *parent)
 {
     rbt_node_t *node;
 
@@ -223,7 +223,13 @@ static rbt_node_t *rbt_creat_node(rbt_tree_t *tree, int64_t idx, int color, int 
     }
 
     node->color = color;
-    node->idx = idx;
+    node->key.k = (void *)tree->alloc(tree->pool, key->l);
+    if (NULL == node->key.k) {
+        tree->dealloc(tree->pool, node);
+        return NULL;
+    }
+    node->key.l = key->l;
+    memcpy(node->key.k, key, key->l);
     node->lchild = tree->sentinel;
     node->rchild = tree->sentinel;
     if (NULL != parent) {
@@ -242,7 +248,7 @@ static rbt_node_t *rbt_creat_node(rbt_tree_t *tree, int64_t idx, int color, int 
  **输入参数:
  **     tree: 红黑树
  **     key: 关键字
- **     key_len: 关键字长度
+ **     size: 关键字SIZE(如果关键字为字符串时, 注意其为SIZE, 不是长度)
  **     data: 关键字对应的数据块
  **输出参数: NONE
  **返    回: RBT_OK:成功 RBT_ERR:失败 RBT_NODE_EXIST:节点存在
@@ -260,18 +266,19 @@ static rbt_node_t *rbt_creat_node(rbt_tree_t *tree, int64_t idx, int color, int 
  **注意事项: 插入节点操作只可能破坏性质(4)
  **作    者: # Qifeng.zou # 2013.12.23 # 2015.07.21 21:29:07 #
  ******************************************************************************/
-int rbt_insert(rbt_tree_t *tree, void *key, int key_len, void *data)
+int rbt_insert(rbt_tree_t *tree, void *_key, size_t size, void *data)
 {
     int ret;
-    int64_t idx;
+    key_obj_t key;
     rbt_node_t *node = tree->root, *add;
 
-    idx = tree->key_cb(key, key_len);
+    key.k = _key;
+    key.l = size;
 
     /* 1. 当根节点为空时，直接添加 */
     if (tree->sentinel == tree->root) {
         /* 性质2: 根结点是黑色的 */
-        tree->root = rbt_creat_node(tree, idx, RBT_COLOR_BLACK, 0, NULL);
+        tree->root = rbt_creat_node(tree, &key, RBT_COLOR_BLACK, 0, NULL);
         if (NULL == tree->root) {
             tree->root = tree->sentinel;
             return RBT_ERR;
@@ -284,46 +291,37 @@ int rbt_insert(rbt_tree_t *tree, void *key, int key_len, void *data)
 
     /* 2. 将节点插入树中, 检查并修复新节点造成红黑树性质的破坏 */
     while (tree->sentinel != node) {
-        if (idx == node->idx) {
-            ret = tree->cmp_cb(key, node->data);
+            ret = tree->cmp_cb(&key, &node->key);
             if (0 == ret) {
                 return RBT_NODE_EXIST;
             }
             else if (ret < 0) {
-                goto RBT_INSERT_LCHILD;
+                if (tree->sentinel == node->lchild) {
+                    add = rbt_creat_node(tree, &key, RBT_COLOR_RED, RBT_LCHILD, node);
+                    if (NULL == add) {
+                        return RBT_ERR;
+                    }
+
+                    add->data = data;
+
+                    return rbt_insert_fixup(tree, add); /* 防止红黑树的性质被破坏 */
+                }
+                node = node->lchild;
             }
             else {
-                goto RBT_INSERT_RCHILD;
-            }
-        }
-        else if (idx < node->idx) {
-        RBT_INSERT_LCHILD:
-            if (tree->sentinel == node->lchild) {
-                add = rbt_creat_node(tree, idx, RBT_COLOR_RED, RBT_LCHILD, node);
-                if (NULL == add) {
-                    return RBT_ERR;
+                if (tree->sentinel == node->rchild) {
+                    add = rbt_creat_node(tree, &key, RBT_COLOR_RED, RBT_RCHILD, node);
+                    if (NULL == add) {
+                        return RBT_ERR;
+                    }
+
+                    add->data = data;
+
+                    return rbt_insert_fixup(tree, add); /* 防止红黑树的性质被破坏 */
                 }
+                node = node->rchild;
 
-                add->data = data;
-
-                return rbt_insert_fixup(tree, add); /* 防止红黑树的性质被破坏 */
             }
-            node = node->lchild;
-        }
-        else {
-        RBT_INSERT_RCHILD:
-            if (tree->sentinel == node->rchild) {
-                add = rbt_creat_node(tree, idx, RBT_COLOR_RED, RBT_RCHILD, node);
-                if (NULL == add) {
-                    return RBT_ERR;
-                }
-
-                add->data = data;
-
-                return rbt_insert_fixup(tree, add); /* 防止红黑树的性质被破坏 */
-            }
-            node = node->rchild;
-        }
     }
 
     return RBT_OK;
@@ -430,6 +428,7 @@ static int rbt_insert_fixup(rbt_tree_t *tree, rbt_node_t *node)
  **输入参数:
  **     tree: 红黑树
  **     key: 关键字
+ **     size: 关键字SIZE
  **输出参数:
  **     data: 关键字对应的数据块
  **返    回: RBT_OK:成功  RBT_ERR:失败
@@ -437,29 +436,22 @@ static int rbt_insert_fixup(rbt_tree_t *tree, rbt_node_t *node)
  **注意事项:
  **作    者: # Qifeng.zou # 2013.12.27 #
  ******************************************************************************/
-int rbt_delete(rbt_tree_t *tree, void *key, int key_len, void **data)
+int rbt_delete(rbt_tree_t *tree, void *_key, size_t size, void **data)
 {
     int ret;
-    int64_t idx;
+    key_obj_t key;
     rbt_node_t *node = tree->root;
 
-    idx = tree->key_cb(key, key_len);
+    key.k = _key;
+    key.l = size;
 
     while (tree->sentinel != node) {
-        if (idx == node->idx) {
-            ret = tree->cmp_cb(key, node->data);
-            if (0 == ret) {
-                *data = node->data;
-                return _rbt_delete(tree, node);
-            }
-            else if (ret < 0) {
-                node = node->lchild;
-            }
-            else {
-                node = node->rchild;
-            }
+        ret = tree->cmp_cb(&key, &node->key);
+        if (0 == ret) {
+            *data = node->data;
+            return _rbt_delete(tree, node);
         }
-        else if (idx < node->idx) {
+        else if (ret < 0) {
             node = node->lchild;
         }
         else {
@@ -486,6 +478,7 @@ int rbt_delete(rbt_tree_t *tree, void *key, int key_len, void **data)
  ******************************************************************************/
 static int _rbt_delete(rbt_tree_t *tree, rbt_node_t *dnode)
 {
+    key_obj_t key;
     rbt_node_t *parent, *next, *refer;
 
     /* Case 1: 被删结点D的左孩子为叶子结点, 右孩子无限制(可为叶子结点，也可为非叶子结点) */
@@ -505,10 +498,12 @@ static int _rbt_delete(rbt_tree_t *tree, rbt_node_t *dnode)
         }
 
         if (rbt_is_red(dnode)) {
+            tree->dealloc(tree->pool, dnode->key.k);
             tree->dealloc(tree->pool, dnode);
             return RBT_OK;
         }
 
+        tree->dealloc(tree->pool, dnode->key.k);
         tree->dealloc(tree->pool, dnode);
 
         return rbt_delete_fixup(tree, refer);
@@ -530,10 +525,12 @@ static int _rbt_delete(rbt_tree_t *tree, rbt_node_t *dnode)
         }
 
         if (rbt_is_red(dnode)) {
+            tree->dealloc(tree->pool, dnode->key.k);
             tree->dealloc(tree->pool, dnode);
             return RBT_OK;
         }
 
+        tree->dealloc(tree->pool, dnode->key.k);
         tree->dealloc(tree->pool, dnode);
 
         return rbt_delete_fixup(tree, refer);
@@ -557,14 +554,17 @@ static int _rbt_delete(rbt_tree_t *tree, rbt_node_t *dnode)
         parent->rchild = refer;
     }
 
-    dnode->idx = next->idx;
+    key = dnode->key;
+    dnode->key = next->key;
     dnode->data = next->data; /* Copy next's satellite data into dnode */
 
     if (rbt_is_red(next)) {  /* Not black */
+        tree->dealloc(tree->pool, key.k);
         tree->dealloc(tree->pool, next);
         return RBT_OK;
     }
 
+    tree->dealloc(tree->pool, key.k);
     tree->dealloc(tree->pool, next);
 
     return rbt_delete_fixup(tree, refer);
@@ -735,10 +735,10 @@ static void rbt_print_head(const rbt_tree_t *tree, const rbt_node_t *node, int d
     if ((tree->sentinel == node->lchild)
         && (tree->sentinel == node->rchild))
     {
-        fprintf(stderr, "<%03ld:%c/>\n", node->idx, node->color);
+        //fprintf(stderr, "<%03ld:%c/>\n", node->idx, node->color);
     }
     else {
-        fprintf(stderr, "<%03ld:%c>\n", node->idx, node->color);
+        //fprintf(stderr, "<%03ld:%c>\n", node->idx, node->color);
     }
 }
 
@@ -772,7 +772,7 @@ static void rbt_print_tail(const rbt_tree_t *tree, const rbt_node_t *node, int d
         depth--;
     }
 
-    fprintf(stderr, "</%03ld>\n", node->idx);
+    //fprintf(stderr, "</%03ld>\n", node->idx);
 }
 
 /******************************************************************************
@@ -868,28 +868,17 @@ int rbt_print(rbt_tree_t *tree)
  **注意事项:
  **作    者: # Qifeng.zou # 2013.12.23 #
  ******************************************************************************/
-void *rbt_query(rbt_tree_t *tree, void *key, int key_len)
+void *rbt_query(rbt_tree_t *tree, void *key, size_t size)
 {
     int ret;
-    int64_t idx;
     rbt_node_t *node = tree->root;
 
-    idx = tree->key_cb(key, key_len);
-
     while (tree->sentinel != node) {
-        if (idx == node->idx) {
-            ret = tree->cmp_cb(key, node->data);
-            if (0 == ret) {
-                return node->data;
-            }
-            else if (ret < 0) {
-                node = node->lchild;
-            }
-            else {
-                node = node->rchild;
-            }
+        ret = tree->cmp_cb(key, node->data);
+        if (0 == ret) {
+            return node->data;
         }
-        else if (idx < node->idx) {
+        else if (ret < 0) {
             node = node->lchild;
         }
         else {
@@ -947,6 +936,7 @@ int rbt_destroy(rbt_tree_t *tree, mem_dealloc_cb_t dealloc, void *args)
         parent = stack_gettop(stack);
         if (NULL == parent) {
             dealloc(args, node->data);
+            tree->dealloc(tree->pool, node->key.k);
             tree->dealloc(tree->pool, node);
             tree->dealloc(tree->pool, tree->sentinel);
             tree->dealloc(tree->pool, tree);
@@ -958,6 +948,7 @@ int rbt_destroy(rbt_tree_t *tree, mem_dealloc_cb_t dealloc, void *args)
             && (tree->sentinel != parent->rchild))
         {
             dealloc(args, node->data);
+            tree->dealloc(tree->pool, node->key.k);
             tree->dealloc(tree->pool, node);
             node = parent->rchild;
             continue;
@@ -970,12 +961,14 @@ int rbt_destroy(rbt_tree_t *tree, mem_dealloc_cb_t dealloc, void *args)
             stack_pop(stack);
 
             dealloc(args, node->data);
+            tree->dealloc(tree->pool, node->key.k);
             tree->dealloc(tree->pool, node);     /* 出栈结点下一次循环时释放 */
 
             node = parent;
             parent = stack_gettop(stack);
             if (NULL == parent) {
                 dealloc(args, node->data);
+                tree->dealloc(tree->pool, node->key.k);
                 tree->dealloc(tree->pool, node);
                 tree->dealloc(tree->pool, tree->sentinel);
                 tree->dealloc(tree->pool, tree);
@@ -986,6 +979,7 @@ int rbt_destroy(rbt_tree_t *tree, mem_dealloc_cb_t dealloc, void *args)
 
         if (NULL != node) {  /* 释放上面出栈的结点 */
             dealloc(args, node->data);
+            tree->dealloc(tree->pool, node->key.k);
             tree->dealloc(tree->pool, node);
         }
         node = parent->rchild;

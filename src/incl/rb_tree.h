@@ -21,13 +21,6 @@ typedef enum
     , RBT_NODE_EXIST                /* 结点存在 */
 } rbt_ret_e;
 
-/* 主键KV */
-typedef struct
-{
-    void *v;                        /* 主键值 */
-    size_t len;                     /* 主键长度 */
-} rbt_key_t;
-
 /* 选项 */
 typedef struct
 {
@@ -47,7 +40,7 @@ typedef struct
 /* 结点结构 */
 typedef struct _rbt_node_t
 {
-    int64_t idx;                    /* 索引值(非唯一值) */
+    key_obj_t key;                  /* 主键(唯一值) */
     int32_t color;                  /* 结点颜色: RBT_COLOR_BLACK(黑) 或 RBT_COLOR_RED(红) */
     struct _rbt_node_t *parent;     /* 父节点 */
     struct _rbt_node_t *lchild;     /* 左孩子节点 */
@@ -62,11 +55,9 @@ typedef struct
     rbt_node_t *root;               /* 根节点 */
     rbt_node_t *sentinel;           /* 哨兵节点 */
 
-    key_cb_t key_cb;                /* KEY值生成函数 */
-    cmp_cb_t cmp_cb;            /* 主键比较函数 */
+    cmp_cb_t cmp_cb;                /* 主键比较函数 */
 
-    struct
-    {
+    struct {
         void *pool;                 /* 内存池 */
         mem_alloc_cb_t alloc;       /* 申请内存 */
         mem_dealloc_cb_t dealloc;   /* 释放内存 */
@@ -84,8 +75,7 @@ typedef struct
 #define rbt_set_lchild(tree, node, left) \
 { \
     (node)->lchild = (left); \
-    if(tree->sentinel != left) \
-    { \
+    if(tree->sentinel != left) { \
         (left)->parent = (node); \
     } \
 } 
@@ -94,8 +84,7 @@ typedef struct
 #define rbt_set_rchild(tree, node, right) \
 { \
     (node)->rchild = (right); \
-    if(tree->sentinel != right) \
-    { \
+    if(tree->sentinel != right) { \
         (right)->parent = (node); \
     } \
 } 
@@ -103,20 +92,18 @@ typedef struct
 /* 设置孩子节点 */
 #define rbt_set_child(tree, node, type, child) \
 { \
-    if(RBT_LCHILD == type) \
-    { \
+    if(RBT_LCHILD == type) { \
         rbt_set_lchild(tree, node, child); \
     } \
-    else \
-    { \
+    else { \
         rbt_set_rchild(tree, node, child); \
     } \
 } 
 
-rbt_tree_t *rbt_creat(rbt_opt_t *opt, key_cb_t key_cb, cmp_cb_t cmp_cb);
-int rbt_insert(rbt_tree_t *tree, void *key, int key_len, void *data);
-int rbt_delete(rbt_tree_t *tree, void *key, int key_len, void **data);
-void *rbt_query(rbt_tree_t *tree, void *key, int key_len);
+rbt_tree_t *rbt_creat(rbt_opt_t *opt, cmp_cb_t cmp_cb);
+int rbt_insert(rbt_tree_t *tree, void *key, size_t size, void *data);
+int rbt_delete(rbt_tree_t *tree, void *key, size_t size, void **data);
+void *rbt_query(rbt_tree_t *tree, void *key, size_t size);
 int rbt_print(rbt_tree_t *tree);
 int rbt_trav(rbt_tree_t *tree, trav_cb_t proc, void *args);
 void *rbt_find(rbt_tree_t *tree, find_cb_t find, void *args);

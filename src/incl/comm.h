@@ -111,6 +111,13 @@ static inline unsigned long cpu_ticket_get(void)
     return ticket.tickets;
 }
 
+/* 主键对象 */
+typedef struct
+{
+    void *k;    /* 主键 */
+    size_t l;   /* 主键长(当为字串时，其为字串长+1) */
+} key_obj_t;
+
 /* 将秒折算成: D天H时M分S秒 */
 #define TM_DAY(sec)         ((sec) / (86400))               /* 天 */
 #define TM_HOUR(sec)        (((sec) % (86400))/(3600))      /* 时 */
@@ -129,7 +136,7 @@ static inline unsigned long cpu_ticket_get(void)
 #endif
 
 typedef int64_t (*key_cb_t)(const void *pkey, size_t pkey_len);
-typedef int (*cmp_cb_t)(const void *data, const void *orig);
+typedef int (*cmp_cb_t)(const void *key1, const void *key2);
 typedef int (*trav_cb_t)(void *data, void *args);
 typedef bool (*find_cb_t)(void *data, void *args);
 
