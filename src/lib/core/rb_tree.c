@@ -868,13 +868,17 @@ int rbt_print(rbt_tree_t *tree)
  **注意事项:
  **作    者: # Qifeng.zou # 2013.12.23 #
  ******************************************************************************/
-void *rbt_query(rbt_tree_t *tree, void *key, size_t size)
+void *rbt_query(rbt_tree_t *tree, void *_key, size_t size)
 {
     int ret;
+    key_obj_t key;
     rbt_node_t *node = tree->root;
 
+    key.k = _key;
+    key.l = size;
+
     while (tree->sentinel != node) {
-        ret = tree->cmp_cb(key, &node->key);
+        ret = tree->cmp_cb(&key, &node->key);
         if (0 == ret) {
             return node->data;
         }
