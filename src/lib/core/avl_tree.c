@@ -234,8 +234,8 @@ static int avl_insert_right(avl_tree_t *tree,
             *taller = false;
             return AVL_ERR;
         }
-        memcpy(add->key.k, key->k, key->l);
         add->key.l = key->l;
+        memcpy(add->key.k, key->k, key->l);
         add->bf = AVL_EH;
         add->data = data;
 
@@ -308,8 +308,8 @@ static int avl_insert_left(avl_tree_t *tree,
             *taller = false;
             return AVL_ERR;
         }
-        memcpy(add->key.k, key->k, key->l);
         add->key.l = key->l;
+        memcpy(add->key.k, key->k, key->l);
         add->bf = AVL_EH;
         add->data = data;
 

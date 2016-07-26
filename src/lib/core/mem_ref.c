@@ -218,7 +218,7 @@ int mem_ref_decr(void *addr)
 {
     int idx, cnt;
     mem_ref_slot_t *slot;
-    mem_ref_item_t *item;
+    mem_ref_item_t *item, *temp;
     mem_ref_cntx_t *ctx = &g_mem_ref_ctx;
 
     idx = (uint64_t)addr % MEM_REF_SLOT_NUM;
@@ -234,7 +234,7 @@ int mem_ref_decr(void *addr)
 
     cnt = --item->count;
     if (0 == cnt) {
-        rbt_delete(slot->tab, addr, sizeof(addr), (void **)&item);
+        rbt_delete(slot->tab, (void *)&addr, sizeof(addr), (void **)&temp);
         spin_unlock(&slot->lock);
         item->dealloc(item->pool, item->addr); // 释放被管理的内存
         free(item);

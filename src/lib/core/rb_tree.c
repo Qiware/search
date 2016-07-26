@@ -229,7 +229,7 @@ static rbt_node_t *rbt_creat_node(rbt_tree_t *tree,
         return NULL;
     }
     node->key.l = key->l;
-    memcpy(node->key.k, key, key->l);
+    memcpy(node->key.k, key->k, key->l);
     node->lchild = tree->sentinel;
     node->rchild = tree->sentinel;
     if (NULL != parent) {
@@ -874,7 +874,7 @@ void *rbt_query(rbt_tree_t *tree, void *key, size_t size)
     rbt_node_t *node = tree->root;
 
     while (tree->sentinel != node) {
-        ret = tree->cmp_cb(key, node->data);
+        ret = tree->cmp_cb(key, &node->key);
         if (0 == ret) {
             return node->data;
         }
