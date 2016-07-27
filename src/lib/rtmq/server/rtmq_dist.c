@@ -158,7 +158,7 @@ static int rtmq_dsvr_dist_data_hdl(rtmq_cntx_t *ctx, rtmq_dsvr_t *dsvr)
 
     for (d=0; d<ctx->conf.distq_num; ++d) {
         /* > 计算弹出个数(WARNNING: 勿将共享变量参与MIN()三目运算, 否则可能出现严重错误!!!) */
-        num = MIN(ring_get_num(ctx->distq[d]), RTRD_DISP_POP_NUM);
+        num = MIN(ring_used(ctx->distq[d]), RTRD_DISP_POP_NUM);
         if (0 == num) {
             continue;
         }

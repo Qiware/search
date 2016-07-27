@@ -721,10 +721,8 @@ static int rtmq_rsvr_sys_mesg_proc(rtmq_cntx_t *ctx,
 static int rtmq_rsvr_exp_mesg_proc(rtmq_cntx_t *ctx,
         rtmq_rsvr_t *rsvr, rtmq_sck_t *sck, void *data)
 {
+    ring_t *rq;
     int rqid, len;
-    queue_t *rq;
-    rtmq_recv_item_t *item;
-    rtmq_snap_t *recv = &sck->recv;
     rtmq_header_t *head = (rtmq_header_t *)data;
 
     if (!sck->auth_succ) {
@@ -745,21 +743,10 @@ static int rtmq_rsvr_exp_mesg_proc(rtmq_cntx_t *ctx,
     rqid = rand() % ctx->conf.recvq_num;
     rq = ctx->recvq[rqid];
 
-    item = (rtmq_recv_item_t *)queue_malloc(rq, sizeof(rtmq_recv_item_t));
-    if (NULL == item) {
-        ++rsvr->drop_total;
-        log_error(rsvr->log, "Devid isn't right! nid:%d/%d", head->nid, sck->nid);
-        return RTMQ_ERR;
-    }
+    mem_ref_incr(data); /* 引用技术+1 */
 
-    item->base = recv->base;
-    item->data = data;
-
-    mem_ref_incr(item->base); /* 引用技术+1 */
-
-    if (queue_push(rq, item)) {
-        mem_ref_decr(item->base); /* 引用技术-1 */
-        queue_dealloc(rq, item);
+    if (ring_push(rq, data)) {
+        mem_ref_decr(data); /* 引用技术-1 */
         ++rsvr->drop_total; /* 丢弃计数 */
         rtmq_rsvr_cmd_proc_all_req(ctx, rsvr);
 
@@ -1600,7 +1587,7 @@ static int rtmq_rsvr_dist_data(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr)
 
     while (1) {
         /* > 弹出队列数据 */
-        num = MIN(ring_get_num(sendq), RTRD_POP_MAX_NUM);
+        num = MIN(ring_used(sendq), RTRD_POP_MAX_NUM);
         if (0 == num) {
             break;
         }

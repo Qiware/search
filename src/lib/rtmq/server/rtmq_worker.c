@@ -210,10 +210,9 @@ static int rtmq_worker_cmd_proc_req_hdl(rtmq_cntx_t *ctx, rtmq_worker_t *worker,
 {
 #define RTRD_WORK_POP_NUM     (1024)
     int idx, num;
-    queue_t *rq;
+    ring_t *rq;
     rtmq_reg_t *reg;
     rtmq_header_t *head;
-    rtmq_recv_item_t *item;
     void *addr[RTRD_WORK_POP_NUM];
     const rtmq_cmd_proc_req_t *work_cmd = (const rtmq_cmd_proc_req_t *)&cmd->param;
 
@@ -222,32 +221,30 @@ static int rtmq_worker_cmd_proc_req_hdl(rtmq_cntx_t *ctx, rtmq_worker_t *worker,
 
     while (1) {
         /* > 从接收队列获取数据 */
-        num = MIN(queue_used(rq), RTRD_WORK_POP_NUM);
+        num = MIN(ring_used(rq), RTRD_WORK_POP_NUM);
         if (0 == num) {
             return RTMQ_OK;
         }
 
-        num = queue_mpop(rq, addr, num);
+        num = ring_mpop(rq, addr, num);
         if (0 == num) {
             continue;
         }
 
         /* > 依次处理各条数据 */
         for (idx=0; idx<num; ++idx) {
-            item = (rtmq_recv_item_t *)addr[idx];
-            head = (rtmq_header_t *)item->data;
+            head = (rtmq_header_t *)addr[idx];
 
             reg = avl_query(ctx->reg, &head->type, sizeof(head->type));
             if (NULL == reg) {
-                mem_ref_decr(item->base);
-                queue_dealloc(rq, item);
+                mem_ref_decr(addr[idx]);
                 ++worker->drop_total;   /* 丢弃计数 */
                 log_trace(ctx->log, "Drop data! type:%u", head->type);
                 continue;
             }
 
             if (reg->proc(head->type, head->nid,
-                    item->data + sizeof(rtmq_header_t), head->length, reg->param))
+                    addr[idx] + sizeof(rtmq_header_t), head->length, reg->param))
             {
                 ++worker->err_total;    /* 错误计数 */
             }
@@ -256,8 +253,7 @@ static int rtmq_worker_cmd_proc_req_hdl(rtmq_cntx_t *ctx, rtmq_worker_t *worker,
             }
 
             /* > 释放内存空间 */
-            mem_ref_decr(item->base);
-            queue_dealloc(rq, item);
+            mem_ref_decr(addr[idx]);
         }
     }
 
