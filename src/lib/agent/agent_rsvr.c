@@ -988,7 +988,7 @@ static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
 
     sendq = ctx->sendq[rsvr->id];
     while (1) {
-        num = MIN(ring_get_num(sendq), AGT_RSVR_DIST_POP_NUM);
+        num = MIN(ring_used(sendq), AGT_RSVR_DIST_POP_NUM);
         if (0 == num) {
             break;
         }
