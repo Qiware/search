@@ -227,14 +227,21 @@ int rtmq_node_to_svr_map_rand(rtmq_cntx_t *ctx, int nid)
  ******************************************************************************/
 int rtmq_sub_mgr_init(rtmq_sub_mgr_t *sub)
 {
-    /* > 创建订阅表 */
-    sub->tab = avl_creat(NULL, (cmp_cb_t)cmp_cb_int32);
-    if (NULL == sub->tab) {
+    /* > 创建ONE订阅表 */
+    pthread_rwlock_init(&sub->sub_one_lock, NULL);
+
+    sub->sub_one_tab = avl_creat(NULL, (cmp_cb_t)cmp_cb_int32);
+    if (NULL == sub->sub_one_tab) {
         return RTMQ_ERR;
     }
 
-    /* > 初始化读写锁 */
-    pthread_rwlock_init(&sub->lock, NULL);
+    /* > 创建ALL订阅表 */
+    pthread_rwlock_init(&sub->sub_all_lock, NULL);
+
+    sub->sub_all_tab = avl_creat(NULL, (cmp_cb_t)cmp_cb_int32);
+    if (NULL == sub->sub_all_tab) {
+        return RTMQ_ERR;
+    }
 
     return RTMQ_OK;
 }
@@ -252,32 +259,31 @@ int rtmq_sub_mgr_init(rtmq_sub_mgr_t *sub)
  ******************************************************************************/
 int rtmq_sub_query(rtmq_cntx_t *ctx, mesg_type_e type)
 {
-    int nid, idx;
+    int nid;
     rtmq_sub_node_t *node;
     rtmq_sub_list_t *list;
     rtmq_sub_mgr_t *sub = &ctx->sub_mgr;
 
-    pthread_rwlock_rdlock(&sub->lock);
-    list = avl_query(sub->tab, &type, sizeof(type));
+    pthread_rwlock_rdlock(&sub->sub_one_lock);
+    list = avl_query(sub->sub_one_tab, &type, sizeof(type));
     if ((NULL == list)
-        || (0 == vector_len(list->nodes)))
+        || (0 == list2_len(list->nodes)))
     {
-        pthread_rwlock_unlock(&sub->lock);
+        pthread_rwlock_unlock(&sub->sub_one_lock);
         log_debug(ctx->log, "No module sub this type! type:%d", type);
         return -1;
     }
 
-    idx = Random()%vector_len(list->nodes);
-    node = (rtmq_sub_node_t *)vector_get(list->nodes, idx);
+    node = (rtmq_sub_node_t *)list2_roll(list->nodes);
     if (NULL == node) {
-        pthread_rwlock_unlock(&sub->lock);
+        pthread_rwlock_unlock(&sub->sub_one_lock);
         log_debug(ctx->log, "Get sub node failed! type:%d", type);
         return -1;
     }
 
     nid = node->nid;
 
-    pthread_rwlock_unlock(&sub->lock);
+    pthread_rwlock_unlock(&sub->sub_one_lock);
 
     log_debug(ctx->log, "Node [%d] has sub type [%d]!", nid, type);
 

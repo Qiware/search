@@ -19,8 +19,10 @@ typedef enum
     , RTMQ_CMD_KPALIVE_REQ              /* 链路保活请求 */
     , RTMQ_CMD_KPALIVE_RSP              /* 链路保活应答 */
 
-    , RTMQ_CMD_SUB_REQ                  /* 订阅请求 */
-    , RTMQ_CMD_SUB_RSP                  /* 订阅应答 */
+    , RTMQ_CMD_SUB_ONE_REQ              /* 订阅请求: 将消息只发送给一个用户 */
+    , RTMQ_CMD_SUB_ONE_RSP              /* 订阅应答 */
+    , RTMQ_CMD_SUB_ALL_REQ              /* 订阅请求: 将消息发送给所有用户 */
+    , RTMQ_CMD_SUB_ALL_RSP              /* 订阅应答 */
 
     , RTMQ_CMD_ADD_SCK                  /* 接收客户端数据-请求 */
     , RTMQ_CMD_DIST_REQ                 /* 分发任务请求 */

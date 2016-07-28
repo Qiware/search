@@ -1001,7 +1001,7 @@ static int rtmq_add_sub_req(rtmq_reg_t *item, rtmq_proxy_ssvr_t *ssvr)
     /* > 设置头部数据 */
     head = (rtmq_header_t *)addr;
 
-    head->type = RTMQ_CMD_SUB_REQ;
+    head->type = RTMQ_CMD_SUB_ONE_REQ;
     head->nid = conf->nid;
     head->length = sizeof(rtmq_sub_req_t);
     head->flag = RTMQ_SYS_MESG;
