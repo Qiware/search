@@ -368,6 +368,49 @@ void *list2_find(list2_t *list, find_cb_t cb, void *args)
 }
 
 /******************************************************************************
+ **函数名称: list2_find_and_del
+ **功    能: 查找&删除满足条件的一个结点
+ **输入参数:
+ **     list: 链表对象
+ **     cb: 查找回调
+ **     args: 附加参数
+ **输出参数: NONE
+ **返    回: 挂载数据
+ **实现描述:
+ **注意事项:
+ **作    者: # Qifeng.zou # 2016.07.28 22:28:18 #
+ ******************************************************************************/
+void *list2_find_and_del(list2_t *list, find_cb_t cb, void *args)
+{
+    void *data;
+    list2_node_t *node, *tail;
+
+    node = list->head;
+    if (NULL != node) {
+        tail = node->prev;
+    }
+
+    for (; NULL != node; node = node->next) {
+        if (cb(node->data, args)) {
+            data = node->data;
+            --list->num;
+            if (0 == list->num) {
+                list->head = NULL;
+            }
+            else {
+                node->prev->next = node->next;
+                node->next->prev = node->prev;
+            }
+            list->dealloc(list->pool, node);
+            return data;
+        }
+        if (node == tail) { break; }
+    }
+
+    return NULL;
+}
+
+/******************************************************************************
  **函数名称: list2_roll
  **功    能: 滚动链表
  **输入参数:
@@ -390,4 +433,38 @@ void *list2_roll(list2_t *list)
     list->head = list->head->next;
 
     return data;
+}
+
+/******************************************************************************
+ **函数名称: list2_destroy
+ **功    能: 销毁链表
+ **输入参数:
+ **     list: 链表对象
+ **     dealloc: 内存回收
+ **     pool: 内存池
+ **输出参数: NONE
+ **返    回: 0:成功 !0:失败
+ **实现描述:
+ **注意事项:
+ **作    者: # Qifeng.zou # 2016.07.28 22:18:20 #
+ ******************************************************************************/
+void list2_destroy(list2_t *list, mem_dealloc_cb_t dealloc, void *pool)
+{
+    list2_node_t *curr, *next, *tail;
+
+    if (NULL == list->head) {
+        return;
+    }
+
+    tail = list->head->prev;
+    for (curr = list->head; NULL != curr; curr = next) {
+       next = curr->next;
+       dealloc(pool, curr->data);
+       list->dealloc(list->pool, curr);
+       if (curr == tail) {
+           break;
+       }
+    }
+
+    list->dealloc(list->pool, list);
 }

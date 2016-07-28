@@ -32,6 +32,7 @@ typedef struct
     };
 } list2_t;
 
+#define list2_len(list) ((list)->num)
 list2_t *list2_creat(list2_opt_t *opt);
 int list2_lpush(list2_t *list, void *data);
 int list2_rpush(list2_t *list, void *data);
@@ -39,8 +40,10 @@ void *list2_lpop(list2_t *list);
 void *list2_rpop(list2_t *list);
 void *list2_delete(list2_t *list, list2_node_t *node);
 void *list2_roll(list2_t *list);
+void list2_destroy(list2_t *list, mem_dealloc_cb_t dealloc, void *pool);
 
 int list2_trav(list2_t *list, trav_cb_t cb, void *args);
 void *list2_find(list2_t *list, find_cb_t cb, void *args);
+void *list2_find_and_del(list2_t *list, find_cb_t cb, void *args);
 
 #endif /*__LIST2_H__*/
