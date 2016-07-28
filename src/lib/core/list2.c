@@ -366,3 +366,28 @@ void *list2_find(list2_t *list, find_cb_t cb, void *args)
 
     return NULL;
 }
+
+/******************************************************************************
+ **函数名称: list2_roll
+ **功    能: 滚动链表
+ **输入参数:
+ **     list: 链表对象
+ **输出参数: NONE
+ **返    回: 链表头挂载数据
+ **实现描述:
+ **注意事项:
+ **作    者: # Qifeng.zou # 2016.07.28 13:36:16 #
+ ******************************************************************************/
+void *list2_roll(list2_t *list)
+{
+    void *data;
+
+    if (NULL == list->head) {
+        return NULL;
+    }
+
+    data = list->head->data;
+    list->head = list->head->next;
+
+    return data;
+}
