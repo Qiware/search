@@ -104,7 +104,7 @@ rbt_tree_t *rbt_creat(rbt_opt_t *opt, cmp_cb_t cmp_cb);
 int rbt_insert(rbt_tree_t *tree, void *key, size_t size, void *data);
 int rbt_delete(rbt_tree_t *tree, void *key, size_t size, void **data);
 void *rbt_query(rbt_tree_t *tree, void *key, size_t size);
-int rbt_print(rbt_tree_t *tree);
+int rbt_print(rbt_tree_t *tree, print_cb_t print);
 int rbt_trav(rbt_tree_t *tree, trav_cb_t proc, void *args);
 void *rbt_find(rbt_tree_t *tree, find_cb_t find, void *args);
 int rbt_destroy(rbt_tree_t *tree, mem_dealloc_cb_t dealloc, void *args);

@@ -701,7 +701,8 @@ static int rbt_delete_fixup(rbt_tree_t *tree, rbt_node_t *node)
  **注意事项:
  **作    者: # Qifeng.zou # 2013.12.17 #
  ******************************************************************************/
-static void rbt_print_head(const rbt_tree_t *tree, const rbt_node_t *node, int depth)
+static void rbt_print_head(const rbt_tree_t *tree,
+        const rbt_node_t *node, int depth, print_cb_t print)
 {
     int idx;
     rbt_node_t *parent = node->parent;
@@ -736,9 +737,15 @@ static void rbt_print_head(const rbt_tree_t *tree, const rbt_node_t *node, int d
         && (tree->sentinel == node->rchild))
     {
         //fprintf(stderr, "<%03ld:%c/>\n", node->idx, node->color);
+        fprintf(stderr, "<");
+        print(node->key.k);
+        fprintf(stderr, ":%c/>\n", node->color);
     }
     else {
         //fprintf(stderr, "<%03ld:%c>\n", node->idx, node->color);
+        fprintf(stderr, "<");
+        print(node->key.k);
+        fprintf(stderr, ":%c>\n", node->color);
     }
 }
 
@@ -746,6 +753,7 @@ static void rbt_print_head(const rbt_tree_t *tree, const rbt_node_t *node, int d
  **函数名称: rbt_print_tail
  **功    能: 打印结点尾(内部接口)
  **输入参数:
+ **     tree: 红黑树
  **     node: 被打印的结点
  **     depth: 结点深度
  **输出参数: NONE
@@ -754,7 +762,8 @@ static void rbt_print_head(const rbt_tree_t *tree, const rbt_node_t *node, int d
  **注意事项:
  **作    者: # Qifeng.zou # 2013.12.17 #
  ******************************************************************************/
-static void rbt_print_tail(const rbt_tree_t *tree, const rbt_node_t *node, int depth)
+static void rbt_print_tail(const rbt_tree_t *tree,
+        const rbt_node_t *node, int depth, print_cb_t print)
 {
     int idx;
 
@@ -773,6 +782,9 @@ static void rbt_print_tail(const rbt_tree_t *tree, const rbt_node_t *node, int d
     }
 
     //fprintf(stderr, "</%03ld>\n", node->idx);
+    fprintf(stderr, "</");
+    print(node->key.k);
+    fprintf(stderr, ">\n");
 }
 
 /******************************************************************************
@@ -780,13 +792,15 @@ static void rbt_print_tail(const rbt_tree_t *tree, const rbt_node_t *node, int d
  **功    能: 打印红黑树(外部接口)
  **输入参数:
  **     tree: 红黑树
+ **     print: 打印结点主键
  **输出参数: NONE
  **返    回: VOID
  **实现描述:
  **注意事项:
+ **     回调print只打印主键内容
  **作    者: # Qifeng.zou # 2013.12.17 #
  ******************************************************************************/
-int rbt_print(rbt_tree_t *tree)
+int rbt_print(rbt_tree_t *tree, print_cb_t print)
 {
     int depth = 0;
     Stack_t _stack, *stack = &_stack;
@@ -802,13 +816,13 @@ int rbt_print(rbt_tree_t *tree)
             rbt_assert(tree, node);
             depth = stack_depth(stack);
             stack_push(stack, node);
-            rbt_print_head(tree, node, depth);   /* 打印头：入栈时打印头 出栈时打印尾 */
+            rbt_print_head(tree, node, depth, print);   /* 打印头：入栈时打印头 出栈时打印尾 */
             node = node->lchild;
         }
 
         /* 打印最左端的子孙结点 */
         depth = stack_depth(stack);
-        rbt_print_head(tree, node, depth);
+        rbt_print_head(tree, node, depth, print);
 
         /* 最左端的孩子有右孩子 */
         if (tree->sentinel != node->rchild) {
@@ -818,7 +832,7 @@ int rbt_print(rbt_tree_t *tree)
         }
 
         /* 最左端的孩子无右孩子 */
-        rbt_print_tail(tree, node, depth);
+        rbt_print_tail(tree, node, depth, print);
 
         parent = stack_gettop(stack);
         if (NULL == parent) {
@@ -840,7 +854,7 @@ int rbt_print(rbt_tree_t *tree)
             stack_pop(stack);
 
             depth = stack_depth(stack);
-            rbt_print_tail(tree, parent, depth);    /* 打印尾：出栈时打印尾 入栈时已打印头 */
+            rbt_print_tail(tree, parent, depth, print);    /* 打印尾：出栈时打印尾 入栈时已打印头 */
 
             node = parent;
             parent = stack_gettop(stack);
