@@ -2,6 +2,7 @@
 #include "redo.h"
 #include "mesg.h"
 #include "command.h"
+#include "mem_ref.h"
 #include "agent_worker.h"
 
 #define AGT_WSVR_POP_NUM    (1024) /* 一次最多弹出数据个数 */
@@ -161,13 +162,13 @@ static int agent_worker_proc_data_hdl(agent_cntx_t *ctx, agent_worker_t *worker)
         rqid %= conf->agent_num;
 
         /* 计算弹出个数(WARN: 千万勿将共享变量参与"?:"三目运算, 否则可能出现严重错误!!!!且很难找出原因!) */
-        num = MIN(queue_used(ctx->recvq[rqid]), AGT_WSVR_POP_NUM);
+        num = MIN(ring_used(ctx->recvq[rqid]), AGT_WSVR_POP_NUM);
         if (0 == num) {
             continue;
         }
 
         /* > 从队列中取数据 */
-        num = queue_mpop(ctx->recvq[rqid], addr, num);
+        num = ring_mpop(ctx->recvq[rqid], addr, num);
         if (0 == num) {
             continue;
         }
@@ -184,7 +185,7 @@ static int agent_worker_proc_data_hdl(agent_cntx_t *ctx, agent_worker_t *worker)
                     head->length + sizeof(mesg_header_t), reg->args);
 
             /* 3. 释放内存空间 */
-            queue_dealloc(ctx->recvq[rqid], addr[idx]);
+            mem_ref_decr(addr[idx]);
         }
     }
 

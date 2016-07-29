@@ -82,7 +82,7 @@ typedef struct
     agent_sid_list_t *connections;          /* SID集合(注:数组长度与Agent相等) */
 
     queue_t **connq;                        /* 连接队列(注:数组长度与Agent相等) */
-    queue_t **recvq;                        /* 接收队列(注:数组长度与Agent相等) */
+    ring_t **recvq;                         /* 接收队列(注:数组长度与Agent相等) */
     ring_t **sendq;                         /* 发送队列(注:数组长度与Agent相等) */
 } agent_cntx_t;
 

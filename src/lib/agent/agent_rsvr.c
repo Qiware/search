@@ -5,6 +5,7 @@
 #include "redo.h"
 #include "utils.h"
 #include "agent.h"
+#include "mem_ref.h"
 #include "command.h"
 #include "xml_tree.h"
 #include "hash_alg.h"
@@ -567,7 +568,7 @@ static int agent_rsvr_del_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *
     CLOSE(sck->fd);
     list_destroy(extra->send_list, (mem_dealloc_cb_t)mem_dealloc, NULL);
     if (sck->recv.addr) {
-        queue_dealloc(ctx->recvq[rsvr->id], sck->recv.addr);
+        mem_ref_decr(sck->recv.addr);
     }
     FREE(sck->extra);
     FREE(sck);
@@ -770,7 +771,8 @@ static int agent_recv_post_hdl(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *
     if (MSG_FLAG_USR == extra->head->flag) {
         log_info(rsvr->log, "Push into user data queue!");
 
-        queue_push(ctx->recvq[rsvr->id], sck->recv.addr);
+        mem_ref_incr(sck->recv.addr);
+        ring_push(ctx->recvq[rsvr->id], sck->recv.addr);
         agent_rsvr_cmd_proc_req(ctx, rsvr, rand()%ctx->conf->worker_num); /* 发送处理命令 */
         return AGENT_OK;
     }
@@ -796,12 +798,14 @@ static int agent_recv_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
     int ret;
     mesg_header_t *head;
     socket_snap_t *recv = &sck->recv;
+    queue_conf_t *conf = &ctx->conf->recvq;
     agent_socket_extra_t *extra = (agent_socket_extra_t *)sck->extra;
 
     for (;;) {
         switch (recv->phase) {
             case SOCK_PHASE_RECV_INIT: /* 1. 分配空间 */
-                recv->addr = queue_malloc(ctx->recvq[rsvr->id], queue_size(ctx->recvq[0]));
+                recv->addr = mem_ref_alloc(conf->size,
+                        NULL, (mem_alloc_cb_t)mem_alloc, (mem_dealloc_cb_t)mem_dealloc);
                 if (NULL == recv->addr) {
                     log_error(rsvr->log, "Alloc from queue failed!");
                     return AGENT_ERR;
@@ -841,7 +845,7 @@ static int agent_recv_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
                     case AGENT_SCK_AGAIN:
                         return ret; /* 下次继续处理 */
                     default:
-                        queue_dealloc(ctx->recvq[rsvr->id], recv->addr);
+                        mem_ref_decr(recv->addr);
                         recv->addr = NULL;
                         return ret; /* 异常情况 */
                 }
@@ -864,7 +868,7 @@ static int agent_recv_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
                     case AGENT_SCK_AGAIN:
                         return ret; /* 下次继续处理 */
                     default:
-                        queue_dealloc(ctx->recvq[rsvr->id], recv->addr);
+                        mem_ref_decr(recv->addr);
                         recv->addr = NULL;
                         return ret; /* 异常情况 */
                 }
@@ -879,7 +883,7 @@ static int agent_recv_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
                         recv->addr = NULL;
                         continue; /* 接收下一条数据 */
                 }
-                queue_dealloc(ctx->recvq[rsvr->id], recv->addr);
+                mem_ref_decr(recv->addr);
                 recv->addr = NULL;
                 return AGENT_ERR;
         }
