@@ -613,7 +613,7 @@ static int agent_recv_head(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
             recv->off += n;
             continue;
         }
-        else if (0 == n) {
+        else if (0 == n || ECONNRESET == errno) {
             log_info(rsvr->log, "Client disconnected. errmsg:[%d] %s! fd:[%d] n:[%d/%d]",
                     errno, strerror(errno), sck->fd, n, left);
             return AGENT_SCK_CLOSE;
@@ -621,11 +621,9 @@ static int agent_recv_head(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
         else if ((n < 0) && (EAGAIN == errno)) {
             return AGENT_SCK_AGAIN; /* 等待下次事件通知 */
         }
-
-        if (EINTR == errno) {
+        else if (EINTR == errno) {
             continue; 
         }
-
         log_error(rsvr->log, "errmsg:[%d] %s. fd:[%d]", errno, strerror(errno), sck->fd);
         return AGENT_ERR;
     }
