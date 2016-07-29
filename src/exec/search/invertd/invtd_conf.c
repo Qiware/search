@@ -12,7 +12,7 @@
 #include "invtd_conf.h"
 
 static int invtd_conf_load_comm(xml_tree_t *xml, invtd_conf_t *conf);
-static int invtd_conf_load_frwder(xml_tree_t *xml, rtmq_proxy_conf_t *conf, int nid);
+static int invtd_conf_load_frwder(xml_tree_t *xml, rtmq_proxy_conf_t *conf, int nid, const char *path);
 
 /******************************************************************************
  **函数名称: invtd_conf_load
@@ -51,7 +51,7 @@ int invtd_conf_load(const char *path, invtd_conf_t *conf, log_cycle_t *log)
     }
 
     /* > 加载DownStream配置 */
-    if (invtd_conf_load_frwder(xml, &conf->frwder, conf->nid)) {
+    if (invtd_conf_load_frwder(xml, &conf->frwder, conf->nid, conf->path)) {
         xml_destroy(xml);
         return INVT_ERR_CONF;
     }
@@ -73,9 +73,12 @@ int invtd_conf_load(const char *path, invtd_conf_t *conf, log_cycle_t *log)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.05.08 #
  ******************************************************************************/
-static int invtd_conf_load_frwder(xml_tree_t *xml, rtmq_proxy_conf_t *conf, int nid)
+static int invtd_conf_load_frwder(xml_tree_t *xml,
+        rtmq_proxy_conf_t *conf, int nid, const char *path)
 {
     xml_node_t *parent, *node;
+
+    snprintf(conf->path, sizeof(conf->path), "%s", path);
 
     parent = xml_query(xml, ".INVERTD.FRWDER");
     if (NULL == parent) {
@@ -247,6 +250,7 @@ static int invtd_conf_load_frwder(xml_tree_t *xml, rtmq_proxy_conf_t *conf, int 
 static int invtd_conf_load_comm(xml_tree_t *xml, invtd_conf_t *conf)
 {
     xml_node_t *node;
+    char path[FILE_LINE_MAX_LEN];
 
     /* > 结点ID */
     node = xml_query(xml, ".INVERTD.ID");
@@ -255,6 +259,9 @@ static int invtd_conf_load_comm(xml_tree_t *xml, invtd_conf_t *conf)
     }
 
     conf->nid = atoi(node->value.str);
+
+    getcwd(path, sizeof(path));
+    snprintf(conf->path, sizeof(conf->path), "%s/../temp/invertd/%d", path, conf->nid);
 
     /* > 倒排表长度 */
     node = xml_query(xml, ".INVERTD.INVT_TAB.MAX");
