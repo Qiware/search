@@ -279,11 +279,13 @@ int mem_ref_decr(void *addr)
         pthread_rwlock_wrlock(&ctx->lock);
         if (0 == item->count) {
             rbt_delete(ctx->tab, (void *)&key, sizeof(key), (void **)&temp);
+            pthread_rwlock_unlock(&ctx->lock);
+
+            item->dealloc(item->pool, item->addr); // 释放被管理的内存
+            free(item);
+            return 0;
         }
         pthread_rwlock_unlock(&ctx->lock);
-
-        item->dealloc(item->pool, item->addr); // 释放被管理的内存
-        free(item);
         return 0;
     }
 
