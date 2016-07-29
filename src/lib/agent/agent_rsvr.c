@@ -769,7 +769,6 @@ static int agent_recv_post_hdl(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *
     if (MSG_FLAG_USR == extra->head->flag) {
         log_info(rsvr->log, "Push into user data queue!");
 
-        mem_ref_incr(sck->recv.addr);
         ring_push(ctx->recvq[rsvr->id], sck->recv.addr);
         agent_rsvr_cmd_proc_req(ctx, rsvr, rand()%ctx->conf->worker_num); /* 发送处理命令 */
         return AGENT_OK;
