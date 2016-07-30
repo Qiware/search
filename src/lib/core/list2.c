@@ -24,26 +24,25 @@
 void list2_assert(list2_t *list)
 {
     int num = 0;
-    list2_node_t *curr = list->head, *tail;
+    list2_node_t *curr;
 
-    if (NULL == curr) {
-        if (list->num) {
-            abort();
-        }
+    if (NULL == list->head) {
+        if (list->num) { abort(); }
         return;
     }
 
-    tail = list->head->prev;
-    while (tail != curr) {
+    curr = list->head;
+    do {
         ++num;
         curr = curr->next;
-    }
+        if (NULL == curr->data
+            || NULL == curr->prev
+            || NULL == curr->next) {
+            abort();
+        }
+    } while (curr != list->head);
 
-    if (num != list->num
-        || ((list->num > 0) && (NULL == list->head->prev)))
-    {
-        abort();
-    }
+    if (num != list->num) { abort(); }
 }
 
 /******************************************************************************
