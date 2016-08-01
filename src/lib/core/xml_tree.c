@@ -297,7 +297,7 @@ int xml_fwrite(xml_tree_t *xml, const char *fname)
 
     fp = fopen(fname, "wb");
     if (NULL == fp) {
-        log_error(xml->log, "Call fopen() Fail![%s]", fname);
+        log_error(xml->log, "errmsg:[%d] %s! fname:%s", errno, strerror(errno), fname);
         return XML_ERR_FOPEN;
     }
 

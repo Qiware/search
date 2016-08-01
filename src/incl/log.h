@@ -82,7 +82,7 @@ const char *log_get_str(int level);
 log_cycle_t *log_init(int level, const char *path);
 #define log_set_level(log, _level) { (log)->level = (_level); }
 void log_core(log_cycle_t *log, int level,
-                const char *fname, int lineno,
+                const char *fname, int lineno, const char *func,
                 const void *dump, int dumplen,
                 const char *fmt, ...);
 #define log_get_path(path, size, name) \
@@ -91,25 +91,25 @@ void log_core(log_cycle_t *log, int level,
 /* 日志模块接口 */
 #define log_fatal(log, ...) /* 撰写FATAL级别日志 */\
     if (NULL != (log) && LOG_LEVEL_FATAL >= (log)->level) \
-        log_core(log, LOG_LEVEL_FATAL, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
+        log_core(log, LOG_LEVEL_FATAL, __FILE__, __LINE__, __func__, NULL, 0, __VA_ARGS__)
 #define log_error(log, ...) /* 撰写ERROR级别日志 */\
     if (NULL != (log) && LOG_LEVEL_ERROR >= (log)->level) \
-        log_core(log, LOG_LEVEL_ERROR, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
+        log_core(log, LOG_LEVEL_ERROR, __FILE__, __LINE__, __func__, NULL, 0, __VA_ARGS__)
 #define log_warn(log, ...)  /* 撰写WARN级别日志 */\
     if (NULL != (log) && LOG_LEVEL_WARN >= (log)->level) \
-        log_core(log, LOG_LEVEL_WARN, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
+        log_core(log, LOG_LEVEL_WARN, __FILE__, __LINE__, __func__, NULL, 0, __VA_ARGS__)
 #define log_info(log, ...)  /* 撰写INFO级别日志 */\
     if (NULL != (log) && LOG_LEVEL_INFO >= (log)->level) \
-        log_core(log, LOG_LEVEL_INFO, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
+        log_core(log, LOG_LEVEL_INFO, __FILE__, __LINE__, __func__, NULL, 0, __VA_ARGS__)
 #define log_debug(log, ...) /* 撰写DEBUG级别日志 */\
     if (NULL != (log) && LOG_LEVEL_DEBUG >= (log)->level) \
-        log_core(log, LOG_LEVEL_DEBUG, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
+        log_core(log, LOG_LEVEL_DEBUG, __FILE__, __LINE__, __func__, NULL, 0, __VA_ARGS__)
 #define log_trace(log, ...) /* 撰写TRACE级别日志 */\
     if (NULL != (log) && LOG_LEVEL_TRACE >= (log)->level) \
-        log_core(log, LOG_LEVEL_TRACE, __FILE__, __LINE__, NULL, 0, __VA_ARGS__)
+        log_core(log, LOG_LEVEL_TRACE, __FILE__, __LINE__, __func__, NULL, 0, __VA_ARGS__)
 #define log_bin(log, addr, len, ...)   /* 撰写MEM-DUMP日志 */\
     if (NULL != (log) && LOG_LEVEL_TRACE >= (log)->level) \
-        log_core(log, LOG_LEVEL_TRACE, __FILE__, __LINE__, addr, len, __VA_ARGS__)
+        log_core(log, LOG_LEVEL_TRACE, __FILE__, __LINE__, __func__, addr, len, __VA_ARGS__)
 
 /* 内部接口 */
 int log_insert(log_svr_t *lsvr, log_cycle_t *log);

@@ -249,6 +249,7 @@ static int lwsd_search_cmd_hdl(lwsd_cntx_t *ctx,
 
     /* > 设置基本信息 */
     head->sid = user->sid;
+    head->nid = conf->nid;
     head->serial = tlz_gen_serail(conf->nid, 0, LWSD_REQ_SEQ(ctx));
 
     /* > 进行消息处理 */

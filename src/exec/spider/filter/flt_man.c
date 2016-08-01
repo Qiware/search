@@ -354,7 +354,7 @@ static int flt_man_add_seed_req_hdl(flt_cntx_t *ctx,
     flt_cmd_add_seed_rsp_t *rsp;
     flt_cmd_add_seed_req_t *req = (flt_cmd_add_seed_req_t *)buff;
 
-    log_debug(man->log, "Call %s(). Url:%s", __func__, req->url);
+    log_debug(man->log, "Url:%s", req->url);
 
     /* > 申请应答空间 */
     item = calloc(1, sizeof(flt_cmd_item_t));
@@ -405,8 +405,6 @@ static int flt_man_query_conf_req_hdl(flt_cntx_t *ctx,
     flt_cmd_t *cmd;
     flt_cmd_item_t *item;
     flt_cmd_conf_t *conf;
-
-    log_debug(man->log, "Call %s()!", __func__);
 
     /* > 申请应答空间 */
     item = calloc(1, sizeof(flt_cmd_item_t));

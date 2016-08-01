@@ -408,7 +408,7 @@ static int agent_reg_def_hdl(unsigned int type, char *buff, size_t len, void *ar
     static int total = 0;
     agent_cntx_t *ctx = (agent_cntx_t *)args;
 
-    log_info(ctx->log, "Call: %s()! total:%d", __func__, ++total);
+    log_info(ctx->log, "total:%d", ++total);
 
     return AGENT_OK;
 }

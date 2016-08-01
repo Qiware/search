@@ -559,7 +559,7 @@ static int agent_rsvr_del_conn(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *
 {
     agent_socket_extra_t *extra = sck->extra;
 
-    log_trace(rsvr->log, "Call %s()! fd:%d sid:%ld", __func__, sck->fd, extra->sid);
+    log_trace(rsvr->log, "fd:%d sid:%ld", sck->fd, extra->sid);
 
     /* > 剔除SID对象 */
     agent_sid_item_del(ctx, extra->sid);
@@ -829,7 +829,7 @@ static int agent_recv_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
                         head->serial = tlz_gen_serail( /* 获取流水号 */
                                 ctx->conf->nid, rsvr->id, ++rsvr->recv_seq);
 
-                        log_info(rsvr->log, "Call %s()! serial:%lu", __func__, head->serial);
+                        log_info(rsvr->log, "serial:%lu", head->serial);
 
                         if (head->length) {
                             recv->phase = SOCK_PHASE_READY_BODY; /* 设置下步 */
@@ -927,8 +927,7 @@ static int agent_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr, socket_t *sck)
             send->off = 0;
             send->total = hhead.length + sizeof(mesg_header_t);
 
-            log_trace(rsvr->log, "Call %s()! sid:%lu serial:%lu!",
-                    __func__, hhead.sid, hhead.serial);
+            log_trace(rsvr->log, "sid:%lu serial:%lu!", hhead.sid, hhead.serial);
         }
 
         /* 2. 发送数据 */

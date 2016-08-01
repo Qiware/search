@@ -361,8 +361,6 @@ static int crwl_man_query_conf_req_hdl(crwl_cntx_t *ctx,
     crwl_cmd_item_t *item;
     crwl_cmd_conf_t *conf;
 
-    log_debug(man->log, "Call %s()!", __func__);
-
     /* > 申请应答空间 */
     item = calloc(1, sizeof(crwl_cmd_item_t));
     if (NULL == item) {

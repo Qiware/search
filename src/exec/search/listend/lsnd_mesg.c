@@ -31,8 +31,8 @@ int lsnd_search_req_hdl(unsigned int type, void *data, int length, void *args)
     lsnd_cntx_t *ctx = (lsnd_cntx_t *)args;
     mesg_header_t *head = (mesg_header_t *)data; /* 消息头 */
 
-    log_debug(ctx->log, "Call %s()! sid:%lu serial:%lu length:%d body:%s!",
-            __func__, head->sid, head->serial, length, head->body);
+    log_debug(ctx->log, "sid:%lu serial:%lu length:%d body:%s!",
+            head->sid, head->serial, length, head->body);
 
     /* > 转换字节序 */
     MESG_HEAD_HTON(head, head);
@@ -65,7 +65,7 @@ int lsnd_search_rsp_hdl(int type, int orig, char *data, size_t len, void *args)
     MESG_HEAD_NTOH(head, &hhead);
 
     MESG_HEAD_PRINT(ctx->log, &hhead)
-    log_debug(ctx->log, "Call %s()! body:%s", __func__, head->body);
+    log_debug(ctx->log, "body:%s", head->body);
 
     return agent_async_send(ctx->agent, type, hhead.sid, data, len);
 }
@@ -93,8 +93,8 @@ int lsnd_insert_word_req_hdl(unsigned int type, void *data, int length, void *ar
     head = (mesg_header_t *)data; // 消息头
     req = (mesg_insert_word_req_t *)(head + 1);
 
-    log_debug(ctx->log, "Call %s()! sid:%lu, serial:%lu word:%s url:%s freq:%d",
-            __func__, head->sid, head->serial, req->word, req->url, ntohl(req->freq));
+    log_debug(ctx->log, "sid:%lu, serial:%lu word:%s url:%s freq:%d",
+            head->sid, head->serial, req->word, req->url, ntohl(req->freq));
 
     /* > 转换字节序 */
     MESG_HEAD_HTON(head, head);
@@ -127,7 +127,7 @@ int lsnd_insert_word_rsp_hdl(int type, int orig, char *data, size_t len, void *a
     MESG_HEAD_NTOH(head, &hhead);
 
     MESG_HEAD_PRINT(ctx->log, &hhead)
-    log_debug(ctx->log, "Call %s()! type:%d len:%d word:%s", __func__, type, len, rsp->word);
+    log_debug(ctx->log, "type:%d len:%d word:%s", type, len, rsp->word);
 
     /* > 放入发送队列 */
     return agent_async_send(ctx->agent, type, hhead.sid, data, len);

@@ -16,6 +16,9 @@ typedef enum
 {
     MSG_TYPE_UNKNOWN                    /* 未知消息 */
 
+    , MSG_PING                          /* PING-请求 */
+    , MSG_PONG                          /* PONG-应答 */
+
     , MSG_SEARCH_REQ                    /* 搜索关键字-请求 */
     , MSG_SEARCH_RSP                    /* 搜索关键字-应答 */
 

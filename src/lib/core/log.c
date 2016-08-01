@@ -107,7 +107,7 @@ log_cycle_t *log_init(int level, const char *path)
  **作    者: # Qifeng.zou # 2013.10.24 #
  ******************************************************************************/
 void log_core(log_cycle_t *log, int level,
-                const char *fname, int lineno,
+                const char *fname, int lineno, const char *func,
                 const void *dump, int dumplen,
                 const char *fmt, ...)
 {
@@ -117,7 +117,7 @@ void log_core(log_cycle_t *log, int level,
     char errmsg[LOG_MSG_MAX_LEN];
 
     va_start(args, fmt);
-    len = snprintf(errmsg, sizeof(errmsg), "[%s][%d] ", fname, lineno);
+    len = snprintf(errmsg, sizeof(errmsg), "[%s][%d]%s() ", fname, lineno, func);
     vsnprintf(errmsg + len, sizeof(errmsg) - len, fmt, args);
     va_end(args);
 

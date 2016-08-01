@@ -35,16 +35,10 @@ static int lwsd_set_reg(lwsd_cntx_t *ctx);
 /* 服务支持的协议, 以及对应的回调 */
 struct libwebsocket_protocols g_lwsd_protocols[] =
 {
-    //{
-    //    "http",                                         /* 协议名 */
-    //    lwsd_callback_http_hdl,                         /* 回调函数 */
-    //    sizeof(lwsd_http_extra_data_t),                 /* 自定义数据空间大小 */
-    //    0,                                              /* Max frame size / rx buffer */
-    //},
     {
         "search",                                       /* 协议名 */
         lwsd_callback_search_hdl,                       /* 回调函数 */
-        sizeof(lwsd_search_user_data_t),               /* 自定义数据空间大小 */
+        sizeof(lwsd_search_user_data_t),                /* 自定义数据空间大小 */
         0,                                              /* Max frame size / rx buffer */
     },
     { NULL, NULL, 0, 0 }                                /* 结束标识 */

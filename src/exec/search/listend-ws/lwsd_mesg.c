@@ -31,8 +31,7 @@ int lwsd_search_req_hdl(unsigned int type, void *data, int length, void *args)
     lwsd_cntx_t *ctx = (lwsd_cntx_t *)args;
     mesg_header_t *head = (mesg_header_t *)data; /* 消息头 */
 
-    log_debug(ctx->log, "Call %s()! serial:%lu length:%d body:%s!",
-            __func__, head->serial, length, head->body);
+    log_debug(ctx->log, "serial:%lu length:%d body:%s!", head->serial, length, head->body);
 
     /* > 转换字节序 */
     MESG_HEAD_HTON(head, head);
@@ -64,7 +63,7 @@ int lwsd_search_rsp_hdl(int type, int orig, char *data, size_t len, void *args)
     /* > 转化字节序 */
     MESG_HEAD_NTOH(head, head);
 
-    log_trace(ctx->log, "Call %s()! body:%s", __func__, head->body);
+    log_trace(ctx->log, "body:%s", head->body);
 
     return lwsd_search_async_send(ctx, head->sid, data, len);
 }
@@ -89,13 +88,11 @@ int lwsd_insert_word_req_hdl(unsigned int type, void *data, int length, void *ar
     mesg_insert_word_req_t *req;
     lwsd_cntx_t *ctx = (lwsd_cntx_t *)args;
 
-    log_debug(ctx->log, "Call %s()!", __func__);
-
     head = (mesg_header_t *)data; // 消息头
     req = (mesg_insert_word_req_t *)(head + 1);
 
-    log_debug(ctx->log, "Call %s()! serial:%lu word:%s url:%s freq:%d",
-            __func__, head->serial, req->word, req->url, ntohl(req->freq));
+    log_debug(ctx->log, "serial:%lu word:%s url:%s freq:%d",
+            head->serial, req->word, req->url, ntohl(req->freq));
 
     /* > 转换字节序 */
     MESG_HEAD_HTON(head, head);
@@ -124,7 +121,7 @@ int lwsd_insert_word_rsp_hdl(int type, int orig, char *data, size_t len, void *a
     mesg_header_t *head = (mesg_header_t *)data;
     mesg_insert_word_rsp_t *rsp = (mesg_insert_word_rsp_t *)(head + 1);
 
-    log_debug(ctx->log, "Call %s()! type:%d len:%d word:%s", __func__, type, len, rsp->word);
+    log_debug(ctx->log, "type:%d len:%d word:%s", type, len, rsp->word);
 
     /* > 转换字节序 */
     MESG_HEAD_NTOH(head, head);

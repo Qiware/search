@@ -114,8 +114,8 @@ static int frwd_search_req_hdl(int type, int orig, char *data, size_t len, void 
     /* > 转换字节序 */
     MESG_HEAD_NTOH(head, head);
 
-    log_trace(ctx->log, "Call %s()! sid:%lu serial:%lu type:%d len:%d flag:%d chksum:[0x%X/0x%X]",
-            __func__, head->sid, head->serial, head->type,
+    log_trace(ctx->log, "sid:%lu serial:%lu type:%d len:%d flag:%d chksum:[0x%X/0x%X]",
+            head->sid, head->serial, head->type,
             head->length, head->flag, head->chksum, MSG_CHKSUM_VAL);
 
     MESG_HEAD_HTON(head, head);
@@ -156,8 +156,7 @@ static int frwd_search_rsp_hdl(int type, int orig, char *data, size_t len, void 
     frwd_cntx_t *ctx = (frwd_cntx_t *)args;
     mesg_header_t *head = (mesg_header_t *)data;
 
-    log_trace(ctx->log, "Call %s()! sid:%lu serial:%lu",
-            __func__, ntoh64(head->sid), ntoh64(head->serial));
+    log_trace(ctx->log, "sid:%lu serial:%lu", ntoh64(head->sid), ntoh64(head->serial));
 
     serial.serial = ntoh64(head->serial);
 
@@ -188,8 +187,6 @@ static int frwd_search_rsp_hdl(int type, int orig, char *data, size_t len, void 
 static int frwd_insert_word_req_hdl(int type, int orig, char *data, size_t len, void *args)
 {
     frwd_cntx_t *ctx = (frwd_cntx_t *)args;
-
-    log_trace(ctx->log, "Call %s()", __func__);
 
     /* > 发送数据 */
     if (rtmq_async_send(ctx->upstrm, type, 30001, data, len)) {
@@ -224,7 +221,7 @@ static int frwd_insert_word_rsp_hdl(int type, int orig, char *data, size_t len, 
     MESG_HEAD_NTOH(head, head);
 
     serial.serial = head->serial;
-    log_trace(ctx->log, "Call %s()! serial:%lu", __func__, head->serial);
+    log_trace(ctx->log, "serial:%lu", head->serial);
 
     MESG_HEAD_HTON(head, head);
 
