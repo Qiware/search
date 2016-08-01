@@ -158,10 +158,10 @@ static int mon_srch_recv_rsp(mon_cntx_t *ctx, mon_srch_conn_t *conn)
     node = xml_query(xml, ".SEARCH-RSP.ITEM");
     for (idx=1; NULL != node; node = xml_brother(node), ++idx) {
         attr = xml_search(xml, node, "URL");
-        fprintf(stderr, "        [%02d] URL:%s", idx, attr->value.str);
+        fprintf(stderr, "        [%02d] url:%s", idx, attr->value.str);
 
         attr = xml_search(xml, node, "FREQ");
-        fprintf(stderr, "    FREQ:%s\n", attr->value.str);
+        fprintf(stderr, "    freq:%s\n", attr->value.str);
     }
 
     xml_destroy(xml);
