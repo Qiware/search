@@ -253,3 +253,82 @@ int str_to_hex(const char *str, int len, char *hex)
 
     return 0;
 }
+
+/******************************************************************************
+ **函数名称: str_to_num
+ **功    能: 将字串转换为数字.
+ **输入参数:
+ **     str: 字符串
+ **输出参数: NONE
+ **返    回: SIZE
+ **实现描述:
+ **注意事项:
+ **     > 1K = 1000
+ **     > 1M = 1000000
+ **     > 1G = 1000000000
+ **     > 1Kb = 1024(byte)
+ **     > 1Mb = 1024 * Kb(byte)
+ **     > 1Gb = 1024 * Mb(byte)
+ **作    者: # Qifeng.zou # 2016.08.02 22:05:12 #
+ ******************************************************************************/
+size_t str_to_num(const char *str)
+{
+    int len = 0;
+    size_t size, unit;
+    const char *ptr = str;
+
+    for (; '\0'!=*ptr; ptr+=1) {
+        if (isdigit(*ptr)) {
+            size = 10*size + (*ptr - '0');
+            continue;
+        }
+        else if (' ' == *ptr) {
+            continue;
+        }
+
+        /* 比较单位 */
+        if (!strncasecmp(ptr, "KB", 2)) {
+            len = 2;
+            unit = KB;
+            break;
+        }
+        else if (!strncasecmp(ptr, "MB", 2)) {
+            len = 2;
+            unit = MB;
+            break;
+        }
+        else if (!strncasecmp(ptr, "GB", 2)) {
+            len = 2;
+            unit = GB;
+            break;
+        }
+        else if (!strncasecmp(ptr, "K", 1)) {
+            len = 1;
+            unit = K;
+            break;
+        }
+        else if (!strncasecmp(ptr, "M", 1)) {
+            len = 1;
+            unit = M;
+            break;
+        }
+        else if (!strncasecmp(ptr, "G", 1)) {
+            len = 1;
+            unit = G;
+            break;
+        }
+        return 0;
+    }
+
+    if (len > 0) {
+        ptr += len;
+        for (; '\0'!=*ptr; ptr+=1) {
+            if (' ' != *ptr) {
+                return 0;
+            }
+        }
+        return size * unit;
+    }
+
+    return size;
+}
