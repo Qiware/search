@@ -101,7 +101,7 @@ static int _crwl_conf_load(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
         log_warn(log, "Set thread number: %d!", worker->num);
     }
     else {
-        worker->num = atoi(node->value.str);
+        worker->num = str_to_num(node->value.str);
     }
 
     if (worker->num <= 0) {
@@ -116,7 +116,7 @@ static int _crwl_conf_load(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
         return -1;
     }
 
-    worker->conn_max_num = atoi(node->value.str);
+    worker->conn_max_num = str_to_num(node->value.str);
     if (worker->conn_max_num <= 0) {
         worker->conn_max_num = CRWL_CONN_MIN_NUM;
     }
@@ -131,7 +131,7 @@ static int _crwl_conf_load(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
         return -1;
     }
 
-    worker->conn_tmout_sec = atoi(node->value.str);
+    worker->conn_tmout_sec = str_to_num(node->value.str);
     if (worker->conn_tmout_sec <= 0) {
         worker->conn_tmout_sec = CRWL_CONN_TMOUT_SEC;
     }
@@ -151,7 +151,7 @@ static int _crwl_conf_load(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
         return -1;
     }
 
-    conf->download.depth = atoi(node->value.str);
+    conf->download.depth = str_to_num(node->value.str);
 
     /* 2 获取存储路径 */
     node = xml_search(xml, nail, "PATH");
@@ -169,7 +169,7 @@ static int _crwl_conf_load(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
         return -1;
     }
 
-    conf->workq_count = atoi(node->value.str);
+    conf->workq_count = str_to_num(node->value.str);
     if (conf->workq_count <= 0) {
         conf->workq_count = CRWL_WORKQ_MAX_NUM;
     }
@@ -181,7 +181,7 @@ static int _crwl_conf_load(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
         return -1;
     }
 
-    conf->man_port = atoi(node->value.str);
+    conf->man_port = str_to_num(node->value.str);
 
     /* > 获取Redis配置 */
     if (crwl_conf_load_redis(xml, conf, log)) {
@@ -243,7 +243,7 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
         return -1;
     }
 
-    master.port = atoi(node->value.str);
+    master.port = str_to_num(node->value.str);
 
     node = xml_search(xml, nail, "PASSWD");
     if (NULL == node) {
@@ -297,7 +297,7 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
             return -1;
         }
 
-        redis->conf[idx].port = atoi(node->value.str);
+        redis->conf[idx].port = str_to_num(node->value.str);
 
         /* 获取PASSWD */
         node = xml_search(xml, item, "PASSWD");

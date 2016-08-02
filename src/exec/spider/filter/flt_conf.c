@@ -113,7 +113,7 @@ static int _flt_conf_load(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *log)
         log_warn(log, "Set thread number: %d!", work->num);
     }
     else {
-        work->num = atoi(node->value.str);
+        work->num = str_to_num(node->value.str);
     }
 
     /* 2. 工作路径(相对查找) */
@@ -150,7 +150,7 @@ static int _flt_conf_load(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *log)
         return -1;
     }
 
-    conf->download.depth = atoi(node->value.str);
+    conf->download.depth = str_to_num(node->value.str);
 
     /* 2 获取存储路径 */
     node = xml_search(xml, nail, "PATH");
@@ -168,7 +168,7 @@ static int _flt_conf_load(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *log)
         return -1;
     }
 
-    conf->workq_count = atoi(node->value.str);
+    conf->workq_count = str_to_num(node->value.str);
     if (conf->workq_count <= 0) {
         conf->workq_count = FLT_WORKQ_MAX_NUM;
     }
@@ -180,7 +180,7 @@ static int _flt_conf_load(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *log)
         return -1;
     }
 
-    conf->man_port = atoi(node->value.str);
+    conf->man_port = str_to_num(node->value.str);
 
     /* > 获取Redis配置 */
     if (flt_conf_load_redis(xml, conf, log)) {
@@ -245,7 +245,7 @@ static int flt_conf_load_redis(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *l
         return -1;
     }
 
-    redis->conf.port = atoi(node->value.str);
+    redis->conf.port = str_to_num(node->value.str);
 
     node = xml_search(xml, nail, "PASSWD");
     if (NULL == node) {
@@ -347,7 +347,7 @@ static int flt_conf_load_seed(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *lo
             log_info(log, "Didn't set depth of uri!");
         }
         else {
-            seed->depth = atoi(node->value.str);
+            seed->depth = str_to_num(node->value.str);
         }
 
         item = item->next;

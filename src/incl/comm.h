@@ -63,6 +63,9 @@
 #define ISPOWEROF2(x)       (0 == (((x)-1) & (x))) /* 判断x是否为2的n次方(2^n) */
 
 /* 内存单位 */
+#define K                   (1000)              /* K */
+#define M                   (100000)            /* M */
+#define G                   (100000000)         /* G */
 #define KB                  (1024)              /* KB */
 #define MB                  (1024 * KB)         /* MB */
 #define GB                  (1024 * MB)         /* GB */

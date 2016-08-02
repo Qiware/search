@@ -97,7 +97,7 @@ static int frwd_conf_parse_comm(xml_tree_t *xml, frwd_conf_t *conf)
         return -1;
     }
 
-    conf->nid = atoi(node->value.str);
+    conf->nid = str_to_num(node->value.str);
 
     /* > 结点名 */
     node = xml_query(xml, ".FRWDER.NAME");
@@ -149,7 +149,7 @@ static int frwd_conf_parse_upstrm(xml_tree_t *xml, const char *path, frwd_conf_t
         return -1;
     }
 
-    conf->port = atoi(node->value.str);
+    conf->port = str_to_num(node->value.str);
 
     /* > 工作路径 */
     node = xml_search(xml, parent, "PATH");
@@ -211,7 +211,7 @@ static int frwd_conf_parse_upstrm(xml_tree_t *xml, const char *path, frwd_conf_t
         return -1;
     }
 
-    conf->recv_thd_num = atoi(node->value.str);
+    conf->recv_thd_num = str_to_num(node->value.str);
     if (0 == conf->recv_thd_num) {
         fprintf(stderr, "%s.THREAD-POOL.SEND_THD_NUM is zero!\n", path);
         return -1;
@@ -225,7 +225,7 @@ static int frwd_conf_parse_upstrm(xml_tree_t *xml, const char *path, frwd_conf_t
         return -1;
     }
 
-    conf->work_thd_num = atoi(node->value.str);
+    conf->work_thd_num = str_to_num(node->value.str);
     if (0 == conf->work_thd_num) {
         fprintf(stderr, "%s.THREAD-POOL.WORK_THD_NUM is zero!\n", path);
         return -1;
@@ -240,7 +240,7 @@ static int frwd_conf_parse_upstrm(xml_tree_t *xml, const char *path, frwd_conf_t
         return -1;
     }
 
-    conf->recvq_num = atoi(node->value.str);
+    conf->recvq_num = str_to_num(node->value.str);
     if (0 == conf->recvq_num) {
         conf->recvq_num = 1;
     }
@@ -253,7 +253,7 @@ static int frwd_conf_parse_upstrm(xml_tree_t *xml, const char *path, frwd_conf_t
         return -1;
     }
 
-    conf->recvq.max = atoi(node->value.str);
+    conf->recvq.max = str_to_num(node->value.str);
     if (0 == conf->recvq.max) {
         fprintf(stderr, "%s.RECVQ.MAX is zero!\n", path);
         return -1;
@@ -267,7 +267,7 @@ static int frwd_conf_parse_upstrm(xml_tree_t *xml, const char *path, frwd_conf_t
         return -1;
     }
 
-    conf->recvq.size = atoi(node->value.str);
+    conf->recvq.size = str_to_num(node->value.str);
     if (0 == conf->recvq.size) {
         fprintf(stderr, "%s.RECVQ.SIZE is zero!\n", path);
         return -1;
@@ -286,7 +286,7 @@ static int frwd_conf_parse_upstrm(xml_tree_t *xml, const char *path, frwd_conf_t
         return -1;
     }
 
-    conf->distq_num = atoi(node->value.str);
+    conf->distq_num = str_to_num(node->value.str);
     if (0 == conf->distq_num) {
         conf->distq_num = 1;
     }
@@ -299,7 +299,7 @@ static int frwd_conf_parse_upstrm(xml_tree_t *xml, const char *path, frwd_conf_t
         return -1;
     }
 
-    conf->distq.max = atoi(node->value.str);
+    conf->distq.max = str_to_num(node->value.str);
     if (0 == conf->distq.max) {
         fprintf(stderr, "%s.SENDQ.MAX is zero!\n", path);
         return -1;
@@ -313,7 +313,7 @@ static int frwd_conf_parse_upstrm(xml_tree_t *xml, const char *path, frwd_conf_t
         return -1;
     }
 
-    conf->distq.size = atoi(node->value.str);
+    conf->distq.size = str_to_num(node->value.str);
     if (0 == conf->distq.size) {
         fprintf(stderr, "%s.SENDQ.SIZE is zero!\n", path);
         return -1;
@@ -359,7 +359,7 @@ static int frwd_conf_parse_downstrm(xml_tree_t *xml, const char *path, frwd_conf
         return -1;
     }
 
-    conf->port = atoi(node->value.str);
+    conf->port = str_to_num(node->value.str);
 
     /* > 工作路径 */
     node = xml_search(xml, parent, "PATH");
@@ -421,7 +421,7 @@ static int frwd_conf_parse_downstrm(xml_tree_t *xml, const char *path, frwd_conf
         return -1;
     }
 
-    conf->recv_thd_num = atoi(node->value.str);
+    conf->recv_thd_num = str_to_num(node->value.str);
     if (0 == conf->recv_thd_num) {
         fprintf(stderr, "%s.THREAD-POOL.SEND_THD_NUM is zero!\n", path);
         return -1;
@@ -435,7 +435,7 @@ static int frwd_conf_parse_downstrm(xml_tree_t *xml, const char *path, frwd_conf
         return -1;
     }
 
-    conf->work_thd_num = atoi(node->value.str);
+    conf->work_thd_num = str_to_num(node->value.str);
     if (0 == conf->work_thd_num) {
         fprintf(stderr, "%s.THREAD-POOL.WORK_THD_NUM is zero!\n", path);
         return -1;
@@ -450,7 +450,7 @@ static int frwd_conf_parse_downstrm(xml_tree_t *xml, const char *path, frwd_conf
         return -1;
     }
 
-    conf->recvq_num = atoi(node->value.str);
+    conf->recvq_num = str_to_num(node->value.str);
     if (0 == conf->recvq_num) {
         conf->recvq_num = 1;
     }
@@ -463,7 +463,7 @@ static int frwd_conf_parse_downstrm(xml_tree_t *xml, const char *path, frwd_conf
         return -1;
     }
 
-    conf->recvq.max = atoi(node->value.str);
+    conf->recvq.max = str_to_num(node->value.str);
     if (0 == conf->recvq.max) {
         fprintf(stderr, "%s.RECVQ.MAX is zero!\n", path);
         return -1;
@@ -477,7 +477,7 @@ static int frwd_conf_parse_downstrm(xml_tree_t *xml, const char *path, frwd_conf
         return -1;
     }
 
-    conf->recvq.size = atoi(node->value.str);
+    conf->recvq.size = str_to_num(node->value.str);
     if (0 == conf->recvq.size) {
         fprintf(stderr, "%s.RECVQ.SIZE is zero!\n", path);
         return -1;
@@ -496,7 +496,7 @@ static int frwd_conf_parse_downstrm(xml_tree_t *xml, const char *path, frwd_conf
         return -1;
     }
 
-    conf->distq_num = atoi(node->value.str);
+    conf->distq_num = str_to_num(node->value.str);
     if (0 == conf->distq_num) {
         conf->distq_num = 1;
     }
@@ -509,7 +509,7 @@ static int frwd_conf_parse_downstrm(xml_tree_t *xml, const char *path, frwd_conf
         return -1;
     }
 
-    conf->distq.max = atoi(node->value.str);
+    conf->distq.max = str_to_num(node->value.str);
     if (0 == conf->distq.max) {
         fprintf(stderr, "%s.SENDQ.MAX is zero!\n", path);
         return -1;
@@ -523,7 +523,7 @@ static int frwd_conf_parse_downstrm(xml_tree_t *xml, const char *path, frwd_conf
         return -1;
     }
 
-    conf->distq.size = atoi(node->value.str);
+    conf->distq.size = str_to_num(node->value.str);
     if (0 == conf->distq.size) {
         fprintf(stderr, "%s.SENDQ.SIZE is zero!\n", path);
         return -1;

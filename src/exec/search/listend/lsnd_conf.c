@@ -105,7 +105,7 @@ static int lsnd_conf_load_comm(xml_tree_t *xml, lsnd_conf_t *conf, log_cycle_t *
         return -1;
     }
 
-    conf->nid = atoi(node->value.str);
+    conf->nid = str_to_num(node->value.str);
 
     /* > 加载工作路径 */
     node = xml_query(xml, ".LISTEND.WORKDIR");
@@ -131,7 +131,7 @@ static int lsnd_conf_load_comm(xml_tree_t *xml, lsnd_conf_t *conf, log_cycle_t *
         return -1;
     }
 
-    conf->distq.num = atoi(node->value.str);
+    conf->distq.num = str_to_num(node->value.str);
 
     node = xml_search(xml, fix, "MAX");
     if (NULL == node) {
@@ -139,7 +139,7 @@ static int lsnd_conf_load_comm(xml_tree_t *xml, lsnd_conf_t *conf, log_cycle_t *
         return -1;
     }
 
-    conf->distq.max = atoi(node->value.str);
+    conf->distq.max = str_to_num(node->value.str);
 
     node = xml_search(xml, fix, "SIZE");
     if (NULL == node) {
@@ -147,7 +147,7 @@ static int lsnd_conf_load_comm(xml_tree_t *xml, lsnd_conf_t *conf, log_cycle_t *
         return -1;
     }
 
-    conf->distq.size = atoi(node->value.str);
+    conf->distq.size = str_to_num(node->value.str);
 
     return 0;
 }
@@ -183,7 +183,7 @@ static int lsnd_conf_parse_agent_connections(
         return -1;
     }
 
-    conf->connections.max = atoi(node->value.str);
+    conf->connections.max = str_to_num(node->value.str);
 
     node = xml_search(xml, fix, "TIMEOUT");     /* > 获取连接超时时间 */
     if (NULL == node) {
@@ -191,7 +191,7 @@ static int lsnd_conf_parse_agent_connections(
         return -1;
     }
 
-    conf->connections.timeout = atoi(node->value.str);
+    conf->connections.timeout = str_to_num(node->value.str);
 
     /* > 获取侦听端口 */
     node = xml_search(xml, fix, "PORT");
@@ -200,7 +200,7 @@ static int lsnd_conf_parse_agent_connections(
         return -1;
     }
 
-    conf->connections.port = atoi(node->value.str);
+    conf->connections.port = str_to_num(node->value.str);
 
     return 0;
 }
@@ -233,7 +233,7 @@ static int lsnd_conf_parse_agent_queue(xml_tree_t *xml, agent_conf_t *conf, log_
             return -1; \
         } \
         \
-        (conf)->max = atoi(node->value.str); \
+        (conf)->max = str_to_num(node->value.str); \
         \
         snprintf(node_path, sizeof(node_path), "%s.SIZE", _path); \
         \
@@ -242,7 +242,7 @@ static int lsnd_conf_parse_agent_queue(xml_tree_t *xml, agent_conf_t *conf, log_
             return -1; \
         } \
         \
-        (conf)->size = atoi(node->value.str); \
+        (conf)->size = str_to_num(node->value.str); \
     }
 
     /* > 定位队列标签 */
@@ -302,7 +302,7 @@ static int lsnd_conf_load_agent(xml_tree_t *xml, lsnd_conf_t *lcf, log_cycle_t *
         return -1;
     }
 
-    conf->worker_num = atoi(node->value.str);
+    conf->worker_num = str_to_num(node->value.str);
 
     /* > 获取AGENT线程数 */
     node = xml_query(xml, ".LISTEND.AGENT.THREAD-POOL.AGENT");
@@ -311,7 +311,7 @@ static int lsnd_conf_load_agent(xml_tree_t *xml, lsnd_conf_t *lcf, log_cycle_t *
         return -1;
     }
 
-    conf->agent_num = atoi(node->value.str);
+    conf->agent_num = str_to_num(node->value.str);
 
     /* > 获取Listen线程数 */
     node = xml_query(xml, ".LISTEND.AGENT.THREAD-POOL.LSN");
@@ -320,7 +320,7 @@ static int lsnd_conf_load_agent(xml_tree_t *xml, lsnd_conf_t *lcf, log_cycle_t *
         return -1;
     }
 
-    conf->lsn_num = atoi(node->value.str);
+    conf->lsn_num = str_to_num(node->value.str);
 
 
     return 0;
@@ -373,7 +373,7 @@ static int lsnd_conf_load_frwder(xml_tree_t *xml, lsnd_conf_t *lcf, log_cycle_t 
         return -1;
     }
 
-    conf->port = atoi(node->value.str);
+    conf->port = str_to_num(node->value.str);
 
     /* > 鉴权信息 */
     node = xml_search(xml, parent, "AUTH.USR");
@@ -405,7 +405,7 @@ static int lsnd_conf_load_frwder(xml_tree_t *xml, lsnd_conf_t *lcf, log_cycle_t 
         return -1;
     }
 
-    conf->send_thd_num = atoi(node->value.str);
+    conf->send_thd_num = str_to_num(node->value.str);
     if (0 == conf->send_thd_num) {
         log_error(log, "THREAD-POOL.SEND_THD_NUM is zero!");
         return -1;
@@ -419,7 +419,7 @@ static int lsnd_conf_load_frwder(xml_tree_t *xml, lsnd_conf_t *lcf, log_cycle_t 
         return -1;
     }
 
-    conf->work_thd_num = atoi(node->value.str);
+    conf->work_thd_num = str_to_num(node->value.str);
     if (0 == conf->work_thd_num) {
         log_error(log, "THREAD-POOL.WORK_THD_NUM is zero!");
         return -1;
@@ -434,7 +434,7 @@ static int lsnd_conf_load_frwder(xml_tree_t *xml, lsnd_conf_t *lcf, log_cycle_t 
         return -1;
     }
 
-    conf->recv_buff_size = atoi(node->value.str) * MB;
+    conf->recv_buff_size = str_to_num(node->value.str) * MB;
     if (0 == conf->recv_buff_size) {
         return -1;
     }
@@ -448,7 +448,7 @@ static int lsnd_conf_load_frwder(xml_tree_t *xml, lsnd_conf_t *lcf, log_cycle_t 
         return -1;
     }
 
-    conf->recvq.max = atoi(node->value.str);
+    conf->recvq.max = str_to_num(node->value.str);
     if (0 == conf->recvq.max) {
         log_error(log, "RECVQ.MAX is zero!");
         return -1;
@@ -462,7 +462,7 @@ static int lsnd_conf_load_frwder(xml_tree_t *xml, lsnd_conf_t *lcf, log_cycle_t 
         return -1;
     }
 
-    conf->recvq.size = atoi(node->value.str);
+    conf->recvq.size = str_to_num(node->value.str);
     if (0 == conf->recvq.size) {
         log_error(log, "RECVQ.SIZE is zero!");
         return -1;
@@ -477,7 +477,7 @@ static int lsnd_conf_load_frwder(xml_tree_t *xml, lsnd_conf_t *lcf, log_cycle_t 
         return -1;
     }
 
-    conf->sendq.max = atoi(node->value.str);
+    conf->sendq.max = str_to_num(node->value.str);
     if (0 == conf->sendq.max) {
         log_error(log, "SENDQ.MAX is zero!");
         return -1;
@@ -491,7 +491,7 @@ static int lsnd_conf_load_frwder(xml_tree_t *xml, lsnd_conf_t *lcf, log_cycle_t 
         return -1;
     }
 
-    conf->sendq.size = atoi(node->value.str);
+    conf->sendq.size = str_to_num(node->value.str);
     if (0 == conf->sendq.size) {
         log_error(log, "SENDQ.SIZE is zero!");
         return -1;

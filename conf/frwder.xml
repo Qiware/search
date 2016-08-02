@@ -7,9 +7,9 @@
             <ITEM USR="qifeng" PASSWD="111111" />
             <ITEM USR="127.0.0.1" PASSWD="111111" />
         </AUTH>
-        <THREAD-POOL RECV_THD_NUM="1" WORK_THD_NUM="4" />   <!-- 线程数据 -->
-        <RECVQ NUM="4" MAX="8192" SIZE="4096" />            <!-- 接收队列(NUM:队列数 MAX:单元总数 SIZE:单元大小) -->
-        <DISTQ NUM="4" MAX="8192" SIZE="4096" />            <!-- 分发队列(NUM:队列数 MAX:单元总数 SIZE:单元大小) -->
+        <THREAD-POOL RECV_THD_NUM="4" WORK_THD_NUM="4" />   <!-- 线程数据 -->
+        <RECVQ NUM="4" MAX="8192" SIZE="4KB" />             <!-- 接收队列(NUM:队列数 MAX:单元总数 SIZE:单元大小) -->
+        <DISTQ NUM="4" MAX="8192" SIZE="4KB" />             <!-- 分发队列(NUM:队列数 MAX:单元总数 SIZE:单元大小) -->
     </DOWNSTRM>
     <!-- 上行配置 -->
     <UPSTRM PORT="28889">
@@ -18,8 +18,8 @@
             <ITEM USR="qifeng" PASSWD="111111" />
             <ITEM USR="127.0.0.1" PASSWD="111111" />
         </AUTH>
-        <THREAD-POOL RECV_THD_NUM="1" WORK_THD_NUM="2" />   <!-- 线程数据 -->
-        <RECVQ NUM="4" MAX="8192" SIZE="4096" />            <!-- 接收队列(NUM:队列数 MAX:单元总数 SIZE:单元大小) -->
-        <DISTQ NUM="4" MAX="8192" SIZE="4096" />            <!-- 分发队列(NUM:队列数 MAX:单元总数 SIZE:单元大小) -->
+        <THREAD-POOL RECV_THD_NUM="4" WORK_THD_NUM="2" />   <!-- 线程数据 -->
+        <RECVQ NUM="4" MAX="8192" SIZE="4KB" />             <!-- 接收队列(NUM:队列数 MAX:单元总数 SIZE:单元大小) -->
+        <DISTQ NUM="4" MAX="8192" SIZE="4KB" />             <!-- 分发队列(NUM:队列数 MAX:单元总数 SIZE:单元大小) -->
     </UPSTRM>
 </FRWDER>
