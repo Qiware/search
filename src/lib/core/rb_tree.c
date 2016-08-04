@@ -74,7 +74,7 @@ void rbt_assert(const rbt_tree_t *tree, const rbt_node_t *node)
  **   LL LR RL RR                   LR  R
  **                                    / \
  **                                   RL RR
- **            说明: 节点N为旋转支点
+ **            说明: 结点N为旋转支点
  **注意事项:
  **作    者: # Qifeng.zou # 2014.01.15 #
  ******************************************************************************/
@@ -118,7 +118,7 @@ static void rbt_right_rotate(rbt_tree_t *tree, rbt_node_t *node)
  **   LL LR RL RR             L  RL
  **                          / \
  **                         LL LR
- **            说明: 节点N为旋转支点
+ **            说明: 结点N为旋转支点
  **注意事项:
  **作    者: # Qifeng.zou # 2014.01.15 #
  ******************************************************************************/
@@ -188,6 +188,7 @@ rbt_tree_t *rbt_creat(rbt_opt_t *opt, cmp_cb_t cmp_cb)
     tree->sentinel->color = RBT_COLOR_BLACK;
     tree->root = tree->sentinel;
     tree->cmp_cb = cmp_cb;
+    tree->num = 0;
 
     tree->pool = opt->pool;
     tree->alloc = opt->alloc;
@@ -198,14 +199,14 @@ rbt_tree_t *rbt_creat(rbt_opt_t *opt, cmp_cb_t cmp_cb)
 
 /******************************************************************************
  **函数名称: rbt_creat_node
- **功    能: 创建关键字为key的节点(内部接口)
+ **功    能: 创建关键字为key的结点(内部接口)
  **输入参数:
  **     tree: 红黑树
  **     key: 主键
  **     len: 主键长度
- **     color: 节点颜色
- **     type: 新增节点是父节点的左孩子还是右孩子
- **     parent: 父节点
+ **     color: 结点颜色
+ **     type: 新增结点是父结点的左孩子还是右孩子
+ **     parent: 父结点
  **输出参数: NONE
  **返    回: RBT_OK:成功 RBT_ERR:失败
  **实现描述:
@@ -244,17 +245,17 @@ static rbt_node_t *rbt_creat_node(rbt_tree_t *tree,
 
 /******************************************************************************
  **函数名称: rbt_insert
- **功    能: 向红黑树中增加节点(对外接口)
+ **功    能: 向红黑树中增加结点(对外接口)
  **输入参数:
  **     tree: 红黑树
  **     key: 关键字
  **     size: 关键字SIZE(如果关键字为字符串时, 注意其为SIZE, 不是长度)
  **     data: 关键字对应的数据块
  **输出参数: NONE
- **返    回: RBT_OK:成功 RBT_ERR:失败 RBT_NODE_EXIST:节点存在
+ **返    回: RBT_OK:成功 RBT_ERR:失败 RBT_NODE_EXIST:结点存在
  **实现描述:
- **     1. 当根节点为空时，直接添加
- **     2. 将节点插入树中, 检查并修复新节点造成红黑树性质的破坏
+ **     1. 当根结点为空时，直接添加
+ **     2. 将结点插入树中, 检查并修复新结点造成红黑树性质的破坏
  **注意事项:
  **  红黑树的5点性质:
  **     1、每个结点要么是红色的，要么是黑色的；
@@ -263,7 +264,7 @@ static rbt_node_t *rbt_creat_node(rbt_tree_t *tree,
  **     4、如果一个结点是红色，则它的两个儿子都是黑色的；
  **     5、对任何一个结点，从该结点通过其子孙结点到达叶子结点(NIL)
  **         的所有路径上包含相同数目的黑结点。
- **注意事项: 插入节点操作只可能破坏性质(4)
+ **注意事项: 插入结点操作只可能破坏性质(4)
  **作    者: # Qifeng.zou # 2013.12.23 # 2015.07.21 21:29:07 #
  ******************************************************************************/
 int rbt_insert(rbt_tree_t *tree, void *_key, size_t size, void *data)
@@ -275,7 +276,7 @@ int rbt_insert(rbt_tree_t *tree, void *_key, size_t size, void *data)
     key.k = _key;
     key.l = size;
 
-    /* 1. 当根节点为空时，直接添加 */
+    /* 1. 当根结点为空时，直接添加 */
     if (tree->sentinel == tree->root) {
         /* 性质2: 根结点是黑色的 */
         tree->root = rbt_creat_node(tree, &key, RBT_COLOR_BLACK, 0, NULL);
@@ -284,12 +285,12 @@ int rbt_insert(rbt_tree_t *tree, void *_key, size_t size, void *data)
             return RBT_ERR;
         }
 
+        ++tree->num;
         tree->root->data = data;
-
         return RBT_OK;
     }
 
-    /* 2. 将节点插入树中, 检查并修复新节点造成红黑树性质的破坏 */
+    /* 2. 将结点插入树中, 检查并修复新结点造成红黑树性质的破坏 */
     while (tree->sentinel != node) {
             ret = tree->cmp_cb(&key, &node->key);
             if (0 == ret) {
@@ -302,8 +303,8 @@ int rbt_insert(rbt_tree_t *tree, void *_key, size_t size, void *data)
                         return RBT_ERR;
                     }
 
+                    ++tree->num;
                     add->data = data;
-
                     return rbt_insert_fixup(tree, add); /* 防止红黑树的性质被破坏 */
                 }
                 node = node->lchild;
@@ -315,12 +316,11 @@ int rbt_insert(rbt_tree_t *tree, void *_key, size_t size, void *data)
                         return RBT_ERR;
                     }
 
+                    ++tree->num;
                     add->data = data;
-
                     return rbt_insert_fixup(tree, add); /* 防止红黑树的性质被破坏 */
                 }
                 node = node->rchild;
-
             }
     }
 
@@ -332,13 +332,13 @@ int rbt_insert(rbt_tree_t *tree, void *_key, size_t size, void *data)
  **功    能: 插入操作修复(内部接口)
  **输入参数:
  **     tree: 红黑树
- **     node: 新增节点的地址
+ **     node: 新增结点的地址
  **输出参数: NONE
  **返    回: RBT_OK:成功 RBT_ERR:失败
  **实现描述:
  **     1. 检查红黑树性质是否被破坏
  **     2. 如果被破坏，则进行对应的处理
- **注意事项: 插入节点操作只可能破坏性质④
+ **注意事项: 插入结点操作只可能破坏性质④
  **作    者: # Qifeng.zou # 2013.12.23 #
  ******************************************************************************/
 static int rbt_insert_fixup(rbt_tree_t *tree, rbt_node_t *node)
@@ -352,9 +352,9 @@ static int rbt_insert_fixup(rbt_tree_t *tree, rbt_node_t *node)
         }
 
         grandpa = parent->parent;
-        if (parent == grandpa->lchild) { /* 父节点为左节点 */
+        if (parent == grandpa->lchild) { /* 父结点为左结点 */
             uncle = grandpa->rchild;
-            /* case 1: 父节点和叔节点为红色 */
+            /* case 1: 父结点和叔结点为红色 */
             if (rbt_is_red(uncle)) {
                 rbt_set_black(parent);
                 rbt_set_black(uncle);
@@ -384,10 +384,10 @@ static int rbt_insert_fixup(rbt_tree_t *tree, rbt_node_t *node)
                 continue;
             }
         }
-        else {                      /* 父节点为右孩子 */
+        else {                      /* 父结点为右孩子 */
             uncle = grandpa->lchild;
 
-            /* case 1: 父节点和叔节点为红色 */
+            /* case 1: 父结点和叔结点为红色 */
             if (rbt_is_red(uncle)) {
                 rbt_set_black(parent);
                 rbt_set_black(uncle);
@@ -448,6 +448,7 @@ int rbt_delete(rbt_tree_t *tree, void *_key, size_t size, void **data)
     while (tree->sentinel != node) {
         ret = tree->cmp_cb(&key, &node->key);
         if (0 == ret) {
+            --tree->num;
             *data = node->data;
             return _rbt_delete(tree, node);
         }
@@ -536,7 +537,7 @@ static int _rbt_delete(rbt_tree_t *tree, rbt_node_t *dnode)
         return rbt_delete_fixup(tree, refer);
     }
 
-    /* Case 3: 被删结点D的左右孩子均不为叶子节点 */
+    /* Case 3: 被删结点D的左右孩子均不为叶子结点 */
     /* 3.1 查找dnode的后继结点next */
     next = dnode->rchild;
     while (tree->sentinel != next->lchild) {
@@ -612,7 +613,7 @@ static int rbt_delete_fixup(rbt_tree_t *tree, rbt_node_t *node)
             }
             else {
                 /* Case 3: 兄弟结点为黑色(默认),
-                    兄弟节点的左子结点为红色, 右子结点为黑色:  以brother为支点, 右旋处理 */
+                    兄弟结点的左子结点为红色, 右子结点为黑色:  以brother为支点, 右旋处理 */
                 if (rbt_is_black(brother->rchild)) {
                     rbt_set_black(brother->lchild);
                     rbt_set_red(brother);
@@ -657,7 +658,7 @@ static int rbt_delete_fixup(rbt_tree_t *tree, rbt_node_t *node)
             }
             else {
                 /* Case 7: 兄弟结点为黑色(默认),
-                    兄弟节点的右子结点为红色, 左子结点为黑色:  以brother为支点, 左旋处理 */
+                    兄弟结点的右子结点为红色, 左子结点为黑色:  以brother为支点, 左旋处理 */
                 if (rbt_is_black(brother->lchild)) {
                     rbt_set_red(brother);
                     rbt_set_black(brother->rchild);
@@ -871,11 +872,11 @@ int rbt_print(rbt_tree_t *tree, print_cb_t print)
 
 /******************************************************************************
  **函数名称: rbt_query
- **功    能: 搜索指定关键字节点(外部接口)
+ **功    能: 搜索指定关键字结点(外部接口)
  **输入参数:
  **     tree: 红黑树
  **     key: 关键字(唯一值)
- **     key_len: 关键字长度
+ **     size: 关键字长度
  **输出参数: NONE
  **返    回: 数据地址
  **实现描述:

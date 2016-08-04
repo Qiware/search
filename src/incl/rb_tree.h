@@ -42,9 +42,9 @@ typedef struct _rbt_node_t
 {
     key_obj_t key;                  /* 主键(唯一值) */
     int32_t color;                  /* 结点颜色: RBT_COLOR_BLACK(黑) 或 RBT_COLOR_RED(红) */
-    struct _rbt_node_t *parent;     /* 父节点 */
-    struct _rbt_node_t *lchild;     /* 左孩子节点 */
-    struct _rbt_node_t *rchild;     /* 右孩子节点 */
+    struct _rbt_node_t *parent;     /* 父结点 */
+    struct _rbt_node_t *lchild;     /* 左孩子结点 */
+    struct _rbt_node_t *rchild;     /* 右孩子结点 */
 
     void *data;                     /* 数据地址 */
 } rbt_node_t;
@@ -52,8 +52,9 @@ typedef struct _rbt_node_t
 /* 红黑树结构 */
 typedef struct
 {
-    rbt_node_t *root;               /* 根节点 */
-    rbt_node_t *sentinel;           /* 哨兵节点 */
+    uint64_t num;                   /* 结点数 */
+    rbt_node_t *root;               /* 根结点 */
+    rbt_node_t *sentinel;           /* 哨兵结点 */
 
     cmp_cb_t cmp_cb;                /* 主键比较函数 */
 
@@ -89,7 +90,7 @@ typedef struct
     } \
 } 
 
-/* 设置孩子节点 */
+/* 设置孩子结点 */
 #define rbt_set_child(tree, node, type, child) \
 { \
     if(RBT_LCHILD == type) { \
@@ -107,6 +108,7 @@ void *rbt_query(rbt_tree_t *tree, void *key, size_t size);
 int rbt_print(rbt_tree_t *tree, print_cb_t print);
 int rbt_trav(rbt_tree_t *tree, trav_cb_t proc, void *args);
 void *rbt_find(rbt_tree_t *tree, find_cb_t find, void *args);
+#define rbt_num(tree) ((tree)->num)
 int rbt_destroy(rbt_tree_t *tree, mem_dealloc_cb_t dealloc, void *args);
 
 #endif /*__RB_TREE_H__*/
