@@ -98,6 +98,7 @@ avl_tree_t *avl_creat(avl_opt_t *opt, cmp_cb_t cmp_cb)
 
     tree->root = NULL;
     tree->cmp_cb = cmp_cb;
+    tree->num = 0;
 
     tree->pool = opt->pool;
     tree->alloc = opt->alloc;
@@ -129,6 +130,7 @@ avl_tree_t *avl_creat(avl_opt_t *opt, cmp_cb_t cmp_cb)
  ******************************************************************************/
 int avl_insert(avl_tree_t *tree, void *_key, size_t size, void *data)
 {
+    int ret;
     key_obj_t key;  /* 主键 */
     bool taller = false;
     avl_node_t *root = tree->root;
@@ -152,6 +154,7 @@ int avl_insert(avl_tree_t *tree, void *_key, size_t size, void *data)
         memcpy(root->key.k, _key, size);
         root->data = data;
 
+        tree->num = 1;
         tree->root = root;
         return AVL_OK;
     }
@@ -159,7 +162,12 @@ int avl_insert(avl_tree_t *tree, void *_key, size_t size, void *data)
     key.k = _key;
     key.l = size;
 
-    return _avl_insert(tree, root, &key, &taller, data);
+    ret = _avl_insert(tree, root, &key, &taller, data);
+    if (AVL_OK == ret) {
+        ++tree->num;
+    }
+
+    return ret;
 }
 
 /******************************************************************************
@@ -845,6 +853,7 @@ static int _avl_delete(avl_tree_t *tree,
 
     /* 查找成功 */
     /* 2. 已找到将被删除的结点node */
+    --tree->num;
     *data = node->data;
 
     /* 2.1 右子树为空, 只需接它的左子树(叶子结点也走这) */

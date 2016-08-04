@@ -45,6 +45,7 @@ typedef struct _node_t
 /* 树结构 */
 typedef struct
 {
+    uint64_t num;               /* 结点数 */
     avl_node_t *root;           /* 根节点 */
 
     key_cb_t key_cb;            /* 生成KEY的回调 */
@@ -64,6 +65,7 @@ int avl_trav(avl_tree_t *tree, trav_cb_t proc, void *args);
 void *avl_find(avl_tree_t *tree, find_cb_t find, void *args);
 void avl_destroy(avl_tree_t *tree, mem_dealloc_cb_t dealloc_cb, void *args);
 #define avl_isempty(tree) (NULL == (tree)->root)
+#define avl_num(tree) ((tree)->num)
 
 /* 测试使用 */
 void avl_assert(const avl_node_t *node);
