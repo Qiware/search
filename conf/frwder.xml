@@ -1,7 +1,7 @@
 <!-- 转发器配置 -->
 <FRWDER ID="20001" NAME="frwder">
     <!-- 下行配置 -->
-    <DOWNSTRM PORT="28888">
+    <FORWARD PORT="28888">
         <PATH>../temp/frwder/dwn/</PATH>                    <!-- 工作路径 -->
         <AUTH>                                              <!-- 鉴权配置 -->
             <ITEM USR="qifeng" PASSWD="111111" />
@@ -10,9 +10,9 @@
         <THREAD-POOL RECV_THD_NUM="4" WORK_THD_NUM="4" />   <!-- 线程数据 -->
         <RECVQ NUM="4" MAX="8192" SIZE="4KB" />             <!-- 接收队列(NUM:队列数 MAX:单元总数 SIZE:单元大小) -->
         <DISTQ NUM="4" MAX="8192" SIZE="4KB" />             <!-- 分发队列(NUM:队列数 MAX:单元总数 SIZE:单元大小) -->
-    </DOWNSTRM>
+    </FORWARD>
     <!-- 上行配置 -->
-    <UPSTRM PORT="28889">
+    <BACKEND PORT="28889">
         <PATH>../temp/frwder/up/</PATH>                     <!-- 工作路径 -->
         <AUTH>                                              <!-- 鉴权配置 -->
             <ITEM USR="qifeng" PASSWD="111111" />
@@ -21,5 +21,5 @@
         <THREAD-POOL RECV_THD_NUM="4" WORK_THD_NUM="2" />   <!-- 线程数据 -->
         <RECVQ NUM="4" MAX="8192" SIZE="4KB" />             <!-- 接收队列(NUM:队列数 MAX:单元总数 SIZE:单元大小) -->
         <DISTQ NUM="4" MAX="8192" SIZE="4KB" />             <!-- 分发队列(NUM:队列数 MAX:单元总数 SIZE:单元大小) -->
-    </UPSTRM>
+    </BACKEND>
 </FRWDER>

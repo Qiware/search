@@ -54,7 +54,7 @@ int frwd_set_reg(frwd_cntx_t *frwd)
 static int frwd_reg_req_cb(frwd_cntx_t *frwd)
 {
 #define FRWD_REG_REQ_CB(frwd, type, proc, args) \
-    if (rtmq_register((frwd)->downstrm, type, (rtmq_reg_cb_t)proc, (void *)args)) { \
+    if (rtmq_register((frwd)->forward, type, (rtmq_reg_cb_t)proc, (void *)args)) { \
         log_error((frwd)->log, "Register type [%d] failed!", type); \
         return FRWD_ERR; \
     }
@@ -79,7 +79,7 @@ static int frwd_reg_req_cb(frwd_cntx_t *frwd)
 static int frwd_reg_rsp_cb(frwd_cntx_t *frwd)
 {
 #define FRWD_REG_RSP_CB(frwd, type, proc, args) \
-    if (rtmq_register((frwd)->upstrm, type, (rtmq_reg_cb_t)proc, (void *)args)) { \
+    if (rtmq_register((frwd)->backend, type, (rtmq_reg_cb_t)proc, (void *)args)) { \
         log_error((frwd)->log, "Register type [%d] failed!", type); \
         return FRWD_ERR; \
     }
@@ -121,13 +121,13 @@ static int frwd_search_req_hdl(int type, int orig, char *data, size_t len, void 
     MESG_HEAD_HTON(head, head);
 
     /* > 发送数据 */
-    nid = rtmq_sub_query(ctx->upstrm, type);
+    nid = rtmq_sub_query(ctx->backend, type);
     if (-1 == nid) {
         log_error(ctx->log, "No module sub type! type:%u", type);
         return 0;
     }
 
-    if (rtmq_async_send(ctx->upstrm, type, nid, data, len)) {
+    if (rtmq_async_send(ctx->backend, type, nid, data, len)) {
         log_error(ctx->log, "Push data into send queue failed! type:%u", type);
         return -1;
     }
@@ -161,7 +161,7 @@ static int frwd_search_rsp_hdl(int type, int orig, char *data, size_t len, void 
     serial.serial = ntoh64(head->serial);
 
     /* > 发送数据 */
-    if (rtmq_async_send(ctx->downstrm, type, serial.nid, data, len)) {
+    if (rtmq_async_send(ctx->forward, type, serial.nid, data, len)) {
         log_error(ctx->log, "Push data into send queue failed! type:%u", type);
         return -1;
     }
@@ -189,7 +189,7 @@ static int frwd_insert_word_req_hdl(int type, int orig, char *data, size_t len, 
     frwd_cntx_t *ctx = (frwd_cntx_t *)args;
 
     /* > 发送数据 */
-    if (rtmq_async_send(ctx->upstrm, type, 30001, data, len)) {
+    if (rtmq_async_send(ctx->backend, type, 30001, data, len)) {
         log_error(ctx->log, "Push data into send queue failed! type:%u", type);
         return -1;
     }
@@ -226,7 +226,7 @@ static int frwd_insert_word_rsp_hdl(int type, int orig, char *data, size_t len, 
     MESG_HEAD_HTON(head, head);
 
     /* > 发送数据 */
-    if (rtmq_async_send(ctx->downstrm, type, serial.nid, data, len)) {
+    if (rtmq_async_send(ctx->forward, type, serial.nid, data, len)) {
         log_error(ctx->log, "Push data into send queue failed! type:%u", type);
         return -1;
     }

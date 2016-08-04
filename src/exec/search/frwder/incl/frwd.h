@@ -32,8 +32,8 @@ typedef struct
     int cmd_sck_id;                         /* 命令套接字 */
     frwd_conf_t conf;                       /* 配置信息 */
     log_cycle_t *log;                       /* 日志对象 */
-    rtmq_cntx_t *upstrm;                    /* UpStream对象 */
-    rtmq_cntx_t *downstrm;                  /* DownStream对象(用于接收来自下游的数据) */
+    rtmq_cntx_t *backend;                   /* Backend对象 */
+    rtmq_cntx_t *forward;                   /* Forward对象(用于接收来自下游的数据) */
 } frwd_cntx_t;
 
 int frwd_getopt(int argc, char **argv, frwd_opt_t *opt);

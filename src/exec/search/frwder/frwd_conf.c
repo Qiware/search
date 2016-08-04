@@ -13,8 +13,8 @@
 #include "rtmq_recv.h"
 
 static int frwd_conf_parse_comm(xml_tree_t *xml, frwd_conf_t *conf);
-static int frwd_conf_parse_upstrm(xml_tree_t *xml, const char *path, frwd_conf_t *fcf);
-static int frwd_conf_parse_downstrm(xml_tree_t *xml, const char *path, frwd_conf_t *fcf);
+static int frwd_conf_parse_backend(xml_tree_t *xml, const char *path, frwd_conf_t *fcf);
+static int frwd_conf_parse_forward(xml_tree_t *xml, const char *path, frwd_conf_t *fcf);
 
 /******************************************************************************
  **函数名称: frwd_load_conf
@@ -56,12 +56,12 @@ int frwd_load_conf(const char *path, frwd_conf_t *conf, log_cycle_t *log)
         }
 
         /* > 提取上游配置 */
-        if (frwd_conf_parse_upstrm(xml, ".FRWDER.UPSTRM", conf)) {
+        if (frwd_conf_parse_backend(xml, ".FRWDER.BACKEND", conf)) {
             break;
         }
 
         /* > 提取下游配置 */
-        if (frwd_conf_parse_downstrm(xml, ".FRWDER.DOWNSTRM", conf)) {
+        if (frwd_conf_parse_forward(xml, ".FRWDER.FORWARD", conf)) {
             break;
         }
 
@@ -113,8 +113,8 @@ static int frwd_conf_parse_comm(xml_tree_t *xml, frwd_conf_t *conf)
 }
 
 /******************************************************************************
- **函数名称: frwd_conf_parse_upstrm
- **功    能: 加载转发配置
+ **函数名称: frwd_conf_parse_backend
+ **功    能: 加载backend配置
  **输入参数: 
  **     xml: XML树
  **     path: 结点路径
@@ -125,11 +125,11 @@ static int frwd_conf_parse_comm(xml_tree_t *xml, frwd_conf_t *conf)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.06.09 #
  ******************************************************************************/
-static int frwd_conf_parse_upstrm(xml_tree_t *xml, const char *path, frwd_conf_t *fcf)
+static int frwd_conf_parse_backend(xml_tree_t *xml, const char *path, frwd_conf_t *fcf)
 {
     rtmq_auth_t *auth;
     xml_node_t *parent, *node, *usr, *passwd;
-    rtmq_conf_t *conf = &fcf->upstrm;
+    rtmq_conf_t *conf = &fcf->backend;
 
     parent = xml_query(xml, path);
     if (NULL == parent) {
@@ -323,7 +323,7 @@ static int frwd_conf_parse_upstrm(xml_tree_t *xml, const char *path, frwd_conf_t
 }
 
 /******************************************************************************
- **函数名称: frwd_conf_parse_downstrm
+ **函数名称: frwd_conf_parse_forward
  **功    能: 加载Download配置
  **输入参数: 
  **     xml: XML树
@@ -335,10 +335,10 @@ static int frwd_conf_parse_upstrm(xml_tree_t *xml, const char *path, frwd_conf_t
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.06.09 #
  ******************************************************************************/
-static int frwd_conf_parse_downstrm(xml_tree_t *xml, const char *path, frwd_conf_t *fcf)
+static int frwd_conf_parse_forward(xml_tree_t *xml, const char *path, frwd_conf_t *fcf)
 {
     rtmq_auth_t *auth;
-    rtmq_conf_t *conf = &fcf->downstrm;
+    rtmq_conf_t *conf = &fcf->forward;
     xml_node_t *parent, *node, *usr, *passwd;
 
     parent = xml_query(xml, path);
