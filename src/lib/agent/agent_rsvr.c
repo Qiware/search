@@ -1013,7 +1013,7 @@ static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
             }
 
             /* > 发入发送列表 */
-            sck =agent_push_into_send_list(ctx, rsvr, hhead.sid, addr[idx]); 
+            sck = agent_push_into_send_list(ctx, rsvr, hhead.sid, addr[idx]); 
             if (NULL == sck) {
                 log_error(ctx->log, "Query socket failed! serial:%lu sid:%lu",
                         hhead.serial, hhead.sid);

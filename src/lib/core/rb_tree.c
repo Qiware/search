@@ -1020,7 +1020,8 @@ int rbt_destroy(rbt_tree_t *tree, mem_dealloc_cb_t dealloc, void *args)
  **输出参数: NONE
  **返    回: VOID
  **实现描述: 处理思路可以参考rbt_print(), 但是稍微有些不同之处.
- **注意事项:
+ **注意事项: 遍历处理过程中的回调函数proc()必须禁止改变当前树的结构, 否则程序必
+ **          然出现crash的现象.
  **作    者: # Qifeng.zou # 2014.12.26 #
  ******************************************************************************/
 int rbt_trav(rbt_tree_t *tree, trav_cb_t proc, void *args)

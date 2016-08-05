@@ -1400,8 +1400,9 @@ static int _avl_trav(avl_node_t *node, trav_cb_t proc, void *args)
  **     args: 附加参数
  **输出参数: NONE
  **返    回: VOID
- **实现描述:
- **注意事项: 按照从小到大的顺序进行遍历
+ **实现描述: 按照从小到大的顺序进行遍历
+ **注意事项: 遍历处理过程中的回调函数proc()必须禁止改变当前树的结构, 否则程序必
+ **          然出现crash的现象.
  **作    者: # Qifeng.zou # 2014.12.23 #
  ******************************************************************************/
 int avl_trav(avl_tree_t *tree, trav_cb_t proc, void *args)
