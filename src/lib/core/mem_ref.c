@@ -11,69 +11,37 @@
 #include "rb_tree.h"
 #include "mem_ref.h"
 
-typedef struct
-{
-    void *addr;
-    size_t size;
-} mem_ref_key_t;
-
 /* 内存引用项 */
 typedef struct
 {
     void *addr;                     // 内存地址
-    size_t size;                    // 内存长度
     uint32_t count;                 // 引用次数
 
     struct {
         void *pool;                 // 内存池
-        mem_alloc_cb_t alloc;       // 申请回调
         mem_dealloc_cb_t dealloc;   // 释放回调
     };
 } mem_ref_item_t;
 
+/* 内存引用槽 */
+typedef struct
+{
+    pthread_rwlock_t lock;          // 读写锁
+    rbt_tree_t *tree;               // 内存引用表
+} mem_ref_slot_t;
+
 /* 全局对象 */
 typedef struct
 {
-    pthread_rwlock_t lock;
-    rbt_tree_t *tab;    // 内存引用表
+#define MEM_REF_SLOT_LEN (777)
+    mem_ref_slot_t slot[MEM_REF_SLOT_LEN];
 } mem_ref_cntx_t;
+
+#define MEM_REF_IDX(addr) ((uint64_t)addr % MEM_REF_SLOT_LEN)
 
 static mem_ref_cntx_t g_mem_ref_ctx; // 全局对象
 
-static int mem_ref_add(void *addr, size_t size, void *pool, mem_alloc_cb_t alloc, mem_dealloc_cb_t dealloc);
-
-/******************************************************************************
- **函数名称: mem_ref_cmp
- **功    能: 查找匹配
- **输入参数: 
- **     key1: 查询对象
- **     key2: 已存储主键
- **输出参数: NONE
- **返    回: 0:相等/<0:小于/>0:大于
- **实现描述:
- **注意事项:
- **     1. key1中的k指向正在查询的内存地址
- **     2. key2中的k指向mem_ref_key_t对象
- **     3. 插入是主键是(addr, size)两个字段, 但搜索时是(addr ~ addr+size-1)之间
- **        任一内存地址.
- **作    者: # Qifeng.zou # 2016.07.26 22:51:17 #
- ******************************************************************************/
-static int mem_ref_cmp(key_obj_t *key1, key_obj_t *key2)
-{
-    mem_ref_key_t *k1, *k2;
-
-    k1 = (mem_ref_key_t *)key1->k;
-    k2 = (mem_ref_key_t *)key2->k;
-
-    if (k1->addr < k2->addr) {
-        return -1; // 小于
-    }
-    else if (k1->addr > (k2->addr + k2->size - 1)) {
-        return 1; // 大于
-    }
-
-    return 0; // 等于
-}
+static int mem_ref_add(void *addr, void *pool, mem_dealloc_cb_t dealloc);
 
 /******************************************************************************
  **函数名称: mem_ref_init
@@ -87,15 +55,20 @@ static int mem_ref_cmp(key_obj_t *key1, key_obj_t *key2)
  ******************************************************************************/
 int mem_ref_init(void)
 {
+    int idx;
+    mem_ref_slot_t *slot;
     mem_ref_cntx_t *ctx = &g_mem_ref_ctx;
 
     memset(ctx, 0, sizeof(mem_ref_cntx_t));
 
-    pthread_rwlock_init(&ctx->lock, NULL);
+    for (idx=0; idx<MEM_REF_SLOT_LEN; ++idx) {
+        slot = &ctx->slot[idx];
 
-    ctx->tab = (rbt_tree_t *)rbt_creat(NULL, (cmp_cb_t)mem_ref_cmp);
-    if (NULL == ctx->tab) {
-        return -1;
+        pthread_rwlock_init(&slot->lock, NULL);
+        slot->tree = (rbt_tree_t *)rbt_creat(NULL, (cmp_cb_t)cmp_cb_ptr);
+        if (NULL == slot->tree) {
+            return -1;
+        }
     }
 
     return 0;
@@ -121,7 +94,7 @@ void *mem_ref_alloc(size_t size, void *pool,
         return NULL;
     }
 
-    mem_ref_add(addr, size, pool, alloc, dealloc);
+    mem_ref_add(addr, pool, dealloc);
 
     return addr;
 }
@@ -132,37 +105,32 @@ void *mem_ref_alloc(size_t size, void *pool,
  **输入参数:
  **     addr: 内存地址
  **输出参数: NONE
- **返    回: 内存池对象
+ **返    回: 引用次数
  **实现描述:
- **注意事项: 内存addr是通过系统调用分配的方可使用内存引用
+ **注意事项: 
  **作    者: # Qifeng.zou # 2016.09.08 #
  ******************************************************************************/
-static int mem_ref_add(void *addr, size_t size,
-        void *pool, mem_alloc_cb_t alloc, mem_dealloc_cb_t dealloc)
+static int mem_ref_add(void *addr, void *pool, mem_dealloc_cb_t dealloc)
 {
-    int cnt;
-    mem_ref_key_t key;
+    int cnt, idx;
+    mem_ref_slot_t *slot;
     mem_ref_item_t *item;
     mem_ref_cntx_t *ctx = &g_mem_ref_ctx;
 
-    key.addr = addr;
-    key.size = size;
+    idx = MEM_REF_IDX(addr);
+    slot = &ctx->slot[idx];
 
 AGAIN:
-    pthread_rwlock_rdlock(&ctx->lock);
+    pthread_rwlock_rdlock(&slot->lock);
 
     /* > 查询引用 */
-    item = (mem_ref_item_t *)rbt_query(ctx->tab, (void *)&key, sizeof(key));
+    item = (mem_ref_item_t *)rbt_query(slot->tree, (void *)addr, sizeof(addr));
     if (NULL != item) {
-        if (item->size != size) {
-            pthread_rwlock_unlock(&ctx->lock);
-            return -1;
-        }
         cnt = (int)atomic32_inc(&item->count);
-        pthread_rwlock_unlock(&ctx->lock);
+        pthread_rwlock_unlock(&slot->lock);
         return cnt;
     }
-    pthread_rwlock_unlock(&ctx->lock);
+    pthread_rwlock_unlock(&slot->lock);
 
 
     /* > 新增引用 */
@@ -172,21 +140,19 @@ AGAIN:
     }
 
     item->addr = addr;
-    item->size = size;
     cnt = ++item->count;
     item->pool = pool;
-    item->alloc = alloc;
     item->dealloc = dealloc;
 
-    pthread_rwlock_wrlock(&ctx->lock);
+    pthread_rwlock_wrlock(&slot->lock);
 
-    if (rbt_insert(ctx->tab, (void *)&key, sizeof(key), item)) {
-        pthread_rwlock_unlock(&ctx->lock);
+    if (rbt_insert(slot->tree, (void *)addr, sizeof(addr), item)) {
+        pthread_rwlock_unlock(&slot->lock);
         free(item);
         goto AGAIN;
     }
 
-    pthread_rwlock_unlock(&ctx->lock);
+    pthread_rwlock_unlock(&slot->lock);
 
     return cnt;
 }
@@ -219,24 +185,24 @@ void mem_ref_dealloc(void *pool, void *addr)
  ******************************************************************************/
 int mem_ref_incr(void *addr)
 {
-    int cnt;
-    mem_ref_key_t key;
+    int cnt, idx;
+    mem_ref_slot_t *slot;
     mem_ref_item_t *item;
     mem_ref_cntx_t *ctx = &g_mem_ref_ctx;
 
-    key.addr = addr;
-    key.size = 1;
+    idx = MEM_REF_IDX(addr);
+    slot = &ctx->slot[idx];
 
-    pthread_rwlock_rdlock(&ctx->lock);
+    pthread_rwlock_rdlock(&slot->lock);
 
-    item = (mem_ref_item_t *)rbt_query(ctx->tab, (void *)&key, sizeof(key));
+    item = (mem_ref_item_t *)rbt_query(slot->tree, (void *)addr, sizeof(addr));
     if (NULL != item) {
         cnt = (int)atomic32_inc(&item->count);
-        pthread_rwlock_unlock(&ctx->lock);
+        pthread_rwlock_unlock(&slot->lock);
         return cnt;
     }
 
-    pthread_rwlock_unlock(&ctx->lock);
+    pthread_rwlock_unlock(&slot->lock);
 
     return -1; // 未创建结点
 }
@@ -256,39 +222,39 @@ int mem_ref_incr(void *addr)
  ******************************************************************************/
 int mem_ref_decr(void *addr)
 {
-    int cnt;
-    mem_ref_key_t key;
+    int cnt, idx;
+    mem_ref_slot_t *slot;
     mem_ref_item_t *item, *temp;
     mem_ref_cntx_t *ctx = &g_mem_ref_ctx;
 
-    key.addr = addr;
-    key.size = 1;
+    idx = MEM_REF_IDX(addr);
+    slot = &ctx->slot[idx];
 
-    pthread_rwlock_rdlock(&ctx->lock);
+    pthread_rwlock_rdlock(&slot->lock);
 
-    item = (mem_ref_item_t *)rbt_query(ctx->tab, (void *)&key, sizeof(key));
+    item = (mem_ref_item_t *)rbt_query(slot->tree, (void *)addr, sizeof(addr));
     if (NULL == item) {
-        pthread_rwlock_unlock(&ctx->lock);
+        pthread_rwlock_unlock(&slot->lock);
         return 0; // Didn't find
     }
 
     cnt = (int)atomic32_dec(&item->count);
     if (0 == cnt) {
-        pthread_rwlock_unlock(&ctx->lock);
+        pthread_rwlock_unlock(&slot->lock);
 
-        pthread_rwlock_wrlock(&ctx->lock);
+        pthread_rwlock_wrlock(&slot->lock);
         if (0 == item->count) {
-            rbt_delete(ctx->tab, (void *)&key, sizeof(key), (void **)&temp);
-            pthread_rwlock_unlock(&ctx->lock);
+            rbt_delete(slot->tree, (void *)addr, sizeof(addr), (void **)&temp);
+            pthread_rwlock_unlock(&slot->lock);
 
             item->dealloc(item->pool, item->addr); // 释放被管理的内存
             free(item);
             return 0;
         }
-        pthread_rwlock_unlock(&ctx->lock);
+        pthread_rwlock_unlock(&slot->lock);
         return 0;
     }
 
-    pthread_rwlock_unlock(&ctx->lock);
+    pthread_rwlock_unlock(&slot->lock);
     return cnt;
 }
