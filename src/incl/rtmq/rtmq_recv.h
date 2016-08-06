@@ -94,7 +94,7 @@ typedef struct _rtrd_sck_t
     rtmq_snap_t recv;                   /* 接收快照 */
     wiov_t send;                        /* 发送缓存 */
 
-    list_t *mesg_list;                  /* 发送消息链表 */
+    list2_t *mesg_list;                 /* 发送消息链表 */
 
     uint64_t recv_total;                /* 接收的数据条数 */
 } rtmq_sck_t;

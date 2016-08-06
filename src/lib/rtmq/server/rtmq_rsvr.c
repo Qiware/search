@@ -406,7 +406,7 @@ static int rtmq_rsvr_wiov_add(rtmq_rsvr_t *rsvr, rtmq_sck_t *sck)
     /* > 从消息链表取数据 */
     while (!wiov_isfull(send)) {
         /* 1 是否有数据 */
-        head = (rtmq_header_t *)list_lpop(sck->mesg_list);;
+        head = (rtmq_header_t *)list2_lpop(sck->mesg_list);;
         if (NULL == head) {
             break; /* 无数据 */
         }
@@ -414,6 +414,7 @@ static int rtmq_rsvr_wiov_add(rtmq_rsvr_t *rsvr, rtmq_sck_t *sck)
             assert(0);
         }
 
+        mem_ref_check((void *)head);
         len = sizeof(rtmq_header_t) + head->length; /* 当前消息总长度 */
 
         /* 3 设置头部数据 */
@@ -900,9 +901,9 @@ static int rtmq_rsvr_keepalive_req_hdl(rtmq_cntx_t *ctx,
     head->chksum = RTMQ_CHKSUM_VAL;
 
     /* > 加入发送列表 */
-    if (list_rpush(sck->mesg_list, rsp)) {
+    if (list2_rpush(sck->mesg_list, rsp)) {
         mem_ref_decr(rsp);
-        log_error(rsvr->log, "Insert into list failed!");
+        log_error(rsvr->log, "Insert into mesg list failed!");
         return RTMQ_ERR;
     }
 
@@ -935,8 +936,7 @@ static int rtmq_rsvr_link_auth_rsp(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck
     len = sizeof(rtmq_header_t) + sizeof(rtmq_link_auth_rsp_t);
 
     addr = (void *)mem_ref_alloc(len, NULL,
-            (mem_alloc_cb_t)mem_alloc,
-            (mem_dealloc_cb_t)mem_dealloc);
+            (mem_alloc_cb_t)mem_alloc, (mem_dealloc_cb_t)mem_dealloc);
     if (NULL == addr) {
         log_error(rsvr->log, "Alloc memory failed!");
         return RTMQ_ERR;
@@ -955,7 +955,7 @@ static int rtmq_rsvr_link_auth_rsp(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck
     link_auth_rsp->is_succ = htonl(sck->auth_succ);
 
     /* > 加入发送列表 */
-    if (list_rpush(sck->mesg_list, addr)) {
+    if (list2_rpush(sck->mesg_list, addr)) {
         mem_ref_decr(addr);
         log_error(rsvr->log, "Insert into list failed!");
         return RTMQ_ERR;
@@ -1257,7 +1257,7 @@ static rtmq_sck_t *rtmq_rsvr_sck_creat(rtmq_rsvr_t *rsvr, rtmq_cmd_add_sck_t *re
         }
 
         /* > 创建发送链表 */
-        sck->mesg_list = list_creat(NULL);
+        sck->mesg_list = list2_creat(NULL);
         if (NULL == sck->mesg_list) {
             log_error(rsvr->log, "Create list failed!");
             break;
@@ -1349,7 +1349,7 @@ static void rtmq_rsvr_sck_free(rtmq_rsvr_t *rsvr, rtmq_sck_t *sck)
 
     /* 释放发送链表空间 */
     if (sck->mesg_list) {
-        list_destroy(sck->mesg_list, (mem_dealloc_cb_t)mem_dealloc, NULL);
+        list2_destroy(sck->mesg_list, (mem_dealloc_cb_t)mem_ref_dealloc, NULL);
     }
 
     /* 释放iov的空间 */
@@ -1583,10 +1583,10 @@ static int rtmq_rsvr_dist_data(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr)
 #define RTRD_POP_MAX_NUM (1024)
     int idx, num;
     ring_t *sendq;
-    void *data[RTRD_POP_MAX_NUM];
-    rtmq_frwd_t *frwd;
     rtmq_sck_t *sck;
     _conn_list_t cl;
+    rtmq_header_t *head;
+    void *data[RTRD_POP_MAX_NUM];
 
     sendq = ctx->sendq[rsvr->id];
 
@@ -1606,10 +1606,12 @@ static int rtmq_rsvr_dist_data(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr)
 
         /* > 逐条处理数据 */
         for (idx=0; idx<num; ++idx) {
-            frwd = (rtmq_frwd_t *)data[idx];
+            head = (rtmq_header_t *)data[idx];
+
+            mem_ref_check(data[idx]);
 
             /* > 查找发送连接 */
-            cl.nid = frwd->dest;
+            cl.nid = head->nid;
             cl.list = list_creat(NULL);
             if (NULL == cl.list) {
                 mem_ref_decr(data[idx]);
@@ -1635,9 +1637,9 @@ static int rtmq_rsvr_dist_data(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr)
 
 
             /* > 放入发送链表 */
-            if (list_rpush(sck->mesg_list, data[idx])) {
+            if (list2_rpush(sck->mesg_list, data[idx])) {
                 mem_ref_decr(data[idx]);
-                log_error(rsvr->log, "Push input list failed!");
+                log_error(rsvr->log, "Push input mesg list failed!");
                 continue;
             }
         }

@@ -124,7 +124,7 @@ AGAIN:
     pthread_rwlock_rdlock(&slot->lock);
 
     /* > 查询引用 */
-    item = (mem_ref_item_t *)rbt_query(slot->tree, (void *)addr, sizeof(addr));
+    item = (mem_ref_item_t *)rbt_query(slot->tree, (void *)&addr, sizeof(addr));
     if (NULL != item) {
         cnt = (int)atomic32_inc(&item->count);
         pthread_rwlock_unlock(&slot->lock);
@@ -146,7 +146,7 @@ AGAIN:
 
     pthread_rwlock_wrlock(&slot->lock);
 
-    if (rbt_insert(slot->tree, (void *)addr, sizeof(addr), item)) {
+    if (rbt_insert(slot->tree, (void *)&addr, sizeof(addr), item)) {
         pthread_rwlock_unlock(&slot->lock);
         free(item);
         goto AGAIN;
@@ -195,7 +195,7 @@ int mem_ref_incr(void *addr)
 
     pthread_rwlock_rdlock(&slot->lock);
 
-    item = (mem_ref_item_t *)rbt_query(slot->tree, (void *)addr, sizeof(addr));
+    item = (mem_ref_item_t *)rbt_query(slot->tree, (void *)&addr, sizeof(addr));
     if (NULL != item) {
         cnt = (int)atomic32_inc(&item->count);
         pthread_rwlock_unlock(&slot->lock);
@@ -232,7 +232,7 @@ int mem_ref_decr(void *addr)
 
     pthread_rwlock_rdlock(&slot->lock);
 
-    item = (mem_ref_item_t *)rbt_query(slot->tree, (void *)addr, sizeof(addr));
+    item = (mem_ref_item_t *)rbt_query(slot->tree, (void *)&addr, sizeof(addr));
     if (NULL == item) {
         pthread_rwlock_unlock(&slot->lock);
         return 0; // Didn't find
@@ -243,8 +243,14 @@ int mem_ref_decr(void *addr)
         pthread_rwlock_unlock(&slot->lock);
 
         pthread_rwlock_wrlock(&slot->lock);
+        item = (mem_ref_item_t *)rbt_query(slot->tree, (void *)&addr, sizeof(addr));
+        if (NULL == item) {
+            pthread_rwlock_unlock(&slot->lock);
+            return 0; // Didn't find
+        }
+
         if (0 == item->count) {
-            rbt_delete(slot->tree, (void *)addr, sizeof(addr), (void **)&temp);
+            rbt_delete(slot->tree, (void *)&addr, sizeof(addr), (void **)&temp);
             pthread_rwlock_unlock(&slot->lock);
 
             item->dealloc(item->pool, item->addr); // 释放被管理的内存
@@ -258,3 +264,42 @@ int mem_ref_decr(void *addr)
     pthread_rwlock_unlock(&slot->lock);
     return cnt;
 }
+
+/******************************************************************************
+ **函数名称: mem_ref_check
+ **功    能: 内存引用检测
+ **输入参数:
+ **     addr: 内存地址
+ **输出参数: NONE
+ **返    回: 引用次数
+ **实现描述:
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2016.09.08 #
+ ******************************************************************************/
+int mem_ref_check(void *addr)
+{
+    int cnt, idx;
+    mem_ref_slot_t *slot;
+    mem_ref_item_t *item;
+    mem_ref_cntx_t *ctx = &g_mem_ref_ctx;
+
+    idx = MEM_REF_IDX(addr);
+    slot = &ctx->slot[idx];
+
+    pthread_rwlock_rdlock(&slot->lock);
+
+    /* > 查询引用 */
+    item = (mem_ref_item_t *)rbt_query(slot->tree, (void *)&addr, sizeof(addr));
+    if (NULL != item) {
+        cnt = item->count;
+        pthread_rwlock_unlock(&slot->lock);
+        return cnt;
+    }
+    pthread_rwlock_unlock(&slot->lock);
+
+    assert(0);
+
+    return 0;
+}
+
+

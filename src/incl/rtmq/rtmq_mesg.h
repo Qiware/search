@@ -43,7 +43,7 @@ typedef enum
 typedef struct
 {
     uint32_t type;                      /* 命令类型 */
-    uint32_t nid;                       /* 源结点ID */
+    uint32_t nid;                       /* 结点ID(上行消息则为源结点ID, 下行消息则为目的结点ID) */
 #define RTMQ_SYS_MESG   (0)             /* 系统类型 */
 #define RTMQ_EXP_MESG   (1)             /* 自定义类型 */
     uint8_t flag;                       /* 消息标志
@@ -73,14 +73,6 @@ typedef struct
 
 /* 校验数据头 */
 #define RTMQ_HEAD_ISVALID(head) (RTMQ_CHKSUM_ISVALID(head))
-
-/* 转发信息 */
-typedef struct
-{
-    int type;                           /* 消息类型 */
-    int dest;                           /* 目标结点ID */
-    int length;                         /* 报体长度 */
-} rtmq_frwd_t;
 
 /* 链路鉴权请求 */
 typedef struct
