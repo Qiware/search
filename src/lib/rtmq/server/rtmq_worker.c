@@ -14,6 +14,8 @@
 #include "rtmq_recv.h"
 #include "thread_pool.h"
 
+#define RTRD_WORK_POP_NUM     (1024)
+
 /* 静态函数 */
 static rtmq_worker_t *rtmq_worker_get_curr(rtmq_cntx_t *ctx);
 static int rtmq_worker_event_core_hdl(rtmq_cntx_t *ctx, rtmq_worker_t *worker);
@@ -208,12 +210,11 @@ static int rtmq_worker_event_core_hdl(rtmq_cntx_t *ctx, rtmq_worker_t *worker)
  ******************************************************************************/
 static int rtmq_worker_cmd_proc_req_hdl(rtmq_cntx_t *ctx, rtmq_worker_t *worker, const rtmq_cmd_t *cmd)
 {
-#define RTRD_WORK_POP_NUM     (1024)
     int idx, num;
-    ring_t *rq;
+    queue_t *rq;
     rtmq_reg_t *reg;
     rtmq_header_t *head;
-    void *addr[RTRD_WORK_POP_NUM];
+    rtmq_recv_item_t *item[RTRD_WORK_POP_NUM];
     const rtmq_cmd_proc_req_t *work_cmd = (const rtmq_cmd_proc_req_t *)&cmd->param;
 
     /* > 获取接收队列 */
@@ -221,30 +222,31 @@ static int rtmq_worker_cmd_proc_req_hdl(rtmq_cntx_t *ctx, rtmq_worker_t *worker,
 
     while (1) {
         /* > 从接收队列获取数据 */
-        num = MIN(ring_used(rq), RTRD_WORK_POP_NUM);
+        num = MIN(queue_used(rq), RTRD_WORK_POP_NUM);
         if (0 == num) {
             return RTMQ_OK;
         }
 
-        num = ring_mpop(rq, addr, num);
+        num = queue_mpop(rq, (void **)item, num);
         if (0 == num) {
             continue;
         }
 
         /* > 依次处理各条数据 */
         for (idx=0; idx<num; ++idx) {
-            head = (rtmq_header_t *)addr[idx];
+            head = (rtmq_header_t *)item[idx]->data;
 
             reg = avl_query(ctx->reg, &head->type, sizeof(head->type));
             if (NULL == reg) {
-                mem_ref_decr(addr[idx]);
                 ++worker->drop_total;   /* 丢弃计数 */
+                mem_ref_decr(item[idx]->base);
+                queue_dealloc(rq, (void *)item[idx]);
                 log_trace(ctx->log, "Drop data! type:%u", head->type);
                 continue;
             }
 
             if (reg->proc(head->type, head->nid,
-                    addr[idx] + sizeof(rtmq_header_t), head->length, reg->param))
+                (void *)(head + 1), head->length, reg->param))
             {
                 ++worker->err_total;    /* 错误计数 */
             }
@@ -253,7 +255,8 @@ static int rtmq_worker_cmd_proc_req_hdl(rtmq_cntx_t *ctx, rtmq_worker_t *worker,
             }
 
             /* > 释放内存空间 */
-            mem_ref_decr(addr[idx]);
+            mem_ref_decr(item[idx]->base);
+            queue_dealloc(rq, (void *)item[idx]);
         }
     }
 

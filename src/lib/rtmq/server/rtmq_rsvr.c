@@ -27,7 +27,7 @@ static int rtmq_rsvr_recv_proc(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t *
 static int rtmq_rsvr_data_proc(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t *sck);
 
 static int rtmq_rsvr_sys_mesg_proc(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t *sck, void *addr);
-static int rtmq_rsvr_exp_mesg_proc(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t *sck, void *addr);
+static int rtmq_rsvr_exp_mesg_proc(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t *sck, void *base, void *addr);
 
 static int rtmq_rsvr_keepalive_req_hdl(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t *sck, void *addr);
 static int rtmq_rsvr_link_auth_req_hdl(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t *sck, void *addr);
@@ -658,7 +658,7 @@ static int rtmq_rsvr_data_proc(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t *
             }
         }
         else {
-            rtmq_rsvr_exp_mesg_proc(ctx, rsvr, sck, curr->optr);
+            rtmq_rsvr_exp_mesg_proc(ctx, rsvr, sck, curr->base, curr->optr);
         }
         curr->optr += one_mesg_len;
     }
@@ -709,6 +709,8 @@ static int rtmq_rsvr_sys_mesg_proc(rtmq_cntx_t *ctx,
  **     ctx: 全局对象
  **     rsvr: 接收服务
  **     sck: 套接字对象
+ **     base: 内存基地址(用于内存引用计数)
+ **     data: 实际数据
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述:
@@ -719,10 +721,11 @@ static int rtmq_rsvr_sys_mesg_proc(rtmq_cntx_t *ctx,
  **作    者: # Qifeng.zou # 2015.01.01 #
  ******************************************************************************/
 static int rtmq_rsvr_exp_mesg_proc(rtmq_cntx_t *ctx,
-        rtmq_rsvr_t *rsvr, rtmq_sck_t *sck, void *data)
+        rtmq_rsvr_t *rsvr, rtmq_sck_t *sck, void *base, void *data)
 {
-    ring_t *rq;
+    queue_t *rq;
     int rqid, len;
+    rtmq_recv_item_t *item;
     rtmq_header_t *head = (rtmq_header_t *)data;
 
     if (!sck->auth_succ) {
@@ -743,17 +746,21 @@ static int rtmq_rsvr_exp_mesg_proc(rtmq_cntx_t *ctx,
     rqid = rand() % ctx->conf.recvq_num;
     rq = ctx->recvq[rqid];
 
-    mem_ref_incr(data); /* 引用技术+1 */
-
-    if (ring_push(rq, data)) {
-        mem_ref_decr(data); /* 引用技术-1 */
+    item = queue_malloc(rq, sizeof(rtmq_recv_item_t));
+    if (NULL == item) {
         ++rsvr->drop_total; /* 丢弃计数 */
         rtmq_rsvr_cmd_proc_all_req(ctx, rsvr);
-
         log_error(rsvr->log, "Alloc from queue failed! recv:%llu drop:%llu error:%llu len:%d",
                 rsvr->recv_total, rsvr->drop_total, rsvr->err_total, len);
         return RTMQ_ERR;
     }
+
+    mem_ref_incr(base); /* 引用计数+1 */
+
+    item->base = base;
+    item->data = data;
+
+    queue_push(rq, item);
 
     rtmq_rsvr_cmd_proc_req(ctx, rsvr, rqid);    /* 发送处理请求 */
 
