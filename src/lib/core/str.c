@@ -274,12 +274,12 @@ int str_to_hex(const char *str, int len, char *hex)
 size_t str_to_num(const char *str)
 {
     int len = 0;
-    size_t size, unit;
+    size_t num = 0, unit;
     const char *ptr = str;
 
     for (; '\0'!=*ptr; ptr+=1) {
         if (isdigit(*ptr)) {
-            size = 10*size + (*ptr - '0');
+            num = 10*num + (*ptr - '0');
             continue;
         }
         else if (' ' == *ptr) {
@@ -327,8 +327,8 @@ size_t str_to_num(const char *str)
                 return 0;
             }
         }
-        return size * unit;
+        return num * unit;
     }
 
-    return size;
+    return num;
 }
