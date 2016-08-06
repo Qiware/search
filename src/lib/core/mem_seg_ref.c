@@ -37,7 +37,7 @@ typedef struct
 typedef struct
 {
     pthread_rwlock_t lock;
-    rbt_tree_t *tab;    // 内存引用表
+    rbt_tree_t *tree;    // 内存引用表
 } mem_seg_ref_cntx_t;
 
 static mem_seg_ref_cntx_t g_msr_ctx; // 全局对象
