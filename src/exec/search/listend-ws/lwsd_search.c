@@ -1,4 +1,5 @@
 #include "comm.h"
+#include "redo.h"
 #include "lwsd.h"
 #include "utils.h"
 #include "lwsd_search.h"
@@ -137,6 +138,7 @@ int lwsd_callback_search_hdl(struct libwebsocket_context *lws,
 static int lwsd_search_wsi_user_init(lwsd_cntx_t *ctx,
         struct libwebsocket *wsi, lwsd_search_user_data_t *user)
 {
+    lwsd_wsi_item_t *item;
     lwsd_conf_t *conf = &ctx->conf;
 
     /* > 初始化数据 */
@@ -153,9 +155,20 @@ static int lwsd_search_wsi_user_init(lwsd_cntx_t *ctx,
         return -1;
     }
 
+    /* > 新建WSI项 */
+    item = (lwsd_wsi_item_t *)calloc(1, sizeof(lwsd_wsi_item_t));
+    if (NULL == item) {
+        log_error(ctx->log, "Alloc memory failed! errmsg:[%d] %s!", errno, strerror(errno));
+        return -1;
+    }
+
+    item->wsi = wsi;
+    item->sid = user->sid;
+
     /* > 插入WSI管理表 */
-    if (rbt_insert(ctx->wsi_map, (void *)wsi)) {
+    if (rbt_insert(ctx->wsi_map, (void *)item)) {
         list_destroy(user->send_list, mem_dealloc, NULL);
+        FREE(item);
         log_error(ctx->log, "Insert wsi map failed! sid:%lu", user->sid);
         return -1;
     }
@@ -197,9 +210,7 @@ static int lwsd_search_wsi_user_free(lwsd_cntx_t *ctx, lwsd_search_user_data_t *
  ******************************************************************************/
 static int lwsd_search_wsi_destroy(lwsd_cntx_t *ctx, lwsd_search_user_data_t *user)
 {
-    struct libwebsocket *wsi, key;
-
-    key.user_space = user;
+    lwsd_wsi_item_t *item, key;
 
     if (NULL == user) {
         return 0;
@@ -209,8 +220,14 @@ static int lwsd_search_wsi_destroy(lwsd_cntx_t *ctx, lwsd_search_user_data_t *us
         user->pl = NULL;
     }
 
-    rbt_delete(ctx->wsi_map, (void *)&key, (void **)&wsi); 
+    /* > 查找&清理wsi映射表 */
+    key.sid = user->sid;
 
+    rbt_delete(ctx->wsi_map, (void *)&key, (void **)&item); 
+
+    FREE(item);
+
+    /* > 释放user数据 */
     return lwsd_search_wsi_user_free(ctx, user);
 }
 
@@ -355,33 +372,32 @@ static int lwsd_search_send_data(lwsd_cntx_t *ctx,
  ******************************************************************************/
 int lwsd_search_async_send(lwsd_cntx_t *ctx, uint64_t sid, const void *addr, size_t len)
 {
-    void *item;
+    void *data;
     lwsd_mesg_payload_t *pl;
-    struct libwebsocket *wsi, key;
-    lwsd_search_user_data_t *user, user_for_key;
-
-    user_for_key.sid = sid;
-    key.user_space = &user_for_key;
+    lwsd_wsi_item_t *item, key;
+    lwsd_search_user_data_t *user;
 
     /* > 通过sid找到对应的wsi对象 */
-    wsi = (struct libwebsocket *)rbt_query(ctx->wsi_map, &key);
-    if (NULL == wsi) {
+    key.sid = sid;
+
+    item = (lwsd_wsi_item_t *)rbt_query(ctx->wsi_map, &key);
+    if (NULL == item) {
         log_error(ctx->log, "Get wsi failed! sid:%lu", sid);
         return -1;
     }
 
-    user = lws_wsi_get_user_space(wsi);
+    user = lws_wsi_get_user_space(item->wsi);
     if (NULL == user) {
         log_error(ctx->log, "Get user of wsi failed! sid:%lu", sid);
         return -1;
     }
 
     /* > 将data放入wsi发送队列中 */
-    item = (void *)mem_alloc(NULL, sizeof(lwsd_mesg_payload_t)
+    data = (void *)mem_alloc(NULL, sizeof(lwsd_mesg_payload_t)
             + LWS_SEND_BUFFER_PRE_PADDING
             + len
             + LWS_SEND_BUFFER_POST_PADDING);
-    if (NULL == item) {
+    if (NULL == data) {
         log_error(ctx->log, "Alloc memory failed! sid:%lu", user->sid);
         return -1;
     }
@@ -392,13 +408,13 @@ int lwsd_search_async_send(lwsd_cntx_t *ctx, uint64_t sid, const void *addr, siz
     pl->len = len;
     pl->offset = 0;
 
-    if (list_rpush(user->send_list, item)) {
+    if (list_rpush(user->send_list, data)) {
         log_error(ctx->log, "Push data into send list failed! sid:%lu", user->sid);
-        mem_dealloc(NULL, item);
+        mem_dealloc(NULL, data);
         return -1;
     }
 
-    lws_callback_on_writable(ctx->lws, wsi);
+    lws_callback_on_writable(ctx->lws, item->wsi);
 
     return 0;
 }

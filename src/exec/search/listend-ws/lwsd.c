@@ -184,22 +184,17 @@ static int lwsd_reg_cmp_cb(const lws_reg_t *reg1, const lws_reg_t *reg2)
  **函数名称: lwsd_wsi_map_cmp_cb
  **功    能: 注册比较回调
  **输入参数:
- **     reg1: 注册回调项1
- **     reg2: 注册回调项2
+ **     item1: WSI项1
+ **     item2: WSI项2
  **输出参数: NONE
  **返    回: =0:相等 <0:小于 >0:大于
  **实现描述: 
  **注意事项: 
  **作    者: # Qifeng.zou # 2016.08.09 10:59:58 #
  ******************************************************************************/
-static int lwsd_wsi_map_cmp_cb(struct libwebsocket *wsi1, struct libwebsocket *wsi2)
+static int lwsd_wsi_map_cmp_cb(lwsd_wsi_item_t *item1, lwsd_wsi_item_t *item2)
 {
-    const lwsd_search_user_data_t *user1, *user2;
-
-    user1 = lws_wsi_get_user_space(wsi1);
-    user2 = lws_wsi_get_user_space(wsi2);
-
-    return (user1->sid - user2->sid);
+    return (item1->sid - item2->sid);
 }
 
 /******************************************************************************

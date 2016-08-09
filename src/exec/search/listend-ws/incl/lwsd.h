@@ -29,6 +29,13 @@ typedef struct
     char *conf_path;                        /* 配置路径 */
 } lwsd_opt_t;
 
+/* WSI项 */
+typedef struct
+{
+    uint64_t sid;                           /* 会话ID */
+    struct libwebsocket *wsi;               /* WSI对象 */
+} lwsd_wsi_item_t;
+
 /* 全局对象 */
 typedef struct
 {
@@ -36,7 +43,8 @@ typedef struct
     log_cycle_t *log;                       /* 日志对象 */
 
     avl_tree_t *lws_reg;                    /* LWS注册表 */
-    rbt_tree_t *wsi_map;                    /* WSI管理表 */
+    rbt_tree_t *wsi_map;                    /* WSI管理表(lwsd_wsi_item_t) */
+
     uint32_t wsi_seq;                       /* WSI序列号(递增) */
     uint32_t req_seq;                       /* REQ序列号(递增) */
     struct libwebsocket_context *lws;       /* LWS上下文 */
