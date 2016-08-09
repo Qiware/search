@@ -106,6 +106,23 @@ void *crwl_manager_routine(void *_ctx)
 }
 
 /******************************************************************************
+ **函数名称: crwl_man_reg_cmp_cb
+ **功    能: 注册比较回调
+ **输入参数:
+ **     reg1: 注册项1
+ **     reg2: 注册项2
+ **输出参数:
+ **返    回: 0:相等 <0:小于 >0:大于
+ **实现描述:
+ **注意事项:
+ **作    者: # Qifeng.zou # 2016.08.09 11:03:20 #
+ ******************************************************************************/
+static int crwl_man_reg_cmp_cb(const crwl_man_reg_t *reg1, const crwl_man_reg_t *reg2)
+{
+    return (reg1->type - reg2->type);
+}
+
+/******************************************************************************
  **函数名称: crwl_man_init
  **功    能: 初始化代理
  **输入参数:
@@ -133,7 +150,7 @@ static crwl_man_t *crwl_man_init(crwl_cntx_t *ctx)
 
     do {
         /* > 创建AVL树 */
-        man->reg = avl_creat(NULL, (cmp_cb_t)cmp_cb_int32);
+        man->reg = avl_creat(NULL, (cmp_cb_t)crwl_man_reg_cmp_cb);
         if (NULL == man->reg) {
             log_error(man->log, "Create AVL failed!");
             return NULL;
@@ -207,9 +224,7 @@ static int crwl_man_register(crwl_man_t *man, int type, crwl_man_reg_cb_t proc, 
     reg->args = NULL;
 
     /* > 插入平衡二叉树 */
-    reg->type = type;
-
-    ret = avl_insert(man->reg, &type, sizeof(type), reg);
+    ret = avl_insert(man->reg, reg);
     if (0 != ret) {
         log_error(man->log, "Register failed! ret:%d", ret);
         return CRWL_ERR;
@@ -270,7 +285,7 @@ static int crwl_man_recv_cmd(crwl_cntx_t *ctx, crwl_man_t *man)
     ssize_t n;
     crwl_cmd_t cmd;
     socklen_t addrlen;
-    crwl_man_reg_t *reg;
+    crwl_man_reg_t *reg, key;
     struct sockaddr_un from;
 
     /* > 接收命令 */
@@ -288,7 +303,8 @@ static int crwl_man_recv_cmd(crwl_cntx_t *ctx, crwl_man_t *man)
     cmd.type = ntohl(cmd.type);
 
     /* > 查找回调 */
-    reg = (crwl_man_reg_t *)avl_query(man->reg, (void *)&cmd.type, sizeof(cmd.type));
+    key.type = cmd.type;
+    reg = (crwl_man_reg_t *)avl_query(man->reg, (void *)&key);
     if (NULL == reg) {
         log_error(man->log, "Didn't register callback for type [%d]!", cmd.type);
         return CRWL_ERR;

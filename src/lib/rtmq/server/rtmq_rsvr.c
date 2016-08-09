@@ -1058,14 +1058,15 @@ static int rtmq_rsvr_sub_find_or_add(rtmq_cntx_t *ctx, rtmq_sck_t *sck, int type
 {
     int ret;
     rtmq_sub_mgr_t *sub;
-    rtmq_sub_list_t *list;
     rtmq_sub_node_t *node;
+    rtmq_sub_list_t *list, key;
 
     /* > Find or add sub node */
     sub = &ctx->sub_mgr;
     pthread_rwlock_wrlock(&sub->sub_one_lock);
     do {
-        list = (rtmq_sub_list_t *)avl_query(sub->sub_one_tab, &type, sizeof(type));
+        key.type = type;
+        list = (rtmq_sub_list_t *)avl_query(sub->sub_one_tab, (void *)&key);
         if (NULL == list) {
             list = (rtmq_sub_list_t *)rtmq_sub_list_creat(type);
             if (NULL == list) {
@@ -1073,7 +1074,7 @@ static int rtmq_rsvr_sub_find_or_add(rtmq_cntx_t *ctx, rtmq_sck_t *sck, int type
                 break;
             }
 
-            if (avl_insert(sub->sub_one_tab, &type, sizeof(type), (void *)list)) {
+            if (avl_insert(sub->sub_one_tab, (void *)list)) {
                 rtmq_sub_list_free(list);
                 log_error(ctx->log, "Insert sub table failed!");
                 break;
@@ -1115,14 +1116,15 @@ static int rtmq_sub_del(rtmq_cntx_t *ctx, rtmq_sck_t *sck, int type)
 {
     void *addr;
     rtmq_sub_mgr_t *sub;
-    rtmq_sub_list_t *list;
     rtmq_sub_node_t *node;
+    rtmq_sub_list_t *list, key;
 
     sub = &ctx->sub_mgr;
+    key.type = type;
 
     pthread_rwlock_wrlock(&sub->sub_one_lock);
     do {
-        list = (rtmq_sub_list_t *)avl_query(sub->sub_one_tab, &type, sizeof(type));
+        list = (rtmq_sub_list_t *)avl_query(sub->sub_one_tab, &key);
         if (NULL == list) {
             break;
         }
@@ -1135,7 +1137,7 @@ static int rtmq_sub_del(rtmq_cntx_t *ctx, rtmq_sck_t *sck, int type)
         free(node);
 
         if (0 == list2_len(list->nodes)) {
-            avl_delete(sub->sub_one_tab, &type, sizeof(type), &addr);
+            avl_delete(sub->sub_one_tab, &key, (void *)&addr);
             free(list);
         }
     } while(0);
@@ -1147,9 +1149,11 @@ static int rtmq_sub_del(rtmq_cntx_t *ctx, rtmq_sck_t *sck, int type)
 /* 添加订阅数据 */
 static int rtmq_rsvr_sck_add_sub(rtmq_cntx_t *ctx, rtmq_sck_t *sck, int type)
 {
-    rtmq_sub_req_t *req;
+    rtmq_sub_req_t *req, key;
 
-    req = (rtmq_sub_req_t *)avl_query(sck->sub_list, &type, sizeof(type));
+    key.type = type;
+
+    req = (rtmq_sub_req_t *)avl_query(sck->sub_list, &key);
     if (NULL != req) {
         log_warn(ctx->log, "Socket sub [%u] repeat!", type);
         return 0;
@@ -1162,7 +1166,7 @@ static int rtmq_rsvr_sck_add_sub(rtmq_cntx_t *ctx, rtmq_sck_t *sck, int type)
 
     req->type = type;
 
-    if (avl_insert(sck->sub_list, &type, sizeof(type), (void *)req)) {
+    if (avl_insert(sck->sub_list, (void *)req)) {
         free(req);
         return -1;
     }
@@ -1226,6 +1230,11 @@ static int rtmq_rsvr_sub_req_hdl(rtmq_cntx_t *ctx, rtmq_rsvr_t *rsvr, rtmq_sck_t
  **注意事项: 套接字关闭时, 记得释放空间, 防止内存泄露!
  **作    者: # Qifeng.zou # 2015.06.11 #
  ******************************************************************************/
+static int rtmq_sub_list_cmp_cb(const rtmq_sub_req_t *req1, const rtmq_sub_req_t *req2)
+{
+    return (req1->type - req2->type);
+}
+
 static rtmq_sck_t *rtmq_rsvr_sck_creat(rtmq_rsvr_t *rsvr, rtmq_cmd_add_sck_t *req)
 {
     rtmq_sck_t *sck;
@@ -1250,7 +1259,7 @@ static rtmq_sck_t *rtmq_rsvr_sck_creat(rtmq_rsvr_t *rsvr, rtmq_cmd_add_sck_t *re
 
     do {
         /* > 创建订阅列表 */
-        sck->sub_list = avl_creat(NULL, (cmp_cb_t)cmp_cb_int32);
+        sck->sub_list = avl_creat(NULL, (cmp_cb_t)rtmq_sub_list_cmp_cb);
         if (NULL == sck->sub_list) {
             log_error(rsvr->log, "Create sub list failed!");
             break;
@@ -1285,15 +1294,17 @@ typedef struct {
 
 int rtmq_rsvr_sck_sub_item_free(rtmq_rsvr_sck_sub_trav_t *args, rtmq_sub_req_t *req)
 {
-    rtmq_sub_list_t *list;
     rtmq_sub_node_t *node;
+    rtmq_sub_list_t *list, key;
     rtmq_sck_t *sck = args->sck;
     rtmq_cntx_t *ctx = args->ctx;
     rtmq_sub_mgr_t *sub = &ctx->sub_mgr;
 
+    key.type = req->type;
+
     pthread_rwlock_wrlock(&sub->sub_one_lock);
     do {
-        list = avl_query(sub->sub_one_tab, &req->type, sizeof(req->type));
+        list = avl_query(sub->sub_one_tab, &key);
         if (NULL == list) {
             break;
         }

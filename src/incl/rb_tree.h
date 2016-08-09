@@ -40,13 +40,12 @@ typedef struct
 /* 结点结构 */
 typedef struct _rbt_node_t
 {
-    key_obj_t key;                  /* 主键(唯一值) */
     int32_t color;                  /* 结点颜色: RBT_COLOR_BLACK(黑) 或 RBT_COLOR_RED(红) */
     struct _rbt_node_t *parent;     /* 父结点 */
     struct _rbt_node_t *lchild;     /* 左孩子结点 */
     struct _rbt_node_t *rchild;     /* 右孩子结点 */
 
-    void *data;                     /* 数据地址 */
+    void *data;                     /* 数据地址(注: 包含主键) */
 } rbt_node_t;
 
 /* 红黑树结构 */
@@ -102,9 +101,9 @@ typedef struct
 } 
 
 rbt_tree_t *rbt_creat(rbt_opt_t *opt, cmp_cb_t cmp_cb);
-int rbt_insert(rbt_tree_t *tree, void *key, size_t size, void *data);
-int rbt_delete(rbt_tree_t *tree, void *key, size_t size, void **data);
-void *rbt_query(rbt_tree_t *tree, void *key, size_t size);
+int rbt_insert(rbt_tree_t *tree, void *data);
+int rbt_delete(rbt_tree_t *tree, void *key, void **data);
+void *rbt_query(rbt_tree_t *tree, void *key);
 int rbt_print(rbt_tree_t *tree, print_cb_t print);
 int rbt_trav(rbt_tree_t *tree, trav_cb_t proc, void *args);
 void *rbt_find(rbt_tree_t *tree, find_cb_t find, void *args);

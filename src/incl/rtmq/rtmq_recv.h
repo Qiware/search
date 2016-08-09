@@ -89,7 +89,7 @@ typedef struct _rtrd_sck_t
     char ipaddr[IP_ADDR_MAX_LEN];       /* IP地址 */
 
     int auth_succ;                      /* 鉴权成功(1:成功 0:失败)  */
-    avl_tree_t *sub_list;               /* 订阅列表: 存储订阅了哪些消息(以type为主键) */
+    avl_tree_t *sub_list;               /* 订阅列表: 存储订阅了哪些消息(rtmq_sub_req_t) */
 
     rtmq_snap_t recv;                   /* 接收快照 */
     wiov_t send;                        /* 发送缓存 */

@@ -8,6 +8,7 @@
  ******************************************************************************/
 #include "log.h"
 #include "redo.h"
+#include "comm.h"
 
 static log_svr_t *g_log_svr = NULL;
 static pthread_mutex_t g_log_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -16,6 +17,23 @@ static size_t log_sync_to_disk(log_cycle_t *log);
 static int log_rename(const log_cycle_t *log, const struct timeb *time);
 static void *log_sync_proc(void *_lsvr);
 static int _log_sync_proc(log_cycle_t *log, void *args);
+
+/******************************************************************************
+ **函数名称: log_svr_cmp_cb
+ **功    能: 比较回调函数
+ **输入参数: 
+ **     log1: 日志对象1
+ **     log2: 日志对象2
+ **输出参数: NONE
+ **返    回: 0:相等 <0:小于 >0:大于
+ **实现描述: 比较函数指针是否等
+ **注意事项: 无需比较文件路径
+ **作    者: # Qifeng.zou # 2016.08.09 11:16:21 #
+ ******************************************************************************/
+static int log_svr_cmp_cb(const log_cycle_t *log1, const log_cycle_t *log2)
+{
+    return ((uint64_t)log1 - (uint64_t)log2);
+}
 
 /******************************************************************************
  **函数名称: log_svr_init
@@ -52,7 +70,7 @@ log_svr_t *log_svr_init(void)
         g_log_svr = lsvr;
         lsvr->timeout = 1;
 
-        lsvr->logs = avl_creat(NULL, (cmp_cb_t)cmp_cb_ptr);
+        lsvr->logs = avl_creat(NULL, (cmp_cb_t)log_svr_cmp_cb);
         if (NULL == lsvr->logs) {
             break;
         }
@@ -261,7 +279,7 @@ static int log_rename(const log_cycle_t *log, const struct timeb *time)
 int log_insert(log_svr_t *lsvr, log_cycle_t *log)
 {
     pthread_mutex_lock(&lsvr->lock);
-    avl_insert(lsvr->logs, (void *)&log, sizeof(log), (void *)log);
+    avl_insert(lsvr->logs, (void *)log);
     pthread_mutex_unlock(&lsvr->lock);
     return 0;
 }

@@ -63,6 +63,22 @@ int sdrd_link_auth_check(sdrd_cntx_t *ctx, sdtp_link_auth_req_t *link_auth_req)
 }
 
 /******************************************************************************
+ **函数名称: sdrd_node_svr_map_cmp_cb
+ **功    能: 比较回调函数
+ **输入参数:
+ **输出参数: NONE
+ **返    回: 
+ **实现描述: 
+ **注意事项:
+ **作    者: # Qifeng.zou # 2016.08.09 14:15:45 #
+ ******************************************************************************/
+static int sdrd_node_svr_map_cmp_cb(
+        const sdrd_dev_to_rsvr_map_t *map1, const sdrd_dev_to_rsvr_map_t *map2)
+{
+    return (map1->nid - map2->nid);
+}
+
+/******************************************************************************
  **函数名称: sdrd_node_to_svr_map_init
  **功    能: 创建NODE与SVR的映射表
  **输入参数:
@@ -75,14 +91,13 @@ int sdrd_link_auth_check(sdrd_cntx_t *ctx, sdtp_link_auth_req_t *link_auth_req)
  ******************************************************************************/
 int sdrd_node_to_svr_map_init(sdrd_cntx_t *ctx)
 {
-    ctx->node_to_svr_map = avl_creat(NULL, (cmp_cb_t)cmp_cb_int32);
+    pthread_rwlock_init(&ctx->node_to_svr_map_lock, NULL);
+
+    ctx->node_to_svr_map = avl_creat(NULL, (cmp_cb_t)sdrd_node_svr_map_cmp_cb);
     if (NULL == ctx->node_to_svr_map) {
         log_error(ctx->log, "Initialize dev->svr map failed!");
         return SDTP_ERR;
     }
-
-    /* > 初始化读写锁 */
-    pthread_rwlock_init(&ctx->node_to_svr_map_lock, NULL);
 
     return SDTP_OK;
 }
@@ -96,47 +111,52 @@ int sdrd_node_to_svr_map_init(sdrd_cntx_t *ctx)
  **     rsvr_idx: 接收服务索引
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
- **实现描述:
+ **实现描述: TODO: 使用结点ID为主键管理链表
  **注意事项: 注册NODEID与RSVR的映射关系, 为自定义数据的应答做铺垫!
  **作    者: # Qifeng.zou # 2015.05.30 #
  ******************************************************************************/
 int sdrd_node_to_svr_map_add(sdrd_cntx_t *ctx, int nid, int rsvr_idx)
 {
-    list_t *list;
-    list_opt_t opt;
     list_node_t *list_node;
     sdrd_node_to_svr_item_t *item;
+    sdrd_dev_to_rsvr_map_t *map, key;
+
+    key.nid = nid;
 
     pthread_rwlock_wrlock(&ctx->node_to_svr_map_lock); /* 加锁 */
 
     while (1) {
         /* > 查找是否已经存在 */
-        list = avl_query(ctx->node_to_svr_map, &nid, sizeof(nid));
-        if (NULL == list) {
-            /* > 构建链表对象 */
-            memset(&opt, 0, sizeof(opt));
-
-            opt.pool = (void *)NULL;
-            opt.alloc = (mem_alloc_cb_t)mem_alloc;
-            opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
-
-            list = list_creat(&opt);
-            if (NULL == list) {
+        map = avl_query(ctx->node_to_svr_map, &key);
+        if (NULL == map) {
+            map = (sdrd_dev_to_rsvr_map_t *)calloc(1, sizeof(sdrd_dev_to_rsvr_map_t));
+            if (NULL == map) {
+                log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
                 return SDTP_ERR;
             }
 
-            if (avl_insert(ctx->node_to_svr_map, &nid, sizeof(nid), (void *)list)) {
+            /* > 构建链表对象 */
+            map->nid = nid;
+            map->list = list_creat(NULL);
+            if (NULL == map->list) {
+                free(map);
+                log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
+                return SDTP_ERR;
+            }
+
+            if (avl_insert(ctx->node_to_svr_map, map)) {
                 pthread_rwlock_unlock(&ctx->node_to_svr_map_lock); /* 解锁 */
                 log_error(ctx->log, "Insert into dev2sck table failed! nid:%d rsvr_idx:%d",
                         nid, rsvr_idx);
-                list_destroy(list, NULL, NULL);
+                list_destroy(map->list, NULL, NULL);
+                free(map);
                 return SDTP_ERR;
             }
             continue;
         }
 
         /* > 插入NODE -> SVR列表 */
-        list_node = list->head;
+        list_node = map->list->head;
         for (; NULL != list_node; list_node = list_node->next) {
             item = (sdrd_node_to_svr_item_t *)list_node->data;
             if (rsvr_idx == item->rsvr_idx) { /* 判断是否重复 */
@@ -146,7 +166,7 @@ int sdrd_node_to_svr_map_add(sdrd_cntx_t *ctx, int nid, int rsvr_idx)
             }
         }
 
-        item = calloc(1, sizeof(sdrd_node_to_svr_item_t));
+        item = (sdrd_node_to_svr_item_t *)calloc(1, sizeof(sdrd_node_to_svr_item_t));
         if (NULL == item) {
             pthread_rwlock_unlock(&ctx->node_to_svr_map_lock); /* 解锁 */
             log_error(ctx->log, "Alloc memory failed! nid:%d rsvr_idx:%d",
@@ -157,7 +177,7 @@ int sdrd_node_to_svr_map_add(sdrd_cntx_t *ctx, int nid, int rsvr_idx)
         item->rsvr_idx = rsvr_idx;
         item->count = 1;
 
-        if (list_lpush(list, item)) {
+        if (list_lpush(map->list, item)) {
             pthread_rwlock_unlock(&ctx->node_to_svr_map_lock); /* 解锁 */
             log_error(ctx->log, "Alloc memory failed! nid:%d rsvr_idx:%d",
                     nid, rsvr_idx);
@@ -193,18 +213,22 @@ int sdrd_node_to_svr_map_del(sdrd_cntx_t *ctx, int nid, int rsvr_idx)
     list_t *list;
     list_node_t *node;
     sdrd_node_to_svr_item_t *item;
+    sdrd_dev_to_rsvr_map_t *map, key;
+
+    key.nid = nid;
 
     pthread_rwlock_wrlock(&ctx->node_to_svr_map_lock);
 
     /* > 获取链表对象 */
-    list = avl_query(ctx->node_to_svr_map, &nid, sizeof(nid));
-    if (NULL == list) {
+    map = avl_query(ctx->node_to_svr_map, &key);
+    if (NULL == map) {
         pthread_rwlock_unlock(&ctx->node_to_svr_map_lock);
         log_error(ctx->log, "Query nid [%d] failed!", nid);
         return SDTP_ERR;
     }
 
-    node = list->head;
+    list = map->list;
+    node = map->list->head;
     for (; NULL != node; node = node->next) {
         item = (sdrd_node_to_svr_item_t *)node->data;
         if (item->rsvr_idx == rsvr_idx) {
@@ -242,22 +266,26 @@ int sdrd_node_to_svr_map_rand(sdrd_cntx_t *ctx, int nid)
     list_t *list;
     list_node_t *node;
     sdrd_node_to_svr_item_t *item;
+    sdrd_dev_to_rsvr_map_t key, *map;
+
+    key.nid = nid;
 
     pthread_rwlock_rdlock(&ctx->node_to_svr_map_lock);
 
     /* > 获取链表对象 */
-    list = avl_query(ctx->node_to_svr_map, &nid, sizeof(nid));
-    if (NULL == list) {
+    map = avl_query(ctx->node_to_svr_map, &key);
+    if (NULL == map) {
         pthread_rwlock_unlock(&ctx->node_to_svr_map_lock);
         log_error(ctx->log, "Query nid [%d] failed!", nid);
         return -1;
     }
-    else if (0 == list->num) {
+    else if (0 == map->list->num) {
         pthread_rwlock_unlock(&ctx->node_to_svr_map_lock);
         return -1;
     }
 
     /* > 遍历链表查找sck_serial结点 */
+    list = map->list;
     idx = rand() % list->num; /* 随机选择 */
     node = list->head;
     for (n = 0; NULL != node; node = node->next, ++n) {

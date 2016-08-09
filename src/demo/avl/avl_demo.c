@@ -8,11 +8,18 @@ typedef struct
     uint64_t id;
 } avl_data_t;
 
+/* 打印结点 */
 void avl_trav_print(avl_data_t *data, void *args)
 {
     static uint32_t idx = 0;
 
     fprintf(stderr, "idx:%u id:%lu\n", ++idx, data->id);
+}
+
+/* 比较回调 */
+void avl_cmp_cb(const avl_data_t *data1, const avl_data_t *data2)
+{
+    return (data1->id - data2->id);
 }
 
 int main(void)
@@ -25,7 +32,7 @@ int main(void)
     char input[INPUT_LEN];
 
     /* > 创建AVL树 */
-    avl = avl_creat(NULL, (cmp_cb_t)cmp_cb_int32);
+    avl = avl_creat(NULL, (cmp_cb_t)avl_cmp_cb);
     if (NULL == avl) {
         fprintf(stderr, "[%s][%d] Create avl failed!\n", __FILE__, __LINE__);
         return -1;

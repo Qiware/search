@@ -204,7 +204,7 @@ rtmq_proxy_t *rtmq_proxy_init(const rtmq_proxy_conf_t *conf, log_cycle_t *log)
         }
 
         /* > 创建处理映射表 */
-        pxy->reg = avl_creat(NULL, (cmp_cb_t)cmp_cb_int32);
+        pxy->reg = avl_creat(NULL, (cmp_cb_t)rtmq_reg_cmp_cb);
         if (NULL == pxy->reg) {
             log_fatal(log, "Create register map failed!");
             break;
@@ -307,7 +307,7 @@ int rtmq_proxy_reg_add(rtmq_proxy_t *pxy, int type, rtmq_reg_cb_t proc, void *pa
     item->proc = proc;
     item->param = param;
 
-    if (avl_insert(pxy->reg, &type, sizeof(type), item)) {
+    if (avl_insert(pxy->reg, item)) {
         log_error(pxy->log, "Register maybe repeat! type:%d!", type);
         free(item);
         return RTMQ_ERR_REPEAT_REG;

@@ -152,7 +152,7 @@ static int lwsd_search_wsi_user_init(lwsd_cntx_t *ctx,
     }
 
     /* > 插入WSI管理表 */
-    if (rbt_insert(ctx->wsi_map, &user->sid, sizeof(user->sid), (void *)wsi)) {
+    if (rbt_insert(ctx->wsi_map, (void *)wsi)) {
         list_destroy(user->send_list, mem_dealloc, NULL);
         log_error(ctx->log, "Insert wsi map failed! sid:%lu", user->sid);
         return -1;
@@ -196,6 +196,9 @@ static int lwsd_search_wsi_user_free(lwsd_cntx_t *ctx, lwsd_search_user_data_t *
 static int lwsd_search_wsi_destroy(lwsd_cntx_t *ctx, lwsd_search_user_data_t *user)
 {
     void *item;
+    struct libwebsocket *wsi, key;
+
+    key.extra = user;
 
     if (NULL == user) {
         return 0;
@@ -205,10 +208,7 @@ static int lwsd_search_wsi_destroy(lwsd_cntx_t *ctx, lwsd_search_user_data_t *us
         user->pl = NULL;
     }
 
-    rbt_delete(ctx->wsi_map, &user->sid, sizeof(user->sid), &item); 
-    if (NULL != item) {
-        mem_dealloc(NULL, item);
-    }
+    rbt_delete(ctx->wsi_map, &key, &wsi); 
 
     return lwsd_search_wsi_user_free(ctx, user);
 }
@@ -354,11 +354,14 @@ int lwsd_search_async_send(lwsd_cntx_t *ctx, uint64_t sid, const void *addr, siz
 {
     void *item;
     lwsd_mesg_payload_t *pl;
-    struct libwebsocket *wsi;
-    lwsd_search_user_data_t *user;
+    struct libwebsocket *wsi, key;
+    lwsd_search_user_data_t *user, key_user;
+
+    key_user.sid = sid;
+    key.extra = &key_user;
 
     /* > 通过sid找到对应的wsi对象 */
-    wsi = (struct libwebsocket *)rbt_query(ctx->wsi_map, &sid, sizeof(sid));
+    wsi = (struct libwebsocket *)rbt_query(ctx->wsi_map, &key);
     if (NULL == wsi) {
         log_error(ctx->log, "Get wsi failed! sid:%lu", sid);
         return -1;

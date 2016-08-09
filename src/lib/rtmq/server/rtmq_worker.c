@@ -212,8 +212,8 @@ static int rtmq_worker_cmd_proc_req_hdl(rtmq_cntx_t *ctx, rtmq_worker_t *worker,
 {
     int idx, num;
     queue_t *rq;
-    rtmq_reg_t *reg;
     rtmq_header_t *head;
+    rtmq_reg_t *reg, key;
     rtmq_recv_item_t *item[RTRD_WORK_POP_NUM];
     const rtmq_cmd_proc_req_t *work_cmd = (const rtmq_cmd_proc_req_t *)&cmd->param;
 
@@ -236,7 +236,9 @@ static int rtmq_worker_cmd_proc_req_hdl(rtmq_cntx_t *ctx, rtmq_worker_t *worker,
         for (idx=0; idx<num; ++idx) {
             head = (rtmq_header_t *)item[idx]->data;
 
-            reg = avl_query(ctx->reg, &head->type, sizeof(head->type));
+            key.type = head->type;
+
+            reg = (rtmq_reg_t *)avl_query(ctx->reg, (void *)&key);
             if (NULL == reg) {
                 ++worker->drop_total;   /* 丢弃计数 */
                 mem_ref_decr(item[idx]->base);

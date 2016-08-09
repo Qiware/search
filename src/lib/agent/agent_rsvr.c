@@ -1051,16 +1051,19 @@ static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
 static socket_t *agent_push_into_send_list(
         agent_cntx_t *ctx, agent_rsvr_t *rsvr, uint64_t sid, void *addr)
 {
-    socket_t *sck;
-    agent_socket_extra_t *extra;
+    socket_t *sck, key;
     agent_sid_list_t *list;
+    agent_socket_extra_t *extra, key_extra;
+
+    key_extra.sid = sid;
+    key.extra = &key_extra;
 
     list = &ctx->connections[rsvr->id];
 
     /* > 查询会话对象 */
     spin_lock(&list->lock);
 
-    sck = rbt_query(list->sids, &sid, sizeof(sid));
+    sck = rbt_query(list->sids, &key);
     if (NULL == sck) {
         spin_unlock(&list->lock);
         return NULL;

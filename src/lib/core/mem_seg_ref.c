@@ -13,12 +13,6 @@
 #include "rb_tree.h"
 #include "mem_seg_ref.h"
 
-typedef struct
-{
-    void *addr;
-    size_t size;
-} mem_seg_ref_key_t;
-
 /* 内存引用项 */
 typedef struct
 {
@@ -48,29 +42,18 @@ static int mem_seg_ref_add(void *addr, size_t size, void *pool, mem_alloc_cb_t a
  **函数名称: mem_seg_ref_cmp
  **功    能: 查找匹配
  **输入参数: 
- **     key1: 查询对象
- **     key2: 已存储主键
  **输出参数: NONE
  **返    回: 0:相等/<0:小于/>0:大于
  **实现描述:
  **注意事项:
- **     1. key1中的k指向正在查询的内存地址
- **     2. key2中的k指向mem_seg_ref_key_t对象
- **     3. 插入是主键是(addr, size)两个字段, 但搜索时是(addr ~ addr+size-1)之间
- **        任一内存地址.
  **作    者: # Qifeng.zou # 2016.07.26 22:51:17 #
  ******************************************************************************/
-static int mem_seg_ref_cmp(key_obj_t *key1, key_obj_t *key2)
+static int mem_seg_ref_cmp(const mem_seg_ref_item_t *item1, const mem_seg_ref_item_t *item2)
 {
-    mem_seg_ref_key_t *k1, *k2;
-
-    k1 = (mem_seg_ref_key_t *)key1->k;
-    k2 = (mem_seg_ref_key_t *)key2->k;
-
-    if (k1->addr < k2->addr) {
+    if (item1->addr < item2->addr) {
         return -1; // 小于
     }
-    else if (k1->addr > (k2->addr + k2->size - 1)) {
+    else if (item1->addr > (item2->addr + item2->size - 1)) {
         return 1; // 大于
     }
 
@@ -143,18 +126,16 @@ static int mem_seg_ref_add(void *addr, size_t size,
         void *pool, mem_alloc_cb_t alloc, mem_dealloc_cb_t dealloc)
 {
     int cnt;
-    mem_seg_ref_key_t key;
-    mem_seg_ref_item_t *item;
+    mem_seg_ref_item_t *item, key;
     mem_seg_ref_cntx_t *ctx = &g_msr_ctx;
 
     key.addr = addr;
-    key.size = size;
 
 AGAIN:
     pthread_rwlock_rdlock(&ctx->lock);
 
     /* > 查询引用 */
-    item = (mem_seg_ref_item_t *)rbt_query(ctx->tree, (void *)&key, sizeof(key));
+    item = (mem_seg_ref_item_t *)rbt_query(ctx->tree, (void *)&key);
     if (NULL != item) {
         if (item->size != size) {
             pthread_rwlock_unlock(&ctx->lock);
@@ -182,7 +163,7 @@ AGAIN:
 
     pthread_rwlock_wrlock(&ctx->lock);
 
-    if (rbt_insert(ctx->tree, (void *)&key, sizeof(key), item)) {
+    if (rbt_insert(ctx->tree, item)) {
         pthread_rwlock_unlock(&ctx->lock);
         free(item);
         goto AGAIN;
@@ -222,16 +203,14 @@ void mem_seg_ref_dealloc(void *pool, void *addr)
 int mem_seg_ref_incr(void *addr)
 {
     int cnt;
-    mem_seg_ref_key_t key;
-    mem_seg_ref_item_t *item;
+    mem_seg_ref_item_t *item, key;
     mem_seg_ref_cntx_t *ctx = &g_msr_ctx;
 
     key.addr = addr;
-    key.size = 1;
 
     pthread_rwlock_rdlock(&ctx->lock);
 
-    item = (mem_seg_ref_item_t *)rbt_query(ctx->tree, (void *)&key, sizeof(key));
+    item = (mem_seg_ref_item_t *)rbt_query(ctx->tree, (void *)&key);
     if (NULL != item) {
         cnt = (int)atomic32_inc(&item->count);
         pthread_rwlock_unlock(&ctx->lock);
@@ -259,16 +238,14 @@ int mem_seg_ref_incr(void *addr)
 int mem_seg_ref_decr(void *addr)
 {
     int cnt;
-    mem_seg_ref_key_t key;
-    mem_seg_ref_item_t *item, *temp;
+    mem_seg_ref_item_t *item, *temp, key;
     mem_seg_ref_cntx_t *ctx = &g_msr_ctx;
 
     key.addr = addr;
-    key.size = 1;
 
     pthread_rwlock_rdlock(&ctx->lock);
 
-    item = (mem_seg_ref_item_t *)rbt_query(ctx->tree, (void *)&key, sizeof(key));
+    item = (mem_seg_ref_item_t *)rbt_query(ctx->tree, (void *)&key);
     if (NULL == item) {
         pthread_rwlock_unlock(&ctx->lock);
         return 0; // Didn't find
@@ -280,7 +257,7 @@ int mem_seg_ref_decr(void *addr)
 
         pthread_rwlock_wrlock(&ctx->lock);
         if (0 == item->count) {
-            rbt_delete(ctx->tree, (void *)&key, sizeof(key), (void **)&temp);
+            rbt_delete(ctx->tree, (void *)&key, (void **)&temp);
             pthread_rwlock_unlock(&ctx->lock);
 
             item->dealloc(item->pool, item->addr); // 释放被管理的内存
