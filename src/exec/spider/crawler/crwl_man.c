@@ -27,8 +27,6 @@ static crwl_man_t *crwl_man_init(crwl_cntx_t *ctx);
 static int crwl_man_event_hdl(crwl_cntx_t *ctx, crwl_man_t *man);
 
 static int crwl_man_reg_cb(crwl_man_t *man);
-static uint32_t crwl_man_reg_key_cb(void *_reg, size_t len);
-static int crwl_man_reg_cmp_cb(void *type, const void *_reg);
 
 static int crwl_man_recv_cmd(crwl_cntx_t *ctx, crwl_man_t *man);
 static int crwl_man_send_cmd(crwl_cntx_t *ctx, crwl_man_t *man);

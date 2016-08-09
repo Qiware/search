@@ -192,9 +192,9 @@ static int lwsd_reg_cmp_cb(const lws_reg_t *reg1, const lws_reg_t *reg2)
  **注意事项: 
  **作    者: # Qifeng.zou # 2016.08.09 10:59:58 #
  ******************************************************************************/
-static int lwsd_wsi_map_cmp_cb(const struct libwebsocket *wsi1, const struct libwebsocket *wsi2)
+static int lwsd_wsi_map_cmp_cb(struct libwebsocket *wsi1, struct libwebsocket *wsi2)
 {
-    lwsd_search_user_data_t *user1, *user2;
+    const lwsd_search_user_data_t *user1, *user2;
 
     user1 = lws_wsi_get_user_space(wsi1);
     user2 = lws_wsi_get_user_space(wsi2);

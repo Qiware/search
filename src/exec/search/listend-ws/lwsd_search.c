@@ -30,10 +30,12 @@ static int lwsd_search_send_data(lwsd_cntx_t *ctx,
  ******************************************************************************/
 int lwsd_search_reg_add(lwsd_cntx_t *ctx, int type, lws_reg_cb_t proc, void *args)
 {
-    lws_reg_t *item;
+    lws_reg_t *item, key;
+
+    key.type = type;
 
     /* > 判断是否冲突 */
-    item = (lws_reg_t *)avl_query(ctx->lws_reg, &type, sizeof(type));
+    item = (lws_reg_t *)avl_query(ctx->lws_reg, &key);
     if (NULL != item) {
         log_error(ctx->log, "Type [%d] was registered at before!", type);
         return -1; /* Was registered */
@@ -51,7 +53,7 @@ int lwsd_search_reg_add(lwsd_cntx_t *ctx, int type, lws_reg_cb_t proc, void *arg
     item->args = (void *)ctx;
 
     /* > 插入注册表 */
-    if (avl_insert(ctx->lws_reg, &type, sizeof(type), (void *)item)) {
+    if (avl_insert(ctx->lws_reg, (void *)item)) {
         log_error(ctx->log, "Insert lws reg table failed!");
         free(item);
         return -1;
@@ -195,10 +197,9 @@ static int lwsd_search_wsi_user_free(lwsd_cntx_t *ctx, lwsd_search_user_data_t *
  ******************************************************************************/
 static int lwsd_search_wsi_destroy(lwsd_cntx_t *ctx, lwsd_search_user_data_t *user)
 {
-    void *item;
     struct libwebsocket *wsi, key;
 
-    key.extra = user;
+    key.user_space = user;
 
     if (NULL == user) {
         return 0;
@@ -208,7 +209,7 @@ static int lwsd_search_wsi_destroy(lwsd_cntx_t *ctx, lwsd_search_user_data_t *us
         user->pl = NULL;
     }
 
-    rbt_delete(ctx->wsi_map, &key, &wsi); 
+    rbt_delete(ctx->wsi_map, (void *)&key, (void **)&wsi); 
 
     return lwsd_search_wsi_user_free(ctx, user);
 }
@@ -232,7 +233,7 @@ static int lwsd_search_cmd_hdl(lwsd_cntx_t *ctx,
         struct libwebsocket_context *lws, struct libwebsocket *wsi,
         lwsd_search_user_data_t *user, void *in, size_t len)
 {
-    lws_reg_t *reg;
+    lws_reg_t *reg, key;
     lwsd_conf_t *conf = &ctx->conf;
     mesg_header_t *head = (mesg_header_t *)in;
 
@@ -253,7 +254,9 @@ static int lwsd_search_cmd_hdl(lwsd_cntx_t *ctx,
     head->serial = tlz_gen_serail(conf->nid, 0, LWSD_REQ_SEQ(ctx));
 
     /* > 进行消息处理 */
-    reg = (lws_reg_t *)avl_query(ctx->lws_reg, &head->type, sizeof(head->type));
+    key.type = head->type;
+
+    reg = (lws_reg_t *)avl_query(ctx->lws_reg, &key);
     if (NULL == reg) {
         return -1;
     }
@@ -355,10 +358,10 @@ int lwsd_search_async_send(lwsd_cntx_t *ctx, uint64_t sid, const void *addr, siz
     void *item;
     lwsd_mesg_payload_t *pl;
     struct libwebsocket *wsi, key;
-    lwsd_search_user_data_t *user, key_user;
+    lwsd_search_user_data_t *user, user_for_key;
 
-    key_user.sid = sid;
-    key.extra = &key_user;
+    user_for_key.sid = sid;
+    key.user_space = &user_for_key;
 
     /* > 通过sid找到对应的wsi对象 */
     wsi = (struct libwebsocket *)rbt_query(ctx->wsi_map, &key);

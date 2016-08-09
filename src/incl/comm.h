@@ -139,7 +139,7 @@ typedef struct
 #endif
 
 typedef int64_t (*key_cb_t)(const void *pkey, size_t pkey_len);
-typedef int (*cmp_cb_t)(const void *data1, const void *data2);
+typedef int (*cmp_cb_t)(void *data1, void *data2);
 typedef int (*trav_cb_t)(void *data, void *args);
 typedef bool (*find_cb_t)(void *data, void *args);
 typedef bool (*print_cb_t)(void *data);
