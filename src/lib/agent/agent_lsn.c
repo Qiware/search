@@ -181,10 +181,11 @@ static int agent_listen_accept(agent_cntx_t *ctx, agent_lsvr_t *lsvr)
     fd = tcp_accept(ctx->listen.lsn_sck_id, (struct sockaddr *)&cliaddr);
     if (fd < 0) {
         spin_unlock(&ctx->listen.accept_lock);
+        log_error(lsvr->log, "errmsg:[%d] %s!", errno, strerror(errno));
         return AGENT_OK;
     }
 
-    sid = ++ctx->listen.sid; /* 计数 */
+    sid = atomic64_inc(&ctx->listen.sid); /* 计数 */
 
     spin_unlock(&ctx->listen.accept_lock); /* 解锁 */
 
@@ -203,7 +204,7 @@ static int agent_listen_accept(agent_cntx_t *ctx, agent_lsvr_t *lsvr)
     add->sid = sid;
     ftime(&add->crtm);
 
-    log_debug(lsvr->log, "Push data! fd:%d addr:%p sid:%u", fd, add, sid);
+    log_debug(lsvr->log, "Push data! fd:%d addr:%p sid:%u idx:%d", fd, add, sid, idx);
 
     queue_push(ctx->connq[idx], add);
 

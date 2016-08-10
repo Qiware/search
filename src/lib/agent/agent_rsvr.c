@@ -73,7 +73,6 @@ void *agent_rsvr_routine(void *_ctx)
             rsvr->ctm = time(NULL);
             if (rsvr->ctm - rsvr->scan_tm > AGENT_TMOUT_SCAN_SEC) {
                 rsvr->scan_tm = rsvr->ctm;
-
                 agent_rsvr_timeout_hdl(ctx, rsvr);
             }
             continue;
