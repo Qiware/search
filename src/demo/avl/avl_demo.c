@@ -17,18 +17,17 @@ void avl_trav_print(avl_data_t *data, void *args)
 }
 
 /* 比较回调 */
-void avl_cmp_cb(const avl_data_t *data1, const avl_data_t *data2)
+int avl_cmp_cb(const avl_data_t *data1, const avl_data_t *data2)
 {
     return (data1->id - data2->id);
 }
 
 int main(void)
 {
-    uint32_t key;
-    int ret, idx, n;
+    int ret;
+    uint32_t id;
     avl_tree_t *avl;
-    rbt_tree_t *rbt;
-    avl_data_t *data;
+    avl_data_t *data, key;
     char input[INPUT_LEN];
 
     /* > 创建AVL树 */
@@ -40,68 +39,85 @@ int main(void)
 
     fprintf(stderr, "[%s][%d] Create avl success!\n", __FILE__, __LINE__);
 
+#if 0
     /* > 插入关键字 */
+    int n;
     for (n=0; n<5; n++) {
+        int idx;
         for(idx=0; idx<1000; idx++) {
-            key = idx;//random();
+            id = idx;//random();
             data = (avl_data_t *)calloc(1, sizeof(avl_data_t));
-            data->id = key;
-            avl_insert(avl, &key, sizeof(key), data);
+            data->id = id;
+            avl_insert(avl, data);
         }
         for(idx=0; idx<1000-5; idx++) {
-            key = idx;//random();
+            id = idx;//random();
             data = (avl_data_t *)calloc(1, sizeof(avl_data_t));
-            data->id = key;
-            avl_delete(avl, &key, sizeof(key), (void **)data);
+            data->id = id;
+
+            key.id = id;
+            avl_delete(avl, (void *)&key, (void **)data);
             free(data);
         }
     }
+#endif
+
+    id = 256;
+    data = (avl_data_t *)calloc(1, sizeof(avl_data_t));
+    data->id = id;
+	avl_insert(avl, (void *)data);
+
+    id = 1280;
+    data = (avl_data_t *)calloc(1, sizeof(avl_data_t));
+    data->id = id;
+	avl_insert(avl, (void *)data);
 
     avl_trav(avl, (trav_cb_t)avl_trav_print, NULL);
+
+    /////////////////
+    avl_destroy(avl, (mem_dealloc_cb_t)mem_dealloc, NULL);
+
+    fprintf(stderr, "Destroy avl success!\n");
+
     return 0;
+    /////////////////
 
-    key = 14;
+    id = 34;
     data = (avl_data_t *)calloc(1, sizeof(avl_data_t));
-    data->id = key;
-	avl_insert(avl, &key, sizeof(key), (void *)data);
+    data->id = id;
+	avl_insert(avl, (void *)data);
 
-    key = 28;
+    id = 37;
     data = (avl_data_t *)calloc(1, sizeof(avl_data_t));
-    data->id = key;
-	avl_insert(avl, &key, sizeof(key), (void *)data);
+    data->id = id;
+	avl_insert(avl, (void *)data);
 
-    key = 34;
+    id = 48;
     data = (avl_data_t *)calloc(1, sizeof(avl_data_t));
-    data->id = key;
-	avl_insert(avl, &key, sizeof(key), (void *)data);
+    data->id = id;
+	avl_insert(avl, (void *)data);
 
-    key = 37;
+    id = 39;
     data = (avl_data_t *)calloc(1, sizeof(avl_data_t));
-    data->id = key;
-	avl_insert(avl, &key, sizeof(key), (void *)data);
+    data->id = id;
+	avl_insert(avl, (void *)data);
 
-    key = 48;
+    id = 38;
     data = (avl_data_t *)calloc(1, sizeof(avl_data_t));
-    data->id = key;
-	avl_insert(avl, &key, sizeof(key), (void *)data);
+    data->id = id;
+	avl_insert(avl, (void *)data);
 
-    key = 39;
+    id = 40;
     data = (avl_data_t *)calloc(1, sizeof(avl_data_t));
-    data->id = key;
-	avl_insert(avl, &key, sizeof(key), (void *)data);
-
-    key = 38;
-    data = (avl_data_t *)calloc(1, sizeof(avl_data_t));
-    data->id = key;
-	avl_insert(avl, &key, sizeof(key), (void *)data);
-
-    key = 40;
-    data = (avl_data_t *)calloc(1, sizeof(avl_data_t));
-    data->id = key;
-	avl_insert(avl, &key, sizeof(key), (void *)data);
+    data->id = id;
+	avl_insert(avl, (void *)data);
 
     avl_print(avl);
     avl_trav(avl, (trav_cb_t)avl_trav_print, NULL);
+
+
+    avl_destroy(avl, (mem_dealloc_cb_t)mem_dealloc, NULL);
+    return 0;
 
     /* > 操作B树 */
     while(1) {
@@ -110,9 +126,9 @@ int main(void)
     #if defined(__AUTO_INPUT__)
         fprintf(stdout, "Input:");
         scanf(" %s", input);
-        key = atoi(input);
+        id = atoi(input);
     #else
-        key = random()%BTREE_NUM;
+        id = random()%BTREE_NUM;
     #endif
 
         if ((0 == strcasecmp(input, "q"))
@@ -125,28 +141,32 @@ int main(void)
             || 0 == strcasecmp(input, "delete"))
         {
             scanf(" %s", input);
-            key = atoi(input);
+            id = atoi(input);
 
-            avl_delete(avl, &key, sizeof(key), (void *)&data);
+            key.id = id;
+
+            avl_delete(avl, (void *)&key, (void *)&data);
             avl_print(avl);
             continue;
         }
 
         data = (avl_data_t *)calloc(1, sizeof(avl_data_t));
-        data->id = key;
+        data->id = id;
 
-        ret = avl_insert(avl, &key, sizeof(key), (void *)data);
+        ret = avl_insert(avl, (void *)data);
         if (0 != ret) {
             fprintf(stderr, "[%s][%d] Insert failed!\n", __FILE__, __LINE__);
             break;
         }
 
-        fprintf(stderr, "[%u] Insert avl success!\n", key);
+        fprintf(stderr, "[%u] Insert avl success!\n", id);
 
         //avl_print(avl);
         avl_trav(avl, (trav_cb_t)avl_trav_print, NULL);
+        break;
     }
 
-    avl_destroy(avl, mem_dummy_dealloc, NULL);
+    avl_destroy(avl, (mem_dealloc_cb_t)mem_dealloc, NULL);
+    fprintf(stderr, "Destroy avl success!\n");
     return 0;
 }
