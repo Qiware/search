@@ -1136,17 +1136,14 @@ int avl_delete_right_balance(avl_tree_t *tree, avl_node_t *node, bool *lower)
 static void _avl_destroy(avl_tree_t *tree, avl_node_t *node, mem_dealloc_cb_t dealloc, void *args)
 {
     if (NULL != node->lchild) {
-        dealloc(args, node->lchild->data);
         _avl_destroy(tree, node->lchild, dealloc, args);
     }
 
     if (NULL != node->rchild) {
-        dealloc(args, node->rchild->data);
         _avl_destroy(tree, node->rchild, dealloc, args);
     }
 
     dealloc(args, node->data);
-    //tree->dealloc(tree->pool, node->key.k);
     tree->dealloc(tree->pool, node);
 }
 
