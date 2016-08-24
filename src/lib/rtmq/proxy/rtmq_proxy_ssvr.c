@@ -233,7 +233,8 @@ void *rtmq_proxy_ssvr_routine(void *_ctx)
 
             /* 重连Recv端 */
             if ((sck->fd = tcp_connect(AF_INET, conf->ipaddr, conf->port)) < 0) {
-                log_error(ssvr->log, "Conncet [%s:%d] failed!", conf->ipaddr, conf->port);
+                log_error(ssvr->log, "Conncet [%s:%d] failed! errmsg:[%d] %s!",
+                        conf->ipaddr, conf->port, errno, strerror(errno));
                 continue;
             }
 
