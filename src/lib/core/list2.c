@@ -400,6 +400,11 @@ void *list2_find_and_del(list2_t *list, find_cb_t cb, void *args)
                 node->prev->next = node->next;
                 node->next->prev = node->prev;
             }
+
+            if (node == list->head) {
+                list->head = node->next;
+            }
+
             list->dealloc(list->pool, node);
             return data;
         }
