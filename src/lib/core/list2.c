@@ -352,11 +352,12 @@ void *list2_find(list2_t *list, find_cb_t cb, void *args)
     list2_node_t *node, *tail;
 
     node = list->head;
-    if (NULL != node) {
-        tail = node->prev;
+    if (NULL == node) {
+        return NULL;
     }
 
-    for (; NULL != node; node = node->next) {
+    tail = node->prev;
+    for (; ; node = node->next) {
         if (cb(node->data, args)) {
             return node->data;
         }
@@ -385,11 +386,12 @@ void *list2_find_and_del(list2_t *list, find_cb_t cb, void *args)
     list2_node_t *node, *tail;
 
     node = list->head;
-    if (NULL != node) {
-        tail = node->prev;
+    if (NULL == node) {
+        return NULL;
     }
 
-    for (; NULL != node; node = node->next) {
+    tail = node->prev;
+    for (; ; node = node->next) {
         if (cb(node->data, args)) {
             data = node->data;
             --list->num;
@@ -399,10 +401,9 @@ void *list2_find_and_del(list2_t *list, find_cb_t cb, void *args)
             else {
                 node->prev->next = node->next;
                 node->next->prev = node->prev;
-            }
-
-            if (node == list->head) {
-                list->head = node->next;
+                if (node == list->head) {
+                    list->head = node->next;
+                }
             }
 
             list->dealloc(list->pool, node);
