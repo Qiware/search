@@ -266,6 +266,7 @@ int str_to_hex(const char *str, int len, char *hex)
  **     > 1K = 1000
  **     > 1M = 1000000
  **     > 1G = 1000000000
+ **     > 1b = 1(byte)
  **     > 1Kb = 1024(byte)
  **     > 1Mb = 1024 * Kb(byte)
  **     > 1Gb = 1024 * Mb(byte)
@@ -287,7 +288,12 @@ size_t str_to_num(const char *str)
         }
 
         /* 比较单位 */
-        if (!strncasecmp(ptr, "KB", 2)) {
+        if (!strncasecmp(ptr, "B", 1)) {
+            len = 1;
+            unit = B;
+            break;
+        }
+        else if (!strncasecmp(ptr, "KB", 2)) {
             len = 2;
             unit = KB;
             break;
