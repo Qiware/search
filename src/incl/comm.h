@@ -66,6 +66,7 @@
 #define K                   (1000)              /* K */
 #define M                   (100000)            /* M */
 #define G                   (100000000)         /* G */
+#define B                   (1)                 /* B */
 #define KB                  (1024)              /* KB */
 #define MB                  (1024 * KB)         /* MB */
 #define GB                  (1024 * MB)         /* GB */
