@@ -15,6 +15,23 @@
 #include "hash_alg.h"
 
 /******************************************************************************
+ **函数名称: invtab_dic_cmp_cb
+ **功    能: 倒排字典比较函数
+ **输入参数:
+ **     dw1: 单词1
+ **     dw2: 单词2
+ **输出参数:
+ **返    回: 0:相等 <0:小于 >0:大于
+ **实现描述:
+ **注意事项:
+ **作    者: # Qifeng.zou # 2016.08.09 17:19:24 #
+ ******************************************************************************/
+static int invtab_dic_cmp_cb(const invt_dic_word_t *dw1, const invt_dic_word_t *dw2)
+{
+    return strcmp(dw1->word.str, dw2->word.str);
+}
+
+/******************************************************************************
  **函数名称: invtab_creat
  **功    能: 创建倒排表
  **输入参数: 
@@ -53,7 +70,7 @@ invt_tab_t *invtab_creat(int max, log_cycle_t *log)
     }
 
     for (idx=0; idx<max; ++idx) {
-        tab->dic[idx] = avl_creat(NULL, (cmp_cb_t)cmp_cb_str);
+        tab->dic[idx] = avl_creat(NULL, (cmp_cb_t)invtab_dic_cmp_cb);
         if (NULL == tab->dic[idx]) {
             log_error(log, "Create avl-tree failed! idx:%d", idx);
             invtab_destroy(tab, NULL, NULL);
@@ -80,7 +97,6 @@ invt_tab_t *invtab_creat(int max, log_cycle_t *log)
 static invt_dic_word_t *invt_word_add(invt_tab_t *tab, char *word, int len)
 {
     int idx;
-    list_opt_t opt;
     invt_dic_word_t *dw;
 
     idx = hash_time33(word) % tab->mod;
@@ -106,18 +122,14 @@ static invt_dic_word_t *invt_word_add(invt_tab_t *tab, char *word, int len)
         dw->word.len = strlen(word);
 
         /* > 创建文档列表 */
-        opt.pool = (void *)NULL;
-        opt.alloc = mem_alloc;
-        opt.dealloc = mem_dealloc;
-
-        dw->doc_list = (list_t *)list_creat(&opt);
+        dw->doc_list = (list_t *)list_creat(NULL);
         if (NULL == dw->doc_list) {
             log_error(tab->log, "Create btree failed! word:%s", word);
             break;
         }
 
         /* > 插入单词词典 */
-        if (avl_insert(tab->dic[idx], word, len+1, (void *)dw)) {
+        if (avl_insert(tab->dic[idx], (void *)dw)) {
             log_error(tab->log, "Insert avl failed! word:%s idx:%d", word, idx);
             break;
         }
@@ -206,19 +218,22 @@ static int invt_word_add_doc(invt_tab_t *tab, invt_dic_word_t *dw, const char *u
 int invtab_insert(invt_tab_t *tab, char *word, const char *url, int freq)
 {
     int idx, len;
-    invt_dic_word_t *dw;
+    invt_dic_word_t *dw, key;
     char lower_word[INVT_WORD_MAX_LEN];
 
     /* > 转化为小写字符 */
     len = strlen(word);
-    len = len+1 > INVT_WORD_MAX_LEN? INVT_WORD_MAX_LEN : len;
+    len = ((len + 1) > INVT_WORD_MAX_LEN)? INVT_WORD_MAX_LEN : len;
 
     char_to_lower(word, lower_word, len);
 
     /* > 查找单词项 */
     idx = hash_time33(lower_word) % tab->mod;
 
-    dw = (invt_dic_word_t *)avl_query(tab->dic[idx], lower_word, len);
+    key.word.len = len;
+    key.word.str = lower_word;
+
+    dw = (invt_dic_word_t *)avl_query(tab->dic[idx], &key);
     if (NULL == dw) {
         dw = invt_word_add(tab, lower_word, len);
         if (NULL == dw) {
@@ -251,18 +266,22 @@ int invtab_insert(invt_tab_t *tab, char *word, const char *url, int freq)
 invt_dic_word_t *invtab_query(invt_tab_t *tab, char *word)
 {
     int idx, len;
+    invt_dic_word_t key;
     char lower_word[INVT_WORD_MAX_LEN];
 
     /* > 转化为小写字符 */
     len = strlen(word);
-    len = len+1 > INVT_WORD_MAX_LEN? INVT_WORD_MAX_LEN : len;
+    len = ((len + 1) > INVT_WORD_MAX_LEN)? INVT_WORD_MAX_LEN : len;
 
     char_to_lower(word, lower_word, len);
 
     /* > 查找关键字 */
     idx = hash_time33_ex(lower_word, len) % tab->mod;
 
-    return (invt_dic_word_t *)avl_query(tab->dic[idx], lower_word, len);
+    key.word.len = len;
+    key.word.str = lower_word;
+
+    return (invt_dic_word_t *)avl_query(tab->dic[idx], &key);
 }
 
 /******************************************************************************
@@ -281,19 +300,22 @@ invt_dic_word_t *invtab_query(invt_tab_t *tab, char *word)
 int invtab_remove(invt_tab_t *tab, char *word)
 {
     int idx, len;
-    invt_dic_word_t *dw;
+    invt_dic_word_t *dw, key;
     char lower_word[INVT_WORD_MAX_LEN];
 
     /* > 转化为小写字符 */
     len = strlen(word);
-    len = len+1 > INVT_WORD_MAX_LEN? INVT_WORD_MAX_LEN : len;
+    len = ((len + 1) > INVT_WORD_MAX_LEN)? INVT_WORD_MAX_LEN : len;
 
     char_to_lower(word, lower_word, len);
 
     /* > 删除关键字 */
     idx = hash_time33(lower_word) % tab->mod;
 
-    if (avl_delete(tab->dic[idx], lower_word, len, (void **)&dw)) {
+    key.word.len = len;
+    key.word.str = lower_word;
+
+    if (avl_delete(tab->dic[idx], &key, (void **)&dw)) {
         log_error(tab->log, "Query word [%s] failed! idx:%d", word, idx);
         return INVT_ERR;
     }

@@ -164,6 +164,40 @@ static int lwsd_proc_lock(const lwsd_conf_t *conf)
 }
 
 /******************************************************************************
+ **函数名称: lwsd_reg_cmp_cb
+ **功    能: 注册比较回调
+ **输入参数:
+ **     reg1: 注册回调项1
+ **     reg2: 注册回调项2
+ **输出参数: NONE
+ **返    回: =0:相等 <0:小于 >0:大于
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2016.08.09 10:59:58 #
+ ******************************************************************************/
+static int lwsd_reg_cmp_cb(const lws_reg_t *reg1, const lws_reg_t *reg2)
+{
+    return (reg1->type - reg2->type);
+}
+
+/******************************************************************************
+ **函数名称: lwsd_wsi_map_cmp_cb
+ **功    能: 注册比较回调
+ **输入参数:
+ **     item1: WSI项1
+ **     item2: WSI项2
+ **输出参数: NONE
+ **返    回: =0:相等 <0:小于 >0:大于
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2016.08.09 10:59:58 #
+ ******************************************************************************/
+static int lwsd_wsi_map_cmp_cb(lwsd_wsi_item_t *item1, lwsd_wsi_item_t *item2)
+{
+    return (item1->sid - item2->sid);
+}
+
+/******************************************************************************
  **函数名称: lwsd_init
  **功    能: 初始化进程
  **输入参数:
@@ -198,14 +232,14 @@ static lwsd_cntx_t *lwsd_init(const lwsd_opt_t *opt, const lwsd_conf_t *conf, lo
 
     do {
         /* > 创建LWS REG表 */
-        ctx->lws_reg = avl_creat(NULL, (cmp_cb_t)cmp_cb_int32);
+        ctx->lws_reg = avl_creat(NULL, (cmp_cb_t)lwsd_reg_cmp_cb);
         if (NULL == ctx->lws_reg) {
             log_error(log, "Create avl failed!");
             break;
         }
 
         /* > 创建LWS WSI表 */
-        ctx->wsi_map = rbt_creat(NULL, (cmp_cb_t)cmp_cb_int32);
+        ctx->wsi_map = rbt_creat(NULL, (cmp_cb_t)lwsd_wsi_map_cmp_cb);
         if (NULL == ctx->wsi_map) {
             log_error(log, "Create rbt failed!");
             break;

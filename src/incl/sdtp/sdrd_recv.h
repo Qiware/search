@@ -85,6 +85,13 @@ typedef struct
     int count;                          /* 引用计数 */
 } sdrd_node_to_svr_item_t;
 
+/* DEV->SVR列表 */
+typedef struct
+{
+    int nid;                            /* 结点ID */
+    list_t *list;                       /* 结点对应的RSVR列表 */
+} sdrd_dev_to_rsvr_map_t;
+
 /* 接收对象 */
 typedef struct
 {
@@ -143,7 +150,7 @@ typedef struct
                                            此队列, 再从此队列分发到不同的线程队列 */
 
     pthread_rwlock_t node_to_svr_map_lock;  /* 读写锁: NODE->SVR映射表 */
-    avl_tree_t *node_to_svr_map;         /* NODE->SVR的映射表(以nid为主键) */
+    avl_tree_t *node_to_svr_map;         /* NODE->SVR的映射表(以nid为主键 sdrd_node_item_t) */
 } sdrd_cntx_t;
 
 /* 外部接口 */

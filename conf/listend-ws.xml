@@ -1,0 +1,37 @@
+<!-- 代理服务配置信息 -->
+<LISTEND ID="10002" WORKDIR="../temp/listend-ws/">
+    <!-- 分发队列配置 -->
+    <DISTQ NUM="8" MAX="4096" SIZE="4KB" />
+
+    <!-- 代理信息配置 -->
+    <LWS IFACE="wlan0">
+        <!-- 并发(连接)配置
+            1) MAX: 最大并发数
+            2) TIMEOUT: 连接超时时间
+            3) PORT: 侦听端口 -->
+        <CONNECTIONS MAX="999999" TIMEOUT="15" PORT="9003" />
+
+        <!-- 路径配置 -->
+        <RESOURCE_PATH></RESOURCE_PATH>
+        <SSL USE="off">
+            <KEY_PATH></KEY_PATH>
+            <CERT_PATH></CERT_PATH>
+        </SSL>
+
+        <!-- 队列配置
+            1) MAX: 队列容量(必须为2的次方)
+            2) SIZE: 队列单元大小(0:表示自定义) -->
+        <QUEUE>
+            <SENDQ MAX="8192" SIZE="4KB" />  <!-- 发送队列 -->
+        </QUEUE>
+    </LWS>
+    <!-- 倒排连接配置 -->
+    <FRWDER>                                    <!-- NODE: 结点ID(必须唯一) -->
+        <SERVER IP="127.0.0.1" PORT="28888" />  <!-- 服务端地址(IP:IP地址 PORT:服务端口) -->
+        <AUTH   USR="qifeng" PASSWD="111111" /> <!-- 鉴权配置(USR:用户名 PASSWD:登录密码) -->
+        <THREAD-POOL SEND_THD_NUM="1" WORK_THD_NUM="1" />  <!-- 线程数目(SEND:发送线程 WORK:工作线程) -->
+        <BUFFER-POOL-SIZE SEND="5" RECV="5" />  <!-- 缓存配置(SEND:发送缓存(MB) RECV:接收缓存(MB)) -->
+        <RECVQ  MAX="4096" SIZE="4KB" />        <!-- 接收队列(MAX:总容量 SIZE:单元大小) -->
+        <SENDQ  MAX="4096" SIZE="4KB" />        <!-- 发送队列(MAX:总容量 SIZE:单元大小) -->
+    </FRWDER>
+</LISTEND>

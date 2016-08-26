@@ -106,7 +106,7 @@ rtmq_cntx_t *rtmq_init(const rtmq_conf_t *cf, log_cycle_t *log)
         }
 
         /* > 初始化注册信息 */
-        ctx->reg = avl_creat(NULL, (cmp_cb_t)cmp_cb_int32);
+        ctx->reg = avl_creat(NULL, (cmp_cb_t)rtmq_reg_cmp_cb);
         if (NULL == ctx->reg) {
             log_error(ctx->log, "Create register map failed!");
             break;
@@ -230,7 +230,7 @@ int rtmq_register(rtmq_cntx_t *ctx, int type, rtmq_reg_cb_t proc, void *param)
     item->proc = proc;
     item->param = param;
 
-    if (avl_insert(ctx->reg, &type, sizeof(type), item)) {
+    if (avl_insert(ctx->reg, item)) {
         log_error(ctx->log, "Register maybe repeat! type:%d!", type);
         free(item);
         return RTMQ_ERR_REPEAT_REG;
@@ -266,6 +266,7 @@ int rtmq_async_send(rtmq_cntx_t *ctx, int type, int dest, void *data, size_t len
     addr = mem_ref_alloc(sizeof(rtmq_header_t) + len,
             NULL, (mem_alloc_cb_t)mem_alloc, (mem_dealloc_cb_t)mem_dealloc);
     if (NULL == addr) {
+        log_error(ctx->log, "Alloc memory failed! errmsg:[%d] %s!", errno, strerror(errno));
         return RTMQ_ERR;
     }
 
@@ -282,6 +283,7 @@ int rtmq_async_send(rtmq_cntx_t *ctx, int type, int dest, void *data, size_t len
     /* > 压入队列空间 */
     if (ring_push(ctx->distq[idx], addr)) {
         mem_ref_decr(addr);
+        log_error(ctx->log, "Push into ring failed!");
         return RTMQ_ERR;
     }
 
@@ -317,7 +319,7 @@ static int rtmq_creat_recvq(rtmq_cntx_t *ctx)
 
     /* > 依次创建接收队列 */
     for(idx=0; idx<conf->recvq_num; ++idx) {
-        ctx->recvq[idx] = ring_creat(conf->recvq.max);
+        ctx->recvq[idx] = queue_creat(conf->recvq.max, sizeof(rtmq_recv_item_t));
         if (NULL == ctx->recvq[idx]) {
             log_error(ctx->log, "Create queue failed! max:%d size:%d",
                     conf->recvq.max, conf->recvq.size);
@@ -657,6 +659,12 @@ static int rtmq_auth_trav_add(rtmq_auth_t *auth, rtmq_cntx_t *ctx)
     return rtmq_auth_add(ctx, auth->usr, auth->passwd);
 }
 
+/* 鉴权比较 */
+static int rtmq_auth_cmp_cb(const rtmq_auth_t *auth1, const rtmq_auth_t *auth2)
+{
+    return strcmp(auth1->usr, auth2->usr);
+}
+
 /******************************************************************************
  **函数名称: rtmq_auth_init
  **功    能: 初始化鉴权表
@@ -674,7 +682,7 @@ static int rtmq_auth_init(rtmq_cntx_t *ctx)
 {
     list_t *auth = ctx->conf.auth;
 
-    ctx->auth = avl_creat(NULL, (cmp_cb_t)cmp_cb_str);
+    ctx->auth = avl_creat(NULL, (cmp_cb_t)rtmq_auth_cmp_cb);
     if (NULL == ctx->auth) {
         return -1;
     }
@@ -697,9 +705,11 @@ static int rtmq_auth_init(rtmq_cntx_t *ctx)
  ******************************************************************************/
 int rtmq_auth_add(rtmq_cntx_t *ctx, char *usr, char *passwd)
 {
-    rtmq_auth_t *auth;
+    rtmq_auth_t *auth, key;
 
-    auth = (rtmq_auth_t *)avl_query(ctx->auth, (void *)usr, strlen(usr)+1);
+    snprintf(key.usr, sizeof(key.usr), "%s", usr);
+
+    auth = (rtmq_auth_t *)avl_query(ctx->auth, &key);
     if (NULL != auth) {
         return (0 == strcmp(auth->passwd, passwd))? 0 : -1;
     }
@@ -713,7 +723,7 @@ int rtmq_auth_add(rtmq_cntx_t *ctx, char *usr, char *passwd)
     snprintf(auth->usr, sizeof(auth->usr), "%s", usr);
     snprintf(auth->passwd, sizeof(auth->passwd), "%s", passwd);
 
-    if (avl_insert(ctx->auth, usr, strlen(usr)+1, (void *)auth)) {
+    if (avl_insert(ctx->auth, (void *)auth)) {
         free(auth);
         return -1;
     }
@@ -736,9 +746,11 @@ int rtmq_auth_add(rtmq_cntx_t *ctx, char *usr, char *passwd)
  ******************************************************************************/
 bool rtmq_auth_check(rtmq_cntx_t *ctx, char *usr, char *passwd)
 {
-    rtmq_auth_t *auth;
+    rtmq_auth_t *auth, key;
 
-    auth = avl_query(ctx->auth, usr, strlen(usr)+1);
+    snprintf(key.usr, sizeof(key.usr), "%s", usr);
+
+    auth = avl_query(ctx->auth, &key);
     if (NULL != auth) {
         return (0 == strcmp(auth->passwd, passwd))? true : false;
     }

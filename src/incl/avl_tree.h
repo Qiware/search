@@ -31,15 +31,13 @@ typedef struct
 /* 节点结构 */
 typedef struct _node_t
 {
-    key_obj_t key;              /* 主键(唯一值) */
-
     int bf;                     /* 平衡因子 */
 
     struct _node_t *parent;     /* 父节点 */
     struct _node_t *lchild;     /* 左孩子 */
     struct _node_t *rchild;     /* 右孩子 */
 
-    void *data;                 /* 附加数据 */
+    void *data;                 /* 附加数据(注: 必须包含主键) */
 } avl_node_t;
 
 /* 树结构 */
@@ -48,7 +46,6 @@ typedef struct
     uint64_t num;               /* 结点数 */
     avl_node_t *root;           /* 根节点 */
 
-    key_cb_t key_cb;            /* 生成KEY的回调 */
     cmp_cb_t cmp_cb;            /* 数值比较回调 */
 
     void *pool;                 /* 内存池 */
@@ -57,9 +54,9 @@ typedef struct
 } avl_tree_t;
 
 avl_tree_t *avl_creat(avl_opt_t *opt, cmp_cb_t cmp_cb);
-int avl_insert(avl_tree_t *tree, void *_key, size_t size, void *data);
-void *avl_query(avl_tree_t *tree, void *key, size_t size);
-int avl_delete(avl_tree_t *tree, void *_key, size_t size, void **data);
+int avl_insert(avl_tree_t *tree, void *data);
+void *avl_query(avl_tree_t *tree, void *key);
+int avl_delete(avl_tree_t *tree, void *key, void **data);
 int avl_print(avl_tree_t *tree);
 int avl_trav(avl_tree_t *tree, trav_cb_t proc, void *args);
 void *avl_find(avl_tree_t *tree, find_cb_t find, void *args);

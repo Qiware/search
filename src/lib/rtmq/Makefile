@@ -20,14 +20,14 @@ LIBS = -lcore
 LIBS += $(SHARED_LIB)
 
 SRC_LIST = ./server/rtmq_recv.c \
-			./server/rtmq_comm.c \
-			./server/rtmq_lsn.c \
-			./server/rtmq_rsvr.c \
-			./server/rtmq_worker.c \
-			./server/rtmq_dist.c \
-			./proxy/rtmq_proxy.c \
-			./proxy/rtmq_proxy_ssvr.c \
-			./proxy/rtmq_proxy_worker.c
+		   ./server/rtmq_comm.c \
+		   ./server/rtmq_lsn.c \
+		   ./server/rtmq_rsvr.c \
+		   ./server/rtmq_worker.c \
+		   ./server/rtmq_dist.c \
+		   ./proxy/rtmq_proxy.c \
+		   ./proxy/rtmq_proxy_ssvr.c \
+		   ./proxy/rtmq_proxy_worker.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST))
 HEADS = $(call func_get_dep_head_list, $(SRC_LIST))

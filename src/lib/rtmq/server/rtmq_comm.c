@@ -65,10 +65,16 @@ int rtmq_link_auth_check(rtmq_cntx_t *ctx, rtmq_link_auth_req_t *link_auth_req)
  **注意事项:
  **作    者: # Qifeng.zou # 2015.05.30 20:29:26 #
  ******************************************************************************/
+static int rtmq_node_to_svr_map_cmp_cb(
+        const rtmq_node_to_svr_map_t *map1, const rtmq_node_to_svr_map_t *map2)
+{
+    return (map1->nid - map2->nid);
+}
+
 int rtmq_node_to_svr_map_init(rtmq_cntx_t *ctx)
 {
     /* > 创建映射表 */
-    ctx->node_to_svr_map = avl_creat(NULL, (cmp_cb_t)cmp_cb_int32);
+    ctx->node_to_svr_map = avl_creat(NULL, (cmp_cb_t)rtmq_node_to_svr_map_cmp_cb);
     if (NULL == ctx->node_to_svr_map) {
         log_error(ctx->log, "Initialize dev->svr map failed!");
         return RTMQ_ERR;
@@ -95,12 +101,14 @@ int rtmq_node_to_svr_map_init(rtmq_cntx_t *ctx)
  ******************************************************************************/
 int rtmq_node_to_svr_map_add(rtmq_cntx_t *ctx, int nid, int rsvr_id)
 {
-    rtmq_node_to_svr_map_t *map;
+    rtmq_node_to_svr_map_t *map, key;
+
+    key.nid = nid;
 
     pthread_rwlock_wrlock(&ctx->node_to_svr_map_lock); /* 加锁 */
 
     /* > 查找是否已经存在 */
-    map = avl_query(ctx->node_to_svr_map, &nid, sizeof(nid));
+    map = avl_query(ctx->node_to_svr_map, &key);
     if (NULL == map) {
         map = (rtmq_node_to_svr_map_t *)calloc(1, sizeof(rtmq_node_to_svr_map_t));
         if (NULL == map) {
@@ -112,7 +120,7 @@ int rtmq_node_to_svr_map_add(rtmq_cntx_t *ctx, int nid, int rsvr_id)
         map->num = 0;
         map->nid = nid;
 
-        if (avl_insert(ctx->node_to_svr_map, &nid, sizeof(nid), (void *)map)) {
+        if (avl_insert(ctx->node_to_svr_map, (void *)map)) {
             pthread_rwlock_unlock(&ctx->node_to_svr_map_lock); /* 解锁 */
             FREE(map);
             log_error(ctx->log, "Insert into dev2sck table failed! nid:%d rsvr_id:%d",
@@ -151,12 +159,14 @@ int rtmq_node_to_svr_map_add(rtmq_cntx_t *ctx, int nid, int rsvr_id)
 int rtmq_node_to_svr_map_del(rtmq_cntx_t *ctx, int nid, int rsvr_id)
 {
     int idx;
-    rtmq_node_to_svr_map_t *map;
+    rtmq_node_to_svr_map_t *map, key;
+
+    key.nid = nid;
 
     pthread_rwlock_wrlock(&ctx->node_to_svr_map_lock);
 
     /* > 查找映射表 */
-    map = avl_query(ctx->node_to_svr_map, &nid, sizeof(nid));
+    map = avl_query(ctx->node_to_svr_map, &key);
     if (NULL == map) {
         pthread_rwlock_unlock(&ctx->node_to_svr_map_lock);
         log_error(ctx->log, "Query nid [%d] failed!", nid);
@@ -168,7 +178,7 @@ int rtmq_node_to_svr_map_del(rtmq_cntx_t *ctx, int nid, int rsvr_id)
         if (map->rsvr_id[idx] == rsvr_id) {
             map->rsvr_id[idx] = map->rsvr_id[--map->num]; /* 删除:使用最后一个值替代当前值 */
             if (0 == map->num) {
-                avl_delete(ctx->node_to_svr_map, &nid, sizeof(nid), (void *)&map);
+                avl_delete(ctx->node_to_svr_map, &key, (void *)&map);
                 FREE(map);
             }
             break;
@@ -194,12 +204,14 @@ int rtmq_node_to_svr_map_del(rtmq_cntx_t *ctx, int nid, int rsvr_id)
 int rtmq_node_to_svr_map_rand(rtmq_cntx_t *ctx, int nid)
 {
     int rsvr_id;
-    rtmq_node_to_svr_map_t *map;
+    rtmq_node_to_svr_map_t *map, key;
+
+    key.nid = nid;
 
     pthread_rwlock_rdlock(&ctx->node_to_svr_map_lock);
 
     /* > 获取映射表 */
-    map = avl_query(ctx->node_to_svr_map, &nid, sizeof(nid));
+    map = avl_query(ctx->node_to_svr_map, &key);
     if (NULL == map) {
         pthread_rwlock_unlock(&ctx->node_to_svr_map_lock);
         log_error(ctx->log, "Query nid [%d] failed!", nid);
@@ -225,12 +237,17 @@ int rtmq_node_to_svr_map_rand(rtmq_cntx_t *ctx, int nid)
  **注意事项:
  **作    者: # Qifeng.zou # 2016.04.23 01:42:02 #
  ******************************************************************************/
+static int rtmq_sub_tab_cmp_cb(const rtmq_sub_list_t *list1, const rtmq_sub_list_t *list2)
+{
+    return (list1->type - list2->type);
+}
+
 int rtmq_sub_mgr_init(rtmq_sub_mgr_t *sub)
 {
     /* > 创建ONE订阅表 */
     pthread_rwlock_init(&sub->sub_one_lock, NULL);
 
-    sub->sub_one_tab = avl_creat(NULL, (cmp_cb_t)cmp_cb_int32);
+    sub->sub_one_tab = avl_creat(NULL, (cmp_cb_t)rtmq_sub_tab_cmp_cb);
     if (NULL == sub->sub_one_tab) {
         return RTMQ_ERR;
     }
@@ -238,7 +255,7 @@ int rtmq_sub_mgr_init(rtmq_sub_mgr_t *sub)
     /* > 创建ALL订阅表 */
     pthread_rwlock_init(&sub->sub_all_lock, NULL);
 
-    sub->sub_all_tab = avl_creat(NULL, (cmp_cb_t)cmp_cb_int32);
+    sub->sub_all_tab = avl_creat(NULL, (cmp_cb_t)rtmq_sub_tab_cmp_cb);
     if (NULL == sub->sub_all_tab) {
         return RTMQ_ERR;
     }
@@ -261,11 +278,14 @@ int rtmq_sub_query(rtmq_cntx_t *ctx, mesg_type_e type)
 {
     int nid;
     rtmq_sub_node_t *node;
-    rtmq_sub_list_t *list;
+    rtmq_sub_list_t *list, key;
     rtmq_sub_mgr_t *sub = &ctx->sub_mgr;
 
+    key.type = type;
+
     pthread_rwlock_rdlock(&sub->sub_one_lock);
-    list = avl_query(sub->sub_one_tab, &type, sizeof(type));
+
+    list = avl_query(sub->sub_one_tab, &key);
     if ((NULL == list)
         || (0 == list2_len(list->nodes)))
     {

@@ -578,6 +578,16 @@ static int agent_comm_init(agent_cntx_t *ctx)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015-06-24 23:58:46 #
  ******************************************************************************/
+static int agent_sids_cmp_cb(const socket_t *sck1, const socket_t *sck2)
+{
+    agent_socket_extra_t *extra1, *extra2;
+
+    extra1 = sck1->extra;
+    extra2 = sck2->extra;
+
+    return (extra1->sid - extra2->sid);
+}
+
 static int agent_sid_list_init(agent_cntx_t *ctx, agent_conf_t *conf)
 {
     int idx;
@@ -593,7 +603,7 @@ static int agent_sid_list_init(agent_cntx_t *ctx, agent_conf_t *conf)
 
         spin_lock_init(&list->lock);
 
-        list->sids = rbt_creat(NULL, (cmp_cb_t)cmp_cb_int64);
+        list->sids = rbt_creat(NULL, (cmp_cb_t)agent_sids_cmp_cb);
         if (NULL == list->sids) {
             FREE(ctx->connections);
             return AGENT_ERR;
@@ -622,7 +632,7 @@ int agent_sid_item_add(agent_cntx_t *ctx, uint64_t sid, socket_t *sck)
 
     spin_lock(&list->lock);
 
-    if (rbt_insert(list->sids, &sid, sizeof(sid), sck)) {
+    if (rbt_insert(list->sids, sck)) {
         spin_unlock(&list->lock);
         return AGENT_ERR;
     }
@@ -645,14 +655,18 @@ int agent_sid_item_add(agent_cntx_t *ctx, uint64_t sid, socket_t *sck)
  ******************************************************************************/
 socket_t *agent_sid_item_del(agent_cntx_t *ctx, uint64_t sid)
 {
-    socket_t *sck;
+    socket_t *sck, key;
     agent_sid_list_t *list;
+    agent_socket_extra_t extra;
+
+    extra.sid = sid;
+    key.extra = &extra;
 
     list = &ctx->connections[sid % ctx->conf->agent_num];
 
     spin_lock(&list->lock);
 
-    if (rbt_delete(list->sids, &sid, sizeof(sid), (void *)&sck)) {
+    if (rbt_delete(list->sids, &key, (void *)&sck)) {
         spin_unlock(&list->lock);
         return sck;
     }
@@ -665,14 +679,17 @@ socket_t *agent_sid_item_del(agent_cntx_t *ctx, uint64_t sid)
 int agent_get_aid_by_sid(agent_cntx_t *ctx, uint64_t sid)
 {
     int aid;
-    socket_t *sck;
-    agent_socket_extra_t *extra;
+    socket_t *sck, key;
+    agent_socket_extra_t *extra, key_extra;
     agent_sid_list_t *list;
+
+    key_extra.sid = sid;
+    key.extra = &key_extra;
 
     list = &ctx->connections[sid % ctx->conf->agent_num];
 
     spin_lock(&list->lock);
-    sck = rbt_query(list->sids, &sid, sizeof(sid));
+    sck = rbt_query(list->sids, &key);
     if (NULL == sck) {
         spin_unlock(&list->lock);
         return -1;

@@ -226,7 +226,7 @@ static int rtmq_proxy_worker_cmd_proc_req_hdl(rtmq_proxy_t *pxy, rtmq_worker_t *
     int idx, num;
     void *addr[RTSD_WORK_POP_NUM];
     queue_t *rq;
-    rtmq_reg_t *reg;
+    rtmq_reg_t *reg, key;
     rtmq_header_t *head;
     const rtmq_cmd_proc_req_t *work_cmd = (const rtmq_cmd_proc_req_t *)&cmd->param;
 
@@ -251,7 +251,9 @@ static int rtmq_proxy_worker_cmd_proc_req_hdl(rtmq_proxy_t *pxy, rtmq_worker_t *
             /* > 执行回调函数 */
             head = (rtmq_header_t *)addr[idx];
 
-            reg = avl_query(pxy->reg, &head->type, sizeof(head->type));
+            key.type = head->type;
+
+            reg = avl_query(pxy->reg, &key);
             if (NULL == reg) {
                 ++worker->drop_total;   /* 丢弃计数 */
                 queue_dealloc(rq, addr[idx]);

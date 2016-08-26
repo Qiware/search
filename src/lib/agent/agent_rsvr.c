@@ -73,7 +73,6 @@ void *agent_rsvr_routine(void *_ctx)
             rsvr->ctm = time(NULL);
             if (rsvr->ctm - rsvr->scan_tm > AGENT_TMOUT_SCAN_SEC) {
                 rsvr->scan_tm = rsvr->ctm;
-
                 agent_rsvr_timeout_hdl(ctx, rsvr);
             }
             continue;
@@ -1013,7 +1012,7 @@ static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
             }
 
             /* > 发入发送列表 */
-            sck =agent_push_into_send_list(ctx, rsvr, hhead.sid, addr[idx]); 
+            sck = agent_push_into_send_list(ctx, rsvr, hhead.sid, addr[idx]); 
             if (NULL == sck) {
                 log_error(ctx->log, "Query socket failed! serial:%lu sid:%lu",
                         hhead.serial, hhead.sid);
@@ -1051,16 +1050,19 @@ static int agent_rsvr_dist_send_data(agent_cntx_t *ctx, agent_rsvr_t *rsvr)
 static socket_t *agent_push_into_send_list(
         agent_cntx_t *ctx, agent_rsvr_t *rsvr, uint64_t sid, void *addr)
 {
-    socket_t *sck;
-    agent_socket_extra_t *extra;
+    socket_t *sck, key;
     agent_sid_list_t *list;
+    agent_socket_extra_t *extra, key_extra;
+
+    key_extra.sid = sid;
+    key.extra = &key_extra;
 
     list = &ctx->connections[rsvr->id];
 
     /* > 查询会话对象 */
     spin_lock(&list->lock);
 
-    sck = rbt_query(list->sids, &sid, sizeof(sid));
+    sck = rbt_query(list->sids, &key);
     if (NULL == sck) {
         spin_unlock(&list->lock);
         return NULL;

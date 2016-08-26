@@ -89,12 +89,12 @@ typedef struct _rtrd_sck_t
     char ipaddr[IP_ADDR_MAX_LEN];       /* IP地址 */
 
     int auth_succ;                      /* 鉴权成功(1:成功 0:失败)  */
-    avl_tree_t *sub_list;               /* 订阅列表: 存储订阅了哪些消息(以type为主键) */
+    avl_tree_t *sub_list;               /* 订阅列表: 存储订阅了哪些消息(rtmq_sub_req_t) */
 
     rtmq_snap_t recv;                   /* 接收快照 */
     wiov_t send;                        /* 发送缓存 */
 
-    list_t *mesg_list;                  /* 发送消息链表 */
+    list2_t *mesg_list;                 /* 发送消息链表 */
 
     uint64_t recv_total;                /* 接收的数据条数 */
 } rtmq_sck_t;
@@ -154,7 +154,7 @@ typedef struct
     int cmd_sck_id;                     /* 命令套接字(注: 用于给各线程发送命令) */
     spinlock_t cmd_sck_lock;            /* 命令套接字锁 */
 
-    ring_t **recvq;                     /* 接收队列(内部队列) */
+    queue_t **recvq;                    /* 接收队列(内部队列) */
     ring_t **sendq;                     /* 发送队列(内部队列) */
     ring_t **distq;                     /* 分发队列(外部队列)
                                            注: 外部接口首先将要发送的数据放入
