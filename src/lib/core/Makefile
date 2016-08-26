@@ -55,7 +55,8 @@ SRC_LIST = log.c \
 			str.c \
 			uri.c \
 			iovec.c \
-			vector.c
+			vector.c \
+			quick_sort.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST))
 HEADS = $(call func_get_dep_head_list, $(SRC_LIST))

@@ -66,7 +66,6 @@
 #define K                   (1000)              /* K */
 #define M                   (100000)            /* M */
 #define G                   (100000000)         /* G */
-#define B                   (1)                 /* B */
 #define KB                  (1024)              /* KB */
 #define MB                  (1024 * KB)         /* MB */
 #define GB                  (1024 * MB)         /* GB */
@@ -144,6 +143,9 @@ typedef int (*cmp_cb_t)(void *data1, void *data2);
 typedef int (*trav_cb_t)(void *data, void *args);
 typedef bool (*find_cb_t)(void *data, void *args);
 typedef bool (*print_cb_t)(void *data);
+
+typedef int (*sort_cmp_cb_t)(void *array, int low, int high);
+typedef int (*sort_swap_cb_t)(void *array, int low, int high);
 
 typedef void * (*mem_alloc_cb_t)(void *pool, size_t size);
 typedef void (*mem_dealloc_cb_t)(void *pool, void *p);
