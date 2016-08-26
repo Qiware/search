@@ -486,3 +486,73 @@ int list_trav(list_t *list, trav_cb_t proc, void *args)
     }
     return 0;
 }
+
+/******************************************************************************
+ **函数名称: list_find
+ **功    能: 查找链表
+ **输入参数:
+ **     list: 链表对象
+ **     cb: 查找回调
+ **     args: 附加参数
+ **输出参数: NONE
+ **返    回: 挂载数据
+ **实现描述:
+ **注意事项:
+ **作    者: # Qifeng.zou # 2016.04.09 07:32:57 #
+ ******************************************************************************/
+void *list_find(list_t *list, find_cb_t cb, void *args)
+{
+    list_node_t *node;
+
+    node = list->head;
+    for (; NULL != node; node = node->next) {
+        if (cb(node->data, args)) {
+            return node->data;
+        }
+    }
+
+    return NULL;
+}
+
+/******************************************************************************
+ **函数名称: list_find_and_del
+ **功    能: 查找&删除满足条件的一个结点
+ **输入参数:
+ **     list: 链表对象
+ **     cb: 查找回调
+ **     args: 附加参数
+ **输出参数: NONE
+ **返    回: 挂载数据
+ **实现描述:
+ **注意事项:
+ **作    者: # Qifeng.zou # 2016.07.28 22:28:18 #
+ ******************************************************************************/
+void *list_find_and_del(list_t *list, find_cb_t cb, void *args)
+{
+    void *data;
+    list_node_t *node, *prev = NULL;
+
+    node = list->head;
+    for (; NULL != node; prev = node, node = node->next) {
+        if (cb(node->data, args)) {
+            data = node->data;
+            --list->num;
+            if (0 == list->num) {
+                list->head = NULL;
+            }
+            else {
+                if (NULL != prev) {
+                    prev->next = node->next;
+                }
+
+                if (node == list->head) {
+                    list->head = node->next;
+                }
+            }
+            list->dealloc(list->pool, node);
+            return data;
+        }
+    }
+
+    return NULL;
+}

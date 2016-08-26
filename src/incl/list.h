@@ -51,4 +51,7 @@ int list_trav(list_t *list, trav_cb_t proc, void *args);
 
 void *list_fetch(list_t *list, int idx);
 
+void *list_find(list_t *list, find_cb_t cb, void *args);
+void *list_find_and_del(list_t *list, find_cb_t cb, void *args);
+
 #endif /*__LIST_H__*/
