@@ -34,7 +34,7 @@ void *flt_sched_routine(void *_ctx)
     flt_task_t *task;
     struct dirent *item;
     char path[FILE_PATH_MAX_LEN],
-         fname[FILE_PATH_MAX_LEN];
+         fpath[FILE_PATH_MAX_LEN];
     flt_cntx_t *ctx = (flt_cntx_t *)_ctx;
     flt_conf_t *conf = ctx->conf;
 
@@ -59,9 +59,9 @@ void *flt_sched_routine(void *_ctx)
 
         /* > 遍历文件 */
         while (NULL != (item = readdir(dir))) {
-            snprintf(fname, sizeof(fname), "%s/%s", path, item->d_name);
+            snprintf(fpath, sizeof(fpath), "%s/%s", path, item->d_name);
             /* > 判断文件类型 */
-            stat(fname, &st);
+            stat(fpath, &st);
             if (!S_ISREG(st.st_mode)) {
                 continue;
             }
@@ -74,7 +74,8 @@ void *flt_sched_routine(void *_ctx)
                 break;
             }
 
-            snprintf(task->path, sizeof(task->path), "%s", fname);
+            snprintf(task->fpath, sizeof(task->fpath), "%s", fpath);
+            snprintf(task->fname, sizeof(task->fname), "%s", item->d_name);
 
             sig_queue_push(ctx->taskq, task);
         }

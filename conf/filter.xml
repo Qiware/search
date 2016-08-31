@@ -3,12 +3,12 @@
     <!-- 工作进程: 负责网页分析
          1) NUM: 线程数
          2) PATH: 工作目录 -->
-    <WORKER NUM="3" PATH="../../data/filter/" />
+    <WORKER NUM="3" PATH="./data/filter/" />
 
     <!-- 爬取配置
          1) DEPTH: 最大爬取深度
          2) PATH: 网页存储路径 -->
-    <DOWNLOAD DEPTH="-1" PATH="../../data/crwl/webpage" />
+    <DOWNLOAD DEPTH="-1" PATH="./data/spider/webpage" />
 
     <!-- 工作队列配置
          COUNT: 队列长度(必须为2的次方) -->
@@ -33,10 +33,11 @@
 
     <!-- 种子配置(DEPTH: 表示种子的当前深度) -->
     <SEED>
-        <ITEM URI="www.baidu.com" DEPTH="0" />
-        <ITEM URI="www.ifeng.com" DEPTH="0" />
-        <ITEM URI="www.qq.com" DEPTH="0" />
-        <ITEM URI="www.163.com" DEPTH="0" />
-        <ITEM URI="www.52rd.com" DEPTH="0" />
+        <ITEM URI="sports.163.com" DEPTH="-1" />
+        <ITEM URI="http://sports.163.com/gjb/" DEPTH="-1" />
     </SEED>
+    <!-- URL匹配列表 -->
+    <MATCH>
+        <ITEM STR="sports" />
+    </MATCH>
 </FILTER>

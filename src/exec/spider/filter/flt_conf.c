@@ -14,6 +14,7 @@
 static int _flt_conf_load(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *log);
 static int flt_conf_load_redis(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *log);
 static int flt_conf_load_seed(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *log);
+static int flt_conf_load_match(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *log);
 
 /******************************************************************************
  **函数名称: flt_conf_load
@@ -194,6 +195,12 @@ static int _flt_conf_load(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *log)
         return -1;
     }
 
+    /* > 加载过滤词配置 */
+    if (flt_conf_load_match(xml, conf, log)) {
+        log_error(log, "Load seed conf failed!");
+        return -1;
+    }
+
     return 0;
 }
 
@@ -289,7 +296,6 @@ static int flt_conf_load_redis(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *l
     return -1;
 }
 
-
 /******************************************************************************
  **函数名称: flt_conf_load_seed
  **功    能: 加载种子配置
@@ -349,6 +355,70 @@ static int flt_conf_load_seed(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *lo
         else {
             seed->depth = str_to_num(node->value.str);
         }
+
+        item = item->next;
+    }
+
+    return 0;
+}
+
+/******************************************************************************
+ **函数名称: flt_conf_load_match
+ **功    能: 加载匹配配置
+ **输入参数: 
+ **     xml: XML配置
+ **     log: 日志对象
+ **输出参数:
+ **     conf: 配置信息
+ **返    回: 0:成功 !0:失败
+ **实现描述: 
+ **     通过XML查询接口查找对应的配置信息
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2016.08.31 16:57:06 #
+ ******************************************************************************/
+static int flt_conf_load_match(xml_tree_t *xml, flt_conf_t *conf, log_cycle_t *log)
+{
+    flt_match_item_t *match;
+    xml_node_t *node, *item;
+
+    /* 创建匹配列表 */
+    conf->match = list_creat(NULL);
+    if (NULL == conf->match) {
+        log_error(log, "Create match list failed!");
+        return -1;
+    }
+
+    /* 1. 定位MATCH->ITEM标签 */
+    item = xml_query(xml, ".FILTER.MATCH.ITEM");
+    if (NULL == item) {
+        log_warn(log, "Didn't configure match item!");
+        return 0;
+    }
+
+    /* 2. 提取筛选信息 */
+    while (NULL != item) {
+        if (0 != strcasecmp(item->name.str, "ITEM")) {
+            item = item->next;
+            continue;
+        }
+
+        /* 提取URI */
+        node = xml_search(xml, item, "STR");
+        if (NULL == node) {
+            log_error(log, "Get match string failed!");
+            continue;
+        }
+
+        match = (flt_match_item_t *)calloc(1, sizeof(flt_match_item_t));
+        if (NULL == match) {
+            log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
+            return -1;
+        }
+
+        snprintf(match->str, sizeof(match->str), "%s", node->value.str);
+
+        /* 放入匹配列表 */
+        list_rpush(conf->match, match);
 
         item = item->next;
     }

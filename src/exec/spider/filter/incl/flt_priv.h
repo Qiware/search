@@ -88,9 +88,6 @@ int flt_usage(const char *exec);
 int flt_proc_lock(void);
 void flt_set_signal(void);
 
-int flt_domain_ip_map_cmp_cb(const char *domain, const flt_domain_ip_map_t *map);
-int flt_domain_blacklist_cmp_cb(const char *domain, const flt_domain_blacklist_t *blacklist);
-
 bool flt_set_uri_exists(redisContext *redis, const char *hash, const char *uri);
 /* 判断uri是否已下载 */
 #define flt_is_uri_down(redis, hash, uri) flt_set_uri_exists(redis, hash, uri)

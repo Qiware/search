@@ -29,7 +29,8 @@
 /* 任务对象 */
 typedef struct
 {
-    char path[FILE_PATH_MAX_LEN];           /* 文件路径 */
+    char fname[FILE_PATH_MAX_LEN];          /* 文件名 */
+    char fpath[FILE_PATH_MAX_LEN];          /* 文件路径 */
 } flt_task_t;
 
 /* 爬取对象 */

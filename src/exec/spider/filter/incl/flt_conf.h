@@ -44,6 +44,12 @@ typedef struct
     char push_tab[TABLE_NAME_MAX_LEN];      /* PUSHED哈希表名 */
 } flt_redis_conf_t;
 
+typedef struct
+{
+#define FLT_MATCH_STR_LEN (256)
+    char str[FLT_MATCH_STR_LEN];
+} flt_match_item_t;
+
 /* 配置信息 */
 typedef struct
 {
@@ -60,6 +66,7 @@ typedef struct
 
 #define FLT_SEED_MAX_NUM   (100)            /* 种子最大数 */
     uint32_t seed_num;                      /* 种子实数 */
+    list_t *match;                          /* URL匹配列表 */
     flt_seed_conf_t seed[FLT_SEED_MAX_NUM]; /* 种子配置 */
 } flt_conf_t;
 

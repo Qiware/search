@@ -22,6 +22,11 @@
 
 static int flt_workers_creat(flt_cntx_t *ctx);
 
+static int flt_domain_ip_map_key_cb(const flt_domain_ip_map_t *map);
+static int flt_domain_ip_map_cmp_cb(const flt_domain_ip_map_t *m1, const flt_domain_ip_map_t *m2);
+static int flt_domain_blacklist_key_cb(const flt_domain_blacklist_t *bl);
+static int flt_domain_blacklist_cmp_cb(const flt_domain_blacklist_t *bl1, const flt_domain_blacklist_t *bl2);
+
 /******************************************************************************
  **函数名称: flt_getopt 
  **功    能: 解析输入参数
@@ -201,13 +206,13 @@ flt_cntx_t *flt_init(char *pname, flt_opt_t *flt_opt)
         /* > 新建域名IP映射表 */
         memset(&opt, 0, sizeof(opt));
 
-        opt.type = HASH_MAP_AVL;
         opt.pool = (void *)NULL;
         opt.alloc = (mem_alloc_cb_t)mem_alloc;
         opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
         ctx->domain_ip_map = hash_map_creat(
                 FLT_DOMAIN_IP_MAP_HASH_MOD,
+                (key_cb_t)flt_domain_ip_map_key_cb,
                 (cmp_cb_t)flt_domain_ip_map_cmp_cb, &opt);
         if (NULL == ctx->domain_ip_map) {
             log_error(log, "Initialize hash table failed!");
@@ -217,13 +222,13 @@ flt_cntx_t *flt_init(char *pname, flt_opt_t *flt_opt)
         /* > 新建域名黑名单表 */
         memset(&opt, 0, sizeof(opt));
 
-        opt.type = HASH_MAP_AVL;
         opt.pool = (void *)NULL;
         opt.alloc = (mem_alloc_cb_t)mem_alloc;
         opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
         ctx->domain_blacklist = hash_map_creat(
                 FLT_DOMAIN_BLACKLIST_HASH_MOD,
+                (key_cb_t)flt_domain_blacklist_key_cb,
                 (cmp_cb_t)flt_domain_blacklist_cmp_cb, &opt);
         if (NULL == ctx->domain_blacklist) {
             log_error(log, "Initialize hash table failed!");
@@ -416,7 +421,7 @@ int flt_proc_lock(void)
 }
 
 /******************************************************************************
- **函数名称: flt_domain_ip_map_query
+ **函数名称: flt_domain_ip_map_copy
  **功    能: 获取域名IP映射
  **输入参数:
  **     map: 域名IP映射
@@ -427,7 +432,7 @@ int flt_proc_lock(void)
  **注意事项: 
  **作    者: # Qifeng.zou # 2015.04.18 #
  ******************************************************************************/
-static int flt_domain_ip_map_query(flt_domain_ip_map_t *map, ipaddr_t *ip)
+static int flt_domain_ip_map_copy(flt_domain_ip_map_t *map, ipaddr_t *ip)
 {
     int idx = rand() % map->ip_num;
 
@@ -474,22 +479,24 @@ int flt_get_domain_ip_map(flt_cntx_t *ctx, char *host, ipaddr_t *ip)
 {
     int ret, ip_num;
     struct addrinfo hints;
-    flt_domain_ip_map_t *new_map;
     struct sockaddr_in *sockaddr;
     struct addrinfo *addrinfo, *curr;
-    flt_domain_blacklist_t blacklist, *new_blacklist;
+    flt_domain_ip_map_t *new_map, map_key;
+    flt_domain_blacklist_t blacklist, *new_blacklist, bl_key;
 
     /* > 从域名IP映射表中查找 */
-    if (!hash_map_query(ctx->domain_ip_map, host, strlen(host),
-            (hash_map_query_cb_t)flt_domain_ip_map_query, ip))
+    snprintf(map_key.host, sizeof(map_key.host), "%s", host);
+    if (!hash_map_query(ctx->domain_ip_map,
+        &map_key, (copy_cb_t)flt_domain_ip_map_copy, ip))
     {
         log_trace(ctx->log, "Found domain ip map in talbe! %s", host);
         return FLT_OK; /* 成功 */
     }
 
     /* > 从域名黑名单中查找 */
-    if (!hash_map_query(ctx->domain_blacklist, host, strlen(host),
-            (hash_map_query_cb_t)flt_domain_blacklist_query, &blacklist))
+    snprintf(bl_key.host, sizeof(bl_key.host), "%s", host);
+    if (!hash_map_query(ctx->domain_blacklist, &bl_key,
+        (copy_cb_t)flt_domain_blacklist_query, &blacklist))
     {
         log_info(ctx->log, "Host [%s] in blacklist!", host);
         return FLT_ERR; /* 在黑名单中 */
@@ -513,7 +520,7 @@ int flt_get_domain_ip_map(flt_cntx_t *ctx, char *host, ipaddr_t *ip)
         new_blacklist->create_tm = time(NULL);
         new_blacklist->access_tm = new_blacklist->create_tm;
 
-        if (hash_map_insert(ctx->domain_blacklist, host, strlen(host), new_blacklist)) {
+        if (hash_map_insert(ctx->domain_blacklist, new_blacklist)) {
             FREE(new_blacklist);
         }
 
@@ -572,7 +579,7 @@ int flt_get_domain_ip_map(flt_cntx_t *ctx, char *host, ipaddr_t *ip)
     freeaddrinfo(addrinfo);
 
     /* 4. 插入域名IP映射表 */
-    ret = hash_map_insert(ctx->domain_ip_map, host, strlen(host), new_map);
+    ret = hash_map_insert(ctx->domain_ip_map, new_map);
     if (0 != ret) {
         if (AVL_NODE_EXIST == ret) {
             if (!new_map->ip_num) {
@@ -604,37 +611,72 @@ int flt_get_domain_ip_map(flt_cntx_t *ctx, char *host, ipaddr_t *ip)
 }
 
 /******************************************************************************
+ **函数名称: flt_domain_ip_map_key_cb
+ **功    能: 生成序列号
+ **输入参数:
+ **     map: 域名IP映射表数据
+ **输出参数: NONE
+ **返    回: 序列号
+ **实现描述: 
+ **注意事项: 查找成功后，将会更新访问时间. 该时间将会是表数据更新的参考依据
+ **作    者: # Qifeng.zou # 2016-08-31 15:37:49 #
+ ******************************************************************************/
+static int flt_domain_ip_map_key_cb(const flt_domain_ip_map_t *map)
+{
+    return hash_time33(map->host);
+}
+
+/******************************************************************************
  **函数名称: flt_domain_ip_map_cmp_cb
  **功    能: 域名IP映射表的比较
  **输入参数:
- **     _domain: 域名
- **     data: 域名IP映射表数据(flt_domain_ip_map_t)
+ **     m1: 域名IP映射表数据(flt_domain_ip_map_t)
+ **     m2: 域名IP映射表数据(flt_domain_ip_map_t)
  **输出参数: NONE
  **返    回: 0:相等 <0:小于 >0:大于
  **实现描述: 
  **注意事项: 查找成功后，将会更新访问时间. 该时间将会是表数据更新的参考依据
  **作    者: # Qifeng.zou # 2014.11.14 #
  ******************************************************************************/
-int flt_domain_ip_map_cmp_cb(const char *domain, const flt_domain_ip_map_t *map)
+static int flt_domain_ip_map_cmp_cb(
+        const flt_domain_ip_map_t *m1, const flt_domain_ip_map_t *m2)
 {
-    return strcmp(domain, map->host);
+    return strcmp(m1->host, m2->host);
+}
+
+/******************************************************************************
+ **函数名称: flt_domain_blacklist_key_cb
+ **功    能: 序列号
+ **输入参数:
+ **     bl1: 域名黑名单数据
+ **     bl2: 域名黑名单数据
+ **输出参数: NONE
+ **返    回: 序列号
+ **实现描述: 
+ **注意事项: 
+ **作    者: # Qifeng.zou # 2016-08-31 15:38:14 #
+ ******************************************************************************/
+static int flt_domain_blacklist_key_cb(const flt_domain_blacklist_t *bl)
+{
+    return hash_time33(bl->host);
 }
 
 /******************************************************************************
  **函数名称: flt_domain_blacklist_cmp_cb
  **功    能: 域名黑名单的比较
  **输入参数:
- **     domain: 域名
- **     blacklist: 域名黑名单数据
+ **     bl1: 域名黑名单数据
+ **     bl2: 域名黑名单数据
  **输出参数: NONE
  **返    回: 0:相等 <0:小于 >0:大于
  **实现描述: 
  **注意事项: 查找成功后，将会更新访问时间. 该时间将会是表数据更新的参考依据
  **作    者: # Qifeng.zou # 2014.11.28 #
  ******************************************************************************/
-int flt_domain_blacklist_cmp_cb(const char *domain, const flt_domain_blacklist_t *blacklist)
+static int flt_domain_blacklist_cmp_cb(
+        const flt_domain_blacklist_t *bl1, const flt_domain_blacklist_t *bl2)
 {
-    return strcmp(domain, blacklist->host);
+    return strcmp(bl1->host, bl2->host);
 }
 
 /******************************************************************************

@@ -21,6 +21,9 @@
 static int flt_worker_workflow(flt_cntx_t *ctx, flt_worker_t *worker);
 static int flt_worker_deep_hdl(flt_cntx_t *ctx, flt_worker_t *worker, gumbo_result_t *result);
 
+static int flt_wpi_move(flt_cntx_t *ctx, flt_task_t *task);
+static int flt_wpi_move_to_error(flt_cntx_t *ctx, flt_task_t *task);
+
 /******************************************************************************
  **函数名称: flt_worker_self
  **功    能: 获取工作对象
@@ -192,8 +195,8 @@ void *flt_worker_routine(void *_ctx)
         }
 
         /* > 提取网页数据 */
-        if (flt_worker_get_webpage_info(task->path, &worker->info, worker->log)) {
-            remove(task->path);
+        if (flt_worker_get_webpage_info(task->fpath, &worker->info, worker->log)) {
+            flt_wpi_move_to_error(ctx, task);
             sig_queue_dealloc(ctx->taskq, task);
             continue;
         }
@@ -202,7 +205,7 @@ void *flt_worker_routine(void *_ctx)
         flt_worker_workflow(ctx, worker);
 
         /* > 释放内存和磁盘 */
-        remove(task->path);
+        flt_wpi_move(ctx, task);
         sig_queue_dealloc(ctx->taskq, task);
     }
     return (void *)-1;
@@ -308,6 +311,42 @@ static int flt_worker_deep_hdl(flt_cntx_t *ctx, flt_worker_t *worker, gumbo_resu
 }
 
 /******************************************************************************
+ **函数名称: flt_uri_find_cb
+ **功    能: 查找uri是否匹配
+ **输入参数:
+ **     filter: 解析器对象
+ **输出参数:
+ **返    回: 0:成功 !0:失败
+ **实现描述:
+ **注意事项:
+ **作    者: # Qifeng.zou # 2015.03.11 #
+ ******************************************************************************/
+static bool flt_uri_find_cb(flt_match_item_t *item, char *uri)
+{
+    return (NULL == strstr(uri, item->str))? false : true;
+}
+
+/******************************************************************************
+ **函数名称: flt_uri_is_match
+ **功    能: uri是否满足过滤条件
+ **输入参数:
+ **     filter: 解析器对象
+ **输出参数:
+ **返    回: 0:成功 !0:失败
+ **实现描述:
+ **注意事项:
+ **作    者: # Qifeng.zou # 2015.03.11 #
+ ******************************************************************************/
+static bool flt_uri_is_match(flt_conf_t *conf, char *uri)
+{
+    if (0 == list_length(conf->match)) {
+        return true; // 无需过滤, 所有均为合法
+    }
+
+    return list_find(conf->match, (find_cb_t)flt_uri_find_cb, (void *)uri);
+}
+
+/******************************************************************************
  **函数名称: flt_worker_workflow
  **功    能: 处理流程
  **输入参数:
@@ -329,6 +368,12 @@ static int flt_worker_workflow(flt_cntx_t *ctx, flt_worker_t *worker)
     /* > 判断网页深度 */
     if (info->depth > conf->download.depth) {
         log_info(ctx->log, "Drop handle webpage! uri:%s depth:%d", info->uri, info->depth);
+        return FLT_OK;
+    }
+
+    /* > 判断URL是否符合过滤条件 */
+    if (!flt_uri_is_match(conf, info->uri)) {
+        log_info(ctx->log, "Url is match failed! uri:%s", info->uri);
         return FLT_OK;
     }
 
@@ -375,4 +420,44 @@ static int flt_worker_workflow(flt_cntx_t *ctx, flt_worker_t *worker)
     gumbo_result_destroy(result);
     gumbo_html_destroy(html);
     return FLT_OK;
+}
+
+/******************************************************************************
+ **函数名称: flt_wpi_move_to_error
+ **功    能: 移动到错误目录
+ **输入参数:
+ **输出参数:
+ **返    回: 0:成功 !0:失败
+ **实现描述:
+ **注意事项:
+ **作    者: # Qifeng.zou # 2016-09-01 06:37:00 #
+ ******************************************************************************/
+static int flt_wpi_move_to_error(flt_cntx_t *ctx, flt_task_t *task)
+{
+    char new_path[FILE_PATH_MAX_LEN];
+    flt_work_conf_t *conf = &ctx->conf->work;
+
+    snprintf(new_path, sizeof(new_path), "%s/wpi/%s", conf->err_path, task->fname);
+
+    return rename(task->fpath, new_path);
+}
+
+/******************************************************************************
+ **函数名称: flt_wpi_move
+ **功    能: 移动到已处理目录
+ **输入参数:
+ **输出参数:
+ **返    回: 0:成功 !0:失败
+ **实现描述:
+ **注意事项:
+ **作    者: # Qifeng.zou # 2016-09-01 06:37:00 #
+ ******************************************************************************/
+static int flt_wpi_move(flt_cntx_t *ctx, flt_task_t *task)
+{
+    char new_path[FILE_PATH_MAX_LEN];
+    flt_work_conf_t *conf = &ctx->conf->work;
+
+    snprintf(new_path, sizeof(new_path), "%s/wpi/%s", conf->webpage_path, task->fname);
+
+    return rename(task->fpath, new_path);
 }
