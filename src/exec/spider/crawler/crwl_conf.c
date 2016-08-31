@@ -209,9 +209,8 @@ static int _crwl_conf_load(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
  ******************************************************************************/
 static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t *log)
 {
-    int idx;
     redis_conf_t master;
-    xml_node_t *nail, *node, *start, *item;
+    xml_node_t *nail, *node;
     crwl_redis_conf_t *redis = &conf->redis;
 
     memset(&master, 0, sizeof(master));
@@ -253,61 +252,8 @@ static int crwl_conf_load_redis(xml_tree_t *xml, crwl_conf_t *conf, log_cycle_t 
 
     snprintf(master.passwd, sizeof(master.passwd), "%s", node->value.str);
 
-    /* > 计算REDIS副本个数 */
-    start = xml_search(xml, nail, "SLAVE.ITEM");
-    if (NULL == start) {
-        log_error(log, "Query item of network failed!");
-        return -1;
-    }
-    
-    redis->num = 1; // 至少存在主REDIS
-    item = start;
-    while (NULL != item) {
-        if (strcmp(item->name.str, "ITEM")) {
-            log_error(log, "Mark name isn't right! mark:%s", item->name.str);
-            return -1;
-        }
-        ++redis->num;
-        item = item->next;
-    }
-
-    redis->conf = (redis_conf_t *)calloc(redis->num, sizeof(redis_conf_t));
-    if (NULL == redis->conf) {
-        log_error(log, "errmsg:[%d] %s!", errno, strerror(errno));
-        return -1;
-    }
-
     /* 注: 出现异常情况时 内存在此不必释放 */
-    memcpy(&redis->conf[0], &master, sizeof(master));
-
-    for (item=start, idx=1; NULL!=item; item=item->next, ++idx) {
-        /* 获取IP地址 */
-        node = xml_search(xml, item, "IP");
-        if (NULL == node) {
-            log_error(log, "[%d] Get ip addr failed!", idx);
-            return -1;
-        }
-
-        snprintf(redis->conf[idx].ip, sizeof(redis->conf[idx].ip), "%s", node->value.str);
-
-        /* 获取PORT地址 */
-        node = xml_search(xml, item, "PORT");
-        if (NULL == node) {
-            log_error(log, "[%d] Get port failed!", idx);
-            return -1;
-        }
-
-        redis->conf[idx].port = str_to_num(node->value.str);
-
-        /* 获取PASSWD */
-        node = xml_search(xml, item, "PASSWD");
-        if (NULL == node) {
-            log_error(log, "[%d] Get password failed!", idx);
-            return -1;
-        }
-
-        snprintf(redis->conf[idx].passwd, sizeof(redis->conf[idx].passwd), "%s", node->value.str);
-    }
+    memcpy(&redis->conf, &master, sizeof(master));
 
     /* > 获取队列名 */
     node = xml_search(xml, nail, "TASKQ.NAME");

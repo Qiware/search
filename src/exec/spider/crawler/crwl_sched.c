@@ -97,12 +97,12 @@ static crwl_sched_t *crwl_sched_init(crwl_cntx_t *ctx)
     tv.tv_sec = 30;
     tv.tv_usec = 0;
     sched->redis = redisConnectWithTimeout(
-        conf->redis.conf[0].ip, conf->redis.conf[0].port, tv);
+        conf->redis.conf.ip, conf->redis.conf.port, tv);
     if (sched->redis->err) {
         redisFree(sched->redis);
         free(sched);
         log_error(ctx->log, "Connect redis failed! IP:[%s:%d]",
-                conf->redis.conf[0].ip, conf->redis.conf[0].port);
+                conf->redis.conf.ip, conf->redis.conf.port);
         return NULL;
     }
 
