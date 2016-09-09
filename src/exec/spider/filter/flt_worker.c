@@ -257,6 +257,42 @@ int flt_worker_destroy(flt_cntx_t *ctx, flt_worker_t *worker)
 }
 
 /******************************************************************************
+ **函数名称: flt_uri_find_cb
+ **功    能: 查找uri是否匹配
+ **输入参数:
+ **     filter: 解析器对象
+ **输出参数:
+ **返    回: 0:成功 !0:失败
+ **实现描述:
+ **注意事项:
+ **作    者: # Qifeng.zou # 2015.03.11 #
+ ******************************************************************************/
+static bool flt_uri_find_cb(flt_match_item_t *item, char *uri)
+{
+    return (NULL == strstr(uri, item->str))? false : true;
+}
+
+/******************************************************************************
+ **函数名称: flt_is_uri_match
+ **功    能: uri是否满足过滤条件
+ **输入参数:
+ **     filter: 解析器对象
+ **输出参数:
+ **返    回: 0:成功 !0:失败
+ **实现描述:
+ **注意事项:
+ **作    者: # Qifeng.zou # 2015.03.11 #
+ ******************************************************************************/
+static bool flt_is_uri_match(flt_conf_t *conf, char *uri)
+{
+    if (0 == list_length(conf->match)) {
+        return true; // 无需过滤, 所有均为合法
+    }
+
+    return list_find(conf->match, (find_cb_t)flt_uri_find_cb, (void *)uri);
+}
+
+/******************************************************************************
  **函数名称: flt_worker_deep_hdl
  **功    能: 超链接的深入分析和处理
  **输入参数:
@@ -294,6 +330,12 @@ static int flt_worker_deep_hdl(flt_cntx_t *ctx, flt_worker_t *worker, gumbo_resu
             continue;
         }
 
+        /* > 判断URL是否符合过滤条件 */
+        if (!flt_is_uri_match(conf, field.uri)) {
+            log_warn(ctx->log, "Url is match failed! uri:%s", field.uri);
+            continue;
+        }
+
         /* > 判断URI是否已经被推送到队列中 */
         if (flt_is_uri_push(worker->redis, conf->redis.push_tab, field.uri)) {
             log_warn(ctx->log, "Uri [%s] was pushed!", field.uri);
@@ -308,42 +350,6 @@ static int flt_worker_deep_hdl(flt_cntx_t *ctx, flt_worker_t *worker, gumbo_resu
     }
 
     return FLT_OK;
-}
-
-/******************************************************************************
- **函数名称: flt_uri_find_cb
- **功    能: 查找uri是否匹配
- **输入参数:
- **     filter: 解析器对象
- **输出参数:
- **返    回: 0:成功 !0:失败
- **实现描述:
- **注意事项:
- **作    者: # Qifeng.zou # 2015.03.11 #
- ******************************************************************************/
-static bool flt_uri_find_cb(flt_match_item_t *item, char *uri)
-{
-    return (NULL == strstr(uri, item->str))? false : true;
-}
-
-/******************************************************************************
- **函数名称: flt_uri_is_match
- **功    能: uri是否满足过滤条件
- **输入参数:
- **     filter: 解析器对象
- **输出参数:
- **返    回: 0:成功 !0:失败
- **实现描述:
- **注意事项:
- **作    者: # Qifeng.zou # 2015.03.11 #
- ******************************************************************************/
-static bool flt_uri_is_match(flt_conf_t *conf, char *uri)
-{
-    if (0 == list_length(conf->match)) {
-        return true; // 无需过滤, 所有均为合法
-    }
-
-    return list_find(conf->match, (find_cb_t)flt_uri_find_cb, (void *)uri);
 }
 
 /******************************************************************************
@@ -368,12 +374,6 @@ static int flt_worker_workflow(flt_cntx_t *ctx, flt_worker_t *worker)
     /* > 判断网页深度 */
     if (info->depth > conf->download.depth) {
         log_info(ctx->log, "Drop handle webpage! uri:%s depth:%d", info->uri, info->depth);
-        return FLT_OK;
-    }
-
-    /* > 判断URL是否符合过滤条件 */
-    if (!flt_uri_is_match(conf, info->uri)) {
-        log_info(ctx->log, "Url is match failed! uri:%s", info->uri);
         return FLT_OK;
     }
 
@@ -439,6 +439,8 @@ static int flt_wpi_move_to_error(flt_cntx_t *ctx, flt_task_t *task)
 
     snprintf(new_path, sizeof(new_path), "%s/wpi/%s", conf->err_path, task->fname);
 
+    Mkdir2(new_path, 0700);
+
     return rename(task->fpath, new_path);
 }
 
@@ -458,6 +460,8 @@ static int flt_wpi_move(flt_cntx_t *ctx, flt_task_t *task)
     flt_work_conf_t *conf = &ctx->conf->work;
 
     snprintf(new_path, sizeof(new_path), "%s/wpi/%s", conf->webpage_path, task->fname);
+
+    Mkdir2(new_path, 0700);
 
     return rename(task->fpath, new_path);
 }

@@ -421,46 +421,6 @@ int flt_proc_lock(void)
 }
 
 /******************************************************************************
- **函数名称: flt_domain_ip_map_copy
- **功    能: 获取域名IP映射
- **输入参数:
- **     map: 域名IP映射
- **输出参数:
- **     ip: IP地址(随机选择一个IP)
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2015.04.18 #
- ******************************************************************************/
-static int flt_domain_ip_map_copy(flt_domain_ip_map_t *map, ipaddr_t *ip)
-{
-    int idx = rand() % map->ip_num;
-
-    memcpy(ip, &map->ip[idx], sizeof(ipaddr_t));
-
-    return FLT_OK;
-}
-
-/******************************************************************************
- **函数名称: flt_domain_blacklist_query
- **功    能: 域名黑名单查询
- **输入参数:
- **     bl: 域名黑名单
- **输出参数:
- **     out: 域名黑名单
- **返    回: 0:成功 !0:失败
- **实现描述: 
- **注意事项: 
- **作    者: # Qifeng.zou # 2015.04.18 #
- ******************************************************************************/
-static int flt_domain_blacklist_query(flt_domain_blacklist_t *bl, flt_domain_blacklist_t *out)
-{
-    memcpy(out, bl, sizeof(flt_domain_blacklist_t));
-
-    return FLT_OK;
-}
-
-/******************************************************************************
  **函数名称: flt_get_domain_ip_map
  **功    能: 获取域名IP映射
  **输入参数:
@@ -475,32 +435,37 @@ static int flt_domain_blacklist_query(flt_domain_blacklist_t *bl, flt_domain_bla
  **注意事项: 如果域名不存在, getaddrinfo()将阻塞30s左右的时间!
  **作    者: # Qifeng.zou # 2014.10.21 #
  ******************************************************************************/
-int flt_get_domain_ip_map(flt_cntx_t *ctx, char *host, ipaddr_t *ip)
+int flt_get_domain_ip_map(flt_cntx_t *ctx, const char *host, ipaddr_t *ip)
 {
     int ret, ip_num;
     struct addrinfo hints;
     struct sockaddr_in *sockaddr;
     struct addrinfo *addrinfo, *curr;
-    flt_domain_ip_map_t *new_map, map_key;
-    flt_domain_blacklist_t blacklist, *new_blacklist, bl_key;
+    flt_domain_ip_map_t *map, *new_map, map_key;
+    flt_domain_blacklist_t *blacklist, *new_blacklist, bl_key;
 
     /* > 从域名IP映射表中查找 */
     snprintf(map_key.host, sizeof(map_key.host), "%s", host);
-    if (!hash_map_query(ctx->domain_ip_map,
-        &map_key, (copy_cb_t)flt_domain_ip_map_copy, ip))
-    {
+
+    map = hash_map_query(ctx->domain_ip_map, &map_key, RDLOCK);
+    if (NULL == map) {
         log_trace(ctx->log, "Found domain ip map in talbe! %s", host);
         return FLT_OK; /* 成功 */
     }
 
+    memcpy(ip, &map->ip[rand() % map->ip_num], sizeof(ipaddr_t));
+
+    hash_map_unlock(ctx->domain_ip_map, &map_key, RDLOCK);
+
     /* > 从域名黑名单中查找 */
     snprintf(bl_key.host, sizeof(bl_key.host), "%s", host);
-    if (!hash_map_query(ctx->domain_blacklist, &bl_key,
-        (copy_cb_t)flt_domain_blacklist_query, &blacklist))
-    {
+
+    blacklist = hash_map_query(ctx->domain_blacklist, &bl_key, RDLOCK);
+    if (NULL == blacklist) {
         log_info(ctx->log, "Host [%s] in blacklist!", host);
         return FLT_ERR; /* 在黑名单中 */
     }
+    hash_map_unlock(ctx->domain_blacklist, &bl_key, RDLOCK);
 
     /* > 通过DNS服务器查询 */
     memset(&hints, 0, sizeof(hints));
@@ -520,7 +485,7 @@ int flt_get_domain_ip_map(flt_cntx_t *ctx, char *host, ipaddr_t *ip)
         new_blacklist->create_tm = time(NULL);
         new_blacklist->access_tm = new_blacklist->create_tm;
 
-        if (hash_map_insert(ctx->domain_blacklist, new_blacklist)) {
+        if (hash_map_insert(ctx->domain_blacklist, new_blacklist, WRLOCK)) {
             FREE(new_blacklist);
         }
 
@@ -579,7 +544,7 @@ int flt_get_domain_ip_map(flt_cntx_t *ctx, char *host, ipaddr_t *ip)
     freeaddrinfo(addrinfo);
 
     /* 4. 插入域名IP映射表 */
-    ret = hash_map_insert(ctx->domain_ip_map, new_map);
+    ret = hash_map_insert(ctx->domain_ip_map, new_map, WRLOCK);
     if (0 != ret) {
         if (AVL_NODE_EXIST == ret) {
             if (!new_map->ip_num) {
@@ -713,7 +678,7 @@ bool flt_set_uri_exists(redisContext *redis, const char *hash, const char *uri)
  **作    者: # Qifeng.zou # 2015.03.13 #
  ******************************************************************************/
 int flt_push_url_to_crwlq(flt_cntx_t *ctx,
-        const char *url, char *host, int port, int depth)
+        const char *url, const char *host, int port, int depth)
 {
     ipaddr_t ip;
     flt_crwl_t *crwl;

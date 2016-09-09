@@ -610,7 +610,8 @@ static int flt_man_store_domain_ip_map_req_hdl(flt_cntx_t *ctx,
         return FLT_ERR;
     }
 
-    hash_map_trav(ctx->domain_ip_map, (trav_cb_t)flt_man_store_domain_ip_map_hdl, &trav);
+    hash_map_trav(ctx->domain_ip_map,
+            (trav_cb_t)flt_man_store_domain_ip_map_hdl, &trav, RDLOCK);
 
     FCLOSE(trav.fp);
 
@@ -714,7 +715,8 @@ static int flt_man_store_domain_blacklist_req_hdl(flt_cntx_t *ctx,
         return FLT_ERR;
     }
 
-    hash_map_trav(ctx->domain_blacklist, (trav_cb_t)flt_man_store_domain_blacklist_hdl, &trav);
+    hash_map_trav(ctx->domain_blacklist,
+            (trav_cb_t)flt_man_store_domain_blacklist_hdl, &trav, RDLOCK);
 
     FCLOSE(trav.fp);
 

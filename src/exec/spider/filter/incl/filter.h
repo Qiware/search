@@ -65,12 +65,12 @@ void flt_destroy(flt_cntx_t *ctx);
 
 void *flt_push_routine(void *_ctx);
 
-int flt_get_domain_ip_map(flt_cntx_t *ctx, char *host, ipaddr_t *ip);
+int flt_get_domain_ip_map(flt_cntx_t *ctx, const char *host, ipaddr_t *ip);
 
 int flt_worker_init(flt_cntx_t *ctx, flt_worker_t *worker, int idx);
 int flt_worker_destroy(flt_cntx_t *ctx, flt_worker_t *worker);
 
-int flt_push_url_to_crwlq(flt_cntx_t *ctx, const char *url, char *host, int port, int depth);
+int flt_push_url_to_crwlq(flt_cntx_t *ctx, const char *url, const char *host, int port, int depth);
 int flt_push_seed_to_crwlq(flt_cntx_t *ctx);
 
 #endif /*__FILTER_H__*/
