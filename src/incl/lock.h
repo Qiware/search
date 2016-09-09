@@ -3,6 +3,14 @@
 
 #include "comm.h"
 
+/* 锁操作[注: 无须定义UNLOCK] */
+typedef enum 
+{
+    NONLOCK             /* 不加锁 */
+    , RDLOCK            /* 加读锁 */
+    , WRLOCK            /* 加写锁 */
+} lock_e;
+
 int _flock(int fd, int type, int whence, int offset, int len);
 int _try_flock(int fd, int type, int whence, int offset, int len);
 

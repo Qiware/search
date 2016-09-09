@@ -151,13 +151,6 @@ typedef int (*sort_swap_cb_t)(void *array, int low, int high);
 typedef void * (*mem_alloc_cb_t)(void *pool, size_t size);
 typedef void (*mem_dealloc_cb_t)(void *pool, void *p);
 
-/* 树操作接口 */
-typedef int (*tree_insert_cb_t)(void *tree, void *data);
-typedef int (*tree_delete_cb_t)(void *tree, void *key, void **data);
-typedef void *(*tree_query_cb_t)(void *tree, void *key);
-typedef void (*tree_trav_cb_t)(void *tree, trav_cb_t proc, void *args);
-typedef void (*tree_destroy_cb_t)(void *tree);
-
 void *mem_alloc(void *pool, size_t size);
 void mem_dealloc(void *pool, void *p);
 static inline void mem_dummy_dealloc(void *pool, void *p) { }
