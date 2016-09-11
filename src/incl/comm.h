@@ -144,6 +144,7 @@ typedef int (*trav_cb_t)(void *data, void *args);
 typedef bool (*find_cb_t)(void *data, void *args);
 typedef bool (*print_cb_t)(void *data);
 typedef int (*copy_cb_t)(const void *in, void *out);
+typedef int64_t (*hash_cb_t)(const void *data);
 
 typedef int (*sort_cmp_cb_t)(void *array, int low, int high);
 typedef int (*sort_swap_cb_t)(void *array, int low, int high);

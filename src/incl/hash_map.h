@@ -21,8 +21,8 @@ typedef struct
     void **tree;                                    /* 树(长度: len) */
     pthread_rwlock_t *lock;                         /* 树锁(长度: len) */
 
-    key_cb_t key_cb;                                /* 生成KEY的回调 */
-    cmp_cb_t cmp_cb;                                /* 比较回调 */
+    cmp_cb_t cmp;                                   /* 比较回调 */
+    hash_cb_t hash;                                 /* 生成哈系值的回调 */
 
     /* 内存池 */
     struct {
@@ -32,7 +32,7 @@ typedef struct
     };
 } hash_map_t;
 
-hash_map_t *hash_map_creat(int len, key_cb_t key_cb, cmp_cb_t cmp_cb, hash_map_opt_t *opt);
+hash_map_t *hash_map_creat(int len, hash_cb_t hash, cmp_cb_t cmp, hash_map_opt_t *opt);
 int hash_map_insert(hash_map_t *htab, void *data, lock_e lock);
 void *hash_map_query(hash_map_t *hmap, void *key, lock_e lock);
 void hash_map_unlock(hash_map_t *map, void *key, lock_e lock);

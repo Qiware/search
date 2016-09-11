@@ -46,7 +46,7 @@ void hash_map_unlock(hash_map_t *hmap, void *key, lock_e lock)
 {
     unsigned int idx;
 
-    idx = hmap->key_cb(key) % hmap->len;
+    idx = hmap->hash(key) % hmap->len;
 
     if ((WRLOCK == lock) || (RDLOCK == lock)) {
         pthread_rwlock_unlock(&hmap->lock[idx]);
@@ -70,8 +70,7 @@ void hash_map_unlock(hash_map_t *hmap, void *key, lock_e lock)
  **注意事项:
  **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
-hash_map_t *hash_map_creat(int len,
-        key_cb_t key_cb, cmp_cb_t cmp_cb, hash_map_opt_t *opt)
+hash_map_t *hash_map_creat(int len, hash_cb_t hash, cmp_cb_t cmp, hash_map_opt_t *opt)
 {
     int idx;
     hash_map_t *hmap;
@@ -96,8 +95,8 @@ hash_map_t *hash_map_creat(int len,
 
     hmap->total = 0;
     hmap->len = len;
-    hmap->key_cb = key_cb;
-    hmap->cmp_cb = cmp_cb;
+    hmap->cmp = cmp;
+    hmap->hash = hash;
 
     hmap->tree = (void **)opt->alloc(opt->pool, len*sizeof(void *));
     if (NULL == hmap->tree) {
@@ -122,7 +121,7 @@ hash_map_t *hash_map_creat(int len,
     for (idx=0; idx<len; ++idx) {
         pthread_rwlock_init(&hmap->lock[idx], NULL);
 
-        hmap->tree[idx] = rbt_creat(&rbt_opt, cmp_cb);
+        hmap->tree[idx] = rbt_creat(&rbt_opt, cmp);
         if (NULL == hmap->tree[idx]) {
             hash_map_destroy(hmap, mem_dummy_dealloc, NULL);
             return NULL;
@@ -151,7 +150,7 @@ int hash_map_insert(hash_map_t *hmap, void *data, lock_e lock)
     int ret;
     unsigned int idx;
 
-    idx = hmap->key_cb(data) % hmap->len;
+    idx = hmap->hash(data) % hmap->len;
 
     _hash_map_lock(hmap, idx, lock);
     ret = rbt_insert(hmap->tree[idx], data);
@@ -181,7 +180,7 @@ void *hash_map_query(hash_map_t *hmap, void *key, lock_e lock)
     void *data;
     unsigned int idx;
 
-    idx = hmap->key_cb(key) % hmap->len;
+    idx = hmap->hash(key) % hmap->len;
 
     _hash_map_lock(hmap, idx, lock);
     data = rbt_query((void *)hmap->tree[idx], key);
@@ -211,7 +210,7 @@ void *hash_map_delete(hash_map_t *hmap, void *key, lock_e lock)
     void *data;
     unsigned int idx;
 
-    idx = hmap->key_cb(key) % hmap->len;
+    idx = hmap->hash(key) % hmap->len;
 
     _hash_map_lock(hmap, idx, lock);
     rbt_delete(hmap->tree[idx], key, &data);
