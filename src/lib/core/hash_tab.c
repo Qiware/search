@@ -9,7 +9,6 @@
  ** 作  者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
 #include "rb_tree.h"
-#include "avl_tree.h"
 #include "hash_tab.h"
 
 static void _hash_tab_lock(hash_tab_t *htab, int idx, lock_e lock)
@@ -154,7 +153,7 @@ int hash_tab_insert(hash_tab_t *htab, void *data, lock_e lock)
 
     _hash_tab_lock(htab, idx, lock);
     ret = rbt_insert(htab->tree[idx], data);
-    if (AVL_OK == ret) {
+    if (0 == ret) {
         ++htab->total;
     }
     _hash_tab_unlock(htab, idx, lock);
@@ -240,7 +239,7 @@ int hash_tab_destroy(hash_tab_t *htab, mem_dealloc_cb_t dealloc, void *args)
     for (idx=0; idx<htab->len; ++idx) {
         pthread_rwlock_wrlock(&htab->lock[idx]);
         if (NULL != htab->tree[idx]) {
-            avl_destroy(htab->tree[idx], dealloc, args);
+            rbt_destroy(htab->tree[idx], dealloc, args);
         }
         pthread_rwlock_unlock(&htab->lock[idx]);
 
