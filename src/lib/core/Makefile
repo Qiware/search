@@ -50,7 +50,7 @@ SRC_LIST = log.c \
 			sck_tcp.c \
 			sck_udp.c \
 			sck_unix.c \
-			hash_map.c \
+			hash_tab.c \
 			hash_alg.c \
 			str.c \
 			uri.c \

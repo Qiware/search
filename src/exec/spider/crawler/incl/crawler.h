@@ -15,7 +15,6 @@
 #include "comm.h"
 #include "list.h"
 #include "queue.h"
-#include "hash_map.h"
 #include "crwl_priv.h"
 #include "crwl_task.h"
 #include "crwl_conf.h"

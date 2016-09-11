@@ -142,7 +142,7 @@ typedef int64_t (*key_cb_t)(const void *data);
 typedef int (*cmp_cb_t)(void *data1, void *data2);
 typedef int (*trav_cb_t)(void *data, void *args);
 typedef bool (*find_cb_t)(void *data, void *args);
-typedef bool (*print_cb_t)(void *data);
+typedef void (*print_cb_t)(void *data);
 typedef int (*copy_cb_t)(const void *in, void *out);
 typedef int64_t (*hash_cb_t)(const void *data);
 

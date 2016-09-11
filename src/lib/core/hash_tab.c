@@ -1,7 +1,7 @@
 /******************************************************************************
  ** Copyright(C) 2014-2024 Qiware technology Co., Ltd
  **
- ** 文件名: hash_map.c
+ ** 文件名: hash_tab.c
  ** 版本号: 1.0
  ** 描  述: 哈希表模块
  **         1. 使用哈希数组分解锁的压力
@@ -10,27 +10,27 @@
  ******************************************************************************/
 #include "rb_tree.h"
 #include "avl_tree.h"
-#include "hash_map.h"
+#include "hash_tab.h"
 
-static void _hash_map_lock(hash_map_t *hmap, int idx, lock_e lock)
+static void _hash_tab_lock(hash_tab_t *htab, int idx, lock_e lock)
 {
     if (WRLOCK == lock) {
-        pthread_rwlock_wrlock(&hmap->lock[idx]);
+        pthread_rwlock_wrlock(&htab->lock[idx]);
     }
     else if (RDLOCK == lock) {
-        pthread_rwlock_rdlock(&hmap->lock[idx]);
+        pthread_rwlock_rdlock(&htab->lock[idx]);
     }
 }
 
-static void _hash_map_unlock(hash_map_t *hmap, int idx, lock_e lock)
+static void _hash_tab_unlock(hash_tab_t *htab, int idx, lock_e lock)
 {
     if ((WRLOCK == lock) || (RDLOCK == lock)) {
-        pthread_rwlock_unlock(&hmap->lock[idx]);
+        pthread_rwlock_unlock(&htab->lock[idx]);
     }
 }
 
 /******************************************************************************
- **函数名称: hash_map_unlock
+ **函数名称: hash_tab_unlock
  **功    能: 哈希表解锁
  **输入参数:
  **     map: 哈希表
@@ -42,19 +42,19 @@ static void _hash_map_unlock(hash_map_t *hmap, int idx, lock_e lock)
  **注意事项:
  **作    者: # Qifeng.zou # 2016.09.10 04:19:51 #
  ******************************************************************************/
-void hash_map_unlock(hash_map_t *hmap, void *key, lock_e lock)
+void hash_tab_unlock(hash_tab_t *htab, void *key, lock_e lock)
 {
     unsigned int idx;
 
-    idx = hmap->hash(key) % hmap->len;
+    idx = htab->hash(key) % htab->len;
 
     if ((WRLOCK == lock) || (RDLOCK == lock)) {
-        pthread_rwlock_unlock(&hmap->lock[idx]);
+        pthread_rwlock_unlock(&htab->lock[idx]);
     }
 }
 
 /******************************************************************************
- **函数名称: hash_map_creat
+ **函数名称: hash_tab_creat
  **功    能: 创建哈希表
  **输入参数:
  **     len: 哈希表长度
@@ -70,12 +70,12 @@ void hash_map_unlock(hash_map_t *hmap, void *key, lock_e lock)
  **注意事项:
  **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
-hash_map_t *hash_map_creat(int len, hash_cb_t hash, cmp_cb_t cmp, hash_map_opt_t *opt)
+hash_tab_t *hash_tab_creat(int len, hash_cb_t hash, cmp_cb_t cmp, hash_tab_opt_t *opt)
 {
     int idx;
-    hash_map_t *hmap;
+    hash_tab_t *htab;
     rbt_opt_t rbt_opt;
-    hash_map_opt_t hmap_opt;
+    hash_tab_opt_t hmap_opt;
 
     if (NULL == opt) {
         memset(&hmap_opt, 0, sizeof(hmap_opt));
@@ -88,26 +88,26 @@ hash_map_t *hash_map_creat(int len, hash_cb_t hash, cmp_cb_t cmp, hash_map_opt_t
     }
 
     /* > 创建哈希数组 */
-    hmap = (hash_map_t *)opt->alloc(opt->pool, sizeof(hash_map_t));
-    if (NULL == hmap) {
+    htab = (hash_tab_t *)opt->alloc(opt->pool, sizeof(hash_tab_t));
+    if (NULL == htab) {
         return NULL;
     }
 
-    hmap->total = 0;
-    hmap->len = len;
-    hmap->cmp = cmp;
-    hmap->hash = hash;
+    htab->total = 0;
+    htab->len = len;
+    htab->cmp = cmp;
+    htab->hash = hash;
 
-    hmap->tree = (void **)opt->alloc(opt->pool, len*sizeof(void *));
-    if (NULL == hmap->tree) {
-        opt->dealloc(opt->pool, hmap);
+    htab->tree = (void **)opt->alloc(opt->pool, len*sizeof(void *));
+    if (NULL == htab->tree) {
+        opt->dealloc(opt->pool, htab);
         return NULL;
     }
 
-    hmap->lock = (pthread_rwlock_t *)opt->alloc(opt->pool, len*sizeof(pthread_rwlock_t));
-    if (NULL == hmap->lock) {
-        opt->dealloc(opt->pool, hmap->tree);
-        opt->dealloc(opt->pool, hmap);
+    htab->lock = (pthread_rwlock_t *)opt->alloc(opt->pool, len*sizeof(pthread_rwlock_t));
+    if (NULL == htab->lock) {
+        opt->dealloc(opt->pool, htab->tree);
+        opt->dealloc(opt->pool, htab);
         return NULL;
     }
 
@@ -119,23 +119,23 @@ hash_map_t *hash_map_creat(int len, hash_cb_t hash, cmp_cb_t cmp, hash_map_opt_t
     rbt_opt.dealloc = (mem_dealloc_cb_t)opt->dealloc;
 
     for (idx=0; idx<len; ++idx) {
-        pthread_rwlock_init(&hmap->lock[idx], NULL);
+        pthread_rwlock_init(&htab->lock[idx], NULL);
 
-        hmap->tree[idx] = rbt_creat(&rbt_opt, cmp);
-        if (NULL == hmap->tree[idx]) {
-            hash_map_destroy(hmap, mem_dummy_dealloc, NULL);
+        htab->tree[idx] = rbt_creat(&rbt_opt, cmp);
+        if (NULL == htab->tree[idx]) {
+            hash_tab_destroy(htab, mem_dummy_dealloc, NULL);
             return NULL;
         }
     }
 
-    return hmap;
+    return htab;
 }
 
 /******************************************************************************
- **函数名称: hash_map_insert
+ **函数名称: hash_tab_insert
  **功    能: 插入哈希成员
  **输入参数:
- **     hmap: 哈希数组
+ **     htab: 哈希数组
  **     data: 需要插入的数据
  **     lock: 锁操作
  **输出参数:
@@ -145,28 +145,28 @@ hash_map_t *hash_map_creat(int len, hash_cb_t hash, cmp_cb_t cmp, hash_map_opt_t
  **注意事项:
  **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
-int hash_map_insert(hash_map_t *hmap, void *data, lock_e lock)
+int hash_tab_insert(hash_tab_t *htab, void *data, lock_e lock)
 {
     int ret;
     unsigned int idx;
 
-    idx = hmap->hash(data) % hmap->len;
+    idx = htab->hash(data) % htab->len;
 
-    _hash_map_lock(hmap, idx, lock);
-    ret = rbt_insert(hmap->tree[idx], data);
+    _hash_tab_lock(htab, idx, lock);
+    ret = rbt_insert(htab->tree[idx], data);
     if (AVL_OK == ret) {
-        ++hmap->total;
+        ++htab->total;
     }
-    _hash_map_unlock(hmap, idx, lock);
+    _hash_tab_unlock(htab, idx, lock);
 
     return ret;
 }
 
 /******************************************************************************
- **函数名称: hash_map_query
+ **函数名称: hash_tab_query
  **功    能: 查找哈希成员
  **输入参数:
- **     hmap: 哈希数组
+ **     htab: 哈希数组
  **     key: 主键
  **     lock: 锁操作
  **输出参数:
@@ -175,17 +175,17 @@ int hash_map_insert(hash_map_t *hmap, void *data, lock_e lock)
  **注意事项:
  **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
-void *hash_map_query(hash_map_t *hmap, void *key, lock_e lock)
+void *hash_tab_query(hash_tab_t *htab, void *key, lock_e lock)
 {
     void *data;
     unsigned int idx;
 
-    idx = hmap->hash(key) % hmap->len;
+    idx = htab->hash(key) % htab->len;
 
-    _hash_map_lock(hmap, idx, lock);
-    data = rbt_query((void *)hmap->tree[idx], key);
+    _hash_tab_lock(htab, idx, lock);
+    data = rbt_query((void *)htab->tree[idx], key);
     if (NULL == data) {
-        _hash_map_unlock(hmap, idx, lock);
+        _hash_tab_unlock(htab, idx, lock);
         return NULL; /* 未找到 */
     }
 
@@ -193,10 +193,10 @@ void *hash_map_query(hash_map_t *hmap, void *key, lock_e lock)
 }
 
 /******************************************************************************
- **函数名称: hash_map_delete
+ **函数名称: hash_tab_delete
  **功    能: 删除哈希成员
  **输入参数:
- **     hmap: 哈希数组
+ **     htab: 哈希数组
  **     pkey: 主键
  **     pkey_len: 主键长度
  **输出参数: NONE
@@ -205,60 +205,60 @@ void *hash_map_query(hash_map_t *hmap, void *key, lock_e lock)
  **注意事项: 返回地址的内存空间由外部释放
  **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
-void *hash_map_delete(hash_map_t *hmap, void *key, lock_e lock)
+void *hash_tab_delete(hash_tab_t *htab, void *key, lock_e lock)
 {
     void *data;
     unsigned int idx;
 
-    idx = hmap->hash(key) % hmap->len;
+    idx = htab->hash(key) % htab->len;
 
-    _hash_map_lock(hmap, idx, lock);
-    rbt_delete(hmap->tree[idx], key, &data);
+    _hash_tab_lock(htab, idx, lock);
+    rbt_delete(htab->tree[idx], key, &data);
     if (NULL != data) {
-        --hmap->total;
+        --htab->total;
     }
-    _hash_map_unlock(hmap, idx, lock);
+    _hash_tab_unlock(htab, idx, lock);
 
     return data;
 }
 
 /******************************************************************************
- **函数名称: hash_map_destroy
+ **函数名称: hash_tab_destroy
  **功    能: 销毁哈希数组
  **输入参数:
- **     hmap: 哈希数组
+ **     htab: 哈希数组
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述:
  **注意事项:
  **作    者: # Qifeng.zou # 2014.10.22 #
  ******************************************************************************/
-int hash_map_destroy(hash_map_t *hmap, mem_dealloc_cb_t dealloc, void *args)
+int hash_tab_destroy(hash_tab_t *htab, mem_dealloc_cb_t dealloc, void *args)
 {
     int idx;
 
-    for (idx=0; idx<hmap->len; ++idx) {
-        pthread_rwlock_wrlock(&hmap->lock[idx]);
-        if (NULL != hmap->tree[idx]) {
-            avl_destroy(hmap->tree[idx], dealloc, args);
+    for (idx=0; idx<htab->len; ++idx) {
+        pthread_rwlock_wrlock(&htab->lock[idx]);
+        if (NULL != htab->tree[idx]) {
+            avl_destroy(htab->tree[idx], dealloc, args);
         }
-        pthread_rwlock_unlock(&hmap->lock[idx]);
+        pthread_rwlock_unlock(&htab->lock[idx]);
 
-        pthread_rwlock_destroy(&hmap->lock[idx]);
+        pthread_rwlock_destroy(&htab->lock[idx]);
     }
 
-    hmap->dealloc(hmap->pool, hmap->tree);
-    hmap->dealloc(hmap->pool, hmap->lock);
-    hmap->dealloc(hmap->pool, hmap);
+    htab->dealloc(htab->pool, htab->tree);
+    htab->dealloc(htab->pool, htab->lock);
+    htab->dealloc(htab->pool, htab);
 
     return 0;
 }
 
 /******************************************************************************
- **函数名称: hash_map_trav
+ **函数名称: hash_tab_trav
  **功    能: 遍历哈希数组
  **输入参数:
- **     hmap: 哈希数组
+ **     htab: 哈希数组
  **     proc: 回调函数
  **     args: 附加参数
  **     lock: 加锁方式
@@ -268,14 +268,14 @@ int hash_map_destroy(hash_map_t *hmap, mem_dealloc_cb_t dealloc, void *args)
  **注意事项:
  **作    者: # Qifeng.zou # 2014.12.24 #
  ******************************************************************************/
-int hash_map_trav(hash_map_t *hmap, trav_cb_t proc, void *args, lock_e lock)
+int hash_tab_trav(hash_tab_t *htab, trav_cb_t proc, void *args, lock_e lock)
 {
     int idx;
 
-    for (idx=0; idx<hmap->len; ++idx) {
-        _hash_map_lock(hmap, idx, lock);
-        rbt_trav(hmap->tree[idx], proc, args);
-        _hash_map_unlock(hmap, idx, lock);
+    for (idx=0; idx<htab->len; ++idx) {
+        _hash_tab_lock(htab, idx, lock);
+        rbt_trav(htab->tree[idx], proc, args);
+        _hash_tab_unlock(htab, idx, lock);
     }
 
     return 0;

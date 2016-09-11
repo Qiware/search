@@ -1,5 +1,5 @@
-#if !defined(__HASH_MAP_H__)
-#define __HASH_MAP_H__
+#if !defined(__HASH_TAB_H__)
+#define __HASH_TAB_H__
 
 #include "comm.h"
 #include "lock.h"
@@ -10,7 +10,7 @@ typedef struct
     void *pool;                                     /* 内存池 */
     mem_alloc_cb_t alloc;                           /* 申请内存 */
     mem_dealloc_cb_t dealloc;                       /* 释放内存 */
-} hash_map_opt_t;
+} hash_tab_opt_t;
 
 /* 哈希数组 */
 typedef struct
@@ -30,16 +30,16 @@ typedef struct
         mem_alloc_cb_t alloc;                       /* 申请内存 */
         mem_dealloc_cb_t dealloc;                   /* 释放内存 */
     };
-} hash_map_t;
+} hash_tab_t;
 
-hash_map_t *hash_map_creat(int len, hash_cb_t hash, cmp_cb_t cmp, hash_map_opt_t *opt);
-int hash_map_insert(hash_map_t *htab, void *data, lock_e lock);
-void *hash_map_query(hash_map_t *hmap, void *key, lock_e lock);
-void hash_map_unlock(hash_map_t *map, void *key, lock_e lock);
-void *hash_map_delete(hash_map_t *htab, void *key, lock_e lock);
-int hash_map_trav(hash_map_t *htab, trav_cb_t proc, void *args, lock_e lock);
-int hash_map_destroy(hash_map_t *htab, mem_dealloc_cb_t dealloc, void *args);
+hash_tab_t *hash_tab_creat(int len, hash_cb_t hash, cmp_cb_t cmp, hash_tab_opt_t *opt);
+int hash_tab_insert(hash_tab_t *htab, void *data, lock_e lock);
+void *hash_tab_query(hash_tab_t *htab, void *key, lock_e lock);
+void hash_tab_unlock(hash_tab_t *htab, void *key, lock_e lock);
+void *hash_tab_delete(hash_tab_t *htab, void *key, lock_e lock);
+int hash_tab_trav(hash_tab_t *htab, trav_cb_t proc, void *args, lock_e lock);
+int hash_tab_destroy(hash_tab_t *htab, mem_dealloc_cb_t dealloc, void *args);
 
-#define hash_map_total(htab) ((htab)->total)
+#define hash_tab_total(htab) ((htab)->total)
 
-#endif /*__HASH_MAP_H__*/
+#endif /*__HASH_TAB_H__*/
