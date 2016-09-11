@@ -81,8 +81,8 @@ hash_map_t *hash_map_creat(int len, hash_cb_t hash, cmp_cb_t cmp, hash_map_opt_t
         memset(&hmap_opt, 0, sizeof(hmap_opt));
 
         hmap_opt.pool = (void *)NULL;
-        hmap_opt.alloc = (mem_alloc_cb_t)opt->alloc;
-        hmap_opt.dealloc = (mem_dealloc_cb_t)opt->dealloc;
+        hmap_opt.alloc = (mem_alloc_cb_t)mem_alloc;
+        hmap_opt.dealloc = (mem_dealloc_cb_t)mem_dealloc;
 
         opt = &hmap_opt;
     }
