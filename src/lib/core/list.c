@@ -434,19 +434,11 @@ void *list_fetch(list_t *list, int idx)
 int list_push_desc(list_t *list, void *data, cmp_cb_t cmp)
 {
     int ret;
-    list_node_t *curr, *node, *prev;
+    list_node_t *curr, *prev;
 
     if (NULL == list->head) {
         return list_lpush(list, data);
     }
-
-    /* > 新建结点 */
-    node = list->alloc(list->pool, sizeof(list_node_t));
-    if (NULL == node) {
-        return -1;
-    }
-
-    node->data = data;
 
     prev = NULL;
     curr=list->head;
