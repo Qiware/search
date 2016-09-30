@@ -1056,92 +1056,91 @@ static bool rtmq_find_node_for_vec_cb(rtmq_sub_node_t *node, uint64_t *sid)
 
 static int rtmq_rsvr_sub_find_or_add(rtmq_cntx_t *ctx, rtmq_sck_t *sck, int type)
 {
-    int ret;
     rtmq_sub_mgr_t *sub;
     rtmq_sub_node_t *node;
     rtmq_sub_list_t *list, key;
 
     /* > Find or add sub node */
     sub = &ctx->sub_mgr;
-    pthread_rwlock_wrlock(&sub->sub_one_lock);
-    do {
-        key.type = type;
-        list = (rtmq_sub_list_t *)avl_query(sub->sub_one_tab, (void *)&key);
+
+QUERY_SUB_ONE_TAB:
+    key.type = type;
+
+    list = (rtmq_sub_list_t *)hash_tab_query(sub->sub_one_tab, (void *)&key, WRLOCK);
+    if (NULL == list) {
+        list = (rtmq_sub_list_t *)rtmq_sub_list_creat(type);
         if (NULL == list) {
-            list = (rtmq_sub_list_t *)rtmq_sub_list_creat(type);
-            if (NULL == list) {
-                log_error(ctx->log, "Create sub list failed!");
-                break;
-            }
-
-            if (avl_insert(sub->sub_one_tab, (void *)list)) {
-                rtmq_sub_list_free(list);
-                log_error(ctx->log, "Insert sub table failed!");
-                break;
-            }
+            log_error(ctx->log, "Create sub list failed!");
+            return RTMQ_ERR;
         }
 
-        node = list2_find(list->nodes, (find_cb_t)rtmq_find_node_for_vec_cb, (void *)&sck->sid);
-        if (NULL != node) {
-            ret = RTMQ_OK;
-            break;
+        if (hash_tab_insert(sub->sub_one_tab, (void *)list, WRLOCK)) {
+            rtmq_sub_list_free(list);
+            log_error(ctx->log, "Insert sub table failed!");
+            return RTMQ_ERR;
         }
+        goto QUERY_SUB_ONE_TAB;
+    }
 
-        /* > Add new node */
-        node = (rtmq_sub_node_t *)calloc(1, sizeof(rtmq_sub_node_t));
-        if (NULL == node) {
-            log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
-            break;
-        }
+    node = list2_find(list->nodes,
+            (find_cb_t)rtmq_find_node_for_vec_cb, (void *)&sck->sid);
+    if (NULL != node) {
+        hash_tab_unlock(sub->sub_one_tab, &key, WRLOCK);
+        return RTMQ_OK;
+    }
 
-        node->sid = sck->sid;
-        node->nid = sck->nid;
+    /* > Add new node */
+    node = (rtmq_sub_node_t *)calloc(1, sizeof(rtmq_sub_node_t));
+    if (NULL == node) {
+        hash_tab_unlock(sub->sub_one_tab, &key, WRLOCK);
+        log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        return RTMQ_ERR;
+    }
 
-        if (list2_rpush(list->nodes, (void *)node)) {
-            log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
-            free(node);
-            break;
-        }
-        ret = RTMQ_OK;
-    } while(0);
-    pthread_rwlock_unlock(&sub->sub_one_lock);
+    node->sid = sck->sid;
+    node->nid = sck->nid;
 
-    log_debug(ctx->log, "Sub req handler! type:%u ret:%d", type, ret);
+    if (list2_rpush(list->nodes, (void *)node)) {
+        hash_tab_unlock(sub->sub_one_tab, &key, WRLOCK);
+        log_error(ctx->log, "errmsg:[%d] %s!", errno, strerror(errno));
+        free(node);
+        return RTMQ_ERR;
+    }
 
-    return ret;
+    hash_tab_unlock(sub->sub_one_tab, &key, WRLOCK);
+    log_debug(ctx->log, "Add sub success! type:%u", type);
+    return RTMQ_OK;
 }
 
 /* 删除订阅数据 */
 static int rtmq_sub_del(rtmq_cntx_t *ctx, rtmq_sck_t *sck, int type)
 {
-    void *addr;
     rtmq_sub_mgr_t *sub;
     rtmq_sub_node_t *node;
     rtmq_sub_list_t *list, key;
 
     sub = &ctx->sub_mgr;
+
     key.type = type;
 
-    pthread_rwlock_wrlock(&sub->sub_one_lock);
-    do {
-        list = (rtmq_sub_list_t *)avl_query(sub->sub_one_tab, &key);
-        if (NULL == list) {
-            break;
-        }
+    list = (rtmq_sub_list_t *)hash_tab_query(sub->sub_one_tab, &key, WRLOCK);
+    if (NULL == list) {
+        return 0;
+    }
 
-        node = list2_find_and_del(list->nodes, (find_cb_t)rtmq_find_node_for_vec_cb, (void *)&sck->sid);
-        if (NULL == node) {
-            break;
-        }
+    node = list2_find_and_del(list->nodes, (find_cb_t)rtmq_find_node_for_vec_cb, (void *)&sck->sid);
+    if (NULL == node) {
+        hash_tab_unlock(sub->sub_one_tab, &key, WRLOCK);
+        return 0;
+    }
 
-        free(node);
+    free(node);
 
-        if (0 == list2_len(list->nodes)) {
-            avl_delete(sub->sub_one_tab, &key, (void *)&addr);
-            free(list);
-        }
-    } while(0);
-    pthread_rwlock_unlock(&sub->sub_one_lock);
+    if (0 == list2_len(list->nodes)) {
+        hash_tab_delete(sub->sub_one_tab, &key, NONLOCK);
+        free(list);
+    }
+    hash_tab_unlock(sub->sub_one_tab, &key, WRLOCK);
 
     return 0;
 }
@@ -1302,23 +1301,20 @@ int rtmq_rsvr_sck_sub_item_free(rtmq_rsvr_sck_sub_trav_t *args, rtmq_sub_req_t *
 
     key.type = req->type;
 
-    pthread_rwlock_wrlock(&sub->sub_one_lock);
-    do {
-        list = avl_query(sub->sub_one_tab, &key);
-        if (NULL == list) {
-            break;
-        }
+    list = hash_tab_query(sub->sub_one_tab, &key, WRLOCK);
+    if (NULL == list) {
+        return 0;
+    }
 
-        node = list2_find_and_del(list->nodes, (find_cb_t)rtmq_find_node_for_vec_cb, &sck->sid);
-        if (NULL == node) {
-            break;
-        }
+    node = list2_find_and_del(list->nodes, (find_cb_t)rtmq_find_node_for_vec_cb, &sck->sid);
+    if (NULL == node) {
+        hash_tab_unlock(sub->sub_one_tab, &key, WRLOCK);
+        return 0;
+    }
+    hash_tab_unlock(sub->sub_one_tab, &key, WRLOCK);
 
-        free(node);
-        free(req);
-    } while(0);
-    pthread_rwlock_unlock(&sub->sub_one_lock);
-
+    free(node);
+    free(req);
     return 0;
 }
 

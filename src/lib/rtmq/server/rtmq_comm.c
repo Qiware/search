@@ -226,17 +226,13 @@ int rtmq_node_to_svr_map_rand(rtmq_cntx_t *ctx, int nid)
     return rsvr_id;
 }
 
-/******************************************************************************
- **函数名称: rtmq_sub_mgr_init
- **功    能: 创建NODE与SVR的映射表
- **输入参数:
- **     sub: Sub manager table
- **输出参数: NONE
- **返    回: 0:Succ !0:Fail
- **实现描述: 
- **注意事项:
- **作    者: # Qifeng.zou # 2016.04.23 01:42:02 #
- ******************************************************************************/
+/* 订阅哈希回调 */
+static uint64_t rtmq_sub_tab_hash_cb(const rtmq_sub_list_t *list)
+{
+    return list->type;
+}
+
+/* 订阅比较回调 */
 static int rtmq_sub_tab_cmp_cb(const rtmq_sub_list_t *list1, const rtmq_sub_list_t *list2)
 {
     return (list1->type - list2->type);
@@ -245,17 +241,17 @@ static int rtmq_sub_tab_cmp_cb(const rtmq_sub_list_t *list1, const rtmq_sub_list
 int rtmq_sub_mgr_init(rtmq_sub_mgr_t *sub)
 {
     /* > 创建ONE订阅表 */
-    pthread_rwlock_init(&sub->sub_one_lock, NULL);
-
-    sub->sub_one_tab = avl_creat(NULL, (cmp_cb_t)rtmq_sub_tab_cmp_cb);
+    sub->sub_one_tab = hash_tab_creat(100,
+            (hash_cb_t)rtmq_sub_tab_hash_cb,
+            (cmp_cb_t)rtmq_sub_tab_cmp_cb, NULL);
     if (NULL == sub->sub_one_tab) {
         return RTMQ_ERR;
     }
 
     /* > 创建ALL订阅表 */
-    pthread_rwlock_init(&sub->sub_all_lock, NULL);
-
-    sub->sub_all_tab = avl_creat(NULL, (cmp_cb_t)rtmq_sub_tab_cmp_cb);
+    sub->sub_all_tab = hash_tab_creat(100,
+            (hash_cb_t)rtmq_sub_tab_hash_cb,
+            (cmp_cb_t)rtmq_sub_tab_cmp_cb, NULL);
     if (NULL == sub->sub_all_tab) {
         return RTMQ_ERR;
     }
@@ -283,27 +279,26 @@ int rtmq_sub_query(rtmq_cntx_t *ctx, mesg_type_e type)
 
     key.type = type;
 
-    pthread_rwlock_rdlock(&sub->sub_one_lock);
-
-    list = avl_query(sub->sub_one_tab, &key);
-    if ((NULL == list)
-        || (0 == list2_len(list->nodes)))
-    {
-        pthread_rwlock_unlock(&sub->sub_one_lock);
+    list = hash_tab_query(sub->sub_one_tab, &key, RDLOCK);
+    if (NULL == list) {
+        log_debug(ctx->log, "No module sub this type! type:%d", type);
+        return -1;
+    }
+    else if (0 == list2_len(list->nodes)) {
+        hash_tab_unlock(sub->sub_one_tab, &key, RDLOCK);
         log_debug(ctx->log, "No module sub this type! type:%d", type);
         return -1;
     }
 
     node = (rtmq_sub_node_t *)list2_roll(list->nodes);
     if (NULL == node) {
-        pthread_rwlock_unlock(&sub->sub_one_lock);
+        hash_tab_unlock(sub->sub_one_tab, &key, RDLOCK);
         log_debug(ctx->log, "Get sub node failed! type:%d", type);
         return -1;
     }
 
     nid = node->nid;
-
-    pthread_rwlock_unlock(&sub->sub_one_lock);
+    hash_tab_unlock(sub->sub_one_tab, &key, RDLOCK);
 
     log_debug(ctx->log, "Node [%d] has sub type [%d]!", nid, type);
 

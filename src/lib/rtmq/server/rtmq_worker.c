@@ -240,16 +240,19 @@ static int rtmq_worker_cmd_proc_req_hdl(rtmq_cntx_t *ctx, rtmq_worker_t *worker,
 
             reg = (rtmq_reg_t *)avl_query(ctx->reg, (void *)&key);
             if (NULL == reg) {
-                ++worker->drop_total;   /* 丢弃计数 */
-                mem_ref_decr(item[idx]->base);
-                queue_dealloc(rq, (void *)item[idx]);
-                log_trace(ctx->log, "Drop data! type:%u", head->type);
-                continue;
+                key.type = 0; // 未知命令
+                reg = (rtmq_reg_t *)avl_query(ctx->reg, (void *)&key);
+                if (NULL == reg) {
+                    ++worker->drop_total;   /* 丢弃计数 */
+                    mem_ref_decr(item[idx]->base);
+                    queue_dealloc(rq, (void *)item[idx]);
+                    log_trace(ctx->log, "Drop data! type:%u", head->type);
+                    continue;
+                }
             }
 
             if (reg->proc(head->type, head->nid,
-                (void *)(head + 1), head->length, reg->param))
-            {
+                (void *)(head + 1), head->length, reg->param)) {
                 ++worker->err_total;    /* 错误计数 */
             }
             else {

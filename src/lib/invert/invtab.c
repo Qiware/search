@@ -191,7 +191,7 @@ static int invt_word_add_doc(invt_tab_t *tab, invt_dic_word_t *dw, const char *u
     doc->freq = freq;
 
     /* > 插入文档列表 */
-    if (list_push_desc(dw->doc_list, doc, (cmp_cb_t)invt_doc_cmp_cb)) {
+    if (list_sort(dw->doc_list, doc, (cmp_cb_t)invt_doc_cmp_cb)) {
         log_error(tab->log, "Push into list failed! word:%s url:%s", dw->word.str, url);
         tab->dealloc(tab->pool, doc->url.str);
         tab->dealloc(tab->pool, doc);

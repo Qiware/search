@@ -4,7 +4,7 @@
 #include "comm.h"
 #include "mesg.h"
 #include "vector.h"
-#include "avl_tree.h"
+#include "hash_tab.h"
 
 /* 订阅连接 */
 typedef struct
@@ -23,11 +23,8 @@ typedef struct
 /* 订阅管理 */
 typedef struct
 {
-    pthread_rwlock_t sub_one_lock;  /* 读写锁 */
-    avl_tree_t *sub_one_tab;        /* 订阅表(注:以type为主键, 存储rtmq_sub_list_t类型) */
-
-    pthread_rwlock_t sub_all_lock;  /* 读写锁 */
-    avl_tree_t *sub_all_tab;        /* 订阅表(注:以type为主键, 存储rtmq_sub_list_t类型) */
+    hash_tab_t *sub_one_tab;        /* 订阅表(注:以type为主键, 存储rtmq_sub_list_t类型) */
+    hash_tab_t *sub_all_tab;        /* 订阅表(注:以type为主键, 存储rtmq_sub_list_t类型) */
 } rtmq_sub_mgr_t;
 
 #endif /*__RTMQ_SUB_H__*/

@@ -255,14 +255,17 @@ static int rtmq_proxy_worker_cmd_proc_req_hdl(rtmq_proxy_t *pxy, rtmq_worker_t *
 
             reg = avl_query(pxy->reg, &key);
             if (NULL == reg) {
-                ++worker->drop_total;   /* 丢弃计数 */
-                queue_dealloc(rq, addr[idx]);
-                continue;
+                key.type = 0; // 未知命令
+                reg = avl_query(pxy->reg, &key);
+                if (NULL == reg) {
+                    ++worker->drop_total;   /* 丢弃计数 */
+                    queue_dealloc(rq, addr[idx]);
+                    continue;
+                }
             }
 
             if (reg->proc(head->type, head->nid,
-                addr[idx] + sizeof(rtmq_header_t), head->length, reg->param))
-            {
+                addr[idx] + sizeof(rtmq_header_t), head->length, reg->param)) {
                 ++worker->err_total;    /* 错误计数 */
             }
             else {
