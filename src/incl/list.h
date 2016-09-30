@@ -43,7 +43,7 @@ int list_remove(list_t *list, void *data);
 
 int list_lpush(list_t *list, void *data);
 int list_rpush(list_t *list, void *data);
-int list_push_desc(list_t *list, void *data, cmp_cb_t cmp);
+int list_sort(list_t *list, void *data, cmp_cb_t cmp);
 
 void *list_lpop(list_t *list);
 void *list_rpop(list_t *list);

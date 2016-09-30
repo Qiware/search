@@ -419,8 +419,8 @@ void *list_fetch(list_t *list, int idx)
 }
 
 /******************************************************************************
- **函数名称: list_push_desc
- **功    能: 插入降序链表
+ **函数名称: list_sort
+ **功    能: 有序插入链表(降序)
  **输入参数:
  **     list: 单向链表
  **     data: 需要插入的数据
@@ -428,10 +428,10 @@ void *list_fetch(list_t *list, int idx)
  **输出参数: NONE
  **返    回: 0:成功 !0:失败
  **实现描述:
- **注意事项:
+ **注意事项: 如果想改为升序则只需修改回调函数cmp的返回值.
  **作    者: # Qifeng.zou # 2015-07-01 23:52:35 #
  ******************************************************************************/
-int list_push_desc(list_t *list, void *data, cmp_cb_t cmp)
+int list_sort(list_t *list, void *data, cmp_cb_t cmp)
 {
     int ret;
     list_node_t *curr, *prev;
