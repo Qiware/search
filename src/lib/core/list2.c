@@ -239,7 +239,6 @@ int list2_rpush(list2_t *list, void *data)
     /* 1. 链表为空 */
     if (NULL == list->head) {
         list->head = node;
-        list->head->prev = node;
         node->prev = node;
         node->next = node;
 
