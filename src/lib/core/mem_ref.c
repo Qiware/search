@@ -8,8 +8,8 @@
  ******************************************************************************/
 #include "comm.h"
 #include "atomic.h"
-#include "rb_tree.h"
 #include "mem_ref.h"
+#include "hash_tab.h"
 
 /* 内存引用项 */
 typedef struct
@@ -23,38 +23,18 @@ typedef struct
     };
 } mem_ref_item_t;
 
-/* 内存引用槽 */
-typedef struct
-{
-    pthread_rwlock_t lock;          // 读写锁
-    rbt_tree_t *tree;               // 内存引用表
-} mem_ref_slot_t;
-
-/* 全局对象 */
-typedef struct
-{
-#define MEM_REF_SLOT_LEN (777)
-    mem_ref_slot_t slot[MEM_REF_SLOT_LEN];
-} mem_ref_cntx_t;
-
-#define MEM_REF_IDX(addr) ((uint64_t)addr % MEM_REF_SLOT_LEN)
-
-static mem_ref_cntx_t g_mem_ref_ctx; // 全局对象
+/* 内存应用管理表 */
+hash_tab_t *g_mem_ref_tab;
 
 static int mem_ref_add(void *addr, void *pool, mem_dealloc_cb_t dealloc);
 
-/******************************************************************************
- **函数名称: mem_ref_cmp_cb
- **功    能: 比较回调函数
- **输入参数: 
- **     item1: 数据项1
- **     item2: 数据项2
- **输出参数: NONE
- **返    回: 0:相等 <0:小于 >0:大于
- **实现描述:
- **注意事项:
- **作    者: # Qifeng.zou # 2016.08.09 11:22:10 #
- ******************************************************************************/
+/* 哈希回调函数 */
+static uint64_t mem_ref_hash_cb(const mem_ref_item_t *item)
+{
+    return (uint64_t)item->addr;
+}
+
+/* 比较回调函数 */
 static int mem_ref_cmp_cb(const mem_ref_item_t *item1, const mem_ref_item_t *item2)
 {
     return ((uint64_t)item1->addr - (uint64_t)item2->addr);
@@ -72,23 +52,11 @@ static int mem_ref_cmp_cb(const mem_ref_item_t *item1, const mem_ref_item_t *ite
  ******************************************************************************/
 int mem_ref_init(void)
 {
-    int idx;
-    mem_ref_slot_t *slot;
-    mem_ref_cntx_t *ctx = &g_mem_ref_ctx;
+    g_mem_ref_tab = hash_tab_creat(333,
+            (hash_cb_t)mem_ref_hash_cb,
+            (cmp_cb_t)mem_ref_cmp_cb, NULL);
 
-    memset(ctx, 0, sizeof(mem_ref_cntx_t));
-
-    for (idx=0; idx<MEM_REF_SLOT_LEN; ++idx) {
-        slot = &ctx->slot[idx];
-
-        pthread_rwlock_init(&slot->lock, NULL);
-        slot->tree = (rbt_tree_t *)rbt_creat(NULL, (cmp_cb_t)mem_ref_cmp_cb);
-        if (NULL == slot->tree) {
-            return -1;
-        }
-    }
-
-    return 0;
+    return (NULL == g_mem_ref_tab)? -1 : 0;
 }
 
 /******************************************************************************
@@ -129,28 +97,20 @@ void *mem_ref_alloc(size_t size, void *pool,
  ******************************************************************************/
 static int mem_ref_add(void *addr, void *pool, mem_dealloc_cb_t dealloc)
 {
-    int cnt, idx;
-    mem_ref_slot_t *slot;
+    int cnt;
     mem_ref_item_t *item, key;
-    mem_ref_cntx_t *ctx = &g_mem_ref_ctx;
-
-    idx = MEM_REF_IDX(addr);
-    slot = &ctx->slot[idx];
 
 AGAIN:
-    pthread_rwlock_rdlock(&slot->lock);
-
     /* > 查询引用 */
     key.addr = addr;
 
-    item = (mem_ref_item_t *)rbt_query(slot->tree, (void *)&key);
+    item = hash_tab_query(g_mem_ref_tab, (void *)&key, RDLOCK);
     if (NULL != item) {
         cnt = (int)atomic32_inc(&item->count);
-        pthread_rwlock_unlock(&slot->lock);
+        hash_tab_unlock(g_mem_ref_tab, &key, RDLOCK);
         return cnt;
     }
-    pthread_rwlock_unlock(&slot->lock);
-
+    hash_tab_unlock(g_mem_ref_tab, &key, RDLOCK);
 
     /* > 新增引用 */
     item = (mem_ref_item_t *)calloc(1, sizeof(mem_ref_item_t));
@@ -163,15 +123,10 @@ AGAIN:
     item->pool = pool;
     item->dealloc = dealloc;
 
-    pthread_rwlock_wrlock(&slot->lock);
-
-    if (rbt_insert(slot->tree, item)) {
-        pthread_rwlock_unlock(&slot->lock);
+    if (hash_tab_insert(g_mem_ref_tab, item, WRLOCK)) {
         free(item);
         goto AGAIN;
     }
-
-    pthread_rwlock_unlock(&slot->lock);
 
     return cnt;
 }
@@ -204,26 +159,18 @@ void mem_ref_dealloc(void *pool, void *addr)
  ******************************************************************************/
 int mem_ref_incr(void *addr)
 {
-    int cnt, idx;
-    mem_ref_slot_t *slot;
+    int cnt;
     mem_ref_item_t *item, key;
-    mem_ref_cntx_t *ctx = &g_mem_ref_ctx;
-
-    idx = MEM_REF_IDX(addr);
-    slot = &ctx->slot[idx];
 
     key.addr = addr;
 
-    pthread_rwlock_rdlock(&slot->lock);
-
-    item = (mem_ref_item_t *)rbt_query(slot->tree, (void *)&key);
+    item = hash_tab_query(g_mem_ref_tab, (void *)&key, RDLOCK);
     if (NULL != item) {
         cnt = (int)atomic32_inc(&item->count);
-        pthread_rwlock_unlock(&slot->lock);
+        hash_tab_unlock(g_mem_ref_tab, &key, RDLOCK);
         return cnt;
     }
-
-    pthread_rwlock_unlock(&slot->lock);
+    hash_tab_unlock(g_mem_ref_tab, &key, RDLOCK);
 
     return -1; // 未创建结点
 }
@@ -243,48 +190,36 @@ int mem_ref_incr(void *addr)
  ******************************************************************************/
 int mem_ref_decr(void *addr)
 {
-    int cnt, idx;
-    mem_ref_slot_t *slot;
-    mem_ref_item_t *item, *temp, key;
-    mem_ref_cntx_t *ctx = &g_mem_ref_ctx;
-
-    idx = MEM_REF_IDX(addr);
-    slot = &ctx->slot[idx];
+    int cnt;
+    mem_ref_item_t *item, key;
 
     key.addr = addr;
 
-    pthread_rwlock_rdlock(&slot->lock);
-
-    item = (mem_ref_item_t *)rbt_query(slot->tree, (void *)&key);
+    item = hash_tab_query(g_mem_ref_tab, (void *)&key, RDLOCK);
     if (NULL == item) {
-        pthread_rwlock_unlock(&slot->lock);
         return 0; // Didn't find
     }
 
     cnt = (int)atomic32_dec(&item->count);
-    if (0 == cnt) {
-        pthread_rwlock_unlock(&slot->lock);
 
-        pthread_rwlock_wrlock(&slot->lock);
-        item = (mem_ref_item_t *)rbt_query(slot->tree, (void *)&key);
+    hash_tab_unlock(g_mem_ref_tab, &key, RDLOCK);
+
+    if (0 == cnt) {
+        item = hash_tab_query(g_mem_ref_tab, (void *)&key, WRLOCK);
         if (NULL == item) {
-            pthread_rwlock_unlock(&slot->lock);
             return 0; // Didn't find
         }
-
-        if (0 == item->count) {
-            rbt_delete(slot->tree, (void *)&key, (void **)&temp);
-            pthread_rwlock_unlock(&slot->lock);
+        else if (0 == item->count) {
+            hash_tab_delete(g_mem_ref_tab, (void *)&key, NONLOCK);
+            hash_tab_unlock(g_mem_ref_tab, &key, WRLOCK);
 
             item->dealloc(item->pool, item->addr); // 释放被管理的内存
             free(item);
             return 0;
         }
-        pthread_rwlock_unlock(&slot->lock);
+        hash_tab_unlock(g_mem_ref_tab, &key, WRLOCK);
         return 0;
     }
-
-    pthread_rwlock_unlock(&slot->lock);
     return cnt;
 }
 
@@ -301,28 +236,19 @@ int mem_ref_decr(void *addr)
  ******************************************************************************/
 int mem_ref_check(void *addr)
 {
-    int cnt, idx;
-    mem_ref_slot_t *slot;
+    int cnt;
     mem_ref_item_t *item, key;
-    mem_ref_cntx_t *ctx = &g_mem_ref_ctx;
-
-    idx = MEM_REF_IDX(addr);
-    slot = &ctx->slot[idx];
-
-    key.addr = addr;
-
-    pthread_rwlock_rdlock(&slot->lock);
 
     /* > 查询引用 */
-    item = (mem_ref_item_t *)rbt_query(slot->tree, (void *)&key);
+    key.addr = addr;
+
+    item = (mem_ref_item_t *)hash_tab_query(g_mem_ref_tab, (void *)&key, RDLOCK);
     if (NULL != item) {
         cnt = item->count;
-        pthread_rwlock_unlock(&slot->lock);
+        hash_tab_unlock(g_mem_ref_tab, &key, RDLOCK);
         return cnt;
     }
-    pthread_rwlock_unlock(&slot->lock);
-
-    assert(0);
+    hash_tab_unlock(g_mem_ref_tab, &key, RDLOCK);
 
     return 0;
 }
