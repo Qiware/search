@@ -859,7 +859,6 @@ int rbt_print(rbt_tree_t *tree, print_cb_t print)
  **功    能: 搜索指定关键字结点(外部接口)
  **输入参数:
  **     tree: 红黑树
- **     key: 关键字(唯一值)
  **     size: 关键字长度
  **输出参数: NONE
  **返    回: 数据地址
