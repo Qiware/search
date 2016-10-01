@@ -10,12 +10,12 @@ include $(PROJ)/make/build.mak
 
 INCLUDE = -I./incl \
 			-I$(PROJ)/src/incl \
-			-I$(PROJ)/../c-ctrl/src/incl \
-			-I$(PROJ)/../c-ctrl/src/incl/sdtp \
-			-I$(PROJ)/../c-ctrl/src/incl/rtmq \
-			-I$(PROJ)/../c-ctrl/src/incl/agent
+			-I$(PROJ)/../clang/src/incl \
+			-I$(PROJ)/../clang/src/incl/sdtp \
+			-I$(PROJ)/../clang/src/incl/rtmq \
+			-I$(PROJ)/../clang/src/incl/agent
 INCLUDE += $(GLOBAL_INCLUDE)
-LIBS_PATH = -L$(PROJ)/lib -L$(PROJ)/../c-ctrl/lib
+LIBS_PATH = -L$(PROJ)/lib -L$(PROJ)/../clang/lib
 
 # 静态链接库
 STATIC_LIB_LIST = libev.a librtmq.a libagent.a libcore.a libutils.a

@@ -10,11 +10,11 @@ include $(PROJ)/make/build.mak
 
 INCLUDE = -I./incl \
 			-I$(PROJ)/src/incl \
-			-I$(PROJ)/../c-ctrl/src/incl \
-			-I$(PROJ)/../c-ctrl/src/incl/rtmq \
-			-I$(PROJ)/../c-ctrl/src/incl/agent
+			-I$(PROJ)/../clang/src/incl \
+			-I$(PROJ)/../clang/src/incl/rtmq \
+			-I$(PROJ)/../clang/src/incl/agent
 INCLUDE += $(GLOBAL_INCLUDE)
-LIBS_PATH = -L$(PROJ)/lib -L$(PROJ)/../c-ctrl/lib
+LIBS_PATH = -L$(PROJ)/lib -L$(PROJ)/../clang/lib
 LIBS = -lpthread -lcore -lrtmq -linvtab
 LIBS += $(SHARED_LIB)
 LIBS_A = $(PROJ_LIB)/libcore.a $(PROJ_LIB)/librtmq.a $(PROJ_LIB)/libinvtab.a
