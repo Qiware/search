@@ -11,6 +11,7 @@
 #include "sck.h"
 #include "mesg.h"
 #include "redo.h"
+#include "search.h"
 #include "monitor.h"
 #include "xml_tree.h"
 

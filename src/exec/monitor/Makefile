@@ -10,10 +10,8 @@ include $(PROJ)/make/build.mak
 
 INCLUDE = -I./incl \
 		  -I$(PROJ)/src/incl \
-		  -I$(PROJ)/src/incl/agent \
-		  -I$(PROJ)/src/exec/monitor/incl \
-		  -I$(PROJ)/src/exec/spider/filter/incl \
-		  -I$(PROJ)/src/exec/spider/crawler/incl
+		  -I$(PROJ)/../cctrl/src/incl \
+		  -I$(PROJ)/src/exec/monitor/incl
 INCLUDE += $(GLOBAL_INCLUDE)
 LIBS_PATH = -L$(PROJ)/lib
 LIBS = -lpthread -lcore
@@ -21,8 +19,6 @@ LIBS += $(SHARED_LIB)
 
 SRC_LIST = monitor.c \
 			mon_conf.c \
-			mon_crwl.c \
-			mon_filter.c \
 			mon_search.c
 
 OBJS = $(subst .c,.o, $(SRC_LIST)) 
