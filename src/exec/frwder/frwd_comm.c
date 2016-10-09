@@ -10,7 +10,6 @@
 #include "comm.h"
 #include "frwd.h"
 #include "mesg.h"
-#include "agent.h"
 #include "command.h"
 
 /******************************************************************************

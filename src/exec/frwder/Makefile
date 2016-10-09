@@ -12,8 +12,7 @@ INCLUDE = -I./incl \
 			-I$(PROJ)/src/incl \
 			-I$(PROJ)/../cctrl/src/incl \
 			-I$(PROJ)/../cctrl/src/incl/sdtp \
-			-I$(PROJ)/../cctrl/src/incl/rtmq \
-			-I$(PROJ)/../cctrl/src/incl/agent
+			-I$(PROJ)/../cctrl/src/incl/rtmq
 INCLUDE += $(GLOBAL_INCLUDE)
 LIBS_PATH = -L$(PROJ)/lib -L$(PROJ)/../cctrl/lib
 LIBS = -lpthread -lcore -lsdtp -lrtmq

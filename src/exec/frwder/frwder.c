@@ -11,7 +11,6 @@
 #include "mesg.h"
 #include "frwd.h"
 #include "redo.h"
-#include "agent.h"
 #include "mem_ref.h"
 #include "frwd_conf.h"
 
