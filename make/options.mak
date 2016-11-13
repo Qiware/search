@@ -14,7 +14,7 @@ GLOBAL_INCLUDE = # 通用头文件路径
 STATIC_LIB_PATH = $(PROJ_LIB) \
 				 /usr/lib/ \
 				 /usr/local/lib \
-				 $(PROJ)/../clang/lib \
+				 $(PROJ)/../cctrl/lib \
 				 /usr/lib/x86_64-linux-gnu/
 
 # 默认开启的功能
