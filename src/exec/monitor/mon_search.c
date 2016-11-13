@@ -9,6 +9,7 @@
  ** 作  者: # Qifeng.zou # 2014.12.27 #
  ******************************************************************************/
 #include "sck.h"
+#include "cmd.h"
 #include "mesg.h"
 #include "redo.h"
 #include "search.h"
@@ -218,7 +219,7 @@ static int mon_srch_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args)
     memset(&conn, 0, sizeof(conn));
 
     /* > 连接代理服务 */
-    conn.fd = tcp_connect(AF_INET, conf->ip, conf->port);
+    conn.fd = tcp_connect(AF_INET, conf->ipaddr, conf->port);
     if (conn.fd < 0) {
         fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
         return -1;
@@ -310,7 +311,7 @@ SRCH_AGAIN:
     /* > 连接代理服务 */
     for (idx=0; idx<num; ++idx) {
         conn[idx].flag = 0;
-        conn[idx].fd = tcp_connect(AF_INET, ctx->conf->search.ip, ctx->conf->search.port);
+        conn[idx].fd = tcp_connect(AF_INET, ctx->conf->search.ipaddr, ctx->conf->search.port);
         if (conn[idx].fd < 0) {
             fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
             break;
@@ -453,7 +454,7 @@ static int mon_insert_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args)
     MESG_HEAD_HTON(&head, &head);
 
     /* > 连接代理服务 */
-    fd = tcp_connect(AF_INET, ctx->conf->search.ip, ctx->conf->search.port);
+    fd = tcp_connect(AF_INET, ctx->conf->search.ipaddr, ctx->conf->search.port);
     if (fd < 0) {
         fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
         return -1;
@@ -530,7 +531,7 @@ static int mon_srch_connect(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args
     /* > 连接代理服务 */
     num = 0;
     for (idx=0; idx<max; ++idx) {
-        fd[idx] = tcp_connect(AF_INET, ctx->conf->search.ip, ctx->conf->search.port);
+        fd[idx] = tcp_connect(AF_INET, ctx->conf->search.ipaddr, ctx->conf->search.port);
         if (fd[idx] < 0) {
             fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
             break;

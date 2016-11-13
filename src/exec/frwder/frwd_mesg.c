@@ -6,8 +6,8 @@
  ** 描  述: 消息处理函数定义
  ** 作  者: # Qifeng.zou # Tue 14 Jul 2015 02:52:16 PM CST #
  ******************************************************************************/
+#include "cmd.h"
 #include "frwd.h"
-#include "mesg.h"
 #include "search.h"
 #include "vector.h"
 #include "command.h"

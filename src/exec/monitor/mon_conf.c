@@ -48,7 +48,7 @@ static int mon_conf_load_menu(xml_tree_t *xml, mon_conf_t *conf)
         break; \
     } \
     \
-    snprintf((conf)->ip, sizeof((conf)->ip), "%s", (char *)node->value.str); \
+    snprintf((conf)->ipaddr, sizeof((conf)->ipaddr), "%s", (char *)node->value.str); \
     \
     snprintf(node_path, sizeof(node_path), "%s.PORT", _path); \
     \

@@ -15,9 +15,12 @@ INCLUDE = -I./incl \
 			-I$(PROJ)/../cctrl/src/incl/agent
 INCLUDE += $(GLOBAL_INCLUDE)
 LIBS_PATH = -L$(PROJ)/lib -L$(PROJ)/../cctrl/lib
-LIBS = -lpthread -lcore -lrtmq -linvtab
+
+# 静态链接库
+STATIC_LIB_LIST = libev.a librtmq.a libinvtab.a libcore.a libutils.a
+LIBS = $(call func_find_static_link_lib,$(STATIC_LIB_PATH),$(STATIC_LIB_LIST))
+LIBS += -lpthread -lm -dl
 LIBS += $(SHARED_LIB)
-LIBS_A = $(PROJ_LIB)/libcore.a $(PROJ_LIB)/librtmq.a $(PROJ_LIB)/libinvtab.a
 
 SRC_LIST = invertd.c \
             invtd_comm.c \
@@ -34,7 +37,7 @@ TARGET = invertd
 
 all: $(TARGET)
 $(TARGET): $(OBJS)
-	@$(CC) $(CFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS_A) $(LIBS)
+	@$(CC) $(CFLAGS) -o $@ $(OBJS) $(INCLUDE) $(LIBS_PATH) $(LIBS)
 	@echo "CC $@"
 	@mv $@ $(PROJ_BIN)/$@-$(VERSION)
 	@rm -f $(PROJ_BIN)/$@

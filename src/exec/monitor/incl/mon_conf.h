@@ -1,15 +1,10 @@
 #if !defined(__MON_CONF_H__)
 #define __MON_CONF_H__
 
+#include "str.h"
 #include "menu.h"
 
 #define MON_DEF_CONF_PATH "../conf/monitor.xml"
-
-typedef struct
-{
-    char ip[IP_ADDR_MAX_LEN];   /* IP地址 */
-    int port;                   /* 端口号 */
-} ip_port_t;
 
 typedef struct
 {

@@ -7,7 +7,7 @@
  ** 作  者: # Qifeng.zou # Thu 16 Jul 2015 01:08:20 AM CST #
  ******************************************************************************/
 
-#include "mesg.h"
+#include "cmd.h"
 #include "agent.h"
 #include "search.h"
 #include "listend.h"

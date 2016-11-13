@@ -11,7 +11,6 @@ include $(PROJ)/make/build.mak
 INCLUDE = -I./incl \
 			-I$(PROJ)/src/incl \
 			-I$(PROJ)/../cctrl/src/incl \
-			-I$(PROJ)/../cctrl/src/incl/sdtp \
 			-I$(PROJ)/../cctrl/src/incl/rtmq \
 			-I$(PROJ)/../cctrl/src/incl/agent
 INCLUDE += $(GLOBAL_INCLUDE)

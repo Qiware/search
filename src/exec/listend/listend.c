@@ -9,8 +9,8 @@
  ******************************************************************************/
 
 #include "sck.h"
+#include "cmd.h"
 #include "lock.h"
-#include "mesg.h"
 #include "redo.h"
 #include "agent.h"
 #include "search.h"

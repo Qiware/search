@@ -6,7 +6,7 @@
  ** 描  述: 倒排服务与消息处理相关内容
  ** 作  者: # Qifeng.zou # Fri 08 May 2015 10:37:21 PM CST #
  ******************************************************************************/
-#include "mesg.h"
+#include "cmd.h"
 #include "search.h"
 #include "invertd.h"
 #include "xml_tree.h"

@@ -6,7 +6,7 @@
  ** 描  述: 搜索处理流程
  ** 作  者: # Qifeng.zou # Fri 08 May 2015 10:37:21 PM CST #
  ******************************************************************************/
-#include "mesg.h"
+#include "cmd.h"
 #include "search.h"
 #include "invertd.h"
 #include "xml_tree.h"
