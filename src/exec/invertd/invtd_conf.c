@@ -12,7 +12,7 @@
 #include "invtd_conf.h"
 
 static int invtd_conf_load_comm(xml_tree_t *xml, invtd_conf_t *conf);
-static int invtd_conf_load_frwder(xml_tree_t *xml, rtmq_proxy_conf_t *conf, int nid, const char *path);
+static int invtd_conf_load_frwder(xml_tree_t *xml, rtmq_proxy_conf_t *conf, invtd_conf_t *icf, const char *path);
 
 /******************************************************************************
  **函数名称: invtd_conf_load
@@ -51,7 +51,7 @@ int invtd_conf_load(const char *path, invtd_conf_t *conf, log_cycle_t *log)
     }
 
     /* > 加载DownStream配置 */
-    if (invtd_conf_load_frwder(xml, &conf->frwder, conf->nid, conf->path)) {
+    if (invtd_conf_load_frwder(xml, &conf->frwder, conf, conf->path)) {
         xml_destroy(xml);
         return INVT_ERR_CONF;
     }
@@ -74,7 +74,7 @@ int invtd_conf_load(const char *path, invtd_conf_t *conf, log_cycle_t *log)
  **作    者: # Qifeng.zou # 2015.05.08 #
  ******************************************************************************/
 static int invtd_conf_load_frwder(xml_tree_t *xml,
-        rtmq_proxy_conf_t *conf, int nid, const char *path)
+        rtmq_proxy_conf_t *conf, invtd_conf_t *icf, const char *path)
 {
     xml_node_t *parent, *node;
 
@@ -87,7 +87,8 @@ static int invtd_conf_load_frwder(xml_tree_t *xml,
     }
 
     /* > 设置结点ID */
-    conf->nid = nid;
+    conf->nid = icf->nid;
+    conf->gid = icf->gid;
 
     /* > 服务端IP */
     node = xml_search(xml, parent, "SERVER.IP");
@@ -251,6 +252,14 @@ static int invtd_conf_load_comm(xml_tree_t *xml, invtd_conf_t *conf)
 {
     xml_node_t *node;
     char path[FILE_LINE_MAX_LEN];
+
+    /* > 分组ID */
+    node = xml_query(xml, ".INVERTD.GID");
+    if (NULL == node) {
+        return INVT_ERR_CONF;
+    }
+
+    conf->gid = str_to_num(node->value.str);
 
     /* > 结点ID */
     node = xml_query(xml, ".INVERTD.ID");

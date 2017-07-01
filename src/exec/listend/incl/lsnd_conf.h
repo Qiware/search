@@ -8,6 +8,7 @@
 /* 侦听配置 */
 typedef struct
 {
+    int gid;                        /* 分组ID */
     int nid;                        /* 结点ID */
     char wdir[FILE_PATH_MAX_LEN];   /* 工作路径 */
 
