@@ -1,5 +1,5 @@
 <!-- 代理服务配置信息 -->
-<LISTEND ID="10002" WORKDIR="../temp/listend-ws/">
+<LISTEND GID="10002" ID="10002" WORKDIR="../temp/listend-ws/">
     <!-- 分发队列配置 -->
     <DISTQ NUM="8" MAX="4096" SIZE="4KB" />
 
