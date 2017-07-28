@@ -27,8 +27,7 @@ static int mon_conf_load_menu(xml_tree_t *xml, mon_conf_t *conf)
     node = xml_search(xml, nail, ".WIDTH");
     if (NULL == node) {
         conf->menu.width = MON_MENU_WIDTH;
-    }
-    else {
+    } else {
         conf->menu.width = atoi(node->value.str);
     }
 

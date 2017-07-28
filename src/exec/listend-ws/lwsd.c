@@ -70,8 +70,7 @@ int main(int argc, char *argv[])
     /* > 解析输入参数 */
     if (lwsd_getopt(argc, argv, &opt)) {
         return lwsd_usage(argv[0]);
-    }
-    else if (opt.isdaemon) {
+    } else if (opt.isdaemon) {
         /* int daemon(int nochdir, int noclose);
          *  1． daemon()函数主要用于希望脱离控制台,以守护进程形式在后台运行的程序.
          *  2． 当nochdir为0时,daemon将更改进城的根目录为root(“/”).
@@ -436,8 +435,7 @@ static int lwsd_lws_get_attr(const lwsd_opt_t *opt,
     if (!conf->is_use_ssl) {
         info->ssl_cert_filepath = NULL;
         info->ssl_private_key_filepath = NULL;
-    }
-    else {
+    } else {
         info->ssl_cert_filepath = conf->cert_path;
         info->ssl_private_key_filepath = conf->key_path;
     }

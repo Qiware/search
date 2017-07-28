@@ -214,8 +214,7 @@ static int lwsd_search_wsi_destroy(lwsd_cntx_t *ctx, lwsd_search_user_data_t *us
 
     if (NULL == user) {
         return 0;
-    }
-    else if (NULL != user->pl) {
+    } else if (NULL != user->pl) {
         mem_dealloc(NULL, user->pl); /* 释放空间 */
         user->pl = NULL;
     }
@@ -259,9 +258,7 @@ static int lwsd_search_cmd_hdl(lwsd_cntx_t *ctx,
     /* > 字节序转换 */
     MESG_HEAD_NTOH(head, head);
 
-    if (len < sizeof(mesg_header_t)
-       || MESG_CHKSUM_ISVALID(head))
-    {
+    if (len < sizeof(mesg_header_t) || MESG_CHKSUM_ISVALID(head)) {
         return -1; /* 长度异常 */
     }
 
@@ -339,11 +336,9 @@ static int lwsd_search_send_data(lwsd_cntx_t *ctx,
             mem_dealloc(NULL, user->pl); /* 释放空间 */
             user->pl = NULL;
             return -1;
-        }
-        else if (n != (int)left) {
+        } else if (n != (int)left) {
             user->pl->offset += n;
-        }
-        else {
+        } else {
             mem_dealloc(NULL, user->pl); /* 释放空间 */
             user->pl = NULL;
         }

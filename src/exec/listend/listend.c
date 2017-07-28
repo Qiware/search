@@ -46,8 +46,7 @@ int main(int argc, char *argv[])
     /* > 解析输入参数 */
     if (lsnd_getopt(argc, argv, &opt)) {
         return lsnd_usage(argv[0]);
-    }
-    else if (opt.isdaemon) {
+    } else if (opt.isdaemon) {
         /* int daemon(int nochdir, int noclose);
          *  1． daemon()函数主要用于希望脱离控制台,以守护进程形式在后台运行的程序.
          *  2． 当nochdir为0时,daemon将更改进程的根目录为root(“/”).

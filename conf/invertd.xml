@@ -5,7 +5,7 @@
 
     <!-- 路由配置 -->
     <FRWDER>
-        <SERVER IP="127.0.0.1" PORT="28889" />              <!-- 服务端地址(IP:IP地址 PORT:服务端口) -->
+        <SERVER ADDR="127.0.0.1:28889" />                   <!-- 服务端地址(ADDR:IP地址+端口) -->
         <AUTH   USR="qifeng" PASSWD="111111" />             <!-- 鉴权配置(USR:用户名 PASSWD:登录密码) -->
         <THREAD-POOL SEND_THD_NUM="2" WORK_THD_NUM="4" />   <!-- 线程数目(SEND:发送线程 WORK:工作线程) -->
         <BUFFER-POOL-SIZE SEND="5" RECV="5" />              <!-- 缓存配置(SEND:发送缓存(MB) RECV:接收缓存(MB)) -->

@@ -123,8 +123,7 @@ static int mon_srch_recv_rsp(mon_cntx_t *ctx, mon_srch_conn_t *conn)
     if (n <= 0) {
         fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
         return -1;
-    }
-    else if (0 == conn->wrtm.tv_sec) {
+    } else if (0 == conn->wrtm.tv_sec) {
         fprintf(stderr, "    Didn't send search request but received response!\n");
     }
 
@@ -247,8 +246,7 @@ static int mon_srch_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args)
             if (EINTR == errno) { continue; }
             fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
             break;
-        }
-        else if (0 == ret) {
+        } else if (0 == ret) {
             fprintf(stderr, "    Timeout!\n");
             break;
         }
@@ -349,8 +347,7 @@ SRCH_AGAIN:
             if (EINTR == errno) { continue; }
             fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
             break;
-        }
-        else if (0 == ret) {
+        } else if (0 == ret) {
             fprintf(stderr, "    Timeout!\n");
             break;
         }
@@ -478,8 +475,7 @@ static int mon_insert_word(menu_cntx_t *menu_ctx, menu_item_t *menu, void *args)
             if (EINTR == errno) { continue; }
             fprintf(stderr, "    errmsg:[%d] %s!\n", errno, strerror(errno));
             break;
-        }
-        else if (0 == ret) {
+        } else if (0 == ret) {
             fprintf(stderr, "    Timeout!\n");
             break;
         }

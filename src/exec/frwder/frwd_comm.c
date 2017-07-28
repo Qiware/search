@@ -50,25 +50,17 @@ int frwd_getopt(int argc, char **argv, frwd_opt_t *opt)
     while (-1 != (ch = getopt_long(argc, argv, "c:l:hd", opts, NULL))) {
         switch (ch) {
             case 'c':   /* 配置路径 */
-            {
                 opt->conf_path = optarg;
                 break;
-            }
             case 'l':   /* 日志级别 */
-            {
                 opt->log_level = log_get_level(optarg);
                 break;
-            }
             case 'd':   /* 是否后台运行 */
-            {
                 opt->isdaemon = true;
                 break;
-            }
             case 'h':   /* 显示帮助信息 */
             default:
-            {
                 return FRWD_SHOW_HELP;
-            }
         }
     }
 

@@ -27,8 +27,7 @@ int main(int argc, char *argv[])
     /* > 获取输入参数 */
     if (frwd_getopt(argc, argv, &opt)) {
         return frwd_usage(basename(argv[0]));
-    }
-    else if (opt.isdaemon) {
+    } else if (opt.isdaemon) {
         daemon(1, 1);   /* 后台运行 */
     }
 

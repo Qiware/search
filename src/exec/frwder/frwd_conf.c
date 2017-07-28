@@ -91,9 +91,7 @@ static int frwd_conf_parse_comm(xml_tree_t *xml, frwd_conf_t *conf)
 
     /* > 结点名ID */
     node = xml_query(xml, ".FRWDER.ID");
-    if (NULL == node
-        || 0 == node->value.len)
-    {
+    if (NULL == node || 0 == node->value.len) {
         return -1;
     }
 
@@ -101,9 +99,7 @@ static int frwd_conf_parse_comm(xml_tree_t *xml, frwd_conf_t *conf)
 
     /* > 结点名 */
     node = xml_query(xml, ".FRWDER.NAME");
-    if (NULL == node
-        || 0 == node->value.len)
-    {
+    if (NULL == node || 0 == node->value.len) {
         return -1;
     }
 
@@ -142,9 +138,7 @@ static int frwd_conf_parse_backend(xml_tree_t *xml, const char *path, frwd_conf_
 
     /* > 帧听端口 */
     node = xml_search(xml, parent, "PORT");
-    if (NULL == node
-        || 0 == node->value.len)
-    {
+    if (NULL == node || 0 == node->value.len) {
         fprintf(stderr, "Didn't find %s.SERVER.PORT!\n", path);
         return -1;
     }
@@ -153,9 +147,7 @@ static int frwd_conf_parse_backend(xml_tree_t *xml, const char *path, frwd_conf_
 
     /* > 工作路径 */
     node = xml_search(xml, parent, "PATH");
-    if (NULL == node
-        || 0 == node->value.len)
-    {
+    if (NULL == node || 0 == node->value.len) {
         fprintf(stderr, "Didn't find %s.PATH!\n", path);
         return -1;
     }
@@ -204,9 +196,7 @@ static int frwd_conf_parse_backend(xml_tree_t *xml, const char *path, frwd_conf_
 
     /* > 线程数目 */
     node = xml_search(xml, parent, "THREAD-POOL.RECV_THD_NUM");  /* 发送线程数 */
-    if (NULL == node
-        || 0 == node->value.len)
-    {
+    if (NULL == node || 0 == node->value.len) {
         fprintf(stderr, "Didn't find %s.THREAD-POOL.SEND_THD_NUM!\n", path);
         return -1;
     }
@@ -218,9 +208,7 @@ static int frwd_conf_parse_backend(xml_tree_t *xml, const char *path, frwd_conf_
     }
 
     node = xml_search(xml, parent, "THREAD-POOL.WORK_THD_NUM");  /* 工作线程数 */
-    if (NULL == node
-        || 0 == node->value.len)
-    {
+    if (NULL == node || 0 == node->value.len) {
         fprintf(stderr, "Didn't find %s.THREAD-POOL.WORK_THD_NUM!\n", path);
         return -1;
     }
@@ -233,9 +221,7 @@ static int frwd_conf_parse_backend(xml_tree_t *xml, const char *path, frwd_conf_
 
     /* > 接收队列 */
     node = xml_search(xml, parent, "RECVQ.NUM");
-    if (NULL == node
-        || 0 == node->value.len)
-    {
+    if (NULL == node || 0 == node->value.len) {
         fprintf(stderr, "Didn't find %s.RECVQ.NUM!\n", path);
         return -1;
     }
@@ -246,9 +232,7 @@ static int frwd_conf_parse_backend(xml_tree_t *xml, const char *path, frwd_conf_
     }
 
     node = xml_search(xml, parent, "RECVQ.MAX");
-    if (NULL == node
-        || 0 == node->value.len)
-    {
+    if (NULL == node || 0 == node->value.len) {
         fprintf(stderr, "Didn't find %s.RECVQ.MAX!\n", path);
         return -1;
     }
@@ -260,9 +244,7 @@ static int frwd_conf_parse_backend(xml_tree_t *xml, const char *path, frwd_conf_
     }
 
     node = xml_search(xml, parent, "RECVQ.SIZE");
-    if (NULL == node
-        || 0 == node->value.len)
-    {
+    if (NULL == node || 0 == node->value.len) {
         fprintf(stderr, "Didn't find %s.RECVQ.SIZE!\n", path);
         return -1;
     }
@@ -279,9 +261,7 @@ static int frwd_conf_parse_backend(xml_tree_t *xml, const char *path, frwd_conf_
 
     /* > 分发队列 */
     node = xml_search(xml, parent, "DISTQ.NUM");
-    if (NULL == node
-        || 0 == node->value.len)
-    {
+    if (NULL == node || 0 == node->value.len) {
         fprintf(stderr, "Didn't find %s.DISTQ.NUM!\n", path);
         return -1;
     }
@@ -292,9 +272,7 @@ static int frwd_conf_parse_backend(xml_tree_t *xml, const char *path, frwd_conf_
     }
 
     node = xml_search(xml, parent, "DISTQ.MAX");
-    if (NULL == node
-        || 0 == node->value.len)
-    {
+    if (NULL == node || 0 == node->value.len) {
         fprintf(stderr, "Didn't find %s.SENDQ.MAX!\n", path);
         return -1;
     }
@@ -306,9 +284,7 @@ static int frwd_conf_parse_backend(xml_tree_t *xml, const char *path, frwd_conf_
     }
 
     node = xml_search(xml, parent, "DISTQ.SIZE");
-    if (NULL == node
-        || 0 == node->value.len)
-    {
+    if (NULL == node || 0 == node->value.len) {
         fprintf(stderr, "Didn't find %s.SENDQ.SIZE!\n", path);
         return -1;
     }
@@ -352,9 +328,7 @@ static int frwd_conf_parse_forward(xml_tree_t *xml, const char *path, frwd_conf_
 
     /* > 帧听端口 */
     node = xml_search(xml, parent, "PORT");
-    if (NULL == node
-        || 0 == node->value.len)
-    {
+    if (NULL == node || 0 == node->value.len) {
         fprintf(stderr, "Didn't find %s.SERVER.PORT!\n", path);
         return -1;
     }
@@ -363,9 +337,7 @@ static int frwd_conf_parse_forward(xml_tree_t *xml, const char *path, frwd_conf_
 
     /* > 工作路径 */
     node = xml_search(xml, parent, "PATH");
-    if (NULL == node
-        || 0 == node->value.len)
-    {
+    if (NULL == node || 0 == node->value.len) {
         fprintf(stderr, "Didn't find %s.PATH!\n", path);
         return -1;
     }
@@ -414,9 +386,7 @@ static int frwd_conf_parse_forward(xml_tree_t *xml, const char *path, frwd_conf_
 
     /* > 线程数目 */
     node = xml_search(xml, parent, "THREAD-POOL.RECV_THD_NUM");  /* 发送线程数 */
-    if (NULL == node
-        || 0 == node->value.len)
-    {
+    if (NULL == node || 0 == node->value.len) {
         fprintf(stderr, "Didn't find %s.THREAD-POOL.SEND_THD_NUM!\n", path);
         return -1;
     }
@@ -428,9 +398,7 @@ static int frwd_conf_parse_forward(xml_tree_t *xml, const char *path, frwd_conf_
     }
 
     node = xml_search(xml, parent, "THREAD-POOL.WORK_THD_NUM");  /* 工作线程数 */
-    if (NULL == node
-        || 0 == node->value.len)
-    {
+    if (NULL == node || 0 == node->value.len) {
         fprintf(stderr, "Didn't find %s.THREAD-POOL.WORK_THD_NUM!\n", path);
         return -1;
     }
@@ -443,9 +411,7 @@ static int frwd_conf_parse_forward(xml_tree_t *xml, const char *path, frwd_conf_
 
     /* > 接收队列 */
     node = xml_search(xml, parent, "RECVQ.NUM");
-    if (NULL == node
-        || 0 == node->value.len)
-    {
+    if (NULL == node || 0 == node->value.len) {
         fprintf(stderr, "Didn't find %s.RECVQ.NUM!\n", path);
         return -1;
     }
@@ -456,9 +422,7 @@ static int frwd_conf_parse_forward(xml_tree_t *xml, const char *path, frwd_conf_
     }
 
     node = xml_search(xml, parent, "RECVQ.MAX");
-    if (NULL == node
-        || 0 == node->value.len)
-    {
+    if (NULL == node || 0 == node->value.len) {
         fprintf(stderr, "Didn't find %s.RECVQ.MAX!\n", path);
         return -1;
     }
@@ -470,9 +434,7 @@ static int frwd_conf_parse_forward(xml_tree_t *xml, const char *path, frwd_conf_
     }
 
     node = xml_search(xml, parent, "RECVQ.SIZE");
-    if (NULL == node
-        || 0 == node->value.len)
-    {
+    if (NULL == node || 0 == node->value.len) {
         fprintf(stderr, "Didn't find %s.RECVQ.SIZE!\n", path);
         return -1;
     }
@@ -489,9 +451,7 @@ static int frwd_conf_parse_forward(xml_tree_t *xml, const char *path, frwd_conf_
 
     /* > 分发队列 */
     node = xml_search(xml, parent, "DISTQ.NUM");
-    if (NULL == node
-        || 0 == node->value.len)
-    {
+    if (NULL == node || 0 == node->value.len) {
         fprintf(stderr, "Didn't find %s.DISTQ.NUM!\n", path);
         return -1;
     }
@@ -502,9 +462,7 @@ static int frwd_conf_parse_forward(xml_tree_t *xml, const char *path, frwd_conf_
     }
 
     node = xml_search(xml, parent, "DISTQ.MAX");
-    if (NULL == node
-        || 0 == node->value.len)
-    {
+    if (NULL == node || 0 == node->value.len) {
         fprintf(stderr, "Didn't find %s.SENDQ.MAX!\n", path);
         return -1;
     }
@@ -516,9 +474,7 @@ static int frwd_conf_parse_forward(xml_tree_t *xml, const char *path, frwd_conf_
     }
 
     node = xml_search(xml, parent, "DISTQ.SIZE");
-    if (NULL == node
-        || 0 == node->value.len)
-    {
+    if (NULL == node || 0 == node->value.len) {
         fprintf(stderr, "Didn't find %s.SENDQ.SIZE!\n", path);
         return -1;
     }

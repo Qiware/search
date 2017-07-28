@@ -49,9 +49,7 @@ static int invtd_search_parse(invtd_cntx_t *ctx,
     MESG_HEAD_NTOH(head, head);
 
     /* > 校验合法性 */
-    if (!MESG_CHKSUM_ISVALID(head)
-        ||  (len != MESG_TOTAL_LEN(head->length)))
-    {
+    if (!MESG_CHKSUM_ISVALID(head) || (len != MESG_TOTAL_LEN(head->length))) {
         log_error(ctx->log, "sid:%lu serial:%lu type:%u flag:%u chksum:0x%X len:%d body:%s",
                 head->sid, head->serial, head->type,
                 head->flag, head->chksum, head->length, xml_str);
@@ -137,9 +135,7 @@ static xml_tree_t *invtd_search_query(invtd_cntx_t *ctx, mesg_search_req_t *req)
 
         /* > 搜索倒排表 */
         word = (invt_dic_word_t *)invtab_query(ctx->invtab, req->words);
-        if (NULL == word
-            || NULL == word->doc_list)
-        {
+        if (NULL == word || NULL == word->doc_list) {
             pthread_rwlock_unlock(&ctx->invtab_lock);
             log_warn(ctx->log, "Didn't search anything! words:%s", req->words);
             if (invtd_search_no_data_hdl(xml)) {

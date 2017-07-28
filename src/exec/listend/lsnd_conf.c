@@ -98,9 +98,7 @@ static int lsnd_conf_load_comm(xml_tree_t *xml, lsnd_conf_t *conf, log_cycle_t *
 
     /* > 加载分组ID */
     node = xml_query(xml, ".LISTEND.GID");
-    if (NULL == node
-        || 0 == node->value.len)
-    {
+    if (NULL == node || 0 == node->value.len) {
         log_error(log, "Get group id failed!");
         return -1;
     }
@@ -109,9 +107,7 @@ static int lsnd_conf_load_comm(xml_tree_t *xml, lsnd_conf_t *conf, log_cycle_t *
 
     /* > 加载结点ID */
     node = xml_query(xml, ".LISTEND.ID");
-    if (NULL == node
-        || 0 == node->value.len)
-    {
+    if (NULL == node || 0 == node->value.len) {
         log_error(log, "Get node id failed!");
         return -1;
     }
@@ -120,9 +116,7 @@ static int lsnd_conf_load_comm(xml_tree_t *xml, lsnd_conf_t *conf, log_cycle_t *
 
     /* > 加载工作路径 */
     node = xml_query(xml, ".LISTEND.WORKDIR");
-    if (NULL == node
-        || 0 == node->value.len)
-    {
+    if (NULL == node || 0 == node->value.len) {
         log_error(log, "Get work directory failed!");
         return -1;
     }
@@ -367,31 +361,17 @@ static int lsnd_conf_load_frwder(xml_tree_t *xml, lsnd_conf_t *lcf, log_cycle_t 
     snprintf(conf->path, sizeof(conf->path), "%s", lcf->wdir);
 
     /* > 服务端IP */
-    node = xml_search(xml, parent, "SERVER.IP");
-    if (NULL == node
-        || 0 == node->value.len)
-    {
+    node = xml_search(xml, parent, "SERVER.ADDR");
+    if (NULL == node || 0 == node->value.len) {
         log_error(log, "Didn't find SERVER.IP!");
         return -1;
     }
 
     snprintf(conf->ipaddr, sizeof(conf->ipaddr), "%s", node->value.str);
 
-    node = xml_search(xml, parent, "SERVER.PORT");
-    if (NULL == node
-        || 0 == node->value.len)
-    {
-        log_error(log, "Didn't find SERVER.PORT!");
-        return -1;
-    }
-
-    conf->port = str_to_num(node->value.str);
-
     /* > 鉴权信息 */
     node = xml_search(xml, parent, "AUTH.USR");
-    if (NULL == node
-        || 0 == node->value.len)
-    {
+    if (NULL == node || 0 == node->value.len) {
         log_error(log, "Didn't find AUTH.USR!");
         return -1;
     }
@@ -399,9 +379,7 @@ static int lsnd_conf_load_frwder(xml_tree_t *xml, lsnd_conf_t *lcf, log_cycle_t 
     snprintf(conf->auth.usr, sizeof(conf->auth.usr), "%s", node->value.str);
 
     node = xml_search(xml, parent, "AUTH.PASSWD");
-    if (NULL == node
-        || 0 == node->value.len)
-    {
+    if (NULL == node || 0 == node->value.len) {
         log_error(log, "Didn't find AUTH.PASSWD!");
         return -1;
     }
@@ -410,9 +388,7 @@ static int lsnd_conf_load_frwder(xml_tree_t *xml, lsnd_conf_t *lcf, log_cycle_t 
 
     /* > 线程数目 */
     node = xml_search(xml, parent, "THREAD-POOL.SEND_THD_NUM");  /* 发送线程数 */
-    if (NULL == node
-        || 0 == node->value.len)
-    {
+    if (NULL == node || 0 == node->value.len) {
         log_error(log, "Didn't find THREAD-POOL.SEND_THD_NUM!");
         return -1;
     }
@@ -424,9 +400,7 @@ static int lsnd_conf_load_frwder(xml_tree_t *xml, lsnd_conf_t *lcf, log_cycle_t 
     }
 
     node = xml_search(xml, parent, "THREAD-POOL.WORK_THD_NUM");  /* 工作线程数 */
-    if (NULL == node
-        || 0 == node->value.len)
-    {
+    if (NULL == node || 0 == node->value.len) {
         log_error(log, "Didn't find THREAD-POOL.WORK_THD_NUM!");
         return -1;
     }
@@ -439,9 +413,7 @@ static int lsnd_conf_load_frwder(xml_tree_t *xml, lsnd_conf_t *lcf, log_cycle_t 
 
     /* > 缓存大小配置 */
     node = xml_search(xml, parent, "BUFFER-POOL-SIZE.RECV");  /* 接收缓存(MB) */
-    if (NULL == node
-        || 0 == node->value.len)
-    {
+    if (NULL == node || 0 == node->value.len) {
         log_error(log, "Didn't find BUFFER-POOL-SIZE.RECV!");
         return -1;
     }
@@ -453,9 +425,7 @@ static int lsnd_conf_load_frwder(xml_tree_t *xml, lsnd_conf_t *lcf, log_cycle_t 
 
     /* > 接收队列 */
     node = xml_search(xml, parent, "RECVQ.MAX");
-    if (NULL == node
-        || 0 == node->value.len)
-    {
+    if (NULL == node || 0 == node->value.len) {
         log_error(log, "Didn't find RECVQ.MAX!");
         return -1;
     }
@@ -467,9 +437,7 @@ static int lsnd_conf_load_frwder(xml_tree_t *xml, lsnd_conf_t *lcf, log_cycle_t 
     }
 
     node = xml_search(xml, parent, "RECVQ.SIZE");
-    if (NULL == node
-        || 0 == node->value.len)
-    {
+    if (NULL == node || 0 == node->value.len) {
         log_error(log, "Didn't find RECVQ.SIZE!");
         return -1;
     }
@@ -482,9 +450,7 @@ static int lsnd_conf_load_frwder(xml_tree_t *xml, lsnd_conf_t *lcf, log_cycle_t 
 
     /* > 发送队列 */
     node = xml_search(xml, parent, "SENDQ.MAX");
-    if (NULL == node
-        || 0 == node->value.len)
-    {
+    if (NULL == node || 0 == node->value.len) {
         log_error(log, "Didn't find SENDQ.MAX!");
         return -1;
     }
@@ -496,9 +462,7 @@ static int lsnd_conf_load_frwder(xml_tree_t *xml, lsnd_conf_t *lcf, log_cycle_t 
     }
 
     node = xml_search(xml, parent, "SENDQ.SIZE");
-    if (NULL == node
-        || 0 == node->value.len)
-    {
+    if (NULL == node || 0 == node->value.len) {
         log_error(log, "Didn't find SENDQ.SIZE!");
         return -1;
     }
