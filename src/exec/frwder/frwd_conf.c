@@ -145,15 +145,6 @@ static int frwd_conf_parse_backend(xml_tree_t *xml, const char *path, frwd_conf_
 
     conf->port = str_to_num(node->value.str);
 
-    /* > 工作路径 */
-    node = xml_search(xml, parent, "PATH");
-    if (NULL == node || 0 == node->value.len) {
-        fprintf(stderr, "Didn't find %s.PATH!\n", path);
-        return -1;
-    }
-
-    snprintf(conf->path, sizeof(conf->path), "%s", node->value.str);
-
     /* > 鉴权信息 */
     node = xml_search(xml, parent, "AUTH.ITEM");
     if (NULL == node) {
@@ -334,15 +325,6 @@ static int frwd_conf_parse_forward(xml_tree_t *xml, const char *path, frwd_conf_
     }
 
     conf->port = str_to_num(node->value.str);
-
-    /* > 工作路径 */
-    node = xml_search(xml, parent, "PATH");
-    if (NULL == node || 0 == node->value.len) {
-        fprintf(stderr, "Didn't find %s.PATH!\n", path);
-        return -1;
-    }
-
-    snprintf(conf->path, sizeof(conf->path), "%s", node->value.str);
 
     /* > 鉴权信息 */
     node = xml_search(xml, parent, "AUTH.ITEM");
